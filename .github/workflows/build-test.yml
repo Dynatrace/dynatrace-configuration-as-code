@@ -1,0 +1,68 @@
+name: Build and Test
+
+# This workflow builds the code and runs the unit tests and integration tests.
+#
+# If this workflow is executed in the context of a fork, the integration tests are
+# skipped and just the unit tests are executed. See the workflow "Trigger
+# Integration Tests for Forks" for more details on how the integration tests are
+# executed for forks.
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # this is checking periodically if there are any breaking API changes
+    # Every day at 00:00
+    - cron: '0 0 * * *'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+
+  build:
+    name: Build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    steps:
+
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.15
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+
+      - name: Code Style
+        if: matrix.os == 'ubuntu-latest'
+        run: make lint
+
+      - name: Build
+        run: make build
+
+      - name: Unit Test
+        run: make test
+
+      - name: Integration Test
+        # Just executed on main branch or if the repo is cloned directly - not for forks:
+        if: github.event.pull_request.head.repo.full_name == github.repository || github.ref == 'refs/heads/main'
+        run: make integration-test
+        env:
+          URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
+          URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
+          TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
+          TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
+
+      - name: Upload Log Files
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: logs
+          path: .logs/*.log

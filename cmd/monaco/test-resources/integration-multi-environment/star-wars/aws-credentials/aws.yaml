@@ -1,0 +1,8 @@
+
+config:
+  - credentials: "aws.json"
+
+credentials:
+  - name: "My AWS Credentials"
+  - accountId: "1234"
+  - iamRoleName: "dev-dynatrace-aws-monitoring-role"

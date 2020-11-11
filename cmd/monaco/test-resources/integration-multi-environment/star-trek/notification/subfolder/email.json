@@ -1,0 +1,13 @@
+{
+    "type": "EMAIL",
+    "name": "{{ .name }}",
+    "alertingProfile": "{{ .alertingProfileId }}",
+    "active": true,
+    "channel": "#team-expamle-cluster",
+    "subject": "I have a problem in *{{ .environment }} stage*",
+    "body": "{{ .environment }} stage: {State} {ProblemID} \n{ProblemURL}\n{ProblemTitle}\n{ProblemImpact} {ProblemSeverity}\n----\n{ProblemDetailsText}\n",
+    "receivers": [
+        {{ .receivers }}
+    ],
+    "shouldSendForResolvedProblems": false
+}

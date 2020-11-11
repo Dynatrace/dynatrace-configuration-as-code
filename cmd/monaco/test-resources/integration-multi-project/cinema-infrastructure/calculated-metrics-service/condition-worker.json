@@ -1,0 +1,22 @@
+{
+  "tsmMetricKey": "{{.name}}",
+  "name": "{{.name}}",
+  "enabled": "{{.enabled}}",
+  "metricDefinition": {
+    "metric": "REQUEST_ATTRIBUTE",
+    "requestAttribute": "{{.requestAttribute}}"
+  },
+  "unit": "COUNT",
+  "conditions": [
+    {
+      "attribute": "SERVICE_DISPLAY_NAME",
+      "comparisonInfo": {
+        "type": "FAST_STRING",
+        "comparison": "EQUALS",
+        "value": "Session Storage Condition Worker",
+        "negate": false,
+        "caseSensitive": false
+      }
+    }
+  ]
+}

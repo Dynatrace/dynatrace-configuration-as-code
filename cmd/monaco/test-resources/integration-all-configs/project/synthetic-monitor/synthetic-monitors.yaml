@@ -1,0 +1,9 @@
+config: 
+  - availability: "availabilty.json"
+
+availability:
+  - name: "Federation Availability"
+  - location: "GEOLOCATION-DD9455EF49BF2F89"
+  - managementZoneId: "/project/management-zone/zone.id"
+  - tag: "/project/auto-tag/application-tagging.name"
+  - host: "https://www.google.com"

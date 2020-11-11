@@ -1,0 +1,53 @@
+{
+  "name": "{{.name}}",
+  "rules": [
+    {
+      "type": "SERVICE",
+      "enabled": true,
+      "propagationTypes": [
+        "SERVICE_TO_HOST_LIKE"
+      ],
+      "conditions": [
+        {
+          "key": {
+            "attribute": "SERVICE_DATABASE_NAME"
+          },
+          "comparisonInfo": {
+            "type": "STRING",
+            "operator": "BEGINS_WITH",
+            "value": "sample",
+            "negate": false,
+            "caseSensitive": false
+          }
+        },
+        {
+          "key": {
+            "attribute": "SERVICE_WEB_SERVER_NAME"
+          },
+          "comparisonInfo": {
+            "type": "STRING",
+            "operator": "EXISTS",
+            "negate": false
+          }
+        },
+        {
+          "key": {
+            "attribute": "PROCESS_GROUP_CUSTOM_METADATA",
+            "type": "PROCESS_CUSTOM_METADATA_KEY",
+            "dynamicKey": {
+              "source": "KUBERNETES",
+              "key": "kubernetes.io/limit-ranger"
+            }
+          },
+          "comparisonInfo": {
+            "type": "STRING",
+            "operator": "BEGINS_WITH",
+            "value": "sample",
+            "negate": false,
+            "caseSensitive": false
+          }
+        }
+      ]
+    }
+  ]
+}

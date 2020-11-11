@@ -1,0 +1,7 @@
+
+config:
+  - application-tagging: "application-tagging.json"
+
+application-tagging:
+  - name: "Application"
+  - dep: "management-zone/mg-zone.name"

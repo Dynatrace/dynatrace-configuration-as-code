@@ -1,0 +1,35 @@
+{
+  "type": "PROCESS_GROUP",
+  "nameFormat": "Test naming PG for {Host:DetectedName}",
+  "displayName": "{{ .name }}",
+  "enabled": true,
+  "rules": [
+    {
+      "key": {
+        "attribute": "PROCESS_GROUP_TECHNOLOGY"
+      },
+      "comparisonInfo": {
+        "type": "SIMPLE_TECH",
+        "operator": "EQUALS",
+        "value": {
+          "type": "JETTY"
+        },
+        "negate": false
+      }
+    },
+    {
+      "key": {
+        "attribute": "HOST_TAGS"
+      },
+      "comparisonInfo": {
+        "type": "TAG",
+        "operator": "TAG_KEY_EQUALS",
+        "value": {
+          "context": "CONTEXTLESS",
+          "key": "Cl_Ser"
+        },
+        "negate": false
+      }
+    }
+  ]
+}

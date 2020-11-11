@@ -1,0 +1,11 @@
+
+config:
+  - mg-zone-d: "zone.json"
+
+mg-zone-d:
+  - skipDeployment: "false"
+  - name: "mzone-1-d"
+
+mg-zone-d.test1:
+  - webAppTaggingName: "/projectA/auto-tag/application-tagging.name"
+  - name: "mzone-1-d-test1"

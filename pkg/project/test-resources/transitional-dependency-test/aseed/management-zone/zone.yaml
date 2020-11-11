@@ -1,0 +1,8 @@
+
+config:
+  - mg-zone: "zone.json"
+
+mg-zone:
+  - webAppTaggingName: "/trillian/dashboard/dashboard.name"
+  - name: "mzone-1"
+  - meId: "HOST_GROUP-1234567890123456"

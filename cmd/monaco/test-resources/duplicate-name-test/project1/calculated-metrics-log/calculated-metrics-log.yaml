@@ -1,0 +1,9 @@
+config:
+  - log-errors: "jira-log-errors.json"
+  - lucene-index-issues: "jira-lucene-index-issues.json"
+
+log-errors:
+  - name: "metric"
+
+lucene-index-issues:
+  - name: "metric"

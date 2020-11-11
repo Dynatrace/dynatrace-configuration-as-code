@@ -1,0 +1,10 @@
+
+config:
+  - application-tagging-e: "application-tagging.json"
+
+application-tagging-e:
+  - name: "Application-e"
+  - skipDeployment: "true"
+
+application-tagging-e.test1:
+  - skipDeployment: "false"

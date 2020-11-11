@@ -1,0 +1,15 @@
+{
+  "label": "{{.name}}",
+  "partitionType": "AWS_DEFAULT",
+  "authenticationData": {
+    "type": "ROLE",
+    "keyBasedAuthentication": null,
+    "roleBasedAuthentication": {
+      "iamRole": "{{.iamRoleName}}",
+      "accountId": "{{.accountId}}"
+    }
+  },
+  "taggedOnly": false,
+  "tagsToMonitor": [],
+  "supportingServicesToMonitor": []
+}

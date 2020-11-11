@@ -1,0 +1,321 @@
+{
+  "version": "{{ .version }}",
+  "name": "{{ .name }}",
+  "type": "JMX",
+  "metricGroup": "custom.jmx.expamle-my-project",
+  "processTypes": [
+    10,
+    12,
+    13,
+    16,
+    17,
+    18
+  ],
+  "entity": "PROCESS_GROUP_INSTANCE",
+  "configUI": {
+    "displayName": "expamle-my-project"
+  },
+  "ui": {
+    "charts": [
+      {
+        "group": "expamle-my-project metrics",
+        "title": "Public Key Amount",
+        "series": [
+          {
+            "key": "{{ .metricPublicKeyAmount }}",
+            "aggregation": "avg",
+            "displayname": "Public Key Amount"
+          }
+        ]
+      },
+      {
+        "group": "expamle-my-project metrics",
+        "title": "SSO2 OAuth Verification Result Cache Size",
+        "series": [
+          {
+            "key": "{{ .metricOAuthVerificationResultCacheSize }}",
+            "aggregation": "avg",
+            "displayname": "SSO2 OAuth Verification Result Cache Size"
+          }
+        ]
+      },
+      {
+        "group": "expamle-my-project metrics",
+        "title": "Private Key Rotations",
+        "series": [
+          {
+            "key": "{{ .metricPrivateKeyRotations }}",
+            "aggregation": "avg",
+            "displayname": "Private Key Rotations"
+          }
+        ]
+      },
+      {
+        "group": "expamle-my-project metrics",
+        "title": "Erroneous Token Exchanges",
+        "series": [
+          {
+            "key": "{{ .metricErroneousTokenExchanges }}",
+            "aggregation": "avg",
+            "displayname": "Erroneous Token Exchanges"
+          }
+        ]
+      },
+      {
+        "group": "expamle-my-project metrics",
+        "title": "Erroneous Token Exchange Rate",
+        "series": [
+          {
+            "key": "{{ .metricErroneousTokenExchangeRate }}",
+            "aggregation": "avg",
+            "displayname": "Erroneous Token Exchange Rate"
+          }
+        ]
+      },
+      {
+        "group": "expamle-my-project metrics",
+        "title": "Exchanged SAML Tokens",
+        "series": [
+          {
+            "key": "{{ .metricSamlTokenExchanges }}",
+            "aggregation": "avg",
+            "displayname": "Exchanged SAML Tokens"
+          }
+        ]
+      },
+      {
+        "group": "expamle-my-project metrics",
+        "title": "Exchanged OAuth2 Tokens",
+        "series": [
+          {
+            "key": "{{ .metricOAuthTokenExchanges }}",
+            "aggregation": "avg",
+            "displayname": "Exchanged OAuth2 Tokens"
+          }
+        ]
+      },
+      {
+        "group": "expamle-my-project metrics",
+        "title": "OAuth2 Token Exchange Rate",
+        "series": [
+          {
+            "key": "{{ .metricOAuthTokenExchangeRate }}",
+            "aggregation": "avg",
+            "displayname": "OAuth2 Token Exchange Rate"
+          }
+        ]
+      },
+      {
+        "group": "expamle-my-project metrics",
+        "title": "SAML Token Exchange Rate",
+        "series": [
+          {
+            "key": "{{ .metricSamlTokenExchangeRate }}",
+            "aggregation": "avg",
+            "displayname": "SAML Token Exchange Rate"
+          }
+        ]
+      }
+    ]
+  },
+  "metrics": [
+    {
+      "timeseries": {
+        "key": "{{ .metricOAuthVerificationResultCacheSize }}",
+        "unit": "Count",
+        "displayname": "SSO2 OAuth Verification Result Cache Size",
+        "dimensions": [
+          "rx_pid"
+        ]
+      },
+      "source": {
+        "domain": "com.dynatrace.expamle.myproject.verification.sso2",
+        "keyProperties": {
+          "name": "OAuthTokenVerificationStrategyImpl"
+        },
+        "attribute": "ResultCacheSize",
+        "allowAdditionalKeys": true,
+        "calculateDelta": false,
+        "calculateRate": false,
+        "aggregation": "SUM"
+      }
+    },
+    {
+      "timeseries": {
+        "key": "{{ .metricPublicKeyAmount }}",
+        "unit": "Count",
+        "displayname": "Public Key Amount",
+        "dimensions": [
+          "rx_pid"
+        ]
+      },
+      "source": {
+        "domain": "com.dynatrace.expamle.myproject.keysign",
+        "keyProperties": {
+          "name": "CachingPublicKeyStore"
+        },
+        "attribute": "PublicKeyAmount",
+        "allowAdditionalKeys": true,
+        "calculateDelta": false,
+        "calculateRate": false,
+        "aggregation": "SUM"
+      }
+    },
+    {
+      "timeseries": {
+        "key": "{{ .metricPrivateKeyRotations }}",
+        "unit": "Count",
+        "displayname": "Private Key Rotations",
+        "dimensions": [
+          "rx_pid"
+        ]
+      },
+      "source": {
+        "domain": "com.dynatrace.expamle.myproject.keysign",
+        "keyProperties": {
+          "name": "RotatingKeySigner",
+          "type": "RotatingKeySignerMBean"
+        },
+        "attribute": "PrivateKeyRotations",
+        "allowAdditionalKeys": true,
+        "calculateDelta": true,
+        "calculateRate": false,
+        "aggregation": "SUM"
+      }
+    },
+    {
+      "timeseries": {
+        "key": "{{ .metricErroneousTokenExchanges }}",
+        "unit": "Count",
+        "displayname": "Erroneous Token Exchanges",
+        "dimensions": [
+          "rx_pid"
+        ]
+      },
+      "source": {
+        "domain": "com.dynatrace.expamle.myproject",
+        "keyProperties": {
+          "name": "JwtTokenExchanger"
+        },
+        "attribute": "ErroneousTokenExchanges",
+        "allowAdditionalKeys": true,
+        "calculateDelta": false,
+        "calculateRate": false,
+        "aggregation": "SUM"
+      }
+    },
+    {
+      "timeseries": {
+        "key": "{{ .metricErroneousTokenExchangeRate }}",
+        "unit": "Count",
+        "displayname": "Erroneous Token Exchange Rate",
+        "dimensions": [
+          "rx_pid"
+        ]
+      },
+      "source": {
+        "domain": "com.dynatrace.expamle.myproject",
+        "keyProperties": {
+          "name": "JwtTokenExchanger"
+        },
+        "attribute": "ErroneousTokenExchanges",
+        "allowAdditionalKeys": true,
+        "calculateDelta": true,
+        "calculateRate": true,
+        "aggregation": "SUM"
+      }
+    },
+    {
+      "timeseries": {
+        "key": "{{ .metricSamlTokenExchanges }}",
+        "unit": "Count",
+        "displayname": "Exchanged SAML Tokens",
+        "dimensions": [
+          "rx_pid"
+        ]
+      },
+      "source": {
+        "domain": "com.dynatrace.expamle.myproject",
+        "keyProperties": {
+          "name": "TokenCounter",
+          "type": "TokenCounterMBean",
+          "tokenType": "SSO2_SAML"
+        },
+        "attribute": "ExchangedTokenAmount",
+        "allowAdditionalKeys": false,
+        "calculateDelta": false,
+        "calculateRate": false,
+        "aggregation": "SUM"
+      }
+    },
+    {
+      "timeseries": {
+        "key": "{{ .metricOAuthTokenExchanges }}",
+        "unit": "Count",
+        "displayname": "Exchanged OAuth2 Tokens",
+        "dimensions": [
+          "rx_pid"
+        ]
+      },
+      "source": {
+        "domain": "com.dynatrace.expamle.myproject",
+        "keyProperties": {
+          "name": "TokenCounter",
+          "type": "TokenCounterMBean",
+          "tokenType": "SSO2_OAUTH2"
+        },
+        "attribute": "ExchangedTokenAmount",
+        "allowAdditionalKeys": false,
+        "calculateDelta": false,
+        "calculateRate": false,
+        "aggregation": "SUM"
+      }
+    },
+    {
+      "timeseries": {
+        "key": "{{ .metricOAuthTokenExchangeRate }}",
+        "unit": "Count",
+        "displayname": "OAuth2 Token Exchange Rate",
+        "dimensions": [
+          "rx_pid"
+        ]
+      },
+      "source": {
+        "domain": "com.dynatrace.expamle.myproject",
+        "keyProperties": {
+          "name": "TokenCounter",
+          "type": "TokenCounterMBean",
+          "tokenType": "SSO2_OAUTH2"
+        },
+        "attribute": "ExchangedTokenAmount",
+        "allowAdditionalKeys": true,
+        "calculateDelta": true,
+        "calculateRate": true,
+        "aggregation": "SUM"
+      }
+    },
+    {
+      "timeseries": {
+        "key": "{{ .metricSamlTokenExchangeRate }}",
+        "unit": "Count",
+        "displayname": "SAML Token Exchange Rate",
+        "dimensions": [
+          "rx_pid"
+        ]
+      },
+      "source": {
+        "domain": "com.dynatrace.expamle.myproject",
+        "keyProperties": {
+          "name": "TokenCounter",
+          "type": "TokenCounterMBean",
+          "tokenType": "SSO2_SAML"
+        },
+        "attribute": "ExchangedTokenAmount",
+        "allowAdditionalKeys": false,
+        "calculateDelta": true,
+        "calculateRate": true,
+        "aggregation": "SUM"
+      }
+    }
+  ]
+}

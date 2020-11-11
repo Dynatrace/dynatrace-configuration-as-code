@@ -1,0 +1,7 @@
+
+config:
+  - zone: "zone.json"
+
+garkbit-zone:
+  - name: "Garkbit mzone"
+  - meId: "HOST_GROUP-1234567890123456"

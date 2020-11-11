@@ -1,0 +1,10 @@
+
+config:
+  - credentials: "azure.json"
+
+credentials:
+  - name: "Enterprise Azure Credentials"
+  - appId: "1234"
+  - directoryId: "1234"
+  - key: "1234"
+  - active: "true"

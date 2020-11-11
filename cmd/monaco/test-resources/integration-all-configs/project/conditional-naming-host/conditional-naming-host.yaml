@@ -1,0 +1,5 @@
+config:
+  - host-naming: "host-naming.json"
+
+host-naming:
+  - name: "MaC Test: Host Naming Rule"

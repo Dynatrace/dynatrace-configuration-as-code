@@ -1,0 +1,5 @@
+config:
+  - pg-naming: "pg-naming.json"
+
+pg-naming:
+  - name: "Cl-ProdXX Server"

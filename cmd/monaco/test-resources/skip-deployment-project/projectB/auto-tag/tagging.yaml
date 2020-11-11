@@ -1,0 +1,7 @@
+
+config:
+  - application-tagging-b: "application-tagging.json"
+
+application-tagging-b:
+  - name: "Application B"
+  - skipDeployment: "true"

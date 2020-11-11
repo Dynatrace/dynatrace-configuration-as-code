@@ -1,0 +1,7 @@
+config:
+  - dashboard: "overview-dashboard.json"
+
+dashboard:
+  - name: "Star Wars"
+  - mzone: "/cinema-infrastructure/management-zone/zone.id"
+  - mzoneName: "/cinema-infrastructure/management-zone/zone.name"

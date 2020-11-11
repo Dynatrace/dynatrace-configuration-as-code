@@ -1,0 +1,14 @@
+
+config:
+  - zone: "zone.json"
+
+zone:
+  - webAppTaggingName: "/cinema-infrastructure/auto-tag/application-tagging.name"
+  - name: "mzone-1"
+  - meId: "HOST_GROUP-1234567890123456"
+
+zone.environment2:
+  - environment: "environment2"
+
+zone.environment1:
+  - environment: "environment1"

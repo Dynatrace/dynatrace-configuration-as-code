@@ -1,0 +1,24 @@
+{
+  "name": "{{ .name }}",
+  "rules": [
+    {
+      "type": "PROCESS_GROUP",
+      "enabled": true,
+      "valueFormat": null,
+      "propagationTypes": [],
+      "conditions": [
+        {
+          "key": {
+            "attribute": "HOST_GROUP_ID"
+          },
+          "comparisonInfo": {
+            "type": "ENTITY_ID",
+            "operator": "EQUALS",
+            "value": "{{ .meId }}",
+            "negate": false
+          }
+        }
+      ]
+    }
+  ]
+}

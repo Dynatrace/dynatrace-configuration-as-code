@@ -1,0 +1,6 @@
+config:
+  - dashboard: "overview-dashboard.json"
+
+dashboard:
+  - name: "Star Wars"
+  - mzone: "/zaphod/alerting-profile/profile.id"

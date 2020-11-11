@@ -1,0 +1,11 @@
+
+config:
+  - application-tagging: "application-tagging.json"
+  - application-tagging-deployed: "application-tagging.json"
+
+application-tagging:
+  - name: "Application"
+  - skipDeployment: "true"
+
+application-tagging-deployed:
+  - name: "Application Deployed"

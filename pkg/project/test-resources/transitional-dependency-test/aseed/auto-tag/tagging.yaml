@@ -1,0 +1,12 @@
+
+config:
+  - application-tagging: "application-tagging.json"
+  - new-application: "application-tagging.json"
+
+application-tagging:
+  - name: "Test Application"
+  - dep: "/marvin/management-zone/zone.name"
+
+new-application-tagging:
+  - name: "New Application"
+  - dep: "management-zone/mg-zone.name"

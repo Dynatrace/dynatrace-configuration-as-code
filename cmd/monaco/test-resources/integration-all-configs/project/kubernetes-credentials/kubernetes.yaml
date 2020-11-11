@@ -1,0 +1,8 @@
+config: 
+  - myk8scluster: "kubernetes.json"
+  
+myk8scluster:
+  - name: "My Kubernetes Cluster"
+  - endpoint: "https://mycluster/"
+  - token: "123456"
+  - active: "false"

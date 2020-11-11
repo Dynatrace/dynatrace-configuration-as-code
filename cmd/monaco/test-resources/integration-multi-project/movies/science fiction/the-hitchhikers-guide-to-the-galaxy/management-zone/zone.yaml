@@ -1,0 +1,14 @@
+
+config:
+  - zone-multiproject: "zone.json"
+
+zone-multiproject:
+  - webAppTaggingName: "/cinema-infrastructure/auto-tag/application-tagging-multiproject.name"
+  - name: "mzone-2-multiproject"
+  - meId: "HOST_GROUP-1234567890123456"
+
+zone-multiproject.environment2:
+  - environment: "environment2"
+
+zone-multiproject.environment1:
+  - environment: "environment1"

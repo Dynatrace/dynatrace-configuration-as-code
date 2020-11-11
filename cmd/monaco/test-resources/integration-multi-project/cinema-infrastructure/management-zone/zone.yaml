@@ -1,0 +1,15 @@
+
+config:
+  - zone-multiproject: "/movies/science fiction/the-hitchhikers-guide-to-the-galaxy/management-zone/zone.json"
+
+zone-multiproject:
+  - webAppTaggingName: "/cinema-infrastructure/auto-tag/application-tagging-multiproject.name"
+  - name: "mzone-1-multiproject"
+
+zone-multiproject.environment2:
+  - meId: "HOST_GROUP-1234567890123456"
+  - environment: "environment2"
+
+zone-multiproject.environment1:
+  - meId: "HOST_GROUP-1234567890123456"
+  - environment: "environment1"

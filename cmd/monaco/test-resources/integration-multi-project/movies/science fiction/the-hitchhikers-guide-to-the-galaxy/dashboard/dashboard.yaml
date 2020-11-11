@@ -1,0 +1,7 @@
+config:
+  - dashboard-multiproject: "overview-dashboard.json"
+
+dashboard-multiproject:
+  - name: "The Hitchhiker's Guide to the Galaxy Multiproject"
+  - mzone: "/movies/science fiction/the-hitchhikers-guide-to-the-galaxy/management-zone/zone-multiproject.id"
+  - mzoneName: "/movies/science fiction/the-hitchhikers-guide-to-the-galaxy/management-zone/zone-multiproject.name"

@@ -1,0 +1,63 @@
+{
+  "name": "{{.name}}",
+  "frequencyMin": 15,
+  "enabled": true,
+  "type": "BROWSER",
+  "createdFrom": "GUI",
+  "script": {
+    "type": "availability",
+    "version": "1.0",
+    "configuration": {
+      "device": {
+        "deviceName": "Desktop",
+        "orientation": "landscape"
+      }
+    },
+    "events": [
+      {
+        "type": "navigate",
+        "description": "Loading of \"{{.url}}\"",
+        "url": "{{.url}}",
+        "wait": {
+          "waitFor": "page_complete"
+        }
+      }
+    ]
+  },
+  "locations": [
+    "GEOLOCATION-B69A5A40388CC698",
+    "GEOLOCATION-0A41430434C388A9"
+  ],
+  "anomalyDetection": {
+    "outageHandling": {
+      "globalOutage": true,
+      "localOutage": false,
+      "localOutagePolicy": {
+        "affectedLocations": 1,
+        "consecutiveRuns": 3
+      }
+    },
+    "loadingTimeThresholds": {
+      "enabled": false,
+      "thresholds": []
+    }
+  },
+  "tags": [
+    "Test"
+  ],
+  "automaticallyAssignedApps": [],
+  "manuallyAssignedApps": [],
+  "keyPerformanceMetrics": {
+    "loadActionKpm": "VISUALLY_COMPLETE",
+    "xhrActionKpm": "VISUALLY_COMPLETE"
+  },
+  "events": [
+    {
+      "name": "Loading of \"{{.url}}\"",
+      "sequenceNumber": 1
+    }
+  ],
+  "managementZones": [
+    "{{.managementZoneId}}"
+  ]
+}
