@@ -1,0 +1,13 @@
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# Binary
+bin/
+/monaco
+/monaco.exe
+
+# Log files
+/cmd/monaco/.logs
+/.logs

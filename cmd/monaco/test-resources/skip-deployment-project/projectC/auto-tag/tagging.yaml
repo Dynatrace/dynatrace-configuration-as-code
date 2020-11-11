@@ -1,0 +1,10 @@
+
+config:
+  - application-tagging-c: "application-tagging.json"
+
+application-tagging-c:
+  - name: "Application C"
+  - skipDeployment: "true"
+
+application-tagging-c.test1:
+  - name: "Application C - Test1"

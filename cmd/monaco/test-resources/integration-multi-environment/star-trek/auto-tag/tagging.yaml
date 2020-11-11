@@ -1,0 +1,11 @@
+config:
+  - tagging: "tagging.json"
+
+tagging:
+  - name: "Star Trek Service"
+
+tagging.environment2:
+  - meId: "HOST_GROUP-1234567890123456"
+
+tagging.environment1:
+  - meId: "HOST_GROUP-1234567890123456"

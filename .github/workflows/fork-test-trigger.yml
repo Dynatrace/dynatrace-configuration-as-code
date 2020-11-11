@@ -1,0 +1,35 @@
+name: Trigger Integration Tests for Forks
+
+# This workflow runs every five minutes and checks whether any PR has the label
+# 'run-integration-tests' set.
+#
+# If this is the case, it also checks whether there is already a specific comment
+# on the PR, which contains a hidden HTML tag # (<!-- -->), indicating that the
+# integration tests (in workflow "Run Integration Tests for Forks") already ran.
+#
+# If there is no such comment already, the GitHub action
+# "trigger-workflow-for-pr-action" dispatches an "trigger-integration-tests" event
+# which gets picked up by workflow "Run Integration Tests for Forks".
+#
+# Now, the integration tests of the fork are run in the context of the upstream
+# repository. This prevents that we don't leak any secrets into the fork. After
+# the tests are successfully executed, the feedback from the test execution is
+# written back to the PR.
+
+on:
+  schedule:
+    # every five minutes
+    - cron: '*/5 * * * *'
+
+jobs:
+  pr_updater:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: main
+        uses: didiladi/trigger-workflow-for-pr-action@v1.0.0
+        with:
+          label: run-integration-tests
+          dispatch-event: trigger-integration-tests
+          token: ${{ secrets.GITHUB_TOKEN }}
+          dispatch-token: ${{ secrets.DISPATCH_TOKEN }}

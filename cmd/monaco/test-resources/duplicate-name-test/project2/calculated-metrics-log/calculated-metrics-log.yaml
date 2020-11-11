@@ -1,0 +1,5 @@
+config:
+  - log-errors: "jira-log-errors.json"
+
+log-errors:
+  - name: "metric"

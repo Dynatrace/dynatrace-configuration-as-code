@@ -1,0 +1,13 @@
+config:
+  - synthetic-monitor: "health-check-monitor.json"
+
+synthetic-monitor:
+  - name: "Enterprise Health Check"
+  - description: "Synthetic Monitor for the Search Engines with which you can find more info about Star Trek."
+  - managementZoneId: "/zaphod/alerting-profile/profile.name"
+
+synthetic-monitor.environment2:
+  - url: "https://www.google.com"
+
+synthetic-monitor.environment1:
+  - url: "https://www.bing.com"

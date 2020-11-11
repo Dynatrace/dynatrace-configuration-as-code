@@ -1,0 +1,27 @@
+
+config:
+  - application-tagging-multiproject: "/cinema-infrastructure/auto-tag/application-tagging.json"
+  - application-tagging-skip-deployment: "/cinema-infrastructure/auto-tag/application-tagging.json"
+  - application-tagging-skip-deployment-2: "/cinema-infrastructure/auto-tag/application-tagging.json"
+
+application-tagging-multiproject:
+  - name: "Test Star Trek Multiproject"
+
+application-tagging-multiproject.production:
+  - skipDeployment: "true"
+
+application-tagging-skip-deployment:
+  - name: "Application tag skip deployment"
+  - skipDeployment: "true"
+
+application-tagging-skip-deployment.development:
+  - skipDeployment: "false"
+
+application-tagging-skip-deployment-2:
+  - name: "Another application tag skip deployment"
+
+application-tagging-skip-deployment-2.production:
+  - skipDeployment: "true"
+
+application-tagging-skip-deployment-2.environment2:
+  - skipDeployment: "false"

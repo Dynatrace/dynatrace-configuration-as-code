@@ -1,0 +1,7 @@
+config:
+  - session-storage-condition-worker-fastqueueqize: "/cinema-infrastructure/calculated-metrics-service/condition-worker.json"
+
+session-storage-condition-worker-fastqueueqize:
+  - name: "calc:service.SessionStorageConditionWorker_fastQueueSize"
+  - enabled: "true"
+  - requestAttribute: "cinema-infrastructure/request-attributes/ondemand-analysis-requestid.name"

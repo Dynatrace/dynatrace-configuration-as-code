@@ -1,0 +1,14 @@
+
+config:
+  - zone: "zone.json"
+
+zone:
+  - name: "mzone-1"
+
+zone.environment1:
+  - meId: "HOST_GROUP-1234567890123456"
+  - environment: "environment1"
+
+zone.environment2:
+  - meId: "HOST_GROUP-1234567890123456"
+  - environment: "environment2"

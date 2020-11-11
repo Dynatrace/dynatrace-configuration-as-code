@@ -1,0 +1,5 @@
+config:
+  - dashboard: "overview-dashboard.json"
+
+dashboard:
+  - name: "Alpha Quadrant"

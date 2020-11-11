@@ -1,0 +1,1 @@
+I'm here to ensure that projects containing APIs and files are validated correctly.

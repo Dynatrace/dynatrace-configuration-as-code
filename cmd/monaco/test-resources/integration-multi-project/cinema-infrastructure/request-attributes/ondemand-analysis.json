@@ -1,0 +1,51 @@
+{
+  "name": "{{.name}}",
+  "enabled": "{{.enabled}}",
+  "dataType": "INTEGER",
+  "dataSources": [
+    {
+      "enabled": true,
+      "source": "METHOD_PARAM",
+      "technology": "JAVA",
+      "methods": [
+        {
+          "method": {
+            "visibility": "PUBLIC",
+            "modifiers": [],
+            "className": "com.compuware.apm.ondemandanalysis.DistributedAnalysisManager",
+            "methodName": "cancelAnalysis",
+            "argumentTypes": [],
+            "returnType": "boolean"
+          },
+          "capture": "THIS",
+          "deepObjectAccess": "requestId"
+        },
+        {
+          "method": {
+            "visibility": "PUBLIC",
+            "modifiers": [],
+            "className": "com.compuware.apm.ondemandanalysis.DistributedAnalysisManager",
+            "methodName": "startAnalysis",
+            "argumentTypes": [],
+            "returnType": "boolean"
+          },
+          "capture": "THIS",
+          "deepObjectAccess": "requestId"
+        }
+      ]
+    },
+    {
+      "enabled": true,
+      "source": "CUSTOM_ATTRIBUTE",
+      "valueProcessing": {
+        "splitAt": "",
+        "trim": false
+      },
+      "parameterName": "On-Demand Analysis - requestId"
+    }
+  ],
+  "normalization": "ORIGINAL",
+  "aggregation": "FIRST",
+  "confidential": false,
+  "skipPersonalDataMasking": false
+}

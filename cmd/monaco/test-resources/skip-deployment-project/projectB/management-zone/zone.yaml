@@ -1,0 +1,8 @@
+
+config:
+  - mg-zone-b: "zone.json"
+
+mg-zone-b:
+  - name: "mzone-1-b"
+  - webAppTaggingName: "/projectB/auto-tag/application-tagging-b.name"
+  - meId: "test"

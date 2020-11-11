@@ -1,0 +1,25 @@
+{
+  "name": "{{ .name }}",
+  "rules": [
+    {
+      "type": "APPLICATION",
+      "enabled": true,
+      "valueFormat": null,
+      "propagationTypes": [],
+      "conditions": [
+        {
+          "key": {
+            "attribute": "WEB_APPLICATION_NAME"
+          },
+          "comparisonInfo": {
+            "type": "STRING",
+            "operator": "CONTAINS",
+            "value": "TEST",
+            "negate": false,
+            "caseSensitive": true
+          }
+        }
+      ]
+    }
+  ]
+}

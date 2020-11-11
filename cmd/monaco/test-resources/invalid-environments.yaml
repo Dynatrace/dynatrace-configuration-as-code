@@ -1,0 +1,8 @@
+test1:
+    - name: "Test1"
+    - env-url: "https://test1.com"
+    - env-token-name: "TEST_TOKEN"   
+test2:
+    - name: "Test2"
+    - env-url: "https://test2.com"
+    - env-token
