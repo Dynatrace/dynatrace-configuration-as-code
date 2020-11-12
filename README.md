@@ -1,4 +1,4 @@
-# Dynatrace Monitoring as Code
+# The Awesome Dynatrace Monitoring as Code
 
 This tool automates deployment of Dynatrace Monitoring Configuration to one or multiple Dynatrace environments.
 
