@@ -66,6 +66,17 @@ func TestFilterProperties(t *testing.T) {
 	assert.Check(t, properties["Captains"] != nil)
 }
 
+func TestFilterPropertiesToReturnExactMatchOnlyForConfigName(t *testing.T) {
+	m := make(map[string]map[string]string)
+
+	m["dashboard"] = make(map[string]string)
+	m["dashboard-availability"] = make(map[string]string)
+
+	properties := filterProperties("dashboard", m)
+
+	assert.Check(t, len(properties) == 1)
+}
+
 func TestGetConfigStringWithEnvironmentOverride(t *testing.T) {
 
 	m := getTestProperties()

@@ -102,10 +102,13 @@ func filterProperties(id string, properties map[string]map[string]string) map[st
 
 	result := make(map[string]map[string]string)
 	for key, value := range properties {
-		if strings.HasPrefix(key, id) {
+		configNameInID := strings.Split(id, ".")[0]
+		configNameInKey := strings.Split(key, ".")[0]
+		if strings.HasPrefix(key, id) && configNameInID == configNameInKey {
 			result[key] = value
 		}
 	}
+
 	return result
 }
 
