@@ -47,6 +47,7 @@ func SetupLogging(verbose bool) error {
 	if err == nil {
 		fileLog.Level(lumber.DEBUG)
 		multiLog.AddLoggers(fileLog)
+		Log = multiLog
 	}
 	return err
 }
