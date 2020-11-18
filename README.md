@@ -128,12 +128,12 @@ If `project` depends on different projects under the same root, those are also d
 
 Multiple projects could be specified by `-p="projectA, projectB, projectC/subproject"`
 
-To deploy configuration the tool will need a valid API Token(s) for the given environments defined as environment variables - you can define the name of that env var in the environments file.
+To deploy configuration the tool will need a valid API Token(s) for the given environments defined as `environment variables` - you can define the name of that env var in the environments file.
 
 To deploy to 1 specific environment within a `environments.yaml` file, the `-specific-environment` or `-se` flag can be passed:
 
-```
-monaco -t=environments.yaml -se=my-environment -p="my-environment" cluster
+```bash
+monaco -e=environments.yaml -se=my-environment -p="my-environment" cluster
 ```
 
 
@@ -144,29 +144,29 @@ Deployment could be done a single environment or several environments defined in
 
 A environment yaml file structure is of the form:
 
-```
+```yaml
 foo:
     - name: "foo"
-    - environment-url: "https://foo.example.com"
-    - env-token-name: "FOO_TOKEN"
+    - env-url: "https://foo.example.com"
+    - env-token-name: "FOO_TOKEN_ENV_VAR"
 
 bar:
     - name: "bar"
-    - environment-url: "https://bar.dynatrace-managed.com/e/environmentid"
-    - env-token-name: "BAR_TOKEN"
+    - env-url: "https://bar.dynatrace-managed.com/e/environmentid"
+    - env-token-name: "BAR_TOKEN_ENV_VAR"
 ```
 
 Environments can also be grouped. Only one group per environment is allowed. Assign environments to groups with `group.environment:`
-```
+```yaml
 production.foo:
     - name: "foo"
-    - environment-url: "https://foo.dynatrace.com"
-    - env-token-name: "FOO_TOKEN"
+    - env-url: "https://foo.dynatrace.com"
+    - env-token-name: "FOO_TOKEN_ENV_VAR"
 
 production.bar:
     - name: "bar"
-    - environment-url: "https://bar.dynatrace-managed.com/e/id"
-    - env-token-name: "BAR_TOKEN"
+    - env-url: "https://bar.dynatrace-managed.com/e/id"
+    - env-token-name: "BAR_TOKEN_ENV_VAR"
 
 ```
 ## Configuration Structure
@@ -223,7 +223,7 @@ You can change that in the dashboard settings, or by just changing the `json` yo
 
 A generally recommended value for the `dashboardMetadata` field is:
 
-```
+```json
  "dashboardMetadata": {
     "name": "{{ .name }}",
     "shared": true,
@@ -252,7 +252,7 @@ This config does the following:
 When you create custom log metrics, you need to reference the metricKey of the log metric as `{{ .name }}` in the YAML file.
 
 e.g.
-```
+```json
 {
   "metricKey": "{{ .name }}",
   "active": true,
@@ -266,7 +266,7 @@ e.g.
 As there is no `name` parameter in conditional naming API you should map `{{ .name }}` to `displayName`.
 
 e.g.
-```
+```json
 {
   "type": "PROCESS_GROUP",
   "nameFormat": "Test naming PG for {Host:DetectedName}",
@@ -276,7 +276,7 @@ e.g.
 ```
 
 This also applies to the `HOST` type. eg.
-```
+```json
 {
   "type": "HOST",
   "nameFormat": "Test - {Host:DetectedName}",
@@ -286,7 +286,7 @@ This also applies to the `HOST` type. eg.
 ```
 
 Also applies to the `SERVICE` type. eg.
-```
+```json
 {
   "type": "SERVICE",
   "nameFormat": "{ProcessGroup:KubernetesNamespace} - {Service:DetectedName}",
@@ -342,7 +342,7 @@ Every configuration needs a YAML containing required and optional content.
 
 A minimal viable config needs to look like this:
 
-```
+```yaml
 config:
     - {config name} : "{path of config json template}"
 
@@ -351,7 +351,7 @@ config:
 ```
 
 e.g. in `projects/infrastructure/alerting-profile/profiles.yaml`
-```
+```yaml
 config:
   - profile: "projects/infrastructure/alerting-profile/profile.json"
 
@@ -365,7 +365,7 @@ Every config needs to provide a name for unique identification, omitting the nam
 Any defined `{config name}` represents a variable that can then be used in a [JSON template](#config-json-templates), and will be resolved and inserted into the config before deployment to Dynatrace.
 
 e.g. `projects/infrastructure/alerting-profile/profiles.yaml` defines a `name`:
-```
+```yaml
 [...]
 profile:
   - name: "EXAMPLE Infrastructure"
@@ -378,13 +378,13 @@ Which is then used in `projects/infrastructure/alerting-profile/profile.json` as
 
 To skip configuration from deploying you can use predefined `skipDeployment` parameter. You can skip deployment of the whole configuration:
 
-```
+```yaml
 my-config:
   - name: "My config"
   - skipDeployment: "true"
 ```
 enable it by default, but skip for environment or group:
-```
+```yaml
 my-config:
   - name: "My config"
   - skipDeployment: "true"
@@ -393,7 +393,7 @@ my-config.development:
   - skipDeployment: "false"
 ```
 or disable it by default and enable only for environment or group:
-```
+```yaml
 my-config:
   - name: "My config"
   - skipDeployment: "false"
@@ -410,7 +410,7 @@ Configuration can be overwritten or extended:
 
 e.g. `projects/infrastructure/notification/notifications.yaml` defines different recipients for email notifications for each environment via
 
-```
+```yaml
 email:
     [...]
 
@@ -447,7 +447,7 @@ To reference these, the dependent `config yaml` can configure a variable of the 
 ```
 
 e.g. `projects/project-name/dashboard/dashboard.yaml` references the management-zone defined by `/projects/infrastructure/management-zone/zone.json` via
-```
+```yaml
   - managementZoneId: "projects/infrastructure/management-zone/zone.id"
 ```
 
@@ -455,7 +455,7 @@ e.g. `projects/project-name/dashboard/dashboard.yaml` references the management-
 Json templates are usually defined inside of project configuration and then references in same project:
 
 **testproject/auto-tag/auto-tag.yaml:**
-```
+```yaml
 config:
   - application-tagging-multiproject: "application-tagging.json"
 
@@ -470,7 +470,7 @@ can be defined relative to `auto-tag.yaml` file. But, what if you would like to 
 In this case, you need to define a full path of json template:
 
 **testproject/auto-tag/auto-tag.yaml:**
-```
+```yaml
 config:
   - application-tagging-multiproject: "/path/to/project/auto-tag/application-tagging.json"
 
@@ -481,7 +481,7 @@ This would save us of content duplication and redefining same templates over and
 
 Of course, it is also possible to reuse one template multiple times within one or different yaml file(s):
 **testproject/auto-tag/auto-tag.yaml:**
-```
+```yaml
 config:
   - application-tagging-multiproject: "/path/to/project/auto-tag/application-tagging.json"
   - application-tagging-tesproject: "/path/to/project/auto-tag/application-tagging.json"
@@ -507,17 +507,17 @@ environment variables. This can be done in any `json` or `yaml` file using this 
 
 E.g. to resolve the URL of an environment, use the following snippet:
 
-```
+```yaml
 development:
     - name: "Dev"
-    - environment-url: "{{ .Env.DEV_URL }}"
-    - env-token-name: "DEV"
+    - env-url: "{{ .Env.DEV_URL }}"
+    - env-token-name: "DEV_TOKEN_ENV_VAR"
 ```
 
 To resolve an environment variable directly in the `json` is also possible. See the following example which sets the value
 of an alerting profile from the env var `ALERTING_PROFILE_VALUE`.
 
-```
+```json
 {
   "name": "{{ .name }}",
   "rules": [
@@ -561,13 +561,13 @@ e.g. `projects/example-project/anomaly-detection-metrics/numberOfDistributionInP
 
 So `projects/example-project/anomaly-detection-metrics/example-anomaly.yaml` references the plugin by name in a variable:
 
-```
+```yaml
 - metricPrefix: "projects/example-project/plugin/custom.jmx.EXAMPLE-PLUGIN-MY-METRIC.name"
 ```
 
 to then construct the `metric-id` in the `json` as:
 
-```
+```json
 "metricId": "ext:{{.metricPrefix}}.metric_NumberOfDistributionInProgressRequests"
 ```
 
@@ -575,7 +575,7 @@ to then construct the `metric-id` in the `json` as:
 Configuration which is not needed anymore can also be deleted in automated fashion. This tool is looking for `delete.yaml` file located in projects root
 folder and deletes all configurations defined in this file after finishing deployment. `delete.yaml` file structure should be defined as following, where
 beside from API you also have to specify then `name` (not id) of configuration to be deleted:
-```
+```yaml
 config:
   - "auto-tag/my-tag"
   - "custom-service-java/my custom service"
