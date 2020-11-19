@@ -101,11 +101,9 @@ func getTransformerFunc(suffix string) func(line string) string {
 }
 
 // Deletes all configs that end with "_suffix", where suffix == suffixTest+suffixTimestamp
-func cleanupIntegrationTest(t *testing.T, suffix string, transformers []func(string) string) {
-	var integrationTestReader, err = util.NewInMemoryFileReader(folder, transformers)
-	assert.NilError(t, err)
+func cleanupIntegrationTest(t *testing.T, envFile, suffix string, integrationTestReader util.FileReader) {
 
-	environments, errs := environment.LoadEnvironmentList("", environmentsFile, integrationTestReader)
+	environments, errs := environment.LoadEnvironmentList("", envFile, integrationTestReader)
 	FailOnAnyError(errs, "loading of environments failed")
 
 	apis := api.NewApis()
@@ -130,10 +128,27 @@ func cleanupIntegrationTest(t *testing.T, suffix string, transformers []func(str
 	}
 }
 
-func RunIntegrationWithCleanup(t *testing.T, suffixTest string, testFunc func(transformers []func(string) string)) {
+// RunIntegrationWithCleanup runs an integration test and cleans up the created configs afterwards
+// This is done by using InMemoryFileReader, which rewrites the names of the read configs internally. It ready all the
+// configs once and holds them in memory. Any subsequent modification of a config (applying them to an environment)
+// is done based on the data in memory. The re-writing of config names ensures, that they have an unique name and don't
+// conflict with other configs created by other integration tests.
+//
+// After the test run, the unique name also helps with finding the applied configs in all the environments and calling
+// the respective DELETE api.
+//
+// The new naming scheme of created configs is defined in a transformer function. By default, this is:
+//
+// <original name>_<current timestamp><defined suffix>
+// e.g. my-config_1605258980000_Suffix
+func RunIntegrationWithCleanup(t *testing.T, configFolder, envFile, suffixTest string, testFunc func(fileReader util.FileReader)) {
+
 	suffix := getTimestamp() + suffixTest
 	transformers := []func(string) string{getTransformerFunc(suffix)}
 
-	testFunc(transformers)
-	cleanupIntegrationTest(t, suffix, transformers)
+	var integrationTestReader, err = util.NewInMemoryFileReader(configFolder, transformers)
+	assert.NilError(t, err)
+
+	testFunc(integrationTestReader)
+	cleanupIntegrationTest(t, envFile, suffix, integrationTestReader)
 }

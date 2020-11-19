@@ -25,21 +25,19 @@ import (
 	"gotest.tools/assert"
 )
 
-const allConfigsFolder = "test-resources/integration-all-configs/"
-const allConfigsEnvironmentsFile = allConfigsFolder + "environments.yaml"
-
 // tests all configs for a single environment
 func TestIntegrationAllConfigs(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, "AllConfigs", func(transformers []func(string) string) {
-		var integrationTestReader, err = util.NewInMemoryFileReader(allConfigsFolder, transformers)
-		assert.NilError(t, err)
+	const allConfigsFolder = "test-resources/integration-all-configs/"
+	const allConfigsEnvironmentsFile = allConfigsFolder + "environments.yaml"
+
+	RunIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fileReader util.FileReader) {
 
 		statusCode := RunImpl([]string{
 			"monaco",
 			"--environments", allConfigsEnvironmentsFile,
 			allConfigsFolder,
-		}, integrationTestReader)
+		}, fileReader)
 
 		assert.Equal(t, statusCode, 0)
 	})

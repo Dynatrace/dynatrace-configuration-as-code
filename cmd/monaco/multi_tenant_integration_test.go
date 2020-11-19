@@ -35,10 +35,7 @@ const environmentsFile = folder + "environments.yaml"
 // Tests all environments with all projects
 func TestIntegrationMultiEnvironment(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, "MultiEnvironment", func(transformers []func(string) string) {
-
-		var integrationTestReader, err = util.NewInMemoryFileReader(folder, transformers)
-		assert.NilError(t, err)
+	RunIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironment", func(integrationTestReader util.FileReader) {
 
 		environments, errs := environment.LoadEnvironmentList("", environmentsFile, integrationTestReader)
 		assert.Check(t, len(errs) == 0, "didn't expect errors loading test environments")
@@ -74,9 +71,7 @@ func TestIntegrationValidationMultiEnvironment(t *testing.T) {
 // tests a single project
 func TestIntegrationMultiEnvironmentSingleProject(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, "MultiEnvironmentSingleProject", func(transformers []func(string) string) {
-		var integrationTestReader, err = util.NewInMemoryFileReader(folder, transformers)
-		assert.NilError(t, err)
+	RunIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleProject", func(integrationTestReader util.FileReader) {
 
 		environments, errs := environment.LoadEnvironmentList("", environmentsFile, integrationTestReader)
 		FailOnAnyError(errs, "loading of environments failed")
@@ -100,9 +95,7 @@ func TestIntegrationMultiEnvironmentSingleProject(t *testing.T) {
 // Tests a single project with dependency
 func TestIntegrationMultiEnvironmentSingleProjectWithDependency(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, "MultiEnvironmentSingleProjectWithDependency", func(transformers []func(string) string) {
-		var integrationTestReader, err = util.NewInMemoryFileReader(folder, transformers)
-		assert.NilError(t, err)
+	RunIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleProjectWithDependency", func(integrationTestReader util.FileReader) {
 
 		environments, errs := environment.LoadEnvironmentList("", environmentsFile, integrationTestReader)
 		FailOnAnyError(errs, "loading of environments failed")
@@ -128,9 +121,7 @@ func TestIntegrationMultiEnvironmentSingleProjectWithDependency(t *testing.T) {
 // tests a single environment
 func TestIntegrationMultiEnvironmentSingleEnvironment(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, "MultiEnvironmentSingleEnvironment", func(transformers []func(string) string) {
-		var integrationTestReader, err = util.NewInMemoryFileReader(folder, transformers)
-		assert.NilError(t, err)
+	RunIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleEnvironment", func(integrationTestReader util.FileReader) {
 
 		environments, errs := environment.LoadEnvironmentList("", environmentsFile, integrationTestReader)
 		FailOnAnyError(errs, "loading of environments failed")

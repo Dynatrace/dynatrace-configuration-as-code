@@ -34,9 +34,7 @@ const multiProjectEnvironmentsFile = multiProjectFolder + "environments.yaml"
 // Tests all environments with all projects
 func TestIntegrationMultiProject(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, "MultiProject", func(transformers []func(string) string) {
-		var integrationTestReader, err = util.NewInMemoryFileReader(multiProjectFolder, transformers)
-		assert.NilError(t, err)
+	RunIntegrationWithCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "MultiProject", func(integrationTestReader util.FileReader) {
 
 		environments, errs := environment.LoadEnvironmentList("", multiProjectEnvironmentsFile, integrationTestReader)
 		assert.Check(t, len(errs) == 0, "didn't expect errors loading test environments")
@@ -72,9 +70,7 @@ func TestIntegrationValidationMultiProject(t *testing.T) {
 // tests a single project with dependencies
 func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, "MultiProjectSingleProject", func(transformers []func(string) string) {
-		var integrationTestReader, err = util.NewInMemoryFileReader(multiProjectFolder, transformers)
-		assert.NilError(t, err)
+	RunIntegrationWithCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "MultiProjectSingleProject", func(integrationTestReader util.FileReader) {
 
 		environments, errs := environment.LoadEnvironmentList("", multiProjectEnvironmentsFile, integrationTestReader)
 		FailOnAnyError(errs, "loading of environments failed")
