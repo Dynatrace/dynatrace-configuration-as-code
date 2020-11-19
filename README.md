@@ -10,8 +10,8 @@ This tool automates deployment of Dynatrace Monitoring Configuration to one or m
 > Probably you're most interested in [Using Monitoring as Code (monaco) Tool](#using-monitoring-as-code-tool)
 and [Configuration Structure](#configuration-structure)
 
-- [Monitoring as Code Tool](#monitoring-as-code-tool)
-  - [Using Monitoring as Code (monaco) Tool](#using-monitoring-as-code-tool)
+- [Dynatrace Monitoring as Code](#dynatrace-monitoring-as-code)
+  - [Using Monitoring as Code Tool](#using-monitoring-as-code-tool)
     - [Commands (CLI)](#commands-cli)
       - [Dry Run (Validating Configuration)](#dry-run-validating-configuration)
     - [Deploying Configuration to Dynatrace](#deploying-configuration-to-dynatrace)
@@ -28,9 +28,10 @@ and [Configuration Structure](#configuration-structure)
       - [Supported Configuration Types](#supported-configuration-types)
     - [Configuration YAML Structure](#configuration-yaml-structure)
     - [Skip configuration deployment](#skip-configuration-deployment)
-    - [Specific Configuration per Environment or Group](#specific-configuration-per-environment-or-group)
-    - [Referencing other JSON templates](#referencing-other-json-templates)
+    - [Specific Configuration per Environment or group](#specific-configuration-per-environment-or-group)
+    - [Referencing other Configurations](#referencing-other-configurations)
     - [Referencing other json templates](#referencing-other-json-templates)
+    - [Templating of Environment Variables](#templating-of-environment-variables)
     - [Plugin Configuration](#plugin-configuration)
     - [Delete Configuration](#delete-configuration)
 
@@ -249,14 +250,27 @@ This config does the following:
 
 ##### Calculated log metrics JSON
 
-When you create custom log metrics, you need to reference the metricKey of the log metric as `{{ .name }}` in the YAML file.
+There is a know drawback to `monaco`'s workaround to the slightly off-standard API for Calculated Log Metrics, which needs you to follow specific naming conventions for your configuration: 
 
-e.g.
+When you create custom log metrics, your configurations `name` needs to be the `metricKey` of the log metric. 
+
+Additionally it is possible that configuration upload fails when a metric configuration is newly created and an additional configuration depends on the new log metric. To work around this, set both `metricKey` and `displayName` to the same value. 
+
+You will thus need to reference at least the `metricKey` of the log metric as `{{ .name }}` in the JSON file (as seen below).
+
+e.g. in the configuration YAML
+```yaml
+...
+some-log-metric-config:
+  - name: "cal.log:this-is-some-metric"
+```
+
+and in the corresponding JSON: 
 ```json
 {
   "metricKey": "{{ .name }}",
   "active": true,
-  "displayName": "{{ .displayName }}",
+  "displayName": "{{ .name }}",
   ...
 }
 ```
