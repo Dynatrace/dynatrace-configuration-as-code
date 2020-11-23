@@ -101,8 +101,8 @@ func newConfig(id string, project string, template util.Template, properties map
 func filterProperties(id string, properties map[string]map[string]string) map[string]map[string]string {
 
 	result := make(map[string]map[string]string)
+	configNameInID := strings.Split(id, ".")[0]
 	for key, value := range properties {
-		configNameInID := strings.Split(id, ".")[0]
 		configNameInKey := strings.Split(key, ".")[0]
 		if strings.HasPrefix(key, id) && configNameInID == configNameInKey {
 			result[key] = value
