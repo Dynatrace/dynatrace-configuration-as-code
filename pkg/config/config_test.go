@@ -19,6 +19,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -64,6 +65,83 @@ func TestFilterProperties(t *testing.T) {
 
 	assert.Check(t, len(properties) == 1)
 	assert.Check(t, properties["Captains"] != nil)
+}
+
+func TestFilterPropertiesToReturnExactMatchOnlyForConfigName(t *testing.T) {
+	m := make(map[string]map[string]string)
+
+	m["dashboard"] = make(map[string]string)
+	m["dashboard-availability"] = make(map[string]string)
+
+	properties := filterProperties("dashboard", m)
+
+	assert.Check(t, len(properties) == 1)
+	assert.Check(t, properties["dashboard"] != nil)
+}
+
+func TestFilterPropertiesToReturnExactMatchOnlyForConfigNameAndEnvironment(t *testing.T) {
+	m := make(map[string]map[string]string)
+
+	m["dashboard"] = make(map[string]string)
+	m["dashboard-availability"] = make(map[string]string)
+	m["dashboard.dev"] = make(map[string]string)
+	m["dashboard-availability.dev"] = make(map[string]string)
+
+	m["dashboard"]["prop1"] = "A"
+	m["dashboard"]["prop2"] = "A"
+	m["dashboard-availability"]["prop1"] = "A"
+	m["dashboard-availability"]["prop2"] = "A"
+
+	m["dashboard.dev"]["prop1"] = "B"
+	m["dashboard.dev"]["prop2"] = "C"
+	m["dashboard-availability.dev"]["prop1"] = "E"
+	m["dashboard-availability.dev"]["prop2"] = "F"
+
+	properties := filterProperties("dashboard.dev", m)
+
+	assert.Check(t, len(properties) == 1)
+	assert.Check(t, properties["dashboard.dev"] != nil)
+	assert.Check(t, len(properties["dashboard.dev"]) == 2)
+}
+
+func TestFilterPropertiesToReturnMoreSpecificProperties(t *testing.T) {
+	m := make(map[string]map[string]string)
+
+	m["dashboard"] = make(map[string]string)
+	m["dashboard.dev"] = make(map[string]string)
+
+	// General properties for all environments
+	m["dashboard"]["prop1"] = "A"
+	m["dashboard"]["prop2"] = "A"
+
+	// Specific properties for dev environment. Note that "prop2" is missing here.
+	m["dashboard.dev"]["prop1"] = "B"
+	m["dashboard.dev"]["prop2"] = "C"
+
+	properties := filterProperties("dashboard.dev", m)
+
+	assert.Check(t, properties["dashboard.dev"]["prop1"] == "B")
+	assert.Check(t, properties["dashboard.dev"]["prop2"] == "C")
+}
+
+func TestFilterPropertiesToReturnNoGeneralPropertiesForMissingSpecificOnes(t *testing.T) {
+	m := make(map[string]map[string]string)
+
+	m["dashboard"] = make(map[string]string)
+	m["dashboard.dev"] = make(map[string]string)
+
+	// General properties for all environments
+	m["dashboard"]["prop1"] = "A"
+	m["dashboard"]["prop2"] = "A"
+
+	// Specific properties for dev environment. Note that "prop2" is missing here.
+	m["dashboard.dev"]["prop1"] = "B"
+
+	properties := filterProperties("dashboard.dev", m)
+
+	fmt.Println(properties)
+	assert.Check(t, properties["dashboard.dev"]["prop1"] == "B")
+	assert.Check(t, len(properties["dashboard.dev"]) == 1)
 }
 
 func TestGetConfigStringWithEnvironmentOverride(t *testing.T) {

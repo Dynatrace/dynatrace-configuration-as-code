@@ -38,7 +38,7 @@ and [Configuration Structure](#configuration-structure)
 
 ## Using Monitoring as Code Tool
 
-Download the latest [release](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/tag/v1.0.0) of the tool.
+Download the latest [release](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/latest) of the tool.
 
 
 ### Commands (CLI)
