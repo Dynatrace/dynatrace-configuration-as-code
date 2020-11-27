@@ -1,0 +1,6 @@
+config:
+  - demo_rule: "demorule.json"
+  
+demo_rule:
+  - name: "Monaco Demo Rule"
+  - enabled: "false"
