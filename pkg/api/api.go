@@ -57,6 +57,7 @@ var apiMap = map[string]string{
 	"conditional-naming-host":         "/api/config/v1/conditionalNaming/host",
 	"conditional-naming-service":      "/api/config/v1/conditionalNaming/service",
 	"maintenance-window":              "/api/config/v1/maintenanceWindows",
+	"request-naming":                  "/api/config/v1/service/requestNaming",
 }
 
 type Api interface {
