@@ -17,6 +17,10 @@ build: clean lint
 	@go build ./...
 	@go build -o ./bin/${BINARY} ./cmd/monaco
 
+install: clean lint
+	@echo Install ${BINARY}
+	@go install ./...
+
 clean:
 	@echo Remove ${BINARY} and bin/
 ifeq ($(OS),Windows_NT)
