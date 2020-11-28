@@ -1,22 +1,31 @@
 BINARY=monaco
 
-.PHONY: build clean test integration-test
+.PHONY: lint format build install clean test integration-test test-package
 
 lint:
+ifeq ($(OS),Windows_NT)
+	@.\tools\check-format.cmd
+else
 	@sh ./tools/check-format.sh
+endif
 
 format:
 	@gofmt -w .
 
-build: clean
+build: clean lint
 	@echo Build ${BINARY}
 	@go build ./...
 	@go build -o ./bin/${BINARY} ./cmd/monaco
 
 clean:
 	@echo Remove ${BINARY} and bin/
+ifeq ($(OS),Windows_NT)
+	@if exist ${BINARY} del /Q ${BINARY}
+	@if exist bin rd /S /Q bin
+else
 	@rm -f ${BINARY}
 	@rm -rf bin/
+endif
 
 test: build
 	@go test -tags=unit -v ./...
