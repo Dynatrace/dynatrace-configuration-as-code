@@ -38,4 +38,4 @@ integration-test: build
 # Run as e.g. make test-package pkg=project
 pkg=...
 test-package: build
-	@go test -tags=unit -count=1 -v ./${pgk}
+	@go test -tags=unit -count=1 -v ./pkg/${pkg}
