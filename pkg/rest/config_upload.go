@@ -24,13 +24,12 @@ import (
 	"time"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 )
 
-func UpsertDynatraceObject(apiPath string, objectName string, configType string, configJson string, apiToken string) (api.DynatraceEntity, error) {
-	isDashBoard, existingObjectId, err := GetObjectIdIfAlreadyExists(configType, apiPath, objectName, apiToken)
+func upsertDynatraceObject(client *http.Client, apiPath string, objectName string, configType string, configJson string, apiToken string) (api.DynatraceEntity, error) {
+
+	isDashBoard, existingObjectId, err := getObjectIdIfAlreadyExists(client, configType, apiPath, objectName, apiToken)
 	var dtEntity api.DynatraceEntity
 	if err != nil {
 		return dtEntity, err
@@ -51,12 +50,12 @@ func UpsertDynatraceObject(apiPath string, objectName string, configType string,
 		if isDashBoard {
 			body = strings.Replace(configJson, "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
 		}
-		resp = Put(path, body, apiToken)
+		resp = put(client, path, body, apiToken)
 	} else {
 		if configType == "app-detection-rule" {
 			path += "?position=PREPEND"
 		}
-		resp = Post(path, body, apiToken)
+		resp = post(client, path, body, apiToken)
 
 		// It can happen that the post fails because config needs time to be propagated on all cluster nodes. If the error
 		// constraintViolations":[{"path":"name","message":"X must have a unique name...
@@ -65,13 +64,13 @@ func UpsertDynatraceObject(apiPath string, objectName string, configType string,
 			// Try again after 5 seconds:
 			util.Log.Warn("\t\tConfig '%s - %s' needs to have a unique name. Waiting for 5 seconds before retry...", configType, objectName)
 			time.Sleep(5 * time.Second)
-			resp = Post(path, body, apiToken)
+			resp = post(client, path, body, apiToken)
 		}
 		// It can take longer until request attributes are ready to be used
 		if !success(resp) && strings.Contains(string(resp.Body), "must specify a known request attribute") {
 			util.Log.Warn("\t\tSpecified request attribute not known for %s. Waiting for 10 seconds before retry...", objectName)
 			time.Sleep(10 * time.Second)
-			resp = Post(path, body, apiToken)
+			resp = post(client, path, body, apiToken)
 		}
 	}
 	if !success(resp) {
@@ -104,32 +103,21 @@ func UpsertDynatraceObject(apiPath string, objectName string, configType string,
 	return dtEntity, nil
 }
 
-func DeleteDynatraceObject(config config.Config, environment environment.Environment) error {
+func deleteDynatraceObject(client *http.Client, configType string, name string, url string, token string) error {
 
-	emptyDict := make(map[string]api.DynatraceEntity)
-	name, err := config.GetObjectNameForEnvironment(environment, emptyDict)
-	if err != nil {
-		return err
-	}
-	token, err := environment.GetToken()
-	if err != nil {
-		return err
-	}
-	url := config.GetApi().GetUrl(environment)
-
-	_, existingId, err := GetObjectIdIfAlreadyExists(config.GetType(), url, name, token)
+	_, existingId, err := getObjectIdIfAlreadyExists(client, configType, url, name, token)
 	if err != nil {
 		return err
 	}
 
 	if len(existingId) > 0 {
-		Delete(url, token, existingId)
+		deleteConfig(client, url, token, existingId)
 	}
 	return nil
 }
 
-func GetObjectIdIfAlreadyExists(configType string, url string, objectName string, apiToken string) (isDashboard bool, existingId string, err error) {
-	isDashboard, values, err := GetExistingValuesFromEndpoint(configType, url, apiToken)
+func getObjectIdIfAlreadyExists(client *http.Client, configType string, url string, objectName string, apiToken string) (isDashboard bool, existingId string, err error) {
+	isDashboard, values, err := getExistingValuesFromEndpoint(client, configType, url, apiToken)
 	if err != nil {
 		return isDashboard, "", err
 	}
@@ -143,9 +131,9 @@ func GetObjectIdIfAlreadyExists(configType string, url string, objectName string
 	return isDashboard, "", nil
 }
 
-func GetExistingValuesFromEndpoint(configType string, url string, apiToken string) (isDashboard bool, values []api.Value, err error) {
+func getExistingValuesFromEndpoint(client *http.Client, configType string, url string, apiToken string) (isDashboard bool, values []api.Value, err error) {
 
-	resp := Get(url, apiToken)
+	resp := get(client, url, apiToken)
 
 	switch configType {
 	case "dashboard":
