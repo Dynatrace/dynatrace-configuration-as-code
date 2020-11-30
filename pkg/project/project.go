@@ -50,7 +50,7 @@ type projectBuilder struct {
 }
 
 // NewProject loads a new project from folder. Returns either project or a reading/sorting error respectively.
-func NewProject(folder string, apis map[string]api.Api, projectRootFolder string, fileReader util.FileReader) (Project, error) {
+func NewProject(fullQualifiedProjectFolderName string, projectFolderName string, apis map[string]api.Api, projectRootFolder string, fileReader util.FileReader) (Project, error) {
 
 	var configs = make([]config.Config, 0)
 
@@ -60,13 +60,13 @@ func NewProject(folder string, apis map[string]api.Api, projectRootFolder string
 
 	builder := projectBuilder{
 		projectRootFolder: projectRootFolder,
-		projectId:         folder,
+		projectId:         fullQualifiedProjectFolderName,
 		configs:           configs,
 		apis:              apis,
 		configFactory:     config.NewConfigFactory(),
 		fileReader:        fileReader,
 	}
-	err := builder.readFolder(folder, true)
+	err := builder.readFolder(fullQualifiedProjectFolderName, true)
 	if err != nil {
 		//debug log here?
 		return nil, err
@@ -78,10 +78,21 @@ func NewProject(folder string, apis map[string]api.Api, projectRootFolder string
 		return nil, err
 	}
 
+	warnIfProjectNameClashesWithApiName(projectFolderName, apis, projectRootFolder)
+
 	return &projectImpl{
-		id:      folder,
+		id:      fullQualifiedProjectFolderName,
 		configs: builder.configs,
 	}, nil
+}
+
+func warnIfProjectNameClashesWithApiName(projectFolderName string, apis map[string]api.Api, projectRootFolder string) {
+
+	lowerCaseProjectFolderName := strings.ToLower(projectFolderName)
+	_, ok := apis[lowerCaseProjectFolderName]
+	if ok {
+		util.Log.Warn("Project %s in folder %s clashes with API name %s. Consider using a different name for your project.", projectFolderName, projectRootFolder, lowerCaseProjectFolderName)
+	}
 }
 
 func (p *projectBuilder) readFolder(folder string, isProjectRoot bool) error {

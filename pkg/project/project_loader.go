@@ -18,6 +18,7 @@ package project
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -42,9 +43,10 @@ func LoadProjectsToDeploy(specificProjectToDeploy string, apis map[string]api.Ap
 		return nil, err
 	}
 	availableProjects := make([]Project, 0)
-	for _, file := range availableProjectFolders {
-		util.Log.Debug("  project - %s", file)
-		project, err := NewProject(file, apis, path, fileReader)
+	for _, fullQualifiedProjectFolderName := range availableProjectFolders {
+		util.Log.Debug("  project - %s", fullQualifiedProjectFolderName)
+		projectFolderName := extractFolderNameFromFullPath(fullQualifiedProjectFolderName)
+		project, err := NewProject(fullQualifiedProjectFolderName, projectFolderName, apis, path, fileReader)
 		if err != nil {
 			return nil, err
 		}
@@ -96,27 +98,34 @@ func returnSortedProjects(projectsToDeploy []Project) ([]Project, error) {
 func createProjectsListFromFolderList(path, specificProjectToDeploy string, projectsFolder string, apis map[string]api.Api, availableProjectFolders []string, fileReader util.FileReader) ([]Project, error) {
 	projectsToDeploy := make([]Project, 0)
 	multiProjects := strings.Split(specificProjectToDeploy, ",")
-	for _, project := range multiProjects {
-		project = strings.TrimSpace(project)
-		projectFolder := filepath.Join(projectsFolder, project)
+	for _, projectFolderName := range multiProjects {
+
+		projectFolderName = strings.TrimSpace(projectFolderName)
+		fullQualifiedProjectFolderName := filepath.Join(projectsFolder, projectFolderName)
+
 		// if specified project has subprojects then add them instead
-		if !hasSubprojectFolder(projectFolder, availableProjectFolders) {
-			_, err := os.Stat(projectFolder)
-			//TODO don't use this here
-			util.FailOnError(err, "Project "+specificProjectToDeploy+" does not exist!")
-			newProject, err := NewProject(projectFolder, apis, path, fileReader)
+		if !hasSubprojectFolder(fullQualifiedProjectFolderName, availableProjectFolders) {
+			_, err := os.Stat(fullQualifiedProjectFolderName)
+
+			if err != nil {
+				return nil, errors.WithMessagef(err, "Project %s does not exist!", specificProjectToDeploy)
+			}
+
+			newProject, err := NewProject(fullQualifiedProjectFolderName, projectFolderName, apis, path, fileReader)
 			if err != nil {
 				return nil, err
 			}
 			projectsToDeploy = append(projectsToDeploy, newProject)
 		} else {
 			// get list of folders only for this path
-			subProjectFolders, err := getAllProjectFoldersRecursively(projectFolder)
+			subProjectFolders, err := getAllProjectFoldersRecursively(fullQualifiedProjectFolderName)
 			if err != nil {
 				return nil, err
 			}
-			for _, projectFolder := range subProjectFolders {
-				newProject, err := NewProject(projectFolder, apis, path, fileReader)
+			for _, fullQualifiedSubProjectFolderName := range subProjectFolders {
+
+				subProjectFolderName := extractFolderNameFromFullPath(fullQualifiedSubProjectFolderName)
+				newProject, err := NewProject(fullQualifiedSubProjectFolderName, subProjectFolderName, apis, path, fileReader)
 				if err != nil {
 					return nil, err
 				}
@@ -126,6 +135,17 @@ func createProjectsListFromFolderList(path, specificProjectToDeploy string, proj
 
 	}
 	return projectsToDeploy, nil
+}
+
+func extractFolderNameFromFullPath(fullQualifiedProjectFolderName string) string {
+
+	// split the full qualified sub project folder name into the individual folders:
+	folders := strings.Split(fullQualifiedProjectFolderName, string(os.PathSeparator))
+
+	// The last element is the name of the sub folder:
+	folderName := folders[len(folders)-1]
+
+	return folderName
 }
 
 // removes projects containing subprojects

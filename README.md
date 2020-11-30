@@ -311,6 +311,7 @@ Also applies to the `SERVICE` type. eg.
 ### Configuration Types / APIs
 
 Each such type folder must contain one `configuration yaml` and one or more `json` files containing the actual configuration send to the Dynatrace API.
+The folder name is case-sensitive and needs to be written exactly as in its definition in [Supported Configuration Types](#supported-configuration-types).
 
 e.g.
 ```
