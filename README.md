@@ -348,6 +348,7 @@ conditional-naming-processgroup: /api/config/v1/conditionalNaming/processGroup,
 conditional-naming-host: /api/config/v1/conditionalNaming/host,
 conditional-naming-service: /api/config/v1/conditionalNaming/service,
 maintenance-window: /api/config/v1/maintenanceWindows
+request-naming-service: /api/config/v1/service/requestNaming
 ```
 
 ### Configuration YAML Structure
