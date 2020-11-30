@@ -149,6 +149,9 @@ func parseInputCommand(args []string, fileReader util.FileReader) (dryRun bool, 
 	// Show usage if flags are invalid
 	if environmentsFile == "" {
 		println("Please provide environments yaml with -e/--environments!")
+		println("For deploying a specific project inside a root config folder, run:")
+		println("monaco -p='project-folder' -e='environments.yaml' projects-root-folder")
+		println("")
 		flagSet.Usage()
 		os.Exit(1)
 	}
