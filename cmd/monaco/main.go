@@ -104,9 +104,8 @@ func RunImpl(args []string, fileReader util.FileReader) (statusCode int) {
 		} else {
 			util.Log.Info("Deployment finished without errors")
 		}
+		deleteConfigs(apis, environments, path, dryRun, fileReader)
 	}
-
-	deleteConfigs(apis, environments, path, dryRun, fileReader)
 
 	return statusCode
 }
