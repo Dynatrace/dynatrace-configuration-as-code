@@ -148,11 +148,30 @@ func parseInputCommand(args []string, fileReader util.FileReader) (dryRun bool, 
 
 	// Show usage if flags are invalid
 	if environmentsFile == "" {
-		println("Please provide environments yaml with -e/--environments!")
-		println("For deploying a specific project inside a root config folder, run:")
-		println("monaco -p='project-folder' -e='environments.yaml' projects-root-folder")
-		println("")
+		cliname := "Name: \n" +
+			"\tmonaco \n" +
+			"Version:\n" +
+			"\t" + version.MonitoringAsCode
+
+		cliuse :=
+			"\nUsage: \n" +
+				"\tmonaco --dry-run --environments <path-to-environment-yaml-file> --project <project-folder> [projects-root-folder] \n" +
+				"\tmonaco --environments <path-to-environment-yaml-file> --project <project-folder> [projects-root-folder] \n" +
+				"\tmonaco --specific-environment <environment-name> --project <project-folder> [projects-root-folder] \n" +
+				"\tmonaco --project <project-folder> [projects-root-folder] --environments <path-to-environment-yaml-file> \n"
+
+		examples :=
+			"Examples:\n" +
+				"Deploy a specific project inside a root config folder: \n" +
+				"\tmonaco -p='project-folder' -e='environments.yaml' projects-root-folder \n" +
+				"\nDeploy a specific project to a specific tenant: \n" +
+				"\tmonaco --environments environments.yaml --specific-environment dev --project myProject"
+
+		println(cliname)
+		println(cliuse)
 		flagSet.Usage()
+		println("")
+		println(examples)
 		os.Exit(1)
 	}
 

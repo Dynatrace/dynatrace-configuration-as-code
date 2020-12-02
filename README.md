@@ -51,6 +51,11 @@ The tool is a single command line application that takes required and optional a
 The tool always depends on a config folder where all configuration projects are stored, possibly with further project subfolders.
 If nothing is supplied the current working dir is used.
 
+Running tool is done with required and or non-required options and positional arguments:
+```
+monaco --environments <path-to-environment-yaml-file> [--specific-environment <environment-name>] [--project <project-folder>] [--dry-run] [--verbose] [projects-root-folder]
+```
+
 For deploying a specific project inside a root config folder, the tool could be run as:
 
 `monaco -p="project-folder" -e="environments.yaml" projects-root-folder`
@@ -64,9 +69,6 @@ Multiple projects can be specified as well:
 The supported flags are described below:
 
 ```
-$ ./monaco
-Please provide environments yaml with -e/--environments!
-Usage of arguments:
   -d    Set dry-run flag to just validate configurations instead of deploying. (shorthand)
   -dry-run
         Set dry-run flag to just validate configurations instead of deploying.
