@@ -4,4 +4,4 @@ config:
 
 application-tagging:
   - name: "Application"
-  - dep: "management-zone/mg-zone.name"
+  - dep: "/management-zone/mg-zone.name"

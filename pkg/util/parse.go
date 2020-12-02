@@ -91,7 +91,7 @@ func convert(original map[string]interface{}) (err error, typed map[string]map[s
 						case string:
 							switch v3 := v3.(type) {
 							case string:
-								if !strings.HasPrefix(v3, "http") {
+								if startsWithPathSeparator(v3) {
 									m2Inner[k3] = ReplacePathSeparators(v3)
 								} else {
 									m2Inner[k3] = v3
@@ -112,4 +112,9 @@ func convert(original map[string]interface{}) (err error, typed map[string]map[s
 		}
 	}
 	return nil, m2
+}
+
+func startsWithPathSeparator(s string) bool {
+	firstChar := string(s[0])
+	return firstChar == "/" || firstChar == "\\"
 }

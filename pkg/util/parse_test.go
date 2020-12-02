@@ -19,6 +19,8 @@
 package util
 
 import (
+	"os"
+	"strings"
 	"testing"
 
 	"gotest.tools/assert"
@@ -54,32 +56,42 @@ func TestUnmarshalYaml(t *testing.T) {
 }
 
 const yamlTestPathSeparators = `
-pathFromLinux:
-    - id: "here/dir/file.id"
-    - name: "here\\dir/file.name"
-    - dir: "here/dir/"
-    - abs: "/home/here/"
-pathFromWindows:
-    - id: "here\\dir\\file.id"
-    - name: "here\\dir/file.name"
-    - dir: "here\\dir\\"
-    - abs: "\\home\\here\\"
+arbitraryPaths:
+    - p1: "this/is/path/with/slashes/only"
+    - p2: "this\\is\\path\\with\\backslashes\\only"
+    - p3: "this/is\\path/with\\mixed"
+    - p4: "/this/is/path/with/slashes/only"
+    - p5: "\\this\\is\\path\\with\\backslashes\\only"
+    - p6: "\\this/is\\path/with\\mixed"
 retainURLs:
     - url: "https://dynatrace.com/"
 `
 
-func TestReplacePathSeparators(t *testing.T) {
+func TestUnmarshalYamlDoesNotNormalizePathSeparatorsIfValueDoesNotStartWithPathSeparator(t *testing.T) {
 	e, result := UnmarshalYaml(yamlTestPathSeparators, "test-yaml-path-separators")
 	assert.NilError(t, e)
 
-	fromLinux := result["pathFromLinux"]
-	fromWindows := result["pathFromWindows"]
+	arbitraryPaths := result["arbitraryPaths"]
 	url := result["retainURLs"]
 
-	assert.Equal(t, fromLinux["id"], fromWindows["id"])
-	assert.Equal(t, fromLinux["name"], fromWindows["name"])
-	assert.Equal(t, fromLinux["dir"], fromWindows["dir"])
-	assert.Equal(t, fromLinux["abs"], fromLinux["abs"])
+	assert.Equal(t, arbitraryPaths["p1"], "this/is/path/with/slashes/only")
+	assert.Equal(t, arbitraryPaths["p2"], "this\\is\\path\\with\\backslashes\\only")
+	assert.Equal(t, arbitraryPaths["p3"], "this/is\\path/with\\mixed")
+	assert.Equal(t, url["url"], "https://dynatrace.com/")
+}
+
+func TestUnmarshalYamlNormalizesPathSeparatorsIfValueStartsWithPathSeparator(t *testing.T) {
+	e, result := UnmarshalYaml(yamlTestPathSeparators, "test-yaml-path-separators")
+	assert.NilError(t, e)
+
+	arbitraryPaths := result["arbitraryPaths"]
+	url := result["retainURLs"]
+
+	platformDependantSeparator := string(os.PathSeparator)
+	assert.Equal(t, len(strings.Split(arbitraryPaths["p4"], platformDependantSeparator)), 7)
+	assert.Equal(t, len(strings.Split(arbitraryPaths["p5"], platformDependantSeparator)), 7)
+	assert.Equal(t, len(strings.Split(arbitraryPaths["p6"], platformDependantSeparator)), 6)
+
 	assert.Equal(t, url["url"], "https://dynatrace.com/")
 }
 
