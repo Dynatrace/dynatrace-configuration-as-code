@@ -74,7 +74,7 @@ Usage of arguments:
         Project configuration to deploy. Also deploys any dependent configuration. (shorthand)
   -project string
         Project configuration to deploy. Also deploys any dependent configuration.
-   -specific-environment string
+  -specific-environment string
         Specifc environment (from list) to deploy to.
   -se string
         Specifc environment (from list) to deploy to. (shorthand)
