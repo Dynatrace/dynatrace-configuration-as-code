@@ -57,13 +57,9 @@ const yamlTestPathSeparators = `
 pathFromLinux:
     - id: "here/dir/file.id"
     - name: "here\\dir/file.name"
-    - dir: "here/dir/"
-    - abs: "/home/here/"
 pathFromWindows:
     - id: "here\\dir\\file.id"
     - name: "here\\dir/file.name"
-    - dir: "here\\dir\\"
-    - abs: "\\home\\here\\"
 retainURLs:
     - url: "https://dynatrace.com/"
 `
@@ -110,4 +106,30 @@ func TestReplaceEnvVarWhenVarIsNotPresent(t *testing.T) {
 
 	err, _ := UnmarshalYaml(yamlTestEnvVar, "test-yaml-test-env-var")
 	assert.ErrorContains(t, err, "map has no entry for key \"TEST_ENV_VAR\"")
+}
+
+func TestIsPathWithValidPath(t *testing.T) {
+	assert.Equal(t, true, IsPath("valid/path.id"))
+	assert.Equal(t, true, IsPath("valid/path.name"))
+}
+
+func TestIsPathWithValidAbsolutPath(t *testing.T) {
+	assert.Equal(t, true, IsPath("/valid/path.id"))
+	assert.Equal(t, true, IsPath("/valid/path.name"))
+}
+
+func TestIsPathWithValidPathBackslash(t *testing.T) {
+	assert.Equal(t, true, IsPath("valid\\path.id"))
+	assert.Equal(t, true, IsPath("valid\\path.name"))
+}
+
+func TestIsPathWithValidAbsolutPathBackslash(t *testing.T) {
+	assert.Equal(t, true, IsPath("\\valid\\path.id"))
+	assert.Equal(t, true, IsPath("\\valid\\path.name"))
+}
+
+func TestIsPathWithInValidPath(t *testing.T) {
+	assert.Equal(t, false, IsPath("/invalid/path"))
+	assert.Equal(t, false, IsPath("https://invalid/path.id"))
+	assert.Equal(t, false, IsPath("asdf"))
 }

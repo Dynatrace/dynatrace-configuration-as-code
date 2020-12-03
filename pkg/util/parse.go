@@ -21,6 +21,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/mattn/go-zglob"
+
 	"gopkg.in/yaml.v2"
 )
 
@@ -74,6 +76,22 @@ func putOrGet(m map[string]map[string]string, key string) map[string]string {
 	return m2
 }
 
+func IsPath(str string) bool {
+	// all vars containing : are invalid paths
+	if strings.ContainsRune(str, ':') {
+		return false
+	}
+
+	// as or right now we only support id,name path references
+	match, err := zglob.Match("**/*.{id,name}", str)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return match
+}
+
 func convert(original map[string]interface{}) (err error, typed map[string]map[string]string) {
 
 	m2 := make(map[string]map[string]string)
@@ -91,7 +109,7 @@ func convert(original map[string]interface{}) (err error, typed map[string]map[s
 						case string:
 							switch v3 := v3.(type) {
 							case string:
-								if !strings.HasPrefix(v3, "http") {
+								if !IsPath(v3) {
 									m2Inner[k3] = ReplacePathSeparators(v3)
 								} else {
 									m2Inner[k3] = v3
