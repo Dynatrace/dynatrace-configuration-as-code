@@ -5,9 +5,14 @@
   - [How to contribute](#how-to-contribute)
   - [Code of Conduct and Shared Values](#code-of-conduct-and-shared-values)
   - [Building the Dynatrace Monitoring as Code Tool](#building-the-dynatrace-monitoring-as-code-tool)
-    - [Tests](#tests)
+  - [Testing the Dynatrace Monitoring as Code Tool](#testing-the-dynatrace-monitoring-as-code-tool)
+    - [Integration Tests](#integration-tests)
+    - [Writing Tests](#writing-tests)
   - [Checking in go mod and sum files](#checking-in-go-mod-and-sum-files)
   - [General information on code](#general-information-on-code)
+    - [Test Mocks](#test-mocks)
+    - [Formatting](#formatting)
+  - [Pre-Commit Hook](#pre-commit-hook)
   - [A note on Dynatrace APIs](#a-note-on-dynatrace-apis)
 
 ## What to contribute
@@ -43,22 +48,39 @@ Before contributing please read and approve [our Code Of Conduct](https://github
 
 The `monaco` tool is written in [Go](https://golang.org/), so you will need to have [installed Go](https://golang.org/dl/) to build it.
 
-To build the tool run `go build ./...` in the repository root folder. Alternatively, you can use the Makefile and run `make build`.
+To build the tool run `make build` in the repository root folder. 
 
-To install the tool to your machine run `go install ./...` in the repository root folder.
+> This guide references the make target for each step. If you want to see the actual Go commands take a look at the [Makefile](./Makefile)
+
+To install the tool to your machine run `make install` in the repository root folder.
 
 This will create a `monaco` executable you can use.
 
-To build a platform specific executable run: `GOOS={OS} GOARCH={ARCH} go build -o bin/monaco.exe ./...`.
+To build a platform specific executable run: `GOOS={OS} GOARCH={ARCH} make build`.
 
-A Windows executable can be built with `GOOS=windows GOARCH=386 go build -o bin/monaco.exe ./...`.
+For example a Windows executable can be built with `GOOS=windows GOARCH=386 make build BINARY=monaco.exe`.
 
+## Testing the Dynatrace Monitoring as Code Tool
 
-### Tests
+Run the unit tests for the whole module with `make test` in the root folder.
 
-Run the unit tests for the whole module with `go test ... -tags=unit` in the root folder.
+### Integration Tests
 
 In addition to unit tests, the module contains integration tests, that upload configuration to two test environments. Those are tagged `integration` and will be run for any pull request opened for Monitoring as Code.
+
+To run the integration tests you will need at least one Dynatrace environment - the tests run against two configurable environments.
+
+The following environment variables need to be defined for these test environments:
+* `URL_ENVIRONMENT_1` ... URL of the first test environment
+* `TOKEN_ENVIRONMENT_1` ... API token for the first test environment 
+* `URL_ENVIRONMENT_2` ... URL of the second test environment
+* `TOKEN_ENVIRONMENT_2` ... API token for the second test environment 
+
+The integration tests can be run with `make integration-test`
+
+For convenience single package tests can be run with `make test-package pkg={PACKAGE}` - e.g. `make test-package pkg=api`.
+
+### Writing Tests
 
 Take a look at [Go Testing](https://golang.org/pkg/testing/) for more info on testing in Go.
 
@@ -77,16 +99,25 @@ Go module files `go.mod` and `go.sum` are check in, in the root folder of the re
 
 ## General information on code
 
-Source code of the tool is found in the `cmd/monaco` folder.
+Source code of the tool is found in the `cmd/monaco` and `pkg/` folders.
+
+### Test Mocks
 
 Go Mockgen is used for some generated mock files. They are not generated every time, but rather checked in, so be careful
 when introducing changes to objects that are mocked. You will have to regenerate and probably manually modify them to remove
 e.g. the reference to the module.
+​To explicitly generate the mocked files, run `make mocks` in the root folder.
+
+### Formatting
 
 This project uses the default go formatting tool `go fmt`.
+
+You can use the Make target `make format` to format all files.
+
+## Pre-Commit Hook
+
 Before committing changes, please make sure you've added the `pre-commit` hook from the hooks folder.
-You can use the `setup-git-hooks.sh` to symlink that file into your `.git/hooks` folder.
-​To generate the mocked files, run `go generate ./...` in the root folder.
+On Unix you can use the `setup-git-hooks.sh` to symlink that file into your `.git/hooks` folder.
 
 ## A note on Dynatrace APIs
 

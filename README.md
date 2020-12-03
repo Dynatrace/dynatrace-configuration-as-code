@@ -24,8 +24,8 @@ and [Configuration Structure](#configuration-structure)
         - [Dashboard JSON](#dashboard-json)
         - [Calculated log metrics JSON](#calculated-log-metrics-json)
         - [Conditional naming JSON](#conditional-naming-json)
-    - [Configuration Types / APIs](#configuration-types--apis)
-      - [Supported Configuration Types](#supported-configuration-types)
+    - [Configuration Types / APIs](#configuration-types-apis)
+      - [Supported Configuration Types and Token Permissions](#supported-configuration-types-and-token-permissions)
     - [Configuration YAML Structure](#configuration-yaml-structure)
     - [Skip configuration deployment](#skip-configuration-deployment)
     - [Specific Configuration per Environment or group](#specific-configuration-per-environment-or-group)
@@ -83,7 +83,7 @@ The supported flags are described below:
         Project configuration to deploy. Also deploys any dependent configuration. (shorthand)
   -project string
         Project configuration to deploy. Also deploys any dependent configuration.
-   -specific-environment string
+  -specific-environment string
         Specifc environment (from list) to deploy to.
   -se string
         Specifc environment (from list) to deploy to. (shorthand)
@@ -320,6 +320,7 @@ Also applies to the `SERVICE` type. eg.
 ### Configuration Types / APIs
 
 Each such type folder must contain one `configuration yaml` and one or more `json` files containing the actual configuration send to the Dynatrace API.
+The folder name is case-sensitive and needs to be written exactly as in its definition in [Supported Configuration Types](#supported-configuration-types).
 
 e.g.
 ```
@@ -331,33 +332,36 @@ projects/
                                          config2.json
 ```
 
-#### Supported Configuration Types
+#### Supported Configuration Types and Token Permissions
 
-Supported configurations types are:
-```
-alerting-profile: /api/config/v1/alertingProfiles
-management-zone: /api/config/v1/managementZones
-auto-tag: /api/config/v1/autoTags
-dashboard: /api/config/v1/dashboards
-notification: /api/config/v1/notifications
-extension: /api/config/v1/extensions
-custom-service-java: /api/config/v1/service/customServices/java
-anomaly-detection-metrics: /api/config/v1/anomalyDetection/metricEvents
-synthetic-location: /api/v1/synthetic/locations
-synthetic-monitor: /api/v1/synthetic/monitors
-application: /api/config/v1/applications/web
-app-detection-rule: /api/config/v1/applicationDetectionRules
-aws-credentials: /api/config/v1/aws/credentials
-kubernetes-credentials: /api/config/v1/kubernetes/credentials
-azure-credentials: /api/config/v1/azure/credentials
-request-attributes: /api/config/v1/service/requestAttributes
-calculated-metrics-service: /api/config/v1/calculatedMetrics/service
-calculated-metrics-log: /api/config/v1/calculatedMetrics/log
-conditional-naming-processgroup: /api/config/v1/conditionalNaming/processGroup,
-conditional-naming-host: /api/config/v1/conditionalNaming/host,
-conditional-naming-service: /api/config/v1/conditionalNaming/service,
-maintenance-window: /api/config/v1/maintenanceWindows
-```
+These are the supported configuration types, their API endpoints and the token permissions required for interacting with any of endpoint.
+
+| Configuration  | Endpoint  | Token Permission(s)  |
+|---|---|---|
+| alerting-profile  |  _/api/config/v1/alertingProfiles_ | `Read Configuration` & `Write Configuration`  |
+|  management-zone | _/api/config/v1/managementZones_  | `Read Configuration` & `Write Configuration`  |
+| auto-tag  | _/api/config/v1/autoTags_  | `Read Configuration` & `Write Configuration`  |
+|  dashboard | _/api/config/v1/dashboards_  | `Read Configuration` & `Write Configuration`  |
+| notification  | _/api/config/v1/notifications_  |  `Read Configuration` & `Write Configuration` |
+|  extension | _/api/config/v1/extensions_  |  `Read Configuration` & `Write Configuration` |
+|  custom-service-java | _/api/config/v1/service/customServices/java_  | `Read Configuration` & `Write Configuration`  |
+| anomaly-detection-metrics  | _/api/config/v1/anomalyDetection/metricEvents_  | `Read Configuration` & `Write Configuration`  |
+| synthetic-location  | _/api/v1/synthetic/locations_  | `Access problem and event feed, metrics, and topology` & `Create and read synthetic monitors, locations, and nodes`   |
+|  synthetic-monitor | _/api/v1/synthetic/monitors_  | `Create and read synthetic monitors, locations, and nodes` |
+| application  | _/api/config/v1/applications/web_  | `Read Configuration` & `Write Configuration`  |
+|  app-detection-rule | _/api/config/v1/applicationDetectionRules_  | `Read Configuration` & `Write Configuration`  |
+| aws-credentials  | _/api/config/v1/aws/credentials_  | `Read Configuration` & `Write Configuration`  |
+| request-attributes  | _/api/config/v1/service/requestAttributes_  |  `Read Configuration` & `Capture request data`  |
+| calculated-metrics-service  | _/api/config/v1/calculatedMetrics/service_  | `Read Configuration` & `Write Configuration`  |
+| calculated-metrics-log  | _/api/config/v1/calculatedMetrics/log_  | `Read Configuration` & `Write Configuration`  |
+| conditional-naming-processgroup  | _/api/config/v1/conditionalNaming/processGroup_  | `Read Configuration` & `Write Configuration`  |
+| conditional-naming-host | _/api/config/v1/conditionalNaming/host_ | `Read Configuration` & `Write Configuration`  |
+| conditional-naming-service  | _/api/config/v1/conditionalNaming/service_  | `Read Configuration` & `Write Configuration`    |
+| maintenance-window  | _/api/config/v1/maintenanceWindows_  | `Deprecated: Configure maintenance windows`  |
+| request-naming | _/api/config/v1/service/requestNaming_ | `Read Configuration` & `Write Configuration`  |
+
+For reference, refer to [this](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication) page for a detailed
+description to each token permission.
 
 ### Configuration YAML Structure
 
