@@ -17,7 +17,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"math/rand"
@@ -92,6 +91,7 @@ func RunImpl(args []string, fileReader util.FileReader) (statusCode int) {
 	for environment, err := range deploymentErrors {
 		if dryRun {
 			util.Log.Error("Validation of %s failed with error %s\n", environment, err)
+			util.PrettyPrintError(err)
 		} else {
 			util.Log.Error("Deployment to %s failed with error %s\n", environment, err)
 		}
@@ -305,7 +305,7 @@ func validateConfig(project project.Project, config config.Config, dict map[stri
 
 	}
 
-	err = validateConfigJson(jsonString, config.GetFilePath())
+	err = util.ValidateJson(jsonString, config.GetFilePath())
 
 	return api.DynatraceEntity{
 		Id:          randomId,
@@ -344,21 +344,6 @@ func uploadConfig(config config.Config, dict map[string]api.DynatraceEntity, env
 		err = fmt.Errorf("%s, responsible config: %s", err.Error(), config.GetFilePath())
 	}
 	return entity, err
-}
-
-/* validates whether the json file is correct, by using the internal validation done
- * when unmarshalling to a an object. As none of our jsons can actually be unmarshalled
- * to a string, we catch that error, but report any other error as fatal.
- */
-func validateConfigJson(jsonString string, filename string) error {
-	var j string
-	err := json.Unmarshal([]byte(jsonString), &j)
-
-	if err != nil && !strings.Contains(err.Error(), "cannot unmarshal") {
-		return fmt.Errorf("%s is not a valid json! Error: %s", filename, err.Error())
-	}
-
-	return nil
 }
 
 // deleteConfigs deletes specified configs, if a delete.yaml file was found
