@@ -19,8 +19,8 @@
 package util
 
 import (
+	"fmt"
 	"os"
-	"strings"
 	"testing"
 
 	"gotest.tools/assert"
@@ -56,43 +56,56 @@ func TestUnmarshalYaml(t *testing.T) {
 }
 
 const yamlTestPathSeparators = `
+config:
+    - application-tagging: "application-tagging.json"
 arbitraryPaths:
-    - p1: "this/is/path/with/slashes/only"
-    - p2: "this\\is\\path\\with\\backslashes\\only"
-    - p3: "this/is\\path/with\\mixed"
-    - p4: "/this/is/path/with/slashes/only"
-    - p5: "\\this\\is\\path\\with\\backslashes\\only"
-    - p6: "\\this/is\\path/with\\mixed"
+    - p1: "// represents a comment maybe"
+    - p2: "\\ only back slashes \\"
+    - p3: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36"
+    - p4: "/absolute/path/dashboard.id"
+    - p5: "relative/path/dashboard.name"
+    - p6: "\\absolute\\backslash\\dashboard.id"
+    - p7: "relative\\backslash\\dashboard.name"
 retainURLs:
     - url: "https://dynatrace.com/"
 `
 
-func TestUnmarshalYamlDoesNotNormalizePathSeparatorsIfValueDoesNotStartWithPathSeparator(t *testing.T) {
+func TestUnmarshalYamlNormalizesPathSeparatorsIfValueIsReferencingVariableInAnotherYaml(t *testing.T) {
 	e, result := UnmarshalYaml(yamlTestPathSeparators, "test-yaml-path-separators")
 	assert.NilError(t, e)
 
+	config := result["config"]
 	arbitraryPaths := result["arbitraryPaths"]
 	url := result["retainURLs"]
 
-	assert.Equal(t, arbitraryPaths["p1"], "this/is/path/with/slashes/only")
-	assert.Equal(t, arbitraryPaths["p2"], "this\\is\\path\\with\\backslashes\\only")
-	assert.Equal(t, arbitraryPaths["p3"], "this/is\\path/with\\mixed")
+	// Shorthand 'ps' for platform-dependant path separator so that less code is needed in assertions below
+	ps := string(os.PathSeparator)
+
+	assert.Equal(t, arbitraryPaths["p4"], fmt.Sprintf("%sabsolute%spath%sdashboard.id", ps, ps, ps))
+	assert.Equal(t, arbitraryPaths["p5"], fmt.Sprintf("relative%spath%sdashboard.name", ps, ps))
+	assert.Equal(t, arbitraryPaths["p6"], fmt.Sprintf("%sabsolute%sbackslash%sdashboard.id", ps, ps, ps))
+	assert.Equal(t, arbitraryPaths["p7"], fmt.Sprintf("relative%sbackslash%sdashboard.name", ps, ps))
+
 	assert.Equal(t, url["url"], "https://dynatrace.com/")
+	assert.Equal(t, config["application-tagging"], "application-tagging.json")
 }
 
-func TestUnmarshalYamlNormalizesPathSeparatorsIfValueStartsWithPathSeparator(t *testing.T) {
+func TestUnmarshalYamlDoesNotNormalizePathSeparatorsIfValueIsNotReferencingVariableInAnotherYaml(t *testing.T) {
 	e, result := UnmarshalYaml(yamlTestPathSeparators, "test-yaml-path-separators")
 	assert.NilError(t, e)
 
+	config := result["config"]
 	arbitraryPaths := result["arbitraryPaths"]
 	url := result["retainURLs"]
 
-	platformDependantSeparator := string(os.PathSeparator)
-	assert.Equal(t, len(strings.Split(arbitraryPaths["p4"], platformDependantSeparator)), 7)
-	assert.Equal(t, len(strings.Split(arbitraryPaths["p5"], platformDependantSeparator)), 7)
-	assert.Equal(t, len(strings.Split(arbitraryPaths["p6"], platformDependantSeparator)), 6)
+	fmt.Println(arbitraryPaths)
+
+	assert.Equal(t, arbitraryPaths["p1"], "// represents a comment maybe")
+	assert.Equal(t, arbitraryPaths["p2"], "\\ only back slashes \\")
+	assert.Equal(t, arbitraryPaths["p3"], "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36")
 
 	assert.Equal(t, url["url"], "https://dynatrace.com/")
+	assert.Equal(t, config["application-tagging"], "application-tagging.json")
 }
 
 const yamlTestEnvVar = `
