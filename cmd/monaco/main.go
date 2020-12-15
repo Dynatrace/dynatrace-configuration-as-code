@@ -188,6 +188,7 @@ func readPath(args []string, fileReader util.FileReader) string {
 	if !strings.HasSuffix(potentialPath, ".yaml") {
 		_, err := fileReader.ReadDir(potentialPath)
 		if err == nil {
+			potentialPath = util.ReplacePathSeparators(potentialPath)
 			if !strings.HasSuffix(potentialPath, string(os.PathSeparator)) {
 				potentialPath += string(os.PathSeparator)
 			}
