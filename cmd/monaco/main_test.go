@@ -139,6 +139,24 @@ func TestExecutePassOnDuplicateNamesInDifferentEnvironments(t *testing.T) {
 	assert.NilError(t, err)
 }
 
+func TestContainsVersionFlagReturnsTrueWhenFlagIsPresent(t *testing.T) {
+	result := containsVersionFlag([]string{"monaco", "--version"})
+
+	assert.Assert(t, result)
+}
+
+func TestContainsVersionFlagReturnsTrueWhenFlagIsPresentEvenWithOtherFlags(t *testing.T) {
+	result := containsVersionFlag([]string{"monaco", "--dry-run", "--version"})
+
+	assert.Assert(t, result)
+}
+
+func TestContainsVersionFlagReturnsFalseWhenFlagIsNotPresent(t *testing.T) {
+	result := containsVersionFlag([]string{"monaco", "--dry-run"})
+
+	assert.Assert(t, !result)
+}
+
 // TODO (CDF-6511) Currently here UnmarshallYaml logs fatal, only ever returns nil errors!
 // func TestInvalidEnvironmentFileResultsInError(t *testing.T) {
 // 	_, err := environment.LoadEnvironmentList("", "test-resources/invalid-environmentsfile.yaml")
