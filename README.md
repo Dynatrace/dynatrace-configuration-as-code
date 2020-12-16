@@ -73,6 +73,13 @@ Multiple projects can be specified as well:
 
 ```-p="project1,project2,project3"```
 
+In order to get the version of the binary simply execute: 
+```sh
+monaco --version
+```
+
+*NOTE:* If the `--version` flag is present it will *ONLY* print the version and then exit. *ANY OTHER FLAG WILL BE IGNORED*.
+
 The supported flags are described below:
 
 ```
@@ -94,6 +101,8 @@ The supported flags are described below:
   -v    Set verbose flag to enable debug logging. (shorthand)
   -verbose
         Set verbose flag to enable debug logging.
+  -version
+        Prints the current version of the tool and exits the program
 ```
 
 #### Dry Run (Validating Configuration)
