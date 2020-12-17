@@ -1,6 +1,8 @@
 BINARY=monaco
 
-.PHONY: lint format mocks build install clean test integration-test test-package
+.PHONY: lint format mocks build install clean test integration-test test-package default
+
+default: build
 
 lint:
 ifeq ($(OS),Windows_NT)

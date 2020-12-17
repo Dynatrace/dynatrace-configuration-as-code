@@ -44,7 +44,21 @@ func Run(args []string) int {
 	return RunImpl(args, util.NewFileReader())
 }
 
+func containsVersionFlag(args []string) bool {
+	for _, arg := range args {
+		if arg == "--version" || arg == "-version" {
+			return true
+		}
+	}
+
+	return false
+}
+
 func RunImpl(args []string, fileReader util.FileReader) (statusCode int) {
+	if containsVersionFlag(args) {
+		fmt.Println(version.MonitoringAsCode)
+		return 0
+	}
 
 	statusCode = 0
 
@@ -115,6 +129,7 @@ func parseInputCommand(args []string, fileReader util.FileReader) (dryRun bool, 
 	// define flags
 	var environmentsFile string
 	var specificEnvironment string
+	var versionFlag bool
 
 	// parse flags
 	shorthand := " (shorthand)"
@@ -140,6 +155,9 @@ func parseInputCommand(args []string, fileReader util.FileReader) (dryRun bool, 
 	flagSet.StringVar(&environmentsFile, "environments", "", environmentsUsage)
 	flagSet.StringVar(&environmentsFile, "e", "", environmentsUsage+shorthand)
 
+	versionUsage := "Prints the current version of the tool and exits"
+	flagSet.BoolVar(&versionFlag, "version", false, versionUsage)
+
 	err := flagSet.Parse(args[1:])
 	if err != nil {
 		return dryRun, verbose, environments, project, path, nil, err
@@ -157,7 +175,8 @@ func parseInputCommand(args []string, fileReader util.FileReader) (dryRun bool, 
 				"\tmonaco --dry-run --environments <path-to-environment-yaml-file> --project <project-folder> [projects-root-folder] \n" +
 				"\tmonaco --environments <path-to-environment-yaml-file> --project <project-folder> [projects-root-folder] \n" +
 				"\tmonaco --specific-environment <environment-name> --project <project-folder> [projects-root-folder] \n" +
-				"\tmonaco --project <project-folder> [projects-root-folder] --environments <path-to-environment-yaml-file> \n"
+				"\tmonaco --project <project-folder> [projects-root-folder] --environments <path-to-environment-yaml-file> \n" +
+				"\tmonaco --version\n"
 
 		examples :=
 			"Examples:\n" +
