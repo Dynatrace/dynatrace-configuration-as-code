@@ -80,7 +80,7 @@ func executeRequest(client *http.Client, request *http.Request) Response {
 	response, _ := rateLimitStrategy.executeRequest(util.NewTimelineProvider(), func() Response {
 		resp, err := client.Do(request)
 		if err != nil {
-			println("HTTP Request failed with Error: " + err.Error())
+			util.Log.Error("HTTP Request failed with Error: " + err.Error())
 			return Response{}
 		}
 		defer func() {
