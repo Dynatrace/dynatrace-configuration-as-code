@@ -345,29 +345,29 @@ projects/
 
 These are the supported configuration types, their API endpoints and the token permissions required for interacting with any of endpoint.
 
-| Configuration  | Endpoint  | Token Permission(s)  |
-|---|---|---|
-| alerting-profile  |  _/api/config/v1/alertingProfiles_ | `Read Configuration` & `Write Configuration`  |
-|  management-zone | _/api/config/v1/managementZones_  | `Read Configuration` & `Write Configuration`  |
-| auto-tag  | _/api/config/v1/autoTags_  | `Read Configuration` & `Write Configuration`  |
-|  dashboard | _/api/config/v1/dashboards_  | `Read Configuration` & `Write Configuration`  |
-| notification  | _/api/config/v1/notifications_  |  `Read Configuration` & `Write Configuration` |
-|  extension | _/api/config/v1/extensions_  |  `Read Configuration` & `Write Configuration` |
-|  custom-service-java | _/api/config/v1/service/customServices/java_  | `Read Configuration` & `Write Configuration`  |
-| anomaly-detection-metrics  | _/api/config/v1/anomalyDetection/metricEvents_  | `Read Configuration` & `Write Configuration`  |
-| synthetic-location  | _/api/v1/synthetic/locations_  | `Access problem and event feed, metrics, and topology` & `Create and read synthetic monitors, locations, and nodes`   |
-|  synthetic-monitor | _/api/v1/synthetic/monitors_  | `Create and read synthetic monitors, locations, and nodes` |
-| application  | _/api/config/v1/applications/web_  | `Read Configuration` & `Write Configuration`  |
-|  app-detection-rule | _/api/config/v1/applicationDetectionRules_  | `Read Configuration` & `Write Configuration`  |
-| aws-credentials  | _/api/config/v1/aws/credentials_  | `Read Configuration` & `Write Configuration`  |
-| request-attributes  | _/api/config/v1/service/requestAttributes_  |  `Read Configuration` & `Capture request data`  |
-| calculated-metrics-service  | _/api/config/v1/calculatedMetrics/service_  | `Read Configuration` & `Write Configuration`  |
-| calculated-metrics-log  | _/api/config/v1/calculatedMetrics/log_  | `Read Configuration` & `Write Configuration`  |
-| conditional-naming-processgroup  | _/api/config/v1/conditionalNaming/processGroup_  | `Read Configuration` & `Write Configuration`  |
-| conditional-naming-host | _/api/config/v1/conditionalNaming/host_ | `Read Configuration` & `Write Configuration`  |
-| conditional-naming-service  | _/api/config/v1/conditionalNaming/service_  | `Read Configuration` & `Write Configuration`    |
-| maintenance-window  | _/api/config/v1/maintenanceWindows_  | `Deprecated: Configure maintenance windows`  |
-| request-naming | _/api/config/v1/service/requestNaming_ | `Read Configuration` & `Write Configuration`  |
+| Configuration                   | Endpoint                                        | Token Permission(s)                                                                                                 |
+| ------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| alerting-profile                | _/api/config/v1/alertingProfiles_               | `Read Configuration` & `Write Configuration`                                                                        |
+| anomaly-detection-metrics       | _/api/config/v1/anomalyDetection/metricEvents_  | `Read Configuration` & `Write Configuration`                                                                        |
+| app-detection-rule              | _/api/config/v1/applicationDetectionRules_      | `Read Configuration` & `Write Configuration`                                                                        |
+| application                     | _/api/config/v1/applications/web_               | `Read Configuration` & `Write Configuration`                                                                        |
+| auto-tag                        | _/api/config/v1/autoTags_                       | `Read Configuration` & `Write Configuration`                                                                        |
+| aws-credentials                 | _/api/config/v1/aws/credentials_                | `Read Configuration` & `Write Configuration`                                                                        |
+| calculated-metrics-log          | _/api/config/v1/calculatedMetrics/log_          | `Read Configuration` & `Write Configuration`                                                                        |
+| calculated-metrics-service      | _/api/config/v1/calculatedMetrics/service_      | `Read Configuration` & `Write Configuration`                                                                        |
+| conditional-naming-host         | _/api/config/v1/conditionalNaming/host_         | `Read Configuration` & `Write Configuration`                                                                        |
+| conditional-naming-processgroup | _/api/config/v1/conditionalNaming/processGroup_ | `Read Configuration` & `Write Configuration`                                                                        |
+| conditional-naming-service      | _/api/config/v1/conditionalNaming/service_      | `Read Configuration` & `Write Configuration`                                                                        |
+| custom-service-java             | _/api/config/v1/service/customServices/java_    | `Read Configuration` & `Write Configuration`                                                                        |
+| dashboard                       | _/api/config/v1/dashboards_                     | `Read Configuration` & `Write Configuration`                                                                        |
+| extension                       | _/api/config/v1/extensions_                     | `Read Configuration` & `Write Configuration`                                                                        |
+| maintenance-window              | _/api/config/v1/maintenanceWindows_             | `Deprecated: Configure maintenance windows`                                                                         |
+| management-zone                 | _/api/config/v1/managementZones_                | `Read Configuration` & `Write Configuration`                                                                        |
+| notification                    | _/api/config/v1/notifications_                  | `Read Configuration` & `Write Configuration`                                                                        |
+| request-attributes              | _/api/config/v1/service/requestAttributes_      | `Read Configuration` & `Capture request data`                                                                       |
+| request-naming                  | _/api/config/v1/service/requestNaming_          | `Read Configuration` & `Write Configuration`                                                                        |
+| synthetic-location              | _/api/v1/synthetic/locations_                   | `Access problem and event feed, metrics, and topology` & `Create and read synthetic monitors, locations, and nodes` |
+| synthetic-monitor               | _/api/v1/synthetic/monitors_                    | `Create and read synthetic monitors, locations, and nodes`                                                          |
 
 For reference, refer to [this](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication) page for a detailed
 description to each token permission.
@@ -612,7 +612,7 @@ Configuration which is not needed anymore can also be deleted in automated fashi
 folder and deletes all configurations defined in this file after finishing deployment. `delete.yaml` file structure should be defined as following, where
 beside from API you also have to specify then `name` (not id) of configuration to be deleted:
 ```yaml
-config:
+delete:
   - "auto-tag/my-tag"
   - "custom-service-java/my custom service"
 ...
