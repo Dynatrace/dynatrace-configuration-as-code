@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"runtime"
 
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/version"
 )
 
@@ -31,30 +32,31 @@ type Response struct {
 	Body       []byte
 }
 
-func Get(url string, apiToken string) Response {
+func get(client *http.Client, url string, apiToken string) Response {
 	req := request(http.MethodGet, url, apiToken)
-	return executeRequest(req)
+	return executeRequest(client, req)
 }
 
-func Delete(url string, apiToken string, id string) {
+// the name delete() would collide with the built-in function
+func deleteConfig(client *http.Client, url string, apiToken string, id string) {
 	req := request(http.MethodDelete, url+"/"+id, apiToken)
-	executeRequest(req)
+	executeRequest(client, req)
 }
 
-func Post(url string, data string, apiToken string) Response {
+func post(client *http.Client, url string, data string, apiToken string) Response {
 	req := requestWithBody(http.MethodPost, url, bytes.NewBuffer([]byte(data)), apiToken)
-	return executeRequest(req)
+	return executeRequest(client, req)
 }
 
-func PostMultiPartFile(url string, data *bytes.Buffer, contentType string, apiToken string) Response {
+func postMultiPartFile(client *http.Client, url string, data *bytes.Buffer, contentType string, apiToken string) Response {
 	req := requestWithBody(http.MethodPost, url, data, apiToken)
 	req.Header.Set("Content-type", contentType)
-	return executeRequest(req)
+	return executeRequest(client, req)
 }
 
-func Put(url string, data string, apiToken string) Response {
+func put(client *http.Client, url string, data string, apiToken string) Response {
 	req := requestWithBody(http.MethodPut, url, bytes.NewBuffer([]byte(data)), apiToken)
-	return executeRequest(req)
+	return executeRequest(client, req)
 }
 
 func request(method string, url string, apiToken string) *http.Request {
@@ -69,11 +71,12 @@ func requestWithBody(method string, url string, body io.Reader, apiToken string)
 	return req
 }
 
-func executeRequest(request *http.Request) Response {
-	client := &http.Client{}
+func executeRequest(client *http.Client, request *http.Request) Response {
+
 	resp, err := client.Do(request)
 	if err != nil {
-		println("HTTP Request failed with Error: " + err.Error())
+		util.Log.Warn("HTTP Request failed with Error: " + err.Error())
+		// TODO error handling
 		return Response{}
 	}
 	defer func() {

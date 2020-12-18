@@ -44,15 +44,19 @@ func TestDoCleanup(t *testing.T) {
 	for _, environment := range environments {
 		token, err := environment.GetToken()
 		assert.NilError(t, err)
+
+		client, err := rest.NewDynatraceClient(environment.GetEnvironmentUrl(), token)
+		assert.NilError(t, err)
+
 		for _, api := range apis {
 
-			_, values, err := rest.GetExistingValuesFromEndpoint(api.GetId(), api.GetUrl(environment), token)
+			values, err := client.List(api)
 			assert.NilError(t, err)
 
 			for _, value := range values {
 				if r.MatchString(value.Name) || r.MatchString(value.Id) || strings.HasSuffix(value.Name, "_") {
 					util.Log.Info("Deleting %s (%s)\n", value.Name, api.GetId())
-					rest.Delete(api.GetUrl(environment), token, value.Id)
+					client.DeleteByName(api, value.Name)
 				}
 			}
 		}

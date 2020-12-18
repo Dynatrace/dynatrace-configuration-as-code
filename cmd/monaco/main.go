@@ -118,7 +118,11 @@ func RunImpl(args []string, fileReader util.FileReader) (statusCode int) {
 		} else {
 			util.Log.Info("Deployment finished without errors")
 		}
-		deleteConfigs(apis, environments, path, dryRun, fileReader)
+		err = deleteConfigs(apis, environments, path, dryRun, fileReader)
+		if err != nil {
+			util.Log.Error("Deletion of configs failed with error %s\n", err)
+			statusCode = -1
+		}
 	}
 
 	return statusCode
@@ -227,6 +231,19 @@ func createApis() map[string]api.Api {
 func execute(environment environment.Environment, projects []project.Project, dryRun bool, path string) error {
 	util.Log.Info("Processing environment " + environment.GetId() + "...")
 
+	var client rest.DynatraceClient
+	if !dryRun {
+		apiToken, err := environment.GetToken()
+		if err != nil {
+			return err
+		}
+
+		client, err = rest.NewDynatraceClient(environment.GetEnvironmentUrl(), apiToken)
+		if err != nil {
+			return err
+		}
+	}
+
 	dict := make(map[string]api.DynatraceEntity)
 	var nameDict = make(map[string]string)
 	var name, configID string
@@ -263,7 +280,7 @@ func execute(environment environment.Environment, projects []project.Project, dr
 			if dryRun {
 				entity, err = validateConfig(project, config, dict, environment)
 			} else {
-				entity, err = uploadConfig(config, dict, environment)
+				entity, err = uploadConfig(client, config, dict, environment)
 			}
 
 			if err != nil {
@@ -334,15 +351,9 @@ func validateConfig(project project.Project, config config.Config, dict map[stri
 	}, err
 }
 
-func uploadConfig(config config.Config, dict map[string]api.DynatraceEntity, environment environment.Environment) (entity api.DynatraceEntity, err error) {
+func uploadConfig(client rest.DynatraceClient, config config.Config, dict map[string]api.DynatraceEntity, environment environment.Environment) (entity api.DynatraceEntity, err error) {
 	util.Log.Debug("\t\tApplying config " + config.GetFilePath())
 
-	configType := config.GetType()
-	url := config.GetApi().GetUrl(environment)
-	apiToken, err := environment.GetToken()
-	if err != nil {
-		return entity, err
-	}
 	jsonString, err := config.GetConfigForEnvironment(environment, dict)
 	if err != nil {
 		return entity, err
@@ -353,12 +364,7 @@ func uploadConfig(config config.Config, dict map[string]api.DynatraceEntity, env
 		return entity, err
 	}
 
-	switch configType {
-	case "extension":
-		entity, err = rest.UploadExtension(url, name, jsonString, apiToken)
-	default:
-		entity, err = rest.UpsertDynatraceObject(url, name, configType, jsonString, apiToken)
-	}
+	entity, err = client.UpsertByName(config.GetApi(), name, jsonString)
 
 	if err != nil {
 		err = fmt.Errorf("%s, responsible config: %s", err.Error(), config.GetFilePath())
@@ -382,7 +388,7 @@ func validateConfigJson(jsonString string, filename string) error {
 }
 
 // deleteConfigs deletes specified configs, if a delete.yaml file was found
-func deleteConfigs(apis map[string]api.Api, environments map[string]environment.Environment, path string, dryRun bool, fileReader util.FileReader) {
+func deleteConfigs(apis map[string]api.Api, environments map[string]environment.Environment, path string, dryRun bool, fileReader util.FileReader) error {
 
 	configs, err := delete.LoadConfigsToDelete(apis, path, fileReader)
 	util.FailOnError(err, "deletion failed")
@@ -392,10 +398,26 @@ func deleteConfigs(apis map[string]api.Api, environments map[string]environment.
 		for name, environment := range environments {
 			util.Log.Info("Deleting %d configs for environment %s...", len(configs), name)
 
+			apiToken, err := environment.GetToken()
+			if err != nil {
+				return err
+			}
+
+			client, err := rest.NewDynatraceClient(environment.GetEnvironmentUrl(), apiToken)
+			if err != nil {
+				return err
+			}
+
 			for _, config := range configs {
 				util.Log.Debug("\tDeleting config " + config.GetId() + " (" + config.GetApi().GetId() + ")")
-				_ = rest.DeleteDynatraceObject(config, environment)
+
+				err = client.DeleteByName(config.GetApi(), config.GetId())
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
+
+	return nil
 }
