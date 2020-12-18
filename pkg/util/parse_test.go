@@ -68,6 +68,8 @@ arbitraryPaths:
     - p7: "relative\\backslash\\dashboard.name"
 retainURLs:
     - url: "https://dynatrace.com/"
+someExtension:
+    - path: "/this/is\\a/path/with\\slashes/and\\backslashes/to\\extension.json"
 `
 
 func TestUnmarshalYamlNormalizesPathSeparatorsIfValueIsReferencingVariableInAnotherYaml(t *testing.T) {
@@ -106,6 +108,15 @@ func TestUnmarshalYamlDoesNotNormalizePathSeparatorsIfValueIsNotReferencingVaria
 
 	assert.Equal(t, url["url"], "https://dynatrace.com/")
 	assert.Equal(t, config["application-tagging"], "application-tagging.json")
+}
+
+func TestUnmarshalYamlDoesNotReplaceSlashesAndBackslashesInJsonReferenceInSectionOtherThanConfigSection(t *testing.T) {
+	e, result := UnmarshalYaml(yamlTestPathSeparators, "test-yaml-path-separators")
+	assert.NilError(t, e)
+
+	someExtension := result["someExtension"]
+
+	assert.Equal(t, someExtension["path"], "/this/is\\a/path/with\\slashes/and\\backslashes/to\\extension.json")
 }
 
 const yamlTestEnvVar = `

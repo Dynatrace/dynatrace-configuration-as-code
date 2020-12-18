@@ -92,7 +92,7 @@ func convert(original map[string]interface{}) (err error, typed map[string]map[s
 						case string:
 							switch v3 := v3.(type) {
 							case string:
-								if referencesJSON(v3) || appearsToReferenceVariableInAnotherYaml(v3) {
+								if referencesConfigJSON(k1, v3) || appearsToReferenceVariableInAnotherYaml(v3) {
 									m2Inner[k3] = ReplacePathSeparators(v3)
 								} else {
 									m2Inner[k3] = v3
@@ -127,7 +127,10 @@ func appearsToReferenceVariableInAnotherYaml(s string) bool {
 	return true
 }
 
-func referencesJSON(s string) bool {
+func referencesConfigJSON(yamlSection, s string) bool {
+	if yamlSection != "config" {
+		return false
+	}
 	return strings.HasSuffix(s, ".json")
 }
 
