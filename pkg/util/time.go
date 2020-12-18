@@ -28,7 +28,11 @@ import (
 // Whenever you need to get the current time, or want to pause the current goroutine (sleep), please consider using
 // this interface
 type TimelineProvider interface {
+
+	// Now Returns the current (client-side) time in UTC
 	Now() time.Time
+
+	// Sleep suspends the current goroutine for the specified duration
 	Sleep(duration time.Duration)
 }
 
@@ -41,7 +45,9 @@ func NewTimelineProvider() TimelineProvider {
 type defaultTimelineProvider struct{}
 
 func (d *defaultTimelineProvider) Now() time.Time {
-	return time.Now()
+	nowInLocalTimeZone := time.Now()
+	location, _ := time.LoadLocation("UTC")
+	return nowInLocalTimeZone.In(location)
 }
 
 func (d *defaultTimelineProvider) Sleep(duration time.Duration) {

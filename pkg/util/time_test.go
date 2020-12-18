@@ -21,6 +21,7 @@ package util
 import (
 	"gotest.tools/assert"
 	"testing"
+	"time"
 )
 
 func TestStringTimestampToHumanReadableFormatWithAValidTimestamp(t *testing.T) {
@@ -44,4 +45,13 @@ func TestMicrosecondsConversionToUnixTimeResultsInSameValueAfterConversion(t *te
 	assert.Equal(t, 2, unixTime.Minute()) // 120 seconds
 	assert.Equal(t, 3, unixTime.Second()) // 3 seconds (120 + 3 = 123 from above)
 	assert.Equal(t, 456789000, unixTime.Nanosecond())
+}
+
+func TestTimelineProviderReturnsUTC(t *testing.T) {
+
+	timelineProvider := NewTimelineProvider()
+	now := timelineProvider.Now()
+
+	location, _ := time.LoadLocation("UTC")
+	assert.Equal(t, now.UnixNano(), now.In(location).UnixNano())
 }
