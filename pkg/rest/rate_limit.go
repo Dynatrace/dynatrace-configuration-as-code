@@ -64,7 +64,7 @@ func (s *simpleSleepRateLimitStrategy) executeRequest(timelineProvider util.Time
 		now := timelineProvider.Now()
 
 		// Attention: this uses server time:
-		resetTime := s.convertMicrosecondsToUnixTime(timeInMicroseconds)
+		resetTime := util.ConvertMicrosecondsToUnixTime(timeInMicroseconds)
 
 		// Attention: this mixes client and server time:
 		sleepDuration := resetTime.Sub(now)
@@ -120,12 +120,4 @@ func (s *simpleSleepRateLimitStrategy) applyMinMaxDefaults(sleepDuration time.Du
 		util.Log.Debug("simpleSleepRateLimitStrategy: Reset sleep duration to %f seconds...", sleepDuration.Seconds())
 	}
 	return sleepDuration
-}
-
-func (s *simpleSleepRateLimitStrategy) convertMicrosecondsToUnixTime(timeInMicroseconds int64) time.Time {
-
-	resetTimeInSeconds := timeInMicroseconds / 1_000_000
-	resetTimeRemainderInNanoseconds := (timeInMicroseconds % 1_000_000) * 1000
-
-	return time.Unix(resetTimeInSeconds, resetTimeRemainderInNanoseconds)
 }

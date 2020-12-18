@@ -48,16 +48,6 @@ func createTimelineProviderMock(t *testing.T) *util.MockTimelineProvider {
 	return util.NewMockTimelineProvider(mockCtrl)
 }
 
-func TestMicrosecondsConversionToUnixTimeResultsInSameValueAfterConversion(t *testing.T) {
-
-	rateLimitStrategy := simpleSleepRateLimitStrategy{}
-	unixTime := rateLimitStrategy.convertMicrosecondsToUnixTime(123456789)
-
-	assert.Equal(t, 2, unixTime.Minute()) // 120 seconds
-	assert.Equal(t, 3, unixTime.Second()) // 3 seconds (120 + 3 = 123 from above)
-	assert.Equal(t, 456789000, unixTime.Nanosecond())
-}
-
 func TestDurationStaysTheSameIfInputIsWithinMinMaxLimits(t *testing.T) {
 
 	rateLimitStrategy := simpleSleepRateLimitStrategy{}

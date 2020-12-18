@@ -36,3 +36,12 @@ func TestStringTimestampToHumanReadableFormatWithAnInvalidTimestampShouldProduce
 	_, _, err := StringTimestampToHumanReadableFormat("abc")
 	assert.ErrorContains(t, err, "is not a valid unix timestamp")
 }
+
+func TestMicrosecondsConversionToUnixTimeResultsInSameValueAfterConversion(t *testing.T) {
+
+	unixTime := ConvertMicrosecondsToUnixTime(123456789)
+
+	assert.Equal(t, 2, unixTime.Minute()) // 120 seconds
+	assert.Equal(t, 3, unixTime.Second()) // 3 seconds (120 + 3 = 123 from above)
+	assert.Equal(t, 456789000, unixTime.Nanosecond())
+}

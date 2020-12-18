@@ -63,3 +63,12 @@ func StringTimestampToHumanReadableFormat(unixTimestampAsString string) (humanRe
 	unixTimeUTC := time.Unix(result, 0)
 	return unixTimeUTC.Format(time.RFC3339), result, nil
 }
+
+// ConvertMicrosecondsToUnixTime converts the UTC time in microseconds to a time.Time struct (unix time)
+func ConvertMicrosecondsToUnixTime(timeInMicroseconds int64) time.Time {
+
+	resetTimeInSeconds := timeInMicroseconds / 1000000
+	resetTimeRemainderInNanoseconds := (timeInMicroseconds % 1000000) * 1000
+
+	return time.Unix(resetTimeInSeconds, resetTimeRemainderInNanoseconds)
+}
