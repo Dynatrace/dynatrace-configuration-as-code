@@ -76,12 +76,11 @@ func executeRequest(client *http.Client, request *http.Request) Response {
 
 	rateLimitStrategy := createRateLimitStrategy()
 
-	// TODO properly handle error
-	response, _ := rateLimitStrategy.executeRequest(util.NewTimelineProvider(), func() Response {
+	response, err := rateLimitStrategy.executeRequest(util.NewTimelineProvider(), func() (Response, error) {
 		resp, err := client.Do(request)
 		if err != nil {
 			util.Log.Error("HTTP Request failed with Error: " + err.Error())
-			return Response{}
+			return Response{}, err
 		}
 		defer func() {
 			err = resp.Body.Close()
@@ -91,8 +90,12 @@ func executeRequest(client *http.Client, request *http.Request) Response {
 			StatusCode: resp.StatusCode,
 			Body:       body,
 			Headers:    resp.Header,
-		}
+		}, err
 	})
 
+	if err != nil {
+		// TODO properly handle error
+		return Response{}
+	}
 	return response
 }

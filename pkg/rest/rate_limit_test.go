@@ -19,6 +19,7 @@
 package rest
 
 import (
+	"errors"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/golang/mock/gomock"
 	"gotest.tools/assert"
@@ -125,19 +126,19 @@ func TestSimpleRateLimitStrategySleepsFor42Seconds(t *testing.T) {
 	timelineProvider := createTimelineProviderMock(t)
 	headers := createTestHeaders(42 * time.Second.Microseconds()) // in 42 seconds
 	invocationCount := 0
-	callback := func() Response {
+	callback := func() (Response, error) {
 
 		if invocationCount == 0 {
 			invocationCount++
 			return Response{
 				StatusCode: 429,
 				Headers:    headers,
-			}
+			}, nil
 		}
 		return Response{
 			StatusCode: 200,
 			Headers:    headers,
-		}
+		}, nil
 	}
 
 	timelineProvider.EXPECT().Now().Times(1).Return(time.Unix(0, 0)) // time travel to the 70s
@@ -155,19 +156,19 @@ func TestSimpleRateLimitStrategy2Iterations(t *testing.T) {
 	timelineProvider := createTimelineProviderMock(t)
 	headers := createTestHeaders(42 * time.Second.Microseconds()) // in 42 seconds
 	invocationCount := 0
-	callback := func() Response {
+	callback := func() (Response, error) {
 
 		if invocationCount <= 1 {
 			invocationCount++
 			return Response{
 				StatusCode: 429,
 				Headers:    headers,
-			}
+			}, nil
 		}
 		return Response{
 			StatusCode: 200,
 			Headers:    headers,
-		}
+		}, nil
 	}
 
 	timelineProvider.EXPECT().Now().Times(2).Return(time.Unix(0, 0)) // time travel to the 70s
@@ -177,4 +178,16 @@ func TestSimpleRateLimitStrategy2Iterations(t *testing.T) {
 
 	assert.NilError(t, err)
 	assert.Equal(t, response.StatusCode, 200)
+}
+
+func TestHandleEmptyResponse(t *testing.T) {
+
+	rateLimitStrategy := simpleSleepRateLimitStrategy{}
+	timelineProvider := createTimelineProviderMock(t)
+	callback := func() (Response, error) {
+		return Response{}, errors.New("foo Error")
+	}
+
+	_, err := rateLimitStrategy.executeRequest(timelineProvider, callback)
+	assert.ErrorContains(t, err, "foo Error")
 }

@@ -26,7 +26,7 @@ import (
 // rateLimitStrategy ensures that the concrete implementation of the rate limiting strategy can be hidden
 // behind this interface
 type rateLimitStrategy interface {
-	executeRequest(timelineProvider util.TimelineProvider, callback func() Response) (Response, error)
+	executeRequest(timelineProvider util.TimelineProvider, callback func() (Response, error)) (Response, error)
 }
 
 // createRateLimitStrategy creates a rateLimitStrategy. In the future this can be extended to instantiate
@@ -43,9 +43,12 @@ func createRateLimitStrategy() rateLimitStrategy {
 // polling iterations before giving up.
 type simpleSleepRateLimitStrategy struct{}
 
-func (s *simpleSleepRateLimitStrategy) executeRequest(timelineProvider util.TimelineProvider, callback func() Response) (Response, error) {
+func (s *simpleSleepRateLimitStrategy) executeRequest(timelineProvider util.TimelineProvider, callback func() (Response, error)) (Response, error) {
 
-	response := callback()
+	response, err := callback()
+	if err != nil {
+		return Response{}, err
+	}
 
 	maxIterationCount := 5
 	currentIteration := 0
@@ -79,7 +82,11 @@ func (s *simpleSleepRateLimitStrategy) executeRequest(timelineProvider util.Time
 
 		// Checking again:
 		currentIteration++
-		response = callback()
+
+		response, err = callback()
+		if err != nil {
+			return Response{}, err
+		}
 	}
 
 	return response, nil
