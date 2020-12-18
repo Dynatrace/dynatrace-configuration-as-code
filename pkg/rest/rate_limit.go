@@ -50,7 +50,7 @@ func (s *simpleSleepRateLimitStrategy) executeRequest(timelineProvider util.Time
 	maxIterationCount := 5
 	currentIteration := 0
 
-	for response.StatusCode == http.StatusTooManyRequests && currentIteration <= maxIterationCount {
+	for response.StatusCode == http.StatusTooManyRequests && currentIteration < maxIterationCount {
 
 		limit, humanReadableTimestamp, timeInMicroseconds, err := s.extractRateLimitHeaders(response)
 		if err != nil {
