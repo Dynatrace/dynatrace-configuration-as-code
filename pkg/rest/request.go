@@ -30,6 +30,7 @@ import (
 type Response struct {
 	StatusCode int
 	Body       []byte
+	Headers    map[string][]string
 }
 
 func get(client *http.Client, url string, apiToken string) Response {
@@ -73,15 +74,28 @@ func requestWithBody(method string, url string, body io.Reader, apiToken string)
 
 func executeRequest(client *http.Client, request *http.Request) Response {
 
-	resp, err := client.Do(request)
+	rateLimitStrategy := createRateLimitStrategy()
+
+	response, err := rateLimitStrategy.executeRequest(util.NewTimelineProvider(), func() (Response, error) {
+		resp, err := client.Do(request)
+		if err != nil {
+			util.Log.Error("HTTP Request failed with Error: " + err.Error())
+			return Response{}, err
+		}
+		defer func() {
+			err = resp.Body.Close()
+		}()
+		body, err := ioutil.ReadAll(resp.Body)
+		return Response{
+			StatusCode: resp.StatusCode,
+			Body:       body,
+			Headers:    resp.Header,
+		}, err
+	})
+
 	if err != nil {
-		util.Log.Warn("HTTP Request failed with Error: " + err.Error())
-		// TODO error handling
+		// TODO properly handle error
 		return Response{}
 	}
-	defer func() {
-		err = resp.Body.Close()
-	}()
-	body, err := ioutil.ReadAll(resp.Body)
-	return Response{resp.StatusCode, body}
+	return response
 }
