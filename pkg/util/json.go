@@ -97,7 +97,7 @@ func ValidateJson(jsonString string, filename string) error {
 		return mapError(jsonString, filename, int(jsonError.Offset), err)
 	}
 	if _, ok := err.(*json.UnmarshalTypeError); ok {
-		// TODO actually check against the model
+		// TODO actually check against the model (github issue #104)
 		return nil
 	}
 	return nil
