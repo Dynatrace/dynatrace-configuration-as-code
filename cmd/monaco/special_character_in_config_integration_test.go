@@ -25,18 +25,17 @@ import (
 	"gotest.tools/assert"
 )
 
-// tests all configs for a single environment
-func TestIntegrationAllConfigs(t *testing.T) {
+func TestIntegrationDoNotNormalizePathSeparatorsInUserAgentString(t *testing.T) {
 
-	const allConfigsFolder = "test-resources/integration-all-configs/"
-	const allConfigsEnvironmentsFile = allConfigsFolder + "environments.yaml"
+	const specialCharConfigFolder = "test-resources/special-character-in-config/"
+	const specialCharEnvironmentsFile = specialCharConfigFolder + "environments.yaml"
 
-	RunIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fileReader util.FileReader) {
+	RunIntegrationWithCleanup(t, specialCharConfigFolder, specialCharEnvironmentsFile, "SpecialCharacterInConfig", func(fileReader util.FileReader) {
 
 		statusCode := RunImpl([]string{
 			"monaco",
-			"--environments", allConfigsEnvironmentsFile,
-			allConfigsFolder,
+			"--environments", specialCharEnvironmentsFile,
+			specialCharConfigFolder,
 		}, fileReader)
 
 		assert.Equal(t, statusCode, 0)

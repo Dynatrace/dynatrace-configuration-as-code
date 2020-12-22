@@ -35,43 +35,47 @@ import (
 )
 
 func AssertConfigAvailable(projects []project.Project, t *testing.T, environments map[string]environment.Environment, available bool) {
-	for _, project := range projects {
-		for _, config := range project.GetConfigs() {
-			AssertConfig(t, environments, available, config)
-		}
-	}
-}
-
-func AssertConfig(t *testing.T, environments map[string]environment.Environment, available bool, config config.Config) {
-	configType := config.GetType()
-	api := config.GetApi()
-	name := config.GetProperties()[config.GetId()]["name"]
 	for _, environment := range environments {
 
 		token, err := environment.GetToken()
 		assert.NilError(t, err)
 
-		_, existingId, _ := rest.GetObjectIdIfAlreadyExists(configType, api.GetUrl(environment), name, token)
-
-		if config.IsSkipDeployment(environment) {
-			assert.Equal(t, existingId, "", "Object should NOT be available, but was. environment.Environment: '"+environment.GetId()+"', failed for '"+name+"' ("+configType+")")
-			continue
-		}
-
-		description := fmt.Sprintf("%s %s on environment %s", configType, name, environment.GetId())
-
-		// 120 polling cycles -> Wait at most 120 * 2 seconds = 4 Minutes:
-		err = rest.Wait(description, 120, func() bool {
-			_, existingId, _ = rest.GetObjectIdIfAlreadyExists(configType, api.GetUrl(environment), name, token)
-			return (available && len(existingId) > 0) || (!available && len(existingId) == 0)
-		})
+		client, err := rest.NewDynatraceClient(environment.GetEnvironmentUrl(), token)
 		assert.NilError(t, err)
 
-		if available {
-			assert.Check(t, len(existingId) > 0, "Object should be available, but wasn't. environment.Environment: '"+environment.GetId()+"', failed for '"+name+"' ("+configType+")")
-		} else {
-			assert.Equal(t, existingId, "", "Object should NOT be available, but was. environment.Environment: '"+environment.GetId()+"', failed for '"+name+"' ("+configType+")")
+		for _, project := range projects {
+			for _, config := range project.GetConfigs() {
+				AssertConfig(t, client, environment, available, config)
+			}
 		}
+	}
+}
+
+func AssertConfig(t *testing.T, client rest.DynatraceClient, environment environment.Environment, shouldBeAvailable bool, config config.Config) {
+	configType := config.GetType()
+	api := config.GetApi()
+	name := config.GetProperties()[config.GetId()]["name"]
+
+	_, existingId, _ := client.ExistsByName(api, name)
+
+	if config.IsSkipDeployment(environment) {
+		assert.Equal(t, existingId, "", "Object should NOT be available, but was. environment.Environment: '"+environment.GetId()+"', failed for '"+name+"' ("+configType+")")
+		return
+	}
+
+	description := fmt.Sprintf("%s %s on environment %s", configType, name, environment.GetId())
+
+	// 120 polling cycles -> Wait at most 120 * 2 seconds = 4 Minutes:
+	err := rest.Wait(description, 120, func() bool {
+		_, existingId, _ := client.ExistsByName(api, name)
+		return (shouldBeAvailable && len(existingId) > 0) || (!shouldBeAvailable && len(existingId) == 0)
+	})
+	assert.NilError(t, err)
+
+	if shouldBeAvailable {
+		assert.Check(t, len(existingId) > 0, "Object should be available, but wasn't. environment.Environment: '"+environment.GetId()+"', failed for '"+name+"' ("+configType+")")
+	} else {
+		assert.Equal(t, existingId, "", "Object should NOT be available, but was. environment.Environment: '"+environment.GetId()+"', failed for '"+name+"' ("+configType+")")
 	}
 }
 
@@ -101,39 +105,59 @@ func getTransformerFunc(suffix string) func(line string) string {
 }
 
 // Deletes all configs that end with "_suffix", where suffix == suffixTest+suffixTimestamp
-func cleanupIntegrationTest(t *testing.T, suffix string, transformers []func(string) string) {
-	var integrationTestReader, err = util.NewInMemoryFileReader(folder, transformers)
-	assert.NilError(t, err)
+func cleanupIntegrationTest(t *testing.T, envFile, suffix string, integrationTestReader util.FileReader) {
 
-	environments, errs := environment.LoadEnvironmentList("", environmentsFile, integrationTestReader)
+	environments, errs := environment.LoadEnvironmentList("", envFile, integrationTestReader)
 	FailOnAnyError(errs, "loading of environments failed")
 
 	apis := api.NewApis()
 	suffix = "_" + suffix
 
 	for _, environment := range environments {
+
 		token, err := environment.GetToken()
 		assert.NilError(t, err)
+
+		client, err := rest.NewDynatraceClient(environment.GetEnvironmentUrl(), token)
+		assert.NilError(t, err)
+
 		for _, api := range apis {
 
-			_, values, err := rest.GetExistingValuesFromEndpoint(api.GetId(), api.GetUrl(environment), token)
+			values, err := client.List(api)
 			assert.NilError(t, err)
 
 			for _, value := range values {
 				// For the calculated-metrics-log API, the suffix is part of the ID, not name
 				if strings.HasSuffix(value.Name, suffix) || strings.HasSuffix(value.Id, suffix) {
 					util.Log.Info("Deleting %s (%s)", value.Name, api.GetId())
-					rest.Delete(api.GetUrl(environment), token, value.Id)
+					client.DeleteByName(api, value.Name)
 				}
 			}
 		}
 	}
 }
 
-func RunIntegrationWithCleanup(t *testing.T, suffixTest string, testFunc func(transformers []func(string) string)) {
+// RunIntegrationWithCleanup runs an integration test and cleans up the created configs afterwards
+// This is done by using InMemoryFileReader, which rewrites the names of the read configs internally. It ready all the
+// configs once and holds them in memory. Any subsequent modification of a config (applying them to an environment)
+// is done based on the data in memory. The re-writing of config names ensures, that they have an unique name and don't
+// conflict with other configs created by other integration tests.
+//
+// After the test run, the unique name also helps with finding the applied configs in all the environments and calling
+// the respective DELETE api.
+//
+// The new naming scheme of created configs is defined in a transformer function. By default, this is:
+//
+// <original name>_<current timestamp><defined suffix>
+// e.g. my-config_1605258980000_Suffix
+func RunIntegrationWithCleanup(t *testing.T, configFolder, envFile, suffixTest string, testFunc func(fileReader util.FileReader)) {
+
 	suffix := getTimestamp() + suffixTest
 	transformers := []func(string) string{getTransformerFunc(suffix)}
 
-	testFunc(transformers)
-	cleanupIntegrationTest(t, suffix, transformers)
+	var integrationTestReader, err = util.NewInMemoryFileReader(configFolder, transformers)
+	assert.NilError(t, err)
+
+	testFunc(integrationTestReader)
+	cleanupIntegrationTest(t, envFile, suffix, integrationTestReader)
 }

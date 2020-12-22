@@ -57,11 +57,14 @@ var apiMap = map[string]string{
 	"conditional-naming-host":         "/api/config/v1/conditionalNaming/host",
 	"conditional-naming-service":      "/api/config/v1/conditionalNaming/service",
 	"maintenance-window":              "/api/config/v1/maintenanceWindows",
+	"request-naming-service":          "/api/config/v1/service/requestNaming",
 }
 
 type Api interface {
 	GetUrl(environment environment.Environment) string
+	GetUrlFromEnvironmentUrl(environmentUrl string) string
 	GetId() string
+	GetApiPath() string
 }
 
 type apiImpl struct {
@@ -86,6 +89,10 @@ func newApi(id string, apiPath string) Api {
 }
 
 func NewApi(id string, apiPath string) Api {
+
+	// TODO log warning if the user tries to create an API with a id not present in map above
+	// This means that a user runs monaco with an untested api
+
 	return &apiImpl{
 		id:      id,
 		apiPath: apiPath,
@@ -96,8 +103,16 @@ func (a *apiImpl) GetUrl(environment environment.Environment) string {
 	return environment.GetEnvironmentUrl() + a.apiPath
 }
 
+func (a *apiImpl) GetUrlFromEnvironmentUrl(environmentUrl string) string {
+	return environmentUrl + a.apiPath
+}
+
 func (a *apiImpl) GetId() string {
 	return a.id
+}
+
+func (a *apiImpl) GetApiPath() string {
+	return a.apiPath
 }
 
 func IsApi(dir string) bool {

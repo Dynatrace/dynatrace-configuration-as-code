@@ -20,6 +20,7 @@ package main
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
@@ -76,6 +77,28 @@ func TestReadPathNoPath(t *testing.T) {
 
 	path := readPath([]string{"monaco", "--environments", "my-file.yaml"}, util.NewFileReader())
 	assert.Equal(t, path, "")
+}
+
+func TestReadPathTrailingSlashIsReplacedByOSPathSeparator(t *testing.T) {
+	path := readPath([]string{"monaco", "--environments", "my-file.yaml", "test-resources/"}, util.NewFileReader())
+	assert.Equal(t, path, "test-resources"+string(os.PathSeparator))
+}
+
+func TestReadPathTrailingBackslashIsReplacedByOSPathSeparator(t *testing.T) {
+	path := readPath([]string{"monaco", "--environments", "my-file.yaml", `test-resources\`}, util.NewFileReader())
+	assert.Equal(t, path, "test-resources"+string(os.PathSeparator))
+}
+
+func TestReadPathMultipleSlashesAreReplacedByOSPathSeparator(t *testing.T) {
+	path := readPath([]string{"monaco", "--environments", "my-file.yaml", "test-resources/integration-multi-project/"}, util.NewFileReader())
+	result := strings.Count(path, string(os.PathSeparator))
+	assert.Equal(t, result, 2)
+}
+
+func TestReadPathMultipleBackslashesAreReplacedByOSPathSeparator(t *testing.T) {
+	path := readPath([]string{"monaco", "--environments", "my-file.yaml", `test-resources\integration-multi-project\`}, util.NewFileReader())
+	result := strings.Count(path, string(os.PathSeparator))
+	assert.Equal(t, result, 2)
 }
 
 func testGetExecuteApis() map[string]api.Api {
@@ -137,6 +160,24 @@ func TestExecutePassOnDuplicateNamesInDifferentEnvironments(t *testing.T) {
 	assert.NilError(t, err)
 	err = execute(environmentProd, projects, true, "")
 	assert.NilError(t, err)
+}
+
+func TestContainsVersionFlagReturnsTrueWhenFlagIsPresent(t *testing.T) {
+	result := containsVersionFlag([]string{"monaco", "--version"})
+
+	assert.Assert(t, result)
+}
+
+func TestContainsVersionFlagReturnsTrueWhenFlagIsPresentEvenWithOtherFlags(t *testing.T) {
+	result := containsVersionFlag([]string{"monaco", "--dry-run", "--version"})
+
+	assert.Assert(t, result)
+}
+
+func TestContainsVersionFlagReturnsFalseWhenFlagIsNotPresent(t *testing.T) {
+	result := containsVersionFlag([]string{"monaco", "--dry-run"})
+
+	assert.Assert(t, !result)
 }
 
 // TODO (CDF-6511) Currently here UnmarshallYaml logs fatal, only ever returns nil errors!

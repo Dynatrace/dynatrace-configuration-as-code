@@ -27,7 +27,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 )
 
-func UploadExtension(apiPath string, extensionName string, extensionJson string, apiToken string) (api.DynatraceEntity, error) {
+func uploadExtension(client *http.Client, apiPath string, extensionName string, extensionJson string, apiToken string) (api.DynatraceEntity, error) {
 	buffer, contentType, err := writeMultiPartForm(extensionName, extensionJson)
 	if err != nil {
 		return api.DynatraceEntity{
@@ -35,7 +35,7 @@ func UploadExtension(apiPath string, extensionName string, extensionJson string,
 		}, err
 	}
 
-	resp := PostMultiPartFile(apiPath, buffer, contentType, apiToken)
+	resp := postMultiPartFile(client, apiPath, buffer, contentType, apiToken)
 
 	if resp.StatusCode != http.StatusCreated {
 		util.Log.Error("\t\t\tUpload of %s failed with status %d!\n\t\t\t\t\tError-message: %s\n", extensionName, resp.StatusCode, string(resp.Body))
