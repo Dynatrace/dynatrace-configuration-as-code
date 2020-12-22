@@ -1,0 +1,29 @@
+{
+    "name": "{{ .name }}",
+    "frequencyMin": 2,
+    "enabled": true,
+    "type": "HTTP",
+    "script": {
+      "version": "1.0",
+      "requests": [
+        {
+          "description": "Check Dynatrace Homepage",
+          "url": "https://www.dynatrace.com",
+          "method": "GET",
+          "requestBody": "",
+          "validation": {
+            "rules": [
+              {
+                "value": "<500",
+                "passIfFound": false,
+                "type": "httpStatusesList"
+              }
+            ]
+          },
+          "configuration": {
+            "userAgent": "{{ .ua_string }}"
+          }
+        }
+      ]
+    }
+  }

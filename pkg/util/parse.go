@@ -19,6 +19,7 @@ package util
 import (
 	"errors"
 	"os"
+	"regexp"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -91,7 +92,7 @@ func convert(original map[string]interface{}) (err error, typed map[string]map[s
 						case string:
 							switch v3 := v3.(type) {
 							case string:
-								if !strings.HasPrefix(v3, "http") {
+								if referencesConfigJSON(k1, v3) || appearsToReferenceVariableInAnotherYaml(v3) {
 									m2Inner[k3] = ReplacePathSeparators(v3)
 								} else {
 									m2Inner[k3] = v3
@@ -112,4 +113,33 @@ func convert(original map[string]interface{}) (err error, typed map[string]map[s
 		}
 	}
 	return nil, m2
+}
+
+func appearsToReferenceVariableInAnotherYaml(s string) bool {
+	if containsColon(s) {
+		// A path to another yaml can never ever contain a colon. Therefore, bailing out if s contains one.
+		return false
+	}
+	if doesNotReferenceKnownVariable(s) {
+		// As of right now there's only a limited number of variables that can be referenced. If s points to something else let's bail out here.
+		return false
+	}
+	return true
+}
+
+func referencesConfigJSON(yamlSection, s string) bool {
+	if yamlSection != "config" {
+		return false
+	}
+	return strings.HasSuffix(s, ".json")
+}
+
+func containsColon(s string) bool {
+	return strings.ContainsRune(s, ':')
+}
+
+var validYamlVariableReference = regexp.MustCompile(`\.(id|name)$`)
+
+func doesNotReferenceKnownVariable(s string) bool {
+	return !validYamlVariableReference.MatchString(s)
 }
