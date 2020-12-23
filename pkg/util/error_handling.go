@@ -21,6 +21,14 @@ import (
 	"os"
 )
 
+// PrettyPrintError should pretty-print the error using a more user-friendly format
+// In the future, this will be extended to support various more errors.
+func PrettyPrintError(err error) {
+	if ppError, ok := err.(*JsonValidationError); ok {
+		ppError.PrettyPrintError()
+	}
+}
+
 func FailOnError(err error, msg string) {
 	if err != nil {
 		Log.Fatal(msg + ": " + err.Error())
