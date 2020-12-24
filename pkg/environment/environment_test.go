@@ -19,9 +19,9 @@
 package environment
 
 import (
-	"testing"
 	"github.com/google/go-cmp/cmp"
 	"gotest.tools/assert"
+	"testing"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 )
@@ -179,12 +179,12 @@ func TestTokenNotAvailableOnGetterCallWithTemplating(t *testing.T) {
 }
 
 func TestTrailingSlashTrimmedFromEnvironmentURL(t *testing.T) {
-    envURL := testTrailingSlashEnvironment.GetEnvironmentUrl()
-    last_char  := envURL[len(envURL)-1:]
-    
-    if last_char == "/" {
-      t.Errorf("Env URL is: %s; Last Char is: %s. Expected last character NOT to be a trailing slash.", envURL, last_char)
-    }
+	envURL := testTrailingSlashEnvironment.GetEnvironmentUrl()
+	last_char := envURL[len(envURL)-1:]
+
+	if last_char == "/" {
+		t.Errorf("Env URL is: %s; Last Char is: %s. Expected last character NOT to be a trailing slash.", envURL, last_char)
+	}
 }
 
 func setupEnvironment(t *testing.T, environmentYamlContent string, environmentOfInterest string) (error, Environment) {
