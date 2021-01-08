@@ -45,7 +45,7 @@ To install Monaco, find the appropriate [package](https://github.com/dynatrace-o
 
 After downloading Monaco, unzip the package. Monaco runs as a single binary named monaco.
 
-Ensure that the terraform binary is available on your PATH. This process will differ depending on your operating system.
+Ensure that the monaco binary is available on your PATH. This process will differ depending on your operating system.
 
 #### On Mac or Linux systems perform the following
 
