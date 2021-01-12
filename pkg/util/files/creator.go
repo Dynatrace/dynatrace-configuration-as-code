@@ -9,8 +9,6 @@ import (
 	"github.com/spf13/afero"
 )
 
-//go:generate mockgen -source=files_creator.go -destination=files_creator_mock.go -package=util FileCreator
-
 //FileCreator is an interface to encapsulate the file creation process. Is has 2 implementations
 //in memory and one that uses files on disk.
 type FileCreator interface {
