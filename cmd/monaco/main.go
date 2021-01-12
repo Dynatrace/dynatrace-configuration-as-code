@@ -21,12 +21,14 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/delete"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
@@ -61,7 +63,7 @@ func RunImpl(args []string, fileReader util.FileReader) (statusCode int) {
 
 	statusCode = 0
 
-	dryRun, verbose, environments, projectNameToDeploy, path, errorList, flagError := parseInputCommand(args, fileReader)
+	dryRun, verbose, environments, projectNameToDeploy, downloadFlag, downloadSpecificAPI, path, errorList, flagError := parseInputCommand(args, fileReader)
 
 	if flagError != nil {
 		util.FailOnError(flagError, "could not parse flags")
@@ -83,7 +85,15 @@ func RunImpl(args []string, fileReader util.FileReader) (statusCode int) {
 	util.Log.Info("Dynatrace Monitoring as Code v" + version.MonitoringAsCode)
 
 	apis := createApis()
-
+	if downloadFlag {
+		statusCode = download.GetConfigs(environments, path, downloadSpecificAPI)
+	} else {
+		statusCode = syncConfigs(dryRun, environments, projectNameToDeploy, apis, path, fileReader, deploymentErrors)
+	}
+	return statusCode
+}
+func syncConfigs(dryRun bool, environments map[string]environment.Environment, projectNameToDeploy string,
+	apis map[string]api.Api, path string, fileReader util.FileReader, deploymentErrors map[string]error) (statusCode int) {
 	projects, err := project.LoadProjectsToDeploy(projectNameToDeploy, apis, path, fileReader)
 	if err != nil {
 		util.FailOnError(err, "Loading of projects failed")
@@ -128,7 +138,8 @@ func RunImpl(args []string, fileReader util.FileReader) (statusCode int) {
 	return statusCode
 }
 
-func parseInputCommand(args []string, fileReader util.FileReader) (dryRun bool, verbose bool, environments map[string]environment.Environment, project string, path string, errorList []error, flagError error) {
+func parseInputCommand(args []string, fileReader util.FileReader) (dryRun bool, verbose bool, environments map[string]environment.Environment, project string,
+	downloadFlag bool, downloadSpecificAPI string, path string, errorList []error, flagError error) {
 
 	// define flags
 	var environmentsFile string
@@ -150,6 +161,12 @@ func parseInputCommand(args []string, fileReader util.FileReader) (dryRun bool, 
 	projectUsage := "Project configuration to deploy. Also deploys any dependent configuration."
 	flagSet.StringVar(&project, "project", "", projectUsage)
 	flagSet.StringVar(&project, "p", "", projectUsage+shorthand)
+	//should be refactor in next versions into a separate command instead of a flag
+	downloadUsage := "Download the configs from the target environment"
+	flagSet.BoolVar(&downloadFlag, "download", false, downloadUsage)
+
+	downloadSpecificAPIUsage := "Optional: Specify API to download"
+	flagSet.StringVar(&downloadSpecificAPI, "dl-specific-api", "", downloadSpecificAPIUsage)
 
 	specificEnvironmentUsage := "Specific environment (from list) to deploy to."
 	flagSet.StringVar(&specificEnvironment, "specific-environment", "", specificEnvironmentUsage)
@@ -164,7 +181,7 @@ func parseInputCommand(args []string, fileReader util.FileReader) (dryRun bool, 
 
 	err := flagSet.Parse(args[1:])
 	if err != nil {
-		return dryRun, verbose, environments, project, path, nil, err
+		return dryRun, verbose, environments, project, downloadFlag, downloadSpecificAPI, path, nil, err
 	}
 
 	// Show usage if flags are invalid
@@ -201,7 +218,7 @@ func parseInputCommand(args []string, fileReader util.FileReader) (dryRun bool, 
 
 	path = readPath(args, fileReader)
 
-	return dryRun, verbose, environments, project, path, errorList, nil
+	return dryRun, verbose, environments, project, downloadFlag, downloadSpecificAPI, path, errorList, nil
 }
 
 func readPath(args []string, fileReader util.FileReader) string {
@@ -270,7 +287,7 @@ func execute(environment environment.Environment, projects []project.Project, dr
 			if err != nil {
 				return err
 			}
-			name = config.GetApi().GetId() + "/" + name
+			name = filepath.Join(config.GetApi().GetId(), name)
 			configID = config.GetFullQualifiedId()
 			if nameDict[name] != "" {
 				return fmt.Errorf("duplicate UID '%s' found in %s and %s", name, configID, nameDict[name])
