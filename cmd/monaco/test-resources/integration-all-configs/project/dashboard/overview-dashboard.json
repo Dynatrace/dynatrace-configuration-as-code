@@ -2,6 +2,7 @@
   "dashboardMetadata": {
     "name": "{{.name}}",
     "shared": true,
+    "owner": "nobody@dynatrace.com",
     "sharingDetails": {
       "linkShared": true,
       "published": false
