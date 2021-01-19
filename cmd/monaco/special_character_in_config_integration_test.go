@@ -18,12 +18,7 @@
 
 package main
 
-import (
-	"testing"
-
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
-	"gotest.tools/assert"
-)
+/* Commented out because of https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/issues/121
 
 func TestIntegrationDoNotNormalizePathSeparatorsInUserAgentString(t *testing.T) {
 
@@ -41,3 +36,4 @@ func TestIntegrationDoNotNormalizePathSeparatorsInUserAgentString(t *testing.T) 
 		assert.Equal(t, statusCode, 0)
 	})
 }
+*/
