@@ -63,20 +63,20 @@ func RunImpl(args []string, fileReader util.FileReader) (statusCode int) {
 
 	statusCode = 0
 
-	dryRun, verbose, environments, projectNameToDeploy, downloadFlag, downloadSpecificAPI, path, errorList, flagError := parseInputCommand(args, fileReader)
+	input, err := parseInputCommand(args, fileReader)
 
-	if flagError != nil {
-		util.FailOnError(flagError, "could not parse flags")
+	if err != nil {
+		util.FailOnError(err, "could not parse flags")
 	}
 
 	var deploymentErrors = make(map[string]error)
 
-	for i, err := range errorList {
+	for i, err := range input.errorList {
 		configIssue := fmt.Sprintf("environmentfile-issue-%d", i)
 		deploymentErrors[configIssue] = err
 	}
 
-	err := util.SetupLogging(verbose)
+	err = util.SetupLogging(input.verbose)
 
 	if err != nil {
 		util.Log.Error("Error writing log file: %s", err.Error())
@@ -85,10 +85,10 @@ func RunImpl(args []string, fileReader util.FileReader) (statusCode int) {
 	util.Log.Info("Dynatrace Monitoring as Code v" + version.MonitoringAsCode)
 
 	apis := createApis()
-	if downloadFlag {
-		statusCode = download.GetConfigs(environments, path, downloadSpecificAPI)
+	if input.downloadFlag {
+		statusCode = download.GetConfigs(input.environments, input.path, input.downloadSpecificAPI)
 	} else {
-		statusCode = syncConfigs(dryRun, environments, projectNameToDeploy, apis, path, fileReader, deploymentErrors)
+		statusCode = syncConfigs(input.dryRun, input.environments, input.projectNameToDeploy, apis, input.path, fileReader, deploymentErrors)
 	}
 	return statusCode
 }
@@ -138,35 +138,34 @@ func syncConfigs(dryRun bool, environments map[string]environment.Environment, p
 	return statusCode
 }
 
-func parseInputCommand(args []string, fileReader util.FileReader) (dryRun bool, verbose bool, environments map[string]environment.Environment, project string,
-	downloadFlag bool, downloadSpecificAPI string, path string, errorList []error, flagError error) {
+func parseInputCommand(args []string, fileReader util.FileReader) (input inputCommands, err error) {
 
 	// define flags
 	var environmentsFile string
 	var specificEnvironment string
 	var versionFlag bool
-
+	input.errorList = make([]error, 0)
 	// parse flags
 	shorthand := " (shorthand)"
 	dryRunUsage := "Set dry-run flag to just validate configurations instead of deploying."
 
 	flagSet := flag.NewFlagSet("arguments", flag.ExitOnError)
-	flagSet.BoolVar(&dryRun, "dry-run", false, dryRunUsage)
-	flagSet.BoolVar(&dryRun, "d", false, dryRunUsage+shorthand)
+	flagSet.BoolVar(&input.dryRun, "dry-run", false, dryRunUsage)
+	flagSet.BoolVar(&input.dryRun, "d", false, dryRunUsage+shorthand)
 
 	verboseUsage := "Set verbose flag to enable debug logging."
-	flagSet.BoolVar(&verbose, "verbose", false, verboseUsage)
-	flagSet.BoolVar(&verbose, "v", false, verboseUsage+shorthand)
+	flagSet.BoolVar(&input.verbose, "verbose", false, verboseUsage)
+	flagSet.BoolVar(&input.verbose, "v", false, verboseUsage+shorthand)
 
 	projectUsage := "Project configuration to deploy. Also deploys any dependent configuration."
-	flagSet.StringVar(&project, "project", "", projectUsage)
-	flagSet.StringVar(&project, "p", "", projectUsage+shorthand)
+	flagSet.StringVar(&input.projectNameToDeploy, "project", "", projectUsage)
+	flagSet.StringVar(&input.projectNameToDeploy, "p", "", projectUsage+shorthand)
 	//should be refactor in next versions into a separate command instead of a flag
 	downloadUsage := "Download the configs from the target environment"
-	flagSet.BoolVar(&downloadFlag, "download", false, downloadUsage)
+	flagSet.BoolVar(&input.downloadFlag, "download", false, downloadUsage)
 
 	downloadSpecificAPIUsage := "Optional: Specify API to download"
-	flagSet.StringVar(&downloadSpecificAPI, "dl-specific-api", "", downloadSpecificAPIUsage)
+	flagSet.StringVar(&input.downloadSpecificAPI, "dl-specific-api", "", downloadSpecificAPIUsage)
 
 	specificEnvironmentUsage := "Specific environment (from list) to deploy to."
 	flagSet.StringVar(&specificEnvironment, "specific-environment", "", specificEnvironmentUsage)
@@ -179,9 +178,10 @@ func parseInputCommand(args []string, fileReader util.FileReader) (dryRun bool, 
 	versionUsage := "Prints the current version of the tool and exits"
 	flagSet.BoolVar(&versionFlag, "version", false, versionUsage)
 
-	err := flagSet.Parse(args[1:])
+	err = flagSet.Parse(args[1:])
+
 	if err != nil {
-		return dryRun, verbose, environments, project, downloadFlag, downloadSpecificAPI, path, nil, err
+		return input, err
 	}
 
 	// Show usage if flags are invalid
@@ -214,11 +214,11 @@ func parseInputCommand(args []string, fileReader util.FileReader) (dryRun bool, 
 		os.Exit(1)
 	}
 
-	environments, errorList = environment.LoadEnvironmentList(specificEnvironment, environmentsFile, fileReader)
+	input.environments, input.errorList = environment.LoadEnvironmentList(specificEnvironment, environmentsFile, fileReader)
 
-	path = readPath(args, fileReader)
+	input.path = readPath(args, fileReader)
 
-	return dryRun, verbose, environments, project, downloadFlag, downloadSpecificAPI, path, errorList, nil
+	return input, nil
 }
 
 func readPath(args []string, fileReader util.FileReader) string {
@@ -422,4 +422,15 @@ func deleteConfigs(apis map[string]api.Api, environments map[string]environment.
 	}
 
 	return nil
+}
+
+type inputCommands struct {
+	dryRun              bool
+	verbose             bool
+	environments        map[string]environment.Environment
+	projectNameToDeploy string
+	downloadFlag        bool
+	downloadSpecificAPI string
+	path                string
+	errorList           []error
 }

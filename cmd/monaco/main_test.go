@@ -180,6 +180,28 @@ func TestContainsVersionFlagReturnsFalseWhenFlagIsNotPresent(t *testing.T) {
 	assert.Assert(t, !result)
 }
 
+// func TestParseInputCommand(t *testing.T) {
+// 	args := []string{"-d", "-e", "-v", "path/to/environment/test", "-download", "-downloadSpecificAPI", "alerting-profile", "/project/test"}
+// 	os.Setenv("testurl", "https://test.live.dynatrace.com")
+
+// 	fileReader := util.CreateFileReaderMock(t)
+// 	envString := `environment2:
+//     - name: "acltest2"
+//     - env-url: "{{ .Env.testurl }}"
+//     - env-token-name: "secrettoken"`
+// 	env := []byte(envString)
+// 	fileReader.EXPECT().
+// 		ReadFile(gomock.Any()).AnyTimes().Return(env, nil)
+// 	fileReader.EXPECT().ReadDir(gomock.Any()).AnyTimes().Return(nil, nil)
+// 	input, err := parseInputCommand(args, fileReader)
+// 	assert.Check(t, input.downloadFlag == true)
+// 	assert.Check(t, input.dryRun == true)
+// 	assert.Check(t, input.verbose == true)
+// 	assert.Check(t, input.downloadSpecificAPI == "alerting-profile")
+// 	assert.NilError(t, err)
+// 	//assert.Check(t, input.environments == )
+// }
+
 // TODO (CDF-6511) Currently here UnmarshallYaml logs fatal, only ever returns nil errors!
 // func TestInvalidEnvironmentFileResultsInError(t *testing.T) {
 // 	_, err := environment.LoadEnvironmentList("", "test-resources/invalid-environmentsfile.yaml")
