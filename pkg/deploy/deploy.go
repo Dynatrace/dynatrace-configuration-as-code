@@ -1,4 +1,4 @@
-package main
+package deploy
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 )
 
-func deploy(workingDir string, fileReader util.FileReader, environmentsFile string,
+func Deploy(workingDir string, fileReader util.FileReader, environmentsFile string,
 	specificEnvironment string, proj string, dryRun bool, verbose bool) error {
 	environments, errors := environment.LoadEnvironmentList(specificEnvironment, environmentsFile, fileReader)
 

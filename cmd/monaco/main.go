@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/deploy"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/version"
 
@@ -145,7 +146,7 @@ Examples:
 			workingDir = "."
 		}
 
-		return deploy(
+		return deploy.Deploy(
 			workingDir,
 			fileReader,
 			ctx.Path("environments"),
@@ -251,7 +252,7 @@ Examples:
 					workingDir = "."
 				}
 
-				return deploy(
+				return deploy.Deploy(
 					workingDir,
 					fileReader,
 					ctx.Path("environments"),
