@@ -101,14 +101,6 @@ func isDefaultEntity(apiID string, dat map[string]interface{}) bool {
 			}
 		}
 		return false
-	case "synthetic-location":
-		return false
-	case "synthetic-monitor":
-		return false
-	case "extension":
-		return false
-	case "aws-credentials":
-		return false
 	default:
 		return false
 	}

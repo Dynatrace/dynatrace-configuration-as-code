@@ -67,13 +67,11 @@ func getAPIList(downloadSpecificAPI string) (filterAPIList map[string]api.Api, e
 		return filterAPIList, nil
 	}
 	requestedApis := strings.Split(downloadSpecificAPI, ",")
-	result := true
 
 	for _, id := range requestedApis {
 		cleanAPI := strings.TrimSpace(id)
-		isApi := api.IsApi(cleanAPI)
-		if isApi == false {
-			result = false
+		isAPI := api.IsApi(cleanAPI)
+		if isAPI == false {
 			err := fmt.Errorf("Value %s is not a valid API name ", cleanAPI)
 			errorList = append(errorList, err)
 		} else {
@@ -82,7 +80,7 @@ func getAPIList(downloadSpecificAPI string) (filterAPIList map[string]api.Api, e
 			filterAPIList[cleanAPI] = api.NewApi(filterAPI.GetId(), path)
 		}
 	}
-	if result == false {
+	if len(errorList) > 0 {
 		return nil, errorList
 	}
 	return filterAPIList, nil
@@ -122,7 +120,7 @@ func downloadConfigFromEnvironment(environment environment.Environment, basepath
 		return err
 	}
 	for _, api := range listApis {
-		util.Log.Info(" --- GETTING CONFIGS for %s", api.GetId())
+		util.Log.Info(" --- Getting configs for %s", api.GetId())
 		jcreator := jsoncreator.NewJSONCreator()
 		ycreator := yamlcreator.NewYamlConfig()
 		err = createConfigsFromAPI(api, token, creator, fullpath, client, jcreator, ycreator)
@@ -130,7 +128,7 @@ func downloadConfigFromEnvironment(environment environment.Environment, basepath
 			util.Log.Error("error configs for api: %s %v", api.GetId(), err)
 		}
 	}
-	util.Log.Info("END downloading info %s", projectName)
+	util.Log.Info("Download process done for project %s", projectName)
 	return err
 }
 
@@ -140,12 +138,14 @@ func createConfigsFromAPI(api api.Api, token string, creator files.FileCreator, 
 	values, err := client.List(api)
 
 	if len(values) == 0 {
-		util.Log.Info("No elements for API %s", api.GetId())
+		util.Log.Info("--- No elements for API %s", api.GetId())
 		return nil
 	}
 	subPath := filepath.Join(fullpath, api.GetId())
-	creator.CreateFolder(subPath)
-
+	_, err = creator.CreateFolder(subPath)
+	if err != nil {
+		return err
+	}
 	for _, val := range values {
 		util.Log.Debug("getting detail %s", val)
 		cont++
