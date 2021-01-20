@@ -21,8 +21,8 @@ func TestGetConfigs(t *testing.T) {
 	env := environment.NewEnvironment("environment1", "test", "", "https://test.live.dynatrace.com", "token")
 	envs := make(map[string]environment.Environment)
 	envs["e1"] = env
-	status := GetConfigs(envs, "", "")
-	assert.Equal(t, status, 0)
+	err := getConfigs("", envs, "")
+	assert.NilError(t, err)
 }
 func TestCreateConfigsFromAPI(t *testing.T) {
 	apiMock := api.CreateAPIMockFactory(t)

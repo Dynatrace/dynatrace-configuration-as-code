@@ -31,12 +31,12 @@ func GetConfigsFilterByEnvironment(workingDir string, fileReader util.FileReader
 	if len(errors) > 0 {
 		return publishErrors(enviromentErrors)
 	}
-	return getConfigs(workingDir, environments, specificEnvironment, downloadSpecificAPI)
+	return getConfigs(workingDir, environments, downloadSpecificAPI)
 
 }
 
 //getConfigs Entry point that retrieves the specified configurations from a Dynatrace tenant
-func getConfigs(workingDir string, environments map[string]environment.Environment, specificEnvironment string, downloadSpecificAPI string) error {
+func getConfigs(workingDir string, environments map[string]environment.Environment, downloadSpecificAPI string) error {
 	//Validate environment list
 	//Validate API list
 	list, err := getAPIList(downloadSpecificAPI)
