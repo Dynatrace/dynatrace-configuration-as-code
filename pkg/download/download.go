@@ -37,8 +37,6 @@ func GetConfigsFilterByEnvironment(workingDir string, fileReader util.FileReader
 
 //getConfigs Entry point that retrieves the specified configurations from a Dynatrace tenant
 func getConfigs(workingDir string, environments map[string]environment.Environment, downloadSpecificAPI string) error {
-	//Validate environment list
-	//Validate API list
 	list, err := getAPIList(downloadSpecificAPI)
 	if err != nil {
 		util.Log.Error("The API list contains invalid values. Run monaco command to see the available options\n" + err.Error())
@@ -48,15 +46,14 @@ func getConfigs(workingDir string, environments map[string]environment.Environme
 	downloadErrors := make(map[string]error)
 
 	for _, environment := range environments {
-
 		//download configs for each environment
 		err = downloadConfigFromEnvironment(environment, workingDir, list)
 		if err != nil {
 			downloadErrors[environment.GetId()] = err
 		}
 	}
-	err = publishErrors(downloadErrors)
-	return err
+	return publishErrors(downloadErrors)
+
 }
 
 func publishErrors(errors map[string]error) error {
@@ -89,8 +86,8 @@ func getAPIList(downloadSpecificAPI string) (map[string]api.Api, error) {
 
 	for _, id := range requestedApis {
 		cleanAPI := strings.TrimSpace(id)
-		isApi := api.IsApi(cleanAPI)
-		if isApi == false {
+		isAPI := api.IsApi(cleanAPI)
+		if isAPI == false {
 			result = false
 			errString += errString + fmt.Sprintf(" \t - Value %s is not a valid API name.\n", cleanAPI)
 		} else {
@@ -142,9 +139,9 @@ func downloadConfigFromEnvironment(environment environment.Environment, basepath
 		util.Log.Info(" --- GETTING CONFIGS for %s", api.GetId())
 		jcreator := jsoncreator.NewJSONCreator()
 		ycreator := yamlcreator.NewYamlConfig()
-		err = createConfigsFromAPI(api, token, creator, fullpath, client, jcreator, ycreator)
-		if err != nil {
-			util.Log.Error("error configs for api: %s %v", api.GetId(), err)
+		errs := createConfigsFromAPI(api, token, creator, fullpath, client, jcreator, ycreator)
+		if len(errs) > 0 {
+			publishErrors(errs)
 		}
 	}
 	util.Log.Info("END downloading info %s", projectName)
@@ -152,7 +149,7 @@ func downloadConfigFromEnvironment(environment environment.Environment, basepath
 }
 
 func createConfigsFromAPI(api api.Api, token string, creator files.FileCreator, fullpath string, client rest.DynatraceClient,
-	jcreator jsoncreator.JSONCreator, ycreator yamlcreator.YamlCreator) (err error) {
+	jcreator jsoncreator.JSONCreator, ycreator yamlcreator.YamlCreator) (errs map[string]error) {
 	//retrieves all objects for the specific api
 	values, err := client.List(api)
 
@@ -169,8 +166,7 @@ func createConfigsFromAPI(api api.Api, token string, creator files.FileCreator, 
 		util.Log.Debug("REQUEST counter %v", cont)
 		name, filter, err := jcreator.CreateJSONConfig(client, api, val, creator, subPath)
 		if err != nil {
-			util.Log.Error("error creating config api json file: %v", err)
-			continue
+			errs[val.Name] = fmt.Errorf("error creating config api json file: %v", err)
 		}
 		if filter == true {
 			continue
@@ -180,8 +176,8 @@ func createConfigsFromAPI(api api.Api, token string, creator files.FileCreator, 
 
 	err = ycreator.CreateYamlFile(creator, subPath, api.GetId())
 	if err != nil {
-		util.Log.Error("error creating config api yaml file: %v", err)
-		return err
+		errs[api.GetId()] = fmt.Errorf("error creating config api yaml file: %v", err)
+		return errs
 	}
 	return nil
 }

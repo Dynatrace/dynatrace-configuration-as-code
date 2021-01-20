@@ -4,13 +4,13 @@ This feature allows you to download the configuration from a Dynatrace tenant as
 
 ### steps
 1. Enable CLI version 2.0 by adding an environment variable call NEW_CLI with a value greater than 0.
-``NEW_CLI=1``
+``export NEW_CLI=1``
 Create an [environment](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code#environments-file) file. 
 2. Run monaco using the download command ``download``
 i.e. ``./monaco download --environments=my-environment.yaml ``
 
 #### Options
-Instead of downloading all the configurations for all the API's you can pass a list of API values separated by comma using the following flag ``-dl-specific-api``.
+Instead of downloading all the configurations for all the API's you can pass a list of API values separated by comma using the following flag ``--downloadSpecificAPI``.
 
 i.e. ``./monaco download --downloadSpecificAPI alerting-profiles,dashboard --environments=my-environment.yaml ``
 

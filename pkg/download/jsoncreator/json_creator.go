@@ -61,7 +61,7 @@ func getDetailFromAPI(client rest.DynatraceClient, api api.Api, name string) (da
 	}
 	filter = isDefaultEntity(api.GetId(), dat)
 	if filter == true {
-		util.Log.Debug("Object has been filter", name)
+		util.Log.Debug("Non-user-created default Object has been filtered out", name)
 		return nil, true, err
 	}
 	return dat, false, nil

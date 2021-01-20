@@ -51,8 +51,8 @@ func TestCreateConfigsFromAPI(t *testing.T) {
 		CreateFolder("/synthetic-monitor").
 		Return("synthetic-monitor", nil)
 
-	err := createConfigsFromAPI(apiMock, "123", fcreator, "/", client, jcreator, ycreator)
-	assert.NilError(t, err)
+	errs := createConfigsFromAPI(apiMock, "123", fcreator, "/", client, jcreator, ycreator)
+	assert.Check(t, len(errs) == 0, "No errors")
 }
 
 func TestTransFormSpecialCasesAPIPath(t *testing.T) {
