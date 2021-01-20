@@ -203,7 +203,7 @@ func parseInputCommand(args []string, fileReader util.FileReader) (input inputCo
 			"Examples:\n" +
 				"Deploy a specific project inside a root config folder: \n" +
 				"\tmonaco -p='project-folder' -e='environments.yaml' projects-root-folder \n" +
-				"\nDeploy a specific project to a specific tenant: \n" +
+				"\nDeploy a specific project to a specific environment: \n" +
 				"\tmonaco --environments environments.yaml --specific-environment dev --project myProject"
 
 		println(cliname)

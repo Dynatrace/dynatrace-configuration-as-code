@@ -1,7 +1,6 @@
 package download
 
 import (
-	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -18,12 +17,15 @@ import (
 var baseProjectName = "" //for folder naming
 var cont = 0
 
-//GetConfigs Entry point that retrieves the specified configurations from a Dynatrace tenant
+//GetConfigs Entry point that retrieves the specified configurations from a Dynatrace environment
 func GetConfigs(environments map[string]environment.Environment, path string, downloadSpecificAPI string) (statusCode int) {
 
-	list, err := getAPIList(downloadSpecificAPI)
-	if err != nil {
-		util.Log.Fatal("The API list contains invalid values. Run monaco command to see the available options\n" + err.Error())
+	list, apiErrors := getAPIList(downloadSpecificAPI)
+	if len(apiErrors) != 0 {
+		util.Log.Error("The API list contains invalid values. Run monaco command to see the available options\n")
+		for _, el := range apiErrors {
+			util.Log.Error("\t " + el.Error())
+		}
 		statusCode = -1
 		return statusCode
 	}
@@ -32,7 +34,7 @@ func GetConfigs(environments map[string]environment.Environment, path string, do
 	for _, environment := range environments {
 
 		//download configs for each environment
-		err = downloadConfigFromEnvironment(environment, path, list)
+		err := downloadConfigFromEnvironment(environment, path, list)
 		if err != nil {
 			downloadErrors[environment.GetId()] = err
 		}
@@ -53,10 +55,10 @@ func publishErrors(errors map[string]error) (statusCode int) {
 }
 
 //returns the list of API filter if the download specific flag is used, otherwise returns all the API's
-func getAPIList(downloadSpecificAPI string) (map[string]api.Api, error) {
+func getAPIList(downloadSpecificAPI string) (filterAPIList map[string]api.Api, errorList []error) {
 	availableApis := api.NewApis()
 	blank := strings.TrimSpace(downloadSpecificAPI) == ""
-	filterAPIList := make(map[string]api.Api)
+	filterAPIList = make(map[string]api.Api)
 	if blank {
 		for _, entity := range availableApis {
 			path := transFormSpecialCasesAPIPath(entity.GetId(), entity.GetApiPath())
@@ -66,14 +68,14 @@ func getAPIList(downloadSpecificAPI string) (map[string]api.Api, error) {
 	}
 	requestedApis := strings.Split(downloadSpecificAPI, ",")
 	result := true
-	errString := ""
 
 	for _, id := range requestedApis {
 		cleanAPI := strings.TrimSpace(id)
 		isApi := api.IsApi(cleanAPI)
 		if isApi == false {
 			result = false
-			errString += errString + fmt.Sprintf(" \t - Value %s is not a valid API name.\n", cleanAPI)
+			err := fmt.Errorf("Value %s is not a valid API name ", cleanAPI)
+			errorList = append(errorList, err)
 		} else {
 			filterAPI := availableApis[cleanAPI]
 			path := transFormSpecialCasesAPIPath(filterAPI.GetId(), filterAPI.GetApiPath())
@@ -81,7 +83,7 @@ func getAPIList(downloadSpecificAPI string) (map[string]api.Api, error) {
 		}
 	}
 	if result == false {
-		return nil, errors.New(errString)
+		return nil, errorList
 	}
 	return filterAPIList, nil
 }

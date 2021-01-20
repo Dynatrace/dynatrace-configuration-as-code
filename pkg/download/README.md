@@ -1,6 +1,6 @@
 # Download configuration
 
-This feature allows you to download the configuration from a Dynatrace tenant as Monaco files. You can use this feature to avoid starting from scratch when using Monaco.
+This feature allows you to download the configuration from a Dynatrace environment as Monaco files. You can use this feature to avoid starting from scratch when using Monaco.
 
 ### steps
 1. Create an environment file. 

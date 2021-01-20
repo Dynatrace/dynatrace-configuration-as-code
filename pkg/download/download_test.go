@@ -71,21 +71,21 @@ func TestDownloadConfigFromEnvironment(t *testing.T) {
 func TestGetAPIList(t *testing.T) {
 	//multiple options
 	list, err := getAPIList("synthetic-location,   extension, alerting-profile")
-	assert.NilError(t, err)
+	assert.Check(t, len(err) == 0)
 	assert.Check(t, list["synthetic-location"].GetId() == "synthetic-location")
 	assert.Check(t, list["dashboard"] == nil)
 	list, err = getAPIList("synthetic-location,extension,dashboard")
-	assert.NilError(t, err)
+	assert.Check(t, len(err) == 0)
 	//single option
 	list, err = getAPIList("synthetic-location")
-	assert.NilError(t, err)
+	assert.Check(t, len(err) == 0)
 	//no option
 	list, err = getAPIList("")
-	assert.NilError(t, err)
+	assert.Check(t, len(err) == 0)
 	list, err = getAPIList(" ")
-	assert.NilError(t, err)
+	assert.Check(t, len(err) == 0)
 	//not a real API
 	list, err = getAPIList("synthetic-location-test,   extension-test, alerting-profile")
-	assert.ErrorContains(t, err, "synthetic-location-test")
-	assert.ErrorContains(t, err, "extension-test")
+	assert.Check(t, err[0].Error() == "Value synthetic-location-test is not a valid API name ")
+	assert.Check(t, err[1].Error() == "Value extension-test is not a valid API name ")
 }
