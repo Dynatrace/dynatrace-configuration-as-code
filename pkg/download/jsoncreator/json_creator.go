@@ -102,7 +102,10 @@ func isDefaultEntity(apiID string, dat map[string]interface{}) bool {
 		}
 		return false
 	case "synthetic-location":
-		return false
+		if dat["type"] == "PRIVATE" {
+			return false
+		}
+		return true
 	case "synthetic-monitor":
 		return false
 	case "extension":

@@ -47,7 +47,7 @@ func TestIsDefaultEntityDashboardCase(t *testing.T) {
 	result := isDefaultEntity("dashboard", sample)
 	assert.Equal(t, result, true)
 	result = isDefaultEntity("synthetic-location", sample)
-	assert.Equal(t, result, false)
+	assert.Equal(t, result, true)
 	result = isDefaultEntity("synthetic-monitor", sample)
 	assert.Equal(t, result, false)
 	result = isDefaultEntity("extension", sample)

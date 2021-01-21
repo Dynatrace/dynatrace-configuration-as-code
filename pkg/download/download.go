@@ -55,17 +55,14 @@ func getConfigs(workingDir string, environments map[string]environment.Environme
 //returns the list of API filter if the download specific flag is used, otherwise returns all the API's
 func getAPIList(downloadSpecificAPI string) (filterAPIList map[string]api.Api, err error) {
 	availableApis := api.NewApis()
-	blank := strings.TrimSpace(downloadSpecificAPI) == ""
-	filterAPIList = make(map[string]api.Api)
-	if blank {
-		for _, entity := range availableApis {
-			path := transFormSpecialCasesAPIPath(entity.GetId(), entity.GetApiPath())
-			filterAPIList[entity.GetId()] = api.NewApi(entity.GetId(), path)
-		}
-		return filterAPIList, nil
+	noFilterAPIListProvided := strings.TrimSpace(downloadSpecificAPI) == ""
+
+	if noFilterAPIListProvided {
+		return availableApis, nil
 	}
 	requestedApis := strings.Split(downloadSpecificAPI, ",")
 	isErr := false
+	filterAPIList = make(map[string]api.Api)
 	for _, id := range requestedApis {
 		cleanAPI := strings.TrimSpace(id)
 		isAPI := api.IsApi(cleanAPI)
@@ -74,8 +71,7 @@ func getAPIList(downloadSpecificAPI string) (filterAPIList map[string]api.Api, e
 			isErr = true
 		} else {
 			filterAPI := availableApis[cleanAPI]
-			path := transFormSpecialCasesAPIPath(filterAPI.GetId(), filterAPI.GetApiPath())
-			filterAPIList[cleanAPI] = api.NewApi(filterAPI.GetId(), path)
+			filterAPIList[cleanAPI] = filterAPI
 		}
 	}
 	if isErr {
@@ -83,17 +79,6 @@ func getAPIList(downloadSpecificAPI string) (filterAPIList map[string]api.Api, e
 	}
 
 	return filterAPIList, nil
-}
-
-//function that deals with modifying the api path register in the api class to apply filters to skip read only entities from being downloaded
-func transFormSpecialCasesAPIPath(apiID string, apiURL string) string {
-
-	switch apiID {
-	case "synthetic-location":
-		return apiURL + "?type=PRIVATE"
-	default:
-		return apiURL
-	}
 }
 
 //creates the project and downloads the configs

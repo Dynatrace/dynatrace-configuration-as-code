@@ -55,13 +55,6 @@ func TestCreateConfigsFromAPI(t *testing.T) {
 	assert.NilError(t, err, "No errors")
 }
 
-func TestTransFormSpecialCasesAPIPath(t *testing.T) {
-	apiurl := transFormSpecialCasesAPIPath("synthetic-location", "/test/api")
-	assert.Equal(t, apiurl, "/test/api?type=PRIVATE")
-	apiurl = transFormSpecialCasesAPIPath("other-api", "/test/api")
-	assert.Equal(t, apiurl, "/test/api")
-}
-
 func TestDownloadConfigFromEnvironment(t *testing.T) {
 	os.Setenv("token", "test")
 	env := environment.NewEnvironment("environment1", "test", "", "https://test.live.dynatrace.com", "token")
