@@ -2,7 +2,7 @@ package jsoncreator
 
 import (
 	"encoding/json"
-	"strings"
+	"net/url"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
@@ -48,7 +48,7 @@ func (d *JsonCreatorImp) CreateJSONConfig(client rest.DynatraceClient, api api.A
 
 func getDetailFromAPI(client rest.DynatraceClient, api api.Api, name string) (dat map[string]interface{}, filter bool, err error) {
 
-	name = strings.Replace(name, "%", "%25", -1) // Replace the real % character in the name with %25 (encoded version)
+	name = url.QueryEscape(name)
 	resp, err := client.ReadById(api, name)
 	if err != nil {
 		util.Log.Error("error getting detail for API %s", api.GetId(), name)

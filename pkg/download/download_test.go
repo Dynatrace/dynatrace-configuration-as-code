@@ -51,8 +51,8 @@ func TestCreateConfigsFromAPI(t *testing.T) {
 		CreateFolder("/synthetic-monitor").
 		Return("synthetic-monitor", nil)
 
-	errs := createConfigsFromAPI(apiMock, "123", fcreator, "/", client, jcreator, ycreator)
-	assert.Check(t, len(errs) == 0, "No errors")
+	err := createConfigsFromAPI(apiMock, "123", fcreator, "/", client, jcreator, ycreator)
+	assert.NilError(t, err, "No errors")
 }
 
 func TestTransFormSpecialCasesAPIPath(t *testing.T) {
@@ -86,6 +86,5 @@ func TestGetAPIList(t *testing.T) {
 	assert.NilError(t, err)
 	//not a real API
 	list, err = getAPIList("synthetic-location-test,   extension-test, alerting-profile")
-	assert.ErrorContains(t, err, "synthetic-location-test")
-	assert.ErrorContains(t, err, "extension-test")
+	assert.ErrorContains(t, err, "There were some errors in the API list provided")
 }

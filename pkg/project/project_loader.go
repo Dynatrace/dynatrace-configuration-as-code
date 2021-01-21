@@ -33,12 +33,7 @@ import (
 // it also resolves all project dependencies
 // if no -p parameter specified, then it creates a list of all projects
 func LoadProjectsToDeploy(specificProjectToDeploy string, apis map[string]api.Api, path string, fileReader util.FileReader) (projectsToDeploy []Project, err error) {
-	// projectsFolder := ""
-	// if filepath.Dir(path) != "" {
-	// 	projectsFolder = path
-	// } else {
-	// 	projectsFolder = filepath.Join(".", path)
-	// }
+
 	projectsFolder := filepath.Join(".", path)
 	projectsToDeploy = make([]Project, 0)
 

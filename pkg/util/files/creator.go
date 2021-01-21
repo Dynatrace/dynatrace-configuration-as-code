@@ -2,7 +2,6 @@ package files
 
 import (
 	"log"
-	"os"
 	"path/filepath"
 	"regexp"
 
@@ -31,7 +30,8 @@ func NewDiskFileCreator() FileCreator {
 //CreateFolder creates a folder in the specified path
 func (a *fileCreator) CreateFolder(path string) (fullpath string, err error) {
 	//path should be sanitized
-	if _, err := os.Stat(path); os.IsNotExist(err) {
+	exist, err := afero.Exists(a.fileManager, path)
+	if !exist && err == nil {
 		err = a.fileManager.Mkdir(path, 0777)
 	}
 	if err != nil {

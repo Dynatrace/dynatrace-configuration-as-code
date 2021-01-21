@@ -18,13 +18,13 @@ func TestCreateFolderDisk(t *testing.T) {
 	folderTest(t, creator)
 }
 func folderTest(t *testing.T, creator FileCreator) {
-	p, err := creator.CreateFolder("/test")
+	p, err := creator.CreateFolder("./test")
 	assert.NilError(t, err)
-	assert.Equal(t, p, "/test")
+	assert.Equal(t, p, "./test")
 	//test with complex name
-	p, err = creator.CreateFolder("/test 23 a!")
+	p, err = creator.CreateFolder("./test 23 a!")
 	assert.NilError(t, err)
-	assert.Equal(t, p, "/test 23 a!")
+	assert.Equal(t, p, "./test 23 a!")
 }
 
 func TestCreateFileInMemory(t *testing.T) {
