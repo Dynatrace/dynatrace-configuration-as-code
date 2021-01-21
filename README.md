@@ -12,6 +12,7 @@ and [Configuration Structure](#configuration-structure)
 
 - [Dynatrace Monitoring as Code](#dynatrace-monitoring-as-code)
   - [Using Monitoring as Code Tool](#using-monitoring-as-code-tool)
+    - [Install Monaco](#install-monaco)
     - [Commands (CLI)](#commands-cli)
       - [Dry Run (Validating Configuration)](#dry-run-validating-configuration)
     - [Deploying Configuration to Dynatrace](#deploying-configuration-to-dynatrace)
@@ -37,9 +38,34 @@ and [Configuration Structure](#configuration-structure)
 
 ---
 
-## Using Monitoring as Code Tool
+### Install Monaco
+To use monaco you will need to install it. Monaco is distributed as a binary package.
 
-Download the latest [release](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/latest) of the tool.
+To install Monaco, find the appropriate [package](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/latest) for your system and download it as a zip archive.
+
+After downloading Monaco, unzip the package. Monaco runs as a single binary named monaco.
+
+Ensure that the monaco binary is available on your PATH. This process will differ depending on your operating system.
+
+#### On Mac or Linux systems perform the following
+
+Print a colon-separated list of locations in your ```PATH```:
+
+```
+$ echo $PATH
+```
+
+Move the Monaco binary to one of the listed locations. This command assumes that the binary is currently in your downloads folder and that your PATH includes ```/usr/local/bin```:
+
+```
+mv ~/Downloads/monaco /usr/local/bin/
+```
+
+#### On Windows
+
+From the user interface, use [this Stack OverFlow](https://stackoverflow.com/questions/1618280/where-can-i-set-path-to-make-exe-on-windows) instructions to set the PATH on Windows.
+
+Verify the installation by running ```monaco``` from your terminal.
 
 
 ### Commands (CLI)
