@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/deploy"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/version"
 
@@ -145,7 +147,7 @@ Examples:
 			workingDir = "."
 		}
 
-		return deploy(
+		return deploy.Deploy(
 			workingDir,
 			fileReader,
 			ctx.Path("environments"),
@@ -213,56 +215,105 @@ Examples:
 		return nil
 	}
 
-	app.Commands = []*cli.Command{
-		{
-			Name:      "deploy",
-			Usage:     "deployes the given environment",
-			UsageText: "deploy [command options] [working directory]",
-			Flags: []cli.Flag{
-				&cli.PathFlag{
-					Name:      "environments",
-					Usage:     "Yaml file containing environment to deploye to",
-					Aliases:   []string{"e"},
-					Required:  true,
-					TakesFile: true,
-				},
-				&cli.StringFlag{
-					Name:    "specific-environment",
-					Usage:   "Specific environment (from list) to deploy to",
-					Aliases: []string{"s"},
-				},
-				&cli.StringFlag{
-					Name:    "project",
-					Usage:   "Project configuration to deploy (also deploys any dependent configurations)",
-					Aliases: []string{"p"},
-				},
-				&cli.BoolFlag{
-					Name:    "dry-run",
-					Aliases: []string{"d"},
-					Usage:   "Switches to just validation instead of actual deployment",
-				},
-			},
-			Action: func(ctx *cli.Context) error {
-				var workingDir string
-
-				if ctx.Args().Present() {
-					workingDir = ctx.Args().First()
-				} else {
-					workingDir = "."
-				}
-
-				return deploy(
-					workingDir,
-					fileReader,
-					ctx.Path("environments"),
-					ctx.String("specific-environment"),
-					ctx.String("project"),
-					ctx.Bool("dry-run"),
-					ctx.Bool("verbose"),
-				)
-			},
-		},
-	}
+	deployCommand := getDeployCommand(fileReader)
+	downloadCommand := getDownloadCommand(fileReader)
+	app.Commands = []*cli.Command{&deployCommand, &downloadCommand}
 
 	return app
+}
+func getDeployCommand(fileReader util.FileReader) cli.Command {
+	command := cli.Command{
+		Name:      "deploy",
+		Usage:     "deployes the given environment",
+		UsageText: "deploy [command options] [working directory]",
+		Flags: []cli.Flag{
+			&cli.PathFlag{
+				Name:      "environments",
+				Usage:     "Yaml file containing environment to deploy to",
+				Aliases:   []string{"e"},
+				Required:  true,
+				TakesFile: true,
+			},
+			&cli.StringFlag{
+				Name:    "specific-environment",
+				Usage:   "Specific environment (from list) to deploy to",
+				Aliases: []string{"s"},
+			},
+			&cli.StringFlag{
+				Name:    "project",
+				Usage:   "Project configuration to deploy (also deploys any dependent configurations)",
+				Aliases: []string{"p"},
+			},
+			&cli.BoolFlag{
+				Name:    "dry-run",
+				Aliases: []string{"d"},
+				Usage:   "Switches to just validation instead of actual deployment",
+			},
+		},
+		Action: func(ctx *cli.Context) error {
+			var workingDir string
+
+			if ctx.Args().Present() {
+				workingDir = ctx.Args().First()
+			} else {
+				workingDir = "."
+			}
+
+			return deploy.Deploy(
+				workingDir,
+				fileReader,
+				ctx.Path("environments"),
+				ctx.String("specific-environment"),
+				ctx.String("project"),
+				ctx.Bool("dry-run"),
+				ctx.Bool("verbose"),
+			)
+		},
+	}
+	return command
+}
+func getDownloadCommand(fileReader util.FileReader) cli.Command {
+	command := cli.Command{
+		Name:      "download",
+		Usage:     "download the given environment",
+		UsageText: "download [command options] [working directory]",
+		Flags: []cli.Flag{
+			&cli.PathFlag{
+				Name:      "environments",
+				Usage:     "Yaml file containing environment to deploy to",
+				Aliases:   []string{"e"},
+				Required:  true,
+				TakesFile: true,
+			},
+			&cli.StringFlag{
+				Name:    "specific-environment",
+				Usage:   "Specific environment (from list) to deploy to",
+				Aliases: []string{"s"},
+			},
+			&cli.StringFlag{
+				Name:    "downloadSpecificAPI",
+				Usage:   "Comma separated list of API's to download ",
+				Aliases: []string{"p"},
+			},
+		},
+		Action: func(ctx *cli.Context) error {
+			var workingDir string
+
+			if ctx.Args().Present() {
+				workingDir = ctx.Args().First()
+			} else {
+				workingDir = "."
+			}
+
+			return download.GetConfigsFilterByEnvironment(
+				workingDir,
+				fileReader,
+				ctx.Path("environments"),
+				ctx.String("specific-environment"),
+				ctx.String("downloadSpecificAPI"),
+				ctx.Bool("verbose"),
+			)
+		},
+	}
+	return command
 }

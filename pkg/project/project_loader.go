@@ -18,10 +18,11 @@ package project
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
@@ -32,6 +33,7 @@ import (
 // it also resolves all project dependencies
 // if no -p parameter specified, then it creates a list of all projects
 func LoadProjectsToDeploy(specificProjectToDeploy string, apis map[string]api.Api, path string, fileReader util.FileReader) (projectsToDeploy []Project, err error) {
+
 	projectsFolder := filepath.Join(".", path)
 	projectsToDeploy = make([]Project, 0)
 
