@@ -92,13 +92,6 @@ Examples:
   Deploy a specific project to a specific tenant:
     monaco --environments environments.yaml --specific-environment dev --project myProject
 `
-	app.Flags = []cli.Flag{
-		&cli.BoolFlag{
-			Name:    "verbose",
-			Aliases: []string{"v"},
-		},
-	}
-
 	app.Before = func(c *cli.Context) error {
 		err := util.SetupLogging(c.Bool("verbose"))
 
@@ -112,6 +105,10 @@ Examples:
 	}
 
 	app.Flags = []cli.Flag{
+		&cli.BoolFlag{
+			Name:    "verbose",
+			Aliases: []string{"v"},
+		},
 		&cli.PathFlag{
 			Name:      "environments",
 			Usage:     "Yaml file containing environment to deploye to",
@@ -196,13 +193,6 @@ Examples:
   Deploy a specific project to a specific tenant:
     monaco deploy --environments environments.yaml --specific-environment dev --project myProject
 `
-	app.Flags = []cli.Flag{
-		&cli.BoolFlag{
-			Name:    "verbose",
-			Aliases: []string{"v"},
-		},
-	}
-
 	app.Before = func(c *cli.Context) error {
 		err := util.SetupLogging(c.Bool("verbose"))
 
@@ -227,6 +217,10 @@ func getDeployCommand(fileReader util.FileReader) cli.Command {
 		Usage:     "deployes the given environment",
 		UsageText: "deploy [command options] [working directory]",
 		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:    "verbose",
+				Aliases: []string{"v"},
+			},
 			&cli.PathFlag{
 				Name:      "environments",
 				Usage:     "Yaml file containing environment to deploy to",
@@ -278,6 +272,10 @@ func getDownloadCommand(fileReader util.FileReader) cli.Command {
 		Usage:     "download the given environment",
 		UsageText: "download [command options] [working directory]",
 		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:    "verbose",
+				Aliases: []string{"v"},
+			},
 			&cli.PathFlag{
 				Name:      "environments",
 				Usage:     "Yaml file containing environment to deploy to",
