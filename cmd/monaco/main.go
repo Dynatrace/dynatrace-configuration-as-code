@@ -92,13 +92,6 @@ Examples:
   Deploy a specific project to a specific tenant:
     monaco --environments environments.yaml --specific-environment dev --project myProject
 `
-	app.Flags = []cli.Flag{
-		&cli.BoolFlag{
-			Name:    "verbose",
-			Aliases: []string{"v"},
-		},
-	}
-
 	app.Before = func(c *cli.Context) error {
 		err := util.SetupLogging(c.Bool("verbose"))
 
@@ -112,6 +105,10 @@ Examples:
 	}
 
 	app.Flags = []cli.Flag{
+		&cli.BoolFlag{
+			Name:    "verbose",
+			Aliases: []string{"v"},
+		},
 		&cli.PathFlag{
 			Name:      "environments",
 			Usage:     "Yaml file containing environment to deploye to",
