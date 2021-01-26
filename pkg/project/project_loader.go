@@ -181,6 +181,9 @@ func hasSubprojectFolder(projectFolder string, projectFolders []string) bool {
 func getAllProjectFoldersRecursively(path string) ([]string, error) {
 	var allProjectsFolders []string
 	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		if info == nil {
+			return fmt.Errorf("Project path does not exist: %s. (This needs to be a relative path from the current directory)", path)
+		}
 		if info.IsDir() && !strings.HasPrefix(path, ".") && !api.ContainsApiName(path) {
 			allProjectsFolders = append(allProjectsFolders, path)
 			err := subprojectsMixedWithApi(path)

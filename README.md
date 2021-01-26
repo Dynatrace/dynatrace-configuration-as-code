@@ -11,10 +11,14 @@ This tool automates deployment of Dynatrace Monitoring Configuration to one or m
 and [Configuration Structure](#configuration-structure)
 
 - [Dynatrace Monitoring as Code](#dynatrace-monitoring-as-code)
-  - [Using Monitoring as Code Tool](#using-monitoring-as-code-tool)
     - [Install Monaco](#install-monaco)
+      - [On Mac or Linux systems perform the following](#on-mac-or-linux-systems-perform-the-following)
+      - [On Windows](#on-windows)
     - [Commands (CLI)](#commands-cli)
       - [Dry Run (Validating Configuration)](#dry-run-validating-configuration)
+      - [Experimental new CLI](#experimental-new-cli)
+        - [Deploy](#deploy)
+        - [Download](#download)
     - [Deploying Configuration to Dynatrace](#deploying-configuration-to-dynatrace)
       - [Running The Tool](#running-the-tool)
       - [Environments file](#environments-file)
@@ -25,7 +29,7 @@ and [Configuration Structure](#configuration-structure)
         - [Dashboard JSON](#dashboard-json)
         - [Calculated log metrics JSON](#calculated-log-metrics-json)
         - [Conditional naming JSON](#conditional-naming-json)
-    - [Configuration Types / APIs](#configuration-types-apis)
+    - [Configuration Types / APIs](#configuration-types--apis)
       - [Supported Configuration Types and Token Permissions](#supported-configuration-types-and-token-permissions)
     - [Configuration YAML Structure](#configuration-yaml-structure)
     - [Skip configuration deployment](#skip-configuration-deployment)
@@ -88,6 +92,8 @@ For deploying a specific project inside a root config folder, the tool could be 
 ```monaco --project <project-folder> --environments <path-to-environment-yaml-file> [projects-root-folder]```
 
 In this case the **project** is within the **projects-root-folder**.
+
+> Note that `[projects-root-folder]` needs to be a relative path from the directory you run monaco in.
 
 For validating your complete configuration in the current folder, the tool could be run as:
 ```monaco --dry-run --environments <path-to-environment-yaml-file>```
