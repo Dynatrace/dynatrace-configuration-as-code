@@ -16,4 +16,4 @@
 
 package version
 
-const MonitoringAsCode = "1.1.0"
+const MonitoringAsCode = "1.2.0"
