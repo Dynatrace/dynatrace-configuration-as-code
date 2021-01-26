@@ -182,6 +182,8 @@ This feature allows you to download the configuration from a Dynatrace
 tenant as Monaco files. You can use this feature to avoid starting from
 scratch when using Monaco. 
 
+For more information on this feature, see [pkg/download/README.md](./pkg/download/README.md).
+
 ### Deploying Configuration to Dynatrace
 
 The tool allows for deploying a configuration or a set of configurations in the form of `project(s)`.
