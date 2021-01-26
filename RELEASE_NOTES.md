@@ -1,9 +1,28 @@
 # Monitoring as Code Tool - Release Notes
 
 - [Monitoring as Code - Release Notes](#monitoring-as-code---release-notes)
+  - [1.2.0](#120)
   - [1.1.0](#110)
   - [1.0.1](#101)
   - [1.0.0](#100)
+
+## 1.2.0
+
+### List of changes
+
+#### Features
+
+* 4c53146 and 8611bd5 #19: Download current environment configuration (#122) 
+* dfbad92 and f54c278 Fix #45: Introduce new experimental cli design (#100)
+
+#### Bugfixes
+
+* fe30566 Fix #136: Handle failing to find project-root-folder path (#137)
+* 211dcbe and b74b06b Fix missing verbose flag in legacy cli (#129)
+
+#### Misc changes
+
+* c70ca7b Fix #82: Define some install steps/requirements (#109)
 
 ## 1.1.0
 
