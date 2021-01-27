@@ -34,7 +34,7 @@ import (
 // if no -p parameter specified, then it creates a list of all projects
 func LoadProjectsToDeploy(specificProjectToDeploy string, apis map[string]api.Api, path string, fileReader util.FileReader) (projectsToDeploy []Project, err error) {
 
-	projectsFolder := filepath.Join(".", path)
+	projectsFolder := filepath.Clean(path)
 	projectsToDeploy = make([]Project, 0)
 
 	util.Log.Debug("Reading projects...")
@@ -44,11 +44,12 @@ func LoadProjectsToDeploy(specificProjectToDeploy string, apis map[string]api.Ap
 	if err != nil {
 		return nil, err
 	}
+
 	availableProjects := make([]Project, 0)
 	for _, fullQualifiedProjectFolderName := range availableProjectFolders {
 		util.Log.Debug("  project - %s", fullQualifiedProjectFolderName)
 		projectFolderName := extractFolderNameFromFullPath(fullQualifiedProjectFolderName)
-		project, err := NewProject(fullQualifiedProjectFolderName, projectFolderName, apis, path, fileReader)
+		project, err := NewProject(fullQualifiedProjectFolderName, projectFolderName, apis, projectsFolder, fileReader)
 		if err != nil {
 			return nil, err
 		}
@@ -62,7 +63,8 @@ func LoadProjectsToDeploy(specificProjectToDeploy string, apis map[string]api.Ap
 		return returnSortedProjects(projectsToDeploy)
 	}
 
-	projectsToDeploy, err = createProjectsListFromFolderList(path, specificProjectToDeploy, projectsFolder, apis, availableProjectFolders, fileReader)
+	projectsToDeploy, err = createProjectsListFromFolderList(projectsFolder, specificProjectToDeploy, projectsFolder, apis, availableProjectFolders, fileReader)
+
 	if err != nil {
 		return nil, err
 	}
@@ -167,8 +169,11 @@ func filterProjectsWithSubproject(allProjectFolders []string) []string {
 
 // checks if project folder contains subproject(s)
 func hasSubprojectFolder(projectFolder string, projectFolders []string) bool {
+	cleanedProjectFolder := filepath.Clean(projectFolder)
+
 	for _, p := range projectFolders {
-		if strings.HasPrefix(p, projectFolder+string(filepath.Separator)) && p != projectFolder {
+		cleanedFolder := filepath.Clean(p)
+		if filepath.Dir(cleanedFolder) == cleanedProjectFolder && cleanedFolder != cleanedProjectFolder {
 			return true
 		}
 	}
