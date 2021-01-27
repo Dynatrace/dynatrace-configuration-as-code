@@ -459,7 +459,7 @@ func TestParseDependencyWithRelativePath(t *testing.T) {
 		Id:          "zone",
 	}
 	dict := make(map[string]api.DynatraceEntity)
-	dict["infrastructure/management-zone/zone"] = dynatraceEntity
+	dict["testproject/infrastructure/management-zone/zone"] = dynatraceEntity
 
 	managementZoneId, err := config.parseDependency("infrastructure/management-zone/zone.id", dict)
 	assert.NilError(t, err)
