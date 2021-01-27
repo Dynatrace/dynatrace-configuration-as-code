@@ -3,6 +3,7 @@ package deploy
 import (
 	"fmt"
 	"math/rand"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -18,6 +19,8 @@ import (
 func Deploy(workingDir string, fileReader util.FileReader, environmentsFile string,
 	specificEnvironment string, proj string, dryRun bool, verbose bool) error {
 	environments, errors := environment.LoadEnvironmentList(specificEnvironment, environmentsFile, fileReader)
+
+	workingDir = filepath.Clean(workingDir)
 
 	var deploymentErrors = make(map[string]error)
 
@@ -127,7 +130,8 @@ func execute(environment environment.Environment, projects []project.Project, dr
 				return err
 			}
 
-			referenceId := strings.TrimPrefix(config.GetFullQualifiedId(), path)
+			referenceId := strings.TrimPrefix(config.GetFullQualifiedId(), path+"/")
+
 			if entity.Name != "" {
 				dict[referenceId] = entity
 			}
