@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -236,17 +237,24 @@ func (c *configImpl) replaceDependencies(data map[string]map[string]string, dict
 }
 
 func (c *configImpl) parseDependency(dependency string, dict map[string]api.DynatraceEntity) (string, error) {
+	absolutePath := false
 
 	// in case of an absolute path within the dependency:
 	if strings.HasPrefix(dependency, string(os.PathSeparator)) {
 		// remove prefix "/"
 		dependency = dependency[1:]
+		absolutePath = true
 	}
 
 	id, access, err := splitDependency(dependency)
 	if err != nil {
 		return "", err
 	}
+
+	if !absolutePath {
+		id = filepath.Join(c.project, id)
+	}
+
 	dtObject, ok := dict[id]
 	if !ok {
 		return "", errors.New("Id '" + id + "' was not available. Please make sure the reference exists.")
@@ -372,7 +380,7 @@ func (c *configImpl) GetFilePath() string {
 
 // GetFullQualifiedId returns the full qualified id of the config based on project, api and config id
 func (c *configImpl) GetFullQualifiedId() string {
-	return strings.Join([]string{c.GetProject(), c.GetApi().GetId(), c.GetId()}, string(os.PathSeparator))
+	return filepath.Join(c.GetProject(), c.GetApi().GetId(), c.GetId())
 }
 
 // NewConfig creates a new Config

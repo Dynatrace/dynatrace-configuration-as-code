@@ -5,7 +5,6 @@ import (
 	"math/rand"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config"
@@ -130,10 +129,8 @@ func execute(environment environment.Environment, projects []project.Project, dr
 				return err
 			}
 
-			referenceId := strings.TrimPrefix(config.GetFullQualifiedId(), path+"/")
-
 			if entity.Name != "" {
-				dict[referenceId] = entity
+				dict[config.GetFullQualifiedId()] = entity
 			}
 		}
 	}
