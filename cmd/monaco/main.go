@@ -69,6 +69,8 @@ We can't wait for your feedback.
 
 	app := cli.NewApp()
 
+	app.ArgsUsage = "[working directory]"
+
 	app.Usage = "Automates the deployment of Dynatrace Monitoring Configuration to one or multiple Dynatrace environments."
 
 	app.Version = version.MonitoringAsCode
@@ -92,6 +94,7 @@ Examples:
   Deploy a specific project to a specific tenant:
     monaco --environments environments.yaml --specific-environment dev --project myProject
 `
+
 	app.Before = func(c *cli.Context) error {
 		err := util.SetupLogging(c.Bool("verbose"))
 
@@ -136,6 +139,11 @@ Examples:
 	}
 
 	app.Action = func(ctx *cli.Context) error {
+		if ctx.NArg() > 1 {
+			util.Log.Error("Too many arguments! Either specify a relative path to the working directory, or omit it for using the current working directory.")
+			cli.ShowAppHelpAndExit(ctx, 1)
+		}
+
 		var workingDir string
 
 		if ctx.Args().Present() {
@@ -216,6 +224,7 @@ func getDeployCommand(fileReader util.FileReader) cli.Command {
 		Name:      "deploy",
 		Usage:     "deployes the given environment",
 		UsageText: "deploy [command options] [working directory]",
+		ArgsUsage: "[working directory]",
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:    "verbose",
@@ -245,6 +254,11 @@ func getDeployCommand(fileReader util.FileReader) cli.Command {
 			},
 		},
 		Action: func(ctx *cli.Context) error {
+			if ctx.NArg() > 1 {
+				util.Log.Error("Too many arguments! Either specify a relative path to the working directory, or omit it for using the current working directory.")
+				cli.ShowAppHelpAndExit(ctx, 1)
+			}
+
 			var workingDir string
 
 			if ctx.Args().Present() {
