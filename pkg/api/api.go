@@ -22,6 +22,8 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 )
 
+//go:generate mockgen -source=api.go -destination=api_mock.go -package=api Api
+
 var apiMap = map[string]apiInput{
 
 	// Early adopter API !
@@ -36,15 +38,15 @@ var apiMap = map[string]apiInput{
 	},
 	// Early adopter API !
 	"dashboard": {
-		apiPath: "/api/config/v1/dashboards",
+		apiPath:                      "/api/config/v1/dashboards",
 		propertyNameOfGetAllResponse: "dashboards",
 	},
 	"notification": {
 		apiPath: "/api/config/v1/notifications",
 	},
 	"extension": {
-		apiPath: "/api/config/v1/extensions",
-		paging:  true,
+		apiPath:                      "/api/config/v1/extensions",
+		paging:                       true,
 		propertyNameOfGetAllResponse: "extensions",
 	},
 	"custom-service-java": {
@@ -112,8 +114,8 @@ var apiMap = map[string]apiInput{
 	// Early adopter API !
 	// Environment API not Config API
 	"slo": {
-		apiPath: "/api/v2/slo",
-		paging:  true,
+		apiPath:                      "/api/v2/slo",
+		paging:                       true,
 		propertyNameOfGetAllResponse: "slo",
 	},
 }
@@ -128,15 +130,15 @@ type Api interface {
 }
 
 type apiInput struct {
-	apiPath string
-	paging  bool
+	apiPath                      string
+	paging                       bool
 	propertyNameOfGetAllResponse string
 }
 
 type apiImpl struct {
-	id      string
-	apiPath string
-	paging  bool
+	id                           string
+	apiPath                      string
+	paging                       bool
 	propertyNameOfGetAllResponse string
 }
 
@@ -161,9 +163,9 @@ func NewApi(id string, apiPath string, paging bool, propertyNameOfGetAllResponse
 	// This means that a user runs monaco with an untested api
 
 	return &apiImpl{
-		id:      id,
-		apiPath: apiPath,
-		paging:  paging,
+		id:                           id,
+		apiPath:                      apiPath,
+		paging:                       paging,
 		propertyNameOfGetAllResponse: propertyNameOfGetAllResponse,
 	}
 }

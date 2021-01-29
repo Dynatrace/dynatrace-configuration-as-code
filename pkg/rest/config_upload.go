@@ -172,8 +172,11 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, url stri
 			if err := json.Unmarshal(resp.Body, &objmap); err != nil {
 				return false, values, err
 			}
-			array := objmap[theApi.GetPropertyNameOfGetAllResponse()].([]interface{})
-			values = append(values, translateGenericValues(array)...)
+
+			if objmap[theApi.GetPropertyNameOfGetAllResponse()] != nil {
+				array := objmap[theApi.GetPropertyNameOfGetAllResponse()].([]interface{})
+				values = append(values, translateGenericValues(array)...)
+			}
 		}
 
 		if theApi.IsPaginated() {
@@ -183,7 +186,7 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, url stri
 			} else {
 				break
 			}
-			resp = get(client, url + "?nextPageKey=" + nextPage, apiToken)
+			resp = get(client, url+"?nextPageKey="+nextPage, apiToken)
 
 		} else {
 			break
