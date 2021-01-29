@@ -29,6 +29,7 @@ import (
 )
 
 const multiProjectFolder = "test-resources/integration-multi-project/"
+const multiProjectFolderWithoutSlash = "test-resources/integration-multi-project"
 const multiProjectEnvironmentsFile = multiProjectFolder + "environments.yaml"
 
 // Tests all environments with all projects
@@ -62,6 +63,19 @@ func TestIntegrationValidationMultiProject(t *testing.T) {
 		"--environments", multiProjectEnvironmentsFile,
 		"--dry-run",
 		multiProjectFolder,
+	}, util.NewFileReader())
+
+	assert.Equal(t, statusCode, 0)
+}
+
+// Tests a dry run (validation)
+func TestIntegrationValidationMultiProjectWithoutEndingSlashInPath(t *testing.T) {
+
+	statusCode := RunImpl([]string{
+		"monaco",
+		"--environments", multiProjectEnvironmentsFile,
+		"--dry-run",
+		multiProjectFolderWithoutSlash,
 	}, util.NewFileReader())
 
 	assert.Equal(t, statusCode, 0)

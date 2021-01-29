@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package main
+package deploy
 
 import (
 	"testing"
@@ -34,20 +34,20 @@ func TestFailsOnMissingFileName(t *testing.T) {
 }
 
 func TestLoadsEnvironmentListCorrectly(t *testing.T) {
-	environments, err := environment.LoadEnvironmentList("", "test-resources/test-environments.yaml", util.NewFileReader())
+	environments, err := environment.LoadEnvironmentList("", "../../cmd/monaco/test-resources/test-environments.yaml", util.NewFileReader())
 	assert.Assert(t, len(err) == 0, "Expected no error")
 	assert.Assert(t, len(environments) == 3, "Expected to load test environments 1-3!")
 }
 
 func TestLoadSpecificEnvironmentCorrectly(t *testing.T) {
-	environments, err := environment.LoadEnvironmentList("test2", "test-resources/test-environments.yaml", util.NewFileReader())
+	environments, err := environment.LoadEnvironmentList("test2", "../../cmd/monaco/test-resources/test-environments.yaml", util.NewFileReader())
 	assert.Assert(t, len(err) == 0, "Expected no error")
 	assert.Assert(t, len(environments) == 1, "Expected to load test environment 2 only!")
 	assert.Assert(t, environments["test2"] != nil, "test2 environment not found in returned list!")
 }
 
 func TestMissingSpecificEnvironmentResultsInError(t *testing.T) {
-	environments, err := environment.LoadEnvironmentList("test42", "test-resources/test-environments.yaml", util.NewFileReader())
+	environments, err := environment.LoadEnvironmentList("test42", "../../cmd/monaco/test-resources/test-environments.yaml", util.NewFileReader())
 	assert.Assert(t, len(err) == 1, "Expected error from referencing unknown environment")
 	assert.Assert(t, len(environments) == 0, "Expected to get empty environment map even on error")
 }
@@ -63,7 +63,7 @@ func TestExecuteFailOnDuplicateNamesWithinSameConfig(t *testing.T) {
 
 	apis := testGetExecuteApis()
 
-	path := util.ReplacePathSeparators("test-resources/duplicate-name-test")
+	path := util.ReplacePathSeparators("../../cmd/monaco/test-resources/duplicate-name-test")
 	projects, err := project.LoadProjectsToDeploy("project1", apis, path, util.NewFileReader())
 	assert.NilError(t, err)
 
@@ -76,7 +76,7 @@ func TestExecutePassOnDifferentApis(t *testing.T) {
 
 	apis := testGetExecuteApis()
 
-	path := util.ReplacePathSeparators("test-resources/duplicate-name-test")
+	path := util.ReplacePathSeparators("../../cmd/monaco/test-resources/duplicate-name-test")
 	projects, err := project.LoadProjectsToDeploy("project2", apis, path, util.NewFileReader())
 	assert.NilError(t, err)
 
@@ -89,7 +89,7 @@ func TestExecuteFailOnDuplicateNamesInDifferentProjects(t *testing.T) {
 
 	apis := testGetExecuteApis()
 
-	path := util.ReplacePathSeparators("test-resources/duplicate-name-test")
+	path := util.ReplacePathSeparators("../../cmd/monaco/test-resources/duplicate-name-test")
 	projects, err := project.LoadProjectsToDeploy("project1, project2", apis, path, util.NewFileReader())
 	assert.NilError(t, err)
 
@@ -103,7 +103,7 @@ func TestExecutePassOnDuplicateNamesInDifferentEnvironments(t *testing.T) {
 
 	apis := testGetExecuteApis()
 
-	path := util.ReplacePathSeparators("test-resources/duplicate-name-test")
+	path := util.ReplacePathSeparators("../../cmd/monaco/test-resources/duplicate-name-test")
 	projects, err := project.LoadProjectsToDeploy("project5", apis, path, util.NewFileReader())
 	assert.NilError(t, err)
 
