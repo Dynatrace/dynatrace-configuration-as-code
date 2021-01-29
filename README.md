@@ -473,6 +473,9 @@ These are the supported configuration types, their API endpoints and the token p
 For reference, refer to [this](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication) page for a detailed
 description to each token permission.
 
+If your desired API is not in the table above, please consider adding it be following the instructions in 
+[How to add new APIs](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/blob/main/docs/how-to-add-a-new-api.md).
+
 ### Configuration YAML Structure
 
 Every configuration needs a YAML containing required and optional content.

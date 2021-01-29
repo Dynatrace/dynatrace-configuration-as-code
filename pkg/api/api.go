@@ -22,6 +22,8 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 )
 
+//go:generate mockgen -source=api.go -destination=api_mock.go -package=api Api
+
 var apiMap = map[string]apiInput{
 
 	// Early adopter API !
