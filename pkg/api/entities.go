@@ -20,20 +20,12 @@ type ValuesResponse struct {
 	Values []Value `json:"values"`
 }
 
-type DashboardResponse struct {
-	Dashboards []Value `json:"dashboards"`
-}
-
 type SyntheticLocationResponse struct {
 	Locations []SyntheticValue `json:"locations"`
 }
 
 type SyntheticMonitorsResponse struct {
 	Monitors []SyntheticValue `json:"monitors"`
-}
-
-type ExtensionsResponse struct {
-	Values []Value `json:"extensions"`
 }
 
 type Value struct {
