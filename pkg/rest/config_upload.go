@@ -27,16 +27,17 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 )
 
-func upsertDynatraceObject(client *http.Client, apiPath string, objectName string, configType string, configJson string, apiToken string) (api.DynatraceEntity, error) {
+func upsertDynatraceObject(client *http.Client, fullUrl string, objectName string, theApi api.Api, configJson string, apiToken string) (api.DynatraceEntity, error) {
 
-	isDashBoard, existingObjectId, err := getObjectIdIfAlreadyExists(client, configType, apiPath, objectName, apiToken)
+	isDashBoard, existingObjectId, err := getObjectIdIfAlreadyExists(client, theApi, fullUrl, objectName, apiToken)
 	var dtEntity api.DynatraceEntity
 	if err != nil {
 		return dtEntity, err
 	}
 	var resp Response
-	path := apiPath
+	path := fullUrl
 	body := configJson
+	configType := theApi.GetId()
 
 	// The calculated-metrics-log API doesn't have a POST endpoint, to create a new log metric we need to use PUT which
 	// requires a metric key for which we can just take the objectName
@@ -45,7 +46,7 @@ func upsertDynatraceObject(client *http.Client, apiPath string, objectName strin
 	}
 
 	if existingObjectId != "" {
-		path = apiPath + "/" + existingObjectId
+		path = joinUrl(fullUrl, existingObjectId)
 		// Updating a dashboard requires the ID to be contained in the JSON, so we just add it...
 		if isDashBoard {
 			body = strings.Replace(configJson, "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
@@ -92,6 +93,30 @@ func upsertDynatraceObject(client *http.Client, apiPath string, objectName strin
 			return dtEntity, err
 		}
 		dtEntity = translateSyntheticEntityResponse(entity, objectName)
+
+	} else if available, locationSlice := isLocationHeaderAvailable(resp); available {
+
+		// The SLO API does not return the ID of the config in its response. Instead, it contains a Location header,
+		// which contains the URL to the created resource. This URL needs to be cleaned, to get the ID of the
+		// config.
+
+		if len(locationSlice) == 0 {
+			return dtEntity,
+				fmt.Errorf("location response header was empty for API %s (name: %s)", configType, objectName)
+		}
+
+		location := locationSlice[0]
+
+		// Some APIs prepend the environment URL. If available, trim it from the location
+		existingObjectId = strings.TrimPrefix(location, fullUrl)
+		existingObjectId = strings.TrimPrefix(existingObjectId, "/")
+
+		dtEntity = api.DynatraceEntity{
+			Id:          existingObjectId,
+			Name:        objectName,
+			Description: "Created object",
+		}
+
 	} else {
 		err := json.Unmarshal(resp.Body, &dtEntity)
 		if util.CheckError(err, "Cannot unmarshal API response") {
@@ -103,9 +128,23 @@ func upsertDynatraceObject(client *http.Client, apiPath string, objectName strin
 	return dtEntity, nil
 }
 
-func deleteDynatraceObject(client *http.Client, configType string, name string, url string, token string) error {
+func joinUrl(urlBase string, path string) string {
+	if strings.HasSuffix(urlBase, "/") {
+		return urlBase + path
+	}
+	return urlBase + "/" + path
+}
 
-	_, existingId, err := getObjectIdIfAlreadyExists(client, configType, url, name, token)
+func isLocationHeaderAvailable(resp Response) (headerAvailable bool, headerArray []string) {
+	if resp.Headers["Location"] != nil {
+		return true, resp.Headers["Location"]
+	}
+	return false, make([]string, 0)
+}
+
+func deleteDynatraceObject(client *http.Client, api api.Api, name string, url string, token string) error {
+
+	_, existingId, err := getObjectIdIfAlreadyExists(client, api, url, name, token)
 	if err != nil {
 		return err
 	}
@@ -116,8 +155,9 @@ func deleteDynatraceObject(client *http.Client, configType string, name string, 
 	return nil
 }
 
-func getObjectIdIfAlreadyExists(client *http.Client, configType string, url string, objectName string, apiToken string) (isDashboard bool, existingId string, err error) {
-	isDashboard, values, err := getExistingValuesFromEndpoint(client, configType, url, apiToken)
+func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, objectName string, apiToken string) (isDashboard bool, existingId string, err error) {
+
+	isDashboard, values, err := getExistingValuesFromEndpoint(client, api, url, apiToken)
 	if err != nil {
 		return isDashboard, "", err
 	}
@@ -131,57 +171,108 @@ func getObjectIdIfAlreadyExists(client *http.Client, configType string, url stri
 	return isDashboard, "", nil
 }
 
-func getExistingValuesFromEndpoint(client *http.Client, configType string, url string, apiToken string) (isDashboard bool, values []api.Value, err error) {
+func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, url string, apiToken string) (isDashboard bool, values []api.Value, err error) {
 
+	values = make([]api.Value, 0)
 	resp := get(client, url, apiToken)
+	isDashboard = theApi.GetId() == "dashboard"
 
-	switch configType {
-	case "dashboard":
-		var jsonResp api.DashboardResponse
-		err = json.Unmarshal(resp.Body, &jsonResp)
-		if util.CheckError(err, "Cannot unmarshal API response for existing dashboards") {
+	for {
+		var objmap map[string]interface{}
+
+		err, values = unmarshalJson(theApi, err, resp, values, objmap, isDashboard)
+		if err != nil {
 			return isDashboard, values, err
 		}
-		isDashboard = true
-		values = jsonResp.Dashboards
-	case "synthetic-location":
+
+		// Does the API support paging?
+		if isPaginated, nextPage := isPaginatedResponse(objmap); isPaginated {
+			resp = get(client, url+"?nextPageKey="+nextPage, apiToken)
+		} else {
+			break
+		}
+	}
+
+	return isDashboard, values, nil
+}
+
+func unmarshalJson(theApi api.Api, err error, resp Response, values []api.Value, objmap map[string]interface{}, isDashboard bool) (error, []api.Value) {
+
+	if theApi.GetId() == "synthetic-location" {
+
 		var jsonResp api.SyntheticLocationResponse
 		err = json.Unmarshal(resp.Body, &jsonResp)
 		if util.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
-			return isDashboard, values, err
+			return err, values
 		}
 		values = translateSyntheticValues(jsonResp.Locations)
-	case "synthetic-monitor":
+
+	} else if theApi.GetId() == "synthetic-monitor" {
+
 		var jsonResp api.SyntheticMonitorsResponse
 		err = json.Unmarshal(resp.Body, &jsonResp)
 		if util.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
-			return isDashboard, values, err
+			return err, values
 		}
 		values = translateSyntheticValues(jsonResp.Monitors)
-	case "extension":
-		var jsonResp api.ExtensionsResponse
-		err = json.Unmarshal(resp.Body, &jsonResp)
-		if util.CheckError(err, "Cannot unmarshal API response for existing extension") {
-			return isDashboard, values, err
-		}
-		values = jsonResp.Values
-	case "aws-credentials":
+
+	} else if theApi.GetId() == "aws-credentials" {
+
 		var jsonResp []api.Value
 		err := json.Unmarshal(resp.Body, &jsonResp)
 		if util.CheckError(err, "Cannot unmarshal API response for existing aws-credentials") {
-			return isDashboard, values, err
+			return err, values
 		}
 		values = jsonResp
-	default:
+
+	} else if !theApi.IsStandardApi() {
+
+		if err := json.Unmarshal(resp.Body, &objmap); err != nil {
+			return err, values
+		}
+
+		if available, array := isResultArrayAvailable(objmap, theApi); available {
+			values = append(values, translateGenericValues(array)...)
+		}
+
+	} else {
+
 		var jsonResponse api.ValuesResponse
 		err = json.Unmarshal(resp.Body, &jsonResponse)
 		if util.CheckError(err, "Cannot unmarshal API response for existing objects") {
-			return isDashboard, values, err
+			return err, values
 		}
 		values = jsonResponse.Values
 	}
 
-	return isDashboard, values, nil
+	return nil, values
+}
+
+func isResultArrayAvailable(jsonResponse map[string]interface{}, theApi api.Api) (resultArrayAvailable bool, results []interface{}) {
+	if jsonResponse[theApi.GetPropertyNameOfGetAllResponse()] != nil {
+		return true, jsonResponse[theApi.GetPropertyNameOfGetAllResponse()].([]interface{})
+	}
+	return false, make([]interface{}, 0)
+}
+
+func isPaginatedResponse(jsonResponse map[string]interface{}) (paginated bool, pageKey string) {
+	if jsonResponse["nextPageKey"] != nil {
+		return true, jsonResponse["nextPageKey"].(string)
+	}
+	return false, ""
+}
+
+func translateGenericValues(inputValues []interface{}) []api.Value {
+	numValues := len(inputValues)
+	values := make([]api.Value, numValues, numValues)
+	for i := 0; i < numValues; i++ {
+		input := inputValues[i].(map[string]interface{})
+		values[i] = api.Value{
+			Id:   input["id"].(string),
+			Name: input["name"].(string),
+		}
+	}
+	return values
 }
 
 func translateSyntheticValues(syntheticValues []api.SyntheticValue) []api.Value {

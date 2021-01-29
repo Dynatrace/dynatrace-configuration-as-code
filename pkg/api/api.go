@@ -22,57 +22,126 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 )
 
-var apiMap = map[string]string{
+var apiMap = map[string]apiInput{
+
 	// Early adopter API !
-	"alerting-profile": "/api/config/v1/alertingProfiles",
-	"management-zone":  "/api/config/v1/managementZones",
-	"auto-tag":         "/api/config/v1/autoTags",
+	"alerting-profile": {
+		apiPath: "/api/config/v1/alertingProfiles",
+	},
+	"management-zone": {
+		apiPath: "/api/config/v1/managementZones",
+	},
+	"auto-tag": {
+		apiPath: "/api/config/v1/autoTags",
+	},
 	// Early adopter API !
-	"dashboard":           "/api/config/v1/dashboards",
-	"notification":        "/api/config/v1/notifications",
-	"extension":           "/api/config/v1/extensions",
-	"custom-service-java": "/api/config/v1/service/customServices/java",
+	"dashboard": {
+		apiPath:                      "/api/config/v1/dashboards",
+		propertyNameOfGetAllResponse: "dashboards",
+	},
+	"notification": {
+		apiPath: "/api/config/v1/notifications",
+	},
+	"extension": {
+		apiPath:                      "/api/config/v1/extensions",
+		propertyNameOfGetAllResponse: "extensions",
+	},
+	"custom-service-java": {
+		apiPath: "/api/config/v1/service/customServices/java",
+	},
 	// Early adopter API !
-	"anomaly-detection-metrics": "/api/config/v1/anomalyDetection/metricEvents",
+	"anomaly-detection-metrics": {
+		apiPath: "/api/config/v1/anomalyDetection/metricEvents",
+	},
 	// Early adopter API !
 	// Environment API not Config API
-	"synthetic-location": "/api/v1/synthetic/locations",
+	"synthetic-location": {
+		apiPath: "/api/v1/synthetic/locations",
+	},
 	// Early adopter API !
 	// Environment API not Config API
-	"synthetic-monitor": "/api/v1/synthetic/monitors",
-	// To be deprecated in v2.0.0, replaced by application-web
-	"application":        "/api/config/v1/applications/web",
-	"application-web":    "/api/config/v1/applications/web",
-	"application-mobile": "/api/config/v1/applications/mobile",
-	"app-detection-rule": "/api/config/v1/applicationDetectionRules",
-	"aws-credentials":    "/api/config/v1/aws/credentials",
+	"synthetic-monitor": {
+		apiPath: "/api/v1/synthetic/monitors",
+	},
+	"application": {
+		apiPath: "/api/config/v1/applications/web",
+	},
+	"application-web": {
+		apiPath: "/api/config/v1/applications/web",
+	},
+	"application-mobile": {
+		apiPath: "/api/config/v1/applications/mobile",
+	},
+	"app-detection-rule": {
+		apiPath: "/api/config/v1/applicationDetectionRules",
+	},
+	"aws-credentials": {
+		apiPath: "/api/config/v1/aws/credentials",
+	},
 	// Early adopter API !
-	"kubernetes-credentials": "/api/config/v1/kubernetes/credentials",
-	"azure-credentials":      "/api/config/v1/azure/credentials",
+	"kubernetes-credentials": {
+		apiPath: "/api/config/v1/kubernetes/credentials",
+	},
+	"azure-credentials": {
+		apiPath: "/api/config/v1/azure/credentials",
+	},
 
-	"request-attributes": "/api/config/v1/service/requestAttributes",
+	"request-attributes": {
+		apiPath: "/api/config/v1/service/requestAttributes",
+	},
 
-	"calculated-metrics-service": "/api/config/v1/calculatedMetrics/service",
+	"calculated-metrics-service": {
+		apiPath: "/api/config/v1/calculatedMetrics/service",
+	},
 	// Early adopter API !
-	"calculated-metrics-log": "/api/config/v1/calculatedMetrics/log",
+	"calculated-metrics-log": {
+		apiPath: "/api/config/v1/calculatedMetrics/log",
+	},
 
-	"conditional-naming-processgroup": "/api/config/v1/conditionalNaming/processGroup",
-	"conditional-naming-host":         "/api/config/v1/conditionalNaming/host",
-	"conditional-naming-service":      "/api/config/v1/conditionalNaming/service",
-	"maintenance-window":              "/api/config/v1/maintenanceWindows",
-	"request-naming-service":          "/api/config/v1/service/requestNaming",
+	"conditional-naming-processgroup": {
+		apiPath: "/api/config/v1/conditionalNaming/processGroup",
+	},
+	"conditional-naming-host": {
+		apiPath: "/api/config/v1/conditionalNaming/host",
+	},
+	"conditional-naming-service": {
+		apiPath: "/api/config/v1/conditionalNaming/service",
+	},
+	"maintenance-window": {
+		apiPath: "/api/config/v1/maintenanceWindows",
+	},
+	"request-naming-service": {
+		apiPath: "/api/config/v1/service/requestNaming",
+	},
+
+	// Early adopter API !
+	// Environment API not Config API
+	"slo": {
+		apiPath:                      "/api/v2/slo",
+		propertyNameOfGetAllResponse: "slo",
+	},
 }
+
+var standardApiPropertyNameOfGetAllResponse = "values"
 
 type Api interface {
 	GetUrl(environment environment.Environment) string
 	GetUrlFromEnvironmentUrl(environmentUrl string) string
 	GetId() string
 	GetApiPath() string
+	GetPropertyNameOfGetAllResponse() string
+	IsStandardApi() bool
+}
+
+type apiInput struct {
+	apiPath                      string
+	propertyNameOfGetAllResponse string
 }
 
 type apiImpl struct {
-	id      string
-	apiPath string
+	id                           string
+	apiPath                      string
+	propertyNameOfGetAllResponse string
 }
 
 func NewApis() map[string]Api {
@@ -86,19 +155,27 @@ func NewApis() map[string]Api {
 	return apis
 }
 
-func newApi(id string, apiPath string) Api {
-
-	return NewApi(id, apiPath)
+func newApi(id string, input apiInput) Api {
+	if input.propertyNameOfGetAllResponse == "" {
+		return NewStandardApi(id, input.apiPath)
+	}
+	return NewApi(id, input.apiPath, input.propertyNameOfGetAllResponse)
 }
 
-func NewApi(id string, apiPath string) Api {
+// NewStandardApi creates an API with propertyNameOfGetAllResponse set to "values"
+func NewStandardApi(id string, apiPath string) Api {
+	return NewApi(id, apiPath, standardApiPropertyNameOfGetAllResponse)
+}
+
+func NewApi(id string, apiPath string, propertyNameOfGetAllResponse string) Api {
 
 	// TODO log warning if the user tries to create an API with a id not present in map above
 	// This means that a user runs monaco with an untested api
 
 	return &apiImpl{
-		id:      id,
-		apiPath: apiPath,
+		id:                           id,
+		apiPath:                      apiPath,
+		propertyNameOfGetAllResponse: propertyNameOfGetAllResponse,
 	}
 }
 
@@ -116,6 +193,14 @@ func (a *apiImpl) GetId() string {
 
 func (a *apiImpl) GetApiPath() string {
 	return a.apiPath
+}
+
+func (a *apiImpl) GetPropertyNameOfGetAllResponse() string {
+	return a.propertyNameOfGetAllResponse
+}
+
+func (a *apiImpl) IsStandardApi() bool {
+	return a.propertyNameOfGetAllResponse == standardApiPropertyNameOfGetAllResponse
 }
 
 func IsApi(dir string) bool {

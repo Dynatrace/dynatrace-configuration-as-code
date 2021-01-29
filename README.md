@@ -466,6 +466,7 @@ These are the supported configuration types, their API endpoints and the token p
 | notification                    | _/api/config/v1/notifications_                  | `Read Configuration` & `Write Configuration`                                                                        |
 | request-attributes              | _/api/config/v1/service/requestAttributes_      | `Read Configuration` & `Capture request data`                                                                       |
 | request-naming                  | _/api/config/v1/service/requestNaming_          | `Read Configuration` & `Write Configuration`                                                                        |
+| slo                             | _/api/v2/slo_                                   | `Read SLO` & `Write SLOs`                                                                                           |
 | synthetic-location              | _/api/v1/synthetic/locations_                   | `Access problem and event feed, metrics, and topology` & `Create and read synthetic monitors, locations, and nodes` |
 | synthetic-monitor               | _/api/v1/synthetic/monitors_                    | `Create and read synthetic monitors, locations, and nodes`                                                          |
 

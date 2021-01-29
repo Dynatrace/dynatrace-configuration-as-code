@@ -1,0 +1,5 @@
+config:
+  - demo_slo: "slo.json"
+
+demo_slo:
+  - name: "My SLO"

@@ -121,7 +121,7 @@ func isNewDynatraceTokenFormat(token string) bool {
 func (d *dynatraceClientImpl) List(api Api) (values []Value, err error) {
 
 	fullUrl := api.GetUrlFromEnvironmentUrl(d.environmentUrl)
-	_, values, err = getExistingValuesFromEndpoint(d.client, api.GetId(), fullUrl, d.token)
+	_, values, err = getExistingValuesFromEndpoint(d.client, api, fullUrl, d.token)
 	return values, err
 }
 
@@ -148,12 +148,12 @@ func (d *dynatraceClientImpl) ReadById(api Api, id string) (json []byte, err err
 
 func (d *dynatraceClientImpl) DeleteByName(api Api, name string) error {
 
-	return deleteDynatraceObject(d.client, api.GetId(), name, api.GetUrlFromEnvironmentUrl(d.environmentUrl), d.token)
+	return deleteDynatraceObject(d.client, api, name, api.GetUrlFromEnvironmentUrl(d.environmentUrl), d.token)
 }
 
 func (d *dynatraceClientImpl) ExistsByName(api Api, name string) (exists bool, id string, err error) {
 
-	_, existingObjectId, err := getObjectIdIfAlreadyExists(d.client, api.GetId(), api.GetUrlFromEnvironmentUrl(d.environmentUrl), name, d.token)
+	_, existingObjectId, err := getObjectIdIfAlreadyExists(d.client, api, api.GetUrlFromEnvironmentUrl(d.environmentUrl), name, d.token)
 	return existingObjectId != "", existingObjectId, err
 }
 
@@ -170,5 +170,5 @@ func (d *dynatraceClientImpl) UpsertByName(api Api, name string, jsonEntity map[
 	if api.GetId() == "extension" {
 		return uploadExtension(d.client, fullUrl, name, string(json), d.token)
 	}
-	return upsertDynatraceObject(d.client, fullUrl, name, api.GetId(), string(json), d.token)
+	return upsertDynatraceObject(d.client, fullUrl, name, api, string(json), d.token)
 }

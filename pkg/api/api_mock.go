@@ -88,3 +88,15 @@ func (mr *MockApiMockRecorder) GetUrlFromEnvironmentUrl(arg0 interface{}) *gomoc
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUrlFromEnvironmentUrl", reflect.TypeOf((*MockApi)(nil).GetUrlFromEnvironmentUrl), arg0)
 }
+
+// IsStandardApi mocks base method
+func (_m *MockApi) IsStandardApi() bool {
+	ret := _m.ctrl.Call(_m, "IsStandardApi")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsStandardApi indicates an expected call of IsStandardApi
+func (_mr *MockApiMockRecorder) IsStandardApi() *gomock.Call {
+	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "IsStandardApi", reflect.TypeOf((*MockApi)(nil).IsStandardApi))
+}
