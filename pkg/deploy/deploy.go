@@ -130,7 +130,7 @@ func execute(environment environment.Environment, projects []project.Project, dr
 			}
 
 			if entity.Name != "" {
-				dict[config.GetFullQualifiedId()] = entity
+				dict[configID] = entity
 			}
 		}
 	}

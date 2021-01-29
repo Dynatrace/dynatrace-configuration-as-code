@@ -63,7 +63,7 @@ func LoadProjectsToDeploy(specificProjectToDeploy string, apis map[string]api.Ap
 		return returnSortedProjects(projectsToDeploy)
 	}
 
-	projectsToDeploy, err = createProjectsListFromFolderList(projectsFolder, specificProjectToDeploy, projectsFolder, apis, availableProjectFolders, fileReader)
+	projectsToDeploy, err = createProjectsListFromFolderList(projectsFolder, specificProjectToDeploy, apis, availableProjectFolders, fileReader)
 
 	if err != nil {
 		return nil, err
@@ -99,37 +99,39 @@ func returnSortedProjects(projectsToDeploy []Project) ([]Project, error) {
 
 // takes project folder parameter and creates []Project slice
 // if project specified contains subprojects, then it adds subprojects instead
-func createProjectsListFromFolderList(path, specificProjectToDeploy string, projectsFolder string, apis map[string]api.Api, availableProjectFolders []string, fileReader util.FileReader) ([]Project, error) {
+func createProjectsListFromFolderList(path, specificProjectToDeploy string, apis map[string]api.Api, availableProjectFolders []string, fileReader util.FileReader) ([]Project, error) {
 	projectsToDeploy := make([]Project, 0)
 	multiProjects := strings.Split(specificProjectToDeploy, ",")
-	for _, projectFolderName := range multiProjects {
+	for _, projectId := range multiProjects {
+		projectId = strings.TrimSpace(projectId)
+		projectFolderPath := filepath.Join(path, projectId)
 
-		projectFolderName = strings.TrimSpace(projectFolderName)
-		fullQualifiedProjectFolderName := filepath.Join(projectsFolder, projectFolderName)
+		fmt.Println("------> ", projectFolderPath, " ", path)
 
 		// if specified project has subprojects then add them instead
-		if !hasSubprojectFolder(fullQualifiedProjectFolderName, availableProjectFolders) {
-			_, err := os.Stat(fullQualifiedProjectFolderName)
+		if !hasSubprojectFolder(projectFolderPath, availableProjectFolders) {
+			_, err := os.Stat(projectFolderPath)
 
 			if err != nil {
 				return nil, errors.WithMessagef(err, "Project %s does not exist!", specificProjectToDeploy)
 			}
 
-			newProject, err := NewProject(fullQualifiedProjectFolderName, projectFolderName, apis, path, fileReader)
+			newProject, err := NewProject(projectId, extractFolderNameFromFullPath(projectId), apis, path, fileReader)
 			if err != nil {
 				return nil, err
 			}
 			projectsToDeploy = append(projectsToDeploy, newProject)
 		} else {
 			// get list of folders only for this path
-			subProjectFolders, err := getAllProjectFoldersRecursively(fullQualifiedProjectFolderName)
+			subProjectFolders, err := getAllProjectFoldersRecursively(projectFolderPath)
 			if err != nil {
 				return nil, err
 			}
-			for _, fullQualifiedSubProjectFolderName := range subProjectFolders {
+			for _, projectPath := range subProjectFolders {
+				folderId := filepath.Join(projectId, projectPath)
 
-				subProjectFolderName := extractFolderNameFromFullPath(fullQualifiedSubProjectFolderName)
-				newProject, err := NewProject(fullQualifiedSubProjectFolderName, subProjectFolderName, apis, path, fileReader)
+				subProjectFolderName := extractFolderNameFromFullPath(folderId)
+				newProject, err := NewProject(folderId, subProjectFolderName, apis, path, fileReader)
 				if err != nil {
 					return nil, err
 				}
@@ -142,14 +144,7 @@ func createProjectsListFromFolderList(path, specificProjectToDeploy string, proj
 }
 
 func extractFolderNameFromFullPath(fullQualifiedProjectFolderName string) string {
-
-	// split the full qualified sub project folder name into the individual folders:
-	folders := strings.Split(fullQualifiedProjectFolderName, string(os.PathSeparator))
-
-	// The last element is the name of the sub folder:
-	folderName := folders[len(folders)-1]
-
-	return folderName
+	return filepath.Base(fullQualifiedProjectFolderName)
 }
 
 // removes projects containing subprojects
@@ -184,13 +179,16 @@ func hasSubprojectFolder(projectFolder string, projectFolders []string) bool {
 // ignores folders with configurations (containing api configs) and hidden folders
 // fails if a folder with both sub projects and api configs are found
 func getAllProjectFoldersRecursively(path string) ([]string, error) {
+	cleanPath := filepath.Clean(path)
 	var allProjectsFolders []string
 	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 		if info == nil {
 			return fmt.Errorf("Project path does not exist: %s. (This needs to be a relative path from the current directory)", path)
 		}
 		if info.IsDir() && !strings.HasPrefix(path, ".") && !api.ContainsApiName(path) {
-			allProjectsFolders = append(allProjectsFolders, path)
+			sanitizedPath := strings.TrimLeft(strings.TrimPrefix(path, cleanPath), string(os.PathSeparator))
+
+			allProjectsFolders = append(allProjectsFolders, sanitizedPath)
 			err := subprojectsMixedWithApi(path)
 			return err
 		}

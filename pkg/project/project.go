@@ -54,9 +54,11 @@ func NewProject(fullQualifiedProjectFolderName string, projectFolderName string,
 
 	var configs = make([]config.Config, 0)
 
+	projectFolderPath := filepath.Join(projectRootFolder, fullQualifiedProjectFolderName)
+
 	// standardize projectRootFolder
 	// trim path separator from projectRoot
-	projectRootFolder = strings.Trim(projectRootFolder, string(os.PathSeparator))
+	projectRootFolder = filepath.Clean(projectRootFolder)
 
 	builder := projectBuilder{
 		projectRootFolder: projectRootFolder,
@@ -66,7 +68,7 @@ func NewProject(fullQualifiedProjectFolderName string, projectFolderName string,
 		configFactory:     config.NewConfigFactory(),
 		fileReader:        fileReader,
 	}
-	err := builder.readFolder(fullQualifiedProjectFolderName, true)
+	err := builder.readFolder(projectFolderPath, true)
 	if err != nil {
 		//debug log here?
 		return nil, err
