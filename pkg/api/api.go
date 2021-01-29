@@ -22,42 +22,100 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 )
 
-var apiMap = map[string]string{
+var apiMap = map[string]apiInput{
+
 	// Early adopter API !
-	"alerting-profile": "/api/config/v1/alertingProfiles",
-	"management-zone":  "/api/config/v1/managementZones",
-	"auto-tag":         "/api/config/v1/autoTags",
+	"alerting-profile": {
+		apiPath: "/api/config/v1/alertingProfiles",
+	},
+	"management-zone": {
+		apiPath: "/api/config/v1/managementZones",
+	},
+	"auto-tag": {
+		apiPath: "/api/config/v1/autoTags",
+	},
 	// Early adopter API !
-	"dashboard":           "/api/config/v1/dashboards",
-	"notification":        "/api/config/v1/notifications",
-	"extension":           "/api/config/v1/extensions",
-	"custom-service-java": "/api/config/v1/service/customServices/java",
+	"dashboard": {
+		apiPath: "/api/config/v1/dashboards",
+		propertyNameOfGetAllResponse: "dashboards",
+	},
+	"notification": {
+		apiPath: "/api/config/v1/notifications",
+	},
+	"extension": {
+		apiPath: "/api/config/v1/extensions",
+		paging:  true,
+		propertyNameOfGetAllResponse: "extensions",
+	},
+	"custom-service-java": {
+		apiPath: "/api/config/v1/service/customServices/java",
+	},
 	// Early adopter API !
-	"anomaly-detection-metrics": "/api/config/v1/anomalyDetection/metricEvents",
+	"anomaly-detection-metrics": {
+		apiPath: "/api/config/v1/anomalyDetection/metricEvents",
+	},
 	// Early adopter API !
 	// Environment API not Config API
-	"synthetic-location": "/api/v1/synthetic/locations",
+	"synthetic-location": {
+		apiPath: "/api/v1/synthetic/locations",
+	},
 	// Early adopter API !
 	// Environment API not Config API
-	"synthetic-monitor":  "/api/v1/synthetic/monitors",
-	"application":        "/api/config/v1/applications/web",
-	"app-detection-rule": "/api/config/v1/applicationDetectionRules",
-	"aws-credentials":    "/api/config/v1/aws/credentials",
+	"synthetic-monitor": {
+		apiPath: "/api/v1/synthetic/monitors",
+	},
+	"application": {
+		apiPath: "/api/config/v1/applications/web",
+	},
+	"app-detection-rule": {
+		apiPath: "/api/config/v1/applicationDetectionRules",
+	},
+	"aws-credentials": {
+		apiPath: "/api/config/v1/aws/credentials",
+	},
 	// Early adopter API !
-	"kubernetes-credentials": "/api/config/v1/kubernetes/credentials",
-	"azure-credentials":      "/api/config/v1/azure/credentials",
+	"kubernetes-credentials": {
+		apiPath: "/api/config/v1/kubernetes/credentials",
+	},
+	"azure-credentials": {
+		apiPath: "/api/config/v1/azure/credentials",
+	},
 
-	"request-attributes": "/api/config/v1/service/requestAttributes",
+	"request-attributes": {
+		apiPath: "/api/config/v1/service/requestAttributes",
+	},
 
-	"calculated-metrics-service": "/api/config/v1/calculatedMetrics/service",
+	"calculated-metrics-service": {
+		apiPath: "/api/config/v1/calculatedMetrics/service",
+	},
 	// Early adopter API !
-	"calculated-metrics-log": "/api/config/v1/calculatedMetrics/log",
+	"calculated-metrics-log": {
+		apiPath: "/api/config/v1/calculatedMetrics/log",
+	},
 
-	"conditional-naming-processgroup": "/api/config/v1/conditionalNaming/processGroup",
-	"conditional-naming-host":         "/api/config/v1/conditionalNaming/host",
-	"conditional-naming-service":      "/api/config/v1/conditionalNaming/service",
-	"maintenance-window":              "/api/config/v1/maintenanceWindows",
-	"request-naming-service":          "/api/config/v1/service/requestNaming",
+	"conditional-naming-processgroup": {
+		apiPath: "/api/config/v1/conditionalNaming/processGroup",
+	},
+	"conditional-naming-host": {
+		apiPath: "/api/config/v1/conditionalNaming/host",
+	},
+	"conditional-naming-service": {
+		apiPath: "/api/config/v1/conditionalNaming/service",
+	},
+	"maintenance-window": {
+		apiPath: "/api/config/v1/maintenanceWindows",
+	},
+	"request-naming-service": {
+		apiPath: "/api/config/v1/service/requestNaming",
+	},
+
+	// Early adopter API !
+	// Environment API not Config API
+	"slo": {
+		apiPath: "/api/v2/slo",
+		paging:  true,
+		propertyNameOfGetAllResponse: "slo",
+	},
 }
 
 type Api interface {
@@ -65,11 +123,21 @@ type Api interface {
 	GetUrlFromEnvironmentUrl(environmentUrl string) string
 	GetId() string
 	GetApiPath() string
+	IsPaginated() bool
+	GetPropertyNameOfGetAllResponse() string
+}
+
+type apiInput struct {
+	apiPath string
+	paging  bool
+	propertyNameOfGetAllResponse string
 }
 
 type apiImpl struct {
 	id      string
 	apiPath string
+	paging  bool
+	propertyNameOfGetAllResponse string
 }
 
 func NewApis() map[string]Api {
@@ -83,12 +151,11 @@ func NewApis() map[string]Api {
 	return apis
 }
 
-func newApi(id string, apiPath string) Api {
-
-	return NewApi(id, apiPath)
+func newApi(id string, input apiInput) Api {
+	return NewApi(id, input.apiPath, input.paging, input.propertyNameOfGetAllResponse)
 }
 
-func NewApi(id string, apiPath string) Api {
+func NewApi(id string, apiPath string, paging bool, propertyNameOfGetAllResponse string) Api {
 
 	// TODO log warning if the user tries to create an API with a id not present in map above
 	// This means that a user runs monaco with an untested api
@@ -96,6 +163,8 @@ func NewApi(id string, apiPath string) Api {
 	return &apiImpl{
 		id:      id,
 		apiPath: apiPath,
+		paging:  paging,
+		propertyNameOfGetAllResponse: propertyNameOfGetAllResponse,
 	}
 }
 
@@ -113,6 +182,16 @@ func (a *apiImpl) GetId() string {
 
 func (a *apiImpl) GetApiPath() string {
 	return a.apiPath
+}
+
+// IsPaging returns true if the API's response is paged, and it potentially needs multiple requests to get
+// all the objects from the API
+func (a *apiImpl) IsPaginated() bool {
+	return a.paging
+}
+
+func (a *apiImpl) GetPropertyNameOfGetAllResponse() string {
+	return a.propertyNameOfGetAllResponse
 }
 
 func IsApi(dir string) bool {
