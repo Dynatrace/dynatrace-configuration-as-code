@@ -26,6 +26,9 @@ Thus, this tool aims to provide a way to reproducibly deploy Dynatrace monitorin
 As all things Dynatrace, scalability is an important requirement, both in number of configuration files and number of environments.
 This is also the area currently offering the most opportunity for improvement of the tool.
 
+Another way to contribute is to extend the list of supported APIs. Please take a look at 
+[the detailed instructions](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/blob/main/docs/how-to-add-a-new-api.md).
+
 ## How to contribute
 
 The easiest way to start contributing or helping with the Monitoring as Code project is to pick an existing [issue/bug](#https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/issues) and [get to work](#building-the-Dynatrace-Monitoring-as-Code-Tool).
