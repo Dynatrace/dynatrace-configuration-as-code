@@ -46,20 +46,18 @@ to get implementation feedback from the maintainers.
 * Add your API to [the map in api.go](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/blob/main/pkg/api/api.go#L25):
   ```
   "<my-api-folder-name>": {
-      apiPath: "<apth-to-my-api>",                       // mandatory
-      paging:  <true-or-false-for-paging>,               // not necessary for most APIs
-      propertyNameOfGetAllResponse: "<property-name>",   // not necessary for most APIs
+      apiPath: "<path-to-my-api>",                       // mandatory
+      propertyNameOfGetAllResponse: "<property-name>",   // not necessary in case of "values"
   },
 
 * Fill the 4 placeholder values from above:
   * `<my-api-folder-name>`: This is the name of the API, which is also used for the folder name
   you need to place your configurations in. Please take a look at the existing API names to get a
   feeling for the naming conventions and choose it accordingly.
-  * `<my-api-folder-name>`: This path points to your API. `monaco` prefixes it with the environment
+  * `<path-to-my-api>`: This path points to your API. `monaco` prefixes it with the environment
   URL to access the configs of your API.
-  * `<true-or-false-for-paging>`: This indicates whether the API supports paging.
   * `<property-name>`: This names the json property used in the `GET ALL` REST call to
-  return the list of configs. E.g. it would be `extensions`, if te response of your API's 
+  return the list of configs. E.g. it would be `extensions`, if the response of your API's 
   `GET ALL` REST call looks like this:
     ```
     {
