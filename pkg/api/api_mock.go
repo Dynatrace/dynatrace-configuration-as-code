@@ -80,18 +80,6 @@ func (_mr *MockApiMockRecorder) GetApiPath() *gomock.Call {
 	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "GetApiPath", reflect.TypeOf((*MockApi)(nil).GetApiPath))
 }
 
-// IsPaginated mocks base method
-func (_m *MockApi) IsPaginated() bool {
-	ret := _m.ctrl.Call(_m, "IsPaginated")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsPaginated indicates an expected call of IsPaginated
-func (_mr *MockApiMockRecorder) IsPaginated() *gomock.Call {
-	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "IsPaginated", reflect.TypeOf((*MockApi)(nil).IsPaginated))
-}
-
 // GetPropertyNameOfGetAllResponse mocks base method
 func (_m *MockApi) GetPropertyNameOfGetAllResponse() string {
 	ret := _m.ctrl.Call(_m, "GetPropertyNameOfGetAllResponse")

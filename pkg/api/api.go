@@ -46,7 +46,6 @@ var apiMap = map[string]apiInput{
 	},
 	"extension": {
 		apiPath:                      "/api/config/v1/extensions",
-		paging:                       true,
 		propertyNameOfGetAllResponse: "extensions",
 	},
 	"custom-service-java": {
@@ -115,7 +114,6 @@ var apiMap = map[string]apiInput{
 	// Environment API not Config API
 	"slo": {
 		apiPath:                      "/api/v2/slo",
-		paging:                       true,
 		propertyNameOfGetAllResponse: "slo",
 	},
 }
@@ -125,20 +123,17 @@ type Api interface {
 	GetUrlFromEnvironmentUrl(environmentUrl string) string
 	GetId() string
 	GetApiPath() string
-	IsPaginated() bool
 	GetPropertyNameOfGetAllResponse() string
 }
 
 type apiInput struct {
 	apiPath                      string
-	paging                       bool
 	propertyNameOfGetAllResponse string
 }
 
 type apiImpl struct {
 	id                           string
 	apiPath                      string
-	paging                       bool
 	propertyNameOfGetAllResponse string
 }
 
@@ -154,10 +149,10 @@ func NewApis() map[string]Api {
 }
 
 func newApi(id string, input apiInput) Api {
-	return NewApi(id, input.apiPath, input.paging, input.propertyNameOfGetAllResponse)
+	return NewApi(id, input.apiPath, input.propertyNameOfGetAllResponse)
 }
 
-func NewApi(id string, apiPath string, paging bool, propertyNameOfGetAllResponse string) Api {
+func NewApi(id string, apiPath string, propertyNameOfGetAllResponse string) Api {
 
 	// TODO log warning if the user tries to create an API with a id not present in map above
 	// This means that a user runs monaco with an untested api
@@ -165,7 +160,6 @@ func NewApi(id string, apiPath string, paging bool, propertyNameOfGetAllResponse
 	return &apiImpl{
 		id:                           id,
 		apiPath:                      apiPath,
-		paging:                       paging,
 		propertyNameOfGetAllResponse: propertyNameOfGetAllResponse,
 	}
 }
@@ -184,12 +178,6 @@ func (a *apiImpl) GetId() string {
 
 func (a *apiImpl) GetApiPath() string {
 	return a.apiPath
-}
-
-// IsPaging returns true if the API's response is paged, and it potentially needs multiple requests to get
-// all the objects from the API
-func (a *apiImpl) IsPaginated() bool {
-	return a.paging
 }
 
 func (a *apiImpl) GetPropertyNameOfGetAllResponse() string {

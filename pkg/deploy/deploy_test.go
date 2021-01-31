@@ -54,8 +54,8 @@ func TestMissingSpecificEnvironmentResultsInError(t *testing.T) {
 
 func testGetExecuteApis() map[string]api.Api {
 	apis := make(map[string]api.Api)
-	apis["calculated-metrics-log"] = api.NewApi("calculated-metrics-log", "/api", false, "values")
-	apis["alerting-profile"] = api.NewApi("alerting-profile", "/api", false, "values")
+	apis["calculated-metrics-log"] = api.NewApi("calculated-metrics-log", "/api", "values")
+	apis["alerting-profile"] = api.NewApi("alerting-profile", "/api", "values")
 	return apis
 }
 func TestExecuteFailOnDuplicateNamesWithinSameConfig(t *testing.T) {

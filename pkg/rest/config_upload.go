@@ -179,15 +179,12 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, url stri
 			}
 		}
 
-		if theApi.IsPaginated() {
+		// Does the API support paging?
+		if objmap["nextPageKey"] != nil {
+			nextPage = objmap["nextPageKey"].(string)
 
-			if objmap["nextPageKey"] != nil {
-				nextPage = objmap["nextPageKey"].(string)
-			} else {
-				break
-			}
+			// Get the next page:
 			resp = get(client, url+"?nextPageKey="+nextPage, apiToken)
-
 		} else {
 			break
 		}
