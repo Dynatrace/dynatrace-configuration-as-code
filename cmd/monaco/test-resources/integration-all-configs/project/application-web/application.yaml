@@ -1,0 +1,6 @@
+
+config:
+  - application: "application.json"
+
+application:
+  - name: "BORG Web Application"

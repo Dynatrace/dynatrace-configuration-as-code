@@ -20,3 +20,4 @@ delete:
   - "maintenance-window/My First Maintenance Window"
   - "azure-credentials/Enterprise Azure Credentials"
   - "application-mobile/BORG Mobile Application"
+  - "application/BORG Web Application"
