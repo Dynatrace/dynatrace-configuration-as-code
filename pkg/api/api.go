@@ -41,6 +41,7 @@ var apiMap = map[string]string{
 	// Environment API not Config API
 	"synthetic-monitor":  "/api/v1/synthetic/monitors",
 	"application":        "/api/config/v1/applications/web",
+	"application-mobile": "/api/config/v1/applications/mobile",
 	"app-detection-rule": "/api/config/v1/applicationDetectionRules",
 	"aws-credentials":    "/api/config/v1/aws/credentials",
 	// Early adopter API !
