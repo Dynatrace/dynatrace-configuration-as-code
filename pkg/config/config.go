@@ -237,13 +237,13 @@ func (c *configImpl) replaceDependencies(data map[string]map[string]string, dict
 }
 
 func (c *configImpl) parseDependency(dependency string, dict map[string]api.DynatraceEntity) (string, error) {
-	absolutePath := false
+	absoluteFromProjectRoot := false
 
 	// in case of an absolute path within the dependency:
 	if strings.HasPrefix(dependency, string(os.PathSeparator)) {
 		// remove prefix "/"
 		dependency = dependency[1:]
-		absolutePath = true
+		absoluteFromProjectRoot = true
 	}
 
 	id, access, err := splitDependency(dependency)
@@ -251,7 +251,7 @@ func (c *configImpl) parseDependency(dependency string, dict map[string]api.Dyna
 		return "", err
 	}
 
-	if !absolutePath {
+	if !absoluteFromProjectRoot {
 		id = filepath.Join(c.project, id)
 	}
 
