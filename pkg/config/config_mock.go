@@ -35,10 +35,10 @@ func (m *MockConfig) EXPECT() *MockConfigMockRecorder {
 }
 
 // GetConfigForEnvironment mocks base method
-func (m *MockConfig) GetConfigForEnvironment(environment environment.Environment, dict map[string]api.DynatraceEntity) (string, error) {
+func (m *MockConfig) GetConfigForEnvironment(environment environment.Environment, dict map[string]api.DynatraceEntity) (map[string]interface{}, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConfigForEnvironment", environment, dict)
-	ret0, _ := ret[0].(string)
+	ret0, _ := ret[0].(map[string]interface{})
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

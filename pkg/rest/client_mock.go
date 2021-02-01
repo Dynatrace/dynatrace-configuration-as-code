@@ -79,18 +79,18 @@ func (mr *MockDynatraceClientMockRecorder) ReadById(a, name interface{}) *gomock
 }
 
 // UpsertByName mocks base method
-func (m *MockDynatraceClient) UpsertByName(a Api, name, json string) (DynatraceEntity, error) {
+func (m *MockDynatraceClient) UpsertByName(a Api, name string, jsonEntity map[string]interface{}) (DynatraceEntity, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpsertByName", a, name, json)
+	ret := m.ctrl.Call(m, "UpsertByName", a, name, jsonEntity)
 	ret0, _ := ret[0].(DynatraceEntity)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpsertByName indicates an expected call of UpsertByName
-func (mr *MockDynatraceClientMockRecorder) UpsertByName(a, name, json interface{}) *gomock.Call {
+func (mr *MockDynatraceClientMockRecorder) UpsertByName(a, name, jsonEntity interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertByName", reflect.TypeOf((*MockDynatraceClient)(nil).UpsertByName), a, name, json)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertByName", reflect.TypeOf((*MockDynatraceClient)(nil).UpsertByName), a, name, jsonEntity)
 }
 
 // DeleteByName mocks base method
