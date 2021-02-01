@@ -45,22 +45,26 @@ func deleteConfig(client *http.Client, url string, apiToken string, id string) {
 }
 
 func post(client *http.Client, url string, data string, apiToken string) Response {
+	util.LogRequest(url, "POST", data)
 	req := requestWithBody(http.MethodPost, url, bytes.NewBuffer([]byte(data)), apiToken)
 	return executeRequest(client, req)
 }
 
 func postMultiPartFile(client *http.Client, url string, data *bytes.Buffer, contentType string, apiToken string) Response {
+	util.LogRequest(url, "POST multipart", "")
 	req := requestWithBody(http.MethodPost, url, data, apiToken)
 	req.Header.Set("Content-type", contentType)
 	return executeRequest(client, req)
 }
 
 func put(client *http.Client, url string, data string, apiToken string) Response {
+	util.LogRequest(url, "PUT", data)
 	req := requestWithBody(http.MethodPut, url, bytes.NewBuffer([]byte(data)), apiToken)
 	return executeRequest(client, req)
 }
 
 func request(method string, url string, apiToken string) *http.Request {
+	util.LogRequest(url, method, "")
 	return requestWithBody(method, url, nil, apiToken)
 }
 
