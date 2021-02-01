@@ -449,6 +449,7 @@ These are the supported configuration types, their API endpoints and the token p
 | anomaly-detection-metrics       | _/api/config/v1/anomalyDetection/metricEvents_  | `Read Configuration` & `Write Configuration`                                                                        |
 | app-detection-rule              | _/api/config/v1/applicationDetectionRules_      | `Read Configuration` & `Write Configuration`                                                                        |
 | application                     | _/api/config/v1/applications/web_               | `Read Configuration` & `Write Configuration`                                                                        |
+| application-mobile              | _/api/config/v1/applications/mobile_            | `Read Configuration` & `Write Configuration`
 | auto-tag                        | _/api/config/v1/autoTags_                       | `Read Configuration` & `Write Configuration`                                                                        |
 | aws-credentials                 | _/api/config/v1/aws/credentials_                | `Read Configuration` & `Write Configuration`                                                                        |
 | calculated-metrics-log          | _/api/config/v1/calculatedMetrics/log_          | `Read Configuration` & `Write Configuration`                                                                        |
