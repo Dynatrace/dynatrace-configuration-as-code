@@ -143,7 +143,8 @@ func execute(environment environment.Environment, projects []project.Project, dr
 func validateConfig(project project.Project, config config.Config, dict map[string]api.DynatraceEntity, environment environment.Environment) (entity api.DynatraceEntity, err error) {
 	util.Log.Debug("\t\tValidating config " + config.GetFilePath())
 
-	jsonString, err := config.GetConfigForEnvironment(environment, dict)
+	_, err = config.GetConfigForEnvironment(environment, dict)
+
 	if err != nil {
 		return entity, err
 	}
@@ -186,8 +187,6 @@ func validateConfig(project project.Project, config config.Config, dict map[stri
 
 	}
 
-	err = util.ValidateJson(jsonString, config.GetFilePath())
-
 	return api.DynatraceEntity{
 		Id:          randomId,
 		Name:        randomId,
@@ -198,7 +197,7 @@ func validateConfig(project project.Project, config config.Config, dict map[stri
 func uploadConfig(client rest.DynatraceClient, config config.Config, dict map[string]api.DynatraceEntity, environment environment.Environment) (entity api.DynatraceEntity, err error) {
 	util.Log.Debug("\t\tApplying config " + config.GetFilePath())
 
-	jsonString, err := config.GetConfigForEnvironment(environment, dict)
+	uploadMap, err := config.GetConfigForEnvironment(environment, dict)
 	if err != nil {
 		return entity, err
 	}
@@ -208,7 +207,7 @@ func uploadConfig(client rest.DynatraceClient, config config.Config, dict map[st
 		return entity, err
 	}
 
-	entity, err = client.UpsertByName(config.GetApi(), name, jsonString)
+	entity, err = client.UpsertByName(config.GetApi(), name, uploadMap)
 
 	if err != nil {
 		err = fmt.Errorf("%s, responsible config: %s", err.Error(), config.GetFilePath())

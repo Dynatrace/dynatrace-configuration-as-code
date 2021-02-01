@@ -86,21 +86,21 @@ func (e *JsonValidationError) PrettyPrintError() {
 }
 
 // ValidateJson validates whether the json file is correct, by using the internal validation done
-//when unmarshalling to a an object. As none of our jsons can actually be unmarshalled
-//to a string, we catch that error, but report any other error as fatal.
-func ValidateJson(jsonString string, filename string) error {
-
-	var j string
-	err := json.Unmarshal([]byte(jsonString), &j)
+// when unmarshalling to a an object. As none of our jsons can actually be unmarshalled
+// to a string, we catch that error, but report any other error as fatal. We then return the parsed
+// json object.
+func ValidateAndParseJson(jsonString string, filename string) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	err := json.Unmarshal([]byte(jsonString), &result)
 
 	if jsonError, ok := err.(*json.SyntaxError); ok {
-		return mapError(jsonString, filename, int(jsonError.Offset), err)
+		return nil, mapError(jsonString, filename, int(jsonError.Offset), err)
 	}
 	if _, ok := err.(*json.UnmarshalTypeError); ok {
 		// TODO actually check against the model (github issue #104)
-		return nil
+		return result, nil
 	}
-	return nil
+	return result, nil
 }
 
 // mapError maps the json parsing error to a JsonValidationError which contains
