@@ -19,6 +19,8 @@ and [Configuration Structure](#configuration-structure)
       - [Experimental new CLI](#experimental-new-cli)
         - [Deploy](#deploy)
         - [Download](#download)
+      - [Misc](#cli-misc)
+        - [Logging all requests send to dynatrace](#cli-misc-log-requests)
     - [Deploying Configuration to Dynatrace](#deploying-configuration-to-dynatrace)
       - [Running The Tool](#running-the-tool)
       - [Environments file](#environments-file)
@@ -183,6 +185,39 @@ tenant as Monaco files. You can use this feature to avoid starting from
 scratch when using Monaco. 
 
 For more information on this feature, see [pkg/download/README.md](./pkg/download/README.md).
+
+#### Misc
+<a id="cli-misc"/>
+
+##### Logging all requests send to dynatrace
+<a id="cli-misc-log-requests">
+
+Sometimes it is usefull for debugging to see send requets from monaco to the dynatrace api.
+This is possible by specifying a log file via the `MONACO_REQUEST_LOG` env variable. 
+
+The specified file can either be relative, then it will be located relative form the current 
+working dir, or absolute. 
+
+**NOTE:** If the file already exists, it will get **truncated**!
+
+Simply set the environment variable and monaco will start writing all send requests to 
+the file like:
+
+```sh
+$ MONACO_REQUEST_LOG=requests.log monaco -e environment project
+```
+
+The requests are logged in format: 
+```
+URL: [url]
+METHOD: [method]
+CONTENT:
+[content]
+==========
+```
+
+As of right now, the content of multipart post requests is not logged. This is a known 
+limitation. 
 
 ### Deploying Configuration to Dynatrace
 
