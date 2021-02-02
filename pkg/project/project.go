@@ -155,6 +155,12 @@ func (p *projectBuilder) processConfigSection(properties map[string]map[string]s
 
 		location = p.standardizeLocation(location, folderPath)
 
+		//Introduce deprecation warning message when using the config type "application"
+		util.Log.Debug("Config type: " + getConfigType(folderPath))
+		if getConfigType(folderPath) == "application" {
+			util.Log.Warn("You are using the configuration 'application', which will be deprecated in v2.0.0. Replace with type 'application-web'.")
+		}
+
 		err, api := p.getExtendedInformationFromLocation(location)
 		if util.CheckError(err, "Could not find API fom location") {
 			return err
@@ -278,4 +284,10 @@ func (p *projectImpl) HasDependencyOn(project Project) bool {
 		}
 	}
 	return false
+}
+
+func getConfigType(folderPath string) string {
+
+	lastSlashLocation := strings.LastIndex(folderPath, "/")
+	return folderPath[lastSlashLocation+1 : len(folderPath)]
 }
