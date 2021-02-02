@@ -17,13 +17,18 @@
 package util
 
 import (
-	"github.com/jcelliott/lumber"
+	"fmt"
 	"os"
+	"path/filepath"
 	"time"
+
+	"github.com/jcelliott/lumber"
 )
 
 // Log is the shared Lumber Logger logging to console and after calling SetupLogging also to file
 var Log lumber.Logger = lumber.NewConsoleLogger(lumber.INFO)
+
+var requestLogFile *os.File
 
 // SetupLogging is used to initialize the shared file Logger once the necessary setup config is available
 func SetupLogging(verbose bool) error {
@@ -44,10 +49,61 @@ func SetupLogging(verbose bool) error {
 
 	logName := ".logs" + string(os.PathSeparator) + time.Now().Format("20060102-150405") + ".log"
 	fileLog, err := lumber.NewAppendLogger(logName)
-	if err == nil {
-		fileLog.Level(lumber.DEBUG)
-		multiLog.AddLoggers(fileLog)
-		Log = multiLog
+
+	if err != nil {
+		return err
 	}
+
+	fileLog.Level(lumber.DEBUG)
+	multiLog.AddLoggers(fileLog)
+	Log = multiLog
+
+	if file, found := os.LookupEnv("MONACO_REQUEST_LOG"); found {
+		logFilePath, err := filepath.Abs(file)
+
+		if err != nil {
+			return err
+		}
+
+		Log.Debug("request log activated at %s", logFilePath)
+		return setupRequestLogging(logFilePath)
+	} else {
+		Log.Debug("request log not activated")
+	}
+
 	return err
+}
+
+func setupRequestLogging(file string) error {
+	handle, err := os.OpenFile(file, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
+
+	if err != nil {
+		return err
+	}
+
+	requestLogFile = handle
+
+	return nil
+}
+
+func IsRequestLoggingActive() bool {
+	return requestLogFile != nil
+}
+
+func LogRequest(url string, method string, content string) error {
+	if content == "" {
+		requestLogFile.WriteString(fmt.Sprintf(`url: %s
+method: %s
+==========
+`, url, method))
+	} else {
+		requestLogFile.WriteString(fmt.Sprintf(`url: %s
+method: %s
+content:
+%s
+==========
+`, url, method, content))
+	}
+
+	return requestLogFile.Sync()
 }
