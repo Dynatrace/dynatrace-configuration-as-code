@@ -22,6 +22,7 @@ import (
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/deploy"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/initialise"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/version"
 
@@ -202,7 +203,8 @@ Examples:
 `
 	deployCommand := getDeployCommand(fileReader)
 	downloadCommand := getDownloadCommand(fileReader)
-	app.Commands = []*cli.Command{&deployCommand, &downloadCommand}
+	initialiseCommand := getInitialiseCommand()
+	app.Commands = []*cli.Command{&deployCommand, &downloadCommand, &initialiseCommand}
 
 	return app
 }
@@ -332,6 +334,36 @@ func getDownloadCommand(fileReader util.FileReader) cli.Command {
 				ctx.String("specific-environment"),
 				ctx.String("downloadSpecificAPI"),
 			)
+		},
+	}
+	return command
+}
+func getInitialiseCommand() cli.Command {
+	command := cli.Command{
+		Name:      "init",
+		Usage:     "initialise demo project and folders",
+		UsageText: "init",
+		Before: func(c *cli.Context) error {
+			err := util.SetupLogging(c.Bool("verbose"))
+
+			if err != nil {
+				return err
+			}
+
+			util.Log.Info("Dynatrace Monitoring as Code v" + version.MonitoringAsCode)
+
+			return nil
+		},
+		Action: func(ctx *cli.Context) error {
+			var workingDir string
+
+			if ctx.Args().Present() {
+				workingDir = ctx.Args().First()
+			} else {
+				workingDir = "."
+			}
+
+			return initialise.CreateTemplate(workingDir)
 		},
 	}
 	return command
