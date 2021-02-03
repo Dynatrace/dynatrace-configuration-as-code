@@ -212,7 +212,6 @@ func getDeployCommand(fileReader util.FileReader) cli.Command {
 		Usage:     "deploys the given environment",
 		UsageText: "deploy [command options] [working directory]",
 		ArgsUsage: "[working directory]",
-<<<<<<< HEAD
 		Before: func(c *cli.Context) error {
 			err := util.SetupLogging(c.Bool("verbose"))
 
@@ -224,8 +223,6 @@ func getDeployCommand(fileReader util.FileReader) cli.Command {
 
 			return nil
 		},
-=======
->>>>>>> cb214669ad26a04251116de6a2f1a0a54e5dc55e
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:    "verbose",
