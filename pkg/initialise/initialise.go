@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download/yamlcreator"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
 )
@@ -47,8 +48,45 @@ func CreateTemplate(workingDir string) error {
 		}
 		util.Log.Info("Created Folder: %v", configTypeFolderPath)
 
-		// Now create demo files in each folder
-		creator.CreateFile(nil, configTypeFolderPath, folderName, ".yaml")
+		config := yamlcreator.NewYamlConfig()
+		/* Add config like:
+		*  config:
+		*  - folderName: folderName.json
+		*  folderName:
+		*  - name: folderName-one
+		*
+		* For example:
+        * config:
+        * - alerting-profile: alerting-profile.json
+        * alerting-profile:
+        * - name: alerting-profile-one
+		*/
+		config.AddConfig(folderName, folderName+"-one")
+		fileCreator := files.NewDiskFileCreator()
+		/* Create file as "folderName.yaml"
+		 * eg. alerting-profile.yaml
+		 */
+		err := config.CreateYamlFile(fileCreator, configTypeFolderPath, folderName)
+		if err != nil {
+			util.Log.Error("Error creating YAML file %v", err)
+		}
+
+		/* Now create demo files in each folder
+		 * Prefil the YAML file with some basic content
+		 *
+		 var builder strings.Builder
+
+		 builder.WriteString("config:")
+		yamlString := `config:
+
+		     third line
+		     fourth line
+		       indentation
+		     fifth line
+		    `
+		yamlData := []byte(yamlString)
+		creator.CreateFile(yamlData, configTypeFolderPath, folderName, ".yaml")
+		*/
 		util.Log.Info("  Created File: %v/%v%v", configTypeFolderPath, folderName, ".yaml")
 		creator.CreateFile(nil, configTypeFolderPath, folderName, ".json")
 		util.Log.Info("  Created File: %v/%v%v", configTypeFolderPath, folderName, ".json")
