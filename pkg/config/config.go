@@ -31,7 +31,7 @@ import (
 //go:generate mockgen -source=config.go -destination=config_mock.go -package=config Config
 
 type Config interface {
-	GetConfigForEnvironment(environment environment.Environment, dict map[string]api.DynatraceEntity) (string, error)
+	GetConfigForEnvironment(environment environment.Environment, dict map[string]api.DynatraceEntity) (map[string]interface{}, error)
 	IsSkipDeployment(environment environment.Environment) bool
 	GetApi() api.Api
 	GetObjectNameForEnvironment(environment environment.Environment, dict map[string]api.DynatraceEntity) (string, error)
@@ -138,17 +138,22 @@ func (c *configImpl) IsSkipDeployment(environment environment.Environment) bool 
 	return false
 }
 
-func (c *configImpl) GetConfigForEnvironment(environment environment.Environment, dict map[string]api.DynatraceEntity) (string, error) {
+func (c *configImpl) GetConfigForEnvironment(environment environment.Environment, dict map[string]api.DynatraceEntity) (map[string]interface{}, error) {
 	filtered := copyProperties(c.properties)
 	filtered, err := c.replaceDependencies(filtered, dict)
 
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if len(filtered) == 0 {
 		json, err := c.template.ExecuteTemplate(map[string]string{})
-		return json, err
+
+		if err != nil {
+			return nil, err
+		}
+
+		return util.ValidateAndParseJson(json, c.GetFilePath())
 	}
 
 	environmentGroupKey := c.id + "." + environment.GetGroup()
@@ -171,11 +176,14 @@ func (c *configImpl) GetConfigForEnvironment(environment environment.Environment
 	}
 
 	json, err := c.template.ExecuteTemplate(filtered[c.id])
+
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return strings.ReplaceAll(json, "&#34;", "\""), nil
+	json = strings.ReplaceAll(json, "&#34;", "\"")
+
+	return util.ValidateAndParseJson(json, c.GetFilePath())
 }
 
 func (c *configImpl) GetObjectNameForEnvironment(environment environment.Environment, dict map[string]api.DynatraceEntity) (string, error) {
