@@ -17,7 +17,7 @@ import (
 )
 
 func Deploy(workingDir string, fileReader util.FileReader, environmentsFile string,
-	specificEnvironment string, proj string, dryRun bool, verbose bool) error {
+	specificEnvironment string, proj string, dryRun bool) error {
 	environments, errors := environment.LoadEnvironmentList(specificEnvironment, environmentsFile, fileReader)
 
 	workingDir = filepath.Clean(workingDir)
