@@ -159,7 +159,6 @@ Examples:
 			ctx.String("specific-environment"),
 			ctx.String("project"),
 			ctx.Bool("dry-run"),
-			ctx.Bool("verbose"),
 		)
 	}
 
@@ -201,18 +200,6 @@ Examples:
   Deploy a specific project to a specific tenant:
     monaco deploy --environments environments.yaml --specific-environment dev --project myProject
 `
-	app.Before = func(c *cli.Context) error {
-		err := util.SetupLogging(c.Bool("verbose"))
-
-		if err != nil {
-			return err
-		}
-
-		util.Log.Info("Dynatrace Monitoring as Code v" + version.MonitoringAsCode)
-
-		return nil
-	}
-
 	deployCommand := getDeployCommand(fileReader)
 	downloadCommand := getDownloadCommand(fileReader)
 	app.Commands = []*cli.Command{&deployCommand, &downloadCommand}
@@ -225,6 +212,17 @@ func getDeployCommand(fileReader util.FileReader) cli.Command {
 		Usage:     "deployes the given environment",
 		UsageText: "deploy [command options] [working directory]",
 		ArgsUsage: "[working directory]",
+		Before: func(c *cli.Context) error {
+			err := util.SetupLogging(c.Bool("verbose"))
+
+			if err != nil {
+				return err
+			}
+
+			util.Log.Info("Dynatrace Monitoring as Code v" + version.MonitoringAsCode)
+
+			return nil
+		},
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:    "verbose",
@@ -274,7 +272,6 @@ func getDeployCommand(fileReader util.FileReader) cli.Command {
 				ctx.String("specific-environment"),
 				ctx.String("project"),
 				ctx.Bool("dry-run"),
-				ctx.Bool("verbose"),
 			)
 		},
 	}
@@ -285,6 +282,17 @@ func getDownloadCommand(fileReader util.FileReader) cli.Command {
 		Name:      "download",
 		Usage:     "download the given environment",
 		UsageText: "download [command options] [working directory]",
+		Before: func(c *cli.Context) error {
+			err := util.SetupLogging(c.Bool("verbose"))
+
+			if err != nil {
+				return err
+			}
+
+			util.Log.Info("Dynatrace Monitoring as Code v" + version.MonitoringAsCode)
+
+			return nil
+		},
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:    "verbose",
@@ -323,7 +331,6 @@ func getDownloadCommand(fileReader util.FileReader) cli.Command {
 				ctx.Path("environments"),
 				ctx.String("specific-environment"),
 				ctx.String("downloadSpecificAPI"),
-				ctx.Bool("verbose"),
 			)
 		},
 	}
