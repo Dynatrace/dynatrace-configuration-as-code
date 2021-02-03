@@ -11,10 +11,16 @@ This tool automates deployment of Dynatrace Monitoring Configuration to one or m
 and [Configuration Structure](#configuration-structure)
 
 - [Dynatrace Monitoring as Code](#dynatrace-monitoring-as-code)
-  - [Using Monitoring as Code Tool](#using-monitoring-as-code-tool)
     - [Install Monaco](#install-monaco)
+      - [On Mac or Linux systems perform the following](#on-mac-or-linux-systems-perform-the-following)
+      - [On Windows](#on-windows)
     - [Commands (CLI)](#commands-cli)
       - [Dry Run (Validating Configuration)](#dry-run-validating-configuration)
+      - [Experimental new CLI](#experimental-new-cli)
+        - [Deploy](#deploy)
+        - [Download](#download)
+      - [Misc](#cli-misc)
+        - [Logging all requests send to dynatrace](#cli-misc-log-requests)
     - [Deploying Configuration to Dynatrace](#deploying-configuration-to-dynatrace)
       - [Running The Tool](#running-the-tool)
       - [Environments file](#environments-file)
@@ -25,7 +31,7 @@ and [Configuration Structure](#configuration-structure)
         - [Dashboard JSON](#dashboard-json)
         - [Calculated log metrics JSON](#calculated-log-metrics-json)
         - [Conditional naming JSON](#conditional-naming-json)
-    - [Configuration Types / APIs](#configuration-types-apis)
+    - [Configuration Types / APIs](#configuration-types--apis)
       - [Supported Configuration Types and Token Permissions](#supported-configuration-types-and-token-permissions)
     - [Configuration YAML Structure](#configuration-yaml-structure)
     - [Skip configuration deployment](#skip-configuration-deployment)
@@ -89,6 +95,8 @@ For deploying a specific project inside a root config folder, the tool could be 
 
 In this case the **project** is within the **projects-root-folder**.
 
+> Note that `[projects-root-folder]` needs to be a relative path from the directory you run monaco in.
+
 For validating your complete configuration in the current folder, the tool could be run as:
 ```monaco --dry-run --environments <path-to-environment-yaml-file>```
 
@@ -146,6 +154,70 @@ To validate the configuration execute `monaco -dry-run` on a yaml file as show h
 ...
 2020/06/16 16:22:30 Config validation SUCCESSFUL
 ```
+
+#### Experimental new CLI
+Starting with version 1.2.0 a new experimental CLI is available. The plan is that it 
+will gradually become the new default in the next few releases. 
+
+To activate the new experimental cli simply set an the env variable `NEW_CLI` to 1. 
+
+E.g.
+
+```sh
+NEW_CLI=1 monaco 
+```
+
+By running the above example you will notice that instead of being flag based, the 
+new cli is based around commands. 
+
+As of right now the following commands are available:
+* deploy
+* download
+
+##### Deploy
+This command is basically doing what the old tool did. It is used to deploy a specified
+config to a dynatrace environment. The flags to things like the environments files
+are mostly the same. 
+
+##### Download
+This feature allows you to download the configuration from a Dynatrace
+tenant as Monaco files. You can use this feature to avoid starting from
+scratch when using Monaco. 
+
+For more information on this feature, see [pkg/download/README.md](./pkg/download/README.md).
+
+#### Misc
+<a id="cli-misc"/>
+
+##### Logging all requests send to dynatrace
+<a id="cli-misc-log-requests">
+
+Sometimes it is usefull for debugging to see send requets from monaco to the dynatrace api.
+This is possible by specifying a log file via the `MONACO_REQUEST_LOG` env variable. 
+
+The specified file can either be relative, then it will be located relative form the current 
+working dir, or absolute. 
+
+**NOTE:** If the file already exists, it will get **truncated**!
+
+Simply set the environment variable and monaco will start writing all send requests to 
+the file like:
+
+```sh
+$ MONACO_REQUEST_LOG=requests.log monaco -e environment project
+```
+
+The requests are logged in format: 
+```
+URL: [url]
+METHOD: [method]
+CONTENT:
+[content]
+==========
+```
+
+As of right now, the content of multipart post requests is not logged. This is a known 
+limitation. 
 
 ### Deploying Configuration to Dynatrace
 

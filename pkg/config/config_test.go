@@ -30,8 +30,8 @@ import (
 	"gotest.tools/assert"
 )
 
-const testTemplate = "Follow the {{.color}} {{.animalType}}"
-const testTemplateWithEnvVar = "Follow the {{.color}} {{ .Env.ANIMAL }}"
+const testTemplate = `{"msg": "Follow the {{.color}} {{.animalType}}"}`
+const testTemplateWithEnvVar = `{"msg": "Follow the {{.color}} {{ .Env.ANIMAL }}"}`
 
 var testDevEnvironment = environment.NewEnvironment("development", "Dev", "", "https://url/to/dev/environment", "DEV")
 var testHardeningEnvironment = environment.NewEnvironment("hardening", "Hardening", "", "https://url/to/hardening/environment", "HARDENING")
@@ -153,7 +153,7 @@ func TestGetConfigStringWithEnvironmentOverride(t *testing.T) {
 
 	devResult, err := config.GetConfigForEnvironment(testDevEnvironment, make(map[string]api.DynatraceEntity))
 	assert.NilError(t, err)
-	assert.Equal(t, "Follow the black squid", devResult)
+	assert.Equal(t, "Follow the black squid", devResult["msg"])
 }
 
 func TestGetConfigStringNoEnvironmentOverride(t *testing.T) {
@@ -164,7 +164,7 @@ func TestGetConfigStringNoEnvironmentOverride(t *testing.T) {
 
 	hardeningResult, err := config.GetConfigForEnvironment(testHardeningEnvironment, make(map[string]api.DynatraceEntity))
 	assert.NilError(t, err)
-	assert.Equal(t, "Follow the white rabbit", hardeningResult)
+	assert.Equal(t, "Follow the white rabbit", hardeningResult["msg"])
 }
 
 func TestGetConfigString(t *testing.T) {
@@ -178,8 +178,8 @@ func TestGetConfigString(t *testing.T) {
 
 	assert.NilError(t, devErr)
 	assert.NilError(t, hardeningErr)
-	assert.Equal(t, "Follow the black squid", devResult)
-	assert.Equal(t, "Follow the white rabbit", hardeningResult)
+	assert.Equal(t, "Follow the black squid", devResult["msg"])
+	assert.Equal(t, "Follow the white rabbit", hardeningResult["msg"])
 }
 
 // test GetConfigForEnvironment if environment group is defined
@@ -192,7 +192,7 @@ func TestGetConfigWithGroupOverride(t *testing.T) {
 
 	productionResult, err := config.GetConfigForEnvironment(testProductionEnvironment, make(map[string]api.DynatraceEntity))
 	assert.NilError(t, err)
-	assert.Equal(t, "Follow the brown dog", productionResult)
+	assert.Equal(t, "Follow the brown dog", productionResult["msg"])
 }
 
 // testing the order when both group and environment overrides are defined
@@ -206,7 +206,7 @@ func TestGetConfigWithGroupAndEnvironmentOverride(t *testing.T) {
 
 	productionResult, err := config.GetConfigForEnvironment(testProductionEnvironment, make(map[string]api.DynatraceEntity))
 	assert.NilError(t, err)
-	assert.Equal(t, "Follow the red cat", productionResult)
+	assert.Equal(t, "Follow the red cat", productionResult["msg"])
 }
 
 // Test combining parameters
@@ -222,14 +222,14 @@ func TestGetConfigWithMergingGroupAndEnvironmentOverrides(t *testing.T) {
 	delete(m["test.prod-environment"], "color")
 	productionResult, err := config.GetConfigForEnvironment(testProductionEnvironment, make(map[string]api.DynatraceEntity))
 	assert.NilError(t, err)
-	assert.Equal(t, "Follow the brown cat", productionResult)
+	assert.Equal(t, "Follow the brown cat", productionResult["msg"])
 
 	// removing whole `test.prod-environment` config section
 	// only `test.production` parameters should be considered
 	delete(m, "test.prod-environment")
 	productionResult, err = config.GetConfigForEnvironment(testProductionEnvironment, make(map[string]api.DynatraceEntity))
 	assert.NilError(t, err)
-	assert.Equal(t, "Follow the brown dog", productionResult)
+	assert.Equal(t, "Follow the brown dog", productionResult["msg"])
 }
 
 func TestSkipConfigDeployment(t *testing.T) {
@@ -478,7 +478,7 @@ func TestGetConfigStringWithEnvVar(t *testing.T) {
 	util.UnsetEnv(t, "ANIMAL")
 
 	assert.NilError(t, err)
-	assert.Equal(t, "Follow the black cow", devResult)
+	assert.Equal(t, "Follow the black cow", devResult["msg"])
 }
 
 func TestGetConfigStringWithEnvVarLeadsToErrorIfEnvVarNotPresent(t *testing.T) {

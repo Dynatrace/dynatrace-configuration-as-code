@@ -18,6 +18,7 @@ package delete
 
 import (
 	"errors"
+	"path/filepath"
 	"strings"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
@@ -39,9 +40,11 @@ func LoadConfigsToDelete(apis map[string]api.Api, path string, fileReader util.F
 
 	result := make([]config.Config, 0)
 
-	data, err := fileReader.ReadFile(path + "" + deleteFileName)
+	deleteFilePath := filepath.Join(path, deleteFileName)
+	data, err := fileReader.ReadFile(deleteFilePath)
 	if err != nil {
 		// Don't raise an error. The delete.yaml might not be there, that's a valid case
+		util.Log.Info("There is no delete file %s found in %s. Skipping delete config.", deleteFileName, deleteFilePath)
 		return result, nil
 	}
 
@@ -57,7 +60,7 @@ func LoadConfigsToDelete(apis map[string]api.Api, path string, fileReader util.F
 			return configs, err
 		}
 
-		api, validConfig := apis[configType]
+		apiName, validConfig := apis[configType]
 		if !validConfig {
 			return configs, errors.New("config type " + configType + " was not valid")
 		}
@@ -66,7 +69,7 @@ func LoadConfigsToDelete(apis map[string]api.Api, path string, fileReader util.F
 		properties[name] = make(map[string]string)
 		properties[name]["name"] = name
 
-		configForDeletion := config.NewConfigForDelete(name, "delete.yaml", properties, api)
+		configForDeletion := config.NewConfigForDelete(name, "delete.yaml", properties, apiName)
 		result = append(result, configForDeletion)
 	}
 

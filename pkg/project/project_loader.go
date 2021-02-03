@@ -18,10 +18,11 @@ package project
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
@@ -32,7 +33,8 @@ import (
 // it also resolves all project dependencies
 // if no -p parameter specified, then it creates a list of all projects
 func LoadProjectsToDeploy(specificProjectToDeploy string, apis map[string]api.Api, path string, fileReader util.FileReader) (projectsToDeploy []Project, err error) {
-	projectsFolder := filepath.Join(".", path)
+
+	projectsFolder := filepath.Clean(path)
 	projectsToDeploy = make([]Project, 0)
 
 	util.Log.Debug("Reading projects...")
@@ -42,11 +44,12 @@ func LoadProjectsToDeploy(specificProjectToDeploy string, apis map[string]api.Ap
 	if err != nil {
 		return nil, err
 	}
+
 	availableProjects := make([]Project, 0)
 	for _, fullQualifiedProjectFolderName := range availableProjectFolders {
 		util.Log.Debug("  project - %s", fullQualifiedProjectFolderName)
 		projectFolderName := extractFolderNameFromFullPath(fullQualifiedProjectFolderName)
-		project, err := NewProject(fullQualifiedProjectFolderName, projectFolderName, apis, path, fileReader)
+		project, err := NewProject(fullQualifiedProjectFolderName, projectFolderName, apis, projectsFolder, fileReader)
 		if err != nil {
 			return nil, err
 		}
@@ -60,7 +63,8 @@ func LoadProjectsToDeploy(specificProjectToDeploy string, apis map[string]api.Ap
 		return returnSortedProjects(projectsToDeploy)
 	}
 
-	projectsToDeploy, err = createProjectsListFromFolderList(path, specificProjectToDeploy, projectsFolder, apis, availableProjectFolders, fileReader)
+	projectsToDeploy, err = createProjectsListFromFolderList(projectsFolder, specificProjectToDeploy, projectsFolder, apis, availableProjectFolders, fileReader)
+
 	if err != nil {
 		return nil, err
 	}
@@ -165,8 +169,11 @@ func filterProjectsWithSubproject(allProjectFolders []string) []string {
 
 // checks if project folder contains subproject(s)
 func hasSubprojectFolder(projectFolder string, projectFolders []string) bool {
+	cleanedProjectFolder := filepath.Clean(projectFolder)
+
 	for _, p := range projectFolders {
-		if strings.HasPrefix(p, projectFolder+string(filepath.Separator)) && p != projectFolder {
+		cleanedFolder := filepath.Clean(p)
+		if filepath.Dir(cleanedFolder) == cleanedProjectFolder && cleanedFolder != cleanedProjectFolder {
 			return true
 		}
 	}
@@ -179,6 +186,9 @@ func hasSubprojectFolder(projectFolder string, projectFolders []string) bool {
 func getAllProjectFoldersRecursively(path string) ([]string, error) {
 	var allProjectsFolders []string
 	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		if info == nil {
+			return fmt.Errorf("Project path does not exist: %s. (This needs to be a relative path from the current directory)", path)
+		}
 		if info.IsDir() && !strings.HasPrefix(path, ".") && !api.ContainsApiName(path) {
 			allProjectsFolders = append(allProjectsFolders, path)
 			err := subprojectsMixedWithApi(path)

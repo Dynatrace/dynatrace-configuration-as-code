@@ -39,10 +39,10 @@ const validJson2 = `{
 
 func TestJsonUnmarshallingWorks(t *testing.T) {
 
-	err := ValidateJson(validJson1, "test.json")
+	_, err := ValidateAndParseJson(validJson1, "test.json")
 	assert.NilError(t, err)
 
-	err = ValidateJson(validJson2, "test.json")
+	_, err = ValidateAndParseJson(validJson2, "test.json")
 	assert.NilError(t, err)
 }
 
@@ -53,7 +53,7 @@ const syntaxErrorMisplacedContext = `{
 
 func TestJsonUnmarshallingWithMisplacedContentExpectedError(t *testing.T) {
 
-	err := ValidateJson(syntaxErrorMisplacedContext, "test.json")
+	_, err := ValidateAndParseJson(syntaxErrorMisplacedContext, "test.json")
 	assert.Check(t, err != nil)
 
 	if jsonErr, ok := err.(JsonValidationError); ok {
@@ -79,7 +79,7 @@ const syntaxErrorNoClosingBracket = `{
 
 func TestJsonUnmarshallingWithNoClosingBracketExpectedError(t *testing.T) {
 
-	err := ValidateJson(syntaxErrorNoClosingBracket, "test.json")
+	_, err := ValidateAndParseJson(syntaxErrorNoClosingBracket, "test.json")
 	assert.Check(t, err != nil)
 
 	if jsonErr, ok := err.(JsonValidationError); ok {
@@ -108,7 +108,7 @@ const syntaxErrorNoComma = `{
 
 func TestJsonUnmarshallingNoCommaExpectedError(t *testing.T) {
 
-	err := ValidateJson(syntaxErrorNoComma, "no-comma.json")
+	_, err := ValidateAndParseJson(syntaxErrorNoComma, "no-comma.json")
 	assert.Check(t, err != nil)
 
 	if jsonErr, ok := err.(JsonValidationError); ok {
@@ -134,7 +134,7 @@ const syntaxErrorInFirstLine = `"key": "value",
 
 func TestJsonUnmarshallingNoOpeningParenthesisExpectedError(t *testing.T) {
 
-	err := ValidateJson(syntaxErrorInFirstLine, "syntax-err.json")
+	_, err := ValidateAndParseJson(syntaxErrorInFirstLine, "syntax-err.json")
 	assert.Check(t, err != nil)
 
 	if jsonErr, ok := err.(JsonValidationError); ok {
