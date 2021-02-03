@@ -50,16 +50,16 @@ func CreateTemplate(workingDir string) error {
 
 		config := yamlcreator.NewYamlConfig()
 		/* Add config like:
-		*  config:
-		*  - folderName: folderName.json
-		*  folderName:
-		*  - name: folderName-one
-		*
-		* For example:
-        * config:
-        * - alerting-profile: alerting-profile.json
-        * alerting-profile:
-        * - name: alerting-profile-one
+				*  config:
+				*  - folderName: folderName.json
+				*  folderName:
+				*  - name: folderName-one
+				*
+				* For example:
+		        * config:
+		        * - alerting-profile: alerting-profile.json
+		        * alerting-profile:
+		        * - name: alerting-profile-one
 		*/
 		config.AddConfig(folderName, folderName+"-one")
 		fileCreator := files.NewDiskFileCreator()
@@ -71,22 +71,6 @@ func CreateTemplate(workingDir string) error {
 			util.Log.Error("Error creating YAML file %v", err)
 		}
 
-		/* Now create demo files in each folder
-		 * Prefil the YAML file with some basic content
-		 *
-		 var builder strings.Builder
-
-		 builder.WriteString("config:")
-		yamlString := `config:
-
-		     third line
-		     fourth line
-		       indentation
-		     fifth line
-		    `
-		yamlData := []byte(yamlString)
-		creator.CreateFile(yamlData, configTypeFolderPath, folderName, ".yaml")
-		*/
 		util.Log.Info("  Created File: %v/%v%v", configTypeFolderPath, folderName, ".yaml")
 		creator.CreateFile(nil, configTypeFolderPath, folderName, ".json")
 		util.Log.Info("  Created File: %v/%v%v", configTypeFolderPath, folderName, ".json")
