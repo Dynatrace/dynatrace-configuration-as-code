@@ -1,10 +1,54 @@
 # Monitoring as Code Tool - Release Notes
 
-- [Monitoring as Code - Release Notes](#monitoring-as-code---release-notes)
+- [Monitoring as Code Tool - Release Notes](#monitoring-as-code-tool---release-notes)
+  - [1.3.0](#130)
+    - [List of changes](#list-of-changes)
+      - [Deprecation Warnings](#deprecation-warnings)
+      - [Features](#features)
+      - [Bugfixes](#bugfixes)
+      - [Misc changes](#misc-changes)
   - [1.2.0](#120)
+    - [List of changes](#list-of-changes-1)
+      - [Features](#features-1)
+      - [Bugfixes](#bugfixes-1)
+      - [Misc changes](#misc-changes-1)
   - [1.1.0](#110)
+    - [List of changes](#list-of-changes-2)
+      - [Features](#features-2)
+      - [Bugfixes](#bugfixes-2)
+      - [Library updates](#library-updates)
+      - [Misc changes](#misc-changes-2)
   - [1.0.1](#101)
   - [1.0.0](#100)
+
+## 1.3.0
+
+### List of changes
+
+#### Deprecation Warnings
+* #146: `application-web` configuration type replaces `application` in the future
+  * `application` config type is deprecated with 1.3.0 and will be removed with 2.0.0
+
+#### Features
+
+* #146: Add support for `application-mobile`(applications/mobile) configurations
+* #66: Add support for `slo` (/api/v2/slo) configruations
+
+#### Bugfixes
+
+* f52d297 Fix #138: Fix issue when providing context path without slash (#139)
+* 60cf6b1 Fix #155: Fix delete command not working (#157)
+* 4ad81a9 Fix #102: Trim URL Trailing Slashes from environment URLs (#142)
+* 2f774bc: Show error when more than one argument is provided (#139)
+* 7002149: Fix pretty print of json error (#150)
+* 4086d87: Fix verbose flag not working in new cli (#159)
+* d911e21: Fix typos in CLI usage info messages (#159)
+
+#### Misc changes
+
+* 27a154c: Add possibility to log requests sent to Dynatrace (#151)
+  * To aid debugging it is now possible to have monaco log what exactly it sends to Dynatrace (fully filled out config JSONs)
+* 3772697: Replace json unmarshall type with map - improves internal handling of responses from Dynatrace (#150)
 
 ## 1.2.0
 
