@@ -114,7 +114,7 @@ Examples:
 		},
 		&cli.PathFlag{
 			Name:      "environments",
-			Usage:     "Yaml file containing environment to deploye to",
+			Usage:     "Yaml file containing environments to deploy to",
 			Aliases:   []string{"e"},
 			Required:  true,
 			TakesFile: true,
@@ -209,7 +209,7 @@ Examples:
 func getDeployCommand(fileReader util.FileReader) cli.Command {
 	command := cli.Command{
 		Name:      "deploy",
-		Usage:     "deployes the given environment",
+		Usage:     "deploys the given environment",
 		UsageText: "deploy [command options] [working directory]",
 		ArgsUsage: "[working directory]",
 		Before: func(c *cli.Context) error {
