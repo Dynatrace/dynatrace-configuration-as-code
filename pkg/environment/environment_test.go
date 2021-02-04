@@ -82,6 +82,7 @@ development:
 var testDevEnvironment = NewEnvironment("development", "Dev", "", "https://url/to/dev/environment", "DEV")
 var testHardeningEnvironment = NewEnvironment("hardening", "Hardening", "", "https://url/to/hardening/environment", "HARDENING")
 var testProductionEnvironment = NewEnvironment("prod-environment", "prod-environment", "production", "https://url/to/production/environment", "PRODUCTION")
+var testTrailingSlashEnvironment = NewEnvironment("trailing-slash-environment", "trailing-slash-environment", "", "https://url/to/production/environment/", "TRAILINGSLASH")
 
 func TestShouldParseYaml(t *testing.T) {
 
@@ -176,6 +177,15 @@ func TestTokenNotAvailableOnGetterCallWithTemplating(t *testing.T) {
 
 	e, _ := util.UnmarshalYaml(testYamlEnvironmentWithNewPropertyFormat, "test-yaml")
 	assert.ErrorContains(t, e, "map has no entry for key \"URL\"")
+}
+
+func TestTrailingSlashTrimmedFromEnvironmentURL(t *testing.T) {
+	envURL := testTrailingSlashEnvironment.GetEnvironmentUrl()
+	last_char := envURL[len(envURL)-1:]
+
+	if last_char == "/" {
+		t.Errorf("Env URL is: %s; Last Char is: %s. Expected last character NOT to be a trailing slash.", envURL, last_char)
+	}
 }
 
 func setupEnvironment(t *testing.T, environmentYamlContent string, environmentOfInterest string) (error, Environment) {
