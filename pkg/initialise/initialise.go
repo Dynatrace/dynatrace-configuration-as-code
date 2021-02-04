@@ -19,6 +19,18 @@ func CreateTemplate(workingDir string) error {
 
 	creator := files.NewDiskFileCreator()
 
+	// Create environments.yaml file
+	environmentsContent := `environment1:
+    - name: "environment1"
+    - env-url: "{{ .Env.ENVIRONMENT_ONE }}"
+    - env-token-name: "{{ .Env.TOKEN_ENVIRONMENT_ONE }}"`
+	_, err := creator.CreateFile([]byte(environmentsContent), workingDir, "environments", ".yaml")
+
+	if err != nil {
+		util.Log.Error("Error creating environments.yaml file")
+	}
+	util.Log.Info("Created File: environments.yaml")
+
 	// Create /projects folder
 	fullpath, err := creator.CreateFolder(projectsFolder)
 	if err != nil {
