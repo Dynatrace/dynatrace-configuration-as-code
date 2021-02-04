@@ -94,6 +94,8 @@ func newEnvironment(id string, properties map[string]string) (Environment, error
 }
 
 func NewEnvironment(id string, name string, group string, environmentUrl string, envTokenName string) Environment {
+	environmentUrl = strings.TrimSuffix(environmentUrl, "/")
+
 	return &environmentImpl{
 		id:             id,
 		name:           name,
