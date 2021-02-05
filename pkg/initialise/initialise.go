@@ -14,8 +14,8 @@ func CreateTemplate(workingDir string) error {
 
 	workingDir = filepath.Clean(workingDir)
 	util.Log.Info("Initialising Monaco Demo Folders")
-	projectsFolder := workingDir + "/projects"
-	demoProjectFolder := projectsFolder + "/baseconfig"
+	projectsFolder := filepath.Join(workingDir, "projects")
+	demoProjectFolder := filepath.Join(workingDir, "projects", "baseconfig")
 
 	creator := files.NewDiskFileCreator()
 
@@ -52,7 +52,7 @@ func CreateTemplate(workingDir string) error {
 	apiMap := api.NewApis()
 
 	for folderName := range apiMap {
-		configTypeFolderPath := demoProjectFolder + "/" + folderName
+		configTypeFolderPath := filepath.Join(demoProjectFolder, folderName)
 		creator.CreateFolder(configTypeFolderPath)
 		if err != nil {
 			util.Log.Error("Error creating /projects/%v >> %v - %v", folderName, fullpath, err)
