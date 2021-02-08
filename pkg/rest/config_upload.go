@@ -282,7 +282,7 @@ func translateGenericValues(inputValues []interface{}, configType string) ([]api
 		if input["name"] == nil {
 			jsonStr, err := json.Marshal(input)
 			if err != nil {
-				util.Log.Warn("Could not marshal %s", configType)
+				util.Log.Warn("Config of type %s was invalid. Ignoring it!", configType)
 				continue
 			}
 
