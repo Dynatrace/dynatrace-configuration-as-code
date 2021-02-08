@@ -286,7 +286,7 @@ func translateGenericValues(inputValues []interface{}, configType string) ([]api
 				continue
 			}
 
-			util.Log.Warn("Config of type %s was invalid: %s", configType, string(jsonStr))
+			util.Log.Warn("Config of type %s was invalid. Auto-corrected to use ID as name!\nInvalid config: %s", configType, string(jsonStr))
 
 			values[i] = api.Value{
 				Id:   input["id"].(string),
