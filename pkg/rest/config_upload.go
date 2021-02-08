@@ -232,7 +232,11 @@ func unmarshalJson(theApi api.Api, err error, resp Response, values []api.Value,
 		}
 
 		if available, array := isResultArrayAvailable(objmap, theApi); available {
-			values = append(values, translateGenericValues(array)...)
+			genericValues, err := translateGenericValues(array, theApi.GetId())
+			if err != nil {
+				return err, values
+			}
+			values = append(values, genericValues...)
 		}
 
 	} else {
@@ -262,17 +266,41 @@ func isPaginatedResponse(jsonResponse map[string]interface{}) (paginated bool, p
 	return false, ""
 }
 
-func translateGenericValues(inputValues []interface{}) []api.Value {
+func translateGenericValues(inputValues []interface{}, configType string) ([]api.Value, error) {
+
 	numValues := len(inputValues)
 	values := make([]api.Value, numValues, numValues)
+
 	for i := 0; i < numValues; i++ {
 		input := inputValues[i].(map[string]interface{})
+
+		if input["id"] == nil {
+			return values, fmt.Errorf("config of type %s was invalid: No id", configType)
+		}
+
+		// repair invalid configs - but log them
+		if input["name"] == nil {
+			jsonStr, err := json.Marshal(input)
+			if err != nil {
+				util.Log.Warn("Could not marshal %s", configType)
+				continue
+			}
+
+			util.Log.Warn("Config of type %s was invalid: %s", configType, string(jsonStr))
+
+			values[i] = api.Value{
+				Id:   input["id"].(string),
+				Name: input["id"].(string), // use the id as name
+			}
+			continue
+		}
+
 		values[i] = api.Value{
 			Id:   input["id"].(string),
 			Name: input["name"].(string),
 		}
 	}
-	return values
+	return values, nil
 }
 
 func translateSyntheticValues(syntheticValues []api.SyntheticValue) []api.Value {
