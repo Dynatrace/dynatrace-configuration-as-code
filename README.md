@@ -19,8 +19,8 @@ and [Configuration Structure](#configuration-structure)
       - [Experimental new CLI](#experimental-new-cli)
         - [Deploy](#deploy)
         - [Download](#download)
-      - [Misc](#cli-misc)
-        - [Logging all requests send to dynatrace](#cli-misc-log-requests)
+      - [Misc](#misc)
+        - [Logging all requests send to dynatrace](#logging-all-requests-send-to-dynatrace)
     - [Deploying Configuration to Dynatrace](#deploying-configuration-to-dynatrace)
       - [Running The Tool](#running-the-tool)
       - [Environments file](#environments-file)
@@ -459,6 +459,10 @@ These are the supported configuration types, their API endpoints and the token p
 | conditional-naming-processgroup | _/api/config/v1/conditionalNaming/processGroup_ | `Read Configuration` & `Write Configuration`                                                                        |
 | conditional-naming-service      | _/api/config/v1/conditionalNaming/service_      | `Read Configuration` & `Write Configuration`                                                                        |
 | custom-service-java             | _/api/config/v1/service/customServices/java_    | `Read Configuration` & `Write Configuration`                                                                        |
+| custom-service-dotnet           | _/api/config/v1/service/customServices/dotnet_  | `Read Configuration` & `Write Configuration`                                                                        |
+| custom-service-go               | _/api/config/v1/service/customServices/go_      | `Read Configuration` & `Write Configuration`                                                                        |
+| custom-service-nodejs           | _/api/config/v1/service/customServices/nodejs_  | `Read Configuration` & `Write Configuration`                                                                        |
+| custom-service-php              | _/api/config/v1/service/customServices/php_     | `Read Configuration` & `Write Configuration`                                                                        |
 | dashboard                       | _/api/config/v1/dashboards_                     | `Read Configuration` & `Write Configuration`                                                                        |
 | extension                       | _/api/config/v1/extensions_                     | `Read Configuration` & `Write Configuration`                                                                        |
 | maintenance-window              | _/api/config/v1/maintenanceWindows_             | `Deprecated: Configure maintenance windows`                                                                         |

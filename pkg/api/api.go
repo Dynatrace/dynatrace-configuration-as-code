@@ -51,6 +51,18 @@ var apiMap = map[string]apiInput{
 	"custom-service-java": {
 		apiPath: "/api/config/v1/service/customServices/java",
 	},
+	"custom-service-dotnet": {
+		apiPath: "/api/config/v1/service/customServices/dotNet",
+	},
+	"custom-service-go": {
+		apiPath: "/api/config/v1/service/customServices/go",
+	},
+	"custom-service-nodejs": {
+		apiPath: "/api/config/v1/service/customServices/nodeJS",
+	},
+	"custom-service-php": {
+		apiPath: "/api/config/v1/service/customServices/php",
+	},
 	// Early adopter API !
 	"anomaly-detection-metrics": {
 		apiPath: "/api/config/v1/anomalyDetection/metricEvents",

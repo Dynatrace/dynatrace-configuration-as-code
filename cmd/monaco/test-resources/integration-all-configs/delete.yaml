@@ -21,3 +21,7 @@ delete:
   - "azure-credentials/Enterprise Azure Credentials"
   - "application-mobile/BORG Mobile Application"
   - "application/BORG Web Application"
+  - "custom-service-java/Enterprise Warp Drive dotNet"
+  - "custom-service-java/Enterprise Warp Drive GoLang"
+  - "custom-service-java/Enterprise Warp Drive NodeJS"
+  - "custom-service-java/Enterprise Warp Drive php"
