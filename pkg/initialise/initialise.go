@@ -16,9 +16,9 @@ func CreateTemplate(workingDir string, createSpecificAPI string) error {
 
 	util.Log.Info("Creating Config for APIs: %v", createSpecificAPI)
 
-	apiList, getAPIListErr := getAPIList(createSpecificAPI)
-	if getAPIListErr != nil {
-		return getAPIListErr
+	apiList, err := getAPIList(createSpecificAPI)
+	if err != nil {
+		return err
 	}
 
 	workingDir = filepath.Clean(workingDir)
@@ -33,7 +33,7 @@ func CreateTemplate(workingDir string, createSpecificAPI string) error {
 		    - name: "environment1"
 		    - env-url: "{{ .Env.ENVIRONMENT_ONE }}"
 		    - env-token-name: "{{ .Env.TOKEN_ENVIRONMENT_ONE }}"`
-	_, err := creator.CreateFile([]byte(environmentsContent), workingDir, "environments", ".yaml")
+	_, err = creator.CreateFile([]byte(environmentsContent), workingDir, "environments", ".yaml")
 
 	if err != nil {
 		util.Log.Error("Error creating environments.yaml file")
