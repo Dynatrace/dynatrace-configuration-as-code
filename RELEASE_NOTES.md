@@ -1,38 +1,32 @@
 # Monitoring as Code Tool - Release Notes
 
-- [Monitoring as Code Tool - Release Notes](#monitoring-as-code-tool---release-notes)
+- Versions:
+  - [1.3.1](#131)
   - [1.3.0](#130)
-    - [List of changes](#list-of-changes)
-      - [Deprecation Warnings](#deprecation-warnings)
-      - [Features](#features)
-      - [Bugfixes](#bugfixes)
-      - [Misc changes](#misc-changes)
   - [1.2.0](#120)
-    - [List of changes](#list-of-changes-1)
-      - [Features](#features-1)
-      - [Bugfixes](#bugfixes-1)
-      - [Misc changes](#misc-changes-1)
   - [1.1.0](#110)
-    - [List of changes](#list-of-changes-2)
-      - [Features](#features-2)
-      - [Bugfixes](#bugfixes-2)
-      - [Library updates](#library-updates)
-      - [Misc changes](#misc-changes-2)
   - [1.0.1](#101)
   - [1.0.0](#100)
+
+## 1.3.1
+
+### List of changes
+#### Bugfixes
+
+* 2e0e88a: Cope with faulty configs (name or id is null) (#169)
 
 ## 1.3.0
 
 ### List of changes
 
 #### Deprecation Warnings
-* #146: `application-web` configuration type replaces `application` in the future
-  * `application` config type is deprecated with 1.3.0 and will be removed with 2.0.0
+  * Fix #146: `application-web` configuration type replaces `application` in the future (#149)
+  * `application` config type is deprecated with 1.3.0 and will be removed with 2.0.0 (#149)
 
 #### Features
 
-* #146: Add support for `application-mobile`(applications/mobile) configurations
-* #66: Add support for `slo` (/api/v2/slo) configruations
+  * Fix #146: Add support for `application-mobile`(applications/mobile) configurations (#149)
+  * 5558b61 Fix #66: Add support for `slo` (/api/v2/slo) configruations (#153)
 
 #### Bugfixes
 
