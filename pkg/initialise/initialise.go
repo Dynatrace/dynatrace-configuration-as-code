@@ -57,7 +57,6 @@ func CreateTemplate(workingDir string, createSpecificAPI string) error {
 	util.Log.Info("Created Folder: %v", demoProjectFolder)
 
 	// For each allowed API, create the relevant folder
-	// Retrieve all allowed APIs
 
 	for folderName := range apiList {
 		configTypeFolderPath := filepath.Join(demoProjectFolder, folderName)
@@ -82,11 +81,11 @@ func CreateTemplate(workingDir string, createSpecificAPI string) error {
 		        * - name: alerting-profile-one
 		*/
 		config.AddConfig(folderName, folderName+"-one")
-		fileCreator := files.NewDiskFileCreator()
+
 		/* Create file as "folderName.yaml"
 		 * eg. alerting-profile.yaml
 		 */
-		err := config.CreateYamlFile(fileCreator, configTypeFolderPath, folderName)
+		err := config.CreateYamlFile(creator, configTypeFolderPath, folderName)
 		if err != nil {
 			util.Log.Error("Error creating YAML file %v", err)
 		}
