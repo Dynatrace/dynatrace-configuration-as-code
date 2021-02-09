@@ -1,25 +1,35 @@
 # Monitoring as Code Tool - Release Notes
 
 - [Monitoring as Code Tool - Release Notes](#monitoring-as-code-tool---release-notes)
-  - [1.3.0](#130)
+  - [1.3.1](#131)
     - [List of changes](#list-of-changes)
+      - [Bugfixes](#bugfixes)
+  - [1.3.0](#130)
+    - [List of changes](#list-of-changes-1)
       - [Deprecation Warnings](#deprecation-warnings)
       - [Features](#features)
-      - [Bugfixes](#bugfixes)
+      - [Bugfixes](#bugfixes-1)
       - [Misc changes](#misc-changes)
   - [1.2.0](#120)
-    - [List of changes](#list-of-changes-1)
+    - [List of changes](#list-of-changes-2)
       - [Features](#features-1)
-      - [Bugfixes](#bugfixes-1)
+      - [Bugfixes](#bugfixes-2)
       - [Misc changes](#misc-changes-1)
   - [1.1.0](#110)
-    - [List of changes](#list-of-changes-2)
+    - [List of changes](#list-of-changes-3)
       - [Features](#features-2)
-      - [Bugfixes](#bugfixes-2)
+      - [Bugfixes](#bugfixes-3)
       - [Library updates](#library-updates)
       - [Misc changes](#misc-changes-2)
   - [1.0.1](#101)
   - [1.0.0](#100)
+
+## 1.3.1
+
+### List of changes
+#### Bugfixes
+
+* 2e0e88a: Cope with faulty configs (name or id is null) (#169)
 
 ## 1.3.0
 
