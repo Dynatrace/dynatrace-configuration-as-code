@@ -1,7 +1,9 @@
 package initialise
 
 import (
+	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download/yamlcreator"
@@ -10,7 +12,14 @@ import (
 )
 
 //CreateTemplate Creates a blank set of monaco folders and files for each supported API
-func CreateTemplate(workingDir string) error {
+func CreateTemplate(workingDir string, createSpecificAPI string) error {
+
+	util.Log.Info("Creating Config for APIs: %v", createSpecificAPI)
+
+	apiList, getAPIListErr := getAPIList(createSpecificAPI)
+	if getAPIListErr != nil {
+		return getAPIListErr
+	}
 
 	workingDir = filepath.Clean(workingDir)
 	util.Log.Info("Initialising Monaco Demo Folders")
@@ -21,9 +30,9 @@ func CreateTemplate(workingDir string) error {
 
 	// Create environments.yaml file
 	environmentsContent := `environment1:
-    - name: "environment1"
-    - env-url: "{{ .Env.ENVIRONMENT_ONE }}"
-    - env-token-name: "{{ .Env.TOKEN_ENVIRONMENT_ONE }}"`
+		    - name: "environment1"
+		    - env-url: "{{ .Env.ENVIRONMENT_ONE }}"
+		    - env-token-name: "{{ .Env.TOKEN_ENVIRONMENT_ONE }}"`
 	_, err := creator.CreateFile([]byte(environmentsContent), workingDir, "environments", ".yaml")
 
 	if err != nil {
@@ -49,9 +58,8 @@ func CreateTemplate(workingDir string) error {
 
 	// For each allowed API, create the relevant folder
 	// Retrieve all allowed APIs
-	apiMap := api.NewApis()
 
-	for folderName := range apiMap {
+	for folderName := range apiList {
 		configTypeFolderPath := filepath.Join(demoProjectFolder, folderName)
 		creator.CreateFolder(configTypeFolderPath)
 		if err != nil {
@@ -89,4 +97,33 @@ func CreateTemplate(workingDir string) error {
 	}
 
 	return nil
+}
+
+//returns the list of API filter if the download specific flag is used, otherwise returns all the API's
+func getAPIList(createSpecificAPI string) (filterAPIList map[string]api.Api, err error) {
+	availableApis := api.NewApis()
+	noFilterAPIListProvided := strings.TrimSpace(createSpecificAPI) == ""
+
+	if noFilterAPIListProvided {
+		return availableApis, nil
+	}
+	requestedApis := strings.Split(createSpecificAPI, ",")
+	isErr := false
+	filterAPIList = make(map[string]api.Api)
+	for _, id := range requestedApis {
+		cleanAPI := strings.TrimSpace(id)
+		isAPI := api.IsApi(cleanAPI)
+		if isAPI == false {
+			util.Log.Error("Value %s is not a valid API name", cleanAPI)
+			isErr = true
+		} else {
+			filterAPI := availableApis[cleanAPI]
+			filterAPIList[cleanAPI] = filterAPI
+		}
+	}
+	if isErr {
+		return nil, fmt.Errorf("There were some errors in the API list provided")
+	}
+
+	return filterAPIList, nil
 }

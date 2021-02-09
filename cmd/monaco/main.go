@@ -200,6 +200,12 @@ Examples:
 
   Deploy a specific project to a specific tenant:
     monaco deploy --environments environments.yaml --specific-environment dev --project myProject
+
+  Initialise a blank monaco project with all APIs:
+    monaco init
+
+  Initialise a blank monaco project with dummy content for specific configuration types (eg. auto-tag and dashboard):
+    monaco init --createSpecificAPI auto-tag,dashboard
 `
 	deployCommand := getDeployCommand(fileReader)
 	downloadCommand := getDownloadCommand(fileReader)
@@ -341,8 +347,8 @@ func getDownloadCommand(fileReader util.FileReader) cli.Command {
 func getInitialiseCommand() cli.Command {
 	command := cli.Command{
 		Name:      "init",
-		Usage:     "initialise demo project and folders",
-		UsageText: "init",
+		Usage:     "initialise demo project and folders. Optionally pass a list of APIs to create demo folders or leave blank for all",
+		UsageText: "init [command options]",
 		Before: func(c *cli.Context) error {
 			err := util.SetupLogging(c.Bool("verbose"))
 
@@ -354,6 +360,13 @@ func getInitialiseCommand() cli.Command {
 
 			return nil
 		},
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    "createSpecificAPI",
+				Usage:   "Comma separated list of API's to create",
+				Aliases: []string{"c"},
+			},
+		},
 		Action: func(ctx *cli.Context) error {
 			var workingDir string
 
@@ -363,7 +376,7 @@ func getInitialiseCommand() cli.Command {
 				workingDir = "."
 			}
 
-			return initialise.CreateTemplate(workingDir)
+			return initialise.CreateTemplate(workingDir, ctx.String("createSpecificAPI"))
 		},
 	}
 	return command
