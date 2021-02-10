@@ -368,12 +368,12 @@ func getInitialiseCommand() cli.Command {
 			},
 		},
 		Action: func(ctx *cli.Context) error {
-			var workingDir string
+			var workingDir = "."
 
 			if ctx.Args().Present() {
 				workingDir = ctx.Args().First()
-			} else {
-				workingDir = "."
+				util.Log.Error("Arguments are not allowed. Correct usage is 'monaco init' or 'monaco init --createSpecificAPI auto-tag,dashboard...'")
+				return nil
 			}
 
 			return initialise.CreateTemplate(workingDir, ctx.String("createSpecificAPI"))
