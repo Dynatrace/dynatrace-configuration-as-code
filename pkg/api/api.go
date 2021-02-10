@@ -122,6 +122,11 @@ var apiMap = map[string]apiInput{
 		apiPath:                      "/api/v2/slo",
 		propertyNameOfGetAllResponse: "slo",
 	},
+
+	// Early adopter API !
+	"credential-vault": {
+		apiPath: "/api/config/v1/credentials",
+	},
 }
 
 var standardApiPropertyNameOfGetAllResponse = "values"
