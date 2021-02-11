@@ -125,7 +125,8 @@ var apiMap = map[string]apiInput{
 
 	// Early adopter API !
 	"credential-vault": {
-		apiPath: "/api/config/v1/credentials",
+		apiPath:                      "/api/config/v1/credentials",
+		propertyNameOfGetAllResponse: "credentials",
 	},
 }
 
