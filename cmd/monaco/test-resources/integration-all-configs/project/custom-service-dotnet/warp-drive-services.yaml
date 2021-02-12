@@ -1,0 +1,6 @@
+
+config:
+  - warp-drive-service: "warp-drive-service.json"
+
+warp-drive-service:
+  - name: "Enterprise Warp Drive dotNet"
