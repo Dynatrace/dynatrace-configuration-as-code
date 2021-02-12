@@ -458,6 +458,7 @@ These are the supported configuration types, their API endpoints and the token p
 | conditional-naming-host         | _/api/config/v1/conditionalNaming/host_         | `Read Configuration` & `Write Configuration`                                                                        |
 | conditional-naming-processgroup | _/api/config/v1/conditionalNaming/processGroup_ | `Read Configuration` & `Write Configuration`                                                                        |
 | conditional-naming-service      | _/api/config/v1/conditionalNaming/service_      | `Read Configuration` & `Write Configuration`                                                                        |
+| credential-vault                | _/api/config/v1/credentials_                    | `Read Credential Vault Entries` & `Write Credential Vault Entries`                                                  |
 | custom-service-java             | _/api/config/v1/service/customServices/java_    | `Read Configuration` & `Write Configuration`                                                                        |
 | custom-service-dotnet           | _/api/config/v1/service/customServices/dotnet_  | `Read Configuration` & `Write Configuration`                                                                        |
 | custom-service-go               | _/api/config/v1/service/customServices/go_      | `Read Configuration` & `Write Configuration`                                                                        |
