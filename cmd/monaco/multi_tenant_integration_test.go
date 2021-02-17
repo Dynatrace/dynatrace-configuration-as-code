@@ -49,7 +49,7 @@ func TestIntegrationMultiEnvironment(t *testing.T) {
 			folder,
 		}, integrationTestReader)
 
-		AssertConfigAvailable(projects, t, environments, true)
+		AssertAllConfigsAvailability(projects, t, environments, true)
 
 		assert.Equal(t, statusCode, 0)
 	})
@@ -86,7 +86,7 @@ func TestIntegrationMultiEnvironmentSingleProject(t *testing.T) {
 			folder,
 		}, integrationTestReader)
 
-		AssertConfigAvailable(projects, t, environments, true)
+		AssertAllConfigsAvailability(projects, t, environments, true)
 
 		assert.Equal(t, statusCode, 0)
 	})
@@ -112,7 +112,7 @@ func TestIntegrationMultiEnvironmentSingleProjectWithDependency(t *testing.T) {
 			folder,
 		}, integrationTestReader)
 
-		AssertConfigAvailable(projects, t, environments, true)
+		AssertAllConfigsAvailability(projects, t, environments, true)
 
 		assert.Equal(t, statusCode, 0)
 	})
@@ -138,7 +138,7 @@ func TestIntegrationMultiEnvironmentSingleEnvironment(t *testing.T) {
 			folder,
 		}, integrationTestReader)
 
-		AssertConfigAvailable(projects, t, environments, true)
+		AssertAllConfigsAvailability(projects, t, environments, true)
 
 		assert.Equal(t, statusCode, 0)
 	})

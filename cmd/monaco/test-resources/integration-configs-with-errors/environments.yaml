@@ -1,0 +1,4 @@
+environment1:
+  - name: "environment1"
+  - env-url: "{{ .Env.URL_ENVIRONMENT_1 }}"
+  - env-token-name: "TOKEN_ENVIRONMENT_1"
