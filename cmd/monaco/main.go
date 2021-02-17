@@ -136,6 +136,11 @@ Examples:
 			Aliases: []string{"d"},
 			Usage:   "Switches to just validation instead of actual deployment",
 		},
+		&cli.BoolFlag{
+			Name:    "continue-on-error",
+			Usage:   "Proceed deployment even if config upload fails",
+			Aliases: []string{"c"},
+		},
 	}
 
 	app.Action = func(ctx *cli.Context) error {
@@ -159,6 +164,7 @@ Examples:
 			ctx.String("specific-environment"),
 			ctx.String("project"),
 			ctx.Bool("dry-run"),
+			ctx.Bool("continue-on-error"),
 		)
 	}
 
@@ -250,6 +256,11 @@ func getDeployCommand(fileReader util.FileReader) cli.Command {
 				Aliases: []string{"d"},
 				Usage:   "Switches to just validation instead of actual deployment",
 			},
+			&cli.BoolFlag{
+				Name:    "continue-on-error",
+				Usage:   "Proceed deployment even if config upload fails",
+				Aliases: []string{"c"},
+			},
 		},
 		Action: func(ctx *cli.Context) error {
 			if ctx.NArg() > 1 {
@@ -272,6 +283,7 @@ func getDeployCommand(fileReader util.FileReader) cli.Command {
 				ctx.String("specific-environment"),
 				ctx.String("project"),
 				ctx.Bool("dry-run"),
+				ctx.Bool("continue-on-error"),
 			)
 		},
 	}

@@ -21,11 +21,18 @@ import (
 	"os"
 )
 
-// PrettyPrintError should pretty-print the error using a more user-friendly format
-// In the future, this will be extended to support various more errors.
-func PrettyPrintError(err error) {
+// PrintError should pretty-print the error using a more user-friendly format
+func PrintError(err error) {
 	if ppError, ok := err.(JsonValidationError); ok {
 		ppError.PrettyPrintError()
+	} else {
+		Log.Error("\t%s", err)
+	}
+}
+
+func PrintErrors(errors []error) {
+	for _, err := range errors {
+		PrintError(err)
 	}
 }
 
