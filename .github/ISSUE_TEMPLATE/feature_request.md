@@ -7,8 +7,8 @@ assignees: ''
 
 ---
 
-** Before you proceed **
-We are happy about your enhancement proposal, but we would like to discuss this with you. Please make sure you've opened a discussion and are creating this feature/improvement request as a result of it. Make sure to link discussion here. 
+**Before you proceed**
+We are happy about your enhancement proposal, but we would like to discuss this with you. Please make sure you've opened a [discussion](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/discussions) and are creating this feature/improvement request as a result of it. Make sure to link discussion here. 
 
 **Is your feature request related to a problem? Please describe.**
 A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
