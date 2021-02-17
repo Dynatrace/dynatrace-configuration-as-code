@@ -1,12 +1,20 @@
 # Monitoring as Code Tool - Release Notes
 
 - Versions:
+  - [1.4.0](#140)
   - [1.3.1](#131)
   - [1.3.0](#130)
   - [1.2.0](#120)
   - [1.1.0](#110)
   - [1.0.1](#101)
   - [1.0.0](#100)
+
+## 1.4.0
+
+#### Features
+
+* f5a4f71 Add support for credentials vault API (#175)
+* af5c4f5 Fix #158: Add support for custom-service APIs for dotnet, go, nodejs, and php (#172)
 
 ## 1.3.1
 
@@ -20,13 +28,13 @@
 ### List of changes
 
 #### Deprecation Warnings
-  * Fix #146: `application-web` configuration type replaces `application` in the future (#149)
-  * `application` config type is deprecated with 1.3.0 and will be removed with 2.0.0 (#149)
+* Fix #146: `application-web` configuration type replaces `application` in the future (#149)
+* `application` config type is deprecated with 1.3.0 and will be removed with 2.0.0 (#149)
 
 #### Features
 
-  * Fix #146: Add support for `application-mobile`(applications/mobile) configurations (#149)
-  * 5558b61 Fix #66: Add support for `slo` (/api/v2/slo) configruations (#153)
+* Fix #146: Add support for `application-mobile`(applications/mobile) configurations (#149)
+* 5558b61 Fix #66: Add support for `slo` (/api/v2/slo) configruations (#153)
 
 #### Bugfixes
 
