@@ -11,3 +11,6 @@ bin/
 # Log files
 /cmd/monaco/.logs
 /.logs
+
+# Mock files
+**/*_mock.go

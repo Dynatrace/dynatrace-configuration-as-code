@@ -10,6 +10,8 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
 )
 
+//go:generate mockgen -source=json_creator.go -destination=json_creator_mock.go -package=jsoncreator JSONCreator
+
 //JSONCreator interface allows to mock the methods for unit testing
 type JSONCreator interface {
 	CreateJSONConfig(client rest.DynatraceClient, api api.Api, value api.Value, creator files.FileCreator,
