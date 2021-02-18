@@ -55,7 +55,9 @@ func CreateTemplate(workingDir string, createSpecificAPI string) error {
 	util.Log.Info("Created Folder: %v", demoProjectFolder)
 
 	// For each allowed API, create the relevant folder
+	// Populate files with dummy content to show the user that they need to replace with THEIR content
 
+	placeholderContent := "Placeholder. Replace with your JSON content."
 	for folderName := range apiList {
 		configTypeFolderPath := filepath.Join(demoProjectFolder, folderName)
 		creator.CreateFolder(configTypeFolderPath)
@@ -89,7 +91,7 @@ func CreateTemplate(workingDir string, createSpecificAPI string) error {
 		}
 
 		util.Log.Info("  Created File: %v/%v%v", configTypeFolderPath, folderName, ".yaml")
-		creator.CreateFile(nil, configTypeFolderPath, folderName, ".json")
+		creator.CreateFile([]byte(placeholderContent), configTypeFolderPath, folderName, ".json")
 		util.Log.Info("  Created File: %v/%v%v", configTypeFolderPath, folderName, ".json")
 	}
 
