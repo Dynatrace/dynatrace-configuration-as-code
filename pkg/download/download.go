@@ -3,7 +3,6 @@ package download
 import (
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download/jsoncreator"
@@ -32,7 +31,7 @@ func GetConfigsFilterByEnvironment(workingDir string, fileReader util.FileReader
 
 //getConfigs Entry point that retrieves the specified configurations from a Dynatrace tenant
 func getConfigs(workingDir string, environments map[string]environment.Environment, downloadSpecificAPI string) error {
-	list, err := getAPIList(downloadSpecificAPI)
+	list, err := api.GetAPIList(downloadSpecificAPI)
 	if err != nil {
 		return err
 	}
@@ -50,35 +49,6 @@ func getConfigs(workingDir string, environments map[string]environment.Environme
 	}
 	return nil
 
-}
-
-//returns the list of API filter if the download specific flag is used, otherwise returns all the API's
-func getAPIList(downloadSpecificAPI string) (filterAPIList map[string]api.Api, err error) {
-	availableApis := api.NewApis()
-	noFilterAPIListProvided := strings.TrimSpace(downloadSpecificAPI) == ""
-
-	if noFilterAPIListProvided {
-		return availableApis, nil
-	}
-	requestedApis := strings.Split(downloadSpecificAPI, ",")
-	isErr := false
-	filterAPIList = make(map[string]api.Api)
-	for _, id := range requestedApis {
-		cleanAPI := strings.TrimSpace(id)
-		isAPI := api.IsApi(cleanAPI)
-		if isAPI == false {
-			util.Log.Error("Value %s is not a valid API name", cleanAPI)
-			isErr = true
-		} else {
-			filterAPI := availableApis[cleanAPI]
-			filterAPIList[cleanAPI] = filterAPI
-		}
-	}
-	if isErr {
-		return nil, fmt.Errorf("There were some errors in the API list provided")
-	}
-
-	return filterAPIList, nil
 }
 
 //creates the project and downloads the configs

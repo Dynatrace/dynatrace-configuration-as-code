@@ -17,9 +17,11 @@
 package api
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 )
 
 //go:generate mockgen -source=api.go -destination=api_mock.go -package=api Api
@@ -219,4 +221,34 @@ func ContainsApiName(path string) bool {
 		}
 	}
 	return false
+}
+
+//GetAPIList returns the list of API filter if the download specific flag is used, otherwise returns all the API's
+func GetAPIList(createSpecificAPI string) (filterAPIList map[string]Api, err error) {
+
+	availableApis := NewApis()
+	noFilterAPIListProvided := strings.TrimSpace(createSpecificAPI) == ""
+
+	if noFilterAPIListProvided {
+		return availableApis, nil
+	}
+	requestedApis := strings.Split(createSpecificAPI, ",")
+	isErr := false
+	filterAPIList = make(map[string]Api)
+	for _, id := range requestedApis {
+		cleanAPI := strings.TrimSpace(id)
+		isAPI := IsApi(cleanAPI)
+		if isAPI == false {
+			util.Log.Error("Value %s is not a valid API name", cleanAPI)
+			isErr = true
+		} else {
+			filterAPI := availableApis[cleanAPI]
+			filterAPIList[cleanAPI] = filterAPI
+		}
+	}
+	if isErr {
+		return nil, fmt.Errorf("There were some errors in the API list provided")
+	}
+
+	return filterAPIList, nil
 }
