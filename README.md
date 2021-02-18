@@ -189,11 +189,12 @@ For more information on this feature, see [pkg/download/README.md](./pkg/downloa
 #### Misc
 <a id="cli-misc"/>
 
-##### Logging all requests send to dynatrace
+##### Logging all requests/response send to dynatrace
 <a id="cli-misc-log-requests">
 
-Sometimes it is usefull for debugging to see send requets from monaco to the dynatrace api.
-This is possible by specifying a log file via the `MONACO_REQUEST_LOG` env variable. 
+Sometimes it is useful for debugging to see http traffic between monaco and the dynatrace api.
+This is possible by specifying a log file via the `MONACO_REQUEST_LOG` and `MONACO_RESPONSE_LOG`
+env variables.
 
 The specified file can either be relative, then it will be located relative form the current 
 working dir, or absolute. 
@@ -204,16 +205,7 @@ Simply set the environment variable and monaco will start writing all send reque
 the file like:
 
 ```sh
-$ MONACO_REQUEST_LOG=requests.log monaco -e environment project
-```
-
-The requests are logged in format: 
-```
-URL: [url]
-METHOD: [method]
-CONTENT:
-[content]
-==========
+$ MONACO_REQUEST_LOG=request.log MONACO_RESPONSE_LOG=response.log monaco -e environment project
 ```
 
 As of right now, the content of multipart post requests is not logged. This is a known 
