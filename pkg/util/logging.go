@@ -18,8 +18,11 @@ package util
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httputil"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/jcelliott/lumber"
@@ -29,6 +32,7 @@ import (
 var Log lumber.Logger = lumber.NewConsoleLogger(lumber.INFO)
 
 var requestLogFile *os.File
+var responseLogFile *os.File
 
 // SetupLogging is used to initialize the shared file Logger once the necessary setup config is available
 func SetupLogging(verbose bool) error {
@@ -58,52 +62,140 @@ func SetupLogging(verbose bool) error {
 	multiLog.AddLoggers(fileLog)
 	Log = multiLog
 
-	if file, found := os.LookupEnv("MONACO_REQUEST_LOG"); found {
-		logFilePath, err := filepath.Abs(file)
+	err = setupRequestLog()
+
+	if err != nil {
+		return err
+	}
+
+	return setupResponseLog()
+}
+
+func setupRequestLog() error {
+	if logFilePath, found := os.LookupEnv("MONACO_REQUEST_LOG"); found {
+		logFilePath, err := filepath.Abs(logFilePath)
 
 		if err != nil {
 			return err
 		}
 
 		Log.Debug("request log activated at %s", logFilePath)
-		return setupRequestLogging(logFilePath)
+		handle, err := prepareLogFile(logFilePath)
+
+		if err != nil {
+			return err
+		}
+
+		requestLogFile = handle
 	} else {
 		Log.Debug("request log not activated")
 	}
 
-	return err
+	return nil
 }
 
-func setupRequestLogging(file string) error {
-	handle, err := os.OpenFile(file, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
+func setupResponseLog() error {
+	if logFilePath, found := os.LookupEnv("MONACO_RESPONSE_LOG"); found {
+		logFilePath, err := filepath.Abs(logFilePath)
 
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
+
+		Log.Debug("response log activated at %s", logFilePath)
+		handle, err := prepareLogFile(logFilePath)
+
+		if err != nil {
+			return err
+		}
+
+		responseLogFile = handle
+	} else {
+		Log.Debug("response log not activated")
 	}
 
-	requestLogFile = handle
-
 	return nil
+}
+
+func prepareLogFile(file string) (*os.File, error) {
+	return os.OpenFile(file, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
 }
 
 func IsRequestLoggingActive() bool {
 	return requestLogFile != nil
 }
 
-func LogRequest(url string, method string, content string) error {
-	if content == "" {
-		requestLogFile.WriteString(fmt.Sprintf(`url: %s
-method: %s
-==========
-`, url, method))
-	} else {
-		requestLogFile.WriteString(fmt.Sprintf(`url: %s
-method: %s
-content:
-%s
-==========
-`, url, method, content))
+func IsResponseLoggingActive() bool {
+	return responseLogFile != nil
+}
+
+func LogRequest(id string, request *http.Request) error {
+	if !IsRequestLoggingActive() {
+		return nil
 	}
 
+	var dumpBody = false
+
+	if contentTypes, ok := request.Header["Content-Type"]; ok {
+		contentType := contentTypes[len(contentTypes)-1]
+
+		dumpBody = shouldDumpBody(contentType)
+	}
+
+	dump, err := httputil.DumpRequestOut(request, dumpBody)
+
+	if err != nil {
+		return err
+	}
+
+	requestLogFile.WriteString(fmt.Sprintf("Request-ID: %s\n", id))
+	requestLogFile.Write(dump)
+	requestLogFile.WriteString("\n=========================\n")
+
 	return requestLogFile.Sync()
+}
+
+func LogResponse(id string, response *http.Response) error {
+	if !IsResponseLoggingActive() {
+		return nil
+	}
+
+	var dumpBody = false
+
+	if contentTypes, ok := response.Header["Content-Type"]; ok {
+		contentType := contentTypes[len(contentTypes)-1]
+
+		dumpBody = shouldDumpBody(contentType)
+	}
+
+	dump, err := httputil.DumpResponse(response, dumpBody)
+
+	if err != nil {
+		return err
+	}
+
+	if id != "" {
+		responseLogFile.WriteString(fmt.Sprintf("Request-ID: %s\n", id))
+	}
+
+	responseLogFile.Write(dump)
+	responseLogFile.WriteString("\n=========================\n")
+
+	return responseLogFile.Sync()
+}
+
+func shouldDumpBody(contentType string) bool {
+	if strings.HasPrefix("text/", contentType) {
+		return true
+	}
+
+	if strings.HasPrefix("application/json", contentType) {
+		return true
+	}
+
+	if strings.HasPrefix("application/xml", contentType) {
+		return true
+	}
+
+	return false
 }

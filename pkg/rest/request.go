@@ -25,6 +25,7 @@ import (
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/version"
+	"github.com/google/uuid"
 )
 
 type Response struct {
@@ -45,26 +46,22 @@ func deleteConfig(client *http.Client, url string, apiToken string, id string) {
 }
 
 func post(client *http.Client, url string, data string, apiToken string) Response {
-	util.LogRequest(url, "POST", data)
 	req := requestWithBody(http.MethodPost, url, bytes.NewBuffer([]byte(data)), apiToken)
 	return executeRequest(client, req)
 }
 
 func postMultiPartFile(client *http.Client, url string, data *bytes.Buffer, contentType string, apiToken string) Response {
-	util.LogRequest(url, "POST multipart", "")
 	req := requestWithBody(http.MethodPost, url, data, apiToken)
 	req.Header.Set("Content-type", contentType)
 	return executeRequest(client, req)
 }
 
 func put(client *http.Client, url string, data string, apiToken string) Response {
-	util.LogRequest(url, "PUT", data)
 	req := requestWithBody(http.MethodPut, url, bytes.NewBuffer([]byte(data)), apiToken)
 	return executeRequest(client, req)
 }
 
 func request(method string, url string, apiToken string) *http.Request {
-	util.LogRequest(url, method, "")
 	return requestWithBody(method, url, nil, apiToken)
 }
 
@@ -77,6 +74,11 @@ func requestWithBody(method string, url string, body io.Reader, apiToken string)
 }
 
 func executeRequest(client *http.Client, request *http.Request) Response {
+	var requestId string
+	if util.IsRequestLoggingActive() {
+		requestId = uuid.NewString()
+		util.LogRequest(requestId, request)
+	}
 
 	rateLimitStrategy := createRateLimitStrategy()
 
@@ -90,6 +92,11 @@ func executeRequest(client *http.Client, request *http.Request) Response {
 			err = resp.Body.Close()
 		}()
 		body, err := ioutil.ReadAll(resp.Body)
+
+		if util.IsResponseLoggingActive() {
+			util.LogResponse(requestId, resp)
+		}
+
 		return Response{
 			StatusCode: resp.StatusCode,
 			Body:       body,
