@@ -6,6 +6,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+//go:generate mockgen -source=yaml_creator.go -destination=yaml_creator_mock.go -package=yamlcreator YamlCreator
+
 //YamlCreator implements method to create the yaml configuration file
 type YamlCreator interface {
 	CreateYamlFile(creator files.FileCreator, path string, name string) error
