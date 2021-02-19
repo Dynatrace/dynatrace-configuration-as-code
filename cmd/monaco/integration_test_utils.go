@@ -34,7 +34,8 @@ import (
 	"gotest.tools/assert"
 )
 
-func AssertConfigAvailable(projects []project.Project, t *testing.T, environments map[string]environment.Environment, available bool) {
+// checks all configurations of a given project with given availability
+func AssertAllConfigsAvailability(projects []project.Project, t *testing.T, environments map[string]environment.Environment, available bool) {
 	for _, environment := range environments {
 
 		token, err := environment.GetToken()
@@ -49,6 +50,18 @@ func AssertConfigAvailable(projects []project.Project, t *testing.T, environment
 			}
 		}
 	}
+}
+
+// checks specific configuration for availability
+func AssertConfigAvailability(t *testing.T, config config.Config, environment environment.Environment, available bool) {
+
+	token, err := environment.GetToken()
+	assert.NilError(t, err)
+
+	client, err := rest.NewDynatraceClient(environment.GetEnvironmentUrl(), token)
+	assert.NilError(t, err)
+
+	AssertConfig(t, client, environment, available, config)
 }
 
 func AssertConfig(t *testing.T, client rest.DynatraceClient, environment environment.Environment, shouldBeAvailable bool, config config.Config) {

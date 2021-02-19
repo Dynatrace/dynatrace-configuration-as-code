@@ -77,7 +77,7 @@ func (e *JsonValidationError) PrettyPrintError() {
 		lineContent := strings.Replace(e.LineContent, "\t", " ", -1)
 		previousLineContent := strings.Replace(e.PreviousLineContent, "\t", " ", -1)
 
-		Log.Error(errorTemplate, e.FileName, e.LineNumber, e.CharacterNumberInLine,
+		Log.Error("\t"+errorTemplate, e.FileName, e.LineNumber, e.CharacterNumberInLine,
 			whiteSpace, previousLineContent,
 			e.LineNumber, lineContent,
 			whiteSpace, whiteSpaceOffset,

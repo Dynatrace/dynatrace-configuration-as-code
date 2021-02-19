@@ -1,0 +1,25 @@
+{
+    "name": "{{ .name }}",
+    "enabled": true,
+    "rules": [
+        {
+            "enabled": true,
+            "fileName": "",
+            "className": "com.dynatrace.expamle.enterprise.service.v1.WarpDrive",
+            "matcher": "{{ .matcher }}",
+            "methodRules": [
+                {
+                    "methodName": "enable",
+                    "argumentTypes": [
+                        "com.dynatrace.expamle.enterprise.service.v1.WarpDrive"
+                    ],
+                    "returnType": "javax.ws.rs.core.Response"
+                }
+            ],
+            "annotations": []
+        }
+    ],
+    "queueEntryPoint": false,
+    "queueEntryPointType": null,
+    "processGroups": []
+}

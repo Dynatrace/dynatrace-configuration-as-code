@@ -86,7 +86,7 @@ If nothing is supplied the current working dir is used.
 Running monaco is done with required and non-required options and positional arguments:
 
 ```
-monaco --environments <path-to-environment-yaml-file> [--specific-environment <environment-name>] [--project <project-folder>] [--dry-run] [--verbose] [projects-root-folder]
+monaco --environments <path-to-environment-yaml-file> [--specific-environment <environment-name>] [--project <project-folder>] [--dry-run] [--verbose] [--continue-on-error] [projects-root-folder]
 ```
 
 For deploying a specific project inside a root config folder, the tool could be run as:
@@ -103,6 +103,10 @@ For validating your complete configuration in the current folder, the tool could
 For deploying all configurations to a single environment and get verbose output, the tool could be run as:
 ```monaco -v -e <path-to-environment-yaml-file> -se <name of environment>```
 
+If, during deployment, `monaco` detects an error (configuration upload fails), it automatically stops deployment of affected environment. In case you want 
+`monaco` to ignore errors and try to upload other configurations, you can provide `--continue-on-error` flag:
+```monaco deploy --project <project-folder> --environments <path-to-environment-yaml-file> continue-on-error [projects-root-folder]```
+
 Multiple projects can be specified as well:
 
 ```-p="project1,project2,project3"```
@@ -117,26 +121,14 @@ monaco --version
 The supported flags are described below:
 
 ```
-  -d    Set dry-run flag to just validate configurations instead of deploying. (shorthand)
-  -dry-run
-        Set dry-run flag to just validate configurations instead of deploying.
-  -p string
-        Project configuration to deploy. Also deploys any dependent configuration. (shorthand)
-  -project string
-        Project configuration to deploy. Also deploys any dependent configuration.
-  -specific-environment string
-        Specifc environment (from list) to deploy to.
-  -se string
-        Specifc environment (from list) to deploy to. (shorthand)
-  -e string
-        Mandatory yaml file containing environments to deploy to. (shorthand)
-  -environments string
-        Mandatory yaml file containing environments to deploy to.
-  -v    Set verbose flag to enable debug logging. (shorthand)
-  -verbose
-        Set verbose flag to enable debug logging.
-  -version
-        Prints the current version of the tool and exits the program
+   --verbose, -v                             (default: false)
+   --environments value, -e value            Yaml file containing environments to deploy to
+   --specific-environment value, --se value  Specific environment (from list) to deploy to (default: none)
+   --project value, -p value                 Project configuration to deploy (also deploys any dependent configurations) (default: none)
+   --dry-run, -d                             Switches to just validation instead of actual deployment (default: false)
+   --continue-on-error, -c                   Proceed deployment even if config upload fails (default: false)
+   --help, -h                                show help (default: false)
+   --version                                 print the version (default: false)
 ```
 
 #### Dry Run (Validating Configuration)
