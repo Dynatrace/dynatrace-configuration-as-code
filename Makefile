@@ -8,7 +8,9 @@ lint:
 ifeq ($(OS),Windows_NT)
 	@.\tools\check-format.cmd
 else
+	@go get github.com/google/addlicense
 	@sh ./tools/check-format.sh
+	@sh ./tools/check-license-headers.sh
 endif
 
 format:
