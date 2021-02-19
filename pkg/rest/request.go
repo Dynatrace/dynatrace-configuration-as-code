@@ -77,7 +77,11 @@ func executeRequest(client *http.Client, request *http.Request) Response {
 	var requestId string
 	if util.IsRequestLoggingActive() {
 		requestId = uuid.NewString()
-		util.LogRequest(requestId, request)
+		err := util.LogRequest(requestId, request)
+
+		if err != nil {
+			util.Log.Warn("error while writing request log for id `%s`: %v", requestId, err)
+		}
 	}
 
 	rateLimitStrategy := createRateLimitStrategy()
@@ -94,7 +98,15 @@ func executeRequest(client *http.Client, request *http.Request) Response {
 		body, err := ioutil.ReadAll(resp.Body)
 
 		if util.IsResponseLoggingActive() {
-			util.LogResponse(requestId, resp)
+			err := util.LogResponse(requestId, resp)
+
+			if err != nil {
+				if requestId != "" {
+					util.Log.Warn("error while writing response log for id `%s`: %v", requestId, err)
+				} else {
+					util.Log.Warn("error while writing response log: %v", requestId, err)
+				}
+			}
 		}
 
 		return Response{
