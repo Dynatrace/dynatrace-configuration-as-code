@@ -148,9 +148,16 @@ func LogRequest(id string, request *http.Request) error {
 		return err
 	}
 
-	requestLogFile.WriteString(fmt.Sprintf("Request-ID: %s\n", id))
-	requestLogFile.Write(dump)
-	requestLogFile.WriteString("\n=========================\n")
+	stringDump := string(dump)
+
+	_, err = requestLogFile.WriteString(fmt.Sprintf(`Request-ID: %s
+%s
+=========================
+`, id, stringDump))
+
+	if err != nil {
+		return err
+	}
 
 	return requestLogFile.Sync()
 }
@@ -175,11 +182,22 @@ func LogResponse(id string, response *http.Response) error {
 	}
 
 	if id != "" {
-		responseLogFile.WriteString(fmt.Sprintf("Request-ID: %s\n", id))
+		_, err = responseLogFile.WriteString(fmt.Sprintf("Request-ID: %s\n", id))
+
+		if err != nil {
+			return err
+		}
 	}
 
-	responseLogFile.Write(dump)
-	responseLogFile.WriteString("\n=========================\n")
+	stringDump := string(dump)
+
+	_, err = responseLogFile.WriteString(fmt.Sprintf(`%s
+=========================
+`, stringDump))
+
+	if err != nil {
+		return err
+	}
 
 	return responseLogFile.Sync()
 }
