@@ -14,7 +14,7 @@ Easy-to-add APIs have these characteristics:
   * `GET <my-environment>/api/config/v1/<my-config>` (get all configs)
   * `GET <my-environment>/api/config/v1/<my-config>/<id>` (get a single config)
   * `POST <my-environment>/api/config/v1/<my-config>` (create a new config)
-  * `PUT <my-environment>/api/config/v1/<my-config>` (change an existing config)
+  * `PUT <my-environment>/api/config/v1/<my-config>/<id>` (change an existing config)
   * `DELETE <my-environment>/api/config/v1/<my-config>/<id>` (delete a config)
 
 * The model of the configuration has a `name` property: 
