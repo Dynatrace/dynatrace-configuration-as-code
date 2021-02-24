@@ -11,3 +11,4 @@ bin/
 # Log files
 /cmd/monaco/.logs
 /.logs
+.DS_Store

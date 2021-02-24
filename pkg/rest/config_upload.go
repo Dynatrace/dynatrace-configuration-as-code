@@ -46,11 +46,17 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 	}
 
 	if existingObjectId != "" {
-		path = joinUrl(fullUrl, existingObjectId)
+		if configType == "managed-users" {
+			path = fullUrl
+			body = strings.Replace(configJson, "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
+		} else {
+			path = joinUrl(fullUrl, existingObjectId)
+		}
 		// Updating a dashboard requires the ID to be contained in the JSON, so we just add it...
 		if isDashBoard {
 			body = strings.Replace(configJson, "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
 		}
+
 		resp = put(client, path, body, apiToken)
 	} else {
 		if configType == "app-detection-rule" {
@@ -225,6 +231,15 @@ func unmarshalJson(theApi api.Api, err error, resp Response, values []api.Value,
 		}
 		values = jsonResp
 
+	} else if theApi.GetId() == "managed-users" {
+		jsonResp := make([]api.UserConfig, 0)
+
+		err = json.Unmarshal(resp.Body, &jsonResp)
+
+		if util.CheckError(err, "Cannot unmarshal API response for existing managed users") {
+			return err, values
+		}
+		values = translateManagedUsersValues(jsonResp)
 	} else if !theApi.IsStandardApi() {
 
 		if err := json.Unmarshal(resp.Body, &objmap); err != nil {
@@ -311,6 +326,19 @@ func translateSyntheticValues(syntheticValues []api.SyntheticValue) []api.Value 
 		values[i] = api.Value{
 			Id:   loc.EntityId,
 			Name: loc.Name,
+		}
+	}
+	return values
+}
+
+func translateManagedUsersValues(managedUsersValues []api.UserConfig) []api.Value {
+	numValues := len(managedUsersValues)
+	values := make([]api.Value, numValues, numValues)
+	for i := 0; i < numValues; i++ {
+		user := managedUsersValues[i]
+		values[i] = api.Value{
+			Id:   user.Id,
+			Name: user.Id,
 		}
 	}
 	return values

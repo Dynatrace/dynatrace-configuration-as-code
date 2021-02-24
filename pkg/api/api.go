@@ -140,6 +140,13 @@ var apiMap = map[string]apiInput{
 		apiPath:                      "/api/config/v1/credentials",
 		propertyNameOfGetAllResponse: "credentials",
 	},
+
+	// Dynatrace Managed API !
+	// Cluster API v1
+	"managed-users": {
+		apiPath:           "/api/v1.0/onpremise/users",
+		managedClusterApi: true,
+	},
 }
 
 var standardApiPropertyNameOfGetAllResponse = "values"
@@ -151,17 +158,20 @@ type Api interface {
 	GetApiPath() string
 	GetPropertyNameOfGetAllResponse() string
 	IsStandardApi() bool
+	IsManagedClusterApi() bool
 }
 
 type apiInput struct {
 	apiPath                      string
 	propertyNameOfGetAllResponse string
+	managedClusterApi            bool
 }
 
 type apiImpl struct {
 	id                           string
 	apiPath                      string
 	propertyNameOfGetAllResponse string
+	managedClusterApi            bool
 }
 
 func NewApis() map[string]Api {
@@ -177,17 +187,17 @@ func NewApis() map[string]Api {
 
 func newApi(id string, input apiInput) Api {
 	if input.propertyNameOfGetAllResponse == "" {
-		return NewStandardApi(id, input.apiPath)
+		return NewStandardApi(id, input.apiPath, input.managedClusterApi)
 	}
-	return NewApi(id, input.apiPath, input.propertyNameOfGetAllResponse)
+	return NewApi(id, input.apiPath, input.propertyNameOfGetAllResponse, input.managedClusterApi)
 }
 
 // NewStandardApi creates an API with propertyNameOfGetAllResponse set to "values"
-func NewStandardApi(id string, apiPath string) Api {
-	return NewApi(id, apiPath, standardApiPropertyNameOfGetAllResponse)
+func NewStandardApi(id string, apiPath string, managedClusterApi bool) Api {
+	return NewApi(id, apiPath, standardApiPropertyNameOfGetAllResponse, managedClusterApi)
 }
 
-func NewApi(id string, apiPath string, propertyNameOfGetAllResponse string) Api {
+func NewApi(id string, apiPath string, propertyNameOfGetAllResponse string, managedClusterApi bool) Api {
 
 	// TODO log warning if the user tries to create an API with a id not present in map above
 	// This means that a user runs monaco with an untested api
@@ -196,11 +206,12 @@ func NewApi(id string, apiPath string, propertyNameOfGetAllResponse string) Api 
 		id:                           id,
 		apiPath:                      apiPath,
 		propertyNameOfGetAllResponse: propertyNameOfGetAllResponse,
+		managedClusterApi:            managedClusterApi,
 	}
 }
 
 func (a *apiImpl) GetUrl(environment environment.Environment) string {
-	return environment.GetEnvironmentUrl() + a.apiPath
+	return environment.GetURL() + a.apiPath
 }
 
 func (a *apiImpl) GetUrlFromEnvironmentUrl(environmentUrl string) string {
@@ -221,6 +232,10 @@ func (a *apiImpl) GetPropertyNameOfGetAllResponse() string {
 
 func (a *apiImpl) IsStandardApi() bool {
 	return a.propertyNameOfGetAllResponse == standardApiPropertyNameOfGetAllResponse
+}
+
+func (a *apiImpl) IsManagedClusterApi() bool {
+	return a.managedClusterApi
 }
 
 func IsApi(dir string) bool {

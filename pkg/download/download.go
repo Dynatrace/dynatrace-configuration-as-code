@@ -98,13 +98,17 @@ func downloadConfigFromEnvironment(environment environment.Environment, basepath
 		util.Log.Error("error retrieving token for enviroment %v %v", projectName, err)
 		return err
 	}
-	client, err := rest.NewDynatraceClient(environment.GetEnvironmentUrl(), token)
+	client, err := rest.NewDynatraceClient(environment.GetURL(), token)
 	if err != nil {
 		util.Log.Error("error creating dynatrace client for enviroment %v %v", projectName, err)
 		return err
 	}
 	for _, api := range listApis {
 		util.Log.Info(" --- GETTING CONFIGS for %s", api.GetId())
+		if api.IsManagedClusterApi() != environment.IsCluster() {
+			util.Log.Info("...skipped")
+			continue
+		}
 		jcreator := jsoncreator.NewJSONCreator()
 		ycreator := yamlcreator.NewYamlConfig()
 		errorAPI := createConfigsFromAPI(api, token, creator, fullpath, client, jcreator, ycreator)

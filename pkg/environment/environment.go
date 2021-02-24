@@ -24,21 +24,25 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 )
 
+// Environment object structure
 type Environment interface {
 	GetId() string
-	GetEnvironmentUrl() string
+	GetURL() string
 	GetToken() (string, error)
 	GetGroup() string
+	IsCluster() bool
 }
 
 type environmentImpl struct {
-	id             string
-	name           string
-	group          string
-	environmentUrl string
-	envTokenName   string
+	id      string
+	name    string
+	group   string
+	URL     string
+	token   string
+	envType string
 }
 
+// NewEnvironments creates a map of environment objects. Key is environment ID, value is Environment object
 func NewEnvironments(maps map[string]map[string]string) (map[string]Environment, []error) {
 
 	environments := make(map[string]Environment)
@@ -83,25 +87,44 @@ func newEnvironment(id string, properties map[string]string) (Environment, error
 	}
 
 	environmentName, nameErr := util.CheckProperty(properties, "name")
-	environmentUrl, urlErr := util.CheckProperty(properties, "env-url")
-	envTokenName, tokenErr := util.CheckProperty(properties, "env-token-name")
+	url, urlErr := util.CheckProperty(properties, "url")
+	token, tokenErr := util.CheckProperty(properties, "token")
+	envType, envTypeErr := util.CheckProperty(properties, "type")
 
-	if nameErr != nil || urlErr != nil || tokenErr != nil {
-		return nil, fmt.Errorf("failed to parse config for environment %s (issues: %s %s %s)", id, nameErr, urlErr, tokenErr)
+	// deprecated
+	envUrl, envUrlErr := util.CheckProperty(properties, "env-url")
+	envToken, envTokenErr := util.CheckProperty(properties, "env-token-name")
+
+	if envUrlErr == nil && len(envUrl) > 0 {
+		util.Log.Warn("You are using 'env-url' property in the environment file. This property is going to be deprecated in v2.0.0. Replace with a property 'url', instead.")
+		url = envUrl
+		urlErr = nil
 	}
 
-	return NewEnvironment(id, environmentName, environmentGroup, environmentUrl, envTokenName), nil
+	if envTokenErr == nil && len(envToken) > 0 {
+		util.Log.Warn("You are using 'env-token-name' property in the environment file. This property is going to be deprecated in v2.0.0. Replace with a property 'token', instead.")
+		token = envToken
+		tokenErr = nil
+	}
+
+	if nameErr != nil || urlErr != nil || tokenErr != nil || envTypeErr != nil {
+		return nil, fmt.Errorf("failed to parse config for environment %s (issues: %s %s %s %s)", id, nameErr, urlErr, tokenErr, envTypeErr)
+	}
+
+	return NewEnvironment(id, environmentName, environmentGroup, url, token, envType), nil
 }
 
-func NewEnvironment(id string, name string, group string, environmentUrl string, envTokenName string) Environment {
-	environmentUrl = strings.TrimSuffix(environmentUrl, "/")
+// NewEnvironment creates a new environment object
+func NewEnvironment(id string, name string, group string, url string, token string, envType string) Environment {
+	url = strings.TrimSuffix(url, "/")
 
 	return &environmentImpl{
-		id:             id,
-		name:           name,
-		group:          group,
-		environmentUrl: environmentUrl,
-		envTokenName:   envTokenName,
+		id:      id,
+		name:    name,
+		group:   group,
+		URL:     url,
+		token:   token,
+		envType: envType,
 	}
 }
 
@@ -109,18 +132,22 @@ func (s *environmentImpl) GetId() string {
 	return s.id
 }
 
-func (s *environmentImpl) GetEnvironmentUrl() string {
-	return s.environmentUrl
+func (s *environmentImpl) GetURL() string {
+	return s.URL
 }
 
 func (s *environmentImpl) GetToken() (string, error) {
-	value := os.Getenv(s.envTokenName)
+	value := os.Getenv(s.token)
 	if value == "" {
-		return value, fmt.Errorf("environment variable " + s.envTokenName + " not found")
+		return value, fmt.Errorf("environment variable " + s.token + " not found")
 	}
 	return value, nil
 }
 
 func (s *environmentImpl) GetGroup() string {
 	return s.group
+}
+
+func (s *environmentImpl) IsCluster() bool {
+	return s.envType == "cluster"
 }

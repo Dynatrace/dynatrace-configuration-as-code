@@ -170,5 +170,6 @@ func (d *dynatraceClientImpl) UpsertByName(api Api, name string, jsonEntity map[
 	if api.GetId() == "extension" {
 		return uploadExtension(d.client, fullUrl, name, string(json), d.token)
 	}
+	
 	return upsertDynatraceObject(d.client, fullUrl, name, api, string(json), d.token)
 }

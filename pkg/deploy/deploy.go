@@ -81,7 +81,7 @@ func execute(environment environment.Environment, projects []project.Project, dr
 			return err
 		}
 
-		client, err = rest.NewDynatraceClient(environment.GetEnvironmentUrl(), apiToken)
+		client, err = rest.NewDynatraceClient(environment.GetURL(), apiToken)
 		if err != nil {
 			return err
 		}
@@ -230,7 +230,7 @@ func deleteConfigs(apis map[string]api.Api, environments map[string]environment.
 				return err
 			}
 
-			client, err := rest.NewDynatraceClient(environment.GetEnvironmentUrl(), apiToken)
+			client, err := rest.NewDynatraceClient(environment.GetURL(), apiToken)
 			if err != nil {
 				return err
 			}

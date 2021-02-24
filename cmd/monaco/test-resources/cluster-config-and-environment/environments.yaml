@@ -1,0 +1,9 @@
+cluster.production:
+  - name: "prod-cluster"
+  - env-url: "{{ .Env.CLUSTER_PROD }}"
+  - env-token-name: "TOKEN_SERVICE_PROVIDER_API"
+  - type: "cluster"
+production.environment1:
+  - name: "environment1"
+  - env-url: "{{ .Env.URL_ENVIRONMENT_1 }}"
+  - env-token-name: "TOKEN_ENVIRONMENT_1"

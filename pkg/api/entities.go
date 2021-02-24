@@ -28,6 +28,9 @@ type SyntheticMonitorsResponse struct {
 	Monitors []SyntheticValue `json:"monitors"`
 }
 
+type ManagedUserConfigResponse struct {
+	Users []UserConfig
+}
 type Value struct {
 	Id    string  `json:"id"`
 	Name  string  `json:"name"`
@@ -52,4 +55,13 @@ type DynatraceEntity struct {
 	Id          string `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
+}
+
+type UserConfig struct {
+	Id                string   `json:"id"`
+	Email             string   `json:"email`
+	FirstName         string   `json:"firstName"`
+	LastName          string   `json:"lastName"`
+	PasswordClearText string   `json:"passwordClearText"`
+	Groups            []string `json:"groups"`
 }
