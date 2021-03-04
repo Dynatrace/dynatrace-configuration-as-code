@@ -1,6 +1,7 @@
 # Monitoring as Code Tool - Release Notes
 
 - Versions:
+  - [1.5.0](#150)
   - [1.4.0](#140)
   - [1.3.1](#131)
   - [1.3.0](#130)
@@ -9,8 +10,30 @@
   - [1.0.1](#101)
   - [1.0.0](#100)
 
+## 1.5.0
+
+### List of changes
+#### Features
+* 84c8ef9 Added option to allow deployment to proceed even if error occurred (#127)
+* c695dd4 Add response log (#228)
+
+#### Bugfixes
+* 7159440 Add missing license headers to files (#191)
+* 2462ba0 Fix dependency resolution not working if defined in overrides (#141)
+
+#### Library updates
+* e217ea8 Bump github.com/golang/mock from 1.4.4 to 1.5.0
+
+#### Misc changes
+* e178bc5 Fix path of PUT in how-to-add-a-new-api.md (#235)
+* 0faae65 Add missing go mod entries for addlincense
+* 080f2f1 Update README.md Updated supported configuration types table
+* faa1b01 Add add-license-header make goal
+* ac6f001 Fail build if license header is missing
+
 ## 1.4.0
 
+### List of changes
 #### Features
 
 * f5a4f71 Add support for credentials vault API (#175)
