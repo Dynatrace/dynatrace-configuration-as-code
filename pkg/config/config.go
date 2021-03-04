@@ -140,11 +140,6 @@ func (c *configImpl) IsSkipDeployment(environment environment.Environment) bool 
 
 func (c *configImpl) GetConfigForEnvironment(environment environment.Environment, dict map[string]api.DynatraceEntity) (map[string]interface{}, error) {
 	filtered := copyProperties(c.properties)
-	filtered, err := c.replaceDependencies(filtered, dict)
-
-	if err != nil {
-		return nil, err
-	}
 
 	if len(filtered) == 0 {
 		json, err := c.template.ExecuteTemplate(map[string]string{})
@@ -173,6 +168,12 @@ func (c *configImpl) GetConfigForEnvironment(environment environment.Environment
 				filtered[c.id][key] = value
 			}
 		}
+	}
+
+	filtered, err := c.replaceDependencies(filtered, dict)
+
+	if err != nil {
+		return nil, err
 	}
 
 	json, err := c.template.ExecuteTemplate(filtered[c.id])

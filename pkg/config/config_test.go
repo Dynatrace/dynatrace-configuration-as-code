@@ -31,6 +31,7 @@ import (
 )
 
 const testTemplate = `{"msg": "Follow the {{.color}} {{.animalType}}"}`
+const testTemplateWithDependency = `{"msg": "Follow the {{.color}} {{.animalType}} with {{ .dep }}"}`
 const testTemplateWithEnvVar = `{"msg": "Follow the {{.color}} {{ .Env.ANIMAL }}"}`
 
 var testDevEnvironment = environment.NewEnvironment("development", "Dev", "", "https://url/to/dev/environment", "DEV")
@@ -195,18 +196,47 @@ func TestGetConfigWithGroupOverride(t *testing.T) {
 	assert.Equal(t, "Follow the brown dog", productionResult["msg"])
 }
 
-// testing the order when both group and environment overrides are defined
-// GetConfigForEnvironment should return environment values, as they are
-// overriding group values of getTestPropertiesWithGroupAndEnvironment
-func TestGetConfigWithGroupAndEnvironmentOverride(t *testing.T) {
+// test GetConfigForEnvironment if environment group is defined
+// it should return `test.production` group values of getTestProperties
+func TestGetConfigWithGroupOverrideAndDependency(t *testing.T) {
 
-	m := getTestPropertiesWithGroupAndEnvironment()
+	m := getTestProperties()
 	templ := getTestTemplate(t)
 	config := newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
 
 	productionResult, err := config.GetConfigForEnvironment(testProductionEnvironment, make(map[string]api.DynatraceEntity))
 	assert.NilError(t, err)
-	assert.Equal(t, "Follow the red cat", productionResult["msg"])
+	assert.Equal(t, "Follow the brown dog", productionResult["msg"])
+}
+
+// Testing dependencies resolution within group and env overrides
+func TestGetConfigWithGroupAndEnvironmentOverride(t *testing.T) {
+
+	managementZonePath := util.ReplacePathSeparators("infrastructure/management-zone/zone")
+
+	dynatraceEntity := api.DynatraceEntity{
+		Description: "bla",
+		Name:        "Test Management Zone",
+		Id:          managementZonePath,
+	}
+
+	dict := make(map[string]api.DynatraceEntity)
+	dict[managementZonePath] = dynatraceEntity
+
+	m := getTestPropertiesWithGroupAndEnvironment()
+	m["test.production"]["dep"] = "infrastructure/management-zone/zone.name"
+	templ := getTestTemplateWithDependency(t)
+	config := newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
+
+	productionResult, err := config.GetConfigForEnvironment(testProductionEnvironment, dict)
+	assert.NilError(t, err)
+	assert.Equal(t, "Follow the red cat with Test Management Zone", productionResult["msg"])
+
+	m["test.prod-environment"]["dep2"] = "infrastructure/management-zone/zone.name"
+	config = newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
+	productionResult, err = config.GetConfigForEnvironment(testProductionEnvironment, dict)
+	assert.NilError(t, err)
+	assert.Equal(t, "Follow the red cat with Test Management Zone", productionResult["msg"])
 }
 
 // Test combining parameters
@@ -296,6 +326,12 @@ func TestGetObjectNameForEnvironment(t *testing.T) {
 
 func getTestTemplate(t *testing.T) util.Template {
 	template, e := util.NewTemplateFromString("test", testTemplate)
+	assert.NilError(t, e)
+	return template
+}
+
+func getTestTemplateWithDependency(t *testing.T) util.Template {
+	template, e := util.NewTemplateFromString("test", testTemplateWithDependency)
 	assert.NilError(t, e)
 	return template
 }
