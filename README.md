@@ -348,6 +348,11 @@ This config does the following:
 * Sets a management zone filter on the complete dashboard, again as a variable, most likely [referenced from another config](#referencing-other-configurations)
   * Filtering the whole dashboard by management zone, makes sure no data not meant to be shown is accidentally picked up on tiles, and removes the possible need to define filters for individual tiles
 
+From Dynatrace version 208 onwards, a dashboard configuration must:
+
+- Have a property ownner, the property owner in dashboardMetadata is mandatory and must contain a not null value.
+- The property sharingDetails in dashboardMetadata is not present anymore.
+
 ##### Calculated log metrics JSON
 
 There is a know drawback to `monaco`'s workaround to the slightly off-standard API for Calculated Log Metrics, which needs you to follow specific naming conventions for your configuration: 
