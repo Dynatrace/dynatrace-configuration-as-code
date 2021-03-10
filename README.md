@@ -23,6 +23,7 @@ and [Configuration Structure](#configuration-structure)
         - [Logging all requests send to dynatrace](#logging-all-requests-send-to-dynatrace)
     - [Deploying Configuration to Dynatrace](#deploying-configuration-to-dynatrace)
       - [Running The Tool](#running-the-tool)
+      - [Running The Tool With A Proxy](#running-the-tool-with-a-proxy)
       - [Environments file](#environments-file)
   - [Configuration Structure](#configuration-structure)
     - [Projects](#projects)
@@ -235,6 +236,20 @@ To deploy to 1 specific environment within a `environments.yaml` file, the `-spe
 
 ```bash
 monaco -e=environments.yaml -se=my-environment -p="my-environment" cluster
+```
+
+#### Running The Tool With A Proxy
+
+In environments where access to Dynatrace API endpoints is only possible or allowed via a proxy server, monaco provides the options to specify the address of your proxy server when running a command:
+
+```bash
+HTTPS_PROXY=localhost:5000 monaco -e=environments.yaml -se=my-environment -p="my-environment" cluster 
+```
+
+With the new CLI:
+
+```bash
+HTTPS_PROXY=localhost:5000 NEW_CLI=1 monaco deploy -e environments.yaml 
 ```
 
 
