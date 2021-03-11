@@ -34,43 +34,76 @@ type Response struct {
 	Headers    map[string][]string
 }
 
-func get(client *http.Client, url string, apiToken string) Response {
-	req := request(http.MethodGet, url, apiToken)
-	return executeRequest(client, req)
+func get(client *http.Client, url string, apiToken string) (Response, error) {
+	req, err := request(http.MethodGet, url, apiToken)
+
+	if err != nil {
+		return Response{}, err
+	}
+
+	return executeRequest(client, req), nil
 }
 
 // the name delete() would collide with the built-in function
-func deleteConfig(client *http.Client, url string, apiToken string, id string) {
-	req := request(http.MethodDelete, url+"/"+id, apiToken)
+func deleteConfig(client *http.Client, url string, apiToken string, id string) error {
+	req, err := request(http.MethodDelete, url+"/"+id, apiToken)
+
+	if err != nil {
+		return err
+	}
+
 	executeRequest(client, req)
+
+	return nil
 }
 
-func post(client *http.Client, url string, data string, apiToken string) Response {
-	req := requestWithBody(http.MethodPost, url, bytes.NewBuffer([]byte(data)), apiToken)
-	return executeRequest(client, req)
+func post(client *http.Client, url string, data string, apiToken string) (Response, error) {
+	req, err := requestWithBody(http.MethodPost, url, bytes.NewBuffer([]byte(data)), apiToken)
+
+	if err != nil {
+		return Response{}, err
+	}
+
+	return executeRequest(client, req), nil
 }
 
-func postMultiPartFile(client *http.Client, url string, data *bytes.Buffer, contentType string, apiToken string) Response {
-	req := requestWithBody(http.MethodPost, url, data, apiToken)
+func postMultiPartFile(client *http.Client, url string, data *bytes.Buffer, contentType string, apiToken string) (Response, error) {
+	req, err := requestWithBody(http.MethodPost, url, data, apiToken)
+
+	if err != nil {
+		return Response{}, err
+	}
+
 	req.Header.Set("Content-type", contentType)
-	return executeRequest(client, req)
+
+	return executeRequest(client, req), nil
 }
 
-func put(client *http.Client, url string, data string, apiToken string) Response {
-	req := requestWithBody(http.MethodPut, url, bytes.NewBuffer([]byte(data)), apiToken)
-	return executeRequest(client, req)
+func put(client *http.Client, url string, data string, apiToken string) (Response, error) {
+	req, err := requestWithBody(http.MethodPut, url, bytes.NewBuffer([]byte(data)), apiToken)
+
+	if err != nil {
+		return Response{}, err
+	}
+
+	return executeRequest(client, req), nil
 }
 
-func request(method string, url string, apiToken string) *http.Request {
+func request(method string, url string, apiToken string) (*http.Request, error) {
 	return requestWithBody(method, url, nil, apiToken)
 }
 
-func requestWithBody(method string, url string, body io.Reader, apiToken string) *http.Request {
-	req, _ := http.NewRequest(method, url, body)
+func requestWithBody(method string, url string, body io.Reader, apiToken string) (*http.Request, error) {
+	req, err := http.NewRequest(method, url, body)
+
+	if err != nil {
+		return nil, err
+	}
+
 	req.Header.Set("Authorization", "Api-Token "+apiToken)
 	req.Header.Set("Content-type", "application/json")
 	req.Header.Set("User-Agent", "Dynatrace Monitoring as Code/"+version.MonitoringAsCode+" "+(runtime.GOOS+" "+runtime.GOARCH))
-	return req
+	return req, nil
 }
 
 func executeRequest(client *http.Client, request *http.Request) Response {

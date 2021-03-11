@@ -51,12 +51,20 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		if isDashBoard {
 			body = strings.Replace(configJson, "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
 		}
-		resp = put(client, path, body, apiToken)
+		resp, err = put(client, path, body, apiToken)
+
+		if err != nil {
+			return api.DynatraceEntity{}, err
+		}
 	} else {
 		if configType == "app-detection-rule" {
 			path += "?position=PREPEND"
 		}
-		resp = post(client, path, body, apiToken)
+		resp, err = post(client, path, body, apiToken)
+
+		if err != nil {
+			return api.DynatraceEntity{}, err
+		}
 
 		// It can happen that the post fails because config needs time to be propagated on all cluster nodes. If the error
 		// constraintViolations":[{"path":"name","message":"X must have a unique name...
@@ -65,13 +73,21 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 			// Try again after 5 seconds:
 			util.Log.Warn("\t\tConfig '%s - %s' needs to have a unique name. Waiting for 5 seconds before retry...", configType, objectName)
 			time.Sleep(5 * time.Second)
-			resp = post(client, path, body, apiToken)
+			resp, err = post(client, path, body, apiToken)
+
+			if err != nil {
+				return api.DynatraceEntity{}, err
+			}
 		}
 		// It can take longer until request attributes are ready to be used
 		if !success(resp) && strings.Contains(string(resp.Body), "must specify a known request attribute") {
 			util.Log.Warn("\t\tSpecified request attribute not known for %s. Waiting for 10 seconds before retry...", objectName)
 			time.Sleep(10 * time.Second)
-			resp = post(client, path, body, apiToken)
+			resp, err = post(client, path, body, apiToken)
+
+			if err != nil {
+				return api.DynatraceEntity{}, err
+			}
 		}
 	}
 	if !success(resp) {
@@ -174,7 +190,12 @@ func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, ob
 func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, url string, apiToken string) (isDashboard bool, values []api.Value, err error) {
 
 	values = make([]api.Value, 0)
-	resp := get(client, url, apiToken)
+	resp, err := get(client, url, apiToken)
+
+	if err != nil {
+		return false, nil, err
+	}
+
 	isDashboard = theApi.GetId() == "dashboard"
 
 	for {
@@ -187,7 +208,11 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, url stri
 
 		// Does the API support paging?
 		if isPaginated, nextPage := isPaginatedResponse(objmap); isPaginated {
-			resp = get(client, url+"?nextPageKey="+nextPage, apiToken)
+			resp, err = get(client, url+"?nextPageKey="+nextPage, apiToken)
+
+			if err != nil {
+				return false, nil, err
+			}
 		} else {
 			break
 		}

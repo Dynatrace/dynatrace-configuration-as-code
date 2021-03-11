@@ -35,7 +35,11 @@ func uploadExtension(client *http.Client, apiPath string, extensionName string, 
 		}, err
 	}
 
-	resp := postMultiPartFile(client, apiPath, buffer, contentType, apiToken)
+	resp, err := postMultiPartFile(client, apiPath, buffer, contentType, apiToken)
+
+	if err != nil {
+		return api.DynatraceEntity{}, err
+	}
 
 	if resp.StatusCode != http.StatusCreated {
 		util.Log.Error("\t\t\tUpload of %s failed with status %d!\n\t\t\t\t\tError-message: %s\n", extensionName, resp.StatusCode, string(resp.Body))
