@@ -41,6 +41,7 @@ and [Configuration Structure](#configuration-structure)
     - [Referencing other json templates](#referencing-other-json-templates)
     - [Templating of Environment Variables](#templating-of-environment-variables)
     - [Plugin Configuration](#plugin-configuration)
+    - [Custom Extensions](#custom-extensions)
     - [Delete Configuration](#delete-configuration)
 
 ---
@@ -722,7 +723,13 @@ to then construct the `metric-id` in the `json` as:
 "metricId": "ext:{{.metricPrefix}}.metric_NumberOfDistributionInProgressRequests"
 ```
 
+### Custom Extensions
+
+Monaco is able to deploy custom extensions and handles the zipping of extensions, as such the JSON file that defines an extension can just be checked in.
+An example of a custom extension can be found [here](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/tree/main/cmd/monaco/test-resources/integration-all-configs/project/extension).
+
 ### Delete Configuration
+
 Configuration which is not needed anymore can also be deleted in automated fashion. This tool is looking for `delete.yaml` file located in projects root
 folder and deletes all configurations defined in this file after finishing deployment. `delete.yaml` file structure should be defined as following, where
 beside from API you also have to specify then `name` (not id) of configuration to be deleted:
