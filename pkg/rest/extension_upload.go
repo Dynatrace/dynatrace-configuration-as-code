@@ -27,8 +27,8 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 )
 
-func uploadExtension(client *http.Client, apiPath string, extensionName string, extensionJson string, apiToken string) (api.DynatraceEntity, error) {
-	buffer, contentType, err := writeMultiPartForm(extensionName, extensionJson)
+func uploadExtension(client *http.Client, apiPath string, extensionName string, payload []byte, apiToken string) (api.DynatraceEntity, error) {
+	buffer, contentType, err := writeMultiPartForm(extensionName, payload)
 	if err != nil {
 		return api.DynatraceEntity{
 			Name: extensionName,
@@ -56,7 +56,7 @@ func uploadExtension(client *http.Client, apiPath string, extensionName string, 
 
 }
 
-func writeMultiPartForm(extensionName string, extensionJson string) (buffer *bytes.Buffer, contentType string, err error) {
+func writeMultiPartForm(extensionName string, extensionJson []byte) (buffer *bytes.Buffer, contentType string, err error) {
 	buffer = new(bytes.Buffer)
 	multipartWriter := multipart.NewWriter(buffer)
 	formFileWriter, _ := multipartWriter.CreateFormFile("file", extensionName+".zip")
@@ -81,14 +81,14 @@ func writeMultiPartForm(extensionName string, extensionJson string) (buffer *byt
 	return buffer, contentType, nil
 }
 
-func writeInMemoryZip(fileName string, fileContent string) (*bytes.Buffer, error) {
+func writeInMemoryZip(fileName string, fileContent []byte) (*bytes.Buffer, error) {
 	buffer := new(bytes.Buffer)
 	zipWriter := zip.NewWriter(buffer)
 	zipFile, err := zipWriter.Create(fileName)
 	if util.CheckError(err, "Failed to create .zip file") {
 		return buffer, err
 	}
-	_, err = zipFile.Write([]byte(fileContent))
+	_, err = zipFile.Write(fileContent)
 	if err != nil {
 		return buffer, err
 	}

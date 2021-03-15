@@ -57,8 +57,8 @@ func deleteConfig(client *http.Client, url string, apiToken string, id string) e
 	return nil
 }
 
-func post(client *http.Client, url string, data string, apiToken string) (Response, error) {
-	req, err := requestWithBody(http.MethodPost, url, bytes.NewBuffer([]byte(data)), apiToken)
+func post(client *http.Client, url string, data []byte, apiToken string) (Response, error) {
+	req, err := requestWithBody(http.MethodPost, url, bytes.NewBuffer(data), apiToken)
 
 	if err != nil {
 		return Response{}, err
@@ -79,8 +79,8 @@ func postMultiPartFile(client *http.Client, url string, data *bytes.Buffer, cont
 	return executeRequest(client, req), nil
 }
 
-func put(client *http.Client, url string, data string, apiToken string) (Response, error) {
-	req, err := requestWithBody(http.MethodPut, url, bytes.NewBuffer([]byte(data)), apiToken)
+func put(client *http.Client, url string, data []byte, apiToken string) (Response, error) {
+	req, err := requestWithBody(http.MethodPut, url, bytes.NewBuffer(data), apiToken)
 
 	if err != nil {
 		return Response{}, err
