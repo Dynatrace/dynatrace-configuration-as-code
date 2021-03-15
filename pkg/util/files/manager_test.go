@@ -17,6 +17,7 @@
 package files
 
 import (
+	"encoding/json"
 	"testing"
 
 	"gotest.tools/assert"
@@ -32,13 +33,9 @@ func TestCreateFolderDisk(t *testing.T) {
 	folderTest(t, fileManager)
 }
 func folderTest(t *testing.T, fileManager FileManager) {
-	p, err := fileManager.CreateFolder("./test")
+	p, err := fileManager.CreateFolder("./test-files/demo-folder-test-create-folder-feature")
 	assert.NilError(t, err)
-	assert.Equal(t, p, "./test")
-	//test with complex name
-	p, err = fileManager.CreateFolder("./test 23 a!")
-	assert.NilError(t, err)
-	assert.Equal(t, p, "./test 23 a!")
+	assert.Equal(t, p, "./test-files/demo-folder-test-create-folder-feature")
 }
 
 func TestCreateFileInMemory(t *testing.T) {
@@ -47,12 +44,47 @@ func TestCreateFileInMemory(t *testing.T) {
 }
 func fileCreateTest(t *testing.T, fileManager FileManager) {
 	data := []byte("{\"test\":\"data\"}")
-	name, err := fileManager.CreateFile(data, "../../../cmd/monaco/.logs/", "test name 43*&@!1", ".json")
+	name, err := fileManager.CreateFile(data, "./test-files/", "test name 43*&@!1", ".json")
 	assert.NilError(t, err)
 	assert.Equal(t, name, "testname431")
 	//long name
-	name, err = fileManager.CreateFile(data, "../../../cmd/monaco/.logs/", "test name 43*&@!1 with random detail in name longer that 50 characters would be trim by the function", ".json")
+	name, err = fileManager.CreateFile(data, "./test-files/",
+		"test name 43*&@!1 with random detail in name longer that 50 characters would be trim by the function", ".json")
 	assert.NilError(t, err)
 	assert.Equal(t, name, "testname431withrandomdetailinnamelongerthat50chara")
+}
+func TestCreateEmptyFile(t *testing.T) {
+	fileManager := NewInMemoryFileManager()
+	file, err := fileManager.CreateEmptyFile("demofile.yaml")
+	assert.NilError(t, err)
+	assert.Check(t, file.Name() == "demofile.yaml")
+}
+
+type testReadFile struct {
+	Test string
+}
+
+func TestReadFile(t *testing.T) {
+	fileManager := NewInMemoryFileManager()
+	file, err := fileManager.ReadFile("./test-files/sample.json")
+	assert.NilError(t, err)
+	var demo testReadFile
+	err = json.Unmarshal(file, &demo)
+	assert.NilError(t, err)
+	assert.Check(t, demo.Test == "demo")
+
+}
+func TestReadDir(t *testing.T) {
+	fileManager := NewInMemoryFileManager()
+	dir, err := fileManager.ReadDir("./test-files")
+	assert.NilError(t, err)
+	var fileExistWhenRead = false
+	for _, file := range dir {
+		if file.Name() == "sample2.json" {
+			fileExistWhenRead = true
+		}
+	}
+
+	assert.Check(t, fileExistWhenRead == true)
 
 }
