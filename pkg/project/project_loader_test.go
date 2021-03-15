@@ -26,6 +26,7 @@ import (
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
 )
 
 func TestIfProjectHasSubproject(t *testing.T) {
@@ -48,7 +49,7 @@ func TestCreateProjectsFromFolderList(t *testing.T) {
 	allProjectFolders, err := getAllProjectFoldersRecursively(path)
 	assert.NilError(t, err)
 
-	projects, err := createProjectsListFromFolderList(path, specificProjectToDeploy, path, apis, allProjectFolders, util.NewFileReader())
+	projects, err := createProjectsListFromFolderList(path, specificProjectToDeploy, path, apis, allProjectFolders, files.NewInMemoryFileManager())
 
 	assert.NilError(t, err)
 
@@ -63,7 +64,7 @@ func TestCreateProjectsFromFolderList(t *testing.T) {
 func TestLoadProjectsToDeployFromFolder(t *testing.T) {
 	folder := "test-resources/transitional-dependency-test"
 
-	projects, err := LoadProjectsToDeploy("", api.NewApis(), folder, util.NewFileReader())
+	projects, err := LoadProjectsToDeploy("", api.NewApis(), folder, files.NewInMemoryFileManager())
 	assert.NilError(t, err)
 	assert.Equal(t, len(projects), 7, "Check if all projects are loaded into list.")
 }
@@ -71,14 +72,14 @@ func TestLoadProjectsToDeployFromFolder(t *testing.T) {
 func TestLoadProjectsThrowsErrorOnCircularConfigDependecy(t *testing.T) {
 	folder := "test-resources/circular-config-dependency-test"
 
-	_, err := LoadProjectsToDeploy("", api.NewApis(), folder, util.NewFileReader())
+	_, err := LoadProjectsToDeploy("", api.NewApis(), folder, files.NewInMemoryFileManager())
 	assert.ErrorContains(t, err, "circular dependency on config")
 }
 
 func TestLoadProjectsThrowsErrorOnCircularProjectDependency(t *testing.T) {
 	folder := "test-resources/circular-project-dependency-test"
 
-	_, err := LoadProjectsToDeploy("", api.NewApis(), folder, util.NewFileReader())
+	_, err := LoadProjectsToDeploy("", api.NewApis(), folder, files.NewInMemoryFileManager())
 	assert.ErrorContains(t, err, "circular dependency on project")
 }
 
@@ -89,7 +90,7 @@ func TestLoadProjectsThrowsErrorOnCircularProjectDependency(t *testing.T) {
 func TestLoadProjectsToDeployWithTransitionalDependencies(t *testing.T) {
 	folder := util.ReplacePathSeparators("test-resources/transitional-dependency-test")
 
-	projects, err := LoadProjectsToDeploy("aseed", api.NewApis(), folder, util.NewFileReader())
+	projects, err := LoadProjectsToDeploy("aseed", api.NewApis(), folder, files.NewInMemoryFileManager())
 
 	assert.NilError(t, err)
 
@@ -109,7 +110,7 @@ func TestLoadProjectsToDeployWithTransitionalDependencies(t *testing.T) {
 func TestLoadProjectsWithResolvingDependenciesInProjectsTree1(t *testing.T) {
 	folder := util.ReplacePathSeparators("test-resources/transitional-dependency-test")
 
-	projects, err := LoadProjectsToDeploy("zem", api.NewApis(), folder, util.NewFileReader())
+	projects, err := LoadProjectsToDeploy("zem", api.NewApis(), folder, files.NewInMemoryFileManager())
 
 	assert.NilError(t, err)
 
@@ -128,7 +129,7 @@ func TestLoadProjectsWithResolvingDependenciesInProjectsTree1(t *testing.T) {
 func TestLoadProjectsWithResolvingDependenciesInProjectsTree2(t *testing.T) {
 	folder := util.ReplacePathSeparators("test-resources/transitional-dependency-test")
 
-	projects, err := LoadProjectsToDeploy("zem, marvin, caveman", api.NewApis(), folder, util.NewFileReader())
+	projects, err := LoadProjectsToDeploy("zem, marvin, caveman", api.NewApis(), folder, files.NewInMemoryFileManager())
 
 	assert.NilError(t, err)
 
@@ -147,7 +148,7 @@ func TestLoadProjectsWithResolvingDependenciesInProjectsTreeProjectSubprojectWit
 	folder := util.ReplacePathSeparators("test-resources/transitional-dependency-test")
 	project := util.ReplacePathSeparators("caveman/anjie/garkbit")
 
-	projects, err := LoadProjectsToDeploy(project, api.NewApis(), folder, util.NewFileReader())
+	projects, err := LoadProjectsToDeploy(project, api.NewApis(), folder, files.NewInMemoryFileManager())
 
 	assert.NilError(t, err)
 

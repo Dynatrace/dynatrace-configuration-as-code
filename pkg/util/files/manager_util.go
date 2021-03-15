@@ -22,9 +22,9 @@ import (
 	"github.com/golang/mock/gomock"
 )
 
-//CreateFileCreatorMockFactory returns a mock version of the filecreator interface
-func CreateFileCreatorMockFactory(t *testing.T) *MockFileCreator {
+//CreateFileManagerMockFactory returns a mock version of the fileManager interface
+func CreateFileManagerMockFactory(t *testing.T) *MockFileManager {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	return NewMockFileCreator(mockCtrl)
+	return NewMockFileManager(mockCtrl)
 }

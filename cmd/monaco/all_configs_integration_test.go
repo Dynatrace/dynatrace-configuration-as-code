@@ -21,7 +21,7 @@ package main
 import (
 	"testing"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
 	"gotest.tools/assert"
 )
 
@@ -31,13 +31,13 @@ func TestIntegrationAllConfigs(t *testing.T) {
 	const allConfigsFolder = "test-resources/integration-all-configs/"
 	const allConfigsEnvironmentsFile = allConfigsFolder + "environments.yaml"
 
-	RunIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fileReader util.FileReader) {
+	RunIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fileManager files.FileManager) {
 
 		statusCode := RunImpl([]string{
 			"monaco",
 			"--environments", allConfigsEnvironmentsFile,
 			allConfigsFolder,
-		}, fileReader)
+		}, fileManager)
 
 		assert.Equal(t, statusCode, 0)
 	})

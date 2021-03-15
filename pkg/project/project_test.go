@@ -27,6 +27,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
 )
 
 func testCreateProjectBuilder(projectsRoot string) projectBuilder {
@@ -38,7 +39,7 @@ func testCreateProjectBuilder(projectsRoot string) projectBuilder {
 	}
 }
 
-func testCreateProjectBuilderWithMock(factory config.ConfigFactory, fileReader util.FileReader, projectId string, projectsRoot string) projectBuilder {
+func testCreateProjectBuilderWithMock(factory config.ConfigFactory, fileManager files.FileManager, projectId string, projectsRoot string) projectBuilder {
 
 	return projectBuilder{
 		projectRootFolder: projectsRoot,
@@ -46,7 +47,7 @@ func testCreateProjectBuilderWithMock(factory config.ConfigFactory, fileReader u
 		apis:              createTestApis(),
 		configs:           make([]config.Config, 0),
 		configFactory:     factory,
-		fileReader:        fileReader,
+		fileManager:       fileManager,
 	}
 }
 
@@ -147,8 +148,8 @@ func TestGetApiFromLocationApiNotFound(t *testing.T) {
 func TestProcessConfigSection(t *testing.T) {
 
 	factory := config.CreateConfigMockFactory(t)
-	fileReaderMock := util.CreateFileReaderMock(t)
-	builder := testCreateProjectBuilderWithMock(factory, fileReaderMock, "testProject", "")
+	fileManagerMock := files.CreateFileManagerMockFactory(t)
+	builder := testCreateProjectBuilderWithMock(factory, fileManagerMock, "testProject", "")
 
 	m := make(map[string]map[string]string)
 
@@ -170,8 +171,8 @@ func TestProcessConfigSection(t *testing.T) {
 func TestProcessConfigSectionWithProjectRootParameter(t *testing.T) {
 
 	factory := config.CreateConfigMockFactory(t)
-	fileReaderMock := util.CreateFileReaderMock(t)
-	builder := testCreateProjectBuilderWithMock(factory, fileReaderMock, "test", "testProjectsRoot")
+	fileManagerMock := files.CreateFileManagerMockFactory(t)
+	builder := testCreateProjectBuilderWithMock(factory, fileManagerMock, "test", "testProjectsRoot")
 
 	m := make(map[string]map[string]string)
 
@@ -242,14 +243,14 @@ dashboard.dev:
 func TestProcessYaml(t *testing.T) {
 
 	factory := config.CreateConfigMockFactory(t)
-	fileReaderMock := util.CreateFileReaderMock(t)
-	builder := testCreateProjectBuilderWithMock(factory, fileReaderMock, "testproject", "")
+	fileManagerMock := files.CreateFileManagerMockFactory(t)
+	builder := testCreateProjectBuilderWithMock(factory, fileManagerMock, "testproject", "")
 
 	properties := make(map[string]map[string]string)
 
 	yamlFile := util.ReplacePathSeparators("test/dashboard/test-file.yaml")
 
-	fileReaderMock.EXPECT().ReadFile(yamlFile).Times(1).Return([]byte(projectTestYaml), nil)
+	fileManagerMock.EXPECT().ReadFile(yamlFile).Times(1).Return([]byte(projectTestYaml), nil)
 	factory.EXPECT().
 		NewConfig("dashboard", "testproject", util.ReplacePathSeparators("test/dashboard/my-project-dashboard.json"), gomock.Any(), testDashboardApi).
 		Return(config.GetMockConfig("my-project-dashboard", "testproject", nil, properties, testDashboardApi, util.ReplacePathSeparators("dashboard/test-file.yaml")), nil)

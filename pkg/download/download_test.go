@@ -34,13 +34,14 @@ func TestGetConfigs(t *testing.T) {
 	os.Setenv("token", "test")
 	env := environment.NewEnvironment("environment1", "test", "", "https://test.live.dynatrace.com", "token")
 	envs := make(map[string]environment.Environment)
+	fileManager := files.NewInMemoryFileManager()
 	envs["e1"] = env
-	err := getConfigs("", envs, "")
+	err := getConfigs(fileManager, "", envs, "")
 	assert.NilError(t, err)
 }
 func TestCreateConfigsFromAPI(t *testing.T) {
 	apiMock := api.CreateAPIMockFactory(t)
-	fcreator := files.CreateFileCreatorMockFactory(t)
+	fcreator := files.CreateFileManagerMockFactory(t)
 	client := rest.CreateDynatraceClientMockFactory(t)
 	jcreator := jsoncreator.CreateJSONCreatorMock(t)
 	ycreator := yamlcreator.CreateYamlCreatorMock(t)
@@ -72,7 +73,9 @@ func TestCreateConfigsFromAPI(t *testing.T) {
 func TestDownloadConfigFromEnvironment(t *testing.T) {
 	os.Setenv("token", "test")
 	env := environment.NewEnvironment("environment1", "test", "", "https://test.live.dynatrace.com", "token")
-	err := downloadConfigFromEnvironment(env, "", nil)
+
+	fileManager := files.NewInMemoryFileManager()
+	err := downloadConfigFromEnvironment(fileManager, env, "", nil)
 	assert.NilError(t, err)
 }
 func TestGetAPIList(t *testing.T) {

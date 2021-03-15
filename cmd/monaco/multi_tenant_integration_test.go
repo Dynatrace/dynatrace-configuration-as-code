@@ -26,7 +26,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
 )
 
 const folder = "test-resources/integration-multi-environment/"
@@ -35,19 +35,19 @@ const environmentsFile = folder + "environments.yaml"
 // Tests all environments with all projects
 func TestIntegrationMultiEnvironment(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironment", func(integrationTestReader util.FileReader) {
+	RunIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironment", func(integrationTestFileManager files.FileManager) {
 
-		environments, errs := environment.LoadEnvironmentList("", environmentsFile, integrationTestReader)
+		environments, errs := environment.LoadEnvironmentList("", environmentsFile, integrationTestFileManager)
 		assert.Check(t, len(errs) == 0, "didn't expect errors loading test environments")
 
-		projects, err := project.LoadProjectsToDeploy("", api.NewApis(), folder, integrationTestReader)
+		projects, err := project.LoadProjectsToDeploy("", api.NewApis(), folder, integrationTestFileManager)
 		assert.NilError(t, err)
 
 		statusCode := RunImpl([]string{
 			"monaco",
 			"-environments", environmentsFile,
 			folder,
-		}, integrationTestReader)
+		}, integrationTestFileManager)
 
 		AssertAllConfigsAvailability(projects, t, environments, true)
 
@@ -63,7 +63,7 @@ func TestIntegrationValidationMultiEnvironment(t *testing.T) {
 		"--environments", environmentsFile,
 		"--dry-run",
 		folder,
-	}, util.NewFileReader())
+	}, files.NewInMemoryFileManager())
 
 	assert.Equal(t, statusCode, 0)
 }
@@ -71,12 +71,12 @@ func TestIntegrationValidationMultiEnvironment(t *testing.T) {
 // tests a single project
 func TestIntegrationMultiEnvironmentSingleProject(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleProject", func(integrationTestReader util.FileReader) {
+	RunIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleProject", func(integrationTestFileManager files.FileManager) {
 
-		environments, errs := environment.LoadEnvironmentList("", environmentsFile, integrationTestReader)
+		environments, errs := environment.LoadEnvironmentList("", environmentsFile, integrationTestFileManager)
 		FailOnAnyError(errs, "loading of environments failed")
 
-		projects, err := project.LoadProjectsToDeploy("cinema-infrastructure", api.NewApis(), folder, integrationTestReader)
+		projects, err := project.LoadProjectsToDeploy("cinema-infrastructure", api.NewApis(), folder, integrationTestFileManager)
 		assert.NilError(t, err)
 
 		statusCode := RunImpl([]string{
@@ -84,7 +84,7 @@ func TestIntegrationMultiEnvironmentSingleProject(t *testing.T) {
 			"--environments", environmentsFile,
 			"--p", "cinema-infrastructure",
 			folder,
-		}, integrationTestReader)
+		}, integrationTestFileManager)
 
 		AssertAllConfigsAvailability(projects, t, environments, true)
 
@@ -95,12 +95,12 @@ func TestIntegrationMultiEnvironmentSingleProject(t *testing.T) {
 // Tests a single project with dependency
 func TestIntegrationMultiEnvironmentSingleProjectWithDependency(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleProjectWithDependency", func(integrationTestReader util.FileReader) {
+	RunIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleProjectWithDependency", func(integrationTestFileManager files.FileManager) {
 
-		environments, errs := environment.LoadEnvironmentList("", environmentsFile, integrationTestReader)
+		environments, errs := environment.LoadEnvironmentList("", environmentsFile, integrationTestFileManager)
 		FailOnAnyError(errs, "loading of environments failed")
 
-		projects, err := project.LoadProjectsToDeploy("star-trek", api.NewApis(), folder, integrationTestReader)
+		projects, err := project.LoadProjectsToDeploy("star-trek", api.NewApis(), folder, integrationTestFileManager)
 		assert.NilError(t, err)
 
 		assert.Check(t, len(projects) == 2, "Projects should be star-trek and the dependency cinema-infrastructure")
@@ -110,7 +110,7 @@ func TestIntegrationMultiEnvironmentSingleProjectWithDependency(t *testing.T) {
 			"--environments", environmentsFile,
 			"--p", "star-trek",
 			folder,
-		}, integrationTestReader)
+		}, integrationTestFileManager)
 
 		AssertAllConfigsAvailability(projects, t, environments, true)
 
@@ -121,12 +121,12 @@ func TestIntegrationMultiEnvironmentSingleProjectWithDependency(t *testing.T) {
 // tests a single environment
 func TestIntegrationMultiEnvironmentSingleEnvironment(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleEnvironment", func(integrationTestReader util.FileReader) {
+	RunIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleEnvironment", func(integrationTestFileManager files.FileManager) {
 
-		environments, errs := environment.LoadEnvironmentList("", environmentsFile, integrationTestReader)
+		environments, errs := environment.LoadEnvironmentList("", environmentsFile, integrationTestFileManager)
 		FailOnAnyError(errs, "loading of environments failed")
 
-		projects, err := project.LoadProjectsToDeploy("star-trek", api.NewApis(), folder, integrationTestReader)
+		projects, err := project.LoadProjectsToDeploy("star-trek", api.NewApis(), folder, integrationTestFileManager)
 		assert.NilError(t, err)
 
 		// remove environment odt69781, just keep dav48679
@@ -136,7 +136,7 @@ func TestIntegrationMultiEnvironmentSingleEnvironment(t *testing.T) {
 			"monaco",
 			"--environments", environmentsFile,
 			folder,
-		}, integrationTestReader)
+		}, integrationTestFileManager)
 
 		AssertAllConfigsAvailability(projects, t, environments, true)
 

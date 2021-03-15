@@ -28,7 +28,7 @@ import (
 
 //JSONCreator interface allows to mock the methods for unit testing
 type JSONCreator interface {
-	CreateJSONConfig(client rest.DynatraceClient, api api.Api, value api.Value, creator files.FileCreator,
+	CreateJSONConfig(client rest.DynatraceClient, api api.Api, value api.Value, creator files.FileManager,
 		path string) (name string, filter bool, err error)
 }
 
@@ -42,7 +42,7 @@ func NewJSONCreator() *JsonCreatorImp {
 }
 
 //CreateJSONConfig creates a json file using the specified path and API data
-func (d *JsonCreatorImp) CreateJSONConfig(client rest.DynatraceClient, api api.Api, value api.Value, creator files.FileCreator,
+func (d *JsonCreatorImp) CreateJSONConfig(client rest.DynatraceClient, api api.Api, value api.Value, creator files.FileManager,
 	path string) (name string, filter bool, err error) {
 	data, filter, err := getDetailFromAPI(client, api, value.Id)
 	if err != nil {

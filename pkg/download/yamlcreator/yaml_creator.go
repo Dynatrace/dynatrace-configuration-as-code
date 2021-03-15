@@ -24,7 +24,7 @@ import (
 
 //YamlCreator implements method to create the yaml configuration file
 type YamlCreator interface {
-	CreateYamlFile(creator files.FileCreator, path string, name string) error
+	CreateYamlFile(creator files.FileManager, path string, name string) error
 	AddConfig(name string, rawName string)
 }
 
@@ -57,7 +57,7 @@ func (yc *YamlConfig) AddConfig(name string, rawName string) {
 }
 
 //CreateYamlFile transforms the struct into a physical file on disk
-func (yc *YamlConfig) CreateYamlFile(creator files.FileCreator, path string, name string) error {
+func (yc *YamlConfig) CreateYamlFile(creator files.FileManager, path string, name string) error {
 
 	data, err := yaml.Marshal(yc)
 	if err != nil {

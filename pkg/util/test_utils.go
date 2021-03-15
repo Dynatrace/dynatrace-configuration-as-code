@@ -19,10 +19,11 @@
 package util
 
 import (
-	"gotest.tools/assert"
 	"os"
 	"strings"
 	"testing"
+
+	"gotest.tools/assert"
 )
 
 func SetEnv(t *testing.T, key string, value string) {
@@ -35,6 +36,7 @@ func UnsetEnv(t *testing.T, key string) {
 	assert.NilError(t, err)
 }
 
+//ReplaceName allows to add a
 func ReplaceName(line string, idChange func(string) string) string {
 
 	if strings.Contains(line, "env-token-name:") {

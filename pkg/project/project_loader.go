@@ -26,13 +26,14 @@ import (
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
 )
 
 // LoadProjectsToDeploy returns a list of projects for deployment
 // if projects specified with -p parameter then it takes only those projects and
 // it also resolves all project dependencies
 // if no -p parameter specified, then it creates a list of all projects
-func LoadProjectsToDeploy(specificProjectToDeploy string, apis map[string]api.Api, path string, fileReader util.FileReader) (projectsToDeploy []Project, err error) {
+func LoadProjectsToDeploy(specificProjectToDeploy string, apis map[string]api.Api, path string, fileManager files.FileManager) (projectsToDeploy []Project, err error) {
 
 	projectsFolder := filepath.Clean(path)
 	projectsToDeploy = make([]Project, 0)
@@ -49,7 +50,7 @@ func LoadProjectsToDeploy(specificProjectToDeploy string, apis map[string]api.Ap
 	for _, fullQualifiedProjectFolderName := range availableProjectFolders {
 		util.Log.Debug("  project - %s", fullQualifiedProjectFolderName)
 		projectFolderName := extractFolderNameFromFullPath(fullQualifiedProjectFolderName)
-		project, err := NewProject(fullQualifiedProjectFolderName, projectFolderName, apis, projectsFolder, fileReader)
+		project, err := NewProject(fullQualifiedProjectFolderName, projectFolderName, apis, projectsFolder, fileManager)
 		if err != nil {
 			return nil, err
 		}
@@ -63,7 +64,7 @@ func LoadProjectsToDeploy(specificProjectToDeploy string, apis map[string]api.Ap
 		return returnSortedProjects(projectsToDeploy)
 	}
 
-	projectsToDeploy, err = createProjectsListFromFolderList(projectsFolder, specificProjectToDeploy, projectsFolder, apis, availableProjectFolders, fileReader)
+	projectsToDeploy, err = createProjectsListFromFolderList(projectsFolder, specificProjectToDeploy, projectsFolder, apis, availableProjectFolders, fileManager)
 
 	if err != nil {
 		return nil, err
@@ -99,7 +100,7 @@ func returnSortedProjects(projectsToDeploy []Project) ([]Project, error) {
 
 // takes project folder parameter and creates []Project slice
 // if project specified contains subprojects, then it adds subprojects instead
-func createProjectsListFromFolderList(path, specificProjectToDeploy string, projectsFolder string, apis map[string]api.Api, availableProjectFolders []string, fileReader util.FileReader) ([]Project, error) {
+func createProjectsListFromFolderList(path, specificProjectToDeploy string, projectsFolder string, apis map[string]api.Api, availableProjectFolders []string, fileManager files.FileManager) ([]Project, error) {
 	projectsToDeploy := make([]Project, 0)
 	multiProjects := strings.Split(specificProjectToDeploy, ",")
 	for _, projectFolderName := range multiProjects {
@@ -115,7 +116,7 @@ func createProjectsListFromFolderList(path, specificProjectToDeploy string, proj
 				return nil, errors.WithMessagef(err, "Project %s does not exist!", specificProjectToDeploy)
 			}
 
-			newProject, err := NewProject(fullQualifiedProjectFolderName, projectFolderName, apis, path, fileReader)
+			newProject, err := NewProject(fullQualifiedProjectFolderName, projectFolderName, apis, path, fileManager)
 			if err != nil {
 				return nil, err
 			}
@@ -129,7 +130,7 @@ func createProjectsListFromFolderList(path, specificProjectToDeploy string, proj
 			for _, fullQualifiedSubProjectFolderName := range subProjectFolders {
 
 				subProjectFolderName := extractFolderNameFromFullPath(fullQualifiedSubProjectFolderName)
-				newProject, err := NewProject(fullQualifiedSubProjectFolderName, subProjectFolderName, apis, path, fileReader)
+				newProject, err := NewProject(fullQualifiedSubProjectFolderName, subProjectFolderName, apis, path, fileManager)
 				if err != nil {
 					return nil, err
 				}

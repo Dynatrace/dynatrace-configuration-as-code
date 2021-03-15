@@ -21,16 +21,17 @@ import (
 	"fmt"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
 )
 
-func LoadEnvironmentList(specificEnvironment string, environmentsFile string, fileReader util.FileReader) (environments map[string]Environment, errorList []error) {
+func LoadEnvironmentList(specificEnvironment string, environmentsFile string, fileManager files.FileManager) (environments map[string]Environment, errorList []error) {
 
 	if environmentsFile == "" {
 		errorList = append(errorList, errors.New("no environmentfile provided"))
 		return environments, errorList
 	}
 
-	environmentsFromFile, errorList := readEnvironments(environmentsFile, fileReader)
+	environmentsFromFile, errorList := readEnvironments(environmentsFile, fileManager)
 
 	if environmentsFromFile == nil || len(environmentsFromFile) == 0 {
 		errorList = append(errorList, fmt.Errorf("no environments loaded from file %s", environmentsFile))
@@ -53,9 +54,9 @@ func LoadEnvironmentList(specificEnvironment string, environmentsFile string, fi
 }
 
 // readEnvironments reads the yaml file for the environments and returns the parsed environments
-func readEnvironments(file string, fileReader util.FileReader) (map[string]Environment, []error) {
+func readEnvironments(file string, fileManager files.FileManager) (map[string]Environment, []error) {
 
-	dat, err := fileReader.ReadFile(file)
+	dat, err := fileManager.ReadFile(file)
 	util.FailOnError(err, "Error while reading file")
 
 	err, environmentMaps := util.UnmarshalYaml(string(dat), file)

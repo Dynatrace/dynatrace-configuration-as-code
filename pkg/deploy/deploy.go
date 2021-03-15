@@ -28,11 +28,12 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
 )
 
-func Deploy(workingDir string, fileReader util.FileReader, environmentsFile string,
+func Deploy(workingDir string, fileManager files.FileManager, environmentsFile string,
 	specificEnvironment string, proj string, dryRun bool, continueOnError bool) error {
-	environments, errors := environment.LoadEnvironmentList(specificEnvironment, environmentsFile, fileReader)
+	environments, errors := environment.LoadEnvironmentList(specificEnvironment, environmentsFile, fileManager)
 
 	workingDir = filepath.Clean(workingDir)
 
@@ -45,7 +46,7 @@ func Deploy(workingDir string, fileReader util.FileReader, environmentsFile stri
 
 	apis := api.NewApis()
 
-	projects, err := project.LoadProjectsToDeploy(proj, apis, workingDir, fileReader)
+	projects, err := project.LoadProjectsToDeploy(proj, apis, workingDir, fileManager)
 	if err != nil {
 		util.FailOnError(err, "Loading of projects failed")
 	}
@@ -92,7 +93,7 @@ func Deploy(workingDir string, fileReader util.FileReader, environmentsFile stri
 		util.Log.Info("Deployment finished without errors")
 	}
 
-	deleteConfigs(apis, environments, workingDir, dryRun, fileReader)
+	deleteConfigs(apis, environments, workingDir, dryRun, fileManager)
 
 	return nil
 }
@@ -251,8 +252,8 @@ func uploadConfig(client rest.DynatraceClient, config config.Config, dict map[st
 }
 
 // deleteConfigs deletes specified configs, if a delete.yaml file was found
-func deleteConfigs(apis map[string]api.Api, environments map[string]environment.Environment, path string, dryRun bool, fileReader util.FileReader) error {
-	configs, err := delete.LoadConfigsToDelete(apis, path, fileReader)
+func deleteConfigs(apis map[string]api.Api, environments map[string]environment.Environment, path string, dryRun bool, fileManager files.FileManager) error {
+	configs, err := delete.LoadConfigsToDelete(apis, path, fileManager)
 	util.FailOnError(err, "deletion failed")
 
 	if len(configs) > 0 && !dryRun {

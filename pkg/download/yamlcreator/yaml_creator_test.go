@@ -40,7 +40,7 @@ func TestCreateYamlFile(t *testing.T) {
 	// ctrl := gomock.NewController(t)
 	config := NewYamlConfig()
 	config.AddConfig("test", "test 1234")
-	fileCreator := files.NewInMemoryFileCreator()
-	err := config.CreateYamlFile(fileCreator, "", "test")
+	fileManager := files.NewInMemoryFileManager()
+	err := config.CreateYamlFile(fileManager, "", "test")
 	assert.NilError(t, err)
 }

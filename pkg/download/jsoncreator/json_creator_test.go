@@ -31,7 +31,7 @@ func TestCreateJsonConfig(t *testing.T) {
 	jsonsample := []byte("{ \"name\": \"test1\"}")
 
 	apiMock := api.CreateAPIMockFactory(t)
-	creator := files.CreateFileCreatorMockFactory(t)
+	creator := files.CreateFileManagerMockFactory(t)
 	client := rest.CreateDynatraceClientMockFactory(t)
 	val := api.Value{Id: "acc3c230-e156-4a11-a5b7-bda1b304e613", Name: "Sockshop Error Profile"}
 	client.

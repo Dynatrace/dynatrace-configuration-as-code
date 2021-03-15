@@ -31,6 +31,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
 	"gotest.tools/assert"
 )
 
@@ -118,9 +119,9 @@ func getTransformerFunc(suffix string) func(line string) string {
 }
 
 // Deletes all configs that end with "_suffix", where suffix == suffixTest+suffixTimestamp
-func cleanupIntegrationTest(t *testing.T, envFile, suffix string, integrationTestReader util.FileReader) {
+func cleanupIntegrationTest(t *testing.T, envFile, suffix string, integrationTestFileManager files.FileManager) {
 
-	environments, errs := environment.LoadEnvironmentList("", envFile, integrationTestReader)
+	environments, errs := environment.LoadEnvironmentList("", envFile, integrationTestFileManager)
 	FailOnAnyError(errs, "loading of environments failed")
 
 	apis := api.NewApis()
@@ -163,14 +164,15 @@ func cleanupIntegrationTest(t *testing.T, envFile, suffix string, integrationTes
 //
 // <original name>_<current timestamp><defined suffix>
 // e.g. my-config_1605258980000_Suffix
-func RunIntegrationWithCleanup(t *testing.T, configFolder, envFile, suffixTest string, testFunc func(fileReader util.FileReader)) {
+
+func RunIntegrationWithCleanup(t *testing.T, configFolder, envFile, suffixTest string, testFunc func(fileManager files.FileManager)) {
 
 	suffix := getTimestamp() + suffixTest
 	transformers := []func(string) string{getTransformerFunc(suffix)}
 
-	var integrationTestReader, err = util.NewInMemoryFileReader(configFolder, transformers)
-	assert.NilError(t, err)
-
-	testFunc(integrationTestReader)
-	cleanupIntegrationTest(t, envFile, suffix, integrationTestReader)
+	//var integrationTestReader, err = files.NewInMemoryFileManager(configFolder, transformers)
+	var fileManager = files.NewInMemoryFileManager()
+	RewriteConfigNames(configFolder, fileManager, transformers)
+	testFunc(fileManager)
+	cleanupIntegrationTest(t, envFile, suffix, fileManager)
 }

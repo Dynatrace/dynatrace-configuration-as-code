@@ -23,7 +23,7 @@ import (
 
 	"gotest.tools/assert"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
 )
 
 const skipDeploymentFolder = "test-resources/skip-deployment-project/"
@@ -36,7 +36,7 @@ func TestValidationSkipDeployment(t *testing.T) {
 		"-environments", skipDeploymentEnvironmentsFile,
 		"-project", "projectA",
 		skipDeploymentFolder,
-	}, util.NewFileReader())
+	}, files.NewInMemoryFileManager())
 
 	assert.Equal(t, statusCode, 0)
 }
@@ -48,7 +48,7 @@ func TestValidationSkipDeploymentWithBrokenDependency(t *testing.T) {
 		"-environments", skipDeploymentEnvironmentsFile,
 		"-project", "projectB",
 		skipDeploymentFolder,
-	}, util.NewFileReader())
+	}, files.NewInMemoryFileManager())
 
 	assert.Assert(t, statusCode != 0, "Status code should be error")
 }
@@ -60,7 +60,7 @@ func TestValidationSkipDeploymentWithOverridingDependency(t *testing.T) {
 		"-environments", skipDeploymentEnvironmentsFile,
 		"-project", "projectC",
 		skipDeploymentFolder,
-	}, util.NewFileReader())
+	}, files.NewInMemoryFileManager())
 
 	assert.Equal(t, statusCode, 0)
 }
@@ -72,7 +72,7 @@ func TestValidationSkipDeploymentWithOverridingFlagValue(t *testing.T) {
 		"-environments", skipDeploymentEnvironmentsFile,
 		"-project", "projectE",
 		skipDeploymentFolder,
-	}, util.NewFileReader())
+	}, files.NewInMemoryFileManager())
 
 	assert.Equal(t, statusCode, 0)
 }

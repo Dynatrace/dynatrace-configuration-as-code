@@ -24,7 +24,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
 	"gotest.tools/assert"
 )
 
@@ -35,19 +35,19 @@ const multiProjectEnvironmentsFile = multiProjectFolder + "environments.yaml"
 // Tests all environments with all projects
 func TestIntegrationMultiProject(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "MultiProject", func(integrationTestReader util.FileReader) {
+	RunIntegrationWithCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "MultiProject", func(integrationTestFileManager files.FileManager) {
 
-		environments, errs := environment.LoadEnvironmentList("", multiProjectEnvironmentsFile, integrationTestReader)
+		environments, errs := environment.LoadEnvironmentList("", multiProjectEnvironmentsFile, integrationTestFileManager)
 		assert.Check(t, len(errs) == 0, "didn't expect errors loading test environments")
 
-		projects, err := project.LoadProjectsToDeploy("", api.NewApis(), multiProjectFolder, integrationTestReader)
+		projects, err := project.LoadProjectsToDeploy("", api.NewApis(), multiProjectFolder, integrationTestFileManager)
 		assert.NilError(t, err)
 
 		statusCode := RunImpl([]string{
 			"monaco",
 			"-environments", multiProjectEnvironmentsFile,
 			multiProjectFolder,
-		}, integrationTestReader)
+		}, integrationTestFileManager)
 
 		AssertAllConfigsAvailability(projects, t, environments, true)
 
@@ -63,7 +63,7 @@ func TestIntegrationValidationMultiProject(t *testing.T) {
 		"--environments", multiProjectEnvironmentsFile,
 		"--dry-run",
 		multiProjectFolder,
-	}, util.NewFileReader())
+	}, files.NewInMemoryFileManager())
 
 	assert.Equal(t, statusCode, 0)
 }
@@ -76,7 +76,7 @@ func TestIntegrationValidationMultiProjectWithoutEndingSlashInPath(t *testing.T)
 		"--environments", multiProjectEnvironmentsFile,
 		"--dry-run",
 		multiProjectFolderWithoutSlash,
-	}, util.NewFileReader())
+	}, files.NewInMemoryFileManager())
 
 	assert.Equal(t, statusCode, 0)
 }
@@ -84,12 +84,12 @@ func TestIntegrationValidationMultiProjectWithoutEndingSlashInPath(t *testing.T)
 // tests a single project with dependencies
 func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "MultiProjectSingleProject", func(integrationTestReader util.FileReader) {
+	RunIntegrationWithCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "MultiProjectSingleProject", func(integrationTestFileManager files.FileManager) {
 
-		environments, errs := environment.LoadEnvironmentList("", multiProjectEnvironmentsFile, integrationTestReader)
+		environments, errs := environment.LoadEnvironmentList("", multiProjectEnvironmentsFile, integrationTestFileManager)
 		FailOnAnyError(errs, "loading of environments failed")
 
-		projects, err := project.LoadProjectsToDeploy("star-trek", api.NewApis(), multiProjectFolder, integrationTestReader)
+		projects, err := project.LoadProjectsToDeploy("star-trek", api.NewApis(), multiProjectFolder, integrationTestFileManager)
 		assert.NilError(t, err)
 
 		assert.Equal(t, projects[0].GetId(), "test-resources/integration-multi-project/cinema-infrastructure", "Check if dependent project `cinema-infrastructure` is loaded and will be deployed first.")
@@ -99,7 +99,7 @@ func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 			"--environments", multiProjectEnvironmentsFile,
 			"--p", "star-trek",
 			multiProjectFolder,
-		}, integrationTestReader)
+		}, integrationTestFileManager)
 
 		AssertAllConfigsAvailability(projects, t, environments, true)
 

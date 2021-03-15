@@ -19,12 +19,13 @@
 package main
 
 import (
+	"testing"
+
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project"
-	"testing"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
 	"gotest.tools/assert"
 )
 
@@ -34,12 +35,12 @@ func TestIntegrationContinueDeploymentOnError(t *testing.T) {
 	const allConfigsFolder = "test-resources/integration-configs-with-errors/"
 	const allConfigsEnvironmentsFile = allConfigsFolder + "environments.yaml"
 
-	RunIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fileReader util.FileReader) {
+	RunIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fileManager files.FileManager) {
 
-		environments, errs := environment.LoadEnvironmentList("", allConfigsEnvironmentsFile, fileReader)
+		environments, errs := environment.LoadEnvironmentList("", allConfigsEnvironmentsFile, fileManager)
 		assert.Check(t, len(errs) == 0, "didn't expect errors loading test environments")
 
-		projects, err := project.LoadProjectsToDeploy("", api.NewApis(), allConfigsFolder, fileReader)
+		projects, err := project.LoadProjectsToDeploy("", api.NewApis(), allConfigsFolder, fileManager)
 		assert.NilError(t, err)
 
 		statusCode := RunImpl([]string{
@@ -47,7 +48,7 @@ func TestIntegrationContinueDeploymentOnError(t *testing.T) {
 			"--verbose", "--continue-on-error",
 			"--environments", allConfigsEnvironmentsFile,
 			allConfigsFolder,
-		}, fileReader)
+		}, fileManager)
 
 		// deployment should fail
 		assert.Equal(t, statusCode, 1)

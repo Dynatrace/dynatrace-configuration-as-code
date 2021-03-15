@@ -25,6 +25,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
 	"github.com/pkg/errors"
 )
 
@@ -46,11 +47,11 @@ type projectBuilder struct {
 	configs           []config.Config
 	apis              map[string]api.Api
 	configFactory     config.ConfigFactory
-	fileReader        util.FileReader
+	fileManager       files.FileManager
 }
 
 // NewProject loads a new project from folder. Returns either project or a reading/sorting error respectively.
-func NewProject(fullQualifiedProjectFolderName string, projectFolderName string, apis map[string]api.Api, projectRootFolder string, fileReader util.FileReader) (Project, error) {
+func NewProject(fullQualifiedProjectFolderName string, projectFolderName string, apis map[string]api.Api, projectRootFolder string, fileManager files.FileManager) (Project, error) {
 
 	var configs = make([]config.Config, 0)
 
@@ -64,7 +65,7 @@ func NewProject(fullQualifiedProjectFolderName string, projectFolderName string,
 		configs:           configs,
 		apis:              apis,
 		configFactory:     config.NewConfigFactory(),
-		fileReader:        fileReader,
+		fileManager:       fileManager,
 	}
 	err := builder.readFolder(fullQualifiedProjectFolderName, true)
 	if err != nil {
@@ -96,7 +97,7 @@ func warnIfProjectNameClashesWithApiName(projectFolderName string, apis map[stri
 }
 
 func (p *projectBuilder) readFolder(folder string, isProjectRoot bool) error {
-	files, err := p.fileReader.ReadDir(folder)
+	files, err := p.fileManager.ReadDir(folder)
 
 	if util.CheckError(err, "Folder "+folder+" could not be read") {
 		return err
@@ -122,7 +123,7 @@ func (p *projectBuilder) processYaml(filename string) error {
 
 	util.Log.Debug("Processing file: " + filename)
 
-	bytes, err := p.fileReader.ReadFile(filename)
+	bytes, err := p.fileManager.ReadFile(filename)
 
 	if util.CheckError(err, "Error while reading file "+filename) {
 		return err

@@ -27,12 +27,13 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
 	"gotest.tools/assert"
 )
 
 func TestDoCleanup(t *testing.T) {
 
-	environments, errs := environment.LoadEnvironmentList("", "test-resources/integration-multi-environment/environments.yaml", util.NewFileReader())
+	environments, errs := environment.LoadEnvironmentList("", "test-resources/integration-multi-environment/environments.yaml", files.NewInMemoryFileManager())
 	for _, err := range errs {
 		assert.NilError(t, err)
 	}
