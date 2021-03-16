@@ -19,6 +19,7 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"reflect"
@@ -152,7 +153,8 @@ func TestGetConfigStringWithEnvironmentOverride(t *testing.T) {
 
 	config := newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
 
-	devResult, err := config.GetConfigForEnvironment(testDevEnvironment, make(map[string]api.DynatraceEntity))
+	devResult, err := getConfigForEnvironmentAsMap(config, testDevEnvironment, make(map[string]api.DynatraceEntity))
+
 	assert.NilError(t, err)
 	assert.Equal(t, "Follow the black squid", devResult["msg"])
 }
@@ -163,7 +165,8 @@ func TestGetConfigStringNoEnvironmentOverride(t *testing.T) {
 	templ := getTestTemplate(t)
 	config := newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
 
-	hardeningResult, err := config.GetConfigForEnvironment(testHardeningEnvironment, make(map[string]api.DynatraceEntity))
+	hardeningResult, err := getConfigForEnvironmentAsMap(config, testHardeningEnvironment, make(map[string]api.DynatraceEntity))
+
 	assert.NilError(t, err)
 	assert.Equal(t, "Follow the white rabbit", hardeningResult["msg"])
 }
@@ -174,8 +177,8 @@ func TestGetConfigString(t *testing.T) {
 	templ := getTestTemplate(t)
 	config := newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
 
-	devResult, devErr := config.GetConfigForEnvironment(testDevEnvironment, make(map[string]api.DynatraceEntity))
-	hardeningResult, hardeningErr := config.GetConfigForEnvironment(testHardeningEnvironment, make(map[string]api.DynatraceEntity))
+	devResult, devErr := getConfigForEnvironmentAsMap(config, testDevEnvironment, make(map[string]api.DynatraceEntity))
+	hardeningResult, hardeningErr := getConfigForEnvironmentAsMap(config, testHardeningEnvironment, make(map[string]api.DynatraceEntity))
 
 	assert.NilError(t, devErr)
 	assert.NilError(t, hardeningErr)
@@ -191,7 +194,7 @@ func TestGetConfigWithGroupOverride(t *testing.T) {
 	templ := getTestTemplate(t)
 	config := newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
 
-	productionResult, err := config.GetConfigForEnvironment(testProductionEnvironment, make(map[string]api.DynatraceEntity))
+	productionResult, err := getConfigForEnvironmentAsMap(config, testProductionEnvironment, make(map[string]api.DynatraceEntity))
 	assert.NilError(t, err)
 	assert.Equal(t, "Follow the brown dog", productionResult["msg"])
 }
@@ -204,7 +207,7 @@ func TestGetConfigWithGroupOverrideAndDependency(t *testing.T) {
 	templ := getTestTemplate(t)
 	config := newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
 
-	productionResult, err := config.GetConfigForEnvironment(testProductionEnvironment, make(map[string]api.DynatraceEntity))
+	productionResult, err := getConfigForEnvironmentAsMap(config, testProductionEnvironment, make(map[string]api.DynatraceEntity))
 	assert.NilError(t, err)
 	assert.Equal(t, "Follow the brown dog", productionResult["msg"])
 }
@@ -228,13 +231,13 @@ func TestGetConfigWithGroupAndEnvironmentOverride(t *testing.T) {
 	templ := getTestTemplateWithDependency(t)
 	config := newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
 
-	productionResult, err := config.GetConfigForEnvironment(testProductionEnvironment, dict)
+	productionResult, err := getConfigForEnvironmentAsMap(config, testProductionEnvironment, dict)
 	assert.NilError(t, err)
 	assert.Equal(t, "Follow the red cat with Test Management Zone", productionResult["msg"])
 
 	m["test.prod-environment"]["dep2"] = "infrastructure/management-zone/zone.name"
 	config = newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
-	productionResult, err = config.GetConfigForEnvironment(testProductionEnvironment, dict)
+	productionResult, err = getConfigForEnvironmentAsMap(config, testProductionEnvironment, dict)
 	assert.NilError(t, err)
 	assert.Equal(t, "Follow the red cat with Test Management Zone", productionResult["msg"])
 }
@@ -250,14 +253,14 @@ func TestGetConfigWithMergingGroupAndEnvironmentOverrides(t *testing.T) {
 	// remove color parameter from `test.prod-environment`
 	// `test.production.color` parameter should be taken instead
 	delete(m["test.prod-environment"], "color")
-	productionResult, err := config.GetConfigForEnvironment(testProductionEnvironment, make(map[string]api.DynatraceEntity))
+	productionResult, err := getConfigForEnvironmentAsMap(config, testProductionEnvironment, make(map[string]api.DynatraceEntity))
 	assert.NilError(t, err)
 	assert.Equal(t, "Follow the brown cat", productionResult["msg"])
 
 	// removing whole `test.prod-environment` config section
 	// only `test.production` parameters should be considered
 	delete(m, "test.prod-environment")
-	productionResult, err = config.GetConfigForEnvironment(testProductionEnvironment, make(map[string]api.DynatraceEntity))
+	productionResult, err = getConfigForEnvironmentAsMap(config, testProductionEnvironment, make(map[string]api.DynatraceEntity))
 	assert.NilError(t, err)
 	assert.Equal(t, "Follow the brown dog", productionResult["msg"])
 }
@@ -509,7 +512,7 @@ func TestGetConfigStringWithEnvVar(t *testing.T) {
 	util.SetEnv(t, "ANIMAL", "cow")
 
 	config := newConfig("test", "testproject", templ, getTestProperties(), testManagementZoneApi, "")
-	devResult, err := config.GetConfigForEnvironment(testDevEnvironment, make(map[string]api.DynatraceEntity))
+	devResult, err := getConfigForEnvironmentAsMap(config, testDevEnvironment, make(map[string]api.DynatraceEntity))
 
 	util.UnsetEnv(t, "ANIMAL")
 
@@ -527,4 +530,22 @@ func TestGetConfigStringWithEnvVarLeadsToErrorIfEnvVarNotPresent(t *testing.T) {
 	_, err := config.GetConfigForEnvironment(testDevEnvironment, make(map[string]api.DynatraceEntity))
 
 	assert.ErrorContains(t, err, "map has no entry for key \"ANIMAL\"")
+}
+
+func getConfigForEnvironmentAsMap(config Config, env environment.Environment, dict map[string]api.DynatraceEntity) (map[string]interface{}, error) {
+	data, err := config.GetConfigForEnvironment(env, dict)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var result map[string]interface{}
+
+	err = json.Unmarshal(data, &result)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, err
 }

@@ -103,6 +103,12 @@ func ValidateAndParseJson(jsonString string, filename string) (map[string]interf
 	return result, nil
 }
 
+func ValidateJson(json string, filename string) error {
+	_, err := ValidateAndParseJson(json, filename)
+
+	return err
+}
+
 // mapError maps the json parsing error to a JsonValidationError which contains
 // the line number, character number, and line in which the error happened
 func mapError(input string, filename string, offset int, err error) (mappedError JsonValidationError) {
