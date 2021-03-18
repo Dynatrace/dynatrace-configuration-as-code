@@ -48,7 +48,8 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 	if existingObjectId != "" {
 		if configType == "managed-users" {
 			path = fullUrl
-			body = strings.Replace(configJson, "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
+			tmp := strings.Replace(string(payload), "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
+			body = []byte(tmp)
 		} else {
 			path = joinUrl(fullUrl, existingObjectId)
 		}
