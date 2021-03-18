@@ -171,6 +171,5 @@ func (d *dynatraceClientImpl) UpsertByName(api Api, name string, payload []byte)
 	if api.GetId() == "extension" {
 		return uploadExtension(d.client, fullUrl, name, payload, d.token)
 	}
-	
 	return upsertDynatraceObject(d.client, fullUrl, name, api, string(json), d.token)
 }
