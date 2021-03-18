@@ -29,4 +29,6 @@ skip-deployment-test-dashboard-2.production:
 
 skip-deployment-test-dashboard-2.environment2:
   - skipDeployment: "false"
+  - mzone: "/cinema-infrastructure/management-zone/zone-multiproject.id"
+
 

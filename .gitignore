@@ -2,6 +2,7 @@
 .idea/
 .vscode/
 *.iml
+.DS_Store
 
 # Binary
 bin/
@@ -11,4 +12,6 @@ bin/
 # Log files
 /cmd/monaco/.logs
 /.logs
-.DS_Store
+
+# Mock files
+**/*_mock.go

@@ -77,7 +77,7 @@ func (e *JsonValidationError) PrettyPrintError() {
 		lineContent := strings.Replace(e.LineContent, "\t", " ", -1)
 		previousLineContent := strings.Replace(e.PreviousLineContent, "\t", " ", -1)
 
-		Log.Error(errorTemplate, e.FileName, e.LineNumber, e.CharacterNumberInLine,
+		Log.Error("\t"+errorTemplate, e.FileName, e.LineNumber, e.CharacterNumberInLine,
 			whiteSpace, previousLineContent,
 			e.LineNumber, lineContent,
 			whiteSpace, whiteSpaceOffset,
@@ -101,6 +101,12 @@ func ValidateAndParseJson(jsonString string, filename string) (map[string]interf
 		return result, nil
 	}
 	return result, nil
+}
+
+func ValidateJson(json string, filename string) error {
+	_, err := ValidateAndParseJson(json, filename)
+
+	return err
 }
 
 // mapError maps the json parsing error to a JsonValidationError which contains

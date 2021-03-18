@@ -23,6 +23,7 @@ and [Configuration Structure](#configuration-structure)
         - [Logging all requests send to dynatrace](#logging-all-requests-send-to-dynatrace)
     - [Deploying Configuration to Dynatrace](#deploying-configuration-to-dynatrace)
       - [Running The Tool](#running-the-tool)
+      - [Running The Tool With A Proxy](#running-the-tool-with-a-proxy)
       - [Environments file](#environments-file)
   - [Configuration Structure](#configuration-structure)
     - [Projects](#projects)
@@ -40,6 +41,7 @@ and [Configuration Structure](#configuration-structure)
     - [Referencing other json templates](#referencing-other-json-templates)
     - [Templating of Environment Variables](#templating-of-environment-variables)
     - [Plugin Configuration](#plugin-configuration)
+    - [Custom Extensions](#custom-extensions)
     - [Delete Configuration](#delete-configuration)
 
 ---
@@ -86,7 +88,7 @@ If nothing is supplied the current working dir is used.
 Running monaco is done with required and non-required options and positional arguments:
 
 ```
-monaco --environments <path-to-environment-yaml-file> [--specific-environment <environment-name>] [--project <project-folder>] [--dry-run] [--verbose] [projects-root-folder]
+monaco --environments <path-to-environment-yaml-file> [--specific-environment <environment-name>] [--project <project-folder>] [--dry-run] [--verbose] [--continue-on-error] [projects-root-folder]
 ```
 
 For deploying a specific project inside a root config folder, the tool could be run as:
@@ -103,6 +105,10 @@ For validating your complete configuration in the current folder, the tool could
 For deploying all configurations to a single environment and get verbose output, the tool could be run as:
 ```monaco -v -e <path-to-environment-yaml-file> -se <name of environment>```
 
+If, during deployment, `monaco` detects an error (configuration upload fails), it automatically stops deployment of affected environment. In case you want 
+`monaco` to ignore errors and try to upload other configurations, you can provide `--continue-on-error` flag:
+```monaco deploy --project <project-folder> --environments <path-to-environment-yaml-file> continue-on-error [projects-root-folder]```
+
 Multiple projects can be specified as well:
 
 ```-p="project1,project2,project3"```
@@ -117,26 +123,14 @@ monaco --version
 The supported flags are described below:
 
 ```
-  -d    Set dry-run flag to just validate configurations instead of deploying. (shorthand)
-  -dry-run
-        Set dry-run flag to just validate configurations instead of deploying.
-  -p string
-        Project configuration to deploy. Also deploys any dependent configuration. (shorthand)
-  -project string
-        Project configuration to deploy. Also deploys any dependent configuration.
-  -specific-environment string
-        Specifc environment (from list) to deploy to.
-  -se string
-        Specifc environment (from list) to deploy to. (shorthand)
-  -e string
-        Mandatory yaml file containing environments to deploy to. (shorthand)
-  -environments string
-        Mandatory yaml file containing environments to deploy to.
-  -v    Set verbose flag to enable debug logging. (shorthand)
-  -verbose
-        Set verbose flag to enable debug logging.
-  -version
-        Prints the current version of the tool and exits the program
+   --verbose, -v                             (default: false)
+   --environments value, -e value            Yaml file containing environments to deploy to
+   --specific-environment value, --se value  Specific environment (from list) to deploy to (default: none)
+   --project value, -p value                 Project configuration to deploy (also deploys any dependent configurations) (default: none)
+   --dry-run, -d                             Switches to just validation instead of actual deployment (default: false)
+   --continue-on-error, -c                   Proceed deployment even if config upload fails (default: false)
+   --help, -h                                show help (default: false)
+   --version                                 print the version (default: false)
 ```
 
 #### Dry Run (Validating Configuration)
@@ -189,11 +183,12 @@ For more information on this feature, see [pkg/download/README.md](./pkg/downloa
 #### Misc
 <a id="cli-misc"/>
 
-##### Logging all requests send to dynatrace
+##### Logging all requests/response send to dynatrace
 <a id="cli-misc-log-requests">
 
-Sometimes it is usefull for debugging to see send requets from monaco to the dynatrace api.
-This is possible by specifying a log file via the `MONACO_REQUEST_LOG` env variable. 
+Sometimes it is useful for debugging to see http traffic between monaco and the dynatrace api.
+This is possible by specifying a log file via the `MONACO_REQUEST_LOG` and `MONACO_RESPONSE_LOG`
+env variables.
 
 The specified file can either be relative, then it will be located relative form the current 
 working dir, or absolute. 
@@ -204,16 +199,7 @@ Simply set the environment variable and monaco will start writing all send reque
 the file like:
 
 ```sh
-$ MONACO_REQUEST_LOG=requests.log monaco -e environment project
-```
-
-The requests are logged in format: 
-```
-URL: [url]
-METHOD: [method]
-CONTENT:
-[content]
-==========
+$ MONACO_REQUEST_LOG=request.log MONACO_RESPONSE_LOG=response.log monaco -e environment project
 ```
 
 As of right now, the content of multipart post requests is not logged. This is a known 
@@ -251,6 +237,20 @@ To deploy to 1 specific environment within a `environments.yaml` file, the `-spe
 
 ```bash
 monaco -e=environments.yaml -se=my-environment -p="my-environment" cluster
+```
+
+#### Running The Tool With A Proxy
+
+In environments where access to Dynatrace API endpoints is only possible or allowed via a proxy server, monaco provides the options to specify the address of your proxy server when running a command:
+
+```bash
+HTTPS_PROXY=localhost:5000 monaco -e=environments.yaml -se=my-environment -p="my-environment" cluster 
+```
+
+With the new CLI:
+
+```bash
+HTTPS_PROXY=localhost:5000 NEW_CLI=1 monaco deploy -e environments.yaml 
 ```
 
 
@@ -364,6 +364,11 @@ This config does the following:
 * Sets a management zone filter on the complete dashboard, again as a variable, most likely [referenced from another config](#referencing-other-configurations)
   * Filtering the whole dashboard by management zone, makes sure no data not meant to be shown is accidentally picked up on tiles, and removes the possible need to define filters for individual tiles
 
+From Dynatrace version 208 onwards, a dashboard configuration must:
+
+- Have a property ownner, the property owner in dashboardMetadata is mandatory and must contain a not null value.
+- The property sharingDetails in dashboardMetadata is not present anymore.
+
 ##### Calculated log metrics JSON
 
 There is a know drawback to `monaco`'s workaround to the slightly off-standard API for Calculated Log Metrics, which needs you to follow specific naming conventions for your configuration: 
@@ -448,11 +453,12 @@ These are the supported configuration types, their API endpoints and the token p
 | alerting-profile                | _/api/config/v1/alertingProfiles_               | `Read Configuration` & `Write Configuration`                                                                        |
 | anomaly-detection-metrics       | _/api/config/v1/anomalyDetection/metricEvents_  | `Read Configuration` & `Write Configuration`                                                                        |
 | app-detection-rule              | _/api/config/v1/applicationDetectionRules_      | `Read Configuration` & `Write Configuration`                                                                        |
-| application **deprecated in 2.0.0!**| _/api/config/v1/applications/web_               | `Read Configuration` & `Write Configuration`                                                                        |
-| application-web **replaces application**| _/api/config/v1/applications/web_            | `Read Configuration` & `Write Configuration`
-| application-mobile              | _/api/config/v1/applications/mobile_            | `Read Configuration` & `Write Configuration`
+| application **deprecated in 2.0.0!**| _/api/config/v1/applications/web_           | `Read Configuration` & `Write Configuration`                                                                        |
+| application-web **replaces application**| _/api/config/v1/applications/web_       | `Read Configuration` & `Write Configuration`                                                                        |
+| application-mobile              | _/api/config/v1/applications/mobile_            | `Read Configuration` & `Write Configuration`                                                                        |
 | auto-tag                        | _/api/config/v1/autoTags_                       | `Read Configuration` & `Write Configuration`                                                                        |
 | aws-credentials                 | _/api/config/v1/aws/credentials_                | `Read Configuration` & `Write Configuration`                                                                        |
+| azure-credentials               | _/api/config/v1/azure/credentials_              | `Read Configuration` & `Write Configuration`                                                                        |
 | calculated-metrics-log          | _/api/config/v1/calculatedMetrics/log_          | `Read Configuration` & `Write Configuration`                                                                        |
 | calculated-metrics-service      | _/api/config/v1/calculatedMetrics/service_      | `Read Configuration` & `Write Configuration`                                                                        |
 | conditional-naming-host         | _/api/config/v1/conditionalNaming/host_         | `Read Configuration` & `Write Configuration`                                                                        |
@@ -466,11 +472,12 @@ These are the supported configuration types, their API endpoints and the token p
 | custom-service-php              | _/api/config/v1/service/customServices/php_     | `Read Configuration` & `Write Configuration`                                                                        |
 | dashboard                       | _/api/config/v1/dashboards_                     | `Read Configuration` & `Write Configuration`                                                                        |
 | extension                       | _/api/config/v1/extensions_                     | `Read Configuration` & `Write Configuration`                                                                        |
+| kubernetes-credentials          | _/api/config/v1/kubernetes/credentials_         | `Read Configuration` & `Write Configuration`                                                                        |
 | maintenance-window              | _/api/config/v1/maintenanceWindows_             | `Deprecated: Configure maintenance windows`                                                                         |
 | management-zone                 | _/api/config/v1/managementZones_                | `Read Configuration` & `Write Configuration`                                                                        |
 | notification                    | _/api/config/v1/notifications_                  | `Read Configuration` & `Write Configuration`                                                                        |
 | request-attributes              | _/api/config/v1/service/requestAttributes_      | `Read Configuration` & `Capture request data`                                                                       |
-| request-naming                  | _/api/config/v1/service/requestNaming_          | `Read Configuration` & `Write Configuration`                                                                        |
+| request-naming-service          | _/api/config/v1/service/requestNaming_          | `Read Configuration` & `Write Configuration`                                                                        |
 | slo                             | _/api/v2/slo_                                   | `Read SLO` & `Write SLOs`                                                                                           |
 | synthetic-location              | _/api/v1/synthetic/locations_                   | `Access problem and event feed, metrics, and topology` & `Create and read synthetic monitors, locations, and nodes` |
 | synthetic-monitor               | _/api/v1/synthetic/monitors_                    | `Create and read synthetic monitors, locations, and nodes`                                                          |
@@ -716,7 +723,13 @@ to then construct the `metric-id` in the `json` as:
 "metricId": "ext:{{.metricPrefix}}.metric_NumberOfDistributionInProgressRequests"
 ```
 
+### Custom Extensions
+
+Monaco is able to deploy custom extensions and handles the zipping of extensions, as such the JSON file that defines an extension can just be checked in.
+An example of a custom extension can be found [here](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/tree/main/cmd/monaco/test-resources/integration-all-configs/project/extension).
+
 ### Delete Configuration
+
 Configuration which is not needed anymore can also be deleted in automated fashion. This tool is looking for `delete.yaml` file located in projects root
 folder and deletes all configurations defined in this file after finishing deployment. `delete.yaml` file structure should be defined as following, where
 beside from API you also have to specify then `name` (not id) of configuration to be deleted:

@@ -25,6 +25,7 @@ import (
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/version"
+	"github.com/google/uuid"
 )
 
 type Response struct {
@@ -33,50 +34,88 @@ type Response struct {
 	Headers    map[string][]string
 }
 
-func get(client *http.Client, url string, apiToken string) Response {
-	req := request(http.MethodGet, url, apiToken)
-	return executeRequest(client, req)
+func get(client *http.Client, url string, apiToken string) (Response, error) {
+	req, err := request(http.MethodGet, url, apiToken)
+
+	if err != nil {
+		return Response{}, err
+	}
+
+	return executeRequest(client, req), nil
 }
 
 // the name delete() would collide with the built-in function
-func deleteConfig(client *http.Client, url string, apiToken string, id string) {
-	req := request(http.MethodDelete, url+"/"+id, apiToken)
+func deleteConfig(client *http.Client, url string, apiToken string, id string) error {
+	req, err := request(http.MethodDelete, url+"/"+id, apiToken)
+
+	if err != nil {
+		return err
+	}
+
 	executeRequest(client, req)
+
+	return nil
 }
 
-func post(client *http.Client, url string, data string, apiToken string) Response {
-	util.LogRequest(url, "POST", data)
-	req := requestWithBody(http.MethodPost, url, bytes.NewBuffer([]byte(data)), apiToken)
-	return executeRequest(client, req)
+func post(client *http.Client, url string, data []byte, apiToken string) (Response, error) {
+	req, err := requestWithBody(http.MethodPost, url, bytes.NewBuffer(data), apiToken)
+
+	if err != nil {
+		return Response{}, err
+	}
+
+	return executeRequest(client, req), nil
 }
 
-func postMultiPartFile(client *http.Client, url string, data *bytes.Buffer, contentType string, apiToken string) Response {
-	util.LogRequest(url, "POST multipart", "")
-	req := requestWithBody(http.MethodPost, url, data, apiToken)
+func postMultiPartFile(client *http.Client, url string, data *bytes.Buffer, contentType string, apiToken string) (Response, error) {
+	req, err := requestWithBody(http.MethodPost, url, data, apiToken)
+
+	if err != nil {
+		return Response{}, err
+	}
+
 	req.Header.Set("Content-type", contentType)
-	return executeRequest(client, req)
+
+	return executeRequest(client, req), nil
 }
 
-func put(client *http.Client, url string, data string, apiToken string) Response {
-	util.LogRequest(url, "PUT", data)
-	req := requestWithBody(http.MethodPut, url, bytes.NewBuffer([]byte(data)), apiToken)
-	return executeRequest(client, req)
+func put(client *http.Client, url string, data []byte, apiToken string) (Response, error) {
+	req, err := requestWithBody(http.MethodPut, url, bytes.NewBuffer(data), apiToken)
+
+	if err != nil {
+		return Response{}, err
+	}
+
+	return executeRequest(client, req), nil
 }
 
-func request(method string, url string, apiToken string) *http.Request {
-	util.LogRequest(url, method, "")
+func request(method string, url string, apiToken string) (*http.Request, error) {
 	return requestWithBody(method, url, nil, apiToken)
 }
 
-func requestWithBody(method string, url string, body io.Reader, apiToken string) *http.Request {
-	req, _ := http.NewRequest(method, url, body)
+func requestWithBody(method string, url string, body io.Reader, apiToken string) (*http.Request, error) {
+	req, err := http.NewRequest(method, url, body)
+
+	if err != nil {
+		return nil, err
+	}
+
 	req.Header.Set("Authorization", "Api-Token "+apiToken)
 	req.Header.Set("Content-type", "application/json")
 	req.Header.Set("User-Agent", "Dynatrace Monitoring as Code/"+version.MonitoringAsCode+" "+(runtime.GOOS+" "+runtime.GOARCH))
-	return req
+	return req, nil
 }
 
 func executeRequest(client *http.Client, request *http.Request) Response {
+	var requestId string
+	if util.IsRequestLoggingActive() {
+		requestId = uuid.NewString()
+		err := util.LogRequest(requestId, request)
+
+		if err != nil {
+			util.Log.Warn("error while writing request log for id `%s`: %v", requestId, err)
+		}
+	}
 
 	rateLimitStrategy := createRateLimitStrategy()
 
@@ -90,6 +129,19 @@ func executeRequest(client *http.Client, request *http.Request) Response {
 			err = resp.Body.Close()
 		}()
 		body, err := ioutil.ReadAll(resp.Body)
+
+		if util.IsResponseLoggingActive() {
+			err := util.LogResponse(requestId, resp)
+
+			if err != nil {
+				if requestId != "" {
+					util.Log.Warn("error while writing response log for id `%s`: %v", requestId, err)
+				} else {
+					util.Log.Warn("error while writing response log: %v", requestId, err)
+				}
+			}
+		}
+
 		return Response{
 			StatusCode: resp.StatusCode,
 			Body:       body,

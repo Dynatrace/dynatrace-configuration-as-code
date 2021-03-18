@@ -67,8 +67,9 @@ func TestExecuteFailOnDuplicateNamesWithinSameConfig(t *testing.T) {
 	projects, err := project.LoadProjectsToDeploy("project1", apis, path, util.NewFileReader())
 	assert.NilError(t, err)
 
-	err = execute(environment, projects, true, "")
-	assert.ErrorContains(t, err, "duplicate UID 'calculated-metrics-log/metric' found in")
+	errors := execute(environment, projects, true, "", false)
+	assert.Equal(t, errors != nil, true)
+	assert.ErrorContains(t, errors[0], "duplicate UID 'calculated-metrics-log/metric' found in")
 }
 
 func TestExecutePassOnDifferentApis(t *testing.T) {
@@ -80,8 +81,10 @@ func TestExecutePassOnDifferentApis(t *testing.T) {
 	projects, err := project.LoadProjectsToDeploy("project2", apis, path, util.NewFileReader())
 	assert.NilError(t, err)
 
-	err = execute(environment, projects, true, "")
-	assert.NilError(t, err)
+	errors := execute(environment, projects, true, "", false)
+	for _, err := range errors {
+		assert.NilError(t, err)
+	}
 }
 
 func TestExecuteFailOnDuplicateNamesInDifferentProjects(t *testing.T) {
@@ -93,8 +96,8 @@ func TestExecuteFailOnDuplicateNamesInDifferentProjects(t *testing.T) {
 	projects, err := project.LoadProjectsToDeploy("project1, project2", apis, path, util.NewFileReader())
 	assert.NilError(t, err)
 
-	err = execute(environment, projects, true, "")
-	assert.ErrorContains(t, err, "duplicate UID 'calculated-metrics-log/metric' found in")
+	errors := execute(environment, projects, true, "", false)
+	assert.ErrorContains(t, errors[0], "duplicate UID 'calculated-metrics-log/metric' found in")
 }
 
 func TestExecutePassOnDuplicateNamesInDifferentEnvironments(t *testing.T) {
@@ -107,10 +110,14 @@ func TestExecutePassOnDuplicateNamesInDifferentEnvironments(t *testing.T) {
 	projects, err := project.LoadProjectsToDeploy("project5", apis, path, util.NewFileReader())
 	assert.NilError(t, err)
 
-	err = execute(environmentDev, projects, true, "")
-	assert.NilError(t, err)
-	err = execute(environmentProd, projects, true, "")
-	assert.NilError(t, err)
+	errors := execute(environmentDev, projects, true, "", false)
+	for _, err := range errors {
+		assert.NilError(t, err)
+	}
+	errors = execute(environmentProd, projects, true, "", false)
+	for _, err := range errors {
+		assert.NilError(t, err)
+	}
 }
 
 // TODO (CDF-6511) Currently here UnmarshallYaml logs fatal, only ever returns nil errors!

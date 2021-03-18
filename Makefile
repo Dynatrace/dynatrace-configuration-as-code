@@ -1,6 +1,6 @@
 BINARY=monaco
 
-.PHONY: lint format mocks build install clean test integration-test test-package default
+.PHONY: lint format mocks build install clean test integration-test test-package default add-license-headers
 
 default: build
 
@@ -8,11 +8,21 @@ lint:
 ifeq ($(OS),Windows_NT)
 	@.\tools\check-format.cmd
 else
+	@go get github.com/google/addlicense
 	@sh ./tools/check-format.sh
+	@sh ./tools/check-license-headers.sh
 endif
 
 format:
 	@gofmt -w .
+
+add-license-headers:
+ifeq ($(OS),Windows_NT)
+	@echo "This is currently not supported on windows"
+	@exit 1
+else
+	@sh ./tools/add-missing-license-headers.sh
+endif
 
 mocks:
 	@go get github.com/golang/mock/mockgen

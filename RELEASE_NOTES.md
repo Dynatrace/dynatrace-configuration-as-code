@@ -1,12 +1,43 @@
 # Monitoring as Code Tool - Release Notes
 
 - Versions:
+  - [1.5.0](#150)
+  - [1.4.0](#140)
   - [1.3.1](#131)
   - [1.3.0](#130)
   - [1.2.0](#120)
   - [1.1.0](#110)
   - [1.0.1](#101)
   - [1.0.0](#100)
+
+## 1.5.0
+
+### List of changes
+#### Features
+* 84c8ef9 Added option to allow deployment to proceed even if error occurred (#127)
+* c695dd4 Add response log (#228)
+
+#### Bugfixes
+* 7159440 Add missing license headers to files (#191)
+* 2462ba0 Fix dependency resolution not working if defined in overrides (#141)
+
+#### Library updates
+* e217ea8 Bump github.com/golang/mock from 1.4.4 to 1.5.0
+
+#### Misc changes
+* e178bc5 Fix path of PUT in how-to-add-a-new-api.md (#235)
+* 0faae65 Add missing go mod entries for addlincense
+* 080f2f1 Update README.md Updated supported configuration types table
+* faa1b01 Add add-license-header make goal
+* ac6f001 Fail build if license header is missing
+
+## 1.4.0
+
+### List of changes
+#### Features
+
+* f5a4f71 Add support for credentials vault API (#175)
+* af5c4f5 Fix #158: Add support for custom-service APIs for dotnet, go, nodejs, and php (#172)
 
 ## 1.3.1
 
@@ -20,13 +51,13 @@
 ### List of changes
 
 #### Deprecation Warnings
-  * Fix #146: `application-web` configuration type replaces `application` in the future (#149)
-  * `application` config type is deprecated with 1.3.0 and will be removed with 2.0.0 (#149)
+* Fix #146: `application-web` configuration type replaces `application` in the future (#149)
+* `application` config type is deprecated with 1.3.0 and will be removed with 2.0.0 (#149)
 
 #### Features
 
-  * Fix #146: Add support for `application-mobile`(applications/mobile) configurations (#149)
-  * 5558b61 Fix #66: Add support for `slo` (/api/v2/slo) configruations (#153)
+* Fix #146: Add support for `application-mobile`(applications/mobile) configurations (#149)
+* 5558b61 Fix #66: Add support for `slo` (/api/v2/slo) configruations (#153)
 
 #### Bugfixes
 

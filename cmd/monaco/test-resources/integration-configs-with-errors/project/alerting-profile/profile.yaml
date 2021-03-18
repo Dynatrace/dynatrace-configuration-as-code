@@ -1,0 +1,7 @@
+
+config:
+  - profile: "profile.json"
+
+profile:
+  - name: "Star Trek Service"
+  - non-existing-ref: "/foobar/custom-service-java/ref.name"

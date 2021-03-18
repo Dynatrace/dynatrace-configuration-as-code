@@ -49,7 +49,7 @@ func TestIntegrationMultiProject(t *testing.T) {
 			multiProjectFolder,
 		}, integrationTestReader)
 
-		AssertConfigAvailable(projects, t, environments, true)
+		AssertAllConfigsAvailability(projects, t, environments, true)
 
 		assert.Equal(t, statusCode, 0)
 	})
@@ -101,7 +101,7 @@ func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 			multiProjectFolder,
 		}, integrationTestReader)
 
-		AssertConfigAvailable(projects, t, environments, true)
+		AssertAllConfigsAvailability(projects, t, environments, true)
 
 		assert.Equal(t, statusCode, 0)
 	})

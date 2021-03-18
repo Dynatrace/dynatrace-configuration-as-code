@@ -27,16 +27,16 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 )
 
-func upsertDynatraceObject(client *http.Client, fullUrl string, objectName string, theApi api.Api, configJson string, apiToken string) (api.DynatraceEntity, error) {
+func upsertDynatraceObject(client *http.Client, fullUrl string, objectName string, theApi api.Api, payload []byte, apiToken string) (api.DynatraceEntity, error) {
 
-	isDashBoard, existingObjectId, err := getObjectIdIfAlreadyExists(client, theApi, fullUrl, objectName, apiToken)
+	existingObjectId, err := getObjectIdIfAlreadyExists(client, theApi, fullUrl, objectName, apiToken)
 	var dtEntity api.DynatraceEntity
 	if err != nil {
 		return dtEntity, err
 	}
 	var resp Response
 	path := fullUrl
-	body := configJson
+	body := payload
 	configType := theApi.GetId()
 
 	// The calculated-metrics-log API doesn't have a POST endpoint, to create a new log metric we need to use PUT which
@@ -53,16 +53,27 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 			path = joinUrl(fullUrl, existingObjectId)
 		}
 		// Updating a dashboard requires the ID to be contained in the JSON, so we just add it...
-		if isDashBoard {
-			body = strings.Replace(configJson, "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
+		if isApiDashboard(theApi) {
+			tmp := strings.Replace(string(payload), "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
+			body = []byte(tmp)
+		}
+		resp, err = put(client, path, body, apiToken)
+
+		if err != nil {
+			return api.DynatraceEntity{}, err
 		}
 
 		resp = put(client, path, body, apiToken)
+
 	} else {
 		if configType == "app-detection-rule" {
 			path += "?position=PREPEND"
 		}
-		resp = post(client, path, body, apiToken)
+		resp, err = post(client, path, body, apiToken)
+
+		if err != nil {
+			return api.DynatraceEntity{}, err
+		}
 
 		// It can happen that the post fails because config needs time to be propagated on all cluster nodes. If the error
 		// constraintViolations":[{"path":"name","message":"X must have a unique name...
@@ -71,13 +82,21 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 			// Try again after 5 seconds:
 			util.Log.Warn("\t\tConfig '%s - %s' needs to have a unique name. Waiting for 5 seconds before retry...", configType, objectName)
 			time.Sleep(5 * time.Second)
-			resp = post(client, path, body, apiToken)
+			resp, err = post(client, path, body, apiToken)
+
+			if err != nil {
+				return api.DynatraceEntity{}, err
+			}
 		}
 		// It can take longer until request attributes are ready to be used
 		if !success(resp) && strings.Contains(string(resp.Body), "must specify a known request attribute") {
 			util.Log.Warn("\t\tSpecified request attribute not known for %s. Waiting for 10 seconds before retry...", objectName)
 			time.Sleep(10 * time.Second)
-			resp = post(client, path, body, apiToken)
+			resp, err = post(client, path, body, apiToken)
+
+			if err != nil {
+				return api.DynatraceEntity{}, err
+			}
 		}
 	}
 	if !success(resp) {
@@ -150,7 +169,7 @@ func isLocationHeaderAvailable(resp Response) (headerAvailable bool, headerArray
 
 func deleteDynatraceObject(client *http.Client, api api.Api, name string, url string, token string) error {
 
-	_, existingId, err := getObjectIdIfAlreadyExists(client, api, url, name, token)
+	existingId, err := getObjectIdIfAlreadyExists(client, api, url, name, token)
 	if err != nil {
 		return err
 	}
@@ -161,48 +180,59 @@ func deleteDynatraceObject(client *http.Client, api api.Api, name string, url st
 	return nil
 }
 
-func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, objectName string, apiToken string) (isDashboard bool, existingId string, err error) {
+func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, objectName string, apiToken string) (existingId string, err error) {
 
-	isDashboard, values, err := getExistingValuesFromEndpoint(client, api, url, apiToken)
+	values, err := getExistingValuesFromEndpoint(client, api, url, apiToken)
 	if err != nil {
-		return isDashboard, "", err
+		return "", err
 	}
 
 	for i := 0; i < len(values); i++ {
 		value := values[i]
 		if value.Name == objectName {
-			return isDashboard, value.Id, nil
+			return value.Id, nil
 		}
 	}
-	return isDashboard, "", nil
+	return "", nil
 }
 
-func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, url string, apiToken string) (isDashboard bool, values []api.Value, err error) {
+func isApiDashboard(api api.Api) bool {
+	return api.GetId() == "dashboard"
+}
+
+func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, url string, apiToken string) (values []api.Value, err error) {
 
 	values = make([]api.Value, 0)
-	resp := get(client, url, apiToken)
-	isDashboard = theApi.GetId() == "dashboard"
+	resp, err := get(client, url, apiToken)
+
+	if err != nil {
+		return nil, err
+	}
 
 	for {
 		var objmap map[string]interface{}
 
-		err, values = unmarshalJson(theApi, err, resp, values, objmap, isDashboard)
+		err, values = unmarshalJson(theApi, err, resp, values, objmap)
 		if err != nil {
-			return isDashboard, values, err
+			return values, err
 		}
 
 		// Does the API support paging?
 		if isPaginated, nextPage := isPaginatedResponse(objmap); isPaginated {
-			resp = get(client, url+"?nextPageKey="+nextPage, apiToken)
+			resp, err = get(client, url+"?nextPageKey="+nextPage, apiToken)
+
+			if err != nil {
+				return nil, err
+			}
 		} else {
 			break
 		}
 	}
 
-	return isDashboard, values, nil
+	return values, nil
 }
 
-func unmarshalJson(theApi api.Api, err error, resp Response, values []api.Value, objmap map[string]interface{}, isDashboard bool) (error, []api.Value) {
+func unmarshalJson(theApi api.Api, err error, resp Response, values []api.Value, objmap map[string]interface{}) (error, []api.Value) {
 
 	if theApi.GetId() == "synthetic-location" {
 

@@ -1,3 +1,17 @@
+// @license
+// Copyright 2021 Dynatrace LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package deploy
 
 import (
@@ -17,16 +31,16 @@ import (
 )
 
 func Deploy(workingDir string, fileReader util.FileReader, environmentsFile string,
-	specificEnvironment string, proj string, dryRun bool) error {
+	specificEnvironment string, proj string, dryRun bool, continueOnError bool) error {
 	environments, errors := environment.LoadEnvironmentList(specificEnvironment, environmentsFile, fileReader)
 
 	workingDir = filepath.Clean(workingDir)
 
-	var deploymentErrors = make(map[string]error)
+	var deploymentErrors = make(map[string][]error)
 
 	for i, err := range errors {
 		configIssue := fmt.Sprintf("environmentfile-issue-%d", i)
-		deploymentErrors[configIssue] = err
+		deploymentErrors[configIssue] = append(deploymentErrors[configIssue], err)
 	}
 
 	apis := api.NewApis()
@@ -43,21 +57,33 @@ func Deploy(workingDir string, fileReader util.FileReader, environmentsFile stri
 	}
 
 	for _, environment := range environments {
-		err := execute(environment, projects, dryRun, workingDir)
-		if err != nil {
-			deploymentErrors[environment.GetId()] = err
+		errors := execute(environment, projects, dryRun, workingDir, continueOnError)
+		if errors != nil && len(errors) > 0 {
+			deploymentErrors[environment.GetId()] = errors
 		}
 	}
 
-	for environment, err := range deploymentErrors {
+	util.Log.Info("Deployment summary:")
+	for environment, errors := range deploymentErrors {
 		if dryRun {
-			util.Log.Error("Validation of %s failed with error %s\n", environment, err)
-			util.PrettyPrintError(err)
+			util.Log.Error("Validation of %s failed. Found %d error(s)\n", environment, len(errors))
+			util.PrintErrors(errors)
+		} else if continueOnError {
+			util.Log.Error("Deployment to %s finished with %d error(s):\n", environment, len(errors))
+			util.PrintErrors(errors)
 		} else {
-			util.Log.Error("Deployment to %s failed with error %s\n", environment, err)
+			util.Log.Error("Deployment to %s failed with error!\n", environment)
+			util.PrintErrors(errors)
 		}
+	}
 
-		return fmt.Errorf("Errors during deployment! Check log!")
+	// do not execute delete if there are problems with deployment
+	if len(deploymentErrors) > 0 {
+		if dryRun {
+			return fmt.Errorf("Errors during validation! Check log!")
+		} else {
+			return fmt.Errorf("Errors during deployment! Check log!")
+		}
 	}
 
 	if dryRun {
@@ -71,19 +97,19 @@ func Deploy(workingDir string, fileReader util.FileReader, environmentsFile stri
 	return nil
 }
 
-func execute(environment environment.Environment, projects []project.Project, dryRun bool, path string) error {
+func execute(environment environment.Environment, projects []project.Project, dryRun bool, path string, continueOnError bool) (errors []error) {
 	util.Log.Info("Processing environment " + environment.GetId() + "...")
 
 	var client rest.DynatraceClient
 	if !dryRun {
 		apiToken, err := environment.GetToken()
 		if err != nil {
-			return err
+			return append(errors, err)
 		}
 
 		client, err = rest.NewDynatraceClient(environment.GetURL(), apiToken)
 		if err != nil {
-			return err
+			return append(errors, err)
 		}
 	}
 
@@ -111,12 +137,12 @@ func execute(environment environment.Environment, projects []project.Project, dr
 
 			name, err = config.GetObjectNameForEnvironment(environment, dict)
 			if err != nil {
-				return err
+				return append(errors, err)
 			}
 			name = config.GetApi().GetId() + "/" + name
 			configID = config.GetFullQualifiedId()
 			if nameDict[name] != "" {
-				return fmt.Errorf("duplicate UID '%s' found in %s and %s", name, configID, nameDict[name])
+				return append(errors, fmt.Errorf("duplicate UID '%s' found in %s and %s", name, configID, nameDict[name]))
 			}
 			nameDict[name] = configID
 
@@ -127,7 +153,15 @@ func execute(environment environment.Environment, projects []project.Project, dr
 			}
 
 			if err != nil {
-				return err
+				// by default stop deployment on error
+				if continueOnError || dryRun {
+					errors = append(errors, err)
+					// Log error here in addition to deployment summary
+					// Useful to debug using verbose
+					util.Log.Error("\t\t\tFailed %s", err)
+				} else {
+					return append(errors, err)
+				}
 			}
 
 			referenceId := strings.TrimPrefix(config.GetFullQualifiedId(), path+"/")
@@ -137,7 +171,8 @@ func execute(environment environment.Environment, projects []project.Project, dr
 			}
 		}
 	}
-	return nil
+
+	return errors
 }
 
 func validateConfig(project project.Project, config config.Config, dict map[string]api.DynatraceEntity, environment environment.Environment) (entity api.DynatraceEntity, err error) {
@@ -195,14 +230,14 @@ func validateConfig(project project.Project, config config.Config, dict map[stri
 }
 
 func uploadConfig(client rest.DynatraceClient, config config.Config, dict map[string]api.DynatraceEntity, environment environment.Environment) (entity api.DynatraceEntity, err error) {
-	util.Log.Debug("\t\tApplying config " + config.GetFilePath())
-
-	uploadMap, err := config.GetConfigForEnvironment(environment, dict)
+	name, err := config.GetObjectNameForEnvironment(environment, dict)
 	if err != nil {
 		return entity, err
 	}
 
-	name, err := config.GetObjectNameForEnvironment(environment, dict)
+	util.Log.Debug("\t\tApplying config `%s` using %s", name, config.GetFilePath())
+
+	uploadMap, err := config.GetConfigForEnvironment(environment, dict)
 	if err != nil {
 		return entity, err
 	}
