@@ -79,10 +79,10 @@ development:
     - env-token-name: "DEV"
 `
 
-var testDevEnvironment = NewEnvironment("development", "Dev", "", "https://url/to/dev/environment", "DEV")
-var testHardeningEnvironment = NewEnvironment("hardening", "Hardening", "", "https://url/to/hardening/environment", "HARDENING")
-var testProductionEnvironment = NewEnvironment("prod-environment", "prod-environment", "production", "https://url/to/production/environment", "PRODUCTION")
-var testTrailingSlashEnvironment = NewEnvironment("trailing-slash-environment", "trailing-slash-environment", "", "https://url/to/production/environment/", "TRAILINGSLASH")
+var testDevEnvironment = NewEnvironment("development", "Dev", "", "https://url/to/dev/environment", "DEV", "")
+var testHardeningEnvironment = NewEnvironment("hardening", "Hardening", "", "https://url/to/hardening/environment", "HARDENING", "")
+var testProductionEnvironment = NewEnvironment("prod-environment", "prod-environment", "production", "https://url/to/production/environment", "PRODUCTION", "")
+var testTrailingSlashEnvironment = NewEnvironment("trailing-slash-environment", "trailing-slash-environment", "", "https://url/to/production/environment/", "TRAILINGSLASH", "")
 
 func TestShouldParseYaml(t *testing.T) {
 
@@ -168,7 +168,7 @@ func TestUrlAvailableWithTemplating(t *testing.T) {
 	e, devEnvironment := setupEnvironment(t, testYamlEnvironmentWithNewPropertyFormat, "development")
 
 	assert.NilError(t, e)
-	assert.Equal(t, "1234", devEnvironment.GetEnvironmentUrl())
+	assert.Equal(t, "1234", devEnvironment.GetURL())
 
 	util.UnsetEnv(t, "URL")
 }
@@ -180,7 +180,7 @@ func TestTokenNotAvailableOnGetterCallWithTemplating(t *testing.T) {
 }
 
 func TestTrailingSlashTrimmedFromEnvironmentURL(t *testing.T) {
-	envURL := testTrailingSlashEnvironment.GetEnvironmentUrl()
+	envURL := testTrailingSlashEnvironment.GetURL()
 	last_char := envURL[len(envURL)-1:]
 
 	if last_char == "/" {

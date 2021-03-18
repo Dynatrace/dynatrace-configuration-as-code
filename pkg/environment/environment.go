@@ -34,12 +34,12 @@ type Environment interface {
 }
 
 type environmentImpl struct {
-	id      string
-	name    string
-	group   string
-	URL     string
-	token   string
-	envType string
+	id           string
+	name         string
+	group        string
+	URL          string
+	envTokenName string
+	envType      string
 }
 
 // NewEnvironments creates a map of environment objects. Key is environment ID, value is Environment object
@@ -88,12 +88,11 @@ func newEnvironment(id string, properties map[string]string) (Environment, error
 
 	environmentName, nameErr := util.CheckProperty(properties, "name")
 	url, urlErr := util.CheckProperty(properties, "url")
-	token, tokenErr := util.CheckProperty(properties, "token")
+	envToken, tokenErr := util.CheckProperty(properties, "env-token-name")
 	envType, envTypeErr := util.CheckProperty(properties, "type")
 
 	// deprecated
 	envUrl, envUrlErr := util.CheckProperty(properties, "env-url")
-	envToken, envTokenErr := util.CheckProperty(properties, "env-token-name")
 
 	if envUrlErr == nil && len(envUrl) > 0 {
 		util.Log.Warn("You are using 'env-url' property in the environment file. This property is going to be deprecated in v2.0.0. Replace with a property 'url', instead.")
@@ -101,30 +100,24 @@ func newEnvironment(id string, properties map[string]string) (Environment, error
 		urlErr = nil
 	}
 
-	if envTokenErr == nil && len(envToken) > 0 {
-		util.Log.Warn("You are using 'env-token-name' property in the environment file. This property is going to be deprecated in v2.0.0. Replace with a property 'token', instead.")
-		token = envToken
-		tokenErr = nil
-	}
-
 	if nameErr != nil || urlErr != nil || tokenErr != nil || envTypeErr != nil {
 		return nil, fmt.Errorf("failed to parse config for environment %s (issues: %s %s %s %s)", id, nameErr, urlErr, tokenErr, envTypeErr)
 	}
 
-	return NewEnvironment(id, environmentName, environmentGroup, url, token, envType), nil
+	return NewEnvironment(id, environmentName, environmentGroup, url, envToken, envType), nil
 }
 
 // NewEnvironment creates a new environment object
-func NewEnvironment(id string, name string, group string, url string, token string, envType string) Environment {
+func NewEnvironment(id string, name string, group string, url string, envTokenName string, envType string) Environment {
 	url = strings.TrimSuffix(url, "/")
 
 	return &environmentImpl{
-		id:      id,
-		name:    name,
-		group:   group,
-		URL:     url,
-		token:   token,
-		envType: envType,
+		id:           id,
+		name:         name,
+		group:        group,
+		URL:          url,
+		envTokenName: envTokenName,
+		envType:      envType,
 	}
 }
 
@@ -137,9 +130,9 @@ func (s *environmentImpl) GetURL() string {
 }
 
 func (s *environmentImpl) GetToken() (string, error) {
-	value := os.Getenv(s.token)
+	value := os.Getenv(s.envTokenName)
 	if value == "" {
-		return value, fmt.Errorf("environment variable " + s.token + " not found")
+		return value, fmt.Errorf("environment variable " + s.envTokenName + " not found")
 	}
 	return value, nil
 }

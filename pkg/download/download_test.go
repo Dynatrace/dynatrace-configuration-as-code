@@ -32,7 +32,7 @@ import (
 
 func TestGetConfigs(t *testing.T) {
 	os.Setenv("token", "test")
-	env := environment.NewEnvironment("environment1", "test", "", "https://test.live.dynatrace.com", "token")
+	env := environment.NewEnvironment("environment1", "test", "", "https://test.live.dynatrace.com", "token", "")
 	envs := make(map[string]environment.Environment)
 	envs["e1"] = env
 	err := getConfigs("", envs, "")
@@ -71,7 +71,7 @@ func TestCreateConfigsFromAPI(t *testing.T) {
 
 func TestDownloadConfigFromEnvironment(t *testing.T) {
 	os.Setenv("token", "test")
-	env := environment.NewEnvironment("environment1", "test", "", "https://test.live.dynatrace.com", "token")
+	env := environment.NewEnvironment("environment1", "test", "", "https://test.live.dynatrace.com", "token", "")
 	err := downloadConfigFromEnvironment(env, "", nil)
 	assert.NilError(t, err)
 }

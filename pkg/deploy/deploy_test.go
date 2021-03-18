@@ -54,12 +54,12 @@ func TestMissingSpecificEnvironmentResultsInError(t *testing.T) {
 
 func testGetExecuteApis() map[string]api.Api {
 	apis := make(map[string]api.Api)
-	apis["calculated-metrics-log"] = api.NewStandardApi("calculated-metrics-log", "/api")
-	apis["alerting-profile"] = api.NewStandardApi("alerting-profile", "/api")
+	apis["calculated-metrics-log"] = api.NewStandardApi("calculated-metrics-log", "/api", false)
+	apis["alerting-profile"] = api.NewStandardApi("alerting-profile", "/api", false)
 	return apis
 }
 func TestExecuteFailOnDuplicateNamesWithinSameConfig(t *testing.T) {
-	environment := environment.NewEnvironment("dev", "Dev", "", "https://url/to/dev/environment", "DEV")
+	environment := environment.NewEnvironment("dev", "Dev", "", "https://url/to/dev/environment", "DEV", "")
 
 	apis := testGetExecuteApis()
 
@@ -73,7 +73,7 @@ func TestExecuteFailOnDuplicateNamesWithinSameConfig(t *testing.T) {
 }
 
 func TestExecutePassOnDifferentApis(t *testing.T) {
-	environment := environment.NewEnvironment("dev", "Dev", "", "https://url/to/dev/environment", "DEV")
+	environment := environment.NewEnvironment("dev", "Dev", "", "https://url/to/dev/environment", "DEV", "")
 
 	apis := testGetExecuteApis()
 
@@ -88,7 +88,7 @@ func TestExecutePassOnDifferentApis(t *testing.T) {
 }
 
 func TestExecuteFailOnDuplicateNamesInDifferentProjects(t *testing.T) {
-	environment := environment.NewEnvironment("dev", "Dev", "", "https://url/to/dev/environment", "DEV")
+	environment := environment.NewEnvironment("dev", "Dev", "", "https://url/to/dev/environment", "DEV", "")
 
 	apis := testGetExecuteApis()
 
@@ -101,8 +101,8 @@ func TestExecuteFailOnDuplicateNamesInDifferentProjects(t *testing.T) {
 }
 
 func TestExecutePassOnDuplicateNamesInDifferentEnvironments(t *testing.T) {
-	environmentDev := environment.NewEnvironment("dev", "Dev", "", "https://url/to/dev/environment", "DEV")
-	environmentProd := environment.NewEnvironment("prod", "Prod", "", "https://url/to/prod/environment", "PROD")
+	environmentDev := environment.NewEnvironment("dev", "Dev", "", "https://url/to/dev/environment", "DEV", "")
+	environmentProd := environment.NewEnvironment("prod", "Prod", "", "https://url/to/prod/environment", "PROD", "")
 
 	apis := testGetExecuteApis()
 

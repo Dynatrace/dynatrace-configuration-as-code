@@ -60,9 +60,9 @@ func createTestApis() map[string]api.Api {
 	return apis
 }
 
-var testAlertingProfileApi = api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles")
-var testManagementZoneApi = api.NewStandardApi("management-zone", "/api/config/v1/managementZones")
-var testDashboardApi = api.NewStandardApi("dashboard", "/api/config/v1/dashboards")
+var testAlertingProfileApi = api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false)
+var testManagementZoneApi = api.NewStandardApi("management-zone", "/api/config/v1/managementZones", false)
+var testDashboardApi = api.NewStandardApi("dashboard", "/api/config/v1/dashboards", false)
 
 func TestGetPathSuccess(t *testing.T) {
 

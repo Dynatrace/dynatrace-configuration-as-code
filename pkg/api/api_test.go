@@ -25,10 +25,10 @@ import (
 	"gotest.tools/assert"
 )
 
-var testDevEnvironment = environment.NewEnvironment("development", "Dev", "", "https://url/to/dev/environment", "DEV")
-var testAlertingProfileApi = NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles")
-var testManagementZoneApi = NewStandardApi("management-zone", "/api/config/v1/managementZones")
-var testDashboardApi = NewStandardApi("dashboard", "/api/config/v1/dashboards")
+var testDevEnvironment = environment.NewEnvironment("development", "Dev", "", "https://url/to/dev/environment", "DEV", "")
+var testAlertingProfileApi = NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false)
+var testManagementZoneApi = NewStandardApi("management-zone", "/api/config/v1/managementZones", false)
+var testDashboardApi = NewStandardApi("dashboard", "/api/config/v1/dashboards", false)
 
 func TestGetUrl(t *testing.T) {
 
