@@ -64,7 +64,7 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 			return api.DynatraceEntity{}, err
 		}
 
-		resp = put(client, path, body, apiToken)
+		resp, err = put(client, path, body, apiToken)
 
 	} else {
 		if configType == "app-detection-rule" {
