@@ -129,6 +129,12 @@ var apiMap = map[string]apiInput{
 	},
 
 	// Early adopter API !
+	"reports": {
+		apiPath:                      "/api/config/v1/reports",
+		propertyNameOfGetAllResponse: "values",
+	},
+
+	// Early adopter API !
 	// Environment API not Config API
 	"slo": {
 		apiPath:                      "/api/v2/slo",
