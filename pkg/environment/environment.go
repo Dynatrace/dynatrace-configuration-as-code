@@ -100,7 +100,10 @@ func newEnvironment(id string, properties map[string]string) (Environment, error
 		urlErr = nil
 	}
 
-	if nameErr != nil || urlErr != nil || tokenErr != nil || envTypeErr != nil {
+	envUrlErr = urlErr
+	envUrl = url
+
+	if nameErr != nil || urlErr != nil || tokenErr != nil {
 		return nil, fmt.Errorf("failed to parse config for environment %s (issues: %s %s %s %s)", id, nameErr, urlErr, tokenErr, envTypeErr)
 	}
 
