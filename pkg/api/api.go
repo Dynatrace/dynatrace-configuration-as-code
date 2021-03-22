@@ -169,6 +169,10 @@ var apiMap = map[string]apiInput{
 		singleResource:    true,
 		usePostMethod:     true,
 	},
+	"managed-management-zones": {
+		apiPath:           "/api/v1.0/onpremise/groups/managementZones",
+		managedClusterApi: true,
+	},
 }
 
 var standardApiPropertyNameOfGetAllResponse = "values"

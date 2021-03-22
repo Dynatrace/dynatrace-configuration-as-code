@@ -50,6 +50,10 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 			path = fullUrl
 			tmp := strings.Replace(string(payload), "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
 			body = []byte(tmp)
+		} else if configType == "managed-groups" {
+			path = fullUrl
+			tmp := strings.Replace(string(payload), "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
+			body = []byte(tmp)
 		} else if theApi.IsSingleResource() {
 			path = fullUrl
 		} else {
@@ -266,13 +270,30 @@ func unmarshalJson(theApi api.Api, err error, resp Response, values []api.Value,
 
 	} else if theApi.GetId() == "managed-users" {
 		jsonResp := make([]api.UserConfig, 0)
-
 		err = json.Unmarshal(resp.Body, &jsonResp)
 
 		if util.CheckError(err, "Cannot unmarshal API response for existing managed users") {
 			return err, values
 		}
 		values = translateManagedUsersValues(jsonResp)
+	} else if theApi.GetId() == "managed-groups" {
+
+		jsonResp := make([]api.GroupConfig, 0)
+		err = json.Unmarshal(resp.Body, &jsonResp)
+
+		if util.CheckError(err, "Cannot unmarshal API response for existing managed users") {
+			return err, values
+		}
+		values = translateManagedGroupsValues(jsonResp)
+	} else if theApi.GetId() == "managed-management-zones" {
+
+		jsonResp := make([]api.ManagementZone, 0)
+		err = json.Unmarshal(resp.Body, &jsonResp)
+
+		if util.CheckError(err, "Cannot unmarshal API response for existing managed users") {
+			return err, values
+		}
+		values = translateManagedMzValues(jsonResp)
 	} else if theApi.IsSingleResource() {
 		values = make([]api.Value, 1)
 		values[0] = api.Value{
@@ -378,6 +399,32 @@ func translateManagedUsersValues(managedUsersValues []api.UserConfig) []api.Valu
 		values[i] = api.Value{
 			Id:   user.Id,
 			Name: user.Id,
+		}
+	}
+	return values
+}
+
+func translateManagedGroupsValues(managedGroupsValues []api.GroupConfig) []api.Value {
+	numValues := len(managedGroupsValues)
+	values := make([]api.Value, numValues, numValues)
+	for i := 0; i < numValues; i++ {
+		group := managedGroupsValues[i]
+		values[i] = api.Value{
+			Id:   group.Id,
+			Name: group.Id,
+		}
+	}
+	return values
+}
+
+func translateManagedMzValues(managedMzValues []api.ManagementZone) []api.Value {
+	numValues := len(managedMzValues)
+	values := make([]api.Value, numValues, numValues)
+	for i := 0; i < numValues; i++ {
+		mz := managedMzValues[i]
+		values[i] = api.Value{
+			Id:   mz.GroupId,
+			Name: mz.GroupId,
 		}
 	}
 	return values
