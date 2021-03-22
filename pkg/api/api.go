@@ -153,6 +153,10 @@ var apiMap = map[string]apiInput{
 		apiPath:           "/api/v1.0/onpremise/users",
 		managedClusterApi: true,
 	},
+	"managed-groups": {
+		apiPath:           "/api/v1.0/onpremise/groups",
+		managedClusterApi: true,
+	},
 }
 
 var standardApiPropertyNameOfGetAllResponse = "values"
