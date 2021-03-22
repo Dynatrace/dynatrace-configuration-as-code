@@ -1,0 +1,11 @@
+{
+ "allowFallbackViaMissionControl": true,
+ "connectionSecurity": "NO_ENCRYPTION",
+ "hostName": "email-smtp.us-east-1.amazonaws.com",
+ "isPasswordConfigured": false,
+ "password": null,
+ "port": 587,
+ "senderEmailAddress": "noreply@dynatrace-managed.com",
+ "useSmtpServer": true,
+ "userName": "AKIAW7BNCKVHO4IWK64G"
+}

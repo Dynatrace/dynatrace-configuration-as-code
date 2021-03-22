@@ -1,0 +1,5 @@
+demo.innov2021:
+  - name: "innov2021"
+  - url: "https://flf884.managed-dev.dynalabs.io"
+  - env-token-name: "TOKEN_ENVIRONMENT_1"
+  - type: "cluster"

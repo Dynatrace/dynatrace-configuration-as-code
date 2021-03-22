@@ -1,0 +1,18 @@
+{
+ "backupEnabled": false,
+ "certificateManagementEnabled": true,
+ "certificateManagementPossible": true,
+ "communityCreateUser": true,
+ "communityExternalSearch": true,
+ "helpChatEnabled": true,
+ "readOnlyRemoteAccessAllowed": false,
+ "remoteAccessOnDemandOnly": false,
+ "ruxitMonitorsRuxit": true,
+ "supportAllowRemoteAccess": true,
+ "supportSendBilling": true,
+ "supportSendClusterHealth": true,
+ "supportSendEvents": true,
+ "suppressNonBillingRelevantData": false,
+ "telemetrySharing": false,
+ "woopraIntegration": false
+}

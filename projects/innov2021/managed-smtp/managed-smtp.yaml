@@ -1,0 +1,4 @@
+config:
+- managed-smtp: managed-smtp.json
+managed-smtp:
+- name: managed-smtp

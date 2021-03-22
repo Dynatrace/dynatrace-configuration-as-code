@@ -1,0 +1,91 @@
+{
+ "creationDate": "2021-03-22T09:17:35.406Z",
+ "name": "{{.name}}",
+ "quotas": {
+  "customMetrics": null,
+  "davisDataUnits": {
+   "annualLimit": null,
+   "consumedThisMonth": 0,
+   "consumedThisYear": 0,
+   "monthlyLimit": null
+  },
+  "demUnits": null,
+  "hostUnits": {
+   "currentUsage": 0,
+   "maxLimit": 35
+  },
+  "logMonitoring": null,
+  "sessionProperties": {
+   "consumedThisMonth": 0,
+   "consumedThisYear": 0
+  },
+  "syntheticMonitors": null,
+  "userSessions": {
+   "consumedMobileSessionsThisMonth": 0,
+   "consumedMobileSessionsThisYear": 0,
+   "consumedUserSessionsWithMobileSessionReplayThisMonth": 0,
+   "consumedUserSessionsWithMobileSessionReplayThisYear": 0,
+   "consumedUserSessionsWithWebSessionReplayThisMonth": 0,
+   "consumedUserSessionsWithWebSessionReplayThisYear": 0,
+   "totalAnnualLimit": null,
+   "totalConsumedThisMonth": 0,
+   "totalConsumedThisYear": 0,
+   "totalMonthlyLimit": null
+  }
+ },
+ "state": "ENABLED",
+ "storage": {
+  "logMonitoringRetention": {
+   "currentlyUsed": 0,
+   "maxLimit": 3024000000
+  },
+  "logMonitoringStorage": {
+   "currentlyUsed": 0,
+   "maxLimit": 0
+  },
+  "realUserMonitoringRetention": {
+   "currentlyUsed": 2244618,
+   "maxLimit": 3024000000
+  },
+  "serviceCodeLevelRetention": {
+   "currentlyUsed": 2244618,
+   "maxLimit": 864000000
+  },
+  "serviceRequestLevelRetention": {
+   "currentlyUsed": 2244618,
+   "maxLimit": 3024000000
+  },
+  "sessionReplayRetention": {
+   "currentlyUsed": 0,
+   "maxLimit": 3024000000
+  },
+  "sessionReplayStorage": {
+   "currentlyUsed": 0,
+   "maxLimit": null,
+   "retentionReductionPercentage": 0,
+   "retentionReductionReason": "NONE"
+  },
+  "symbolFilesFromMobileApps": {
+   "currentlyUsed": 0,
+   "maxLimit": 1073741824
+  },
+  "syntheticMonitoringRetention": {
+   "currentlyUsed": 2244618,
+   "maxLimit": 3024000000
+  },
+  "transactionStorage": {
+   "currentlyUsed": 0,
+   "maxLimit": 2147483648,
+   "retentionReductionPercentage": 0,
+   "retentionReductionReason": "NONE"
+  },
+  "transactionTrafficQuota": {
+   "maxLimit": 1000
+  },
+  "userActionsPerMinute": {
+   "maxLimit": 3500
+  }
+ },
+ "tags": [],
+ "trial": false
+}

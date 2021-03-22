@@ -1,0 +1,25 @@
+config:
+- czwarty: czwarty.json
+- exampleenvironment: exampleenvironment.json
+- exampleenvironment2: exampleenvironment2.json
+- piaty: piaty.json
+- production: production.json
+- qa: qa.json
+- szosty: szosty.json
+- trzeci: trzeci.json
+czwarty:
+- name: czwarty
+exampleenvironment:
+- name: example environment
+exampleenvironment2:
+- name: example environment2
+piaty:
+- name: piaty
+production:
+- name: production
+qa:
+- name: qa
+szosty:
+- name: szosty
+trzeci:
+- name: trzeci

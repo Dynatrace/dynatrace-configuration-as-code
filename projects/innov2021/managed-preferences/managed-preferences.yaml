@@ -1,0 +1,4 @@
+config:
+- managed-preferences: managed-preferences.json
+managed-preferences:
+- name: managed-preferences

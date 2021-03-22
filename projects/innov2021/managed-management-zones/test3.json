@@ -1,0 +1,51 @@
+{
+ "groupId": "test3",
+ "mzPermissionsPerEnvironment": [
+  {
+   "environmentUuid": "e2888c6a-607e-4c18-b817-f317c10a1aa6",
+   "mzPermissions": [
+    {
+     "mzId": "3827223878816945918",
+     "permissions": [
+      "VIEW_SENSITIVE_REQUEST_DATA",
+      "VIEWER",
+      "LOG_VIEWER"
+     ]
+    }
+   ]
+  },
+  {
+   "environmentUuid": "e1a13608-222f-4f8a-8ddc-f7baadad5ed6",
+   "mzPermissions": []
+  },
+  {
+   "environmentUuid": "0f13a010-f581-4b52-915f-746c96a4c977",
+   "mzPermissions": []
+  },
+  {
+   "environmentUuid": "65ca87ab-62eb-41ef-9939-d523a3b20cae",
+   "mzPermissions": [
+    {
+     "mzId": "-263036454330135551",
+     "permissions": []
+    }
+   ]
+  },
+  {
+   "environmentUuid": "7776be40-7389-42bc-a6dd-e0d4eab206da",
+   "mzPermissions": []
+  },
+  {
+   "environmentUuid": "4a74b19f-fd0d-4a92-acc0-bb8e0abb7e1a",
+   "mzPermissions": []
+  },
+  {
+   "environmentUuid": "73938789-9f75-4f77-b7d6-54d2dbfbc4a0",
+   "mzPermissions": []
+  },
+  {
+   "environmentUuid": "c9a67fe6-8bf8-4bb8-82a1-3ebe8d9ca4d2",
+   "mzPermissions": []
+  }
+ ]
+}

@@ -1,0 +1,24 @@
+{
+ "accessAccount": true,
+ "accessRight": {
+  "LOG_VIEWER": [
+   "65ca87ab-62eb-41ef-9939-d523a3b20cae"
+  ],
+  "MANAGE_SETTINGS": [
+   "65ca87ab-62eb-41ef-9939-d523a3b20cae"
+  ],
+  "REPLAY_SESSION_DATA": [
+   "65ca87ab-62eb-41ef-9939-d523a3b20cae"
+  ],
+  "VIEWER": [
+   "65ca87ab-62eb-41ef-9939-d523a3b20cae"
+  ]
+ },
+ "isClusterAdminGroup": false,
+ "ldapGroupNames": [
+  "test1"
+ ],
+ "manageAccount": true,
+ "name": "{{.name}}",
+ "ssoGroupNames": []
+}

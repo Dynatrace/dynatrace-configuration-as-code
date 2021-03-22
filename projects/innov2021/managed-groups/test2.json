@@ -1,0 +1,11 @@
+{
+ "accessAccount": false,
+ "accessRight": {},
+ "isClusterAdminGroup": false,
+ "ldapGroupNames": [
+  "test2"
+ ],
+ "manageAccount": false,
+ "name": "{{.name}}",
+ "ssoGroupNames": []
+}
