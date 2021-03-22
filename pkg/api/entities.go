@@ -67,6 +67,35 @@ type UserConfig struct {
 	Groups            []string `json:"groups"`
 }
 
+type GroupConfig struct {
+	Id                 string       `json:"id"`
+	Name               string       `json:"name`
+	LDAPGroupNames     []string     `json:"ldapGroupNames"`
+	SSOGroupNames      []string     `json:"ssoGroupNames"`
+	AccessRight        *AccessRight `json:"accessRight"`
+	IsCluterAdminGroup bool         `json:"isClusterAdminGroup"`
+	IsAccessAccount    bool         `json:"isAccessAccount"`
+	IsManageAccount    bool         `json:"isManageAccount"`
+}
+
+type AccessRight struct {
+	Rights *string `json:"rights"`
+}
+type ManagementZone struct {
+	GroupId                     string                        `json:"groupId"`
+	MzPermissionsPerEnvironment []MzPermissionsPerEnvironment `json:"mzPermissionsPerEnvironment"`
+}
+
+type MzPermissionsPerEnvironment struct {
+	EnvironmentUuid string              `json:"environmentUuid"`
+	MzPermissions   []MzPermissionsList `json:"mzPermissions"`
+}
+
+type MzPermissionsList struct {
+	MzId        string   `json:"mzId"`
+	Permissions []string `json:"permissions"`
+}
+
 type Preferences struct {
 	CertificateManagementEnabled   bool `json:"certificateManagementEnabled"`
 	CertificateManagementPossible  bool `json:"certificateManagementPossible"`
