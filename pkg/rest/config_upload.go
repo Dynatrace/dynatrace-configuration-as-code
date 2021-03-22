@@ -62,6 +62,8 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 			body = []byte(tmp)
 		} else if configType == "managed-management-zones" {
 			path = fullUrl
+			tmp := strings.Replace(string(payload), "{", "{\n\"groupId\":\""+existingObjectId+"\",\n", 1)
+			body = []byte(tmp)
 		} else if configType == "managed-environments" {
 			var err error
 			if body, err = sanitizeEnvironment(payload); err != nil {
@@ -74,13 +76,13 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 			tmp := strings.Replace(string(payload), "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
 			body = []byte(tmp)
 		}
+
 		resp, err = put(client, path, body, apiToken)
 
 		if err != nil {
 			return api.DynatraceEntity{}, err
 		}
 
-		resp, err = put(client, path, body, apiToken)
 	} else {
 		if configType == "app-detection-rule" {
 			path += "?position=PREPEND"
@@ -175,6 +177,9 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 			Description: "Created object",
 		}
 
+	} else if configType == "managed-management-zones" {
+		// does not containany response body
+		return dtEntity, nil
 	} else {
 		err := json.Unmarshal(resp.Body, &dtEntity)
 		if util.CheckError(err, "Cannot unmarshal API response") {
@@ -330,7 +335,7 @@ func unmarshalJson(theApi api.Api, err error, resp Response, values []api.Value,
 		jsonResp := make([]api.GroupConfig, 0)
 		err = json.Unmarshal(resp.Body, &jsonResp)
 
-		if util.CheckError(err, "Cannot unmarshal API response for existing managed users") {
+		if util.CheckError(err, "Cannot unmarshal API response for existing managed groups") {
 			return err, values
 		}
 		values = translateManagedGroupsValues(jsonResp)
@@ -339,7 +344,7 @@ func unmarshalJson(theApi api.Api, err error, resp Response, values []api.Value,
 		jsonResp := make([]api.ManagementZone, 0)
 		err = json.Unmarshal(resp.Body, &jsonResp)
 
-		if util.CheckError(err, "Cannot unmarshal API response for existing managed users") {
+		if util.CheckError(err, "Cannot unmarshal API response for existing managed management zones") {
 			return err, values
 		}
 		values = translateManagedMzValues(jsonResp)
