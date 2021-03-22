@@ -161,6 +161,7 @@ var apiMap = map[string]apiInput{
 		apiPath:           "/api/v1.0/onpremise/smtp",
 		managedClusterApi: true,
 		singleResource:    true,
+		usePostMethod:     true,
 	},
 	"managed-preferences": {
 		apiPath:           "/api/v1.0/onpremise/preferences",
