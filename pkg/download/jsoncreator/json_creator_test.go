@@ -40,6 +40,7 @@ func TestCreateJsonConfig(t *testing.T) {
 		Return(jsonsample, nil)
 
 	apiMock.EXPECT().GetId().Return("alerting-profile").AnyTimes()
+	apiMock.EXPECT().IsSingleResource().AnyTimes()
 
 	creator.
 		EXPECT().
