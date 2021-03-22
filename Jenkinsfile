@@ -3,7 +3,6 @@ pipeline {
     environment {
         TOKEN_ENVIRONMENT_1=credentials('innov-token')
         NEW_CLI=1
-        PATH=$PATH:/home/ec2-user/go/bin
     }
 
     agent any
