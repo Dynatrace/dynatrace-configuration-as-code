@@ -31,6 +31,7 @@ type SyntheticMonitorsResponse struct {
 type ManagedUserConfigResponse struct {
 	Users []UserConfig
 }
+
 type Value struct {
 	Id    string  `json:"id"`
 	Name  string  `json:"name"`
@@ -64,4 +65,22 @@ type UserConfig struct {
 	LastName          string   `json:"lastName"`
 	PasswordClearText string   `json:"passwordClearText"`
 	Groups            []string `json:"groups"`
+}
+
+type Preferences struct {
+	CertificateManagementEnabled   bool `json:"certificateManagementEnabled"`
+	CertificateManagementPossible  bool `json:"certificateManagementPossible"`
+	SupportSendBilling             bool `json:"supportSendBilling"`
+	SuppressNonBillingRelevantData bool `json:"suppressNonBillingRelevantData"`
+	SupportSendClusterHealth       bool `json:"supportSendClusterHealth"`
+	SupportSendEvents              bool `json:"supportSendEvents"`
+	SupportAllowRemoteAccess       bool `json:"supportAllowRemoteAccess"`
+	RemoteAccessOnDemandOnly       bool `json:"remoteAccessOnDemandOnly"`
+	CommunityCreateUser            bool `json:"communityCreateUser"`
+	CommunityExternalSearch        bool `json:"communityExternalSearch"`
+	RuxitMonitorsRuxit             bool `json:"ruxitMonitorsRuxit"`
+	WoopraIntegration              bool `json:"woopraIntegration"`
+	TelemetrySharing               bool `json:"telemetrySharing"`
+	HelpChatEnabled                bool `json:"helpChatEnabled"`
+	ReadOnlyRemoteAccessAllowed    bool `json:"readOnlyRemoteAccessAllowed"`
 }

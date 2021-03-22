@@ -162,6 +162,12 @@ var apiMap = map[string]apiInput{
 		managedClusterApi: true,
 		singleResource:    true,
 	},
+	"managed-preferences": {
+		apiPath:           "/api/v1.0/onpremise/preferences",
+		managedClusterApi: true,
+		singleResource:    true,
+		usePostMethod:     true,
+	},
 }
 
 var standardApiPropertyNameOfGetAllResponse = "values"
@@ -175,6 +181,7 @@ type Api interface {
 	IsStandardApi() bool
 	IsManagedClusterApi() bool
 	IsSingleResource() bool
+	IsUsePostMethod() bool
 }
 
 type apiInput struct {
@@ -182,6 +189,7 @@ type apiInput struct {
 	propertyNameOfGetAllResponse string
 	managedClusterApi            bool
 	singleResource               bool
+	usePostMethod                bool
 }
 
 type apiImpl struct {
@@ -190,6 +198,7 @@ type apiImpl struct {
 	propertyNameOfGetAllResponse string
 	managedClusterApi            bool
 	singleResource               bool
+	usePostMethod                bool
 }
 
 func NewApis() map[string]Api {
@@ -205,18 +214,18 @@ func NewApis() map[string]Api {
 
 func newApi(id string, input apiInput) Api {
 	if input.propertyNameOfGetAllResponse == "" {
-		return NewStandardApi(id, input.apiPath, input.managedClusterApi, input.singleResource)
+		return NewStandardApi(id, input.apiPath, input.managedClusterApi, input.singleResource, input.usePostMethod)
 	}
-	return NewApi(id, input.apiPath, input.propertyNameOfGetAllResponse, input.managedClusterApi, input.singleResource)
+	return NewApi(id, input.apiPath, input.propertyNameOfGetAllResponse, input.managedClusterApi, input.singleResource, input.usePostMethod)
 }
 
 // NewStandardApi creates an API with propertyNameOfGetAllResponse set to "values"
-func NewStandardApi(id string, apiPath string, managedClusterApi bool, singleResource bool) Api {
-	return NewApi(id, apiPath, standardApiPropertyNameOfGetAllResponse, managedClusterApi, singleResource)
+func NewStandardApi(id string, apiPath string, managedClusterApi bool, singleResource bool, usePostMethod bool) Api {
+	return NewApi(id, apiPath, standardApiPropertyNameOfGetAllResponse, managedClusterApi, singleResource, usePostMethod)
 }
 
 func NewApi(id string, apiPath string, propertyNameOfGetAllResponse string, managedClusterApi bool,
-	singleResource bool) Api {
+	singleResource bool, usePostMethod bool) Api {
 
 	// TODO log warning if the user tries to create an API with a id not present in map above
 	// This means that a user runs monaco with an untested api
@@ -227,6 +236,7 @@ func NewApi(id string, apiPath string, propertyNameOfGetAllResponse string, mana
 		propertyNameOfGetAllResponse: propertyNameOfGetAllResponse,
 		managedClusterApi:            managedClusterApi,
 		singleResource:               singleResource,
+		usePostMethod:                usePostMethod,
 	}
 }
 
@@ -260,6 +270,10 @@ func (a *apiImpl) IsManagedClusterApi() bool {
 
 func (a *apiImpl) IsSingleResource() bool {
 	return a.singleResource
+}
+
+func (a *apiImpl) IsUsePostMethod() bool {
+	return a.usePostMethod
 }
 
 func IsApi(dir string) bool {

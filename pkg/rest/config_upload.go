@@ -50,6 +50,8 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 			path = fullUrl
 			tmp := strings.Replace(string(payload), "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
 			body = []byte(tmp)
+		} else if theApi.IsSingleResource() {
+			path = fullUrl
 		} else {
 			path = joinUrl(fullUrl, existingObjectId)
 		}
@@ -58,14 +60,14 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 			tmp := strings.Replace(string(payload), "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
 			body = []byte(tmp)
 		}
-		resp, err = put(client, path, body, apiToken)
-
+		if theApi.IsUsePostMethod() {
+			resp, err = post(client, path, body, apiToken)
+		} else {
+			resp, err = put(client, path, body, apiToken)
+		}
 		if err != nil {
 			return api.DynatraceEntity{}, err
 		}
-
-		resp, err = put(client, path, body, apiToken)
-
 	} else {
 		if configType == "app-detection-rule" {
 			path += "?position=PREPEND"
@@ -378,6 +380,13 @@ func translateManagedUsersValues(managedUsersValues []api.UserConfig) []api.Valu
 			Name: user.Id,
 		}
 	}
+	return values
+}
+
+func translateManagedPreferencesValues() []api.Value {
+	values := make([]api.Value, 1, 1)
+	values[0] = api.Value{Id: "Preferences",
+		Name: "Preferences"}
 	return values
 }
 
