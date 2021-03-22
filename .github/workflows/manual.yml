@@ -46,7 +46,7 @@ jobs:
         run: make test
         
       - name: Run monaco
-        run: ./bin/monaco deploy --verbose --project innov2021 --environments ../projects/environments.yaml --specific-environment innov2021 ../projects/
+        run: ./bin/monaco deploy --verbose --project innov2021 --environments projects/environments.yaml --specific-environment innov2021 projects/
         env:
           NEW_CLI: 1
           URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
