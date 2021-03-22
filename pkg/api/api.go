@@ -157,6 +157,11 @@ var apiMap = map[string]apiInput{
 		apiPath:           "/api/v1.0/onpremise/groups",
 		managedClusterApi: true,
 	},
+	"managed-smtp": {
+		apiPath:           "/api/v1.0/onpremise/smtp",
+		managedClusterApi: true,
+		singleResource:    true,
+	},
 }
 
 var standardApiPropertyNameOfGetAllResponse = "values"
@@ -169,12 +174,14 @@ type Api interface {
 	GetPropertyNameOfGetAllResponse() string
 	IsStandardApi() bool
 	IsManagedClusterApi() bool
+	IsSingleResource() bool
 }
 
 type apiInput struct {
 	apiPath                      string
 	propertyNameOfGetAllResponse string
 	managedClusterApi            bool
+	singleResource               bool
 }
 
 type apiImpl struct {
@@ -182,6 +189,7 @@ type apiImpl struct {
 	apiPath                      string
 	propertyNameOfGetAllResponse string
 	managedClusterApi            bool
+	singleResource               bool
 }
 
 func NewApis() map[string]Api {
@@ -197,17 +205,18 @@ func NewApis() map[string]Api {
 
 func newApi(id string, input apiInput) Api {
 	if input.propertyNameOfGetAllResponse == "" {
-		return NewStandardApi(id, input.apiPath, input.managedClusterApi)
+		return NewStandardApi(id, input.apiPath, input.managedClusterApi, input.singleResource)
 	}
-	return NewApi(id, input.apiPath, input.propertyNameOfGetAllResponse, input.managedClusterApi)
+	return NewApi(id, input.apiPath, input.propertyNameOfGetAllResponse, input.managedClusterApi, input.singleResource)
 }
 
 // NewStandardApi creates an API with propertyNameOfGetAllResponse set to "values"
-func NewStandardApi(id string, apiPath string, managedClusterApi bool) Api {
-	return NewApi(id, apiPath, standardApiPropertyNameOfGetAllResponse, managedClusterApi)
+func NewStandardApi(id string, apiPath string, managedClusterApi bool, singleResource bool) Api {
+	return NewApi(id, apiPath, standardApiPropertyNameOfGetAllResponse, managedClusterApi, singleResource)
 }
 
-func NewApi(id string, apiPath string, propertyNameOfGetAllResponse string, managedClusterApi bool) Api {
+func NewApi(id string, apiPath string, propertyNameOfGetAllResponse string, managedClusterApi bool,
+	singleResource bool) Api {
 
 	// TODO log warning if the user tries to create an API with a id not present in map above
 	// This means that a user runs monaco with an untested api
@@ -217,6 +226,7 @@ func NewApi(id string, apiPath string, propertyNameOfGetAllResponse string, mana
 		apiPath:                      apiPath,
 		propertyNameOfGetAllResponse: propertyNameOfGetAllResponse,
 		managedClusterApi:            managedClusterApi,
+		singleResource:               singleResource,
 	}
 }
 
@@ -246,6 +256,10 @@ func (a *apiImpl) IsStandardApi() bool {
 
 func (a *apiImpl) IsManagedClusterApi() bool {
 	return a.managedClusterApi
+}
+
+func (a *apiImpl) IsSingleResource() bool {
+	return a.singleResource
 }
 
 func IsApi(dir string) bool {

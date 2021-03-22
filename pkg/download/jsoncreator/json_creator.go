@@ -44,7 +44,13 @@ func NewJSONCreator() *JsonCreatorImp {
 //CreateJSONConfig creates a json file using the specified path and API data
 func (d *JsonCreatorImp) CreateJSONConfig(client rest.DynatraceClient, api api.Api, value api.Value, creator files.FileCreator,
 	path string) (name string, filter bool, err error) {
-	data, filter, err := getDetailFromAPI(client, api, value.Id)
+
+	var data map[string]interface{}
+	if api.IsSingleResource() {
+		data, filter, err = getDetailFromAPI(client, api, "")
+	} else {
+		data, filter, err = getDetailFromAPI(client, api, value.Id)
+	}
 	if err != nil {
 		util.Log.Error("error getting detail %s from API", api.GetId())
 		return "", false, err

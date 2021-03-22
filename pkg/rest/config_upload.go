@@ -271,6 +271,12 @@ func unmarshalJson(theApi api.Api, err error, resp Response, values []api.Value,
 			return err, values
 		}
 		values = translateManagedUsersValues(jsonResp)
+	} else if theApi.IsSingleResource() {
+		values = make([]api.Value, 1)
+		values[0] = api.Value{
+			Id:   theApi.GetId(),
+			Name: theApi.GetId(),
+		}
 	} else if !theApi.IsStandardApi() {
 
 		if err := json.Unmarshal(resp.Body, &objmap); err != nil {
