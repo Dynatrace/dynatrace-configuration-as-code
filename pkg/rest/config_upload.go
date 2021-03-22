@@ -46,6 +46,12 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 	}
 
 	if existingObjectId != "" {
+		if theApi.IsSingleResource() {
+			path = fullUrl
+		} else {
+			path = joinUrl(fullUrl, existingObjectId)
+		}
+
 		if configType == "managed-users" {
 			path = fullUrl
 			tmp := strings.Replace(string(payload), "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
@@ -54,17 +60,15 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 			path = fullUrl
 			tmp := strings.Replace(string(payload), "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
 			body = []byte(tmp)
+		} else if configType == "managed-management-zones" {
+			path = fullUrl
 		} else if configType == "managed-environments" {
-			path = joinUrl(fullUrl, existingObjectId)
 			var err error
 			if body, err = sanitizeEnvironment(payload); err != nil {
 				return dtEntity, err
 			}
-		} else if theApi.IsSingleResource() {
-			path = fullUrl
-		} else {
-			path = joinUrl(fullUrl, existingObjectId)
 		}
+
 		// Updating a dashboard requires the ID to be contained in the JSON, so we just add it...
 		if isApiDashboard(theApi) {
 			tmp := strings.Replace(string(payload), "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
