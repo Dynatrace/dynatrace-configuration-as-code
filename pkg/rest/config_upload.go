@@ -74,17 +74,28 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 			tmp := strings.Replace(string(payload), "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
 			body = []byte(tmp)
 		}
-		if theApi.IsUsePostMethod() {
-			resp, err = post(client, path, body, apiToken)
-		} else {
-			resp, err = put(client, path, body, apiToken)
-		}
+		resp, err = put(client, path, body, apiToken)
+
 		if err != nil {
 			return api.DynatraceEntity{}, err
 		}
+
+		resp, err = put(client, path, body, apiToken)
 	} else {
 		if configType == "app-detection-rule" {
 			path += "?position=PREPEND"
+		} else if configType == "managed-smtp" {
+			var smtpSettings api.SmtpConfiguration
+			err := json.Unmarshal(body, &smtpSettings)
+
+			if util.CheckError(err, "Cannot unmarshal API response for existing managed SMTP configuration") {
+				return dtEntity, err
+			}
+
+			if smtpSettings.Password == nil {
+				util.Log.Info("SMTP password is set to 'null', skipping...")
+				return dtEntity, err
+			}
 		} else if configType == "managed-environments" {
 			var err error
 			if body, err = sanitizeEnvironment(payload); err != nil {
@@ -222,6 +233,10 @@ func deleteDynatraceObject(client *http.Client, api api.Api, name string, url st
 }
 
 func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, objectName string, apiToken string) (existingId string, err error) {
+
+	if api.IsSingleResource() {
+		return "", nil
+	}
 
 	values, err := getExistingValuesFromEndpoint(client, api, url, apiToken)
 	if err != nil {

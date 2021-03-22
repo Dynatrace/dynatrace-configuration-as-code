@@ -113,3 +113,15 @@ type Preferences struct {
 	HelpChatEnabled                bool `json:"helpChatEnabled"`
 	ReadOnlyRemoteAccessAllowed    bool `json:"readOnlyRemoteAccessAllowed"`
 }
+
+type SmtpConfiguration struct {
+	HostName                       string  `json:"hostName"`
+	Port                           int     `json:"port"`
+	UserName                       string  `json:"userName"`
+	Password                       *string `json:"password"`
+	IsPasswordConfigured           bool    `json:"isPasswordConfigured"`
+	ConnectionSecurity             string  `json:"connectionSecurity"`
+	SenderEmailAddress             string  `json:"senderEmailAddress"`
+	AllowFallbackViaMissionControl bool    `json:"allowFallbackViaMissionControl"`
+	UseSmtpServer                  bool    `json:"useSmtpServer"`
+}

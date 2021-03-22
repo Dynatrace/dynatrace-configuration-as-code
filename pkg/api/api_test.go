@@ -26,9 +26,9 @@ import (
 )
 
 var testDevEnvironment = environment.NewEnvironment("development", "Dev", "", "https://url/to/dev/environment", "DEV", "")
-var testAlertingProfileApi = NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, false, false)
-var testManagementZoneApi = NewStandardApi("management-zone", "/api/config/v1/managementZones", false, false, false)
-var testDashboardApi = NewStandardApi("dashboard", "/api/config/v1/dashboards", false, false, false)
+var testAlertingProfileApi = NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", "", false, false)
+var testManagementZoneApi = NewStandardApi("management-zone", "/api/config/v1/managementZones", "", false, false)
+var testDashboardApi = NewStandardApi("dashboard", "/api/config/v1/dashboards", "", false, false)
 
 func TestGetUrl(t *testing.T) {
 
