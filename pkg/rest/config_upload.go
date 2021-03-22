@@ -54,6 +54,12 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 			path = fullUrl
 			tmp := strings.Replace(string(payload), "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
 			body = []byte(tmp)
+		} else if configType == "managed-environments" {
+			path = joinUrl(fullUrl, existingObjectId)
+			var err error
+			if body, err = sanitizeEnvironment(payload); err != nil {
+				return dtEntity, err
+			}
 		} else if theApi.IsSingleResource() {
 			path = fullUrl
 		} else {
@@ -75,6 +81,11 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 	} else {
 		if configType == "app-detection-rule" {
 			path += "?position=PREPEND"
+		} else if configType == "managed-environments" {
+			var err error
+			if body, err = sanitizeEnvironment(payload); err != nil {
+				return dtEntity, err
+			}
 		}
 		resp, err = post(client, path, body, apiToken)
 
@@ -158,6 +169,25 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 	util.Log.Debug("\t\t\tCreated new object for %s (%s)", dtEntity.Name, dtEntity.Id)
 
 	return dtEntity, nil
+}
+
+func sanitizeEnvironment(payload []byte) ([]byte, error) {
+	var body []byte
+	var err error
+	var objmap map[string]interface{}
+	if err = json.Unmarshal(payload, &objmap); err != nil {
+		return body, err
+	}
+	// for now setting log monitoring storage/retention is disabled
+	// (it would fail with 400 if log monitoring is not configured on cluster so I decided to remove it completely)
+	var storage = objmap["storage"].(map[string]interface{})
+	storage["logMonitoringRetention"] = nil
+	storage["logMonitoringStorage"] = nil
+
+	if body, err = json.Marshal(objmap); err != nil {
+		return body, err
+	}
+	return body, err
 }
 
 func joinUrl(urlBase string, path string) string {
