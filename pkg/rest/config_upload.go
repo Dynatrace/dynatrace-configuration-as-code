@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -27,7 +28,8 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 )
 
-func upsertDynatraceObject(client *http.Client, fullUrl string, objectName string, theApi api.Api, payload []byte, apiToken string) (api.DynatraceEntity, error) {
+func upsertDynatraceObject(client *http.Client, fullUrl string, objectName string, theApi api.Api, payload []byte,
+	filePath string, apiToken string) (api.DynatraceEntity, error) {
 
 	existingObjectId, err := getObjectIdIfAlreadyExists(client, theApi, fullUrl, objectName, apiToken)
 	var dtEntity api.DynatraceEntity
@@ -84,6 +86,7 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		}
 
 	} else {
+		skipUpload := false
 		if configType == "app-detection-rule" {
 			path += "?position=PREPEND"
 		} else if configType == "managed-smtp" {
@@ -103,8 +106,37 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 			if body, err = sanitizeEnvironment(payload); err != nil {
 				return dtEntity, err
 			}
+		} else if theApi.GetId() == "managed-certificates" {
+			var jsonResp api.SslCertificateConfig
+			err = json.Unmarshal(body, &jsonResp)
+			if isCertificateEntityUpToDate(client, apiToken, fullUrl, jsonResp, filePath) {
+				util.Log.Info("Certificate for " + jsonResp.CertificateType +
+					" for node " + strconv.Itoa(jsonResp.NodeId) + " is up to date, skipping...")
+				return dtEntity, err
+			}
+
+			resp, err = uploadCertificate(client, apiToken, fullUrl, jsonResp, filePath)
+			if util.CheckError(err, "Unable to upload certificates for "+jsonResp.CertificateType+
+				", node "+strconv.Itoa(jsonResp.NodeId)) {
+				return dtEntity, err
+			}
+
+			skipUpload = true
+		} else if configType == "managed-users" {
+			tmp := strings.Replace(string(payload), "{", "{\n\"id\":\""+objectName+"\",\n", 1)
+			body = []byte(tmp)
+		} else if configType == "managed-management-zones" {
+			path = fullUrl
+			resp, err = put(client, path, body, apiToken)
 		}
-		resp, err = post(client, path, body, apiToken)
+
+		if configType != "managed-management-zones" {
+			resp, err = post(client, path, body, apiToken)
+		}
+
+		if !skipUpload {
+			resp, err = post(client, path, body, apiToken)
+		}
 
 		if err != nil {
 			return api.DynatraceEntity{}, err
@@ -178,7 +210,7 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		}
 
 	} else if configType == "managed-management-zones" {
-		// does not containany response body
+		// does not contain any response body
 		return dtEntity, nil
 	} else {
 		err := json.Unmarshal(resp.Body, &dtEntity)
