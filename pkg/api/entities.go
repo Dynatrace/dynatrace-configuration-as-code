@@ -114,6 +114,23 @@ type Preferences struct {
 	ReadOnlyRemoteAccessAllowed    bool `json:"readOnlyRemoteAccessAllowed"`
 }
 
+type SettingsItems struct {
+	Items      []Item `json:"items"`
+	TotalCount int    `json:"totalCount"`
+	PageSize   int    `json:"pageSize"`
+}
+
+type Item struct {
+	ObjectId string `json:"objectId"`
+	Value    Note   `json:"value"`
+}
+
+type Note struct {
+	Title        string `json:"title"`
+	Introduction string `json:"introduction"`
+	Details      string `json:"details"`
+}
+
 type SmtpConfiguration struct {
 	HostName                       string  `json:"hostName"`
 	Port                           int     `json:"port"`

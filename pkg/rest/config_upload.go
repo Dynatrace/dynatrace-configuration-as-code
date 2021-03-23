@@ -264,7 +264,12 @@ func isApiDashboard(api api.Api) bool {
 func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, url string, apiToken string) (values []api.Value, err error) {
 
 	values = make([]api.Value, 0)
-	resp, err := get(client, url, apiToken)
+	var resp Response
+	if theApi.GetApiType() == "cluster-settings-v2" {
+		resp, err = get(client, url+"?schemaIds="+theApi.GetSchemas()[0]+"&scopes=realm-empty__realm&fields=+objectId,+value", apiToken)
+	} else {
+		resp, err = get(client, url, apiToken)
+	}
 
 	if err != nil {
 		return nil, err
@@ -340,7 +345,6 @@ func unmarshalJson(theApi api.Api, err error, resp Response, values []api.Value,
 		}
 		values = translateManagedGroupsValues(jsonResp)
 	} else if theApi.GetId() == "managed-management-zones" {
-
 		jsonResp := make([]api.ManagementZone, 0)
 		err = json.Unmarshal(resp.Body, &jsonResp)
 
@@ -348,6 +352,13 @@ func unmarshalJson(theApi api.Api, err error, resp Response, values []api.Value,
 			return err, values
 		}
 		values = translateManagedMzValues(jsonResp)
+	} else if theApi.GetId() == "managed-cluster-settings" {
+		var jsonResp api.SettingsItems
+		err = json.Unmarshal(resp.Body, &jsonResp)
+		if util.CheckError(err, "Cannot unmarshal API response fort existing managed cluster settings") {
+			return err, values
+		}
+		values = translateManagedClusterSettings(jsonResp.Items, theApi.GetSchemas()[0])
 	} else if theApi.IsSingleResource() {
 		values = make([]api.Value, 1)
 		values[0] = api.Value{
@@ -484,10 +495,16 @@ func translateManagedMzValues(managedMzValues []api.ManagementZone) []api.Value 
 	return values
 }
 
-func translateManagedPreferencesValues() []api.Value {
-	values := make([]api.Value, 1, 1)
-	values[0] = api.Value{Id: "Preferences",
-		Name: "Preferences"}
+func translateManagedClusterSettings(settingsItems []api.Item, s string) []api.Value {
+	numValues := len(settingsItems)
+	values := make([]api.Value, numValues, numValues)
+	for i := 0; i < numValues; i++ {
+		item := settingsItems[i]
+		values[i] = api.Value{
+			Id:   item.ObjectId,
+			Name: s,
+		}
+	}
 	return values
 }
 

@@ -140,6 +140,9 @@ func (d *dynatraceClientImpl) ReadByName(api Api, name string) (json []byte, err
 
 func (d *dynatraceClientImpl) ReadById(api Api, id string) (json []byte, err error) {
 	fullUrl := api.GetUrlFromEnvironmentUrl(d.environmentUrl) + "/" + id + api.GetParams()
+	if api.GetApiType() == "cluster-settings-v2" {
+		fullUrl = fullUrl + "?schemaIds=" + api.GetSchemas()[0] + "&scopes=realm-empty__realm&fields=+objectId,+value"
+	}
 	response, err := get(d.client, fullUrl, d.token)
 
 	if err != nil {
