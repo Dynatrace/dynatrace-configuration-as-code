@@ -61,7 +61,7 @@ type DynatraceClient interface {
 	//    GET <environment-url>/api/config/v1/alertingProfiles ... to check if the config is already available
 	//    POST <environment-url>/api/config/v1/alertingProfiles ... afterwards, if the config is not yet available
 	//    PUT <environment-url>/api/config/v1/alertingProfiles/<id> ... instead of POST, if the config is already available
-	UpsertByName(a Api, name string, payload []byte) (entity DynatraceEntity, err error)
+	UpsertByName(a Api, name string, payload []byte, filePath string) (entity DynatraceEntity, err error)
 
 	// Delete removed a given config for a given API using its name.
 	// It calls the underlying GET and DELETE endpoints for the API. E.g. for alerting profiles this would be:
@@ -163,7 +163,7 @@ func (d *dynatraceClientImpl) ExistsByName(api Api, name string) (exists bool, i
 	return existingObjectId != "", existingObjectId, err
 }
 
-func (d *dynatraceClientImpl) UpsertByName(api Api, name string, payload []byte) (entity DynatraceEntity, err error) {
+func (d *dynatraceClientImpl) UpsertByName(api Api, name string, payload []byte, filePath string) (entity DynatraceEntity, err error) {
 
 	fullUrl := api.GetUrlFromEnvironmentUrl(d.environmentUrl)
 
@@ -174,5 +174,5 @@ func (d *dynatraceClientImpl) UpsertByName(api Api, name string, payload []byte)
 	if api.GetId() == "extension" {
 		return uploadExtension(d.client, fullUrl, name, payload, d.token)
 	}
-	return upsertDynatraceObject(d.client, fullUrl, name, api, payload, d.token)
+	return upsertDynatraceObject(d.client, fullUrl, name, api, payload, filePath, d.token)
 }

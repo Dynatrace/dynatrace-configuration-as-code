@@ -167,8 +167,12 @@ var apiMap = map[string]apiInput{
 		managedClusterApi: true,
 		singleResource:    true,
 	},
-	"managed-management-zones": {
-		apiPath:           "/api/v1.0/onpremise/groups/managementZones",
+	//"managed-management-zones": {
+	//	apiPath:           "/api/v1.0/onpremise/groups/managementZones",
+	//	managedClusterApi: true,
+	//},
+	"managed-certificates": {
+		apiPath:           "/api/v1.0/onpremise/sslCertificate/",
 		managedClusterApi: true,
 	},
 	// Cluster API v2

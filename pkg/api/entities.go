@@ -16,6 +16,11 @@
 
 package api
 
+import (
+	"strconv"
+	"time"
+)
+
 type ValuesResponse struct {
 	Values []Value `json:"values"`
 }
@@ -141,4 +146,40 @@ type SmtpConfiguration struct {
 	SenderEmailAddress             string  `json:"senderEmailAddress"`
 	AllowFallbackViaMissionControl bool    `json:"allowFallbackViaMissionControl"`
 	UseSmtpServer                  bool    `json:"useSmtpServer"`
+}
+
+type SslCertificateConfig struct {
+	NodeId               int    `json:"nodeId"`
+	CertificateType      string `json:"certificateType"`
+	CertificateFile      string `json:"certificateFile"`
+	CertificateChainFile string `json:"certificateChainFile"`
+	PrivateKeyFile       string `json:"privateKeyFile"`
+}
+
+type UtcTimeMilis time.Time
+
+type SslCertificateNodeConfig struct {
+	RestartRequired        bool         `json:"restartRequired"`
+	InProgress             bool         `json:"inProgress"`
+	ExpirationDate         UtcTimeMilis `json:"expirationDate"`
+	CustomKeyStore         bool         `json:"customKeyStore"`
+	CustomKeyStoreWritable bool         `json:"customKeyStoreWritable"`
+	Issuer                 string       `json:"issuer"`
+	Subject                string       `json:"subject"`
+	Default                bool         `json:"default"`
+}
+
+func (t *UtcTimeMilis) UnmarshalJSON(b []byte) error {
+	unixPart := string(b[0 : len(b)-3])
+	milisPart := string(b[len(b)-3:])
+	unix, err := strconv.ParseInt(unixPart, 10, 64)
+	if err != nil {
+		return err
+	}
+	milis, err := strconv.ParseInt(milisPart, 10, 64)
+	if err != nil {
+		return err
+	}
+	*t = UtcTimeMilis(time.Unix(unix, milis*1000).In(time.UTC))
+	return nil
 }

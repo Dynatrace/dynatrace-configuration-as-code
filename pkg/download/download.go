@@ -123,6 +123,11 @@ func downloadConfigFromEnvironment(environment environment.Environment, basepath
 			util.Log.Info("...skipped")
 			continue
 		}
+		if api.GetId() == "managed-certificates" {
+			util.Log.Info("Download of Managed cluster certificates is not available")
+			util.Log.Info("...skipped")
+			continue
+		}
 		jcreator := jsoncreator.NewJSONCreator()
 		ycreator := yamlcreator.NewYamlConfig()
 		errorAPI := createConfigsFromAPI(api, token, creator, fullpath, client, jcreator, ycreator)
