@@ -2,9 +2,12 @@ config:
 - test2: test2.json
 - test3: test3.json
 - test1: test1.json
+- missioncontrolgroup: missioncontrolgroup.json
 test1:
 - name: test1
 test2:
 - name: test2
 test3:
 - name: test3
+missioncontrolgroup:
+- name: missioncontrolgroup
