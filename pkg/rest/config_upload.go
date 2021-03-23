@@ -103,8 +103,17 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 			if body, err = sanitizeEnvironment(payload); err != nil {
 				return dtEntity, err
 			}
+		} else if configType == "managed-users" {
+			tmp := strings.Replace(string(payload), "{", "{\n\"id\":\""+objectName+"\",\n", 1)
+			body = []byte(tmp)
+		} else if configType == "managed-management-zones" {
+			path = fullUrl
+			resp, err = put(client, path, body, apiToken)
 		}
-		resp, err = post(client, path, body, apiToken)
+
+		if configType != "managed-management-zones" {
+			resp, err = post(client, path, body, apiToken)
+		}
 
 		if err != nil {
 			return api.DynatraceEntity{}, err
@@ -178,7 +187,7 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		}
 
 	} else if configType == "managed-management-zones" {
-		// does not containany response body
+		// does not contain any response body
 		return dtEntity, nil
 	} else {
 		err := json.Unmarshal(resp.Body, &dtEntity)
