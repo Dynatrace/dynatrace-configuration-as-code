@@ -156,6 +156,12 @@ type SslCertificateConfig struct {
 	PrivateKeyFile       string `json:"privateKeyFile"`
 }
 
+type SslCertificateUpload struct {
+	PrivateKeyEncoded           string `json:"privateKeyEncoded"`
+	PublicKeyCertificateEncoded string `json:"publicKeyCertificateEncoded"`
+	CertificateChainEncoded     string `json:"certificateChainEncoded"`
+}
+
 type UtcTimeMilis time.Time
 
 type SslCertificateNodeConfig struct {

@@ -8,15 +8,14 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 )
 
-func isCertificateEntityUpToDate(client *http.Client, apiToken string, sslConfig api.SslCertificateConfig, filePath string,
-	fullUrl string) bool {
+func isCertificateEntityUpToDate(client *http.Client, apiToken string, fullUrl string, sslConfig api.SslCertificateConfig,
+	filePath string) bool {
 	var configsDir = filepath.Dir(filePath)
 	certLocation := filepath.Join(configsDir, sslConfig.CertificateFile)
 	certInfo, err := getCertificateInfo(certLocation)
@@ -32,12 +31,51 @@ func isCertificateEntityUpToDate(client *http.Client, apiToken string, sslConfig
 		certInfo.expiration == exInfo.expiration
 }
 
-func prepareCertificateUpload() {
+func uploadCertificate(client *http.Client, apiToken string, fullUrl string, sslConfig api.SslCertificateConfig,
+	filePath string) (Response, error) {
+	var resp Response
+	upload, err := prepareCertificateUpload(sslConfig, filePath)
+	if util.CheckError(err, "Failed to read certificate files") {
+		return resp, err
+	}
+	fullUploadUrl := strings.TrimSuffix(fullUrl, "/") + "/store/" + sslConfig.CertificateType +
+		"/" + strconv.Itoa(sslConfig.NodeId)
+	jsonBody, err := json.Marshal(upload)
+	if util.CheckError(err, "Failed to serialize certificate upload request") {
+		return resp, err
+	}
 
+	util.Log.Info("Uploading certificate for " + sslConfig.CertificateType +
+		" and node " + strconv.Itoa(sslConfig.NodeId))
+	resp, err = post(client, fullUploadUrl, jsonBody, apiToken)
+	if util.CheckError(err, "Failed to upload SSL certificate to managed cluster, invalid server response") {
+		return resp, err
+	}
+
+	return resp, nil
 }
 
-type CertificateUpload struct {
-	
+func prepareCertificateUpload(sslConfig api.SslCertificateConfig, filePath string) (api.SslCertificateUpload, error) {
+	var sslUpload api.SslCertificateUpload
+	var configsDir = filepath.Dir(filePath)
+	cert, err := readCertificateFile(filepath.Join(configsDir, sslConfig.CertificateFile))
+	if util.CheckError(err, "Failed to read certificate file "+sslConfig.CertificateFile) {
+		return sslUpload, err
+	}
+	chain, err := readCertificateFile(filepath.Join(configsDir, sslConfig.CertificateChainFile))
+	if util.CheckError(err, "Failed to read certificate chain file "+sslConfig.CertificateChainFile) {
+		return sslUpload, err
+	}
+	privateKey, err := readCertificateFile(filepath.Join(configsDir, sslConfig.PrivateKeyFile))
+	if util.CheckError(err, "Failed to read private key "+sslConfig.PrivateKeyFile) {
+		return sslUpload, err
+	}
+	sslUpload = api.SslCertificateUpload{
+		PrivateKeyEncoded:           privateKey,
+		PublicKeyCertificateEncoded: cert,
+		CertificateChainEncoded:     chain,
+	}
+	return sslUpload, nil
 }
 
 type certificateInfo struct {
@@ -48,16 +86,7 @@ type certificateInfo struct {
 
 func getCertificateInfo(filePath string) (certificateInfo, error) {
 	var certInfo certificateInfo
-	certFile, err := os.Open(filePath)
-
-	if util.CheckError(err, "Unable to open certificate file "+filePath) {
-		return certInfo, err
-	}
-
-	defer certFile.Close()
-
-	certBytes, err := ioutil.ReadAll(certFile)
-
+	certBytes, err := ioutil.ReadFile(filePath)
 	if util.CheckError(err, "Unable to open certificate file "+filePath) {
 		return certInfo, err
 	}
@@ -107,4 +136,14 @@ func fetchExistingCertificateInfo(client *http.Client, apiToken string, fullUrl 
 	}
 
 	return certInfo, nil
+}
+
+func readCertificateFile(filePath string) (string, error) {
+	var certificate string
+	certBytes, err := ioutil.ReadFile(filePath)
+	if util.CheckError(err, "Unable to open certificate file "+filePath) {
+		return certificate, err
+	}
+	certificate = string(certBytes)
+	return certificate, nil
 }

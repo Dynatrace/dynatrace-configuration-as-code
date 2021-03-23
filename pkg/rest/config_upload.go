@@ -109,9 +109,15 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		} else if theApi.GetId() == "managed-certificates" {
 			var jsonResp api.SslCertificateConfig
 			err = json.Unmarshal(body, &jsonResp)
-			if isCertificateEntityUpToDate(client, apiToken, jsonResp, filePath, fullUrl) {
+			if isCertificateEntityUpToDate(client, apiToken, fullUrl, jsonResp, filePath) {
 				util.Log.Info("Certificate for " + jsonResp.CertificateType +
 					" for node " + strconv.Itoa(jsonResp.NodeId) + " is up to date, skipping...")
+				return dtEntity, err
+			}
+
+			resp, err = uploadCertificate(client, apiToken, fullUrl, jsonResp, filePath)
+			if util.CheckError(err, "Unable to upload certificates for "+jsonResp.CertificateType+
+				", node "+strconv.Itoa(jsonResp.NodeId)) {
 				return dtEntity, err
 			}
 
