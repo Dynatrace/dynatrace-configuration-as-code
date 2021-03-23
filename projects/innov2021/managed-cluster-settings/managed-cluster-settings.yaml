@@ -1,4 +1,0 @@
-config:
-- builtinlogin-screen-settings: builtinlogin-screen-settings.json
-builtinlogin-screen-settings:
-- name: builtin:login-screen-settings

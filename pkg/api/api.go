@@ -178,12 +178,12 @@ var apiMap = map[string]apiInput{
 		managedClusterApi:            true,
 		propertyNameOfGetAllResponse: "environments",
 	},
-	"managed-cluster-settings": {
+	/*	"managed-cluster-settings": {
 		apiPath:           "/api/cluster/v2/settings/objects",
 		apiType:           "cluster-settings-v2",
 		managedClusterApi: true,
 		schemas:           []string{"builtin:login-screen-settings"},
-	},
+	},*/
 }
 
 var standardApiPropertyNameOfGetAllResponse = "values"
