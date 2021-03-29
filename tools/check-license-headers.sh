@@ -3,7 +3,7 @@
 
 echo "Checking files for license header..."
 
-WRONG_FORMAT=$(addlicense -f tools/license_header.txt --check $(find . -type f -name '*.go' -not -path '*_mock.go') | sort)
+WRONG_FORMAT=$(addlicense -f tools/license_header.txt --check $(git ls-files --exclude '*_mock.go' '*.go') | sort)
 
 # if gofmt found no files with wrong formatting, exit ok
 [ -z "$WRONG_FORMAT" ] && exit 0
