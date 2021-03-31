@@ -46,7 +46,7 @@ func TestIntegrationMultiProject(t *testing.T) {
 
 		statusCode := RunImpl([]string{
 			"monaco",
-			"-environments", multiProjectEnvironmentsFile,
+			"--environments", multiProjectEnvironmentsFile,
 			multiProjectFolder,
 		}, fs)
 
@@ -98,7 +98,7 @@ func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 		statusCode := RunImpl([]string{
 			"monaco",
 			"--environments", multiProjectEnvironmentsFile,
-			"--p", "star-trek",
+			"-p", "star-trek",
 			multiProjectFolder,
 		}, fs)
 
