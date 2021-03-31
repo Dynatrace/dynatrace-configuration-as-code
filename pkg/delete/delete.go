@@ -70,7 +70,7 @@ func LoadConfigsToDelete(fs afero.IOFS, apis map[string]api.Api, path string) (c
 		properties[name] = make(map[string]string)
 		properties[name]["name"] = name
 
-		configForDeletion := config.NewConfigForDelete(fs, name, "delete.yaml", properties, apiName)
+		configForDeletion := config.NewConfigForDelete(name, "delete.yaml", properties, apiName)
 		result = append(result, configForDeletion)
 	}
 
