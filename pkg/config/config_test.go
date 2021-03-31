@@ -150,8 +150,8 @@ func TestGetConfigStringWithEnvironmentOverride(t *testing.T) {
 
 	m := getTestProperties()
 	templ := getTestTemplate(t)
-
-	config := newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
+	fs := util.CreateTestFileSystem()
+	config := newConfig(fs, "test", "testproject", templ, m, testManagementZoneApi, "")
 
 	devResult, err := getConfigForEnvironmentAsMap(config, testDevEnvironment, make(map[string]api.DynatraceEntity))
 
@@ -163,7 +163,8 @@ func TestGetConfigStringNoEnvironmentOverride(t *testing.T) {
 
 	m := getTestProperties()
 	templ := getTestTemplate(t)
-	config := newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
+	fs := util.CreateTestFileSystem()
+	config := newConfig(fs, "test", "testproject", templ, m, testManagementZoneApi, "")
 
 	hardeningResult, err := getConfigForEnvironmentAsMap(config, testHardeningEnvironment, make(map[string]api.DynatraceEntity))
 
@@ -175,7 +176,8 @@ func TestGetConfigString(t *testing.T) {
 
 	m := getTestProperties()
 	templ := getTestTemplate(t)
-	config := newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
+	fs := util.CreateTestFileSystem()
+	config := newConfig(fs, "test", "testproject", templ, m, testManagementZoneApi, "")
 
 	devResult, devErr := getConfigForEnvironmentAsMap(config, testDevEnvironment, make(map[string]api.DynatraceEntity))
 	hardeningResult, hardeningErr := getConfigForEnvironmentAsMap(config, testHardeningEnvironment, make(map[string]api.DynatraceEntity))
@@ -192,7 +194,8 @@ func TestGetConfigWithGroupOverride(t *testing.T) {
 
 	m := getTestProperties()
 	templ := getTestTemplate(t)
-	config := newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
+	fs := util.CreateTestFileSystem()
+	config := newConfig(fs, "test", "testproject", templ, m, testManagementZoneApi, "")
 
 	productionResult, err := getConfigForEnvironmentAsMap(config, testProductionEnvironment, make(map[string]api.DynatraceEntity))
 	assert.NilError(t, err)
@@ -205,7 +208,8 @@ func TestGetConfigWithGroupOverrideAndDependency(t *testing.T) {
 
 	m := getTestProperties()
 	templ := getTestTemplate(t)
-	config := newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
+	fs := util.CreateTestFileSystem()
+	config := newConfig(fs, "test", "testproject", templ, m, testManagementZoneApi, "")
 
 	productionResult, err := getConfigForEnvironmentAsMap(config, testProductionEnvironment, make(map[string]api.DynatraceEntity))
 	assert.NilError(t, err)
@@ -229,14 +233,15 @@ func TestGetConfigWithGroupAndEnvironmentOverride(t *testing.T) {
 	m := getTestPropertiesWithGroupAndEnvironment()
 	m["test.production"]["dep"] = "infrastructure/management-zone/zone.name"
 	templ := getTestTemplateWithDependency(t)
-	config := newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
+	fs := util.CreateTestFileSystem()
+	config := newConfig(fs, "test", "testproject", templ, m, testManagementZoneApi, "")
 
 	productionResult, err := getConfigForEnvironmentAsMap(config, testProductionEnvironment, dict)
 	assert.NilError(t, err)
 	assert.Equal(t, "Follow the red cat with Test Management Zone", productionResult["msg"])
 
 	m["test.prod-environment"]["dep2"] = "infrastructure/management-zone/zone.name"
-	config = newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
+	config = newConfig(fs, "test", "testproject", templ, m, testManagementZoneApi, "")
 	productionResult, err = getConfigForEnvironmentAsMap(config, testProductionEnvironment, dict)
 	assert.NilError(t, err)
 	assert.Equal(t, "Follow the red cat with Test Management Zone", productionResult["msg"])
@@ -245,10 +250,10 @@ func TestGetConfigWithGroupAndEnvironmentOverride(t *testing.T) {
 // Test combining parameters
 // If there are different parameters defined for group and environment, they should be merged
 func TestGetConfigWithMergingGroupAndEnvironmentOverrides(t *testing.T) {
-
+	fs := util.CreateTestFileSystem()
 	m := getTestPropertiesWithGroupAndEnvironment()
 	templ := getTestTemplate(t)
-	config := newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
+	config := newConfig(fs, "test", "testproject", templ, m, testManagementZoneApi, "")
 
 	// remove color parameter from `test.prod-environment`
 	// `test.production.color` parameter should be taken instead
@@ -269,25 +274,26 @@ func TestSkipConfigDeployment(t *testing.T) {
 
 	m := getTestPropertiesWithGroupAndEnvironment()
 	templ := getTestTemplate(t)
-	config := newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
+	fs := util.CreateTestFileSystem()
+	config := newConfig(fs, "test", "testproject", templ, m, testManagementZoneApi, "")
 
 	skipDeployment := config.IsSkipDeployment(testProductionEnvironment)
 	assert.Equal(t, true, skipDeployment)
 
 	delete(m["test.prod-environment"], skipConfigDeploymentParameter)
 	m["test.production"][skipConfigDeploymentParameter] = "true"
-	config = newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
+	config = newConfig(fs, "test", "testproject", templ, m, testManagementZoneApi, "")
 	skipDeployment = config.IsSkipDeployment(testProductionEnvironment)
 	assert.Equal(t, true, skipDeployment)
 
 	delete(m["test.production"], skipConfigDeploymentParameter)
 	m["test"][skipConfigDeploymentParameter] = "true"
-	config = newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
+	config = newConfig(fs, "test", "testproject", templ, m, testManagementZoneApi, "")
 	skipDeployment = config.IsSkipDeployment(testProductionEnvironment)
 	assert.Equal(t, true, skipDeployment)
 
 	delete(m["test"], skipConfigDeploymentParameter)
-	config = newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
+	config = newConfig(fs, "test", "testproject", templ, m, testManagementZoneApi, "")
 	skipDeployment = config.IsSkipDeployment(testProductionEnvironment)
 	assert.Equal(t, false, skipDeployment)
 }
@@ -298,7 +304,8 @@ func TestGetObjectNameForEnvironment(t *testing.T) {
 
 	m := getTestPropertiesWithGroupAndEnvironment()
 	templ := getTestTemplate(t)
-	config := newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
+	fs := util.CreateTestFileSystem()
+	config := newConfig(fs, "test", "testproject", templ, m, testManagementZoneApi, "")
 
 	productionResult, err := config.GetObjectNameForEnvironment(testProductionEnvironment, make(map[string]api.DynatraceEntity))
 	assert.NilError(t, err)
@@ -417,11 +424,12 @@ func TestHasDependencyCheck(t *testing.T) {
 	prop["test"]["name"] = "A name"
 	prop["test"]["somethingelse"] = util.ReplacePathSeparators("testproject/management-zone/other.id")
 	temp, e := util.NewTemplateFromString("test", "{{.name}}{{.somethingelse}}")
+	fs := util.CreateTestFileSystem()
 	assert.NilError(t, e)
 
-	config := newConfig("test", "testproject", temp, prop, testManagementZoneApi, "test.json")
+	config := newConfig(fs, "test", "testproject", temp, prop, testManagementZoneApi, "test.json")
 
-	otherConfig := newConfig("other", "testproject", temp, make(map[string]map[string]string), testManagementZoneApi, "other.json")
+	otherConfig := newConfig(fs, "other", "testproject", temp, make(map[string]map[string]string), testManagementZoneApi, "other.json")
 
 	assert.Equal(t, true, config.HasDependencyOn(otherConfig))
 }
@@ -510,8 +518,8 @@ func TestGetConfigStringWithEnvVar(t *testing.T) {
 	templ := getTestTemplateWithEnvVars(t)
 
 	util.SetEnv(t, "ANIMAL", "cow")
-
-	config := newConfig("test", "testproject", templ, getTestProperties(), testManagementZoneApi, "")
+	fs := util.CreateTestFileSystem()
+	config := newConfig(fs, "test", "testproject", templ, getTestProperties(), testManagementZoneApi, "")
 	devResult, err := getConfigForEnvironmentAsMap(config, testDevEnvironment, make(map[string]api.DynatraceEntity))
 
 	util.UnsetEnv(t, "ANIMAL")
@@ -525,8 +533,8 @@ func TestGetConfigStringWithEnvVarLeadsToErrorIfEnvVarNotPresent(t *testing.T) {
 	templ := getTestTemplateWithEnvVars(t)
 
 	util.UnsetEnv(t, "ANIMAL")
-
-	config := newConfig("test", "testproject", templ, getTestProperties(), testManagementZoneApi, "")
+	fs := util.CreateTestFileSystem()
+	config := newConfig(fs, "test", "testproject", templ, getTestProperties(), testManagementZoneApi, "")
 	_, err := config.GetConfigForEnvironment(testDevEnvironment, make(map[string]api.DynatraceEntity))
 
 	assert.ErrorContains(t, err, "map has no entry for key \"ANIMAL\"")

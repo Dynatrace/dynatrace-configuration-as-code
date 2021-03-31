@@ -21,23 +21,23 @@ package main
 import (
 	"testing"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/spf13/afero"
 	"gotest.tools/assert"
 )
 
 // tests all configs for a single environment
 func TestIntegrationAllConfigs(t *testing.T) {
 
-	const allConfigsFolder = "test-resources/integration-all-configs/"
-	const allConfigsEnvironmentsFile = allConfigsFolder + "environments.yaml"
+	allConfigsFolder := "test-resources/integration-all-configs/"
+	allConfigsEnvironmentsFile := allConfigsFolder + "environments.yaml"
 
-	RunIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fileReader util.FileReader) {
+	RunIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fs afero.IOFS) {
 
 		statusCode := RunImpl([]string{
 			"monaco",
 			"--environments", allConfigsEnvironmentsFile,
 			allConfigsFolder,
-		}, fileReader)
+		}, fs)
 
 		assert.Equal(t, statusCode, 0)
 	})

@@ -1,4 +1,4 @@
-// +build unit
+// +build integration
 
 /**
  * @license
@@ -22,6 +22,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/afero"
 	"gotest.tools/assert"
 )
 
@@ -72,10 +73,11 @@ func TestInMemoryReplaceNameAdvancedMatching(t *testing.T) {
 
 func assertInMemoryReplace(t *testing.T, transformers []func(string) string, expected string) {
 
-	reader, err := NewInMemoryFileReader("test-resources", transformers)
+	var reader = CreateTestFileSystem()
+	err := RewriteConfigNames("test-resources", reader, transformers)
 	assert.NilError(t, err)
 
-	content, err := reader.ReadFile("test-resources/test-environments.yaml")
+	content, err := afero.ReadFile(reader.Fs, "test-resources/test-environments.yaml")
 	assert.NilError(t, err)
 
 	assert.Check(t, strings.Contains(string(content), expected), "content '%s' was invalid", content)

@@ -22,8 +22,7 @@ import (
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
-	"github.com/golang/mock/gomock"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"gotest.tools/assert"
 )
 
@@ -31,8 +30,8 @@ func TestCreateJsonConfig(t *testing.T) {
 	jsonsample := []byte("{ \"name\": \"test1\"}")
 
 	apiMock := api.CreateAPIMockFactory(t)
-	creator := files.CreateFileCreatorMockFactory(t)
 	client := rest.CreateDynatraceClientMockFactory(t)
+	fs := util.CreateTestFileSystem()
 	val := api.Value{Id: "acc3c230-e156-4a11-a5b7-bda1b304e613", Name: "Sockshop Error Profile"}
 	client.
 		EXPECT().
@@ -41,16 +40,13 @@ func TestCreateJsonConfig(t *testing.T) {
 
 	apiMock.EXPECT().GetId().Return("alerting-profile").AnyTimes()
 
-	creator.
-		EXPECT().
-		CreateFile(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-		Return("alerting-profile.json", nil)
 	jcreator := NewJSONCreator()
 
-	name, filter, err := jcreator.CreateJSONConfig(client, apiMock, val, creator, "/")
+	name, cleanName, filter, err := jcreator.CreateJSONConfig(fs, client, apiMock, val, "/")
 	assert.NilError(t, err)
 	assert.Equal(t, filter, false)
-	assert.Equal(t, name, "alerting-profile.json")
+	assert.Equal(t, name, "Sockshop Error Profile")
+	assert.Equal(t, cleanName, "SockshopErrorProfile")
 }
 func TestIsDefaultEntityDashboardCase(t *testing.T) {
 	//create payload similar to dynatrace API object for dashboard
@@ -76,12 +72,16 @@ func TestProcessJSONFile(t *testing.T) {
 	sample["name"] = "test1"
 	sample["displayName"] = "testDisplay"
 	sample["id"] = "testId"
-	file, err := processJSONFile(sample, "testId")
+	apiMock := api.CreateAPIMockFactory(t)
+	apiMock.EXPECT().GetId().Return("alerting-profile").AnyTimes()
+	file, name, cleanName, err := processJSONFile(sample, "testId", "test1", apiMock)
 	assert.NilError(t, err)
 	jsonfile := make(map[string]interface{})
 	err = json.Unmarshal(file, &jsonfile)
 	assert.Check(t, jsonfile["testprop"] == "testprop")
 	assert.Check(t, jsonfile["name"] == "{{.name}}")
 	assert.Check(t, jsonfile["displayName"] == "{{.name}}")
+	assert.Check(t, name == "test1")
+	assert.Check(t, cleanName == "test1")
 	assert.Check(t, jsonfile["id"] == nil)
 }

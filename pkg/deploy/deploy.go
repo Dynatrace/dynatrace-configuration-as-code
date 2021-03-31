@@ -28,11 +28,12 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/spf13/afero"
 )
 
-func Deploy(workingDir string, fileReader util.FileReader, environmentsFile string,
+func Deploy(workingDir string, fs afero.IOFS, environmentsFile string,
 	specificEnvironment string, proj string, dryRun bool, continueOnError bool) error {
-	environments, errors := environment.LoadEnvironmentList(specificEnvironment, environmentsFile, fileReader)
+	environments, errors := environment.LoadEnvironmentList(specificEnvironment, environmentsFile, fs)
 
 	workingDir = filepath.Clean(workingDir)
 
@@ -45,7 +46,7 @@ func Deploy(workingDir string, fileReader util.FileReader, environmentsFile stri
 
 	apis := api.NewApis()
 
-	projects, err := project.LoadProjectsToDeploy(proj, apis, workingDir, fileReader)
+	projects, err := project.LoadProjectsToDeploy(fs, proj, apis, workingDir)
 	if err != nil {
 		util.FailOnError(err, "Loading of projects failed")
 	}
@@ -92,7 +93,7 @@ func Deploy(workingDir string, fileReader util.FileReader, environmentsFile stri
 		util.Log.Info("Deployment finished without errors")
 	}
 
-	deleteConfigs(apis, environments, workingDir, dryRun, fileReader)
+	deleteConfigs(apis, environments, workingDir, dryRun, fs)
 
 	return nil
 }
@@ -251,8 +252,8 @@ func uploadConfig(client rest.DynatraceClient, config config.Config, dict map[st
 }
 
 // deleteConfigs deletes specified configs, if a delete.yaml file was found
-func deleteConfigs(apis map[string]api.Api, environments map[string]environment.Environment, path string, dryRun bool, fileReader util.FileReader) error {
-	configs, err := delete.LoadConfigsToDelete(apis, path, fileReader)
+func deleteConfigs(apis map[string]api.Api, environments map[string]environment.Environment, path string, dryRun bool, fs afero.IOFS) error {
+	configs, err := delete.LoadConfigsToDelete(fs, apis, path)
 	util.FailOnError(err, "deletion failed")
 
 	if len(configs) > 0 && !dryRun {

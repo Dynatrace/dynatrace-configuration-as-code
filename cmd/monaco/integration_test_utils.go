@@ -20,6 +20,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"testing"
@@ -31,6 +32,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/spf13/afero"
 	"gotest.tools/assert"
 )
 
@@ -118,9 +120,9 @@ func getTransformerFunc(suffix string) func(line string) string {
 }
 
 // Deletes all configs that end with "_suffix", where suffix == suffixTest+suffixTimestamp
-func cleanupIntegrationTest(t *testing.T, envFile, suffix string, integrationTestReader util.FileReader) {
+func cleanupIntegrationTest(t *testing.T, fs afero.IOFS, envFile, suffix string) {
 
-	environments, errs := environment.LoadEnvironmentList("", envFile, integrationTestReader)
+	environments, errs := environment.LoadEnvironmentList("", envFile, fs)
 	FailOnAnyError(errs, "loading of environments failed")
 
 	apis := api.NewApis()
@@ -163,14 +165,17 @@ func cleanupIntegrationTest(t *testing.T, envFile, suffix string, integrationTes
 //
 // <original name>_<current timestamp><defined suffix>
 // e.g. my-config_1605258980000_Suffix
-func RunIntegrationWithCleanup(t *testing.T, configFolder, envFile, suffixTest string, testFunc func(fileReader util.FileReader)) {
+
+func RunIntegrationWithCleanup(t *testing.T, configFolder, envFile, suffixTest string, testFunc func(fs afero.IOFS)) {
 
 	suffix := getTimestamp() + suffixTest
 	transformers := []func(string) string{getTransformerFunc(suffix)}
-
-	var integrationTestReader, err = util.NewInMemoryFileReader(configFolder, transformers)
-	assert.NilError(t, err)
-
-	testFunc(integrationTestReader)
-	cleanupIntegrationTest(t, envFile, suffix, integrationTestReader)
+	var fs = util.CreateTestFileSystem()
+	err := util.RewriteConfigNames(configFolder, fs, transformers)
+	if err != nil {
+		log.Fatal("Error rewriting configs names")
+		return
+	}
+	testFunc(fs)
+	cleanupIntegrationTest(t, fs, envFile, suffix)
 }

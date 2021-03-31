@@ -32,7 +32,7 @@ import (
 
 func TestDoCleanup(t *testing.T) {
 
-	environments, errs := environment.LoadEnvironmentList("", "test-resources/integration-multi-environment/environments.yaml", util.NewFileReader())
+	environments, errs := environment.LoadEnvironmentList("", "test-resources/integration-multi-environment/environments.yaml", util.CreateTestFileSystem())
 	for _, err := range errs {
 		assert.NilError(t, err)
 	}

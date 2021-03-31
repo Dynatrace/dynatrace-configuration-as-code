@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/spf13/afero"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
@@ -35,6 +36,7 @@ func CreateConfigMockFactory(t *testing.T) *MockConfigFactory {
 	return NewMockConfigFactory(mockCtrl)
 }
 
-func GetMockConfig(id string, project string, template util.Template, properties map[string]map[string]string, api api.Api, fileName string) Config {
-	return newConfig(id, project, template, properties, api, fileName)
+func GetMockConfig(fs afero.IOFS, id string, project string, template util.Template, properties map[string]map[string]string, api api.Api, fileName string) Config {
+
+	return newConfig(fs, id, project, template, properties, api, fileName)
 }

@@ -24,7 +24,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/version"
-
+	"github.com/spf13/afero"
 	"github.com/urfave/cli/v2"
 )
 
@@ -34,16 +34,17 @@ func main() {
 }
 
 func Run(args []string) int {
-	return RunImpl(args, util.NewFileReader())
+	fsStdlib := afero.NewIOFS(afero.NewOsFs())
+	return RunImpl(args, fsStdlib)
 }
 
-func RunImpl(args []string, fileReader util.FileReader) (statusCode int) {
+func RunImpl(args []string, fs afero.IOFS) (statusCode int) {
 	var app *cli.App
 
 	if newCli, ok := os.LookupEnv("NEW_CLI"); ok && newCli != "0" {
-		app = buildExperimentalCli(fileReader)
+		app = buildExperimentalCli(fs)
 	} else {
-		app = buildCli(fileReader)
+		app = buildCli(fs)
 	}
 
 	err := app.Run(args)
@@ -56,7 +57,7 @@ func RunImpl(args []string, fileReader util.FileReader) (statusCode int) {
 	return 0
 }
 
-func buildCli(fileReader util.FileReader) *cli.App {
+func buildCli(fs afero.IOFS) *cli.App {
 	fmt.Print(`You are currently using the old CLI structure which will be used by
 default until monaco version 2.0.0
 
@@ -159,7 +160,7 @@ Examples:
 
 		return deploy.Deploy(
 			workingDir,
-			fileReader,
+			fs,
 			ctx.Path("environments"),
 			ctx.String("specific-environment"),
 			ctx.String("project"),
@@ -171,7 +172,7 @@ Examples:
 	return app
 }
 
-func buildExperimentalCli(fileReader util.FileReader) *cli.App {
+func buildExperimentalCli(fs afero.IOFS) *cli.App {
 	fmt.Print(`You are using the new CLI structure which is currently in Beta.
 
 Please provide feedback here:
@@ -206,13 +207,13 @@ Examples:
   Deploy a specific project to a specific tenant:
     monaco deploy --environments environments.yaml --specific-environment dev --project myProject
 `
-	deployCommand := getDeployCommand(fileReader)
-	downloadCommand := getDownloadCommand(fileReader)
+	deployCommand := getDeployCommand(fs)
+	downloadCommand := getDownloadCommand(fs)
 	app.Commands = []*cli.Command{&deployCommand, &downloadCommand}
 
 	return app
 }
-func getDeployCommand(fileReader util.FileReader) cli.Command {
+func getDeployCommand(fs afero.IOFS) cli.Command {
 	command := cli.Command{
 		Name:      "deploy",
 		Usage:     "deploys the given environment",
@@ -278,7 +279,7 @@ func getDeployCommand(fileReader util.FileReader) cli.Command {
 
 			return deploy.Deploy(
 				workingDir,
-				fileReader,
+				fs,
 				ctx.Path("environments"),
 				ctx.String("specific-environment"),
 				ctx.String("project"),
@@ -289,7 +290,7 @@ func getDeployCommand(fileReader util.FileReader) cli.Command {
 	}
 	return command
 }
-func getDownloadCommand(fileReader util.FileReader) cli.Command {
+func getDownloadCommand(fs afero.IOFS) cli.Command {
 	command := cli.Command{
 		Name:      "download",
 		Usage:     "download the given environment",
@@ -339,7 +340,7 @@ func getDownloadCommand(fileReader util.FileReader) cli.Command {
 
 			return download.GetConfigsFilterByEnvironment(
 				workingDir,
-				fileReader,
+				fs,
 				ctx.Path("environments"),
 				ctx.String("specific-environment"),
 				ctx.String("downloadSpecificAPI"),

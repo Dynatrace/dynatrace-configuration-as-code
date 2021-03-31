@@ -26,6 +26,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/pkg/errors"
+	"github.com/spf13/afero"
 )
 
 type Project interface {
@@ -46,11 +47,11 @@ type projectBuilder struct {
 	configs           []config.Config
 	apis              map[string]api.Api
 	configFactory     config.ConfigFactory
-	fileReader        util.FileReader
+	fs                afero.IOFS
 }
 
 // NewProject loads a new project from folder. Returns either project or a reading/sorting error respectively.
-func NewProject(fullQualifiedProjectFolderName string, projectFolderName string, apis map[string]api.Api, projectRootFolder string, fileReader util.FileReader) (Project, error) {
+func NewProject(fs afero.IOFS, fullQualifiedProjectFolderName string, projectFolderName string, apis map[string]api.Api, projectRootFolder string) (Project, error) {
 
 	var configs = make([]config.Config, 0)
 
@@ -64,7 +65,7 @@ func NewProject(fullQualifiedProjectFolderName string, projectFolderName string,
 		configs:           configs,
 		apis:              apis,
 		configFactory:     config.NewConfigFactory(),
-		fileReader:        fileReader,
+		fs:                fs,
 	}
 	err := builder.readFolder(fullQualifiedProjectFolderName, true)
 	if err != nil {
@@ -96,7 +97,7 @@ func warnIfProjectNameClashesWithApiName(projectFolderName string, apis map[stri
 }
 
 func (p *projectBuilder) readFolder(folder string, isProjectRoot bool) error {
-	files, err := p.fileReader.ReadDir(folder)
+	files, err := afero.ReadDir(p.fs.Fs, folder)
 
 	if util.CheckError(err, "Folder "+folder+" could not be read") {
 		return err
@@ -122,7 +123,7 @@ func (p *projectBuilder) processYaml(filename string) error {
 
 	util.Log.Debug("Processing file: " + filename)
 
-	bytes, err := p.fileReader.ReadFile(filename)
+	bytes, err := afero.ReadFile(p.fs.Fs, filename)
 
 	if util.CheckError(err, "Error while reading file "+filename) {
 		return err
@@ -165,7 +166,7 @@ func (p *projectBuilder) processConfigSection(properties map[string]map[string]s
 			util.Log.Warn("You are using the configuration 'application', which will be deprecated in v2.0.0. Replace with type 'application-web'.")
 		}
 
-		config, err := p.configFactory.NewConfig(configName, p.projectId, location, properties, api)
+		config, err := p.configFactory.NewConfig(p.fs, configName, p.projectId, location, properties, api)
 		if util.CheckError(err, "Could not create config"+configName) {
 			return err
 		}
