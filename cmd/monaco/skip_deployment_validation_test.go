@@ -32,9 +32,9 @@ const skipDeploymentEnvironmentsFile = "test-resources/test-environments.yaml"
 func TestValidationSkipDeployment(t *testing.T) {
 	statusCode := RunImpl([]string{
 		"monaco",
-		"-dry-run",
-		"-environments", skipDeploymentEnvironmentsFile,
-		"-project", "projectA",
+		"--dry-run",
+		"--environments", skipDeploymentEnvironmentsFile,
+		"--project", "projectA",
 		skipDeploymentFolder,
 	}, util.CreateTestFileSystem())
 
@@ -44,9 +44,9 @@ func TestValidationSkipDeployment(t *testing.T) {
 func TestValidationSkipDeploymentWithBrokenDependency(t *testing.T) {
 	statusCode := RunImpl([]string{
 		"monaco",
-		"-dry-run",
-		"-environments", skipDeploymentEnvironmentsFile,
-		"-project", "projectB",
+		"--dry-run",
+		"--environments", skipDeploymentEnvironmentsFile,
+		"--project", "projectB",
 		skipDeploymentFolder,
 	}, util.CreateTestFileSystem())
 
@@ -56,9 +56,9 @@ func TestValidationSkipDeploymentWithBrokenDependency(t *testing.T) {
 func TestValidationSkipDeploymentWithOverridingDependency(t *testing.T) {
 	statusCode := RunImpl([]string{
 		"monaco",
-		"-dry-run",
-		"-environments", skipDeploymentEnvironmentsFile,
-		"-project", "projectC",
+		"--dry-run",
+		"--environments", skipDeploymentEnvironmentsFile,
+		"--project", "projectC",
 		skipDeploymentFolder,
 	}, util.CreateTestFileSystem())
 
@@ -68,9 +68,9 @@ func TestValidationSkipDeploymentWithOverridingDependency(t *testing.T) {
 func TestValidationSkipDeploymentWithOverridingFlagValue(t *testing.T) {
 	statusCode := RunImpl([]string{
 		"monaco",
-		"-dry-run",
-		"-environments", skipDeploymentEnvironmentsFile,
-		"-project", "projectE",
+		"--dry-run",
+		"--environments", skipDeploymentEnvironmentsFile,
+		"--project", "projectE",
 		skipDeploymentFolder,
 	}, util.CreateTestFileSystem())
 
@@ -82,7 +82,7 @@ func TestValidationSkipDeploymentWithOverridingFlagValue(t *testing.T) {
 // 	statusCode := RunImpl([]string{
 // 		"monaco",
 // 		"-dry-run",
-// 		"-environments", skipDeploymentEnvironmentsFile,
+// 		"--environments", skipDeploymentEnvironmentsFile,
 // 		"-project", "projectD",
 // 		skipDeploymentFolder,
 // 	}, util.CreateTestFileSystem())
