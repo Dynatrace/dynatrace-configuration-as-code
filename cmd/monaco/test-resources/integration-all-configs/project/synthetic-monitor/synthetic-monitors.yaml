@@ -3,7 +3,7 @@ config:
 
 availability:
   - name: "Federation Availability"
-  - location: "GEOLOCATION-45AB48D9D6925ECC"
+  - location: "GEOLOCATION-9999453BE4BDB3CD"
   - managementZoneId: "/project/management-zone/zone.id"
   - tag: "/project/auto-tag/application-tagging.name"
   - host: "https://www.google.com"

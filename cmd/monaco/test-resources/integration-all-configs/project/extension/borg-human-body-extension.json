@@ -22,7 +22,7 @@
         "title": "Public Key Amount",
         "series": [
           {
-            "key": "{{ .metricPublicKeyAmount }}",
+            "key": "{{ .name }}{{ .metricPublicKeyAmount }}",
             "aggregation": "avg",
             "displayname": "Public Key Amount"
           }
@@ -33,7 +33,7 @@
         "title": "SSO2 OAuth Verification Result Cache Size",
         "series": [
           {
-            "key": "{{ .metricOAuthVerificationResultCacheSize }}",
+            "key": "{{ .name }}{{ .metricOAuthVerificationResultCacheSize }}",
             "aggregation": "avg",
             "displayname": "SSO2 OAuth Verification Result Cache Size"
           }
@@ -44,7 +44,7 @@
         "title": "Private Key Rotations",
         "series": [
           {
-            "key": "{{ .metricPrivateKeyRotations }}",
+            "key": "{{ .name }}{{ .metricPrivateKeyRotations }}",
             "aggregation": "avg",
             "displayname": "Private Key Rotations"
           }
@@ -55,7 +55,7 @@
         "title": "Erroneous Token Exchanges",
         "series": [
           {
-            "key": "{{ .metricErroneousTokenExchanges }}",
+            "key": "{{ .name }}{{ .metricErroneousTokenExchanges }}",
             "aggregation": "avg",
             "displayname": "Erroneous Token Exchanges"
           }
@@ -66,7 +66,7 @@
         "title": "Erroneous Token Exchange Rate",
         "series": [
           {
-            "key": "{{ .metricErroneousTokenExchangeRate }}",
+            "key": "{{ .name }}{{ .metricErroneousTokenExchangeRate }}",
             "aggregation": "avg",
             "displayname": "Erroneous Token Exchange Rate"
           }
@@ -77,7 +77,7 @@
         "title": "Exchanged SAML Tokens",
         "series": [
           {
-            "key": "{{ .metricSamlTokenExchanges }}",
+            "key": "{{ .name }}{{ .metricSamlTokenExchanges }}",
             "aggregation": "avg",
             "displayname": "Exchanged SAML Tokens"
           }
@@ -88,7 +88,7 @@
         "title": "Exchanged OAuth2 Tokens",
         "series": [
           {
-            "key": "{{ .metricOAuthTokenExchanges }}",
+            "key": "{{ .name }}{{ .metricOAuthTokenExchanges }}",
             "aggregation": "avg",
             "displayname": "Exchanged OAuth2 Tokens"
           }
@@ -99,7 +99,7 @@
         "title": "OAuth2 Token Exchange Rate",
         "series": [
           {
-            "key": "{{ .metricOAuthTokenExchangeRate }}",
+            "key": "{{ .name }}{{ .metricOAuthTokenExchangeRate }}",
             "aggregation": "avg",
             "displayname": "OAuth2 Token Exchange Rate"
           }
@@ -110,7 +110,7 @@
         "title": "SAML Token Exchange Rate",
         "series": [
           {
-            "key": "{{ .metricSamlTokenExchangeRate }}",
+            "key": "{{ .name }}{{ .metricSamlTokenExchangeRate }}",
             "aggregation": "avg",
             "displayname": "SAML Token Exchange Rate"
           }
@@ -121,7 +121,7 @@
   "metrics": [
     {
       "timeseries": {
-        "key": "{{ .metricOAuthVerificationResultCacheSize }}",
+        "key": "{{ .name }}{{ .metricOAuthVerificationResultCacheSize }}",
         "unit": "Count",
         "displayname": "SSO2 OAuth Verification Result Cache Size",
         "dimensions": [
@@ -142,7 +142,7 @@
     },
     {
       "timeseries": {
-        "key": "{{ .metricPublicKeyAmount }}",
+        "key": "{{ .name }}{{ .metricPublicKeyAmount }}",
         "unit": "Count",
         "displayname": "Public Key Amount",
         "dimensions": [
@@ -163,7 +163,7 @@
     },
     {
       "timeseries": {
-        "key": "{{ .metricPrivateKeyRotations }}",
+        "key": "{{ .name }}{{ .metricPrivateKeyRotations }}",
         "unit": "Count",
         "displayname": "Private Key Rotations",
         "dimensions": [
@@ -185,7 +185,7 @@
     },
     {
       "timeseries": {
-        "key": "{{ .metricErroneousTokenExchanges }}",
+        "key": "{{ .name }}{{ .metricErroneousTokenExchanges }}",
         "unit": "Count",
         "displayname": "Erroneous Token Exchanges",
         "dimensions": [
@@ -206,7 +206,7 @@
     },
     {
       "timeseries": {
-        "key": "{{ .metricErroneousTokenExchangeRate }}",
+        "key": "{{ .name }}{{ .metricErroneousTokenExchangeRate }}",
         "unit": "Count",
         "displayname": "Erroneous Token Exchange Rate",
         "dimensions": [
@@ -227,7 +227,7 @@
     },
     {
       "timeseries": {
-        "key": "{{ .metricSamlTokenExchanges }}",
+        "key": "{{ .name }}{{ .metricSamlTokenExchanges }}",
         "unit": "Count",
         "displayname": "Exchanged SAML Tokens",
         "dimensions": [
@@ -250,7 +250,7 @@
     },
     {
       "timeseries": {
-        "key": "{{ .metricOAuthTokenExchanges }}",
+        "key": "{{ .name }}{{ .metricOAuthTokenExchanges }}",
         "unit": "Count",
         "displayname": "Exchanged OAuth2 Tokens",
         "dimensions": [
@@ -273,7 +273,7 @@
     },
     {
       "timeseries": {
-        "key": "{{ .metricOAuthTokenExchangeRate }}",
+        "key": "{{ .name }}{{ .metricOAuthTokenExchangeRate }}",
         "unit": "Count",
         "displayname": "OAuth2 Token Exchange Rate",
         "dimensions": [
@@ -296,7 +296,7 @@
     },
     {
       "timeseries": {
-        "key": "{{ .metricSamlTokenExchangeRate }}",
+        "key": "{{ .name }}{{ .metricSamlTokenExchangeRate }}",
         "unit": "Count",
         "displayname": "SAML Token Exchange Rate",
         "dimensions": [
