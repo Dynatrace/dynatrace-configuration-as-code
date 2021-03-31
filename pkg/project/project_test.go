@@ -21,12 +21,12 @@ package project
 import (
 	"testing"
 
-	"github.com/golang/mock/gomock"
-	"gotest.tools/assert"
-
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/golang/mock/gomock"
+	"github.com/spf13/afero"
+	"gotest.tools/assert"
 )
 
 func testCreateProjectBuilder(projectsRoot string) projectBuilder {
@@ -34,11 +34,12 @@ func testCreateProjectBuilder(projectsRoot string) projectBuilder {
 	return projectBuilder{
 		projectRootFolder: projectsRoot,
 		apis:              createTestApis(),
+		configFactory:     config.NewConfigFactory(),
 		configs:           make([]config.Config, 10),
 	}
 }
 
-func testCreateProjectBuilderWithMock(factory config.ConfigFactory, fileReader util.FileReader, projectId string, projectsRoot string) projectBuilder {
+func testCreateProjectBuilderWithMock(factory config.ConfigFactory, fs afero.IOFS, projectId string, projectsRoot string) projectBuilder {
 
 	return projectBuilder{
 		projectRootFolder: projectsRoot,
@@ -46,7 +47,7 @@ func testCreateProjectBuilderWithMock(factory config.ConfigFactory, fileReader u
 		apis:              createTestApis(),
 		configs:           make([]config.Config, 0),
 		configFactory:     factory,
-		fileReader:        fileReader,
+		fs:                fs,
 	}
 }
 
@@ -147,7 +148,7 @@ func TestGetApiFromLocationApiNotFound(t *testing.T) {
 func TestProcessConfigSection(t *testing.T) {
 
 	factory := config.CreateConfigMockFactory(t)
-	fileReaderMock := util.CreateFileReaderMock(t)
+	fileReaderMock := util.CreateTestFileSystem()
 	builder := testCreateProjectBuilderWithMock(factory, fileReaderMock, "testProject", "")
 
 	m := make(map[string]map[string]string)
@@ -159,8 +160,8 @@ func TestProcessConfigSection(t *testing.T) {
 
 	zoneA := util.ReplacePathSeparators("test/management-zone/zoneA.json")
 	profile := util.ReplacePathSeparators("test/alerting-profile/profile.json")
-	factory.EXPECT().NewConfig("test1", "testProject", zoneA, m, testManagementZoneApi).Times(1)
-	factory.EXPECT().NewConfig("test2", "testProject", profile, m, testAlertingProfileApi).Times(1)
+	factory.EXPECT().NewConfig(fileReaderMock, "test1", "testProject", zoneA, m, testManagementZoneApi).Times(1)
+	factory.EXPECT().NewConfig(fileReaderMock, "test2", "testProject", profile, m, testAlertingProfileApi).Times(1)
 
 	folderPath := util.ReplacePathSeparators("test/management-zone")
 	err := builder.processConfigSection(m, folderPath)
@@ -170,7 +171,7 @@ func TestProcessConfigSection(t *testing.T) {
 func TestProcessConfigSectionWithProjectRootParameter(t *testing.T) {
 
 	factory := config.CreateConfigMockFactory(t)
-	fileReaderMock := util.CreateFileReaderMock(t)
+	fileReaderMock := util.CreateTestFileSystem()
 	builder := testCreateProjectBuilderWithMock(factory, fileReaderMock, "test", "testProjectsRoot")
 
 	m := make(map[string]map[string]string)
@@ -182,8 +183,8 @@ func TestProcessConfigSectionWithProjectRootParameter(t *testing.T) {
 
 	zoneA := util.ReplacePathSeparators("testProjectsRoot/test/management-zone/zoneA.json")
 	profile := util.ReplacePathSeparators("testProjectsRoot/test/alerting-profile/profile.json")
-	factory.EXPECT().NewConfig("testconfig1", "test", zoneA, m, testManagementZoneApi).Times(1)
-	factory.EXPECT().NewConfig("testconfig2", "test", profile, m, testAlertingProfileApi).Times(1)
+	factory.EXPECT().NewConfig(fileReaderMock, "testconfig1", "test", zoneA, m, testManagementZoneApi).Times(1)
+	factory.EXPECT().NewConfig(fileReaderMock, "testconfig2", "test", profile, m, testAlertingProfileApi).Times(1)
 
 	folderPath := util.ReplacePathSeparators("test/management-zone")
 	err := builder.processConfigSection(m, folderPath)
@@ -242,19 +243,21 @@ dashboard.dev:
 func TestProcessYaml(t *testing.T) {
 
 	factory := config.CreateConfigMockFactory(t)
-	fileReaderMock := util.CreateFileReaderMock(t)
+	fileReaderMock := util.CreateTestFileSystem()
+	err := fileReaderMock.Mkdir("test/dashboard/", 0777)
+	err = afero.WriteFile(fileReaderMock.Fs, "test/dashboard/test-file.yaml", []byte(projectTestYaml), 0664)
+
 	builder := testCreateProjectBuilderWithMock(factory, fileReaderMock, "testproject", "")
 
 	properties := make(map[string]map[string]string)
 
 	yamlFile := util.ReplacePathSeparators("test/dashboard/test-file.yaml")
 
-	fileReaderMock.EXPECT().ReadFile(yamlFile).Times(1).Return([]byte(projectTestYaml), nil)
 	factory.EXPECT().
-		NewConfig("dashboard", "testproject", util.ReplacePathSeparators("test/dashboard/my-project-dashboard.json"), gomock.Any(), testDashboardApi).
-		Return(config.GetMockConfig("my-project-dashboard", "testproject", nil, properties, testDashboardApi, util.ReplacePathSeparators("dashboard/test-file.yaml")), nil)
+		NewConfig(fileReaderMock, "dashboard", "testproject", util.ReplacePathSeparators("test/dashboard/my-project-dashboard.json"), gomock.Any(), testDashboardApi).
+		Return(config.GetMockConfig(fileReaderMock, "my-project-dashboard", "testproject", nil, properties, testDashboardApi, util.ReplacePathSeparators("dashboard/test-file.yaml")), nil)
 
-	err := builder.processYaml(yamlFile)
+	err = builder.processYaml(yamlFile)
 
 	assert.NilError(t, err)
 	assert.Equal(t, 1, len(builder.configs))

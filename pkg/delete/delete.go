@@ -24,6 +24,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 )
 
@@ -36,12 +37,12 @@ type deleteYaml struct {
 
 // LoadConfigsToDelete loads the delete.yaml file (if available) and converts its entries into configs which need
 // to be deleted
-func LoadConfigsToDelete(apis map[string]api.Api, path string, fileReader util.FileReader) (configs []config.Config, err error) {
+func LoadConfigsToDelete(fs afero.IOFS, apis map[string]api.Api, path string) (configs []config.Config, err error) {
 
 	result := make([]config.Config, 0)
 
 	deleteFilePath := filepath.Join(path, deleteFileName)
-	data, err := fileReader.ReadFile(deleteFilePath)
+	data, err := afero.ReadFile(fs.Fs, deleteFilePath)
 	if err != nil {
 		// Don't raise an error. The delete.yaml might not be there, that's a valid case
 		util.Log.Info("There is no delete file %s found in %s. Skipping delete config.", deleteFileName, deleteFilePath)
@@ -69,7 +70,7 @@ func LoadConfigsToDelete(apis map[string]api.Api, path string, fileReader util.F
 		properties[name] = make(map[string]string)
 		properties[name]["name"] = name
 
-		configForDeletion := config.NewConfigForDelete(name, "delete.yaml", properties, apiName)
+		configForDeletion := config.NewConfigForDelete(fs, name, "delete.yaml", properties, apiName)
 		result = append(result, configForDeletion)
 	}
 

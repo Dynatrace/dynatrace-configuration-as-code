@@ -25,7 +25,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download/yamlcreator"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/golang/mock/gomock"
 	"gotest.tools/assert"
 )
@@ -34,17 +34,17 @@ func TestGetConfigs(t *testing.T) {
 	os.Setenv("token", "test")
 	env := environment.NewEnvironment("environment1", "test", "", "https://test.live.dynatrace.com", "token")
 	envs := make(map[string]environment.Environment)
+	fileManager := util.CreateTestFileSystem()
 	envs["e1"] = env
-	err := getConfigs("", envs, "")
+	err := getConfigs(fileManager, "", envs, "")
 	assert.NilError(t, err)
 }
 func TestCreateConfigsFromAPI(t *testing.T) {
 	apiMock := api.CreateAPIMockFactory(t)
-	fcreator := files.CreateFileCreatorMockFactory(t)
 	client := rest.CreateDynatraceClientMockFactory(t)
 	jcreator := jsoncreator.CreateJSONCreatorMock(t)
 	ycreator := yamlcreator.CreateYamlCreatorMock(t)
-
+	fs := util.CreateTestFileSystem()
 	list := []api.Value{{Id: "d", Name: "namevalue"}}
 
 	client.EXPECT().
@@ -55,24 +55,23 @@ func TestCreateConfigsFromAPI(t *testing.T) {
 
 	jcreator.EXPECT().
 		CreateJSONConfig(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-		Return("demo.json", false, nil)
+		Return("demo.json", "demo", false, nil)
 
 	ycreator.EXPECT().
 		CreateYamlFile(gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(nil)
 	ycreator.EXPECT().AddConfig(gomock.Any(), gomock.Any())
-	fcreator.EXPECT().
-		CreateFolder("/synthetic-monitor").
-		Return("synthetic-monitor", nil)
 
-	err := createConfigsFromAPI(apiMock, "123", fcreator, "/", client, jcreator, ycreator)
+	err := createConfigsFromAPI(fs, apiMock, "123", "/", client, jcreator, ycreator)
 	assert.NilError(t, err, "No errors")
 }
 
 func TestDownloadConfigFromEnvironment(t *testing.T) {
 	os.Setenv("token", "test")
 	env := environment.NewEnvironment("environment1", "test", "", "https://test.live.dynatrace.com", "token")
-	err := downloadConfigFromEnvironment(env, "", nil)
+
+	fileManager := util.CreateTestFileSystem()
+	err := downloadConfigFromEnvironment(fileManager, env, "", nil)
 	assert.NilError(t, err)
 }
 func TestGetAPIList(t *testing.T) {

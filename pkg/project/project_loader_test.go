@@ -45,10 +45,11 @@ func TestCreateProjectsFromFolderList(t *testing.T) {
 	path := util.ReplacePathSeparators("test-resources/transitional-dependency-test")
 	specificProjectToDeploy := "zem, marvin, caveman"
 	apis := api.NewApis()
-	allProjectFolders, err := getAllProjectFoldersRecursively(path)
+	fs := util.CreateTestFileSystem()
+	allProjectFolders, err := getAllProjectFoldersRecursively(fs, path)
 	assert.NilError(t, err)
 
-	projects, err := createProjectsListFromFolderList(path, specificProjectToDeploy, path, apis, allProjectFolders, util.NewFileReader())
+	projects, err := createProjectsListFromFolderList(fs, path, specificProjectToDeploy, path, apis, allProjectFolders)
 
 	assert.NilError(t, err)
 
@@ -62,23 +63,23 @@ func TestCreateProjectsFromFolderList(t *testing.T) {
 
 func TestLoadProjectsToDeployFromFolder(t *testing.T) {
 	folder := "test-resources/transitional-dependency-test"
-
-	projects, err := LoadProjectsToDeploy("", api.NewApis(), folder, util.NewFileReader())
+	fs := util.CreateTestFileSystem()
+	projects, err := LoadProjectsToDeploy(fs, "", api.NewApis(), folder)
 	assert.NilError(t, err)
 	assert.Equal(t, len(projects), 7, "Check if all projects are loaded into list.")
 }
 
 func TestLoadProjectsThrowsErrorOnCircularConfigDependecy(t *testing.T) {
 	folder := "test-resources/circular-config-dependency-test"
-
-	_, err := LoadProjectsToDeploy("", api.NewApis(), folder, util.NewFileReader())
+	fs := util.CreateTestFileSystem()
+	_, err := LoadProjectsToDeploy(fs, "", api.NewApis(), folder)
 	assert.ErrorContains(t, err, "circular dependency on config")
 }
 
 func TestLoadProjectsThrowsErrorOnCircularProjectDependency(t *testing.T) {
 	folder := "test-resources/circular-project-dependency-test"
-
-	_, err := LoadProjectsToDeploy("", api.NewApis(), folder, util.NewFileReader())
+	fs := util.CreateTestFileSystem()
+	_, err := LoadProjectsToDeploy(fs, "", api.NewApis(), folder)
 	assert.ErrorContains(t, err, "circular dependency on project")
 }
 
@@ -88,8 +89,8 @@ func TestLoadProjectsThrowsErrorOnCircularProjectDependency(t *testing.T) {
  */
 func TestLoadProjectsToDeployWithTransitionalDependencies(t *testing.T) {
 	folder := util.ReplacePathSeparators("test-resources/transitional-dependency-test")
-
-	projects, err := LoadProjectsToDeploy("aseed", api.NewApis(), folder, util.NewFileReader())
+	fs := util.CreateTestFileSystem()
+	projects, err := LoadProjectsToDeploy(fs, "aseed", api.NewApis(), folder)
 
 	assert.NilError(t, err)
 
@@ -108,8 +109,8 @@ func TestLoadProjectsToDeployWithTransitionalDependencies(t *testing.T) {
  */
 func TestLoadProjectsWithResolvingDependenciesInProjectsTree1(t *testing.T) {
 	folder := util.ReplacePathSeparators("test-resources/transitional-dependency-test")
-
-	projects, err := LoadProjectsToDeploy("zem", api.NewApis(), folder, util.NewFileReader())
+	fs := util.CreateTestFileSystem()
+	projects, err := LoadProjectsToDeploy(fs, "zem", api.NewApis(), folder)
 
 	assert.NilError(t, err)
 
@@ -127,8 +128,8 @@ func TestLoadProjectsWithResolvingDependenciesInProjectsTree1(t *testing.T) {
  */
 func TestLoadProjectsWithResolvingDependenciesInProjectsTree2(t *testing.T) {
 	folder := util.ReplacePathSeparators("test-resources/transitional-dependency-test")
-
-	projects, err := LoadProjectsToDeploy("zem, marvin, caveman", api.NewApis(), folder, util.NewFileReader())
+	fs := util.CreateTestFileSystem()
+	projects, err := LoadProjectsToDeploy(fs, "zem, marvin, caveman", api.NewApis(), folder)
 
 	assert.NilError(t, err)
 
@@ -146,8 +147,8 @@ func TestLoadProjectsWithResolvingDependenciesInProjectsTree2(t *testing.T) {
 func TestLoadProjectsWithResolvingDependenciesInProjectsTreeProjectSubprojectWithoutDependencies(t *testing.T) {
 	folder := util.ReplacePathSeparators("test-resources/transitional-dependency-test")
 	project := util.ReplacePathSeparators("caveman/anjie/garkbit")
-
-	projects, err := LoadProjectsToDeploy(project, api.NewApis(), folder, util.NewFileReader())
+	fs := util.CreateTestFileSystem()
+	projects, err := LoadProjectsToDeploy(fs, project, api.NewApis(), folder)
 
 	assert.NilError(t, err)
 
@@ -171,7 +172,8 @@ func TestFilterProjectsWithSubproject(t *testing.T) {
 
 func TestGetAllProjectFoldersRecursivelyFailsOnMixedFolder(t *testing.T) {
 	path := util.ReplacePathSeparators("test-resources/configs-and-api-mixed-test/project1")
-	_, err := getAllProjectFoldersRecursively(path)
+	fs := util.CreateTestFileSystem()
+	_, err := getAllProjectFoldersRecursively(fs, path)
 
 	expected := util.ReplacePathSeparators("found folder with projects and configurations in test-resources/configs-and-api-mixed-test/project1")
 	assert.Error(t, err, expected)
@@ -179,7 +181,8 @@ func TestGetAllProjectFoldersRecursivelyFailsOnMixedFolder(t *testing.T) {
 
 func TestGetAllProjectFoldersRecursivelyFailsOnMixedFolderInSubproject(t *testing.T) {
 	path := util.ReplacePathSeparators("test-resources/configs-and-api-mixed-test/project2")
-	_, err := getAllProjectFoldersRecursively(path)
+	fs := util.CreateTestFileSystem()
+	_, err := getAllProjectFoldersRecursively(fs, path)
 
 	expected := util.ReplacePathSeparators("found folder with projects and configurations in test-resources/configs-and-api-mixed-test/project2/subproject2")
 	assert.Error(t, err, expected)
@@ -187,6 +190,7 @@ func TestGetAllProjectFoldersRecursivelyFailsOnMixedFolderInSubproject(t *testin
 
 func TestGetAllProjectFoldersRecursivelyPassesOnSeparatedFolders(t *testing.T) {
 	path := util.ReplacePathSeparators("test-resources/configs-and-api-mixed-test/project3")
-	_, err := getAllProjectFoldersRecursively(path)
+	fs := util.CreateTestFileSystem()
+	_, err := getAllProjectFoldersRecursively(fs, path)
 	assert.NilError(t, err)
 }

@@ -16,20 +16,22 @@ package jsoncreator
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
+	"path/filepath"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
+	"github.com/spf13/afero"
 )
 
 //go:generate mockgen -source=json_creator.go -destination=json_creator_mock.go -package=jsoncreator JSONCreator
 
 //JSONCreator interface allows to mock the methods for unit testing
 type JSONCreator interface {
-	CreateJSONConfig(client rest.DynatraceClient, api api.Api, value api.Value, creator files.FileCreator,
-		path string) (name string, filter bool, err error)
+	CreateJSONConfig(fs afero.IOFS, client rest.DynatraceClient, api api.Api, value api.Value,
+		path string) (name string, cleanName string, filter bool, err error)
 }
 
 //JSONCreatorImp object
@@ -42,24 +44,28 @@ func NewJSONCreator() *JsonCreatorImp {
 }
 
 //CreateJSONConfig creates a json file using the specified path and API data
-func (d *JsonCreatorImp) CreateJSONConfig(client rest.DynatraceClient, api api.Api, value api.Value, creator files.FileCreator,
-	path string) (name string, filter bool, err error) {
+func (d *JsonCreatorImp) CreateJSONConfig(fs afero.IOFS, client rest.DynatraceClient, api api.Api, value api.Value,
+	path string) (name string, cleanName string, filter bool, err error) {
 	data, filter, err := getDetailFromAPI(client, api, value.Id)
 	if err != nil {
 		util.Log.Error("error getting detail %s from API", api.GetId())
-		return "", false, err
+		return "", "", false, err
 	}
-	if filter == true {
-		return "", true, nil
+	if filter {
+		return "", "", true, nil
 	}
-	jsonfile, err := processJSONFile(data, value.Id)
-
-	name, err = creator.CreateFile(jsonfile, path, value.Name, ".json")
+	jsonfile, name, cleanName, err := processJSONFile(data, value.Id, value.Name, api)
+	if err != nil {
+		util.Log.Error("error processing jsonfile %s", api.GetId())
+		return "", "", false, err
+	}
+	fullPath := filepath.Join(path, cleanName+".json")
+	err = afero.WriteFile(fs.Fs, fullPath, jsonfile, 0664)
 	if err != nil {
 		util.Log.Error("error writing detail %s", api.GetId())
-		return "", false, err
+		return "", "", false, err
 	}
-	return name, false, nil
+	return name, cleanName, false, nil
 }
 
 func getDetailFromAPI(client rest.DynatraceClient, api api.Api, name string) (dat map[string]interface{}, filter bool, err error) {
@@ -76,7 +82,7 @@ func getDetailFromAPI(client rest.DynatraceClient, api api.Api, name string) (da
 		return nil, false, err
 	}
 	filter = isDefaultEntity(api.GetId(), dat)
-	if filter == true {
+	if filter {
 		util.Log.Debug("Non-user-created default Object has been filtered out", name)
 		return nil, true, err
 	}
@@ -84,25 +90,51 @@ func getDetailFromAPI(client rest.DynatraceClient, api api.Api, name string) (da
 }
 
 //processJSONFile removes and replaces properties for each json config to make them compatible with monaco standard
-func processJSONFile(dat map[string]interface{}, id string) ([]byte, error) {
+func processJSONFile(dat map[string]interface{}, id string, name string, api api.Api) ([]byte, string, string, error) {
 
+	name, err := getNameForConfig(name, dat, api)
+	if err != nil {
+		return nil, "", "", err
+	}
+	dat = replaceKeyProperties(dat)
+	cleanName := util.SanitizeName(name) //for using as the json filename
+	jsonfile, err := json.MarshalIndent(dat, "", " ")
+
+	if err != nil {
+		util.Log.Error("error creating json file  %s", id)
+		return nil, "", "", err
+	}
+	return jsonfile, name, cleanName, nil
+}
+
+//replaceKeyProperties replaces name or displayname for each config
+func replaceKeyProperties(dat map[string]interface{}) map[string]interface{} {
 	//removes id field
 	delete(dat, "id")
-	//replaces name or displayname
 	if dat["name"] != nil {
 		dat["name"] = "{{.name}}"
 	}
 	if dat["displayName"] != nil {
 		dat["displayName"] = "{{.name}}"
 	}
-
-	jsonfile, err := json.MarshalIndent(dat, "", " ")
-
-	if err != nil {
-		util.Log.Error("error creating json file  %s", id)
-		return nil, err
+	//for reports
+	if dat["dashboardId"] != nil {
+		dat["dashboardId"] = "{{.name}}"
 	}
-	return jsonfile, nil
+	return dat
+}
+
+//getNameForConfig return the correct name based on the type of config
+func getNameForConfig(name string, dat map[string]interface{}, api api.Api) (string, error) {
+	//for the apis that return a name for the config
+	if name != "" {
+		return name, nil
+	}
+	if api.GetId() == "reports" {
+		return dat["dashboardId"].(string), nil
+	}
+
+	return "", fmt.Errorf("error getting name for config in api %q", api.GetId())
 }
 
 //isDefaultEntity returns if the object from the dynatrace API is readonly, in which case it shouldn't be downloaded

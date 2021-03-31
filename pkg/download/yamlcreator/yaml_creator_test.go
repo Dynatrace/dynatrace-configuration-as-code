@@ -19,7 +19,7 @@ package yamlcreator
 import (
 	"testing"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"gotest.tools/assert"
 )
 
@@ -40,7 +40,7 @@ func TestCreateYamlFile(t *testing.T) {
 	// ctrl := gomock.NewController(t)
 	config := NewYamlConfig()
 	config.AddConfig("test", "test 1234")
-	fileCreator := files.NewInMemoryFileCreator()
+	fileCreator := util.CreateTestFileSystem()
 	err := config.CreateYamlFile(fileCreator, "", "test")
 	assert.NilError(t, err)
 }

@@ -21,6 +21,8 @@ import (
 	"os"
 	"strings"
 	"text/template"
+
+	"github.com/spf13/afero"
 )
 
 // Template wraps the underlying templating logic and provides a means of setting config values just on one place.
@@ -47,9 +49,9 @@ func NewTemplateFromString(name string, content string) (Template, error) {
 }
 
 // NewTemplate creates a new template for the given file
-func NewTemplate(fileName string) (Template, error) {
+func NewTemplate(fs afero.IOFS, fileName string) (Template, error) {
 
-	templ, err := template.ParseFiles(fileName)
+	templ, err := template.ParseFS(fs, fileName)
 	if err != nil {
 		return nil, err
 	}

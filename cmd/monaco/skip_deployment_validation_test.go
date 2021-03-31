@@ -36,7 +36,7 @@ func TestValidationSkipDeployment(t *testing.T) {
 		"-environments", skipDeploymentEnvironmentsFile,
 		"-project", "projectA",
 		skipDeploymentFolder,
-	}, util.NewFileReader())
+	}, util.CreateTestFileSystem())
 
 	assert.Equal(t, statusCode, 0)
 }
@@ -48,7 +48,7 @@ func TestValidationSkipDeploymentWithBrokenDependency(t *testing.T) {
 		"-environments", skipDeploymentEnvironmentsFile,
 		"-project", "projectB",
 		skipDeploymentFolder,
-	}, util.NewFileReader())
+	}, util.CreateTestFileSystem())
 
 	assert.Assert(t, statusCode != 0, "Status code should be error")
 }
@@ -60,7 +60,7 @@ func TestValidationSkipDeploymentWithOverridingDependency(t *testing.T) {
 		"-environments", skipDeploymentEnvironmentsFile,
 		"-project", "projectC",
 		skipDeploymentFolder,
-	}, util.NewFileReader())
+	}, util.CreateTestFileSystem())
 
 	assert.Equal(t, statusCode, 0)
 }
@@ -72,7 +72,7 @@ func TestValidationSkipDeploymentWithOverridingFlagValue(t *testing.T) {
 		"-environments", skipDeploymentEnvironmentsFile,
 		"-project", "projectE",
 		skipDeploymentFolder,
-	}, util.NewFileReader())
+	}, util.CreateTestFileSystem())
 
 	assert.Equal(t, statusCode, 0)
 }
@@ -85,7 +85,7 @@ func TestValidationSkipDeploymentWithOverridingFlagValue(t *testing.T) {
 // 		"-environments", skipDeploymentEnvironmentsFile,
 // 		"-project", "projectD",
 // 		skipDeploymentFolder,
-// 	}, util.NewFileReader())
+// 	}, util.CreateTestFileSystem())
 
 // 	assert.Assert(t, statusCode != 0)
 // }

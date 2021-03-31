@@ -26,6 +26,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/spf13/afero"
 )
 
 //go:generate mockgen -source=config.go -destination=config_mock.go -package=config Config
@@ -52,6 +53,7 @@ var dependencySuffixes = []string{".id", ".name"}
 const skipConfigDeploymentParameter = "skipDeployment"
 
 type configImpl struct {
+	fs                  afero.IOFS
 	id                  string
 	project             string
 	properties          map[string]map[string]string
@@ -64,7 +66,7 @@ type configImpl struct {
 
 // configFactory is used to create new Configs - this is needed for testing purposes
 type ConfigFactory interface {
-	NewConfig(id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (Config, error)
+	NewConfig(fs afero.IOFS, id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (Config, error)
 }
 
 type configFactoryImpl struct{}
@@ -73,22 +75,23 @@ func NewConfigFactory() ConfigFactory {
 	return &configFactoryImpl{}
 }
 
-func NewConfig(id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (Config, error) {
+func NewConfig(fs afero.IOFS, id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (Config, error) {
 
-	template, err := util.NewTemplate(fileName)
+	template, err := util.NewTemplate(fs, fileName)
 	if err != nil {
 		return nil, fmt.Errorf("loading config %s failed with %s", project+string(os.PathSeparator)+id, err)
 	}
 
-	return newConfig(id, project, template, filterProperties(id, properties), api, fileName), nil
+	return newConfig(fs, id, project, template, filterProperties(id, properties), api, fileName), nil
 }
 
-func NewConfigForDelete(id string, fileName string, properties map[string]map[string]string, api api.Api) Config {
-	return newConfig(id, "", nil, filterProperties(id, properties), api, fileName)
+func NewConfigForDelete(fs afero.IOFS, id string, fileName string, properties map[string]map[string]string, api api.Api) Config {
+	return newConfig(fs, id, "", nil, filterProperties(id, properties), api, fileName)
 }
 
-func newConfig(id string, project string, template util.Template, properties map[string]map[string]string, api api.Api, fileName string) Config {
+func newConfig(fs afero.IOFS, id string, project string, template util.Template, properties map[string]map[string]string, api api.Api, fileName string) Config {
 	return &configImpl{
+		fs:         fs,
 		id:         id,
 		project:    project,
 		template:   template,
@@ -389,8 +392,8 @@ func (c *configImpl) GetFullQualifiedId() string {
 }
 
 // NewConfig creates a new Config
-func (c *configFactoryImpl) NewConfig(id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (Config, error) {
-	config, err := NewConfig(id, project, fileName, properties, api)
+func (c *configFactoryImpl) NewConfig(fs afero.IOFS, id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (Config, error) {
+	config, err := NewConfig(fs, id, project, fileName, properties, api)
 	if err != nil {
 		return nil, err
 	}

@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/spf13/afero"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
@@ -32,7 +33,7 @@ import (
 // if projects specified with -p parameter then it takes only those projects and
 // it also resolves all project dependencies
 // if no -p parameter specified, then it creates a list of all projects
-func LoadProjectsToDeploy(specificProjectToDeploy string, apis map[string]api.Api, path string, fileReader util.FileReader) (projectsToDeploy []Project, err error) {
+func LoadProjectsToDeploy(fs afero.IOFS, specificProjectToDeploy string, apis map[string]api.Api, path string) (projectsToDeploy []Project, err error) {
 
 	projectsFolder := filepath.Clean(path)
 	projectsToDeploy = make([]Project, 0)
@@ -40,7 +41,7 @@ func LoadProjectsToDeploy(specificProjectToDeploy string, apis map[string]api.Ap
 	util.Log.Debug("Reading projects...")
 
 	// creates list of all available projects
-	availableProjectFolders, err := getAllProjectFoldersRecursively(projectsFolder)
+	availableProjectFolders, err := getAllProjectFoldersRecursively(fs, projectsFolder)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +50,7 @@ func LoadProjectsToDeploy(specificProjectToDeploy string, apis map[string]api.Ap
 	for _, fullQualifiedProjectFolderName := range availableProjectFolders {
 		util.Log.Debug("  project - %s", fullQualifiedProjectFolderName)
 		projectFolderName := extractFolderNameFromFullPath(fullQualifiedProjectFolderName)
-		project, err := NewProject(fullQualifiedProjectFolderName, projectFolderName, apis, projectsFolder, fileReader)
+		project, err := NewProject(fs, fullQualifiedProjectFolderName, projectFolderName, apis, projectsFolder)
 		if err != nil {
 			return nil, err
 		}
@@ -63,7 +64,7 @@ func LoadProjectsToDeploy(specificProjectToDeploy string, apis map[string]api.Ap
 		return returnSortedProjects(projectsToDeploy)
 	}
 
-	projectsToDeploy, err = createProjectsListFromFolderList(projectsFolder, specificProjectToDeploy, projectsFolder, apis, availableProjectFolders, fileReader)
+	projectsToDeploy, err = createProjectsListFromFolderList(fs, projectsFolder, specificProjectToDeploy, projectsFolder, apis, availableProjectFolders)
 
 	if err != nil {
 		return nil, err
@@ -99,7 +100,7 @@ func returnSortedProjects(projectsToDeploy []Project) ([]Project, error) {
 
 // takes project folder parameter and creates []Project slice
 // if project specified contains subprojects, then it adds subprojects instead
-func createProjectsListFromFolderList(path, specificProjectToDeploy string, projectsFolder string, apis map[string]api.Api, availableProjectFolders []string, fileReader util.FileReader) ([]Project, error) {
+func createProjectsListFromFolderList(fs afero.IOFS, path, specificProjectToDeploy string, projectsFolder string, apis map[string]api.Api, availableProjectFolders []string) ([]Project, error) {
 	projectsToDeploy := make([]Project, 0)
 	multiProjects := strings.Split(specificProjectToDeploy, ",")
 	for _, projectFolderName := range multiProjects {
@@ -109,27 +110,27 @@ func createProjectsListFromFolderList(path, specificProjectToDeploy string, proj
 
 		// if specified project has subprojects then add them instead
 		if !hasSubprojectFolder(fullQualifiedProjectFolderName, availableProjectFolders) {
-			_, err := os.Stat(fullQualifiedProjectFolderName)
+			_, err := fs.Stat(fullQualifiedProjectFolderName)
 
 			if err != nil {
 				return nil, errors.WithMessagef(err, "Project %s does not exist!", specificProjectToDeploy)
 			}
 
-			newProject, err := NewProject(fullQualifiedProjectFolderName, projectFolderName, apis, path, fileReader)
+			newProject, err := NewProject(fs, fullQualifiedProjectFolderName, projectFolderName, apis, path)
 			if err != nil {
 				return nil, err
 			}
 			projectsToDeploy = append(projectsToDeploy, newProject)
 		} else {
 			// get list of folders only for this path
-			subProjectFolders, err := getAllProjectFoldersRecursively(fullQualifiedProjectFolderName)
+			subProjectFolders, err := getAllProjectFoldersRecursively(fs, fullQualifiedProjectFolderName)
 			if err != nil {
 				return nil, err
 			}
 			for _, fullQualifiedSubProjectFolderName := range subProjectFolders {
 
 				subProjectFolderName := extractFolderNameFromFullPath(fullQualifiedSubProjectFolderName)
-				newProject, err := NewProject(fullQualifiedSubProjectFolderName, subProjectFolderName, apis, path, fileReader)
+				newProject, err := NewProject(fs, fullQualifiedSubProjectFolderName, subProjectFolderName, apis, path)
 				if err != nil {
 					return nil, err
 				}
@@ -183,15 +184,15 @@ func hasSubprojectFolder(projectFolder string, projectFolders []string) bool {
 // walks through a path recursively and searches for all folders
 // ignores folders with configurations (containing api configs) and hidden folders
 // fails if a folder with both sub projects and api configs are found
-func getAllProjectFoldersRecursively(path string) ([]string, error) {
+func getAllProjectFoldersRecursively(fs afero.IOFS, path string) ([]string, error) {
 	var allProjectsFolders []string
-	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+	err := afero.Walk(fs.Fs, path, func(path string, info os.FileInfo, err error) error {
 		if info == nil {
 			return fmt.Errorf("Project path does not exist: %s. (This needs to be a relative path from the current directory)", path)
 		}
 		if info.IsDir() && !strings.HasPrefix(path, ".") && !api.ContainsApiName(path) {
 			allProjectsFolders = append(allProjectsFolders, path)
-			err := subprojectsMixedWithApi(path)
+			err := subprojectsMixedWithApi(fs, path)
 			return err
 		}
 		return nil
@@ -203,13 +204,13 @@ func getAllProjectFoldersRecursively(path string) ([]string, error) {
 	return filterProjectsWithSubproject(allProjectsFolders), nil
 }
 
-func subprojectsMixedWithApi(path string) error {
+func subprojectsMixedWithApi(fs afero.IOFS, path string) error {
 	apiFound, subprojectFound := false, false
-	f, err := os.Open(path)
+	_, err := fs.Open(path)
 	if err != nil {
 		return err
 	}
-	dirs, err := f.Readdir(0)
+	dirs, err := fs.ReadDir(path)
 	if err != nil {
 		return err
 	}
