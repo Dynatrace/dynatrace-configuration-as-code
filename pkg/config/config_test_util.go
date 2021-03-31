@@ -38,5 +38,5 @@ func CreateConfigMockFactory(t *testing.T) *MockConfigFactory {
 
 func GetMockConfig(fs afero.IOFS, id string, project string, template util.Template, properties map[string]map[string]string, api api.Api, fileName string) Config {
 
-	return newConfig(fs, id, project, template, properties, api, fileName)
+	return newConfig(id, project, template, properties, api, fileName)
 }

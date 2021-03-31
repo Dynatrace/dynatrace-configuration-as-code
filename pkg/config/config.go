@@ -53,7 +53,6 @@ var dependencySuffixes = []string{".id", ".name"}
 const skipConfigDeploymentParameter = "skipDeployment"
 
 type configImpl struct {
-	fs                  afero.IOFS
 	id                  string
 	project             string
 	properties          map[string]map[string]string
@@ -82,16 +81,15 @@ func NewConfig(fs afero.IOFS, id string, project string, fileName string, proper
 		return nil, fmt.Errorf("loading config %s failed with %s", project+string(os.PathSeparator)+id, err)
 	}
 
-	return newConfig(fs, id, project, template, filterProperties(id, properties), api, fileName), nil
+	return newConfig(id, project, template, filterProperties(id, properties), api, fileName), nil
 }
 
-func NewConfigForDelete(fs afero.IOFS, id string, fileName string, properties map[string]map[string]string, api api.Api) Config {
-	return newConfig(fs, id, "", nil, filterProperties(id, properties), api, fileName)
+func NewConfigForDelete(id string, fileName string, properties map[string]map[string]string, api api.Api) Config {
+	return newConfig(id, "", nil, filterProperties(id, properties), api, fileName)
 }
 
-func newConfig(fs afero.IOFS, id string, project string, template util.Template, properties map[string]map[string]string, api api.Api, fileName string) Config {
+func newConfig(id string, project string, template util.Template, properties map[string]map[string]string, api api.Api, fileName string) Config {
 	return &configImpl{
-		fs:         fs,
 		id:         id,
 		project:    project,
 		template:   template,
