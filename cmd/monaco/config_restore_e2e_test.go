@@ -66,16 +66,19 @@ func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolde
 	err := preparation_uploadConfigs(t, fs, suffixTest, initialConfigsFolder, envFile)
 	if err != nil {
 		assert.NilError(t, err, "Error during download preparation stage")
+		os.Setenv("NEW_CLI", "0")
 		return
 	}
 	err = execution_downloadConfigs(t, fs, downloadFolder, envFile, apisToDownload, suffixTest)
 	if err != nil {
 		assert.NilError(t, err, "Error during download execution stage")
+		os.Setenv("NEW_CLI", "0")
 		return
 	}
 	cleanupEnvironmentConfigs(t, fs, envFile, suffixTest)
 	validation_uploadDownloadedConfigs(t, fs, downloadFolder, envFile)
 	cleanupEnvironmentConfigs(t, fs, envFile, suffixTest)
+	os.Setenv("NEW_CLI", "0")
 }
 
 func preparation_uploadConfigs(t *testing.T, fs afero.IOFS, suffixTest string, configFolder string, envFile string) error {
