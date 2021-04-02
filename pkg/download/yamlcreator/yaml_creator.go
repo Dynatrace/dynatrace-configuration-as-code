@@ -26,7 +26,7 @@ import (
 
 //YamlCreator implements method to create the yaml configuration file
 type YamlCreator interface {
-	CreateYamlFile(fs afero.IOFS, path string, name string) error
+	CreateYamlFile(fs afero.Fs, path string, name string) error
 	AddConfig(name string, rawName string)
 }
 
@@ -59,7 +59,7 @@ func (yc *YamlConfig) AddConfig(name string, rawName string) {
 }
 
 //CreateYamlFile transforms the struct into a physical file on disk
-func (yc *YamlConfig) CreateYamlFile(fs afero.IOFS, path string, name string) error {
+func (yc *YamlConfig) CreateYamlFile(fs afero.Fs, path string, name string) error {
 
 	data, err := yaml.Marshal(yc)
 	if err != nil {
@@ -67,7 +67,7 @@ func (yc *YamlConfig) CreateYamlFile(fs afero.IOFS, path string, name string) er
 		return err
 	}
 	fullPath := filepath.Join(path, name+".yaml")
-	err = afero.WriteFile(fs.Fs, fullPath, data, 0664)
+	err = afero.WriteFile(fs, fullPath, data, 0664)
 	if err != nil {
 		util.Log.Error("error creating yaml file %s", name)
 		return err

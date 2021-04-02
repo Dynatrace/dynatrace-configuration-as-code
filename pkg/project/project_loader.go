@@ -33,7 +33,7 @@ import (
 // if projects specified with -p parameter then it takes only those projects and
 // it also resolves all project dependencies
 // if no -p parameter specified, then it creates a list of all projects
-func LoadProjectsToDeploy(fs afero.IOFS, specificProjectToDeploy string, apis map[string]api.Api, path string) (projectsToDeploy []Project, err error) {
+func LoadProjectsToDeploy(fs afero.Fs, specificProjectToDeploy string, apis map[string]api.Api, path string) (projectsToDeploy []Project, err error) {
 
 	projectsFolder := filepath.Clean(path)
 	projectsToDeploy = make([]Project, 0)
@@ -100,7 +100,7 @@ func returnSortedProjects(projectsToDeploy []Project) ([]Project, error) {
 
 // takes project folder parameter and creates []Project slice
 // if project specified contains subprojects, then it adds subprojects instead
-func createProjectsListFromFolderList(fs afero.IOFS, path, specificProjectToDeploy string, projectsFolder string, apis map[string]api.Api, availableProjectFolders []string) ([]Project, error) {
+func createProjectsListFromFolderList(fs afero.Fs, path, specificProjectToDeploy string, projectsFolder string, apis map[string]api.Api, availableProjectFolders []string) ([]Project, error) {
 	projectsToDeploy := make([]Project, 0)
 	multiProjects := strings.Split(specificProjectToDeploy, ",")
 	for _, projectFolderName := range multiProjects {
@@ -184,9 +184,9 @@ func hasSubprojectFolder(projectFolder string, projectFolders []string) bool {
 // walks through a path recursively and searches for all folders
 // ignores folders with configurations (containing api configs) and hidden folders
 // fails if a folder with both sub projects and api configs are found
-func getAllProjectFoldersRecursively(fs afero.IOFS, path string) ([]string, error) {
+func getAllProjectFoldersRecursively(fs afero.Fs, path string) ([]string, error) {
 	var allProjectsFolders []string
-	err := afero.Walk(fs.Fs, path, func(path string, info os.FileInfo, err error) error {
+	err := afero.Walk(fs, path, func(path string, info os.FileInfo, err error) error {
 		if info == nil {
 			return fmt.Errorf("Project path does not exist: %s. (This needs to be a relative path from the current directory)", path)
 		}
@@ -204,13 +204,13 @@ func getAllProjectFoldersRecursively(fs afero.IOFS, path string) ([]string, erro
 	return filterProjectsWithSubproject(allProjectsFolders), nil
 }
 
-func subprojectsMixedWithApi(fs afero.IOFS, path string) error {
+func subprojectsMixedWithApi(fs afero.Fs, path string) error {
 	apiFound, subprojectFound := false, false
 	_, err := fs.Open(path)
 	if err != nil {
 		return err
 	}
-	dirs, err := fs.ReadDir(path)
+	dirs, err := afero.ReadDir(fs, path)
 	if err != nil {
 		return err
 	}

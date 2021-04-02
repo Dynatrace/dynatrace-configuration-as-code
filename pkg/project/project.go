@@ -47,11 +47,11 @@ type projectBuilder struct {
 	configs           []config.Config
 	apis              map[string]api.Api
 	configFactory     config.ConfigFactory
-	fs                afero.IOFS
+	fs                afero.Fs
 }
 
 // NewProject loads a new project from folder. Returns either project or a reading/sorting error respectively.
-func NewProject(fs afero.IOFS, fullQualifiedProjectFolderName string, projectFolderName string, apis map[string]api.Api, projectRootFolder string) (Project, error) {
+func NewProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolderName string, apis map[string]api.Api, projectRootFolder string) (Project, error) {
 
 	var configs = make([]config.Config, 0)
 
@@ -97,7 +97,7 @@ func warnIfProjectNameClashesWithApiName(projectFolderName string, apis map[stri
 }
 
 func (p *projectBuilder) readFolder(folder string, isProjectRoot bool) error {
-	files, err := afero.ReadDir(p.fs.Fs, folder)
+	files, err := afero.ReadDir(p.fs, folder)
 
 	if util.CheckError(err, "Folder "+folder+" could not be read") {
 		return err
@@ -123,7 +123,7 @@ func (p *projectBuilder) processYaml(filename string) error {
 
 	util.Log.Debug("Processing file: " + filename)
 
-	bytes, err := afero.ReadFile(p.fs.Fs, filename)
+	bytes, err := afero.ReadFile(p.fs, filename)
 
 	if util.CheckError(err, "Error while reading file "+filename) {
 		return err

@@ -24,7 +24,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-func LoadEnvironmentList(specificEnvironment string, environmentsFile string, fs afero.IOFS) (environments map[string]Environment, errorList []error) {
+func LoadEnvironmentList(specificEnvironment string, environmentsFile string, fs afero.Fs) (environments map[string]Environment, errorList []error) {
 
 	if environmentsFile == "" {
 		errorList = append(errorList, errors.New("no environmentfile provided"))
@@ -54,9 +54,9 @@ func LoadEnvironmentList(specificEnvironment string, environmentsFile string, fs
 }
 
 // readEnvironments reads the yaml file for the environments and returns the parsed environments
-func readEnvironments(file string, fs afero.IOFS) (map[string]Environment, []error) {
+func readEnvironments(file string, fs afero.Fs) (map[string]Environment, []error) {
 
-	dat, err := afero.ReadFile(fs.Fs, file)
+	dat, err := afero.ReadFile(fs, file)
 	util.FailOnError(err, "Error while reading file")
 
 	err, environmentMaps := util.UnmarshalYaml(string(dat), file)

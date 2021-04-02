@@ -31,7 +31,7 @@ func TestIntegrationAllConfigs(t *testing.T) {
 	allConfigsFolder := "test-resources/integration-all-configs/"
 	allConfigsEnvironmentsFile := allConfigsFolder + "environments.yaml"
 
-	RunIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fs afero.IOFS) {
+	RunIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fs afero.Fs) {
 
 		statusCode := RunImpl([]string{
 			"monaco",

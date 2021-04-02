@@ -30,7 +30,7 @@ import (
 
 //JSONCreator interface allows to mock the methods for unit testing
 type JSONCreator interface {
-	CreateJSONConfig(fs afero.IOFS, client rest.DynatraceClient, api api.Api, value api.Value,
+	CreateJSONConfig(fs afero.Fs, client rest.DynatraceClient, api api.Api, value api.Value,
 		path string) (name string, cleanName string, filter bool, err error)
 }
 
@@ -44,7 +44,7 @@ func NewJSONCreator() *JsonCreatorImp {
 }
 
 //CreateJSONConfig creates a json file using the specified path and API data
-func (d *JsonCreatorImp) CreateJSONConfig(fs afero.IOFS, client rest.DynatraceClient, api api.Api, value api.Value,
+func (d *JsonCreatorImp) CreateJSONConfig(fs afero.Fs, client rest.DynatraceClient, api api.Api, value api.Value,
 	path string) (name string, cleanName string, filter bool, err error) {
 	data, filter, err := getDetailFromAPI(client, api, value.Id)
 	if err != nil {
@@ -60,7 +60,7 @@ func (d *JsonCreatorImp) CreateJSONConfig(fs afero.IOFS, client rest.DynatraceCl
 		return "", "", false, err
 	}
 	fullPath := filepath.Join(path, cleanName+".json")
-	err = afero.WriteFile(fs.Fs, fullPath, jsonfile, 0664)
+	err = afero.WriteFile(fs, fullPath, jsonfile, 0664)
 	if err != nil {
 		util.Log.Error("error writing detail %s", api.GetId())
 		return "", "", false, err

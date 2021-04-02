@@ -34,11 +34,10 @@ func main() {
 }
 
 func Run(args []string) int {
-	fsStdlib := afero.NewIOFS(afero.NewOsFs())
-	return RunImpl(args, fsStdlib)
+	return RunImpl(args, afero.NewOsFs())
 }
 
-func RunImpl(args []string, fs afero.IOFS) (statusCode int) {
+func RunImpl(args []string, fs afero.Fs) (statusCode int) {
 	var app *cli.App
 
 	if newCli, ok := os.LookupEnv("NEW_CLI"); ok && newCli != "0" {
@@ -57,7 +56,7 @@ func RunImpl(args []string, fs afero.IOFS) (statusCode int) {
 	return 0
 }
 
-func buildCli(fs afero.IOFS) *cli.App {
+func buildCli(fs afero.Fs) *cli.App {
 	fmt.Print(`You are currently using the old CLI structure which will be used by
 default until monaco version 2.0.0
 
@@ -172,7 +171,7 @@ Examples:
 	return app
 }
 
-func buildExperimentalCli(fs afero.IOFS) *cli.App {
+func buildExperimentalCli(fs afero.Fs) *cli.App {
 	fmt.Print(`You are using the new CLI structure which is currently in Beta.
 
 Please provide feedback here:
@@ -213,7 +212,7 @@ Examples:
 
 	return app
 }
-func getDeployCommand(fs afero.IOFS) cli.Command {
+func getDeployCommand(fs afero.Fs) cli.Command {
 	command := cli.Command{
 		Name:      "deploy",
 		Usage:     "deploys the given environment",
@@ -290,7 +289,7 @@ func getDeployCommand(fs afero.IOFS) cli.Command {
 	}
 	return command
 }
-func getDownloadCommand(fs afero.IOFS) cli.Command {
+func getDownloadCommand(fs afero.Fs) cli.Command {
 	command := cli.Command{
 		Name:      "download",
 		Usage:     "download the given environment",

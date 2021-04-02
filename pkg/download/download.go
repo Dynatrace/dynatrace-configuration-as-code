@@ -31,7 +31,7 @@ import (
 var cont = 0
 
 //GetConfigsFilterByEnvironment filters the enviroments list based on specificEnvironment flag value
-func GetConfigsFilterByEnvironment(workingDir string, fs afero.IOFS, environmentsFile string,
+func GetConfigsFilterByEnvironment(workingDir string, fs afero.Fs, environmentsFile string,
 	specificEnvironment string, downloadSpecificAPI string) error {
 	environments, errors := environment.LoadEnvironmentList(specificEnvironment, environmentsFile, fs)
 	if len(errors) > 0 {
@@ -45,7 +45,7 @@ func GetConfigsFilterByEnvironment(workingDir string, fs afero.IOFS, environment
 }
 
 //getConfigs Entry point that retrieves the specified configurations from a Dynatrace tenant
-func getConfigs(fs afero.IOFS, workingDir string, environments map[string]environment.Environment, downloadSpecificAPI string) error {
+func getConfigs(fs afero.Fs, workingDir string, environments map[string]environment.Environment, downloadSpecificAPI string) error {
 	list, err := getAPIList(downloadSpecificAPI)
 	if err != nil {
 		return err
@@ -96,7 +96,7 @@ func getAPIList(downloadSpecificAPI string) (filterAPIList map[string]api.Api, e
 }
 
 //creates the project and downloads the configs
-func downloadConfigFromEnvironment(fs afero.IOFS, environment environment.Environment, basepath string, listApis map[string]api.Api) (err error) {
+func downloadConfigFromEnvironment(fs afero.Fs, environment environment.Environment, basepath string, listApis map[string]api.Api) (err error) {
 	projectName := environment.GetId()
 	path := filepath.Join(basepath, projectName)
 
@@ -129,7 +129,7 @@ func downloadConfigFromEnvironment(fs afero.IOFS, environment environment.Enviro
 	return nil
 }
 
-func createConfigsFromAPI(fs afero.IOFS, api api.Api, token string, fullpath string, client rest.DynatraceClient,
+func createConfigsFromAPI(fs afero.Fs, api api.Api, token string, fullpath string, client rest.DynatraceClient,
 	jcreator jsoncreator.JSONCreator, ycreator yamlcreator.YamlCreator) (err error) {
 	//retrieves all objects for the specific api
 	values, err := client.List(api)

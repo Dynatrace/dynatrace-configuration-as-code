@@ -36,7 +36,7 @@ const environmentsFile = folder + "environments.yaml"
 // Tests all environments with all projects
 func TestIntegrationMultiEnvironment(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironment", func(fs afero.IOFS) {
+	RunIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironment", func(fs afero.Fs) {
 
 		environments, errs := environment.LoadEnvironmentList("", environmentsFile, fs)
 		assert.Check(t, len(errs) == 0, "didn't expect errors loading test environments")
@@ -72,7 +72,7 @@ func TestIntegrationValidationMultiEnvironment(t *testing.T) {
 // tests a single project
 func TestIntegrationMultiEnvironmentSingleProject(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleProject", func(fs afero.IOFS) {
+	RunIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleProject", func(fs afero.Fs) {
 
 		environments, errs := environment.LoadEnvironmentList("", environmentsFile, fs)
 		FailOnAnyError(errs, "loading of environments failed")
@@ -96,7 +96,7 @@ func TestIntegrationMultiEnvironmentSingleProject(t *testing.T) {
 // Tests a single project with dependency
 func TestIntegrationMultiEnvironmentSingleProjectWithDependency(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleProjectWithDependency", func(fs afero.IOFS) {
+	RunIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleProjectWithDependency", func(fs afero.Fs) {
 
 		environments, errs := environment.LoadEnvironmentList("", environmentsFile, fs)
 		FailOnAnyError(errs, "loading of environments failed")
@@ -122,7 +122,7 @@ func TestIntegrationMultiEnvironmentSingleProjectWithDependency(t *testing.T) {
 // tests a single environment
 func TestIntegrationMultiEnvironmentSingleEnvironment(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleEnvironment", func(fs afero.IOFS) {
+	RunIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleEnvironment", func(fs afero.Fs) {
 
 		environments, errs := environment.LoadEnvironmentList("", environmentsFile, fs)
 		FailOnAnyError(errs, "loading of environments failed")
