@@ -35,7 +35,7 @@ func TestIntegrationContinueDeploymentOnError(t *testing.T) {
 	const allConfigsFolder = "test-resources/integration-configs-with-errors/"
 	const allConfigsEnvironmentsFile = allConfigsFolder + "environments.yaml"
 
-	RunIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fs afero.IOFS) {
+	RunIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fs afero.Fs) {
 
 		environments, errs := environment.LoadEnvironmentList("", allConfigsEnvironmentsFile, fs)
 		assert.Check(t, len(errs) == 0, "didn't expect errors loading test environments")

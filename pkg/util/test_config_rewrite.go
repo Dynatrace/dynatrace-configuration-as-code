@@ -25,8 +25,8 @@ import (
 )
 
 //rewriteConfigNames reads the config from the config folder and rewrites the files on a inmemory filesystem.
-func RewriteConfigNames(path string, fs afero.IOFS, transformers []func(string) string) error {
-	files, err := afero.ReadDir(fs.Fs, path)
+func RewriteConfigNames(path string, fs afero.Fs, transformers []func(string) string) error {
+	files, err := afero.ReadDir(fs, path)
 	if err != nil {
 		return err
 	}

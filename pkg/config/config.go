@@ -65,7 +65,7 @@ type configImpl struct {
 
 // configFactory is used to create new Configs - this is needed for testing purposes
 type ConfigFactory interface {
-	NewConfig(fs afero.IOFS, id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (Config, error)
+	NewConfig(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (Config, error)
 }
 
 type configFactoryImpl struct{}
@@ -74,7 +74,7 @@ func NewConfigFactory() ConfigFactory {
 	return &configFactoryImpl{}
 }
 
-func NewConfig(fs afero.IOFS, id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (Config, error) {
+func NewConfig(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (Config, error) {
 
 	template, err := util.NewTemplate(fs, fileName)
 	if err != nil {
@@ -390,7 +390,7 @@ func (c *configImpl) GetFullQualifiedId() string {
 }
 
 // NewConfig creates a new Config
-func (c *configFactoryImpl) NewConfig(fs afero.IOFS, id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (Config, error) {
+func (c *configFactoryImpl) NewConfig(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (Config, error) {
 	config, err := NewConfig(fs, id, project, fileName, properties, api)
 	if err != nil {
 		return nil, err

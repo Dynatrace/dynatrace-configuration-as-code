@@ -23,12 +23,10 @@ import (
 //CreateTestFileSystem creates a virtual filesystem with 2 layers.
 //The first layer allows to read file from the disk
 //the second layer allows to modify files on a virtual filesystem
-func CreateTestFileSystem() afero.IOFS {
+func CreateTestFileSystem() afero.Fs {
 	base := afero.NewOsFs()
 	baseLayer := afero.NewReadOnlyFs(base)
-	fs := afero.NewCopyOnWriteFs(baseLayer, afero.NewMemMapFs())
-	fsStdlib := afero.NewIOFS(fs)
-	return fsStdlib
+	return afero.NewCopyOnWriteFs(baseLayer, afero.NewMemMapFs())
 }
 
 //SanitizeName removes special characters, limits to max 254 characters in name, no special characters

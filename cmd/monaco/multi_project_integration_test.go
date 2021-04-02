@@ -36,7 +36,7 @@ const multiProjectEnvironmentsFile = multiProjectFolder + "environments.yaml"
 // Tests all environments with all projects
 func TestIntegrationMultiProject(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "MultiProject", func(fs afero.IOFS) {
+	RunIntegrationWithCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "MultiProject", func(fs afero.Fs) {
 
 		environments, errs := environment.LoadEnvironmentList("", multiProjectEnvironmentsFile, fs)
 		assert.Check(t, len(errs) == 0, "didn't expect errors loading test environments")
@@ -85,7 +85,7 @@ func TestIntegrationValidationMultiProjectWithoutEndingSlashInPath(t *testing.T)
 // tests a single project with dependencies
 func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "MultiProjectSingleProject", func(fs afero.IOFS) {
+	RunIntegrationWithCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "MultiProjectSingleProject", func(fs afero.Fs) {
 
 		environments, errs := environment.LoadEnvironmentList("", multiProjectEnvironmentsFile, fs)
 		FailOnAnyError(errs, "loading of environments failed")

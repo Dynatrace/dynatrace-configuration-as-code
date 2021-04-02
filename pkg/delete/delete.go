@@ -37,12 +37,12 @@ type deleteYaml struct {
 
 // LoadConfigsToDelete loads the delete.yaml file (if available) and converts its entries into configs which need
 // to be deleted
-func LoadConfigsToDelete(fs afero.IOFS, apis map[string]api.Api, path string) (configs []config.Config, err error) {
+func LoadConfigsToDelete(fs afero.Fs, apis map[string]api.Api, path string) (configs []config.Config, err error) {
 
 	result := make([]config.Config, 0)
 
 	deleteFilePath := filepath.Join(path, deleteFileName)
-	data, err := afero.ReadFile(fs.Fs, deleteFilePath)
+	data, err := afero.ReadFile(fs, deleteFilePath)
 	if err != nil {
 		// Don't raise an error. The delete.yaml might not be there, that's a valid case
 		util.Log.Info("There is no delete file %s found in %s. Skipping delete config.", deleteFileName, deleteFilePath)

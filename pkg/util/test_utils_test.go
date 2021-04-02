@@ -77,7 +77,7 @@ func assertInMemoryReplace(t *testing.T, transformers []func(string) string, exp
 	err := RewriteConfigNames("test-resources", reader, transformers)
 	assert.NilError(t, err)
 
-	content, err := afero.ReadFile(reader.Fs, "test-resources/test-environments.yaml")
+	content, err := afero.ReadFile(reader, "test-resources/test-environments.yaml")
 	assert.NilError(t, err)
 
 	assert.Check(t, strings.Contains(string(content), expected), "content '%s' was invalid", content)

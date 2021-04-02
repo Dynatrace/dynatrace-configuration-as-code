@@ -31,7 +31,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-func Deploy(workingDir string, fs afero.IOFS, environmentsFile string,
+func Deploy(workingDir string, fs afero.Fs, environmentsFile string,
 	specificEnvironment string, proj string, dryRun bool, continueOnError bool) error {
 	environments, errors := environment.LoadEnvironmentList(specificEnvironment, environmentsFile, fs)
 
@@ -252,7 +252,7 @@ func uploadConfig(client rest.DynatraceClient, config config.Config, dict map[st
 }
 
 // deleteConfigs deletes specified configs, if a delete.yaml file was found
-func deleteConfigs(apis map[string]api.Api, environments map[string]environment.Environment, path string, dryRun bool, fs afero.IOFS) error {
+func deleteConfigs(apis map[string]api.Api, environments map[string]environment.Environment, path string, dryRun bool, fs afero.Fs) error {
 	configs, err := delete.LoadConfigsToDelete(fs, apis, path)
 	util.FailOnError(err, "deletion failed")
 
