@@ -30,6 +30,8 @@ These are the supported configuration types, their API endpoints and the token p
 | custom-service-php              | _/api/config/v1/service/customServices/php_     | `Read Configuration` & `Write Configuration`                                                                        |
 | dashboard                       | _/api/config/v1/dashboards_                     | `Read Configuration` & `Write Configuration`                                                                        |
 | extension                       | _/api/config/v1/extensions_                     | `Read Configuration` & `Write Configuration`                                                                        |
+| failure-detection-parametersets          | _/api/config/v1/service/failureDetection/parameterSelection/parameterSets_  | `Read Configuration` & `Write Configuration`                                   |
+| failure-detection-rules                  | _/api/config/v1/service/failureDetection/parameterSelection/rules_          | `Read Configuration` & `Write Configuration`                                   |
 | kubernetes-credentials          | _/api/config/v1/kubernetes/credentials_         | `Read Configuration` & `Write Configuration`                                                                        |
 | maintenance-window              | _/api/config/v1/maintenanceWindows_             | `Read Configuratio`  & `Write Configuration`                                                                                     |
 | management-zone                 | _/api/config/v1/managementZones_                | `Read Configuration` & `Write Configuration`                                                                        |

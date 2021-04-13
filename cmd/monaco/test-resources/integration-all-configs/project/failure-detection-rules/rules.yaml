@@ -1,0 +1,7 @@
+config:
+  - rule: "rule.json"
+
+rule:
+  - name: "ignoreAllExceptionsForAppGw"
+  - description: "Apply 'ignoreAllExceptions' parameter set to all App Gateway REST services"
+  - fdpId: "/project/failure-detection-parametersets/parameterset.id"
