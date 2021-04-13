@@ -50,8 +50,6 @@ func TestIntegrationAllConfigs(t *testing.T) {
 			// the project "only-post" (folder ./test-resources/integration-all-configs/only-post)
 			// The mobile application API will be fixed in the scope of
 			//     https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/issues/275
-			// The dashboard report API will be fixed in the scope of
-			//     https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/issues/281
 			"--project", "project",
 			allConfigsFolder,
 		}, fs)
