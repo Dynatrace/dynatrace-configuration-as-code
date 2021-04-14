@@ -1,6 +1,7 @@
 # Monitoring as Code Tool - Release Notes
 
 - Versions:
+  - [1.5.1](#151)
   - [1.5.0](#150)
   - [1.4.0](#140)
   - [1.3.1](#131)
@@ -9,6 +10,36 @@
   - [1.1.0](#110)
   - [1.0.1](#101)
   - [1.0.0](#100)
+
+## 1.5.1
+
+### List of changes
+
+#### Bugfixes
+* bb125fb fix: Paging in monaco was not working (#276)
+* 7388bbd Fix absolute paths broken
+* 7bd5a7f Fix template loading for absolute template reference
+* affafab reset env variable at the end of e2e test (#266)
+* 559b881 removes fs from config implementation (#266)
+* 397a8b2 fix parameters in integration test (#266)
+* 2440ee7 e2e test config restore environment (#266)
+
+#### Misc changes
+* 7e38119 Add licensecheck dependencies to go mod (#250)
+* 72721cf Handle possible error when creating a new go http request
+* cea13c5 Do not unmarshall json before sending it to api
+* 0031be2 Upgrade to go 1.16
+* 73c3751 afero as filesystem
+* ace1513 Improve check-license-headers.sh script
+
+#### Library updates
+* dd0ce7d Bump github.com/google/go-cmp from 0.5.4 to 0.5.5
+* aaf8c64 Bump github.com/spf13/afero from 1.5.1 to 1.6.0
+
+### Documentation
+* a789838 Added documentation about custom extensions #113 (#251)
+* fc09d97 Added proxy documentation (#249)
+* e486bf5 Added dashboards documentation (#247)
 
 ## 1.5.0
 
