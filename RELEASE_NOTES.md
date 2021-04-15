@@ -1,6 +1,7 @@
 # Monitoring as Code Tool - Release Notes
 
 - Versions:
+  - [1.5.2](#152)
   - [1.5.1](#151)
   - [1.5.0](#150)
   - [1.4.0](#140)
@@ -10,6 +11,17 @@
   - [1.1.0](#110)
   - [1.0.1](#101)
   - [1.0.0](#100)
+
+## 1.5.2
+
+### List of changes
+
+#### Bugfixes
+* 422679b fix: Update mobile application config to fix integration tests (#289)
+* b3761ee fix: References on pre-existing SLOs do not work (#289)
+
+#### Misc changes
+* f5303a7 ci: Add static code analysis of PRs (#286)
 
 ## 1.5.1
 
