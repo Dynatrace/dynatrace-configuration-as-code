@@ -8,6 +8,7 @@
       "frustratedOnError": true
     },
     "optInModeEnabled": true,
+    "sessionReplayEnabled": true,
     "sessionReplayOnCrashEnabled": true,
     "beaconEndpointType": "CLUSTER_ACTIVE_GATE"
   }
