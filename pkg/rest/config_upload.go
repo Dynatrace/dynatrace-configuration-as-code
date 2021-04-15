@@ -30,10 +30,10 @@ import (
 func upsertDynatraceObject(client *http.Client, fullUrl string, objectName string, theApi api.Api, payload []byte, apiToken string) (api.DynatraceEntity, error) {
 
 	existingObjectId, err := getObjectIdIfAlreadyExists(client, theApi, fullUrl, objectName, apiToken)
-	var dtEntity api.DynatraceEntity
 	if err != nil {
-		return dtEntity, err
+		return api.DynatraceEntity{}, err
 	}
+
 	var resp Response
 	path := fullUrl
 	body := payload
@@ -45,7 +45,9 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		existingObjectId = objectName
 	}
 
-	if existingObjectId != "" {
+	isUpdate := existingObjectId != ""
+
+	if isUpdate {
 		path = joinUrl(fullUrl, existingObjectId)
 		// Updating a dashboard requires the ID to be contained in the JSON, so we just add it...
 		if isApiDashboard(theApi) {
@@ -57,6 +59,18 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		if err != nil {
 			return api.DynatraceEntity{}, err
 		}
+
+		if success(resp) {
+			util.Log.Debug("\t\t\tUpdated existing object for %s (%s)", objectName, existingObjectId)
+			return api.DynatraceEntity{
+				Id:          existingObjectId,
+				Name:        objectName,
+				Description: "Updated existing object",
+			}, nil
+		} else {
+			return api.DynatraceEntity{}, fmt.Errorf("Failed to update DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
+		}
+
 	} else {
 		if configType == "app-detection-rule" {
 			path += "?position=PREPEND"
@@ -90,35 +104,29 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 				return api.DynatraceEntity{}, err
 			}
 		}
+		if !success(resp) {
+			return api.DynatraceEntity{}, fmt.Errorf("Failed to create DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
+		}
 	}
-	if !success(resp) {
-		return dtEntity, fmt.Errorf("Failed to upsert DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
-	}
-	if updateSuccess(resp) {
-		util.Log.Debug("\t\t\tUpdated existing object for %s (%s)", objectName, existingObjectId)
-		return api.DynatraceEntity{
-			Id:          existingObjectId,
-			Name:        objectName,
-			Description: "Updated existing object",
-		}, nil
-	}
+
+	var dtEntity api.DynatraceEntity
 
 	if configType == "synthetic-monitor" || configType == "synthetic-location" {
 		var entity api.SyntheticEntity
 		err := json.Unmarshal(resp.Body, &entity)
 		if util.CheckError(err, "Cannot unmarshal Synthetic API response") {
-			return dtEntity, err
+			return api.DynatraceEntity{}, err
 		}
 		dtEntity = translateSyntheticEntityResponse(entity, objectName)
 
 	} else if available, locationSlice := isLocationHeaderAvailable(resp); available {
 
-		// The SLO API does not return the ID of the config in its response. Instead, it contains a Location header,
-		// which contains the URL to the created resource. This URL needs to be cleaned, to get the ID of the
-		// config.
+		// The POST of the SLO API does not return the ID of the config in its response. Instead, it contains a
+		// Location header, which contains the URL to the created resource. This URL needs to be cleaned, to get the
+		// ID of the config.
 
 		if len(locationSlice) == 0 {
-			return dtEntity,
+			return api.DynatraceEntity{},
 				fmt.Errorf("location response header was empty for API %s (name: %s)", configType, objectName)
 		}
 
@@ -137,7 +145,7 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 	} else {
 		err := json.Unmarshal(resp.Body, &dtEntity)
 		if util.CheckError(err, "Cannot unmarshal API response") {
-			return dtEntity, err
+			return api.DynatraceEntity{}, err
 		}
 	}
 	util.Log.Debug("\t\t\tCreated new object for %s (%s)", dtEntity.Name, dtEntity.Id)
@@ -360,8 +368,4 @@ func translateSyntheticEntityResponse(resp api.SyntheticEntity, objectName strin
 
 func success(resp Response) bool {
 	return resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusCreated || resp.StatusCode == http.StatusNoContent
-}
-
-func updateSuccess(resp Response) bool {
-	return resp.StatusCode == http.StatusNoContent
 }
