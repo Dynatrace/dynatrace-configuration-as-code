@@ -3,6 +3,7 @@
 - [Contributing to the Monitoring as Code Tool](#contributing-to-the-monitoring-as-code-tool)
   - [What to contribute](#what-to-contribute)
   - [How to contribute](#how-to-contribute)
+  - [Examples of Commit Style Messages](#Examples-of-commit-style-messages)
   - [Code of Conduct and Shared Values](#code-of-conduct-and-shared-values)
   - [Building the Dynatrace Monitoring as Code Tool](#building-the-dynatrace-monitoring-as-code-tool)
   - [Testing the Dynatrace Monitoring as Code Tool](#testing-the-dynatrace-monitoring-as-code-tool)
@@ -41,7 +42,36 @@ Branches naming follows the `feature/{Issue}/{description}` or `bugfix/{Issue}/{
 
 Branches are rebased and only fast-forward merges to main permitted. No merge commits.
 
-Commits are not auto-squashed when merging a PR, so please make sure your commits are fit to go into main (DIY squash when necessary), and write [good commit messages](https://chris.beams.io/posts/git-commit/).
+Commits are not auto-squashed when merging a PR, so please make sure your commits are fit to go into main (DIY squash when necessary).
+
+Commits should conform to  [Conventional Commit](https://www.conventionalcommits.org/) standard.
+
+### Examples of Commit Style Messages
+
+New Feature Changes
+``` 
+feat: allow provided config object to extend other configs
+```
+
+Bug Fix Changes
+```
+fix: change function call
+
+see the issue for details
+
+on typos fixed.
+
+Reviewed-by: Z
+Refs #133 
+```
+
+Documentation Changes
+```
+docs: correct getting started guide 
+```
+
+More examples can be found [here](https://www.conventionalcommits.org/en/v1.0.0/#examples)
+
 
 ## Code of Conduct and Shared Values
 
