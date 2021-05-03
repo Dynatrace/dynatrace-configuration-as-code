@@ -1,6 +1,7 @@
 # Monitoring as Code Tool - Release Notes
 
 - Versions:
+  - [1.5.3](#153)
   - [1.5.2](#152)
   - [1.5.1](#151)
   - [1.5.0](#150)
@@ -11,6 +12,11 @@
   - [1.1.0](#110)
   - [1.0.1](#101)
   - [1.0.0](#100)
+
+## 1.5.3
+
+#### Bugfixes
+* 7b0cfae Bugfix #307 multiple dependencies with relative path resolution not working (#307)
 
 ## 1.5.2
 
