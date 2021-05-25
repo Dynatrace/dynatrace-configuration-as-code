@@ -49,9 +49,7 @@ and [Configuration Structure](#configuration-structure)
 ### Install Monaco
 To use monaco you will need to install it. Monaco is distributed as a binary package.
 
-To install Monaco, find the appropriate [package](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/latest) for your system and download it as a zip archive.
-
-After downloading Monaco, unzip the package. Monaco runs as a single binary named monaco.
+To install Monaco, find the appropriate [executable](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/latest) for your system and download it.
 
 Ensure that the monaco binary is available on your PATH. This process will differ depending on your operating system.
 
@@ -105,7 +103,7 @@ For validating your complete configuration in the current folder, the tool could
 For deploying all configurations to a single environment and get verbose output, the tool could be run as:
 ```monaco -v -e <path-to-environment-yaml-file> -se <name of environment>```
 
-If, during deployment, `monaco` detects an error (configuration upload fails), it automatically stops deployment of affected environment. In case you want 
+If, during deployment, `monaco` detects an error (configuration upload fails), it automatically stops deployment of affected environment. In case you want
 `monaco` to ignore errors and try to upload other configurations, you can provide `--continue-on-error` flag:
 ```monaco deploy --project <project-folder> --environments <path-to-environment-yaml-file> continue-on-error [projects-root-folder]```
 
@@ -113,7 +111,7 @@ Multiple projects can be specified as well:
 
 ```-p="project1,project2,project3"```
 
-In order to get the version of the binary simply execute: 
+In order to get the version of the binary simply execute:
 ```sh
 monaco --version
 ```
@@ -150,19 +148,19 @@ To validate the configuration execute `monaco -dry-run` on a yaml file as show h
 ```
 
 #### Experimental new CLI
-Starting with version 1.2.0 a new experimental CLI is available. The plan is that it 
-will gradually become the new default in the next few releases. 
+Starting with version 1.2.0 a new experimental CLI is available. The plan is that it
+will gradually become the new default in the next few releases.
 
-To activate the new experimental cli simply set an the env variable `NEW_CLI` to 1. 
+To activate the new experimental cli simply set an the env variable `NEW_CLI` to 1.
 
 E.g.
 
 ```sh
-NEW_CLI=1 monaco 
+NEW_CLI=1 monaco
 ```
 
-By running the above example you will notice that instead of being flag based, the 
-new cli is based around commands. 
+By running the above example you will notice that instead of being flag based, the
+new cli is based around commands.
 
 As of right now the following commands are available:
 * deploy
@@ -171,12 +169,12 @@ As of right now the following commands are available:
 ##### Deploy
 This command is basically doing what the old tool did. It is used to deploy a specified
 config to a dynatrace environment. The flags to things like the environments files
-are mostly the same. 
+are mostly the same.
 
 ##### Download
 This feature allows you to download the configuration from a Dynatrace
 tenant as Monaco files. You can use this feature to avoid starting from
-scratch when using Monaco. 
+scratch when using Monaco.
 
 For more information on this feature, see [pkg/download/README.md](./pkg/download/README.md).
 
@@ -190,20 +188,20 @@ Sometimes it is useful for debugging to see http traffic between monaco and the 
 This is possible by specifying a log file via the `MONACO_REQUEST_LOG` and `MONACO_RESPONSE_LOG`
 env variables.
 
-The specified file can either be relative, then it will be located relative form the current 
-working dir, or absolute. 
+The specified file can either be relative, then it will be located relative form the current
+working dir, or absolute.
 
 **NOTE:** If the file already exists, it will get **truncated**!
 
-Simply set the environment variable and monaco will start writing all send requests to 
+Simply set the environment variable and monaco will start writing all send requests to
 the file like:
 
 ```sh
 $ MONACO_REQUEST_LOG=request.log MONACO_RESPONSE_LOG=response.log monaco -e environment project
 ```
 
-As of right now, the content of multipart post requests is not logged. This is a known 
-limitation. 
+As of right now, the content of multipart post requests is not logged. This is a known
+limitation.
 
 ### Deploying Configuration to Dynatrace
 
@@ -244,13 +242,13 @@ monaco -e=environments.yaml -se=my-environment -p="my-environment" cluster
 In environments where access to Dynatrace API endpoints is only possible or allowed via a proxy server, monaco provides the options to specify the address of your proxy server when running a command:
 
 ```bash
-HTTPS_PROXY=localhost:5000 monaco -e=environments.yaml -se=my-environment -p="my-environment" cluster 
+HTTPS_PROXY=localhost:5000 monaco -e=environments.yaml -se=my-environment -p="my-environment" cluster
 ```
 
 With the new CLI:
 
 ```bash
-HTTPS_PROXY=localhost:5000 NEW_CLI=1 monaco deploy -e environments.yaml 
+HTTPS_PROXY=localhost:5000 NEW_CLI=1 monaco deploy -e environments.yaml
 ```
 
 
@@ -371,11 +369,11 @@ From Dynatrace version 208 onwards, a dashboard configuration must:
 
 ##### Calculated log metrics JSON
 
-There is a know drawback to `monaco`'s workaround to the slightly off-standard API for Calculated Log Metrics, which needs you to follow specific naming conventions for your configuration: 
+There is a know drawback to `monaco`'s workaround to the slightly off-standard API for Calculated Log Metrics, which needs you to follow specific naming conventions for your configuration:
 
-When you create custom log metrics, your configurations `name` needs to be the `metricKey` of the log metric. 
+When you create custom log metrics, your configurations `name` needs to be the `metricKey` of the log metric.
 
-Additionally it is possible that configuration upload fails when a metric configuration is newly created and an additional configuration depends on the new log metric. To work around this, set both `metricKey` and `displayName` to the same value. 
+Additionally it is possible that configuration upload fails when a metric configuration is newly created and an additional configuration depends on the new log metric. To work around this, set both `metricKey` and `displayName` to the same value.
 
 You will thus need to reference at least the `metricKey` of the log metric as `{{ .name }}` in the JSON file (as seen below).
 
@@ -386,7 +384,7 @@ some-log-metric-config:
   - name: "cal.log:this-is-some-metric"
 ```
 
-and in the corresponding JSON: 
+and in the corresponding JSON:
 ```json
 {
   "metricKey": "{{ .name }}",
@@ -485,7 +483,7 @@ These are the supported configuration types, their API endpoints and the token p
 For reference, refer to [this](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication) page for a detailed
 description to each token permission.
 
-If your desired API is not in the table above, please consider adding it be following the instructions in 
+If your desired API is not in the table above, please consider adding it be following the instructions in
 [How to add new APIs](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/blob/main/docs/how-to-add-a-new-api.md).
 
 ### Configuration YAML Structure

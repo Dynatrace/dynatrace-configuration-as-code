@@ -353,8 +353,6 @@ func (c *configImpl) HasDependencyOn(config Config) bool {
 					if valueString == strings.Join([]string{config.GetType(), config.GetId()}, string(os.PathSeparator)) {
 						config.addToRequiredByConfigIdList(c.GetFullQualifiedId())
 						return true
-					} else {
-						return false
 					}
 				}
 

@@ -424,6 +424,23 @@ func TestHasDependencyCheck(t *testing.T) {
 	assert.Equal(t, true, config.HasDependencyOn(otherConfig))
 }
 
+func TestHasDependencyWithMultipleDependenciesCheck(t *testing.T) {
+	prop := make(map[string]map[string]string)
+	prop["test"] = make(map[string]string)
+	prop["test"]["name"] = "A name"
+
+	prop["test"]["someDependency"] = "management-zone/not-existing-dep.name"
+	prop["test"]["somethingelse"] = util.ReplacePathSeparators("management-zone/other.id")
+	temp, e := util.NewTemplateFromString("test", "{{.name}}{{.somethingelse}}")
+	assert.NilError(t, e)
+
+	config := newConfig("test", "testproject", temp, prop, testManagementZoneApi, "test.json")
+
+	otherConfig := newConfig("other", "testproject", temp, make(map[string]map[string]string), testManagementZoneApi, "other.json")
+
+	assert.Equal(t, true, config.HasDependencyOn(otherConfig))
+}
+
 func TestMeIdRegex(t *testing.T) {
 	assert.Check(t, isMeId("HOST_GROUP-95BEC188F318D09C"))
 	assert.Check(t, isMeId("APPLICATION-95BEC188F318D09C"))
