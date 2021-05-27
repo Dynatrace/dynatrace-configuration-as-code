@@ -51,7 +51,7 @@ Make the binary executable:
 $ chmod +x monaco
 ```
 
-Optionally install driftctl to a central location in your `PATH`.
+Optionally install monaco to a central location in your `PATH`.
 This command assumes that the binary is currently in your downloads folder and that your PATH includes `/usr/local/bin`:
 
 ```shell
