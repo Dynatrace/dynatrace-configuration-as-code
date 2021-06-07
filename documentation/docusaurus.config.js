@@ -55,12 +55,10 @@ module.exports = {
       '@docusaurus/preset-classic',
       {
         docs: {
-          // It is recommended to set document id as docs home page (`docs/` path).
           routeBasePath: '/',
           sidebarPath: require.resolve('./sidebars.js'),
-          // Please change this to your repo.
-          editUrl:
-            'https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/edit/main',
+          editUrl: 'https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/edit/main/documentation/',
+          versions: {},
         },
         blog: false,
         theme: {
