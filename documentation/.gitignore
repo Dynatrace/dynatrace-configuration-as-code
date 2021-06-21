@@ -1,21 +1,3 @@
-# IDEs
-.idea/
-.vscode/
-*.iml
-
-# Binary
-bin/
-/monaco
-/monaco.exe
-
-# Log files
-/cmd/monaco/.logs
-/.logs
-
-# Mock files
-**/*_mock.go
-cmd/monaco/test-resources/download/
-
 # Dependencies
 /node_modules
 
