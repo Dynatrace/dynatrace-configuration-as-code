@@ -1,6 +1,7 @@
 # Monitoring as Code Tool - Release Notes
 
 - Versions:
+  - [1.6.0](#160)
   - [1.5.3](#153)
   - [1.5.2](#152)
   - [1.5.1](#151)
@@ -12,6 +13,31 @@
   - [1.1.0](#110)
   - [1.0.1](#101)
   - [1.0.0](#100)
+
+## 1.6.0
+
+### List of changes
+
+#### Features
+* 04ec13c feat(api): add failuredetection api and fix broken contribution link (#283)
+* 67b163d feat: Remove unsupported macOS 32bit build target
+* ef01727 feat: Build monaco releases for macOS M1/arm
+
+#### Bugfixes
+* 1baf806 fix: Upsert objects with special chars no longer fail
+
+#### Documentation 
+* (several): Add Github Pages Documentation 
+* 8fa751a doc: Fix install section in README
+
+#### Library updates
+* 15b650b Bump github.com/golang/mock from 1.5.0 to 1.6.0
+* 93eefbf Bump actions/setup-node from 1 to 2.1.5
+* d0440dd Bump github.com/google/go-cmp from 0.5.5 to 0.5.6
+* a7b93c4 Bump actions/checkout from 2 to 2.3.4
+* 8c610cf Bump actions/create-release from 1.0.0 to 1.1.4
+* ac72312 Bump crazy-max/ghaction-xgo from 1 to 1.6.1
+* f6b9fd2 Bump golangci/golangci-lint-action from v2 to v2.5.2
 
 ## 1.5.3
 
