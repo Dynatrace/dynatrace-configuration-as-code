@@ -1,0 +1,6 @@
+config:
+  - parameterset: "parameterset.json"
+
+parameterset:
+  - name: "ignoreAllExceptions"
+  - description: "ignore all exceptions and therefore only rely on http status code for failure detection"

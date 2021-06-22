@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -155,9 +156,9 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 
 func joinUrl(urlBase string, path string) string {
 	if strings.HasSuffix(urlBase, "/") {
-		return urlBase + path
+		return urlBase + url.PathEscape(path)
 	}
-	return urlBase + "/" + path
+	return urlBase + "/" + url.PathEscape(path)
 }
 
 func isLocationHeaderAvailable(resp Response) (headerAvailable bool, headerArray []string) {

@@ -140,6 +140,14 @@ var apiMap = map[string]apiInput{
 		apiPath:                      "/api/config/v1/credentials",
 		propertyNameOfGetAllResponse: "credentials",
 	},
+
+	"failure-detection-parametersets": {
+		apiPath: "/api/config/v1/service/failureDetection/parameterSelection/parameterSets",
+	},
+
+	"failure-detection-rules": {
+		apiPath: "/api/config/v1/service/failureDetection/parameterSelection/rules",
+	},
 }
 
 var standardApiPropertyNameOfGetAllResponse = "values"

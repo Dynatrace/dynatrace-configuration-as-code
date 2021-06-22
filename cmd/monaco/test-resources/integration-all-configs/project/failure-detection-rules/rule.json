@@ -1,0 +1,20 @@
+{
+    "name": "{{ .name }}",
+    "description": "{{ .description }}",
+    "enabled": true,
+    "fdpId": "{{ .fdpId }}",
+    "conditions": [
+        {
+            "attribute": "SERVICE_TAG",
+            "predicate": {
+                "type": "TAG_EQUALS",
+                "keys": [
+                    "app.kubernetes.io/part-of"
+                ],
+                "values": [
+                    "appgateway"
+                ]
+            }
+        }
+    ]
+}
