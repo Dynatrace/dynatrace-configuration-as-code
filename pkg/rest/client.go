@@ -164,10 +164,6 @@ func (d *dynatraceClientImpl) UpsertByName(api Api, name string, payload []byte)
 
 	fullUrl := api.GetUrlFromEnvironmentUrl(d.environmentUrl)
 
-	if err != nil {
-		return DynatraceEntity{}, err
-	}
-
 	if api.GetId() == "extension" {
 		return uploadExtension(d.client, fullUrl, name, payload, d.token)
 	}
