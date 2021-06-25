@@ -19,6 +19,8 @@ package rest
 import (
 	"archive/zip"
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"mime/multipart"
 	"net/http"
 	"time"
@@ -27,7 +29,28 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 )
 
+type extensionStatus int
+
+const (
+	extensionValidationError extensionStatus = iota
+	extensionUpToDate
+	extensionConfigOutdated
+	extensionNeedsUpdate
+)
+
 func uploadExtension(client *http.Client, apiPath string, extensionName string, payload []byte, apiToken string) (api.DynatraceEntity, error) {
+
+	status, err := validateIfExtensionShouldBeUploaded(client, apiPath, extensionName, payload, apiToken)
+	if err != nil {
+		return api.DynatraceEntity{}, err
+	}
+
+	if status == extensionUpToDate {
+		return api.DynatraceEntity{
+			Name: extensionName,
+		}, nil
+	}
+
 	buffer, contentType, err := writeMultiPartForm(extensionName, payload)
 	if err != nil {
 		return api.DynatraceEntity{
@@ -54,6 +77,44 @@ func uploadExtension(client *http.Client, apiPath string, extensionName string, 
 		Name: extensionName,
 	}, nil
 
+}
+
+func validateIfExtensionShouldBeUploaded(client *http.Client, apiPath string, extensionName string, payload []byte, apiToken string) (status extensionStatus, err error) {
+	response, err := get(client, apiPath+"/"+extensionName, apiToken)
+	if err != nil {
+		return extensionValidationError, err
+	}
+	var extProperties struct{ Version *string }
+	if err := json.Unmarshal(response.Body, &extProperties); err != nil {
+		return extensionValidationError, err
+	}
+
+	if extProperties.Version == nil {
+		return extensionValidationError, fmt.Errorf("API failed to return a version for extension (%s)", extensionName)
+	}
+	curVersion := *extProperties.Version
+
+	var extension struct{ Version *string }
+	if err := json.Unmarshal(payload, &extension); err != nil {
+		return extensionValidationError, err
+	}
+
+	if extension.Version == nil {
+		return extensionValidationError, fmt.Errorf("extension configuration (%s) does not define a version", extensionName)
+	}
+	newVersion := *extension.Version
+
+	if curVersion > newVersion {
+		err := fmt.Errorf("already deployed version (%s) of extension (%s) is newer than local (%s)", extensionName, curVersion, newVersion)
+		return extensionConfigOutdated, err
+	}
+
+	if curVersion == newVersion {
+		util.Log.Info("Extension (%s) already deployed in version (%s), skipping.", extensionName, newVersion)
+		return extensionUpToDate, nil
+	}
+
+	return extensionNeedsUpdate, nil
 }
 
 func writeMultiPartForm(extensionName string, extensionJson []byte) (buffer *bytes.Buffer, contentType string, err error) {
