@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -32,7 +33,6 @@ import (
 //go:generate mockgen -source=config.go -destination=config_mock.go -package=config Config
 
 type Config interface {
-	GetConfigForEnvironment(environment environment.Environment, dict map[string]api.DynatraceEntity) ([]byte, error)
 	IsSkipDeployment(environment environment.Environment) bool
 	GetApi() api.Api
 	GetObjectNameForEnvironment(environment environment.Environment, dict map[string]api.DynatraceEntity) (string, error)
@@ -50,7 +50,7 @@ type Config interface {
 
 var dependencySuffixes = []string{".id", ".name"}
 
-const skipConfigDeploymentParameter = "skipDeployment"
+const SkipConfigDeploymentParameter = "skipDeployment"
 
 type configImpl struct {
 	id                  string
@@ -58,7 +58,6 @@ type configImpl struct {
 	properties          map[string]map[string]string
 	template            util.Template
 	api                 api.Api
-	objectName          string
 	fileName            string
 	requiredByConfigIds []string
 }
@@ -86,6 +85,11 @@ func NewConfig(fs afero.Fs, id string, project string, fileName string, properti
 
 func NewConfigForDelete(id string, fileName string, properties map[string]map[string]string, api api.Api) Config {
 	return newConfig(id, "", nil, filterProperties(id, properties), api, fileName)
+}
+
+func NewConfigWithTemplate(id string, project string, fileName string, template util.Template,
+	properties map[string]map[string]string, api api.Api) (Config, error) {
+	return newConfig(id, project, template, filterProperties(id, properties), api, fileName), nil
 }
 
 func newConfig(id string, project string, template util.Template, properties map[string]map[string]string, api api.Api, fileName string) Config {
@@ -117,7 +121,7 @@ func (c *configImpl) IsSkipDeployment(environment environment.Environment) bool 
 	environmentKey := c.id + "." + environment.GetId()
 
 	if properties, ok := c.properties[environmentKey]; ok {
-		if value, ok := properties[skipConfigDeploymentParameter]; ok {
+		if value, ok := properties[SkipConfigDeploymentParameter]; ok {
 			return strings.EqualFold(value, "true")
 		}
 	}
@@ -125,79 +129,18 @@ func (c *configImpl) IsSkipDeployment(environment environment.Environment) bool 
 	environmentGroupKey := c.id + "." + environment.GetGroup()
 
 	if properties, ok := c.properties[environmentGroupKey]; ok {
-		if value, ok := properties[skipConfigDeploymentParameter]; ok {
+		if value, ok := properties[SkipConfigDeploymentParameter]; ok {
 			return strings.EqualFold(value, "true")
 		}
 	}
 
 	if properties, ok := c.properties[c.id]; ok {
-		if value, ok := properties[skipConfigDeploymentParameter]; ok {
+		if value, ok := properties[SkipConfigDeploymentParameter]; ok {
 			return strings.EqualFold(value, "true")
 		}
 	}
 
 	return false
-}
-
-func (c *configImpl) GetConfigForEnvironment(environment environment.Environment, dict map[string]api.DynatraceEntity) ([]byte, error) {
-	filtered := copyProperties(c.properties)
-
-	if len(filtered) == 0 {
-		json, err := c.template.ExecuteTemplate(map[string]string{})
-
-		if err != nil {
-			return nil, err
-		}
-
-		err = util.ValidateJson(json, c.GetFilePath())
-
-		if err != nil {
-			return nil, err
-		}
-
-		return []byte(json), nil
-	}
-
-	environmentGroupKey := c.id + "." + environment.GetGroup()
-	environmentKey := c.id + "." + environment.GetId()
-
-	// collect all group and environment properties
-	// environment override group properties
-	for _, environment := range []string{environmentGroupKey, environmentKey} {
-		filteredForEnvironment := filterProperties(environment, c.properties)
-		if len(filteredForEnvironment) > 0 {
-			for key, value := range filteredForEnvironment[environment] {
-				_, ok := filtered[c.id]
-				if !ok {
-					filtered[c.id] = make(map[string]string)
-				}
-
-				filtered[c.id][key] = value
-			}
-		}
-	}
-
-	filtered, err := c.replaceDependencies(filtered, dict)
-
-	if err != nil {
-		return nil, err
-	}
-
-	json, err := c.template.ExecuteTemplate(filtered[c.id])
-
-	if err != nil {
-		return nil, err
-	}
-
-	json = strings.ReplaceAll(json, "&#34;", "\"")
-
-	err = util.ValidateJson(json, c.GetFilePath())
-
-	if err != nil {
-		return nil, err
-	}
-
-	return []byte(json), nil
 }
 
 func (c *configImpl) GetObjectNameForEnvironment(environment environment.Environment, dict map[string]api.DynatraceEntity) (string, error) {
@@ -215,7 +158,7 @@ func (c *configImpl) GetObjectNameForEnvironment(environment environment.Environ
 	if name == "" {
 		return "", fmt.Errorf("could not find name property in config %s, please make sure `name` is defined", c.GetFullQualifiedId())
 	}
-	if isDependency(name) {
+	if IsDependency(name) {
 		return c.parseDependency(name, dict)
 	}
 	return name, nil
@@ -237,7 +180,7 @@ func (c *configImpl) replaceDependencies(data map[string]map[string]string, dict
 	var err error
 	for k, v := range data {
 		for k2, v2 := range v {
-			if isDependency(v2) {
+			if IsDependency(v2) {
 				data[k][k2], err = c.parseDependency(v2, dict)
 				if err != nil {
 					return data, err
@@ -252,12 +195,9 @@ func (c *configImpl) replaceDependencies(data map[string]map[string]string, dict
 func (c *configImpl) parseDependency(dependency string, dict map[string]api.DynatraceEntity) (string, error) {
 
 	// in case of an absolute path within the dependency:
-	if strings.HasPrefix(dependency, string(os.PathSeparator)) {
-		// remove prefix "/"
-		dependency = dependency[1:]
-	}
+	dependency = strings.TrimPrefix(dependency, string(os.PathSeparator))
 
-	id, access, err := splitDependency(dependency)
+	id, access, err := SplitDependency(dependency)
 	if err != nil {
 		return "", err
 	}
@@ -276,7 +216,7 @@ func (c *configImpl) parseDependency(dependency string, dict map[string]api.Dyna
 	}
 }
 
-func isDependency(property string) bool {
+func IsDependency(property string) bool {
 	for _, suffix := range dependencySuffixes {
 		if strings.HasSuffix(property, suffix) {
 			return true
@@ -285,7 +225,7 @@ func isDependency(property string) bool {
 	return false
 }
 
-func splitDependency(property string) (id string, access string, err error) {
+func SplitDependency(property string) (id string, access string, err error) {
 	split := strings.Split(property, ".")
 	if len(split) < 2 {
 		return "", "", fmt.Errorf("property %s cannot be split", property)
@@ -297,7 +237,7 @@ func splitDependency(property string) (id string, access string, err error) {
 		secondPart = split[len(split)-1]
 		firstPart = strings.TrimSuffix(property, "."+secondPart)
 	}
-	return firstPart, secondPart, nil
+	return filepath.ToSlash(firstPart), secondPart, nil
 }
 
 func (c *configImpl) GetApi() api.Api {
@@ -337,13 +277,9 @@ func (c *configImpl) HasDependencyOn(config Config) bool {
 
 			// Check dependencies only for values ending with suffixes
 			// User can freely define values using dots, but .name$ and .id$ are reserved
-			if valueIndex != -1 && isDependency(value[valueIndex:]) {
+			if valueIndex != -1 && IsDependency(value[valueIndex:]) {
 				valueString := value[:valueIndex]
-
-				if strings.HasPrefix(valueString, string(os.PathSeparator)) {
-					// remove prefix "/"
-					valueString = valueString[1:]
-				}
+				valueString = strings.TrimPrefix(valueString, string(os.PathSeparator))
 
 				// if dependency is relative path:
 				// projects, config type and location should match

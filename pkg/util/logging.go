@@ -51,7 +51,7 @@ func SetupLogging(verbose bool) error {
 		}
 	}
 
-	logName := ".logs" + string(os.PathSeparator) + time.Now().Format("20060102-150405") + ".log"
+	logName := filepath.Join(".logs", time.Now().Format("20060102-150405")+".log")
 	fileLog, err := lumber.NewAppendLogger(logName)
 
 	if err != nil {

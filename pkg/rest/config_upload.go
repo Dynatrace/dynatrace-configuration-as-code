@@ -181,9 +181,24 @@ func deleteDynatraceObject(client *http.Client, api api.Api, name string, url st
 	return nil
 }
 
-func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, objectName string, apiToken string) (existingId string, err error) {
+func deleteDynatraceObjects(client *http.Client, api api.Api, names []string, url string, token string) error {
+	existingIds, err := getObjectIdsIfAlreadyExists(client, api, url, names, token)
 
+	if err != nil {
+		return err
+	}
+
+	for _, id := range existingIds {
+		if len(id) > 0 {
+			_ = deleteConfig(client, url, token, id)
+		}
+	}
+	return nil
+}
+
+func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, objectName string, apiToken string) (string, error) {
 	values, err := getExistingValuesFromEndpoint(client, api, url, apiToken)
+
 	if err != nil {
 		return "", err
 	}
@@ -197,7 +212,6 @@ func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, ob
 				configName = value.Id
 			}
 			configsFound++
-
 		}
 	}
 
@@ -205,6 +219,35 @@ func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, ob
 		util.Log.Error("\t\t\tFound %d configs with same name: %s. Please delete duplicates.", configsFound, objectName)
 	}
 	return configName, nil
+}
+
+func getObjectIdsIfAlreadyExists(client *http.Client, api api.Api, url string, objectNames []string, apiToken string) ([]string, error) {
+	values, err := getExistingValuesFromEndpoint(client, api, url, apiToken)
+
+	if err != nil {
+		return nil, err
+	}
+
+	nameLookupMap := toLookupMap(objectNames)
+	var result []string
+
+	for i := 0; i < len(values); i++ {
+		value := values[i]
+		if _, found := nameLookupMap[value.Name]; found && value.Id != "" {
+			result = append(result, value.Id)
+		}
+	}
+	return result, nil
+}
+
+func toLookupMap(strs []string) map[string]struct{} {
+	result := make(map[string]struct{})
+
+	for _, str := range strs {
+		result[str] = struct{}{}
+	}
+
+	return result
 }
 
 func isApiDashboard(api api.Api) bool {
@@ -222,7 +265,7 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, url stri
 
 	for {
 
-		err, values, objmap := unmarshalJson(theApi, err, resp)
+		err, values, objmap := unmarshalJson(theApi, resp)
 		if err != nil {
 			return values, err
 		}
@@ -243,7 +286,7 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, url stri
 	return existingValues, nil
 }
 
-func unmarshalJson(theApi api.Api, err error, resp Response) (error, []api.Value, map[string]interface{}) {
+func unmarshalJson(theApi api.Api, resp Response) (error, []api.Value, map[string]interface{}) {
 
 	var values []api.Value
 	var objmap map[string]interface{}
@@ -267,7 +310,7 @@ func unmarshalJson(theApi api.Api, err error, resp Response) (error, []api.Value
 		if theApi.GetId() == "synthetic-location" {
 
 			var jsonResp api.SyntheticLocationResponse
-			err = json.Unmarshal(resp.Body, &jsonResp)
+			err := json.Unmarshal(resp.Body, &jsonResp)
 			if util.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
 				return err, nil, nil
 			}
@@ -276,7 +319,7 @@ func unmarshalJson(theApi api.Api, err error, resp Response) (error, []api.Value
 		} else if theApi.GetId() == "synthetic-monitor" {
 
 			var jsonResp api.SyntheticMonitorsResponse
-			err = json.Unmarshal(resp.Body, &jsonResp)
+			err := json.Unmarshal(resp.Body, &jsonResp)
 			if util.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
 				return err, nil, nil
 			}
@@ -295,7 +338,7 @@ func unmarshalJson(theApi api.Api, err error, resp Response) (error, []api.Value
 		} else {
 
 			var jsonResponse api.ValuesResponse
-			err = json.Unmarshal(resp.Body, &jsonResponse)
+			err := json.Unmarshal(resp.Body, &jsonResponse)
 			if util.CheckError(err, "Cannot unmarshal API response for existing objects") {
 				return err, nil, nil
 			}
@@ -322,11 +365,10 @@ func isPaginatedResponse(jsonResponse map[string]interface{}) (paginated bool, p
 
 func translateGenericValues(inputValues []interface{}, configType string) ([]api.Value, error) {
 
-	numValues := len(inputValues)
-	values := make([]api.Value, numValues, numValues)
+	values := make([]api.Value, 0, len(inputValues))
 
-	for i := 0; i < numValues; i++ {
-		input := inputValues[i].(map[string]interface{})
+	for _, input := range inputValues {
+		input := input.(map[string]interface{})
 
 		if input["id"] == nil {
 			return values, fmt.Errorf("config of type %s was invalid: No id", configType)
@@ -342,30 +384,28 @@ func translateGenericValues(inputValues []interface{}, configType string) ([]api
 
 			util.Log.Warn("Config of type %s was invalid. Auto-corrected to use ID as name!\nInvalid config: %s", configType, string(jsonStr))
 
-			values[i] = api.Value{
+			values = append(values, api.Value{
 				Id:   input["id"].(string),
 				Name: input["id"].(string), // use the id as name
-			}
+			})
 			continue
 		}
 
-		values[i] = api.Value{
+		values = append(values, api.Value{
 			Id:   input["id"].(string),
 			Name: input["name"].(string),
-		}
+		})
 	}
 	return values, nil
 }
 
 func translateSyntheticValues(syntheticValues []api.SyntheticValue) []api.Value {
-	numValues := len(syntheticValues)
-	values := make([]api.Value, numValues, numValues)
-	for i := 0; i < numValues; i++ {
-		loc := syntheticValues[i]
-		values[i] = api.Value{
+	values := make([]api.Value, 0, len(syntheticValues))
+	for _, loc := range syntheticValues {
+		values = append(values, api.Value{
 			Id:   loc.EntityId,
 			Name: loc.Name,
-		}
+		})
 	}
 	return values
 }

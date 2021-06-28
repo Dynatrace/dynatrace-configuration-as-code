@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 6
 ---
 
 # Plugin Configuration
@@ -17,7 +17,7 @@ e.g. `projects/example-project/anomaly-detection-metrics/numberOfDistributionInP
 So `projects/example-project/anomaly-detection-metrics/example-anomaly.yaml` references the plugin by name in a variable:
 
 ```yaml
-- metricPrefix: "projects/example-project/plugin/custom.jmx.EXAMPLE-PLUGIN-MY-METRIC.name"
+- metricPrefix: ["plugin", "custom.jmx.EXAMPLE-PLUGIN-MY-METRIC", "name"]
 ```
 
 to then construct the `metric-id` in the `json` as:

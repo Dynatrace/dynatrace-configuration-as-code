@@ -25,6 +25,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 )
@@ -36,9 +37,9 @@ type Project interface {
 	GetId() string
 }
 
-type projectImpl struct {
-	id      string
-	configs []config.Config
+type ProjectImpl struct {
+	Id      string
+	Configs []config.Config
 }
 
 type projectBuilder struct {
@@ -57,7 +58,7 @@ func NewProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolde
 
 	// standardize projectRootFolder
 	// trim path separator from projectRoot
-	projectRootFolder = strings.Trim(projectRootFolder, string(os.PathSeparator))
+	projectRootFolder = strings.TrimRight(projectRootFolder, string(os.PathSeparator))
 
 	builder := projectBuilder{
 		projectRootFolder: projectRootFolder,
@@ -81,9 +82,9 @@ func NewProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolde
 
 	warnIfProjectNameClashesWithApiName(projectFolderName, apis, projectRootFolder)
 
-	return &projectImpl{
-		id:      fullQualifiedProjectFolderName,
-		configs: builder.configs,
+	return &ProjectImpl{
+		Id:      fullQualifiedProjectFolderName,
+		Configs: builder.configs,
 	}, nil
 }
 
@@ -97,13 +98,13 @@ func warnIfProjectNameClashesWithApiName(projectFolderName string, apis map[stri
 }
 
 func (p *projectBuilder) readFolder(folder string, isProjectRoot bool) error {
-	files, err := afero.ReadDir(p.fs, folder)
+	filesInFolder, err := afero.ReadDir(p.fs, folder)
 
 	if util.CheckError(err, "Folder "+folder+" could not be read") {
 		return err
 	}
 
-	for _, file := range files {
+	for _, file := range filesInFolder {
 
 		fullFileName := filepath.Join(folder, file.Name())
 
@@ -112,7 +113,7 @@ func (p *projectBuilder) readFolder(folder string, isProjectRoot bool) error {
 			if err != nil {
 				return err
 			}
-		} else if !isProjectRoot && isYaml(file.Name()) {
+		} else if !isProjectRoot && files.IsYaml(file.Name()) {
 			err = p.processYaml(fullFileName)
 		}
 	}
@@ -187,14 +188,11 @@ func (p *projectBuilder) processConfigSection(properties map[string]map[string]s
 func (p *projectBuilder) standardizeLocation(location string, folderPath string) string {
 
 	if strings.HasPrefix(location, string(os.PathSeparator)) {
-
 		// add project root to location
-		location = strings.Join([]string{p.projectRootFolder, location[1:]}, string(os.PathSeparator))
-		// remove leading / from location
-		location = strings.TrimLeft(location, string(os.PathSeparator))
+		location = filepath.Join(p.projectRootFolder, location)
 	} else {
 		// add folder + location
-		location = folderPath + string(os.PathSeparator) + location
+		location = filepath.Join(folderPath, location)
 	}
 	return location
 }
@@ -237,10 +235,6 @@ func (p *projectBuilder) getConfigTypeFromLocation(location string) (error, api.
 	return errors.New("API was unknown. Not found in " + location), nil
 }
 
-func isYaml(file string) bool {
-	return strings.HasSuffix(file, ".yaml")
-}
-
 func (p *projectBuilder) sortConfigsAccordingToDependencies() error {
 
 	configs, err := sortConfigurations(p.configs)
@@ -251,13 +245,13 @@ func (p *projectBuilder) sortConfigsAccordingToDependencies() error {
 }
 
 // GetConfigs returns the configs for this project
-func (p *projectImpl) GetConfigs() []config.Config {
-	return p.configs
+func (p *ProjectImpl) GetConfigs() []config.Config {
+	return p.Configs
 }
 
 // GetConfig searches for a config with the given id in the current project
 // If no such config is found, an error is returned
-func (p *projectImpl) GetConfig(id string) (config config.Config, err error) {
+func (p *ProjectImpl) GetConfig(id string) (config config.Config, err error) {
 	for _, config := range p.GetConfigs() {
 		if id == config.GetFullQualifiedId() {
 			return config, err
@@ -268,15 +262,15 @@ func (p *projectImpl) GetConfig(id string) (config config.Config, err error) {
 }
 
 // GetId returns the id for this project
-func (p *projectImpl) GetId() string {
-	return p.id
+func (p *ProjectImpl) GetId() string {
+	return p.Id
 }
 
 // HasDependencyOn checks if one project depends on the given parameter config
 // Having a dependency means, that the project having the dependency needs to be applied AFTER the project it depends on
-func (p *projectImpl) HasDependencyOn(project Project) bool {
+func (p *ProjectImpl) HasDependencyOn(project Project) bool {
 
-	for _, myConfig := range p.configs {
+	for _, myConfig := range p.Configs {
 		for _, otherConfig := range project.GetConfigs() {
 			if myConfig.HasDependencyOn(otherConfig) {
 				return true
