@@ -40,10 +40,9 @@ func createTestConfig(name string, filePrefix string, property string) config.Co
 	path := strings.Split(filePrefix, string(os.PathSeparator))
 	zoneId := path[len(path)-2 : len(path)-1]
 	project := strings.Join(path[0:len(path)-2], string(os.PathSeparator))
-	fileReaderMock := util.CreateTestFileSystem()
 	var testManagementZoneApi = api.NewStandardApi(zoneId[0], "/api/config/v1/foobar")
 
-	configA := config.GetMockConfig(fileReaderMock, name, project, nil, propA, testManagementZoneApi, filePrefix+name+".json")
+	configA := config.GetMockConfig(name, project, nil, propA, testManagementZoneApi, filePrefix+name+".json")
 
 	return configA
 }
@@ -126,17 +125,17 @@ func TestFailsOnCircularProjectDependency(t *testing.T) {
 	pathC := util.ReplacePathSeparators("my-project/management-zone/")
 	configA := createTestConfig("zone-a", pathA, "foo")
 	configB := createTestConfig("profile", pathB, pathC+"zone-b.id")
-	projectA := &projectImpl{
-		id:      "A",
-		configs: []config.Config{configB, configA},
+	projectA := &ProjectImpl{
+		Id:      "A",
+		Configs: []config.Config{configB, configA},
 	}
 
 	pathD := util.ReplacePathSeparators("my-project/alerting-profile/")
 	configC := createTestConfig("zone-b", pathC, "foo")
 	configD := createTestConfig("profile", pathD, pathA+"zone-a.id")
-	projectB := &projectImpl{
-		id:      "B",
-		configs: []config.Config{configC, configD},
+	projectB := &ProjectImpl{
+		Id:      "B",
+		Configs: []config.Config{configC, configD},
 	}
 
 	projects := []Project{projectB, projectA} // reverse ordering
@@ -157,18 +156,18 @@ func TestSortingByProjectDependency_1(t *testing.T) {
 	pathB := util.ReplacePathSeparators("projects/infrastructure/alerting-profile/")
 	configA := createTestConfig("zone-a", pathA, "foo")
 	configB := createTestConfig("profile", pathB, pathA+"zone-a.id")
-	projectA := &projectImpl{
-		id:      "A",
-		configs: []config.Config{configB, configA},
+	projectA := &ProjectImpl{
+		Id:      "A",
+		Configs: []config.Config{configB, configA},
 	}
 
 	pathC := util.ReplacePathSeparators("my-project/management-zone/")
 	pathD := util.ReplacePathSeparators("my-project/alerting-profile/")
 	configC := createTestConfig("zone-a", pathC, "foo")
 	configD := createTestConfig("profile", pathD, pathA+"zone-a.id")
-	projectB := &projectImpl{
-		id:      "B",
-		configs: []config.Config{configC, configD},
+	projectB := &ProjectImpl{
+		Id:      "B",
+		Configs: []config.Config{configC, configD},
 	}
 
 	projects := []Project{projectB, projectA} // reverse ordering
@@ -192,22 +191,22 @@ func TestSortingByProjectDependency_2(t *testing.T) {
 	pathX := util.ReplacePathSeparators("projects/token/alerting-profile/")
 	configA := createTestConfig("zone-a", pathA, pathX+"later.id")
 	configB := createTestConfig("profile", pathB, pathA+"zone-a.id")
-	projectA := &projectImpl{
-		id:      "A",
-		configs: []config.Config{configB, configA},
+	projectA := &ProjectImpl{
+		Id:      "A",
+		Configs: []config.Config{configB, configA},
 	}
 
 	pathD := util.ReplacePathSeparators("projects/my-project/alerting-profile/")
 	configD := createTestConfig("profile", pathD, pathA+"zone-a.id")
-	projectB := &projectImpl{
-		id:      "B",
-		configs: []config.Config{configD},
+	projectB := &ProjectImpl{
+		Id:      "B",
+		Configs: []config.Config{configD},
 	}
 
 	configX := createTestConfig("later", pathX, "special")
-	projectX := &projectImpl{
-		id:      "X",
-		configs: []config.Config{configX},
+	projectX := &ProjectImpl{
+		Id:      "X",
+		Configs: []config.Config{configX},
 	}
 
 	projects := []Project{projectB, projectA, projectX}
@@ -236,29 +235,29 @@ func TestSortingByProjectDependency_3(t *testing.T) {
 	pathX := util.ReplacePathSeparators("projects/token/alerting-profile/")
 	configA := createTestConfig("zone-a", pathA, pathX+"profileX.id")
 	configB := createTestConfig("profile", pathB, pathA+"zone-a.id")
-	projectA := &projectImpl{
-		id:      "A",
-		configs: []config.Config{configB, configA},
+	projectA := &ProjectImpl{
+		Id:      "A",
+		Configs: []config.Config{configB, configA},
 	}
 
 	pathD := util.ReplacePathSeparators("projects/my-project/alerting-profile/")
 	configD := createTestConfig("profile", pathD, pathA+"zone-a.id")
-	projectB := &projectImpl{
-		id:      "B",
-		configs: []config.Config{configD},
+	projectB := &ProjectImpl{
+		Id:      "B",
+		Configs: []config.Config{configD},
 	}
 
 	configX := createTestConfig("profileX", pathX, "special")
 	configX2 := createTestConfig("depOnY", pathX, pathX+"profileY.name")
-	projectX := &projectImpl{
-		id:      "X",
-		configs: []config.Config{configX, configX2},
+	projectX := &ProjectImpl{
+		Id:      "X",
+		Configs: []config.Config{configX, configX2},
 	}
 
 	configY := createTestConfig("profileY", pathX, "special")
-	projectY := &projectImpl{
-		id:      "Y",
-		configs: []config.Config{configY},
+	projectY := &ProjectImpl{
+		Id:      "Y",
+		Configs: []config.Config{configY},
 	}
 
 	projects := []Project{projectB, projectY, projectA, projectX}
@@ -299,21 +298,21 @@ func TestSortingByProjectDependency_4(t *testing.T) {
 	pathX := util.ReplacePathSeparators("projects/token/alerting-profile/")
 	configA := createTestConfig("zone-a", pathA, pathX+"later.id")
 	configB := createTestConfig("profile", pathB, pathA+"zone-a.id")
-	projectA := &projectImpl{
-		id:      "A",
-		configs: []config.Config{configB, configA},
+	projectA := &ProjectImpl{
+		Id:      "A",
+		Configs: []config.Config{configB, configA},
 	}
 
 	configD := createTestConfig("profile", pathA, pathX+"later.id")
-	projectB := &projectImpl{
-		id:      "B",
-		configs: []config.Config{configD},
+	projectB := &ProjectImpl{
+		Id:      "B",
+		Configs: []config.Config{configD},
 	}
 
 	configX := createTestConfig("later", pathX, "special")
-	projectX := &projectImpl{
-		id:      "X",
-		configs: []config.Config{configX},
+	projectX := &ProjectImpl{
+		Id:      "X",
+		Configs: []config.Config{configX},
 	}
 
 	projects := []Project{projectB, projectA, projectX}
@@ -343,28 +342,28 @@ func TestSortingByProjectDependency_5(t *testing.T) {
 	configA := createTestConfig("zone-a", pathA, pathX+"profileX.id")
 	configB := createTestConfig("profile", pathB, pathA+"zone-a.id")
 	configC := createTestConfig("depOnY", pathX, pathX+"profileY.name")
-	projectA := &projectImpl{
-		id:      "A",
-		configs: []config.Config{configB, configA, configC},
+	projectA := &ProjectImpl{
+		Id:      "A",
+		Configs: []config.Config{configB, configA, configC},
 	}
 
 	pathD := util.ReplacePathSeparators("projects/my-project/alerting-profile/")
 	configD := createTestConfig("profile", pathD, pathA+"zone-a.id")
-	projectB := &projectImpl{
-		id:      "B",
-		configs: []config.Config{configD},
+	projectB := &ProjectImpl{
+		Id:      "B",
+		Configs: []config.Config{configD},
 	}
 
 	configX := createTestConfig("profileX", pathX, "special")
-	projectX := &projectImpl{
-		id:      "X",
-		configs: []config.Config{configX},
+	projectX := &ProjectImpl{
+		Id:      "X",
+		Configs: []config.Config{configX},
 	}
 
 	configY := createTestConfig("profileY", pathX, "special")
-	projectY := &projectImpl{
-		id:      "Y",
-		configs: []config.Config{configY},
+	projectY := &ProjectImpl{
+		Id:      "Y",
+		Configs: []config.Config{configY},
 	}
 
 	projects := []Project{projectB, projectY, projectA, projectX}

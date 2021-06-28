@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
 )
 
 // JsonValidationError is an error which contains more information about
@@ -32,7 +34,7 @@ type JsonValidationError struct {
 
 	// FileName is the file name (full qualified) where the error happened
 	// This field is always filled.
-	FileName string
+	Location Location
 	// LineNumber contains the line number (starting by one) where the error happened
 	// If we don't have the information, this is -1.
 	LineNumber int
@@ -49,9 +51,18 @@ type JsonValidationError struct {
 	Cause error
 }
 
-func (e JsonValidationError) Error() string {
-	return fmt.Sprintf("file %s is not a valid json: Error: %s", e.FileName, e.Cause.Error())
+var (
+	_ PrettyPrintableError = (*JsonValidationError)(nil)
+)
+
+func (e *JsonValidationError) Error() string {
+	return fmt.Sprintf("rendered template `%s` is not a valid json: Error: %s",
+		e.Location.TemplateFilePath, e.Cause.Error())
 }
+
+var (
+	_ error = (*JsonValidationError)(nil)
+)
 
 // ContainsLineInformation indicates whether additional line information is present in
 // the error.
@@ -67,54 +78,57 @@ const errorTemplate = `File did not contain valid json:
  %s - Cause: %s
 `
 
-func (e *JsonValidationError) PrettyPrintError() {
+func (e *JsonValidationError) PrettyError() string {
 
 	if e.ContainsLineInformation() {
-
 		lengthOfLineNum := len(strconv.Itoa(e.LineNumber))
 		whiteSpace := strings.Repeat(" ", lengthOfLineNum)
 		whiteSpaceOffset := strings.Repeat(" ", e.CharacterNumberInLine-1)
 		lineContent := strings.Replace(e.LineContent, "\t", " ", -1)
 		previousLineContent := strings.Replace(e.PreviousLineContent, "\t", " ", -1)
 
-		Log.Error("\t"+errorTemplate, e.FileName, e.LineNumber, e.CharacterNumberInLine,
+		return fmt.Sprintf(errorTemplate,
+			e.Location.TemplateFilePath, e.LineNumber, e.CharacterNumberInLine,
 			whiteSpace, previousLineContent,
 			e.LineNumber, lineContent,
 			whiteSpace, whiteSpaceOffset,
 			whiteSpace, e.Cause.Error())
 	}
+
+	return e.Error()
 }
 
-// ValidateJson validates whether the json file is correct, by using the internal validation done
-// when unmarshalling to a an object. As none of our jsons can actually be unmarshalled
-// to a string, we catch that error, but report any other error as fatal. We then return the parsed
-// json object.
-func ValidateAndParseJson(jsonString string, filename string) (map[string]interface{}, error) {
+type Location struct {
+	Coordinate       coordinate.Coordinate
+	Group            string
+	Environment      string
+	TemplateFilePath string
+}
+
+func ValidateJson(data string, location Location) error {
 	var result map[string]interface{}
-	err := json.Unmarshal([]byte(jsonString), &result)
+	err := json.Unmarshal([]byte(data), &result)
 
-	if jsonError, ok := err.(*json.SyntaxError); ok {
-		return nil, mapError(jsonString, filename, int(jsonError.Offset), err)
+	if err == nil {
+		return nil
 	}
-	if _, ok := err.(*json.UnmarshalTypeError); ok {
+
+	switch e := err.(type) {
+	case *json.SyntaxError:
+		return mapError(data, location, int(e.Offset), err)
+	case *json.UnmarshalTypeError:
 		// TODO actually check against the model (github issue #104)
-		return result, nil
+		return nil
 	}
-	return result, nil
-}
 
-func ValidateJson(json string, filename string) error {
-	_, err := ValidateAndParseJson(json, filename)
-
-	return err
+	return nil
 }
 
 // mapError maps the json parsing error to a JsonValidationError which contains
 // the line number, character number, and line in which the error happened
-func mapError(input string, filename string, offset int, err error) (mappedError JsonValidationError) {
-
+func mapError(input string, location Location, offset int, err error) error {
 	if offset > len(input) || offset < 0 {
-		return newEmptyErr(filename, err)
+		return newEmptyErr(location, err)
 	}
 
 	var characterCountToEndOfPrevLine = 0
@@ -124,8 +138,8 @@ func mapError(input string, filename string, offset int, err error) (mappedError
 	for i, line := range lines {
 		if offset <= characterCountToEndOfPrevLine+len(line) {
 
-			return JsonValidationError{
-				FileName:              filename,
+			return &JsonValidationError{
+				Location:              location,
 				LineNumber:            i + 1, // humans tend to count from 1
 				CharacterNumberInLine: offset - characterCountToEndOfPrevLine,
 				LineContent:           line,
@@ -137,14 +151,14 @@ func mapError(input string, filename string, offset int, err error) (mappedError
 		previousLineContent = line
 	}
 
-	return newEmptyErr(filename, err)
+	return newEmptyErr(location, err)
 }
 
 // newEmptyErr constructs an empty error without line number, character number,
 // and line in which the error happened
-func newEmptyErr(filename string, err error) JsonValidationError {
-	return JsonValidationError{
-		FileName:              filename,
+func newEmptyErr(location Location, err error) error {
+	return &JsonValidationError{
+		Location:              location,
 		LineNumber:            -1,
 		CharacterNumberInLine: -1,
 		LineContent:           "",

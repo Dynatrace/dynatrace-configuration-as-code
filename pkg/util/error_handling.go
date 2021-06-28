@@ -21,12 +21,34 @@ import (
 	"os"
 )
 
+type PrettyPrintableError interface {
+	PrettyError() string
+}
+
+func ErrorString(err error) string {
+	if err == nil {
+		return "<nil>"
+	}
+
+	var prettyPrintError PrettyPrintableError
+
+	if errors.As(err, &prettyPrintError) {
+		return prettyPrintError.PrettyError()
+	} else {
+		return err.Error()
+	}
+}
+
 // PrintError should pretty-print the error using a more user-friendly format
 func PrintError(err error) {
-	if ppError, ok := err.(JsonValidationError); ok {
-		ppError.PrettyPrintError()
+	var prettyPrintError PrettyPrintableError
+
+	if errors.As(err, &prettyPrintError) {
+		Log.Error(prettyPrintError.PrettyError())
 	} else {
-		Log.Error("\t%s", err)
+		if err != nil {
+			Log.Error(err.Error())
+		}
 	}
 }
 

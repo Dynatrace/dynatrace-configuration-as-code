@@ -23,6 +23,8 @@ import (
 
 	"gotest.tools/assert"
 
+	"fmt"
+
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 )
 
@@ -50,7 +52,7 @@ func TestValidationSkipDeploymentWithBrokenDependency(t *testing.T) {
 		skipDeploymentFolder,
 	}, util.CreateTestFileSystem())
 
-	assert.Assert(t, statusCode != 0, "Status code should be error")
+	assert.Assert(t, statusCode != 0, fmt.Sprintf("Status code (%d) should be error", statusCode))
 }
 
 func TestValidationSkipDeploymentWithOverridingDependency(t *testing.T) {

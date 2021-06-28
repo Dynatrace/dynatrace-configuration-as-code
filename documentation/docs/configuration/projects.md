@@ -2,22 +2,67 @@
 sidebar_position: 3
 ---
 
-# Configuration Structure
+# Projects
 
-Configuration files are ordered by `project` in the projects folder. Project folder can only contain:
+A project is a folder containing, which contains specially named
+sub-folders, representing APIs. This API folders then contain another
+layer of folders defining confiugrations. Then finally, this configuration
+folders contain yaml files, specifying what gets deployed.
 
-- configurations
-- or another project(s)
+## APIs
 
-This means, it is possible to group projects into folders.
+To see a list of all supported APIs and folder names, please have a
+look [here](./configTypes_tokenPermissions.md).
 
-Combining projects and configurations in same folder is not supported.
+## Configurations
 
-There is no restriction in the depth of projects tree.
+Configurations consists of two parts:
+- Yaml defining parameters, dependencies, name and template
+- JSON Template file
 
-To get an idea, what are the possible combinations take a look at `cmd/monaco/test-resources/integration-multi-project`.
+### Configuration Yaml
 
-## Config JSON Templates
+Contains basic information about the config to deploy. This includes
+the name of the config, the location of the template file and parameters
+usable in the template file. Parameters can be overwritten based on what
+group or environment is currently deployed.
+
+For more details on the configuration syntax, see [here](yaml_config.md).
+
+### JSON Template File
+
+The JSON template contains the payload, which will get uploaded to the dynatrace
+api endpoints. It allows you to reference all defined parameters of the configuration
+via `{{ .[PARAMETER_NAME] }}` syntax.
+
+Here is a basic example of how such a JSON might look like:
+```json
+{
+    "name": "{{ .name }}",
+    "type": "{{ .type }}"
+}
+```
+
+And here the corresponding config yaml:
+```yaml
+configs:
+- id: sample
+  config:
+    name: "Sample"
+    parameters:
+      type: "simple"
+```
+
+As you can see, it is also possible to reference the name of a configuration.
+
+Under the hood monaco uses a technology called GO templates. In theory, they allow
+you do define more complex templates, but it is **highly** recommended to keep templates
+**as simple as possible**. This means that only knowing about referncing variables via
+`{{ .[PARAMETER_NAME] }}` should be more than enough!
+
+Here a [link](https://golang.org/pkg/text/template/) to the GO template documentation.
+
+#### Things you should know
 
 The `json` files that can be uploaded with this tool are the jsons object that the respective Dynatrace APIs accept/return.
 
@@ -34,18 +79,6 @@ Checked in configuration should not include:
 * Empty/null values that are optional to when creating an object.
   * Most API GET endpoints return more data than needed to create an object. Many of those fields are empty or null, and can just be omited.
   * e.g. `tileFilter`s on dashboards
-
-The tool handles these files as templates, so you can use variables in the format
-
-```
-{{ .variable }}
-```
-
-inside the config json.
-
-Variables present in the template need to be defined in the respective config `yaml` - [see 'Configuration YAML Structure'](#configuration-yaml-structure).
-
-#### Things you should know
 
 ##### Dashboard JSON
 
@@ -86,11 +119,11 @@ From Dynatrace version 208 onwards, a dashboard configuration must:
 
 ##### Calculated log metrics JSON
 
-There is a know drawback to `monaco`'s workaround to the slightly off-standard API for Calculated Log Metrics, which needs you to follow specific naming conventions for your configuration: 
+There is a know drawback to `monaco`'s workaround to the slightly off-standard API for Calculated Log Metrics, which needs you to follow specific naming conventions for your configuration:
 
-When you create custom log metrics, your configurations `name` needs to be the `metricKey` of the log metric. 
+When you create custom log metrics, your configurations `name` needs to be the `metricKey` of the log metric.
 
-Additionally it is possible that configuration upload fails when a metric configuration is newly created and an additional configuration depends on the new log metric. To work around this, set both `metricKey` and `displayName` to the same value. 
+Additionally it is possible that configuration upload fails when a metric configuration is newly created and an additional configuration depends on the new log metric. To work around this, set both `metricKey` and `displayName` to the same value.
 
 You will thus need to reference at least the `metricKey` of the log metric as `{{ .name }}` in the JSON file (as seen below).
 
@@ -102,7 +135,7 @@ some-log-metric-config:
   - name: "cal.log:this-is-some-metric"
 ```
 
-and in the corresponding JSON: 
+and in the corresponding JSON:
 ```json
 {
   "metricKey": "{{ .name }}",
@@ -147,20 +180,4 @@ Also applies to the `SERVICE` type. eg.
   "displayName": "{{ .name }}",
   ...
 }
-```
-
-### Configuration Types / APIs
-
-Each such type folder must contain one `configuration yaml` and one or more `json` files containing the actual configuration send to the Dynatrace API.
-The folder name is case-sensitive and needs to be written exactly as in its definition in [Supported Configuration Types](#supported-configuration-types).
-
-e.g.
-
-```
-projects/
-        {projectname}/
-                     {configuration type}/
-                                         config.yaml
-                                         config1.json
-                                         config2.json
 ```

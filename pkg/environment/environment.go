@@ -29,6 +29,7 @@ type Environment interface {
 	GetEnvironmentUrl() string
 	GetToken() (string, error)
 	GetGroup() string
+	GetTokenName() string
 }
 
 type environmentImpl struct {
@@ -119,6 +120,10 @@ func (s *environmentImpl) GetToken() (string, error) {
 		return value, fmt.Errorf("environment variable " + s.envTokenName + " not found")
 	}
 	return value, nil
+}
+
+func (s *environmentImpl) GetTokenName() string {
+	return s.envTokenName
 }
 
 func (s *environmentImpl) GetGroup() string {

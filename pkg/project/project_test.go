@@ -158,8 +158,8 @@ func TestProcessConfigSection(t *testing.T) {
 	m["config"]["test1"] = util.ReplacePathSeparators("/test/management-zone/zoneA.json")
 	m["config"]["test2"] = util.ReplacePathSeparators("/test/alerting-profile/profile.json")
 
-	zoneA := util.ReplacePathSeparators("test/management-zone/zoneA.json")
-	profile := util.ReplacePathSeparators("test/alerting-profile/profile.json")
+	zoneA := util.ReplacePathSeparators("/test/management-zone/zoneA.json")
+	profile := util.ReplacePathSeparators("/test/alerting-profile/profile.json")
 	factory.EXPECT().NewConfig(fs, "test1", "testProject", zoneA, m, testManagementZoneApi).Times(1)
 	factory.EXPECT().NewConfig(fs, "test2", "testProject", profile, m, testAlertingProfileApi).Times(1)
 
@@ -191,14 +191,6 @@ func TestProcessConfigSectionWithProjectRootParameter(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestIsYaml(t *testing.T) {
-
-	assert.Check(t, isYaml("test.yaml"))
-	assert.Check(t, isYaml("foo/test.yaml"))
-	assert.Check(t, !isYaml("foo/test.json"))
-	assert.Check(t, !isYaml(""))
-}
-
 func TestStandardizeLocationWithAbsolutePath(t *testing.T) {
 
 	builder := testCreateProjectBuilder("")
@@ -207,8 +199,8 @@ func TestStandardizeLocationWithAbsolutePath(t *testing.T) {
 	standardizedLocation := builder.standardizeLocation(json, "foo")
 	standardizedLocation1 := builder.standardizeLocation(json1, "foo")
 
-	expected := util.ReplacePathSeparators("general/dashboard/dashboard.json")
-	expected1 := util.ReplacePathSeparators("cluster/general/dashboard/dashboard.json")
+	expected := util.ReplacePathSeparators("/general/dashboard/dashboard.json")
+	expected1 := util.ReplacePathSeparators("/cluster/general/dashboard/dashboard.json")
 	assert.Equal(t, expected, standardizedLocation)
 	assert.Equal(t, expected1, standardizedLocation1)
 }
@@ -254,8 +246,8 @@ func TestProcessYaml(t *testing.T) {
 	yamlFile := util.ReplacePathSeparators("test/dashboard/test-file.yaml")
 
 	factory.EXPECT().
-		NewConfig(fs, "dashboard", "testproject", util.ReplacePathSeparators("test/dashboard/my-project-dashboard.json"), gomock.Any(), testDashboardApi).
-		Return(config.GetMockConfig(fs, "my-project-dashboard", "testproject", nil, properties, testDashboardApi, util.ReplacePathSeparators("dashboard/test-file.yaml")), nil)
+		NewConfig(gomock.Any(), "dashboard", "testproject", util.ReplacePathSeparators("test/dashboard/my-project-dashboard.json"), gomock.Any(), testDashboardApi).
+		Return(config.GetMockConfig("my-project-dashboard", "testproject", nil, properties, testDashboardApi, util.ReplacePathSeparators("dashboard/test-file.yaml")), nil)
 
 	err = builder.processYaml(yamlFile)
 

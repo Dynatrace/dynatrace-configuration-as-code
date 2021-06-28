@@ -36,7 +36,6 @@ import (
 func LoadProjectsToDeploy(fs afero.Fs, specificProjectToDeploy string, apis map[string]api.Api, path string) (projectsToDeploy []Project, err error) {
 
 	projectsFolder := filepath.Clean(path)
-	projectsToDeploy = make([]Project, 0)
 
 	util.Log.Debug("Reading projects...")
 
