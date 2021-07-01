@@ -131,8 +131,6 @@ application-tagging-multiproject:
 
 In this example, `application-tagging.json` is located in `auto-tag` folder of same project and the path to it
 can be defined relative to `auto-tag.yaml` file. But, what if you would like to reuse one template defined outside of this project?
- can be defined relative to `auto-tag.yaml` file. But, what if you would like to reuse one template defined outside of this project?
-can be defined relative to `auto-tag.yaml` file. But, what if you would like to reuse one template defined outside of this project?
 In this case, you need to define a full path of json template:
 
 **testproject/auto-tag/auto-tag.yaml:**
