@@ -36,13 +36,13 @@ This is an example using `curl`. If you don't have `curl`, install it, or use `w
 ```shell
 # Linux
 # x64
-$ curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/v1.5.2/monaco-linux-amd64 -o monaco
+$ curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/v1.6.0/monaco-linux-amd64 -o monaco
 
 # x86
-$ curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/v1.5.2/monaco-linux-386 -o monaco
+$ curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/v1.6.0/monaco-linux-386 -o monaco
 
 # macOS
-$ curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/v1.5.2/monaco-darwin-10.12-amd64 -o monaco
+$ curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/v1.6.0/monaco-darwin-10.12-amd64 -o monaco
 ```
 
 Make the binary executable:
@@ -65,24 +65,34 @@ $ sudo mv ~/Downloads/monaco /usr/local/bin/
 $ monaco
 You are currently using the old CLI structure which will be used by
 default until monaco version 2.0.0
+
 Check out the beta of the new CLI by adding the environment variable
   "NEW_CLI".
+
 We can't wait for your feedback.
+
 NAME:
-   monaco-linux-amd64 - Automates the deployment of Dynatrace Monitoring Configuration to one or multiple Dynatrace environments.
+   monaco - Automates the deployment of Dynatrace Monitoring Configuration to one or multiple Dynatrace environments.
+
 USAGE:
-   monaco-linux-amd64 [global options] command [command options] [working directory]
+   monaco [global options] command [command options] [working directory]
+
 VERSION:
-   1.5.1
+   1.6.0
+
 DESCRIPTION:
    Tool used to deploy dynatrace configurations via the cli
+
    Examples:
      Deploy a specific project inside a root config folder:
        monaco -p='project-folder' -e='environments.yaml' projects-root-folder
+
      Deploy a specific project to a specific tenant:
        monaco --environments environments.yaml --specific-environment dev --project myProject
+
 COMMANDS:
    help, h  Shows a list of commands or help for one command
+
 GLOBAL OPTIONS:
    --verbose, -v                             (default: false)
    --environments value, -e value            Yaml file containing environments to deploy to
@@ -103,7 +113,7 @@ Verify the installation by running `monaco`  from your terminal.
 
 ```shell
 $ monaco
-YYou are currently using the old CLI structure which will be used by
+You are currently using the old CLI structure which will be used by
 default until monaco version 2.0.0
 
 Check out the beta of the new CLI by adding the environment variable
