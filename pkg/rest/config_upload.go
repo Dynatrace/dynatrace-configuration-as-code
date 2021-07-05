@@ -188,13 +188,23 @@ func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, ob
 		return "", err
 	}
 
+	var configName = ""
+	var configsFound = 0
 	for i := 0; i < len(values); i++ {
 		value := values[i]
 		if value.Name == objectName {
-			return value.Id, nil
+			if configsFound == 0 {
+				configName = value.Id
+			}
+			configsFound++
+
 		}
 	}
-	return "", nil
+
+	if configsFound > 1 {
+		util.Log.Error("\t\t\tFound %d configs with same name: %s. Please delete duplicates.", configsFound, objectName)
+	}
+	return configName, nil
 }
 
 func isApiDashboard(api api.Api) bool {
