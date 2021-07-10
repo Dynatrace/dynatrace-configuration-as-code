@@ -17,6 +17,7 @@ package util
 import (
 	"regexp"
 
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
 
@@ -31,9 +32,9 @@ func CreateTestFileSystem() afero.Fs {
 
 //SanitizeName removes special characters, limits to max 254 characters in name, no special characters
 func SanitizeName(name string) string {
-	reg, err := regexp.Compile("[^a-zA-Z0-9-]+")
+	reg, err := regexp.Compile(`[^a-zA-Z0-9-_\.]+`)
 	if err != nil {
-		Log.Error("error sanitizing the name of the config %s", err)
+		log.Error("error sanitizing the name of the config %s", err)
 	}
 	processedString := reg.ReplaceAllString(name, "")
 	runes := []rune(processedString)

@@ -24,6 +24,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
 
@@ -75,13 +76,15 @@ func newTemplate(templ *template.Template) Template {
 // in the data map. Additionally, it resolves all environment variables present in the template.
 // Important: if a variable present in the template has no corresponding entry in the data map, this method will throw
 // an error
+// In v2 config templating this is replaced by renderer.go/Render
 func (t *templateImpl) ExecuteTemplate(data map[string]string) (string, error) {
 
 	tpl := bytes.Buffer{}
 
 	dataForTemplating := addEnvVars(data)
 
-	dataForTemplating = escapeSpecialCharacters(dataForTemplating)
+	// replace \n with \\n
+	dataForTemplating = EscapeNewlineCharacters(dataForTemplating)
 
 	err := t.template.Execute(&tpl, dataForTemplating)
 	if CheckError(err, "Could not execute template") {
@@ -109,7 +112,7 @@ func addEnvVars(properties map[string]string) map[string]interface{} {
 		}
 
 		if _, ok := properties[split[0]]; ok {
-			Log.Info("Environment variable %s also defined as property. Was that your intention?", split[0])
+			log.Info("Environment variable %s also defined as property. Was that your intention?", split[0])
 		}
 
 		envVars[split[0]] = split[1]
@@ -118,9 +121,9 @@ func addEnvVars(properties map[string]string) map[string]interface{} {
 	return data
 }
 
-// escapeSpecialCharacters walks recursively though the map and escapes all special characters that can't just be written to the
-// json template. characters that will be escaped: newlines (\n), double quotes (\")
-func escapeSpecialCharacters(properties map[string]interface{}) map[string]interface{} {
+// EscapeNewlineCharacters walks recursively though the map and replaces all newlines in strings with the escaped string '\n'.
+// Note: this is in use in both v1 and v2 config templating
+func EscapeNewlineCharacters(properties map[string]interface{}) map[string]interface{} {
 
 	escapedProperties := make(map[string]interface{}, len(properties))
 
@@ -132,9 +135,9 @@ func escapeSpecialCharacters(properties map[string]interface{}) map[string]inter
 		case map[string]string:
 			escapedProperties[key] = escapeSpecialCharactersForStringMap(field)
 		case map[string]interface{}:
-			escapedProperties[key] = escapeSpecialCharacters(field)
+			escapedProperties[key] = EscapeNewlineCharacters(field)
 		default:
-			Log.Debug("Unknown value type %v in property %v.", reflect.TypeOf(value), key)
+			log.Debug("Unknown value type %v in property %v.", reflect.TypeOf(value), key)
 		}
 	}
 

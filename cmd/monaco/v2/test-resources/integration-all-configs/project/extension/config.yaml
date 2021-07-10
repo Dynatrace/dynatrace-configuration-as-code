@@ -1,0 +1,17 @@
+configs:
+- id: borg-human-body-extension
+  config:
+    name: custom.jmx.borg-human-body-extension
+    parameters:
+      metricErroneousTokenExchangeRate: metric_ErroneousTokenExchangeRate_1573462142415
+      metricErroneousTokenExchanges: metric_ErroneousTokenExchanges_1573462142415
+      metricOAuthTokenExchangeRate: metric_ExchangedTokenAmount_1573462769314
+      metricOAuthTokenExchanges: metric_ExchangedTokenAmount_1573458316897
+      metricOAuthVerificationResultCacheSize: metric_OAuthVerificationResultCacheSize_1573462268247
+      metricPrivateKeyRotations: metric_PrivateKeyRotations_1573462204691
+      metricPublicKeyAmount: metric_PublicKeyAmount_1573462268247
+      metricSamlTokenExchangeRate: metric_ExchangedTokenAmount_1573462753254
+      metricSamlTokenExchanges: metric_ExchangedTokenAmount_1573462075761
+      version: 1.0.0
+    template: borg-human-body-extension.json
+    skip: false

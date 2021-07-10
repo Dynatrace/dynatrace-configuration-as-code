@@ -19,6 +19,7 @@ package rest
 import (
 	"errors"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"net/http"
 	"time"
 )
@@ -60,8 +61,8 @@ func (s *simpleSleepRateLimitStrategy) executeRequest(timelineProvider util.Time
 			return response, err
 		}
 
-		util.Log.Info("Rate limit of %d requests/min reached: Applying rate limit strategy (simpleSleepRateLimitStrategy, iteration: %d)", limit, currentIteration+1)
-		util.Log.Info("simpleSleepRateLimitStrategy: Attempting to sleep until %s", humanReadableTimestamp)
+		log.Info("Rate limit of %d requests/min reached: Applying rate limit strategy (simpleSleepRateLimitStrategy, iteration: %d)", limit, currentIteration+1)
+		log.Info("simpleSleepRateLimitStrategy: Attempting to sleep until %s", humanReadableTimestamp)
 
 		// Attention: this uses client time:
 		now := timelineProvider.Now()
@@ -71,14 +72,14 @@ func (s *simpleSleepRateLimitStrategy) executeRequest(timelineProvider util.Time
 
 		// Attention: this mixes client and server time:
 		sleepDuration := resetTime.Sub(now)
-		util.Log.Debug("simpleSleepRateLimitStrategy: Calculated sleep duration of %f seconds...", sleepDuration.Seconds())
+		log.Debug("simpleSleepRateLimitStrategy: Calculated sleep duration of %f seconds...", sleepDuration.Seconds())
 
 		// That's why we need plausible min/max wait time defaults:
 		sleepDuration = s.applyMinMaxDefaults(sleepDuration)
 
-		util.Log.Debug("simpleSleepRateLimitStrategy: Sleeping for %f seconds...", sleepDuration.Seconds())
+		log.Debug("simpleSleepRateLimitStrategy: Sleeping for %f seconds...", sleepDuration.Seconds())
 		timelineProvider.Sleep(sleepDuration)
-		util.Log.Debug("simpleSleepRateLimitStrategy: Slept for %f seconds", sleepDuration.Seconds())
+		log.Debug("simpleSleepRateLimitStrategy: Slept for %f seconds", sleepDuration.Seconds())
 
 		// Checking again:
 		currentIteration++
@@ -120,11 +121,11 @@ func (s *simpleSleepRateLimitStrategy) applyMinMaxDefaults(sleepDuration time.Du
 
 	if sleepDuration.Nanoseconds() < minWaitTimeInNanoseconds.Nanoseconds() {
 		sleepDuration = minWaitTimeInNanoseconds
-		util.Log.Debug("simpleSleepRateLimitStrategy: Reset sleep duration to %f seconds...", sleepDuration.Seconds())
+		log.Debug("simpleSleepRateLimitStrategy: Reset sleep duration to %f seconds...", sleepDuration.Seconds())
 	}
 	if sleepDuration.Nanoseconds() > maxWaitTimeInNanoseconds.Nanoseconds() {
 		sleepDuration = maxWaitTimeInNanoseconds
-		util.Log.Debug("simpleSleepRateLimitStrategy: Reset sleep duration to %f seconds...", sleepDuration.Seconds())
+		log.Debug("simpleSleepRateLimitStrategy: Reset sleep duration to %f seconds...", sleepDuration.Seconds())
 	}
 	return sleepDuration
 }

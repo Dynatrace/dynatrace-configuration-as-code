@@ -128,7 +128,7 @@ func TestEscapeNewlineCharacters(t *testing.T) {
 		},
 	}
 
-	result := escapeSpecialCharacters(p)
+	result := EscapeNewlineCharacters(p)
 
 	expected := map[string]interface{}{
 		`string without newline`: `just some string`,
@@ -154,9 +154,7 @@ func TestEscapeNewlineCharactersWithEmptyMap(t *testing.T) {
 
 	empty := map[string]interface{}{}
 
-	res := escapeSpecialCharacters(empty)
-
-	assert.DeepEqual(t, res, empty)
+	assert.DeepEqual(t, EscapeNewlineCharacters(empty), empty)
 }
 
 func Test_escapeCharactersForJson(t *testing.T) {

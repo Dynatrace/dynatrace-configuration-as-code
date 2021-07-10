@@ -39,6 +39,19 @@ var nameReplacingPostfixFunc = func(line string) string {
 	return ReplaceName(line, appendNameFunc)
 }
 
+var nameReplacingPostfixFuncForFileContent = func(fileContent string) string {
+
+	var result = ""
+	lines := strings.Split(fileContent, "\n")
+	for i, line := range lines {
+		result += ReplaceName(line, appendNameFunc)
+		if i < len(lines)-1 {
+			result += "\n"
+		}
+	}
+	return result
+}
+
 var nameReplacingPrefixFunc = func(line string) string {
 	return ReplaceName(line, prependNameFunc)
 }
@@ -58,6 +71,26 @@ func TestReplaceNameMatching(t *testing.T) {
 	assert.Equal(t, "	-name: test_postfix  ", nameReplacingPostfixFunc("	-name: test  "))
 	assert.Equal(t, "	-name: \"test_postfix\"  ", nameReplacingPostfixFunc("	-name: \"test\"  "))
 	assert.Equal(t, "	-name: 'test_postfix'  ", nameReplacingPostfixFunc("	-name: 'test'  "))
+}
+
+func TestReplaceNameMatchingConfigV2(t *testing.T) {
+
+	const configV2Config = `configs:
+- id: profile
+  config:
+    name: Star Trek Service
+    template: profile.json
+    skip: false`
+
+	const configV2ConfigExpected = `configs:
+- id: profile
+  config:
+    name: Star Trek Service_postfix
+    template: profile.json
+    skip: false`
+
+	result := nameReplacingPostfixFuncForFileContent(configV2Config)
+	assert.Equal(t, configV2ConfigExpected, result)
 }
 
 func TestReplaceNameDependency(t *testing.T) {

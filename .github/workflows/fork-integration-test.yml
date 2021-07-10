@@ -42,7 +42,15 @@ jobs:
       - name: Unit Test
         run: make test
 
-      - name: Integration Test
+      - name: Integration Test V1
+        run: make integration-test-v1
+        env:
+          URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
+          URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
+          TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
+          TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
+
+      - name: Integration Test V2
         run: make integration-test
         env:
           URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}

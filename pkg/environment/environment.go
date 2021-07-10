@@ -29,6 +29,7 @@ type Environment interface {
 	GetEnvironmentUrl() string
 	GetToken() (string, error)
 	GetGroup() string
+	GetTokenName() string
 }
 
 type environmentImpl struct {
@@ -82,12 +83,17 @@ func newEnvironment(id string, properties map[string]string) (Environment, error
 		return nil, fmt.Errorf("group name must differ from environment name %s", id)
 	}
 
-	environmentName, nameErr := util.CheckProperty(properties, "name")
-	environmentUrl, urlErr := util.CheckProperty(properties, "env-url")
-	envTokenName, tokenErr := util.CheckProperty(properties, "env-token-name")
-
-	if nameErr != nil || urlErr != nil || tokenErr != nil {
-		return nil, fmt.Errorf("failed to parse config for environment %s (issues: %s %s %s)", id, nameErr, urlErr, tokenErr)
+	environmentName, err := util.CheckProperty(properties, "name")
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse config for environment %s: %v", environmentName, err)
+	}
+	environmentUrl, err := util.CheckProperty(properties, "env-url")
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse config for environment %s: %v", environmentName, err)
+	}
+	envTokenName, err := util.CheckProperty(properties, "env-token-name")
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse config for environment %s: %v", environmentName, err)
 	}
 
 	return NewEnvironment(id, environmentName, environmentGroup, environmentUrl, envTokenName), nil
@@ -119,6 +125,10 @@ func (s *environmentImpl) GetToken() (string, error) {
 		return value, fmt.Errorf("environment variable " + s.envTokenName + " not found")
 	}
 	return value, nil
+}
+
+func (s *environmentImpl) GetTokenName() string {
+	return s.envTokenName
 }
 
 func (s *environmentImpl) GetGroup() string {

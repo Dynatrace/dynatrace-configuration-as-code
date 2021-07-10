@@ -20,7 +20,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 )
 
 func Wait(description string, maxPollCount int, condition func() bool) error {
@@ -33,7 +33,7 @@ func Wait(description string, maxPollCount int, condition func() bool) error {
 		time.Sleep(2 * time.Second)
 	}
 
-	util.Log.Error("Error: Waiting for '%s' timed out!", description)
+	log.Error("Error: Waiting for '%s' timed out!", description)
 
 	return errors.New("Waiting for '" + description + "' timed out!")
 }

@@ -1,0 +1,20 @@
+{
+    "name": "{{ .name }}",
+    "enabled": true,
+    "rules": [
+      {
+        "enabled": true,
+        "fileName": "AFile.js",
+        "methodRules": [
+          {
+            "methodName": "AMethod",
+            "argumentTypes": [
+              "java.lang.String"
+            ],
+            "returnType": "void"
+          }
+        ]
+      }
+    ],
+    "queueEntryPoint": false
+  }

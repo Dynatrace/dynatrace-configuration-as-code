@@ -27,7 +27,7 @@ import (
 func LoadEnvironmentList(specificEnvironment string, environmentsFile string, fs afero.Fs) (environments map[string]Environment, errorList []error) {
 
 	if environmentsFile == "" {
-		errorList = append(errorList, errors.New("no environmentfile provided"))
+		errorList = append(errorList, errors.New("no environment file provided"))
 		return environments, errorList
 	}
 

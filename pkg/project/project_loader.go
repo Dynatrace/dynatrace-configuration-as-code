@@ -26,7 +26,7 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 )
 
 // LoadProjectsToDeploy returns a list of projects for deployment
@@ -37,7 +37,7 @@ func LoadProjectsToDeploy(fs afero.Fs, specificProjectToDeploy string, apis map[
 
 	projectsFolder := filepath.Clean(path)
 
-	util.Log.Debug("Reading projects...")
+	log.Debug("Reading projects...")
 
 	// creates list of all available projects
 	availableProjectFolders, err := getAllProjectFoldersRecursively(fs, projectsFolder)
@@ -47,7 +47,7 @@ func LoadProjectsToDeploy(fs afero.Fs, specificProjectToDeploy string, apis map[
 
 	availableProjects := make([]Project, 0)
 	for _, fullQualifiedProjectFolderName := range availableProjectFolders {
-		util.Log.Debug("  project - %s", fullQualifiedProjectFolderName)
+		log.Debug("  project - %s", fullQualifiedProjectFolderName)
 		projectFolderName := extractFolderNameFromFullPath(fullQualifiedProjectFolderName)
 		project, err := NewProject(fs, fullQualifiedProjectFolderName, projectFolderName, apis, projectsFolder)
 		if err != nil {
@@ -88,7 +88,7 @@ func LoadProjectsToDeploy(fs afero.Fs, specificProjectToDeploy string, apis map[
 }
 
 func returnSortedProjects(projectsToDeploy []Project) ([]Project, error) {
-	util.Log.Debug("Sorting projects...")
+	log.Debug("Sorting projects...")
 	projectsToDeploy, err := sortProjects(projectsToDeploy)
 	if err != nil {
 		return nil, err

@@ -1,0 +1,31 @@
+{
+  "type": "HOST",
+  "nameFormat": "MaC - {Host:DetectedName}",
+  "displayName": "{{ .name }}",
+  "enabled": true,
+  "rules": [{
+      "key": {
+        "attribute": "HOST_DETECTED_NAME"
+      },
+      "comparisonInfo": {
+        "type": "STRING",
+        "operator": "EXISTS",
+        "value": null,
+        "negate": false,
+        "caseSensitive": null
+      }
+    }, {
+      "key": {
+        "attribute": "HOST_TAGS"
+      },
+      "comparisonInfo": {
+        "type": "TAG",
+        "operator": "TAG_KEY_EQUALS",
+        "value": {
+          "context": "CONTEXTLESS",
+          "key": "Cl_Ser"
+        },
+        "negate": false
+      }
+    }]
+}

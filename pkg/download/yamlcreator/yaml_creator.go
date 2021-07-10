@@ -15,12 +15,13 @@
 package yamlcreator
 
 import (
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"io/fs"
 	"path/filepath"
 	"sort"
 	"strings"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 )
@@ -191,13 +192,13 @@ func (yc *YamlConfig) WriteYamlFile(fs afero.Fs, path string, name string) error
 
 	data, err := yc.marshalYaml(yamlConfig)
 	if err != nil {
-		util.Log.Error("error parsing yaml file: %v", err)
+		log.Error("error parsing yaml file: %v", err)
 		return err
 	}
 
 	err = yc.writeFile(fs, fullPath, data, 0664)
 	if err != nil {
-		util.Log.Error("error creating yaml file %s", name)
+		log.Error("error creating yaml file %s", name)
 		return err
 	}
 

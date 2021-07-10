@@ -1,0 +1,6 @@
+configs:
+- id: dashboard
+  config:
+    name: Alpha Quadrant
+    template: overview-dashboard.json
+    skip: false

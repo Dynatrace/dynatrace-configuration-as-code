@@ -1,5 +1,5 @@
-//go:build integration
-// +build integration
+//go:build integration || integration_v1
+// +build integration integration_v1
 
 /**
  * @license
@@ -20,9 +20,9 @@ package util
 
 import (
 	"bufio"
-	"path/filepath"
-
 	"github.com/spf13/afero"
+	"path/filepath"
+	"strings"
 )
 
 //rewriteConfigNames reads the config from the config folder and rewrites the files on a inmemory filesystem.
@@ -41,6 +41,10 @@ func RewriteConfigNames(path string, fs afero.Fs, transformers []func(string) st
 			if err != nil {
 				return err
 			}
+			continue
+		}
+
+		if strings.Contains(fullPath, "manifest") {
 			continue
 		}
 
@@ -83,7 +87,6 @@ func RewriteConfigNames(path string, fs afero.Fs, transformers []func(string) st
 	return nil
 }
 func applyLineTransformers(line string, transformers []func(string) string) string {
-
 	for _, transformer := range transformers {
 		line = transformer(line)
 	}

@@ -27,6 +27,7 @@ import (
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 )
 
 func upsertDynatraceObject(
@@ -148,7 +149,7 @@ func unmarshalResponse(resp Response, fullUrl string, configType string, objectN
 			return api.DynatraceEntity{}, err
 		}
 	}
-	util.Log.Debug("\t\t\tCreated new object for %s (%s)", dtEntity.Name, dtEntity.Id)
+	log.Debug("Created new object for %s (%s)", dtEntity.Name, dtEntity.Id)
 
 	return dtEntity, nil
 }
@@ -178,7 +179,7 @@ func updateDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		return api.DynatraceEntity{}, fmt.Errorf("Failed to update DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
 	}
 
-	util.Log.Debug("\t\t\tUpdated existing object for %s (%s)", objectName, existingObjectId)
+	log.Debug("\t\t\tUpdated existing object for %s (%s)", objectName, existingObjectId)
 	return api.DynatraceEntity{
 		Id:          existingObjectId,
 		Name:        objectName,
@@ -233,7 +234,7 @@ func callWithRetryOnKnowTimingIssue(client *http.Client, restCall sendingRequest
 
 func retry(client *http.Client, restCall sendingRequest, objectName string, path string, body []byte, apiToken string, maxRetries int, timeout time.Duration) (resp Response, err error) {
 	for i := 0; i < maxRetries; i++ {
-		util.Log.Warn("\t\t\tDependency of config %s was not available. Waiting for %s before retry...", objectName, timeout)
+		log.Warn("\t\t\tDependency of config %s was not available. Waiting for %s before retry...", objectName, timeout)
 		time.Sleep(timeout)
 		resp, err = restCall(client, path, body, apiToken)
 		if err == nil && success(resp) {
@@ -299,28 +300,30 @@ func isLocationHeaderAvailable(resp Response) (headerAvailable bool, headerArray
 	return false, make([]string, 0)
 }
 
-func deleteDynatraceObject(client *http.Client, api api.Api, name string, url string, token string) error {
+func deleteDynatraceObjects(client *http.Client, api api.Api, names []string, url string, token string) []error {
+	existingIds, err := getObjectIdsIfAlreadyExists(client, api, url, names, token)
 
-	existingId, err := getObjectIdIfAlreadyExists(client, api, url, name, token)
 	if err != nil {
-		return fmt.Errorf("failed to get config for deletion %s (%s):\n    %w", name, api.GetId(), err)
+		return []error{err}
 	}
 
-	if len(existingId) == 0 {
-		util.Log.Debug("No config %s (%s) found to delete", name, api.GetId())
-		return nil // the way delete works this is not actually an error, many long deleted things might be in delete.yaml
+	var errors []error
+	for _, v := range existingIds {
+		if len(v.Id) > 0 {
+			err = deleteConfig(client, url, token, v.Id)
+			if err == nil {
+				log.Info("Deleted config %s with id %s (%s)", v.Name, v.Id, api.GetId())
+			} else {
+				errors = append(errors, fmt.Errorf("failed to delete config %s (%s): %w", v.Name, api.GetId(), err))
+			}
+		}
 	}
-
-	err = deleteConfig(client, url, token, existingId)
-	if err != nil {
-		return fmt.Errorf("failed to delete config %s (%s):\n    %w", name, api.GetId(), err)
-	}
-	return nil
+	return errors
 }
 
-func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, objectName string, apiToken string) (existingId string, err error) {
-
+func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, objectName string, apiToken string) (string, error) {
 	values, err := getExistingValuesFromEndpoint(client, api, url, apiToken)
+
 	if err != nil {
 		return "", err
 	}
@@ -334,19 +337,58 @@ func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, ob
 				objectId = value.Id
 			}
 			matchingObjectsFound++
-
 		}
 	}
 
 	if matchingObjectsFound > 1 {
-		util.Log.Warn("\t\t\tFound %d configs with same name: %s. Please delete duplicates.", matchingObjectsFound, objectName)
+		log.Warn("Found %d configs with same name: %s. Please delete duplicates.", matchingObjectsFound, objectName)
 	}
 
 	if len(objectId) > 0 {
-		util.Log.Debug("Found existing config %s (%s) with id %s", objectName, api.GetId(), objectId)
+		log.Debug("Found existing config %s (%s) with id %s", objectName, api.GetId(), objectId)
 	}
 
 	return objectId, nil
+}
+
+func getObjectIdsIfAlreadyExists(client *http.Client, a api.Api, url string, objectNames []string, apiToken string) ([]api.Value, error) {
+	values, err := getExistingValuesFromEndpoint(client, a, url, apiToken)
+
+	if err != nil {
+		return nil, err
+	}
+
+	nameLookupMap := toLookupMap(objectNames)
+	var result []api.Value
+
+	for i := 0; i < len(values); i++ {
+		value := values[i]
+		if _, found := nameLookupMap[value.Name]; found && value.Id != "" {
+			result = append(result, value)
+			nameLookupMap[value.Name]++
+			log.Debug("Found existing config %s (%s) with id %s", value.Name, a.GetId(), value.Id)
+		}
+	}
+
+	for name, count := range nameLookupMap {
+		if count == 0 {
+			log.Debug("No config %s (%s) found to delete", name, a.GetId())
+		} else if count > 1 {
+			log.Warn("Found %d configs with same name: %s.", count, name)
+		}
+	}
+
+	return result, nil
+}
+
+func toLookupMap(strs []string) map[string]int {
+	result := make(map[string]int)
+
+	for _, str := range strs {
+		result[str] = 0
+	}
+
+	return result
 }
 
 func isApiDashboard(api api.Api) bool {
@@ -390,7 +432,8 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlStrin
 
 	var existingValues []api.Value
 	for {
-		err, values, objmap := unmarshalJson(theApi, err, resp)
+
+		err, values, objmap := unmarshalJson(theApi, resp)
 		if err != nil {
 			return values, err
 		}
@@ -472,7 +515,7 @@ func addNextPageQueryParams(theApi api.Api, url *url.URL, nextPage string) *url.
 	return url
 }
 
-func unmarshalJson(theApi api.Api, err error, resp Response) (error, []api.Value, map[string]interface{}) {
+func unmarshalJson(theApi api.Api, resp Response) (error, []api.Value, map[string]interface{}) {
 
 	var values []api.Value
 	var objmap map[string]interface{}
@@ -496,7 +539,7 @@ func unmarshalJson(theApi api.Api, err error, resp Response) (error, []api.Value
 		if theApi.GetId() == "synthetic-location" {
 
 			var jsonResp api.SyntheticLocationResponse
-			err = json.Unmarshal(resp.Body, &jsonResp)
+			err := json.Unmarshal(resp.Body, &jsonResp)
 			if util.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
 				return err, nil, nil
 			}
@@ -505,7 +548,7 @@ func unmarshalJson(theApi api.Api, err error, resp Response) (error, []api.Value
 		} else if theApi.GetId() == "synthetic-monitor" {
 
 			var jsonResp api.SyntheticMonitorsResponse
-			err = json.Unmarshal(resp.Body, &jsonResp)
+			err := json.Unmarshal(resp.Body, &jsonResp)
 			if util.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
 				return err, nil, nil
 			}
@@ -524,7 +567,7 @@ func unmarshalJson(theApi api.Api, err error, resp Response) (error, []api.Value
 		} else {
 
 			var jsonResponse api.ValuesResponse
-			err = json.Unmarshal(resp.Body, &jsonResponse)
+			err := json.Unmarshal(resp.Body, &jsonResponse)
 			if util.CheckError(err, "Cannot unmarshal API response for existing objects") {
 				return err, nil, nil
 			}
@@ -551,11 +594,10 @@ func isPaginatedResponse(jsonResponse map[string]interface{}) (paginated bool, p
 
 func translateGenericValues(inputValues []interface{}, configType string) ([]api.Value, error) {
 
-	numValues := len(inputValues)
-	values := make([]api.Value, numValues, numValues)
+	values := make([]api.Value, 0, len(inputValues))
 
-	for i := 0; i < numValues; i++ {
-		input := inputValues[i].(map[string]interface{})
+	for _, input := range inputValues {
+		input := input.(map[string]interface{})
 
 		if input["id"] == nil {
 			return values, fmt.Errorf("config of type %s was invalid: No id", configType)
@@ -565,9 +607,11 @@ func translateGenericValues(inputValues []interface{}, configType string) ([]api
 		if input["name"] == nil {
 			jsonStr, err := json.Marshal(input)
 			if err != nil {
-				util.Log.Warn("Config of type %s was invalid. Ignoring it!", configType)
+				log.Warn("Config of type %s was invalid. Ignoring it!", configType)
 				continue
 			}
+
+			log.Warn("Config of type %s was invalid. Auto-corrected to use ID as name! Invalid config: %s", configType, string(jsonStr))
 
 			substitutedName := ""
 
@@ -578,34 +622,32 @@ func translateGenericValues(inputValues []interface{}, configType string) ([]api
 				substitutedName = input["dashboardId"].(string)
 			} else {
 				// Substitute name with id since it is unique identifier for entity
-				util.Log.Warn("Config of type %s was invalid. Auto-corrected to use ID as name!\nInvalid config: %s", configType, string(jsonStr))
+				log.Warn("Config of type %s was invalid. Auto-corrected to use ID as name!\nInvalid config: %s", configType, string(jsonStr))
 				substitutedName = input["id"].(string)
 			}
 
-			values[i] = api.Value{
+			values = append(values, api.Value{
 				Id:   input["id"].(string),
-				Name: substitutedName, // use the id as name
-			}
+				Name: substitutedName,
+			})
 			continue
 		}
 
-		values[i] = api.Value{
+		values = append(values, api.Value{
 			Id:   input["id"].(string),
 			Name: input["name"].(string),
-		}
+		})
 	}
 	return values, nil
 }
 
 func translateSyntheticValues(syntheticValues []api.SyntheticValue) []api.Value {
-	numValues := len(syntheticValues)
-	values := make([]api.Value, numValues, numValues)
-	for i := 0; i < numValues; i++ {
-		loc := syntheticValues[i]
-		values[i] = api.Value{
+	values := make([]api.Value, 0, len(syntheticValues))
+	for _, loc := range syntheticValues {
+		values = append(values, api.Value{
 			Id:   loc.EntityId,
 			Name: loc.Name,
-		}
+		})
 	}
 	return values
 }

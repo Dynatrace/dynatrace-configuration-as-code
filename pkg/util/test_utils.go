@@ -1,5 +1,5 @@
-//go:build unit || integration
-// +build unit integration
+//go:build integration || integration_v1 || unit
+// +build integration integration_v1 unit
 
 /**
  * @license
@@ -50,8 +50,6 @@ func ReplaceName(line string, idChange func(string) string) string {
 		if strings.HasPrefix(trimmed, "-") {
 			trimmed = trimmed[1:]
 			trimmed = strings.TrimSpace(trimmed)
-		} else {
-			return line
 		}
 
 		withoutPrefix := strings.TrimLeft(trimmed, "name:")

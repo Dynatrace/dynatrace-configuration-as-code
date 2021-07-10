@@ -25,6 +25,8 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 )
@@ -37,9 +39,9 @@ type Project interface {
 	GetCleanId() (string, error)
 }
 
-type projectImpl struct {
-	id                string
-	configs           []config.Config
+type ProjectImpl struct {
+	Id                string
+	Configs           []config.Config
 	projectRootFolder string
 	getRelFilepath    func(basepath string, targpath string) (string, error)
 }
@@ -60,7 +62,7 @@ func NewProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolde
 
 	// standardize projectRootFolder
 	// trim path separator from projectRoot
-	sanitizedProjectRootFolder := strings.Trim(projectRootFolder, string(os.PathSeparator))
+	sanitizedProjectRootFolder := strings.TrimRight(projectRootFolder, string(os.PathSeparator))
 
 	builder := projectBuilder{
 		projectRootFolder: sanitizedProjectRootFolder,
@@ -84,9 +86,9 @@ func NewProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolde
 
 	warnIfProjectNameClashesWithApiName(projectFolderName, apis, sanitizedProjectRootFolder)
 
-	return &projectImpl{
-		id:                fullQualifiedProjectFolderName,
-		configs:           builder.configs,
+	return &ProjectImpl{
+		Id:                fullQualifiedProjectFolderName,
+		Configs:           builder.configs,
 		projectRootFolder: projectRootFolder,
 		getRelFilepath:    filepath.Rel,
 	}, nil
@@ -97,18 +99,18 @@ func warnIfProjectNameClashesWithApiName(projectFolderName string, apis map[stri
 	lowerCaseProjectFolderName := strings.ToLower(projectFolderName)
 	_, ok := apis[lowerCaseProjectFolderName]
 	if ok {
-		util.Log.Warn("Project %s in folder %s clashes with API name %s. Consider using a different name for your project.", projectFolderName, projectRootFolder, lowerCaseProjectFolderName)
+		log.Warn("Project %s in folder %s clashes with API name %s. Consider using a different name for your project.", projectFolderName, projectRootFolder, lowerCaseProjectFolderName)
 	}
 }
 
 func (p *projectBuilder) readFolder(folder string, isProjectRoot bool) error {
-	files, err := afero.ReadDir(p.fs, folder)
+	filesInFolder, err := afero.ReadDir(p.fs, folder)
 
 	if util.CheckError(err, "Folder "+folder+" could not be read") {
 		return err
 	}
 
-	for _, file := range files {
+	for _, file := range filesInFolder {
 
 		fullFileName := filepath.Join(folder, file.Name())
 
@@ -117,7 +119,7 @@ func (p *projectBuilder) readFolder(folder string, isProjectRoot bool) error {
 			if err != nil {
 				return err
 			}
-		} else if !isProjectRoot && isYaml(file.Name()) {
+		} else if !isProjectRoot && files.IsYaml(file.Name()) {
 			err = p.processYaml(fullFileName)
 		}
 	}
@@ -126,7 +128,7 @@ func (p *projectBuilder) readFolder(folder string, isProjectRoot bool) error {
 
 func (p *projectBuilder) processYaml(filename string) error {
 
-	util.Log.Debug("Processing file: " + filename)
+	log.Debug("Processing file: " + filename)
 
 	bytes, err := afero.ReadFile(p.fs, filename)
 
@@ -153,7 +155,7 @@ func (p *projectBuilder) processConfigSection(properties map[string]map[string]s
 
 	templates, ok := properties["config"]
 	if !ok {
-		util.Log.Error("Property 'config' was not available")
+		log.Error("Property 'config' was not available")
 		return errors.New("Property 'config' was not available")
 	}
 
@@ -168,7 +170,7 @@ func (p *projectBuilder) processConfigSection(properties map[string]map[string]s
 
 		//Introduce deprecation warning message when using the config type "application"
 		if api.GetId() == "application" {
-			util.Log.Warn("You are using the configuration 'application', which will be deprecated in v2.0.0. Replace with type 'application-web'.")
+			log.Warn("You are using the configuration 'application', which will be deprecated in v2.0.0. Replace with type 'application-web'.")
 		}
 
 		config, err := p.configFactory.NewConfig(p.fs, configName, p.projectId, location, properties, api)
@@ -192,14 +194,11 @@ func (p *projectBuilder) processConfigSection(properties map[string]map[string]s
 func (p *projectBuilder) standardizeLocation(location string, folderPath string) string {
 
 	if strings.HasPrefix(location, string(os.PathSeparator)) {
-
 		// add project root to location
-		location = strings.Join([]string{p.projectRootFolder, location[1:]}, string(os.PathSeparator))
-		// remove leading / from location
-		location = strings.TrimLeft(location, string(os.PathSeparator))
+		location = filepath.Join(p.projectRootFolder, location)
 	} else {
 		// add folder + location
-		location = folderPath + string(os.PathSeparator) + location
+		location = filepath.Join(folderPath, location)
 	}
 	return location
 }
@@ -262,15 +261,15 @@ func (p *projectBuilder) sortConfigsAccordingToDependencies() error {
 }
 
 // GetConfigs returns the configs for this project
-func (p *projectImpl) GetConfigs() []config.Config {
-	return p.configs
+func (p *ProjectImpl) GetConfigs() []config.Config {
+	return p.Configs
 }
 
 // GetConfig searches for a config with the given id in the current project
 // If no such config is found, an error is returned
-func (p *projectImpl) GetConfig(id string) (config config.Config, err error) {
+func (p *ProjectImpl) GetConfig(id string) (config config.Config, err error) {
 	for _, config := range p.GetConfigs() {
-		if id == config.GetFullQualifiedId() {
+		if id == config.GetId() {
 			return config, err
 		}
 	}
@@ -279,20 +278,20 @@ func (p *projectImpl) GetConfig(id string) (config config.Config, err error) {
 }
 
 // GetId returns the id for this project
-func (p *projectImpl) GetId() string {
-	return p.id
+func (p *ProjectImpl) GetId() string {
+	return p.Id
 }
 
 // GetCleanId returns a sanitized project id, cleaned from all path attributes
-func (p *projectImpl) GetCleanId() (string, error) {
-	return p.getRelFilepath(p.projectRootFolder, p.id)
+func (p *ProjectImpl) GetCleanId() (string, error) {
+	return p.getRelFilepath(p.projectRootFolder, p.Id)
 }
 
 // HasDependencyOn checks if one project depends on the given parameter config
 // Having a dependency means, that the project having the dependency needs to be applied AFTER the project it depends on
-func (p *projectImpl) HasDependencyOn(project Project) bool {
+func (p *ProjectImpl) HasDependencyOn(project Project) bool {
 
-	for _, myConfig := range p.configs {
+	for _, myConfig := range p.Configs {
 		for _, otherConfig := range project.GetConfigs() {
 			if myConfig.HasDependencyOn(otherConfig) {
 				return true

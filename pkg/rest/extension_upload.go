@@ -27,6 +27,7 @@ import (
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 )
 
 type extensionStatus int
@@ -65,9 +66,11 @@ func uploadExtension(client *http.Client, apiPath string, extensionName string, 
 	}
 
 	if resp.StatusCode != http.StatusCreated {
-		util.Log.Error("\t\t\tUpload of %s failed with status %d!\n\t\t\t\t\tError-message: %s\n", extensionName, resp.StatusCode, string(resp.Body))
+		return api.DynatraceEntity{
+			Name: extensionName,
+		}, fmt.Errorf("upload of %s failed with status %d! Response: %s", extensionName, resp.StatusCode, string(resp.Body))
 	} else {
-		util.Log.Debug("\t\t\tExtension upload successful for %s", extensionName)
+		log.Debug("Extension upload successful for %s", extensionName)
 
 		// As other configs depend on metrics created by extensions, and metric creation seems to happen with delay...
 		time.Sleep(1 * time.Second)
@@ -113,7 +116,7 @@ func validateIfExtensionShouldBeUploaded(client *http.Client, apiPath string, ex
 	}
 
 	if curVersion == newVersion {
-		util.Log.Info("Extension (%s) already deployed in version (%s), skipping.", extensionName, newVersion)
+		log.Info("Extension (%s) already deployed in version (%s), skipping.", extensionName, newVersion)
 		return extensionUpToDate, nil
 	}
 

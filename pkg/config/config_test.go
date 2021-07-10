@@ -20,7 +20,6 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"testing"
@@ -33,7 +32,6 @@ import (
 
 const testTemplate = `{"msg": "Follow the {{.color}} {{.animalType}}"}`
 const testTemplateWithDependency = `{"msg": "Follow the {{.color}} {{.animalType}} with {{ .dep }}"}`
-const testTemplateWithEnvVar = `{"msg": "Follow the {{.color}} {{ .Env.ANIMAL }}"}`
 
 var testDevEnvironment = environment.NewEnvironment("development", "Dev", "", "https://url/to/dev/environment", "DEV")
 var testHardeningEnvironment = environment.NewEnvironment("hardening", "Hardening", "", "https://url/to/hardening/environment", "HARDENING")
@@ -146,123 +144,6 @@ func TestFilterPropertiesToReturnNoGeneralPropertiesForMissingSpecificOnes(t *te
 	assert.Check(t, len(properties["dashboard.dev"]) == 1)
 }
 
-func TestGetConfigStringWithEnvironmentOverride(t *testing.T) {
-
-	m := getTestProperties()
-	templ := getTestTemplate(t)
-	config := newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
-
-	devResult, err := getConfigForEnvironmentAsMap(config, testDevEnvironment, make(map[string]api.DynatraceEntity))
-
-	assert.NilError(t, err)
-	assert.Equal(t, "Follow the black squid", devResult["msg"])
-}
-
-func TestGetConfigStringNoEnvironmentOverride(t *testing.T) {
-
-	m := getTestProperties()
-	templ := getTestTemplate(t)
-	config := newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
-
-	hardeningResult, err := getConfigForEnvironmentAsMap(config, testHardeningEnvironment, make(map[string]api.DynatraceEntity))
-
-	assert.NilError(t, err)
-	assert.Equal(t, "Follow the white rabbit", hardeningResult["msg"])
-}
-
-func TestGetConfigString(t *testing.T) {
-
-	m := getTestProperties()
-	templ := getTestTemplate(t)
-	config := newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
-
-	devResult, devErr := getConfigForEnvironmentAsMap(config, testDevEnvironment, make(map[string]api.DynatraceEntity))
-	hardeningResult, hardeningErr := getConfigForEnvironmentAsMap(config, testHardeningEnvironment, make(map[string]api.DynatraceEntity))
-
-	assert.NilError(t, devErr)
-	assert.NilError(t, hardeningErr)
-	assert.Equal(t, "Follow the black squid", devResult["msg"])
-	assert.Equal(t, "Follow the white rabbit", hardeningResult["msg"])
-}
-
-// test GetConfigForEnvironment if environment group is defined
-// it should return `test.production` group values of getTestProperties
-func TestGetConfigWithGroupOverride(t *testing.T) {
-
-	m := getTestProperties()
-	templ := getTestTemplate(t)
-	config := newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
-
-	productionResult, err := getConfigForEnvironmentAsMap(config, testProductionEnvironment, make(map[string]api.DynatraceEntity))
-	assert.NilError(t, err)
-	assert.Equal(t, "Follow the brown dog", productionResult["msg"])
-}
-
-// test GetConfigForEnvironment if environment group is defined
-// it should return `test.production` group values of getTestProperties
-func TestGetConfigWithGroupOverrideAndDependency(t *testing.T) {
-
-	m := getTestProperties()
-	templ := getTestTemplate(t)
-	config := newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
-
-	productionResult, err := getConfigForEnvironmentAsMap(config, testProductionEnvironment, make(map[string]api.DynatraceEntity))
-	assert.NilError(t, err)
-	assert.Equal(t, "Follow the brown dog", productionResult["msg"])
-}
-
-// Testing dependencies resolution within group and env overrides
-func TestGetConfigWithGroupAndEnvironmentOverride(t *testing.T) {
-
-	managementZonePath := util.ReplacePathSeparators("infrastructure/management-zone/zone")
-
-	dynatraceEntity := api.DynatraceEntity{
-		Description: "bla",
-		Name:        "Test Management Zone",
-		Id:          managementZonePath,
-	}
-
-	dict := make(map[string]api.DynatraceEntity)
-	dict[managementZonePath] = dynatraceEntity
-
-	m := getTestPropertiesWithGroupAndEnvironment()
-	m["test.production"]["dep"] = "infrastructure/management-zone/zone.name"
-	templ := getTestTemplateWithDependency(t)
-	config := newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
-
-	productionResult, err := getConfigForEnvironmentAsMap(config, testProductionEnvironment, dict)
-	assert.NilError(t, err)
-	assert.Equal(t, "Follow the red cat with Test Management Zone", productionResult["msg"])
-
-	m["test.prod-environment"]["dep2"] = "infrastructure/management-zone/zone.name"
-	config = newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
-	productionResult, err = getConfigForEnvironmentAsMap(config, testProductionEnvironment, dict)
-	assert.NilError(t, err)
-	assert.Equal(t, "Follow the red cat with Test Management Zone", productionResult["msg"])
-}
-
-// Test combining parameters
-// If there are different parameters defined for group and environment, they should be merged
-func TestGetConfigWithMergingGroupAndEnvironmentOverrides(t *testing.T) {
-	m := getTestPropertiesWithGroupAndEnvironment()
-	templ := getTestTemplate(t)
-	config := newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
-
-	// remove color parameter from `test.prod-environment`
-	// `test.production.color` parameter should be taken instead
-	delete(m["test.prod-environment"], "color")
-	productionResult, err := getConfigForEnvironmentAsMap(config, testProductionEnvironment, make(map[string]api.DynatraceEntity))
-	assert.NilError(t, err)
-	assert.Equal(t, "Follow the brown cat", productionResult["msg"])
-
-	// removing whole `test.prod-environment` config section
-	// only `test.production` parameters should be considered
-	delete(m, "test.prod-environment")
-	productionResult, err = getConfigForEnvironmentAsMap(config, testProductionEnvironment, make(map[string]api.DynatraceEntity))
-	assert.NilError(t, err)
-	assert.Equal(t, "Follow the brown dog", productionResult["msg"])
-}
-
 func TestSkipConfigDeployment(t *testing.T) {
 
 	m := getTestPropertiesWithGroupAndEnvironment()
@@ -272,19 +153,19 @@ func TestSkipConfigDeployment(t *testing.T) {
 	skipDeployment := config.IsSkipDeployment(testProductionEnvironment)
 	assert.Equal(t, true, skipDeployment)
 
-	delete(m["test.prod-environment"], skipConfigDeploymentParameter)
-	m["test.production"][skipConfigDeploymentParameter] = "true"
+	delete(m["test.prod-environment"], SkipConfigDeploymentParameter)
+	m["test.production"][SkipConfigDeploymentParameter] = "true"
 	config = newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
 	skipDeployment = config.IsSkipDeployment(testProductionEnvironment)
 	assert.Equal(t, true, skipDeployment)
 
-	delete(m["test.production"], skipConfigDeploymentParameter)
-	m["test"][skipConfigDeploymentParameter] = "true"
+	delete(m["test.production"], SkipConfigDeploymentParameter)
+	m["test"][SkipConfigDeploymentParameter] = "true"
 	config = newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
 	skipDeployment = config.IsSkipDeployment(testProductionEnvironment)
 	assert.Equal(t, true, skipDeployment)
 
-	delete(m["test"], skipConfigDeploymentParameter)
+	delete(m["test"], SkipConfigDeploymentParameter)
 	config = newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
 	skipDeployment = config.IsSkipDeployment(testProductionEnvironment)
 	assert.Equal(t, false, skipDeployment)
@@ -331,37 +212,6 @@ func getTestTemplate(t *testing.T) util.Template {
 	return template
 }
 
-func getTestTemplateWithDependency(t *testing.T) util.Template {
-	template, e := util.NewTemplateFromString("test", testTemplateWithDependency)
-	assert.NilError(t, e)
-	return template
-}
-
-func getTestTemplateWithEnvVars(t *testing.T) util.Template {
-	template, e := util.NewTemplateFromString("test", testTemplateWithEnvVar)
-	assert.NilError(t, e)
-	return template
-}
-
-func getTestProperties() map[string]map[string]string {
-
-	m := make(map[string]map[string]string)
-
-	m["test"] = make(map[string]string)
-	m["test"]["color"] = "white"
-	m["test"]["animalType"] = "rabbit"
-
-	m["test.development"] = make(map[string]string)
-	m["test.development"]["color"] = "black"
-	m["test.development"]["animalType"] = "squid"
-
-	m["test.production"] = make(map[string]string)
-	m["test.production"]["color"] = "brown"
-	m["test.production"]["animalType"] = "dog"
-
-	return m
-}
-
 func getTestPropertiesWithGroupAndEnvironment() map[string]map[string]string {
 
 	m := make(map[string]map[string]string)
@@ -380,7 +230,7 @@ func getTestPropertiesWithGroupAndEnvironment() map[string]map[string]string {
 	m["test.prod-environment"]["name"] = "Prod environment config name"
 	m["test.prod-environment"]["color"] = "red"
 	m["test.prod-environment"]["animalType"] = "cat"
-	m["test.prod-environment"][skipConfigDeploymentParameter] = "true"
+	m["test.prod-environment"][SkipConfigDeploymentParameter] = "true"
 
 	return m
 }
@@ -481,47 +331,4 @@ func TestParseDependencyWithRelativePath(t *testing.T) {
 	managementZoneId, err := config.parseDependency("infrastructure/management-zone/zone.id", dict)
 	assert.NilError(t, err)
 	assert.Equal(t, "zone", managementZoneId)
-}
-
-func TestGetConfigStringWithEnvVar(t *testing.T) {
-
-	templ := getTestTemplateWithEnvVars(t)
-
-	util.SetEnv(t, "ANIMAL", "cow")
-	config := newConfig("test", "testproject", templ, getTestProperties(), testManagementZoneApi, "")
-	devResult, err := getConfigForEnvironmentAsMap(config, testDevEnvironment, make(map[string]api.DynatraceEntity))
-
-	util.UnsetEnv(t, "ANIMAL")
-
-	assert.NilError(t, err)
-	assert.Equal(t, "Follow the black cow", devResult["msg"])
-}
-
-func TestGetConfigStringWithEnvVarLeadsToErrorIfEnvVarNotPresent(t *testing.T) {
-
-	templ := getTestTemplateWithEnvVars(t)
-
-	util.UnsetEnv(t, "ANIMAL")
-	config := newConfig("test", "testproject", templ, getTestProperties(), testManagementZoneApi, "")
-	_, err := config.GetConfigForEnvironment(testDevEnvironment, make(map[string]api.DynatraceEntity))
-
-	assert.ErrorContains(t, err, "map has no entry for key \"ANIMAL\"")
-}
-
-func getConfigForEnvironmentAsMap(config Config, env environment.Environment, dict map[string]api.DynatraceEntity) (map[string]interface{}, error) {
-	data, err := config.GetConfigForEnvironment(env, dict)
-
-	if err != nil {
-		return nil, err
-	}
-
-	var result map[string]interface{}
-
-	err = json.Unmarshal(data, &result)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return result, err
 }

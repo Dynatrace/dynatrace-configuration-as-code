@@ -22,9 +22,10 @@ package config
 import (
 	"testing"
 
+	"github.com/golang/mock/gomock"
+
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
-	"github.com/golang/mock/gomock"
 )
 
 func CreateConfigMockFactory(t *testing.T) *MockConfigFactory {

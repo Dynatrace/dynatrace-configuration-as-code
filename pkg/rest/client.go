@@ -23,7 +23,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 
 	. "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 )
@@ -75,6 +75,10 @@ type DynatraceClient interface {
 	//    DELETE <environment-url>/api/config/v1/alertingProfiles/<id> ... to delete the config
 	DeleteByName(a Api, name string) error
 
+	// Delete removed a given config for a given API using its name.
+	// Same as DeleteByName only that it allows to delete multiple entries in one go
+	BulkDeleteByName(a Api, names []string) []error
+
 	// ExistsByName checks if a config with the given name exists for the given API.
 	// It calls the underlying GET endpoint for the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles
@@ -108,8 +112,8 @@ func NewDynatraceClient(environmentUrl, token string) (DynatraceClient, error) {
 	}
 
 	if !isNewDynatraceTokenFormat(token) {
-		util.Log.Warn("You used an old token format. Please consider switching to the new 1.205+ token format.")
-		util.Log.Warn("More information: https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication/#-dynatrace-version-1205--token-format")
+		log.Warn("You used an old token format. Please consider switching to the new 1.205+ token format.")
+		log.Warn("More information: https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication/#-dynatrace-version-1205--token-format")
 	}
 
 	return &dynatraceClientImpl{
@@ -167,9 +171,23 @@ func (d *dynatraceClientImpl) ReadById(api Api, id string) (json []byte, err err
 	return response.Body, nil
 }
 
+//TODO can be deprectated for BulkDelete if integration test cleanup is adapted
 func (d *dynatraceClientImpl) DeleteByName(api Api, name string) error {
 
-	return deleteDynatraceObject(d.client, api, name, api.GetUrlFromEnvironmentUrl(d.environmentUrl), d.token)
+	errs := deleteDynatraceObjects(d.client, api, []string{name}, api.GetUrlFromEnvironmentUrl(d.environmentUrl), d.token)
+	if len(errs) == 0 {
+		return nil
+	}
+
+	if len(errs) > 1 {
+		log.Warn("Trying to delete single configuration %s produced more than one error. Truncating to first.", name)
+	}
+	return errs[0]
+}
+
+func (d *dynatraceClientImpl) BulkDeleteByName(api Api, names []string) []error {
+
+	return deleteDynatraceObjects(d.client, api, names, api.GetUrlFromEnvironmentUrl(d.environmentUrl), d.token)
 }
 
 func (d *dynatraceClientImpl) ExistsByName(api Api, name string) (exists bool, id string, err error) {

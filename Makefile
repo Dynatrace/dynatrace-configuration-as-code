@@ -11,6 +11,7 @@ else
 	@go install github.com/google/addlicense@latest
 	@sh ./tools/check-format.sh
 	@sh ./tools/check-license-headers.sh
+	@go mod tidy
 endif
 
 format:
@@ -31,7 +32,7 @@ mocks:
 build: clean lint
 	@echo Build ${BINARY}
 	@go build ./...
-	@go build -o ./bin/${BINARY} ./cmd/monaco
+	@go build -o ./bin/${BINARY} ./cmd/monaco/v2
 
 build-release: clean lint
 	@echo Release build ${BINARY}
@@ -62,6 +63,10 @@ test: mocks build
 integration-test: build
 	@go test -tags=cleanup -v ./...
 	@go test -tags=integration -v ./...
+
+integration-test-v1: build
+	@go test -tags=cleanup -v ./...
+	@go test -tags=integration_v1 -v ./...
 
 # Build and Test a single package supplied via pgk variable, without using test cache
 # Run as e.g. make test-package pkg=project

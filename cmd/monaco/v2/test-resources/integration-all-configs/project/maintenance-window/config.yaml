@@ -1,0 +1,12 @@
+configs:
+- id: maintenancewindow
+  config:
+    name: My First Maintenance Window
+    parameters:
+      description: My First Maintenance Window
+      end: 2022-11-06 10:40
+      start: 2022-11-06 09:40
+      suppression: DETECT_PROBLEMS_DONT_ALERT
+      type: PLANNED
+    template: maintenance-window.json
+    skip: false

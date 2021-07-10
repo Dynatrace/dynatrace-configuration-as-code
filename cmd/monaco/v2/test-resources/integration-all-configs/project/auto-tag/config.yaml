@@ -1,0 +1,6 @@
+configs:
+- id: application-tagging
+  config:
+    name: Resistance is futile!
+    template: application-tagging.json
+    skip: false

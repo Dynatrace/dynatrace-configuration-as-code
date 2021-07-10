@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 )
 
 func sortProjects(projects []Project) (sorted []Project, err error) {
@@ -48,7 +48,7 @@ func calculateIncomingProjectDependencies(projects []Project) (adjacencyMatrix [
 			if i != j {
 				p2 := projects[j]
 				if p2.HasDependencyOn(p1) {
-					util.Log.Debug("\t\t%s has dep on %s", p2.GetId(), p1.GetId())
+					logDependency(p2.GetId(), p1.GetId())
 					adjacencyMatrix[i][j] = true
 					inDegrees[i]++
 				}
@@ -64,13 +64,13 @@ func sortConfigurations(configs []config.Config) (sorted []config.Config, err er
 	incomingDeps, inDegrees := calculateIncomingConfigDependencies(configs)
 	reverse, err, errorOn := topologySort(incomingDeps, inDegrees)
 	if err != nil {
-		util.Log.Debug(err.Error())
+		log.Debug(err.Error())
 		return sorted, fmt.Errorf("failed to sort configs, circular dependency on config %s detected, please check dependencies", configs[errorOn].GetFullQualifiedId())
 	}
 
 	for i := len(reverse) - 1; i >= 0; i-- {
 		sorted = append(sorted, configs[reverse[i]])
-		util.Log.Debug("\t\t%s", configs[reverse[i]].GetFullQualifiedId())
+		log.Debug("\t\t%s", configs[reverse[i]].GetFullQualifiedId())
 	}
 	return sorted, nil
 }
@@ -86,7 +86,7 @@ func calculateIncomingConfigDependencies(configs []config.Config) (adjacencyMatr
 			if i != j {
 				c2 := configs[j]
 				if c2.HasDependencyOn(c1) {
-					util.Log.Debug("\t\t%s has dep on %s", c2.GetFullQualifiedId(), c1.GetFullQualifiedId())
+					logDependency(c2.GetFullQualifiedId(), c1.GetFullQualifiedId())
 					adjacencyMatrix[i][j] = true
 					inDegrees[i]++
 				}
@@ -134,4 +134,8 @@ func getAllLeaves(inDegrees []int) []int {
 		}
 	}
 	return nodes
+}
+
+func logDependency(depending string, dependedOn string) {
+	log.Debug("%s has dependency on %s", depending, dependedOn)
 }

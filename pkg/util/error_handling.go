@@ -19,14 +19,38 @@ package util
 import (
 	"errors"
 	"os"
+
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 )
+
+type PrettyPrintableError interface {
+	PrettyError() string
+}
+
+func ErrorString(err error) string {
+	if err == nil {
+		return "<nil>"
+	}
+
+	var prettyPrintError PrettyPrintableError
+
+	if errors.As(err, &prettyPrintError) {
+		return prettyPrintError.PrettyError()
+	} else {
+		return err.Error()
+	}
+}
 
 // PrintError should pretty-print the error using a more user-friendly format
 func PrintError(err error) {
-	if ppError, ok := err.(JsonValidationError); ok {
-		ppError.PrettyPrintError()
+	var prettyPrintError PrettyPrintableError
+
+	if errors.As(err, &prettyPrintError) {
+		log.Error(prettyPrintError.PrettyError())
 	} else {
-		Log.Error("\t%s", err)
+		if err != nil {
+			log.Error(err.Error())
+		}
 	}
 }
 
@@ -38,14 +62,14 @@ func PrintErrors(errors []error) {
 
 func FailOnError(err error, msg string) {
 	if err != nil {
-		Log.Fatal(msg + ": " + err.Error())
+		log.Fatal(msg + ": " + err.Error())
 		os.Exit(1)
 	}
 }
 
 func CheckError(err error, msg string) bool {
 	if err != nil {
-		Log.Error(msg + ": " + err.Error())
+		log.Error(msg + ": " + err.Error())
 		return true
 	}
 	return false
