@@ -27,3 +27,9 @@ This command is basically doing what the old tool did. It is used to deploy a sp
 ### Download
 
 This feature allows you to download the configuration from a Dynatrace tenant as Monaco files. You can use this feature to avoid starting from scratch when using Monaco.
+
+### Dry run 
+To validate a configuration while using the new CLI version, use the `deploy` command with the flag, `--dry-run`. For example, 
+```
+$ ./monaco deploy --dry-run <any other arguments>
+```
