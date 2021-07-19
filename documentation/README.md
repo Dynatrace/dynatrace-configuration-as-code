@@ -1,33 +1,64 @@
-# Website
+### Creating New Version
 
-This website is built using [Docusaurus 2](https://docusaurus.io/), a modern static website generator.
+1. First, make sure your content in the `documentation/docs` directory is ready to be frozen as a version. A version always should be based from master.
 
-## Installation
+- Copy the full `documentation/docs/` folder contents from above into a new `documentation/versioned_docs/version-<version>/` folder.
+- Create a versioned sidebars file in `documentation/versioned_sidebars/version-<version>-sidebars.json`.
+- Append the new version number to `documentation/versions.json`.
 
-```console
-yarn install
+## Docs {#docs}
+
+### Creating new docs {#creating-new-docs}
+
+1. Place the new file into the corresponding version folder.
+1. Include the reference for the new file into the corresponding sidebar file, according to version number.
+
+**Next version docs**
+
+```shell
+# The new file.
+documenatation/docs/new.md
 ```
 
-## Local Development
+**Older version docs**
 
-```console
-yarn start
+```shell
+# The new file.
+documenatation/versioned_docs/version-1.0.0/new.md
+
+# Edit the corresponding sidebar file.
+documenatation/versioned_sidebars/version-1.0.0-sidebars.json
 ```
 
-This command starts a local development server and opens up a browser window. Most changes are reflected live without having to restart the server.
+## Versions {#versions}
 
-## Build
+Each directory in `documentation/versioned_docs/` will represent a documentation version.
 
-```console
-yarn build
+### Updating an existing version {#updating-an-existing-version}
+
+You can update multiple docs versions at the same time because each directory in `documentation/versioned_docs/` represents specific routes when published.
+
+1. Edit any file.
+1. Commit and push changes.
+1. It will be published to the version.
+
+Example: When you change any file in `documentation/versioned_docs/version-2.6/`, it will only affect the docs for version `2.6`.
+
+### Deleting an existing version {#deleting-an-existing-version}
+
+You can delete/remove versions as well.
+
+1. Remove the version from `documentation/versions.json`.
+
+Example:
+
+```diff {4}
+[
+  "2.0.0",
+  "1.9.0",
+- "1.8.0"
+]
 ```
 
-This command generates static content into the `build` directory and can be served using any static contents hosting service.
-
-## Deployment
-
-```console
-GIT_USER=<Your GitHub username> USE_SSH=true yarn deploy
-```
-
-If you are using GitHub pages for hosting, this command is a convenient way to build the website and push to the `gh-pages` branch.
+2. Delete the versioned docs directory. Example: `documentation/versioned_docs/version-1.8.0`.
+3. Delete the versioned sidebars file. Example: `documentation/versioned_sidebars/version-1.8.0-sidebars.json`.
