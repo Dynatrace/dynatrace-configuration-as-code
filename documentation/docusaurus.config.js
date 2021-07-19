@@ -10,15 +10,15 @@ module.exports = {
   baseUrl: '/dynatrace-monitoring-as-code/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/favicon.png',
   organizationName: 'dynatrace-oss',
-  projectName: 'dynatrace-monitoring-as-code', // Usually your repo name.
+  projectName: 'dynatrace-monitoring-as-code',
   themeConfig: {
     navbar: {
       title: 'Monaco',
       logo: {
         alt: 'My Site Logo',
-        src: 'img/Dynatrace_Logo_RGB_CNH_800x142px.svg',
+        src: 'img/DT_Logo.svg',
       },
       items: [
         {
