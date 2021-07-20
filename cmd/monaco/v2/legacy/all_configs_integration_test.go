@@ -16,35 +16,38 @@
  * limitations under the License.
  */
 
-package main
+package legacy
 
 import (
 	"testing"
 
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/runner"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 )
 
 // tests all configs for a single environment
 func TestIntegrationAllConfigs(t *testing.T) {
-
 	allConfigsFolder := "test-resources/integration-all-configs/"
 	allConfigsEnvironmentsFile := allConfigsFolder + "environments.yaml"
 
-	RunIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fs afero.Fs) {
+	RunLegacyIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fs afero.Fs) {
 
 		// This causes a POST for all configs:
-		statusCode := RunImpl([]string{
+		statusCode := runner.RunImpl([]string{
 			"monaco",
-			"--environments", allConfigsEnvironmentsFile,
+			"deploy",
+			"--environments",
+			allConfigsEnvironmentsFile,
 			allConfigsFolder,
 		}, fs)
 
 		assert.Equal(t, statusCode, 0)
 
 		// This causes a PUT for all configs:
-		statusCode = RunImpl([]string{
+		statusCode = runner.RunImpl([]string{
 			"monaco",
+			"deploy",
 			"--environments", allConfigsEnvironmentsFile,
 			// Currently there are some APIs for which updating the config does not work. These configs are included in
 			// the project "only-post" (folder ./test-resources/integration-all-configs/only-post)

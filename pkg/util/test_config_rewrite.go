@@ -82,7 +82,6 @@ func RewriteConfigNames(path string, fs afero.Fs, transformers []func(string) st
 	return nil
 }
 func applyLineTransformers(line string, transformers []func(string) string) string {
-
 	for _, transformer := range transformers {
 		line = transformer(line)
 	}

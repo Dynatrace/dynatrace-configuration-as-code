@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package main
+package legacy
 
 import (
 	"testing"
@@ -25,6 +25,7 @@ import (
 
 	"fmt"
 
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/runner"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 )
 
@@ -32,8 +33,9 @@ const skipDeploymentFolder = "test-resources/skip-deployment-project/"
 const skipDeploymentEnvironmentsFile = "test-resources/test-environments.yaml"
 
 func TestValidationSkipDeployment(t *testing.T) {
-	statusCode := RunImpl([]string{
+	statusCode := runner.RunImpl([]string{
 		"monaco",
+		"deploy",
 		"--dry-run",
 		"--environments", skipDeploymentEnvironmentsFile,
 		"--project", "projectA",
@@ -44,8 +46,9 @@ func TestValidationSkipDeployment(t *testing.T) {
 }
 
 func TestValidationSkipDeploymentWithBrokenDependency(t *testing.T) {
-	statusCode := RunImpl([]string{
+	statusCode := runner.RunImpl([]string{
 		"monaco",
+		"deploy",
 		"--dry-run",
 		"--environments", skipDeploymentEnvironmentsFile,
 		"--project", "projectB",
@@ -56,8 +59,9 @@ func TestValidationSkipDeploymentWithBrokenDependency(t *testing.T) {
 }
 
 func TestValidationSkipDeploymentWithOverridingDependency(t *testing.T) {
-	statusCode := RunImpl([]string{
+	statusCode := runner.RunImpl([]string{
 		"monaco",
+		"deploy",
 		"--dry-run",
 		"--environments", skipDeploymentEnvironmentsFile,
 		"--project", "projectC",
@@ -68,8 +72,9 @@ func TestValidationSkipDeploymentWithOverridingDependency(t *testing.T) {
 }
 
 func TestValidationSkipDeploymentWithOverridingFlagValue(t *testing.T) {
-	statusCode := RunImpl([]string{
+	statusCode := runner.RunImpl([]string{
 		"monaco",
+		"deploy",
 		"--dry-run",
 		"--environments", skipDeploymentEnvironmentsFile,
 		"--project", "projectE",
@@ -79,15 +84,15 @@ func TestValidationSkipDeploymentWithOverridingFlagValue(t *testing.T) {
 	assert.Equal(t, statusCode, 0)
 }
 
-// uncomment once the cross project skipDeployment check is implemented
-// func TestValidationSkipDeploymentInterProjectWithMissingDependency(t *testing.T) {
-// 	statusCode := RunImpl([]string{
-// 		"monaco",
-// 		"-dry-run",
-// 		"--environments", skipDeploymentEnvironmentsFile,
-// 		"-project", "projectD",
-// 		skipDeploymentFolder,
-// 	}, util.CreateTestFileSystem())
+func TestValidationSkipDeploymentInterProjectWithMissingDependency(t *testing.T) {
+	statusCode := runner.RunImpl([]string{
+		"monaco",
+		"deploy",
+		"-dry-run",
+		"--environments", skipDeploymentEnvironmentsFile,
+		"-project", "projectD",
+		skipDeploymentFolder,
+	}, util.CreateTestFileSystem())
 
-// 	assert.Assert(t, statusCode != 0)
-// }
+	assert.Assert(t, statusCode != 0)
+}

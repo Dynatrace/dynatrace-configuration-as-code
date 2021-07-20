@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package main
+package legacy
 
 import (
 	"fmt"
@@ -32,6 +32,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/envvars"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 )
@@ -166,7 +167,14 @@ func cleanupIntegrationTest(t *testing.T, fs afero.Fs, envFile, suffix string) {
 // <original name>_<current timestamp><defined suffix>
 // e.g. my-config_1605258980000_Suffix
 
-func RunIntegrationWithCleanup(t *testing.T, configFolder, envFile, suffixTest string, testFunc func(fs afero.Fs)) {
+func RunLegacyIntegrationWithCleanup(t *testing.T, configFolder, envFile, suffixTest string, testFunc func(fs afero.Fs)) {
+	envvars.InstallFakeEnvironment(map[string]string{
+		"CONFIG_V1": "1",
+	})
+
+	defer func() {
+		envvars.InstallOsBased()
+	}()
 
 	suffix := getTimestamp() + suffixTest
 	transformers := []func(string) string{getTransformerFunc(suffix)}
@@ -176,6 +184,8 @@ func RunIntegrationWithCleanup(t *testing.T, configFolder, envFile, suffixTest s
 		log.Fatal("Error rewriting configs names")
 		return
 	}
+
+	defer cleanupIntegrationTest(t, fs, envFile, suffix)
+
 	testFunc(fs)
-	cleanupIntegrationTest(t, fs, envFile, suffix)
 }

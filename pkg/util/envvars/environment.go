@@ -14,7 +14,10 @@
 
 package envvars
 
-import "os"
+import (
+	"os"
+	"sync"
+)
 
 type environment interface {
 	Lookup(name string) (string, bool)
@@ -38,8 +41,12 @@ func (e *fakeEnvironment) Lookup(name string) (string, bool) {
 }
 
 var instance environment = &osBasedEnvironment{}
+var mutex = &sync.RWMutex{}
 
 func InstallFakeEnvironment(data map[string]string) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	instance = &fakeEnvironment{
 		data,
 	}
