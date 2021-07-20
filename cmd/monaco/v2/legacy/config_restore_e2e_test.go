@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package main
+package legacy
 
 import (
 	"log"
@@ -25,10 +25,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/runner"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/envvars"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 )
@@ -43,6 +45,14 @@ import (
 
 //This version runs the test against 2 simple configs (alerting profiles and management zones)
 func TestRestoreConfigsSimple(t *testing.T) {
+	envvars.InstallFakeEnvironment(map[string]string{
+		"CONFIG_V1": "1",
+	})
+
+	defer func() {
+		envvars.InstallOsBased()
+	}()
+
 	initialConfigsFolder := "test-resources/integration-download-configs/"
 	envFile := initialConfigsFolder + "environments.yaml"
 	downloadFolder := "test-resources/download"
@@ -61,24 +71,20 @@ func TestRestoreConfigsSimple(t *testing.T) {
 // 	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, envFile, subsetOfConfigsToDownload)
 // }
 func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolder string, suffixTest string, envFile string, apisToDownload string) {
-	os.Setenv("NEW_CLI", "1")
 	fs := util.CreateTestFileSystem()
 	err := preparation_uploadConfigs(t, fs, suffixTest, initialConfigsFolder, envFile)
 	if err != nil {
 		assert.NilError(t, err, "Error during download preparation stage")
-		os.Setenv("NEW_CLI", "0")
 		return
 	}
 	err = execution_downloadConfigs(t, fs, downloadFolder, envFile, apisToDownload, suffixTest)
 	if err != nil {
 		assert.NilError(t, err, "Error during download execution stage")
-		os.Setenv("NEW_CLI", "0")
 		return
 	}
 	cleanupEnvironmentConfigs(t, fs, envFile, suffixTest)
 	validation_uploadDownloadedConfigs(t, fs, downloadFolder, envFile)
 	cleanupEnvironmentConfigs(t, fs, envFile, suffixTest)
-	os.Setenv("NEW_CLI", "0")
 }
 
 func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, configFolder string, envFile string) error {
@@ -91,7 +97,7 @@ func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, con
 		return err
 	}
 	//uploads the configs
-	statusCode := RunImpl([]string{
+	statusCode := runner.RunImpl([]string{
 		"monaco", "deploy",
 		"--environments", envFile,
 		configFolder,
@@ -123,7 +129,7 @@ func execution_downloadConfigs(t *testing.T, fs afero.Fs, downloadFolder string,
 			downloadFolder,
 		}
 	}
-	statusCode := RunImpl(parameters, fs)
+	statusCode := runner.RunImpl(parameters, fs)
 	assert.Equal(t, statusCode, 0)
 
 	return nil
@@ -138,7 +144,7 @@ func validation_uploadDownloadedConfigs(t *testing.T, fs afero.Fs, downloadFolde
 		return nil
 	})
 
-	statusCode := RunImpl([]string{
+	statusCode := runner.RunImpl([]string{
 		"monaco", "deploy",
 		"--environments", envFile,
 		downloadFolder,

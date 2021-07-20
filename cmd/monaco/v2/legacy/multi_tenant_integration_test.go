@@ -16,13 +16,14 @@
  * limitations under the License.
  */
 
-package main
+package legacy
 
 import (
 	"testing"
 
 	"gotest.tools/assert"
 
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/runner"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project"
@@ -36,7 +37,7 @@ const environmentsFile = folder + "environments.yaml"
 // Tests all environments with all projects
 func TestIntegrationMultiEnvironment(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironment", func(fs afero.Fs) {
+	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironment", func(fs afero.Fs) {
 
 		environments, errs := environment.LoadEnvironmentList("", environmentsFile, fs)
 		assert.Check(t, len(errs) == 0, "didn't expect errors loading test environments")
@@ -44,8 +45,9 @@ func TestIntegrationMultiEnvironment(t *testing.T) {
 		projects, err := project.LoadProjectsToDeploy(fs, "", api.NewApis(), folder)
 		assert.NilError(t, err)
 
-		statusCode := RunImpl([]string{
+		statusCode := runner.RunImpl([]string{
 			"monaco",
+			"deploy",
 			"--environments", environmentsFile,
 			folder,
 		}, fs)
@@ -59,8 +61,9 @@ func TestIntegrationMultiEnvironment(t *testing.T) {
 // Tests a dry run (validation)
 func TestIntegrationValidationMultiEnvironment(t *testing.T) {
 
-	statusCode := RunImpl([]string{
+	statusCode := runner.RunImpl([]string{
 		"monaco",
+		"deploy",
 		"--environments", environmentsFile,
 		"--dry-run",
 		folder,
@@ -72,7 +75,7 @@ func TestIntegrationValidationMultiEnvironment(t *testing.T) {
 // tests a single project
 func TestIntegrationMultiEnvironmentSingleProject(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleProject", func(fs afero.Fs) {
+	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleProject", func(fs afero.Fs) {
 
 		environments, errs := environment.LoadEnvironmentList("", environmentsFile, fs)
 		FailOnAnyError(errs, "loading of environments failed")
@@ -80,8 +83,9 @@ func TestIntegrationMultiEnvironmentSingleProject(t *testing.T) {
 		projects, err := project.LoadProjectsToDeploy(fs, "cinema-infrastructure", api.NewApis(), folder)
 		assert.NilError(t, err)
 
-		statusCode := RunImpl([]string{
+		statusCode := runner.RunImpl([]string{
 			"monaco",
+			"deploy",
 			"--environments", environmentsFile,
 			"-p", "cinema-infrastructure",
 			folder,
@@ -96,7 +100,7 @@ func TestIntegrationMultiEnvironmentSingleProject(t *testing.T) {
 // Tests a single project with dependency
 func TestIntegrationMultiEnvironmentSingleProjectWithDependency(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleProjectWithDependency", func(fs afero.Fs) {
+	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleProjectWithDependency", func(fs afero.Fs) {
 
 		environments, errs := environment.LoadEnvironmentList("", environmentsFile, fs)
 		FailOnAnyError(errs, "loading of environments failed")
@@ -106,8 +110,9 @@ func TestIntegrationMultiEnvironmentSingleProjectWithDependency(t *testing.T) {
 
 		assert.Check(t, len(projects) == 2, "Projects should be star-trek and the dependency cinema-infrastructure")
 
-		statusCode := RunImpl([]string{
+		statusCode := runner.RunImpl([]string{
 			"monaco",
+			"deploy",
 			"--environments", environmentsFile,
 			"-p", "star-trek",
 			folder,
@@ -122,7 +127,7 @@ func TestIntegrationMultiEnvironmentSingleProjectWithDependency(t *testing.T) {
 // tests a single environment
 func TestIntegrationMultiEnvironmentSingleEnvironment(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleEnvironment", func(fs afero.Fs) {
+	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleEnvironment", func(fs afero.Fs) {
 
 		environments, errs := environment.LoadEnvironmentList("", environmentsFile, fs)
 		FailOnAnyError(errs, "loading of environments failed")
@@ -133,8 +138,9 @@ func TestIntegrationMultiEnvironmentSingleEnvironment(t *testing.T) {
 		// remove environment odt69781, just keep dav48679
 		delete(environments, "odt69781")
 
-		statusCode := RunImpl([]string{
+		statusCode := runner.RunImpl([]string{
 			"monaco",
+			"deploy",
 			"--environments", environmentsFile,
 			folder,
 		}, fs)

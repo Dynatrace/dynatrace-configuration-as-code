@@ -16,11 +16,12 @@
  * limitations under the License.
  */
 
-package main
+package legacy
 
 import (
 	"testing"
 
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/runner"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project"
@@ -35,7 +36,7 @@ func TestIntegrationContinueDeploymentOnError(t *testing.T) {
 	const allConfigsFolder = "test-resources/integration-configs-with-errors/"
 	const allConfigsEnvironmentsFile = allConfigsFolder + "environments.yaml"
 
-	RunIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fs afero.Fs) {
+	RunLegacyIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fs afero.Fs) {
 
 		environments, errs := environment.LoadEnvironmentList("", allConfigsEnvironmentsFile, fs)
 		assert.Check(t, len(errs) == 0, "didn't expect errors loading test environments")
@@ -43,9 +44,11 @@ func TestIntegrationContinueDeploymentOnError(t *testing.T) {
 		projects, err := project.LoadProjectsToDeploy(fs, "", api.NewApis(), allConfigsFolder)
 		assert.NilError(t, err)
 
-		statusCode := RunImpl([]string{
+		statusCode := runner.RunImpl([]string{
 			"monaco",
-			"--verbose", "--continue-on-error",
+			"deploy",
+			"--verbose",
+			"--continue-on-error",
 			"--environments", allConfigsEnvironmentsFile,
 			allConfigsFolder,
 		}, fs)

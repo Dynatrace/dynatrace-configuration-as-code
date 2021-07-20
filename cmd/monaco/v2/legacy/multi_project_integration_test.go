@@ -16,15 +16,17 @@
  * limitations under the License.
  */
 
-package main
+package legacy
 
 import (
 	"testing"
 
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/runner"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/envvars"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 )
@@ -36,7 +38,7 @@ const multiProjectEnvironmentsFile = multiProjectFolder + "environments.yaml"
 // Tests all environments with all projects
 func TestIntegrationMultiProject(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "MultiProject", func(fs afero.Fs) {
+	RunLegacyIntegrationWithCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "MultiProject", func(fs afero.Fs) {
 
 		environments, errs := environment.LoadEnvironmentList("", multiProjectEnvironmentsFile, fs)
 		assert.Check(t, len(errs) == 0, "didn't expect errors loading test environments")
@@ -44,8 +46,9 @@ func TestIntegrationMultiProject(t *testing.T) {
 		projects, err := project.LoadProjectsToDeploy(fs, "", api.NewApis(), multiProjectFolder)
 		assert.NilError(t, err)
 
-		statusCode := RunImpl([]string{
+		statusCode := runner.RunImpl([]string{
 			"monaco",
+			"deploy",
 			"--environments", multiProjectEnvironmentsFile,
 			multiProjectFolder,
 		}, fs)
@@ -58,9 +61,17 @@ func TestIntegrationMultiProject(t *testing.T) {
 
 // Tests a dry run (validation)
 func TestIntegrationValidationMultiProject(t *testing.T) {
+	envvars.InstallFakeEnvironment(map[string]string{
+		"CONFIG_V1": "1",
+	})
 
-	statusCode := RunImpl([]string{
+	defer func() {
+		envvars.InstallOsBased()
+	}()
+
+	statusCode := runner.RunImpl([]string{
 		"monaco",
+		"deploy",
 		"--environments", multiProjectEnvironmentsFile,
 		"--dry-run",
 		multiProjectFolder,
@@ -71,9 +82,17 @@ func TestIntegrationValidationMultiProject(t *testing.T) {
 
 // Tests a dry run (validation)
 func TestIntegrationValidationMultiProjectWithoutEndingSlashInPath(t *testing.T) {
+	envvars.InstallFakeEnvironment(map[string]string{
+		"CONFIG_V1": "1",
+	})
 
-	statusCode := RunImpl([]string{
+	defer func() {
+		envvars.InstallOsBased()
+	}()
+
+	statusCode := runner.RunImpl([]string{
 		"monaco",
+		"deploy",
 		"--environments", multiProjectEnvironmentsFile,
 		"--dry-run",
 		multiProjectFolderWithoutSlash,
@@ -85,7 +104,7 @@ func TestIntegrationValidationMultiProjectWithoutEndingSlashInPath(t *testing.T)
 // tests a single project with dependencies
 func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "MultiProjectSingleProject", func(fs afero.Fs) {
+	RunLegacyIntegrationWithCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "MultiProjectSingleProject", func(fs afero.Fs) {
 
 		environments, errs := environment.LoadEnvironmentList("", multiProjectEnvironmentsFile, fs)
 		FailOnAnyError(errs, "loading of environments failed")
@@ -95,8 +114,9 @@ func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 
 		assert.Equal(t, projects[0].GetId(), "test-resources/integration-multi-project/cinema-infrastructure", "Check if dependent project `cinema-infrastructure` is loaded and will be deployed first.")
 
-		statusCode := RunImpl([]string{
+		statusCode := runner.RunImpl([]string{
 			"monaco",
+			"deploy",
 			"--environments", multiProjectEnvironmentsFile,
 			"-p", "star-trek",
 			multiProjectFolder,
