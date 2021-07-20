@@ -1,13 +1,13 @@
 name: Run Static Code Analysis
 
 # This workflow uses golangci-lint to run static code analysis on PRs
-# In addition to default golanci-linters checks vulnerability checks (gosec), 
-# closing of openend http bodies (bodyclose), cyclomatic complexity (cyclop), 
+# In addition to default golanci-linters checks vulnerability checks (gosec),
+# closing of openend http bodies (bodyclose), cyclomatic complexity (cyclop),
 # exhaustive switches (exhaustive) and open TODO/FIXME comments (godox)
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ main, next ]
 
 jobs:
   golangci:
