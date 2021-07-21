@@ -134,7 +134,7 @@ func writeReferenceParameter(context parameter.ParameterWriterContext) (map[stri
 	sameApi := context.Coordinate.Api == refParam.Config.Api
 	sameConfig := context.Coordinate.Config == refParam.Config.Config
 
-	if sameProject {
+	if !sameProject {
 		result["project"] = refParam.Config.Project
 	}
 
