@@ -85,6 +85,9 @@ func validateIfExtensionShouldBeUploaded(client *http.Client, apiPath string, ex
 	if err != nil {
 		return extensionValidationError, err
 	}
+	if response.StatusCode == http.StatusNotFound {
+		return extensionNeedsUpdate, nil
+	}
 	var extProperties struct{ Version *string }
 	if err := json.Unmarshal(response.Body, &extProperties); err != nil {
 		return extensionValidationError, err
