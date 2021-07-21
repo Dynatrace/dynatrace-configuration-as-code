@@ -67,6 +67,17 @@ func TestCorrectlyIdentifiesNecessaryUpdate(t *testing.T) {
 	assert.Equal(t, status, extensionNeedsUpdate)
 }
 
+func TestCorrectlyIdentifiesMissingExtension(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		rw.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", nil, "token")
+	assert.NilError(t, err)
+	assert.Equal(t, status, extensionNeedsUpdate)
+}
+
 func TestThrowsErrorOnRemoteParsingProblems(t *testing.T) {
 	localPayload := `{ "version": "1.5" }`
 	remotePayload := `{ "version "1" `
