@@ -17,7 +17,7 @@ package manifest
 type project struct {
 	Name string  `yaml:"name"`
 	Type *string `yaml:"type,omitempty"`
-	Path string  `yaml:"path"`
+	Path string  `yaml:"path,omitempty"`
 }
 
 type tokenConfig struct {
