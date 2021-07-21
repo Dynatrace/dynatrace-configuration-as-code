@@ -62,10 +62,19 @@ func persistManifestToDisk(context *ManifestWriterContext, m manifest) error {
 func toWriteableProjects(projects map[string]ProjectDefinition) []project {
 	var result []project
 
-	for projectName, projectDefinition := range projects {
-		p := project{
-			Name: projectName,
-			Path: projectDefinition.Path,
+	//TODO detect grouping projects
+	for _, projectDefinition := range projects {
+		var p project
+
+		if projectDefinition.Name != projectDefinition.Path {
+			p = project{
+				Name: projectDefinition.Name,
+				Path: projectDefinition.Path,
+			}
+		} else {
+			p = project{
+				Name: projectDefinition.Name,
+			}
 		}
 
 		result = append(result, p)
