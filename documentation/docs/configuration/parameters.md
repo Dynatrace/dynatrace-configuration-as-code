@@ -36,8 +36,8 @@ parameters:
   complexThreshold:
     type: value
     value:
-        amount: 15
-        unit: sec
+      amount: 15
+      unit: sec
 ```
 
 In the template of this config you could then access the `threshold`
@@ -139,4 +139,65 @@ configs:
     parameters:
       zoneId: ["infrastructure", "management-zone", "main", "id"]
       devZoneId: ["management-zone", "development", "id"]
+```
+
+## Compound Parameter
+
+The compound parameter is a parameter composed of other parameters of the same
+config. This parameters requires 2 properties: a `format` string and a list of
+`references` to all referenced parameters. Both properties are required.
+The `format` string can be any string, and to use parameters in it, the
+following syntax is used: `{{ .parameter }}`, where <parameter> is the
+name of the parameter that will be filled in. A simple example might look like this:
+
+```yaml
+parameters:
+  example:
+    type: compound
+    format: "{{ .greeting }} {{ .entity }}!"
+    references:
+      - greeting
+      - entity
+  greeting: "Hello"
+  entity: "World"
+```
+
+This would produce the value `Hello World!` for `example`. Compound parameters
+can also be used for more complex values, as seen in the following example:
+
+```yaml
+parameters:
+  example:
+    type: compound
+    format: "{{ .resource.name }}: {{ .resource.percent }}%"
+    references:
+      - resource
+  progress:
+    type: value
+    value:
+      name: "Health"
+      percent: 40
+```
+
+This would produce the value `Health: 40%` for example.
+Even though referenced parameters can only be from the same config,
+by using the reference parameter it is possible to make a compound
+parameters with other configs. The same goes for environment variables.
+
+```yaml
+parameters:
+  example:
+    type: compound
+    format: "{{ .user }}'s dashboard is {{ .status }}"
+    references:
+      - user
+      - status
+  user:
+    type: environment
+    name: USER_NAME
+  status:
+    type: reference
+    api: dashboard
+    config: dashboard
+    property: status
 ```
