@@ -17,6 +17,7 @@ package v2
 import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
+	compoundParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/compound"
 	envParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/environment"
 	refParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/reference"
 	valueParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/value"
@@ -76,4 +77,5 @@ var DefaultParameterParsers = map[string]parameter.ParameterSerDe{
 	refParam.ReferenceParameterType:           refParam.ReferenceParameterSerde,
 	valueParam.ValueParameterType:             valueParam.ValueParameterSerde,
 	envParam.EnvironmentVariableParameterType: envParam.EnvironmentVariableParameterSerde,
+	compoundParam.CompoundParameterType:       compoundParam.CompoundParameterSerde,
 }
