@@ -168,7 +168,7 @@ func cleanupIntegrationTest(t *testing.T, fs afero.Fs, envFile, suffix string) {
 // e.g. my-config_1605258980000_Suffix
 
 func RunLegacyIntegrationWithCleanup(t *testing.T, configFolder, envFile, suffixTest string, testFunc func(fs afero.Fs)) {
-	envvars.InstallFakeEnvironment(map[string]string{
+	envvars.InstallFakeOsOverrideEnvironment(map[string]string{
 		"CONFIG_V1": "1",
 	})
 

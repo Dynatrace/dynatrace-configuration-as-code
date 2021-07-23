@@ -40,20 +40,44 @@ func (e *fakeEnvironment) Lookup(name string) (string, bool) {
 	return data, found
 }
 
-var instance environment = &osBasedEnvironment{}
-var mutex = &sync.RWMutex{}
+type fakeOsOverrideEnvironment struct {
+	overrides map[string]string
+}
+
+func (e *fakeOsOverrideEnvironment) Lookup(name string) (string, bool) {
+	if data, found := e.overrides[name]; found {
+		return data, found
+	}
+
+	return osBased.Lookup(name)
+}
+
+var (
+	osBased = &osBasedEnvironment{}
+)
+
+var (
+	instance environment = osBased
+	mutex                = &sync.RWMutex{}
+)
+
+func InstallFakeOsOverrideEnvironment(overrides map[string]string) {
+	updateInstace(&fakeOsOverrideEnvironment{overrides})
+}
 
 func InstallFakeEnvironment(data map[string]string) {
-	mutex.Lock()
-	defer mutex.Unlock()
-
-	instance = &fakeEnvironment{
-		data,
-	}
+	updateInstace(&fakeEnvironment{data})
 }
 
 func InstallOsBased() {
-	instance = &osBasedEnvironment{}
+	updateInstace(osBased)
+}
+
+func updateInstace(env environment) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	instance = env
 }
 
 func Lookup(name string) (string, bool) {
