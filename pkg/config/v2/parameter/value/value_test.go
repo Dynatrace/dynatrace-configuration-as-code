@@ -19,7 +19,6 @@ package value
 import (
 	"testing"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
 
 	"gotest.tools/assert"
@@ -29,12 +28,6 @@ func TestParseValueParameter(t *testing.T) {
 	value := "test"
 
 	param, err := parseValueParameter(parameter.ParameterParserContext{
-		Coordinate: coordinate.Coordinate{
-			Project: "projectA",
-			Api:     "dashboard",
-			Config:  "super-important",
-		},
-		ParameterName: "title",
 		Value: map[string]interface{}{
 			"value": value,
 		},
@@ -43,21 +36,42 @@ func TestParseValueParameter(t *testing.T) {
 	assert.NilError(t, err)
 
 	valueParam, ok := param.(*ValueParameter)
+	assert.Assert(t, ok, "parsed parameter should be value parameter")
+	assert.Equal(t, valueParam.GetType(), "value")
 
-	assert.Assert(t, ok, "parsed parameter is value parameter")
 	assert.Equal(t, value, valueParam.Value)
+}
+
+func TestParseValueParameterMap(t *testing.T) {
+	value := map[string]string{
+		"foo":  "bar",
+		"fizz": "buzz",
+	}
+
+	param, err := parseValueParameter(parameter.ParameterParserContext{
+		Value: map[string]interface{}{
+			"value": value,
+		},
+	})
+
+	assert.NilError(t, err)
+
+	valueParam, ok := param.(*ValueParameter)
+	assert.Assert(t, ok, "parsed parameter should be value parameter")
+
+	result, ok := valueParam.Value.(map[string]string)
+	assert.Assert(t, ok, "result should be of type map[string]string, is: %T", valueParam.Value)
+	assert.Equal(t, len(result), 2)
+
+	for key, val := range value {
+		assert.Equal(t, result[key], val)
+	}
 }
 
 func TestParseValueParameterMissingValueParameterShouldReturnError(t *testing.T) {
 	value := "test"
 
 	_, err := parseValueParameter(parameter.ParameterParserContext{
-		Coordinate: coordinate.Coordinate{
-			Project: "projectA",
-			Api:     "dashboard",
-			Config:  "super-important",
-		},
-		ParameterName: "title",
 		Value: map[string]interface{}{
 			"title": value,
 		},
@@ -67,9 +81,7 @@ func TestParseValueParameterMissingValueParameterShouldReturnError(t *testing.T)
 }
 
 func TestGetReferencesShouldNotReturnAnything(t *testing.T) {
-	fixture := ValueParameter{
-		Value: "test",
-	}
+	fixture := New("test")
 
 	refs := fixture.GetReferences()
 
@@ -78,19 +90,48 @@ func TestGetReferencesShouldNotReturnAnything(t *testing.T) {
 
 func TestResolveValue(t *testing.T) {
 	value := "test"
-	fixture := ValueParameter{
-		Value: value,
-	}
+	fixture := New(value)
 
-	result, err := fixture.ResolveValue(parameter.ResolveContext{
-		ConfigCoordinate: coordinate.Coordinate{
-			Project: "projectA",
-			Api:     "dashboard",
-			Config:  "super-important",
-		},
-		ParameterName: "test",
-	})
+	result, err := fixture.ResolveValue(parameter.ResolveContext{})
 
 	assert.NilError(t, err)
 	assert.Equal(t, value, result)
+}
+
+func TestResolveValueMap(t *testing.T) {
+	value := map[string]string{
+		"foo":  "bar",
+		"some": "thing",
+	}
+	fixture := New(value)
+
+	result, err := fixture.ResolveValue(parameter.ResolveContext{})
+
+	assert.NilError(t, err)
+
+	resultMap, ok := result.(map[string]string)
+	assert.Assert(t, ok, "result should be of type map[string]string, is: %T", result)
+	assert.Equal(t, len(resultMap), 2)
+
+	for key, val := range value {
+		assert.Equal(t, resultMap[key], val)
+	}
+}
+
+func TestWriteValueParameter(t *testing.T) {
+	value := "something"
+	param := New(value)
+
+	context := parameter.ParameterWriterContext{
+		Parameter: param,
+	}
+
+	result, err := writeValueParameter(context)
+
+	assert.NilError(t, err)
+	assert.Equal(t, len(result), 1, "should have 1 property")
+
+	resultVal, ok := result["value"]
+	assert.Assert(t, ok, "should have property `name`")
+	assert.Equal(t, resultVal, value)
 }

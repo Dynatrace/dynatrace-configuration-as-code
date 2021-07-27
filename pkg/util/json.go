@@ -55,7 +55,7 @@ var (
 	_ PrettyPrintableError = (*JsonValidationError)(nil)
 )
 
-func (e *JsonValidationError) Error() string {
+func (e JsonValidationError) Error() string {
 	return fmt.Sprintf("rendered template `%s` is not a valid json: Error: %s",
 		e.Location.TemplateFilePath, e.Cause.Error())
 }
@@ -66,7 +66,7 @@ var (
 
 // ContainsLineInformation indicates whether additional line information is present in
 // the error.
-func (e *JsonValidationError) ContainsLineInformation() bool {
+func (e JsonValidationError) ContainsLineInformation() bool {
 	return e.LineNumber > 0 && e.CharacterNumberInLine > 0 && e.LineContent != ""
 }
 
@@ -78,7 +78,7 @@ const errorTemplate = `File did not contain valid json:
  %s - Cause: %s
 `
 
-func (e *JsonValidationError) PrettyError() string {
+func (e JsonValidationError) PrettyError() string {
 
 	if e.ContainsLineInformation() {
 		lengthOfLineNum := len(strconv.Itoa(e.LineNumber))
@@ -138,7 +138,7 @@ func mapError(input string, location Location, offset int, err error) error {
 	for i, line := range lines {
 		if offset <= characterCountToEndOfPrevLine+len(line) {
 
-			return &JsonValidationError{
+			return JsonValidationError{
 				Location:              location,
 				LineNumber:            i + 1, // humans tend to count from 1
 				CharacterNumberInLine: offset - characterCountToEndOfPrevLine,
@@ -157,7 +157,7 @@ func mapError(input string, location Location, offset int, err error) error {
 // newEmptyErr constructs an empty error without line number, character number,
 // and line in which the error happened
 func newEmptyErr(location Location, err error) error {
-	return &JsonValidationError{
+	return JsonValidationError{
 		Location:              location,
 		LineNumber:            -1,
 		CharacterNumberInLine: -1,

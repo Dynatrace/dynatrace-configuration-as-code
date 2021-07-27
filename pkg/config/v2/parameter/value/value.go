@@ -15,7 +15,6 @@
 package value
 
 import (
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/errors"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
 )
 
@@ -31,6 +30,10 @@ var ValueParameterSerde = parameter.ParameterSerDe{
 // resolve at config load time.
 type ValueParameter struct {
 	Value interface{}
+}
+
+func New(value interface{}) *ValueParameter {
+	return &ValueParameter{Value: value}
 }
 
 // this forces the compiler to check if ValueParameter is of type Parameter
@@ -53,35 +56,17 @@ func (p *ValueParameter) ResolveValue(_ parameter.ResolveContext) (interface{}, 
 // the only required property is `value`.
 func parseValueParameter(context parameter.ParameterParserContext) (parameter.Parameter, error) {
 	if val, ok := context.Value["value"]; ok {
-		return &ValueParameter{
-			Value: val,
-		}, nil
+		return New(val), nil
 	}
 
-	return nil, &parameter.ParameterParserError{
-		Location: context.Coordinate,
-		EnvironmentDetails: errors.EnvironmentDetails{
-			Group:       context.Group,
-			Environment: context.Environment,
-		},
-		ParameterName: context.ParameterName,
-		Reason:        "missing property `value`",
-	}
+	return nil, parameter.NewParameterParserError(context, "missing property `value`")
 }
 
 func writeValueParameter(context parameter.ParameterWriterContext) (map[string]interface{}, error) {
 	valueParam, ok := context.Parameter.(*ValueParameter)
 
 	if !ok {
-		return nil, &parameter.ParameterWriterError{
-			Location: context.Coordinate,
-			EnvironmentDetails: errors.EnvironmentDetails{
-				Group:       context.Group,
-				Environment: context.Environment,
-			},
-			ParameterName: context.ParameterName,
-			Reason:        "unexpected type. parameter is not of type `ValueParameter`",
-		}
+		return nil, parameter.NewParameterWriterError(context, "unexpected type. parameter is not of type `ValueParameter`")
 	}
 
 	return map[string]interface{}{

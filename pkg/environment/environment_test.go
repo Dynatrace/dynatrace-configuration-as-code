@@ -134,16 +134,7 @@ func TestParsingEnvironmentsWithSameIds(t *testing.T) {
 }
 
 func TestTokenAvailableOnGetterCall(t *testing.T) {
-	testTokenAvailableOnGetterCall(t, testYamlEnvironment)
-}
-
-func TestTokenNotAvailableOnGetterCall(t *testing.T) {
-	testTokenNotAvailableOnGetterCall(t, testYamlEnvironment)
-}
-
-func testTokenAvailableOnGetterCall(t *testing.T, environmentYamlContent string) {
-
-	e, devEnvironment := setupEnvironment(t, environmentYamlContent, "development")
+	e, devEnvironment := setupEnvironment(t, testYamlEnvironment, "development")
 
 	util.SetEnv(t, "DEV", "1234")
 	token, e := devEnvironment.GetToken()
@@ -154,9 +145,8 @@ func testTokenAvailableOnGetterCall(t *testing.T, environmentYamlContent string)
 	util.UnsetEnv(t, "DEV")
 }
 
-func testTokenNotAvailableOnGetterCall(t *testing.T, environmentYamlContent string) {
-
-	e, devEnvironment := setupEnvironment(t, environmentYamlContent, "development")
+func TestTokenNotAvailableOnGetterCall(t *testing.T) {
+	e, devEnvironment := setupEnvironment(t, testYamlEnvironment, "development")
 	_, e = devEnvironment.GetToken()
 
 	assert.Error(t, e, "environment variable DEV not found")

@@ -120,17 +120,26 @@ type ParameterParserError struct {
 	Reason string
 }
 
-func (p *ParameterParserError) Coordinates() coordinate.Coordinate {
+func (p ParameterParserError) Coordinates() coordinate.Coordinate {
 	return p.Location
 }
 
-func (p *ParameterParserError) LocationDetails() errors.EnvironmentDetails {
+func (p ParameterParserError) LocationDetails() errors.EnvironmentDetails {
 	return p.EnvironmentDetails
 }
 
-func (p *ParameterParserError) Error() string {
+func (p ParameterParserError) Error() string {
 	return fmt.Sprintf("%s: cannot parse parameter: %s",
 		p.ParameterName, p.Reason)
+}
+
+func NewParameterParserError(context ParameterParserContext, reason string) error {
+	return ParameterParserError{
+		Location:           context.Coordinate,
+		EnvironmentDetails: errors.EnvironmentDetails{Group: context.Group, Environment: context.Environment},
+		ParameterName:      context.ParameterName,
+		Reason:             reason,
+	}
 }
 
 type ParameterWriterError struct {
@@ -143,17 +152,26 @@ type ParameterWriterError struct {
 	Reason string
 }
 
-func (p *ParameterWriterError) Coordinates() coordinate.Coordinate {
+func (p ParameterWriterError) Coordinates() coordinate.Coordinate {
 	return p.Location
 }
 
-func (p *ParameterWriterError) LocationDetails() errors.EnvironmentDetails {
+func (p ParameterWriterError) LocationDetails() errors.EnvironmentDetails {
 	return p.EnvironmentDetails
 }
 
-func (p *ParameterWriterError) Error() string {
+func (p ParameterWriterError) Error() string {
 	return fmt.Sprintf("%s: cannot write parameter: %s",
 		p.ParameterName, p.Reason)
+}
+
+func NewParameterWriterError(context ParameterWriterContext, reason string) error {
+	return &ParameterWriterError{
+		Location:           context.Coordinate,
+		EnvironmentDetails: errors.EnvironmentDetails{Group: context.Group, Environment: context.Environment},
+		ParameterName:      context.ParameterName,
+		Reason:             reason,
+	}
 }
 
 // ParameterResolveValueError is used to indicate that an error occurred during the resolving
@@ -165,17 +183,26 @@ type ParameterResolveValueError struct {
 	Reason             string
 }
 
-func (p *ParameterResolveValueError) Coordinates() coordinate.Coordinate {
+func (p ParameterResolveValueError) Coordinates() coordinate.Coordinate {
 	return p.Location
 }
 
-func (p *ParameterResolveValueError) LocationDetails() errors.EnvironmentDetails {
+func (p ParameterResolveValueError) LocationDetails() errors.EnvironmentDetails {
 	return p.EnvironmentDetails
 }
 
-func (p *ParameterResolveValueError) Error() string {
+func (p ParameterResolveValueError) Error() string {
 	return fmt.Sprintf("%s: cannot parse parameter: %s",
 		p.ParameterName, p.Reason)
+}
+
+func NewParameterResolveValueError(context ResolveContext, reason string) ParameterResolveValueError {
+	return ParameterResolveValueError{
+		Location:           context.ConfigCoordinate,
+		EnvironmentDetails: errors.EnvironmentDetails{Group: context.Group, Environment: context.Environment},
+		ParameterName:      context.ParameterName,
+		Reason:             reason,
+	}
 }
 
 type ParameterWriterContext struct {

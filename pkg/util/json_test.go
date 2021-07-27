@@ -56,15 +56,14 @@ func TestJsonUnmarshallingWithMisplacedContentExpectedError(t *testing.T) {
 	err := ValidateJson(syntaxErrorMisplacedContext, Location{TemplateFilePath: "test.json"})
 	assert.Check(t, err != nil)
 
-	if jsonErr, ok := err.(*JsonValidationError); ok {
-		assert.Equal(t, "test.json", jsonErr.Location.TemplateFilePath)
-		assert.Equal(t, 3, jsonErr.LineNumber)
-		assert.Equal(t, 2, jsonErr.CharacterNumberInLine)
-		assert.Equal(t, "\tsneakySyntaxError", jsonErr.LineContent)
-		assert.Check(t, jsonErr.Cause != nil)
-	} else {
-		t.Fail()
-	}
+	jsonErr, ok := err.(JsonValidationError)
+	assert.Assert(t, ok, "err should be of type JsonValidationError, is: %T", err)
+
+	assert.Equal(t, "test.json", jsonErr.Location.TemplateFilePath)
+	assert.Equal(t, 3, jsonErr.LineNumber)
+	assert.Equal(t, 2, jsonErr.CharacterNumberInLine)
+	assert.Equal(t, "\tsneakySyntaxError", jsonErr.LineContent)
+	assert.Check(t, jsonErr.Cause != nil)
 }
 
 const syntaxErrorNoClosingBracket = `{
@@ -80,15 +79,14 @@ func TestJsonUnmarshallingWithNoClosingBracketExpectedError(t *testing.T) {
 	err := ValidateJson(syntaxErrorNoClosingBracket, Location{TemplateFilePath: "test.json"})
 	assert.Check(t, err != nil)
 
-	if jsonErr, ok := err.(*JsonValidationError); ok {
-		assert.Equal(t, "test.json", jsonErr.Location.TemplateFilePath)
-		assert.Equal(t, 6, jsonErr.LineNumber)
-		assert.Equal(t, 2, jsonErr.CharacterNumberInLine)
-		assert.Equal(t, "\t]", jsonErr.LineContent)
-		assert.Check(t, jsonErr.Cause != nil)
-	} else {
-		t.Fail()
-	}
+	jsonErr, ok := err.(JsonValidationError)
+	assert.Assert(t, ok, "err should be of type JsonValidationError, is: %T", err)
+
+	assert.Equal(t, "test.json", jsonErr.Location.TemplateFilePath)
+	assert.Equal(t, 6, jsonErr.LineNumber)
+	assert.Equal(t, 2, jsonErr.CharacterNumberInLine)
+	assert.Equal(t, "\t]", jsonErr.LineContent)
+	assert.Check(t, jsonErr.Cause != nil)
 }
 
 const syntaxErrorNoComma = `{
@@ -107,15 +105,14 @@ func TestJsonUnmarshallingNoCommaExpectedError(t *testing.T) {
 	err := ValidateJson(syntaxErrorNoComma, Location{TemplateFilePath: "no-comma.json"})
 	assert.Check(t, err != nil)
 
-	if jsonErr, ok := err.(*JsonValidationError); ok {
-		assert.Equal(t, "no-comma.json", jsonErr.Location.TemplateFilePath)
-		assert.Equal(t, 7, jsonErr.LineNumber)
-		assert.Equal(t, 4, jsonErr.CharacterNumberInLine)
-		assert.Equal(t, "\t\t\t\"boolean\": true", jsonErr.LineContent)
-		assert.Check(t, jsonErr.Cause != nil)
-	} else {
-		t.Fail()
-	}
+	jsonErr, ok := err.(JsonValidationError)
+	assert.Assert(t, ok, "err should be of type JsonValidationError, is: %T", err)
+
+	assert.Equal(t, "no-comma.json", jsonErr.Location.TemplateFilePath)
+	assert.Equal(t, 7, jsonErr.LineNumber)
+	assert.Equal(t, 4, jsonErr.CharacterNumberInLine)
+	assert.Equal(t, "\t\t\t\"boolean\": true", jsonErr.LineContent)
+	assert.Check(t, jsonErr.Cause != nil)
 }
 
 const syntaxErrorInFirstLine = `"key": "value",
@@ -131,13 +128,12 @@ func TestJsonUnmarshallingNoOpeningParenthesisExpectedError(t *testing.T) {
 	err := ValidateJson(syntaxErrorInFirstLine, Location{TemplateFilePath: "syntax-err.json"})
 	assert.Check(t, err != nil)
 
-	if jsonErr, ok := err.(*JsonValidationError); ok {
-		assert.Equal(t, "syntax-err.json", jsonErr.Location.TemplateFilePath)
-		assert.Equal(t, 1, jsonErr.LineNumber)
-		assert.Equal(t, 6, jsonErr.CharacterNumberInLine)
-		assert.Equal(t, "\"key\": \"value\",", jsonErr.LineContent)
-		assert.Check(t, jsonErr.Cause != nil)
-	} else {
-		t.Fail()
-	}
+	jsonErr, ok := err.(JsonValidationError)
+	assert.Assert(t, ok, "err should be of type JsonValidationError, is: %T", err)
+
+	assert.Equal(t, "syntax-err.json", jsonErr.Location.TemplateFilePath)
+	assert.Equal(t, 1, jsonErr.LineNumber)
+	assert.Equal(t, 6, jsonErr.CharacterNumberInLine)
+	assert.Equal(t, "\"key\": \"value\",", jsonErr.LineContent)
+	assert.Check(t, jsonErr.Cause != nil)
 }

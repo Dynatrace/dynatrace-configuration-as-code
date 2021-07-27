@@ -17,7 +17,6 @@ package environment
 import (
 	"fmt"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/errors"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/envvars"
@@ -38,13 +37,28 @@ type EnvironmentVariableParameter struct {
 	// name of the referenced environment variable
 	Name string
 
-	// default value used if environment variable specified by `name` cannot be found.
-	// note: this value is only used, if the `HasDefaultValue` flag is set to true.
-	DefaultValue string
-
 	// flag indicating that a default value has been set. this is needed, as
 	// we cannot distinguish an empty string from an not set value.
 	HasDefaultValue bool
+
+	// default value used if environment variable specified by `name` cannot be found.
+	// note: this value is only used, if the `HasDefaultValue` flag is set to true.
+	DefaultValue string
+}
+
+func New(name string) *EnvironmentVariableParameter {
+	return &EnvironmentVariableParameter{
+		Name:            name,
+		HasDefaultValue: false,
+	}
+}
+
+func NewWithDefault(name string, defaultValue string) *EnvironmentVariableParameter {
+	return &EnvironmentVariableParameter{
+		Name:            name,
+		HasDefaultValue: true,
+		DefaultValue:    defaultValue,
+	}
 }
 
 // this forces the compiler to check if EnvironmentVariableParameter is of type Parameter
@@ -68,15 +82,7 @@ func (p *EnvironmentVariableParameter) ResolveValue(context parameter.ResolveCon
 		return p.DefaultValue, nil
 	}
 
-	return nil, &parameter.ParameterResolveValueError{
-		Location: context.ConfigCoordinate,
-		EnvironmentDetails: errors.EnvironmentDetails{
-			Group:       context.Group,
-			Environment: context.Environment,
-		},
-		ParameterName: context.ParameterName,
-		Reason:        fmt.Sprintf("environment variable `%s` not set", p.Name),
-	}
+	return nil, parameter.NewParameterResolveValueError(context, fmt.Sprintf("environment variable `%s` not set", p.Name))
 }
 
 // parseEnvironmentValueParameter parses an EnvironmentVariableParameter from a given context.
@@ -84,44 +90,22 @@ func (p *EnvironmentVariableParameter) ResolveValue(context parameter.ResolveCon
 func parseEnvironmentValueParameter(context parameter.ParameterParserContext) (parameter.Parameter, error) {
 	if name, ok := context.Value["name"]; ok {
 		defaultValue := ""
-		hasDefault := false
 
 		if val, ok := context.Value["default"]; ok {
 			defaultValue = util.ToString(val)
-			hasDefault = true
+			return NewWithDefault(util.ToString(name), defaultValue), nil
 		}
-
-		return &EnvironmentVariableParameter{
-			Name:            util.ToString(name),
-			DefaultValue:    defaultValue,
-			HasDefaultValue: hasDefault,
-		}, nil
+		return New(util.ToString(name)), nil
 
 	}
-	return nil, &parameter.ParameterParserError{
-		Location: context.Coordinate,
-		EnvironmentDetails: errors.EnvironmentDetails{
-			Group:       context.Group,
-			Environment: context.Environment,
-		},
-		ParameterName: context.ParameterName,
-		Reason:        "missing property `name`",
-	}
+	return nil, parameter.NewParameterParserError(context, "missing property `name`")
 }
 
 func writeEnvironmentValueParameter(context parameter.ParameterWriterContext) (map[string]interface{}, error) {
 	envParam, ok := context.Parameter.(*EnvironmentVariableParameter)
 
 	if !ok {
-		return nil, &parameter.ParameterWriterError{
-			Location: context.Coordinate,
-			EnvironmentDetails: errors.EnvironmentDetails{
-				Group:       context.Group,
-				Environment: context.Environment,
-			},
-			ParameterName: context.ParameterName,
-			Reason:        "unexpected type. parameter is not of type `EnvironmentVariableParameter`",
-		}
+		return nil, parameter.NewParameterWriterError(context, "unexpected type. parameter is not of type `EnvironmentVariableParameter`")
 	}
 
 	result := make(map[string]interface{})

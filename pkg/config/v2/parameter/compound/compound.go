@@ -17,11 +17,11 @@ package compound
 import (
 	"bytes"
 	"fmt"
-	"text/template"
+	templ "text/template"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/errors"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 )
 
@@ -34,9 +34,22 @@ var CompoundParameterSerde = parameter.ParameterSerDe{
 }
 
 type CompoundParameter struct {
-	format               *template.Template
+	format               *templ.Template
 	rawFormatString      string
 	referencedParameters []parameter.ParameterReference
+}
+
+func New(name string, format string, referencedParameters []parameter.ParameterReference) (*CompoundParameter, error) {
+	formatTempl, err := template.ParseTemplate(name, format)
+	if err != nil {
+		return &CompoundParameter{}, err
+	}
+
+	return &CompoundParameter{
+		format:               formatTempl,
+		rawFormatString:      format,
+		referencedParameters: referencedParameters,
+	}, nil
 }
 
 // this forces the compiler to check if CompoundParameter is of type Parameter
@@ -73,62 +86,45 @@ func (p *CompoundParameter) ResolveValue(context parameter.ResolveContext) (inte
 // is a template string and `references` are all the used references in `format` refering
 // to other parameters within the config.
 func parseCompoundParameter(context parameter.ParameterParserContext) (parameter.Parameter, error) {
-	formatInterface, ok := context.Value["format"]
+	format, ok := context.Value["format"]
 	if !ok {
-		return nil, createParameterParseError(context, "missing property `format`")
-	}
-
-	format, err := template.New(context.ParameterName).Option("missingkey=error").Parse(util.ToString(formatInterface))
-	if err != nil {
-		return nil, createParameterParseError(context, "format is not a valid template: %v", err)
+		return nil, parameter.NewParameterParserError(context, "missing property `format`")
 	}
 
 	references, ok := context.Value["references"]
 	if !ok {
-		return nil, createParameterParseError(context, "missing property `references`")
+		return nil, parameter.NewParameterParserError(context, "missing property `references`")
 	}
 
 	referencedParameterSlice, ok := references.([]interface{})
 	if !ok {
-		return nil, createParameterParseError(context, "malformed value `references`")
+		return nil, parameter.NewParameterParserError(context, "malformed value `references`")
 	}
 
 	referencedParameters, err := toParameterReferences(referencedParameterSlice, context.Coordinate)
 	if err != nil {
-		return nil, createParameterParseError(context, "invalid parameter references: %v", err)
+		return nil, parameter.NewParameterParserError(context, fmt.Sprintf("invalid parameter references: %v", err))
 	}
 
-	return &CompoundParameter{
-		format:               format,
-		rawFormatString:      util.ToString(formatInterface),
-		referencedParameters: referencedParameters,
-	}, nil
+	return New(context.ParameterName, util.ToString(format), referencedParameters)
 }
 
 func writeCompoundParameter(context parameter.ParameterWriterContext) (map[string]interface{}, error) {
 	compoundParam, ok := context.Parameter.(*CompoundParameter)
 
 	if !ok {
-		return nil, &parameter.ParameterWriterError{
-			Location: context.Coordinate,
-			EnvironmentDetails: errors.EnvironmentDetails{
-				Group:       context.Group,
-				Environment: context.Environment,
-			},
-			ParameterName: context.ParameterName,
-			Reason:        "unexpected type. parameter is not of type `CompoundParameter`",
-		}
+		return nil, parameter.NewParameterWriterError(context, "unexpected type. parameter is not of type `CompoundParameter`")
 	}
 
 	result := make(map[string]interface{})
 
 	if compoundParam.rawFormatString == "" {
-		return nil, createParameterWriteError(context, "missing property `format`")
+		return nil, parameter.NewParameterWriterError(context, "missing property `format`")
 	}
 	result["format"] = compoundParam.rawFormatString
 
 	if len(compoundParam.referencedParameters) == 0 {
-		return nil, createParameterWriteError(context, "missing property `references`")
+		return nil, parameter.NewParameterWriterError(context, "missing property `references`")
 	}
 	references := make([]interface{}, len(compoundParam.referencedParameters))
 
@@ -138,30 +134,6 @@ func writeCompoundParameter(context parameter.ParameterWriterContext) (map[strin
 	result["references"] = references
 
 	return result, nil
-}
-
-func createParameterParseError(context parameter.ParameterParserContext, reason string, a ...interface{}) error {
-	return &parameter.ParameterParserError{
-		Location: context.Coordinate,
-		EnvironmentDetails: errors.EnvironmentDetails{
-			Group:       context.Group,
-			Environment: context.Environment,
-		},
-		ParameterName: context.ParameterName,
-		Reason:        fmt.Sprintf(reason, a...),
-	}
-}
-
-func createParameterWriteError(context parameter.ParameterWriterContext, reason string, a ...interface{}) error {
-	return &parameter.ParameterWriterError{
-		Location: context.Coordinate,
-		EnvironmentDetails: errors.EnvironmentDetails{
-			Group:       context.Group,
-			Environment: context.Environment,
-		},
-		ParameterName: context.ParameterName,
-		Reason:        fmt.Sprintf(reason, a...),
-	}
 }
 
 func toParameterReferences(params []interface{}, coord coordinate.Coordinate) (paramRefs []parameter.ParameterReference, err error) {

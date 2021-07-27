@@ -19,8 +19,8 @@ package environment
 import (
 	"testing"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/envvars"
 	"gotest.tools/assert"
 )
@@ -29,12 +29,6 @@ func TestParseValueParameter(t *testing.T) {
 	name := "test"
 
 	param, err := parseEnvironmentValueParameter(parameter.ParameterParserContext{
-		Coordinate: coordinate.Coordinate{
-			Project: "projectA",
-			Api:     "dashboard",
-			Config:  "super-important",
-		},
-		ParameterName: "title",
 		Value: map[string]interface{}{
 			"name": name,
 		},
@@ -44,7 +38,9 @@ func TestParseValueParameter(t *testing.T) {
 
 	envParameter, ok := param.(*EnvironmentVariableParameter)
 
-	assert.Assert(t, ok, "parsed parameter is environment parameter")
+	assert.Assert(t, ok, "parsed parameter should be environment parameter")
+	assert.Equal(t, envParameter.GetType(), "environment")
+
 	assert.Equal(t, name, envParameter.Name)
 	assert.Assert(t, !envParameter.HasDefaultValue, "environment parameter should not have default")
 }
@@ -54,12 +50,6 @@ func TestParseValueParameterWithDefault(t *testing.T) {
 	defaultValue := "this"
 
 	param, err := parseEnvironmentValueParameter(parameter.ParameterParserContext{
-		Coordinate: coordinate.Coordinate{
-			Project: "projectA",
-			Api:     "dashboard",
-			Config:  "super-important",
-		},
-		ParameterName: "title",
 		Value: map[string]interface{}{
 			"name":    name,
 			"default": defaultValue,
@@ -70,7 +60,7 @@ func TestParseValueParameterWithDefault(t *testing.T) {
 
 	envParameter, ok := param.(*EnvironmentVariableParameter)
 
-	assert.Assert(t, ok, "parsed parameter is environment parameter")
+	assert.Assert(t, ok, "parsed parameter should be environment parameter")
 	assert.Equal(t, name, envParameter.Name)
 	assert.Assert(t, envParameter.HasDefaultValue, "environment parameter should have default")
 	assert.Equal(t, defaultValue, envParameter.DefaultValue)
@@ -78,12 +68,6 @@ func TestParseValueParameterWithDefault(t *testing.T) {
 
 func TestParseValueParameterMissingRequiredField(t *testing.T) {
 	_, err := parseEnvironmentValueParameter(parameter.ParameterParserContext{
-		Coordinate: coordinate.Coordinate{
-			Project: "projectA",
-			Api:     "dashboard",
-			Config:  "super-important",
-		},
-		ParameterName: "title",
 		Value: map[string]interface{}{
 			"wrong":   "value",
 			"default": "value",
@@ -94,12 +78,11 @@ func TestParseValueParameterMissingRequiredField(t *testing.T) {
 }
 
 func TestGetReferences(t *testing.T) {
-	fixture := EnvironmentVariableParameter{
-		Name:            "test",
-		HasDefaultValue: false,
-	}
+	fixture := New("test")
 
-	assert.Assert(t, len(fixture.GetReferences()) == 0, "environment parameter should not have references")
+	references := fixture.GetReferences()
+
+	assert.Equal(t, len(references), 0, "environment parameter should not have references")
 }
 
 func TestResolveValue(t *testing.T) {
@@ -109,21 +92,11 @@ func TestResolveValue(t *testing.T) {
 	envvars.InstallFakeEnvironment(map[string]string{
 		name: value,
 	})
-
 	defer envvars.InstallOsBased()
 
-	fixture := EnvironmentVariableParameter{
-		Name:            name,
-		HasDefaultValue: false,
-	}
+	fixture := New(name)
 
 	result, err := fixture.ResolveValue(parameter.ResolveContext{
-		ConfigCoordinate: coordinate.Coordinate{
-			Project: "projectA",
-			Api:     "dashboard",
-			Config:  "super-important",
-		},
-
 		ParameterName: "test",
 	})
 
@@ -139,22 +112,81 @@ func TestResolveValueWithDefaultValue(t *testing.T) {
 
 	defer envvars.InstallOsBased()
 
-	fixture := EnvironmentVariableParameter{
-		Name:            name,
-		HasDefaultValue: true,
-		DefaultValue:    defaultValue,
-	}
+	fixture := NewWithDefault(name, defaultValue)
 
 	result, err := fixture.ResolveValue(parameter.ResolveContext{
-		ConfigCoordinate: coordinate.Coordinate{
-			Project: "projectA",
-			Api:     "dashboard",
-			Config:  "super-important",
-		},
-
-		ParameterName: "test",
+		ParameterName: name,
 	})
 
 	assert.NilError(t, err)
 	assert.Equal(t, defaultValue, result)
+}
+
+func TestResolveValueErrorOnUnsetEnvVar(t *testing.T) {
+	name := "test"
+
+	envvars.InstallFakeEnvironment(map[string]string{})
+
+	defer envvars.InstallOsBased()
+
+	fixture := New(name)
+
+	_, err := fixture.ResolveValue(parameter.ResolveContext{
+		ParameterName: name,
+	})
+
+	assert.Assert(t, err != nil, "expected an error when resolving unset var without default")
+}
+
+func TestWriteEnvironmentValueParameter(t *testing.T) {
+	name := "TEST"
+	envParam := New(name)
+
+	context := parameter.ParameterWriterContext{
+		Parameter: envParam,
+	}
+
+	result, err := writeEnvironmentValueParameter(context)
+
+	assert.NilError(t, err)
+	assert.Equal(t, len(result), 1, "should have 1 property")
+
+	resultEnv, ok := result["name"]
+	assert.Assert(t, ok, "should have property `name`")
+	assert.Equal(t, resultEnv, name)
+}
+
+func TestWriteEnvironmentValueParameterWithDefault(t *testing.T) {
+	name := "TEST"
+	defaultVal := "some default"
+	envParam := NewWithDefault(name, defaultVal)
+
+	context := parameter.ParameterWriterContext{
+		Parameter: envParam,
+	}
+
+	result, err := writeEnvironmentValueParameter(context)
+
+	assert.NilError(t, err)
+	assert.Equal(t, len(result), 2, "should have 2 properties")
+
+	resultDefault, ok := result["default"]
+	assert.Assert(t, ok, "should have property `default`")
+	assert.Equal(t, resultDefault, defaultVal)
+
+	resultEnv, ok := result["name"]
+	assert.Assert(t, ok, "should have property `name`")
+	assert.Equal(t, resultEnv, name)
+}
+
+func TestWriteEnvironmentValueParameterErrorOnOtherParameterType(t *testing.T) {
+	valueParam := value.ValueParameter{}
+
+	context := parameter.ParameterWriterContext{
+		Parameter: &valueParam,
+	}
+
+	_, err := writeEnvironmentValueParameter(context)
+
+	assert.Assert(t, err != nil)
 }

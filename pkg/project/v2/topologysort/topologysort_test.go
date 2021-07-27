@@ -40,10 +40,7 @@ func TestIsReferencing(t *testing.T) {
 		Name: "name",
 		Parameter: &test.DummyParameter{
 			References: []parameter.ParameterReference{
-				{
-					Config:   referencingConfig,
-					Property: referencingProperty,
-				},
+				parameter.ParameterReference{Config: referencingConfig, Property: referencingProperty},
 			},
 		},
 	}

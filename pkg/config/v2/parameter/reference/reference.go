@@ -36,6 +36,18 @@ type ReferenceParameter struct {
 	parameter.ParameterReference
 }
 
+func New(project string, api string, config string, property string) *ReferenceParameter {
+	coord := coordinate.Coordinate{
+		Project: project,
+		Api:     api,
+		Config:  config,
+	}
+
+	return &ReferenceParameter{
+		parameter.ParameterReference{Config: coord, Property: property},
+	}
+}
+
 func (p *ReferenceParameter) GetType() string {
 	return ReferenceParameterType
 }
@@ -50,7 +62,7 @@ type UnresolvedReferenceError struct {
 	parameter.ParameterReference
 }
 
-func (e *UnresolvedReferenceError) Error() string {
+func (e UnresolvedReferenceError) Error() string {
 	return fmt.Sprintf("%s: cannot resolve reference %s: %s",
 		e.ParameterName, e.ParameterReference.ToString(), e.Reason)
 }
@@ -74,59 +86,24 @@ func (p *ReferenceParameter) ResolveValue(context parameter.ResolveContext) (int
 		if val, found := context.ResolvedParameterValues[p.Property]; found {
 			return val, nil
 		}
-
-		return nil, &UnresolvedReferenceError{
-			ParameterResolveValueError: parameter.ParameterResolveValueError{
-				Location: context.ConfigCoordinate,
-				EnvironmentDetails: errors.EnvironmentDetails{
-					Group:       context.Group,
-					Environment: context.Environment,
-				},
-				ParameterName: context.ParameterName,
-				Reason:        "property has not been resolved yet or does not exist",
-			},
-			ParameterReference: p.ParameterReference,
-		}
+		return nil, newUnresolvedReferenceError(context, p.ParameterReference, "property has not been resolved yet or does not exist")
 	}
 
 	if entity, found := context.ResolvedEntities[p.Config]; found {
 		if val, found := entity.Properties[p.Property]; found {
 			return val, nil
 		}
-
-		return nil, &UnresolvedReferenceError{
-			ParameterResolveValueError: parameter.ParameterResolveValueError{
-				Location: context.ConfigCoordinate,
-				EnvironmentDetails: errors.EnvironmentDetails{
-					Group:       context.Group,
-					Environment: context.Environment,
-				},
-				ParameterName: context.ParameterName,
-				Reason:        "property has not been resolved yet or does not exist",
-			},
-			ParameterReference: p.ParameterReference,
-		}
+		return nil, newUnresolvedReferenceError(context, p.ParameterReference, "property has not been resolved yet or does not exist")
 	}
 
-	return nil, &UnresolvedReferenceError{
-		ParameterResolveValueError: parameter.ParameterResolveValueError{
-			Location:      context.ConfigCoordinate,
-			ParameterName: context.ParameterName,
-			Reason:        "config has not been resolved yet or does not exist",
-		},
-		ParameterReference: p.ParameterReference,
-	}
+	return nil, newUnresolvedReferenceError(context, p.ParameterReference, "config has not been resolved yet or does not exist")
 }
 
 func writeReferenceParameter(context parameter.ParameterWriterContext) (map[string]interface{}, error) {
 	refParam, ok := context.Parameter.(*ReferenceParameter)
 
 	if !ok {
-		return nil, &parameter.ParameterWriterError{
-			Location:      context.Coordinate,
-			ParameterName: context.ParameterName,
-			Reason:        "unexpected type. parameter is not of type `ReferenceParameter`",
-		}
+		return nil, parameter.NewParameterWriterError(context, "unexpected type. parameter is not of type `ReferenceParameter`")
 	}
 
 	result := make(map[string]interface{})
@@ -182,42 +159,24 @@ func parseReferenceParameter(context parameter.ParameterParserContext) (paramete
 	if val, ok := context.Value["property"]; ok {
 		property = util.ToString(val)
 	} else {
-		return nil, &parameter.ParameterParserError{
-			Location: context.Coordinate,
-			EnvironmentDetails: errors.EnvironmentDetails{
-				Group:       context.Group,
-				Environment: context.Environment,
-			},
-			ParameterName: context.ParameterName,
-			Reason:        "missing configuration `property`",
-		}
+		return nil, parameter.NewParameterParserError(context, "missing configuration `property`")
 	}
 
 	// ensure that we do not have "holes" in the reference definition
 	if projectSet && (!apiSet || !configSet) {
-		return nil, &parameter.ParameterParserError{
-			Location:      context.Coordinate,
-			ParameterName: context.ParameterName,
-			Reason:        "project is set, but either api or config isn't! please specify api and config",
-		}
+		return nil, parameter.NewParameterParserError(context, "project is set, but either api or config isn't! please specify api and config")
 	}
 
 	if apiSet && !configSet {
-		return nil, &parameter.ParameterParserError{
-			Location:      context.Coordinate,
-			ParameterName: context.ParameterName,
-			Reason:        "api is set, but config isn't! please specify config",
-		}
+		return nil, parameter.NewParameterParserError(context, "api is set, but config isn't! please specify config")
 	}
 
-	return &ReferenceParameter{
-		ParameterReference: parameter.ParameterReference{
-			Config: coordinate.Coordinate{
-				Project: project,
-				Api:     api,
-				Config:  config,
-			},
-			Property: property,
-		},
-	}, nil
+	return New(project, api, config, property), nil
+}
+
+func newUnresolvedReferenceError(context parameter.ResolveContext, reference parameter.ParameterReference, reason string) error {
+	return &UnresolvedReferenceError{
+		ParameterResolveValueError: parameter.NewParameterResolveValueError(context, reason),
+		ParameterReference:         reference,
+	}
 }

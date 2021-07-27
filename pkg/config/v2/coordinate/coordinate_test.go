@@ -52,3 +52,19 @@ func TestMatchShouldReturnFalseOnNonMatching(t *testing.T) {
 
 	assert.Assert(t, !result, "shouldn't match")
 }
+
+func TestMatchShouldReturnFalseOnNonMatchingSameApi(t *testing.T) {
+	coordinate := Coordinate{
+		Project: "project1",
+		Api:     "dashboard",
+		Config:  "dashboard1",
+	}
+
+	result := coordinate.Match(Coordinate{
+		Project: "project1",
+		Api:     "dashboard",
+		Config:  "dashboard2",
+	})
+
+	assert.Assert(t, !result, "shouldn't match")
+}
