@@ -59,7 +59,7 @@ type ProjectConverterError struct {
 	Reason  string
 }
 
-func (e *ProjectConverterError) Error() string {
+func (e ProjectConverterError) Error() string {
 	return fmt.Sprintf("%s: cannot convert project: %s", e.Project, e.Reason)
 }
 
@@ -68,11 +68,18 @@ type ConvertConfigError struct {
 	Reason   string
 }
 
-func (e *ConvertConfigError) Coordinates() coordinate.Coordinate {
+func newConvertConfigError(coord coordinate.Coordinate, reason string) ConvertConfigError {
+	return ConvertConfigError{
+		Location: coord,
+		Reason:   reason,
+	}
+}
+
+func (e ConvertConfigError) Coordinates() coordinate.Coordinate {
 	return e.Location
 }
 
-func (e *ConvertConfigError) Error() string {
+func (e ConvertConfigError) Error() string {
 	return fmt.Sprintf("cannot convert config: %s", e.Reason)
 }
 
@@ -82,11 +89,23 @@ type ReferenceParserError struct {
 	Reason        string
 }
 
-func (e *ReferenceParserError) Coordinates() coordinate.Coordinate {
+func newReferenceParserError(projectId string, config configv1.Config, parameterName string, reason string) ReferenceParserError {
+	return ReferenceParserError{
+		Location: coordinate.Coordinate{
+			Project: projectId,
+			Api:     config.GetApi().GetId(),
+			Config:  config.GetId(),
+		},
+		ParameterName: parameterName,
+		Reason:        reason,
+	}
+}
+
+func (e ReferenceParserError) Coordinates() coordinate.Coordinate {
 	return e.Location
 }
 
-func (e *ReferenceParserError) Error() string {
+func (e ReferenceParserError) Error() string {
 	return fmt.Sprintf("%s: cannot parse reference: %s",
 		e.ParameterName, e.Reason)
 }
@@ -241,10 +260,7 @@ func convertConfig(context *ConfigConvertContext, environment manifest.Environme
 	templ, envParams, errs := convertTemplate(context, config.GetFilePath())
 
 	if len(errs) > 0 {
-		errors = append(errors, &ConvertConfigError{
-			Location: coord,
-			Reason:   fmt.Sprintf("unable to load template `%s`: %s", config.GetFilePath(), errs),
-		})
+		errors = append(errors, newConvertConfigError(coord, fmt.Sprintf("unable to load template `%s`: %s", config.GetFilePath(), errs)))
 	}
 
 	parameters, references, skip, parameterErrors := convertParameters(context, environment, config)
@@ -255,11 +271,8 @@ func convertConfig(context *ConfigConvertContext, environment manifest.Environme
 
 	for paramName, param := range envParams {
 		if _, found := parameters[paramName]; found {
-			errors = append(errors, &ConvertConfigError{
-				Location: coord,
-				Reason: fmt.Sprintf("parameter name collision. automatic environment variable conversion failed. please rename `%s` parameter",
-					paramName),
-			})
+			errors = append(errors, newConvertConfigError(coord,
+				fmt.Sprintf("parameter name collision. automatic environment variable conversion failed. please rename `%s` parameter", paramName)))
 			continue
 		}
 
@@ -287,7 +300,14 @@ type EnvironmentVariableConverterError struct {
 	Reason       string
 }
 
-func (e *EnvironmentVariableConverterError) Error() string {
+func newEnvironmentVariableConverterError(templatePath string, reason string) EnvironmentVariableConverterError {
+	return EnvironmentVariableConverterError{
+		TemplatePath: templatePath,
+		Reason:       reason,
+	}
+}
+
+func (e EnvironmentVariableConverterError) Error() string {
 	return fmt.Sprintf("%s: %s", e.TemplatePath, e.Reason)
 }
 
@@ -307,10 +327,7 @@ func convertTemplate(context *ConfigConvertContext, templatePath string) (templa
 		match := envVariableRegex.FindStringSubmatch(p)
 
 		if len(match) != 2 {
-			errors = append(errors, &EnvironmentVariableConverterError{
-				TemplatePath: templatePath,
-				Reason:       fmt.Sprintf("cannot parse environment variable: `%s` seems to be invalid", p),
-			})
+			errors = append(errors, newEnvironmentVariableConverterError(templatePath, fmt.Sprintf("cannot parse environment variable: `%s` seems to be invalid", p)))
 			return ""
 		}
 
@@ -318,10 +335,7 @@ func convertTemplate(context *ConfigConvertContext, templatePath string) (templa
 		paramName := transformEnvironmentToParamName(envVar)
 
 		if _, found := environmentParameters[paramName]; !found {
-			environmentParameters[paramName] = &environment.EnvironmentVariableParameter{
-				Name:            envVar,
-				HasDefaultValue: false,
-			}
+			environmentParameters[paramName] = environment.New(envVar)
 		}
 
 		return transformToPropertyAccess(paramName)
@@ -406,15 +420,13 @@ func parseSkipDeploymentParameter(context *ConfigConvertContext, config configv1
 		return false, nil
 	}
 
-	return false, &ConvertConfigError{
-		Location: coordinate.Coordinate{
-			Project: context.ProjectId,
-			Api:     config.GetApi().GetId(),
-			Config:  config.GetId(),
-		},
-		Reason: fmt.Sprintf("invalid value for %s: `%s`. allowed values: true, false",
-			configv1.SkipConfigDeploymentParameter, value),
+	location := coordinate.Coordinate{
+		Project: context.ProjectId,
+		Api:     config.GetApi().GetId(),
+		Config:  config.GetId(),
 	}
+
+	return false, newConvertConfigError(location, fmt.Sprintf("invalid value for %s: `%s`. allowed values: true, false", configv1.SkipConfigDeploymentParameter, value))
 }
 
 func parseReference(context *ConfigConvertContext, config configv1.Config, parameterName string, reference string) (*refParam.ReferenceParameter, error) {
@@ -430,31 +442,15 @@ func parseReference(context *ConfigConvertContext, config configv1.Config, param
 	numberOfParts := len(parts)
 
 	if numberOfParts < 3 {
-		return nil, &ReferenceParserError{
-			Location: coordinate.Coordinate{
-				Project: context.ProjectId,
-				Api:     config.GetApi().GetId(),
-				Config:  config.GetId(),
-			},
-			ParameterName: parameterName,
-			Reason:        "not enough parts. please provide <projectId>/<name>/<config>.<property>",
-		}
+		return nil, newReferenceParserError(context.ProjectId, config, parameterName,
+			"not enough parts. please provide <projectId>/<name>/<config>.<property>")
 	}
 
 	referencedConfigId := parts[numberOfParts-1]
 	apiId := parts[numberOfParts-2]
 	projectId := strings.Join(parts[0:numberOfParts-2], ".")
 
-	return &refParam.ReferenceParameter{
-		ParameterReference: parameter.ParameterReference{
-			Config: coordinate.Coordinate{
-				Project: projectId,
-				Api:     apiId,
-				Config:  referencedConfigId,
-			},
-			Property: property,
-		},
-	}, nil
+	return refParam.New(projectId, apiId, referencedConfigId, property), nil
 }
 
 func loadPropertiesForEnvironment(environment manifest.EnvironmentDefinition, config configv1.Config) map[string]string {
@@ -491,9 +487,7 @@ func convertEnvironments(environments map[string]environmentv1.Environment) map[
 			Name:  env.GetId(),
 			Url:   env.GetEnvironmentUrl(),
 			Group: group,
-			Token: &manifest.EnvironmentVariableToken{
-				EnvironmentVariableName: env.GetTokenName(),
-			},
+			Token: &manifest.EnvironmentVariableToken{EnvironmentVariableName: env.GetTokenName()},
 		}
 	}
 

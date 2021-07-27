@@ -15,13 +15,13 @@
 package writer
 
 import (
-	"fmt"
 	"path/filepath"
 
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
 	project "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/spf13/afero"
 )
 
@@ -68,7 +68,7 @@ func writeProjects(context *WriterContext, projectDefinitions map[string]manifes
 		definition, found := projectDefinitions[p.Id]
 
 		if !found {
-			fmt.Printf("WARNING: no project definition found for `%s`. skipping....\n", p.Id)
+			util.Log.Warn("no project definition found for `%s`. skipping....\n", p.Id)
 			continue
 		}
 

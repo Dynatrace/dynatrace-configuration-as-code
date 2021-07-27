@@ -124,7 +124,7 @@ func LoadTemplate(fs afero.Fs, path string) (Template, error) {
 		content: content,
 	}
 
-	parsedTemplate, err := parseTemplate(sanitizedPath, content)
+	parsedTemplate, err := ParseTemplate(sanitizedPath, content)
 
 	if err != nil {
 		return nil, err
@@ -151,7 +151,7 @@ func CreateFileBasedTemplateFromString(path, content string) (Template, error) {
 		content: content,
 	}
 
-	parsedTemplate, err := parseTemplate(sanitizedPath, content)
+	parsedTemplate, err := ParseTemplate(sanitizedPath, content)
 
 	if err != nil {
 		return nil, err
@@ -177,7 +177,7 @@ func LoadTemplateFromString(id, name, content string) (Template, error) {
 		content: content,
 	}
 
-	parsedTemplate, err := parseTemplate(id, content)
+	parsedTemplate, err := ParseTemplate(id, content)
 
 	if err != nil {
 		return nil, err
@@ -189,6 +189,6 @@ func LoadTemplateFromString(id, name, content string) (Template, error) {
 	return template, nil
 }
 
-func parseTemplate(id, content string) (*templ.Template, error) {
+func ParseTemplate(id, content string) (*templ.Template, error) {
 	return templ.New(id).Option("missingkey=error").Parse(content)
 }

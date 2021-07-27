@@ -87,26 +87,56 @@ type DefinitionParserError struct {
 	Reason   string
 }
 
+func newDefinitionParserError(configId string, context *ConfigLoaderContext, reason string) DefinitionParserError {
+	return DefinitionParserError{
+		Location: coordinate.Coordinate{
+			Project: context.ProjectId,
+			Api:     context.ApiId,
+			Config:  configId,
+		},
+		Path:   context.Path,
+		Reason: reason,
+	}
+}
+
 type DetailedDefinitionParserError struct {
 	DefinitionParserError
 	EnvironmentDetails configErrors.EnvironmentDetails
 }
 
-func (e *DetailedDefinitionParserError) LocationDetails() configErrors.EnvironmentDetails {
+func newDetailedDefinitionParserError(configId string, context *ConfigLoaderContext, environment manifest.EnvironmentDefinition,
+	reason string) DetailedDefinitionParserError {
+
+	return DetailedDefinitionParserError{
+		DefinitionParserError: newDefinitionParserError(configId, context, reason),
+		EnvironmentDetails:    configErrors.EnvironmentDetails{Group: environment.Group, Environment: environment.Name},
+	}
+}
+
+func (e DetailedDefinitionParserError) LocationDetails() configErrors.EnvironmentDetails {
 	return e.EnvironmentDetails
 }
 
-func (e *DetailedDefinitionParserError) Environment() string {
+func (e DetailedDefinitionParserError) Environment() string {
 	return e.EnvironmentDetails.Environment
 }
 
-func (e *DefinitionParserError) Coordinates() coordinate.Coordinate {
-	return e.Coordinates()
+func (e DefinitionParserError) Coordinates() coordinate.Coordinate {
+	return e.Location
 }
 
 type ParameterDefinitionParserError struct {
 	DetailedDefinitionParserError
 	ParameterName string
+}
+
+func newParameterDefinitionParserError(name string, configId string, context *ConfigLoaderContext,
+	environment manifest.EnvironmentDefinition, reason string) ParameterDefinitionParserError {
+
+	return ParameterDefinitionParserError{
+		DetailedDefinitionParserError: newDetailedDefinitionParserError(configId, context, environment, reason),
+		ParameterName:                 name,
+	}
 }
 
 var (
@@ -115,12 +145,12 @@ var (
 	_ configErrors.DetailedConfigError = (*ParameterDefinitionParserError)(nil)
 )
 
-func (e *ParameterDefinitionParserError) Error() string {
+func (e ParameterDefinitionParserError) Error() string {
 	return fmt.Sprintf("%s: cannot parse parameter definition in `%s`: %s",
 		e.ParameterName, e.Path, e.Reason)
 }
 
-func (e *DefinitionParserError) Error() string {
+func (e DefinitionParserError) Error() string {
 	return fmt.Sprintf("cannot parse definition in `%s`: %s",
 		e.Path, e.Reason)
 }
@@ -262,22 +292,7 @@ func getConfigFromDefinition(fs afero.Fs, context *ConfigLoaderContext,
 
 	if definition.Template == "" {
 		return Config{}, []error{
-			&DetailedDefinitionParserError{
-				DefinitionParserError: DefinitionParserError{
-					Location: coordinate.Coordinate{
-						Project: context.ProjectId,
-						Api:     context.ApiId,
-						Config:  configId,
-					},
-					Path:   context.Path,
-					Reason: "missing property `template`",
-				},
-
-				EnvironmentDetails: configErrors.EnvironmentDetails{
-					Group:       environment.Group,
-					Environment: environment.Name,
-				},
-			},
+			newDetailedDefinitionParserError(configId, context, environment, "missing property `template`"),
 		}
 	}
 
@@ -286,23 +301,7 @@ func getConfigFromDefinition(fs afero.Fs, context *ConfigLoaderContext,
 	var errors []error
 
 	if err != nil {
-		errors = append(errors,
-			&DetailedDefinitionParserError{
-				DefinitionParserError: DefinitionParserError{
-					Location: coordinate.Coordinate{
-						Project: context.ProjectId,
-						Api:     context.ApiId,
-						Config:  configId,
-					},
-					Path:   context.Path,
-					Reason: fmt.Sprintf("error while loading template: `%s`", err),
-				},
-				EnvironmentDetails: configErrors.EnvironmentDetails{
-					Group:       environment.Group,
-					Environment: environment.Name,
-				},
-			},
-		)
+		errors = append(errors, newDetailedDefinitionParserError(configId, context, environment, fmt.Sprintf("error while loading template: `%s`", err)))
 	}
 
 	parameters, configReferences, parameterErrors := parseParametersAndReferences(context,
@@ -339,21 +338,7 @@ func getConfigFromDefinition(fs afero.Fs, context *ConfigLoaderContext,
 		}
 
 	} else {
-		errors = append(errors, &DetailedDefinitionParserError{
-			DefinitionParserError: DefinitionParserError{
-				Location: coordinate.Coordinate{
-					Project: context.ProjectId,
-					Api:     context.ApiId,
-					Config:  configId,
-				},
-				Path:   context.Path,
-				Reason: "missing parameter `name`",
-			},
-			EnvironmentDetails: configErrors.EnvironmentDetails{
-				Group:       environment.Group,
-				Environment: environment.Name,
-			},
-		})
+		errors = append(errors, newDetailedDefinitionParserError(configId, context, environment, "missing parameter `name`"))
 	}
 
 	if errors != nil {
@@ -390,32 +375,12 @@ func parseSkip(context *ConfigLoaderContext, environment manifest.EnvironmentDef
 			return false, nil
 		}
 
-		return false, &DetailedDefinitionParserError{
-			DefinitionParserError: DefinitionParserError{
-				Location: coordinate.Coordinate{
-					Project: context.ProjectId,
-					Api:     context.ApiId,
-					Config:  configId,
-				},
-				Path:   context.Path,
-				Reason: fmt.Sprintf("invalid value for `skip`: `%s`. only `true` and `false` are allowed", strVal),
-			},
-			EnvironmentDetails: configErrors.EnvironmentDetails{
-				Group:       environment.Group,
-				Environment: environment.Name,
-			},
-		}
+		return false, newDetailedDefinitionParserError(configId, context, environment,
+			fmt.Sprintf("invalid value for `skip`: `%s`. only `true` and `false` are allowed", strVal))
 	}
 
-	return false, &DefinitionParserError{
-		Location: coordinate.Coordinate{
-			Project: context.ProjectId,
-			Api:     context.ApiId,
-			Config:  configId,
-		},
-		Path:   context.Path,
-		Reason: "invalid value for `skip`: only bool or string types are allowed",
-	}
+	return false, newDefinitionParserError(configId, context,
+		"invalid value for `skip`: only bool or string types are allowed")
 }
 
 func getReferenceSlice(references map[string]coordinate.Coordinate) []coordinate.Coordinate {
@@ -440,15 +405,7 @@ func parseParametersAndReferences(context *ConfigLoaderContext, environment mani
 
 	for name, param := range parameterMap {
 		if _, found := parameters[name]; found {
-			errors = append(errors, &DefinitionParserError{
-				Location: coordinate.Coordinate{
-					Project: context.ProjectId,
-					Api:     context.ApiId,
-					Config:  configId,
-				},
-				Path:   context.Path,
-				Reason: fmt.Sprintf("duplicated parameter `%s`", name),
-			})
+			errors = append(errors, newDefinitionParserError(configId, context, fmt.Sprintf("duplicate parameter `%s`", name)))
 			continue
 		}
 
@@ -476,25 +433,8 @@ func parseParametersAndReferences(context *ConfigLoaderContext, environment mani
 func parseParameter(context *ConfigLoaderContext, environment manifest.EnvironmentDefinition,
 	configId string, name string, param interface{}) (parameter.Parameter, error) {
 	if name == IdParameter {
-		return nil, &ParameterDefinitionParserError{
-			DetailedDefinitionParserError: DetailedDefinitionParserError{
-				DefinitionParserError: DefinitionParserError{
-					Location: coordinate.Coordinate{
-						Project: context.ProjectId,
-						Api:     context.ApiId,
-						Config:  configId,
-					},
-					Path: context.Path,
-					Reason: fmt.Sprintf("parameter name `%s` is not allowed (reserved)",
-						IdParameter),
-				},
-				EnvironmentDetails: configErrors.EnvironmentDetails{
-					Group:       environment.Group,
-					Environment: environment.Name,
-				},
-			},
-			ParameterName: name,
-		}
+		return nil, newParameterDefinitionParserError(name, configId, context, environment,
+			fmt.Sprintf("parameter name `%s` is not allowed (reserved)", IdParameter))
 	}
 
 	if val, ok := param.([]interface{}); ok {
@@ -510,25 +450,8 @@ func parseParameter(context *ConfigLoaderContext, environment manifest.Environme
 		serDe, found := context.ParametersSerDe[parameterType]
 
 		if !found {
-			return nil, &ParameterDefinitionParserError{
-				DetailedDefinitionParserError: DetailedDefinitionParserError{
-					DefinitionParserError: DefinitionParserError{
-						Location: coordinate.Coordinate{
-							Project: context.ProjectId,
-							Api:     context.ApiId,
-							Config:  configId,
-						},
-						Path: context.Path,
-						Reason: fmt.Sprintf("unknown parameter type `%s`",
-							parameterType),
-					},
-					EnvironmentDetails: configErrors.EnvironmentDetails{
-						Group:       environment.Group,
-						Environment: environment.Name,
-					},
-				},
-				ParameterName: name,
-			}
+			return nil, newParameterDefinitionParserError(name, configId, context, environment,
+				fmt.Sprintf("unknown parameter type `%s`", parameterType))
 		}
 
 		return serDe.Deserializer(parameter.ParameterParserContext{
@@ -542,9 +465,7 @@ func parseParameter(context *ConfigLoaderContext, environment manifest.Environme
 		})
 	}
 
-	return &valueParam.ValueParameter{
-		Value: param,
-	}, nil
+	return valueParam.New(param), nil
 }
 
 func toStringMap(m map[interface{}]interface{}) map[string]interface{} {
@@ -561,26 +482,8 @@ func toStringMap(m map[interface{}]interface{}) map[string]interface{} {
 func arrayToReferenceParameter(context *ConfigLoaderContext, environment manifest.EnvironmentDefinition,
 	configId string, parameterName string, arr []interface{}) (parameter.Parameter, error) {
 	if len(arr) == 0 || len(arr) > 4 {
-		return nil, &ParameterDefinitionParserError{
-			DetailedDefinitionParserError: DetailedDefinitionParserError{
-				DefinitionParserError: DefinitionParserError{
-					Location: coordinate.Coordinate{
-						Project: context.ProjectId,
-						Api:     context.ApiId,
-						Config:  configId,
-					},
-					Path: context.Path,
-					Reason: fmt.Sprintf("short references must have between 1 and 4 elements. you provided `%d`",
-						len(arr)),
-				},
-
-				EnvironmentDetails: configErrors.EnvironmentDetails{
-					Group:       environment.Group,
-					Environment: environment.Name,
-				},
-			},
-			ParameterName: parameterName,
-		}
+		return nil, newParameterDefinitionParserError(parameterName, configId, context, environment,
+			fmt.Sprintf("short references must have between 1 and 4 elements. you provided `%d`", len(arr)))
 	}
 
 	project := context.ProjectId
@@ -605,16 +508,7 @@ func arrayToReferenceParameter(context *ConfigLoaderContext, environment manifes
 		property = toString(arr[3])
 	}
 
-	return &refParam.ReferenceParameter{
-		ParameterReference: parameter.ParameterReference{
-			Config: coordinate.Coordinate{
-				Project: project,
-				Api:     api,
-				Config:  config,
-			},
-			Property: property,
-		},
-	}, nil
+	return refParam.New(project, api, config, property), nil
 }
 
 func toString(v interface{}) string {

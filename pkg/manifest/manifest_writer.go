@@ -59,22 +59,14 @@ func persistManifestToDisk(context *ManifestWriterContext, m manifest) error {
 	return afero.WriteFile(context.Fs, filepath.Clean(context.ManifestPath), manifestAsYaml, 0664)
 }
 
-func toWriteableProjects(projects map[string]ProjectDefinition) []project {
-	var result []project
-
+func toWriteableProjects(projects map[string]ProjectDefinition) (result []project) {
 	//TODO detect grouping projects
 	for _, projectDefinition := range projects {
-		var p project
+
+		p := project{Name: projectDefinition.Name}
 
 		if projectDefinition.Name != projectDefinition.Path {
-			p = project{
-				Name: projectDefinition.Name,
-				Path: projectDefinition.Path,
-			}
-		} else {
-			p = project{
-				Name: projectDefinition.Name,
-			}
+			p.Path = projectDefinition.Path
 		}
 
 		result = append(result, p)
@@ -83,7 +75,7 @@ func toWriteableProjects(projects map[string]ProjectDefinition) []project {
 	return result
 }
 
-func toWriteableEnvironmentGroups(environments map[string]EnvironmentDefinition) []group {
+func toWriteableEnvironmentGroups(environments map[string]EnvironmentDefinition) (result []group) {
 	environmentPerGroup := make(map[string][]environment)
 
 	for name, env := range environments {
@@ -96,13 +88,8 @@ func toWriteableEnvironmentGroups(environments map[string]EnvironmentDefinition)
 		environmentPerGroup[env.Group] = append(environmentPerGroup[env.Group], e)
 	}
 
-	var result []group
-
 	for g, envs := range environmentPerGroup {
-		result = append(result, group{
-			Group:   g,
-			Entries: envs,
-		})
+		result = append(result, group{Group: g, Entries: envs})
 	}
 
 	return result

@@ -215,7 +215,6 @@ func toTopLevelConfigDefinition(context *configConverterContext, configs []Confi
 			groupOverrides = append(groupOverrides, extendedConfigDefinition{
 				configDefinition: *base,
 				group:            group,
-				environment:      "",
 			})
 		}
 
@@ -363,23 +362,23 @@ func extractSharedParameters(configs []extendedConfigDefinition) map[string]conf
 	result := make(map[string]configParameter)
 	startParams := configs[0].Parameters
 
-ParamLoop:
 	for name, val := range startParams {
-		for i := 1; i < len(configs); i++ {
-			conf := configs[i]
-			paramVal := conf.Parameters[name]
-
-			if !reflect.DeepEqual(val, paramVal) {
-				// TODO should probably be refactored (loops with labels
-				// are kinda a code smell)
-				continue ParamLoop
-			}
+		if isSharedParameter(configs[1:], name, val) {
+			result[name] = val
 		}
-
-		result[name] = val
 	}
-
 	return result
+}
+
+func isSharedParameter(configs []extendedConfigDefinition, name string, val configParameter) bool {
+	for _, conf := range configs {
+		paramVal := conf.Parameters[name]
+
+		if !reflect.DeepEqual(val, paramVal) {
+			return false
+		}
+	}
+	return true
 }
 
 type propertyCheckResult struct {
@@ -593,13 +592,7 @@ func toParameterDefinition(context *detailedConfigConverterContext, parameterNam
 			context.config.ToString(), parameterName, param.GetType())
 	}
 
-	result, err := serde.Serializer(parameter.ParameterWriterContext{
-		Coordinate:    context.config,
-		Group:         context.environmentDetails.group,
-		Environment:   context.environmentDetails.environment,
-		ParameterName: parameterName,
-		Parameter:     param,
-	})
+	result, err := serde.Serializer(newParameterWriterContext(context, parameterName, param))
 
 	if err != nil {
 		return nil, err
@@ -621,19 +614,13 @@ func toSpecialParameterDefinition(context *detailedConfigConverterContext, param
 		valueParam, ok := param.(*value.ValueParameter)
 
 		if !ok {
-			return nil, fmt.Errorf("%s:%s: parameter of type `%s` is no value param!", context.config.ToString(), parameterName, param.GetType())
+			return nil, fmt.Errorf("%s:%s: parameter of type `%s` is no value param", context.config.ToString(), parameterName, param.GetType())
 		}
 
 		switch valueParam.Value.(type) {
 		// map/array values need special handling to not collide with other paramters
 		case map[string]interface{}, []interface{}:
-			result, err := context.ParametersSerde[param.GetType()].Serializer(parameter.ParameterWriterContext{
-				Coordinate:    context.config,
-				Group:         context.environmentDetails.group,
-				Environment:   context.environmentDetails.environment,
-				ParameterName: parameterName,
-				Parameter:     param,
-			})
+			result, err := context.ParametersSerde[param.GetType()].Serializer(newParameterWriterContext(context, parameterName, param))
 
 			if err != nil {
 				return nil, err
@@ -658,4 +645,15 @@ func groupConfigs(configs []Config) map[coordinate.Coordinate][]Config {
 	}
 
 	return result
+}
+
+func newParameterWriterContext(context *detailedConfigConverterContext, name string,
+	param parameter.Parameter) parameter.ParameterWriterContext {
+	return parameter.ParameterWriterContext{
+		Coordinate:    context.config,
+		Group:         context.environmentDetails.group,
+		Environment:   context.environmentDetails.environment,
+		ParameterName: name,
+		Parameter:     param,
+	}
 }

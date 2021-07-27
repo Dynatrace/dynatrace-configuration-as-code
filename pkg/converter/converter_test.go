@@ -53,9 +53,7 @@ func TestConvertParameters(t *testing.T) {
 		Name:  environmentName,
 		Url:   "test.env",
 		Group: "",
-		Token: &manifest.EnvironmentVariableToken{
-			EnvironmentVariableName: "token",
-		},
+		Token: &manifest.EnvironmentVariableToken{"token"},
 	}
 
 	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles")
@@ -243,9 +241,7 @@ func TestLoadPropertiesForEnvironment(t *testing.T) {
 		Name:  environmentName,
 		Url:   "test.env",
 		Group: groupName,
-		Token: &manifest.EnvironmentVariableToken{
-			EnvironmentVariableName: "token",
-		},
+		Token: &manifest.EnvironmentVariableToken{"token"},
 	}
 
 	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles")
@@ -305,9 +301,7 @@ func TestConvertConfig(t *testing.T) {
 		Name:  environmentName,
 		Url:   "test.env",
 		Group: "",
-		Token: &manifest.EnvironmentVariableToken{
-			EnvironmentVariableName: "token",
-		},
+		Token: &manifest.EnvironmentVariableToken{"token"},
 	}
 
 	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles")
@@ -371,9 +365,7 @@ func TestConvertConfigWithEnvNameCollisionShouldFail(t *testing.T) {
 		Name:  environmentName,
 		Url:   "test.env",
 		Group: "",
-		Token: &manifest.EnvironmentVariableToken{
-			EnvironmentVariableName: "token",
-		},
+		Token: &manifest.EnvironmentVariableToken{"token"},
 	}
 
 	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles")
@@ -416,9 +408,7 @@ func TestConvertSkippedConfig(t *testing.T) {
 		Name:  environmentName,
 		Url:   "test.env",
 		Group: "",
-		Token: &manifest.EnvironmentVariableToken{
-			EnvironmentVariableName: "token",
-		},
+		Token: &manifest.EnvironmentVariableToken{"token"},
 	}
 
 	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles")
@@ -473,18 +463,14 @@ func TestConvertConfigs(t *testing.T) {
 			Name:  environmentName,
 			Url:   "test.env",
 			Group: environmentGroup,
-			Token: &manifest.EnvironmentVariableToken{
-				EnvironmentVariableName: "token",
-			},
+			Token: &manifest.EnvironmentVariableToken{"token"},
 		},
 
 		environmentName2: {
 			Name:  environmentName2,
 			Url:   "test.env",
 			Group: environmentGroup2,
-			Token: &manifest.EnvironmentVariableToken{
-				EnvironmentVariableName: "token",
-			},
+			Token: &manifest.EnvironmentVariableToken{"token"},
 		},
 	}
 
@@ -558,18 +544,14 @@ func TestConvertProjects(t *testing.T) {
 			Name:  environmentName,
 			Url:   "test.env",
 			Group: environmentGroup,
-			Token: &manifest.EnvironmentVariableToken{
-				EnvironmentVariableName: "token",
-			},
+			Token: &manifest.EnvironmentVariableToken{"token"},
 		},
 
 		environmentName2: {
 			Name:  environmentName2,
 			Url:   "test.env",
 			Group: environmentGroup2,
-			Token: &manifest.EnvironmentVariableToken{
-				EnvironmentVariableName: "token",
-			},
+			Token: &manifest.EnvironmentVariableToken{"token"},
 		},
 	}
 

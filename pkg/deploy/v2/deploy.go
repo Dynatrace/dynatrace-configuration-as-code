@@ -34,7 +34,7 @@ type InvalidJsonError struct {
 	error              error
 }
 
-func (e *InvalidJsonError) Unwrap() error {
+func (e InvalidJsonError) Unwrap() error {
 	return e.error
 }
 
@@ -43,15 +43,15 @@ var (
 	_ (interface{ Unwrap() error }) = (*InvalidJsonError)(nil)
 )
 
-func (e *InvalidJsonError) Coordinates() coordinate.Coordinate {
+func (e InvalidJsonError) Coordinates() coordinate.Coordinate {
 	return e.Config
 }
 
-func (e *InvalidJsonError) LocationDetails() configErrors.EnvironmentDetails {
+func (e InvalidJsonError) LocationDetails() configErrors.EnvironmentDetails {
 	return e.EnvironmentDetails
 }
 
-func (e *InvalidJsonError) Error() string {
+func (e InvalidJsonError) Error() string {
 	return e.error.Error()
 }
 
@@ -61,15 +61,26 @@ type ConfigDeployError struct {
 	Reason             string
 }
 
-func (e *ConfigDeployError) Coordinates() coordinate.Coordinate {
+func newConfigDeployError(conf *config.Config, reason string) ConfigDeployError {
+	return ConfigDeployError{
+		Config: conf.Coordinate,
+		EnvironmentDetails: configErrors.EnvironmentDetails{
+			Group:       conf.Group,
+			Environment: conf.Environment,
+		},
+		Reason: reason,
+	}
+}
+
+func (e ConfigDeployError) Coordinates() coordinate.Coordinate {
 	return e.Config
 }
 
-func (e *ConfigDeployError) LocationDetails() configErrors.EnvironmentDetails {
+func (e ConfigDeployError) LocationDetails() configErrors.EnvironmentDetails {
 	return e.EnvironmentDetails
 }
 
-func (e *ConfigDeployError) Error() string {
+func (e ConfigDeployError) Error() string {
 	return e.Reason
 }
 
@@ -81,15 +92,29 @@ type ParameterReferenceError struct {
 	Reason             string
 }
 
-func (e *ParameterReferenceError) Coordinates() coordinate.Coordinate {
+func newParameterReferenceError(coord coordinate.Coordinate, group string, env string,
+	param string, ref parameter.ParameterReference, reason string) ParameterReferenceError {
+	return ParameterReferenceError{
+		Config: coord,
+		EnvironmentDetails: configErrors.EnvironmentDetails{
+			Group:       group,
+			Environment: env,
+		},
+		Parameter: param,
+		Reference: ref,
+		Reason:    reason,
+	}
+}
+
+func (e ParameterReferenceError) Coordinates() coordinate.Coordinate {
 	return e.Config
 }
 
-func (e *ParameterReferenceError) LocationDetails() configErrors.EnvironmentDetails {
+func (e ParameterReferenceError) LocationDetails() configErrors.EnvironmentDetails {
 	return e.EnvironmentDetails
 }
 
-func (e *ParameterReferenceError) Error() string {
+func (e ParameterReferenceError) Error() string {
 	return fmt.Sprintf("parameter `%s` cannot reference `%s`: %s",
 		e.Parameter, e.Reference.ToString(), e.Reason)
 }
@@ -181,28 +206,14 @@ func deployConfig(client rest.DynatraceClient, apis map[string]api.Api,
 		errors = append(errors, err)
 	} else {
 		if _, found := knownEntityNames[conf.Coordinate.Api][configName]; found {
-			errors = append(errors, &ConfigDeployError{
-				Config: conf.Coordinate,
-				EnvironmentDetails: configErrors.EnvironmentDetails{
-					Group:       conf.Group,
-					Environment: conf.Environment,
-				},
-				Reason: fmt.Sprintf("duplicated config name `%s`", configName),
-			})
+			errors = append(errors, newConfigDeployError(conf, fmt.Sprintf("duplicated config name `%s`", configName)))
 		}
 	}
 
 	api := apis[conf.Coordinate.Api]
 
 	if api == nil {
-		errors = append(errors, &ConfigDeployError{
-			Config: conf.Coordinate,
-			EnvironmentDetails: configErrors.EnvironmentDetails{
-				Group:       conf.Group,
-				Environment: conf.Environment,
-			},
-			Reason: fmt.Sprintf("unknown api `%s`. this is most likely a bug!", conf.Coordinate.Api),
-		})
+		errors = append(errors, newConfigDeployError(conf, fmt.Sprintf("unknown api `%s`. this is most likely a bug!", conf.Coordinate.Api)))
 	}
 
 	if errors != nil {
@@ -254,27 +265,13 @@ func extractConfigName(conf *config.Config, properties parameter.Properties) (st
 	val, found := properties[config.NameParameter]
 
 	if !found {
-		return "", &ConfigDeployError{
-			Config: conf.Coordinate,
-			EnvironmentDetails: configErrors.EnvironmentDetails{
-				Group:       conf.Group,
-				Environment: conf.Environment,
-			},
-			Reason: "missing `name` for config",
-		}
+		return "", newConfigDeployError(conf, "missing `name` for config")
 	}
 
 	name, success := val.(string)
 
 	if !success {
-		return "", &ConfigDeployError{
-			Config: conf.Coordinate,
-			EnvironmentDetails: configErrors.EnvironmentDetails{
-				Group:       conf.Group,
-				Environment: conf.Environment,
-			},
-			Reason: "`name` in config is not of type string",
-		}
+		return "", newConfigDeployError(conf, "`name` in config is not of type string")
 	}
 
 	return name, nil
@@ -343,16 +340,7 @@ func validateParameterReferences(configCoordinates coordinate.Coordinate,
 		if ref.Config == configCoordinates {
 			// parameters referencing themselves makes no sense
 			if ref.Property == paramName {
-				errors = append(errors, &ParameterReferenceError{
-					Config: configCoordinates,
-					EnvironmentDetails: configErrors.EnvironmentDetails{
-						Group:       group,
-						Environment: environment,
-					},
-					Parameter: paramName,
-					Reference: ref,
-					Reason:    "parameter referencing itself",
-				})
+				errors = append(errors, newParameterReferenceError(configCoordinates, group, environment, paramName, ref, "parameter referencing itself"))
 			}
 
 			continue
@@ -361,30 +349,12 @@ func validateParameterReferences(configCoordinates coordinate.Coordinate,
 		entity, found := entities[ref.Config]
 
 		if !found {
-			errors = append(errors, &ParameterReferenceError{
-				Config: configCoordinates,
-				EnvironmentDetails: configErrors.EnvironmentDetails{
-					Group:       group,
-					Environment: environment,
-				},
-				Parameter: paramName,
-				Reference: ref,
-				Reason:    "referencing config not found",
-			})
+			errors = append(errors, newParameterReferenceError(configCoordinates, group, environment, paramName, ref, "referencing config not found"))
 			continue
 		}
 
 		if entity.Skip {
-			errors = append(errors, &ParameterReferenceError{
-				Config: configCoordinates,
-				EnvironmentDetails: configErrors.EnvironmentDetails{
-					Group:       group,
-					Environment: environment,
-				},
-				Parameter: paramName,
-				Reference: ref,
-				Reason:    "referencing skipped config",
-			})
+			errors = append(errors, newParameterReferenceError(configCoordinates, group, environment, paramName, ref, "referencing skipped config"))
 			continue
 		}
 	}

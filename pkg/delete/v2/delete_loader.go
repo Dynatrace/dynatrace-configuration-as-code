@@ -42,7 +42,15 @@ type DeleteEntryParserError struct {
 	Reason string
 }
 
-func (e *DeleteEntryParserError) Error() string {
+func newDeleteEntryParserError(value string, index int, reason string) DeleteEntryParserError {
+	return DeleteEntryParserError{
+		Value:  value,
+		Index:  index,
+		Reason: reason,
+	}
+}
+
+func (e DeleteEntryParserError) Error() string {
 	return fmt.Sprintf("invalid delete entry `%s` on index `%d`: %s",
 		e.Value, e.Index, e.Reason)
 }
@@ -126,11 +134,7 @@ func parseDeleteFileDefinition(context *loaderContext, definition deleteFileDefi
 
 func parseDeleteEntry(context *loaderContext, index int, entry string) (DeletePointer, error) {
 	if !strings.Contains(entry, deleteDelimiter) {
-		return DeletePointer{}, &DeleteEntryParserError{
-			Value:  entry,
-			Index:  index,
-			Reason: fmt.Sprintf("invalid format. doesn't contain `%s`", deleteDelimiter),
-		}
+		return DeletePointer{}, newDeleteEntryParserError(entry, index, fmt.Sprintf("invalid format. doesn't contain `%s`", deleteDelimiter))
 	}
 
 	parts := strings.SplitN(entry, deleteDelimiter, 2)
@@ -141,11 +145,7 @@ func parseDeleteEntry(context *loaderContext, index int, entry string) (DeletePo
 	entityName := parts[1]
 
 	if _, found := context.knownApis[apiId]; !found {
-		return DeletePointer{}, &DeleteEntryParserError{
-			Value:  entry,
-			Index:  index,
-			Reason: fmt.Sprintf("unknown api `%s`", apiId),
-		}
+		return DeletePointer{}, newDeleteEntryParserError(entry, index, fmt.Sprintf("unknown api `%s`", apiId))
 	}
 
 	return DeletePointer{

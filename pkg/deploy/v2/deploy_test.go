@@ -84,17 +84,18 @@ func TestResolveParameterValues(t *testing.T) {
 }
 
 func TestResolveParameterValuesShouldFailWhenReferencingNonExistingConfig(t *testing.T) {
+	nonExistingConfig := coordinate.Coordinate{
+		Project: "non-existing",
+		Api:     "management-zone",
+		Config:  "zone1",
+	}
 	parameters := []topologysort.ParameterWithName{
 		{
 			Name: config.NameParameter,
 			Parameter: &test.DummyParameter{
 				References: []parameter.ParameterReference{
 					{
-						Config: coordinate.Coordinate{
-							Project: "non-existing",
-							Api:     "management-zone",
-							Config:  "zone1",
-						},
+						Config:   nonExistingConfig,
 						Property: "name",
 					},
 				},
@@ -383,7 +384,7 @@ func TestExtractConfigNameShouldFailOnMissingName(t *testing.T) {
 
 	_, err := extractConfigName(&conf, properties)
 
-	assert.Assert(t, err != nil, "error should not be null (error val: %s)", err)
+	assert.Assert(t, err != nil, "error should not be nil (error val: %s)", err)
 }
 
 func TestExtractConfigNameShouldFailOnNameWithNonStringType(t *testing.T) {
@@ -406,7 +407,7 @@ func TestExtractConfigNameShouldFailOnNameWithNonStringType(t *testing.T) {
 
 	_, err := extractConfigName(&conf, properties)
 
-	assert.Assert(t, err != nil, "error should not be null (error val: %s)", err)
+	assert.Assert(t, err != nil, "error should not be nil (error val: %s)", err)
 }
 
 func TestDeployConfig(t *testing.T) {

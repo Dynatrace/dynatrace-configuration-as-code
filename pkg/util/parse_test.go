@@ -100,8 +100,6 @@ func TestUnmarshalYamlDoesNotNormalizePathSeparatorsIfValueIsNotReferencingVaria
 	arbitraryPaths := result["arbitraryPaths"]
 	url := result["retainURLs"]
 
-	fmt.Println(arbitraryPaths)
-
 	assert.Equal(t, arbitraryPaths["p1"], "// represents a comment maybe")
 	assert.Equal(t, arbitraryPaths["p2"], "\\ only back slashes \\")
 	assert.Equal(t, arbitraryPaths["p3"], "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36")

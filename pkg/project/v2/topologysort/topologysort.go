@@ -38,11 +38,11 @@ type CircularDependencyParameterSortError struct {
 	DependsOn          []parameter.ParameterReference
 }
 
-func (e *CircularDependencyParameterSortError) Coordinates() coordinate.Coordinate {
+func (e CircularDependencyParameterSortError) Coordinates() coordinate.Coordinate {
 	return e.Config
 }
 
-func (e *CircularDependencyParameterSortError) LocationDetails() errors.EnvironmentDetails {
+func (e CircularDependencyParameterSortError) LocationDetails() errors.EnvironmentDetails {
 	return e.EnvironmentDetails
 }
 
@@ -50,7 +50,7 @@ var (
 	_ errors.DetailedConfigError = (*CircularDependencyParameterSortError)(nil)
 )
 
-func (e *CircularDependencyParameterSortError) Error() string {
+func (e CircularDependencyParameterSortError) Error() string {
 	return fmt.Sprintf("%s: circular dependency detected. check parameter dependencies: %s",
 		e.Parameter, joinParameterReferencesToString(e.DependsOn))
 }
@@ -80,7 +80,7 @@ type CircualDependencyProjectSortError struct {
 	DependsOn []string
 }
 
-func (e *CircualDependencyProjectSortError) Error() string {
+func (e CircualDependencyProjectSortError) Error() string {
 	return fmt.Sprintf("%s:%s: circular dependency detected. check project dependencies: %s",
 		e.Environment, e.Project, strings.Join(e.DependsOn, ", "))
 }
@@ -91,7 +91,7 @@ type CircularDependencyConfigSortError struct {
 	DependsOn   []coordinate.Coordinate
 }
 
-func (e *CircularDependencyConfigSortError) Error() string {
+func (e CircularDependencyConfigSortError) Error() string {
 	return fmt.Sprintf("%s:%s: circular dependency detected. check configs dependencies: %s",
 		e.Environment, e.Config.ToString(), joinCoordinatesToString(e.DependsOn))
 }

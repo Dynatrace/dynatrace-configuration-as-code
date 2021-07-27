@@ -15,6 +15,7 @@
 package runner
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -30,27 +31,20 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-type ConfigurationError struct {
-}
-
-func (c *ConfigurationError) Error() string {
-	return ""
-}
+var errWrongUsage = errors.New("")
 
 func Run(args []string) int {
 	return RunImpl(args, afero.NewOsFs())
 }
 
 func RunImpl(args []string, fs afero.Fs) (statusCode int) {
-	var app *cli.App
-
-	app = buildCli(fs)
+	app := buildCli(fs)
 
 	err := app.Run(args)
 
 	if err != nil {
-		if _, ok := err.(*ConfigurationError); !ok {
-			// Log error if it wasn't an ConfigurationError
+		if err != errWrongUsage {
+			// Log error if it wasn't a usage error
 			util.Log.Error(err.Error())
 		}
 		return 1
@@ -152,14 +146,14 @@ func getDeployCommand(fs afero.Fs) cli.Command {
 
 			if !args.Present() {
 				util.Log.Error("deployment manifest path missing")
-				cli.ShowSubcommandHelp(ctx)
-				return &ConfigurationError{}
+				_ = cli.ShowSubcommandHelp(ctx)
+				return errWrongUsage
 			}
 
 			if args.Len() > 1 {
 				util.Log.Error("too many arguments")
-				cli.ShowSubcommandHelp(ctx)
-				return &ConfigurationError{}
+				_ = cli.ShowSubcommandHelp(ctx)
+				return errWrongUsage
 			}
 
 			return deploy.Deploy(

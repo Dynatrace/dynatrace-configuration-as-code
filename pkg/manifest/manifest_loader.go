@@ -40,7 +40,14 @@ type ManifestLoaderError struct {
 	Reason       string
 }
 
-func (e *ManifestLoaderError) Error() string {
+func newManifestLoaderError(manifest string, reason string) ManifestLoaderError {
+	return ManifestLoaderError{
+		ManifestPath: manifest,
+		Reason:       reason,
+	}
+}
+
+func (e ManifestLoaderError) Error() string {
 	return fmt.Sprintf("%s: %s", e.ManifestPath, e.Reason)
 }
 
@@ -50,7 +57,15 @@ type ManifestEnvironmentLoaderError struct {
 	Environment string
 }
 
-func (e *ManifestEnvironmentLoaderError) Error() string {
+func newManifestEnvironmentLoaderError(manifest string, group string, env string, reason string) ManifestEnvironmentLoaderError {
+	return ManifestEnvironmentLoaderError{
+		ManifestLoaderError: newManifestLoaderError(manifest, reason),
+		Group:               group,
+		Environment:         env,
+	}
+}
+
+func (e ManifestEnvironmentLoaderError) Error() string {
 	return fmt.Sprintf("%s:%s:%s: %s", e.ManifestPath, e.Group, e.Environment, e.Reason)
 }
 
@@ -59,7 +74,14 @@ type ManifestProjectLoaderError struct {
 	Project string
 }
 
-func (e *ManifestProjectLoaderError) Error() string {
+func newManifestProjectLoaderError(manifest string, project string, reason string) ManifestProjectLoaderError {
+	return ManifestProjectLoaderError{
+		ManifestLoaderError: newManifestLoaderError(manifest, reason),
+		Project:             project,
+	}
+}
+
+func (e ManifestProjectLoaderError) Error() string {
 	return fmt.Sprintf("%s:%s: %s", e.ManifestPath, e.Project, e.Reason)
 }
 
@@ -67,12 +89,7 @@ func LoadManifest(context *ManifestLoaderContext) (Manifest, []error) {
 	manifestPath := filepath.Clean(context.ManifestPath)
 
 	if !files.IsYaml(manifestPath) {
-		return Manifest{}, []error{
-			&ManifestLoaderError{
-				ManifestPath: context.ManifestPath,
-				Reason:       "manifest file is not a yaml",
-			},
-		}
+		return Manifest{}, []error{newManifestLoaderError(context.ManifestPath, "manifest file is not a yaml")}
 	}
 
 	exists, err := files.DoesFileExist(context.Fs, manifestPath)
@@ -82,23 +99,13 @@ func LoadManifest(context *ManifestLoaderContext) (Manifest, []error) {
 	}
 
 	if !exists {
-		return Manifest{}, []error{
-			&ManifestLoaderError{
-				ManifestPath: context.ManifestPath,
-				Reason:       "specified manifest file is either no file or does not exist",
-			},
-		}
+		return Manifest{}, []error{newManifestLoaderError(context.ManifestPath, "specified manifest file is either no file or does not exist")}
 	}
 
 	data, err := afero.ReadFile(context.Fs, manifestPath)
 
 	if err != nil {
-		return Manifest{}, []error{
-			&ManifestLoaderError{
-				ManifestPath: context.ManifestPath,
-				Reason:       fmt.Sprintf("error while reading the manifest: %s", err),
-			},
-		}
+		return Manifest{}, []error{newManifestLoaderError(context.ManifestPath, fmt.Sprintf("error while reading the manifest: %s", err))}
 	}
 
 	return parseManifest(context, data)
@@ -111,12 +118,7 @@ func parseManifest(context *ManifestLoaderContext, data []byte) (Manifest, []err
 	err := yaml.Unmarshal(data, &manifest)
 
 	if err != nil {
-		return Manifest{}, []error{
-			&ManifestLoaderError{
-				ManifestPath: context.ManifestPath,
-				Reason:       fmt.Sprintf("error during parsing of the manifest: `%s`", err),
-			},
-		}
+		return Manifest{}, []error{newManifestLoaderError(context.ManifestPath, fmt.Sprintf("error during parsing of the manifest: `%s`", err))}
 	}
 
 	var errors []error
@@ -140,10 +142,7 @@ func parseManifest(context *ManifestLoaderContext, data []byte) (Manifest, []err
 	if projectErrors != nil {
 		errors = append(errors, projectErrors...)
 	} else if len(projectDefinitions) == 0 {
-		errors = append(errors, &ManifestLoaderError{
-			ManifestPath: context.ManifestPath,
-			Reason:       "no projects defined in manifest",
-		})
+		errors = append(errors, newManifestLoaderError(context.ManifestPath, "no projects defined in manifest"))
 	}
 
 	environmentDefinitions, manifestErrors := toEnvironments(context, manifest.Environments)
@@ -151,10 +150,7 @@ func parseManifest(context *ManifestLoaderContext, data []byte) (Manifest, []err
 	if manifestErrors != nil {
 		errors = append(errors, manifestErrors...)
 	} else if len(environmentDefinitions) == 0 {
-		errors = append(errors, &ManifestLoaderError{
-			ManifestPath: context.ManifestPath,
-			Reason:       "no environments defined in manifest",
-		})
+		errors = append(errors, newManifestLoaderError(context.ManifestPath, "no environments defined in manifest"))
 	}
 
 	if errors != nil {
@@ -173,10 +169,7 @@ func toEnvironments(context *ManifestLoaderContext, groups []group) (map[string]
 
 	for i, group := range groups {
 		if group.Group == "" {
-			errors = append(errors, &ManifestLoaderError{
-				ManifestPath: context.ManifestPath,
-				Reason:       fmt.Sprintf("missing group name on index `%d`", i),
-			})
+			errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("missing group name on index `%d`", i)))
 			continue
 		}
 
@@ -189,10 +182,7 @@ func toEnvironments(context *ManifestLoaderContext, groups []group) (map[string]
 			}
 
 			if _, found := environments[env.Name]; found {
-				errors = append(errors, &ManifestLoaderError{
-					ManifestPath: context.ManifestPath,
-					Reason:       fmt.Sprintf("environment with name `%s` already exists", env.Name),
-				})
+				errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("environment with name `%s` already exists", env.Name)))
 				continue
 			}
 
@@ -217,14 +207,7 @@ func toEnvironment(context *ManifestLoaderContext, config environment, group str
 	}
 
 	if config.Url == "" {
-		errors = append(errors, &ManifestEnvironmentLoaderError{
-			ManifestLoaderError: ManifestLoaderError{
-				ManifestPath: context.ManifestPath,
-				Reason:       "no `url` configured or value is blank",
-			},
-			Group:       group,
-			Environment: config.Name,
-		})
+		errors = append(errors, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, "no `url` configured or value is blank"))
 	}
 
 	if len(errors) > 0 {
@@ -253,31 +236,15 @@ func parseToken(context *ManifestLoaderContext, config environment, group string
 		return parseEnvironmentToken(context, group, config, token)
 	}
 
-	return nil, &ManifestEnvironmentLoaderError{
-		ManifestLoaderError: ManifestLoaderError{
-			ManifestPath: context.ManifestPath,
-			Reason:       fmt.Sprintf("unknwon token type `%s`", tokenType),
-		},
-		Group:       group,
-		Environment: config.Name,
-	}
+	return nil, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("unknwon token type `%s`", tokenType))
 }
 
 func parseEnvironmentToken(context *ManifestLoaderContext, group string, config environment, token tokenConfig) (Token, error) {
 	if val, found := token.Config["name"]; found {
-		return &EnvironmentVariableToken{
-			EnvironmentVariableName: util.ToString(val),
-		}, nil
+		return &EnvironmentVariableToken{util.ToString(val)}, nil
 	}
 
-	return nil, &ManifestEnvironmentLoaderError{
-		ManifestLoaderError: ManifestLoaderError{
-			ManifestPath: context.ManifestPath,
-			Reason:       "missing key `name` in token config",
-		},
-		Group:       group,
-		Environment: config.Name,
-	}
+	return nil, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, "missing key `name` in token config")
 }
 
 func toProjectDefinitions(context *projectLoaderContext, definitions []project) (map[string]ProjectDefinition, []error) {
@@ -294,11 +261,7 @@ func toProjectDefinitions(context *projectLoaderContext, definitions []project) 
 
 		for _, project := range parsed {
 			if _, found := result[project.Name]; found {
-				errors = append(errors, &ManifestLoaderError{
-					ManifestPath: context.manifestPath,
-					Reason:       fmt.Sprintf("duplicated project name `%s`", project.Name),
-				})
-
+				errors = append(errors, newManifestLoaderError(context.manifestPath, fmt.Sprintf("duplicated project name `%s`", project.Name)))
 				continue
 			}
 
@@ -328,40 +291,20 @@ func parseProjectDefinition(context *projectLoaderContext, project project) ([]P
 	case "grouping":
 		return parseGroupingProjectDefinition(context, project)
 	default:
-		return nil, []error{
-			&ManifestProjectLoaderError{
-				ManifestLoaderError: ManifestLoaderError{
-					ManifestPath: context.manifestPath,
-					Reason:       fmt.Sprintf("invalid project type `%s`", projectType),
-				},
-				Project: project.Name,
-			},
-		}
+		return nil, []error{newManifestProjectLoaderError(context.manifestPath, project.Name,
+			fmt.Sprintf("invalid project type `%s`", projectType))}
 	}
 }
 
 func parseSimpleProjectDefinition(context *projectLoaderContext, project project) ([]ProjectDefinition, []error) {
 	if project.Path == "" && project.Name == "" {
-		return nil, []error{
-			&ManifestProjectLoaderError{
-				ManifestLoaderError: ManifestLoaderError{
-					ManifestPath: context.manifestPath,
-					Reason:       "project is missing both name and path",
-				},
-			},
-		}
+		return nil, []error{newManifestProjectLoaderError(context.manifestPath, project.Name,
+			"project is missing both name and path")}
 	}
 
 	if strings.ContainsAny(project.Name, `/\`) {
-		return nil, []error{
-			&ManifestProjectLoaderError{
-				ManifestLoaderError: ManifestLoaderError{
-					ManifestPath: context.manifestPath,
-					Reason:       `project name is not allowed to contain '/' or '\'`,
-				},
-				Project: project.Name,
-			},
-		}
+		return nil, []error{newManifestProjectLoaderError(context.manifestPath, project.Name,
+			`project name is not allowed to contain '/' or '\'`)}
 	}
 
 	if project.Path == "" {
@@ -405,15 +348,8 @@ func parseGroupingProjectDefinition(context *projectLoaderContext, project proje
 
 	if result == nil {
 		// TODO should we really fail here?
-		return nil, []error{
-			&ManifestProjectLoaderError{
-				ManifestLoaderError: ManifestLoaderError{
-					ManifestPath: context.manifestPath,
-					Reason:       fmt.Sprintf("no projects found in `%s`", projectPath),
-				},
-				Project: project.Name,
-			},
-		}
+		return nil, []error{newManifestProjectLoaderError(context.manifestPath, project.Name,
+			fmt.Sprintf("no projects found in `%s`", projectPath))}
 	}
 
 	return result, nil
