@@ -20,7 +20,8 @@ package legacy
 
 import (
 	"fmt"
-	"strconv"
+	"math/rand"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -103,7 +104,7 @@ func FailOnAnyError(errors []error, errorMessage string) {
 }
 
 func getTimestamp() string {
-	return strconv.FormatInt(time.Now().UnixNano(), 10)
+	return time.Now().Format("20060102150405")
 }
 
 func addSuffix(suffix string) func(line string) string {
@@ -168,24 +169,37 @@ func cleanupIntegrationTest(t *testing.T, fs afero.Fs, envFile, suffix string) {
 // e.g. my-config_1605258980000_Suffix
 
 func RunLegacyIntegrationWithCleanup(t *testing.T, configFolder, envFile, suffixTest string, testFunc func(fs afero.Fs)) {
+	configFolder, _ = filepath.Abs(configFolder)
+	envFile, _ = filepath.Abs(envFile)
+
 	envvars.InstallFakeOsOverrideEnvironment(map[string]string{
 		"CONFIG_V1": "1",
 	})
 
-	defer func() {
-		envvars.InstallOsBased()
-	}()
+	defer envvars.InstallOsBased()
 
-	suffix := getTimestamp() + suffixTest
+	randomNumber := rand.Intn(100)
+
+	suffix := fmt.Sprintf("%s_%d_%s", getTimestamp(), randomNumber, suffixTest)
 	transformers := []func(string) string{getTransformerFunc(suffix)}
 	var fs = util.CreateTestFileSystem()
 	err := util.RewriteConfigNames(configFolder, fs, transformers)
 	if err != nil {
-		log.Fatal("Error rewriting configs names")
+		t.Fatalf("Error rewriting configs names: %s", err)
 		return
 	}
 
 	defer cleanupIntegrationTest(t, fs, envFile, suffix)
 
 	testFunc(fs)
+}
+
+func AbsOrPanicFromSlash(path string) string {
+	result, err := filepath.Abs(filepath.FromSlash(path))
+
+	if err != nil {
+		panic(err)
+	}
+
+	return result
 }

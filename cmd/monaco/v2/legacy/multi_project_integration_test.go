@@ -19,6 +19,7 @@
 package legacy
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/runner"
@@ -31,13 +32,12 @@ import (
 	"gotest.tools/assert"
 )
 
-const multiProjectFolder = "test-resources/integration-multi-project/"
-const multiProjectFolderWithoutSlash = "test-resources/integration-multi-project"
-const multiProjectEnvironmentsFile = multiProjectFolder + "environments.yaml"
+var multiProjectFolder = AbsOrPanicFromSlash("test-resources/integration-multi-project/")
+var multiProjectFolderWithoutSlash = AbsOrPanicFromSlash("test-resources/integration-multi-project")
+var multiProjectEnvironmentsFile = filepath.Join(multiProjectFolder, "environments.yaml")
 
 // Tests all environments with all projects
 func TestIntegrationMultiProject(t *testing.T) {
-
 	RunLegacyIntegrationWithCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "MultiProject", func(fs afero.Fs) {
 
 		environments, errs := environment.LoadEnvironmentList("", multiProjectEnvironmentsFile, fs)
@@ -65,9 +65,7 @@ func TestIntegrationValidationMultiProject(t *testing.T) {
 		"CONFIG_V1": "1",
 	})
 
-	defer func() {
-		envvars.InstallOsBased()
-	}()
+	defer envvars.InstallOsBased()
 
 	statusCode := runner.RunImpl([]string{
 		"monaco",
@@ -86,9 +84,7 @@ func TestIntegrationValidationMultiProjectWithoutEndingSlashInPath(t *testing.T)
 		"CONFIG_V1": "1",
 	})
 
-	defer func() {
-		envvars.InstallOsBased()
-	}()
+	defer envvars.InstallOsBased()
 
 	statusCode := runner.RunImpl([]string{
 		"monaco",
@@ -111,8 +107,6 @@ func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 
 		projects, err := project.LoadProjectsToDeploy(fs, "star-trek", api.NewApis(), multiProjectFolder)
 		assert.NilError(t, err)
-
-		assert.Equal(t, projects[0].GetId(), "test-resources/integration-multi-project/cinema-infrastructure", "Check if dependent project `cinema-infrastructure` is loaded and will be deployed first.")
 
 		statusCode := runner.RunImpl([]string{
 			"monaco",

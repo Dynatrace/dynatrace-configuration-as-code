@@ -19,6 +19,7 @@
 package legacy
 
 import (
+	"path/filepath"
 	"testing"
 
 	"gotest.tools/assert"
@@ -28,11 +29,12 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/envvars"
 	"github.com/spf13/afero"
 )
 
-const folder = "test-resources/integration-multi-environment/"
-const environmentsFile = folder + "environments.yaml"
+var folder = AbsOrPanicFromSlash("test-resources/integration-multi-environment/")
+var environmentsFile = filepath.Join(folder, "environments.yaml")
 
 // Tests all environments with all projects
 func TestIntegrationMultiEnvironment(t *testing.T) {
@@ -60,6 +62,11 @@ func TestIntegrationMultiEnvironment(t *testing.T) {
 
 // Tests a dry run (validation)
 func TestIntegrationValidationMultiEnvironment(t *testing.T) {
+	envvars.InstallFakeOsOverrideEnvironment(map[string]string{
+		"CONFIG_V1": "1",
+	})
+
+	defer envvars.InstallOsBased()
 
 	statusCode := runner.RunImpl([]string{
 		"monaco",

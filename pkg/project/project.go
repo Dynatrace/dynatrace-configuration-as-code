@@ -254,7 +254,7 @@ func (p *ProjectImpl) GetConfigs() []config.Config {
 // If no such config is found, an error is returned
 func (p *ProjectImpl) GetConfig(id string) (config config.Config, err error) {
 	for _, config := range p.GetConfigs() {
-		if id == config.GetFullQualifiedId() {
+		if id == config.GetId() {
 			return config, err
 		}
 	}
