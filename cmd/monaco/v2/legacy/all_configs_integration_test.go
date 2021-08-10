@@ -19,6 +19,7 @@
 package legacy
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/runner"
@@ -28,8 +29,8 @@ import (
 
 // tests all configs for a single environment
 func TestIntegrationAllConfigs(t *testing.T) {
-	allConfigsFolder := "test-resources/integration-all-configs/"
-	allConfigsEnvironmentsFile := allConfigsFolder + "environments.yaml"
+	allConfigsFolder := AbsOrPanicFromSlash("test-resources/integration-all-configs/")
+	allConfigsEnvironmentsFile := filepath.Join(allConfigsFolder, "environments.yaml")
 
 	RunLegacyIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fs afero.Fs) {
 
