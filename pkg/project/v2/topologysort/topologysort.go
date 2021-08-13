@@ -25,7 +25,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/errors"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
 	project "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/sort"
 )
 
@@ -189,7 +189,7 @@ func parametersToSortData(conf coordinate.Coordinate, parameters []ParameterWith
 			}
 
 			if p.IsReferencing(conf, param) {
-				util.Log.Debug("\t\t%s has dep on %s", p.Name, param.Name)
+				log.Debug("\t\t%s has dep on %s", p.Name, param.Name)
 				matrix[i][j] = true
 				inDegrees[i]++
 			}
@@ -290,7 +290,7 @@ func configsToSortData(configs []config.Config) ([][]bool, []int) {
 			}
 
 			if c.HasDependencyOn(config) {
-				util.Log.Debug("\t\t%s has dep on %s", c.Coordinate.ToString(), config.Coordinate.ToString())
+				log.Debug("\t\t%s has dep on %s", c.Coordinate.ToString(), config.Coordinate.ToString())
 				matrix[i][j] = true
 				inDegrees[i]++
 			}
@@ -350,7 +350,7 @@ func projectsToSortData(projects []project.Project, environment string) ([][]boo
 			}
 
 			if p.HasDependencyOn(environment, project) {
-				util.Log.Debug("\t\t%s has dep on %s", p.Id, project.Id)
+				log.Debug("\t\t%s has dep on %s", p.Id, project.Id)
 				matrix[i][j] = true
 				inDegrees[i]++
 			}

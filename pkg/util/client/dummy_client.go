@@ -23,7 +23,7 @@ import (
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/google/uuid"
 	"github.com/spf13/afero"
 )
@@ -153,7 +153,7 @@ func (c *DummyClient) writeRequest(a api.Api, name string, payload []byte) {
 	err := afero.WriteFile(c.Fs, filepath.Join(dir, filename), payload, 0664)
 
 	if err != nil {
-		util.Log.Error(err.Error())
+		log.Error(err.Error())
 	}
 }
 

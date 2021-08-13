@@ -22,7 +22,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 
 	. "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 )
@@ -106,8 +106,8 @@ func NewDynatraceClient(environmentUrl, token string) (DynatraceClient, error) {
 	}
 
 	if !isNewDynatraceTokenFormat(token) {
-		util.Log.Warn("You used an old token format. Please consider switching to the new 1.205+ token format.")
-		util.Log.Warn("More information: https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication/#-dynatrace-version-1205--token-format")
+		log.Warn("You used an old token format. Please consider switching to the new 1.205+ token format.")
+		log.Warn("More information: https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication/#-dynatrace-version-1205--token-format")
 	}
 
 	return &dynatraceClientImpl{

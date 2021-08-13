@@ -26,6 +26,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 )
@@ -93,7 +94,7 @@ func warnIfProjectNameClashesWithApiName(projectFolderName string, apis map[stri
 	lowerCaseProjectFolderName := strings.ToLower(projectFolderName)
 	_, ok := apis[lowerCaseProjectFolderName]
 	if ok {
-		util.Log.Warn("Project %s in folder %s clashes with API name %s. Consider using a different name for your project.", projectFolderName, projectRootFolder, lowerCaseProjectFolderName)
+		log.Warn("Project %s in folder %s clashes with API name %s. Consider using a different name for your project.", projectFolderName, projectRootFolder, lowerCaseProjectFolderName)
 	}
 }
 
@@ -122,7 +123,7 @@ func (p *projectBuilder) readFolder(folder string, isProjectRoot bool) error {
 
 func (p *projectBuilder) processYaml(filename string) error {
 
-	util.Log.Debug("Processing file: " + filename)
+	log.Debug("Processing file: " + filename)
 
 	bytes, err := afero.ReadFile(p.fs, filename)
 
@@ -149,7 +150,7 @@ func (p *projectBuilder) processConfigSection(properties map[string]map[string]s
 
 	templates, ok := properties["config"]
 	if !ok {
-		util.Log.Error("Property 'config' was not available")
+		log.Error("Property 'config' was not available")
 		return errors.New("Property 'config' was not available")
 	}
 
@@ -164,7 +165,7 @@ func (p *projectBuilder) processConfigSection(properties map[string]map[string]s
 
 		//Introduce deprecation warning message when using the config type "application"
 		if api.GetId() == "application" {
-			util.Log.Warn("You are using the configuration 'application', which will be deprecated in v2.0.0. Replace with type 'application-web'.")
+			log.Warn("You are using the configuration 'application', which will be deprecated in v2.0.0. Replace with type 'application-web'.")
 		}
 
 		config, err := p.configFactory.NewConfig(p.fs, configName, p.projectId, location, properties, api)

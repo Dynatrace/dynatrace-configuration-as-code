@@ -19,7 +19,6 @@
 package legacy
 
 import (
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,6 +30,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/envvars"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 )
@@ -88,7 +88,7 @@ func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolde
 }
 
 func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, configFolder string, envFile string) error {
-	util.Log.Info("BEGIN PREPARATION PROCESS")
+	log.Info("BEGIN PREPARATION PROCESS")
 	suffix := getTimestamp() + suffixTest
 	transformers := []func(string) string{getTransformerFunc(suffix)}
 	err := util.RewriteConfigNames(configFolder, fs, transformers)
@@ -107,7 +107,7 @@ func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, con
 }
 func execution_downloadConfigs(t *testing.T, fs afero.Fs, downloadFolder string, envFile string,
 	apisToDownload string, suffixTest string) error {
-	util.Log.Info("BEGIN DOWNLOAD PROCESS")
+	log.Info("BEGIN DOWNLOAD PROCESS")
 	//Download
 	err := fs.MkdirAll(downloadFolder, 0777)
 	if err != nil {
@@ -136,11 +136,11 @@ func execution_downloadConfigs(t *testing.T, fs afero.Fs, downloadFolder string,
 }
 func validation_uploadDownloadedConfigs(t *testing.T, fs afero.Fs, downloadFolder string,
 	envFile string) {
-	util.Log.Info("BEGIN VALIDATION PROCESS")
+	log.Info("BEGIN VALIDATION PROCESS")
 	//Shows you the downloaded files list in the command line
 	_ = afero.Walk(fs, downloadFolder+"/", func(path string, info os.FileInfo, err error) error {
 		fpath, err := filepath.Abs(path)
-		util.Log.Info("file " + fpath)
+		log.Info("file " + fpath)
 		return nil
 	})
 
@@ -154,7 +154,7 @@ func validation_uploadDownloadedConfigs(t *testing.T, fs afero.Fs, downloadFolde
 
 // Deletes all configs that end with "_suffix", where suffix == suffixTest+suffixTimestamp
 func cleanupEnvironmentConfigs(t *testing.T, fs afero.Fs, envFile, suffix string) {
-	util.Log.Info("BEGIN CLEANUP PROCESS")
+	log.Info("BEGIN CLEANUP PROCESS")
 	environments, errs := environment.LoadEnvironmentList("", envFile, fs)
 	FailOnAnyError(errs, "loading of environments failed")
 
@@ -176,7 +176,7 @@ func cleanupEnvironmentConfigs(t *testing.T, fs afero.Fs, envFile, suffix string
 			for _, value := range values {
 				// For the calculated-metrics-log API, the suffix is part of the ID, not name
 				if strings.HasSuffix(value.Name, suffix) || strings.HasSuffix(value.Id, suffix) {
-					util.Log.Info("Deleting %s (%s)", value.Name, api.GetId())
+					log.Info("Deleting %s (%s)", value.Name, api.GetId())
 					client.DeleteByName(api, value.Name)
 				}
 			}

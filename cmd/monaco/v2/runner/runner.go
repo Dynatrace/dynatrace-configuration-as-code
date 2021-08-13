@@ -23,8 +23,8 @@ import (
 	legacyDeploy "github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/deploy"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/deploy"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/envvars"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/version"
 	"github.com/spf13/afero"
 
@@ -45,7 +45,7 @@ func RunImpl(args []string, fs afero.Fs) (statusCode int) {
 	if err != nil {
 		if err != errWrongUsage {
 			// Log error if it wasn't a usage error
-			util.Log.Error(err.Error())
+			log.Error("%v\n", err)
 		}
 		return 1
 	}
@@ -84,8 +84,8 @@ Examples:
 	convertCommand := getConvertCommand(fs)
 
 	if isEnvFlagEnabled("CONFIG_V1") {
-		util.Log.Warn("CONFIG_V1 environment var detected!")
-		util.Log.Warn("Please convert your config to v2 format, as the migration layer will get removed in one of the next releases!")
+		log.Warn("CONFIG_V1 environment var detected!")
+		log.Warn("Please convert your config to v2 format, as the migration layer will get removed in one of the next releases!")
 		deployCommand = getLegacyDeployCommand(fs)
 	} else {
 		deployCommand = getDeployCommand(fs)
@@ -97,13 +97,13 @@ Examples:
 }
 
 func configureLogging(ctx *cli.Context) error {
-	err := util.SetupLogging(ctx.Bool("verbose"))
-
+	log.Verbose = ctx.Bool("verbose")
+	err := log.SetupLogging()
 	if err != nil {
 		return err
 	}
 
-	util.Log.Info("Dynatrace Monitoring as Code v" + version.MonitoringAsCode)
+	log.Info("Dynatrace Monitoring as Code v" + version.MonitoringAsCode)
 
 	return nil
 }
@@ -145,13 +145,13 @@ func getDeployCommand(fs afero.Fs) cli.Command {
 			args := ctx.Args()
 
 			if !args.Present() {
-				util.Log.Error("deployment manifest path missing")
+				log.Error("deployment manifest path missing")
 				_ = cli.ShowSubcommandHelp(ctx)
 				return errWrongUsage
 			}
 
 			if args.Len() > 1 {
-				util.Log.Error("too many arguments")
+				log.Error("too many arguments")
 				_ = cli.ShowSubcommandHelp(ctx)
 				return errWrongUsage
 			}
@@ -201,7 +201,7 @@ func getConvertCommand(fs afero.Fs) cli.Command {
 		},
 		Action: func(ctx *cli.Context) error {
 			if ctx.NArg() > 1 {
-				util.Log.Error("Too many arguments! Either specify a relative path to the working directory, or omit it for using the current working directory.")
+				log.Error("Too many arguments! Either specify a relative path to the working directory, or omit it for using the current working directory.")
 				cli.ShowAppHelpAndExit(ctx, 1)
 			}
 
@@ -273,7 +273,7 @@ func getLegacyDeployCommand(fs afero.Fs) cli.Command {
 		},
 		Action: func(ctx *cli.Context) error {
 			if ctx.NArg() > 1 {
-				util.Log.Error("Too many arguments! Either specify a relative path to the working directory, or omit it for using the current working directory.")
+				log.Error("Too many arguments! Either specify a relative path to the working directory, or omit it for using the current working directory.")
 				cli.ShowAppHelpAndExit(ctx, 1)
 			}
 

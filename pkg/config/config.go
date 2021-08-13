@@ -27,6 +27,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
 
@@ -233,7 +234,7 @@ func SplitDependency(property string) (id string, access string, err error) {
 	firstPart, secondPart := split[0], split[1]
 
 	if len(split) > 2 {
-		util.Log.Debug("\t\t\tproperty %s contains more than the single expected `.` separator, using last separator for split", property)
+		log.Debug("\t\t\tproperty %s contains more than the single expected `.` separator, using last separator for split", property)
 		secondPart = split[len(split)-1]
 		firstPart = strings.TrimSuffix(property, "."+secondPart)
 	}

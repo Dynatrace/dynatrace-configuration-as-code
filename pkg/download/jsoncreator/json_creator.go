@@ -23,6 +23,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
 
@@ -48,7 +49,7 @@ func (d *JsonCreatorImp) CreateJSONConfig(fs afero.Fs, client rest.DynatraceClie
 	path string) (name string, cleanName string, filter bool, err error) {
 	data, filter, err := getDetailFromAPI(client, api, value.Id)
 	if err != nil {
-		util.Log.Error("error getting detail %s from API", api.GetId())
+		log.Error("error getting detail %s from API", api.GetId())
 		return "", "", false, err
 	}
 	if filter {
@@ -56,13 +57,13 @@ func (d *JsonCreatorImp) CreateJSONConfig(fs afero.Fs, client rest.DynatraceClie
 	}
 	jsonfile, name, cleanName, err := processJSONFile(data, value.Id, value.Name, api)
 	if err != nil {
-		util.Log.Error("error processing jsonfile %s", api.GetId())
+		log.Error("error processing jsonfile %s", api.GetId())
 		return "", "", false, err
 	}
 	fullPath := filepath.Join(path, cleanName+".json")
 	err = afero.WriteFile(fs, fullPath, jsonfile, 0664)
 	if err != nil {
-		util.Log.Error("error writing detail %s", api.GetId())
+		log.Error("error writing detail %s", api.GetId())
 		return "", "", false, err
 	}
 	return name, cleanName, false, nil
@@ -73,17 +74,17 @@ func getDetailFromAPI(client rest.DynatraceClient, api api.Api, name string) (da
 	name = url.QueryEscape(name)
 	resp, err := client.ReadById(api, name)
 	if err != nil {
-		util.Log.Error("error getting detail for API %s", api.GetId(), name)
+		log.Error("error getting detail for API %s", api.GetId(), name)
 		return nil, false, err
 	}
 	err = json.Unmarshal(resp, &dat)
 	if err != nil {
-		util.Log.Error("error transforming %s from json to object", name)
+		log.Error("error transforming %s from json to object", name)
 		return nil, false, err
 	}
 	filter = isDefaultEntity(api.GetId(), dat)
 	if filter {
-		util.Log.Debug("Non-user-created default Object has been filtered out", name)
+		log.Debug("Non-user-created default Object has been filtered out", name)
 		return nil, true, err
 	}
 	return dat, false, nil
@@ -101,7 +102,7 @@ func processJSONFile(dat map[string]interface{}, id string, name string, api api
 	jsonfile, err := json.MarshalIndent(dat, "", " ")
 
 	if err != nil {
-		util.Log.Error("error creating json file  %s", id)
+		log.Error("error creating json file  %s", id)
 		return nil, "", "", err
 	}
 	return jsonfile, name, cleanName, nil

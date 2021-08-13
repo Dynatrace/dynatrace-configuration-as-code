@@ -22,6 +22,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
 
@@ -106,7 +107,7 @@ func addEnvVars(properties map[string]string) map[string]interface{} {
 		}
 
 		if _, ok := properties[split[0]]; ok {
-			Log.Info("Environment variable %s also defined as property. Was that your intention?", split[0])
+			log.Info("Environment variable %s also defined as property. Was that your intention?", split[0])
 		}
 
 		envVars[split[0]] = split[1]

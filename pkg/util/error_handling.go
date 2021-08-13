@@ -19,6 +19,8 @@ package util
 import (
 	"errors"
 	"os"
+
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 )
 
 type PrettyPrintableError interface {
@@ -44,10 +46,10 @@ func PrintError(err error) {
 	var prettyPrintError PrettyPrintableError
 
 	if errors.As(err, &prettyPrintError) {
-		Log.Error(prettyPrintError.PrettyError())
+		log.Error(prettyPrintError.PrettyError())
 	} else {
 		if err != nil {
-			Log.Error(err.Error())
+			log.Error(err.Error())
 		}
 	}
 }
@@ -60,14 +62,14 @@ func PrintErrors(errors []error) {
 
 func FailOnError(err error, msg string) {
 	if err != nil {
-		Log.Fatal(msg + ": " + err.Error())
+		log.Fatal(msg + ": " + err.Error())
 		os.Exit(1)
 	}
 }
 
 func CheckError(err error, msg string) bool {
 	if err != nil {
-		Log.Error(msg + ": " + err.Error())
+		log.Error(msg + ": " + err.Error())
 		return true
 	}
 	return false
