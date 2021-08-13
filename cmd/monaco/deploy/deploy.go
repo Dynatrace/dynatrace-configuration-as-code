@@ -32,6 +32,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/client"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
 
@@ -95,7 +96,7 @@ func Deploy(fs afero.Fs, workingDir string, environmentsFile string,
 		for envName, errors := range deploymentErrors {
 			numberOfError = numberOfError + len(errors)
 
-			util.Log.Error("Environment `%s`: %d error(s)", envName, len(errors))
+			log.Error("Environment `%s`: %d error(s)", envName, len(errors))
 			util.PrintErrors(errors)
 		}
 
@@ -106,14 +107,14 @@ func Deploy(fs afero.Fs, workingDir string, environmentsFile string,
 		}
 	} else {
 		if dryRun {
-			util.Log.Info("Config seems valid!")
+			log.Info("Config seems valid!")
 		}
 	}
 
 	deleteErrors := deleteConfigs(fs, apis, environmentMap, workingDir, dryRun)
 
 	if len(deleteErrors) > 0 {
-		util.Log.Error("Errors during delete:")
+		log.Error("Errors during delete:")
 		util.PrintErrors(deleteErrors)
 
 		if dryRun {
@@ -239,13 +240,13 @@ func deleteConfigs(fs afero.Fs, apis map[string]api.Api, environments map[string
 }
 
 func logDeleteInfo(entriesToDelete map[string][]configDelete.DeletePointer) {
-	util.Log.Info("Trying to delete the following configs:")
+	log.Info("Trying to delete the following configs:")
 
 	for api, entries := range entriesToDelete {
-		util.Log.Info("%s (%d):", api, len(entries))
+		log.Info("%s (%d):", api, len(entries))
 
 		for _, entry := range entries {
-			util.Log.Info("\t%s", entry.Name)
+			log.Info("\t%s", entry.Name)
 		}
 	}
 }

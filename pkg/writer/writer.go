@@ -21,7 +21,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
 	project "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
 
@@ -68,7 +68,7 @@ func writeProjects(context *WriterContext, projectDefinitions map[string]manifes
 		definition, found := projectDefinitions[p.Id]
 
 		if !found {
-			util.Log.Warn("no project definition found for `%s`. skipping....\n", p.Id)
+			log.Warn("no project definition found for `%s`. skipping....\n", p.Id)
 			continue
 		}
 

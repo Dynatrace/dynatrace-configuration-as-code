@@ -30,6 +30,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/client"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
 
@@ -112,7 +113,7 @@ func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironment stri
 	var deploymentErrors []error
 
 	for envName, configs := range sortedConfigs {
-		util.Log.Info("Processing environment `%s`...", envName)
+		log.Info("Processing environment `%s`...", envName)
 		env, found := environmentMap[envName]
 
 		if !found {
@@ -145,7 +146,7 @@ func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironment stri
 
 		return errors.New("errors during deploy")
 	} else {
-		util.Log.Info("Deployment finished without errors")
+		log.Info("Deployment finished without errors")
 	}
 
 	return nil
@@ -165,22 +166,22 @@ func printErrorReport(deploymentErrors []error) {
 	}
 
 	if len(generalErrors) > 0 {
-		util.Log.Error("=== General Errors ===")
+		log.Error("=== General Errors ===")
 		for _, err := range generalErrors {
-			util.Log.Error(util.ErrorString(err))
+			log.Error(util.ErrorString(err))
 		}
 	}
 
 	groupedConfigErrors := groupConfigErrors(configErrors)
 
 	for project, apiErrors := range groupedConfigErrors {
-		util.Log.Error("==== Project `%s`\n", project)
+		log.Error("==== Project `%s`\n", project)
 
 		for api, configErrors := range apiErrors {
-			util.Log.Error("===== Api `%s`\n", api)
+			log.Error("===== Api `%s`\n", api)
 
 			for config, errs := range configErrors {
-				util.Log.Error("====== Config `%s`\n", config)
+				log.Error("====== Config `%s`\n", config)
 
 				var generalConfigErrors []configError.ConfigError
 				var detailedConfigErrors []configError.DetailedConfigError
@@ -197,17 +198,17 @@ func printErrorReport(deploymentErrors []error) {
 				groupErrors := groupEnvironmentConfigErrors(detailedConfigErrors)
 
 				for _, err := range generalConfigErrors {
-					util.Log.Error(util.ErrorString(err))
+					log.Error(util.ErrorString(err))
 				}
 
 				for group, environmentErrors := range groupErrors {
-					util.Log.Error("======= Group `%s`\n", group)
+					log.Error("======= Group `%s`\n", group)
 
 					for env, errs := range environmentErrors {
-						util.Log.Error("======== Env `%s`\n", env)
+						log.Error("======== Env `%s`\n", env)
 
 						for _, err := range errs {
-							util.Log.Error(util.ErrorString(err))
+							log.Error(util.ErrorString(err))
 						}
 					}
 				}
