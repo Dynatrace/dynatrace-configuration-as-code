@@ -97,7 +97,9 @@ Examples:
 }
 
 func configureLogging(ctx *cli.Context) error {
-	log.Verbose = ctx.Bool("verbose")
+	if ctx.Bool("verbose") {
+		log.Default().SetLevel(log.LevelDebug)
+	}
 	err := log.SetupLogging()
 	if err != nil {
 		return err
