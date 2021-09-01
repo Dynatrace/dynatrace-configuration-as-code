@@ -21,6 +21,7 @@ import (
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/convert"
 	legacyDeploy "github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/deploy"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/delete"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/deploy"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/envvars"
@@ -82,6 +83,7 @@ Examples:
 	var deployCommand cli.Command
 	downloadCommand := getDownloadCommand(fs)
 	convertCommand := getConvertCommand(fs)
+	deleteCommand := getDeleteCommand(fs)
 
 	if isEnvFlagEnabled("CONFIG_V1") {
 		log.Warn("CONFIG_V1 environment var detected!")
@@ -91,7 +93,7 @@ Examples:
 		deployCommand = getDeployCommand(fs)
 	}
 
-	app.Commands = []*cli.Command{&deployCommand, &convertCommand, &downloadCommand}
+	app.Commands = []*cli.Command{&deployCommand, &convertCommand, &downloadCommand, &deleteCommand}
 
 	return app
 }
@@ -165,6 +167,45 @@ func getDeployCommand(fs afero.Fs) cli.Command {
 				ctx.String("project"),
 				ctx.Bool("dry-run"),
 				ctx.Bool("continue-on-error"),
+			)
+		},
+	}
+	return command
+}
+
+func getDeleteCommand(fs afero.Fs) cli.Command {
+	command := cli.Command{
+		Name:      "delete",
+		Usage:     "delete everything defined in the delete.yaml for the given environments in the manifest.yaml",
+		UsageText: "delete [command options] manifest.yaml delete.yaml",
+		ArgsUsage: "[working directory]",
+		Before:    configureLogging,
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:    "verbose",
+				Aliases: []string{"v"},
+			},
+		},
+
+		Action: func(ctx *cli.Context) error {
+			args := ctx.Args()
+
+			if !args.Present() {
+				log.Error("delete.yaml is missing")
+				_ = cli.ShowSubcommandHelp(ctx)
+				return errWrongUsage
+			}
+
+			if args.Len() != 2 {
+				log.Error("wrong amount of arguments")
+				_ = cli.ShowSubcommandHelp(ctx)
+				return errWrongUsage
+			}
+
+			return delete.Delete(
+				fs,
+				args.Get(0),
+				args.Get(1),
 			)
 		},
 	}
