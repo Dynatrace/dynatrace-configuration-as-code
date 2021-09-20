@@ -32,6 +32,7 @@ type Template interface {
 
 	// string content of the template
 	Content() string
+	UpdateContent(newContent string)
 }
 
 type FileBasedTemplate interface {
@@ -59,6 +60,9 @@ func (t *stringTemplate) Name() string {
 func (t *stringTemplate) Content() string {
 	return t.content
 }
+func (t *stringTemplate) UpdateContent(newContent string) {
+	t.content = newContent
+}
 
 // type defining a template which can be rendered
 type fileBasedTemplate struct {
@@ -80,6 +84,9 @@ func (t *fileBasedTemplate) Content() string {
 
 func (t *fileBasedTemplate) FilePath() string {
 	return t.path
+}
+func (t *fileBasedTemplate) UpdateContent(newContent string) {
+	t.content = newContent
 }
 
 var (

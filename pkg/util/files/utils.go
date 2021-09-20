@@ -17,6 +17,8 @@ package files
 import (
 	"strings"
 
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
+
 	"github.com/spf13/afero"
 )
 
@@ -42,4 +44,16 @@ func DoesFileExist(fs afero.Fs, path string) (bool, error) {
 
 func IsYaml(file string) bool {
 	return strings.HasSuffix(file, ".yaml")
+}
+func DirToAbsolutePath(fs afero.Fs, path string) (string, error) {
+	isDir, err := afero.DirExists(fs, path)
+	if err != nil {
+		return "", err
+	}
+	if !isDir {
+		log.Fatal("directory %s is not a valid path", path)
+	}
+	fileinfo, err := fs.Stat(path)
+	println(fileinfo)
+	return fileinfo.Name(), nil
 }

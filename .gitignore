@@ -38,3 +38,8 @@ config.json
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+cmd/monaco/v2/legacy/.logs/
+#testing download paths
+**/.logs/
+cmd/monaco/v2/downloaded-configs/
+cmd/monaco/v2/converted-configs/

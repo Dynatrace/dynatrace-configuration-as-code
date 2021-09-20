@@ -23,7 +23,7 @@ import (
 	legacyDeploy "github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/deploy"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/delete"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/deploy"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/download"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/envvars"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/version"
@@ -81,7 +81,7 @@ Examples:
     monaco deploy -s dev service.yaml
 `
 	var deployCommand cli.Command
-	downloadCommand := getDownloadCommand(fs)
+	var downloadCommand cli.Command
 	convertCommand := getConvertCommand(fs)
 	deleteCommand := getDeleteCommand(fs)
 
@@ -91,6 +91,7 @@ Examples:
 		deployCommand = getLegacyDeployCommand(fs)
 	} else {
 		deployCommand = getDeployCommand(fs)
+		downloadCommand = getDownloadCommand(fs)
 	}
 
 	app.Commands = []*cli.Command{&deployCommand, &convertCommand, &downloadCommand, &deleteCommand}
@@ -346,7 +347,7 @@ func getDownloadCommand(fs afero.Fs) cli.Command {
 	command := cli.Command{
 		Name:      "download",
 		Usage:     "download the given environment",
-		UsageText: "download [command options] [working directory]",
+		UsageText: "download [command options] [working directory].",
 		Before:    configureLogging,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
@@ -354,44 +355,67 @@ func getDownloadCommand(fs afero.Fs) cli.Command {
 				Aliases: []string{"v"},
 			},
 			&cli.PathFlag{
-				Name:      "environments",
-				Usage:     "Yaml file containing environment to deploy to",
-				Aliases:   []string{"e"},
-				Required:  true,
-				TakesFile: true,
+				Name:     "url",
+				Usage:    "Environment url including https:// . Can also be set using env variable ",
+				Aliases:  []string{"u"},
+				Required: true,
+				EnvVars:  []string{"DYNATRACE_URL"},
 			},
 			&cli.StringFlag{
-				Name:    "specific-environment",
-				Usage:   "Specific environment (from list) to deploy to",
-				Aliases: []string{"s"},
+				Name:        "manifestName",
+				Usage:       "Name of the manifest file to create",
+				DefaultText: "manifest.yaml",
+				Value:       "manifest.yaml",
+				Aliases:     []string{"m"},
 			},
 			&cli.StringFlag{
-				Name:    "downloadSpecificAPI",
-				Usage:   "Comma separated list of API's to download ",
-				Aliases: []string{"p"},
+				Name:        "outputFolder",
+				Usage:       "Folder where to download the configs",
+				DefaultText: "downloaded-configs",
+				Value:       "downloaded-configs",
+				Aliases:     []string{"o"},
+			},
+			&cli.StringFlag{
+				Name:    "filter",
+				Usage:   "Optional comma separated list of API's to download",
+				Aliases: []string{"f"},
+			},
+			&cli.StringFlag{
+				Name:    "tokenName",
+				Usage:   "The env variable name for the dynatrace token. By default it would be DYNATRACE-TOKEN",
+				Value:   "DYNATRACE-TOKEN",
+				Aliases: []string{"t"},
 			},
 		},
 		Action: func(ctx *cli.Context) error {
+			if ctx.NArg() > 1 {
+				log.Error("Too many arguments! Either specify a relative path to the working directory, or omit it for using the current working directory.")
+				cli.ShowAppHelpAndExit(ctx, 1)
+			}
 			var workingDir string
-
 			if ctx.Args().Present() {
 				workingDir = ctx.Args().First()
 			} else {
 				workingDir = "."
 			}
+			manifestName := ctx.String("manifestName")
 
-			return download.GetConfigsFilterByEnvironment(
-				workingDir,
+			if !strings.HasSuffix(manifestName, ".yaml") {
+				manifestName = manifestName + ".yaml"
+			}
+			return download.GetConfigsFrom(
 				fs,
-				ctx.Path("environments"),
-				ctx.String("specific-environment"),
-				ctx.String("downloadSpecificAPI"),
+				workingDir,
+				ctx.String("url"),
+				ctx.String("manifestName"),
+				ctx.String("outputFolder"),
+				ctx.String("filter"),
+				ctx.String("tokenName"),
 			)
 		},
 	}
 	return command
 }
-
 func isEnvFlagEnabled(env string) bool {
 	val, ok := envvars.Lookup(env)
 

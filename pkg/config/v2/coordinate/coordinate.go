@@ -25,7 +25,8 @@ type Coordinate struct {
 	Api string
 
 	// Config specifies the id of an configuration
-	Config string
+	Config      string
+	DynatraceId string
 }
 
 func (c *Coordinate) ToString() string {
