@@ -1,3 +1,4 @@
+//go:build cleanup
 // +build cleanup
 
 /**
