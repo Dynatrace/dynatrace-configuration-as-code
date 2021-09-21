@@ -97,7 +97,7 @@ func solveDependencies(projectId string, configs map[string][]configv2.Config) m
 	}
 	return configs
 }
-func newDependencyConfig(projectId string, config configv2.Config, dependencyCoor coordinate.Coordinate) configv2.Config {
+func newDependencyConfigconfig configv2.Config, dependencyCoor coordinate.Coordinate) configv2.Config {
 	newContent := strings.ReplaceAll(config.Template.Content(), dependencyCoor.DynatraceId, dependencyCoor.Config)
 	idProperty := "id" //since all depends on id to relative configs
 	ref := refParam.New(dependencyCoor.Project, dependencyCoor.Api, dependencyCoor.Config, idProperty)
