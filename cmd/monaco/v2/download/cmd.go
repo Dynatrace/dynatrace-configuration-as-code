@@ -75,7 +75,7 @@ func generateDownloadEnvironment(envName string, url string, tokenName string) m
 }
 
 //generateProjectDefiniton defines a new project for the download process
-func generateProjectDefiniton(filter string, projectName string, env manifest.EnvironmentDefinition) (map[string]manifest.ProjectDefinition, []projectv2.Project, []error) {
+func generateProjectDefinition(filter string, projectName string, env manifest.EnvironmentDefinition) (map[string]manifest.ProjectDefinition, []projectv2.Project, []error) {
 	var projectList []projectv2.Project
 	projectDefinitions := make(map[string]manifest.ProjectDefinition)
 
