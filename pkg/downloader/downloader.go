@@ -46,7 +46,7 @@ func DownloadConfigs(env manifest.EnvironmentDefinition, listApis map[string]api
 	}
 	client, err := rest.NewDynatraceClient(env.Url, token)
 	if err != nil {
-		log.Error("error creating dynatrace client for enviroment %v %v", env.Name, err)
+		log.Error("error creating dynatrace client for environment %v %v", env.Name, err)
 		errors = append(errors, err)
 		return nil, errors
 	}
