@@ -24,7 +24,7 @@ ifeq ($(OS),Windows_NT)
 else
 	@sh ./tools/add-missing-license-headers.sh
 endif
-#this might have to be added to path after install
+
 mocks:
 	@go install github.com/golang/mock/mockgen
 	@go generate ./...
