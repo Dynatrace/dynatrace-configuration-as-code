@@ -106,7 +106,7 @@ func newDependencyConfigconfig configv2.Config, dependencyCoor coordinate.Coordi
 	config.Parameters[parameterName] = ref
 	return config
 }
-func createConfigforTargetApi(env manifest.EnvironmentDefinition, creator dynatraceparser.DynatraceParser,
+func createConfigForTargetApi(env manifest.EnvironmentDefinition, creator dynatraceparser.DynatraceParser,
 	client rest.DynatraceClient, api api.Api, projectId string) ([]configv2.Config, []error) {
 	var errors []error
 	var configs []configv2.Config
