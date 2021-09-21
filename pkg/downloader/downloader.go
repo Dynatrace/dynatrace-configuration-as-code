@@ -40,7 +40,7 @@ func DownloadConfigs(env manifest.EnvironmentDefinition, listApis map[string]api
 
 	token, err := env.GetToken()
 	if err != nil {
-		log.Error("error retrieving token for enviroment %v %v", env.Name, err)
+		log.Error("error retrieving token for environment %v %v", env.Name, err)
 		errors = append(errors, err)
 		return nil, errors
 	}
