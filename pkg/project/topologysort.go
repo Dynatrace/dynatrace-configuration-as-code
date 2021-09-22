@@ -48,7 +48,7 @@ func calculateIncomingProjectDependencies(projects []Project) (adjacencyMatrix [
 			if i != j {
 				p2 := projects[j]
 				if p2.HasDependencyOn(p1) {
-					log.Debug("\t\t%s has dep on %s", p2.GetId(), p1.GetId())
+					logDependency(p2.GetId(), p1.GetId())
 					adjacencyMatrix[i][j] = true
 					inDegrees[i]++
 				}
@@ -86,7 +86,7 @@ func calculateIncomingConfigDependencies(configs []config.Config) (adjacencyMatr
 			if i != j {
 				c2 := configs[j]
 				if c2.HasDependencyOn(c1) {
-					log.Debug("\t\t%s has dep on %s", c2.GetFullQualifiedId(), c1.GetFullQualifiedId())
+					logDependency(c2.GetFullQualifiedId(), c1.GetFullQualifiedId())
 					adjacencyMatrix[i][j] = true
 					inDegrees[i]++
 				}
@@ -134,4 +134,8 @@ func getAllLeaves(inDegrees []int) []int {
 		}
 	}
 	return nodes
+}
+
+func logDependency(depending string, dependedOn string) {
+	log.Debug("%s has dependency on %s", depending, dependedOn)
 }

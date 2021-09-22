@@ -189,7 +189,7 @@ func parametersToSortData(conf coordinate.Coordinate, parameters []ParameterWith
 			}
 
 			if p.IsReferencing(conf, param) {
-				log.Debug("\t\t%s has dep on %s", p.Name, param.Name)
+				logDependency("Config Parameter", p.Name, param.Name)
 				matrix[i][j] = true
 				inDegrees[i]++
 			}
@@ -290,7 +290,7 @@ func configsToSortData(configs []config.Config) ([][]bool, []int) {
 			}
 
 			if c.HasDependencyOn(config) {
-				log.Debug("\t\t%s has dep on %s", c.Coordinate.ToString(), config.Coordinate.ToString())
+				logDependency("Configuration", c.Coordinate.ToString(), config.Coordinate.ToString())
 				matrix[i][j] = true
 				inDegrees[i]++
 			}
@@ -350,7 +350,7 @@ func projectsToSortData(projects []project.Project, environment string) ([][]boo
 			}
 
 			if p.HasDependencyOn(environment, project) {
-				log.Debug("\t\t%s has dep on %s", p.Id, project.Id)
+				logDependency("Project", p.Id, project.Id)
 				matrix[i][j] = true
 				inDegrees[i]++
 			}
@@ -358,4 +358,8 @@ func projectsToSortData(projects []project.Project, environment string) ([][]boo
 	}
 
 	return matrix, inDegrees
+}
+
+func logDependency(prefix string, depending string, dependedOn string) {
+	log.Debug("%s: %s has dependency on %s", prefix, depending, dependedOn)
 }
