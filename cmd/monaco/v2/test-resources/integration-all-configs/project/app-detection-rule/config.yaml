@@ -1,0 +1,17 @@
+configs:
+- id: rule
+  config:
+    name:
+      api: application-web
+      config: application
+      property: name
+      type: reference
+    parameters:
+      applicationId:
+        api: application-web
+        config: application
+        property: id
+        type: reference
+      pattern: pattern
+    template: rule.json
+    skip: false

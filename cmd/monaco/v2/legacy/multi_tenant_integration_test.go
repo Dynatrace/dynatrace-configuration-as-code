@@ -1,5 +1,5 @@
-//go:build integration
-// +build integration
+//go:build integration_v1
+// +build integration_v1
 
 /**
  * @license
@@ -51,6 +51,7 @@ func TestIntegrationMultiEnvironment(t *testing.T) {
 		statusCode := runner.RunImpl([]string{
 			"monaco",
 			"deploy",
+			"--verbose",
 			"--environments", environmentsFile,
 			folder,
 		}, fs)
@@ -72,6 +73,7 @@ func TestIntegrationValidationMultiEnvironment(t *testing.T) {
 	statusCode := runner.RunImpl([]string{
 		"monaco",
 		"deploy",
+		"--verbose",
 		"--environments", environmentsFile,
 		"--dry-run",
 		folder,
@@ -94,6 +96,7 @@ func TestIntegrationMultiEnvironmentSingleProject(t *testing.T) {
 		statusCode := runner.RunImpl([]string{
 			"monaco",
 			"deploy",
+			"--verbose",
 			"--environments", environmentsFile,
 			"-p", "cinema-infrastructure",
 			folder,
@@ -121,6 +124,7 @@ func TestIntegrationMultiEnvironmentSingleProjectWithDependency(t *testing.T) {
 		statusCode := runner.RunImpl([]string{
 			"monaco",
 			"deploy",
+			"--verbose",
 			"--environments", environmentsFile,
 			"-p", "star-trek",
 			folder,
@@ -149,6 +153,7 @@ func TestIntegrationMultiEnvironmentSingleEnvironment(t *testing.T) {
 		statusCode := runner.RunImpl([]string{
 			"monaco",
 			"deploy",
+			"--verbose",
 			"--environments", environmentsFile,
 			folder,
 		}, fs)

@@ -1,0 +1,6 @@
+configs:
+- id: demo_slo
+  config:
+    name: My SLO
+    template: slo.json
+    skip: false

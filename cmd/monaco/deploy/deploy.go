@@ -160,7 +160,12 @@ func createClient(environment manifest.EnvironmentDefinition, dryRun bool) (rest
 		return nil, err
 	}
 
-	return rest.NewDynatraceClient(environment.Url, token)
+	url, err := environment.GetUrl()
+	if err != nil {
+		return nil, err
+	}
+
+	return rest.NewDynatraceClient(url, token)
 }
 
 func loadConfigs(fs afero.Fs, apis map[string]api.Api, environmentsFile string,

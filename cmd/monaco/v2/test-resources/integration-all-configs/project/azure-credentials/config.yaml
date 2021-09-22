@@ -1,0 +1,11 @@
+configs:
+- id: credentials
+  config:
+    name: Enterprise Azure Credentials
+    parameters:
+      active: "true"
+      appId: "1234"
+      directoryId: "1234"
+      key: "1234"
+    template: azure.json
+    skip: false

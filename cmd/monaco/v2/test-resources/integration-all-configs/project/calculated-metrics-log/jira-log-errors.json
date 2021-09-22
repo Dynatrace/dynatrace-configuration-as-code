@@ -1,0 +1,18 @@
+{
+  "metricKey": "{{.name}}",
+  "active": true,
+  "displayName": "{{.displayName}}",
+  "unit": "COUNT",
+  "searchString": "ERROR",
+  "metricValueType": "OCCURRENCES",
+  "logSourceFilters": [
+    {
+      "sourceEntities": [
+        "PROCESS_GROUP_INSTANCE-B2CA55594BC6D921"
+      ],
+      "hostFilters": [
+        "HOST-A17EF5293A801252"
+      ]
+    }
+  ]
+}

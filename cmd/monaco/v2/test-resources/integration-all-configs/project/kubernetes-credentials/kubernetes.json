@@ -1,0 +1,9 @@
+{
+    "active": "{{ .active }}",
+    "label": "{{ .name }}",
+    "endpointUrl": "https://{{ urlquery .name }}/",
+    "authToken": "{{ .token }}",
+    "eventsIntegrationEnabled": true,
+    "workloadIntegrationEnabled": true,
+    "certificateCheckEnabled": false
+}

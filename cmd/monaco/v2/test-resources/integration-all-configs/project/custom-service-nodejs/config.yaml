@@ -1,0 +1,6 @@
+configs:
+- id: warp-drive-service
+  config:
+    name: Enterprise Warp Drive NodeJS
+    template: warp-drive-service.json
+    skip: false

@@ -16,7 +16,9 @@ package manifest
 
 import (
 	"fmt"
-	"os"
+	environmentv1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/envvars"
+	"strings"
 )
 
 type ProjectDefinition struct {
@@ -26,10 +28,21 @@ type ProjectDefinition struct {
 
 type EnvironmentDefinition struct {
 	Name  string
-	Url   string
+	url   UrlDefinition
 	Group string
 	Token
 }
+
+type UrlType string
+
+const EnvironmentUrlType UrlType = "environment"
+const ValueUrlType UrlType = "value"
+
+type UrlDefinition struct {
+	Type  UrlType
+	Value string
+}
+
 type Token interface {
 	GetToken() (string, error)
 }
@@ -38,12 +51,49 @@ type EnvironmentVariableToken struct {
 	EnvironmentVariableName string
 }
 
+func NewEnvironmentDefinitionFromV1(env environmentv1.Environment, group string) EnvironmentDefinition {
+	return EnvironmentDefinition{
+		Name: env.GetId(),
+		url: UrlDefinition{
+			Type:  ValueUrlType,
+			Value: strings.TrimSuffix(env.GetEnvironmentUrl(), "/"),
+		},
+		Group: group,
+		Token: &EnvironmentVariableToken{EnvironmentVariableName: env.GetTokenName()},
+	}
+}
+
+func NewEnvironmentDefinition(name string, url UrlDefinition, group string, token *EnvironmentVariableToken) EnvironmentDefinition {
+	return EnvironmentDefinition{
+		Name:  name,
+		url:   url,
+		Group: group,
+		Token: token,
+	}
+}
+
 func (t *EnvironmentVariableToken) GetToken() (string, error) {
-	if token, found := os.LookupEnv(t.EnvironmentVariableName); found {
+	if token, found := envvars.Lookup(t.EnvironmentVariableName); found {
 		return token, nil
 	}
 
 	return "", fmt.Errorf("no environment variable `%s` set", t.EnvironmentVariableName)
+}
+
+func (e *EnvironmentDefinition) GetUrl() (string, error) {
+
+	switch e.url.Type {
+	case EnvironmentUrlType:
+		if url, found := envvars.Lookup(e.url.Value); found {
+			return url, nil
+		} else {
+			return "", fmt.Errorf("no environment variable set for %s", e.url.Value)
+		}
+	case ValueUrlType:
+		return e.url.Value, nil
+	default:
+		return "", fmt.Errorf("type `%s` does not exist for enviroment URL. Supported are %s and %s", e.url.Type, EnvironmentUrlType, ValueUrlType)
+	}
 }
 
 type Manifest struct {

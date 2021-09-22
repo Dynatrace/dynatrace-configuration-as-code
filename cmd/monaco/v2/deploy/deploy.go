@@ -405,7 +405,12 @@ func getClient(environment manifest.EnvironmentDefinition, dryRun bool) (rest.Dy
 			return nil, err
 		}
 
-		return rest.NewDynatraceClient(environment.Url, token)
+		url, err := environment.GetUrl()
+		if err != nil {
+			return nil, err
+		}
+
+		return rest.NewDynatraceClient(url, token)
 	}
 }
 
