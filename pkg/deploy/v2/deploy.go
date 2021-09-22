@@ -247,7 +247,7 @@ func deployConfig(client rest.DynatraceClient, apis map[string]api.Api,
 	entity, err := client.UpsertByName(api, configName, []byte(renderedConfig))
 
 	if err != nil {
-		return parameter.ResolvedEntity{}, []error{err}
+		return parameter.ResolvedEntity{}, []error{newConfigDeployError(conf, err.Error())}
 	}
 
 	properties[config.IdParameter] = entity.Id
