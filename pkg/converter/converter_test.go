@@ -721,3 +721,9 @@ func generateDummyConfig(t *testing.T) configv1.Config {
 
 	return conf
 }
+
+func TestAdjustProjectId(t *testing.T) {
+	id := adjustProjectId(`test\project/name`)
+
+	assert.Equal(t, `test.project.name`, id)
+}

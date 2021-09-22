@@ -152,8 +152,10 @@ func convertProjects(context *ConverterContext, environments map[string]manifest
 	return projectDefinitions, convertedProjects, nil
 }
 
+var illegalProjectIdCharsRegex = regexp.MustCompile(`[\\/]`)
+
 func adjustProjectId(projectId string) string {
-	return strings.ReplaceAll(projectId, "/", ".")
+	return illegalProjectIdCharsRegex.ReplaceAllLiteralString(projectId, ".")
 }
 
 func convertProject(context *ConverterContext, environments map[string]manifest.EnvironmentDefinition,
