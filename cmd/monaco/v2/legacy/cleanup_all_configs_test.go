@@ -17,7 +17,11 @@
  * limitations under the License.
  */
 
+<<<<<<< HEAD:cmd/monaco/v2/legacy/cleanup_all_configs_test.go
 package legacy
+=======
+package v2
+>>>>>>> f324beae... fixup! feat(test): Add the first integration test for config v2:cmd/monaco/v2/cleanup_all_configs_test.go
 
 import (
 	"regexp"

@@ -1,0 +1,13 @@
+{
+  "name": "{{ .name }}",
+  "description": "{{ .description }}",
+  "type": "{{ .type }}",
+  "suppression": "{{ .suppression }}",
+  "scope": null,
+  "schedule": {
+    "recurrenceType": "ONCE",
+    "start": "{{ .start }}",
+    "end": "{{ .end }}",
+    "zoneId": "Europe/Brussels"
+  }
+}

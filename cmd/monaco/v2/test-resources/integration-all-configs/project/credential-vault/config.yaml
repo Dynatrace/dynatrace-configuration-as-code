@@ -1,0 +1,11 @@
+configs:
+- id: credential
+  config:
+    name: Sample Credentials
+    parameters:
+      description: Sample set of credentials for API documentation
+      ownerAccessOnly: "true"
+      scope: SYNTHETIC
+      type: USERNAME_PASSWORD
+    template: credential.json
+    skip: false

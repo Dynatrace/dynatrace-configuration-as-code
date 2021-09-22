@@ -1,5 +1,5 @@
-//go:build integration
-// +build integration
+//go:build integration_v1
+// +build integration_v1
 
 /**
  * @license
@@ -44,6 +44,7 @@ func TestValidationSkipDeployment(t *testing.T) {
 	statusCode := runner.RunImpl([]string{
 		"monaco",
 		"deploy",
+		"--verbose",
 		"--dry-run",
 		"--environments", skipDeploymentEnvironmentsFile,
 		"--project", "projectA",
@@ -63,6 +64,7 @@ func TestValidationSkipDeploymentWithBrokenDependency(t *testing.T) {
 	statusCode := runner.RunImpl([]string{
 		"monaco",
 		"deploy",
+		"--verbose",
 		"--dry-run",
 		"--environments", skipDeploymentEnvironmentsFile,
 		"--project", "projectB",
@@ -82,6 +84,7 @@ func TestValidationSkipDeploymentWithOverridingDependency(t *testing.T) {
 	statusCode := runner.RunImpl([]string{
 		"monaco",
 		"deploy",
+		"--verbose",
 		"--dry-run",
 		"--environments", skipDeploymentEnvironmentsFile,
 		"--project", "projectC",
@@ -101,6 +104,7 @@ func TestValidationSkipDeploymentWithOverridingFlagValue(t *testing.T) {
 	statusCode := runner.RunImpl([]string{
 		"monaco",
 		"deploy",
+		"--verbose",
 		"--dry-run",
 		"--environments", skipDeploymentEnvironmentsFile,
 		"--project", "projectE",
@@ -120,6 +124,7 @@ func TestValidationSkipDeploymentInterProjectWithMissingDependency(t *testing.T)
 	statusCode := runner.RunImpl([]string{
 		"monaco",
 		"deploy",
+		"--verbose",
 		"--dry-run",
 		"--environments", skipDeploymentEnvironmentsFile,
 		"--project", "projectD",

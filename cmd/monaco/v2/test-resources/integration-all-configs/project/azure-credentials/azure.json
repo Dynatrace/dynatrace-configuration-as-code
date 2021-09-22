@@ -1,0 +1,10 @@
+{
+  "label": "{{ .name }}",
+  "appId": "{{ .appId }}",
+  "directoryId": "{{ .directoryId }}",
+  "active": "{{ .active }}",
+  "key": "{{ .key }}",
+  "autoTagging": true,
+  "monitorOnlyTaggedEntities": false,
+  "monitorOnlyTagPairs": []
+}

@@ -1,0 +1,9 @@
+configs:
+- id: parameterset
+  config:
+    name: ignoreAllExceptions
+    parameters:
+      description: ignore all exceptions and therefore only rely on http status code
+        for failure detection
+    template: parameterset.json
+    skip: false
