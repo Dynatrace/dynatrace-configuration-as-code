@@ -34,8 +34,8 @@ import (
 	"github.com/spf13/afero"
 )
 
-func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironment string,
-	specificProject string, dryRun, continueOnError bool) error {
+func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironment []string,
+	specificProject []string, dryRun, continueOnError bool) error {
 
 	deploymentManifestPath = filepath.Clean(deploymentManifestPath)
 	deploymentManifestPath, err := filepath.Abs(deploymentManifestPath)
@@ -57,11 +57,12 @@ func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironment stri
 
 	environments := manifest.GetEnvironmentsAsSlice()
 
-	if specificEnvironment != "" {
-		filtered, err := filterEnvironmentByName(environments, specificEnvironment)
+	if len(specificEnvironment) > 0 {
+		filtered, errs := filterEnvironmentsByName(environments, specificEnvironment)
 
-		if err != nil {
-			return err
+		if errs != nil {
+			util.PrintErrors(errs)
+			return errors.New("error while loading environments")
 		}
 
 		environments = filtered
@@ -86,20 +87,9 @@ func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironment stri
 		return errors.New("error while loading projects")
 	}
 
-	if specificProject != "" {
-		filtered, err := filterProjectIdsByName(projects, []string{specificProject})
-
-		if err != nil {
-			return err
-		}
-
-		projectsWithDependencies, err := loadProjectsWithDependencies(projects, filtered, environmentNames)
-
-		if err != nil {
-			return err
-		}
-
-		projects = projectsWithDependencies
+	projects, err = loadProjectsToDeploy(specificProject, projects, environmentNames)
+	if err != nil {
+		return err
 	}
 
 	sortedConfigs, errs := topologysort.GetSortedConfigsForEnvironments(projects, environmentNames)
@@ -110,6 +100,36 @@ func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironment stri
 		return errors.New("error during sort")
 	}
 
+	err = execDeployment(sortedConfigs, environmentMap, continueOnError, dryRun, apis)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func loadProjectsToDeploy(specificProject []string, projects []project.Project, environmentNames []string) ([]project.Project, error) {
+	if len(specificProject) > 0 {
+		filtered, err := filterProjectIdsByName(projects, specificProject)
+
+		if err != nil {
+			return nil, err
+		}
+
+		projectsWithDependencies, err := loadProjectsWithDependencies(projects, filtered, environmentNames)
+
+		if err != nil {
+			return nil, err
+		}
+
+		projects = projectsWithDependencies
+	}
+
+	return projects, nil
+}
+
+func execDeployment(sortedConfigs map[string][]config.Config, environmentMap map[string]manifest.EnvironmentDefinition, continueOnError bool, dryRun bool, apis map[string]api.Api) error {
 	var deploymentErrors []error
 
 	for envName, configs := range sortedConfigs {
@@ -399,18 +419,22 @@ func getApiNames(apis map[string]api.Api) []string {
 	return result
 }
 
-func filterEnvironmentByName(environments []manifest.EnvironmentDefinition, name string) ([]manifest.EnvironmentDefinition, error) {
+func filterEnvironmentsByName(environments []manifest.EnvironmentDefinition, names []string) ([]manifest.EnvironmentDefinition, []error) {
 	var result []manifest.EnvironmentDefinition
+	var err []error
 
-	for _, env := range environments {
-		if env.Name == name {
-			result = append(result, env)
+	for _, name := range names {
+		found := false
+		for _, env := range environments {
+			if env.Name == name {
+				result = append(result, env)
+				found = true
+			}
+		}
+		if !found {
+			err = append(err, fmt.Errorf("no environment found `%s`", name))
 		}
 	}
 
-	if result != nil {
-		return result, nil
-	}
-
-	return nil, fmt.Errorf("no environment with name `%s` found", name)
+	return result, err
 }

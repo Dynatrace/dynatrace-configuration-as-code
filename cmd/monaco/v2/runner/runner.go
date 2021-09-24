@@ -124,12 +124,12 @@ func getDeployCommand(fs afero.Fs) cli.Command {
 				Name:    "verbose",
 				Aliases: []string{"v"},
 			},
-			&cli.StringFlag{
+			&cli.StringSliceFlag{
 				Name:    "environment",
 				Usage:   "Environment to deploy to",
 				Aliases: []string{"e"},
 			},
-			&cli.StringFlag{
+			&cli.StringSliceFlag{
 				Name:    "project",
 				Usage:   "Project configuration to deploy (also deploys any dependent configurations)",
 				Aliases: []string{"p"},
@@ -163,8 +163,8 @@ func getDeployCommand(fs afero.Fs) cli.Command {
 			return deploy.Deploy(
 				fs,
 				args.First(),
-				ctx.String("specific-environment"),
-				ctx.String("project"),
+				ctx.StringSlice("environment"),
+				ctx.StringSlice("project"),
 				ctx.Bool("dry-run"),
 				ctx.Bool("continue-on-error"),
 			)
