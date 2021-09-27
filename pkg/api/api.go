@@ -148,6 +148,10 @@ var apiMap = map[string]apiInput{
 	"failure-detection-rules": {
 		apiPath: "/api/config/v1/service/failureDetection/parameterSelection/rules",
 	},
+
+	"calculated-metrics-mobile": {
+		apiPath: "/api/config/v1/calculatedMetrics/mobile",
+	},
 }
 
 var standardApiPropertyNameOfGetAllResponse = "values"
