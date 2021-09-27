@@ -111,6 +111,15 @@ var apiMap = map[string]apiInput{
 	"calculated-metrics-log": {
 		apiPath: "/api/config/v1/calculatedMetrics/log",
 	},
+	"calculated-metrics-application-mobile": {
+		apiPath: "/api/config/v1/calculatedMetrics/mobile",
+	},
+	"calculated-metrics-synthetic": {
+		apiPath: "/api/config/v1/calculatedMetrics/synthetic",
+	},
+	"calculated-metrics-application-web": {
+		apiPath: "/api/config/v1/calculatedMetrics/rum",
+	},
 
 	"conditional-naming-processgroup": {
 		apiPath: "/api/config/v1/conditionalNaming/processGroup",

@@ -1,5 +1,6 @@
-config: 
+config:
   - availability: "availabilty.json"
+  - browser-test: "browser-test.json"
 
 availability:
   - name: "Federation Availability"
@@ -7,3 +8,7 @@ availability:
   - managementZoneId: "/project/management-zone/zone.id"
   - tag: "/project/auto-tag/application-tagging.name"
   - host: "https://www.google.com"
+
+browser-test:
+  - name: "Borg Availability"
+  - location: "GEOLOCATION-9999453BE4BDB3CD"

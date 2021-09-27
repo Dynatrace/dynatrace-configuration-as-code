@@ -1,0 +1,6 @@
+config:
+  - speed: "speed-metric.json"
+
+speed:
+  - name: "calc:synthetic.browser.delorean.speed"
+  - testId: "/project/synthetic-monitor/browser-test.id"
