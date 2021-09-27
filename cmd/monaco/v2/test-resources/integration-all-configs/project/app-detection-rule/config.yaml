@@ -1,11 +1,7 @@
 configs:
 - id: rule
   config:
-    name:
-      api: application-web
-      config: application
-      property: name
-      type: reference
+    name: myApp
     parameters:
       applicationId:
         api: application-web
