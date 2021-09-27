@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-package legacy
+package v1
 
 import (
 	"testing"
