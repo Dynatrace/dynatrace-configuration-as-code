@@ -19,6 +19,7 @@ These are the supported configuration types, their API endpoints and the token p
 | azure-credentials               | _/api/config/v1/azure/credentials_              | `Read Configuration` & `Write Configuration`                                                                        |
 | calculated-metrics-log          | _/api/config/v1/calculatedMetrics/log_          | `Read Configuration` & `Write Configuration`                                                                        |
 | calculated-metrics-service      | _/api/config/v1/calculatedMetrics/service_      | `Read Configuration` & `Write Configuration`                                                                        |
+| calculated-metrics-rum      | _/api/config/v1/calculatedMetrics/rum_      | `Read Configuration` & `Write Configuration`                                                                        |
 | conditional-naming-host         | _/api/config/v1/conditionalNaming/host_         | `Read Configuration` & `Write Configuration`                                                                        |
 | conditional-naming-processgroup | _/api/config/v1/conditionalNaming/processGroup_ | `Read Configuration` & `Write Configuration`                                                                        |
 | conditional-naming-service      | _/api/config/v1/conditionalNaming/service_      | `Read Configuration` & `Write Configuration`                                                                        |

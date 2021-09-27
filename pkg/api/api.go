@@ -148,6 +148,9 @@ var apiMap = map[string]apiInput{
 	"failure-detection-rules": {
 		apiPath: "/api/config/v1/service/failureDetection/parameterSelection/rules",
 	},
+	"calculated-metrics-rum": {
+		apiPath: "/api/config/v1/calculatedMetrics/rum",
+	},
 }
 
 var standardApiPropertyNameOfGetAllResponse = "values"
