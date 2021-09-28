@@ -77,9 +77,6 @@ var apiMap = map[string]apiInput{
 	"synthetic-monitor": {
 		apiPath: "/api/v1/synthetic/monitors",
 	},
-	"application": {
-		apiPath: "/api/config/v1/applications/web",
-	},
 	"application-web": {
 		apiPath: "/api/config/v1/applications/web",
 	},
