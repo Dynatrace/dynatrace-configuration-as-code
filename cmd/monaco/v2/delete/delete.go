@@ -17,6 +17,7 @@ package delete
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 	"path/filepath"
 	"strings"
 
@@ -30,7 +31,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-func Delete(fs afero.Fs, deploymentManifestPath string, deletePath string) error {
+func Delete(fs afero.Fs, deploymentManifestPath string, deletePath string, envs []string) error {
 
 	deploymentManifestPath = filepath.Clean(deploymentManifestPath)
 	deploymentManifestPath, manifestErr := filepath.Abs(deploymentManifestPath)
@@ -59,24 +60,27 @@ func Delete(fs afero.Fs, deploymentManifestPath string, deletePath string) error
 		return errors.New("error while loading environments")
 	}
 
-	entriesToDelete, errors := configDelete.LoadEntriesToDelete(fs, getApiNames(apis), deleteFileWorkingDir, deleteFile)
+	entriesToDelete, errs := configDelete.LoadEntriesToDelete(fs, getApiNames(apis), deleteFileWorkingDir, deleteFile)
 
-	if errors != nil {
-		return fmt.Errorf("LoadEntriesToDelte throw an error: `%s`", errors)
+	if errs != nil {
+		return fmt.Errorf("LoadEntriesToDelte throw an error: `%s`", errs)
 	}
 
-	environments := manifest.Environments
-	var deleteErrors []error
-	for _, env := range environments {
-		client, err := createClient(env, false)
+	environments := manifest.GetEnvironmentsAsSlice()
 
-		if err != nil {
-			log.Error("It was not possible to create a client for env `%s` to the following error: %s", env, err)
+	if len(envs) > 0 {
+		filtered, errs := environment.FilterEnvironmentsByName(environments, envs)
+
+		if errs != nil {
+			util.PrintErrors(errs)
+			return errors.New("error while loading environments")
 		}
 
-		errs := configDelete.DeleteConfigs(client, apis, entriesToDelete)
-		deleteErrors = append(deleteErrors, errs...)
+		environments = filtered
 	}
+
+	deleteErrors := deleteConfigs(environments, apis, entriesToDelete)
+
 	for _, e := range deleteErrors {
 		log.Error("Deletion error: %s", e)
 	}
@@ -84,6 +88,28 @@ func Delete(fs afero.Fs, deploymentManifestPath string, deletePath string) error
 		return fmt.Errorf("encountered %v errors during delete", len(deleteErrors))
 	}
 	return nil
+}
+
+func deleteConfigs(environments []manifest.EnvironmentDefinition, apis map[string]api.Api, entriesToDelete map[string][]configDelete.DeletePointer) []error {
+	var deleteErrors []error
+
+	for _, env := range environments {
+		client, err := createClient(env, false)
+
+		if err != nil {
+			log.Error("It was not possible to create a client for env `%s` to the following error: %s", env, err)
+		}
+
+		log.Info("Deleting configs for `%s`", env.Name)
+
+		errs := configDelete.DeleteConfigs(client, apis, entriesToDelete)
+
+		if errs != nil {
+			deleteErrors = append(deleteErrors, err)
+		}
+	}
+
+	return deleteErrors
 }
 
 func createClient(environment manifest.EnvironmentDefinition, dryRun bool) (rest.DynatraceClient, error) {

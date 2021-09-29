@@ -177,7 +177,7 @@ func getDeployCommand(fs afero.Fs) cli.Command {
 func getDeleteCommand(fs afero.Fs) cli.Command {
 	command := cli.Command{
 		Name:      "delete",
-		Usage:     "delete everything defined in the delete.yaml for the given environments in the manifest.yaml",
+		Usage:     "deletes configuration defined in the delete.yaml for the given environment(s)",
 		UsageText: "delete [command options] manifest.yaml delete.yaml",
 		ArgsUsage: "[working directory]",
 		Before:    configureLogging,
@@ -185,6 +185,11 @@ func getDeleteCommand(fs afero.Fs) cli.Command {
 			&cli.BoolFlag{
 				Name:    "verbose",
 				Aliases: []string{"v"},
+			},
+			&cli.StringSliceFlag{
+				Name:    "environment",
+				Usage:   "Deletes configuration only for specified envs. If not set, delete will be executed on all environments defined in manifest.",
+				Aliases: []string{"e"},
 			},
 		},
 
@@ -197,8 +202,14 @@ func getDeleteCommand(fs afero.Fs) cli.Command {
 				return errWrongUsage
 			}
 
-			if args.Len() != 2 {
-				log.Error("wrong amount of arguments")
+			if args.Len() < 2 {
+				log.Error("not enough arguments")
+				_ = cli.ShowSubcommandHelp(ctx)
+				return errWrongUsage
+			}
+
+			if args.Len() > 2 {
+				log.Error("too many arguments")
 				_ = cli.ShowSubcommandHelp(ctx)
 				return errWrongUsage
 			}
@@ -207,6 +218,7 @@ func getDeleteCommand(fs afero.Fs) cli.Command {
 				fs,
 				args.Get(0),
 				args.Get(1),
+				ctx.StringSlice("environment"),
 			)
 		},
 	}

@@ -17,6 +17,7 @@ package deploy
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 	"path/filepath"
 	"strings"
 
@@ -58,7 +59,7 @@ func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironment []st
 	environments := manifest.GetEnvironmentsAsSlice()
 
 	if len(specificEnvironment) > 0 {
-		filtered, errs := filterEnvironmentsByName(environments, specificEnvironment)
+		filtered, errs := environment.FilterEnvironmentsByName(environments, specificEnvironment)
 
 		if errs != nil {
 			util.PrintErrors(errs)
@@ -413,24 +414,4 @@ func getApiNames(apis map[string]api.Api) []string {
 	}
 
 	return result
-}
-
-func filterEnvironmentsByName(environments []manifest.EnvironmentDefinition, names []string) ([]manifest.EnvironmentDefinition, []error) {
-	var result []manifest.EnvironmentDefinition
-	var err []error
-
-	for _, name := range names {
-		found := false
-		for _, env := range environments {
-			if env.Name == name {
-				result = append(result, env)
-				found = true
-			}
-		}
-		if !found {
-			err = append(err, fmt.Errorf("no environment found `%s`", name))
-		}
-	}
-
-	return result, err
 }
