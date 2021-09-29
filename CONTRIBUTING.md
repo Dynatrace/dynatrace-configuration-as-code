@@ -158,6 +158,6 @@ Some of the APIs this tool uses are 'Earlier Adopter' APIs. They may change, and
 
 To avoid keeping two documents up to date, the volatile/EA endpoints are marked with a comment in [apis.yaml](apis.yaml).
 
-If you add a new API please mark it correctly if it should be an 'Early  Adopter' API.
+If you [add a new API](./New_API.md) please mark it correctly if it should be an 'Early  Adopter' API.
 
 If you see that an API has been moved to a final release, please remove the respective comment.
