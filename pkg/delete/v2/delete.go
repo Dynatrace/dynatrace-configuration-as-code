@@ -16,7 +16,6 @@ package v2
 
 import (
 	"fmt"
-
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 )
