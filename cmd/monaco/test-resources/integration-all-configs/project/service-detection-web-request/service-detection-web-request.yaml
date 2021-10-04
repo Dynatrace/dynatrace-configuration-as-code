@@ -1,0 +1,4 @@
+config:
+- ServiceDetectionWebRequest: service-detection-web-request.json
+ServiceDetectionWebRequest:
+- name: ServiceDetectionWebRequest

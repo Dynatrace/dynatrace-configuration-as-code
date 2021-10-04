@@ -1,0 +1,40 @@
+{
+ "applicationId": null,
+ "conditions": [
+  {
+   "attributeType": "SERVER_NAME",
+   "compareOperations": [
+    {
+     "ignoreCase": false,
+     "negate": false,
+     "type": "EQUALS",
+     "values": [
+      "serverName"
+     ]
+    }
+   ]
+  },
+  {
+   "attributeType": "URL_PATH",
+   "compareOperations": [
+    {
+     "negate": false,
+     "type": "EXISTS"
+    }
+   ]
+  }
+ ],
+ "contextRoot": {
+  "segmentsToCopyFromUrlPath": 2,
+  "transformations": []
+ },
+ "description": "Sample Description",
+ "enabled": true,
+ "managementZones": [],
+ "name": "{{.name}}",
+ "serverName": {
+  "transformations": [],
+  "valueOverride": "testNewValue"
+ },
+ "type": "FULL_WEB_REQUEST"
+}

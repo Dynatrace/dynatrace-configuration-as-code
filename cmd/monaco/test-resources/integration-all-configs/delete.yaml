@@ -25,3 +25,5 @@ delete:
   - "custom-service-java/Enterprise Warp Drive GoLang"
   - "custom-service-java/Enterprise Warp Drive NodeJS"
   - "custom-service-java/Enterprise Warp Drive php"
+  - "service-detection-web-service/ServiceDetectionWebService"
+  - "service-detection-web-request/ServiceDetectionWebRequest" 

@@ -1,0 +1,4 @@
+config:
+- ServiceDetectionWebService: service-detection-web-service.json
+ServiceDetectionWebService:
+- name: ServiceDetectionWebService
