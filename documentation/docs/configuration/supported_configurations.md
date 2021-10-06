@@ -1,8 +1,8 @@
 ---
-sidebar_position: 8
+sidebar_position: 6
 ---
 
-# Configuration Types and Token Permissions
+# Supported Configuration Types
 
 These are the supported configuration types, their API endpoints and the token permissions required for interacting with any of endpoint.
 
@@ -44,5 +44,3 @@ These are the supported configuration types, their API endpoints and the token p
 
 For reference, refer to [this](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication) page for a detailed
 description to each token permission.
-
-If your desired API is not in the table above, please consider adding it be following the instructions in [How to add new APIs](Guides/add_new_api.md).

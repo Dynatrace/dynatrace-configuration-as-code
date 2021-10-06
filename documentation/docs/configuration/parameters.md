@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 4
 ---
 
 # Configuration Parameters
@@ -147,7 +147,7 @@ The compound parameter is a parameter composed of other parameters of the same
 config. This parameters requires 2 properties: a `format` string and a list of
 `references` to all referenced parameters. Both properties are required.
 The `format` string can be any string, and to use parameters in it, the
-following syntax is used: `{{ .parameter }}`, where <parameter> is the
+following syntax is used: `{{ .parameter }}`, where `<parameter>` is the
 name of the parameter that will be filled in. A simple example might look like this:
 
 ```yaml

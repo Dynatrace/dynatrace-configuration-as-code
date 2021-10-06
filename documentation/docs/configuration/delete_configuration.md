@@ -1,5 +1,5 @@
 ---
-sidebar_position: 7
+sidebar_position: 5
 ---
 
 # Delete Configuration
@@ -7,6 +7,7 @@ sidebar_position: 7
 Configuration which is not needed anymore can also be deleted in automated fashion. This tool is looking for `delete.yaml` file located in projects root
 folder and deletes all configurations defined in this file after finishing deployment. `delete.yaml` file structure should be defined as following, where
 beside from API you also have to specify then `name` (not id) of configuration to be deleted:
+
 ```yaml
 delete:
   - "auto-tag/my-tag"
