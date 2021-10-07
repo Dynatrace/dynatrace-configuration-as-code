@@ -1,0 +1,30 @@
+{
+    "type": "OPAQUE_AND_EXTERNAL_WEB_SERVICE",
+    "name": "{{ .name }}",
+    "description": "REST API example",
+    "enabled": true,
+    "detectAsWebRequestService": false,
+    "managementZones": [],
+    "conditions": [
+        {
+            "attributeType": "URL_PATH",
+            "compareOperations": [
+                {
+                    "type": "STRING_CONTAINS",
+                    "invert": "false",
+                    "ignoreCase": "false",
+                    "values": [
+                        "value1",
+                        "value2"
+                    ]
+                }
+            ]
+        }
+    ],
+    "urlPath": {
+        "valueOverride": "abc"
+    },
+    "port": {
+        "doNotUseForServiceId": "true"
+    }
+}

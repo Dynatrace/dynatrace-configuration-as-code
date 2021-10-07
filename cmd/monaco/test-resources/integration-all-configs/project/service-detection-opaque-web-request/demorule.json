@@ -1,0 +1,46 @@
+{
+    "type": "OPAQUE_AND_EXTERNAL_WEB_REQUEST",
+    "name": "{{ .name }}",
+    "description": "REST API example",
+    "enabled": true,
+    "managementZones": [],
+    "conditions": [
+        {
+            "attributeType": "URL_HOST_NAME",
+            "compareOperations": [
+                {
+                    "type": "STRING_CONTAINS",
+                    "ignoreCase": "false",
+                    "values": [
+                        "value1",
+                        "value2"
+                    ]
+                }
+            ]
+        }
+    ],
+    "applicationId": {
+        "valueOverride": "abc"
+    },
+    "contextRoot": {
+        "segmentsToCopyFromUrlPath": 2,
+        "transformations": [
+            {
+                "type": "BEFORE",
+                "delimiter": "/"
+            }
+        ]
+    },
+    "port": {
+        "doNotUseForServiceId": "true"
+    },
+    "publicDomainName": {
+        "copyFromHostName": "true",
+        "transformations": [
+            {
+                "type": "BEFORE",
+                "delimiter": "/"
+            }
+        ]
+    }
+}
