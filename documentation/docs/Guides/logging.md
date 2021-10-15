@@ -1,8 +1,8 @@
 ---
-sidebar_position: 1
+sidebar_position: 2
 ---
 
-# Logging
+# Log Files
 
 Sometimes it is useful for debugging to see http traffic between monaco and the dynatrace api. This is possible by specifying a log file via the `MONACO_REQUEST_LOG` and `MONACO_RESPONSE_LOG` env variables.
 

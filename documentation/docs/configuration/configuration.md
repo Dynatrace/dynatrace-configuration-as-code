@@ -12,9 +12,7 @@ Projects are directories (folders) used to logically group api configurations to
 
 ## Deployment manifest
 
-Deployment manifests are yaml files that tell Monaco what projects to deploy and exactly where they should be deployed. For more information see [here](./manifest.md).
-
-In order for monaco to know what to deploy, there has to be a manifest file present.
+Deployment manifests are yaml files that tell Monaco what projects to deploy and exactly where they should be deployed. In order for monaco to know what to deploy, there has to be a manifest file present.
 This file provides details on what to deploy and where to deploy it.
 
 ## Manifest Structure

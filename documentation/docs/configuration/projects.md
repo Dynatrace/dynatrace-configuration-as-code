@@ -12,7 +12,7 @@ folders contain yaml files, specifying what gets deployed.
 ## APIs
 
 To see a list of all supported APIs and folder names, please have a
-look [here](./configTypes_tokenPermissions.md).
+look [here](./supported_configurations.md).
 
 ## Configurations
 
@@ -28,7 +28,7 @@ the name of the config, the location of the template file and parameters
 usable in the template file. Parameters can be overwritten based on what
 group or environment is currently deployed.
 
-For more details on the configuration syntax, see [here](yaml_config.md).
+For more details on the configuration syntax, see [here](./yaml_configuration.md).
 
 ### JSON Template File
 

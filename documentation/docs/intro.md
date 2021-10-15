@@ -1,13 +1,13 @@
 ---
 id: intro
 sidebar_position: 1
-title: What is Monaco?
+title: What is Monaco ?
 slug: /
 ---
 
 Monaco is CLI tool that tool automates deployment of Dynatrace Monitoring Configuration to one or multiple Dynatrace environments.
 
-## Why monaco?
+# Why monaco ?
 
 Configuring monitoring and observability be both hard and time consuming to do at scale. Monaco enables Application Teams through self-service capabilities to setup and configure Monitoring and Alerting without causing manual work on the team responsible for monitoring.
 
@@ -22,6 +22,6 @@ With monaco, defining what to monitor and what to be alerted on is easy for deve
 - Supports all the mechanisms and best-practices of git-based workflows such as pull requests, merging and approvals
 - Allows to easily promote configuration from one environment to another following their deployment from development to hardening to production
 
-To get started, install the tool:
+To get started, you can follow this guide:
 
-[Installation](./installation.md)
+[Get Started](./Guides/Get-Started/get-started.md)
