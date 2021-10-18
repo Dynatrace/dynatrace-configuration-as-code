@@ -1,0 +1,7 @@
+{
+    "schemaId": "builtin:span-attribute",
+    "value": {
+        "key": "test"
+    },
+    "scope": "environment"
+}

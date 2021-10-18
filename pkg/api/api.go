@@ -148,6 +148,13 @@ var apiMap = map[string]apiInput{
 	"failure-detection-rules": {
 		apiPath: "/api/config/v1/service/failureDetection/parameterSelection/rules",
 	},
+
+	// Early adopter API !
+	// Environment API not Config API
+	"settings-objects": {
+		apiPath:                      "/api/v2/settings/objects",
+	},
+
 }
 
 var standardApiPropertyNameOfGetAllResponse = "values"

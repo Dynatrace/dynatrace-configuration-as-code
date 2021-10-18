@@ -41,6 +41,7 @@ These are the supported configuration types, their API endpoints and the token p
 | slo                             | _/api/v2/slo_                                   | `Read SLO` & `Write SLOs`                                                                                           |
 | synthetic-location              | _/api/v1/synthetic/locations_                   | `Access problem and event feed, metrics, and topology` & `Create and read synthetic monitors, locations, and nodes` |
 | synthetic-monitor               | _/api/v1/synthetic/monitors_                    | `Create and read synthetic monitors, locations, and nodes`                                                          |
+| settings-objects                | _/api/v2/settings/objects_                      | `Read Settings` & `Write Settings`                                                                                  |
 
 For reference, refer to [this](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication) page for a detailed
 description to each token permission.
