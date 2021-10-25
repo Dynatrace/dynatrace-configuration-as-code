@@ -63,14 +63,14 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		}
 
 		if success(resp) {
-			log.Debug("\t\t\tUpdated existing object for %s (%s)", objectName, existingObjectId)
+			log.Debug("Updated existing object for %s (%s)", objectName, existingObjectId)
 			return api.DynatraceEntity{
 				Id:          existingObjectId,
 				Name:        objectName,
 				Description: "Updated existing object",
 			}, nil
 		} else {
-			return api.DynatraceEntity{}, fmt.Errorf("Failed to update DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
+			return api.DynatraceEntity{}, fmt.Errorf("failed to update %s \"%s\" (HTTP %d)! Response: %s", theApi.GetId(), objectName, resp.StatusCode, string(resp.Body))
 		}
 
 	} else {
@@ -88,7 +88,7 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		// is returned, try once again
 		if !success(resp) && strings.Contains(string(resp.Body), "must have a unique name") {
 			// Try again after 5 seconds:
-			log.Warn("\t\tConfig '%s - %s' needs to have a unique name. Waiting for 5 seconds before retry...", configType, objectName)
+			log.Warn("Config '%s - %s' needs to have a unique name. Waiting for 5 seconds before retry...", configType, objectName)
 			time.Sleep(5 * time.Second)
 			resp, err = post(client, path, body, apiToken)
 
@@ -98,7 +98,7 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		}
 		// It can take longer until request attributes are ready to be used
 		if !success(resp) && strings.Contains(string(resp.Body), "must specify a known request attribute") {
-			log.Warn("\t\tSpecified request attribute not known for %s. Waiting for 10 seconds before retry...", objectName)
+			log.Warn("Specified request attribute not known for %s. Waiting for 10 seconds before retry...", objectName)
 			time.Sleep(10 * time.Second)
 			resp, err = post(client, path, body, apiToken)
 
@@ -107,7 +107,7 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 			}
 		}
 		if !success(resp) {
-			return api.DynatraceEntity{}, fmt.Errorf("Failed to create DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
+			return api.DynatraceEntity{}, fmt.Errorf("failed to create %s \"%s\" (HTTP %d)! Response: %s", theApi.GetId(), objectName, resp.StatusCode, string(resp.Body))
 		}
 	}
 
@@ -150,7 +150,7 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 			return api.DynatraceEntity{}, err
 		}
 	}
-	log.Debug("\t\t\tCreated new object for %s (%s)", dtEntity.Name, dtEntity.Id)
+	log.Debug("Created new object for %s (%s)", dtEntity.Name, dtEntity.Id)
 
 	return dtEntity, nil
 }
@@ -217,7 +217,7 @@ func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, ob
 	}
 
 	if configsFound > 1 {
-		log.Error("\t\t\tFound %d configs with same name: %s. Please delete duplicates.", configsFound, objectName)
+		log.Error("Found %d configs with same name: %s. Please delete duplicates.", configsFound, objectName)
 	}
 	return configName, nil
 }
@@ -383,7 +383,7 @@ func translateGenericValues(inputValues []interface{}, configType string) ([]api
 				continue
 			}
 
-			log.Warn("Config of type %s was invalid. Auto-corrected to use ID as name!\nInvalid config: %s", configType, string(jsonStr))
+			log.Warn("Config of type %s was invalid. Auto-corrected to use ID as name! Invalid config: %s", configType, string(jsonStr))
 
 			values = append(values, api.Value{
 				Id:   input["id"].(string),

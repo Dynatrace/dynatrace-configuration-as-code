@@ -234,7 +234,7 @@ func SplitDependency(property string) (id string, access string, err error) {
 	firstPart, secondPart := split[0], split[1]
 
 	if len(split) > 2 {
-		log.Debug("\t\t\tproperty %s contains more than the single expected `.` separator, using last separator for split", property)
+		log.Debug("property %s contains more than the single expected `.` separator, using last separator for split", property)
 		secondPart = split[len(split)-1]
 		firstPart = strings.TrimSuffix(property, "."+secondPart)
 	}
