@@ -43,3 +43,41 @@ type topLevelDefinition struct {
 }
 
 type configParameter interface{}
+
+type newTopLevelDefinition struct {
+	Version newConfigDefinitionVersion
+	Configs []newTopLevelConfigDefinition
+}
+
+type newConfigDefinitionVersion string
+const v2 newConfigDefinitionVersion = "v2"
+
+type newTopLevelConfigDefinition struct {
+	Config               newConfigDefinition      				 `yaml:"config"`
+	GroupOverrides       []groupOverride                         `yaml:"groupOverrides,omitempty"`
+	EnvironmentOverrides []environmentOverride                   `yaml:"environmentOverrides,omitempty"`
+}
+
+type newConfigDefinition struct {
+
+	// Either Name or NameFromReference MUST be set
+	// If none is set -> Error
+	// If both are set -> Error
+	Name                 string                                  `yaml:"name,omitempty"`
+	NameFromReference    newConfigParameterDefinition            `yaml:"nameFromReference,omitempty"`
+
+	Parameters           map[string]newConfigParameterDefinition `yaml:"parameters,omitempty"`
+	Template             string                                  `yaml:"template,omitempty"`
+	Skip                 bool                                    `yaml:"skip,omitempty"`
+}
+
+type newConfigParameterDefinition struct {
+	Type     ConfigParameterType `yaml:"type,omitempty"`
+	Property string              `yaml:"property,omitempty"`
+	ConfigId string              `yaml:"config-id,omitempty"`
+	Api      string              `yaml:"api,omitempty"`
+}
+
+type ConfigParameterType string
+const ConfigParameterReference ConfigParameterType = "reference"
+
