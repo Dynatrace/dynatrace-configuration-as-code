@@ -21,8 +21,8 @@ import (
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/convert"
 	legacyDeploy "github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/deploy"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/delete"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/deploy"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/main/delete"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/main/deploy"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/envvars"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"

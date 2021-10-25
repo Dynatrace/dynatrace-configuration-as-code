@@ -1,0 +1,22 @@
+configs:
+- id: zone-multiproject
+  config:
+    name: mzone-1-multiproject
+    parameters:
+      meId: HOST_GROUP-1234567890123456
+      webAppTaggingName:
+        api: auto-tag
+        config: application-tagging-multiproject
+        property: name
+        type: reference
+    template: ../../movies/science fiction/the-hitchhikers-guide-to-the-galaxy/management-zone/zone.json
+    skip: false
+  groupOverrides:
+  - group: production
+    override:
+      parameters:
+        environment: environment2
+  - group: development
+    override:
+      parameters:
+        environment: environment1

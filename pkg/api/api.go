@@ -183,6 +183,16 @@ func NewApis() map[string]Api {
 	return apis
 }
 
+func GetApiNames(apis map[string]Api) []string {
+	result := make([]string, 0, len(apis))
+
+	for api := range apis {
+		result = append(result, api)
+	}
+
+	return result
+}
+
 func newApi(id string, input apiInput) Api {
 	if input.propertyNameOfGetAllResponse == "" {
 		return NewStandardApi(id, input.apiPath)

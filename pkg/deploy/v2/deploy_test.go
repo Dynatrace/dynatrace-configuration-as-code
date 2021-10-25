@@ -76,7 +76,7 @@ func TestResolveParameterValues(t *testing.T) {
 
 	entities := map[coordinate.Coordinate]parameter.ResolvedEntity{}
 
-	values, errors := resolveParameterValues(client, &conf, entities, parameters, false)
+	values, errors := ResolveParameterValues(client, &conf, entities, parameters, false)
 
 	assert.Assert(t, len(errors) == 0, "there should be no errors (errors: %s)", errors)
 	assert.Equal(t, name, values[config.NameParameter])
@@ -120,7 +120,7 @@ func TestResolveParameterValuesShouldFailWhenReferencingNonExistingConfig(t *tes
 
 	entities := map[coordinate.Coordinate]parameter.ResolvedEntity{}
 
-	_, errors := resolveParameterValues(client, &conf, entities, parameters, false)
+	_, errors := ResolveParameterValues(client, &conf, entities, parameters, false)
 
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
@@ -169,7 +169,7 @@ func TestResolveParameterValuesShouldFailWhenReferencingSkippedConfig(t *testing
 		},
 	}
 
-	_, errors := resolveParameterValues(client, &conf, entities, parameters, false)
+	_, errors := ResolveParameterValues(client, &conf, entities, parameters, false)
 
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
@@ -200,7 +200,7 @@ func TestResolveParameterValuesShouldFailWhenParameterResolveReturnsError(t *tes
 
 	entities := map[coordinate.Coordinate]parameter.ResolvedEntity{}
 
-	_, errors := resolveParameterValues(client, &conf, entities, parameters, false)
+	_, errors := ResolveParameterValues(client, &conf, entities, parameters, false)
 
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
@@ -361,7 +361,7 @@ func TestExtractConfigName(t *testing.T) {
 		config.NameParameter: name,
 	}
 
-	val, err := extractConfigName(&conf, properties)
+	val, err := ExtractConfigName(&conf, properties)
 
 	assert.NilError(t, err)
 	assert.Equal(t, name, val)
@@ -383,7 +383,7 @@ func TestExtractConfigNameShouldFailOnMissingName(t *testing.T) {
 
 	properties := parameter.Properties{}
 
-	_, err := extractConfigName(&conf, properties)
+	_, err := ExtractConfigName(&conf, properties)
 
 	assert.Assert(t, err != nil, "error should not be nil (error val: %s)", err)
 }
@@ -406,7 +406,7 @@ func TestExtractConfigNameShouldFailOnNameWithNonStringType(t *testing.T) {
 		config.NameParameter: 1,
 	}
 
-	_, err := extractConfigName(&conf, properties)
+	_, err := ExtractConfigName(&conf, properties)
 
 	assert.Assert(t, err != nil, "error should not be nil (error val: %s)", err)
 }

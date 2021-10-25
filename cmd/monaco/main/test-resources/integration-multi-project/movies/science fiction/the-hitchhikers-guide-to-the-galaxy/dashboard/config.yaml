@@ -1,0 +1,17 @@
+configs:
+- id: dashboard-multiproject
+  config:
+    name: The Hitchhiker's Guide to the Galaxy Multiproject
+    parameters:
+      mzone:
+        api: management-zone
+        config: zone-multiproject
+        property: id
+        type: reference
+      mzoneName:
+        api: management-zone
+        config: zone-multiproject
+        property: name
+        type: reference
+    template: overview-dashboard.json
+    skip: false

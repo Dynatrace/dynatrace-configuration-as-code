@@ -32,7 +32,7 @@ mocks:
 build: clean lint
 	@echo Build ${BINARY}
 	@go build ./...
-	@go build -o ./bin/${BINARY} ./cmd/monaco/v2
+	@go build -o ./bin/${BINARY} ./cmd/monaco/main
 
 install: clean lint
 	@echo Install ${BINARY}

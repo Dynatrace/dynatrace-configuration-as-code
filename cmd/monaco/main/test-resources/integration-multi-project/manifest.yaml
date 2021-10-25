@@ -1,0 +1,24 @@
+projects:
+- name: movies.science fiction.the-hitchhikers-guide-to-the-galaxy
+  path: movies/science fiction/the-hitchhikers-guide-to-the-galaxy
+- name: cinema-infrastructure
+- name: star-trek
+  path: star-trek
+
+environments:
+- group: development
+  entries:
+  - name: environment1
+    url:
+      type: environment
+      value: URL_ENVIRONMENT_1
+    token:
+      name: TOKEN_ENVIRONMENT_1
+- group: production
+  entries:
+    - name: environment2
+      url:
+        type: environment
+        value: URL_ENVIRONMENT_2
+      token:
+        name: TOKEN_ENVIRONMENT_2

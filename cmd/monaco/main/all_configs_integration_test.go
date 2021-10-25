@@ -17,12 +17,12 @@
  * limitations under the License.
  */
 
-package v2
+package main
 
 import (
 	"testing"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/runner"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/main/runner"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 )

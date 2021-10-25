@@ -196,11 +196,11 @@ func deployConfig(client rest.DynatraceClient, apis map[string]api.Api,
 		errors = append(errors, err)
 	}
 
-	properties, errs := resolveParameterValues(client, conf, entities, parameters, dryRun)
+	properties, errs := ResolveParameterValues(client, conf, entities, parameters, dryRun)
 
 	errors = append(errors, errs...)
 
-	configName, err := extractConfigName(conf, properties)
+	configName, err := ExtractConfigName(conf, properties)
 
 	if err != nil {
 		errors = append(errors, err)
@@ -261,7 +261,7 @@ func deployConfig(client rest.DynatraceClient, apis map[string]api.Api,
 	}, nil
 }
 
-func extractConfigName(conf *config.Config, properties parameter.Properties) (string, error) {
+func ExtractConfigName(conf *config.Config, properties parameter.Properties) (string, error) {
 	val, found := properties[config.NameParameter]
 
 	if !found {
@@ -277,7 +277,7 @@ func extractConfigName(conf *config.Config, properties parameter.Properties) (st
 	return name, nil
 }
 
-func resolveParameterValues(client rest.DynatraceClient, conf *config.Config,
+func ResolveParameterValues(client rest.DynatraceClient, conf *config.Config,
 	entities map[coordinate.Coordinate]parameter.ResolvedEntity, parameters []topologysort.ParameterWithName,
 	dryRun bool) (parameter.Properties, []error) {
 

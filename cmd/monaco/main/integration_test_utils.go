@@ -3,7 +3,7 @@
 
 /**
  * @license
- * Copyright 2020 Dynatrace LLC
+ * Copyright 2021 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,11 +17,17 @@
  * limitations under the License.
  */
 
-package v2
+package main
 
 import (
 	"fmt"
+	configv2 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
+	v2 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/deploy/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
+	projectv2 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2/topologysort"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -30,9 +36,6 @@ import (
 	"time"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
@@ -40,61 +43,96 @@ import (
 	"gotest.tools/assert"
 )
 
-// checks all configurations of a given project with given availability
-func AssertAllConfigsAvailability(projects []project.Project, t *testing.T, environments map[string]environment.Environment, available bool) {
-	for _, environment := range environments {
+// AssertAllConfigsAvailability checks all configurations of a given project with given availability
+func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string, specificEnvironment string, available bool) {
 
-		token, err := environment.GetToken()
+	loadedManifest, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
+		Fs:           fs,
+		ManifestPath: manifestPath,
+	})
+	FailOnAnyError(errs, "loading of environments failed")
+
+	environments := loadedManifest.Environments
+	if specificEnvironment != "" {
+		environments = make(map[string]manifest.EnvironmentDefinition)
+		if val, ok := loadedManifest.Environments[specificEnvironment]; ok {
+			environments[specificEnvironment] = val
+		} else {
+			log.Fatal("Environment %s not found in manifest", specificEnvironment)
+			os.Exit(1)
+		}
+	}
+
+	projects, errs := projectv2.LoadProjects(fs, projectv2.ProjectLoaderContext{
+		Apis:            api.GetApiNames(api.NewApis()),
+		WorkingDir:      manifestPath,
+		Manifest:        loadedManifest,
+		ParametersSerde: configv2.DefaultParameterParsers,
+	})
+	FailOnAnyError(errs, "loading of projects failed")
+
+	entities := make(map[coordinate.Coordinate]parameter.ResolvedEntity)
+
+	for _, env := range environments {
+
+		token, err := env.GetToken()
 		assert.NilError(t, err)
 
-		client, err := rest.NewDynatraceClient(environment.GetEnvironmentUrl(), token)
+		url, err := env.GetUrl()
 		assert.NilError(t, err)
 
-		for _, project := range projects {
-			for _, config := range project.GetConfigs() {
-				AssertConfig(t, client, environment, available, config)
+		client, err := rest.NewDynatraceClient(url, token)
+		assert.NilError(t, err)
+
+		for _, theProject := range projects {
+			for _, apis := range theProject.Configs {
+				for theApi, configs := range apis {
+					for _, theConfig := range configs {
+
+						if theConfig.Skip {
+							continue
+						}
+
+						parameters, err := topologysort.SortParameters(theConfig.Group, theConfig.Environment, theConfig.Coordinate, theConfig.Parameters)
+						FailOnAnyError(errs, "resolving of parameter values failed")
+
+						properties, errs := v2.ResolveParameterValues(client, &theConfig, entities, parameters, false)
+						FailOnAnyError(errs, "resolving of parameter values failed")
+
+						configName, err := v2.ExtractConfigName(&theConfig, properties)
+						assert.NilError(t, err)
+
+						AssertConfig(t, client, env, available, theConfig, theApi, configName)
+					}
+				}
 			}
 		}
 	}
 }
 
-// checks specific configuration for availability
-func AssertConfigAvailability(t *testing.T, config config.Config, environment environment.Environment, available bool) {
+func AssertConfig(t *testing.T, client rest.DynatraceClient, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config configv2.Config, apiId string, name string) {
 
-	token, err := environment.GetToken()
-	assert.NilError(t, err)
+	theApi := api.NewApis()[apiId]
+	_, existingId, _ := client.ExistsByName(theApi, name)
 
-	client, err := rest.NewDynatraceClient(environment.GetEnvironmentUrl(), token)
-	assert.NilError(t, err)
-
-	AssertConfig(t, client, environment, available, config)
-}
-
-func AssertConfig(t *testing.T, client rest.DynatraceClient, environment environment.Environment, shouldBeAvailable bool, config config.Config) {
-	configType := config.GetType()
-	api := config.GetApi()
-	name := config.GetProperties()[config.GetId()]["name"]
-
-	_, existingId, _ := client.ExistsByName(api, name)
-
-	if config.IsSkipDeployment(environment) {
-		assert.Equal(t, existingId, "", "Object should NOT be available, but was. environment.Environment: '"+environment.GetId()+"', failed for '"+name+"' ("+configType+")")
+	if config.Skip {
+		assert.Equal(t, existingId, "", "Object should NOT be available, but was. environment.Environment: '"+environment.Name+"', failed for '"+name+"' ("+apiId+")")
 		return
 	}
 
-	description := fmt.Sprintf("%s %s on environment %s", configType, name, environment.GetId())
+	description := fmt.Sprintf("%s %s on environment %s", apiId, name, environment.Name)
 
 	// 120 polling cycles -> Wait at most 120 * 2 seconds = 4 Minutes:
 	err := rest.Wait(description, 120, func() bool {
-		_, existingId, _ := client.ExistsByName(api, name)
+		_, existingId, _ := client.ExistsByName(theApi, name)
 		return (shouldBeAvailable && len(existingId) > 0) || (!shouldBeAvailable && len(existingId) == 0)
 	})
 	assert.NilError(t, err)
 
 	if shouldBeAvailable {
-		assert.Check(t, len(existingId) > 0, "Object should be available, but wasn't. environment.Environment: '"+environment.GetId()+"', failed for '"+name+"' ("+configType+")")
+		assert.Check(t, len(existingId) > 0, "Object should be available, but wasn't. environment.Environment: '"+environment.Name+"', failed for '"+name+"' ("+apiId+")")
 	} else {
-		assert.Equal(t, existingId, "", "Object should NOT be available, but was. environment.Environment: '"+environment.GetId()+"', failed for '"+name+"' ("+configType+")")
+		assert.Equal(t, existingId, "", "Object should NOT be available, but was. environment.Environment: '"+environment.Name+"', failed for '"+name+"' ("+apiId+")")
 	}
 }
 
@@ -124,7 +162,7 @@ func getTransformerFunc(suffix string) func(line string) string {
 }
 
 // Deletes all configs that end with "_suffix", where suffix == suffixTest+suffixTimestamp
-func cleanupIntegrationTest(t *testing.T, fs afero.Fs, loadedManifest manifest.Manifest, specificEnvironment, suffix string) {
+func cleanupIntegrationTest(t *testing.T, loadedManifest manifest.Manifest, specificEnvironment, suffix string) {
 
 	environments := loadedManifest.Environments
 	if specificEnvironment != "" {
@@ -203,7 +241,7 @@ func RunIntegrationWithCleanup(t *testing.T, configFolder, manifestPath, specifi
 		return
 	}
 
-	defer cleanupIntegrationTest(t, fs, loadedManifest, specificEnvironment, suffix)
+	defer cleanupIntegrationTest(t, loadedManifest, specificEnvironment, suffix)
 
 	testFunc(fs)
 }

@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v2
+package main
 
 import (
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/main/runner"
 	"os"
-
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/runner"
 )
 
 func main() {
