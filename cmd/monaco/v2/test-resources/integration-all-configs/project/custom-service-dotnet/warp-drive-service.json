@@ -1,0 +1,22 @@
+{
+    "name": "{{ .name }}",
+    "enabled": true,
+    "rules": [
+      {
+        "enabled": true,
+        "fileName": "",
+        "className": "com.dynatrace.easytravel.servicex",
+        "matcher": "EQUALS",
+        "methodRules": [
+          {
+            "methodName": "methody",
+            "returnType": "void"
+          }
+        ],
+        "annotations": []
+      }
+    ],
+    "queueEntryPoint": false,
+    "queueEntryPointType": null,
+    "processGroups": []
+  }

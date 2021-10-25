@@ -1,5 +1,5 @@
-//go:build integration
-// +build integration
+//go:build integration_v1
+// +build integration_v1
 
 /**
  * @license
@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-package legacy
+package v1
 
 import (
 	"fmt"

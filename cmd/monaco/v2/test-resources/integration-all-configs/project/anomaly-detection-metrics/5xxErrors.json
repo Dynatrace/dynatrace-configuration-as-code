@@ -1,0 +1,21 @@
+{
+    "metricId": "builtin:service.errors.fivexx.rate",
+    "name": "{{ .name }}",
+    "description": "The {metricname} value of {severity} was {alert_condition} your custom threshold of {threshold}.",
+    "aggregationType": "AVG",
+    "eventType": "CUSTOM_ALERT",
+    "severity": "CUSTOM_ALERT",
+    "alertCondition": "ABOVE",
+    "samples": 5,
+    "violatingSamples": 3,
+    "dealertingSamples": 5,
+    "threshold": 5,
+    "enabled": true,
+    "tagFilters": [
+      {
+        "context": "CONTEXTLESS",
+        "key": "{{ .tag }}"
+      }
+    ],
+    "unit": "PERCENT"
+  }

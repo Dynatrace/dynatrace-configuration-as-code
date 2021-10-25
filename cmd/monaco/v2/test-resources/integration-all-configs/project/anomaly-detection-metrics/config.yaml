@@ -1,0 +1,12 @@
+configs:
+- id: 5xx-errors
+  config:
+    name: Borg 5xx Errors
+    parameters:
+      tag:
+        api: auto-tag
+        config: application-tagging
+        property: name
+        type: reference
+    template: 5xxErrors.json
+    skip: false

@@ -1,5 +1,5 @@
-//go:build integration
-// +build integration
+//go:build integration_v1
+// +build integration_v1
 
 /**
  * @license
@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-package legacy
+package v1
 
 import (
 	"path/filepath"
@@ -50,6 +50,7 @@ func TestIntegrationMultiProject(t *testing.T) {
 		statusCode := runner.RunImpl([]string{
 			"monaco",
 			"deploy",
+			"--verbose",
 			"--environments", multiProjectEnvironmentsFile,
 			multiProjectFolder,
 		}, fs)
@@ -71,6 +72,7 @@ func TestIntegrationValidationMultiProject(t *testing.T) {
 	statusCode := runner.RunImpl([]string{
 		"monaco",
 		"deploy",
+		"--verbose",
 		"--environments", multiProjectEnvironmentsFile,
 		"--dry-run",
 		multiProjectFolder,
@@ -90,6 +92,7 @@ func TestIntegrationValidationMultiProjectWithoutEndingSlashInPath(t *testing.T)
 	statusCode := runner.RunImpl([]string{
 		"monaco",
 		"deploy",
+		"--verbose",
 		"--environments", multiProjectEnvironmentsFile,
 		"--dry-run",
 		multiProjectFolderWithoutSlash,
@@ -112,6 +115,7 @@ func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 		statusCode := runner.RunImpl([]string{
 			"monaco",
 			"deploy",
+			"--verbose",
 			"--environments", multiProjectEnvironmentsFile,
 			"-p", "star-trek",
 			multiProjectFolder,

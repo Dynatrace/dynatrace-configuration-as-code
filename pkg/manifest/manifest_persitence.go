@@ -27,8 +27,13 @@ type tokenConfig struct {
 
 type environment struct {
 	Name  string      `yaml:"name"`
-	Url   string      `yaml:"url"`
+	Url   url         `yaml:"url"`
 	Token tokenConfig `yaml:"token"`
+}
+
+type url struct {
+	Type  string `yaml:"type,omitempty"`
+	Value string `yaml:"value"`
 }
 
 type group struct {

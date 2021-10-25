@@ -1,0 +1,9 @@
+configs:
+- id: credentials
+  config:
+    name: Enterprise AWS Credentials
+    parameters:
+      accountId: "1234"
+      iamRoleName: yes-the-enterprise-runs-on-AWS
+    template: aws.json
+    skip: false

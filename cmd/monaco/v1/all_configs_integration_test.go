@@ -1,5 +1,5 @@
-//go:build integration
-// +build integration
+//go:build integration_v1
+// +build integration_v1
 
 /**
  * @license
@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-package legacy
+package v1
 
 import (
 	"path/filepath"
@@ -39,6 +39,7 @@ func TestIntegrationAllConfigs(t *testing.T) {
 		statusCode := runner.RunImpl([]string{
 			"monaco",
 			"deploy",
+			"--verbose",
 			"--environments",
 			allConfigsEnvironmentsFile,
 			allConfigsFolder,
@@ -50,6 +51,7 @@ func TestIntegrationAllConfigs(t *testing.T) {
 		statusCode = runner.RunImpl([]string{
 			"monaco",
 			"deploy",
+			"--verbose",
 			"--environments", allConfigsEnvironmentsFile,
 			// Currently there are some APIs for which updating the config does not work. These configs are included in
 			// the project "only-post" (folder ./test-resources/integration-all-configs/only-post)

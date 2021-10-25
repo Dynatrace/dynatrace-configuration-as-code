@@ -1,0 +1,6 @@
+configs:
+- id: pg-naming
+  config:
+    name: Cl-ProdXX Server
+    template: pg-naming.json
+    skip: false

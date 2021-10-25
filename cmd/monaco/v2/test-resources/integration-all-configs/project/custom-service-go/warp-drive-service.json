@@ -1,0 +1,20 @@
+{
+    "name": "{{ .name }}",
+    "enabled": true,
+    "rules": [
+        {
+        "enabled": true,
+        "className": "AClass",
+        "methodRules": [
+            {
+            "methodName": "AMethod",
+            "argumentTypes": [
+                "java.lang.String"
+            ],
+            "returnType": "void"
+            }
+        ]
+        }
+    ],
+    "queueEntryPoint": false
+}

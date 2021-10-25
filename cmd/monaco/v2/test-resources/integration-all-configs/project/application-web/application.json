@@ -1,0 +1,123 @@
+{
+  "name": "{{ .name }}",
+  "realUserMonitoringEnabled": true,
+  "costControlUserSessionPercentage": 100,
+  "loadActionKeyPerformanceMetric": "VISUALLY_COMPLETE",
+  "xhrActionKeyPerformanceMetric": "VISUALLY_COMPLETE",
+  "loadActionApdexSettings": {
+    "threshold": 1,
+    "toleratedThreshold": 1000,
+    "frustratingThreshold": 3000,
+    "toleratedFallbackThreshold": 1300,
+    "frustratingFallbackThreshold": 3300,
+    "considerJavaScriptErrors": true
+  },
+  "xhrActionApdexSettings": {
+    "threshold": 3,
+    "toleratedThreshold": 3000,
+    "frustratingThreshold": 12000,
+    "toleratedFallbackThreshold": 3000,
+    "frustratingFallbackThreshold": 12000,
+    "considerJavaScriptErrors": true
+  },
+  "customActionApdexSettings": {
+    "threshold": 3,
+    "toleratedThreshold": 3000,
+    "frustratingThreshold": 12000,
+    "toleratedFallbackThreshold": 3000,
+    "frustratingFallbackThreshold": 12000,
+    "considerJavaScriptErrors": true
+  },
+  "waterfallSettings": {
+    "uncompressedResourcesThreshold": 860,
+    "resourcesThreshold": 100000,
+    "resourceBrowserCachingThreshold": 50,
+    "slowFirstPartyResourcesThreshold": 200000,
+    "slowThirdPartyResourcesThreshold": 200000,
+    "slowCdnResourcesThreshold": 200000,
+    "speedIndexVisuallyCompleteRatioThreshold": 50
+  },
+  "monitoringSettings": {
+    "fetchRequests": true,
+    "xmlHttpRequest": true,
+    "javaScriptFrameworkSupport": {
+      "angular": true,
+      "dojo": false,
+      "extJS": false,
+      "icefaces": false,
+      "jQuery": false,
+      "mooTools": false,
+      "prototype": false,
+      "activeXObject": false
+    },
+    "contentCapture": {
+      "resourceTimingSettings": {
+        "w3cResourceTimings": true,
+        "nonW3cResourceTimings": false,
+        "nonW3cResourceTimingsInstrumentationDelay": 50,
+        "resourceTimingCaptureType": "CAPTURE_FULL_DETAILS",
+        "resourceTimingsDomainLimit": 10
+      },
+      "javaScriptErrors": true,
+      "timeoutSettings": {
+        "timedActionSupport": false,
+        "temporaryActionLimit": 0,
+        "temporaryActionTotalTimeout": 100
+      },
+      "visuallyCompleteAndSpeedIndex": true
+    },
+    "excludeXhrRegex": "",
+    "injectionMode": "JAVASCRIPT_TAG",
+    "libraryFileLocation": "",
+    "monitoringDataPath": "",
+    "customConfigurationProperties": "",
+    "serverRequestPathId": "",
+    "secureCookieAttribute": false,
+    "cookiePlacementDomain": "",
+    "cacheControlHeaderOptimizations": true,
+    "advancedJavaScriptTagSettings": {
+      "syncBeaconFirefox": false,
+      "syncBeaconInternetExplorer": false,
+      "instrumentUnsupportedAjaxFrameworks": false,
+      "specialCharactersToEscape": "",
+      "maxActionNameLength": 100,
+      "maxErrorsToCapture": 10,
+      "additionalEventHandlers": {
+        "userMouseupEventForClicks": false,
+        "clickEventHandler": false,
+        "mouseupEventHandler": false,
+        "blurEventHandler": false,
+        "changeEventHandler": false,
+        "toStringMethod": false,
+        "maxDomNodesToInstrument": 5000
+      },
+      "eventWrapperSettings": {
+        "click": false,
+        "mouseUp": false,
+        "change": false,
+        "blur": false,
+        "touchStart": false,
+        "touchEnd": false
+      },
+      "globalEventCaptureSettings": {
+        "mouseUp": true,
+        "mouseDown": true,
+        "click": true,
+        "doubleClick": true,
+        "keyUp": true,
+        "keyDown": true,
+        "scroll": true,
+        "additionalEventCapturedAsUserInput": ""
+      }
+    }
+  },
+  "userActionNamingSettings": {
+    "placeholders": [],
+    "loadActionNamingRules": [],
+    "xhrActionNamingRules": [],
+    "ignoreCase": true,
+    "splitUserActionsByDomain": true
+  },
+  "metaDataCaptureSettings": [],
+  "conversionGoals": []
+}

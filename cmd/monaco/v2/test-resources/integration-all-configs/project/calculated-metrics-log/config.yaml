@@ -1,0 +1,8 @@
+configs:
+- id: log-errors
+  config:
+    name: calc:log.jiralogerrors
+    parameters:
+      displayName: Jira Log Errors
+    template: jira-log-errors.json
+    skip: false
