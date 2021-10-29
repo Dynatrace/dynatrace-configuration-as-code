@@ -180,9 +180,12 @@ func validateConfig(project project.Project, config config.Config, dict map[stri
 	util.Log.Debug("\t\tValidating config " + config.GetFilePath())
 
 	_, err = config.GetConfigForEnvironment(environment, dict)
-
 	if err != nil {
 		return entity, err
+	}
+
+	if config.GetApi().IsSettings20Api() {
+
 	}
 
 	randomId := "random-" + strconv.Itoa(rand.Int())

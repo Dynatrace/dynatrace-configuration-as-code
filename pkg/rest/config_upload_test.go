@@ -33,7 +33,8 @@ func TestTranslateGenericValuesOnStandardResponse(t *testing.T) {
 	response := make([]interface{}, 1)
 	response[0] = entry
 
-	values, err := translateGenericValues(response, "extensions")
+	uploader := classicApiRestClient{}
+	values, err := uploader.translateGenericValues(response, "extensions")
 
 	assert.NilError(t, err)
 	assert.Check(t, len(values) == 1)
@@ -50,7 +51,8 @@ func TestTranslateGenericValuesOnIdMissing(t *testing.T) {
 	response := make([]interface{}, 1)
 	response[0] = entry
 
-	_, err := translateGenericValues(response, "extensions")
+	uploader := classicApiRestClient{}
+	_, err := uploader.translateGenericValues(response, "extensions")
 
 	assert.ErrorContains(t, err, "config of type extensions was invalid: No id")
 }
@@ -63,7 +65,8 @@ func TestTranslateGenericValuesOnNameMissing(t *testing.T) {
 	response := make([]interface{}, 1)
 	response[0] = entry
 
-	values, err := translateGenericValues(response, "extensions")
+	uploader := classicApiRestClient{}
+	values, err := uploader.translateGenericValues(response, "extensions")
 
 	assert.NilError(t, err)
 	assert.Check(t, len(values) == 1)

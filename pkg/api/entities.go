@@ -53,3 +53,37 @@ type DynatraceEntity struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
+
+type Settings20SchemaResponse struct {
+	Items      []Settings20SchemaItemResponse `json:"items"`
+	TotalCount int                            `json:"totalCount"`
+}
+
+type Settings20SchemaItemResponse struct {
+	SchemaId            string `json:"schemaId"`
+	DisplayName         string `json:"displayName"`
+	LatestSchemaVersion string `json:"latestSchemaVersion"`
+}
+
+type Settings20SchemaItemDetailsResponse struct {
+	Dynatrace     string   `json:"dynatrace"`
+	SchemaId      string   `json:"schemaId"`
+	DisplayName   string   `json:"displayName"`
+	Description   string   `json:"description"`
+	Documentation string   `json:"documentation"`
+	Version       string   `json:"version"`
+	MultiObject   bool     `json:"multiObject"`
+	MaxObjects    int      `json:"maxObjects"`
+	AllowedScopes []string `json:"allowedScopes"`
+}
+
+type Settings20ObjectResponse struct {
+	Items      []Settings20ObjectItemResponse `json:"items"`
+	TotalCount int                            `json:"totalCount"`
+	PageSize   int                            `json:"pageSize"`
+}
+
+type Settings20ObjectItemResponse struct {
+	ObjectId string      `json:"objectId"`
+	Value    interface{} `json:"value"`
+}

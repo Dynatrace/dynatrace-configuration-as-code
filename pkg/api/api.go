@@ -150,6 +150,36 @@ var apiMap = map[string]apiInput{
 	},
 }
 
+var settings20ApiMap = map[string]apiInputSettings20{
+
+	"builtin:span-entry-points": {
+		namePropertyJsonPath: "$.entryPointRule.ruleName",
+	},
+	"builtin:tokens.token-settings": {
+		unique: true,
+	},
+	"builtin:problem.notifications": {
+		namePropertyJsonPath: "$.displayName",
+	},
+	"builtin:logmonitoring.log-events": {
+		namePropertyJsonPath: "$.summary",
+	},
+}
+
+// Settings20SchemaApi is the API used internally to get all the settings 2.0 schemas
+var Settings20SchemaApi Api = &apiImpl{
+	id:                           "schemas",
+	apiPath:                      "/api/v2/settings/schemas",
+	propertyNameOfGetAllResponse: "items",
+}
+
+// Settings20ObjectsApi is the API used internally to get all the settings 2.0 objects
+var Settings20ObjectsApi Api = &apiImpl{
+	id:                           "objects",
+	apiPath:                      "/api/v2/settings/objects",
+	propertyNameOfGetAllResponse: "items",
+}
+
 var standardApiPropertyNameOfGetAllResponse = "values"
 
 type Api interface {
@@ -159,6 +189,12 @@ type Api interface {
 	GetApiPath() string
 	GetPropertyNameOfGetAllResponse() string
 	IsStandardApi() bool
+	IsSettings20Api() bool
+}
+
+type apiInputSettings20 struct {
+	namePropertyJsonPath string
+	unique               bool
 }
 
 type apiInput struct {
@@ -172,12 +208,28 @@ type apiImpl struct {
 	propertyNameOfGetAllResponse string
 }
 
+type settings20Impl struct {
+	id                   string
+	apiPath              string
+	namePropertyJsonPath string
+	unique               bool
+}
+
 func NewApis() map[string]Api {
 
 	apis := make(map[string]Api)
 
 	for id, details := range apiMap {
 		apis[id] = newApi(id, details)
+	}
+
+	for id, details := range settings20ApiMap {
+		apis[id] = &settings20Impl{
+			id:                   id,
+			apiPath:              id,
+			namePropertyJsonPath: details.namePropertyJsonPath,
+			unique:               details.namePropertyJsonPath == "",
+		}
 	}
 
 	return apis
@@ -231,15 +283,54 @@ func (a *apiImpl) IsStandardApi() bool {
 	return a.propertyNameOfGetAllResponse == standardApiPropertyNameOfGetAllResponse
 }
 
+func (a *apiImpl) IsSettings20Api() bool {
+	return false
+}
+
+func (a *settings20Impl) GetUrl(environment environment.Environment) string {
+	return environment.GetEnvironmentUrl() + "settings/objects"
+}
+
+func (a *settings20Impl) GetUrlFromEnvironmentUrl(environmentUrl string) string {
+	return environmentUrl + "/api/v2/settings/objects"
+}
+
+func (a *settings20Impl) GetId() string {
+	return a.id
+}
+
+func (a *settings20Impl) GetApiPath() string {
+	return a.apiPath
+}
+
+func (a *settings20Impl) GetPropertyNameOfGetAllResponse() string {
+	return a.namePropertyJsonPath
+}
+
+func (a *settings20Impl) IsStandardApi() bool {
+	return false
+}
+
+func (a *settings20Impl) IsSettings20Api() bool {
+	return true
+}
+
 func IsApi(dir string) bool {
-	_, ok := apiMap[dir]
-	return ok
+	_, okClassicApi := apiMap[dir]
+	_, okSettings20Api := settings20ApiMap[dir]
+
+	return okClassicApi || okSettings20Api
 }
 
 // tests if part of project folder path contains an API
 // folders with API in path are not valid projects
 func ContainsApiName(path string) bool {
 	for api := range apiMap {
+		if strings.Contains(path, api) {
+			return true
+		}
+	}
+	for api := range settings20ApiMap {
 		if strings.Contains(path, api) {
 			return true
 		}

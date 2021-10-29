@@ -1,0 +1,16 @@
+{
+    "scope": "environment",
+    "schemaId": "builtin:problem.notifications",
+    "schemaVersion": "1.0.16",
+    "value": {
+        "enabled": false,
+        "type": "SLACK",
+        "displayName": "{{ .name }}",
+        "slackNotification": {
+            "url": "https://hooks.slack.com/services/bla",
+            "channel": "#int-some-channel",
+            "message": "{State} Problem {ProblemID}: {ImpactedEntity}"
+        },
+        "alertingProfile": "vu9U3hXa3q0AAAABABhidWlsdGluOmFsZXJ0aW5nLnByb2ZpbGUABnRlbmFudAAGdGVuYW50ACQwNGFkNzk5Mi1iZjQzLTNlMzUtODgwNC04MWY3OThkNjdiZTa-71TeFdrerQ"
+    }
+}

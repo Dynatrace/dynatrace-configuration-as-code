@@ -1,0 +1,17 @@
+{
+    "scope": "environment",
+    "schemaId": "builtin:logmonitoring.log-events",
+    "schemaVersion": "3.0.4",
+    "value": {
+        "enabled": true,
+        "summary": "{{ .name }}",
+        "query": "dt.kubernetes.cluster.name=\"9d949141\"  AND k8s.deployment.name=\"kube-proxy\" AND content=\"Unauthorized\" ",
+        "eventTemplate": {
+            "title": "kube-proxy shows unauthorized api-server calls",
+            "description": "Kube-proxy receives unauthorized error from the kube api-server. Please investigate as this should never happen!",
+            "eventType": "ERROR",
+            "davisMerge": true,
+            "metadata": []
+        }
+    }
+}

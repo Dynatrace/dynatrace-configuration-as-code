@@ -1,0 +1,5 @@
+config:
+  - demo_config: "config.json"
+
+demo_config:
+  - name: "Monaco Setting 20 test"

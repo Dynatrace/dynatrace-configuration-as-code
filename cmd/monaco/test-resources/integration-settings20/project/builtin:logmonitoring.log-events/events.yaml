@@ -1,0 +1,5 @@
+config:
+  - demo_config: "config.json"
+
+demo_config:
+  - name: "SPINE kube-proxy Unauthorized"

@@ -1,7 +1,9 @@
 module github.com/dynatrace-oss/dynatrace-monitoring-as-code
 
 require (
+	github.com/PaesslerAG/jsonpath v0.1.1 // indirect
 	github.com/golang/mock v1.6.0
+	github.com/google/addlicense v1.0.0 // indirect
 	github.com/google/go-cmp v0.5.6
 	github.com/google/uuid v1.3.0
 	github.com/jcelliott/lumber v0.0.0-20160324203708-dd349441af25
