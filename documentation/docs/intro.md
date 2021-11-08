@@ -5,23 +5,26 @@ title: What is Monaco ?
 slug: /
 ---
 
-Monaco is CLI tool that tool automates deployment of Dynatrace Monitoring Configuration to one or multiple Dynatrace environments.
+Monaco is CLI tool that automates the deployment of Dynatrace Monitoring Configuration to one or multiple Dynatrace environments.
 
-# Why monaco ?
+## Why Monaco?
 
-Configuring monitoring and observability be both hard and time consuming to do at scale. Monaco enables Application Teams through self-service capabilities to setup and configure Monitoring and Alerting without causing manual work on the team responsible for monitoring.
+Monaco’s self-service model enables development teams to set up monitoring and observability easily and efficiently, even for large scale applications. It eliminates the need for building custom monitoring solutions and reduces the manual work for monitoring teams.  
 
-With monaco, defining what to monitor and what to be alerted on is easy for developers as checking in a monitoring configuration file into version control along with the applications source code. With the next commit or Pull Request the code gets built, deployed and the automatically get the monitoring dashboards and alerting notifications. This self-service model will ensure teams can focus more time on building business services. Monaco eliminates the need of  building a custom monitoring solution that fits into a team's development process and mindset.
+## How does it work? 
+
+Developers define a monitoring configuration file that is checked into version control alongside the application’s source code. With the next commit or pull request, the code gets built and deployed, automatically creating monitoring dashboards and alerting notifications. 
 
 ## Features
 
-- Templatize configuration for reusability across multiple environments
-- Handle Interdependencies between configurations without keeping track of unique identifiers
-- Introducing the capability to easily apply – and update – the same configuration to hundreds of Dynatrace environments as well as being able to roll out to specific environments
-- Provides an easy way to promote application specific configurations from one environment to another – following their deployments from development, to hardening to production
-- Supports all the mechanisms and best-practices of git-based workflows such as pull requests, merging and approvals
-- Allows to easily promote configuration from one environment to another following their deployment from development to hardening to production
+Monaco currently offers the following features:
+- Creating configuration templates for reuse across multiple environments. 
+- Handling interdependencies between configurations without needing to keep track of unique identifiers. 
+- Applying the same configuration to hundreds of Dynatrace environments and updating them. 
+- Rolling out specific configurations to specific environments. 
+- Promoting application-specific configurations from one environment to another, following deployments in every stage. 
+- Supporting all mechanisms and best practices of git-based workflows such as pull requests, merging, and approvals. 
 
-To get started, you can follow this guide:
+## Get started
 
-[Get Started](./Guides/Get-Started/get-started.md)
+To get started, follow our [Getting Started](./Guides/Get-Started/get-started.md) guide.
