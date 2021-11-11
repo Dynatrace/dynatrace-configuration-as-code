@@ -2,7 +2,7 @@
 
 Documentation is available [here](https://dynatrace-oss.github.io/dynatrace-monitoring-as-code/).
 
-You can download a copy of the Software Bill of Materials (SBOM) [here](https://github.com/keptn/keptn/actions/runs/1416203195)
+You can download a copy of the Software Bill of Materials (SBOM) [here](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/actions/runs/1448437882)
 
 If you're new to Monaco and want to learn more about the problem it aims to solve, please check out our [blog post](https://www.dynatrace.com/news/blog/monitoring-as-code/).
 
