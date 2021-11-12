@@ -1,10 +1,14 @@
 ---
-sidebar_position: 2
+id: intro
+sidebar_position: 1
 title: Monaco Documentation
+slug: /
 ---
 
+# Welcome to the Monaco docs
+
 <p>
-Monaco is a monitoring as code (MAC) tool that allows you to create, update and version your monitoring configurations in Dynatrace at scale and efficiently.
+Monaco is a monitoring as code (MAC) tool that allows you to create, update and version your monitoring configurations in Dynatrace efficiently and at scale.
 </p>
 
 
@@ -17,74 +21,84 @@ Monaco is a monitoring as code (MAC) tool that allows you to create, update and 
     <p></p>
     <h3 id="get-started">
       <a name="get-started" class="anchor" href="#get-started">»</a>
-      Get Started
+      Get started
     </h3>
 
   <ul>
 
+
   <li>
 
-Learn how Monaco <a href="https://www.youtube.com/watch?v=8MCua6Ip_0E">helps teams in configuring monitoring and observability</a> as a self service
+[What is Monaco?](./Get-Started/intro)
   </li>
+
 <li>
 
-Install Monaco and explore use cases with the [getting started guide](./Guides/Get-Started/get-started.mdx).
+[Install Monaco](./Get-Started/install-monaco)
 
 </li>
   </ul>
 
-<h3 id="manage-infrastructure">
-  <a name="manage-infrastructure" class="anchor" href="#manage-infrastructure">»</a>
-  Manage Monitoring Tasks
-</h3>
-
-  <ul>
-
-  <li>
-
-Describe configurations in your Dynatrace environment(s) in JSON and YAML files.
-  </li>
-<li>
-
-Provision consistent configurations accross multiple environments in a controlled way.
-
-</li>
-  </ul>
 
   </div>
   <div class="col-md-6 col sm-12">
     <p></p>
     <h3 id="get-started">
       <a name="get-started" class="anchor" href="#get-started">»</a>
-      Collaborate
+      Guides
     </h3>
 
   <ul>
 
   <li>
 
-With Monaco, your configuration as code can be saved into version control where multiple teams can use Monaco together.
+[Manage configurations](./Guides/manage-configuration)
+
   </li>
-  </ul>
+  <li>
 
-<h3 id="manage-infrastructure">
-  <a name="manage-infrastructure" class="anchor" href="#manage-infrastructure">»</a>
-  Develop and Share
-</h3>
-
-  <ul>
+Add an API
+  </li>
 
   <li>
 
-[Add a new API](./New_API.md) to allow Monaco interact with more Dynatrace available APIs.
+Deploy a project
+  </li>
+  </ul>
+
+
+  </div>
+
+<div class="col-md-6 col sm-12">
+    <p></p>
+    <h3 id="get-started">
+      <a name="get-started" class="anchor" href="#get-started">»</a>
+      Quick links
+    </h3>
+
+  <ul>
+
+   <li>
+
+What's new
+  </li>
+
+  <li>
+
+[Commands cheat sheet](./commands/commands.md)
 
   </li>
-<li>
+  <li>
 
-Create configurations that can be reused and shared within teams.
+Glossary
+  </li>
 
-</li>
+  <li>
+
+Supported configuration types
+  </li>
   </ul>
+
 
   </div>
 
