@@ -5,7 +5,7 @@ title: What is Monaco?
 slug: /
 ---
 
-Monaco is CLI tool that tool automates deployment of Dynatrace Monitoring Configuration to one or multiple Dynatrace environments.
+Monaco is CLI tool that automates deployment of Dynatrace Monitoring Configuration to one or multiple Dynatrace environments.
 
 ## Why monaco?
 
