@@ -2,7 +2,7 @@
 id: intro
 sidebar_position: 1
 title: What is Monaco?
-slug: /
+slug: /license
 ---
 
 Monaco is CLI tool that tool automates deployment of Dynatrace Monitoring Configuration to one or multiple Dynatrace environments.
