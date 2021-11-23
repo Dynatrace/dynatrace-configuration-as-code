@@ -52,7 +52,7 @@ func DownloadConfigs(env manifest.EnvironmentDefinition, listApis map[string]api
 	}
 	for _, api := range listApis {
 		creator := dynatraceparser.NewDynatraceParser()
-		configs, errs := createConfigforTargetApi(env, creator, client, api, projectId)
+		configs, errs := createConfigForTargetApi(env, creator, client, api, projectId)
 		//apiconfig, err := createConfigFromApiV2(env, api, projectId, token, client)
 		if len(errs) > 0 {
 			log.Error("error getting configs for env %v %v", env.Name, errs[0])
@@ -90,14 +90,14 @@ func solveDependencies(projectId string, configs map[string][]configv2.Config) m
 					log.Debug(val.Api)
 					//WARNING: validate multiple dependencies in 1 config!!
 					//should update template and coordinate
-					config = newDependencyConfig(projectId, config, val)
+					config = newDependencyConfig(config, val)
 				}
 			}
 		}
 	}
 	return configs
 }
-func newDependencyConfigconfig configv2.Config, dependencyCoor coordinate.Coordinate) configv2.Config {
+func newDependencyConfig(config configv2.Config, dependencyCoor coordinate.Coordinate) configv2.Config {
 	newContent := strings.ReplaceAll(config.Template.Content(), dependencyCoor.DynatraceId, dependencyCoor.Config)
 	idProperty := "id" //since all depends on id to relative configs
 	ref := refParam.New(dependencyCoor.Project, dependencyCoor.Api, dependencyCoor.Config, idProperty)
