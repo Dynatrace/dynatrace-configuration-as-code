@@ -48,14 +48,14 @@ func GetConfigsFrom(fs afero.Fs, workingDir string, url string,
 		return fmt.Errorf("cannot transform workingDir to absolute path: %s", err)
 	}
 	environments := generateDownloadEnvironment(EnvName, url, tokenName)
-	projectDefinitions, projects, errs := generateProjectDefiniton(filter, ProjectName, environments[EnvName])
+	projectDefinitions, projects, errs := generateProjectDefinition(filter, ProjectName, environments[EnvName])
 	if len(errs) > 0 {
 		util.PrintErrors(errs)
 		return fmt.Errorf("encountered errors while trying to download configurations. check logs")
 	}
-	_, errs = generateManifest(fs, workingDir, manifestName, outputFolder, environments, projectDefinitions, projects)
-	if errs != nil {
-		util.PrintErrors(errs)
+	_, errsMan := generateManifest(fs, workingDir, manifestName, outputFolder, environments, projectDefinitions, projects)
+	if len(errsMan) > 0 {
+		util.PrintErrors(errsMan)
 		return fmt.Errorf("encountered errors while trying to persist configurations. check logs")
 	}
 	return nil
@@ -64,12 +64,11 @@ func GetConfigsFrom(fs afero.Fs, workingDir string, url string,
 //generateDownloadEnvironment creates a new environment definition based on cli parameters, only a single env is generated
 func generateDownloadEnvironment(envName string, url string, tokenName string) map[string]manifest.EnvironmentDefinition {
 	environments := make(map[string]manifest.EnvironmentDefinition)
-	env := manifest.EnvironmentDefinition{
-		Name:  envName,
-		Url:   url,
-		Group: DefaultGroup,
-		Token: &manifest.EnvironmentVariableToken{EnvironmentVariableName: tokenName},
+	urlDef := manifest.UrlDefinition{
+		Type:  "enviroment",
+		Value: url,
 	}
+	env := manifest.NewEnvironmentDefinition(envName, urlDef, DefaultGroup, &manifest.EnvironmentVariableToken{EnvironmentVariableName: tokenName})
 	environments[envName] = env
 	return environments
 }
