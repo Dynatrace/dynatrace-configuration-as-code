@@ -213,6 +213,8 @@ func isApiDashboard(api api.Api) bool {
 
 func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, url string, apiToken string) (values []api.Value, err error) {
 
+	url = addQueryParamsForNonStandardApis(theApi, url)
+
 	var existingValues []api.Value
 	resp, err := get(client, url, apiToken)
 
@@ -241,6 +243,14 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, url stri
 	}
 
 	return existingValues, nil
+}
+
+func addQueryParamsForNonStandardApis(theApi api.Api, url string) string {
+
+	if theApi.GetId() == "anomaly-detection-metrics" {
+		url = url + "?includeEntityFilterMetricEvents=true"
+	}
+	return url
 }
 
 func unmarshalJson(theApi api.Api, err error, resp Response) (error, []api.Value, map[string]interface{}) {
