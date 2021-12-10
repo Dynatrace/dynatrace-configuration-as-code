@@ -17,4 +17,24 @@ updates:
       - "dynatrace-oss/mac-maintainers"
     commit-message:
       prefix: "chore"
-      include: "scope"  
+      include: "scope"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    target-branch: "next"
+    reviewers:
+      - "dynatrace-oss/mac-maintainers"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    target-branch: "next"
+    reviewers:
+      - "dynatrace-oss/mac-maintainers"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
