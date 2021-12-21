@@ -157,6 +157,19 @@ var apiMap = map[string]apiInput{
 	"failure-detection-rules": {
 		apiPath: "/api/config/v1/service/failureDetection/parameterSelection/rules",
 	},
+
+	"service-detection-full-web-request": {
+		apiPath: "/api/config/v1/service/detectionRules/FULL_WEB_REQUEST",
+	},
+	"service-detection-full-web-service": {
+		apiPath: "/api/config/v1/service/detectionRules/FULL_WEB_SERVICE",
+	},
+	"service-detection-opaque-web-request": {
+		apiPath: "/api/config/v1/service/detectionRules/OPAQUE_AND_EXTERNAL_WEB_REQUEST",
+	},
+	"service-detection-opaque-web-service": {
+		apiPath: "/api/config/v1/service/detectionRules/OPAQUE_AND_EXTERNAL_WEB_SERVICE",
+	},
 }
 
 var standardApiPropertyNameOfGetAllResponse = "values"

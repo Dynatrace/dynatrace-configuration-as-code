@@ -42,6 +42,10 @@ These are the supported configuration types, their API endpoints and the token p
 | request-attributes              | _/api/config/v1/service/requestAttributes_      | `Read Configuration` & `Capture request data`                                                                       |
 | request-naming-service          | _/api/config/v1/service/requestNaming_          | `Read Configuration` & `Write Configuration`                                                                        |
 | slo                             | _/api/v2/slo_                                   | `Read SLO` & `Write SLOs`                                                                                           |
+| service-detection-full-web-request   | _/api/config/v1/service/detectionRules/FULL_WEB_REQUEST_                 | `Read Configuration` & `Write Configuration`                                          |
+| service-detection-full-web-service   | _/api/config/v1/service/detectionRules/FULL_WEB_SERVICE_                 | `Read Configuration` & `Write Configuration`                                          |
+| service-detection-opaque-web-request | _/api/config/v1/service/detectionRules/OPAQUE_AND_EXTERNAL_WEB_REQUEST_  | `Read Configuration` & `Write Configuration`                                          |
+| service-detection-opaque-web-service | _/api/config/v1/service/detectionRules/OPAQUE_AND_EXTERNAL_WEB_SERVICE_  | `Read Configuration` & `Write Configuration`                                          |
 | synthetic-location              | _/api/v1/synthetic/locations_                   | `Access problem and event feed, metrics, and topology` & `Create and read synthetic monitors, locations, and nodes` |
 | synthetic-monitor               | _/api/v1/synthetic/monitors_                    | `Create and read synthetic monitors, locations, and nodes`                                                          |
 

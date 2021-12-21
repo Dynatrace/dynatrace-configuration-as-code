@@ -50,8 +50,8 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 
 	if isUpdate {
 		path = joinUrl(fullUrl, existingObjectId)
-		// Updating a dashboard requires the ID to be contained in the JSON, so we just add it...
-		if isApiDashboard(theApi) {
+		// Updating a dashboard, or any service detection API requires the ID to be contained in the JSON, so we just add it...
+		if isApiDashboard(theApi) || isAnyServiceDetectionApi(theApi) {
 			tmp := strings.Replace(string(payload), "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
 			body = []byte(tmp)
 		}
@@ -209,6 +209,10 @@ func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, ob
 
 func isApiDashboard(api api.Api) bool {
 	return api.GetId() == "dashboard"
+}
+
+func isAnyServiceDetectionApi(api api.Api) bool {
+	return strings.HasPrefix(api.GetId(), "service-detection-")
 }
 
 func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, url string, apiToken string) (values []api.Value, err error) {
