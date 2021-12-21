@@ -1,51 +1,65 @@
 ---
-sidebar_position: 2
-title: Manage Configurations
+sidebar_position: 1
+title: Manage configurations
 ---
 
-With Monaco installed, you're ready to build your first monitoring configuration and have this deployed to your Dynatrace environment. To do so, you'll create some configuration files to define what is to be applied to your environment.
-<p> </p>
+To get you started with managing configurations, this section will guide you through a simple example: creating a tagging rule with Monaco. 
+You will learn how to create, deploy, and delete a configuration. 
 
-## Prerequisites
+** Prerequisites **
 
-<ul>
-  <li>Monaco (2.0.0+) installed.</li>
-  <li>A Dynatrace environment and access to create environment tokens.</li>
-  <li>A Dynatrace token with <code>Write entities (entities.write)</code> permission. </li>
-</ul>
+* Monaco 2.0.0+ installed (see [Install Monaco](../Get-Started/install-monaco.mdx))
+* A Dynatrace environment and access to create environment tokens
+* A Dynatrace token with the following permissions: 
+    * Write entities (ApV1) <code>entities.write</code> 
+    * Write configuration (ApV2) <code>WriteConfig</code> 
 
-<p> </p>
+>
+> :warning: To learn how to create tokens, please refer to the [Dynatrace documentation](https://www.dynatrace.com/support/help/shortlink/token#create-api-token). 
+>
 
-## Write Configuration
+## Create configuration
 
 In this tutorial, you'll create a tagging rule in an environment that will apply tags to hosts and services where a Dynatrace server is detected.
 
-Create a directory for your configuration:
+1\. Open your preferred CLI. 
+
+2\. Create a directory for your configuration
 
 ```shell
-$ mkdir learn-monaco-auto-tag
+mkdir learn-monaco-auto-tag
 ```
 
-Change into the directory:
+3\. Change to the new directory
+
 ```shell
-$ cd learn-monaco-auto-tag
+cd learn-monaco-auto-tag
 ```
 
-Create a project directory to store the tagging configuration and change into the directory:
+4\. Create a project directory to store the tagging configuration and change to it
+
 ```shell
-$ mkdir -p project-example/auto-tag; cd project-example/auto-tag
+mkdir -p project-example/auto-tag
 ```
 
-Create 2 files, the first file is to store the JSON configuration of the tagging configuration. The second file will be the [YAML configuration](../../configuration/yaml_configuration.md) file which lists the configurations to be deployed:
+```shell
+cd project-example/auto-tag
+```
+
+5\. Create two files. 
+* The first file (auto-tag.json) stores the JSON configuration of the tagging configuration. 
+* The second file (auto-tag.yaml) will be the [YAML configuration](../../configuration/yaml_configuration.md) file which lists the configurations to be deployed
+
 ```shell
 touch auto-tag.json auto-tag.yaml
 ```
-<p></p>
 
-Open `auto-tag.json` in your text editor, paste in the configuration below, then save the file
+6\. Open the JSON configuration file (`auto-tag.json`) in your text editor and paste in the configuration below. Save the file
 
 
->**Tip** The name used in this configuration is specified as a variable and its value will be given in the YAML configuration
+>
+> :warning: The name used in this configuration is specified as a variable and its value will be given in the YAML configuration
+>
 
 ```json
 {
@@ -80,9 +94,11 @@ Open `auto-tag.json` in your text editor, paste in the configuration below, then
 }
 ```
 
-Next, Open `auto-tag.yaml` in your text editor, paste in the configuration below, then save the file
+7\. Open the YAML configuration file (`auto-tag.yaml`) in your text editor and paste the configuration below. Save the file
 
->**Tip** The value of name is now provided:
+>
+> :warning: The name of the tag should be provided here. In this example: `DTServer`
+>
 
 ```yaml
 configs:
@@ -94,21 +110,21 @@ configs:
 
 <p></p>
 
-Change back into the `learn-monaco-auto-tag` folder:
+8\. Change back to the configuration directory folder (`learn-monaco-auto-tag`)
+
 ```shell
 cd ../..
 ```
 
-Create a [deployment manifest file](../../configuration/configuration.md#deployment-manifest) to instruct Monaco what project to deploy and exactly where it should be deployed:
+9\. Create a [deployment manifest file](../../configuration/configuration.md#deployment-manifest) to instruct Monaco what project to deploy and where to deploy it
+
 ```shell
 touch deploy.yaml
 ```
 
-Open the `deploy.yaml` file in your text editor and past in the configuration below, and save the file:
+10\. Open the deployment manifest file (`deploy.yaml`) in your text editor and paste in the configuration below. Save the file
 
-<p></p>
-
-> **Replace*** the **url value** with your Dynatrace environment url
+> :warning: **Replace the URL value** with the URL of your Dynatrace environment
 
 ```yaml
 projects:
@@ -121,30 +137,94 @@ environments:
       - name: development-environment
         url: "https://xxxxxx.live.Dynatrace.com"
         token:
-          name: "development-token"
-```
-<p></p>
-
-## Export Token to your Environment Variables
-
-Export your Dynatrace token to your environment.
-
-> **Tip** Ensure your token has **Write Permissions**
-
-```shell
-$ export development-token=YourTokenValue
+          name: "devToken"
 ```
 
-## Validate Configuration
+11\. Export your Dynatrace token to your environment
 
-Ensure your configuration is syntactically valid and consistent by using the `monaco deploy --dry-run` command.
-
-Validate your configuration. The example configuration provided above is valid, so Monaco will return a message finished without errors.
+>
+> :warning: Ensure your token has permissions to **write entities** and **write configuration**
+>
 
 ```shell
-$ monaco  deploy --dry-run deploy.yaml
+export devToken=YourTokenValue
+```
+
+12\. Run `monaco deploy --dry-run` to ensure your configuration is syntactically valid and consistent 
+
+```shell
+monaco  deploy --dry-run deploy.yaml
+```
+
+13\. If the dry run was successful, Monaco will return the following message:
+
+```shell
 2021/10/13 13:22:06 INFO  Dynatrace Monitoring as Code v2.0.0
 2021/10/13 13:22:06 INFO  Processing environment `development-environment`...
 2021/10/13 13:22:06 INFO  Deployment finished without errors
+```
 
+## Deploy configuration
+
+Now that you have [created the configuration](./manage-configuration#create-configuration), you need to deploy it to your Dynatrace environment. To do this, you use the `monaco deploy` command.
+
+1\. To apply your configuration with the `monaco deploy` command, provide the name of the deployment file as argument 
+
+```shell
+monaco  deploy deploy.yaml
+```
+
+2\. If the deployment is successful, Monaco will return the following message:
+
+```shell
+2021/10/13 14:48:43 INFO  Dynatrace Monitoring as Code v2.0.0
+2021/10/13 14:48:43 INFO  Processing environment `development-environment`...
+2021/10/13 14:48:43 INFO  Deployment finished without errors
+```
+>
+> :warning: If your configuration fails to deploy, you may have syntax errors in your files or your token requires more permissions. 
+> Please refer to the output error description.
+>
+
+3\. To check if your tag has been created, open your Dynatrace environment in your browser
+
+4\. Go to Manage > Settings > Tags > Automatically Applied Tags
+
+5\. Search for `DTServer`
+
+<!-- <img
+  src={require('../static/img/DTServer.PNG').default}
+  alt="dtserver"
+/> -->
+
+## Delete configuration
+
+Now that your configuration is [deployed](./manage-configuration#deploy-configuration), you can delete it. To do this, you will use the `monaco delete` command.
+
+1\. To delete the previously created tag `DTServer`, create a file called `delete.yaml` in the root folder
+
+```shell
+touch delete.yaml
+```
+
+2\. Open the file in your text editor and paste the following configuration, then save the changes.
+
+```yaml
+delete:
+  - "auto-tag/DTserver"
+```
+
+3\. Delete the tag from your environment. 
+
+>
+> :warning: The `delete` command requires both the **delete file** and the **deployment manifest file** as arguments. The deployment manifest file indicates in which environment(s) to delete the configuration specified in the delete file. 
+>
+
+```shell
+monaco delete deploy.yaml delete.yaml
+```
+4\. If the deletion was successful, Monaco will return the following message:
+
+```shell
+2021/10/13 18:21:33 INFO  Dynatrace Monitoring as Code v2.0.0
 ```

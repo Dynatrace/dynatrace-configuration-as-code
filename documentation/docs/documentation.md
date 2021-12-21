@@ -57,7 +57,7 @@ Monaco is a monitoring as code (MAC) tool that allows you to create, update and 
   </li>
   <li>
 
-Add an API
+[Add a new API](./Guides/add_new_api)
   </li>
 
   <li>

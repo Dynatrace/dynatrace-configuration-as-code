@@ -33,7 +33,7 @@ Monaco currently offers the following features:
 
 ## Get started
 
-To get started, follow our [getting started guide.](./Guides/Get-Started/get-started.mdx)
+To get started, follow our guide on [how to install Monaco.](./install-monaco)
 
 ## Learn more
 
