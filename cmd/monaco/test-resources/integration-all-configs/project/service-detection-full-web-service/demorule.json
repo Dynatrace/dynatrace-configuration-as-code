@@ -1,0 +1,41 @@
+{
+    "type": "FULL_WEB_SERVICE",
+    "managementZones": [],
+    "name": "{{ .name }}",
+    "description": "REST API example",
+    "enabled": true,
+    "conditions": [
+        {
+            "attributeType": "FRAMEWORK",
+            "compareOperations": [
+                {
+                    "type": "EQUALS",
+                    "negate": false,
+                    "ignoreCase": false,
+                    "values": [
+                        "JERSEY"
+                    ]
+                }
+            ]
+        },
+        {
+            "attributeType": "URL_PATH",
+            "compareOperations": [
+                {
+                    "type": "STARTS_WITH",
+                    "negate": false,
+                    "ignoreCase": false,
+                    "values": [
+                        "/prefix/"
+                    ]
+                }
+            ]
+        }
+    ],
+    "detectAsWebRequestService": true,
+    "webServiceName": null,
+    "webServiceNameSpace": null,
+    "applicationId": null,
+    "contextRoot": null,
+    "serverName": null
+}
