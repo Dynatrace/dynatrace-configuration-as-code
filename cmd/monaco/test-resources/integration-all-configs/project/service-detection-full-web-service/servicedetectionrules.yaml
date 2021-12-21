@@ -1,0 +1,5 @@
+config:
+  - demo_rule: "demorule.json"
+
+demo_rule:
+  - name: "Don't detect Jersey as WebService"
