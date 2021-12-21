@@ -222,6 +222,10 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, url stri
 		return nil, err
 	}
 
+	if !success(resp) {
+		return nil, fmt.Errorf("Failed to get existing configs for api %s (HTTP %d)!\n    Response was: %s", theApi.GetId(), resp.StatusCode, string(resp.Body))
+	}
+
 	for {
 
 		err, values, objmap := unmarshalJson(theApi, err, resp)
