@@ -60,10 +60,6 @@ Monaco is a monitoring as code (MAC) tool that allows you to create, update and 
 [Add a new API](./Guides/add_new_api)
   </li>
 
-  <li>
-
-Deploy a project
-  </li>
   </ul>
 
 
@@ -80,7 +76,13 @@ Deploy a project
 
    <li>
 
-What's new
+[What's new](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases)
+  </li>
+
+  <li>
+
+[License and bill of materials](./Useful-links/bill-of-materials)  
+
   </li>
 
   <li>
@@ -93,10 +95,6 @@ What's new
 Glossary
   </li>
 
-  <li>
-
-Supported configuration types
-  </li>
   </ul>
 
 
