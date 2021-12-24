@@ -6,7 +6,7 @@ require (
 	github.com/google/go-cmp v0.5.6
 	github.com/google/uuid v1.3.0
 	github.com/pkg/errors v0.9.1
-	github.com/spf13/afero v1.6.0
+	github.com/spf13/afero v1.7.0
 	github.com/urfave/cli/v2 v2.3.0
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/yaml.v2 v2.4.0
