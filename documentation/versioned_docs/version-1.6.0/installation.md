@@ -10,7 +10,7 @@ To use monaco you will need to install it. Monaco is distributed as a binary pac
 
 To install Monaco, find the appropriate executable for your system and download it.
 
-Ensure that the monaco binary is available on your PATH. This process will differ depending on your operating system. This process will differ depending on your operating system.
+Ensure that the monaco binary is available on your PATH, using the appropriate process for your operating system. 
 
 Executables are available in the [release page](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases).
 
