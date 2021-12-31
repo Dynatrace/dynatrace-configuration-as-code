@@ -86,5 +86,5 @@ to get implementation feedback from the maintainers.
 * Add a sample config for the integration tests in [cmd/monaco/test-resources/integration-all-configs](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/tree/main/cmd/monaco/test-resources/integration-all-configs)
 * Add your API to the [table of supported APIs](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code#configuration-types--apis).
 
-After performing this steps, please create the pull request in the upstream repository. Other users
-of `monaco` will thank you! :rocket:
+After performing these steps, please create the pull request in the upstream repository.
+Other users of `monaco` will thank you! :rocket:
