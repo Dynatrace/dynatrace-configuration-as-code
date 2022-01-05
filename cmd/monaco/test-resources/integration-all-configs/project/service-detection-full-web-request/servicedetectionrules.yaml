@@ -1,0 +1,6 @@
+config:
+  - demo_rule: "demorule.json"
+  
+demo_rule:
+  - name: "Service detection - Full Web Request Demo Rule"
+  - enabled: "false"
