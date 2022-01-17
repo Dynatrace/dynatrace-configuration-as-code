@@ -1,0 +1,5 @@
+config:
+  - speed: "speed-metric.json"
+
+speed:
+  - name: "calc:apps.web.speed.delorean"
