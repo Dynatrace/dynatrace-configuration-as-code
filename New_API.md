@@ -1,5 +1,8 @@
+---
+sidebar_position: 1
+---
 
-# How to add a new API?
+# How to add a new API
 
 You spotted a new API which you want to automate using `monaco`, but sadly it's not in the 
 [table of supported APIs](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code#configuration-types--apis)?
@@ -18,23 +21,27 @@ Easy-to-add APIs have these characteristics:
   * `DELETE <my-environment>/api/config/v1/<my-config>/<id>` (delete a config)
 
 * The model of the configuration has a `name` property: 
-  ``` 
-  {
+ 
+```json
+{
       "id": "acbed0c4-4ef1-4303-991f-102510a69322",
       "name: "my-name"
       ...
-  }
+}
+```
 
 * The `GET (all)` REST call return `id` and `name`:
-  ```
-  {
+
+```json
+{
     "values": [
       {
         "id": "string",
         "name": "string"
       }
     ]
-  }
+}
+```
 
 If your API supports these 3 characteristics, you just need to perform the steps in the following section to add it.
 
@@ -44,11 +51,13 @@ to get implementation feedback from the maintainers.
 ## Steps to add an API
 
 * Add your API to [the map in api.go](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/blob/main/pkg/api/api.go#L25):
-  ```
+
+```json
   "<my-api-folder-name>": {
       apiPath: "<path-to-my-api>",                       // mandatory
       propertyNameOfGetAllResponse: "<property-name>",   // not necessary in case of "values"
   },
+```
 
 * Fill the 4 placeholder values from above:
   * `<my-api-folder-name>`: This is the name of the API, which is also used for the folder name
@@ -59,7 +68,8 @@ to get implementation feedback from the maintainers.
   * `<property-name>`: This names the json property used in the `GET ALL` REST call to
   return the list of configs. E.g. it would be `extensions`, if the response of your API's 
   `GET ALL` REST call looks like this:
-    ```
+  
+```json
     {
       "extensions": [
         {
@@ -71,6 +81,7 @@ to get implementation feedback from the maintainers.
         "totalResults": 9,
         "nextPageToken": "LlUdYmu5S2MfX/ppfCInR9M="
       }
+```
 
 * Add a sample config for the integration tests in [cmd/monaco/test-resources/integration-all-configs](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/tree/main/cmd/monaco/test-resources/integration-all-configs)
 * Add your API to the [table of supported APIs](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code#configuration-types--apis).

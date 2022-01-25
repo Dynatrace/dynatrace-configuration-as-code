@@ -12,11 +12,12 @@ folders contain yaml files, specifying what gets deployed.
 ## APIs
 
 To see a list of all supported APIs and folder names, please have a
-look [here](./configTypes_tokenPermissions.md).
+look [here](./supported_configurations.md).
 
 ## Configurations
 
 Configurations consists of two parts:
+
 - Yaml defining parameters, dependencies, name and template
 - JSON Template file
 
@@ -27,7 +28,7 @@ the name of the config, the location of the template file and parameters
 usable in the template file. Parameters can be overwritten based on what
 group or environment is currently deployed.
 
-For more details on the configuration syntax, see [here](yaml_config.md).
+For more details on the configuration syntax, see [here](./yaml_configuration.md).
 
 ### JSON Template File
 
@@ -44,6 +45,7 @@ Here is a basic example of how such a JSON might look like:
 ```
 
 And here the corresponding config yaml:
+
 ```yaml
 configs:
 - id: sample
@@ -73,8 +75,8 @@ Configs can then be downloaded via the respective GET endpoint defined in the Dy
 Checked in configuration should not include:
 
 * the entity's `id` but only it's `name`. The entity may be created or updated if one of the same name exists.
-  * The `name` must be defined as [a variable](#configuration-yaml-structure).
-* hardcoded values for environment information such as references to other auto-deployed entities, tags, management-zones, etc.
+  - The `name` must be defined as [a variable](#configuration-yaml-structure).
+- hardcoded values for environment information such as references to other auto-deployed entities, tags, management-zones, etc.
   * These should all be referenced as variables as [described below](#referencing-other-configurations).
 * Empty/null values that are optional to when creating an object.
   * Most API GET endpoints return more data than needed to create an object. Many of those fields are empty or null, and can just be omited.
@@ -107,10 +109,11 @@ A generally recommended value for the `dashboardMetadata` field is:
 ```
 
 This config does the following:
-* References the name of the Dashboard as a [variable](#configuration-yaml-structure)
-* Shares the dashboard with other users
-* Sets a management zone filter on the complete dashboard, again as a variable, most likely [referenced from another config](#referencing-other-configurations)
-  * Filtering the whole dashboard by management zone, makes sure no data not meant to be shown is accidentally picked up on tiles, and removes the possible need to define filters for individual tiles
+
+- References the name of the Dashboard as a [variable](#configuration-yaml-structure)
+- Shares the dashboard with other users
+- Sets a management zone filter on the complete dashboard, again as a variable, most likely [referenced from another config](#referencing-other-configurations)
+  - Filtering the whole dashboard by management zone, makes sure no data not meant to be shown is accidentally picked up on tiles, and removes the possible need to define filters for individual tiles
 
 From Dynatrace version 208 onwards, a dashboard configuration must:
 

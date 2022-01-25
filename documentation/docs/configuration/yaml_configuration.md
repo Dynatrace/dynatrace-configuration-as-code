@@ -1,8 +1,8 @@
 ---
-sidebar_position: 4
+sidebar_position: 2
 ---
 
-# Configuration YAML
+# YAML Configuration
 
 Each configuration yaml contains a list of configurations to be deployed.
 
@@ -35,12 +35,13 @@ e.g. two dashboards with the same `id` in two different projects.
 
 It is important to note, that the field is only local to monaco. It has nothing
 to do with the id provided by the dynatrace api. One important use case for this
-`id` is, that it is used when using (reference parameters)[./parameters.md#reference_parameter].
+`id` is, that it is used when using [reference parameters](./parameters.md#reference_parameter).
 
 
 ## Config
 
 The `config` field offers the following fields:
+
 * `name` - **required** - Name used to identify objects in the dynatrace api
 * `template` - **required** - Defines templating file used to render request to dynatrace api (see [here](./projects.md#template_file) for more details)
 * `skipDeployment` - Boolean flag (either true, or false) used to notify monaco to not deploy this configuration

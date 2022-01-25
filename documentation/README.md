@@ -6,9 +6,9 @@
 - Create a versioned sidebars file in `documentation/versioned_sidebars/version-<version>-sidebars.json`.
 - Append the new version number to `documentation/versions.json`.
 
-## Docs {#docs}
+## Docs
 
-### Creating new docs {#creating-new-docs}
+### Creating new docs
 
 1. Place the new file into the corresponding version folder.
 1. Include the reference for the new file into the corresponding sidebar file, according to version number.
@@ -30,11 +30,11 @@ documenatation/versioned_docs/version-1.0.0/new.md
 documenatation/versioned_sidebars/version-1.0.0-sidebars.json
 ```
 
-## Versions {#versions}
+## Versions
 
 Each directory in `documentation/versioned_docs/` will represent a documentation version.
 
-### Updating an existing version {#updating-an-existing-version}
+### Updating an existing version
 
 You can update multiple docs versions at the same time because each directory in `documentation/versioned_docs/` represents specific routes when published.
 
@@ -44,7 +44,7 @@ You can update multiple docs versions at the same time because each directory in
 
 Example: When you change any file in `documentation/versioned_docs/version-2.6/`, it will only affect the docs for version `2.6`.
 
-### Deleting an existing version {#deleting-an-existing-version}
+### Deleting an existing version
 
 You can delete/remove versions as well.
 
