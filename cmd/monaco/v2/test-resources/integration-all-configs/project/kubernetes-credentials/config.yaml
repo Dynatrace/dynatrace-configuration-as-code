@@ -1,0 +1,10 @@
+configs:
+- id: myk8scluster
+  config:
+    name: My Kubernetes Cluster
+    parameters:
+      active: "false"
+      endpoint: https://mycluster/
+      token: "123456"
+    template: kubernetes.json
+    skip: false

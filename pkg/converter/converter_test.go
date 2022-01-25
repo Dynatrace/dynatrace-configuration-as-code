@@ -50,12 +50,7 @@ func TestConvertParameters(t *testing.T) {
 		ProjectId: "projectA",
 	}
 
-	environment := manifest.EnvironmentDefinition{
-		Name:  environmentName,
-		Url:   "test.env",
-		Group: "",
-		Token: &manifest.EnvironmentVariableToken{"token"},
-	}
+	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", &manifest.EnvironmentVariableToken{"token"})
 
 	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles")
 
@@ -238,12 +233,7 @@ func TestLoadPropertiesForEnvironment(t *testing.T) {
 	referenceParameterName := "managementZoneId"
 	referenceParameterValue := "/projectB/management-zone/zone.id"
 
-	environment := manifest.EnvironmentDefinition{
-		Name:  environmentName,
-		Url:   "test.env",
-		Group: groupName,
-		Token: &manifest.EnvironmentVariableToken{"token"},
-	}
+	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), groupName, &manifest.EnvironmentVariableToken{"token"})
 
 	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles")
 
@@ -298,12 +288,7 @@ func TestConvertConfig(t *testing.T) {
 		ProjectId: "projectA",
 	}
 
-	environment := manifest.EnvironmentDefinition{
-		Name:  environmentName,
-		Url:   "test.env",
-		Group: "",
-		Token: &manifest.EnvironmentVariableToken{"token"},
-	}
+	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", &manifest.EnvironmentVariableToken{"token"})
 
 	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles")
 
@@ -362,12 +347,8 @@ func TestConvertConfigWithEnvNameCollisionShouldFail(t *testing.T) {
 		ProjectId: "projectA",
 	}
 
-	environment := manifest.EnvironmentDefinition{
-		Name:  environmentName,
-		Url:   "test.env",
-		Group: "",
-		Token: &manifest.EnvironmentVariableToken{"token"},
-	}
+	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "",
+		&manifest.EnvironmentVariableToken{"token"})
 
 	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles")
 
@@ -405,12 +386,7 @@ func TestConvertSkippedConfig(t *testing.T) {
 		ProjectId: "projectA",
 	}
 
-	environment := manifest.EnvironmentDefinition{
-		Name:  environmentName,
-		Url:   "test.env",
-		Group: "",
-		Token: &manifest.EnvironmentVariableToken{"token"},
-	}
+	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", &manifest.EnvironmentVariableToken{"token"})
 
 	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles")
 
@@ -460,19 +436,8 @@ func TestConvertConfigs(t *testing.T) {
 	}
 
 	environments := map[string]manifest.EnvironmentDefinition{
-		environmentName: {
-			Name:  environmentName,
-			Url:   "test.env",
-			Group: environmentGroup,
-			Token: &manifest.EnvironmentVariableToken{"token"},
-		},
-
-		environmentName2: {
-			Name:  environmentName2,
-			Url:   "test.env",
-			Group: environmentGroup2,
-			Token: &manifest.EnvironmentVariableToken{"token"},
-		},
+		environmentName:  manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), environmentGroup, &manifest.EnvironmentVariableToken{"token"}),
+		environmentName2: manifest.NewEnvironmentDefinition(environmentName2, createSimpleUrlDefinition(), environmentGroup2, &manifest.EnvironmentVariableToken{"token"}),
 	}
 
 	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles")
@@ -541,19 +506,9 @@ func TestConvertProjects(t *testing.T) {
 	}
 
 	environments := map[string]manifest.EnvironmentDefinition{
-		environmentName: {
-			Name:  environmentName,
-			Url:   "test.env",
-			Group: environmentGroup,
-			Token: &manifest.EnvironmentVariableToken{"token"},
-		},
 
-		environmentName2: {
-			Name:  environmentName2,
-			Url:   "test.env",
-			Group: environmentGroup2,
-			Token: &manifest.EnvironmentVariableToken{"token"},
-		},
+		environmentName:  manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), environmentGroup, &manifest.EnvironmentVariableToken{"token"}),
+		environmentName2: manifest.NewEnvironmentDefinition(environmentName2, createSimpleUrlDefinition(), environmentGroup2, &manifest.EnvironmentVariableToken{"token"}),
 	}
 
 	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles")
@@ -726,4 +681,11 @@ func TestAdjustProjectId(t *testing.T) {
 	id := adjustProjectId(`test\project/name`)
 
 	assert.Equal(t, `test.project.name`, id)
+}
+
+func createSimpleUrlDefinition() manifest.UrlDefinition {
+	return manifest.UrlDefinition{
+		Type:  manifest.ValueUrlType,
+		Value: "test.env",
+	}
 }

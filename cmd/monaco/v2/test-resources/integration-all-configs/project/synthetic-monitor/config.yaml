@@ -1,0 +1,19 @@
+configs:
+- id: availability
+  config:
+    name: Federation Availability
+    parameters:
+      host: https://www.google.com
+      location: GEOLOCATION-9999453BE4BDB3CD
+      managementZoneId:
+        api: management-zone
+        config: zone
+        property: id
+        type: reference
+      tag:
+        api: auto-tag
+        config: application-tagging
+        property: name
+        type: reference
+    template: availabilty.json
+    skip: false

@@ -1,0 +1,23 @@
+{
+    "name": "{{ .name }}",
+    "enabled": true,
+    "rules": [
+      {
+        "enabled": true,
+        "fileName": "phpFile",
+        "fileNameMatcher": "ENDS_WITH",
+        "className": "",
+        "matcher": "EQUALS",
+        "methodRules": [
+          {
+            "methodName": "myMethod",
+            "returnType": "void"
+          }
+        ],
+        "annotations": []
+      }
+    ],
+    "queueEntryPoint": false,
+    "queueEntryPointType": null,
+    "processGroups": []
+  }

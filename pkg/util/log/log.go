@@ -89,7 +89,7 @@ func (l *extendedLogger) Error(msg string, a ...interface{}) {
 
 // Warn logs the message with the prefix WARN.
 func (l *extendedLogger) Warn(msg string, a ...interface{}) {
-	doLog(l, LevelError, msg, a...)
+	doLog(l, LevelWarn, msg, a...)
 }
 
 // Info logs the message with the prefix INFO.

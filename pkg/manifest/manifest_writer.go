@@ -80,8 +80,10 @@ func toWriteableEnvironmentGroups(environments map[string]EnvironmentDefinition)
 
 	for name, env := range environments {
 		e := environment{
-			Name:  name,
-			Url:   env.Url,
+			Name: name,
+			Url: url{
+				Value: env.url.Value,
+			},
 			Token: toWritableToken(env),
 		}
 

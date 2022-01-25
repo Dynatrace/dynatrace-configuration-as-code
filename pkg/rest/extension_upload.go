@@ -66,9 +66,11 @@ func uploadExtension(client *http.Client, apiPath string, extensionName string, 
 	}
 
 	if resp.StatusCode != http.StatusCreated {
-		log.Error("\t\t\tUpload of %s failed with status %d!\n\t\t\t\t\tError-message: %s\n", extensionName, resp.StatusCode, string(resp.Body))
+		return api.DynatraceEntity{
+			Name: extensionName,
+		}, fmt.Errorf("upload of %s failed with status %d! Response: %s", extensionName, resp.StatusCode, string(resp.Body))
 	} else {
-		log.Debug("\t\t\tExtension upload successful for %s", extensionName)
+		log.Debug("Extension upload successful for %s", extensionName)
 
 		// As other configs depend on metrics created by extensions, and metric creation seems to happen with delay...
 		time.Sleep(1 * time.Second)

@@ -206,7 +206,7 @@ func toEnvironment(context *ManifestLoaderContext, config environment, group str
 		errors = append(errors, err)
 	}
 
-	if config.Url == "" {
+	if config.Url.Value == "" {
 		errors = append(errors, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, "no `url` configured or value is blank"))
 	}
 
@@ -215,11 +215,24 @@ func toEnvironment(context *ManifestLoaderContext, config environment, group str
 	}
 
 	return EnvironmentDefinition{
-		Name:  config.Name,
-		Url:   config.Url,
+		Name: config.Name,
+		url: UrlDefinition{
+			Type:  extractUrlType(config),
+			Value: strings.TrimSuffix(config.Url.Value, "/"),
+		},
 		Token: token,
 		Group: group,
 	}, nil
+}
+
+func extractUrlType(config environment) UrlType {
+	var urlType UrlType
+	if config.Url.Type == "" || config.Url.Type == util.ToString(ValueUrlType) {
+		urlType = ValueUrlType
+	} else if config.Url.Type == util.ToString(EnvironmentUrlType) {
+		urlType = EnvironmentUrlType
+	}
+	return urlType
 }
 
 func parseToken(context *ManifestLoaderContext, config environment, group string, token tokenConfig) (Token, error) {

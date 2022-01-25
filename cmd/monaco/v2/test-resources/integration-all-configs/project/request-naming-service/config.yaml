@@ -1,0 +1,8 @@
+configs:
+- id: demo_rule
+  config:
+    name: Monaco Demo Rule
+    parameters:
+      enabled: "false"
+    template: demorule.json
+    skip: false

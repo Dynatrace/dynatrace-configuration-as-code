@@ -38,7 +38,7 @@ jobs:
         id: go
 
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v2.4.0
 
       - name: Code Style
         if: matrix.os == 'ubuntu-latest'
@@ -49,6 +49,16 @@ jobs:
 
       - name: Unit Test
         run: make test
+
+      - name: Integration Test V1
+        # Just executed on main branch or if the repo is cloned directly - not for forks:
+        if: github.event.pull_request.head.repo.full_name == github.repository || github.ref == 'refs/heads/main'
+        run: make integration-test-v1
+        env:
+          URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
+          URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
+          TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
+          TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
 
       - name: Integration Test
         # Just executed on main branch or if the repo is cloned directly - not for forks:

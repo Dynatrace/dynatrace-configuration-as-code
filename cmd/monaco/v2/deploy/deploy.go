@@ -74,6 +74,7 @@ func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironment []st
 
 	apis := api.NewApis()
 
+	log.Debug("Loading configuration projects ...")
 	projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
 		Apis:            getApiNames(apis),
 		WorkingDir:      workingDir,
@@ -195,14 +196,8 @@ func printErrorReport(deploymentErrors []error) {
 	groupedConfigErrors := groupConfigErrors(configErrors)
 
 	for project, apiErrors := range groupedConfigErrors {
-		log.Error("==== Project `%s`\n", project)
-
 		for api, configErrors := range apiErrors {
-			log.Error("===== Api `%s`\n", api)
-
 			for config, errs := range configErrors {
-				log.Error("====== Config `%s`\n", config)
-
 				var generalConfigErrors []configError.ConfigError
 				var detailedConfigErrors []configError.DetailedConfigError
 
@@ -218,17 +213,13 @@ func printErrorReport(deploymentErrors []error) {
 				groupErrors := groupEnvironmentConfigErrors(detailedConfigErrors)
 
 				for _, err := range generalConfigErrors {
-					log.Error(util.ErrorString(err))
+					log.Error("%s:%s:%s %s", project, api, config, util.ErrorString(err))
 				}
 
 				for group, environmentErrors := range groupErrors {
-					log.Error("======= Group `%s`\n", group)
-
 					for env, errs := range environmentErrors {
-						log.Error("======== Env `%s`\n", env)
-
 						for _, err := range errs {
-							log.Error(util.ErrorString(err))
+							log.Error("%s(%s) %s:%s:%s %T %s", env, group, project, api, config, err, util.ErrorString(err))
 						}
 					}
 				}
@@ -405,7 +396,12 @@ func getClient(environment manifest.EnvironmentDefinition, dryRun bool) (rest.Dy
 			return nil, err
 		}
 
-		return rest.NewDynatraceClient(environment.Url, token)
+		url, err := environment.GetUrl()
+		if err != nil {
+			return nil, err
+		}
+
+		return rest.NewDynatraceClient(url, token)
 	}
 }
 

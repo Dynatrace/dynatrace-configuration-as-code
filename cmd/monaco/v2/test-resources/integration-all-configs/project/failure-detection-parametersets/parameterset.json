@@ -1,0 +1,19 @@
+{
+    "name": "{{ .name }}",
+    "description": "{{ .description }}",
+    "clientSideMissingHttpCodeIsFailure": false,
+    "serverSideMissingHttpCodeIsFailure": false,
+    "failingHttpCodesClientSide": "400-599",
+    "failingHttpCodesServerSide": "500-599",
+    "http404NotFoundFailureEnabled": false,
+    "brokenLinkDomains": [],
+    "successForcingExceptionPatterns": [],
+    "ignoredExceptionPatterns": [
+        {
+            "classPattern": ".",
+            "messagePattern": null
+        }
+    ],
+    "exceptionOnAnyNodeExceptionPatterns": [],
+    "tagConditions": []
+}

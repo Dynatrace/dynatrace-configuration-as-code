@@ -485,12 +485,7 @@ func convertEnvironments(environments map[string]environmentv1.Environment) map[
 			group = env.GetGroup()
 		}
 
-		result[env.GetId()] = manifest.EnvironmentDefinition{
-			Name:  env.GetId(),
-			Url:   env.GetEnvironmentUrl(),
-			Group: group,
-			Token: &manifest.EnvironmentVariableToken{EnvironmentVariableName: env.GetTokenName()},
-		}
+		result[env.GetId()] = manifest.NewEnvironmentDefinitionFromV1(env, group)
 	}
 
 	return result
