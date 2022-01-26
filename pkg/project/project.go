@@ -238,7 +238,13 @@ func (p *projectBuilder) getConfigTypeFromLocation(location string) (error, api.
 }
 
 func isYaml(file string) bool {
-	return strings.HasSuffix(file, ".yaml")
+	isYAML := false
+
+	if strings.HasSuffix(file, ".yaml") || strings.HasSuffix(file, ".yml") {
+		isYAML = true
+	}
+
+	return isYAML
 }
 
 func (p *projectBuilder) sortConfigsAccordingToDependencies() error {
