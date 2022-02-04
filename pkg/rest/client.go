@@ -162,10 +162,9 @@ func (d *dynatraceClientImpl) ExistsByName(api Api, name string) (exists bool, i
 
 func (d *dynatraceClientImpl) UpsertByName(api Api, name string, payload []byte) (entity DynatraceEntity, err error) {
 
-	fullUrl := api.GetUrlFromEnvironmentUrl(d.environmentUrl)
-
 	if api.GetId() == "extension" {
+		fullUrl := api.GetUrlFromEnvironmentUrl(d.environmentUrl)
 		return uploadExtension(d.client, fullUrl, name, payload, d.token)
 	}
-	return upsertDynatraceObject(d.client, fullUrl, name, api, payload, d.token)
+	return upsertDynatraceObject(d.client, d.environmentUrl, name, api, payload, d.token)
 }
