@@ -21,6 +21,7 @@ package rest
 
 import (
 	"gotest.tools/assert"
+	"reflect"
 	"testing"
 )
 
@@ -70,4 +71,75 @@ func TestTranslateGenericValuesOnNameMissing(t *testing.T) {
 
 	assert.Equal(t, values[0].Id, "foo")
 	assert.Equal(t, values[0].Name, "foo")
+}
+
+func Test_replaceNameWithGeneratedUuid(t *testing.T) {
+	type args struct {
+		objectName string
+		payload    []byte
+	}
+	tests := []struct {
+		name                string
+		givenName           string
+		givenPayload        []byte
+		wantUuid            string
+		wantModifiedPayload []byte
+		wantErr             bool
+	}{
+		{
+			"replacesNamePropertyWithUUid",
+			"an application detection rule",
+			[]byte("{\n  \"applicationIdentifier\": \"42\",\n  \"name\": \"an application detection rule\",\n  \"filterConfig\": {\n    \"pattern\": \"A pattern\",\n    \"applicationMatchType\": \"BEGINS_WITH\",\n    \"applicationMatchTarget\": \"URL\"\n  }\n}"),
+			"51f47928-d86a-3cd0-9a2a-b0f04a1c4531",
+			[]byte("{\n  \"applicationIdentifier\": \"42\",\n  \"name\": \"51f47928-d86a-3cd0-9a2a-b0f04a1c4531\",\n  \"filterConfig\": {\n    \"pattern\": \"A pattern\",\n    \"applicationMatchType\": \"BEGINS_WITH\",\n    \"applicationMatchTarget\": \"URL\"\n  }\n}"),
+			false,
+		},
+		{
+			"replacesNamePropertyWithUUid_withoutWhitespaces",
+			"an application detection rule",
+			[]byte("{\n  \"applicationIdentifier\":\"42\",\n\"name\":\"an application detection rule\",\n  \"filterConfig\": {\n    \"pattern\": \"A pattern\",\n    \"applicationMatchType\": \"BEGINS_WITH\",\n    \"applicationMatchTarget\": \"URL\"\n  }\n}"),
+			"51f47928-d86a-3cd0-9a2a-b0f04a1c4531",
+			[]byte("{\n  \"applicationIdentifier\":\"42\",\n\"name\": \"51f47928-d86a-3cd0-9a2a-b0f04a1c4531\",\n  \"filterConfig\": {\n    \"pattern\": \"A pattern\",\n    \"applicationMatchType\": \"BEGINS_WITH\",\n    \"applicationMatchTarget\": \"URL\"\n  }\n}"),
+			false,
+		},
+		{
+			"replacesNamePropertyWithUUid_withWhitespaces",
+			"an application detection rule",
+			[]byte("{\n  \"applicationIdentifier\": \"42\",\n  \"name\" :  \"an application detection rule\",\n  \"filterConfig\": {\n    \"pattern\": \"A pattern\",\n    \"applicationMatchType\": \"BEGINS_WITH\",\n    \"applicationMatchTarget\": \"URL\"\n  }\n}"),
+			"51f47928-d86a-3cd0-9a2a-b0f04a1c4531",
+			[]byte("{\n  \"applicationIdentifier\": \"42\",\n  \"name\": \"51f47928-d86a-3cd0-9a2a-b0f04a1c4531\",\n  \"filterConfig\": {\n    \"pattern\": \"A pattern\",\n    \"applicationMatchType\": \"BEGINS_WITH\",\n    \"applicationMatchTarget\": \"URL\"\n  }\n}"),
+			false,
+		},
+		{
+			"replacesNamePropertyWithUUid_withMoreWhitespaces",
+			"an application detection rule",
+			[]byte("{\n  \"applicationIdentifier\": \"42\",\n  \"name\"    :          \"an application detection rule\",\n  \"filterConfig\": {\n    \"pattern\": \"A pattern\",\n    \"applicationMatchType\": \"BEGINS_WITH\",\n    \"applicationMatchTarget\": \"URL\"\n  }\n}"),
+			"51f47928-d86a-3cd0-9a2a-b0f04a1c4531",
+			[]byte("{\n  \"applicationIdentifier\": \"42\",\n  \"name\": \"51f47928-d86a-3cd0-9a2a-b0f04a1c4531\",\n  \"filterConfig\": {\n    \"pattern\": \"A pattern\",\n    \"applicationMatchType\": \"BEGINS_WITH\",\n    \"applicationMatchTarget\": \"URL\"\n  }\n}"),
+			false,
+		},
+		{
+			"replacesNamePropertyWithUUid_butNoOtherOccurrences",
+			"an application detection rule",
+			[]byte("{\n  \"applicationIdentifier\": \"an application detection rule\",\n  \"name\": \"an application detection rule\",\n  \"filterConfig\": {\n    \"pattern\": \"A pattern\",\n    \"applicationMatchType\": \"BEGINS_WITH\",\n    \"applicationMatchTarget\": \"URL\"\n  }\n}"),
+			"51f47928-d86a-3cd0-9a2a-b0f04a1c4531",
+			[]byte("{\n  \"applicationIdentifier\": \"an application detection rule\",\n  \"name\": \"51f47928-d86a-3cd0-9a2a-b0f04a1c4531\",\n  \"filterConfig\": {\n    \"pattern\": \"A pattern\",\n    \"applicationMatchType\": \"BEGINS_WITH\",\n    \"applicationMatchTarget\": \"URL\"\n  }\n}"),
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotUuid, gotPayload, err := replaceNameWithGeneratedUuid(tt.givenName, tt.givenPayload)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("replaceNameWithGeneratedUuid() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if gotUuid != tt.wantUuid {
+				t.Errorf("replaceNameWithGeneratedUuid() gotUuid = %v, want %v", gotUuid, tt.wantUuid)
+			}
+			if !reflect.DeepEqual(gotPayload, tt.wantModifiedPayload) {
+				t.Errorf("replaceNameWithGeneratedUuid() gotPayload = %v, want %v", string(gotPayload), string(tt.wantModifiedPayload))
+			}
+		})
+	}
 }

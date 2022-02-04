@@ -18,9 +18,11 @@ package rest
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
@@ -31,14 +33,43 @@ import (
 func upsertDynatraceObject(client *http.Client, environmentUrl string, objectName string, theApi api.Api, payload []byte, apiToken string) (api.DynatraceEntity, error) {
 
 	fullUrl := theApi.GetUrlFromEnvironmentUrl(environmentUrl)
+	body := payload
+	configType := theApi.GetId()
 
-	existingObjectId, err := getObjectIdIfAlreadyExists(client, theApi, fullUrl, objectName, apiToken)
+	// Starting in version 1.236.0 the app-detection-rule API no longer uses a name property
+	// If supplied with a 'name' that is a UUID, it will use this identifier,
+	// any other string will result in a generated UUID identifier.
+	// Dynatrace will return the same UUID as id and name when configuration is queried.
+	//
+	// For backwards compatibility and to match this in monaco, migrated existing rules as well as rules configured via
+	// monaco use a generated UUID v3 derived from the name property.
+	// For monaco this replacement is made transparent by only using the UUID at the interface to Dynatrace - when checking
+	// for existing configuration and in the uploaded configuration playload - while otherwise using the unique objectName
+	// as for any other configuration.
+	expectedDynatraceName := objectName
+	if configType == "app-detection-rule" {
+		v, err := GetDynatraceVersion(client, environmentUrl, apiToken)
+		if err != nil {
+			return api.DynatraceEntity{}, err
+		}
+
+		if MinimumDynatraceVersionReached(Version{1, 236, 0}, v) {
+			util.Log.Debug("\t\tDynatrace environment in version %s is using UUIDs for app-detection-rule names. Converting %s to UUID.", v.String(), objectName)
+
+			uuid, modifiedPayload, err := replaceNameWithGeneratedUuid(objectName, payload)
+			if err != nil {
+				return api.DynatraceEntity{}, err
+			}
+
+			expectedDynatraceName = uuid
+			body = modifiedPayload
+		}
+	}
+
+	existingObjectId, err := getObjectIdIfAlreadyExists(client, theApi, fullUrl, expectedDynatraceName, apiToken)
 	if err != nil {
 		return api.DynatraceEntity{}, err
 	}
-
-	body := payload
-	configType := theApi.GetId()
 
 	// The calculated-metrics-log API doesn't have a POST endpoint, to create a new log metric we need to use PUT which
 	// requires a metric key for which we can just take the objectName
@@ -53,6 +84,20 @@ func upsertDynatraceObject(client *http.Client, environmentUrl string, objectNam
 	} else {
 		return createDynatraceObject(client, fullUrl, objectName, theApi, body, apiToken)
 	}
+}
+
+func replaceNameWithGeneratedUuid(objectName string, payload []byte) (string, []byte, error) {
+	uuid, err := util.GenerateUuidFromName(objectName)
+	if err != nil {
+		util.Log.Debug(err.Error())
+		return "", nil, errors.New("Failed to generate UUID for app-detection-rule: " + objectName)
+	}
+
+	r := regexp.MustCompile(`name"\s*:\s*"` + objectName + `"`)
+	tmp := r.ReplaceAllString(string(payload), `name": "`+uuid+`"`)
+	newPayload := []byte(tmp)
+
+	return uuid, newPayload, nil
 }
 
 func createDynatraceObject(client *http.Client, fullUrl string, objectName string, theApi api.Api, payload []byte, apiToken string) (api.DynatraceEntity, error) {
