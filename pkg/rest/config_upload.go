@@ -49,29 +49,7 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 	isUpdate := existingObjectId != ""
 
 	if isUpdate {
-		path = joinUrl(fullUrl, existingObjectId)
-		// Updating a dashboard, or any service detection API requires the ID to be contained in the JSON, so we just add it...
-		if isApiDashboard(theApi) || isAnyServiceDetectionApi(theApi) {
-			tmp := strings.Replace(string(payload), "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
-			body = []byte(tmp)
-		}
-		resp, err = put(client, path, body, apiToken)
-
-		if err != nil {
-			return api.DynatraceEntity{}, err
-		}
-
-		if success(resp) {
-			util.Log.Debug("\t\t\tUpdated existing object for %s (%s)", objectName, existingObjectId)
-			return api.DynatraceEntity{
-				Id:          existingObjectId,
-				Name:        objectName,
-				Description: "Updated existing object",
-			}, nil
-		} else {
-			return api.DynatraceEntity{}, fmt.Errorf("Failed to update DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
-		}
-
+		return updateDynatraceObject(client, fullUrl, objectName, existingObjectId, theApi, body, apiToken)
 	} else {
 		if configType == "app-detection-rule" {
 			path += "?position=PREPEND"
@@ -152,6 +130,33 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 	util.Log.Debug("\t\t\tCreated new object for %s (%s)", dtEntity.Name, dtEntity.Id)
 
 	return dtEntity, nil
+}
+
+func updateDynatraceObject(client *http.Client, fullUrl string, objectName string, existingObjectId string, theApi api.Api, payload []byte, apiToken string) (api.DynatraceEntity, error) {
+	path := joinUrl(fullUrl, existingObjectId)
+	body := payload
+
+	// Updating a dashboard, or any service detection API requires the ID to be contained in the JSON, so we just add it...
+	if isApiDashboard(theApi) || isAnyServiceDetectionApi(theApi) {
+		tmp := strings.Replace(string(payload), "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
+		body = []byte(tmp)
+	}
+	resp, err := put(client, path, body, apiToken)
+
+	if err != nil {
+		return api.DynatraceEntity{}, err
+	}
+
+	if !success(resp) {
+		return api.DynatraceEntity{}, fmt.Errorf("Failed to update DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
+	}
+
+	util.Log.Debug("\t\t\tUpdated existing object for %s (%s)", objectName, existingObjectId)
+	return api.DynatraceEntity{
+		Id:          existingObjectId,
+		Name:        objectName,
+		Description: "Updated existing object",
+	}, nil
 }
 
 func joinUrl(urlBase string, path string) string {
