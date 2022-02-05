@@ -35,8 +35,6 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		return api.DynatraceEntity{}, err
 	}
 
-	var resp Response
-	path := fullUrl
 	body := payload
 	configType := theApi.GetId()
 
@@ -51,41 +49,50 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 	if isUpdate {
 		return updateDynatraceObject(client, fullUrl, objectName, existingObjectId, theApi, body, apiToken)
 	} else {
-		if configType == "app-detection-rule" {
-			path += "?position=PREPEND"
-		}
+		return createDynatraceObject(client, fullUrl, objectName, theApi, body, apiToken)
+	}
+}
+
+func createDynatraceObject(client *http.Client, fullUrl string, objectName string, theApi api.Api, payload []byte, apiToken string) (api.DynatraceEntity, error) {
+	path := fullUrl
+	body := payload
+
+	configType := theApi.GetId()
+
+	if configType == "app-detection-rule" {
+		path += "?position=PREPEND"
+	}
+	resp, err := post(client, path, body, apiToken)
+
+	if err != nil {
+		return api.DynatraceEntity{}, err
+	}
+
+	// It can happen that the post fails because config needs time to be propagated on all cluster nodes. If the error
+	// constraintViolations":[{"path":"name","message":"X must have a unique name...
+	// is returned, try once again
+	if !success(resp) && strings.Contains(string(resp.Body), "must have a unique name") {
+		// Try again after 5 seconds:
+		util.Log.Warn("\t\tConfig '%s - %s' needs to have a unique name. Waiting for 5 seconds before retry...", configType, objectName)
+		time.Sleep(5 * time.Second)
 		resp, err = post(client, path, body, apiToken)
 
 		if err != nil {
 			return api.DynatraceEntity{}, err
 		}
+	}
+	// It can take longer until request attributes are ready to be used
+	if !success(resp) && strings.Contains(string(resp.Body), "must specify a known request attribute") {
+		util.Log.Warn("\t\tSpecified request attribute not known for %s. Waiting for 10 seconds before retry...", objectName)
+		time.Sleep(10 * time.Second)
+		resp, err = post(client, path, body, apiToken)
 
-		// It can happen that the post fails because config needs time to be propagated on all cluster nodes. If the error
-		// constraintViolations":[{"path":"name","message":"X must have a unique name...
-		// is returned, try once again
-		if !success(resp) && strings.Contains(string(resp.Body), "must have a unique name") {
-			// Try again after 5 seconds:
-			util.Log.Warn("\t\tConfig '%s - %s' needs to have a unique name. Waiting for 5 seconds before retry...", configType, objectName)
-			time.Sleep(5 * time.Second)
-			resp, err = post(client, path, body, apiToken)
-
-			if err != nil {
-				return api.DynatraceEntity{}, err
-			}
+		if err != nil {
+			return api.DynatraceEntity{}, err
 		}
-		// It can take longer until request attributes are ready to be used
-		if !success(resp) && strings.Contains(string(resp.Body), "must specify a known request attribute") {
-			util.Log.Warn("\t\tSpecified request attribute not known for %s. Waiting for 10 seconds before retry...", objectName)
-			time.Sleep(10 * time.Second)
-			resp, err = post(client, path, body, apiToken)
-
-			if err != nil {
-				return api.DynatraceEntity{}, err
-			}
-		}
-		if !success(resp) {
-			return api.DynatraceEntity{}, fmt.Errorf("Failed to create DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
-		}
+	}
+	if !success(resp) {
+		return api.DynatraceEntity{}, fmt.Errorf("Failed to create DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
 	}
 
 	var dtEntity api.DynatraceEntity
@@ -112,11 +119,11 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		location := locationSlice[0]
 
 		// Some APIs prepend the environment URL. If available, trim it from the location
-		existingObjectId = strings.TrimPrefix(location, fullUrl)
-		existingObjectId = strings.TrimPrefix(existingObjectId, "/")
+		objectId := strings.TrimPrefix(location, fullUrl)
+		objectId = strings.TrimPrefix(objectId, "/")
 
 		dtEntity = api.DynatraceEntity{
-			Id:          existingObjectId,
+			Id:          objectId,
 			Name:        objectName,
 			Description: "Created object",
 		}
