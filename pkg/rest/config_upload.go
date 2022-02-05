@@ -62,8 +62,8 @@ func createDynatraceObject(client *http.Client, fullUrl string, objectName strin
 	if configType == "app-detection-rule" {
 		path += "?position=PREPEND"
 	}
-	resp, err := post(client, path, body, apiToken)
 
+	resp, err := post(client, path, body, apiToken)
 	if err != nil {
 		return api.DynatraceEntity{}, err
 	}
@@ -95,6 +95,10 @@ func createDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		return api.DynatraceEntity{}, fmt.Errorf("Failed to create DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
 	}
 
+	return unmarshalResponse(resp, fullUrl, configType, objectName)
+}
+
+func unmarshalResponse(resp Response, fullUrl string, configType string, objectName string) (api.DynatraceEntity, error) {
 	var dtEntity api.DynatraceEntity
 
 	if configType == "synthetic-monitor" || configType == "synthetic-location" {
