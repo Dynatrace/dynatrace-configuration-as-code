@@ -50,16 +50,6 @@ jobs:
       - name: Unit Test
         run: make test
 
-      - name: Integration Test
-        # Just executed on main branch or if the repo is cloned directly - not for forks:
-        if: github.event.pull_request.head.repo.full_name == github.repository || github.ref == 'refs/heads/main'
-        run: make integration-test
-        env:
-          URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
-          URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
-          TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
-          TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
-
       - name: Upload Log Files
         if: ${{ always() }}
         uses: actions/upload-artifact@v2
