@@ -6,6 +6,4 @@ speed:
   - appId: "coming from override"
 
 speed.environment1:
-  # temporarily created by hand in the integration test environment
-  # will be fixed in https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/issues/275
-  - appId: "MOBILE_APPLICATION-2260EF7B2E364A21"
+  - appId: "/only-post/application-mobile/mobile-application.id"
