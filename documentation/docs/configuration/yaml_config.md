@@ -2,11 +2,15 @@
 sidebar_position: 4
 ---
 
-# Configuration YAML Structure
+# Configuration YAML structure
 
-Every configuration needs a YAML containing required and optional content.
+This guide will explain what the structure of a YAML config file should look like. 
 
-A minimal viable config needs to look like this:
+## Config YAML structure
+
+Every configuration needs a YAML file containing required and optional content.
+
+A minimum viable config should look like this:
 
 ```yaml
 config:
@@ -16,7 +20,8 @@ config:
     - name: "{a unique name}"
 ```
 
-e.g. in `projects/infrastructure/alerting-profile/profiles.yaml`
+Example: in `projects/infrastructure/alerting-profile/profiles.yaml`
+
 ```yaml
 config:
   - profile: "projects/infrastructure/alerting-profile/profile.json"
@@ -26,11 +31,12 @@ profile:
 [...]
 ```
 
-Every config needs to provide a name for unique identification, omitting the name variable or using a duplicate name will result in a validation / deployment error.
+Every config needs to provide a name for unique identification. Omitting the name variable or using a duplicate name will result in a validation / deployment error.
 
-Any defined `{config name}` represents a variable that can then be used in a [JSON template](#config-json-templates), and will be resolved and inserted into the config before deployment to Dynatrace.
+Any defined `{config name}` represents a variable that can then be used in a [JSON template](../configuration/configuration_structure#config-json-templates), and will be resolved and inserted into the config before deploying to Dynatrace.
 
-e.g. `projects/infrastructure/alerting-profile/profiles.yaml` defines a `name`:
+Example: `projects/infrastructure/alerting-profile/profiles.yaml` defines a `name`, which is then used in `projects/infrastructure/alerting-profile/profile.json` as `{{.name}}`.
+
 ```yaml
 [...]
 profile:
@@ -38,18 +44,16 @@ profile:
 [...]
 ```
 
-Which is then used in `projects/infrastructure/alerting-profile/profile.json` as `{{.name}}`.
-
 ### Skip configuration deployment
 
-To skip configuration from deploying you can use predefined `skipDeployment` parameter. You can skip deployment of the whole configuration:
+To skip the deployment of a configuration, use the predefined `skipDeployment` parameter.
 
 ```yaml
 my-config:
   - name: "My config"
   - skipDeployment: "true"
 ```
-enable it by default, but skip for environment or group:
+If you wan to enable it by default, but skip for environment or group, do the following:
 ```yaml
 my-config:
   - name: "My config"
@@ -58,7 +62,7 @@ my-config:
 my-config.development:
   - skipDeployment: "false"
 ```
-or disable it by default and enable only for environment or group:
+If you want to disable it by default and enable only for environment or group: 
 ```yaml
 my-config:
   - name: "My config"
@@ -68,13 +72,13 @@ my-config.environment:
   - skipDeployment: "true"
 ```
 
-### Specific Configuration per Environment or group
+### Specific configuration per environment or group
 
-Configuration can be overwritten or extended:
-* per environment by adding `.{Environment}` configurations
-* per group by adding `.{GROUP}` configurations
+Configurations can be overwritten or extended:
+* per environment, by adding `.{Environment}` configurations
+* per group, by adding `.{GROUP}` configurations
 
-e.g. `projects/infrastructure/notification/notifications.yaml` defines different recipients for email notifications for each environment via
+`projects/infrastructure/notification/notifications.yaml` defines different recipients for email notifications for each environment via
 
 ```yaml
 email:
@@ -95,14 +99,11 @@ email.environment3:
 
 Anything in the base `email` configuration is still applied, unless it's re-defined in the `.{GROUP}` or `.{Environment}` config.
 
-**If both environment and group configurations are defined, then environment
-is preferred over the group configuration.**
+> :warning: If both environment and group configurations are defined, then environment is preferred over the group configuration.
 
-### Referencing other Configurations
+### Referencing other configurations
 
-In many cases one auto-deployed Dynatrace configuration will depend on another one.
-
-E.g. Where most configurations depend on the management-zone defined in `projects/infrastructure/management-zone`
+In many cases, one auto-deployed Dynatrace configuration will depend on another one. E.g., where most configurations depend on the management-zone defined in `projects/infrastructure/management-zone`
 
 The tool allows your configuration to reference either the `name` or `id` of the Dynatrace object of another configuration created on the cluster.
 
@@ -117,8 +118,8 @@ e.g. `projects/project-name/dashboard/dashboard.yaml` references the management-
   - managementZoneId: "projects/infrastructure/management-zone/zone.id"
 ```
 
-### Referencing other json templates
-Json templates are usually defined inside of project configuration and then references in same project:
+### Referencing other JSON templates
+JSON templates are usually defined inside of a project configuration and then referenced in same project:
 
 **testproject/auto-tag/auto-tag.yaml:**
 ```yaml
@@ -129,11 +130,9 @@ application-tagging-multiproject:
   - name: "Test Application Multiproject"
 ```
 
-In this example, `application-tagging.json` is located in `auto-tag` folder of same project and the path to it
+In this example, `application-tagging.json` is located in the `auto-tag` folder of the same project and the path to it
 can be defined relative to `auto-tag.yaml` file. But, what if you would like to reuse one template defined outside of this project?
- can be defined relative to `auto-tag.yaml` file. But, what if you would like to reuse one template defined outside of this project?
-can be defined relative to `auto-tag.yaml` file. But, what if you would like to reuse one template defined outside of this project?
-In this case, you need to define a full path of json template:
+In this case, you need to define a full path of a json template:
 
 **testproject/auto-tag/auto-tag.yaml:**
 ```yaml
@@ -143,9 +142,9 @@ config:
 application-tagging-multiproject:
   - name: "Test Application Multiproject"
 ```
-This would save us of content duplication and redefining same templates over and over again.
+This would save us of content duplication and redefining the same templates over and over again.
 
-Of course, it is also possible to reuse one template multiple times within one or different yaml file(s):
+Of course, it is also possible to reuse one template multiple times within one or different YAML file(s):
 **testproject/auto-tag/auto-tag.yaml:**
 ```yaml
 config:
@@ -166,12 +165,12 @@ application-tagging-otherproject:
   - param: "Otherproject parameter"
 ```
 
-### Templating of Environment Variables
+### Templating of environment variables
 
-In addition to the templating of `json` files, where you need to specify the values in the corresponding `yaml` files, its also possible to resolve
-environment variables. This can be done in any `json` or `yaml` file using this syntax: `{{.Env.ENV_VAR}}`.
+In addition to the templating of JSON files, where you need to specify the values in the corresponding YAML files, its also possible to resolve
+environment variables. This can be done in any JSON or YAML file using this syntax: `{{.Env.ENV_VAR}}`.
 
-E.g. to resolve the URL of an environment, use the following snippet:
+E.g., to resolve the URL of an environment, use the following snippet:
 
 ```yaml
 development:
@@ -180,7 +179,7 @@ development:
     - env-token-name: "DEV_TOKEN_ENV_VAR"
 ```
 
-To resolve an environment variable directly in the `json` is also possible. See the following example which sets the value
+It's also possible to resolve an environment variable directly in the JSON. See the following example which sets the value
 of an alerting profile from the env var `ALERTING_PROFILE_VALUE`.
 
 ```json
@@ -211,4 +210,4 @@ of an alerting profile from the env var `ALERTING_PROFILE_VALUE`.
 }
 ```
 
-**Attention**: Values you pass into configuration via environment variables must not contain `=`.
+> :warning: Values you pass into configuration via environment variables must not contain `=`.

@@ -2,11 +2,11 @@
 sidebar_position: 5
 ---
 
-# Plugin Configuration
+# Plugin configuration
 
-> **Important**
+> :warning: **Important**
 >
-> If you define something that depends on a metric created by a plugin, make sure to reference the plugin by name, so that the configurations will be applied in the correct order (after the plugin was created)
+> If you define something that depends on a metric created by a plugin, make sure to reference the plugin by name, so that the configurations will be applied in the correct order (after the plugin is created)
 >
 > Plugins can not be referenced by `id` as the Dynatrace plugin endpoint does not return this!
 >

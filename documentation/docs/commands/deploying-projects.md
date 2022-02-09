@@ -2,11 +2,11 @@
 sidebar_position: 2
 ---
 
-# Deploying Projects
+# Deploy projects
 
 The tool allows for deploying a configuration or a set of configurations in the form of project(s). A project is a folder containing files that define configurations to be deployed to a environment or a group of environments. This is done by passing the `--project` flag (or `-p` for short).
 
-## Running The Tool
+## Running the tool
 
 Below you find a few samples on how to run the tool to deploy your configurations:
 

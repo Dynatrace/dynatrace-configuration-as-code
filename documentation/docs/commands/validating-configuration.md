@@ -2,14 +2,13 @@
 sidebar_position: 1
 ---
 
-# Validating Configuration
+# Validate configuration
 
-Monaco validates the configuration files in a directory, it does so by performing a dry run. It will check whether your Dynatrace config files are valid JSON, and whether your tool configuration yaml files can be parsed and used.
+Monaco validates configuration files in a directory by performing a dry run. It will check whether your Dynatrace config files are in a valid JSON format, and whether your tool configuration YAML files can be parsed and used.
 
-To validate the configuration execute monaco -dry-run on a yaml file as show here:
+To validate the configuration, execute a `monaco dry run` on a YAML file as shown below.
 
-
-Create a file at `src/pages/my-react-page.js`:
+Create the file at `src/pages/my-react-page.js`:
 
 ```jsx title="run monaco in dry mode"
 $ ./monaco -dry-run --environments=project/sub-project/my-environments.yaml

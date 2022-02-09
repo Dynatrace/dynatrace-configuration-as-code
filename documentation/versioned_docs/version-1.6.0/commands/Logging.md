@@ -4,18 +4,16 @@ sidebar_position: 5
 
 # Logging
 
-Sometimes it is useful for debugging to see http traffic between monaco and the dynatrace api. This is possible by specifying a log file via the `MONACO_REQUEST_LOG` and `MONACO_RESPONSE_LOG` env variables.
+Sometimes it is useful for debugging to see HTTP traffic between Monaco and the Dynatrace API. This is possible by specifying a log file via the `MONACO_REQUEST_LOG` and `MONACO_RESPONSE_LOG` env variables.
 
-The specified file can either be relative, then it will be located relative form the current working dir, or absolute.
+The specified file can be relative or absolute. If relative, then it will be located relative to the current working dir.
 
-**NOTE**: If the file already exists, it will get **truncated!**
+> :warning: If the file already exists, it will get **truncated!**
 
-Simply set the environment variable and monaco will start writing all send requests to the file like:
-
-```shell title="shell"
-
-$ MONACO_REQUEST_LOG=request.log MONACO_RESPONSE_LOG=response.log monaco -e environment project
+To specify the log file, set the environment variable and Monaco will start writing all send requests to the file as follows:
 
 ```
+$ MONACO_REQUEST_LOG=request.log MONACO_RESPONSE_LOG=response.log monaco -e environment project
+```
 
-As of right now, the content of multipart post requests is not logged. This is a known limitation.
+The content of multipart post requests is currently not logged. This is a known limitation.

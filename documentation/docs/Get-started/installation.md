@@ -6,13 +6,11 @@ title: Install Monaco
 import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
 
-To use monaco you will need to install it. Monaco is distributed as a binary package.
+This guide will show you how to download Monaco and install it on your operating system (Linux/MacOS or Windows).
 
-To install Monaco, find the appropriate executable for your system and download it.
-
-Ensure that the monaco binary is available on your PATH. This process will differ depending on your operating system. This process will differ depending on your operating system.
-
-Executables are available in the [release page](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases).
+1.	Go to the Monaco [release page](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases).
+2.	Download the required version.
+3.	Check that the Monaco binary is available on your PATH. This process will differ depending on your operating system (see steps below). 
 
 <Tabs
   defaultValue="operating system"
@@ -31,18 +29,18 @@ Executables are available in the [release page](https://github.com/dynatrace-oss
 >
   <TabItem value="linux-macos">
 
-This is an example using `curl`. If you don't have `curl`, install it, or use `wget`.
+For Linux/macOS, we recommend using `curl` (download it from [here](https://curl.se/) or use `wget`).
 
 ```shell
 # Linux
 # x64
-$ curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/v1.6.0/monaco-linux-amd64 -o monaco
+$ curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/vx.x.x/monaco-linux-amd64 -o monaco
 
 # x86
-$ curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/v1.6.0/monaco-linux-386 -o monaco
+$ curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/vx.x.x/monaco-linux-386 -o monaco
 
 # macOS
-$ curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/v1.6.0/monaco-darwin-10.12-amd64 -o monaco
+$ curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/vx.x.x/monaco-darwin-10.12-amd64 -o monaco
 ```
 
 Make the binary executable:
@@ -51,7 +49,7 @@ Make the binary executable:
 $ chmod +x monaco
 ```
 
-Optionally install monaco to a central location in your `PATH`.
+Optionally install Monaco to a central location in your `PATH`.
 This command assumes that the binary is currently in your downloads folder and that your PATH includes `/usr/local/bin`:
 
 ```shell
@@ -59,40 +57,30 @@ This command assumes that the binary is currently in your downloads folder and t
 $ sudo mv ~/Downloads/monaco /usr/local/bin/
 ```
 
-## Verify Download
+Now you can verify the download. 
 
 ```shell
 $ monaco
 You are currently using the old CLI structure which will be used by
 default until monaco version 2.0.0
-
 Check out the beta of the new CLI by adding the environment variable
   "NEW_CLI".
-
 We can't wait for your feedback.
-
 NAME:
-   monaco - Automates the deployment of Dynatrace Monitoring Configuration to one or multiple Dynatrace environments.
-
+   monaco-linux-amd64 - Automates the deployment of Dynatrace Monitoring Configuration to one or multiple Dynatrace environments.
 USAGE:
-   monaco [global options] command [command options] [working directory]
-
+   monaco-linux-amd64 [global options] command [command options] [working directory]
 VERSION:
-   1.6.0
-
+   1.5.1
 DESCRIPTION:
    Tool used to deploy dynatrace configurations via the cli
-
    Examples:
      Deploy a specific project inside a root config folder:
        monaco -p='project-folder' -e='environments.yaml' projects-root-folder
-
      Deploy a specific project to a specific tenant:
        monaco --environments environments.yaml --specific-environment dev --project myProject
-
 COMMANDS:
    help, h  Shows a list of commands or help for one command
-
 GLOBAL OPTIONS:
    --verbose, -v                             (default: false)
    --environments value, -e value            Yaml file containing environments to deploy to
@@ -108,12 +96,19 @@ GLOBAL OPTIONS:
   </TabItem>
   <TabItem value="windows">
 
-From the user interface, use this [Stack OverFlow](https://stackoverflow.com/questions/1618280/where-can-i-set-path-to-make-exe-on-windows) instructions to set the PATH on Windows.
-Verify the installation by running `monaco`  from your terminal.
+Before you start, you need to set the PATH on Windows: 
+
+1.	Go to Control Panel -> System -> System settings -> Environment Variables.
+2.	Scroll down in system variables until you find PATH.
+3.	Click edit and change accordingly.
+4.	Include a semicolon at the end of the previous as that is the delimiter, i.e., c:\path;c:\path2
+5.	Launch a new console for the settings to take effect.
+
+Once your PATH is set, verify the installation by running `monaco` from your terminal. 
 
 ```shell
 $ monaco
-You are currently using the old CLI structure which will be used by
+YYou are currently using the old CLI structure which will be used by
 default until monaco version 2.0.0
 
 Check out the beta of the new CLI by adding the environment variable
@@ -159,3 +154,5 @@ GLOBAL OPTIONS:
 </Tabs>
   </TabItem>
 </Tabs>
+
+Now that Monaco is installed, follow our introductory guide on [how to deploy a configuration to Dynatrace.](../configuration/deploy_configuration)

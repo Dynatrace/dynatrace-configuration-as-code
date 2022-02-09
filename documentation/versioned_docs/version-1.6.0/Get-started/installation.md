@@ -6,13 +6,11 @@ title: Install Monaco
 import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
 
-To use monaco you will need to install it. Monaco is distributed as a binary package.
+This guide will show you how to download Monaco and install it on your operating system (Linux/MacOS or Windows).
 
-To install Monaco, find the appropriate executable for your system and download it.
-
-Ensure that the monaco binary is available on your PATH. This process will differ depending on your operating system. This process will differ depending on your operating system.
-
-Executables are available in the [release page](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases).
+1.	Go to the Monaco [release page](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases).
+2.	Download the required version.
+3.	Check that the Monaco binary is available on your PATH. This process will differ depending on your operating system (see steps below). 
 
 <Tabs
   defaultValue="operating system"
@@ -31,7 +29,7 @@ Executables are available in the [release page](https://github.com/dynatrace-oss
 >
   <TabItem value="linux-macos">
 
-This is an example using `curl`. If you don't have `curl`, install it, or use `wget`.
+For Linux/macOS, we recommend using `curl` (download it from [here](https://curl.se/) or use `wget`).
 
 ```shell
 # Linux
@@ -51,7 +49,7 @@ Make the binary executable:
 $ chmod +x monaco
 ```
 
-Optionally install monaco to a central location in your `PATH`.
+Optionally install Monaco to a central location in your `PATH`.
 This command assumes that the binary is currently in your downloads folder and that your PATH includes `/usr/local/bin`:
 
 ```shell
@@ -59,7 +57,7 @@ This command assumes that the binary is currently in your downloads folder and t
 $ sudo mv ~/Downloads/monaco /usr/local/bin/
 ```
 
-## Verify Download
+Now you can verify the download. 
 
 ```shell
 $ monaco
@@ -98,8 +96,15 @@ GLOBAL OPTIONS:
   </TabItem>
   <TabItem value="windows">
 
-From the user interface, use this [Stack OverFlow](https://stackoverflow.com/questions/1618280/where-can-i-set-path-to-make-exe-on-windows) instructions to set the PATH on Windows.
-Verify the installation by running `monaco`  from your terminal.
+Before you start, you need to set the PATH on Windows: 
+
+1.	Go to Control Panel -> System -> System settings -> Environment Variables.
+2.	Scroll down in system variables until you find PATH.
+3.	Click edit and change accordingly.
+4.	Include a semicolon at the end of the previous as that is the delimiter, i.e., c:\path;c:\path2
+5.	Launch a new console for the settings to take effect.
+
+Once your PATH is set, verify the installation by running `monaco` from your terminal. 
 
 ```shell
 $ monaco
@@ -149,3 +154,5 @@ GLOBAL OPTIONS:
 </Tabs>
   </TabItem>
 </Tabs>
+
+Now that Monaco is installed, follow our introductory guide on [how to deploy a configuration to Dynatrace.](../configuration/deploy_configuration)
