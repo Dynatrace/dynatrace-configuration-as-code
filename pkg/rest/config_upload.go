@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
@@ -132,6 +133,11 @@ func updateDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		body = []byte(tmp)
 	}
 
+	// Updating a Mobile Application does not allow changing the appliactionType as such this property required on Create, must be stripped on Update
+	if isMobileApp(theApi) {
+		body = stripCreateOnlyPropertiesFromAppMobile(body)
+	}
+
 	resp, err := callWithRetryOnKnowTimingIssue(client, put, objectName, path, body, apiToken)
 
 	if err != nil {
@@ -148,6 +154,15 @@ func updateDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		Name:        objectName,
 		Description: "Updated existing object",
 	}, nil
+}
+
+func stripCreateOnlyPropertiesFromAppMobile(payload []byte) []byte {
+	//applicationType is required on creation, but not allowed to be updated
+	r := regexp.MustCompile(`"applicationType":.*?,`)
+	tmp := r.ReplaceAllString(string(payload), "")
+	newPayload := []byte(tmp)
+
+	return newPayload
 }
 
 // callWithRetryOnKnowTimingIssue handles several know cases in which Dynatrace has a slight delay before newly created objects
@@ -285,6 +300,10 @@ func isApiDashboard(api api.Api) bool {
 
 func isAnyServiceDetectionApi(api api.Api) bool {
 	return strings.HasPrefix(api.GetId(), "service-detection-")
+}
+
+func isMobileApp(api api.Api) bool {
+	return api.GetId() == "application-mobile"
 }
 
 func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, url string, apiToken string) (values []api.Value, err error) {
