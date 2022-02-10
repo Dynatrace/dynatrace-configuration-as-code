@@ -7,7 +7,7 @@ sidebar_position: 3
 Configuration files are ordered by `project` in the projects folder. Project folders can only contain:
 
 - configurations
-- OR other project(s)
+- other project(s)
 
 This means it is possible to group projects into folders, but combining projects and configurations in the same folder is not supported.
 

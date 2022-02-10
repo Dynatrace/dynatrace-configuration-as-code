@@ -23,7 +23,7 @@ As of right now the following commands are available:
 
 ### Deploy
 
-This command is basically doing what the old tool did. It is used to deploy a specified config to a dynatrace environment. The flags to things like the environments files are mostly the same. Read more about it here: [Deploy projects](../commands/deploying-projects.md)
+This command is basically doing what the old tool did. It is used to deploy a specified config to a Dynatrace environment. The flags to things like the environments files are mostly the same. Read more about it here: [Deploy projects](../commands/deploying-projects.md)
 
 ### Download
 
