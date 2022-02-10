@@ -3,16 +3,18 @@ sidebar_position: 1
 ---
 
 
-# Deploying Configuration to Dynatrace
+# Deploy configuration
 
-Monaco allows for deploying a configuration or a set of configurations in the form of project(s). A project is a folder containing files that define configurations to be deployed to a environment or a group of environments. This is done by passing the --project flag (or -p for short).
+This guide will show you how to deploy a Monaco configuration to Dynatrace. 
+
+Monaco allows for deploying a configuration or a set of configurations in the form of project(s). A project is a folder containing files that define configurations to be deployed to an environment or a group of environments. This is done by passing the `--project` flag (or `-p` for short).
 
 
-### Running The Tool
+### Running the tool
 
-Below you find a few samples on how to run the tool to deploy your configurations:
+Below you will find a few examples on how to run the tool to deploy your configurations:
 
-```shell title="shell"
+```
 monaco -e=environments.yaml (deploy all projects in the current folder to all environments)
 
 monaco -e=environments.yaml -p="project" projects-root-folder (deploy projects-root-folder/project and any projects in projects-root-folder it depends on to all environments)
@@ -26,26 +28,27 @@ If `project` contains additional sub-projects, then all projects are deployed re
 
 If `project` depends on different projects under the same root, those are also deployed.
 
-Multiple projects could be specified by `-p="projectA, projectB, projectC/subproject"`
+Multiple projects can be specified with the following syntax: `-p="projectA, projectB, projectC/subproject"`
 
-To deploy configuration the tool will need a valid API Token(s) for the given environments defined as `environment variables` - you can define the name of that env var in the environments file.
+To deploy configurations the tool will need a valid API Token(s) for the given environments defined as `environment variables`. You can define the name of that enviroment variable in the environments file.
 
-To deploy to 1 specific environment within a `environments.yaml` file, the `-specific-environment` or -se flag can be passed:
+To deploy to one specific environment within an `environments.yaml` file, the `-specific-environment` or `-se` flag can be passed as follows:
 
-```shell title="shell"
+```
 monaco -e=environments.yaml -se=my-environment -p="my-environment" cluster
 ```
+Read more about the environments file here: [Environments file](./environments_file)
 
-### Running The Tool With A Proxy
+### Running the tool with a proxy
 
-In environments where access to Dynatrace API endpoints is only possible or allowed via a proxy server, monaco provides the options to specify the address of your proxy server when running a command:
+In environments where the access to Dynatrace API endpoints is only possible or allowed via a proxy server, Monaco provides the option of specifying the address of your proxy server when running a command:
 
-```shell title="shell"
+```
 HTTPS_PROXY=localhost:5000 monaco -e=environments.yaml -se=my-environment -p="my-environment" cluster 
 ```
 
 With the new CLI:
 
-```shell title="shell"
+```
 HTTPS_PROXY=localhost:5000 NEW_CLI=1 monaco deploy -e environments.yaml 
 ```
