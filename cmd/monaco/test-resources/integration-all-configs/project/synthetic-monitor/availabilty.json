@@ -55,5 +55,5 @@
   "managementZones": [
     "{{.managementZoneId}}"
   ],
-  "manuallyAssignedApps": []
+  "manuallyAssignedApps": ["{{ .appId }}"]
 }

@@ -37,6 +37,7 @@ func TestIntegrationAllConfigs(t *testing.T) {
 		// This causes a POST for all configs:
 		statusCode := RunImpl([]string{
 			"monaco",
+			"-v",
 			"--environments", allConfigsEnvironmentsFile,
 			allConfigsFolder,
 		}, fs)
@@ -46,6 +47,7 @@ func TestIntegrationAllConfigs(t *testing.T) {
 		// This causes a PUT for all configs:
 		statusCode = RunImpl([]string{
 			"monaco",
+			"-v",
 			"--environments", allConfigsEnvironmentsFile,
 			// Currently there are some APIs for which updating the config does not work. These configs are included in
 			// the project "only-post" (folder ./test-resources/integration-all-configs/only-post)

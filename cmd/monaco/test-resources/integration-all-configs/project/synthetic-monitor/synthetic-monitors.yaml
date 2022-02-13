@@ -8,6 +8,7 @@ availability:
   - managementZoneId: "/project/management-zone/zone.id"
   - tag: "/project/auto-tag/application-tagging.name"
   - host: "https://www.google.com"
+  - appId: "/project/application/application.id"
 
 browser-test:
   - name: "Borg Availability"
