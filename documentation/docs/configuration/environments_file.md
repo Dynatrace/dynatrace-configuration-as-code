@@ -5,11 +5,13 @@ sidebar_position: 2
 
 # Environments file
 
-Environments are defined in the environments.yaml consisting of the environment url and the name of the environment variable to use for the API token.
+The environments file is a YAML file used to define to which environment(s) to deploy configurations.  
 
-Deployment could be done a single environment or several environments defined in the environments.yaml file.
+In the file, you declare the environment url and the name of the environment variable to use for the API token.
 
-A environment yaml file structure is of the form:
+Deployment can be done on a single environment or on several environments.
+
+Here is an example of the structure of an environments file: 
 
 ```yaml title="environments.yaml"
 foo:
@@ -23,7 +25,7 @@ bar:
     - env-token-name: "BAR_TOKEN_ENV_VAR"
 ```
 
-Environments can also be grouped. Only one group per environment is allowed. Assign environments to groups with `group.environment`:
+Environments can also be grouped, but only one group is allowed per environment. Assign environments to groups with `group.environment`:
 
 ```yaml title="environments.yaml"
 production.foo:
