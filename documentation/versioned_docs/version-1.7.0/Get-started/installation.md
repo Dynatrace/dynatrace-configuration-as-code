@@ -6,10 +6,10 @@ title: Install Monaco
 import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
 
-This guide will show you how to download Monaco and install it on your operating system (Linux/MacOS or Windows).
+This guide shows you how to download Monaco and install it on your operating system (Linux/macOS or Windows).
 
 1.	Go to the Monaco [release page](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases).
-2.	Download the required version.
+2.	Download the appropriate version.
 3.	Check that the Monaco binary is available on your PATH. This process will differ depending on your operating system (see steps below). 
 
 <Tabs
@@ -29,7 +29,7 @@ This guide will show you how to download Monaco and install it on your operating
 >
   <TabItem value="linux-macos">
 
-For Linux/macOS, we recommend using `curl` (download it from [here](https://curl.se/) or use `wget`).
+For Linux/macOS, we recommend using `curl`. You can download it from [here](https://curl.se/) or use `wget`.
 
 ```shell
 # Linux
@@ -49,15 +49,15 @@ Make the binary executable:
  chmod +x monaco
 ```
 
-Optionally install Monaco to a central location in your `PATH`.
-This command assumes that the binary is currently in your downloads folder and that your PATH includes `/usr/local/bin`:
+Optionally, install Monaco to a central location in your `PATH`.
+This command assumes that the binary is currently in your downloads folder and that your $PATH includes `/usr/local/bin`:
 
 ```shell
-# use any path that suits you, this is just a standard example. Install sudo if needed.
+# use any path that suits you; this is just a standard example. Install sudo if needed.
  sudo mv ~/Downloads/monaco /usr/local/bin/
 ```
 
-Now you can verify the download. 
+Now you can execute the `monaco` command to verify the download. 
 
 ```shell
  monaco
