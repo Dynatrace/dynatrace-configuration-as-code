@@ -4,7 +4,7 @@ sidebar_position: 4
 
 # Download configuration
 
-This feature allows you to download the configuration from a Dynatrace tenant as Monaco files. You can use this feature to avoid starting from scratch when using Monaco. 
+This feature allows you to download the configuration from a Dynatrace tenant as Monaco files. Use this feature to avoid starting from scratch when using Monaco. 
 
 > :warning: This feature requires CLI version 2.0.
 
@@ -38,4 +38,4 @@ To download specific APIs only, use `--downloadSpecificAPI` to pass a list of AP
 
 ## Notes
 
-> :warning: **Application Detection Rules.** When using download functionality you will only be able to update existing application dectection rules. If you want to create a new app detection rule you can only do so if there are no other app detection rules for that application.
+> :warning: **Application Detection Rules.** When using download functionality, you can only update existing application dectection rules. You can only create a new app detection rule if no other app detection rules exist for that application.
