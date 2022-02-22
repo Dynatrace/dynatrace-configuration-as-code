@@ -15,4 +15,4 @@ To download a copy of the bill of materials for Monaco:
 
 3\. Scroll to **Artifacts** and click on **dependencies-and-licenses** to download the files
 
-4\. The downloaded folder will containe two .txt files: one for node.js and one for go. Each file will list the components and their respective licenses. 
+4\. The downloaded folder contains two .txt files: one for node.js and one for go. Each file lists the components and their respective licenses. 

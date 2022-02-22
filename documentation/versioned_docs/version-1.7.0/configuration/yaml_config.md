@@ -4,7 +4,7 @@ sidebar_position: 4
 
 # Configuration YAML structure
 ​
-This guide will explain what the structure of a YAML config file should look like. 
+This guide explains the structure of a YAML config file. 
 ​
 ## Config YAML structure
 ​
@@ -35,7 +35,7 @@ profile:
 ```
 
 ​
-Every config needs to provide a name for unique identification. Omitting the name variable or using a duplicate name will result in a validation / deployment error.
+Every config needs to provide a name for unique identification. Omitting the name variable or using a duplicate name causes a validation / deployment error.
 ​
 Any defined `{config name}` represents a variable that can then be used in a [JSON template](../configuration/configuration_structure#config-json-templates), and will be resolved and inserted into the config before deploying to Dynatrace.
 ​
@@ -119,7 +119,7 @@ Anything in the base `email` configuration is still applied, unless it's re-defi
 
 ### Referencing other configurations
 ​
-In many cases, one auto-deployed Dynatrace configuration will depend on another one. E.g., where most configurations depend on the management-zone defined in `projects/infrastructure/management-zone`
+In many cases, one auto-deployed Dynatrace configuration depends on another one. E.g., where most configurations depend on the management-zone defined in `projects/infrastructure/management-zone`
 ​
 The tool allows your configuration to reference either the `name` or `id` of the Dynatrace object of another configuration created on the cluster.
 ​
@@ -139,7 +139,7 @@ e.g. `projects/project-name/dashboard/dashboard.yaml` references the management-
 
 ​
 ### Referencing other JSON templates
-JSON templates are usually defined inside of a project configuration and then referenced in same project:
+JSON templates are usually defined inside of a project configuration and then referenced in the same project:
 ​
 **testproject/auto-tag/auto-tag.yaml:**
 
@@ -154,7 +154,7 @@ application-tagging-multiproject:
 ​
 In this example, `application-tagging.json` is located in the `auto-tag` folder of the same project and the path to it
 can be defined relative to `auto-tag.yaml` file. But, what if you would like to reuse one template defined outside of this project?
-In this case, you need to define a full path of a json template:
+In this case, you need to define the full path of a json template:
 ​
 **testproject/auto-tag/auto-tag.yaml:**
 
@@ -166,7 +166,7 @@ application-tagging-multiproject:
   - name: "Test Application Multiproject"
 ```
 
-This would save us of content duplication and redefining the same templates over and over again.
+This would save us from content duplication and redefining the same templates over and over again.
 ​
 Of course, it is also possible to reuse one template multiple times within one or different YAML file(s):
 **testproject/auto-tag/auto-tag.yaml:**
@@ -207,7 +207,7 @@ development:
 ```
 
 ​
-It's also possible to resolve an environment variable directly in the JSON. See the following example which sets the value
+An environment variable can also be resolved directly in the JSON. See the following example which sets the value
 of an alerting profile from the env var `ALERTING_PROFILE_VALUE`.
 ​
 
@@ -240,4 +240,4 @@ of an alerting profile from the env var `ALERTING_PROFILE_VALUE`.
 ```
 
 ​
-> :warning: Values you pass into configuration via environment variables must not contain `=`.
+> :warning: Values you pass into a configuration as environment variables must not contain the `=` character.
