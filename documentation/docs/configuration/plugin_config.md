@@ -2,11 +2,11 @@
 sidebar_position: 5
 ---
 
-# Plugin Configuration
+# Plugin configuration
 
-> **Important**
+> :warning: **Important**
 >
-> If you define something that depends on a metric created by a plugin, make sure to reference the plugin by name, so that the configurations will be applied in the correct order (after the plugin was created)
+> If you define something that depends on a metric created by a plugin, make sure to reference the plugin by name, so that the configurations will be applied in the correct order (after the plugin is created)
 >
 > Plugins can not be referenced by `id` as the Dynatrace plugin endpoint does not return this!
 >
@@ -28,5 +28,5 @@ to then construct the `metric-id` in the `json` as:
 
 ### Custom Extensions
 
-Monaco is able to deploy custom extensions and handles the zipping of extensions, as such the JSON file that defines an extension can just be checked in.
+Monaco is able to deploy custom extensions and handles the zipping of extensions, as such the JSON file that defines an extension can just be checked in. The versions of the extension is checked before it is uploaded. If the version of the extension to be uploaded is the same or equal to what is already deployed, then the upload is skipped.
 An example of a custom extension can be found [here](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/tree/main/cmd/monaco/test-resources/integration-all-configs/project/extension).
