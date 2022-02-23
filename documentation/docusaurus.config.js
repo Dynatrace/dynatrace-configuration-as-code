@@ -14,6 +14,9 @@ module.exports = {
   organizationName: 'dynatrace-oss',
   projectName: 'dynatrace-monitoring-as-code',
   themeConfig: {
+    colorMode: {
+      defaultMode: 'dark',
+    },
     navbar: {
       title: 'Monaco',
       logo: {
