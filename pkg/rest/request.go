@@ -34,6 +34,9 @@ type Response struct {
 	Headers    map[string][]string
 }
 
+// function type of put and post requests
+type sendingRequest func(client *http.Client, url string, data []byte, apiToken string) (Response, error)
+
 func get(client *http.Client, url string, apiToken string) (Response, error) {
 	req, err := request(http.MethodGet, url, apiToken)
 

@@ -1,0 +1,64 @@
+{
+    "name": "{{ .name }}",
+    "frequencyMin": 15,
+    "enabled": true,
+    "type": "BROWSER",
+    "createdFrom": "GUI",
+    "script": {
+        "type": "clickpath",
+        "version": "1.0",
+        "configuration": {
+            "device": {
+                "deviceName": "Desktop",
+                "orientation": "landscape"
+            },
+            "disableWebSecurity": false
+        },
+        "events": [
+            {
+                "type": "navigate",
+                "description": "Loading of \"www.google.com\"",
+                "url": "http://www.google.com",
+                "wait": {
+                    "waitFor": "page_complete"
+                }
+            }
+        ]
+    },
+    "locations": [
+        "{{ .location }}"
+    ],
+    "anomalyDetection": {
+        "outageHandling": {
+            "globalOutage": true,
+            "globalOutagePolicy": {
+                "consecutiveRuns": 1
+            },
+            "localOutage": false,
+            "localOutagePolicy": {
+                "affectedLocations": null,
+                "consecutiveRuns": null
+            },
+            "retryOnError": true
+        },
+        "loadingTimeThresholds": {
+            "enabled": true,
+            "thresholds": []
+        }
+    },
+    "tags": [],
+    "managementZones": [],
+    "automaticallyAssignedApps": [],
+    "manuallyAssignedApps": [],
+    "keyPerformanceMetrics": {
+        "loadActionKpm": "VISUALLY_COMPLETE",
+        "xhrActionKpm": "VISUALLY_COMPLETE"
+    },
+    "events": [
+        {
+            "entityId": "SYNTHETIC_TEST_STEP-BE955B7C74A99390",
+            "name": "Loading of \"www.google.com\"",
+            "sequenceNumber": 1
+        }
+    ]
+}

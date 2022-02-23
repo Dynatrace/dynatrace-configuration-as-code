@@ -1,0 +1,37 @@
+{
+    "tsmMetricKey": "{{ .name }}",
+    "name": "{{ .name }}",
+    "enabled": true,
+    "metricDefinition": {
+        "metric": "DATABASE_CHILD_CALL_COUNT",
+        "requestAttribute": null
+    },
+    "unit": "COUNT",
+    "unitDisplayName": "",
+    "entityId": null,
+    "managementZones": [],
+    "conditions": [
+        {
+            "attribute": "SERVICE_NAME",
+            "comparisonInfo": {
+                "type": "STRING",
+                "comparison": "BEGINS_WITH",
+                "value": "example.com",
+                "values": null,
+                "negate": false,
+                "caseSensitive": false
+            }
+        },
+        {
+            "attribute": "REMOTE_ENDPOINT",
+            "comparisonInfo": {
+                "type": "STRING",
+                "comparison": "EXISTS",
+                "value": null,
+                "values": null,
+                "negate": false,
+                "caseSensitive": false
+            }
+        }
+    ]
+}
