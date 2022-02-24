@@ -163,7 +163,7 @@ func TestUnmarshalConvertYamlHasParsingIssuesOnLevel1(t *testing.T) {
 	e, _ := convert(m)
 
 	// Then
-	assert.ErrorContains(t, e, "cannot convert YAML")
+	assert.ErrorContains(t, e, "cannot convert YAML on level 1: value of key 'light' has unexpected type")
 }
 
 const testYamlParsingIssueOnLevel2 = `
@@ -181,7 +181,7 @@ func TestUnmarshalConvertYamlHasParsingIssuesOnLevel2(t *testing.T) {
 	e, _ := convert(m)
 
 	// Then
-	assert.ErrorContains(t, e, "cannot convert YAML")
+	assert.ErrorContains(t, e, "cannot convert YAML on level 2: test - test2")
 }
 
 const testYamlParsingIssueOnLevel3 = `
@@ -198,7 +198,7 @@ func TestUnmarshalConvertYamlHasParsingIssuesOnLevel3(t *testing.T) {
 	e, _ := convert(m)
 
 	// Then
-	assert.ErrorContains(t, e, "cannot convert YAML")
+	assert.ErrorContains(t, e, "cannot convert YAML on level 3: invalid key type '%!s(int=123)'")
 }
 
 const testYamlParsingIssueOnLevel4 = `
@@ -216,5 +216,5 @@ func TestUnmarshalConvertYamlHasParsingIssuesOnLevel4(t *testing.T) {
 	e, _ := convert(m)
 
 	// Then
-	assert.ErrorContains(t, e, "cannot convert YAML")
+	assert.ErrorContains(t, e, "cannot convert YAML on level 4: value of key 'Han' has unexpected type")
 }
