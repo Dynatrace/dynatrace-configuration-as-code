@@ -24,6 +24,7 @@ import (
 	"os"
 	"testing"
 
+	"gopkg.in/yaml.v2"
 	"gotest.tools/assert"
 )
 
@@ -147,4 +148,73 @@ func TestReplaceEnvVarWhenVarIsNotPresent(t *testing.T) {
 
 	err, _ := UnmarshalYaml(yamlTestEnvVar, "test-yaml-test-env-var")
 	assert.ErrorContains(t, err, "map has no entry for key \"TEST_ENV_VAR\"")
+}
+
+const testYamlParsingIssueOnLevel1 = `
+light: dark
+`
+
+func TestUnmarshalConvertYamlHasParsingIssuesOnLevel1(t *testing.T) {
+	// Given
+	m := make(map[string]interface{})
+	yaml.Unmarshal([]byte(testYamlParsingIssueOnLevel1), &m)
+
+	// When
+	e, _ := convert(m)
+
+	// Then
+	assert.ErrorContains(t, e, "cannot convert YAML")
+}
+
+const testYamlParsingIssueOnLevel2 = `
+light:
+ - test
+   - test2
+`
+
+func TestUnmarshalConvertYamlHasParsingIssuesOnLevel2(t *testing.T) {
+	// Given
+	m := make(map[string]interface{})
+	yaml.Unmarshal([]byte(testYamlParsingIssueOnLevel2), &m)
+
+	// When
+	e, _ := convert(m)
+
+	// Then
+	assert.ErrorContains(t, e, "cannot convert YAML")
+}
+
+const testYamlParsingIssueOnLevel3 = `
+light:
+ - 123: test2
+`
+
+func TestUnmarshalConvertYamlHasParsingIssuesOnLevel3(t *testing.T) {
+	// Given
+	m := make(map[string]interface{})
+	yaml.Unmarshal([]byte(testYamlParsingIssueOnLevel3), &m)
+
+	// When
+	e, _ := convert(m)
+
+	// Then
+	assert.ErrorContains(t, e, "cannot convert YAML")
+}
+
+const testYamlParsingIssueOnLevel4 = `
+light:
+    - Han:
+       - test
+`
+
+func TestUnmarshalConvertYamlHasParsingIssuesOnLevel4(t *testing.T) {
+	// Given
+	m := make(map[string]interface{})
+	yaml.Unmarshal([]byte(testYamlParsingIssueOnLevel4), &m)
+
+	// When
+	e, _ := convert(m)
+
+	// Then
+	assert.ErrorContains(t, e, "cannot convert YAML")
 }
