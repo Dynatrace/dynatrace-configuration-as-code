@@ -25,10 +25,7 @@ jobs:
 
   build:
     name: Build
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
+    runs-on: ubuntu-latest
     steps:
 
       - name: Set up Go 1.x
@@ -40,8 +37,7 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v3.2.0
 
-      - name: Lint
-        if: matrix.os == 'ubuntu-latest'
+      - name: ✍️ Lint
         run: make lint
 
       - name: 🏗️ Build
