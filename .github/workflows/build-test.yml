@@ -51,8 +51,8 @@ jobs:
         run: make test
 
       - name: Integration Test
-        # Just executed on main branch or if the repo is cloned directly - not for forks:
-        if: github.event.pull_request.head.repo.full_name == github.repository || github.ref == 'refs/heads/main'
+        # Only execute directly if running in main repository, not on forks
+        if: github.repository == 'dynatrace-oss/dynatrace-monitoring-as-code'
         run: make integration-test
         env:
           URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
@@ -60,8 +60,8 @@ jobs:
           TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
           TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
 
-      - name: Upload Log Files
-        if: ${{ always() }}
+      - name: Upload Integration Test Log Files
+        if: github.repository == 'dynatrace-oss/dynatrace-monitoring-as-code'
         uses: actions/upload-artifact@v2
         with:
           name: logs
