@@ -36,12 +36,6 @@ jobs:
           repository: ${{ github.event.client_payload.user }}/${{ github.event.client_payload.repo }}
           ref: ${{ github.event.client_payload.ref }}
 
-      - name: Build
-        run: make build
-
-      - name: Unit Test
-        run: make test
-
       - name: Integration Test
         run: make integration-test
         env:
