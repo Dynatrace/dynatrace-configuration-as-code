@@ -5,7 +5,13 @@ VERSION=2.x
 
 default: build
 
-lint:
+setup:
+	@echo "Installing build tools..."
+	@go install github.com/google/addlicense@latest
+	@go install gotest.tools/gotestsum@latest
+	@go install github.com/golang/mock/mockgen@latest
+
+lint: setup
 ifeq ($(OS),Windows_NT)
 	@.\tools\check-format.cmd
 else
@@ -26,9 +32,8 @@ else
 	@sh ./tools/add-missing-license-headers.sh
 endif
 
-mocks:
+mocks: setup
 	@echo "Generating mocks"
-	@go install github.com/golang/mock/mockgen@v1
 	@go generate ./...
 
 vet:
@@ -41,7 +46,7 @@ check:
 	@golangci-lint run ./...
 
 build: clean
-	@echo Build ${BINARY}
+	@echo "Building ${BINARY}..."
 	@CGO_ENABLED=0 go build -a -tags netgo -ldflags '-w -extldflags "-static"' -o ./bin/${BINARY} ./cmd/monaco
 
 build-release: clean
@@ -54,14 +59,14 @@ build-release: clean
 	@ GOOS=darwin  GOARCH=arm64 CGO_ENABLED=0 go build -a -tags netgo -ldflags '-X github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/version.MonitoringAsCode=${VERSION} -w -extldflags "-static"' -o ./build/${BINARY}-darwin-arm64      ./cmd/monaco
 
 install:
-	@echo Install ${BINARY}
+	@echo "Installing ${BINARY}..."
 	@CGO_ENABLED=0 go install -a -tags netgo -ldflags '-w -extldflags "-static"' ./cmd/monaco
 
 run:
 	@CGO_ENABLED=0 go run -a -tags netgo -ldflags '-w -extldflags "-static"' ./cmd/monaco
 
 clean:
-	@echo Remove bin/ and build/
+	@echo "Removing ${BINARY}, bin/ and /build ..."
 ifeq ($(OS),Windows_NT)
 	@if exist bin rd /S /Q bin
 	@if exist bin rd /S /Q build
@@ -70,29 +75,31 @@ else
 	@rm -rf build/
 endif
 
-test: mocks lint
-	@go test -tags=unit -v ./...
+test: setup mocks lint
+	@echo "Testing ${BINARY}..."
+	@gotestsum ${testopts} -- -tags=unit -v ./...
 
-integration-test:
-	@go test -tags=integration -timeout=30m -v ./...
+integration-test: setup
+	@gotestsum ${testopts} --format standard-verbose -- -tags=integration -timeout=30m -v ./...
 
-integration-test-v1:
-	@go test -tags=integration_v1 -timeout=30m -v ./...
+integration-test-v1:setup
+	@gotestsum ${testopts} --format standard-verbose -- -tags=integration_v1 -timeout=30m -v ./...
 
-download-restore-test:
-	@go test -tags=download_restore -timeout=30m -v ./...
+download-restore-test: setup
+	@gotestsum ${testopts} --format standard-verbose -- -tags=download_restore -timeout=30m -v ./...
 
 clean-environments:
-	@go test -tags=cleanup -v ./...
+	@gotestsum ${testopts} --format standard-verbose -- -tags=cleanup -v ./...
 
-nightly-test:
-	@go test -tags=nightly -timeout=60m -v ./...
+nightly-test:setup
+	@gotestsum ${testopts} --format standard-verbose -- -tags=nightly -timeout=60m -v ./...
 
 # Build and Test a single package supplied via pgk variable, without using test cache
 # Run as e.g. make test-package pkg=project
 pkg=...
-test-package: mocks lint
-	@go test -tags=unit -count=1 -v ./pkg/${pkg}
+test-package: setup mocks lint
+	@echo "Testing ${pkg}..."
+	@gotestsum -- -tags=unit -count=1 -v ./pkg/${pkg}
 
 update-dependencies:
 	@echo Update go dependencies
