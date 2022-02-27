@@ -7,7 +7,7 @@ name: Run Static Code Analysis
 
 on:
   pull_request:
-    branches: [ main, next ]
+    branches: [ main ]
 
 jobs:
   golangci:
@@ -18,9 +18,7 @@ jobs:
       - name: 🕵️ Go vet
         run: make vet
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3.3.1
+        uses: reviewdog/action-golangci-lint@v2
         with:
-          version: v1.50
-
-          # PR config -> only flag issues in changeset
-          only-new-issues: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-check
