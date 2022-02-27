@@ -59,3 +59,8 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           assets_path: ./build
+
+      - name: Generate Release Notes
+        uses: docker://aevea/release-notary:0.9.6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
