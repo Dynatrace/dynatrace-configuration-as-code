@@ -12,6 +12,10 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  schedule:
+    # this is checking periodically if there are any breaking API changes
+    # Every day at 00:00
+    - cron: '0 0 * * *'
 
 defaults:
   run:

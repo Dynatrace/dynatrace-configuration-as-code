@@ -16,6 +16,10 @@ defaults:
   run:
     shell: bash
 
+env:
+  BASE_REPO: 'Dynatrace/internal-monitoring-as-cde'  # Used to only execute directly if running in main repository, not on forks/PRs inside forks
+  E2E_TEST_LABEL: 'run-e2e-test'
+
 jobs:
 
   build:
@@ -39,8 +43,7 @@ jobs:
         run: make build-release
 
       - name: 🌎 Integration test
-        # Just executed on main branch or if the repo is cloned directly - not for forks:
-        if: github.event.pull_request.head.repo.full_name == github.repository || github.ref == 'refs/heads/main' || github.event.label.name == 'run-e2e-test'
+        if: github.repository == env.BASE_REPO || github.event.label.name == env.E2E_TEST_LABEL
         run: make integration-test
         env:
           URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
@@ -49,8 +52,7 @@ jobs:
           TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
 
       - name: 🧓 Integration test (legacy)
-        # Just executed on main branch or if the repo is cloned directly - not for forks:
-        if: github.event.pull_request.head.repo.full_name == github.repository || github.ref == 'refs/heads/main' || github.event.label.name == 'run-e2e-test'
+        if: github.repository == env.BASE_REPO || github.event.label.name == env.E2E_TEST_LABEL
         run: make integration-test-v1
         env:
           URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
@@ -59,8 +61,7 @@ jobs:
           TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
 
       - name: 📥/📤 Download/Restore test
-        # Just executed on main branch or if the repo is cloned directly - not for forks:
-        if: github.event.pull_request.head.repo.full_name == github.repository || github.ref == 'refs/heads/main' || github.event.label.name == 'run-e2e-test'
+        if: github.repository == env.BASE_REPO || github.event.label.name == env.E2E_TEST_LABEL
         run: make download-restore-test
         env:
           URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
@@ -69,7 +70,7 @@ jobs:
           TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
 
       - name: 🌙 Nightly Tests
-        if: ${{ github.event_name == 'schedule' }}
+        if: github.repository == env.BASE_REPO && github.event_name == 'schedule'
         run: make nightly-test
         env:
           URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
@@ -78,7 +79,7 @@ jobs:
           TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
 
       - name: 🧹 Cleanup
-        if: ${{ github.event_name == 'schedule' }}
+        if: github.repository == env.BASE_REPO && github.event_name == 'schedule'
         run: make clean-environments
         env:
           URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
