@@ -16,12 +16,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2.4.0
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v2.5.2
+        uses: reviewdog/action-golangci-lint@v2
         with:
-          version: v1.39
-
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-check
           # Addtional Linters
-          args:  -E gosec -E bodyclose -E cyclop -E exhaustive -E godox
-
-          # PR config -> only flag issues in changeset
-          only-new-issues: true
+          golangci_lint_flags:  -E gosec -E bodyclose -E cyclop -E exhaustive -E godox
