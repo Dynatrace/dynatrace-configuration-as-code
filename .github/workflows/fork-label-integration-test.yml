@@ -1,0 +1,27 @@
+name: Label Integration Tests for Forks
+
+# This workflow runs on creation of a PR that changes go code and sets the
+# 'run-integration-tests' label on it.
+#
+# Any labeled PRs will be picked up by the 'fork-test-trigger' action, which
+# in turn triggers an integration test of monaco using the PRs changes.
+
+on:
+  pull_request:
+    types: opened
+    branches:
+      - main
+    paths:
+      - '**/*.go'
+      - 'go.mod'
+
+
+jobs:
+  add_labels:
+    # Only execute directly if running in main repository, not on forks
+    if: github.repository == 'dynatrace-oss/dynatrace-monitoring-as-code'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions-ecosystem/action-add-labels@v1
+        with:
+          labels: run-integration-tests
