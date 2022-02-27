@@ -1,0 +1,22 @@
+name: Valdiate Documentation
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'documentation/**'
+
+jobs:
+  check-documentation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2.4.0
+      - uses: actions/setup-node@v2.5.1
+        with:
+          node-version: '12.x'
+      - name: Build
+        working-directory: ./documentation
+        run: |
+          npm i
+          npm run build

@@ -1,27 +1,14 @@
-name: gh-documentation
+name: Release Documentation
 
 on:
-  pull_request:
-    branches: [main]
   push:
-    branches: [main]
+    branches:
+      - main
+    paths:
+      - 'documentation/**'
 
 jobs:
-  checks:
-    if: github.event_name != 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2.4.0
-      - uses: actions/setup-node@v2.5.1
-        with:
-          node-version: '12.x'
-      - name: Build
-        working-directory: ./documentation
-        run: |
-          npm i
-          npm run build
-  gh-release:
-    if: github.event_name != 'pull_request'
+  release-documentation:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2.4.0
