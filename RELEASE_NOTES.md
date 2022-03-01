@@ -1,6 +1,7 @@
 # Monitoring as Code Tool - Release Notes
 
 - Versions:
+  - [1.7.0](#170)
   - [1.6.0](#160)
   - [1.5.3](#153)
   - [1.5.2](#152)
@@ -13,6 +14,58 @@
   - [1.1.0](#110)
   - [1.0.1](#101)
   - [1.0.0](#100)
+
+## 1.7.0
+
+### List of changes
+
+#### Features
+* f42141a feat: print warning if two or mode configurations having same name are detected in Dynatrace (#357)
+* 51d83f3 feat: Check Version before Extension upload (#386)
+* debc4cb feat(workflow): Add workflow for generating bill-of-materials (#471)
+* c8a9f7c feat(deps): Add the next branch to dependabot targets (#470)
+* 4e5c6be feat(api): Added service detection APIs (#499)
+* 0554279 feat(api): calculated metrics for mobile, web, synthetic, service (#502)
+* 1611e13 feat(util): Introduce UUID v3 generator util (#538)
+* 27381b9 feat(rest): Add util to check Dynatrace version (#538)
+
+#### Bugfixes
+* 525f69e fix: update vulnerable security packages (#381)
+* 21feb04 fix: Check status code in extension validation to allow uploading new extensions again (#392)
+* d3287f7 fix: upgrade packages with security alerts (#420)
+* f1dbd48 fix(integration tests): Fix breaking chnge in SLO api (#485)
+* bd5b8b8 fix(api): Always include query param for anomaly detection metrics API (#468)
+* c4855d7 fix: do not ignore non-successful responses on GET(all) requests (#503)
+* 5f58408 fix(rest): Handling timing issues on Dynatrace object creation (#538)
+* d7cddde fix(rest): Strip create only property from application-mobile on update (#538)
+
+#### Misc changes
+* a2f58cd fix: add prefix to dependabot commit messages to comply with (#361)
+* (several) refactor(rest): Structure REST code (#538)
+* 4e1bdaa refactor(rest): Build full URL in upsert method rather than caller (#538)
+* 02b088d ci: Activate verbose logging in intergation tests (#538)
+* 45e8a06 ci: Update Mobile Application ID in integration test config (#538)
+
+#### Documentation 
+* 1156003 docs: Adjust version in linux installation instructions (#362)
+* 5a7c00d docs: Removed duplicate lines in yaml_config.md
+* a3f8a35 docs: Adding a note about using --dry-run with the new CLI. (#355)
+* 98311d6 docs: Add README on how to contribute to the documentation (#388)
+* 4966b26 docs: update README with bill of materials (#481)
+* 5791b49 docs: add Bill of materials and license (#489)
+* 777e9b3 docs: fix typos in downloading-configuration.md (#458)
+* 26a6322 docs: update documentation for 1.7 release (#539)
+
+#### Library updates
+* da5c405 chore(deps): bump actions/setup-node from 2.1.5 to 2.2.0
+* ebdd4d1 chore(deps): Bump prismjs from 1.23.0 to 1.24.0 in /documentation
+* 6b3ecc3 chore(deps): bump github.com/google/uuid from 1.2.0 to 1.3.0
+* 05d183b chore(deps): bump actions/setup-node from 2.2.0 to 2.4.0
+* 1d43129 chore(deps): bump actions/checkout from 2.3.4 to 2.3.5
+* 3186ff5 chore(deps): bump actions/setup-node from 2.4.0 to 2.4.1 (#434)
+* 8a02a9d chore(deps): bump actions/checkout from 2.3.5 to 2.4.0
+* 5a73b53 chore(deps): bump actions/setup-node from 2.4.1 to 2.5.0
+* 70c3338 chore(deps): bump algoliasearch-helper in /documentation
 
 ## 1.6.0
 
@@ -83,7 +136,7 @@
 * dd0ce7d Bump github.com/google/go-cmp from 0.5.4 to 0.5.5
 * aaf8c64 Bump github.com/spf13/afero from 1.5.1 to 1.6.0
 
-### Documentation
+#### Documentation
 * a789838 Added documentation about custom extensions #113 (#251)
 * fc09d97 Added proxy documentation (#249)
 * e486bf5 Added dashboards documentation (#247)

@@ -1,0 +1,12 @@
+{
+    "enabled": true,
+    "name": "{{ .name }}",
+    "metricKey": "{{ .name }}",
+    "metric": "UserActionDuration",
+    "monitorIdentifier": "{{ .testId }}",
+    "dimensions": [
+        {
+            "dimension": "Location"
+        }
+    ]
+}

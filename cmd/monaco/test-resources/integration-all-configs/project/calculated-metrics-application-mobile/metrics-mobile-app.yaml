@@ -1,0 +1,9 @@
+config:
+  - speed: "speed-metric.json"
+
+speed:
+  - name: "calc:apps.mobile.speed.delorean"
+  - appId: "coming from override"
+
+speed.environment1:
+  - appId: "/only-post/application-mobile/mobile-application.id"
