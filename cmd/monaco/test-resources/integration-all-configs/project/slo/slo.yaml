@@ -3,3 +3,4 @@ config:
 
 demo_slo:
   - name: "My SLO"
+  - mzone: "/project/management-zone/zone.name"

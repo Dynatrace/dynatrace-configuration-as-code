@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
@@ -28,15 +29,15 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 )
 
-func upsertDynatraceObject(client *http.Client, fullUrl string, objectName string, theApi api.Api, payload []byte, apiToken string) (api.DynatraceEntity, error) {
+func upsertDynatraceObject(client *http.Client, environmentUrl string, objectName string, theApi api.Api, payload []byte, apiToken string) (api.DynatraceEntity, error) {
+
+	fullUrl := theApi.GetUrlFromEnvironmentUrl(environmentUrl)
 
 	existingObjectId, err := getObjectIdIfAlreadyExists(client, theApi, fullUrl, objectName, apiToken)
 	if err != nil {
 		return api.DynatraceEntity{}, err
 	}
 
-	var resp Response
-	path := fullUrl
 	body := payload
 	configType := theApi.GetId()
 
@@ -49,67 +50,35 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 	isUpdate := existingObjectId != ""
 
 	if isUpdate {
-		path = joinUrl(fullUrl, existingObjectId)
-		// Updating a dashboard requires the ID to be contained in the JSON, so we just add it...
-		if isApiDashboard(theApi) {
-			tmp := strings.Replace(string(payload), "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
-			body = []byte(tmp)
-		}
-		resp, err = put(client, path, body, apiToken)
-
-		if err != nil {
-			return api.DynatraceEntity{}, err
-		}
-
-		if success(resp) {
-			util.Log.Debug("\t\t\tUpdated existing object for %s (%s)", objectName, existingObjectId)
-			return api.DynatraceEntity{
-				Id:          existingObjectId,
-				Name:        objectName,
-				Description: "Updated existing object",
-			}, nil
-		} else {
-			return api.DynatraceEntity{}, fmt.Errorf("Failed to update DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
-		}
-
+		return updateDynatraceObject(client, fullUrl, objectName, existingObjectId, theApi, body, apiToken)
 	} else {
-		if configType == "app-detection-rule" {
-			path += "?position=PREPEND"
-		}
-		resp, err = post(client, path, body, apiToken)
+		return createDynatraceObject(client, fullUrl, objectName, theApi, body, apiToken)
+	}
+}
 
-		if err != nil {
-			return api.DynatraceEntity{}, err
-		}
+func createDynatraceObject(client *http.Client, fullUrl string, objectName string, theApi api.Api, payload []byte, apiToken string) (api.DynatraceEntity, error) {
+	path := fullUrl
+	body := payload
 
-		// It can happen that the post fails because config needs time to be propagated on all cluster nodes. If the error
-		// constraintViolations":[{"path":"name","message":"X must have a unique name...
-		// is returned, try once again
-		if !success(resp) && strings.Contains(string(resp.Body), "must have a unique name") {
-			// Try again after 5 seconds:
-			util.Log.Warn("\t\tConfig '%s - %s' needs to have a unique name. Waiting for 5 seconds before retry...", configType, objectName)
-			time.Sleep(5 * time.Second)
-			resp, err = post(client, path, body, apiToken)
+	configType := theApi.GetId()
 
-			if err != nil {
-				return api.DynatraceEntity{}, err
-			}
-		}
-		// It can take longer until request attributes are ready to be used
-		if !success(resp) && strings.Contains(string(resp.Body), "must specify a known request attribute") {
-			util.Log.Warn("\t\tSpecified request attribute not known for %s. Waiting for 10 seconds before retry...", objectName)
-			time.Sleep(10 * time.Second)
-			resp, err = post(client, path, body, apiToken)
-
-			if err != nil {
-				return api.DynatraceEntity{}, err
-			}
-		}
-		if !success(resp) {
-			return api.DynatraceEntity{}, fmt.Errorf("Failed to create DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
-		}
+	if configType == "app-detection-rule" {
+		path += "?position=PREPEND"
 	}
 
+	resp, err := callWithRetryOnKnowTimingIssue(client, post, objectName, path, body, apiToken)
+	if err != nil {
+		return api.DynatraceEntity{}, err
+	}
+
+	if !success(resp) {
+		return api.DynatraceEntity{}, fmt.Errorf("Failed to create DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
+	}
+
+	return unmarshalResponse(resp, fullUrl, configType, objectName)
+}
+
+func unmarshalResponse(resp Response, fullUrl string, configType string, objectName string) (api.DynatraceEntity, error) {
 	var dtEntity api.DynatraceEntity
 
 	if configType == "synthetic-monitor" || configType == "synthetic-location" {
@@ -134,11 +103,11 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		location := locationSlice[0]
 
 		// Some APIs prepend the environment URL. If available, trim it from the location
-		existingObjectId = strings.TrimPrefix(location, fullUrl)
-		existingObjectId = strings.TrimPrefix(existingObjectId, "/")
+		objectId := strings.TrimPrefix(location, fullUrl)
+		objectId = strings.TrimPrefix(objectId, "/")
 
 		dtEntity = api.DynatraceEntity{
-			Id:          existingObjectId,
+			Id:          objectId,
 			Name:        objectName,
 			Description: "Created object",
 		}
@@ -152,6 +121,124 @@ func upsertDynatraceObject(client *http.Client, fullUrl string, objectName strin
 	util.Log.Debug("\t\t\tCreated new object for %s (%s)", dtEntity.Name, dtEntity.Id)
 
 	return dtEntity, nil
+}
+
+func updateDynatraceObject(client *http.Client, fullUrl string, objectName string, existingObjectId string, theApi api.Api, payload []byte, apiToken string) (api.DynatraceEntity, error) {
+	path := joinUrl(fullUrl, existingObjectId)
+	body := payload
+
+	// Updating a dashboard, or any service detection API requires the ID to be contained in the JSON, so we just add it...
+	if isApiDashboard(theApi) || isAnyServiceDetectionApi(theApi) {
+		tmp := strings.Replace(string(payload), "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
+		body = []byte(tmp)
+	}
+
+	// Updating a Mobile Application does not allow changing the appliactionType as such this property required on Create, must be stripped on Update
+	if isMobileApp(theApi) {
+		body = stripCreateOnlyPropertiesFromAppMobile(body)
+	}
+
+	resp, err := callWithRetryOnKnowTimingIssue(client, put, objectName, path, body, apiToken)
+
+	if err != nil {
+		return api.DynatraceEntity{}, err
+	}
+
+	if !success(resp) {
+		return api.DynatraceEntity{}, fmt.Errorf("Failed to update DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
+	}
+
+	util.Log.Debug("\t\t\tUpdated existing object for %s (%s)", objectName, existingObjectId)
+	return api.DynatraceEntity{
+		Id:          existingObjectId,
+		Name:        objectName,
+		Description: "Updated existing object",
+	}, nil
+}
+
+func stripCreateOnlyPropertiesFromAppMobile(payload []byte) []byte {
+	//applicationType is required on creation, but not allowed to be updated
+	r := regexp.MustCompile(`"applicationType":.*?,`)
+	tmp := r.ReplaceAllString(string(payload), "")
+	newPayload := []byte(tmp)
+
+	return newPayload
+}
+
+// callWithRetryOnKnowTimingIssue handles several know cases in which Dynatrace has a slight delay before newly created objects
+// can be used in further configuration. This is a cheap way to allow monaco to work around this, by waiting, then
+// retrying in case of know errors on upload.
+func callWithRetryOnKnowTimingIssue(client *http.Client, restCall sendingRequest, objectName string, path string, body []byte, apiToken string) (Response, error) {
+
+	resp, err := restCall(client, path, body, apiToken)
+
+	if err == nil && success(resp) {
+		return resp, nil
+	}
+
+	// It can take longer until calculated service metrics are ready to be used in SLOs
+	if isCalculatedMetricNotReadyYet(resp) ||
+		// It can take longer until management zones are ready to be used in SLOs
+		isManagementZoneNotReadyYet(resp) ||
+		// It can take longer until Credentials are ready to be used in Synthetic Monitors
+		isCredentialNotReadyYet(resp) ||
+		// It can take some time for configurations to propagate to all cluster nodes - indicated by an incorrect constraint violation error
+		isGeneralDependencyNotReadyYet(resp) {
+
+		return retry(client, restCall, objectName, path, body, apiToken, 3, 5*time.Second)
+	}
+
+	// It can take even longer until request attributes are ready to be used
+	if isRequestAttributeNotYetReady(resp) {
+		return retry(client, restCall, objectName, path, body, apiToken, 3, 10*time.Second)
+	}
+
+	// It can take even longer until applications are ready to be used in synthetic tests
+	if isApplicationNotReadyYet(resp) {
+		return retry(client, restCall, objectName, path, body, apiToken, 5, 15*time.Second)
+	}
+
+	return resp, nil
+}
+
+func retry(client *http.Client, restCall sendingRequest, objectName string, path string, body []byte, apiToken string, maxRetries int, timeout time.Duration) (Response, error) {
+	for i := 0; i < maxRetries; i++ {
+		util.Log.Warn("\t\t\tDependency of config %s was not available. Waiting for %s before retry...", objectName, timeout)
+		time.Sleep(timeout)
+		resp, err := restCall(client, path, body, apiToken)
+		if err == nil && success(resp) {
+			return resp, err
+		}
+	}
+	return Response{}, fmt.Errorf("dependency of config %s was not available after %d retries", objectName, maxRetries)
+}
+
+func isGeneralDependencyNotReadyYet(resp Response) bool {
+	return strings.Contains(string(resp.Body), "must have a unique name")
+}
+
+func isCalculatedMetricNotReadyYet(resp Response) bool {
+	return strings.Contains(string(resp.Body), "Metric selector for numerator is invalid.")
+}
+
+func isRequestAttributeNotYetReady(resp Response) bool {
+	return strings.Contains(string(resp.Body), "must specify a known request attribute")
+}
+
+func isManagementZoneNotReadyYet(resp Response) bool {
+	return strings.Contains(string(resp.Body), "Entity selector is invalid") ||
+		(strings.Contains(string(resp.Body), "SLO validation failed") &&
+			strings.Contains(string(resp.Body), "Management-Zone not found"))
+}
+
+func isApplicationNotReadyYet(resp Response) bool {
+	return strings.Contains(string(resp.Body), "Unknown application(s)")
+}
+
+func isCredentialNotReadyYet(resp Response) bool {
+	s := string(resp.Body)
+	return strings.Contains(s, "credential-vault") &&
+		strings.Contains(s, "was not available")
 }
 
 func joinUrl(urlBase string, path string) string {
@@ -211,13 +298,27 @@ func isApiDashboard(api api.Api) bool {
 	return api.GetId() == "dashboard"
 }
 
+func isAnyServiceDetectionApi(api api.Api) bool {
+	return strings.HasPrefix(api.GetId(), "service-detection-")
+}
+
+func isMobileApp(api api.Api) bool {
+	return api.GetId() == "application-mobile"
+}
+
 func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, url string, apiToken string) (values []api.Value, err error) {
+
+	url = addQueryParamsForNonStandardApis(theApi, url)
 
 	var existingValues []api.Value
 	resp, err := get(client, url, apiToken)
 
 	if err != nil {
 		return nil, err
+	}
+
+	if !success(resp) {
+		return nil, fmt.Errorf("Failed to get existing configs for api %s (HTTP %d)!\n    Response was: %s", theApi.GetId(), resp.StatusCode, string(resp.Body))
 	}
 
 	for {
@@ -241,6 +342,14 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, url stri
 	}
 
 	return existingValues, nil
+}
+
+func addQueryParamsForNonStandardApis(theApi api.Api, url string) string {
+
+	if theApi.GetId() == "anomaly-detection-metrics" {
+		url = url + "?includeEntityFilterMetricEvents=true"
+	}
+	return url
 }
 
 func unmarshalJson(theApi api.Api, err error, resp Response) (error, []api.Value, map[string]interface{}) {

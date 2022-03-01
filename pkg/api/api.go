@@ -111,6 +111,15 @@ var apiMap = map[string]apiInput{
 	"calculated-metrics-log": {
 		apiPath: "/api/config/v1/calculatedMetrics/log",
 	},
+	"calculated-metrics-application-mobile": {
+		apiPath: "/api/config/v1/calculatedMetrics/mobile",
+	},
+	"calculated-metrics-synthetic": {
+		apiPath: "/api/config/v1/calculatedMetrics/synthetic",
+	},
+	"calculated-metrics-application-web": {
+		apiPath: "/api/config/v1/calculatedMetrics/rum",
+	},
 
 	"conditional-naming-processgroup": {
 		apiPath: "/api/config/v1/conditionalNaming/processGroup",
@@ -147,6 +156,19 @@ var apiMap = map[string]apiInput{
 
 	"failure-detection-rules": {
 		apiPath: "/api/config/v1/service/failureDetection/parameterSelection/rules",
+	},
+
+	"service-detection-full-web-request": {
+		apiPath: "/api/config/v1/service/detectionRules/FULL_WEB_REQUEST",
+	},
+	"service-detection-full-web-service": {
+		apiPath: "/api/config/v1/service/detectionRules/FULL_WEB_SERVICE",
+	},
+	"service-detection-opaque-web-request": {
+		apiPath: "/api/config/v1/service/detectionRules/OPAQUE_AND_EXTERNAL_WEB_REQUEST",
+	},
+	"service-detection-opaque-web-service": {
+		apiPath: "/api/config/v1/service/detectionRules/OPAQUE_AND_EXTERNAL_WEB_SERVICE",
 	},
 }
 

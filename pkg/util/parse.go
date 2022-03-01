@@ -17,7 +17,7 @@
 package util
 
 import (
-	"errors"
+	"fmt"
 	"os"
 	"regexp"
 	"strings"
@@ -78,7 +78,6 @@ func putOrGet(m map[string]map[string]string, key string) map[string]string {
 func convert(original map[string]interface{}) (err error, typed map[string]map[string]string) {
 
 	m2 := make(map[string]map[string]string)
-	err = errors.New("cannot convert YAML")
 
 	for k1, v1 := range original {
 		switch v2 := v1.(type) {
@@ -98,18 +97,18 @@ func convert(original map[string]interface{}) (err error, typed map[string]map[s
 									m2Inner[k3] = v3
 								}
 							default:
-								return err, m2
+								return fmt.Errorf("cannot convert YAML on level 4: value of key '%s' has unexpected type", k3), m2
 							}
 						default:
-							return err, m2
+							return fmt.Errorf("cannot convert YAML on level 3: invalid key type '%s'", k3), m2
 						}
 					}
 				default:
-					return err, m2
+					return fmt.Errorf("cannot convert YAML on level 2: %s", v3), m2
 				}
 			}
 		default:
-			return err, m2
+			return fmt.Errorf("cannot convert YAML on level 1: value of key '%s' has unexpected type", k1), m2
 		}
 	}
 	return nil, m2
