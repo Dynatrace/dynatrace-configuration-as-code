@@ -33,7 +33,6 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/envvars"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
@@ -173,11 +172,7 @@ func RunLegacyIntegrationWithCleanup(t *testing.T, configFolder, envFile, suffix
 	configFolder, _ = filepath.Abs(configFolder)
 	envFile, _ = filepath.Abs(envFile)
 
-	envvars.InstallFakeOsOverrideEnvironment(map[string]string{
-		"CONFIG_V1": "1",
-	})
-
-	defer envvars.InstallOsBased()
+	t.Setenv("CONFIG_V1", "1")
 
 	randomNumber := rand.Intn(100)
 

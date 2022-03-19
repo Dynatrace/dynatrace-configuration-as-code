@@ -15,7 +15,6 @@ package manifest
 
 import (
 	environmentv1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/envvars"
 	"gotest.tools/assert"
 	"reflect"
 	"testing"
@@ -49,11 +48,8 @@ func TestEnvironmentDefinitionGetUrlMissingEnvVar(t *testing.T) {
 }
 
 func TestEnvironmentDefinitionGetUrlResolveEnvVar(t *testing.T) {
+	t.Setenv("ENV_VAR", "http://monaco-is-great.com")
 
-	envvars.InstallFakeEnvironment(map[string]string{
-		"ENV_VAR": "http://monaco-is-great.com",
-	})
-	defer envvars.InstallOsBased()
 	definition := createEnvEnvironmentDefinition()
 
 	url, err := definition.GetUrl()
