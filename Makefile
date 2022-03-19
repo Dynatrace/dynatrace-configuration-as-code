@@ -31,21 +31,20 @@ mocks:
 
 build: clean lint
 	@echo Build ${BINARY}
-	@go build ./...
-	@go build -o ./bin/${BINARY} ./cmd/monaco
+	@CGO_ENABLED=0 go build -a -tags netgo -ldflags '-w -extldflags "-static"' -o ./bin/${BINARY} ./cmd/monaco
 
 build-release: clean lint
 	@echo Release build ${BINARY}
-	@ GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -tags netgo -ldflags '-w -extldflags "-static"' -o ./build/${BINARY}-windows-amd64.exe ./cmd/monaco
-	@ GOOS=windows GOARCH=386   CGO_ENABLED=0 go build -tags netgo -ldflags '-w -extldflags "-static"' -o ./build/${BINARY}-windows-386.exe   ./cmd/monaco
-	@ GOOS=linux   GOARCH=amd64 CGO_ENABLED=0 go build -tags netgo -ldflags '-w -extldflags "-static"' -o ./build/${BINARY}-linux-amd64       ./cmd/monaco
-	@ GOOS=linux   GOARCH=386   CGO_ENABLED=0 go build -tags netgo -ldflags '-w -extldflags "-static"' -o ./build/${BINARY}-linux-386         ./cmd/monaco
-	@ GOOS=darwin  GOARCH=amd64 CGO_ENABLED=0 go build -tags netgo -ldflags '-w -extldflags "-static"' -o ./build/${BINARY}-darwin-amd64      ./cmd/monaco
-	@ GOOS=darwin  GOARCH=arm64 CGO_ENABLED=0 go build -tags netgo -ldflags '-w -extldflags "-static"' -o ./build/${BINARY}-darwin-arm64      ./cmd/monaco
+	@ GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -a -tags netgo -ldflags '-w -extldflags "-static"' -o ./build/${BINARY}-windows-amd64.exe ./cmd/monaco
+	@ GOOS=windows GOARCH=386   CGO_ENABLED=0 go build -a -tags netgo -ldflags '-w -extldflags "-static"' -o ./build/${BINARY}-windows-386.exe   ./cmd/monaco
+	@ GOOS=linux   GOARCH=amd64 CGO_ENABLED=0 go build -a -tags netgo -ldflags '-w -extldflags "-static"' -o ./build/${BINARY}-linux-amd64       ./cmd/monaco
+	@ GOOS=linux   GOARCH=386   CGO_ENABLED=0 go build -a -tags netgo -ldflags '-w -extldflags "-static"' -o ./build/${BINARY}-linux-386         ./cmd/monaco
+	@ GOOS=darwin  GOARCH=amd64 CGO_ENABLED=0 go build -a -tags netgo -ldflags '-w -extldflags "-static"' -o ./build/${BINARY}-darwin-amd64      ./cmd/monaco
+	@ GOOS=darwin  GOARCH=arm64 CGO_ENABLED=0 go build -a -tags netgo -ldflags '-w -extldflags "-static"' -o ./build/${BINARY}-darwin-arm64      ./cmd/monaco
 
 install: clean lint
 	@echo Install ${BINARY}
-	@go install ./cmd/monaco
+	@CGO_ENABLED=0 go install -a -tags netgo -ldflags '-w -extldflags "-static"' -o ./bin/${BINARY} ./cmd/monaco
 
 clean:
 	@echo Remove bin/ and build/
