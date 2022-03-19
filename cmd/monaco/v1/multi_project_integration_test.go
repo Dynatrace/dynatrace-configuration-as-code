@@ -28,7 +28,6 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/envvars"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 )
@@ -63,11 +62,7 @@ func TestIntegrationMultiProject(t *testing.T) {
 
 // Tests a dry run (validation)
 func TestIntegrationValidationMultiProject(t *testing.T) {
-	envvars.InstallFakeEnvironment(map[string]string{
-		"CONFIG_V1": "1",
-	})
-
-	defer envvars.InstallOsBased()
+	t.Setenv("CONFIG_V1", "1")
 
 	statusCode := runner.RunImpl([]string{
 		"monaco",
@@ -83,11 +78,7 @@ func TestIntegrationValidationMultiProject(t *testing.T) {
 
 // Tests a dry run (validation)
 func TestIntegrationValidationMultiProjectWithoutEndingSlashInPath(t *testing.T) {
-	envvars.InstallFakeEnvironment(map[string]string{
-		"CONFIG_V1": "1",
-	})
-
-	defer envvars.InstallOsBased()
+	t.Setenv("CONFIG_V1", "1")
 
 	statusCode := runner.RunImpl([]string{
 		"monaco",

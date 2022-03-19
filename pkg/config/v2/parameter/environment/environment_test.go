@@ -22,7 +22,6 @@ import (
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/value"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/envvars"
 	"gotest.tools/assert"
 )
 
@@ -90,10 +89,7 @@ func TestResolveValue(t *testing.T) {
 	name := "test"
 	value := "this is a test"
 
-	envvars.InstallFakeEnvironment(map[string]string{
-		name: value,
-	})
-	defer envvars.InstallOsBased()
+	t.Setenv(name, value)
 
 	fixture := New(name)
 
@@ -106,12 +102,8 @@ func TestResolveValue(t *testing.T) {
 }
 
 func TestResolveValueWithDefaultValue(t *testing.T) {
-	name := "test"
+	name := "__not_set_test"
 	defaultValue := "this is the default"
-
-	envvars.InstallFakeEnvironment(map[string]string{})
-
-	defer envvars.InstallOsBased()
 
 	fixture := NewWithDefault(name, defaultValue)
 
@@ -124,11 +116,7 @@ func TestResolveValueWithDefaultValue(t *testing.T) {
 }
 
 func TestResolveValueErrorOnUnsetEnvVar(t *testing.T) {
-	name := "test"
-
-	envvars.InstallFakeEnvironment(map[string]string{})
-
-	defer envvars.InstallOsBased()
+	name := "__not_set_test"
 
 	fixture := New(name)
 

@@ -16,9 +16,10 @@ package manifest
 
 import (
 	"fmt"
-	environmentv1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/envvars"
+	"os"
 	"strings"
+
+	environmentv1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 )
 
 type ProjectDefinition struct {
@@ -73,7 +74,7 @@ func NewEnvironmentDefinition(name string, url UrlDefinition, group string, toke
 }
 
 func (t *EnvironmentVariableToken) GetToken() (string, error) {
-	if token, found := envvars.Lookup(t.EnvironmentVariableName); found {
+	if token, found := os.LookupEnv(t.EnvironmentVariableName); found {
 		return token, nil
 	}
 
@@ -84,7 +85,7 @@ func (e *EnvironmentDefinition) GetUrl() (string, error) {
 
 	switch e.url.Type {
 	case EnvironmentUrlType:
-		if url, found := envvars.Lookup(e.url.Value); found {
+		if url, found := os.LookupEnv(e.url.Value); found {
 			return url, nil
 		} else {
 			return "", fmt.Errorf("no environment variable set for %s", e.url.Value)

@@ -18,13 +18,13 @@ import (
 	"errors"
 	"fmt"
 	legacyDeploy "github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v1/deploy"
+	"os"
 	"strings"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/convert"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/delete"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/deploy"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/envvars"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/version"
 	"github.com/spf13/afero"
@@ -394,7 +394,7 @@ func getDownloadCommand(fs afero.Fs) cli.Command {
 }
 
 func isEnvFlagEnabled(env string) bool {
-	val, ok := envvars.Lookup(env)
+	val, ok := os.LookupEnv(env)
 
 	return ok && val != "0"
 }

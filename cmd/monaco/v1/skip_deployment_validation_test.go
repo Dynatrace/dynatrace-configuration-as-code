@@ -28,18 +28,13 @@ import (
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/runner"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/envvars"
 )
 
 var skipDeploymentFolder = AbsOrPanicFromSlash("test-resources/skip-deployment-project/")
 var skipDeploymentEnvironmentsFile = AbsOrPanicFromSlash("test-resources/test-environments.yaml")
 
 func TestValidationSkipDeployment(t *testing.T) {
-	envvars.InstallFakeEnvironment(map[string]string{
-		"CONFIG_V1": "1",
-	})
-
-	defer envvars.InstallOsBased()
+	t.Setenv("CONFIG_V1", "1")
 
 	statusCode := runner.RunImpl([]string{
 		"monaco",
@@ -55,11 +50,7 @@ func TestValidationSkipDeployment(t *testing.T) {
 }
 
 func TestValidationSkipDeploymentWithBrokenDependency(t *testing.T) {
-	envvars.InstallFakeEnvironment(map[string]string{
-		"CONFIG_V1": "1",
-	})
-
-	defer envvars.InstallOsBased()
+	t.Setenv("CONFIG_V1", "1")
 
 	statusCode := runner.RunImpl([]string{
 		"monaco",
@@ -75,11 +66,7 @@ func TestValidationSkipDeploymentWithBrokenDependency(t *testing.T) {
 }
 
 func TestValidationSkipDeploymentWithOverridingDependency(t *testing.T) {
-	envvars.InstallFakeEnvironment(map[string]string{
-		"CONFIG_V1": "1",
-	})
-
-	defer envvars.InstallOsBased()
+	t.Setenv("CONFIG_V1", "1")
 
 	statusCode := runner.RunImpl([]string{
 		"monaco",
@@ -95,11 +82,7 @@ func TestValidationSkipDeploymentWithOverridingDependency(t *testing.T) {
 }
 
 func TestValidationSkipDeploymentWithOverridingFlagValue(t *testing.T) {
-	envvars.InstallFakeEnvironment(map[string]string{
-		"CONFIG_V1": "1",
-	})
-
-	defer envvars.InstallOsBased()
+	t.Setenv("CONFIG_V1", "1")
 
 	statusCode := runner.RunImpl([]string{
 		"monaco",
@@ -115,11 +98,7 @@ func TestValidationSkipDeploymentWithOverridingFlagValue(t *testing.T) {
 }
 
 func TestValidationSkipDeploymentInterProjectWithMissingDependency(t *testing.T) {
-	envvars.InstallFakeEnvironment(map[string]string{
-		"CONFIG_V1": "1",
-	})
-
-	defer envvars.InstallOsBased()
+	t.Setenv("CONFIG_V1", "1")
 
 	statusCode := runner.RunImpl([]string{
 		"monaco",

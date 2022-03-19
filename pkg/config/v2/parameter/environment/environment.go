@@ -16,10 +16,10 @@ package environment
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/envvars"
 )
 
 // EnvironmentVariableParameterType specifies the type of the parameter used in config files
@@ -74,7 +74,7 @@ func (p *EnvironmentVariableParameter) GetReferences() []parameter.ParameterRefe
 }
 
 func (p *EnvironmentVariableParameter) ResolveValue(context parameter.ResolveContext) (interface{}, error) {
-	if val, found := envvars.Lookup(p.Name); found {
+	if val, found := os.LookupEnv(p.Name); found {
 		return val, nil
 	}
 
