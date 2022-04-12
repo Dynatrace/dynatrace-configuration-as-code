@@ -1,13 +1,6 @@
 {
   "diskNameFilter": null,
   "enabled": true,
-  "metadata": {
-    "clusterVersion": "1.240.31.20220412-120534",
-    "configurationVersions": [],
-    "currentConfigurationVersions": [
-      "1"
-    ]
-  },
   "metric": "LOW_DISK_SPACE",
   "name": "{{.name}}",
   "samples": 3,
