@@ -68,6 +68,10 @@ var apiMap = map[string]apiInput{
 		apiPath: "/api/config/v1/anomalyDetection/metricEvents",
 	},
 	// Early adopter API !
+	"anomaly-detection-disks": {
+		apiPath: "/api/config/v1/anomalyDetection/diskEvents",
+	},
+	// Early adopter API !
 	// Environment API not Config API
 	"synthetic-location": {
 		apiPath: "/api/v1/synthetic/locations",
