@@ -139,8 +139,16 @@ func (d *dynatraceClientImpl) ReadByName(api Api, name string) (json []byte, err
 }
 
 func (d *dynatraceClientImpl) ReadById(api Api, id string) (json []byte, err error) {
-	fullUrl := api.GetUrlFromEnvironmentUrl(d.environmentUrl) + "/" + id
-	response, err := get(d.client, fullUrl, d.token)
+	url := ""
+	isLegacyApi := api.IsLegacyApi()
+
+	if isLegacyApi {
+		url = api.GetUrlFromEnvironmentUrl(d.environmentUrl)
+	} else {
+		url = api.GetUrlFromEnvironmentUrl(d.environmentUrl) + "/" + id
+	}
+
+	response, err := get(d.client, url, d.token)
 
 	if err != nil {
 		return nil, err

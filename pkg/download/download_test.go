@@ -40,6 +40,7 @@ func TestGetConfigs(t *testing.T) {
 	err := getConfigs(fileManager, "", envs, "")
 	assert.NilError(t, err)
 }
+
 func TestCreateConfigsFromAPI(t *testing.T) {
 	apiMock := api.CreateAPIMockFactory(t)
 	client := rest.CreateDynatraceClientMockFactory(t)
@@ -53,6 +54,9 @@ func TestCreateConfigsFromAPI(t *testing.T) {
 
 	apiMock.EXPECT().
 		GetId().Return("synthetic-monitor").AnyTimes()
+
+	apiMock.EXPECT().
+		IsLegacyApi().Return(false).AnyTimes()
 
 	jcreator.EXPECT().
 		CreateJSONConfig(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
@@ -75,6 +79,7 @@ func TestDownloadConfigFromEnvironment(t *testing.T) {
 	err := downloadConfigFromEnvironment(fileManager, env, "", nil)
 	assert.NilError(t, err)
 }
+
 func TestGetAPIList(t *testing.T) {
 	//multiple options
 	list, err := getAPIList("synthetic-location,   extension, alerting-profile")

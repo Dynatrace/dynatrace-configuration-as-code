@@ -129,8 +129,54 @@ func downloadConfigFromEnvironment(fs afero.Fs, environment environment.Environm
 	return nil
 }
 
-func createConfigsFromAPI(fs afero.Fs, api api.Api, token string, fullpath string, client rest.DynatraceClient,
-	jcreator jsoncreator.JSONCreator, ycreator yamlcreator.YamlCreator) (err error) {
+func createConfigsFolder(
+	fs afero.Fs,
+	api api.Api,
+	fullpath string,
+) (subPath string, err error) {
+	subPath = filepath.Join(fullpath, api.GetId())
+	return subPath, fs.MkdirAll(subPath, 0777)
+}
+
+func createConfigsFromAPI(
+	fs afero.Fs,
+	api api.Api,
+	token string,
+	fullpath string,
+	client rest.DynatraceClient,
+	jcreator jsoncreator.JSONCreator,
+	ycreator yamlcreator.YamlCreator,
+) (err error) {
+	// Retrieves single object from legacy API
+	isLegacyApi := api.IsLegacyApi()
+	if isLegacyApi {
+		subPath, err := createConfigsFolder(fs, api, fullpath)
+		if err != nil {
+			util.Log.Error("error creating folder for api %v %v", api.GetId(), err)
+			return err
+		}
+
+		legacyVal := api.NewLegacyValue()
+
+		name, cleanName, filter, err := jcreator.CreateJSONConfig(fs, client, api, legacyVal, subPath)
+		if err != nil {
+			util.Log.Error("error creating config api json file: %v", err)
+			return err
+		}
+		if filter {
+			return nil
+		}
+
+		ycreator.AddConfig(cleanName, name)
+		err = ycreator.CreateYamlFile(fs, subPath, api.GetId())
+		if err != nil {
+			util.Log.Error("error creating config api yaml file: %v", err)
+			return err
+		}
+
+		return nil
+	}
+
 	//retrieves all objects for the specific api
 	values, err := client.List(api)
 	if err != nil {
