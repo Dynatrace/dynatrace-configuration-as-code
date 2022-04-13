@@ -111,6 +111,10 @@ func processJSONFile(dat map[string]interface{}, id string, name string, api api
 func replaceKeyProperties(dat map[string]interface{}) map[string]interface{} {
 	//removes id field
 	delete(dat, "id")
+
+	// Removes metadata field
+	delete(dat, "metadata")
+
 	if dat["name"] != nil {
 		dat["name"] = "{{.name}}"
 	}
