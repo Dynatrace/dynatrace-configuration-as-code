@@ -29,28 +29,38 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 )
 
-func upsertDynatraceObject(client *http.Client, environmentUrl string, objectName string, theApi api.Api, payload []byte, apiToken string) (api.DynatraceEntity, error) {
-
+func upsertDynatraceObject(
+	client *http.Client,
+	environmentUrl string,
+	objectName string,
+	theApi api.Api,
+	payload []byte,
+	apiToken string,
+) (api.DynatraceEntity, error) {
 	fullUrl := theApi.GetUrlFromEnvironmentUrl(environmentUrl)
-
-	existingObjectId, err := getObjectIdIfAlreadyExists(client, theApi, fullUrl, objectName, apiToken)
-	if err != nil {
-		return api.DynatraceEntity{}, err
-	}
-
 	body := payload
 	configType := theApi.GetId()
+	isLegacyApi := theApi.IsLegacyApi()
+	objectId := ""
 
-	// The calculated-metrics-log API doesn't have a POST endpoint, to create a new log metric we need to use PUT which
-	// requires a metric key for which we can just take the objectName
-	if configType == "calculated-metrics-log" && existingObjectId == "" {
-		existingObjectId = objectName
+	// The calculated-metrics-log  and legacy APIs don't have a POST endpoint.
+	// To create a new log metric we need to use PUT which requires a metric key
+	// for which we can just take the objectName
+	if isLegacyApi || configType == "calculated-metrics-log" {
+		objectId = objectName
+	} else {
+		existingObjectId, err := getObjectIdIfAlreadyExists(client, theApi, fullUrl, objectName, apiToken)
+		if err != nil {
+			return api.DynatraceEntity{}, err
+		}
+
+		objectId = existingObjectId
 	}
 
-	isUpdate := existingObjectId != ""
+	isUpdate := objectId != ""
 
 	if isUpdate {
-		return updateDynatraceObject(client, fullUrl, objectName, existingObjectId, theApi, body, apiToken)
+		return updateDynatraceObject(client, fullUrl, objectName, objectId, theApi, body, apiToken)
 	} else {
 		return createDynatraceObject(client, fullUrl, objectName, theApi, body, apiToken)
 	}
@@ -124,8 +134,15 @@ func unmarshalResponse(resp Response, fullUrl string, configType string, objectN
 }
 
 func updateDynatraceObject(client *http.Client, fullUrl string, objectName string, existingObjectId string, theApi api.Api, payload []byte, apiToken string) (api.DynatraceEntity, error) {
-	path := joinUrl(fullUrl, existingObjectId)
+	path := ""
 	body := payload
+
+	isLegacyApi := theApi.IsLegacyApi()
+	if isLegacyApi {
+		path = fullUrl
+	} else {
+		path = joinUrl(fullUrl, existingObjectId)
+	}
 
 	// Updating a dashboard, or any service detection API requires the ID to be contained in the JSON, so we just add it...
 	if isApiDashboard(theApi) || isAnyServiceDetectionApi(theApi) {
