@@ -177,6 +177,66 @@ var apiMap = map[string]apiInput{
 	// Early adopter API !
 	"reports": {
 		apiPath: "/api/config/v1/reports",
+	// Legacy APIs
+	"frequent-issue-detection": {
+		apiPath:     "/api/config/v1/frequentIssueDetection",
+		isLegacyApi: true,
+	},
+	"data-privacy": {
+		apiPath:     "/api/config/v1/dataPrivacy",
+		isLegacyApi: true,
+	},
+	"hosts-auto-update": {
+		apiPath:     "/api/config/v1/hosts/autoupdate",
+		isLegacyApi: true,
+	},
+	"anomaly-detection-applications": {
+		apiPath:     "/api/config/v1/anomalyDetection/applications",
+		isLegacyApi: true,
+	},
+	"anomaly-detection-aws": {
+		apiPath:     "/api/config/v1/anomalyDetection/aws",
+		isLegacyApi: true,
+	},
+	"anomaly-detection-database-services": {
+		apiPath:     "/api/config/v1/anomalyDetection/databaseServices",
+		isLegacyApi: true,
+	},
+	"anomaly-detection-hosts": {
+		apiPath:     "/api/config/v1/anomalyDetection/hosts",
+		isLegacyApi: true,
+	},
+	"anomaly-detection-services": {
+		apiPath:     "/api/config/v1/anomalyDetection/services",
+		isLegacyApi: true,
+	},
+	"anomaly-detection-vmware": {
+		apiPath:     "/api/config/v1/anomalyDetection/vmware",
+		isLegacyApi: true,
+	},
+	"service-resource-naming": {
+		apiPath:     "/api/config/v1/service/resourceNaming",
+		isLegacyApi: true,
+	},
+	"app-detection-rule-host": {
+		apiPath:     "/api/config/v1/applicationDetectionRules/hostDetection",
+		isLegacyApi: true,
+	},
+	"content-resources": {
+		apiPath:     "/api/config/v1/contentResources",
+		isLegacyApi: true,
+	},
+	"allowed-beacon-origins": {
+		apiPath:     "/api/config/v1/allowedBeaconOriginsForCors",
+		isLegacyApi: true,
+	},
+	"geo-ip-detection-headers": {
+		apiPath:     "/api/config/v1/geographicRegions/ipDetectionHeaders",
+		isLegacyApi: true,
+	},
+	"geo-ip-address-mappings": {
+		apiPath:     "/api/config/v1/geographicRegions/ipAddressMappings",
+		isLegacyApi: true,
 	},
 }
 
@@ -190,17 +250,21 @@ type Api interface {
 	GetPropertyNameOfGetAllResponse() string
 	IsStandardApi() bool
 	IsReportsApi() bool
+	IsLegacyApi() bool
+	NewLegacyValue() Value
 }
 
 type apiInput struct {
 	apiPath                      string
 	propertyNameOfGetAllResponse string
+	isLegacyApi                  bool
 }
 
 type apiImpl struct {
 	id                           string
 	apiPath                      string
 	propertyNameOfGetAllResponse string
+	isLegacyApi                  bool
 }
 
 func NewApis() map[string]Api {
@@ -215,18 +279,28 @@ func NewApis() map[string]Api {
 }
 
 func newApi(id string, input apiInput) Api {
+	if input.isLegacyApi {
+		return NewLegacyApi(id, input.apiPath)
+	}
+
 	if input.propertyNameOfGetAllResponse == "" {
 		return NewStandardApi(id, input.apiPath)
 	}
-	return NewApi(id, input.apiPath, input.propertyNameOfGetAllResponse)
+
+	return NewApi(id, input.apiPath, input.propertyNameOfGetAllResponse, false)
 }
 
 // NewStandardApi creates an API with propertyNameOfGetAllResponse set to "values"
 func NewStandardApi(id string, apiPath string) Api {
-	return NewApi(id, apiPath, standardApiPropertyNameOfGetAllResponse)
+	return NewApi(id, apiPath, standardApiPropertyNameOfGetAllResponse, false)
 }
 
-func NewApi(id string, apiPath string, propertyNameOfGetAllResponse string) Api {
+// NewLegacyApi creates an API with isLegacyApi set to true
+func NewLegacyApi(id string, apiPath string) Api {
+	return NewApi(id, apiPath, "", true)
+}
+
+func NewApi(id string, apiPath string, propertyNameOfGetAllResponse string, isLegacyApi bool) Api {
 
 	// TODO log warning if the user tries to create an API with a id not present in map above
 	// This means that a user runs monaco with an untested api
@@ -235,6 +309,7 @@ func NewApi(id string, apiPath string, propertyNameOfGetAllResponse string) Api 
 		id:                           id,
 		apiPath:                      apiPath,
 		propertyNameOfGetAllResponse: propertyNameOfGetAllResponse,
+		isLegacyApi:                  isLegacyApi,
 	}
 }
 
@@ -265,6 +340,17 @@ func (a *apiImpl) IsStandardApi() bool {
 // Determine APIs that require additional handlers
 func (a *apiImpl) IsReportsApi() bool {
 	return a.id == "reports"
+}
+
+func (a *apiImpl) IsLegacyApi() bool {
+	return a.isLegacyApi
+}
+
+func (a *apiImpl) NewLegacyValue() Value {
+	return Value{
+		Name: a.id,
+		Id:   a.id,
+	}
 }
 
 func IsApi(dir string) bool {
