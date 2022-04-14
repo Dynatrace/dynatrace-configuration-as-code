@@ -1,0 +1,4 @@
+config:
+- app-detection-rule-host: app-detection-rule-host.json
+app-detection-rule-host:
+- name: app-detection-rule-host

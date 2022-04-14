@@ -1,0 +1,5 @@
+{
+ "frequentIssueDetectionApplicationEnabled": true,
+ "frequentIssueDetectionInfrastructureEnabled": true,
+ "frequentIssueDetectionServiceEnabled": true
+}

@@ -1,0 +1,4 @@
+config:
+- service-resource-naming: service-resource-naming.json
+service-resource-naming:
+- name: service-resource-naming

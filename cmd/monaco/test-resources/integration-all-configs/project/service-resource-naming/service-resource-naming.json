@@ -1,0 +1,20 @@
+{
+ "binary": [
+  ".exe",
+  ".zip"
+ ],
+ "image": [
+  ".jpg",
+  ".png",
+  ".gif",
+  ".jpeg",
+  ".bmp",
+  ".svg",
+  ".ico",
+  ".woff",
+  ".ttf",
+  ".otf",
+  ".woff2",
+  ".eot"
+ ]
+}

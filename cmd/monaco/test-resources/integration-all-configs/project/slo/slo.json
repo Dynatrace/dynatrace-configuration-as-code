@@ -6,7 +6,7 @@
   "metricNumerator": "builtin:service.errors.server.successCount",
   "metricDenominator": "builtin:service.requestCount.total",
   "evaluationType": "AGGREGATE",
-  "filter": "mzName(\"{{ .mzone }}\"),type(\"HOST\")",
+  "filter": "mzName(\"{{ .mzone }}\"),type(\"SERVICE\")",
   "target": 95,
   "warning": 97.5,
   "timeframe": "-1d"
