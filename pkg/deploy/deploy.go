@@ -136,6 +136,17 @@ func execute(environment environment.Environment, projects []project.Project, dr
 				continue
 			}
 
+			isSkippedDueToConfig, skipReason, err := config.IsSkippedDueToConfig(environment, dict)
+			if err != nil {
+				return append(errors, err)
+			}
+
+			if isSkippedDueToConfig {
+				util.Log.Info("\t\t\tskipping deployment of %s: %s", config.GetId(), config.GetFilePath())
+				util.Log.Info("\t\t\t\t%s", skipReason)
+				continue
+			}
+
 			name, err = config.GetObjectNameForEnvironment(environment, dict)
 			if err != nil {
 				return append(errors, err)
