@@ -1,0 +1,4 @@
+config:
+- anomaly-detection-database-services: anomaly-detection-database-services.json
+anomaly-detection-database-services:
+- name: anomaly-detection-database-services

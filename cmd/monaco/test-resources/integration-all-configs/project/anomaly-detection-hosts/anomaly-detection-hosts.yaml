@@ -1,0 +1,4 @@
+config:
+- anomaly-detection-hosts: anomaly-detection-hosts.json
+anomaly-detection-hosts:
+- name: anomaly-detection-hosts

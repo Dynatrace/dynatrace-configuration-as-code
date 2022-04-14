@@ -1,0 +1,4 @@
+{
+ "allowedBeaconOrigins": [],
+ "rejectBeaconsWithoutOriginHeader": false
+}

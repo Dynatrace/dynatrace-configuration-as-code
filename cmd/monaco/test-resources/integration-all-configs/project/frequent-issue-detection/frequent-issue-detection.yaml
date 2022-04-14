@@ -1,0 +1,4 @@
+config:
+- frequent-issue-detection: frequent-issue-detection.json
+frequent-issue-detection:
+- name: frequent-issue-detection

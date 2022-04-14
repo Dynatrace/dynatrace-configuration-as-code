@@ -1,0 +1,26 @@
+{
+ "ec2CandidateCpuSaturationDetection": {
+  "enabled": true
+ },
+ "elbHighConnectionErrorsDetection": {
+  "enabled": true
+ },
+ "lambdaHighErrorRateDetection": {
+  "enabled": true
+ },
+ "rdsHighCpuDetection": {
+  "enabled": true
+ },
+ "rdsHighMemoryDetection": {
+  "enabled": true
+ },
+ "rdsHighWriteReadLatencyDetection": {
+  "enabled": true
+ },
+ "rdsLowStorageDetection": {
+  "enabled": true
+ },
+ "rdsRestartsSequenceDetection": {
+  "enabled": true
+ }
+}
