@@ -1,0 +1,26 @@
+{
+ "failureRateIncrease": {
+  "automaticDetection": {
+   "failingServiceCallPercentageIncreaseAbsolute": 0,
+   "failingServiceCallPercentageIncreaseRelative": 50
+  },
+  "detectionMode": "DETECT_AUTOMATICALLY"
+ },
+ "responseTimeDegradation": {
+  "automaticDetection": {
+   "loadThreshold": "TEN_REQUESTS_PER_MINUTE",
+   "responseTimeDegradationMilliseconds": 100,
+   "responseTimeDegradationPercent": 50,
+   "slowestResponseTimeDegradationMilliseconds": 1000,
+   "slowestResponseTimeDegradationPercent": 100
+  },
+  "detectionMode": "DETECT_AUTOMATICALLY"
+ },
+ "trafficDrop": {
+  "enabled": true,
+  "trafficDropPercent": 50
+ },
+ "trafficSpike": {
+  "enabled": false
+ }
+}

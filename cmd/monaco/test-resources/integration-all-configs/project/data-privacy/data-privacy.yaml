@@ -1,0 +1,4 @@
+config:
+- data-privacy: data-privacy.json
+data-privacy:
+- name: data-privacy
