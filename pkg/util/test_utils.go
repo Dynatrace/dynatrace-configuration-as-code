@@ -20,10 +20,11 @@
 package util
 
 import (
-	"gotest.tools/assert"
 	"os"
 	"strings"
 	"testing"
+
+	"gotest.tools/assert"
 )
 
 func SetEnv(t *testing.T, key string, value string) {
@@ -60,7 +61,16 @@ func ReplaceName(line string, idChange func(string) string) string {
 			name = name[1 : len(name)-1]
 		}
 
-		return strings.ReplaceAll(line, name, idChange(name))
+		// Dependencies are not substituted
+		isIdDependency := strings.HasSuffix(name, ".id")
+		isNameDependency := strings.HasSuffix(name, ".name")
+
+		if isIdDependency || isNameDependency {
+			return line
+		}
+
+		replaced := strings.ReplaceAll(line, name, idChange(name))
+		return replaced
 	}
 	return line
 }
