@@ -1,0 +1,6 @@
+---
+config:
+- report: report.json
+
+report:
+- name: "/project/dashboard/dashboard.id"

@@ -30,6 +30,7 @@ var testDevEnvironment = environment.NewEnvironment("development", "Dev", "", "h
 var testAlertingProfileApi = NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles")
 var testManagementZoneApi = NewStandardApi("management-zone", "/api/config/v1/managementZones")
 var testDashboardApi = NewStandardApi("dashboard", "/api/config/v1/dashboards")
+var testReportsApi = NewStandardApi("reports", "/api/config/v1/reports")
 
 func TestGetUrl(t *testing.T) {
 
@@ -59,4 +60,12 @@ func TestIfFolderContainsApiInPath(t *testing.T) {
 	assert.Equal(t, ContainsApiName("extension"), true, "Check if `extension` is an API")
 	assert.Equal(t, ContainsApiName("/project/sub-project/extension/subfolder"), true, "Check if `extension` is an API")
 	assert.Equal(t, ContainsApiName("/project/sub-project"), false, "Check if `extension` is an API")
+}
+
+func TestIsReportsApi(t *testing.T) {
+	isReportsApi := testReportsApi.IsReportsApi()
+	assert.Equal(t, isReportsApi, true)
+
+	isReportsApi = testDashboardApi.IsReportsApi()
+	assert.Equal(t, isReportsApi, false)
 }

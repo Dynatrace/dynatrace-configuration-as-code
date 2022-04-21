@@ -20,8 +20,9 @@
 package rest
 
 import (
-	"gotest.tools/assert"
 	"testing"
+
+	"gotest.tools/assert"
 )
 
 func TestTranslateGenericValuesOnStandardResponse(t *testing.T) {
@@ -70,4 +71,22 @@ func TestTranslateGenericValuesOnNameMissing(t *testing.T) {
 
 	assert.Equal(t, values[0].Id, "foo")
 	assert.Equal(t, values[0].Name, "foo")
+}
+
+func TestTranslateGenericValuesForReportsEndpoint(t *testing.T) {
+
+	entry := make(map[string]interface{})
+	entry["id"] = "foo"
+	entry["dashboardId"] = "dashboardId"
+
+	response := make([]interface{}, 1)
+	response[0] = entry
+
+	values, err := translateGenericValues(response, "reports")
+
+	assert.NilError(t, err)
+	assert.Check(t, len(values) == 1)
+
+	assert.Equal(t, values[0].Id, "foo")
+	assert.Equal(t, values[0].Name, "dashboardId")
 }
