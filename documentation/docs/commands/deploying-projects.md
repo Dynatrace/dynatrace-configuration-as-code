@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Deploy projects
 
-The `monaco` tool can deploy a configuration or a set of configurations in the form of project(s). A project is a folder containing files that define the configurations to be deployed to a environment or a group of environments. This is done by passing the `--project` flag (or `-p` for short).
+The `Monaco` tool can deploy a configuration or a set of configurations in the form of project(s). A project is a folder containing files that define the configurations to be deployed to a environment or a group of environments. This is done by passing the `--project` flag (or `-p` for short).
 
 ## Running the tool
 
