@@ -3,16 +3,16 @@ sidebar_position: 1
 title: Add a new API
 ---
 ​
-This guide will show you how to add a new API to Monaco that is not included in the [table of supported APIs](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code#configuration-types--apis) and how to recognize if an API is easy to add or not. 
+This guide shows you how to add a new API to Monaco that is not included in the [table of supported APIs](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code#configuration-types--apis) and how to determine whether an API is easy to add. 
 ​
 > :warning: Adding APIs to Monaco is straightforward in most cases. However, some APIs require more coding.
 ​
 
-## Recognize if an API is easy to add
+## Determine if an API is easy to add
 ​
 Easy-to-add APIs fulfill the following criteria: 
 ​
-* They implement the following HTTP methods. E.g., for configuration APIs that is: 
+* Configuration APIs that implement the following HTTP methods: 
   * `GET <my-environment>/api/config/v1/<my-config>` (get all configs)
   * `GET <my-environment>/api/config/v1/<my-config>/<id>` (get a single config)
   * `POST <my-environment>/api/config/v1/<my-config>` (create a new config)
@@ -45,10 +45,9 @@ Easy-to-add APIs fulfill the following criteria:
 }
 ```
 
-​
-If your API fulfills these 3 criteria, perform the steps in the following section to add it to Monaco.
 
-​
+If your API fulfills these three criteria, perform the steps in the following section to add it to Monaco.
+
 ## Recognize if an API is of legacy format
 
 In addition to *easy-to-add* APIs, there are such APIs that comply to a *legacy* format:
@@ -64,7 +63,7 @@ to get implementation feedback from the maintainers.
 
 ## Add a new API to Monaco
 ​
-The steps in this guide will show you how to add a new API to Monaco.
+Take the following steps to add a new API to Monaco.
 
 1. Open your preferred CLI and enter the following code to add your API to [the map in api.go](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/blob/main/pkg/api/api.go#L25) and replace the placeholder values as described below. 
 ​
@@ -80,10 +79,10 @@ The steps in this guide will show you how to add a new API to Monaco.
 
 | Placeholder     | Description | 
 | ----------- | ----------- | 
-| <nobr>`<my-api-folder-name>`</nobr> | The name of the API, also used for the folder name for the configurations. Please take a look at the existing API names to get a feeling for the naming conventions and choose one accordingly.|
-| <nobr>`<path-to-my-api>`</nobr> | This path points to your API. Monaco prefixes it with the environment URL to access the configs of your API. |
+| <nobr>`<my-api-folder-name>`</nobr> | The name of the API, also used for the folder name for the configurations. Study the existing API names to get a feeling for the naming conventions and choose one accordingly.|
+| <nobr>`<path-to-my-api>`</nobr> | Path for your API. Monaco prefixes it with the environment URL to access the configs of your API. |
 | <nobr>`<is-legacy-api>`</nobr> | Boolean value specifying if an API is of legacy format (optional, default: *false*). |
-| <nobr>`<property-name>`</nobr> | This names the json property used in the `GET ALL` REST call to return the list of configs. E.g. it would be `extensions`, if the response of your API's `GET ALL` REST call looks like the snippet below|
+| <nobr>`<property-name>`</nobr> | Name of the json property used in the `GET ALL` REST call to return the list of configs. E.g. it would be `extensions`, if the response of your PI's `GET ALL` REST call looks like the snippet below|
 ​
   
 ```json

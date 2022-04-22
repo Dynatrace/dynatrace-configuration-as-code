@@ -11,7 +11,7 @@ Configuration files are ordered by `project` in the projects folder. Project fol
 
 This means it is possible to group projects into folders, but combining projects and configurations in the same folder is not supported.
 
-There are no restriction for the depth of a projects tree.
+There are no restrictions on the depth of a projects tree.
 
 To get an idea of the possible combinations take a look at `cmd/monaco/test-resources/integration-multi-project`.
 
@@ -29,7 +29,7 @@ Checked in configuration should **not** include:
   * The `name` must be defined as [a variable](#configuration-yaml-structure).
 * Hardcoded values for environment information such as references to other auto-deployed entities, tags, management-zones, etc.
   * These should all be referenced as variables as [described below](#referencing-other-configurations).
-* Empty/null values that are optional to the creation of an object.
+* Empty/null values that are optional for the creation of an object.
   * Most API GET endpoints return more data than needed to create an object. Many of those fields are empty or null, and can be omitted.
   * E.g., `tileFilter`s on dashboards
 
@@ -44,7 +44,7 @@ Variables present in the template need to be defined in the respective config `y
 
 ### Dashboard JSON
 
-When you create a dashboard in the Dynatrace UI it will be private by default. All the dashboards deployed for Monaco need to be shared publicly with other users.
+When you create a dashboard in the Dynatrace UI it is private by default. All the dashboards deployed for Monaco need to be shared publicly with other users.
 
 You can change this in the dashboard settings, or by just changing your checked in `json` file.
 
@@ -76,14 +76,14 @@ This config does the following:
 
 From Dynatrace version 208 onwards:
 
-- A dashboard configuration must have a property ownner. The property owner in dashboardMetadata is mandatory and must contain a not null value.
-- The property sharingDetails in dashboardMetadata is not present anymore.
+- A dashboard configuration must have a property owner. The property owner in dashboardMetadata is mandatory and must contain a non-null value.
+- The property sharingDetails in dashboardMetadata is no longer present.
 
 ### Calculated log metrics JSON
 
 There is a know drawback to Monaco's workaround to the slightly off-standard API for Calculated Log Metrics, which needs you to follow specific naming conventions for your configuration: 
 
-> When you create custom log metrics, your configuration's `name` needs to be the `metricKey` of the log metric. 
+> When you create custom log metrics, your configuration's `name` must be the `metricKey` of the log metric. 
 
 Additionally it is possible that a configuration upload fails when a metric configuration is newly created and an additional configuration depends on the new log metric. To work around this, set both `metricKey` and `displayName` to the same value. 
 
