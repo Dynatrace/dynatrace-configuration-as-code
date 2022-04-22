@@ -25,7 +25,7 @@ those are also deployed.
 
 Multiple projects can be specified by `-p="projectA, projectB, projectC/subproject"`.
 
-To deploy the configuration, `monaco` needs a valid API Token(s) for the each environment.  These are defined as `environment variables`; you can define the name of that env var in the environments file that is specified as an argument to the `-e` option.
+To deploy the configuration, `Monaco` needs a valid API Token(s) for the each environment.  These are defined as `environment variables`; you can define the name of that env var in the environments file that is specified as an argument to the `-e` option.
 
 To deploy to a specific environment within an `environments.yaml` file, use the `-specific-environment` or `-se` flag:
 
