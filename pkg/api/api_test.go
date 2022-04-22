@@ -31,6 +31,9 @@ var testAlertingProfileApi = NewStandardApi("alerting-profile", "/api/config/v1/
 var testManagementZoneApi = NewStandardApi("management-zone", "/api/config/v1/managementZones")
 var testDashboardApi = NewStandardApi("dashboard", "/api/config/v1/dashboards")
 
+var hostsAutoUpdateApiId = "hosts-auto-update"
+var testHostsAutoUpdateApi = NewLegacyApi(hostsAutoUpdateApiId, "/api/config/v1/hosts/autoupdate")
+
 func TestGetUrl(t *testing.T) {
 
 	url := testManagementZoneApi.GetUrl(testDevEnvironment)
@@ -59,4 +62,27 @@ func TestIfFolderContainsApiInPath(t *testing.T) {
 	assert.Equal(t, ContainsApiName("extension"), true, "Check if `extension` is an API")
 	assert.Equal(t, ContainsApiName("/project/sub-project/extension/subfolder"), true, "Check if `extension` is an API")
 	assert.Equal(t, ContainsApiName("/project/sub-project"), false, "Check if `extension` is an API")
+}
+
+// TBD:
+func TestIsHostsAutoUpdateApi(t *testing.T) {
+	isHostsAutoUpdateApi := testDashboardApi.IsHostsAutoUpdateApi()
+	assert.Equal(t, false, isHostsAutoUpdateApi)
+
+	isHostsAutoUpdateApi = testHostsAutoUpdateApi.IsHostsAutoUpdateApi()
+	assert.Equal(t, true, isHostsAutoUpdateApi)
+}
+
+func TestIsLegacyApi(t *testing.T) {
+	isLegacyApi := testDashboardApi.IsLegacyApi()
+	assert.Equal(t, false, isLegacyApi)
+
+	isLegacyApi = testHostsAutoUpdateApi.IsLegacyApi()
+	assert.Equal(t, true, isLegacyApi)
+}
+
+func TestNewLegacyValue(t *testing.T) {
+	value := testHostsAutoUpdateApi.NewLegacyValue()
+	assert.Equal(t, hostsAutoUpdateApiId, value.Name)
+	assert.Equal(t, hostsAutoUpdateApiId, value.Id)
 }

@@ -242,6 +242,7 @@ type Api interface {
 	GetApiPath() string
 	GetPropertyNameOfGetAllResponse() string
 	IsStandardApi() bool
+	IsHostsAutoUpdateApi() bool
 	IsLegacyApi() bool
 	NewLegacyValue() Value
 }
@@ -327,6 +328,10 @@ func (a *apiImpl) GetPropertyNameOfGetAllResponse() string {
 
 func (a *apiImpl) IsStandardApi() bool {
 	return a.propertyNameOfGetAllResponse == standardApiPropertyNameOfGetAllResponse
+}
+
+func (a *apiImpl) IsHostsAutoUpdateApi() bool {
+	return a.id == "hosts-auto-update"
 }
 
 func (a *apiImpl) IsLegacyApi() bool {

@@ -136,6 +136,7 @@ func execute(environment environment.Environment, projects []project.Project, dr
 				continue
 			}
 
+			// Log and skip deployment if certain configs are missing fields, etc.
 			isSkippedDueToConfig, skipReason, err := config.IsSkippedDueToConfig(environment, dict)
 			if err != nil {
 				return append(errors, err)
