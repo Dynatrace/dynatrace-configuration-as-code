@@ -142,8 +142,8 @@ func (c *configImpl) IsSkipDeployment(environment environment.Environment) bool 
 }
 
 func (c *configImpl) IsSkippedDueToConfig(environment environment.Environment, dict map[string]api.DynatraceEntity) (bool, string, error) {
-	apiId := c.GetApi().GetId()
-	isHostsAutoUpdate := apiId == "hosts-auto-update"
+	// Some APIs require additional validations based on their config
+	isHostsAutoUpdate := c.GetApi().IsHostsAutoUpdateApi()
 
 	if isHostsAutoUpdate {
 		data, err := c.GetConfigForEnvironment(environment, dict)
@@ -155,6 +155,10 @@ func (c *configImpl) IsSkippedDueToConfig(environment environment.Environment, d
 		err = json.Unmarshal(data, &configData)
 		if err != nil {
 			return true, "", err
+		}
+
+		if _, ok := configData["updateWindows"]; !ok {
+			return false, "", fmt.Errorf("invalid config")
 		}
 
 		definedWindows, ok := configData["updateWindows"].(map[string]interface{})["windows"].([]interface{})

@@ -250,6 +250,7 @@ type Api interface {
 	GetPropertyNameOfGetAllResponse() string
 	IsStandardApi() bool
 	IsReportsApi() bool
+	IsHostsAutoUpdateApi() bool
 	IsLegacyApi() bool
 	NewLegacyValue() Value
 }
@@ -340,6 +341,10 @@ func (a *apiImpl) IsStandardApi() bool {
 // Determine APIs that require additional handlers
 func (a *apiImpl) IsReportsApi() bool {
 	return a.id == "reports"
+}
+
+func (a *apiImpl) IsHostsAutoUpdateApi() bool {
+	return a.id == "hosts-auto-update"
 }
 
 func (a *apiImpl) IsLegacyApi() bool {

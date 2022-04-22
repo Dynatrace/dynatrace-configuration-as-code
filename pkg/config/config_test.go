@@ -35,11 +35,14 @@ import (
 const testTemplate = `{"msg": "Follow the {{.color}} {{.animalType}}"}`
 const testTemplateWithDependency = `{"msg": "Follow the {{.color}} {{.animalType}} with {{ .dep }}"}`
 const testTemplateWithEnvVar = `{"msg": "Follow the {{.color}} {{ .Env.ANIMAL }}"}`
+const testHostAutoUpdateTemplate = `{"updateWindows": { "windows": ["window"] }}`
+const testHostAutoUpdateTemplateWithEmptyWindows = `{"updateWindows": { "windows": [] }}`
 
 var testDevEnvironment = environment.NewEnvironment("development", "Dev", "", "https://url/to/dev/environment", "DEV")
 var testHardeningEnvironment = environment.NewEnvironment("hardening", "Hardening", "", "https://url/to/hardening/environment", "HARDENING")
 var testProductionEnvironment = environment.NewEnvironment("prod-environment", "prod-environment", "production", "https://url/to/production/environment", "PRODUCTION")
 var testManagementZoneApi = api.NewStandardApi("management-zone", "/api/config/v1/managementZones")
+var testHostsAutoUpdateApi = api.NewLegacyApi("hosts-auto-update", "/api/config/v1/hosts/autoupdate")
 
 func createConfigForTest(id string, project string, template util.Template, properties map[string]map[string]string, api api.Api, fileName string) configImpl {
 	return configImpl{
@@ -562,4 +565,43 @@ func getConfigForEnvironmentAsMap(config Config, env environment.Environment, di
 	}
 
 	return result, err
+}
+
+func TestIsSkippedDueToConfig(t *testing.T) {
+	prop := getTestPropertiesWithGroupAndEnvironment()
+
+	// Should fail when template can't be parsed
+	templ := getTestTemplate(t)
+	config := createConfigForTest("test", "testproject", templ, prop, testHostsAutoUpdateApi, "")
+
+	_, _, err := config.IsSkippedDueToConfig(testProductionEnvironment, make(map[string]api.DynatraceEntity))
+	assert.Error(t, err, "invalid config")
+
+	// Should return false when api is other than "hosts-auto-update"
+	config = createConfigForTest("test", "testproject", templ, prop, testManagementZoneApi, "")
+
+	isSkippedDueToConfig, _, err := config.IsSkippedDueToConfig(testProductionEnvironment, make(map[string]api.DynatraceEntity))
+	assert.NilError(t, err)
+	assert.Equal(t, false, isSkippedDueToConfig)
+
+	// Should return false when template specifies update window
+	templ, e := util.NewTemplateFromString("test", testHostAutoUpdateTemplate)
+	assert.NilError(t, e)
+
+	config = createConfigForTest("test", "testproject", templ, prop, testHostsAutoUpdateApi, "")
+
+	isSkippedDueToConfig, _, err = config.IsSkippedDueToConfig(testProductionEnvironment, make(map[string]api.DynatraceEntity))
+	assert.NilError(t, err)
+	assert.Equal(t, false, isSkippedDueToConfig)
+
+	// Should return true when template doesn't include update window
+	templ, e = util.NewTemplateFromString("test", testHostAutoUpdateTemplateWithEmptyWindows)
+	assert.NilError(t, e)
+
+	config = createConfigForTest("test", "testproject", templ, prop, testHostsAutoUpdateApi, "")
+
+	isSkippedDueToConfig, skipReason, err := config.IsSkippedDueToConfig(testProductionEnvironment, make(map[string]api.DynatraceEntity))
+	assert.NilError(t, err)
+	assert.Equal(t, true, isSkippedDueToConfig)
+	assert.Equal(t, "\"updateWindows.windows\" can't be empty", skipReason)
 }

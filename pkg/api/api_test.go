@@ -32,6 +32,9 @@ var testManagementZoneApi = NewStandardApi("management-zone", "/api/config/v1/ma
 var testDashboardApi = NewStandardApi("dashboard", "/api/config/v1/dashboards")
 var testReportsApi = NewStandardApi("reports", "/api/config/v1/reports")
 
+var hostsAutoUpdateApiId = "hosts-auto-update"
+var testHostsAutoUpdateApi = NewLegacyApi(hostsAutoUpdateApiId, "/api/config/v1/hosts/autoupdate")
+
 func TestGetUrl(t *testing.T) {
 
 	url := testManagementZoneApi.GetUrl(testDevEnvironment)
@@ -68,4 +71,26 @@ func TestIsReportsApi(t *testing.T) {
 
 	isReportsApi = testDashboardApi.IsReportsApi()
 	assert.Equal(t, isReportsApi, false)
+}
+
+func TestIsHostsAutoUpdateApi(t *testing.T) {
+	isHostsAutoUpdateApi := testDashboardApi.IsHostsAutoUpdateApi()
+	assert.Equal(t, false, isHostsAutoUpdateApi)
+
+	isHostsAutoUpdateApi = testHostsAutoUpdateApi.IsHostsAutoUpdateApi()
+	assert.Equal(t, true, isHostsAutoUpdateApi)
+}
+
+func TestIsLegacyApi(t *testing.T) {
+	isLegacyApi := testDashboardApi.IsLegacyApi()
+	assert.Equal(t, false, isLegacyApi)
+
+	isLegacyApi = testHostsAutoUpdateApi.IsLegacyApi()
+	assert.Equal(t, true, isLegacyApi)
+}
+
+func TestNewLegacyValue(t *testing.T) {
+	value := testHostsAutoUpdateApi.NewLegacyValue()
+	assert.Equal(t, hostsAutoUpdateApiId, value.Name)
+	assert.Equal(t, hostsAutoUpdateApiId, value.Id)
 }
