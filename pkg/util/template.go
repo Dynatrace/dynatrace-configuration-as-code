@@ -100,7 +100,7 @@ func addEnvVars(properties map[string]string) map[string]interface{} {
 	data["Env"] = envVars
 
 	for _, v := range os.Environ() {
-		split := strings.Split(v, "=")
+		split := strings.SplitN(v, "=", 2)
 		if len(split) != 2 {
 			continue
 		}
