@@ -76,6 +76,19 @@ func TestGetStringWithEnvVarAndProperty(t *testing.T) {
 	assert.Equal(t, "Follow the white rabbit", result)
 }
 
+func TestGetStringWithEnvVarIncludingEqualSigns(t *testing.T) {
+
+	template, err := NewTemplateFromString("template_test", testMatrixTemplateWithEnvVar)
+	assert.NilError(t, err)
+
+	SetEnv(t, "ANIMAL", "cow=rabbit=chicken")
+	result, err := template.ExecuteTemplate(getTemplateTestProperties())
+	UnsetEnv(t, "ANIMAL")
+
+	assert.NilError(t, err)
+	assert.Equal(t, "Follow the white cow=rabbit=chicken", result)
+}
+
 func getTemplateTestProperties() map[string]string {
 
 	m := make(map[string]string)
