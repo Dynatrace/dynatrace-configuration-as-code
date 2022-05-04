@@ -60,6 +60,11 @@ func TestReplaceNameMatching(t *testing.T) {
 	assert.Equal(t, "	-name: 'test_postfix'  ", nameReplacingPostfixFunc("	-name: 'test'  "))
 }
 
+func TestReplaceNameDependency(t *testing.T) {
+	assert.Equal(t, "- name: test_postfix.id", nameReplacingPostfixFunc("- name: test_postfix.id"))
+	assert.Equal(t, "- name: test_postfix.name", nameReplacingPostfixFunc("- name: test_postfix.name"))
+}
+
 func TestInMemoryReplaceNameSimpleMatching(t *testing.T) {
 
 	transformers := []func(string) string{nameReplacingPostfixFunc}
