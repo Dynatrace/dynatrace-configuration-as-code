@@ -177,6 +177,7 @@ var apiMap = map[string]apiInput{
 	// Early adopter API !
 	"reports": {
 		apiPath: "/api/config/v1/reports",
+	},
 	// Legacy APIs
 	"frequent-issue-detection": {
 		apiPath:     "/api/config/v1/frequentIssueDetection",
