@@ -127,8 +127,8 @@ func updateDynatraceObject(client *http.Client, fullUrl string, objectName strin
 	path := joinUrl(fullUrl, existingObjectId)
 	body := payload
 
-	// Updating a dashboard, or any service detection API requires the ID to be contained in the JSON, so we just add it...
-	if isApiDashboard(theApi) || isAnyServiceDetectionApi(theApi) {
+	// Updating a dashboard, reports or any service detection API requires the ID to be contained in the JSON, so we just add it...
+	if isApiDashboard(theApi) || theApi.IsReportsApi() || isAnyServiceDetectionApi(theApi) {
 		tmp := strings.Replace(string(payload), "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
 		body = []byte(tmp)
 	}
@@ -391,7 +391,7 @@ func unmarshalJson(theApi api.Api, err error, resp Response) (error, []api.Value
 			}
 			values = translateSyntheticValues(jsonResp.Monitors)
 
-		} else if !theApi.IsStandardApi() {
+		} else if !theApi.IsStandardApi() || theApi.IsReportsApi() {
 
 			if available, array := isResultArrayAvailable(objmap, theApi); available {
 				jsonResp, err := translateGenericValues(array, theApi.GetId())
@@ -441,7 +441,7 @@ func translateGenericValues(inputValues []interface{}, configType string) ([]api
 			return values, fmt.Errorf("config of type %s was invalid: No id", configType)
 		}
 
-		// repair invalid configs - but log them
+		// Substitute missing name attribute
 		if input["name"] == nil {
 			jsonStr, err := json.Marshal(input)
 			if err != nil {
@@ -449,11 +449,22 @@ func translateGenericValues(inputValues []interface{}, configType string) ([]api
 				continue
 			}
 
-			util.Log.Warn("Config of type %s was invalid. Auto-corrected to use ID as name!\nInvalid config: %s", configType, string(jsonStr))
+			substitutedName := ""
+
+			// Differentiate handling for reports API from others
+			isReportsApi := configType == "reports"
+			if isReportsApi {
+				// Substitute name with dashboard id since it is unique identifier for entity
+				substitutedName = input["dashboardId"].(string)
+			} else {
+				// Substitute name with id since it is unique identifier for entity
+				util.Log.Warn("Config of type %s was invalid. Auto-corrected to use ID as name!\nInvalid config: %s", configType, string(jsonStr))
+				substitutedName = input["id"].(string)
+			}
 
 			values[i] = api.Value{
 				Id:   input["id"].(string),
-				Name: input["id"].(string), // use the id as name
+				Name: substitutedName, // use the id as name
 			}
 			continue
 		}

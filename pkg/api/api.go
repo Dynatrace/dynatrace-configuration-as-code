@@ -174,6 +174,10 @@ var apiMap = map[string]apiInput{
 	"service-detection-opaque-web-service": {
 		apiPath: "/api/config/v1/service/detectionRules/OPAQUE_AND_EXTERNAL_WEB_SERVICE",
 	},
+	// Early adopter API !
+	"reports": {
+		apiPath: "/api/config/v1/reports",
+	},
 }
 
 var standardApiPropertyNameOfGetAllResponse = "values"
@@ -185,6 +189,7 @@ type Api interface {
 	GetApiPath() string
 	GetPropertyNameOfGetAllResponse() string
 	IsStandardApi() bool
+	IsReportsApi() bool
 }
 
 type apiInput struct {
@@ -255,6 +260,11 @@ func (a *apiImpl) GetPropertyNameOfGetAllResponse() string {
 
 func (a *apiImpl) IsStandardApi() bool {
 	return a.propertyNameOfGetAllResponse == standardApiPropertyNameOfGetAllResponse
+}
+
+// Determine APIs that require additional handlers
+func (a *apiImpl) IsReportsApi() bool {
+	return a.id == "reports"
 }
 
 func IsApi(dir string) bool {

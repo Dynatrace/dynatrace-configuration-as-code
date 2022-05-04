@@ -40,6 +40,7 @@ These are the supported configuration types, their API endpoints and the token p
 | maintenance-window              | _/api/config/v1/maintenanceWindows_             | `Read Configuratio`  & `Write Configuration`                                                                                     |
 | management-zone                 | _/api/config/v1/managementZones_                | `Read Configuration` & `Write Configuration`                                                                        |
 | notification                    | _/api/config/v1/notifications_                  | `Read Configuration` & `Write Configuration`                                                                        |
+| reports                         | _/api/config/v1/reports_                        | `Read Configuration` & `Write Configuration` |
 | request-attributes              | _/api/config/v1/service/requestAttributes_      | `Read Configuration` & `Capture request data`                                                                       |
 | request-naming-service          | _/api/config/v1/service/requestNaming_          | `Read Configuration` & `Write Configuration`                                                                        |
 | slo                             | _/api/v2/slo_                                   | `Read SLO` & `Write SLOs`                                                                                           |
