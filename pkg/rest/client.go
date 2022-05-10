@@ -139,7 +139,7 @@ func (d *dynatraceClientImpl) ReadByName(api Api, name string) (json []byte, err
 }
 
 func (d *dynatraceClientImpl) ReadById(api Api, id string) (json []byte, err error) {
-	url := ""
+	var url string
 	isLegacyApi := api.IsLegacyApi()
 
 	if isLegacyApi {
