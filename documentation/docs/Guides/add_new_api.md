@@ -55,7 +55,7 @@ In addition to *easy-to-add* APIs, there are such APIs that comply to a *legacy*
 
 * They implement the following HTTP methods. E.g., for configuration APIs that is: 
   * `GET <my-environment>/api/config/v1/<my-config>` (get the config)
-  * `PUT <my-environment>/api/config/v1/<my-config>` (change a config)
+  * `PUT <my-environment>/api/config/v1/<my-config>` (change the config)
 
 
 > :warning: If your API does not fulfil any of the *easy-to-add* or *legacy* requirements, please open a ticket in Monaco's backlog
