@@ -101,7 +101,7 @@ Take the following steps to add a new API to Monaco.
 ```
 
 ​
-1. Add a sample config for the integration tests in [cmd/monaco/test-resources/integration-all-configs](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/tree/main/cmd/monaco/test-resources/integration-all-configs)
+2. Add a sample config for the integration tests in [cmd/monaco/test-resources/integration-all-configs](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/tree/main/cmd/monaco/test-resources/integration-all-configs)
 
 ​
 3. Add your API to the [table of supported APIs](../configuration/configTypes_tokenPermissions).
