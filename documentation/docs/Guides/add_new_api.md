@@ -54,7 +54,7 @@ If your API fulfills these 3 criteria, perform the steps in the following sectio
 In addition to *easy-to-add* APIs, there are such APIs that comply to a *legacy* format:
 
 * They implement the following HTTP methods. E.g., for configuration APIs that is: 
-  * `GET <my-environment>/api/config/v1/<my-config>` (get a config)
+  * `GET <my-environment>/api/config/v1/<my-config>` (get the config)
   * `PUT <my-environment>/api/config/v1/<my-config>` (change a config)
 
 
