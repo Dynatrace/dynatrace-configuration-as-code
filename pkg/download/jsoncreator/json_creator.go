@@ -165,6 +165,11 @@ func isDefaultEntity(apiID string, dat map[string]interface{}) bool {
 	case "aws-credentials":
 		return false
 	case "hosts-auto-update":
+		_, ok := dat["updateWindows"]
+		if !ok {
+			return false
+		}
+
 		definedWindows, ok := dat["updateWindows"].(map[string]interface{})["windows"].([]interface{})
 		if !ok {
 			return false
