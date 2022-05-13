@@ -17,7 +17,6 @@
 package config
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -35,7 +34,6 @@ import (
 type Config interface {
 	GetConfigForEnvironment(environment environment.Environment, dict map[string]api.DynatraceEntity) ([]byte, error)
 	IsSkipDeployment(environment environment.Environment) bool
-	IsSkippedDueToConfig(environment environment.Environment, dict map[string]api.DynatraceEntity) (bool, string, error)
 	GetApi() api.Api
 	GetObjectNameForEnvironment(environment environment.Environment, dict map[string]api.DynatraceEntity) (string, error)
 	HasDependencyOn(config Config) bool
@@ -139,42 +137,6 @@ func (c *configImpl) IsSkipDeployment(environment environment.Environment) bool 
 	}
 
 	return false
-}
-
-func (c *configImpl) IsSkippedDueToConfig(environment environment.Environment, dict map[string]api.DynatraceEntity) (bool, string, error) {
-	// Some APIs require additional validations based on their config
-	isHostsAutoUpdate := c.GetApi().IsHostsAutoUpdateApi()
-
-	if isHostsAutoUpdate {
-		data, err := c.GetConfigForEnvironment(environment, dict)
-		if err != nil {
-			return true, "", err
-		}
-
-		var configData map[string]interface{}
-		err = json.Unmarshal(data, &configData)
-		if err != nil {
-			return true, "", err
-		}
-
-		if _, ok := configData["updateWindows"]; !ok {
-			return false, "", fmt.Errorf("invalid config")
-		}
-
-		definedWindows, ok := configData["updateWindows"].(map[string]interface{})["windows"].([]interface{})
-		if !ok {
-			return false, "", fmt.Errorf("invalid config")
-		}
-
-		numberDefinedWindows := len(definedWindows)
-		if numberDefinedWindows < 1 {
-			return true, "\"updateWindows.windows\" can't be empty", nil
-		}
-
-		return false, "", nil
-	}
-
-	return false, "", nil
 }
 
 func (c *configImpl) GetConfigForEnvironment(environment environment.Environment, dict map[string]api.DynatraceEntity) ([]byte, error) {

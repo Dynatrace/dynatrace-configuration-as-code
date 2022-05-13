@@ -250,8 +250,6 @@ type Api interface {
 	GetApiPath() string
 	GetPropertyNameOfGetAllResponse() string
 	IsStandardApi() bool
-	IsReportsApi() bool
-	IsHostsAutoUpdateApi() bool
 	IsSingleConfigurationApi() bool
 	NewIdValue() Value
 }
@@ -337,15 +335,6 @@ func (a *apiImpl) GetPropertyNameOfGetAllResponse() string {
 
 func (a *apiImpl) IsStandardApi() bool {
 	return a.propertyNameOfGetAllResponse == standardApiPropertyNameOfGetAllResponse
-}
-
-// Determine APIs that require additional handlers
-func (a *apiImpl) IsReportsApi() bool {
-	return a.id == "reports"
-}
-
-func (a *apiImpl) IsHostsAutoUpdateApi() bool {
-	return a.id == "hosts-auto-update"
 }
 
 func (a *apiImpl) IsSingleConfigurationApi() bool {

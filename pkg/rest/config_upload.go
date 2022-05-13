@@ -143,7 +143,7 @@ func updateDynatraceObject(client *http.Client, fullUrl string, objectName strin
 	body := payload
 
 	// Updating a dashboard, reports or any service detection API requires the ID to be contained in the JSON, so we just add it...
-	if isApiDashboard(theApi) || theApi.IsReportsApi() || isAnyServiceDetectionApi(theApi) {
+	if isApiDashboard(theApi) || isReportsApi(theApi) || isAnyServiceDetectionApi(theApi) {
 		tmp := strings.Replace(string(payload), "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
 		body = []byte(tmp)
 	}
@@ -317,6 +317,10 @@ func isApiDashboard(api api.Api) bool {
 	return api.GetId() == "dashboard"
 }
 
+func isReportsApi(api api.Api) bool {
+	return api.GetId() == "reports"
+}
+
 func isAnyServiceDetectionApi(api api.Api) bool {
 	return strings.HasPrefix(api.GetId(), "service-detection-")
 }
@@ -410,7 +414,7 @@ func unmarshalJson(theApi api.Api, err error, resp Response) (error, []api.Value
 			}
 			values = translateSyntheticValues(jsonResp.Monitors)
 
-		} else if !theApi.IsStandardApi() || theApi.IsReportsApi() {
+		} else if !theApi.IsStandardApi() || isReportsApi(theApi) {
 
 			if available, array := isResultArrayAvailable(objmap, theApi); available {
 				jsonResp, err := translateGenericValues(array, theApi.GetId())

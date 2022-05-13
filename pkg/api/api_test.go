@@ -65,22 +65,6 @@ func TestIfFolderContainsApiInPath(t *testing.T) {
 	assert.Equal(t, ContainsApiName("/project/sub-project"), false, "Check if `extension` is an API")
 }
 
-func TestIsReportsApi(t *testing.T) {
-	isReportsApi := testReportsApi.IsReportsApi()
-	assert.Equal(t, isReportsApi, true)
-
-	isReportsApi = testDashboardApi.IsReportsApi()
-	assert.Equal(t, isReportsApi, false)
-}
-
-func TestIsHostsAutoUpdateApi(t *testing.T) {
-	isHostsAutoUpdateApi := testDashboardApi.IsHostsAutoUpdateApi()
-	assert.Equal(t, false, isHostsAutoUpdateApi)
-
-	isHostsAutoUpdateApi = testHostsAutoUpdateApi.IsHostsAutoUpdateApi()
-	assert.Equal(t, true, isHostsAutoUpdateApi)
-}
-
 func TestIsSingleConfigurationApi(t *testing.T) {
 	isSingleConfigurationApi := testDashboardApi.IsSingleConfigurationApi()
 	assert.Equal(t, false, isSingleConfigurationApi)

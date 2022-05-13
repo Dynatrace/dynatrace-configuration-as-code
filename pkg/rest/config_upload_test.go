@@ -22,8 +22,14 @@ package rest
 import (
 	"testing"
 
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"gotest.tools/assert"
 )
+
+var testReportsApi = api.NewStandardApi("reports", "/api/config/v1/reports")
+var testDashboardApi = api.NewStandardApi("dashboard", "/api/config/v1/dashboards")
+var testMobileAppApi = api.NewStandardApi("application-mobile", "/api/config/v1/applications/mobile")
+var testServiceDetectionApi = api.NewStandardApi("service-detection-full-web-request", "/api/config/v1/service/detectionRules/FULL_WEB_REQUEST")
 
 func TestTranslateGenericValuesOnStandardResponse(t *testing.T) {
 
@@ -121,4 +127,36 @@ func TestJoinUrl(t *testing.T) {
 
 	joinedUrl = joinUrl(urlBase, path)
 	assert.Equal(t, joinedUrl, "url")
+}
+
+func TestIsReportsApi(t *testing.T) {
+	isTrue := isReportsApi(testReportsApi)
+	assert.Equal(t, true, isTrue)
+
+	isFalse := isReportsApi(testDashboardApi)
+	assert.Equal(t, false, isFalse)
+}
+
+func TestIsMobileApp(t *testing.T) {
+	isTrue := isMobileApp(testMobileAppApi)
+	assert.Equal(t, true, isTrue)
+
+	isFalse := isMobileApp(testDashboardApi)
+	assert.Equal(t, false, isFalse)
+}
+
+func TestIsAnyServiceDetectionApi(t *testing.T) {
+	isTrue := isAnyServiceDetectionApi(testServiceDetectionApi)
+	assert.Equal(t, true, isTrue)
+
+	isFalse := isAnyServiceDetectionApi(testDashboardApi)
+	assert.Equal(t, false, isFalse)
+}
+
+func TestIsApiDashboard(t *testing.T) {
+	isTrue := isApiDashboard(testDashboardApi)
+	assert.Equal(t, true, isTrue)
+
+	isFalse := isApiDashboard(testReportsApi)
+	assert.Equal(t, false, isFalse)
 }
