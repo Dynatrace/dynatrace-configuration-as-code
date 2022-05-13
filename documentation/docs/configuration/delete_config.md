@@ -22,4 +22,4 @@ You must specify the API and the `name` (not id) of the configuration to be dele
 
 > :warning: if the same name is used for the new config and the config defined in delete.yaml, then the config will be deleted right after deployment.
 
-> :warning: Due to the nature of legacy endpoints (i.e. global oppossed to entity configuration), these configurations can not be deleted.
+> :warning: Due to the nature of single configuration endpoints (i.e. global oppossed to entity configuration), these configurations can not be deleted.

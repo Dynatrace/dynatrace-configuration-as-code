@@ -90,3 +90,35 @@ func TestTranslateGenericValuesForReportsEndpoint(t *testing.T) {
 	assert.Equal(t, values[0].Id, "foo")
 	assert.Equal(t, values[0].Name, "dashboardId")
 }
+
+func TestJoinUrl(t *testing.T) {
+	urlBase := "url/"
+	path := "path"
+
+	joinedUrl := joinUrl(urlBase, path)
+	assert.Equal(t, joinedUrl, "url/path")
+
+	urlBase = "url/"
+	path = "path"
+
+	joinedUrl = joinUrl(urlBase, path)
+	assert.Equal(t, joinedUrl, "url/path")
+
+	urlBase = "url"
+	path = "path"
+
+	joinedUrl = joinUrl(urlBase, path)
+	assert.Equal(t, joinedUrl, "url/path")
+
+	urlBase = "url"
+	path = " "
+
+	joinedUrl = joinUrl(urlBase, path)
+	assert.Equal(t, joinedUrl, "url")
+
+	urlBase = "url/"
+	path = " "
+
+	joinedUrl = joinUrl(urlBase, path)
+	assert.Equal(t, joinedUrl, "url")
+}

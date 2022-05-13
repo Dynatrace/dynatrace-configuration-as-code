@@ -121,10 +121,10 @@ func downloadConfigFromEnvironment(fs afero.Fs, environment environment.Environm
 		jcreator := jsoncreator.NewJSONCreator()
 		ycreator := yamlcreator.NewYamlConfig()
 
-		// Retrieves single object from legacy API
-		isLegacyApi := api.IsLegacyApi()
-		if isLegacyApi {
-			errorAPI := createConfigsFromLegacyAPI(fs, api, token, path, client, jcreator, ycreator)
+		// Retrieves object from single configuration API
+		isSingleConfigurationApi := api.IsSingleConfigurationApi()
+		if isSingleConfigurationApi {
+			errorAPI := createConfigsFromSingleConfigurationAPI(fs, api, token, path, client, jcreator, ycreator)
 			if errorAPI != nil {
 				util.Log.Error("error getting configs from API %v %v", api.GetId())
 			}
@@ -148,7 +148,7 @@ func createConfigsFolder(
 	return subPath, fs.MkdirAll(subPath, 0777)
 }
 
-func createConfigsFromLegacyAPI(
+func createConfigsFromSingleConfigurationAPI(
 	fs afero.Fs,
 	api api.Api,
 	token string,
@@ -157,16 +157,15 @@ func createConfigsFromLegacyAPI(
 	jcreator jsoncreator.JSONCreator,
 	ycreator yamlcreator.YamlCreator,
 ) (err error) {
-	// Retrieves single object from legacy API
 	subPath, err := createConfigsFolder(fs, api, fullpath)
 	if err != nil {
 		util.Log.Error("error creating folder for api %v %v", api.GetId(), err)
 		return err
 	}
 
-	legacyVal := api.NewLegacyValue()
+	idVal := api.NewIdValue()
 
-	name, cleanName, filter, err := jcreator.CreateJSONConfig(fs, client, api, legacyVal, subPath)
+	name, cleanName, filter, err := jcreator.CreateJSONConfig(fs, client, api, idVal, subPath)
 	if err != nil {
 		util.Log.Error("error creating config api json file: %v", err)
 		return err
@@ -204,8 +203,7 @@ func createConfigsFromAPI(
 		util.Log.Info("No elements for API %s", api.GetId())
 		return nil
 	}
-	subPath := filepath.Join(fullpath, api.GetId())
-	err = fs.MkdirAll(subPath, 0777)
+	subPath, err := createConfigsFolder(fs, api, fullpath)
 	if err != nil {
 		util.Log.Error("error creating folder for api %v %v", api.GetId(), err)
 		return err

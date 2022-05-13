@@ -37,30 +37,35 @@ func upsertDynatraceObject(
 	payload []byte,
 	apiToken string,
 ) (api.DynatraceEntity, error) {
-	fullUrl := theApi.GetUrlFromEnvironmentUrl(environmentUrl)
-	body := payload
-	configType := theApi.GetId()
-	isLegacyApi := theApi.IsLegacyApi()
-	objectId := ""
+	isSingleConfigurationApi := theApi.IsSingleConfigurationApi()
+	existingObjectId := ""
 
-	// The calculated-metrics-log  and legacy APIs don't have a POST endpoint.
-	// To create a new log metric we need to use PUT which requires a metric key
-	// for which we can just take the objectName
-	if isLegacyApi || configType == "calculated-metrics-log" {
-		objectId = objectName
-	} else {
-		existingObjectId, err := getObjectIdIfAlreadyExists(client, theApi, fullUrl, objectName, apiToken)
+	fullUrl := theApi.GetUrlFromEnvironmentUrl(environmentUrl)
+
+	// Single configuration APIs don't have an id which allows skipping this step
+	if !isSingleConfigurationApi {
+		var err error
+		existingObjectId, err = getObjectIdIfAlreadyExists(client, theApi, fullUrl, objectName, apiToken)
 		if err != nil {
 			return api.DynatraceEntity{}, err
 		}
-
-		objectId = existingObjectId
 	}
 
-	isUpdate := objectId != ""
+	body := payload
+	configType := theApi.GetId()
 
-	if isUpdate {
-		return updateDynatraceObject(client, fullUrl, objectName, objectId, theApi, body, apiToken)
+	// The calculated-metrics-log API doesn't have a POST endpoint, to create a new log metric we need to use PUT which
+	// requires a metric key for which we can just take the objectName
+	if configType == "calculated-metrics-log" && existingObjectId == "" {
+		existingObjectId = objectName
+	}
+
+	isUpdate := existingObjectId != ""
+
+	// Single configuration APIs don't have a POST, but a PUT endpoint
+	// and therefore always require an update
+	if isUpdate || isSingleConfigurationApi {
+		return updateDynatraceObject(client, fullUrl, objectName, existingObjectId, theApi, body, apiToken)
 	} else {
 		return createDynatraceObject(client, fullUrl, objectName, theApi, body, apiToken)
 	}
@@ -134,15 +139,8 @@ func unmarshalResponse(resp Response, fullUrl string, configType string, objectN
 }
 
 func updateDynatraceObject(client *http.Client, fullUrl string, objectName string, existingObjectId string, theApi api.Api, payload []byte, apiToken string) (api.DynatraceEntity, error) {
-	path := ""
+	path := joinUrl(fullUrl, existingObjectId)
 	body := payload
-
-	isLegacyApi := theApi.IsLegacyApi()
-	if isLegacyApi {
-		path = fullUrl
-	} else {
-		path = joinUrl(fullUrl, existingObjectId)
-	}
 
 	// Updating a dashboard, reports or any service detection API requires the ID to be contained in the JSON, so we just add it...
 	if isApiDashboard(theApi) || theApi.IsReportsApi() || isAnyServiceDetectionApi(theApi) {
@@ -259,10 +257,14 @@ func isCredentialNotReadyYet(resp Response) bool {
 }
 
 func joinUrl(urlBase string, path string) string {
-	if strings.HasSuffix(urlBase, "/") {
-		return urlBase + url.PathEscape(path)
+	trimmedUrl := strings.TrimSuffix(urlBase, "/")
+
+	trimmedPath := strings.TrimSpace(path)
+	if trimmedPath == "" {
+		return trimmedUrl
 	}
-	return urlBase + "/" + url.PathEscape(path)
+
+	return trimmedUrl + "/" + url.PathEscape(trimmedPath)
 }
 
 func isLocationHeaderAvailable(resp Response) (headerAvailable bool, headerArray []string) {

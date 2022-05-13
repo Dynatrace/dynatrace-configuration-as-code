@@ -140,9 +140,9 @@ func (d *dynatraceClientImpl) ReadByName(api Api, name string) (json []byte, err
 
 func (d *dynatraceClientImpl) ReadById(api Api, id string) (json []byte, err error) {
 	var url string
-	isLegacyApi := api.IsLegacyApi()
+	isSingleConfigurationApi := api.IsSingleConfigurationApi()
 
-	if isLegacyApi {
+	if isSingleConfigurationApi {
 		url = api.GetUrlFromEnvironmentUrl(d.environmentUrl)
 	} else {
 		url = api.GetUrlFromEnvironmentUrl(d.environmentUrl) + "/" + id

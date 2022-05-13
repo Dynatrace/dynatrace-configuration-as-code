@@ -33,7 +33,7 @@ var testDashboardApi = NewStandardApi("dashboard", "/api/config/v1/dashboards")
 var testReportsApi = NewStandardApi("reports", "/api/config/v1/reports")
 
 var hostsAutoUpdateApiId = "hosts-auto-update"
-var testHostsAutoUpdateApi = NewLegacyApi(hostsAutoUpdateApiId, "/api/config/v1/hosts/autoupdate")
+var testHostsAutoUpdateApi = NewSingleConfigurationApi(hostsAutoUpdateApiId, "/api/config/v1/hosts/autoupdate")
 
 func TestGetUrl(t *testing.T) {
 
@@ -81,16 +81,16 @@ func TestIsHostsAutoUpdateApi(t *testing.T) {
 	assert.Equal(t, true, isHostsAutoUpdateApi)
 }
 
-func TestIsLegacyApi(t *testing.T) {
-	isLegacyApi := testDashboardApi.IsLegacyApi()
-	assert.Equal(t, false, isLegacyApi)
+func TestIsSingleConfigurationApi(t *testing.T) {
+	isSingleConfigurationApi := testDashboardApi.IsSingleConfigurationApi()
+	assert.Equal(t, false, isSingleConfigurationApi)
 
-	isLegacyApi = testHostsAutoUpdateApi.IsLegacyApi()
-	assert.Equal(t, true, isLegacyApi)
+	isSingleConfigurationApi = testHostsAutoUpdateApi.IsSingleConfigurationApi()
+	assert.Equal(t, true, isSingleConfigurationApi)
 }
 
-func TestNewLegacyValue(t *testing.T) {
-	value := testHostsAutoUpdateApi.NewLegacyValue()
+func TestNewIdValue(t *testing.T) {
+	value := testHostsAutoUpdateApi.NewIdValue()
 	assert.Equal(t, hostsAutoUpdateApiId, value.Name)
 	assert.Equal(t, hostsAutoUpdateApiId, value.Id)
 }

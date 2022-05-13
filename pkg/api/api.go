@@ -178,66 +178,66 @@ var apiMap = map[string]apiInput{
 	"reports": {
 		apiPath: "/api/config/v1/reports",
 	},
-	// Legacy APIs
+	// Single configuration APIs
 	"frequent-issue-detection": {
-		apiPath:     "/api/config/v1/frequentIssueDetection",
-		isLegacyApi: true,
+		apiPath:                  "/api/config/v1/frequentIssueDetection",
+		isSingleConfigurationApi: true,
 	},
 	"data-privacy": {
-		apiPath:     "/api/config/v1/dataPrivacy",
-		isLegacyApi: true,
+		apiPath:                  "/api/config/v1/dataPrivacy",
+		isSingleConfigurationApi: true,
 	},
 	"hosts-auto-update": {
-		apiPath:     "/api/config/v1/hosts/autoupdate",
-		isLegacyApi: true,
+		apiPath:                  "/api/config/v1/hosts/autoupdate",
+		isSingleConfigurationApi: true,
 	},
 	"anomaly-detection-applications": {
-		apiPath:     "/api/config/v1/anomalyDetection/applications",
-		isLegacyApi: true,
+		apiPath:                  "/api/config/v1/anomalyDetection/applications",
+		isSingleConfigurationApi: true,
 	},
 	"anomaly-detection-aws": {
-		apiPath:     "/api/config/v1/anomalyDetection/aws",
-		isLegacyApi: true,
+		apiPath:                  "/api/config/v1/anomalyDetection/aws",
+		isSingleConfigurationApi: true,
 	},
 	"anomaly-detection-database-services": {
-		apiPath:     "/api/config/v1/anomalyDetection/databaseServices",
-		isLegacyApi: true,
+		apiPath:                  "/api/config/v1/anomalyDetection/databaseServices",
+		isSingleConfigurationApi: true,
 	},
 	"anomaly-detection-hosts": {
-		apiPath:     "/api/config/v1/anomalyDetection/hosts",
-		isLegacyApi: true,
+		apiPath:                  "/api/config/v1/anomalyDetection/hosts",
+		isSingleConfigurationApi: true,
 	},
 	"anomaly-detection-services": {
-		apiPath:     "/api/config/v1/anomalyDetection/services",
-		isLegacyApi: true,
+		apiPath:                  "/api/config/v1/anomalyDetection/services",
+		isSingleConfigurationApi: true,
 	},
 	"anomaly-detection-vmware": {
-		apiPath:     "/api/config/v1/anomalyDetection/vmware",
-		isLegacyApi: true,
+		apiPath:                  "/api/config/v1/anomalyDetection/vmware",
+		isSingleConfigurationApi: true,
 	},
 	"service-resource-naming": {
-		apiPath:     "/api/config/v1/service/resourceNaming",
-		isLegacyApi: true,
+		apiPath:                  "/api/config/v1/service/resourceNaming",
+		isSingleConfigurationApi: true,
 	},
 	"app-detection-rule-host": {
-		apiPath:     "/api/config/v1/applicationDetectionRules/hostDetection",
-		isLegacyApi: true,
+		apiPath:                  "/api/config/v1/applicationDetectionRules/hostDetection",
+		isSingleConfigurationApi: true,
 	},
 	"content-resources": {
-		apiPath:     "/api/config/v1/contentResources",
-		isLegacyApi: true,
+		apiPath:                  "/api/config/v1/contentResources",
+		isSingleConfigurationApi: true,
 	},
 	"allowed-beacon-origins": {
-		apiPath:     "/api/config/v1/allowedBeaconOriginsForCors",
-		isLegacyApi: true,
+		apiPath:                  "/api/config/v1/allowedBeaconOriginsForCors",
+		isSingleConfigurationApi: true,
 	},
 	"geo-ip-detection-headers": {
-		apiPath:     "/api/config/v1/geographicRegions/ipDetectionHeaders",
-		isLegacyApi: true,
+		apiPath:                  "/api/config/v1/geographicRegions/ipDetectionHeaders",
+		isSingleConfigurationApi: true,
 	},
 	"geo-ip-address-mappings": {
-		apiPath:     "/api/config/v1/geographicRegions/ipAddressMappings",
-		isLegacyApi: true,
+		apiPath:                  "/api/config/v1/geographicRegions/ipAddressMappings",
+		isSingleConfigurationApi: true,
 	},
 }
 
@@ -252,21 +252,21 @@ type Api interface {
 	IsStandardApi() bool
 	IsReportsApi() bool
 	IsHostsAutoUpdateApi() bool
-	IsLegacyApi() bool
-	NewLegacyValue() Value
+	IsSingleConfigurationApi() bool
+	NewIdValue() Value
 }
 
 type apiInput struct {
 	apiPath                      string
 	propertyNameOfGetAllResponse string
-	isLegacyApi                  bool
+	isSingleConfigurationApi     bool
 }
 
 type apiImpl struct {
 	id                           string
 	apiPath                      string
 	propertyNameOfGetAllResponse string
-	isLegacyApi                  bool
+	isSingleConfigurationApi     bool
 }
 
 func NewApis() map[string]Api {
@@ -281,8 +281,8 @@ func NewApis() map[string]Api {
 }
 
 func newApi(id string, input apiInput) Api {
-	if input.isLegacyApi {
-		return NewLegacyApi(id, input.apiPath)
+	if input.isSingleConfigurationApi {
+		return NewSingleConfigurationApi(id, input.apiPath)
 	}
 
 	if input.propertyNameOfGetAllResponse == "" {
@@ -297,12 +297,12 @@ func NewStandardApi(id string, apiPath string) Api {
 	return NewApi(id, apiPath, standardApiPropertyNameOfGetAllResponse, false)
 }
 
-// NewLegacyApi creates an API with isLegacyApi set to true
-func NewLegacyApi(id string, apiPath string) Api {
+// NewSingleConfigurationApi creates an API with isSingleConfigurationApi set to true
+func NewSingleConfigurationApi(id string, apiPath string) Api {
 	return NewApi(id, apiPath, "", true)
 }
 
-func NewApi(id string, apiPath string, propertyNameOfGetAllResponse string, isLegacyApi bool) Api {
+func NewApi(id string, apiPath string, propertyNameOfGetAllResponse string, isSingleConfigurationApi bool) Api {
 
 	// TODO log warning if the user tries to create an API with a id not present in map above
 	// This means that a user runs monaco with an untested api
@@ -311,7 +311,7 @@ func NewApi(id string, apiPath string, propertyNameOfGetAllResponse string, isLe
 		id:                           id,
 		apiPath:                      apiPath,
 		propertyNameOfGetAllResponse: propertyNameOfGetAllResponse,
-		isLegacyApi:                  isLegacyApi,
+		isSingleConfigurationApi:     isSingleConfigurationApi,
 	}
 }
 
@@ -348,11 +348,13 @@ func (a *apiImpl) IsHostsAutoUpdateApi() bool {
 	return a.id == "hosts-auto-update"
 }
 
-func (a *apiImpl) IsLegacyApi() bool {
-	return a.isLegacyApi
+func (a *apiImpl) IsSingleConfigurationApi() bool {
+	return a.isSingleConfigurationApi
 }
 
-func (a *apiImpl) NewLegacyValue() Value {
+// Returns a Value which contains the api's id as
+// Id and Name attribute
+func (a *apiImpl) NewIdValue() Value {
 	return Value{
 		Name: a.id,
 		Id:   a.id,

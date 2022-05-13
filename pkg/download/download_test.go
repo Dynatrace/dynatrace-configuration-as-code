@@ -56,7 +56,7 @@ func TestCreateConfigsFromAPI(t *testing.T) {
 		GetId().Return("synthetic-monitor").AnyTimes()
 
 	apiMock.EXPECT().
-		IsLegacyApi().Return(false).AnyTimes()
+		IsSingleConfigurationApi().Return(false).AnyTimes()
 
 	jcreator.EXPECT().
 		CreateJSONConfig(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
