@@ -1,0 +1,26 @@
+{
+ "droppedPacketsDetection": {
+  "enabled": true
+ },
+ "esxiHighCpuSaturation": {
+  "enabled": true
+ },
+ "esxiHighMemoryDetection": {
+  "enabled": true
+ },
+ "guestCpuLimitReached": {
+  "enabled": true
+ },
+ "lowDatastoreSpaceDetection": {
+  "enabled": true
+ },
+ "overloadedStorageDetection": {
+  "enabled": true
+ },
+ "slowPhysicalStorageDetection": {
+  "enabled": true
+ },
+ "undersizedStorageDetection": {
+  "enabled": true
+ }
+}

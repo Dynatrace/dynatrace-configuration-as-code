@@ -1,0 +1,4 @@
+config:
+- anomaly-detection-applications: anomaly-detection-applications.json
+anomaly-detection-applications:
+- name: anomaly-detection-applications

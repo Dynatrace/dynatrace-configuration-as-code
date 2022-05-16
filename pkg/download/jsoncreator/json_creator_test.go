@@ -67,6 +67,39 @@ func TestIsDefaultEntityDashboardCase(t *testing.T) {
 	assert.Equal(t, result, false)
 }
 
+func TestIsDefaultEntityHostsAutoUpdateCase(t *testing.T) {
+	// Create payload similar to dynatrace API object
+	sample := make(map[string]interface{})
+
+	jsonBlob := []byte(`{
+		"setting": "DISABLED",
+		"targetVersion": null,
+		"updateWindows": {
+			"windows": []
+		},
+		"version": null
+	 }`)
+	json.Unmarshal(jsonBlob, &sample)
+
+	result := isDefaultEntity("hosts-auto-update", sample)
+	assert.Equal(t, result, true)
+
+	jsonBlob = []byte(`{
+		"setting": "ENABLED",
+		"targetVersion": null,
+		"updateWindows": {
+			"windows": [{
+				"id": "existing-update-window"
+			}]
+		},
+		"version": null
+	 }`)
+	json.Unmarshal(jsonBlob, &sample)
+
+	result = isDefaultEntity("hosts-auto-update", sample)
+	assert.Equal(t, result, false)
+}
+
 func TestProcessJSONFile(t *testing.T) {
 	sample := make(map[string]interface{})
 	sample["testprop"] = "testprop"

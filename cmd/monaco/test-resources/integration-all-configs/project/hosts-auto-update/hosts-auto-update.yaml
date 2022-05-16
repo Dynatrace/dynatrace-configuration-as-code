@@ -1,0 +1,4 @@
+config:
+- hosts-auto-update: hosts-auto-update.json
+hosts-auto-update:
+- name: hosts-auto-update

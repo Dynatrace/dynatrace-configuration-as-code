@@ -1,0 +1,30 @@
+{
+ "databaseConnectionFailureCount": {
+  "connectionFailsCount": 5,
+  "enabled": true,
+  "timePeriodMinutes": 5
+ },
+ "failureRateIncrease": {
+  "automaticDetection": {
+   "failingServiceCallPercentageIncreaseAbsolute": 0,
+   "failingServiceCallPercentageIncreaseRelative": 50
+  },
+  "detectionMode": "DETECT_AUTOMATICALLY"
+ },
+ "loadDrop": {
+  "enabled": false
+ },
+ "loadSpike": {
+  "enabled": false
+ },
+ "responseTimeDegradation": {
+  "automaticDetection": {
+   "loadThreshold": "TEN_REQUESTS_PER_MINUTE",
+   "responseTimeDegradationMilliseconds": 5,
+   "responseTimeDegradationPercent": 50,
+   "slowestResponseTimeDegradationMilliseconds": 20,
+   "slowestResponseTimeDegradationPercent": 100
+  },
+  "detectionMode": "DETECT_AUTOMATICALLY"
+ }
+}

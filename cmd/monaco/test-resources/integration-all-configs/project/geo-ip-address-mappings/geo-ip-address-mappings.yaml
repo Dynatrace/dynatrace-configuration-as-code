@@ -1,0 +1,4 @@
+config:
+- geo-ip-address-mappings: geo-ip-address-mappings.json
+geo-ip-address-mappings:
+- name: geo-ip-address-mappings

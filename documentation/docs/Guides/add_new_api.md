@@ -46,12 +46,22 @@ Easy-to-add APIs fulfill the following criteria:
 ```
 
 ​
-If your API fulfills these three criteria, perform the steps in the following section to add it to Monaco.
+If your API fulfills these 3 criteria, perform the steps in the following section to add it to Monaco.
+
 ​
-> :warning: If your API does not fulfil these requirements, please open a ticket in Monaco's backlog
+## Recognize if an API is of single configuration format
+
+In addition to *easy-to-add* APIs, there are such APIs that comply to a *single configuration* format:
+
+* They implement the following HTTP methods. E.g. for configuration APIs that is: 
+  * `GET <my-environment>/api/config/v1/<my-config>` (get the config)
+  * `PUT <my-environment>/api/config/v1/<my-config>` (change the config)
+
+Opposed to standard APIs that allow configuring multiple entities, these APIs manage a single, global configuration (within one environment). Therefore, only a single GET and PUT endpoint exists but no endpoints that would allow managing sub-resources (e.g. `../<my-config>/<id>`).
+
+> :warning: If your API does not fulfil any of the *easy-to-add* or *single configuration* requirements, please open a ticket in Monaco's backlog
 to get implementation feedback from the maintainers.
-​
-​
+
 
 ## Add a new API to Monaco
 ​
@@ -62,17 +72,19 @@ Take the following steps to add a new API to Monaco.
 
 ```json
   "<my-api-folder-name>": {
-      apiPath: "<path-to-my-api>",                       // mandatory
-      propertyNameOfGetAllResponse: "<property-name>",   // not necessary in case of "values"
+      apiPath: "<path-to-my-api>",                             // mandatory
+      isSingleConfigurationApi: <is-single-configuration-api>, // only necessary if API is of single configuration format
+      propertyNameOfGetAllResponse: "<property-name>",         // only necessary if API returns no "values" envelope (see below)
   },
 ```
 ​
 
 | Placeholder     | Description | 
 | ----------- | ----------- | 
-| <nobr>`<my-api-folder-name>`</nobr> | The name of the API, also used for the folder name for the configurations. Study the existing API names to get a feeling for the naming conventions and choose one accordingly.|
-| <nobr>`<path-to-my-api>`</nobr> | Path for your API. Monaco prefixes it with the environment URL to access the configs of your API. |
-| <nobr>`<property-name>`</nobr> | Name of the json property used in the `GET ALL` REST call to return the list of configs. E.g. it would be `extensions`, if the response of your PI's `GET ALL` REST call looks like the snippet below|
+| <nobr>`<my-api-folder-name>`</nobr> | The name of the API, also used for the folder name for the configurations. Please take a look at the existing API names to get a feeling for the naming conventions and choose one accordingly.|
+| <nobr>`<path-to-my-api>`</nobr> | This path points to your API. Monaco prefixes it with the environment URL to access the configs of your API. |
+| <nobr>`<is-single-configuration-api>`</nobr> | Boolean value specifying if an API is of single configuration format (optional, default: *false*). |
+| <nobr>`<property-name>`</nobr> | This names the json property used in the `GET ALL` REST call to return the list of configs. E.g. it would be `extensions`, if the response of your API's `GET ALL` REST call looks like the snippet below|
 ​
   
 ```json

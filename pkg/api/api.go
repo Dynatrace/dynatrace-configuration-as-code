@@ -178,6 +178,67 @@ var apiMap = map[string]apiInput{
 	"reports": {
 		apiPath: "/api/config/v1/reports",
 	},
+	// Single configuration APIs
+	"frequent-issue-detection": {
+		apiPath:                  "/api/config/v1/frequentIssueDetection",
+		isSingleConfigurationApi: true,
+	},
+	"data-privacy": {
+		apiPath:                  "/api/config/v1/dataPrivacy",
+		isSingleConfigurationApi: true,
+	},
+	"hosts-auto-update": {
+		apiPath:                  "/api/config/v1/hosts/autoupdate",
+		isSingleConfigurationApi: true,
+	},
+	"anomaly-detection-applications": {
+		apiPath:                  "/api/config/v1/anomalyDetection/applications",
+		isSingleConfigurationApi: true,
+	},
+	"anomaly-detection-aws": {
+		apiPath:                  "/api/config/v1/anomalyDetection/aws",
+		isSingleConfigurationApi: true,
+	},
+	"anomaly-detection-database-services": {
+		apiPath:                  "/api/config/v1/anomalyDetection/databaseServices",
+		isSingleConfigurationApi: true,
+	},
+	"anomaly-detection-hosts": {
+		apiPath:                  "/api/config/v1/anomalyDetection/hosts",
+		isSingleConfigurationApi: true,
+	},
+	"anomaly-detection-services": {
+		apiPath:                  "/api/config/v1/anomalyDetection/services",
+		isSingleConfigurationApi: true,
+	},
+	"anomaly-detection-vmware": {
+		apiPath:                  "/api/config/v1/anomalyDetection/vmware",
+		isSingleConfigurationApi: true,
+	},
+	"service-resource-naming": {
+		apiPath:                  "/api/config/v1/service/resourceNaming",
+		isSingleConfigurationApi: true,
+	},
+	"app-detection-rule-host": {
+		apiPath:                  "/api/config/v1/applicationDetectionRules/hostDetection",
+		isSingleConfigurationApi: true,
+	},
+	"content-resources": {
+		apiPath:                  "/api/config/v1/contentResources",
+		isSingleConfigurationApi: true,
+	},
+	"allowed-beacon-origins": {
+		apiPath:                  "/api/config/v1/allowedBeaconOriginsForCors",
+		isSingleConfigurationApi: true,
+	},
+	"geo-ip-detection-headers": {
+		apiPath:                  "/api/config/v1/geographicRegions/ipDetectionHeaders",
+		isSingleConfigurationApi: true,
+	},
+	"geo-ip-address-mappings": {
+		apiPath:                  "/api/config/v1/geographicRegions/ipAddressMappings",
+		isSingleConfigurationApi: true,
+	},
 }
 
 var standardApiPropertyNameOfGetAllResponse = "values"
@@ -189,18 +250,21 @@ type Api interface {
 	GetApiPath() string
 	GetPropertyNameOfGetAllResponse() string
 	IsStandardApi() bool
-	IsReportsApi() bool
+	IsSingleConfigurationApi() bool
+	NewIdValue() Value
 }
 
 type apiInput struct {
 	apiPath                      string
 	propertyNameOfGetAllResponse string
+	isSingleConfigurationApi     bool
 }
 
 type apiImpl struct {
 	id                           string
 	apiPath                      string
 	propertyNameOfGetAllResponse string
+	isSingleConfigurationApi     bool
 }
 
 func NewApis() map[string]Api {
@@ -215,18 +279,28 @@ func NewApis() map[string]Api {
 }
 
 func newApi(id string, input apiInput) Api {
+	if input.isSingleConfigurationApi {
+		return NewSingleConfigurationApi(id, input.apiPath)
+	}
+
 	if input.propertyNameOfGetAllResponse == "" {
 		return NewStandardApi(id, input.apiPath)
 	}
-	return NewApi(id, input.apiPath, input.propertyNameOfGetAllResponse)
+
+	return NewApi(id, input.apiPath, input.propertyNameOfGetAllResponse, false)
 }
 
 // NewStandardApi creates an API with propertyNameOfGetAllResponse set to "values"
 func NewStandardApi(id string, apiPath string) Api {
-	return NewApi(id, apiPath, standardApiPropertyNameOfGetAllResponse)
+	return NewApi(id, apiPath, standardApiPropertyNameOfGetAllResponse, false)
 }
 
-func NewApi(id string, apiPath string, propertyNameOfGetAllResponse string) Api {
+// NewSingleConfigurationApi creates an API with isSingleConfigurationApi set to true
+func NewSingleConfigurationApi(id string, apiPath string) Api {
+	return NewApi(id, apiPath, "", true)
+}
+
+func NewApi(id string, apiPath string, propertyNameOfGetAllResponse string, isSingleConfigurationApi bool) Api {
 
 	// TODO log warning if the user tries to create an API with a id not present in map above
 	// This means that a user runs monaco with an untested api
@@ -235,6 +309,7 @@ func NewApi(id string, apiPath string, propertyNameOfGetAllResponse string) Api 
 		id:                           id,
 		apiPath:                      apiPath,
 		propertyNameOfGetAllResponse: propertyNameOfGetAllResponse,
+		isSingleConfigurationApi:     isSingleConfigurationApi,
 	}
 }
 
@@ -262,9 +337,17 @@ func (a *apiImpl) IsStandardApi() bool {
 	return a.propertyNameOfGetAllResponse == standardApiPropertyNameOfGetAllResponse
 }
 
-// Determine APIs that require additional handlers
-func (a *apiImpl) IsReportsApi() bool {
-	return a.id == "reports"
+func (a *apiImpl) IsSingleConfigurationApi() bool {
+	return a.isSingleConfigurationApi
+}
+
+// Returns a Value which contains the api's id as
+// Id and Name attribute
+func (a *apiImpl) NewIdValue() Value {
+	return Value{
+		Name: a.id,
+		Id:   a.id,
+	}
 }
 
 func IsApi(dir string) bool {

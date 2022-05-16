@@ -29,13 +29,26 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 )
 
-func upsertDynatraceObject(client *http.Client, environmentUrl string, objectName string, theApi api.Api, payload []byte, apiToken string) (api.DynatraceEntity, error) {
+func upsertDynatraceObject(
+	client *http.Client,
+	environmentUrl string,
+	objectName string,
+	theApi api.Api,
+	payload []byte,
+	apiToken string,
+) (api.DynatraceEntity, error) {
+	isSingleConfigurationApi := theApi.IsSingleConfigurationApi()
+	existingObjectId := ""
 
 	fullUrl := theApi.GetUrlFromEnvironmentUrl(environmentUrl)
 
-	existingObjectId, err := getObjectIdIfAlreadyExists(client, theApi, fullUrl, objectName, apiToken)
-	if err != nil {
-		return api.DynatraceEntity{}, err
+	// Single configuration APIs don't have an id which allows skipping this step
+	if !isSingleConfigurationApi {
+		var err error
+		existingObjectId, err = getObjectIdIfAlreadyExists(client, theApi, fullUrl, objectName, apiToken)
+		if err != nil {
+			return api.DynatraceEntity{}, err
+		}
 	}
 
 	body := payload
@@ -49,7 +62,9 @@ func upsertDynatraceObject(client *http.Client, environmentUrl string, objectNam
 
 	isUpdate := existingObjectId != ""
 
-	if isUpdate {
+	// Single configuration APIs don't have a POST, but a PUT endpoint
+	// and therefore always require an update
+	if isUpdate || isSingleConfigurationApi {
 		return updateDynatraceObject(client, fullUrl, objectName, existingObjectId, theApi, body, apiToken)
 	} else {
 		return createDynatraceObject(client, fullUrl, objectName, theApi, body, apiToken)
@@ -128,7 +143,7 @@ func updateDynatraceObject(client *http.Client, fullUrl string, objectName strin
 	body := payload
 
 	// Updating a dashboard, reports or any service detection API requires the ID to be contained in the JSON, so we just add it...
-	if isApiDashboard(theApi) || theApi.IsReportsApi() || isAnyServiceDetectionApi(theApi) {
+	if isApiDashboard(theApi) || isReportsApi(theApi) || isAnyServiceDetectionApi(theApi) {
 		tmp := strings.Replace(string(payload), "{", "{\n\"id\":\""+existingObjectId+"\",\n", 1)
 		body = []byte(tmp)
 	}
@@ -242,10 +257,14 @@ func isCredentialNotReadyYet(resp Response) bool {
 }
 
 func joinUrl(urlBase string, path string) string {
-	if strings.HasSuffix(urlBase, "/") {
-		return urlBase + url.PathEscape(path)
+	trimmedUrl := strings.TrimSuffix(urlBase, "/")
+
+	trimmedPath := strings.TrimSpace(path)
+	if trimmedPath == "" {
+		return trimmedUrl
 	}
-	return urlBase + "/" + url.PathEscape(path)
+
+	return trimmedUrl + "/" + url.PathEscape(trimmedPath)
 }
 
 func isLocationHeaderAvailable(resp Response) (headerAvailable bool, headerArray []string) {
@@ -296,6 +315,10 @@ func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, ob
 
 func isApiDashboard(api api.Api) bool {
 	return api.GetId() == "dashboard"
+}
+
+func isReportsApi(api api.Api) bool {
+	return api.GetId() == "reports"
 }
 
 func isAnyServiceDetectionApi(api api.Api) bool {
@@ -391,7 +414,7 @@ func unmarshalJson(theApi api.Api, err error, resp Response) (error, []api.Value
 			}
 			values = translateSyntheticValues(jsonResp.Monitors)
 
-		} else if !theApi.IsStandardApi() || theApi.IsReportsApi() {
+		} else if !theApi.IsStandardApi() || isReportsApi(theApi) {
 
 			if available, array := isResultArrayAvailable(objmap, theApi); available {
 				jsonResp, err := translateGenericValues(array, theApi.GetId())

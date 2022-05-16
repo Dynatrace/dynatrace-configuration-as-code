@@ -1,0 +1,4 @@
+config:
+- allowed-beacon-origins: allowed-beacon-origins.json
+allowed-beacon-origins:
+- name: allowed-beacon-origins

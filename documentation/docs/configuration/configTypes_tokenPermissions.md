@@ -11,7 +11,16 @@ These are the supported configuration types, their API endpoints and the token p
 | alerting-profile                | _/api/config/v1/alertingProfiles_               | `Read Configuration` & `Write Configuration`                                                                        |
 | anomaly-detection-metrics       | _/api/config/v1/anomalyDetection/metricEvents_  | `Read Configuration` & `Write Configuration`                                                                        |
 | anomaly-detection-disks         | _/api/config/v1/anomalyDetection/diskEvents_    | `Read Configuration` & `Write Configuration`                                                                        |
+| allowed-beacon-origins <br /> **SINGLE CONFIGURATION ENDPOINT**             | _/api/config/v1/allowedBeaconOriginsForCors_        | `Read Configuration` & `Write Configuration`                                      |
+| anomaly-detection-applications <br /> **SINGLE CONFIGURATION ENDPOINT**     | _/api/config/v1/anomalyDetection/applications_      | `Read Configuration` & `Write Configuration`                                      |
+| anomaly-detection-aws <br /> **SINGLE CONFIGURATION ENDPOINT**              | _/api/config/v1/anomalyDetection/aws_               | `Read Configuration` & `Write Configuration`                                      |
+| anomaly-detection-database-services <br /> **SINGLE CONFIGURATION ENDPOINT**| _/api/config/v1/anomalyDetection/databaseServices_  | `Read Configuration` & `Write Configuration`                                      |
+| anomaly-detection-hosts <br /> **SINGLE CONFIGURATION ENDPOINT**            | _/api/config/v1/anomalyDetection/hosts_             | `Read Configuration` & `Write Configuration`                                      |
+| anomaly-detection-metrics                                     | _/api/config/v1/anomalyDetection/metricEvents_      | `Read Configuration` & `Write Configuration`                                      |
+| anomaly-detection-services <br /> **SINGLE CONFIGURATION ENDPOINT**         | _/api/config/v1/anomalyDetection/services_          | `Read Configuration` & `Write Configuration`                                      |
+| anomaly-detection-vmware <br /> **SINGLE CONFIGURATION ENDPOINT**           | _/api/config/v1/anomalyDetection/applications_      | `Read Configuration` & `Write Configuration`                                      |
 | app-detection-rule              | _/api/config/v1/applicationDetectionRules_      | `Read Configuration` & `Write Configuration`                                                                        |
+| app-detection-rule-host <br /> **SINGLE CONFIGURATION ENDPOINT**| _/api/config/v1/applicationDetectionRules/hostDetection_        | `Read Configuration` & `Write Configuration`                                      |
 | application **deprecated in 2.0.0!**| _/api/config/v1/applications/web_           | `Read Configuration` & `Write Configuration`                                                                        |
 | application-web **replaces application**| _/api/config/v1/applications/web_       | `Read Configuration` & `Write Configuration`                                                                        |
 | application-mobile              | _/api/config/v1/applications/mobile_            | `Read Configuration` & `Write Configuration`                                                                        |
@@ -26,6 +35,7 @@ These are the supported configuration types, their API endpoints and the token p
 | conditional-naming-host         | _/api/config/v1/conditionalNaming/host_         | `Read Configuration` & `Write Configuration`                                                                        |
 | conditional-naming-processgroup | _/api/config/v1/conditionalNaming/processGroup_ | `Read Configuration` & `Write Configuration`                                                                        |
 | conditional-naming-service      | _/api/config/v1/conditionalNaming/service_      | `Read Configuration` & `Write Configuration`                                                                        |
+| content-resources <br /> **SINGLE CONFIGURATION ENDPOINT**| _/api/config/v1/contentResources_   | `Read Configuration` & `Write Configuration`                                                                        |
 | credential-vault                | _/api/config/v1/credentials_                    | `Read Credential Vault Entries` & `Write Credential Vault Entries`                                                  |
 | custom-service-java             | _/api/config/v1/service/customServices/java_    | `Read Configuration` & `Write Configuration`                                                                        |
 | custom-service-dotnet           | _/api/config/v1/service/customServices/dotnet_  | `Read Configuration` & `Write Configuration`                                                                        |
@@ -33,9 +43,14 @@ These are the supported configuration types, their API endpoints and the token p
 | custom-service-nodejs           | _/api/config/v1/service/customServices/nodejs_  | `Read Configuration` & `Write Configuration`                                                                        |
 | custom-service-php              | _/api/config/v1/service/customServices/php_     | `Read Configuration` & `Write Configuration`                                                                        |
 | dashboard                       | _/api/config/v1/dashboards_                     | `Read Configuration` & `Write Configuration`                                                                        |
+| data-privacy <br /> **SINGLE CONFIGURATION ENDPOINT**| _/api/config/v1/dataPrivacy_             | `Read Configuration`, `DataPrivacy`                                                                                 |
 | extension                       | _/api/config/v1/extensions_                     | `Read Configuration` & `Write Configuration`                                                                        |
 | failure-detection-parametersets          | _/api/config/v1/service/failureDetection/parameterSelection/parameterSets_  | `Read Configuration` & `Write Configuration`                                   |
 | failure-detection-rules                  | _/api/config/v1/service/failureDetection/parameterSelection/rules_          | `Read Configuration` & `Write Configuration`                                   |
+| frequent-issue-detection <br /> **SINGLE CONFIGURATION ENDPOINT**| _/api/config/v1/frequentIssueDetection_                           | `Read Configuration` & `Write Configuration`                                   |
+| geo-ip-address-mappings <br /> **SINGLE CONFIGURATION ENDPOINT** | _/api/config/v1/geographicRegions/ipAddressMappings_              | `Read Configuration` & `Write Configuration`                                   |
+| geo-ip-detection-headers <br /> **SINGLE CONFIGURATION ENDPOINT**| _/api/config/v1/geographicRegions/ipDetectionHeaders_             | `Read Configuration` & `Write Configuration`                                   |
+| hosts-auto-update <br /> **SINGLE CONFIGURATION ENDPOINT**       | _/api/config/v1/hosts/autoupdate_                                 | `Read Configuration` & `Write Configuration`                                   |
 | kubernetes-credentials          | _/api/config/v1/kubernetes/credentials_         | `Read Configuration` & `Write Configuration`                                                                        |
 | maintenance-window              | _/api/config/v1/maintenanceWindows_             | `Read Configuratio`  & `Write Configuration`                                                                                     |
 | management-zone                 | _/api/config/v1/managementZones_                | `Read Configuration` & `Write Configuration`                                                                        |
@@ -48,6 +63,7 @@ These are the supported configuration types, their API endpoints and the token p
 | service-detection-full-web-service   | _/api/config/v1/service/detectionRules/FULL_WEB_SERVICE_                 | `Read Configuration` & `Write Configuration`                                          |
 | service-detection-opaque-web-request | _/api/config/v1/service/detectionRules/OPAQUE_AND_EXTERNAL_WEB_REQUEST_  | `Read Configuration` & `Write Configuration`                                          |
 | service-detection-opaque-web-service | _/api/config/v1/service/detectionRules/OPAQUE_AND_EXTERNAL_WEB_SERVICE_  | `Read Configuration` & `Write Configuration`                                          |
+| service-resource-naming <br /> **SINGLE CONFIGURATION ENDPOINT**| _/api/config/v1/service/resourceNaming_                     | `Read Configuration` & `Write Configuration`                                          |
 | synthetic-location              | _/api/v1/synthetic/locations_                   | `Access problem and event feed, metrics, and topology` & `Create and read synthetic monitors, locations, and nodes` |
 | synthetic-monitor               | _/api/v1/synthetic/monitors_                    | `Create and read synthetic monitors, locations, and nodes`                                                          |
 

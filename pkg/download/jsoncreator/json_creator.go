@@ -111,6 +111,10 @@ func processJSONFile(dat map[string]interface{}, id string, name string, api api
 func replaceKeyProperties(dat map[string]interface{}) map[string]interface{} {
 	//removes id field
 	delete(dat, "id")
+
+	// Removes metadata field
+	delete(dat, "metadata")
+
 	if dat["name"] != nil {
 		dat["name"] = "{{.name}}"
 	}
@@ -159,6 +163,23 @@ func isDefaultEntity(apiID string, dat map[string]interface{}) bool {
 	case "extension":
 		return false
 	case "aws-credentials":
+		return false
+	case "hosts-auto-update":
+		_, ok := dat["updateWindows"]
+		if !ok {
+			return false
+		}
+
+		definedWindows, ok := dat["updateWindows"].(map[string]interface{})["windows"].([]interface{})
+		if !ok {
+			return false
+		}
+
+		numberDefinedWindows := len(definedWindows)
+		if numberDefinedWindows < 1 {
+			return true
+		}
+
 		return false
 	default:
 		return false

@@ -35,6 +35,8 @@ import (
 const testTemplate = `{"msg": "Follow the {{.color}} {{.animalType}}"}`
 const testTemplateWithDependency = `{"msg": "Follow the {{.color}} {{.animalType}} with {{ .dep }}"}`
 const testTemplateWithEnvVar = `{"msg": "Follow the {{.color}} {{ .Env.ANIMAL }}"}`
+const testHostAutoUpdateTemplate = `{"updateWindows": { "windows": ["window"] }}`
+const testHostAutoUpdateTemplateWithEmptyWindows = `{"updateWindows": { "windows": [] }}`
 
 var testDevEnvironment = environment.NewEnvironment("development", "Dev", "", "https://url/to/dev/environment", "DEV")
 var testHardeningEnvironment = environment.NewEnvironment("hardening", "Hardening", "", "https://url/to/hardening/environment", "HARDENING")

@@ -32,6 +32,9 @@ var testManagementZoneApi = NewStandardApi("management-zone", "/api/config/v1/ma
 var testDashboardApi = NewStandardApi("dashboard", "/api/config/v1/dashboards")
 var testReportsApi = NewStandardApi("reports", "/api/config/v1/reports")
 
+var hostsAutoUpdateApiId = "hosts-auto-update"
+var testHostsAutoUpdateApi = NewSingleConfigurationApi(hostsAutoUpdateApiId, "/api/config/v1/hosts/autoupdate")
+
 func TestGetUrl(t *testing.T) {
 
 	url := testManagementZoneApi.GetUrl(testDevEnvironment)
@@ -62,10 +65,16 @@ func TestIfFolderContainsApiInPath(t *testing.T) {
 	assert.Equal(t, ContainsApiName("/project/sub-project"), false, "Check if `extension` is an API")
 }
 
-func TestIsReportsApi(t *testing.T) {
-	isReportsApi := testReportsApi.IsReportsApi()
-	assert.Equal(t, isReportsApi, true)
+func TestIsSingleConfigurationApi(t *testing.T) {
+	isSingleConfigurationApi := testDashboardApi.IsSingleConfigurationApi()
+	assert.Equal(t, false, isSingleConfigurationApi)
 
-	isReportsApi = testDashboardApi.IsReportsApi()
-	assert.Equal(t, isReportsApi, false)
+	isSingleConfigurationApi = testHostsAutoUpdateApi.IsSingleConfigurationApi()
+	assert.Equal(t, true, isSingleConfigurationApi)
+}
+
+func TestNewIdValue(t *testing.T) {
+	value := testHostsAutoUpdateApi.NewIdValue()
+	assert.Equal(t, hostsAutoUpdateApiId, value.Name)
+	assert.Equal(t, hostsAutoUpdateApiId, value.Id)
 }
