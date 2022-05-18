@@ -42,7 +42,7 @@ jobs:
                   echo "👍 done. written results to ./dependencies-and-licenses-node.txt"
                   cat dependencies-and-licenses-node.txt
             - name: Upload dependencies and licenses artifact
-              uses: actions/upload-artifact@v2
+              uses: actions/upload-artifact@v3
               with:
                   name: dependencies-and-licenses
                   path: dependencies-and-licenses-*.txt
