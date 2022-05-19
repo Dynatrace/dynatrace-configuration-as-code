@@ -29,7 +29,7 @@ jobs:
         run: make build
 
       - name: Build with xgo
-        uses: crazy-max/ghaction-xgo@v1.6.1
+        uses: crazy-max/ghaction-xgo@v1.8.0
         with:
           xgo_version: latest
           go_version: 1.16.0
