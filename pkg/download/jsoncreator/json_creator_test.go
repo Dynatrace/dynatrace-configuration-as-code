@@ -40,6 +40,7 @@ func TestCreateJsonConfig(t *testing.T) {
 		Return(jsonsample, nil)
 
 	apiMock.EXPECT().GetId().Return("alerting-profile").AnyTimes()
+	apiMock.EXPECT().IsNonUniqueNameApi().Return(false).AnyTimes()
 
 	jcreator := NewJSONCreator()
 
@@ -116,10 +117,14 @@ func TestProcessJSONFile(t *testing.T) {
 	sample["name"] = "test1"
 	sample["displayName"] = "testDisplay"
 	sample["id"] = "testId"
+
 	apiMock := api.CreateAPIMockFactory(t)
 	apiMock.EXPECT().GetId().Return("alerting-profile").AnyTimes()
+	apiMock.EXPECT().IsNonUniqueNameApi().Return(false).Times(1)
+
 	file, name, cleanName, err := processJSONFile(sample, "testId", "test1", apiMock)
 	assert.NilError(t, err)
+
 	jsonfile := make(map[string]interface{})
 	err = json.Unmarshal(file, &jsonfile)
 	assert.Check(t, jsonfile["testprop"] == "testprop")
@@ -128,4 +133,10 @@ func TestProcessJSONFile(t *testing.T) {
 	assert.Check(t, name == "test1")
 	assert.Check(t, cleanName == "test1")
 	assert.Check(t, jsonfile["id"] == nil)
+
+	apiMock.EXPECT().IsNonUniqueNameApi().Return(true).Times(1)
+
+	_, _, cleanName, err = processJSONFile(sample, "testId", "test1", apiMock)
+	assert.NilError(t, err)
+	assert.Equal(t, "testId", cleanName)
 }

@@ -51,20 +51,24 @@ func (d *JsonCreatorImp) CreateJSONConfig(fs afero.Fs, client rest.DynatraceClie
 		util.Log.Error("error getting detail %s from API", api.GetId())
 		return "", "", false, err
 	}
+
 	if filter {
 		return "", "", true, nil
 	}
+
 	jsonfile, name, cleanName, err := processJSONFile(data, value.Id, value.Name, api)
 	if err != nil {
 		util.Log.Error("error processing jsonfile %s", api.GetId())
 		return "", "", false, err
 	}
+
 	fullPath := filepath.Join(path, cleanName+".json")
 	err = afero.WriteFile(fs, fullPath, jsonfile, 0664)
 	if err != nil {
 		util.Log.Error("error writing detail %s", api.GetId())
 		return "", "", false, err
 	}
+
 	return name, cleanName, false, nil
 }
 
@@ -97,7 +101,16 @@ func processJSONFile(dat map[string]interface{}, id string, name string, api api
 		return nil, "", "", err
 	}
 	dat = replaceKeyProperties(dat)
-	cleanName := util.SanitizeName(name) //for using as the json filename
+
+	cleanName := "" //for using as the json filename
+	isNonUniqueNameApi := api.IsNonUniqueNameApi()
+
+	if isNonUniqueNameApi {
+		cleanName = util.SanitizeName(id)
+	} else {
+		cleanName = util.SanitizeName(name)
+	}
+
 	jsonfile, err := json.MarshalIndent(dat, "", " ")
 
 	if err != nil {
