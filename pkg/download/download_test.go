@@ -62,10 +62,17 @@ func TestCreateConfigsFromAPI(t *testing.T) {
 		CreateJSONConfig(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return("demo.json", "demo", false, nil)
 
-	ycreator.EXPECT().
+	ycreator.
+		EXPECT().
+		ReadYamlFile(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(nil)
+	ycreator.
+		EXPECT().
+		UpdateConfig(gomock.Any(), gomock.Any(), gomock.Any())
+	ycreator.
+		EXPECT().
 		CreateYamlFile(gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(nil)
-	ycreator.EXPECT().AddConfig(gomock.Any(), gomock.Any())
 
 	err := createConfigsFromAPI(fs, apiMock, "123", "/", client, jcreator, ycreator)
 	assert.NilError(t, err, "No errors")

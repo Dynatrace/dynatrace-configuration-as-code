@@ -97,29 +97,29 @@ func getAPIList(downloadSpecificAPI string) (filterAPIList map[string]api.Api, e
 
 //creates the project and downloads the configs
 func downloadConfigFromEnvironment(fs afero.Fs, environment environment.Environment, basepath string, listApis map[string]api.Api) (err error) {
-	projectName := environment.GetId()
-	path := filepath.Join(basepath, projectName)
+	environmentName := environment.GetId()
+	path := filepath.Join(basepath, environmentName)
 
-	util.Log.Info("Creating base project name %s", projectName)
+	util.Log.Info("Creating base project name %s", environmentName)
 	err = fs.MkdirAll(path, 0777)
 	if err != nil {
-		util.Log.Error("error creating folder for enviroment %v %v", projectName, err)
+		util.Log.Error("error creating folder for enviroment %v %v", environmentName, err)
 		return err
 	}
 	token, err := environment.GetToken()
 	if err != nil {
-		util.Log.Error("error retrieving token for enviroment %v %v", projectName, err)
+		util.Log.Error("error retrieving token for enviroment %v %v", environmentName, err)
 		return err
 	}
 	client, err := rest.NewDynatraceClient(environment.GetEnvironmentUrl(), token)
 	if err != nil {
-		util.Log.Error("error creating dynatrace client for enviroment %v %v", projectName, err)
+		util.Log.Error("error creating dynatrace client for enviroment %v %v", environmentName, err)
 		return err
 	}
 	for _, api := range listApis {
 		util.Log.Info(" --- GETTING CONFIGS for %s", api.GetId())
 		jcreator := jsoncreator.NewJSONCreator()
-		ycreator := yamlcreator.NewYamlConfig()
+		ycreator := yamlcreator.NewYamlConfig(environmentName)
 
 		// Retrieves object from single configuration API
 		isSingleConfigurationApi := api.IsSingleConfigurationApi()
@@ -135,7 +135,7 @@ func downloadConfigFromEnvironment(fs afero.Fs, environment environment.Environm
 			}
 		}
 	}
-	util.Log.Info("END downloading info %s", projectName)
+	util.Log.Info("END downloading info %s", environmentName)
 	return nil
 }
 
@@ -203,16 +203,26 @@ func createConfigsFromAPI(
 		util.Log.Info("No elements for API %s", api.GetId())
 		return nil
 	}
+
 	subPath, err := createConfigsFolder(fs, api, fullpath)
 	if err != nil {
 		util.Log.Error("error creating folder for api %v %v", api.GetId(), err)
 		return err
 	}
+
+	apiId := api.GetId()
+
+	err = ycreator.ReadYamlFile(fs, subPath, apiId)
+	if err != nil {
+		util.Log.Debug("No previously downloaded configs found.")
+	}
+
 	for _, val := range values {
 		util.Log.Debug("getting detail %s", val)
 		cont++
 		util.Log.Debug("REQUEST counter %v", cont)
-		name, cleanName, filter, err := jcreator.CreateJSONConfig(fs, client, api, val, subPath)
+
+		_, cleanName, filter, err := jcreator.CreateJSONConfig(fs, client, api, val, subPath)
 		if err != nil {
 			util.Log.Error("error creating config api json file: %v", err)
 			continue
@@ -220,13 +230,16 @@ func createConfigsFromAPI(
 		if filter {
 			continue
 		}
-		ycreator.AddConfig(cleanName, name)
+
+		jsonFileName := cleanName + ".json"
+		ycreator.UpdateConfig(val.Id, val.Name, jsonFileName)
 	}
 
-	err = ycreator.CreateYamlFile(fs, subPath, api.GetId())
+	err = ycreator.CreateYamlFile(fs, subPath, apiId)
 	if err != nil {
 		util.Log.Error("error creating config api yaml file: %v", err)
 		return err
 	}
+
 	return nil
 }
