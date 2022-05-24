@@ -40,6 +40,7 @@ var apiMap = map[string]apiInput{
 	"dashboard": {
 		apiPath:                      "/api/config/v1/dashboards",
 		propertyNameOfGetAllResponse: "dashboards",
+		isNonUniqueNameApi:           true,
 	},
 	"notification": {
 		apiPath: "/api/config/v1/notifications",
@@ -138,7 +139,8 @@ var apiMap = map[string]apiInput{
 		apiPath: "/api/config/v1/maintenanceWindows",
 	},
 	"request-naming-service": {
-		apiPath: "/api/config/v1/service/requestNaming",
+		apiPath:            "/api/config/v1/service/requestNaming",
+		isNonUniqueNameApi: true,
 	},
 
 	// Early adopter API !
@@ -251,6 +253,7 @@ type Api interface {
 	GetPropertyNameOfGetAllResponse() string
 	IsStandardApi() bool
 	IsSingleConfigurationApi() bool
+	IsNonUniqueNameApi() bool
 	NewIdValue() Value
 }
 
@@ -258,6 +261,7 @@ type apiInput struct {
 	apiPath                      string
 	propertyNameOfGetAllResponse string
 	isSingleConfigurationApi     bool
+	isNonUniqueNameApi           bool
 }
 
 type apiImpl struct {
@@ -265,6 +269,7 @@ type apiImpl struct {
 	apiPath                      string
 	propertyNameOfGetAllResponse string
 	isSingleConfigurationApi     bool
+	isNonUniqueNameApi           bool
 }
 
 func NewApis() map[string]Api {
@@ -284,23 +289,23 @@ func newApi(id string, input apiInput) Api {
 	}
 
 	if input.propertyNameOfGetAllResponse == "" {
-		return NewStandardApi(id, input.apiPath)
+		return NewStandardApi(id, input.apiPath, input.isNonUniqueNameApi)
 	}
 
-	return NewApi(id, input.apiPath, input.propertyNameOfGetAllResponse, false)
+	return NewApi(id, input.apiPath, input.propertyNameOfGetAllResponse, false, input.isNonUniqueNameApi)
 }
 
 // NewStandardApi creates an API with propertyNameOfGetAllResponse set to "values"
-func NewStandardApi(id string, apiPath string) Api {
-	return NewApi(id, apiPath, standardApiPropertyNameOfGetAllResponse, false)
+func NewStandardApi(id string, apiPath string, isNonUniqueNameApi bool) Api {
+	return NewApi(id, apiPath, standardApiPropertyNameOfGetAllResponse, false, isNonUniqueNameApi)
 }
 
 // NewSingleConfigurationApi creates an API with isSingleConfigurationApi set to true
 func NewSingleConfigurationApi(id string, apiPath string) Api {
-	return NewApi(id, apiPath, "", true)
+	return NewApi(id, apiPath, "", true, false)
 }
 
-func NewApi(id string, apiPath string, propertyNameOfGetAllResponse string, isSingleConfigurationApi bool) Api {
+func NewApi(id string, apiPath string, propertyNameOfGetAllResponse string, isSingleConfigurationApi bool, isNonUniqueNameApi bool) Api {
 
 	// TODO log warning if the user tries to create an API with a id not present in map above
 	// This means that a user runs monaco with an untested api
@@ -310,6 +315,7 @@ func NewApi(id string, apiPath string, propertyNameOfGetAllResponse string, isSi
 		apiPath:                      apiPath,
 		propertyNameOfGetAllResponse: propertyNameOfGetAllResponse,
 		isSingleConfigurationApi:     isSingleConfigurationApi,
+		isNonUniqueNameApi:           isNonUniqueNameApi,
 	}
 }
 
@@ -339,6 +345,10 @@ func (a *apiImpl) IsStandardApi() bool {
 
 func (a *apiImpl) IsSingleConfigurationApi() bool {
 	return a.isSingleConfigurationApi
+}
+
+func (a *apiImpl) IsNonUniqueNameApi() bool {
+	return a.isNonUniqueNameApi
 }
 
 // Returns a Value which contains the api's id as

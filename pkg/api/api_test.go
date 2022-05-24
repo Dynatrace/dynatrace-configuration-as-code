@@ -27,10 +27,10 @@ import (
 )
 
 var testDevEnvironment = environment.NewEnvironment("development", "Dev", "", "https://url/to/dev/environment", "DEV")
-var testAlertingProfileApi = NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles")
-var testManagementZoneApi = NewStandardApi("management-zone", "/api/config/v1/managementZones")
-var testDashboardApi = NewStandardApi("dashboard", "/api/config/v1/dashboards")
-var testReportsApi = NewStandardApi("reports", "/api/config/v1/reports")
+var testAlertingProfileApi = NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false)
+var testManagementZoneApi = NewStandardApi("management-zone", "/api/config/v1/managementZones", false)
+var testDashboardApi = NewStandardApi("dashboard", "/api/config/v1/dashboards", true)
+var testReportsApi = NewStandardApi("reports", "/api/config/v1/reports", false)
 
 var hostsAutoUpdateApiId = "hosts-auto-update"
 var testHostsAutoUpdateApi = NewSingleConfigurationApi(hostsAutoUpdateApiId, "/api/config/v1/hosts/autoupdate")
@@ -71,6 +71,14 @@ func TestIsSingleConfigurationApi(t *testing.T) {
 
 	isSingleConfigurationApi = testHostsAutoUpdateApi.IsSingleConfigurationApi()
 	assert.Equal(t, true, isSingleConfigurationApi)
+}
+
+func TestIsNonUniqueNameApi(t *testing.T) {
+	isNonUniqueNameApi := testDashboardApi.IsNonUniqueNameApi()
+	assert.Equal(t, true, isNonUniqueNameApi)
+
+	isNonUniqueNameApi = testHostsAutoUpdateApi.IsNonUniqueNameApi()
+	assert.Equal(t, false, isNonUniqueNameApi)
 }
 
 func TestNewIdValue(t *testing.T) {
