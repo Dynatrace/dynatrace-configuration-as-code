@@ -20,6 +20,8 @@
 package project
 
 import (
+	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
@@ -265,4 +267,47 @@ func TestProcessYaml(t *testing.T) {
 
 	config := builder.configs[0]
 	assert.Check(t, config != nil)
+}
+
+var mockGenerateUuidFromConfigIdSuccess = func(projectUniqueId string, configId string) (string, error) {
+	return projectUniqueId + "/" + configId, nil
+}
+
+var mockGenerateUuidFromConfigIdFail = func(projectUniqueId string, configId string) (string, error) {
+	return "", fmt.Errorf("generateUuidFromConfigIdFail")
+}
+
+var mockGetRelFilepathSuccess = func(basepath string, targpath string) (string, error) {
+	return filepath.Rel(basepath, targpath)
+}
+
+var mockGetRelFilepathFail = func(basepath string, targpath string) (string, error) {
+	return "", fmt.Errorf("getRelFilepathFail")
+}
+
+func TestGenerateConfigUuid(t *testing.T) {
+	fullQualifiedProjectFolderName := "/test/folder/env/project"
+	projectRootFolder := "/test/folder"
+
+	projectAtTest := &projectImpl{
+		id:                       fullQualifiedProjectFolderName,
+		projectRootFolder:        projectRootFolder,
+		generateUuidFromConfigId: mockGenerateUuidFromConfigIdSuccess,
+		getRelFilepath:           mockGetRelFilepathSuccess,
+	}
+
+	uuidAtTest, err := projectAtTest.GenerateConfigUuid("my-config-id")
+	assert.NilError(t, err)
+	assert.Equal(t, "env/project/my-config-id", uuidAtTest)
+
+	projectAtTest.getRelFilepath = mockGetRelFilepathFail
+
+	_, err = projectAtTest.GenerateConfigUuid("my-config-id")
+	assert.Error(t, err, "getRelFilepathFail")
+
+	projectAtTest.getRelFilepath = mockGetRelFilepathSuccess
+	projectAtTest.generateUuidFromConfigId = mockGenerateUuidFromConfigIdFail
+
+	_, err = projectAtTest.GenerateConfigUuid("my-config-id")
+	assert.Error(t, err, "generateUuidFromConfigIdFail")
 }

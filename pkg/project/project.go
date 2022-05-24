@@ -34,11 +34,15 @@ type Project interface {
 	GetConfigs() []config.Config
 	GetConfig(id string) (config.Config, error)
 	GetId() string
+	GenerateConfigUuid(configId string) (string, error)
 }
 
 type projectImpl struct {
-	id      string
-	configs []config.Config
+	id                       string
+	configs                  []config.Config
+	projectRootFolder        string
+	generateUuidFromConfigId func(projectUniqueId string, configId string) (string, error)
+	getRelFilepath           func(basepath string, targpath string) (string, error)
 }
 
 type projectBuilder struct {
@@ -57,10 +61,10 @@ func NewProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolde
 
 	// standardize projectRootFolder
 	// trim path separator from projectRoot
-	projectRootFolder = strings.Trim(projectRootFolder, string(os.PathSeparator))
+	sanitizedProjectRootFolder := strings.Trim(projectRootFolder, string(os.PathSeparator))
 
 	builder := projectBuilder{
-		projectRootFolder: projectRootFolder,
+		projectRootFolder: sanitizedProjectRootFolder,
 		projectId:         fullQualifiedProjectFolderName,
 		configs:           configs,
 		apis:              apis,
@@ -79,11 +83,14 @@ func NewProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolde
 		return nil, err
 	}
 
-	warnIfProjectNameClashesWithApiName(projectFolderName, apis, projectRootFolder)
+	warnIfProjectNameClashesWithApiName(projectFolderName, apis, sanitizedProjectRootFolder)
 
 	return &projectImpl{
-		id:      fullQualifiedProjectFolderName,
-		configs: builder.configs,
+		id:                       fullQualifiedProjectFolderName,
+		configs:                  builder.configs,
+		projectRootFolder:        projectRootFolder,
+		generateUuidFromConfigId: util.GenerateUuidFromConfigId,
+		getRelFilepath:           filepath.Rel,
 	}, nil
 }
 
@@ -284,4 +291,22 @@ func (p *projectImpl) HasDependencyOn(project Project) bool {
 		}
 	}
 	return false
+}
+
+// GenerateConfigUuid generates a unique id for this config, considering environment and project structure
+func (p *projectImpl) GenerateConfigUuid(configId string) (string, error) {
+	projectId := p.id
+	projectRootFolder := p.projectRootFolder
+
+	projectUniqueId, err := p.getRelFilepath(projectRootFolder, projectId)
+	if err != nil {
+		return "", err
+	}
+
+	configUuid, err := p.generateUuidFromConfigId(projectUniqueId, configId)
+	if err != nil {
+		return "", err
+	}
+
+	return configUuid, nil
 }
