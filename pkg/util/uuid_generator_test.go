@@ -17,7 +17,11 @@
 
 package util
 
-import "testing"
+import (
+	"testing"
+
+	"gotest.tools/assert"
+)
 
 func TestGenerateUuidFromName(t *testing.T) {
 	tests := []struct {
@@ -65,4 +69,30 @@ func TestGenerateUuidFromName(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestIsUuid(t *testing.T) {
+	validUuid := "41598cc6-677f-39a0-a8e8-dece5e4e27fc"
+	inValidUuid := "41598cc6-677f-39a0-a8e8-dece5e4e27fg"
+
+	isUuid := IsUuid(validUuid)
+	assert.Equal(t, true, isUuid)
+
+	isUuid = IsUuid(inValidUuid)
+	assert.Equal(t, false, isUuid)
+}
+
+func TestGenerateUuidFromConfigId(t *testing.T) {
+	projectUniqueId := "environment-id/project-id"
+	validUuid := "41598cc6-677f-39a0-a8e8-dece5e4e27fc"
+	configId := "my-config-id"
+	expectedUuidResult := "49ac3d5e-ca4a-35be-b94e-26913319bac4"
+
+	uuidToBeTested, err := GenerateUuidFromConfigId(projectUniqueId, validUuid)
+	assert.NilError(t, err)
+	assert.Equal(t, validUuid, uuidToBeTested)
+
+	uuidToBeTested, err = GenerateUuidFromConfigId(projectUniqueId, configId)
+	assert.NilError(t, err)
+	assert.Equal(t, expectedUuidResult, uuidToBeTested)
 }
