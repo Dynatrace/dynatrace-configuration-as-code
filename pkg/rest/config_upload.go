@@ -71,6 +71,21 @@ func upsertDynatraceObject(
 	}
 }
 
+func upsertDynatraceEntityById(
+	client *http.Client,
+	environmentUrl string,
+	entityId string,
+	objectName string,
+	theApi api.Api,
+	payload []byte,
+	apiToken string,
+) (api.DynatraceEntity, error) {
+	fullUrl := theApi.GetUrlFromEnvironmentUrl(environmentUrl)
+	body := payload
+
+	return updateDynatraceObject(client, fullUrl, objectName, entityId, theApi, body, apiToken)
+}
+
 func createDynatraceObject(client *http.Client, fullUrl string, objectName string, theApi api.Api, payload []byte, apiToken string) (api.DynatraceEntity, error) {
 	path := fullUrl
 	body := payload
