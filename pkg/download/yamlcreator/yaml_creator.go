@@ -15,6 +15,7 @@
 package yamlcreator
 
 import (
+	"io/fs"
 	"path/filepath"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
@@ -26,24 +27,53 @@ import (
 
 //YamlCreator implements method to create the yaml configuration file
 type YamlCreator interface {
+	ReadYamlFile(fs afero.Fs, configSubPath string, apiId string) error
 	CreateYamlFile(fs afero.Fs, path string, name string) error
 	AddConfig(name string, rawName string)
+	UpdateConfig(entityId string, entityName string, jsonFileName string)
 }
 
-//YamlConfig defines the structure for the config file for each API
+// YamlConfig defines the structure for the config file for each API including meta data
 type YamlConfig struct {
-	Config []map[string]string
-	Detail map[string][]DetailConfig `yaml:",inline"`
+	Config                   []map[string]string
+	Detail                   map[string][]DetailConfig
+	EnvironmentName          string
+	generateUuidFromConfigId func(projectUniqueId string, configId string) (string, error)
+	marshalYaml              func(in interface{}) (out []byte, err error)
+	unmarshalYaml            func(text string, fileName string) (error, map[string]map[string]string)
+	readFile                 func(fs afero.Fs, filename string) ([]byte, error)
+	writeFile                func(fs afero.Fs, filename string, data []byte, perm fs.FileMode) error
 }
 
-//DetailConfig sets the default properties to be set replace in each json file
+// DetailConfig contains name and meta data for each API and entity
 type DetailConfig struct {
+	Name           string `yaml:"name"`
+	Id             string `yaml:"id"`
+	ConfigFileName string `yaml:"configFileName"`
+	IsDownloaded   bool   `yaml:"isDownloaded"`
+}
+
+// CleansedYamlConfig defines the structure for the config file for each API
+type CleansedYamlConfig struct {
+	Config []map[string]string               `yaml:"config"`
+	Detail map[string][]CleansedDetailConfig `yaml:",inline"`
+}
+
+// CleansedDetailConfig sets the default properties to be set replace in each json file
+type CleansedDetailConfig struct {
 	Name string `yaml:"name"`
 }
 
 //NewYamlConfig return a new yaml struct with Config and Detail as fields
-func NewYamlConfig() *YamlConfig {
-	yamlConfig := YamlConfig{}
+func NewYamlConfig(environmentName string) *YamlConfig {
+	yamlConfig := YamlConfig{
+		EnvironmentName:          environmentName,
+		generateUuidFromConfigId: util.GenerateUuidFromConfigId,
+		marshalYaml:              yaml.Marshal,
+		unmarshalYaml:            util.UnmarshalYaml,
+		readFile:                 afero.ReadFile,
+		writeFile:                afero.WriteFile,
+	}
 	yamlConfig.Detail = make(map[string][]DetailConfig)
 	return &yamlConfig
 }
@@ -58,19 +88,176 @@ func (yc *YamlConfig) AddConfig(name string, rawName string) {
 	yc.Detail[name] = append(yc.Detail[name], config)
 }
 
+// UpdateConfig allows updating configs in the yaml file
+func (yc *YamlConfig) UpdateConfig(entityId string, entityName string, jsonFileName string) {
+	configId := yc.getConfigName(entityId)
+
+	detailConfig := DetailConfig{
+		Name:           entityName,
+		Id:             entityId,
+		ConfigFileName: jsonFileName,
+		IsDownloaded:   true,
+	}
+
+	yc.Detail[configId] = []DetailConfig{detailConfig}
+
+	isExistingConfig := false
+
+	for i, config := range yc.Config {
+		for k := range config {
+			if k == configId {
+				isExistingConfig = true
+				yc.Config[i][k] = jsonFileName
+			}
+		}
+	}
+
+	if !isExistingConfig {
+		config := map[string]string{}
+		config[configId] = jsonFileName
+		yc.Config = append(yc.Config, config)
+	}
+}
+
+func (yc *YamlConfig) getConfigName(entityId string) string {
+	for _, v := range yc.Detail {
+		config := v[0]
+		if config.Id == entityId {
+			return config.Name
+		}
+	}
+
+	return entityId
+}
+
+func (yc *YamlConfig) cleanseYamlConfig() CleansedYamlConfig {
+	yamlConfig := CleansedYamlConfig{
+		Config: []map[string]string{},
+		Detail: map[string][]CleansedDetailConfig{},
+	}
+
+	for k, v := range yc.Detail {
+		// isDownloaded specifies whether config was downloaded, i.e. currently exists in environment
+		// If it wasn't downloaded, it also won't be added to the config yaml.
+		isDownloaded := v[0].IsDownloaded
+
+		if isDownloaded {
+			entityName := v[0].Name
+			configFileName := v[0].ConfigFileName
+
+			yamlConfig.Detail[k] = []CleansedDetailConfig{}
+
+			cleansedDetailConfig := CleansedDetailConfig{
+				Name: entityName,
+			}
+
+			yamlConfig.Detail[k] = append(yamlConfig.Detail[k], cleansedDetailConfig)
+
+			cleansedConfig := map[string]string{}
+			cleansedConfig[k] = configFileName
+
+			yamlConfig.Config = append(yamlConfig.Config, cleansedConfig)
+		}
+	}
+
+	return yamlConfig
+}
+
 //CreateYamlFile transforms the struct into a physical file on disk
 func (yc *YamlConfig) CreateYamlFile(fs afero.Fs, path string, name string) error {
+	yamlConfig := yc.cleanseYamlConfig()
+	fullPath := filepath.Join(path, name+".yaml")
 
-	data, err := yaml.Marshal(yc)
+	data, err := yc.marshalYaml(yamlConfig)
 	if err != nil {
 		util.Log.Error("error parsing yaml file: %v", err)
 		return err
 	}
-	fullPath := filepath.Join(path, name+".yaml")
-	err = afero.WriteFile(fs, fullPath, data, 0664)
+
+	err = yc.writeFile(fs, fullPath, data, 0664)
 	if err != nil {
 		util.Log.Error("error creating yaml file %s", name)
 		return err
 	}
+
+	return nil
+}
+
+func (yc *YamlConfig) parseConfigs(unmarshaledData map[string]map[string]string) {
+	for k, v := range unmarshaledData {
+		if k == "config" {
+			for configId, configJson := range v {
+				configItem := make(map[string]string)
+				configItem[configId] = configJson
+
+				yc.Config = append(yc.Config, configItem)
+			}
+		}
+	}
+}
+
+func (yc *YamlConfig) findConfigFileName(configId string) string {
+	for _, v := range yc.Config {
+		for potentialId, configFileName := range v {
+			if potentialId == configId {
+				return configFileName
+			}
+		}
+	}
+
+	return ""
+}
+
+func (yc *YamlConfig) parseConfigDetails(unmarshaledData map[string]map[string]string) error {
+	for configId := range unmarshaledData {
+		if configId != "config" {
+			// As of May 2022, download does not support project structure
+			// Fallback to environment unique id
+			environmentUniqueConfigId := yc.EnvironmentName
+
+			entityUuid, err := yc.generateUuidFromConfigId(environmentUniqueConfigId, configId)
+			if err != nil {
+				return err
+			}
+
+			configFileName := yc.findConfigFileName(configId)
+
+			detailConfig := DetailConfig{
+				Name:           configId,
+				Id:             entityUuid,
+				ConfigFileName: configFileName,
+			}
+
+			yc.Detail[configId] = []DetailConfig{
+				detailConfig,
+			}
+		}
+	}
+
+	return nil
+}
+
+// ReadYamlFile reads an potentially existing config yaml
+func (yc *YamlConfig) ReadYamlFile(fs afero.Fs, configSubPath string, apiId string) error {
+	configFileName := apiId + ".yaml"
+	fullPath := filepath.Join(configSubPath, configFileName)
+
+	fileData, err := yc.readFile(fs, fullPath)
+	if err != nil {
+		return err
+	}
+
+	err, unmarshaledData := yc.unmarshalYaml(string(fileData), configFileName)
+	if err != nil {
+		return err
+	}
+
+	yc.parseConfigs(unmarshaledData)
+
+	err = yc.parseConfigDetails(unmarshaledData)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
