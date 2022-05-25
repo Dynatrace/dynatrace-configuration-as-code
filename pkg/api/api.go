@@ -37,6 +37,7 @@ var apiMap = map[string]apiInput{
 		apiPath: "/api/config/v1/autoTags",
 	},
 	// Early adopter API !
+	// Non unique name API !
 	"dashboard": {
 		apiPath:                      "/api/config/v1/dashboards",
 		propertyNameOfGetAllResponse: "dashboards",
@@ -138,6 +139,7 @@ var apiMap = map[string]apiInput{
 	"maintenance-window": {
 		apiPath: "/api/config/v1/maintenanceWindows",
 	},
+	// Non unique name API !
 	"request-naming-service": {
 		apiPath:            "/api/config/v1/service/requestNaming",
 		isNonUniqueNameApi: true,
@@ -343,10 +345,15 @@ func (a *apiImpl) IsStandardApi() bool {
 	return a.propertyNameOfGetAllResponse == standardApiPropertyNameOfGetAllResponse
 }
 
+// Single configuration APIs are those APIs that configure an environment global setting.
+// Such settings require additional handling and can't be deleted.
 func (a *apiImpl) IsSingleConfigurationApi() bool {
 	return a.isSingleConfigurationApi
 }
 
+// Non unique name APIs are those APIs that don't work with an environment wide unique id.
+// For such APIs, the name attribute can't be used as a id (Monaco default behavior), hence
+// such APIs require additional handling.
 func (a *apiImpl) IsNonUniqueNameApi() bool {
 	return a.isNonUniqueNameApi
 }
