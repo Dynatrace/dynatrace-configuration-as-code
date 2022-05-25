@@ -31,11 +31,55 @@ import (
 	"github.com/spf13/afero"
 )
 
-func Deploy(workingDir string, fs afero.Fs, environmentsFile string,
-	specificEnvironment string, proj string, dryRun bool, continueOnError bool) error {
-	environments, errors := environment.LoadEnvironmentList(specificEnvironment, environmentsFile, fs)
+type Deploy struct {
+	fs                   afero.Fs
+	workingDir           string
+	environmentsFilePath string
+	loadEnvironmentList  func(specificEnvironment string, environmentsFilePath string, fs afero.Fs) (environments map[string]environment.Environment, errorList []error)
+	loadProjectsToDeploy func(fs afero.Fs, specificProjectToDeploy string, apis map[string]api.Api, path string) (projectsToDeploy []project.Project, err error)
+	loadConfigsToDelete  func(fs afero.Fs, apis map[string]api.Api, path string) (configs []config.Config, err error)
+	failOnError          func(err error, msg string)
+	apis                 map[string]api.Api
+	newDynatraceClient   func(environmentUrl string, token string) (rest.DynatraceClient, error)
+}
 
-	workingDir = filepath.Clean(workingDir)
+type DeployIface interface {
+	Deploy(specificEnvironment string, proj string, continueOnError bool) error
+	DeployDryRun(specificEnvironment string, proj string, continueOnError bool) error
+	Delete(specificEnvironment string, proj string) error
+	DeleteDryRun(specificEnvironment string, proj string) error
+	RunAll(specificEnvironment string, proj string, isDryRun bool, continueOnError bool) error
+}
+
+func NewHandler(
+	workingDir string,
+	fs afero.Fs,
+	environmentsFilePath string,
+) (*Deploy, error) {
+	// TBD: Check whether workingDir, environmentsFilePath exist...
+
+	deploy := &Deploy{
+		fs:                   fs,
+		workingDir:           filepath.Clean(workingDir),
+		environmentsFilePath: environmentsFilePath,
+		loadEnvironmentList:  environment.LoadEnvironmentList,
+		loadProjectsToDeploy: project.LoadProjectsToDeploy,
+		loadConfigsToDelete:  delete.LoadConfigsToDelete,
+		failOnError:          util.FailOnError,
+		apis:                 api.NewApis(),
+		newDynatraceClient:   rest.NewDynatraceClient,
+	}
+
+	return deploy, nil
+}
+
+func (d *Deploy) deploy(
+	specificEnvironment string,
+	proj string,
+	isDryRun bool,
+	continueOnError bool,
+) error {
+	environments, errors := d.loadEnvironmentList(specificEnvironment, d.environmentsFilePath, d.fs)
 
 	var deploymentErrors = make(map[string][]error)
 
@@ -44,11 +88,9 @@ func Deploy(workingDir string, fs afero.Fs, environmentsFile string,
 		deploymentErrors[configIssue] = append(deploymentErrors[configIssue], err)
 	}
 
-	apis := api.NewApis()
-
-	projects, err := project.LoadProjectsToDeploy(fs, proj, apis, workingDir)
+	projects, err := d.loadProjectsToDeploy(d.fs, proj, d.apis, d.workingDir)
 	if err != nil {
-		util.FailOnError(err, "Loading of projects failed")
+		d.failOnError(err, "Loading of projects failed")
 	}
 
 	util.Log.Info("Executing projects in this order: ")
@@ -58,15 +100,15 @@ func Deploy(workingDir string, fs afero.Fs, environmentsFile string,
 	}
 
 	for _, environment := range environments {
-		errors := execute(environment, projects, dryRun, workingDir, continueOnError)
-		if errors != nil && len(errors) > 0 {
+		errors := d.execute(environment, projects, isDryRun, continueOnError)
+		if len(errors) > 0 {
 			deploymentErrors[environment.GetId()] = errors
 		}
 	}
 
 	util.Log.Info("Deployment summary:")
 	for environment, errors := range deploymentErrors {
-		if dryRun {
+		if isDryRun {
 			util.Log.Error("Validation of %s failed. Found %d error(s)\n", environment, len(errors))
 			util.PrintErrors(errors)
 		} else if continueOnError {
@@ -78,27 +120,85 @@ func Deploy(workingDir string, fs afero.Fs, environmentsFile string,
 		}
 	}
 
-	// do not execute delete if there are problems with deployment
 	if len(deploymentErrors) > 0 {
-		if dryRun {
-			return fmt.Errorf("Errors during validation! Check log!")
+		if isDryRun {
+			return fmt.Errorf("errors during validation! Check log")
 		} else {
-			return fmt.Errorf("Errors during deployment! Check log!")
+			return fmt.Errorf("errors during deployment! Check log")
 		}
 	}
 
-	if dryRun {
+	if isDryRun {
 		util.Log.Info("Validation finished without errors")
 	} else {
 		util.Log.Info("Deployment finished without errors")
 	}
 
-	deleteConfigs(apis, environments, workingDir, dryRun, fs)
+	return nil
+}
+
+func (d *Deploy) Deploy(
+	specificEnvironment string,
+	proj string,
+	continueOnError bool,
+) error {
+	isDryRun := false
+
+	return d.deploy(specificEnvironment, proj, isDryRun, continueOnError)
+}
+
+func (d *Deploy) DeployDryRun(
+	specificEnvironment string,
+	proj string,
+	continueOnError bool,
+) error {
+	isDryRun := true
+
+	return d.deploy(specificEnvironment, proj, isDryRun, continueOnError)
+}
+
+func (d *Deploy) Delete(
+	specificEnvironment string,
+	proj string,
+) error {
+	isDryRun := false
+
+	environments, _ := d.loadEnvironmentList(specificEnvironment, d.environmentsFilePath, d.fs)
+	return d.deleteConfigs(environments, isDryRun)
+}
+
+func (d *Deploy) DeleteDryRun(
+	specificEnvironment string,
+	proj string,
+) error {
+	isDryRun := true
+
+	environments, _ := d.loadEnvironmentList(specificEnvironment, d.environmentsFilePath, d.fs)
+	return d.deleteConfigs(environments, isDryRun)
+}
+
+func (d *Deploy) RunAll(
+	specificEnvironment string,
+	proj string,
+	isDryRun bool,
+	continueOnError bool,
+) error {
+	err := d.deploy(specificEnvironment, proj, isDryRun, continueOnError)
+	// do not execute delete if there are problems with deployment
+	if err != nil {
+		return err
+	}
+
+	environments, _ := d.loadEnvironmentList(specificEnvironment, d.environmentsFilePath, d.fs)
+	err = d.deleteConfigs(environments, isDryRun)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
-func execute(environment environment.Environment, projects []project.Project, dryRun bool, path string, continueOnError bool) (errors []error) {
+func (d *Deploy) execute(environment environment.Environment, projects []project.Project, dryRun bool, continueOnError bool) (errors []error) {
 	util.Log.Info("Processing environment " + environment.GetId() + "...")
 
 	var client rest.DynatraceClient
@@ -108,7 +208,7 @@ func execute(environment environment.Environment, projects []project.Project, dr
 			return append(errors, err)
 		}
 
-		client, err = rest.NewDynatraceClient(environment.GetEnvironmentUrl(), apiToken)
+		client, err = d.newDynatraceClient(environment.GetEnvironmentUrl(), apiToken)
 		if err != nil {
 			return append(errors, err)
 		}
@@ -126,7 +226,9 @@ func execute(environment environment.Environment, projects []project.Project, dr
 			util.Log.Debug("\t\t\t%d: %s", i+1, config.GetFilePath())
 		}
 
-		for _, config := range project.GetConfigs() {
+		configs := project.GetConfigs()
+
+		for _, config := range configs {
 
 			var entity api.DynatraceEntity
 			var err error
@@ -136,21 +238,25 @@ func execute(environment environment.Environment, projects []project.Project, dr
 				continue
 			}
 
-			name, err = config.GetObjectNameForEnvironment(environment, dict)
-			if err != nil {
-				return append(errors, err)
+			isNonUniqueNameApi := config.GetApi().IsNonUniqueNameApi()
+			if !isNonUniqueNameApi {
+				name, err = config.GetObjectNameForEnvironment(environment, dict)
+				if err != nil {
+					return append(errors, err)
+				}
+				name = config.GetApi().GetId() + "/" + name
+				configID = config.GetFullQualifiedId()
+				if nameDict[name] != "" {
+					return append(errors, fmt.Errorf("duplicate UID '%s' found in %s and %s", name, configID, nameDict[name]))
+				}
+				nameDict[name] = configID
+
 			}
-			name = config.GetApi().GetId() + "/" + name
-			configID = config.GetFullQualifiedId()
-			if nameDict[name] != "" {
-				return append(errors, fmt.Errorf("duplicate UID '%s' found in %s and %s", name, configID, nameDict[name]))
-			}
-			nameDict[name] = configID
 
 			if dryRun {
 				entity, err = validateConfig(project, config, dict, environment)
 			} else {
-				entity, err = uploadConfig(client, config, dict, environment)
+				entity, err = uploadConfig(project, client, config, dict, environment)
 			}
 
 			if err != nil {
@@ -165,7 +271,7 @@ func execute(environment environment.Environment, projects []project.Project, dr
 				}
 			}
 
-			referenceId := strings.TrimPrefix(config.GetFullQualifiedId(), path+"/")
+			referenceId := strings.TrimPrefix(config.GetFullQualifiedId(), d.workingDir+"/")
 
 			if entity.Name != "" {
 				dict[referenceId] = entity
@@ -187,42 +293,6 @@ func validateConfig(project project.Project, config config.Config, dict map[stri
 
 	randomId := "random-" + strconv.Itoa(rand.Int())
 
-	// If configuration deployment skipped but has dependency, throw an error
-	if config.IsSkipDeployment(environment) {
-		util.Log.Info("\t\t\tskipping deployment of %s: %s", config.GetId(), config.GetFilePath())
-		erronousDependencies := make([]string, 0)
-
-		for _, requiredId := range config.GetRequiredByConfigIdList() {
-			//TODO this won't work for inter project dependencies
-			requiredConfig, err := project.GetConfig(requiredId)
-
-			if err != nil {
-				util.Log.Warn("Encountered known bug (cross project skipDeployment check is not working at the moment): %s", err)
-				// return api.DynatraceEntity{
-				// 	Id:          randomId,
-				// 	Name:        randomId,
-				// 	Description: randomId,
-				// }, fmt.Errorf("config with id %s hasn't been found in project %s", requiredId, project.GetId())
-				continue
-			}
-
-			requiredIsSkipped := requiredConfig.IsSkipDeployment(environment)
-
-			if !requiredIsSkipped {
-				erronousDependencies = append(erronousDependencies, requiredId)
-			}
-		}
-
-		if len(erronousDependencies) > 0 {
-			return api.DynatraceEntity{
-				Id:          randomId,
-				Name:        randomId,
-				Description: randomId,
-			}, fmt.Errorf("this config is required by %s and can't be skipped for deployment", erronousDependencies)
-		}
-
-	}
-
 	return api.DynatraceEntity{
 		Id:          randomId,
 		Name:        randomId,
@@ -230,7 +300,7 @@ func validateConfig(project project.Project, config config.Config, dict map[stri
 	}, err
 }
 
-func uploadConfig(client rest.DynatraceClient, config config.Config, dict map[string]api.DynatraceEntity, environment environment.Environment) (entity api.DynatraceEntity, err error) {
+func uploadConfig(project project.Project, client rest.DynatraceClient, config config.Config, dict map[string]api.DynatraceEntity, environment environment.Environment) (entity api.DynatraceEntity, err error) {
 	name, err := config.GetObjectNameForEnvironment(environment, dict)
 	if err != nil {
 		return entity, err
@@ -243,17 +313,33 @@ func uploadConfig(client rest.DynatraceClient, config config.Config, dict map[st
 		return entity, err
 	}
 
-	entity, err = client.UpsertByName(config.GetApi(), name, uploadMap)
+	isNonUniqueNameApi := config.GetApi().IsNonUniqueNameApi()
 
-	if err != nil {
-		err = fmt.Errorf("%s, responsible config: %s", err.Error(), config.GetFilePath())
+	if isNonUniqueNameApi {
+		configId := config.GetId()
+
+		entityId, err := project.GenerateConfigUuid(configId)
+		if err != nil {
+			return entity, err
+		}
+
+		entity, err = client.UpsertByEntityId(config.GetApi(), entityId, name, uploadMap)
+		if err != nil {
+			err = fmt.Errorf("%s, responsible config: %s", err.Error(), config.GetFilePath())
+		}
+		return entity, err
+	} else {
+		entity, err = client.UpsertByName(config.GetApi(), name, uploadMap)
+		if err != nil {
+			err = fmt.Errorf("%s, responsible config: %s", err.Error(), config.GetFilePath())
+		}
+		return entity, err
 	}
-	return entity, err
 }
 
 // deleteConfigs deletes specified configs, if a delete.yaml file was found
-func deleteConfigs(apis map[string]api.Api, environments map[string]environment.Environment, path string, dryRun bool, fs afero.Fs) error {
-	configs, err := delete.LoadConfigsToDelete(fs, apis, path)
+func (d *Deploy) deleteConfigs(environments map[string]environment.Environment, dryRun bool) error {
+	configs, err := d.loadConfigsToDelete(d.fs, d.apis, d.workingDir)
 	util.FailOnError(err, "deletion failed")
 
 	if len(configs) > 0 && !dryRun {
@@ -266,15 +352,20 @@ func deleteConfigs(apis map[string]api.Api, environments map[string]environment.
 				return err
 			}
 
-			client, err := rest.NewDynatraceClient(environment.GetEnvironmentUrl(), apiToken)
+			client, err := d.newDynatraceClient(environment.GetEnvironmentUrl(), apiToken)
 			if err != nil {
 				return err
 			}
 
 			for _, config := range configs {
-				util.Log.Debug("\tDeleting config " + config.GetId() + " (" + config.GetApi().GetId() + ")")
+				configId := config.GetId()
+				configApi := config.GetApi()
+				configApiId := configApi.GetId()
+				// isNonUniqueNameApi := configApi.IsNonUniqueNameApi()
 
-				err = client.DeleteByName(config.GetApi(), config.GetId())
+				util.Log.Debug("\tDeleting config " + configId + " (" + configApiId + ")")
+
+				err = client.DeleteByName(configApi, configId)
 				if err != nil {
 					return err
 				}

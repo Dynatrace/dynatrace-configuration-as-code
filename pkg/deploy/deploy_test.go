@@ -20,15 +20,167 @@
 package deploy
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/delete"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/golang/mock/gomock"
+	"github.com/spf13/afero"
 
 	"gotest.tools/assert"
 )
+
+const mockWorkdir = "/"
+const mockEnvironmentsFilePath = "/environments.yaml"
+const mockSpecificEnvironment = ""
+const mockProj = ""
+const mockContinueOnError = false
+
+var mockConfigYamlFileContent = []byte(`
+---
+config:
+  - uuid: config.json
+
+uuid:
+- name: Instance name
+`)
+
+var mockConfigSkipDeploymentYamlFileContent = []byte(`
+---
+config:
+  - uuid: config.json
+  - uuid2: config.json
+
+uuid:
+- name: Instance name
+
+uuid2:
+- name: Another instance name
+- skipDeployment: "true"
+`)
+
+var mockDuplicateConfigYamlFileContent = []byte(`
+---
+config:
+- uuid1: config.json
+- uuid2: config.json
+
+uuid1:
+- name: Duplicate name
+
+uuid2:
+- name: Duplicate name
+`)
+
+var mockDuplicateAcrossEnvironmentsConfigYamlFileContent = []byte(`
+---
+config:
+- uuid1: config.json
+
+uuid1.dev:
+- name: Duplicate name
+
+uuid2.prod:
+- name: Duplicate name
+`)
+
+var mockConfigJsonFileContent = []byte(`
+{
+	"name": "{{.name}}"
+}
+`)
+
+var mockDeleteFileContent = []byte(`
+---
+delete:
+  - "alerting-profile/Star Trek Service"
+  - "dashboard/Alpha Quadrant"
+`)
+
+// TBD: This could be properly mocked
+var mockLoadProjectsToDeploy = project.LoadProjectsToDeploy
+var mockLoadConfigsToDelete = delete.LoadConfigsToDelete
+var mockLoadEnvironmentList = func(specificEnvironment, environmentsFilePath string, fs afero.Fs) (environments map[string]environment.Environment, errorList []error) {
+	os.Setenv("DEV", "DEV_API_TOKEN")
+	os.Setenv("PROD", "PROD_API_TOKEN")
+
+	environments = map[string]environment.Environment{}
+	environments["dev"] = environment.NewEnvironment("dev", "Dev", "", "https://url/to/dev/environment", "DEV")
+	environments["prod"] = environment.NewEnvironment("prod", "Prod", "", "https://url/to/prod/environment", "PROD")
+
+	return environments, []error{}
+}
+
+var testGetExecuteApis = func() map[string]api.Api {
+	apis := make(map[string]api.Api)
+	apis["calculated-metrics-log"] = api.NewStandardApi("calculated-metrics-log", "/api", false)
+	apis["alerting-profile"] = api.NewStandardApi("alerting-profile", "/api", false)
+	apis["dashboard"] = api.NewStandardApi("dashboard", "/api", true)
+	return apis
+}
+
+var mockNewHandler = func(t *testing.T) *Deploy {
+	mockFs := afero.NewMemMapFs()
+
+	// delete.yaml
+	f, err := mockFs.Create("/delete.yaml")
+	assert.NilError(t, err)
+	_, err = f.Write(mockDeleteFileContent)
+	assert.NilError(t, err)
+
+	// projects
+	mockFs.MkdirAll("/projectA/calculated-metrics-log", 0777)
+	f, err = mockFs.Create("/projectA/calculated-metrics-log/config.yaml")
+	assert.NilError(t, err)
+	_, err = f.Write(mockConfigSkipDeploymentYamlFileContent)
+	assert.NilError(t, err)
+	f, err = mockFs.Create("/projectA/calculated-metrics-log/config.json")
+	assert.NilError(t, err)
+	_, err = f.Write(mockConfigJsonFileContent)
+	assert.NilError(t, err)
+
+	mockFs.MkdirAll("/projectA/alerting-profile", 0777)
+	f, err = mockFs.Create("/projectA/alerting-profile/config.yaml")
+	assert.NilError(t, err)
+	_, err = f.Write(mockConfigYamlFileContent)
+	assert.NilError(t, err)
+	f, err = mockFs.Create("/projectA/alerting-profile/config.json")
+	assert.NilError(t, err)
+	_, err = f.Write(mockConfigJsonFileContent)
+	assert.NilError(t, err)
+
+	mockFs.MkdirAll("/projectB/dashboard", 0777)
+	f, err = mockFs.Create("/projectB/dashboard/config.yaml")
+	assert.NilError(t, err)
+	_, err = f.Write(mockConfigYamlFileContent)
+	assert.NilError(t, err)
+	f, err = mockFs.Create("/projectB/dashboard/config.json")
+	assert.NilError(t, err)
+	_, err = f.Write(mockConfigJsonFileContent)
+	assert.NilError(t, err)
+
+	mockApis := testGetExecuteApis()
+
+	deployHandler := &Deploy{
+		fs:                   mockFs,
+		workingDir:           filepath.Clean(mockWorkdir),
+		environmentsFilePath: mockEnvironmentsFilePath,
+		loadEnvironmentList:  mockLoadEnvironmentList,
+		loadProjectsToDeploy: mockLoadProjectsToDeploy,
+		loadConfigsToDelete:  mockLoadConfigsToDelete,
+		failOnError:          func(err error, msg string) { return },
+		apis:                 mockApis,
+	}
+
+	return deployHandler
+}
 
 func TestFailsOnMissingFileName(t *testing.T) {
 	_, err := environment.LoadEnvironmentList("dev", "", util.CreateTestFileSystem())
@@ -54,74 +206,249 @@ func TestMissingSpecificEnvironmentResultsInError(t *testing.T) {
 	assert.Assert(t, len(environments) == 0, "Expected to get empty environment map even on error")
 }
 
-func testGetExecuteApis() map[string]api.Api {
-	apis := make(map[string]api.Api)
-	apis["calculated-metrics-log"] = api.NewStandardApi("calculated-metrics-log", "/api", false)
-	apis["alerting-profile"] = api.NewStandardApi("alerting-profile", "/api", false)
-	return apis
-}
-func TestExecuteFailOnDuplicateNamesWithinSameConfig(t *testing.T) {
-	apis := testGetExecuteApis()
-	fs := util.CreateTestFileSystem()
-	environment := environment.NewEnvironment("dev", "Dev", "", "https://url/to/dev/environment", "DEV")
-	//always use files relative to the local folder or absolute paths, don't use ../ to navigate to upper levels to allow to run the test locally
-	projects, err := project.LoadProjectsToDeploy(fs, "project1", apis, "./test-resources/duplicate-name-test")
-	assert.NilError(t, err)
+func TestNewHandler(t *testing.T) {
+	mockFs := afero.NewMemMapFs()
 
-	errors := execute(environment, projects, true, "", false)
-	assert.Equal(t, errors != nil, true)
-	assert.ErrorContains(t, errors[0], "duplicate UID 'calculated-metrics-log/metric' found in")
+	deployHandler, err := NewHandler(mockWorkdir, mockFs, mockEnvironmentsFilePath)
+	assert.NilError(t, err)
+	assert.Equal(t, mockWorkdir, deployHandler.workingDir)
+	assert.Equal(t, mockEnvironmentsFilePath, deployHandler.environmentsFilePath)
 }
 
-func TestExecutePassOnDifferentApis(t *testing.T) {
-	environment := environment.NewEnvironment("dev", "Dev", "", "https://url/to/dev/environment", "DEV")
+func TestDeploy(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	deployHandler := mockNewHandler(t)
 
-	apis := testGetExecuteApis()
-
-	path := util.ReplacePathSeparators("./test-resources/duplicate-name-test")
-	fs := util.CreateTestFileSystem()
-	projects, err := project.LoadProjectsToDeploy(fs, "project2", apis, path)
-	assert.NilError(t, err)
-
-	errors := execute(environment, projects, true, "", false)
-	for _, err := range errors {
-		assert.NilError(t, err)
+	mockDynatraceClient := rest.NewMockDynatraceClient(mockCtrl)
+	deployHandler.newDynatraceClient = func(environmentUrl, token string) (rest.DynatraceClient, error) {
+		return mockDynatraceClient, nil
 	}
-}
 
-func TestExecuteFailOnDuplicateNamesInDifferentProjects(t *testing.T) {
-	environment := environment.NewEnvironment("dev", "Dev", "", "https://url/to/dev/environment", "DEV")
+	mockDynatraceClient.
+		EXPECT().
+		UpsertByEntityId(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(api.DynatraceEntity{}, nil).
+		AnyTimes()
 
-	apis := testGetExecuteApis()
+	mockDynatraceClient.
+		EXPECT().
+		UpsertByName(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(api.DynatraceEntity{}, nil).
+		AnyTimes()
 
-	path := util.ReplacePathSeparators("./test-resources/duplicate-name-test")
-	fs := util.CreateTestFileSystem()
-	projects, err := project.LoadProjectsToDeploy(fs, "project1, project2", apis, path)
+	err := deployHandler.Deploy(mockSpecificEnvironment, mockProj, mockContinueOnError)
 	assert.NilError(t, err)
 
-	errors := execute(environment, projects, true, "", false)
-	assert.ErrorContains(t, errors[0], "duplicate UID 'calculated-metrics-log/metric' found in")
+	// Test loadEnvironmentList fail
+	deployHandler.loadEnvironmentList = func(specificEnvironment, environmentsFilePath string, fs afero.Fs) (environments map[string]environment.Environment, errorList []error) {
+		return map[string]environment.Environment{}, []error{fmt.Errorf("loadEnvironmentListFail1"), fmt.Errorf("loadEnvironmentListFail2")}
+	}
+
+	err = deployHandler.Deploy(mockSpecificEnvironment, mockProj, mockContinueOnError)
+	assert.ErrorContains(t, err, "errors during deployment")
+
+	// Test loadProjectsToDeploy fail
+	failOnErrorCount := 0
+	deployHandler = mockNewHandler(t)
+	deployHandler.loadProjectsToDeploy = func(fs afero.Fs, specificProjectToDeploy string, apis map[string]api.Api, path string) (projectsToDeploy []project.Project, err error) {
+		return []project.Project{}, fmt.Errorf("loadProjectsToDeployFail")
+	}
+	deployHandler.failOnError = func(err error, msg string) {
+		failOnErrorCount++
+		return
+	}
+	deployHandler.newDynatraceClient = func(environmentUrl, token string) (rest.DynatraceClient, error) {
+		return mockDynatraceClient, nil
+	}
+
+	err = deployHandler.Deploy(mockSpecificEnvironment, mockProj, mockContinueOnError)
+	assert.Equal(t, 1, failOnErrorCount)
+
+	// Test execute fail
+	deployHandler = mockNewHandler(t)
+	deployHandler.newDynatraceClient = func(environmentUrl, token string) (rest.DynatraceClient, error) {
+		return mockDynatraceClient, fmt.Errorf("executeFail")
+	}
+
+	err = deployHandler.Deploy(mockSpecificEnvironment, mockProj, mockContinueOnError)
+	assert.ErrorContains(t, err, "errors during deployment")
+
+	err = deployHandler.Deploy(mockSpecificEnvironment, mockProj, true)
+	assert.ErrorContains(t, err, "errors during deployment")
 }
 
-func TestExecutePassOnDuplicateNamesInDifferentEnvironments(t *testing.T) {
-	environmentDev := environment.NewEnvironment("dev", "Dev", "", "https://url/to/dev/environment", "DEV")
-	environmentProd := environment.NewEnvironment("prod", "Prod", "", "https://url/to/prod/environment", "PROD")
+func TestDeployDryRun(t *testing.T) {
+	deployHandler := mockNewHandler(t)
 
-	apis := testGetExecuteApis()
-
-	path := util.ReplacePathSeparators("./test-resources/duplicate-name-test")
-	fs := util.CreateTestFileSystem()
-	projects, err := project.LoadProjectsToDeploy(fs, "project5", apis, path)
+	err := deployHandler.DeployDryRun(mockSpecificEnvironment, mockProj, mockContinueOnError)
 	assert.NilError(t, err)
 
-	errors := execute(environmentDev, projects, true, "", false)
-	for _, err := range errors {
-		assert.NilError(t, err)
+	// Test loadEnvironmentList fail
+	deployHandler.loadEnvironmentList = func(specificEnvironment, environmentsFilePath string, fs afero.Fs) (environments map[string]environment.Environment, errorList []error) {
+		return map[string]environment.Environment{}, []error{fmt.Errorf("loadEnvironmentListFail1"), fmt.Errorf("loadEnvironmentListFail2")}
 	}
-	errors = execute(environmentProd, projects, true, "", false)
-	for _, err := range errors {
-		assert.NilError(t, err)
+
+	err = deployHandler.DeployDryRun(mockSpecificEnvironment, mockProj, mockContinueOnError)
+	assert.ErrorContains(t, err, "errors during validation")
+}
+
+func TestDelete(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	mockDynatraceClient := rest.NewMockDynatraceClient(mockCtrl)
+
+	deployHandler := mockNewHandler(t)
+	deployHandler.newDynatraceClient = func(environmentUrl, token string) (rest.DynatraceClient, error) {
+		return mockDynatraceClient, nil
 	}
+
+	mockDynatraceClient.
+		EXPECT().
+		DeleteByName(gomock.Any(), gomock.Any()).
+		Return(nil).
+		AnyTimes()
+
+	err := deployHandler.Delete(mockSpecificEnvironment, mockProj)
+	assert.NilError(t, err)
+
+	// Test DeleteByName fail
+	mockDynatraceClient = rest.NewMockDynatraceClient(mockCtrl)
+	deployHandler.newDynatraceClient = func(environmentUrl, token string) (rest.DynatraceClient, error) {
+		return mockDynatraceClient, nil
+	}
+
+	mockDynatraceClient.
+		EXPECT().
+		DeleteByName(gomock.Any(), gomock.Any()).
+		Return(fmt.Errorf("DeleteByNameFail")).
+		Times(1)
+
+	err = deployHandler.Delete(mockSpecificEnvironment, mockProj)
+	assert.Error(t, err, "DeleteByNameFail")
+
+	// Test newDynatraceClient fail
+	mockDynatraceClient = rest.NewMockDynatraceClient(mockCtrl)
+	deployHandler.newDynatraceClient = func(environmentUrl, token string) (rest.DynatraceClient, error) {
+		return mockDynatraceClient, fmt.Errorf("newDynatraceClientFail")
+	}
+
+	mockDynatraceClient.
+		EXPECT().
+		DeleteByName(gomock.Any(), gomock.Any()).
+		Return(fmt.Errorf("DeleteByNameFail")).
+		Times(0)
+
+	err = deployHandler.Delete(mockSpecificEnvironment, mockProj)
+	assert.Error(t, err, "newDynatraceClientFail")
+}
+
+func TestDeleteDryRun(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	mockDynatraceClient := rest.NewMockDynatraceClient(mockCtrl)
+
+	deployHandler := mockNewHandler(t)
+	deployHandler.newDynatraceClient = func(environmentUrl, token string) (rest.DynatraceClient, error) {
+		return mockDynatraceClient, nil
+	}
+
+	mockDynatraceClient.
+		EXPECT().
+		DeleteByName(gomock.Any(), gomock.Any()).
+		Return(nil).
+		AnyTimes()
+
+	err := deployHandler.DeleteDryRun(mockSpecificEnvironment, mockProj)
+	assert.NilError(t, err)
+}
+
+func TestExecuteWithDuplicateConfigNames(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	mockDynatraceClient := rest.NewMockDynatraceClient(mockCtrl)
+
+	mockDynatraceClient.
+		EXPECT().
+		UpsertByEntityId(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(api.DynatraceEntity{}, nil).
+		AnyTimes()
+
+	mockDynatraceClient.
+		EXPECT().
+		UpsertByName(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(api.DynatraceEntity{}, nil).
+		AnyTimes()
+
+	// Create duplicate config within same project
+	deployHandler := mockNewHandler(t)
+	deployHandler.newDynatraceClient = func(environmentUrl, token string) (rest.DynatraceClient, error) {
+		return mockDynatraceClient, nil
+	}
+
+	err := deployHandler.fs.MkdirAll("/projectC/calculated-metrics-log", 0777)
+	assert.NilError(t, err)
+	f, err := deployHandler.fs.Create("/projectC/calculated-metrics-log/config.yaml")
+	assert.NilError(t, err)
+	_, err = f.Write(mockDuplicateConfigYamlFileContent)
+	assert.NilError(t, err)
+	f, err = deployHandler.fs.Create("/projectC/calculated-metrics-log/config.json")
+	assert.NilError(t, err)
+	_, err = f.Write(mockConfigJsonFileContent)
+	assert.NilError(t, err)
+
+	environments, _ := mockLoadEnvironmentList("", "", deployHandler.fs)
+	apis := testGetExecuteApis()
+	projects, _ := mockLoadProjectsToDeploy(deployHandler.fs, "", apis, deployHandler.workingDir)
+
+	deployErrors := deployHandler.execute(environments["dev"], projects, false, false)
+	assert.Equal(t, 1, len(deployErrors))
+	assert.ErrorContains(t, deployErrors[0], "duplicate UID 'calculated-metrics-log/Duplicate name'")
+
+	// Create duplicate config in different projects
+	deployHandler = mockNewHandler(t)
+	deployHandler.newDynatraceClient = func(environmentUrl, token string) (rest.DynatraceClient, error) {
+		return mockDynatraceClient, nil
+	}
+
+	err = deployHandler.fs.MkdirAll("/projectB/calculated-metrics-log", 0777)
+	assert.NilError(t, err)
+	f, err = deployHandler.fs.Create("/projectB/calculated-metrics-log/config.yaml")
+	assert.NilError(t, err)
+	_, err = f.Write(mockConfigYamlFileContent)
+	assert.NilError(t, err)
+	f, err = deployHandler.fs.Create("/projectB/calculated-metrics-log/config.json")
+	assert.NilError(t, err)
+	_, err = f.Write(mockConfigJsonFileContent)
+	assert.NilError(t, err)
+
+	environments, _ = mockLoadEnvironmentList("", "", deployHandler.fs)
+	apis = testGetExecuteApis()
+	projects, _ = mockLoadProjectsToDeploy(deployHandler.fs, "", apis, deployHandler.workingDir)
+
+	deployErrors = deployHandler.execute(environments["dev"], projects, false, false)
+	assert.Equal(t, 1, len(deployErrors))
+	assert.ErrorContains(t, deployErrors[0], "duplicate UID 'calculated-metrics-log/Instance name'")
+
+	// Create duplicate config across environments
+	deployHandler = mockNewHandler(t)
+	deployHandler.newDynatraceClient = func(environmentUrl, token string) (rest.DynatraceClient, error) {
+		return mockDynatraceClient, nil
+	}
+
+	err = deployHandler.fs.MkdirAll("/projectB/calculated-metrics-log", 0777)
+	assert.NilError(t, err)
+	f, err = deployHandler.fs.Create("/projectB/calculated-metrics-log/config.yaml")
+	assert.NilError(t, err)
+	_, err = f.Write(mockDuplicateAcrossEnvironmentsConfigYamlFileContent)
+	assert.NilError(t, err)
+	f, err = deployHandler.fs.Create("/projectB/calculated-metrics-log/config.json")
+	assert.NilError(t, err)
+	_, err = f.Write(mockConfigJsonFileContent)
+	assert.NilError(t, err)
+
+	environments, _ = mockLoadEnvironmentList("", "", deployHandler.fs)
+	apis = testGetExecuteApis()
+	projects, _ = mockLoadProjectsToDeploy(deployHandler.fs, "", apis, deployHandler.workingDir)
+
+	deployErrors = deployHandler.execute(environments["dev"], projects, false, false)
+	assert.Equal(t, 0, len(deployErrors))
 }
 
 // TODO (CDF-6511) Currently here UnmarshallYaml logs fatal, only ever returns nil errors!
