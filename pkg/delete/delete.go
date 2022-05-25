@@ -61,16 +61,22 @@ func LoadConfigsToDelete(fs afero.Fs, apis map[string]api.Api, path string) (con
 			return configs, err
 		}
 
-		apiName, validConfig := apis[configType]
+		apiIface, validConfig := apis[configType]
 		if !validConfig {
 			return configs, errors.New("config type " + configType + " was not valid")
+		}
+
+		isNonUniqueNameApi := apiIface.IsNonUniqueNameApi()
+		if isNonUniqueNameApi {
+			util.Log.Warn("Detected non-unique naming API. Please remove %s from delete.yaml", element)
+			continue
 		}
 
 		properties := make(map[string]map[string]string)
 		properties[name] = make(map[string]string)
 		properties[name]["name"] = name
 
-		configForDeletion := config.NewConfigForDelete(name, "delete.yaml", properties, apiName)
+		configForDeletion := config.NewConfigForDelete(name, "delete.yaml", properties, apiIface)
 		result = append(result, configForDeletion)
 	}
 
