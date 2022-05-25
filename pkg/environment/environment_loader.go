@@ -33,7 +33,7 @@ func LoadEnvironmentList(specificEnvironment string, environmentsFile string, fs
 
 	environmentsFromFile, errorList := readEnvironments(environmentsFile, fs)
 
-	if environmentsFromFile == nil || len(environmentsFromFile) == 0 {
+	if len(environmentsFromFile) == 0 {
 		errorList = append(errorList, fmt.Errorf("no environments loaded from file %s", environmentsFile))
 		return environments, errorList
 	}

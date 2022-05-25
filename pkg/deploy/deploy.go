@@ -51,6 +51,45 @@ type DeployIface interface {
 	RunAll(specificEnvironment string, proj string, isDryRun bool, continueOnError bool) error
 }
 
+func returnFromDeploymentWithError(isDryRun bool, continueOnError bool, deploymentErrors map[string][]error) error {
+	util.Log.Info("Deployment summary:")
+
+	if isDryRun {
+		for environment, errors := range deploymentErrors {
+			util.Log.Error("Validation of %s failed. Found %d error(s)\n", environment, len(errors))
+			util.PrintErrors(errors)
+		}
+
+		return fmt.Errorf("errors during validation! Check log")
+	} else if continueOnError {
+		for environment, errors := range deploymentErrors {
+			util.Log.Error("Deployment to %s finished with %d error(s):\n", environment, len(errors))
+			util.PrintErrors(errors)
+		}
+
+		return fmt.Errorf("errors during deployment! Check log")
+	} else {
+		for environment, errors := range deploymentErrors {
+			util.Log.Error("Deployment to %s failed with error!\n", environment)
+			util.PrintErrors(errors)
+		}
+
+		return fmt.Errorf("errors during deployment! Check log")
+	}
+}
+
+func returnFromDeployment(isDryRun bool) error {
+	util.Log.Info("Deployment summary:")
+
+	if isDryRun {
+		util.Log.Info("Validation finished without errors")
+	} else {
+		util.Log.Info("Deployment finished without errors")
+	}
+
+	return nil
+}
+
 func NewHandler(
 	workingDir string,
 	fs afero.Fs,
@@ -106,35 +145,12 @@ func (d *Deploy) deploy(
 		}
 	}
 
-	util.Log.Info("Deployment summary:")
-	for environment, errors := range deploymentErrors {
-		if isDryRun {
-			util.Log.Error("Validation of %s failed. Found %d error(s)\n", environment, len(errors))
-			util.PrintErrors(errors)
-		} else if continueOnError {
-			util.Log.Error("Deployment to %s finished with %d error(s):\n", environment, len(errors))
-			util.PrintErrors(errors)
-		} else {
-			util.Log.Error("Deployment to %s failed with error!\n", environment)
-			util.PrintErrors(errors)
-		}
-	}
-
-	if len(deploymentErrors) > 0 {
-		if isDryRun {
-			return fmt.Errorf("errors during validation! Check log")
-		} else {
-			return fmt.Errorf("errors during deployment! Check log")
-		}
-	}
-
-	if isDryRun {
-		util.Log.Info("Validation finished without errors")
+	isErrored := len(deploymentErrors) > 0
+	if isErrored {
+		return returnFromDeploymentWithError(isDryRun, continueOnError, deploymentErrors)
 	} else {
-		util.Log.Info("Deployment finished without errors")
+		return returnFromDeployment(isDryRun)
 	}
-
-	return nil
 }
 
 func (d *Deploy) Deploy(
@@ -198,83 +214,124 @@ func (d *Deploy) RunAll(
 	return nil
 }
 
-func (d *Deploy) execute(environment environment.Environment, projects []project.Project, dryRun bool, continueOnError bool) (errors []error) {
+func validateOrUpload(
+	isDryRun bool,
+	project project.Project,
+	client rest.DynatraceClient,
+	config config.Config,
+	dict map[string]api.DynatraceEntity,
+	environment environment.Environment,
+) (entity api.DynatraceEntity, err error) {
+	if isDryRun {
+		return validateConfig(project, config, dict, environment)
+	} else {
+		return uploadConfig(project, client, config, dict, environment)
+	}
+}
+
+func logProjectDeployOrder(projectId string, configs []config.Config) {
+	util.Log.Info("\tProcessing project %s...", projectId)
+	util.Log.Debug("\t\tDeploying configs in this order: ")
+	for i, config := range configs {
+		util.Log.Debug("\t\t\t%d: %s", i+1, config.GetFilePath())
+	}
+}
+
+func executeConfig(
+	isDryRun bool,
+	continueOnError bool,
+	environment environment.Environment,
+	project project.Project,
+	workingDir string,
+	config config.Config,
+	dict map[string]api.DynatraceEntity,
+	nameDict map[string]string,
+	client rest.DynatraceClient,
+	errors *[]error,
+) error {
+	if config.IsSkipDeployment(environment) {
+		util.Log.Info("\t\t\tskipping deployment of %s: %s", config.GetId(), config.GetFilePath())
+		return nil
+	}
+
+	isNonUniqueNameApi := config.GetApi().IsNonUniqueNameApi()
+	if !isNonUniqueNameApi {
+		name, err := config.GetObjectNameForEnvironment(environment, dict)
+		if err != nil {
+			return err
+		}
+		name = config.GetApi().GetId() + "/" + name
+		configID := config.GetFullQualifiedId()
+		if nameDict[name] != "" {
+			return fmt.Errorf("duplicate UID '%s' found in %s and %s", name, configID, nameDict[name])
+		}
+		nameDict[name] = configID
+	}
+
+	entity, err := validateOrUpload(isDryRun, project, client, config, dict, environment)
+
+	if err != nil {
+		// by default stop deployment on error
+		if continueOnError || isDryRun {
+			*errors = append(*errors, err)
+			// Log error here in addition to deployment summary
+			// Useful to debug using verbose
+			util.Log.Error("\t\t\tFailed %s", err)
+		} else {
+			return err
+		}
+	}
+
+	referenceId := strings.TrimPrefix(config.GetFullQualifiedId(), workingDir+"/")
+
+	if entity.Name != "" {
+		dict[referenceId] = entity
+	}
+
+	return nil
+}
+
+func (d *Deploy) execute(environment environment.Environment, projects []project.Project, dryRun bool, continueOnError bool) []error {
 	util.Log.Info("Processing environment " + environment.GetId() + "...")
 
 	var client rest.DynatraceClient
 	if !dryRun {
 		apiToken, err := environment.GetToken()
 		if err != nil {
-			return append(errors, err)
+			return []error{err}
 		}
 
 		client, err = d.newDynatraceClient(environment.GetEnvironmentUrl(), apiToken)
 		if err != nil {
-			return append(errors, err)
+			return []error{err}
 		}
 	}
 
 	dict := make(map[string]api.DynatraceEntity)
-	var nameDict = make(map[string]string)
-	var name, configID string
+	nameDict := make(map[string]string)
+	errors := []error{}
 
 	for _, project := range projects {
-
-		util.Log.Info("\tProcessing project " + project.GetId() + "...")
-		util.Log.Debug("\t\tDeploying configs in this order: ")
-		for i, config := range project.GetConfigs() {
-			util.Log.Debug("\t\t\t%d: %s", i+1, config.GetFilePath())
-		}
-
 		configs := project.GetConfigs()
+		projectId := project.GetId()
+
+		logProjectDeployOrder(projectId, configs)
 
 		for _, config := range configs {
-
-			var entity api.DynatraceEntity
-			var err error
-
-			if config.IsSkipDeployment(environment) {
-				util.Log.Info("\t\t\tskipping deployment of %s: %s", config.GetId(), config.GetFilePath())
-				continue
-			}
-
-			isNonUniqueNameApi := config.GetApi().IsNonUniqueNameApi()
-			if !isNonUniqueNameApi {
-				name, err = config.GetObjectNameForEnvironment(environment, dict)
-				if err != nil {
-					return append(errors, err)
-				}
-				name = config.GetApi().GetId() + "/" + name
-				configID = config.GetFullQualifiedId()
-				if nameDict[name] != "" {
-					return append(errors, fmt.Errorf("duplicate UID '%s' found in %s and %s", name, configID, nameDict[name]))
-				}
-				nameDict[name] = configID
-
-			}
-
-			if dryRun {
-				entity, err = validateConfig(project, config, dict, environment)
-			} else {
-				entity, err = uploadConfig(project, client, config, dict, environment)
-			}
-
+			err := executeConfig(
+				dryRun,
+				continueOnError,
+				environment,
+				project,
+				d.workingDir,
+				config,
+				dict,
+				nameDict,
+				client,
+				&errors,
+			)
 			if err != nil {
-				// by default stop deployment on error
-				if continueOnError || dryRun {
-					errors = append(errors, err)
-					// Log error here in addition to deployment summary
-					// Useful to debug using verbose
-					util.Log.Error("\t\t\tFailed %s", err)
-				} else {
-					return append(errors, err)
-				}
-			}
-
-			referenceId := strings.TrimPrefix(config.GetFullQualifiedId(), d.workingDir+"/")
-
-			if entity.Name != "" {
-				dict[referenceId] = entity
+				return append(errors, err)
 			}
 		}
 	}
