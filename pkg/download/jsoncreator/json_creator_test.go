@@ -49,20 +49,30 @@ func TestCreateJsonConfig(t *testing.T) {
 	assert.Equal(t, name, "Sockshop Error Profile")
 	assert.Equal(t, cleanName, "SockshopErrorProfile")
 }
+
 func TestIsDefaultEntityDashboardCase(t *testing.T) {
 	//create payload similar to dynatrace API object for dashboard
 	sample := make(map[string]interface{})
 	sample["dashboardMetadata"] = make(map[string]interface{})
 	metadata := sample["dashboardMetadata"].(map[string]interface{})
 	metadata["preset"] = true
+
 	result := isDefaultEntity("dashboard", sample)
+	assert.Equal(t, result, false)
+
+	metadata["owner"] = "Dynatrace"
+	result = isDefaultEntity("dashboard", sample)
 	assert.Equal(t, result, true)
+
 	result = isDefaultEntity("synthetic-location", sample)
 	assert.Equal(t, result, true)
+
 	result = isDefaultEntity("synthetic-monitor", sample)
 	assert.Equal(t, result, false)
+
 	result = isDefaultEntity("extension", sample)
 	assert.Equal(t, result, false)
+
 	result = isDefaultEntity("aws-credentials", sample)
 	assert.Equal(t, result, false)
 }

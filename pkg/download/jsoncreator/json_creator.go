@@ -148,7 +148,13 @@ func isDefaultEntity(apiID string, dat map[string]interface{}) bool {
 	case "dashboard":
 		if dat["dashboardMetadata"] != nil {
 			metadata := dat["dashboardMetadata"].(map[string]interface{})
-			if metadata["preset"] != nil && metadata["preset"] == true {
+
+			// dashboards can be flagged as "preset" which makes them public in a specific environment.
+			// Only dashboards that are flaged "preset" and are owned by "Dynatrace" are default and can be skipped.
+			isPreset := metadata["preset"] != nil && metadata["preset"] == true
+			isOwnerDynatrace := metadata["owner"] != nil && metadata["owner"] == "Dynatrace"
+
+			if isPreset && isOwnerDynatrace {
 				return true
 			}
 		}

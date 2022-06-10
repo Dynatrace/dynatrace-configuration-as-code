@@ -243,7 +243,8 @@ func isRequestAttributeNotYetReady(resp Response) bool {
 func isManagementZoneNotReadyYet(resp Response) bool {
 	return strings.Contains(string(resp.Body), "Entity selector is invalid") ||
 		(strings.Contains(string(resp.Body), "SLO validation failed") &&
-			strings.Contains(string(resp.Body), "Management-Zone not found"))
+			strings.Contains(string(resp.Body), "Management-Zone not found")) ||
+		strings.Contains(string(resp.Body), "Unknown management zone")
 }
 
 func isApplicationNotReadyYet(resp Response) bool {

@@ -9,11 +9,11 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Core Repo
-              uses: actions/checkout@v2.4.0
+              uses: actions/checkout@v3.0.2
               with:
                   path: 'dynatrace-oss/dynatrace-monitoring-as-code'
             - name: Set up Go
-              uses: actions/setup-go@v2
+              uses: actions/setup-go@v3
               with:
                   go-version: '~1.16'
             - name: Install go-licence-detector
@@ -42,7 +42,7 @@ jobs:
                   echo "👍 done. written results to ./dependencies-and-licenses-node.txt"
                   cat dependencies-and-licenses-node.txt
             - name: Upload dependencies and licenses artifact
-              uses: actions/upload-artifact@v2
+              uses: actions/upload-artifact@v3
               with:
                   name: dependencies-and-licenses
                   path: dependencies-and-licenses-*.txt
