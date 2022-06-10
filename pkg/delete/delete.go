@@ -68,7 +68,7 @@ func LoadConfigsToDelete(fs afero.Fs, apis map[string]api.Api, path string) (con
 
 		isNonUniqueNameApi := apiIface.IsNonUniqueNameApi()
 		if isNonUniqueNameApi {
-			util.Log.Warn("Detected non-unique naming API. Please remove %s from delete.yaml", element)
+			util.Log.Warn("Detected non-unique naming API - can not safely delete %s. Please delete the correct configuration from your environment manually and remove from delete.yaml", element)
 			continue
 		}
 

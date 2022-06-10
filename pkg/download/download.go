@@ -175,7 +175,7 @@ func createConfigsFromSingleConfigurationAPI(
 	}
 
 	ycreator.AddConfig(cleanName, name)
-	err = ycreator.CreateYamlFile(fs, subPath, api.GetId())
+	err = ycreator.WriteYamlFile(fs, subPath, api.GetId())
 	if err != nil {
 		util.Log.Error("error creating config api yaml file: %v", err)
 		return err
@@ -235,7 +235,7 @@ func createConfigsFromAPI(
 		ycreator.UpdateConfig(val.Id, val.Name, jsonFileName)
 	}
 
-	err = ycreator.CreateYamlFile(fs, subPath, apiId)
+	err = ycreator.WriteYamlFile(fs, subPath, apiId)
 	if err != nil {
 		util.Log.Error("error creating config api yaml file: %v", err)
 		return err

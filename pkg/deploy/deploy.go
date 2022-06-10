@@ -382,13 +382,13 @@ func uploadConfig(project project.Project, client rest.DynatraceClient, config c
 
 		entity, err = client.UpsertByEntityId(config.GetApi(), entityId, name, uploadMap)
 		if err != nil {
-			err = fmt.Errorf("%s, responsible config: %s", err.Error(), config.GetFilePath())
+			err = fmt.Errorf("%w, responsible config: %s", err, config.GetFilePath())
 		}
 		return entity, err
 	} else {
 		entity, err = client.UpsertByName(config.GetApi(), name, uploadMap)
 		if err != nil {
-			err = fmt.Errorf("%s, responsible config: %s", err.Error(), config.GetFilePath())
+			err = fmt.Errorf("%w, responsible config: %s", err, config.GetFilePath())
 		}
 		return entity, err
 	}
