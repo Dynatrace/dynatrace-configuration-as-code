@@ -297,8 +297,14 @@ func deleteDynatraceObject(client *http.Client, api api.Api, name string, url st
 		return err
 	}
 
-	if len(existingId) > 0 {
-		deleteConfig(client, url, token, existingId)
+	if len(existingId) == 0 {
+		util.Log.Debug("No config %s (%s) found to delete", name, api.GetId())
+		return nil // the way delete works this is not actually an error, many long deleted things might be in delete.yaml
+	}
+
+	err = deleteConfig(client, url, token, existingId)
+	if err != nil {
+		return fmt.Errorf("failed to delete config %s (%s): %w", name, api.GetId(), err)
 	}
 	return nil
 }
@@ -310,23 +316,28 @@ func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, ob
 		return "", err
 	}
 
-	var configName = ""
-	var configsFound = 0
+	var objectId = ""
+	var matchingObjectsFound = 0
 	for i := 0; i < len(values); i++ {
 		value := values[i]
 		if value.Name == objectName {
-			if configsFound == 0 {
-				configName = value.Id
+			if matchingObjectsFound == 0 {
+				objectId = value.Id
 			}
-			configsFound++
+			matchingObjectsFound++
 
 		}
 	}
 
-	if configsFound > 1 {
-		util.Log.Warn("\t\t\tFound %d configs with same name: %s. Please delete duplicates.", configsFound, objectName)
+	if matchingObjectsFound > 1 {
+		util.Log.Warn("\t\t\tFound %d configs with same name: %s. Please delete duplicates.", matchingObjectsFound, objectName)
 	}
-	return configName, nil
+
+	if len(objectId) > 0 {
+		util.Log.Debug("Found existing config %s (%s) with id %s", objectName, api.GetId(), objectId)
+	}
+
+	return objectId, nil
 }
 
 func isApiDashboard(api api.Api) bool {
