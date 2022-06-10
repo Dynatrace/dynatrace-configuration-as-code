@@ -28,7 +28,7 @@ import (
 //YamlCreator implements method to create the yaml configuration file
 type YamlCreator interface {
 	ReadYamlFile(fs afero.Fs, configSubPath string, apiId string) error
-	CreateYamlFile(fs afero.Fs, path string, name string) error
+	WriteYamlFile(fs afero.Fs, path string, name string) error
 	AddConfig(name string, rawName string)
 	UpdateConfig(entityId string, entityName string, jsonFileName string)
 }
@@ -78,6 +78,11 @@ func NewYamlConfig(environmentName string) *YamlConfig {
 	return &yamlConfig
 }
 
+//isTopLevelConfigurationYamlKey checks if a given yaml key is the toplevel element defining further Configs
+func isTopLevelConfigurationYamlKey(key string) bool {
+	return key == "config"
+}
+
 //AddConfig allows to add new configs to the yaml file
 func (yc *YamlConfig) AddConfig(name string, rawName string) {
 
@@ -101,22 +106,20 @@ func (yc *YamlConfig) UpdateConfig(entityId string, entityName string, jsonFileN
 
 	yc.Detail[configId] = []DetailConfig{detailConfig}
 
-	isExistingConfig := false
-
 	for i, config := range yc.Config {
 		for k := range config {
 			if k == configId {
-				isExistingConfig = true
+				// If config is found, return
 				yc.Config[i][k] = jsonFileName
+				return
 			}
 		}
 	}
 
-	if !isExistingConfig {
-		config := map[string]string{}
-		config[configId] = jsonFileName
-		yc.Config = append(yc.Config, config)
-	}
+	// If no config was found, create new one
+	config := map[string]string{}
+	config[configId] = jsonFileName
+	yc.Config = append(yc.Config, config)
 }
 
 func (yc *YamlConfig) getConfigName(entityId string) string {
@@ -163,8 +166,8 @@ func (yc *YamlConfig) cleanseYamlConfig() CleansedYamlConfig {
 	return yamlConfig
 }
 
-//CreateYamlFile transforms the struct into a physical file on disk
-func (yc *YamlConfig) CreateYamlFile(fs afero.Fs, path string, name string) error {
+//WriteYamlFile transforms the struct into a physical file on disk
+func (yc *YamlConfig) WriteYamlFile(fs afero.Fs, path string, name string) error {
 	yamlConfig := yc.cleanseYamlConfig()
 	fullPath := filepath.Join(path, name+".yaml")
 
@@ -185,7 +188,7 @@ func (yc *YamlConfig) CreateYamlFile(fs afero.Fs, path string, name string) erro
 
 func (yc *YamlConfig) parseConfigs(unmarshaledData map[string]map[string]string) {
 	for k, v := range unmarshaledData {
-		if k == "config" {
+		if isTopLevelConfigurationYamlKey(k) {
 			for configId, configJson := range v {
 				configItem := make(map[string]string)
 				configItem[configId] = configJson
@@ -210,7 +213,7 @@ func (yc *YamlConfig) findConfigFileName(configId string) string {
 
 func (yc *YamlConfig) parseConfigDetails(unmarshaledData map[string]map[string]string) error {
 	for configId := range unmarshaledData {
-		if configId != "config" {
+		if !isTopLevelConfigurationYamlKey(configId) {
 			// As of May 2022, download does not support project structure
 			// Fallback to environment unique id
 			environmentUniqueConfigId := yc.EnvironmentName

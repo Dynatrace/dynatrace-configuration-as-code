@@ -71,7 +71,7 @@ func TestCreateConfigsFromAPI(t *testing.T) {
 		UpdateConfig(gomock.Any(), gomock.Any(), gomock.Any())
 	ycreator.
 		EXPECT().
-		CreateYamlFile(gomock.Any(), gomock.Any(), gomock.Any()).
+		WriteYamlFile(gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(nil)
 
 	err := createConfigsFromAPI(fs, apiMock, "123", "/", client, jcreator, ycreator)

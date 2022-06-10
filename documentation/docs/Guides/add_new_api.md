@@ -85,7 +85,7 @@ Take the following steps to add a new API to Monaco.
 | <nobr>`<my-api-folder-name>`</nobr> | The name of the API, also used for the folder name for the configurations. Please take a look at the existing API names to get a feeling for the naming conventions and choose one accordingly.|
 | <nobr>`<path-to-my-api>`</nobr> | This path points to your API. Monaco prefixes it with the environment URL to access the configs of your API. |
 | <nobr>`<is-single-configuration-api>`</nobr> | Boolean value specifying if an API is of single configuration format (optional, default: *false*). |
-| <nobr>`<is-unique-name-api>`</nobr> | Boolean value specifying if an API doesn't have a unique name attribute (optional, default: *false*). |
+| <nobr>`<is-non-unique-name-api>`</nobr> | Boolean value specifying if an API doesn't have a unique name attribute (optional, default: *false*). |
 | <nobr>`<property-name>`</nobr> | This names the json property used in the `GET ALL` REST call to return the list of configs. E.g. it would be `extensions`, if the response of your API's `GET ALL` REST call looks like the snippet below|
 ​
   

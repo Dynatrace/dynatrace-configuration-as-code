@@ -48,7 +48,7 @@ func TestAddConfig(t *testing.T) {
 // 	config := NewYamlConfig(testEnvironmentName)
 // 	config.AddConfig("test", "test 1234")
 // 	fileCreator := util.CreateTestFileSystem()
-// 	err := config.CreateYamlFile(fileCreator, "", "test")
+// 	err := config.WriteYamlFile(fileCreator, "", "test")
 // 	assert.NilError(t, err)
 // }
 
@@ -150,7 +150,7 @@ func TestUpdateConfig(t *testing.T) {
 	assert.Equal(t, 3, numberConfigs)
 }
 
-func TestCreateYamlFile(t *testing.T) {
+func TestWriteYamlFile(t *testing.T) {
 	mockConfigSubPath := filepath.Join("config", "sub", "path")
 	mockApiId := "api-id"
 	mockFs := newMockFs(t, mockConfigSubPath, mockApiId)
@@ -176,12 +176,12 @@ func TestCreateYamlFile(t *testing.T) {
 	configDetails := config.Detail[mockEntityId]
 	assert.Equal(t, true, configDetails[0].IsDownloaded)
 
-	err = config.CreateYamlFile(mockFs, mockConfigSubPath, mockApiId)
+	err = config.WriteYamlFile(mockFs, mockConfigSubPath, mockApiId)
 	assert.NilError(t, err)
 
 	config.marshalYaml = func(in interface{}) (out []byte, err error) { return []byte{}, fmt.Errorf("marshalYamlFail") }
 
-	err = config.CreateYamlFile(mockFs, mockConfigSubPath, mockApiId)
+	err = config.WriteYamlFile(mockFs, mockConfigSubPath, mockApiId)
 	assert.Error(t, err, "marshalYamlFail")
 
 	config.marshalYaml = yaml.Marshal
@@ -189,6 +189,6 @@ func TestCreateYamlFile(t *testing.T) {
 		return fmt.Errorf("writeFileFail")
 	}
 
-	err = config.CreateYamlFile(mockFs, mockConfigSubPath, mockApiId)
+	err = config.WriteYamlFile(mockFs, mockConfigSubPath, mockApiId)
 	assert.Error(t, err, "writeFileFail")
 }
