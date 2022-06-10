@@ -18,6 +18,7 @@ package rest
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -49,13 +50,18 @@ func get(client *http.Client, url string, apiToken string) (Response, error) {
 
 // the name delete() would collide with the built-in function
 func deleteConfig(client *http.Client, url string, apiToken string, id string) error {
-	req, err := request(http.MethodDelete, url+"/"+id, apiToken)
+	fullPath := url + "/" + id
+	req, err := request(http.MethodDelete, fullPath, apiToken)
 
 	if err != nil {
 		return err
 	}
 
-	executeRequest(client, req)
+	resp := executeRequest(client, req)
+
+	if !success(resp) {
+		return fmt.Errorf("failed call to DELETE %s (HTTP %d)!\n Response was:\n %s", fullPath, resp.StatusCode, string(resp.Body))
+	}
 
 	return nil
 }

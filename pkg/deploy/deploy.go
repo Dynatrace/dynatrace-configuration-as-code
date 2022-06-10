@@ -366,12 +366,13 @@ func deleteConfigs(apis map[string]api.Api, environments map[string]environment.
 			}
 
 			for _, config := range configs {
-				util.Log.Debug("\tDeleting config " + config.GetId() + " (" + config.GetApi().GetId() + ")")
+				util.Log.Debug("\tTrying to delete config %v (%v)", config.GetId(), config.GetApi().GetId())
 
 				err = client.DeleteByName(config.GetApi(), config.GetId())
 				if err != nil {
 					return err
 				}
+				util.Log.Info("\tDeleted config %v (%v)", config.GetId(), config.GetApi().GetId())
 			}
 		}
 	}
