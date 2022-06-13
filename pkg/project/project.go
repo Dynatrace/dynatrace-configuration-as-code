@@ -34,7 +34,7 @@ type Project interface {
 	GetConfigs() []config.Config
 	GetConfig(id string) (config.Config, error)
 	GetId() string
-	GenerateConfigUuid(configId string) (string, error)
+	GetCleanId() (string, error)
 }
 
 type projectImpl struct {
@@ -285,6 +285,11 @@ func (p *projectImpl) GetId() string {
 	return p.id
 }
 
+// GetCleanId returns a sanitized project id, cleaned from all path attributes
+func (p *projectImpl) GetCleanId() (string, error) {
+	return p.getRelFilepath(p.projectRootFolder, p.id)
+}
+
 // HasDependencyOn checks if one project depends on the given parameter config
 // Having a dependency means, that the project having the dependency needs to be applied AFTER the project it depends on
 func (p *projectImpl) HasDependencyOn(project Project) bool {
@@ -297,22 +302,4 @@ func (p *projectImpl) HasDependencyOn(project Project) bool {
 		}
 	}
 	return false
-}
-
-// GenerateConfigUuid generates a unique id for this config, considering environment and project structure
-func (p *projectImpl) GenerateConfigUuid(configId string) (string, error) {
-	projectId := p.id
-	projectRootFolder := p.projectRootFolder
-
-	projectUniqueId, err := p.getRelFilepath(projectRootFolder, projectId)
-	if err != nil {
-		return "", err
-	}
-
-	configUuid, err := p.generateUuidFromConfigId(projectUniqueId, configId)
-	if err != nil {
-		return "", err
-	}
-
-	return configUuid, nil
 }

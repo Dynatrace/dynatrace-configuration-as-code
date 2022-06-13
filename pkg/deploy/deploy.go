@@ -375,7 +375,12 @@ func uploadConfig(project project.Project, client rest.DynatraceClient, config c
 	if isNonUniqueNameApi {
 		configId := config.GetId()
 
-		entityId, err := project.GenerateConfigUuid(configId)
+		projectCleanId, err := project.GetCleanId()
+		if err != nil {
+			return entity, err
+		}
+
+		entityId, err := util.GenerateUuidFromConfigId(projectCleanId, configId)
 		if err != nil {
 			return entity, err
 		}

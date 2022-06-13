@@ -284,30 +284,3 @@ var mockGetRelFilepathSuccess = func(basepath string, targpath string) (string, 
 var mockGetRelFilepathFail = func(basepath string, targpath string) (string, error) {
 	return "", fmt.Errorf("getRelFilepathFail")
 }
-
-func TestGenerateConfigUuid(t *testing.T) {
-	fullQualifiedProjectFolderName := "/test/folder/env/project"
-	projectRootFolder := "/test/folder"
-
-	projectAtTest := &projectImpl{
-		id:                       fullQualifiedProjectFolderName,
-		projectRootFolder:        projectRootFolder,
-		generateUuidFromConfigId: mockGenerateUuidFromConfigIdSuccess,
-		getRelFilepath:           mockGetRelFilepathSuccess,
-	}
-
-	uuidAtTest, err := projectAtTest.GenerateConfigUuid("my-config-id")
-	assert.NilError(t, err)
-	assert.Equal(t, "env/project/my-config-id", uuidAtTest)
-
-	projectAtTest.getRelFilepath = mockGetRelFilepathFail
-
-	_, err = projectAtTest.GenerateConfigUuid("my-config-id")
-	assert.Error(t, err, "getRelFilepathFail")
-
-	projectAtTest.getRelFilepath = mockGetRelFilepathSuccess
-	projectAtTest.generateUuidFromConfigId = mockGenerateUuidFromConfigIdFail
-
-	_, err = projectAtTest.GenerateConfigUuid("my-config-id")
-	assert.Error(t, err, "generateUuidFromConfigIdFail")
-}
