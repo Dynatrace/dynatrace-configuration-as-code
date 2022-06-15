@@ -43,15 +43,6 @@ func TestAddConfig(t *testing.T) {
 	assert.Check(t, config.Detail["test"][0].Name == "test 1234")
 }
 
-// func TestCreateYamlFile(t *testing.T) {
-// 	// ctrl := gomock.NewController(t)
-// 	config := NewYamlConfig(testEnvironmentName)
-// 	config.AddConfig("test", "test 1234")
-// 	fileCreator := util.CreateTestFileSystem()
-// 	err := config.WriteYamlFile(fileCreator, "", "test")
-// 	assert.NilError(t, err)
-// }
-
 var mockConfigYaml = []byte(`
 config:
 - config-id: json-file-name.json
@@ -122,9 +113,9 @@ func TestUpdateConfig(t *testing.T) {
 	// Adds config details
 	mockEntityId := "new-config-id"
 	mockEntityName := "new-config-name"
-	mockJsonFileName := "json-file-name.json"
+	mockCleanName := "json-file-name"
 
-	config.UpdateConfig(mockEntityId, mockEntityName, mockJsonFileName)
+	config.UpdateConfig(mockEntityId, mockEntityName, mockCleanName, true, "config.json")
 
 	numberConfigs = len(config.Config)
 	assert.Equal(t, 2, numberConfigs)
@@ -132,9 +123,9 @@ func TestUpdateConfig(t *testing.T) {
 	// Adds config details
 	mockEntityId = "another-config-id"
 	mockEntityName = "another-config-name"
-	mockJsonFileName = "json-file-name.json"
+	mockCleanName = "json-file-name"
 
-	config.UpdateConfig(mockEntityId, mockEntityName, mockJsonFileName)
+	config.UpdateConfig(mockEntityId, mockEntityName, mockCleanName, true, "config.json")
 
 	numberConfigs = len(config.Config)
 	assert.Equal(t, 3, numberConfigs)
@@ -142,9 +133,9 @@ func TestUpdateConfig(t *testing.T) {
 	// Overwrites config details
 	mockEntityId = "config-id"
 	mockEntityName = "config-name"
-	mockJsonFileName = "json-file-name.json"
+	mockCleanName = "json-file-name"
 
-	config.UpdateConfig(mockEntityId, mockEntityName, mockJsonFileName)
+	config.UpdateConfig(mockEntityId, mockEntityName, mockCleanName, true, "config.json")
 
 	numberConfigs = len(config.Config)
 	assert.Equal(t, 3, numberConfigs)
@@ -166,9 +157,9 @@ func TestWriteYamlFile(t *testing.T) {
 	// Marks existing config as "downloaded"
 	mockEntityId := "config-id"
 	mockEntityName := "config-name"
-	mockJsonFileName := "json-file-name.json"
+	mockCleanName := "json-file-name"
 
-	config.UpdateConfig(mockEntityId, mockEntityName, mockJsonFileName)
+	config.UpdateConfig(mockEntityId, mockEntityName, mockCleanName, true, "config.json")
 
 	numberConfigs = len(config.Config)
 	assert.Equal(t, 1, numberConfigs)

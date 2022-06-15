@@ -56,11 +56,14 @@ func TestCreateConfigsFromAPI(t *testing.T) {
 		GetId().Return("synthetic-monitor").AnyTimes()
 
 	apiMock.EXPECT().
+		IsNonUniqueNameApi().Return(false).AnyTimes()
+
+	apiMock.EXPECT().
 		IsSingleConfigurationApi().Return(false).AnyTimes()
 
 	jcreator.EXPECT().
 		CreateJSONConfig(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-		Return("demo.json", "demo", false, nil)
+		Return(false, nil)
 
 	ycreator.
 		EXPECT().
@@ -68,11 +71,15 @@ func TestCreateConfigsFromAPI(t *testing.T) {
 		Return(nil)
 	ycreator.
 		EXPECT().
-		UpdateConfig(gomock.Any(), gomock.Any(), gomock.Any())
+		UpdateConfig(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 	ycreator.
 		EXPECT().
 		WriteYamlFile(gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(nil)
+	ycreator.
+		EXPECT().
+		GetConfigFileName(gomock.Any()).
+		Return("")
 
 	err := createConfigsFromAPI(fs, apiMock, "123", "/", client, jcreator, ycreator)
 	assert.NilError(t, err, "No errors")
