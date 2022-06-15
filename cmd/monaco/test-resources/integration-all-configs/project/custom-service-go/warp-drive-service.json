@@ -1,20 +1,21 @@
 {
-    "name": "{{ .name }}",
-    "enabled": true,
-    "rules": [
+  "name": "{{ .name }}",
+  "enabled": true,
+  "rules": [
+    {
+      "enabled": true,
+      "className": "AClass",
+      "methodRules": [
         {
-        "enabled": true,
-        "className": "AClass",
-        "methodRules": [
-            {
-            "methodName": "AMethod",
-            "argumentTypes": [
-                "java.lang.String"
-            ],
-            "returnType": "void"
-            }
-        ]
+          "methodName": "AMethod",
+          "argumentTypes": [
+            "java.lang.String"
+          ],
+          "returnType": "void",
+          "visibility": "PUBLIC"
         }
-    ],
-    "queueEntryPoint": false
+      ]
+    }
+  ],
+  "queueEntryPoint": false
 }
