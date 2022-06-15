@@ -120,9 +120,9 @@ var mockLoadEnvironmentList = func(specificEnvironment, environmentsFilePath str
 
 var testGetExecuteApis = func() map[string]api.Api {
 	apis := make(map[string]api.Api)
-	apis["calculated-metrics-log"] = api.NewStandardApi("calculated-metrics-log", "/api", false)
-	apis["alerting-profile"] = api.NewStandardApi("alerting-profile", "/api", false)
-	apis["dashboard"] = api.NewStandardApi("dashboard", "/api", true)
+	apis["calculated-metrics-log"] = api.NewStandardApi("calculated-metrics-log", "/api", false, "")
+	apis["alerting-profile"] = api.NewStandardApi("alerting-profile", "/api", false, "")
+	apis["dashboard"] = api.NewStandardApi("dashboard", "/api", true, "dashboard-v2")
 	return apis
 }
 

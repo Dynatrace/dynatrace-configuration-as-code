@@ -330,7 +330,7 @@ func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, ob
 }
 
 func isApiDashboard(api api.Api) bool {
-	return api.GetId() == "dashboard"
+	return api.GetId() == "dashboard" || api.GetId() == "dashboard-v2"
 }
 
 func isReportsApi(api api.Api) bool {

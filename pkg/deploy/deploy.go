@@ -254,13 +254,22 @@ func executeConfig(
 		return nil
 	}
 
-	isNonUniqueNameApi := config.GetApi().IsNonUniqueNameApi()
+	apiIface := config.GetApi()
+	apiId := apiIface.GetId()
+
+	isDeprecatedApi := apiIface.IsDeprecatedApi()
+	if isDeprecatedApi {
+		isDeprecatedBy := apiIface.IsDeprecatedBy()
+		util.Log.Warn("API for \"%s\" is deprecated! Please consider migrating to \"%s\"!", apiId, isDeprecatedBy)
+	}
+
+	isNonUniqueNameApi := apiIface.IsNonUniqueNameApi()
 	if !isNonUniqueNameApi {
 		name, err := config.GetObjectNameForEnvironment(environment, dict)
 		if err != nil {
 			return err
 		}
-		name = config.GetApi().GetId() + "/" + name
+		name = apiId + "/" + name
 		configID := config.GetFullQualifiedId()
 		if nameDict[name] != "" {
 			return fmt.Errorf("duplicate UID '%s' found in %s and %s", name, configID, nameDict[name])

@@ -30,7 +30,8 @@ type YamlCreator interface {
 	ReadYamlFile(fs afero.Fs, configSubPath string, apiId string) error
 	WriteYamlFile(fs afero.Fs, path string, name string) error
 	AddConfig(name string, rawName string)
-	UpdateConfig(entityId string, entityName string, jsonFileName string)
+	UpdateConfig(entityId string, entityName string, configId string, isNonUniqueNameApi bool, jsonFileName string)
+	GetConfigFileName(configId string) string
 }
 
 // YamlConfig defines the structure for the config file for each API including meta data
@@ -94,14 +95,16 @@ func (yc *YamlConfig) AddConfig(name string, rawName string) {
 }
 
 // UpdateConfig allows updating configs in the yaml file
-func (yc *YamlConfig) UpdateConfig(entityId string, entityName string, jsonFileName string) {
-	configId := yc.getConfigName(entityId)
-
+func (yc *YamlConfig) UpdateConfig(entityId string, entityName string, configId string, isNonUniqueNameApi bool, jsonFileName string) {
 	detailConfig := DetailConfig{
 		Name:           entityName,
 		Id:             entityId,
 		ConfigFileName: jsonFileName,
 		IsDownloaded:   true,
+	}
+
+	if isNonUniqueNameApi {
+		configId = yc.getConfigName(entityId)
 	}
 
 	yc.Detail[configId] = []DetailConfig{detailConfig}
@@ -199,7 +202,7 @@ func (yc *YamlConfig) parseConfigs(unmarshaledData map[string]map[string]string)
 	}
 }
 
-func (yc *YamlConfig) findConfigFileName(configId string) string {
+func (yc *YamlConfig) GetConfigFileName(configId string) string {
 	for _, v := range yc.Config {
 		for potentialId, configFileName := range v {
 			if potentialId == configId {
@@ -223,7 +226,7 @@ func (yc *YamlConfig) parseConfigDetails(unmarshaledData map[string]map[string]s
 				return err
 			}
 
-			configFileName := yc.findConfigFileName(configId)
+			configFileName := yc.GetConfigFileName(configId)
 
 			detailConfig := DetailConfig{
 				Name:           configId,
