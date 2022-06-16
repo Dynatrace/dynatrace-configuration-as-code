@@ -389,12 +389,17 @@ func uploadConfig(project project.Project, client rest.DynatraceClient, config c
 			return entity, err
 		}
 
-		entityId, err := util.GenerateUuidFromConfigId(projectCleanId, configId)
-		if err != nil {
-			return entity, err
+		entityUuid := configId
+
+		isUuid := util.IsUuid(entityUuid)
+		if !isUuid {
+			entityUuid, err = util.GenerateUuidFromConfigId(projectCleanId, configId)
+			if err != nil {
+				return entity, err
+			}
 		}
 
-		entity, err = client.UpsertByEntityId(config.GetApi(), entityId, name, uploadMap)
+		entity, err = client.UpsertByEntityId(config.GetApi(), entityUuid, name, uploadMap)
 		if err != nil {
 			err = fmt.Errorf("%w, responsible config: %s", err, config.GetFilePath())
 		}

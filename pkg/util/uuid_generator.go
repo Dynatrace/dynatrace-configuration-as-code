@@ -49,13 +49,6 @@ func IsUuid(configId string) bool {
 // GenerateUuidFromConfigId takes the unique project identifier within an environment, a config id and
 // generates a valid UUID based on provided information
 func GenerateUuidFromConfigId(projectUniqueId string, configId string) (string, error) {
-	// Return if configId is UUID
-	isUuid := IsUuid(configId)
-	if isUuid {
-		return configId, nil
-	}
-
-	// Otherwise calculate UUID from projectName and configId
 	projectUniqueConfigId := filepath.Join(projectUniqueId, configId)
 
 	uuid, err := GenerateUuidFromName(projectUniqueConfigId)

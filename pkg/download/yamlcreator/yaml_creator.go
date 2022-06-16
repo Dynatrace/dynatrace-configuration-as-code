@@ -39,6 +39,7 @@ type YamlConfig struct {
 	Config                   []map[string]string
 	Detail                   map[string][]DetailConfig
 	EnvironmentName          string
+	isUuid                   func(configId string) bool
 	generateUuidFromConfigId func(projectUniqueId string, configId string) (string, error)
 	marshalYaml              func(in interface{}) (out []byte, err error)
 	unmarshalYaml            func(text string, fileName string) (error, map[string]map[string]string)
@@ -69,6 +70,7 @@ type CleansedDetailConfig struct {
 func NewYamlConfig(environmentName string) *YamlConfig {
 	yamlConfig := YamlConfig{
 		EnvironmentName:          environmentName,
+		isUuid:                   util.IsUuid,
 		generateUuidFromConfigId: util.GenerateUuidFromConfigId,
 		marshalYaml:              yaml.Marshal,
 		unmarshalYaml:            util.UnmarshalYaml,
@@ -214,16 +216,21 @@ func (yc *YamlConfig) GetConfigFileName(configId string) string {
 	return ""
 }
 
-func (yc *YamlConfig) parseConfigDetails(unmarshaledData map[string]map[string]string) error {
+func (yc *YamlConfig) parseConfigDetails(unmarshaledData map[string]map[string]string) (err error) {
 	for configId := range unmarshaledData {
 		if !isTopLevelConfigurationYamlKey(configId) {
 			// As of May 2022, download does not support project structure
 			// Fallback to environment unique id
 			environmentUniqueConfigId := yc.EnvironmentName
 
-			entityUuid, err := yc.generateUuidFromConfigId(environmentUniqueConfigId, configId)
-			if err != nil {
-				return err
+			entityUuid := configId
+
+			isUuid := yc.isUuid(entityUuid)
+			if !isUuid {
+				entityUuid, err = yc.generateUuidFromConfigId(environmentUniqueConfigId, configId)
+				if err != nil {
+					return err
+				}
 			}
 
 			configFileName := yc.GetConfigFileName(configId)

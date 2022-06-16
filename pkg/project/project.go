@@ -38,11 +38,10 @@ type Project interface {
 }
 
 type projectImpl struct {
-	id                       string
-	configs                  []config.Config
-	projectRootFolder        string
-	generateUuidFromConfigId func(projectUniqueId string, configId string) (string, error)
-	getRelFilepath           func(basepath string, targpath string) (string, error)
+	id                string
+	configs           []config.Config
+	projectRootFolder string
+	getRelFilepath    func(basepath string, targpath string) (string, error)
 }
 
 type projectBuilder struct {
@@ -86,11 +85,10 @@ func NewProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolde
 	warnIfProjectNameClashesWithApiName(projectFolderName, apis, sanitizedProjectRootFolder)
 
 	return &projectImpl{
-		id:                       fullQualifiedProjectFolderName,
-		configs:                  builder.configs,
-		projectRootFolder:        projectRootFolder,
-		generateUuidFromConfigId: util.GenerateUuidFromConfigId,
-		getRelFilepath:           filepath.Rel,
+		id:                fullQualifiedProjectFolderName,
+		configs:           builder.configs,
+		projectRootFolder: projectRootFolder,
+		getRelFilepath:    filepath.Rel,
 	}, nil
 }
 
