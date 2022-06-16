@@ -110,3 +110,26 @@ Take the following steps to add a new API to Monaco.
 3. Add your API to the [table of supported APIs](../configuration/configTypes_tokenPermissions).
 ​
 > :rocket: After performing these steps, please create the pull request in the upstream repository to share it with the community!
+
+## Deprecating configuration types
+
+Sometimes it's necessary to deprecate certain configuration types. This could have several reasons such as the DT API being deprecated or breaking functional changes (e.g. *dashboard-v2* resolves name uniques challenges of the *dashboard* configuration type).
+
+As a best practise, such configurations are kept in the format: `<deprecated-configuration>-v<version increment>` (e.g. *dashboard-v2*).
+
+In addition, deprecated configs can be flagged as such by specifying *isDeprecatedBy*, e.g.:
+
+```
+"<my-deprecated-api-folder-name>": {
+    apiPath: "<path-to-my-api>",               // mandatory
+    isDeprecatedBy: "<my-new-api-folder-name>" // only necessary if API is deprecated
+},
+```
+
+Deprecated APIs are handled differently. For example, they are not downloaded anymore (unless explicitly specified by providing the *--downloadSpecificAPI* flag). During deployment a warning message is shown, however resources are still deployed.
+
+### When and when not to deprecate?
+
+As a rule of thumb, the same configuration types shall be re-used when e.g. new features are added. However, if a feature breaks functionality of an existing configuration type it is usually better to create a new vesion increment and deprecate the previously existing one.
+
+For example, more info about the *dashboard*, *request-naming-service*, *app-detection-rule* deprecatin can be found [here](../deprecated_migration).

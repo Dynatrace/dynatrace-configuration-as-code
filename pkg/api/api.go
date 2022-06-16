@@ -38,6 +38,10 @@ var apiMap = map[string]apiInput{
 	},
 	// Early adopter API !
 	// Deprecated !
+	//
+	// v2 resolves conflicts between DT entities which names are not unique within an environment.
+	// https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/pull/654
+	//
 	"dashboard": {
 		apiPath:                      "/api/config/v1/dashboards",
 		propertyNameOfGetAllResponse: "dashboards",
@@ -100,6 +104,10 @@ var apiMap = map[string]apiInput{
 		apiPath: "/api/config/v1/applications/mobile",
 	},
 	// Deprecated !
+	//
+	// v2 resolves conflicts between DT entities which names are not unique within an environment.
+	// https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/pull/654
+	//
 	"app-detection-rule": {
 		apiPath:        "/api/config/v1/applicationDetectionRules",
 		isDeprecatedBy: "app-detection-rule-v2",
@@ -153,6 +161,10 @@ var apiMap = map[string]apiInput{
 		apiPath: "/api/config/v1/maintenanceWindows",
 	},
 	// Deprecated !
+	//
+	// v2 resolves conflicts between DT entities which names are not unique within an environment.
+	// https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/pull/654
+	//
 	"request-naming-service": {
 		apiPath:        "/api/config/v1/service/requestNaming",
 		isDeprecatedBy: "request-naming-service-v2",
