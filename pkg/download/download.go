@@ -209,7 +209,7 @@ func createConfigsFromAPI(
 		return err
 	}
 	for _, val := range values {
-		util.Log.Debug("getting detail %s", val)
+		util.Log.Debug("getting detail %v (%v)", val.Name, val.Id)
 		cont++
 		util.Log.Debug("REQUEST counter %v", cont)
 		name, cleanName, filter, err := jcreator.CreateJSONConfig(fs, client, api, val, subPath)
