@@ -132,4 +132,4 @@ Deprecated APIs are handled differently. For example, they are not downloaded an
 
 As a rule of thumb, the same configuration types shall be re-used when e.g. new features are added. However, if a feature breaks functionality of an existing configuration type it is usually better to create a new vesion increment and deprecate the previously existing one.
 
-For example, more info about the *dashboard*, *request-naming-service*, *app-detection-rule* deprecatin can be found [here](./deprecated_migration).
+For example, more info about the *dashboard*, *request-naming-service*, *app-detection-rule* deprecation can be found [here](./deprecated_migration).
