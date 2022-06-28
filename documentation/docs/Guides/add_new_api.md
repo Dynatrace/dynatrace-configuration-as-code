@@ -113,7 +113,7 @@ Take the following steps to add a new API to Monaco.
 
 ## Deprecating configuration types
 
-Sometimes it's necessary to deprecate certain configuration types. This could have several reasons such as the DT API being deprecated or breaking functional changes (e.g. *dashboard-v2* resolves name uniques challenges of the *dashboard* configuration type).
+Sometimes it's necessary to deprecate certain configuration types. This could have several reasons such as the DT API being deprecated or breaking functional changes (e.g. *dashboard-v2* resolves name uniqueness challenges of the *dashboard* configuration type).
 
 As a best practise, such configurations are kept in the format: `<deprecated-configuration>-v<version increment>` (e.g. *dashboard-v2*).
 
