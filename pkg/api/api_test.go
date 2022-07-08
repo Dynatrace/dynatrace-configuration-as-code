@@ -86,3 +86,11 @@ func TestNewIdValue(t *testing.T) {
 	assert.Equal(t, hostsAutoUpdateApiId, value.Name)
 	assert.Equal(t, hostsAutoUpdateApiId, value.Id)
 }
+
+func TestIsDeprecatedApi(t *testing.T) {
+	isDeprecatedApi := testDashboardApi.IsDeprecatedApi()
+	assert.Equal(t, true, isDeprecatedApi)
+
+	isDeprecatedApi = testManagementZoneApi.IsDeprecatedApi()
+	assert.Equal(t, false, isDeprecatedApi)
+}
