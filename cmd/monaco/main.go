@@ -312,14 +312,14 @@ func getDownloadCommand(fs afero.Fs) cli.Command {
 			},
 			&cli.PathFlag{
 				Name:      "environments",
-				Usage:     "Yaml file containing environment to deploy to",
+				Usage:     "Yaml file containing environment to download from",
 				Aliases:   []string{"e"},
 				Required:  true,
 				TakesFile: true,
 			},
 			&cli.StringFlag{
 				Name:    "specific-environment",
-				Usage:   "Specific environment (from list) to deploy to",
+				Usage:   "Specific environment (from list) to download",
 				Aliases: []string{"s"},
 			},
 			&cli.StringFlag{
