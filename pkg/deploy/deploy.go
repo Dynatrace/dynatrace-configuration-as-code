@@ -31,6 +31,38 @@ import (
 	"github.com/spf13/afero"
 )
 
+func logProjectDeploymentOrder(projects []project.Project) {
+	util.Log.Info("Executing projects in this order: ")
+
+	for i, project := range projects {
+		util.Log.Info("\t%d: %s (%d configs)", i+1, project.GetId(), len(project.GetConfigs()))
+	}
+}
+
+func logConfigDeploymentOrder(projectId string, configs []config.Config) {
+	util.Log.Info("\tProcessing project %s...", projectId)
+	util.Log.Debug("\t\tDeploying configs in this order: ")
+	for i, config := range configs {
+		util.Log.Debug("\t\t\t%d: %s", i+1, config.GetFilePath())
+	}
+}
+
+func logDeploymentSummary(isDryRun bool, isContinueOnError bool, deploymentErrors map[string][]error) {
+	util.Log.Info("Deployment summary:")
+	for environment, errors := range deploymentErrors {
+		if isDryRun {
+			util.Log.Error("Validation of %s failed. Found %d error(s)\n", environment, len(errors))
+			util.PrintErrors(errors)
+		} else if isContinueOnError {
+			util.Log.Error("Deployment to %s finished with %d error(s):\n", environment, len(errors))
+			util.PrintErrors(errors)
+		} else {
+			util.Log.Error("Deployment to %s failed with error!\n", environment)
+			util.PrintErrors(errors)
+		}
+	}
+}
+
 func Deploy(
 	workingDir string,
 	fs afero.Fs,
@@ -58,11 +90,7 @@ func Deploy(
 		util.FailOnError(err, "Loading of projects failed")
 	}
 
-	util.Log.Info("Executing projects in this order: ")
-
-	for i, project := range projects {
-		util.Log.Info("\t%d: %s (%d configs)", i+1, project.GetId(), len(project.GetConfigs()))
-	}
+	logProjectDeploymentOrder(projects)
 
 	for _, environment := range environments {
 		errors := execute(environment, projects, dryRun, workingDir, continueOnError)
@@ -71,27 +99,15 @@ func Deploy(
 		}
 	}
 
-	util.Log.Info("Deployment summary:")
-	for environment, errors := range deploymentErrors {
-		if dryRun {
-			util.Log.Error("Validation of %s failed. Found %d error(s)\n", environment, len(errors))
-			util.PrintErrors(errors)
-		} else if continueOnError {
-			util.Log.Error("Deployment to %s finished with %d error(s):\n", environment, len(errors))
-			util.PrintErrors(errors)
-		} else {
-			util.Log.Error("Deployment to %s failed with error!\n", environment)
-			util.PrintErrors(errors)
-		}
-	}
+	logDeploymentSummary(dryRun, continueOnError, deploymentErrors)
+
+	isErrored := len(deploymentErrors) > 0
 
 	// do not execute delete if there are problems with deployment
-	if len(deploymentErrors) > 0 {
-		if dryRun {
-			return fmt.Errorf("errors during validation! Check log")
-		} else {
-			return fmt.Errorf("errors during deployment! Check log")
-		}
+	if isErrored && dryRun {
+		return fmt.Errorf("errors during validation! Check log")
+	} else if isErrored {
+		return fmt.Errorf("errors during deployment! Check log")
 	}
 
 	if dryRun {
@@ -100,93 +116,134 @@ func Deploy(
 		util.Log.Info("Deployment finished without errors")
 	}
 
-	deleteConfigs(apis, environments, workingDir, dryRun, fs)
+	err = deleteConfigs(apis, environments, workingDir, dryRun, fs)
+	if err != nil {
+		return fmt.Errorf("errors during delete! Check log")
+	}
 
 	return nil
 }
 
-func execute(environment environment.Environment, projects []project.Project, dryRun bool, path string, continueOnError bool) (errors []error) {
+func validateOrUpload(
+	isDryRun bool,
+	project project.Project,
+	client rest.DynatraceClient,
+	config config.Config,
+	dict map[string]api.DynatraceEntity,
+	environment environment.Environment,
+) (entity api.DynatraceEntity, err error) {
+	if isDryRun {
+		return validateConfig(project, config, dict, environment)
+	} else {
+		return uploadConfig(client, project, config, dict, environment)
+	}
+}
+
+func executeConfig(
+	isDryRun bool,
+	isContinueOnError bool,
+	environment environment.Environment,
+	project project.Project,
+	workingDir string,
+	config config.Config,
+	dict map[string]api.DynatraceEntity,
+	nameDict map[string]string,
+	client rest.DynatraceClient,
+	errors *[]error,
+) error {
+	if config.IsSkipDeployment(environment) {
+		util.Log.Info("\t\t\tskipping deployment of %s: %s", config.GetId(), config.GetFilePath())
+		return nil
+	}
+
+	apiIface := config.GetApi()
+	apiId := apiIface.GetId()
+
+	isDeprecatedApi := apiIface.IsDeprecatedApi()
+	if isDeprecatedApi {
+		isDeprecatedBy := apiIface.IsDeprecatedBy()
+		util.Log.Warn("API for \"%s\" is deprecated! Please consider migrating to \"%s\"!", apiId, isDeprecatedBy)
+	}
+
+	isNonUniqueNameApi := apiIface.IsNonUniqueNameApi()
+
+	if !isNonUniqueNameApi {
+		name, err := config.GetObjectNameForEnvironment(environment, dict)
+		if err != nil {
+			return err
+		}
+		name = config.GetApi().GetId() + "/" + name
+		configID := config.GetFullQualifiedId()
+		if nameDict[name] != "" {
+			return fmt.Errorf("duplicate UID '%s' found in %s and %s", name, configID, nameDict[name])
+		}
+		nameDict[name] = configID
+	}
+
+	entity, err := validateOrUpload(isDryRun, project, client, config, dict, environment)
+	if err != nil {
+		// by default stop deployment on error
+		if isContinueOnError || isDryRun {
+			*errors = append(*errors, err)
+			// Log error here in addition to deployment summary
+			// Useful to debug using verbose
+			util.Log.Error("\t\t\tFailed %s", err)
+		} else {
+			return err
+		}
+	}
+
+	referenceId := strings.TrimPrefix(config.GetFullQualifiedId(), workingDir+"/")
+
+	if entity.Name != "" {
+		dict[referenceId] = entity
+	}
+
+	return nil
+}
+
+func execute(environment environment.Environment, projects []project.Project, dryRun bool, path string, continueOnError bool) []error {
 	util.Log.Info("Processing environment " + environment.GetId() + "...")
 
 	var client rest.DynatraceClient
 	if !dryRun {
 		apiToken, err := environment.GetToken()
 		if err != nil {
-			return append(errors, err)
+			return []error{err}
 		}
 
 		client, err = rest.NewDynatraceClient(environment.GetEnvironmentUrl(), apiToken)
 		if err != nil {
-			return append(errors, err)
+			return []error{err}
 		}
 	}
 
 	dict := make(map[string]api.DynatraceEntity)
-	var nameDict = make(map[string]string)
+	nameDict := make(map[string]string)
+	errors := []error{}
 
 	for _, project := range projects {
+		projectId := project.GetId()
+		configs := project.GetConfigs()
 
-		util.Log.Info("\tProcessing project " + project.GetId() + "...")
-		util.Log.Debug("\t\tDeploying configs in this order: ")
-		for i, config := range project.GetConfigs() {
-			util.Log.Debug("\t\t\t%d: %s", i+1, config.GetFilePath())
-		}
+		logConfigDeploymentOrder(projectId, configs)
 
 		for _, config := range project.GetConfigs() {
-			if config.IsSkipDeployment(environment) {
-				util.Log.Info("\t\t\tskipping deployment of %s: %s", config.GetId(), config.GetFilePath())
-				continue
-			}
-
-			apiIface := config.GetApi()
-			apiId := apiIface.GetId()
-
-			isDeprecatedApi := apiIface.IsDeprecatedApi()
-			if isDeprecatedApi {
-				isDeprecatedBy := apiIface.IsDeprecatedBy()
-				util.Log.Warn("API for \"%s\" is deprecated! Please consider migrating to \"%s\"!", apiId, isDeprecatedBy)
-			}
-
-			isNonUniqueNameApi := apiIface.IsNonUniqueNameApi()
-
-			if !isNonUniqueNameApi {
-				name, err := config.GetObjectNameForEnvironment(environment, dict)
-				if err != nil {
-					return append(errors, err)
-				}
-				name = config.GetApi().GetId() + "/" + name
-				configID := config.GetFullQualifiedId()
-				if nameDict[name] != "" {
-					return append(errors, fmt.Errorf("duplicate UID '%s' found in %s and %s", name, configID, nameDict[name]))
-				}
-				nameDict[name] = configID
-			}
-
-			var entity api.DynatraceEntity
-			var err error
-
-			if dryRun {
-				entity, err = validateConfig(project, config, dict, environment)
-			} else {
-				entity, err = uploadConfig(client, project, config, dict, environment)
-			}
+			err := executeConfig(
+				dryRun,
+				continueOnError,
+				environment,
+				project,
+				path,
+				config,
+				dict,
+				nameDict,
+				client,
+				&errors,
+			)
 
 			if err != nil {
-				// by default stop deployment on error
-				if continueOnError || dryRun {
-					errors = append(errors, err)
-					// Log error here in addition to deployment summary
-					// Useful to debug using verbose
-					util.Log.Error("\t\t\tFailed %s", err)
-				} else {
-					return append(errors, err)
-				}
-			}
-
-			referenceId := strings.TrimPrefix(config.GetFullQualifiedId(), path+"/")
-
-			if entity.Name != "" {
-				dict[referenceId] = entity
+				return append(errors, err)
 			}
 		}
 	}
