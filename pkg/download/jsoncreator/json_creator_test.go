@@ -120,7 +120,7 @@ func TestProcessJSONFile(t *testing.T) {
 	apiMock.EXPECT().GetId().Return("alerting-profile").AnyTimes()
 	apiMock.EXPECT().IsNonUniqueNameApi().Return(false).Times(1)
 
-	file, err := processJSONFile(sample, "testId", "test1", apiMock)
+	file, err := processJSONFile(sample, "testId")
 	assert.NilError(t, err)
 
 	jsonfile := make(map[string]interface{})
@@ -132,6 +132,6 @@ func TestProcessJSONFile(t *testing.T) {
 
 	apiMock.EXPECT().IsNonUniqueNameApi().Return(true).Times(1)
 
-	_, err = processJSONFile(sample, "testId", "test1", apiMock)
+	_, err = processJSONFile(sample, "testId")
 	assert.NilError(t, err)
 }

@@ -189,7 +189,6 @@ func createConfigsFromSingleConfigurationAPI(
 
 	idVal := api.NewIdValue()
 
-	// At this point all API specific substitutions have been made (e.g. reports name = dashboard id)
 	configId, err := getConfigId(idVal.Id, idVal.Name, api)
 	if err != nil {
 		util.Log.Error("error creating config id: %v", err)
@@ -205,6 +204,7 @@ func createConfigsFromSingleConfigurationAPI(
 
 	jsonConfigFilePath := filepath.Join(subPath, jsonConfigFileName)
 
+	// At this point all API specific substitutions are made (e.g. reports name = dashboard id)
 	filter, err := jcreator.CreateJSONConfig(fs, client, api, idVal, jsonConfigFilePath)
 	if err != nil {
 		util.Log.Error("error creating config api json file: %v", err)
@@ -264,7 +264,6 @@ func createConfigsFromAPI(
 		cont++
 		util.Log.Debug("REQUEST counter %v", cont)
 
-		// At this point all API specific substitutions have been made (e.g. reports name = dashboard id)
 		configId, err := getConfigId(val.Id, val.Name, api)
 		if err != nil {
 			util.Log.Error("error creating config id: %v", err)
@@ -280,6 +279,7 @@ func createConfigsFromAPI(
 
 		jsonConfigFilePath := filepath.Join(subPath, jsonConfigFileName)
 
+		// At this point all API specific substitutions are made (e.g. reports name = dashboard id)
 		filter, err := jcreator.CreateJSONConfig(fs, client, api, val, jsonConfigFilePath)
 		if err != nil {
 			util.Log.Error("error creating config api json file: %v", err)

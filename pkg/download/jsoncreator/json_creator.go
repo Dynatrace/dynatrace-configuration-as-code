@@ -54,7 +54,7 @@ func (d *JsonCreatorImp) CreateJSONConfig(fs afero.Fs, client rest.DynatraceClie
 		return true, nil
 	}
 
-	jsonfile, err := processJSONFile(data, value.Id, value.Name, api)
+	jsonfile, err := processJSONFile(data, value.Id)
 	if err != nil {
 		util.Log.Error("error processing jsonfile %s", api.GetId())
 		return false, err
@@ -91,7 +91,7 @@ func getDetailFromAPI(client rest.DynatraceClient, api api.Api, name string) (da
 }
 
 //processJSONFile removes and replaces properties for each json config to make them compatible with monaco standard
-func processJSONFile(data map[string]interface{}, id string, name string, api api.Api) ([]byte, error) {
+func processJSONFile(data map[string]interface{}, id string) ([]byte, error) {
 	data = replaceKeyProperties(data)
 
 	jsonfile, err := json.MarshalIndent(data, "", " ")
