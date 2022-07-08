@@ -323,9 +323,9 @@ func getDownloadCommand(fs afero.Fs) cli.Command {
 				Aliases: []string{"s"},
 			},
 			&cli.StringFlag{
-				Name:    "downloadSpecificAPI",
+				Name:    "specific-api",
 				Usage:   "Comma separated list of API's to download ",
-				Aliases: []string{"p"},
+				Aliases: []string{"a", "p", "downloadSpecificAPI"},
 			},
 		},
 		Action: func(ctx *cli.Context) error {
@@ -342,7 +342,7 @@ func getDownloadCommand(fs afero.Fs) cli.Command {
 				fs,
 				ctx.Path("environments"),
 				ctx.String("specific-environment"),
-				ctx.String("downloadSpecificAPI"),
+				ctx.String("specific-api"),
 			)
 		},
 	}

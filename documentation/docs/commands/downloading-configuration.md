@@ -28,11 +28,11 @@ This feature allows you to download the configuration from a Dynatrace tenant as
 
 ## Options
 
-To download specific APIs only, use `--downloadSpecificAPI` to pass a list of API values separated by a comma. 
+To download specific APIs only, use `--specific-api` to pass a list of API values separated by a comma. 
 
 ```shell title="shell"
 
- monaco download --downloadSpecificAPI alerting-profile,dashboard --environments=my-environment.yaml
+ monaco download --specific-api alerting-profile,dashboard --environments=my-environment.yaml
 
 ```
 
