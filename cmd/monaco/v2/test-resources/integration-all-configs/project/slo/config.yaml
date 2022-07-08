@@ -4,3 +4,5 @@ configs:
     name: My SLO
     template: slo.json
     skip: false
+    parameters:
+      mzone: ["management-zone", "zone", "name"]

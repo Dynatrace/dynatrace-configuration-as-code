@@ -5,4 +5,4 @@ configs:
     parameters:
       displayName: Jira Log Errors
     template: jira-log-errors.json
-    skip: false
+    skip: true
