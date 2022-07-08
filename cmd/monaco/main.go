@@ -157,26 +157,15 @@ Examples:
 			workingDir = "."
 		}
 
-		deploymentHandler, err := deploy.NewHandler(
+		return deploy.Deploy(
 			workingDir,
 			fs,
 			ctx.Path("environments"),
-		)
-		if err != nil {
-			return err
-		}
-
-		err = deploymentHandler.RunAll(
 			ctx.String("specific-environment"),
 			ctx.String("project"),
 			ctx.Bool("dry-run"),
 			ctx.Bool("continue-on-error"),
 		)
-		if err != nil {
-			return err
-		}
-
-		return nil
 	}
 
 	return app
@@ -287,26 +276,15 @@ func getDeployCommand(fs afero.Fs) cli.Command {
 				workingDir = "."
 			}
 
-			deploymentHandler, err := deploy.NewHandler(
+			return deploy.Deploy(
 				workingDir,
 				fs,
 				ctx.Path("environments"),
-			)
-			if err != nil {
-				return err
-			}
-
-			err = deploymentHandler.RunAll(
 				ctx.String("specific-environment"),
 				ctx.String("project"),
 				ctx.Bool("dry-run"),
 				ctx.Bool("continue-on-error"),
 			)
-			if err != nil {
-				return err
-			}
-
-			return nil
 		},
 	}
 	return command
