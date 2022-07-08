@@ -187,9 +187,13 @@ func createConfigsFromSingleConfigurationAPI(
 		util.Log.Debug("No previously downloaded configs found.")
 	}
 
-	idVal := api.NewIdValue()
+	// Single configuration entities don't have name or id. Therefore, configuration type
+	// used for the API's id.
+	// In the context of downloading this configuration type is used as entityId and entityName.
+	entityId := api.GetId()
+	entityName := entityId
 
-	configId, err := getConfigId(idVal.Id, idVal.Name, api)
+	configId, err := getConfigId(entityId, entityName, api)
 	if err != nil {
 		util.Log.Error("error creating config id: %v", err)
 		return err
@@ -205,7 +209,7 @@ func createConfigsFromSingleConfigurationAPI(
 	jsonConfigFilePath := filepath.Join(subPath, jsonConfigFileName)
 
 	// At this point all API specific substitutions are made (e.g. reports name = dashboard id)
-	filter, err := jcreator.CreateJSONConfig(fs, client, api, idVal, jsonConfigFilePath)
+	filter, err := jcreator.CreateJSONConfig(fs, client, api, entityId, jsonConfigFilePath)
 	if err != nil {
 		util.Log.Error("error creating config api json file: %v", err)
 		return err
@@ -215,7 +219,7 @@ func createConfigsFromSingleConfigurationAPI(
 	}
 
 	isNonUniqueNameApi := false
-	ycreator.UpdateConfig(idVal.Id, idVal.Name, configId, isNonUniqueNameApi, jsonConfigFileName)
+	ycreator.UpdateConfig(entityId, entityName, configId, isNonUniqueNameApi, jsonConfigFileName)
 
 	err = ycreator.WriteYamlFile(fs, subPath, api.GetId())
 	if err != nil {
@@ -280,7 +284,7 @@ func createConfigsFromAPI(
 		jsonConfigFilePath := filepath.Join(subPath, jsonConfigFileName)
 
 		// At this point all API specific substitutions are made (e.g. reports name = dashboard id)
-		filter, err := jcreator.CreateJSONConfig(fs, client, api, val, jsonConfigFilePath)
+		filter, err := jcreator.CreateJSONConfig(fs, client, api, val.Id, jsonConfigFilePath)
 		if err != nil {
 			util.Log.Error("error creating config api json file: %v", err)
 			continue

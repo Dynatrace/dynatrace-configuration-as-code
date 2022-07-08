@@ -28,8 +28,13 @@ import (
 
 //JSONCreator interface allows to mock the methods for unit testing
 type JSONCreator interface {
-	CreateJSONConfig(fs afero.Fs, client rest.DynatraceClient, api api.Api, value api.Value,
-		path string) (filter bool, err error)
+	CreateJSONConfig(
+		fs afero.Fs,
+		client rest.DynatraceClient,
+		api api.Api,
+		entityId string,
+		path string,
+	) (filter bool, err error)
 }
 
 //JSONCreatorImp object
@@ -42,9 +47,9 @@ func NewJSONCreator() *JsonCreatorImp {
 }
 
 //CreateJSONConfig creates a json file using the specified path and API data
-func (d *JsonCreatorImp) CreateJSONConfig(fs afero.Fs, client rest.DynatraceClient, api api.Api, value api.Value,
+func (d *JsonCreatorImp) CreateJSONConfig(fs afero.Fs, client rest.DynatraceClient, api api.Api, entityId string,
 	jsonFilePath string) (filter bool, err error) {
-	data, filter, err := getDetailFromAPI(client, api, value.Id)
+	data, filter, err := getDetailFromAPI(client, api, entityId)
 	if err != nil {
 		util.Log.Error("error getting detail %s from API", api.GetId())
 		return false, err
@@ -54,7 +59,7 @@ func (d *JsonCreatorImp) CreateJSONConfig(fs afero.Fs, client rest.DynatraceClie
 		return true, nil
 	}
 
-	jsonfile, err := processJSONFile(data, value.Id)
+	jsonfile, err := processJSONFile(data, entityId)
 	if err != nil {
 		util.Log.Error("error processing jsonfile %s", api.GetId())
 		return false, err
@@ -69,24 +74,26 @@ func (d *JsonCreatorImp) CreateJSONConfig(fs afero.Fs, client rest.DynatraceClie
 	return false, nil
 }
 
-func getDetailFromAPI(client rest.DynatraceClient, api api.Api, name string) (dat map[string]interface{}, filter bool, err error) {
-
-	name = url.QueryEscape(name)
-	resp, err := client.ReadById(api, name)
+func getDetailFromAPI(client rest.DynatraceClient, api api.Api, entityId string) (dat map[string]interface{}, filter bool, err error) {
+	escapedEntityId := url.QueryEscape(entityId)
+	resp, err := client.ReadById(api, escapedEntityId)
 	if err != nil {
-		util.Log.Error("error getting detail for API %s", api.GetId(), name)
+		util.Log.Error("error getting detail for API %s", api.GetId(), escapedEntityId)
 		return nil, false, err
 	}
+
 	err = json.Unmarshal(resp, &dat)
 	if err != nil {
-		util.Log.Error("error transforming %s from json to object", name)
+		util.Log.Error("error transforming %s from json to object", escapedEntityId)
 		return nil, false, err
 	}
+
 	filter = isDefaultEntity(api.GetId(), dat)
 	if filter {
-		util.Log.Debug("Non-user-created default Object has been filtered out", name)
+		util.Log.Debug("Non-user-created default Object has been filtered out", escapedEntityId)
 		return nil, true, err
 	}
+
 	return dat, false, nil
 }
 

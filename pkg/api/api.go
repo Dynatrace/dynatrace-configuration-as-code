@@ -288,7 +288,6 @@ type Api interface {
 	IsNonUniqueNameApi() bool
 	IsDeprecatedApi() bool
 	IsDeprecatedBy() string
-	NewIdValue() Value
 }
 
 type apiInput struct {
@@ -402,15 +401,6 @@ func (a *apiImpl) IsDeprecatedApi() bool {
 
 func (a *apiImpl) IsDeprecatedBy() string {
 	return a.isDeprecatedBy
-}
-
-// Returns a Value which contains the api's id as
-// Id and Name attribute
-func (a *apiImpl) NewIdValue() Value {
-	return Value{
-		Name: a.id,
-		Id:   a.id,
-	}
 }
 
 func IsApi(dir string) bool {

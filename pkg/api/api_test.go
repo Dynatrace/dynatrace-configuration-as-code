@@ -81,12 +81,6 @@ func TestIsNonUniqueNameApi(t *testing.T) {
 	assert.Equal(t, false, isNonUniqueNameApi)
 }
 
-func TestNewIdValue(t *testing.T) {
-	value := testHostsAutoUpdateApi.NewIdValue()
-	assert.Equal(t, hostsAutoUpdateApiId, value.Name)
-	assert.Equal(t, hostsAutoUpdateApiId, value.Id)
-}
-
 func TestIsDeprecatedApi(t *testing.T) {
 	isDeprecatedApi := testDashboardApi.IsDeprecatedApi()
 	assert.Equal(t, true, isDeprecatedApi)

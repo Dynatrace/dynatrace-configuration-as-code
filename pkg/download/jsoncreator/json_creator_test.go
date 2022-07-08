@@ -44,7 +44,7 @@ func TestCreateJsonConfig(t *testing.T) {
 
 	jcreator := NewJSONCreator()
 
-	filter, err := jcreator.CreateJSONConfig(fs, client, apiMock, val, "/")
+	filter, err := jcreator.CreateJSONConfig(fs, client, apiMock, val.Id, "/")
 	assert.NilError(t, err)
 	assert.Equal(t, filter, false)
 }
