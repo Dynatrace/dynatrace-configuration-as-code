@@ -83,13 +83,11 @@ func getAPIList(downloadSpecificAPI string) (filterAPIList map[string]api.Api, e
 
 		return filterAPIList, nil
 	}
-
 	requestedApis := strings.Split(downloadSpecificAPI, ",")
 	isErr := false
 	for _, id := range requestedApis {
 		cleanAPI := strings.TrimSpace(id)
 		isAPI := api.IsApi(cleanAPI)
-
 		if !isAPI {
 			util.Log.Error("Value %s is not a valid API name", cleanAPI)
 			isErr = true
@@ -253,6 +251,7 @@ func createConfigsFromAPI(
 		util.Log.Error("error creating folder for api %v %v", api.GetId(), err)
 		return err
 	}
+	emptyfolder := true
 
 	apiId := api.GetId()
 
@@ -282,6 +281,8 @@ func createConfigsFromAPI(
 		jsonConfigFilePath := filepath.Join(subPath, jsonConfigFileName)
 
 		// At this point all API specific substitutions are made (e.g. reports name = dashboard id)
+
+
 		filter, err := jcreator.CreateJSONConfig(fs, client, api, val.Id, jsonConfigFilePath)
 		if err != nil {
 			util.Log.Error("error creating config api json file: %v", err)
@@ -290,15 +291,23 @@ func createConfigsFromAPI(
 		if filter {
 			continue
 		}
-
+		emptyfolder = false
 		isNonUniqueNameApi := api.IsNonUniqueNameApi()
 		ycreator.UpdateConfig(val.Id, val.Name, configId, isNonUniqueNameApi, jsonConfigFileName)
 	}
 
-	err = ycreator.WriteYamlFile(fs, subPath, apiId)
-	if err != nil {
-		util.Log.Error("error creating config api yaml file: %v", err)
-		return err
+	if emptyfolder {
+		err = fs.RemoveAll(subPath)
+		if err != nil {
+			util.Log.Error("error removing empty folder: %v", err)
+			return err
+		}
+	} else {
+		err = ycreator.WriteYamlFile(fs, subPath, apiId)
+	        if err != nil {
+		        util.Log.Error("error creating config api yaml file: %v", err)
+		        return err
+                }
 	}
 
 	return nil
