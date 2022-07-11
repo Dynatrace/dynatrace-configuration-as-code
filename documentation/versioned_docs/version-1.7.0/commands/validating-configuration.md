@@ -8,7 +8,7 @@ Monaco validates configuration files in a directory by performing a dry run. It 
 
 To validate the configuration, execute a `monaco dry run` on a YAML file as shown below.
 
-Create the file at `src/pages/my-react-page.js`:
+Create the file at `project/sub-project/my-environments.yaml`:
 
 ```jsx title="run monaco in dry mode"
  ./monaco -dry-run --environments=project/sub-project/my-environments.yaml
