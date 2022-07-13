@@ -282,7 +282,6 @@ func createConfigsFromAPI(
 
 		// At this point all API specific substitutions are made (e.g. reports name = dashboard id)
 
-
 		filter, err := jcreator.CreateJSONConfig(fs, client, api, val.Id, jsonConfigFilePath)
 		if err != nil {
 			util.Log.Error("error creating config api json file: %v", err)
@@ -304,10 +303,10 @@ func createConfigsFromAPI(
 		}
 	} else {
 		err = ycreator.WriteYamlFile(fs, subPath, apiId)
-	        if err != nil {
-		        util.Log.Error("error creating config api yaml file: %v", err)
-		        return err
-                }
+		if err != nil {
+			util.Log.Error("error creating config api yaml file: %v", err)
+			return err
+		}
 	}
 
 	return nil
