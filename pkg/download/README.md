@@ -12,7 +12,7 @@ i.e. ``./monaco download --environments=my-environment.yaml ``
 #### Options
 Instead of downloading all the configurations for all the API's you can pass a list of API values separated by comma using the following flag ``--downloadSpecificAPI``.
 
-i.e. ``./monaco download --downloadSpecificAPI alerting-profiles,dashboard --environments=my-environment.yaml ``
+i.e. ``./monaco download --downloadSpecificAPI alerting-profile,dashboard --environments=my-environment.yaml ``
 
 
 #### Notes

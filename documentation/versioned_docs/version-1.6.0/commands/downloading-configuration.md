@@ -30,7 +30,7 @@ Instead of downloading all the configurations for all the APIs you can pass a li
 
 ```shell title="shell"
 
-$ monaco download --downloadSpecificAPI alerting-profiles,dashboard --environments=my-environment.yaml
+$ monaco download --downloadSpecificAPI alerting-profile,dashboard --environments=my-environment.yaml
 
 ```
 
