@@ -40,14 +40,13 @@ func TestCreateJsonConfig(t *testing.T) {
 		Return(jsonsample, nil)
 
 	apiMock.EXPECT().GetId().Return("alerting-profile").AnyTimes()
+	apiMock.EXPECT().IsNonUniqueNameApi().Return(false).AnyTimes()
 
 	jcreator := NewJSONCreator()
 
-	name, cleanName, filter, err := jcreator.CreateJSONConfig(fs, client, apiMock, val, "/")
+	filter, err := jcreator.CreateJSONConfig(fs, client, apiMock, val.Id, "/")
 	assert.NilError(t, err)
 	assert.Equal(t, filter, false)
-	assert.Equal(t, name, "Sockshop Error Profile")
-	assert.Equal(t, cleanName, "SockshopErrorProfile")
 }
 
 func TestIsDefaultEntityDashboardCase(t *testing.T) {
@@ -116,16 +115,23 @@ func TestProcessJSONFile(t *testing.T) {
 	sample["name"] = "test1"
 	sample["displayName"] = "testDisplay"
 	sample["id"] = "testId"
+
 	apiMock := api.CreateAPIMockFactory(t)
 	apiMock.EXPECT().GetId().Return("alerting-profile").AnyTimes()
-	file, name, cleanName, err := processJSONFile(sample, "testId", "test1", apiMock)
+	apiMock.EXPECT().IsNonUniqueNameApi().Return(false).Times(1)
+
+	file, err := processJSONFile(sample, "testId")
 	assert.NilError(t, err)
+
 	jsonfile := make(map[string]interface{})
 	err = json.Unmarshal(file, &jsonfile)
 	assert.Check(t, jsonfile["testprop"] == "testprop")
 	assert.Check(t, jsonfile["name"] == "{{.name}}")
 	assert.Check(t, jsonfile["displayName"] == "{{.name}}")
-	assert.Check(t, name == "test1")
-	assert.Check(t, cleanName == "test1")
 	assert.Check(t, jsonfile["id"] == nil)
+
+	apiMock.EXPECT().IsNonUniqueNameApi().Return(true).Times(1)
+
+	_, err = processJSONFile(sample, "testId")
+	assert.NilError(t, err)
 }

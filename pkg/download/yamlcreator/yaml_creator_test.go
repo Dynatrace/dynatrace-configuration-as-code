@@ -18,30 +18,168 @@
 package yamlcreator
 
 import (
+	"fmt"
+	"io/fs"
+	"path/filepath"
 	"testing"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/spf13/afero"
+	"gopkg.in/yaml.v2"
 	"gotest.tools/assert"
 )
 
+const testEnvironmentName = "test-environment-0"
+
 func TestNewYamlConfig(t *testing.T) {
-	config := NewYamlConfig()
+	config := NewYamlConfig(testEnvironmentName)
 	assert.Check(t, config.Detail != nil, "map not initialized")
 }
 
 func TestAddConfig(t *testing.T) {
 	//test special name in config file
-	config := NewYamlConfig()
+	config := NewYamlConfig(testEnvironmentName)
 	config.AddConfig("test", "test 1234")
 	assert.Check(t, len(config.Detail["test"]) == 1)
 	assert.Check(t, config.Detail["test"][0].Name == "test 1234")
 }
 
-func TestCreateYamlFile(t *testing.T) {
-	// ctrl := gomock.NewController(t)
-	config := NewYamlConfig()
-	config.AddConfig("test", "test 1234")
-	fileCreator := util.CreateTestFileSystem()
-	err := config.CreateYamlFile(fileCreator, "", "test")
+var mockConfigYaml = []byte(`
+config:
+- config-id: json-file-name.json
+
+config-id:
+- name: Dynatrace entity name
+`)
+
+var newMockFs = func(t *testing.T, mockConfigSubPath string, mockApiId string) afero.Fs {
+	mockConfigFilePath := filepath.Join(mockConfigSubPath, mockApiId+".yaml")
+	mockFs := afero.NewMemMapFs()
+
+	f, err := mockFs.Create(mockConfigFilePath)
+	defer f.Close()
 	assert.NilError(t, err)
+
+	_, err = f.Write(mockConfigYaml)
+	assert.NilError(t, err)
+
+	return mockFs
+}
+
+func TestReadYamlFile(t *testing.T) {
+	mockConfigSubPath := filepath.Join("config", "sub", "path")
+	mockApiId := "api-id"
+	mockFs := newMockFs(t, mockConfigSubPath, mockApiId)
+
+	config := NewYamlConfig(testEnvironmentName)
+
+	err := config.ReadYamlFile(mockFs, mockConfigSubPath, mockApiId)
+	assert.NilError(t, err)
+
+	config.readFile = func(fs afero.Fs, filename string) ([]byte, error) { return []byte{}, fmt.Errorf("readFileFail") }
+
+	err = config.ReadYamlFile(mockFs, mockConfigSubPath, mockApiId)
+	assert.Error(t, err, "readFileFail")
+
+	config = NewYamlConfig(testEnvironmentName)
+	config.unmarshalYaml = func(text, fileName string) (error, map[string]map[string]string) {
+		return fmt.Errorf("unmarshalYamlFail"), map[string]map[string]string{}
+	}
+
+	err = config.ReadYamlFile(mockFs, mockConfigSubPath, mockApiId)
+	assert.Error(t, err, "unmarshalYamlFail")
+
+	config = NewYamlConfig(testEnvironmentName)
+	config.generateUuidFromConfigId = func(projectUniqueId, configId string) (string, error) {
+		return "", fmt.Errorf("generateUuidFromConfigIdFail")
+	}
+
+	err = config.ReadYamlFile(mockFs, mockConfigSubPath, mockApiId)
+	assert.Error(t, err, "generateUuidFromConfigIdFail")
+}
+
+func TestUpdateConfig(t *testing.T) {
+	mockConfigSubPath := filepath.Join("config", "sub", "path")
+	mockApiId := "api-id"
+	mockFs := newMockFs(t, mockConfigSubPath, mockApiId)
+
+	config := NewYamlConfig(testEnvironmentName)
+
+	err := config.ReadYamlFile(mockFs, mockConfigSubPath, mockApiId)
+	assert.NilError(t, err)
+
+	numberConfigs := len(config.Config)
+	assert.Equal(t, 1, numberConfigs)
+
+	// Adds config details
+	mockEntityId := "new-config-id"
+	mockEntityName := "new-config-name"
+	mockCleanName := "json-file-name"
+
+	config.UpdateConfig(mockEntityId, mockEntityName, mockCleanName, true, "config.json")
+
+	numberConfigs = len(config.Config)
+	assert.Equal(t, 2, numberConfigs)
+
+	// Adds config details
+	mockEntityId = "another-config-id"
+	mockEntityName = "another-config-name"
+	mockCleanName = "json-file-name"
+
+	config.UpdateConfig(mockEntityId, mockEntityName, mockCleanName, true, "config.json")
+
+	numberConfigs = len(config.Config)
+	assert.Equal(t, 3, numberConfigs)
+
+	// Overwrites config details
+	mockEntityId = "config-id"
+	mockEntityName = "config-name"
+	mockCleanName = "json-file-name"
+
+	config.UpdateConfig(mockEntityId, mockEntityName, mockCleanName, true, "config.json")
+
+	numberConfigs = len(config.Config)
+	assert.Equal(t, 3, numberConfigs)
+}
+
+func TestWriteYamlFile(t *testing.T) {
+	mockConfigSubPath := filepath.Join("config", "sub", "path")
+	mockApiId := "api-id"
+	mockFs := newMockFs(t, mockConfigSubPath, mockApiId)
+
+	config := NewYamlConfig(testEnvironmentName)
+
+	err := config.ReadYamlFile(mockFs, mockConfigSubPath, mockApiId)
+	assert.NilError(t, err)
+
+	numberConfigs := len(config.Config)
+	assert.Equal(t, 1, numberConfigs)
+
+	// Marks existing config as "downloaded"
+	mockEntityId := "config-id"
+	mockEntityName := "config-name"
+	mockCleanName := "json-file-name"
+
+	config.UpdateConfig(mockEntityId, mockEntityName, mockCleanName, true, "config.json")
+
+	numberConfigs = len(config.Config)
+	assert.Equal(t, 1, numberConfigs)
+
+	configDetails := config.Detail[mockEntityId]
+	assert.Equal(t, true, configDetails[0].IsDownloaded)
+
+	err = config.WriteYamlFile(mockFs, mockConfigSubPath, mockApiId)
+	assert.NilError(t, err)
+
+	config.marshalYaml = func(in interface{}) (out []byte, err error) { return []byte{}, fmt.Errorf("marshalYamlFail") }
+
+	err = config.WriteYamlFile(mockFs, mockConfigSubPath, mockApiId)
+	assert.Error(t, err, "marshalYamlFail")
+
+	config.marshalYaml = yaml.Marshal
+	config.writeFile = func(fs afero.Fs, filename string, data []byte, perm fs.FileMode) error {
+		return fmt.Errorf("writeFileFail")
+	}
+
+	err = config.WriteYamlFile(mockFs, mockConfigSubPath, mockApiId)
+	assert.Error(t, err, "writeFileFail")
 }

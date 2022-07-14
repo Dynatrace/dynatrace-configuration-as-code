@@ -63,14 +63,19 @@ type DynatraceClient interface {
 	//    PUT <environment-url>/api/config/v1/alertingProfiles/<id> ... instead of POST, if the config is already available
 	UpsertByName(a Api, name string, payload []byte) (entity DynatraceEntity, err error)
 
-	// Delete removed a given config for a given API using its name.
+	// UpsertByEntityId creates or updates an existing Dynatrace entity by it's id.
+	// If the entity doesn't exist it is created with the according id. E.g. for alerting profiles this would be:
+	//    PUT <environment-url>/api/config/v1/alertingProfiles/<id> ... whether or not the config is already available
+	UpsertByEntityId(a Api, entityId string, name string, payload []byte) (entity DynatraceEntity, err error)
+
+	// Delete removes a given config for a given API using its name.
 	// It calls the underlying GET and DELETE endpoints for the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles ... to get the id of the existing config
 	//    DELETE <environment-url>/api/config/v1/alertingProfiles/<id> ... to delete the config
 	DeleteByName(a Api, name string) error
 
 	// ExistsByName checks if a config with the given name exists for the given API.
-	// It cally the underlying GET endpoint for the API. E.g. for alerting profiles this would be:
+	// It calls the underlying GET endpoint for the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles
 	ExistsByName(a Api, name string) (exists bool, id string, err error)
 }
@@ -163,8 +168,9 @@ func (d *dynatraceClientImpl) DeleteByName(api Api, name string) error {
 }
 
 func (d *dynatraceClientImpl) ExistsByName(api Api, name string) (exists bool, id string, err error) {
+	url := api.GetUrlFromEnvironmentUrl(d.environmentUrl)
 
-	existingObjectId, err := getObjectIdIfAlreadyExists(d.client, api, api.GetUrlFromEnvironmentUrl(d.environmentUrl), name, d.token)
+	existingObjectId, err := getObjectIdIfAlreadyExists(d.client, api, url, name, d.token)
 	return existingObjectId != "", existingObjectId, err
 }
 
@@ -175,4 +181,8 @@ func (d *dynatraceClientImpl) UpsertByName(api Api, name string, payload []byte)
 		return uploadExtension(d.client, fullUrl, name, payload, d.token)
 	}
 	return upsertDynatraceObject(d.client, d.environmentUrl, name, api, payload, d.token)
+}
+
+func (d *dynatraceClientImpl) UpsertByEntityId(api Api, entityId string, name string, payload []byte) (entity DynatraceEntity, err error) {
+	return upsertDynatraceEntityById(d.client, d.environmentUrl, entityId, name, api, payload, d.token)
 }
