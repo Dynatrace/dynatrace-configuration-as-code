@@ -20,6 +20,8 @@
 package project
 
 import (
+	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
@@ -62,9 +64,9 @@ func createTestApis() map[string]api.Api {
 	return apis
 }
 
-var testAlertingProfileApi = api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles")
-var testManagementZoneApi = api.NewStandardApi("management-zone", "/api/config/v1/managementZones")
-var testDashboardApi = api.NewStandardApi("dashboard", "/api/config/v1/dashboards")
+var testAlertingProfileApi = api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "")
+var testManagementZoneApi = api.NewStandardApi("management-zone", "/api/config/v1/managementZones", false, "")
+var testDashboardApi = api.NewStandardApi("dashboard", "/api/config/v1/dashboards", true, "dashboard-v2")
 
 func TestGetPathSuccess(t *testing.T) {
 
@@ -265,4 +267,20 @@ func TestProcessYaml(t *testing.T) {
 
 	config := builder.configs[0]
 	assert.Check(t, config != nil)
+}
+
+var mockGenerateUuidFromConfigIdSuccess = func(projectUniqueId string, configId string) (string, error) {
+	return projectUniqueId + "/" + configId, nil
+}
+
+var mockGenerateUuidFromConfigIdFail = func(projectUniqueId string, configId string) (string, error) {
+	return "", fmt.Errorf("generateUuidFromConfigIdFail")
+}
+
+var mockGetRelFilepathSuccess = func(basepath string, targpath string) (string, error) {
+	return filepath.Rel(basepath, targpath)
+}
+
+var mockGetRelFilepathFail = func(basepath string, targpath string) (string, error) {
+	return "", fmt.Errorf("getRelFilepathFail")
 }

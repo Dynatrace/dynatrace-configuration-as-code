@@ -41,7 +41,7 @@ const testHostAutoUpdateTemplateWithEmptyWindows = `{"updateWindows": { "windows
 var testDevEnvironment = environment.NewEnvironment("development", "Dev", "", "https://url/to/dev/environment", "DEV")
 var testHardeningEnvironment = environment.NewEnvironment("hardening", "Hardening", "", "https://url/to/hardening/environment", "HARDENING")
 var testProductionEnvironment = environment.NewEnvironment("prod-environment", "prod-environment", "production", "https://url/to/production/environment", "PRODUCTION")
-var testManagementZoneApi = api.NewStandardApi("management-zone", "/api/config/v1/managementZones")
+var testManagementZoneApi = api.NewStandardApi("management-zone", "/api/config/v1/managementZones", false, "")
 
 func createConfigForTest(id string, project string, template util.Template, properties map[string]map[string]string, api api.Api, fileName string) configImpl {
 	return configImpl{

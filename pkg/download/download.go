@@ -70,21 +70,38 @@ func getConfigs(fs afero.Fs, workingDir string, environments map[string]environm
 func getAPIList(downloadSpecificAPI string) (filterAPIList map[string]api.Api, err error) {
 	availableApis := api.NewApis()
 	noFilterAPIListProvided := strings.TrimSpace(downloadSpecificAPI) == ""
+	filterAPIList = make(map[string]api.Api)
 
+	// If no filter provided, return only non deprecated APIs
 	if noFilterAPIListProvided {
-		return availableApis, nil
+		for availableApiId, availableApi := range availableApis {
+			isDeprecated := availableApi.IsDeprecatedApi()
+			if !isDeprecated {
+				filterAPIList[availableApiId] = availableApi
+			}
+		}
+
+		return filterAPIList, nil
 	}
+
 	requestedApis := strings.Split(downloadSpecificAPI, ",")
 	isErr := false
-	filterAPIList = make(map[string]api.Api)
 	for _, id := range requestedApis {
 		cleanAPI := strings.TrimSpace(id)
 		isAPI := api.IsApi(cleanAPI)
+
 		if !isAPI {
 			util.Log.Error("Value %s is not a valid API name", cleanAPI)
 			isErr = true
 		} else {
 			filterAPI := availableApis[cleanAPI]
+			isDeprecatedApi := filterAPI.IsDeprecatedApi()
+
+			if isDeprecatedApi {
+				isDeprecatedBy := filterAPI.IsDeprecatedBy()
+				util.Log.Warn("API for \"%s\" is deprecated! Please consider migrating to \"%s\"!", cleanAPI, isDeprecatedBy)
+			}
+
 			filterAPIList[cleanAPI] = filterAPI
 		}
 	}
@@ -97,29 +114,29 @@ func getAPIList(downloadSpecificAPI string) (filterAPIList map[string]api.Api, e
 
 //creates the project and downloads the configs
 func downloadConfigFromEnvironment(fs afero.Fs, environment environment.Environment, basepath string, listApis map[string]api.Api) (err error) {
-	projectName := environment.GetId()
-	path := filepath.Join(basepath, projectName)
+	environmentName := environment.GetId()
+	path := filepath.Join(basepath, environmentName)
 
-	util.Log.Info("Creating base project name %s", projectName)
+	util.Log.Info("Creating base project name %s", environmentName)
 	err = fs.MkdirAll(path, 0777)
 	if err != nil {
-		util.Log.Error("error creating folder for enviroment %v %v", projectName, err)
+		util.Log.Error("error creating folder for enviroment %v %v", environmentName, err)
 		return err
 	}
 	token, err := environment.GetToken()
 	if err != nil {
-		util.Log.Error("error retrieving token for enviroment %v %v", projectName, err)
+		util.Log.Error("error retrieving token for enviroment %v %v", environmentName, err)
 		return err
 	}
 	client, err := rest.NewDynatraceClient(environment.GetEnvironmentUrl(), token)
 	if err != nil {
-		util.Log.Error("error creating dynatrace client for enviroment %v %v", projectName, err)
+		util.Log.Error("error creating dynatrace client for enviroment %v %v", environmentName, err)
 		return err
 	}
 	for _, api := range listApis {
 		util.Log.Info(" --- GETTING CONFIGS for %s", api.GetId())
 		jcreator := jsoncreator.NewJSONCreator()
-		ycreator := yamlcreator.NewYamlConfig()
+		ycreator := yamlcreator.NewYamlConfig(environmentName)
 
 		// Retrieves object from single configuration API
 		isSingleConfigurationApi := api.IsSingleConfigurationApi()
@@ -135,7 +152,7 @@ func downloadConfigFromEnvironment(fs afero.Fs, environment environment.Environm
 			}
 		}
 	}
-	util.Log.Info("END downloading info %s", projectName)
+	util.Log.Info("END downloading info %s", environmentName)
 	return nil
 }
 
@@ -163,9 +180,36 @@ func createConfigsFromSingleConfigurationAPI(
 		return err
 	}
 
-	idVal := api.NewIdValue()
+	apiId := api.GetId()
 
-	name, cleanName, filter, err := jcreator.CreateJSONConfig(fs, client, api, idVal, subPath)
+	err = ycreator.ReadYamlFile(fs, subPath, apiId)
+	if err != nil {
+		util.Log.Debug("No previously downloaded configs found.")
+	}
+
+	// Single configuration entities don't have name or id. Therefore, configuration type
+	// used for the API's id.
+	// In the context of downloading this configuration type is used as entityId and entityName.
+	entityId := api.GetId()
+	entityName := entityId
+
+	configId, err := getConfigId(entityId, entityName, api)
+	if err != nil {
+		util.Log.Error("error creating config id: %v", err)
+		return err
+	}
+
+	jsonConfigFileName := ycreator.GetConfigFileName(configId)
+
+	isKnownConfigFileName := jsonConfigFileName != ""
+	if !isKnownConfigFileName {
+		jsonConfigFileName = configId + ".json"
+	}
+
+	jsonConfigFilePath := filepath.Join(subPath, jsonConfigFileName)
+
+	// At this point all API specific substitutions are made (e.g. reports name = dashboard id)
+	filter, err := jcreator.CreateJSONConfig(fs, client, api, entityId, jsonConfigFilePath)
 	if err != nil {
 		util.Log.Error("error creating config api json file: %v", err)
 		return err
@@ -174,8 +218,10 @@ func createConfigsFromSingleConfigurationAPI(
 		return nil
 	}
 
-	ycreator.AddConfig(cleanName, name)
-	err = ycreator.CreateYamlFile(fs, subPath, api.GetId())
+	isNonUniqueNameApi := false
+	ycreator.UpdateConfig(entityId, entityName, configId, isNonUniqueNameApi, jsonConfigFileName)
+
+	err = ycreator.WriteYamlFile(fs, subPath, api.GetId())
 	if err != nil {
 		util.Log.Error("error creating config api yaml file: %v", err)
 		return err
@@ -203,16 +249,42 @@ func createConfigsFromAPI(
 		util.Log.Info("No elements for API %s", api.GetId())
 		return nil
 	}
+
 	subPath, err := createConfigsFolder(fs, api, fullpath)
 	if err != nil {
 		util.Log.Error("error creating folder for api %v %v", api.GetId(), err)
 		return err
 	}
+
+	apiId := api.GetId()
+
+	err = ycreator.ReadYamlFile(fs, subPath, apiId)
+	if err != nil {
+		util.Log.Debug("No previously downloaded configs found.")
+	}
+
 	for _, val := range values {
-		util.Log.Debug("getting detail %s", val)
+		util.Log.Debug("Getting details for id %s, name %s", val.Id, val.Name)
 		cont++
 		util.Log.Debug("REQUEST counter %v", cont)
-		name, cleanName, filter, err := jcreator.CreateJSONConfig(fs, client, api, val, subPath)
+
+		configId, err := getConfigId(val.Id, val.Name, api)
+		if err != nil {
+			util.Log.Error("error creating config id: %v", err)
+			continue
+		}
+
+		jsonConfigFileName := ycreator.GetConfigFileName(configId)
+
+		isKnownConfigFileName := jsonConfigFileName != ""
+		if !isKnownConfigFileName {
+			jsonConfigFileName = configId + ".json"
+		}
+
+		jsonConfigFilePath := filepath.Join(subPath, jsonConfigFileName)
+
+		// At this point all API specific substitutions are made (e.g. reports name = dashboard id)
+		filter, err := jcreator.CreateJSONConfig(fs, client, api, val.Id, jsonConfigFilePath)
 		if err != nil {
 			util.Log.Error("error creating config api json file: %v", err)
 			continue
@@ -220,13 +292,34 @@ func createConfigsFromAPI(
 		if filter {
 			continue
 		}
-		ycreator.AddConfig(cleanName, name)
+
+		isNonUniqueNameApi := api.IsNonUniqueNameApi()
+		ycreator.UpdateConfig(val.Id, val.Name, configId, isNonUniqueNameApi, jsonConfigFileName)
 	}
 
-	err = ycreator.CreateYamlFile(fs, subPath, api.GetId())
+	err = ycreator.WriteYamlFile(fs, subPath, apiId)
 	if err != nil {
 		util.Log.Error("error creating config api yaml file: %v", err)
 		return err
 	}
+
 	return nil
+}
+
+// Retrieves and sanitizes config id which is used as a unique identifier of
+// config details and as a reference to the config's json file
+func getConfigId(id string, name string, api api.Api) (configId string, err error) {
+	isNonUniqueNameApi := api.IsNonUniqueNameApi()
+	if isNonUniqueNameApi {
+		configId = util.SanitizeName(id)
+		return configId, nil
+	}
+
+	//for the apis that return a name for the config
+	if name != "" {
+		configId = util.SanitizeName(name)
+		return configId, nil
+	}
+
+	return "", fmt.Errorf("error getting configId for api %q", api.GetId())
 }
