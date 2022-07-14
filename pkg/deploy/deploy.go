@@ -141,7 +141,6 @@ func validateOrUpload(
 
 func executeConfig(
 	isDryRun bool,
-	isContinueOnError bool,
 	environment environment.Environment,
 	project project.Project,
 	workingDir string,
@@ -149,7 +148,6 @@ func executeConfig(
 	dict map[string]api.DynatraceEntity,
 	nameDict map[string]string,
 	client rest.DynatraceClient,
-	errors *[]error,
 ) error {
 	if config.IsSkipDeployment(environment) {
 		util.Log.Info("\t\t\tskipping deployment of %s: %s", config.GetId(), config.GetFilePath())
@@ -181,25 +179,13 @@ func executeConfig(
 	}
 
 	entity, err := validateOrUpload(isDryRun, project, client, config, dict, environment)
-	if err != nil {
-		// by default stop deployment on error
-		if isContinueOnError || isDryRun {
-			*errors = append(*errors, err)
-			// Log error here in addition to deployment summary
-			// Useful to debug using verbose
-			util.Log.Error("\t\t\tFailed %s", err)
-		} else {
-			return err
-		}
-	}
-
 	referenceId := strings.TrimPrefix(config.GetFullQualifiedId(), workingDir+"/")
 
 	if entity.Name != "" {
 		dict[referenceId] = entity
 	}
 
-	return nil
+	return err
 }
 
 func execute(environment environment.Environment, projects []project.Project, dryRun bool, path string, continueOnError bool) []error {
@@ -231,7 +217,6 @@ func execute(environment environment.Environment, projects []project.Project, dr
 		for _, config := range project.GetConfigs() {
 			err := executeConfig(
 				dryRun,
-				continueOnError,
 				environment,
 				project,
 				path,
@@ -239,11 +224,19 @@ func execute(environment environment.Environment, projects []project.Project, dr
 				dict,
 				nameDict,
 				client,
-				&errors,
 			)
 
 			if err != nil {
-				return append(errors, err)
+				errors = append(errors, err)
+
+				// by we default stop deployment on error and return
+				if !continueOnError && !dryRun {
+					return errors
+				}
+
+				// Log error here in addition to deployment summary
+				// Useful to debug using verbose
+				util.Log.Error("\t\t\tFailed %s", err)
 			}
 		}
 	}
