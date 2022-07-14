@@ -34,11 +34,14 @@ type Project interface {
 	GetConfigs() []config.Config
 	GetConfig(id string) (config.Config, error)
 	GetId() string
+	GetCleanId() (string, error)
 }
 
 type projectImpl struct {
-	id      string
-	configs []config.Config
+	id                string
+	configs           []config.Config
+	projectRootFolder string
+	getRelFilepath    func(basepath string, targpath string) (string, error)
 }
 
 type projectBuilder struct {
@@ -57,10 +60,10 @@ func NewProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolde
 
 	// standardize projectRootFolder
 	// trim path separator from projectRoot
-	projectRootFolder = strings.Trim(projectRootFolder, string(os.PathSeparator))
+	sanitizedProjectRootFolder := strings.Trim(projectRootFolder, string(os.PathSeparator))
 
 	builder := projectBuilder{
-		projectRootFolder: projectRootFolder,
+		projectRootFolder: sanitizedProjectRootFolder,
 		projectId:         fullQualifiedProjectFolderName,
 		configs:           configs,
 		apis:              apis,
@@ -79,11 +82,13 @@ func NewProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolde
 		return nil, err
 	}
 
-	warnIfProjectNameClashesWithApiName(projectFolderName, apis, projectRootFolder)
+	warnIfProjectNameClashesWithApiName(projectFolderName, apis, sanitizedProjectRootFolder)
 
 	return &projectImpl{
-		id:      fullQualifiedProjectFolderName,
-		configs: builder.configs,
+		id:                fullQualifiedProjectFolderName,
+		configs:           builder.configs,
+		projectRootFolder: projectRootFolder,
+		getRelFilepath:    filepath.Rel,
 	}, nil
 }
 
@@ -276,6 +281,11 @@ func (p *projectImpl) GetConfig(id string) (config config.Config, err error) {
 // GetId returns the id for this project
 func (p *projectImpl) GetId() string {
 	return p.id
+}
+
+// GetCleanId returns a sanitized project id, cleaned from all path attributes
+func (p *projectImpl) GetCleanId() (string, error) {
+	return p.getRelFilepath(p.projectRootFolder, p.id)
 }
 
 // HasDependencyOn checks if one project depends on the given parameter config

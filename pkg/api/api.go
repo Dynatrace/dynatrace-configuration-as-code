@@ -37,9 +37,22 @@ var apiMap = map[string]apiInput{
 		apiPath: "/api/config/v1/autoTags",
 	},
 	// Early adopter API !
+	// Deprecated !
+	//
+	// v2 resolves conflicts between DT entities which names are not unique within an environment.
+	// https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/pull/654
+	//
 	"dashboard": {
 		apiPath:                      "/api/config/v1/dashboards",
 		propertyNameOfGetAllResponse: "dashboards",
+		isDeprecatedBy:               "dashboard-v2",
+	},
+	// Early adopter API
+	// Non unique name API
+	"dashboard-v2": {
+		apiPath:                      "/api/config/v1/dashboards",
+		propertyNameOfGetAllResponse: "dashboards",
+		isNonUniqueNameApi:           true,
 	},
 	"notification": {
 		apiPath: "/api/config/v1/notifications",
@@ -90,8 +103,18 @@ var apiMap = map[string]apiInput{
 	"application-mobile": {
 		apiPath: "/api/config/v1/applications/mobile",
 	},
+	// Deprecated !
+	//
+	// v2 resolves conflicts between DT entities which names are not unique within an environment.
+	// https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/pull/654
+	//
 	"app-detection-rule": {
-		apiPath: "/api/config/v1/applicationDetectionRules",
+		apiPath:        "/api/config/v1/applicationDetectionRules",
+		isDeprecatedBy: "app-detection-rule-v2",
+	},
+	"app-detection-rule-v2": {
+		apiPath:            "/api/config/v1/applicationDetectionRules",
+		isNonUniqueNameApi: true,
 	},
 	"aws-credentials": {
 		apiPath: "/api/config/v1/aws/credentials",
@@ -137,8 +160,19 @@ var apiMap = map[string]apiInput{
 	"maintenance-window": {
 		apiPath: "/api/config/v1/maintenanceWindows",
 	},
+	// Deprecated !
+	//
+	// v2 resolves conflicts between DT entities which names are not unique within an environment.
+	// https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/pull/654
+	//
 	"request-naming-service": {
-		apiPath: "/api/config/v1/service/requestNaming",
+		apiPath:        "/api/config/v1/service/requestNaming",
+		isDeprecatedBy: "request-naming-service-v2",
+	},
+	// Non unique name API !
+	"request-naming-service-v2": {
+		apiPath:            "/api/config/v1/service/requestNaming",
+		isNonUniqueNameApi: true,
 	},
 
 	// Early adopter API !
@@ -251,13 +285,17 @@ type Api interface {
 	GetPropertyNameOfGetAllResponse() string
 	IsStandardApi() bool
 	IsSingleConfigurationApi() bool
-	NewIdValue() Value
+	IsNonUniqueNameApi() bool
+	IsDeprecatedApi() bool
+	IsDeprecatedBy() string
 }
 
 type apiInput struct {
 	apiPath                      string
 	propertyNameOfGetAllResponse string
 	isSingleConfigurationApi     bool
+	isNonUniqueNameApi           bool
+	isDeprecatedBy               string
 }
 
 type apiImpl struct {
@@ -265,6 +303,8 @@ type apiImpl struct {
 	apiPath                      string
 	propertyNameOfGetAllResponse string
 	isSingleConfigurationApi     bool
+	isNonUniqueNameApi           bool
+	isDeprecatedBy               string
 }
 
 func NewApis() map[string]Api {
@@ -280,27 +320,27 @@ func NewApis() map[string]Api {
 
 func newApi(id string, input apiInput) Api {
 	if input.isSingleConfigurationApi {
-		return NewSingleConfigurationApi(id, input.apiPath)
+		return NewSingleConfigurationApi(id, input.apiPath, input.isDeprecatedBy)
 	}
 
 	if input.propertyNameOfGetAllResponse == "" {
-		return NewStandardApi(id, input.apiPath)
+		return NewStandardApi(id, input.apiPath, input.isNonUniqueNameApi, input.isDeprecatedBy)
 	}
 
-	return NewApi(id, input.apiPath, input.propertyNameOfGetAllResponse, false)
+	return NewApi(id, input.apiPath, input.propertyNameOfGetAllResponse, false, input.isNonUniqueNameApi, input.isDeprecatedBy)
 }
 
 // NewStandardApi creates an API with propertyNameOfGetAllResponse set to "values"
-func NewStandardApi(id string, apiPath string) Api {
-	return NewApi(id, apiPath, standardApiPropertyNameOfGetAllResponse, false)
+func NewStandardApi(id string, apiPath string, isNonUniqueNameApi bool, isDeprecatedBy string) Api {
+	return NewApi(id, apiPath, standardApiPropertyNameOfGetAllResponse, false, isNonUniqueNameApi, isDeprecatedBy)
 }
 
 // NewSingleConfigurationApi creates an API with isSingleConfigurationApi set to true
-func NewSingleConfigurationApi(id string, apiPath string) Api {
-	return NewApi(id, apiPath, "", true)
+func NewSingleConfigurationApi(id string, apiPath string, isDeprecatedBy string) Api {
+	return NewApi(id, apiPath, "", true, false, isDeprecatedBy)
 }
 
-func NewApi(id string, apiPath string, propertyNameOfGetAllResponse string, isSingleConfigurationApi bool) Api {
+func NewApi(id string, apiPath string, propertyNameOfGetAllResponse string, isSingleConfigurationApi bool, isNonUniqueNameApi bool, isDeprecatedBy string) Api {
 
 	// TODO log warning if the user tries to create an API with a id not present in map above
 	// This means that a user runs monaco with an untested api
@@ -310,6 +350,8 @@ func NewApi(id string, apiPath string, propertyNameOfGetAllResponse string, isSi
 		apiPath:                      apiPath,
 		propertyNameOfGetAllResponse: propertyNameOfGetAllResponse,
 		isSingleConfigurationApi:     isSingleConfigurationApi,
+		isNonUniqueNameApi:           isNonUniqueNameApi,
+		isDeprecatedBy:               isDeprecatedBy,
 	}
 }
 
@@ -337,17 +379,28 @@ func (a *apiImpl) IsStandardApi() bool {
 	return a.propertyNameOfGetAllResponse == standardApiPropertyNameOfGetAllResponse
 }
 
+// Single configuration APIs are those APIs that configure an environment global setting.
+// Such settings require additional handling and can't be deleted.
 func (a *apiImpl) IsSingleConfigurationApi() bool {
 	return a.isSingleConfigurationApi
 }
 
-// Returns a Value which contains the api's id as
-// Id and Name attribute
-func (a *apiImpl) NewIdValue() Value {
-	return Value{
-		Name: a.id,
-		Id:   a.id,
-	}
+// Non unique name APIs are those APIs that don't work with an environment wide unique id.
+// For such APIs, the name attribute can't be used as a id (Monaco default behavior), hence
+// such APIs require additional handling.
+func (a *apiImpl) IsNonUniqueNameApi() bool {
+	return a.isNonUniqueNameApi
+}
+
+// Deprecated APIs are those APIs that either implement a new Monaco handler or
+// are deprecated from DT's side. While shwoing a warning, deploying and downloading
+// such APIs works as long as it's supported by DT's API.
+func (a *apiImpl) IsDeprecatedApi() bool {
+	return a.isDeprecatedBy != ""
+}
+
+func (a *apiImpl) IsDeprecatedBy() string {
+	return a.isDeprecatedBy
 }
 
 func IsApi(dir string) bool {

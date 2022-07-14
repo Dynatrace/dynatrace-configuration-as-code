@@ -71,6 +71,21 @@ func upsertDynatraceObject(
 	}
 }
 
+func upsertDynatraceEntityById(
+	client *http.Client,
+	environmentUrl string,
+	entityId string,
+	objectName string,
+	theApi api.Api,
+	payload []byte,
+	apiToken string,
+) (api.DynatraceEntity, error) {
+	fullUrl := theApi.GetUrlFromEnvironmentUrl(environmentUrl)
+	body := payload
+
+	return updateDynatraceObject(client, fullUrl, objectName, entityId, theApi, body, apiToken)
+}
+
 func createDynatraceObject(client *http.Client, fullUrl string, objectName string, theApi api.Api, payload []byte, apiToken string) (api.DynatraceEntity, error) {
 	path := fullUrl
 	body := payload
@@ -315,7 +330,7 @@ func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, ob
 }
 
 func isApiDashboard(api api.Api) bool {
-	return api.GetId() == "dashboard"
+	return api.GetId() == "dashboard" || api.GetId() == "dashboard-v2"
 }
 
 func isReportsApi(api api.Api) bool {
