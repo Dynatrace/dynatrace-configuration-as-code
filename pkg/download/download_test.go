@@ -81,7 +81,7 @@ func TestCreateConfigsFromAPI(t *testing.T) {
 		GetConfigFileName(gomock.Any()).
 		Return("")
 
-	err := createConfigsFromAPI(fs, apiMock, "123", "/", client, jcreator, ycreator)
+	err := createConfigsFromAPI(fs, apiMock, "/", client, jcreator, ycreator)
 	assert.NilError(t, err, "No errors")
 }
 
