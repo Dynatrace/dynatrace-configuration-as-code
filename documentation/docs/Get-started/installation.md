@@ -107,7 +107,7 @@ Once your PATH is set, verify the installation by running `monaco` from your ter
 
 ```shell
  monaco
-YYou are currently using the old CLI structure which will be used by
+You are currently using the old CLI structure which will be used by
 default until monaco version 2.0.0
 
 Check out the beta of the new CLI by adding the environment variable

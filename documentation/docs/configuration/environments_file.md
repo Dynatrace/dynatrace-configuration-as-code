@@ -7,7 +7,7 @@ sidebar_position: 2
 
 The environments file is a YAML file used to define to which environment(s) to deploy configurations.  
 
-In the file, you declare the environment url and the name of the environment variable to use for the API token.
+In the file, you declare the environment URL and the name of the environment variable to use for the API token.
 
 Deployment can be done on a single environment or on several environments.
 
