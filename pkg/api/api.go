@@ -62,8 +62,8 @@ var apiMap = map[string]apiInput{
 		propertyNameOfGetAllResponse: "extensions",
 	},
 	"extension-elasticsearch": {
-		apiPath:                      "/api/config/v1/extensions/dynatrace.python.elasticsearch/instances",
-		propertyNameOfGetAllResponse: "configurationsList",
+		apiPath:                  "/api/config/v1/extensions/dynatrace.python.elasticsearch/global",
+		isSingleConfigurationApi: true,
 	},
 	"custom-service-java": {
 		apiPath: "/api/config/v1/service/customServices/java",
