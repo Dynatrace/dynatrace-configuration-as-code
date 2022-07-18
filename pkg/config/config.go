@@ -210,7 +210,7 @@ func (c *configImpl) GetObjectNameForEnvironment(environment environment.Environ
 		name = c.properties[c.id]["name"]
 	}
 	if name == "" {
-		return "", fmt.Errorf("could not find name property in config %s, please make sure `name` is defined", c.GetFullQualifiedId())
+		return "", fmt.Errorf("could not find name property in config %s, please make sure `name` is defined and not empty", c.GetFullQualifiedId())
 	}
 	if isDependency(name) {
 		return c.parseDependency(name, dict)

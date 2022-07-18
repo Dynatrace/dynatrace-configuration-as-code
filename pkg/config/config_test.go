@@ -321,7 +321,7 @@ func TestGetObjectNameForEnvironment(t *testing.T) {
 	delete(m["test"], "name")
 	productionResult, err = config.GetObjectNameForEnvironment(testProductionEnvironment, make(map[string]api.DynatraceEntity))
 
-	expected := util.ReplacePathSeparators("could not find name property in config testproject/management-zone/test, please make sure `name` is defined")
+	expected := util.ReplacePathSeparators("could not find name property in config testproject/management-zone/test, please make sure `name` is defined and not empty")
 	assert.Error(t, err, expected)
 }
 
