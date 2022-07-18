@@ -53,14 +53,14 @@ Optionally, install Monaco to a central location in your `PATH`.
 This command assumes that the binary is currently in your downloads folder and that your $PATH includes `/usr/local/bin`:
 
 ```shell
-# use any path that suits you; this is just a standard example. Install sudo if needed.
- sudo mv ~/Downloads/monaco /usr/local/bin/
+# Use any path that suits you; this is just a standard example. Install sudo if needed.
+sudo mv ~/Downloads/monaco /usr/local/bin/
 ```
 
 Now you can execute the `monaco` command to verify the download. 
 
 ```shell
- monaco
+monaco
 You are currently using the old CLI structure which will be used by
 default until monaco version 2.0.0
 Check out the beta of the new CLI by adding the environment variable

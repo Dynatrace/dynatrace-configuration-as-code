@@ -4,7 +4,7 @@ sidebar_position: 4
 
 # Download configuration
 
-This feature allows you to download the configuration from a Dynatrace tenant as Monaco files. 
+This feature lets you download the configuration from a Dynatrace tenant as Monaco files. 
 Use this feature to avoid starting from scratch when using Monaco. 
 
 > :warning: This feature requires CLI version 2.0.
