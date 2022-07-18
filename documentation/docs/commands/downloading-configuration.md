@@ -25,10 +25,11 @@ monaco download --environments=my-environment.yaml
 
 ## Options
 
-To download specific APIs only, use `--downloadSpecificAPI` to pass a list of API values separated by a comma. 
+To download specific APIs only, use `--specific-api` to pass a list of API values separated by a comma. 
+
 
 ```shell
-monaco download --downloadSpecificAPI alerting-profile,dashboard --environments=my-environment.yaml
+monaco download --specific-api alerting-profile,dashboard --environments=my-environment.yaml
 ```
 
 ## Notes

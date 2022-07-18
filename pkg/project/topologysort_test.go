@@ -41,10 +41,9 @@ func createTestConfig(name string, filePrefix string, property string) config.Co
 	path := strings.Split(filePrefix, string(os.PathSeparator))
 	zoneId := path[len(path)-2 : len(path)-1]
 	project := strings.Join(path[0:len(path)-2], string(os.PathSeparator))
-	fileReaderMock := util.CreateTestFileSystem()
 	var testManagementZoneApi = api.NewStandardApi(zoneId[0], "/api/config/v1/foobar", false, "")
 
-	configA := config.GetMockConfig(fileReaderMock, name, project, nil, propA, testManagementZoneApi, filePrefix+name+".json")
+	configA := config.GetMockConfig(name, project, nil, propA, testManagementZoneApi, filePrefix+name+".json")
 
 	return configA
 }

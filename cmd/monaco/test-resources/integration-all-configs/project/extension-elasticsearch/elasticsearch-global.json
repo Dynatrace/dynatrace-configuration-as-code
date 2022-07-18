@@ -1,0 +1,10 @@
+{
+    "extensionId": "dynatrace.python.elasticsearch",
+    "enabled": true,
+    "infraOnlyEnabled": false,
+    "properties": {
+        "auth_user": "{{.user}}",
+        "auth_password": "{{.password}}",
+        "url": "{{.url}}"
+    }
+}
