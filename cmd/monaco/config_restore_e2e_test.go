@@ -118,7 +118,7 @@ func execution_downloadConfigs(t *testing.T, fs afero.Fs, downloadFolder string,
 		}
 	} else {
 		parameters = []string{
-			"monaco", "download", "--downloadSpecificAPI",
+			"monaco", "download", "--specific-api",
 			apisToDownload,
 			"--environments", envFile,
 			downloadFolder,

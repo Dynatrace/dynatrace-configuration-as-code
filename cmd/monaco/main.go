@@ -312,20 +312,20 @@ func getDownloadCommand(fs afero.Fs) cli.Command {
 			},
 			&cli.PathFlag{
 				Name:      "environments",
-				Usage:     "Yaml file containing environment to deploy to",
+				Usage:     "Yaml file containing environment to download from",
 				Aliases:   []string{"e"},
 				Required:  true,
 				TakesFile: true,
 			},
 			&cli.StringFlag{
 				Name:    "specific-environment",
-				Usage:   "Specific environment (from list) to deploy to",
+				Usage:   "Specific environment (from list) to download",
 				Aliases: []string{"s"},
 			},
 			&cli.StringFlag{
-				Name:    "downloadSpecificAPI",
+				Name:    "specific-api",
 				Usage:   "Comma separated list of API's to download ",
-				Aliases: []string{"p"},
+				Aliases: []string{"a", "p", "downloadSpecificAPI"},
 			},
 		},
 		Action: func(ctx *cli.Context) error {
@@ -342,7 +342,7 @@ func getDownloadCommand(fs afero.Fs) cli.Command {
 				fs,
 				ctx.Path("environments"),
 				ctx.String("specific-environment"),
-				ctx.String("downloadSpecificAPI"),
+				ctx.String("specific-api"),
 			)
 		},
 	}
