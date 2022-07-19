@@ -1,0 +1,9 @@
+config:
+  - globalElasticsearch: 'elasticsearch-global.json'
+
+globalElasticsearch:
+  -  name: 'elasticsearch-ignored-name'
+  -  user: 'username'
+  -  password: 'password'
+  -  url: 'https://example.com'
+

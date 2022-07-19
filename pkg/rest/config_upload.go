@@ -324,7 +324,7 @@ func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, ob
 	}
 
 	if configsFound > 1 {
-		util.Log.Error("\t\t\tFound %d configs with same name: %s. Please delete duplicates.", configsFound, objectName)
+		util.Log.Warn("\t\t\tFound %d configs with same name: %s. Please delete duplicates.", configsFound, objectName)
 	}
 	return configName, nil
 }

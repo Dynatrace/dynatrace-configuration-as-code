@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"regexp"
 	"strings"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
@@ -40,7 +39,6 @@ type Config interface {
 	GetFilePath() string
 	GetFullQualifiedId() string
 	GetType() string
-	GetMeIdsOfEnvironment(environment environment.Environment) map[string]map[string]string
 	GetId() string
 	GetProject() string
 	GetProperties() map[string]map[string]string
@@ -58,7 +56,6 @@ type configImpl struct {
 	properties          map[string]map[string]string
 	template            util.Template
 	api                 api.Api
-	objectName          string
 	fileName            string
 	requiredByConfigIds []string
 }
@@ -213,7 +210,7 @@ func (c *configImpl) GetObjectNameForEnvironment(environment environment.Environ
 		name = c.properties[c.id]["name"]
 	}
 	if name == "" {
-		return "", fmt.Errorf("could not find name property in config %s, please make sure `name` is defined", c.GetFullQualifiedId())
+		return "", fmt.Errorf("could not find name property in config %s, please make sure `name` is defined and not empty", c.GetFullQualifiedId())
 	}
 	if isDependency(name) {
 		return c.parseDependency(name, dict)
@@ -394,37 +391,4 @@ func (c *configFactoryImpl) NewConfig(fs afero.Fs, id string, project string, fi
 		return nil, err
 	}
 	return config, nil
-}
-
-// GetMeIdsOfEnvironment returns the config's properties filtered by ME identifiers
-func (c *configImpl) GetMeIdsOfEnvironment(environment environment.Environment) map[string]map[string]string {
-
-	result := make(map[string]map[string]string)
-
-	for name, props := range c.properties {
-
-		if !strings.HasSuffix(name, environment.GetId()) {
-			continue
-		}
-
-		for key, value := range props {
-
-			if isMeId(value) {
-				innerMap, ok := result[name]
-				if !ok {
-					innerMap = make(map[string]string)
-					result[name] = innerMap
-				}
-				innerMap[key] = value
-			}
-		}
-	}
-	return result
-}
-
-// isMeId checks if the given value looks like an ME identifier
-func isMeId(value string) bool {
-
-	regExp := regexp.MustCompile(`[A-Z_]+-[A-Z0-9]{16}`)
-	return regExp.Match([]byte(value))
 }
