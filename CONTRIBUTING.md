@@ -25,7 +25,7 @@ This tool was created out of the following needs but not limited to:
 Thus, this tool aims to provide a way to reproducibly deploy Dynatrace monitoring configuration in a "configuration as code"-way.
 
 As with all things Dynatrace, scalability is an important requirement, both in the number of configuration files and the number of environments.
-This is also the area currently offering the most opportunity to improve of the tool.
+This is also the area currently offering the most opportunity to improve the tool.
 
 Another way to contribute is to extend the list of supported APIs. Please take a look at 
 [the detailed instructions](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/blob/main/docs/how-to-add-a-new-api.md).
@@ -45,7 +45,10 @@ Branches naming follows the `feature/{Issue}/{description}` or `bugfix/{Issue}/{
 
 Branches are rebased and only fast-forward merges to main permitted. No merge commits.
 
-Commits are not auto-squashed when merging a PR, so please ensure your commits are fit to go into main (DIY squash when necessary).
+By default, commits are not auto-squashed when merging a PR, so please ensure your commits are fit to go into main.
+
+For convenience auto-squashing all PR commits into a single one is an optional merge strategy - but we strive for [atomic commits](https://www.freshconsulting.com/insights/blog/atomic-commits/) 
+with [good commit messages](https://cbea.ms/git-commit/) in main so not auto-squashing is recommended.
 
 Commits should conform to  [Conventional Commit](https://www.conventionalcommits.org/) standard.
 
@@ -100,6 +103,8 @@ For example, a Windows executable can be built with `GOOS=windows GOARCH=386 mak
 
 Run the unit tests for the whole module with `make test` in the root folder.
 
+For convenience single package tests can be run with `make test-package pkg={PACKAGE}` - e.g. `make test-package pkg=api`.
+
 ### Integration Tests
 
 In addition to unit tests, the module contains integration tests that upload configuration to two test environments. Those are tagged `integration` and will be run for any pull request opened for Monitoring as Code.
@@ -108,13 +113,11 @@ To run the integration tests, you will need at least one Dynatrace environment -
 
 Define the following environment variables to test for these environments:
 * `URL_ENVIRONMENT_1` ... URL of the first test environment
-* `TOKEN_ENVIRONMENT_1` ... API token for the first test environment 
+* `TOKEN_ENVIRONMENT_1` ... API token for the first test environment
 * `URL_ENVIRONMENT_2` ... URL of the second test environment
-* `TOKEN_ENVIRONMENT_2` ... API token for the second test environment 
+* `TOKEN_ENVIRONMENT_2` ... API token for the second test environment
 
 Run the integration tests using `make integration-test`.
-
-For convenience single package tests can be run with `make test-package pkg={PACKAGE}` - e.g. `make test-package pkg=api`.
 
 ### Writing Tests
 
