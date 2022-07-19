@@ -141,12 +141,12 @@ func downloadConfigFromEnvironment(fs afero.Fs, environment environment.Environm
 		// Retrieves object from single configuration API
 		isSingleConfigurationApi := api.IsSingleConfigurationApi()
 		if isSingleConfigurationApi {
-			errorAPI := createConfigsFromSingleConfigurationAPI(fs, api, token, path, client, jcreator, ycreator)
+			errorAPI := createConfigsFromSingleConfigurationAPI(fs, api, path, client, jcreator, ycreator)
 			if errorAPI != nil {
 				util.Log.Error("error getting configs from API %v %v", api.GetId())
 			}
 		} else {
-			errorAPI := createConfigsFromAPI(fs, api, token, path, client, jcreator, ycreator)
+			errorAPI := createConfigsFromAPI(fs, api, path, client, jcreator, ycreator)
 			if errorAPI != nil {
 				util.Log.Error("error getting configs from API %v %v", api.GetId())
 			}
@@ -168,7 +168,6 @@ func createConfigsFolder(
 func createConfigsFromSingleConfigurationAPI(
 	fs afero.Fs,
 	api api.Api,
-	token string,
 	fullpath string,
 	client rest.DynatraceClient,
 	jcreator jsoncreator.JSONCreator,
@@ -233,7 +232,6 @@ func createConfigsFromSingleConfigurationAPI(
 func createConfigsFromAPI(
 	fs afero.Fs,
 	api api.Api,
-	token string,
 	fullpath string,
 	client rest.DynatraceClient,
 	jcreator jsoncreator.JSONCreator,

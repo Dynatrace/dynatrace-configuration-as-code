@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"reflect"
 	"testing"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
@@ -35,8 +34,6 @@ import (
 const testTemplate = `{"msg": "Follow the {{.color}} {{.animalType}}"}`
 const testTemplateWithDependency = `{"msg": "Follow the {{.color}} {{.animalType}} with {{ .dep }}"}`
 const testTemplateWithEnvVar = `{"msg": "Follow the {{.color}} {{ .Env.ANIMAL }}"}`
-const testHostAutoUpdateTemplate = `{"updateWindows": { "windows": ["window"] }}`
-const testHostAutoUpdateTemplateWithEmptyWindows = `{"updateWindows": { "windows": [] }}`
 
 var testDevEnvironment = environment.NewEnvironment("development", "Dev", "", "https://url/to/dev/environment", "DEV")
 var testHardeningEnvironment = environment.NewEnvironment("hardening", "Hardening", "", "https://url/to/hardening/environment", "HARDENING")
@@ -324,7 +321,7 @@ func TestGetObjectNameForEnvironment(t *testing.T) {
 	delete(m["test"], "name")
 	productionResult, err = config.GetObjectNameForEnvironment(testProductionEnvironment, make(map[string]api.DynatraceEntity))
 
-	expected := util.ReplacePathSeparators("could not find name property in config testproject/management-zone/test, please make sure `name` is defined")
+	expected := util.ReplacePathSeparators("could not find name property in config testproject/management-zone/test, please make sure `name` is defined and not empty")
 	assert.Error(t, err, expected)
 }
 
@@ -442,43 +439,6 @@ func TestHasDependencyWithMultipleDependenciesCheck(t *testing.T) {
 	otherConfig := newConfig("other", "testproject", temp, make(map[string]map[string]string), testManagementZoneApi, "other.json")
 
 	assert.Equal(t, true, config.HasDependencyOn(otherConfig))
-}
-
-func TestMeIdRegex(t *testing.T) {
-	assert.Check(t, isMeId("HOST_GROUP-95BEC188F318D09C"))
-	assert.Check(t, isMeId("APPLICATION-95BEC188F318D09C"))
-	assert.Check(t, isMeId("SERVICE-95BEC188F318D09C"))
-	assert.Check(t, !isMeId("TOO_SHORT-95BEC188F318D09"))
-	assert.Check(t, !isMeId("meId"))
-}
-
-func TestGetMeIdProperties(t *testing.T) {
-
-	prop := make(map[string]map[string]string)
-	prop["test.development"] = make(map[string]string)
-	prop["test.development"]["app1"] = "APPLICATION-95BEC188F318D09C"
-	prop["test.development"]["service1"] = "SERVICE-95BEC188F318D09C"
-	prop["test.development"]["service2"] = "noMe"
-	prop["test2.development"] = make(map[string]string)
-	prop["test2.development"]["app1"] = "NOT_AN_APP-1234"
-	prop["test3"] = make(map[string]string)
-	prop["test3"]["app1"] = "APPLICATION-95BEC188F318D09C"
-
-	config := configImpl{
-		properties: prop,
-	}
-
-	meIdsOfEnvironment := config.GetMeIdsOfEnvironment(testDevEnvironment)
-
-	assert.Check(t, len(meIdsOfEnvironment) == 1)
-
-	expected := make(map[string]map[string]string)
-	expected["test.development"] = make(map[string]string)
-	expected["test.development"]["app1"] = "APPLICATION-95BEC188F318D09C"
-	expected["test.development"]["service1"] = "SERVICE-95BEC188F318D09C"
-
-	equal := reflect.DeepEqual(expected, meIdsOfEnvironment)
-	assert.Check(t, equal)
 }
 
 func TestParseDependencyWithAbsolutePath(t *testing.T) {

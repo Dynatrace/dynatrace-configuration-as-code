@@ -20,8 +20,6 @@
 package project
 
 import (
-	"fmt"
-	"path/filepath"
 	"testing"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
@@ -258,7 +256,7 @@ func TestProcessYaml(t *testing.T) {
 
 	factory.EXPECT().
 		NewConfig(fs, "dashboard", "testproject", util.ReplacePathSeparators("test/dashboard/my-project-dashboard.json"), gomock.Any(), testDashboardApi).
-		Return(config.GetMockConfig(fs, "my-project-dashboard", "testproject", nil, properties, testDashboardApi, util.ReplacePathSeparators("dashboard/test-file.yaml")), nil)
+		Return(config.GetMockConfig("my-project-dashboard", "testproject", nil, properties, testDashboardApi, util.ReplacePathSeparators("dashboard/test-file.yaml")), nil)
 
 	err = builder.processYaml(yamlFile)
 
@@ -267,20 +265,4 @@ func TestProcessYaml(t *testing.T) {
 
 	config := builder.configs[0]
 	assert.Check(t, config != nil)
-}
-
-var mockGenerateUuidFromConfigIdSuccess = func(projectUniqueId string, configId string) (string, error) {
-	return projectUniqueId + "/" + configId, nil
-}
-
-var mockGenerateUuidFromConfigIdFail = func(projectUniqueId string, configId string) (string, error) {
-	return "", fmt.Errorf("generateUuidFromConfigIdFail")
-}
-
-var mockGetRelFilepathSuccess = func(basepath string, targpath string) (string, error) {
-	return filepath.Rel(basepath, targpath)
-}
-
-var mockGetRelFilepathFail = func(basepath string, targpath string) (string, error) {
-	return "", fmt.Errorf("getRelFilepathFail")
 }
