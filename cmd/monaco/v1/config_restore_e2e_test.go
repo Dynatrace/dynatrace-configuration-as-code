@@ -60,24 +60,24 @@ func TestRestoreConfigsSimple(t *testing.T) {
 //		testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, envFile, subsetOfConfigsToDownload)
 //	}
 func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolder string, suffixTest string, envFile string, apisToDownload string) {
-	os.Setenv("NEW_CLI", "1")
+	os.Setenv("CONFIG_V1", "1")
 	fs := util.CreateTestFileSystem()
 	err := preparation_uploadConfigs(t, fs, suffixTest, initialConfigsFolder, envFile)
 	if err != nil {
 		assert.NilError(t, err, "Error during download preparation stage")
-		os.Setenv("NEW_CLI", "0")
+		os.Setenv("CONFIG_V1", "0")
 		return
 	}
 	err = execution_downloadConfigs(t, fs, downloadFolder, envFile, apisToDownload)
 	if err != nil {
 		assert.NilError(t, err, "Error during download execution stage")
-		os.Setenv("NEW_CLI", "0")
+		os.Setenv("CONFIG_V1", "0")
 		return
 	}
 	cleanupIntegrationTest(t, fs, envFile, suffixTest)
 	validation_uploadDownloadedConfigs(t, fs, downloadFolder, envFile)
-	cleanupIntegrationTest(t, fs, envFile, suffixTest)
-	os.Setenv("NEW_CLI", "0")
+	cleanupEnvironmentConfigs(t, fs, envFile, suffixTest)
+	os.Setenv("CONFIG_V1", "0")
 }
 
 func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, configFolder string, envFile string) error {
@@ -91,7 +91,9 @@ func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, con
 	}
 	//uploads the configs
 	statusCode := runner.RunImpl([]string{
-		"monaco", "deploy",
+		"monaco",
+		"deploy",
+		"--verbose",
 		"--environments", envFile,
 		configFolder,
 	}, fs)
@@ -102,7 +104,11 @@ func execution_downloadConfigs(t *testing.T, fs afero.Fs, downloadFolder string,
 	apisToDownload string, suffixTest string) error {
 	log.Info("BEGIN DOWNLOAD PROCESS")
 	//Download
-	err := fs.MkdirAll(downloadFolder, 0777)
+	//err := fs.MkdirAll(downloadFolder, 0777)
+	//if err != nil {
+	//	return err
+	//}
+	downloadFolder, err := filepath.Abs(downloadFolder)
 	if err != nil {
 		return err
 	}
@@ -110,13 +116,18 @@ func execution_downloadConfigs(t *testing.T, fs afero.Fs, downloadFolder string,
 
 	if apisToDownload == "all" {
 		parameters = []string{
-			"monaco", "download",
+			"monaco",
+			"download",
+			"--verbose",
 			"--environments", envFile,
 			downloadFolder,
 		}
 	} else {
 		parameters = []string{
-			"monaco", "download", "--specific-api",
+			"monaco",
+			"download",
+			"--verbose",
+			"--specific-api",
 			apisToDownload,
 			"--environments", envFile,
 			downloadFolder,
@@ -138,7 +149,9 @@ func validation_uploadDownloadedConfigs(t *testing.T, fs afero.Fs, downloadFolde
 	})
 
 	statusCode := runner.RunImpl([]string{
-		"monaco", "deploy",
+		"monaco",
+		"deploy",
+		"--verbose",
 		"--environments", envFile,
 		downloadFolder,
 	}, fs)

@@ -21,6 +21,7 @@ package v1
 
 import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/runner"
+	"path/filepath"
 	"testing"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
@@ -34,8 +35,8 @@ import (
 // tests all configs for a single environment
 func TestIntegrationContinueDeploymentOnError(t *testing.T) {
 
-	const allConfigsFolder = "test-resources/integration-configs-with-errors/"
-	const allConfigsEnvironmentsFile = allConfigsFolder + "environments.yaml"
+	allConfigsFolder := AbsOrPanicFromSlash("test-resources/integration-configs-with-errors/")
+	allConfigsEnvironmentsFile := filepath.Join(allConfigsFolder, "environments.yaml")
 
 	RunLegacyIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fs afero.Fs) {
 
@@ -47,7 +48,9 @@ func TestIntegrationContinueDeploymentOnError(t *testing.T) {
 
 		statusCode := runner.RunImpl([]string{
 			"monaco",
-			"--verbose", "--continue-on-error",
+			"deploy",
+			"--verbose",
+			"--continue-on-error",
 			"--environments", allConfigsEnvironmentsFile,
 			allConfigsFolder,
 		}, fs)
@@ -56,7 +59,7 @@ func TestIntegrationContinueDeploymentOnError(t *testing.T) {
 		assert.Equal(t, statusCode, 1)
 
 		// dashboard should anyways be deployed
-		dashboardConfig, err := projects[0].GetConfig("test-resources/integration-configs-with-errors/project/dashboard/dashboard")
+		dashboardConfig, err := projects[0].GetConfig("dashboard")
 		assert.NilError(t, err)
 		AssertConfigAvailability(t, dashboardConfig, environments["environment1"], true)
 	})
