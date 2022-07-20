@@ -4,8 +4,9 @@ sidebar_position: 3
 
 # Configuration structure
 
-Configuration files are ordered by `project` in the projects folder. Project folders can only contain:
+Configuration files are ordered by `project` in the projects folder. 
 
+Project folders can only contain:
 - configurations
 - other project(s)
 
@@ -21,16 +22,16 @@ The `json` files that can be uploaded with this tool are the JSON objects that t
 
 Adding a new config is generally done via the Dynatrace UI - unless you know the config JSON structures well enough to prefer writing them.
 
-Configs can then be downloaded via the respective GET endpoint defined in the Dynatrace Configuration API, and should be cleaned up for auto-deployment.
+Configs can then be downloaded via the respective GET endpoint defined in the Dynatrace Configuration API and should be cleaned up for auto-deployment.
 
-Checked in configuration should **not** include:
+Checked-in configuration should **not** include:
 
 * The entity's `id` but only its `name`. The entity may be created or updated if one of the same name exists.
   * The `name` must be defined as [a variable](#configuration-yaml-structure).
 * Hardcoded values for environment information such as references to other auto-deployed entities, tags, management-zones, etc.
   * These should all be referenced as variables as [described below](#referencing-other-configurations).
 * Empty/null values that are optional for the creation of an object.
-  * Most API GET endpoints return more data than needed to create an object. Many of those fields are empty or null, and can be omitted.
+  * Most API GET endpoints return more data than needed to create an object. Many of those fields are empty or null and can be omitted.
   * E.g., `tileFilter`s on dashboards
 
 The tool handles these files as templates, so you can use the following variable format inside the config JSON: 
@@ -40,13 +41,14 @@ The tool handles these files as templates, so you can use the following variable
 ```
 
 
-Variables present in the template need to be defined in the respective config `yaml` - [see 'Configuration YAML Structure'](../configuration/yaml_config).
+Variables present in the template need to be defined in the respective config`yaml` - [see 'Configuration YAML Structure'](../configuration/yaml_config).
 
 ### Dashboard JSON
 
-When you create a dashboard in the Dynatrace UI it is private by default. All the dashboards deployed for Monaco need to be shared publicly with other users.
+When you create a dashboard in the Dynatrace UI it is private by default. 
+All the dashboards deployed for Monaco need to be shared publicly with other users.
 
-You can change this in the dashboard settings, or by just changing your checked in `json` file.
+You can change this in the dashboard settings, or by just changing your checked-in `json` file.
 
 We recommend the following values for the `dashboardMetadata`:
 
@@ -72,7 +74,7 @@ This config does the following:
 * Reference the name of the Dashboard as a [variable](../configuration/yaml_config)
 * Share the dashboard with other users
 * Set a management zone filter on the complete dashboard, again as a variable, most likely [referenced from another config](../configuration/yaml_config#referencing-other-configurations)
-  * Filtering the whole dashboard by management zone makes sure no private data is accidentally picked up on tiles, and removes the possible need to define filters for individual tiles
+  * Filtering the whole dashboard by management zone makes sure no private data is accidentally picked up on tiles and removes the possible need to define filters for individual tiles
 
 From Dynatrace version 208 onwards:
 
@@ -81,11 +83,13 @@ From Dynatrace version 208 onwards:
 
 ### Calculated log metrics JSON
 
-There is a know drawback to Monaco's workaround to the slightly off-standard API for Calculated Log Metrics, which needs you to follow specific naming conventions for your configuration: 
+There is a known drawback to Monaco's workaround to the slightly off-standard API for Calculated Log Metrics, 
+which needs you to follow specific naming conventions for your configuration: 
 
 > When you create custom log metrics, your configuration's `name` must be the `metricKey` of the log metric. 
 
-Additionally it is possible that a configuration upload fails when a metric configuration is newly created and an additional configuration depends on the new log metric. To work around this, set both `metricKey` and `displayName` to the same value. 
+Additionally, it is possible that a configuration upload fails when a metric configuration is newly created
+and an additional configuration depends on the new log metric. To work around this, set both `metricKey` and `displayName` to the same value. 
 
 You will thus need to reference at least the `metricKey` of the log metric as `{{ .name }}` in the JSON file, as you can see below: 
 
