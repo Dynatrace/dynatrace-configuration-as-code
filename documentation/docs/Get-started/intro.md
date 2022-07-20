@@ -10,7 +10,7 @@ Monaco is a CLI tool that automates the deployment of Dynatrace Monitoring Confi
 Monaco’s self-service model enables development teams to set up monitoring and observability quickly and efficiently, even for large-scale applications. 
 It eliminates the need for building custom monitoring solutions and reduces the manual work for monitoring teams.  
 
-The Monitoring as Code (MAC) approach enables you to manage your Dynatrace environment monitoring tasks through configuration files instead of a graphical user interface. 
+The Monitoring as Code (Monaco) approach enables you to manage your Dynatrace environment monitoring tasks through configuration files instead of a graphical user interface. 
 Configuration files allow you to create, update, and manage your monitoring configurations safely, consistently, and repetitively. They can be reused, versioned, and shared within your team.
 
 ## How does it work? 
