@@ -240,3 +240,17 @@ of an alerting profile from the env var `ALERTING_PROFILE_VALUE`.
 ```
 
 > :warning: Values you pass into a configuration as environment variables must not contain the `=` character.
+
+### Newlines in variables
+
+All line breaks in variables are escaped.
+
+```yaml
+development:
+    - name: "Dev"
+    - example1: "This is \\n already escaped" 
+    - example2: "This will \n be escaped"
+    - text: |
+        This will also
+        be escaped
+```
