@@ -99,7 +99,7 @@ func processJSONFile(dat map[string]interface{}, id string, name string, api api
 	}
 	dat = replaceKeyProperties(dat)
 	cleanName := util.SanitizeName(name) //for using as the json filename
-	jsonfile, err := json.MarshalIndent(dat, "", " ")
+	jsonfile, err := json.MarshalIndent(dat, "", "    ")
 
 	if err != nil {
 		log.Error("error creating json file  %s", id)
