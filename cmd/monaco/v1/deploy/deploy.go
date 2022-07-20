@@ -177,12 +177,6 @@ func loadConfigs(fs afero.Fs, apis map[string]api.Api, environmentsFile string,
 		return manifest.Manifest{}, nil, errors
 	}
 
-	workingDir, err := filepath.Abs(workingDir)
-
-	if err != nil {
-		return manifest.Manifest{}, nil, []error{err}
-	}
-
 	workingDirFs := afero.NewBasePathFs(fs, workingDir)
 
 	projects, err := projectv1.LoadProjectsToDeploy(workingDirFs, specificProjects, apis, ".")
