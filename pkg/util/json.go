@@ -82,6 +82,8 @@ func (e *JsonValidationError) PrettyPrintError() {
 			e.LineNumber, lineContent,
 			whiteSpace, whiteSpaceOffset,
 			whiteSpace, e.Cause.Error())
+	} else {
+		Log.Error("\t%v", e)
 	}
 }
 
