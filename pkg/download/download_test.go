@@ -28,6 +28,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/golang/mock/gomock"
+	"github.com/spf13/afero"
 	"gotest.tools/assert"
 )
 
@@ -83,6 +84,11 @@ func TestCreateConfigsFromAPI(t *testing.T) {
 
 	err := createConfigsFromAPI(fs, apiMock, "/", client, jcreator, ycreator)
 	assert.NilError(t, err, "No errors")
+
+	dirCreated, err := afero.DirExists(fs, "/synthetic-monitor")
+	assert.NilError(t, err, "No errors")
+	assert.Equal(t, dirCreated, true, "no folder got created")
+
 }
 
 func TestDownloadConfigFromEnvironment(t *testing.T) {
@@ -113,4 +119,52 @@ func TestGetAPIList(t *testing.T) {
 	//not a real API
 	list, err = getAPIList("synthetic-location-test,   extension-test, alerting-profile")
 	assert.ErrorContains(t, err, "There were some errors in the API list provided")
+}
+
+func TestCreateConfigsFromAPI_NoJSONCreated_NoEmptyFolder(t *testing.T) {
+	apiMock := api.CreateAPIMockFactory(t)
+	client := rest.CreateDynatraceClientMockFactory(t)
+	jcreator := jsoncreator.CreateJSONCreatorMock(t)
+	ycreator := yamlcreator.CreateYamlCreatorMock(t)
+	fs := util.CreateTestFileSystem()
+	list := []api.Value{{Id: "d", Name: "namevalue"}}
+
+	client.EXPECT().
+		List(gomock.Any()).Return(list, nil)
+
+	apiMock.EXPECT().
+		GetId().Return("synthetic-monitor").AnyTimes()
+
+	apiMock.EXPECT().
+		IsNonUniqueNameApi().Return(false).AnyTimes()
+
+	apiMock.EXPECT().
+		IsSingleConfigurationApi().Return(false).AnyTimes()
+
+	jcreator.EXPECT().
+		CreateJSONConfig(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(true, nil)
+
+	ycreator.
+		EXPECT().
+		ReadYamlFile(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(nil)
+	ycreator.
+		EXPECT().
+		UpdateConfig(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+	ycreator.
+		EXPECT().
+		WriteYamlFile(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(nil)
+	ycreator.
+		EXPECT().
+		GetConfigFileName(gomock.Any()).
+		Return("")
+
+	err := createConfigsFromAPI(fs, apiMock, "/", client, jcreator, ycreator)
+	assert.NilError(t, err, "error in createConfigsFromAPI")
+
+	dirCreated, err := afero.DirExists(fs, "/synthetic-monitor") // no folder is created
+	assert.NilError(t, err, "error in fake File system")
+	assert.Equal(t, dirCreated, false, "folder got created")
 }

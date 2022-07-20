@@ -112,11 +112,12 @@ func processJSONFile(data map[string]interface{}, id string) ([]byte, error) {
 
 //replaceKeyProperties replaces name or displayname for each config
 func replaceKeyProperties(dat map[string]interface{}) map[string]interface{} {
-	//removes id field
-	delete(dat, "id")
 
-	// Removes metadata field
-	delete(dat, "metadata")
+	dat = removeKey(dat, []string{"metadata"})
+	dat = removeKey(dat, []string{"id"})
+	dat = removeKey(dat, []string{"identifier"})
+	dat = removeKey(dat, []string{"rules", "id"})
+	dat = removeKey(dat, []string{"rules", "methodRules", "id"})
 
 	if dat["name"] != nil {
 		dat["name"] = "{{.name}}"
@@ -127,6 +128,36 @@ func replaceKeyProperties(dat map[string]interface{}) map[string]interface{} {
 	//for reports
 	if dat["dashboardId"] != nil {
 		dat["dashboardId"] = "{{.name}}"
+	}
+	return dat
+}
+
+// removes key with specified path
+func removeKey(dat map[string]interface{}, key []string) map[string]interface{} {
+	if len(key) == 0 || dat == nil {
+		//noting todo
+		return dat
+	}
+	if len(key) == 1 {
+		delete(dat, key[0])
+		return dat
+	}
+	if dat[key[0]] == nil {
+		// no field: nothing to do
+		return dat
+	}
+	if field, ok := dat[key[0]].(map[string]interface{}); ok {
+		dat[key[0]] = removeKey(field, key[1:])
+		return dat
+	}
+
+	if arrayOfFields, ok := dat[key[0]].([]interface{}); ok {
+		for i := range arrayOfFields {
+			if field, ok := arrayOfFields[i].(map[string]interface{}); ok {
+				arrayOfFields[i] = removeKey(field, key[1:])
+			}
+		}
+		dat[key[0]] = arrayOfFields
 	}
 	return dat
 }
