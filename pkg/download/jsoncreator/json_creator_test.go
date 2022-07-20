@@ -141,6 +141,7 @@ func TestReplaceKeyProperties(t *testing.T) {
 		"metadata":    true,
 		"id":          12,
 		"identifier":  "id",
+		"entityId":    "aaa",
 		"noRemove":    "aaa",
 		"name":        "replace",
 		"displayName": "replace",
@@ -163,7 +164,8 @@ func TestReplaceKeyProperties(t *testing.T) {
 
 	assert.Assert(t, data["metadata"] == nil, "metadata should be removed")
 	assert.Assert(t, data["id"] == nil, "id should be removed")
-	assert.Assert(t, data["identifier"] == nil, "id should be removed")
+	assert.Assert(t, data["entityId"] == nil, "entityId should be removed")
+	assert.Assert(t, data["identifier"] == nil, "identifier should be removed")
 	assert.Assert(t, data["rules"] != nil, "rules should exist and not be removed")
 	assert.Assert(t, len(data) == 4, "too many or too little elements have been removed")
 	assert.Assert(t, data["rules"].([]interface{})[0].(map[string]interface{})["id"] == nil, "rule.id should be removed")

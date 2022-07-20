@@ -118,6 +118,7 @@ func replaceKeyProperties(dat map[string]interface{}) map[string]interface{} {
 	dat = removeKey(dat, []string{"identifier"})
 	dat = removeKey(dat, []string{"rules", "id"})
 	dat = removeKey(dat, []string{"rules", "methodRules", "id"})
+	dat = removeKey(dat, []string{"entityId"})
 
 	if dat["name"] != nil {
 		dat["name"] = "{{.name}}"
