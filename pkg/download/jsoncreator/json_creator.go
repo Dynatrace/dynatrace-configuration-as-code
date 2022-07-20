@@ -17,6 +17,7 @@ package jsoncreator
 import (
 	"encoding/json"
 	"net/url"
+	"strings"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
@@ -189,7 +190,10 @@ func isDefaultEntity(apiID string, dat map[string]interface{}) bool {
 	case "synthetic-monitor":
 		return false
 	case "extension":
-		return false
+		if id, ok := dat["id"].(string); ok && strings.HasPrefix(id, "custom.") {
+			return false
+		}
+		return true
 	case "aws-credentials":
 		return false
 	case "hosts-auto-update":

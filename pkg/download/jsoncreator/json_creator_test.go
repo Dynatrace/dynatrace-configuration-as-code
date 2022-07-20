@@ -70,7 +70,7 @@ func TestIsDefaultEntityDashboardCase(t *testing.T) {
 	assert.Equal(t, result, false)
 
 	result = isDefaultEntity("extension", sample)
-	assert.Equal(t, result, false)
+	assert.Equal(t, result, true)
 
 	result = isDefaultEntity("aws-credentials", sample)
 	assert.Equal(t, result, false)
@@ -107,6 +107,31 @@ func TestIsDefaultEntityHostsAutoUpdateCase(t *testing.T) {
 
 	result = isDefaultEntity("hosts-auto-update", sample)
 	assert.Equal(t, result, false)
+}
+
+func TestIsDefaultEntity_Extension(t *testing.T) {
+	//create payload similar to dynatrace API object for dashboard
+
+	sample := map[string]interface{}{
+		"id":          "custom.something",
+		"metricGroup": "metric group",
+		"name":        "{{.name}}",
+		"properties":  []map[string]interface{}{},
+		"type":        "type",
+		"version":     "version",
+	}
+
+	result := isDefaultEntity("extension", sample)
+	assert.Equal(t, result, false)
+
+	sample["id"] = "dynatrace.something"
+	result = isDefaultEntity("extension", sample)
+	assert.Equal(t, result, true)
+
+	sample["id"] = "ruxit.selfmonitoring.something"
+	result = isDefaultEntity("extension", sample)
+	assert.Equal(t, result, true)
+
 }
 
 func TestProcessJSONFile(t *testing.T) {
