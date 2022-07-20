@@ -135,3 +135,120 @@ func TestProcessJSONFile(t *testing.T) {
 	_, err = processJSONFile(sample, "testId")
 	assert.NilError(t, err)
 }
+
+func TestReplaceKeyProperties(t *testing.T) {
+	data := map[string]interface{}{
+		"metadata":    true,
+		"id":          12,
+		"identifier":  "id",
+		"noRemove":    "aaa",
+		"name":        "replace",
+		"displayName": "replace",
+		"rules": []interface{}{
+			map[string]interface{}{
+				"2":           12,
+				"id":          "random string",
+				"methodRules": map[string]interface{}{"bool": false, "id": "asdf"},
+				"bool":        false,
+			},
+			map[string]interface{}{
+				"2":           12,
+				"id":          "random string",
+				"methodRules": map[string]interface{}{"id": "asdf"},
+				"bool":        false,
+			},
+		},
+	}
+	data = replaceKeyProperties(data)
+
+	assert.Assert(t, data["metadata"] == nil, "metadata should be removed")
+	assert.Assert(t, data["id"] == nil, "id should be removed")
+	assert.Assert(t, data["identifier"] == nil, "id should be removed")
+	assert.Assert(t, data["rules"] != nil, "rules should exist and not be removed")
+	assert.Assert(t, len(data) == 4, "too many or too little elements have been removed")
+	assert.Assert(t, data["rules"].([]interface{})[0].(map[string]interface{})["id"] == nil, "rule.id should be removed")
+	assert.Assert(t, data["rules"].([]interface{})[1].(map[string]interface{})["id"] == nil, "rule.id should be removed even if there is not just one")
+	assert.Assert(t, data["rules"].([]interface{})[0].(map[string]interface{})["bool"] != nil, "rule.bool must not be removed")
+	assert.Assert(t, data["rules"].([]interface{})[0].(map[string]interface{})["methodRules"] != nil, "rule.methodRules must exist")
+	assert.Assert(t, data["rules"].([]interface{})[1].(map[string]interface{})["methodRules"] != nil, "rule.methodRules must exist")
+	assert.Assert(t, data["rules"].([]interface{})[0].(map[string]interface{})["methodRules"].(map[string]interface{})["id"] == nil, "ruel.methodRules.id should be removed")
+	assert.Assert(t, data["rules"].([]interface{})[1].(map[string]interface{})["methodRules"].(map[string]interface{})["id"] == nil, "ruel.methodRules.id should be removed")
+	assert.Assert(t, data["rules"].([]interface{})[0].(map[string]interface{})["methodRules"].(map[string]interface{})["bool"] != nil, "ruel.methodRules.bool must not be removed")
+
+	//replace test
+	assert.Assert(t, data["name"] == "{{.name}}", "names have to be replaced")
+	assert.Assert(t, data["displayName"] == "{{.name}}", "names have to be replaced")
+	assert.Assert(t, data["dashboardId"] == nil, "nonexistent values should not be created")
+}
+
+func TestRemoveKey_TooLittleRemoved(t *testing.T) {
+	data := map[string]interface{}{
+		"a":  true,
+		"id": 12,
+		"b":  "AAA",
+		"c":  "aaa",
+		"d":  "A",
+		"e":  "A",
+		"REC": []interface{}{
+			map[string]interface{}{
+				"a":    12,
+				"b":    "random string",
+				"rec2": map[string]interface{}{"bool": false, "id": "asdf"},
+				"bool": false,
+			},
+			map[string]interface{}{
+				"a": 12,
+				"b": "random string",
+				"c": map[string]interface{}{"id": "asdf"},
+				"d": false,
+			},
+		},
+	}
+
+	data = removeKey(data, []string{"id"})
+	assert.Assert(t, data["id"] == nil, "id must be removed")
+
+	data = removeKey(data, []string{"REC", "a"})
+	assert.Assert(t, data["REC"].([]interface{})[0].(map[string]interface{})["a"] == nil, "must be removed")
+	assert.Assert(t, data["REC"].([]interface{})[1].(map[string]interface{})["a"] == nil, "must be removed")
+
+	data = removeKey(data, []string{"REC", "rec2"})
+	assert.Assert(t, data["REC"].([]interface{})[0].(map[string]interface{})["rec2"] == nil, "must be removed")
+	assert.Assert(t, data["REC"].([]interface{})[1].(map[string]interface{})["rec2"] == nil, "must be removed")
+
+}
+
+func TestRemoveKey_TooMuchRemoved(t *testing.T) {
+	data := map[string]interface{}{
+		"a":  true,
+		"id": 12,
+		"b":  "AAA",
+		"c":  "aaa",
+		"d":  "A",
+		"e":  "A",
+		"REC": []interface{}{
+			map[string]interface{}{
+				"a":    12,
+				"b":    "random string",
+				"rec2": map[string]interface{}{"bool": false, "id": "asdf"},
+				"bool": false,
+			},
+			map[string]interface{}{
+				"a": 12,
+				"b": "random string",
+				"c": map[string]interface{}{"id": "asdf"},
+				"d": false,
+			},
+		},
+	}
+
+	data = removeKey(data, []string{"invalid"})
+	assert.Equal(t, len(data), 7, "data must not change")
+
+	data = removeKey(data, []string{"not exist", "a"})
+	assert.Equal(t, len(data), 7, "data must not change")
+
+	data = removeKey(data, []string{"a", "a"})
+	assert.Equal(t, len(data), 7, "data must not change")
+
+}
