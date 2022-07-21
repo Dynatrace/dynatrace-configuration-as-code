@@ -185,7 +185,8 @@ func RunLegacyIntegrationWithCleanup(t *testing.T, configFolder, envFile, suffix
 
 	defer envvars.InstallOsBased()
 
-	randomNumber := rand.Intn(100)
+	rand.Seed(time.Now().UnixNano())
+	randomNumber := rand.Intn(10000)
 
 	suffix := fmt.Sprintf("%s_%d_%s", getTimestamp(), randomNumber, suffixTest)
 	transformers := []func(string) string{getTransformerFunc(suffix)}
