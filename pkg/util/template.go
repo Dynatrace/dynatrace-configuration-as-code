@@ -19,6 +19,7 @@ package util
 import (
 	"bytes"
 	"os"
+	"reflect"
 	"strings"
 	"text/template"
 
@@ -80,6 +81,9 @@ func (t *templateImpl) ExecuteTemplate(data map[string]string) (string, error) {
 	// env vars
 	dataForTemplating := addEnvVars(data)
 
+	// replace \n with \\n
+	dataForTemplating = escapeNewlineCharacters(dataForTemplating)
+
 	err := t.template.Execute(&tpl, dataForTemplating)
 	if CheckError(err, "Could not execute template") {
 		return "", err
@@ -113,4 +117,40 @@ func addEnvVars(properties map[string]string) map[string]interface{} {
 	}
 
 	return data
+}
+
+// escapeNewlineCharacters walks recursively though the map and replaces all newlines in strings with the escaped string '\n'.
+func escapeNewlineCharacters(properties map[string]interface{}) map[string]interface{} {
+
+	escapedProperties := make(map[string]interface{}, len(properties))
+
+	for key, value := range properties {
+
+		switch field := value.(type) {
+		case string:
+			escapedProperties[key] = escapeNewlines(field)
+		case map[string]string:
+			escapedProperties[key] = escapeNewlineCharactersForStringMap(field)
+		case map[string]interface{}:
+			escapedProperties[key] = escapeNewlineCharacters(field)
+		default:
+			Log.Debug("Unknown value type %v in property %v.", reflect.TypeOf(value), key)
+		}
+	}
+
+	return escapedProperties
+}
+
+func escapeNewlineCharactersForStringMap(properties map[string]string) map[string]string {
+	escapedProperties := make(map[string]string, len(properties))
+
+	for key, value := range properties {
+		escapedProperties[key] = escapeNewlines(value)
+	}
+
+	return escapedProperties
+}
+
+func escapeNewlines(rawString string) string {
+	return strings.ReplaceAll(rawString, "\n", `\n`)
 }

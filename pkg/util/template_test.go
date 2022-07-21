@@ -108,3 +108,61 @@ func getTemplateTestPropertiesClashingWithEnvVars() map[string]string {
 
 	return m
 }
+
+func TestEscapeNewlineCharacters(t *testing.T) {
+
+	p := map[string]interface{}{
+		"string without newline": "just some string",
+		"string with newline":    "some\nstring",
+		"nested": map[string]interface{}{
+			"nested without newline": "just some string",
+			"nested with newline":    "some\nstring",
+			"deepNested": map[string]interface{}{ // not yet used, but might be in the future
+				"deepNested without newline": "just some string",
+				"deepNested with newline":    "some\nstring",
+			},
+		},
+		"nestedEnv": map[string]string{
+			"nestedEnv without newline": "just some string",
+			"nestedEnv with newline":    "some\nstring",
+		},
+	}
+
+	result := escapeNewlineCharacters(p)
+
+	expected := map[string]interface{}{
+		`string without newline`: `just some string`,
+		`string with newline`:    `some\nstring`,
+		`nested`: map[string]interface{}{
+			`nested without newline`: `just some string`,
+			`nested with newline`:    `some\nstring`,
+			`deepNested`: map[string]interface{}{ // not yet used, but might be in the future
+				`deepNested without newline`: `just some string`,
+				`deepNested with newline`:    `some\nstring`,
+			},
+		},
+		`nestedEnv`: map[string]string{
+			`nestedEnv without newline`: `just some string`,
+			`nestedEnv with newline`:    `some\nstring`,
+		},
+	}
+
+	assert.DeepEqual(t, expected, result)
+}
+
+func TestEscapeNewlineCharactersWithEmptyMap(t *testing.T) {
+
+	empty := map[string]interface{}{}
+
+	assert.DeepEqual(t, escapeNewlineCharacters(empty), empty)
+}
+
+func TestEscapeNewline(t *testing.T) {
+	assert.Equal(t, escapeNewlines("String without newline"), `String without newline`)
+	assert.Equal(t, escapeNewlines("String with one\nnewline"), `String with one\nnewline`)
+	assert.Equal(t, escapeNewlines("String with one windows\r\nnewline"), "String with one windows\r\\nnewline")
+	assert.Equal(t, escapeNewlines("String with already escaped \\n newline"), "String with already escaped \\n newline")
+	assert.Equal(t,
+		escapeNewlines("\nString with multiple \n new\nlines on many positions\n\n"),
+		`\nString with multiple \n new\nlines on many positions\n\n`)
+}
