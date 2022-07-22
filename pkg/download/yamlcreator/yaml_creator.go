@@ -17,6 +17,7 @@ package yamlcreator
 import (
 	"io/fs"
 	"path/filepath"
+	"sort"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/spf13/afero"
@@ -144,7 +145,14 @@ func (yc *YamlConfig) cleanseYamlConfig() CleansedYamlConfig {
 		Detail: map[string][]CleansedDetailConfig{},
 	}
 
-	for k, v := range yc.Detail {
+	keys := make([]string, 0) // sort keys to make the yaml order stable
+	for key := range yc.Detail {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		v := yc.Detail[k]
 		// isDownloaded specifies whether config was downloaded, i.e. currently exists in environment
 		// If it wasn't downloaded, it also won't be added to the config yaml.
 		isDownloaded := v[0].IsDownloaded
