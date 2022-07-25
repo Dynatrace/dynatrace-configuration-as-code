@@ -32,7 +32,7 @@ func (d *DummyParameter) GetReferences() []parameter.ParameterReference {
 	return d.References
 }
 
-func (d *DummyParameter) ResolveValue(context parameter.ResolveContext) (interface{}, error) {
+func (d *DummyParameter) ResolveValue(_ parameter.ResolveContext) (interface{}, error) {
 	if d.Err != nil {
 		return nil, d.Err
 	}

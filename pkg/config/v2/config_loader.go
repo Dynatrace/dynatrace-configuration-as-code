@@ -304,8 +304,8 @@ func getConfigFromDefinition(fs afero.Fs, context *ConfigLoaderContext,
 		errors = append(errors, newDetailedDefinitionParserError(configId, context, environment, fmt.Sprintf("error while loading template: `%s`", err)))
 	}
 
-	parameters, configReferences, parameterErrors := parseParametersAndReferences(context,
-		environment, configId, definition, definition.Parameters)
+	parameters, configReferences, parameterErrors := parseParametersAndReferences(context, environment, configId,
+		definition.Parameters)
 
 	if parameterErrors != nil {
 		errors = append(errors, parameterErrors...)
@@ -396,8 +396,7 @@ func getReferenceSlice(references map[string]coordinate.Coordinate) []coordinate
 type References map[string]coordinate.Coordinate
 
 func parseParametersAndReferences(context *ConfigLoaderContext, environment manifest.EnvironmentDefinition,
-	configId string, definition configDefinition,
-	parameterMap map[string]configParameter) (Parameters, References, []error) {
+	configId string, parameterMap map[string]configParameter) (Parameters, References, []error) {
 
 	parameters := make(map[string]parameter.Parameter)
 	configReferences := make(map[string]coordinate.Coordinate)
