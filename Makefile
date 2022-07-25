@@ -32,7 +32,7 @@ mocks:
 build: clean lint
 	@echo Build ${BINARY}
 	@go build ./...
-	@go build -o ./bin/${BINARY} ./cmd/monaco/v2
+	@go build -o ./bin/${BINARY} ./cmd/monaco
 
 build-release: clean lint
 	@echo Release build ${BINARY}
@@ -45,7 +45,7 @@ build-release: clean lint
 
 install: clean lint
 	@echo Install ${BINARY}
-	@go install ./...
+	@go install ./cmd/monaco
 
 clean:
 	@echo Remove bin/ and build/
