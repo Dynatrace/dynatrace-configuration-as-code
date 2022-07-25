@@ -82,10 +82,6 @@ func NewConfig(fs afero.Fs, id string, project string, fileName string, properti
 	return newConfig(id, project, template, filterProperties(id, properties), api, fileName), nil
 }
 
-func NewConfigForDelete(id string, fileName string, properties map[string]map[string]string, api api.Api) Config {
-	return newConfig(id, "", nil, filterProperties(id, properties), api, fileName)
-}
-
 func NewConfigWithTemplate(id string, project string, fileName string, template util.Template,
 	properties map[string]map[string]string, api api.Api) (Config, error) {
 	return newConfig(id, project, template, filterProperties(id, properties), api, fileName), nil
