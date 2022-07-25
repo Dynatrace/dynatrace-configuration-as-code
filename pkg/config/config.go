@@ -163,18 +163,6 @@ func (c *configImpl) GetObjectNameForEnvironment(environment environment.Environ
 	return name, nil
 }
 
-func copyProperties(original map[string]map[string]string) map[string]map[string]string {
-
-	copies := make(map[string]map[string]string)
-	for k, v := range original {
-		copies[k] = make(map[string]string)
-		for key, val := range v {
-			copies[k][key] = val
-		}
-	}
-	return copies
-}
-
 func (c *configImpl) replaceDependencies(data map[string]map[string]string, dict map[string]api.DynatraceEntity) (map[string]map[string]string, error) {
 	var err error
 	for k, v := range data {
