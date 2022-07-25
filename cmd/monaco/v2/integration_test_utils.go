@@ -21,6 +21,7 @@ package v2
 
 import (
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
 	"math/rand"
 	"os"
@@ -203,6 +204,8 @@ func RunIntegrationWithCleanup(t *testing.T, configFolder, manifestPath, specifi
 		t.Fatalf("Error rewriting configs names: %s", err)
 		return
 	}
+
+	template.InitTemplateCache()
 
 	defer cleanupIntegrationTest(t, fs, loadedManifest, specificEnvironment, suffix)
 

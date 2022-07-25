@@ -21,6 +21,7 @@ package v1
 
 import (
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
 	"math/rand"
 	"path/filepath"
 	"strings"
@@ -196,6 +197,8 @@ func RunLegacyIntegrationWithCleanup(t *testing.T, configFolder, envFile, suffix
 		t.Fatalf("Error rewriting configs names: %s", err)
 		return
 	}
+
+	template.InitTemplateCache()
 
 	defer cleanupIntegrationTest(t, fs, envFile, suffix)
 

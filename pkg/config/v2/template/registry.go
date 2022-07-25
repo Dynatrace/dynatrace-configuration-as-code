@@ -16,6 +16,7 @@ package template
 
 import (
 	"encoding/json"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"path/filepath"
 
 	templ "text/template"
@@ -100,12 +101,20 @@ var templateCache = make(map[string]Template)
 // cache for parsed go templates to only parse them once
 var parsedTemplateCache = make(map[string]*templ.Template)
 
+func InitTemplateCache() {
+	templateCache = make(map[string]Template)
+	parsedTemplateCache = make(map[string]*templ.Template)
+}
+
 // tries to load the file at the given path and turns it into a template.
 // the name of the template will be the sanitized path.
 func LoadTemplate(fs afero.Fs, path string) (Template, error) {
 	sanitizedPath := filepath.Clean(path)
 
+	log.Info("Loading template for %s", sanitizedPath)
+
 	if template, found := templateCache[sanitizedPath]; found {
+		log.Info("found %s in cache", sanitizedPath)
 		return template, nil
 	}
 
@@ -140,7 +149,10 @@ func LoadTemplate(fs afero.Fs, path string) (Template, error) {
 func CreateFileBasedTemplateFromString(path, content string) (Template, error) {
 	sanitizedPath := filepath.Clean(path)
 
+	log.Info("Loading file-based template for %s", sanitizedPath)
+
 	if template, found := templateCache[sanitizedPath]; found {
+		log.Info("found %s in cache", sanitizedPath)
 		return template, nil
 	}
 
@@ -166,6 +178,7 @@ func CreateFileBasedTemplateFromString(path, content string) (Template, error) {
 // tries to parse the given string into a template and return it
 func LoadTemplateFromString(id, name, content string) (Template, error) {
 	if template, found := templateCache[id]; found {
+		log.Info("found %s in cache", id)
 		return template, nil
 	}
 
