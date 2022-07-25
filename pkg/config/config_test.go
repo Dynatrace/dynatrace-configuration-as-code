@@ -235,30 +235,6 @@ func getTestPropertiesWithGroupAndEnvironment() map[string]map[string]string {
 	return m
 }
 
-func TestReplaceDependency(t *testing.T) {
-
-	entity1 := api.DynatraceEntity{Id: "0815", Name: "MyCustomObj"}
-	entity2 := api.DynatraceEntity{Id: "asdf", Name: "MySuperObj"}
-
-	dict := make(map[string]api.DynatraceEntity)
-	dict["Foo"] = entity1
-	dict["Bar"] = entity2
-
-	data := make(map[string]map[string]string)
-	data["obj"] = make(map[string]string)
-
-	data["obj"]["k1"] = "value"
-	data["obj"]["k2"] = "Bar.id"
-	data["obj"]["k3"] = "Foo.name"
-
-	config := configImpl{}
-	data, err := config.replaceDependencies(data, dict)
-	assert.NilError(t, err)
-	assert.Equal(t, "value", data["obj"]["k1"])
-	assert.Equal(t, "asdf", data["obj"]["k2"])
-	assert.Equal(t, "MyCustomObj", data["obj"]["k3"])
-}
-
 func TestHasDependencyCheck(t *testing.T) {
 	prop := make(map[string]map[string]string)
 	prop["test"] = make(map[string]string)

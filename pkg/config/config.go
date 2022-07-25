@@ -163,22 +163,6 @@ func (c *configImpl) GetObjectNameForEnvironment(environment environment.Environ
 	return name, nil
 }
 
-func (c *configImpl) replaceDependencies(data map[string]map[string]string, dict map[string]api.DynatraceEntity) (map[string]map[string]string, error) {
-	var err error
-	for k, v := range data {
-		for k2, v2 := range v {
-			if IsDependency(v2) {
-				data[k][k2], err = c.parseDependency(v2, dict)
-				if err != nil {
-					return data, err
-				}
-			}
-		}
-	}
-
-	return data, nil
-}
-
 func (c *configImpl) parseDependency(dependency string, dict map[string]api.DynatraceEntity) (string, error) {
 
 	// in case of an absolute path within the dependency:
