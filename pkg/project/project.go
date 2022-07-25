@@ -241,16 +241,6 @@ func (p *projectBuilder) getConfigTypeFromLocation(location string) (error, api.
 	return errors.New("API was unknown. Not found in " + location), nil
 }
 
-func isYaml(file string) bool {
-	isYAML := false
-
-	if strings.HasSuffix(file, ".yaml") || strings.HasSuffix(file, ".yml") {
-		isYAML = true
-	}
-
-	return isYAML
-}
-
 func (p *projectBuilder) sortConfigsAccordingToDependencies() error {
 
 	configs, err := sortConfigurations(p.configs)

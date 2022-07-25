@@ -41,5 +41,5 @@ func DoesFileExist(fs afero.Fs, path string) (bool, error) {
 }
 
 func IsYaml(file string) bool {
-	return strings.HasSuffix(file, ".yaml")
+	return strings.HasSuffix(file, ".yaml") || strings.HasSuffix(file, ".yml")
 }
