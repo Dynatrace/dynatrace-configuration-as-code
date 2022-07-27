@@ -26,6 +26,6 @@ The following options (flags) allow you to run the convert command to change con
 
 - `--environment` - (Required) Use this option or `-e` to provide the file containing the list of environments. The shorthand `-e` can also be used.
 
-- `--manifestName` - (Required) With this option, the name of the manifest file that is produced by the convert command is supplied.
+- `--manifest-name` - (Required) With this option, the name of the manifest file that is produced by the convert command is supplied.
 
-- `--outputFolder` - (Required) This option is used supply the name of the output folder the convert command creates and stores all converted configurations. `-o` can also be used as a shorthand.
+- `--output-folder` - (Required) This option is used supply the name of the output folder the convert command creates and stores all converted configurations. `-o` can also be used as a shorthand.

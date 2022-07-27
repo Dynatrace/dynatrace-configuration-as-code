@@ -230,15 +230,16 @@ func getConvertCommand(fs afero.Fs) cli.Command {
 				TakesFile: true,
 			},
 			&cli.PathFlag{
-				Name:      "outputFolder",
+				Name:      "output-folder",
 				Usage:     "Folder where to write converted config to",
 				Aliases:   []string{"o"},
 				Required:  true,
 				TakesFile: false,
 			},
 			&cli.StringFlag{
-				Name:     "manifestName",
+				Name:     "manifest-name",
 				Usage:    "Name of the manifest file to create",
+				Aliases:  []string{"m"},
 				Required: true,
 			},
 		},
