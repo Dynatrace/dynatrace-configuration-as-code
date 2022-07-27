@@ -1,6 +1,7 @@
 # Monitoring as Code Tool - Release Notes
 
 - Versions:
+  - [1.8.1](#181)
   - [1.8.0](#180)
   - [1.7.0](#170)
   - [1.6.0](#160)
@@ -16,6 +17,15 @@
   - [1.0.1](#101)
   - [1.0.0](#100)
 
+
+## 1.8.1
+
+### List of changes
+
+#### Misc changes
+* d920125 ci: Build static monaco binary
+* 414cc2d ci: Run build-release for each build
+* 7b13c4e ci: Remove no longer needed xgo github action step
 
 ## 1.8.0
 
