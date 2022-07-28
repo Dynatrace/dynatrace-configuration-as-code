@@ -77,9 +77,10 @@ func (d *JsonCreatorImp) CreateJSONConfig(fs afero.Fs, client rest.DynatraceClie
 
 func getDetailFromAPI(client rest.DynatraceClient, api api.Api, entityId string) (dat map[string]interface{}, filter bool, err error) {
 	escapedEntityId := url.QueryEscape(entityId)
+
 	resp, err := client.ReadById(api, escapedEntityId)
 	if err != nil {
-		util.Log.Error("error getting detail for API %s", api.GetId(), escapedEntityId)
+		util.Log.Error("error getting detail for API %s for entity %v", api.GetId(), escapedEntityId)
 		return nil, false, err
 	}
 

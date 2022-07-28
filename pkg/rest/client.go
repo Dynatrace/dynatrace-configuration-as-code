@@ -18,6 +18,7 @@ package rest
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -154,6 +155,10 @@ func (d *dynatraceClientImpl) ReadById(api Api, id string) (json []byte, err err
 	}
 
 	response, err := get(d.client, url, d.token)
+
+	if !success(response) {
+		return nil, fmt.Errorf("Failed to get existing config for api %v (HTTP %v)!\n    Response was: %v", api.GetId(), response.StatusCode, string(response.Body))
+	}
 
 	if err != nil {
 		return nil, err
