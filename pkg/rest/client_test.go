@@ -20,9 +20,14 @@
 package rest
 
 import (
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"gotest.tools/assert"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 )
+
+var mockApi = api.NewApi("mock-api", "/mock-api", "", true, true, "")
 
 func TestNewClientNoUrl(t *testing.T) {
 	client, err := NewDynatraceClient("", "abc")
@@ -58,4 +63,38 @@ func TestNewClient(t *testing.T) {
 	client, err := NewDynatraceClient("https://my-environment.live.dynatrace.com/", "abc")
 	assert.NilError(t, err, "not valid")
 	assert.Check(t, client != nil)
+}
+
+func TestReadByIdReturnsAnErrorUponEncounteringAnError(t *testing.T) {
+	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		http.Error(res, "", http.StatusForbidden)
+	}))
+	defer func() { testServer.Close() }()
+	client := newDynatraceClientForTesting(testServer)
+
+	_, err := client.ReadById(mockApi, "test")
+	assert.ErrorContains(t, err, "Response was")
+}
+
+func TestReadByIdReturnsTheResponseGivenNoError(t *testing.T) {
+	body := []byte{1, 3, 3, 7}
+
+	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		res.Write(body)
+	}))
+	defer func() { testServer.Close() }()
+
+	client := newDynatraceClientForTesting(testServer)
+
+	resp, err := client.ReadById(mockApi, "test")
+	assert.NilError(t, err, "there should not be an error")
+	assert.DeepEqual(t, body, resp)
+}
+
+// newDynatraceClientForTesting creates a new DynatraceClient for a given test-server
+func newDynatraceClientForTesting(server *httptest.Server) DynatraceClient {
+	return &dynatraceClientImpl{
+		client:         server.Client(),
+		environmentUrl: server.URL,
+	}
 }

@@ -55,7 +55,7 @@ func getConfigs(fs afero.Fs, workingDir string, environments map[string]environm
 		//download configs for each environment
 		err := downloadConfigFromEnvironment(fs, environment, workingDir, list)
 		if err != nil {
-			util.Log.Error("error while downloading configs for environment %v %v", environment.GetId())
+			util.Log.Error("error while downloading configs for environment %v", environment.GetId())
 			isError = true
 		}
 	}
@@ -141,12 +141,14 @@ func downloadConfigFromEnvironment(fs afero.Fs, environment environment.Environm
 		if isSingleConfigurationApi {
 			errorAPI := createConfigsFromSingleConfigurationAPI(fs, api, path, client, jcreator, ycreator)
 			if errorAPI != nil {
-				util.Log.Error("error getting configs from API %v %v", api.GetId())
+				util.Log.Error("error getting configs from API %v", api.GetId())
+				return errorAPI
 			}
 		} else {
 			errorAPI := createConfigsFromAPI(fs, api, path, client, jcreator, ycreator)
 			if errorAPI != nil {
-				util.Log.Error("error getting configs from API %v %v", api.GetId())
+				util.Log.Error("error getting configs from API %v", api.GetId())
+				return errorAPI
 			}
 		}
 	}
