@@ -26,6 +26,7 @@ import (
 	projectv1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project"
 	projectv2 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/writer"
 	"github.com/spf13/afero"
 )
@@ -81,6 +82,8 @@ func loadConfigs(fs afero.Fs, workingDir string, apis map[string]api.Api,
 
 	projects, err := projectv1.LoadProjectsToDeploy(workingDirFs, "", apis, ".")
 
+	projects = removeEmptyProjects(projects)
+
 	if err != nil {
 		return manifest.Manifest{}, nil, []error{err}
 	}
@@ -88,4 +91,21 @@ func loadConfigs(fs afero.Fs, workingDir string, apis map[string]api.Api,
 	return converter.Convert(converter.ConverterContext{
 		Fs: workingDirFs,
 	}, environments, projects)
+}
+
+func removeEmptyProjects(projects []projectv1.Project) []projectv1.Project {
+	filteredProjects := make([]projectv1.Project, 0, len(projects))
+
+	for _, project := range projects {
+
+		numberConfigs := len(project.GetConfigs())
+
+		if numberConfigs == 0 {
+			log.Debug("Skipping project '%v' as it contains no configs.", project.GetId())
+		} else {
+			filteredProjects = append(filteredProjects, project)
+		}
+	}
+
+	return filteredProjects
 }
