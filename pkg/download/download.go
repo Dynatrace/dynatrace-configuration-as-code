@@ -33,7 +33,7 @@ var cont = 0
 
 //GetConfigsFilterByEnvironment filters the enviroments list based on specificEnvironment flag value
 func GetConfigsFilterByEnvironment(workingDir string, fs afero.Fs, environmentsFile string,
-	specificEnvironment string, downloadSpecificAPI string) error {
+	specificEnvironment string, downloadSpecificAPIs []string) error {
 	environments, errors := environment.LoadEnvironmentList(specificEnvironment, environmentsFile, fs)
 	if len(errors) > 0 {
 		for _, err := range errors {
@@ -41,13 +41,13 @@ func GetConfigsFilterByEnvironment(workingDir string, fs afero.Fs, environmentsF
 		}
 		return fmt.Errorf("There were some errors while getting environment files")
 	}
-	return getConfigs(fs, workingDir, environments, downloadSpecificAPI)
+	return getConfigs(fs, workingDir, environments, downloadSpecificAPIs)
 
 }
 
 //getConfigs Entry point that retrieves the specified configurations from a Dynatrace tenant
-func getConfigs(fs afero.Fs, workingDir string, environments map[string]environment.Environment, downloadSpecificAPI string) error {
-	list, err := getAPIList(downloadSpecificAPI)
+func getConfigs(fs afero.Fs, workingDir string, environments map[string]environment.Environment, downloadSpecificAPIs []string) error {
+	list, err := getAPIList(downloadSpecificAPIs)
 	if err != nil {
 		return err
 	}
@@ -68,9 +68,9 @@ func getConfigs(fs afero.Fs, workingDir string, environments map[string]environm
 }
 
 //returns the list of API filter if the download specific flag is used, otherwise returns all the API's
-func getAPIList(downloadSpecificAPI string) (filterAPIList map[string]api.Api, err error) {
+func getAPIList(downloadSpecificAPI []string) (filterAPIList map[string]api.Api, err error) {
 	availableApis := api.NewApis()
-	noFilterAPIListProvided := strings.TrimSpace(downloadSpecificAPI) == ""
+	noFilterAPIListProvided := len(downloadSpecificAPI) == 0
 	filterAPIList = make(map[string]api.Api)
 
 	// If no filter provided, return only non deprecated APIs
@@ -84,9 +84,8 @@ func getAPIList(downloadSpecificAPI string) (filterAPIList map[string]api.Api, e
 
 		return filterAPIList, nil
 	}
-	requestedApis := strings.Split(downloadSpecificAPI, ",")
 	isErr := false
-	for _, id := range requestedApis {
+	for _, id := range downloadSpecificAPI {
 		cleanAPI := strings.TrimSpace(id)
 		isAPI := api.IsApi(cleanAPI)
 		if !isAPI {

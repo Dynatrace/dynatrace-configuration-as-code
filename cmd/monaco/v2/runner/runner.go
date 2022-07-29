@@ -17,9 +17,10 @@ package runner
 import (
 	"errors"
 	"fmt"
-	legacyDeploy "github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v1/deploy"
 	"os"
 	"strings"
+
+	legacyDeploy "github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v1/deploy"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/convert"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/delete"
@@ -366,9 +367,9 @@ func getDownloadCommand(fs afero.Fs) cli.Command {
 				Usage:   "Specific environment (from list) to download",
 				Aliases: []string{"s"},
 			},
-			&cli.StringFlag{
+			&cli.StringSliceFlag{
 				Name:    "specific-api",
-				Usage:   "Comma separated list of APIs to download ",
+				Usage:   "API to download (repeat this flag to download multiple APIs)",
 				Aliases: []string{"a"},
 			},
 		},
@@ -386,7 +387,7 @@ func getDownloadCommand(fs afero.Fs) cli.Command {
 				fs,
 				ctx.Path("environments"),
 				ctx.String("specific-environment"),
-				ctx.String("specific-api"),
+				ctx.StringSlice("specific-api"),
 			)
 		},
 	}

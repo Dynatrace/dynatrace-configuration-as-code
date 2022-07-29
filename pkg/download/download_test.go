@@ -38,8 +38,8 @@ func TestGetConfigs(t *testing.T) {
 	envs := make(map[string]environment.Environment)
 	fileManager := util.CreateTestFileSystem()
 	envs["e1"] = env
-	err := getConfigs(fileManager, "", envs, "")
-	assert.NilError(t, err)
+	err := getConfigs(fileManager, "", envs, make([]string, 0))
+	assert.ErrorContains(t, err, "There were some errors")
 }
 
 func TestCreateConfigsFromAPI(t *testing.T) {
@@ -138,22 +138,22 @@ func TestDownloadConfigFromEnvironment(t *testing.T) {
 
 func TestGetAPIList(t *testing.T) {
 	//multiple options
-	list, err := getAPIList("synthetic-location,   extension, alerting-profile")
+	list, err := getAPIList([]string{"synthetic-location", "extension", "alerting-profile"})
 	assert.NilError(t, err)
 	assert.Check(t, list["synthetic-location"].GetId() == "synthetic-location")
 	assert.Check(t, list["dashboard"] == nil)
-	list, err = getAPIList("synthetic-location,extension,dashboard")
+	list, err = getAPIList([]string{"synthetic-location", "extension", "dashboard"})
 	assert.NilError(t, err)
 	//single option
-	list, err = getAPIList("synthetic-location")
+	list, err = getAPIList([]string{"synthetic-location"})
 	assert.NilError(t, err)
 	//no option
-	list, err = getAPIList("")
+	list, err = getAPIList([]string{})
 	assert.NilError(t, err)
-	list, err = getAPIList(" ")
+	list, err = getAPIList([]string{})
 	assert.NilError(t, err)
 	//not a real API
-	list, err = getAPIList("synthetic-location-test,   extension-test, alerting-profile")
+	list, err = getAPIList([]string{"synthetic-location-test", "   extension-test", " alerting-profile"})
 	assert.ErrorContains(t, err, "There were some errors in the API list provided")
 }
 
