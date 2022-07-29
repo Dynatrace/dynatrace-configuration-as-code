@@ -257,7 +257,7 @@ func getConvertCommand(fs afero.Fs) cli.Command {
 				workingDir = "."
 			}
 
-			manifestName := ctx.String("manifestName")
+			manifestName := ctx.String("manifest-name")
 
 			if !strings.HasSuffix(manifestName, ".yaml") {
 				manifestName = manifestName + ".yaml"
@@ -267,7 +267,7 @@ func getConvertCommand(fs afero.Fs) cli.Command {
 				fs,
 				workingDir,
 				ctx.Path("environments"),
-				ctx.Path("outputFolder"),
+				ctx.Path("output-folder"),
 				manifestName,
 			)
 		},
