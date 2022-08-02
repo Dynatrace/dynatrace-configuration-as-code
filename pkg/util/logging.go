@@ -134,13 +134,7 @@ func LogRequest(id string, request *http.Request) error {
 		return nil
 	}
 
-	var dumpBody = false
-
-	if contentTypes, ok := request.Header["Content-Type"]; ok {
-		contentType := contentTypes[len(contentTypes)-1]
-
-		dumpBody = shouldDumpBody(contentType)
-	}
+	var dumpBody = shouldDumpBody(request.Header)
 
 	dump, err := httputil.DumpRequestOut(request, dumpBody)
 
@@ -167,13 +161,7 @@ func LogResponse(id string, response *http.Response) error {
 		return nil
 	}
 
-	var dumpBody = false
-
-	if contentTypes, ok := response.Header["Content-Type"]; ok {
-		contentType := contentTypes[len(contentTypes)-1]
-
-		dumpBody = shouldDumpBody(contentType)
-	}
+	var dumpBody = shouldDumpBody(response.Header)
 
 	dump, err := httputil.DumpResponse(response, dumpBody)
 
@@ -202,17 +190,23 @@ func LogResponse(id string, response *http.Response) error {
 	return responseLogFile.Sync()
 }
 
-func shouldDumpBody(contentType string) bool {
-	if strings.HasPrefix("text/", contentType) {
-		return true
-	}
+var dumpCasePrefixes = []string{
+	"text/",
+	"application/xml",
+	"application/json",
+}
 
-	if strings.HasPrefix("application/json", contentType) {
-		return true
-	}
+func shouldDumpBody(headers http.Header) bool {
+	contentType := headers.Get("Content-Type")
 
-	if strings.HasPrefix("application/xml", contentType) {
-		return true
+	return shouldDumpBodyForContentType(contentType)
+}
+
+func shouldDumpBodyForContentType(contentType string) bool {
+	for _, prefix := range dumpCasePrefixes {
+		if strings.HasPrefix(contentType, prefix) {
+			return true
+		}
 	}
 
 	return false
