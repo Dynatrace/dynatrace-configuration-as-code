@@ -1,6 +1,6 @@
 BINARY=monaco
 
-.PHONY: lint format mocks build install clean test integration-test test-package default add-license-headers
+.PHONY: lint format mocks build install clean test integration-test integration-test-v1 test-package default add-license-headers
 
 default: build
 
@@ -30,11 +30,11 @@ mocks:
 	@go install github.com/golang/mock/mockgen@latest
 	@go generate ./...
 
-build: clean lint
+build: clean
 	@echo Build ${BINARY}
 	@CGO_ENABLED=0 go build -a -tags netgo -ldflags '-w -extldflags "-static"' -o ./bin/${BINARY} ./cmd/monaco
 
-build-release: clean lint
+build-release: clean
 	@echo Release build ${BINARY}
 	@ GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -a -tags netgo -ldflags '-w -extldflags "-static"' -o ./build/${BINARY}-windows-amd64.exe ./cmd/monaco
 	@ GOOS=windows GOARCH=386   CGO_ENABLED=0 go build -a -tags netgo -ldflags '-w -extldflags "-static"' -o ./build/${BINARY}-windows-386.exe   ./cmd/monaco
@@ -43,7 +43,7 @@ build-release: clean lint
 	@ GOOS=darwin  GOARCH=amd64 CGO_ENABLED=0 go build -a -tags netgo -ldflags '-w -extldflags "-static"' -o ./build/${BINARY}-darwin-amd64      ./cmd/monaco
 	@ GOOS=darwin  GOARCH=arm64 CGO_ENABLED=0 go build -a -tags netgo -ldflags '-w -extldflags "-static"' -o ./build/${BINARY}-darwin-arm64      ./cmd/monaco
 
-install: clean lint
+install:
 	@echo Install ${BINARY}
 	@CGO_ENABLED=0 go install -a -tags netgo -ldflags '-w -extldflags "-static"' ./cmd/monaco
 
@@ -57,19 +57,19 @@ else
 	@rm -rf build/
 endif
 
-test: mocks build
+test: mocks lint
 	@go test -tags=unit -v ./...
 
-integration-test: build
+integration-test:
 	@go test -tags=cleanup -v ./...
 	@go test -tags=integration -v ./...
 
-integration-test-v1: build
+integration-test-v1:
 	@go test -tags=cleanup -v ./...
 	@go test -tags=integration_v1 -v ./...
 
 # Build and Test a single package supplied via pgk variable, without using test cache
 # Run as e.g. make test-package pkg=project
 pkg=...
-test-package: mocks build
+test-package: mocks lint
 	@go test -tags=unit -count=1 -v ./pkg/${pkg}
