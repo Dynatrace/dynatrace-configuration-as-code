@@ -23,6 +23,10 @@ pipeline {
         }
     }
 
+    triggers {
+        cron(env.BRANCH_NAME == 'main' ? 'H 0 * * *' : '')
+    }
+
     stages {
         stage('Build') {
             steps {
@@ -63,6 +67,18 @@ pipeline {
                     steps {
                         sh "make build-release"
                     }
+                }
+            }
+        }
+
+        stage('Cleanup') {
+            when {
+                equals expected: true, actual: currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause').size() > 0
+            }
+            steps {
+
+                withVault(vaultSecrets: [credentialsEnvironment1, credentialsEnvironment2]) {
+                    sh "make clean-environments"
                 }
             }
         }
