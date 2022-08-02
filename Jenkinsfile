@@ -30,28 +30,39 @@ pipeline {
             }
         }
 
-        stage('Test') {
-            steps {
-                sh "make test"
-            }
-            post {
-                always {
-                    junit testResults: '**/build/test-results/test/*.xml', allowEmptyResults: true
+        stage('Tests') {
+            parallel {
+                stage('Unit test') {
+                    steps {
+                        sh "make test"
+                    }
+                    post {
+                        always {
+                            junit testResults: '**/build/test-results/test/*.xml', allowEmptyResults: true
+                        }
+                    }
                 }
-            }
-        }
 
-        stage('Build release binaries') {
-            steps {
-                sh "make build-release"
-            }
-        }
+                stage('Run integration test') {
+                    steps {
+                        withVault(vaultSecrets: [credentialsEnvironment1, credentialsEnvironment2]) {
+                            sh "make integration-test"
+                        }
+                    }
+                }
 
-        stage('Run integration test') {
-            steps {
-                withVault(vaultSecrets: [credentialsEnvironment1, credentialsEnvironment2]) {
-                    sh "make integration-test"
-                    sh "make integration-test-v1"
+                stage('Run integration test legacy') {
+                    steps {
+                        withVault(vaultSecrets: [credentialsEnvironment1, credentialsEnvironment2]) {
+                            sh "make integration-test-v1"
+                        }
+                    }
+                }
+
+                stage('Building release binaries works') {
+                    steps {
+                        sh "make build-release"
+                    }
                 }
             }
         }

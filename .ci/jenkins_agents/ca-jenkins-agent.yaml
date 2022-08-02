@@ -11,5 +11,5 @@ spec:
         - "jenkins-slave"
       resources:
         requests:
-          cpu: 500m
+          cpu: 2
           memory: 2Gi
