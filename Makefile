@@ -26,7 +26,8 @@ else
 endif
 
 mocks:
-	@go get github.com/golang/mock/mockgen
+	@echo "Generating mocks"
+	@go install github.com/golang/mock/mockgen@latest
 	@go generate ./...
 
 build: clean lint

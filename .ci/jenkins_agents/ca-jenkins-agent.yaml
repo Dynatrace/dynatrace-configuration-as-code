@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+    - name: jnlp
+      image: registry.lab.dynatrace.org/keptn/ca-jenkins-agent
+      securityContext:
+        privileged: true
+      imagePullPolicy: Always
+      args:
+        - "jenkins-slave"
+      resources:
+        requests:
+          cpu: 500m
+          memory: 2Gi
