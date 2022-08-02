@@ -45,7 +45,7 @@ build-release: clean lint
 
 install: clean lint
 	@echo Install ${BINARY}
-	@CGO_ENABLED=0 go install -a -tags netgo -ldflags '-w -extldflags "-static"' -o ./bin/${BINARY} ./cmd/monaco
+	@CGO_ENABLED=0 go install -a -tags netgo -ldflags '-w -extldflags "-static"' ./cmd/monaco
 
 clean:
 	@echo Remove bin/ and build/
