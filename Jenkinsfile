@@ -1,3 +1,15 @@
+def credentialsEnvironment1 = [
+    path        : 'keptn-jenkins/monaco/integration-tests/environment-1',
+    secretValues: [
+        [envVar: 'URL_ENVIRONMENT_1',   vaultKey: 'url'],
+        [envVar: 'TOKEN_ENVIRONMENT_1', vaultKey: 'token']]]
+
+def credentialsEnvironment2 = [
+    path        : 'keptn-jenkins/monaco/integration-tests/environment-2',
+    secretValues: [
+        [envVar: 'URL_ENVIRONMENT_2',   vaultKey: 'url'],
+        [envVar: 'TOKEN_ENVIRONMENT_2', vaultKey: 'token']]]
+
 pipeline {
     agent {
         kubernetes {
@@ -32,6 +44,15 @@ pipeline {
         stage('Build release binaries') {
             steps {
                 sh "make build-release"
+            }
+        }
+
+        stage('Run integration test') {
+            steps {
+                withVault(vaultSecrets: [credentialsEnvironment1, credentialsEnvironment2]) {
+                    sh "make integration-test"
+                    sh "make integration-test-v1"
+                }
             }
         }
     }
