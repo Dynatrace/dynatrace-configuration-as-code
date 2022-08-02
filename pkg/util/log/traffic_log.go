@@ -120,7 +120,9 @@ func LogResponse(id string, response *http.Response, body string) error {
 		return nil
 	}
 
-	dump, err := httputil.DumpResponse(response, false)
+	var dumpBody = shouldDumpBody(response.Header)
+
+	dump, err := httputil.DumpResponse(response, dumpBody)
 
 	if err != nil {
 		return err
