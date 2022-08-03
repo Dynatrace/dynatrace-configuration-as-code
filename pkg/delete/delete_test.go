@@ -53,10 +53,40 @@ func TestSplitValidConfigLine(t *testing.T) {
 	assert.Equal(t, "my-dashboard", name)
 }
 
-func TestSplitConfigLineWithTooManyDelimiters(t *testing.T) {
+func TestSplitConfigLineWithTwoDelimiters(t *testing.T) {
 
-	_, _, err := splitConfigToDelete("dashboard/my/dashboard")
-	assert.ErrorContains(t, err, "more than one '/' delimiter")
+	configType, name, err := splitConfigToDelete("dashboard/my/dashboard")
+	assert.NilError(t, err)
+
+	assert.Equal(t, "dashboard", configType)
+	assert.Equal(t, "my/dashboard", name)
+}
+
+func TestSplitConfigLineWithMoreDelimiters(t *testing.T) {
+
+	configType, name, err := splitConfigToDelete("dashboard/my/dashboard/a/s/d/f")
+	assert.NilError(t, err)
+
+	assert.Equal(t, "dashboard", configType)
+	assert.Equal(t, "my/dashboard/a/s/d/f", name)
+}
+
+func TestSplitConfigLineWithTrailingDelimiter(t *testing.T) {
+
+	configType, name, err := splitConfigToDelete("dashboard/my/dashboard/")
+	assert.NilError(t, err)
+
+	assert.Equal(t, "dashboard", configType)
+	assert.Equal(t, "my/dashboard/", name)
+}
+
+func TestSplitConfigLineWithLeadingDelimiter(t *testing.T) {
+
+	configType, name, err := splitConfigToDelete("dashboard//my-dashboard")
+	assert.NilError(t, err)
+
+	assert.Equal(t, "dashboard", configType)
+	assert.Equal(t, "/my-dashboard", name)
 }
 
 func TestSplitConfigLineWithNoDelimiter(t *testing.T) {
