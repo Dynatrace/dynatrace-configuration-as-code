@@ -1,0 +1,5 @@
+config:
+  - application: "app.json"
+
+application:
+  - name: "Awesome App"

@@ -3,6 +3,6 @@ config:
   - rule: "rule.json"
 
 rule:
-  - name: "/project/application/application.name"
-  - applicationId: "/project/application/application.id"
+  - name: "/project/application-web/application.name"
+  - applicationId: "/project/application-web/application.id"
   - pattern: "pattern"
