@@ -21,6 +21,6 @@ import (
 )
 
 func main() {
-	statusCode := runner.Run(os.Args)
+	statusCode := runner.Run()
 	os.Exit(statusCode)
 }

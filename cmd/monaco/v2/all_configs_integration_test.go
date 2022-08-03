@@ -37,28 +37,19 @@ func TestIntegrationAllConfigs(t *testing.T) {
 	RunIntegrationWithCleanup(t, configFolder, manifest, specificEnvironment, "AllConfigs", func(fs afero.Fs) {
 
 		// This causes a POST for all configs:
-		statusCode := runner.RunImpl([]string{
-			"monaco",
-			"deploy",
-			"--verbose",
-			manifest,
-		}, fs)
 
-		assert.Equal(t, statusCode, 0)
+		cmd := runner.BuildCli(fs)
+		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
+		err := cmd.Execute()
+
+		assert.NilError(t, err)
 
 		// This causes a PUT for all configs:
-		statusCode = runner.RunImpl([]string{
-			"monaco",
-			"deploy",
-			"--verbose",
-			// Currently there are some APIs for which updating the config does not work. These configs are included in
-			// the project "only-post" (folder ./test-resources/integration-all-configs/only-post)
-			// The mobile application API will be fixed in the scope of
-			//     https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/issues/275
-			"--project", "project",
-			manifest,
-		}, fs)
 
-		assert.Equal(t, statusCode, 0)
+		cmd = runner.BuildCli(fs)
+		cmd.SetArgs([]string{"deploy", "--verbose", "--project", "project", manifest})
+		err = cmd.Execute()
+		assert.NilError(t, err)
+
 	})
 }

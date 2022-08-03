@@ -16,7 +16,6 @@ package runner
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"strings"
 
@@ -29,20 +28,19 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/version"
 	"github.com/spf13/afero"
-
-	"github.com/urfave/cli/v2"
+	"github.com/spf13/cobra"
 )
 
 var errWrongUsage = errors.New("")
 
-func Run(args []string) int {
-	return RunImpl(args, afero.NewOsFs())
-}
+var specificApi, environment, project []string
+var environments, specificEnvironment, projects, outputFolder, manifestName string
+var verbose, dryRun, continueOnError bool
 
-func RunImpl(args []string, fs afero.Fs) (statusCode int) {
-	app := buildCli(fs)
+func Run() int {
+	rootCmd := BuildCli(afero.NewOsFs())
 
-	err := app.Run(args)
+	err := rootCmd.Execute()
 
 	if err != nil {
 		if err != errWrongUsage {
@@ -55,52 +53,47 @@ func RunImpl(args []string, fs afero.Fs) (statusCode int) {
 	return 0
 }
 
-func buildCli(fs afero.Fs) *cli.App {
-	app := cli.NewApp()
+func BuildCli(fs afero.Fs) *cobra.Command {
 
-	app.Usage = "Automates the deployment of Dynatrace Monitoring Configuration to one or multiple Dynatrace environments."
+	var rootCmd = &cobra.Command{
+		Use:   "monaco <command>",
+		Short: "Automates the deployment of Dynatrace Monitoring Configuration to one or multiple Dynatrace environments.",
+		Long: `Tool used to deploy dynatrace configurations via the cli
+	
+		Examples:
+		  Deploy a manifest
+			monaco deploy service.yaml
+		
+		  Deploy a a specific environment within an manifest
+			monaco deploy service.yaml -e dev`,
 
-	app.Version = version.MonitoringAsCode
-
-	cli.VersionPrinter = func(c *cli.Context) {
-		fmt.Println(c.App.Version)
+		PersistentPreRunE: configureLogging,
+		Run: func(cmd *cobra.Command, args []string) {
+			cmd.Help()
+		},
 	}
 
-	cli.VersionFlag = &cli.BoolFlag{
-		Name:  "version",
-		Usage: "print the version",
-	}
-
-	app.Description = `
-Tool used to deploy dynatrace configurations via the cli
-
-Examples:
-  Deploy a manifest
-    monaco deploy service.yaml
-
-  Deploy a a specific environment within an manifest
-    monaco deploy -s dev service.yaml
-`
-	var deployCommand cli.Command
 	downloadCommand := getDownloadCommand(fs)
 	convertCommand := getConvertCommand(fs)
+	deployCommand := getDeployCommand(fs)
 	deleteCommand := getDeleteCommand(fs)
 
 	if isEnvFlagEnabled("CONFIG_V1") {
 		log.Warn("CONFIG_V1 environment var detected!")
 		log.Warn("Please convert your config to v2 format, as the migration layer will get removed in one of the next releases!")
 		deployCommand = getLegacyDeployCommand(fs)
-	} else {
-		deployCommand = getDeployCommand(fs)
 	}
 
-	app.Commands = []*cli.Command{&deployCommand, &convertCommand, &downloadCommand, &deleteCommand}
+	rootCmd.AddCommand(downloadCommand)
+	rootCmd.AddCommand(convertCommand)
+	rootCmd.AddCommand(deployCommand)
+	rootCmd.AddCommand(deleteCommand)
 
-	return app
+	return rootCmd
 }
 
-func configureLogging(ctx *cli.Context) error {
-	if ctx.Bool("verbose") {
+func configureLogging(cmd *cobra.Command, args []string) error {
+	if verbose {
 		log.Default().SetLevel(log.LevelDebug)
 	}
 	err := log.SetupLogging()
@@ -113,301 +106,157 @@ func configureLogging(ctx *cli.Context) error {
 	return nil
 }
 
-func getDeployCommand(fs afero.Fs) cli.Command {
-	command := cli.Command{
-		Name:      "deploy",
-		Usage:     "deploys the given environment",
-		UsageText: "deploy [command options] deployment-manifest",
-		ArgsUsage: "[working directory]",
-		Before:    configureLogging,
-		Flags: []cli.Flag{
-			&cli.BoolFlag{
-				Name:    "verbose",
-				Aliases: []string{"v"},
-			},
-			&cli.StringSliceFlag{
-				Name:    "environment",
-				Usage:   "Environment to deploy to",
-				Aliases: []string{"e"},
-			},
-			&cli.StringSliceFlag{
-				Name:    "project",
-				Usage:   "Project configuration to deploy (also deploys any dependent configurations)",
-				Aliases: []string{"p"},
-			},
-			&cli.BoolFlag{
-				Name:    "dry-run",
-				Aliases: []string{"d"},
-				Usage:   "Switches to just validation instead of actual deployment",
-			},
-			&cli.BoolFlag{
-				Name:    "continue-on-error",
-				Usage:   "Proceed deployment even if config upload fails",
-				Aliases: []string{"c"},
-			},
-		},
-		Action: func(ctx *cli.Context) error {
-			args := ctx.Args()
+func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
+	deployCmd = &cobra.Command{
+		Use: "deploy manifest.yaml",
+		RunE: func(cmd *cobra.Command, args []string) error {
 
-			if !args.Present() {
+			if len(args) == 0 {
 				log.Error("deployment manifest path missing")
-				_ = cli.ShowSubcommandHelp(ctx)
+				cmd.Help()
 				return errWrongUsage
 			}
 
-			if args.Len() > 1 {
+			if len(args) > 1 {
 				log.Error("too many arguments")
-				_ = cli.ShowSubcommandHelp(ctx)
+				cmd.Help()
 				return errWrongUsage
 			}
 
-			return deploy.Deploy(
-				fs,
-				args.First(),
-				ctx.StringSlice("environment"),
-				ctx.StringSlice("project"),
-				ctx.Bool("dry-run"),
-				ctx.Bool("continue-on-error"),
-			)
+			return deploy.Deploy(fs, args[0], environment, project, dryRun, continueOnError)
 		},
 	}
-	return command
+	deployCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print debug output")
+	deployCmd.Flags().StringSliceVarP(&environment, "environment", "e", make([]string, 0), "Environment to deploy to")
+	deployCmd.Flags().StringSliceVarP(&project, "project", "p", make([]string, 0), "Project configuration to deploy (also deploys any dependent configurations)")
+	deployCmd.Flags().BoolVarP(&dryRun, "dry-run", "d", false, "Switches to just validation instead of actual deployment")
+	deployCmd.Flags().BoolVarP(&continueOnError, "continue-on-error", "c", false, "Proceed deployment even if config upload fails")
+	return
 }
 
-func getDeleteCommand(fs afero.Fs) cli.Command {
-	command := cli.Command{
-		Name:      "delete",
-		Usage:     "deletes configuration defined in the delete.yaml for the given environment(s)",
-		UsageText: "delete [command options] manifest.yaml delete.yaml",
-		ArgsUsage: "[working directory]",
-		Before:    configureLogging,
-		Flags: []cli.Flag{
-			&cli.BoolFlag{
-				Name:    "verbose",
-				Aliases: []string{"v"},
-			},
-			&cli.StringSliceFlag{
-				Name:    "environment",
-				Usage:   "Deletes configuration only for specified envs. If not set, delete will be executed on all environments defined in manifest.",
-				Aliases: []string{"e"},
-			},
-		},
+func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
+	deleteCmd = &cobra.Command{
+		Use: "delete manifest.yaml delete.yaml",
+		RunE: func(cmd *cobra.Command, args []string) error {
 
-		Action: func(ctx *cli.Context) error {
-			args := ctx.Args()
-
-			if !args.Present() {
+			if len(args) != 0 {
 				log.Error("delete.yaml is missing")
-				_ = cli.ShowSubcommandHelp(ctx)
+				cmd.Help()
 				return errWrongUsage
 			}
-
-			if args.Len() < 2 {
+			if len(args) < 2 {
 				log.Error("not enough arguments")
-				_ = cli.ShowSubcommandHelp(ctx)
+				cmd.Help()
 				return errWrongUsage
 			}
 
-			if args.Len() > 2 {
+			if len(args) > 2 {
 				log.Error("too many arguments")
-				_ = cli.ShowSubcommandHelp(ctx)
+				cmd.Help()
 				return errWrongUsage
 			}
 
-			return delete.Delete(
-				fs,
-				args.Get(0),
-				args.Get(1),
-				ctx.StringSlice("environment"),
-			)
+			return delete.Delete(fs, args[0], args[1], environment)
 		},
 	}
-	return command
+	deleteCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print debug output")
+	deleteCmd.Flags().StringSliceVarP(&environment, "environment", "e", make([]string, 0), "Deletes configuration only for specified envs. If not set, delete will be executed on all environments defined in manifest.")
+	return deleteCmd
 }
 
-func getConvertCommand(fs afero.Fs) cli.Command {
-	command := cli.Command{
-		Name:      "convert",
-		ArgsUsage: "<path to monaco project folder to convert>",
-		Before:    configureLogging,
-		Flags: []cli.Flag{
-			&cli.BoolFlag{
-				Name:    "verbose",
-				Aliases: []string{"v"},
-			},
-			&cli.PathFlag{
-				Name:      "environments",
-				Usage:     "Yaml file containing environment to deploy to",
-				Aliases:   []string{"e"},
-				Required:  true,
-				TakesFile: true,
-			},
-			&cli.PathFlag{
-				Name:      "output-folder",
-				Usage:     "Folder where to write converted config to",
-				Aliases:   []string{"o"},
-				Required:  true,
-				TakesFile: false,
-			},
-			&cli.StringFlag{
-				Name:     "manifest-name",
-				Usage:    "Name of the manifest file to create",
-				Aliases:  []string{"m"},
-				Required: true,
-			},
-		},
-		Action: func(ctx *cli.Context) error {
-			if ctx.NArg() > 1 {
+func getConvertCommand(fs afero.Fs) (convertCmd *cobra.Command) {
+	convertCmd = &cobra.Command{
+		Use: "convert",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 1 {
 				log.Error("Too many arguments! Either specify a relative path to the working directory, or omit it for using the current working directory.")
-				cli.ShowAppHelpAndExit(ctx, 1)
+				cmd.Help()
+				return errWrongUsage
 			}
 
 			var workingDir string
 
-			if ctx.Args().Present() {
-				workingDir = ctx.Args().First()
+			if len(args) != 0 {
+				workingDir = args[0]
 			} else {
 				workingDir = "."
 			}
-
-			manifestName := ctx.String("manifest-name")
 
 			if !strings.HasSuffix(manifestName, ".yaml") {
 				manifestName = manifestName + ".yaml"
 			}
 
-			return convert.Convert(
-				fs,
-				workingDir,
-				ctx.Path("environments"),
-				ctx.Path("output-folder"),
-				manifestName,
-			)
+			return convert.Convert(fs, workingDir, environments, outputFolder, manifestName)
 		},
 	}
-	return command
+	convertCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print debug output")
+	convertCmd.Flags().StringVarP(&environments, "environments", "e", "", "Yaml file containing environment to download from")
+	convertCmd.Flags().StringVarP(&outputFolder, "output-folder", "o", "", "Folder where to write converted config to")
+	convertCmd.Flags().StringVarP(&manifestName, "manifest-name", "m", "", "Name of the manifest file to create")
+	convertCmd.MarkFlagDirname("output-folder")
+	convertCmd.MarkFlagFilename("envoronments")
+	convertCmd.MarkFlagRequired("environments")
+	convertCmd.MarkFlagRequired("output-folder")
+	convertCmd.MarkFlagRequired("manifest-name")
+	return convertCmd
 }
 
-func getLegacyDeployCommand(fs afero.Fs) cli.Command {
-	command := cli.Command{
-		Name:      "deploy",
-		Usage:     "deploys the given environment in legacy format",
-		UsageText: "deploy-legacy [command options] [working directory]",
-		ArgsUsage: "[working directory]",
-		Before:    configureLogging,
-		Flags: []cli.Flag{
-			&cli.BoolFlag{
-				Name:    "verbose",
-				Aliases: []string{"v"},
-			},
-			&cli.PathFlag{
-				Name:      "environments",
-				Usage:     "Yaml file containing environment to deploy to",
-				Aliases:   []string{"e"},
-				Required:  true,
-				TakesFile: true,
-			},
-			&cli.StringFlag{
-				Name:    "specific-environment",
-				Usage:   "Specific environment (from list) to deploy to",
-				Aliases: []string{"s"},
-			},
-			&cli.StringFlag{
-				Name:    "project",
-				Usage:   "Project configuration to deploy (also deploys any dependent configurations)",
-				Aliases: []string{"p"},
-			},
-			&cli.BoolFlag{
-				Name:    "dry-run",
-				Aliases: []string{"d"},
-				Usage:   "Switches to just validation instead of actual deployment",
-			},
-			&cli.BoolFlag{
-				Name:    "continue-on-error",
-				Usage:   "Proceed deployment even if config upload fails",
-				Aliases: []string{"c"},
-			},
-		},
-		Action: func(ctx *cli.Context) error {
-			if ctx.NArg() > 1 {
-				log.Error("Too many arguments! Either specify a relative path to the working directory, or omit it for using the current working directory.")
-				cli.ShowAppHelpAndExit(ctx, 1)
+func getLegacyDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
+
+	deployCmd = &cobra.Command{
+		Use: "deploy",
+		RunE: func(cmd *cobra.Command, args []string) error {
+
+			if len(args) > 1 {
+				log.Error("too many arguments")
+				cmd.Help()
+				return errWrongUsage
+			}
+			workingDir := "."
+			if len(args) != 0 {
+				workingDir = args[0]
 			}
 
+			return legacyDeploy.Deploy(fs, workingDir, environments, specificEnvironment, projects, dryRun, continueOnError)
+		},
+	}
+	deployCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print debug output")
+	deployCmd.Flags().StringVarP(&environments, "environments", "e", "", "Yaml file containing environment to deploy to")
+	deployCmd.Flags().StringVarP(&projects, "project", "p", "", "Project configuration to deploy (also deploys any dependent configurations)")
+	deployCmd.Flags().BoolVarP(&dryRun, "dry-run", "d", false, "Switches to just validation instead of actual deployment")
+	deployCmd.Flags().BoolVarP(&continueOnError, "continue-on-error", "c", false, "Proceed deployment even if config upload fails")
+	deployCmd.MarkFlagFilename("environments")
+	deployCmd.MarkFlagRequired("environments")
+	return deployCmd
+}
+
+func getDownloadCommand(fs afero.Fs) (downloadCmd *cobra.Command) {
+
+	downloadCmd = &cobra.Command{
+		Use: "download",
+		RunE: func(cmd *cobra.Command, args []string) error {
 			var workingDir string
 
-			if ctx.Args().Present() {
-				workingDir = ctx.Args().First()
+			if len(args) != 0 {
+				workingDir = args[0]
 			} else {
 				workingDir = "."
 			}
 
-			return legacyDeploy.Deploy(
-				fs,
-				workingDir,
-				ctx.Path("environments"),
-				ctx.String("specific-environment"),
-				ctx.String("project"),
-				ctx.Bool("dry-run"),
-				ctx.Bool("continue-on-error"),
-			)
+			return download.GetConfigsFilterByEnvironment(workingDir, fs, environments, specificEnvironment, specificApi)
 		},
 	}
-	return command
-}
+	downloadCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print debug output")
+	downloadCmd.Flags().StringVarP(&environments, "environments", "e", "", "Yaml file containing environment to download")
+	downloadCmd.Flags().StringVarP(&specificEnvironment, "specific-environment", "s", "", "Specific environment (from list) to download")
+	downloadCmd.Flags().StringSliceVarP(&specificApi, "specific-api", "a", make([]string, 0), "APIs to download")
+	downloadCmd.MarkFlagFilename("environments")
+	downloadCmd.MarkFlagRequired("environments")
+	return downloadCmd
 
-func getDownloadCommand(fs afero.Fs) cli.Command {
-	command := cli.Command{
-		Name:      "download",
-		Usage:     "download the given environment",
-		UsageText: "download [command options] [working directory]",
-		Before:    configureLogging,
-		Flags: []cli.Flag{
-			&cli.BoolFlag{
-				Name:    "verbose",
-				Aliases: []string{"v"},
-			},
-			&cli.PathFlag{
-				Name:      "environments",
-				Usage:     "Yaml file containing environment to download from",
-				Aliases:   []string{"e"},
-				Required:  true,
-				TakesFile: true,
-			},
-			&cli.StringFlag{
-				Name:    "specific-environment",
-				Usage:   "Specific environment (from list) to download",
-				Aliases: []string{"s"},
-			},
-			&cli.StringSliceFlag{
-				Name:    "specific-api",
-				Usage:   "API to download (repeat this flag to download multiple APIs)",
-				Aliases: []string{"a"},
-			},
-		},
-		Action: func(ctx *cli.Context) error {
-			var workingDir string
-
-			if ctx.Args().Present() {
-				workingDir = ctx.Args().First()
-			} else {
-				workingDir = "."
-			}
-
-			return download.GetConfigsFilterByEnvironment(
-				workingDir,
-				fs,
-				ctx.Path("environments"),
-				ctx.String("specific-environment"),
-				ctx.StringSlice("specific-api"),
-			)
-		},
-	}
-	return command
 }
 
 func isEnvFlagEnabled(env string) bool {
 	val, ok := os.LookupEnv(env)
-
 	return ok && val != "0"
 }

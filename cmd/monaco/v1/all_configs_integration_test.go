@@ -36,20 +36,21 @@ func TestIntegrationAllConfigs(t *testing.T) {
 	RunLegacyIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fs afero.Fs) {
 
 		// This causes a POST for all configs:
-		statusCode := runner.RunImpl([]string{
-			"monaco",
+		cmd := runner.BuildCli(fs)
+		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
 			"--environments",
 			allConfigsEnvironmentsFile,
 			allConfigsFolder,
-		}, fs)
-
-		assert.Equal(t, statusCode, 0)
+		})
+		err := cmd.Execute()
+		assert.NilError(t, err)
 
 		// This causes a PUT for all configs:
-		statusCode = runner.RunImpl([]string{
-			"monaco",
+
+		cmd = runner.BuildCli(fs)
+		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
 			"--environments", allConfigsEnvironmentsFile,
@@ -59,8 +60,8 @@ func TestIntegrationAllConfigs(t *testing.T) {
 			//     https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/issues/275
 			"--project", "project",
 			allConfigsFolder,
-		}, fs)
-
-		assert.Equal(t, statusCode, 0)
+		})
+		err = cmd.Execute()
+		assert.NilError(t, err)
 	})
 }

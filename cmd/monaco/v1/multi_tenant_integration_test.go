@@ -47,17 +47,18 @@ func TestIntegrationMultiEnvironment(t *testing.T) {
 		projects, err := project.LoadProjectsToDeploy(fs, "", api.NewApis(), folder)
 		assert.NilError(t, err)
 
-		statusCode := runner.RunImpl([]string{
-			"monaco",
+		cmd := runner.BuildCli(fs)
+		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
 			"--environments", environmentsFile,
 			folder,
-		}, fs)
+		})
+		err = cmd.Execute()
 
 		AssertAllConfigsAvailability(projects, t, environments, true)
 
-		assert.Equal(t, statusCode, 0)
+		assert.NilError(t, err)
 	})
 }
 
@@ -65,16 +66,17 @@ func TestIntegrationMultiEnvironment(t *testing.T) {
 func TestIntegrationValidationMultiEnvironment(t *testing.T) {
 	t.Setenv("CONFIG_V1", "1")
 
-	statusCode := runner.RunImpl([]string{
-		"monaco",
+	cmd := runner.BuildCli(util.CreateTestFileSystem())
+	cmd.SetArgs([]string{
 		"deploy",
 		"--verbose",
 		"--environments", environmentsFile,
 		"--dry-run",
 		folder,
-	}, util.CreateTestFileSystem())
+	})
+	err := cmd.Execute()
 
-	assert.Equal(t, statusCode, 0)
+	assert.NilError(t, err)
 }
 
 // tests a single project
@@ -88,18 +90,19 @@ func TestIntegrationMultiEnvironmentSingleProject(t *testing.T) {
 		projects, err := project.LoadProjectsToDeploy(fs, "cinema-infrastructure", api.NewApis(), folder)
 		assert.NilError(t, err)
 
-		statusCode := runner.RunImpl([]string{
-			"monaco",
+		cmd := runner.BuildCli(fs)
+		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
 			"--environments", environmentsFile,
 			"-p", "cinema-infrastructure",
 			folder,
-		}, fs)
+		})
+		err = cmd.Execute()
 
 		AssertAllConfigsAvailability(projects, t, environments, true)
 
-		assert.Equal(t, statusCode, 0)
+		assert.NilError(t, err)
 	})
 }
 
@@ -116,18 +119,19 @@ func TestIntegrationMultiEnvironmentSingleProjectWithDependency(t *testing.T) {
 
 		assert.Check(t, len(projects) == 2, "Projects should be star-trek and the dependency cinema-infrastructure")
 
-		statusCode := runner.RunImpl([]string{
-			"monaco",
+		cmd := runner.BuildCli(fs)
+		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
 			"--environments", environmentsFile,
 			"-p", "star-trek",
 			folder,
-		}, fs)
+		})
+		err = cmd.Execute()
 
 		AssertAllConfigsAvailability(projects, t, environments, true)
 
-		assert.Equal(t, statusCode, 0)
+		assert.NilError(t, err)
 	})
 }
 
@@ -145,16 +149,17 @@ func TestIntegrationMultiEnvironmentSingleEnvironment(t *testing.T) {
 		// remove environment odt69781, just keep dav48679
 		delete(environments, "odt69781")
 
-		statusCode := runner.RunImpl([]string{
-			"monaco",
+		cmd := runner.BuildCli(fs)
+		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
 			"--environments", environmentsFile,
 			folder,
-		}, fs)
+		})
+		err = cmd.Execute()
 
 		AssertAllConfigsAvailability(projects, t, environments, true)
 
-		assert.Equal(t, statusCode, 0)
+		assert.NilError(t, err)
 	})
 }

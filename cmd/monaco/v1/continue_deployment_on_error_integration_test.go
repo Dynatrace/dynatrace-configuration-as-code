@@ -46,17 +46,17 @@ func TestIntegrationContinueDeploymentOnError(t *testing.T) {
 		projects, err := project.LoadProjectsToDeploy(fs, "", api.NewApis(), allConfigsFolder)
 		assert.NilError(t, err)
 
-		statusCode := runner.RunImpl([]string{
-			"monaco",
+		cmd := runner.BuildCli(fs)
+		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
 			"--continue-on-error",
 			"--environments", allConfigsEnvironmentsFile,
 			allConfigsFolder,
-		}, fs)
-
+		})
+		err = cmd.Execute()
 		// deployment should fail
-		assert.Equal(t, statusCode, 1)
+		assert.Assert(t, err != nil, "deployment should fail")
 
 		// dashboard should anyways be deployed
 		dashboardConfig, err := projects[0].GetConfig("dashboard")

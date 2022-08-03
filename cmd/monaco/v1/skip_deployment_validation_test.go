@@ -24,8 +24,6 @@ import (
 
 	"gotest.tools/assert"
 
-	"fmt"
-
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/runner"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 )
@@ -36,79 +34,83 @@ var skipDeploymentEnvironmentsFile = AbsOrPanicFromSlash("test-resources/test-en
 func TestValidationSkipDeployment(t *testing.T) {
 	t.Setenv("CONFIG_V1", "1")
 
-	statusCode := runner.RunImpl([]string{
-		"monaco",
+	cmd := runner.BuildCli(util.CreateTestFileSystem())
+	cmd.SetArgs([]string{
 		"deploy",
 		"--verbose",
 		"--dry-run",
 		"--environments", skipDeploymentEnvironmentsFile,
 		"--project", "projectA",
 		skipDeploymentFolder,
-	}, util.CreateTestFileSystem())
+	})
+	err := cmd.Execute()
+	assert.NilError(t, err)
 
-	assert.Equal(t, statusCode, 0)
 }
 
 func TestValidationSkipDeploymentWithBrokenDependency(t *testing.T) {
 	t.Setenv("CONFIG_V1", "1")
 
-	statusCode := runner.RunImpl([]string{
-		"monaco",
+	cmd := runner.BuildCli(util.CreateTestFileSystem())
+	cmd.SetArgs([]string{
 		"deploy",
 		"--verbose",
 		"--dry-run",
 		"--environments", skipDeploymentEnvironmentsFile,
 		"--project", "projectB",
 		skipDeploymentFolder,
-	}, util.CreateTestFileSystem())
-
-	assert.Assert(t, statusCode != 0, fmt.Sprintf("Status code (%d) should be error", statusCode))
+	})
+	err := cmd.Execute()
+	assert.Error(t, err, "dry run found 3 errors. check logs")
 }
 
 func TestValidationSkipDeploymentWithOverridingDependency(t *testing.T) {
 	t.Setenv("CONFIG_V1", "1")
 
-	statusCode := runner.RunImpl([]string{
-		"monaco",
+	cmd := runner.BuildCli(util.CreateTestFileSystem())
+	cmd.SetArgs([]string{
 		"deploy",
 		"--verbose",
 		"--dry-run",
 		"--environments", skipDeploymentEnvironmentsFile,
 		"--project", "projectC",
 		skipDeploymentFolder,
-	}, util.CreateTestFileSystem())
+	})
+	err := cmd.Execute()
 
-	assert.Equal(t, statusCode, 0)
+	assert.NilError(t, err)
 }
 
 func TestValidationSkipDeploymentWithOverridingFlagValue(t *testing.T) {
 	t.Setenv("CONFIG_V1", "1")
 
-	statusCode := runner.RunImpl([]string{
-		"monaco",
+	cmd := runner.BuildCli(util.CreateTestFileSystem())
+	cmd.SetArgs([]string{
 		"deploy",
 		"--verbose",
 		"--dry-run",
 		"--environments", skipDeploymentEnvironmentsFile,
 		"--project", "projectE",
 		skipDeploymentFolder,
-	}, util.CreateTestFileSystem())
+	})
+	err := cmd.Execute()
 
-	assert.Equal(t, statusCode, 0)
+	assert.NilError(t, err)
 }
 
 func TestValidationSkipDeploymentInterProjectWithMissingDependency(t *testing.T) {
 	t.Setenv("CONFIG_V1", "1")
 
-	statusCode := runner.RunImpl([]string{
-		"monaco",
+	cmd := runner.BuildCli(util.CreateTestFileSystem())
+	cmd.SetArgs([]string{
 		"deploy",
 		"--verbose",
 		"--dry-run",
 		"--environments", skipDeploymentEnvironmentsFile,
 		"--project", "projectD",
 		skipDeploymentFolder,
-	}, util.CreateTestFileSystem())
+	})
+	err := cmd.Execute()
 
-	assert.Assert(t, statusCode != 0)
+	assert.Error(t, err, "dry run found 1 errors. check logs")
 }

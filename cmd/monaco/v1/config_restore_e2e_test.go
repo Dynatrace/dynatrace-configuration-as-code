@@ -84,14 +84,17 @@ func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, con
 		return err
 	}
 	//uploads the configs
-	statusCode := runner.RunImpl([]string{
-		"monaco",
+
+	cmd := runner.BuildCli(fs)
+	cmd.SetArgs([]string{
 		"deploy",
 		"--verbose",
 		"--environments", envFile,
 		configFolder,
-	}, fs)
-	assert.Equal(t, statusCode, 0)
+	})
+	err = cmd.Execute()
+	assert.NilError(t, err)
+
 	return nil
 }
 func execution_downloadConfigs(t *testing.T, fs afero.Fs, downloadFolder string, envFile string,
@@ -110,7 +113,6 @@ func execution_downloadConfigs(t *testing.T, fs afero.Fs, downloadFolder string,
 
 	if apisToDownload == "all" {
 		parameters = []string{
-			"monaco",
 			"download",
 			"--verbose",
 			"--environments", envFile,
@@ -118,7 +120,6 @@ func execution_downloadConfigs(t *testing.T, fs afero.Fs, downloadFolder string,
 		}
 	} else {
 		parameters = []string{
-			"monaco",
 			"download",
 			"--verbose",
 			"--specific-api",
@@ -127,9 +128,11 @@ func execution_downloadConfigs(t *testing.T, fs afero.Fs, downloadFolder string,
 			downloadFolder,
 		}
 	}
-	statusCode := runner.RunImpl(parameters, fs)
-	assert.Equal(t, statusCode, 0)
 
+	cmd := runner.BuildCli(fs)
+	cmd.SetArgs(parameters)
+	err = cmd.Execute()
+	assert.NilError(t, err)
 	return nil
 }
 func validation_uploadDownloadedConfigs(t *testing.T, fs afero.Fs, downloadFolder string,
@@ -142,14 +145,15 @@ func validation_uploadDownloadedConfigs(t *testing.T, fs afero.Fs, downloadFolde
 		return nil
 	})
 
-	statusCode := runner.RunImpl([]string{
-		"monaco",
+	cmd := runner.BuildCli(fs)
+	cmd.SetArgs([]string{
 		"deploy",
 		"--verbose",
 		"--environments", envFile,
 		downloadFolder,
-	}, fs)
-	assert.Equal(t, statusCode, 0)
+	})
+	err := cmd.Execute()
+	assert.NilError(t, err)
 }
 
 // Deletes all configs that end with "_suffix", where suffix == suffixTest+suffixTimestamp

@@ -46,17 +46,18 @@ func TestIntegrationMultiProject(t *testing.T) {
 		projects, err := project.LoadProjectsToDeploy(fs, "", api.NewApis(), multiProjectFolder)
 		assert.NilError(t, err)
 
-		statusCode := runner.RunImpl([]string{
-			"monaco",
+		cmd := runner.BuildCli(fs)
+		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
 			"--environments", multiProjectEnvironmentsFile,
 			multiProjectFolder,
-		}, fs)
+		})
+		err = cmd.Execute()
 
 		AssertAllConfigsAvailability(projects, t, environments, true)
 
-		assert.Equal(t, statusCode, 0)
+		assert.NilError(t, err)
 	})
 }
 
@@ -64,32 +65,34 @@ func TestIntegrationMultiProject(t *testing.T) {
 func TestIntegrationValidationMultiProject(t *testing.T) {
 	t.Setenv("CONFIG_V1", "1")
 
-	statusCode := runner.RunImpl([]string{
-		"monaco",
+	cmd := runner.BuildCli(util.CreateTestFileSystem())
+	cmd.SetArgs([]string{
 		"deploy",
 		"--verbose",
 		"--environments", multiProjectEnvironmentsFile,
 		"--dry-run",
 		multiProjectFolder,
-	}, util.CreateTestFileSystem())
+	})
+	err := cmd.Execute()
 
-	assert.Equal(t, statusCode, 0)
+	assert.NilError(t, err)
 }
 
 // Tests a dry run (validation)
 func TestIntegrationValidationMultiProjectWithoutEndingSlashInPath(t *testing.T) {
 	t.Setenv("CONFIG_V1", "1")
 
-	statusCode := runner.RunImpl([]string{
-		"monaco",
+	cmd := runner.BuildCli(util.CreateTestFileSystem())
+	cmd.SetArgs([]string{
 		"deploy",
 		"--verbose",
 		"--environments", multiProjectEnvironmentsFile,
 		"--dry-run",
 		multiProjectFolderWithoutSlash,
-	}, util.CreateTestFileSystem())
+	})
+	err := cmd.Execute()
 
-	assert.Equal(t, statusCode, 0)
+	assert.NilError(t, err)
 }
 
 // tests a single project with dependencies
@@ -103,17 +106,19 @@ func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 		projects, err := project.LoadProjectsToDeploy(fs, "star-trek", api.NewApis(), multiProjectFolder)
 		assert.NilError(t, err)
 
-		statusCode := runner.RunImpl([]string{
-			"monaco",
+		cmd := runner.BuildCli(fs)
+
+		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
 			"--environments", multiProjectEnvironmentsFile,
 			"-p", "star-trek",
 			multiProjectFolder,
-		}, fs)
+		})
+		err = cmd.Execute()
 
 		AssertAllConfigsAvailability(projects, t, environments, true)
 
-		assert.Equal(t, statusCode, 0)
+		assert.NilError(t, err)
 	})
 }
