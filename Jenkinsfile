@@ -1,14 +1,14 @@
 def credentialsEnvironment1 = [
     path        : 'keptn-jenkins/monaco/integration-tests/environment-1',
     secretValues: [
-        [envVar: 'URL_ENVIRONMENT_1',   vaultKey: 'url'],
-        [envVar: 'TOKEN_ENVIRONMENT_1', vaultKey: 'token']]]
+        [envVar: 'URL_ENVIRONMENT_1',   vaultKey: 'url',    isRequired: true],
+        [envVar: 'TOKEN_ENVIRONMENT_1', vaultKey: 'token',  isRequired: true]]]
 
 def credentialsEnvironment2 = [
     path        : 'keptn-jenkins/monaco/integration-tests/environment-2',
     secretValues: [
-        [envVar: 'URL_ENVIRONMENT_2',   vaultKey: 'url'],
-        [envVar: 'TOKEN_ENVIRONMENT_2', vaultKey: 'token']]]
+        [envVar: 'URL_ENVIRONMENT_2',   vaultKey: 'url',    isRequired: true],
+        [envVar: 'TOKEN_ENVIRONMENT_2', vaultKey: 'token',  isRequired: true]]]
 
 pipeline {
     agent {
