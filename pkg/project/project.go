@@ -168,11 +168,6 @@ func (p *projectBuilder) processConfigSection(properties map[string]map[string]s
 			return err
 		}
 
-		//Introduce deprecation warning message when using the config type "application"
-		if api.GetId() == "application" {
-			log.Warn("You are using the configuration 'application', which will be deprecated in v2.0.0. Replace with type 'application-web'.")
-		}
-
 		config, err := p.configFactory.NewConfig(p.fs, configName, p.projectId, location, properties, api)
 		if util.CheckError(err, "Could not create config"+configName) {
 			return err
