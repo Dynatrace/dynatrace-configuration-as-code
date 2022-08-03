@@ -60,24 +60,18 @@ func TestRestoreConfigsSimple(t *testing.T) {
 //		testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, envFile, subsetOfConfigsToDownload)
 //	}
 func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolder string, suffixTest string, envFile string, apisToDownload string) {
-	os.Setenv("CONFIG_V1", "1")
+	t.Setenv("CONFIG_V1", "1")
 	fs := util.CreateTestFileSystem()
 	err := preparation_uploadConfigs(t, fs, suffixTest, initialConfigsFolder, envFile)
-	if err != nil {
-		assert.NilError(t, err, "Error during download preparation stage")
-		os.Setenv("CONFIG_V1", "0")
-		return
-	}
-	err = execution_downloadConfigs(t, fs, downloadFolder, envFile, apisToDownload)
-	if err != nil {
-		assert.NilError(t, err, "Error during download execution stage")
-		os.Setenv("CONFIG_V1", "0")
-		return
-	}
-	cleanupIntegrationTest(t, fs, envFile, suffixTest)
+
+	assert.NilError(t, err, "Error during download preparation stage")
+
+	err = execution_downloadConfigs(t, fs, downloadFolder, envFile, apisToDownload, suffixTest)
+	assert.NilError(t, err, "Error during download execution stage")
+
+	cleanupEnvironmentConfigs(t, fs, envFile, suffixTest)
 	validation_uploadDownloadedConfigs(t, fs, downloadFolder, envFile)
 	cleanupEnvironmentConfigs(t, fs, envFile, suffixTest)
-	os.Setenv("CONFIG_V1", "0")
 }
 
 func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, configFolder string, envFile string) error {
