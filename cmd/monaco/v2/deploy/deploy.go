@@ -17,7 +17,6 @@ package deploy
 import (
 	"errors"
 	"fmt"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 	"path/filepath"
 	"strings"
 
@@ -35,7 +34,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironment []string,
+func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironments []string,
 	specificProject []string, dryRun, continueOnError bool) error {
 
 	deploymentManifestPath = filepath.Clean(deploymentManifestPath)
@@ -56,17 +55,9 @@ func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironment []st
 		return errors.New("error while loading environments")
 	}
 
-	environments := manifest.GetEnvironmentsAsSlice()
-
-	if len(specificEnvironment) > 0 {
-		filtered, errs := environment.FilterEnvironmentsByName(environments, specificEnvironment)
-
-		if errs != nil {
-			util.PrintErrors(errs)
-			return errors.New("error while loading environments")
-		}
-
-		environments = filtered
+	environments, err := manifest.FilterEnvironmentsByNames(specificEnvironments)
+	if err != nil {
+		return err
 	}
 
 	environmentMap := toEnvironmentMap(environments)

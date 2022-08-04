@@ -10,7 +10,7 @@ bin/
 
 # Log files
 /cmd/monaco/.logs
-/.logs
+.logs
 
 # Mock files
 **/*_mock.go

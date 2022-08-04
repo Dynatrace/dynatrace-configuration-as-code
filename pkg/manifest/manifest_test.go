@@ -15,10 +15,13 @@ package manifest
 
 import (
 	environmentv1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"gotest.tools/assert"
 	"reflect"
 	"testing"
 )
+
+var sortStrings = cmpopts.SortSlices(func(a, b string) bool { return a < b })
 
 func TestNewEnvironmentDefinitionFromV1(t *testing.T) {
 
@@ -81,4 +84,108 @@ func createValueEnvironmentDefinition() EnvironmentDefinition {
 		Group: "group",
 		Token: &EnvironmentVariableToken{EnvironmentVariableName: "NAME"},
 	}
+}
+
+func TestGetEnvironmentsAsSlice(t *testing.T) {
+	envs := map[string]EnvironmentDefinition{
+		"Test":  {Name: "Test"},
+		"Test2": {Name: "Test2"},
+	}
+
+	manifest := Manifest{
+		Environments: envs,
+	}
+
+	actual := manifest.GetEnvironmentsAsSlice()
+
+	assertEnvironmentsWithNames(t, actual, []string{"Test", "Test2"})
+}
+
+func TestManifestFilterEnvironmentsByNamesWithEmptyNames(t *testing.T) {
+	envs := map[string]EnvironmentDefinition{
+		"Test":  {Name: "Test"},
+		"Test2": {Name: "Test2"},
+	}
+
+	manifest := Manifest{
+		Environments: envs,
+	}
+
+	actual, err := manifest.FilterEnvironmentsByNames([]string{})
+	assert.NilError(t, err, "empty array should not be an error")
+
+	assertEnvironmentsWithNames(t, actual, []string{"Test", "Test2"})
+}
+
+func TestManifestFilterEnvironmentsByNamesWithNil(t *testing.T) {
+	envs := map[string]EnvironmentDefinition{
+		"Test":  {Name: "Test"},
+		"Test2": {Name: "Test2"},
+	}
+
+	manifest := Manifest{
+		Environments: envs,
+	}
+
+	actual, err := manifest.FilterEnvironmentsByNames(nil)
+	assert.NilError(t, err, "empty array should not be an error")
+
+	assertEnvironmentsWithNames(t, actual, []string{"Test", "Test2"})
+}
+
+func TestManifestFilterEnvironmentsByNamesWithAllNames(t *testing.T) {
+	envs := map[string]EnvironmentDefinition{
+		"Test":  {Name: "Test"},
+		"Test2": {Name: "Test2"},
+	}
+
+	manifest := Manifest{
+		Environments: envs,
+	}
+
+	actual, err := manifest.FilterEnvironmentsByNames([]string{"Test", "Test2"})
+	assert.NilError(t, err, "empty array should not be an error")
+
+	assertEnvironmentsWithNames(t, actual, []string{"Test", "Test2"})
+}
+
+func TestManifestFilterEnvironmentsByNamesWithOneName(t *testing.T) {
+	envs := map[string]EnvironmentDefinition{
+		"Test":  {Name: "Test"},
+		"Test2": {Name: "Test2"},
+	}
+
+	manifest := Manifest{
+		Environments: envs,
+	}
+
+	actual, err := manifest.FilterEnvironmentsByNames([]string{"Test"})
+	assert.NilError(t, err, "empty array should not be an error")
+
+	assertEnvironmentsWithNames(t, actual, []string{"Test"})
+}
+
+func TestManifestFilterEnvironmentsByNamesWithAnUnknownName(t *testing.T) {
+	envs := map[string]EnvironmentDefinition{
+		"Test":  {Name: "Test"},
+		"Test2": {Name: "Test2"},
+	}
+
+	manifest := Manifest{
+		Environments: envs,
+	}
+
+	_, err := manifest.FilterEnvironmentsByNames([]string{"Test4"})
+	assert.ErrorContains(t, err, "Test4", "Unknown environment should give an error")
+}
+
+func assertEnvironmentsWithNames(t *testing.T, environments []EnvironmentDefinition, expectedNames []string) {
+	assert.Equal(t, len(environments), len(expectedNames), "Unexpected amount of environments")
+
+	var environmentNames []string
+	for _, env := range environments {
+		environmentNames = append(environmentNames, env.Name)
+	}
+
+	assert.DeepEqual(t, environmentNames, expectedNames, sortStrings)
 }

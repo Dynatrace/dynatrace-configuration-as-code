@@ -19,7 +19,6 @@ package environment
 import (
 	"errors"
 	"fmt"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/spf13/afero"
@@ -64,24 +63,4 @@ func readEnvironments(file string, fs afero.Fs) (map[string]Environment, []error
 	util.FailOnError(err, "Error while converting file")
 
 	return NewEnvironments(environmentMaps)
-}
-
-func FilterEnvironmentsByName(environments []manifest.EnvironmentDefinition, names []string) ([]manifest.EnvironmentDefinition, []error) {
-	var result []manifest.EnvironmentDefinition
-	var err []error
-
-	for _, name := range names {
-		found := false
-		for _, env := range environments {
-			if env.Name == name {
-				result = append(result, env)
-				found = true
-			}
-		}
-		if !found {
-			err = append(err, fmt.Errorf("no environment found `%s`", name))
-		}
-	}
-
-	return result, err
 }
