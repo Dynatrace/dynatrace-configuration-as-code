@@ -1,0 +1,28 @@
+configs:
+- id: application-tagging-skip-deployment-2
+  config:
+    name: Another application tag skip deployment
+    template: ../../../cinema-infrastructure/auto-tag/application-tagging.json
+    skip: false
+- id: application-tagging-skip-deployment
+  config:
+    name: Application tag skip deployment
+    template: ../../../cinema-infrastructure/auto-tag/application-tagging.json
+  groupOverrides:
+  - group: development
+    override:
+      skip: false
+  - group: production
+    override:
+      skip: true
+- id: application-tagging-multiproject
+  config:
+    name: Test Star Trek Multiproject
+    template: ../../../cinema-infrastructure/auto-tag/application-tagging.json
+  groupOverrides:
+  - group: development
+    override:
+      skip: false
+  - group: production
+    override:
+      skip: true

@@ -1,0 +1,23 @@
+configs:
+- id: zone-multiproject
+  config:
+    name: mzone-2-multiproject
+    parameters:
+      meId: HOST_GROUP-1234567890123456
+      webAppTaggingName:
+        api: auto-tag
+        config: application-tagging-multiproject
+        project: cinema-infrastructure
+        property: name
+        type: reference
+    template: zone.json
+    skip: false
+  groupOverrides:
+  - group: production
+    override:
+      parameters:
+        environment: environment2
+  - group: development
+    override:
+      parameters:
+        environment: environment1

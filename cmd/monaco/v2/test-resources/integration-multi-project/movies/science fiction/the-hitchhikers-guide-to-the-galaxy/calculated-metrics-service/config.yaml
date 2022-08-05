@@ -1,0 +1,14 @@
+configs:
+- id: session-storage-condition-worker-fastqueueqize
+  config:
+    name: calc:service.SessionStorageConditionWorker_fastQueueSize
+    parameters:
+      enabled: "true"
+      requestAttribute:
+        api: request-attributes
+        config: ondemand-analysis-requestid
+        project: cinema-infrastructure
+        property: name
+        type: reference
+    template: ../../../../cinema-infrastructure/calculated-metrics-service/condition-worker.json
+    skip: false
