@@ -47,7 +47,7 @@ func TestIntegrationAllConfigs(t *testing.T) {
 		// This causes a PUT for all configs:
 
 		cmd = runner.BuildCli(fs)
-		cmd.SetArgs([]string{"deploy", "--verbose", "--project", "project", manifest})
+		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
 		err = cmd.Execute()
 		assert.NilError(t, err)
 
