@@ -282,6 +282,16 @@ func getApiMap(fromApiInputs map[string]apiInput) ApiMap {
 	return apis
 }
 
+func GetApiNames(apis map[string]Api) []string {
+	result := make([]string, 0, len(apis))
+
+	for api := range apis {
+		result = append(result, api)
+	}
+
+	return result
+}
+
 func newApi(id string, input apiInput) Api {
 	if input.isSingleConfigurationApi {
 		return NewSingleConfigurationApi(id, input.apiPath, input.isDeprecatedBy)

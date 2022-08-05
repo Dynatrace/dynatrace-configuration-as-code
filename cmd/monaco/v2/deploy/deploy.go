@@ -78,7 +78,7 @@ func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironments []s
 
 	log.Debug("Loading configuration projects ...")
 	projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
-		Apis:            getApiNames(apis),
+		Apis:            api.GetApiNames(apis),
 		WorkingDir:      workingDir,
 		Manifest:        manifest,
 		ParametersSerde: config.DefaultParameterParsers,
@@ -405,14 +405,4 @@ func getClient(environment manifest.EnvironmentDefinition, dryRun bool) (rest.Dy
 
 		return rest.NewDynatraceClient(url, token)
 	}
-}
-
-func getApiNames(apis map[string]api.Api) []string {
-	result := make([]string, 0, len(apis))
-
-	for api := range apis {
-		result = append(result, api)
-	}
-
-	return result
 }
