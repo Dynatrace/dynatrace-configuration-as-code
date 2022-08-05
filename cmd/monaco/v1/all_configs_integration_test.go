@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/runner"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 )

@@ -20,7 +20,7 @@
 package v1
 
 import (
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/runner"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner"
 	"os"
 	"path/filepath"
 	"testing"
