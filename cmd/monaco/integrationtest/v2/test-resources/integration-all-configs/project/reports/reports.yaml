@@ -1,0 +1,10 @@
+configs:
+- id: report
+  config:
+    name: Dashboard Report # TO ENABLE USE OF NON-UNIQUE NAME APIs, it needs to be possible for a name to be an ID/auto-replaced from a reference
+    parameters:
+      dashboardId: ["dashboard","dashboard","id"]
+    template: report.json
+    skip: true
+# TODO: this is skipped as v2 does currently not allow for a name to be reference. TBD if we actually want this!
+# see: cmd/monaco/integrationtest/v1/test-resources/integration-all-configs/project/reports/reports.yaml for how it would work

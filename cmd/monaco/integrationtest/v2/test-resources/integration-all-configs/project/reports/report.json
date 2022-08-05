@@ -1,0 +1,11 @@
+{
+ "dashboardId": "{{.dashboardId}}",
+ "enabled": true,
+ "subscriptions": {
+  "MONTH": [],
+  "WEEK": [
+   "john.doe@dynatrace.com"
+  ]
+ },
+ "type": "DASHBOARD"
+}

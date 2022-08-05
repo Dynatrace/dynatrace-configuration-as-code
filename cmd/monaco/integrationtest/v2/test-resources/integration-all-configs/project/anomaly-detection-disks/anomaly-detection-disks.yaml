@@ -1,0 +1,5 @@
+configs:
+  - id: low-disk
+    config:
+      name: low-disk
+      template: low-disk.json

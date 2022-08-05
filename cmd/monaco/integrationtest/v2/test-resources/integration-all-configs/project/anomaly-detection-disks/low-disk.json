@@ -1,0 +1,10 @@
+{
+  "diskNameFilter": null,
+  "enabled": true,
+  "metric": "LOW_DISK_SPACE",
+  "name": "{{.name}}",
+  "samples": 3,
+  "tagFilters": [],
+  "threshold": 10,
+  "violatingSamples": 3
+}

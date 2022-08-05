@@ -1,0 +1,12 @@
+{
+    "applicationIdentifier": "APPLICATION-EA7C4B59F27D43EB",
+    "name": "{{ .name }}",
+    "metricKey": "{{ .name }}",
+    "enabled": true,
+    "metricDefinition": {
+        "metric": "VisuallyComplete",
+        "propertyKey": null
+    },
+    "dimensions": [],
+    "userActionFilter": null
+}

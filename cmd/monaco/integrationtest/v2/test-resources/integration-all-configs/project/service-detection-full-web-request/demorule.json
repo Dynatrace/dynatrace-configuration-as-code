@@ -1,0 +1,39 @@
+{
+  "type": "FULL_WEB_REQUEST",
+  "managementZones": [],
+  "name": "{{ .name }}",
+  "description": "{{ .name }}",
+  "enabled": {{ .enabled }},
+  "conditions": [
+    {
+      "attributeType": "SERVER_NAME",
+      "compareOperations": [
+        {
+          "type": "EQUALS",
+          "negate": false,
+          "ignoreCase": false,
+          "values": [
+            "demoserver1",
+            "demoserver2"
+          ]
+        }
+      ]
+    },
+    {
+      "attributeType": "URL_PATH",
+      "compareOperations": [
+        {
+          "type": "EXISTS",
+          "negate": false
+        }
+      ]
+    }
+  ],
+  "contextRoot": {
+    "transformations": [],
+    "segmentsToCopyFromUrlPath": 2
+  },
+  "serverName": {
+    "valueOverride": "demoserver"
+  }
+}

@@ -1,0 +1,5 @@
+configs:
+  - id: geo-ip-address-mappings
+    config:
+      name: geo-ip-address-mappings
+      template: geo-ip-address-mappings.json

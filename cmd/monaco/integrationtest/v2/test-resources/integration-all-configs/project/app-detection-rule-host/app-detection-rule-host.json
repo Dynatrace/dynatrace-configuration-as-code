@@ -1,0 +1,7 @@
+{
+ "hostDetectionHeaders": [
+  "X-Forwarded-Host",
+  "X-Host",
+  "Host"
+ ]
+}

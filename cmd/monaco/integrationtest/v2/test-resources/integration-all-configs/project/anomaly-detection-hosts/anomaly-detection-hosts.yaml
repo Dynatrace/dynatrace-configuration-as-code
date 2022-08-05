@@ -1,0 +1,5 @@
+configs:
+  - id: anomaly-detection-hosts
+    config:
+      name: anomaly-detection-hosts
+      template: anomaly-detection-hosts.json

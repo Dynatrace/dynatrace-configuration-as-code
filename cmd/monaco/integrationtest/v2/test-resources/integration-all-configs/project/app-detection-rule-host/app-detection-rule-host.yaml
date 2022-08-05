@@ -1,0 +1,5 @@
+configs:
+  - id: app-detection-rule-host
+    config:
+      name: app-detection-rule-host
+      template: app-detection-rule-host.json

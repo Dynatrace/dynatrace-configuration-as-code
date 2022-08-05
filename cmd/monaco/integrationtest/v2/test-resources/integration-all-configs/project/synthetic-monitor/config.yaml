@@ -17,3 +17,9 @@ configs:
         type: reference
     template: availabilty.json
     skip: false
+- id: browser-test
+  config:
+    name: Borg Availability
+    parameters:
+      location: GEOLOCATION-9999453BE4BDB3CD
+    template: browser-test.json

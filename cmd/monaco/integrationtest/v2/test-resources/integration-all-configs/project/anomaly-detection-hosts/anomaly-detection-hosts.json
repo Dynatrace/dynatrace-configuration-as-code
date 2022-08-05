@@ -1,0 +1,45 @@
+{
+ "connectionLostDetection": {
+  "enabled": true,
+  "enabledOnGracefulShutdowns": false
+ },
+ "diskLowInodesDetection": {
+  "enabled": true
+ },
+ "diskLowSpaceDetection": {
+  "enabled": true
+ },
+ "diskSlowWritesAndReadsDetection": {
+  "enabled": false
+ },
+ "highCpuSaturationDetection": {
+  "enabled": true
+ },
+ "highGcActivityDetection": {
+  "enabled": true
+ },
+ "highMemoryDetection": {
+  "enabled": true
+ },
+ "highNetworkDetection": {
+  "enabled": true
+ },
+ "networkDroppedPacketsDetection": {
+  "enabled": true
+ },
+ "networkErrorsDetection": {
+  "enabled": true
+ },
+ "networkHighRetransmissionDetection": {
+  "enabled": true
+ },
+ "networkTcpProblemsDetection": {
+  "enabled": true
+ },
+ "outOfMemoryDetection": {
+  "enabled": true
+ },
+ "outOfThreadsDetection": {
+  "enabled": true
+ }
+}

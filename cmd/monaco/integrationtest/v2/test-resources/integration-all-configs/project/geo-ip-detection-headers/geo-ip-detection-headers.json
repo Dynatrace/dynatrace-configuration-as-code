@@ -1,0 +1,11 @@
+{
+ "ipDetectionHeaders": [
+  "rproxy_remote_address",
+  "True-Client-IP",
+  "X-Client-Ip",
+  "X-Cluster-Client-Ip",
+  "X-Forwarded-For",
+  "X-Http-Client-Ip",
+  "CF-Connecting-IP"
+ ]
+}
