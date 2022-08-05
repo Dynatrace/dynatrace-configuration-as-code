@@ -18,13 +18,13 @@ import (
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 )
 
-// map of api to configs
+// ConfigsPerApis is a map of api to configs
 type ConfigsPerApis map[string][]config.Config
 
-// map of environment to api to configs
+// ConfigsPerApisPerEnvironments is a map of environment to api to configs
 type ConfigsPerApisPerEnvironments map[string]ConfigsPerApis
 
-// map of environment to project ids
+// DependenciesPerEnvironment is a map of environment to project ids
 type DependenciesPerEnvironment map[string][]string
 
 type Project struct {
