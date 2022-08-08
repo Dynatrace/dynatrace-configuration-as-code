@@ -24,6 +24,7 @@ import (
 	legacyDeploy "github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v1/deploy"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/convert"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/completion"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/delete"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/deploy"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download"
@@ -225,7 +226,7 @@ func getLegacyDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 	deployCmd.Flags().StringVarP(&projects, "project", "p", "", "Project configuration to deploy (also deploys any dependent configurations)")
 	deployCmd.Flags().BoolVarP(&dryRun, "dry-run", "d", false, "Switches to just validation instead of actual deployment")
 	deployCmd.Flags().BoolVarP(&continueOnError, "continue-on-error", "c", false, "Proceed deployment even if config upload fails")
-	err := deployCmd.MarkFlagFilename("environments")
+	err := deployCmd.MarkFlagFilename("environments", "yaml")
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
@@ -257,8 +258,9 @@ func getDownloadCommand(fs afero.Fs) (downloadCmd *cobra.Command) {
 	downloadCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print debug output")
 	downloadCmd.Flags().StringVarP(&environments, "environments", "e", "", "Yaml file containing environment to download")
 	downloadCmd.Flags().StringVarP(&specificEnvironment, "specific-environment", "s", "", "Specific environment (from list) to download")
+	downloadCmd.RegisterFlagCompletionFunc("specific-environment", completion.DownloadSpecificEnvironment)
 	downloadCmd.Flags().StringSliceVarP(&specificApi, "specific-api", "a", make([]string, 0), "APIs to download")
-	err := downloadCmd.MarkFlagFilename("environments")
+	err := downloadCmd.MarkFlagFilename("environments", "yaml")
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
@@ -266,8 +268,12 @@ func getDownloadCommand(fs afero.Fs) (downloadCmd *cobra.Command) {
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
-	return downloadCmd
+	err = downloadCmd.RegisterFlagCompletionFunc("specific-api", completion.DownloadSpecificApi)
+	if err != nil {
+		log.Fatal("failed to setup CLI %v", err)
+	}
 
+	return downloadCmd
 }
 
 func isEnvFlagEnabled(env string) bool {
