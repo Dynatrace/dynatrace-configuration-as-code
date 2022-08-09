@@ -136,27 +136,32 @@ func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 
 func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 	deleteCmd = &cobra.Command{
-		Use: "delete manifest.yaml delete.yaml",
+		Use:  "delete manifest.yaml delete.yaml",
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			if len(args) != 0 {
-				log.Error("delete.yaml is missing")
-				cmd.Help()
-				return errWrongUsage
-			}
-			if len(args) < 2 {
-				log.Error("not enough arguments")
+			if len(args) != 2 {
+				log.Error("wrong number of arguments expected two")
 				cmd.Help()
 				return errWrongUsage
 			}
 
-			if len(args) > 2 {
-				log.Error("too many arguments")
+			manifestName = args[0]
+			deleteFile := args[1]
+
+			if !strings.HasSuffix(manifestName, ".yaml") {
+				log.Error("Wrong format for manifest file! expected a .yaml file")
 				cmd.Help()
 				return errWrongUsage
 			}
 
-			return delete.Delete(fs, args[0], args[1], environment)
+			if !strings.HasSuffix(deleteFile, "delete.yaml") {
+				log.Error("Wrong format for delete file! delete has to be named deletet.yaml")
+				cmd.Help()
+				return errWrongUsage
+			}
+
+			return delete.Delete(fs, manifestName, deleteFile, environment)
 		},
 	}
 	deleteCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print debug output")

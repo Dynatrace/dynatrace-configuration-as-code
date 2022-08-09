@@ -29,7 +29,7 @@ This commands cheat sheet for Monaco describes the basic commands for managing y
 
 | Command     | Description | 
 | ----------- | ----------- | 
-| <nobr>`delete`</nobr> | Remove one or more configurations from one or more Dynatrace tenants.  |
+| <nobr>`delete manifest.yaml delete.yaml`</nobr> | Remove one or more configurations from one or more Dynatrace tenants.  **Arguments required**|
 | <nobr>`delete --environment` or `-e`</nobr>    | Delete your configuration(s) from specific environments within your deployment manifest file. |
 
 ## Convert command
