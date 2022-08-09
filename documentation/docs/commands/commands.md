@@ -36,7 +36,6 @@ This commands cheat sheet for Monaco describes the basic commands for managing y
 
 | Command     | Description | 
 | ----------- | ----------- | 
-| <nobr>`convert`</nobr> | Apply automatic conversion rules to help convert Monaco v.1 configuration files to Monaco v.2 files. **Options required.** |
-| <nobr>`convert --environment` or `-e`</nobr>    |Specify the YAML file containing the list of environments.  **Required** |
-| <nobr>`convert --manifest-name`</nobr>    | Specify the name to be used for the manifest file produced by the convert command. **Required** |
-| <nobr>`convert --output-folder` or `-o`</nobr>    | Specify the name of the output folder created by the convert command to store all converted configurations. **Required** |
+| <nobr>`convert environment.yaml v1-project`</nobr> | Apply automatic conversion rules to help convert Monaco v.1 configuration files to Monaco v.2 files. **Arguments required.** |
+| <nobr>`convert --manifest or -m`</nobr>    | Specify the name to be used for the manifest file produced by the convert command.|
+| <nobr>`convert --output-folder` or `-o`</nobr>    | Specify the name of the output folder created by the convert command to store all converted configurations.|

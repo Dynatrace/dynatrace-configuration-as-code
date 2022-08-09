@@ -34,7 +34,7 @@ import (
 var errWrongUsage = errors.New("")
 
 var specificApi, environment, project []string
-var environments, specificEnvironment, projects, outputFolder, manifestName string
+var environments, specificEnvironment, projects, workingDir, outputFolder, manifestName string
 var verbose, dryRun, continueOnError bool
 
 func Run() int {
@@ -166,38 +166,41 @@ func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 
 func getConvertCommand(fs afero.Fs) (convertCmd *cobra.Command) {
 	convertCmd = &cobra.Command{
-		Use: "convert",
+		Use:  "convert environment.yaml outputFolder",
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) > 1 {
-				log.Error("Too many arguments! Either specify a relative path to the working directory, or omit it for using the current working directory.")
+
+			if len(args) != 2 {
+				log.Error("Wrong number of arguments! expected two arguments: environment, outputfolder")
 				cmd.Help()
 				return errWrongUsage
 			}
 
-			var workingDir string
+			environmentsFile := args[0]
+			workingDir := args[1]
 
-			if len(args) != 0 {
-				workingDir = args[0]
-			} else {
-				workingDir = "."
+			if !strings.HasSuffix(environmentsFile, ".yaml") {
+				log.Error("Wrong format for environment file! expected a .yaml file")
+				cmd.Help()
+				return errWrongUsage
 			}
 
 			if !strings.HasSuffix(manifestName, ".yaml") {
 				manifestName = manifestName + ".yaml"
 			}
 
-			return convert.Convert(fs, workingDir, environments, outputFolder, manifestName)
+			if outputFolder == "{project folder}-v2" {
+				outputFolder = workingDir + "-v2"
+			}
+
+			return convert.Convert(fs, workingDir, environmentsFile, outputFolder, manifestName)
 		},
 	}
 	convertCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print debug output")
-	convertCmd.Flags().StringVarP(&environments, "environments", "e", "", "Yaml file containing environment to download from")
-	convertCmd.Flags().StringVarP(&outputFolder, "output-folder", "o", "", "Folder where to write converted config to")
-	convertCmd.Flags().StringVarP(&manifestName, "manifest-name", "m", "", "Name of the manifest file to create")
+	convertCmd.Flags().StringVarP(&manifestName, "manifest", "m", "manifest.yaml", "Name of the manifest file to create")
+	convertCmd.Flags().StringVarP(&outputFolder, "output-folder", "o", "{project folder}-v2", "Folder where to write converted config to")
 	convertCmd.MarkFlagDirname("output-folder")
-	convertCmd.MarkFlagFilename("envoronments")
-	convertCmd.MarkFlagRequired("environments")
-	convertCmd.MarkFlagRequired("output-folder")
-	convertCmd.MarkFlagRequired("manifest-name")
+
 	return convertCmd
 }
 
