@@ -108,7 +108,8 @@ func configureLogging(cmd *cobra.Command, args []string) error {
 
 func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 	deployCmd = &cobra.Command{
-		Use: "deploy manifest.yaml",
+		Use:  "deploy manifest.yaml",
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			if len(args) == 0 {
@@ -123,7 +124,15 @@ func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 				return errWrongUsage
 			}
 
-			return deploy.Deploy(fs, args[0], environment, project, dryRun, continueOnError)
+			manifestName = args[0]
+
+			if !strings.HasSuffix(manifestName, ".yaml") {
+				log.Error("Wrong format for manifest file! expected a .yaml file")
+				cmd.Help()
+				return errWrongUsage
+			}
+
+			return deploy.Deploy(fs, manifestName, environment, project, dryRun, continueOnError)
 		},
 	}
 	deployCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print debug output")
