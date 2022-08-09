@@ -34,42 +34,49 @@ pipeline {
             }
         }
 
-        stage('Tests') {
-            parallel {
-                stage('Unit test') {
-                    steps {
-                        sh "make test"
-                    }
-                    post {
-                        always {
-                            junit testResults: '**/build/test-results/test/*.xml', allowEmptyResults: true
-                        }
-                    }
-                }
-
-                stage('Run integration test') {
-                    steps {
-                        withVault(vaultSecrets: [credentialsEnvironment1, credentialsEnvironment2]) {
-                            sh "make integration-test"
-                        }
-                    }
-                }
-
-                stage('Run integration test legacy') {
-                    steps {
-                        withVault(vaultSecrets: [credentialsEnvironment1, credentialsEnvironment2]) {
-                            sh "make integration-test-v1"
-                        }
-                    }
-                }
-
-                stage('Building release binaries works') {
-                    steps {
-                        sh "make build-release"
-                    }
+        stage('Unit test') {
+            steps {
+                sh "make test"
+            }
+            post {
+                always {
+                    junit testResults: '**/build/test-results/test/*.xml', allowEmptyResults: true
                 }
             }
         }
+
+        stage('Integration test') {
+            when {
+                expression {
+                    env.BRANCH_IS_PRIMARY
+                }
+            }
+            steps {
+                withVault(vaultSecrets: [credentialsEnvironment1, credentialsEnvironment2]) {
+                    sh "make integration-test"
+                }
+            }
+        }
+
+        stage('Integration test (legacy)') {
+            when {
+                expression {
+                    env.BRANCH_IS_PRIMARY
+                }
+            }
+            steps {
+                withVault(vaultSecrets: [credentialsEnvironment1, credentialsEnvironment2]) {
+                    sh "make integration-test-v1"
+                }
+            }
+        }
+
+        stage('Building release binaries works') {
+            steps {
+                sh "make build-release"
+            }
+        }
+
 
         stage('Cleanup') {
             when {
