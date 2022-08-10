@@ -110,10 +110,11 @@ func configureLogging(cmd *cobra.Command, args []string) error {
 
 func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 	deployCmd = &cobra.Command{
-		Use:     "deploy <manifest.yaml>",
-		Short:   "Deploy configurations to Dynatrace environments",
-		Example: "monaco deploy manifest.yaml -v -e dev-environment",
-		Args:    cobra.ExactArgs(1),
+		Use:               "deploy <manifest.yaml>",
+		Short:             "Deploy configurations to Dynatrace environments",
+		Example:           "monaco deploy manifest.yaml -v -e dev-environment",
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: completion.DeployCompletion,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			manifestName = args[0]
@@ -131,6 +132,14 @@ func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 	deployCmd.Flags().StringSliceVarP(&project, "project", "p", make([]string, 0), "Project configuration to deploy (also deploys any dependent configurations)")
 	deployCmd.Flags().BoolVarP(&dryRun, "dry-run", "d", false, "Switches to just validation instead of actual deployment")
 	deployCmd.Flags().BoolVarP(&continueOnError, "continue-on-error", "c", false, "Proceed deployment even if config upload fails")
+	err := deployCmd.RegisterFlagCompletionFunc("environment", completion.EnvironmentFromManifest)
+	if err != nil {
+		log.Fatal("failed to setup CLI %v", err)
+	}
+	err = deployCmd.RegisterFlagCompletionFunc("project", completion.DeployProject)
+	if err != nil {
+		log.Fatal("failed to setup CLI %v", err)
+	}
 	return deployCmd
 }
 
@@ -161,15 +170,17 @@ func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 	}
 	deleteCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print debug output")
 	deleteCmd.Flags().StringSliceVarP(&environment, "environment", "e", make([]string, 0), "Deletes configuration only for specified envs. If not set, delete will be executed on all environments defined in manifest.")
+	deleteCmd.RegisterFlagCompletionFunc("environment", completion.EnvironmentFromManifest)
 	return deleteCmd
 }
 
 func getConvertCommand(fs afero.Fs) (convertCmd *cobra.Command) {
 	convertCmd = &cobra.Command{
-		Use:     "convert <environment.yaml> <config folder to convert>",
-		Short:   "Convert v1 monaco configuration into v2 format",
-		Example: "monaco convert environment.yaml my-v1-project -o my-v2-project",
-		Args:    cobra.ExactArgs(2),
+		Use:               "convert <environment.yaml> <config folder to convert>",
+		Short:             "Convert v1 monaco configuration into v2 format",
+		Example:           "monaco convert environment.yaml my-v1-project -o my-v2-project",
+		Args:              cobra.ExactArgs(2),
+		ValidArgsFunction: completion.ConvertCompletion,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			environmentsFile := args[0]
@@ -198,7 +209,10 @@ func getConvertCommand(fs afero.Fs) (convertCmd *cobra.Command) {
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
-
+	err = convertCmd.MarkFlagFilename("manifest", "yaml")
+	if err != nil {
+		log.Fatal("failed to setup CLI %v", err)
+	}
 	return convertCmd
 }
 
@@ -259,6 +273,7 @@ func getDownloadCommand(fs afero.Fs) (downloadCmd *cobra.Command) {
 	downloadCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print debug output")
 	downloadCmd.Flags().StringVarP(&environments, "environments", "e", "", "Yaml file containing environment to download")
 	downloadCmd.Flags().StringVarP(&specificEnvironment, "specific-environment", "s", "", "Specific environment (from list) to download")
+	downloadCmd.RegisterFlagCompletionFunc("specific-environment", completion.EnvironmentFromEnvironmentfile)
 	downloadCmd.Flags().StringSliceVarP(&specificApi, "specific-api", "a", make([]string, 0), "APIs to download")
 	err := downloadCmd.MarkFlagFilename("environments", "yaml")
 	if err != nil {
@@ -274,7 +289,6 @@ func getDownloadCommand(fs afero.Fs) (downloadCmd *cobra.Command) {
 	}
 
 	return downloadCmd
-
 }
 
 func isEnvFlagEnabled(env string) bool {
