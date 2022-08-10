@@ -136,7 +136,7 @@ func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
-	err = deployCmd.RegisterFlagCompletionFunc("project", completion.DeployProject)
+	err = deployCmd.RegisterFlagCompletionFunc("project", completion.ProjectsFromManifest)
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
@@ -273,9 +273,12 @@ func getDownloadCommand(fs afero.Fs) (downloadCmd *cobra.Command) {
 	downloadCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print debug output")
 	downloadCmd.Flags().StringVarP(&environments, "environments", "e", "", "Yaml file containing environment to download")
 	downloadCmd.Flags().StringVarP(&specificEnvironment, "specific-environment", "s", "", "Specific environment (from list) to download")
-	downloadCmd.RegisterFlagCompletionFunc("specific-environment", completion.EnvironmentFromEnvironmentfile)
 	downloadCmd.Flags().StringSliceVarP(&specificApi, "specific-api", "a", make([]string, 0), "APIs to download")
-	err := downloadCmd.MarkFlagFilename("environments", "yaml")
+	err := downloadCmd.RegisterFlagCompletionFunc("specific-environment", completion.EnvironmentFromEnvironmentfile)
+	if err != nil {
+		log.Fatal("failed to setup CLI %v", err)
+	}
+	err = downloadCmd.MarkFlagFilename("environments", "yaml")
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
@@ -289,6 +292,7 @@ func getDownloadCommand(fs afero.Fs) (downloadCmd *cobra.Command) {
 	}
 
 	return downloadCmd
+
 }
 
 func isEnvFlagEnabled(env string) bool {

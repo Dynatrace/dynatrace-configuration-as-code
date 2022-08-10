@@ -1,6 +1,5 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package completion
 
@@ -76,7 +75,7 @@ func EnvironmentFromManifest(cmd *cobra.Command, args []string, toComplete strin
 	return keys, cobra.ShellCompDirectiveDefault
 }
 
-func DeployProject(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+func ProjectsFromManifest(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 
 	manifestPath := args[0]
 	manifest, _ := manifest.LoadManifest(&manifest.ManifestLoaderContext{
