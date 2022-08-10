@@ -157,6 +157,7 @@ func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 
 			return delete.Delete(fs, manifestName, deleteFile, environment)
 		},
+		ValidArgsFunction: completion.DeleteCompletion,
 	}
 	deleteCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print debug output")
 	deleteCmd.Flags().StringSliceVarP(&environment, "environment", "e", make([]string, 0), "Deletes configuration only for specified envs. If not set, delete will be executed on all environments defined in manifest.")
@@ -258,7 +259,6 @@ func getDownloadCommand(fs afero.Fs) (downloadCmd *cobra.Command) {
 	downloadCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print debug output")
 	downloadCmd.Flags().StringVarP(&environments, "environments", "e", "", "Yaml file containing environment to download")
 	downloadCmd.Flags().StringVarP(&specificEnvironment, "specific-environment", "s", "", "Specific environment (from list) to download")
-	downloadCmd.RegisterFlagCompletionFunc("specific-environment", completion.DownloadSpecificEnvironment)
 	downloadCmd.Flags().StringSliceVarP(&specificApi, "specific-api", "a", make([]string, 0), "APIs to download")
 	err := downloadCmd.MarkFlagFilename("environments", "yaml")
 	if err != nil {
@@ -268,12 +268,13 @@ func getDownloadCommand(fs afero.Fs) (downloadCmd *cobra.Command) {
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
-	err = downloadCmd.RegisterFlagCompletionFunc("specific-api", completion.DownloadSpecificApi)
+	err = downloadCmd.RegisterFlagCompletionFunc("specific-api", completion.AllAvailableApis)
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
 
 	return downloadCmd
+
 }
 
 func isEnvFlagEnabled(env string) bool {
