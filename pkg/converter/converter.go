@@ -16,6 +16,8 @@ package converter
 
 import (
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"regexp"
 	"strings"
 
@@ -239,7 +241,8 @@ func convertConfigs(context *ConfigConvertContext, environments map[string]manif
 				continue
 			}
 
-			result[env.Name][conf.GetApi().GetId()] = append(result[env.Name][conf.GetApi().GetId()], convertedConf)
+			apiId := convertedConf.Coordinate.Api
+			result[env.Name][apiId] = append(result[env.Name][apiId], convertedConf)
 		}
 	}
 
@@ -253,13 +256,23 @@ func convertConfigs(context *ConfigConvertContext, environments map[string]manif
 func convertConfig(context *ConfigConvertContext, environment manifest.EnvironmentDefinition, config configv1.Config) (configv2.Config, []error) {
 	var errors []error
 
+	apiId := config.GetApi().GetId()
+	convertedTemplatePath := config.GetFilePath()
+	apiConversion := api.GetV2ApiId(config.GetApi())
+	if apiId != apiConversion {
+		log.Info("Converting config '%s' from deprecated API %s to %s", config.GetId(), apiId, apiConversion)
+		convertedTemplatePath = strings.Replace(convertedTemplatePath, apiId, apiConversion, 1)
+		convertedTemplatePath = strings.Replace(convertedTemplatePath, ".json", "-"+apiId+".json", 1) //ensure modified template paths don't overlap with existing ones
+		apiId = apiConversion
+	}
+
 	coord := coordinate.Coordinate{
 		Project: context.ProjectId,
-		Api:     config.GetApi().GetId(),
+		Api:     apiId,
 		Config:  config.GetId(),
 	}
 
-	templ, envParams, errs := convertTemplate(context, config.GetFilePath())
+	templ, envParams, errs := convertTemplate(context, config.GetFilePath(), convertedTemplatePath)
 
 	if len(errs) > 0 {
 		errors = append(errors, newConvertConfigError(coord, fmt.Sprintf("unable to load template `%s`: %s", config.GetFilePath(), errs)))
@@ -315,8 +328,8 @@ func (e EnvironmentVariableConverterError) Error() string {
 
 var _ error = (*EnvironmentVariableConverterError)(nil)
 
-func convertTemplate(context *ConfigConvertContext, templatePath string) (template.Template, map[string]parameter.Parameter, []error) {
-	data, err := afero.ReadFile(context.Fs, templatePath)
+func convertTemplate(context *ConfigConvertContext, currentPath string, writeToPath string) (template.Template, map[string]parameter.Parameter, []error) {
+	data, err := afero.ReadFile(context.Fs, currentPath)
 
 	if err != nil {
 		return nil, nil, []error{err}
@@ -329,7 +342,7 @@ func convertTemplate(context *ConfigConvertContext, templatePath string) (templa
 		match := envVariableRegex.FindStringSubmatch(p)
 
 		if len(match) != 2 {
-			errors = append(errors, newEnvironmentVariableConverterError(templatePath, fmt.Sprintf("cannot parse environment variable: `%s` seems to be invalid", p)))
+			errors = append(errors, newEnvironmentVariableConverterError(currentPath, fmt.Sprintf("cannot parse environment variable: `%s` seems to be invalid", p)))
 			return ""
 		}
 
@@ -343,7 +356,7 @@ func convertTemplate(context *ConfigConvertContext, templatePath string) (templa
 		return transformToPropertyAccess(paramName)
 	})
 
-	templ, err := template.CreateFileBasedTemplateFromString(templatePath, templText)
+	templ, err := template.CreateFileBasedTemplateFromString(writeToPath, templText)
 
 	if err != nil {
 		errors = append(errors, err)

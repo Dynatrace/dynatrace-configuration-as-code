@@ -331,6 +331,67 @@ func TestConvertConfig(t *testing.T) {
 		convertedConfig.Parameters[transformEnvironmentToParamName(envVarName)].(*envParam.EnvironmentVariableParameter).Name)
 }
 
+func TestConvertDeprecatedConfigToLatest(t *testing.T) {
+	projectId := "projectA"
+	environmentName := "development"
+	configId := "application-1"
+	configName := "Application 1"
+	simpleParameterName := "randomValue"
+	simpleParameterValue := "hello"
+	referenceParameterName := "managementZoneId"
+	referenceParameterValue := "/projectB/management-zone/zone.id"
+	envVarName := "TEST_VAR"
+
+	convertContext := &ConfigConvertContext{
+		ConverterContext: &ConverterContext{
+			Fs: setupDummyFsWithEnvVariableInTemplate(t, envVarName),
+		},
+		ProjectId: "projectA",
+	}
+
+	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", &manifest.EnvironmentVariableToken{"token"})
+
+	api := api.NewStandardApi("application", "/api/config/v1/application/web", false, "application-web")
+
+	properties := map[string]map[string]string{
+		configId: {
+			"name":                 configName,
+			simpleParameterName:    simpleParameterValue,
+			referenceParameterName: referenceParameterValue,
+		},
+	}
+
+	template, err := util.NewTemplateFromString("test/test-config.json", "{}")
+
+	assert.NilError(t, err)
+
+	config, err := configv1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
+		template, properties, api)
+
+	assert.NilError(t, err)
+
+	convertedConfig, errors := convertConfig(convertContext, environment, config)
+
+	assert.Equal(t, 0, len(errors), "errors: %s", errors)
+	assert.Equal(t, projectId, convertedConfig.Coordinate.Project)
+	assert.Equal(t, api.IsDeprecatedBy(), convertedConfig.Coordinate.Api)
+	assert.Equal(t, configId, convertedConfig.Coordinate.Config)
+	assert.Equal(t, environmentName, convertedConfig.Environment)
+
+	references := convertedConfig.References
+
+	assert.Equal(t, 1, len(references))
+	assert.Equal(t, "projectB", references[0].Project)
+	assert.Equal(t, "management-zone", references[0].Api)
+	assert.Equal(t, "zone", references[0].Config)
+
+	assert.Equal(t, 4, len(convertedConfig.Parameters))
+	assert.Equal(t, configName, convertedConfig.Parameters["name"].(*valueParam.ValueParameter).Value)
+	assert.Equal(t, simpleParameterValue, convertedConfig.Parameters[simpleParameterName].(*valueParam.ValueParameter).Value)
+	assert.Equal(t, envVarName,
+		convertedConfig.Parameters[transformEnvironmentToParamName(envVarName)].(*envParam.EnvironmentVariableParameter).Name)
+}
+
 func TestConvertConfigWithEnvNameCollisionShouldFail(t *testing.T) {
 	environmentName := "development"
 	configId := "alerting-profile-1"
@@ -598,7 +659,7 @@ func TestConvertTemplate(t *testing.T) {
 			Fs: fs,
 		},
 		ProjectId: "projectA",
-	}, "test.json")
+	}, "test.json", "test.json")
 
 	assert.Assert(t, len(errs) == 0, "expected no errors but got %d: %s", len(errs), errs)
 	assert.Assert(t, templ != nil)
