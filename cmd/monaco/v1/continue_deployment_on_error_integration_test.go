@@ -43,7 +43,7 @@ func TestIntegrationContinueDeploymentOnError(t *testing.T) {
 		environments, errs := environment.LoadEnvironmentList("", allConfigsEnvironmentsFile, fs)
 		assert.Check(t, len(errs) == 0, "didn't expect errors loading test environments")
 
-		projects, err := project.LoadProjectsToDeploy(fs, "", api.NewApis(), allConfigsFolder)
+		projects, err := project.LoadProjectsToDeploy(fs, "", api.NewV1Apis(), allConfigsFolder)
 		assert.NilError(t, err)
 
 		cmd := runner.BuildCli(fs)

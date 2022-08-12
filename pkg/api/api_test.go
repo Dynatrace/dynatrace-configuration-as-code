@@ -57,10 +57,11 @@ func TestCreateApisResultsInError(t *testing.T) {
 }
 
 func TestIfFolderContainsApiInPath(t *testing.T) {
-	assert.Equal(t, ContainsApiName("trillian"), false, "Check if `trillian` is an API")
-	assert.Equal(t, ContainsApiName("extension"), true, "Check if `extension` is an API")
-	assert.Equal(t, ContainsApiName("/project/sub-project/extension/subfolder"), true, "Check if `extension` is an API")
-	assert.Equal(t, ContainsApiName("/project/sub-project"), false, "Check if `extension` is an API")
+	apis := NewApis()
+	assert.Equal(t, apis.ContainsApiName("trillian"), false, "Check if `trillian` is an API")
+	assert.Equal(t, apis.ContainsApiName("extension"), true, "Check if `extension` is an API")
+	assert.Equal(t, apis.ContainsApiName("/project/sub-project/extension/subfolder"), true, "Check if `extension` is an API")
+	assert.Equal(t, apis.ContainsApiName("/project/sub-project"), false, "Check if `extension` is an API")
 }
 
 func TestIsSingleConfigurationApi(t *testing.T) {

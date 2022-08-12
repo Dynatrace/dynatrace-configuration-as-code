@@ -39,7 +39,7 @@ func TestDoCleanup(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	apis := api.NewApis()
+	apis := api.NewV1Apis()
 
 	r, _ := regexp.Compile(`^.+_.*\d+.*$`)
 

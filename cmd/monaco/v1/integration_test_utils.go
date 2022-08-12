@@ -128,7 +128,7 @@ func cleanupIntegrationTest(t *testing.T, fs afero.Fs, envFile, suffix string) {
 	environments, errs := environment.LoadEnvironmentList("", envFile, fs)
 	FailOnAnyError(errs, "loading of environments failed")
 
-	apis := api.NewApis()
+	apis := api.NewV1Apis()
 	suffix = "_" + suffix
 
 	for _, environment := range environments {

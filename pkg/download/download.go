@@ -87,7 +87,7 @@ func getAPIList(downloadSpecificAPI []string) (filterAPIList map[string]api.Api,
 	isErr := false
 	for _, id := range downloadSpecificAPI {
 		cleanAPI := strings.TrimSpace(id)
-		isAPI := api.IsApi(cleanAPI)
+		isAPI := availableApis.IsApi(cleanAPI)
 		if !isAPI {
 			log.Error("Value %s is not a valid API name", cleanAPI)
 			isErr = true

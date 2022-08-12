@@ -44,7 +44,7 @@ func TestIntegrationMultiEnvironment(t *testing.T) {
 		environments, errs := environment.LoadEnvironmentList("", environmentsFile, fs)
 		assert.Check(t, len(errs) == 0, "didn't expect errors loading test environments")
 
-		projects, err := project.LoadProjectsToDeploy(fs, "", api.NewApis(), folder)
+		projects, err := project.LoadProjectsToDeploy(fs, "", api.NewV1Apis(), folder)
 		assert.NilError(t, err)
 
 		cmd := runner.BuildCli(fs)
@@ -87,7 +87,7 @@ func TestIntegrationMultiEnvironmentSingleProject(t *testing.T) {
 		environments, errs := environment.LoadEnvironmentList("", environmentsFile, fs)
 		FailOnAnyError(errs, "loading of environments failed")
 
-		projects, err := project.LoadProjectsToDeploy(fs, "cinema-infrastructure", api.NewApis(), folder)
+		projects, err := project.LoadProjectsToDeploy(fs, "cinema-infrastructure", api.NewV1Apis(), folder)
 		assert.NilError(t, err)
 
 		cmd := runner.BuildCli(fs)
@@ -114,7 +114,7 @@ func TestIntegrationMultiEnvironmentSingleProjectWithDependency(t *testing.T) {
 		environments, errs := environment.LoadEnvironmentList("", environmentsFile, fs)
 		FailOnAnyError(errs, "loading of environments failed")
 
-		projects, err := project.LoadProjectsToDeploy(fs, "star-trek", api.NewApis(), folder)
+		projects, err := project.LoadProjectsToDeploy(fs, "star-trek", api.NewV1Apis(), folder)
 		assert.NilError(t, err)
 
 		assert.Check(t, len(projects) == 2, "Projects should be star-trek and the dependency cinema-infrastructure")
@@ -143,7 +143,7 @@ func TestIntegrationMultiEnvironmentSingleEnvironment(t *testing.T) {
 		environments, errs := environment.LoadEnvironmentList("", environmentsFile, fs)
 		FailOnAnyError(errs, "loading of environments failed")
 
-		projects, err := project.LoadProjectsToDeploy(fs, "star-trek", api.NewApis(), folder)
+		projects, err := project.LoadProjectsToDeploy(fs, "star-trek", api.NewV1Apis(), folder)
 		assert.NilError(t, err)
 
 		// remove environment odt69781, just keep dav48679

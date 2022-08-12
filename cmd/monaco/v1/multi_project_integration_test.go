@@ -43,7 +43,7 @@ func TestIntegrationMultiProject(t *testing.T) {
 		environments, errs := environment.LoadEnvironmentList("", multiProjectEnvironmentsFile, fs)
 		assert.Check(t, len(errs) == 0, "didn't expect errors loading test environments")
 
-		projects, err := project.LoadProjectsToDeploy(fs, "", api.NewApis(), multiProjectFolder)
+		projects, err := project.LoadProjectsToDeploy(fs, "", api.NewV1Apis(), multiProjectFolder)
 		assert.NilError(t, err)
 
 		cmd := runner.BuildCli(fs)
@@ -103,7 +103,7 @@ func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 		environments, errs := environment.LoadEnvironmentList("", multiProjectEnvironmentsFile, fs)
 		FailOnAnyError(errs, "loading of environments failed")
 
-		projects, err := project.LoadProjectsToDeploy(fs, "star-trek", api.NewApis(), multiProjectFolder)
+		projects, err := project.LoadProjectsToDeploy(fs, "star-trek", api.NewV1Apis(), multiProjectFolder)
 		assert.NilError(t, err)
 
 		cmd := runner.BuildCli(fs)

@@ -38,7 +38,7 @@ import (
 
 func Deploy(fs afero.Fs, workingDir string, environmentsFile string,
 	specificEnvironment string, specificProjects string, dryRun bool, continueOnError bool) error {
-	apis := api.NewApis()
+	apis := api.NewV1Apis()
 
 	workingDir, err := filepath.Abs(workingDir)
 

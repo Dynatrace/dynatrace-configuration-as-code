@@ -49,7 +49,7 @@ func TestCreateProjectsFromFolderList(t *testing.T) {
 	specificProjectToDeploy := "zem, marvin, caveman"
 	apis := api.NewApis()
 	fs := util.CreateTestFileSystem()
-	allProjectFolders, err := getAllProjectFoldersRecursively(fs, path)
+	allProjectFolders, err := getAllProjectFoldersRecursively(fs, apis, path)
 	assert.NilError(t, err)
 
 	projects, err := createProjectsListFromFolderList(fs, path, specificProjectToDeploy, path, apis, allProjectFolders)
@@ -176,7 +176,8 @@ func TestFilterProjectsWithSubproject(t *testing.T) {
 func TestGetAllProjectFoldersRecursivelyFailsOnMixedFolder(t *testing.T) {
 	path := util.ReplacePathSeparators("test-resources/configs-and-api-mixed-test/project1")
 	fs := util.CreateTestFileSystem()
-	_, err := getAllProjectFoldersRecursively(fs, path)
+	apis := api.NewApis()
+	_, err := getAllProjectFoldersRecursively(fs, apis, path)
 
 	expected := util.ReplacePathSeparators("found folder with projects and configurations in test-resources/configs-and-api-mixed-test/project1")
 	assert.Error(t, err, expected)
@@ -185,7 +186,8 @@ func TestGetAllProjectFoldersRecursivelyFailsOnMixedFolder(t *testing.T) {
 func TestGetAllProjectFoldersRecursivelyFailsOnMixedFolderInSubproject(t *testing.T) {
 	path := util.ReplacePathSeparators("test-resources/configs-and-api-mixed-test/project2")
 	fs := util.CreateTestFileSystem()
-	_, err := getAllProjectFoldersRecursively(fs, path)
+	apis := api.NewApis()
+	_, err := getAllProjectFoldersRecursively(fs, apis, path)
 
 	expected := util.ReplacePathSeparators("found folder with projects and configurations in test-resources/configs-and-api-mixed-test/project2/subproject2")
 	assert.Error(t, err, expected)
@@ -194,7 +196,8 @@ func TestGetAllProjectFoldersRecursivelyFailsOnMixedFolderInSubproject(t *testin
 func TestGetAllProjectFoldersRecursivelyPassesOnSeparatedFolders(t *testing.T) {
 	path := util.ReplacePathSeparators("test-resources/configs-and-api-mixed-test/project3")
 	fs := util.CreateTestFileSystem()
-	_, err := getAllProjectFoldersRecursively(fs, path)
+	apis := api.NewApis()
+	_, err := getAllProjectFoldersRecursively(fs, apis, path)
 	assert.NilError(t, err)
 }
 
