@@ -1,0 +1,45 @@
+{
+    "isClusterAdminGroup": true,
+    "accessAccount": true,
+    "manageAccount": true,
+    "id": null,
+    "name": "{{.name}}",
+    "ldapGroupNames": [
+      "{{.ldapGroupName}}"
+    ],
+    "ssoGroupNames": [
+	"{{.ssoGroupName}}"
+	],
+    "accessRight": {
+      "VIEWER": [
+        "{{.environment-id-VIEWER}}"
+      ],
+      "MANAGE_SETTINGS": [
+        "{{.environment-id-MANAGE-SETTINGS}}"
+      ],
+      "AGENT_INSTALL": [
+        "{{.environment-id-AGENT-INSTALL}}"
+      ],
+      "LOG_VIEWER": [
+        "{{.environment-id-LOG-VIEWER}}"
+      ],
+      "VIEW_SENSITIVE_REQUEST_DATA": [
+        "{{.environment-id-VIEW-SENSITIVE-REQUEST-DATA}}"
+      ],
+      "CONFIGURE_REQUEST_CAPTURE_DATA": [
+        "{{.environment-id-CONFIGURE-REQUEST-CAPTURE-DATA}}"
+      ],
+      "REPLAY_SESSION_DATA": [
+        "{{.environment-id-REPLAY-SESSION-DATA}}"
+      ]
+	  "REPLAY_SESSION_DATA_WITHOUT_MASKING": [
+        "{{.environment-id-REPLAY-SESSION-DATA-WITHOUT-MASKING}}"
+      ],
+      "MANAGE_SECURITY_PROBLEMS": [
+        "{{.environment-id-MANAGE-SECURITY-PROBLEMS}}"
+      ],
+      "MANAGE_SUPPORT_TICKETS": [
+        "{{.environment-id-MANAGE-SUPPORT-TICKETS}}"
+      ]
+	}
+  },
