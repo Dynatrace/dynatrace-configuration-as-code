@@ -67,7 +67,7 @@ These are the supported configuration types, their API endpoints and the token p
 | service-resource-naming <br /> **SINGLE CONFIGURATION ENDPOINT**             | _/api/config/v1/service/resourceNaming_                                    | `Read Configuration` & `Write Configuration`                                                                        |
 | synthetic-location                                                           | _/api/v1/synthetic/locations_                                              | `Access problem and event feed, metrics, and topology` & `Create and read synthetic monitors, locations, and nodes` |
 | synthetic-monitor                                                            | _/api/v1/synthetic/monitors_                                               | `Create and read synthetic monitors, locations, and nodes`                                                          |
-| user-group                                                            | _/api/v1/onpremise/groups                                               | `Read, create and update user group`                                                          |
+| user-group                                                            | _/api/v1/onpremise/groups                                               | `Service Provider API`                                                          |
 
 For reference, refer to [this](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication) page for a detailed
 description to each token permission.
