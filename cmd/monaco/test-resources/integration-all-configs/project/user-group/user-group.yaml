@@ -1,0 +1,17 @@
+config:
+- user-group: "user-group.json"
+
+user-group:
+- name: "Test-user-group"
+- ldapGroupName: "ldapGroupName1" 
+- ssoGroupName: "ssoGroupName1"
+- environment-id-VIEWER: "environment-id-1"
+- environment-id-MANAGE-SETTINGS: "environment-id-1"
+- environment-id-AGENT-INSTALL: "environment-id-1"
+- environment-id-LOG-VIEWER: "environment-id-1"
+- environment-id-VIEW-SENSITIVE-REQUEST-DATA: "environment-id-1"
+- environment-id-CONFIGURE-REQUEST-CAPTURE-DATA: ""
+- environment-id-REPLAY-SESSION-DATA: "environment-id-1"
+- environment-id-REPLAY-SESSION-DATA-WITHOUT-MASKING: ""
+- environment-id-MANAGE-SECURITY-PROBLEMS: ""
+- environment-id-MANAGE-SUPPORT-TICKETS: ""
