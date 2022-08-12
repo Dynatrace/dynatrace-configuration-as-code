@@ -277,6 +277,10 @@ var apiMap = map[string]apiInput{
 		apiPath:                  "/api/config/v1/geographicRegions/ipAddressMappings",
 		isSingleConfigurationApi: true,
 	},
+// Early adopter API !
+ "user-group": {
+      apiPath: "/api/v1.0/onpremise/groups", 
+  },
 }
 
 var standardApiPropertyNameOfGetAllResponse = "values"
