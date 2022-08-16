@@ -2,12 +2,12 @@ import React from "react";
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import Link from "@docusaurus/Link";
 import Layout from "@theme/Layout";
-import { useVersions, useLatestVersion } from "@theme/hooks/useDocs";
+import { useVersions, useLatestVersion } from "@docusaurus/plugin-content-docs/client";
 
 const Version = () => {
   const { siteConfig } = useDocusaurusContext();
-  const versions = useVersions();
-  const latestVersion = useLatestVersion();
+  const versions = useVersions("default");
+  const latestVersion = useLatestVersion("default");
   const currentVersion = versions.find((version) => version.name === "current");
   const pastVersions = versions.filter(
     (version) => version !== latestVersion && version.name !== "current"
@@ -65,7 +65,7 @@ const Version = () => {
           <div className="margin-bottom--lg">
             <h3 id="archive">Past versions</h3>
             <p>
-              Here you can find documentation for previous versions of driftctl.
+              Here you can find documentation for previous versions of monaco.
             </p>
             <table>
               <tbody>
