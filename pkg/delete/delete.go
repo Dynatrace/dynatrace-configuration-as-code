@@ -92,11 +92,7 @@ func splitConfigToDelete(config string) (configType string, name string, err err
 		return
 	}
 
-	split := strings.Split(config, "/")
-	if len(split) != 2 {
-		err = errors.New("config " + config + " contains more than one '" + deleteDelimiter + "' delimiter")
-		return
-	}
+	split := strings.SplitN(config, "/", 2)
 
 	return split[0], split[1], nil
 }

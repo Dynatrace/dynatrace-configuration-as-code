@@ -1,6 +1,8 @@
 # Monitoring as Code Tool - Release Notes
 
 - Versions:
+  - [1.8.1](#181)
+  - [1.8.0](#180)
   - [1.7.0](#170)
   - [1.6.0](#160)
   - [1.5.3](#153)
@@ -14,6 +16,116 @@
   - [1.1.0](#110)
   - [1.0.1](#101)
   - [1.0.0](#100)
+
+
+## 1.8.1
+
+### List of changes
+
+#### Misc changes
+* d920125 ci: Build static monaco binary
+* 414cc2d ci: Run build-release for each build
+* 7b13c4e ci: Remove no longer needed xgo github action step
+
+## 1.8.0
+
+### List of changes
+
+#### Features
+* 62e3862 feat(yaml_creator): order YAML-files Lexographically
+* 1acb1e7 feat: Allow newline characters in variables
+* 8808ab6 feat: Improve error handling and logging of Delete operation
+* 6e78134 feat: Improve some log messages (#685)
+* 2459391 feat: Add support for elasticsearch-extension (#677)
+* de9304b feat: Handle Dynatrace Configurations with non-unique names
+* 191458b feat: Also recognize .yml files as YAML
+* 78d5ff8 feat: Download non Dynatrace preset dashboards (#644)
+* dc9d4de feat: Support 'Single Configuration' APIs
+* 010c23e Feature/610/reports endpoint (#614)
+* dd16c28 feat: remove metadata
+* 4006c75 feat: add endpoints for disk anomaly detection
+* 55bf694 feat(workflow): Add CODEOWNERS default reviewers
+* 241a4c0 feat(parse): produce more detailed error messages for YAML conversion issues
+
+
+#### Bugfixes
+* 2075820 fix(download): added filter for extensions
+* ff6e33a fix: Log JsonValidationErrors that do not have line information
+* ca745fc fix(download): Remove non standard identifier `entityId` during download
+* ddbc836 fix(download): Remove standard identifiers from configs during download
+* 109fce8 fix: added unit test
+* a840d83 fix: download-creates-folders-for-empty-configurations
+* 3ad8aad fix: incorptorated pullrequest #445* 
+* 2029bc8 fix: download help descriptions fixed
+* 4ea4135 fix: changed flag `downloadSpecificAPI` to `specific-api`
+* 33547b3 fix: Check for "Unknown management zone" (#651)
+* 7997ac4 fix: do not ignore vars that have "=" in the value
+
+#### Misc changes
+* 0d900d4 refactor: Remove unused symbols (#681)
+* 05eb9b1 test: skip dependency transformation (#612)
+* b73404d test: fix filter type
+* c80eb41 build: update all runners to go ~1.16
+* db45ac8 build: restrict go version to >= 1.16 and < 1.17
+* 7256eca test(parse): add tests for failing YAML conversion
+
+
+#### Documentation 
+* 36c1e22 docs: Minor fixes & rewordings to the documentation (#682)
+* bd8877b docs: Correct filepath in validation-configuration.md sample
+* ef36def docs: Fix case
+* 31618f5 docs: Fix case
+* afa2e39 docs: Resolve mismatch between latest and 1.7.0
+* 70e6b4b docs: update macos installation url
+* 19ced19 docs: fix macos download url
+* 66d4cb8 docs: remove duplicate text, reword what's left. (#511)
+* f98975c docs: Minor wordsmithing (#512)
+* de9562e docs: Minor wordsmithing to "What is Monaco" (#513)
+* 364fb5d docs: Minor edit to "Add API" (#514)
+* 64404bf docs: trivial edits for your consideration (#541)
+* ceb86c8 docs: trivial edits for your consideration (#542)
+* 3fa52b9 docs: small edits for your consideration (#543)
+* 8cc35d9 docs: editorial changes to "New CLI" (#544)
+* a917845 docs: trivial edits to "Download configuration" (#545)
+* d57aa10 docs: edits to Logging.md (#546)
+* e610800 docs: minor edits to "Configuration structure" (#547)
+* 09d8ef2 docs: edits to yaml_config.md (#548)
+* 86462e5 docs: edits to plugin_config.md (#549)
+* 2a4a1b8 docs: edits to delete_config.md (#550)
+* 76f9fc6 docs: edits to add_new_api.md (#551)
+* 8ade72d docs: edits to bill of materials.md (#552)
+* 24fcbb2 Documentation fixes for 1.7 (#540)
+
+
+#### Library updates
+* ed51ede chore(deps): bump github.com/urfave/cli/v2 from 2.11.0 to 2.11.1
+* e56d5b7 chore(deps): bump terser from 4.8.0 to 4.8.1 in /documentation
+* 46955f6 chore(deps): bump github.com/spf13/afero from 1.9.0 to 1.9.2 (#688)
+* e40e584 chore(deps): bump github.com/spf13/afero from 1.8.2 to 1.9.0 (#680)
+* 443426e chore(deps): bump crazy-max/ghaction-xgo from 2.0.0 to 2.1.0 (#684)
+* a9167c8 chore(deps): bump github.com/urfave/cli/v2 from 2.8.1 to 2.11.0
+* d5f0bed chore(deps): bump eventsource from 1.1.0 to 1.1.2 in /documentation
+* 3164b7e chore(deps): bump crazy-max/ghaction-xgo from 1.8.0 to 2.0.0
+* cac89d7 chore(deps): bump github.com/urfave/cli/v2 from 2.7.1 to 2.8.1
+* 2cdc845 ci(dependabot): Drop dependency updates for next branch
+* 4e4b71d chore(deps): bump github.com/urfave/cli/v2 from 2.6.0 to 2.7.1
+* 5bd0f8f chore(deps): bump crazy-max/ghaction-xgo from 1.6.1 to 1.8.0
+* ab03369 chore(deps): bump actions/checkout from 2.4.0 to 3.0.2
+* abe8dbf chore(deps): bump github.com/urfave/cli/v2 from 2.3.0 to 2.6.0
+* 140d6e5 chore(deps): bump github.com/google/go-cmp from 0.5.7 to 0.5.8
+* 815b28a chore(deps): bump actions/setup-go from 2 to 3
+* 226151c chore(deps): bump actions/upload-artifact from 2 to 3
+* b57c5a9 chore(deps): bump minimist from 1.2.5 to 1.2.6 in /documentation
+* bf5ed4d chore(deps): bump async from 2.6.3 to 2.6.4 in /documentation
+* 01ba113 chore(deps): bump github.com/spf13/afero from 1.6.0 to 1.8.2
+* b1f58e9 chore(deps): bump golangci/golangci-lint-action from 3.1.0 to 3.2.0
+* 0b2776b chore(deps): bump golangci/golangci-lint-action from 2.5.2 to 3.1.0
+* f29b07d chore(deps): bump actions/setup-node from 2.5.1 to 3
+* 6ba8b7e chore(deps): bump prismjs from 1.26.0 to 1.27.0 in /documentation
+* 22b1fd7 chore(deps): bump github.com/google/go-cmp from 0.5.6 to 0.5.7
+* 898e2a6 chore(deps): bump url-parse from 1.5.4 to 1.5.10 in /documentation
+* b8fadb0 chore(deps): bump actions/setup-node from 2.5.0 to 2.5.1
+
 
 ## 1.7.0
 

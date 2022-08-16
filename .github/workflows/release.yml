@@ -25,21 +25,9 @@ jobs:
           CODE_VERSION=`grep "const MonitoringAsCode" pkg/version/version.go | awk -F"[\"\"]" '{print $2}'`
           TAG_VERSION_WITH_PREFIX=${{ github.ref }}
           [ $CODE_VERSION = ${TAG_VERSION_WITH_PREFIX:11} ];
-      - name: Build
-        run: make build
 
-      - name: Build with xgo
-        uses: crazy-max/ghaction-xgo@v2.1.0
-        with:
-          xgo_version: latest
-          go_version: 1.16.15
-          dest: build
-          prefix: monaco
-          targets: windows/386,windows/amd64,linux/386,linux/amd64,darwin/amd64,darwin/arm64
-          v: true
-          x: false
-          pkg: cmd/monaco
-          ldflags: -s -w
+      - name: Build
+        run: make build-release
 
       - name: Create Release
         uses: actions/create-release@v1.1.4
