@@ -143,8 +143,10 @@ func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 
 func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 	deleteCmd = &cobra.Command{
-		Use:  "delete manifest.yaml delete.yaml",
-		Args: cobra.ExactArgs(2),
+		Use:     "delete <manifest.yaml> <delete.yaml>",
+		Short:   "Delete configurations defined in delete.yaml from the environments defined in the manifest",
+		Example: "monaco delete manifest.yaml delete.yaml -e dev-environment",
+		Args:    cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			if len(args) != 2 {
