@@ -69,7 +69,7 @@ Examples:
 
 		PersistentPreRunE: configureLogging,
 		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Help()
+			_ = cmd.Help()
 		},
 	}
 
@@ -202,7 +202,9 @@ func getConvertCommand(fs afero.Fs) (convertCmd *cobra.Command) {
 func getLegacyDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 
 	deployCmd = &cobra.Command{
-		Use: "deploy",
+		Use:     "deploy [configuration directory]",
+		Short:   "Deploy v1 configurations to Dynatrace environments",
+		Example: "monaco deploy -e environments.yaml",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			if len(args) > 1 {
