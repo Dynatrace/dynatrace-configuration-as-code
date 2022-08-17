@@ -250,8 +250,14 @@ func getDownloadCommand(fs afero.Fs) (downloadCmd *cobra.Command) {
 	downloadCmd.Flags().StringVarP(&environments, "environments", "e", "", "Yaml file containing environment to download")
 	downloadCmd.Flags().StringVarP(&specificEnvironment, "specific-environment", "s", "", "Specific environment (from list) to download")
 	downloadCmd.Flags().StringSliceVarP(&specificApi, "specific-api", "a", make([]string, 0), "APIs to download")
-	downloadCmd.MarkFlagFilename("environments")
-	downloadCmd.MarkFlagRequired("environments")
+	err := downloadCmd.MarkFlagFilename("environments")
+	if err != nil {
+		log.Fatal("failed to setup CLI %v", err)
+	}
+	err = downloadCmd.MarkFlagRequired("environments")
+	if err != nil {
+		log.Fatal("failed to setup CLI %v", err)
+	}
 	return downloadCmd
 
 }
