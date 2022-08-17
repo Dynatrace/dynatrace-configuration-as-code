@@ -114,13 +114,11 @@ func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 
 			if len(args) == 0 {
 				log.Error("deployment manifest path missing")
-				cmd.Help()
 				return errWrongUsage
 			}
 
 			if len(args) > 1 {
 				log.Error("too many arguments")
-				cmd.Help()
 				return errWrongUsage
 			}
 
@@ -128,7 +126,6 @@ func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 
 			if !strings.HasSuffix(manifestName, ".yaml") {
 				log.Error("Wrong format for manifest file! expected a .yaml file")
-				cmd.Help()
 				return errWrongUsage
 			}
 
@@ -151,7 +148,6 @@ func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 
 			if len(args) != 2 {
 				log.Error("wrong number of arguments expected two")
-				cmd.Help()
 				return errWrongUsage
 			}
 
@@ -160,13 +156,11 @@ func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 
 			if !strings.HasSuffix(manifestName, ".yaml") {
 				log.Error("Wrong format for manifest file! expected a .yaml file")
-				cmd.Help()
 				return errWrongUsage
 			}
 
 			if !strings.HasSuffix(deleteFile, "delete.yaml") {
 				log.Error("Wrong format for delete file! delete has to be named deletet.yaml")
-				cmd.Help()
 				return errWrongUsage
 			}
 
@@ -191,7 +185,6 @@ func getConvertCommand(fs afero.Fs) (convertCmd *cobra.Command) {
 
 			if !strings.HasSuffix(environmentsFile, ".yaml") {
 				log.Error("Wrong format for environment file! expected a .yaml file")
-				cmd.Help()
 				return errWrongUsage
 			}
 
@@ -222,7 +215,6 @@ func getLegacyDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 
 			if len(args) > 1 {
 				log.Error("too many arguments")
-				cmd.Help()
 				return errWrongUsage
 			}
 			workingDir := "."
