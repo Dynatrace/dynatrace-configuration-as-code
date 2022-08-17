@@ -61,12 +61,11 @@ func BuildCli(fs afero.Fs) *cobra.Command {
 		Short: "Automates the deployment of Dynatrace Monitoring Configuration to one or multiple Dynatrace environments.",
 		Long: `Tool used to deploy dynatrace configurations via the cli
 
-		Examples:
-		  Deploy a manifest
-			monaco deploy service.yaml
-
-		  Deploy a a specific environment within an manifest
-			monaco deploy service.yaml -e dev`,
+Examples:
+  Deploy configuration defined in a manifest
+    monaco deploy service.yaml
+  Deploy a specific environment within an manifest
+    monaco deploy service.yaml -e dev`,
 
 		PersistentPreRunE: configureLogging,
 		Run: func(cmd *cobra.Command, args []string) {
