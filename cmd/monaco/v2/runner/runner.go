@@ -149,11 +149,6 @@ func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 		Args:    cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			if len(args) != 2 {
-				log.Error("wrong number of arguments expected two")
-				return errWrongUsage
-			}
-
 			manifestName = args[0]
 			deleteFile := args[1]
 
