@@ -16,6 +16,7 @@ package runner
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 
@@ -184,8 +185,8 @@ func getConvertCommand(fs afero.Fs) (convertCmd *cobra.Command) {
 			workingDir := args[1]
 
 			if !strings.HasSuffix(environmentsFile, ".yaml") {
-				log.Error("Wrong format for environment file! expected a .yaml file")
-				return errWrongUsage
+				err := fmt.Errorf("wrong format for environment file! expected a .yaml file, but got %s", environmentsFile)
+				return err
 			}
 
 			if !strings.HasSuffix(manifestName, ".yaml") {
@@ -202,7 +203,10 @@ func getConvertCommand(fs afero.Fs) (convertCmd *cobra.Command) {
 	convertCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print debug output")
 	convertCmd.Flags().StringVarP(&manifestName, "manifest", "m", "manifest.yaml", "Name of the manifest file to create")
 	convertCmd.Flags().StringVarP(&outputFolder, "output-folder", "o", "{project folder}-v2", "Folder where to write converted config to")
-	convertCmd.MarkFlagDirname("output-folder")
+	err := convertCmd.MarkFlagDirname("output-folder")
+	if err != nil {
+		log.Fatal("failed to setup CLI %v", err)
+	}
 
 	return convertCmd
 }
