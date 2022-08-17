@@ -115,16 +115,6 @@ func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			if len(args) == 0 {
-				log.Error("deployment manifest path missing")
-				return errWrongUsage
-			}
-
-			if len(args) > 1 {
-				log.Error("too many arguments")
-				return errWrongUsage
-			}
-
 			manifestName = args[0]
 
 			if !strings.HasSuffix(manifestName, ".yaml") {
