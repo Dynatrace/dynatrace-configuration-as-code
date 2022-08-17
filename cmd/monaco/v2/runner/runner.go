@@ -59,11 +59,11 @@ func BuildCli(fs afero.Fs) *cobra.Command {
 		Use:   "monaco <command>",
 		Short: "Automates the deployment of Dynatrace Monitoring Configuration to one or multiple Dynatrace environments.",
 		Long: `Tool used to deploy dynatrace configurations via the cli
-	
+
 		Examples:
 		  Deploy a manifest
 			monaco deploy service.yaml
-		
+
 		  Deploy a a specific environment within an manifest
 			monaco deploy service.yaml -e dev`,
 
@@ -180,8 +180,10 @@ func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 
 func getConvertCommand(fs afero.Fs) (convertCmd *cobra.Command) {
 	convertCmd = &cobra.Command{
-		Use:  "convert environment.yaml outputFolder",
-		Args: cobra.ExactArgs(2),
+		Use:     "convert <environment.yaml> <config folder to convert>",
+		Short:   "Convert v1 monaco configuration into v2 format",
+		Example: "monaco convert environment.yaml my-v1-project -o my-v2-project",
+		Args:    cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			if len(args) != 2 {
