@@ -186,12 +186,6 @@ func getConvertCommand(fs afero.Fs) (convertCmd *cobra.Command) {
 		Args:    cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			if len(args) != 2 {
-				log.Error("Wrong number of arguments! expected two arguments: environment, outputfolder")
-				cmd.Help()
-				return errWrongUsage
-			}
-
 			environmentsFile := args[0]
 			workingDir := args[1]
 
