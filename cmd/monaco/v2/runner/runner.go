@@ -231,7 +231,9 @@ func getLegacyDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 func getDownloadCommand(fs afero.Fs) (downloadCmd *cobra.Command) {
 
 	downloadCmd = &cobra.Command{
-		Use: "download",
+		Use:     "download",
+		Short:   "Download configuration from Dynatrace",
+		Example: "monaco download -e environment.yaml",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var workingDir string
 
