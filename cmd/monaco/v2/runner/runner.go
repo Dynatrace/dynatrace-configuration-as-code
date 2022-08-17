@@ -118,8 +118,8 @@ func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 			manifestName = args[0]
 
 			if !strings.HasSuffix(manifestName, ".yaml") {
-				log.Error("Wrong format for manifest file! expected a .yaml file")
-				return errWrongUsage
+				err := fmt.Errorf("wrong format for manifest file! expected a .yaml file, but got %s", manifestName)
+				return err
 			}
 
 			return deploy.Deploy(fs, manifestName, environment, project, dryRun, continueOnError)
@@ -130,7 +130,7 @@ func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 	deployCmd.Flags().StringSliceVarP(&project, "project", "p", make([]string, 0), "Project configuration to deploy (also deploys any dependent configurations)")
 	deployCmd.Flags().BoolVarP(&dryRun, "dry-run", "d", false, "Switches to just validation instead of actual deployment")
 	deployCmd.Flags().BoolVarP(&continueOnError, "continue-on-error", "c", false, "Proceed deployment even if config upload fails")
-	return
+	return deployCmd
 }
 
 func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
