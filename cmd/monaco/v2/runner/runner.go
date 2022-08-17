@@ -224,8 +224,14 @@ func getLegacyDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 	deployCmd.Flags().StringVarP(&projects, "project", "p", "", "Project configuration to deploy (also deploys any dependent configurations)")
 	deployCmd.Flags().BoolVarP(&dryRun, "dry-run", "d", false, "Switches to just validation instead of actual deployment")
 	deployCmd.Flags().BoolVarP(&continueOnError, "continue-on-error", "c", false, "Proceed deployment even if config upload fails")
-	deployCmd.MarkFlagFilename("environments")
-	deployCmd.MarkFlagRequired("environments")
+	err := deployCmd.MarkFlagFilename("environments")
+	if err != nil {
+		log.Fatal("failed to setup CLI %v", err)
+	}
+	err = deployCmd.MarkFlagRequired("environments")
+	if err != nil {
+		log.Fatal("failed to setup CLI %v", err)
+	}
 	return deployCmd
 }
 
