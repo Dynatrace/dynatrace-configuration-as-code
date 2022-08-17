@@ -109,8 +109,10 @@ func configureLogging(cmd *cobra.Command, args []string) error {
 
 func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 	deployCmd = &cobra.Command{
-		Use:  "deploy manifest.yaml",
-		Args: cobra.ExactArgs(1),
+		Use:     "deploy <manifest.yaml>",
+		Short:   "Deploy configurations to Dynatrace environments",
+		Example: "monaco deploy manifest.yaml -v -e dev-environment",
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			if len(args) == 0 {
