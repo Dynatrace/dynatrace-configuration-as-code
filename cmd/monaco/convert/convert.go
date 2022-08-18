@@ -68,7 +68,7 @@ func Convert(fs afero.Fs, workingDir string, environmentsFile string, outputFold
 func loadConfigs(fs afero.Fs, workingDir string, apis map[string]api.Api,
 	environmentsFile string) (manifest.Manifest, []projectv2.Project, []error) {
 
-	environments, errors := environmentv1.LoadEnvironmentList("", environmentsFile, fs)
+	environments, errors := environmentv1.LoadEnvironmentsWithoutTemplating(environmentsFile, fs)
 
 	if len(errors) > 0 {
 		return manifest.Manifest{}, nil, errors

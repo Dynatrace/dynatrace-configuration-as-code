@@ -19,11 +19,14 @@ package environment
 import (
 	"errors"
 	"fmt"
-
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/spf13/afero"
 )
 
+// LoadEnvironmentList loads environments from a templated yaml file - any references to environment variables will be
+// replaced with actual values. This will fail if an environment variable is referenced but not set.
+// If a specificEnvironment is provided only this environment will be returned, if the requested environment does not exist,
+// an error is returned.
 func LoadEnvironmentList(specificEnvironment string, environmentsFile string, fs afero.Fs) (environments map[string]Environment, errorList []error) {
 
 	if environmentsFile == "" {
@@ -48,6 +51,35 @@ func LoadEnvironmentList(specificEnvironment string, environmentsFile string, fs
 		environments[specificEnvironment] = environmentsFromFile[specificEnvironment]
 	} else {
 		environments = environmentsFromFile
+	}
+
+	return environments, errorList
+}
+
+// LoadEnvironmentsWithoutTemplating loads environments from a yaml file without templating. No variable references will
+// be replaced on loading.
+func LoadEnvironmentsWithoutTemplating(environmentsFile string, fs afero.Fs) (environments map[string]Environment, errorList []error) {
+	if environmentsFile == "" {
+		errorList = append(errorList, errors.New("no environment file provided"))
+		return environments, errorList
+	}
+
+	dat, err := afero.ReadFile(fs, environmentsFile)
+	util.FailOnError(err, "Error while reading file")
+
+	err, environmentMaps := util.UnmarshalYamlWithoutTemplating(string(dat), environmentsFile)
+	util.FailOnError(err, "Error while converting file")
+
+	environments, envErrs := NewEnvironments(environmentMaps)
+
+	if len(envErrs) > 0 {
+		errorList = append(errorList, envErrs...)
+		return environments, errorList
+	}
+
+	if len(environments) == 0 {
+		errorList = append(errorList, fmt.Errorf("no environments loaded from file %s", environmentsFile))
+		return environments, errorList
 	}
 
 	return environments, errorList
