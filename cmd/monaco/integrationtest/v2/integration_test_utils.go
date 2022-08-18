@@ -226,45 +226,32 @@ func cleanupIntegrationTest(t *testing.T, fs afero.Fs, loadedManifest manifest.M
 
 func RunIntegrationWithCleanup(t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, testFunc func(fs afero.Fs)) {
 
-	var fs = util.CreateTestFileSystem()
+	fs := util.CreateTestFileSystem()
+	RunIntegrationWithCleanupOnGivenFs(t, fs, configFolder, manifestPath, specificEnvironment, suffixTest, testFunc)
+}
+
+func RunIntegrationWithCleanupOnGivenFs(t *testing.T, testFs afero.Fs, configFolder, manifestPath, specificEnvironment, suffixTest string, testFunc func(fs afero.Fs)) {
 	loadedManifest, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
-		Fs:           fs,
+		Fs:           testFs,
 		ManifestPath: manifestPath,
 	})
 	FailOnAnyError(errs, "loading of environments failed")
 
 	configFolder, _ = filepath.Abs(configFolder)
-	suffix := appendUniqueSuffixToIntegrationTestConfigs(t, fs, configFolder, suffixTest)
-
-	template.InitTemplateCache()
-
-	defer cleanupIntegrationTest(t, fs, loadedManifest, specificEnvironment, suffix)
-
-	testFunc(fs)
-}
-
-func appendUniqueSuffixToIntegrationTestConfigs(t *testing.T, fs afero.Fs, configFolder string, generalSuffix string) string {
 	rand.Seed(time.Now().UnixNano())
 	randomNumber := rand.Intn(10000)
 
-	suffix := fmt.Sprintf("%s_%d_%s", getTimestamp(), randomNumber, generalSuffix)
+	suffix := fmt.Sprintf("%s_%d_%s", getTimestamp(), randomNumber, suffixTest)
 	transformers := []func(string) string{getTransformerFunc(suffix)}
-
-	err := util.RewriteConfigNames(configFolder, fs, transformers)
+	err := util.RewriteConfigNames(configFolder, testFs, transformers)
 	if err != nil {
 		t.Fatalf("Error rewriting configs names: %s", err)
-		return suffix
+		return
 	}
 
-	return suffix
-}
+	template.InitTemplateCache()
 
-func AbsOrPanicFromSlash(path string) string {
-	result, err := filepath.Abs(filepath.FromSlash(path))
+	defer cleanupIntegrationTest(t, testFs, loadedManifest, specificEnvironment, suffix)
 
-	if err != nil {
-		panic(err)
-	}
-
-	return result
+	testFunc(testFs)
 }
