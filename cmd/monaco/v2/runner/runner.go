@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	legacyDeploy "github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v1/deploy"
@@ -35,7 +36,7 @@ import (
 var errWrongUsage = errors.New("")
 
 var specificApi, environment, project []string
-var environments, specificEnvironment, projects, workingDir, outputFolder, manifestName string
+var environments, specificEnvironment, projects, outputFolder, manifestName string
 var verbose, dryRun, continueOnError bool
 
 func Run() int {
@@ -182,7 +183,7 @@ func getConvertCommand(fs afero.Fs) (convertCmd *cobra.Command) {
 			}
 
 			if outputFolder == "{project folder}-v2" {
-				outputFolder = workingDir + "-v2"
+				outputFolder = filepath.Clean(workingDir) + "-v2"
 			}
 
 			return convert.Convert(fs, workingDir, environmentsFile, outputFolder, manifestName)
