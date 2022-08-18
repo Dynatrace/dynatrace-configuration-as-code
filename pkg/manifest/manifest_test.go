@@ -27,12 +27,38 @@ import (
 var sortStrings = cmpopts.SortSlices(func(a, b string) bool { return a < b })
 
 func TestNewEnvironmentDefinitionFromV1(t *testing.T) {
-
-	env := environmentv1.NewEnvironment("test", "name", "group", "http://google.com", "NAME")
-	want := createValueEnvironmentDefinition()
-
-	if got := NewEnvironmentDefinitionFromV1(env, "group"); !reflect.DeepEqual(got, want) {
-		t.Errorf("NewEnvironmentDefinitionFromV1() = %v, want %v", got, want)
+	type args struct {
+		env   environmentv1.Environment
+		group string
+	}
+	tests := []struct {
+		name string
+		args args
+		want EnvironmentDefinition
+	}{
+		{
+			"simple v1 environment is converted",
+			args{
+				environmentv1.NewEnvironment("test", "name", "group", "http://google.com", "NAME"),
+				"group",
+			},
+			createValueEnvironmentDefinition(),
+		},
+		{
+			"v1 environment with env var is converted",
+			args{
+				environmentv1.NewEnvironment("test", "name", "group", "{{ .Env.ENV_VAR }}", "NAME"),
+				"group",
+			},
+			createEnvEnvironmentDefinition(),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := NewEnvironmentDefinitionFromV1(tt.args.env, tt.args.group); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NewEnvironmentDefinitionFromV1() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 
@@ -191,4 +217,40 @@ func assertEnvironmentsWithNames(t *testing.T, environments []EnvironmentDefinit
 	}
 
 	assert.DeepEqual(t, environmentNames, expectedNames, sortStrings)
+}
+
+func Test_trimToEnvVariableName(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			"simple string",
+			"{{ .Env.ENV_VAR }}",
+			"ENV_VAR",
+		},
+		{
+			"empty string",
+			"    ",
+			"",
+		},
+		{
+			"spaces string",
+			"   {{         .Env.ENV_VAR      }}    ",
+			"ENV_VAR",
+		},
+		{
+			"wrong string",
+			"just a random string { }",
+			"just a random string { }",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := trimToEnvVariableName(tt.input); got != tt.want {
+				t.Errorf("trimToEnvVariableName() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

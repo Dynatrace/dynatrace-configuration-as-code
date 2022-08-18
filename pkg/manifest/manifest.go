@@ -54,14 +54,38 @@ type EnvironmentVariableToken struct {
 
 func NewEnvironmentDefinitionFromV1(env environmentv1.Environment, group string) EnvironmentDefinition {
 	return EnvironmentDefinition{
-		Name: env.GetId(),
-		url: UrlDefinition{
-			Type:  ValueUrlType,
-			Value: strings.TrimSuffix(env.GetEnvironmentUrl(), "/"),
-		},
+		Name:  env.GetId(),
+		url:   newUrlDefinitionFromV1(env),
 		Group: group,
 		Token: &EnvironmentVariableToken{EnvironmentVariableName: env.GetTokenName()},
 	}
+}
+
+func newUrlDefinitionFromV1(env environmentv1.Environment) UrlDefinition {
+	if isEnvVariable(env.GetEnvironmentUrl()) {
+		return UrlDefinition{
+			Type:  EnvironmentUrlType,
+			Value: trimToEnvVariableName(env.GetEnvironmentUrl()),
+		}
+	}
+
+	return UrlDefinition{
+		Type:  ValueUrlType,
+		Value: strings.TrimSuffix(env.GetEnvironmentUrl(), "/"),
+	}
+}
+
+func isEnvVariable(url string) bool {
+	return strings.Contains(url, ".Env.")
+}
+
+func trimToEnvVariableName(envReference string) string {
+	s := strings.TrimSpace(envReference)
+	s = strings.TrimPrefix(s, "{{")
+	s = strings.TrimSuffix(s, "}}")
+	s = strings.TrimSpace(s)
+	s = strings.TrimPrefix(s, ".Env.")
+	return s
 }
 
 func NewEnvironmentDefinition(name string, url UrlDefinition, group string, token *EnvironmentVariableToken) EnvironmentDefinition {
