@@ -127,7 +127,7 @@ envVars:
 
 func TestReplaceEnvVarWhenVarIsPresent(t *testing.T) {
 
-	SetEnv(t, "TEST_ENV_VAR", "I'm the king of the World!")
+	t.Setenv("TEST_ENV_VAR", "I'm the king of the World!")
 
 	e, result := UnmarshalYaml(yamlTestEnvVar, "test-yaml-test-env-var")
 	assert.NilError(t, e)
@@ -135,17 +135,29 @@ func TestReplaceEnvVarWhenVarIsPresent(t *testing.T) {
 	testMap := result["envVars"]
 	assert.Equal(t, "I'm the king of the World!", testMap["env-var"])
 	assert.Equal(t, "I'm the king of the World! Or am I?", testMap["env-var-with-content"])
-
-	UnsetEnv(t, "TEST_ENV_VAR")
 }
 
 func TestReplaceEnvVarWhenVarIsNotPresent(t *testing.T) {
 
-	// just in case:
-	UnsetEnv(t, "TEST_ENV_VAR")
-
 	err, _ := UnmarshalYaml(yamlTestEnvVar, "test-yaml-test-env-var")
 	assert.ErrorContains(t, err, "map has no entry for key \"TEST_ENV_VAR\"")
+}
+
+func TestUnmarshalYamlWithoutTemplatingDoesNotReplaceVariables(t *testing.T) {
+
+	t.Setenv("TEST_ENV_VAR", "I'm the king of the World!")
+
+	e, result := UnmarshalYamlWithoutTemplating(yamlTestEnvVar, "test-yaml-test-env-var")
+	assert.NilError(t, e)
+
+	testMap := result["envVars"]
+	assert.Equal(t, "{{ .Env.TEST_ENV_VAR }}", testMap["env-var"])
+	assert.Equal(t, "{{ .Env.TEST_ENV_VAR }} Or am I?", testMap["env-var-with-content"])
+}
+
+func TestUnmarshalYamlWithoutTemplatingDoesNotFailIfVariablesAreMissing(t *testing.T) {
+	e, _ := UnmarshalYamlWithoutTemplating(yamlTestEnvVar, "test-yaml-test-env-var")
+	assert.NilError(t, e)
 }
 
 const testYamlParsingIssueOnLevel1 = `

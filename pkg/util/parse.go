@@ -25,7 +25,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// UnmarshalYaml takes the contents of a yaml file and converts it to a map[string]map[string]string
+// UnmarshalYaml takes the contents of a yaml file and converts it to a map[string]map[string]string.
+// The file be templated, with any references replaced - or resulting in an error if no value is available.
 // The yaml file should have the following format:
 //
 // some-name-1:
@@ -49,6 +50,20 @@ func UnmarshalYaml(text string, fileName string) (error, map[string]map[string]s
 	m := make(map[string]interface{})
 
 	err = yaml.Unmarshal([]byte(text), &m)
+	FailOnError(err, "Failed to unmarshal yaml\n"+text+"\nerror:")
+
+	err, typed := convert(m)
+	FailOnError(err, "YAML file "+fileName+" could not be parsed")
+
+	return nil, typed
+}
+
+// UnmarshalYamlWithoutTemplating takes the contents of a yaml file and converts it to a map[string]map[string]string.
+// If references should be replaced (which you generally want) use UnmarshalYaml instead.
+func UnmarshalYamlWithoutTemplating(text string, fileName string) (error, map[string]map[string]string) {
+	m := make(map[string]interface{})
+
+	err := yaml.Unmarshal([]byte(text), &m)
 	FailOnError(err, "Failed to unmarshal yaml\n"+text+"\nerror:")
 
 	err, typed := convert(m)
