@@ -55,15 +55,16 @@ func ReplaceName(line string, idChange func(string) string) string {
 		withoutPrefix := strings.TrimLeft(trimmed, "name:")
 		name := strings.TrimSpace(withoutPrefix)
 
+		if len(name) == 0 { //line only contained the name, can't do anything here and probably a non-shorthand v2 reference
+			return line
+		}
+
 		if strings.HasPrefix(name, "\"") || strings.HasPrefix(name, "'") {
 			name = name[1 : len(name)-1]
 		}
 
 		// Dependencies are not substituted
-		isIdDependency := strings.HasSuffix(name, ".id")
-		isNameDependency := strings.HasSuffix(name, ".name")
-
-		if isIdDependency || isNameDependency {
+		if isV1Dependency(name) || isV2Dependency(name) {
 			return line
 		}
 
@@ -71,4 +72,17 @@ func ReplaceName(line string, idChange func(string) string) string {
 		return replaced
 	}
 	return line
+}
+
+func isV1Dependency(name string) bool {
+	return strings.HasSuffix(name, ".id") || strings.HasSuffix(name, ".name")
+}
+
+func isV2Dependency(name string) bool {
+	if !(strings.HasPrefix(name, "[") && strings.HasSuffix(name, "]")) {
+		return false
+	}
+	s := strings.TrimSuffix(name, "]")
+	s = strings.TrimSpace(s)
+	return strings.HasSuffix(s, "\"id\"") || strings.HasSuffix(s, "\"name\"")
 }
