@@ -22,7 +22,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
@@ -112,7 +111,7 @@ func createProjectsListFromFolderList(fs afero.Fs, path, specificProjectToDeploy
 			_, err := fs.Stat(fullQualifiedProjectFolderName)
 
 			if err != nil {
-				return nil, errors.WithMessagef(err, "Project %s does not exist!", specificProjectToDeploy)
+				return nil, fmt.Errorf("project %s does not exist (%w)", specificProjectToDeploy, err)
 			}
 
 			newProject, err := NewProject(fs, fullQualifiedProjectFolderName, projectFolderName, apis, path)

@@ -27,7 +27,6 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
-	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 )
 
@@ -156,7 +155,7 @@ func (p *projectBuilder) processConfigSection(properties map[string]map[string]s
 	templates, ok := properties["config"]
 	if !ok {
 		log.Error("Property 'config' was not available")
-		return errors.New("Property 'config' was not available")
+		return fmt.Errorf("property 'config' was not available")
 	}
 
 	for configName, location := range templates {
@@ -211,7 +210,7 @@ func (p *projectBuilder) removeYamlFileFromPath(location string) (error, string)
 
 	split := strings.Split(location, string(os.PathSeparator))
 	if len(split) <= 1 {
-		return errors.New("path " + location + " too short"), ""
+		return fmt.Errorf("path %s too short", location), ""
 	}
 
 	return nil, strings.Join(split[:len(split)-1], string(os.PathSeparator))
@@ -221,7 +220,7 @@ func (p *projectBuilder) getConfigTypeFromLocation(location string) (error, api.
 
 	split := strings.Split(location, string(os.PathSeparator))
 	if len(split) <= 1 {
-		return errors.New("path " + location + " too short"), nil
+		return fmt.Errorf("path %s too short", location), nil
 	}
 
 	// iterate from end of path:
@@ -234,7 +233,7 @@ func (p *projectBuilder) getConfigTypeFromLocation(location string) (error, api.
 		}
 	}
 
-	return errors.New("API was unknown. Not found in " + location), nil
+	return fmt.Errorf("API was unknown. Not found in %s", location), nil
 }
 
 func (p *projectBuilder) sortConfigsAccordingToDependencies() error {
