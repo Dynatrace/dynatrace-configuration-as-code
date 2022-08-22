@@ -248,7 +248,8 @@ func isGeneralDependencyNotReadyYet(resp Response) bool {
 }
 
 func isCalculatedMetricNotReadyYet(resp Response) bool {
-	return strings.Contains(string(resp.Body), "Metric selector for numerator is invalid.")
+	return strings.Contains(string(resp.Body), "Metric selector") &&
+		strings.Contains(string(resp.Body), "invalid")
 }
 
 func isRequestAttributeNotYetReady(resp Response) bool {
