@@ -205,7 +205,8 @@ func (p *projectBuilder) getExtendedInformationFromLocation(location string) (er
 
 // Strips the "XXX.yaml" from the path"
 // example: input is "project/dashboards/config.yaml"
-//          output should be "project/dashboards"
+//
+//	output should be "project/dashboards"
 func (p *projectBuilder) removeYamlFileFromPath(location string) (error, string) {
 
 	split := strings.Split(location, string(os.PathSeparator))

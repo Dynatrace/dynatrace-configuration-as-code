@@ -31,7 +31,7 @@ import (
 
 var cont = 0
 
-//GetConfigsFilterByEnvironment filters the enviroments list based on specificEnvironment flag value
+// GetConfigsFilterByEnvironment filters the enviroments list based on specificEnvironment flag value
 func GetConfigsFilterByEnvironment(workingDir string, fs afero.Fs, environmentsFile string,
 	specificEnvironment string, downloadSpecificAPIs []string) error {
 	environments, errors := environment.LoadEnvironmentList(specificEnvironment, environmentsFile, fs)
@@ -45,7 +45,7 @@ func GetConfigsFilterByEnvironment(workingDir string, fs afero.Fs, environmentsF
 
 }
 
-//getConfigs Entry point that retrieves the specified configurations from a Dynatrace tenant
+// getConfigs Entry point that retrieves the specified configurations from a Dynatrace tenant
 func getConfigs(fs afero.Fs, workingDir string, environments map[string]environment.Environment, downloadSpecificAPIs []string) error {
 	list, err := getAPIList(downloadSpecificAPIs)
 	if err != nil {
@@ -67,7 +67,7 @@ func getConfigs(fs afero.Fs, workingDir string, environments map[string]environm
 
 }
 
-//returns the list of API filter if the download specific flag is used, otherwise returns all the API's
+// returns the list of API filter if the download specific flag is used, otherwise returns all the API's
 func getAPIList(downloadSpecificAPI []string) (filterAPIList map[string]api.Api, err error) {
 	availableApis := api.NewApis()
 	noFilterAPIListProvided := len(downloadSpecificAPI) == 0
@@ -110,7 +110,7 @@ func getAPIList(downloadSpecificAPI []string) (filterAPIList map[string]api.Api,
 	return filterAPIList, nil
 }
 
-//creates the project and downloads the configs
+// creates the project and downloads the configs
 func downloadConfigFromEnvironment(fs afero.Fs, environment environment.Environment, basepath string, listApis map[string]api.Api) (err error) {
 	environmentName := environment.GetId()
 	path := filepath.Join(basepath, environmentName)

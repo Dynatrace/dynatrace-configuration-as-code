@@ -56,7 +56,7 @@ func TestRestoreConfigsSimple(t *testing.T) {
 //		envFile := initialConfigsFolder + "environments.yaml"
 //		downloadFolder := "test-resources/download_all_configs"
 //		subsetOfConfigsToDownload := "all" //value only for testing
-//		suffixTest := "dl1"
+//		suffixTest := "_dl1"
 //		testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, envFile, subsetOfConfigsToDownload)
 //	}
 func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolder string, suffixTest string, envFile string, apisToDownload string) {

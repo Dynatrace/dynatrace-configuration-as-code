@@ -26,7 +26,7 @@ import (
 
 //go:generate mockgen -source=json_creator.go -destination=json_creator_mock.go -package=jsoncreator JSONCreator
 
-//JSONCreator interface allows to mock the methods for unit testing
+// JSONCreator interface allows to mock the methods for unit testing
 type JSONCreator interface {
 	CreateJSONConfig(
 		fs afero.Fs,
@@ -37,16 +37,16 @@ type JSONCreator interface {
 	) (filter bool, err error)
 }
 
-//JSONCreatorImp object
+// JSONCreatorImp object
 type JsonCreatorImp struct{}
 
-//NewJSONCreator creates a new instance of the jsonCreator
+// NewJSONCreator creates a new instance of the jsonCreator
 func NewJSONCreator() *JsonCreatorImp {
 	result := JsonCreatorImp{}
 	return &result
 }
 
-//CreateJSONConfig creates a json file using the specified path and API data
+// CreateJSONConfig creates a json file using the specified path and API data
 func (d *JsonCreatorImp) CreateJSONConfig(fs afero.Fs, client rest.DynatraceClient, api api.Api, entityId string,
 	jsonFilePath string) (filter bool, err error) {
 	data, filter, err := getDetailFromAPI(client, api, entityId)
@@ -97,7 +97,7 @@ func getDetailFromAPI(client rest.DynatraceClient, api api.Api, entityId string)
 	return dat, false, nil
 }
 
-//processJSONFile removes and replaces properties for each json config to make them compatible with monaco standard
+// processJSONFile removes and replaces properties for each json config to make them compatible with monaco standard
 func processJSONFile(data map[string]interface{}, id string) ([]byte, error) {
 	data = replaceKeyProperties(data)
 
@@ -110,7 +110,7 @@ func processJSONFile(data map[string]interface{}, id string) ([]byte, error) {
 	return jsonfile, nil
 }
 
-//replaceKeyProperties replaces name or displayname for each config
+// replaceKeyProperties replaces name or displayname for each config
 func replaceKeyProperties(dat map[string]interface{}) map[string]interface{} {
 
 	dat = removeKey(dat, []string{"metadata"})
@@ -163,7 +163,7 @@ func removeKey(dat map[string]interface{}, key []string) map[string]interface{} 
 	return dat
 }
 
-//isDefaultEntity returns if the object from the dynatrace API is readonly, in which case it shouldn't be downloaded
+// isDefaultEntity returns if the object from the dynatrace API is readonly, in which case it shouldn't be downloaded
 func isDefaultEntity(apiID string, dat map[string]interface{}) bool {
 
 	switch apiID {

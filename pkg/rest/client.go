@@ -171,7 +171,7 @@ func (d *dynatraceClientImpl) ReadById(api Api, id string) (json []byte, err err
 	return response.Body, nil
 }
 
-//TODO can be deprectated for BulkDelete if integration test cleanup is adapted
+// TODO can be deprectated for BulkDelete if integration test cleanup is adapted
 func (d *dynatraceClientImpl) DeleteByName(api Api, name string) error {
 
 	errs := deleteDynatraceObjects(d.client, api, []string{name}, api.GetUrlFromEnvironmentUrl(d.environmentUrl), d.token)

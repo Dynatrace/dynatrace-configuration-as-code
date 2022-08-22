@@ -29,11 +29,11 @@ import (
 // The yaml file should have the following format:
 //
 // some-name-1:
-//  - list-key-1: "list-entry-1"
-//  - list-key-2: "list-entry-2"
-// some-name-2:
-//  - list-key-1: "list-entry-1"
+//   - list-key-1: "list-entry-1"
+//   - list-key-2: "list-entry-2"
 //
+// some-name-2:
+//   - list-key-1: "list-entry-1"
 func UnmarshalYaml(text string, fileName string) (error, map[string]map[string]string) {
 
 	template, err := NewTemplateFromString(fileName, text)

@@ -181,10 +181,6 @@ func (yc *YamlConfig) cleanseYamlConfig() CleansedYamlConfig {
 	return yamlConfig
 }
 
-func sanitizeNameValue(name string) string {
-	return strings.ReplaceAll(name, "\"", `\"`)
-}
-
 // WriteYamlFile transforms the struct into a physical file on disk
 func (yc *YamlConfig) WriteYamlFile(fs afero.Fs, path string, name string) error {
 	yamlConfig := yc.cleanseYamlConfig()
