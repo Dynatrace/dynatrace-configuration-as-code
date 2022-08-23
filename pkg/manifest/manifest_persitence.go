@@ -14,14 +14,17 @@
 
 package manifest
 
+const simpleProjectType = "simple"
+const groupProjectType = "grouping"
+
 type project struct {
-	Name string  `yaml:"name"`
-	Type *string `yaml:"type,omitempty"`
-	Path string  `yaml:"path,omitempty"`
+	Name string `yaml:"name"`
+	Type string `yaml:"type,omitempty"`
+	Path string `yaml:"path,omitempty"`
 }
 
 type tokenConfig struct {
-	Type   *string                `yaml:"type,omitempty"`
+	Type   string                 `yaml:"type,omitempty"` //TODO drop
 	Config map[string]interface{} `yaml:",inline"`
 }
 

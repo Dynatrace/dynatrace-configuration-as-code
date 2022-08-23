@@ -210,6 +210,11 @@ func toEnvironment(context *ManifestLoaderContext, config environment, group str
 		errors = append(errors, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, "no `url` configured or value is blank"))
 	}
 
+	urlType, err := extractUrlType(config)
+	if err != nil {
+		errors = append(errors, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("failed to parse URL %v", err)))
+	}
+
 	if len(errors) > 0 {
 		return EnvironmentDefinition{}, errors
 	}
@@ -217,7 +222,7 @@ func toEnvironment(context *ManifestLoaderContext, config environment, group str
 	return EnvironmentDefinition{
 		Name: config.Name,
 		url: UrlDefinition{
-			Type:  extractUrlType(config),
+			Type:  urlType,
 			Value: strings.TrimSuffix(config.Url.Value, "/"),
 		},
 		Token: token,
@@ -225,23 +230,25 @@ func toEnvironment(context *ManifestLoaderContext, config environment, group str
 	}, nil
 }
 
-func extractUrlType(config environment) UrlType {
-	var urlType UrlType
+func extractUrlType(config environment) (UrlType, error) {
 	if config.Url.Type == "" || config.Url.Type == util.ToString(ValueUrlType) {
-		urlType = ValueUrlType
-	} else if config.Url.Type == util.ToString(EnvironmentUrlType) {
-		urlType = EnvironmentUrlType
+		return ValueUrlType, nil
 	}
-	return urlType
+
+	if config.Url.Type == util.ToString(EnvironmentUrlType) {
+		return EnvironmentUrlType, nil
+	}
+
+	return "", fmt.Errorf("%s is not a valid URL Type", config.Url.Type)
 }
 
 func parseToken(context *ManifestLoaderContext, config environment, group string, token tokenConfig) (Token, error) {
 	var tokenType string
 
-	if token.Type == nil {
+	if token.Type == "" {
 		tokenType = "environment"
 	} else {
-		tokenType = *token.Type
+		tokenType = token.Type
 	}
 
 	switch tokenType {
@@ -292,16 +299,16 @@ func toProjectDefinitions(context *projectLoaderContext, definitions []project) 
 func parseProjectDefinition(context *projectLoaderContext, project project) ([]ProjectDefinition, []error) {
 	var projectType string
 
-	if project.Type == nil {
-		projectType = "simple"
+	if project.Type == "" {
+		projectType = simpleProjectType
 	} else {
-		projectType = *project.Type
+		projectType = project.Type
 	}
 
 	switch projectType {
-	case "simple":
+	case simpleProjectType:
 		return parseSimpleProjectDefinition(context, project)
-	case "grouping":
+	case groupProjectType:
 		return parseGroupingProjectDefinition(context, project)
 	default:
 		return nil, []error{newManifestProjectLoaderError(context.manifestPath, project.Name,
