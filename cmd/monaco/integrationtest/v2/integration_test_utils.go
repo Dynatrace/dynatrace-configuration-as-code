@@ -21,7 +21,6 @@ package v2
 
 import (
 	"fmt"
-	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
@@ -37,6 +36,7 @@ import (
 	"time"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
+	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
@@ -161,7 +161,7 @@ func getTransformerFunc(suffix string) func(line string) string {
 }
 
 // Deletes all configs that end with "_suffix", where suffix == suffixTest+suffixTimestamp
-func cleanupIntegrationTest(t *testing.T, fs afero.Fs, loadedManifest manifest.Manifest, specificEnvironment, suffix string) {
+func cleanupIntegrationTest(t *testing.T, loadedManifest manifest.Manifest, specificEnvironment, suffix string) {
 
 	log.Info("### Cleaning up after integration test ###")
 
@@ -251,7 +251,7 @@ func RunIntegrationWithCleanupOnGivenFs(t *testing.T, testFs afero.Fs, configFol
 
 	template.InitTemplateCache()
 
-	defer cleanupIntegrationTest(t, testFs, loadedManifest, specificEnvironment, suffix)
+	defer cleanupIntegrationTest(t, loadedManifest, specificEnvironment, suffix)
 
 	testFunc(testFs)
 }
