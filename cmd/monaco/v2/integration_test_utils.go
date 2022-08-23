@@ -127,6 +127,8 @@ func getTransformerFunc(suffix string) func(line string) string {
 // Deletes all configs that end with "_suffix", where suffix == suffixTest+suffixTimestamp
 func cleanupIntegrationTest(t *testing.T, fs afero.Fs, loadedManifest manifest.Manifest, specificEnvironment, suffix string) {
 
+	log.Info("### Cleaning up after integration test ###")
+
 	environments := loadedManifest.Environments
 	if specificEnvironment != "" {
 		environments = make(map[string]manifest.EnvironmentDefinition)
@@ -162,8 +164,10 @@ func cleanupIntegrationTest(t *testing.T, fs afero.Fs, loadedManifest manifest.M
 			for _, value := range values {
 				// For the calculated-metrics-log API, the suffix is part of the ID, not name
 				if strings.HasSuffix(value.Name, suffix) || strings.HasSuffix(value.Id, suffix) {
-					log.Info("Deleting %s (%s)", value.Name, api.GetId())
-					client.DeleteByName(api, value.Name)
+					err := client.DeleteByName(api, value.Name)
+					if err != nil {
+						log.Error("Failed to delete %s", value.Name)
+					}
 				}
 			}
 		}
