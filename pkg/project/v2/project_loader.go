@@ -124,6 +124,7 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 
 	return Project{
 		Id:           projectDefinition.Name,
+		GroupId:      projectDefinition.Group,
 		Configs:      configMap,
 		Dependencies: toDependenciesMap(projectDefinition.Name, configs),
 	}, nil

@@ -26,21 +26,116 @@ import (
 )
 
 func Test_toWriteableProjects(t *testing.T) {
-	type args struct {
-		projects map[string]ProjectDefinition
-	}
 	tests := []struct {
-		name       string
-		args       args
-		wantResult []project
+		name          string
+		givenProjects map[string]ProjectDefinition
+		wantResult    []project
 	}{
-		// TODO: Add test cases.
+		{
+			"creates_simple_projects",
+			map[string]ProjectDefinition{
+				"project_a": {
+					Name: "a",
+					Path: "projects/a",
+				},
+				"project_b": {
+					Name: "b",
+					Path: "projects/b",
+				},
+				"project_c": {
+					Name: "c",
+					Path: "projects/c",
+				},
+			},
+			[]project{
+				{
+					Name: "a",
+					Path: "projects/a",
+				},
+				{
+					Name: "b",
+					Path: "projects/b",
+				},
+				{
+					Name: "c",
+					Path: "projects/c",
+				},
+			},
+		},
+		{
+			"creates_grouping_projects",
+			map[string]ProjectDefinition{
+				"project_a": {
+					Name: "projects.a",
+					Path: "projects/a",
+				},
+				"project_b": {
+					Name: "projects.b",
+					Path: "projects/b",
+				},
+				"project_c": {
+					Name: "projects.c",
+					Path: "projects/c",
+				},
+			},
+			[]project{
+				{
+					Name: "projects",
+					Path: "projects",
+					Type: "grouping",
+				},
+			},
+		},
+		{
+			"creates_mixed_projects",
+			map[string]ProjectDefinition{
+				"project_a": {
+					Name: "projects.a",
+					Path: "projects/a",
+				},
+				"project_b": {
+					Name: "projects.b",
+					Path: "projects/b",
+				},
+				"project_c": {
+					Name: "projects.c",
+					Path: "projects/c",
+				},
+				"project_alpha": {
+					Name: "alpha",
+					Path: "special_projects/alpha",
+				},
+				"nested_project_1": {
+					Name: "nested.projects.deeply.grouped.one",
+					Path: "nested/projects/deeply/grouped/one",
+				},
+				"nested_project_2": {
+					Name: "nested.projects.deeply.grouped.two",
+					Path: "nested/projects/deeply/grouped/two",
+				},
+			},
+			[]project{
+				{
+					Name: "alpha",
+					Path: "special_projects/alpha",
+				},
+				{
+					Name: "nested.projects.deeply.grouped",
+					Path: "nested/projects/deeply/grouped",
+					Type: "grouping",
+				},
+				{
+					Name: "projects",
+					Path: "projects",
+					Type: "grouping",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotResult := toWriteableProjects(tt.args.projects); !reflect.DeepEqual(gotResult, tt.wantResult) {
-				t.Errorf("toWriteableProjects() = %v, want %v", gotResult, tt.wantResult)
-			}
+			gotResult := toWriteableProjects(tt.givenProjects)
+			assert.DeepEqual(t, gotResult, tt.wantResult, cmpopts.SortSlices(func(a, b project) bool { return a.Name < b.Name }))
 		})
 	}
 }

@@ -181,12 +181,14 @@ func Test_parseProjectDefinition_GroupingType(t *testing.T) {
 
 	want := []ProjectDefinition{
 		{
-			Name: "PROJ_NAME.a",
-			Path: "PROJ_PATH/a",
+			Name:  "PROJ_NAME.a",
+			Group: "PROJ_NAME",
+			Path:  "PROJ_PATH/a",
 		},
 		{
-			Name: "PROJ_NAME.b",
-			Path: "PROJ_PATH/b",
+			Name:  "PROJ_NAME.b",
+			Group: "PROJ_NAME",
+			Path:  "PROJ_PATH/b",
 		},
 	}
 	got, gotErrs := parseProjectDefinition(&context, project)

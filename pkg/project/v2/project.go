@@ -30,6 +30,9 @@ type DependenciesPerEnvironment map[string][]string
 type Project struct {
 	Id string
 
+	// set to the name defined in manifest if this project is part of a grouping, else will be empty
+	GroupId string
+
 	Configs ConfigsPerApisPerEnvironments
 
 	// map of environment to project ids

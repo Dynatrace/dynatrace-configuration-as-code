@@ -299,8 +299,9 @@ func filterProjectIdsByName(projects []project.Project, names []string) ([]strin
 	foundProjects := map[string]struct{}{}
 
 	for _, p := range projects {
-		if containsName(names, p.Id) {
+		if containsName(names, p.Id) || containsName(names, p.GroupId) {
 			foundProjects[p.Id] = struct{}{}
+			foundProjects[p.GroupId] = struct{}{}
 			result = append(result, p.Id)
 		}
 	}

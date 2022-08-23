@@ -24,8 +24,9 @@ import (
 )
 
 type ProjectDefinition struct {
-	Name string
-	Path string
+	Name  string
+	Group string
+	Path  string
 }
 
 type EnvironmentDefinition struct {

@@ -16,6 +16,7 @@ package manifest
 
 import (
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
@@ -60,8 +61,20 @@ func persistManifestToDisk(context *ManifestWriterContext, m manifest) error {
 }
 
 func toWriteableProjects(projects map[string]ProjectDefinition) (result []project) {
-	//TODO detect grouping projects
+	groups := map[string]project{}
+
 	for _, projectDefinition := range projects {
+
+		if isGroupingProject(projectDefinition) {
+			groupName, groupPath := extractGroupedProjectDetails(projectDefinition)
+
+			groups[groupName] = project{
+				Name: groupName,
+				Path: groupPath,
+				Type: groupProjectType,
+			}
+			continue
+		}
 
 		p := project{Name: projectDefinition.Name}
 
@@ -72,7 +85,25 @@ func toWriteableProjects(projects map[string]ProjectDefinition) (result []projec
 		result = append(result, p)
 	}
 
+	for _, projectGroup := range groups {
+		result = append(result, projectGroup)
+	}
+
 	return result
+}
+
+func isGroupingProject(projectDefinition ProjectDefinition) bool {
+	return strings.Contains(projectDefinition.Name, ".") &&
+		strings.ReplaceAll(projectDefinition.Name, ".", "/") == projectDefinition.Path
+}
+
+func extractGroupedProjectDetails(projectDefinition ProjectDefinition) (groupName, groupPath string) {
+	subgroups := strings.Split(projectDefinition.Name, ".")
+	projectName := subgroups[len(subgroups)-1]
+	groupName = strings.TrimSuffix(projectDefinition.Name, "."+projectName)
+	groupPath = strings.TrimSuffix(projectDefinition.Path, "/"+projectName)
+
+	return groupName, groupPath
 }
 
 func toWriteableEnvironmentGroups(environments map[string]EnvironmentDefinition) (result []group) {

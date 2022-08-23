@@ -361,8 +361,9 @@ func parseGroupingProjectDefinition(context *projectLoaderContext, project proje
 		}
 
 		result = append(result, ProjectDefinition{
-			Name: project.Name + "." + file.Name(),
-			Path: filepath.Join(projectPath, file.Name()),
+			Name:  project.Name + "." + file.Name(),
+			Group: project.Name,
+			Path:  filepath.Join(projectPath, file.Name()),
 		})
 	}
 
