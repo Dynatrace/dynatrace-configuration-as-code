@@ -35,6 +35,7 @@ func Convert(fs afero.Fs, workingDir string, environmentsFile string, outputFold
 	manifestName string) error {
 	apis := api.NewApis()
 
+	log.Info("Converting configurations from '%s' ...", workingDir)
 	man, projs, configLoadErrors := loadConfigs(fs, workingDir, apis, environmentsFile)
 
 	if len(configLoadErrors) > 0 {
@@ -54,11 +55,13 @@ func Convert(fs afero.Fs, workingDir string, environmentsFile string, outputFold
 	}, man, projs)
 
 	if len(errs) > 0 {
+		log.Error("Encountered %d errors while converting %s:", len(errs), workingDir)
 		util.PrintErrors(errs)
 
 		return fmt.Errorf("encountered errors while converting configs. check logs")
 	}
 
+	log.Info("Successfully converted configurations to v2 format, stored in '%s'", outputFolder)
 	return nil
 }
 
