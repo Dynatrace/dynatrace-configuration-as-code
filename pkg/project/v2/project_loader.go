@@ -15,6 +15,7 @@
 package v2
 
 import (
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"path/filepath"
 
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
@@ -74,6 +75,9 @@ func toEnvironmentSlice(environments map[string]manifest.EnvironmentDefinition) 
 
 func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition manifest.ProjectDefinition,
 	environments []manifest.EnvironmentDefinition) (Project, []error) {
+
+	log.Info("Loading project `%s` (%s)", projectDefinition.Name, projectDefinition.Path)
+
 	configs := make([]config.Config, 0)
 	var errors []error
 
