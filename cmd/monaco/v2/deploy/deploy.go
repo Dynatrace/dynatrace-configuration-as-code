@@ -66,6 +66,16 @@ func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironments []s
 
 	apis := api.NewApis()
 
+	log.Info("Projects to be deployed:")
+	for name := range manifest.Projects {
+		log.Info("  - %s", name)
+	}
+
+	log.Info("Environments to deploy to:")
+	for _, name := range environmentNames {
+		log.Info("  - %s", name)
+	}
+
 	log.Debug("Loading configuration projects ...")
 	projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
 		Apis:            getApiNames(apis),
@@ -126,7 +136,7 @@ func execDeployment(sortedConfigs map[string][]config.Config, environmentMap map
 	var deploymentErrors []error
 
 	for envName, configs := range sortedConfigs {
-		log.Info("Processing environment `%s`...", envName)
+		log.Info("Deploying configurations to environment `%s`...", envName)
 		env, found := environmentMap[envName]
 
 		if !found {
