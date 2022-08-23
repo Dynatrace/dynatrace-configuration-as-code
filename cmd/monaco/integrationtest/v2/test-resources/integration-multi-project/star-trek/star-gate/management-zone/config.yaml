@@ -1,7 +1,7 @@
 configs:
 - id: zone-multiproject
   config:
-    name: mzone-1-multiproject-1
+    name: sg-mzone-1-multiproject-1
     parameters:
       meId: HOST_GROUP-1234567890123456
       webAppTaggingName:
@@ -13,11 +13,11 @@ configs:
     template: zone.json
     skip: false
   groupOverrides:
-  - group: production
-    override:
-      parameters:
-        environment: environment2
   - group: development
     override:
       parameters:
         environment: environment1
+  - group: production
+    override:
+      parameters:
+        environment: environment2

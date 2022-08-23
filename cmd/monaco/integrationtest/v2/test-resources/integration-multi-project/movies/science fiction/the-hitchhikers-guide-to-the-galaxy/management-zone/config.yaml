@@ -13,11 +13,11 @@ configs:
     template: zone.json
     skip: false
   groupOverrides:
-  - group: production
-    override:
-      parameters:
-        environment: environment2
   - group: development
     override:
       parameters:
         environment: environment1
+  - group: production
+    override:
+      parameters:
+        environment: environment2

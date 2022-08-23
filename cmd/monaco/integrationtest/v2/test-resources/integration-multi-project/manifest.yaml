@@ -1,10 +1,11 @@
 projects:
-- name: movies.science fiction.the-hitchhikers-guide-to-the-galaxy
-  path: movies/science fiction/the-hitchhikers-guide-to-the-galaxy
 - name: cinema-infrastructure
 - name: star-trek
+  type: grouping
   path: star-trek
-
+- name: movies.science fiction
+  type: grouping
+  path: movies/science fiction
 environments:
 - group: development
   entries:

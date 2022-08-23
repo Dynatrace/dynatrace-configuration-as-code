@@ -1,0 +1,87 @@
+{
+  "dashboardMetadata": {
+    "name": "{{.name}}",
+    "shared": true,
+    "owner": "nobody@dynatrace.com",
+    "sharingDetails": {
+      "linkShared": true,
+      "published": false
+    },
+    "dashboardFilter": {
+      "timeframe": "",
+      "managementZone": {
+        "id": "{{.mzone}}",
+        "name": "{{.mzoneName}}"
+      }
+    }
+  },
+  "tiles": [
+    {
+      "name": "Host health",
+      "tileType": "HOSTS",
+      "configured": true,
+      "bounds": {
+        "top": 0,
+        "left": 38,
+        "width": 304,
+        "height": 304
+      },
+      "tileFilter": {
+        "timeframe": null,
+        "managementZone": null
+      },
+      "filterConfig": null,
+      "chartVisible": true
+    },
+    {
+      "name": "Service health",
+      "tileType": "SERVICES",
+      "configured": true,
+      "bounds": {
+        "top": 0,
+        "left": 380,
+        "width": 304,
+        "height": 304
+      },
+      "tileFilter": {
+        "timeframe": null,
+        "managementZone": null
+      },
+      "filterConfig": null,
+      "chartVisible": true
+    },
+    {
+      "name": "Service or request",
+      "tileType": "SERVICE_VERSATILE",
+      "configured": false,
+      "bounds": {
+        "top": 0,
+        "left": 722,
+        "width": 304,
+        "height": 304
+      },
+      "tileFilter": {
+        "timeframe": null,
+        "managementZone": null
+      },
+      "assignedEntities": []
+    },
+    {
+      "name": "World map",
+      "tileType": "APPLICATION_WORLDMAP",
+      "configured": true,
+      "bounds": {
+        "top": 342,
+        "left": 38,
+        "width": 304,
+        "height": 304
+      },
+      "tileFilter": {
+        "timeframe": null,
+        "managementZone": null
+      },
+      "assignedEntities": [],
+      "metric": "XHR_ACTIONS"
+    }
+  ]
+}
