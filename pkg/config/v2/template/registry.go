@@ -111,10 +111,10 @@ func InitTemplateCache() {
 func LoadTemplate(fs afero.Fs, path string) (Template, error) {
 	sanitizedPath := filepath.Clean(path)
 
-	log.Info("Loading template for %s", sanitizedPath)
+	log.Debug("Loading template for %s", sanitizedPath)
 
 	if template, found := templateCache[sanitizedPath]; found {
-		log.Info("found %s in cache", sanitizedPath)
+		log.Debug("found %s in cache", sanitizedPath)
 		return template, nil
 	}
 
@@ -149,10 +149,10 @@ func LoadTemplate(fs afero.Fs, path string) (Template, error) {
 func CreateFileBasedTemplateFromString(path, content string) (Template, error) {
 	sanitizedPath := filepath.Clean(path)
 
-	log.Info("Loading file-based template for %s", sanitizedPath)
+	log.Debug("Loading file-based template for %s", sanitizedPath)
 
 	if template, found := templateCache[sanitizedPath]; found {
-		log.Info("found %s in cache", sanitizedPath)
+		log.Debug("found %s in cache", sanitizedPath)
 		return template, nil
 	}
 
@@ -178,7 +178,7 @@ func CreateFileBasedTemplateFromString(path, content string) (Template, error) {
 // tries to parse the given string into a template and return it
 func LoadTemplateFromString(id, name, content string) (Template, error) {
 	if template, found := templateCache[id]; found {
-		log.Info("found %s in cache", id)
+		log.Debug("found %s in cache", id)
 		return template, nil
 	}
 
