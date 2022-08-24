@@ -37,7 +37,7 @@ import (
 var errWrongUsage = errors.New("")
 
 var specificApi, environment, project []string
-var environments, specificEnvironment, projects, outputFolder, manifestName string
+var environments, specificEnvironment, projects, outputFolder, manifestName, environmentUrl, environmentName, environmentToken string
 var verbose, dryRun, continueOnError bool
 
 func Run() int {
@@ -267,13 +267,18 @@ func getDownloadCommand(fs afero.Fs) (downloadCmd *cobra.Command) {
 				workingDir = "."
 			}
 
-			return download.GetConfigsFilterByEnvironment(workingDir, fs, environments, specificEnvironment, specificApi)
+			return download.GetConfigsFilterByEnvironment(workingDir, fs, environments, specificEnvironment, environmentUrl, environmentName, environmentToken, specificApi)
 		},
 	}
 	downloadCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print debug output")
 	downloadCmd.Flags().StringVarP(&environments, "environments", "e", "", "Yaml file containing environment to download")
 	downloadCmd.Flags().StringVarP(&specificEnvironment, "specific-environment", "s", "", "Specific environment (from list) to download")
 	downloadCmd.Flags().StringSliceVarP(&specificApi, "specific-api", "a", make([]string, 0), "APIs to download")
+
+	downloadCmd.Flags().StringVarP(&environmentUrl, "url", "u", "", "Environment Url")
+	downloadCmd.Flags().StringVarP(&environmentName, "environment-name", "n", "", "Environment name (project folder name)")
+	downloadCmd.Flags().StringVarP(&environmentToken, "token-name", "t", "TOKEN", "Name of the environment variable containing the token ")
+
 	err := downloadCmd.RegisterFlagCompletionFunc("specific-environment", completion.EnvironmentFromEnvironmentfile)
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
@@ -282,10 +287,12 @@ func getDownloadCommand(fs afero.Fs) (downloadCmd *cobra.Command) {
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
-	err = downloadCmd.MarkFlagRequired("environments")
-	if err != nil {
-		log.Fatal("failed to setup CLI %v", err)
-	}
+
+	downloadCmd.MarkFlagsMutuallyExclusive("environments", "url")
+	downloadCmd.MarkFlagsMutuallyExclusive("specific-environment", "url")
+
+	downloadCmd.MarkFlagsRequiredTogether("url", "token-name", "environment-name")
+
 	err = downloadCmd.RegisterFlagCompletionFunc("specific-api", completion.AllAvailableApis)
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)

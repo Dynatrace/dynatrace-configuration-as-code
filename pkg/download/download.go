@@ -16,9 +16,10 @@ package download
 
 import (
 	"fmt"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"path/filepath"
 	"strings"
+
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download/jsoncreator"
@@ -33,13 +34,23 @@ var cont = 0
 
 // GetConfigsFilterByEnvironment filters the enviroments list based on specificEnvironment flag value
 func GetConfigsFilterByEnvironment(workingDir string, fs afero.Fs, environmentsFile string,
-	specificEnvironment string, downloadSpecificAPIs []string) error {
-	environments, errors := environment.LoadEnvironmentList(specificEnvironment, environmentsFile, fs)
-	if len(errors) > 0 {
-		for _, err := range errors {
-			log.Error("Error while getting enviroments ", err)
+	specificEnvironment, environmentUrl, environmentName, environmentToken string, downloadSpecificAPIs []string) error {
+	environments := map[string]environment.Environment{}
+	if environmentsFile == "" {
+		id := environmentName
+		environments = map[string]environment.Environment{
+			id: environment.NewEnvironment(id, environmentName, "default", environmentUrl, environmentToken),
 		}
-		return fmt.Errorf("There were some errors while getting environment files")
+
+	} else {
+		var errors []error
+		environments, errors = environment.LoadEnvironmentList(specificEnvironment, environmentsFile, fs)
+		if len(errors) > 0 {
+			for _, err := range errors {
+				log.Error("Error while getting enviroments ", err)
+			}
+			return fmt.Errorf("There were some errors while getting environment files")
+		}
 	}
 	return getConfigs(fs, workingDir, environments, downloadSpecificAPIs)
 

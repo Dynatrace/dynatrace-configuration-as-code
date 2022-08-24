@@ -11,7 +11,7 @@ Use this feature to avoid starting from scratch when using Monaco.
 
 ## Download configurations
 
-
+### With environment file
 1. Enable CLI 2.0 by adding an environment variable called NEW_CLI with a non-empty value other than 0. 
 ```shell
 export NEW_CLI=1
@@ -22,6 +22,17 @@ export NEW_CLI=1
 ```shell
 monaco download --environments=my-environment.yaml
 ```
+
+### Without environment file
+
+Run monaco using the download command
+
+```shell
+monaco download --url https://environment.dynatracelabs.com --environment-name MyEnvironment --token-name TOKEN  
+```
+
+
+
 
 ## Options
 

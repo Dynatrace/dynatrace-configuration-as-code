@@ -31,6 +31,8 @@ import (
 	"gotest.tools/assert"
 )
 
+type downloadFunction func(*testing.T, afero.Fs, string, string, string) error
+
 //TestRestoreConfigs validates if the configurations can be restore from the downloaded version after being deleted
 //It has 5 stages:
 //Preparation: Uploads a set of configurations and return the virtual filesystem
@@ -40,13 +42,24 @@ import (
 //Cleanup: Deletes the configurations that were uploaded during validation
 
 // This version runs the test against 2 simple configs (alerting profiles and management zones)
-func TestRestoreConfigsSimple(t *testing.T) {
+func TestRestoreConfigs_FromDownloadWithEnvFile(t *testing.T) {
 	initialConfigsFolder := "test-resources/integration-download-configs/"
 	envFile := initialConfigsFolder + "environments.yaml"
 	downloadFolder := "test-resources/download"
 	subsetOfConfigsToDownload := "alerting-profile,management-zone"
-	suffixTest := "download1"
-	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, envFile, subsetOfConfigsToDownload)
+	suffixTest := "_download_env-file"
+
+	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, envFile, subsetOfConfigsToDownload, execution_downloadConfigs)
+}
+
+func TestRestoreConfigs_FromDownloadWithCLIParameters(t *testing.T) {
+	initialConfigsFolder := "test-resources/integration-download-configs/"
+	envFile := initialConfigsFolder + "environments.yaml"
+	downloadFolder := "test-resources/download"
+	subsetOfConfigsToDownload := "alerting-profile,management-zone"
+	suffixTest := "_download_cli-only"
+
+	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, envFile, subsetOfConfigsToDownload, execution_downloadConfigsWithoutEnvironmentFile)
 }
 
 // This version runs the test against the all_configs project, currently fails because of config dependencies
@@ -59,14 +72,15 @@ func TestRestoreConfigsSimple(t *testing.T) {
 //		suffixTest := "_dl1"
 //		testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, envFile, subsetOfConfigsToDownload)
 //	}
-func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolder string, suffixTest string, envFile string, apisToDownload string) {
+
+func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolder string, suffixTest string, envFile string, apisToDownload string, downloadFunc downloadFunction) {
 	t.Setenv("CONFIG_V1", "1")
 	fs := util.CreateTestFileSystem()
 	err := preparation_uploadConfigs(t, fs, suffixTest, initialConfigsFolder, envFile)
 
 	assert.NilError(t, err, "Error during download preparation stage")
 
-	err = execution_downloadConfigs(t, fs, downloadFolder, envFile, apisToDownload, suffixTest)
+	err = downloadFunc(t, fs, downloadFolder, envFile, apisToDownload)
 	assert.NilError(t, err, "Error during download execution stage")
 
 	cleanupEnvironmentConfigs(t, fs, envFile, suffixTest)
@@ -97,8 +111,52 @@ func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, con
 
 	return nil
 }
+
+func execution_downloadConfigsWithoutEnvironmentFile(t *testing.T, fs afero.Fs, downloadFolder string, envFile string,
+	apisToDownload string) error {
+	log.Info("BEGIN DOWNLOAD PROCESS")
+	//Download
+	//err := fs.MkdirAll(downloadFolder, 0777)
+	//if err != nil {
+	//	return err
+	//}
+	downloadFolder, err := filepath.Abs(downloadFolder)
+	if err != nil {
+		return err
+	}
+	parameters := []string{}
+
+	if apisToDownload == "all" {
+		parameters = []string{
+			"download",
+			"--verbose",
+			"--url", os.Getenv("URL_ENVIRONMENT_1"),
+			"--environment-name", "environment1",
+			"--token-name", "TOKEN_ENVIRONMENT_1",
+			downloadFolder,
+		}
+	} else {
+		parameters = []string{
+			"download",
+			"--verbose",
+			"--specific-api",
+			apisToDownload,
+			"--url", os.Getenv("URL_ENVIRONMENT_1"),
+			"--environment-name", "environment1",
+			"--token-name", "TOKEN_ENVIRONMENT_1",
+			downloadFolder,
+		}
+	}
+
+	cmd := runner.BuildCli(fs)
+	cmd.SetArgs(parameters)
+	err = cmd.Execute()
+	assert.NilError(t, err)
+	return nil
+}
+
 func execution_downloadConfigs(t *testing.T, fs afero.Fs, downloadFolder string, envFile string,
-	apisToDownload string, suffixTest string) error {
+	apisToDownload string) error {
 	log.Info("BEGIN DOWNLOAD PROCESS")
 	//Download
 	//err := fs.MkdirAll(downloadFolder, 0777)
@@ -135,6 +193,7 @@ func execution_downloadConfigs(t *testing.T, fs afero.Fs, downloadFolder string,
 	assert.NilError(t, err)
 	return nil
 }
+
 func validation_uploadDownloadedConfigs(t *testing.T, fs afero.Fs, downloadFolder string,
 	envFile string) {
 	log.Info("BEGIN VALIDATION PROCESS")
