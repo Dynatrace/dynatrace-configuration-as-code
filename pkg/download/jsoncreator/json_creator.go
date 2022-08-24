@@ -101,7 +101,7 @@ func getDetailFromAPI(client rest.DynatraceClient, api api.Api, entityId string)
 func processJSONFile(data map[string]interface{}, id string) ([]byte, error) {
 	data = replaceKeyProperties(data)
 
-	jsonfile, err := json.MarshalIndent(data, "", " ")
+	jsonfile, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		log.Error("error creating json file  %s", id)
 		return nil, err
