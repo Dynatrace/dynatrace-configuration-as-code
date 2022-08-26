@@ -76,28 +76,21 @@ func TestRestoreConfigs_FromDownloadWithCLIParameters(t *testing.T) {
 func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolder string, suffixTest string, envFile string, apisToDownload string, downloadFunc downloadFunction) {
 	t.Setenv("CONFIG_V1", "1")
 	fs := util.CreateTestFileSystem()
-	err := preparation_uploadConfigs(t, fs, suffixTest, initialConfigsFolder, envFile)
+	suffix, err := preparation_uploadConfigs(t, fs, suffixTest, initialConfigsFolder, envFile)
 
 	assert.NilError(t, err, "Error during download preparation stage")
 
 	err = downloadFunc(t, fs, downloadFolder, envFile, apisToDownload)
 	assert.NilError(t, err, "Error during download execution stage")
 
-	cleanupEnvironmentConfigs(t, fs, envFile, suffixTest)
+	cleanupIntegrationTest(t, fs, envFile, suffix)
 	validation_uploadDownloadedConfigs(t, fs, downloadFolder, envFile)
-	cleanupEnvironmentConfigs(t, fs, envFile, suffixTest)
+	cleanupIntegrationTest(t, fs, envFile, suffix)
 }
 
-func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, configFolder string, envFile string) error {
+func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, configFolder string, envFile string) (suffix string, err error) {
 	log.Info("BEGIN PREPARATION PROCESS")
-	suffix := getTimestamp() + suffixTest
-	transformers := []func(string) string{getTransformerFunc(suffix)}
-	err := util.RewriteConfigNames(configFolder, fs, transformers)
-	if err != nil {
-		log.Fatal("Error rewriting configs names")
-		return err
-	}
-	//uploads the configs
+	suffix = appendUniqueSuffixToIntegrationTestConfigs(t, fs, configFolder, suffixTest)
 
 	cmd := runner.BuildCli(fs)
 	cmd.SetArgs([]string{
@@ -109,7 +102,7 @@ func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, con
 	err = cmd.Execute()
 	assert.NilError(t, err)
 
-	return nil
+	return suffix, nil
 }
 
 func execution_downloadConfigsWithoutEnvironmentFile(t *testing.T, fs afero.Fs, downloadFolder string, envFile string,
@@ -213,36 +206,4 @@ func validation_uploadDownloadedConfigs(t *testing.T, fs afero.Fs, downloadFolde
 	})
 	err := cmd.Execute()
 	assert.NilError(t, err)
-}
-
-// Deletes all configs that end with "_suffix", where suffix == suffixTest+suffixTimestamp
-func cleanupEnvironmentConfigs(t *testing.T, fs afero.Fs, envFile, suffix string) {
-	log.Info("BEGIN CLEANUP PROCESS")
-	environments, errs := environment.LoadEnvironmentList("", envFile, fs)
-	FailOnAnyError(errs, "loading of environments failed")
-
-	apis := api.NewV1Apis()
-
-	for _, environment := range environments {
-
-		token, err := environment.GetToken()
-		assert.NilError(t, err)
-
-		client, err := rest.NewDynatraceClient(environment.GetEnvironmentUrl(), token)
-		assert.NilError(t, err)
-
-		for _, api := range apis {
-
-			values, err := client.List(api)
-			assert.NilError(t, err)
-
-			for _, value := range values {
-				// For the calculated-metrics-log API, the suffix is part of the ID, not name
-				if strings.HasSuffix(value.Name, suffix) || strings.HasSuffix(value.Id, suffix) {
-					log.Info("Deleting %s (%s)", value.Name, api.GetId())
-					client.DeleteByName(api, value.Name)
-				}
-			}
-		}
-	}
 }
