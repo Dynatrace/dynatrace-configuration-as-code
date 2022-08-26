@@ -96,7 +96,7 @@ func createDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		path += "?position=PREPEND"
 	}
 
-	resp, err := callWithRetryOnKnowTimingIssue(client, post, objectName, path, body, apiToken)
+	resp, err := callWithRetryOnKnowTimingIssue(client, post, objectName, path, body, theApi, apiToken)
 	if err != nil {
 		return api.DynatraceEntity{}, err
 	}
@@ -168,7 +168,7 @@ func updateDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		body = stripCreateOnlyPropertiesFromAppMobile(body)
 	}
 
-	resp, err := callWithRetryOnKnowTimingIssue(client, put, objectName, path, body, apiToken)
+	resp, err := callWithRetryOnKnowTimingIssue(client, put, objectName, path, body, theApi, apiToken)
 
 	if err != nil {
 		return api.DynatraceEntity{}, err
@@ -198,7 +198,7 @@ func stripCreateOnlyPropertiesFromAppMobile(payload []byte) []byte {
 // callWithRetryOnKnowTimingIssue handles several know cases in which Dynatrace has a slight delay before newly created objects
 // can be used in further configuration. This is a cheap way to allow monaco to work around this, by waiting, then
 // retrying in case of know errors on upload.
-func callWithRetryOnKnowTimingIssue(client *http.Client, restCall sendingRequest, objectName string, path string, body []byte, apiToken string) (Response, error) {
+func callWithRetryOnKnowTimingIssue(client *http.Client, restCall sendingRequest, objectName string, path string, body []byte, theApi api.Api, apiToken string) (Response, error) {
 
 	resp, err := restCall(client, path, body, apiToken)
 
@@ -224,7 +224,7 @@ func callWithRetryOnKnowTimingIssue(client *http.Client, restCall sendingRequest
 	}
 
 	// It can take even longer until applications are ready to be used in synthetic tests
-	if isApplicationNotReadyYet(resp) {
+	if isApplicationNotReadyYet(resp, theApi) {
 		return retry(client, restCall, objectName, path, body, apiToken, 5, 15*time.Second)
 	}
 
@@ -262,8 +262,9 @@ func isManagementZoneNotReadyYet(resp Response) bool {
 		strings.Contains(string(resp.Body), "Unknown management zone")
 }
 
-func isApplicationNotReadyYet(resp Response) bool {
-	return strings.Contains(string(resp.Body), "Unknown application(s)")
+func isApplicationNotReadyYet(resp Response, theApi api.Api) bool {
+	return (theApi.GetId() == "synthetic-monitor" && resp.StatusCode == 500) ||
+		strings.Contains(string(resp.Body), "Unknown application(s)")
 }
 
 func isCredentialNotReadyYet(resp Response) bool {
