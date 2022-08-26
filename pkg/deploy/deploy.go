@@ -116,9 +116,10 @@ func Deploy(
 		util.Log.Info("Deployment finished without errors")
 	}
 
-	err = deleteConfigs(apis, environments, workingDir, dryRun, fs)
-	if err != nil {
-		return fmt.Errorf("errors during delete! Check log")
+	deleteErrors := deleteConfigs(apis, environments, workingDir, dryRun, fs)
+	if len(deleteErrors) > 0 {
+		util.Log.Error("Errors during delete:")
+		util.PrintErrors(deleteErrors)
 	}
 
 	return nil
@@ -346,7 +347,7 @@ func uploadConfig(client rest.DynatraceClient, project project.Project, config c
 }
 
 // deleteConfigs deletes specified configs, if a delete.yaml file was found
-func deleteConfigs(apis map[string]api.Api, environments map[string]environment.Environment, path string, dryRun bool, fs afero.Fs) error {
+func deleteConfigs(apis map[string]api.Api, environments map[string]environment.Environment, path string, dryRun bool, fs afero.Fs) (errs []error) {
 	configs, err := delete.LoadConfigsToDelete(fs, apis, path)
 	util.FailOnError(err, "deletion failed")
 
@@ -357,12 +358,12 @@ func deleteConfigs(apis map[string]api.Api, environments map[string]environment.
 
 			apiToken, err := environment.GetToken()
 			if err != nil {
-				return err
+				return []error{err}
 			}
 
 			client, err := rest.NewDynatraceClient(environment.GetEnvironmentUrl(), apiToken)
 			if err != nil {
-				return err
+				return []error{err}
 			}
 
 			for _, config := range configs {
@@ -370,12 +371,14 @@ func deleteConfigs(apis map[string]api.Api, environments map[string]environment.
 
 				err = client.DeleteByName(config.GetApi(), config.GetId())
 				if err != nil {
-					return err
+					util.Log.Error("\tFailed to delete config %v (%v)", config.GetId(), config.GetApi().GetId())
+					errs = append(errs, err)
+				} else {
+					util.Log.Info("\tDeleted config %v (%v)", config.GetId(), config.GetApi().GetId())
 				}
-				util.Log.Info("\tDeleted config %v (%v)", config.GetId(), config.GetApi().GetId())
 			}
 		}
 	}
 
-	return nil
+	return errs
 }
