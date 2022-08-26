@@ -181,23 +181,30 @@ func RunLegacyIntegrationWithCleanup(t *testing.T, configFolder, envFile, suffix
 
 	t.Setenv("CONFIG_V1", "1")
 
-	rand.Seed(time.Now().UnixNano())
-	randomNumber := rand.Intn(10000)
-
-	suffix := fmt.Sprintf("%s_%d_%s", getTimestamp(), randomNumber, suffixTest)
-	transformers := []func(string) string{getTransformerFunc(suffix)}
 	var fs = util.CreateTestFileSystem()
-	err := util.RewriteConfigNames(configFolder, fs, transformers)
-	if err != nil {
-		t.Fatalf("Error rewriting configs names: %s", err)
-		return
-	}
+	suffix := appendUniqueSuffixToIntegrationTestConfigs(t, fs, configFolder, suffixTest)
 
 	template.InitTemplateCache()
 
 	defer cleanupIntegrationTest(t, fs, envFile, suffix)
 
 	testFunc(fs)
+}
+
+func appendUniqueSuffixToIntegrationTestConfigs(t *testing.T, fs afero.Fs, configFolder string, generalSuffix string) string {
+	rand.Seed(time.Now().UnixNano())
+	randomNumber := rand.Intn(10000)
+
+	suffix := fmt.Sprintf("%s_%d_%s", getTimestamp(), randomNumber, generalSuffix)
+	transformers := []func(string) string{getTransformerFunc(suffix)}
+
+	err := util.RewriteConfigNames(configFolder, fs, transformers)
+	if err != nil {
+		t.Fatalf("Error rewriting configs names: %s", err)
+		return suffix
+	}
+
+	return suffix
 }
 
 func AbsOrPanicFromSlash(path string) string {
