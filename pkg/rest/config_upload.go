@@ -304,7 +304,7 @@ func deleteDynatraceObjects(client *http.Client, api api.Api, names []string, ur
 	existingIds, err := getObjectIdsIfAlreadyExists(client, api, url, names, token)
 
 	if err != nil {
-		return []error{err}
+		return []error{fmt.Errorf("failed to get configs for deletion (%s):\n\t%w", api.GetId(), err)}
 	}
 
 	var errors []error
@@ -372,7 +372,7 @@ func getObjectIdsIfAlreadyExists(client *http.Client, a api.Api, url string, obj
 
 	for name, count := range nameLookupMap {
 		if count == 0 {
-			log.Debug("No config %s (%s) found to delete", name, a.GetId())
+			log.Debug("No config %s (%s) found", name, a.GetId())
 		} else if count > 1 {
 			log.Warn("Found %d configs with same name: %s.", count, name)
 		}

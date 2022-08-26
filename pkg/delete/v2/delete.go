@@ -46,7 +46,8 @@ func DeleteConfigs(client rest.DynatraceClient, apis map[string]api.Api,
 			continue
 		}
 
-		log.Debug("\tTrying to delete configs of type %s %s", api.GetId(), names)
+		log.Info("Deleting configs of type %s...", api.GetId())
+		log.Debug("\tconfigs: %s", names)
 		err := client.BulkDeleteByName(api, names)
 
 		if err != nil {
