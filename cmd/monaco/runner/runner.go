@@ -17,6 +17,7 @@ package runner
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner/completion"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,7 +25,6 @@ import (
 	legacyDeploy "github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v1/deploy"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/convert"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v2/completion"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/delete"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/deploy"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download"
