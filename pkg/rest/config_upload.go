@@ -296,7 +296,7 @@ func deleteDynatraceObject(client *http.Client, api api.Api, name string, url st
 
 	existingId, err := getObjectIdIfAlreadyExists(client, api, url, name, token)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get config for deletion %s (%s):\n    %w", name, api.GetId(), err)
 	}
 
 	if len(existingId) == 0 {
@@ -306,7 +306,7 @@ func deleteDynatraceObject(client *http.Client, api api.Api, name string, url st
 
 	err = deleteConfig(client, url, token, existingId)
 	if err != nil {
-		return fmt.Errorf("failed to delete config %s (%s): %w", name, api.GetId(), err)
+		return fmt.Errorf("failed to delete config %s (%s):\n    %w", name, api.GetId(), err)
 	}
 	return nil
 }
