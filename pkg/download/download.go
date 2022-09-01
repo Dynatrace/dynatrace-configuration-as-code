@@ -132,28 +132,32 @@ func downloadConfigFromEnvironment(fs afero.Fs, environment environment.Environm
 		return err
 	}
 	for _, api := range listApis {
-		util.Log.Info(" --- GETTING CONFIGS for %s", api.GetId())
-		jcreator := jsoncreator.NewJSONCreator()
-		ycreator := yamlcreator.NewYamlConfig(environmentName)
-
-		// Retrieves object from single configuration API
-		isSingleConfigurationApi := api.IsSingleConfigurationApi()
-		if isSingleConfigurationApi {
-			errorAPI := createConfigsFromSingleConfigurationAPI(fs, api, path, client, jcreator, ycreator)
-			if errorAPI != nil {
-				util.Log.Error("error getting configs from API %v", api.GetId())
-				return errorAPI
-			}
-		} else {
-			errorAPI := createConfigsFromAPI(fs, api, path, client, jcreator, ycreator)
-			if errorAPI != nil {
-				util.Log.Error("error getting configs from API %v", api.GetId())
-				return errorAPI
-			}
-		}
+		downloadConfigForApi(fs, api, environmentName, path, client)
 	}
 	util.Log.Info("END downloading info %s", environmentName)
 	return nil
+}
+
+// downloadConfigForApi downloads the config/configs for a given API.
+// Errors that occur are logged and not further propagated
+func downloadConfigForApi(fs afero.Fs, api api.Api, environmentName string, path string, client rest.DynatraceClient) {
+	util.Log.Info(" --- GETTING CONFIGS for %s", api.GetId())
+
+	jcreator := jsoncreator.NewJSONCreator()
+	ycreator := yamlcreator.NewYamlConfig(environmentName)
+
+	// Retrieves object from single configuration API
+	if api.IsSingleConfigurationApi() {
+		errorAPI := createConfigsFromSingleConfigurationAPI(fs, api, path, client, jcreator, ycreator)
+		if errorAPI != nil {
+			util.Log.Error("error getting config from API %v", api.GetId())
+		}
+	} else {
+		errorAPI := createConfigsFromAPI(fs, api, path, client, jcreator, ycreator)
+		if errorAPI != nil {
+			util.Log.Error("error getting configs from API %v", api.GetId())
+		}
+	}
 }
 
 func createConfigsFolder(
