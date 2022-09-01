@@ -1,6 +1,8 @@
 # Monitoring as Code Tool - Release Notes
 
 - Versions:
+  - [1.8.3](#183)
+  - [1.8.2](#182)
   - [1.8.1](#181)
   - [1.8.0](#180)
   - [1.7.0](#170)
@@ -17,6 +19,27 @@
   - [1.0.1](#101)
   - [1.0.0](#100)
 
+## 1.8.3
+### List of changes
+#### Bug fixes
+
+* 6e0016 fix: Do not abort download after the first download error.
+
+## 1.8.2
+### List of changes
+#### Features
+* 086ebb5 Retry SLO creation on additional know error
+
+#### Bug fixes
+* 1d94584 Workaround synthetic API failing if Application ID can not (yet) be found
+* e090000 filter the mime types correctly for logging (#709)
+* 7b3ad72 (download) Deleting configs with slashes in the name does no longer error. (#706)
+* c707483 (download) Downloading single config Apis now report encountered errors
+
+#### Documentation
+* 04807b4 Update download link to latest monaco release
+* 373b8d8 Rename 1.8.0 sidebar to 1.8.1 as .0 docs where completely replaced
+* ad702cc Upgrade to docusaurus 2.0.1 release
 
 ## 1.8.1
 
