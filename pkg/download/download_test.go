@@ -39,7 +39,7 @@ func TestGetConfigs(t *testing.T) {
 	fileManager := util.CreateTestFileSystem()
 	envs["e1"] = env
 	err := getConfigs(fileManager, "", envs, "")
-	assert.ErrorContains(t, err, "There were some errors")
+	assert.NilError(t, err)
 }
 
 func TestCreateConfigsFromAPI(t *testing.T) {
