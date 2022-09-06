@@ -84,5 +84,5 @@ func isV2Dependency(name string) bool {
 	}
 	s := strings.TrimSuffix(name, "]")
 	s = strings.TrimSpace(s)
-	return strings.HasSuffix(s, "\"id\"") || strings.HasSuffix(s, "\"name\"")
+	return strings.HasSuffix(s, `"id"`) || strings.HasSuffix(s, `"name"`)
 }
