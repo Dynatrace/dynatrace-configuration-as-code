@@ -234,39 +234,3 @@ func assertEnvironmentsWithNames(t *testing.T, environments []EnvironmentDefinit
 
 	assert.DeepEqual(t, environmentNames, expectedNames, sortStrings)
 }
-
-func Test_trimToEnvVariableName(t *testing.T) {
-	tests := []struct {
-		name  string
-		input string
-		want  string
-	}{
-		{
-			"simple string",
-			"{{ .Env.ENV_VAR }}",
-			"ENV_VAR",
-		},
-		{
-			"empty string",
-			"    ",
-			"",
-		},
-		{
-			"spaces string",
-			"   {{         .Env.ENV_VAR      }}    ",
-			"ENV_VAR",
-		},
-		{
-			"wrong string",
-			"just a random string { }",
-			"just a random string { }",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := trimToEnvVariableName(tt.input); got != tt.want {
-				t.Errorf("trimToEnvVariableName() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}

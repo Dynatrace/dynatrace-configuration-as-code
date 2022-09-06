@@ -16,6 +16,7 @@ package manifest
 
 import (
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"os"
 	"strings"
 
@@ -62,10 +63,10 @@ func NewEnvironmentDefinitionFromV1(env environmentv1.Environment, group string)
 }
 
 func newUrlDefinitionFromV1(env environmentv1.Environment) UrlDefinition {
-	if isEnvVariable(env.GetEnvironmentUrl()) {
+	if util.IsEnvVariable(env.GetEnvironmentUrl()) {
 		return UrlDefinition{
 			Type:  EnvironmentUrlType,
-			Value: trimToEnvVariableName(env.GetEnvironmentUrl()),
+			Value: util.TrimToEnvVariableName(env.GetEnvironmentUrl()),
 		}
 	}
 
@@ -73,19 +74,6 @@ func newUrlDefinitionFromV1(env environmentv1.Environment) UrlDefinition {
 		Type:  ValueUrlType,
 		Value: strings.TrimSuffix(env.GetEnvironmentUrl(), "/"),
 	}
-}
-
-func isEnvVariable(url string) bool {
-	return strings.Contains(url, ".Env.")
-}
-
-func trimToEnvVariableName(envReference string) string {
-	s := strings.TrimSpace(envReference)
-	s = strings.TrimPrefix(s, "{{")
-	s = strings.TrimSuffix(s, "}}")
-	s = strings.TrimSpace(s)
-	s = strings.TrimPrefix(s, ".Env.")
-	return s
 }
 
 func NewEnvironmentDefinition(name string, url UrlDefinition, group string, token *EnvironmentVariableToken) EnvironmentDefinition {
