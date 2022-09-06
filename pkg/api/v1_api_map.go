@@ -286,9 +286,5 @@ func GetV2ApiId(forV1Api Api) string {
 		currentApiId = forV1Api.IsDeprecatedBy()
 	}
 
-	if strings.HasSuffix(currentApiId, "-v2") {
-		currentApiId = strings.TrimSuffix(currentApiId, "-v2")
-	}
-
-	return currentApiId
+	return strings.TrimSuffix(currentApiId, "-v2")
 }
