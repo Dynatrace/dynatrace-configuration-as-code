@@ -26,7 +26,6 @@ import (
 
 var apiMap = map[string]apiInput{
 
-	// Early adopter API !
 	"alerting-profile": {
 		apiPath: "/api/config/v1/alertingProfiles",
 	},
@@ -36,8 +35,6 @@ var apiMap = map[string]apiInput{
 	"auto-tag": {
 		apiPath: "/api/config/v1/autoTags",
 	},
-	// Early adopter API
-	// Non unique name API
 	"dashboard": {
 		apiPath:                      "/api/config/v1/dashboards",
 		propertyNameOfGetAllResponse: "dashboards",
@@ -69,7 +66,6 @@ var apiMap = map[string]apiInput{
 	"custom-service-php": {
 		apiPath: "/api/config/v1/service/customServices/php",
 	},
-	// Early adopter API !
 	"anomaly-detection-metrics": {
 		apiPath: "/api/config/v1/anomalyDetection/metricEvents",
 	},
@@ -77,12 +73,10 @@ var apiMap = map[string]apiInput{
 	"anomaly-detection-disks": {
 		apiPath: "/api/config/v1/anomalyDetection/diskEvents",
 	},
-	// Early adopter API !
 	// Environment API not Config API
 	"synthetic-location": {
 		apiPath: "/api/v1/synthetic/locations",
 	},
-	// Early adopter API !
 	// Environment API not Config API
 	"synthetic-monitor": {
 		apiPath: "/api/v1/synthetic/monitors",
@@ -107,11 +101,9 @@ var apiMap = map[string]apiInput{
 	"azure-credentials": {
 		apiPath: "/api/config/v1/azure/credentials",
 	},
-
 	"request-attributes": {
 		apiPath: "/api/config/v1/service/requestAttributes",
 	},
-
 	"calculated-metrics-service": {
 		apiPath: "/api/config/v1/calculatedMetrics/service",
 	},
@@ -128,7 +120,6 @@ var apiMap = map[string]apiInput{
 	"calculated-metrics-application-web": {
 		apiPath: "/api/config/v1/calculatedMetrics/rum",
 	},
-
 	"conditional-naming-processgroup": {
 		apiPath: "/api/config/v1/conditionalNaming/processGroup",
 	},
@@ -141,33 +132,25 @@ var apiMap = map[string]apiInput{
 	"maintenance-window": {
 		apiPath: "/api/config/v1/maintenanceWindows",
 	},
-	// Non unique name API !
 	"request-naming-service": {
 		apiPath:            "/api/config/v1/service/requestNaming",
 		isNonUniqueNameApi: true,
 	},
-
-	// Early adopter API !
 	// Environment API not Config API
 	"slo": {
 		apiPath:                      "/api/v2/slo",
 		propertyNameOfGetAllResponse: "slo",
 	},
-
-	// Early adopter API !
 	"credential-vault": {
 		apiPath:                      "/api/config/v1/credentials",
 		propertyNameOfGetAllResponse: "credentials",
 	},
-
 	"failure-detection-parametersets": {
 		apiPath: "/api/config/v1/service/failureDetection/parameterSelection/parameterSets",
 	},
-
 	"failure-detection-rules": {
 		apiPath: "/api/config/v1/service/failureDetection/parameterSelection/rules",
 	},
-
 	"service-detection-full-web-request": {
 		apiPath: "/api/config/v1/service/detectionRules/FULL_WEB_REQUEST",
 	},
@@ -184,7 +167,6 @@ var apiMap = map[string]apiInput{
 	"reports": {
 		apiPath: "/api/config/v1/reports",
 	},
-	// Single configuration APIs
 	"frequent-issue-detection": {
 		apiPath:                  "/api/config/v1/frequentIssueDetection",
 		isSingleConfigurationApi: true,

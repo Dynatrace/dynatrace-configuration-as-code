@@ -23,7 +23,6 @@ import "strings"
 // and dropping the '-v2' suffix with v2.
 var v1ApiMap = map[string]apiInput{
 
-	// Early adopter API !
 	"alerting-profile": {
 		apiPath: "/api/config/v1/alertingProfiles",
 	},
@@ -33,19 +32,11 @@ var v1ApiMap = map[string]apiInput{
 	"auto-tag": {
 		apiPath: "/api/config/v1/autoTags",
 	},
-	// Early adopter API !
-	// Deprecated !
-	//
-	// v2 resolves conflicts between DT entities which names are not unique within an environment.
-	// https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/pull/654
-	//
 	"dashboard": {
 		apiPath:                      "/api/config/v1/dashboards",
 		propertyNameOfGetAllResponse: "dashboards",
 		isDeprecatedBy:               "dashboard-v2",
 	},
-	// Early adopter API
-	// Non unique name API
 	"dashboard-v2": {
 		apiPath:                      "/api/config/v1/dashboards",
 		propertyNameOfGetAllResponse: "dashboards",
@@ -77,21 +68,15 @@ var v1ApiMap = map[string]apiInput{
 	"custom-service-php": {
 		apiPath: "/api/config/v1/service/customServices/php",
 	},
-	// Early adopter API !
 	"anomaly-detection-metrics": {
 		apiPath: "/api/config/v1/anomalyDetection/metricEvents",
 	},
-	// Early adopter API !
 	"anomaly-detection-disks": {
 		apiPath: "/api/config/v1/anomalyDetection/diskEvents",
 	},
-	// Early adopter API !
-	// Environment API not Config API
 	"synthetic-location": {
 		apiPath: "/api/v1/synthetic/locations",
 	},
-	// Early adopter API !
-	// Environment API not Config API
 	"synthetic-monitor": {
 		apiPath: "/api/v1/synthetic/monitors",
 	},
@@ -105,11 +90,6 @@ var v1ApiMap = map[string]apiInput{
 	"application-mobile": {
 		apiPath: "/api/config/v1/applications/mobile",
 	},
-	// Deprecated !
-	//
-	// v2 resolves conflicts between DT entities which names are not unique within an environment.
-	// https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/pull/654
-	//
 	"app-detection-rule": {
 		apiPath:        "/api/config/v1/applicationDetectionRules",
 		isDeprecatedBy: "app-detection-rule-v2",
@@ -121,22 +101,18 @@ var v1ApiMap = map[string]apiInput{
 	"aws-credentials": {
 		apiPath: "/api/config/v1/aws/credentials",
 	},
-	// Early adopter API !
 	"kubernetes-credentials": {
 		apiPath: "/api/config/v1/kubernetes/credentials",
 	},
 	"azure-credentials": {
 		apiPath: "/api/config/v1/azure/credentials",
 	},
-
 	"request-attributes": {
 		apiPath: "/api/config/v1/service/requestAttributes",
 	},
-
 	"calculated-metrics-service": {
 		apiPath: "/api/config/v1/calculatedMetrics/service",
 	},
-	// Early adopter API !
 	"calculated-metrics-log": {
 		apiPath: "/api/config/v1/calculatedMetrics/log",
 	},
@@ -149,7 +125,6 @@ var v1ApiMap = map[string]apiInput{
 	"calculated-metrics-application-web": {
 		apiPath: "/api/config/v1/calculatedMetrics/rum",
 	},
-
 	"conditional-naming-processgroup": {
 		apiPath: "/api/config/v1/conditionalNaming/processGroup",
 	},
@@ -162,42 +137,28 @@ var v1ApiMap = map[string]apiInput{
 	"maintenance-window": {
 		apiPath: "/api/config/v1/maintenanceWindows",
 	},
-	// Deprecated !
-	//
-	// v2 resolves conflicts between DT entities which names are not unique within an environment.
-	// https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/pull/654
-	//
 	"request-naming-service": {
 		apiPath:        "/api/config/v1/service/requestNaming",
 		isDeprecatedBy: "request-naming-service-v2",
 	},
-	// Non unique name API !
 	"request-naming-service-v2": {
 		apiPath:            "/api/config/v1/service/requestNaming",
 		isNonUniqueNameApi: true,
 	},
-
-	// Early adopter API !
-	// Environment API not Config API
 	"slo": {
 		apiPath:                      "/api/v2/slo",
 		propertyNameOfGetAllResponse: "slo",
 	},
-
-	// Early adopter API !
 	"credential-vault": {
 		apiPath:                      "/api/config/v1/credentials",
 		propertyNameOfGetAllResponse: "credentials",
 	},
-
 	"failure-detection-parametersets": {
 		apiPath: "/api/config/v1/service/failureDetection/parameterSelection/parameterSets",
 	},
-
 	"failure-detection-rules": {
 		apiPath: "/api/config/v1/service/failureDetection/parameterSelection/rules",
 	},
-
 	"service-detection-full-web-request": {
 		apiPath: "/api/config/v1/service/detectionRules/FULL_WEB_REQUEST",
 	},
@@ -210,11 +171,9 @@ var v1ApiMap = map[string]apiInput{
 	"service-detection-opaque-web-service": {
 		apiPath: "/api/config/v1/service/detectionRules/OPAQUE_AND_EXTERNAL_WEB_SERVICE",
 	},
-	// Early adopter API !
 	"reports": {
 		apiPath: "/api/config/v1/reports",
 	},
-	// Single configuration APIs
 	"frequent-issue-detection": {
 		apiPath:                  "/api/config/v1/frequentIssueDetection",
 		isSingleConfigurationApi: true,
