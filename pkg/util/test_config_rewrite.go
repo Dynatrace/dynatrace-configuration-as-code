@@ -1,5 +1,5 @@
-//go:build integration || integration_v1
-// +build integration integration_v1
+//go:build integration || integration_v1 || unit
+// +build integration integration_v1 unit
 
 /**
  * @license
