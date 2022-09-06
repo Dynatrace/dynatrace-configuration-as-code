@@ -91,6 +91,22 @@ func TestEnvironmentDefinitionGetUrlResolveEnvVar(t *testing.T) {
 
 }
 
+func TestEnvironmentDefinitionGetUrlFailsOnUnkownType(t *testing.T) {
+
+	definition := EnvironmentDefinition{
+		Name: "test",
+		url: UrlDefinition{
+			Type:  "!!!THIS IS NOT A TYPE!!!",
+			Value: "http://google.com",
+		},
+		Group: "group",
+		Token: &EnvironmentVariableToken{EnvironmentVariableName: "NAME"},
+	}
+	_, err := definition.GetUrl()
+
+	assert.ErrorContains(t, err, "type `!!!THIS IS NOT A TYPE!!!` does not exist")
+}
+
 func createEnvEnvironmentDefinition() EnvironmentDefinition {
 	return EnvironmentDefinition{
 		Name: "test",
