@@ -264,7 +264,7 @@ func isManagementZoneNotReadyYet(resp Response) bool {
 }
 
 func isApplicationNotReadyYet(resp Response, theApi api.Api) bool {
-	return (theApi.GetId() == "synthetic-monitor" && resp.StatusCode == 500) ||
+	return isServerError(resp) && (theApi.GetId() == "synthetic-monitor" || isAnyApplicationApi(theApi)) ||
 		strings.Contains(string(resp.Body), "Unknown application(s)")
 }
 
@@ -352,6 +352,10 @@ func isReportsApi(api api.Api) bool {
 
 func isAnyServiceDetectionApi(api api.Api) bool {
 	return strings.HasPrefix(api.GetId(), "service-detection-")
+}
+
+func isAnyApplicationApi(api api.Api) bool {
+	return strings.HasPrefix(api.GetId(), "application-")
 }
 
 func isMobileApp(api api.Api) bool {
@@ -551,4 +555,8 @@ func translateSyntheticEntityResponse(resp api.SyntheticEntity, objectName strin
 
 func success(resp Response) bool {
 	return resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusCreated || resp.StatusCode == http.StatusNoContent
+}
+
+func isServerError(resp Response) bool {
+	return resp.StatusCode >= 500 && resp.StatusCode <= 599
 }
