@@ -104,7 +104,7 @@ func TestEnvironmentDefinitionGetUrlFailsOnUnkownType(t *testing.T) {
 	}
 	_, err := definition.GetUrl()
 
-	assert.ErrorContains(t, err, "type `!!!THIS IS NOT A TYPE!!!` does not exist")
+	assert.ErrorContains(t, err, "url.type `!!!THIS IS NOT A TYPE!!!` is not a valid type")
 }
 
 func createEnvEnvironmentDefinition() EnvironmentDefinition {

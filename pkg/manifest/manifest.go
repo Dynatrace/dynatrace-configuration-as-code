@@ -105,7 +105,7 @@ func (e *EnvironmentDefinition) GetUrl() (string, error) {
 	case ValueUrlType:
 		return e.url.Value, nil
 	default:
-		return "", fmt.Errorf("type `%s` does not exist for enviroment URL. Supported are %s and %s", e.url.Type, EnvironmentUrlType, ValueUrlType)
+		return "", fmt.Errorf("url.type `%s` is not a valid type for enviroment URL. Supported are %s and %s", e.url.Type, EnvironmentUrlType, ValueUrlType)
 	}
 }
 
