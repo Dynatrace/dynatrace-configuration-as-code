@@ -21,6 +21,9 @@ import (
 	"regexp"
 )
 
+// RegEx matching environment variable template reference of the format '{{ .Env.NAME_OF_VAR }}'
+// accepting any possible whitespace before and after the actual variable,
+// and capturing the name of the actual env var (anything following .Env. up to the first whitespace or } character)
 var envPattern = regexp.MustCompile(`{{\s*\.Env\.(.*?)\s*}}`)
 
 // IsEnvVariable checks if a given string conforms to how monaco expects an environment variable reference looks in a
