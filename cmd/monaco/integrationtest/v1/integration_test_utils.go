@@ -21,7 +21,6 @@ package v1
 
 import (
 	"fmt"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
 	"math/rand"
 	"path/filepath"
 	"strings"
@@ -183,8 +182,6 @@ func RunLegacyIntegrationWithCleanup(t *testing.T, configFolder, envFile, suffix
 
 	var fs = util.CreateTestFileSystem()
 	suffix := appendUniqueSuffixToIntegrationTestConfigs(t, fs, configFolder, suffixTest)
-
-	template.InitTemplateCache()
 
 	defer cleanupIntegrationTest(t, fs, envFile, suffix)
 

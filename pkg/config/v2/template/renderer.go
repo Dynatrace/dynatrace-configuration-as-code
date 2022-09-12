@@ -18,29 +18,31 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	templ "text/template"
 )
 
 // tries to render a given template with the given properties and returns the
 // resulting string. if any error occurs during rendering, an error is returned.
 func Render(template Template, properties map[string]interface{}) (string, error) {
-	parsedTemplate, found := parsedTemplateCache[template.Id()]
+	parsedTemplate, err := ParseTemplate(template.Id(), template.Content())
 
-	// if we do not find the template in the template cache, it means that it was
-	// somehow instantiated without calling the template registry functions.
-	if !found {
-		return "", fmt.Errorf("trying to render unknown template `%s`. this should not happen and is likely a bug",
-			template.Name())
+	if err != nil {
+		return "", fmt.Errorf("failure trying to render template %s: %w", template.Name(), err)
 	}
 
 	result := bytes.Buffer{}
 
 	dataForTemplating := util.EscapeNewlineCharacters(properties)
 
-	err := parsedTemplate.Execute(&result, dataForTemplating)
+	err = parsedTemplate.Execute(&result, dataForTemplating)
 
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failure trying to render template %s: %w", template.Name(), err)
 	}
 
 	return result.String(), nil
+}
+
+func ParseTemplate(id, content string) (*templ.Template, error) {
+	return templ.New(id).Option("missingkey=error").Parse(content)
 }

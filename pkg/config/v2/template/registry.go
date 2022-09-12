@@ -19,8 +19,6 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"path/filepath"
 
-	templ "text/template"
-
 	"github.com/spf13/afero"
 )
 
@@ -95,28 +93,12 @@ func (t *stringTemplate) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct{ Name string }{Name: t.name})
 }
 
-// cache for templates so that they don't get read from disk multiple times
-var templateCache = make(map[string]Template)
-
-// cache for parsed go templates to only parse them once
-var parsedTemplateCache = make(map[string]*templ.Template)
-
-func InitTemplateCache() {
-	templateCache = make(map[string]Template)
-	parsedTemplateCache = make(map[string]*templ.Template)
-}
-
 // tries to load the file at the given path and turns it into a template.
 // the name of the template will be the sanitized path.
 func LoadTemplate(fs afero.Fs, path string) (Template, error) {
 	sanitizedPath := filepath.Clean(path)
 
 	log.Debug("Loading template for %s", sanitizedPath)
-
-	if template, found := templateCache[sanitizedPath]; found {
-		log.Debug("found %s in cache", sanitizedPath)
-		return template, nil
-	}
 
 	data, err := afero.ReadFile(fs, sanitizedPath)
 
@@ -133,15 +115,6 @@ func LoadTemplate(fs afero.Fs, path string) (Template, error) {
 		content: content,
 	}
 
-	parsedTemplate, err := ParseTemplate(sanitizedPath, content)
-
-	if err != nil {
-		return nil, err
-	}
-
-	templateCache[sanitizedPath] = template
-	parsedTemplateCache[sanitizedPath] = parsedTemplate
-
 	return template, nil
 }
 
@@ -151,11 +124,6 @@ func CreateFileBasedTemplateFromString(path, content string) (Template, error) {
 
 	log.Debug("Loading file-based template for %s", sanitizedPath)
 
-	if template, found := templateCache[sanitizedPath]; found {
-		log.Debug("found %s in cache", sanitizedPath)
-		return template, nil
-	}
-
 	template := new(fileBasedTemplate)
 
 	*template = fileBasedTemplate{
@@ -163,24 +131,11 @@ func CreateFileBasedTemplateFromString(path, content string) (Template, error) {
 		content: content,
 	}
 
-	parsedTemplate, err := ParseTemplate(sanitizedPath, content)
-
-	if err != nil {
-		return nil, err
-	}
-
-	templateCache[sanitizedPath] = template
-	parsedTemplateCache[sanitizedPath] = parsedTemplate
-
 	return template, nil
 }
 
 // tries to parse the given string into a template and return it
 func LoadTemplateFromString(id, name, content string) (Template, error) {
-	if template, found := templateCache[id]; found {
-		log.Debug("found %s in cache", id)
-		return template, nil
-	}
 
 	template := new(stringTemplate)
 
@@ -190,18 +145,5 @@ func LoadTemplateFromString(id, name, content string) (Template, error) {
 		content: content,
 	}
 
-	parsedTemplate, err := ParseTemplate(id, content)
-
-	if err != nil {
-		return nil, err
-	}
-
-	templateCache[id] = template
-	parsedTemplateCache[id] = parsedTemplate
-
 	return template, nil
-}
-
-func ParseTemplate(id, content string) (*templ.Template, error) {
-	return templ.New(id).Option("missingkey=error").Parse(content)
 }

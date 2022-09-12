@@ -20,7 +20,6 @@
 package v2
 
 import (
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"path"
 	"path/filepath"
@@ -33,9 +32,6 @@ import (
 
 // tests conversion from v1 by converting v1 test-resources before deploying as v2
 func TestV1ConfigurationCanBeConvertedAndDeployedAfterConversion(t *testing.T) {
-
-	// QUICKFIX: ensure the conversion reads configs from disk rather than anything cached from prev runs
-	template.InitTemplateCache()
 
 	configV1Folder := "../v1/test-resources/integration-all-configs/"
 	env := path.Join(configV1Folder, "environments.yaml")

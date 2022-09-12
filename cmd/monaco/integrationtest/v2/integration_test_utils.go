@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
 	deploy "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/deploy/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
 	project "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
@@ -248,8 +247,6 @@ func RunIntegrationWithCleanupOnGivenFs(t *testing.T, testFs afero.Fs, configFol
 		t.Fatalf("Error rewriting configs names: %s", err)
 		return
 	}
-
-	template.InitTemplateCache()
 
 	defer cleanupIntegrationTest(t, loadedManifest, specificEnvironment, suffix)
 
