@@ -15,7 +15,6 @@
 package template
 
 import (
-	"encoding/json"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"path/filepath"
 
@@ -36,27 +35,6 @@ type Template interface {
 type FileBasedTemplate interface {
 	Template
 	FilePath() string
-}
-
-// type defining a template which can be rendered
-type stringTemplate struct {
-	id string
-
-	name string
-
-	content string
-}
-
-func (t *stringTemplate) Id() string {
-	return t.id
-}
-
-func (t *stringTemplate) Name() string {
-	return t.name
-}
-
-func (t *stringTemplate) Content() string {
-	return t.content
 }
 
 // type defining a template which can be rendered
@@ -82,16 +60,8 @@ func (t *fileBasedTemplate) FilePath() string {
 }
 
 var (
-	_ Template          = (*stringTemplate)(nil)
 	_ FileBasedTemplate = (*fileBasedTemplate)(nil)
 )
-
-func (t *stringTemplate) MarshalJSON() ([]byte, error) {
-	// Only used for debugging purpose.
-	// The content of the template is dropped, since it adds too much
-	// content to the debug file.
-	return json.Marshal(&struct{ Name string }{Name: t.name})
-}
 
 // tries to load the file at the given path and turns it into a template.
 // the name of the template will be the sanitized path.
@@ -119,7 +89,7 @@ func LoadTemplate(fs afero.Fs, path string) (Template, error) {
 }
 
 // tries to parse the given string into a template and return it
-func CreateFileBasedTemplateFromString(path, content string) (Template, error) {
+func CreateTemplateFromString(path, content string) (Template, error) {
 	sanitizedPath := filepath.Clean(path)
 
 	log.Debug("Loading file-based template for %s", sanitizedPath)
@@ -128,20 +98,6 @@ func CreateFileBasedTemplateFromString(path, content string) (Template, error) {
 
 	*template = fileBasedTemplate{
 		path:    path,
-		content: content,
-	}
-
-	return template, nil
-}
-
-// tries to parse the given string into a template and return it
-func LoadTemplateFromString(id, name, content string) (Template, error) {
-
-	template := new(stringTemplate)
-
-	*template = stringTemplate{
-		id:      id,
-		name:    name,
 		content: content,
 	}
 
