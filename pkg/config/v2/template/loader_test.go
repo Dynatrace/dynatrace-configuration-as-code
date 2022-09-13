@@ -32,10 +32,9 @@ func TestCreateTemplateFromString(t *testing.T) {
 		content string
 	}
 	tests := []struct {
-		name    string
-		args    args
-		want    Template
-		wantErr bool
+		name string
+		args args
+		want Template
 	}{
 		{
 			"simple template created",
@@ -47,7 +46,6 @@ func TestCreateTemplateFromString(t *testing.T) {
 				path:    "a/file/path.json",
 				content: " { file: content } ",
 			},
-			false,
 		},
 		{
 			"works on empty inputs",
@@ -59,16 +57,11 @@ func TestCreateTemplateFromString(t *testing.T) {
 				path:    "",
 				content: "",
 			},
-			false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := CreateTemplateFromString(tt.args.path, tt.args.content)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("CreateTemplateFromString() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			got := CreateTemplateFromString(tt.args.path, tt.args.content)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("CreateTemplateFromString() got = %v, want %v", got, tt.want)
 			}

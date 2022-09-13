@@ -356,11 +356,7 @@ func convertTemplate(context *ConfigConvertContext, currentPath string, writeToP
 		return transformToPropertyAccess(paramName)
 	})
 
-	templ, err := template.CreateTemplateFromString(writeToPath, templText)
-
-	if err != nil {
-		errors = append(errors, err)
-	}
+	templ := template.CreateTemplateFromString(writeToPath, templText)
 
 	if len(errors) > 0 {
 		return nil, nil, errors

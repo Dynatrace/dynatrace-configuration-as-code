@@ -764,9 +764,7 @@ func generateDummyTemplate(t *testing.T) template.Template {
 
 	assert.NilError(t, err)
 
-	templ, err := template.CreateTemplateFromString("deploy_test-"+uuid.String(), "{}")
-
-	assert.NilError(t, err)
+	templ := template.CreateTemplateFromString("deploy_test-"+uuid.String(), "{}")
 
 	return templ
 }
