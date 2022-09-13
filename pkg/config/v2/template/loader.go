@@ -15,6 +15,7 @@
 package template
 
 import (
+	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"path/filepath"
 
@@ -33,6 +34,7 @@ type Template interface {
 }
 
 type FileBasedTemplate interface {
+	//TODO possibly drop this, as there's for now only file-based templates (can there ever be others?)
 	Template
 	FilePath() string
 }
@@ -75,7 +77,7 @@ func LoadTemplate(fs afero.Fs, path string) (Template, error) {
 	data, err := afero.ReadFile(fs, sanitizedPath)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load template: %w", err)
 	}
 
 	content := string(data)

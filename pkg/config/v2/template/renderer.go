@@ -21,7 +21,7 @@ import (
 	templ "text/template"
 )
 
-// tries to render a given template with the given properties and returns the
+// Render tries to render a given template with the given properties and returns the
 // resulting string. if any error occurs during rendering, an error is returned.
 func Render(template Template, properties map[string]interface{}) (string, error) {
 	parsedTemplate, err := ParseTemplate(template.Id(), template.Content())
@@ -43,6 +43,8 @@ func Render(template Template, properties map[string]interface{}) (string, error
 	return result.String(), nil
 }
 
+// ParseTemplate creates go Template with the given id from the given string content
+// in any error occurs creating the template, an erro is returned
 func ParseTemplate(id, content string) (*templ.Template, error) {
 	return templ.New(id).Option("missingkey=error").Parse(content)
 }
