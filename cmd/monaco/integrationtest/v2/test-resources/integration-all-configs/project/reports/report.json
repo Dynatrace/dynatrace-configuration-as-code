@@ -1,5 +1,5 @@
 {
- "dashboardId": "{{.dashboardId}}",
+ "dashboardId": "{{.name}}",
  "enabled": true,
  "subscriptions": {
   "MONTH": [],
