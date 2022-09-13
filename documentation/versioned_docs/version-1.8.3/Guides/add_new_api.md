@@ -3,7 +3,7 @@ sidebar_position: 1
 title: Add a new API
 ---
 ​
-This guide shows you how to add a new API to Monaco that is not included in the [table of supported APIs](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code#configuration-types--apis) and how to determine whether an API is easy to add. 
+This guide shows you how to add a new API to Monaco that is not included in the [table of supported APIs](configuration/configTypes_tokenPermissions.md) and how to determine whether an API is easy to add. 
 ​
 > :warning: Adding APIs to Monaco is straightforward in most cases. However, some APIs require more coding.
 ​
