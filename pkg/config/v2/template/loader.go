@@ -59,9 +59,11 @@ func (t *fileBasedTemplate) FilePath() string {
 	return t.path
 }
 
-var (
-	_ FileBasedTemplate = (*fileBasedTemplate)(nil)
-)
+// this forces the compiler to check if fileBasedTemplate is of interface type FileBasedTemplate
+var _ FileBasedTemplate = (*fileBasedTemplate)(nil)
+
+// this forces the compiler to check if fileBasedTemplate is of interface type Template
+var _ Template = (*fileBasedTemplate)(nil)
 
 // tries to load the file at the given path and turns it into a template.
 // the name of the template will be the sanitized path.
