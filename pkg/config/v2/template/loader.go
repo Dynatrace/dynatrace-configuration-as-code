@@ -22,6 +22,11 @@ import (
 	"github.com/spf13/afero"
 )
 
+// Template is the main interface of a configuration payload that may contain template references (using Go Templates)
+// The only implementation used in monaco is the FilebasedTemplate, but this interface is meant to enable any usecase
+// where the content of a configuration is not coming from a file - e.g. a possible use as a library in a terraform
+// provider, which could implement its own extension of a Template that turns an object in TF configuration language into
+// deployable JSON payload when Content() is called.
 type Template interface {
 	// id of the template, used as a key in the template cache
 	Id() string
@@ -33,8 +38,9 @@ type Template interface {
 	Content() string
 }
 
+// FileBasedTemplate is the usual (only) type of config template monaco uses
+// This is the usual API payload JSON file
 type FileBasedTemplate interface {
-	//TODO possibly drop this, as there's for now only file-based templates (can there ever be others?)
 	Template
 	FilePath() string
 }
