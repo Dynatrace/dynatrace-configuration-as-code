@@ -1,0 +1,25 @@
+projects:
+# this will clash with a sub-project of the star-trek grouping
+- name: star-trek.star-gate
+  path: movies/science fiction/the-hitchhikers-guide-to-the-galaxy
+# this will load star-trek.star-gate and star-trek.star-wars as projects
+- name: star-trek
+  type: grouping
+  path: star-trek
+environments:
+- group: development
+  entries:
+  - name: environment1
+    url:
+      type: environment
+      value: URL_ENVIRONMENT_1
+    token:
+      name: TOKEN_ENVIRONMENT_1
+- group: production
+  entries:
+    - name: environment2
+      url:
+        type: environment
+        value: URL_ENVIRONMENT_2
+      token:
+        name: TOKEN_ENVIRONMENT_2

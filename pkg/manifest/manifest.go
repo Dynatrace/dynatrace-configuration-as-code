@@ -29,6 +29,13 @@ type ProjectDefinition struct {
 	Path  string
 }
 
+func (p ProjectDefinition) String() string {
+	if len(p.Group) > 0 {
+		return fmt.Sprintf("%s (group: %s, path: %s)", p.Name, p.Group, p.Path)
+	}
+	return fmt.Sprintf("%s (path: %s)", p.Name, p.Path)
+}
+
 type EnvironmentDefinition struct {
 	Name  string
 	url   UrlDefinition

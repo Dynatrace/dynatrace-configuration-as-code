@@ -20,6 +20,7 @@
 package manifest
 
 import (
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/spf13/afero"
 	"reflect"
 	"testing"
@@ -215,4 +216,224 @@ func Test_parseProjectDefinition_FailsOnUnknownType(t *testing.T) {
 
 	assert.Assert(t, len(gotErrs) == 1)
 	assert.ErrorType(t, gotErrs[0], ManifestProjectLoaderError{})
+}
+
+func Test_parseProjectDefinition_FailsOnInvalidProjectDefinitions(t *testing.T) {
+	context := projectLoaderContext{
+		fs:           afero.NewMemMapFs(),
+		manifestPath: ".",
+	}
+
+	tests := []struct {
+		name    string
+		project project
+	}{
+		{
+			"invalid simple project",
+			project{
+				Name: "",
+				Path: "",
+			},
+		},
+		{
+			"grouping dir that does not exist",
+			project{
+				Name: "a grouping",
+				Type: groupProjectType,
+				Path: "path/that/wont/be/found",
+			},
+		},
+		{
+			"name containing path separators",
+			project{
+				Name: "names/must/not/be\\paths",
+				Path: "",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, gotErrs := parseProjectDefinition(&context, tt.project)
+
+			assert.Assert(t, len(gotErrs) == 1)
+			assert.ErrorType(t, gotErrs[0], ManifestProjectLoaderError{})
+		})
+	}
+
+}
+
+func Test_toProjectDefinitions(t *testing.T) {
+
+	testFs := afero.NewMemMapFs()
+	_ = testFs.MkdirAll("project/path/", 0755)
+	_ = testFs.MkdirAll("project/path/a", 0755)
+	_ = testFs.MkdirAll("project/path/b", 0755)
+	_ = afero.WriteFile(testFs, "project/path/test_file", []byte("file should be ignored"), 0644)
+	_ = testFs.MkdirAll("another/project/path/", 0755)
+	_ = testFs.MkdirAll("another/project/path/one", 0755)
+	_ = testFs.MkdirAll("another/project/path/two", 0755)
+	_ = testFs.MkdirAll("empty/project/path", 0755)
+
+	tests := []struct {
+		name               string
+		projectDefinitions []project
+		want               map[string]ProjectDefinition
+		wantErrs           bool
+	}{
+		{
+			"returns error on duplicate project id",
+			[]project{
+				{
+					Name: "project_id",
+					Path: "project/path/",
+				},
+				{
+					Name: "project_id",
+					Path: "another/project/path/",
+				},
+			},
+			nil,
+			true,
+		},
+		{
+			"returns error on duplicate project id between simple and grouping",
+			[]project{
+				{
+					Name: "project_id",
+					Path: "project/path/",
+				},
+				{
+					Name: "project_id",
+					Type: groupProjectType,
+					Path: "another/project/path/",
+				},
+			},
+			nil,
+			true,
+		},
+		{
+			"returns error on duplicate project id between grouping and grouping",
+			[]project{
+				{
+					Name: "project_id",
+					Type: groupProjectType,
+					Path: "project/path/",
+				},
+				{
+					Name: "project_id",
+					Type: groupProjectType,
+					Path: "another/project/path/",
+				},
+			},
+			nil,
+			true,
+		},
+		{
+			"returns error on duplicate project id between simple and sub-project in a group",
+			[]project{
+				{
+					Name: "project_id.a",
+					Path: "some/project/path/",
+				},
+				{
+					Name: "project_id", //this group will contain 'project_id.a' & 'project_id.b' projects
+					Type: groupProjectType,
+					Path: "project/path/",
+				},
+			},
+			nil,
+			true,
+		},
+		{
+			"returns error if grouping project path can not be read",
+			[]project{
+				{
+					Name: "project_id",
+					Type: groupProjectType,
+					Path: "this/path/does/not/exist",
+				},
+			},
+			nil,
+			true,
+		},
+		{
+			"returns error if project is invalid (empty)",
+			[]project{
+				{
+					Name: "",
+					Path: "",
+				},
+			},
+			nil,
+			true,
+		},
+		{
+			"returns error if project is invalid (path separators)",
+			[]project{
+				{
+					Name: "names/must/not/be\\paths",
+					Path: "",
+				},
+			},
+			nil,
+			true,
+		},
+		{
+			"returns error if a grouping project does not contain any projects",
+			[]project{
+				{
+					Name: "project_id",
+					Type: groupProjectType,
+					Path: "empty/project/path/",
+				},
+			},
+			nil,
+			true,
+		},
+		{
+			"correctly parses project definition",
+			[]project{
+				{
+					Name: "project_id_1",
+					Path: "project/path/",
+				},
+				{
+					Name: "project_id_2",
+					Type: groupProjectType,
+					Path: "another/project/path/",
+				},
+			},
+			map[string]ProjectDefinition{
+				"project_id_1": {
+					Name: "project_id_1",
+					Path: "project/path/",
+				},
+				"project_id_2.one": {
+					Name:  "project_id_2.one",
+					Group: "project_id_2",
+					Path:  "another/project/path/one",
+				},
+				"project_id_2.two": {
+					Name:  "project_id_2.two",
+					Group: "project_id_2",
+					Path:  "another/project/path/two",
+				},
+			},
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			context := &projectLoaderContext{testFs, "path/to/a/manifest.yaml"}
+
+			got, gotErrs := toProjectDefinitions(context, tt.projectDefinitions)
+
+			numErrs := len(gotErrs)
+			if (tt.wantErrs && numErrs <= 0) || (!tt.wantErrs && numErrs > 0) {
+				t.Errorf("toProjectDefinitions() returned unexpected Errors = %v", gotErrs)
+			}
+
+			assert.DeepEqual(t, got, tt.want, cmpopts.SortSlices(func(a, b ProjectDefinition) bool { return a.Name < b.Name }))
+		})
+	}
 }

@@ -78,3 +78,14 @@ func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 		AssertAllConfigsAvailability(t, fs, oneProjectManifestNotDeployed, multiProjectSpecificEnvironment, false)
 	})
 }
+
+func TestIntegrationMultiProject_ReturnsErrorOnInvalidProjectDefinitions(t *testing.T) {
+
+	invalidManifest := multiProjectFolder + "invalid-manifest-with-duplicate-projects.yaml"
+
+	cmd := runner.BuildCli(util.CreateTestFileSystem())
+	cmd.SetArgs([]string{"deploy", "--verbose", invalidManifest})
+	err := cmd.Execute()
+
+	assert.Check(t, err != nil)
+}

@@ -271,6 +271,11 @@ func toProjectDefinitions(context *projectLoaderContext, definitions []project) 
 	var errors []error
 	result := make(map[string]ProjectDefinition)
 
+	definitionErrors := checkForDuplicateDefinitions(context, definitions)
+	if len(definitionErrors) > 0 {
+		return nil, definitionErrors
+	}
+
 	for _, project := range definitions {
 		parsed, projectErrors := parseProjectDefinition(context, project)
 
@@ -280,8 +285,8 @@ func toProjectDefinitions(context *projectLoaderContext, definitions []project) 
 		}
 
 		for _, project := range parsed {
-			if _, found := result[project.Name]; found {
-				errors = append(errors, newManifestLoaderError(context.manifestPath, fmt.Sprintf("duplicated project name `%s`", project.Name)))
+			if p, found := result[project.Name]; found {
+				errors = append(errors, newManifestLoaderError(context.manifestPath, fmt.Sprintf("duplicated project name `%s` used by %s and %s", project.Name, p, project)))
 				continue
 			}
 
@@ -294,6 +299,17 @@ func toProjectDefinitions(context *projectLoaderContext, definitions []project) 
 	}
 
 	return result, nil
+}
+
+func checkForDuplicateDefinitions(context *projectLoaderContext, definitions []project) (errors []error) {
+	definedIds := map[string]struct{}{}
+	for _, project := range definitions {
+		if _, found := definedIds[project.Name]; found {
+			errors = append(errors, newManifestLoaderError(context.manifestPath, fmt.Sprintf("duplicated project name `%s`", project.Name)))
+		}
+		definedIds[project.Name] = struct{}{}
+	}
+	return errors
 }
 
 func parseProjectDefinition(context *projectLoaderContext, project project) ([]ProjectDefinition, []error) {
@@ -350,7 +366,7 @@ func parseGroupingProjectDefinition(context *projectLoaderContext, project proje
 	files, err := afero.ReadDir(context.fs, projectPath)
 
 	if err != nil {
-		return nil, []error{err}
+		return nil, []error{newManifestProjectLoaderError(context.manifestPath, project.Name, fmt.Sprintf("failed to read project dir: %v", err))}
 	}
 
 	var result []ProjectDefinition
