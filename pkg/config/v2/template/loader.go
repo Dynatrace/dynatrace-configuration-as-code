@@ -88,14 +88,12 @@ func LoadTemplate(fs afero.Fs, path string) (Template, error) {
 
 	content := string(data)
 
-	template := new(fileBasedTemplate)
-
-	*template = fileBasedTemplate{
+	template := fileBasedTemplate{
 		path:    sanitizedPath,
 		content: content,
 	}
 
-	return template, nil
+	return &template, nil
 }
 
 // tries to parse the given string into a template and return it
@@ -104,12 +102,10 @@ func CreateTemplateFromString(path, content string) Template {
 
 	log.Debug("Loading file-based template for %s", sanitizedPath)
 
-	template := new(fileBasedTemplate)
-
-	*template = fileBasedTemplate{
+	template := fileBasedTemplate{
 		path:    path,
 		content: content,
 	}
 
-	return template
+	return &template
 }
