@@ -115,7 +115,7 @@ func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironments []s
 
 func loadProjectsToDeploy(specificProject []string, projects []project.Project, environmentNames []string) ([]project.Project, error) {
 	if len(specificProject) > 0 {
-		filtered, err := filterProjectIdsByName(projects, specificProject)
+		filtered, err := filterProjectsByName(projects, specificProject)
 
 		if err != nil {
 			return nil, err
@@ -309,14 +309,16 @@ func toEnvironmentNames(environments []manifest.EnvironmentDefinition) []string 
 	return result
 }
 
-func filterProjectIdsByName(projects []project.Project, names []string) ([]string, error) {
+func filterProjectsByName(projects []project.Project, names []string) ([]string, error) {
 	var result []string
 
 	foundProjects := map[string]struct{}{}
 
 	for _, p := range projects {
-		if containsName(names, p.Id) || containsName(names, p.GroupId) {
+		if containsName(names, p.Id) {
 			foundProjects[p.Id] = struct{}{}
+			result = append(result, p.Id)
+		} else if containsName(names, p.GroupId) {
 			foundProjects[p.GroupId] = struct{}{}
 			result = append(result, p.Id)
 		}
