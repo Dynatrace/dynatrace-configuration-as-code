@@ -30,7 +30,7 @@ type ProjectDefinition struct {
 }
 
 func (p ProjectDefinition) String() string {
-	if len(p.Group) > 0 {
+	if p.Group != "" {
 		return fmt.Sprintf("%s (group: %s, path: %s)", p.Name, p.Group, p.Path)
 	}
 	return fmt.Sprintf("%s (path: %s)", p.Name, p.Path)

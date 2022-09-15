@@ -55,7 +55,7 @@ func ReplaceName(line string, idChange func(string) string) string {
 		withoutPrefix := strings.TrimLeft(trimmed, "name:")
 		name := strings.TrimSpace(withoutPrefix)
 
-		if len(name) == 0 { //line only contained the name, can't do anything here and probably a non-shorthand v2 reference
+		if name == "" { //line only contained the name, can't do anything here and probably a non-shorthand v2 reference
 			return line
 		}
 
