@@ -37,7 +37,7 @@ profile:
 
 Every config needs to provide a name for unique identification. Omitting the name variable or using a duplicate name causes a validation / deployment error.
 
-Any defined `{config name}` represents a variable that can then be used in a [JSON template](../configuration/configuration_structure#config-json-templates), and will be resolved and inserted into the config before deploying to Dynatrace.
+Any defined `{config name}` represents a variable that can then be used in a [JSON template](configuration_structure.md#config-json-templates), and will be resolved and inserted into the config before deploying to Dynatrace.
 
 Example: `projects/infrastructure/alerting-profile/profiles.yaml` defines a `name`, which is then used in `projects/infrastructure/alerting-profile/profile.json` as `{{.name}}`.
 

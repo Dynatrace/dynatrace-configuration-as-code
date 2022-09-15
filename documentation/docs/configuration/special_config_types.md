@@ -36,6 +36,6 @@ To work around this, special handling is present for these configuration APIS, e
 As this switch from names to IDs results in re-creating configurations if they were previously created by name,
 already existing configuration types like `dashboard` are retained with the previous flawed handling, while new `-v2` configuration types were added with the non-unique-name constraint/handling.
 
-To ensure configurations are correctly updated, please see the manual steps in the [Migration Guide](Guides/deprecated_migration.md) for how to deal with this.
+To ensure configurations are correctly updated, please see the manual steps in the [Migration Guide](/Guides/deprecated_migration.md) for how to deal with this.
 
 > NOTE: As the `-v2` naming implies, the previous handling is deprecated and will be dropped in version 2.0.

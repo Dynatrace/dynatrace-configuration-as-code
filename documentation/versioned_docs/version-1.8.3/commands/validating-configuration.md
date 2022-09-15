@@ -16,7 +16,7 @@ monaco --dry-run --environments=environments.yaml
 
 ## Validating your configuration using the new CLI
 
-To validate your configuration [using the new CLI](./experimental-new-cli.md), add the `--dry-run` flag to the `deploy` command.
+To validate your configuration [using the new CLI](experimental-new-cli.md), add the `--dry-run` flag to the `deploy` command.
 ```shell title="Validating your configuration using the new CLI"
 NEW_CLI=1 monaco deploy --dry-run --environments=environments.yaml
 ```

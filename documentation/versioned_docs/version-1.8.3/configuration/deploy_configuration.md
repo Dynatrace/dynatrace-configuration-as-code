@@ -41,7 +41,7 @@ To deploy to one specific environment within an `environments.yaml` file, the `-
 ```shell
 monaco -e=environments.yaml -se=my-environment -p="my-environment" cluster
 ```
-Read more about the environments file here: [Environments file](./environments_file)
+Read more about the environments file here: [Environments file](environments_file.md)
 
 ### Running the tool with a proxy
 

@@ -37,7 +37,7 @@ Monaco currently offers the following features:
 
 ## Get started
 
-To get started, follow our guide on [how to install Monaco.](./installation)
+To get started, follow our guide on [how to install Monaco.](installation.md)
 
 ## Learn more
 
