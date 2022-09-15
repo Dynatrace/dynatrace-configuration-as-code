@@ -16,6 +16,7 @@ package convert
 
 import (
 	"fmt"
+	"path"
 	"path/filepath"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
@@ -59,6 +60,11 @@ func Convert(fs afero.Fs, workingDir string, environmentsFile string, outputFold
 		util.PrintErrors(errs)
 
 		return fmt.Errorf("encountered errors while converting configs. check logs")
+	}
+
+	err := copyDeleteFileIfPresent(fs, workingDir, outputFolder)
+	if err != nil {
+		return fmt.Errorf("failed to copy delete.yaml from %s to %s: %w", workingDir, outputFolder, err)
 	}
 
 	log.Info("Successfully converted configurations to v2 format, stored in '%s'", outputFolder)
@@ -111,4 +117,29 @@ func removeEmptyProjects(projects []projectv1.Project) []projectv1.Project {
 	}
 
 	return filteredProjects
+}
+
+func copyDeleteFileIfPresent(fs afero.Fs, workingDir, outputFolder string) error {
+
+	currentDeleteFile := path.Join(workingDir, "delete.yaml")
+
+	deleteFileExists, err := afero.Exists(fs, currentDeleteFile)
+	if err != nil {
+		return err
+	}
+
+	if !deleteFileExists {
+		return nil
+	}
+
+	f, err := afero.ReadFile(fs, currentDeleteFile)
+	if err != nil {
+		return err
+	}
+	err = afero.WriteFile(fs, path.Join(outputFolder, "delete.yaml"), f, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
