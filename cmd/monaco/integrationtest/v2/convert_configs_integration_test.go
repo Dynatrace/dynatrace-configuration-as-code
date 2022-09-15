@@ -30,9 +30,7 @@ import (
 	"gotest.tools/assert"
 )
 
-// tests conversion from v1 by converting v1 test-resources before deploying as v2
-func TestV1ConfigurationCanBeConvertedAndDeployedAfterConversion(t *testing.T) {
-
+func setupConvertedConfig(t *testing.T) (testFs afero.Fs, convertedFolder string) {
 	configV1Folder := "../v1/test-resources/integration-all-configs/"
 	env := path.Join(configV1Folder, "environments.yaml")
 
@@ -54,10 +52,32 @@ func TestV1ConfigurationCanBeConvertedAndDeployedAfterConversion(t *testing.T) {
 
 	assert.NilError(t, err)
 
-	_, err = fs.Stat(convertedConfigV2Folder)
-	assert.NilError(t, err, "Expected converted config folder %s to exist", convertedConfigV2Folder)
+	return fs, convertedConfigV2Folder
+}
+
+func TestV1ConfigurationCanBeConverted(t *testing.T) {
+	fs, convertedConfigV2Folder := setupConvertedConfig(t)
+
+	assertExpectedPathExists(t, fs, convertedConfigV2Folder)
+	assertExpectedPathExists(t, fs, path.Join(convertedConfigV2Folder, "manifest.yaml"))
+	assertExpectedPathExists(t, fs, path.Join(convertedConfigV2Folder, "delete.yaml"))
+	assertExpectedPathExists(t, fs, path.Join(convertedConfigV2Folder, "project/"))
+	assertExpectedPathExists(t, fs, path.Join(convertedConfigV2Folder, "project/auto-tag/config.yaml")) //check one sample config
+}
+
+func assertExpectedPathExists(t *testing.T, fs afero.Fs, path string) {
+	fileExists, _ := afero.Exists(fs, path)
+	assert.Check(t, fileExists, "Expected %s to exist", path)
+}
+
+// tests conversion from v1 by converting v1 test-resources before deploying as v2
+func TestV1ConfigurationCanBeConvertedAndDeployedAfterConversion(t *testing.T) {
+
+	fs, convertedConfigV2Folder := setupConvertedConfig(t)
+	assertExpectedPathExists(t, fs, convertedConfigV2Folder)
 
 	manifest := path.Join(convertedConfigV2Folder, "manifest.yaml")
+	assertExpectedPathExists(t, fs, manifest)
 
 	RunIntegrationWithCleanupOnGivenFs(t, fs, convertedConfigV2Folder, manifest, "", "AllConfigs", func(fs afero.Fs) {
 
