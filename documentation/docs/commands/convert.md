@@ -27,3 +27,7 @@ The following options (flags) allow you to run the convert command to change con
 - `--manifest` - With this option, the name of the manifest file that is produced by the convert command is supplied. (Defaults to manifest.yaml) `-m` can also be used as a shorthand.
 
 - `--output-folder` - This option is used supply the name of the output folder the convert command creates and stores all converted configurations.(Defaults to {project-folder}-v2) `-o` can also be used as a shorthand.
+
+## Demo
+
+![](./convert_demo.svg)
