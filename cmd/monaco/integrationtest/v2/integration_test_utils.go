@@ -111,26 +111,28 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 func AssertConfig(t *testing.T, client rest.DynatraceClient, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config, apiId string, name string) {
 
 	theApi := api.NewApis()[apiId]
-	_, existingId, _ := client.ExistsByName(theApi, name)
+
+	var exists bool
 
 	if config.Skip {
-		assert.Equal(t, existingId, "", "Object should NOT be available, but was. environment.Environment: '"+environment.Name+"', failed for '"+name+"' ("+apiId+")")
+		exists, _, _ = client.ExistsByName(theApi, name)
+		assert.Check(t, !exists, "Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, name, apiId)
 		return
 	}
 
 	description := fmt.Sprintf("%s %s on environment %s", apiId, name, environment.Name)
 
-	// 120 polling cycles -> Wait at most 120 * 2 seconds = 4 Minutes:
+	// To deal with delays of configs becoming available try for max 120 polling cycles (4min - at 2sec cycles) for expected state to be reached
 	err := rest.Wait(description, 120, func() bool {
-		_, existingId, _ := client.ExistsByName(theApi, name)
-		return (shouldBeAvailable && len(existingId) > 0) || (!shouldBeAvailable && len(existingId) == 0)
+		exists, _, _ = client.ExistsByName(theApi, name)
+		return (shouldBeAvailable && exists) || (!shouldBeAvailable && !exists)
 	})
 	assert.NilError(t, err)
 
 	if shouldBeAvailable {
-		assert.Check(t, len(existingId) > 0, "Object should be available, but wasn't. environment.Environment: '"+environment.Name+"', failed for '"+name+"' ("+apiId+")")
+		assert.Check(t, exists, "Object should be available, but wasn't. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, name, apiId)
 	} else {
-		assert.Equal(t, existingId, "", "Object should NOT be available, but was. environment.Environment: '"+environment.Name+"', failed for '"+name+"' ("+apiId+")")
+		assert.Check(t, !exists, "Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, name, apiId)
 	}
 }
 

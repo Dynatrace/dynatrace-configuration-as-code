@@ -73,26 +73,27 @@ func AssertConfig(t *testing.T, client rest.DynatraceClient, environment environ
 	api := config.GetApi()
 	name := config.GetProperties()[config.GetId()]["name"]
 
-	_, existingId, _ := client.ExistsByName(api, name)
+	var exists bool
 
 	if config.IsSkipDeployment(environment) {
-		assert.Equal(t, existingId, "", "Object should NOT be available, but was. environment.Environment: '"+environment.GetId()+"', failed for '"+name+"' ("+configType+")")
+		exists, _, _ = client.ExistsByName(api, name)
+		assert.Check(t, !exists, "Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environment.GetId(), name, configType)
 		return
 	}
 
 	description := fmt.Sprintf("%s %s on environment %s", configType, name, environment.GetId())
 
-	// 120 polling cycles -> Wait at most 120 * 2 seconds = 4 Minutes:
+	// To deal with delays of configs becoming available try for max 120 polling cycles (4min - at 2sec cycles) for expected state to be reached
 	err := rest.Wait(description, 120, func() bool {
-		_, existingId, _ := client.ExistsByName(api, name)
-		return (shouldBeAvailable && len(existingId) > 0) || (!shouldBeAvailable && len(existingId) == 0)
+		exists, _, _ = client.ExistsByName(api, name)
+		return (shouldBeAvailable && exists) || (!shouldBeAvailable && !exists)
 	})
 	assert.NilError(t, err)
 
 	if shouldBeAvailable {
-		assert.Check(t, len(existingId) > 0, "Object should be available, but wasn't. environment.Environment: '"+environment.GetId()+"', failed for '"+name+"' ("+configType+")")
+		assert.Check(t, exists, "Object should be available, but wasn't. environment.Environment: '%s', failed for '%s' (%s)", environment.GetId(), name, configType)
 	} else {
-		assert.Equal(t, existingId, "", "Object should NOT be available, but was. environment.Environment: '"+environment.GetId()+"', failed for '"+name+"' ("+configType+")")
+		assert.Check(t, !exists, "Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environment.GetId(), name, configType)
 	}
 }
 
