@@ -2,7 +2,7 @@
 sidebar_position: 2
 title: Migrating deprecated configuration types
 ---
-​
+
 This guide shows you how to migrate deprecated configuration types.
 
 ## *dashboard*, *request-naming-service*, *app-detection-rule*

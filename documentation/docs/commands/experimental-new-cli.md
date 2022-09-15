@@ -21,10 +21,10 @@ NEW_CLI=1 monaco
 
 This command is basically doing what the old tool did. It is used to deploy a specified config to a Dynatrace environment.
 The flags to things like the environments files are mostly the same.
-Read more about it here: [Deploy projects](../commands/deploying-projects.md)
+Read more about it here: [Deploy projects](deploying-projects.md)
 
 ### Download
 
 This command allows you to download the configuration from a Dynatrace tenant as Monaco files.
 Use this command to avoid starting from scratch when using Monaco.
-Read more about it here: [Download configuration](../commands/downloading-configuration.md)
+Read more about it here: [Download configuration](downloading-configuration.md)

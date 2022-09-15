@@ -27,9 +27,9 @@ Configs can then be downloaded via the respective GET endpoint defined in the Dy
 Checked-in configuration should **not** include:
 
 * The entity's `id` but only its `name`. The entity may be created or updated if one of the same name exists.
-  * The `name` must be defined as [a variable](#configuration-yaml-structure).
+  * The `name` must be defined as [a variable](yaml_config.md#config-yaml-structure).
 * Hardcoded values for environment information such as references to other auto-deployed entities, tags, management-zones, etc.
-  * These should all be referenced as variables as [described below](#referencing-other-configurations).
+  * These should all be referenced as variables as [described here](yaml_config.md#referencing-other-configurations).
 * Empty/null values that are optional for the creation of an object.
   * Most API GET endpoints return more data than needed to create an object. Many of those fields are empty or null and can be omitted.
   * E.g., `tileFilter`s on dashboards
@@ -41,7 +41,7 @@ The tool handles these files as templates, so you can use the following variable
 ```
 
 
-Variables present in the template need to be defined in the respective config`yaml` - [see 'Configuration YAML Structure'](../configuration/yaml_config).
+Variables present in the template need to be defined in the respective config`yaml` - [see 'Configuration YAML Structure'](yaml_config.md).
 
 ### Dashboard JSON
 
@@ -71,9 +71,9 @@ We recommend the following values for the `dashboardMetadata`:
 ```
 
 This config does the following:
-* Reference the name of the Dashboard as a [variable](../configuration/yaml_config)
+* Reference the name of the Dashboard as a [variable](yaml_config.md)
 * Share the dashboard with other users
-* Set a management zone filter on the complete dashboard, again as a variable, most likely [referenced from another config](../configuration/yaml_config#referencing-other-configurations)
+* Set a management zone filter on the complete dashboard, again as a variable, most likely [referenced from another config](yaml_config.md#referencing-other-configurations)
   * Filtering the whole dashboard by management zone makes sure no private data is accidentally picked up on tiles and removes the possible need to define filters for individual tiles
 
 From Dynatrace version 208 onwards:
@@ -151,7 +151,7 @@ And it also applies to the `SERVICE` type.
 ### Configuration types / APIs
 
 Each type of folder must contain one `configuration yaml` and one or more JSON files containing the actual configuration sent to the Dynatrace API.
-The folder name is case-sensitive and needs to be written exactly as in its definition in [Supported configuration types](../configuration/configTypes_tokenPermissions).
+The folder name is case-sensitive and needs to be written exactly as in its definition in [Supported configuration types](configTypes_tokenPermissions.md).
 
 
 ```

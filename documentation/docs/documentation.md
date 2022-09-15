@@ -29,18 +29,18 @@ Monaco is a "monitoring as code" tool that allows you to create, update and vers
 
   <li>
 
-[What is Monaco?](./Get-started/intro)
+[What is Monaco?](/Get-started/intro.md)
   </li>
 
 <li>
 
-[Install Monaco](./Get-started/installation)
+[Install Monaco](/Get-started/installation.md)
 
 </li>
 
   <li>
 
-[Deploy configuration](./configuration/deploy_configuration)
+[Deploy configuration](/configuration/deploy_configuration.md)
 
   </li>
 
@@ -60,19 +60,19 @@ Monaco is a "monitoring as code" tool that allows you to create, update and vers
 
   <li>
 
-[Delete configuration](./configuration/delete_config)
+[Delete configuration](/configuration/delete_config.md)
 
   </li>
 
   <li>
 
-[Add a new API](./Guides/add_new_api)
+[Add a new API](/Guides/add_new_api.md)
 
   </li>
 
   <li>
 
-[Activate the new CLI](./commands/experimental-new-cli)
+[Activate the new CLI](/commands/experimental-new-cli.md)
 
   </li>
 
@@ -97,7 +97,7 @@ Monaco is a "monitoring as code" tool that allows you to create, update and vers
 
   <li>
 
-[License and bill of materials](./Useful-links/bill-of-materials)  
+[License and bill of materials](/Useful-links/bill-of-materials.md)  
 
   </li>
 
