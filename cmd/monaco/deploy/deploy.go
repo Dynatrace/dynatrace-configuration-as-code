@@ -136,7 +136,7 @@ func execDeployment(sortedConfigs map[string][]config.Config, environmentMap map
 	var deploymentErrors []error
 
 	for envName, configs := range sortedConfigs {
-		log.Info("Deploying configurations to environment `%s`...", envName)
+		logDeploymentInfo(dryRun, envName)
 		env, found := environmentMap[envName]
 
 		if !found {
@@ -167,12 +167,27 @@ func execDeployment(sortedConfigs map[string][]config.Config, environmentMap map
 	if deploymentErrors != nil {
 		printErrorReport(deploymentErrors)
 
-		return errors.New("errors during deploy")
+		return fmt.Errorf("errors during %s", getOperationNounForLogging(dryRun))
 	} else {
-		log.Info("Deployment finished without errors")
+		log.Info("%s finished without errors", getOperationNounForLogging(dryRun))
 	}
 
 	return nil
+}
+
+func logDeploymentInfo(dryRun bool, envName string) {
+	if dryRun {
+		log.Info("Validating configurations for environment `%s`...", envName)
+	} else {
+		log.Info("Deploying configurations to environment `%s`...", envName)
+	}
+}
+
+func getOperationNounForLogging(dryRun bool) string {
+	if dryRun {
+		return "Validation"
+	}
+	return "Deployment"
 }
 
 func printErrorReport(deploymentErrors []error) {
