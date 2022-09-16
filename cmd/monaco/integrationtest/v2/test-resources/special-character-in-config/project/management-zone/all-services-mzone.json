@@ -1,0 +1,12 @@
+{
+    "description": null,
+    "dimensionalRules": [],
+    "entitySelectorBasedRules": [
+        {
+            "enabled": true,
+            "entitySelector": "type(\"CONTAINER_GROUP\"),entityName.contains(\"ervice\")"
+        }
+    ],
+    "name": "{{.name}}",
+    "rules": []
+}

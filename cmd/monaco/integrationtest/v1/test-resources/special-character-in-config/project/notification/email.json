@@ -1,0 +1,12 @@
+{
+    "type": "EMAIL",
+    "name": "{{ .name }}",
+    "alertingProfile": "{{ .alertingProfileId }}",
+    "active": true,
+    "subject": "I have a problem in *{{ .environment }}*",
+    "body": "{{ .environment }} stage: {State} {ProblemID} \n{ProblemURL}\n{ProblemTitle}\n{ProblemImpact} {ProblemSeverity}\n----\n{ProblemDetailsText}\n",
+    "receivers": [
+        {{ .receivers }}
+    ],
+    "shouldSendForResolvedProblems": false
+}

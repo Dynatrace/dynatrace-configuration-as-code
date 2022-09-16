@@ -1,0 +1,6 @@
+configs:
+- id: profile
+  config:
+    name: A "Alerting Profile" - for things with "quotes"
+    template: profile.json
+    skip: false

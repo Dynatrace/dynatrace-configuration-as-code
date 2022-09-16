@@ -49,7 +49,9 @@ func AssertAllConfigsAvailability(projects []project.Project, t *testing.T, envi
 		assert.NilError(t, err)
 
 		for _, project := range projects {
+			log.Info("Asserting Configs from project are available: %s", project.GetId())
 			for _, config := range project.GetConfigs() {
+				log.Info("Asserting Config is available: %s (%s)", config.GetProperties()[config.GetId()]["name"], config.GetType())
 				AssertConfig(t, client, environment, available, config)
 			}
 		}

@@ -1,0 +1,6 @@
+configs:
+- id: ervices_zone
+  config:
+    name: A "Management Zone" - GC name contains "ervice"
+    template: all-services-mzone.json
+    skip: false
