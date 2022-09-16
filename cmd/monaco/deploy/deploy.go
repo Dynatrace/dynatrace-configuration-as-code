@@ -66,16 +66,6 @@ func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironments []s
 
 	apis := api.NewApis()
 
-	log.Info("Projects to be deployed:")
-	for name := range manifest.Projects {
-		log.Info("  - %s", name)
-	}
-
-	log.Info("Environments to deploy to:")
-	for _, name := range environmentNames {
-		log.Info("  - %s", name)
-	}
-
 	log.Debug("Loading configuration projects ...")
 	projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
 		Apis:            api.GetApiNames(apis),
@@ -101,6 +91,16 @@ func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironments []s
 		// TODO add grouping and print proper error repot
 		util.PrintErrors(errs)
 		return errors.New("error during sort")
+	}
+
+	log.Info("Projects to be deployed:")
+	for _, p := range projects {
+		log.Info("  - %s", p)
+	}
+
+	log.Info("Environments to deploy to:")
+	for _, name := range environmentNames {
+		log.Info("  - %s", name)
 	}
 
 	err = execDeployment(sortedConfigs, environmentMap, continueOnError, dryRun, apis)

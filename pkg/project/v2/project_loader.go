@@ -76,7 +76,7 @@ func toEnvironmentSlice(environments map[string]manifest.EnvironmentDefinition) 
 func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition manifest.ProjectDefinition,
 	environments []manifest.EnvironmentDefinition) (Project, []error) {
 
-	log.Info("Loading project `%s` (%s)", projectDefinition.Name, projectDefinition.Path)
+	log.Debug("Loading project `%s` (%s)...", projectDefinition.Name, projectDefinition.Path)
 
 	configs := make([]config.Config, 0)
 	var errors []error

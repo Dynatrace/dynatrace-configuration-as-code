@@ -15,6 +15,7 @@
 package v2
 
 import (
+	"fmt"
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 )
 
@@ -39,7 +40,7 @@ type Project struct {
 	Dependencies DependenciesPerEnvironment
 }
 
-func (p *Project) HasDependencyOn(environment string, project Project) bool {
+func (p Project) HasDependencyOn(environment string, project Project) bool {
 	dependencies, found := p.Dependencies[environment]
 
 	if !found {
@@ -53,4 +54,11 @@ func (p *Project) HasDependencyOn(environment string, project Project) bool {
 	}
 
 	return false
+}
+
+func (p Project) String() string {
+	if p.GroupId != "" {
+		return fmt.Sprintf("%s [group: %s] (%d configs)", p.Id, p.GroupId, len(p.Configs))
+	}
+	return fmt.Sprintf("%s (%d configs)", p.Id, len(p.Configs))
 }
