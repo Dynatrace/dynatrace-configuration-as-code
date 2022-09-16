@@ -121,10 +121,10 @@ func ValidateJson(data string, location Location) error {
 		return mapError(data, location, int(e.Offset), err)
 	case *json.UnmarshalTypeError:
 		// TODO actually check against the model (github issue #104)
-		return nil
+		return mapError(data, location, int(e.Offset), err)
 	}
 
-	return nil
+	return newEmptyErr(location, err)
 }
 
 // mapError maps the json parsing error to a JsonValidationError which contains
