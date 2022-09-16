@@ -25,12 +25,13 @@ import (
 	templ "text/template"
 )
 
-var (
+const (
 	simpleTemplateString       = "{ \"key\": {{ .val }} }"
 	invalidTemplateString      = "{ \"key\": {{ .val }"
 	templateStringWithNewlines = `{ "key":
 {{ .val }}
 }`
+	templateString = "Follow the {{.color}} {{ .animal }}"
 )
 
 func TestParseTemplate(t *testing.T) {
@@ -109,12 +110,52 @@ func TestRender(t *testing.T) {
 			false,
 		},
 		{
+			"renders template #1",
+			&fileBasedTemplate{
+				path:    "a path",
+				content: templateString,
+			},
+			map[string]interface{}{"color": "white", "animal": "rabbit"},
+			`Follow the white rabbit`,
+			false,
+		},
+		{
+			"renders template #2",
+			&fileBasedTemplate{
+				path:    "a path",
+				content: templateString,
+			},
+			map[string]interface{}{"color": "white", "animal": "cow"},
+			`Follow the white cow`,
+			false,
+		},
+		{
+			"renders template - random characters in property",
+			&fileBasedTemplate{
+				path:    "a path",
+				content: templateString,
+			},
+			map[string]interface{}{"color": "white", "animal": "rabbit$=co\\/\\/=chicken"},
+			`Follow the white rabbit$=co\\/\\/=chicken`,
+			false,
+		},
+		{
 			"fails if referenced property is not defined",
 			&fileBasedTemplate{
 				path:    "a path",
 				content: simpleTemplateString,
 			},
 			map[string]interface{}{}, // 'val' used in template but not defined as property
+			"",
+			true,
+		},
+		{
+			"fails if one referenced property is not defined",
+			&fileBasedTemplate{
+				path:    "a path",
+				content: templateString,
+			},
+			map[string]interface{}{"color": "white"}, // 'val' used in template but not defined as property
 			"",
 			true,
 		},
@@ -138,9 +179,6 @@ func TestRender(t *testing.T) {
 			"{ \"key\":\nthe-key\n}",
 			false,
 		},
-		//escapes newline
-		//fails on invalid template
-		//fails on missing template properties
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

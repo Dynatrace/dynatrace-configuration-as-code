@@ -32,10 +32,12 @@ func Render(template Template, properties map[string]interface{}) (string, error
 
 	result := bytes.Buffer{}
 
-	dataForTemplating := util.EscapeNewlineCharacters(properties)
+	dataForTemplating, err := util.EscapeSpecialCharacters(properties)
+	if err != nil {
+		return "", fmt.Errorf("failure preparing input properties to render template %s: %w", template.Name(), err)
+	}
 
 	err = parsedTemplate.Execute(&result, dataForTemplating)
-
 	if err != nil {
 		return "", fmt.Errorf("failure trying to render template %s: %w", template.Name(), err)
 	}

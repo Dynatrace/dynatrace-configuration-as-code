@@ -28,6 +28,7 @@ import (
 const test_yaml = "test-resources/templating-integration-test-config.yaml"
 const test_json = "test-resources/templating-integration-test-template.json"
 
+// Note: this tests v1 templating paths - for v2 see pkg/config/v2/template/template_integration_test.go
 func TestConfigurationTemplatingFromFilesProducesValidJson(t *testing.T) {
 	fs := afero.NewReadOnlyFs(afero.NewOsFs())
 	bytes, err := afero.ReadFile(fs, test_yaml)
@@ -40,8 +41,8 @@ func TestConfigurationTemplatingFromFilesProducesValidJson(t *testing.T) {
 	assert.NilError(t, err, "Expected template json (%s) to be loaded without error", test_json)
 
 	rendered, err := template.ExecuteTemplate(properties["properties"])
-	assert.NilError(t, err, "Expected template to render without error\n %s", rendered)
+	assert.NilError(t, err, "Expected template to render without error")
 
-	err = ValidateJson(rendered, test_json)
-	assert.NilError(t, err, "Expected rendered template to be valid JSON:\n %s", rendered)
+	err = ValidateJson(rendered, Location{})
+	assert.NilError(t, err, "Expected rendered template to be valid JSON")
 }
