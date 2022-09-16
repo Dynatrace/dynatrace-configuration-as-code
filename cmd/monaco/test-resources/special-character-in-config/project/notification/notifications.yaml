@@ -1,0 +1,8 @@
+config:
+  - email: "email.json"
+
+email:
+  - name: "ONLY VALID IF QUOTES ARE UNTOUCHED"
+  - alertingProfileId: "/project/alerting-profile/profile.id"
+  - receivers: '"jean-luc.picard@dynatrace.com", "jim.kirk@dynatrace.com"'
+  - environment: "Env1"

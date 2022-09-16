@@ -1,0 +1,34 @@
+config:
+  - dashboard: "overview-dashboard.json"
+
+dashboard:
+  - name: "Alpha Quadrant"
+  - markdown1: |-
+      ## This is a Markdown tile
+
+      It supports **rich text** and [links](https://dynatrace.com)
+
+      It also includes some new-lines to test with. Very cool!
+  - markdown2: "## This is another Markdown tile\n\nTest new-lines with a different approach."
+  - markdown3: "Three tests are better than two.\\n\\nGenerally, the more the merrier."
+  - markdown4: >
+      One more test\n
+      to check if newlines work.
+  - markdown5: Plain string \nusing \\n
+    markdown6: "Line
+      break"
+    markdown7: |
+      One more string
+      With line breaks.
+    markdown8: >-
+      And this one
+    markdown9: >+
+
+      Keep also the useless ones.
+
+    markdown10: |+
+
+      Same here.
+
+
+
