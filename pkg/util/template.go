@@ -18,10 +18,7 @@ package util
 
 import (
 	"bytes"
-	"encoding/json"
 	"os"
-	"reflect"
-	"regexp"
 	"strings"
 	"text/template"
 
@@ -122,90 +119,4 @@ func addEnvVars(properties map[string]string) map[string]interface{} {
 	}
 
 	return data
-}
-
-// escapeSpecialCharacters walks recursively though the map and escapes all special characters that can't just be written to the
-// json template. characters that will be escaped: newlines (\n), double quotes (\")
-// Note: this is in use in both v1 and v2 config templating
-func EscapeSpecialCharacters(properties map[string]interface{}) (map[string]interface{}, error) {
-
-	escapedProperties := make(map[string]interface{}, len(properties))
-
-	for key, value := range properties {
-
-		switch field := value.(type) {
-		case string:
-			escaped, err := escapeCharactersForJson(field)
-			if err != nil {
-				return nil, err
-			}
-			escapedProperties[key] = escaped
-		case map[string]string:
-			escaped, err := escapeNewlineCharactersForStringMap(field)
-			if err != nil {
-				return nil, err
-			}
-			escapedProperties[key] = escaped
-		case map[string]interface{}:
-			escaped, err := EscapeSpecialCharacters(field)
-			if err != nil {
-				return nil, err
-			}
-			escapedProperties[key] = escaped
-		default:
-			log.Debug("Unknown value type %v in property %v.", reflect.TypeOf(value), key)
-		}
-	}
-
-	return escapedProperties, nil
-}
-
-func escapeNewlineCharactersForStringMap(properties map[string]string) (map[string]string, error) {
-	escapedProperties := make(map[string]string, len(properties))
-
-	for key, value := range properties {
-		escaped, err := escapeCharactersForJson(value)
-		if err != nil {
-			return nil, err
-		}
-		escapedProperties[key] = escaped
-	}
-
-	return escapedProperties, nil
-}
-
-// escapeCharactersForJson ensures a string can be placed into a json by just marshalling it to json.
-// This will escape anything that needs to be escaped - but explicitly excludes strings that are of string list format.
-// Such list strings can be used to place several values into a json list and their double-quotes are needed to render
-// valid json and must not be escaped. As a caveat this means any other characters aren't escaped either for lists.
-// As marshalling additionally places quotes around the output these first and last characters are cut off before returning.
-func escapeCharactersForJson(rawString string) (string, error) {
-	if isListDefinition(rawString) {
-		return rawString, nil
-	}
-
-	b, err := json.Marshal(rawString)
-	if err != nil {
-		// errors should never occur for marshalling a string value - better safe than sorry if implementation details change
-		return "", err
-	}
-	s := string(b)
-	s = s[1 : len(s)-1] //marshalling places quotes around the json string which we don't want
-	return s, nil
-}
-
-// pattern matching strings of the format '"value", "value", ...' which are sometimes used to set lists into JSON templates
-// these must generally not have their quotes escaped as their JSON template is usually not valid with these values
-var listPattern = regexp.MustCompile(`(?:\s*".*?"\s*,\s*".*?"\s*,?)+`)
-
-func isListDefinition(s string) bool {
-	return listPattern.MatchString(s)
-}
-
-// pattern matching strings of the format '"value", "value", ...' which are sometimes used to set lists into JSON templates
-// these must generally not have their quotes escaped as their JSON template is usually not valid with these values
-var listPattern = regexp.MustCompile(`(?:\s*".*?"\s*,\s*".*?"\s*,?)+`)
-
-func isListDefinition(s string) bool {
-	return listPattern.MatchString(s)
 }
