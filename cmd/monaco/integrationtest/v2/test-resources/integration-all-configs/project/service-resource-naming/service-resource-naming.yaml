@@ -1,5 +1,0 @@
-configs:
-  - id: service-resource-naming
-    config:
-      name: service-resource-naming
-      template: service-resource-naming.json

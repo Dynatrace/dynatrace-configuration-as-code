@@ -1,5 +1,0 @@
-configs:
-  - id: frequent-issue-detection
-    config:
-      name: frequent-issue-detection
-      template: frequent-issue-detection.json

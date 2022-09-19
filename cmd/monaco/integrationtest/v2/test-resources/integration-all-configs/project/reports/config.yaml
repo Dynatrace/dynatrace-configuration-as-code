@@ -1,0 +1,10 @@
+configs:
+- id: report
+  config:
+    name:
+      api: dashboard
+      config: dashboard
+      property: id
+      type: reference
+    template: report.json
+    skip: false

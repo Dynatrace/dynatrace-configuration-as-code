@@ -1,0 +1,6 @@
+configs:
+- id: geo-ip-detection-headers
+  config:
+    name: geo-ip-detection-headers
+    template: geo-ip-detection-headers.json
+    skip: false

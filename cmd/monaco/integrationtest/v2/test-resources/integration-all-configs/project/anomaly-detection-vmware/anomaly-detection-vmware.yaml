@@ -1,5 +1,0 @@
-configs:
-  - id: anomaly-detection-vmware
-    config:
-      name: anomaly-detection-vmware
-      template: anomaly-detection-vmware.json

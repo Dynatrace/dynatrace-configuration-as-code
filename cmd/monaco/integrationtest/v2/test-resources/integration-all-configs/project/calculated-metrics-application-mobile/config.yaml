@@ -1,0 +1,13 @@
+configs:
+- id: speed
+  config:
+    name: calc:apps.mobile.speed.delorean
+    parameters:
+      appId:
+        api: application-mobile
+        config: mobile-application
+        project: project
+        property: id
+        type: reference
+    template: speed-metric.json
+    skip: false

@@ -2,7 +2,11 @@ configs:
 - id: demo_slo
   config:
     name: My SLO
+    parameters:
+      mzone:
+        api: management-zone
+        config: zone
+        property: name
+        type: reference
     template: slo.json
     skip: false
-    parameters:
-      mzone: ["management-zone", "zone", "name"]

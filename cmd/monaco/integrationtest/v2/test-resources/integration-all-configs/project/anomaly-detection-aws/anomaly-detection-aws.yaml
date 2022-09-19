@@ -1,5 +1,0 @@
-configs:
-  - id: anomaly-detection-aws
-    config:
-      name: anomaly-detection-aws
-      template: anomaly-detection-aws.json

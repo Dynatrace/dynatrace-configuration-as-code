@@ -1,9 +1,0 @@
-config:
-  - id: globalElasticsearch
-    config:
-      name: elasticsearch-ignored-name
-      parameters:
-        user: 'username'
-        password: 'password'
-        url: 'https://example.com'
-      template: elasticsearch-global.json

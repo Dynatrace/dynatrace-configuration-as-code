@@ -1,5 +1,0 @@
-configs:
-  - id: anomaly-detection-database-services
-    config:
-      name: anomaly-detection-database-services
-      template: anomaly-detection-database-services.json

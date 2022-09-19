@@ -1,5 +1,0 @@
-configs:
-  - id: anomaly-detection-services
-    config:
-      name: anomaly-detection-services
-      template: anomaly-detection-services.json

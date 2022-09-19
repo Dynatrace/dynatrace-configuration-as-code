@@ -3,6 +3,11 @@ configs:
   config:
     name: Federation Availability
     parameters:
+      appId:
+        api: application-web
+        config: application
+        property: id
+        type: reference
       host: https://www.google.com
       location: GEOLOCATION-9999453BE4BDB3CD
       managementZoneId:
@@ -23,3 +28,4 @@ configs:
     parameters:
       location: GEOLOCATION-9999453BE4BDB3CD
     template: browser-test.json
+    skip: false

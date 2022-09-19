@@ -1,7 +1,0 @@
-configs:
-  - id: demo_rule
-    config:
-      name: Service detection - Full Web Request Demo Rule
-      parameters:
-        enabled: "false"
-      template: demorule.json

@@ -1,5 +1,0 @@
-configs:
-  - id: allowed-beacon-origins
-    config:
-      name: allowed-beacon-origins
-      template: allowed-beacon-origins.json

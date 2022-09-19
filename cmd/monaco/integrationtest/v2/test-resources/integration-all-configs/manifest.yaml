@@ -1,6 +1,5 @@
 projects:
 - name: project
-- name: only-post
 environments:
 - group: default
   entries:

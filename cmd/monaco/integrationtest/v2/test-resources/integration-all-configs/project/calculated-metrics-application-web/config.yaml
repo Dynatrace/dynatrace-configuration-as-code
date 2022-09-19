@@ -1,0 +1,6 @@
+configs:
+- id: speed
+  config:
+    name: calc:apps.web.speed.delorean
+    template: speed-metric.json
+    skip: false

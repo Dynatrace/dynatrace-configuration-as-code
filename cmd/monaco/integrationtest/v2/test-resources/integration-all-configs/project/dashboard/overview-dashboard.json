@@ -79,6 +79,48 @@
       },
       "assignedEntities": [],
       "metric": "XHR_ACTIONS"
+    },
+    {
+      "name": "Markdown1",
+      "tileType": "MARKDOWN",
+      "configured": true,
+      "bounds": {
+        "top": 342,
+        "left": 380,
+        "width": 304,
+        "height": 152
+      },
+      "nameSize": null,
+      "tileFilter": {},
+      "markdown": "{{ .markdown1 }}"
+    },
+    {
+      "name": "Markdown2",
+      "tileType": "MARKDOWN",
+      "configured": true,
+      "bounds": {
+        "top": 494,
+        "left": 380,
+        "width": 304,
+        "height": 152
+      },
+      "nameSize": null,
+      "tileFilter": {},
+      "markdown": "{{ .markdown2 }}"
+    },
+    {
+      "name": "Markdown3",
+      "tileType": "MARKDOWN",
+      "configured": true,
+      "bounds": {
+        "top": 646,
+        "left": 380,
+        "width": 304,
+        "height": 152
+      },
+      "nameSize": null,
+      "tileFilter": {},
+      "markdown": "{{ .markdown3 }}{{ .markdown4 }}{{ .markdown5 }}{{ .markdown6 }}{{ .markdown7 }}{{ .markdown8 }}{{ .markdown9 }}{{ .markdown10 }}"
     }
   ]
 }

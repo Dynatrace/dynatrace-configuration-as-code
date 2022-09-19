@@ -1,5 +1,0 @@
-configs:
-  - id: fluxcompensator-exhaust
-    config:
-      name: calc:service.topdbcallsperurl
-      template: metric-fluxcompensator-exhaust.json

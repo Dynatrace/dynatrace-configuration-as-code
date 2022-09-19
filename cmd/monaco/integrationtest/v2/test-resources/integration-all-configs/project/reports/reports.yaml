@@ -1,5 +1,0 @@
-configs:
-- id: report
-  config:
-    name: ["dashboard","dashboard","id"]
-    template: report.json

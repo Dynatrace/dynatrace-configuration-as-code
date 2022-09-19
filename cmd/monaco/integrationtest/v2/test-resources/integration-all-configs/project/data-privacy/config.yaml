@@ -1,0 +1,6 @@
+configs:
+- id: data-privacy
+  config:
+    name: data-privacy
+    template: data-privacy.json
+    skip: false

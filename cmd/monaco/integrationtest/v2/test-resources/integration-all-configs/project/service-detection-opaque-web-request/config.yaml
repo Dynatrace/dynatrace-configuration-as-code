@@ -1,0 +1,6 @@
+configs:
+- id: demo_rule
+  config:
+    name: My sample rule
+    template: demorule.json
+    skip: false
