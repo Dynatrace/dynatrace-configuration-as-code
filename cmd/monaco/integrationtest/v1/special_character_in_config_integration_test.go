@@ -1,5 +1,5 @@
-//go:build integration
-// +build integration
+//go:build integration_v1
+// +build integration_v1
 
 /**
  * @license
