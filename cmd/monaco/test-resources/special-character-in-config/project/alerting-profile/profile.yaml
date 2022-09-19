@@ -1,0 +1,6 @@
+
+config:
+  - profile: "profile.json"
+
+profile:
+  - name: A "Alerting Profile" - for things with "quotes"

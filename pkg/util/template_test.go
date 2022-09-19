@@ -128,7 +128,8 @@ func TestEscapeNewlineCharacters(t *testing.T) {
 		},
 	}
 
-	result := escapeNewlineCharacters(p)
+	result, err := escapeSpecialCharacters(p)
+	assert.NilError(t, err)
 
 	expected := map[string]interface{}{
 		`string without newline`: `just some string`,
@@ -154,15 +155,193 @@ func TestEscapeNewlineCharactersWithEmptyMap(t *testing.T) {
 
 	empty := map[string]interface{}{}
 
-	assert.DeepEqual(t, escapeNewlineCharacters(empty), empty)
+	res, err := escapeSpecialCharacters(empty)
+
+	assert.NilError(t, err)
+	assert.DeepEqual(t, res, empty)
 }
 
-func TestEscapeNewline(t *testing.T) {
-	assert.Equal(t, escapeNewlines("String without newline"), `String without newline`)
-	assert.Equal(t, escapeNewlines("String with one\nnewline"), `String with one\nnewline`)
-	assert.Equal(t, escapeNewlines("String with one windows\r\nnewline"), "String with one windows\r\\nnewline")
-	assert.Equal(t, escapeNewlines("String with already escaped \\n newline"), "String with already escaped \\n newline")
-	assert.Equal(t,
-		escapeNewlines("\nString with multiple \n new\nlines on many positions\n\n"),
-		`\nString with multiple \n new\nlines on many positions\n\n`)
+func Test_escapeCharactersForJson(t *testing.T) {
+	tests := []struct {
+		inputString string
+		want        string
+	}{
+		{
+			`string with no quotes is unchanged`,
+			`string with no quotes is unchanged`,
+		},
+		{
+			`string """ with "double quotes" results in quotes being "escaped"`,
+			`string \"\"\" with \"double quotes\" results in quotes being \"escaped\"`,
+		},
+		{
+			`string with 'single quotes' quotes is unchanged`,
+			`string with 'single quotes' quotes is unchanged`,
+		},
+		{
+			"\nString with multiple \n new\nlines on many positions\n\n",
+			`\nString with multiple \n new\nlines on many positions\n\n`,
+		},
+		{
+			"String with already escaped \\n newline",
+			`String with already escaped \\n newline`,
+		},
+		{
+			"String with one windows\r\nnewline",
+			`String with one windows\r\nnewline`,
+		},
+		{
+			"String with one\nnewline",
+			`String with one\nnewline`,
+		},
+		{
+			"String with one\nnewline",
+			`String with one\nnewline`,
+		},
+		{
+			"String without newline",
+			`String without newline`,
+		},
+		{
+			"String { containing {{ some {json : like text } stays as is",
+			`String { containing {{ some {json : like text } stays as is`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.inputString, func(t *testing.T) {
+			got, err := escapeCharactersForJson(tt.inputString)
+			if err != nil {
+				t.Errorf("escapeCharactersForJson() unexpected error = %v", err)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("escapeCharactersForJson() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTemplatesWithSpecialCharactersProduceValidJson(t *testing.T) {
+	tests := []struct {
+		name           string
+		templateString string
+		properties     map[string]string
+		want           string
+	}{
+		{
+			"empty test should work",
+			`{}`,
+			map[string]string{},
+			`{}`,
+		},
+		{
+			"newlines are escaped",
+			`{ "key": "{{ .value }}", "object": { "o_key": "{{ .object_value}}" } }`,
+			map[string]string{
+				"value":        "A string\nwith several lines\n\n - here's one\n\n - and another",
+				"object_value": "and\r\none\r\nmore",
+			},
+			`{ "key": "A string\nwith several lines\n\n - here's one\n\n - and another", "object": { "o_key": "and\r\none\r\nmore" } }`,
+		},
+		{
+			"strings with random double-quotes are escaped",
+			`{ "key": "{{ .value }}" }`,
+			map[string]string{
+				"value": `A "String" - that contains random "quotes"`,
+			},
+			`{ "key": "A \"String\" - that contains random \"quotes\"" }`,
+		},
+		{
+			"regular slashes are not escaped",
+			`{ "userAgent": "{{ .value }}" }`,
+			map[string]string{
+				"value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36",
+			},
+			`{ "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36" }`,
+		},
+		{
+			"a v1 list definition does not get quotes escaped",
+			`{ "list": [ {{ .entries }} ] }`,
+			map[string]string{
+				"entries": `"element a", "element b", "element c"`,
+			},
+			`{ "list": [ "element a", "element b", "element c" ] }`,
+		},
+		{
+			"a v1 list definition can still contain newlines",
+			`{ "list": [ {{ .entries }} ] }`,
+			map[string]string{
+				"entries": `"element a",
+"element b",
+"element c"`,
+			},
+			`{ "list": [ "element a",
+"element b",
+"element c" ] }`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			template, err := NewTemplateFromString("template_test", tt.templateString)
+			assert.NilError(t, err)
+
+			result, err := template.ExecuteTemplate(tt.properties)
+			assert.NilError(t, err)
+			assert.Equal(t, result, tt.want)
+
+			err = ValidateJson(result, "irrelevant filename")
+			assert.NilError(t, err)
+		})
+	}
+}
+
+func Test_isListDefinition(t *testing.T) {
+	tests := []struct {
+		input string
+		want  bool
+	}{
+		{
+			"just a normal string",
+			false,
+		},
+		{
+			`"not a list! just broken",`,
+			false,
+		},
+		{
+			`"shortest list", "possible"`,
+			true,
+		},
+		{
+			`"slightly","longer","simple","list"`,
+			true,
+		},
+		{
+			`"slightly" , "longer",   "simple" , "list" , "with"    ,    "spaces"`,
+			true,
+		},
+		{
+			`"a", "list", "with", "trailing", "comma",`,
+			true,
+		},
+		{
+			`
+                   "slightly",
+                   "longer",
+                   "simple",
+                   "list",
+                   "with"
+                   ,"line breaks"
+
+                  `,
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			if got := isListDefinition(tt.input); got != tt.want {
+				t.Errorf("isListDefinition() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
