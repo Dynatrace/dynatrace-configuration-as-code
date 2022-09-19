@@ -19,22 +19,27 @@
 
 package main
 
-/* Commented out because of https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/issues/121
+import (
+	"github.com/spf13/afero"
+	"testing"
 
-func TestIntegrationDoNotNormalizePathSeparatorsInUserAgentString(t *testing.T) {
+	"gotest.tools/assert"
+)
+
+func TestSpecialCharactersAreCorrectlyEscapedWhereNeeded(t *testing.T) {
 
 	const specialCharConfigFolder = "test-resources/special-character-in-config/"
 	const specialCharEnvironmentsFile = specialCharConfigFolder + "environments.yaml"
 
-	RunIntegrationWithCleanup(t, specialCharConfigFolder, specialCharEnvironmentsFile, "SpecialCharacterInConfig", func(fileReader util.FileReader) {
+	RunIntegrationWithCleanup(t, specialCharConfigFolder, specialCharEnvironmentsFile, "SpecialCharacterInConfig", func(fs afero.Fs) {
 
 		statusCode := RunImpl([]string{
 			"monaco",
+			"--verbose",
 			"--environments", specialCharEnvironmentsFile,
 			specialCharConfigFolder,
-		}, fileReader)
+		}, fs)
 
 		assert.Equal(t, statusCode, 0)
 	})
 }
-*/
