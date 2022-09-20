@@ -17,11 +17,13 @@ package download
 import (
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download/downloader"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
 	"github.com/spf13/afero"
-	"golang.org/x/exp/maps"
 	"os"
 	"strings"
 )
@@ -42,16 +44,16 @@ func DownloadConfigs(fs afero.Fs, workingdir, environmentUrl, projectName, envVa
 		return fmt.Errorf("failed to create Dynatrace client: %w", err)
 	}
 
-	downloadedConfigs := downloadAllConfigs(apis, client, projectName)
+	downloadedConfigs := downloader.DownloadAllConfigs(apis, client, projectName)
 
 	if len(downloadedConfigs) == 0 {
 		log.Info("No configs were downloaded")
 	}
 
 	log.Info("Resolving dependencies between configurations")
-	downloadedConfigs = resolveDependencies(downloadedConfigs)
+	downloadedConfigs = download.ResolveDependencies(downloadedConfigs)
 
-	err = writeToDisk(fs, downloadedConfigs, projectName)
+	err = download.WriteToDisk(fs, downloadedConfigs, projectName)
 	if err != nil {
 		return err
 	}

@@ -18,16 +18,17 @@ package download
 
 import (
 	"fmt"
+	"strings"
+
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/reference"
 	project "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
-	"golang.org/x/exp/maps"
-	"strings"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
 )
 
-func resolveDependencies(configs project.ConfigsPerApis) project.ConfigsPerApis {
+func ResolveDependencies(configs project.ConfigsPerApis) project.ConfigsPerApis {
 	log.Debug("Resolving dependencies between configs")
 
 	configsById := collectConfigsById(configs)

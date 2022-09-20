@@ -27,7 +27,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-func writeToDisk(fs afero.Fs, downloadedConfigs project.ConfigsPerApis, projectName string) error {
+func WriteToDisk(fs afero.Fs, downloadedConfigs project.ConfigsPerApis, projectName string) error {
 
 	proj, projectDefinitions := createProjectData(downloadedConfigs, projectName)
 

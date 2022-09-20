@@ -17,6 +17,7 @@ package runner
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/download"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner/completion"
 	"os"
 	"path/filepath"
@@ -27,7 +28,6 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/convert"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/delete"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/deploy"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/version"
 	"github.com/spf13/afero"
