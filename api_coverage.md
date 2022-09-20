@@ -1,4 +1,5 @@
 # Configuration API
+
 | Endpoint                                                                 | Supported | Deprecated by Settings v2 |
 |--------------------------------------------------------------------------|-----------|---------------------------|
 | /api/config/v1/alertingProfiles                                          | ✔         | YES                       |
@@ -6,7 +7,7 @@
 | /api/config/v1/anomalyDetection/aws                                      | ✔️         |                           |
 | /api/config/v1/anomalyDetection/databaseServices                         | ✔️         |                           |
 | /api/config/v1/anomalyDetection/diskEvents                               | ✔️         |                           |
-| /api/config/v1/anomalyDetection/hosts                                    | NO        |                           |
+| /api/config/v1/anomalyDetection/hosts                                    | ✔️         |                           |
 | /api/config/v1/anomalyDetection/metricEvents                             | ✔         |                           | 
 | /api/config/v1/anomalyDetection/processGroups                            | NO        |                           |
 | /api/config/v1/anomalyDetection/services                                 | ✔️         |                           |
@@ -65,13 +66,50 @@
 | /api/config/v1/service/requestNaming                                     | ✔️         |                           |
 | /api/config/v1/service/resourceNaming                                    | ✔️         |                           |
 
-# (TODO) Environment API v1 
-| Endpoint                                                                 | Supported |
-|--------------------------------------------------------------------------|-----------|
-| /api/v1/synthetic/locations                                              | ✔️        |
-| /api/v1/synthetic/monitors                                               | ✔️        |
+# Environment API v1
 
-# (TODO) Environment API v2
-| Endpoint                                                                 | Supported |
-|--------------------------------------------------------------------------|-----------|
-| /api/v2/slo                                                              | ✔️        |
+Most environment APIs are not 'configuration' - this list only contains APIs that clearly fall into scope of monitoring
+config as code.
+
+| Endpoint                                                                 | Supported | Deprecated by Settings v2 |
+|--------------------------------------------------------------------------|-----------|---------------------------|
+| /api/v1/synthetic/locations                                              | ✔         |                           |
+| /api/v1/synthetic/monitors                                               | ✔         |                           |
+
+Topology & Smartscape APIs *might* fall into scope of monaco - however they can be used to manually set tags on
+monitored
+entities, and will need dedicated implementation to work.
+
+# Environment API v2
+
+| Endpoint                            | Description                                     | Supported | Deprecated by Settings v2 |
+|-------------------------------------|-------------------------------------------------|-----------|---------------------------|
+| /api/v2/slo                         | SLOs                                            | ✔         |                           |
+| /api/v2/activeGates/{id}/autoUpdate | Auto-update config for specific env active gate | NO        |                           |
+| /api/v2/activeGates/autoUpdate      | Global uto-update config for env active gates   | NO        |                           |
+| /api/v2/extensions                  | Extension 2.0 upload and configuration          | NO        |                           |
+| /api/v2/networkZones                | Specific and global networkzone settings        | NO        |                           |
+| /api/v2/settings                    | Settings 2.0                                    | NO        |                           |
+| /api/v2/synthetic                   | Global synthetic settings and v2 locations API  | NO        |                           |
+
+# Summarized List of currently unsupported Config APIs
+
+| Endpoint                                             | Deprecated by Settings v2 | Default API Pattern                    |
+|------------------------------------------------------|---------------------------|----------------------------------------|
+| /api/v2/activeGates/{id}/autoUpdate                  |                           | X                                      |
+| /api/v2/activeGates/autoUpdate                       |                           | X                                      |
+| /api/v2/extensions                                   |                           | X - but similar to v1 extensions       |
+| /api/v2/networkZones                                 |                           | ~ (no POST)                            |
+| /api/v2/settings                                     |                           | X                                      |
+| /api/v2/synthetic                                    |                           | ✔                                      |
+| /api/config/v1/service/failureDetection/ibmMqTracing | YES                       |                                        | 
+| /api/config/v1/hostgroups/{id}                       |                           | X (hostgroup ID needs to be known)     |  
+| /api/config/v1/hosts/{id}                            |                           | X (host ID needs to be known)          |  
+| /api/config/v1/plugins                               |                           | X - but similar to v1 extensions       |
+| /api/config/v1/remoteEnvironments                    |                           | ✔                                      |
+| /api/config/v1/symfiles                              |                           | X                                      |
+| /api/config/v1/cloudFoundry/credentials              |                           | ✔                                      |
+| /api/config/v1/aws/privatelink                       |                           | X                                      |
+| /api/config/v1/anomalyDetection/processGroups        |                           | X (process group ID needs to be known) | 
+
+
