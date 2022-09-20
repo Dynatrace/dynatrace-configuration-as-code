@@ -528,7 +528,7 @@ func extractTemplate(context *detailedConfigConverterContext, config Config) (st
 			content:      templ.Content(),
 		}, nil
 	case template.Template:
-		sanitizedName := util.SanitizeName(templ.Name())
+		sanitizedName := util.SanitizeName(templ.Id()) + ".json"
 
 		return sanitizedName, configTemplate{
 			templatePath: filepath.Join(context.configFolder, sanitizedName),

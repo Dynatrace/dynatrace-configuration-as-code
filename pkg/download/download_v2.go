@@ -48,6 +48,11 @@ func DownloadConfigs(fs afero.Fs, workingdir, environmentUrl, projectName, envVa
 		log.Info("No configs were downloaded")
 	}
 
+	err = writeToDisk(fs, downloadedConfigs, projectName)
+	if err != nil {
+		return err
+	}
+
 	log.Info("Finished download")
 
 	return nil
