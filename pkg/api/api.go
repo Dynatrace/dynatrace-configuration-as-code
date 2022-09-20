@@ -46,6 +46,7 @@ var apiMap = map[string]apiInput{
 	"extension": {
 		apiPath:                      "/api/config/v1/extensions",
 		propertyNameOfGetAllResponse: "extensions",
+		skipDownload:                 true,
 	},
 	"extension-elasticsearch": {
 		apiPath:                  "/api/config/v1/extensions/dynatrace.python.elasticsearch/global",
@@ -93,15 +94,18 @@ var apiMap = map[string]apiInput{
 		isNonUniqueNameApi: true,
 	},
 	"aws-credentials": {
-		apiPath: "/api/config/v1/aws/credentials",
+		apiPath:      "/api/config/v1/aws/credentials",
+		skipDownload: true,
 	},
 	// Early adopter API !
 	"kubernetes-credentials": {
 		apiPath:            "/api/config/v1/kubernetes/credentials",
 		isNonUniqueNameApi: true,
+		skipDownload:       true,
 	},
 	"azure-credentials": {
-		apiPath: "/api/config/v1/azure/credentials",
+		apiPath:      "/api/config/v1/azure/credentials",
+		skipDownload: true,
 	},
 	"request-attributes": {
 		apiPath: "/api/config/v1/service/requestAttributes",
@@ -146,6 +150,7 @@ var apiMap = map[string]apiInput{
 	"credential-vault": {
 		apiPath:                      "/api/config/v1/credentials",
 		propertyNameOfGetAllResponse: "credentials",
+		skipDownload:                 true,
 	},
 	"failure-detection-parametersets": {
 		apiPath: "/api/config/v1/service/failureDetection/parameterSelection/parameterSets",
@@ -244,6 +249,14 @@ type Api interface {
 	IsNonUniqueNameApi() bool
 	IsDeprecatedApi() bool
 	IsDeprecatedBy() string
+
+	// ShouldSkipDownload indicates whether an API should be downloaded or not.
+	//
+	// Some APIs are not re-uploadable by design, either as they require hidden credentials,
+	// or if they require a special format, e.g. a zip file.
+	//
+	// Those configs include all configs handling credentials, as well as the extension-API.
+	ShouldSkipDownload() bool
 }
 
 type apiInput struct {
@@ -252,6 +265,7 @@ type apiInput struct {
 	isSingleConfigurationApi     bool
 	isNonUniqueNameApi           bool
 	isDeprecatedBy               string
+	skipDownload                 bool
 }
 
 type apiImpl struct {
@@ -261,7 +275,13 @@ type apiImpl struct {
 	isSingleConfigurationApi     bool
 	isNonUniqueNameApi           bool
 	isDeprecatedBy               string
+	skipDownload                 bool
 }
+
+var (
+	// apiImpl needs to implement the API interface
+	_ Api = (*apiImpl)(nil)
+)
 
 type ApiMap map[string]Api
 
@@ -296,27 +316,46 @@ func GetApiNames(apis map[string]Api) []string {
 
 func newApi(id string, input apiInput) Api {
 	if input.isSingleConfigurationApi {
-		return NewSingleConfigurationApi(id, input.apiPath, input.isDeprecatedBy)
+		return NewSingleConfigurationApi(id, input.apiPath, input.isDeprecatedBy, input.skipDownload)
 	}
 
 	if input.propertyNameOfGetAllResponse == "" {
-		return NewStandardApi(id, input.apiPath, input.isNonUniqueNameApi, input.isDeprecatedBy)
+		return NewStandardApi(id, input.apiPath, input.isNonUniqueNameApi, input.isDeprecatedBy, input.skipDownload)
 	}
 
-	return NewApi(id, input.apiPath, input.propertyNameOfGetAllResponse, false, input.isNonUniqueNameApi, input.isDeprecatedBy)
+	return NewApi(id, input.apiPath, input.propertyNameOfGetAllResponse, false, input.isNonUniqueNameApi, input.isDeprecatedBy, input.skipDownload)
 }
 
 // NewStandardApi creates an API with propertyNameOfGetAllResponse set to "values"
-func NewStandardApi(id string, apiPath string, isNonUniqueNameApi bool, isDeprecatedBy string) Api {
-	return NewApi(id, apiPath, standardApiPropertyNameOfGetAllResponse, false, isNonUniqueNameApi, isDeprecatedBy)
+func NewStandardApi(
+	id string,
+	apiPath string,
+	isNonUniqueNameApi bool,
+	isDeprecatedBy string,
+	skipDownload bool,
+) Api {
+	return NewApi(id, apiPath, standardApiPropertyNameOfGetAllResponse, false, isNonUniqueNameApi, isDeprecatedBy, skipDownload)
 }
 
 // NewSingleConfigurationApi creates an API with isSingleConfigurationApi set to true
-func NewSingleConfigurationApi(id string, apiPath string, isDeprecatedBy string) Api {
-	return NewApi(id, apiPath, "", true, false, isDeprecatedBy)
+func NewSingleConfigurationApi(
+	id string,
+	apiPath string,
+	isDeprecatedBy string,
+	skipDownload bool,
+) Api {
+	return NewApi(id, apiPath, "", true, false, isDeprecatedBy, skipDownload)
 }
 
-func NewApi(id string, apiPath string, propertyNameOfGetAllResponse string, isSingleConfigurationApi bool, isNonUniqueNameApi bool, isDeprecatedBy string) Api {
+func NewApi(
+	id string,
+	apiPath string,
+	propertyNameOfGetAllResponse string,
+	isSingleConfigurationApi bool,
+	isNonUniqueNameApi bool,
+	isDeprecatedBy string,
+	skipDownload bool,
+) Api {
 
 	// TODO log warning if the user tries to create an API with a id not present in map above
 	// This means that a user runs monaco with an untested api
@@ -328,6 +367,7 @@ func NewApi(id string, apiPath string, propertyNameOfGetAllResponse string, isSi
 		isSingleConfigurationApi:     isSingleConfigurationApi,
 		isNonUniqueNameApi:           isNonUniqueNameApi,
 		isDeprecatedBy:               isDeprecatedBy,
+		skipDownload:                 skipDownload,
 	}
 }
 
@@ -377,6 +417,10 @@ func (a *apiImpl) IsDeprecatedApi() bool {
 
 func (a *apiImpl) IsDeprecatedBy() string {
 	return a.isDeprecatedBy
+}
+
+func (a *apiImpl) ShouldSkipDownload() bool {
+	return a.skipDownload
 }
 
 func (m ApiMap) IsApi(dir string) bool {

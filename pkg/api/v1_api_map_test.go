@@ -32,22 +32,22 @@ func TestGetV2ApiId(t *testing.T) {
 	}{
 		{
 			"Returns ID for non deprecated API",
-			args{NewStandardApi("type_id", "config/v1/type", false, "")},
+			args{NewStandardApi("type_id", "config/v1/type", false, "", false)},
 			"type_id",
 		},
 		{
 			"Returns deprecating ID for deprecated API",
-			args{NewStandardApi("type_id", "config/v1/type", false, "new_type_id")},
+			args{NewStandardApi("type_id", "config/v1/type", false, "new_type_id", false)},
 			"new_type_id",
 		},
 		{
 			"Strips -v2 for breaking change APIs from v1",
-			args{NewStandardApi("type_id-v2", "config/v1/type", true, "")},
+			args{NewStandardApi("type_id-v2", "config/v1/type", true, "", false)},
 			"type_id",
 		},
 		{
 			"Strips -v2 if deprecating ID was a breaking change API in v1",
-			args{NewStandardApi("og_type_id", "config/v1/type", true, "type_id-v2")},
+			args{NewStandardApi("og_type_id", "config/v1/type", true, "type_id-v2", false)},
 			"type_id",
 		},
 	}

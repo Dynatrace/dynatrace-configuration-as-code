@@ -27,11 +27,11 @@ import (
 	"testing"
 )
 
-var testReportsApi = api.NewStandardApi("reports", "/api/config/v1/reports", false, "")
-var testDashboardApi = api.NewStandardApi("dashboard", "/api/config/v1/dashboards", true, "dashboard-v2")
-var testMobileAppApi = api.NewStandardApi("application-mobile", "/api/config/v1/applications/mobile", false, "")
-var testServiceDetectionApi = api.NewStandardApi("service-detection-full-web-request", "/api/config/v1/service/detectionRules/FULL_WEB_REQUEST", false, "")
-var testSyntheticApi = api.NewStandardApi("synthetic-monitor", "/api/environment/v1/synthetic/monitor", false, "")
+var testReportsApi = api.NewStandardApi("reports", "/api/config/v1/reports", false, "", false)
+var testDashboardApi = api.NewStandardApi("dashboard", "/api/config/v1/dashboards", true, "dashboard-v2", false)
+var testMobileAppApi = api.NewStandardApi("application-mobile", "/api/config/v1/applications/mobile", false, "", false)
+var testServiceDetectionApi = api.NewStandardApi("service-detection-full-web-request", "/api/config/v1/service/detectionRules/FULL_WEB_REQUEST", false, "", false)
+var testSyntheticApi = api.NewStandardApi("synthetic-monitor", "/api/environment/v1/synthetic/monitor", false, "", false)
 
 func TestTranslateGenericValuesOnStandardResponse(t *testing.T) {
 
@@ -143,7 +143,7 @@ func TestIsAnyApplicationApi(t *testing.T) {
 
 	assert.Equal(t, true, isAnyApplicationApi(testMobileAppApi))
 
-	testWebApi := api.NewStandardApi("application-web", "/api/config/v1/applications/web", false, "")
+	testWebApi := api.NewStandardApi("application-web", "/api/config/v1/applications/web", false, "", false)
 	assert.Equal(t, true, isAnyApplicationApi(testWebApi))
 
 	assert.Equal(t, false, isAnyApplicationApi(testDashboardApi))

@@ -33,7 +33,7 @@ import (
 const testTemplate = `{"msg": "Follow the {{.color}} {{.animalType}}"}`
 
 var testProductionEnvironment = environment.NewEnvironment("prod-environment", "prod-environment", "production", "https://url/to/production/environment", "PRODUCTION")
-var testManagementZoneApi = api.NewStandardApi("management-zone", "/api/config/v1/managementZones", false, "")
+var testManagementZoneApi = api.NewStandardApi("management-zone", "/api/config/v1/managementZones", false, "", false)
 
 func createConfigForTest(id string, project string, template util.Template, properties map[string]map[string]string, api api.Api, fileName string) configImpl {
 	return configImpl{

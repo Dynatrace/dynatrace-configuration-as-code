@@ -27,8 +27,8 @@ import (
 	"testing"
 )
 
-var mockApi = api.NewApi("mock-api", "/mock-api", "", true, true, "")
-var mockApiNotSingle = api.NewApi("mock-api", "/mock-api", "", false, true, "")
+var mockApi = api.NewApi("mock-api", "/mock-api", "", true, true, "", false)
+var mockApiNotSingle = api.NewApi("mock-api", "/mock-api", "", false, true, "", false)
 
 func TestNewClientNoUrl(t *testing.T) {
 	client, err := NewDynatraceClient("", "abc")

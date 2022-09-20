@@ -52,7 +52,7 @@ func TestConvertParameters(t *testing.T) {
 
 	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", &manifest.EnvironmentVariableToken{"token"})
 
-	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "")
+	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
 
 	properties := map[string]map[string]string{
 		configId: {
@@ -115,7 +115,7 @@ func TestParseSkipDeploymentParameter(t *testing.T) {
 		ProjectId: "projectA",
 	}
 
-	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "")
+	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
 
 	properties := map[string]map[string]string{
 		configId: {
@@ -235,7 +235,7 @@ func TestLoadPropertiesForEnvironment(t *testing.T) {
 
 	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), groupName, &manifest.EnvironmentVariableToken{"token"})
 
-	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "")
+	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
 
 	properties := map[string]map[string]string{
 		configId: {
@@ -290,7 +290,7 @@ func TestConvertConfig(t *testing.T) {
 
 	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", &manifest.EnvironmentVariableToken{"token"})
 
-	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "")
+	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
 
 	properties := map[string]map[string]string{
 		configId: {
@@ -351,7 +351,7 @@ func TestConvertDeprecatedConfigToLatest(t *testing.T) {
 
 	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", &manifest.EnvironmentVariableToken{"token"})
 
-	api := api.NewStandardApi("application", "/api/config/v1/application/web", false, "application-web")
+	api := api.NewStandardApi("application", "/api/config/v1/application/web", false, "application-web", false)
 
 	properties := map[string]map[string]string{
 		configId: {
@@ -411,7 +411,7 @@ func TestConvertConfigWithEnvNameCollisionShouldFail(t *testing.T) {
 	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "",
 		&manifest.EnvironmentVariableToken{"token"})
 
-	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "")
+	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
 
 	properties := map[string]map[string]string{
 		configId: {
@@ -449,7 +449,7 @@ func TestConvertSkippedConfig(t *testing.T) {
 
 	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", &manifest.EnvironmentVariableToken{"token"})
 
-	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "")
+	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
 
 	properties := map[string]map[string]string{
 		configId: {
@@ -501,7 +501,7 @@ func TestConvertConfigs(t *testing.T) {
 		environmentName2: manifest.NewEnvironmentDefinition(environmentName2, createSimpleUrlDefinition(), environmentGroup2, &manifest.EnvironmentVariableToken{"token"}),
 	}
 
-	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "")
+	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
 
 	properties := map[string]map[string]string{
 		configId: {
@@ -572,7 +572,7 @@ func TestConvertProjects(t *testing.T) {
 		environmentName2: manifest.NewEnvironmentDefinition(environmentName2, createSimpleUrlDefinition(), environmentGroup2, &manifest.EnvironmentVariableToken{"token"}),
 	}
 
-	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "")
+	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
 
 	properties := map[string]map[string]string{
 		configId: {
@@ -722,7 +722,7 @@ func generateDummyTemplate(t *testing.T) util.Template {
 func generateDummyConfig(t *testing.T) configv1.Config {
 	var configId = "alerting-profile-1"
 
-	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "")
+	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
 
 	properties := map[string]map[string]string{}
 
