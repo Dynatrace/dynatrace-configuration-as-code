@@ -24,8 +24,16 @@ import (
 )
 
 // CreateAPIMockFactory returns a mock version of the api interface
-func CreateAPIMockFactory(t *testing.T) *MockApi {
+func CreateAPIMockFactory(t *testing.T) (*MockApi, func()) {
 	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-	return NewMockApi(mockCtrl)
+
+	return NewMockApi(mockCtrl), mockCtrl.Finish
+}
+
+func CreateAPIMockWithId(t *testing.T, id string) (*MockApi, func()) {
+
+	api, finish := CreateAPIMockFactory(t)
+	api.EXPECT().GetId().Return(id)
+
+	return api, finish
 }

@@ -42,7 +42,13 @@ func DownloadConfigs(fs afero.Fs, workingdir, environmentUrl, projectName, envVa
 		return fmt.Errorf("failed to create Dynatrace client: %w", err)
 	}
 
-	apis, client = apis, client // non-error variables
+	downloadedConfigs := downloadAllConfigs(apis, client, projectName)
+
+	if len(downloadedConfigs) == 0 {
+		log.Info("No configs were downloaded")
+	}
+
+	log.Info("Finished download")
 
 	return nil
 }

@@ -36,6 +36,13 @@ type Template interface {
 
 	// string content of the template
 	Content() string
+
+	// UpdateContent sets the content of the template to the new provided one
+	UpdateContent(newContent string)
+}
+
+type DownloadTemplate struct {
+	id, name, content string
 }
 
 // FileBasedTemplate is the usual (only) type of config template monaco uses
@@ -67,11 +74,39 @@ func (t *fileBasedTemplate) FilePath() string {
 	return t.path
 }
 
-// this forces the compiler to check if fileBasedTemplate is of interface type FileBasedTemplate
-var _ FileBasedTemplate = (*fileBasedTemplate)(nil)
+func (t *fileBasedTemplate) UpdateContent(newContent string) {
+	t.content = newContent
+}
 
-// this forces the compiler to check if fileBasedTemplate is of interface type Template
-var _ Template = (*fileBasedTemplate)(nil)
+func (d *DownloadTemplate) Id() string {
+	return d.id
+}
+
+func (d *DownloadTemplate) Name() string {
+	return d.name
+}
+
+func (d *DownloadTemplate) Content() string {
+	return d.content
+}
+
+func (d *DownloadTemplate) UpdateContent(newContent string) {
+	d.content = newContent
+}
+
+func (d DownloadTemplate) AsFileTemplate(path string) FileBasedTemplate {
+	return &fileBasedTemplate{
+		path:    path,
+		content: d.content,
+	}
+}
+
+// Force the compiler to check whether the structs implement the interfaces
+var (
+	_ FileBasedTemplate = (*fileBasedTemplate)(nil)
+	_ Template          = (*fileBasedTemplate)(nil)
+	_ Template          = (*DownloadTemplate)(nil)
+)
 
 // tries to load the file at the given path and turns it into a template.
 // the name of the template will be the sanitized path.
@@ -108,4 +143,12 @@ func CreateTemplateFromString(path, content string) Template {
 	}
 
 	return &template
+}
+
+func NewDownloadTemplate(id, name, content string) Template {
+	return &DownloadTemplate{
+		name:    name,
+		content: content,
+		id:      id,
+	}
 }
