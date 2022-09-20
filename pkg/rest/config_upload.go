@@ -231,16 +231,16 @@ func callWithRetryOnKnowTimingIssue(client *http.Client, restCall sendingRequest
 	return resp, nil
 }
 
-func retry(client *http.Client, restCall sendingRequest, objectName string, path string, body []byte, apiToken string, maxRetries int, timeout time.Duration) (Response, error) {
+func retry(client *http.Client, restCall sendingRequest, objectName string, path string, body []byte, apiToken string, maxRetries int, timeout time.Duration) (resp Response, err error) {
 	for i := 0; i < maxRetries; i++ {
 		util.Log.Warn("\t\t\tDependency of config %s was not available. Waiting for %s before retry...", objectName, timeout)
 		time.Sleep(timeout)
-		resp, err := restCall(client, path, body, apiToken)
+		resp, err = restCall(client, path, body, apiToken)
 		if err == nil && success(resp) {
 			return resp, err
 		}
 	}
-	return Response{}, fmt.Errorf("dependency of config %s was not available after %d retries", objectName, maxRetries)
+	return Response{}, fmt.Errorf("dependency of config %s was not available after %d retries: %w", objectName, maxRetries, err)
 }
 
 func isGeneralDependencyNotReadyYet(resp Response) bool {
