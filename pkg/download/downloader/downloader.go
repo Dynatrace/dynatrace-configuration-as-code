@@ -157,29 +157,19 @@ func downloadConfig(theApi api.Api, value api.Value, client rest.DynatraceClient
 		return config.Config{}, true
 	}
 
-			if !shouldConfigBePersisted(theApi, downloadedJson) {
-				log.Debug("\tSkipping persisting config %v (%v) in API %v", value.Id, value.Name, theApi.GetId())
-				waitGroup.Done()
-				return
-			}
+	if !shouldConfigBePersisted(theApi, downloadedJson) {
+		log.Debug("\tSkipping persisting config %v (%v) in API %v", value.Id, value.Name, theApi.GetId())
+		return config.Config{}, true
+	}
 
-			c, err := createConfigForDownloadedJson(downloadedJson, theApi, value, projectId)
+	c, err := createConfigForDownloadedJson(downloadedJson, theApi, value, projectId)
 
 	if err != nil {
 		log.Error("Error creating config for %v in api %v: %v", value.Id, theApi.GetId(), err)
-		} else {
-				configsMutex.Lock()
-				configs = append(configs, c)
-				configsMutex.Unlock()
-			}
-
-			waitGroup.Done()
-		}()
+		return config.Config{}, true
 	}
 
-	waitGroup.Wait()
-
-	return configs
+	return c, false
 }
 
 func downloadAndUnmarshalConfig(theApi api.Api, value api.Value, client rest.DynatraceClient) (map[string]interface{}, error) {
