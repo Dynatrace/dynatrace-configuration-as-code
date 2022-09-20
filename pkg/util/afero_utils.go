@@ -17,7 +17,6 @@ package util
 import (
 	"regexp"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
 
@@ -30,17 +29,27 @@ func CreateTestFileSystem() afero.Fs {
 	return afero.NewCopyOnWriteFs(baseLayer, afero.NewMemMapFs())
 }
 
-// SanitizeName removes special characters, limits to max 254 characters in name, no special characters
-func SanitizeName(name string) string {
-	reg, err := regexp.Compile(`[^a-zA-Z0-9-_\.]+`)
-	if err != nil {
-		log.Error("error sanitizing the name of the config %s", err)
-	}
-	processedString := reg.ReplaceAllString(name, "")
-	runes := []rune(processedString)
-	if len(runes) > 254 {
-		processedString = string(runes[:254])
-	}
-	return processedString
+// matches any non-alphanumerical chars including -, _, .
+var namePattern = regexp.MustCompile(`[^a-zA-Z0-9-_.]+`)
 
+// matches any non-alphanumerical chars including _
+var templatePattern = regexp.MustCompile(`[^a-zA-Z0-9_]+`)
+
+const MaxFilenameLengthWithoutFileExtension = 254
+
+// SanitizeName removes special characters, limits to max 254 characters in name, no special characters except '-', '_', and '.'
+func SanitizeName(name string) string {
+	processedString := namePattern.ReplaceAllString(name, "")
+
+	runes := []rune(processedString)
+	if len(runes) > MaxFilenameLengthWithoutFileExtension {
+		processedString = string(runes[:MaxFilenameLengthWithoutFileExtension])
+	}
+
+	return processedString
+}
+
+// SanitizeTemplateVar removes all except alphanumerical chars and underscores (_)
+func SanitizeTemplateVar(templateVarName string) string {
+	return templatePattern.ReplaceAllString(templateVarName, "")
 }

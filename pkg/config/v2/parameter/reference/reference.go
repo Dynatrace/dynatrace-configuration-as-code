@@ -48,6 +48,12 @@ func New(project string, api string, config string, property string) *ReferenceP
 	}
 }
 
+func NewWithCoordinate(coordinate coordinate.Coordinate, property string) *ReferenceParameter {
+	return &ReferenceParameter{
+		parameter.ParameterReference{Config: coordinate, Property: property},
+	}
+}
+
 func (p *ReferenceParameter) GetType() string {
 	return ReferenceParameterType
 }
