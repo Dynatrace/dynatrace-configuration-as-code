@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"runtime"
 
@@ -137,7 +136,7 @@ func executeRequest(client *http.Client, request *http.Request) Response {
 		defer func() {
 			err = resp.Body.Close()
 		}()
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 
 		if util.IsResponseLoggingActive() {
 			err := util.LogResponse(requestId, resp, string(body))
