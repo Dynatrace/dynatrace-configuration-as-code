@@ -241,14 +241,7 @@ func retry(client *http.Client, restCall sendingRequest, objectName string, path
 			return resp, err
 		}
 	}
-
-	var retryErr error
-	if err != nil {
-		retryErr = fmt.Errorf("dependency of config %s was not available after %d retries: %w", objectName, maxRetries, err)
-	} else {
-		retryErr = fmt.Errorf("dependency of config %s was not available after %d retries: (HTTP %d)!\n    Response was: %s", objectName, maxRetries, resp.StatusCode, resp.Body)
-	}
-	return Response{}, retryErr
+	return Response{}, fmt.Errorf("dependency of config %s was not available after %d retries: %w", objectName, maxRetries, err)
 }
 
 func isGeneralDependencyNotReadyYet(resp Response) bool {
