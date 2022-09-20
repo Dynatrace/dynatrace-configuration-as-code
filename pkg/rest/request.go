@@ -140,7 +140,7 @@ func executeRequest(client *http.Client, request *http.Request) Response {
 		body, err := ioutil.ReadAll(resp.Body)
 
 		if util.IsResponseLoggingActive() {
-			err := util.LogResponse(requestId, resp)
+			err := util.LogResponse(requestId, resp, string(body))
 
 			if err != nil {
 				if requestId != "" {
