@@ -67,7 +67,8 @@ var apiMap = map[string]apiInput{
 		apiPath: "/api/config/v1/service/customServices/php",
 	},
 	"anomaly-detection-metrics": {
-		apiPath: "/api/config/v1/anomalyDetection/metricEvents",
+		apiPath:            "/api/config/v1/anomalyDetection/metricEvents",
+		isNonUniqueNameApi: true,
 	},
 	// Early adopter API !
 	"anomaly-detection-disks": {
@@ -96,7 +97,8 @@ var apiMap = map[string]apiInput{
 	},
 	// Early adopter API !
 	"kubernetes-credentials": {
-		apiPath: "/api/config/v1/kubernetes/credentials",
+		apiPath:            "/api/config/v1/kubernetes/credentials",
+		isNonUniqueNameApi: true,
 	},
 	"azure-credentials": {
 		apiPath: "/api/config/v1/azure/credentials",
