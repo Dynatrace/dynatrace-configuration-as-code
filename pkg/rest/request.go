@@ -140,7 +140,7 @@ func executeRequest(client *http.Client, request *http.Request) Response {
 		body, err := io.ReadAll(resp.Body)
 
 		if log.IsResponseLoggingActive() {
-			err := log.LogResponse(requestId, resp)
+			err := log.LogResponse(requestId, resp, string(body))
 
 			if err != nil {
 				if requestId != "" {
