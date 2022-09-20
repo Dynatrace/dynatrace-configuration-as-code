@@ -256,8 +256,8 @@ func deployConfig(client rest.DynatraceClient, apis map[string]api.Api,
 
 		entityUuid := configId
 
-		isUuid := util.IsUuid(entityUuid)
-		if !isUuid {
+		isUuidOrMeId := util.IsUuid(entityUuid) || util.IsMeId(entityUuid)
+		if !isUuidOrMeId {
 			entityUuid, err = util.GenerateUuidFromConfigId(projectId, configId)
 			if err != nil {
 				return parameter.ResolvedEntity{}, []error{newConfigDeployError(conf, err.Error())}
