@@ -26,6 +26,7 @@ import (
 var shouldDumpCases = []string{
 	"application/json",
 	"application/json; charset=utf-8",
+	"application/json;charset=utf-8",
 	"text/plain",
 	"text/plain; charset=utf-16",
 	"application/xml",
