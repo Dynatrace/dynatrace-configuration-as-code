@@ -28,6 +28,7 @@ import (
 )
 
 var mockApi = api.NewApi("mock-api", "/mock-api", "", true, true, "")
+var mockApiNotSingle = api.NewApi("mock-api", "/mock-api", "", false, true, "")
 
 func TestNewClientNoUrl(t *testing.T) {
 	client, err := NewDynatraceClient("", "abc")
@@ -74,6 +75,17 @@ func TestReadByIdReturnsAnErrorUponEncounteringAnError(t *testing.T) {
 
 	_, err := client.ReadById(mockApi, "test")
 	assert.ErrorContains(t, err, "Response was")
+}
+
+func TestReadByIdEscapesTheId(t *testing.T) {
+	unescapedId := "ruxit.perfmon.dotnetV4:%TimeInGC:time_in_gc_alert_high_generic"
+
+	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {}))
+	defer func() { testServer.Close() }()
+	client := newDynatraceClientForTesting(testServer)
+
+	_, err := client.ReadById(mockApiNotSingle, unescapedId)
+	assert.NilError(t, err)
 }
 
 func TestReadByIdReturnsTheResponseGivenNoError(t *testing.T) {
