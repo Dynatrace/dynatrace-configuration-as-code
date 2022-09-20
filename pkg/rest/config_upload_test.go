@@ -20,10 +20,11 @@
 package rest
 
 import (
-	"testing"
-
+	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"gotest.tools/assert"
+	"net/http"
+	"testing"
 )
 
 var testReportsApi = api.NewStandardApi("reports", "/api/config/v1/reports", false, "")
@@ -340,4 +341,61 @@ func Test_isApplicationNotReadyYet(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_retryReturnsFirstSuccessfulResponse(t *testing.T) {
+	i := 0
+	mockCall := sendingRequest(func(client *http.Client, url string, data []byte, apiToken string) (Response, error) {
+		if i < 3 {
+			i++
+			return Response{}, fmt.Errorf("Something wrong")
+		}
+		return Response{
+			StatusCode: 200,
+			Body:       []byte("Success"),
+		}, nil
+	})
+
+	gotResp, err := retry(nil, mockCall, "dont matter", "some/path", []byte("body"), "token", 5, 1)
+	assert.NilError(t, err)
+	assert.Equal(t, gotResp.StatusCode, 200)
+	assert.Equal(t, string(gotResp.Body), "Success")
+}
+
+func Test_retryFailsAfterDefinedTries(t *testing.T) {
+	maxRetries := 2
+	i := 0
+	mockCall := sendingRequest(func(client *http.Client, url string, data []byte, apiToken string) (Response, error) {
+		if i < maxRetries+1 {
+			i++
+			return Response{}, fmt.Errorf("Something wrong")
+		}
+		return Response{
+			StatusCode: 200,
+			Body:       []byte("Success"),
+		}, nil
+	})
+
+	_, err := retry(nil, mockCall, "dont matter", "some/path", []byte("body"), "token", maxRetries, 1)
+	assert.Check(t, err != nil)
+	assert.Check(t, i == 2)
+}
+
+func Test_retryReturnContainsOriginalApiError(t *testing.T) {
+	maxRetries := 2
+	i := 0
+	mockCall := sendingRequest(func(client *http.Client, url string, data []byte, apiToken string) (Response, error) {
+		if i < maxRetries+1 {
+			i++
+			return Response{}, fmt.Errorf("Something wrong")
+		}
+		return Response{
+			StatusCode: 200,
+			Body:       []byte("Success"),
+		}, nil
+	})
+
+	_, err := retry(nil, mockCall, "dont matter", "some/path", []byte("body"), "token", maxRetries, 1)
+	assert.Check(t, err != nil)
+	assert.ErrorContains(t, err, "Something wrong")
 }
