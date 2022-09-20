@@ -36,8 +36,8 @@ import (
 
 var errWrongUsage = errors.New("")
 
-var specificApi, environment, project []string
-var environments, specificEnvironment, projects, outputFolder, manifestName, environmentUrl, environmentName, environmentToken string
+var environment, project []string
+var environments, specificEnvironment, projects, outputFolder, manifestName string
 var verbose, dryRun, continueOnError bool
 
 func Run() int {
@@ -94,7 +94,7 @@ Examples:
 	return rootCmd
 }
 
-func configureLogging(cmd *cobra.Command, args []string) error {
+func configureLogging(_ *cobra.Command, _ []string) error {
 	if verbose {
 		log.Default().SetLevel(log.LevelDebug)
 	}
@@ -253,6 +253,8 @@ func getLegacyDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 }
 
 func getDownloadCommand(fs afero.Fs) (downloadCmd *cobra.Command) {
+	var environments, specificEnvironment, environmentUrl, environmentName, environmentVariableName string
+	var specificApis []string
 
 	downloadCmd = &cobra.Command{
 		Use:     "download",
@@ -261,29 +263,38 @@ func getDownloadCommand(fs afero.Fs) (downloadCmd *cobra.Command) {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var workingDir string
 
+			// TODO: check if either environment flag or url flag is set, otherwise fail early
+
 			if len(args) != 0 {
 				workingDir = args[0]
 			} else {
 				workingDir = "."
 			}
 
-			return download.GetConfigsFilterByEnvironment(workingDir, fs, environments, specificEnvironment, environmentUrl, environmentName, environmentToken, specificApi)
+			return download.DownloadConfigs(fs, workingDir, environmentUrl, environmentName, environmentVariableName, specificApis)
 		},
 	}
+
+	// flags always available
 	downloadCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print debug output")
+	downloadCmd.Flags().StringSliceVarP(&specificApis, "specific-api", "a", make([]string, 0), "APIs to download")
+	// TODO david.laubreiter: Continue flag
+
+	// download using the manifest
+	// TODO david.laubreiter: Not yet actually used, implement before merge
 	downloadCmd.Flags().StringVarP(&environments, "environments", "e", "", "Yaml file containing environment to download")
 	downloadCmd.Flags().StringVarP(&specificEnvironment, "specific-environment", "s", "", "Specific environment (from list) to download")
-	downloadCmd.Flags().StringSliceVarP(&specificApi, "specific-api", "a", make([]string, 0), "APIs to download")
 
+	// download directly using flags
 	downloadCmd.Flags().StringVarP(&environmentUrl, "url", "u", "", "Environment Url")
-	downloadCmd.Flags().StringVarP(&environmentName, "environment-name", "n", "", "Environment name (project folder name)")
-	downloadCmd.Flags().StringVarP(&environmentToken, "token-name", "t", "TOKEN", "Name of the environment variable containing the token ")
+	downloadCmd.Flags().StringVarP(&environmentName, "environment-name", "n", "", "Project name (project folder name)")
+	downloadCmd.Flags().StringVarP(&environmentVariableName, "token-name", "t", "TOKEN", "Name of the environment variable containing the token ")
 
 	err := downloadCmd.RegisterFlagCompletionFunc("specific-environment", completion.EnvironmentFromEnvironmentfile)
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
-	err = downloadCmd.MarkFlagFilename("environments", "yaml")
+	err = downloadCmd.MarkFlagFilename("environments", "yaml", "yml")
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
