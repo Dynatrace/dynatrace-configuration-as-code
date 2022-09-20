@@ -33,6 +33,8 @@ import (
 	"gotest.tools/assert"
 )
 
+var dashboardApi = api.NewStandardApi("dashboard", "dashboard", false, "dashboard-v2", false)
+
 func TestResolveParameterValues(t *testing.T) {
 	name := "test"
 	owner := "hansi"
@@ -453,13 +455,10 @@ func TestDeployConfig(t *testing.T) {
 	}
 
 	entities := map[coordinate.Coordinate]parameter.ResolvedEntity{}
-	apis := map[string]api.Api{
-		"dashboard": api.NewStandardApi("dashboard", "dashboard", false, "dashboard-v2"),
-	}
 
 	knownEntityNames := knownEntityMap{}
 
-	resolvedEntity, errors := deployConfig(client, apis, entities, knownEntityNames, &conf, false)
+	resolvedEntity, errors := deployConfig(client, dashboardApi, entities, knownEntityNames, &conf, false)
 
 	assert.Assert(t, len(errors) == 0, "there should be no errors (no errors: %d, %s)", len(errors), errors)
 	assert.Equal(t, name, resolvedEntity.EntityName, "%s == %s")
@@ -496,18 +495,14 @@ func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
 	}
 
 	entities := map[coordinate.Coordinate]parameter.ResolvedEntity{}
-	dashboardApiId := "dashboard"
-	apis := map[string]api.Api{
-		dashboardApiId: api.NewStandardApi("dashboard", "dashboard", false, "dashboard-v2"),
-	}
 
 	knownEntityNames := knownEntityMap{
-		dashboardApiId: {
+		"dashboard": {
 			name: struct{}{},
 		},
 	}
 
-	_, errors := deployConfig(client, apis, entities, knownEntityNames, &conf, false)
+	_, errors := deployConfig(client, dashboardApi, entities, knownEntityNames, &conf, false)
 
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
@@ -560,14 +555,10 @@ func TestDeployConfigShouldFailCyclicParameterDependencies(t *testing.T) {
 	}
 
 	entities := map[coordinate.Coordinate]parameter.ResolvedEntity{}
-	dashboardApiId := "dashboard"
-	apis := map[string]api.Api{
-		dashboardApiId: api.NewStandardApi("dashboard", "dashboard", false, "dashboard-v2"),
-	}
 
 	knownEntityNames := knownEntityMap{}
 
-	_, errors := deployConfig(client, apis, entities, knownEntityNames, &conf, false)
+	_, errors := deployConfig(client, dashboardApi, entities, knownEntityNames, &conf, false)
 
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
@@ -590,14 +581,10 @@ func TestDeployConfigShouldFailOnMissingNameParameter(t *testing.T) {
 	}
 
 	entities := map[coordinate.Coordinate]parameter.ResolvedEntity{}
-	dashboardApiId := "dashboard"
-	apis := map[string]api.Api{
-		dashboardApiId: api.NewStandardApi("dashboard", "dashboard", false, "dashboard-v2"),
-	}
 
 	knownEntityNames := knownEntityMap{}
 
-	_, errors := deployConfig(client, apis, entities, knownEntityNames, &conf, false)
+	_, errors := deployConfig(client, dashboardApi, entities, knownEntityNames, &conf, false)
 
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
@@ -636,14 +623,9 @@ func TestDeployConfigShouldFailOnReferenceOnUnknownConfig(t *testing.T) {
 	}
 
 	entities := map[coordinate.Coordinate]parameter.ResolvedEntity{}
-	dashboardApiId := "dashboard"
-	apis := map[string]api.Api{
-		dashboardApiId: api.NewStandardApi("dashboard", "dashboard", false, "dashboard-v2"),
-	}
-
 	knownEntityNames := knownEntityMap{}
 
-	_, errors := deployConfig(client, apis, entities, knownEntityNames, &conf, false)
+	_, errors := deployConfig(client, dashboardApi, entities, knownEntityNames, &conf, false)
 
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
@@ -692,41 +674,9 @@ func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
 		},
 	}
 
-	dashboardApiId := "dashboard"
-	apis := map[string]api.Api{
-		dashboardApiId: api.NewStandardApi("dashboard", "dashboard", false, "dashboard-v2"),
-	}
-
 	knownEntityNames := knownEntityMap{}
 
-	_, errors := deployConfig(client, apis, entities, knownEntityNames, &conf, false)
-
-	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
-}
-
-func TestDeployConfigShouldFailOnUnknownApi(t *testing.T) {
-	parameters := []topologysort.ParameterWithName{}
-
-	client := &client.DummyClient{}
-	conf := config.Config{
-		Template: generateDummyTemplate(t),
-		Coordinate: coordinate.Coordinate{
-			Project: "project1",
-			Api:     "dashboard",
-			Config:  "dashboard-1",
-		},
-		Environment: "development",
-		Parameters:  toParameterMap(parameters),
-		References:  toReferences(parameters),
-		Skip:        false,
-	}
-
-	entities := map[coordinate.Coordinate]parameter.ResolvedEntity{}
-	apis := map[string]api.Api{}
-
-	knownEntityNames := knownEntityMap{}
-
-	_, errors := deployConfig(client, apis, entities, knownEntityNames, &conf, false)
+	_, errors := deployConfig(client, dashboardApi, entities, knownEntityNames, &conf, false)
 
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }

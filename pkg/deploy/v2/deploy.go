@@ -139,12 +139,12 @@ func DeployConfigs(client rest.DynatraceClient, apis map[string]api.Api,
 	knownEntityNames := createKnownEntityMap(apis)
 
 	for i, config := range sortedConfigs {
-		if config.Skip {
-			coordinate := config.Coordinate
+		coord := config.Coordinate
 
-			entities[coordinate] = parameter.ResolvedEntity{
-				EntityName: coordinate.Config,
-				Coordinate: coordinate,
+		if config.Skip {
+			entities[coord] = parameter.ResolvedEntity{
+				EntityName: coord.Config,
+				Coordinate: coord,
 				Properties: parameter.Properties{},
 				Skip:       true,
 			}
@@ -155,7 +155,18 @@ func DeployConfigs(client rest.DynatraceClient, apis map[string]api.Api,
 			continue
 		}
 
-		entity, deploymentErrors := deployConfig(client, apis, entities, knownEntityNames, &sortedConfigs[i], dryRun)
+		apiToDeploy := apis[coord.Api]
+		if apiToDeploy == nil {
+			errors = append(errors, fmt.Errorf("unknown api `%s`. this is most likely a bug", coord.Api))
+
+			if continueOnError || dryRun {
+				continue
+			} else {
+				return errors
+			}
+		}
+
+		entity, deploymentErrors := deployConfig(client, apiToDeploy, entities, knownEntityNames, &sortedConfigs[i], dryRun)
 
 		if deploymentErrors != nil {
 			errors = append(errors, deploymentErrors...)
@@ -185,9 +196,14 @@ func createKnownEntityMap(apis map[string]api.Api) knownEntityMap {
 
 }
 
-func deployConfig(client rest.DynatraceClient, apis map[string]api.Api,
-	entities parameter.ResolvedEntities, knownEntityNames knownEntityMap,
-	conf *config.Config, dryRun bool) (parameter.ResolvedEntity, []error) {
+func deployConfig(
+	client rest.DynatraceClient,
+	theApi api.Api,
+	entities parameter.ResolvedEntities,
+	knownEntityNames knownEntityMap,
+	conf *config.Config,
+	dryRun bool,
+) (parameter.ResolvedEntity, []error) {
 
 	var errors []error
 
@@ -206,15 +222,9 @@ func deployConfig(client rest.DynatraceClient, apis map[string]api.Api,
 	if err != nil {
 		errors = append(errors, err)
 	} else {
-		if _, found := knownEntityNames[conf.Coordinate.Api][configName]; found {
+		if _, found := knownEntityNames[theApi.GetId()][configName]; found && !theApi.IsNonUniqueNameApi() {
 			errors = append(errors, newConfigDeployError(conf, fmt.Sprintf("duplicated config name `%s`", configName)))
 		}
-	}
-
-	theApi := apis[conf.Coordinate.Api]
-
-	if theApi == nil {
-		errors = append(errors, newConfigDeployError(conf, fmt.Sprintf("unknown api `%s`. this is most likely a bug!", conf.Coordinate.Api)))
 	}
 
 	if errors != nil {
