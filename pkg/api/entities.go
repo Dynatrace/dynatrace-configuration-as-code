@@ -29,9 +29,14 @@ type SyntheticMonitorsResponse struct {
 }
 
 type Value struct {
-	Id    string  `json:"id"`
-	Name  string  `json:"name"`
+	Id   string `json:"id"`
+	Name string `json:"name"`
+
+	// Owner is used by dashboards to indicate the creator of the dashboard. We use it to filter Dynatrace created dashboards.
 	Owner *string `json:"owner,omitempty"`
+
+	// Type is used by synthetic-locations to indicate whether it is a PRIVATE location or not.
+	Type *string `json:"type,omitempty"`
 }
 
 type SyntheticValue struct {
