@@ -28,7 +28,7 @@ import (
 )
 
 func resolveDependencies(configs project.ConfigsPerApis) project.ConfigsPerApis {
-	log.Info("Resolving dependencies between configs")
+	log.Debug("Resolving dependencies between configs")
 
 	configsById := collectConfigsById(configs)
 

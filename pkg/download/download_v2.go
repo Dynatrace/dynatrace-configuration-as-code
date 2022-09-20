@@ -48,6 +48,7 @@ func DownloadConfigs(fs afero.Fs, workingdir, environmentUrl, projectName, envVa
 		log.Info("No configs were downloaded")
 	}
 
+	log.Info("Resolving dependencies between configurations")
 	downloadedConfigs = resolveDependencies(downloadedConfigs)
 
 	err = writeToDisk(fs, downloadedConfigs, projectName)

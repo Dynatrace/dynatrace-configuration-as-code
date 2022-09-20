@@ -604,8 +604,6 @@ func translateGenericValues(inputValues []interface{}, configType string) ([]api
 				continue
 			}
 
-			log.Warn("Config of type %s was invalid. Auto-corrected to use ID as name! Invalid config: %s", configType, string(jsonStr))
-
 			substitutedName := ""
 
 			// Differentiate handling for reports API from others
@@ -613,10 +611,12 @@ func translateGenericValues(inputValues []interface{}, configType string) ([]api
 			if isReportsApi {
 				// Substitute name with dashboard id since it is unique identifier for entity
 				substitutedName = input["dashboardId"].(string)
+				log.Debug("Config of type %s was invalid. Auto-corrected to use dashboardId as name!\nInvalid config: %s", configType, string(jsonStr))
+
 			} else {
 				// Substitute name with id since it is unique identifier for entity
-				log.Warn("Config of type %s was invalid. Auto-corrected to use ID as name!\nInvalid config: %s", configType, string(jsonStr))
 				substitutedName = input["id"].(string)
+				log.Debug("Config of type %s was invalid. Auto-corrected to use ID as name! Invalid config: %s", configType, string(jsonStr))
 			}
 
 			values = append(values, api.Value{
