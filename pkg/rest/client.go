@@ -55,7 +55,7 @@ type DynatraceClient interface {
 	// ReadById reads a Dynatrace config identified by id from the given API.
 	// It calls the underlying GET endpoint for the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles/<id> ... to get the alerting profile
-	ReadById(a Api, name string) (json []byte, err error)
+	ReadById(a Api, id string) (json []byte, err error)
 
 	// Upsert creates a given Dynatrace config it it doesn't exists and updates it otherwise using its name
 	// It calls the underlying GET, POST, and PUT endpoints for the API. E.g. for alerting profiles this would be:
@@ -145,23 +145,23 @@ func (d *dynatraceClientImpl) ReadByName(api Api, name string) (json []byte, err
 }
 
 func (d *dynatraceClientImpl) ReadById(api Api, id string) (json []byte, err error) {
-	var url string
+	var dtUrl string
 	isSingleConfigurationApi := api.IsSingleConfigurationApi()
 
 	if isSingleConfigurationApi {
-		url = api.GetUrlFromEnvironmentUrl(d.environmentUrl)
+		dtUrl = api.GetUrlFromEnvironmentUrl(d.environmentUrl)
 	} else {
-		url = api.GetUrlFromEnvironmentUrl(d.environmentUrl) + "/" + id
+		dtUrl = api.GetUrlFromEnvironmentUrl(d.environmentUrl) + "/" + url.PathEscape(id)
 	}
 
-	response, err := get(d.client, url, d.token)
-
-	if !success(response) {
-		return nil, fmt.Errorf("Failed to get existing config for api %v (HTTP %v)!\n    Response was: %v", api.GetId(), response.StatusCode, string(response.Body))
-	}
+	response, err := get(d.client, dtUrl, d.token)
 
 	if err != nil {
 		return nil, err
+	}
+
+	if !success(response) {
+		return nil, fmt.Errorf("Failed to get existing config for api %v (HTTP %v)!\n    Response was: %v", api.GetId(), response.StatusCode, string(response.Body))
 	}
 
 	return response.Body, nil
