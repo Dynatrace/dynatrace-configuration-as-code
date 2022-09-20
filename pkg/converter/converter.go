@@ -129,10 +129,10 @@ func Convert(context ConverterContext, environments map[string]environmentv1.Env
 }
 
 func convertProjects(context *ConverterContext, environments map[string]manifest.EnvironmentDefinition,
-	projects []projectv1.Project) (map[string]manifest.ProjectDefinition, []projectv2.Project, []error) {
+	projects []projectv1.Project) (manifest.ProjectDefinitionByProjectId, []projectv2.Project, []error) {
 	var errors []error
 	var convertedProjects []projectv2.Project
-	projectDefinitions := make(map[string]manifest.ProjectDefinition)
+	projectDefinitions := make(manifest.ProjectDefinitionByProjectId)
 
 	for _, p := range projects {
 		adjustedId := adjustProjectId(p.GetId())

@@ -61,6 +61,8 @@ type EnvironmentVariableToken struct {
 	EnvironmentVariableName string
 }
 
+type ProjectDefinitionByProjectId map[string]ProjectDefinition
+
 func NewEnvironmentDefinitionFromV1(env environmentv1.Environment, group string) EnvironmentDefinition {
 	return EnvironmentDefinition{
 		Name:  env.GetId(),
@@ -119,7 +121,7 @@ func (e *EnvironmentDefinition) GetUrl() (string, error) {
 
 type Manifest struct {
 	// Projects defined in the manifest, split by project-name
-	Projects map[string]ProjectDefinition
+	Projects ProjectDefinitionByProjectId
 
 	// Environments defined in the manifest, split by environment-name
 	Environments map[string]EnvironmentDefinition
