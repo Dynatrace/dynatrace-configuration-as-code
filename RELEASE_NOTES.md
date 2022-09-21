@@ -1,6 +1,7 @@
 # Monitoring as Code Tool - Release Notes
 
 - Versions:
+  - [1.8.4](#184)
   - [1.8.3](#183)
   - [1.8.2](#182)
   - [1.8.1](#181)
@@ -18,6 +19,31 @@
   - [1.1.0](#110)
   - [1.0.1](#101)
   - [1.0.0](#100)
+
+## 1.8.4
+### List of changes
+#### Bug fixes
+* 9ef99e8b fix: Include already read response body in optional response log (#744)
+* 5cf194cf fix: Include last API error when failing retries (#744)
+* f8d307ce fix: Escape all characters for JSON templating (#741)
+* ec92caa5 fix: More leniently handle Dynatrace errors that are ususally caused by newly created applications not being found yet
+* e11c45bd fix(deploy): URL Path escape identifiers when reading Dynatrace entities by ID  
+
+#### Documentation
+* dc9818d7 docs: Fix MAC installation links
+* d1b66ba7 fix(docs): Configure all links as relative or absolute from content root (#738)
+* 4b1c5049 docs: Better describe special types of configuration (#718)
+* 647bb7ee fix(docs): Fix link to config types in add-new-api guide (#736)
+
+#### Misc changes
+* 084ad54e refactor: Replace deprecated ioutil.ReadAll
+* 2946ec1a test: Extend special character config E2E test (#121, #741)
+* 083c46ac fix(test): Add missing build tag on logging_test
+* bump github.com/urfave/cli/v2 dependency from 2.11.2 to 2.16.3
+  * cdf298c0 chore(deps): bump github.com/urfave/cli/v2 from 2.16.2 to 2.16.3
+  * 4ed67ac3 chore(deps): bump github.com/urfave/cli/v2 from 2.14.1 to 2.16.2
+  * 22da0533 chore(deps): bump github.com/urfave/cli/v2 from 2.11.2 to 2.14.1
+* 7a3a6e8e chore(deps): bump github.com/google/go-cmp from 0.5.8 to 0.5.9
 
 ## 1.8.3
 ### List of changes
