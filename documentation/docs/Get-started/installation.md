@@ -40,7 +40,10 @@ For Linux/macOS, we recommend using `curl`. You can download it from [here](http
  curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/v1.8.3/monaco-linux-386 -o monaco
 
 # macOS
- curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/v1.8.3/monaco-darwin-10.16-amd64 -o monaco
+ curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/v1.8.3/monaco-darwin-amd64 -o monaco
+ 
+ # macOS - Apple Silicon (M1/M2)
+ curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/v1.8.3/monaco-darwin-arm64 -o monaco
 ```
 
 Make the binary executable:
