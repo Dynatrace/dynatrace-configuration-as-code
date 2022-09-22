@@ -20,6 +20,7 @@
 package api
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
@@ -86,4 +87,147 @@ func TestIsDeprecatedApi(t *testing.T) {
 
 	isDeprecatedApi = testManagementZoneApi.IsDeprecatedApi()
 	assert.Equal(t, false, isDeprecatedApi)
+}
+
+func TestApiMap_Filter(t *testing.T) {
+
+	skip := createSkipableApi(t, true)
+	dontSkip := createSkipableApi(t, false)
+
+	tests := []struct {
+		name   string
+		m      ApiMap
+		filter func(api Api) bool
+		want   ApiMap
+		want1  ApiMap
+	}{
+		{
+			"split nothing",
+			nil,
+			func(a Api) bool { return true },
+			ApiMap{},
+			ApiMap{},
+		},
+		{
+			"split only first",
+			ApiMap{"a": skip, "b": dontSkip},
+			func(a Api) bool { return true },
+			ApiMap{},
+			ApiMap{"a": skip, "b": dontSkip},
+		},
+		{
+			"split only second",
+			ApiMap{"a": skip, "b": dontSkip},
+			func(a Api) bool { return false },
+			ApiMap{"a": skip, "b": dontSkip},
+			ApiMap{},
+		},
+		{
+			"split by download second",
+			ApiMap{"a": skip, "b": dontSkip},
+			func(a Api) bool { return a.ShouldSkipDownload() },
+			ApiMap{"b": dontSkip},
+			ApiMap{"a": skip},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1 := tt.m.Filter(tt.filter)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Filter() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("Filter() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}
+
+func createSkipableApi(t *testing.T, skip bool) Api {
+	api, finish := CreateAPIMockFactory(t)
+	finish() // don't care about verify
+
+	api.EXPECT().ShouldSkipDownload().Return(skip)
+	return api
+}
+
+func TestApiMap_FilterApisByName(t *testing.T) {
+	tests := []struct {
+		name            string
+		m               ApiMap
+		args            []string
+		wantApis        ApiMap
+		wantUnknownApis []string
+	}{
+		{
+			"empty values",
+			ApiMap{},
+			[]string{},
+			ApiMap{},
+			[]string{},
+		},
+		{
+			"empty map, non empty keys",
+			ApiMap{},
+			[]string{"a"},
+			ApiMap{},
+			[]string{"a"},
+		},
+		{
+			"non empty map, empty values",
+			createApiMapWithKeys("a"),
+			[]string{},
+			createApiMapWithKeys("a"),
+			[]string{},
+		},
+		{
+			"full matching values",
+			createApiMapWithKeys("a"),
+			[]string{"a"},
+			createApiMapWithKeys("a"),
+			[]string{},
+		},
+		{
+			"partially matching values",
+			createApiMapWithKeys("a"),
+			[]string{"a", "b"},
+			createApiMapWithKeys("a"),
+			[]string{"b"},
+		},
+		{
+			"partially matching values with more keys in map",
+			createApiMapWithKeys("a", "c"),
+			[]string{"a", "b"},
+			createApiMapWithKeys("a"),
+			[]string{"b"},
+		},
+		{
+			"filtering map",
+			createApiMapWithKeys("a", "c"),
+			[]string{"a"},
+			createApiMapWithKeys("a"),
+			[]string{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotApis, gotUnknownApis := tt.m.FilterApisByName(tt.args)
+			if !reflect.DeepEqual(gotApis, tt.wantApis) {
+				t.Errorf("FilterApisByName() gotApis = %v, want %v", gotApis, tt.wantApis)
+			}
+			if !reflect.DeepEqual(gotUnknownApis, tt.wantUnknownApis) {
+				t.Errorf("FilterApisByName() gotUnknownApis = %v, want %v", gotUnknownApis, tt.wantUnknownApis)
+			}
+		})
+	}
+}
+
+func createApiMapWithKeys(keys ...string) ApiMap {
+	m := make(ApiMap, len(keys))
+
+	for _, k := range keys {
+		m[k] = nil
+	}
+
+	return m
 }

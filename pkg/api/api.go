@@ -428,7 +428,7 @@ func (m ApiMap) IsApi(dir string) bool {
 	return ok
 }
 
-// tests if part of project folder path contains an API
+// ContainsApiName tests if part of project folder path contains an API
 // folders with API in path are not valid projects
 func (m ApiMap) ContainsApiName(path string) bool {
 	for api := range m {
@@ -436,9 +436,12 @@ func (m ApiMap) ContainsApiName(path string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
+// Filter filters the APIs into two maps based on the provided callback.
+// If the value is true (the value is filtered), the value is put into the second return value, otherwise the first.
 func (m ApiMap) Filter(filter func(api Api) bool) (ApiMap, ApiMap) {
 	apis := make(ApiMap, len(m))
 	filteredApis := ApiMap{}
@@ -458,8 +461,10 @@ func (m ApiMap) Filter(filter func(api Api) bool) (ApiMap, ApiMap) {
 // Given an emtpy slice, the object is unchanged.
 // The second return value contains all apiNames which were not found in the original map, otherwise an empty slice.
 func (m ApiMap) FilterApisByName(apiNames []string) (apis ApiMap, unknownApis []string) {
+	unknownApis = make([]string, 0)
+
 	if len(apiNames) == 0 {
-		return m, []string{}
+		return m, unknownApis
 	}
 
 	apis = make(ApiMap, len(m))
