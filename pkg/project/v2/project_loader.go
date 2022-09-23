@@ -15,6 +15,8 @@
 package v2
 
 import (
+	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"path/filepath"
 
@@ -108,6 +110,10 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 		configs = append(configs, loaded...)
 	}
 
+	if d := getDuplicatedId(configs); d != nil {
+		errors = append(errors, fmt.Errorf("duplicate IDs: %v ", d))
+	}
+
 	if errors != nil {
 		return Project{}, errors
 	}
@@ -130,24 +136,40 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 	}, nil
 }
 
+func getDuplicatedId(args []config.Config) []string {
+
+	m := make(map[coordinate.Coordinate]int)
+	for _, configuration := range args {
+		m[configuration.Coordinate] += 1
+	}
+
+	var duplicates []string
+	for c, n := range m {
+		if n > 1 {
+			duplicates = append(duplicates, c.Config)
+		}
+	}
+	return duplicates
+}
+
 func toDependenciesMap(projectId string,
 	configs []config.Config) map[string][]string {
 	result := make(map[string][]string)
 
-	for _, config := range configs {
+	for _, c := range configs {
 		// ignore skipped configs
-		if config.Skip {
+		if c.Skip {
 			continue
 		}
 
-		for _, ref := range config.References {
+		for _, ref := range c.References {
 			// ignore project on same project
 			if projectId == ref.Project {
 				continue
 			}
 
-			if !containsProject(result[config.Environment], ref.Project) {
-				result[config.Environment] = append(result[config.Environment], ref.Project)
+			if !containsProject(result[c.Environment], ref.Project) {
+				result[c.Environment] = append(result[c.Environment], ref.Project)
 			}
 		}
 	}
