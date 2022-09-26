@@ -191,7 +191,7 @@ func Test_trimToEnvVariableName(t *testing.T) {
 	}
 }
 
-func TestEscapeNewlineCharacters(t *testing.T) {
+func Test_EscapeSpecialCharacters_EscapesNewline(t *testing.T) {
 
 	p := map[string]interface{}{
 		"string without newline": "just some string",
@@ -233,7 +233,7 @@ func TestEscapeNewlineCharacters(t *testing.T) {
 	assert.DeepEqual(t, expected, result)
 }
 
-func TestEscapeNewlineCharactersWithEmptyMap(t *testing.T) {
+func Test_EscapeSpecialCharacters_WithEmptyMap(t *testing.T) {
 
 	empty := map[string]interface{}{}
 

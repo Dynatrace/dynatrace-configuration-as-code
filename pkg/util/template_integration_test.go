@@ -41,8 +41,8 @@ func TestConfigurationTemplatingFromFilesProducesValidJson(t *testing.T) {
 	assert.NilError(t, err, "Expected template json (%s) to be loaded without error", test_json)
 
 	rendered, err := template.ExecuteTemplate(properties["properties"])
-	assert.NilError(t, err, "Expected template to render without error")
+	assert.NilError(t, err, "Expected template to render without error\n %s", rendered)
 
 	err = ValidateJson(rendered, Location{})
-	assert.NilError(t, err, "Expected rendered template to be valid JSON")
+	assert.NilError(t, err, "Expected rendered template to be valid JSON:\n %s", rendered)
 }

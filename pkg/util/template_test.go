@@ -109,6 +109,104 @@ func getTemplateTestPropertiesClashingWithEnvVars() map[string]string {
 	return m
 }
 
+func TestEscapeNewlineCharacters(t *testing.T) {
+
+	p := map[string]interface{}{
+		"string without newline": "just some string",
+		"string with newline":    "some\nstring",
+		"nested": map[string]interface{}{
+			"nested without newline": "just some string",
+			"nested with newline":    "some\nstring",
+			"deepNested": map[string]interface{}{ // not yet used, but might be in the future
+				"deepNested without newline": "just some string",
+				"deepNested with newline":    "some\nstring",
+			},
+		},
+		"nestedEnv": map[string]string{
+			"nestedEnv without newline": "just some string",
+			"nestedEnv with newline":    "some\nstring",
+		},
+	}
+
+	result := escapeSpecialCharacters(p)
+
+	expected := map[string]interface{}{
+		`string without newline`: `just some string`,
+		`string with newline`:    `some\nstring`,
+		`nested`: map[string]interface{}{
+			`nested without newline`: `just some string`,
+			`nested with newline`:    `some\nstring`,
+			`deepNested`: map[string]interface{}{ // not yet used, but might be in the future
+				`deepNested without newline`: `just some string`,
+				`deepNested with newline`:    `some\nstring`,
+			},
+		},
+		`nestedEnv`: map[string]string{
+			`nestedEnv without newline`: `just some string`,
+			`nestedEnv with newline`:    `some\nstring`,
+		},
+	}
+
+	assert.DeepEqual(t, expected, result)
+}
+
+func TestEscapeNewlineCharactersWithEmptyMap(t *testing.T) {
+
+	empty := map[string]interface{}{}
+
+	res := escapeSpecialCharacters(empty)
+
+	assert.DeepEqual(t, res, empty)
+}
+
+func Test_escapeNewlines(t *testing.T) {
+	tests := []struct {
+		inputString string
+		want        string
+	}{
+		{
+			`string with no quotes is unchanged`,
+			`string with no quotes is unchanged`,
+		},
+		{
+			`string with 'single quotes' quotes is unchanged`,
+			`string with 'single quotes' quotes is unchanged`,
+		},
+		{
+			"\nString with multiple \n new\nlines on many positions\n\n",
+			`\nString with multiple \n new\nlines on many positions\n\n`,
+		},
+		{
+			"String with already escaped \\n newline",
+			`String with already escaped \n newline`,
+		},
+		{
+			"String with one\nnewline",
+			`String with one\nnewline`,
+		},
+		{
+			"String with one\nnewline",
+			`String with one\nnewline`,
+		},
+		{
+			"String without newline",
+			`String without newline`,
+		},
+		{
+			"String { containing {{ some {json : like text } stays as is",
+			`String { containing {{ some {json : like text } stays as is`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.inputString, func(t *testing.T) {
+			got := escapeNewlines(tt.inputString)
+			if got != tt.want {
+				t.Errorf("escapeNewlines() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestTemplatesWithSpecialCharactersProduceValidJson(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -127,17 +225,9 @@ func TestTemplatesWithSpecialCharactersProduceValidJson(t *testing.T) {
 			`{ "key": "{{ .value }}", "object": { "o_key": "{{ .object_value}}" } }`,
 			map[string]string{
 				"value":        "A string\nwith several lines\n\n - here's one\n\n - and another",
-				"object_value": "and\r\none\r\nmore",
+				"object_value": "and\none\nmore",
 			},
-			`{ "key": "A string\nwith several lines\n\n - here's one\n\n - and another", "object": { "o_key": "and\r\none\r\nmore" } }`,
-		},
-		{
-			"strings with random double-quotes are escaped",
-			`{ "key": "{{ .value }}" }`,
-			map[string]string{
-				"value": `A "String" - that contains random "quotes"`,
-			},
-			`{ "key": "A \"String\" - that contains random \"quotes\"" }`,
+			`{ "key": "A string\nwith several lines\n\n - here's one\n\n - and another", "object": { "o_key": "and\none\nmore" } }`,
 		},
 		{
 			"regular slashes are not escaped",
@@ -156,16 +246,14 @@ func TestTemplatesWithSpecialCharactersProduceValidJson(t *testing.T) {
 			`{ "list": [ "element a", "element b", "element c" ] }`,
 		},
 		{
-			"a v1 list definition can still contain newlines",
+			"a list definition can contain newlines",
 			`{ "list": [ {{ .entries }} ] }`,
 			map[string]string{
 				"entries": `"element a",
 "element b",
 "element c"`,
 			},
-			`{ "list": [ "element a",
-"element b",
-"element c" ] }`,
+			"{ \"list\": [ \"element a\",\n\"element b\",\n\"element c\" ] }",
 		},
 	}
 	for _, tt := range tests {

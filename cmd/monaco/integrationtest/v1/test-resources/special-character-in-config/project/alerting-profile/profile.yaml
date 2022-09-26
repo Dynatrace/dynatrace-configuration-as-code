@@ -1,6 +1,10 @@
 
 config:
   - profile: "profile.json"
+  - profile2: profile.json
 
 profile:
-  - name: A "Alerting Profile" - for things with "quotes"
+  - name: 'A \"Alerting Profile\" - for things with \"quotes\"'
+
+profile2:
+  - name: Another \"Alerting Profile\" - for things with \"quotes\"

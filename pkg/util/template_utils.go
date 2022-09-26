@@ -66,7 +66,7 @@ func EscapeSpecialCharacters(properties map[string]interface{}) (map[string]inte
 			}
 			escapedProperties[key] = escaped
 		case map[string]string:
-			escaped, err := escapeNewlineCharactersForStringMap(field)
+			escaped, err := escapeCharactersForStringMap(field)
 			if err != nil {
 				return nil, err
 			}
@@ -85,7 +85,7 @@ func EscapeSpecialCharacters(properties map[string]interface{}) (map[string]inte
 	return escapedProperties, nil
 }
 
-func escapeNewlineCharactersForStringMap(properties map[string]string) (map[string]string, error) {
+func escapeCharactersForStringMap(properties map[string]string) (map[string]string, error) {
 	escapedProperties := make(map[string]string, len(properties))
 
 	for key, value := range properties {
