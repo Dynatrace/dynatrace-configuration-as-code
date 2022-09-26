@@ -261,17 +261,16 @@ func getDownloadCommand(fs afero.Fs) (downloadCmd *cobra.Command) {
 		Short:   "Download configuration from Dynatrace",
 		Example: "monaco download -e environment.yaml",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var workingDir string
 
-			// TODO: check if either environment flag or url flag is set, otherwise fail early
-
-			if len(args) != 0 {
-				workingDir = args[0]
-			} else {
-				workingDir = "."
+			if environments != "" {
+				return download.DownloadConfigsBasedOnManifest(fs, environments, specificEnvironment, specificApis)
 			}
 
-			return download.DownloadConfigs(fs, workingDir, environmentUrl, environmentName, environmentVariableName, specificApis)
+			if environmentUrl != "" {
+				return download.DownloadConfigs(fs, environmentUrl, environmentName, environmentVariableName, specificApis)
+			}
+
+			return fmt.Errorf(`either '--environments' or '--url' has to be provided`)
 		},
 	}
 
@@ -303,6 +302,7 @@ func getDownloadCommand(fs afero.Fs) (downloadCmd *cobra.Command) {
 	downloadCmd.MarkFlagsMutuallyExclusive("specific-environment", "url")
 
 	downloadCmd.MarkFlagsRequiredTogether("url", "token-name", "environment-name")
+	downloadCmd.MarkFlagsRequiredTogether("environments", "specific-environment") // make specific environment optional?
 
 	err = downloadCmd.RegisterFlagCompletionFunc("specific-api", completion.AllAvailableApis)
 	if err != nil {

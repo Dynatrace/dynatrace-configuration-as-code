@@ -19,6 +19,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download/downloader"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
@@ -27,6 +28,48 @@ import (
 	"os"
 	"strings"
 )
+
+func DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile, specificEnvironmentName string, apiNamesToDownload []string) error {
+
+	man, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
+		Fs:           fs,
+		ManifestPath: manifestFile,
+	})
+
+	if errs != nil {
+		util.PrintErrors(errs)
+		return fmt.Errorf("failed to load manifest '%v'", manifestFile)
+	}
+
+	env, found := man.Environments[specificEnvironmentName]
+	if !found {
+		return fmt.Errorf("environment '%v' was not available in manifest '%v'", specificEnvironmentName, manifestFile)
+	}
+
+	apisToDownload, errs := getApisToDownload(apiNamesToDownload)
+
+	if len(errs) > 0 {
+		util.PrintErrors(errs)
+		return fmt.Errorf("failed to load apis")
+	}
+
+	url, err := env.GetUrl()
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	token, err := env.GetToken()
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	if len(errs) > 0 {
+		util.PrintErrors(errs)
+		return fmt.Errorf("failed to load manifest data")
+	}
+
+	return doDownload(fs, url, specificEnvironmentName, token, apisToDownload)
+}
 
 func DownloadConfigs(fs afero.Fs, environmentUrl, projectName, envVarName string, apiNamesToDownload []string) error {
 
