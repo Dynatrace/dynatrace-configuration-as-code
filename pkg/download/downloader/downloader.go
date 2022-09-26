@@ -30,6 +30,9 @@ import (
 	"sync"
 )
 
+// DownloadAllConfigs downloads all specified apis from a given environment.
+//
+// See package documentation for implementation details.
 func DownloadAllConfigs(apisToDownload api.ApiMap, client rest.DynatraceClient, projectName string) project.ConfigsPerApis {
 
 	// apis & mutex to lock it

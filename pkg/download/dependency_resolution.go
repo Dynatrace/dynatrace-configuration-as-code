@@ -28,6 +28,10 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
 )
 
+// ResolveDependencies resolves all id-dependencies between downloaded configs.
+//
+// We do this by collecting all ids of all configs, and then simply by searching for them in templates.
+// If we find an occurrence, we replace it with a generic variable and reference the config.
 func ResolveDependencies(configs project.ConfigsPerApis) project.ConfigsPerApis {
 	log.Debug("Resolving dependencies between configs")
 
