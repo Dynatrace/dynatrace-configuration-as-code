@@ -28,16 +28,30 @@ import (
 	"strings"
 )
 
-func DownloadConfigs(fs afero.Fs, workingdir, environmentUrl, projectName, envVarName string, apiNamesToDownload []string) error {
+func DownloadConfigs(fs afero.Fs, environmentUrl, projectName, envVarName string, apiNamesToDownload []string) error {
+
+	apis, errors := getApisToDownload(apiNamesToDownload)
+
+	if len(errors) > 0 {
+		util.PrintErrors(errors)
+		return fmt.Errorf("failed to load apis")
+	}
 
 	// Initial checks ang logging basic information
-	token, apis, errors := validateVariables(envVarName, environmentUrl, projectName, apiNamesToDownload)
+	token, errors := validateParameters(envVarName, environmentUrl, projectName)
 
 	if len(errors) > 0 {
 		util.PrintErrors(errors)
 
 		return fmt.Errorf("not all necessary information is present to start downloading configurations")
 	}
+
+	return doDownload(fs, environmentUrl, projectName, token, apis)
+}
+
+func doDownload(fs afero.Fs, environmentUrl string, projectName string, token string, apis api.ApiMap) error {
+
+	log.Info("Downloading APIs '%v' from environment '%v' into project '%v'", strings.Join(maps.Keys(apis), ", "), environmentUrl, projectName)
 
 	client, err := rest.NewDynatraceClient(environmentUrl, token)
 	if err != nil {
@@ -63,9 +77,8 @@ func DownloadConfigs(fs afero.Fs, workingdir, environmentUrl, projectName, envVa
 	return nil
 }
 
-// validateVariables checks that all necessary variables have been set.
-// If all variables have been set, a message is logged for basic information
-func validateVariables(envVarName, environmentUrl, projectName string, apisToDownload []string) (string, api.ApiMap, []error) {
+// validateParameters checks that all necessary variables have been set.
+func validateParameters(envVarName, environmentUrl, projectName string) (string, []error) {
 	token := os.Getenv(envVarName)
 	errors := make([]error, 0)
 
@@ -82,7 +95,14 @@ func validateVariables(envVarName, environmentUrl, projectName string, apisToDow
 		errors = append(errors, fmt.Errorf("project=name '%v' is empty", environmentUrl))
 	}
 
-	// Get all v2 apis and filter for the selected ones
+	return token, errors
+}
+
+// Get all v2 apis and filter for the selected ones
+func getApisToDownload(apisToDownload []string) (api.ApiMap, []error) {
+
+	errors := []error{}
+
 	apis, unknownApis := api.NewApis().FilterApisByName(apisToDownload)
 	if len(unknownApis) > 0 {
 		errors = append(errors, fmt.Errorf("APIs '%v' are not known. Please consult our documentation for known API-names", strings.Join(unknownApis, ",")))
@@ -101,15 +121,5 @@ func validateVariables(envVarName, environmentUrl, projectName string, apisToDow
 		errors = append(errors, fmt.Errorf("no APIs to download"))
 	}
 
-	if len(errors) > 0 {
-		return "", nil, errors
-	}
-
-	if len(apisToDownload) == 0 {
-		log.Info("Downloading all APIs from environment '%v' into project '%v' using environment-variable '%v'", environmentUrl, projectName, envVarName)
-	} else {
-		log.Info("Downloading APIs '%v' from environment '%v' into project '%v' using environment-variable '%v'", strings.Join(apisToDownload, ", "), environmentUrl, projectName, envVarName)
-	}
-
-	return token, apis, nil
+	return apis, errors
 }
