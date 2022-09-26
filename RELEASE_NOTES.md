@@ -1,6 +1,7 @@
 # Monitoring as Code Tool - Release Notes
 
 - Versions:
+  - [1.8.5](#185) 
   - [1.8.4](#184)
   - [1.8.3](#183)
   - [1.8.2](#182)
@@ -19,6 +20,22 @@
   - [1.1.0](#110)
   - [1.0.1](#101)
   - [1.0.0](#100)
+
+## 1.8.5
+
+Release 1.8.4 introduced a 'fix' to always escape the content of variables (from a YAML) before placing it
+into a JSON template. 
+
+This can cause issues for certain usecases in which the content filled into a template is needed to create 
+a valid JSON and must not be escaped - e.g. if the template introduces double-quotes needed in the JSON payload.
+
+1.8.5 reverts the eager escaping for JSON and instead escapes only known characters at specific points -
+double-quotes when downloading and newline characters when templating for deployment.
+
+### List of changes
+#### Bug fixes
+52fff6a1 fix(download): Escape quotes in download name properties (#741)
+6c6eda7e fix: Revert escaping all JSON characters for templating (#741)
 
 ## 1.8.4
 ### List of changes
