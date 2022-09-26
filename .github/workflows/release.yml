@@ -19,6 +19,8 @@ jobs:
 
       - name: Check out code into the Go module directory
         uses: actions/checkout@v3.0.2
+        with:
+            fetch-depth: 0
 
       - name: Check Version
         run: |
@@ -47,3 +49,8 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           assets_path: ./build
+
+      - name: Release Notary Action
+        uses: docker://aevea/release-notary:0.9.1
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
