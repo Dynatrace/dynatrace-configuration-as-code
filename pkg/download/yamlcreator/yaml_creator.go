@@ -18,6 +18,7 @@ import (
 	"io/fs"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/spf13/afero"
@@ -26,7 +27,7 @@ import (
 
 //go:generate mockgen -source=yaml_creator.go -destination=yaml_creator_mock.go -package=yamlcreator YamlCreator
 
-//YamlCreator implements method to create the yaml configuration file
+// YamlCreator implements method to create the yaml configuration file
 type YamlCreator interface {
 	ReadYamlFile(fs afero.Fs, configSubPath string, apiId string) error
 	WriteYamlFile(fs afero.Fs, path string, name string) error
@@ -67,7 +68,7 @@ type CleansedDetailConfig struct {
 	Name string `yaml:"name"`
 }
 
-//NewYamlConfig return a new yaml struct with Config and Detail as fields
+// NewYamlConfig return a new yaml struct with Config and Detail as fields
 func NewYamlConfig(environmentName string) *YamlConfig {
 	yamlConfig := YamlConfig{
 		EnvironmentName:          environmentName,
@@ -82,12 +83,12 @@ func NewYamlConfig(environmentName string) *YamlConfig {
 	return &yamlConfig
 }
 
-//isTopLevelConfigurationYamlKey checks if a given yaml key is the toplevel element defining further Configs
+// isTopLevelConfigurationYamlKey checks if a given yaml key is the toplevel element defining further Configs
 func isTopLevelConfigurationYamlKey(key string) bool {
 	return key == "config"
 }
 
-//AddConfig allows to add new configs to the yaml file
+// AddConfig allows to add new configs to the yaml file
 func (yc *YamlConfig) AddConfig(name string, rawName string) {
 
 	config := DetailConfig{Name: rawName}
@@ -164,7 +165,7 @@ func (yc *YamlConfig) cleanseYamlConfig() CleansedYamlConfig {
 			yamlConfig.Detail[k] = []CleansedDetailConfig{}
 
 			cleansedDetailConfig := CleansedDetailConfig{
-				Name: entityName,
+				Name: sanitizeNameValue(entityName),
 			}
 
 			yamlConfig.Detail[k] = append(yamlConfig.Detail[k], cleansedDetailConfig)
@@ -179,7 +180,11 @@ func (yc *YamlConfig) cleanseYamlConfig() CleansedYamlConfig {
 	return yamlConfig
 }
 
-//WriteYamlFile transforms the struct into a physical file on disk
+func sanitizeNameValue(name string) string {
+	return strings.ReplaceAll(name, "\"", `\"`)
+}
+
+// WriteYamlFile transforms the struct into a physical file on disk
 func (yc *YamlConfig) WriteYamlFile(fs afero.Fs, path string, name string) error {
 	yamlConfig := yc.cleanseYamlConfig()
 	fullPath := filepath.Join(path, name+".yaml")
