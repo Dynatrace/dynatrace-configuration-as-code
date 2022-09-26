@@ -1,8 +1,6 @@
 # This is NOT a monaco configuration yaml - it only used to integration test the loading of config from yaml
 properties:
   - simple: "Alpha Quadrant"
-  - string_with_no_quotes: A "Management Zone" - GC name contains "ervice"
-  - string_with_single_quotes: 'A "Management Zone" - GC name contains "ervice"'
   - escaped_with_single_quotes: 'A \"Management Zone\" - GC name contains \"ervice\"'
   - newline1: |-
       ## This is a Markdown tile
@@ -31,6 +29,8 @@ properties:
 
       Same here.
   - list: '"jean-luc.picard@dynatrace.com", "james.t.kirk@dynatrace.com"'
+  - single_entry_list: '"jim.holden@dynatrace.com"'
+  - single_entry_with_quotes_list: "jim.holden@dynatrace.com"
   - list_with_newlines: |
       "jean-luc.picard@dynatrace.com",
       "james.t.kirk@dynatrace.com",

@@ -2,6 +2,7 @@
 config:
   - slack: "subfolder/slack.json"
   - email: "subfolder/email.json"
+  - email_single_receiver: "subfolder/email.json"
 
 slack:
   - alertingProfileId: "/project/alerting-profile/profile.id"
@@ -23,3 +24,9 @@ email.environment1:
 
 email.environment2:
   - environment: "Env2"
+
+email_single_receiver:
+  - name: "There's only one Captain!'s Log"
+  - receivers: '"jim.kirk@dynatrace.com"'
+  - alertingProfileId: "/project/alerting-profile/profile.id"
+  - environment: "test env"

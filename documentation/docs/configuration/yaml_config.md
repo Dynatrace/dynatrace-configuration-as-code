@@ -254,3 +254,16 @@ development:
         This will also
         be escaped
 ```
+
+### Double-Quotes in variables
+
+Sometimes you might want to use quotes in a configuration.
+
+To make this work in strings, you need to enclose the value in single-quotes (`'`) and escape any double-quotes (`\"`).
+
+If you don't do that, the fully templated configurations will not be valid JSON.
+
+```yaml
+escaped_quoted_sample:
+    - name: 'An Alerting Profile for \"Company Service\"'
+```

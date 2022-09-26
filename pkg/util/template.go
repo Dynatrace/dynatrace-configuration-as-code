@@ -18,7 +18,6 @@ package util
 
 import (
 	"bytes"
-	"encoding/json"
 	"os"
 	"reflect"
 	"regexp"
@@ -82,12 +81,9 @@ func (t *templateImpl) ExecuteTemplate(data map[string]string) (string, error) {
 
 	dataForTemplating := addEnvVars(data)
 
-	dataForTemplating, err := escapeSpecialCharacters(dataForTemplating)
-	if CheckError(err, "Failed to prepare config properties for templating") {
-		return "", err
-	}
+	dataForTemplating = escapeSpecialCharacters(dataForTemplating)
 
-	err = t.template.Execute(&tpl, dataForTemplating)
+	err := t.template.Execute(&tpl, dataForTemplating)
 	if CheckError(err, "Could not execute template") {
 		return "", err
 	}
@@ -124,7 +120,7 @@ func addEnvVars(properties map[string]string) map[string]interface{} {
 
 // escapeSpecialCharacters walks recursively though the map and escapes all special characters that can't just be written to the
 // json template. characters that will be escaped: newlines (\n), double quotes (\")
-func escapeSpecialCharacters(properties map[string]interface{}) (map[string]interface{}, error) {
+func escapeSpecialCharacters(properties map[string]interface{}) map[string]interface{} {
 
 	escapedProperties := make(map[string]interface{}, len(properties))
 
@@ -132,63 +128,34 @@ func escapeSpecialCharacters(properties map[string]interface{}) (map[string]inte
 
 		switch field := value.(type) {
 		case string:
-			escaped, err := escapeCharactersForJson(field)
-			if err != nil {
-				return nil, err
-			}
-			escapedProperties[key] = escaped
+			escapedProperties[key] = escapeNewlines(field)
 		case map[string]string:
-			escaped, err := escapeNewlineCharactersForStringMap(field)
-			if err != nil {
-				return nil, err
-			}
-			escapedProperties[key] = escaped
+			escapedProperties[key] = escapeSpecialCharactersForStringMap(field)
 		case map[string]interface{}:
-			escaped, err := escapeSpecialCharacters(field)
-			if err != nil {
-				return nil, err
-			}
-			escapedProperties[key] = escaped
+			escapedProperties[key] = escapeSpecialCharacters(field)
 		default:
 			Log.Debug("Unknown value type %v in property %v.", reflect.TypeOf(value), key)
 		}
 	}
 
-	return escapedProperties, nil
+	return escapedProperties
 }
 
-func escapeNewlineCharactersForStringMap(properties map[string]string) (map[string]string, error) {
+func escapeSpecialCharactersForStringMap(properties map[string]string) map[string]string {
 	escapedProperties := make(map[string]string, len(properties))
 
 	for key, value := range properties {
-		escaped, err := escapeCharactersForJson(value)
-		if err != nil {
-			return nil, err
-		}
-		escapedProperties[key] = escaped
+		escapedProperties[key] = escapeNewlines(value)
 	}
 
-	return escapedProperties, nil
+	return escapedProperties
 }
 
-// escapeCharactersForJson ensures a string can be placed into a json by just marshalling it to json.
-// This will escape anything that needs to be escaped - but explicitly excludes strings that are of string list format.
-// Such list strings can be used to place several values into a json list and their double-quotes are needed to render
-// valid json and must not be escaped. As a caveat this means any other characters aren't escaped either for lists.
-// As marshalling additionally places quotes around the output these first and last characters are cut off before returning.
-func escapeCharactersForJson(rawString string) (string, error) {
+func escapeNewlines(rawString string) string {
 	if isListDefinition(rawString) {
-		return rawString, nil
+		return rawString
 	}
-
-	b, err := json.Marshal(rawString)
-	if err != nil {
-		// errors should never occur for marshalling a string value - better safe than sorry if implementation details change
-		return "", err
-	}
-	s := string(b)
-	s = s[1 : len(s)-1] //marshalling places quotes around the json string which we don't want
-	return s, nil
+	return strings.ReplaceAll(rawString, "\n", `\n`)
 }
 
 // pattern matching strings of the format '"value", "value", ...' which are sometimes used to set lists into JSON templates

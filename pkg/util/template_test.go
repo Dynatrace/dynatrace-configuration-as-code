@@ -128,8 +128,7 @@ func TestEscapeNewlineCharacters(t *testing.T) {
 		},
 	}
 
-	result, err := escapeSpecialCharacters(p)
-	assert.NilError(t, err)
+	result := escapeSpecialCharacters(p)
 
 	expected := map[string]interface{}{
 		`string without newline`: `just some string`,
@@ -155,9 +154,8 @@ func TestEscapeNewlineCharactersWithEmptyMap(t *testing.T) {
 
 	empty := map[string]interface{}{}
 
-	res, err := escapeSpecialCharacters(empty)
+	res := escapeSpecialCharacters(empty)
 
-	assert.NilError(t, err)
 	assert.DeepEqual(t, res, empty)
 }
 
@@ -171,10 +169,6 @@ func Test_escapeCharactersForJson(t *testing.T) {
 			`string with no quotes is unchanged`,
 		},
 		{
-			`string """ with "double quotes" results in quotes being "escaped"`,
-			`string \"\"\" with \"double quotes\" results in quotes being \"escaped\"`,
-		},
-		{
 			`string with 'single quotes' quotes is unchanged`,
 			`string with 'single quotes' quotes is unchanged`,
 		},
@@ -184,11 +178,7 @@ func Test_escapeCharactersForJson(t *testing.T) {
 		},
 		{
 			"String with already escaped \\n newline",
-			`String with already escaped \\n newline`,
-		},
-		{
-			"String with one windows\r\nnewline",
-			`String with one windows\r\nnewline`,
+			`String with already escaped \n newline`,
 		},
 		{
 			"String with one\nnewline",
@@ -209,11 +199,7 @@ func Test_escapeCharactersForJson(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.inputString, func(t *testing.T) {
-			got, err := escapeCharactersForJson(tt.inputString)
-			if err != nil {
-				t.Errorf("escapeCharactersForJson() unexpected error = %v", err)
-				return
-			}
+			got := escapeNewlines(tt.inputString)
 			if got != tt.want {
 				t.Errorf("escapeCharactersForJson() got = %v, want %v", got, tt.want)
 			}
@@ -239,17 +225,9 @@ func TestTemplatesWithSpecialCharactersProduceValidJson(t *testing.T) {
 			`{ "key": "{{ .value }}", "object": { "o_key": "{{ .object_value}}" } }`,
 			map[string]string{
 				"value":        "A string\nwith several lines\n\n - here's one\n\n - and another",
-				"object_value": "and\r\none\r\nmore",
+				"object_value": "and\none\nmore",
 			},
-			`{ "key": "A string\nwith several lines\n\n - here's one\n\n - and another", "object": { "o_key": "and\r\none\r\nmore" } }`,
-		},
-		{
-			"strings with random double-quotes are escaped",
-			`{ "key": "{{ .value }}" }`,
-			map[string]string{
-				"value": `A "String" - that contains random "quotes"`,
-			},
-			`{ "key": "A \"String\" - that contains random \"quotes\"" }`,
+			`{ "key": "A string\nwith several lines\n\n - here's one\n\n - and another", "object": { "o_key": "and\none\nmore" } }`,
 		},
 		{
 			"regular slashes are not escaped",
@@ -268,16 +246,14 @@ func TestTemplatesWithSpecialCharactersProduceValidJson(t *testing.T) {
 			`{ "list": [ "element a", "element b", "element c" ] }`,
 		},
 		{
-			"a v1 list definition can still contain newlines",
+			"a list definition can contain newlines",
 			`{ "list": [ {{ .entries }} ] }`,
 			map[string]string{
 				"entries": `"element a",
 "element b",
 "element c"`,
 			},
-			`{ "list": [ "element a",
-"element b",
-"element c" ] }`,
+			"{ \"list\": [ \"element a\",\n\"element b\",\n\"element c\" ] }",
 		},
 	}
 	for _, tt := range tests {
