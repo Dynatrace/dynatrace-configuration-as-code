@@ -75,7 +75,7 @@ Examples:
 		},
 	}
 
-	downloadCommand := getDownloadCommand(fs)
+	downloadCommand := getDownloadCommand(fs, &download.DefaultCommand{})
 	convertCommand := getConvertCommand(fs)
 	deployCommand := getDeployCommand(fs)
 	deleteCommand := getDeleteCommand(fs)
@@ -252,7 +252,7 @@ func getLegacyDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 	return deployCmd
 }
 
-func getDownloadCommand(fs afero.Fs) (downloadCmd *cobra.Command) {
+func getDownloadCommand(fs afero.Fs, command download.Command) (downloadCmd *cobra.Command) {
 	var environments, specificEnvironment, environmentUrl, environmentName, environmentVariableName string
 	var specificApis []string
 
@@ -263,11 +263,11 @@ func getDownloadCommand(fs afero.Fs) (downloadCmd *cobra.Command) {
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			if environments != "" {
-				return download.DownloadConfigsBasedOnManifest(fs, environments, specificEnvironment, specificApis)
+				return command.DownloadConfigsBasedOnManifest(fs, environments, specificEnvironment, specificApis)
 			}
 
 			if environmentUrl != "" {
-				return download.DownloadConfigs(fs, environmentUrl, environmentName, environmentVariableName, specificApis)
+				return command.DownloadConfigs(fs, environmentUrl, environmentName, environmentVariableName, specificApis)
 			}
 
 			return fmt.Errorf(`either '--environments' or '--url' has to be provided`)
@@ -280,7 +280,6 @@ func getDownloadCommand(fs afero.Fs) (downloadCmd *cobra.Command) {
 	// TODO david.laubreiter: Continue flag
 
 	// download using the manifest
-	// TODO david.laubreiter: Not yet actually used, implement before merge
 	downloadCmd.Flags().StringVarP(&environments, "environments", "e", "", "Yaml file containing environment to download")
 	downloadCmd.Flags().StringVarP(&specificEnvironment, "specific-environment", "s", "", "Specific environment (from list) to download")
 

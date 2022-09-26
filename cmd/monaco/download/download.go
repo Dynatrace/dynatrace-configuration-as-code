@@ -29,7 +29,25 @@ import (
 	"strings"
 )
 
-func DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile, specificEnvironmentName string, apiNamesToDownload []string) error {
+//go:generate mockgen -source=download.go -destination=download_mock.go -package=download -write_package_comment=false Command
+
+// Command is used to test the CLi commands properly without executing the actual monaco download.
+//
+// The actual implementations are in the [DefaultCommand] struct.
+type Command interface {
+	DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile, specificEnvironmentName string, apiNamesToDownload []string) error
+	DownloadConfigs(fs afero.Fs, environmentUrl, projectName, envVarName string, apiNamesToDownload []string) error
+}
+
+// DefaultCommand is used to implement the [Command] interface.
+type DefaultCommand struct{}
+
+// make sure DefaultCommand implements the Command interface
+var (
+	_ Command = (*DefaultCommand)(nil)
+)
+
+func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile, specificEnvironmentName string, apiNamesToDownload []string) error {
 
 	man, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
 		Fs:           fs,
@@ -71,7 +89,7 @@ func DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile, specificEnvironme
 	return doDownload(fs, url, specificEnvironmentName, token, apisToDownload)
 }
 
-func DownloadConfigs(fs afero.Fs, environmentUrl, projectName, envVarName string, apiNamesToDownload []string) error {
+func (d DefaultCommand) DownloadConfigs(fs afero.Fs, environmentUrl, projectName, envVarName string, apiNamesToDownload []string) error {
 
 	apis, errors := getApisToDownload(apiNamesToDownload)
 
