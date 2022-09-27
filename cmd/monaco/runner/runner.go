@@ -298,7 +298,6 @@ func getDownloadCommand(fs afero.Fs, command download.Command) (downloadCmd *cob
 	}
 
 	downloadCmd.MarkFlagsMutuallyExclusive("environments", "url")
-	downloadCmd.MarkFlagsMutuallyExclusive("specific-environment", "url")
 
 	downloadCmd.MarkFlagsRequiredTogether("url", "token-name", "environment-name")
 	downloadCmd.MarkFlagsRequiredTogether("environments", "specific-environment") // make specific environment optional?
