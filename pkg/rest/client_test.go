@@ -102,11 +102,3 @@ func TestReadByIdReturnsTheResponseGivenNoError(t *testing.T) {
 	assert.NilError(t, err, "there should not be an error")
 	assert.DeepEqual(t, body, resp)
 }
-
-// newDynatraceClientForTesting creates a new DynatraceClient for a given test-server
-func newDynatraceClientForTesting(server *httptest.Server) DynatraceClient {
-	return &dynatraceClientImpl{
-		client:         server.Client(),
-		environmentUrl: server.URL,
-	}
-}

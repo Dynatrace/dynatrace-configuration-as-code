@@ -24,6 +24,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/golang/mock/gomock"
 	"gotest.tools/assert"
+	"net/http"
 	"strconv"
 	"testing"
 	"time"
@@ -33,11 +34,14 @@ func createTestHeaders(resetTimestamp int64) map[string][]string {
 
 	headers := make(map[string][]string)
 
-	headers["X-RateLimit-Limit"] = make([]string, 1)
-	headers["X-RateLimit-Limit"][0] = "20"
+	limitKey := http.CanonicalHeaderKey("X-RateLimit-Limit")
+	rateKey := http.CanonicalHeaderKey("X-RateLimit-Reset")
 
-	headers["X-RateLimit-Reset"] = make([]string, 1)
-	headers["X-RateLimit-Reset"][0] = strconv.FormatInt(resetTimestamp, 10)
+	headers[limitKey] = make([]string, 1)
+	headers[limitKey][0] = "20"
+
+	headers[rateKey] = make([]string, 1)
+	headers[rateKey][0] = strconv.FormatInt(resetTimestamp, 10)
 
 	return headers
 }
@@ -111,7 +115,7 @@ func TestRateLimitHeaderExtractionForInvalidHeader(t *testing.T) {
 
 	rateLimitStrategy := simpleSleepRateLimitStrategy{}
 	headers := createTestHeaders(0)
-	headers["X-RateLimit-Reset"][0] = "not a unix timestamp"
+	headers[http.CanonicalHeaderKey("X-RateLimit-Reset")][0] = "not a unix timestamp"
 	response := Response{
 		StatusCode: 429,
 		Headers:    headers,

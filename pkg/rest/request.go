@@ -45,7 +45,7 @@ func get(client *http.Client, url string, apiToken string) (Response, error) {
 		return Response{}, err
 	}
 
-	return executeRequest(client, req), nil
+	return executeRequest(client, req)
 }
 
 // the name delete() would collide with the built-in function
@@ -57,7 +57,11 @@ func deleteConfig(client *http.Client, url string, apiToken string, id string) e
 		return err
 	}
 
-	resp := executeRequest(client, req)
+	resp, err := executeRequest(client, req)
+
+	if err != nil {
+		return err
+	}
 
 	if !success(resp) {
 		return fmt.Errorf("failed call to DELETE %s (HTTP %d)!\n Response was:\n %s", fullPath, resp.StatusCode, string(resp.Body))
@@ -73,7 +77,7 @@ func post(client *http.Client, url string, data []byte, apiToken string) (Respon
 		return Response{}, err
 	}
 
-	return executeRequest(client, req), nil
+	return executeRequest(client, req)
 }
 
 func postMultiPartFile(client *http.Client, url string, data *bytes.Buffer, contentType string, apiToken string) (Response, error) {
@@ -85,7 +89,7 @@ func postMultiPartFile(client *http.Client, url string, data *bytes.Buffer, cont
 
 	req.Header.Set("Content-type", contentType)
 
-	return executeRequest(client, req), nil
+	return executeRequest(client, req)
 }
 
 func put(client *http.Client, url string, data []byte, apiToken string) (Response, error) {
@@ -95,7 +99,7 @@ func put(client *http.Client, url string, data []byte, apiToken string) (Respons
 		return Response{}, err
 	}
 
-	return executeRequest(client, req), nil
+	return executeRequest(client, req)
 }
 
 func request(method string, url string, apiToken string) (*http.Request, error) {
@@ -115,7 +119,7 @@ func requestWithBody(method string, url string, body io.Reader, apiToken string)
 	return req, nil
 }
 
-func executeRequest(client *http.Client, request *http.Request) Response {
+func executeRequest(client *http.Client, request *http.Request) (Response, error) {
 	var requestId string
 	if log.IsRequestLoggingActive() {
 		requestId = uuid.NewString()
@@ -159,8 +163,7 @@ func executeRequest(client *http.Client, request *http.Request) Response {
 	})
 
 	if err != nil {
-		// TODO properly handle error
-		return Response{}
+		return Response{}, err
 	}
-	return response
+	return response, nil
 }

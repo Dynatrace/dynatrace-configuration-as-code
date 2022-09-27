@@ -18,10 +18,12 @@ package rest
 
 import (
 	"errors"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
+	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 )
 
 // rateLimitStrategy ensures that the concrete implementation of the rate limiting strategy can be hidden
@@ -58,7 +60,7 @@ func (s *simpleSleepRateLimitStrategy) executeRequest(timelineProvider util.Time
 
 		limit, humanReadableTimestamp, timeInMicroseconds, err := s.extractRateLimitHeaders(response)
 		if err != nil {
-			return response, err
+			return response, fmt.Errorf("encountered response code 'STATUS_TOO_MANY_REQUESTS (429)' but failed to extract rate limit header: %v", err)
 		}
 
 		log.Info("Rate limit of %d requests/min reached: Applying rate limit strategy (simpleSleepRateLimitStrategy, iteration: %d)", limit, currentIteration+1)
@@ -95,8 +97,8 @@ func (s *simpleSleepRateLimitStrategy) executeRequest(timelineProvider util.Time
 
 func (s *simpleSleepRateLimitStrategy) extractRateLimitHeaders(response Response) (limit string, humanReadableResetTimestamp string, resetTimeInMicroseconds int64, err error) {
 
-	limitAsArray := response.Headers["X-RateLimit-Limit"]
-	resetAsArray := response.Headers["X-RateLimit-Reset"]
+	limitAsArray := response.Headers[http.CanonicalHeaderKey("X-RateLimit-Limit")]
+	resetAsArray := response.Headers[http.CanonicalHeaderKey("X-RateLimit-Reset")]
 
 	if limitAsArray == nil || limitAsArray[0] == "" {
 		return "", "", 0, errors.New("rate limit header 'X-RateLimit-Limit' not found")
