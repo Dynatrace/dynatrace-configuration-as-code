@@ -123,6 +123,7 @@ func doDownload(fs afero.Fs, environmentUrl string, projectName string, token st
 
 	if len(downloadedConfigs) == 0 {
 		log.Info("No configs were downloaded")
+		return nil
 	}
 
 	log.Info("Resolving dependencies between configurations")
