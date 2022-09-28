@@ -98,8 +98,8 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, environmentUrl, projectName
 		return fmt.Errorf("failed to load apis")
 	}
 
-	// Initial checks ang logging basic information
-	token, errors := validateParameters(envVarName, environmentUrl, projectName)
+	token := os.Getenv(envVarName)
+	errors = validateParameters(envVarName, environmentUrl, projectName, token)
 
 	if len(errors) > 0 {
 		util.PrintErrors(errors)
@@ -140,30 +140,30 @@ func doDownload(fs afero.Fs, environmentUrl string, projectName string, token st
 }
 
 // validateParameters checks that all necessary variables have been set.
-func validateParameters(envVarName, environmentUrl, projectName string) (string, []error) {
-	token := os.Getenv(envVarName)
+func validateParameters(envVarName, environmentUrl, projectName, token string) []error {
 	errors := make([]error, 0)
 
 	if envVarName == "" {
 		errors = append(errors, fmt.Errorf("environment-variable '%v' not specified", envVarName))
-	}
-	if token == "" {
+	} else if token == "" {
 		errors = append(errors, fmt.Errorf("environment-variable '%v' is not set", envVarName))
 	}
+
 	if environmentUrl == "" {
 		errors = append(errors, fmt.Errorf("environment-url '%v' is empty", environmentUrl))
 	}
+
 	if projectName == "" {
-		errors = append(errors, fmt.Errorf("project=name '%v' is empty", environmentUrl))
+		errors = append(errors, fmt.Errorf("project-name '%v' is empty", environmentUrl))
 	}
 
-	return token, errors
+	return errors
 }
 
 // Get all v2 apis and filter for the selected ones
 func getApisToDownload(apisToDownload []string) (api.ApiMap, []error) {
 
-	errors := []error{}
+	var errors []error
 
 	apis, unknownApis := api.NewApis().FilterApisByName(apisToDownload)
 	if len(unknownApis) > 0 {
@@ -176,7 +176,7 @@ func getApisToDownload(apisToDownload []string) (api.ApiMap, []error) {
 
 	if len(filtered) > 0 {
 		keys := strings.Join(maps.Keys(filtered), ", ")
-		log.Debug("Skipping APIs for download: '%v'", keys)
+		log.Info("APIs that won't be downloaded and need manual creation: '%v'.", keys)
 	}
 
 	if len(apis) == 0 {
