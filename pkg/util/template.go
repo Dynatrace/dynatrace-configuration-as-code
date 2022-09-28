@@ -19,7 +19,6 @@ package util
 import (
 	"bytes"
 	"os"
-	"reflect"
 	"strings"
 	"text/template"
 
@@ -82,9 +81,12 @@ func (t *templateImpl) ExecuteTemplate(data map[string]string) (string, error) {
 
 	dataForTemplating := addEnvVars(data)
 
-	dataForTemplating = escapeSpecialCharacters(dataForTemplating)
+	dataForTemplating, err := EscapeSpecialCharacters(dataForTemplating)
+	if CheckError(err, "Failed to prepare config properties for templating") {
+		return "", err
+	}
 
-	err := t.template.Execute(&tpl, dataForTemplating)
+	err = t.template.Execute(&tpl, dataForTemplating)
 	if CheckError(err, "Could not execute template") {
 		return "", err
 	}
@@ -117,44 +119,4 @@ func addEnvVars(properties map[string]string) map[string]interface{} {
 	}
 
 	return data
-}
-
-// escapeSpecialCharacters walks recursively though the map and escapes all special characters that can't just be written to the
-// json template. characters that will be escaped: newlines (\n), double quotes (\")
-func escapeSpecialCharacters(properties map[string]interface{}) map[string]interface{} {
-
-	escapedProperties := make(map[string]interface{}, len(properties))
-
-	for key, value := range properties {
-
-		switch field := value.(type) {
-		case string:
-			escapedProperties[key] = escapeNewlines(field)
-		case map[string]string:
-			escapedProperties[key] = escapeSpecialCharactersForStringMap(field)
-		case map[string]interface{}:
-			escapedProperties[key] = escapeSpecialCharacters(field)
-		default:
-			log.Debug("Unknown value type %v in property %v.", reflect.TypeOf(value), key)
-		}
-	}
-
-	return escapedProperties
-}
-
-func escapeSpecialCharactersForStringMap(properties map[string]string) map[string]string {
-	escapedProperties := make(map[string]string, len(properties))
-
-	for key, value := range properties {
-		escapedProperties[key] = escapeNewlines(value)
-	}
-
-	return escapedProperties
-}
-
-func escapeNewlines(rawString string) string {
-	if isListDefinition(rawString) {
-		return rawString
-	}
-	return strings.ReplaceAll(rawString, "\n", `\n`)
 }

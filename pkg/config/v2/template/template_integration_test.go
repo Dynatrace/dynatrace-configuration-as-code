@@ -38,10 +38,10 @@ func TestConfigurationTemplatingFromFilesProducesValidJson(t *testing.T) {
 	properties := loadPropertiesFromYaml(fs, t)
 
 	rendered, err := Render(template, properties)
-	assert.NilError(t, err, "Expected template to render without error")
+	assert.NilError(t, err, "Expected template to render without error:\n %s", rendered)
 
 	err = util.ValidateJson(rendered, util.Location{})
-	assert.NilError(t, err, "Expected rendered template to be valid JSON")
+	assert.NilError(t, err, "Expected rendered template to be valid JSON:\n %s", rendered)
 }
 
 func loadPropertiesFromYaml(fs afero.Fs, t *testing.T) map[string]interface{} {
@@ -76,17 +76,9 @@ func TestTemplatesWithSpecialCharactersProduceValidJson(t *testing.T) {
 			`{ "key": "{{ .value }}", "object": { "o_key": "{{ .object_value}}" } }`,
 			map[string]interface{}{
 				"value":        "A string\nwith several lines\n\n - here's one\n\n - and another",
-				"object_value": "and\r\none\r\nmore",
+				"object_value": "and\none\nmore",
 			},
-			`{ "key": "A string\nwith several lines\n\n - here's one\n\n - and another", "object": { "o_key": "and\r\none\r\nmore" } }`,
-		},
-		{
-			"strings with random double-quotes are escaped",
-			`{ "key": "{{ .value }}" }`,
-			map[string]interface{}{
-				"value": `A "String" - that contains random "quotes"`,
-			},
-			`{ "key": "A \"String\" - that contains random \"quotes\"" }`,
+			`{ "key": "A string\nwith several lines\n\n - here's one\n\n - and another", "object": { "o_key": "and\none\nmore" } }`,
 		},
 		{
 			"regular slashes are not escaped",

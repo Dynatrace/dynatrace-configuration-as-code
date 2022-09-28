@@ -21,6 +21,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"reflect"
 	"regexp"
+	"strings"
 )
 
 // RegEx matching environment variable template reference of the format '{{ .Env.NAME_OF_VAR }}'
@@ -60,7 +61,7 @@ func EscapeSpecialCharacters(properties map[string]interface{}) (map[string]inte
 
 		switch field := value.(type) {
 		case string:
-			escaped, err := escapeCharactersForJson(field)
+			escaped, err := escapeCharacters(field)
 			if err != nil {
 				return nil, err
 			}
@@ -89,7 +90,7 @@ func escapeCharactersForStringMap(properties map[string]string) (map[string]stri
 	escapedProperties := make(map[string]string, len(properties))
 
 	for key, value := range properties {
-		escaped, err := escapeCharactersForJson(value)
+		escaped, err := escapeCharacters(value)
 		if err != nil {
 			return nil, err
 		}
@@ -99,6 +100,15 @@ func escapeCharactersForStringMap(properties map[string]string) (map[string]stri
 	return escapedProperties, nil
 }
 
+func escapeCharacters(rawString string) (string, error) {
+	if isListDefinition(rawString) {
+		return rawString, nil
+	}
+	return escapeNewlines(rawString), nil
+}
+
+// Due to APM-387662 this is currently NOT used
+//
 // escapeCharactersForJson ensures a string can be placed into a json by just marshalling it to json.
 // This will escape anything that needs to be escaped - but explicitly excludes strings that are of string list format.
 // Such list strings can be used to place several values into a json list and their double-quotes are needed to render
@@ -117,6 +127,11 @@ func escapeCharactersForJson(rawString string) (string, error) {
 	s := string(b)
 	s = s[1 : len(s)-1] //marshalling places quotes around the json string which we don't want
 	return s, nil
+}
+
+// escapeNewlines only escapes newline characters in an input string by replacing all occurrences with a raw \n
+func escapeNewlines(rawString string) string {
+	return strings.ReplaceAll(rawString, "\n", `\n`)
 }
 
 // pattern matching strings of the format '"value", "value", ...' which are sometimes used to set lists into JSON templates

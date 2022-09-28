@@ -1,6 +1,15 @@
 configs:
 - id: profile
   config:
-    name: A "Alerting Profile" - for things with "quotes"
+    name: Another "Alerting Profile" - for things with "quotes"
+    template: profile.json
+    skip: false
+- id: single_tick_profile
+  config:
+    name: 'A \"Alerting Profile\" - for things with \"quotes\"'
+    template: profile.json
+- id: escaped_profile
+  config:
+    name: Another \"Alerting Profile\" - for things with \"quotes\"
     template: profile.json
     skip: false

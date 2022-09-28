@@ -136,7 +136,7 @@ func TestRender(t *testing.T) {
 				content: templateString,
 			},
 			map[string]interface{}{"color": "white", "animal": "rabbit$=co\\/\\/=chicken"},
-			`Follow the white rabbit$=co\\/\\/=chicken`,
+			`Follow the white rabbit$=co\/\/=chicken`,
 			false,
 		},
 		{

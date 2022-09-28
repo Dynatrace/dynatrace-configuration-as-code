@@ -2,8 +2,6 @@
     "key": "value",
     "strings": {
         "simple": "{{ .simple }}",
-        "no_quotes": "{{ .string_with_no_quotes }}",
-        "single_quotes": "{{ .string_with_single_quotes }}",
         "escaped_quotes": "{{ .escaped_with_single_quotes }}"
     },
     "newlines": {
