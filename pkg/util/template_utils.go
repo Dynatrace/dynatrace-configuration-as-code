@@ -58,32 +58,28 @@ func EscapeSpecialCharacters(properties map[string]interface{}) (map[string]inte
 	escapedProperties := make(map[string]interface{}, len(properties))
 
 	for key, value := range properties {
-
-		switch field := value.(type) {
-		case string:
-			escaped, err := escapeCharacters(field)
-			if err != nil {
-				return nil, err
-			}
-			escapedProperties[key] = escaped
-		case map[string]string:
-			escaped, err := escapeCharactersForStringMap(field)
-			if err != nil {
-				return nil, err
-			}
-			escapedProperties[key] = escaped
-		case map[string]interface{}:
-			escaped, err := EscapeSpecialCharacters(field)
-			if err != nil {
-				return nil, err
-			}
-			escapedProperties[key] = escaped
-		default:
-			log.Debug("Unknown value type %v in property %v.", reflect.TypeOf(value), key)
+		escaped, err := EscapeSpecialCharactersInValue(value)
+		if err != nil {
+			return nil, err
 		}
+		escapedProperties[key] = escaped
 	}
 
 	return escapedProperties, nil
+}
+
+func EscapeSpecialCharactersInValue(value interface{}) (interface{}, error) {
+	switch field := value.(type) {
+	case string:
+		return escapeCharacters(field)
+	case map[string]string:
+		return escapeCharactersForStringMap(field)
+	case map[string]interface{}:
+		return EscapeSpecialCharacters(field)
+	default:
+		log.Debug("tried to string escape value of unsupported type %v, returning unchanged", reflect.TypeOf(value))
+		return value, nil
+	}
 }
 
 func escapeCharactersForStringMap(properties map[string]string) (map[string]string, error) {
