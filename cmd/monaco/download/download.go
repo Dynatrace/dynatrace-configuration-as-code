@@ -20,6 +20,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download/downloader"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
+	project "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
@@ -112,7 +113,7 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, environmentUrl, projectName
 
 func doDownload(fs afero.Fs, environmentUrl string, projectName string, token string, apis api.ApiMap) error {
 
-	log.Info("Downloading APIs '%v' from environment '%v' into project '%v'", strings.Join(maps.Keys(apis), ", "), environmentUrl, projectName)
+	log.Debug("Downloading APIs '%v' from environment '%v' into project '%v'", strings.Join(maps.Keys(apis), ", "), environmentUrl, projectName)
 
 	client, err := rest.NewDynatraceClient(environmentUrl, token)
 	if err != nil {
@@ -124,6 +125,8 @@ func doDownload(fs afero.Fs, environmentUrl string, projectName string, token st
 	if len(downloadedConfigs) == 0 {
 		log.Info("No configs were downloaded")
 		return nil
+	} else {
+		log.Debug("Downloaded %v configs", sumConfigs(downloadedConfigs))
 	}
 
 	log.Info("Resolving dependencies between configurations")
@@ -139,22 +142,32 @@ func doDownload(fs afero.Fs, environmentUrl string, projectName string, token st
 	return nil
 }
 
+func sumConfigs(configs project.ConfigsPerApis) int {
+	sum := 0
+
+	for _, v := range configs {
+		sum += len(v)
+	}
+
+	return sum
+}
+
 // validateParameters checks that all necessary variables have been set.
 func validateParameters(envVarName, environmentUrl, projectName, token string) []error {
 	errors := make([]error, 0)
 
 	if envVarName == "" {
-		errors = append(errors, fmt.Errorf("environment-variable '%v' not specified", envVarName))
+		errors = append(errors, fmt.Errorf("token '%v' not specified", envVarName))
 	} else if token == "" {
-		errors = append(errors, fmt.Errorf("environment-variable '%v' is not set", envVarName))
+		errors = append(errors, fmt.Errorf("the content of token '%v' is not set", envVarName))
 	}
 
 	if environmentUrl == "" {
-		errors = append(errors, fmt.Errorf("environment-url '%v' is empty", environmentUrl))
+		errors = append(errors, fmt.Errorf("url '%v' is empty", environmentUrl))
 	}
 
 	if projectName == "" {
-		errors = append(errors, fmt.Errorf("project-name '%v' is empty", environmentUrl))
+		errors = append(errors, fmt.Errorf("project '%v' is empty", environmentUrl))
 	}
 
 	return errors

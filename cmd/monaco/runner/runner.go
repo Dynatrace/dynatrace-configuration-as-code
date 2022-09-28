@@ -132,7 +132,7 @@ func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 	deployCmd.Flags().StringSliceVarP(&project, "project", "p", make([]string, 0), "Project configuration to deploy (also deploys any dependent configurations)")
 	deployCmd.Flags().BoolVarP(&dryRun, "dry-run", "d", false, "Switches to just validation instead of actual deployment")
 	deployCmd.Flags().BoolVarP(&continueOnError, "continue-on-error", "c", false, "Proceed deployment even if config upload fails")
-	err := deployCmd.RegisterFlagCompletionFunc("environment", completion.EnvironmentFromManifest)
+	err := deployCmd.RegisterFlagCompletionFunc("environment", completion.EnvironmentByManifestFlag)
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
@@ -170,7 +170,7 @@ func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 	}
 	deleteCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print debug output")
 	deleteCmd.Flags().StringSliceVarP(&environment, "environment", "e", make([]string, 0), "Deletes configuration only for specified envs. If not set, delete will be executed on all environments defined in manifest.")
-	deleteCmd.RegisterFlagCompletionFunc("environment", completion.EnvironmentFromManifest)
+	deleteCmd.RegisterFlagCompletionFunc("environment", completion.EnvironmentByArg0)
 	return deleteCmd
 }
 
@@ -253,24 +253,24 @@ func getLegacyDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 }
 
 func getDownloadCommand(fs afero.Fs, command download.Command) (downloadCmd *cobra.Command) {
-	var environments, specificEnvironment, environmentUrl, environmentName, environmentVariableName string
+	var manifest, specificEnvironment, url, project, tokenEnvVar string
 	var specificApis []string
 
 	downloadCmd = &cobra.Command{
 		Use:     "download",
 		Short:   "Download configuration from Dynatrace",
-		Example: "monaco download -e environment.yaml",
+		Example: "monaco download -m manifest.yaml -s staging",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			if environments != "" {
-				return command.DownloadConfigsBasedOnManifest(fs, environments, specificEnvironment, specificApis)
+			if manifest != "" {
+				return command.DownloadConfigsBasedOnManifest(fs, manifest, specificEnvironment, specificApis)
 			}
 
-			if environmentUrl != "" {
-				return command.DownloadConfigs(fs, environmentUrl, environmentName, environmentVariableName, specificApis)
+			if url != "" {
+				return command.DownloadConfigs(fs, url, project, tokenEnvVar, specificApis)
 			}
 
-			return fmt.Errorf(`either '--environments' or '--url' has to be provided`)
+			return fmt.Errorf(`either '--manifest' or '--url' has to be provided`)
 		},
 	}
 
@@ -280,27 +280,28 @@ func getDownloadCommand(fs afero.Fs, command download.Command) (downloadCmd *cob
 	// TODO david.laubreiter: Continue flag
 
 	// download using the manifest
-	downloadCmd.Flags().StringVarP(&environments, "environments", "e", "", "Yaml file containing environment to download")
-	downloadCmd.Flags().StringVarP(&specificEnvironment, "specific-environment", "s", "", "Specific environment (from list) to download")
+	downloadCmd.Flags().StringVarP(&manifest, "manifest", "m", "", "Manifest file")
+	downloadCmd.Flags().StringVarP(&specificEnvironment, "specific-environment", "s", "", "Specific environment from Manifest to download")
 
 	// download directly using flags
-	downloadCmd.Flags().StringVarP(&environmentUrl, "url", "u", "", "Environment Url")
-	downloadCmd.Flags().StringVarP(&environmentName, "environment-name", "n", "", "Project name (project folder name)")
-	downloadCmd.Flags().StringVarP(&environmentVariableName, "token-name", "t", "TOKEN", "Name of the environment variable containing the token ")
+	downloadCmd.Flags().StringVarP(&url, "url", "u", "", "Environment Url")
+	downloadCmd.Flags().StringVarP(&project, "project", "p", "", "Project name (project folder name)")
+	downloadCmd.Flags().StringVarP(&tokenEnvVar, "token", "t", "", "Name of the environment variable containing the token ")
 
-	err := downloadCmd.RegisterFlagCompletionFunc("specific-environment", completion.EnvironmentFromEnvironmentfile)
-	if err != nil {
-		log.Fatal("failed to setup CLI %v", err)
-	}
-	err = downloadCmd.MarkFlagFilename("environments", "yaml", "yml")
+	err := downloadCmd.RegisterFlagCompletionFunc("specific-environment", completion.EnvironmentByArg0)
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
 
-	downloadCmd.MarkFlagsMutuallyExclusive("environments", "url")
+	err = downloadCmd.MarkFlagFilename("manifest", "yaml", "yml")
+	if err != nil {
+		log.Fatal("failed to setup CLI %v", err)
+	}
 
-	downloadCmd.MarkFlagsRequiredTogether("url", "token-name", "environment-name")
-	downloadCmd.MarkFlagsRequiredTogether("environments", "specific-environment") // make specific environment optional?
+	downloadCmd.MarkFlagsMutuallyExclusive("manifest", "url")
+
+	downloadCmd.MarkFlagsRequiredTogether("url", "token", "project")
+	downloadCmd.MarkFlagsRequiredTogether("manifest", "specific-environment") // make specific environment optional?
 
 	err = downloadCmd.RegisterFlagCompletionFunc("specific-api", completion.AllAvailableApis)
 	if err != nil {

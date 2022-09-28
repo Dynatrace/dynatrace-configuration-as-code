@@ -17,11 +17,13 @@
 package completion
 
 import (
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/slices"
+	"github.com/spf13/pflag"
 	"os"
 	"strings"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -53,39 +55,32 @@ func ConvertCompletion(cmd *cobra.Command, args []string, toComplete string) ([]
 	}
 }
 
-func AllAvailableApis(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	keys := []string{}
-	for k := range api.NewApis() {
-		keys = append(keys, k)
+func AllAvailableApis(cmd *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+	value, ok := cmd.Flag("specific-api").Value.(pflag.SliceValue)
+	if !ok {
+		return nil, cobra.ShellCompDirectiveError
 	}
-	return keys, cobra.ShellCompDirectiveDefault
+
+	allApis := maps.Keys(api.NewApis())
+
+	return slices.Difference(allApis, value.GetSlice()), cobra.ShellCompDirectiveDefault
 }
 
-func EnvironmentFromEnvironmentfile(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-
-	environmentFileName := cmd.Flag("environments").Value.String()
-	environments, _ := environment.LoadEnvironmentList("", environmentFileName, afero.NewOsFs())
-
-	keys := []string{}
-	for k := range environments {
-		keys = append(keys, k)
-	}
-	return keys, cobra.ShellCompDirectiveDefault
+func EnvironmentByManifestFlag(cmd *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+	return loadEnvironmentsFromManifest(cmd.Flag("manifest").Value.String())
 }
 
-func EnvironmentFromManifest(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+func EnvironmentByArg0(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
+	return loadEnvironmentsFromManifest(args[0])
+}
 
-	manifestPath := args[0]
-	manifest, _ := manifest.LoadManifest(&manifest.ManifestLoaderContext{
+func loadEnvironmentsFromManifest(manifestPath string) ([]string, cobra.ShellCompDirective) {
+	man, _ := manifest.LoadManifest(&manifest.ManifestLoaderContext{
 		Fs:           afero.NewOsFs(),
 		ManifestPath: manifestPath,
 	})
 
-	keys := []string{}
-	for k := range manifest.Environments {
-		keys = append(keys, k)
-	}
-	return keys, cobra.ShellCompDirectiveDefault
+	return maps.Keys(man.Environments), cobra.ShellCompDirectiveDefault
 }
 
 func ProjectsFromManifest(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

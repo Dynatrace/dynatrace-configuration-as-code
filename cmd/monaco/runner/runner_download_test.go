@@ -27,11 +27,11 @@ func TestInvalidCliCommands(t *testing.T) {
 		{
 			"neither env or url provided",
 			"",
-			[]string{"either '--environments' or '--url' has to be provided"},
+			[]string{"either '--manifest' or '--url' has to be provided"},
 		},
 		{
-			"both --url and --environments provided",
-			"--url test --environments test --specific-environment test --environment-name test --token-name test --",
+			"both --url and --manifest provided",
+			"--url test --manifest manifest.yaml --specific-environment test --project test --token test --",
 			[]string{"none of the others can be"},
 		},
 		{
@@ -42,16 +42,16 @@ func TestInvalidCliCommands(t *testing.T) {
 		{
 			"--url is missing other required parameters",
 			"--url test",
-			[]string{"environment-name", "token-name"},
+			[]string{"project", "token"},
 		},
 		{
-			"--environments is missing argument",
-			"--environments",
+			"--manifest is missing argument",
+			"--manifest",
 			[]string{"needs an argument"},
 		},
 		{
-			"--environments is missing other required parameters",
-			"--environments test.yaml",
+			"--manifest is missing other required parameters",
+			"--manifest test.yaml",
 			[]string{"specific-environment"},
 		},
 		{
@@ -91,84 +91,84 @@ func TestValidCommands(t *testing.T) {
 	}{
 		{
 			"direct download no specific apis",
-			"--url test --environment-name test --token-name token",
+			"--url test --project test --token token",
 			func(cmd *download.MockCommand) {
 				cmd.EXPECT().DownloadConfigs(gomock.Any(), "test", "test", "token", []string{})
 			},
 		},
 		{
 			"direct download with specific apis (multiple flags)",
-			"--url test --environment-name test --token-name token --specific-api test --specific-api test2",
+			"--url test --project test --token token --specific-api test --specific-api test2",
 			func(cmd *download.MockCommand) {
 				cmd.EXPECT().DownloadConfigs(gomock.Any(), "test", "test", "token", []string{"test", "test2"})
 			},
 		},
 		{
 			"direct download with specific apis (single flag)",
-			"--url test --environment-name test --token-name token --specific-api test,test2",
+			"--url test --project test --token token --specific-api test,test2",
 			func(cmd *download.MockCommand) {
 				cmd.EXPECT().DownloadConfigs(gomock.Any(), "test", "test", "token", []string{"test", "test2"})
 			},
 		},
 		{
 			"direct download with specific apis (mixed flags)",
-			"--url test --environment-name test --token-name token --specific-api test,test2 --specific-api test3",
+			"--url test --project test --token token --specific-api test,test2 --specific-api test3",
 			func(cmd *download.MockCommand) {
 				cmd.EXPECT().DownloadConfigs(gomock.Any(), "test", "test", "token", []string{"test", "test2", "test3"})
 			},
 		},
 		{
 			"direct download with specific apis (mixed flags) and verbose",
-			"--url test --environment-name test --token-name token --specific-api test,test2 --specific-api test3 -v",
+			"--url test --project test --token token --specific-api test,test2 --specific-api test3 -v",
 			func(cmd *download.MockCommand) {
 				cmd.EXPECT().DownloadConfigs(gomock.Any(), "test", "test", "token", []string{"test", "test2", "test3"})
 			},
 		},
 		{
 			"direct download with specific apis (mixed flags) and verbose",
-			"--url test --environment-name test --token-name token --specific-api test,test2 --specific-api test3 -v",
+			"--url test --project test --token token --specific-api test,test2 --specific-api test3 -v",
 			func(cmd *download.MockCommand) {
 				cmd.EXPECT().DownloadConfigs(gomock.Any(), "test", "test", "token", []string{"test", "test2", "test3"})
 			},
 		},
 		{
 			"manifest download no specific apis",
-			"--environments test.yaml --specific-environment test",
+			"--manifest test.yaml --specific-environment test",
 			func(cmd *download.MockCommand) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), "test.yaml", "test", []string{})
 			},
 		},
 		{
 			"manifest download with specific apis (multiple flags)",
-			"--environments test.yaml --specific-environment test --specific-api test --specific-api test2",
+			"--manifest test.yaml --specific-environment test --specific-api test --specific-api test2",
 			func(cmd *download.MockCommand) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), "test.yaml", "test", []string{"test", "test2"})
 			},
 		},
 		{
 			"manifest download with specific apis (single flag)",
-			"--environments test.yaml --specific-environment test --specific-api test,test2",
+			"--manifest test.yaml --specific-environment test --specific-api test,test2",
 			func(cmd *download.MockCommand) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), "test.yaml", "test", []string{"test", "test2"})
 			},
 		},
 		{
 			"manifest download with specific apis (mixed flags)",
-			"--environments test.yaml --specific-environment test --specific-api test,test2 --specific-api test3",
+			"--manifest test.yaml --specific-environment test --specific-api test,test2 --specific-api test3",
 			func(cmd *download.MockCommand) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), "test.yaml", "test", []string{"test", "test2", "test3"})
 			},
 		},
 		{
 			"manifest download with specific apis (mixed flags) and verbose",
-			"--environments test.yaml --specific-environment test --specific-api test,test2 --specific-api test3 -v",
+			"--manifest test.yaml --specific-environment test --specific-api test,test2 --specific-api test3 -v",
 			func(cmd *download.MockCommand) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), "test.yaml", "test", []string{"test", "test2", "test3"})
 			},
 		},
 		{
 			"manifest download with specific apis (mixed flags) and verbose",
-			"--environments test.yaml --specific-environment test --specific-api test,test2 --specific-api test3 -v",
+			"--manifest test.yaml --specific-environment test --specific-api test,test2 --specific-api test3 -v",
 			func(cmd *download.MockCommand) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), "test.yaml", "test", []string{"test", "test2", "test3"})
 			},
