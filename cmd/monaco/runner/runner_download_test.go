@@ -118,20 +118,6 @@ func TestValidCommands(t *testing.T) {
 			},
 		},
 		{
-			"direct download with specific apis (mixed flags) and verbose",
-			"--url test --project test --token token --specific-api test,test2 --specific-api test3 -v",
-			func(cmd *download.MockCommand) {
-				cmd.EXPECT().DownloadConfigs(gomock.Any(), "test", "test", "token", []string{"test", "test2", "test3"})
-			},
-		},
-		{
-			"direct download with specific apis (mixed flags) and verbose",
-			"--url test --project test --token token --specific-api test,test2 --specific-api test3 -v",
-			func(cmd *download.MockCommand) {
-				cmd.EXPECT().DownloadConfigs(gomock.Any(), "test", "test", "token", []string{"test", "test2", "test3"})
-			},
-		},
-		{
 			"manifest download no specific apis",
 			"--manifest test.yaml --specific-environment test",
 			func(cmd *download.MockCommand) {
@@ -155,20 +141,6 @@ func TestValidCommands(t *testing.T) {
 		{
 			"manifest download with specific apis (mixed flags)",
 			"--manifest test.yaml --specific-environment test --specific-api test,test2 --specific-api test3",
-			func(cmd *download.MockCommand) {
-				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), "test.yaml", "test", []string{"test", "test2", "test3"})
-			},
-		},
-		{
-			"manifest download with specific apis (mixed flags) and verbose",
-			"--manifest test.yaml --specific-environment test --specific-api test,test2 --specific-api test3 -v",
-			func(cmd *download.MockCommand) {
-				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), "test.yaml", "test", []string{"test", "test2", "test3"})
-			},
-		},
-		{
-			"manifest download with specific apis (mixed flags) and verbose",
-			"--manifest test.yaml --specific-environment test --specific-api test,test2 --specific-api test3 -v",
 			func(cmd *download.MockCommand) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), "test.yaml", "test", []string{"test", "test2", "test3"})
 			},

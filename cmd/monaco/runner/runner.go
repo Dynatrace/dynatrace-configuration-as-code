@@ -38,7 +38,7 @@ var errWrongUsage = errors.New("")
 
 var environment, project []string
 var environments, specificEnvironment, projects, outputFolder, manifestName string
-var verbose, dryRun, continueOnError bool
+var dryRun, continueOnError bool
 
 func Run() int {
 	rootCmd := BuildCli(afero.NewOsFs())
@@ -57,6 +57,7 @@ func Run() int {
 }
 
 func BuildCli(fs afero.Fs) *cobra.Command {
+	var verbose bool
 
 	var rootCmd = &cobra.Command{
 		Use:   "monaco <command>",
@@ -69,12 +70,16 @@ Examples:
   Deploy a specific environment within an manifest
     monaco deploy service.yaml -e dev`,
 
-		PersistentPreRunE: configureLogging,
+		PersistentPreRunE: configureDebugLogging(&verbose),
 		Run: func(cmd *cobra.Command, args []string) {
 			_ = cmd.Help()
 		},
 	}
 
+	// global flags
+	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable debug logging")
+
+	// commands
 	downloadCommand := getDownloadCommand(fs, &download.DefaultCommand{})
 	convertCommand := getConvertCommand(fs)
 	deployCommand := getDeployCommand(fs)
@@ -94,18 +99,21 @@ Examples:
 	return rootCmd
 }
 
-func configureLogging(_ *cobra.Command, _ []string) error {
-	if verbose {
-		log.Default().SetLevel(log.LevelDebug)
-	}
-	err := log.SetupLogging()
-	if err != nil {
-		return err
-	}
+func configureDebugLogging(verbose *bool) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		if *verbose {
+			log.Default().SetLevel(log.LevelDebug)
+		}
 
-	log.Info("Dynatrace Monitoring as Code v" + version.MonitoringAsCode)
+		err := log.SetupLogging()
+		if err != nil {
+			return err
+		}
 
-	return nil
+		log.Info("Dynatrace Monitoring as Code v" + version.MonitoringAsCode)
+
+		return nil
+	}
 }
 
 func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
@@ -127,7 +135,7 @@ func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 			return deploy.Deploy(fs, manifestName, environment, project, dryRun, continueOnError)
 		},
 	}
-	deployCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print debug output")
+
 	deployCmd.Flags().StringSliceVarP(&environment, "environment", "e", make([]string, 0), "Environment to deploy to")
 	deployCmd.Flags().StringSliceVarP(&project, "project", "p", make([]string, 0), "Project configuration to deploy (also deploys any dependent configurations)")
 	deployCmd.Flags().BoolVarP(&dryRun, "dry-run", "d", false, "Switches to just validation instead of actual deployment")
@@ -168,7 +176,7 @@ func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 		},
 		ValidArgsFunction: completion.DeleteCompletion,
 	}
-	deleteCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print debug output")
+
 	deleteCmd.Flags().StringSliceVarP(&environment, "environment", "e", make([]string, 0), "Deletes configuration only for specified envs. If not set, delete will be executed on all environments defined in manifest.")
 	deleteCmd.RegisterFlagCompletionFunc("environment", completion.EnvironmentByArg0)
 	return deleteCmd
@@ -202,7 +210,7 @@ func getConvertCommand(fs afero.Fs) (convertCmd *cobra.Command) {
 			return convert.Convert(fs, workingDir, environmentsFile, outputFolder, manifestName)
 		},
 	}
-	convertCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print debug output")
+
 	convertCmd.Flags().StringVarP(&manifestName, "manifest", "m", "manifest.yaml", "Name of the manifest file to create")
 	convertCmd.Flags().StringVarP(&outputFolder, "output-folder", "o", "{project folder}-v2", "Folder where to write converted config to")
 	err := convertCmd.MarkFlagDirname("output-folder")
@@ -236,7 +244,7 @@ func getLegacyDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 			return legacyDeploy.Deploy(fs, workingDir, environments, specificEnvironment, projects, dryRun, continueOnError)
 		},
 	}
-	deployCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print debug output")
+
 	deployCmd.Flags().StringVarP(&environments, "environments", "e", "", "Yaml file containing environment to deploy to")
 	deployCmd.Flags().StringVarP(&projects, "project", "p", "", "Project configuration to deploy (also deploys any dependent configurations)")
 	deployCmd.Flags().BoolVarP(&dryRun, "dry-run", "d", false, "Switches to just validation instead of actual deployment")
@@ -275,7 +283,6 @@ func getDownloadCommand(fs afero.Fs, command download.Command) (downloadCmd *cob
 	}
 
 	// flags always available
-	downloadCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print debug output")
 	downloadCmd.Flags().StringSliceVarP(&specificApis, "specific-api", "a", make([]string, 0), "APIs to download")
 	// TODO david.laubreiter: Continue flag
 
