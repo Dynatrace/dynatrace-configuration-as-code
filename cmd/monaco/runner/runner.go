@@ -17,28 +17,24 @@ package runner
 import (
 	"errors"
 	"fmt"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/download"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner/completion"
 	"os"
 	"path/filepath"
 	"strings"
 
-	legacyDeploy "github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v1/deploy"
+	"github.com/spf13/afero"
+	"github.com/spf13/cobra"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/convert"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/delete"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/deploy"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/download"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner/completion"
+	legacyDeploy "github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v1/deploy"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/version"
-	"github.com/spf13/afero"
-	"github.com/spf13/cobra"
 )
 
 var errWrongUsage = errors.New("")
-
-var environment, project []string
-var environments, specificEnvironment, projects, outputFolder, manifestName string
-var dryRun, continueOnError bool
 
 func Run() int {
 	rootCmd := BuildCli(afero.NewOsFs())
@@ -117,6 +113,10 @@ func configureDebugLogging(verbose *bool) func(cmd *cobra.Command, args []string
 }
 
 func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
+	var dryRun, continueOnError bool
+	var manifestName string
+	var environment, project []string
+
 	deployCmd = &cobra.Command{
 		Use:               "deploy <manifest.yaml>",
 		Short:             "Deploy configurations to Dynatrace environments",
@@ -152,6 +152,10 @@ func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 }
 
 func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
+
+	var environment []string
+	var manifestName string
+
 	deleteCmd = &cobra.Command{
 		Use:     "delete <manifest.yaml> <delete.yaml>",
 		Short:   "Delete configurations defined in delete.yaml from the environments defined in the manifest",
@@ -178,11 +182,18 @@ func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 	}
 
 	deleteCmd.Flags().StringSliceVarP(&environment, "environment", "e", make([]string, 0), "Deletes configuration only for specified envs. If not set, delete will be executed on all environments defined in manifest.")
-	deleteCmd.RegisterFlagCompletionFunc("environment", completion.EnvironmentByArg0)
+
+	if err := deleteCmd.RegisterFlagCompletionFunc("environment", completion.EnvironmentByArg0); err != nil {
+		log.Fatal("failed to setup CLI %v", err)
+	}
+
 	return deleteCmd
 }
 
 func getConvertCommand(fs afero.Fs) (convertCmd *cobra.Command) {
+
+	var outputFolder, manifestName string
+
 	convertCmd = &cobra.Command{
 		Use:               "convert <environment.yaml> <config folder to convert>",
 		Short:             "Convert v1 monaco configuration into v2 format",
@@ -225,6 +236,8 @@ func getConvertCommand(fs afero.Fs) (convertCmd *cobra.Command) {
 }
 
 func getLegacyDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
+	var dryRun, continueOnError bool
+	var specificEnvironment, environments, projects string
 
 	deployCmd = &cobra.Command{
 		Use:     "deploy [configuration directory]",
