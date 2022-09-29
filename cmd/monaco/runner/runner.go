@@ -80,7 +80,7 @@ Examples:
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable debug logging")
 
 	// commands
-	downloadCommand := getDownloadCommand(fs, &download.DefaultCommand{})
+	downloadCommand := download.GetDownloadCommand(fs, &download.DefaultCommand{})
 	convertCommand := getConvertCommand(fs)
 	deployCommand := getDeployCommand(fs)
 	deleteCommand := getDeleteCommand(fs)
@@ -258,65 +258,6 @@ func getLegacyDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 		log.Fatal("failed to setup CLI %v", err)
 	}
 	return deployCmd
-}
-
-func getDownloadCommand(fs afero.Fs, command download.Command) (downloadCmd *cobra.Command) {
-	var manifest, specificEnvironment, url, project, tokenEnvVar string
-	var specificApis []string
-
-	downloadCmd = &cobra.Command{
-		Use:     "download",
-		Short:   "Download configuration from Dynatrace",
-		Example: "monaco download -m manifest.yaml -s staging",
-		RunE: func(cmd *cobra.Command, args []string) error {
-
-			if manifest != "" {
-				return command.DownloadConfigsBasedOnManifest(fs, manifest, specificEnvironment, specificApis)
-			}
-
-			if url != "" {
-				return command.DownloadConfigs(fs, url, project, tokenEnvVar, specificApis)
-			}
-
-			return fmt.Errorf(`either '--manifest' or '--url' has to be provided`)
-		},
-	}
-
-	// flags always available
-	downloadCmd.Flags().StringSliceVarP(&specificApis, "specific-api", "a", make([]string, 0), "APIs to download")
-	// TODO david.laubreiter: Continue flag
-
-	// download using the manifest
-	downloadCmd.Flags().StringVarP(&manifest, "manifest", "m", "", "Manifest file")
-	downloadCmd.Flags().StringVarP(&specificEnvironment, "specific-environment", "s", "", "Specific environment from Manifest to download")
-
-	// download directly using flags
-	downloadCmd.Flags().StringVarP(&url, "url", "u", "", "Environment Url")
-	downloadCmd.Flags().StringVarP(&project, "project", "p", "", "Project name (project folder name)")
-	downloadCmd.Flags().StringVarP(&tokenEnvVar, "token", "t", "", "Name of the environment variable containing the token ")
-
-	err := downloadCmd.RegisterFlagCompletionFunc("specific-environment", completion.EnvironmentByArg0)
-	if err != nil {
-		log.Fatal("failed to setup CLI %v", err)
-	}
-
-	err = downloadCmd.MarkFlagFilename("manifest", "yaml", "yml")
-	if err != nil {
-		log.Fatal("failed to setup CLI %v", err)
-	}
-
-	downloadCmd.MarkFlagsMutuallyExclusive("manifest", "url")
-
-	downloadCmd.MarkFlagsRequiredTogether("url", "token", "project")
-	downloadCmd.MarkFlagsRequiredTogether("manifest", "specific-environment") // make specific environment optional?
-
-	err = downloadCmd.RegisterFlagCompletionFunc("specific-api", completion.AllAvailableApis)
-	if err != nil {
-		log.Fatal("failed to setup CLI %v", err)
-	}
-
-	return downloadCmd
-
 }
 
 func isEnvFlagEnabled(env string) bool {
