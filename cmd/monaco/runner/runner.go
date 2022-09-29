@@ -127,7 +127,7 @@ func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 
 			manifestName = args[0]
 
-			if !strings.HasSuffix(manifestName, ".yaml") {
+			if !hasYamlFileExtension(manifestName) {
 				err := fmt.Errorf("wrong format for manifest file! expected a .yaml file, but got %s", manifestName)
 				return err
 			}
@@ -166,12 +166,12 @@ func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 			manifestName = args[0]
 			deleteFile := args[1]
 
-			if !strings.HasSuffix(manifestName, ".yaml") {
+			if !hasYamlFileExtension(manifestName) {
 				err := fmt.Errorf("wrong format for manifest file! expected a .yaml file, but got %s", manifestName)
 				return err
 			}
 
-			if !strings.HasSuffix(deleteFile, "delete.yaml") {
+			if deleteFile != "delete.yaml" {
 				err := fmt.Errorf("wrong format for delete file! Has to be named 'delete.yaml', but got %s", deleteFile)
 				return err
 			}
@@ -205,12 +205,12 @@ func getConvertCommand(fs afero.Fs) (convertCmd *cobra.Command) {
 			environmentsFile := args[0]
 			workingDir := args[1]
 
-			if !strings.HasSuffix(environmentsFile, ".yaml") {
+			if !hasYamlFileExtension(environmentsFile) {
 				err := fmt.Errorf("wrong format for environment file! expected a .yaml file, but got %s", environmentsFile)
 				return err
 			}
 
-			if !strings.HasSuffix(manifestName, ".yaml") {
+			if !hasYamlFileExtension(manifestName) {
 				manifestName = manifestName + ".yaml"
 			}
 
@@ -276,4 +276,8 @@ func getLegacyDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 func isEnvFlagEnabled(env string) bool {
 	val, ok := os.LookupEnv(env)
 	return ok && val != "0"
+}
+
+func hasYamlFileExtension(name string) bool {
+	return strings.HasSuffix(name, ".yaml") || strings.HasSuffix(name, ".yml")
 }

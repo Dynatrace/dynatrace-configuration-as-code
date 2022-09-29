@@ -29,7 +29,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func DeleteCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+var yamlExtensions = []string{".yaml", "yml"}
+
+func DeleteCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
 	if len(args) == 0 {
 		return ManifestFile(cmd, args, toComplete)
 	} else if len(args) == 1 {
@@ -98,16 +100,16 @@ func ProjectsFromManifest(cmd *cobra.Command, args []string, toComplete string) 
 	return keys, cobra.ShellCompDirectiveDefault
 }
 
-func ManifestFile(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	return []string{"yaml"}, cobra.ShellCompDirectiveFilterFileExt
+func ManifestFile() ([]string, cobra.ShellCompDirective) {
+	return yamlExtensions, cobra.ShellCompDirectiveFilterFileExt
 }
 
 func DeleteFile(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return deepFileSeach(".", "delete.yaml"), cobra.ShellCompDirectiveDefault
 }
 
-func EnvironmentFile(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	return []string{"yaml"}, cobra.ShellCompDirectiveFilterFileExt
+func EnvironmentFile() ([]string, cobra.ShellCompDirective) {
+	return yamlExtensions, cobra.ShellCompDirectiveFilterFileExt
 }
 
 func deepFileSeach(root, ext string) []string {
