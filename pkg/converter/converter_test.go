@@ -19,6 +19,11 @@ package converter
 
 import (
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
+	listParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/list"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/reference"
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
@@ -34,13 +39,14 @@ import (
 	is "gotest.tools/assert/cmp"
 )
 
+const simpleParameterName = "randomValue"
+const referenceParameterName = "managementZoneId"
+
 func TestConvertParameters(t *testing.T) {
 	environmentName := "test"
 	configId := "alerting-profile-1"
 	configName := "Alerting Profile 1"
-	simpleParameterName := "randomValue"
 	simpleParameterValue := "hello"
-	referenceParameterName := "managementZoneId"
 	referenceParameterValue := "/projectB/management-zone/zone.id"
 
 	convertContext := &ConfigConvertContext{
@@ -228,9 +234,7 @@ func TestLoadPropertiesForEnvironment(t *testing.T) {
 	groupName := "development"
 	configId := "alerting-profile-1"
 	configName := "Alerting Profile 1"
-	simpleParameterName := "randomValue"
 	simpleParameterValue := "hello"
-	referenceParameterName := "managementZoneId"
 	referenceParameterValue := "/projectB/management-zone/zone.id"
 
 	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), groupName, &manifest.EnvironmentVariableToken{"token"})
@@ -275,9 +279,7 @@ func TestConvertConfig(t *testing.T) {
 	environmentName := "development"
 	configId := "alerting-profile-1"
 	configName := "Alerting Profile 1"
-	simpleParameterName := "randomValue"
 	simpleParameterValue := "hello"
-	referenceParameterName := "managementZoneId"
 	referenceParameterValue := "/projectB/management-zone/zone.id"
 	envVarName := "TEST_VAR"
 
@@ -336,9 +338,7 @@ func TestConvertDeprecatedConfigToLatest(t *testing.T) {
 	environmentName := "development"
 	configId := "application-1"
 	configName := "Application 1"
-	simpleParameterName := "randomValue"
 	simpleParameterValue := "hello"
-	referenceParameterName := "managementZoneId"
 	referenceParameterValue := "/projectB/management-zone/zone.id"
 	envVarName := "TEST_VAR"
 
@@ -485,16 +485,13 @@ func TestConvertConfigs(t *testing.T) {
 	environmentGroup2 := "hardening"
 	configId := "alerting-profile-1"
 	configName := "Alerting Profile 1"
-	simpleParameterName := "randomValue"
 	simpleParameterValue := "hello"
 	simpleParameterValue2 := "world"
-
-	convertContext := &ConfigConvertContext{
-		ConverterContext: &ConverterContext{
-			Fs: setupDummyFs(t),
-		},
-		ProjectId: projectId,
-	}
+	referenceParameterValue := "/projectB/management-zone/zone.id"
+	listParameterName := "list"
+	listParameterValue := `"GEOLOCATION-41","GEOLOCATION-42","GEOLOCATION-43"`
+	listParameterValue2 := `"james.t.kirk@dynatrace.com"`
+	envVariableName := "ENV_VAR"
 
 	environments := map[string]manifest.EnvironmentDefinition{
 		environmentName:  manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), environmentGroup, &manifest.EnvironmentVariableToken{"token"}),
@@ -505,20 +502,29 @@ func TestConvertConfigs(t *testing.T) {
 
 	properties := map[string]map[string]string{
 		configId: {
-			"name":              configName,
-			simpleParameterName: simpleParameterValue,
+			"name":                 configName,
+			simpleParameterName:    simpleParameterValue,
+			referenceParameterName: referenceParameterValue,
+			listParameterName:      listParameterValue,
 		},
 		configId + "." + environmentGroup2: {
 			simpleParameterName: simpleParameterValue2,
+			listParameterName:   listParameterValue2,
 		},
 	}
 
-	template := generateDummyTemplate(t)
+	fs, template := setupFsWithFullTestTemplate(t, simpleParameterName, referenceParameterName, listParameterName, envVariableName)
 
 	config, err := configv1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
 		template, properties, api)
-
 	assert.NilError(t, err)
+
+	convertContext := &ConfigConvertContext{
+		ConverterContext: &ConverterContext{
+			Fs: fs,
+		},
+		ProjectId: projectId,
+	}
 
 	convertedConfigs, errors := convertConfigs(convertContext, environments, []configv1.Config{config})
 
@@ -533,8 +539,24 @@ func TestConvertConfigs(t *testing.T) {
 
 	c := configs[0]
 	assert.Equal(t, configId, c.Coordinate.Config)
-	assert.Equal(t, 2, len(c.Parameters))
+	assert.Equal(t, 5, len(c.Parameters))
+
+	// assert value param is converted as expected
 	assert.Equal(t, simpleParameterValue, c.Parameters[simpleParameterName].(*valueParam.LegacyValueParameter).Value)
+
+	// assert value param is converted as expected
+	assert.Equal(t, coordinate.Coordinate{
+		Project: "projectB",
+		Api:     "management-zone",
+		Config:  "zone",
+	}, c.Parameters[referenceParameterName].(*reference.ReferenceParameter).Config)
+	assert.Equal(t, "id", c.Parameters[referenceParameterName].(*reference.ReferenceParameter).Property)
+
+	// assert list param is converted as expected
+	assert.DeepEqual(t, []string{"GEOLOCATION-41", "GEOLOCATION-42", "GEOLOCATION-43"}, c.Parameters[listParameterName].(*listParam.ListParameter).Values)
+
+	// assert env reference in template has created correct env parameter
+	assert.Equal(t, envVariableName, c.Parameters[transformEnvironmentToParamName(envVariableName)].(*envParam.EnvironmentVariableParameter).Name)
 
 	apiConfigs = convertedConfigs[environmentName2]
 	assert.Equal(t, 1, len(apiConfigs))
@@ -544,8 +566,14 @@ func TestConvertConfigs(t *testing.T) {
 
 	c = configs[0]
 	assert.Equal(t, configId, c.Coordinate.Config)
-	assert.Equal(t, 2, len(c.Parameters))
+	assert.Equal(t, 5, len(c.Parameters))
+
+	// assert override simple param is converted as expected
 	assert.Equal(t, simpleParameterValue2, c.Parameters[simpleParameterName].(*valueParam.LegacyValueParameter).Value)
+
+	// assert override list param is converted as expected
+	// assert list param is converted as expected
+	assert.DeepEqual(t, []string{"james.t.kirk@dynatrace.com"}, c.Parameters[listParameterName].(*listParam.ListParameter).Values)
 }
 
 func TestConvertProjects(t *testing.T) {
@@ -556,10 +584,8 @@ func TestConvertProjects(t *testing.T) {
 	environmentGroup2 := "hardening"
 	configId := "alerting-profile-1"
 	configName := "Alerting Profile 1"
-	simpleParameterName := "randomValue"
 	simpleParameterValue := "hello"
 	simpleParameterValue2 := "world"
-	referenceParameterName := "managementZoneId"
 	referenceParameterValue := "/projectB/management-zone/zone.id"
 
 	convertContext := &ConverterContext{
@@ -643,7 +669,7 @@ func TestConvertProjects(t *testing.T) {
 	assert.Equal(t, simpleParameterValue2, c.Parameters[simpleParameterName].(*valueParam.LegacyValueParameter).Value)
 }
 
-func TestConvertTemplate(t *testing.T) {
+func TestConvertTemplate_ConvertsEnvReferences(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	err := afero.WriteFile(fs, "test.json", []byte(`{
 		"test": "{{.Env.HELLO}}",
@@ -654,7 +680,7 @@ func TestConvertTemplate(t *testing.T) {
 
 	assert.NilError(t, err)
 
-	templ, envParams, errs := convertTemplate(&ConfigConvertContext{
+	templ, envParams, _, errs := convertTemplate(&ConfigConvertContext{
 		ConverterContext: &ConverterContext{
 			Fs: fs,
 		},
@@ -683,6 +709,108 @@ func TestConvertTemplate(t *testing.T) {
 	}
 }
 
+func TestConvertTemplate_ConvertsListVariables(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	err := afero.WriteFile(fs, "test.json", []byte(`{
+		"test": [ {{.list}} ],
+		"test1": [
+				{{ .list1   }}
+		],
+	}`), 0644)
+
+	assert.NilError(t, err)
+
+	templ, _, listParamIds, errs := convertTemplate(&ConfigConvertContext{
+		ConverterContext: &ConverterContext{
+			Fs: fs,
+		},
+		ProjectId: "projectA",
+	}, "test.json", "test.json")
+
+	assert.Assert(t, len(errs) == 0, "expected no errors but got %d: %s", len(errs), errs)
+	assert.Assert(t, templ != nil)
+
+	assert.Equal(t, len(listParamIds), 2, " expected to list param ids to be found in template")
+	_, paramFound := listParamIds["list"]
+	assert.Assert(t, paramFound)
+	_, paramFound = listParamIds["list1"]
+	assert.Assert(t, paramFound)
+	assert.Equal(t, templ.Content(), `{
+		"test": {{ .list }},
+		"test1": {{ .list1 }},
+	}`)
+}
+
+func TestConvertTemplate(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	err := afero.WriteFile(fs, "test.json", []byte(`{
+		"envKey": "{{.Env.ENV_VALUE}}",
+		"listKey": [
+				{{ .list_value   }}
+		],
+		"key": "value"
+	}`), 0644)
+
+	assert.NilError(t, err)
+
+	templ, envParams, listParamIds, errs := convertTemplate(&ConfigConvertContext{
+		ConverterContext: &ConverterContext{
+			Fs: fs,
+		},
+		ProjectId: "projectA",
+	}, "test.json", "test.json")
+
+	assert.Assert(t, len(errs) == 0, "expected no errors but got %d: %s", len(errs), errs)
+	assert.Assert(t, templ != nil)
+
+	// check list parameter
+	assert.Equal(t, len(listParamIds), 1, " expected to list param ids to be found in template")
+	_, listParamFound := listParamIds["list_value"]
+	assert.Assert(t, listParamFound)
+
+	// check env parameter
+	paramName := transformEnvironmentToParamName("ENV_VALUE")
+	param, found := envParams[paramName]
+
+	assert.Assert(t, found, "EnvParam should contain `%s`", paramName)
+	assert.Assert(t, param != nil, "EvnParam `%s` should be not nil", paramName)
+
+	envParam, ok := param.(*envParam.EnvironmentVariableParameter)
+	assert.Assert(t, ok, "EnvParam `%s` should be an environment variable", paramName)
+	assert.Assert(t, !envParam.HasDefaultValue, "EnvParam `%s` should have no default value")
+	assert.Equal(t, "ENV_VALUE", envParam.Name)
+
+	// check converted template
+	assert.Equal(t, templ.Content(), `{
+		"envKey": "{{ .__ENV_ENV_VALUE__ }}",
+		"listKey": {{ .list_value }},
+		"key": "value"
+	}`)
+}
+
+func TestConvertListsInTemplate(t *testing.T) {
+	input := `{
+		"test": [ {{.list}} ],
+		"test1": [
+				{{ .list1   }}
+		],
+	}`
+	expected := `{
+		"test": {{ .list }},
+		"test1": {{ .list1 }},
+	}`
+	result, paramIds, errs := convertListsInTemplate(input, "does/not/matter")
+	assert.Assert(t, len(errs) == 0, "expected no errors but got %d: %s", len(errs), errs)
+	assert.Equal(t, len(paramIds), 2, " expected to list param ids to be found in template")
+
+	_, paramFound := paramIds["list"]
+	assert.Assert(t, paramFound)
+	_, paramFound = paramIds["list1"]
+	assert.Assert(t, paramFound)
+
+	assert.Equal(t, result, expected)
+}
+
 func setupDummyFs(t *testing.T) afero.Fs {
 	fs := afero.NewMemMapFs()
 
@@ -709,6 +837,23 @@ func setupDummyFsWithEnvVariableInTemplate(t *testing.T, envVarName string) afer
 	assert.NilError(t, err)
 
 	return fs
+}
+
+func setupFsWithFullTestTemplate(t *testing.T, simpleVar, refVar, listVar, envVar string) (afero.Fs, util.Template) {
+	fs := afero.NewMemMapFs()
+
+	err := fs.Mkdir("test", 0644)
+	assert.NilError(t, err)
+
+	templateContent := fmt.Sprintf(`{ "simple": "{{ .%s }}", "reference": "{{ .%s }}", "list": [ {{ .%s }} ], "env": "{{ .Env.%s }}" }`, simpleVar, refVar, listVar, envVar)
+
+	template, err := util.NewTemplateFromString("test/test-config.json", templateContent)
+	assert.NilError(t, err)
+
+	err = afero.WriteFile(fs, "test/test-config.json", []byte(templateContent), 0644)
+	assert.NilError(t, err)
+
+	return fs, template
 }
 
 func generateDummyTemplate(t *testing.T) util.Template {
@@ -748,5 +893,109 @@ func createSimpleUrlDefinition() manifest.UrlDefinition {
 	return manifest.UrlDefinition{
 		Type:  manifest.ValueUrlType,
 		Value: "test.env",
+	}
+}
+
+func TestListVariableRegex(t *testing.T) {
+	patternsThatShouldMatch := []string{
+		`    "receivers": [
+        {{ .expectedValue }}
+    ],`,
+		`"something else":
+[
+      {{ .expectedValue }}
+
+]`,
+		`"some property" : "with a key",
+"list": [{{.expectedValue}}]`,
+		`  "list  " : [
+  {{.expectedValue}}],`,
+		`"lists": {
+"
+list"   :
+
+
+[ {{
+.expectedValue
+}}
+]
+
+}`,
+	}
+
+	for _, s := range patternsThatShouldMatch {
+		assert.Assert(t, listVariableRegex.MatchString(s))
+		matches := listVariableRegex.FindStringSubmatch(s)
+		assert.Equal(t, len(matches), 3, "expected regex matching to return 3 matches - - full match, list match & variable name capture group")
+		assert.Equal(t, matches[2], "expectedValue")
+		sanitizedFullMatch := strings.ReplaceAll(strings.ReplaceAll(matches[1], " ", ""), "\n", "")
+		assert.Equal(t, sanitizedFullMatch, "[{{.expectedValue}}]")
+	}
+
+}
+
+func Test_parseListStringToSlice(t *testing.T) {
+	tests := []struct {
+		inputString string
+		want        []string
+		wantErr     bool
+	}{
+		{
+			`"a", "b", "c"`,
+			[]string{"a", "b", "c"},
+			false,
+		},
+		{
+			`  " a " , " b "`,
+			[]string{" a ", " b "},
+			false,
+		},
+		{
+			`  "e@mail.com" , "first.last@domain.com"  `,
+			[]string{"e@mail.com", "first.last@domain.com"},
+			false,
+		},
+		{
+			`  " a " , " b "   , `,
+			[]string{" a ", " b "},
+			false,
+		},
+		{
+			`"a"`,
+			[]string{"a"},
+			false,
+		},
+		{
+			`"e@mail.com"`,
+			[]string{"e@mail.com"},
+			false,
+		},
+		{
+			``,
+			[]string{},
+			true,
+		},
+		{
+			`"inval,id`,
+			[]string{},
+			true,
+		},
+		{
+			`"",`,
+			[]string{},
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.inputString, func(t *testing.T) {
+			got, err := parseListStringToSlice(tt.inputString)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("parseListStringToSlice() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("parseListStringToSlice() got = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

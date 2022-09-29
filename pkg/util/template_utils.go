@@ -112,7 +112,7 @@ var SimpleStringEscapeFunction = escapeSimpleCharacters
 var FullStringEscapeFunction = escapeCharactersForJson
 
 func escapeSimpleCharacters(rawString string) (string, error) {
-	if isListDefinition(rawString) {
+	if IsListDefinition(rawString) {
 		return rawString, nil
 	}
 	return escapeNewlines(rawString), nil
@@ -145,6 +145,6 @@ func escapeNewlines(rawString string) string {
 // these must generally not have their quotes escaped as their JSON template is usually not valid with these values
 var listPattern = regexp.MustCompile(`(?:\s*".*?"\s*,\s*".*?"\s*,?)+`)
 
-func isListDefinition(s string) bool {
+func IsListDefinition(s string) bool {
 	return listPattern.MatchString(s)
 }

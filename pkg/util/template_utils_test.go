@@ -447,7 +447,7 @@ func Test_isListDefinition(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			if got := isListDefinition(tt.input); got != tt.want {
+			if got := IsListDefinition(tt.input); got != tt.want {
 				t.Errorf("isListDefinition() = %v, want %v", got, tt.want)
 			}
 		})

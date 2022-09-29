@@ -17,6 +17,8 @@ package converter
 import (
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
+	listParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/list"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"regexp"
 	"strings"
@@ -44,7 +46,10 @@ const (
 )
 
 var (
-	envVariableRegex = regexp.MustCompile(`{{ *\.Env\.([A-Za-z0-9_-]*) *}}`)
+	//TODO move both of these to template utils, where a form of envVar regex and matching exists already
+	envVariableRegex  = regexp.MustCompile(`{{ *\.Env\.([A-Za-z0-9_-]*) *}}`)
+	listVariableRegex = regexp.MustCompile(`"[\w\s]+"\s*:\s*(\[\s*\{\{\s*\.([\w]+)\s*}}\s*])`)
+	simpleValueRegex  = regexp.MustCompile(`\s*".+?"\s*`)
 )
 
 type ConverterContext struct {
@@ -53,7 +58,8 @@ type ConverterContext struct {
 
 type ConfigConvertContext struct {
 	*ConverterContext
-	ProjectId string
+	ProjectId             string
+	KnownListParameterIds map[string]struct{}
 }
 
 type ProjectConverterError struct {
@@ -272,11 +278,13 @@ func convertConfig(context *ConfigConvertContext, environment manifest.Environme
 		Config:  config.GetId(),
 	}
 
-	templ, envParams, errs := convertTemplate(context, config.GetFilePath(), convertedTemplatePath)
+	templ, envParams, listParamIds, errs := convertTemplate(context, config.GetFilePath(), convertedTemplatePath)
 
 	if len(errs) > 0 {
 		errors = append(errors, newConvertConfigError(coord, fmt.Sprintf("unable to load template `%s`: %s", config.GetFilePath(), errs)))
 	}
+
+	context.KnownListParameterIds = listParamIds
 
 	parameters, references, skip, parameterErrors := convertParameters(context, environment, config)
 
@@ -310,40 +318,44 @@ func convertConfig(context *ConfigConvertContext, environment manifest.Environme
 }
 
 // TODO make groupable?
-type EnvironmentVariableConverterError struct {
+type TemplateConversionError struct {
 	TemplatePath string
 	Reason       string
 }
 
-func newEnvironmentVariableConverterError(templatePath string, reason string) EnvironmentVariableConverterError {
-	return EnvironmentVariableConverterError{
+func newTemplateConversionError(templatePath string, reason string) TemplateConversionError {
+	return TemplateConversionError{
 		TemplatePath: templatePath,
 		Reason:       reason,
 	}
 }
 
-func (e EnvironmentVariableConverterError) Error() string {
+func (e TemplateConversionError) Error() string {
 	return fmt.Sprintf("%s: %s", e.TemplatePath, e.Reason)
 }
 
-var _ error = (*EnvironmentVariableConverterError)(nil)
+var _ error = (*TemplateConversionError)(nil)
 
-func convertTemplate(context *ConfigConvertContext, currentPath string, writeToPath string) (template.Template, map[string]parameter.Parameter, []error) {
+func convertTemplate(context *ConfigConvertContext, currentPath string, writeToPath string) (modifiedTemplate template.Template, envParams map[string]parameter.Parameter, listParameterIds map[string]struct{}, errs []error) {
 	data, err := afero.ReadFile(context.Fs, currentPath)
 
 	if err != nil {
-		return nil, nil, []error{err}
+		return nil, nil, nil, []error{err}
 	}
 
-	templText, environmentParameters, errors := convertEnvVarsReferencesInTemplate(string(data), currentPath)
+	templText, environmentParameters, errs := convertEnvVarsReferencesInTemplate(string(data), currentPath)
+	if len(errs) > 0 {
+		return nil, nil, nil, errs
+	}
+
+	templText, listParameterIds, errs = convertListsInTemplate(templText, currentPath)
+	if len(errs) > 0 {
+		return nil, nil, nil, errs
+	}
 
 	templ := template.CreateTemplateFromString(writeToPath, templText)
 
-	if len(errors) > 0 {
-		return nil, nil, errors
-	}
-
-	return templ, environmentParameters, nil
+	return templ, environmentParameters, listParameterIds, nil
 }
 
 func convertEnvVarsReferencesInTemplate(currentTemplate string, currentPath string) (modifiedTemplate string, environmentParameters map[string]parameter.Parameter, errors []error) {
@@ -353,7 +365,7 @@ func convertEnvVarsReferencesInTemplate(currentTemplate string, currentPath stri
 		match := envVariableRegex.FindStringSubmatch(p)
 
 		if len(match) != 2 {
-			errors = append(errors, newEnvironmentVariableConverterError(currentPath, fmt.Sprintf("cannot parse environment variable: `%s` seems to be invalid", p)))
+			errors = append(errors, newTemplateConversionError(currentPath, fmt.Sprintf("cannot parse environment variable: `%s` seems to be invalid", p)))
 			return ""
 		}
 
@@ -375,6 +387,28 @@ func transformEnvironmentToParamName(env string) string {
 
 func transformToPropertyAccess(property string) string {
 	return fmt.Sprintf("{{ .%s }}", property)
+}
+
+func convertListsInTemplate(currentTemplate string, currentPath string) (modifiedTemplate string, listParameterIds map[string]struct{}, errors []error) {
+	listParameterIds = map[string]struct{}{}
+
+	templText := listVariableRegex.ReplaceAllStringFunc(currentTemplate, func(s string) string {
+		match := listVariableRegex.FindStringSubmatch(s)
+
+		if len(match) != 3 {
+			errors = append(errors, newTemplateConversionError(currentPath, fmt.Sprintf("cannot parse list variable: `%s` seems to be invalid", s)))
+			return ""
+		}
+
+		fullMatch := match[0]
+		fullListMatch := match[1]
+		varName := match[2]
+
+		listParameterIds[varName] = struct{}{}
+		return strings.Replace(fullMatch, fullListMatch, transformToPropertyAccess(varName), 1)
+	})
+
+	return templText, listParameterIds, errors
 }
 
 func convertParameters(context *ConfigConvertContext, environment manifest.EnvironmentDefinition,
@@ -409,6 +443,13 @@ func convertParameters(context *ConfigConvertContext, environment manifest.Envir
 			}
 
 			parameters[name] = ref
+		} else if _, found := context.KnownListParameterIds[name]; found {
+			valueSlice, err := parseListStringToSlice(value)
+			if err != nil {
+				errors = append(errors, err)
+				continue
+			}
+			parameters[name] = &listParam.ListParameter{Values: valueSlice}
 		} else {
 			parameters[name] = &valueParam.LegacyValueParameter{
 				valueParam.ValueParameter{
@@ -423,7 +464,7 @@ func convertParameters(context *ConfigConvertContext, environment manifest.Envir
 	}
 
 	if errors != nil {
-		return nil, nil, false, errors
+		return parameters, nil, false, errors
 	}
 
 	return parameters, references, skip, nil
@@ -486,6 +527,24 @@ func loadPropertiesForEnvironment(environment manifest.EnvironmentDefinition, co
 	}
 
 	return result
+}
+
+func parseListStringToSlice(s string) ([]string, error) {
+	if !util.IsListDefinition(s) && !simpleValueRegex.MatchString(s) {
+		return []string{}, fmt.Errorf("failed to parse value for list parameter, '%s' is not in expected list format", s)
+	}
+
+	var slice []string
+	splitOnColon := strings.Split(s, ",")
+	for _, ss := range splitOnColon {
+		ss = strings.TrimSpace(ss)
+		ss = strings.TrimPrefix(ss, `"`)
+		ss = strings.TrimSuffix(ss, `"`)
+		if len(ss) > 0 {
+			slice = append(slice, ss)
+		}
+	}
+	return slice, nil
 }
 
 func convertEnvironments(environments map[string]environmentv1.Environment) map[string]manifest.EnvironmentDefinition {
