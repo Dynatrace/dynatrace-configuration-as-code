@@ -45,6 +45,12 @@ pipeline {
             }
         }
 
+        stage('Binary starts') {
+            steps {
+                sh "make run"
+            }
+        }
+
         stage('Integration test') {
             when {
                 expression {

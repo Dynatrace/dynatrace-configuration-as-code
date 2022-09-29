@@ -47,6 +47,9 @@ install:
 	@echo Install ${BINARY}
 	@CGO_ENABLED=0 go install -a -tags netgo -ldflags '-w -extldflags "-static"' ./cmd/monaco
 
+run:
+	@CGO_ENABLED=0 go run -a -tags netgo -ldflags '-w -extldflags "-static"' ./cmd/monaco
+
 clean:
 	@echo Remove bin/ and build/
 ifeq ($(OS),Windows_NT)
