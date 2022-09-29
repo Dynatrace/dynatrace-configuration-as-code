@@ -101,6 +101,23 @@ func TestResolveValue(t *testing.T) {
 	assert.Equal(t, value, result)
 }
 
+func TestResolveValue_EscapesSpecialCharacters(t *testing.T) {
+	name := "test"
+	v := `this is a "test"`
+	expected := `this is a \"test\"`
+
+	t.Setenv(name, v)
+
+	fixture := New(name)
+
+	result, err := fixture.ResolveValue(parameter.ResolveContext{
+		ParameterName: "test",
+	})
+
+	assert.NilError(t, err)
+	assert.Equal(t, expected, result)
+}
+
 func TestResolveValueWithDefaultValue(t *testing.T) {
 	name := "__not_set_test"
 	defaultValue := "this is the default"

@@ -50,15 +50,18 @@ func TrimToEnvVariableName(envReference string) string {
 	return matches[1] //first and only capture group content returned on index 1, with full match on index 0
 }
 
-// EscapeSpecialCharacters walks recursively though the map and escapes all special characters that can't just be written to the
-// json template. characters that will be escaped: newlines (\n), double quotes (\")
-// Note: this is in use in both v1 and v2 config templating
+// EscapeSpecialCharacters takes a map of config properties (some level of map (of maps...) of string) and
+// escapes any newline characters in it
+// Note: this is in use in both v1 config templating
 func EscapeSpecialCharacters(properties map[string]interface{}) (map[string]interface{}, error) {
+	return escapeSpecialCharactersInMap(properties, escapeSimpleCharacters)
+}
 
+func escapeSpecialCharactersInMap(properties map[string]interface{}, escapeFunc StringEscapeFunction) (map[string]interface{}, error) {
 	escapedProperties := make(map[string]interface{}, len(properties))
 
 	for key, value := range properties {
-		escaped, err := EscapeSpecialCharactersInValue(value)
+		escaped, err := EscapeSpecialCharactersInValue(value, escapeFunc)
 		if err != nil {
 			return nil, err
 		}
@@ -68,25 +71,29 @@ func EscapeSpecialCharacters(properties map[string]interface{}) (map[string]inte
 	return escapedProperties, nil
 }
 
-func EscapeSpecialCharactersInValue(value interface{}) (interface{}, error) {
+// EscapeSpecialCharactersInValue takes a value and tries to escape any strings in it - it will walk recursively in
+// case of maps/maps-of-maps of string and escape any special characters using a StringEscapeFunction.
+// This is used by v1 config templating - with a simple function escaping newlines
+// and v2 parameter values returns - with an escape function escaping strings to be fully JSON compliant
+func EscapeSpecialCharactersInValue(value interface{}, escapeFunc StringEscapeFunction) (interface{}, error) {
 	switch field := value.(type) {
 	case string:
-		return escapeCharacters(field)
+		return escapeFunc(field)
 	case map[string]string:
-		return escapeCharactersForStringMap(field)
+		return escapeCharactersForStringMap(field, escapeFunc)
 	case map[string]interface{}:
-		return EscapeSpecialCharacters(field)
+		return escapeSpecialCharactersInMap(field, escapeFunc)
 	default:
 		log.Debug("tried to string escape value of unsupported type %v, returning unchanged", reflect.TypeOf(value))
 		return value, nil
 	}
 }
 
-func escapeCharactersForStringMap(properties map[string]string) (map[string]string, error) {
+func escapeCharactersForStringMap(properties map[string]string, escapeFunc StringEscapeFunction) (map[string]string, error) {
 	escapedProperties := make(map[string]string, len(properties))
 
 	for key, value := range properties {
-		escaped, err := escapeCharacters(value)
+		escaped, err := escapeFunc(value)
 		if err != nil {
 			return nil, err
 		}
@@ -96,7 +103,15 @@ func escapeCharactersForStringMap(properties map[string]string) (map[string]stri
 	return escapedProperties, nil
 }
 
-func escapeCharacters(rawString string) (string, error) {
+type StringEscapeFunction func(string) (string, error)
+
+// SimpleStringEscapeFunction only escapes newline characters in an input string
+var SimpleStringEscapeFunction = escapeSimpleCharacters
+
+// FullStringEscapeFunction fully escapes any special characters in the input string, ensure it is valid for use in JSON
+var FullStringEscapeFunction = escapeCharactersForJson
+
+func escapeSimpleCharacters(rawString string) (string, error) {
 	if isListDefinition(rawString) {
 		return rawString, nil
 	}
@@ -111,10 +126,6 @@ func escapeCharacters(rawString string) (string, error) {
 // valid json and must not be escaped. As a caveat this means any other characters aren't escaped either for lists.
 // As marshalling additionally places quotes around the output these first and last characters are cut off before returning.
 func escapeCharactersForJson(rawString string) (string, error) {
-	if isListDefinition(rawString) {
-		return rawString, nil
-	}
-
 	b, err := json.Marshal(rawString)
 	if err != nil {
 		// errors should never occur for marshalling a string value - better safe than sorry if implementation details change

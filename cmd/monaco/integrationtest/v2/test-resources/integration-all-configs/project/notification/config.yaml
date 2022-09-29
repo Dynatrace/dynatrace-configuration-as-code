@@ -21,7 +21,11 @@ configs:
         property: id
         type: reference
       environment: Env1
-      receivers: '"jean-luc.picard@dynatrace.com", "jim.kirk@dynatrace.com"'
+      receivers:
+        type: list
+        values:
+          - "jean-luc.picard@dynatrace.com"
+          - "jim.kirk@dynatrace.com"
     template: subfolder/email.json
     skip: false
 - id: email_single_receiver
@@ -34,6 +38,9 @@ configs:
         property: id
         type: reference
       environment: test-env
-      receivers: '"james.t.kirk@dynatrace.com"'
+      receivers:
+        type: list
+        values:
+          - "james.t.kirk@dynatrace.com"
     template: subfolder/email.json
     skip: false

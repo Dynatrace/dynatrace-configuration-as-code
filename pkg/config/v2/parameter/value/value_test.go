@@ -18,6 +18,8 @@
 package value
 
 import (
+	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"testing"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
@@ -135,4 +137,50 @@ func TestWriteValueParameter(t *testing.T) {
 	resultVal, ok := result["value"]
 	assert.Assert(t, ok, "should have property `name`")
 	assert.Equal(t, resultVal, value)
+}
+
+func TestValuesWithSpecialCharactersReturnContentValidForJson(t *testing.T) {
+	tests := []struct {
+		name  string
+		value string
+	}{
+		{
+			"empty test should work",
+			"",
+		},
+		{
+			"newlines are escaped",
+			"A string\nwith several lines\n\n - here's one\n\n - and another",
+		},
+		{
+			"regular slashes are not escaped",
+			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36",
+		},
+		{
+			"a list string gets quotes escaped",
+			`"element a", "element b", "element c"`,
+		},
+		{
+			"a list string can still contain newlines",
+			`"element a",
+"element b",
+"element c"`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fixture := New(tt.value)
+
+			result, err := fixture.ResolveValue(parameter.ResolveContext{})
+
+			assert.NilError(t, err)
+
+			resString := result.(string)
+
+			sampleJson := fmt.Sprintf(`{ "val": "%s"}`, resString)
+
+			err = util.ValidateJson(sampleJson, util.Location{})
+			assert.NilError(t, err)
+		})
+	}
 }

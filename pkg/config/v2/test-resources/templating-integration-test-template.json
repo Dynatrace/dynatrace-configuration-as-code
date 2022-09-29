@@ -17,13 +17,9 @@
         "10": "{{ .newline10 }}"
     },
     "lists": {
-        "simple" : [ {{ .list }} ],
-        "linebreaks_in_json": [
-            {{ .list }}
-        ],
-        "linebreaks_between_entries": [
-            {{ .list_with_newlines }}
-        ]
+        "list": {{ .list }},
+        "long_list": {{ .long_list }},
+        "single_entry": {{ .single_entry_list }}
     },
     "slashes": "{{ .slashes }}"
 }

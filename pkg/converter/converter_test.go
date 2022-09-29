@@ -81,12 +81,12 @@ func TestConvertParameters(t *testing.T) {
 	nameParameter, found := parameters["name"]
 
 	assert.Equal(t, true, found)
-	assert.Equal(t, configName, nameParameter.(*valueParam.ValueParameter).Value)
+	assert.Equal(t, configName, nameParameter.(*valueParam.LegacyValueParameter).Value)
 
 	simpleParameter, found := parameters[simpleParameterName]
 
 	assert.Equal(t, true, found)
-	assert.Equal(t, simpleParameterValue, simpleParameter.(*valueParam.ValueParameter).Value)
+	assert.Equal(t, simpleParameterValue, simpleParameter.(*valueParam.LegacyValueParameter).Value)
 
 	referenceParameter, found := parameters[referenceParameterName]
 
@@ -325,8 +325,8 @@ func TestConvertConfig(t *testing.T) {
 	assert.Equal(t, "zone", references[0].Config)
 
 	assert.Equal(t, 4, len(convertedConfig.Parameters))
-	assert.Equal(t, configName, convertedConfig.Parameters["name"].(*valueParam.ValueParameter).Value)
-	assert.Equal(t, simpleParameterValue, convertedConfig.Parameters[simpleParameterName].(*valueParam.ValueParameter).Value)
+	assert.Equal(t, configName, convertedConfig.Parameters["name"].(*valueParam.LegacyValueParameter).Value)
+	assert.Equal(t, simpleParameterValue, convertedConfig.Parameters[simpleParameterName].(*valueParam.LegacyValueParameter).Value)
 	assert.Equal(t, envVarName,
 		convertedConfig.Parameters[transformEnvironmentToParamName(envVarName)].(*envParam.EnvironmentVariableParameter).Name)
 }
@@ -386,8 +386,8 @@ func TestConvertDeprecatedConfigToLatest(t *testing.T) {
 	assert.Equal(t, "zone", references[0].Config)
 
 	assert.Equal(t, 4, len(convertedConfig.Parameters))
-	assert.Equal(t, configName, convertedConfig.Parameters["name"].(*valueParam.ValueParameter).Value)
-	assert.Equal(t, simpleParameterValue, convertedConfig.Parameters[simpleParameterName].(*valueParam.ValueParameter).Value)
+	assert.Equal(t, configName, convertedConfig.Parameters["name"].(*valueParam.LegacyValueParameter).Value)
+	assert.Equal(t, simpleParameterValue, convertedConfig.Parameters[simpleParameterName].(*valueParam.LegacyValueParameter).Value)
 	assert.Equal(t, envVarName,
 		convertedConfig.Parameters[transformEnvironmentToParamName(envVarName)].(*envParam.EnvironmentVariableParameter).Name)
 }
@@ -534,7 +534,7 @@ func TestConvertConfigs(t *testing.T) {
 	c := configs[0]
 	assert.Equal(t, configId, c.Coordinate.Config)
 	assert.Equal(t, 2, len(c.Parameters))
-	assert.Equal(t, simpleParameterValue, c.Parameters[simpleParameterName].(*valueParam.ValueParameter).Value)
+	assert.Equal(t, simpleParameterValue, c.Parameters[simpleParameterName].(*valueParam.LegacyValueParameter).Value)
 
 	apiConfigs = convertedConfigs[environmentName2]
 	assert.Equal(t, 1, len(apiConfigs))
@@ -545,7 +545,7 @@ func TestConvertConfigs(t *testing.T) {
 	c = configs[0]
 	assert.Equal(t, configId, c.Coordinate.Config)
 	assert.Equal(t, 2, len(c.Parameters))
-	assert.Equal(t, simpleParameterValue2, c.Parameters[simpleParameterName].(*valueParam.ValueParameter).Value)
+	assert.Equal(t, simpleParameterValue2, c.Parameters[simpleParameterName].(*valueParam.LegacyValueParameter).Value)
 }
 
 func TestConvertProjects(t *testing.T) {
@@ -629,7 +629,7 @@ func TestConvertProjects(t *testing.T) {
 	c := configs[0]
 	assert.Equal(t, configId, c.Coordinate.Config)
 	assert.Equal(t, 3, len(c.Parameters))
-	assert.Equal(t, simpleParameterValue, c.Parameters[simpleParameterName].(*valueParam.ValueParameter).Value)
+	assert.Equal(t, simpleParameterValue, c.Parameters[simpleParameterName].(*valueParam.LegacyValueParameter).Value)
 
 	apiConfigs = convertedConfigs[environmentName2]
 	assert.Equal(t, 1, len(apiConfigs))
@@ -640,7 +640,7 @@ func TestConvertProjects(t *testing.T) {
 	c = configs[0]
 	assert.Equal(t, configId, c.Coordinate.Config)
 	assert.Equal(t, 3, len(c.Parameters))
-	assert.Equal(t, simpleParameterValue2, c.Parameters[simpleParameterName].(*valueParam.ValueParameter).Value)
+	assert.Equal(t, simpleParameterValue2, c.Parameters[simpleParameterName].(*valueParam.LegacyValueParameter).Value)
 }
 
 func TestConvertTemplate(t *testing.T) {

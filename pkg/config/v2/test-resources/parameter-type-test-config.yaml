@@ -1,0 +1,27 @@
+configs:
+  - id: parameter_type_test
+    config:
+      name: "Parameter Type Test Config"
+      template: templating-integration-test-template.json #not used here
+      parameters:
+        simple_value: "SIMPLE VALUE"
+        full_value:
+          type: value
+          value: "TEST VALUE"
+        simple_reference: ["reference_cfg", "name"]
+        full_reference:
+          type: reference
+          project: "some project"
+          api: "some api"
+          config: "reference_cfg"
+          property: "name"
+        environment:
+          type: environment
+          name: "HELLO_THERE"
+          defaultValue: "General Kenobi!"
+        list:
+          type: list
+          values:
+            - "one"
+            - "two"
+            - "three"

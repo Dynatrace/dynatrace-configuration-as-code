@@ -614,7 +614,11 @@ func toSpecialParameterDefinition(context *detailedConfigConverterContext, param
 		valueParam, ok := param.(*value.ValueParameter)
 
 		if !ok {
-			return nil, fmt.Errorf("%s:%s: parameter of type `%s` is no value param", context.config, parameterName, param.GetType())
+			if legacyValueParam, ok := param.(*value.LegacyValueParameter); ok {
+				valueParam = &legacyValueParam.ValueParameter
+			} else {
+				return nil, fmt.Errorf("%s:%s: parameter of type `%s` is no value param", context.config, parameterName, param.GetType())
+			}
 		}
 
 		switch valueParam.Value.(type) {

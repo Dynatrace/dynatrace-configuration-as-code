@@ -74,15 +74,15 @@ func (p *EnvironmentVariableParameter) GetReferences() []parameter.ParameterRefe
 }
 
 func (p *EnvironmentVariableParameter) ResolveValue(context parameter.ResolveContext) (interface{}, error) {
-	if val, found := os.LookupEnv(p.Name); found {
-		return val, nil
+
+	val, found := os.LookupEnv(p.Name)
+	if !found && p.HasDefaultValue {
+		val = p.DefaultValue
+	} else if !found {
+		return nil, parameter.NewParameterResolveValueError(context, fmt.Sprintf("environment variable `%s` not set", p.Name))
 	}
 
-	if p.HasDefaultValue {
-		return p.DefaultValue, nil
-	}
-
-	return nil, parameter.NewParameterResolveValueError(context, fmt.Sprintf("environment variable `%s` not set", p.Name))
+	return util.EscapeSpecialCharactersInValue(val, util.FullStringEscapeFunction)
 }
 
 // parseEnvironmentValueParameter parses an EnvironmentVariableParameter from a given context.

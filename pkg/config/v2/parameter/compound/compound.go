@@ -77,7 +77,8 @@ func (p *CompoundParameter) ResolveValue(context parameter.ResolveContext) (inte
 		return nil, fmt.Errorf("error resolving compound value: %v", err)
 	}
 
-	return out.String(), nil
+	str := out.String()
+	return util.EscapeSpecialCharactersInValue(str, util.FullStringEscapeFunction)
 
 }
 
