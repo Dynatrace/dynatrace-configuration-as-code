@@ -15,19 +15,3 @@ configs:
           - "jean-luc.picard@dynatrace.com"
           - "jim.kirk@dynatrace.com"
     template: email.json
-- id: single_receiver_email
-  config:
-    name: list content is escaped
-    parameters:
-      alertingProfileId:
-        api: alerting-profile
-        config: profile
-        property: id
-        type: reference
-      environment: Env1
-      receivers:
-        type: list
-        values:
-          - james."t".kirk@dynatrace.com
-          - jean-"luc".picard@dynatrace.com
-    template: email.json
