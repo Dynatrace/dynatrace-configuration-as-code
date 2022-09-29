@@ -33,25 +33,25 @@ var yamlExtensions = []string{".yaml", "yml"}
 
 func DeleteCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
 	if len(args) == 0 {
-		return ManifestFile(cmd, args, toComplete)
+		return ManifestFile()
 	} else if len(args) == 1 {
-		return DeleteFile(cmd, args, toComplete)
+		return DeleteFile()
 	} else {
 		return make([]string, 0), cobra.ShellCompDirectiveDefault
 	}
 }
 
-func DeployCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+func DeployCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
 	if len(args) == 0 {
-		return ManifestFile(cmd, args, toComplete)
+		return ManifestFile()
 	} else {
 		return make([]string, 0), cobra.ShellCompDirectiveFilterDirs
 	}
 }
 
-func ConvertCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+func ConvertCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
 	if len(args) == 0 {
-		return EnvironmentFile(cmd, args, toComplete)
+		return EnvironmentFile()
 	} else {
 		return make([]string, 0), cobra.ShellCompDirectiveFilterDirs
 	}
@@ -85,34 +85,30 @@ func loadEnvironmentsFromManifest(manifestPath string) ([]string, cobra.ShellCom
 	return maps.Keys(man.Environments), cobra.ShellCompDirectiveDefault
 }
 
-func ProjectsFromManifest(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+func ProjectsFromManifest(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
 
 	manifestPath := args[0]
-	manifest, _ := manifest.LoadManifest(&manifest.ManifestLoaderContext{
+	mani, _ := manifest.LoadManifest(&manifest.ManifestLoaderContext{
 		Fs:           afero.NewOsFs(),
 		ManifestPath: manifestPath,
 	})
 
-	keys := []string{}
-	for k := range manifest.Projects {
-		keys = append(keys, k)
-	}
-	return keys, cobra.ShellCompDirectiveDefault
+	return maps.Keys(mani.Projects), cobra.ShellCompDirectiveDefault
 }
 
 func ManifestFile() ([]string, cobra.ShellCompDirective) {
 	return yamlExtensions, cobra.ShellCompDirectiveFilterFileExt
 }
 
-func DeleteFile(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	return deepFileSeach(".", "delete.yaml"), cobra.ShellCompDirectiveDefault
+func DeleteFile() ([]string, cobra.ShellCompDirective) {
+	return deepFileSearch(".", "delete.yaml"), cobra.ShellCompDirectiveDefault
 }
 
 func EnvironmentFile() ([]string, cobra.ShellCompDirective) {
 	return yamlExtensions, cobra.ShellCompDirectiveFilterFileExt
 }
 
-func deepFileSeach(root, ext string) []string {
+func deepFileSearch(root, ext string) []string {
 
 	var allMatchingFiles []string
 	err := afero.Walk(afero.NewOsFs(), root, func(path string, info os.FileInfo, err error) error {
