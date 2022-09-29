@@ -335,10 +335,21 @@ func convertTemplate(context *ConfigConvertContext, currentPath string, writeToP
 		return nil, nil, []error{err}
 	}
 
-	environmentParameters := map[string]parameter.Parameter{}
-	var errors []error
+	templText, environmentParameters, errors := convertEnvVarsReferencesInTemplate(string(data), currentPath)
 
-	templText := envVariableRegex.ReplaceAllStringFunc(string(data), func(p string) string {
+	templ := template.CreateTemplateFromString(writeToPath, templText)
+
+	if len(errors) > 0 {
+		return nil, nil, errors
+	}
+
+	return templ, environmentParameters, nil
+}
+
+func convertEnvVarsReferencesInTemplate(currentTemplate string, currentPath string) (modifiedTemplate string, environmentParameters map[string]parameter.Parameter, errors []error) {
+	environmentParameters = map[string]parameter.Parameter{}
+
+	templText := envVariableRegex.ReplaceAllStringFunc(currentTemplate, func(p string) string {
 		match := envVariableRegex.FindStringSubmatch(p)
 
 		if len(match) != 2 {
@@ -355,14 +366,7 @@ func convertTemplate(context *ConfigConvertContext, currentPath string, writeToP
 
 		return transformToPropertyAccess(paramName)
 	})
-
-	templ := template.CreateTemplateFromString(writeToPath, templText)
-
-	if len(errors) > 0 {
-		return nil, nil, errors
-	}
-
-	return templ, environmentParameters, nil
+	return templText, environmentParameters, errors
 }
 
 func transformEnvironmentToParamName(env string) string {
@@ -406,8 +410,10 @@ func convertParameters(context *ConfigConvertContext, environment manifest.Envir
 
 			parameters[name] = ref
 		} else {
-			parameters[name] = &valueParam.ValueParameter{
-				Value: value,
+			parameters[name] = &valueParam.LegacyValueParameter{
+				valueParam.ValueParameter{
+					Value: value,
+				},
 			}
 		}
 
