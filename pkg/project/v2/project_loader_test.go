@@ -32,7 +32,7 @@ func Test_checkDuplicatedId(t *testing.T) {
 	assert.Equal(t, len(getDuplicatedId(singleElementList())), 0)
 	assert.Equal(t, len(getDuplicatedId(listOfDifferentElements())), 0)
 	assert.Equal(t, len(getDuplicatedId(oneDuplicatedElement())), 1)
-	assert.Equal(t, getDuplicatedId(oneDuplicatedElement())[0], "id")
+	assert.Equal(t, getDuplicatedId(oneDuplicatedElement())[0], "project:api:id")
 }
 
 func Test_reportsOneDuplicateId(t *testing.T) {
@@ -136,6 +136,24 @@ func TestLoadProjects_AllowsOverlappingIdsInDifferentProjects(t *testing.T) {
 
 	assert.Equal(t, len(gotErrs), 0, "Expected to load project without error")
 	assert.Equal(t, len(got), 2, "Expected two loaded project")
+}
+
+func TestLoadProjects_ContainsCoordinateWhenReturningErrorForDuplicates(t *testing.T) {
+	testFs := afero.NewMemMapFs()
+	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.yaml", []byte("configs:\n- id: OVERLAP\n  config:\n    name: Test Profile\n    template: profile.json"), 0644)
+	_ = afero.WriteFile(testFs, "project/alerting-profile/profile2.yaml", []byte("configs:\n- id: OVERLAP\n  config:\n    name: Test Profile\n    template: profile.json"), 0644)
+	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644)
+	_ = afero.WriteFile(testFs, "project/dashboard/config.yaml", []byte("configs:\n- id: DASH_OVERLAP\n  config:\n    name: Test Dash\n    template: dash.json\n- id: DASH_OVERLAP\n  config:\n    name: Test Dash 2\n    template: dash.json"), 0644)
+	_ = afero.WriteFile(testFs, "project/dashboard/dash.json", []byte("{}"), 0644)
+
+	context := getTestProjectLoaderContext([]string{"alerting-profile", "dashboard"}, []string{"project"})
+
+	_, gotErrs := LoadProjects(testFs, context)
+
+	assert.Equal(t, len(gotErrs), 1, "Expected to fail on overlapping coordinates")
+	err := gotErrs[0]
+	assert.ErrorContains(t, err, "project:alerting-profile:OVERLAP")
+	assert.ErrorContains(t, err, "project:dashboard:DASH_OVERLAP")
 }
 
 func TestLoadProjects_ReturnsErrOnOverlappingCoordinate_InDifferentFiles(t *testing.T) {

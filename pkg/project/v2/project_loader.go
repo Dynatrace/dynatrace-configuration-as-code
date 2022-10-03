@@ -16,14 +16,14 @@ package v2
 
 import (
 	"fmt"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
-	"path/filepath"
-
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/spf13/afero"
+	"path/filepath"
+	"strings"
 )
 
 type ProjectLoaderContext struct {
@@ -111,7 +111,7 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 	}
 
 	if d := getDuplicatedId(configs); d != nil {
-		errors = append(errors, fmt.Errorf("duplicate IDs: %v ", d))
+		errors = append(errors, fmt.Errorf("Config IDs need to be unique to project/type, found duplicates: [%s] ", strings.Join(d, ", ")))
 	}
 
 	if errors != nil {
@@ -146,7 +146,7 @@ func getDuplicatedId(args []config.Config) []string {
 	var duplicates []string
 	for c, n := range m {
 		if n > 1 {
-			duplicates = append(duplicates, c.Config)
+			duplicates = append(duplicates, c.ToString())
 		}
 	}
 	return duplicates
