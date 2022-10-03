@@ -18,6 +18,7 @@
 package v2
 
 import (
+	"fmt"
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
@@ -28,20 +29,20 @@ import (
 )
 
 func Test_checkDuplicatedId(t *testing.T) {
-	assert.Equal(t, len(getDuplicatedId(nil)), 0)
-	assert.Equal(t, len(getDuplicatedId(singleElementList())), 0)
-	assert.Equal(t, len(getDuplicatedId(listOfDifferentElements())), 0)
-	assert.Equal(t, len(getDuplicatedId(oneDuplicatedElement())), 1)
-	assert.Equal(t, getDuplicatedId(oneDuplicatedElement())[0], "project:api:id")
+	assert.Equal(t, len(findDuplicatedConfigIdentifiers(nil)), 0)
+	assert.Equal(t, len(findDuplicatedConfigIdentifiers(singleElementList())), 0)
+	assert.Equal(t, len(findDuplicatedConfigIdentifiers(listOfDifferentElements())), 0)
+	assert.Equal(t, len(findDuplicatedConfigIdentifiers(oneDuplicatedElement())), 1)
+	assert.Equal(t, findDuplicatedConfigIdentifiers(oneDuplicatedElement())[0], "project:api:id")
 }
 
 func Test_reportsOneDuplicateId(t *testing.T) {
-	assert.Equal(t, len(getDuplicatedId(twiceDuplicatedElement())), 1)
+	assert.Equal(t, len(findDuplicatedConfigIdentifiers(twiceDuplicatedElement())), 1)
 }
 
 func Test_notADuplicateIfFullCoordinateIsDifferent(t *testing.T) {
-	assert.Equal(t, len(getDuplicatedId(duplicatedIdInDifferentProjects())), 0)
-	assert.Equal(t, len(getDuplicatedId(duplicatedIdInDifferentApis())), 0)
+	assert.Equal(t, len(findDuplicatedConfigIdentifiers(duplicatedIdInDifferentProjects())), 0)
+	assert.Equal(t, len(findDuplicatedConfigIdentifiers(duplicatedIdInDifferentApis())), 0)
 }
 
 func singleElementList() []config.Config {
@@ -88,7 +89,7 @@ func TestLoadProjects_LoadsSimpleProject(t *testing.T) {
 	_ = afero.WriteFile(testFs, "project/dashboard/board.yaml", []byte("configs:\n- id: board\n  config:\n    name: Test Dashboard\n    template: board.json"), 0644)
 	_ = afero.WriteFile(testFs, "project/dashboard/board.json", []byte("{}"), 0644)
 
-	context := getTestProjectLoaderContext([]string{"dashboard", "alerting-profile"}, []string{"project"})
+	context := getSimpleProjectLoaderContext([]string{"project"})
 
 	got, gotErrs := LoadProjects(testFs, context)
 
@@ -115,7 +116,7 @@ func TestLoadProjects_AllowsOverlappingIdsInDifferentApis(t *testing.T) {
 	_ = afero.WriteFile(testFs, "project/dashboard/board.yaml", []byte("configs:\n- id: OVERLAP\n  config:\n    name: Test Dashboard\n    template: board.json"), 0644)
 	_ = afero.WriteFile(testFs, "project/dashboard/board.json", []byte("{}"), 0644)
 
-	context := getTestProjectLoaderContext([]string{"dashboard", "alerting-profile"}, []string{"project"})
+	context := getSimpleProjectLoaderContext([]string{"project"})
 
 	got, gotErrs := LoadProjects(testFs, context)
 
@@ -130,12 +131,43 @@ func TestLoadProjects_AllowsOverlappingIdsInDifferentProjects(t *testing.T) {
 	_ = afero.WriteFile(testFs, "project2/alerting-profile/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json"), 0644)
 	_ = afero.WriteFile(testFs, "project2/alerting-profile/profile.json", []byte("{}"), 0644)
 
-	context := getTestProjectLoaderContext([]string{"alerting-profile"}, []string{"project", "project2"})
+	context := getSimpleProjectLoaderContext([]string{"project", "project2"})
 
 	got, gotErrs := LoadProjects(testFs, context)
 
 	assert.Equal(t, len(gotErrs), 0, "Expected to load project without error")
 	assert.Equal(t, len(got), 2, "Expected two loaded project")
+}
+
+func TestLoadProjects_AllowsOverlappingIdsInEnvironmentOverride(t *testing.T) {
+	testFs := afero.NewMemMapFs()
+	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.yaml", []byte(`
+configs:
+- id: profile
+  config:
+    name: Test Profile
+    template: profile.json
+  environmentOverrides:
+    - environment: env1
+      override:
+        name: Some Special Name
+    - environment: env2
+      override:
+        skip: true`), 0644)
+	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644)
+
+	context := getFullProjectLoaderContext([]string{"alerting-profile"}, []string{"project"}, []string{"env1", "env2"})
+
+	got, gotErrs := LoadProjects(testFs, context)
+
+	assert.Equal(t, len(gotErrs), 0, "Expected to load project without error")
+	assert.Equal(t, len(got), 1, "Expected a single loaded project")
+	assert.Equal(t, len(got[0].Configs["env1"]), 1, "Expected one config for env1")
+	assert.Equal(t, len(got[0].Configs["env2"]), 1, "Expected one config for env2")
+
+	env1ConfCoordinate := got[0].Configs["env1"]["alerting-profile"][0].Coordinate
+	env2ConfCoordinate := got[0].Configs["env2"]["alerting-profile"][0].Coordinate
+	assert.Equal(t, env1ConfCoordinate, env2ConfCoordinate, "Expected coordinates to be the same between environments")
 }
 
 func TestLoadProjects_ContainsCoordinateWhenReturningErrorForDuplicates(t *testing.T) {
@@ -146,7 +178,7 @@ func TestLoadProjects_ContainsCoordinateWhenReturningErrorForDuplicates(t *testi
 	_ = afero.WriteFile(testFs, "project/dashboard/config.yaml", []byte("configs:\n- id: DASH_OVERLAP\n  config:\n    name: Test Dash\n    template: dash.json\n- id: DASH_OVERLAP\n  config:\n    name: Test Dash 2\n    template: dash.json"), 0644)
 	_ = afero.WriteFile(testFs, "project/dashboard/dash.json", []byte("{}"), 0644)
 
-	context := getTestProjectLoaderContext([]string{"alerting-profile", "dashboard"}, []string{"project"})
+	context := getSimpleProjectLoaderContext([]string{"project"})
 
 	_, gotErrs := LoadProjects(testFs, context)
 
@@ -162,7 +194,7 @@ func TestLoadProjects_ReturnsErrOnOverlappingCoordinate_InDifferentFiles(t *test
 	_ = afero.WriteFile(testFs, "project/alerting-profile/profile2.yaml", []byte("configs:\n- id: OVERLAP\n  config:\n    name: Test Profile\n    template: profile.json"), 0644)
 	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644)
 
-	context := getTestProjectLoaderContext([]string{"alerting-profile"}, []string{"project"})
+	context := getSimpleProjectLoaderContext([]string{"project"})
 
 	_, gotErrs := LoadProjects(testFs, context)
 
@@ -183,14 +215,22 @@ func TestLoadProjects_ReturnsErrOnOverlappingCoordinate_InSameFile(t *testing.T)
     template: profile.json`), 0644)
 	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644)
 
-	context := getTestProjectLoaderContext([]string{"alerting-profile"}, []string{"project"})
+	context := getSimpleProjectLoaderContext([]string{"project"})
 
 	_, gotErrs := LoadProjects(testFs, context)
 
 	assert.Equal(t, len(gotErrs), 1, "Expected to fail on overlapping coordinates")
 }
 
+func getSimpleProjectLoaderContext(projects []string) ProjectLoaderContext {
+	return getTestProjectLoaderContext([]string{"alerting-profile", "dashboard"}, projects)
+}
+
 func getTestProjectLoaderContext(apis []string, projects []string) ProjectLoaderContext {
+	return getFullProjectLoaderContext(apis, projects, []string{"env"})
+}
+
+func getFullProjectLoaderContext(apis []string, projects []string, environments []string) ProjectLoaderContext {
 
 	projectDefinitions := make(manifest.ProjectDefinitionByProjectId, len(projects))
 	for _, p := range projects {
@@ -200,17 +240,20 @@ func getTestProjectLoaderContext(apis []string, projects []string) ProjectLoader
 		}
 	}
 
+	envDefinitions := make(map[string]manifest.EnvironmentDefinition, len(environments))
+	for _, e := range environments {
+		envDefinitions[e] = manifest.EnvironmentDefinition{
+			Name:  e,
+			Token: &manifest.EnvironmentVariableToken{EnvironmentVariableName: fmt.Sprintf("%s_VAR", e)},
+		}
+	}
+
 	return ProjectLoaderContext{
 		Apis:       apis,
 		WorkingDir: ".",
 		Manifest: manifest.Manifest{
-			Projects: projectDefinitions,
-			Environments: map[string]manifest.EnvironmentDefinition{
-				"env": {
-					Name:  "env",
-					Token: &manifest.EnvironmentVariableToken{EnvironmentVariableName: "ENV_VAR"},
-				},
-			},
+			Projects:     projectDefinitions,
+			Environments: envDefinitions,
 		},
 		ParametersSerde: config.DefaultParameterParsers,
 	}

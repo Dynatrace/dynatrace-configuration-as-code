@@ -17,7 +17,6 @@ package v2
 import (
 	"fmt"
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
@@ -110,7 +109,7 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 		configs = append(configs, loaded...)
 	}
 
-	if d := getDuplicatedId(configs); d != nil {
+	if d := findDuplicatedConfigIdentifiers(configs); d != nil {
 		errors = append(errors, fmt.Errorf("Config IDs need to be unique to project/type, found duplicates: [%s] ", strings.Join(d, ", ")))
 	}
 
@@ -136,18 +135,26 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 	}, nil
 }
 
-func getDuplicatedId(configs []config.Config) []string {
+func findDuplicatedConfigIdentifiers(configs []config.Config) []string {
 
-	coordinates := make(map[coordinate.Coordinate]int)
+	coordinates := make(map[string]int)
 	var duplicates []string
 	for _, c := range configs {
-		if timesFound, found := coordinates[c.Coordinate]; found && timesFound < 2 {
+		id := toFullyQualifiedConfigIdentifier(c)
+		if timesFound, found := coordinates[id]; found && timesFound < 2 {
 			duplicates = append(duplicates, c.Coordinate.ToString())
 		}
 
-		coordinates[c.Coordinate] += 1
+		coordinates[id] += 1
 	}
 	return duplicates
+}
+
+// toFullyUniqueConfigIdentifier returns a configs coordinate as well as environment,
+// as in the scope of project loader we might have "overlapping" coordinates for any loaded
+// environment or group override of the same configuration
+func toFullyQualifiedConfigIdentifier(config config.Config) string {
+	return fmt.Sprintf("%s:%s:%s", config.Group, config.Environment, config.Coordinate)
 }
 
 func toDependenciesMap(projectId string,
