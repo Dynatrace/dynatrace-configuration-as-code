@@ -136,18 +136,16 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 	}, nil
 }
 
-func getDuplicatedId(args []config.Config) []string {
+func getDuplicatedId(configs []config.Config) []string {
 
-	m := make(map[coordinate.Coordinate]int)
-	for _, configuration := range args {
-		m[configuration.Coordinate] += 1
-	}
-
+	coordinates := make(map[coordinate.Coordinate]int)
 	var duplicates []string
-	for c, n := range m {
-		if n > 1 {
-			duplicates = append(duplicates, c.ToString())
+	for _, c := range configs {
+		if timesFound, found := coordinates[c.Coordinate]; found && timesFound < 2 {
+			duplicates = append(duplicates, c.Coordinate.ToString())
 		}
+
+		coordinates[c.Coordinate] += 1
 	}
 	return duplicates
 }
