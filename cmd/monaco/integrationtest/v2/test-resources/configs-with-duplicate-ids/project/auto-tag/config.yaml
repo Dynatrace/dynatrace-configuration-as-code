@@ -1,0 +1,9 @@
+configs:
+- id: tag # this does not overlap with project2/auto-tag/tag
+  config:
+    name: Resistance is futile!
+    template: application-tagging.json
+- id: profile # this does not overlap with project/alerting-profile/profile configs
+  config:
+    name: Resistance is futile!
+    template: application-tagging.json
