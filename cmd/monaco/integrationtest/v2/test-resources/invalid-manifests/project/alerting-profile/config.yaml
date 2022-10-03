@@ -1,0 +1,11 @@
+configs:
+- id: profile
+  config:
+    name: Star Trek Service
+    template: profile.json
+    skip: false
+- id: another_profile
+  config:
+    name: Star Wars Service
+    template: profile.json
+    skip: false
