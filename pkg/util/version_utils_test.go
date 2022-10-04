@@ -15,15 +15,16 @@
 package util
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 )
 
-func TestMinimumDynatraceVersionReached(t *testing.T) {
+func TestVersion_GreaterThan(t *testing.T) {
 	tests := []struct {
-		expectedMinVersion Version
-		currentVersion     Version
-		want               bool
+		testVersion    Version
+		currentVersion Version
+		want           bool
 	}{
 		{
 			Version{1, 236, 0},
@@ -58,7 +59,7 @@ func TestMinimumDynatraceVersionReached(t *testing.T) {
 		{
 			Version{1, 236, 65},
 			Version{1, 236, 65},
-			true,
+			false,
 		},
 		{
 			Version{1, 236, 65},
@@ -67,9 +68,66 @@ func TestMinimumDynatraceVersionReached(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tName := "TestMinimumDynatraceVersionReached(" + tt.expectedMinVersion.String() + "," + tt.currentVersion.String() + ")"
+		tName := fmt.Sprintf("%s>%s==%v", tt.currentVersion, tt.testVersion, tt.want)
 		t.Run(tName, func(t *testing.T) {
-			if got := MinimumVersionReached(tt.expectedMinVersion, tt.currentVersion); got != tt.want {
+			if got := tt.currentVersion.GreaterThan(tt.testVersion); got != tt.want {
+				t.Errorf("MinimumDynatraceVersionReached() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestVersion_SmallerThan(t *testing.T) {
+	tests := []struct {
+		testVersion    Version
+		currentVersion Version
+		want           bool
+	}{
+		{
+			Version{1, 236, 0},
+			Version{1, 234, 0},
+			true,
+		},
+		{
+			Version{1, 236, 0},
+			Version{1, 236, 5},
+			false,
+		},
+		{
+			Version{1, 236, 0},
+			Version{2, 234, 0},
+			false,
+		},
+		{
+			Version{2, 236, 0},
+			Version{1, 234, 0},
+			true,
+		},
+		{
+			Version{2, 236, 0},
+			Version{2, 234, 75},
+			true,
+		},
+		{
+			Version{1, 236, 0},
+			Version{1, 236, 65},
+			false,
+		},
+		{
+			Version{1, 236, 65},
+			Version{1, 236, 65},
+			false,
+		},
+		{
+			Version{1, 236, 65},
+			Version{1, 236, 0},
+			true,
+		},
+	}
+	for _, tt := range tests {
+		tName := fmt.Sprintf("%s<%s==%v", tt.currentVersion, tt.testVersion, tt.want)
+		t.Run(tName, func(t *testing.T) {
+			if got := tt.currentVersion.SmallerThan(tt.testVersion); got != tt.want {
 				t.Errorf("MinimumDynatraceVersionReached() = %v, want %v", got, tt.want)
 			}
 		})

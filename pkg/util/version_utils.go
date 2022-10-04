@@ -26,24 +26,31 @@ type Version struct {
 	Patch int
 }
 
-func (v *Version) String() string {
+func (v Version) String() string {
 	return fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
 }
 
-func MinimumVersionReached(expectedMinVersion Version, currentVersion Version) bool {
-	if currentVersion.Major < expectedMinVersion.Major {
+func (v Version) GreaterThan(other Version) bool {
+	if v == other {
 		return false
 	}
-	if currentVersion.Major == expectedMinVersion.Major &&
-		currentVersion.Minor < expectedMinVersion.Minor {
+	if v.Major < other.Major {
 		return false
 	}
-	if currentVersion.Major == expectedMinVersion.Major &&
-		currentVersion.Minor == expectedMinVersion.Minor &&
-		currentVersion.Patch < expectedMinVersion.Patch {
+	if v.Major == other.Major &&
+		v.Minor < other.Minor {
+		return false
+	}
+	if v.Major == other.Major &&
+		v.Minor == other.Minor &&
+		v.Patch < other.Patch {
 		return false
 	}
 	return true
+}
+
+func (v Version) SmallerThan(other Version) bool {
+	return other.GreaterThan(v)
 }
 
 func ParseVersion(versionString string) (version Version, err error) {
