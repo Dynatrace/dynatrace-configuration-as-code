@@ -21,7 +21,7 @@ package v2
 
 import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner"
-	"github.com/spf13/afero"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -34,23 +34,14 @@ func TestAllDuplicateErrorsAreReported(t *testing.T) {
 	configFolder := "test-resources/configs-with-duplicate-ids/"
 	manifest := filepath.Join(configFolder, "manifest.yaml")
 
-	RunIntegrationWithCleanup(t, configFolder, manifest, "", "DuplicateIdErrors", func(fs afero.Fs) {
+	logOutput := strings.Builder{}
+	cmd := runner.BuildCliWithCapturedLog(util.CreateTestFileSystem(), &logOutput)
+	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
+	err := cmd.Execute()
 
-		cmd := runner.BuildCli(fs)
-		cmd.SetArgs([]string{
-			"deploy",
-			"--verbose",
-			manifest,
-		})
+	assert.ErrorContains(t, err, "error while loading projects")
 
-		output := strings.Builder{}
-		cmd.SetOut(&output)
-		err := cmd.Execute()
-
-		assert.ErrorContains(t, err, "error while loading projects")
-
-		runLog := strings.ToLower(output.String())
-		strings.Contains(runLog, "duplicate")
-		strings.Contains(runLog, "project:alerting-profile:profile")
-	})
+	runLog := strings.ToLower(logOutput.String())
+	strings.Contains(runLog, "duplicate")
+	strings.Contains(runLog, "project:alerting-profile:profile")
 }
