@@ -70,7 +70,7 @@ type UnresolvedReferenceError struct {
 
 func (e UnresolvedReferenceError) Error() string {
 	return fmt.Sprintf("%s: cannot resolve reference %s: %s",
-		e.ParameterName, e.ParameterReference.ToString(), e.Reason)
+		e.ParameterName, e.ParameterReference, e.Reason)
 }
 
 var (

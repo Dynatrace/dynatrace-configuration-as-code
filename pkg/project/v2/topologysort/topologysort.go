@@ -60,13 +60,13 @@ func joinParameterReferencesToString(refs []parameter.ParameterReference) string
 	case 0:
 		return ""
 	case 1:
-		return refs[0].ToString()
+		return refs[0].String()
 	}
 
 	result := strings.Builder{}
 
 	for _, ref := range refs {
-		result.WriteString(ref.ToString())
+		result.WriteString(ref.String())
 		result.WriteString(", ")
 	}
 

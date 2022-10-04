@@ -117,7 +117,7 @@ func (e ParameterReferenceError) LocationDetails() configErrors.EnvironmentDetai
 
 func (e ParameterReferenceError) Error() string {
 	return fmt.Sprintf("parameter `%s` cannot reference `%s`: %s",
-		e.Parameter, e.Reference.ToString(), e.Reason)
+		e.Parameter, e.Reference, e.Reason)
 }
 
 var (

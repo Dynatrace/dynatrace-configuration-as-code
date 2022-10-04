@@ -95,7 +95,7 @@ type ParameterReference struct {
 	Property string
 }
 
-func (p *ParameterReference) ToString() string {
+func (p ParameterReference) String() string {
 	return fmt.Sprintf("%s:%s", p.Config, p.Property)
 }
 
