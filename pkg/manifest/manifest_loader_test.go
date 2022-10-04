@@ -20,6 +20,8 @@
 package manifest
 
 import (
+	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/version"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/spf13/afero"
 	"reflect"
@@ -434,6 +436,140 @@ func Test_toProjectDefinitions(t *testing.T) {
 			}
 
 			assert.DeepEqual(t, got, tt.want, cmpopts.SortSlices(func(a, b ProjectDefinition) bool { return a.Name < b.Name }))
+		})
+	}
+}
+
+func Test_parseManifestFile(t *testing.T) {
+	tests := []struct {
+		name     string
+		context  *ManifestLoaderContext
+		data     string
+		want     manifest
+		wantErrs bool
+	}{
+		{
+			"parses simple manifest",
+			&ManifestLoaderContext{},
+			fmt.Sprintf(
+				`manifest_version: "%s"
+projects:
+- name: project
+environments:
+- group: default
+  entries:
+  - name: env
+    url:
+      type: environment
+      value: ENV_URL
+    token:
+      name: ENV_TOKEN
+`, version.ManifestVersion),
+			manifest{
+				ManifestVersion: version.ManifestVersion,
+				Projects: []project{
+					{
+						Name: "project",
+					},
+				},
+				Environments: []group{
+					{
+						Group: "default",
+						Entries: []environment{
+							{
+								Name: "env",
+								Url: url{
+									Type:  "environment",
+									Value: "ENV_URL",
+								},
+								Token: tokenConfig{
+									Config: map[string]interface{}{"name": "ENV_TOKEN"},
+								},
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+		{
+			"fails on missing version",
+			&ManifestLoaderContext{},
+			`projects:
+- name: project
+environments:
+- group: default
+  entries:
+  - name: env
+    url:
+      type: environment
+      value: ENV_URL
+    token:
+      name: ENV_TOKEN
+`,
+			manifest{},
+			true,
+		},
+		{
+			"fails on missing projects",
+			&ManifestLoaderContext{},
+			fmt.Sprintf(
+				`manifest_version: "%s"
+environments:
+- group: default
+  entries:
+  - name: env
+    url:
+      type: environment
+      value: ENV_URL
+    token:
+      name: ENV_TOKEN
+`, version.ManifestVersion),
+			manifest{},
+			true,
+		},
+		{
+			"fails on missing environments",
+			&ManifestLoaderContext{},
+			fmt.Sprintf(
+				`manifest_version: "%s"
+projects:
+- name: project
+`, version.ManifestVersion),
+			manifest{},
+			true,
+		},
+		{
+			"fails on duplicate project defintions",
+			&ManifestLoaderContext{},
+			fmt.Sprintf(
+				`manifest_version: "%s"
+projects:
+- name: project
+projects:
+- name: project2
+environments:
+- group: default
+  entries:
+  - name: env
+    url:
+      type: environment
+      value: ENV_URL
+    token:
+      name: ENV_TOKEN
+`, version.ManifestVersion),
+			manifest{},
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, gotErrs := parseManifestFile(tt.context, []byte(tt.data))
+			if (tt.wantErrs && len(gotErrs) < 1) || (!tt.wantErrs && len(gotErrs) > 0) {
+				t.Errorf("parseManifest() gotErrs = %v, wantErrs = %v", gotErrs, tt.wantErrs)
+			} else if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("parseManifest() got = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }

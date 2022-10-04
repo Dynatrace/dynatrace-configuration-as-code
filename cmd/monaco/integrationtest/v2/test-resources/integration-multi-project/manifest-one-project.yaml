@@ -1,3 +1,4 @@
+manifest_version: 1.0
 projects:
 - name: cinema-infrastructure
 - name: star-trek

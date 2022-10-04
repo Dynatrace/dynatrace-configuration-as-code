@@ -1,3 +1,4 @@
+manifest_version: 1.0
 projects:
   - name: movies.science fiction.the-hitchhikers-guide-to-the-galaxy
     path: movies/science fiction/the-hitchhikers-guide-to-the-galaxy

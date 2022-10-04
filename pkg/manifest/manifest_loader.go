@@ -113,12 +113,10 @@ func LoadManifest(context *ManifestLoaderContext) (Manifest, []error) {
 
 func parseManifest(context *ManifestLoaderContext, data []byte) (Manifest, []error) {
 	manifestPath := filepath.Clean(context.ManifestPath)
-	var manifest manifest
 
-	err := yaml.Unmarshal(data, &manifest)
-
+	manifest, err := parseManifestFile(context, data)
 	if err != nil {
-		return Manifest{}, []error{newManifestLoaderError(context.ManifestPath, fmt.Sprintf("error during parsing of the manifest: `%s`", err))}
+		return Manifest{}, err
 	}
 
 	var errors []error
@@ -161,6 +159,35 @@ func parseManifest(context *ManifestLoaderContext, data []byte) (Manifest, []err
 		Projects:     projectDefinitions,
 		Environments: environmentDefinitions,
 	}, nil
+}
+
+func parseManifestFile(context *ManifestLoaderContext, data []byte) (manifest, []error) {
+	var m manifest
+	var errs []error
+
+	err := yaml.UnmarshalStrict(data, &m)
+
+	if err != nil {
+		errs = append(errs, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("error during parsing of the manifest: `%s`", err)))
+	}
+
+	if len(m.ManifestVersion) == 0 {
+		errs = append(errs, newManifestLoaderError(context.ManifestPath, "error during parsing of the manifest: `manifest_version` missing"))
+	}
+
+	if len(m.Projects) == 0 {
+		errs = append(errs, newManifestLoaderError(context.ManifestPath, "error during parsing of the manifest: no `projects` defined"))
+	}
+
+	if len(m.Environments) == 0 {
+		errs = append(errs, newManifestLoaderError(context.ManifestPath, "error during parsing of the manifest: no `environments` defined"))
+	}
+
+	if len(errs) != 0 {
+		return manifest{}, errs
+	}
+
+	return m, nil
 }
 
 func toEnvironments(context *ManifestLoaderContext, groups []group) (map[string]EnvironmentDefinition, []error) {

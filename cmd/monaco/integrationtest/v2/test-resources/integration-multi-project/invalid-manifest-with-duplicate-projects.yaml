@@ -1,3 +1,4 @@
+manifest_version: "1.0"
 projects:
 # this will clash with a sub-project of the star-trek grouping
 - name: star-trek.star-gate
