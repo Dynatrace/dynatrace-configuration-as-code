@@ -27,7 +27,8 @@ import (
 var apiMap = map[string]apiInput{
 
 	"alerting-profile": {
-		apiPath: "/api/config/v1/alertingProfiles",
+		apiPath:            "/api/config/v1/alertingProfiles",
+		isNonUniqueNameApi: true,
 	},
 	"management-zone": {
 		apiPath: "/api/config/v1/managementZones",
