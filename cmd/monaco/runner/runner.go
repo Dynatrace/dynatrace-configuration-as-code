@@ -17,6 +17,7 @@ package runner
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -32,9 +33,12 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/version"
+	builtinLog "log"
 )
 
 var errWrongUsage = errors.New("")
+
+var optionalAddedLogger *builtinLog.Logger
 
 func Run() int {
 	rootCmd := BuildCli(afero.NewOsFs())
@@ -50,6 +54,13 @@ func Run() int {
 	}
 
 	return 0
+}
+
+func BuildCliWithCapturedLog(fs afero.Fs, logOutput io.Writer) *cobra.Command {
+	optionalAddedLogger = builtinLog.New(logOutput, "", builtinLog.LstdFlags)
+
+	cmd := BuildCli(fs)
+	return cmd
 }
 
 func BuildCli(fs afero.Fs) *cobra.Command {
@@ -101,7 +112,7 @@ func configureDebugLogging(verbose *bool) func(cmd *cobra.Command, args []string
 			log.Default().SetLevel(log.LevelDebug)
 		}
 
-		err := log.SetupLogging()
+		err := log.SetupLogging(optionalAddedLogger)
 		if err != nil {
 			return err
 		}

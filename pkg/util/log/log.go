@@ -59,9 +59,10 @@ func (l logLevel) prefix() string {
 }
 
 type extendedLogger struct {
-	consoleLogger *log.Logger
-	fileLogger    *log.Logger
-	level         logLevel
+	consoleLogger    *log.Logger
+	fileLogger       *log.Logger
+	additionalLogger *log.Logger
+	level            logLevel
 }
 
 // New creates a new extendedLogger, which contains two
@@ -130,13 +131,14 @@ func Default() *extendedLogger {
 // stdout. Otherwise, the file logger will be set to a log
 // file whose name will be the current timestamp, in the
 // format of <YYYYMMDD-hhmmss>.log
-func SetupLogging() error {
+func SetupLogging(optionalAddedLogger *log.Logger) error {
 	if err := setupFileLogging(); err != nil {
 		return nil
 	}
 	if err := setupRequestLog(); err != nil {
 		return nil
 	}
+	defaultLogger.additionalLogger = optionalAddedLogger
 	return setupResponseLog()
 }
 
@@ -190,6 +192,9 @@ func doLog(logger *extendedLogger, level logLevel, msg string, a ...interface{})
 	}
 	if logger.fileLogger != nil {
 		logger.fileLogger.Println(msg)
+	}
+	if logger.additionalLogger != nil {
+		logger.additionalLogger.Println(msg)
 	}
 }
 
