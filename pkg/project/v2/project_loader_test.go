@@ -33,7 +33,7 @@ func Test_findDuplicatedConfigIdentifiers(t *testing.T) {
 	tests := []struct {
 		name  string
 		input []config.Config
-		want  []string
+		want  []config.Config
 	}{
 		{
 			"nil input produces empty output",
@@ -76,17 +76,20 @@ func Test_findDuplicatedConfigIdentifiers(t *testing.T) {
 				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
 				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id1"}},
 			},
-			[]string{"project:api:id"},
+			[]config.Config{{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}}},
 		},
 		{
-			"reports duplicate configs once",
+			"finds each duplicate",
 			[]config.Config{
 				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
 				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
 				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
 				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id1"}},
 			},
-			[]string{"project:api:id"},
+			[]config.Config{
+				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
+				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
+			},
 		},
 	}
 
@@ -200,10 +203,9 @@ func TestLoadProjects_ContainsCoordinateWhenReturningErrorForDuplicates(t *testi
 
 	_, gotErrs := LoadProjects(testFs, context)
 
-	assert.Equal(t, len(gotErrs), 1, "Expected to fail on overlapping coordinates")
-	err := gotErrs[0]
-	assert.ErrorContains(t, err, "project:alerting-profile:OVERLAP")
-	assert.ErrorContains(t, err, "project:dashboard:DASH_OVERLAP")
+	assert.Equal(t, len(gotErrs), 2, "Expected to fail on overlapping coordinates")
+	assert.ErrorContains(t, gotErrs[0], "project:alerting-profile:OVERLAP")
+	assert.ErrorContains(t, gotErrs[1], "project:dashboard:DASH_OVERLAP")
 }
 
 func TestLoadProjects_ReturnsErrOnOverlappingCoordinate_InDifferentFiles(t *testing.T) {

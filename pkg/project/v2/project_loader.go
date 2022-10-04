@@ -17,12 +17,13 @@ package v2
 import (
 	"fmt"
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
+	configErrors "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/errors"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 	"path/filepath"
-	"strings"
 )
 
 type ProjectLoaderContext struct {
@@ -30,6 +31,33 @@ type ProjectLoaderContext struct {
 	WorkingDir      string
 	Manifest        manifest.Manifest
 	ParametersSerde map[string]parameter.ParameterSerDe
+}
+
+type DuplicateConfigIdentifierError struct {
+	Config             coordinate.Coordinate
+	EnvironmentDetails configErrors.EnvironmentDetails
+}
+
+func (e DuplicateConfigIdentifierError) Coordinates() coordinate.Coordinate {
+	return e.Config
+}
+
+func (e DuplicateConfigIdentifierError) LocationDetails() configErrors.EnvironmentDetails {
+	return e.EnvironmentDetails
+}
+
+func (e DuplicateConfigIdentifierError) Error() string {
+	return fmt.Sprintf("Config IDs need to be unique to project/type, found duplicate `%s`", e.Config)
+}
+
+func newDuplicateConfigIdentifierError(c config.Config) DuplicateConfigIdentifierError {
+	return DuplicateConfigIdentifierError{
+		Config: c.Coordinate,
+		EnvironmentDetails: configErrors.EnvironmentDetails{
+			Group:       c.Group,
+			Environment: c.Environment,
+		},
+	}
 }
 
 func LoadProjects(fs afero.Fs, context ProjectLoaderContext) ([]Project, []error) {
@@ -110,7 +138,9 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 	}
 
 	if d := findDuplicatedConfigIdentifiers(configs); d != nil {
-		errors = append(errors, fmt.Errorf("Config IDs need to be unique to project/type, found duplicates: [%s] ", strings.Join(d, ", ")))
+		for _, c := range d {
+			errors = append(errors, newDuplicateConfigIdentifierError(c))
+		}
 	}
 
 	if errors != nil {
@@ -135,17 +165,16 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 	}, nil
 }
 
-func findDuplicatedConfigIdentifiers(configs []config.Config) []string {
+func findDuplicatedConfigIdentifiers(configs []config.Config) []config.Config {
 
-	coordinates := make(map[string]int)
-	var duplicates []string
+	coordinates := make(map[string]struct{})
+	var duplicates []config.Config
 	for _, c := range configs {
 		id := toFullyQualifiedConfigIdentifier(c)
-		if timesFound, found := coordinates[id]; found && timesFound < 2 {
-			duplicates = append(duplicates, c.Coordinate.String())
+		if _, found := coordinates[id]; found {
+			duplicates = append(duplicates, c)
 		}
-
-		coordinates[id] += 1
+		coordinates[id] = struct{}{}
 	}
 	return duplicates
 }
