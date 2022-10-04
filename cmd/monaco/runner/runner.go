@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -30,6 +29,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/download"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner/completion"
 	legacyDeploy "github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v1/deploy"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/version"
 )
@@ -127,7 +127,7 @@ func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 
 			manifestName = args[0]
 
-			if !hasYamlFileExtension(manifestName) {
+			if !files.IsYamlFileExtension(manifestName) {
 				err := fmt.Errorf("wrong format for manifest file! expected a .yaml file, but got %s", manifestName)
 				return err
 			}
@@ -166,7 +166,7 @@ func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 			manifestName = args[0]
 			deleteFile := args[1]
 
-			if !hasYamlFileExtension(manifestName) {
+			if !files.IsYamlFileExtension(manifestName) {
 				err := fmt.Errorf("wrong format for manifest file! expected a .yaml file, but got %s", manifestName)
 				return err
 			}
@@ -205,12 +205,12 @@ func getConvertCommand(fs afero.Fs) (convertCmd *cobra.Command) {
 			environmentsFile := args[0]
 			workingDir := args[1]
 
-			if !hasYamlFileExtension(environmentsFile) {
+			if !files.IsYamlFileExtension(environmentsFile) {
 				err := fmt.Errorf("wrong format for environment file! expected a .yaml file, but got %s", environmentsFile)
 				return err
 			}
 
-			if !hasYamlFileExtension(manifestName) {
+			if !files.IsYamlFileExtension(manifestName) {
 				manifestName = manifestName + ".yaml"
 			}
 
@@ -228,7 +228,7 @@ func getConvertCommand(fs afero.Fs) (convertCmd *cobra.Command) {
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
-	err = convertCmd.MarkFlagFilename("manifest", "yaml")
+	err = convertCmd.MarkFlagFilename("manifest", files.YamlExtensions...)
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
@@ -262,7 +262,7 @@ func getLegacyDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 	deployCmd.Flags().StringVarP(&projects, "project", "p", "", "Project configuration to deploy (also deploys any dependent configurations)")
 	deployCmd.Flags().BoolVarP(&dryRun, "dry-run", "d", false, "Switches to just validation instead of actual deployment")
 	deployCmd.Flags().BoolVarP(&continueOnError, "continue-on-error", "c", false, "Proceed deployment even if config upload fails")
-	err := deployCmd.MarkFlagFilename("environments", "yaml")
+	err := deployCmd.MarkFlagFilename("environments", files.YamlExtensions...)
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
@@ -276,8 +276,4 @@ func getLegacyDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 func isEnvFlagEnabled(env string) bool {
 	val, ok := os.LookupEnv(env)
 	return ok && val != "0"
-}
-
-func hasYamlFileExtension(name string) bool {
-	return strings.HasSuffix(name, ".yaml") || strings.HasSuffix(name, ".yml")
 }

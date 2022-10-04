@@ -118,7 +118,7 @@ func (p *projectBuilder) readFolder(folder string, isProjectRoot bool) error {
 			if err != nil {
 				return err
 			}
-		} else if !isProjectRoot && files.IsYaml(file.Name()) {
+		} else if !isProjectRoot && files.IsYamlFileExtension(file.Name()) {
 			err = p.processYaml(fullFileName)
 		}
 	}

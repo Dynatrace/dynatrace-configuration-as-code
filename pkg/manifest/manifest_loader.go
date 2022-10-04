@@ -88,7 +88,7 @@ func (e ManifestProjectLoaderError) Error() string {
 func LoadManifest(context *ManifestLoaderContext) (Manifest, []error) {
 	manifestPath := filepath.Clean(context.ManifestPath)
 
-	if !files.IsYaml(manifestPath) {
+	if !files.IsYamlFileExtension(manifestPath) {
 		return Manifest{}, []error{newManifestLoaderError(context.ManifestPath, "manifest file is not a yaml")}
 	}
 

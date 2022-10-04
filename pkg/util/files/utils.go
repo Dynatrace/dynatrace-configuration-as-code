@@ -20,6 +20,9 @@ import (
 	"github.com/spf13/afero"
 )
 
+// YamlExtensions contains all yaml-file extensions without leading dot that we allow.
+var YamlExtensions = []string{"yaml", "yml"}
+
 func DoesFileExist(fs afero.Fs, path string) (bool, error) {
 	exists, err := afero.Exists(fs, path)
 
@@ -40,6 +43,13 @@ func DoesFileExist(fs afero.Fs, path string) (bool, error) {
 	return !isDir, nil
 }
 
-func IsYaml(file string) bool {
-	return strings.HasSuffix(file, ".yaml") || strings.HasSuffix(file, ".yml")
+// IsYamlFileExtension checks whether a file has a yaml extension specified in YamlExtensions, with leading dot.
+func IsYamlFileExtension(file string) bool {
+	for _, extension := range YamlExtensions {
+		if strings.HasSuffix(file, "."+extension) {
+			return true
+		}
+	}
+
+	return false
 }

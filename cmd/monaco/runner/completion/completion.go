@@ -17,6 +17,7 @@
 package completion
 
 import (
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/slices"
 	"github.com/spf13/pflag"
@@ -28,8 +29,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
-
-var yamlExtensions = []string{".yaml", "yml"}
 
 func DeleteCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
 	if len(args) == 0 {
@@ -97,7 +96,7 @@ func ProjectsFromManifest(_ *cobra.Command, args []string, _ string) ([]string, 
 }
 
 func ManifestFile() ([]string, cobra.ShellCompDirective) {
-	return yamlExtensions, cobra.ShellCompDirectiveFilterFileExt
+	return files.YamlExtensions, cobra.ShellCompDirectiveFilterFileExt
 }
 
 func DeleteFile() ([]string, cobra.ShellCompDirective) {
@@ -105,7 +104,7 @@ func DeleteFile() ([]string, cobra.ShellCompDirective) {
 }
 
 func EnvironmentFile() ([]string, cobra.ShellCompDirective) {
-	return yamlExtensions, cobra.ShellCompDirectiveFilterFileExt
+	return files.YamlExtensions, cobra.ShellCompDirectiveFilterFileExt
 }
 
 func deepFileSearch(root, ext string) []string {

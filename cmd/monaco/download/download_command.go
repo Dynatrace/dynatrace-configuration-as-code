@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner/completion"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 )
 
@@ -64,7 +65,7 @@ func GetDownloadCommand(fs afero.Fs, command Command) (downloadCmd *cobra.Comman
 		log.Fatal("failed to setup CLI %v", err)
 	}
 
-	err = downloadCmd.MarkFlagFilename("manifest", "yaml", "yml")
+	err = downloadCmd.MarkFlagFilename("manifest", files.YamlExtensions...)
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}

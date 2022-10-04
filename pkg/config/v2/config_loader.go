@@ -53,7 +53,7 @@ func LoadConfigs(fs afero.Fs, context *LoaderContext) (result []Config, errors [
 	for _, file := range filesInFolder {
 		filename := file.Name()
 
-		if file.IsDir() || !files.IsYaml(filename) {
+		if file.IsDir() || !files.IsYamlFileExtension(filename) {
 			continue
 		}
 
