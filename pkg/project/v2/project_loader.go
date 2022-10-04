@@ -142,7 +142,7 @@ func findDuplicatedConfigIdentifiers(configs []config.Config) []string {
 	for _, c := range configs {
 		id := toFullyQualifiedConfigIdentifier(c)
 		if timesFound, found := coordinates[id]; found && timesFound < 2 {
-			duplicates = append(duplicates, c.Coordinate.ToString())
+			duplicates = append(duplicates, c.Coordinate.String())
 		}
 
 		coordinates[id] += 1

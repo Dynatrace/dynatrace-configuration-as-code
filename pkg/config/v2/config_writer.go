@@ -572,7 +572,7 @@ func parseNameParameter(context *detailedConfigConverterContext, config Config) 
 
 	if !found {
 		return nil, fmt.Errorf("%s: `name` paramter missing",
-			config.Coordinate.ToString())
+			config.Coordinate)
 	}
 
 	return toParameterDefinition(context, NameParameter, nameParam)
@@ -589,7 +589,7 @@ func toParameterDefinition(context *detailedConfigConverterContext, parameterNam
 
 	if !found {
 		return nil, fmt.Errorf("%s:%s: no serde found for type `%s`",
-			context.config.ToString(), parameterName, param.GetType())
+			context.config, parameterName, param.GetType())
 	}
 
 	result, err := serde.Serializer(newParameterWriterContext(context, parameterName, param))
@@ -614,7 +614,7 @@ func toSpecialParameterDefinition(context *detailedConfigConverterContext, param
 		valueParam, ok := param.(*value.ValueParameter)
 
 		if !ok {
-			return nil, fmt.Errorf("%s:%s: parameter of type `%s` is no value param", context.config.ToString(), parameterName, param.GetType())
+			return nil, fmt.Errorf("%s:%s: parameter of type `%s` is no value param", context.config, parameterName, param.GetType())
 		}
 
 		switch valueParam.Value.(type) {
@@ -634,7 +634,7 @@ func toSpecialParameterDefinition(context *detailedConfigConverterContext, param
 		}
 	}
 
-	return nil, fmt.Errorf("%s:%s: unknown special type `%s`", context.config.ToString(), parameterName, param.GetType())
+	return nil, fmt.Errorf("%s:%s: unknown special type `%s`", context.config, parameterName, param.GetType())
 }
 
 func groupConfigs(configs []Config) map[coordinate.Coordinate][]Config {

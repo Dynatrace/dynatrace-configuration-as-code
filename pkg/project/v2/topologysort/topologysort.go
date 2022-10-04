@@ -93,7 +93,7 @@ type CircularDependencyConfigSortError struct {
 
 func (e CircularDependencyConfigSortError) Error() string {
 	return fmt.Sprintf("%s:%s: circular dependency detected. check configs dependencies: %s",
-		e.Environment, e.Config.ToString(), joinCoordinatesToString(e.DependsOn))
+		e.Environment, e.Config, joinCoordinatesToString(e.DependsOn))
 }
 
 func joinCoordinatesToString(coordinates []coordinate.Coordinate) string {
@@ -101,13 +101,13 @@ func joinCoordinatesToString(coordinates []coordinate.Coordinate) string {
 	case 0:
 		return ""
 	case 1:
-		return coordinates[0].ToString()
+		return coordinates[0].String()
 	}
 
 	result := strings.Builder{}
 
 	for _, coordinate := range coordinates {
-		result.WriteString(coordinate.ToString())
+		result.WriteString(coordinate.String())
 		result.WriteString(", ")
 	}
 
@@ -290,7 +290,7 @@ func configsToSortData(configs []config.Config) ([][]bool, []int) {
 			}
 
 			if c.HasDependencyOn(config) {
-				logDependency("Configuration", c.Coordinate.ToString(), config.Coordinate.ToString())
+				logDependency("Configuration", c.Coordinate.String(), config.Coordinate.String())
 				matrix[i][j] = true
 				inDegrees[i]++
 			}

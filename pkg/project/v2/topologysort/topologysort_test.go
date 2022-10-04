@@ -519,7 +519,7 @@ func indexOfConfig(t *testing.T, configs []config.Config, coordinate coordinate.
 		}
 	}
 
-	t.Fatalf("no config `%s` found", coordinate.ToString())
+	t.Fatalf("no config `%s` found", coordinate)
 	return -1
 }
 

@@ -333,7 +333,7 @@ func getConfigFromDefinition(fs afero.Fs, context *ConfigLoaderContext,
 			parameters[NameParameter] = name
 
 			for _, ref := range name.GetReferences() {
-				configReferences[ref.Config.ToString()] = ref.Config
+				configReferences[ref.Config.String()] = ref.Config
 			}
 		}
 
@@ -418,7 +418,7 @@ func parseParametersAndReferences(context *ConfigLoaderContext, environment mani
 		parameters[name] = result
 
 		for _, ref := range result.GetReferences() {
-			configReferences[ref.Config.ToString()] = ref.Config
+			configReferences[ref.Config.String()] = ref.Config
 		}
 	}
 

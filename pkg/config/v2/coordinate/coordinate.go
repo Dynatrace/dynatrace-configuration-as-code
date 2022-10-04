@@ -28,12 +28,12 @@ type Coordinate struct {
 	Config string
 }
 
-func (c *Coordinate) ToString() string {
+func (c Coordinate) String() string {
 	return fmt.Sprintf("%s:%s:%s", c.Project, c.Api, c.Config)
 }
 
 // Match tests if this coordinate is the same as the given one
-func (c *Coordinate) Match(coordinate Coordinate) bool {
+func (c Coordinate) Match(coordinate Coordinate) bool {
 	return c.Project == coordinate.Project &&
 		c.Api == coordinate.Api &&
 		c.Config == coordinate.Config

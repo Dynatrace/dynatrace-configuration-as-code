@@ -96,7 +96,7 @@ type ParameterReference struct {
 }
 
 func (p *ParameterReference) ToString() string {
-	return fmt.Sprintf("%s:%s", p.Config.ToString(), p.Property)
+	return fmt.Sprintf("%s:%s", p.Config, p.Property)
 }
 
 type ParameterParserContext struct {
