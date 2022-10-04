@@ -16,7 +16,9 @@
 
 package downloader
 
-import "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
+import (
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
+)
 
 type apiFilter struct {
 	// shouldBeSkippedPreDownload is an optional callback indicating that a config should not be downloaded after the list of the configs
@@ -46,6 +48,22 @@ var apiFilters = map[string]apiFilter{
 	"synthetic-location": {
 		shouldConfigBePersisted: func(json map[string]interface{}) bool {
 			return json["type"] == "PRIVATE"
+		},
+	},
+	"hosts-auto-update": {
+		// check that the property 'updateWindows' is not empty, otherwise discard.
+		shouldConfigBePersisted: func(json map[string]interface{}) bool {
+			autoUpdates, ok := json["updateWindows"]
+			if !ok {
+				return true
+			}
+
+			windows, ok := autoUpdates.(map[string]interface{})["windows"].([]interface{})
+			if !ok {
+				return true
+			}
+
+			return len(windows) > 0
 		},
 	},
 }

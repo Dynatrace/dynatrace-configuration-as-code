@@ -111,6 +111,30 @@ func Test_ShouldBePersisted(t *testing.T) {
 			`{"type": "PUBLIC"}`,
 			false,
 		},
+		{
+			"Empty update windows are not persisted",
+			"hosts-auto-update",
+			`{"updateWindows": {"windows": []}}`,
+			false,
+		},
+		{
+			"Missing updateWindows is persisted",
+			"hosts-auto-update",
+			`{}`,
+			true,
+		},
+		{
+			"Missing windows is persisted",
+			"hosts-auto-update",
+			`{"updateWindows": {}}`,
+			true,
+		},
+		{
+			"Windows with values are persisted",
+			"hosts-auto-update",
+			`{"updateWindows": {"windows": ["1-2-3"]}}`,
+			true,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.apiId+" "+test.name, func(t *testing.T) {
