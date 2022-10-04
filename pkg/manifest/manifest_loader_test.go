@@ -21,9 +21,11 @@ package manifest
 
 import (
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/version"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/spf13/afero"
+	"math"
 	"reflect"
 	"testing"
 
@@ -540,7 +542,7 @@ projects:
 			true,
 		},
 		{
-			"fails on duplicate project defintions",
+			"fails on duplicate project definitions",
 			&ManifestLoaderContext{},
 			fmt.Sprintf(
 				`manifest_version: "%s"
@@ -561,6 +563,66 @@ environments:
 			manifest{},
 			true,
 		},
+		{
+			"fails on no longer supported manifest version",
+			&ManifestLoaderContext{},
+			`manifest_version: 0.0
+projects:
+- name: project
+environments:
+- group: default
+  entries:
+  - name: env
+    url:
+      type: environment
+      value: ENV_URL
+    token:
+      name: ENV_TOKEN
+`,
+			manifest{},
+			true,
+		},
+		{
+			"fails on not yet supported manifest version",
+			&ManifestLoaderContext{},
+			fmt.Sprintf(
+				`manifest_version: "%s"
+projects:
+- name: project
+projects:
+- name: project2
+environments:
+- group: default
+  entries:
+  - name: env
+    url:
+      type: environment
+      value: ENV_URL
+    token:
+      name: ENV_TOKEN
+`, fmt.Sprintf("%d.%d", math.MaxInt32, math.MaxInt32)),
+			manifest{},
+			true,
+		},
+		{
+			"fails on malformed manifest version",
+			&ManifestLoaderContext{},
+			`manifest_version: "random text"
+projects:
+- name: project
+environments:
+- group: default
+  entries:
+  - name: env
+    url:
+      type: environment
+      value: ENV_URL
+    token:
+      name: ENV_TOKEN
+`,
+			manifest{},
+			true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -569,6 +631,64 @@ environments:
 				t.Errorf("parseManifest() gotErrs = %v, wantErrs = %v", gotErrs, tt.wantErrs)
 			} else if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("parseManifest() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestManifestVersionsCanBeParsedToVersionStruct(t *testing.T) {
+	_, err := util.ParseVersion(version.MinManifestVersion)
+	assert.NilError(t, err, "expected version.MinManifestVersion (%s) to parse to Version struct", version.MinManifestVersion)
+	_, err = util.ParseVersion(version.ManifestVersion)
+	assert.NilError(t, err, "expected version.ManifestVersion (%s) to parse to Version struct", version.ManifestVersion)
+}
+
+func Test_validateManifestVersion(t *testing.T) {
+	tests := []struct {
+		name            string
+		manifestVersion string
+		wantErr         bool
+	}{
+		{
+			"no errs for current manifest version",
+			version.ManifestVersion,
+			false,
+		},
+		{
+			"no errs for minimum supported manifest version",
+			version.MinManifestVersion,
+			false,
+		},
+		{
+			"fails if version is garbage string",
+			"just some random text that's not a version at all",
+			true,
+		},
+		{
+			"fails if semantic version is too long",
+			"1.2.3.4.5",
+			true,
+		},
+		{
+			"fails if semantic version is too short",
+			"1",
+			true,
+		},
+		{
+			"fails if version is smaller than min supported",
+			"0.0",
+			true,
+		},
+		{
+			"fails if version is large than current supported",
+			fmt.Sprintf("%d.%d", math.MaxInt32, math.MaxInt32), //free bounds check for never overflowing version on 32bit binary
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := validateManifestVersion(tt.manifestVersion); (err != nil) != tt.wantErr {
+				t.Errorf("validateManifestVersion() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

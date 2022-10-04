@@ -16,6 +16,7 @@ package manifest
 
 import (
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/version"
 	"path/filepath"
 	"strings"
 
@@ -168,19 +169,20 @@ func parseManifestFile(context *ManifestLoaderContext, data []byte) (manifest, [
 	err := yaml.UnmarshalStrict(data, &m)
 
 	if err != nil {
-		errs = append(errs, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("error during parsing of the manifest: `%s`", err)))
+		errs = append(errs, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("error during parsing the manifest: %s", err)))
 	}
 
-	if len(m.ManifestVersion) == 0 {
-		errs = append(errs, newManifestLoaderError(context.ManifestPath, "error during parsing of the manifest: `manifest_version` missing"))
+	err = validateManifestVersion(m.ManifestVersion)
+	if err != nil {
+		errs = append(errs, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("invalid manifest definition: %s", err)))
 	}
 
 	if len(m.Projects) == 0 {
-		errs = append(errs, newManifestLoaderError(context.ManifestPath, "error during parsing of the manifest: no `projects` defined"))
+		errs = append(errs, newManifestLoaderError(context.ManifestPath, "invalid manifest definition: no `projects` defined"))
 	}
 
 	if len(m.Environments) == 0 {
-		errs = append(errs, newManifestLoaderError(context.ManifestPath, "error during parsing of the manifest: no `environments` defined"))
+		errs = append(errs, newManifestLoaderError(context.ManifestPath, "invalid manifest definition: no `environments` defined"))
 	}
 
 	if len(errs) != 0 {
@@ -188,6 +190,30 @@ func parseManifestFile(context *ManifestLoaderContext, data []byte) (manifest, [
 	}
 
 	return m, nil
+}
+
+var maxSupportedManifestVersion, _ = util.ParseVersion(version.ManifestVersion)
+var minSupportedManifestVersion, _ = util.ParseVersion(version.MinManifestVersion)
+
+func validateManifestVersion(manifestVersion string) error {
+	if len(manifestVersion) == 0 {
+		return fmt.Errorf("`manifest_version` missing")
+	}
+
+	v, err := util.ParseVersion(manifestVersion)
+	if err != nil {
+		return fmt.Errorf("invalid `manifest_version`: %w", err)
+	}
+
+	if v.SmallerThan(minSupportedManifestVersion) {
+		return fmt.Errorf("`manifest_version` %s is no longer supported. Min required version is %s, please update manifest", manifestVersion, version.MinManifestVersion)
+	}
+
+	if v.GreaterThan(maxSupportedManifestVersion) {
+		return fmt.Errorf("`manifest_version` %s is not supported by monaco %s. Max supported version is %s, please check manifest or update monaco", manifestVersion, version.MonitoringAsCode, version.ManifestVersion)
+	}
+
+	return nil
 }
 
 func toEnvironments(context *ManifestLoaderContext, groups []group) (map[string]EnvironmentDefinition, []error) {
