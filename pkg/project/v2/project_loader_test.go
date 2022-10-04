@@ -23,63 +23,81 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
 	"github.com/spf13/afero"
+	"reflect"
 	"testing"
 
 	"gotest.tools/assert"
 )
 
-func Test_checkDuplicatedId(t *testing.T) {
-	assert.Equal(t, len(findDuplicatedConfigIdentifiers(nil)), 0)
-	assert.Equal(t, len(findDuplicatedConfigIdentifiers(singleElementList())), 0)
-	assert.Equal(t, len(findDuplicatedConfigIdentifiers(listOfDifferentElements())), 0)
-	assert.Equal(t, len(findDuplicatedConfigIdentifiers(oneDuplicatedElement())), 1)
-	assert.Equal(t, findDuplicatedConfigIdentifiers(oneDuplicatedElement())[0], "project:api:id")
-}
+func Test_findDuplicatedConfigIdentifiers(t *testing.T) {
+	tests := []struct {
+		name  string
+		input []config.Config
+		want  []string
+	}{
+		{
+			"nil input produces empty output",
+			nil,
+			nil,
+		},
+		{
+			"no duplicates in single config",
+			[]config.Config{{Coordinate: coordinate.Coordinate{Config: "id"}}},
+			nil,
+		},
+		{
+			"no duplicates if project differs",
+			[]config.Config{
+				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
+				{Coordinate: coordinate.Coordinate{Project: "project1", Api: "api", Config: "id"}},
+			},
+			nil,
+		},
+		{
+			"no duplicates if api differs",
+			[]config.Config{
+				{Coordinate: coordinate.Coordinate{Project: "project", Api: "aws-credentials", Config: "id"}},
+				{Coordinate: coordinate.Coordinate{Project: "project", Api: "azure-credentials", Config: "id"}},
+			},
+			nil,
+		},
+		{
+			"no duplicates in list of disparate configs",
+			[]config.Config{
+				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
+				{Coordinate: coordinate.Coordinate{Project: "project1", Api: "api1", Config: "id1"}},
+			},
+			nil,
+		},
+		{
+			"finds duplicate configs",
+			[]config.Config{
+				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
+				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
+				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id1"}},
+			},
+			[]string{"project:api:id"},
+		},
+		{
+			"reports duplicate configs once",
+			[]config.Config{
+				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
+				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
+				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
+				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id1"}},
+			},
+			[]string{"project:api:id"},
+		},
+	}
 
-func Test_reportsOneDuplicateId(t *testing.T) {
-	assert.Equal(t, len(findDuplicatedConfigIdentifiers(twiceDuplicatedElement())), 1)
-}
-
-func Test_notADuplicateIfFullCoordinateIsDifferent(t *testing.T) {
-	assert.Equal(t, len(findDuplicatedConfigIdentifiers(duplicatedIdInDifferentProjects())), 0)
-	assert.Equal(t, len(findDuplicatedConfigIdentifiers(duplicatedIdInDifferentApis())), 0)
-}
-
-func singleElementList() []config.Config {
-	return []config.Config{{Coordinate: coordinate.Coordinate{Config: "id"}}}
-}
-
-func listOfDifferentElements() []config.Config {
-	return []config.Config{
-		{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
-		{Coordinate: coordinate.Coordinate{Project: "project1", Api: "api1", Config: "id1"}}}
-}
-
-func oneDuplicatedElement() []config.Config {
-	return []config.Config{
-		{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
-		{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
-		{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id1"}}}
-}
-
-func twiceDuplicatedElement() []config.Config {
-	return []config.Config{
-		{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
-		{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
-		{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
-		{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id1"}}}
-}
-
-func duplicatedIdInDifferentProjects() []config.Config {
-	return []config.Config{
-		{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
-		{Coordinate: coordinate.Coordinate{Project: "project1", Api: "api", Config: "id"}}}
-}
-
-func duplicatedIdInDifferentApis() []config.Config {
-	return []config.Config{
-		{Coordinate: coordinate.Coordinate{Project: "project", Api: "aws-credentials", Config: "credential"}},
-		{Coordinate: coordinate.Coordinate{Project: "project", Api: "azure-credentials", Config: "credential"}}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := findDuplicatedConfigIdentifiers(tt.input)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("findDuplicatedConfigIdentifiers() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
 
 func TestLoadProjects_LoadsSimpleProject(t *testing.T) {
