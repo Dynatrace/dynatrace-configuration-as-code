@@ -242,6 +242,19 @@ func TestLoadProjects_ReturnsErrOnOverlappingCoordinate_InSameFile(t *testing.T)
 	assert.Equal(t, len(gotErrs), 1, "Expected to fail on overlapping coordinates")
 }
 
+func Test_loadProject_returnsErrorIfProjectPathDoesNotExist(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	ctx := ProjectLoaderContext{}
+	definition := manifest.ProjectDefinition{
+		Name: "project",
+		Path: "this/does/not/exist",
+	}
+
+	_, gotErrs := loadProject(fs, ctx, definition, []manifest.EnvironmentDefinition{})
+	assert.Assert(t, len(gotErrs) == 1)
+	assert.ErrorContains(t, gotErrs[0], "filepath `this/does/not/exist` does not exist")
+}
+
 func getSimpleProjectLoaderContext(projects []string) ProjectLoaderContext {
 	return getTestProjectLoaderContext([]string{"alerting-profile", "dashboard"}, projects)
 }

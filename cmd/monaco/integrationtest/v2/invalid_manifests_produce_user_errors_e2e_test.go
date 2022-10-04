@@ -78,3 +78,19 @@ func TestInvalidManifest_ReportsError(t *testing.T) {
 		})
 	}
 }
+
+func TestNonExistentProjectInManifestReturnsError(t *testing.T) {
+	manifest := filepath.Join("test-resources/invalid-manifests/", "manifest_non_existent_project.yaml")
+
+	logOutput := strings.Builder{}
+	cmd := runner.BuildCliWithCapturedLog(util.CreateTestFileSystem(), &logOutput)
+	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
+	err := cmd.Execute()
+
+	assert.ErrorContains(t, err, "error while loading projects")
+
+	runLog := strings.ToLower(logOutput.String())
+	expectedErrorLog := "filepath `this_does_not_exist` does not exist"
+	assert.Assert(t, strings.Contains(runLog, expectedErrorLog), "Expected command output to contain: %s", expectedErrorLog)
+
+}
