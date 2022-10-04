@@ -56,7 +56,7 @@ func Delete(fs afero.Fs, deploymentManifestPath string, deletePath string, envir
 
 	if manifestLoadError != nil {
 		util.PrintErrors(manifestLoadError)
-		return errors.New("error while loading environments")
+		return errors.New("error while loading manifest")
 	}
 
 	entriesToDelete, errs := configDelete.LoadEntriesToDelete(fs, getApiNames(apis), deleteFileWorkingDir, deleteFile)

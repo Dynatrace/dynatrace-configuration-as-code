@@ -52,7 +52,7 @@ func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironments []s
 	if errs != nil {
 		// TODO add grouping and print proper error repot
 		util.PrintErrors(errs)
-		return errors.New("error while loading environments")
+		return errors.New("error while loading manifest")
 	}
 
 	environments, err := manifest.FilterEnvironmentsByNames(specificEnvironments)
