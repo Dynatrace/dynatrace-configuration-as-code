@@ -75,9 +75,7 @@ func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironments []s
 	})
 
 	if errs != nil {
-		// TODO add grouping and print proper error report
-		// HOW TO TEST: e.g. remove the template property from any any config and observe what is logged
-		util.PrintErrors(errs)
+		printErrorReport(errs)
 		return errors.New("error while loading projects")
 	}
 
