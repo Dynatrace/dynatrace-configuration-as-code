@@ -100,16 +100,16 @@ func Test_ShouldBePersisted(t *testing.T) {
 			true,
 		},
 		{
-			"Synthetic-location should be persisted if it's not private",
+			"Synthetic-location should be persisted if it's private",
 			"synthetic-location",
 			`{"type": "PRIVATE"}`,
-			false,
+			true,
 		},
 		{
-			"Synthetic-location should not be persisted if it's private",
+			"Synthetic-location should not be persisted if it's public",
 			"synthetic-location",
 			`{"type": "PUBLIC"}`,
-			true,
+			false,
 		},
 	}
 	for _, test := range tests {

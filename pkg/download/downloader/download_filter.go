@@ -45,7 +45,7 @@ var apiFilters = map[string]apiFilter{
 	},
 	"synthetic-location": {
 		shouldConfigBePersisted: func(json map[string]interface{}) bool {
-			return json["type"] != "PRIVATE"
+			return json["type"] == "PRIVATE"
 		},
 	},
 }
