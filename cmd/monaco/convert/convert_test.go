@@ -20,6 +20,8 @@
 package convert
 
 import (
+	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/version"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 	"io/fs"
@@ -79,8 +81,9 @@ func TestConvert_WorksIfThereIsJustEmptyProjects(t *testing.T) {
 	emptyProjectExists, _ := afero.Exists(testFs, "converted/project")
 	assert.Check(t, !emptyProjectExists)
 
-	manifestWithoutProjects :=
-		`projects: []
+	manifestWithoutProjects := fmt.Sprintf(
+		`manifest_version: "%s"
+projects: []
 environments:
 - group: default
   entries:
@@ -90,7 +93,7 @@ environments:
       value: ENV_URL
     token:
       name: ENV_TOKEN
-`
+`, version.ManifestVersion)
 
 	manifestExists, _ := afero.Exists(testFs, "converted/manifest.yaml")
 	assert.Check(t, manifestExists)
@@ -114,8 +117,9 @@ func assertExpectedConfigurationCreated(t *testing.T, testFs afero.Fs) {
 }
 
 func assertExpectedManifestCreated(t *testing.T, testFs afero.Fs) {
-	expectedManifest :=
-		`projects:
+	expectedManifest := fmt.Sprintf(
+		`manifest_version: "%s"
+projects:
 - name: project
 environments:
 - group: default
@@ -126,7 +130,7 @@ environments:
       value: ENV_URL
     token:
       name: ENV_TOKEN
-`
+`, version.ManifestVersion)
 
 	manifestExists, _ := afero.Exists(testFs, "converted/manifest.yaml")
 	assert.Check(t, manifestExists)

@@ -15,6 +15,7 @@
 package manifest
 
 import (
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/version"
 	"path/filepath"
 	"strings"
 
@@ -43,8 +44,9 @@ func WriteManifest(context *ManifestWriterContext, manifestToWrite Manifest) err
 	groups := toWriteableEnvironmentGroups(manifestToWrite.Environments)
 
 	m := manifest{
-		Projects:     projects,
-		Environments: groups,
+		ManifestVersion: version.ManifestVersion,
+		Projects:        projects,
+		Environments:    groups,
 	}
 
 	return persistManifestToDisk(context, m)

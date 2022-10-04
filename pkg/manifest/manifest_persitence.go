@@ -45,6 +45,7 @@ type group struct {
 }
 
 type manifest struct {
-	Projects     []project `yaml:"projects"`
-	Environments []group   `yaml:"environments"`
+	ManifestVersion string    `yaml:"manifest_version"`
+	Projects        []project `yaml:"projects"`
+	Environments    []group   `yaml:"environments"`
 }
