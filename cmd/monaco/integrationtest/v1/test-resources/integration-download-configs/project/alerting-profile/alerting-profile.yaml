@@ -1,6 +1,0 @@
-
-config:
-  - alerting-profile: "profile.json"
-
-alerting-profile:
-  - name: "alert-download-demo"

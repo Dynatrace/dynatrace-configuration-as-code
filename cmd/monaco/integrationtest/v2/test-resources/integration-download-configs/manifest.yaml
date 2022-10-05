@@ -1,0 +1,12 @@
+manifest_version: "1.0"
+projects:
+- name: project
+environments:
+- group: default
+  entries:
+  - name: environment1
+    url:
+      type: environment
+      value: URL_ENVIRONMENT_1
+    token:
+      name: TOKEN_ENVIRONMENT_1

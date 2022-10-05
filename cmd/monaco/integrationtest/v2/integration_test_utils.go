@@ -236,21 +236,29 @@ func RunIntegrationWithCleanupOnGivenFs(t *testing.T, testFs afero.Fs, configFol
 		Fs:           testFs,
 		ManifestPath: manifestPath,
 	})
-	FailOnAnyError(errs, "loading of environments failed")
+	FailOnAnyError(errs, "loading of manifest failed")
 
 	configFolder, _ = filepath.Abs(configFolder)
-	rand.Seed(time.Now().UnixNano())
-	randomNumber := rand.Intn(10000)
 
-	suffix := fmt.Sprintf("%s_%d_%s", getTimestamp(), randomNumber, suffixTest)
-	transformers := []func(string) string{getTransformerFunc(suffix)}
-	err := util.RewriteConfigNames(configFolder, testFs, transformers)
-	if err != nil {
-		t.Fatalf("Error rewriting configs names: %s", err)
-		return
-	}
+	suffix := appendUniqueSuffixToIntegrationTestConfigs(t, testFs, configFolder, suffixTest)
 
 	defer cleanupIntegrationTest(t, loadedManifest, specificEnvironment, suffix)
 
 	testFunc(testFs)
+}
+
+func appendUniqueSuffixToIntegrationTestConfigs(t *testing.T, fs afero.Fs, configFolder string, generalSuffix string) string {
+	rand.Seed(time.Now().UnixNano())
+	randomNumber := rand.Intn(10000)
+
+	suffix := fmt.Sprintf("%s_%d_%s", getTimestamp(), randomNumber, generalSuffix)
+	transformers := []func(string) string{getTransformerFunc(suffix)}
+
+	err := util.RewriteConfigNames(configFolder, fs, transformers)
+	if err != nil {
+		t.Fatalf("Error rewriting configs names: %s", err)
+		return suffix
+	}
+
+	return suffix
 }
