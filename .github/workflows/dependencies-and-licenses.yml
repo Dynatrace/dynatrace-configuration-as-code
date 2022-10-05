@@ -9,7 +9,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Core Repo
-              uses: actions/checkout@v3.0.2
+              uses: actions/checkout@v3.1.0
               with:
                   path: 'dynatrace-oss/dynatrace-monitoring-as-code'
             - name: Set up Go
