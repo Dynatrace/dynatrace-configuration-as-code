@@ -37,7 +37,7 @@ func TestInvalidCliCommands(t *testing.T) {
 		errorContainsExpected []string
 	}{
 		{
-			"neither env or url provided",
+			"neither manifest nor url provided",
 			"",
 			[]string{"either '--manifest' or '--url' has to be provided"},
 		},

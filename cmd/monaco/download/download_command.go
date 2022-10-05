@@ -30,9 +30,13 @@ func GetDownloadCommand(fs afero.Fs, command Command) (downloadCmd *cobra.Comman
 	var specificApis []string
 
 	downloadCmd = &cobra.Command{
-		Use:     "download",
-		Short:   "Download configuration from Dynatrace",
-		Example: "monaco download -m manifest.yaml -s staging",
+		Use:   "download",
+		Short: "Download configuration from Dynatrace",
+		Long: `Download configuration from Dynatrace
+
+Either downloading based on an existing manifest, or by defining environment URL and API token via flags.`,
+		Example: `- monaco download -m manifest.yaml -s some_environment_from_manifest
+- monaco download -u environment.live.dynatrace.com -t API_TOKEN_ENV_VAR_NAME`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			if manifest != "" {
@@ -71,6 +75,7 @@ func GetDownloadCommand(fs afero.Fs, command Command) (downloadCmd *cobra.Comman
 	}
 
 	downloadCmd.MarkFlagsMutuallyExclusive("manifest", "url")
+	downloadCmd.MarkFlagsMutuallyExclusive("manifest", "token")
 
 	downloadCmd.MarkFlagsRequiredTogether("url", "token", "project")
 	downloadCmd.MarkFlagsRequiredTogether("manifest", "specific-environment") // make specific environment optional?
