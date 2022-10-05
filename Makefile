@@ -30,6 +30,10 @@ mocks:
 	@go install github.com/golang/mock/mockgen@latest
 	@go generate ./...
 
+vet:
+	@echo "Vetting files"
+	@go vet ./...
+
 build: clean
 	@echo Build ${BINARY}
 	@CGO_ENABLED=0 go build -a -tags netgo -ldflags '-w -extldflags "-static"' -o ./bin/${BINARY} ./cmd/monaco

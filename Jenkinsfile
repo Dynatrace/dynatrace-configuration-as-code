@@ -28,13 +28,13 @@ pipeline {
     }
 
     stages {
-        stage('Build') {
+        stage('🏗️ Build') {
             steps {
                 sh "make build"
             }
         }
 
-        stage('Unit test') {
+        stage('🧪 Unit test') {
             steps {
                 sh "make test"
             }
@@ -45,13 +45,19 @@ pipeline {
             }
         }
 
-        stage('Binary starts') {
+        stage('🔎 Go vet') {
+            steps {
+                sh "make vet"
+            }
+        }
+
+        stage('🚀 Binary starts') {
             steps {
                 sh "make run"
             }
         }
 
-        stage('Integration test') {
+        stage('🌎 Integration test') {
             when {
                 expression {
                     env.BRANCH_IS_PRIMARY
@@ -64,7 +70,7 @@ pipeline {
             }
         }
 
-        stage('Integration test (legacy)') {
+        stage('🧓 Integration test (legacy)') {
             when {
                 expression {
                     env.BRANCH_IS_PRIMARY
@@ -77,14 +83,14 @@ pipeline {
             }
         }
 
-        stage('Building release binaries works') {
+        stage('🏁 Build release binaries') {
             steps {
                 sh "make build-release"
             }
         }
 
 
-        stage('Cleanup') {
+        stage('🧹 Cleanup') {
             when {
                 equals expected: true, actual: currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause').size() > 0
             }
