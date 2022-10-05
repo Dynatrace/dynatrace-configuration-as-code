@@ -31,7 +31,7 @@ jobs:
           go-version: '~1.16'
         id: go
 
-      - uses: actions/checkout@v3.0.2
+      - uses: actions/checkout@v3.1.0
         with:
           repository: ${{ github.event.client_payload.user }}/${{ github.event.client_payload.repo }}
           ref: ${{ github.event.client_payload.ref }}
