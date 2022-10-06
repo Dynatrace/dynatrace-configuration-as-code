@@ -69,16 +69,19 @@ func TestRestoreConfigs_FromDownloadWithCLIParameters(t *testing.T) {
 	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, execution_downloadConfigsWithCLIParameters)
 }
 
-// This version runs the test against the all_configs project, currently fails because of config dependencies
-//
-//	func TestRestoreConfigsFull(t *testing.T) {
-//		initialConfigsFolder := "test-resources/integration-all-configs/"
-//		envFile := initialConfigsFolder + "environments.yaml"
-//		downloadFolder := "test-resources/download_all_configs"
-//		subsetOfConfigsToDownload := "all" //value only for testing
-//		suffixTest := "_dl1"
-//		testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, envFile, subsetOfConfigsToDownload)
-//	}
+// This version runs the test against the all_configs project
+func TestRestoreConfigsFull(t *testing.T) {
+	initialConfigsFolder := "test-resources/integration-download-configs/"
+	manifestFile := initialConfigsFolder + "manifest.yaml"
+	downloadFolder := "test-resources/download"
+	subsetOfConfigsToDownload := "all" //value only for testing
+	suffixTest := "_download_all"
+
+	// ensure Token env var expected to be inside download manifest is set
+	t.Setenv("TOKEN_PROJECT_ENVIRONMENT1", os.Getenv("TOKEN_ENVIRONMENT_1"))
+
+	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, execution_downloadConfigs)
+}
 
 func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolder string, suffixTest string, manifestFile string, apisToDownload string, downloadFunc downloadFunction) {
 	initialConfigsFolder, _ = filepath.Abs(initialConfigsFolder)
