@@ -94,7 +94,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile
 		tokenEnvVar = envVarToken.EnvironmentVariableName
 	}
 
-	return doDownload(fs, url, fmt.Sprintf("%s_%s", projectName, specificEnvironmentName), token, tokenEnvVar, outputFolder, apisToDownload)
+	return doDownload(fs, url, fmt.Sprintf("%s_%s", projectName, specificEnvironmentName), token, tokenEnvVar, outputFolder, apisToDownload, rest.NewDynatraceClient)
 }
 
 func (d DefaultCommand) DownloadConfigs(fs afero.Fs, environmentUrl, projectName, envVarName, outputFolder string, apiNamesToDownload []string) error {
@@ -115,10 +115,12 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, environmentUrl, projectName
 		return fmt.Errorf("not all necessary information is present to start downloading configurations")
 	}
 
-	return doDownload(fs, environmentUrl, projectName, token, envVarName, outputFolder, apis)
+	return doDownload(fs, environmentUrl, projectName, token, envVarName, outputFolder, apis, rest.NewDynatraceClient)
 }
 
-func doDownload(fs afero.Fs, environmentUrl, projectName, token, tokenEnvVarName, outputFolder string, apis api.ApiMap) error {
+type dynatraceClientFactory func(environmentUrl, token string) (rest.DynatraceClient, error)
+
+func doDownload(fs afero.Fs, environmentUrl, projectName, token, tokenEnvVarName, outputFolder string, apis api.ApiMap, clientFactory dynatraceClientFactory) error {
 
 	errors := validateOutputFolder(fs, outputFolder, projectName)
 	if len(errors) > 0 {
@@ -130,7 +132,7 @@ func doDownload(fs afero.Fs, environmentUrl, projectName, token, tokenEnvVarName
 	log.Info("Downloading from environment '%v' into project '%v'", environmentUrl, projectName)
 	log.Debug("APIS to download: \n - %v", strings.Join(maps.Keys(apis), "\n - "))
 
-	client, err := rest.NewDynatraceClient(environmentUrl, token)
+	client, err := clientFactory(environmentUrl, token)
 	if err != nil {
 		return fmt.Errorf("failed to create Dynatrace client: %w", err)
 	}
