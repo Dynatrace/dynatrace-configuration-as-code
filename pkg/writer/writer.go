@@ -50,10 +50,10 @@ func WriteToDisk(context *WriterContext, manifestToWrite manifest.Manifest, proj
 		return []error{err}
 	}
 
-	return WriteProjects(context, manifestToWrite.Projects, projects)
+	return writeProjects(context, manifestToWrite.Projects, projects)
 }
 
-func WriteProjects(context *WriterContext, projectDefinitions manifest.ProjectDefinitionByProjectId,
+func writeProjects(context *WriterContext, projectDefinitions manifest.ProjectDefinitionByProjectId,
 	projects []project.Project) []error {
 	sanitizedOutputDir := filepath.Clean(context.OutputDir)
 	err := context.Fs.MkdirAll(sanitizedOutputDir, 0777)

@@ -25,26 +25,63 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/writer"
 	"github.com/spf13/afero"
+	"path/filepath"
+	"strings"
+	"time"
 )
 
 // WriteToDisk writes all projects to the disk
-func WriteToDisk(fs afero.Fs, downloadedConfigs project.ConfigsPerApis, projectName string) error {
+func WriteToDisk(fs afero.Fs, downloadedConfigs project.ConfigsPerApis, projectName, environmentUrl, outputFolder string) error {
+	timestampString := time.Now().Format("2006-01-02-150405")
+
+	return writeToDisk(fs, downloadedConfigs, projectName, environmentUrl, outputFolder, timestampString)
+}
+
+func writeToDisk(fs afero.Fs, downloadedConfigs project.ConfigsPerApis, projectName, environmentUrl, outputFolder, timestampString string) error {
+
+	log.Debug("Preparing downloaded data for persisting")
+
+	if outputFolder == "" {
+		outputFolder = filepath.Clean(fmt.Sprintf("download_%s/", timestampString))
+	}
+
+	manifestName := "manifest.yaml"
+	if exists, _ := afero.Exists(fs, filepath.Join(outputFolder, manifestName)); exists {
+		manifestName = fmt.Sprintf("manifest_%s.yaml", timestampString)
+		log.Warn("A manifest.yaml already exists in '%s', creating '%s' instead.", outputFolder, manifestName)
+	}
 
 	proj, projectDefinitions := createProjectData(downloadedConfigs, projectName)
 
-	log.Debug("Writing projects to disk")
-	errs := writer.WriteProjects(&writer.WriterContext{
+	m := manifest.Manifest{
+		Projects: projectDefinitions,
+		Environments: map[string]manifest.EnvironmentDefinition{
+			projectName: manifest.NewEnvironmentDefinition(projectName,
+				manifest.UrlDefinition{
+					Type:  manifest.ValueUrlType,
+					Value: environmentUrl,
+				},
+				"default",
+				&manifest.EnvironmentVariableToken{
+					EnvironmentVariableName: fmt.Sprintf("TOKEN_%s", strings.ToUpper(projectName)),
+				}),
+		},
+	}
+
+	log.Debug("Persisting downloaded configurations")
+	errs := writer.WriteToDisk(&writer.WriterContext{
 		Fs:              fs,
-		OutputDir:       projectName,
+		OutputDir:       outputFolder,
+		ManifestName:    manifestName,
 		ParametersSerde: config.DefaultParameterParsers,
-	}, projectDefinitions, []project.Project{proj})
+	}, m, []project.Project{proj})
 
 	if len(errs) > 0 {
 		util.PrintErrors(errs)
-		return fmt.Errorf("error writing stuff")
+		return fmt.Errorf("failed to persist downloaded configurations")
 	}
 
-	log.Debug("Done writing projects to disk")
+	log.Info("Downloaded configurations written to '%s'", outputFolder)
 	return nil
 }
 
@@ -61,6 +98,7 @@ func createProjectData(downloadedConfigs project.ConfigsPerApis, projectName str
 	projectDefinitions := manifest.ProjectDefinitionByProjectId{
 		projectName: {
 			Name: projectName,
+			Path: projectName,
 		},
 	}
 

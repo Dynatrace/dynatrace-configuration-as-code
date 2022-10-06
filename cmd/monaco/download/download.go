@@ -132,7 +132,7 @@ func doDownload(fs afero.Fs, environmentUrl string, projectName string, token st
 	log.Info("Resolving dependencies between configurations")
 	downloadedConfigs = download.ResolveDependencies(downloadedConfigs)
 
-	err = download.WriteToDisk(fs, downloadedConfigs, projectName)
+	err = download.WriteToDisk(fs, downloadedConfigs, projectName, environmentUrl, "")
 	if err != nil {
 		return err
 	}
