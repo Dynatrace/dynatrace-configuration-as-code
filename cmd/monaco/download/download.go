@@ -113,7 +113,8 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, environmentUrl, projectName
 
 func doDownload(fs afero.Fs, environmentUrl, projectName, token, outputFolder string, apis api.ApiMap) error {
 
-	log.Debug("Downloading APIs '%v' from environment '%v' into project '%v'", strings.Join(maps.Keys(apis), ", "), environmentUrl, projectName)
+	log.Info("Downloading from environment '%v' into project '%v'", environmentUrl, projectName)
+	log.Debug("APIS to download: \n - %v", strings.Join(maps.Keys(apis), "\n - "))
 
 	client, err := rest.NewDynatraceClient(environmentUrl, token)
 	if err != nil {
