@@ -36,8 +36,8 @@ import (
 //
 // The actual implementations are in the [DefaultCommand] struct.
 type Command interface {
-	DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile, projectName, specificEnvironmentName string, apiNamesToDownload []string) error
-	DownloadConfigs(fs afero.Fs, environmentUrl, projectName, envVarName string, apiNamesToDownload []string) error
+	DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile, projectName, specificEnvironmentName, outputFolder string, apiNamesToDownload []string) error
+	DownloadConfigs(fs afero.Fs, environmentUrl, projectName, envVarName, outputFolder string, apiNamesToDownload []string) error
 }
 
 // DefaultCommand is used to implement the [Command] interface.
@@ -48,7 +48,7 @@ var (
 	_ Command = (*DefaultCommand)(nil)
 )
 
-func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile, projectName, specificEnvironmentName string, apiNamesToDownload []string) error {
+func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile, projectName, specificEnvironmentName, outputFolder string, apiNamesToDownload []string) error {
 
 	man, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
 		Fs:           fs,
@@ -87,10 +87,10 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile
 		return fmt.Errorf("failed to load manifest data")
 	}
 
-	return doDownload(fs, url, fmt.Sprintf("%s_%s", projectName, specificEnvironmentName), token, apisToDownload)
+	return doDownload(fs, url, fmt.Sprintf("%s_%s", projectName, specificEnvironmentName), token, outputFolder, apisToDownload)
 }
 
-func (d DefaultCommand) DownloadConfigs(fs afero.Fs, environmentUrl, projectName, envVarName string, apiNamesToDownload []string) error {
+func (d DefaultCommand) DownloadConfigs(fs afero.Fs, environmentUrl, projectName, envVarName, outputFolder string, apiNamesToDownload []string) error {
 
 	apis, errors := getApisToDownload(apiNamesToDownload)
 
@@ -108,10 +108,10 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, environmentUrl, projectName
 		return fmt.Errorf("not all necessary information is present to start downloading configurations")
 	}
 
-	return doDownload(fs, environmentUrl, projectName, token, apis)
+	return doDownload(fs, environmentUrl, projectName, token, outputFolder, apis)
 }
 
-func doDownload(fs afero.Fs, environmentUrl string, projectName string, token string, apis api.ApiMap) error {
+func doDownload(fs afero.Fs, environmentUrl, projectName, token, outputFolder string, apis api.ApiMap) error {
 
 	log.Debug("Downloading APIs '%v' from environment '%v' into project '%v'", strings.Join(maps.Keys(apis), ", "), environmentUrl, projectName)
 
@@ -132,7 +132,7 @@ func doDownload(fs afero.Fs, environmentUrl string, projectName string, token st
 	log.Info("Resolving dependencies between configurations")
 	downloadedConfigs = download.ResolveDependencies(downloadedConfigs)
 
-	err = download.WriteToDisk(fs, downloadedConfigs, projectName, environmentUrl, "")
+	err = download.WriteToDisk(fs, downloadedConfigs, projectName, environmentUrl, outputFolder)
 	if err != nil {
 		return err
 	}

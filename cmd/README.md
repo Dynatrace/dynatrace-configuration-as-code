@@ -19,20 +19,20 @@ Here a list of all flags, so that they can be used consistently. Note that they 
 
 Note: The legacy deploy command is not included.
 
-| Flag name              | Short |  Multi  | Default                             | Global | Components           | Description                                                                     |
-|------------------------|-------|:-------:|-------------------------------------|:------:|----------------------|---------------------------------------------------------------------------------|
-| --verbose              | -v    |    ✗    | `false`                             |   ✓    |                      | Enable debug logging                                                            |
-| --help                 | -h    |    ✗    | N/A                                 |   ✓    |                      | Print help                                                                      |
-| --continue-on-error    | -c    |    ✗    | `false`                             |   ✗    | deploy               | Proceed even if an error occurs                                                 |
-| --dry-run              | -d    |    ✗    | `false`                             |   ✗    | deploy               | Use validation mode                                                             |
-| --environments         | -e    |    ✓    | `[ ]`                               |   ✗    | deploy<br/>delete    | What environments to deploy                                                     |
-| --project              | -p    | ✓<br/>✗ | `[ ]`<br/>`project`                 |   ✗    | deploy<br/>download  | What projects to deploy<br/>In what project-folder to save the downloaded files |
-| --manifest             | -m    |    ✗    | *required flag*<br/>`manifest.yaml` |   ✗    | download<br/>convert | What manifest file to use                                                       |
-| --specific-environment | -s    |    ✗    | *required flag*                     |   ✗    | download             | What specific environment in the manifest to use                                |
-| --url                  | -u    |    ✗    | *required flag*                     |   ✗    | download             | The URL to use                                                                  |
-| --token                | -t    |    ✗    | *required flag*                     |   ✗    | download             | The environment variable to use to download                                     |
-| --specific-api         | -a    |    ✓    | `[ ]`                               |   ✗    | download             | The list of apis to download, if not specified all are used                     |
-| --output-folder        | -o    |    ✗    | `{project-folder}-v2`               |   ✗    | convert              | The directory to put the converted files                                        |        
+| Flag name              | Short |  Multi  | Default                                               | Global | Components           | Description                                                                     |
+|------------------------|-------|:-------:|-------------------------------------------------------|:------:|----------------------|---------------------------------------------------------------------------------|
+| --verbose              | -v    |    ✗    | `false`                                               |   ✓    |                      | Enable debug logging                                                            |
+| --help                 | -h    |    ✗    | N/A                                                   |   ✓    |                      | Print help                                                                      |
+| --continue-on-error    | -c    |    ✗    | `false`                                               |   ✗    | deploy               | Proceed even if an error occurs                                                 |
+| --dry-run              | -d    |    ✗    | `false`                                               |   ✗    | deploy               | Use validation mode                                                             |
+| --environments         | -e    |    ✓    | `[ ]`                                                 |   ✗    | deploy<br/>delete    | What environments to deploy                                                     |
+| --project              | -p    | ✓<br/>✗ | `[ ]`<br/>`project`                                   |   ✗    | deploy<br/>download  | What projects to deploy<br/>In what project-folder to save the downloaded files |
+| --manifest             | -m    |    ✗    | *required flag*<br/>`manifest.yaml`                   |   ✗    | download<br/>convert | What manifest file to use                                                       |
+| --specific-environment | -s    |    ✗    | *required flag*                                       |   ✗    | download             | What specific environment in the manifest to use                                |
+| --url                  | -u    |    ✗    | *required flag*                                       |   ✗    | download             | The URL to use                                                                  |
+| --token                | -t    |    ✗    | *required flag*                                       |   ✗    | download             | The environment variable to use to download                                     |
+| --specific-api         | -a    |    ✓    | `[ ]`                                                 |   ✗    | download             | The list of apis to download, if not specified all are used                     |
+| --output-folder        | -o    |    ✗    | `{project-folder}-v2`<br/>`{environment}-{timestamp}` |   ✗    | convert<br/>download              | The directory to put the converted/downloaded files                             |        
 
 Inconsistencies to get rid of:
 1. Required flags. We should not have required flags.

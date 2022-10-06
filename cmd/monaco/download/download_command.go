@@ -26,7 +26,7 @@ import (
 )
 
 func GetDownloadCommand(fs afero.Fs, command Command) (downloadCmd *cobra.Command) {
-	var manifest, specificEnvironment, url, project, tokenEnvVar string
+	var manifest, specificEnvironment, url, project, tokenEnvVar, outputFolder string
 	var specificApis []string
 
 	downloadCmd = &cobra.Command{
@@ -40,11 +40,11 @@ Either downloading based on an existing manifest, or by defining environment URL
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			if manifest != "" {
-				return command.DownloadConfigsBasedOnManifest(fs, manifest, project, specificEnvironment, specificApis)
+				return command.DownloadConfigsBasedOnManifest(fs, manifest, project, specificEnvironment, outputFolder, specificApis)
 			}
 
 			if url != "" {
-				return command.DownloadConfigs(fs, url, project, tokenEnvVar, specificApis)
+				return command.DownloadConfigs(fs, url, project, tokenEnvVar, outputFolder, specificApis)
 			}
 
 			return fmt.Errorf(`either '--manifest' or '--url' has to be provided`)
@@ -54,6 +54,11 @@ Either downloading based on an existing manifest, or by defining environment URL
 	// flags always available
 	downloadCmd.Flags().StringSliceVarP(&specificApis, "specific-api", "a", make([]string, 0), "APIs to download")
 	downloadCmd.Flags().StringVarP(&project, "project", "p", "project", "Project name (folder) to create")
+	downloadCmd.Flags().StringVarP(&outputFolder, "output-folder", "o", "", "Folder to write downloaded configs to")
+	err := downloadCmd.MarkFlagDirname("output-folder")
+	if err != nil {
+		log.Fatal("failed to setup CLI %v", err)
+	}
 	// TODO david.laubreiter: Continue flag
 
 	// download using the manifest
@@ -64,7 +69,7 @@ Either downloading based on an existing manifest, or by defining environment URL
 	downloadCmd.Flags().StringVarP(&url, "url", "u", "", "Environment Url")
 	downloadCmd.Flags().StringVarP(&tokenEnvVar, "token", "t", "", "Name of the environment variable containing the token ")
 
-	err := downloadCmd.RegisterFlagCompletionFunc("specific-environment", completion.EnvironmentByArg0)
+	err = downloadCmd.RegisterFlagCompletionFunc("specific-environment", completion.EnvironmentByArg0)
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
