@@ -40,7 +40,7 @@ Either downloading based on an existing manifest, or by defining environment URL
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			if manifest != "" {
-				return command.DownloadConfigsBasedOnManifest(fs, manifest, specificEnvironment, specificApis)
+				return command.DownloadConfigsBasedOnManifest(fs, manifest, project, specificEnvironment, specificApis)
 			}
 
 			if url != "" {
@@ -53,6 +53,7 @@ Either downloading based on an existing manifest, or by defining environment URL
 
 	// flags always available
 	downloadCmd.Flags().StringSliceVarP(&specificApis, "specific-api", "a", make([]string, 0), "APIs to download")
+	downloadCmd.Flags().StringVarP(&project, "project", "p", "project", "Project name (folder) to create")
 	// TODO david.laubreiter: Continue flag
 
 	// download using the manifest
@@ -61,7 +62,6 @@ Either downloading based on an existing manifest, or by defining environment URL
 
 	// download directly using flags
 	downloadCmd.Flags().StringVarP(&url, "url", "u", "", "Environment Url")
-	downloadCmd.Flags().StringVarP(&project, "project", "p", "", "Project name (project folder name)")
 	downloadCmd.Flags().StringVarP(&tokenEnvVar, "token", "t", "", "Name of the environment variable containing the token ")
 
 	err := downloadCmd.RegisterFlagCompletionFunc("specific-environment", completion.EnvironmentByArg0)
@@ -77,7 +77,7 @@ Either downloading based on an existing manifest, or by defining environment URL
 	downloadCmd.MarkFlagsMutuallyExclusive("manifest", "url")
 	downloadCmd.MarkFlagsMutuallyExclusive("manifest", "token")
 
-	downloadCmd.MarkFlagsRequiredTogether("url", "token", "project")
+	downloadCmd.MarkFlagsRequiredTogether("url", "token")
 	downloadCmd.MarkFlagsRequiredTogether("manifest", "specific-environment") // make specific environment optional?
 
 	err = downloadCmd.RegisterFlagCompletionFunc("specific-api", completion.AllAvailableApis)

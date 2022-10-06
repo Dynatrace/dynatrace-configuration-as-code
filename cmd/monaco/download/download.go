@@ -36,7 +36,7 @@ import (
 //
 // The actual implementations are in the [DefaultCommand] struct.
 type Command interface {
-	DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile, specificEnvironmentName string, apiNamesToDownload []string) error
+	DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile, projectName, specificEnvironmentName string, apiNamesToDownload []string) error
 	DownloadConfigs(fs afero.Fs, environmentUrl, projectName, envVarName string, apiNamesToDownload []string) error
 }
 
@@ -48,7 +48,7 @@ var (
 	_ Command = (*DefaultCommand)(nil)
 )
 
-func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile, specificEnvironmentName string, apiNamesToDownload []string) error {
+func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile, projectName, specificEnvironmentName string, apiNamesToDownload []string) error {
 
 	man, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
 		Fs:           fs,
@@ -87,7 +87,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile
 		return fmt.Errorf("failed to load manifest data")
 	}
 
-	return doDownload(fs, url, specificEnvironmentName, token, apisToDownload)
+	return doDownload(fs, url, fmt.Sprintf("%s_%s", projectName, specificEnvironmentName), token, apisToDownload)
 }
 
 func (d DefaultCommand) DownloadConfigs(fs afero.Fs, environmentUrl, projectName, envVarName string, apiNamesToDownload []string) error {

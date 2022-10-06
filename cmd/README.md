@@ -26,7 +26,7 @@ Note: The legacy deploy command is not included.
 | --continue-on-error    | -c    |    ✗    | `false`                             |   ✗    | deploy               | Proceed even if an error occurs                                                 |
 | --dry-run              | -d    |    ✗    | `false`                             |   ✗    | deploy               | Use validation mode                                                             |
 | --environments         | -e    |    ✓    | `[ ]`                               |   ✗    | deploy<br/>delete    | What environments to deploy                                                     |
-| --project              | -p    | ✓<br/>✗ | `[ ]`<br/>*required flag*           |   ✗    | deploy<br/>download  | What projects to deploy<br/>In what project-folder to save the downloaded files |
+| --project              | -p    | ✓<br/>✗ | `[ ]`<br/>`project`                 |   ✗    | deploy<br/>download  | What projects to deploy<br/>In what project-folder to save the downloaded files |
 | --manifest             | -m    |    ✗    | *required flag*<br/>`manifest.yaml` |   ✗    | download<br/>convert | What manifest file to use                                                       |
 | --specific-environment | -s    |    ✗    | *required flag*                     |   ✗    | download             | What specific environment in the manifest to use                                |
 | --url                  | -u    |    ✗    | *required flag*                     |   ✗    | download             | The URL to use                                                                  |
