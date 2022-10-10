@@ -41,6 +41,15 @@ const concurrentRequestsEnvKey = "CONCURRENT_REQUESTS"
 //
 // See package documentation for implementation details.
 func DownloadAllConfigs(apisToDownload api.ApiMap, client rest.DynatraceClient, projectName string) project.ConfigsPerApis {
+	return downloadAllConfigs(apisToDownload, client, projectName, downloadConfigForApi)
+}
+
+func downloadAllConfigs(
+	apisToDownload api.ApiMap,
+	client rest.DynatraceClient,
+	projectName string,
+	downloadConfigForApi func(currentApi api.Api, client rest.DynatraceClient, projectName string) []config.Config,
+) project.ConfigsPerApis {
 
 	// apis & mutex to lock it
 	apis := make(project.ConfigsPerApis, len(apisToDownload))

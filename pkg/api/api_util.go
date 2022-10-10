@@ -32,7 +32,7 @@ func CreateAPIMockFactory(t *testing.T) (*MockApi, func()) {
 func CreateAPIMockWithId(t *testing.T, id string) (*MockApi, func()) {
 
 	api, finish := CreateAPIMockFactory(t)
-	api.EXPECT().GetId().Return(id)
+	api.EXPECT().GetId().MinTimes(1).Return(id)
 
 	return api, finish
 }
