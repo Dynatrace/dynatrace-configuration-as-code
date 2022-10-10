@@ -19,6 +19,7 @@ package download
 import (
 	"fmt"
 	"strings"
+	"sync"
 
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/reference"
@@ -45,15 +46,26 @@ func ResolveDependencies(configs project.ConfigsPerApis) project.ConfigsPerApis 
 }
 
 func findAndSetDependencies(configs project.ConfigsPerApis, configsById map[string]config.Config) {
-	// currently a simple brute force attach, could be parallelized
+	wg := sync.WaitGroup{}
+
+	// currently a simple brute force attach
 	for theApi, configs := range configs {
 		for _, configToBeUpdated := range configs {
-			newContent, parameters := findAndReplaceIds(theApi, configToBeUpdated, configsById)
+			wg.Add(1)
 
-			maps.Copy(configToBeUpdated.Parameters, parameters)
-			configToBeUpdated.Template.UpdateContent(newContent)
+			configToBeUpdated := configToBeUpdated
+			go func() {
+				newContent, parameters := findAndReplaceIds(theApi, configToBeUpdated, configsById)
+
+				maps.Copy(configToBeUpdated.Parameters, parameters)
+				configToBeUpdated.Template.UpdateContent(newContent)
+
+				wg.Done()
+			}()
 		}
 	}
+
+	wg.Wait()
 }
 
 func collectConfigsById(configs project.ConfigsPerApis) map[string]config.Config {
