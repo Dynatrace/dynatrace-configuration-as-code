@@ -48,8 +48,11 @@ func TestParametersAreLoadedAsExpected(t *testing.T) {
 	assert.Equal(t, cfg.Parameters["simple_value"].GetType(), valueParam.ValueParameterType)
 	assert.Equal(t, cfg.Parameters["full_value"].GetType(), valueParam.ValueParameterType)
 	assert.Equal(t, cfg.Parameters["simple_reference"].GetType(), reference.ReferenceParameterType)
+	assert.Equal(t, cfg.Parameters["multiline_reference"].GetType(), reference.ReferenceParameterType)
 	assert.Equal(t, cfg.Parameters["full_reference"].GetType(), reference.ReferenceParameterType)
 	assert.Equal(t, cfg.Parameters["environment"].GetType(), envParam.EnvironmentVariableParameterType)
 	assert.Equal(t, cfg.Parameters["list"].GetType(), listParam.ListParameterType)
-
+	assert.Equal(t, cfg.Parameters["list_array"].GetType(), listParam.ListParameterType)
+	assert.Equal(t, cfg.Parameters["list_full_values"].GetType(), listParam.ListParameterType)
+	assert.Equal(t, cfg.Parameters["list_complex_values"].GetType(), listParam.ListParameterType)
 }

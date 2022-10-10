@@ -17,7 +17,8 @@ package list
 import (
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/value"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
 	"strings"
 )
 
@@ -31,10 +32,10 @@ var ListParameterSerde = parameter.ParameterSerDe{
 
 // ListParameter represents a simple list of string values.
 type ListParameter struct {
-	Values []string
+	Values []value.ValueParameter //TODO(CA-1517): allow for parameter.Parameter
 }
 
-func New(values []string) *ListParameter {
+func New(values []value.ValueParameter) *ListParameter {
 	return &ListParameter{Values: values}
 }
 
@@ -46,20 +47,20 @@ func (p *ListParameter) GetType() string {
 }
 
 func (p *ListParameter) GetReferences() []parameter.ParameterReference {
-	// TODO allow references?
+	//TODO(CA-1517): implement handling of references in list values
 	// the value parameter cannot have references, as it is a simple value
 	return []parameter.ParameterReference{}
 }
 
-func (p *ListParameter) ResolveValue(_ parameter.ResolveContext) (interface{}, error) {
+func (p *ListParameter) ResolveValue(c parameter.ResolveContext) (interface{}, error) {
 
 	listValues := make([]string, len(p.Values))
-	for i, s := range p.Values {
-		escaped, err := util.EscapeSpecialCharactersInValue(s, util.FullStringEscapeFunction)
+	for i, v := range p.Values {
+		resolved, err := v.ResolveValue(c)
 		if err != nil {
 			return nil, err
 		}
-		listValues[i] = fmt.Sprintf(`"%s"`, escaped)
+		listValues[i] = fmt.Sprintf(`"%s"`, resolved)
 	}
 	list := fmt.Sprintf("[ %s ]", strings.Join(listValues, ","))
 	return list, nil
@@ -74,9 +75,31 @@ func writeListParameter(context parameter.ParameterWriterContext) (map[string]in
 
 	result := make(map[string]interface{})
 
-	result["values"] = listParam.Values
+	result["values"] = toWritableValues(context, listParam.Values)
 
 	return result, nil
+}
+
+// TODO(CA-1517): call the underlying parameter's Deserialzer/write methods
+// toWriteableValues turns the underlying ValueParameters into a simple string list to write them in their short form
+func toWritableValues(context parameter.ParameterWriterContext, values []value.ValueParameter) []interface{} {
+	writableValues := make([]interface{}, len(values))
+	for i, v := range values {
+
+		if s, ok := v.Value.(string); ok {
+			writableValues[i] = s
+			continue
+		}
+
+		subCtxt := context
+		subCtxt.Parameter = &v
+		writableVal, _ := value.ValueParameterSerde.Serializer(subCtxt)
+
+		writableVal["type"] = v.GetType()
+
+		writableValues[i] = writableVal
+	}
+	return writableValues
 }
 
 func parseListParameter(context parameter.ParameterParserContext) (parameter.Parameter, error) {
@@ -90,16 +113,41 @@ func parseListParameter(context parameter.ParameterParserContext) (parameter.Par
 		return nil, parameter.NewParameterParserError(context, "malformed property `values` - expected list")
 	}
 
-	stringSlice := make([]string, len(valueSlice))
+	parameterSlice := make([]value.ValueParameter, len(valueSlice))
 	for i, v := range valueSlice {
-		s, ok := v.(string)
-		if !ok {
-			return nil, parameter.NewParameterParserError(context,
-				fmt.Sprintf("malformed value `%s` at index %d - expected list string", s, i),
-			)
+
+		if s, ok := v.(string); ok {
+			parameterSlice[i] = value.ValueParameter{Value: s}
+		} else {
+			p, err := parseSubParameter(v, context)
+			if err != nil {
+				return nil, parameter.NewParameterParserError(context,
+					fmt.Sprintf("malformed value `%v` at index %d: %v", v, i, err),
+				)
+			}
+			parameterSlice[i] = p
 		}
-		stringSlice[i] = s
 	}
 
-	return New(stringSlice), nil
+	return New(parameterSlice), nil
+}
+
+func parseSubParameter(paramValue interface{}, context parameter.ParameterParserContext) (value.ValueParameter, error) {
+	mapVal, ok := paramValue.(map[interface{}]interface{})
+	if !ok {
+		return value.ValueParameter{}, fmt.Errorf("malformed list entry `%v`", paramValue)
+	}
+	subValue := maps.ToStringMap(mapVal)
+	subContext := parameter.ParameterParserContext{
+		Coordinate:    context.Coordinate,
+		Group:         context.Group,
+		Environment:   context.Environment,
+		ParameterName: context.ParameterName,
+		Value:         subValue,
+	}
+	p, err := value.ValueParameterSerde.Deserializer(subContext)
+	if err != nil {
+		return value.ValueParameter{}, err
+	}
+	return *p.(*value.ValueParameter), nil
 }

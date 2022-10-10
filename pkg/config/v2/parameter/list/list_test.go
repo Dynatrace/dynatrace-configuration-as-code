@@ -18,7 +18,9 @@
 package list
 
 import (
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"reflect"
 	"testing"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
@@ -26,106 +28,140 @@ import (
 )
 
 func TestParseListParameter(t *testing.T) {
-	param, err := parseListParameter(parameter.ParameterParserContext{
-		Value: map[string]interface{}{
-			"values": []interface{}{"firstName", "lastName"},
+
+	tests := []struct {
+		name     string
+		context  parameter.ParameterParserContext
+		wantVals []value.ValueParameter
+	}{
+		{
+			"simple values",
+			parameter.ParameterParserContext{
+				Value: map[string]interface{}{
+					"values": []interface{}{"firstName", "lastName"},
+				},
+			},
+			[]value.ValueParameter{{"firstName"}, {"lastName"}},
 		},
-	})
+		{
+			"full values",
+			parameter.ParameterParserContext{
+				Value: map[string]interface{}{
+					"values": []interface{}{
+						map[interface{}]interface{}{
+							"type":  "value",
+							"value": "firstName",
+						},
+						map[interface{}]interface{}{
+							"type":  "value",
+							"value": "lastName",
+						},
+					},
+				},
+			},
+			[]value.ValueParameter{{"firstName"}, {"lastName"}},
+		},
+		{
+			"complex values",
+			parameter.ParameterParserContext{
+				Value: map[string]interface{}{
+					"values": []interface{}{
+						map[interface{}]interface{}{
+							"type": "value",
+							"value": map[interface{}]interface{}{
+								"firstName": "John",
+								"lastName":  "Dorian",
+							},
+						},
+					},
+				},
+			},
+			[]value.ValueParameter{{map[interface{}]interface{}{
+				"firstName": "John",
+				"lastName":  "Dorian",
+			}}},
+		},
+		{
+			"empty values",
+			parameter.ParameterParserContext{
+				Value: map[string]interface{}{
+					"values": []interface{}{},
+				},
+			},
+			[]value.ValueParameter{},
+		},
+	}
 
-	assert.NilError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			param, err := parseListParameter(tt.context)
+			assert.NilError(t, err)
 
-	listParam, ok := param.(*ListParameter)
+			listParam, ok := param.(*ListParameter)
 
-	assert.Assert(t, ok, "parsed parameter should be list parameter")
-	assert.Equal(t, listParam.GetType(), "list")
+			assert.Assert(t, ok, "parsed parameter should be list parameter")
+			assert.Equal(t, listParam.GetType(), "list")
 
-	vals := listParam.Values
-	assert.Equal(t, len(vals), 2, "should have loaded two values")
-	assert.Equal(t, vals[0], "firstName")
-	assert.Equal(t, vals[1], "lastName")
+			assert.DeepEqual(t, tt.wantVals, listParam.Values)
+		})
+	}
 }
 
-func TestParseListParameter_ErrorOnMissingValues(t *testing.T) {
-	_, err := parseListParameter(parameter.ParameterParserContext{
-		Value: map[string]interface{}{
-			"just some random thing": struct{}{},
-		},
-	})
+func TestParseListParameter_Error(t *testing.T) {
 
-	assert.ErrorContains(t, err, "missing property `values`")
+	tests := []struct {
+		name          string
+		context       parameter.ParameterParserContext
+		expextedError string
+	}{
+		{
+			"fails on missing values",
+			parameter.ParameterParserContext{
+				Value: map[string]interface{}{
+					"just some random thing": struct{}{},
+				},
+			},
+			"missing property `values`",
+		},
+		{
+			"fails on non-list values",
+			parameter.ParameterParserContext{
+				Value: map[string]interface{}{
+					"values": "this is a string, not a list",
+				},
+			},
+			"malformed property `values`",
+		},
+		{
+			"fails if list entries ar not ValueParameter",
+			parameter.ParameterParserContext{
+				Value: map[string]interface{}{
+					"values": []interface{}{
+						struct {
+							This string
+						}{
+							This: "should not be parsable",
+						},
+					},
+				},
+			},
+			"malformed list entry",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := parseListParameter(tt.context)
+
+			assert.ErrorContains(t, err, tt.expextedError)
+		})
+	}
 }
 
-func TestParseListParameter_ErrorIfValuesAreNoList(t *testing.T) {
-	_, err := parseListParameter(parameter.ParameterParserContext{
-		Value: map[string]interface{}{
-			"values": "this is a string, not a list",
-		},
-	})
-
-	assert.ErrorContains(t, err, "malformed property `values`")
-}
-
-//	func TestParseCompoundParameterComplexValue(t *testing.T) {
-//		param, err := parseCompoundParameter(parameter.ParameterParserContext{
-//			Value: map[string]interface{}{
-//				"format":     "{{ .person.name }}: {{ .person.age }}",
-//				"references": []interface{}{"person"},
-//			},
-//		})
-//
-//		assert.NilError(t, err)
-//
-//		compoundParameter, ok := param.(*CompoundParameter)
-//		assert.Assert(t, ok, "parsed parameter should be compound parameter")
-//
-//		refs := compoundParameter.GetReferences()
-//		assert.Equal(t, len(refs), 1, "should be referencing 1")
-//		assert.Equal(t, refs[0].Property, "person")
-//	}
-//
-//	func TestParseCompoundParameterErrorOnMissingFormat(t *testing.T) {
-//		_, err := parseCompoundParameter(parameter.ParameterParserContext{
-//			Value: map[string]interface{}{
-//				"references": []interface{}{"firstName", "lastName"},
-//			},
-//		})
-//
-//		assert.Assert(t, err != nil, "expected an error parsing missing format")
-//	}
-//
-//	func TestParseCompoundParameterErrorOnMissingReferences(t *testing.T) {
-//		_, err := parseCompoundParameter(parameter.ParameterParserContext{
-//			Value: map[string]interface{}{
-//				"format": "{{ .firstName }} {{ .lastName }}",
-//			},
-//		})
-//
-//		assert.Assert(t, err != nil, "expected an error parsing missing references")
-//	}
-//
-//	func TestParseCompoundParameterErrorOnWrongReferenceFormat(t *testing.T) {
-//		_, err := parseCompoundParameter(parameter.ParameterParserContext{
-//			Value: map[string]interface{}{
-//				"format":     "{{ .firstName }} {{ .lastName }}",
-//				"references": []int{3, 4},
-//			}})
-//
-//		assert.Assert(t, err != nil, "expected an error parsing invalid references")
-//	}
-//
-//	func TestParseCompoundParameterErrorOnWrongReferences(t *testing.T) {
-//		_, err := parseCompoundParameter(parameter.ParameterParserContext{
-//			Value: map[string]interface{}{
-//				"format":     "{{ .firstName }} {{ .lastName }}",
-//				"references": []interface{}{[]interface{}{}},
-//			}})
-//
-//		assert.Assert(t, err != nil, "expected an error parsing invalid references")
-//	}
 func TestResolveValue(t *testing.T) {
 	context := parameter.ResolveContext{}
 
-	compoundParameter := New([]string{"a", "b", "c"})
+	compoundParameter := New([]value.ValueParameter{{Value: "a"}, {Value: "b"}, {Value: "c"}})
 
 	result, err := compoundParameter.ResolveValue(context)
 	assert.NilError(t, err)
@@ -136,7 +172,7 @@ func TestResolveValue(t *testing.T) {
 func TestResolveSingleValue(t *testing.T) {
 	context := parameter.ResolveContext{}
 
-	compoundParameter := New([]string{"a"})
+	compoundParameter := New([]value.ValueParameter{{Value: "a"}})
 
 	result, err := compoundParameter.ResolveValue(context)
 	assert.NilError(t, err)
@@ -147,7 +183,7 @@ func TestResolveSingleValue(t *testing.T) {
 func TestResolveEmptyValue(t *testing.T) {
 	context := parameter.ResolveContext{}
 
-	compoundParameter := New([]string{})
+	compoundParameter := New([]value.ValueParameter{})
 
 	result, err := compoundParameter.ResolveValue(context)
 	assert.NilError(t, err)
@@ -155,64 +191,81 @@ func TestResolveEmptyValue(t *testing.T) {
 	assert.Equal(t, `[  ]`, util.ToString(result))
 }
 
-//
-//func TestWriteCompoundParameter(t *testing.T) {
-//	testFormat := "{{ .firstName }} {{ .lastName }}"
-//	testRef1 := "firstName"
-//	testRef2 := "lastName"
-//	testRefs := []parameter.ParameterReference{
-//		{Property: testRef1},
-//		{Property: testRef2},
-//	}
-//	compoundParameter, err := New("testName", testFormat, testRefs)
-//	assert.NilError(t, err)
-//
-//	context := parameter.ParameterWriterContext{Parameter: compoundParameter}
-//
-//	result, err := writeCompoundParameter(context)
-//	assert.NilError(t, err)
-//
-//	assert.Equal(t, len(result), 2)
-//
-//	format, ok := result["format"]
-//	assert.Assert(t, ok, "should have parameter format")
-//	assert.Equal(t, format, testFormat)
-//
-//	references, ok := result["references"]
-//	assert.Assert(t, ok, "should have parameter references")
-//
-//	referenceSlice, ok := references.([]interface{})
-//	assert.Assert(t, ok, "references should be slice")
-//
-//	assert.Equal(t, len(referenceSlice), 2)
-//	for i, testRef := range testRefs {
-//		assert.Equal(t, referenceSlice[i], testRef.Property)
-//	}
-//}
-//
-//func TestWriteCompoundParameterErrorOnNonCompoundParameter(t *testing.T) {
-//	context := parameter.ParameterWriterContext{Parameter: &value.ValueParameter{}}
-//
-//	_, err := writeCompoundParameter(context)
-//	assert.Assert(t, err != nil, "expected an error writing wrong parameter type")
-//}
-//
-//func TestWriteCompoundParameterErrorOnMissingFormat(t *testing.T) {
-//	compoundParameter, err := New("testName", "", nil)
-//	assert.NilError(t, err)
-//
-//	context := parameter.ParameterWriterContext{Parameter: compoundParameter}
-//
-//	_, err = writeCompoundParameter(context)
-//	assert.Assert(t, err != nil, "expected an error writing missing format")
-//}
-//
-//func TestWriteCompoundParameterErrorOnMissingReferences(t *testing.T) {
-//	compoundParameter, err := New("testName", "testFormat", nil)
-//	assert.NilError(t, err)
-//
-//	context := parameter.ParameterWriterContext{Parameter: compoundParameter}
-//
-//	_, err = writeCompoundParameter(context)
-//	assert.Assert(t, err != nil, "expected an error writing missing references")
-//}
+func Test_writeListParameter(t *testing.T) {
+	tests := []struct {
+		name         string
+		inputContext parameter.ParameterWriterContext
+		want         map[string]interface{}
+		wantErr      bool
+	}{
+		{
+			"simple write",
+			parameter.ParameterWriterContext{
+				Parameter: &ListParameter{
+					Values: []value.ValueParameter{{"one"}, {"two"}, {"three"}},
+				},
+			},
+			map[string]interface{}{"values": []interface{}{"one", "two", "three"}},
+			false,
+		},
+		{
+			"complex write",
+			parameter.ParameterWriterContext{
+				Parameter: &ListParameter{
+					Values: []value.ValueParameter{
+						{
+							map[interface{}]interface{}{
+								"firstName": "John",
+								"lastName":  "Dorian",
+							},
+						},
+					},
+				},
+			},
+			map[string]interface{}{
+				"values": []interface{}{
+					map[string]interface{}{
+						"type": "value",
+						"value": map[interface{}]interface{}{
+							"firstName": "John",
+							"lastName":  "Dorian",
+						},
+					},
+				},
+			},
+			false,
+		},
+		{
+			"does not fail on empty values",
+			parameter.ParameterWriterContext{
+				Parameter: &ListParameter{
+					Values: []value.ValueParameter{},
+				},
+			},
+			map[string]interface{}{"values": []interface{}{}},
+			false,
+		},
+		{
+			"returns error if parameter is not a list",
+			parameter.ParameterWriterContext{
+				Parameter: &value.ValueParameter{
+					Value: "I'm not a list!",
+				},
+			},
+			nil,
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := writeListParameter(tt.inputContext)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("writeListParameter() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("writeListParameter() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

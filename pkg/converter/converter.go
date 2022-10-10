@@ -444,7 +444,7 @@ func convertParameters(context *ConfigConvertContext, environment manifest.Envir
 
 			parameters[name] = ref
 		} else if _, found := context.KnownListParameterIds[name]; found {
-			valueSlice, err := parseListStringToSlice(value)
+			valueSlice, err := parseListStringToValueSlice(value)
 			if err != nil {
 				errors = append(errors, err)
 				continue
@@ -529,19 +529,19 @@ func loadPropertiesForEnvironment(environment manifest.EnvironmentDefinition, co
 	return result
 }
 
-func parseListStringToSlice(s string) ([]string, error) {
+func parseListStringToValueSlice(s string) ([]valueParam.ValueParameter, error) {
 	if !util.IsListDefinition(s) && !simpleValueRegex.MatchString(s) {
-		return []string{}, fmt.Errorf("failed to parse value for list parameter, '%s' is not in expected list format", s)
+		return []valueParam.ValueParameter{}, fmt.Errorf("failed to parse value for list parameter, '%s' is not in expected list format", s)
 	}
 
-	var slice []string
+	var slice []valueParam.ValueParameter
 	splitOnColon := strings.Split(s, ",")
-	for _, ss := range splitOnColon {
-		ss = strings.TrimSpace(ss)
-		ss = strings.TrimPrefix(ss, `"`)
-		ss = strings.TrimSuffix(ss, `"`)
-		if len(ss) > 0 {
-			slice = append(slice, ss)
+	for _, entry := range splitOnColon {
+		entry = strings.TrimSpace(entry)
+		entry = strings.TrimPrefix(entry, `"`)
+		entry = strings.TrimSuffix(entry, `"`)
+		if len(entry) > 0 {
+			slice = append(slice, valueParam.ValueParameter{Value: entry})
 		}
 	}
 	return slice, nil

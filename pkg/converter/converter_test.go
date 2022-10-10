@@ -553,7 +553,7 @@ func TestConvertConfigs(t *testing.T) {
 	assert.Equal(t, "id", c.Parameters[referenceParameterName].(*reference.ReferenceParameter).Property)
 
 	// assert list param is converted as expected
-	assert.DeepEqual(t, []string{"GEOLOCATION-41", "GEOLOCATION-42", "GEOLOCATION-43"}, c.Parameters[listParameterName].(*listParam.ListParameter).Values)
+	assert.DeepEqual(t, []valueParam.ValueParameter{{"GEOLOCATION-41"}, {"GEOLOCATION-42"}, {"GEOLOCATION-43"}}, c.Parameters[listParameterName].(*listParam.ListParameter).Values)
 
 	// assert env reference in template has created correct env parameter
 	assert.Equal(t, envVariableName, c.Parameters[transformEnvironmentToParamName(envVariableName)].(*envParam.EnvironmentVariableParameter).Name)
@@ -573,7 +573,7 @@ func TestConvertConfigs(t *testing.T) {
 
 	// assert override list param is converted as expected
 	// assert list param is converted as expected
-	assert.DeepEqual(t, []string{"james.t.kirk@dynatrace.com"}, c.Parameters[listParameterName].(*listParam.ListParameter).Values)
+	assert.DeepEqual(t, []valueParam.ValueParameter{{"james.t.kirk@dynatrace.com"}}, c.Parameters[listParameterName].(*listParam.ListParameter).Values)
 }
 
 func TestConvertProjects(t *testing.T) {
@@ -934,61 +934,61 @@ list"   :
 
 }
 
-func Test_parseListStringToSlice(t *testing.T) {
+func Test_parseListStringToValueSlice(t *testing.T) {
 	tests := []struct {
 		inputString string
-		want        []string
+		want        []valueParam.ValueParameter
 		wantErr     bool
 	}{
 		{
 			`"a", "b", "c"`,
-			[]string{"a", "b", "c"},
+			[]valueParam.ValueParameter{{"a"}, {"b"}, {"c"}},
 			false,
 		},
 		{
 			`  " a " , " b "`,
-			[]string{" a ", " b "},
+			[]valueParam.ValueParameter{{" a "}, {" b "}},
 			false,
 		},
 		{
 			`  "e@mail.com" , "first.last@domain.com"  `,
-			[]string{"e@mail.com", "first.last@domain.com"},
+			[]valueParam.ValueParameter{{"e@mail.com"}, {"first.last@domain.com"}},
 			false,
 		},
 		{
 			`  " a " , " b "   , `,
-			[]string{" a ", " b "},
+			[]valueParam.ValueParameter{{" a "}, {" b "}},
 			false,
 		},
 		{
 			`"a"`,
-			[]string{"a"},
+			[]valueParam.ValueParameter{{"a"}},
 			false,
 		},
 		{
 			`"e@mail.com"`,
-			[]string{"e@mail.com"},
+			[]valueParam.ValueParameter{{"e@mail.com"}},
 			false,
 		},
 		{
 			``,
-			[]string{},
+			[]valueParam.ValueParameter{},
 			true,
 		},
 		{
 			`"inval,id`,
-			[]string{},
+			[]valueParam.ValueParameter{},
 			true,
 		},
 		{
 			`"",`,
-			[]string{},
+			[]valueParam.ValueParameter{},
 			true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.inputString, func(t *testing.T) {
-			got, err := parseListStringToSlice(tt.inputString)
+			got, err := parseListStringToValueSlice(tt.inputString)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("parseListStringToSlice() error = %v, wantErr %v", err, tt.wantErr)
 				return

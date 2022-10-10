@@ -9,6 +9,9 @@ configs:
           type: value
           value: "TEST VALUE"
         simple_reference: ["reference_cfg", "name"]
+        multiline_reference:
+          - "reference_cfg"
+          - "name"
         full_reference:
           type: reference
           project: "some project"
@@ -25,3 +28,30 @@ configs:
             - "one"
             - "two"
             - "three"
+        list_array:
+          type: list
+          values: ["one", "two", "three"]
+        list_full_values:
+          type: list
+          values:
+            - type: value
+              value: "one"
+            - type: value
+              value: "two"
+            - type: value
+              value: "three"
+        list_complex_values:
+          type: list
+          values:
+            - type: value
+              value:
+                first: Mace
+                last: Windu
+            - type: value
+              value:
+                first: Obi-Wan
+                last: Kenobi
+            - type: value
+              value:
+                first: Anakin
+                last: Skywalker
