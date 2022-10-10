@@ -18,6 +18,11 @@ package downloader
 
 import (
 	"encoding/json"
+	"os"
+	"strconv"
+	"sync"
+	"time"
+
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
@@ -26,9 +31,12 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
 	project "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/concurrency"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
-	"sync"
 )
+
+const defaultConcurrentDownloads = 50
+const concurrentRequestsEnvKey = "CONCURRENT_REQUESTS"
 
 // DownloadAllConfigs downloads all specified apis from a given environment.
 //
@@ -39,38 +47,53 @@ func DownloadAllConfigs(apisToDownload api.ApiMap, client rest.DynatraceClient, 
 	apis := make(project.ConfigsPerApis, len(apisToDownload))
 	apisMutex := sync.Mutex{}
 
-	// during dev: we can use it to greatly improve the speed like this, but in prod we might spam the dt api with too many concurrent requests.
-	// We could use a limiter, e.g. https://pkg.go.dev/github.com/tidwall/limiter?utm_source=godoc#New, or https://github.com/korovkin/limiter
-	// We could use a channel mechanism directly https://calmops.com/golang/golang-limit-total-number-of-goroutines/
 	waitGroup := sync.WaitGroup{}
 	waitGroup.Add(len(apisToDownload))
 
+	limiter := concurrency.NewLimiter(getConcurrentDownloadLimit())
+
 	log.Debug("Fetching configs to download")
+
+	startTime := time.Now()
 
 	for _, currentApi := range apisToDownload {
 		currentApi := currentApi // prevent data race
 
-		go func() {
+		limiter.Execute(func() {
 
 			// download the configs for each api and fill them in the map
-			configs := downloadConfigForApi(currentApi, client, projectName)
+			configs := downloadConfigForApi(currentApi, client, projectName, limiter)
 
 			if len(configs) > 0 {
 				apisMutex.Lock()
 				apis[currentApi.GetId()] = configs
 				apisMutex.Unlock()
 			}
+
 			waitGroup.Done()
-		}()
+		})
 	}
 
+	log.Debug("Started all downloads")
 	waitGroup.Wait()
+	limiter.Close()
 
-	log.Debug("Finished fetching all configs")
+	duration := time.Now().Sub(startTime).Truncate(1 * time.Second)
+	log.Debug("Finished fetching all configs in %v", duration)
+
 	return apis
 }
 
-func downloadConfigForApi(currentApi api.Api, client rest.DynatraceClient, projectName string) []config.Config {
+func getConcurrentDownloadLimit() int {
+	concurrentRequests, err := strconv.Atoi(os.Getenv(concurrentRequestsEnvKey))
+	if err != nil || concurrentRequests < 0 {
+		return defaultConcurrentDownloads
+	}
+
+	return concurrentRequests
+}
+
+func downloadConfigForApi(currentApi api.Api, client rest.DynatraceClient, projectName string, limiter *concurrency.Limiter) []config.Config {
 	var configsToDownload []api.Value
 	var err error
 
@@ -99,9 +122,10 @@ func downloadConfigForApi(currentApi api.Api, client rest.DynatraceClient, proje
 		log.Debug("\tNo configs of type '%v' to download", apiId)
 		return []config.Config{}
 	}
-	configs := createConfigsForApi(currentApi, configsToDownload, client, projectName)
 
 	log.Debug("\tFound %d configs of type '%v' to download", len(configsToDownload), apiId)
+	configs := createConfigsForApi(currentApi, configsToDownload, client, projectName, limiter)
+
 	log.Debug("\tFinished downloading all configs of type '%v'", apiId)
 
 	return configs
@@ -123,7 +147,7 @@ func filterConfigsToSkip(a api.Api, value []api.Value) []api.Value {
 	return valuesToDownload
 }
 
-func createConfigsForApi(theApi api.Api, values []api.Value, client rest.DynatraceClient, projectId string) []config.Config {
+func createConfigsForApi(theApi api.Api, values []api.Value, client rest.DynatraceClient, projectId string, limiter *concurrency.Limiter) []config.Config {
 	configs := make([]config.Config, 0, len(values))
 	configsMutex := sync.Mutex{}
 
@@ -134,7 +158,7 @@ func createConfigsForApi(theApi api.Api, values []api.Value, client rest.Dynatra
 
 		value := value
 
-		go func() {
+		limiter.Execute(func() {
 			conf, skipConfig := downloadConfig(theApi, value, client, projectId)
 
 			if !skipConfig {
@@ -144,7 +168,7 @@ func createConfigsForApi(theApi api.Api, values []api.Value, client rest.Dynatra
 			}
 
 			waitGroup.Done()
-		}()
+		})
 	}
 
 	waitGroup.Wait()
