@@ -16,6 +16,7 @@ package v2
 
 import (
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
 	"path/filepath"
 	"strings"
 
@@ -460,21 +461,11 @@ func parseParameter(context *ConfigLoaderContext, environment manifest.Environme
 				Config:  configId,
 			},
 			ParameterName: name,
-			Value:         toStringMap(val),
+			Value:         maps.ToStringMap(val),
 		})
 	}
 
 	return valueParam.New(param), nil
-}
-
-func toStringMap(m map[interface{}]interface{}) map[string]interface{} {
-	result := make(map[string]interface{})
-
-	for key, value := range m {
-		result[toString(key)] = value
-	}
-
-	return result
 }
 
 // TODO come up with better way to handle this, as this is a hack

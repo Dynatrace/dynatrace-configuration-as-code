@@ -16,6 +16,8 @@
 
 package maps
 
+import "fmt"
+
 // Copy copies everything from source into dest. Existing values are overwritten.
 // dest may be nil if, and only if, source is empty or nil
 func Copy[T comparable, V any, M ~map[T]V](dest, source M) {
@@ -33,4 +35,16 @@ func Keys[K comparable, V any, M ~map[K]V](m M) []K {
 	}
 
 	return keys
+}
+
+// ToStringMap turns the Keys of a map[interface{}]interface{} into string keys
+// keys will be transformed using fmt.Sprintf
+func ToStringMap(m map[interface{}]interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+
+	for key, value := range m {
+		result[fmt.Sprintf("%v", key)] = value
+	}
+
+	return result
 }

@@ -20,6 +20,7 @@
 package maps
 
 import (
+	"fmt"
 	"gotest.tools/assert"
 	"reflect"
 	"sort"
@@ -138,6 +139,59 @@ func TestKeys(t *testing.T) {
 
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Keys() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestToStringMap(t *testing.T) {
+	tests := []struct {
+		name  string
+		input map[interface{}]interface{}
+		want  map[string]interface{}
+	}{
+		{
+			"parses empty map",
+			map[interface{}]interface{}{},
+			map[string]interface{}{},
+		},
+		{
+			"parses string map",
+			map[interface{}]interface{}{
+				"one": "string",
+				"two": "string",
+			},
+			map[string]interface{}{
+				"one": "string",
+				"two": "string",
+			},
+		},
+		{
+			"flattens non-strings",
+			map[interface{}]interface{}{
+				struct {
+					Value  string
+					Number int
+				}{
+					"something",
+					42,
+				}: 52,
+			},
+			map[string]interface{}{
+				fmt.Sprintf("%v", struct {
+					Value  string
+					Number int
+				}{
+					"something",
+					42,
+				}): 52,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ToStringMap(tt.input); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ToStringMap() = %v, want %v", got, tt.want)
 			}
 		})
 	}
