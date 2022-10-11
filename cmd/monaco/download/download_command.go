@@ -16,80 +16,91 @@ package download
 
 import (
 	"fmt"
-
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner/completion"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 )
 
 func GetDownloadCommand(fs afero.Fs, command Command) (downloadCmd *cobra.Command) {
-	var manifest, specificEnvironment, url, project, tokenEnvVar, outputFolder string
+	var specificEnvironment, project, outputFolder string
 	var specificApis []string
 
 	downloadCmd = &cobra.Command{
-		Use:   "download",
-		Short: "Download configuration from Dynatrace",
+		Use:   "download [manifest]",
+		Short: "Download configuration from Dynatrace via a manifest file",
 		Long: `Download configuration from Dynatrace
 
-Either downloading based on an existing manifest, or by defining environment URL and API token via flags.`,
-		Example: `- monaco download -m manifest.yaml -s some_environment_from_manifest
-- monaco download -u environment.live.dynatrace.com -t API_TOKEN_ENV_VAR_NAME`,
+Either downloading based on an existing manifest, or by defining environment URL and API token via the 'direct' sub-command.`,
+		Example: `- monaco download manifest.yaml -s some_environment_from_manifest
+- monaco download direct environment.live.dynatrace.com API_TOKEN_ENV_VAR_NAME`,
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 1 || args[0] == "" {
+				return fmt.Errorf(`manifest has to be provided as argument`)
+			}
+			return nil
+		},
+		ValidArgsFunction: func(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
+			return files.YamlExtensions, cobra.ShellCompDirectiveDefault
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-
-			if manifest != "" {
-				return command.DownloadConfigsBasedOnManifest(fs, manifest, project, specificEnvironment, outputFolder, specificApis)
-			}
-
-			if url != "" {
-				return command.DownloadConfigs(fs, url, project, tokenEnvVar, outputFolder, specificApis)
-			}
-
-			return fmt.Errorf(`either '--manifest' or '--url' has to be provided`)
+			manifest := args[0]
+			return command.DownloadConfigsBasedOnManifest(fs, manifest, project, specificEnvironment, outputFolder, specificApis)
 		},
 	}
 
-	// flags always available
-	downloadCmd.Flags().StringSliceVarP(&specificApis, "specific-api", "a", make([]string, 0), "APIs to download")
-	downloadCmd.Flags().StringVarP(&project, "project", "p", "project", "Project to create within the output-folder")
-	downloadCmd.Flags().StringVarP(&outputFolder, "output-folder", "o", "", "Folder to write downloaded configs to")
-	err := downloadCmd.MarkFlagDirname("output-folder")
+	directDownloadCmd := &cobra.Command{
+		Use:     "direct [URL] [TOKEN_NAME]",
+		Short:   "Download configuration from a Dynatrace environment specified on the command line",
+		Long:    `Download configuration from a Dynatrace environment specified on the command line`,
+		Example: `monaco download direct https://environment.live.dynatrace.com API_TOKEN_ENV_VAR_NAME`,
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 2 || args[0] == "" || args[1] == "" {
+				return fmt.Errorf(`url and token have to be provided as positional argument`)
+			}
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			url := args[0]
+			tokenEnvVar := args[1]
+			return command.DownloadConfigs(fs, url, project, tokenEnvVar, outputFolder, specificApis)
+
+		},
+	}
+
+	downloadCmd.AddCommand(directDownloadCmd)
+
+	// download using the manifest
+	downloadCmd.Flags().StringVarP(&specificEnvironment, "specific-environment", "s", "", "Specific environment from Manifest to download")
+	err := downloadCmd.MarkFlagRequired("specific-environment")
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
-	// TODO david.laubreiter: Continue flag
-
-	// download using the manifest
-	downloadCmd.Flags().StringVarP(&manifest, "manifest", "m", "", "Manifest file")
-	downloadCmd.Flags().StringVarP(&specificEnvironment, "specific-environment", "s", "", "Specific environment from Manifest to download")
-
-	// download directly using flags
-	downloadCmd.Flags().StringVarP(&url, "url", "u", "", "Environment Url")
-	downloadCmd.Flags().StringVarP(&tokenEnvVar, "token", "t", "", "Name of the environment variable containing the token ")
-
 	err = downloadCmd.RegisterFlagCompletionFunc("specific-environment", completion.EnvironmentByArg0)
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
 
-	err = downloadCmd.MarkFlagFilename("manifest", files.YamlExtensions...)
-	if err != nil {
-		log.Fatal("failed to setup CLI %v", err)
-	}
-
-	downloadCmd.MarkFlagsMutuallyExclusive("manifest", "url")
-	downloadCmd.MarkFlagsMutuallyExclusive("manifest", "token")
-
-	downloadCmd.MarkFlagsRequiredTogether("url", "token")
-	downloadCmd.MarkFlagsRequiredTogether("manifest", "specific-environment") // make specific environment optional?
-
-	err = downloadCmd.RegisterFlagCompletionFunc("specific-api", completion.AllAvailableApis)
-	if err != nil {
-		log.Fatal("failed to setup CLI %v", err)
-	}
+	setupSharedFlags(downloadCmd, &project, &outputFolder, &specificApis)
+	setupSharedFlags(directDownloadCmd, &project, &outputFolder, &specificApis)
 
 	return downloadCmd
+}
 
+func setupSharedFlags(cmd *cobra.Command, project, outputFolder *string, specificApis *[]string) {
+	// flags always available
+	cmd.Flags().StringSliceVarP(specificApis, "specific-api", "a", make([]string, 0), "APIs to download")
+	cmd.Flags().StringVarP(project, "project", "p", "project", "Project to create within the output-folder")
+	cmd.Flags().StringVarP(outputFolder, "output-folder", "o", "", "Folder to write downloaded configs to")
+	err := cmd.MarkFlagDirname("output-folder")
+	if err != nil {
+		log.Fatal("failed to setup CLI %v", err)
+	}
+
+	err = cmd.RegisterFlagCompletionFunc("specific-api", completion.AllAvailableApis)
+	if err != nil {
+		log.Fatal("failed to setup CLI %v", err)
+	}
 }

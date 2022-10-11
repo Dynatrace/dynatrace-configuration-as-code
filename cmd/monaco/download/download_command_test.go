@@ -37,34 +37,29 @@ func TestInvalidCliCommands(t *testing.T) {
 		errorContainsExpected []string
 	}{
 		{
-			"neither manifest nor url provided",
+			"no arguments provided",
 			"",
-			[]string{"either '--manifest' or '--url' has to be provided"},
+			[]string{"manifest has to be provided as argument"},
 		},
 		{
-			"both --url and --manifest provided",
-			"--url test --manifest manifest.yaml --specific-environment test --project test --token test --",
-			[]string{"none of the others can be"},
+			"no arguments provided to direct download",
+			"direct",
+			[]string{"url and token have to be provided as positional argument"},
 		},
 		{
-			"url without arg",
-			"--url",
-			[]string{"--url"},
+			"url is missing other required argument",
+			"direct some.env.url.com",
+			[]string{"url and token have to be provided as positional argument"},
 		},
 		{
-			"--url is missing other required parameters",
-			"--url test",
-			[]string{"token"},
-		},
-		{
-			"--manifest is missing argument",
-			"--manifest",
-			[]string{"needs an argument"},
-		},
-		{
-			"--manifest is missing other required parameters",
-			"--manifest test.yaml",
+			"manifest is missing required parameter",
+			"manifest.yaml",
 			[]string{"specific-environment"},
+		},
+		{
+			"manifest is missing put flags are set",
+			"--specific-environment some_env",
+			[]string{"manifest has to be provided as argument"},
 		},
 		{
 			"unknown flag",
@@ -103,84 +98,84 @@ func TestValidCommands(t *testing.T) {
 	}{
 		{
 			"direct download no specific apis",
-			"--url test --project test --token token",
+			"direct test.url token --project test",
 			func(cmd *MockCommand) {
-				cmd.EXPECT().DownloadConfigs(gomock.Any(), "test", "test", "token", "", []string{})
+				cmd.EXPECT().DownloadConfigs(gomock.Any(), "test.url", "test", "token", "", []string{})
 			},
 		},
 		{
 			"direct download with default project",
-			"--url test --token token",
+			"direct test.url token",
 			func(cmd *MockCommand) {
-				cmd.EXPECT().DownloadConfigs(gomock.Any(), "test", "project", "token", "", []string{})
+				cmd.EXPECT().DownloadConfigs(gomock.Any(), "test.url", "project", "token", "", []string{})
 			},
 		},
 		{
 			"direct download with specific apis (multiple flags)",
-			"--url test --project test --token token --specific-api test --specific-api test2",
+			"direct test.url token --project test --specific-api test --specific-api test2",
 			func(cmd *MockCommand) {
-				cmd.EXPECT().DownloadConfigs(gomock.Any(), "test", "test", "token", "", []string{"test", "test2"})
+				cmd.EXPECT().DownloadConfigs(gomock.Any(), "test.url", "test", "token", "", []string{"test", "test2"})
 			},
 		},
 		{
 			"direct download with specific apis (single flag)",
-			"--url test --project test --token token --specific-api test,test2",
+			"direct test.url token --project test --specific-api test,test2",
 			func(cmd *MockCommand) {
-				cmd.EXPECT().DownloadConfigs(gomock.Any(), "test", "test", "token", "", []string{"test", "test2"})
+				cmd.EXPECT().DownloadConfigs(gomock.Any(), "test.url", "test", "token", "", []string{"test", "test2"})
 			},
 		},
 		{
 			"direct download with specific apis (mixed flags)",
-			"--url test --project test --token token --specific-api test,test2 --specific-api test3",
+			"direct test.url token --project test --specific-api test,test2 --specific-api test3",
 			func(cmd *MockCommand) {
-				cmd.EXPECT().DownloadConfigs(gomock.Any(), "test", "test", "token", "", []string{"test", "test2", "test3"})
+				cmd.EXPECT().DownloadConfigs(gomock.Any(), "test.url", "test", "token", "", []string{"test", "test2", "test3"})
 			},
 		},
 		{
 			"direct download with outputfolder",
-			"--url test --token token --output-folder myDownloads",
+			"direct test.url token --output-folder myDownloads",
 			func(cmd *MockCommand) {
-				cmd.EXPECT().DownloadConfigs(gomock.Any(), "test", "project", "token", "myDownloads", []string{})
+				cmd.EXPECT().DownloadConfigs(gomock.Any(), "test.url", "project", "token", "myDownloads", []string{})
 			},
 		},
 		{
 			"manifest download no specific apis",
-			"--manifest test.yaml --specific-environment test",
+			"test.yaml --specific-environment test",
 			func(cmd *MockCommand) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), "test.yaml", "project", "test", "", []string{})
 			},
 		},
 		{
 			"manifest download with specific apis (multiple flags)",
-			"--manifest test.yaml --specific-environment test --specific-api test --specific-api test2",
+			"test.yaml --specific-environment test --specific-api test --specific-api test2",
 			func(cmd *MockCommand) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), "test.yaml", "project", "test", "", []string{"test", "test2"})
 			},
 		},
 		{
 			"manifest download with specific apis (single flag)",
-			"--manifest test.yaml --specific-environment test --specific-api test,test2",
+			"test.yaml --specific-environment test --specific-api test,test2",
 			func(cmd *MockCommand) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), "test.yaml", "project", "test", "", []string{"test", "test2"})
 			},
 		},
 		{
 			"manifest download with specific apis (mixed flags)",
-			"--manifest test.yaml --specific-environment test --specific-api test,test2 --specific-api test3",
+			"test.yaml --specific-environment test --specific-api test,test2 --specific-api test3",
 			func(cmd *MockCommand) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), "test.yaml", "project", "test", "", []string{"test", "test2", "test3"})
 			},
 		},
 		{
 			"manifest download with project",
-			"--manifest test.yaml --specific-environment test --project testproject",
+			"test.yaml --specific-environment test --project testproject",
 			func(cmd *MockCommand) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), "test.yaml", "testproject", "test", "", []string{})
 			},
 		},
 		{
 			"manifest download with outputfolder",
-			"--manifest test.yaml --specific-environment test --output-folder myDownloads",
+			"test.yaml --specific-environment test --output-folder myDownloads",
 			func(cmd *MockCommand) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), "test.yaml", "project", "test", "myDownloads", []string{})
 			},

@@ -26,6 +26,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
 	"github.com/spf13/afero"
+	"net/url"
 	"os"
 	"path"
 	"strings"
@@ -178,6 +179,10 @@ func validateParameters(envVarName, environmentUrl, projectName, token string) [
 
 	if environmentUrl == "" {
 		errors = append(errors, fmt.Errorf("url not specified"))
+	}
+
+	if _, err := url.Parse(environmentUrl); err != nil {
+		errors = append(errors, fmt.Errorf("url is invalid: %w", err))
 	}
 
 	if projectName == "" {

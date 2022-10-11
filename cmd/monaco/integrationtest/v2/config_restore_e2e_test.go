@@ -124,19 +124,21 @@ func execution_downloadConfigsWithCLIParameters(t *testing.T, fs afero.Fs, downl
 	if apisToDownload == "all" {
 		parameters = []string{
 			"download",
+			"direct",
+			os.Getenv("URL_ENVIRONMENT_1"),
+			"TOKEN_ENVIRONMENT_1",
 			"--verbose",
-			"--url", os.Getenv("URL_ENVIRONMENT_1"),
-			"--token", "TOKEN_ENVIRONMENT_1",
 			"--output-folder", downloadFolder,
 		}
 	} else {
 		parameters = []string{
 			"download",
+			"direct",
+			os.Getenv("URL_ENVIRONMENT_1"),
+			"TOKEN_ENVIRONMENT_1",
 			"--verbose",
 			"--specific-api",
 			apisToDownload,
-			"--url", os.Getenv("URL_ENVIRONMENT_1"),
-			"--token", "TOKEN_ENVIRONMENT_1",
 			"--output-folder", downloadFolder,
 		}
 	}
@@ -161,18 +163,18 @@ func execution_downloadConfigs(t *testing.T, fs afero.Fs, downloadFolder string,
 	if apisToDownload == "all" {
 		parameters = []string{
 			"download",
+			manifestFile,
 			"--verbose",
-			"--manifest", manifestFile,
 			"--specific-environment", "environment1",
 			"--output-folder", downloadFolder,
 		}
 	} else {
 		parameters = []string{
 			"download",
+			manifestFile,
 			"--verbose",
 			"--specific-api",
 			apisToDownload,
-			"--manifest", manifestFile,
 			"--specific-environment", "environment1",
 			"--output-folder", downloadFolder,
 		}
