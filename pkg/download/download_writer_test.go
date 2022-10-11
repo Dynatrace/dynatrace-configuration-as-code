@@ -34,6 +34,7 @@ func TestWriteToDisk(t *testing.T) {
 		fs                afero.Fs
 		downloadedConfigs v2.ConfigsPerApis
 		projectName       string
+		tokenEnvVarName   string
 		environmentUrl    string
 		outputFolder      string
 		timestampString   string
@@ -65,6 +66,7 @@ func TestWriteToDisk(t *testing.T) {
 					},
 				},
 				projectName:     "test-project",
+				tokenEnvVarName: "TEST_ENV_TOKEN",
 				environmentUrl:  "env.url.com",
 				outputFolder:    "test-output",
 				timestampString: "TESTING_TIME",
@@ -93,6 +95,7 @@ func TestWriteToDisk(t *testing.T) {
 					},
 				},
 				projectName:     "test-project",
+				tokenEnvVarName: "TEST_ENV_TOKEN",
 				environmentUrl:  "env.url.com",
 				outputFolder:    "",
 				timestampString: "TESTING_TIME",
@@ -121,6 +124,7 @@ func TestWriteToDisk(t *testing.T) {
 					},
 				},
 				projectName:     "test-project",
+				tokenEnvVarName: "TEST_ENV_TOKEN",
 				environmentUrl:  "env.url.com",
 				outputFolder:    "test-output",
 				timestampString: "TESTING_TIME",
@@ -132,7 +136,7 @@ func TestWriteToDisk(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := writeToDisk(tt.args.fs, tt.args.downloadedConfigs, tt.args.projectName, tt.args.environmentUrl, tt.args.outputFolder, tt.args.timestampString); (err != nil) != tt.wantErr {
+			if err := writeToDisk(tt.args.fs, tt.args.downloadedConfigs, tt.args.projectName, tt.args.tokenEnvVarName, tt.args.environmentUrl, tt.args.outputFolder, tt.args.timestampString); (err != nil) != tt.wantErr {
 				t.Errorf("WriteToDisk() error = %v, wantErr %v", err, tt.wantErr)
 			}
 

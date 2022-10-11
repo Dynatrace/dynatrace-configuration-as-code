@@ -87,7 +87,12 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile
 		return fmt.Errorf("failed to load manifest data")
 	}
 
-	return doDownload(fs, url, fmt.Sprintf("%s_%s", projectName, specificEnvironmentName), token, outputFolder, apisToDownload)
+	tokenEnvVar := fmt.Sprintf("TOKEN_%s", strings.ToUpper(projectName))
+	if envVarToken, ok := env.Token.(*manifest.EnvironmentVariableToken); ok {
+		tokenEnvVar = envVarToken.EnvironmentVariableName
+	}
+
+	return doDownload(fs, url, fmt.Sprintf("%s_%s", projectName, specificEnvironmentName), token, tokenEnvVar, outputFolder, apisToDownload)
 }
 
 func (d DefaultCommand) DownloadConfigs(fs afero.Fs, environmentUrl, projectName, envVarName, outputFolder string, apiNamesToDownload []string) error {
@@ -108,10 +113,10 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, environmentUrl, projectName
 		return fmt.Errorf("not all necessary information is present to start downloading configurations")
 	}
 
-	return doDownload(fs, environmentUrl, projectName, token, outputFolder, apis)
+	return doDownload(fs, environmentUrl, projectName, token, envVarName, outputFolder, apis)
 }
 
-func doDownload(fs afero.Fs, environmentUrl, projectName, token, outputFolder string, apis api.ApiMap) error {
+func doDownload(fs afero.Fs, environmentUrl, projectName, token, tokenEnvVarName, outputFolder string, apis api.ApiMap) error {
 
 	log.Info("Downloading from environment '%v' into project '%v'", environmentUrl, projectName)
 	log.Debug("APIS to download: \n - %v", strings.Join(maps.Keys(apis), "\n - "))
@@ -133,7 +138,7 @@ func doDownload(fs afero.Fs, environmentUrl, projectName, token, outputFolder st
 	log.Info("Resolving dependencies between configurations")
 	downloadedConfigs = download.ResolveDependencies(downloadedConfigs)
 
-	err = download.WriteToDisk(fs, downloadedConfigs, projectName, environmentUrl, outputFolder)
+	err = download.WriteToDisk(fs, downloadedConfigs, projectName, tokenEnvVarName, environmentUrl, outputFolder)
 	if err != nil {
 		return err
 	}

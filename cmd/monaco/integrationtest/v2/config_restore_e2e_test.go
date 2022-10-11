@@ -50,9 +50,6 @@ func TestRestoreConfigs_FromDownloadWithManifestFile(t *testing.T) {
 	subsetOfConfigsToDownload := "alerting-profile,management-zone"
 	suffixTest := "_download_manifest"
 
-	// ensure Token env var expected to be inside download manifest is set
-	t.Setenv("TOKEN_PROJECT_ENVIRONMENT1", os.Getenv("TOKEN_ENVIRONMENT_1"))
-
 	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, execution_downloadConfigs)
 }
 
@@ -62,9 +59,6 @@ func TestRestoreConfigs_FromDownloadWithCLIParameters(t *testing.T) {
 	downloadFolder := "test-resources/download"
 	subsetOfConfigsToDownload := "alerting-profile,management-zone"
 	suffixTest := "_download_cli-only"
-
-	// ensure Token env var expected to be inside download manifest is set
-	t.Setenv("TOKEN_PROJECT", os.Getenv("TOKEN_ENVIRONMENT_1"))
 
 	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, execution_downloadConfigsWithCLIParameters)
 }
@@ -76,9 +70,6 @@ func TestRestoreConfigsFull(t *testing.T) {
 	downloadFolder := "test-resources/download"
 	subsetOfConfigsToDownload := "all" //value only for testing
 	suffixTest := "_download_all"
-
-	// ensure Token env var expected to be inside download manifest is set
-	t.Setenv("TOKEN_PROJECT_ENVIRONMENT1", os.Getenv("TOKEN_ENVIRONMENT_1"))
 
 	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, execution_downloadConfigs)
 }

@@ -26,18 +26,17 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/writer"
 	"github.com/spf13/afero"
 	"path/filepath"
-	"strings"
 	"time"
 )
 
 // WriteToDisk writes all projects to the disk
-func WriteToDisk(fs afero.Fs, downloadedConfigs project.ConfigsPerApis, projectName, environmentUrl, outputFolder string) error {
+func WriteToDisk(fs afero.Fs, downloadedConfigs project.ConfigsPerApis, projectName, tokenEnvVarName, environmentUrl, outputFolder string) error {
 	timestampString := time.Now().Format("2006-01-02-150405")
 
-	return writeToDisk(fs, downloadedConfigs, projectName, environmentUrl, outputFolder, timestampString)
+	return writeToDisk(fs, downloadedConfigs, projectName, tokenEnvVarName, environmentUrl, outputFolder, timestampString)
 }
 
-func writeToDisk(fs afero.Fs, downloadedConfigs project.ConfigsPerApis, projectName, environmentUrl, outputFolder, timestampString string) error {
+func writeToDisk(fs afero.Fs, downloadedConfigs project.ConfigsPerApis, projectName, tokenEnvVarName, environmentUrl, outputFolder, timestampString string) error {
 
 	log.Debug("Preparing downloaded data for persisting")
 
@@ -63,7 +62,7 @@ func writeToDisk(fs afero.Fs, downloadedConfigs project.ConfigsPerApis, projectN
 				},
 				"default",
 				&manifest.EnvironmentVariableToken{
-					EnvironmentVariableName: fmt.Sprintf("TOKEN_%s", strings.ToUpper(projectName)),
+					EnvironmentVariableName: tokenEnvVarName,
 				}),
 		},
 	}
