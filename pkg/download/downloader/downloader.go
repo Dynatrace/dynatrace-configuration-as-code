@@ -44,11 +44,16 @@ func DownloadAllConfigs(apisToDownload api.ApiMap, client rest.DynatraceClient, 
 	return downloadAllConfigs(apisToDownload, client, projectName, downloadConfigForApi)
 }
 
+type (
+	downloadConfigForApiFunc func(api.Api, rest.DynatraceClient, string, filterConfigsToSkipFunc) []config.Config
+	filterConfigsToSkipFunc  func(api.Api, []api.Value) []api.Value
+)
+
 func downloadAllConfigs(
 	apisToDownload api.ApiMap,
 	client rest.DynatraceClient,
 	projectName string,
-	downloadConfigForApi func(currentApi api.Api, client rest.DynatraceClient, projectName string) []config.Config,
+	downloadConfigForApi downloadConfigForApiFunc,
 ) project.ConfigsPerApis {
 
 	// apis & mutex to lock it
@@ -70,7 +75,7 @@ func downloadAllConfigs(
 		go func() {
 
 			// download the configs for each api and fill them in the map
-			configs := downloadConfigForApi(currentApi, client, projectName)
+			configs := downloadConfigForApi(currentApi, client, projectName, filterConfigsToSkip)
 
 			if len(configs) > 0 {
 				apisMutex.Lock()
@@ -100,43 +105,48 @@ func getConcurrentDownloadLimit() int {
 	return concurrentRequests
 }
 
-func downloadConfigForApi(currentApi api.Api, client rest.DynatraceClient, projectName string) []config.Config {
-	var configsToDownload []api.Value
-	var err error
+func downloadConfigForApi(
+	currentApi api.Api,
+	client rest.DynatraceClient,
+	projectName string,
+	filterConfigsToSkip filterConfigsToSkipFunc,
+) []config.Config {
 
-	apiId := currentApi.GetId()
-
-	if !currentApi.IsSingleConfigurationApi() {
-		log.Debug("\tFetching all '%v' configs", apiId)
-		configsToDownload, err = client.List(currentApi)
-
-		if err != nil {
-			log.Error("\tFailed to fetch configs of type '%v', skipping download of this type. Reason: %v", apiId, err)
-			return []config.Config{}
-		}
-	} else {
-		log.Debug("\tFetching singleton-configuration '%v'", apiId)
-
-		// singleton-config. We use the api-id as mock-id
-		singletonConfigToDownload := api.Value{Id: currentApi.GetId(), Name: currentApi.GetId()}
-		configsToDownload = []api.Value{singletonConfigToDownload}
+	configsToDownload, err := findConfigsToDownload(currentApi, client)
+	if err != nil {
+		log.Error("\tFailed to fetch configs of type '%v', skipping download of this type. Reason: %v", currentApi.GetId(), err)
+		return []config.Config{}
 	}
 
 	// filter all configs we do not want to download. All remaining will be downloaded
 	configsToDownload = filterConfigsToSkip(currentApi, configsToDownload)
 
 	if len(configsToDownload) == 0 {
-		log.Debug("\tNo configs of type '%v' to download", apiId)
+		log.Debug("\tNo configs of type '%v' to download", currentApi.GetId())
 		return []config.Config{}
 	}
 
-	log.Debug("\tFound %d configs of type '%v' to download", len(configsToDownload), apiId)
+	log.Debug("\tFound %d configs of type '%v' to download", len(configsToDownload), currentApi.GetId())
 	configs := createConfigsForApi(currentApi, configsToDownload, client, projectName)
 
-	log.Debug("\tFinished downloading all configs of type '%v'", apiId)
+	log.Debug("\tFinished downloading all configs of type '%v'", currentApi.GetId())
 
 	return configs
 
+}
+
+func findConfigsToDownload(currentApi api.Api, client rest.DynatraceClient) ([]api.Value, error) {
+
+	if currentApi.IsSingleConfigurationApi() {
+		log.Debug("\tFetching singleton-configuration '%v'", currentApi.GetId())
+
+		// singleton-config. We use the api-id as mock-id
+		singletonConfigToDownload := api.Value{Id: currentApi.GetId(), Name: currentApi.GetId()}
+		return []api.Value{singletonConfigToDownload}, nil
+	}
+
+	log.Debug("\tFetching all '%v' configs", currentApi.GetId())
+	return client.List(currentApi)
 }
 
 // filterConfigsToSkip filters the configs to download to not needed configs. E.g. dashboards from Dynatrace are presets - we can discard them immediately before downloading
