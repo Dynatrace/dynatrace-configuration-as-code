@@ -27,6 +27,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
 	"github.com/spf13/afero"
 	"os"
+	"path"
 	"strings"
 )
 
@@ -118,6 +119,13 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, environmentUrl, projectName
 
 func doDownload(fs afero.Fs, environmentUrl, projectName, token, tokenEnvVarName, outputFolder string, apis api.ApiMap) error {
 
+	errors := validateOutputFolder(fs, outputFolder, projectName)
+	if len(errors) > 0 {
+		util.PrintErrors(errors)
+
+		return fmt.Errorf("output folder is invalid")
+	}
+
 	log.Info("Downloading from environment '%v' into project '%v'", environmentUrl, projectName)
 	log.Debug("APIS to download: \n - %v", strings.Join(maps.Keys(apis), "\n - "))
 
@@ -174,6 +182,36 @@ func validateParameters(envVarName, environmentUrl, projectName, token string) [
 
 	if projectName == "" {
 		errors = append(errors, fmt.Errorf("project not specified"))
+	}
+
+	return errors
+}
+
+func validateOutputFolder(fs afero.Fs, outputFolder, project string) []error {
+	errors := make([]error, 0)
+
+	errors = append(errors, validateFolder(fs, outputFolder)...)
+	if len(errors) > 0 {
+		return errors
+	}
+	errors = append(errors, validateFolder(fs, path.Join(outputFolder, project))...)
+	return errors
+}
+
+func validateFolder(fs afero.Fs, path string) []error {
+	errors := make([]error, 0)
+	exists, err := afero.Exists(fs, path)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("failed to check if output folder '%s' exists: %w", path, err))
+	}
+	if exists {
+		isDir, err := afero.IsDir(fs, path)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("failed to check if output folder '%s' is a folder: %w", path, err))
+		}
+		if !isDir {
+			errors = append(errors, fmt.Errorf("unable to write to '%s': file exists and is not a directory", path))
+		}
 	}
 
 	return errors
