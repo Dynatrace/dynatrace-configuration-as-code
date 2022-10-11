@@ -65,7 +65,7 @@ func TestGetDownloadLimit(t *testing.T) {
 
 func TestDownloadAllConfigs(t *testing.T) {
 	t.Run("empty api map returns nothing and does not call the download function", func(t *testing.T) {
-		callback := func(currentApi api.Api, client rest.DynatraceClient, projectName string) []config.Config {
+		callback := func(currentApi api.Api, client rest.DynatraceClient, projectName string, _ findConfigsToDownloadFunc, _ filterConfigsToSkipFunc, _ downloadConfigsOfApiFunc) []config.Config {
 			t.Error("callback should not have been called")
 			return nil
 		}
@@ -77,7 +77,7 @@ func TestDownloadAllConfigs(t *testing.T) {
 		a, _ := api.CreateAPIMockWithId(t, "id")
 		c := config.Config{}
 
-		callback := func(currentApi api.Api, client rest.DynatraceClient, projectName string) []config.Config {
+		callback := func(currentApi api.Api, client rest.DynatraceClient, projectName string, _ findConfigsToDownloadFunc, _ filterConfigsToSkipFunc, _ downloadConfigsOfApiFunc) []config.Config {
 			assert.Equal(t, currentApi, a)
 
 			return []config.Config{c}
@@ -93,7 +93,7 @@ func TestDownloadAllConfigs(t *testing.T) {
 	t.Run("one api without configs is not inserted", func(t *testing.T) {
 		a, _ := api.CreateAPIMockFactory(t)
 
-		callback := func(currentApi api.Api, client rest.DynatraceClient, projectName string) []config.Config {
+		callback := func(currentApi api.Api, client rest.DynatraceClient, projectName string, _ findConfigsToDownloadFunc, _ filterConfigsToSkipFunc, _ downloadConfigsOfApiFunc) []config.Config {
 			assert.Equal(t, currentApi, a)
 
 			return []config.Config{}
@@ -111,8 +111,8 @@ func TestDownloadAllConfigs(t *testing.T) {
 		c1 := config.Config{}
 		c2 := config.Config{}
 
-		callback := func(currentApi api.Api, client rest.DynatraceClient, projectName string) []config.Config {
-			switch currentApi.GetId() { // return differnt results for differnt apis
+		callback := func(currentApi api.Api, client rest.DynatraceClient, projectName string, _ findConfigsToDownloadFunc, _ filterConfigsToSkipFunc, _ downloadConfigsOfApiFunc) []config.Config {
+			switch currentApi.GetId() { // return different results for different apis
 			case "api-1":
 				return []config.Config{}
 			case "api-2":
