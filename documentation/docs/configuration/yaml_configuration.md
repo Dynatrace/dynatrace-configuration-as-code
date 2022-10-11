@@ -50,18 +50,24 @@ The `config` field offers the following fields:
 ### Config - Parameters
 
 There are a number of different parameter types available.
-Please see [here](./parameters.md) for more details.
 
-### Newlines in YAML Configuration
+Please see [the page on Parameters](./parameters.md) for more details.
 
-All line breaks uses in YAML values will be escaped before being added into configuration uploaded to Dynatrace.
+### String Escaping of Config
+
+In general all YAML values will be escaped before being added into configuration uploaded to Dynatrace.
+
+This ensures that fully filled templates are valid JSON when uploading. 
+
+Any newlines, special characters like double-quotes, etc. will be escaped.
 
 ```yaml
-development:
-    - name: "Dev"
-    - example1: "This is \\n already escaped" 
-    - example2: "This will \n be escaped"
-    - text: |
+parameters:
+    name: "Dev"
+    example1: "This is \\n already escaped" 
+    example2: "This will \n be escaped"
+    example3: This "will" be escaped too
+    text: |
         This will also
         be escaped
 ```
