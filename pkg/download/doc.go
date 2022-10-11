@@ -41,7 +41,16 @@ In case of an occurrence, the occurrence is replaced by a generic variable, and 
 
 Entry point: [WriteToDisk]
 
-Our persistence is also very basic at the moment. All configs that were downloaded are simply stored on the specified path.
+When persisting, all configs that were downloaded are stored in a project folder inside either a specified outputFolder,
+or a default folder named 'download_{TIMESTAMP}'.
+
 If any existing configs are located there, they are overwritten.
+
+In addition to downloaded configurations, a manifest file is created which can be used to deploy the downloaded configs.
+If a manifest.yaml already exists in the outputFolder a timestamp is appended and a new manifest created to ensure a
+config 'update' does not destroy existing manifests.
+
+The result of WriteToDisk will be a full configuration project and manifest with which that project can be deployed,
+written to the Filesystem.
 */
 package download
