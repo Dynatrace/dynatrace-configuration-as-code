@@ -26,7 +26,7 @@ the template file.
 
 Since `values` are the most common type of parameter, there is also a
 special short form syntax to define them. If your parameter is neither
-an array, nor an map, you can simply provide the value.
+an array, nor a map, you can simply provide the value.
 
 Example:
 
@@ -201,3 +201,43 @@ parameters:
     config: dashboard
     property: status
 ```
+
+## List Parameter
+
+Parameters of type `list` allow you to define lists of Value Parameters.
+
+When written into a Template, these will be written as a JSON list surrounded
+by square-brackets and seperated by commas. 
+
+This type of parameter is generally useful when you require a simple list of things like emails, identifiers, etc., 
+but can be filled with any kind of Value parameter.
+
+Example:
+
+```yaml
+parameters:
+  recipients:
+    type: list
+    values: 
+        - first.last@company.com
+        - someone.else@company.com
+  geolocations: 
+    type: list
+    values: ["GEOLOCATTION-1234567", "GEOLOCATION-7654321"]
+```
+
+In the example above you see that you can define the list values either line by line, 
+or as an array in YAML.
+
+When using a List Parameter Value in a JSON Template, make sure to just reference the value without any extra brackets. 
+ 
+ ```json
+{
+    "emails": {{ .recipients }}
+}
+```
+ 
+ > **Note** that this differs from the sometimes used string list in v1 for which the template needed to include square brackets
+> (e.g. `"emails": [ {{ .recipients }} ]`).
+> 
+> When such lists are encountered upon converting v1 configuration Templates will be automatically updated.
