@@ -8,5 +8,10 @@ configs:
         config: zone
         property: name
         type: reference
+      threshold:
+        type: value
+        value:
+          target: 95
+          warning: 97.5
     template: slo.json
     skip: false
