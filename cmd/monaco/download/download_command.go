@@ -53,7 +53,7 @@ Either downloading based on an existing manifest, or by defining environment URL
 
 	// flags always available
 	downloadCmd.Flags().StringSliceVarP(&specificApis, "specific-api", "a", make([]string, 0), "APIs to download")
-	downloadCmd.Flags().StringVarP(&project, "project", "p", "project", "Project name (folder) to create")
+	downloadCmd.Flags().StringVarP(&project, "project", "p", "project", "Project to create within the output-folder")
 	downloadCmd.Flags().StringVarP(&outputFolder, "output-folder", "o", "", "Folder to write downloaded configs to")
 	err := downloadCmd.MarkFlagDirname("output-folder")
 	if err != nil {
