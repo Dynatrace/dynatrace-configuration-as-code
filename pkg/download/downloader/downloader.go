@@ -44,7 +44,7 @@ func DownloadAllConfigs(apisToDownload api.ApiMap, client rest.DynatraceClient, 
 	return downloadAllConfigs(apisToDownload, client, projectName, downloadConfigForApi)
 }
 
-type downloadConfigForApiFunc func(api.Api, rest.DynatraceClient, string, findConfigsToDownloadFunc, filterConfigsToSkipFunc, createConfigsForApiFunc) []config.Config
+type downloadConfigForApiFunc func(api.Api, rest.DynatraceClient, string, findConfigsToDownloadFunc, filterConfigsToSkipFunc, downloadConfigsOfApiFunc) []config.Config
 
 func downloadAllConfigs(
 	apisToDownload api.ApiMap,
@@ -72,7 +72,7 @@ func downloadAllConfigs(
 		go func() {
 
 			// download the configs for each api and fill them in the map
-			configs := downloadConfigForApi(currentApi, client, projectName, findConfigsToDownload, filterConfigsToSkip, createConfigsForApi)
+			configs := downloadConfigForApi(currentApi, client, projectName, findConfigsToDownload, filterConfigsToSkip, downloadConfigsOfApi)
 
 			if len(configs) > 0 {
 				apisMutex.Lock()
@@ -105,7 +105,7 @@ func getConcurrentDownloadLimit() int {
 type (
 	findConfigsToDownloadFunc func(currentApi api.Api, client rest.DynatraceClient) ([]api.Value, error)
 	filterConfigsToSkipFunc   func(api.Api, []api.Value) []api.Value
-	createConfigsForApiFunc   func(theApi api.Api, values []api.Value, client rest.DynatraceClient, projectId string) []config.Config
+	downloadConfigsOfApiFunc  func(api.Api, []api.Value, rest.DynatraceClient, string) []config.Config
 )
 
 func downloadConfigForApi(
@@ -114,7 +114,7 @@ func downloadConfigForApi(
 	projectName string,
 	findConfigsToDownload findConfigsToDownloadFunc,
 	filterConfigsToSkip filterConfigsToSkipFunc,
-	createConfigsForApi createConfigsForApiFunc,
+	downloadConfigsOfApi downloadConfigsOfApiFunc,
 ) []config.Config {
 
 	configsToDownload, err := findConfigsToDownload(currentApi, client)
@@ -132,7 +132,7 @@ func downloadConfigForApi(
 	}
 
 	log.Debug("\tFound %d configs of type '%v' to download", len(configsToDownload), currentApi.GetId())
-	configs := createConfigsForApi(currentApi, configsToDownload, client, projectName)
+	configs := downloadConfigsOfApi(currentApi, configsToDownload, client, projectName)
 
 	log.Debug("\tFinished downloading all configs of type '%v'", currentApi.GetId())
 
@@ -169,7 +169,7 @@ func filterConfigsToSkip(a api.Api, value []api.Value) []api.Value {
 	return valuesToDownload
 }
 
-func createConfigsForApi(theApi api.Api, values []api.Value, client rest.DynatraceClient, projectId string) []config.Config {
+func downloadConfigsOfApi(theApi api.Api, values []api.Value, client rest.DynatraceClient, projectId string) []config.Config {
 	configs := make([]config.Config, 0, len(values))
 	configsMutex := sync.Mutex{}
 
