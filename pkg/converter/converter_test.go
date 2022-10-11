@@ -86,12 +86,12 @@ func TestConvertParameters(t *testing.T) {
 	nameParameter, found := parameters["name"]
 
 	assert.Equal(t, true, found)
-	assert.Equal(t, configName, nameParameter.(*valueParam.LegacyValueParameter).Value)
+	assert.Equal(t, configName, nameParameter.(*valueParam.ValueParameter).Value)
 
 	simpleParameter, found := parameters[simpleParameterName]
 
 	assert.Equal(t, true, found)
-	assert.Equal(t, simpleParameterValue, simpleParameter.(*valueParam.LegacyValueParameter).Value)
+	assert.Equal(t, simpleParameterValue, simpleParameter.(*valueParam.ValueParameter).Value)
 
 	referenceParameter, found := parameters[referenceParameterName]
 
@@ -326,8 +326,8 @@ func TestConvertConfig(t *testing.T) {
 	assert.Equal(t, "zone", references[0].Config)
 
 	assert.Equal(t, 4, len(convertedConfig.Parameters))
-	assert.Equal(t, configName, convertedConfig.Parameters["name"].(*valueParam.LegacyValueParameter).Value)
-	assert.Equal(t, simpleParameterValue, convertedConfig.Parameters[simpleParameterName].(*valueParam.LegacyValueParameter).Value)
+	assert.Equal(t, configName, convertedConfig.Parameters["name"].(*valueParam.ValueParameter).Value)
+	assert.Equal(t, simpleParameterValue, convertedConfig.Parameters[simpleParameterName].(*valueParam.ValueParameter).Value)
 	assert.Equal(t, envVarName,
 		convertedConfig.Parameters[transformEnvironmentToParamName(envVarName)].(*envParam.EnvironmentVariableParameter).Name)
 }
@@ -385,8 +385,8 @@ func TestConvertDeprecatedConfigToLatest(t *testing.T) {
 	assert.Equal(t, "zone", references[0].Config)
 
 	assert.Equal(t, 4, len(convertedConfig.Parameters))
-	assert.Equal(t, configName, convertedConfig.Parameters["name"].(*valueParam.LegacyValueParameter).Value)
-	assert.Equal(t, simpleParameterValue, convertedConfig.Parameters[simpleParameterName].(*valueParam.LegacyValueParameter).Value)
+	assert.Equal(t, configName, convertedConfig.Parameters["name"].(*valueParam.ValueParameter).Value)
+	assert.Equal(t, simpleParameterValue, convertedConfig.Parameters[simpleParameterName].(*valueParam.ValueParameter).Value)
 	assert.Equal(t, envVarName,
 		convertedConfig.Parameters[transformEnvironmentToParamName(envVarName)].(*envParam.EnvironmentVariableParameter).Name)
 }
@@ -541,7 +541,7 @@ func TestConvertConfigs(t *testing.T) {
 	assert.Equal(t, 5, len(c.Parameters))
 
 	// assert value param is converted as expected
-	assert.Equal(t, simpleParameterValue, c.Parameters[simpleParameterName].(*valueParam.LegacyValueParameter).Value)
+	assert.Equal(t, simpleParameterValue, c.Parameters[simpleParameterName].(*valueParam.ValueParameter).Value)
 
 	// assert value param is converted as expected
 	assert.Equal(t, coordinate.Coordinate{
@@ -568,7 +568,7 @@ func TestConvertConfigs(t *testing.T) {
 	assert.Equal(t, 5, len(c.Parameters))
 
 	// assert override simple param is converted as expected
-	assert.Equal(t, simpleParameterValue2, c.Parameters[simpleParameterName].(*valueParam.LegacyValueParameter).Value)
+	assert.Equal(t, simpleParameterValue2, c.Parameters[simpleParameterName].(*valueParam.ValueParameter).Value)
 
 	// assert override list param is converted as expected
 	// assert list param is converted as expected
@@ -654,7 +654,7 @@ func TestConvertProjects(t *testing.T) {
 	c := configs[0]
 	assert.Equal(t, configId, c.Coordinate.Config)
 	assert.Equal(t, 3, len(c.Parameters))
-	assert.Equal(t, simpleParameterValue, c.Parameters[simpleParameterName].(*valueParam.LegacyValueParameter).Value)
+	assert.Equal(t, simpleParameterValue, c.Parameters[simpleParameterName].(*valueParam.ValueParameter).Value)
 
 	apiConfigs = convertedConfigs[environmentName2]
 	assert.Equal(t, 1, len(apiConfigs))
@@ -665,7 +665,7 @@ func TestConvertProjects(t *testing.T) {
 	c = configs[0]
 	assert.Equal(t, configId, c.Coordinate.Config)
 	assert.Equal(t, 3, len(c.Parameters))
-	assert.Equal(t, simpleParameterValue2, c.Parameters[simpleParameterName].(*valueParam.LegacyValueParameter).Value)
+	assert.Equal(t, simpleParameterValue2, c.Parameters[simpleParameterName].(*valueParam.ValueParameter).Value)
 }
 
 func TestConvertTemplate_ConvertsEnvReferences(t *testing.T) {

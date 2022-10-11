@@ -433,11 +433,7 @@ func convertParameters(context *ConfigConvertContext, environment manifest.Envir
 			}
 			parameters[name] = &listParam.ListParameter{Values: valueSlice}
 		} else {
-			parameters[name] = &valueParam.LegacyValueParameter{
-				valueParam.ValueParameter{
-					Value: value,
-				},
-			}
+			parameters[name] = &valueParam.ValueParameter{Value: value}
 		}
 
 		for _, ref := range parameters[name].GetReferences() {
