@@ -23,7 +23,6 @@ import (
 	listParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/list"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/reference"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
@@ -894,44 +893,6 @@ func createSimpleUrlDefinition() manifest.UrlDefinition {
 		Type:  manifest.ValueUrlType,
 		Value: "test.env",
 	}
-}
-
-func TestListVariableRegex(t *testing.T) {
-	patternsThatShouldMatch := []string{
-		`    "receivers": [
-        {{ .expectedValue }}
-    ],`,
-		`"something else":
-[
-      {{ .expectedValue }}
-
-]`,
-		`"some property" : "with a key",
-"list": [{{.expectedValue}}]`,
-		`  "list  " : [
-  {{.expectedValue}}],`,
-		`"lists": {
-"
-list"   :
-
-
-[ {{
-.expectedValue
-}}
-]
-
-}`,
-	}
-
-	for _, s := range patternsThatShouldMatch {
-		assert.Assert(t, listVariableRegex.MatchString(s))
-		matches := listVariableRegex.FindStringSubmatch(s)
-		assert.Equal(t, len(matches), 3, "expected regex matching to return 3 matches - - full match, list match & variable name capture group")
-		assert.Equal(t, matches[2], "expectedValue")
-		sanitizedFullMatch := strings.ReplaceAll(strings.ReplaceAll(matches[1], " ", ""), "\n", "")
-		assert.Equal(t, sanitizedFullMatch, "[{{.expectedValue}}]")
-	}
-
 }
 
 func Test_parseListStringToValueSlice(t *testing.T) {

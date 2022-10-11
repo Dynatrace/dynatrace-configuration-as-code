@@ -45,13 +45,6 @@ const (
 	DefaultGroup = "default"
 )
 
-var (
-	//TODO move both of these to template utils, where a form of envVar regex and matching exists already
-	envVariableRegex  = regexp.MustCompile(`{{ *\.Env\.([A-Za-z0-9_-]*) *}}`)
-	listVariableRegex = regexp.MustCompile(`"[\w\s]+"\s*:\s*(\[\s*\{\{\s*\.([\w]+)\s*}}\s*])`)
-	simpleValueRegex  = regexp.MustCompile(`\s*".+?"\s*`)
-)
-
 type ConverterContext struct {
 	Fs afero.Fs
 }
@@ -361,15 +354,8 @@ func convertTemplate(context *ConfigConvertContext, currentPath string, writeToP
 func convertEnvVarsReferencesInTemplate(currentTemplate string, currentPath string) (modifiedTemplate string, environmentParameters map[string]parameter.Parameter, errors []error) {
 	environmentParameters = map[string]parameter.Parameter{}
 
-	templText := envVariableRegex.ReplaceAllStringFunc(currentTemplate, func(p string) string {
-		match := envVariableRegex.FindStringSubmatch(p)
-
-		if len(match) != 2 {
-			errors = append(errors, newTemplateConversionError(currentPath, fmt.Sprintf("cannot parse environment variable: `%s` seems to be invalid", p)))
-			return ""
-		}
-
-		envVar := match[1]
+	templText := util.EnvVariableRegexPattern.ReplaceAllStringFunc(currentTemplate, func(p string) string {
+		envVar := util.TrimToEnvVariableName(p)
 		paramName := transformEnvironmentToParamName(envVar)
 
 		if _, found := environmentParameters[paramName]; !found {
@@ -392,17 +378,13 @@ func transformToPropertyAccess(property string) string {
 func convertListsInTemplate(currentTemplate string, currentPath string) (modifiedTemplate string, listParameterIds map[string]struct{}, errors []error) {
 	listParameterIds = map[string]struct{}{}
 
-	templText := listVariableRegex.ReplaceAllStringFunc(currentTemplate, func(s string) string {
-		match := listVariableRegex.FindStringSubmatch(s)
+	templText := util.ListVariableRegexPattern.ReplaceAllStringFunc(currentTemplate, func(s string) string {
 
-		if len(match) != 3 {
-			errors = append(errors, newTemplateConversionError(currentPath, fmt.Sprintf("cannot parse list variable: `%s` seems to be invalid", s)))
+		fullMatch, fullListMatch, varName, err := util.MatchListVariable(s)
+		if err != nil {
+			errors = append(errors, newTemplateConversionError(currentPath, err.Error()))
 			return ""
 		}
-
-		fullMatch := match[0]
-		fullListMatch := match[1]
-		varName := match[2]
 
 		listParameterIds[varName] = struct{}{}
 		return strings.Replace(fullMatch, fullListMatch, transformToPropertyAccess(varName), 1)
@@ -530,7 +512,7 @@ func loadPropertiesForEnvironment(environment manifest.EnvironmentDefinition, co
 }
 
 func parseListStringToValueSlice(s string) ([]valueParam.ValueParameter, error) {
-	if !util.IsListDefinition(s) && !simpleValueRegex.MatchString(s) {
+	if !util.IsListDefinition(s) && !util.IsSimpleValueDefinition(s) {
 		return []valueParam.ValueParameter{}, fmt.Errorf("failed to parse value for list parameter, '%s' is not in expected list format", s)
 	}
 
