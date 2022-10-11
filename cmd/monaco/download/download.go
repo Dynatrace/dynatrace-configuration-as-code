@@ -158,17 +158,17 @@ func validateParameters(envVarName, environmentUrl, projectName, token string) [
 	errors := make([]error, 0)
 
 	if envVarName == "" {
-		errors = append(errors, fmt.Errorf("token '%v' not specified", envVarName))
+		errors = append(errors, fmt.Errorf("token not specified"))
 	} else if token == "" {
 		errors = append(errors, fmt.Errorf("the content of token '%v' is not set", envVarName))
 	}
 
 	if environmentUrl == "" {
-		errors = append(errors, fmt.Errorf("url '%v' is empty", environmentUrl))
+		errors = append(errors, fmt.Errorf("url not specified"))
 	}
 
 	if projectName == "" {
-		errors = append(errors, fmt.Errorf("project '%v' is empty", environmentUrl))
+		errors = append(errors, fmt.Errorf("project not specified"))
 	}
 
 	return errors
