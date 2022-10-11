@@ -44,3 +44,18 @@ configs:
           - "james.t.kirk@dynatrace.com"
     template: subfolder/email.json
     skip: false
+- id: email_list_as_array
+  config:
+    name: "email_list_as_array"
+    parameters:
+      alertingProfileId:
+        api: alerting-profile
+        config: profile
+        property: id
+        type: reference
+      environment: test-env
+      receivers:
+        type: list
+        values: ["james.holden@dynatrace.com", "malcolm.reynolds@dynatrace.com", "james.t.kirk@dynatrace.com"]
+    template: subfolder/email.json
+    skip: false
