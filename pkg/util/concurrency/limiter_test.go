@@ -67,10 +67,11 @@ func TestCallbackExecutions(t *testing.T) {
 			limiter := NewLimiter(test.cap)
 
 			wg := sync.WaitGroup{}
+			wg.Add(test.callbacks)
+
 			counter := int32(test.callbacks)
 
 			for i := 0; i < test.callbacks; i++ {
-				wg.Add(1)
 
 				limiter.Execute(func() {
 					atomic.AddInt32(&counter, -1)
