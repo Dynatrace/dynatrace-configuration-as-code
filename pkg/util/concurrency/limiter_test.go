@@ -23,6 +23,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestNewLimiter(t *testing.T) {
@@ -42,18 +43,18 @@ func TestCallbackExecutions(t *testing.T) {
 	}{
 		{
 			"More callbacks than capacity (sequential)",
-			100,
 			1,
+			100,
 		},
 		{
 			"More callbacks than capacity (parallel)",
-			10000,
 			100,
+			10000,
 		},
 		{
 			"More capacity than callbacks",
-			10,
 			10000,
+			10,
 		},
 		{
 			"Same amount",
@@ -116,4 +117,55 @@ func TestExecutionsAreActuallyParallel(t *testing.T) {
 
 	wgPost.Wait() // wait all finished
 	assert.Equal(t, len(limiter.waitChan), 0, "goroutines should be done")
+}
+
+func TestExecuteBlockingDoesNotReturnImmediately(t *testing.T) {
+	limiter := NewLimiter(1) // 1 callback allowed, so we set up 2 callbacks to test that they have been called after one another
+
+	firstCallbackWaitUntilTestSetupIsComplete := sync.Mutex{} // block the first callback until the test setup is done
+	firstCallbackWaitUntilTestSetupIsComplete.Lock()
+
+	firstCallbackCalled := atomic.Bool{}
+	secondCallbackDone := atomic.Bool{}
+
+	wgBothGoroutinesStarted := sync.WaitGroup{}
+	wgBothGoroutinesStarted.Add(2)
+
+	wgBothGoroutinesDone := sync.WaitGroup{}
+	wgBothGoroutinesDone.Add(2)
+
+	wgFirstGoroutineStarted := sync.WaitGroup{}
+	wgFirstGoroutineStarted.Add(1)
+
+	go func() {
+		limiter.ExecuteBlocking(func() {
+			wgFirstGoroutineStarted.Done() // allow second goroutine to start
+			wgBothGoroutinesStarted.Done()
+
+			firstCallbackWaitUntilTestSetupIsComplete.Lock() // blocking wait for test to start
+
+			time.Sleep(time.Second)
+			firstCallbackCalled.Store(true) // store true to verify in second goroutine that this one is done
+		})
+
+		wgBothGoroutinesDone.Done()
+	}()
+
+	go func() {
+		wgFirstGoroutineStarted.Wait() // continue after first goroutine is inside the Execute block
+		wgBothGoroutinesStarted.Done()
+
+		limiter.ExecuteBlocking(func() {})
+		assert.Equal(t, firstCallbackCalled.Load(), true)
+
+		secondCallbackDone.Store(true)
+		wgBothGoroutinesDone.Done()
+	}()
+
+	wgBothGoroutinesStarted.Wait()
+
+	firstCallbackWaitUntilTestSetupIsComplete.Unlock()
+
+	wgBothGoroutinesDone.Wait()
+	assert.Equal(t, secondCallbackDone.Load(), true)
 }

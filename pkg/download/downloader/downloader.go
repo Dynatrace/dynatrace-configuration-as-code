@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2020 Dynatrace LLC
+ * Copyright 2022 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -31,7 +31,6 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
 	project "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/concurrency"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 )
 
@@ -50,7 +49,7 @@ func DownloadAllConfigs(apisToDownload api.ApiMap, client rest.DynatraceClient, 
 	waitGroup := sync.WaitGroup{}
 	waitGroup.Add(len(apisToDownload))
 
-	limiter := concurrency.NewLimiter(getConcurrentDownloadLimit())
+	client = rest.LimitClientParallelRequests(client, getConcurrentDownloadLimit())
 
 	log.Debug("Fetching configs to download")
 
@@ -59,10 +58,10 @@ func DownloadAllConfigs(apisToDownload api.ApiMap, client rest.DynatraceClient, 
 	for _, currentApi := range apisToDownload {
 		currentApi := currentApi // prevent data race
 
-		limiter.Execute(func() {
+		go func() {
 
 			// download the configs for each api and fill them in the map
-			configs := downloadConfigForApi(currentApi, client, projectName, limiter)
+			configs := downloadConfigForApi(currentApi, client, projectName)
 
 			if len(configs) > 0 {
 				apisMutex.Lock()
@@ -71,12 +70,11 @@ func DownloadAllConfigs(apisToDownload api.ApiMap, client rest.DynatraceClient, 
 			}
 
 			waitGroup.Done()
-		})
+		}()
 	}
 
 	log.Debug("Started all downloads")
 	waitGroup.Wait()
-	limiter.Close()
 
 	duration := time.Now().Sub(startTime).Truncate(1 * time.Second)
 	log.Debug("Finished fetching all configs in %v", duration)
@@ -93,7 +91,7 @@ func getConcurrentDownloadLimit() int {
 	return concurrentRequests
 }
 
-func downloadConfigForApi(currentApi api.Api, client rest.DynatraceClient, projectName string, limiter *concurrency.Limiter) []config.Config {
+func downloadConfigForApi(currentApi api.Api, client rest.DynatraceClient, projectName string) []config.Config {
 	var configsToDownload []api.Value
 	var err error
 
@@ -124,7 +122,7 @@ func downloadConfigForApi(currentApi api.Api, client rest.DynatraceClient, proje
 	}
 
 	log.Debug("\tFound %d configs of type '%v' to download", len(configsToDownload), apiId)
-	configs := createConfigsForApi(currentApi, configsToDownload, client, projectName, limiter)
+	configs := createConfigsForApi(currentApi, configsToDownload, client, projectName)
 
 	log.Debug("\tFinished downloading all configs of type '%v'", apiId)
 
@@ -147,7 +145,7 @@ func filterConfigsToSkip(a api.Api, value []api.Value) []api.Value {
 	return valuesToDownload
 }
 
-func createConfigsForApi(theApi api.Api, values []api.Value, client rest.DynatraceClient, projectId string, limiter *concurrency.Limiter) []config.Config {
+func createConfigsForApi(theApi api.Api, values []api.Value, client rest.DynatraceClient, projectId string) []config.Config {
 	configs := make([]config.Config, 0, len(values))
 	configsMutex := sync.Mutex{}
 
@@ -158,7 +156,7 @@ func createConfigsForApi(theApi api.Api, values []api.Value, client rest.Dynatra
 
 		value := value
 
-		limiter.Execute(func() {
+		go func() {
 			conf, skipConfig := downloadConfig(theApi, value, client, projectId)
 
 			if !skipConfig {
@@ -168,7 +166,7 @@ func createConfigsForApi(theApi api.Api, values []api.Value, client rest.Dynatra
 			}
 
 			waitGroup.Done()
-		})
+		}()
 	}
 
 	waitGroup.Wait()

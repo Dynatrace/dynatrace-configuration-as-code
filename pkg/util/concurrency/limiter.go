@@ -58,6 +58,21 @@ func (l *Limiter) Execute(callback func()) {
 	}()
 }
 
+// ExecuteBlocking runs the passed function blocking.
+// If the maximum number of parallel running functions is reached, the function does not execute the callback and does not return
+// until a slot is free.
+func (l *Limiter) ExecuteBlocking(callback func()) {
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	l.Execute(func() {
+		callback()
+		wg.Done()
+	})
+
+	wg.Wait()
+}
+
 // Close cleans up the limiter. All running goroutines will be finished, but no new ones can be started.
 // Closing the limiter multiple times will cause a panic
 func (l *Limiter) Close() {
