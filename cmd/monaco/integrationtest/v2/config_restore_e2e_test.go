@@ -22,6 +22,7 @@ package v2
 import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/test"
 	"os"
 	"path/filepath"
 	"testing"
@@ -214,7 +215,7 @@ func cleanupDeployedConfiguration(t *testing.T, fs afero.Fs, manifestFilepath st
 		Fs:           fs,
 		ManifestPath: manifestFilepath,
 	})
-	FailOnAnyError(errs, "loading of manifest failed")
+	test.FailTestOnAnyError(t, errs, "loading of manifest failed")
 
 	cleanupIntegrationTest(t, loadedManifest, "", testSuffix)
 }

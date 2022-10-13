@@ -20,6 +20,7 @@
 package v1
 
 import (
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/test"
 	"path/filepath"
 	"testing"
 
@@ -101,7 +102,7 @@ func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 	RunLegacyIntegrationWithCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "MultiProjectSingleProject", func(fs afero.Fs) {
 
 		environments, errs := environment.LoadEnvironmentList("", multiProjectEnvironmentsFile, fs)
-		FailOnAnyError(errs, "loading of environments failed")
+		test.FailTestOnAnyError(t, errs, "loading of environments failed")
 
 		projects, err := project.LoadProjectsToDeploy(fs, "star-trek", api.NewV1Apis(), multiProjectFolder)
 		assert.NilError(t, err)

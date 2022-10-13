@@ -21,6 +21,7 @@ package v1
 
 import (
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/test"
 	"math/rand"
 	"path/filepath"
 	"strings"
@@ -99,13 +100,6 @@ func AssertConfig(t *testing.T, client rest.DynatraceClient, environment environ
 	}
 }
 
-func FailOnAnyError(errors []error, errorMessage string) {
-
-	for _, err := range errors {
-		util.FailOnError(err, errorMessage)
-	}
-}
-
 func getTimestamp() string {
 	return time.Now().Format("20060102150405")
 }
@@ -128,7 +122,7 @@ func getTransformerFunc(suffix string) func(line string) string {
 func cleanupIntegrationTest(t *testing.T, fs afero.Fs, envFile, suffix string) {
 
 	environments, errs := environment.LoadEnvironmentList("", envFile, fs)
-	FailOnAnyError(errs, "loading of environments failed")
+	test.FailTestOnAnyError(t, errs, "loading of environments failed")
 
 	apis := api.NewV1Apis()
 	suffix = "_" + suffix

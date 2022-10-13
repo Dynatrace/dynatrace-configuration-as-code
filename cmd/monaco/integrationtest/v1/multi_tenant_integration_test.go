@@ -20,6 +20,7 @@
 package v1
 
 import (
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/test"
 	"path/filepath"
 	"testing"
 
@@ -85,7 +86,7 @@ func TestIntegrationMultiEnvironmentSingleProject(t *testing.T) {
 	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleProject", func(fs afero.Fs) {
 
 		environments, errs := environment.LoadEnvironmentList("", environmentsFile, fs)
-		FailOnAnyError(errs, "loading of environments failed")
+		test.FailTestOnAnyError(t, errs, "loading of environments failed")
 
 		projects, err := project.LoadProjectsToDeploy(fs, "cinema-infrastructure", api.NewV1Apis(), folder)
 		assert.NilError(t, err)
@@ -112,7 +113,7 @@ func TestIntegrationMultiEnvironmentSingleProjectWithDependency(t *testing.T) {
 	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleProjectWithDependency", func(fs afero.Fs) {
 
 		environments, errs := environment.LoadEnvironmentList("", environmentsFile, fs)
-		FailOnAnyError(errs, "loading of environments failed")
+		test.FailTestOnAnyError(t, errs, "loading of environments failed")
 
 		projects, err := project.LoadProjectsToDeploy(fs, "star-trek", api.NewV1Apis(), folder)
 		assert.NilError(t, err)
@@ -141,7 +142,7 @@ func TestIntegrationMultiEnvironmentSingleEnvironment(t *testing.T) {
 	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleEnvironment", func(fs afero.Fs) {
 
 		environments, errs := environment.LoadEnvironmentList("", environmentsFile, fs)
-		FailOnAnyError(errs, "loading of environments failed")
+		test.FailTestOnAnyError(t, errs, "loading of environments failed")
 
 		projects, err := project.LoadProjectsToDeploy(fs, "star-trek", api.NewV1Apis(), folder)
 		assert.NilError(t, err)

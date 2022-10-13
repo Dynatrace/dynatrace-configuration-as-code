@@ -27,6 +27,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
 	project "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2/topologysort"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/test"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -50,7 +51,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 		Fs:           fs,
 		ManifestPath: manifestPath,
 	})
-	FailOnAnyError(errs, "loading of environments failed")
+	test.FailTestOnAnyError(t, errs, "loading of environments failed")
 
 	specificEnvs := []string{}
 	if specificEnvironment != "" {
@@ -67,7 +68,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 		Manifest:        loadedManifest,
 		ParametersSerde: config.DefaultParameterParsers,
 	})
-	FailOnAnyError(errs, "loading of projects failed")
+	test.FailTestOnAnyError(t, errs, "loading of projects failed")
 
 	entities := make(map[coordinate.Coordinate]parameter.ResolvedEntity)
 
@@ -92,10 +93,10 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 						}
 
 						parameters, err := topologysort.SortParameters(theConfig.Group, theConfig.Environment, theConfig.Coordinate, theConfig.Parameters)
-						FailOnAnyError(errs, "resolving of parameter values failed")
+						test.FailTestOnAnyError(t, errs, "resolving of parameter values failed")
 
 						properties, errs := deploy.ResolveParameterValues(client, &theConfig, entities, parameters, false)
-						FailOnAnyError(errs, "resolving of parameter values failed")
+						test.FailTestOnAnyError(t, errs, "resolving of parameter values failed")
 
 						configName, err := deploy.ExtractConfigName(&theConfig, properties)
 						assert.NilError(t, err)
@@ -133,13 +134,6 @@ func AssertConfig(t *testing.T, client rest.DynatraceClient, environment manifes
 		assert.Check(t, exists, "Object should be available, but wasn't. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, name, apiId)
 	} else {
 		assert.Check(t, !exists, "Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, name, apiId)
-	}
-}
-
-func FailOnAnyError(errors []error, errorMessage string) {
-
-	for _, err := range errors {
-		util.FailOnError(err, errorMessage)
 	}
 }
 
@@ -236,7 +230,7 @@ func RunIntegrationWithCleanupOnGivenFs(t *testing.T, testFs afero.Fs, configFol
 		Fs:           testFs,
 		ManifestPath: manifestPath,
 	})
-	FailOnAnyError(errs, "loading of manifest failed")
+	test.FailTestOnAnyError(t, errs, "loading of manifest failed")
 
 	configFolder, _ = filepath.Abs(configFolder)
 
