@@ -60,7 +60,7 @@ func removeByPath(dat map[string]interface{}, key []string) map[string]interface
 }
 
 func replaceTemplateProperties(dat map[string]interface{}) map[string]interface{} {
-	var nameTemplate = "{{.name}}"
+	const nameTemplate = "{{.name}}"
 
 	if dat["name"] != nil {
 		dat["name"] = nameTemplate

@@ -30,11 +30,3 @@ func unmarshal(t *testing.T, content string) map[string]interface{} {
 
 	return mapped
 }
-
-func marshal(t *testing.T, j any) string {
-	marshalled, err := json.Marshal(j)
-
-	assert.NilError(t, err, "Error in test definition")
-
-	return string(marshalled)
-}
