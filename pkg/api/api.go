@@ -100,9 +100,9 @@ var apiMap = map[string]apiInput{
 	},
 	// Early adopter API !
 	"kubernetes-credentials": {
-		apiPath:            "/api/config/v1/kubernetes/credentials",
-		isNonUniqueNameApi: true,
-		skipDownload:       true,
+		apiPath: "/api/config/v1/kubernetes/credentials",
+		//isNonUniqueNameApi: true, // non-unique name handling for k8s credentials does not work, as path ID needs to be a ME-ID not a uuid; handling as unique again for now
+		skipDownload: true,
 	},
 	"azure-credentials": {
 		apiPath:      "/api/config/v1/azure/credentials",
