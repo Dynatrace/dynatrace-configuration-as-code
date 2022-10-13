@@ -18,6 +18,7 @@ package downloader
 
 import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 )
 
 type apiFilter struct {
@@ -82,4 +83,19 @@ func shouldConfigBePersisted(a api.Api, json map[string]interface{}) bool {
 	}
 
 	return true
+}
+
+// filterConfigsToSkip filters the configs to download to not needed configs. E.g. dashboards from Dynatrace are presets - we can discard them immediately before downloading
+func filterConfigsToSkip(a api.Api, value []api.Value) []api.Value {
+	valuesToDownload := make([]api.Value, 0, len(value))
+
+	for _, value := range value {
+		if !shouldConfigBeSkipped(a, value) {
+			valuesToDownload = append(valuesToDownload, value)
+		} else {
+			log.Debug("Skipping download of config  '%v' of API '%v'", value.Id, a.GetId())
+		}
+	}
+
+	return valuesToDownload
 }

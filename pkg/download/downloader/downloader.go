@@ -154,21 +154,6 @@ func findConfigsToDownload(currentApi api.Api, client rest.DynatraceClient) ([]a
 	return client.List(currentApi)
 }
 
-// filterConfigsToSkip filters the configs to download to not needed configs. E.g. dashboards from Dynatrace are presets - we can discard them immediately before downloading
-func filterConfigsToSkip(a api.Api, value []api.Value) []api.Value {
-	valuesToDownload := make([]api.Value, 0, len(value))
-
-	for _, value := range value {
-		if !shouldConfigBeSkipped(a, value) {
-			valuesToDownload = append(valuesToDownload, value)
-		} else {
-			log.Debug("Skipping download of config  '%v' of API '%v'", value.Id, a.GetId())
-		}
-	}
-
-	return valuesToDownload
-}
-
 func downloadConfigsOfApi(theApi api.Api, values []api.Value, client rest.DynatraceClient, projectId string) []config.Config {
 	configs := make([]config.Config, 0, len(values))
 	configsMutex := sync.Mutex{}
