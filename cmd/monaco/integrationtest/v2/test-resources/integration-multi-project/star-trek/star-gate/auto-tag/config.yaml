@@ -1,7 +1,7 @@
 configs:
-- id: application-tagging-multiproject
+- id: st-sg-tag-1
   config:
-    name: sg-Test Star Trek Multiproject
+    name: Star Gate - Tag 1 - Skipped on Prod
     template: ../../../cinema-infrastructure/auto-tag/application-tagging.json
   groupOverrides:
   - group: development
@@ -10,14 +10,14 @@ configs:
   - group: production
     override:
       skip: true
-- id: application-tagging-skip-deployment-2
+- id: st-sg-tag-2
   config:
-    name: sg-Another application tag skip deployment
+    name: Star Gate - Tag 2
     template: ../../../cinema-infrastructure/auto-tag/application-tagging.json
     skip: false
-- id: application-tagging-skip-deployment
+- id: st-sg-tag-3
   config:
-    name: sg-Application tag skip deployment
+    name: Star Gate - Tag 3 - Skipped on Prod
     template: ../../../cinema-infrastructure/auto-tag/application-tagging.json
   groupOverrides:
   - group: development

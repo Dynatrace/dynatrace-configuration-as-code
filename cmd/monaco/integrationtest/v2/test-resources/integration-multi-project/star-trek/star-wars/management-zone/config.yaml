@@ -1,7 +1,7 @@
 configs:
-- id: zone-multiproject
+- id: st-sw-mz
   config:
-    name: mzone-1-multiproject-1
+    name: Star Wars MZ
     parameters:
       meId: HOST_GROUP-1234567890123456
       webAppTaggingName:

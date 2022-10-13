@@ -1,12 +1,12 @@
 configs:
-- id: application-tagging-skip-deployment-2
+- id: st-sw-tag-1
   config:
-    name: Another application tag skip deployment
+    name: Star Wars - Tag
     template: ../../../cinema-infrastructure/auto-tag/application-tagging.json
     skip: false
-- id: application-tagging-skip-deployment
+- id: st-sw-tag-2
   config:
-    name: Application tag skip deployment
+    name: Star Wars - Tag 2 - Skipped on Prod
     template: ../../../cinema-infrastructure/auto-tag/application-tagging.json
   groupOverrides:
   - group: production
@@ -15,9 +15,9 @@ configs:
   - group: development
     override:
       skip: false
-- id: application-tagging-multiproject
+- id: st-sw-tag-3
   config:
-    name: Test Star Trek Multiproject
+    name: Star Wars - Tag 3 - Skipped on Prod
     template: ../../../cinema-infrastructure/auto-tag/application-tagging.json
   groupOverrides:
   - group: production

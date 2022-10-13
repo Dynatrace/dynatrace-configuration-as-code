@@ -1,7 +1,7 @@
 configs:
-- id: dashboard-multiproject
+- id: st-sw-dash-1
   config:
-    name: Star Wars Multiproject  <>&/?|%
+    name: Star Wars Dash 1
     parameters:
       mzone:
         api: management-zone
@@ -17,9 +17,9 @@ configs:
         type: reference
     template: overview-dashboard.json
     skip: false
-- id: skip-deployment-test-dashboard-2
+- id: st-sw-dash-2
   config:
-    name: Another skip deployment test dashboard deployed to environtment 2
+    name: Star Wars Dash 2
     parameters:
       mzone:
         api: management-zone
@@ -35,14 +35,14 @@ configs:
         type: reference
       someParam:
         api: auto-tag
-        config: application-tagging-skip-deployment-2
+        config: st-sw-tag-1
         property: id
         type: reference
     template: overview-dashboard.json
     skip: false
-- id: skip-deployment-test-dashboard
+- id: st-sw-dash-3
   config:
-    name: Skip deployment test dashboard
+    name: Star Wars Dash 3 - Skipped on Prod
     parameters:
       mzone:
         api: management-zone
@@ -58,7 +58,7 @@ configs:
         type: reference
       someParam:
         api: auto-tag
-        config: application-tagging-skip-deployment
+        config: st-sw-tag-3
         property: id
         type: reference
     template: overview-dashboard.json

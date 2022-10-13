@@ -1,7 +1,7 @@
 configs:
-- id: zone-multiproject
+- id: st-sg-mz
   config:
-    name: sg-mzone-1-multiproject-1
+    name: Star Gate MZ
     parameters:
       meId: HOST_GROUP-1234567890123456
       webAppTaggingName:
