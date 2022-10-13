@@ -149,7 +149,7 @@ func unmarshalResponse(resp Response, fullUrl string, configType string, objectN
 			return api.DynatraceEntity{}, err
 		}
 	}
-	log.Debug("Created new object for %s (%s)", dtEntity.Name, dtEntity.Id)
+	log.Debug("\tCreated new object for %s (%s)", dtEntity.Name, dtEntity.Id)
 
 	return dtEntity, nil
 }
@@ -179,7 +179,7 @@ func updateDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		return api.DynatraceEntity{}, fmt.Errorf("Failed to update DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
 	}
 
-	log.Debug("\t\t\tUpdated existing object for %s (%s)", objectName, existingObjectId)
+	log.Debug("\tUpdated existing object for %s (%s)", objectName, existingObjectId)
 	return api.DynatraceEntity{
 		Id:          existingObjectId,
 		Name:        objectName,
