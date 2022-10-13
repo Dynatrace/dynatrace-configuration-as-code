@@ -44,8 +44,7 @@ import (
 )
 
 // AssertAllConfigsAvailability checks all configurations of a given project with given availability
-func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string, specificEnvironment string, available bool) {
-
+func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string, specificProjects []string, specificEnvironment string, available bool) {
 	loadedManifest, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
 		Fs:           fs,
 		ManifestPath: manifestPath,
@@ -58,20 +57,49 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 	}
 	environments, err := loadedManifest.FilterEnvironmentsByNames(specificEnvs)
 	if err != nil {
-		log.Fatal("Failed to filter environments: %v", err)
+		t.Fatalf("Failed to filter environments: %v", err)
 	}
+
+	cwd, err := filepath.Abs(filepath.Dir(manifestPath))
+	assert.NilError(t, err)
 
 	projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
 		Apis:            api.GetApiNames(api.NewApis()),
-		WorkingDir:      manifestPath,
+		WorkingDir:      cwd,
 		Manifest:        loadedManifest,
 		ParametersSerde: config.DefaultParameterParsers,
 	})
 	test.FailTestOnAnyError(t, errs, "loading of projects failed")
 
-	entities := make(map[coordinate.Coordinate]parameter.ResolvedEntity)
+	envNames := make([]string, 0, len(environments))
 
 	for _, env := range environments {
+		envNames = append(envNames, env.Name)
+	}
+
+	sortedConfigs, errs := topologysort.GetSortedConfigsForEnvironments(projects, envNames)
+
+	checkString := "exist"
+	if !available {
+		checkString = "do NOT exist"
+	}
+
+	projectsToValidate := map[string]struct{}{}
+	if len(specificProjects) > 0 {
+		log.Info("Asserting configurations from projects: %s %s", specificProjects, checkString)
+		for _, p := range specificProjects {
+			projectsToValidate[p] = struct{}{}
+		}
+	} else {
+		log.Info("Asserting configurations from all projects %s", checkString)
+		for _, p := range projects {
+			projectsToValidate[p.Id] = struct{}{}
+		}
+	}
+
+	for envName, configs := range sortedConfigs {
+
+		env := loadedManifest.Environments[envName]
 
 		token, err := env.GetToken()
 		assert.NilError(t, err)
@@ -82,27 +110,44 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 		client, err := rest.NewDynatraceClient(url, token)
 		assert.NilError(t, err)
 
-		for _, theProject := range projects {
-			for _, apis := range theProject.Configs {
-				for theApi, configs := range apis {
-					for _, theConfig := range configs {
+		entities := make(map[coordinate.Coordinate]parameter.ResolvedEntity)
+		var parameters []topologysort.ParameterWithName
 
-						if theConfig.Skip {
-							continue
-						}
+		for _, theConfig := range configs {
+			coord := theConfig.Coordinate
 
-						parameters, err := topologysort.SortParameters(theConfig.Group, theConfig.Environment, theConfig.Coordinate, theConfig.Parameters)
-						test.FailTestOnAnyError(t, errs, "resolving of parameter values failed")
-
-						properties, errs := deploy.ResolveParameterValues(client, &theConfig, entities, parameters, false)
-						test.FailTestOnAnyError(t, errs, "resolving of parameter values failed")
-
-						configName, err := deploy.ExtractConfigName(&theConfig, properties)
-						assert.NilError(t, err)
-
-						AssertConfig(t, client, env, available, theConfig, theApi, configName)
-					}
+			if theConfig.Skip {
+				entities[coord] = parameter.ResolvedEntity{
+					EntityName: coord.Config,
+					Coordinate: coord,
+					Properties: parameter.Properties{},
+					Skip:       true,
 				}
+				continue
+			}
+
+			configParameters, err := topologysort.SortParameters(theConfig.Group, theConfig.Environment, theConfig.Coordinate, theConfig.Parameters)
+			test.FailTestOnAnyError(t, errs, "sorting of parameter values failed")
+
+			parameters = append(parameters, configParameters...)
+
+			properties, errs := deploy.ResolveParameterValues(client, &theConfig, entities, parameters, false)
+			test.FailTestOnAnyError(t, errs, "resolving of parameter values failed")
+
+			properties[config.IdParameter] = "NO REAL ID NEEDED FOR CHECKING AVAILABILITY"
+
+			configName, err := deploy.ExtractConfigName(&theConfig, properties)
+			assert.NilError(t, err)
+
+			entities[coord] = parameter.ResolvedEntity{
+				EntityName: configName,
+				Coordinate: coord,
+				Properties: properties,
+				Skip:       false,
+			}
+
+			if _, found := projectsToValidate[coord.Project]; found {
+				AssertConfig(t, client, env, available, theConfig, coord.Api, configName)
 			}
 		}
 	}

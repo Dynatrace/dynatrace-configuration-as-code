@@ -44,6 +44,6 @@ func TestSpecialCharactersAreCorrectlyEscapedWhereNeeded(t *testing.T) {
 		err := cmd.Execute()
 		assert.NilError(t, err)
 
-		AssertAllConfigsAvailability(t, fs, specialCharManifest, "", true)
+		AssertAllConfigsAvailability(t, fs, specialCharManifest, []string{}, "", true)
 	})
 }

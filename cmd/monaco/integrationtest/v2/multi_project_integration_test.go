@@ -30,8 +30,6 @@ import (
 
 var multiProjectFolder = "test-resources/integration-multi-project/"
 var multiProjectManifest = multiProjectFolder + "manifest.yaml"
-var oneProjectManifest = multiProjectFolder + "manifest-one-project.yaml"
-var oneProjectManifestNotDeployed = multiProjectFolder + "manifest-one-project-not-deployed.yaml"
 var multiProjectSpecificEnvironment = ""
 
 // Tests all environments with all projects
@@ -46,7 +44,7 @@ func TestIntegrationMultiProject(t *testing.T) {
 
 		assert.NilError(t, err)
 
-		AssertAllConfigsAvailability(t, fs, multiProjectManifest, multiProjectSpecificEnvironment, true)
+		AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{}, multiProjectSpecificEnvironment, true)
 	})
 }
 
@@ -74,8 +72,11 @@ func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 
 		assert.NilError(t, err)
 
-		AssertAllConfigsAvailability(t, fs, oneProjectManifest, multiProjectSpecificEnvironment, true)
-		AssertAllConfigsAvailability(t, fs, oneProjectManifestNotDeployed, multiProjectSpecificEnvironment, false)
+		// Validate Star Trek sub-projects were deployed
+		AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{"star-trek.star-wars", "star-trek.star-gate"}, multiProjectSpecificEnvironment, true)
+
+		// Validate movies project was not deployed
+		AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{"movies.science fiction.the-hitchhikers-guide-to-the-galaxy"}, multiProjectSpecificEnvironment, false)
 	})
 }
 
