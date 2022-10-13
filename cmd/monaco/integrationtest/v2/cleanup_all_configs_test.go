@@ -33,7 +33,7 @@ import (
 
 func TestDoCleanup(t *testing.T) {
 
-	manifestPath := "test-resources/integration-all-configs/manifest.yaml"
+	manifestPath := "test-resources/test_environments_manifest.yaml"
 
 	fs := afero.NewOsFs()
 	loadedManifest, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
@@ -47,8 +47,8 @@ func TestDoCleanup(t *testing.T) {
 	// match anything ending in test suffixes of {timestamp}_{random numbers}_{some suffix test}
 	testSuffixRegex := regexp.MustCompile(`^.+_\d+_\d+_.*$`)
 
-	deletedConfigs := 0
 	for _, environment := range loadedManifest.GetEnvironmentsAsSlice() {
+		deletedConfigs := 0
 		token, err := environment.GetToken()
 		assert.NilError(t, err)
 
@@ -79,6 +79,7 @@ func TestDoCleanup(t *testing.T) {
 				}
 			}
 		}
+		t.Logf("Deleted %d leftover test configurations from %s (%s)", deletedConfigs, environment.Name, envUrl)
 	}
-	t.Logf("Deleted %d leftover test configurations", deletedConfigs)
+
 }

@@ -1,0 +1,19 @@
+manifest_version: 1.0
+projects:
+  - name: project
+    path: integration-all-configs/project
+environments:
+- group: default
+  entries:
+  - name: environment1
+    url:
+      type: environment
+      value: URL_ENVIRONMENT_1
+    token:
+      name: TOKEN_ENVIRONMENT_1
+  - name: environment2
+    url:
+      type: environment
+      value: URL_ENVIRONMENT_2
+    token:
+      name: TOKEN_ENVIRONMENT_2
