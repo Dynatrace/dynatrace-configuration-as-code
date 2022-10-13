@@ -39,7 +39,7 @@ func TestInvalidCliCommands(t *testing.T) {
 		{
 			"no arguments provided",
 			"",
-			[]string{"manifest has to be provided as argument"},
+			[]string{"sub-command is required"},
 		},
 		{
 			"no arguments provided to direct download",
@@ -52,14 +52,14 @@ func TestInvalidCliCommands(t *testing.T) {
 			[]string{"url and token have to be provided as positional argument"},
 		},
 		{
-			"manifest is missing required parameter",
-			"manifest.yaml",
-			[]string{"specific-environment"},
+			"manifest provided but missing specific environment",
+			"manifest manifest.yaml",
+			[]string{"manifest and environment name have to be provided as positional arguments"},
 		},
 		{
-			"manifest is missing put flags are set",
-			"--specific-environment some_env",
-			[]string{"manifest has to be provided as argument"},
+			"manifest is missing but environment is provider",
+			"manifest some_env",
+			[]string{"manifest and environment name have to be provided as positional arguments"},
 		},
 		{
 			"unknown flag",
@@ -140,44 +140,44 @@ func TestValidCommands(t *testing.T) {
 		},
 		{
 			"manifest download no specific apis",
-			"test.yaml --specific-environment test",
+			"manifest test.yaml test_env",
 			func(cmd *MockCommand) {
-				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), "test.yaml", "project", "test", "", []string{})
+				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), "test.yaml", "project", "test_env", "", []string{})
 			},
 		},
 		{
 			"manifest download with specific apis (multiple flags)",
-			"test.yaml --specific-environment test --specific-api test --specific-api test2",
+			"manifest test.yaml test_env --specific-api test --specific-api test2",
 			func(cmd *MockCommand) {
-				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), "test.yaml", "project", "test", "", []string{"test", "test2"})
+				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), "test.yaml", "project", "test_env", "", []string{"test", "test2"})
 			},
 		},
 		{
 			"manifest download with specific apis (single flag)",
-			"test.yaml --specific-environment test --specific-api test,test2",
+			"manifest test.yaml test_env --specific-api test,test2",
 			func(cmd *MockCommand) {
-				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), "test.yaml", "project", "test", "", []string{"test", "test2"})
+				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), "test.yaml", "project", "test_env", "", []string{"test", "test2"})
 			},
 		},
 		{
 			"manifest download with specific apis (mixed flags)",
-			"test.yaml --specific-environment test --specific-api test,test2 --specific-api test3",
+			"manifest test.yaml test_env --specific-api test,test2 --specific-api test3",
 			func(cmd *MockCommand) {
-				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), "test.yaml", "project", "test", "", []string{"test", "test2", "test3"})
+				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), "test.yaml", "project", "test_env", "", []string{"test", "test2", "test3"})
 			},
 		},
 		{
 			"manifest download with project",
-			"test.yaml --specific-environment test --project testproject",
+			"manifest test.yaml test_env --project testproject",
 			func(cmd *MockCommand) {
-				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), "test.yaml", "testproject", "test", "", []string{})
+				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), "test.yaml", "testproject", "test_env", "", []string{})
 			},
 		},
 		{
 			"manifest download with outputfolder",
-			"test.yaml --specific-environment test --output-folder myDownloads",
+			"manifest test.yaml test_env --output-folder myDownloads",
 			func(cmd *MockCommand) {
-				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), "test.yaml", "project", "test", "myDownloads", []string{})
+				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), "test.yaml", "project", "test_env", "myDownloads", []string{})
 			},
 		},
 	}

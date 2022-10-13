@@ -16,7 +16,6 @@ package download
 
 import (
 	"fmt"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 
@@ -25,36 +24,45 @@ import (
 )
 
 func GetDownloadCommand(fs afero.Fs, command Command) (downloadCmd *cobra.Command) {
-	var specificEnvironment, project, outputFolder string
+	var project, outputFolder string
 	var specificApis []string
 
 	downloadCmd = &cobra.Command{
-		Use:   "download [manifest]",
-		Short: "Download configuration from Dynatrace via a manifest file",
+		Use:   "download",
+		Short: "Download configuration from Dynatrace",
 		Long: `Download configuration from Dynatrace
 
 Either downloading based on an existing manifest, or by defining environment URL and API token via the 'direct' sub-command.`,
-		Example: `- monaco download manifest.yaml -s some_environment_from_manifest
-- monaco download direct environment.live.dynatrace.com API_TOKEN_ENV_VAR_NAME`,
+		Example: `- monaco download manifest manifest.yaml some_environment_from_manifest
+- monaco download direct https://environment.live.dynatrace.com API_TOKEN_ENV_VAR_NAME`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return fmt.Errorf("'direct' or 'manifest' sub-command is required")
+		},
+	}
+
+	manifestDownloadCmd := &cobra.Command{
+		Use:     "manifest [manifest file] [environment to download]",
+		Aliases: []string{"m"},
+		Short:   "Download configuration from Dynatrace via a manifest file",
+		Example: `monaco download manifest.yaml some_environment_from_manifest`,
 		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) != 1 || args[0] == "" {
-				return fmt.Errorf(`manifest has to be provided as argument`)
+			if len(args) != 2 || args[0] == "" || args[1] == "" {
+				return fmt.Errorf(`manifest and environment name have to be provided as positional arguments`)
 			}
 			return nil
 		},
-		ValidArgsFunction: func(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
-			return files.YamlExtensions, cobra.ShellCompDirectiveDefault
-		},
+		ValidArgsFunction: completion.DownloadManifestCompletion,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			manifest := args[0]
+			specificEnvironment := args[1]
 			return command.DownloadConfigsBasedOnManifest(fs, manifest, project, specificEnvironment, outputFolder, specificApis)
 		},
 	}
 
 	directDownloadCmd := &cobra.Command{
 		Use:     "direct [URL] [TOKEN_NAME]",
+		Aliases: []string{"d"},
 		Short:   "Download configuration from a Dynatrace environment specified on the command line",
-		Long:    `Download configuration from a Dynatrace environment specified on the command line`,
 		Example: `monaco download direct https://environment.live.dynatrace.com API_TOKEN_ENV_VAR_NAME`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) != 2 || args[0] == "" || args[1] == "" {
@@ -62,6 +70,7 @@ Either downloading based on an existing manifest, or by defining environment URL
 			}
 			return nil
 		},
+		ValidArgsFunction: completion.DownloadDirectCompletion,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			url := args[0]
 			tokenEnvVar := args[1]
@@ -70,21 +79,11 @@ Either downloading based on an existing manifest, or by defining environment URL
 		},
 	}
 
-	downloadCmd.AddCommand(directDownloadCmd)
-
-	// download using the manifest
-	downloadCmd.Flags().StringVarP(&specificEnvironment, "specific-environment", "s", "", "Specific environment from Manifest to download")
-	err := downloadCmd.MarkFlagRequired("specific-environment")
-	if err != nil {
-		log.Fatal("failed to setup CLI %v", err)
-	}
-	err = downloadCmd.RegisterFlagCompletionFunc("specific-environment", completion.EnvironmentByArg0)
-	if err != nil {
-		log.Fatal("failed to setup CLI %v", err)
-	}
-
-	setupSharedFlags(downloadCmd, &project, &outputFolder, &specificApis)
+	setupSharedFlags(manifestDownloadCmd, &project, &outputFolder, &specificApis)
 	setupSharedFlags(directDownloadCmd, &project, &outputFolder, &specificApis)
+
+	downloadCmd.AddCommand(manifestDownloadCmd)
+	downloadCmd.AddCommand(directDownloadCmd)
 
 	return downloadCmd
 }

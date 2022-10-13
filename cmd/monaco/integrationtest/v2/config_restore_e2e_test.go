@@ -163,19 +163,21 @@ func execution_downloadConfigs(t *testing.T, fs afero.Fs, downloadFolder string,
 	if apisToDownload == "all" {
 		parameters = []string{
 			"download",
+			"manifest",
 			manifestFile,
+			"environment1",
 			"--verbose",
-			"--specific-environment", "environment1",
 			"--output-folder", downloadFolder,
 		}
 	} else {
 		parameters = []string{
 			"download",
+			"manifest",
 			manifestFile,
+			"environment1",
 			"--verbose",
 			"--specific-api",
 			apisToDownload,
-			"--specific-environment", "environment1",
 			"--output-folder", downloadFolder,
 		}
 	}

@@ -48,6 +48,33 @@ func DeployCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobr
 	}
 }
 
+func DownloadManifestCompletion(c *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	if len(args) == 0 {
+		return ManifestFile()
+	} else if len(args) == 1 {
+		return EnvironmentByArg0(c, args, toComplete)
+	} else {
+		return make([]string, 0), cobra.ShellCompDirectiveNoFileComp
+	}
+}
+
+func DownloadDirectCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
+	if len(args) == 1 {
+		return listEnvVarNames(), cobra.ShellCompDirectiveDefault
+	} else {
+		return make([]string, 0), cobra.ShellCompDirectiveNoFileComp
+	}
+}
+
+func listEnvVarNames() []string {
+	env := os.Environ()
+	names := make([]string, len(env))
+	for i, e := range env {
+		names[i] = strings.Split(e, "=")[0]
+	}
+	return names
+}
+
 func ConvertCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
 	if len(args) == 0 {
 		return EnvironmentFile()
