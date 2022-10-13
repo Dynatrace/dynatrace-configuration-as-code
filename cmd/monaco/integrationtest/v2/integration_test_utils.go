@@ -177,9 +177,7 @@ func cleanupIntegrationTest(t *testing.T, loadedManifest manifest.Manifest, spec
 		assert.NilError(t, err)
 
 		url, err := environment.GetUrl()
-		if err != nil {
-			util.FailOnError(err, "failed to resolve URL")
-		}
+		assert.NilError(t, err)
 
 		client, err := rest.NewDynatraceClient(url, token)
 		assert.NilError(t, err)
