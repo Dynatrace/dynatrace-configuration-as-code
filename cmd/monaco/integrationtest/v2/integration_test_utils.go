@@ -29,7 +29,6 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2/topologysort"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/test"
 	"math/rand"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -53,11 +52,11 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 	})
 	test.FailTestOnAnyError(t, errs, "loading of environments failed")
 
-	specificEnvs := []string{}
+	var specificEnvs []string
 	if specificEnvironment != "" {
 		specificEnvs = append(specificEnvs, specificEnvironment)
 	}
-	environments, err := loadedManifest.FilterEnvironmentsByNames([]string{specificEnvironment})
+	environments, err := loadedManifest.FilterEnvironmentsByNames(specificEnvs)
 	if err != nil {
 		log.Fatal("Failed to filter environments: %v", err)
 	}
@@ -160,15 +159,13 @@ func cleanupIntegrationTest(t *testing.T, loadedManifest manifest.Manifest, spec
 
 	log.Info("### Cleaning up after integration test ###")
 
-	environments := loadedManifest.Environments
+	var specificEnvs []string
 	if specificEnvironment != "" {
-		environments = make(map[string]manifest.EnvironmentDefinition)
-		if val, ok := loadedManifest.Environments[specificEnvironment]; ok {
-			environments[specificEnvironment] = val
-		} else {
-			log.Fatal("Environment %s not found in manifest", specificEnvironment)
-			os.Exit(1)
-		}
+		specificEnvs = append(specificEnvs, specificEnvironment)
+	}
+	environments, err := loadedManifest.FilterEnvironmentsByNames(specificEnvs)
+	if err != nil {
+		log.Fatal("Failed to filter environments: %v", err)
 	}
 
 	apis := api.NewApis()
