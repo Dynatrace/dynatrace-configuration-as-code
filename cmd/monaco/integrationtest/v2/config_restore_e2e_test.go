@@ -91,14 +91,21 @@ func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolde
 	cleanupDeployedConfiguration(t, fs, manifestFile, suffix) // remove previously deployed configs
 
 	downloadedManifestPath := filepath.Join(downloadFolder, "manifest.yaml")
-	validation_uploadDownloadedConfigs(t, fs, downloadFolder, downloadedManifestPath) // re-deploy from download
 
-	cleanupDeployedConfiguration(t, fs, filepath.Join(downloadFolder, "manifest.yaml"), suffix) // cleanup
+	t.Cleanup(func() { // cleanup uploaded configs after test run
+		cleanupDeployedConfiguration(t, fs, downloadedManifestPath, suffix)
+	})
+
+	validation_uploadDownloadedConfigs(t, fs, downloadFolder, downloadedManifestPath) // re-deploy from download
 }
 
 func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, configFolder string, manifestFile string) (suffix string, err error) {
 	log.Info("BEGIN PREPARATION PROCESS")
 	suffix = appendUniqueSuffixToIntegrationTestConfigs(t, fs, configFolder, suffixTest)
+
+	t.Cleanup(func() { // register extra cleanup in case test fails after deployment
+		cleanupDeployedConfiguration(t, fs, manifestFile, suffix)
+	})
 
 	cmd := runner.BuildCli(fs)
 	cmd.SetArgs([]string{

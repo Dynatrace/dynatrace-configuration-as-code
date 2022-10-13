@@ -180,7 +180,9 @@ func RunLegacyIntegrationWithCleanup(t *testing.T, configFolder, envFile, suffix
 	var fs = util.CreateTestFileSystem()
 	suffix := appendUniqueSuffixToIntegrationTestConfigs(t, fs, configFolder, suffixTest)
 
-	defer cleanupIntegrationTest(t, fs, envFile, suffix)
+	t.Cleanup(func() {
+		cleanupIntegrationTest(t, fs, envFile, suffix)
+	})
 
 	testFunc(fs)
 }

@@ -236,7 +236,9 @@ func RunIntegrationWithCleanupOnGivenFs(t *testing.T, testFs afero.Fs, configFol
 
 	suffix := appendUniqueSuffixToIntegrationTestConfigs(t, testFs, configFolder, suffixTest)
 
-	defer cleanupIntegrationTest(t, loadedManifest, specificEnvironment, suffix)
+	t.Cleanup(func() {
+		cleanupIntegrationTest(t, loadedManifest, specificEnvironment, suffix)
+	})
 
 	testFunc(testFs)
 }
