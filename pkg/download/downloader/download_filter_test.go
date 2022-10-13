@@ -19,8 +19,8 @@
 package downloader
 
 import (
-	"encoding/json"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
+	"github.com/golang/mock/gomock"
 	"gotest.tools/assert"
 	"testing"
 )
@@ -51,6 +51,12 @@ func Test_ShouldConfigBeSkipped(t *testing.T) {
 			"no owner is not skipped",
 			"dashboard",
 			api.Value{Owner: nil},
+			false,
+		},
+		{
+			"unregistered api should not be skipped",
+			"api",
+			api.Value{},
 			false,
 		},
 	}
@@ -134,6 +140,12 @@ func Test_ShouldBePersisted(t *testing.T) {
 			`{"updateWindows": {"windows": ["1-2-3"]}}`,
 			true,
 		},
+		{
+			"unregistered api should be persisted",
+			"some-api",
+			"{}",
+			true,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.apiId+" "+test.name, func(t *testing.T) {
@@ -159,11 +171,22 @@ func Test_AllDefinedApiFiltersHaveApis(t *testing.T) {
 	}
 }
 
-func unmarshal(t *testing.T, content string) map[string]interface{} {
-	mapped := map[string]interface{}{}
-	err := json.Unmarshal([]byte(content), &mapped)
+func TestFilterConfigsToSkip(t *testing.T) {
+	a := api.NewMockApi(gomock.NewController(t))
+	a.EXPECT().GetId().AnyTimes().Return("dashboard")
 
-	assert.NilError(t, err, "Error during test definition")
+	var ownerDynatrace = "Dynatrace"
+	var ownerSomebody = "Somebody"
 
-	return mapped
+	values := []api.Value{
+		{Owner: &ownerDynatrace}, // should be removed
+		{Owner: &ownerSomebody},
+		{Owner: nil},
+	}
+
+	results := filterConfigsToSkip(a, values)
+
+	assert.Equal(t, len(results), 2)
+	assert.Equal(t, *results[0].Owner, ownerSomebody)
+	assert.Equal(t, results[1].Owner, (*string)(nil))
 }
