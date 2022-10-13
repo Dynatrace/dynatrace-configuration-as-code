@@ -1,5 +1,4 @@
 //go:build cleanup
-// +build cleanup
 
 /**
  * @license
@@ -17,37 +16,46 @@
  * limitations under the License.
  */
 
-package v1
+package v2
 
 import (
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/test"
+	"github.com/spf13/afero"
 	"regexp"
-	"strings"
 	"testing"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"gotest.tools/assert"
 )
 
 func TestDoCleanup(t *testing.T) {
 
-	environments, errs := environment.LoadEnvironmentList("", "test-resources/integration-multi-environment/environments.yaml", util.CreateTestFileSystem())
-	for _, err := range errs {
-		assert.NilError(t, err)
-	}
+	manifestPath := "test-resources/integration-all-configs/manifest.yaml"
 
-	apis := api.NewV1Apis()
+	fs := afero.NewOsFs()
+	loadedManifest, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
+		Fs:           fs,
+		ManifestPath: manifestPath,
+	})
+	test.FailTestOnAnyError(t, errs, "failed to load manifest to delete for")
 
-	r, _ := regexp.Compile(`^.+_.*\d+.*$`)
+	apis := api.NewApis()
 
-	for _, environment := range environments {
+	// match anything ending in test suffixes of {timestamp}_{random numbers}_{some suffix test}
+	testSuffixRegex := regexp.MustCompile(`^.+_\d+_\d+_.*$`)
+
+	deletedConfigs := 0
+	for _, environment := range loadedManifest.GetEnvironmentsAsSlice() {
 		token, err := environment.GetToken()
 		assert.NilError(t, err)
 
-		client, err := rest.NewDynatraceClient(environment.GetEnvironmentUrl(), token)
+		envUrl, err := environment.GetUrl()
+		assert.NilError(t, err)
+
+		client, err := rest.NewDynatraceClient(envUrl, token)
 		assert.NilError(t, err)
 
 		for _, api := range apis {
@@ -60,11 +68,17 @@ func TestDoCleanup(t *testing.T) {
 			assert.NilError(t, err)
 
 			for _, value := range values {
-				if r.MatchString(value.Name) || r.MatchString(value.Id) || strings.HasSuffix(value.Name, "_") {
-					log.Info("Deleting %s (%s)\n", value.Name, api.GetId())
-					client.DeleteByName(api, value.Name)
+				if testSuffixRegex.MatchString(value.Name) || testSuffixRegex.MatchString(value.Id) {
+					log.Info("Deleting %s (%s)", value.Name, api.GetId())
+					err := client.DeleteByName(api, value.Name)
+					if err != nil {
+						t.Errorf("failed to delete %s (%s): %v", value.Name, api.GetId(), err)
+					} else {
+						deletedConfigs++
+					}
 				}
 			}
 		}
 	}
+	t.Logf("Deleted %d leftover test configurations", deletedConfigs)
 }
