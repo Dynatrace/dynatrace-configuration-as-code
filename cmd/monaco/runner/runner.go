@@ -91,6 +91,7 @@ Examples:
 	convertCommand := getConvertCommand(fs)
 	deployCommand := getDeployCommand(fs)
 	deleteCommand := getDeleteCommand(fs)
+	purgeCommand := getPurgeCommand(fs)
 
 	if isEnvFlagEnabled("CONFIG_V1") {
 		log.Warn("CONFIG_V1 environment var detected!")
@@ -102,6 +103,13 @@ Examples:
 	rootCmd.AddCommand(convertCommand)
 	rootCmd.AddCommand(deployCommand)
 	rootCmd.AddCommand(deleteCommand)
+
+	if isEnvFlagEnabled("MONACO_ENABLE_DANGEROUS_COMMANDS") {
+		log.Warn("MONACO_ENABLE_DANGEROUS_COMMANDS environment var detected!")
+		log.Warn("Use additional commands with care, they might have heavy impact on configurations or environments")
+
+		rootCmd.AddCommand(purgeCommand)
+	}
 
 	return rootCmd
 }
@@ -199,6 +207,40 @@ func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 	}
 
 	return deleteCmd
+}
+
+func getPurgeCommand(fs afero.Fs) (purgeCmd *cobra.Command) {
+
+	var environment []string
+	var manifestName string
+
+	purgeCmd = &cobra.Command{
+		Use:     "purge <manifest.yaml>",
+		Short:   "Delete ALL configurations from the environments defined in the manifest",
+		Example: "monaco purge manifest.yaml -e dev-environment",
+		Hidden:  true, // this command will not be suggested or shown in help
+		Args:    cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+
+			manifestName = args[0]
+
+			if !files.IsYamlFileExtension(manifestName) {
+				err := fmt.Errorf("wrong format for manifest file! expected a .yaml file, but got %s", manifestName)
+				return err
+			}
+
+			return delete.Purge(fs, manifestName, environment)
+		},
+		ValidArgsFunction: completion.PurgeCompletion,
+	}
+
+	purgeCmd.Flags().StringSliceVarP(&environment, "environment", "e", make([]string, 0), "Deletes configuration only for specified envs. If not set, delete will be executed on all environments defined in manifest.")
+
+	if err := purgeCmd.RegisterFlagCompletionFunc("environment", completion.EnvironmentByArg0); err != nil {
+		log.Fatal("failed to setup CLI %v", err)
+	}
+
+	return purgeCmd
 }
 
 func getConvertCommand(fs afero.Fs) (convertCmd *cobra.Command) {

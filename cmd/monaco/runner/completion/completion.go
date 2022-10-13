@@ -66,6 +66,14 @@ func DownloadDirectCompletion(_ *cobra.Command, args []string, _ string) ([]stri
 	}
 }
 
+func PurgeCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
+	if len(args) == 0 {
+		return ManifestFile()
+	} else {
+		return make([]string, 0), cobra.ShellCompDirectiveDefault
+	}
+}
+
 func listEnvVarNames() []string {
 	env := os.Environ()
 	names := make([]string, len(env))

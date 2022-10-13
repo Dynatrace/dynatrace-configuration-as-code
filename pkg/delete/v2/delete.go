@@ -58,6 +58,32 @@ func DeleteConfigs(client rest.DynatraceClient, apis map[string]api.Api,
 	return errors
 }
 
+func DeleteAllConfigs(client rest.DynatraceClient, apis map[string]api.Api) (errors []error) {
+
+	for _, api := range apis {
+		log.Info("Collecting configs of type %s...", api.GetId())
+		values, err := client.List(api)
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+
+		names := make([]string, len(values))
+		for i, v := range values {
+			names[i] = v.Name
+		}
+
+		log.Info("Deleting %d configs of type %s...", len(names), api.GetId())
+		errs := client.BulkDeleteByName(api, names)
+
+		if errs != nil {
+			errors = append(errors, errs...)
+		}
+	}
+
+	return errors
+}
+
 func toNames(pointers []DeletePointer) []string {
 	result := make([]string, len(pointers))
 
