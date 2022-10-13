@@ -197,7 +197,7 @@ func cleanupIntegrationTest(t *testing.T, loadedManifest manifest.Manifest, spec
 				if strings.HasSuffix(value.Name, suffix) || strings.HasSuffix(value.Id, suffix) {
 					err := client.DeleteByName(api, value.Name)
 					if err != nil {
-						log.Error("Failed to delete %s", value.Name)
+						t.Errorf("Failed to cleanup test config: %s (%s)", value.Name, api.GetId())
 					}
 				}
 			}
