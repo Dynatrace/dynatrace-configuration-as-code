@@ -20,6 +20,8 @@ import (
 	"errors"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
+	valueParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/golang/mock/gomock"
 	"gotest.tools/assert"
@@ -282,5 +284,141 @@ func TestFindConfigsToDownload(t *testing.T) {
 
 		_, err := findConfigsToDownload(a, c)
 		assert.Error(t, err, "error")
+	})
+}
+
+func TestDownloadConfigs(t *testing.T) {
+	projectId := "my-project"
+	apiId := "api-id"
+
+	value := api.Value{Id: "1", Name: "name"}
+
+	type args struct {
+		response          string
+		err               error
+		shouldBePersisted shouldConfigBePersistedFunc
+	}
+	type expect struct {
+		skip     bool
+		template string
+	}
+	tests := []struct {
+		name   string
+		args   args
+		expect expect
+	}{
+		{
+			name: "Empty object response is a valid download",
+			args: args{
+				response: "{}",
+				err:      nil,
+			},
+			expect: expect{
+				skip:     false,
+				template: "{}",
+			},
+		},
+		{
+			name: "Error does mean config is skipped",
+			args: args{
+				err: errors.New("error"),
+			},
+			expect: expect{
+				skip: true,
+			},
+		},
+		{
+			name: "Filtered configs should be skipped",
+			args: args{
+				response: "{}",
+				shouldBePersisted: func(_ api.Api, _ map[string]interface{}) bool {
+					return false
+				},
+			},
+			expect: expect{
+				skip: true,
+			},
+		},
+		{
+			name: "Invalid json is skipped",
+			args: args{
+				response: "asdf",
+			},
+			expect: expect{
+				skip: true,
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			a := api.NewMockApi(gomock.NewController(t)) // setup api
+			a.EXPECT().GetId().AnyTimes().Return(apiId)
+
+			client := rest.NewMockDynatraceClient(gomock.NewController(t)) // setup client
+			client.EXPECT().ReadById(a, "1").Return([]byte(test.args.response), test.args.err)
+
+			persist := test.args.shouldBePersisted
+			if persist == nil {
+				persist = shouldConfigBePersisted
+			}
+
+			conf, skip := downloadConfigForTesting(a, value, client, projectId, persist)
+
+			expectedCoordinate := coordinate.Coordinate{projectId, apiId, value.Id}
+
+			assert.Equal(t, skip, test.expect.skip, "skip")
+
+			if !test.expect.skip { // only verify rest if we don't skip
+				assert.DeepEqual(t, conf.Template.Content(), test.expect.template)
+				assert.DeepEqual(t, conf.Coordinate, expectedCoordinate)
+				assert.Equal(t, conf.Parameters["name"].(*valueParam.ValueParameter).Value, value.Name)
+			}
+		})
+	}
+}
+
+func TestDownloadConfigsOfApi(t *testing.T) {
+	t.Run("Multiple values", func(t *testing.T) {
+		a := api.NewMockApi(gomock.NewController(t))
+		a.EXPECT().GetId().AnyTimes().Return("api-id")
+
+		client := rest.NewMockDynatraceClient(gomock.NewController(t))
+		client.EXPECT().ReadById(a, gomock.Any()).Times(3).Return([]byte("{}"), nil)
+
+		values := []api.Value{{Id: "1", Name: "1"}, {Id: "3", Name: "3"}, {Id: "3", Name: "3"}}
+		projectId := "project-id"
+
+		configs := downloadConfigsOfApi(a, values, client, projectId)
+
+		assert.Equal(t, len(configs), 3)
+	})
+
+	t.Run("single value", func(t *testing.T) {
+		a := api.NewMockApi(gomock.NewController(t))
+		a.EXPECT().GetId().AnyTimes().Return("api-id")
+
+		client := rest.NewMockDynatraceClient(gomock.NewController(t))
+		client.EXPECT().ReadById(a, gomock.Any()).Times(1).Return([]byte("{}"), nil)
+
+		values := []api.Value{{Id: "1", Name: "1"}}
+		projectId := "project-id"
+
+		configs := downloadConfigsOfApi(a, values, client, projectId)
+
+		assert.Equal(t, len(configs), 1)
+	})
+
+	t.Run("no value", func(t *testing.T) {
+		a := api.NewMockApi(gomock.NewController(t))
+		a.EXPECT().GetId().AnyTimes().Return("api-id")
+
+		client := rest.NewMockDynatraceClient(gomock.NewController(t))
+
+		values := []api.Value{}
+		projectId := "project-id"
+
+		configs := downloadConfigsOfApi(a, values, client, projectId)
+
+		assert.Equal(t, len(configs), 0)
 	})
 }

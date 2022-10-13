@@ -184,6 +184,18 @@ func downloadConfigsOfApi(theApi api.Api, values []api.Value, client rest.Dynatr
 }
 
 func downloadConfig(theApi api.Api, value api.Value, client rest.DynatraceClient, projectId string) (conf config.Config, skipConfig bool) {
+	return downloadConfigForTesting(theApi, value, client, projectId, shouldConfigBePersisted)
+}
+
+type shouldConfigBePersistedFunc func(a api.Api, json map[string]interface{}) bool
+
+func downloadConfigForTesting(
+	theApi api.Api,
+	value api.Value,
+	client rest.DynatraceClient,
+	projectId string,
+	shouldConfigBePersisted shouldConfigBePersistedFunc,
+) (conf config.Config, skipConfig bool) {
 	// download json and check if we should skip it
 	downloadedJson, err := downloadAndUnmarshalConfig(theApi, value, client)
 	if err != nil {
