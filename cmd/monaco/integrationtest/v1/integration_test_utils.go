@@ -152,7 +152,7 @@ func cleanupIntegrationTest(t *testing.T, fs afero.Fs, envFile, suffix string) {
 					log.Info("Deleting %s (%s)", value.Name, api.GetId())
 					err := client.DeleteById(api, value.Id)
 					if err != nil {
-						t.Errorf("Failed to cleanup test config: %s (%s)", value.Name, api.GetId())
+						t.Errorf("Failed to cleanup test config: %s (%s): %v", value.Name, api.GetId(), err)
 					}
 				}
 			}
