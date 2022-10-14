@@ -301,6 +301,12 @@ func deleteDynatraceObjects(client *http.Client, api api.Api, names []string, ur
 	}
 
 	var errors []error
+
+	if len(existingIds) == 0 {
+		log.Warn("No configs of given names found for deletion(%s): %s", api.GetId(), names)
+		return errors
+	}
+
 	for _, v := range existingIds {
 		if v.Id != "" {
 			err = deleteConfig(client, url, token, v.Id)
