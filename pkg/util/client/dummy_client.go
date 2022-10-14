@@ -234,6 +234,29 @@ func (c *DummyClient) DeleteByName(a api.Api, name string) error {
 	return nil
 }
 
+func (c *DummyClient) DeleteById(a api.Api, id string) error {
+	entries, found := c.Entries[a]
+
+	if !found {
+		return nil
+	}
+
+	var foundIndex = -1
+
+	for i, entry := range entries {
+		if entry.Id == id {
+			foundIndex = i
+			break
+		}
+	}
+
+	if foundIndex >= 0 {
+		c.Entries[a] = append(entries[:foundIndex], entries[foundIndex+1:]...)
+	}
+
+	return nil
+}
+
 func (c *DummyClient) ExistsByName(a api.Api, name string) (exists bool, id string, err error) {
 	entries, found := c.Entries[a]
 

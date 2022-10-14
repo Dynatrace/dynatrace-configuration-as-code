@@ -82,6 +82,14 @@ func (l limitingClient) DeleteByName(a api.Api, name string) (err error) {
 	return
 }
 
+func (l limitingClient) DeleteById(a api.Api, id string) (err error) {
+	l.limiter.ExecuteBlocking(func() {
+		err = l.client.DeleteById(a, id)
+	})
+
+	return
+}
+
 func (l limitingClient) BulkDeleteByName(a api.Api, names []string) (errs []error) {
 	l.limiter.ExecuteBlocking(func() {
 		errs = l.client.BulkDeleteByName(a, names)

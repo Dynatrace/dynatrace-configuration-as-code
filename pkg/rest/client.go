@@ -75,6 +75,11 @@ type DynatraceClient interface {
 	//    DELETE <environment-url>/api/config/v1/alertingProfiles/<id> ... to delete the config
 	DeleteByName(a Api, name string) error
 
+	// Delete removes a given config for a given API using its id.
+	// It calls the DELETE endpoint for the API. E.g. for alerting profiles this would be:
+	//    DELETE <environment-url>/api/config/v1/alertingProfiles/<id> ... to delete the config
+	DeleteById(a Api, id string) error
+
 	// Delete removed a given config for a given API using its name.
 	// Same as DeleteByName only that it allows to delete multiple entries in one go
 	BulkDeleteByName(a Api, names []string) []error
@@ -183,6 +188,11 @@ func (d *dynatraceClientImpl) DeleteByName(api Api, name string) error {
 		log.Warn("Trying to delete single configuration %s produced more than one error. Truncating to first.", name)
 	}
 	return errs[0]
+}
+
+func (d *dynatraceClientImpl) DeleteById(api Api, id string) error {
+
+	return deleteConfig(d.client, api.GetUrlFromEnvironmentUrl(d.environmentUrl), d.token, id)
 }
 
 func (d *dynatraceClientImpl) BulkDeleteByName(api Api, names []string) []error {
