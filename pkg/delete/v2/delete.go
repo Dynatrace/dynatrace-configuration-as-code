@@ -68,16 +68,15 @@ func DeleteAllConfigs(client rest.DynatraceClient, apis map[string]api.Api) (err
 			continue
 		}
 
-		names := make([]string, len(values))
-		for i, v := range values {
-			names[i] = v.Name
-		}
+		log.Info("Deleting %d configs of type %s...", len(values), api.GetId())
 
-		log.Info("Deleting %d configs of type %s...", len(names), api.GetId())
-		errs := client.BulkDeleteByName(api, names)
+		for _, v := range values {
+			// TODO(improvement): this could be improved by filtering for default configs the same way as Download does
+			err := client.DeleteById(api, v.Id)
 
-		if errs != nil {
-			errors = append(errors, errs...)
+			if err != nil {
+				errors = append(errors, err)
+			}
 		}
 	}
 

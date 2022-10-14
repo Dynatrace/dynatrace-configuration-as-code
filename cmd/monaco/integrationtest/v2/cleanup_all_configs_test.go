@@ -70,7 +70,7 @@ func TestDoCleanup(t *testing.T) {
 			for _, value := range values {
 				if testSuffixRegex.MatchString(value.Name) || testSuffixRegex.MatchString(value.Id) {
 					log.Info("Deleting %s (%s)", value.Name, api.GetId())
-					err := client.DeleteByName(api, value.Name)
+					err := client.DeleteById(api, value.Id)
 					if err != nil {
 						t.Errorf("failed to delete %s (%s): %v", value.Name, api.GetId(), err)
 					} else {
