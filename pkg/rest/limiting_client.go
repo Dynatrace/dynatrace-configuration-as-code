@@ -74,14 +74,6 @@ func (l limitingClient) UpsertByEntityId(a api.Api, entityId string, name string
 	return
 }
 
-func (l limitingClient) DeleteByName(a api.Api, name string) (err error) {
-	l.limiter.ExecuteBlocking(func() {
-		err = l.client.DeleteByName(a, name)
-	})
-
-	return
-}
-
 func (l limitingClient) DeleteById(a api.Api, id string) (err error) {
 	l.limiter.ExecuteBlocking(func() {
 		err = l.client.DeleteById(a, id)

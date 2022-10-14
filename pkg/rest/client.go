@@ -69,19 +69,15 @@ type DynatraceClient interface {
 	//    PUT <environment-url>/api/config/v1/alertingProfiles/<id> ... whether or not the config is already available
 	UpsertByEntityId(a Api, entityId string, name string, payload []byte) (entity DynatraceEntity, err error)
 
-	// Delete removes a given config for a given API using its name.
-	// It calls the underlying GET and DELETE endpoints for the API. E.g. for alerting profiles this would be:
-	//    GET <environment-url>/api/config/v1/alertingProfiles ... to get the id of the existing config
-	//    DELETE <environment-url>/api/config/v1/alertingProfiles/<id> ... to delete the config
-	DeleteByName(a Api, name string) error
-
 	// Delete removes a given config for a given API using its id.
 	// It calls the DELETE endpoint for the API. E.g. for alerting profiles this would be:
 	//    DELETE <environment-url>/api/config/v1/alertingProfiles/<id> ... to delete the config
 	DeleteById(a Api, id string) error
 
-	// Delete removed a given config for a given API using its name.
-	// Same as DeleteByName only that it allows to delete multiple entries in one go
+	// BulkDelete removes given configs for a given API by name - of course this can be used with a single name as well.
+	// It calls the underlying GET and DELETE endpoints for the API. E.g. for alerting profiles this would be:
+	//    GET <environment-url>/api/config/v1/alertingProfiles ... to get the id of the existing config
+	//    DELETE <environment-url>/api/config/v1/alertingProfiles/<id> ... to delete the config
 	BulkDeleteByName(a Api, names []string) []error
 
 	// ExistsByName checks if a config with the given name exists for the given API.
@@ -174,20 +170,6 @@ func (d *dynatraceClientImpl) ReadById(api Api, id string) (json []byte, err err
 	}
 
 	return response.Body, nil
-}
-
-// TODO can be deprectated for BulkDelete if integration test cleanup is adapted
-func (d *dynatraceClientImpl) DeleteByName(api Api, name string) error {
-
-	errs := deleteDynatraceObjects(d.client, api, []string{name}, api.GetUrlFromEnvironmentUrl(d.environmentUrl), d.token)
-	if len(errs) == 0 {
-		return nil
-	}
-
-	if len(errs) > 1 {
-		log.Warn("Trying to delete single configuration %s produced more than one error. Truncating to first.", name)
-	}
-	return errs[0]
 }
 
 func (d *dynatraceClientImpl) DeleteById(api Api, id string) error {
