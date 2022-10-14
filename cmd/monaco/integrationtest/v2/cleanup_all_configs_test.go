@@ -20,6 +20,7 @@ package v2
 
 import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/test"
 	"github.com/spf13/afero"
 	"regexp"
@@ -27,7 +28,6 @@ import (
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"gotest.tools/assert"
 )
 
@@ -69,11 +69,11 @@ func TestDoCleanup(t *testing.T) {
 
 			for _, value := range values {
 				if testSuffixRegex.MatchString(value.Name) || testSuffixRegex.MatchString(value.Id) {
-					log.Info("Deleting %s (%s)", value.Name, api.GetId())
 					err := client.DeleteById(api, value.Id)
 					if err != nil {
 						t.Errorf("failed to delete %s (%s): %v", value.Name, api.GetId(), err)
 					} else {
+						log.Info("Deleted %s (%s)", value.Name, api.GetId())
 						deletedConfigs++
 					}
 				}
