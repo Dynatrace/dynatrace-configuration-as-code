@@ -179,7 +179,12 @@ func updateDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		return api.DynatraceEntity{}, fmt.Errorf("Failed to update DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
 	}
 
-	log.Debug("\tUpdated existing object for %s (%s)", objectName, existingObjectId)
+	if theApi.IsNonUniqueNameApi() {
+		log.Debug("\tCreated/Updated object by ID for %s (%s)", objectName, existingObjectId)
+	} else {
+		log.Debug("\tUpdated existing object for %s (%s)", objectName, existingObjectId)
+	}
+
 	return api.DynatraceEntity{
 		Id:          existingObjectId,
 		Name:        objectName,
