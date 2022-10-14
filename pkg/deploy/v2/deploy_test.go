@@ -1,5 +1,4 @@
 //go:build unit
-// +build unit
 
 // @license
 // Copyright 2021 Dynatrace LLC
