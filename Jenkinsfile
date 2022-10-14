@@ -83,6 +83,19 @@ pipeline {
             }
         }
 
+        stage('📥/📤 Download/Restore test') {
+                    when {
+                        expression {
+                            env.BRANCH_IS_PRIMARY
+                        }
+                    }
+                    steps {
+                        withVault(vaultSecrets: [credentialsEnvironment1, credentialsEnvironment2]) {
+                            sh "make download-restore-test"
+                        }
+                    }
+                }
+
         stage('🏁 Build release binaries') {
             steps {
                 sh "make build-release"

@@ -73,6 +73,9 @@ integration-test:
 integration-test-v1:
 	@go test -tags=integration_v1 -timeout=30m -v ./...
 
+download-restore-test:
+	@go test -tags=download_restore -timeout=30m -v ./...
+
 clean-environments:
 	@go test -tags=cleanup -v ./...
 

@@ -1,5 +1,4 @@
-//go:build integration || integration_v1 || unit
-// +build integration integration_v1 unit
+//go:build integration || integration_v1 || download_restore || unit
 
 /**
  * @license

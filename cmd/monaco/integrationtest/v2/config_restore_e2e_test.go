@@ -1,5 +1,4 @@
-//go:build integration
-// +build integration
+//go:build download_restore
 
 /**
  * @license
@@ -43,7 +42,9 @@ type downloadFunction func(*testing.T, afero.Fs, string, string, string) error
 //Validation: Uploads the downloaded configs and checks for status code 0 as result
 //Cleanup: Deletes the configurations that were uploaded during validation
 
-// This version runs the test against 2 simple configs (alerting profiles and management zones)
+// TestRestoreConfigs_FromDownloadWithManifestFile deploys, download and re-deploys from download the download-configs test-resources
+// As this downloads all alerting-profile and management-zone configs, other tests and their cleanup are likely to interfere
+// Thus download_restore tests should be run independently to other integration tests
 func TestRestoreConfigs_FromDownloadWithManifestFile(t *testing.T) {
 	initialConfigsFolder := "test-resources/integration-download-configs/"
 	manifestFile := initialConfigsFolder + "manifest.yaml"
@@ -54,6 +55,9 @@ func TestRestoreConfigs_FromDownloadWithManifestFile(t *testing.T) {
 	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, execution_downloadConfigs)
 }
 
+// TestRestoreConfigs_FromDownloadWithCLIParameters deploys, download and re-deploys from download the download-configs test-resources
+// As this downloads all alerting-profile and management-zone configs, other tests and their cleanup are likely to interfere
+// Thus download_restore tests should be run independently to other integration tests
 func TestRestoreConfigs_FromDownloadWithCLIParameters(t *testing.T) {
 	initialConfigsFolder := "test-resources/integration-download-configs/"
 	manifestFile := initialConfigsFolder + "manifest.yaml"
@@ -64,9 +68,14 @@ func TestRestoreConfigs_FromDownloadWithCLIParameters(t *testing.T) {
 	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, execution_downloadConfigsWithCLIParameters)
 }
 
-// This version runs the test against the all_configs project
+// TestRestoreConfigsFull is currently
+// TestRestoreConfigsFull deploys, download and re-deploys from download the all-configs test-resources
+// As this downloads all configs from all APIs other tests and their cleanup are likely to interfere
+// Thus download_restore tests should be run independently to other integration tests
 func TestRestoreConfigsFull(t *testing.T) {
-	initialConfigsFolder := "test-resources/integration-download-configs/"
+	t.Skipf("Test skipped as not all configurations can currently successfully be re-uploaded automatically after download")
+
+	initialConfigsFolder := "test-resources/integration-all-configs/"
 	manifestFile := initialConfigsFolder + "manifest.yaml"
 	downloadFolder := "test-resources/download"
 	subsetOfConfigsToDownload := "all" //value only for testing
