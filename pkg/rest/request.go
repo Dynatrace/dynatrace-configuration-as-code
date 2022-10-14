@@ -63,6 +63,11 @@ func deleteConfig(client *http.Client, url string, apiToken string, id string) e
 		return err
 	}
 
+	if resp.StatusCode == 404 {
+		log.Debug("No config with id '%s' found to delete (HTTP 404 response)", id)
+		return nil
+	}
+
 	if !success(resp) {
 		return fmt.Errorf("failed call to DELETE %s (HTTP %d)!\n Response was:\n %s", fullPath, resp.StatusCode, string(resp.Body))
 	}
