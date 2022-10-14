@@ -325,7 +325,7 @@ func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, ob
 	var matchingObjectsFound = 0
 	for i := 0; i < len(values); i++ {
 		value := values[i]
-		if value.Name == objectName {
+		if value.Name == objectName || escapeApiValueName(value) == objectName {
 			if matchingObjectsFound == 0 {
 				objectId = value.Id
 			}
@@ -356,10 +356,15 @@ func getObjectIdsIfAlreadyExists(client *http.Client, a api.Api, url string, obj
 
 	for i := 0; i < len(values); i++ {
 		value := values[i]
+		escapedValueName := escapeApiValueName(value)
 		if _, found := nameLookupMap[value.Name]; found && value.Id != "" {
 			result = append(result, value)
 			nameLookupMap[value.Name]++
 			log.Debug("Found existing config %s (%s) with id %s", value.Name, a.GetId(), value.Id)
+		} else if _, found := nameLookupMap[escapedValueName]; found && value.Id != "" {
+			result = append(result, api.Value{Id: value.Id, Name: escapedValueName})
+			nameLookupMap[escapedValueName]++
+			log.Debug("Found existing config %s (%s) with id %s", escapedValueName, a.GetId(), value.Id)
 		}
 	}
 
@@ -372,6 +377,15 @@ func getObjectIdsIfAlreadyExists(client *http.Client, a api.Api, url string, obj
 	}
 
 	return result, nil
+}
+
+func escapeApiValueName(value api.Value) string {
+	valueName, err := util.EscapeSpecialCharactersInValue(value.Name, util.FullStringEscapeFunction)
+	if err != nil {
+		log.Warn("failed to string escape API value '%s' while checking if object exists, check directly", value.Name)
+		return value.Name
+	}
+	return valueName.(string)
 }
 
 func toLookupMap(strs []string) map[string]int {

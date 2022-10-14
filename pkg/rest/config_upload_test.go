@@ -24,6 +24,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"gotest.tools/assert"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
@@ -398,4 +399,146 @@ func Test_retryReturnContainsOriginalApiError(t *testing.T) {
 	_, err := retry(nil, mockCall, "dont matter", "some/path", []byte("body"), "token", maxRetries, 1)
 	assert.Check(t, err != nil)
 	assert.ErrorContains(t, err, "Something wrong")
+}
+
+func Test_getObjectIdIfAlreadyExists(t *testing.T) {
+
+	testApi := api.NewStandardApi("test", "/test/api", false, "", false)
+
+	tests := []struct {
+		name                    string
+		givenObjectName         string
+		givenApiResponse        string
+		givenApiResponseIsError bool
+		wantFoundId             string
+		wantErr                 bool
+	}{
+		{
+			name:             "finds object id as expected",
+			givenObjectName:  "TEST NAME",
+			givenApiResponse: `{ "values": [ { "id": "42", "name": "TEST NAME" } ] }`,
+			wantFoundId:      "42",
+			wantErr:          false,
+		},
+		{
+			name:             "returns first match if more than one object of given name exist",
+			givenObjectName:  "TEST NAME",
+			givenApiResponse: `{ "values": [ { "id": "41", "name": "TEST NAME" }, { "id": "42", "name": "TEST NAME" } ] }`,
+			wantFoundId:      "41",
+			wantErr:          false,
+		},
+		{
+			name:             "returns empty string without error if no match found",
+			givenObjectName:  "TEST NAME",
+			givenApiResponse: `{ "values": [ { "id": "42", "name": "some other thing" } ] }`,
+			wantFoundId:      "",
+			wantErr:          false,
+		},
+		{
+			name:             "returns object id as expected if string escaping is needed to match",
+			givenObjectName:  `TEST \"NAME\"`,
+			givenApiResponse: `{ "values": [ { "id": "42", "name": "TEST \"NAME\"" } ] }`, // note after API GET and unmarshalling this will be 'TEST "NAME"' and not match directly
+			wantFoundId:      "42",
+			wantErr:          false,
+		},
+		{
+			name:                    "returns error if API call fails",
+			givenObjectName:         "TEST NAME",
+			givenApiResponseIsError: true,
+			wantFoundId:             "",
+			wantErr:                 true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				if tt.givenApiResponseIsError {
+					rw.WriteHeader(400)
+					return
+				}
+				_, _ = rw.Write([]byte(tt.givenApiResponse))
+			}))
+			defer server.Close()
+
+			got, err := getObjectIdIfAlreadyExists(server.Client(), testApi, server.URL, tt.givenObjectName, "test-token")
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getObjectIdIfAlreadyExists() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.wantFoundId {
+				t.Errorf("getObjectIdIfAlreadyExists() got = %v, want %v", got, tt.wantFoundId)
+			}
+		})
+	}
+}
+
+func Test_getObjectIdsIfAlreadyExists(t *testing.T) {
+
+	testApi := api.NewStandardApi("test", "/test/api", false, "", false)
+
+	tests := []struct {
+		name                    string
+		givenObjectNames        []string
+		givenApiResponse        string
+		givenApiResponseIsError bool
+		wantFoundValues         []api.Value
+		wantErr                 bool
+	}{
+		{
+			name:             "finds objects as expected",
+			givenObjectNames: []string{"TEST NAME", "ANOTHER NAME"},
+			givenApiResponse: `{ "values": [ { "id": "42", "name": "TEST NAME" }, { "id": "21", "name": "ANOTHER NAME" } ] }`,
+			wantFoundValues:  []api.Value{{Id: "42", Name: "TEST NAME"}, {Id: "21", Name: "ANOTHER NAME"}},
+			wantErr:          false,
+		},
+		{
+			name:             "returns all matches if more than one object of given names exist",
+			givenObjectNames: []string{"TEST NAME", "ANOTHER NAME"},
+			givenApiResponse: `{ "values": [ { "id": "41", "name": "TEST NAME" }, { "id": "20", "name": "ANOTHER NAME" }, { "id": "42", "name": "TEST NAME" }, { "id": "21", "name": "ANOTHER NAME" } ] }`,
+			wantFoundValues:  []api.Value{{Id: "41", Name: "TEST NAME"}, {Id: "20", Name: "ANOTHER NAME"}, {Id: "42", Name: "TEST NAME"}, {Id: "21", Name: "ANOTHER NAME"}},
+			wantErr:          false,
+		},
+		{
+			name:             "returns no values without error if no matches found",
+			givenObjectNames: []string{"TEST NAME", "ANOTHER NAME"},
+			givenApiResponse: `{ "values": [ { "id": "41", "name": "some other thing" } ] }`,
+			wantFoundValues:  nil,
+			wantErr:          false,
+		},
+		{
+			name:             "returns object id as expected if string escaping is needed to match",
+			givenObjectNames: []string{`TEST \"NAME\"`, `ANOTHER \"NAME\"`},
+			givenApiResponse: `{ "values": [ { "id": "42", "name": "TEST \"NAME\"" }, { "id": "21", "name": "ANOTHER \"NAME\"" } ] }`, // note after API GET and unmarshalling this will be 'TEST "NAME"' and not match directly
+			wantFoundValues:  []api.Value{{Id: "42", Name: `TEST \"NAME\"`}, {Id: "21", Name: `ANOTHER \"NAME\"`}},
+			wantErr:          false,
+		},
+		{
+			name:                    "returns error if API call fails",
+			givenObjectNames:        []string{"TEST NAME", "ANOTHER NAME"},
+			givenApiResponseIsError: true,
+			wantFoundValues:         nil,
+			wantErr:                 true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				if tt.givenApiResponseIsError {
+					rw.WriteHeader(400)
+					return
+				}
+				_, _ = rw.Write([]byte(tt.givenApiResponse))
+			}))
+			defer server.Close()
+
+			got, err := getObjectIdsIfAlreadyExists(server.Client(), testApi, server.URL, tt.givenObjectNames, "test-token")
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getObjectIdsIfAlreadyExists() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			assert.DeepEqual(t, got, tt.wantFoundValues)
+		})
+	}
 }
