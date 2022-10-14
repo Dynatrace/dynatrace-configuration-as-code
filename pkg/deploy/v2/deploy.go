@@ -382,7 +382,7 @@ func validateParameterReferences(configCoordinates coordinate.Coordinate,
 		entity, found := entities[ref.Config]
 
 		if !found {
-			errors = append(errors, newParameterReferenceError(configCoordinates, group, environment, paramName, ref, "referencing config not found"))
+			errors = append(errors, newParameterReferenceError(configCoordinates, group, environment, paramName, ref, "referenced config not found"))
 			continue
 		}
 
