@@ -82,7 +82,6 @@ func TestCallbackExecutions(t *testing.T) {
 
 			wg.Wait()
 
-			assert.Equal(t, len(limiter.waitChan), 0, "All tasks should be done")
 			assert.Equal(t, int32(0), counter, "Counter should be 0")
 		})
 	}
@@ -115,9 +114,6 @@ func TestExecutionsAreActuallyParallel(t *testing.T) {
 	assert.Equal(t, len(limiter.waitChan), 10, "goroutines should be running")
 
 	m.Unlock() // unlock to run all goroutines
-
-	wgPost.Wait() // wait all finished
-	assert.Equal(t, len(limiter.waitChan), 0, "goroutines should be done")
 }
 
 func TestExecuteBlockingDoesNotReturnImmediately(t *testing.T) {
