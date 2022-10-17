@@ -37,6 +37,17 @@ func Keys[K comparable, V any, M ~map[K]V](m M) []K {
 	return keys
 }
 
+// Values returns all values of the map
+func Values[K comparable, V any, M ~map[K]V](m M) []V {
+	values := make([]V, 0, len(m))
+
+	for _, v := range m {
+		values = append(values, v)
+	}
+
+	return values
+}
+
 // ToStringMap turns the Keys of a map[interface{}]interface{} into string keys
 // keys will be transformed using fmt.Sprintf
 func ToStringMap(m map[interface{}]interface{}) map[string]interface{} {

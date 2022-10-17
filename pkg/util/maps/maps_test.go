@@ -20,9 +20,9 @@ package maps
 
 import (
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/test"
 	"gotest.tools/assert"
 	"reflect"
-	"sort"
 	"testing"
 )
 
@@ -102,8 +102,6 @@ func TestCopy(t *testing.T) {
 }
 
 func TestKeys(t *testing.T) {
-	type args struct {
-	}
 	tests := []struct {
 		name string
 		args map[string]int
@@ -133,12 +131,45 @@ func TestKeys(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := Keys(tt.args)
-			sort.Strings(got)
-			sort.Strings(tt.want)
 
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Keys() = %v, want %v", got, tt.want)
-			}
+			assert.DeepEqual(t, got, tt.want, test.OrderStrings)
+		})
+	}
+}
+
+func TestValues(t *testing.T) {
+
+	tests := []struct {
+		name string
+		args map[string]int
+		want []int
+	}{
+		{
+			"empty",
+			map[string]int{},
+			[]int{},
+		},
+		{
+			"single",
+			map[string]int{"a": 1},
+			[]int{1},
+		},
+		{
+			"some",
+			map[string]int{"a": 1, "b": 2, "c": 3},
+			[]int{1, 2, 3},
+		},
+		{
+			"nil map does not error",
+			nil,
+			[]int{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := Values(tt.args)
+
+			assert.DeepEqual(t, got, tt.want, test.OrderInts)
 		})
 	}
 }

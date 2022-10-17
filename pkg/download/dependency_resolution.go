@@ -87,7 +87,7 @@ func findAndReplaceIds(apiName string, configToBeUpdated config.Config, configs 
 		if strings.Contains(content, key) && conf.Template.Id() != configToBeUpdated.Template.Id() {
 			log.Debug("\treference: '%v/%v' referencing '%v' in coordinate '%v' ", apiName, configToBeUpdated.Template.Id(), key, conf.Coordinate)
 
-			parameterName := util.SanitizeTemplateVar(fmt.Sprintf("%v__%v__id", conf.Coordinate.Api, conf.Coordinate.Config))
+			parameterName := createParameterName(conf.Coordinate.Api, conf.Coordinate.Config)
 			coord := conf.Coordinate
 
 			content = strings.ReplaceAll(content, key, "{{."+parameterName+"}}")
@@ -97,4 +97,8 @@ func findAndReplaceIds(apiName string, configToBeUpdated config.Config, configs 
 	}
 
 	return content, parameters
+}
+
+func createParameterName(api, configId string) string {
+	return util.SanitizeTemplateVar(fmt.Sprintf("%v__%v__id", api, configId))
 }
