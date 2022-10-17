@@ -85,3 +85,8 @@ clean-environments:
 pkg=...
 test-package: mocks lint
 	@go test -tags=unit -count=1 -v ./pkg/${pkg}
+
+update-dependencies:
+	@echo Update go dependencies
+	@go get -u ./...
+	@go mod tidy
