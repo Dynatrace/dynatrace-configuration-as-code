@@ -2,60 +2,51 @@
 sidebar_position: 4
 ---
 
-# Download configuration
+# Download
 
 This feature lets you download the configuration from a Dynatrace tenant as Monaco files. 
 Use this feature to avoid starting from scratch when using Monaco. 
 
-> :warning: This feature requires CLI version 2.0.
-
 ## Download configurations
 
-### With environment file
-1. Enable CLI 2.0 by adding an environment variable called NEW_CLI with a non-empty value other than 0. 
-```shell
-export NEW_CLI=1
-```
-2. Create an environment file.
-3. Run monaco using the download command
+### Using the manifest
+
+1. [Create a manifest file if you don't have one already](../configuration/yaml_configuration.md).
+2. Run monaco using the download command
 
 ```shell
-monaco download --environments=my-environment.yaml
+monaco download manifest manifest.yaml environment-name
 ```
 
-### Without environment file
+Use `--help` to view all options you have to configure the download-behavior:
+```shell
+monaco download manifest --help`
+```
 
-Run monaco using the download command
+### Direct download
+
+To download an environment directly without the usage of a manifest, use the `monaco download direct`-command.
+This command can get you started if you have nothing configured yet. A manifest will be created for you.
 
 ```shell
-monaco download --url https://environment.dynatracelabs.com --environment-name MyEnvironment --token-name TOKEN  
+monaco download  direct https://environment.dynatracelabs.com API_TOKEN_ENVIRONMENT_VARIABLE  
 ```
+The content of the environment variable is the api-token used to download the configuration.
 
-
-
-
-## Options
-
-To download specific APIs only, use `--specific-api` to pass an API. 
-
-
+Use `--help` to view all options you have to configure the download-behavior:
 ```shell
-monaco download --specific-api alerting-profile --specific-api dashboard --environments=my-environment.yaml
+monaco download direct --help`
 ```
 
-# Skipped configurations
 
-Some configurations on Dynatrace are predefined and must not be downloaded and reuploaded on the same, or another environment.
+## Unsupported APIs
 
-Those skipped configurations are:
+Some APIs are supported to be deployed but are not supported to be downloaded.
+To deploy them, you need to create them manually. 
 
-| API                         | Details                                                                           |
-|-----------------------------|-----------------------------------------------------------------------------------|
-| `dashboard`/`dashboard-v2`  | Dashboards that have the owner `Dynatrace` set, or dashboards, which are a preset |
-| `anomaly-detection-metrics` | Configurations that start with `dynatrace.` or `ruxit.`                           |
-| `synthetic-locations`       | `public` (Dynatrace provided) locations                                           |
-| `extension`                 | Extensions with an id that starts with `custom.`                                  |
-
-## Notes
-
-> :warning: **Application Detection Rules.** When using download functionality, you can only update existing application detection rules. You can only create a new app detection rule if no other app detection rules exist for that application.
+These APIs are:
+* aws-credentials
+* azure-credentials
+* credential-vault
+* extension
+* kubernetes-credentials
