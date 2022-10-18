@@ -678,7 +678,7 @@ func translateSyntheticEntityResponse(resp api.SyntheticEntity, objectName strin
 }
 
 func success(resp Response) bool {
-	return resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusCreated || resp.StatusCode == http.StatusNoContent
+	return resp.StatusCode >= 200 && resp.StatusCode <= 299
 }
 
 func isServerError(resp Response) bool {
