@@ -68,10 +68,10 @@ func TestDurationWillBeTheMinimumIfInputIsSmallerThanMinLimit(t *testing.T) {
 
 	rateLimitStrategy := simpleSleepRateLimitStrategy{}
 
-	value := rateLimitStrategy.applyMinMaxDefaults(4 * time.Second)
-	assert.Equal(t, 5, int(value.Seconds()))
+	value := rateLimitStrategy.applyMinMaxDefaults(500 * time.Millisecond)
+	assert.Equal(t, 1, int(value.Seconds()))
 	value = rateLimitStrategy.applyMinMaxDefaults(-19 * time.Second)
-	assert.Equal(t, 5, int(value.Seconds()))
+	assert.Equal(t, 1, int(value.Seconds()))
 }
 
 func TestDurationWillBeTheMaximumIfInputIsLargerThanMaxLimit(t *testing.T) {

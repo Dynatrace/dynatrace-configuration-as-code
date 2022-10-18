@@ -47,7 +47,7 @@ func createRateLimitStrategy() rateLimitStrategy {
 // polling iterations before giving up.
 type simpleSleepRateLimitStrategy struct{}
 
-const minWaitDuration = 5 * time.Second
+const minWaitDuration = 1 * time.Second
 
 func (s *simpleSleepRateLimitStrategy) executeRequest(timelineProvider util.TimelineProvider, callback func() (Response, error)) (Response, error) {
 
