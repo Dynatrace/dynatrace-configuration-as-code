@@ -19,6 +19,7 @@ package rest
 import (
 	"errors"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"time"
 
@@ -46,6 +47,8 @@ func createRateLimitStrategy() rateLimitStrategy {
 // polling iterations before giving up.
 type simpleSleepRateLimitStrategy struct{}
 
+const minWaitDuration = 5 * time.Second
+
 func (s *simpleSleepRateLimitStrategy) executeRequest(timelineProvider util.TimelineProvider, callback func() (Response, error)) (Response, error) {
 
 	response, err := callback()
@@ -58,26 +61,18 @@ func (s *simpleSleepRateLimitStrategy) executeRequest(timelineProvider util.Time
 
 	for response.StatusCode == http.StatusTooManyRequests && currentIteration < maxIterationCount {
 
-		limit, humanReadableTimestamp, timeInMicroseconds, err := s.extractRateLimitHeaders(response)
+		sleepDuration, humanReadableTimestamp, err := s.getSleepDurationFromResponseHeader(response, timelineProvider)
+
 		if err != nil {
-			return response, fmt.Errorf("encountered response code 'STATUS_TOO_MANY_REQUESTS (429)' but failed to extract rate limit header: %v", err)
+			log.Debug("Failed to get rate limiting details from API response, generating wait time instead...")
+			sleepDuration, humanReadableTimestamp = s.generateSleepDuration(currentIteration, timelineProvider)
 		}
-
-		log.Info("Rate limit of %d requests/min reached: Applying rate limit strategy (simpleSleepRateLimitStrategy, iteration: %d)", limit, currentIteration+1)
-		log.Info("simpleSleepRateLimitStrategy: Attempting to sleep until %s", humanReadableTimestamp)
-
-		// Attention: this uses client time:
-		now := timelineProvider.Now()
-
-		// Attention: this uses server time:
-		resetTime := util.ConvertMicrosecondsToUnixTime(timeInMicroseconds)
-
-		// Attention: this mixes client and server time:
-		sleepDuration := resetTime.Sub(now)
-		log.Debug("simpleSleepRateLimitStrategy: Calculated sleep duration of %f seconds...", sleepDuration.Seconds())
 
 		// That's why we need plausible min/max wait time defaults:
 		sleepDuration = s.applyMinMaxDefaults(sleepDuration)
+
+		log.Info("Rate limit reached: Applying rate limit strategy (simpleSleepRateLimitStrategy, iteration: %d)", currentIteration+1)
+		log.Info("simpleSleepRateLimitStrategy: Attempting to sleep until %s", humanReadableTimestamp)
 
 		log.Debug("simpleSleepRateLimitStrategy: Sleeping for %f seconds...", sleepDuration.Seconds())
 		timelineProvider.Sleep(sleepDuration)
@@ -93,6 +88,25 @@ func (s *simpleSleepRateLimitStrategy) executeRequest(timelineProvider util.Time
 	}
 
 	return response, nil
+}
+
+func (s *simpleSleepRateLimitStrategy) getSleepDurationFromResponseHeader(response Response, timelineProvider util.TimelineProvider) (sleepDuration time.Duration, humanReadableResetTimestamp string, err error) {
+	_, humanReadableTimestamp, timeInMicroseconds, err := s.extractRateLimitHeaders(response)
+	if err != nil {
+		return 0, "", fmt.Errorf("encountered response code 'STATUS_TOO_MANY_REQUESTS (429)' but failed to extract rate limit header: %v", err)
+	}
+
+	// Attention: this uses client time:
+	now := timelineProvider.Now()
+
+	// Attention: this uses server time:
+	resetTime := util.ConvertMicrosecondsToUnixTime(timeInMicroseconds)
+
+	// Attention: this mixes client and server time:
+	sleepDuration = resetTime.Sub(now)
+
+	log.Debug("simpleSleepRateLimitStrategy: Calculated sleep duration of %f seconds...", sleepDuration.Seconds())
+	return sleepDuration, humanReadableTimestamp, nil
 }
 
 func (s *simpleSleepRateLimitStrategy) extractRateLimitHeaders(response Response) (limit string, humanReadableResetTimestamp string, resetTimeInMicroseconds int64, err error) {
@@ -116,13 +130,31 @@ func (s *simpleSleepRateLimitStrategy) extractRateLimitHeaders(response Response
 	return limit, humanReadableResetTimestamp, resetTimeInMicroseconds, nil
 }
 
+// generateSleepDuration will generate a random sleep duration time between minWaitTime and minWaitTime * backoffMultiplier
+// generated sleep durations are used in case the API did not reply with a limit and reset time
+// and called with the current retry iteration count to implement increasing possible wait times per iteration
+func (s *simpleSleepRateLimitStrategy) generateSleepDuration(backoffMultiplier int, timelineProvider util.TimelineProvider) (sleepDuration time.Duration, humanReadableResetTimestamp string) {
+	rand.Seed(time.Now().UnixNano())
+
+	if backoffMultiplier < 1 {
+		backoffMultiplier = 1
+	}
+
+	addedWaitMillis := rand.Int63n(minWaitDuration.Nanoseconds())
+
+	sleepDuration = minWaitDuration + time.Duration(addedWaitMillis*int64(backoffMultiplier))
+
+	humanReadableResetTimestamp = timelineProvider.Now().Add(sleepDuration).Format(time.RFC3339)
+
+	return sleepDuration, humanReadableResetTimestamp
+}
+
 func (s *simpleSleepRateLimitStrategy) applyMinMaxDefaults(sleepDuration time.Duration) time.Duration {
 
-	minWaitTimeInNanoseconds := 5 * time.Second
 	maxWaitTimeInNanoseconds := 1 * time.Minute
 
-	if sleepDuration.Nanoseconds() < minWaitTimeInNanoseconds.Nanoseconds() {
-		sleepDuration = minWaitTimeInNanoseconds
+	if sleepDuration.Nanoseconds() < minWaitDuration.Nanoseconds() {
+		sleepDuration = minWaitDuration
 		log.Debug("simpleSleepRateLimitStrategy: Reset sleep duration to %f seconds...", sleepDuration.Seconds())
 	}
 	if sleepDuration.Nanoseconds() > maxWaitTimeInNanoseconds.Nanoseconds() {

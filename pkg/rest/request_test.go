@@ -19,34 +19,10 @@
 package rest
 
 import (
-	"gotest.tools/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
-
-func TestGetWithStatus429AndWithoutRetryHeaders(t *testing.T) {
-	client, url := newDynatraceTestServer(t, func(res http.ResponseWriter, req *http.Request) {
-		http.Error(res, "", http.StatusTooManyRequests)
-	})
-
-	_, err := get(client, url, "token")
-
-	assert.ErrorContains(t, err, "X-RateLimit-Limit")
-}
-
-func TestGetWithStatus429AndWithoutXRateLimitReset(t *testing.T) {
-	client, url := newDynatraceTestServer(t, func(res http.ResponseWriter, req *http.Request) {
-		// setting directly to not use the canonical name - it will be used anyway somewhere in Go
-		res.Header()["X-RateLimit-Limit"] = []string{"some-limit"}
-
-		http.Error(res, "", http.StatusTooManyRequests)
-	})
-
-	_, err := get(client, url, "token")
-
-	assert.ErrorContains(t, err, "X-RateLimit-Reset")
-}
 
 func Test_deleteConfig(t *testing.T) {
 	tests := []struct {
