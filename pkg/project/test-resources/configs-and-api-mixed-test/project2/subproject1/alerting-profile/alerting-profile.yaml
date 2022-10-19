@@ -1,5 +1,0 @@
-config:
-  - profile: "profile.json"
-
-profile:
-  - name: "Alerting profile"

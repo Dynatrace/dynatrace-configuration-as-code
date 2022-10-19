@@ -21,6 +21,7 @@ package v1
 
 import (
 	"fmt"
+	projectV1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v1"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/test"
 	"math/rand"
 	"path/filepath"
@@ -31,7 +32,6 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
@@ -40,7 +40,7 @@ import (
 )
 
 // checks all configurations of a given project with given availability
-func AssertAllConfigsAvailability(projects []project.Project, t *testing.T, environments map[string]environment.Environment, available bool) {
+func AssertAllConfigsAvailability(projects []projectV1.Project, t *testing.T, environments map[string]environment.Environment, available bool) {
 	for _, environment := range environments {
 
 		token, err := environment.GetToken()

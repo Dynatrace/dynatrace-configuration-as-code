@@ -1,0 +1,5 @@
+config:
+  - dashboard: "dashboard.json"
+
+dashboard:
+  - name: "Sample dashboard"

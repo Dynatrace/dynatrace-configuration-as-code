@@ -20,6 +20,7 @@
 package v1
 
 import (
+	projectV1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v1"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/test"
 	"path/filepath"
 	"testing"
@@ -29,7 +30,6 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/spf13/afero"
 )
@@ -45,7 +45,7 @@ func TestIntegrationMultiEnvironment(t *testing.T) {
 		environments, errs := environment.LoadEnvironmentList("", environmentsFile, fs)
 		assert.Check(t, len(errs) == 0, "didn't expect errors loading test environments")
 
-		projects, err := project.LoadProjectsToDeploy(fs, "", api.NewV1Apis(), folder)
+		projects, err := projectV1.LoadProjectsToDeploy(fs, "", api.NewV1Apis(), folder)
 		assert.NilError(t, err)
 
 		cmd := runner.BuildCli(fs)
@@ -88,7 +88,7 @@ func TestIntegrationMultiEnvironmentSingleProject(t *testing.T) {
 		environments, errs := environment.LoadEnvironmentList("", environmentsFile, fs)
 		test.FailTestOnAnyError(t, errs, "loading of environments failed")
 
-		projects, err := project.LoadProjectsToDeploy(fs, "cinema-infrastructure", api.NewV1Apis(), folder)
+		projects, err := projectV1.LoadProjectsToDeploy(fs, "cinema-infrastructure", api.NewV1Apis(), folder)
 		assert.NilError(t, err)
 
 		cmd := runner.BuildCli(fs)
@@ -115,7 +115,7 @@ func TestIntegrationMultiEnvironmentSingleProjectWithDependency(t *testing.T) {
 		environments, errs := environment.LoadEnvironmentList("", environmentsFile, fs)
 		test.FailTestOnAnyError(t, errs, "loading of environments failed")
 
-		projects, err := project.LoadProjectsToDeploy(fs, "star-trek", api.NewV1Apis(), folder)
+		projects, err := projectV1.LoadProjectsToDeploy(fs, "star-trek", api.NewV1Apis(), folder)
 		assert.NilError(t, err)
 
 		assert.Check(t, len(projects) == 2, "Projects should be star-trek and the dependency cinema-infrastructure")
@@ -144,7 +144,7 @@ func TestIntegrationMultiEnvironmentSingleEnvironment(t *testing.T) {
 		environments, errs := environment.LoadEnvironmentList("", environmentsFile, fs)
 		test.FailTestOnAnyError(t, errs, "loading of environments failed")
 
-		projects, err := project.LoadProjectsToDeploy(fs, "star-trek", api.NewV1Apis(), folder)
+		projects, err := projectV1.LoadProjectsToDeploy(fs, "star-trek", api.NewV1Apis(), folder)
 		assert.NilError(t, err)
 
 		// remove environment odt69781, just keep dav48679

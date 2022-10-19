@@ -1,0 +1,6 @@
+config:
+  - zone: "zone.json"
+
+zone:
+  - name: "mzone"
+  - meId: "HOST_GROUP-1234567890123456"

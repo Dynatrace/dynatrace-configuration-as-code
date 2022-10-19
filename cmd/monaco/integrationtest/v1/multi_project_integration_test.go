@@ -20,6 +20,7 @@
 package v1
 
 import (
+	projectV1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v1"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/test"
 	"path/filepath"
 	"testing"
@@ -27,7 +28,6 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
@@ -44,7 +44,7 @@ func TestIntegrationMultiProject(t *testing.T) {
 		environments, errs := environment.LoadEnvironmentList("", multiProjectEnvironmentsFile, fs)
 		assert.Check(t, len(errs) == 0, "didn't expect errors loading test environments")
 
-		projects, err := project.LoadProjectsToDeploy(fs, "", api.NewV1Apis(), multiProjectFolder)
+		projects, err := projectV1.LoadProjectsToDeploy(fs, "", api.NewV1Apis(), multiProjectFolder)
 		assert.NilError(t, err)
 
 		cmd := runner.BuildCli(fs)
@@ -104,7 +104,7 @@ func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 		environments, errs := environment.LoadEnvironmentList("", multiProjectEnvironmentsFile, fs)
 		test.FailTestOnAnyError(t, errs, "loading of environments failed")
 
-		projects, err := project.LoadProjectsToDeploy(fs, "star-trek", api.NewV1Apis(), multiProjectFolder)
+		projects, err := projectV1.LoadProjectsToDeploy(fs, "star-trek", api.NewV1Apis(), multiProjectFolder)
 		assert.NilError(t, err)
 
 		cmd := runner.BuildCli(fs)

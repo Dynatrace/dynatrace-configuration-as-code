@@ -16,17 +16,17 @@ package deploy
 
 import (
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
 	"path/filepath"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
-	configv2 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
+	configV2 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/converter"
 	configDelete "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/delete/v2"
 	deploy "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/deploy/v2"
-	environmentv1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
-	projectv1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project"
-	projectv2 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
+	environmentV1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
+	projectV1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v1"
+	projectV2 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2/topologysort"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
@@ -46,7 +46,7 @@ func Deploy(fs afero.Fs, workingDir string, environmentsFile string,
 		return fmt.Errorf("cannot transform workingDir to absolute path: %s", err)
 	}
 
-	manifest, projects, configLoadErrors := loadConfigs(fs, apis, environmentsFile,
+	m, projects, configLoadErrors := loadConfigs(fs, apis, environmentsFile,
 		specificEnvironment, specificProjects, workingDir)
 
 	if len(configLoadErrors) > 0 {
@@ -55,7 +55,7 @@ func Deploy(fs afero.Fs, workingDir string, environmentsFile string,
 		return fmt.Errorf("encountered errors while trying to load configs. check logs")
 	}
 
-	sortedConfigs, errs := topologysort.GetSortedConfigsForEnvironments(projects, toEnvironmentNames(manifest.Environments))
+	sortedConfigs, errs := topologysort.GetSortedConfigsForEnvironments(projects, toEnvironmentNames(m.Environments))
 
 	if errs != nil {
 		util.PrintErrors(configLoadErrors)
@@ -63,7 +63,7 @@ func Deploy(fs afero.Fs, workingDir string, environmentsFile string,
 	}
 
 	deploymentErrors := make(map[string][]error)
-	environmentMap := manifest.Environments
+	environmentMap := m.Environments
 
 	for envName, configs := range sortedConfigs {
 		env, found := environmentMap[envName]
@@ -138,7 +138,7 @@ func toEnvironmentNames(environments map[string]manifest.EnvironmentDefinition) 
 }
 
 func deployEnvironment(environment manifest.EnvironmentDefinition, apis map[string]api.Api,
-	sortedConfigs []configv2.Config, dryRun bool, continueOnError bool) []error {
+	sortedConfigs []configV2.Config, dryRun bool, continueOnError bool) []error {
 
 	apiClient, err := createClient(environment, dryRun)
 
@@ -169,9 +169,9 @@ func createClient(environment manifest.EnvironmentDefinition, dryRun bool) (rest
 }
 
 func loadConfigs(fs afero.Fs, apis map[string]api.Api, environmentsFile string,
-	specificEnvironment string, specificProjects string, workingDir string) (manifest.Manifest, []projectv2.Project, []error) {
+	specificEnvironment string, specificProjects string, workingDir string) (manifest.Manifest, []projectV2.Project, []error) {
 
-	environments, errors := environmentv1.LoadEnvironmentList(specificEnvironment, environmentsFile, fs)
+	environments, errors := environmentV1.LoadEnvironmentList(specificEnvironment, environmentsFile, fs)
 
 	if len(errors) > 0 {
 		return manifest.Manifest{}, nil, errors
@@ -179,7 +179,7 @@ func loadConfigs(fs afero.Fs, apis map[string]api.Api, environmentsFile string,
 
 	workingDirFs := afero.NewBasePathFs(fs, workingDir)
 
-	projects, err := projectv1.LoadProjectsToDeploy(workingDirFs, specificProjects, apis, ".")
+	projects, err := projectV1.LoadProjectsToDeploy(workingDirFs, specificProjects, apis, ".")
 
 	if err != nil {
 		return manifest.Manifest{}, nil, []error{err}
@@ -222,13 +222,13 @@ func deleteConfigs(fs afero.Fs, apis map[string]api.Api, environments map[string
 	var result []error
 
 	for _, env := range environments {
-		client, err := createClient(env, false)
+		c, err := createClient(env, false)
 
 		if err != nil {
 			result = append(result, err)
 		}
 
-		errs := configDelete.DeleteConfigs(client, apis, entriesToDelete)
+		errs := configDelete.DeleteConfigs(c, apis, entriesToDelete)
 
 		if errs != nil {
 			result = append(result, errs...)
@@ -241,8 +241,8 @@ func deleteConfigs(fs afero.Fs, apis map[string]api.Api, environments map[string
 func logDeleteInfo(entriesToDelete map[string][]configDelete.DeletePointer) {
 	log.Info("Trying to delete the following configs:")
 
-	for api, entries := range entriesToDelete {
-		log.Info("%s (%d):", api, len(entries))
+	for a, entries := range entriesToDelete {
+		log.Info("%s (%d):", a, len(entries))
 
 		for _, entry := range entries {
 			log.Info("\t%s", entry.Name)
@@ -253,8 +253,8 @@ func logDeleteInfo(entriesToDelete map[string][]configDelete.DeletePointer) {
 func getApiNames(apis map[string]api.Api) []string {
 	result := make([]string, 0, len(apis))
 
-	for api := range apis {
-		result = append(result, api)
+	for a := range apis {
+		result = append(result, a)
 	}
 
 	return result

@@ -24,7 +24,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/converter"
 	environmentv1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
-	projectv1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project"
+	projectv1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v1"
 	projectv2 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"

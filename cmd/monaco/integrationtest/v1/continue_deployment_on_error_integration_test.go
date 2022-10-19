@@ -21,12 +21,12 @@ package v1
 
 import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner"
+	projectV1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v1"
 	"path/filepath"
 	"testing"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project"
 	"github.com/spf13/afero"
 
 	"gotest.tools/assert"
@@ -43,7 +43,7 @@ func TestIntegrationContinueDeploymentOnError(t *testing.T) {
 		environments, errs := environment.LoadEnvironmentList("", allConfigsEnvironmentsFile, fs)
 		assert.Check(t, len(errs) == 0, "didn't expect errors loading test environments")
 
-		projects, err := project.LoadProjectsToDeploy(fs, "", api.NewV1Apis(), allConfigsFolder)
+		projects, err := projectV1.LoadProjectsToDeploy(fs, "", api.NewV1Apis(), allConfigsFolder)
 		assert.NilError(t, err)
 
 		cmd := runner.BuildCli(fs)
