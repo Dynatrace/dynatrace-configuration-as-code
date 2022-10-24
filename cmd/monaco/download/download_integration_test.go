@@ -96,6 +96,26 @@ func (i integrationTestServer) Read(uri string) ([]byte, bool) {
 	return readFileOrPanic(filepath.Join(i.basePath, path)), true
 }
 
+func (i integrationTestServer) Handler() func(res http.ResponseWriter, req *http.Request) {
+	return func(res http.ResponseWriter, req *http.Request) {
+		if req.Method != http.MethodGet {
+			http.Error(res, "Unsupported", http.StatusMethodNotAllowed)
+			return
+		}
+
+		if content, found := i.Read(req.RequestURI); !found {
+			log.Error("Failed to find resource '%s'", req.RequestURI)
+			http.Error(res, "Not found", http.StatusNotFound)
+			return
+		} else {
+			_, err := res.Write(content)
+			if err != nil {
+				http.Error(res, err.Error(), http.StatusInternalServerError)
+			}
+		}
+	}
+}
+
 func newTestServer(t *testing.T, basePath string, urlMapping map[string]string) integrationTestServer {
 	return integrationTestServer{
 		t:          t,
@@ -124,23 +144,8 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 	testServer := newTestServer(t, testBasePath, responses)
 
 	// Server
-	server := rest.NewDynatraceTLSServerForTesting(t, func(res http.ResponseWriter, req *http.Request) {
-		if req.Method != http.MethodGet {
-			http.Error(res, "Unsupported", http.StatusMethodNotAllowed)
-			return
-		}
+	server := rest.NewDynatraceTLSServerForTesting(t, testServer.Handler())
 
-		if content, found := testServer.Read(req.RequestURI); !found {
-			log.Error("Failed to find resource '%s'", req.RequestURI)
-			http.Error(res, "Not found", http.StatusNotFound)
-			return
-		} else {
-			_, err := res.Write(content)
-			if err != nil {
-				http.Error(res, err.Error(), http.StatusInternalServerError)
-			}
-		}
-	})
 	fs := afero.NewMemMapFs()
 
 	// WHEN we download everything
@@ -218,22 +223,7 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 	testServer := newTestServer(t, testBasePath, responses)
 
 	// Server
-	server := rest.NewDynatraceTLSServerForTesting(t, func(res http.ResponseWriter, req *http.Request) {
-		if req.Method != http.MethodGet {
-			http.Error(res, "Unsupported", http.StatusMethodNotAllowed)
-			return
-		}
-
-		if content, found := testServer.Read(req.RequestURI); !found {
-			http.Error(res, "Not found", http.StatusNotFound)
-			return
-		} else {
-			_, err := res.Write(content)
-			if err != nil {
-				http.Error(res, err.Error(), http.StatusInternalServerError)
-			}
-		}
-	})
+	server := rest.NewDynatraceTLSServerForTesting(t, testServer.Handler())
 	fs := afero.NewMemMapFs()
 
 	// WHEN we download everything
@@ -335,23 +325,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 	testServer := newTestServer(t, testBasePath, responses)
 
 	// Server
-	server := rest.NewDynatraceTLSServerForTesting(t, func(res http.ResponseWriter, req *http.Request) {
-		if req.Method != http.MethodGet {
-			http.Error(res, "Unsupported", http.StatusMethodNotAllowed)
-			return
-		}
-
-		if content, found := testServer.Read(req.RequestURI); !found {
-			log.Error("Failed to find resource '%s'", req.RequestURI)
-			http.Error(res, "Not found", http.StatusNotFound)
-			return
-		} else {
-			_, err := res.Write(content)
-			if err != nil {
-				http.Error(res, err.Error(), http.StatusInternalServerError)
-			}
-		}
-	})
+	server := rest.NewDynatraceTLSServerForTesting(t, testServer.Handler())
 	fs := afero.NewMemMapFs()
 
 	// WHEN we download everything
