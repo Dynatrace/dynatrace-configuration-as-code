@@ -53,6 +53,7 @@ type ConfigConvertContext struct {
 	*ConverterContext
 	ProjectId             string
 	KnownListParameterIds map[string]struct{}
+	V1Apis                api.ApiMap
 }
 
 type ProjectConverterError struct {
@@ -165,6 +166,7 @@ func convertProject(context *ConverterContext, environments map[string]manifest.
 	convertedConfigs, errors := convertConfigs(&ConfigConvertContext{
 		ConverterContext: context,
 		ProjectId:        adjustedId,
+		V1Apis:           api.NewV1Apis(),
 	}, environments, project.GetConfigs())
 
 	if errors != nil {
@@ -486,10 +488,16 @@ func parseReference(context *ConfigConvertContext, config configV1.Config, param
 	}
 
 	referencedConfigId := parts[numberOfParts-1]
-	apiId := parts[numberOfParts-2]
+	referencedApiId := parts[numberOfParts-2]
 	projectId := strings.Join(parts[0:numberOfParts-2], ".")
 
-	return refParam.New(projectId, apiId, referencedConfigId, property), nil
+	if !context.V1Apis.IsApi(referencedApiId) {
+		return nil, newReferenceParserError(context.ProjectId, config, parameterName, fmt.Sprintf("referenced API '%s' does not exist", referencedApiId))
+	}
+
+	currentApiId := api.GetV2ApiId(context.V1Apis[referencedApiId])
+
+	return refParam.New(projectId, currentApiId, referencedConfigId, property), nil
 }
 
 func loadPropertiesForEnvironment(environment manifest.EnvironmentDefinition, config configV1.Config) map[string]string {

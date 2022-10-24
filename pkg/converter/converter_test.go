@@ -18,19 +18,19 @@ package converter
 
 import (
 	"fmt"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
-	listParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/list"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/reference"
-	projectv1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v1"
 	"reflect"
 	"testing"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config"
 	configv1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
 	envParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/environment"
+	listParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/list"
+	refParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/reference"
 	valueParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
+	projectv1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v1"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
@@ -51,17 +51,21 @@ func TestConvertParameters(t *testing.T) {
 	envParameterName := "url"
 	envParameterValue := " {{ .Env.SOME_ENV_VAR }} "
 
+	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", &manifest.EnvironmentVariableToken{"token"})
+
+	testApi := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
+
 	convertContext := &ConfigConvertContext{
 		ConverterContext: &ConverterContext{
 			Fs: setupDummyFs(t),
 		},
 		KnownListParameterIds: map[string]struct{}{listParameterName: {}},
-		ProjectId:             "projectA",
+		V1Apis: map[string]api.Api{
+			"alerting-profile": testApi,
+			"management-zone":  api.NewStandardApi("management-zone", "/api/path", false, "", false),
+		},
+		ProjectId: "projectA",
 	}
-
-	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", &manifest.EnvironmentVariableToken{"token"})
-
-	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
 
 	properties := map[string]map[string]string{
 		configId: {
@@ -77,12 +81,12 @@ func TestConvertParameters(t *testing.T) {
 
 	assert.NilError(t, err)
 
-	config, err := configv1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
-		template, properties, api)
+	testConfig, err := configv1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
+		template, properties, testApi)
 
 	assert.NilError(t, err)
 
-	parameters, refs, skip, errors := convertParameters(convertContext, environment, config)
+	parameters, refs, skip, errors := convertParameters(convertContext, environment, testConfig)
 
 	assert.Assert(t, is.Nil(errors))
 	assert.Equal(t, 5, len(parameters))
@@ -203,45 +207,6 @@ func TestParseSkipDeploymentParameter(t *testing.T) {
 	}
 }
 
-func TestParseAbsoluteReference(t *testing.T) {
-	config := generateDummyConfig(t)
-
-	ref, err := parseReference(&ConfigConvertContext{
-		ProjectId: "projectA",
-	}, config, "test", "/projectB/management-zone/zone.id")
-
-	assert.NilError(t, err)
-	assert.Equal(t, "projectB", ref.Config.Project)
-	assert.Equal(t, "management-zone", ref.Config.Api)
-	assert.Equal(t, "zone", ref.Config.Config)
-	assert.Equal(t, "id", ref.Property)
-}
-
-func TestParseRelativeReference(t *testing.T) {
-	config := generateDummyConfig(t)
-
-	ref, err := parseReference(&ConfigConvertContext{
-		ProjectId: "projectA",
-	}, config, "test", "projectB/management-zone/zone.id")
-
-	assert.NilError(t, err)
-	assert.Equal(t, "projectB", ref.Config.Project)
-	assert.Equal(t, "management-zone", ref.Config.Api)
-	assert.Equal(t, "zone", ref.Config.Config)
-	assert.Equal(t, "id", ref.Property)
-}
-
-func TestParseInvalidReference(t *testing.T) {
-	config := generateDummyConfig(t)
-
-	ref, err := parseReference(&ConfigConvertContext{
-		ProjectId: "projectA",
-	}, config, "test", "/management-zone/zone.id")
-
-	assert.Assert(t, is.Nil(ref))
-	assert.Assert(t, err != nil)
-}
-
 func TestLoadPropertiesForEnvironment(t *testing.T) {
 	environmentName := "dev"
 	groupName := "development"
@@ -296,16 +261,16 @@ func TestConvertConfig(t *testing.T) {
 	referenceParameterValue := "/projectB/management-zone/zone.id"
 	envVarName := "TEST_VAR"
 
+	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", &manifest.EnvironmentVariableToken{"token"})
+
+	testApi := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
 	convertContext := &ConfigConvertContext{
 		ConverterContext: &ConverterContext{
 			Fs: setupDummyFsWithEnvVariableInTemplate(t, envVarName),
 		},
+		V1Apis:    api.NewV1Apis(),
 		ProjectId: "projectA",
 	}
-
-	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", &manifest.EnvironmentVariableToken{"token"})
-
-	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
 
 	properties := map[string]map[string]string{
 		configId: {
@@ -319,16 +284,16 @@ func TestConvertConfig(t *testing.T) {
 
 	assert.NilError(t, err)
 
-	config, err := configv1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
-		template, properties, api)
+	testConfig, err := configv1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
+		template, properties, testApi)
 
 	assert.NilError(t, err)
 
-	convertedConfig, errors := convertConfig(convertContext, environment, config)
+	convertedConfig, errors := convertConfig(convertContext, environment, testConfig)
 
 	assert.Equal(t, 0, len(errors), "errors: %s", errors)
 	assert.Equal(t, projectId, convertedConfig.Coordinate.Project)
-	assert.Equal(t, api.GetId(), convertedConfig.Coordinate.Api)
+	assert.Equal(t, testApi.GetId(), convertedConfig.Coordinate.Api)
 	assert.Equal(t, configId, convertedConfig.Coordinate.Config)
 	assert.Equal(t, environmentName, convertedConfig.Environment)
 
@@ -352,19 +317,20 @@ func TestConvertDeprecatedConfigToLatest(t *testing.T) {
 	configId := "application-1"
 	configName := "Application 1"
 	simpleParameterValue := "hello"
-	referenceParameterValue := "/projectB/management-zone/zone.id"
+	referenceParameterValue := "/projectB/application/another-app.id"
 	envVarName := "TEST_VAR"
+
+	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", &manifest.EnvironmentVariableToken{"token"})
+
+	deprecatedApi := api.NewStandardApi("application", "/api/config/v1/application/web", false, "application-web", false)
 
 	convertContext := &ConfigConvertContext{
 		ConverterContext: &ConverterContext{
 			Fs: setupDummyFsWithEnvVariableInTemplate(t, envVarName),
 		},
+		V1Apis:    map[string]api.Api{"application": deprecatedApi},
 		ProjectId: "projectA",
 	}
-
-	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", &manifest.EnvironmentVariableToken{"token"})
-
-	api := api.NewStandardApi("application", "/api/config/v1/application/web", false, "application-web", false)
 
 	properties := map[string]map[string]string{
 		configId: {
@@ -378,16 +344,16 @@ func TestConvertDeprecatedConfigToLatest(t *testing.T) {
 
 	assert.NilError(t, err)
 
-	config, err := configv1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
-		template, properties, api)
+	testConfig, err := configv1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
+		template, properties, deprecatedApi)
 
 	assert.NilError(t, err)
 
-	convertedConfig, errors := convertConfig(convertContext, environment, config)
+	convertedConfig, errors := convertConfig(convertContext, environment, testConfig)
 
 	assert.Equal(t, 0, len(errors), "errors: %s", errors)
 	assert.Equal(t, projectId, convertedConfig.Coordinate.Project)
-	assert.Equal(t, api.IsDeprecatedBy(), convertedConfig.Coordinate.Api)
+	assert.Equal(t, deprecatedApi.IsDeprecatedBy(), convertedConfig.Coordinate.Api)
 	assert.Equal(t, configId, convertedConfig.Coordinate.Config)
 	assert.Equal(t, environmentName, convertedConfig.Environment)
 
@@ -395,8 +361,8 @@ func TestConvertDeprecatedConfigToLatest(t *testing.T) {
 
 	assert.Equal(t, 1, len(references))
 	assert.Equal(t, "projectB", references[0].Project)
-	assert.Equal(t, "management-zone", references[0].Api)
-	assert.Equal(t, "zone", references[0].Config)
+	assert.Equal(t, "application-web", references[0].Api, "expected deprecated API in reference to be replaced as well")
+	assert.Equal(t, "another-app", references[0].Config)
 
 	assert.Equal(t, 4, len(convertedConfig.Parameters))
 	assert.Equal(t, configName, convertedConfig.Parameters["name"].(*valueParam.ValueParameter).Value)
@@ -510,7 +476,7 @@ func TestConvertConfigs(t *testing.T) {
 		environmentName2: manifest.NewEnvironmentDefinition(environmentName2, createSimpleUrlDefinition(), environmentGroup2, &manifest.EnvironmentVariableToken{"token"}),
 	}
 
-	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
+	testApi := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
 
 	properties := map[string]map[string]string{
 		configId: {
@@ -527,18 +493,19 @@ func TestConvertConfigs(t *testing.T) {
 
 	fs, template := setupFsWithFullTestTemplate(t, simpleParameterName, referenceParameterName, listParameterName, envVariableName)
 
-	config, err := configv1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
-		template, properties, api)
+	testConfig, err := configv1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
+		template, properties, testApi)
 	assert.NilError(t, err)
 
 	convertContext := &ConfigConvertContext{
 		ConverterContext: &ConverterContext{
 			Fs: fs,
 		},
+		V1Apis:    api.NewV1Apis(),
 		ProjectId: projectId,
 	}
 
-	convertedConfigs, errors := convertConfigs(convertContext, environments, []configv1.Config{config})
+	convertedConfigs, errors := convertConfigs(convertContext, environments, []configv1.Config{testConfig})
 
 	assert.Equal(t, 0, len(errors))
 	assert.Equal(t, 2, len(convertedConfigs))
@@ -546,7 +513,7 @@ func TestConvertConfigs(t *testing.T) {
 	apiConfigs := convertedConfigs[environmentName]
 	assert.Equal(t, 1, len(apiConfigs))
 
-	configs := apiConfigs[api.GetId()]
+	configs := apiConfigs[testApi.GetId()]
 	assert.Equal(t, 1, len(configs))
 
 	c := configs[0]
@@ -561,8 +528,8 @@ func TestConvertConfigs(t *testing.T) {
 		Project: "projectB",
 		Api:     "management-zone",
 		Config:  "zone",
-	}, c.Parameters[referenceParameterName].(*reference.ReferenceParameter).Config)
-	assert.Equal(t, "id", c.Parameters[referenceParameterName].(*reference.ReferenceParameter).Property)
+	}, c.Parameters[referenceParameterName].(*refParam.ReferenceParameter).Config)
+	assert.Equal(t, "id", c.Parameters[referenceParameterName].(*refParam.ReferenceParameter).Property)
 
 	// assert list param is converted as expected
 	assert.DeepEqual(t, []valueParam.ValueParameter{{"GEOLOCATION-41"}, {"GEOLOCATION-42"}, {"GEOLOCATION-43"}}, c.Parameters[listParameterName].(*listParam.ListParameter).Values)
@@ -573,7 +540,7 @@ func TestConvertConfigs(t *testing.T) {
 	apiConfigs = convertedConfigs[environmentName2]
 	assert.Equal(t, 1, len(apiConfigs))
 
-	configs = apiConfigs[api.GetId()]
+	configs = apiConfigs[testApi.GetId()]
 	assert.Equal(t, 1, len(configs))
 
 	c = configs[0]
@@ -969,6 +936,90 @@ func Test_parseListStringToValueSlice(t *testing.T) {
 			}
 			if !tt.wantErr && !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("parseListStringToSlice() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_parseReference(t *testing.T) {
+	tests := []struct {
+		name               string
+		givenParameterName string
+		givenReference     string
+		givenKnownApis     api.ApiMap
+		want               *refParam.ReferenceParameter
+		wantErr            bool
+	}{
+		{
+			"parses relative reference",
+			"test-param",
+			"some-project/alerting-profile/some-config.id",
+			api.NewV1Apis(),
+			refParam.New("some-project", "alerting-profile", "some-config", "id"),
+			false,
+		},
+		{
+			"parses absolute reference",
+			"test-param",
+			"/some-project/alerting-profile/some-config.id",
+			api.NewV1Apis(),
+			refParam.New("some-project", "alerting-profile", "some-config", "id"),
+			false,
+		},
+		{
+			"returns error for invalid reference",
+			"test-param",
+			"/management-zone/zone.id",
+			api.NewV1Apis(),
+			nil,
+			true,
+		},
+		{
+			"returns error for non-reference",
+			"test-param",
+			"not-a-reference",
+			api.NewV1Apis(),
+			nil,
+			true,
+		},
+		{
+			"returns error for unkown api reference",
+			"test-param",
+			"/some-project/alerting-profile/some-config.id",
+			api.ApiMap{}, //no APIs known
+			nil,
+			true,
+		},
+		{
+			"replaces deprecated APIs",
+			"test-param",
+			"/some-project/deprecated-api/some-config.some-property",
+			api.ApiMap{
+				"deprecated-api": api.NewStandardApi("deprecated-api", "/api/path", false, "new-api", false),
+			},
+			refParam.New("some-project", "new-api", "some-config", "some-property"),
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testConfig := generateDummyConfig(t)
+
+			testContext := &ConfigConvertContext{
+				ConverterContext: &ConverterContext{
+					Fs: setupDummyFs(t),
+				},
+				V1Apis:    tt.givenKnownApis,
+				ProjectId: "test-project",
+			}
+
+			got, err := parseReference(testContext, testConfig, tt.givenParameterName, tt.givenReference)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("parseReference() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("parseReference() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
