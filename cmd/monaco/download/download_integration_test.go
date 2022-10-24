@@ -68,6 +68,31 @@ var templateContentComparator = cmp.Comparer(func(a, b template.Template) bool {
 	return jsonEqual(a.Content(), b.Content())
 })
 
+type integrationTestServer struct {
+	basePath   string
+	urlMapping map[string]string
+	t          *testing.T
+}
+
+func (i integrationTestServer) Read(uri string) ([]byte, bool) {
+	path, found := i.urlMapping[uri]
+
+	if !found {
+		i.t.Errorf("Uri '%s' not mapped", uri)
+		return nil, false
+	}
+
+	return readFileOrPanic(filepath.Join(i.basePath, path)), true
+}
+
+func newTestServer(t *testing.T, basePath string, urlMapping map[string]string) integrationTestServer {
+	return integrationTestServer{
+		t:          t,
+		basePath:   basePath,
+		urlMapping: urlMapping,
+	}
+}
+
 func TestDownloadIntegrationSimple(t *testing.T) {
 	// GIVEN apis, server responses, file system
 	const projectName = "integration-test-1"
@@ -80,10 +105,12 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 	}
 
 	// Responses
-	responses := map[string][]byte{
-		"/fake-id":      readFileOrPanic(testBasePath, "fake-api/__LIST.json"),
-		"/fake-id/id-1": readFileOrPanic(testBasePath, "fake-api/id-1.json"),
+	responses := map[string]string{
+		"/fake-id":      "fake-api/__LIST.json",
+		"/fake-id/id-1": "fake-api/id-1.json",
 	}
+
+	testServer := newTestServer(t, testBasePath, responses)
 
 	// Server
 	server := rest.NewDynatraceTLSServerForTesting(t, func(res http.ResponseWriter, req *http.Request) {
@@ -92,7 +119,7 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 			return
 		}
 
-		if content, found := responses[req.RequestURI]; !found {
+		if content, found := testServer.Read(req.RequestURI); !found {
 			log.Error("Failed to find resource '%s'", req.RequestURI)
 			http.Error(res, "Not found", http.StatusNotFound)
 			return
@@ -171,11 +198,13 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 	}
 
 	// Responses
-	responses := map[string][]byte{
-		"/fake-id":      readFileOrPanic(testBasePath, "fake-api/__LIST.json"),
-		"/fake-id/id-1": readFileOrPanic(testBasePath, "fake-api/id-1.json"),
-		"/fake-id/id-2": readFileOrPanic(testBasePath, "fake-api/id-2.json"),
+	responses := map[string]string{
+		"/fake-id":      "fake-api/__LIST.json",
+		"/fake-id/id-1": "fake-api/id-1.json",
+		"/fake-id/id-2": "fake-api/id-2.json",
 	}
+
+	testServer := newTestServer(t, testBasePath, responses)
 
 	// Server
 	server := rest.NewDynatraceTLSServerForTesting(t, func(res http.ResponseWriter, req *http.Request) {
@@ -184,8 +213,7 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 			return
 		}
 
-		if content, found := responses[req.RequestURI]; !found {
-			log.Error("Failed to find resource '%s'", req.RequestURI)
+		if content, found := testServer.Read(req.RequestURI); !found {
 			http.Error(res, "Not found", http.StatusNotFound)
 			return
 		} else {
@@ -282,18 +310,20 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 	}
 
 	// Responses
-	responses := map[string][]byte{
-		"/fake-api-1":      readFileOrPanic(testBasePath, "fake-api-1/__LIST.json"),
-		"/fake-api-1/id-1": readFileOrPanic(testBasePath, "fake-api-1/id-1.json"),
-		"/fake-api-1/id-2": readFileOrPanic(testBasePath, "fake-api-1/id-2.json"),
+	responses := map[string]string{
+		"/fake-api-1":      "fake-api-1/__LIST.json",
+		"/fake-api-1/id-1": "fake-api-1/id-1.json",
+		"/fake-api-1/id-2": "fake-api-1/id-2.json",
 
-		"/fake-api-2":      readFileOrPanic(testBasePath, "fake-api-2/__LIST.json"),
-		"/fake-api-2/id-3": readFileOrPanic(testBasePath, "fake-api-2/id-3.json"),
-		"/fake-api-2/id-4": readFileOrPanic(testBasePath, "fake-api-2/id-4.json"),
+		"/fake-api-2":      "fake-api-2/__LIST.json",
+		"/fake-api-2/id-3": "fake-api-2/id-3.json",
+		"/fake-api-2/id-4": "fake-api-2/id-4.json",
 
-		"/fake-api-3":      readFileOrPanic(testBasePath, "fake-api-3/__LIST.json"),
-		"/fake-api-3/id-5": readFileOrPanic(testBasePath, "fake-api-3/id-5.json"),
+		"/fake-api-3":      "fake-api-3/__LIST.json",
+		"/fake-api-3/id-5": "fake-api-3/id-5.json",
 	}
+
+	testServer := newTestServer(t, testBasePath, responses)
 
 	// Server
 	server := rest.NewDynatraceTLSServerForTesting(t, func(res http.ResponseWriter, req *http.Request) {
@@ -302,7 +332,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 			return
 		}
 
-		if content, found := responses[req.RequestURI]; !found {
+		if content, found := testServer.Read(req.RequestURI); !found {
 			log.Error("Failed to find resource '%s'", req.RequestURI)
 			http.Error(res, "Not found", http.StatusNotFound)
 			return
