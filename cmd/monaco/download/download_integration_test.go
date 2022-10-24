@@ -266,6 +266,173 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 	}))
 }
 
+func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
+	// GIVEN apis, server responses, file system
+	const projectName = "integration-test-3"
+	const testBasePath = "test-resources/" + projectName
+
+	// APIs
+	fakeApi1 := api.NewStandardApi("fake-id-1", "/fake-api-1", false, "", false)
+	fakeApi2 := api.NewStandardApi("fake-id-2", "/fake-api-2", false, "", false)
+	fakeApi3 := api.NewStandardApi("fake-id-3", "/fake-api-3", false, "", false)
+	apiMap := api.ApiMap{
+		fakeApi1.GetId(): fakeApi1,
+		fakeApi2.GetId(): fakeApi2,
+		fakeApi3.GetId(): fakeApi3,
+	}
+
+	// Responses
+	responses := map[string][]byte{
+		"/fake-api-1":      readFileOrPanic(testBasePath, "fake-api-1/__LIST.json"),
+		"/fake-api-1/id-1": readFileOrPanic(testBasePath, "fake-api-1/id-1.json"),
+		"/fake-api-1/id-2": readFileOrPanic(testBasePath, "fake-api-1/id-2.json"),
+
+		"/fake-api-2":      readFileOrPanic(testBasePath, "fake-api-2/__LIST.json"),
+		"/fake-api-2/id-3": readFileOrPanic(testBasePath, "fake-api-2/id-3.json"),
+		"/fake-api-2/id-4": readFileOrPanic(testBasePath, "fake-api-2/id-4.json"),
+
+		"/fake-api-3":      readFileOrPanic(testBasePath, "fake-api-3/__LIST.json"),
+		"/fake-api-3/id-5": readFileOrPanic(testBasePath, "fake-api-3/id-5.json"),
+	}
+
+	// Server
+	server := rest.NewDynatraceTLSServerForTesting(t, func(res http.ResponseWriter, req *http.Request) {
+		if req.Method != http.MethodGet {
+			http.Error(res, "Unsupported", http.StatusMethodNotAllowed)
+			return
+		}
+
+		if content, found := responses[req.RequestURI]; !found {
+			log.Error("Failed to find resource '%s'", req.RequestURI)
+			http.Error(res, "Not found", http.StatusNotFound)
+			return
+		} else {
+			_, err := res.Write(content)
+			if err != nil {
+				http.Error(res, err.Error(), http.StatusInternalServerError)
+			}
+		}
+	})
+	fs := afero.NewMemMapFs()
+
+	// WHEN we download everything
+	err := doDownload(fs, server.URL, projectName, "token", "TOKEN_ENV_VAR", "out", apiMap, func(environmentUrl, token string) (rest.DynatraceClient, error) {
+		return rest.NewDynatraceClientForTesting(environmentUrl, token, server.Client())
+	})
+
+	assert.NilError(t, err)
+
+	// THEN we can load the project again and verify its content
+	man, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
+		Fs:           fs,
+		ManifestPath: "out/manifest.yaml",
+	})
+	if errs != nil {
+		t.Errorf("Errors occured: %v", errs)
+		return
+	}
+
+	projects, errs := projectLoader.LoadProjects(fs, projectLoader.ProjectLoaderContext{
+		Apis:            maps.Keys(apiMap),
+		WorkingDir:      "out",
+		Manifest:        man,
+		ParametersSerde: config.DefaultParameterParsers,
+	})
+	if errs != nil {
+		t.Errorf("Errors occured: %v", errs)
+		return
+	}
+
+	assert.Equal(t, len(projects), 1)
+	p := projects[0]
+	assert.Equal(t, p.Id, projectName)
+	assert.Equal(t, len(p.Configs), 1)
+
+	configs, found := p.Configs[projectName]
+	assert.Equal(t, found, true)
+
+	assert.DeepEqual(t, configs, projectLoader.ConfigsPerApis{
+		fakeApi1.GetId(): []config.Config{
+			{
+				Coordinate: coordinate.Coordinate{Project: projectName, Api: fakeApi1.GetId(), Config: "id-1"},
+				Skip:       false,
+				Parameters: map[string]parameter.Parameter{
+					"name": &value.ValueParameter{Value: "Test-1"},
+				},
+				Group:       "default",
+				Environment: projectName,
+				References:  []coordinate.Coordinate{},
+				Template:    contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}"}`},
+			},
+			{
+				Coordinate: coordinate.Coordinate{Project: projectName, Api: fakeApi1.GetId(), Config: "id-2"},
+				Skip:       false,
+				Parameters: map[string]parameter.Parameter{
+					"name":             &value.ValueParameter{Value: "Test-2"},
+					"fakeid1__id1__id": reference.New(projectName, fakeApi1.GetId(), "id-1", "id"),
+				},
+				Group:       "default",
+				Environment: projectName,
+				References: []coordinate.Coordinate{
+					{Project: projectName, Api: fakeApi1.GetId(), Config: "id-1"},
+				},
+				Template: contentOnlyTemplate{`{"custom-response": false, "name": "{{.name}}", "reference-to-id1": "{{.fakeid1__id1__id}}"}`},
+			},
+		},
+		fakeApi2.GetId(): []config.Config{
+			{
+				Coordinate: coordinate.Coordinate{Project: projectName, Api: fakeApi2.GetId(), Config: "id-3"},
+				Skip:       false,
+				Parameters: map[string]parameter.Parameter{
+					"name":             &value.ValueParameter{Value: "Test-3"},
+					"fakeid1__id1__id": reference.New(projectName, fakeApi1.GetId(), "id-1", "id"),
+				},
+				Group:       "default",
+				Environment: projectName,
+				References: []coordinate.Coordinate{
+					{Project: projectName, Api: fakeApi1.GetId(), Config: "id-1"},
+				},
+				Template: contentOnlyTemplate{`{"custom-response": "No!", "name": "{{.name}}", "subobject": {"something": "{{.fakeid1__id1__id}}"}}`},
+			},
+			{
+				Coordinate: coordinate.Coordinate{Project: projectName, Api: fakeApi2.GetId(), Config: "id-4"},
+				Skip:       false,
+				Parameters: map[string]parameter.Parameter{
+					"name":             &value.ValueParameter{Value: "Test-4"},
+					"fakeid2__id3__id": reference.New(projectName, fakeApi2.GetId(), "id-3", "id"),
+				},
+				Group:       "default",
+				Environment: projectName,
+				References: []coordinate.Coordinate{
+					{Project: projectName, Api: fakeApi2.GetId(), Config: "id-3"},
+				},
+				Template: contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}", "reference-to-id3": "{{.fakeid2__id3__id}}"}`},
+			},
+		},
+		fakeApi3.GetId(): []config.Config{
+			{
+				Coordinate: coordinate.Coordinate{Project: projectName, Api: fakeApi3.GetId(), Config: "id-5"},
+				Skip:       false,
+				Parameters: map[string]parameter.Parameter{
+					"name":             &value.ValueParameter{Value: "Test-5"},
+					"fakeid1__id2__id": reference.New(projectName, fakeApi1.GetId(), "id-2", "id"),
+					"fakeid2__id4__id": reference.New(projectName, fakeApi2.GetId(), "id-4", "id"),
+				},
+				Group:       "default",
+				Environment: projectName,
+				References: []coordinate.Coordinate{
+					{Project: projectName, Api: fakeApi1.GetId(), Config: "id-2"},
+					{Project: projectName, Api: fakeApi2.GetId(), Config: "id-4"},
+				},
+				Template: contentOnlyTemplate{`{"name": "{{.name}}", "custom-response": true, "reference-to-id6-of-another-api": ["{{.fakeid2__id4__id}}" ,{"o":  "{{.fakeid1__id2__id}}"}]}
+`},
+			},
+		},
+	}, templateContentComparator, cmpopts.SortSlices(func(a, b config.Config) bool {
+		return strings.Compare(a.Coordinate.String(), b.Coordinate.String()) < 0
+	}))
+}
+
 func readFileOrPanic(path ...string) []byte {
 	content, err := os.ReadFile(filepath.Join(path...))
 	if err != nil {

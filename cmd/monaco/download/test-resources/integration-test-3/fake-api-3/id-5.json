@@ -1,0 +1,5 @@
+{
+    "name": "Test-5",
+    "custom-response": true,
+    "reference-to-id6-of-another-api": ["id-4" ,{"o":  "id-2"}]
+}
