@@ -27,7 +27,6 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2/topologysort"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/client"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/test"
 	"github.com/google/uuid"
 	"gotest.tools/assert"
 )
@@ -43,19 +42,19 @@ func TestResolveParameterValues(t *testing.T) {
 	parameters := []topologysort.ParameterWithName{
 		{
 			Name: config.NameParameter,
-			Parameter: &test.DummyParameter{
+			Parameter: &parameter.DummyParameter{
 				Value: name,
 			},
 		},
 		{
 			Name: ownerParameterName,
-			Parameter: &test.DummyParameter{
+			Parameter: &parameter.DummyParameter{
 				Value: owner,
 			},
 		},
 		{
 			Name: timeoutParameterName,
-			Parameter: &test.DummyParameter{
+			Parameter: &parameter.DummyParameter{
 				Value: timeout,
 			},
 		},
@@ -94,7 +93,7 @@ func TestResolveParameterValuesShouldFailWhenReferencingNonExistingConfig(t *tes
 	parameters := []topologysort.ParameterWithName{
 		{
 			Name: config.NameParameter,
-			Parameter: &test.DummyParameter{
+			Parameter: &parameter.DummyParameter{
 				References: []parameter.ParameterReference{
 					{
 						Config:   nonExistingConfig,
@@ -136,7 +135,7 @@ func TestResolveParameterValuesShouldFailWhenReferencingSkippedConfig(t *testing
 	parameters := []topologysort.ParameterWithName{
 		{
 			Name: config.NameParameter,
-			Parameter: &test.DummyParameter{
+			Parameter: &parameter.DummyParameter{
 				References: []parameter.ParameterReference{
 					{
 						Config:   referenceCoordinate,
@@ -179,7 +178,7 @@ func TestResolveParameterValuesShouldFailWhenParameterResolveReturnsError(t *tes
 	parameters := []topologysort.ParameterWithName{
 		{
 			Name: config.NameParameter,
-			Parameter: &test.DummyParameter{
+			Parameter: &parameter.DummyParameter{
 				Err: errors.New("error"),
 			},
 		},
@@ -219,7 +218,7 @@ func TestValidateParameterReferences(t *testing.T) {
 		Config:  "zone1",
 	}
 
-	param := &test.DummyParameter{
+	param := &parameter.DummyParameter{
 		Value: "test",
 		References: []parameter.ParameterReference{
 			{
@@ -258,7 +257,7 @@ func TestValidateParameterReferencesShouldFailWhenReferencingSelf(t *testing.T) 
 		Config:  "dashboard-1",
 	}
 
-	param := &test.DummyParameter{
+	param := &parameter.DummyParameter{
 		Value: "test",
 		References: []parameter.ParameterReference{
 			{
@@ -288,7 +287,7 @@ func TestValidateParameterReferencesShouldFailWhenReferencingSkippedConfig(t *te
 		Config:  "zone1",
 	}
 
-	param := &test.DummyParameter{
+	param := &parameter.DummyParameter{
 		Value: "test",
 		References: []parameter.ParameterReference{
 			{
@@ -325,7 +324,7 @@ func TestValidateParameterReferencesShouldFailWhenReferencingUnknownConfig(t *te
 		Config:  "zone1",
 	}
 
-	param := &test.DummyParameter{
+	param := &parameter.DummyParameter{
 		Value: "test",
 		References: []parameter.ParameterReference{
 			{
@@ -421,19 +420,19 @@ func TestDeployConfig(t *testing.T) {
 	parameters := []topologysort.ParameterWithName{
 		{
 			Name: config.NameParameter,
-			Parameter: &test.DummyParameter{
+			Parameter: &parameter.DummyParameter{
 				Value: name,
 			},
 		},
 		{
 			Name: ownerParameterName,
-			Parameter: &test.DummyParameter{
+			Parameter: &parameter.DummyParameter{
 				Value: owner,
 			},
 		},
 		{
 			Name: timeoutParameterName,
-			Parameter: &test.DummyParameter{
+			Parameter: &parameter.DummyParameter{
 				Value: timeout,
 			},
 		},
@@ -473,7 +472,7 @@ func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
 	parameters := []topologysort.ParameterWithName{
 		{
 			Name: config.NameParameter,
-			Parameter: &test.DummyParameter{
+			Parameter: &parameter.DummyParameter{
 				Value: name,
 			},
 		},
@@ -517,7 +516,7 @@ func TestDeployConfigShouldFailCyclicParameterDependencies(t *testing.T) {
 	parameters := []topologysort.ParameterWithName{
 		{
 			Name: config.NameParameter,
-			Parameter: &test.DummyParameter{
+			Parameter: &parameter.DummyParameter{
 				References: []parameter.ParameterReference{
 					{
 						Config:   configCoordinates,
@@ -528,7 +527,7 @@ func TestDeployConfigShouldFailCyclicParameterDependencies(t *testing.T) {
 		},
 		{
 			Name: ownerParameterName,
-			Parameter: &test.DummyParameter{
+			Parameter: &parameter.DummyParameter{
 				References: []parameter.ParameterReference{
 					{
 						Config:   configCoordinates,
@@ -592,7 +591,7 @@ func TestDeployConfigShouldFailOnReferenceOnUnknownConfig(t *testing.T) {
 	parameters := []topologysort.ParameterWithName{
 		{
 			Name: config.NameParameter,
-			Parameter: &test.DummyParameter{
+			Parameter: &parameter.DummyParameter{
 				References: []parameter.ParameterReference{
 					{
 						Config: coordinate.Coordinate{
@@ -639,7 +638,7 @@ func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
 	parameters := []topologysort.ParameterWithName{
 		{
 			Name: config.NameParameter,
-			Parameter: &test.DummyParameter{
+			Parameter: &parameter.DummyParameter{
 				References: []parameter.ParameterReference{
 					{
 						Config:   referenceCoordinates,

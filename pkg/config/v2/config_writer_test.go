@@ -21,7 +21,6 @@ import (
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/value"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/test"
 	"gotest.tools/assert"
 )
 
@@ -290,10 +289,10 @@ func TestToParameterDefinition(t *testing.T) {
 		configConverterContext: &configConverterContext{
 			WriterContext: &WriterContext{
 				ParametersSerde: map[string]parameter.ParameterSerDe{
-					test.DummyParameterType: {
+					parameter.DummyParameterType: {
 						Serializer: func(c parameter.ParameterWriterContext) (map[string]interface{}, error) {
 							return map[string]interface{}{
-								"Value": c.Parameter.(*test.DummyParameter).Value,
+								"Value": c.Parameter.(*parameter.DummyParameter).Value,
 							}, nil
 						},
 					},
@@ -303,7 +302,7 @@ func TestToParameterDefinition(t *testing.T) {
 		},
 	}
 
-	result, err := toParameterDefinition(&context, paramName, &test.DummyParameter{
+	result, err := toParameterDefinition(&context, paramName, &parameter.DummyParameter{
 		Value: paramValue,
 	})
 

@@ -23,7 +23,6 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
 	project "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/test"
 	"gotest.tools/assert"
 )
 
@@ -38,7 +37,7 @@ func TestIsReferencing(t *testing.T) {
 
 	param := ParameterWithName{
 		Name: "name",
-		Parameter: &test.DummyParameter{
+		Parameter: &parameter.DummyParameter{
 			References: []parameter.ParameterReference{
 				parameter.ParameterReference{Config: referencingConfig, Property: referencingProperty},
 			},
@@ -47,7 +46,7 @@ func TestIsReferencing(t *testing.T) {
 
 	referencedParameter := ParameterWithName{
 		Name:      referencingProperty,
-		Parameter: &test.DummyParameter{},
+		Parameter: &parameter.DummyParameter{},
 	}
 
 	result := param.IsReferencing(referencingConfig, referencedParameter)
@@ -66,7 +65,7 @@ func TestIsReferencingShouldReturnFalseForNotReferencing(t *testing.T) {
 
 	param := ParameterWithName{
 		Name: "name",
-		Parameter: &test.DummyParameter{
+		Parameter: &parameter.DummyParameter{
 			References: []parameter.ParameterReference{
 				{
 					Config:   referencingConfig,
@@ -78,7 +77,7 @@ func TestIsReferencingShouldReturnFalseForNotReferencing(t *testing.T) {
 
 	referencedParameter := ParameterWithName{
 		Name:      "name",
-		Parameter: &test.DummyParameter{},
+		Parameter: &parameter.DummyParameter{},
 	}
 
 	result := param.IsReferencing(referencingConfig, referencedParameter)
@@ -95,12 +94,12 @@ func TestIsReferencingShouldReturnFalseForParameterWithoutReferences(t *testing.
 
 	param := ParameterWithName{
 		Name:      "name",
-		Parameter: &test.DummyParameter{},
+		Parameter: &parameter.DummyParameter{},
 	}
 
 	referencedParameter := ParameterWithName{
 		Name:      "name",
-		Parameter: &test.DummyParameter{},
+		Parameter: &parameter.DummyParameter{},
 	}
 
 	result := param.IsReferencing(referencingConfig, referencedParameter)
@@ -119,7 +118,7 @@ func TestSortParameters(t *testing.T) {
 	timeoutParameterName := "timeout"
 
 	parameters := config.Parameters{
-		config.NameParameter: &test.DummyParameter{
+		config.NameParameter: &parameter.DummyParameter{
 			References: []parameter.ParameterReference{
 				{
 					Config:   configCoordinates,
@@ -127,8 +126,8 @@ func TestSortParameters(t *testing.T) {
 				},
 			},
 		},
-		ownerParameterName:   &test.DummyParameter{},
-		timeoutParameterName: &test.DummyParameter{},
+		ownerParameterName:   &parameter.DummyParameter{},
+		timeoutParameterName: &parameter.DummyParameter{},
 	}
 
 	sortedParams, err := SortParameters("", "dev", configCoordinates, parameters)
@@ -152,7 +151,7 @@ func TestSortParametersShouldFailOnCircularDependency(t *testing.T) {
 	ownerParameterName := "owner"
 
 	parameters := config.Parameters{
-		config.NameParameter: &test.DummyParameter{
+		config.NameParameter: &parameter.DummyParameter{
 			References: []parameter.ParameterReference{
 				{
 					Config:   configCoordinates,
@@ -160,7 +159,7 @@ func TestSortParametersShouldFailOnCircularDependency(t *testing.T) {
 				},
 			},
 		},
-		ownerParameterName: &test.DummyParameter{
+		ownerParameterName: &parameter.DummyParameter{
 			References: []parameter.ParameterReference{
 				{
 					Config:   configCoordinates,
@@ -425,7 +424,7 @@ func TestGetSortedConfigsForEnvironments(t *testing.T) {
 							Coordinate:  dashboardConfigCoordinate,
 							Environment: environmentName,
 							Parameters: map[string]parameter.Parameter{
-								"autoTagId": &test.DummyParameter{
+								"autoTagId": &parameter.DummyParameter{
 									References: []parameter.ParameterReference{
 										{
 											Config:   autoTagCoordinates,
@@ -446,7 +445,7 @@ func TestGetSortedConfigsForEnvironments(t *testing.T) {
 							},
 							Environment: environmentName,
 							Parameters: map[string]parameter.Parameter{
-								"name": &test.DummyParameter{
+								"name": &parameter.DummyParameter{
 									Value: "sample",
 								},
 							},
@@ -469,7 +468,7 @@ func TestGetSortedConfigsForEnvironments(t *testing.T) {
 							Coordinate:  autoTagCoordinates,
 							Environment: environmentName,
 							Parameters: map[string]parameter.Parameter{
-								referencedPropertyName: &test.DummyParameter{
+								referencedPropertyName: &parameter.DummyParameter{
 									Value: "10",
 								},
 							},

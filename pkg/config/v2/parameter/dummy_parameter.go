@@ -1,3 +1,5 @@
+//go:build unit
+
 // @license
 // Copyright 2021 Dynatrace LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,27 +14,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package test
-
-import "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
+package parameter
 
 const DummyParameterType = "dummy"
 
 type DummyParameter struct {
 	Value      interface{}
 	Err        error
-	References []parameter.ParameterReference
+	References []ParameterReference
 }
 
 func (d *DummyParameter) GetType() string {
 	return DummyParameterType
 }
 
-func (d *DummyParameter) GetReferences() []parameter.ParameterReference {
+func (d *DummyParameter) GetReferences() []ParameterReference {
 	return d.References
 }
 
-func (d *DummyParameter) ResolveValue(_ parameter.ResolveContext) (interface{}, error) {
+func (d *DummyParameter) ResolveValue(_ ResolveContext) (interface{}, error) {
 	if d.Err != nil {
 		return nil, d.Err
 	}
@@ -40,4 +40,4 @@ func (d *DummyParameter) ResolveValue(_ parameter.ResolveContext) (interface{}, 
 	return d.Value, nil
 }
 
-var _ parameter.Parameter = (*DummyParameter)(nil)
+var _ Parameter = (*DummyParameter)(nil)
