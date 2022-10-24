@@ -22,6 +22,7 @@ import (
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/reference"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
@@ -30,12 +31,14 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -154,6 +157,113 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 			},
 		},
 	}, templateContentComparator)
+}
+
+func TestDownloadIntegrationWithReference(t *testing.T) {
+	// GIVEN apis, server responses, file system
+	const projectName = "integration-test-2"
+	const testBasePath = "test-resources/" + projectName
+
+	// APIs
+	fakeApi := api.NewStandardApi("fake-id", "/fake-id", false, "", false)
+	apiMap := api.ApiMap{
+		fakeApi.GetId(): fakeApi,
+	}
+
+	// Responses
+	responses := map[string][]byte{
+		"/fake-id":      readFileOrPanic(testBasePath, "fake-api/__LIST.json"),
+		"/fake-id/id-1": readFileOrPanic(testBasePath, "fake-api/id-1.json"),
+		"/fake-id/id-2": readFileOrPanic(testBasePath, "fake-api/id-2.json"),
+	}
+
+	// Server
+	server := rest.NewDynatraceTLSServerForTesting(t, func(res http.ResponseWriter, req *http.Request) {
+		if req.Method != http.MethodGet {
+			http.Error(res, "Unsupported", http.StatusMethodNotAllowed)
+			return
+		}
+
+		if content, found := responses[req.RequestURI]; !found {
+			log.Error("Failed to find resource '%s'", req.RequestURI)
+			http.Error(res, "Not found", http.StatusNotFound)
+			return
+		} else {
+			_, err := res.Write(content)
+			if err != nil {
+				http.Error(res, err.Error(), http.StatusInternalServerError)
+			}
+		}
+	})
+	fs := afero.NewMemMapFs()
+
+	// WHEN we download everything
+	err := doDownload(fs, server.URL, projectName, "token", "TOKEN_ENV_VAR", "out", apiMap, func(environmentUrl, token string) (rest.DynatraceClient, error) {
+		return rest.NewDynatraceClientForTesting(environmentUrl, token, server.Client())
+	})
+
+	assert.NilError(t, err)
+
+	// THEN we can load the project again and verify its content
+	man, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
+		Fs:           fs,
+		ManifestPath: "out/manifest.yaml",
+	})
+	if errs != nil {
+		t.Errorf("Errors occured: %v", errs)
+		return
+	}
+
+	projects, errs := projectLoader.LoadProjects(fs, projectLoader.ProjectLoaderContext{
+		Apis:            maps.Keys(apiMap),
+		WorkingDir:      "out",
+		Manifest:        man,
+		ParametersSerde: config.DefaultParameterParsers,
+	})
+	if errs != nil {
+		t.Errorf("Errors occured: %v", errs)
+		return
+	}
+
+	assert.Equal(t, len(projects), 1)
+	p := projects[0]
+	assert.Equal(t, p.Id, projectName)
+	assert.Equal(t, len(p.Configs), 1)
+
+	configs, found := p.Configs[projectName]
+	assert.Equal(t, found, true)
+
+	assert.DeepEqual(t, configs, projectLoader.ConfigsPerApis{
+		fakeApi.GetId(): []config.Config{
+			{
+				Coordinate: coordinate.Coordinate{Project: projectName, Api: fakeApi.GetId(), Config: "id-1"},
+				Skip:       false,
+				Parameters: map[string]parameter.Parameter{
+					"name": &value.ValueParameter{Value: "Test-1"},
+				},
+				Group:       "default",
+				Environment: projectName,
+				References:  []coordinate.Coordinate{},
+				Template:    contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}"}`},
+			},
+			{
+				Coordinate: coordinate.Coordinate{Project: projectName, Api: fakeApi.GetId(), Config: "id-2"},
+				Skip:       false,
+				Parameters: map[string]parameter.Parameter{
+					"name":            &value.ValueParameter{Value: "Test-2"},
+					"fakeid__id1__id": reference.New(projectName, fakeApi.GetId(), "id-1", "id"),
+				},
+				Group:       "default",
+				Environment: projectName,
+				References: []coordinate.Coordinate{
+					{Project: projectName, Api: fakeApi.GetId(), Config: "id-1"},
+				},
+				Template: contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}", "reference-to-id1": "{{.fakeid__id1__id}}"}`},
+			},
+		},
+	}, templateContentComparator, cmpopts.SortSlices(func(a, b config.Config) bool {
+		return strings.Compare(a.Coordinate.String(), b.Coordinate.String()) < 0
+	}))
 }
 
 func readFileOrPanic(path ...string) []byte {
