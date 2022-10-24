@@ -42,6 +42,21 @@ import (
 	"testing"
 )
 
+// compareOptions holds all options we require for the tests to not be flaky.
+// E.g. slices may be in any order, template may have any implementation.
+// We want to be pragmatic in comparing them - so we define these options to make it very simple.
+var compareOptions = []cmp.Option{
+	cmp.Comparer(func(a, b template.Template) bool {
+		return jsonEqual(a.Content(), b.Content())
+	}),
+	cmpopts.SortSlices(func(a, b config.Config) bool {
+		return strings.Compare(a.Coordinate.String(), b.Coordinate.String()) < 0
+	}),
+	cmpopts.SortSlices(func(a, b coordinate.Coordinate) bool {
+		return strings.Compare(a.String(), b.String()) < 0
+	}),
+}
+
 type contentOnlyTemplate struct {
 	content string
 }
@@ -63,10 +78,6 @@ func (c contentOnlyTemplate) UpdateContent(_ string) {
 }
 
 var _ template.Template = (*contentOnlyTemplate)(nil)
-
-var templateContentComparator = cmp.Comparer(func(a, b template.Template) bool {
-	return jsonEqual(a.Content(), b.Content())
-})
 
 type integrationTestServer struct {
 	basePath   string
@@ -183,7 +194,7 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 				Template:    contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}"}`},
 			},
 		},
-	}, templateContentComparator)
+	}, compareOptions...)
 }
 
 func TestDownloadIntegrationWithReference(t *testing.T) {
@@ -289,9 +300,7 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 				Template: contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}", "reference-to-id1": "{{.fakeid__id1__id}}"}`},
 			},
 		},
-	}, templateContentComparator, cmpopts.SortSlices(func(a, b config.Config) bool {
-		return strings.Compare(a.Coordinate.String(), b.Coordinate.String()) < 0
-	}))
+	}, compareOptions...)
 }
 
 func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
@@ -458,9 +467,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 `},
 			},
 		},
-	}, templateContentComparator, cmpopts.SortSlices(func(a, b config.Config) bool {
-		return strings.Compare(a.Coordinate.String(), b.Coordinate.String()) < 0
-	}))
+	}, compareOptions...)
 }
 
 func readFileOrPanic(path ...string) []byte {
