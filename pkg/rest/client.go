@@ -94,7 +94,10 @@ type dynatraceClientImpl struct {
 
 // NewDynatraceClient creates a new DynatraceClient
 func NewDynatraceClient(environmentUrl, token string) (DynatraceClient, error) {
+	return newDynatraceClient(environmentUrl, token, http.Client{})
+}
 
+func newDynatraceClient(environmentUrl, token string, client http.Client) (DynatraceClient, error) {
 	if environmentUrl == "" {
 		return nil, errors.New("no environment url")
 	}
@@ -120,7 +123,7 @@ func NewDynatraceClient(environmentUrl, token string) (DynatraceClient, error) {
 	return &dynatraceClientImpl{
 		environmentUrl: environmentUrl,
 		token:          token,
-		client:         &http.Client{},
+		client:         &client,
 	}, nil
 }
 
