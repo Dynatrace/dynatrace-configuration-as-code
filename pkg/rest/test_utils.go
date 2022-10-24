@@ -40,3 +40,16 @@ func newDynatraceTestServer(t *testing.T, callback func(res http.ResponseWriter,
 
 	return testServer.Client(), testServer.URL
 }
+
+// NewDynatraceTLSServerForTesting creates a new test server and returns it.
+// The server is closed automatically upon exiting the testing environment
+func NewDynatraceTLSServerForTesting(t *testing.T, callback func(res http.ResponseWriter, req *http.Request)) *httptest.Server {
+	testServer := httptest.NewTLSServer(http.HandlerFunc(callback))
+	t.Cleanup(testServer.Close)
+
+	return testServer
+}
+
+func NewDynatraceClientForTesting(environmentUrl, token string, client *http.Client) (DynatraceClient, error) {
+	return newDynatraceClient(environmentUrl, token, *client)
+}
