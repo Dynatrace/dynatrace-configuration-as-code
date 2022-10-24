@@ -25,8 +25,12 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// UnmarshalYamlFunc is a function that will Umarshal a yaml string of a config or environment definition into a map.
+type UnmarshalYamlFunc func(text string, filename string) (map[string]map[string]string, error)
+
 // UnmarshalYaml takes the contents of a yaml file and converts it to a map[string]map[string]string.
 // The file be templated, with any references replaced - or resulting in an error if no value is available.
+//
 // The yaml file should have the following format:
 //
 // some-name-1:
@@ -63,6 +67,8 @@ func UnmarshalYaml(text string, fileName string) (map[string]map[string]string, 
 func UnmarshalYamlWithoutTemplating(text string, fileName string) (map[string]map[string]string, error) {
 	m := make(map[string]interface{})
 
+	text = ensureAnyTemplateStringsAreInQuotes(text)
+
 	err := yaml.Unmarshal([]byte(text), &m)
 	FailOnError(err, "Failed to unmarshal yaml\n"+text+"\nerror:")
 
@@ -70,6 +76,21 @@ func UnmarshalYamlWithoutTemplating(text string, fileName string) (map[string]ma
 	FailOnError(err, "YAML file "+fileName+" could not be parsed")
 
 	return typed, nil
+}
+
+// nonQuotedVariableRegex matches a limited edge case of variable definitons as yaml values defined without quotes
+// e.g. - value: {{ .Env.MyValue }} is sometimes used in monaco configurations. Templating will replace this with the
+// actual values in quotes, but without templating this will produce invalid yaml. This matches on a value (something
+// after a colon) that does not start with a double-quote but then is a reference (surrounded by double curly brackets)
+var nonQuotedVariableRegex = regexp.MustCompile(`:\s*[^"]\s*{{.*?}}`)
+
+func ensureAnyTemplateStringsAreInQuotes(text string) string {
+	sanitized := nonQuotedVariableRegex.ReplaceAllStringFunc(text, func(s string) string {
+		s = strings.ReplaceAll(s, `{{`, `"{{`)
+		s = strings.ReplaceAll(s, `}}`, `}}"`)
+		return s
+	})
+	return sanitized
 }
 
 func ReplacePathSeparators(path string) (newPath string) {

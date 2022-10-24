@@ -18,6 +18,7 @@ package v1
 
 import (
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"os"
 	"path/filepath"
 	"strings"
@@ -36,23 +37,9 @@ func LoadProjectsToDeploy(fs afero.Fs, specificProjectToDeploy string, apis map[
 
 	projectsFolder := filepath.Clean(path)
 
-	log.Debug("Reading projects...")
-
-	// creates list of all available projects
-	availableProjectFolders, err := getAllProjectFoldersRecursively(fs, apis, projectsFolder)
+	availableProjectFolders, availableProjects, err := loadAllProjects(fs, apis, projectsFolder, util.UnmarshalYaml)
 	if err != nil {
 		return nil, err
-	}
-
-	availableProjects := make([]Project, 0)
-	for _, fullQualifiedProjectFolderName := range availableProjectFolders {
-		log.Debug("  project - %s", fullQualifiedProjectFolderName)
-		projectFolderName := extractFolderNameFromFullPath(fullQualifiedProjectFolderName)
-		project, err := NewProject(fs, fullQualifiedProjectFolderName, projectFolderName, apis, projectsFolder)
-		if err != nil {
-			return nil, err
-		}
-		availableProjects = append(availableProjects, project)
 	}
 
 	// return all projects if no projects specified by -p parameter
@@ -62,7 +49,7 @@ func LoadProjectsToDeploy(fs afero.Fs, specificProjectToDeploy string, apis map[
 		return returnSortedProjects(projectsToDeploy)
 	}
 
-	projectsToDeploy, err = createProjectsListFromFolderList(fs, projectsFolder, specificProjectToDeploy, projectsFolder, apis, availableProjectFolders)
+	projectsToDeploy, err = createProjectsListFromFolderList(fs, projectsFolder, specificProjectToDeploy, projectsFolder, apis, availableProjectFolders, util.UnmarshalYaml)
 
 	if err != nil {
 		return nil, err
@@ -86,6 +73,37 @@ func LoadProjectsToDeploy(fs afero.Fs, specificProjectToDeploy string, apis map[
 	return returnSortedProjects(projectsToDeploy)
 }
 
+// LoadProjectsToConvert returns a list of projects to be converted to v2
+func LoadProjectsToConvert(fs afero.Fs, apis map[string]api.Api, path string) ([]Project, error) {
+	_, projects, err := loadAllProjects(fs, apis, path, util.UnmarshalYamlWithoutTemplating)
+	return projects, err
+}
+
+func loadAllProjects(fs afero.Fs, apis map[string]api.Api, projectsFolder string, unmarshalYaml util.UnmarshalYamlFunc) (projectFolders []string, projects []Project, err error) {
+	projectsFolder = filepath.Clean(projectsFolder)
+
+	log.Debug("Reading projects...")
+
+	// creates list of all available projects
+	availableProjectFolders, err := getAllProjectFoldersRecursively(fs, apis, projectsFolder)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	availableProjects := make([]Project, 0)
+	for _, fullQualifiedProjectFolderName := range availableProjectFolders {
+		log.Debug("  project - %s", fullQualifiedProjectFolderName)
+		projectFolderName := extractFolderNameFromFullPath(fullQualifiedProjectFolderName)
+		project, err := NewProject(fs, fullQualifiedProjectFolderName, projectFolderName, apis, projectsFolder, unmarshalYaml)
+		if err != nil {
+			return nil, nil, err
+		}
+		availableProjects = append(availableProjects, project)
+	}
+
+	return availableProjectFolders, availableProjects, nil
+}
+
 func returnSortedProjects(projectsToDeploy []Project) ([]Project, error) {
 	log.Debug("Sorting projects...")
 	projectsToDeploy, err := sortProjects(projectsToDeploy)
@@ -98,7 +116,7 @@ func returnSortedProjects(projectsToDeploy []Project) ([]Project, error) {
 
 // takes project folder parameter and creates []Project slice
 // if project specified contains subprojects, then it adds subprojects instead
-func createProjectsListFromFolderList(fs afero.Fs, path, specificProjectToDeploy string, projectsFolder string, apis map[string]api.Api, availableProjectFolders []string) ([]Project, error) {
+func createProjectsListFromFolderList(fs afero.Fs, path, specificProjectToDeploy string, projectsFolder string, apis map[string]api.Api, availableProjectFolders []string, unmarshalYaml util.UnmarshalYamlFunc) ([]Project, error) {
 	projectsToDeploy := make([]Project, 0)
 	multiProjects := strings.Split(specificProjectToDeploy, ",")
 	for _, projectFolderName := range multiProjects {
@@ -114,7 +132,7 @@ func createProjectsListFromFolderList(fs afero.Fs, path, specificProjectToDeploy
 				return nil, fmt.Errorf("project %s does not exist (%w)", specificProjectToDeploy, err)
 			}
 
-			newProject, err := NewProject(fs, fullQualifiedProjectFolderName, projectFolderName, apis, path)
+			newProject, err := NewProject(fs, fullQualifiedProjectFolderName, projectFolderName, apis, path, unmarshalYaml)
 			if err != nil {
 				return nil, err
 			}
@@ -128,7 +146,7 @@ func createProjectsListFromFolderList(fs afero.Fs, path, specificProjectToDeploy
 			for _, fullQualifiedSubProjectFolderName := range subProjectFolders {
 
 				subProjectFolderName := extractFolderNameFromFullPath(fullQualifiedSubProjectFolderName)
-				newProject, err := NewProject(fs, fullQualifiedSubProjectFolderName, subProjectFolderName, apis, path)
+				newProject, err := NewProject(fs, fullQualifiedSubProjectFolderName, subProjectFolderName, apis, path, unmarshalYaml)
 				if err != nil {
 					return nil, err
 				}

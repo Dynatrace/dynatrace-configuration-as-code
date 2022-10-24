@@ -249,7 +249,7 @@ func TestProcessYaml(t *testing.T) {
 		NewConfig(gomock.Any(), "dashboard", "testproject", util.ReplacePathSeparators("test/dashboard/my-project-dashboard.json"), gomock.Any(), testDashboardApi).
 		Return(config.GetMockConfig("my-project-dashboard", "testproject", nil, properties, testDashboardApi, util.ReplacePathSeparators("dashboard/test-file.yaml")), nil)
 
-	err = builder.processYaml(yamlFile)
+	err = builder.processYaml(yamlFile, util.UnmarshalYaml)
 
 	assert.NilError(t, err)
 	assert.Equal(t, 1, len(builder.configs))

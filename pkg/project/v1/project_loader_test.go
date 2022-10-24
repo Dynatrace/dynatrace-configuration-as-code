@@ -51,7 +51,7 @@ func TestCreateProjectsFromFolderList(t *testing.T) {
 	allProjectFolders, err := getAllProjectFoldersRecursively(fs, apis, path)
 	assert.NilError(t, err)
 
-	projects, err := createProjectsListFromFolderList(fs, path, specificProjectToDeploy, path, apis, allProjectFolders)
+	projects, err := createProjectsListFromFolderList(fs, path, specificProjectToDeploy, path, apis, allProjectFolders, util.UnmarshalYaml)
 
 	assert.NilError(t, err)
 

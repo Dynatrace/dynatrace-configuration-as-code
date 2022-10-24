@@ -227,3 +227,35 @@ func TestUnmarshalConvertYamlHasParsingIssuesOnLevel4(t *testing.T) {
 	// Then
 	assert.ErrorContains(t, e, "cannot convert YAML on level 4: value of key 'Han' has unexpected type")
 }
+
+func Test_ensureAnyTemplateStringsAreInQuotes(t *testing.T) {
+
+	tests := []struct {
+		given string
+		want  string
+	}{
+		{
+			"random string",
+			"random string",
+		},
+		{
+			`value: "{{ something in quotes }}"`,
+			`value: "{{ something in quotes }}"`,
+		},
+		{
+			`- url: {{ no quotes }}`,
+			`- url: "{{ no quotes }}"`,
+		},
+		{
+			`- url: "  {{ end quote  missing YAML error is unchanged }}`,
+			`- url: "  {{ end quote  missing YAML error is unchanged }}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.given, func(t *testing.T) {
+			if got := ensureAnyTemplateStringsAreInQuotes(tt.given); got != tt.want {
+				t.Errorf("ensureAnyTemplateStringsAreInQuotes() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

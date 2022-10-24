@@ -55,7 +55,7 @@ type projectBuilder struct {
 }
 
 // NewProject loads a new project from folder. Returns either project or a reading/sorting error respectively.
-func NewProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolderName string, apis map[string]api.Api, projectRootFolder string) (Project, error) {
+func NewProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolderName string, apis map[string]api.Api, projectRootFolder string, unmarshalYaml util.UnmarshalYamlFunc) (Project, error) {
 
 	var configs = make([]config.Config, 0)
 
@@ -71,7 +71,7 @@ func NewProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolde
 		configFactory:     config.NewConfigFactory(),
 		fs:                fs,
 	}
-	err := builder.readFolder(fullQualifiedProjectFolderName, true)
+	err := builder.readFolder(fullQualifiedProjectFolderName, true, unmarshalYaml)
 	if err != nil {
 		//debug log here?
 		return nil, err
@@ -102,7 +102,7 @@ func warnIfProjectNameClashesWithApiName(projectFolderName string, apis map[stri
 	}
 }
 
-func (p *projectBuilder) readFolder(folder string, isProjectRoot bool) error {
+func (p *projectBuilder) readFolder(folder string, isProjectRoot bool, unmarshalYaml util.UnmarshalYamlFunc) error {
 	filesInFolder, err := afero.ReadDir(p.fs, folder)
 
 	if util.CheckError(err, "Folder "+folder+" could not be read") {
@@ -114,18 +114,18 @@ func (p *projectBuilder) readFolder(folder string, isProjectRoot bool) error {
 		fullFileName := filepath.Join(folder, file.Name())
 
 		if file.IsDir() {
-			err = p.readFolder(fullFileName, false)
+			err = p.readFolder(fullFileName, false, unmarshalYaml)
 			if err != nil {
 				return err
 			}
 		} else if !isProjectRoot && files.IsYamlFileExtension(file.Name()) {
-			err = p.processYaml(fullFileName)
+			err = p.processYaml(fullFileName, unmarshalYaml)
 		}
 	}
 	return err
 }
 
-func (p *projectBuilder) processYaml(filename string) error {
+func (p *projectBuilder) processYaml(filename string, unmarshalYaml util.UnmarshalYamlFunc) error {
 
 	log.Debug("Processing file: " + filename)
 
@@ -135,7 +135,7 @@ func (p *projectBuilder) processYaml(filename string) error {
 		return err
 	}
 
-	properties, err := util.UnmarshalYaml(string(bytes), filename)
+	properties, err := unmarshalYaml(string(bytes), filename)
 	if util.CheckError(err, "Error while converting file "+filename) {
 		return err
 	}
