@@ -30,14 +30,10 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/slices"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
-	"net/http"
-	"os"
-	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -80,75 +76,6 @@ func (c contentOnlyTemplate) UpdateContent(_ string) {
 
 var _ template.Template = (*contentOnlyTemplate)(nil)
 
-type integrationTestServer struct {
-	basePath   string
-	urlMapping map[string]string
-	t          *testing.T
-	calls      map[string]int
-}
-
-func (i integrationTestServer) Read(uri string) ([]byte, bool) {
-	path, found := i.urlMapping[uri]
-
-	if !found {
-		i.t.Errorf("Uri '%s' not mapped", uri)
-		return nil, false
-	}
-
-	return readFileOrPanic(filepath.Join(i.basePath, path)), true
-}
-
-func (i integrationTestServer) Handler() func(res http.ResponseWriter, req *http.Request) {
-	return func(res http.ResponseWriter, req *http.Request) {
-		if req.Method != http.MethodGet {
-			http.Error(res, "Unsupported", http.StatusMethodNotAllowed)
-			return
-		}
-
-		i.calls[req.RequestURI]++
-
-		if content, found := i.Read(req.RequestURI); !found {
-			log.Error("Failed to find resource '%s'", req.RequestURI)
-			http.Error(res, "Not found", http.StatusNotFound)
-			return
-		} else {
-			_, err := res.Write(content)
-			if err != nil {
-				http.Error(res, err.Error(), http.StatusInternalServerError)
-			}
-		}
-	}
-}
-
-func (i integrationTestServer) verify() {
-	mapped := maps.Keys(i.urlMapping)
-	accessed := maps.Keys(i.calls)
-
-	accessedNotMapped := slices.Difference(accessed, mapped)
-	mappedNotAccessed := slices.Difference(mapped, accessed)
-
-	for _, v := range accessedNotMapped {
-		i.t.Errorf("Path accessed but not mapped: %v", v)
-	}
-
-	for _, v := range mappedNotAccessed {
-		i.t.Errorf("Path mapped but never accessed: %v", v)
-	}
-}
-
-func newTestServer(t *testing.T, basePath string, urlMapping map[string]string) integrationTestServer {
-	testServer := integrationTestServer{
-		t:          t,
-		basePath:   basePath,
-		urlMapping: urlMapping,
-		calls:      map[string]int{},
-	}
-
-	t.Cleanup(testServer.verify)
-
-	return testServer
-}
-
 func TestDownloadIntegrationSimple(t *testing.T) {
 	// GIVEN apis, server responses, file system
 	const projectName = "integration-test-1"
@@ -166,10 +93,8 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 		"/fake-id/id-1": "fake-api/id-1.json",
 	}
 
-	testServer := newTestServer(t, testBasePath, responses)
-
 	// Server
-	server := rest.NewDynatraceTLSServerForTesting(t, testServer.Handler())
+	server := rest.NewIntegrationTestServer(t, testBasePath, responses)
 
 	fs := afero.NewMemMapFs()
 
@@ -245,10 +170,9 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 		"/fake-id/id-2": "fake-api/id-2.json",
 	}
 
-	testServer := newTestServer(t, testBasePath, responses)
-
 	// Server
-	server := rest.NewDynatraceTLSServerForTesting(t, testServer.Handler())
+	server := rest.NewIntegrationTestServer(t, testBasePath, responses)
+
 	fs := afero.NewMemMapFs()
 
 	// WHEN we download everything
@@ -347,10 +271,8 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 		"/fake-api-3/id-5": "fake-api-3/id-5.json",
 	}
 
-	testServer := newTestServer(t, testBasePath, responses)
-
 	// Server
-	server := rest.NewDynatraceTLSServerForTesting(t, testServer.Handler())
+	server := rest.NewIntegrationTestServer(t, testBasePath, responses)
 	fs := afero.NewMemMapFs()
 
 	// WHEN we download everything
@@ -467,15 +389,6 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 			},
 		},
 	}, compareOptions...)
-}
-
-func readFileOrPanic(path ...string) []byte {
-	content, err := os.ReadFile(filepath.Join(path...))
-	if err != nil {
-		panic("Failed to read file during test setup: " + err.Error())
-	}
-
-	return content
 }
 
 func jsonEqual(jsonA, jsonB string) bool {

@@ -19,8 +19,14 @@
 package rest
 
 import (
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/slices"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"sync"
 	"testing"
 )
 
@@ -32,19 +38,92 @@ func newDynatraceClientForTesting(server *httptest.Server) DynatraceClient {
 	}
 }
 
-// Creates a new test server and returns the created client & URL.
-// The server is closed automatically upon exiting the testing environment
-func newDynatraceTestServer(t *testing.T, callback func(res http.ResponseWriter, req *http.Request)) (*http.Client, string) {
-	testServer := httptest.NewServer(http.HandlerFunc(callback))
-	t.Cleanup(testServer.Close)
-
-	return testServer.Client(), testServer.URL
+type integrationTestResources struct {
+	basePath   string
+	urlMapping map[string]string
+	t          *testing.T
+	calls      map[string]int
+	callsMutex *sync.Mutex
 }
 
-// NewDynatraceTLSServerForTesting creates a new test server and returns it.
-// The server is closed automatically upon exiting the testing environment
-func NewDynatraceTLSServerForTesting(t *testing.T, callback func(res http.ResponseWriter, req *http.Request)) *httptest.Server {
-	testServer := httptest.NewTLSServer(http.HandlerFunc(callback))
+func (i integrationTestResources) Read(uri string) ([]byte, bool) {
+	path, found := i.urlMapping[uri]
+
+	if !found {
+		i.t.Errorf("Uri '%s' not mapped", uri)
+		return nil, false
+	}
+
+	return readFileOrPanic(filepath.Join(i.basePath, path)), true
+}
+
+func (i integrationTestResources) handler() func(res http.ResponseWriter, req *http.Request) {
+	return func(res http.ResponseWriter, req *http.Request) {
+		if req.Method != http.MethodGet {
+			http.Error(res, "Unsupported", http.StatusMethodNotAllowed)
+			return
+		}
+
+		i.callsMutex.Lock()
+		i.calls[req.RequestURI]++
+		i.callsMutex.Unlock()
+
+		if content, found := i.Read(req.RequestURI); !found {
+			log.Error("Failed to find resource '%s'", req.RequestURI)
+			http.Error(res, "Not found", http.StatusNotFound)
+			return
+		} else {
+			_, err := res.Write(content)
+			if err != nil {
+				http.Error(res, err.Error(), http.StatusInternalServerError)
+			}
+		}
+	}
+}
+
+func (i integrationTestResources) verify() {
+	mapped := maps.Keys(i.urlMapping)
+	accessed := maps.Keys(i.calls)
+
+	accessedNotMapped := slices.Difference(accessed, mapped)
+	mappedNotAccessed := slices.Difference(mapped, accessed)
+
+	for _, v := range accessedNotMapped {
+		i.t.Errorf("Path accessed but not mapped: %v", v)
+	}
+
+	for _, v := range mappedNotAccessed {
+		i.t.Errorf("Path mapped but never accessed: %v", v)
+	}
+}
+
+func readFileOrPanic(path ...string) []byte {
+	content, err := os.ReadFile(filepath.Join(path...))
+	if err != nil {
+		panic("Failed to read file during test setup: " + err.Error())
+	}
+
+	return content
+}
+
+// NewIntegrationTestServer creates a new test server and returns it.
+// The server is closed automatically upon exiting the testing environment, as well as all defined mappings are checked.
+//
+// The mapping works as followings: The keys of the map are the URIs the client accesses, while the keys are the path to the
+// files *without* the basePath. What file names are used is not important, though a convention is to use __LIST.json for the
+// list of all resources for a given API.
+func NewIntegrationTestServer(t *testing.T, basePath string, mappings map[string]string) *httptest.Server {
+	serverResources := integrationTestResources{
+		t:          t,
+		basePath:   basePath,
+		urlMapping: mappings,
+		calls:      map[string]int{},
+		callsMutex: &sync.Mutex{},
+	}
+
+	testServer := httptest.NewTLSServer(http.HandlerFunc(serverResources.handler()))
+
+	t.Cleanup(serverResources.verify)
 	t.Cleanup(testServer.Close)
 
 	return testServer
