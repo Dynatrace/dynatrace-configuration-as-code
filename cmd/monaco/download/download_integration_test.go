@@ -30,6 +30,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/slices"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/spf13/afero"
@@ -83,6 +84,7 @@ type integrationTestServer struct {
 	basePath   string
 	urlMapping map[string]string
 	t          *testing.T
+	calls      map[string]int
 }
 
 func (i integrationTestServer) Read(uri string) ([]byte, bool) {
@@ -103,6 +105,8 @@ func (i integrationTestServer) Handler() func(res http.ResponseWriter, req *http
 			return
 		}
 
+		i.calls[req.RequestURI]++
+
 		if content, found := i.Read(req.RequestURI); !found {
 			log.Error("Failed to find resource '%s'", req.RequestURI)
 			http.Error(res, "Not found", http.StatusNotFound)
@@ -116,12 +120,33 @@ func (i integrationTestServer) Handler() func(res http.ResponseWriter, req *http
 	}
 }
 
+func (i integrationTestServer) verify() {
+	mapped := maps.Keys(i.urlMapping)
+	accessed := maps.Keys(i.calls)
+
+	accessedNotMapped := slices.Difference(accessed, mapped)
+	mappedNotAccessed := slices.Difference(mapped, accessed)
+
+	for _, v := range accessedNotMapped {
+		i.t.Errorf("Path accessed but not mapped: %v", v)
+	}
+
+	for _, v := range mappedNotAccessed {
+		i.t.Errorf("Path mapped but never accessed: %v", v)
+	}
+}
+
 func newTestServer(t *testing.T, basePath string, urlMapping map[string]string) integrationTestServer {
-	return integrationTestServer{
+	testServer := integrationTestServer{
 		t:          t,
 		basePath:   basePath,
 		urlMapping: urlMapping,
+		calls:      map[string]int{},
 	}
+
+	t.Cleanup(testServer.verify)
+
+	return testServer
 }
 
 func TestDownloadIntegrationSimple(t *testing.T) {
