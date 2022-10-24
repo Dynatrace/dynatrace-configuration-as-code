@@ -17,6 +17,7 @@ package v2
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"path/filepath"
 	"reflect"
 
@@ -571,7 +572,12 @@ func parseNameParameter(context *detailedConfigConverterContext, config Config) 
 	nameParam, found := config.Parameters[NameParameter]
 
 	if !found {
-		return nil, fmt.Errorf("%s: `name` paramter missing",
+		if config.Skip {
+			log.Warn("%s: Encountered skipped config without 'name', setting default name.", context.config)
+			return "SKIPPED CONFIG", nil
+		}
+
+		return nil, fmt.Errorf("%s: `name` parameter missing",
 			config.Coordinate)
 	}
 
