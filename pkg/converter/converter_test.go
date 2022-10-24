@@ -39,6 +39,7 @@ import (
 
 const simpleParameterName = "randomValue"
 const referenceParameterName = "managementZoneId"
+const listParameterName = "locations"
 
 func TestConvertParameters(t *testing.T) {
 	environmentName := "test"
@@ -46,12 +47,16 @@ func TestConvertParameters(t *testing.T) {
 	configName := "Alerting Profile 1"
 	simpleParameterValue := "hello"
 	referenceParameterValue := "/projectB/management-zone/zone.id"
+	listParameterValue := `"GEOLOCATION-41","GEOLOCATION-42","GEOLOCATION-43"`
+	envParameterName := "url"
+	envParameterValue := " {{ .Env.SOME_ENV_VAR }} "
 
 	convertContext := &ConfigConvertContext{
 		ConverterContext: &ConverterContext{
 			Fs: setupDummyFs(t),
 		},
-		ProjectId: "projectA",
+		KnownListParameterIds: map[string]struct{}{listParameterName: {}},
+		ProjectId:             "projectA",
 	}
 
 	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", &manifest.EnvironmentVariableToken{"token"})
@@ -63,6 +68,8 @@ func TestConvertParameters(t *testing.T) {
 			"name":                 configName,
 			simpleParameterName:    simpleParameterValue,
 			referenceParameterName: referenceParameterValue,
+			listParameterName:      listParameterValue,
+			envParameterName:       envParameterValue,
 		},
 	}
 
@@ -78,7 +85,7 @@ func TestConvertParameters(t *testing.T) {
 	parameters, refs, skip, errors := convertParameters(convertContext, environment, config)
 
 	assert.Assert(t, is.Nil(errors))
-	assert.Equal(t, 3, len(parameters))
+	assert.Equal(t, 5, len(parameters))
 	assert.Equal(t, 1, len(refs))
 	assert.Equal(t, false, skip, "should not be skipped")
 
@@ -106,6 +113,14 @@ func TestConvertParameters(t *testing.T) {
 	assert.Equal(t, "management-zone", ref.Config.Api)
 	assert.Equal(t, "zone", ref.Config.Config)
 	assert.Equal(t, "id", ref.Property)
+
+	listParameter, found := parameters[listParameterName]
+	assert.Equal(t, true, found)
+	assert.DeepEqual(t, []valueParam.ValueParameter{{"GEOLOCATION-41"}, {"GEOLOCATION-42"}, {"GEOLOCATION-43"}}, listParameter.(*listParam.ListParameter).Values)
+
+	envParameter, found := parameters[envParameterName]
+	assert.Equal(t, true, found)
+	assert.DeepEqual(t, "SOME_ENV_VAR", envParameter.(*envParam.EnvironmentVariableParameter).Name)
 }
 
 func TestParseSkipDeploymentParameter(t *testing.T) {
@@ -486,7 +501,6 @@ func TestConvertConfigs(t *testing.T) {
 	simpleParameterValue := "hello"
 	simpleParameterValue2 := "world"
 	referenceParameterValue := "/projectB/management-zone/zone.id"
-	listParameterName := "list"
 	listParameterValue := `"GEOLOCATION-41","GEOLOCATION-42","GEOLOCATION-43"`
 	listParameterValue2 := `"james.t.kirk@dynatrace.com"`
 	envVariableName := "ENV_VAR"

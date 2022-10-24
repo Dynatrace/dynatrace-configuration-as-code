@@ -29,7 +29,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
 	configErrors "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/errors"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/environment"
+	envParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/environment"
 	refParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/reference"
 	valueParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
@@ -359,7 +359,7 @@ func convertEnvVarsReferencesInTemplate(currentTemplate string) (modifiedTemplat
 		paramName := transformEnvironmentToParamName(envVar)
 
 		if _, found := environmentParameters[paramName]; !found {
-			environmentParameters[paramName] = environment.New(envVar)
+			environmentParameters[paramName] = envParam.New(envVar)
 		}
 
 		return transformToPropertyAccess(paramName)
@@ -432,6 +432,9 @@ func convertParameters(context *ConfigConvertContext, environment manifest.Envir
 				continue
 			}
 			parameters[name] = &listParam.ListParameter{Values: valueSlice}
+		} else if util.IsEnvVariable(value) {
+			envVarName := util.TrimToEnvVariableName(value)
+			parameters[name] = envParam.New(envVarName)
 		} else {
 			parameters[name] = &valueParam.ValueParameter{Value: value}
 		}

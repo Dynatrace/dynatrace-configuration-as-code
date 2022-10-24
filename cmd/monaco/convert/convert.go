@@ -89,7 +89,7 @@ func loadConfigs(fs afero.Fs, workingDir string, apis map[string]api.Api,
 		workingDirFs = afero.NewBasePathFs(fs, workingDir)
 	}
 
-	projects, err := projectv1.LoadProjectsToDeploy(workingDirFs, "", apis, ".")
+	projects, err := projectv1.LoadProjectsToConvert(workingDirFs, apis, ".")
 
 	projects = removeEmptyProjects(projects)
 
