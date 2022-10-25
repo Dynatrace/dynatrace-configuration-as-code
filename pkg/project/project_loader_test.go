@@ -20,7 +20,9 @@
 package project
 
 import (
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"os"
+	"strings"
 	"testing"
 
 	"gotest.tools/assert"
@@ -194,4 +196,37 @@ func TestGetAllProjectFoldersRecursivelyPassesOnSeparatedFolders(t *testing.T) {
 	fs := util.CreateTestFileSystem()
 	_, err := getAllProjectFoldersRecursively(fs, path)
 	assert.NilError(t, err)
+}
+
+func TestGetAllProjectsFoldersRecursivelyPassesOnHiddenFolders(t *testing.T) {
+	path := util.ReplacePathSeparators("test-resources/hidden-directories/project1")
+	fs := util.CreateTestFileSystem()
+	_, err := getAllProjectFoldersRecursively(fs, path)
+	assert.NilError(t, err)
+}
+
+func TestGetAllProjectsFoldersRecursivelyPassesOnProjectsWithinHiddenFolders(t *testing.T) {
+	path := util.ReplacePathSeparators("test-resources/hidden-directories/project2")
+	fs := util.CreateTestFileSystem()
+	projects, err := getAllProjectFoldersRecursively(fs, path)
+
+	assert.NilError(t, err)
+
+	// NOT test-resources/hidden-directories/project2/.logs
+	assert.DeepEqual(t, projects, []string{"test-resources/hidden-directories/project2/subproject"})
+}
+
+func TestGetAllProjectsFoldersRecursivelyPassesOnProjects(t *testing.T) {
+	path := util.ReplacePathSeparators("test-resources/hidden-directories")
+	fs := util.CreateTestFileSystem()
+	projects, err := getAllProjectFoldersRecursively(fs, path)
+
+	assert.NilError(t, err)
+
+	// NOT test-resources/hidden-directories/.logs
+	// NOT test-resources/hidden-directories/project2/.logs
+	assert.DeepEqual(t, projects, []string{
+		"test-resources/hidden-directories/project1",
+		"test-resources/hidden-directories/project2/subproject",
+	}, cmpopts.SortSlices(func(a, b string) bool { return strings.Compare(a, b) < 0 }))
 }
