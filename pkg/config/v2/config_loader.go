@@ -385,13 +385,7 @@ func parseSkip(context *ConfigLoaderContext, environment manifest.EnvironmentDef
 }
 
 func getReferenceSlice(references map[string]coordinate.Coordinate) []coordinate.Coordinate {
-	result := make([]coordinate.Coordinate, 0, len(references))
-
-	for _, ref := range references {
-		result = append(result, ref)
-	}
-
-	return result
+	return maps.Values(references)
 }
 
 type References map[string]coordinate.Coordinate

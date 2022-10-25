@@ -17,6 +17,7 @@
 package api
 
 import (
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
 	"strings"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
@@ -306,13 +307,7 @@ func getApiMap(fromApiInputs map[string]apiInput) ApiMap {
 }
 
 func GetApiNames(apis map[string]Api) []string {
-	result := make([]string, 0, len(apis))
-
-	for api := range apis {
-		result = append(result, api)
-	}
-
-	return result
+	return maps.Keys(apis)
 }
 
 func newApi(id string, input apiInput) Api {

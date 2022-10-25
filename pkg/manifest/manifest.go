@@ -17,6 +17,7 @@ package manifest
 import (
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
 	"os"
 	"strings"
 
@@ -128,13 +129,7 @@ type Manifest struct {
 }
 
 func (m *Manifest) GetEnvironmentsAsSlice() []EnvironmentDefinition {
-	result := make([]EnvironmentDefinition, 0, len(m.Environments))
-
-	for _, env := range m.Environments {
-		result = append(result, env)
-	}
-
-	return result
+	return maps.Values(m.Environments)
 }
 
 // FilterEnvironmentsByNames filters the environments by name and returns all environments that match the given names.
