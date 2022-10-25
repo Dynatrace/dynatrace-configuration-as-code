@@ -189,7 +189,7 @@ func getAllProjectFoldersRecursively(fs afero.Fs, path string) ([]string, error)
 		if info == nil {
 			return fmt.Errorf("Project path does not exist: %s. (This needs to be a relative path from the current directory)", path)
 		}
-		if info.IsDir() && !strings.HasPrefix(path, ".") && !api.ContainsApiName(path) {
+		if info.IsDir() && !isIgnoredPath(path) && !api.ContainsApiName(path) {
 			allProjectsFolders = append(allProjectsFolders, path)
 			err := subprojectsMixedWithApi(fs, path)
 			return err
@@ -214,16 +214,28 @@ func subprojectsMixedWithApi(fs afero.Fs, path string) error {
 		return err
 	}
 	for _, d := range dirs {
+		if isIgnoredPath(d.Name()) {
+			continue
+		}
+
 		if api.IsApi(d.Name()) {
 			apiFound = true
 		} else if d.IsDir() {
 			subprojectFound = true
 		}
+
 		if apiFound && subprojectFound {
 			return fmt.Errorf("found folder with projects and configurations in %s", path)
 		}
 	}
 	return nil
+}
+
+// isIgnoredPath checks if the path starts with a dot, or if the current evaluated element starts with a dot
+func isIgnoredPath(path string) bool {
+	baseName := filepath.Base(path)
+
+	return strings.HasPrefix(path, ".") || strings.HasPrefix(baseName, ".")
 }
 
 // Searches for project in projects array and returns true if
