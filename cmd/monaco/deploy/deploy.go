@@ -17,6 +17,7 @@ package deploy
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/slices"
 	"path/filepath"
 	"strings"
 
@@ -384,13 +385,7 @@ func toProjectMap(projects []project.Project) map[string]project.Project {
 }
 
 func containsName(names []string, name string) bool {
-	for _, n := range names {
-		if n == name {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(names, name)
 }
 
 func toEnvironmentMap(environments []manifest.EnvironmentDefinition) map[string]manifest.EnvironmentDefinition {
