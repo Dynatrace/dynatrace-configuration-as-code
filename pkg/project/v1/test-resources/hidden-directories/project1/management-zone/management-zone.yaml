@@ -1,0 +1,5 @@
+config:
+  - management-zone: tag-based-mz.json
+
+management-zone:
+  - name: "Management Zone"

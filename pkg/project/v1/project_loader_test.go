@@ -203,14 +203,14 @@ func TestGetAllProjectFoldersRecursivelyPassesOnSeparatedFolders(t *testing.T) {
 func TestGetAllProjectsFoldersRecursivelyPassesOnHiddenFolders(t *testing.T) {
 	path := util.ReplacePathSeparators("test-resources/hidden-directories/project1")
 	fs := util.CreateTestFileSystem()
-	_, err := getAllProjectFoldersRecursively(fs, path)
+	_, err := getAllProjectFoldersRecursively(fs, api.NewV1Apis(), path)
 	assert.NilError(t, err)
 }
 
 func TestGetAllProjectsFoldersRecursivelyPassesOnProjectsWithinHiddenFolders(t *testing.T) {
 	path := util.ReplacePathSeparators("test-resources/hidden-directories/project2")
 	fs := util.CreateTestFileSystem()
-	projects, err := getAllProjectFoldersRecursively(fs, path)
+	projects, err := getAllProjectFoldersRecursively(fs, api.NewV1Apis(), path)
 
 	assert.NilError(t, err)
 
@@ -221,7 +221,7 @@ func TestGetAllProjectsFoldersRecursivelyPassesOnProjectsWithinHiddenFolders(t *
 func TestGetAllProjectsFoldersRecursivelyPassesOnProjects(t *testing.T) {
 	path := util.ReplacePathSeparators("test-resources/hidden-directories")
 	fs := util.CreateTestFileSystem()
-	projects, err := getAllProjectFoldersRecursively(fs, path)
+	projects, err := getAllProjectFoldersRecursively(fs, api.NewV1Apis(), path)
 
 	assert.NilError(t, err)
 
