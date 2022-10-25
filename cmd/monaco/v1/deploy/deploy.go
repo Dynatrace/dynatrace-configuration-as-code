@@ -190,7 +190,7 @@ func loadConfigs(fs afero.Fs, apis map[string]api.Api, environmentsFile string,
 	}, environments, projects)
 }
 
-func deleteConfigs(fs afero.Fs, apis map[string]api.Api, environments map[string]manifest.EnvironmentDefinition,
+func deleteConfigs(fs afero.Fs, apis api.ApiMap, environments map[string]manifest.EnvironmentDefinition,
 	workingDir string, dryRun bool) []error {
 	deleteFile := "delete.yaml"
 
@@ -205,7 +205,7 @@ func deleteConfigs(fs afero.Fs, apis map[string]api.Api, environments map[string
 		return nil
 	}
 
-	apiNames := getApiNames(apis)
+	apiNames := api.GetApiNames(apis)
 
 	entriesToDelete, errors := configDelete.LoadEntriesToDelete(fs, apiNames, workingDir, deleteFile)
 
@@ -248,14 +248,4 @@ func logDeleteInfo(entriesToDelete map[string][]configDelete.DeletePointer) {
 			log.Info("\t%s", entry.Name)
 		}
 	}
-}
-
-func getApiNames(apis map[string]api.Api) []string {
-	result := make([]string, 0, len(apis))
-
-	for a := range apis {
-		result = append(result, a)
-	}
-
-	return result
 }

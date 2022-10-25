@@ -59,7 +59,7 @@ func Delete(fs afero.Fs, deploymentManifestPath string, deletePath string, envir
 		return errors.New("error while loading manifest")
 	}
 
-	entriesToDelete, errs := configDelete.LoadEntriesToDelete(fs, getApiNames(apis), deleteFileWorkingDir, deleteFile)
+	entriesToDelete, errs := configDelete.LoadEntriesToDelete(fs, api.GetApiNames(apis), deleteFileWorkingDir, deleteFile)
 	if errs != nil {
 		return fmt.Errorf("encountered errors while parsing delete.yaml: %s", errs)
 	}
@@ -124,14 +124,4 @@ func createClient(environment manifest.EnvironmentDefinition, dryRun bool) (rest
 	}
 
 	return rest.NewDynatraceClient(url, token)
-}
-
-func getApiNames(apis map[string]api.Api) []string {
-	result := make([]string, 0, len(apis))
-
-	for api := range apis {
-		result = append(result, api)
-	}
-
-	return result
 }
