@@ -38,7 +38,7 @@ dark:
 
 func TestUnmarshalYaml(t *testing.T) {
 
-	e, result := UnmarshalYaml(testYaml, "test-yaml")
+	result, e := UnmarshalYaml(testYaml, "test-yaml")
 	assert.NilError(t, e)
 
 	assert.Check(t, len(result) == 2)
@@ -74,7 +74,7 @@ someExtension:
 `
 
 func TestUnmarshalYamlNormalizesPathSeparatorsIfValueIsReferencingVariableInAnotherYaml(t *testing.T) {
-	e, result := UnmarshalYaml(yamlTestPathSeparators, "test-yaml-path-separators")
+	result, e := UnmarshalYaml(yamlTestPathSeparators, "test-yaml-path-separators")
 	assert.NilError(t, e)
 
 	config := result["config"]
@@ -94,7 +94,7 @@ func TestUnmarshalYamlNormalizesPathSeparatorsIfValueIsReferencingVariableInAnot
 }
 
 func TestUnmarshalYamlDoesNotNormalizePathSeparatorsIfValueIsNotReferencingVariableInAnotherYaml(t *testing.T) {
-	e, result := UnmarshalYaml(yamlTestPathSeparators, "test-yaml-path-separators")
+	result, e := UnmarshalYaml(yamlTestPathSeparators, "test-yaml-path-separators")
 	assert.NilError(t, e)
 
 	config := result["config"]
@@ -110,7 +110,7 @@ func TestUnmarshalYamlDoesNotNormalizePathSeparatorsIfValueIsNotReferencingVaria
 }
 
 func TestUnmarshalYamlDoesNotReplaceSlashesAndBackslashesInJsonReferenceInSectionOtherThanConfigSection(t *testing.T) {
-	e, result := UnmarshalYaml(yamlTestPathSeparators, "test-yaml-path-separators")
+	result, e := UnmarshalYaml(yamlTestPathSeparators, "test-yaml-path-separators")
 	assert.NilError(t, e)
 
 	someExtension := result["someExtension"]
@@ -128,7 +128,7 @@ func TestReplaceEnvVarWhenVarIsPresent(t *testing.T) {
 
 	t.Setenv("TEST_ENV_VAR", "I'm the king of the World!")
 
-	e, result := UnmarshalYaml(yamlTestEnvVar, "test-yaml-test-env-var")
+	result, e := UnmarshalYaml(yamlTestEnvVar, "test-yaml-test-env-var")
 	assert.NilError(t, e)
 
 	testMap := result["envVars"]
@@ -138,7 +138,7 @@ func TestReplaceEnvVarWhenVarIsPresent(t *testing.T) {
 
 func TestReplaceEnvVarWhenVarIsNotPresent(t *testing.T) {
 
-	err, _ := UnmarshalYaml(yamlTestEnvVar, "test-yaml-test-env-var")
+	_, err := UnmarshalYaml(yamlTestEnvVar, "test-yaml-test-env-var")
 	assert.ErrorContains(t, err, "map has no entry for key \"TEST_ENV_VAR\"")
 }
 
@@ -146,7 +146,7 @@ func TestUnmarshalYamlWithoutTemplatingDoesNotReplaceVariables(t *testing.T) {
 
 	t.Setenv("TEST_ENV_VAR", "I'm the king of the World!")
 
-	e, result := UnmarshalYamlWithoutTemplating(yamlTestEnvVar, "test-yaml-test-env-var")
+	result, e := UnmarshalYamlWithoutTemplating(yamlTestEnvVar, "test-yaml-test-env-var")
 	assert.NilError(t, e)
 
 	testMap := result["envVars"]
@@ -155,7 +155,7 @@ func TestUnmarshalYamlWithoutTemplatingDoesNotReplaceVariables(t *testing.T) {
 }
 
 func TestUnmarshalYamlWithoutTemplatingDoesNotFailIfVariablesAreMissing(t *testing.T) {
-	e, _ := UnmarshalYamlWithoutTemplating(yamlTestEnvVar, "test-yaml-test-env-var")
+	_, e := UnmarshalYamlWithoutTemplating(yamlTestEnvVar, "test-yaml-test-env-var")
 	assert.NilError(t, e)
 }
 
@@ -169,7 +169,7 @@ func TestUnmarshalConvertYamlHasParsingIssuesOnLevel1(t *testing.T) {
 	yaml.Unmarshal([]byte(testYamlParsingIssueOnLevel1), &m)
 
 	// When
-	e, _ := convert(m)
+	_, e := convert(m)
 
 	// Then
 	assert.ErrorContains(t, e, "cannot convert YAML on level 1: value of key 'light' has unexpected type")
@@ -187,7 +187,7 @@ func TestUnmarshalConvertYamlHasParsingIssuesOnLevel2(t *testing.T) {
 	yaml.Unmarshal([]byte(testYamlParsingIssueOnLevel2), &m)
 
 	// When
-	e, _ := convert(m)
+	_, e := convert(m)
 
 	// Then
 	assert.ErrorContains(t, e, "cannot convert YAML on level 2: test - test2")
@@ -204,7 +204,7 @@ func TestUnmarshalConvertYamlHasParsingIssuesOnLevel3(t *testing.T) {
 	yaml.Unmarshal([]byte(testYamlParsingIssueOnLevel3), &m)
 
 	// When
-	e, _ := convert(m)
+	_, e := convert(m)
 
 	// Then
 	assert.ErrorContains(t, e, "cannot convert YAML on level 3: invalid key type '%!s(int=123)'")
@@ -222,7 +222,7 @@ func TestUnmarshalConvertYamlHasParsingIssuesOnLevel4(t *testing.T) {
 	yaml.Unmarshal([]byte(testYamlParsingIssueOnLevel4), &m)
 
 	// When
-	e, _ := convert(m)
+	_, e := convert(m)
 
 	// Then
 	assert.ErrorContains(t, e, "cannot convert YAML on level 4: value of key 'Han' has unexpected type")

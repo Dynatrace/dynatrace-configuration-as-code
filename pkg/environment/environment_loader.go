@@ -67,7 +67,7 @@ func LoadEnvironmentsWithoutTemplating(environmentsFile string, fs afero.Fs) (en
 	dat, err := afero.ReadFile(fs, environmentsFile)
 	util.FailOnError(err, "Error while reading file")
 
-	err, environmentMaps := util.UnmarshalYamlWithoutTemplating(string(dat), environmentsFile)
+	environmentMaps, err := util.UnmarshalYamlWithoutTemplating(string(dat), environmentsFile)
 	util.FailOnError(err, "Error while converting file")
 
 	environments, envErrs := NewEnvironments(environmentMaps)
@@ -91,7 +91,7 @@ func readEnvironments(file string, fs afero.Fs) (map[string]Environment, []error
 	dat, err := afero.ReadFile(fs, file)
 	util.FailOnError(err, "Error while reading file")
 
-	err, environmentMaps := util.UnmarshalYaml(string(dat), file)
+	environmentMaps, err := util.UnmarshalYaml(string(dat), file)
 	util.FailOnError(err, "Error while converting file")
 
 	return NewEnvironments(environmentMaps)

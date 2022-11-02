@@ -33,7 +33,7 @@ func TestConfigurationTemplatingFromFilesProducesValidJson(t *testing.T) {
 	bytes, err := afero.ReadFile(fs, test_yaml)
 	assert.NilError(t, err, "Expected config yaml (%s) to be read without error", test_yaml)
 
-	err, properties := UnmarshalYaml(string(bytes), test_yaml)
+	properties, err := UnmarshalYaml(string(bytes), test_yaml)
 	assert.NilError(t, err, "Expected config yaml (%s) to be parsed without error", test_yaml)
 
 	template, err := NewTemplate(fs, test_json)

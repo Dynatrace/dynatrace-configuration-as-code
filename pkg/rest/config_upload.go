@@ -164,7 +164,7 @@ func updateDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		body = []byte(tmp)
 	}
 
-	// Updating a Mobile Application does not allow changing the appliactionType as such this property required on Create, must be stripped on Update
+	// Updating a Mobile Application does not allow changing the applicationType as such this property required on Create, must be stripped on Update
 	if isMobileApp(theApi) {
 		body = stripCreateOnlyPropertiesFromAppMobile(body)
 	}
@@ -451,7 +451,7 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlStrin
 	var existingValues []api.Value
 	for {
 
-		err, values, objmap := unmarshalJson(theApi, resp)
+		values, objmap, err := unmarshalJson(theApi, resp)
 		if err != nil {
 			return values, err
 		}
@@ -533,7 +533,7 @@ func addNextPageQueryParams(theApi api.Api, url *url.URL, nextPage string) *url.
 	return url
 }
 
-func unmarshalJson(theApi api.Api, resp Response) (error, []api.Value, map[string]interface{}) {
+func unmarshalJson(theApi api.Api, resp Response) ([]api.Value, map[string]interface{}, error) {
 
 	var values []api.Value
 	var objmap map[string]interface{}
@@ -544,14 +544,14 @@ func unmarshalJson(theApi api.Api, resp Response) (error, []api.Value, map[strin
 		var jsonResp []api.Value
 		err := json.Unmarshal(resp.Body, &jsonResp)
 		if util.CheckError(err, "Cannot unmarshal API response for existing aws-credentials") {
-			return err, values, objmap
+			return values, objmap, err
 		}
 		values = jsonResp
 
 	} else {
 
 		if err := json.Unmarshal(resp.Body, &objmap); err != nil {
-			return err, nil, nil
+			return nil, nil, err
 		}
 
 		if theApi.GetId() == "synthetic-location" {
@@ -559,7 +559,7 @@ func unmarshalJson(theApi api.Api, resp Response) (error, []api.Value, map[strin
 			var jsonResp api.SyntheticLocationResponse
 			err := json.Unmarshal(resp.Body, &jsonResp)
 			if util.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
-				return err, nil, nil
+				return nil, nil, err
 			}
 			values = translateSyntheticValues(jsonResp.Locations)
 
@@ -568,7 +568,7 @@ func unmarshalJson(theApi api.Api, resp Response) (error, []api.Value, map[strin
 			var jsonResp api.SyntheticMonitorsResponse
 			err := json.Unmarshal(resp.Body, &jsonResp)
 			if util.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
-				return err, nil, nil
+				return nil, nil, err
 			}
 			values = translateSyntheticValues(jsonResp.Monitors)
 
@@ -577,7 +577,7 @@ func unmarshalJson(theApi api.Api, resp Response) (error, []api.Value, map[strin
 			if available, array := isResultArrayAvailable(objmap, theApi); available {
 				jsonResp, err := translateGenericValues(array, theApi.GetId())
 				if err != nil {
-					return err, nil, nil
+					return nil, nil, err
 				}
 				values = jsonResp
 			}
@@ -587,13 +587,13 @@ func unmarshalJson(theApi api.Api, resp Response) (error, []api.Value, map[strin
 			var jsonResponse api.ValuesResponse
 			err := json.Unmarshal(resp.Body, &jsonResponse)
 			if util.CheckError(err, "Cannot unmarshal API response for existing objects") {
-				return err, nil, nil
+				return nil, nil, err
 			}
 			values = jsonResponse.Values
 		}
 	}
 
-	return nil, values, objmap
+	return values, objmap, nil
 }
 
 func isResultArrayAvailable(jsonResponse map[string]interface{}, theApi api.Api) (resultArrayAvailable bool, results []interface{}) {

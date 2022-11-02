@@ -86,7 +86,7 @@ var testTrailingSlashEnvironment = NewEnvironment("trailing-slash-environment", 
 
 func TestShouldParseYaml(t *testing.T) {
 
-	e, result := util.UnmarshalYaml(testYamlEnvironment, "test-yaml")
+	result, e := util.UnmarshalYaml(testYamlEnvironment, "test-yaml")
 	assert.NilError(t, e)
 
 	environments, errorList := NewEnvironments(result)
@@ -108,7 +108,7 @@ func TestShouldParseYaml(t *testing.T) {
 }
 
 func TestParsingEnvironmentsWithMultipleGroups(t *testing.T) {
-	e, result := util.UnmarshalYaml(testYamlEnvironmentWithGroups, "test-yaml")
+	result, e := util.UnmarshalYaml(testYamlEnvironmentWithGroups, "test-yaml")
 	assert.NilError(t, e)
 
 	environments, errorList := NewEnvironments(result)
@@ -122,7 +122,7 @@ func TestParsingEnvironmentsWithMultipleGroups(t *testing.T) {
 }
 
 func TestParsingEnvironmentsWithSameIds(t *testing.T) {
-	e, result := util.UnmarshalYaml(testYamlEnvironmentSameIds, "test-yaml")
+	result, e := util.UnmarshalYaml(testYamlEnvironmentSameIds, "test-yaml")
 	assert.NilError(t, e)
 
 	environments, errorList := NewEnvironments(result)
@@ -165,7 +165,7 @@ func TestUrlAvailableWithTemplating(t *testing.T) {
 
 func TestTokenNotAvailableOnGetterCallWithTemplating(t *testing.T) {
 
-	e, _ := util.UnmarshalYaml(testYamlEnvironmentWithNewPropertyFormat, "test-yaml")
+	_, e := util.UnmarshalYaml(testYamlEnvironmentWithNewPropertyFormat, "test-yaml")
 	assert.ErrorContains(t, e, "map has no entry for key \"URL\"")
 }
 
@@ -180,7 +180,7 @@ func TestTrailingSlashTrimmedFromEnvironmentURL(t *testing.T) {
 
 func setupEnvironment(t *testing.T, environmentYamlContent string, environmentOfInterest string) (error, Environment) {
 
-	e, result := util.UnmarshalYaml(environmentYamlContent, "test-yaml")
+	result, e := util.UnmarshalYaml(environmentYamlContent, "test-yaml")
 	assert.NilError(t, e)
 
 	environments, errorList := NewEnvironments(result)

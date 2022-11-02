@@ -42,7 +42,7 @@ type ProjectImpl struct {
 	Id                string
 	Configs           []config.Config
 	projectRootFolder string
-	getRelFilepath    func(basepath string, targpath string) (string, error)
+	getRelFilepath    func(basePath string, targetPath string) (string, error)
 }
 
 type projectBuilder struct {
@@ -135,7 +135,7 @@ func (p *projectBuilder) processYaml(filename string) error {
 		return err
 	}
 
-	err, properties := util.UnmarshalYaml(string(bytes), filename)
+	properties, err := util.UnmarshalYaml(string(bytes), filename)
 	if util.CheckError(err, "Error while converting file "+filename) {
 		return err
 	}
@@ -202,7 +202,7 @@ func (p *projectBuilder) getExtendedInformationFromLocation(location string) (er
 	return p.getConfigTypeFromLocation(location)
 }
 
-// Strips the "XXX.yaml" from the path"
+// Strips the "XXX.yaml" from the path
 // example: input is "project/dashboards/config.yaml"
 //
 //	output should be "project/dashboards"
@@ -253,9 +253,9 @@ func (p *ProjectImpl) GetConfigs() []config.Config {
 // GetConfig searches for a config with the given id in the current project
 // If no such config is found, an error is returned
 func (p *ProjectImpl) GetConfig(id string) (config config.Config, err error) {
-	for _, config := range p.GetConfigs() {
-		if id == config.GetId() {
-			return config, err
+	for _, conf := range p.GetConfigs() {
+		if id == conf.GetId() {
+			return conf, err
 		}
 	}
 

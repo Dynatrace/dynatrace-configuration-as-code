@@ -35,16 +35,16 @@ import (
 //
 // some-name-2:
 //   - list-key-1: "list-entry-1"
-func UnmarshalYaml(text string, fileName string) (error, map[string]map[string]string) {
+func UnmarshalYaml(text string, fileName string) (map[string]map[string]string, error) {
 
 	template, err := NewTemplateFromString(fileName, text)
 	if err != nil {
-		return err, make(map[string]map[string]string)
+		return make(map[string]map[string]string), err
 	}
 
 	text, err = template.ExecuteTemplate(make(map[string]string))
 	if err != nil {
-		return err, make(map[string]map[string]string)
+		return make(map[string]map[string]string), err
 	}
 
 	m := make(map[string]interface{})
@@ -52,24 +52,24 @@ func UnmarshalYaml(text string, fileName string) (error, map[string]map[string]s
 	err = yaml.Unmarshal([]byte(text), &m)
 	FailOnError(err, "Failed to unmarshal yaml\n"+text+"\nerror:")
 
-	err, typed := convert(m)
+	typed, err := convert(m)
 	FailOnError(err, "YAML file "+fileName+" could not be parsed")
 
-	return nil, typed
+	return typed, nil
 }
 
 // UnmarshalYamlWithoutTemplating takes the contents of a yaml file and converts it to a map[string]map[string]string.
 // If references should be replaced (which you generally want) use UnmarshalYaml instead.
-func UnmarshalYamlWithoutTemplating(text string, fileName string) (error, map[string]map[string]string) {
+func UnmarshalYamlWithoutTemplating(text string, fileName string) (map[string]map[string]string, error) {
 	m := make(map[string]interface{})
 
 	err := yaml.Unmarshal([]byte(text), &m)
 	FailOnError(err, "Failed to unmarshal yaml\n"+text+"\nerror:")
 
-	err, typed := convert(m)
+	typed, err := convert(m)
 	FailOnError(err, "YAML file "+fileName+" could not be parsed")
 
-	return nil, typed
+	return typed, nil
 }
 
 func ReplacePathSeparators(path string) (newPath string) {
@@ -90,7 +90,7 @@ func putOrGet(m map[string]map[string]string, key string) map[string]string {
 	return m2
 }
 
-func convert(original map[string]interface{}) (err error, typed map[string]map[string]string) {
+func convert(original map[string]interface{}) (typed map[string]map[string]string, err error) {
 
 	m2 := make(map[string]map[string]string)
 
@@ -112,21 +112,21 @@ func convert(original map[string]interface{}) (err error, typed map[string]map[s
 									m2Inner[k3] = v3
 								}
 							default:
-								return fmt.Errorf("cannot convert YAML on level 4: value of key '%s' has unexpected type", k3), m2
+								return m2, fmt.Errorf("cannot convert YAML on level 4: value of key '%s' has unexpected type", k3)
 							}
 						default:
-							return fmt.Errorf("cannot convert YAML on level 3: invalid key type '%s'", k3), m2
+							return m2, fmt.Errorf("cannot convert YAML on level 3: invalid key type '%s'", k3)
 						}
 					}
 				default:
-					return fmt.Errorf("cannot convert YAML on level 2: %s", v3), m2
+					return m2, fmt.Errorf("cannot convert YAML on level 2: %s", v3)
 				}
 			}
 		default:
-			return fmt.Errorf("cannot convert YAML on level 1: value of key '%s' has unexpected type", k1), m2
+			return m2, fmt.Errorf("cannot convert YAML on level 1: value of key '%s' has unexpected type", k1)
 		}
 	}
-	return nil, m2
+	return m2, nil
 }
 
 func appearsToReferenceVariableInAnotherYaml(s string) bool {
