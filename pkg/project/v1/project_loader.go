@@ -94,7 +94,7 @@ func loadAllProjects(fs afero.Fs, apis map[string]api.Api, projectsFolder string
 	for _, fullQualifiedProjectFolderName := range availableProjectFolders {
 		log.Debug("  project - %s", fullQualifiedProjectFolderName)
 		projectFolderName := extractFolderNameFromFullPath(fullQualifiedProjectFolderName)
-		project, err := NewProject(fs, fullQualifiedProjectFolderName, projectFolderName, apis, projectsFolder, unmarshalYaml)
+		project, err := newProject(fs, fullQualifiedProjectFolderName, projectFolderName, apis, projectsFolder, unmarshalYaml)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -132,7 +132,7 @@ func createProjectsListFromFolderList(fs afero.Fs, path, specificProjectToDeploy
 				return nil, fmt.Errorf("project %s does not exist (%w)", specificProjectToDeploy, err)
 			}
 
-			newProject, err := NewProject(fs, fullQualifiedProjectFolderName, projectFolderName, apis, path, unmarshalYaml)
+			newProject, err := newProject(fs, fullQualifiedProjectFolderName, projectFolderName, apis, path, unmarshalYaml)
 			if err != nil {
 				return nil, err
 			}
@@ -146,7 +146,7 @@ func createProjectsListFromFolderList(fs afero.Fs, path, specificProjectToDeploy
 			for _, fullQualifiedSubProjectFolderName := range subProjectFolders {
 
 				subProjectFolderName := extractFolderNameFromFullPath(fullQualifiedSubProjectFolderName)
-				newProject, err := NewProject(fs, fullQualifiedSubProjectFolderName, subProjectFolderName, apis, path, unmarshalYaml)
+				newProject, err := newProject(fs, fullQualifiedSubProjectFolderName, subProjectFolderName, apis, path, unmarshalYaml)
 				if err != nil {
 					return nil, err
 				}

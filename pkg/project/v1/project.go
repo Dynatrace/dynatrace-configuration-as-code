@@ -54,8 +54,8 @@ type projectBuilder struct {
 	fs                afero.Fs
 }
 
-// NewProject loads a new project from folder. Returns either project or a reading/sorting error respectively.
-func NewProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolderName string, apis map[string]api.Api, projectRootFolder string, unmarshalYaml util.UnmarshalYamlFunc) (Project, error) {
+// newProject loads a new project from folder. Returns either project or a reading/sorting error respectively.
+func newProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolderName string, apis map[string]api.Api, projectRootFolder string, unmarshalYaml util.UnmarshalYamlFunc) (Project, error) {
 
 	var configs = make([]config.Config, 0)
 
