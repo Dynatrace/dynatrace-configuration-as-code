@@ -354,6 +354,69 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 	}, compareOptions...)
 }
 
+func TestDownloadIntegrationSingletonConfig(t *testing.T) {
+	// GIVEN apis, server responses, file system
+	const projectName = "integration-test-singleton"
+	const testBasePath = "test-resources/" + projectName
+
+	// APIs
+	fakeApi := api.NewSingleConfigurationApi("fake-id", "/fake-id", "", false)
+	apiMap := api.ApiMap{
+		fakeApi.GetId(): fakeApi,
+	}
+
+	// Responses
+	responses := map[string]string{
+		"/fake-id": "fake-api/singleton.json",
+	}
+
+	// Server
+	server := rest.NewIntegrationTestServer(t, testBasePath, responses)
+
+	fs := afero.NewMemMapFs()
+
+	// WHEN we download everything
+	err := doDownload(fs, server.URL, projectName, "token", "TOKEN_ENV_VAR", "out", apiMap, func(environmentUrl, token string) (rest.DynatraceClient, error) {
+		return rest.NewDynatraceClientForTesting(environmentUrl, token, server.Client())
+	})
+
+	assert.NilError(t, err)
+
+	// THEN we can load the project again and verify its content
+	projects, errs := loadDownloadedProjects(t, fs, apiMap)
+	if len(errs) != 0 {
+		for _, err := range errs {
+			t.Errorf("%v", err)
+		}
+		return
+	}
+
+	assert.Equal(t, len(projects), 1)
+	p := projects[0]
+	assert.Equal(t, p.Id, projectName)
+	assert.Equal(t, len(p.Configs), 1)
+
+	configs, found := p.Configs[projectName]
+	assert.Equal(t, found, true)
+	assert.Equal(t, len(configs), 1)
+
+	assert.DeepEqual(t, configs, projectLoader.ConfigsPerApis{
+		fakeApi.GetId(): []config.Config{
+			{
+				Coordinate: coordinate.Coordinate{Project: projectName, Api: fakeApi.GetId(), Config: "fake-id"},
+				Skip:       false,
+				Parameters: map[string]parameter.Parameter{
+					"name": &value.ValueParameter{Value: "fake-id"},
+				},
+				Group:       "default",
+				Environment: projectName,
+				References:  []coordinate.Coordinate{},
+				Template:    contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}"}`},
+			},
+		},
+	}, compareOptions...)
+}
+
 func loadDownloadedProjects(t *testing.T, fs afero.Fs, apiMap api.ApiMap) ([]projectLoader.Project, []error) {
 	man, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
 		Fs:           fs,
