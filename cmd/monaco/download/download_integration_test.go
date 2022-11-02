@@ -106,23 +106,11 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 	assert.NilError(t, err)
 
 	// THEN we can load the project again and verify its content
-	man, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
-		Fs:           fs,
-		ManifestPath: "out/manifest.yaml",
-	})
-	if errs != nil {
-		t.Errorf("Errors occured: %v", errs)
-		return
-	}
-
-	projects, errs := projectLoader.LoadProjects(fs, projectLoader.ProjectLoaderContext{
-		Apis:            maps.Keys(apiMap),
-		WorkingDir:      "out",
-		Manifest:        man,
-		ParametersSerde: config.DefaultParameterParsers,
-	})
-	if errs != nil {
-		t.Errorf("Errors occured: %v", errs)
+	projects, errs := loadDownloadedProjects(t, fs, apiMap)
+	if len(errs) != 0 {
+		for _, err := range errs {
+			t.Errorf("%v", err)
+		}
 		return
 	}
 
@@ -183,23 +171,11 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 	assert.NilError(t, err)
 
 	// THEN we can load the project again and verify its content
-	man, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
-		Fs:           fs,
-		ManifestPath: "out/manifest.yaml",
-	})
-	if errs != nil {
-		t.Errorf("Errors occured: %v", errs)
-		return
-	}
-
-	projects, errs := projectLoader.LoadProjects(fs, projectLoader.ProjectLoaderContext{
-		Apis:            maps.Keys(apiMap),
-		WorkingDir:      "out",
-		Manifest:        man,
-		ParametersSerde: config.DefaultParameterParsers,
-	})
-	if errs != nil {
-		t.Errorf("Errors occured: %v", errs)
+	projects, errs := loadDownloadedProjects(t, fs, apiMap)
+	if len(errs) != 0 {
+		for _, err := range errs {
+			t.Errorf("%v", err)
+		}
 		return
 	}
 
@@ -282,24 +258,11 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 
 	assert.NilError(t, err)
 
-	// THEN we can load the project again and verify its content
-	man, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
-		Fs:           fs,
-		ManifestPath: "out/manifest.yaml",
-	})
-	if errs != nil {
-		t.Errorf("Errors occured: %v", errs)
-		return
-	}
-
-	projects, errs := projectLoader.LoadProjects(fs, projectLoader.ProjectLoaderContext{
-		Apis:            maps.Keys(apiMap),
-		WorkingDir:      "out",
-		Manifest:        man,
-		ParametersSerde: config.DefaultParameterParsers,
-	})
-	if errs != nil {
-		t.Errorf("Errors occured: %v", errs)
+	projects, errs := loadDownloadedProjects(t, fs, apiMap)
+	if len(errs) != 0 {
+		for _, err := range errs {
+			t.Errorf("%v", err)
+		}
 		return
 	}
 
@@ -389,6 +352,29 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 			},
 		},
 	}, compareOptions...)
+}
+
+func loadDownloadedProjects(t *testing.T, fs afero.Fs, apiMap api.ApiMap) ([]projectLoader.Project, []error) {
+	man, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
+		Fs:           fs,
+		ManifestPath: "out/manifest.yaml",
+	})
+	if errs != nil {
+		t.Errorf("Errors occured loading manifest")
+		return nil, errs
+	}
+
+	projects, errs := projectLoader.LoadProjects(fs, projectLoader.ProjectLoaderContext{
+		Apis:            maps.Keys(apiMap),
+		WorkingDir:      "out",
+		Manifest:        man,
+		ParametersSerde: config.DefaultParameterParsers,
+	})
+	if errs != nil {
+		t.Errorf("Errors occured loading projects")
+		return nil, errs
+	}
+	return projects, nil
 }
 
 func jsonEqual(jsonA, jsonB string) bool {
