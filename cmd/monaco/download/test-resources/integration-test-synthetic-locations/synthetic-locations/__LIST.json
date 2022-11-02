@@ -1,0 +1,19 @@
+{
+    "locations": [
+        {
+            "name": "Public location - should not be stored",
+            "type": "PUBLIC",
+            "entityId": "id-1"
+        },
+        {
+            "name": "Private location - should be stored",
+            "type": "PRIVATE",
+            "entityId": "id-2"
+        },
+        {
+            "name": "Cluster location - should not be stored",
+            "type": "CLUSTER",
+            "entityId": "id-3"
+        }
+    ]
+}

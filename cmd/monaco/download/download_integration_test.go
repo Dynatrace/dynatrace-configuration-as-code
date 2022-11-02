@@ -417,6 +417,72 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 	}, compareOptions...)
 }
 
+func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
+	// GIVEN apis, server responses, file system
+	const projectName = "integration-test-synthetic-locations"
+	const testBasePath = "test-resources/" + projectName
+
+	// APIs
+	syntheticLocationApi := api.NewStandardApi("synthetic-location", "/synthetic-location", false, "", false)
+	apiMap := api.ApiMap{
+		syntheticLocationApi.GetId(): syntheticLocationApi,
+	}
+
+	// Responses
+	responses := map[string]string{
+		"/synthetic-location":      "synthetic-locations/__LIST.json",
+		"/synthetic-location/id-1": "synthetic-locations/id-1.json",
+		"/synthetic-location/id-2": "synthetic-locations/id-2.json",
+		"/synthetic-location/id-3": "synthetic-locations/id-3.json",
+	}
+
+	// Server
+	server := rest.NewIntegrationTestServer(t, testBasePath, responses)
+
+	fs := afero.NewMemMapFs()
+
+	// WHEN we download everything
+	err := doDownload(fs, server.URL, projectName, "token", "TOKEN_ENV_VAR", "out", apiMap, func(environmentUrl, token string) (rest.DynatraceClient, error) {
+		return rest.NewDynatraceClientForTesting(environmentUrl, token, server.Client())
+	})
+
+	assert.NilError(t, err)
+
+	// THEN we can load the project again and verify its content
+	projects, errs := loadDownloadedProjects(t, fs, apiMap)
+	if len(errs) != 0 {
+		for _, err := range errs {
+			t.Errorf("%v", err)
+		}
+		return
+	}
+
+	assert.Equal(t, len(projects), 1)
+	p := projects[0]
+	assert.Equal(t, p.Id, projectName)
+	assert.Equal(t, len(p.Configs), 1)
+
+	configs, found := p.Configs[projectName]
+	assert.Equal(t, found, true)
+	assert.Equal(t, len(configs), 1)
+
+	assert.DeepEqual(t, configs, projectLoader.ConfigsPerApis{
+		syntheticLocationApi.GetId(): []config.Config{
+			{
+				Coordinate: coordinate.Coordinate{Project: projectName, Api: syntheticLocationApi.GetId(), Config: "id-2"},
+				Skip:       false,
+				Parameters: map[string]parameter.Parameter{
+					"name": &value.ValueParameter{Value: "Private location - should be stored"},
+				},
+				Group:       "default",
+				Environment: projectName,
+				References:  []coordinate.Coordinate{},
+				Template:    contentOnlyTemplate{`{"type": "PRIVATE", "name": "{{.name}}"}`},
+			},
+		},
+	}, compareOptions...)
+}
+
 func loadDownloadedProjects(t *testing.T, fs afero.Fs, apiMap api.ApiMap) ([]projectLoader.Project, []error) {
 	man, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
 		Fs:           fs,
