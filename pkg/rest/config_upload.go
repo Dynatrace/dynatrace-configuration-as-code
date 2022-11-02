@@ -651,10 +651,16 @@ func translateGenericValues(inputValues []interface{}, configType string) ([]api
 			continue
 		}
 
-		values = append(values, api.Value{
+		value := api.Value{
 			Id:   input["id"].(string),
 			Name: input["name"].(string),
-		})
+		}
+
+		if v, ok := input["owner"].(string); ok {
+			value.Owner = &v
+		}
+
+		values = append(values, value)
 	}
 	return values, nil
 }

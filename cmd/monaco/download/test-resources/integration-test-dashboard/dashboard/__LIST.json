@@ -1,0 +1,24 @@
+{
+    "dashboards": [
+        {
+            "id": "id-1",
+            "name": "Non-unique dashboard-name",
+            "owner": "Q"
+        },
+        {
+            "id": "id-2",
+            "name": "Non-unique dashboard-name",
+            "owner": "Admiral Jean-Luc Picard"
+        },
+        {
+            "id": "id-3",
+            "name": "Dashboard owned by Dynatrace",
+            "owner": "Dynatrace"
+        },
+        {
+            "id": "id-4",
+            "name": "Dashboard which is a preset",
+            "owner": "Not Dynatrace"
+        }
+    ]
+}

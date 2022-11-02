@@ -1,0 +1,9 @@
+{
+    "id": "id-3",
+    "dashboardMetadata": {
+        "name": "Dashboard which is a preset",
+        "owner": "Not Dynatrace",
+        "preset": true
+    },
+    "tiles": []
+}
