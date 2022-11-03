@@ -1,25 +1,49 @@
 # Monitoring as Code Tool - Release Notes
 
 - Versions:
-  - [1.8.5](#185) 
-  - [1.8.4](#184)
-  - [1.8.3](#183)
-  - [1.8.2](#182)
-  - [1.8.1](#181)
-  - [1.8.0](#180)
-  - [1.7.0](#170)
-  - [1.6.0](#160)
-  - [1.5.3](#153)
-  - [1.5.2](#152)
-  - [1.5.1](#151)
-  - [1.5.0](#150)
-  - [1.4.0](#140)
-  - [1.3.1](#131)
-  - [1.3.0](#130)
-  - [1.2.0](#120)
-  - [1.1.0](#110)
-  - [1.0.1](#101)
-  - [1.0.0](#100)
+    - [1.8.6](#186) 
+    - [1.8.5](#185)
+    - [1.8.4](#184)
+    - [1.8.3](#183)
+    - [1.8.2](#182)
+    - [1.8.1](#181)
+    - [1.8.0](#180)
+    - [1.7.0](#170)
+    - [1.6.0](#160)
+    - [1.5.3](#153)
+    - [1.5.2](#152)
+    - [1.5.1](#151)
+    - [1.5.0](#150)
+    - [1.4.0](#140)
+    - [1.3.1](#131)
+    - [1.3.0](#130)
+    - [1.2.0](#120)
+    - [1.1.0](#110)
+    - [1.0.1](#101)
+    - [1.0.0](#100)
+
+## 1.8.6
+
+Release 1.8.6 fixes an issue of monaco not ignoring hidden sub-folders - like it's own .logs/ - in some cases. 
+
+Up to now, hidden directories were ignored only if they were in the 'top' level of a loaded project. 
+If a hidden directory was inside a sub-folder below that, it was not.
+
+With this fix:
+1) hidden directories can no longer be projects
+2) having hidden directories inside project folders works now
+
+### List of changes
+#### Bug fixes
+* fix: Project loading should ignore hidden directories
+
+#### Misc changes
+* chore(deps): bump github.com/urfave/cli/v2 from 2.20.2 to 2.23.0
+* chore(deps): bump github.com/urfave/cli/v2 from 2.17.1 to 2.20.2
+* chore(deps): bump github.com/urfave/cli/v2 from 2.16.3 to 2.17.1
+* chore(deps): bump golangci/golangci-lint-action from 3.2.0 to 3.3.0
+* chore(deps): bump actions/checkout from 3.0.2 to 3.1.0
+
 
 ## 1.8.5
 
