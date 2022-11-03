@@ -106,7 +106,7 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 	assert.NilError(t, err)
 
 	// THEN we can load the project again and verify its content
-	projects, errs := loadDownloadedProjects(t, fs, apiMap)
+	projects, errs := loadDownloadedProjects(fs, apiMap)
 	if len(errs) != 0 {
 		for _, err := range errs {
 			t.Errorf("%v", err)
@@ -171,7 +171,7 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 	assert.NilError(t, err)
 
 	// THEN we can load the project again and verify its content
-	projects, errs := loadDownloadedProjects(t, fs, apiMap)
+	projects, errs := loadDownloadedProjects(fs, apiMap)
 	if len(errs) != 0 {
 		for _, err := range errs {
 			t.Errorf("%v", err)
@@ -258,7 +258,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 
 	assert.NilError(t, err)
 
-	projects, errs := loadDownloadedProjects(t, fs, apiMap)
+	projects, errs := loadDownloadedProjects(fs, apiMap)
 	if len(errs) != 0 {
 		for _, err := range errs {
 			t.Errorf("%v", err)
@@ -383,7 +383,7 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 	assert.NilError(t, err)
 
 	// THEN we can load the project again and verify its content
-	projects, errs := loadDownloadedProjects(t, fs, apiMap)
+	projects, errs := loadDownloadedProjects(fs, apiMap)
 	if len(errs) != 0 {
 		for _, err := range errs {
 			t.Errorf("%v", err)
@@ -449,7 +449,7 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 	assert.NilError(t, err)
 
 	// THEN we can load the project again and verify its content
-	projects, errs := loadDownloadedProjects(t, fs, apiMap)
+	projects, errs := loadDownloadedProjects(fs, apiMap)
 	if len(errs) != 0 {
 		for _, err := range errs {
 			t.Errorf("%v", err)
@@ -516,7 +516,7 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 	assert.NilError(t, err)
 
 	// THEN we can load the project again and verify its content
-	projects, errs := loadDownloadedProjects(t, fs, apiMap)
+	projects, errs := loadDownloadedProjects(fs, apiMap)
 	if len(errs) != 0 {
 		for _, err := range errs {
 			t.Errorf("%v", err)
@@ -561,27 +561,143 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 	}, compareOptions...)
 }
 
-func loadDownloadedProjects(t *testing.T, fs afero.Fs, apiMap api.ApiMap) ([]projectLoader.Project, []error) {
+func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
+	testcases := []struct {
+		projectName        string
+		shouldProjectExist bool
+		expectedConfigs    []config.Config
+	}{
+		{
+			projectName:        "valid",
+			shouldProjectExist: true,
+			expectedConfigs: []config.Config{
+				{
+					Coordinate: coordinate.Coordinate{Project: "valid", Api: "hosts-auto-update", Config: "hosts-auto-update"},
+					Skip:       false,
+					Parameters: map[string]parameter.Parameter{
+						"name": &value.ValueParameter{Value: "hosts-auto-update"},
+					},
+					Group:       "default",
+					Environment: "valid",
+					References:  []coordinate.Coordinate{},
+					Template:    contentOnlyTemplate{`{"updateWindows":{"windows":[{"id":"3","name":"Daily maintenance window"}]}}`},
+				},
+			},
+		},
+		{
+			projectName:        "updateWindows-empty",
+			shouldProjectExist: true,
+			expectedConfigs: []config.Config{
+				{
+					Coordinate: coordinate.Coordinate{Project: "updateWindows-empty", Api: "hosts-auto-update", Config: "hosts-auto-update"},
+					Skip:       false,
+					Parameters: map[string]parameter.Parameter{
+						"name": &value.ValueParameter{Value: "hosts-auto-update"},
+					},
+					Group:       "default",
+					Environment: "updateWindows-empty",
+					References:  []coordinate.Coordinate{},
+					Template:    contentOnlyTemplate{`{}`},
+				},
+			},
+		},
+		{
+			projectName:        "windows-empty",
+			shouldProjectExist: false,
+			expectedConfigs:    []config.Config{},
+		},
+		{
+			projectName:        "windows-missing",
+			shouldProjectExist: true,
+			expectedConfigs: []config.Config{
+				{
+					Coordinate: coordinate.Coordinate{Project: "windows-missing", Api: "hosts-auto-update", Config: "hosts-auto-update"},
+					Skip:       false,
+					Parameters: map[string]parameter.Parameter{
+						"name": &value.ValueParameter{Value: "hosts-auto-update"},
+					},
+					Group:       "default",
+					Environment: "windows-missing",
+					References:  []coordinate.Coordinate{},
+					Template:    contentOnlyTemplate{`{"updateWindows":{}}`},
+				},
+			},
+		},
+	}
+
+	for _, testcase := range testcases {
+		t.Run(testcase.projectName, func(t *testing.T) {
+			testBasePath := "test-resources/integration-test-auto-update/" + testcase.projectName
+
+			// APIs
+			hostAutoUpdateApi := api.NewSingleConfigurationApi("hosts-auto-update", "/hosts-auto-update", "dashboards", false)
+			apiMap := api.ApiMap{
+				hostAutoUpdateApi.GetId(): hostAutoUpdateApi,
+			}
+
+			// Responses
+			responses := map[string]string{
+				"/hosts-auto-update": "host-auto-update/singleton.json",
+			}
+
+			// Server
+			server := rest.NewIntegrationTestServer(t, testBasePath, responses)
+
+			fs := afero.NewMemMapFs()
+
+			// WHEN we download everything
+			err := doDownload(fs, server.URL, testcase.projectName, "token", "TOKEN_ENV_VAR", "out", apiMap, func(environmentUrl, token string) (rest.DynatraceClient, error) {
+				return rest.NewDynatraceClientForTesting(environmentUrl, token, server.Client())
+			})
+
+			assert.NilError(t, err)
+
+			// THEN we can load the project again and verify its content
+			projects, errs := loadDownloadedProjects(fs, apiMap)
+
+			if !testcase.shouldProjectExist {
+				assert.Equal(t, len(errs) > 0, true, "Project loading should have failed")
+				return
+			}
+
+			if len(errs) != 0 {
+				for _, err := range errs {
+					t.Errorf("%v", err)
+				}
+				return
+			}
+
+			assert.Equal(t, len(projects), 1)
+			p := projects[0]
+			assert.Equal(t, p.Id, testcase.projectName)
+			assert.Equal(t, len(p.Configs), 1)
+
+			configs, found := p.Configs[testcase.projectName]
+			assert.Equal(t, found, true)
+			assert.Equal(t, len(configs), 1)
+
+			assert.DeepEqual(t, configs, projectLoader.ConfigsPerApis{
+				hostAutoUpdateApi.GetId(): testcase.expectedConfigs,
+			}, compareOptions...)
+		})
+	}
+}
+
+func loadDownloadedProjects(fs afero.Fs, apiMap api.ApiMap) ([]projectLoader.Project, []error) {
 	man, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
 		Fs:           fs,
 		ManifestPath: "out/manifest.yaml",
 	})
 	if errs != nil {
-		t.Errorf("Errors occured loading manifest")
 		return nil, errs
 	}
 
-	projects, errs := projectLoader.LoadProjects(fs, projectLoader.ProjectLoaderContext{
+	return projectLoader.LoadProjects(fs, projectLoader.ProjectLoaderContext{
 		Apis:            maps.Keys(apiMap),
 		WorkingDir:      "out",
 		Manifest:        man,
 		ParametersSerde: config.DefaultParameterParsers,
 	})
-	if errs != nil {
-		t.Errorf("Errors occured loading projects")
-		return nil, errs
-	}
-	return projects, nil
 }
 
 func jsonEqual(jsonA, jsonB string) bool {

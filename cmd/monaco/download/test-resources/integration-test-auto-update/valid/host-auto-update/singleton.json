@@ -1,0 +1,10 @@
+{
+    "updateWindows": {
+        "windows": [
+            {
+                "id": "3",
+                "name": "Daily maintenance window"
+            }
+        ]
+    }
+}
