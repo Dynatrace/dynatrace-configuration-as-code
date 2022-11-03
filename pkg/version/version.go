@@ -16,7 +16,7 @@
 
 package version
 
-const MonitoringAsCode = "2.0.0"
+var MonitoringAsCode = "2.0.0"
 
 const ManifestVersion = "1.0"
 const MinManifestVersion = "1.0"
