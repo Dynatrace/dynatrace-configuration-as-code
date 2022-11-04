@@ -92,8 +92,7 @@ var apiMap = map[string]apiInput{
 		apiPath: "/api/config/v1/applications/mobile",
 	},
 	"app-detection-rule": {
-		apiPath:            "/api/config/v1/applicationDetectionRules",
-		isNonUniqueNameApi: true,
+		apiPath: "/api/config/v1/applicationDetectionRules",
 	},
 	"aws-credentials": {
 		apiPath:      "/api/config/v1/aws/credentials",
