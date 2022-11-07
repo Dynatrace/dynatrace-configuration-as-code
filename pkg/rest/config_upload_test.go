@@ -399,3 +399,26 @@ func Test_retryReturnContainsOriginalApiError(t *testing.T) {
 	assert.Check(t, err != nil)
 	assert.ErrorContains(t, err, "Something wrong")
 }
+
+func Test_retryReturnContainsHttpErrorIfNotSuccess(t *testing.T) {
+	maxRetries := 2
+	i := 0
+	mockCall := sendingRequest(func(client *http.Client, url string, data []byte, apiToken string) (Response, error) {
+		if i < maxRetries+1 {
+			i++
+			return Response{
+				StatusCode: 400,
+				Body:       []byte("{ err: 'failed to create thing'}"),
+			}, nil
+		}
+		return Response{
+			StatusCode: 200,
+			Body:       []byte("Success"),
+		}, nil
+	})
+
+	_, err := retry(nil, mockCall, "dont matter", "some/path", []byte("body"), "token", maxRetries, 1)
+	assert.Check(t, err != nil)
+	assert.ErrorContains(t, err, "400")
+	assert.ErrorContains(t, err, "{ err: 'failed to create thing'}")
+}
