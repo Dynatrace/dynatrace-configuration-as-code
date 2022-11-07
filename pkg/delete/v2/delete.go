@@ -19,6 +19,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
+	"strings"
 )
 
 type DeletePointer struct {
@@ -26,36 +27,93 @@ type DeletePointer struct {
 	Name  string
 }
 
-func DeleteConfigs(client rest.DynatraceClient, apis map[string]api.Api,
-	entriesToDelete map[string][]DeletePointer) (errors []error) {
+func DeleteConfigs(client rest.DynatraceClient, apis map[string]api.Api, entriesToDelete map[string][]DeletePointer) (errors []error) {
 
 	for targetApi, entries := range entriesToDelete {
-		api, found := apis[targetApi]
+		theApi, found := apis[targetApi]
 
 		if !found {
-			errors = append(errors, fmt.Errorf("invalid api `%s`", targetApi))
+			errors = append(errors, fmt.Errorf("unknown api `%s`", targetApi))
 			continue
 		}
 
-		names := toNames(entries)
-
-		if api.IsNonUniqueNameApi() {
-			log.Warn("Detected non-unique naming API (%s) - can not safely delete configurations [%s]. "+
-				"Please delete the correct configuration from your environment manually and remove from delete.yaml",
-				targetApi, names)
-			continue
-		}
-
-		log.Info("Deleting configs of type %s...", api.GetId())
-		log.Debug("\tconfigs: %s", names)
-		err := client.BulkDeleteByName(api, names)
-
+		values, err := client.List(theApi)
 		if err != nil {
-			errors = append(errors, err...)
+			errors = append(errors, fmt.Errorf("failed to fetch existing configs of api `%v`. Skipping deletion all configs of this api. Reason: %w", theApi.GetId(), err))
+		}
+
+		names, ids, errs := findConfigsToDelete(entries, values, theApi.GetId())
+		errors = append(errors, errs...)
+
+		log.Info("Deleting configs of type %s...", theApi.GetId())
+
+		log.Debug("\tconfig-names: %s", names)
+		if errs := client.BulkDeleteByName(theApi, names); errs != nil {
+			errors = append(errors, errs...)
+		}
+
+		// delete by id if we need to
+		if len(ids) != 0 {
+			log.Debug("\tconfig-ids: %s", names)
+			for _, v := range ids {
+				if err := client.DeleteById(theApi, v); err != nil {
+					errors = append(errors, err)
+				}
+
+			}
 		}
 	}
 
 	return errors
+}
+
+// splitConfigsToDelete splits the configs to be deleted into name-deletes, and id-deletes.
+// We first search the names of the config-to-be-deleted, and if we find it, return them.
+// If we don't find it, we look if the name is actually an id, and if we find it, return them.
+// If a given name is found multiple times, we return an error for each name.
+func findConfigsToDelete(entries []DeletePointer, values []api.Value, apiName string) ([]string, []string, []error) {
+
+	configIdsByConfigName := make(map[string][]string, len(entries))
+	for _, entry := range entries {
+		configIdsByConfigName[entry.Name] = []string{}
+		for _, value := range values {
+			if value.Name == entry.Name {
+				configIdsByConfigName[entry.Name] = append(configIdsByConfigName[entry.Name], value.Id)
+			}
+		}
+	}
+
+	names := make([]string, 0, len(entries))
+	idsToDelete := make([]string, 0, len(entries))
+	var errs []error
+
+	for name, ids := range configIdsByConfigName {
+		occurrences := len(ids)
+
+		if occurrences == 0 {
+			// no configs found -> name might be an id. If we find the id, we use it to delete by id
+
+			found := false
+			for _, value := range values {
+				if value.Id == name {
+					idsToDelete = append(idsToDelete, name)
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				log.Debug("No config found with the name or ID '%v' (%v)", name, apiName)
+			}
+		} else if occurrences == 1 {
+			names = append(names, name)
+		} else {
+			// multiple configs with this name found -> error
+			errs = append(errs, fmt.Errorf("multiple configs found with the name '%v' (%v). Ids: %v", name, apiName, strings.Join(ids, ", ")))
+		}
+	}
+
+	return names, idsToDelete, errs
 }
 
 func DeleteAllConfigs(client rest.DynatraceClient, apis map[string]api.Api) (errors []error) {
@@ -81,14 +139,4 @@ func DeleteAllConfigs(client rest.DynatraceClient, apis map[string]api.Api) (err
 	}
 
 	return errors
-}
-
-func toNames(pointers []DeletePointer) []string {
-	result := make([]string, len(pointers))
-
-	for i, p := range pointers {
-		result[i] = p.Name
-	}
-
-	return result
 }
