@@ -6,6 +6,14 @@ def artifactoryCredentials = [
     ]
 ]
 
+def releaseToArtifactory(def credentials, def version, def binary) {
+    withEnv(["VERSION=${version}", "BINARY=${binary}"]) {
+        withVault(vaultSecrets: [credentials]) {
+            sh 'curl -u "$ARTIFACTORY_USER":"$ARTIFACTORY_PASSWORD" -X PUT https://artifactory.lab.dynatrace.org/artifactory/monaco-local/monaco/$VERSION/$BINARY -T ./build/$BINARY'
+        }
+    }
+}
+
 pipeline {
     agent {
         kubernetes {
@@ -25,9 +33,11 @@ pipeline {
                 tag 'v*'
             }
             steps {
-                versionTag = sh(returnStdout: true, script: "git tag -l --points-at HEAD --sort=-creatordate | head -n 1").trim()
-                VERSION = versionTag.substring(1)  // drop v prefix
-                echo "Building release version ${VERSION}"
+                script {
+                    versionTag = sh(returnStdout: true, script: "git tag -l --points-at HEAD --sort=-creatordate | head -n 1").trim()
+                    VERSION = versionTag.substring(1)  // drop v prefix
+                    echo "Building release version ${VERSION}"
+                }
             }
         }
 
@@ -48,43 +58,43 @@ pipeline {
             parallel {
                 stage('🐧 Deliver Linux 32bit') {
                     steps {
-                        withVault(vaultSecrets: [artifactoryCredentials]) {
-                            sh "curl -u ${ARTIFACTORY_USER}:${ARTIFACTORY_PASSWORD} -X PUT https://artifactory.lab.dynatrace.org/artifactory/monaco-local/monaco/${VERSION}/monaco-linux-386 -T ./build/monaco-linux-386"
+                        script {
+                            releaseToArtifactory(artifactoryCredentials, "${VERSION}", "monaco-linux-386")
                         }
                     }
                 }
                 stage('🐧 Deliver Linux 64bit') {
                     steps {
-                        withVault(vaultSecrets: [artifactoryCredentials]) {
-                            sh "curl -u ${ARTIFACTORY_USER}:${ARTIFACTORY_PASSWORD} -X PUT https://artifactory.lab.dynatrace.org/artifactory/monaco-local/monaco/${VERSION}/monaco-linux-amd64 -T ./build/monaco-linux-amd64"
+                        script {
+                            releaseToArtifactory(artifactoryCredentials, "${VERSION}" , "monaco-linux-amd64")
                         }
                     }
                 }
                 stage('🪟 Deliver Windows 32bit') {
                     steps {
-                        withVault(vaultSecrets: [artifactoryCredentials]) {
-                            sh "curl -u ${ARTIFACTORY_USER}:${ARTIFACTORY_PASSWORD} -X PUT https://artifactory.lab.dynatrace.org/artifactory/monaco-local/monaco/${VERSION}/monaco-windows-386 -T ./build/monaco-windows-386"
+                        script {
+                            releaseToArtifactory(artifactoryCredentials, "${VERSION}" , "monaco-windows-386")
                         }
                     }
                 }
                 stage('🪟 Deliver Windows 64bit') {
                     steps {
-                        withVault(vaultSecrets: [artifactoryCredentials]) {
-                            sh "curl -u ${ARTIFACTORY_USER}:${ARTIFACTORY_PASSWORD} -X PUT https://artifactory.lab.dynatrace.org/artifactory/monaco-local/monaco/${VERSION}/monaco-windows-amd64 -T ./build/monaco-windows-amd64"
+                        script {
+                            releaseToArtifactory(artifactoryCredentials, "${VERSION}" , "monaco-windows-amd64")
                         }
                     }
                 }
                 stage('🍏 Deliver Mac OS Apple Silicon') {
                     steps {
-                        withVault(vaultSecrets: [artifactoryCredentials]) {
-                            sh "curl -u ${ARTIFACTORY_USER}:${ARTIFACTORY_PASSWORD} -X PUT https://artifactory.lab.dynatrace.org/artifactory/monaco-local/monaco/${VERSION}/monaco-darwin-arm64 -T ./build/monaco-darwin-arm64"
+                        script {
+                            releaseToArtifactory(artifactoryCredentials, "${VERSION}" , "monaco-darwin-arm64")
                         }
                     }
                 }
                 stage('🍏 Deliver Mac OS 64bit') {
                     steps {
-                        withVault(vaultSecrets: [artifactoryCredentials]) {
-                            sh "curl -u ${ARTIFACTORY_USER}:${ARTIFACTORY_PASSWORD} -X PUT https://artifactory.lab.dynatrace.org/artifactory/monaco-local/monaco/${VERSION}/monaco-darwin-amd64 -T ./build/monaco-darwin-amd64"
+                        script {
+                            releaseToArtifactory(artifactoryCredentials, "${VERSION}" , "monaco-darwin-amd64")
                         }
                     }
                 }
