@@ -58,7 +58,8 @@ func (p Project) HasDependencyOn(environment string, project Project) bool {
 
 func (p Project) String() string {
 	if p.GroupId != "" {
-		return fmt.Sprintf("%s [group: %s] (%d configs)", p.Id, p.GroupId, len(p.Configs))
+		return fmt.Sprintf("%s [group: %s]", p.Id, p.GroupId)
 	}
-	return fmt.Sprintf("%s (%d configs)", p.Id, len(p.Configs))
+
+	return p.Id
 }
