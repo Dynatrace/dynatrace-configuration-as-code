@@ -213,6 +213,7 @@ func getPurgeCommand(fs afero.Fs) (purgeCmd *cobra.Command) {
 
 	var environment []string
 	var manifestName string
+	var specificApis []string
 
 	purgeCmd = &cobra.Command{
 		Use:     "purge <manifest.yaml>",
@@ -229,14 +230,18 @@ func getPurgeCommand(fs afero.Fs) (purgeCmd *cobra.Command) {
 				return err
 			}
 
-			return delete.Purge(fs, manifestName, environment)
+			return delete.Purge(fs, manifestName, environment, specificApis)
 		},
 		ValidArgsFunction: completion.PurgeCompletion,
 	}
 
 	purgeCmd.Flags().StringSliceVarP(&environment, "environment", "e", make([]string, 0), "Deletes configuration only for specified envs. If not set, delete will be executed on all environments defined in manifest.")
+	purgeCmd.Flags().StringSliceVarP(&specificApis, "specific-api", "a", make([]string, 0), "APIs to purge")
 
 	if err := purgeCmd.RegisterFlagCompletionFunc("environment", completion.EnvironmentByArg0); err != nil {
+		log.Fatal("failed to setup CLI %v", err)
+	}
+	if err := purgeCmd.RegisterFlagCompletionFunc("specific-api", completion.AllAvailableApis); err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
 

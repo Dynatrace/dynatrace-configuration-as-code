@@ -26,7 +26,7 @@ import (
 	"path/filepath"
 )
 
-func Purge(fs afero.Fs, deploymentManifestPath string, environmentNames []string) error {
+func Purge(fs afero.Fs, deploymentManifestPath string, environmentNames []string, apiNames []string) error {
 
 	deploymentManifestPath = filepath.Clean(deploymentManifestPath)
 	deploymentManifestPath, manifestErr := filepath.Abs(deploymentManifestPath)
@@ -36,8 +36,11 @@ func Purge(fs afero.Fs, deploymentManifestPath string, environmentNames []string
 	}
 
 	apis := api.NewApis()
+	if len(apiNames) > 0 {
+		apis, _ = apis.FilterApisByName(apiNames)
+	}
 
-	manifest, manifestLoadError := manifest.LoadManifest(&manifest.ManifestLoaderContext{
+	mani, manifestLoadError := manifest.LoadManifest(&manifest.ManifestLoaderContext{
 		Fs:           fs,
 		ManifestPath: deploymentManifestPath,
 	})
@@ -47,7 +50,7 @@ func Purge(fs afero.Fs, deploymentManifestPath string, environmentNames []string
 		return errors.New("error while loading manifest")
 	}
 
-	environments, err := manifest.FilterEnvironmentsByNames(environmentNames)
+	environments, err := mani.FilterEnvironmentsByNames(environmentNames)
 	if err != nil {
 		return fmt.Errorf("Failed to load environments: %s", err)
 	}
