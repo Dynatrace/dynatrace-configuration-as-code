@@ -73,14 +73,14 @@ pipeline {
                 stage('🪟 Deliver Windows 32bit') {
                     steps {
                         script {
-                            releaseToArtifactory(artifactoryCredentials, "${VERSION}" , "monaco-windows-386")
+                            releaseToArtifactory(artifactoryCredentials, "${VERSION}" , "monaco-windows-386.exe")
                         }
                     }
                 }
                 stage('🪟 Deliver Windows 64bit') {
                     steps {
                         script {
-                            releaseToArtifactory(artifactoryCredentials, "${VERSION}" , "monaco-windows-amd64")
+                            releaseToArtifactory(artifactoryCredentials, "${VERSION}" , "monaco-windows-amd64.exe")
                         }
                     }
                 }
