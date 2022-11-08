@@ -166,10 +166,24 @@ func parseConfigs(fs afero.Fs, context *LoaderContext, filePath string) (configs
 
 	definition := topLevelDefinition{}
 
-	err = yaml.Unmarshal(data, &definition)
+	err = yaml.UnmarshalStrict(data, &definition)
 
 	if err != nil {
-		return nil, []error{err}
+		if strings.Contains(err.Error(), "field config not found in type v2.topLevelDefinition") {
+			return nil, []error{
+				fmt.Errorf("config '%s' is not valid v2 configuration - you may be loading v1 configs, please 'convert' to v2:\n%w", filePath, err),
+			}
+		}
+
+		return nil, []error{
+			fmt.Errorf("failed to load config '%s':\n%w", filePath, err),
+		}
+	}
+
+	if len(definition.Configs) == 0 {
+		return nil, []error{
+			fmt.Errorf("no configurations found in file '%s'", filePath),
+		}
 	}
 
 	configLoaderContext := &ConfigLoaderContext{

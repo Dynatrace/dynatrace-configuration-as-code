@@ -77,7 +77,8 @@ func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironments []s
 
 	if errs != nil {
 		printErrorReport(errs)
-		return errors.New("error while loading projects")
+
+		return errors.New("error while loading projects - you may be loading v1 projects, please 'convert' to v2")
 	}
 
 	projects, err = loadProjectsToDeploy(specificProject, projects, environmentNames)

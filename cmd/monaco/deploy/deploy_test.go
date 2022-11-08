@@ -18,6 +18,9 @@ package deploy
 
 import (
 	p "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
+	"github.com/spf13/afero"
+	"gotest.tools/assert"
+	"path/filepath"
 	"reflect"
 	"testing"
 )
@@ -158,4 +161,36 @@ func Test_filterProjectsByName(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDeploy_ReportsErrorWhenRunningOnV1Config(t *testing.T) {
+	testFs := afero.NewMemMapFs()
+	// Create v1 configuration
+	configPath, _ := filepath.Abs("project/alerting-profile/profile.yaml")
+	_ = afero.WriteFile(testFs, configPath, []byte("config:\n  - profile: \"profile.json\"\n\nprofile:\n  - name: \"Star Trek Service\""), 0644)
+	templatePath, _ := filepath.Abs("project/alerting-profile/profile.json")
+	_ = afero.WriteFile(testFs, templatePath, []byte("{}"), 0644)
+
+	// Add v2 manifest
+	manifestPath, _ := filepath.Abs("manifest.yaml")
+	_ = afero.WriteFile(testFs, manifestPath, []byte("manifest_version: 1.0\nprojects:\n- name: project\nenvironments:\n- group: default\n  entries:\n  - name: environment1\n    url:\n      type: environment\n      value: ENV_URL\n    token:\n      name: ENV_TOKEN\n"), 0644)
+
+	err := Deploy(testFs, "manifest.yaml", []string{}, []string{}, true, false)
+	assert.ErrorContains(t, err, "error while loading projects")
+}
+
+func TestDeploy_ReportsErrorForBrokenV2Config(t *testing.T) {
+	testFs := afero.NewMemMapFs()
+	// Create v1 configuration
+	configPath, _ := filepath.Abs("project/alerting-profile/profile.yaml")
+	_ = afero.WriteFile(testFs, configPath, []byte("configs:\n- id: profile\n  config:\n    name: Star Trek Service\n    skip: false\n"), 0644)
+	templatePath, _ := filepath.Abs("project/alerting-profile/profile.json")
+	_ = afero.WriteFile(testFs, templatePath, []byte("{}"), 0644)
+
+	// Add v2 manifest
+	manifestPath, _ := filepath.Abs("manifest.yaml")
+	_ = afero.WriteFile(testFs, manifestPath, []byte("manifest_version: 1.0\nprojects:\n- name: project\nenvironments:\n- group: default\n  entries:\n  - name: environment1\n    url:\n      type: environment\n      value: ENV_URL\n    token:\n      name: ENV_TOKEN\n"), 0644)
+
+	err := Deploy(testFs, "manifest.yaml", []string{}, []string{}, true, false)
+	assert.ErrorContains(t, err, "error while loading projects")
 }
