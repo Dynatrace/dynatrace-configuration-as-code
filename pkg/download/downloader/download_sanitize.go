@@ -34,6 +34,8 @@ func sanitizeProperties(properties map[string]interface{}, apiId string) map[str
 func removeIdentifyingProperties(dat map[string]interface{}) map[string]interface{} {
 	dat = removeByPath(dat, []string{"metadata"})
 	dat = removeByPath(dat, []string{"id"})
+	dat = removeByPath(dat, []string{"applicationId"})
+	dat = removeByPath(dat, []string{"applicationIdentifier"})
 	dat = removeByPath(dat, []string{"identifier"})
 	dat = removeByPath(dat, []string{"rules", "id"})
 	dat = removeByPath(dat, []string{"rules", "methodRules", "id"})

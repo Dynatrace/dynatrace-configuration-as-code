@@ -53,6 +53,12 @@ func TestRemoveIdentifiers(t *testing.T) {
 			"{}",
 		},
 		{
+			"applicationId is removed",
+			`{"applicationId":""}`,
+			"does-not-matter",
+			"{}",
+		},
+		{
 			"rules.id is removed",
 			`{"rules": {"id": ""}}`,
 			"does-not-matter",
