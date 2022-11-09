@@ -91,6 +91,42 @@ func TestCreateConfigsFromAPI(t *testing.T) {
 
 }
 
+func TestCreateConfigsFromAPIDiscardFilteredValues(t *testing.T) {
+	apiMock := api.NewMockApi(gomock.NewController(t))
+	apiMock.EXPECT().GetId().Return("anomaly-detection-metrics").AnyTimes()
+	apiMock.EXPECT().IsNonUniqueNameApi().Return(false).AnyTimes()
+	apiMock.EXPECT().IsSingleConfigurationApi().Return(false).AnyTimes()
+
+	list := []api.Value{
+		{Id: "d", Name: "namevalue"},
+		{Id: "ruxit.A", Name: "namevalue"},     //filter
+		{Id: "dynatrace.B", Name: "namevalue"}, // filter
+		{Id: "myown.c", Name: "namevalue"},
+		{Id: "b836ff25-24e3-496d-8dce-d94110815ab5", Name: "namevalue"},
+	}
+
+	client := rest.NewMockDynatraceClient(gomock.NewController(t))
+	client.EXPECT().List(gomock.Any()).Return(list, nil)
+
+	jcreator := jsoncreator.NewMockJSONCreator(gomock.NewController(t))
+	jcreator.EXPECT().CreateJSONConfig(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil).Times(3)
+
+	ycreator := yamlcreator.NewMockYamlCreator(gomock.NewController(t))
+	ycreator.EXPECT().ReadYamlFile(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+	ycreator.EXPECT().UpdateConfig(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(3)
+	ycreator.EXPECT().WriteYamlFile(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+	ycreator.EXPECT().GetConfigFileName(gomock.Any()).Return("").Times(3)
+
+	fs := util.CreateTestFileSystem()
+
+	err := createConfigsFromAPI(fs, apiMock, "/", client, jcreator, ycreator)
+	assert.NilError(t, err, "No errors")
+
+	dirCreated, err := afero.DirExists(fs, "/anomaly-detection-metrics")
+	assert.NilError(t, err, "No errors")
+	assert.Equal(t, dirCreated, true, "no folder got created")
+}
+
 func TestDownloadConfigFromEnvironment(t *testing.T) {
 	os.Setenv("token", "test")
 	env := environment.NewEnvironment("environment1", "test", "", "https://test.live.dynatrace.com", "token")
