@@ -26,7 +26,6 @@ import (
 
 func TestSplitConfigsForDeletion(t *testing.T) {
 	type expect struct {
-		names   []string
 		ids     []string
 		numErrs int
 	}
@@ -36,93 +35,84 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 		values  []api.Value
 	}
 
-	d1 := DeletePointer{Name: "d1"}
-	d2 := DeletePointer{Name: "d2"}
-	d3 := DeletePointer{Name: "d3"}
-
 	tests := []struct {
 		name   string
 		args   args
 		expect expect
 	}{
 		{
-			name: "Empty pointers",
+			name: "Empty everything",
+		},
+		{
+			name: "Full overlap",
+			args: args{
+				entries: []DeletePointer{{Name: "d1"}, {Name: "d2"}, {Name: "d3"}},
+				values:  []api.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "id2"}, {Name: "d3", Id: "id3"}},
+			},
+			expect: expect{
+				ids:     []string{"id1", "id2", "id3"},
+				numErrs: 0,
+			},
+		},
+		{
+			name: "Empty entries, nothing deleted",
 			args: args{
 				entries: []DeletePointer{},
-			},
-			expect: expect{
-				names: []string{},
+				values:  []api.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "id2"}, {Name: "d3", Id: "id3"}},
 			},
 		},
 		{
-			name: "Non unique - simple names, full overlap",
+			name: "More deletes",
 			args: args{
-				entries: []DeletePointer{d1, d2, d3},
-				values:  []api.Value{{Name: "d1"}, {Name: "d2"}, {Name: "d3"}},
+				entries: []DeletePointer{{Name: "d1"}, {Name: "d2"}, {Name: "d3"}},
+				values:  []api.Value{{Name: "d1", Id: "id1"}},
 			},
 			expect: expect{
-				names:   []string{"d1", "d2", "d3"},
-				ids:     []string{},
+				ids:     []string{"id1"},
 				numErrs: 0,
 			},
 		},
 		{
-			name: "Non unique - simple names, more deletes",
+			name: "More values",
 			args: args{
-				entries: []DeletePointer{d1, d2, d3},
-				values:  []api.Value{{Name: "d1"}},
+				entries: []DeletePointer{{Name: "d1"}},
+				values:  []api.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "id2"}, {Name: "d3", Id: "id3"}},
 			},
 			expect: expect{
-				names:   []string{"d1"},
-				ids:     []string{},
+				ids:     []string{"id1"},
 				numErrs: 0,
 			},
 		},
 		{
-			name: "Non unique - simple names, more values",
+			name: "Id-fallback",
 			args: args{
-				entries: []DeletePointer{d1},
-				values:  []api.Value{{Name: "d1"}, {Name: "d2"}, {Name: "d3"}},
+				entries: []DeletePointer{{Name: "d1"}, {Name: "d2-id"}},
+				values:  []api.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "d2-id"}, {Name: "d3", Id: "id3"}},
 			},
 			expect: expect{
-				names:   []string{"d1"},
-				ids:     []string{},
+				ids:     []string{"id1", "d2-id"},
 				numErrs: 0,
 			},
 		},
 		{
-			name: "Non unique - fallback to id",
+			name: "Duplicate names",
 			args: args{
-				entries: []DeletePointer{d1, {Name: "d2-id"}},
-				values:  []api.Value{{Name: "d1"}, {Name: "d2", Id: "d2-id"}, {Name: "d3"}},
-			},
-			expect: expect{
-				names:   []string{"d1"},
-				ids:     []string{"d2-id"},
-				numErrs: 0,
-			},
-		},
-		{
-			name: "Non unique - multiple same name",
-			args: args{
-				entries: []DeletePointer{d1, d2},
+				entries: []DeletePointer{{Name: "d1"}, {Name: "d2"}},
 				values:  []api.Value{{Name: "d1"}, {Name: "d1"}, {Name: "d2"}, {Name: "d2"}},
 			},
 			expect: expect{
-				names:   []string{},
 				ids:     []string{},
 				numErrs: 2,
 			},
 		},
 		{
-			name: "Non unique - combined",
+			name: "Combined",
 			args: args{
-				entries: []DeletePointer{d1, d2, d3, {Name: "d4-id"}},
-				values:  []api.Value{{Name: "d1"}, {Name: "d2"}, {Name: "d2"}, {Name: "d3"}, {Id: "d4-id"}},
+				entries: []DeletePointer{{Name: "d1"}, {Name: "d2"}, {Name: "d3"}, {Name: "d4-id"}},
+				values:  []api.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "id2"}, {Name: "d2", Id: "id-something"}, {Name: "d3", Id: "id3"}, {Id: "d4-id"}},
 			},
 			expect: expect{
-				names:   []string{"d1", "d3"},
-				ids:     []string{"d4-id"},
+				ids:     []string{"id1", "id3", "d4-id"},
 				numErrs: 1,
 			},
 		},
@@ -138,8 +128,6 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 			client := rest.NewMockDynatraceClient(gomock.NewController(t))
 			client.EXPECT().List(a).Return(tc.args.values, nil)
 
-			client.EXPECT().BulkDeleteByName(a, gomock.InAnyOrder(tc.expect.names))
-
 			for _, id := range tc.expect.ids {
 				client.EXPECT().DeleteById(a, id)
 			}
@@ -154,10 +142,9 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 func TestSplitConfigsForDeletionClientReturnsError(t *testing.T) {
 	a := api.NewMockApi(gomock.NewController(t))
 	a.EXPECT().GetId().AnyTimes().Return("some-id")
-	a.EXPECT().IsNonUniqueNameApi().Return(true)
 
 	apiMap := map[string]api.Api{a.GetId(): a}
-	entriesToDelete := map[string][]DeletePointer{}
+	entriesToDelete := map[string][]DeletePointer{a.GetId(): {{}}}
 
 	client := rest.NewMockDynatraceClient(gomock.NewController(t))
 	client.EXPECT().List(a).Return(nil, errors.New("error"))
