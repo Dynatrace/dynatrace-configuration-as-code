@@ -14,6 +14,11 @@
 
 package v2
 
+import (
+	"fmt"
+	"reflect"
+)
+
 type groupOverride struct {
 	Group    string           `yaml:"group"`
 	Override configDefinition `yaml:"override"`
@@ -43,3 +48,7 @@ type topLevelDefinition struct {
 }
 
 type configParameter interface{}
+
+func getTopLevelDefinitionYamlTypeName() string {
+	return fmt.Sprintf("%s", reflect.ValueOf(topLevelDefinition{}).Type())
+}

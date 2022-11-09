@@ -169,7 +169,7 @@ func parseConfigs(fs afero.Fs, context *LoaderContext, filePath string) (configs
 	err = yaml.UnmarshalStrict(data, &definition)
 
 	if err != nil {
-		if strings.Contains(err.Error(), "field config not found in type v2.topLevelDefinition") {
+		if strings.Contains(err.Error(), fmt.Sprintf("field config not found in type %s", getTopLevelDefinitionYamlTypeName())) {
 			return nil, []error{
 				fmt.Errorf("config '%s' is not valid v2 configuration - you may be loading v1 configs, please 'convert' to v2:\n%w", filePath, err),
 			}
