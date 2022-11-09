@@ -236,7 +236,7 @@ func downloadAndUnmarshalConfig(theApi api.Api, value api.Value, client rest.Dyn
 }
 
 func createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api.Api, value api.Value, projectId string) (config.Config, error) {
-	templ, err := createTemplate(mappedJson, value)
+	templ, err := createTemplate(mappedJson, value, theApi.GetId())
 	if err != nil {
 		return config.Config{}, err
 	}
@@ -259,9 +259,9 @@ func createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api
 	}, nil
 }
 
-func createTemplate(mappedJson map[string]interface{}, value api.Value) (tmpl template.Template, err error) {
+func createTemplate(mappedJson map[string]interface{}, value api.Value, apiId string) (tmpl template.Template, err error) {
 
-	mappedJson = sanitizeProperties(mappedJson)
+	mappedJson = sanitizeProperties(mappedJson, apiId)
 	bytes, err := json.MarshalIndent(mappedJson, "", "  ")
 	if err != nil {
 		return nil, err

@@ -25,97 +25,145 @@ func TestRemoveIdentifiers(t *testing.T) {
 	tests := []struct {
 		name         string
 		json         string
+		api          string
 		expectedJson string
 	}{
 		{
 			"metadata is removed",
 			`{"metadata":""}`,
+			"does-not-matter",
 			"{}",
 		},
 		{
 			"id is removed",
 			`{"id":""}`,
+			"does-not-matter",
 			"{}",
 		},
 		{
 			"identifier is removed",
 			`{"identifier":""}`,
+			"does-not-matter",
 			"{}",
 		},
 		{
 			"entityId is removed",
 			`{"entityId":""}`,
+			"does-not-matter",
 			"{}",
 		},
 		{
 			"rules.id is removed",
 			`{"rules": {"id": ""}}`,
+			"does-not-matter",
 			`{"rules":{}}`,
 		},
 		{
 			"rules[].id is removed",
 			`{"rules": [{"id": ""}]}`,
+			"does-not-matter",
 			`{"rules":[{}]}`,
 		},
 		{
 			"rules.methodRules.id is removed",
 			`{"rules": {"methodRules": {"id": ""}}}`,
+			"does-not-matter",
 			`{"rules": {"methodRules":{}}}`,
 		},
 		{
 			"rules[].methodRules.id is removed",
 			`{"rules": [{"methodRules": {"id": ""}}]}`,
+			"does-not-matter",
 			`{"rules": [{"methodRules":{}}]}`,
 		},
 		{
 			"rules[].methodRules.id is removed",
 			`{"rules": [{"methodRules": {"id": ""}}]}`,
+			"does-not-matter",
 			`{"rules": [{"methodRules":{}}]}`,
 		},
 		{
 			"rules[].methodRules[].id is removed",
 			`{"rules": [{"methodRules": [{"id": ""}]}]}`,
+			"does-not-matter",
 			`{"rules": [{"methodRules":[{}]}]}`,
 		},
 		{
 			"rules.methodRules[].id is removed",
 			`{"rules": {"methodRules": [{"id": ""}]}}`,
+			"does-not-matter",
 			`{"rules": {"methodRules":[{}]}}`,
 		},
 		{
 			"other properties are not removed",
 			`{"x":""}`,
+			"does-not-matter",
 			`{"x":""}`,
 		},
 		{
 			"multiple others are not removed",
 			`{"x":"", "y": 1234, "z": null}`,
+			"does-not-matter",
 			`{"x":"", "y": 1234, "z": null}`,
+		},
+		{
+			"order property is removed for service-detection-full-web-service",
+			`{"some_prop":"some_val", "order": 42}`,
+			"service-detection-full-web-service",
+			`{"some_prop":"some_val"}`,
+		},
+		{
+			"order property is removed for service-detection-full-web-request",
+			`{"some_prop":"some_val", "order": 42}`,
+			"service-detection-full-web-request",
+			`{"some_prop":"some_val"}`,
+		},
+		{
+			"order property is removed for service-detection-opaque-web-service",
+			`{"some_prop":"some_val", "order": 42}`,
+			"service-detection-opaque-web-service",
+			`{"some_prop":"some_val"}`,
+		},
+		{
+			"order property is removed for service-detection-opaque-web-request",
+			`{"some_prop":"some_val", "order": 42}`,
+			"service-detection-opaque-web-request",
+			`{"some_prop":"some_val"}`,
+		},
+		{
+			"order property is NOT removed for other APIs",
+			`{"some_prop":"some_val", "order": 42}`,
+			"altering-profile",
+			`{"some_prop":"some_val", "order": 42}`,
 		},
 		{
 			"name is replaced with template",
 			`{"name":"asdf"}`,
+			"does-not-matter",
 			`{"name": "{{.name}}"}`,
 		},
 		{
 			"displayName is replaced with name",
 			`{"displayName":"asdf"}`,
+			"does-not-matter",
 			`{"displayName": "{{.name}}"}`,
 		},
 		{
 			"dashboardMetadata.name is replaced with name",
 			`{"dashboardMetadata": {"name": "something"}}`,
+			"does-not-matter",
 			`{"dashboardMetadata": {"name": "{{.name}}"}}`,
 		},
 		{
 			"mixed works",
 			`{"x":"", "y": 1234, "z": null, "id": "", "rules": {"methodRules": {"id": ""}}, "dashboardMetadata": {"name": "{{.name}}"}}`,
+			"does-not-matter",
 			`{"x":"", "y": 1234, "z": null, "rules": {"methodRules":{}}, "dashboardMetadata": {"name": "{{.name}}"}}`,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result := sanitizeProperties(unmarshal(t, test.json))
+			result := sanitizeProperties(unmarshal(t, test.json), test.api)
 
 			expected := unmarshal(t, test.expectedJson)
 

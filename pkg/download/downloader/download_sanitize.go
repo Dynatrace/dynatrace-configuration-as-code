@@ -16,8 +16,18 @@
 
 package downloader
 
-func sanitizeProperties(properties map[string]interface{}) map[string]interface{} {
+type sanitizeFunc func(properties map[string]interface{}) map[string]interface{}
+
+var apiSanitizeFunctions = map[string]sanitizeFunc{
+	"service-detection-full-web-service":   removeOrderProperty,
+	"service-detection-full-web-request":   removeOrderProperty,
+	"service-detection-opaque-web-service": removeOrderProperty,
+	"service-detection-opaque-web-request": removeOrderProperty,
+}
+
+func sanitizeProperties(properties map[string]interface{}, apiId string) map[string]interface{} {
 	properties = removeIdentifyingProperties(properties)
+	properties = removePropertiesNotAllowedOnUpload(properties, apiId)
 	return replaceTemplateProperties(properties)
 }
 
@@ -30,6 +40,17 @@ func removeIdentifyingProperties(dat map[string]interface{}) map[string]interfac
 	dat = removeByPath(dat, []string{"entityId"})
 
 	return dat
+}
+
+func removePropertiesNotAllowedOnUpload(properties map[string]interface{}, apiId string) map[string]interface{} {
+	if specificSanitizer := apiSanitizeFunctions[apiId]; specificSanitizer != nil {
+		return specificSanitizer(properties)
+	}
+	return properties
+}
+
+func removeOrderProperty(properties map[string]interface{}) map[string]interface{} {
+	return removeByPath(properties, []string{"order"})
 }
 
 func removeByPath(dat map[string]interface{}, key []string) map[string]interface{} {
