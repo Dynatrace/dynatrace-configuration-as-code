@@ -83,3 +83,16 @@ func CheckProperty(properties map[string]string, property string) (string, error
 	}
 	return prop, nil
 }
+
+// PrintWarning should pretty-print the error as a warning to user using a more user-friendly format
+func PrintWarning(err error) {
+	var prettyPrintError PrettyPrintableError
+
+	if errors.As(err, &prettyPrintError) {
+		log.Warn(prettyPrintError.PrettyError())
+	} else {
+		if err != nil {
+			log.Warn(err.Error())
+		}
+	}
+}
