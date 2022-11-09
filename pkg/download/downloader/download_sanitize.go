@@ -16,13 +16,29 @@
 
 package downloader
 
-type sanitizeFunc func(properties map[string]interface{}) map[string]interface{}
-
-var apiSanitizeFunctions = map[string]sanitizeFunc{
+var apiSanitizeFunctions = map[string]func(properties map[string]interface{}) map[string]interface{}{
 	"service-detection-full-web-service":   removeOrderProperty,
 	"service-detection-full-web-request":   removeOrderProperty,
 	"service-detection-opaque-web-service": removeOrderProperty,
 	"service-detection-opaque-web-request": removeOrderProperty,
+	"maintenance-window": func(properties map[string]interface{}) map[string]interface{} {
+		if s, ok := properties["scope"].(map[string]interface{}); ok {
+			var emptyEntities, emptyMatches bool
+			if entities, ok := s["entities"].([]interface{}); ok && len(entities) == 0 {
+				properties = removeByPath(properties, []string{"scope", "entities"})
+				emptyEntities = true
+			}
+			if matches, ok := s["matches"].([]interface{}); ok && len(matches) == 0 {
+				properties = removeByPath(properties, []string{"scope", "matches"})
+				emptyMatches = true
+			}
+			if emptyEntities && emptyMatches {
+				properties = removeByPath(properties, []string{"scope"})
+			}
+		}
+
+		return properties
+	},
 }
 
 func sanitizeProperties(properties map[string]interface{}, apiId string) map[string]interface{} {
@@ -35,7 +51,6 @@ func removeIdentifyingProperties(dat map[string]interface{}) map[string]interfac
 	dat = removeByPath(dat, []string{"metadata"})
 	dat = removeByPath(dat, []string{"id"})
 	dat = removeByPath(dat, []string{"applicationId"})
-	dat = removeByPath(dat, []string{"applicationIdentifier"})
 	dat = removeByPath(dat, []string{"identifier"})
 	dat = removeByPath(dat, []string{"rules", "id"})
 	dat = removeByPath(dat, []string{"rules", "methodRules", "id"})

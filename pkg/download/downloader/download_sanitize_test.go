@@ -143,6 +143,36 @@ func TestRemoveIdentifiers(t *testing.T) {
 			`{"some_prop":"some_val", "order": 42}`,
 		},
 		{
+			"empty scopes.entities is removed from maintenance-window",
+			`{"some_prop":"some_val", "scope": {"entities":[], "matches": ["some_match"] } }`,
+			"maintenance-window",
+			`{"some_prop":"some_val", "scope": {"matches": ["some_match"] } }`,
+		},
+		{
+			"empty scopes.matches is removed from maintenance-window",
+			`{"some_prop":"some_val", "scope": {"entities":["some_entity"], "matches": [] } }`,
+			"maintenance-window",
+			`{"some_prop":"some_val", "scope": {"entities": ["some_entity"] } }`,
+		},
+		{
+			"empty scopes is removed from maintenance-window",
+			`{"some_prop":"some_val", "scope": {"entities":[], "matches": [] } }`,
+			"maintenance-window",
+			`{"some_prop":"some_val"}`,
+		},
+		{
+			"maintenance-window without any scopes is unchanged",
+			`{"some_prop":"some_val"}`,
+			"maintenance-window",
+			`{"some_prop":"some_val"}`,
+		},
+		{
+			"scopes property is NOT changed for other APIs",
+			`{"some_prop":"some_val", "scope": {"entities":[], "matches": [] } }`,
+			"alerting-profile",
+			`{"some_prop":"some_val", "scope": {"entities":[], "matches": [] } }`,
+		},
+		{
 			"name is replaced with template",
 			`{"name":"asdf"}`,
 			"does-not-matter",
