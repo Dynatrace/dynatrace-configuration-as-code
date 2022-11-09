@@ -1,0 +1,8 @@
+{
+    "values": [
+        {"id":  "my.name", "name": "Test1"},
+        {"id":  "ruxit.test", "name": "Test2"},
+        {"id":  "dynatrace.test", "name": "Test3"},
+        {"id":  "b836ff25-24e3-496d-8dce-d94110815ab5", "name": "Test4"}
+    ]
+}

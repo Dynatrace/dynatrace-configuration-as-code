@@ -46,11 +46,11 @@ type integrationTestResources struct {
 	callsMutex *sync.Mutex
 }
 
-func (i integrationTestResources) Read(uri string) ([]byte, bool) {
-	path, found := i.urlMapping[uri]
+func (i integrationTestResources) Read(urlPath string) ([]byte, bool) {
+	path, found := i.urlMapping[urlPath]
 
 	if !found {
-		i.t.Errorf("Uri '%s' not mapped", uri)
+		i.t.Errorf("URL path '%s' not mapped", urlPath)
 		return nil, false
 	}
 
@@ -64,12 +64,14 @@ func (i integrationTestResources) handler() func(res http.ResponseWriter, req *h
 			return
 		}
 
+		path := req.URL.Path
+
 		i.callsMutex.Lock()
-		i.calls[req.RequestURI]++
+		i.calls[path]++
 		i.callsMutex.Unlock()
 
-		if content, found := i.Read(req.RequestURI); !found {
-			log.Error("Failed to find resource '%s'", req.RequestURI)
+		if content, found := i.Read(path); !found {
+			log.Error("Failed to find resource '%s'", path)
 			http.Error(res, "Not found", http.StatusNotFound)
 			return
 		} else {

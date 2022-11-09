@@ -59,6 +59,30 @@ func Test_ShouldConfigBeSkipped(t *testing.T) {
 			api.Value{},
 			false,
 		},
+		{
+			"ruxit. should be skipped",
+			"anomaly-detection-metrics",
+			api.Value{Id: "ruxit.a"},
+			true,
+		},
+		{
+			"dynatrace. should be skipped",
+			"anomaly-detection-metrics",
+			api.Value{Id: "dynatrace.b"},
+			true,
+		},
+		{
+			"ids should not be skipped",
+			"anomaly-detection-metrics",
+			api.Value{Id: "b836ff25-24e3-496d-8dce-d94110815ab5"},
+			false,
+		},
+		{
+			"random strings should not be skipped",
+			"anomaly-detection-metrics",
+			api.Value{Id: "test.something"},
+			false,
+		},
 	}
 
 	for _, test := range tests {

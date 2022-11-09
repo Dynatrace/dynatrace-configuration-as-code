@@ -561,6 +561,82 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 	}, compareOptions...)
 }
 
+func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
+	// GIVEN apis, server responses, file system
+	const projectName = "integration-test-ad-metrics"
+	const testBasePath = "test-resources/" + projectName
+
+	// APIs
+	dashboardApi := api.NewStandardApi("anomaly-detection-metrics", "/ad-metrics", false, "", false)
+	apiMap := api.ApiMap{
+		dashboardApi.GetId(): dashboardApi,
+	}
+
+	// Responses
+	responses := map[string]string{
+		"/ad-metrics":         "ad-metrics/__LIST.json",
+		"/ad-metrics/my.name": "ad-metrics/my.name.json",
+		"/ad-metrics/b836ff25-24e3-496d-8dce-d94110815ab5": "ad-metrics/b836ff25-24e3-496d-8dce-d94110815ab5.json",
+	}
+
+	// Server
+	server := rest.NewIntegrationTestServer(t, testBasePath, responses)
+
+	fs := afero.NewMemMapFs()
+
+	// WHEN we download everything
+	err := doDownload(fs, server.URL, projectName, "token", "TOKEN_ENV_VAR", "out", apiMap, func(environmentUrl, token string) (rest.DynatraceClient, error) {
+		return rest.NewDynatraceClientForTesting(environmentUrl, token, server.Client())
+	})
+
+	assert.NilError(t, err)
+
+	// THEN we can load the project again and verify its content
+	projects, errs := loadDownloadedProjects(fs, apiMap)
+	if len(errs) != 0 {
+		for _, err := range errs {
+			t.Errorf("%v", err)
+		}
+		return
+	}
+
+	assert.Equal(t, len(projects), 1)
+	p := projects[0]
+	assert.Equal(t, p.Id, projectName)
+	assert.Equal(t, len(p.Configs), 1)
+
+	configs, found := p.Configs[projectName]
+	assert.Equal(t, found, true)
+	assert.Equal(t, len(configs), 1)
+
+	assert.DeepEqual(t, configs, projectLoader.ConfigsPerApis{
+		dashboardApi.GetId(): []config.Config{
+			{
+				Coordinate: coordinate.Coordinate{Project: projectName, Api: dashboardApi.GetId(), Config: "b836ff25-24e3-496d-8dce-d94110815ab5"},
+				Skip:       false,
+				Parameters: map[string]parameter.Parameter{
+					"name": &value.ValueParameter{Value: "Test4"},
+				},
+				Group:       "default",
+				Environment: projectName,
+				References:  []coordinate.Coordinate{},
+				Template:    contentOnlyTemplate{`{}`},
+			},
+			{
+				Coordinate: coordinate.Coordinate{Project: projectName, Api: dashboardApi.GetId(), Config: "my.name"},
+				Skip:       false,
+				Parameters: map[string]parameter.Parameter{
+					"name": &value.ValueParameter{Value: "Test1"},
+				},
+				Group:       "default",
+				Environment: projectName,
+				References:  []coordinate.Coordinate{},
+				Template:    contentOnlyTemplate{`{}`},
+			},
+		},
+	}, compareOptions...)
+}
+
 func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 	testcases := []struct {
 		projectName        string

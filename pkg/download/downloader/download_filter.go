@@ -19,6 +19,7 @@ package downloader
 import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
+	"strings"
 )
 
 type apiFilter struct {
@@ -65,6 +66,11 @@ var apiFilters = map[string]apiFilter{
 			}
 
 			return len(windows) > 0
+		},
+	},
+	"anomaly-detection-metrics": {
+		shouldBeSkippedPreDownload: func(value api.Value) bool {
+			return strings.HasPrefix(value.Id, "dynatrace.") || strings.HasPrefix(value.Id, "ruxit.")
 		},
 	},
 }
