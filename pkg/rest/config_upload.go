@@ -305,33 +305,6 @@ func isLocationHeaderAvailable(resp Response) (headerAvailable bool, headerArray
 	return false, make([]string, 0)
 }
 
-func deleteDynatraceObjects(client *http.Client, api api.Api, names []string, url string, token string) []error {
-	existingIds, err := getObjectIdsIfAlreadyExists(client, api, url, names, token)
-
-	if err != nil {
-		return []error{fmt.Errorf("failed to get configs for deletion (%s):\n\t%w", api.GetId(), err)}
-	}
-
-	var errors []error
-
-	if len(existingIds) == 0 {
-		log.Warn("No configs of given names found for deletion(%s): %s", api.GetId(), names)
-		return errors
-	}
-
-	for _, v := range existingIds {
-		if v.Id != "" {
-			err = deleteConfig(client, url, token, v.Id)
-			if err == nil {
-				log.Info("Deleted config %s with id %s (%s)", v.Name, v.Id, api.GetId())
-			} else {
-				errors = append(errors, fmt.Errorf("failed to delete config %s (%s): %w", v.Name, api.GetId(), err))
-			}
-		}
-	}
-	return errors
-}
-
 func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, objectName string, apiToken string) (string, error) {
 	values, err := getExistingValuesFromEndpoint(client, api, url, apiToken)
 
@@ -362,41 +335,6 @@ func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, ob
 	return objectId, nil
 }
 
-func getObjectIdsIfAlreadyExists(client *http.Client, a api.Api, url string, objectNames []string, apiToken string) ([]api.Value, error) {
-	values, err := getExistingValuesFromEndpoint(client, a, url, apiToken)
-
-	if err != nil {
-		return nil, err
-	}
-
-	nameLookupMap := toLookupMap(objectNames)
-	var result []api.Value
-
-	for i := 0; i < len(values); i++ {
-		value := values[i]
-		escapedValueName := escapeApiValueName(value)
-		if _, found := nameLookupMap[value.Name]; found && value.Id != "" {
-			result = append(result, value)
-			nameLookupMap[value.Name]++
-			log.Debug("Found existing config %s (%s) with id %s", value.Name, a.GetId(), value.Id)
-		} else if _, found := nameLookupMap[escapedValueName]; found && value.Id != "" {
-			result = append(result, api.Value{Id: value.Id, Name: escapedValueName})
-			nameLookupMap[escapedValueName]++
-			log.Debug("Found existing config %s (%s) with id %s", escapedValueName, a.GetId(), value.Id)
-		}
-	}
-
-	for name, count := range nameLookupMap {
-		if count == 0 {
-			log.Debug("No config %s (%s) found", name, a.GetId())
-		} else if count > 1 {
-			log.Warn("Found %d configs with same name: %s.", count, name)
-		}
-	}
-
-	return result, nil
-}
-
 func escapeApiValueName(value api.Value) string {
 	valueName, err := util.EscapeSpecialCharactersInValue(value.Name, util.FullStringEscapeFunction)
 	if err != nil {
@@ -404,16 +342,6 @@ func escapeApiValueName(value api.Value) string {
 		return value.Name
 	}
 	return valueName.(string)
-}
-
-func toLookupMap(strs []string) map[string]int {
-	result := make(map[string]int)
-
-	for _, str := range strs {
-		result[str] = 0
-	}
-
-	return result
 }
 
 func isApiDashboard(api api.Api) bool {

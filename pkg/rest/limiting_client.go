@@ -82,14 +82,6 @@ func (l limitingClient) DeleteById(a api.Api, id string) (err error) {
 	return
 }
 
-func (l limitingClient) BulkDeleteByName(a api.Api, names []string) (errs []error) {
-	l.limiter.ExecuteBlocking(func() {
-		errs = l.client.BulkDeleteByName(a, names)
-	})
-
-	return
-}
-
 func (l limitingClient) ExistsByName(a api.Api, name string) (exists bool, id string, err error) {
 	l.limiter.ExecuteBlocking(func() {
 		exists, id, err = l.client.ExistsByName(a, name)

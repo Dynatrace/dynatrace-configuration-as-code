@@ -198,19 +198,6 @@ func (c *DummyClient) writeRequest(a api.Api, name string, payload []byte) {
 	}
 }
 
-func (c *DummyClient) BulkDeleteByName(a api.Api, names []string) []error {
-	var errs []error
-	for _, name := range names {
-		err := c.deleteByName(a, name)
-
-		if err != nil {
-			errs = append(errs, err)
-		}
-	}
-
-	return errs
-}
-
 func (c *DummyClient) deleteByName(a api.Api, name string) error {
 	entries, found := c.Entries[a]
 

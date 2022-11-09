@@ -74,12 +74,6 @@ type DynatraceClient interface {
 	//    DELETE <environment-url>/api/config/v1/alertingProfiles/<id> ... to delete the config
 	DeleteById(a Api, id string) error
 
-	// BulkDelete removes given configs for a given API by name - of course this can be used with a single name as well.
-	// It calls the underlying GET and DELETE endpoints for the API. E.g. for alerting profiles this would be:
-	//    GET <environment-url>/api/config/v1/alertingProfiles ... to get the id of the existing config
-	//    DELETE <environment-url>/api/config/v1/alertingProfiles/<id> ... to delete the config
-	BulkDeleteByName(a Api, names []string) []error
-
 	// ExistsByName checks if a config with the given name exists for the given API.
 	// It calls the underlying GET endpoint for the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles
@@ -178,11 +172,6 @@ func (d *dynatraceClientImpl) ReadById(api Api, id string) (json []byte, err err
 func (d *dynatraceClientImpl) DeleteById(api Api, id string) error {
 
 	return deleteConfig(d.client, api.GetUrlFromEnvironmentUrl(d.environmentUrl), d.token, id)
-}
-
-func (d *dynatraceClientImpl) BulkDeleteByName(api Api, names []string) []error {
-
-	return deleteDynatraceObjects(d.client, api, names, api.GetUrlFromEnvironmentUrl(d.environmentUrl), d.token)
 }
 
 func (d *dynatraceClientImpl) ExistsByName(api Api, name string) (exists bool, id string, err error) {
