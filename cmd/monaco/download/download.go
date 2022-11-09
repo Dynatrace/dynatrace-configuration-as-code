@@ -143,7 +143,7 @@ func doDownload(fs afero.Fs, environmentUrl, projectName, token, tokenEnvVarName
 		log.Info("No configs were downloaded")
 		return nil
 	} else {
-		log.Debug("Downloaded %v configs", sumConfigs(downloadedConfigs))
+		log.Info("Downloaded %v configs", sumConfigs(downloadedConfigs))
 	}
 
 	log.Info("Resolving dependencies between configurations")
