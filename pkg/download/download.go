@@ -247,6 +247,9 @@ func createConfigsFromAPI(
 		util.Log.Error("error getting client list from api %v %v", api.GetId(), err)
 		return err
 	}
+
+	values = filterConfigsNotToDownload(api, values)
+
 	if len(values) == 0 {
 		util.Log.Info("No elements for API %s", api.GetId())
 		return nil
@@ -316,6 +319,20 @@ func createConfigsFromAPI(
 	}
 
 	return nil
+}
+
+func filterConfigsNotToDownload(a api.Api, values []api.Value) []api.Value {
+	result := make([]api.Value, 0, len(values))
+
+	for _, v := range values {
+		if a.GetId() == "anomaly-detection-metrics" && (strings.HasPrefix(v.Id, "dynatrace.") || strings.HasPrefix(v.Id, "ruxit.")) {
+			util.Log.Debug("Skipping download of config '%v' (%v): Predefined configuration", v.Name, a.GetId())
+		} else {
+			result = append(result, v)
+		}
+	}
+
+	return result
 }
 
 // Retrieves and sanitizes config id which is used as a unique identifier of
