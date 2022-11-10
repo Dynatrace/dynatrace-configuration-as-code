@@ -16,7 +16,6 @@ package jsoncreator
 
 import (
 	"encoding/json"
-	"net/url"
 	"strings"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
@@ -76,23 +75,22 @@ func (d *JsonCreatorImp) CreateJSONConfig(fs afero.Fs, client rest.DynatraceClie
 }
 
 func getDetailFromAPI(client rest.DynatraceClient, api api.Api, entityId string) (dat map[string]interface{}, filter bool, err error) {
-	escapedEntityId := url.QueryEscape(entityId)
 
-	resp, err := client.ReadById(api, escapedEntityId)
+	resp, err := client.ReadById(api, entityId)
 	if err != nil {
-		util.Log.Error("error getting detail for API %s for entity %v", api.GetId(), escapedEntityId)
+		util.Log.Error("error getting detail for API %s for entity %v", api.GetId(), entityId)
 		return nil, false, err
 	}
 
 	err = json.Unmarshal(resp, &dat)
 	if err != nil {
-		util.Log.Error("error transforming %s from json to object", escapedEntityId)
+		util.Log.Error("error transforming %s from json to object", entityId)
 		return nil, false, err
 	}
 
 	filter = isDefaultEntity(api.GetId(), dat)
 	if filter {
-		util.Log.Debug("Non-user-created default Object has been filtered out", escapedEntityId)
+		util.Log.Debug("Non-user-created default Object has been filtered out", entityId)
 		return nil, true, err
 	}
 
