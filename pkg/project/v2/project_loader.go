@@ -61,6 +61,7 @@ func newDuplicateConfigIdentifierError(c config.Config) DuplicateConfigIdentifie
 	}
 }
 
+// TODO: Move fs into context?
 func LoadProjects(fs afero.Fs, context ProjectLoaderContext) ([]Project, []error) {
 	environments := toEnvironmentSlice(context.Manifest.Environments)
 	projects := make([]Project, 0)
@@ -116,6 +117,37 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 
 	log.Debug("Loading project `%s` (%s)...", projectDefinition.Name, projectDefinition.Path)
 
+	configs, errors := loadProjectsLegacyWay(fs, context, projectDefinition, environments)
+
+	if d := findDuplicatedConfigIdentifiers(configs); d != nil {
+		for _, c := range d {
+			errors = append(errors, newDuplicateConfigIdentifierError(c))
+		}
+	}
+
+	if errors != nil {
+		return Project{}, errors
+	}
+
+	configMap := make(ConfigsPerApisPerEnvironments)
+
+	for _, conf := range configs {
+		if _, found := configMap[conf.Environment]; !found {
+			configMap[conf.Environment] = make(map[string][]config.Config)
+		}
+
+		configMap[conf.Environment][conf.Coordinate.Api] = append(configMap[conf.Environment][conf.Coordinate.Api], conf)
+	}
+
+	return Project{
+		Id:           projectDefinition.Name,
+		GroupId:      projectDefinition.Group,
+		Configs:      configMap,
+		Dependencies: toDependenciesMap(projectDefinition.Name, configs),
+	}, nil
+}
+
+func loadProjectsLegacyWay(fs afero.Fs, context ProjectLoaderContext, projectDefinition manifest.ProjectDefinition, environments []manifest.EnvironmentDefinition) ([]config.Config, []error) {
 	configs := make([]config.Config, 0)
 	var errors []error
 
@@ -145,33 +177,7 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 
 		configs = append(configs, loaded...)
 	}
-
-	if d := findDuplicatedConfigIdentifiers(configs); d != nil {
-		for _, c := range d {
-			errors = append(errors, newDuplicateConfigIdentifierError(c))
-		}
-	}
-
-	if errors != nil {
-		return Project{}, errors
-	}
-
-	configMap := make(ConfigsPerApisPerEnvironments)
-
-	for _, conf := range configs {
-		if _, found := configMap[conf.Environment]; !found {
-			configMap[conf.Environment] = make(map[string][]config.Config)
-		}
-
-		configMap[conf.Environment][conf.Coordinate.Api] = append(configMap[conf.Environment][conf.Coordinate.Api], conf)
-	}
-
-	return Project{
-		Id:           projectDefinition.Name,
-		GroupId:      projectDefinition.Group,
-		Configs:      configMap,
-		Dependencies: toDependenciesMap(projectDefinition.Name, configs),
-	}, nil
+	return configs, errors
 }
 
 func findDuplicatedConfigIdentifiers(configs []config.Config) []config.Config {
