@@ -164,7 +164,6 @@ func loadProjectsLegacyWay(fs afero.Fs, context ProjectLoaderContext, projectDef
 
 		loaded, configErrors := config.LoadConfigs(fs, &config.LoaderContext{
 			ProjectId:       projectDefinition.Name,
-			ApiId:           api,
 			Path:            apiPath,
 			Environments:    environments,
 			ParametersSerDe: context.ParametersSerde,
