@@ -36,9 +36,14 @@ type configDefinition struct {
 	Skip       interface{}                `yaml:"skip,omitempty"`
 }
 
+type configType struct {
+	Api string `yaml:"api"`
+}
+
 type topLevelConfigDefinition struct {
 	Id                   string                `yaml:"id"`
 	Config               configDefinition      `yaml:"config"`
+	Type                 configType            `yaml:"type"`
 	GroupOverrides       []groupOverride       `yaml:"groupOverrides,omitempty"`
 	EnvironmentOverrides []environmentOverride `yaml:"environmentOverrides,omitempty"`
 }
