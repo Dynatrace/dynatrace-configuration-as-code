@@ -17,6 +17,8 @@
 package topologysort
 
 import (
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/sort"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"testing"
 
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
@@ -318,7 +320,7 @@ func TestSortConfigsShouldReportAllLinksOfCyclicDependency(t *testing.T) {
 	assert.Assert(t, len(errs) > 0, "should report cyclic dependency errors")
 	assert.Assert(t, len(errs) == 3, "should report an error for each config")
 	for _, err := range errs {
-		depErr, ok := err.(*CircularDependencyConfigSortError)
+		depErr, ok := err.(CircularDependencyConfigSortError)
 		assert.Assert(t, ok, "expected errors of type CircularDependencyConfigSortError")
 		if depErr.Config.Match(config1Coordinates) {
 			assert.Assert(t, depErr.DependsOn[0] == config2Coordinates)
@@ -596,4 +598,88 @@ func indexOfParam(t *testing.T, params []ParameterWithName, name string) int {
 
 	t.Fatalf("no parameter with name `%s` found", name)
 	return -1
+}
+
+func Test_parseConfigSortErrors(t *testing.T) {
+	testConfigs := []config.Config{
+		{Coordinate: coordinate.Coordinate{
+			Project: "p1",
+			Api:     "a1",
+			Config:  "c1",
+		}},
+		{Coordinate: coordinate.Coordinate{
+			Project: "p1",
+			Api:     "a1",
+			Config:  "c2",
+		}},
+		{Coordinate: coordinate.Coordinate{
+			Project: "p1",
+			Api:     "a1",
+			Config:  "c3",
+		}},
+		{Coordinate: coordinate.Coordinate{
+			Project: "p1",
+			Api:     "a2",
+			Config:  "c1",
+		}},
+	}
+
+	type args struct {
+		sortErrs []sort.TopologySortError
+		configs  []config.Config
+	}
+	tests := []struct {
+		name string
+		args args
+		want []error
+	}{
+		{
+			"returns empty list for empty input",
+			args{
+				[]sort.TopologySortError{},
+				testConfigs,
+			},
+			[]error{},
+		},
+		{
+			"parses simple errors into list",
+			args{
+				[]sort.TopologySortError{
+					{
+						OnId:                        0,
+						UnresolvedIncomingEdgesFrom: []int{1, 2},
+					},
+					{
+						OnId:                        2,
+						UnresolvedIncomingEdgesFrom: []int{0},
+					},
+				},
+				testConfigs,
+			},
+			[]error{
+				CircularDependencyConfigSortError{
+					Config:    testConfigs[0].Coordinate,
+					DependsOn: []coordinate.Coordinate{testConfigs[2].Coordinate},
+				},
+				CircularDependencyConfigSortError{
+					Config:    testConfigs[1].Coordinate,
+					DependsOn: []coordinate.Coordinate{testConfigs[0].Coordinate},
+				},
+				CircularDependencyConfigSortError{
+					Config:    testConfigs[2].Coordinate,
+					DependsOn: []coordinate.Coordinate{testConfigs[0].Coordinate},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := parseConfigSortErrors(tt.args.sortErrs, tt.args.configs)
+			assert.DeepEqual(t, got, tt.want, cmpopts.SortSlices(func(a, b error) bool {
+				depErrA := a.(CircularDependencyConfigSortError)
+				depErrB := b.(CircularDependencyConfigSortError)
+				return depErrA.Config.String() < depErrB.Config.String()
+			}))
+		})
+	}
 }

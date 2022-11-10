@@ -81,7 +81,7 @@ type CircualDependencyProjectSortError struct {
 }
 
 func (e CircualDependencyProjectSortError) Error() string {
-	return fmt.Sprintf("%s:%s: circular dependency detected. check project dependencies: %s",
+	return fmt.Sprintf("%s:%s: circular dependency detected.\n check project dependencies: %s",
 		e.Environment, e.Project, strings.Join(e.DependsOn, ", "))
 }
 
@@ -92,7 +92,7 @@ type CircularDependencyConfigSortError struct {
 }
 
 func (e CircularDependencyConfigSortError) Error() string {
-	return fmt.Sprintf("%s:%s: circular dependency detected. check configs dependencies: %s",
+	return fmt.Sprintf("%s:%s: is part of circular dependency.\n depends on: %s",
 		e.Environment, e.Config, joinCoordinatesToString(e.DependsOn))
 }
 
@@ -256,18 +256,7 @@ func sortConfigs(configs []config.Config) ([]config.Config, []error) {
 	sorted, sortErrs := sort.TopologySort(matrix, inDegrees)
 
 	if len(sortErrs) > 0 {
-		errs := make([]error, len(sortErrs))
-
-		for i, sortErr := range sortErrs {
-			conf := configs[sortErr.OnId]
-
-			errs[i] = &CircularDependencyConfigSortError{
-				Config:      conf.Coordinate,
-				Environment: conf.Environment,
-				DependsOn:   conf.References,
-			}
-		}
-		return nil, errs
+		return nil, parseConfigSortErrors(sortErrs, configs)
 	}
 
 	result := make([]config.Config, 0, len(configs))
@@ -306,6 +295,40 @@ func configsToSortData(configs []config.Config) ([][]bool, []int) {
 	}
 
 	return matrix, inDegrees
+}
+
+// parseConfigSortErrors turns [sort.TopologySortError] into [CircularDependencyConfigSortError]
+// for each config still has an edge to another after sorting an error will be created by aggregating the sort errors
+func parseConfigSortErrors(sortErrs []sort.TopologySortError, configs []config.Config) []error {
+	depErrs := make(map[coordinate.Coordinate]CircularDependencyConfigSortError)
+
+	for _, sortErr := range sortErrs {
+		conf := configs[sortErr.OnId]
+
+		for _, index := range sortErr.UnresolvedIncomingEdgesFrom {
+			dependingConfig := configs[index]
+
+			if err, exists := depErrs[dependingConfig.Coordinate]; exists {
+				err.DependsOn = append(err.DependsOn, conf.Coordinate)
+				depErrs[dependingConfig.Coordinate] = err
+			} else {
+				depErrs[dependingConfig.Coordinate] = CircularDependencyConfigSortError{
+					Config:      dependingConfig.Coordinate,
+					Environment: dependingConfig.Environment,
+					DependsOn:   []coordinate.Coordinate{conf.Coordinate},
+				}
+			}
+		}
+	}
+
+	errs := make([]error, len(depErrs))
+	i := 0
+	for _, depErr := range depErrs {
+		errs[i] = depErr
+		i++
+	}
+
+	return errs
 }
 
 func sortProjects(projects []project.Project, environments []string) (ProjectsPerEnvironment, []error) {
