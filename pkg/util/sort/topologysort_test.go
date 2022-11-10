@@ -70,9 +70,9 @@ func TestTopologySort(t *testing.T) {
 			},
 			[]int{},
 			[]TopologySortError{
-				{OnId: 0},
-				{OnId: 1},
-				{OnId: 2},
+				{OnId: 0, UnresolvedIncomingEdgesFrom: []int{2}},
+				{OnId: 1, UnresolvedIncomingEdgesFrom: []int{0}},
+				{OnId: 2, UnresolvedIncomingEdgesFrom: []int{1}},
 			},
 		},
 	}

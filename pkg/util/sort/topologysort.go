@@ -17,11 +17,12 @@ package sort
 import "fmt"
 
 type TopologySortError struct {
-	OnId int
+	OnId                        int
+	UnresolvedIncomingEdgesFrom []int
 }
 
 func (e TopologySortError) Error() string {
-	return fmt.Sprintf("circular Dependency in Topology Sort, could not resolve dependencies still pointing to index %d", e.OnId)
+	return fmt.Sprintf("circular Dependency in Topology Sort, could not resolve dependencies still pointing to index %d from %v", e.OnId, e.UnresolvedIncomingEdgesFrom)
 }
 
 var (
@@ -52,7 +53,10 @@ func TopologySort(incomingEdges [][]bool, inDegrees []int) (topoSorted []int, er
 	errs = []TopologySortError{}
 	for i := range inDegrees {
 		if inDegrees[i] != 0 {
-			errs = append(errs, TopologySortError{OnId: i})
+			errs = append(errs, TopologySortError{
+				OnId:                        i,
+				UnresolvedIncomingEdgesFrom: getSourceOfIncomingEdges(incomingEdges[i]),
+			})
 		}
 	}
 
@@ -67,4 +71,14 @@ func getAllLeaves(inDegrees []int) []int {
 		}
 	}
 	return nodes
+}
+
+func getSourceOfIncomingEdges(incomingEdges []bool) []int {
+	var sources []int
+	for i, hasEdge := range incomingEdges {
+		if hasEdge {
+			sources = append(sources, i)
+		}
+	}
+	return sources
 }
