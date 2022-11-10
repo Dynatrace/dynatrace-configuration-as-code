@@ -247,8 +247,11 @@ func toTopLevelConfigDefinition(context *configConverterContext, configs []Confi
 	}
 
 	return topLevelConfigDefinition{
-		Id:                   context.config.Config,
-		Config:               config,
+		Id:     context.config.Config,
+		Config: config,
+		Type: configType{
+			Api: context.config.Api,
+		},
 		GroupOverrides:       groupOverrideConfigs,
 		EnvironmentOverrides: environmentOverrideConfigs,
 	}, templates, nil
