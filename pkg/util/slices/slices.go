@@ -39,3 +39,14 @@ func Difference[T comparable, S ~[]T](a S, b S) S {
 
 	return result
 }
+
+// AnyMatches checks if any value in the slice matches the filter. If so, true is returned, otherwise false.
+func AnyMatches[T comparable, S ~[]T](s S, filter func(v T) bool) bool {
+	for _, v := range s {
+		if filter(v) {
+			return true
+		}
+	}
+
+	return false
+}

@@ -17,7 +17,9 @@ package v2
 import (
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
-	"path/filepath"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/slices"
+	"os"
+	"strings"
 
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
@@ -61,7 +63,6 @@ func newDuplicateConfigIdentifierError(c config.Config) DuplicateConfigIdentifie
 	}
 }
 
-// TODO: Move fs into context?
 func LoadProjects(fs afero.Fs, context ProjectLoaderContext) ([]Project, []error) {
 	environments := toEnvironmentSlice(context.Manifest.Environments)
 	projects := make([]Project, 0)
@@ -117,7 +118,7 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 
 	log.Debug("Loading project `%s` (%s)...", projectDefinition.Name, projectDefinition.Path)
 
-	configs, errors := loadProjectsLegacyWay(fs, context, projectDefinition, environments)
+	configs, errors := loadConfigsOfProject(fs, context, projectDefinition, environments)
 
 	if d := findDuplicatedConfigIdentifiers(configs); d != nil {
 		for _, c := range d {
@@ -147,35 +148,46 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 	}, nil
 }
 
-func loadProjectsLegacyWay(fs afero.Fs, context ProjectLoaderContext, projectDefinition manifest.ProjectDefinition, environments []manifest.EnvironmentDefinition) ([]config.Config, []error) {
-	configs := make([]config.Config, 0)
+func loadConfigsOfProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition manifest.ProjectDefinition, environments []manifest.EnvironmentDefinition) ([]config.Config, []error) {
+	var configs []config.Config
 	var errors []error
 
-	for _, api := range context.Apis {
-		apiPath := filepath.Join(projectDefinition.Path, api)
+	err := afero.Walk(fs, projectDefinition.Path, func(path string, info os.FileInfo, err error) error {
 
-		if exists, err := afero.Exists(fs, apiPath); !exists || err != nil {
-			continue
+		if !info.IsDir() {
+			return nil
 		}
 
-		if isDir, err := afero.IsDir(fs, apiPath); !isDir || err != nil {
-			continue
+		pathParts := strings.Split(path, string(os.PathSeparator))
+		anyHidden := slices.AnyMatches(pathParts, func(v string) bool {
+			return strings.HasPrefix(v, ".")
+		})
+
+		if anyHidden {
+			return nil
 		}
 
-		loaded, configErrors := config.LoadConfigs(fs, &config.LoaderContext{
+		loaded, errs := config.LoadConfigs(fs, &config.LoaderContext{
 			ProjectId:       projectDefinition.Name,
-			Path:            apiPath,
+			Path:            path,
 			Environments:    environments,
 			ParametersSerDe: context.ParametersSerde,
 		})
 
-		if configErrors != nil {
-			errors = append(errors, configErrors...)
-			continue
+		if errs != nil {
+			errors = append(errors, errs...)
+			return nil
 		}
 
 		configs = append(configs, loaded...)
+
+		return nil
+	})
+
+	if err != nil {
+		errors = append(errors, err)
 	}
+
 	return configs, errors
 }
 
