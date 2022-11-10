@@ -32,6 +32,19 @@ To download specific APIs only, use `--specific-api` to pass a list of API value
 monaco download --specific-api alerting-profile,dashboard --environments=my-environment.yaml
 ```
 
+# Skipped configurations
+
+Some configurations on Dynatrace are predefined and must not be downloaded and reuploaded on the same, or another environment.
+
+Those skipped configurations are:
+
+| API                         | Details                                                                           |
+|-----------------------------|-----------------------------------------------------------------------------------|
+| `dashboard`/`dashboard-v2`  | Dashboards that have the owner `Dynatrace` set, or dashboards, which are a preset |
+| `anomaly-detection-metrics` | Configurations that start with `dynatrace.` or `ruxit.`                           |
+| `synthetic-locations`       | `public` (Dynatrace provided) locations                                           |
+| `extension`                 | Extensions with an id that starts with `custom.`                                  |
+
 ## Notes
 
 > :warning: **Application Detection Rules.** When using download functionality, you can only update existing application detection rules. You can only create a new app detection rule if no other app detection rules exist for that application.
