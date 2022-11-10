@@ -135,7 +135,7 @@ func (p *ParameterWithName) IsReferencing(config coordinate.Coordinate, param Pa
 	return false
 }
 
-func SortParameters(group string, environment string, conf coordinate.Coordinate, parameters config.Parameters) ([]ParameterWithName, error) {
+func SortParameters(group string, environment string, conf coordinate.Coordinate, parameters config.Parameters) ([]ParameterWithName, []error) {
 	parametersWithName := make([]ParameterWithName, 0, len(parameters))
 
 	for name, param := range parameters {
@@ -150,20 +150,25 @@ func SortParameters(group string, environment string, conf coordinate.Coordinate
 	})
 
 	matrix, inDegrees := parametersToSortData(conf, parametersWithName)
-	sorted, err, errorOn := sort.TopologySort(matrix, inDegrees)
+	sorted, sortErrs := sort.TopologySort(matrix, inDegrees)
 
-	if err != nil {
-		param := parametersWithName[errorOn]
+	if len(sortErrs) > 0 {
+		errs := make([]error, len(sortErrs))
+		for i, sortErr := range sortErrs {
+			param := parametersWithName[sortErr.OnId]
 
-		return nil, &CircularDependencyParameterSortError{
-			Config: conf,
-			EnvironmentDetails: errors.EnvironmentDetails{
-				Group:       group,
-				Environment: environment,
-			},
-			Parameter: param.Name,
-			DependsOn: param.Parameter.GetReferences(),
+			errs[i] = &CircularDependencyParameterSortError{
+				Config: conf,
+				EnvironmentDetails: errors.EnvironmentDetails{
+					Group:       group,
+					Environment: environment,
+				},
+				Parameter: param.Name,
+				DependsOn: param.Parameter.GetReferences(),
+			}
 		}
+		return nil, errs
+
 	}
 
 	result := make([]ParameterWithName, 0, len(parametersWithName))
@@ -214,11 +219,9 @@ func GetSortedConfigsForEnvironments(projects []project.Project, environments []
 
 		for _, project := range sortedProject {
 			configs := project.Configs[env]
-			sortedConfigs, err := sortConfigs(getConfigs(configs))
+			sortedConfigs, cfgSortErrs := sortConfigs(getConfigs(configs))
 
-			if err != nil {
-				errors = append(errors, err)
-			}
+			errors = append(errors, cfgSortErrs...)
 
 			sortedConfigResult = append(sortedConfigResult, sortedConfigs...)
 		}
@@ -247,19 +250,24 @@ func getConfigs(m map[string][]config.Config) []config.Config {
 	return result
 }
 
-func sortConfigs(configs []config.Config) ([]config.Config, error) {
+func sortConfigs(configs []config.Config) ([]config.Config, []error) {
 	matrix, inDegrees := configsToSortData(configs)
 
-	sorted, err, errorOn := sort.TopologySort(matrix, inDegrees)
+	sorted, sortErrs := sort.TopologySort(matrix, inDegrees)
 
-	if err != nil {
-		conf := configs[errorOn]
+	if len(sortErrs) > 0 {
+		errs := make([]error, len(sortErrs))
 
-		return nil, &CircularDependencyConfigSortError{
-			Config:      conf.Coordinate,
-			Environment: conf.Environment,
-			DependsOn:   conf.References,
+		for i, sortErr := range sortErrs {
+			conf := configs[sortErr.OnId]
+
+			errs[i] = &CircularDependencyConfigSortError{
+				Config:      conf.Coordinate,
+				Environment: conf.Environment,
+				DependsOn:   conf.References,
+			}
 		}
+		return nil, errs
 	}
 
 	result := make([]config.Config, 0, len(configs))
@@ -308,16 +316,18 @@ func sortProjects(projects []project.Project, environments []string) (ProjectsPe
 	for _, env := range environments {
 		matrix, inDegrees := projectsToSortData(projects, env)
 
-		sorted, err, errorOn := sort.TopologySort(matrix, inDegrees)
+		sorted, sortErrs := sort.TopologySort(matrix, inDegrees)
 
-		if err != nil {
-			project := projects[errorOn]
+		if len(sortErrs) > 0 {
+			for _, sortErr := range sortErrs {
+				p := projects[sortErr.OnId]
 
-			errors = append(errors, &CircualDependencyProjectSortError{
-				Environment: env,
-				Project:     project.Id,
-				DependsOn:   project.Dependencies[env],
-			})
+				errors = append(errors, &CircualDependencyProjectSortError{
+					Environment: env,
+					Project:     p.Id,
+					DependsOn:   p.Dependencies[env],
+				})
+			}
 		}
 
 		result := make([]project.Project, 0, len(sorted))

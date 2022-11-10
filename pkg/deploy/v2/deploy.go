@@ -207,11 +207,8 @@ func deployConfig(
 
 	var errors []error
 
-	parameters, err := topologysort.SortParameters(conf.Group, conf.Environment, conf.Coordinate, conf.Parameters)
-
-	if err != nil {
-		errors = append(errors, err)
-	}
+	parameters, sortErrs := topologysort.SortParameters(conf.Group, conf.Environment, conf.Coordinate, conf.Parameters)
+	errors = append(errors, sortErrs...)
 
 	properties, errs := ResolveParameterValues(client, conf, entities, parameters, dryRun)
 

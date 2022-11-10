@@ -16,8 +16,20 @@ package sort
 
 import "fmt"
 
+type TopologySortError struct {
+	OnId int
+}
+
+func (e TopologySortError) Error() string {
+	return fmt.Sprintf("circular Dependency in Topology Sort, could not resolve dependencies still pointing to index %d", e.OnId)
+}
+
+var (
+	_ error = (*TopologySortError)(nil)
+)
+
 // https://en.wikipedia.org/wiki/Topological_sorting#Kahn's_algorithm
-func TopologySort(incomingEdges [][]bool, inDegrees []int) (topoSorted []int, err error, errorOnId int) {
+func TopologySort(incomingEdges [][]bool, inDegrees []int) (topoSorted []int, errs []TopologySortError) {
 
 	nodes := getAllLeaves(inDegrees)
 
@@ -36,13 +48,15 @@ func TopologySort(incomingEdges [][]bool, inDegrees []int) (topoSorted []int, er
 			}
 		}
 	}
+
+	errs = []TopologySortError{}
 	for i := range inDegrees {
 		if inDegrees[i] != 0 {
-			return topoSorted, fmt.Errorf("circular Dependency in Topology Sort, could not resolve dependencies still pointing to index %d", i), i
+			errs = append(errs, TopologySortError{OnId: i})
 		}
 	}
 
-	return topoSorted, nil, -1
+	return topoSorted, errs
 }
 
 func getAllLeaves(inDegrees []int) []int {
