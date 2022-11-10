@@ -46,7 +46,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 		{
 			name: "Full overlap",
 			args: args{
-				entries: []DeletePointer{{Name: "d1"}, {Name: "d2"}, {Name: "d3"}},
+				entries: []DeletePointer{{DeleteIdentifier: "d1"}, {DeleteIdentifier: "d2"}, {DeleteIdentifier: "d3"}},
 				values:  []api.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "id2"}, {Name: "d3", Id: "id3"}},
 			},
 			expect: expect{
@@ -64,7 +64,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 		{
 			name: "More deletes",
 			args: args{
-				entries: []DeletePointer{{Name: "d1"}, {Name: "d2"}, {Name: "d3"}},
+				entries: []DeletePointer{{DeleteIdentifier: "d1"}, {DeleteIdentifier: "d2"}, {DeleteIdentifier: "d3"}},
 				values:  []api.Value{{Name: "d1", Id: "id1"}},
 			},
 			expect: expect{
@@ -75,7 +75,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 		{
 			name: "More values",
 			args: args{
-				entries: []DeletePointer{{Name: "d1"}},
+				entries: []DeletePointer{{DeleteIdentifier: "d1"}},
 				values:  []api.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "id2"}, {Name: "d3", Id: "id3"}},
 			},
 			expect: expect{
@@ -86,7 +86,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 		{
 			name: "Id-fallback",
 			args: args{
-				entries: []DeletePointer{{Name: "d1"}, {Name: "d2-id"}},
+				entries: []DeletePointer{{DeleteIdentifier: "d1"}, {DeleteIdentifier: "d2-id"}},
 				values:  []api.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "d2-id"}, {Name: "d3", Id: "id3"}},
 			},
 			expect: expect{
@@ -97,7 +97,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 		{
 			name: "Duplicate names",
 			args: args{
-				entries: []DeletePointer{{Name: "d1"}, {Name: "d2"}},
+				entries: []DeletePointer{{DeleteIdentifier: "d1"}, {DeleteIdentifier: "d2"}},
 				values:  []api.Value{{Name: "d1"}, {Name: "d1"}, {Name: "d2"}, {Name: "d2"}},
 			},
 			expect: expect{
@@ -108,7 +108,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 		{
 			name: "Combined",
 			args: args{
-				entries: []DeletePointer{{Name: "d1"}, {Name: "d2"}, {Name: "d3"}, {Name: "d4-id"}},
+				entries: []DeletePointer{{DeleteIdentifier: "d1"}, {DeleteIdentifier: "d2"}, {DeleteIdentifier: "d3"}, {DeleteIdentifier: "d4-id"}},
 				values:  []api.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "id2"}, {Name: "d2", Id: "id-something"}, {Name: "d3", Id: "id3"}, {Id: "d4-id"}},
 			},
 			expect: expect{

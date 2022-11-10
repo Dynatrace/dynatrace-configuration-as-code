@@ -142,14 +142,14 @@ func parseDeleteEntry(context *loaderContext, index int, entry string) (DeletePo
 	// since the string must contain at least one delimiter and we
 	// split the entity by max two, we do not need to test for len of parts
 	apiId := parts[0]
-	entityName := parts[1]
+	deleteIdentifier := parts[1]
 
 	if _, found := context.knownApis[apiId]; !found {
 		return DeletePointer{}, newDeleteEntryParserError(entry, index, fmt.Sprintf("unknown api `%s`", apiId))
 	}
 
 	return DeletePointer{
-		ApiId: apiId,
-		Name:  entityName,
+		ApiId:            apiId,
+		DeleteIdentifier: deleteIdentifier,
 	}, nil
 }

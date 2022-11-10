@@ -22,8 +22,8 @@ import (
 )
 
 type DeletePointer struct {
-	ApiId string
-	Name  string
+	ApiId            string
+	DeleteIdentifier string
 }
 
 func DeleteConfigs(client rest.DynatraceClient, apis map[string]api.Api, entriesToDelete map[string][]DeletePointer) (errors []error) {
@@ -74,12 +74,12 @@ func filterValuesToDelete(entries []DeletePointer, existingValues []api.Value, a
 		valuesById[v.Id] = v
 
 		for _, entry := range entries {
-			if toDeleteByName[entry.Name] == nil {
-				toDeleteByName[entry.Name] = []api.Value{}
+			if toDeleteByName[entry.DeleteIdentifier] == nil {
+				toDeleteByName[entry.DeleteIdentifier] = []api.Value{}
 			}
 
-			if v.Name == entry.Name {
-				toDeleteByName[entry.Name] = append(toDeleteByName[entry.Name], v)
+			if v.Name == entry.DeleteIdentifier {
+				toDeleteByName[entry.DeleteIdentifier] = append(toDeleteByName[entry.DeleteIdentifier], v)
 			}
 		}
 	}

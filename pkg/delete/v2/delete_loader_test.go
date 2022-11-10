@@ -42,7 +42,7 @@ func TestParseDeleteEntry(t *testing.T) {
 
 	assert.NilError(t, err)
 	assert.Equal(t, api, entry.ApiId)
-	assert.Equal(t, name, entry.Name)
+	assert.Equal(t, name, entry.DeleteIdentifier)
 }
 
 func TestParseDeleteEntryWithMultipleSlashesShouldWork(t *testing.T) {
@@ -63,7 +63,7 @@ func TestParseDeleteEntryWithMultipleSlashesShouldWork(t *testing.T) {
 
 	assert.NilError(t, err)
 	assert.Equal(t, api, entry.ApiId)
-	assert.Equal(t, name, entry.Name)
+	assert.Equal(t, name, entry.DeleteIdentifier)
 }
 
 func TestParseDeleteEntryInvalidEntryWithoutDelimiterShouldFail(t *testing.T) {
@@ -135,16 +135,16 @@ func TestParseDeleteFileDefinitions(t *testing.T) {
 
 	assert.Equal(t, 1, len(apiEntities))
 	assert.Equal(t, DeletePointer{
-		ApiId: api,
-		Name:  name,
+		ApiId:            api,
+		DeleteIdentifier: name,
 	}, apiEntities[0])
 
 	api2Entities := result[api2]
 
 	assert.Equal(t, 1, len(api2Entities))
 	assert.Equal(t, DeletePointer{
-		ApiId: api2,
-		Name:  name2,
+		ApiId:            api2,
+		DeleteIdentifier: name2,
 	}, api2Entities[0])
 }
 
@@ -210,16 +210,16 @@ func TestLoadEntriesToDelete(t *testing.T) {
 
 	assert.Equal(t, 1, len(apiEntities))
 	assert.Equal(t, DeletePointer{
-		ApiId: "management-zone",
-		Name:  "test entity/entities",
+		ApiId:            "management-zone",
+		DeleteIdentifier: "test entity/entities",
 	}, apiEntities[0])
 
 	api2Entities := result["auto-tag"]
 
 	assert.Equal(t, 1, len(api2Entities))
 	assert.Equal(t, DeletePointer{
-		ApiId: "auto-tag",
-		Name:  "random tag",
+		ApiId:            "auto-tag",
+		DeleteIdentifier: "random tag",
 	}, api2Entities[0])
 }
 
