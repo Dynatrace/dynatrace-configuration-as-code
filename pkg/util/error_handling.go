@@ -96,3 +96,9 @@ func PrintWarning(err error) {
 		}
 	}
 }
+
+func PrintWarnings(errors []error) {
+	for _, err := range errors {
+		PrintWarning(err)
+	}
+}

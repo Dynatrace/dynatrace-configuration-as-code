@@ -17,10 +17,12 @@ package download
 import (
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
+	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download/downloader"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
 	project "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2/topologysort"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
@@ -74,7 +76,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile
 		return fmt.Errorf("failed to load apis")
 	}
 
-	url, err := env.GetUrl()
+	u, err := env.GetUrl()
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -94,7 +96,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile
 		tokenEnvVar = envVarToken.EnvironmentVariableName
 	}
 
-	return doDownload(fs, url, fmt.Sprintf("%s_%s", projectName, specificEnvironmentName), token, tokenEnvVar, outputFolder, apisToDownload, rest.NewDynatraceClient)
+	return doDownload(fs, u, fmt.Sprintf("%s_%s", projectName, specificEnvironmentName), token, tokenEnvVar, outputFolder, apisToDownload, rest.NewDynatraceClient)
 }
 
 func (d DefaultCommand) DownloadConfigs(fs afero.Fs, environmentUrl, projectName, envVarName, outputFolder string, apiNamesToDownload []string) error {
@@ -120,6 +122,17 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, environmentUrl, projectName
 
 type dynatraceClientFactory func(environmentUrl, token string) (rest.DynatraceClient, error)
 
+func getConfigs(environmentUrl string, token string, apis api.ApiMap, projectName string, clientFactory dynatraceClientFactory) (project.ConfigsPerApis, error) {
+	client, err := clientFactory(environmentUrl, token)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Dynatrace client: %w", err)
+	}
+
+	downloadedConfigs := downloader.DownloadAllConfigs(apis, client, projectName)
+	log.Info("Downloaded %v configs", sumConfigs(downloadedConfigs))
+	return downloadedConfigs, nil
+}
+
 func doDownload(fs afero.Fs, environmentUrl, projectName, token, tokenEnvVarName, outputFolder string, apis api.ApiMap, clientFactory dynatraceClientFactory) error {
 
 	errors := validateOutputFolder(fs, outputFolder, projectName)
@@ -132,22 +145,20 @@ func doDownload(fs afero.Fs, environmentUrl, projectName, token, tokenEnvVarName
 	log.Info("Downloading from environment '%v' into project '%v'", environmentUrl, projectName)
 	log.Debug("APIS to download: \n - %v", strings.Join(maps.Keys(apis), "\n - "))
 
-	client, err := clientFactory(environmentUrl, token)
+	downloadedConfigs, err := getConfigs(environmentUrl, token, apis, projectName, clientFactory)
 	if err != nil {
-		return fmt.Errorf("failed to create Dynatrace client: %w", err)
+		return err
 	}
-
-	downloadedConfigs := downloader.DownloadAllConfigs(apis, client, projectName)
 
 	if len(downloadedConfigs) == 0 {
 		log.Info("No configs were downloaded")
 		return nil
-	} else {
-		log.Info("Downloaded %v configs", sumConfigs(downloadedConfigs))
 	}
 
 	log.Info("Resolving dependencies between configurations")
 	downloadedConfigs = download.ResolveDependencies(downloadedConfigs)
+
+	_ = reportForCircularDependencies(downloadedConfigs)
 
 	err = download.WriteToDisk(fs, downloadedConfigs, projectName, tokenEnvVarName, environmentUrl, outputFolder)
 	if err != nil {
@@ -156,6 +167,19 @@ func doDownload(fs afero.Fs, environmentUrl, projectName, token, tokenEnvVarName
 
 	log.Info("Finished download")
 
+	return nil
+}
+
+func reportForCircularDependencies(configs project.ConfigsPerApis) error {
+	configList := make([]config.Config, len(configs))
+	for _, v := range configs {
+		configList = append(configList, v...)
+	}
+	_, errs := topologysort.SortConfigs(configList)
+	if errs != nil {
+		util.PrintWarnings(errs)
+		return fmt.Errorf("downloaded configurations contain dependnency problems, please check log and cleanup configurations manually")
+	}
 	return nil
 }
 

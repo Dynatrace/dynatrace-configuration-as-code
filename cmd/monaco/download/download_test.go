@@ -17,6 +17,12 @@
 package download
 
 import (
+	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
+	valueParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/value"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
+	project "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
 	"github.com/spf13/afero"
 	"testing"
 )
@@ -105,4 +111,73 @@ func getTestFs(existingFolderPaths []string, existingFilePaths []string) afero.F
 		_ = afero.WriteFile(fs, p, []byte{}, 0777)
 	}
 	return fs
+}
+
+func Test_checkForCircularDependencies(t *testing.T) {
+	type args struct {
+		configs project.ConfigsPerApis
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			"writes nothing if no configs are downloaded",
+			args{project.ConfigsPerApis{}},
+			false,
+		}, {
+			"return errors if cyclic dependency in downloaded configs",
+			args{
+				project.ConfigsPerApis{
+					"dashboard": []config.Config{
+						{
+							Template: template.CreateTemplateFromString("some/path", "{}"),
+							Parameters: map[string]parameter.Parameter{
+								"name": &valueParam.ValueParameter{Value: "name A"},
+							},
+							Coordinate: coordinate.Coordinate{
+								Project: "test",
+								Api:     "dashboard",
+								Config:  "a",
+							},
+							References: []coordinate.Coordinate{
+								{
+									Project: "test",
+									Api:     "dashboard",
+									Config:  "b",
+								},
+							},
+						},
+						{
+							Template: template.CreateTemplateFromString("some/path", "{}"),
+							Parameters: map[string]parameter.Parameter{
+								"name": &valueParam.ValueParameter{Value: "name A"},
+							},
+							Coordinate: coordinate.Coordinate{
+								Project: "test",
+								Api:     "dashboard",
+								Config:  "b",
+							},
+							References: []coordinate.Coordinate{
+								{
+									Project: "test",
+									Api:     "dashboard",
+									Config:  "a",
+								},
+							},
+						},
+					},
+				},
+			},
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := reportForCircularDependencies(tt.args.configs); (err != nil) != tt.wantErr {
+				t.Errorf("reportForCircularDependencies() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }

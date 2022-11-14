@@ -106,8 +106,8 @@ func joinCoordinatesToString(coordinates []coordinate.Coordinate) string {
 
 	result := strings.Builder{}
 
-	for _, coordinate := range coordinates {
-		result.WriteString(coordinate.String())
+	for _, c := range coordinates {
+		result.WriteString(c.String())
 		result.WriteString(", ")
 	}
 
@@ -217,9 +217,9 @@ func GetSortedConfigsForEnvironments(projects []project.Project, environments []
 	for env, sortedProject := range sortedProjectsPerEnvironment {
 		sortedConfigResult := make([]config.Config, 0)
 
-		for _, project := range sortedProject {
-			configs := project.Configs[env]
-			sortedConfigs, cfgSortErrs := sortConfigs(getConfigs(configs))
+		for _, p := range sortedProject {
+			configs := p.Configs[env]
+			sortedConfigs, cfgSortErrs := SortConfigs(getConfigs(configs))
 
 			errors = append(errors, cfgSortErrs...)
 
@@ -250,7 +250,7 @@ func getConfigs(m map[string][]config.Config) []config.Config {
 	return result
 }
 
-func sortConfigs(configs []config.Config) ([]config.Config, []error) {
+func SortConfigs(configs []config.Config) ([]config.Config, []error) {
 	matrix, inDegrees := configsToSortData(configs)
 
 	sorted, sortErrs := sort.TopologySort(matrix, inDegrees)
@@ -273,7 +273,7 @@ func configsToSortData(configs []config.Config) ([][]bool, []int) {
 	matrix := make([][]bool, numConfigs)
 	inDegrees := make([]int, len(configs))
 
-	for i, config := range configs {
+	for i, conf := range configs {
 		matrix[i] = make([]bool, numConfigs)
 
 		for j, c := range configs {
@@ -286,8 +286,8 @@ func configsToSortData(configs []config.Config) ([][]bool, []int) {
 				continue
 			}
 
-			if c.HasDependencyOn(config) {
-				logDependency("Configuration", c.Coordinate.String(), config.Coordinate.String())
+			if c.HasDependencyOn(conf) {
+				logDependency("Configuration", c.Coordinate.String(), conf.Coordinate.String())
 				matrix[i][j] = true
 				inDegrees[i]++
 			}

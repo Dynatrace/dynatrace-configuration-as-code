@@ -219,7 +219,7 @@ func TestSortConfigs(t *testing.T) {
 		},
 	}
 
-	sorted, errs := sortConfigs(configs)
+	sorted, errs := SortConfigs(configs)
 
 	assert.Equal(t, len(errs), 0, "expected zero errors when sorting")
 	assert.Assert(t, len(configs) == len(sorted), "len configs (%d) == len sorted (%d)", len(configs), len(sorted))
@@ -378,7 +378,7 @@ func TestSortConfigsShouldNotFailOnCyclicDependencyWhichAreSkip(t *testing.T) {
 		},
 	}
 
-	_, errs := sortConfigs(configs)
+	_, errs := SortConfigs(configs)
 
 	assert.Equal(t, len(errs), 0, "expected zero errors when sorting")
 }
