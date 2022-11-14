@@ -84,7 +84,7 @@ func findAndReplaceIds(apiName string, configToBeUpdated config.Config, configs 
 	content := configToBeUpdated.Template.Content()
 
 	for key, conf := range configs {
-		if strings.Contains(content, key) && conf.Template.Id() != configToBeUpdated.Template.Id() {
+		if shouldReplaceReference(configToBeUpdated, conf, content, key) {
 			log.Debug("\treference: '%v/%v' referencing '%v' in coordinate '%v' ", apiName, configToBeUpdated.Template.Id(), key, conf.Coordinate)
 
 			parameterName := createParameterName(conf.Coordinate.Api, conf.Coordinate.Config)
@@ -97,6 +97,17 @@ func findAndReplaceIds(apiName string, configToBeUpdated config.Config, configs 
 	}
 
 	return content, parameters
+}
+
+// shouldReplaceReference checks if a given key is found in the content of another config and should be replaced
+// in case two configs are actually the same, or if they are both dashboards no replacement will happen as in these
+// cases there is no real valid reference even if the key is found in the content.
+func shouldReplaceReference(configToBeUpdated config.Config, configToUpdateFrom config.Config, contentToBeUpdated, keyToReplace string) bool {
+	if configToBeUpdated.Coordinate.Api == "dashboard" && configToUpdateFrom.Coordinate.Api == "dashboard" {
+		return false //dashboards can not actually reference each other, but often contain a link to another inside a markdown tile
+	}
+
+	return configToUpdateFrom.Template.Id() != configToBeUpdated.Template.Id() && strings.Contains(contentToBeUpdated, keyToReplace)
 }
 
 func createParameterName(api, configId string) string {
