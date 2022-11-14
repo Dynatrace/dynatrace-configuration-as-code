@@ -49,7 +49,7 @@ type topLevelConfigDefinition struct {
 }
 
 type topLevelDefinition struct {
-	Configs []topLevelConfigDefinition
+	Configs []topLevelConfigDefinition `yaml:"configs"`
 }
 
 type configParameter interface{}
