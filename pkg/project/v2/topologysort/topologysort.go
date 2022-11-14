@@ -219,7 +219,7 @@ func GetSortedConfigsForEnvironments(projects []project.Project, environments []
 
 		for _, p := range sortedProject {
 			configs := p.Configs[env]
-			sortedConfigs, cfgSortErrs := SortConfigs(getConfigs(configs))
+			sortedConfigs, cfgSortErrs := sortConfigs(getConfigs(configs))
 
 			errors = append(errors, cfgSortErrs...)
 
@@ -250,7 +250,7 @@ func getConfigs(m map[string][]config.Config) []config.Config {
 	return result
 }
 
-func SortConfigs(configs []config.Config) ([]config.Config, []error) {
+func sortConfigs(configs []config.Config) ([]config.Config, []error) {
 	matrix, inDegrees := configsToSortData(configs)
 
 	sorted, sortErrs := sort.TopologySort(matrix, inDegrees)

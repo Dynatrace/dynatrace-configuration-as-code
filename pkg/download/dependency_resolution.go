@@ -18,6 +18,7 @@ package download
 
 import (
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
 	"strings"
 	"sync"
 
@@ -50,15 +51,16 @@ func findAndSetDependencies(configs project.ConfigsPerApis, configsById map[stri
 
 	// currently a simple brute force attach
 	for theApi, configs := range configs {
-		for _, configToBeUpdated := range configs {
+		for i := range configs {
 			wg.Add(1)
 
-			configToBeUpdated := configToBeUpdated
+			configToBeUpdated := &configs[i]
 			go func() {
-				newContent, parameters := findAndReplaceIds(theApi, configToBeUpdated, configsById)
+				newContent, parameters, coordinates := findAndReplaceIds(theApi, *configToBeUpdated, configsById)
 
 				maps.Copy(configToBeUpdated.Parameters, parameters)
 				configToBeUpdated.Template.UpdateContent(newContent)
+				configToBeUpdated.References = append(configToBeUpdated.References, coordinates...)
 
 				wg.Done()
 			}()
@@ -79,9 +81,10 @@ func collectConfigsById(configs project.ConfigsPerApis) map[string]config.Config
 	return configsById
 }
 
-func findAndReplaceIds(apiName string, configToBeUpdated config.Config, configs map[string]config.Config) (string, config.Parameters) {
+func findAndReplaceIds(apiName string, configToBeUpdated config.Config, configs map[string]config.Config) (string, config.Parameters, []coordinate.Coordinate) {
 	parameters := make(config.Parameters, 0)
 	content := configToBeUpdated.Template.Content()
+	coordinates := make([]coordinate.Coordinate, 0)
 
 	for key, conf := range configs {
 		if shouldReplaceReference(configToBeUpdated, conf, content, key) {
@@ -93,10 +96,11 @@ func findAndReplaceIds(apiName string, configToBeUpdated config.Config, configs 
 			content = strings.ReplaceAll(content, key, "{{."+parameterName+"}}")
 			ref := reference.NewWithCoordinate(coord, "id")
 			parameters[parameterName] = ref
+			coordinates = append(coordinates, coord)
 		}
 	}
 
-	return content, parameters
+	return content, parameters, coordinates
 }
 
 // shouldReplaceReference checks if a given key is found in the content of another config and should be replaced

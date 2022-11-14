@@ -75,7 +75,7 @@ func TestWriteToDisk(t *testing.T) {
 			false,
 		},
 		{
-			"creates 'download_{TIMESTAMP}' output if no outputfolder is defined",
+			"creates 'download_{TIMESTAMP}' output if no output folder is defined",
 			args{
 				fs: emptyTestFs(),
 				downloadedConfigs: v2.ConfigsPerApis{

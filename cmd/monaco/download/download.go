@@ -17,7 +17,6 @@ package download
 import (
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
-	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download/downloader"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
@@ -122,17 +121,6 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, environmentUrl, projectName
 
 type dynatraceClientFactory func(environmentUrl, token string) (rest.DynatraceClient, error)
 
-func getConfigs(environmentUrl string, token string, apis api.ApiMap, projectName string, clientFactory dynatraceClientFactory) (project.ConfigsPerApis, error) {
-	client, err := clientFactory(environmentUrl, token)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Dynatrace client: %w", err)
-	}
-
-	downloadedConfigs := downloader.DownloadAllConfigs(apis, client, projectName)
-	log.Info("Downloaded %v configs", sumConfigs(downloadedConfigs))
-	return downloadedConfigs, nil
-}
-
 func doDownload(fs afero.Fs, environmentUrl, projectName, token, tokenEnvVarName, outputFolder string, apis api.ApiMap, clientFactory dynatraceClientFactory) error {
 
 	errors := validateOutputFolder(fs, outputFolder, projectName)
@@ -145,42 +133,47 @@ func doDownload(fs afero.Fs, environmentUrl, projectName, token, tokenEnvVarName
 	log.Info("Downloading from environment '%v' into project '%v'", environmentUrl, projectName)
 	log.Debug("APIS to download: \n - %v", strings.Join(maps.Keys(apis), "\n - "))
 
-	downloadedConfigs, err := getConfigs(environmentUrl, token, apis, projectName, clientFactory)
+	downloadedConfigs, err := downloadConfigs(environmentUrl, token, apis, projectName, clientFactory)
 	if err != nil {
 		return err
 	}
 
-	if len(downloadedConfigs) == 0 {
-		log.Info("No configs were downloaded")
-		return nil
-	}
-
 	log.Info("Resolving dependencies between configurations")
 	downloadedConfigs = download.ResolveDependencies(downloadedConfigs)
-
-	_ = reportForCircularDependencies(downloadedConfigs)
 
 	err = download.WriteToDisk(fs, downloadedConfigs, projectName, tokenEnvVarName, environmentUrl, outputFolder)
 	if err != nil {
 		return err
 	}
 
-	log.Info("Finished download")
+	if m := reportForCircularDependencies(downloadedConfigs, projectName); m != "" {
+		log.Warn(m)
+	} else {
+		log.Info("Finished download")
+	}
 
 	return nil
 }
 
-func reportForCircularDependencies(configs project.ConfigsPerApis) error {
-	configList := make([]config.Config, len(configs))
-	for _, v := range configs {
-		configList = append(configList, v...)
-	}
-	_, errs := topologysort.SortConfigs(configList)
-	if errs != nil {
+func reportForCircularDependencies(configs project.ConfigsPerApis, projectName string) string {
+	p, _ := download.CreateProjectData(configs, projectName)
+	_, errs := topologysort.GetSortedConfigsForEnvironments([]project.Project{p}, []string{projectName})
+	if len(errs) != 0 {
 		util.PrintWarnings(errs)
-		return fmt.Errorf("downloaded configurations contain dependnency problems, please check log and cleanup configurations manually")
+		return "Download finished with problems - there are circular dependencies between configurations that need to be resolved manually"
 	}
-	return nil
+	return ""
+}
+
+func downloadConfigs(environmentUrl string, token string, apis api.ApiMap, projectName string, clientFactory dynatraceClientFactory) (project.ConfigsPerApis, error) {
+	client, err := clientFactory(environmentUrl, token)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Dynatrace client: %w", err)
+	}
+
+	downloadedConfigs := downloader.DownloadAllConfigs(apis, client, projectName)
+	log.Info("Downloaded %v configs", sumConfigs(downloadedConfigs))
+	return downloadedConfigs, nil
 }
 
 func sumConfigs(configs project.ConfigsPerApis) int {

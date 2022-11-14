@@ -24,6 +24,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
 	project "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
 	"github.com/spf13/afero"
+	"gotest.tools/assert"
 	"testing"
 )
 
@@ -115,7 +116,8 @@ func getTestFs(existingFolderPaths []string, existingFilePaths []string) afero.F
 
 func Test_checkForCircularDependencies(t *testing.T) {
 	type args struct {
-		configs project.ConfigsPerApis
+		configs     project.ConfigsPerApis
+		projectName string
 	}
 	tests := []struct {
 		name    string
@@ -124,7 +126,10 @@ func Test_checkForCircularDependencies(t *testing.T) {
 	}{
 		{
 			"writes nothing if no configs are downloaded",
-			args{project.ConfigsPerApis{}},
+			args{
+				project.ConfigsPerApis{},
+				"testProject",
+			},
 			false,
 		}, {
 			"return errors if cyclic dependency in downloaded configs",
@@ -169,14 +174,15 @@ func Test_checkForCircularDependencies(t *testing.T) {
 						},
 					},
 				},
+				"testProject",
 			},
 			true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := reportForCircularDependencies(tt.args.configs); (err != nil) != tt.wantErr {
-				t.Errorf("reportForCircularDependencies() error = %v, wantErr %v", err, tt.wantErr)
+			if m := reportForCircularDependencies(tt.args.configs, tt.args.projectName); (m != "") != tt.wantErr {
+				assert.Equal(t, m, "There are circular dependencies in a configuration that has to be removed!!!")
 			}
 		})
 	}

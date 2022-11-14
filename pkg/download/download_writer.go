@@ -50,7 +50,7 @@ func writeToDisk(fs afero.Fs, downloadedConfigs project.ConfigsPerApis, projectN
 		log.Warn("A manifest.yaml already exists in '%s', creating '%s' instead.", outputFolder, manifestName)
 	}
 
-	proj, projectDefinitions := createProjectData(downloadedConfigs, projectName)
+	proj, projectDefinitions := CreateProjectData(downloadedConfigs, projectName)
 
 	m := manifest.Manifest{
 		Projects: projectDefinitions,
@@ -82,24 +82,4 @@ func writeToDisk(fs afero.Fs, downloadedConfigs project.ConfigsPerApis, projectN
 
 	log.Info("Downloaded configurations written to '%s'", outputFolder)
 	return nil
-}
-
-func createProjectData(downloadedConfigs project.ConfigsPerApis, projectName string) (project.Project, manifest.ProjectDefinitionByProjectId) {
-	configsPerApiPerEn := project.ConfigsPerApisPerEnvironments{
-		projectName: downloadedConfigs,
-	}
-
-	proj := project.Project{
-		Id:      projectName,
-		Configs: configsPerApiPerEn,
-	}
-
-	projectDefinitions := manifest.ProjectDefinitionByProjectId{
-		projectName: {
-			Name: projectName,
-			Path: projectName,
-		},
-	}
-
-	return proj, projectDefinitions
 }
