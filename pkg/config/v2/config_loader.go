@@ -35,7 +35,6 @@ import (
 
 type LoaderContext struct {
 	ProjectId       string
-	ApiId           string
 	Path            string
 	Environments    []manifest.EnvironmentDefinition
 	KnownApis       []string
@@ -82,6 +81,7 @@ type ConfigLoaderContext struct {
 	*LoaderContext
 	Folder string
 	Path   string
+	ApiId  string
 }
 
 type DefinitionParserError struct {
