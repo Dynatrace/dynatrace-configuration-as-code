@@ -171,6 +171,7 @@ func loadConfigsOfProject(fs afero.Fs, context ProjectLoaderContext, projectDefi
 			ProjectId:       projectDefinition.Name,
 			Path:            path,
 			Environments:    environments,
+			KnownApis:       context.Apis,
 			ParametersSerDe: context.ParametersSerde,
 		})
 

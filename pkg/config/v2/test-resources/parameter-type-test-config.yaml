@@ -1,5 +1,7 @@
 configs:
   - id: parameter_type_test
+    type:
+      api: "some-api"
     config:
       name: "Parameter Type Test Config"
       template: templating-integration-test-template.json #not used here

@@ -29,6 +29,7 @@ func Test_parseConfigs(t *testing.T) {
 		ProjectId: "project",
 		ApiId:     "some-api",
 		Path:      "some-dir/",
+		KnownApis: []string{"some-api"},
 		Environments: []manifest.EnvironmentDefinition{
 			manifest.NewEnvironmentDefinition(
 				"env name",
@@ -76,9 +77,17 @@ func Test_parseConfigs(t *testing.T) {
 			"reports detailed error for invalid v2 config",
 			"test-file.yaml",
 			"test-file.yaml",
-			"configs:\n- id: profile\n  config:\n    name: Star Trek Service\n    skip: false\n",
+			"configs:\n- id: profile\n  config:\n    name: Star Trek Service\n    skip: false\n  type:\n    api: some-api",
 			nil,
 			[]string{"missing property `template`"},
+		},
+		{
+			"reports detailed error for invalid v2 config",
+			"test-file.yaml",
+			"test-file.yaml",
+			"configs:\n- id: profile\n  config:\n    name: Star Trek Service\n    skip: false\n  type:\n    api: another-api",
+			nil,
+			[]string{"unknown API: 'another-api'"},
 		},
 		{
 			"reports error for empty v2 config",

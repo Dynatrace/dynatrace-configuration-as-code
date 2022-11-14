@@ -37,6 +37,7 @@ func TestConfigurationTemplatingFromFilesProducesValidJson(t *testing.T) {
 		Environments: []manifest.EnvironmentDefinition{
 			{Name: "testEnv"},
 		},
+		KnownApis:       []string{"some-api"},
 		ParametersSerDe: DefaultParameterParsers,
 	}
 

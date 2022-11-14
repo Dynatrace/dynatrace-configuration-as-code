@@ -1,5 +1,7 @@
 configs:
   - id: test
+    type:
+      api: "some-api"
     config:
       name: test
       template: templating-integration-test-template.json

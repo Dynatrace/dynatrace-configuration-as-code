@@ -16,8 +16,8 @@ package v2
 
 import (
 	"fmt"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/slices"
 	"path/filepath"
 	"strings"
 
@@ -38,6 +38,7 @@ type LoaderContext struct {
 	ApiId           string
 	Path            string
 	Environments    []manifest.EnvironmentDefinition
+	KnownApis       []string
 	ParametersSerDe map[string]parameter.ParameterSerDe
 }
 
@@ -217,8 +218,12 @@ func parseDefinition(fs afero.Fs, context *ConfigLoaderContext,
 	results := make([]Config, 0)
 	var errors []error
 
-	if _, found := api.NewApis()[definition.Type.Api]; !found {
-		return nil, []error{fmt.Errorf("unknown API %v", definition.Type.Api)}
+	if definition.Type.Api == "" {
+		return nil, []error{fmt.Errorf("missing config-property type.api in %v", context.Path)}
+	}
+
+	if !slices.Contains(context.KnownApis, definition.Type.Api) {
+		return nil, []error{fmt.Errorf("unknown API: '%v' in %v", definition.Type.Api, context.Path)}
 	}
 
 	context.ApiId = definition.Type.Api
