@@ -1,5 +1,7 @@
 configs:
 - id: rule
+  type:
+    api: failure-detection-rules
   config:
     name: ignoreAllExceptionsForAppGw
     parameters:

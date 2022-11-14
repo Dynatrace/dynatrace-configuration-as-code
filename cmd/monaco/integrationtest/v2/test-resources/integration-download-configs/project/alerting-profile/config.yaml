@@ -4,3 +4,5 @@ configs:
     name: alert-download-demo
     template: profile.json
     skip: false
+  type:
+    api: alerting-profile

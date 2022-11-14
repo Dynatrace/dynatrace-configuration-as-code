@@ -12,3 +12,5 @@ configs:
         type: reference
     template: ../../../../cinema-infrastructure/calculated-metrics-service/condition-worker.json
     skip: false
+  type:
+    api: calculated-metrics-service

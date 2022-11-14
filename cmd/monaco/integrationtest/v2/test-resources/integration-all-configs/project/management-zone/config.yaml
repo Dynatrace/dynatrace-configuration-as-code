@@ -1,5 +1,7 @@
 configs:
 - id: zone
+  type:
+    api: management-zone
   config:
     name: mzone-1
     parameters:

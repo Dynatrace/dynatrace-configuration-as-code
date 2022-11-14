@@ -11,6 +11,8 @@ configs:
         type: reference
     template: ../../movies/science fiction/the-hitchhikers-guide-to-the-galaxy/management-zone/zone.json
     skip: false
+  type:
+    api: management-zone
   groupOverrides:
   - group: production
     override:

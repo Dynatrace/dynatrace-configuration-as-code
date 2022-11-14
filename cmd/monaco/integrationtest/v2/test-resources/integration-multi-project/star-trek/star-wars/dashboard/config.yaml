@@ -1,5 +1,7 @@
 configs:
 - id: st-sw-dash-1
+  type:
+    api: dashboard
   config:
     name: Star Wars Dash 1
     parameters:
@@ -18,6 +20,8 @@ configs:
     template: overview-dashboard.json
     skip: false
 - id: st-sw-dash-2
+  type:
+    api: dashboard
   config:
     name: Star Wars Dash 2
     parameters:
@@ -41,6 +45,8 @@ configs:
     template: overview-dashboard.json
     skip: false
 - id: st-sw-dash-3
+  type:
+    api: dashboard
   config:
     name: Star Wars Dash 3 - Skipped on Prod
     parameters:

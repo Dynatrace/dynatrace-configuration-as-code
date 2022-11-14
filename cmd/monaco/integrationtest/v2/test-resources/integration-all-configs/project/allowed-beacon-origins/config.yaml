@@ -4,3 +4,5 @@ configs:
     name: allowed-beacon-origins
     template: allowed-beacon-origins.json
     skip: false
+  type:
+    api: allowed-beacon-origins

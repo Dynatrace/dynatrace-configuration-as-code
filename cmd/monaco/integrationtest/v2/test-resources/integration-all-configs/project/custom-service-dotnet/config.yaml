@@ -4,3 +4,5 @@ configs:
     name: Enterprise Warp Drive dotNet
     template: warp-drive-service.json
     skip: false
+  type:
+    api: custom-service-dotnet

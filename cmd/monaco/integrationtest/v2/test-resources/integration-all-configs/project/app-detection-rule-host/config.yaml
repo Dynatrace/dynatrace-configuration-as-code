@@ -4,3 +4,5 @@ configs:
     name: app-detection-rule-host
     template: app-detection-rule-host.json
     skip: false
+  type:
+    api: app-detection-rule-host

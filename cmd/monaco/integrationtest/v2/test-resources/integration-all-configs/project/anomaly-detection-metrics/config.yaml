@@ -10,3 +10,5 @@ configs:
         type: reference
     template: 5xxErrors.json
     skip: false
+  type:
+    api: anomaly-detection-metrics

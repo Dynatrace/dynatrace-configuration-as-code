@@ -4,3 +4,5 @@ configs:
     name: anomaly-detection-applications
     template: anomaly-detection-applications.json
     skip: false
+  type:
+    api: anomaly-detection-applications

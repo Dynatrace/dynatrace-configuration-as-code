@@ -15,3 +15,5 @@ configs:
           warning: 97.5
     template: slo.json
     skip: false
+  type:
+    api: slo

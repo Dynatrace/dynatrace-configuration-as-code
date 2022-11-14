@@ -6,3 +6,5 @@ configs:
       enabled: "false"
     template: demorule.json
     skip: false
+  type:
+    api: service-detection-full-web-request

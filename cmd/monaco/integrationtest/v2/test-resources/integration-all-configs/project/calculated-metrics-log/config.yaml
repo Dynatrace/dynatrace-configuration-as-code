@@ -6,3 +6,5 @@ configs:
       displayName: Jira Log Errors
     template: jira-log-errors.json
     skip: false
+  type:
+    api: calculated-metrics-log

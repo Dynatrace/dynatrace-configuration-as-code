@@ -15,3 +15,5 @@ configs:
       version: 1.0.0
     template: borg-human-body-extension.json
     skip: false
+  type:
+    api: extension

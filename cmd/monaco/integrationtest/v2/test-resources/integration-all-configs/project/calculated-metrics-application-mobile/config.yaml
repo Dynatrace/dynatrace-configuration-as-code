@@ -11,3 +11,5 @@ configs:
         type: reference
     template: speed-metric.json
     skip: false
+  type:
+    api: calculated-metrics-application-mobile

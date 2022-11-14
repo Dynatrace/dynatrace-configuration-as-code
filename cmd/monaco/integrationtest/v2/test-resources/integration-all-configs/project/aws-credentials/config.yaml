@@ -7,3 +7,5 @@ configs:
       iamRoleName: yes-the-enterprise-runs-on-AWS
     template: aws.json
     skip: false
+  type:
+    api: aws-credentials

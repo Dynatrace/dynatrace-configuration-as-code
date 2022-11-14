@@ -4,3 +4,5 @@ configs:
     name: service-resource-naming
     template: service-resource-naming.json
     skip: false
+  type:
+    api: service-resource-naming

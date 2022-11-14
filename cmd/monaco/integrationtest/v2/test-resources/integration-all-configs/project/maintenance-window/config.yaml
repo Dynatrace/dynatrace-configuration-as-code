@@ -1,5 +1,7 @@
 configs:
 - id: maintenancewindow
+  type:
+    api: maintenance-window
   config:
     name: My First Maintenance Window
     parameters:

@@ -4,3 +4,5 @@ configs:
     name: anomaly-detection-aws
     template: anomaly-detection-aws.json
     skip: false
+  type:
+    api: anomaly-detection-aws

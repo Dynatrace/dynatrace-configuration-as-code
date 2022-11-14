@@ -1,5 +1,7 @@
 configs:
 - id: parameterset
+  type:
+    api: failure-detection-parametersets
   config:
     name: ignoreAllExceptions
     parameters:

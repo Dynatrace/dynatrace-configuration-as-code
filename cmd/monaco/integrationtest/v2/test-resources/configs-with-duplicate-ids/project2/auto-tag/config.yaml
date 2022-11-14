@@ -4,3 +4,5 @@ configs:
     name: Resistance is futile!
     template: application-tagging.json
     skip: false
+  type:
+    api: auto-tag

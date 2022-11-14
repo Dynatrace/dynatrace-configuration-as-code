@@ -4,3 +4,5 @@ configs:
     name: anomaly-detection-vmware
     template: anomaly-detection-vmware.json
     skip: false
+  type:
+    api: anomaly-detection-vmware

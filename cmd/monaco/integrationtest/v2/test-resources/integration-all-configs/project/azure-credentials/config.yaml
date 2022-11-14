@@ -9,3 +9,5 @@ configs:
       key: "1234"
     template: azure.json
     skip: false
+  type:
+    api: azure-credentials

@@ -1,5 +1,7 @@
 configs:
 - id: hosts-auto-update
+  type:
+    api: hosts-auto-update
   config:
     name: hosts-auto-update
     template: hosts-auto-update.json

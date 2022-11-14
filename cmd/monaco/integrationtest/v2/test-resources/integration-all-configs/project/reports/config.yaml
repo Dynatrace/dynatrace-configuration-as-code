@@ -8,3 +8,5 @@ configs:
       type: reference
     template: report.json
     skip: false
+  type:
+    api: reports

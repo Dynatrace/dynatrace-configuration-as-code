@@ -15,3 +15,5 @@ configs:
           - "jean-luc.picard@dynatrace.com"
           - "jim.kirk@dynatrace.com"
     template: email.json
+  type:
+    api: notification

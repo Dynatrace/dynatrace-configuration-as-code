@@ -15,3 +15,5 @@ configs:
       pattern: pattern
     template: rule.json
     skip: false
+  type:
+    api: app-detection-rule

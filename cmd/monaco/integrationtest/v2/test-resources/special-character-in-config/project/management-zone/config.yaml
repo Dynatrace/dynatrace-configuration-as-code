@@ -4,3 +4,5 @@ configs:
     name: A "Management Zone" - GC name contains "ervice"
     template: all-services-mzone.json
     skip: false
+  type:
+    api: management-zone

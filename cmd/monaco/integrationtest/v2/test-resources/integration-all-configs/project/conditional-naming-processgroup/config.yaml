@@ -4,3 +4,5 @@ configs:
     name: Cl-ProdXX Server
     template: pg-naming.json
     skip: false
+  type:
+    api: conditional-naming-processgroup

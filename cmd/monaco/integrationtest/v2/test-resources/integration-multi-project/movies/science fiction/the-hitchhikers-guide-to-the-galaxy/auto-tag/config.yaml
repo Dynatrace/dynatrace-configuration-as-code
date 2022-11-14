@@ -4,3 +4,5 @@ configs:
     name: Test Movies Multiproject
     template: ../../../../cinema-infrastructure/auto-tag/application-tagging.json
     skip: false
+  type:
+    api: auto-tag

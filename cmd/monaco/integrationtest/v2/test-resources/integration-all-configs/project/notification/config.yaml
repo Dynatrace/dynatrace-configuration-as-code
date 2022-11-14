@@ -1,5 +1,7 @@
 configs:
 - id: slack
+  type:
+    api: notification
   config:
     name: 'Star Trek to #team-star-trek'
     parameters:
@@ -12,6 +14,8 @@ configs:
     template: subfolder/slack.json
     skip: false
 - id: email
+  type:
+    api: notification
   config:
     name: Captain's Log
     parameters:
@@ -29,6 +33,8 @@ configs:
     template: subfolder/email.json
     skip: false
 - id: email_single_receiver
+  type:
+    api: notification
   config:
     name: "There's only one Captain!'s Log"
     parameters:
@@ -45,6 +51,8 @@ configs:
     template: subfolder/email.json
     skip: false
 - id: email_list_as_array
+  type:
+    api: notification
   config:
     name: "email_list_as_array"
     parameters:

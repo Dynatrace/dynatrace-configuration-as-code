@@ -1,5 +1,7 @@
 configs:
 - id: myk8scluster
+  type:
+    api: kubernetes-credentials
   config:
     name: My Kubernetes Cluster
     parameters:

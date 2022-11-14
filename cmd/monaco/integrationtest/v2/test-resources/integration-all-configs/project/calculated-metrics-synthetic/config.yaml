@@ -1,7 +1,9 @@
 configs:
-  - id: speed
-    config:
-      name: calc:synthetic.browser.delorean.speed
-      parameters:
-        testId: ["synthetic-monitor", "browser-test", "id"]
-      template: speed-metric.json
+- id: speed
+  config:
+    name: calc:synthetic.browser.delorean.speed
+    parameters:
+      testId: ["synthetic-monitor", "browser-test", "id"]
+    template: speed-metric.json
+  type:
+    api: calculated-metrics-synthetic

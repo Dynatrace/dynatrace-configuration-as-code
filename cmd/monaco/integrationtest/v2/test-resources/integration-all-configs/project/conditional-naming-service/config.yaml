@@ -4,3 +4,5 @@ configs:
     name: Prepend Namespace
     template: service-naming.json
     skip: false
+  type:
+    api: conditional-naming-service

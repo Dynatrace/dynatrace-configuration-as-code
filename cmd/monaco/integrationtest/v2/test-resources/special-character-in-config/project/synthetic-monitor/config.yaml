@@ -7,3 +7,5 @@ configs:
         like Gecko) Chrome/86.0.4240.198 Safari/537.36
     template: availability.json
     skip: false
+  type:
+    api: synthetic-monitor

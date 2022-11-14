@@ -1,5 +1,7 @@
 configs:
 - id: st-sg-mz
+  type:
+    api: management-zone
   config:
     name: Star Gate MZ
     parameters:

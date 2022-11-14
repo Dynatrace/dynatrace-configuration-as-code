@@ -1,5 +1,7 @@
 configs:
 - id: globalElasticsearch
+  type:
+    api: extension-elasticsearch
   config:
     name: elasticsearch-ignored-name
     parameters:

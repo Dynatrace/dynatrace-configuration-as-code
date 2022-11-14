@@ -4,3 +4,5 @@ configs:
     name: Test Cinema Multiproject
     template: ../../star-trek/star-wars/auto-tag/application-tagging.json
     skip: false
+  type:
+    api: auto-tag

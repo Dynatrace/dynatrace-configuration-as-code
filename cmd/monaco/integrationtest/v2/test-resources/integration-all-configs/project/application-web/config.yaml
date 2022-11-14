@@ -4,3 +4,5 @@ configs:
     name: BORG Web Application
     template: application.json
     skip: false
+  type:
+    api: application-web

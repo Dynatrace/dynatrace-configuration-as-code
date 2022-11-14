@@ -4,3 +4,5 @@ configs:
     name: anomaly-detection-database-services
     template: anomaly-detection-database-services.json
     skip: false
+  type:
+    api: anomaly-detection-database-services

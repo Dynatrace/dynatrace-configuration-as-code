@@ -6,3 +6,5 @@ configs:
       enabled: "false"
     template: ondemand-analysis.json
     skip: false
+  type:
+    api: request-attributes

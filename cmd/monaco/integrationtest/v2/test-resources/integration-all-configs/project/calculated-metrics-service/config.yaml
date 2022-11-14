@@ -4,3 +4,5 @@ configs:
     name: calc:service.topdbcallsperurl
     template: metric-fluxcompensator-exhaust.json
     skip: false
+  type:
+    api: calculated-metrics-service

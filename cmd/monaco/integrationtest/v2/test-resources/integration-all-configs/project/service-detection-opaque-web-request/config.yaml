@@ -4,3 +4,5 @@ configs:
     name: My sample rule
     template: demorule.json
     skip: false
+  type:
+    api: service-detection-opaque-web-request

@@ -4,3 +4,5 @@ configs:
     name: Don't detect Jersey as WebService
     template: demorule.json
     skip: false
+  type:
+    api: service-detection-full-web-service

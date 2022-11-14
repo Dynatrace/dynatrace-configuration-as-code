@@ -7,3 +7,5 @@ configs:
       meId: HOST_GROUP-1234567890123456
     template: zone.json
     skip: false
+  type:
+    api: management-zone

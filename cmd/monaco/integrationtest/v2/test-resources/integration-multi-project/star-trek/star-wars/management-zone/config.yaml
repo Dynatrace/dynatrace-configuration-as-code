@@ -1,5 +1,7 @@
 configs:
 - id: st-sw-mz
+  type:
+    api: management-zone
   config:
     name: Star Wars MZ
     parameters:

@@ -1,5 +1,7 @@
 configs:
 - id: st-sg-dash-1
+  type:
+    api: dashboard
   config:
     name: Star Gate Dash
     parameters:
@@ -23,6 +25,8 @@ configs:
     template: overview-dashboard.json
     skip: false
 - id: st-sg-dash-2
+  type:
+    api: dashboard
   config:
     name: Star Gate Dash 2 - Skipped on Prod
     parameters:
@@ -52,6 +56,8 @@ configs:
     override:
       skip: true
 - id: st-sg-dash-3
+  type:
+    api: dashboard
   config:
     name: Star Gate Dash 3
     parameters:

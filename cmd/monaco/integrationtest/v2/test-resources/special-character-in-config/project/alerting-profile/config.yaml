@@ -4,11 +4,17 @@ configs:
     name: Unescaped "Profile" - for things with "quotes"
     template: profile.json
     skip: false
+  type:
+    api: alerting-profile
 - id: single_tick_profile
+  type:
+    api: alerting-profile
   config:
     name: 'Singletick \"Alerting Profile\"'
     template: profile.json
 - id: escaped_profile
+  type:
+    api: alerting-profile
   config:
     name: Plain escaped \"Alerting Profile\"
     template: profile.json

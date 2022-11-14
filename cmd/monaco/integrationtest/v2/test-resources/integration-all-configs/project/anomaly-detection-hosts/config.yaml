@@ -4,3 +4,5 @@ configs:
     name: anomaly-detection-hosts
     template: anomaly-detection-hosts.json
     skip: false
+  type:
+    api: anomaly-detection-hosts

@@ -15,3 +15,5 @@ configs:
         type: reference
     template: overview-dashboard.json
     skip: false
+  type:
+    api: dashboard

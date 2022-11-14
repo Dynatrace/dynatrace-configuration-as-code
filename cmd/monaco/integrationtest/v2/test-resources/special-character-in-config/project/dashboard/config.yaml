@@ -1,5 +1,7 @@
 configs:
 - id: dashboard
+  type:
+    api: dashboard
   config:
     name: Alpha Quadrant
     parameters:

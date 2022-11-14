@@ -4,3 +4,5 @@ configs:
     name: low-disk
     template: low-disk.json
     skip: false
+  type:
+    api: anomaly-detection-disks

@@ -4,3 +4,5 @@ configs:
     name: data-privacy
     template: data-privacy.json
     skip: false
+  type:
+    api: data-privacy

@@ -1,5 +1,7 @@
 configs:
 - id: availability
+  type:
+    api: synthetic-monitor
   config:
     name: Federation Availability
     parameters:
@@ -29,3 +31,5 @@ configs:
       location: GEOLOCATION-9999453BE4BDB3CD
     template: browser-test.json
     skip: false
+  type:
+    api: synthetic-monitor

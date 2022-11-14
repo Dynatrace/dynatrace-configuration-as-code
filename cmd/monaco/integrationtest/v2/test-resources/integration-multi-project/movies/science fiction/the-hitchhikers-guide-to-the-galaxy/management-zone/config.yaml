@@ -12,6 +12,8 @@ configs:
         type: reference
     template: zone.json
     skip: false
+  type:
+    api: management-zone
   groupOverrides:
   - group: development
     override:

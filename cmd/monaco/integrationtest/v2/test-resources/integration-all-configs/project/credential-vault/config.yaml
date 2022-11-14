@@ -9,3 +9,5 @@ configs:
       type: USERNAME_PASSWORD
     template: credential.json
     skip: false
+  type:
+    api: credential-vault

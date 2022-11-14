@@ -4,3 +4,5 @@ configs:
     name: calc:apps.web.speed.delorean
     template: speed-metric.json
     skip: false
+  type:
+    api: calculated-metrics-application-web

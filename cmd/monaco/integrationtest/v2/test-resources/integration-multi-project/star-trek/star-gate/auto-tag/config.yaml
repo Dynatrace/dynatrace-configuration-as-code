@@ -1,5 +1,7 @@
 configs:
 - id: st-sg-tag-1
+  type:
+    api: auto-tag
   config:
     name: Star Gate - Tag 1 - Skipped on Prod
     template: ../../../cinema-infrastructure/auto-tag/application-tagging.json
@@ -11,11 +13,15 @@ configs:
     override:
       skip: true
 - id: st-sg-tag-2
+  type:
+    api: auto-tag
   config:
     name: Star Gate - Tag 2
     template: ../../../cinema-infrastructure/auto-tag/application-tagging.json
     skip: false
 - id: st-sg-tag-3
+  type:
+    api: auto-tag
   config:
     name: Star Gate - Tag 3 - Skipped on Prod
     template: ../../../cinema-infrastructure/auto-tag/application-tagging.json

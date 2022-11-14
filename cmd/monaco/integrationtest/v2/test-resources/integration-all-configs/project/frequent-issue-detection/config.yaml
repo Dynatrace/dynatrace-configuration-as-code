@@ -1,5 +1,7 @@
 configs:
 - id: frequent-issue-detection
+  type:
+    api: frequent-issue-detection
   config:
     name: frequent-issue-detection
     template: frequent-issue-detection.json
