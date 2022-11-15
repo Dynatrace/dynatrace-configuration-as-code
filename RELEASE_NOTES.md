@@ -1,6 +1,7 @@
 # Monitoring as Code Tool - Release Notes
 
 - Versions:
+    - [1.8.7](#187) 
     - [1.8.6](#186) 
     - [1.8.5](#185)
     - [1.8.4](#184)
@@ -21,6 +22,36 @@
     - [1.1.0](#110)
     - [1.0.1](#101)
     - [1.0.0](#100)
+
+
+## 1.8.7
+
+Release 1.8.7 fixes three issues in monaco:
+* Download APIs where the id contains characters that need escaping no longer error
+* Predefined anomaly-detection-metrics are now ignored during download
+* HTTP errors and responses are logged when retrying
+
+Additionally, the documentation has been updated to include 
+1) what and why configs are skipped during download, and
+2) how to migrate app-detection-rules.
+
+### List of changes
+#### Bug fixes
+* 2c6b39cb fix(download): Don't double-escape ids
+* a4f51f6d fix(download): Skip plugin-definitions of ad-metrics
+* 8437d714 fix(rest): Log http error and response in case of retry failures
+
+#### Documentation
+* b4d55cc6 docs(download): Add documentation of the configurations skipped during download
+* dd15f330 docs: Document App Detection Rule ordering workaround
+* 865f4232 docs: Add migration guide for app-detection-rules renamed by settings migration
+
+#### Misc changes
+* e6f9c5b9 chore(deps): bump golangci/golangci-lint-action from 3.3.0 to 3.3.1
+* ee85da7c chore(deps): bump loader-utils from 2.0.2 to 2.0.3 in /documentation
+* cf45d54f chore(deps): bump github.com/urfave/cli/v2 from 2.23.4 to 2.23.5
+* 31eaf019 chore(deps): bump github.com/urfave/cli/v2 from 2.23.0 to 2.23.4
+
 
 ## 1.8.6
 
