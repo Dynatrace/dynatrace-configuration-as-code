@@ -1,0 +1,37 @@
+configs:
+  - id: boring-alerts
+    type:
+      api: alerting-profile
+    config:
+      name: My boring service's alerts
+      template: profile.json
+  - id: boring-tag
+    type:
+      api: auto-tag
+    config:
+      name: The-Boring-Tag
+      template: service-tag.json
+  - id: boring-service
+    type:
+      api: custom-service-php
+    config:
+      name: Boring PHP Service
+      template: custom-service.json
+      skip: false
+  - id: boring-slack-notifications
+    type:
+      api: notification
+    config:
+      name: 'Boring Service Issues to #team-awesome'
+      parameters:
+        alertingProfileId:
+          type: reference
+          api: alerting-profile
+          config: boring-alerts
+          property: id
+        environment: Env1
+      template: slack.json
+      skip: false
+
+
+

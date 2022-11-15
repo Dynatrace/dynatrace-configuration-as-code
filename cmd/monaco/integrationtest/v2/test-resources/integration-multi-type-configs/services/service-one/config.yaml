@@ -1,0 +1,46 @@
+configs:
+  - id: awesome-alerts
+    type:
+      api: alerting-profile
+    config:
+      name: My super awesome service's alerts
+      template: profile.json
+  - id: awesome-service-tag
+    type:
+      api: auto-tag
+    config:
+      name: Super-Awesome-Tag
+      template: service-tag.json
+  - id: super-awesome-service
+    type:
+      api: custom-service-go
+    config:
+      name: Super Awesome GoLang Service
+      template: custom-service.json
+      skip: false
+  - id: mgmt-zone
+    type:
+      api: management-zone
+    config:
+      name: super-awesome-management-zone
+      parameters:
+        environment: environment1
+        meId: HOST_GROUP-1234567890123456
+      template: zone.json
+  - id: awesome-slack-notifications
+    type:
+      api: notification
+    config:
+      name: 'Super Awesome Service Issues to #team-awesome'
+      parameters:
+        alertingProfileId:
+          type: reference
+          api: alerting-profile
+          config: awesome-alerts
+          property: id
+        environment: Env1
+      template: slack.json
+      skip: false
+
+
+
