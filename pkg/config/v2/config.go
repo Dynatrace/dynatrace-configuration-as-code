@@ -37,6 +37,15 @@ const (
 // Parameters defines a map of name to parameter
 type Parameters map[string]parameter.Parameter
 
+type Type struct {
+	Schema, SchemaVersion, Scope, Api string
+}
+
+// IsSettings returns true if Schema is not empty
+func (t Type) IsSettings() bool {
+	return t.Schema != ""
+}
+
 // Config struct defining a configuration which can be deployed.
 type Config struct {
 	// template used to render the request send to the dynatrace api
@@ -47,6 +56,8 @@ type Config struct {
 	Group string
 	// name of the environment this configuration is for
 	Environment string
+	// Type holds information of the underlying config type (classic, settings)
+	Type Type
 	// map of all parameters which will be resolved and are then available
 	// in the template
 	Parameters Parameters
