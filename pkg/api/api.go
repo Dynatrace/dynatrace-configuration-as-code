@@ -309,6 +309,16 @@ func GetApiNames(apis map[string]Api) []string {
 	return maps.Keys(apis)
 }
 
+func GetApiNameLookup(apis map[string]Api) map[string]struct{} {
+	lookup := make(map[string]struct{}, len(apis))
+
+	for k := range apis {
+		lookup[k] = struct{}{}
+	}
+
+	return lookup
+}
+
 func newApi(id string, input apiInput) Api {
 	if input.isSingleConfigurationApi {
 		return NewSingleConfigurationApi(id, input.apiPath, input.isDeprecatedBy, input.skipDownload)

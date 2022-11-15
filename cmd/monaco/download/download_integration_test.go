@@ -29,7 +29,6 @@ import (
 	projectLoader "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/spf13/afero"
@@ -769,7 +768,7 @@ func loadDownloadedProjects(fs afero.Fs, apiMap api.ApiMap) ([]projectLoader.Pro
 	}
 
 	return projectLoader.LoadProjects(fs, projectLoader.ProjectLoaderContext{
-		Apis:            maps.Keys(apiMap),
+		KnownApis:       api.GetApiNameLookup(apiMap),
 		WorkingDir:      "out",
 		Manifest:        man,
 		ParametersSerde: config.DefaultParameterParsers,

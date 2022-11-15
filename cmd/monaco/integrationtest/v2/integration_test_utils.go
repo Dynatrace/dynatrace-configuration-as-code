@@ -63,7 +63,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 	assert.NilError(t, err)
 
 	projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
-		Apis:            api.GetApiNames(api.NewApis()),
+		KnownApis:       api.GetApiNameLookup(api.NewApis()),
 		WorkingDir:      cwd,
 		Manifest:        loadedManifest,
 		ParametersSerde: config.DefaultParameterParsers,

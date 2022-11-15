@@ -30,7 +30,7 @@ import (
 )
 
 type ProjectLoaderContext struct {
-	Apis            []string
+	KnownApis       map[string]struct{}
 	WorkingDir      string
 	Manifest        manifest.Manifest
 	ParametersSerde map[string]parameter.ParameterSerDe
@@ -171,7 +171,7 @@ func loadConfigsOfProject(fs afero.Fs, context ProjectLoaderContext, projectDefi
 			ProjectId:       projectDefinition.Name,
 			Path:            path,
 			Environments:    environments,
-			KnownApis:       context.Apis,
+			KnownApis:       context.KnownApis,
 			ParametersSerDe: context.ParametersSerde,
 		})
 

@@ -28,7 +28,7 @@ func Test_parseConfigs(t *testing.T) {
 	testLoaderContext := &LoaderContext{
 		ProjectId: "project",
 		Path:      "some-dir/",
-		KnownApis: []string{"some-api"},
+		KnownApis: map[string]struct{}{"some-api": {}},
 		Environments: []manifest.EnvironmentDefinition{
 			manifest.NewEnvironmentDefinition(
 				"env name",

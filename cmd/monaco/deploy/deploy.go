@@ -69,7 +69,7 @@ func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironments []s
 
 	log.Debug("Loading configuration projects ...")
 	projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
-		Apis:            api.GetApiNames(apis),
+		KnownApis:       api.GetApiNameLookup(apis),
 		WorkingDir:      workingDir,
 		Manifest:        manifest,
 		ParametersSerde: config.DefaultParameterParsers,

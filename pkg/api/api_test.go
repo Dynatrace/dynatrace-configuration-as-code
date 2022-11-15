@@ -44,7 +44,7 @@ func TestCreateApis(t *testing.T) {
 	apis = NewApis()
 
 	notification, ok := apis["notification"]
-	assert.Assert(t, ok, "Expected `notification` key in Apis")
+	assert.Assert(t, ok, "Expected `notification` key in KnownApis")
 	assert.Equal(t, notification.GetUrl(testDevEnvironment), "https://url/to/dev/environment/api/config/v1/notifications", "Expected to get `notification` API url")
 }
 

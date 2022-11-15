@@ -417,8 +417,13 @@ func getFullProjectLoaderContext(apis []string, projects []string, environments 
 		}
 	}
 
+	knownApis := make(map[string]struct{}, len(apis))
+	for _, v := range apis {
+		knownApis[v] = struct{}{}
+	}
+
 	return ProjectLoaderContext{
-		Apis:       apis,
+		KnownApis:  knownApis,
 		WorkingDir: ".",
 		Manifest: manifest.Manifest{
 			Projects:     projectDefinitions,
