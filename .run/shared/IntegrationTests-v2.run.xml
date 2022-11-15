@@ -1,0 +1,22 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Integration Tests - v2" type="GoTestRunConfiguration" factoryName="Go Test" folderName="shared">
+    <module name="internal" />
+    <working_directory value="$PROJECT_DIR$/cmd" />
+    <go_parameters value="--tags=integration" />
+    <envs>
+      <env name="MONACO_REQUEST_LOG" value="v2_request.log" />
+      <env name="MONACO_RESPONSE_LOG" value="v2_response.log" />
+      <env name="TOKEN_ENVIRONMENT_1" value="FILL ME" />
+      <env name="TOKEN_ENVIRONMENT_2" value="FILL ME" />
+      <env name="URL_ENVIRONMENT_1" value="FILL ME" />
+      <env name="URL_ENVIRONMENT_2" value="FILL ME" />
+    </envs>
+    <root_directory value="$PROJECT_DIR$" />
+    <kind value="DIRECTORY" />
+    <package value="github.com/dynatrace-oss/dynatrace-monitoring-as-code" />
+    <directory value="$PROJECT_DIR$/cmd" />
+    <filePath value="$PROJECT_DIR$" />
+    <framework value="gotest" />
+    <method v="2" />
+  </configuration>
+</component>
