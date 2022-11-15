@@ -24,13 +24,13 @@ import (
 func TestMatch(t *testing.T) {
 	coordinate := Coordinate{
 		Project: "project1",
-		Api:     "dashboard",
+		Type:    "dashboard",
 		Config:  "dashboard1",
 	}
 
 	result := coordinate.Match(Coordinate{
 		Project: "project1",
-		Api:     "dashboard",
+		Type:    "dashboard",
 		Config:  "dashboard1",
 	})
 
@@ -40,13 +40,13 @@ func TestMatch(t *testing.T) {
 func TestMatchShouldReturnFalseOnNonMatching(t *testing.T) {
 	coordinate := Coordinate{
 		Project: "project1",
-		Api:     "dashboard",
+		Type:    "dashboard",
 		Config:  "dashboard1",
 	}
 
 	result := coordinate.Match(Coordinate{
 		Project: "project1",
-		Api:     "auto-tag",
+		Type:    "auto-tag",
 		Config:  "tags",
 	})
 
@@ -56,13 +56,13 @@ func TestMatchShouldReturnFalseOnNonMatching(t *testing.T) {
 func TestMatchShouldReturnFalseOnNonMatchingSameApi(t *testing.T) {
 	coordinate := Coordinate{
 		Project: "project1",
-		Api:     "dashboard",
+		Type:    "dashboard",
 		Config:  "dashboard1",
 	}
 
 	result := coordinate.Match(Coordinate{
 		Project: "project1",
-		Api:     "dashboard",
+		Type:    "dashboard",
 		Config:  "dashboard2",
 	})
 

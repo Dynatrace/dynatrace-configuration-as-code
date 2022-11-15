@@ -155,9 +155,9 @@ func DeployConfigs(client rest.DynatraceClient, apis map[string]api.Api,
 			continue
 		}
 
-		apiToDeploy := apis[coord.Api]
+		apiToDeploy := apis[coord.Type]
 		if apiToDeploy == nil {
-			errors = append(errors, fmt.Errorf("unknown api `%s`. this is most likely a bug", coord.Api))
+			errors = append(errors, fmt.Errorf("unknown api `%s`. this is most likely a bug", coord.Type))
 
 			if continueOnError || dryRun {
 				continue
@@ -178,7 +178,7 @@ func DeployConfigs(client rest.DynatraceClient, apis map[string]api.Api,
 			}
 		}
 
-		knownEntityNames[config.Coordinate.Api][entity.EntityName] = struct{}{}
+		knownEntityNames[config.Coordinate.Type][entity.EntityName] = struct{}{}
 		entities[entity.Coordinate] = entity
 	}
 

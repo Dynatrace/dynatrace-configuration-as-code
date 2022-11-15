@@ -132,7 +132,7 @@ func toTopLevelDefinitions(context *WriterContext, configs []Config) (map[apiCoo
 	for coord, confs := range configsPerCoordinate {
 		configContext := &configConverterContext{
 			WriterContext: context,
-			configFolder:  filepath.Join(context.ProjectFolder, coord.Api),
+			configFolder:  filepath.Join(context.ProjectFolder, coord.Type),
 			config:        coord,
 		}
 
@@ -145,7 +145,7 @@ func toTopLevelDefinitions(context *WriterContext, configs []Config) (map[apiCoo
 
 		apiCoord := apiCoordinate{
 			project: coord.Project,
-			api:     coord.Api,
+			api:     coord.Type,
 		}
 
 		configsPerApi[apiCoord] = append(configsPerApi[apiCoord], definition)
@@ -250,7 +250,7 @@ func toTopLevelConfigDefinition(context *configConverterContext, configs []Confi
 		Id:     context.config.Config,
 		Config: config,
 		Type: configType{
-			Api: context.config.Api,
+			Api: context.config.Type,
 		},
 		GroupOverrides:       groupOverrideConfigs,
 		EnvironmentOverrides: environmentOverrideConfigs,

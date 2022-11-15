@@ -260,15 +260,15 @@ func groupConfigErrors(errors []configError.ConfigError) ProjectErrors {
 
 		if apiErrors == nil {
 			apiErrors = make(ApiErrors)
-			apiErrors[coord.Api] = make(ConfigErrors)
+			apiErrors[coord.Type] = make(ConfigErrors)
 			projectErrors[coord.Project] = apiErrors
 		}
 
-		configErrors := apiErrors[coord.Api]
+		configErrors := apiErrors[coord.Type]
 
 		if configErrors == nil {
 			configErrors = make(ConfigErrors)
-			apiErrors[coord.Api] = configErrors
+			apiErrors[coord.Type] = configErrors
 		}
 
 		configErrors[coord.Config] = append(configErrors[coord.Config], err)

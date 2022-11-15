@@ -31,7 +31,7 @@ import (
 func TestIsReferencing(t *testing.T) {
 	referencingConfig := coordinate.Coordinate{
 		Project: "project-1",
-		Api:     "dashboard",
+		Type:    "dashboard",
 		Config:  "dashboard-1",
 	}
 
@@ -59,7 +59,7 @@ func TestIsReferencing(t *testing.T) {
 func TestIsReferencingShouldReturnFalseForNotReferencing(t *testing.T) {
 	referencingConfig := coordinate.Coordinate{
 		Project: "project-1",
-		Api:     "dashboard",
+		Type:    "dashboard",
 		Config:  "dashboard-1",
 	}
 
@@ -90,7 +90,7 @@ func TestIsReferencingShouldReturnFalseForNotReferencing(t *testing.T) {
 func TestIsReferencingShouldReturnFalseForParameterWithoutReferences(t *testing.T) {
 	referencingConfig := coordinate.Coordinate{
 		Project: "project-1",
-		Api:     "dashboard",
+		Type:    "dashboard",
 		Config:  "dashboard-1",
 	}
 
@@ -112,7 +112,7 @@ func TestIsReferencingShouldReturnFalseForParameterWithoutReferences(t *testing.
 func TestSortParameters(t *testing.T) {
 	configCoordinates := coordinate.Coordinate{
 		Project: "project-1",
-		Api:     "dashboard",
+		Type:    "dashboard",
 		Config:  "dashboard-1",
 	}
 
@@ -146,7 +146,7 @@ func TestSortParameters(t *testing.T) {
 func TestSortParametersShouldFailOnCircularDependency(t *testing.T) {
 	configCoordinates := coordinate.Coordinate{
 		Project: "project-1",
-		Api:     "dashboard",
+		Type:    "dashboard",
 		Config:  "dashboard-1",
 	}
 
@@ -179,17 +179,17 @@ func TestSortParametersShouldFailOnCircularDependency(t *testing.T) {
 func TestSortConfigs(t *testing.T) {
 	configCoordinates := coordinate.Coordinate{
 		Project: "project-1",
-		Api:     "dashboard",
+		Type:    "dashboard",
 		Config:  "dashboard-1",
 	}
 	configCoordinates2 := coordinate.Coordinate{
 		Project: "project-1",
-		Api:     "dashboard",
+		Type:    "dashboard",
 		Config:  "dashboard-2",
 	}
 	referencedConfigCoordinates := coordinate.Coordinate{
 		Project: "project-1",
-		Api:     "auto-tags",
+		Type:    "auto-tags",
 		Config:  "tags",
 	}
 
@@ -233,12 +233,12 @@ func TestSortConfigs(t *testing.T) {
 func TestSortConfigsShouldFailOnCyclicDependency(t *testing.T) {
 	configCoordinates := coordinate.Coordinate{
 		Project: "project-1",
-		Api:     "dashboard",
+		Type:    "dashboard",
 		Config:  "dashboard-1",
 	}
 	referencedConfigCoordinates := coordinate.Coordinate{
 		Project: "project-1",
-		Api:     "auto-tags",
+		Type:    "auto-tags",
 		Config:  "tags",
 	}
 
@@ -271,17 +271,17 @@ func TestSortConfigsShouldFailOnCyclicDependency(t *testing.T) {
 func TestSortConfigsShouldReportAllLinksOfCyclicDependency(t *testing.T) {
 	config1Coordinates := coordinate.Coordinate{
 		Project: "project-1",
-		Api:     "dashboard",
+		Type:    "dashboard",
 		Config:  "dashboard-1",
 	}
 	config2Coordinates := coordinate.Coordinate{
 		Project: "project-1",
-		Api:     "auto-tags",
+		Type:    "auto-tags",
 		Config:  "tags",
 	}
 	config3Coordinates := coordinate.Coordinate{
 		Project: "project-1",
-		Api:     "management-zone",
+		Type:    "management-zone",
 		Config:  "zone-1",
 	}
 
@@ -337,12 +337,12 @@ func TestSortConfigsShouldReportAllLinksOfCyclicDependency(t *testing.T) {
 func TestSortConfigsShouldNotFailOnCyclicDependencyWhichAreSkip(t *testing.T) {
 	configCoordinates := coordinate.Coordinate{
 		Project: "project-1",
-		Api:     "dashboard",
+		Type:    "dashboard",
 		Config:  "dashboard-1",
 	}
 	referencedConfigCoordinates := coordinate.Coordinate{
 		Project: "project-1",
-		Api:     "auto-tags",
+		Type:    "auto-tags",
 		Config:  "tags",
 	}
 
@@ -368,7 +368,7 @@ func TestSortConfigsShouldNotFailOnCyclicDependencyWhichAreSkip(t *testing.T) {
 		{
 			Coordinate: coordinate.Coordinate{
 				Project: "project-1",
-				Api:     "dashboard",
+				Type:    "dashboard",
 				Config:  "dashboard-2",
 			},
 			Environment: "development",
@@ -468,7 +468,7 @@ func TestGetSortedConfigsForEnvironments(t *testing.T) {
 	dashboardApiId := "dashboard"
 	dashboardConfigCoordinate := coordinate.Coordinate{
 		Project: projectId,
-		Api:     dashboardApiId,
+		Type:    dashboardApiId,
 		Config:  "sample dashboard",
 	}
 
@@ -476,7 +476,7 @@ func TestGetSortedConfigsForEnvironments(t *testing.T) {
 	autoTagConfigId := "tag"
 	autoTagCoordinates := coordinate.Coordinate{
 		Project: referencedProjectId,
-		Api:     autoTagApiId,
+		Type:    autoTagApiId,
 		Config:  autoTagConfigId,
 	}
 
@@ -508,7 +508,7 @@ func TestGetSortedConfigsForEnvironments(t *testing.T) {
 						{
 							Coordinate: coordinate.Coordinate{
 								Project: projectId,
-								Api:     dashboardApiId,
+								Type:    dashboardApiId,
 								Config:  "Random Dashboard",
 							},
 							Environment: environmentName,
@@ -604,22 +604,22 @@ func Test_parseConfigSortErrors(t *testing.T) {
 	testConfigs := []config.Config{
 		{Coordinate: coordinate.Coordinate{
 			Project: "p1",
-			Api:     "a1",
+			Type:    "a1",
 			Config:  "c1",
 		}},
 		{Coordinate: coordinate.Coordinate{
 			Project: "p1",
-			Api:     "a1",
+			Type:    "a1",
 			Config:  "c2",
 		}},
 		{Coordinate: coordinate.Coordinate{
 			Project: "p1",
-			Api:     "a1",
+			Type:    "a1",
 			Config:  "c3",
 		}},
 		{Coordinate: coordinate.Coordinate{
 			Project: "p1",
-			Api:     "a2",
+			Type:    "a2",
 			Config:  "c1",
 		}},
 	}

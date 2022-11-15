@@ -95,7 +95,7 @@ func newReferenceParserError(projectId string, config configV1.Config, parameter
 	return ReferenceParserError{
 		Location: coordinate.Coordinate{
 			Project: projectId,
-			Api:     config.GetApi().GetId(),
+			Type:    config.GetApi().GetId(),
 			Config:  config.GetId(),
 		},
 		ParameterName: parameterName,
@@ -242,7 +242,7 @@ func convertConfigs(context *ConfigConvertContext, environments map[string]manif
 				continue
 			}
 
-			apiId := convertedConf.Coordinate.Api
+			apiId := convertedConf.Coordinate.Type
 			result[env.Name][apiId] = append(result[env.Name][apiId], convertedConf)
 		}
 	}
@@ -269,7 +269,7 @@ func convertConfig(context *ConfigConvertContext, environment manifest.Environme
 
 	coord := coordinate.Coordinate{
 		Project: context.ProjectId,
-		Api:     apiId,
+		Type:    apiId,
 		Config:  config.GetId(),
 	}
 
@@ -463,7 +463,7 @@ func parseSkipDeploymentParameter(context *ConfigConvertContext, config configV1
 
 	location := coordinate.Coordinate{
 		Project: context.ProjectId,
-		Api:     config.GetApi().GetId(),
+		Type:    config.GetApi().GetId(),
 		Config:  config.GetId(),
 	}
 

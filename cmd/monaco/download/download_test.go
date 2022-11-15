@@ -143,13 +143,13 @@ func Test_checkForCircularDependencies(t *testing.T) {
 							},
 							Coordinate: coordinate.Coordinate{
 								Project: "test",
-								Api:     "dashboard",
+								Type:    "dashboard",
 								Config:  "a",
 							},
 							References: []coordinate.Coordinate{
 								{
 									Project: "test",
-									Api:     "dashboard",
+									Type:    "dashboard",
 									Config:  "b",
 								},
 							},
@@ -161,13 +161,13 @@ func Test_checkForCircularDependencies(t *testing.T) {
 							},
 							Coordinate: coordinate.Coordinate{
 								Project: "test",
-								Api:     "dashboard",
+								Type:    "dashboard",
 								Config:  "b",
 							},
 							References: []coordinate.Coordinate{
 								{
 									Project: "test",
-									Api:     "dashboard",
+									Type:    "dashboard",
 									Config:  "a",
 								},
 							},

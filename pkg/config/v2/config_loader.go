@@ -93,7 +93,7 @@ func newDefinitionParserError(configId string, context *ConfigLoaderContext, rea
 	return DefinitionParserError{
 		Location: coordinate.Coordinate{
 			Project: context.ProjectId,
-			Api:     context.ApiId,
+			Type:    context.ApiId,
 			Config:  configId,
 		},
 		Path:   context.Path,
@@ -375,7 +375,7 @@ func getConfigFromDefinition(fs afero.Fs, context *ConfigLoaderContext,
 		Template: template,
 		Coordinate: coordinate.Coordinate{
 			Project: context.ProjectId,
-			Api:     context.ApiId,
+			Type:    context.ApiId,
 			Config:  configId,
 		},
 		Group:       environment.Group,
@@ -476,7 +476,7 @@ func parseParameter(context *ConfigLoaderContext, environment manifest.Environme
 		return serDe.Deserializer(parameter.ParameterParserContext{
 			Coordinate: coordinate.Coordinate{
 				Project: context.ProjectId,
-				Api:     context.ApiId,
+				Type:    context.ApiId,
 				Config:  configId,
 			},
 			ParameterName: name,

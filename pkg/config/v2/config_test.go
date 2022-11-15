@@ -26,14 +26,14 @@ import (
 func TestHasDependencyOn(t *testing.T) {
 	referencedConfig := coordinate.Coordinate{
 		Project: "project1",
-		Api:     "auto-tag",
+		Type:    "auto-tag",
 		Config:  "tag",
 	}
 
 	conf := Config{
 		Coordinate: coordinate.Coordinate{
 			Project: "project1",
-			Api:     "dashboard",
+			Type:    "dashboard",
 			Config:  "dashboard1",
 		},
 		Environment: "dev",
@@ -56,7 +56,7 @@ func TestHasDependencyOnShouldReturnFalseIfNoDependenciesAreDefined(t *testing.T
 	conf := Config{
 		Coordinate: coordinate.Coordinate{
 			Project: "project1",
-			Api:     "dashboard",
+			Type:    "dashboard",
 			Config:  "dashboard1",
 		},
 		Environment: "dev",
@@ -65,7 +65,7 @@ func TestHasDependencyOnShouldReturnFalseIfNoDependenciesAreDefined(t *testing.T
 	conf2 := Config{
 		Coordinate: coordinate.Coordinate{
 			Project: "project1",
-			Api:     "auto-tag",
+			Type:    "auto-tag",
 			Config:  "tag",
 		},
 		Environment: "dev",
@@ -80,7 +80,7 @@ func TestMatchReference(t *testing.T) {
 	conf := Config{
 		Coordinate: coordinate.Coordinate{
 			Project: "project1",
-			Api:     "dashboard",
+			Type:    "dashboard",
 			Config:  "dashboard1",
 		},
 		Environment: "dev",
@@ -88,7 +88,7 @@ func TestMatchReference(t *testing.T) {
 
 	result := conf.MatchReference(coordinate.Coordinate{
 		Project: "project1",
-		Api:     "dashboard",
+		Type:    "dashboard",
 		Config:  "dashboard1",
 	})
 
@@ -99,7 +99,7 @@ func TestMatchReferenceShouldReturnFalseIfNotMatching(t *testing.T) {
 	conf := Config{
 		Coordinate: coordinate.Coordinate{
 			Project: "project1",
-			Api:     "dashboard",
+			Type:    "dashboard",
 			Config:  "dashboard1",
 		},
 		Environment: "dev",
@@ -107,7 +107,7 @@ func TestMatchReferenceShouldReturnFalseIfNotMatching(t *testing.T) {
 
 	result := conf.MatchReference(coordinate.Coordinate{
 		Project: "project2",
-		Api:     "auto-tag",
+		Type:    "auto-tag",
 		Config:  "tag",
 	})
 

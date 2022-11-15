@@ -39,7 +39,7 @@ type ReferenceParameter struct {
 func New(project string, api string, config string, property string) *ReferenceParameter {
 	coord := coordinate.Coordinate{
 		Project: project,
-		Api:     api,
+		Type:    api,
 		Config:  config,
 	}
 
@@ -114,7 +114,7 @@ func writeReferenceParameter(context parameter.ParameterWriterContext) (map[stri
 
 	result := make(map[string]interface{})
 	sameProject := context.Coordinate.Project == refParam.Config.Project
-	sameApi := context.Coordinate.Api == refParam.Config.Api
+	sameApi := context.Coordinate.Type == refParam.Config.Type
 	sameConfig := context.Coordinate.Config == refParam.Config.Config
 
 	if !sameProject {
@@ -122,7 +122,7 @@ func writeReferenceParameter(context parameter.ParameterWriterContext) (map[stri
 	}
 
 	if !sameProject || !sameApi {
-		result["api"] = refParam.Config.Api
+		result["api"] = refParam.Config.Type
 	}
 
 	if !sameProject || !sameApi || !sameConfig {
@@ -140,7 +140,7 @@ func writeReferenceParameter(context parameter.ParameterWriterContext) (map[stri
 // for example only `api` empty.
 func parseReferenceParameter(context parameter.ParameterParserContext) (parameter.Parameter, error) {
 	project := context.Coordinate.Project
-	api := context.Coordinate.Api
+	api := context.Coordinate.Type
 	config := context.Coordinate.Config
 	var property string
 	projectSet := false

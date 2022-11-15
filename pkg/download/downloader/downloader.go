@@ -247,7 +247,7 @@ func createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api
 	coord := coordinate.Coordinate{
 		Project: projectId,
 		Config:  templ.Id(),
-		Api:     theApi.GetId(),
+		Type:    theApi.GetId(),
 	}
 
 	return config.Config{

@@ -21,20 +21,20 @@ type Coordinate struct {
 	// Project specifies the id of an project
 	Project string
 
-	// Api specifies the id of an api
-	Api string
+	// Type specifies the id of an api, or a schema id
+	Type string
 
 	// Config specifies the id of an configuration
 	Config string
 }
 
 func (c Coordinate) String() string {
-	return fmt.Sprintf("%s:%s:%s", c.Project, c.Api, c.Config)
+	return fmt.Sprintf("%s:%s:%s", c.Project, c.Type, c.Config)
 }
 
 // Match tests if this coordinate is the same as the given one
 func (c Coordinate) Match(coordinate Coordinate) bool {
 	return c.Project == coordinate.Project &&
-		c.Api == coordinate.Api &&
+		c.Type == coordinate.Type &&
 		c.Config == coordinate.Config
 }

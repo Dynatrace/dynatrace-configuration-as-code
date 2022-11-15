@@ -147,7 +147,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 			}
 
 			if _, found := projectsToValidate[coord.Project]; found {
-				AssertConfig(t, client, env, available, theConfig, coord.Api, configName)
+				AssertConfig(t, client, env, available, theConfig, coord.Type, configName)
 			}
 		}
 	}

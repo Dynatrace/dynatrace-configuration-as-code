@@ -48,47 +48,47 @@ func Test_findDuplicatedConfigIdentifiers(t *testing.T) {
 		{
 			"no duplicates if project differs",
 			[]config.Config{
-				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
-				{Coordinate: coordinate.Coordinate{Project: "project1", Api: "api", Config: "id"}},
+				{Coordinate: coordinate.Coordinate{Project: "project", Type: "api", Config: "id"}},
+				{Coordinate: coordinate.Coordinate{Project: "project1", Type: "api", Config: "id"}},
 			},
 			nil,
 		},
 		{
 			"no duplicates if api differs",
 			[]config.Config{
-				{Coordinate: coordinate.Coordinate{Project: "project", Api: "aws-credentials", Config: "id"}},
-				{Coordinate: coordinate.Coordinate{Project: "project", Api: "azure-credentials", Config: "id"}},
+				{Coordinate: coordinate.Coordinate{Project: "project", Type: "aws-credentials", Config: "id"}},
+				{Coordinate: coordinate.Coordinate{Project: "project", Type: "azure-credentials", Config: "id"}},
 			},
 			nil,
 		},
 		{
 			"no duplicates in list of disparate configs",
 			[]config.Config{
-				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
-				{Coordinate: coordinate.Coordinate{Project: "project1", Api: "api1", Config: "id1"}},
+				{Coordinate: coordinate.Coordinate{Project: "project", Type: "api", Config: "id"}},
+				{Coordinate: coordinate.Coordinate{Project: "project1", Type: "api1", Config: "id1"}},
 			},
 			nil,
 		},
 		{
 			"finds duplicate configs",
 			[]config.Config{
-				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
-				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
-				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id1"}},
+				{Coordinate: coordinate.Coordinate{Project: "project", Type: "api", Config: "id"}},
+				{Coordinate: coordinate.Coordinate{Project: "project", Type: "api", Config: "id"}},
+				{Coordinate: coordinate.Coordinate{Project: "project", Type: "api", Config: "id1"}},
 			},
-			[]config.Config{{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}}},
+			[]config.Config{{Coordinate: coordinate.Coordinate{Project: "project", Type: "api", Config: "id"}}},
 		},
 		{
 			"finds each duplicate",
 			[]config.Config{
-				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
-				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
-				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
-				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id1"}},
+				{Coordinate: coordinate.Coordinate{Project: "project", Type: "api", Config: "id"}},
+				{Coordinate: coordinate.Coordinate{Project: "project", Type: "api", Config: "id"}},
+				{Coordinate: coordinate.Coordinate{Project: "project", Type: "api", Config: "id"}},
+				{Coordinate: coordinate.Coordinate{Project: "project", Type: "api", Config: "id1"}},
 			},
 			[]config.Config{
-				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
-				{Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "id"}},
+				{Coordinate: coordinate.Coordinate{Project: "project", Type: "api", Config: "id"}},
+				{Coordinate: coordinate.Coordinate{Project: "project", Type: "api", Config: "id"}},
 			},
 		},
 	}

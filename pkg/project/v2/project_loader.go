@@ -137,7 +137,7 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 			configMap[conf.Environment] = make(map[string][]config.Config)
 		}
 
-		configMap[conf.Environment][conf.Coordinate.Api] = append(configMap[conf.Environment][conf.Coordinate.Api], conf)
+		configMap[conf.Environment][conf.Coordinate.Type] = append(configMap[conf.Environment][conf.Coordinate.Type], conf)
 	}
 
 	return Project{

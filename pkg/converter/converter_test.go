@@ -114,7 +114,7 @@ func TestConvertParameters(t *testing.T) {
 	ref := references[0]
 
 	assert.Equal(t, "projectB", ref.Config.Project)
-	assert.Equal(t, "management-zone", ref.Config.Api)
+	assert.Equal(t, "management-zone", ref.Config.Type)
 	assert.Equal(t, "zone", ref.Config.Config)
 	assert.Equal(t, "id", ref.Property)
 
@@ -293,7 +293,7 @@ func TestConvertConfig(t *testing.T) {
 
 	assert.Equal(t, 0, len(errors), "errors: %s", errors)
 	assert.Equal(t, projectId, convertedConfig.Coordinate.Project)
-	assert.Equal(t, testApi.GetId(), convertedConfig.Coordinate.Api)
+	assert.Equal(t, testApi.GetId(), convertedConfig.Coordinate.Type)
 	assert.Equal(t, configId, convertedConfig.Coordinate.Config)
 	assert.Equal(t, environmentName, convertedConfig.Environment)
 
@@ -301,7 +301,7 @@ func TestConvertConfig(t *testing.T) {
 
 	assert.Equal(t, 1, len(references))
 	assert.Equal(t, "projectB", references[0].Project)
-	assert.Equal(t, "management-zone", references[0].Api)
+	assert.Equal(t, "management-zone", references[0].Type)
 	assert.Equal(t, "zone", references[0].Config)
 
 	assert.Equal(t, 4, len(convertedConfig.Parameters))
@@ -353,7 +353,7 @@ func TestConvertDeprecatedConfigToLatest(t *testing.T) {
 
 	assert.Equal(t, 0, len(errors), "errors: %s", errors)
 	assert.Equal(t, projectId, convertedConfig.Coordinate.Project)
-	assert.Equal(t, deprecatedApi.IsDeprecatedBy(), convertedConfig.Coordinate.Api)
+	assert.Equal(t, deprecatedApi.IsDeprecatedBy(), convertedConfig.Coordinate.Type)
 	assert.Equal(t, configId, convertedConfig.Coordinate.Config)
 	assert.Equal(t, environmentName, convertedConfig.Environment)
 
@@ -361,7 +361,7 @@ func TestConvertDeprecatedConfigToLatest(t *testing.T) {
 
 	assert.Equal(t, 1, len(references))
 	assert.Equal(t, "projectB", references[0].Project)
-	assert.Equal(t, "application-web", references[0].Api, "expected deprecated API in reference to be replaced as well")
+	assert.Equal(t, "application-web", references[0].Type, "expected deprecated API in reference to be replaced as well")
 	assert.Equal(t, "another-app", references[0].Config)
 
 	assert.Equal(t, 4, len(convertedConfig.Parameters))
@@ -450,7 +450,7 @@ func TestConvertSkippedConfig(t *testing.T) {
 
 	assert.Equal(t, 0, len(errors))
 	assert.Equal(t, projectId, convertedConfig.Coordinate.Project)
-	assert.Equal(t, api.GetId(), convertedConfig.Coordinate.Api)
+	assert.Equal(t, api.GetId(), convertedConfig.Coordinate.Type)
 	assert.Equal(t, configId, convertedConfig.Coordinate.Config)
 	assert.Equal(t, environmentName, convertedConfig.Environment)
 	assert.Equal(t, true, convertedConfig.Skip)
@@ -526,7 +526,7 @@ func TestConvertConfigs(t *testing.T) {
 	// assert value param is converted as expected
 	assert.Equal(t, coordinate.Coordinate{
 		Project: "projectB",
-		Api:     "management-zone",
+		Type:    "management-zone",
 		Config:  "zone",
 	}, c.Parameters[referenceParameterName].(*refParam.ReferenceParameter).Config)
 	assert.Equal(t, "id", c.Parameters[referenceParameterName].(*refParam.ReferenceParameter).Property)

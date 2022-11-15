@@ -86,7 +86,7 @@ func TestDependencyResolution(t *testing.T) {
 				"api": []config.Config{
 					{
 						Template:   template.NewDownloadTemplate("c1-id", "name", "content"),
-						Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "c1-id"},
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", Config: "c1-id"},
 					},
 					{
 						Template:   template.NewDownloadTemplate("c2-id", "name2", "something something c1-id something something"),
@@ -98,14 +98,14 @@ func TestDependencyResolution(t *testing.T) {
 				"api": []config.Config{
 					{
 						Template:   template.NewDownloadTemplate("c1-id", "name", "content"),
-						Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "c1-id"},
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", Config: "c1-id"},
 					},
 					{
 						Template: template.NewDownloadTemplate("c2-id", "name2", makeTemplateString("something something %s something something", "api", "c1-id")),
 						Parameters: config.Parameters{
 							createParameterName("api", "c1-id"): refParam.New("project", "api", "c1-id", "id"),
 						},
-						References: []coordinate.Coordinate{coordinate.Coordinate{Project: "project", Api: "api", Config: "c1-id"}},
+						References: []coordinate.Coordinate{{Project: "project", Type: "api", Config: "c1-id"}},
 					},
 				},
 			},
@@ -116,12 +116,12 @@ func TestDependencyResolution(t *testing.T) {
 				"api": []config.Config{
 					{
 						Template:   template.NewDownloadTemplate("c1-id", "name", "template of config 1 references config 2: c2-id"),
-						Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "c1-id"},
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", Config: "c1-id"},
 						Parameters: config.Parameters{},
 					},
 					{
 						Template:   template.NewDownloadTemplate("c2-id", "name2", "template of config 2 references config 1: c1-id"),
-						Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "c2-id"},
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", Config: "c2-id"},
 						Parameters: config.Parameters{},
 					},
 				},
@@ -130,19 +130,19 @@ func TestDependencyResolution(t *testing.T) {
 				"api": []config.Config{
 					{
 						Template:   template.NewDownloadTemplate("c1-id", "name", makeTemplateString("template of config 1 references config 2: %s", "api", "c2-id")),
-						Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "c1-id"},
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", Config: "c1-id"},
 						Parameters: config.Parameters{
 							createParameterName("api", "c2-id"): refParam.New("project", "api", "c2-id", "id"),
 						},
-						References: []coordinate.Coordinate{coordinate.Coordinate{Project: "project", Api: "api", Config: "c2-id"}},
+						References: []coordinate.Coordinate{{Project: "project", Type: "api", Config: "c2-id"}},
 					},
 					{
 						Template:   template.NewDownloadTemplate("c2-id", "name2", makeTemplateString("template of config 2 references config 1: %s", "api", "c1-id")),
-						Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "c2-id"},
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", Config: "c2-id"},
 						Parameters: config.Parameters{
 							createParameterName("api", "c1-id"): refParam.New("project", "api", "c1-id", "id"),
 						},
-						References: []coordinate.Coordinate{coordinate.Coordinate{Project: "project", Api: "api", Config: "c1-id"}},
+						References: []coordinate.Coordinate{{Project: "project", Type: "api", Config: "c1-id"}},
 					},
 				},
 			},
@@ -153,17 +153,17 @@ func TestDependencyResolution(t *testing.T) {
 				"api": []config.Config{
 					{
 						Template:   template.NewDownloadTemplate("c1-id", "name", "template of config 1 references config 2: c2-id"),
-						Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "c1-id"},
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", Config: "c1-id"},
 						Parameters: config.Parameters{},
 					},
 					{
 						Template:   template.NewDownloadTemplate("c2-id", "name2", "template of config 2 references config 3: c3-id"),
-						Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "c2-id"},
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", Config: "c2-id"},
 						Parameters: config.Parameters{},
 					},
 					{
 						Template:   template.NewDownloadTemplate("c3-id", "name3", "template of config 3 references nothing"),
-						Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "c3-id"},
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", Config: "c3-id"},
 						Parameters: config.Parameters{},
 					},
 				},
@@ -172,23 +172,23 @@ func TestDependencyResolution(t *testing.T) {
 				"api": []config.Config{
 					{
 						Template:   template.NewDownloadTemplate("c1-id", "name", makeTemplateString("template of config 1 references config 2: %s", "api", "c2-id")),
-						Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "c1-id"},
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", Config: "c1-id"},
 						Parameters: config.Parameters{
 							createParameterName("api", "c2-id"): refParam.New("project", "api", "c2-id", "id"),
 						},
-						References: []coordinate.Coordinate{coordinate.Coordinate{Project: "project", Api: "api", Config: "c2-id"}},
+						References: []coordinate.Coordinate{{Project: "project", Type: "api", Config: "c2-id"}},
 					},
 					{
 						Template:   template.NewDownloadTemplate("c2-id", "name2", makeTemplateString("template of config 2 references config 3: %s", "api", "c3-id")),
-						Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "c2-id"},
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", Config: "c2-id"},
 						Parameters: config.Parameters{
 							createParameterName("api", "c3-id"): refParam.New("project", "api", "c3-id", "id"),
 						},
-						References: []coordinate.Coordinate{coordinate.Coordinate{Project: "project", Api: "api", Config: "c3-id"}},
+						References: []coordinate.Coordinate{{Project: "project", Type: "api", Config: "c3-id"}},
 					},
 					{
 						Template:   template.NewDownloadTemplate("c3-id", "name3", "template of config 3 references nothing"),
-						Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "c3-id"},
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", Config: "c3-id"},
 						Parameters: config.Parameters{},
 						References: nil,
 					},
@@ -201,21 +201,21 @@ func TestDependencyResolution(t *testing.T) {
 				"api": []config.Config{
 					{
 						Template:   template.NewDownloadTemplate("c1-id", "name", "template of config 1 references config 2: c2-id"),
-						Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "c1-id"},
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", Config: "c1-id"},
 						Parameters: config.Parameters{},
 					},
 				},
 				"api-2": []config.Config{
 					{
 						Template:   template.NewDownloadTemplate("c2-id", "name2", "template of config 2 references config 3: c3-id"),
-						Coordinate: coordinate.Coordinate{Project: "project", Api: "api-2", Config: "c2-id"},
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api-2", Config: "c2-id"},
 						Parameters: config.Parameters{},
 					},
 				},
 				"api-3": []config.Config{
 					{
 						Template:   template.NewDownloadTemplate("c3-id", "name3", "template of config 3 references nothing"),
-						Coordinate: coordinate.Coordinate{Project: "project", Api: "api-3", Config: "c3-id"},
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api-3", Config: "c3-id"},
 						Parameters: config.Parameters{},
 					},
 				},
@@ -224,27 +224,27 @@ func TestDependencyResolution(t *testing.T) {
 				"api": []config.Config{
 					{
 						Template:   template.NewDownloadTemplate("c1-id", "name", makeTemplateString("template of config 1 references config 2: %s", "api-2", "c2-id")),
-						Coordinate: coordinate.Coordinate{Project: "project", Api: "api", Config: "c1-id"},
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", Config: "c1-id"},
 						Parameters: config.Parameters{
 							createParameterName("api-2", "c2-id"): refParam.New("project", "api-2", "c2-id", "id"),
 						},
-						References: []coordinate.Coordinate{coordinate.Coordinate{Project: "project", Api: "api-2", Config: "c2-id"}},
+						References: []coordinate.Coordinate{{Project: "project", Type: "api-2", Config: "c2-id"}},
 					},
 				},
 				"api-2": []config.Config{
 					{
 						Template:   template.NewDownloadTemplate("c2-id", "name2", makeTemplateString("template of config 2 references config 3: %s", "api-3", "c3-id")),
-						Coordinate: coordinate.Coordinate{Project: "project", Api: "api-2", Config: "c2-id"},
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api-2", Config: "c2-id"},
 						Parameters: config.Parameters{
 							createParameterName("api-3", "c3-id"): refParam.New("project", "api-3", "c3-id", "id"),
 						},
-						References: []coordinate.Coordinate{coordinate.Coordinate{Project: "project", Api: "api-3", Config: "c3-id"}},
+						References: []coordinate.Coordinate{{Project: "project", Type: "api-3", Config: "c3-id"}},
 					},
 				},
 				"api-3": []config.Config{
 					{
 						Template:   template.NewDownloadTemplate("c3-id", "name3", "template of config 3 references nothing"),
-						Coordinate: coordinate.Coordinate{Project: "project", Api: "api-3", Config: "c3-id"},
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api-3", Config: "c3-id"},
 						Parameters: config.Parameters{},
 						References: nil,
 					},
