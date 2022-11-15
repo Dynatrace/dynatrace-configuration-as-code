@@ -62,7 +62,7 @@ pipeline {
             }
         }
 
-        stage('📤 Deliver release to Artifactory') {
+        stage('📤 Deliver release internally') {
             when {
                 tag 'v*'
             }
@@ -109,27 +109,24 @@ pipeline {
                         }
                     }
                 }
-            }
-        }
-        stage('📦 Release Container Image') {
-            when {
-                tag 'v*'
-            }
-            steps {
-                withEnv(["VERSION=${VERSION}", "REGISTRY=${harbor.registry}"]) {
-                    withVault(vaultSecrets: [harbor.credentials]) {
-                        script {
-                            sh 'docker login $REGISTRY -u "$username" -p "$password" '
-                            sh 'docker build -t $REGISTRY/monaco/dynatrace-monitoring-as-code:$VERSION .'
-                            sh 'docker push $REGISTRY/monaco/dynatrace-monitoring-as-code:$VERSION'
+                stage('📦 Release Container Image') {
+                    steps {
+                        withEnv(["VERSION=${VERSION}", "REGISTRY=${harbor.registry}"]) {
+                            withVault(vaultSecrets: [harbor.credentials]) {
+                                script {
+                                    sh 'docker login $REGISTRY -u "$username" -p "$password" '
+                                    sh 'docker build -t $REGISTRY/monaco/dynatrace-monitoring-as-code:$VERSION .'
+                                    sh 'docker push $REGISTRY/monaco/dynatrace-monitoring-as-code:$VERSION'
+                                }
+                            }
                         }
                     }
-                }
-            }
-            post {
-                always {
-                    withEnv(["REGISTRY=${harbor.registry}"]) {
-                        sh 'docker logout $REGISTRY'
+                    post {
+                        always {
+                            withEnv(["REGISTRY=${harbor.registry}"]) {
+                                sh 'docker logout $REGISTRY'
+                            }
+                        }
                     }
                 }
             }
