@@ -6,7 +6,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/jcelliott/lumber v0.0.0-20160324203708-dd349441af25
 	github.com/pkg/errors v0.9.1
-	github.com/spf13/afero v1.9.2
+	github.com/spf13/afero v1.9.3
 	github.com/urfave/cli/v2 v2.23.5
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/yaml.v2 v2.4.0
