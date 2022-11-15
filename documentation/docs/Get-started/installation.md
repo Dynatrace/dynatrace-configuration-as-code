@@ -34,16 +34,16 @@ For Linux/macOS, we recommend using `curl`. You can download it from [here](http
 ```shell
 # Linux
 # x64
- curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/v1.8.6/monaco-linux-amd64 -o monaco
+ curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/v1.8.7/monaco-linux-amd64 -o monaco
 
 # x86
- curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/v1.8.6/monaco-linux-386 -o monaco
+ curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/v1.8.7/monaco-linux-386 -o monaco
 
 # macOS
- curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/v1.8.6/monaco-darwin-amd64 -o monaco
+ curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/v1.8.7/monaco-darwin-amd64 -o monaco
  
  # macOS - Apple Silicon (M1/M2)
- curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/v1.8.6/monaco-darwin-arm64 -o monaco
+ curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/v1.8.7/monaco-darwin-arm64 -o monaco
 ```
 
 Make the binary executable:
@@ -74,7 +74,7 @@ NAME:
 USAGE:
    monaco-linux-amd64 [global options] command [command options] [working directory]
 VERSION:
-   1.8.6
+   1.8.7
 DESCRIPTION:
    Tool used to deploy dynatrace configurations via the cli
    Examples:
@@ -125,7 +125,7 @@ USAGE:
    monaco.exe [global options] command [command options] [working directory]
 
 VERSION:
-   1.8.6
+   1.8.7
 
 DESCRIPTION:
    Tool used to deploy dynatrace configurations via the cli
