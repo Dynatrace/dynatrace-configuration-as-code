@@ -17,10 +17,13 @@
 package v2
 
 import (
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/value"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
-	"reflect"
 	"testing"
 )
 
@@ -96,11 +99,73 @@ func Test_parseConfigs(t *testing.T) {
 			nil,
 			[]string{"no configurations found in file"},
 		},
+		{
+			"loads settings 2.0 config with all properties",
+			"test-file.yaml",
+			"test-file.yaml",
+			"configs:\n- id: profile-id\n  config:\n    name: 'Star Trek > Star Wars'\n    template: 'profile.json'\n  type:\n    schema: 'builtin:profile.test'\n    schemaVersion: '1.0'\n    scope: 'tenant'",
+			[]Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project: "project",
+						Type:    "builtin:profile.test",
+						Config:  "profile-id",
+					},
+					Parameters:  Parameters{"name": &value.ValueParameter{Value: string("Star Trek > Star Wars")}},
+					References:  []coordinate.Coordinate{},
+					Skip:        false,
+					Environment: "env name",
+					Group:       "default",
+				},
+			},
+			nil,
+		},
+		{
+			"loading a config with both api and schema should fail",
+			"test-file.yaml",
+			"test-file.yaml",
+			"configs:\n- id: profile-id\n  config:\n    name: 'Star Trek > Star Wars'\n    template: 'profile.json'\n  type:\n    schema: 'builtin:profile.test'\n    schemaVersion: '1.0'\n    scope: 'tenant'\n    api: something",
+			nil,
+			[]string{"mutually exclusive config-properties type.api and type.schema"},
+		},
+		{
+			"loading a config with neither api and schema should fail",
+			"test-file.yaml",
+			"test-file.yaml",
+			"configs:\n- id: profile-id\n  config:\n    name: 'Star Trek > Star Wars'\n    template: 'profile.json'\n  type:\n    schemaVersion: '1.0'\n    scope: 'tenant'",
+			nil,
+			[]string{"missing config-property type.api or type.schema"},
+		},
+		{
+			"loading a config with both api and schema-version should fail",
+			"test-file.yaml",
+			"test-file.yaml",
+			"configs:\n- id: profile-id\n  config:\n    name: 'Star Trek > Star Wars'\n    template: 'profile.json'\n  type:\n    api: 'something'\n    schemaVersion: '1.0'",
+			nil,
+			[]string{"mutually exclusive config-properties type.api and type.schemaVersion"},
+		},
+		{
+			"loading a config with both api and scope should fail",
+			"test-file.yaml",
+			"test-file.yaml",
+			"configs:\n- id: profile-id\n  config:\n    name: 'Star Trek > Star Wars'\n    template: 'profile.json'\n  type:\n    api: 'something'\n    scope: 'builtin:some.scope'",
+			nil,
+			[]string{"mutually exclusive config-properties type.api and type.scope"},
+		},
+		{
+			"loading a schema without scope fails",
+			"test-file.yaml",
+			"test-file.yaml",
+			"configs:\n- id: profile-id\n  config:\n    name: 'Star Trek > Star Wars'\n    template: 'profile.json'\n  type:\n    schema: 'builtin:profile.test'",
+			nil,
+			[]string{"type.scope is required"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			testFs := afero.NewMemMapFs()
 			_ = afero.WriteFile(testFs, tt.filePathOnDisk, []byte(tt.fileContentOnDisk), 0644)
+			_ = afero.WriteFile(testFs, "profile.json", []byte("{}"), 0644)
 
 			gotConfigs, gotErrors := parseConfigs(testFs, testLoaderContext, tt.filePathArgument)
 			if len(tt.wantErrorsContain) != 0 {
@@ -112,9 +177,7 @@ func Test_parseConfigs(t *testing.T) {
 				return
 			}
 			assert.Assert(t, len(gotErrors) == 0, "expected no errors but got: %v", gotErrors)
-			if !reflect.DeepEqual(gotConfigs, tt.wantConfigs) {
-				t.Errorf("parseConfigs() gotConfigs = %v, want %v", gotConfigs, tt.wantConfigs)
-			}
+			assert.DeepEqual(t, gotConfigs, tt.wantConfigs, cmpopts.IgnoreInterfaces(struct{ template.Template }{}))
 		})
 	}
 }

@@ -211,21 +211,18 @@ func parseConfigs(fs afero.Fs, context *LoaderContext, filePath string) (configs
 	return configs, nil
 }
 
+// parseDefinition parses a single config entry
 func parseDefinition(fs afero.Fs, context *ConfigLoaderContext,
 	configId string, definition topLevelConfigDefinition) ([]Config, []error) {
 
 	results := make([]Config, 0)
 	var errors []error
 
-	if definition.Type.Api == "" {
-		return nil, []error{fmt.Errorf("missing config-property type.api in %v", context.Path)}
+	if err := validateConfigType(context.KnownApis, definition); err != nil {
+		return nil, []error{fmt.Errorf("validation failed in config '%v': %w", context.Path, err)}
 	}
 
-	if _, found := context.KnownApis[definition.Type.Api]; !found {
-		return nil, []error{fmt.Errorf("unknown API: '%v' in %v", definition.Type.Api, context.Path)}
-	}
-
-	context.ApiId = definition.Type.Api
+	context.ApiId = getApiType(definition)
 
 	groupOverrideMap := toGroupOverrideMap(definition.GroupOverrides)
 	environmentOverrideMap := toEnvironmentOverrideMap(definition.EnvironmentOverrides)
@@ -247,6 +244,42 @@ func parseDefinition(fs afero.Fs, context *ConfigLoaderContext,
 	}
 
 	return results, nil
+}
+
+func getApiType(definition topLevelConfigDefinition) string {
+	if definition.Type.Schema != "" {
+		return definition.Type.Schema // FIXME: does not work if configs are loaded in parallel
+	}
+
+	return definition.Type.Api // FIXME: does not work if configs are loaded in parallel
+}
+
+func validateConfigType(knownApis map[string]struct{}, definition topLevelConfigDefinition) error {
+	if definition.Type.Api == "" && definition.Type.Schema == "" {
+		return fmt.Errorf("missing config-property type.api or type.schema")
+	}
+
+	if definition.Type.Api != "" && definition.Type.Schema != "" {
+		return fmt.Errorf("mutually exclusive config-properties type.api and type.schema")
+	}
+
+	if definition.Type.Api != "" && definition.Type.SchemaVersion != "" {
+		return fmt.Errorf("mutually exclusive config-properties type.api and type.schemaVersion")
+	}
+
+	if definition.Type.Api != "" && definition.Type.Scope != "" {
+		return fmt.Errorf("mutually exclusive config-properties type.api and type.scope")
+	}
+
+	if definition.Type.Schema != "" && definition.Type.Scope == "" {
+		return fmt.Errorf("type.scope is required")
+	}
+
+	if _, found := knownApis[definition.Type.Api]; definition.Type.Api != "" && !found {
+		return fmt.Errorf("unknown API: '%v'", definition.Type.Api)
+	}
+
+	return nil
 }
 
 func toEnvironmentOverrideMap(environments []environmentOverride) map[string]environmentOverride {

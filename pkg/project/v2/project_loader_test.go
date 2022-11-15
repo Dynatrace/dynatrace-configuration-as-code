@@ -256,7 +256,7 @@ func TestLoadProjects_LoadsKnownAndUnknownApiNames(t *testing.T) {
 	got, gotErrs := LoadProjects(testFs, context)
 
 	assert.Equal(t, len(gotErrs), 1, "Expected to load project with an error")
-	assert.Error(t, gotErrs[0], "unknown API: 'unknown-api' in project/not-dashboard-dir/board.yaml")
+	assert.ErrorContains(t, gotErrs[0], "unknown API: 'unknown-api'")
 	assert.Equal(t, len(got), 0, "Expected no loaded projects")
 }
 

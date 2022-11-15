@@ -37,7 +37,7 @@ type configDefinition struct {
 }
 
 type configType struct {
-	Api string `yaml:"api"`
+	Api string `yaml:"api,omitempty"`
 
 	Schema        string `yaml:"schema,omitempty"`
 	SchemaVersion string `yaml:"schemaVersion,omitempty"`
