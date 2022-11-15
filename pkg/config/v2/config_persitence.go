@@ -38,6 +38,10 @@ type configDefinition struct {
 
 type configType struct {
 	Api string `yaml:"api"`
+
+	Schema        string `yaml:"schema,omitempty"`
+	SchemaVersion string `yaml:"schemaVersion,omitempty"`
+	Scope         string `yaml:"scope,omitempty"` //required if the config is settings 2.0 type, ignored/error on config api
 }
 
 type topLevelConfigDefinition struct {
