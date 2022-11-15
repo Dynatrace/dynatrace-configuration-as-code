@@ -6,6 +6,17 @@ def artifactoryCredentials = [
     ]
 ]
 
+def harbor = [
+    registry   : 'registry.lab.dynatrace.org/monaco',
+    credentials: [
+        path        : 'keptn-jenkins/monaco/harbor-account',
+        secretValues: [
+            [envVar: 'username', vaultKey: 'username', isRequired: true],
+            [envVar: 'password', vaultKey: 'password', isRequired: true]
+        ]
+    ]
+]
+
 def releaseToArtifactory(def credentials, def version, def binary) {
     withEnv(["VERSION=${version}", "BINARY=${binary}"]) {
         withVault(vaultSecrets: [credentials]) {
@@ -66,36 +77,59 @@ pipeline {
                 stage('🐧 Deliver Linux 64bit') {
                     steps {
                         script {
-                            releaseToArtifactory(artifactoryCredentials, "${VERSION}" , "monaco-linux-amd64")
+                            releaseToArtifactory(artifactoryCredentials, "${VERSION}", "monaco-linux-amd64")
                         }
                     }
                 }
                 stage('🪟 Deliver Windows 32bit') {
                     steps {
                         script {
-                            releaseToArtifactory(artifactoryCredentials, "${VERSION}" , "monaco-windows-386.exe")
+                            releaseToArtifactory(artifactoryCredentials, "${VERSION}", "monaco-windows-386.exe")
                         }
                     }
                 }
                 stage('🪟 Deliver Windows 64bit') {
                     steps {
                         script {
-                            releaseToArtifactory(artifactoryCredentials, "${VERSION}" , "monaco-windows-amd64.exe")
+                            releaseToArtifactory(artifactoryCredentials, "${VERSION}", "monaco-windows-amd64.exe")
                         }
                     }
                 }
                 stage('🍏 Deliver Mac OS Apple Silicon') {
                     steps {
                         script {
-                            releaseToArtifactory(artifactoryCredentials, "${VERSION}" , "monaco-darwin-arm64")
+                            releaseToArtifactory(artifactoryCredentials, "${VERSION}", "monaco-darwin-arm64")
                         }
                     }
                 }
                 stage('🍏 Deliver Mac OS 64bit') {
                     steps {
                         script {
-                            releaseToArtifactory(artifactoryCredentials, "${VERSION}" , "monaco-darwin-amd64")
+                            releaseToArtifactory(artifactoryCredentials, "${VERSION}", "monaco-darwin-amd64")
                         }
+                    }
+                }
+            }
+        }
+        stage('📦 Release Container Image') {
+            when {
+                tag 'v*'
+            }
+            steps {
+                withEnv(["VERSION=${version}", "REGISTRY=${harbor.registry}"]) {
+                    withVault(vaultSecrets: [harbor.credentials]) {
+                        script {
+                            sh 'docker login $REGISTRY -u "$username" -p "$password" '
+                            sh 'docker build -t $REGISTRY/monaco/dynatrace-monitoring-as-code:$VERSION .'
+                            sh 'docker push $REGISTRY/monaco/dynatrace-monitoring-as-code:$VERSION'
+                        }
+                    }
+                }
+            }
+            post {
+                always {
+                    withEnv(["REGISTRY=${harbor.registry}"]) {
+                        sh 'docker logout $REGISTRY'
                     }
                 }
             }
