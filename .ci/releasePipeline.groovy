@@ -116,7 +116,7 @@ pipeline {
                 tag 'v*'
             }
             steps {
-                withEnv(["VERSION=${version}", "REGISTRY=${harbor.registry}"]) {
+                withEnv(["VERSION=${VERSION}", "REGISTRY=${harbor.registry}"]) {
                     withVault(vaultSecrets: [harbor.credentials]) {
                         script {
                             sh 'docker login $REGISTRY -u "$username" -p "$password" '
