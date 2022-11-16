@@ -238,7 +238,7 @@ var apiMap = map[string]apiInput{
 var standardApiPropertyNameOfGetAllResponse = "values"
 
 type Api interface {
-	GetUrlFromEnvironmentUrl(environmentUrl string) string
+	GetUrl(environmentUrl string) string
 	GetId() string
 	GetPropertyNameOfGetAllResponse() string
 	IsStandardApi() bool
@@ -372,7 +372,7 @@ func NewApi(
 	}
 }
 
-func (a *apiImpl) GetUrlFromEnvironmentUrl(environmentUrl string) string {
+func (a *apiImpl) GetUrl(environmentUrl string) string {
 	return environmentUrl + a.apiPath
 }
 

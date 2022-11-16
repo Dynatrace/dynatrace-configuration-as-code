@@ -41,7 +41,7 @@ func upsertDynatraceObject(
 	isSingleConfigurationApi := theApi.IsSingleConfigurationApi()
 	existingObjectId := ""
 
-	fullUrl := theApi.GetUrlFromEnvironmentUrl(environmentUrl)
+	fullUrl := theApi.GetUrl(environmentUrl)
 
 	// Single configuration APIs don't have an id which allows skipping this step
 	if !isSingleConfigurationApi {
@@ -81,7 +81,7 @@ func upsertDynatraceEntityById(
 	payload []byte,
 	apiToken string,
 ) (api.DynatraceEntity, error) {
-	fullUrl := theApi.GetUrlFromEnvironmentUrl(environmentUrl)
+	fullUrl := theApi.GetUrl(environmentUrl)
 	body := payload
 
 	return updateDynatraceObject(client, fullUrl, objectName, entityId, theApi, body, apiToken)

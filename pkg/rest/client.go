@@ -127,7 +127,7 @@ func isNewDynatraceTokenFormat(token string) bool {
 
 func (d *dynatraceClientImpl) List(api Api) (values []Value, err error) {
 
-	fullUrl := api.GetUrlFromEnvironmentUrl(d.environmentUrl)
+	fullUrl := api.GetUrl(d.environmentUrl)
 	values, err = getExistingValuesFromEndpoint(d.client, api, fullUrl, d.token)
 	return values, err
 }
@@ -151,9 +151,9 @@ func (d *dynatraceClientImpl) ReadById(api Api, id string) (json []byte, err err
 	isSingleConfigurationApi := api.IsSingleConfigurationApi()
 
 	if isSingleConfigurationApi {
-		dtUrl = api.GetUrlFromEnvironmentUrl(d.environmentUrl)
+		dtUrl = api.GetUrl(d.environmentUrl)
 	} else {
-		dtUrl = api.GetUrlFromEnvironmentUrl(d.environmentUrl) + "/" + url.PathEscape(id)
+		dtUrl = api.GetUrl(d.environmentUrl) + "/" + url.PathEscape(id)
 	}
 
 	response, err := get(d.client, dtUrl, d.token)
@@ -171,11 +171,11 @@ func (d *dynatraceClientImpl) ReadById(api Api, id string) (json []byte, err err
 
 func (d *dynatraceClientImpl) DeleteById(api Api, id string) error {
 
-	return deleteConfig(d.client, api.GetUrlFromEnvironmentUrl(d.environmentUrl), d.token, id)
+	return deleteConfig(d.client, api.GetUrl(d.environmentUrl), d.token, id)
 }
 
 func (d *dynatraceClientImpl) ExistsByName(api Api, name string) (exists bool, id string, err error) {
-	url := api.GetUrlFromEnvironmentUrl(d.environmentUrl)
+	url := api.GetUrl(d.environmentUrl)
 
 	existingObjectId, err := getObjectIdIfAlreadyExists(d.client, api, url, name, d.token)
 	return existingObjectId != "", existingObjectId, err
@@ -184,7 +184,7 @@ func (d *dynatraceClientImpl) ExistsByName(api Api, name string) (exists bool, i
 func (d *dynatraceClientImpl) UpsertByName(api Api, name string, payload []byte) (entity DynatraceEntity, err error) {
 
 	if api.GetId() == "extension" {
-		fullUrl := api.GetUrlFromEnvironmentUrl(d.environmentUrl)
+		fullUrl := api.GetUrl(d.environmentUrl)
 		return uploadExtension(d.client, fullUrl, name, payload, d.token)
 	}
 	return upsertDynatraceObject(d.client, d.environmentUrl, name, api, payload, d.token)
