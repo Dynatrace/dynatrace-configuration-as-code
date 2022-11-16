@@ -243,7 +243,6 @@ type Api interface {
 	GetUrl(environment environment.Environment) string
 	GetUrlFromEnvironmentUrl(environmentUrl string) string
 	GetId() string
-	GetApiPath() string
 	GetPropertyNameOfGetAllResponse() string
 	IsStandardApi() bool
 	IsSingleConfigurationApi() bool
@@ -386,10 +385,6 @@ func (a *apiImpl) GetUrlFromEnvironmentUrl(environmentUrl string) string {
 
 func (a *apiImpl) GetId() string {
 	return a.id
-}
-
-func (a *apiImpl) GetApiPath() string {
-	return a.apiPath
 }
 
 func (a *apiImpl) GetPropertyNameOfGetAllResponse() string {
