@@ -45,9 +45,17 @@ pipeline {
             }
         }
 
-        stage('🔎 Go vet') {
+        stage('🕵️ Go vet') {
             steps {
                 sh "make vet"
+            }
+        }
+
+        stage('🔎 Static checks') {
+            steps {
+                catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                    sh "make check"
+                }
             }
         }
 

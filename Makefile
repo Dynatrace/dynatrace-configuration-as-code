@@ -15,6 +15,10 @@ else
 	@go mod tidy
 endif
 
+check:
+	@go install honnef.co/go/tools/cmd/staticcheck@latest
+	@staticcheck ./...
+
 format:
 	@gofmt -w .
 
