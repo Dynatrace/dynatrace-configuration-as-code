@@ -19,8 +19,6 @@ package api
 import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
 	"strings"
-
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 )
 
 //go:generate mockgen -source=api.go -destination=api_mock.go -package=api Api
@@ -240,7 +238,6 @@ var apiMap = map[string]apiInput{
 var standardApiPropertyNameOfGetAllResponse = "values"
 
 type Api interface {
-	GetUrl(environment environment.Environment) string
 	GetUrlFromEnvironmentUrl(environmentUrl string) string
 	GetId() string
 	GetPropertyNameOfGetAllResponse() string
@@ -373,10 +370,6 @@ func NewApi(
 		isDeprecatedBy:               isDeprecatedBy,
 		skipDownload:                 skipDownload,
 	}
-}
-
-func (a *apiImpl) GetUrl(environment environment.Environment) string {
-	return environment.GetEnvironmentUrl() + a.apiPath
 }
 
 func (a *apiImpl) GetUrlFromEnvironmentUrl(environmentUrl string) string {

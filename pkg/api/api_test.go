@@ -35,7 +35,7 @@ var testHostsAutoUpdateApi = NewSingleConfigurationApi(hostsAutoUpdateApiId, "/a
 
 func TestGetUrl(t *testing.T) {
 
-	url := testManagementZoneApi.GetUrl(testDevEnvironment)
+	url := testManagementZoneApi.GetUrlFromEnvironmentUrl(testDevEnvironment.GetEnvironmentUrl())
 	assert.Equal(t, "https://url/to/dev/environment/api/config/v1/managementZones", url)
 }
 
@@ -45,7 +45,7 @@ func TestCreateApis(t *testing.T) {
 
 	notification, ok := apis["notification"]
 	assert.Assert(t, ok, "Expected `notification` key in KnownApis")
-	assert.Equal(t, notification.GetUrl(testDevEnvironment), "https://url/to/dev/environment/api/config/v1/notifications", "Expected to get `notification` API url")
+	assert.Equal(t, notification.GetUrlFromEnvironmentUrl(testDevEnvironment.GetEnvironmentUrl()), "https://url/to/dev/environment/api/config/v1/notifications", "Expected to get `notification` API url")
 }
 
 func TestCreateApisResultsInError(t *testing.T) {
