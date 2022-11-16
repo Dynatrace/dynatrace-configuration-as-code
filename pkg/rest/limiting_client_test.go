@@ -27,15 +27,14 @@ import (
 var givenJson = []byte{1, 2, 3}
 var givenError = errors.New("error")
 
-func TestDecoratedClient_ReadByName(t *testing.T) {
+func TestDecoratedClient_ReadById(t *testing.T) {
 	a := api.NewMockApi(gomock.NewController(t))
 
 	client := NewMockDynatraceClient(gomock.NewController(t))
 	limited := LimitClientParallelRequests(client, 1)
 
-	client.EXPECT().ReadByName(a, "name").Return(givenJson, givenError)
-
-	j, e := limited.ReadByName(a, "name")
+	client.EXPECT().ReadById(a, "id").Return(givenJson, givenError)
+	j, e := limited.ReadById(a, "id")
 
 	assert.DeepEqual(t, j, givenJson)
 	assert.Equal(t, e, givenError)

@@ -42,14 +42,6 @@ func (l limitingClient) List(a api.Api) (values []api.Value, err error) {
 	return
 }
 
-func (l limitingClient) ReadByName(a api.Api, name string) (json []byte, err error) {
-	l.limiter.ExecuteBlocking(func() {
-		json, err = l.client.ReadByName(a, name)
-	})
-
-	return
-}
-
 func (l limitingClient) ReadById(a api.Api, id string) (json []byte, err error) {
 	l.limiter.ExecuteBlocking(func() {
 		json, err = l.client.ReadById(a, id)

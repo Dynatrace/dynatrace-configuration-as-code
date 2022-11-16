@@ -46,12 +46,6 @@ type DynatraceClient interface {
 	// The result is expressed using a list of Value (id and name tuples).
 	List(a Api) (values []Value, err error)
 
-	// ReadByName reads a Dynatrace config identified by name from the given API.
-	// It calls the underlying GET endpoints for the API. E.g. for alerting profiles this would be:
-	//    GET <environment-url>/api/config/v1/alertingProfiles ... to get the id of the existing alerting profile
-	//    GET <environment-url>/api/config/v1/alertingProfiles/<id> ... to get the alerting profile
-	ReadByName(a Api, name string) (json []byte, err error)
-
 	// ReadById reads a Dynatrace config identified by id from the given API.
 	// It calls the underlying GET endpoint for the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles/<id> ... to get the alerting profile
@@ -130,20 +124,6 @@ func (d *dynatraceClientImpl) List(api Api) (values []Value, err error) {
 	fullUrl := api.GetUrl(d.environmentUrl)
 	values, err = getExistingValuesFromEndpoint(d.client, api, fullUrl, d.token)
 	return values, err
-}
-
-func (d *dynatraceClientImpl) ReadByName(api Api, name string) (json []byte, err error) {
-
-	exists, id, err := d.ExistsByName(api, name)
-	if err != nil {
-		return nil, err
-	}
-
-	if !exists {
-		return nil, errors.New("404 - no config found with name " + name)
-	}
-
-	return d.ReadById(api, id)
 }
 
 func (d *dynatraceClientImpl) ReadById(api Api, id string) (json []byte, err error) {
