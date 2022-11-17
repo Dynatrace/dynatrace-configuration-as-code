@@ -30,13 +30,13 @@ import (
 )
 
 // WriteToDisk writes all projects to the disk
-func WriteToDisk(fs afero.Fs, proj project.Project, projectDefinition manifest.ProjectDefinitionByProjectId, tokenEnvVarName, environmentUrl, outputFolder string) error {
+func WriteToDisk(fs afero.Fs, proj project.Project, tokenEnvVarName, environmentUrl, outputFolder string) error {
 	timestampString := time.Now().Format("2006-01-02-150405")
 
-	return writeToDisk(fs, proj, projectDefinition, tokenEnvVarName, environmentUrl, outputFolder, timestampString)
+	return writeToDisk(fs, proj, tokenEnvVarName, environmentUrl, outputFolder, timestampString)
 }
 
-func writeToDisk(fs afero.Fs, proj project.Project, projectDefinition manifest.ProjectDefinitionByProjectId, tokenEnvVarName, environmentUrl, outputFolder, timestampString string) error {
+func writeToDisk(fs afero.Fs, proj project.Project, tokenEnvVarName, environmentUrl, outputFolder, timestampString string) error {
 
 	log.Debug("Preparing downloaded data for persisting")
 
@@ -50,20 +50,7 @@ func writeToDisk(fs afero.Fs, proj project.Project, projectDefinition manifest.P
 		log.Warn("A manifest.yaml already exists in '%s', creating '%s' instead.", outputFolder, manifestName)
 	}
 
-	m := manifest.Manifest{
-		Projects: projectDefinition,
-		Environments: map[string]manifest.EnvironmentDefinition{
-			proj.Id: manifest.NewEnvironmentDefinition(proj.Id,
-				manifest.UrlDefinition{
-					Type:  manifest.ValueUrlType,
-					Value: environmentUrl,
-				},
-				"default",
-				&manifest.EnvironmentVariableToken{
-					EnvironmentVariableName: tokenEnvVarName,
-				}),
-		},
-	}
+	m := createManifest(proj, tokenEnvVarName, environmentUrl)
 
 	log.Debug("Persisting downloaded configurations")
 	errs := writer.WriteToDisk(&writer.WriterContext{
@@ -80,4 +67,28 @@ func writeToDisk(fs afero.Fs, proj project.Project, projectDefinition manifest.P
 
 	log.Info("Downloaded configurations written to '%s'", outputFolder)
 	return nil
+}
+
+func createManifest(proj project.Project, tokenEnvVarName string, environmentUrl string) manifest.Manifest {
+	projectDefinition := manifest.ProjectDefinitionByProjectId{
+		proj.Id: {
+			Name: proj.Id,
+			Path: proj.Id,
+		},
+	}
+
+	return manifest.Manifest{
+		Projects: projectDefinition,
+		Environments: map[string]manifest.EnvironmentDefinition{
+			proj.Id: manifest.NewEnvironmentDefinition(proj.Id,
+				manifest.UrlDefinition{
+					Type:  manifest.ValueUrlType,
+					Value: environmentUrl,
+				},
+				"default",
+				&manifest.EnvironmentVariableToken{
+					EnvironmentVariableName: tokenEnvVarName,
+				}),
+		},
+	}
 }

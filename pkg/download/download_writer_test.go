@@ -135,9 +135,9 @@ func TestWriteToDisk(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			proj, projDef := CreateProjectData(tt.args.downloadedConfigs, tt.args.projectName) //using CreateProject data to simplify test struct setup
+			proj := CreateProjectData(tt.args.downloadedConfigs, tt.args.projectName) //using CreateProject data to simplify test struct setup
 
-			if err := writeToDisk(tt.args.fs, proj, projDef, tt.args.tokenEnvVarName, tt.args.environmentUrl, tt.args.outputFolder, tt.args.timestampString); (err != nil) != tt.wantErr {
+			if err := writeToDisk(tt.args.fs, proj, tt.args.tokenEnvVarName, tt.args.environmentUrl, tt.args.outputFolder, tt.args.timestampString); (err != nil) != tt.wantErr {
 				t.Errorf("WriteToDisk() error = %v, wantErr %v", err, tt.wantErr)
 			}
 

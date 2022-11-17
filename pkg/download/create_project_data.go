@@ -17,26 +17,18 @@
 package download
 
 import (
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
 	project "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
 )
 
-func CreateProjectData(downloadedConfigs project.ConfigsPerApis, projectName string) (project.Project, manifest.ProjectDefinitionByProjectId) {
-	configsPerApiPerEn := project.ConfigsPerApisPerEnvironments{
+func CreateProjectData(downloadedConfigs project.ConfigsPerApis, projectName string) project.Project {
+	configsPerApiPerEnv := project.ConfigsPerApisPerEnvironments{
 		projectName: downloadedConfigs,
 	}
 
 	proj := project.Project{
 		Id:      projectName,
-		Configs: configsPerApiPerEn,
+		Configs: configsPerApiPerEnv,
 	}
 
-	projectDefinitions := manifest.ProjectDefinitionByProjectId{
-		projectName: {
-			Name: projectName,
-			Path: projectName,
-		},
-	}
-
-	return proj, projectDefinitions
+	return proj
 }
