@@ -1,8 +1,0 @@
-config:
-  - log-errors: "jira-log-errors.json"
-
-log-errors.dev:
-  - name: "metric"
-
-log-errors.prod:
-  - name: "metric"
