@@ -224,9 +224,9 @@ func mapKeysToSlice(m map[string]struct{}) []string {
 }
 
 func convertConfigs(context *ConfigConvertContext, environments map[string]manifest.EnvironmentDefinition,
-	configs []configV1.Config) (projectV2.ConfigsPerApisPerEnvironments, []error) {
+	configs []configV1.Config) (projectV2.ConfigsPerTypePerEnvironments, []error) {
 
-	result := make(projectV2.ConfigsPerApisPerEnvironments)
+	result := make(projectV2.ConfigsPerTypePerEnvironments)
 	var errors []error
 
 	for _, conf := range configs {
@@ -242,8 +242,8 @@ func convertConfigs(context *ConfigConvertContext, environments map[string]manif
 				continue
 			}
 
-			apiId := convertedConf.Coordinate.Type
-			result[env.Name][apiId] = append(result[env.Name][apiId], convertedConf)
+			configType := convertedConf.Coordinate.Type
+			result[env.Name][configType] = append(result[env.Name][configType], convertedConf)
 		}
 	}
 

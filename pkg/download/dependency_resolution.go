@@ -34,7 +34,7 @@ import (
 //
 // We do this by collecting all ids of all configs, and then simply by searching for them in templates.
 // If we find an occurrence, we replace it with a generic variable and reference the config.
-func ResolveDependencies(configs project.ConfigsPerApis) project.ConfigsPerApis {
+func ResolveDependencies(configs project.ConfigsPerType) project.ConfigsPerType {
 	log.Debug("Resolving dependencies between configs")
 
 	configsById := collectConfigsById(configs)
@@ -46,7 +46,7 @@ func ResolveDependencies(configs project.ConfigsPerApis) project.ConfigsPerApis 
 	return configs
 }
 
-func findAndSetDependencies(configs project.ConfigsPerApis, configsById map[string]config.Config) {
+func findAndSetDependencies(configs project.ConfigsPerType, configsById map[string]config.Config) {
 	wg := sync.WaitGroup{}
 
 	// currently a simple brute force attach
@@ -70,7 +70,7 @@ func findAndSetDependencies(configs project.ConfigsPerApis, configsById map[stri
 	wg.Wait()
 }
 
-func collectConfigsById(configs project.ConfigsPerApis) map[string]config.Config {
+func collectConfigsById(configs project.ConfigsPerType) map[string]config.Config {
 	configsById := map[string]config.Config{}
 
 	for _, configs := range configs {

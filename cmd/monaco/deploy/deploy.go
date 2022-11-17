@@ -256,19 +256,19 @@ func groupConfigErrors(errors []configError.ConfigError) ProjectErrors {
 	for _, err := range errors {
 		coord := err.Coordinates()
 
-		apiErrors := projectErrors[coord.Project]
+		typeErrors := projectErrors[coord.Project]
 
-		if apiErrors == nil {
-			apiErrors = make(ApiErrors)
-			apiErrors[coord.Type] = make(ConfigErrors)
-			projectErrors[coord.Project] = apiErrors
+		if typeErrors == nil {
+			typeErrors = make(ApiErrors)
+			typeErrors[coord.Type] = make(ConfigErrors)
+			projectErrors[coord.Project] = typeErrors
 		}
 
-		configErrors := apiErrors[coord.Type]
+		configErrors := typeErrors[coord.Type]
 
 		if configErrors == nil {
 			configErrors = make(ConfigErrors)
-			apiErrors[coord.Type] = configErrors
+			typeErrors[coord.Type] = configErrors
 		}
 
 		configErrors[coord.Config] = append(configErrors[coord.Config], err)

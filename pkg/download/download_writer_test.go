@@ -31,7 +31,7 @@ func TestWriteToDisk(t *testing.T) {
 
 	type args struct {
 		fs                afero.Fs
-		downloadedConfigs v2.ConfigsPerApis
+		downloadedConfigs v2.ConfigsPerType
 		projectName       string
 		tokenEnvVarName   string
 		environmentUrl    string
@@ -49,7 +49,7 @@ func TestWriteToDisk(t *testing.T) {
 			"creates expected files",
 			args{
 				fs: emptyTestFs(),
-				downloadedConfigs: v2.ConfigsPerApis{
+				downloadedConfigs: v2.ConfigsPerType{
 					"test-api": []config.Config{
 						{
 							Template:    template.CreateTemplateFromString("template.json", "{}"),
@@ -78,7 +78,7 @@ func TestWriteToDisk(t *testing.T) {
 			"creates 'download_{TIMESTAMP}' output if no output folder is defined",
 			args{
 				fs: emptyTestFs(),
-				downloadedConfigs: v2.ConfigsPerApis{
+				downloadedConfigs: v2.ConfigsPerType{
 					"test-api": []config.Config{
 						{
 							Template:    template.CreateTemplateFromString("template.json", "{}"),
@@ -107,7 +107,7 @@ func TestWriteToDisk(t *testing.T) {
 			"creates 'manifest_{TIMESTAMP}' if a manifest.yaml already exists",
 			args{
 				fs: testFsWithWithExistingManifest("test-output"),
-				downloadedConfigs: v2.ConfigsPerApis{
+				downloadedConfigs: v2.ConfigsPerType{
 					"test-api": []config.Config{
 						{
 							Template:    template.CreateTemplateFromString("template.json", "{}"),

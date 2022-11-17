@@ -130,7 +130,7 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 		return Project{}, errors
 	}
 
-	configMap := make(ConfigsPerApisPerEnvironments)
+	configMap := make(ConfigsPerTypePerEnvironments)
 
 	for _, conf := range configs {
 		if _, found := configMap[conf.Environment]; !found {

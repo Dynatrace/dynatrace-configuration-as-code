@@ -19,11 +19,11 @@ import (
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 )
 
-// ConfigsPerApis is a map of api to configs
-type ConfigsPerApis map[string][]config.Config
+// ConfigsPerType is a map of configType (api or schema id) to configs
+type ConfigsPerType map[string][]config.Config
 
-// ConfigsPerApisPerEnvironments is a map of environment to api to configs
-type ConfigsPerApisPerEnvironments map[string]ConfigsPerApis
+// ConfigsPerTypePerEnvironments is a map of environment to api to configs
+type ConfigsPerTypePerEnvironments map[string]ConfigsPerType
 
 // DependenciesPerEnvironment is a map of environment to project ids
 type DependenciesPerEnvironment map[string][]string
@@ -34,7 +34,7 @@ type Project struct {
 	// set to the name defined in manifest if this project is part of a grouping, else will be empty
 	GroupId string
 
-	Configs ConfigsPerApisPerEnvironments
+	Configs ConfigsPerTypePerEnvironments
 
 	// map of environment to project ids
 	Dependencies DependenciesPerEnvironment

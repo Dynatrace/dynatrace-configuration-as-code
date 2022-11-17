@@ -166,7 +166,7 @@ func reportForCircularDependencies(p project.Project) error {
 	return nil
 }
 
-func downloadConfigs(environmentUrl string, token string, apis api.ApiMap, projectName string, clientFactory dynatraceClientFactory) (project.ConfigsPerApis, error) {
+func downloadConfigs(environmentUrl string, token string, apis api.ApiMap, projectName string, clientFactory dynatraceClientFactory) (project.ConfigsPerType, error) {
 	client, err := clientFactory(environmentUrl, token)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Dynatrace client: %w", err)
@@ -177,7 +177,7 @@ func downloadConfigs(environmentUrl string, token string, apis api.ApiMap, proje
 	return downloadedConfigs, nil
 }
 
-func sumConfigs(configs project.ConfigsPerApis) int {
+func sumConfigs(configs project.ConfigsPerType) int {
 	sum := 0
 
 	for _, v := range configs {

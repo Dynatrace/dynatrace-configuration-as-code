@@ -32,24 +32,24 @@ func TestDependencyResolution(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		setup    project.ConfigsPerApis
-		expected project.ConfigsPerApis
+		setup    project.ConfigsPerType
+		expected project.ConfigsPerType
 	}{
 		{
 			"empty works",
-			project.ConfigsPerApis{},
-			project.ConfigsPerApis{},
+			project.ConfigsPerType{},
+			project.ConfigsPerType{},
 		},
 		{
 			"single config works",
-			project.ConfigsPerApis{
+			project.ConfigsPerType{
 				"api": []config.Config{
 					{
 						Template: template.NewDownloadTemplate("id", "name", "content"),
 					},
 				},
 			},
-			project.ConfigsPerApis{
+			project.ConfigsPerType{
 				"api": []config.Config{
 					{
 						Template: template.NewDownloadTemplate("id", "name", "content"),
@@ -59,7 +59,7 @@ func TestDependencyResolution(t *testing.T) {
 		},
 		{
 			"two disjunctive config works",
-			project.ConfigsPerApis{
+			project.ConfigsPerType{
 				"api": []config.Config{
 					{
 						Template: template.NewDownloadTemplate("id", "name", "content"),
@@ -69,7 +69,7 @@ func TestDependencyResolution(t *testing.T) {
 					},
 				},
 			},
-			project.ConfigsPerApis{
+			project.ConfigsPerType{
 				"api": []config.Config{
 					{
 						Template: template.NewDownloadTemplate("id", "name", "content"),
@@ -82,7 +82,7 @@ func TestDependencyResolution(t *testing.T) {
 		},
 		{
 			"referencing a config works",
-			project.ConfigsPerApis{
+			project.ConfigsPerType{
 				"api": []config.Config{
 					{
 						Template:   template.NewDownloadTemplate("c1-id", "name", "content"),
@@ -94,7 +94,7 @@ func TestDependencyResolution(t *testing.T) {
 					},
 				},
 			},
-			project.ConfigsPerApis{
+			project.ConfigsPerType{
 				"api": []config.Config{
 					{
 						Template:   template.NewDownloadTemplate("c1-id", "name", "content"),
@@ -112,7 +112,7 @@ func TestDependencyResolution(t *testing.T) {
 		},
 		{
 			"cyclic reference works",
-			project.ConfigsPerApis{
+			project.ConfigsPerType{
 				"api": []config.Config{
 					{
 						Template:   template.NewDownloadTemplate("c1-id", "name", "template of config 1 references config 2: c2-id"),
@@ -126,7 +126,7 @@ func TestDependencyResolution(t *testing.T) {
 					},
 				},
 			},
-			project.ConfigsPerApis{
+			project.ConfigsPerType{
 				"api": []config.Config{
 					{
 						Template:   template.NewDownloadTemplate("c1-id", "name", makeTemplateString("template of config 1 references config 2: %s", "api", "c2-id")),
@@ -149,7 +149,7 @@ func TestDependencyResolution(t *testing.T) {
 		},
 		{
 			"3-config transitive",
-			project.ConfigsPerApis{
+			project.ConfigsPerType{
 				"api": []config.Config{
 					{
 						Template:   template.NewDownloadTemplate("c1-id", "name", "template of config 1 references config 2: c2-id"),
@@ -168,7 +168,7 @@ func TestDependencyResolution(t *testing.T) {
 					},
 				},
 			},
-			project.ConfigsPerApis{
+			project.ConfigsPerType{
 				"api": []config.Config{
 					{
 						Template:   template.NewDownloadTemplate("c1-id", "name", makeTemplateString("template of config 1 references config 2: %s", "api", "c2-id")),
@@ -197,7 +197,7 @@ func TestDependencyResolution(t *testing.T) {
 		},
 		{
 			"3-config transitive over different apis",
-			project.ConfigsPerApis{
+			project.ConfigsPerType{
 				"api": []config.Config{
 					{
 						Template:   template.NewDownloadTemplate("c1-id", "name", "template of config 1 references config 2: c2-id"),
@@ -220,7 +220,7 @@ func TestDependencyResolution(t *testing.T) {
 					},
 				},
 			},
-			project.ConfigsPerApis{
+			project.ConfigsPerType{
 				"api": []config.Config{
 					{
 						Template:   template.NewDownloadTemplate("c1-id", "name", makeTemplateString("template of config 1 references config 2: %s", "api-2", "c2-id")),

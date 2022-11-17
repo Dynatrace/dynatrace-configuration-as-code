@@ -485,7 +485,7 @@ func TestGetSortedConfigsForEnvironments(t *testing.T) {
 	projects := []project.Project{
 		{
 			Id: projectId,
-			Configs: project.ConfigsPerApisPerEnvironments{
+			Configs: project.ConfigsPerTypePerEnvironments{
 				environmentName: {
 					dashboardApiId: []config.Config{
 						{
@@ -529,7 +529,7 @@ func TestGetSortedConfigsForEnvironments(t *testing.T) {
 		},
 		{
 			Id: referencedProjectId,
-			Configs: project.ConfigsPerApisPerEnvironments{
+			Configs: project.ConfigsPerTypePerEnvironments{
 				environmentName: {
 					autoTagApiId: []config.Config{
 						{

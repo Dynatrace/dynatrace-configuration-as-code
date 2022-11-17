@@ -122,7 +122,7 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 	assert.Equal(t, found, true)
 	assert.Equal(t, len(configs), 1)
 
-	assert.DeepEqual(t, configs, projectLoader.ConfigsPerApis{
+	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
 		fakeApi.GetId(): []config.Config{
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.GetId(), Config: "id-1"},
@@ -186,7 +186,7 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 	configs, found := p.Configs[projectName]
 	assert.Equal(t, found, true)
 
-	assert.DeepEqual(t, configs, projectLoader.ConfigsPerApis{
+	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
 		fakeApi.GetId(): []config.Config{
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.GetId(), Config: "id-1"},
@@ -273,7 +273,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 	configs, found := p.Configs[projectName]
 	assert.Equal(t, found, true)
 
-	assert.DeepEqual(t, configs, projectLoader.ConfigsPerApis{
+	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
 		fakeApi1.GetId(): []config.Config{
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi1.GetId(), Config: "id-1"},
@@ -399,7 +399,7 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 	assert.Equal(t, found, true)
 	assert.Equal(t, len(configs), 1)
 
-	assert.DeepEqual(t, configs, projectLoader.ConfigsPerApis{
+	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
 		fakeApi.GetId(): []config.Config{
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.GetId(), Config: "fake-id"},
@@ -465,7 +465,7 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 	assert.Equal(t, found, true)
 	assert.Equal(t, len(configs), 1)
 
-	assert.DeepEqual(t, configs, projectLoader.ConfigsPerApis{
+	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
 		syntheticLocationApi.GetId(): []config.Config{
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: syntheticLocationApi.GetId(), Config: "id-2"},
@@ -532,7 +532,7 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 	assert.Equal(t, found, true)
 	assert.Equal(t, len(configs), 1)
 
-	assert.DeepEqual(t, configs, projectLoader.ConfigsPerApis{
+	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
 		dashboardApi.GetId(): []config.Config{
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.GetId(), Config: "id-1"},
@@ -608,7 +608,7 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 	assert.Equal(t, found, true)
 	assert.Equal(t, len(configs), 1)
 
-	assert.DeepEqual(t, configs, projectLoader.ConfigsPerApis{
+	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
 		dashboardApi.GetId(): []config.Config{
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.GetId(), Config: "b836ff25-24e3-496d-8dce-d94110815ab5"},
@@ -751,7 +751,7 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 			assert.Equal(t, found, true)
 			assert.Equal(t, len(configs), 1)
 
-			assert.DeepEqual(t, configs, projectLoader.ConfigsPerApis{
+			assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
 				hostAutoUpdateApi.GetId(): testcase.expectedConfigs,
 			}, compareOptions...)
 		})

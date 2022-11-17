@@ -134,7 +134,7 @@ func Test_checkForCircularDependencies(t *testing.T) {
 			args{
 				project.Project{
 					Id: "test_project",
-					Configs: map[string]project.ConfigsPerApis{
+					Configs: map[string]project.ConfigsPerType{
 						"test_project": {
 							"dashboard": []config.Config{
 								{

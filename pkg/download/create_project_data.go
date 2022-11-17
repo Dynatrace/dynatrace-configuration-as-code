@@ -20,14 +20,14 @@ import (
 	project "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
 )
 
-func CreateProjectData(downloadedConfigs project.ConfigsPerApis, projectName string) project.Project {
-	configsPerApiPerEnv := project.ConfigsPerApisPerEnvironments{
+func CreateProjectData(downloadedConfigs project.ConfigsPerType, projectName string) project.Project {
+	configsPerTypePerEnv := project.ConfigsPerTypePerEnvironments{
 		projectName: downloadedConfigs,
 	}
 
 	proj := project.Project{
 		Id:      projectName,
-		Configs: configsPerApiPerEnv,
+		Configs: configsPerTypePerEnv,
 	}
 
 	return proj

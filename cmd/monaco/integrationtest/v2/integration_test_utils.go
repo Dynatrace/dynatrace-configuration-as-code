@@ -153,19 +153,19 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 	}
 }
 
-func AssertConfig(t *testing.T, client rest.DynatraceClient, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config, apiId string, name string) {
+func AssertConfig(t *testing.T, client rest.DynatraceClient, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config, configType string, name string) {
 
-	theApi := api.NewApis()[apiId]
+	theApi := api.NewApis()[configType]
 
 	var exists bool
 
 	if config.Skip {
 		exists, _, _ = client.ExistsByName(theApi, name)
-		assert.Check(t, !exists, "Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, name, apiId)
+		assert.Check(t, !exists, "Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, name, configType)
 		return
 	}
 
-	description := fmt.Sprintf("%s %s on environment %s", apiId, name, environment.Name)
+	description := fmt.Sprintf("%s %s on environment %s", configType, name, environment.Name)
 
 	// To deal with delays of configs becoming available try for max 120 polling cycles (4min - at 2sec cycles) for expected state to be reached
 	err := rest.Wait(description, 120, func() bool {
@@ -175,9 +175,9 @@ func AssertConfig(t *testing.T, client rest.DynatraceClient, environment manifes
 	assert.NilError(t, err)
 
 	if shouldBeAvailable {
-		assert.Check(t, exists, "Object should be available, but wasn't. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, name, apiId)
+		assert.Check(t, exists, "Object should be available, but wasn't. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, name, configType)
 	} else {
-		assert.Check(t, !exists, "Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, name, apiId)
+		assert.Check(t, !exists, "Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, name, configType)
 	}
 }
 
