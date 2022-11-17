@@ -237,7 +237,7 @@ func cleanupIntegrationTest(t *testing.T, loadedManifest manifest.Manifest, spec
 				if strings.HasSuffix(value.Name, suffix) || strings.HasSuffix(value.Id, suffix) {
 					err := client.DeleteById(api, value.Id)
 					if err != nil {
-						t.Errorf("Failed to cleanup test config: %s (%s): %v", value.Name, api.GetId(), err)
+						t.Logf("Failed to cleanup test config: %s (%s): %v", value.Name, api.GetId(), err)
 					} else {
 						log.Info("Cleaned up test config %s (%s)", value.Name, value.Id)
 					}
