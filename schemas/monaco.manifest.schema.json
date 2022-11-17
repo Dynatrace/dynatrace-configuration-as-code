@@ -1,0 +1,95 @@
+{
+    "$id": "https://example.com/monaco.manifest.schema.json",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Dynatrace Monitoring as Code Manifest File",
+    "type": "object",
+    "properties": {
+      "manifest_version": {
+        "type": "string",
+        "description": "The schema version this manifest conforms to - e.g. 1.0"
+      },
+      "projects": {
+        "type": "array",
+        "description": "The projects grouped by this manifest",
+        "items": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "The name of this project"
+                },
+                "type": {
+                    "type": "string",
+                    "description": "Optional Type of this project. Default: Simple",
+                    "oneOf": [
+                        {
+                            "const": "simple",
+                            "description": "A simple project, directly containing configuration. Default."
+                        },
+                        {
+                            "const": "grouping",
+                            "description": "A grouping project, containing several sub-projects."
+                        }
+                    ]
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Optional filepath of the project relative to the manifest.yaml location. Defaults to name"
+                }
+            },
+            "required": [ "name" ]
+        }
+      },
+      "environments": {
+        "description": "The Environment groups to which projects in this manifest are deployed",
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {
+                "group":  {
+                    "type": "string",
+                    "description": "The name of this environment group"
+                },
+                "entries": {
+                    "description": "The environments in this group",
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "The name of this environment"
+                            },
+                            "url" : {
+                                "description": "The URL of this environment",
+                                "type": "object",
+                                "properties": {
+                                    "type": {
+                                        "description": "Optional Type of URL definition.",
+                                        "type": "string",
+                                        "oneOf": [
+                                            {
+                                                "const": "value",
+                                                "description": "URL directly defined in the 'value'. Default."
+                                            },
+                                            {
+                                                "const": "environment",
+                                                "description": "URL defined by an environment variable name in 'value' to read from."
+                                            }
+                                        ]
+                                    },
+                                    "value": {
+                                        "type": "string",
+                                        "description": "The value of the URL, based on type either an URL or environment variable name"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+      }
+    },
+    "required": [ "manifest_version", "projects", "environments" ]
+  }
