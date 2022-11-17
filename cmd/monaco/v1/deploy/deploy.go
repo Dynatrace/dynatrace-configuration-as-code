@@ -16,6 +16,7 @@ package deploy
 
 import (
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/deploy"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
 	"path/filepath"
 
@@ -23,7 +24,6 @@ import (
 	configV2 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/converter"
 	configDelete "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/delete/v2"
-	deploy "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/deploy/v2"
 	environmentV1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 	projectV1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v1"
 	projectV2 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"

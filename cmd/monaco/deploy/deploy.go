@@ -17,6 +17,7 @@ package deploy
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/deploy"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/slices"
 	"path/filepath"
 	"strings"
@@ -24,7 +25,6 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 	configError "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/errors"
-	deploy "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/deploy/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
 	project "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2/topologysort"
