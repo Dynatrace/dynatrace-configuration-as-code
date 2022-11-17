@@ -15,10 +15,6 @@ else
 	@go mod tidy
 endif
 
-check:
-	@go install honnef.co/go/tools/cmd/staticcheck@latest
-	@staticcheck ./...
-
 format:
 	@gofmt -w .
 
@@ -38,6 +34,11 @@ mocks:
 vet:
 	@echo "Vetting files"
 	@go vet ./...
+
+check:
+	@echo "Static code analysis"
+	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.1
+	@golangci-lint run ./...
 
 build: clean
 	@echo Build ${BINARY}
