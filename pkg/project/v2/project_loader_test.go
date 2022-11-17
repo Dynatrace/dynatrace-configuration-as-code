@@ -260,6 +260,99 @@ func TestLoadProjects_LoadsKnownAndUnknownApiNames(t *testing.T) {
 	assert.Equal(t, len(got), 0, "Expected no loaded projects")
 }
 
+func TestLoadProjects_LoadsProjectWithConfigAndSettingsConfigurations(t *testing.T) {
+	testFs := afero.NewMemMapFs()
+	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644)
+	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644)
+	_ = afero.WriteFile(testFs, "project/dashboard/board.yaml", []byte("configs:\n- id: board\n  config:\n    name: Test Dashboard\n    template: board.json\n  type:\n    api: dashboard"), 0644)
+	_ = afero.WriteFile(testFs, "project/dashboard/board.json", []byte("{}"), 0644)
+	_ = afero.WriteFile(testFs, "project/settings.yaml", []byte("configs:\n- id: setting_one\n  type:\n    schema: \"builtin:super.special.schema\"\n    schemaVersion: \"1.42.14\"\n    scope: \"tenant\"\n  config:\n    name: Setting One\n    template: my_first_setting.json\n- id: setting_two\n  type:\n    schema: \"builtin:other.cool.schema\"\n    scope: \"HOST-1234567\"\n  config:\n    name: Setting Two\n    template: my_second_setting.json"), 0644)
+	_ = afero.WriteFile(testFs, "project/my_first_setting.json", []byte("{}"), 0644)
+	_ = afero.WriteFile(testFs, "project/my_second_setting.json", []byte("{}"), 0644)
+
+	context := getSimpleProjectLoaderContext([]string{"project"})
+
+	got, gotErrs := LoadProjects(testFs, context)
+
+	assert.Equal(t, len(gotErrs), 0, "Expected to load project without error")
+	assert.Equal(t, len(got), 1, "Expected a single loaded project")
+
+	c, found := got[0].Configs["env"]
+	assert.Assert(t, found, "Expected configs loaded for test environment")
+	assert.Equal(t, len(c), 4, "Expected a dashboard, alerting-profile and two Settings configs in loaded project")
+
+	db, found := c["dashboard"]
+	assert.Assert(t, found, "Expected configs loaded for dashboard api")
+	assert.Equal(t, len(db), 1, "Expected a one config to be loaded for dashboard")
+
+	a, found := c["alerting-profile"]
+	assert.Assert(t, found, "Expected configs loaded for dashboard api")
+	assert.Equal(t, len(a), 1, "Expected a one config to be loaded for alerting-profile")
+
+	s1, found := c["builtin:super.special.schema"]
+	assert.Assert(t, found, "Expected configs loaded for setting schema 'builtin:super.special.schema'")
+	assert.Equal(t, len(s1), 1, "Expected a one config to be loaded for 'builtin:super.special.schema'")
+
+	s2, found := c["builtin:other.cool.schema"]
+	assert.Assert(t, found, "Expected configs loaded for setting schema 'builtin:other.cool.schema'")
+	assert.Equal(t, len(s2), 1, "Expected a one config to be loaded for 'builtin:other.cool.schema'")
+}
+
+func TestLoadProjects_LoadsProjectConfigsWithCorrectTypeInformation(t *testing.T) {
+
+	t.Skip("Schema type checking skipped until CA-2000 is implemented") //TODO remove with CA-2000
+
+	testFs := afero.NewMemMapFs()
+	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644)
+	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644)
+	_ = afero.WriteFile(testFs, "project/dashboard/board.yaml", []byte("configs:\n- id: board\n  config:\n    name: Test Dashboard\n    template: board.json\n  type:\n    api: dashboard"), 0644)
+	_ = afero.WriteFile(testFs, "project/dashboard/board.json", []byte("{}"), 0644)
+	_ = afero.WriteFile(testFs, "project/settings.yaml", []byte("configs:\n- id: setting_one\n  type:\n    schema: \"builtin:super.special.schema\"\n    schemaVersion: \"1.42.14\"\n    scope: \"tenant\"\n  config:\n    name: Setting One\n    template: my_first_setting.json\n- id: setting_two\n  type:\n    schema: \"builtin:other.cool.schema\"\n    scope: \"HOST-1234567\"\n  config:\n    name: Setting Two\n    template: my_second_setting.json"), 0644)
+	_ = afero.WriteFile(testFs, "project/my_first_setting.json", []byte("{}"), 0644)
+	_ = afero.WriteFile(testFs, "project/my_second_setting.json", []byte("{}"), 0644)
+
+	context := getSimpleProjectLoaderContext([]string{"project"})
+
+	got, gotErrs := LoadProjects(testFs, context)
+
+	assert.Equal(t, len(gotErrs), 0, "Expected to load project without error")
+	assert.Equal(t, len(got), 1, "Expected a single loaded project")
+
+	c, found := got[0].Configs["env"]
+	assert.Assert(t, found, "Expected configs loaded for test environment")
+
+	db, found := c["dashboard"]
+	assert.Assert(t, found, "Expected configs loaded for dashboard api")
+	assert.Equal(t, db[0].Type, config.Type{
+		Api: "dashboard",
+	})
+
+	a, found := c["alerting-profile"]
+	assert.Assert(t, found, "Expected configs loaded for dashboard api")
+	assert.Equal(t, a[0].Type, config.Type{
+		Api: "alerting-profile",
+	})
+
+	s1, found := c["builtin:super.special.schema"]
+	assert.Assert(t, found, "Expected configs loaded for setting schema 'builtin:super.special.schema'")
+	assert.Equal(t, s1[0].Type, config.Type{
+		Schema:        "builtin:super.special.schema",
+		SchemaVersion: "1.42.14",
+		Scope:         "tenant",
+		Api:           "",
+	})
+
+	s2, found := c["builtin:other.cool.schema"]
+	assert.Assert(t, found, "Expected configs loaded for setting schema 'builtin:other.cool.schema'")
+	assert.Equal(t, s2[0].Type, config.Type{
+		Schema:        "builtin:other.cool.schema",
+		SchemaVersion: "",
+		Scope:         "HOST-1234567",
+		Api:           "",
+	})
+
+}
+
 func TestLoadProjects_AllowsOverlappingIdsInDifferentApis(t *testing.T) {
 	testFs := afero.NewMemMapFs()
 	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.yaml", []byte("configs:\n- id: OVERLAP\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644)

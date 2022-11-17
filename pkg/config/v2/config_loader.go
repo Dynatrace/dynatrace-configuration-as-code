@@ -411,6 +411,12 @@ func getConfigFromDefinition(fs afero.Fs, context *ConfigLoaderContext,
 			Type:    context.ApiId,
 			Config:  configId,
 		},
+		Type: Type{
+			Schema:        "", //TODO fill in CA-2000
+			SchemaVersion: "", //TODO fill in CA-2000
+			Scope:         "", //TODO fill in CA-2000
+			Api:           "", //TODO fill in CA-2000
+		},
 		Group:       environment.Group,
 		Environment: environment.Name,
 		Parameters:  parameters,
