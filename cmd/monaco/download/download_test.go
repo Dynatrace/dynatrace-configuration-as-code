@@ -181,8 +181,11 @@ func Test_checkForCircularDependencies(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if m := reportForCircularDependencies(tt.args.configs, tt.args.projectName); (m != "") != tt.wantErr {
-				assert.Equal(t, m, "There are circular dependencies in a configuration that has to be removed!!!")
+			err := reportForCircularDependencies(tt.args.configs, tt.args.projectName)
+			if tt.wantErr {
+				assert.ErrorContains(t, err, "there are circular dependencies")
+			} else {
+				assert.NilError(t, err)
 			}
 		})
 	}

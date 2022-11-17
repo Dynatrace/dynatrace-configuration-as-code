@@ -146,8 +146,8 @@ func doDownload(fs afero.Fs, environmentUrl, projectName, token, tokenEnvVarName
 		return err
 	}
 
-	if m := reportForCircularDependencies(downloadedConfigs, projectName); m != "" {
-		log.Warn(m)
+	if depErr := reportForCircularDependencies(downloadedConfigs, projectName); depErr != nil {
+		log.Warn("Download finished with problems: %s", depErr)
 	} else {
 		log.Info("Finished download")
 	}
@@ -155,14 +155,14 @@ func doDownload(fs afero.Fs, environmentUrl, projectName, token, tokenEnvVarName
 	return nil
 }
 
-func reportForCircularDependencies(configs project.ConfigsPerApis, projectName string) string {
+func reportForCircularDependencies(configs project.ConfigsPerApis, projectName string) error {
 	p, _ := download.CreateProjectData(configs, projectName)
 	_, errs := topologysort.GetSortedConfigsForEnvironments([]project.Project{p}, []string{projectName})
 	if len(errs) != 0 {
 		util.PrintWarnings(errs)
-		return "Download finished with problems - there are circular dependencies between configurations that need to be resolved manually"
+		return fmt.Errorf("there are circular dependencies between %d configurations that need to be resolved manually", len(errs))
 	}
-	return ""
+	return nil
 }
 
 func downloadConfigs(environmentUrl string, token string, apis api.ApiMap, projectName string, clientFactory dynatraceClientFactory) (project.ConfigsPerApis, error) {
