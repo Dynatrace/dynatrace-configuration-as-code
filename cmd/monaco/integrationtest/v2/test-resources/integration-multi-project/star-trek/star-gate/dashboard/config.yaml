@@ -6,19 +6,19 @@ configs:
     name: Star Gate Dash
     parameters:
       mzone:
-        api: management-zone
+        configType: management-zone
         config: zone-multiproject
         project: cinema-infrastructure
         property: id
         type: reference
       mzoneName:
-        api: management-zone
+        configType: management-zone
         config: zone-multiproject
         project: cinema-infrastructure
         property: name
         type: reference
       someParam:
-        api: auto-tag
+        configType: auto-tag
         config: st-sg-tag-2
         property: id
         type: reference
@@ -31,19 +31,19 @@ configs:
     name: Star Gate Dash 2 - Skipped on Prod
     parameters:
       mzone:
-        api: management-zone
+        configType: management-zone
         config: zone-multiproject
         project: cinema-infrastructure
         property: id
         type: reference
       mzoneName:
-        api: management-zone
+        configType: management-zone
         config: zone-multiproject
         project: cinema-infrastructure
         property: name
         type: reference
       someParam:
-        api: auto-tag
+        configType: auto-tag
         config: st-sg-tag-3
         property: id
         type: reference
@@ -62,13 +62,13 @@ configs:
     name: Star Gate Dash 3
     parameters:
       mzone:
-        api: management-zone
+        configType: management-zone
         config: zone-multiproject
         project: cinema-infrastructure
         property: id
         type: reference
       mzoneName:
-        api: management-zone
+        configType: management-zone
         config: zone-multiproject
         project: cinema-infrastructure
         property: name

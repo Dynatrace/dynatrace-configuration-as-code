@@ -5,7 +5,7 @@ configs:
     parameters:
       meId: HOST_GROUP-1234567890123456
       webAppTaggingName:
-        api: auto-tag
+        configType: auto-tag
         config: application-tagging-multiproject
         property: name
         type: reference

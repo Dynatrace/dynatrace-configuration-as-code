@@ -4,7 +4,7 @@ configs:
     name: My SLO
     parameters:
       mzone:
-        api: management-zone
+        configType: management-zone
         config: zone
         property: name
         type: reference

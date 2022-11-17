@@ -2,13 +2,13 @@ configs:
 - id: rule
   config:
     name:
-      api: application-web
+      configType: application-web
       config: application
       property: name
       type: reference
     parameters:
       applicationId:
-        api: application-web
+        configType: application-web
         config: application
         property: id
         type: reference

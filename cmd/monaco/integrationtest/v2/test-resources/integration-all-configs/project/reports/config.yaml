@@ -2,7 +2,7 @@ configs:
 - id: report
   config:
     name:
-      api: dashboard
+      configType: dashboard
       config: dashboard
       property: id
       type: reference

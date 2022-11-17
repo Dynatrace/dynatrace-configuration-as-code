@@ -4,7 +4,7 @@ configs:
     name: lists are written without escaped quotes
     parameters:
       alertingProfileId:
-        api: alerting-profile
+        configType: alerting-profile
         config: profile
         property: id
         type: reference

@@ -6,19 +6,19 @@ configs:
     name: Federation Availability
     parameters:
       appId:
-        api: application-web
+        configType: application-web
         config: application
         property: id
         type: reference
       host: https://www.google.com
       location: GEOLOCATION-9999453BE4BDB3CD
       managementZoneId:
-        api: management-zone
+        configType: management-zone
         config: zone
         property: id
         type: reference
       tag:
-        api: auto-tag
+        configType: auto-tag
         config: application-tagging
         property: name
         type: reference

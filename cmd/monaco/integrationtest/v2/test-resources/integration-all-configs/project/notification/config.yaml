@@ -6,7 +6,7 @@ configs:
     name: 'Star Trek to #team-star-trek'
     parameters:
       alertingProfileId:
-        api: alerting-profile
+        configType: alerting-profile
         config: profile
         property: id
         type: reference
@@ -20,7 +20,7 @@ configs:
     name: Captain's Log
     parameters:
       alertingProfileId:
-        api: alerting-profile
+        configType: alerting-profile
         config: profile
         property: id
         type: reference
@@ -39,7 +39,7 @@ configs:
     name: "There's only one Captain!'s Log"
     parameters:
       alertingProfileId:
-        api: alerting-profile
+        configType: alerting-profile
         config: profile
         property: id
         type: reference
@@ -57,7 +57,7 @@ configs:
     name: "email_list_as_array"
     parameters:
       alertingProfileId:
-        api: alerting-profile
+        configType: alerting-profile
         config: profile
         property: id
         type: reference

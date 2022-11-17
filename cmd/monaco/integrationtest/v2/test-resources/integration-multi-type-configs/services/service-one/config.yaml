@@ -35,7 +35,7 @@ configs:
       parameters:
         alertingProfileId:
           type: reference
-          api: alerting-profile
+          configType: alerting-profile
           config: awesome-alerts
           property: id
         environment: Env1

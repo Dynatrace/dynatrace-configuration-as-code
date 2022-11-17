@@ -6,13 +6,13 @@ configs:
     name: Star Wars Dash 1
     parameters:
       mzone:
-        api: management-zone
+        configType: management-zone
         config: zone-multiproject
         project: cinema-infrastructure
         property: id
         type: reference
       mzoneName:
-        api: management-zone
+        configType: management-zone
         config: zone-multiproject
         project: cinema-infrastructure
         property: name
@@ -26,19 +26,19 @@ configs:
     name: Star Wars Dash 2
     parameters:
       mzone:
-        api: management-zone
+        configType: management-zone
         config: zone-multiproject
         project: cinema-infrastructure
         property: id
         type: reference
       mzoneName:
-        api: management-zone
+        configType: management-zone
         config: zone-multiproject
         project: cinema-infrastructure
         property: name
         type: reference
       someParam:
-        api: auto-tag
+        configType: auto-tag
         config: st-sw-tag-1
         property: id
         type: reference
@@ -51,19 +51,19 @@ configs:
     name: Star Wars Dash 3 - Skipped on Prod
     parameters:
       mzone:
-        api: management-zone
+        configType: management-zone
         config: zone-multiproject
         project: cinema-infrastructure
         property: id
         type: reference
       mzoneName:
-        api: management-zone
+        configType: management-zone
         config: zone-multiproject
         project: cinema-infrastructure
         property: name
         type: reference
       someParam:
-        api: auto-tag
+        configType: auto-tag
         config: st-sw-tag-3
         property: id
         type: reference

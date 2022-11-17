@@ -36,10 +36,10 @@ type ReferenceParameter struct {
 	parameter.ParameterReference
 }
 
-func New(project string, api string, config string, property string) *ReferenceParameter {
+func New(project string, configType string, config string, property string) *ReferenceParameter {
 	coord := coordinate.Coordinate{
 		Project: project,
-		Type:    api,
+		Type:    configType,
 		Config:  config,
 	}
 
@@ -105,6 +105,11 @@ func (p *ReferenceParameter) ResolveValue(context parameter.ResolveContext) (int
 	return nil, newUnresolvedReferenceError(context, p.ParameterReference, "config has not been resolved yet or does not exist")
 }
 
+const projectField = "project"
+const typeField = "configType"
+const idField = "config"
+const propertyField = "property"
+
 func writeReferenceParameter(context parameter.ParameterWriterContext) (map[string]interface{}, error) {
 	refParam, ok := context.Parameter.(*ReferenceParameter)
 
@@ -114,70 +119,70 @@ func writeReferenceParameter(context parameter.ParameterWriterContext) (map[stri
 
 	result := make(map[string]interface{})
 	sameProject := context.Coordinate.Project == refParam.Config.Project
-	sameApi := context.Coordinate.Type == refParam.Config.Type
+	sameType := context.Coordinate.Type == refParam.Config.Type
 	sameConfig := context.Coordinate.Config == refParam.Config.Config
 
 	if !sameProject {
-		result["project"] = refParam.Config.Project
+		result[projectField] = refParam.Config.Project
 	}
 
-	if !sameProject || !sameApi {
-		result["api"] = refParam.Config.Type
+	if !sameProject || !sameType {
+		result[typeField] = refParam.Config.Type
 	}
 
-	if !sameProject || !sameApi || !sameConfig {
-		result["config"] = refParam.Config.Config
+	if !sameProject || !sameType || !sameConfig {
+		result[idField] = refParam.Config.Config
 	}
 
-	result["property"] = refParam.Property
+	result[propertyField] = refParam.Property
 
 	return result, nil
 }
 
 // parseReferenceParameter tries to parse a ReferenceParameter from a given context.
-// it requires at least a `property` config value. All other values (project, api, config)
+// it requires at least a `property` config value. All other values (project, type, config)
 // will be filled in from the current context if missing.  it is not allowed to leave
-// for example only `api` empty.
+// for example only `type` empty.
 func parseReferenceParameter(context parameter.ParameterParserContext) (parameter.Parameter, error) {
 	project := context.Coordinate.Project
-	api := context.Coordinate.Type
+	configType := context.Coordinate.Type
 	config := context.Coordinate.Config
 	var property string
 	projectSet := false
-	apiSet := false
+	typeSet := false
 	configSet := false
 
-	if val, ok := context.Value["project"]; ok {
+	if val, ok := context.Value[projectField]; ok {
 		projectSet = true
 		project = util.ToString(val)
 	}
 
-	if val, ok := context.Value["api"]; ok {
-		apiSet = true
-		api = util.ToString(val)
+	if val, ok := context.Value[typeField]; ok {
+		typeSet = true
+		configType = util.ToString(val)
 	}
 
-	if val, ok := context.Value["config"]; ok {
+	if val, ok := context.Value[idField]; ok {
 		configSet = true
 		config = util.ToString(val)
 	}
 
-	if val, ok := context.Value["property"]; ok {
+	if val, ok := context.Value[propertyField]; ok {
 		property = util.ToString(val)
 	} else {
 		return nil, parameter.NewParameterParserError(context, "missing configuration `property`")
 	}
 
 	// ensure that we do not have "holes" in the reference definition
-	if projectSet && (!apiSet || !configSet) {
-		return nil, parameter.NewParameterParserError(context, "project is set, but either api or config isn't! please specify api and config")
+	if projectSet && (!typeSet || !configSet) {
+		return nil, parameter.NewParameterParserError(context, "project is set, but either type or config isn't! please specify type and config")
 	}
 
-	if apiSet && !configSet {
-		return nil, parameter.NewParameterParserError(context, "api is set, but config isn't! please specify config")
+	if typeSet && !configSet {
+		return nil, parameter.NewParameterParserError(context, "type is set, but config isn't! please specify config")
 	}
 
-	return New(project, api, config, property), nil
+	return New(project, configType, config, property), nil
 }
 
 func newUnresolvedReferenceError(context parameter.ResolveContext, reference parameter.ParameterReference, reason string) error {

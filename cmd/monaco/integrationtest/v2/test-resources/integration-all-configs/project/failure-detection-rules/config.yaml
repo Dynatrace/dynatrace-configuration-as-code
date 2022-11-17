@@ -8,7 +8,7 @@ configs:
       description: Apply 'ignoreAllExceptions' parameter set to all App Gateway REST
         services
       fdpId:
-        api: failure-detection-parametersets
+        configType: failure-detection-parametersets
         config: parameterset
         property: id
         type: reference

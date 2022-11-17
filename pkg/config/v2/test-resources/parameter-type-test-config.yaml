@@ -17,7 +17,7 @@ configs:
         full_reference:
           type: reference
           project: "some project"
-          api: "some api"
+          configType: "some api"
           config: "reference_cfg"
           property: "name"
         environment:

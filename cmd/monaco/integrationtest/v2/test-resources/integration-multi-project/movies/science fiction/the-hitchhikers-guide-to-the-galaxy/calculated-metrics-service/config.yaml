@@ -5,7 +5,7 @@ configs:
     parameters:
       enabled: "true"
       requestAttribute:
-        api: request-attributes
+        configType: request-attributes
         config: ondemand-analysis-requestid
         project: cinema-infrastructure
         property: name
