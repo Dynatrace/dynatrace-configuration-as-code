@@ -116,8 +116,7 @@ func getTestFs(existingFolderPaths []string, existingFilePaths []string) afero.F
 
 func Test_checkForCircularDependencies(t *testing.T) {
 	type args struct {
-		configs     project.ConfigsPerApis
-		projectName string
+		proj project.Project
 	}
 	tests := []struct {
 		name    string
@@ -127,61 +126,64 @@ func Test_checkForCircularDependencies(t *testing.T) {
 		{
 			"writes nothing if no configs are downloaded",
 			args{
-				project.ConfigsPerApis{},
-				"testProject",
+				project.Project{},
 			},
 			false,
 		}, {
 			"return errors if cyclic dependency in downloaded configs",
 			args{
-				project.ConfigsPerApis{
-					"dashboard": []config.Config{
-						{
-							Template: template.CreateTemplateFromString("some/path", "{}"),
-							Parameters: map[string]parameter.Parameter{
-								"name": &valueParam.ValueParameter{Value: "name A"},
-							},
-							Coordinate: coordinate.Coordinate{
-								Project: "test",
-								Type:    "dashboard",
-								Config:  "a",
-							},
-							References: []coordinate.Coordinate{
+				project.Project{
+					Id: "test_project",
+					Configs: map[string]project.ConfigsPerApis{
+						"test_project": {
+							"dashboard": []config.Config{
 								{
-									Project: "test",
-									Type:    "dashboard",
-									Config:  "b",
+									Template: template.CreateTemplateFromString("some/path", "{}"),
+									Parameters: map[string]parameter.Parameter{
+										"name": &valueParam.ValueParameter{Value: "name A"},
+									},
+									Coordinate: coordinate.Coordinate{
+										Project: "test",
+										Type:    "dashboard",
+										Config:  "a",
+									},
+									References: []coordinate.Coordinate{
+										{
+											Project: "test",
+											Type:    "dashboard",
+											Config:  "b",
+										},
+									},
 								},
-							},
-						},
-						{
-							Template: template.CreateTemplateFromString("some/path", "{}"),
-							Parameters: map[string]parameter.Parameter{
-								"name": &valueParam.ValueParameter{Value: "name A"},
-							},
-							Coordinate: coordinate.Coordinate{
-								Project: "test",
-								Type:    "dashboard",
-								Config:  "b",
-							},
-							References: []coordinate.Coordinate{
 								{
-									Project: "test",
-									Type:    "dashboard",
-									Config:  "a",
+									Template: template.CreateTemplateFromString("some/path", "{}"),
+									Parameters: map[string]parameter.Parameter{
+										"name": &valueParam.ValueParameter{Value: "name A"},
+									},
+									Coordinate: coordinate.Coordinate{
+										Project: "test",
+										Type:    "dashboard",
+										Config:  "b",
+									},
+									References: []coordinate.Coordinate{
+										{
+											Project: "test",
+											Type:    "dashboard",
+											Config:  "a",
+										},
+									},
 								},
 							},
 						},
 					},
 				},
-				"testProject",
 			},
 			true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := reportForCircularDependencies(tt.args.configs, tt.args.projectName)
+			err := reportForCircularDependencies(tt.args.proj)
 			if tt.wantErr {
 				assert.ErrorContains(t, err, "there are circular dependencies")
 			} else {

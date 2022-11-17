@@ -30,13 +30,13 @@ import (
 )
 
 // WriteToDisk writes all projects to the disk
-func WriteToDisk(fs afero.Fs, downloadedConfigs project.ConfigsPerApis, projectName, tokenEnvVarName, environmentUrl, outputFolder string) error {
+func WriteToDisk(fs afero.Fs, proj project.Project, projectDefinition manifest.ProjectDefinitionByProjectId, tokenEnvVarName, environmentUrl, outputFolder string) error {
 	timestampString := time.Now().Format("2006-01-02-150405")
 
-	return writeToDisk(fs, downloadedConfigs, projectName, tokenEnvVarName, environmentUrl, outputFolder, timestampString)
+	return writeToDisk(fs, proj, projectDefinition, tokenEnvVarName, environmentUrl, outputFolder, timestampString)
 }
 
-func writeToDisk(fs afero.Fs, downloadedConfigs project.ConfigsPerApis, projectName, tokenEnvVarName, environmentUrl, outputFolder, timestampString string) error {
+func writeToDisk(fs afero.Fs, proj project.Project, projectDefinition manifest.ProjectDefinitionByProjectId, tokenEnvVarName, environmentUrl, outputFolder, timestampString string) error {
 
 	log.Debug("Preparing downloaded data for persisting")
 
@@ -50,12 +50,10 @@ func writeToDisk(fs afero.Fs, downloadedConfigs project.ConfigsPerApis, projectN
 		log.Warn("A manifest.yaml already exists in '%s', creating '%s' instead.", outputFolder, manifestName)
 	}
 
-	proj, projectDefinitions := CreateProjectData(downloadedConfigs, projectName)
-
 	m := manifest.Manifest{
-		Projects: projectDefinitions,
+		Projects: projectDefinition,
 		Environments: map[string]manifest.EnvironmentDefinition{
-			projectName: manifest.NewEnvironmentDefinition(projectName,
+			proj.Id: manifest.NewEnvironmentDefinition(proj.Id,
 				manifest.UrlDefinition{
 					Type:  manifest.ValueUrlType,
 					Value: environmentUrl,

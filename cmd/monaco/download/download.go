@@ -141,12 +141,14 @@ func doDownload(fs afero.Fs, environmentUrl, projectName, token, tokenEnvVarName
 	log.Info("Resolving dependencies between configurations")
 	downloadedConfigs = download.ResolveDependencies(downloadedConfigs)
 
-	err = download.WriteToDisk(fs, downloadedConfigs, projectName, tokenEnvVarName, environmentUrl, outputFolder)
+	proj, projDef := download.CreateProjectData(downloadedConfigs, projectName)
+
+	err = download.WriteToDisk(fs, proj, projDef, tokenEnvVarName, environmentUrl, outputFolder)
 	if err != nil {
 		return err
 	}
 
-	if depErr := reportForCircularDependencies(downloadedConfigs, projectName); depErr != nil {
+	if depErr := reportForCircularDependencies(proj); depErr != nil {
 		log.Warn("Download finished with problems: %s", depErr)
 	} else {
 		log.Info("Finished download")
@@ -155,9 +157,8 @@ func doDownload(fs afero.Fs, environmentUrl, projectName, token, tokenEnvVarName
 	return nil
 }
 
-func reportForCircularDependencies(configs project.ConfigsPerApis, projectName string) error {
-	p, _ := download.CreateProjectData(configs, projectName)
-	_, errs := topologysort.GetSortedConfigsForEnvironments([]project.Project{p}, []string{projectName})
+func reportForCircularDependencies(p project.Project) error {
+	_, errs := topologysort.GetSortedConfigsForEnvironments([]project.Project{p}, []string{p.Id})
 	if len(errs) != 0 {
 		util.PrintWarnings(errs)
 		return fmt.Errorf("there are circular dependencies between %d configurations that need to be resolved manually", len(errs))
