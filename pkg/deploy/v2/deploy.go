@@ -29,41 +29,41 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 )
 
-type InvalidJsonError struct {
+type invalidJsonError struct {
 	Config             coordinate.Coordinate
 	EnvironmentDetails configErrors.EnvironmentDetails
 	error              error
 }
 
-func (e InvalidJsonError) Unwrap() error {
+func (e invalidJsonError) Unwrap() error {
 	return e.error
 }
 
 var (
-	// InvalidJsonError must support unwrap function
-	_ (interface{ Unwrap() error }) = (*InvalidJsonError)(nil)
+	// invalidJsonError must support unwrap function
+	_ (interface{ Unwrap() error }) = (*invalidJsonError)(nil)
 )
 
-func (e InvalidJsonError) Coordinates() coordinate.Coordinate {
+func (e invalidJsonError) Coordinates() coordinate.Coordinate {
 	return e.Config
 }
 
-func (e InvalidJsonError) LocationDetails() configErrors.EnvironmentDetails {
+func (e invalidJsonError) LocationDetails() configErrors.EnvironmentDetails {
 	return e.EnvironmentDetails
 }
 
-func (e InvalidJsonError) Error() string {
+func (e invalidJsonError) Error() string {
 	return e.error.Error()
 }
 
-type ConfigDeployError struct {
+type configDeployError struct {
 	Config             coordinate.Coordinate
 	EnvironmentDetails configErrors.EnvironmentDetails
 	Reason             string
 }
 
-func newConfigDeployError(conf *config.Config, reason string) ConfigDeployError {
-	return ConfigDeployError{
+func newConfigDeployError(conf *config.Config, reason string) configDeployError {
+	return configDeployError{
 		Config: conf.Coordinate,
 		EnvironmentDetails: configErrors.EnvironmentDetails{
 			Group:       conf.Group,
@@ -73,15 +73,15 @@ func newConfigDeployError(conf *config.Config, reason string) ConfigDeployError 
 	}
 }
 
-func (e ConfigDeployError) Coordinates() coordinate.Coordinate {
+func (e configDeployError) Coordinates() coordinate.Coordinate {
 	return e.Config
 }
 
-func (e ConfigDeployError) LocationDetails() configErrors.EnvironmentDetails {
+func (e configDeployError) LocationDetails() configErrors.EnvironmentDetails {
 	return e.EnvironmentDetails
 }
 
-func (e ConfigDeployError) Error() string {
+func (e configDeployError) Error() string {
 	return e.Reason
 }
 
@@ -121,7 +121,7 @@ func (e ParameterReferenceError) Error() string {
 }
 
 var (
-	_ configErrors.DetailedConfigError = (*ConfigDeployError)(nil)
+	_ configErrors.DetailedConfigError = (*configDeployError)(nil)
 	_ configErrors.DetailedConfigError = (*ParameterReferenceError)(nil)
 )
 
@@ -242,7 +242,7 @@ func deployConfig(
 	})
 
 	if err != nil {
-		return parameter.ResolvedEntity{}, []error{&InvalidJsonError{
+		return parameter.ResolvedEntity{}, []error{&invalidJsonError{
 			Config: conf.Coordinate,
 			EnvironmentDetails: configErrors.EnvironmentDetails{
 				Group:       conf.Group,
