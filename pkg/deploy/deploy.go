@@ -333,7 +333,6 @@ func ResolveParameterValues(client rest.DynatraceClient, conf *config.Config,
 			Environment:             conf.Environment,
 			ParameterName:           name,
 			ResolvedParameterValues: properties,
-			Client:                  client,
 			DryRun:                  dryRun,
 		})
 

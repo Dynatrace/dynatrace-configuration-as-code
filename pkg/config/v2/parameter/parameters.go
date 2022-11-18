@@ -19,7 +19,6 @@ import (
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/errors"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 )
 
 // Properties defines a map representing resolved parameters
@@ -67,8 +66,6 @@ type ResolveContext struct {
 
 	// resolved values of the current config
 	ResolvedParameterValues Properties
-
-	Client rest.DynatraceClient
 
 	// dry run indicates that no persistent operations should be made
 	DryRun bool
