@@ -34,7 +34,7 @@ Monaco is a "configuration as code" tool that allows you to create, update and v
 
 <li>
 
-[Install Monaco](./Get-started/install-monaco)
+[Install Monaco](/Get-started/installation.md)
 
 </li>
   </ul>
@@ -52,14 +52,14 @@ Monaco is a "configuration as code" tool that allows you to create, update and v
 
   <li>
 
-[Manage configurations](./Guides/manage-configuration)
+[Manage configurations](/Guides/manage-configuration.md)
 
   </li>
   <li>
 
-[//]: # (possibly missing [Delete configuration](./configuration/delete_config))
+[//]: # (possibly missing [Delete configuration](/configuration/delete_configuration.md))
 
-[Add a new API](./Guides/add_new_api)
+[Add a new API](/Guides/add_new_api.md)
   </li>
 
   </ul>
@@ -89,7 +89,7 @@ Monaco is a "configuration as code" tool that allows you to create, update and v
 
   <li>
 
-[Commands cheat sheet](./commands/commands.md)
+[Commands cheat sheet](/commands/commands.md)
 
   </li>
   <li>

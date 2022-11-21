@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Deploy
 
-The `monaco deploy` command executes the action of deploying configurations to environment(s) defined in a given [deployment manifest](./configuration/configuration.md#deployment-manifest) file.
+The `monaco deploy` command executes the action of deploying configurations to environment(s) defined in a given [deployment manifest](/configuration/configuration.md#deployment-manifest) file.
 
 Usage: `monaco deploy [command options] deployment-manifest`
 
@@ -12,7 +12,7 @@ The most straightforward in using  `monaco deploy` is to run it without any flag
 
 ## Example
 
-Consider a [deployment manifest](./configuration/configuration.md#deployment-manifest) file called **deployment-file.yaml** with the given structure below:
+Consider a [deployment manifest](/configuration/configuration.md#deployment-manifest) file called **deployment-file.yaml** with the given structure below:
 
 ```yaml
 projects:

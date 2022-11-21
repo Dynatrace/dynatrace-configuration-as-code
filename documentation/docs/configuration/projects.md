@@ -12,7 +12,7 @@ folders contain yaml files, specifying what gets deployed.
 ## APIs
 
 To see a list of all supported APIs and folder names, please have a
-look [here](./supported_configurations.md).
+look [here](supported_configurations.md).
 
 ## Configurations
 
@@ -28,7 +28,7 @@ the name of the config, the location of the template file and parameters
 usable in the template file. Parameters can be overwritten based on what
 group or environment is currently deployed.
 
-For more details on the configuration syntax, see [here](./yaml_configuration.md).
+For more details on the configuration syntax, see [here](yaml_configuration.md).
 
 ### JSON Template File
 
@@ -75,12 +75,12 @@ Configs can then be downloaded via the respective GET endpoint defined in the Dy
 Checked in configuration should **not** include:
 
 * the entity's `id` but only it's `name`. The entity may be created or updated if one of the same name exists.
-  - The `name` must be defined as [a variable](#configuration-yaml-structure).
+  - The `name` must be defined as [a variable](#configuration-yaml).
 - hardcoded values for environment information such as references to other auto-deployed entities, tags, management-zones, etc.
 * The entity's `id` but only its `name`. The entity may be created or updated if one of the same name exists.
-  * The `name` must be defined as [a variable](yaml_config.md#name-variable).
+  * The `name` must be defined as [a variable](#configuration-yaml).
 * Hardcoded values for environment information such as references to other auto-deployed entities, tags, management-zones, etc.
-  * These should all be referenced as variables as [described here](yaml_config.md#referencing-other-configurations).
+  * These should all be referenced as variables using [Reference Parameters](parameters.md#reference-parameter).
 * Empty/null values that are optional for the creation of an object.
   * Most API GET endpoints return more data than needed to create an object. Many of those fields are empty or null, and can be omitted.
   * E.g., `tileFilter`s on dashboards
@@ -113,13 +113,13 @@ We recommend the following values for the `dashboardMetadata`:
 
 This config does the following:
 
-- References the name of the Dashboard as a [variable](#configuration-yaml-structure)
+- References the name of the Dashboard as a [variable](#configuration-yaml)
 - Shares the dashboard with other users
-- Sets a management zone filter on the complete dashboard, again as a variable, most likely [referenced from another config](#referencing-other-configurations)
+- Sets a management zone filter on the complete dashboard, again as a variable, most likely [referenced from another config](parameters.md#reference-parameter)
   - Filtering the whole dashboard by management zone, makes sure no data not meant to be shown is accidentally picked up on tiles, and removes the possible need to define filters for individual tiles
-* Reference the name of the Dashboard as a [variable](../configuration/yaml_config)
+* Reference the name of the Dashboard as a [variable](#config-yaml)
 * Share the dashboard with other users
-* Set a management zone filter on the complete dashboard, again as a variable, most likely [referenced from another config](../configuration/yaml_config#referencing-other-configurations)
+* Set a management zone filter on the complete dashboard, again as a variable, most likely [referenced from another config](parameters.md#reference-parameter)
   * Filtering the whole dashboard by management zone makes sure no private data is accidentally picked up on tiles, and removes the possible need to define filters for individual tiles
 
 From Dynatrace version 208 onwards:
@@ -195,7 +195,7 @@ And it also applies to the `SERVICE` type.
 ### Configuration types / APIs
 
 Each type of folder must contain one `configuration yaml` and one or more JSON files containing the actual configuration sent to the Dynatrace API.
-The folder name is case-sensitive and needs to be written exactly as in its definition in [Supported configuration types](configTypes_tokenPermissions.md).
+The folder name is case-sensitive and needs to be written exactly as in its definition in [Supported configuration types](supported_configurations.md). //TODO UPDATE THAT FILE
 
 
 ```

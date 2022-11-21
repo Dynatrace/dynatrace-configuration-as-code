@@ -30,4 +30,4 @@ The following options (flags) allow you to run the convert command to change con
 
 ## Demo
 
-![](./convert_demo.svg)
+![](convert_demo.svg)

@@ -156,4 +156,4 @@ GLOBAL OPTIONS:
   </TabItem>
 </Tabs>
 
-Now that Monaco is installed, follow our introductory guide on [how to deploy a configuration to Dynatrace.](/configuration/deploy_configuration.md)
+Now that Monaco is installed, follow our introductory guide on [how to deploy a configuration to Dynatrace.](/configuration/deploy_configuration)

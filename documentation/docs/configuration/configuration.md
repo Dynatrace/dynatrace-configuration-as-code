@@ -8,7 +8,7 @@ A Monaco configuration is a complete set of project(s) and a deployment manifest
 
 ## Projects
 
-Projects are directories (folders) used to logically group api configurations together. An example of a project could be a service. So all configurations regarding this service will be present in the folder. Projects can consist of multiple files and directories. For more information see [here](./projects.md)
+Projects are directories (folders) used to logically group api configurations together. An example of a project could be a service. So all configurations regarding this service will be present in the folder. Projects can consist of multiple files and directories. For more information see [here](projects.md)
 
 ## Deployment manifest
 

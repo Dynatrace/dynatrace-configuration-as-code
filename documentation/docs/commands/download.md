@@ -11,7 +11,7 @@ Use this feature to avoid starting from scratch when using Monaco.
 
 ### Using the manifest
 
-1. [Create a manifest file if you don't have one already](../configuration/yaml_configuration.md).
+1. [Create a manifest file if you don't have one already](/configuration/yaml_configuration.md).
 2. Run monaco using the download command
 
 ```shell

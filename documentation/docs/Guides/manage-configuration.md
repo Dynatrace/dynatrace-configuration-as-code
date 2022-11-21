@@ -8,7 +8,7 @@ You will learn how to create, deploy, and delete a configuration.
 
 ** Prerequisites **
 
-* Monaco 2.0.0+ installed (see [Install Monaco](../Get-Started/install-monaco.mdx))
+* Monaco 2.0.0+ installed (see [Install Monaco](/Get-started/installation.md))
 * A Dynatrace environment and access to create environment tokens
 * A Dynatrace token with the following permissions: 
     * Write entities (ApV1) <code>entities.write</code> 
@@ -48,7 +48,7 @@ cd project-example/auto-tag
 
 5\. Create two files. 
 * The first file (auto-tag.json) stores the JSON configuration of the tagging configuration. 
-* The second file (auto-tag.yaml) will be the [YAML configuration](../../configuration/yaml_configuration.md) file which lists the configurations to be deployed
+* The second file (auto-tag.yaml) will be the [YAML configuration](/configuration/yaml_configuration.md) file which lists the configurations to be deployed
 
 ```shell
 touch auto-tag.json auto-tag.yaml
@@ -118,7 +118,7 @@ configs:
 cd ../..
 ```
 
-9\. Create a [deployment manifest file](../../configuration/configuration.md#deployment-manifest) to instruct Monaco what project to deploy and where to deploy it
+9\. Create a [deployment manifest file](/configuration/configuration.md#deployment-manifest) to instruct Monaco what project to deploy and where to deploy it
 
 ```shell
 touch deploy.yaml
@@ -171,7 +171,7 @@ monaco  deploy --dry-run deploy.yaml
 
 ## Deploy configuration
 
-Now that you have [created the configuration](./manage-configuration#create-configuration), you need to deploy it to your Dynatrace environment. To do this, you use the `monaco deploy` command.
+Now that you have [created the configuration](manage-configuration.md#create-configuration), you need to deploy it to your Dynatrace environment. To do this, you use the `monaco deploy` command.
 
 1\. To apply your configuration with the `monaco deploy` command, provide the name of the deployment file as argument 
 
@@ -204,7 +204,7 @@ monaco  deploy deploy.yaml
 
 ## Delete configuration
 
-Now that your configuration is [deployed](./manage-configuration#deploy-configuration), you can delete it. To do this, you will use the `monaco delete` command.
+Now that your configuration is [deployed](manage-configuration.md#deploy-configuration), you can delete it. To do this, you will use the `monaco delete` command.
 
 1\. To delete the previously created tag `DTServer`, create a file called `delete.yaml` in the root folder
 

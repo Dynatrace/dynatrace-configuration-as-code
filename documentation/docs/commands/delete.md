@@ -12,7 +12,7 @@ The delete command takes two arguments as yaml files. A manifest file which cont
 
 ## Example
 
-Consider a [deployment manifest](./configuration/configuration.md#deployment-manifest) file called **deployment-file.yaml** with the given structure below:
+Consider a [deployment manifest](/configuration/configuration.md#deployment-manifest) file called **deployment-file.yaml** with the given structure below:
 
 ```yaml
 projects:

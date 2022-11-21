@@ -35,7 +35,7 @@ e.g. two dashboards with the same `id` in two different projects.
 
 It is important to note, that the field is only local to monaco. It has nothing
 to do with the id provided by the dynatrace api. One important use case for this
-`id` is, that it is used when using [reference parameters](./parameters.md#reference_parameter).
+`id` is, that it is used when using [reference parameters](parameters.md#reference-parameter).
 
 
 ## Config
@@ -43,7 +43,7 @@ to do with the id provided by the dynatrace api. One important use case for this
 The `config` field offers the following fields:
 
 * `name` - **required** - Name used to identify objects in the dynatrace api
-* `template` - **required** - Defines templating file used to render request to dynatrace api (see [here](./projects.md#template_file) for more details)
+* `template` - **required** - Defines templating file used to render request to dynatrace api (see [here](projects.md#json-template-file) for more details)
 * `skipDeployment` - Boolean flag (either true, or false) used to notify monaco to not deploy this configuration
 * `parameters` - List of parameters available in the template
 
@@ -51,7 +51,7 @@ The `config` field offers the following fields:
 
 There are a number of different parameter types available.
 
-Please see [the page on Parameters](./parameters.md) for more details.
+Please see [the page on Parameters](parameters.md) for more details.
 
 ### String Escaping of Config
 
