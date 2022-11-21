@@ -17,7 +17,15 @@ This file provides details on what to deploy and where to deploy it.
 
 ## Manifest Structure
 
-The manifest is written in yaml syntax. It has two top level keys `projects` and `environments`.
+The manifest is written in yaml syntax. It has three top level keys `manifest_version`, `projects` and `environments`.
+
+### Version
+
+A manifest must contain a `manifest_version` as a top level key. This a simple string and used to validate if the currently
+used version of monaco can correctly parse the manifest. 
+
+Currently, the supported manifest version is "1.0". The release notes will contain details in case the manifest is extended 
+and newer versions are released.
 
 ### Projects
 
@@ -84,19 +92,23 @@ environments:
 - group: dev
   entries:
   - name: test-env-1
-    url: https://aaa.bbb.cc
+    url: 
+      value: https://aaa.bbb.cc
     token:
       name: TEST_ENV_TOKEN
 
   - name: test-env-2
-    url: https://ddd.bbb.cc
+    url: 
+      value: https://ddd.bbb.cc
     token:
       name: TEST_ENV_2_TOKEN
 
 - group: prod
-  entires:
+  entries:
   - name: prod-env-1
-    url: https://prod.env.cc
+    url:
+      type: environment
+      value: PROD_URL
     token:
       name: PROD_TOKEN
 ```
@@ -107,7 +119,7 @@ in one group.
 An environment configuration consists  of three parts:
 
 - name
-- url
+- url (which can be a value, or loaded from an environment variable)
 - token
 
 The name has to be unique. The token configuration specifies a name of the environment variable from where monaco will load the access token for the dynatrace api.
