@@ -11,6 +11,9 @@ variables.
 To not accidentally check in any modifications copy the files out of the shared/ folder into the .run/ folder -
 modifications should then apply to the upper level configuration files and not change those in shared/.
 
+Note: If you checked out the project in a custom-named folder, you might need to adjust the `<module name>` tag
+of each run configuration to match with the project folder name.
+
 Please be mindful about checking in any changes to run configurations - by default this folder is .gitignored anyway -
 this is really just meant as a shared basis.
 
