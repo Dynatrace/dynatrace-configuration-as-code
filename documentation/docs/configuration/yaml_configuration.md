@@ -11,6 +11,8 @@ A basic configuraion yaml looks something like this
 ```yaml
 configs:
 - id: test-dashboard
+  type:
+      api: dashboard
   config:
     name: Test Dashboard
     template: dashboard.json
@@ -36,6 +38,11 @@ e.g. two dashboards with the same `id` in two different projects.
 It is important to note, that the field is only local to monaco. It has nothing
 to do with the id provided by the dynatrace api. One important use case for this
 `id` is, that it is used when using [reference parameters](parameters.md#reference-parameter).
+
+
+## Type
+
+The `type.api` field is a required field which defines to what [api](supported_configurations.md) the config belongs.
 
 
 ## Config
