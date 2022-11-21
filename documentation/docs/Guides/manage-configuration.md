@@ -77,7 +77,7 @@ touch auto-tag.json auto-tag.yaml
                       {
                             "key": {
                                   "attribute": "PROCESS_GROUP_PREDEFINED_METADATA",
-                                  "dynamicKey": "Dynatrace_CLUSTER_ID",
+                                  "dynamicKey": "DYNATRACE_CLUSTER_ID",
                                   "type": "PROCESS_PREDEFINED_METADATA_KEY"
                             },
                             "comparisonInfo": {
@@ -103,6 +103,8 @@ touch auto-tag.json auto-tag.yaml
 ```yaml
 configs:
   - id: application-tagging
+    type: 
+      api: auto-tag
     config:
       template: "auto-tag.json"
       name: "DTServer"
@@ -127,6 +129,8 @@ touch deploy.yaml
 > :warning: **Replace the URL value** with the URL of your Dynatrace environment
 
 ```yaml
+manifest_version: 1.0
+
 projects:
   - name: auto-tag
     path: project-example
@@ -135,7 +139,8 @@ environments:
   - group: development
     entries:
       - name: development-environment
-        url: "https://xxxxxx.live.Dynatrace.com"
+        url: 
+          value: "https://xxxxxx.live.Dynatrace.com"
         token:
           name: "devToken"
 ```
