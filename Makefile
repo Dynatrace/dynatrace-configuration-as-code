@@ -9,7 +9,7 @@ lint:
 ifeq ($(OS),Windows_NT)
 	@.\tools\check-format.cmd
 else
-	@go install github.com/google/addlicense@latest
+	@go install github.com/google/addlicense@v1
 	@sh ./tools/check-format.sh
 	@sh ./tools/check-license-headers.sh
 	@go mod tidy
@@ -28,7 +28,7 @@ endif
 
 mocks:
 	@echo "Generating mocks"
-	@go install github.com/golang/mock/mockgen@latest
+	@go install github.com/golang/mock/mockgen@v1
 	@go generate ./...
 
 vet:
@@ -37,7 +37,7 @@ vet:
 
 check:
 	@echo "Static code analysis"
-	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.1
+	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1
 	@golangci-lint run ./...
 
 build: clean
