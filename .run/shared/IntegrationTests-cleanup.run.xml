@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Integration Tests - cleanup" type="GoTestRunConfiguration" factoryName="Go Test" folderName="shared">
-    <module name="internal" />
+    <module name="monitoring-as-code" />
     <working_directory value="$PROJECT_DIR$/cmd" />
     <go_parameters value="--tags=cleanup" />
     <envs>
