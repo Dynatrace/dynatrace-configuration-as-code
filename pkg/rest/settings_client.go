@@ -24,8 +24,6 @@ import (
 
 const pathSettingsObjects = "/api/v2/settings/objects"
 
-//go:generate mockgen -source=client_settings.go -destination=client_settings_mock.go -package=rest SettingsClient
-
 // SettingsObject contains all the information necessary to create/update a settings object
 type SettingsObject struct {
 	Id, Schema, SchemaVersion, Scope string
