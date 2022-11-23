@@ -236,3 +236,10 @@ func (c *DummyClient) ExistsByName(a api.Api, name string) (exists bool, id stri
 
 	return false, "", nil
 }
+
+func (c *DummyClient) Upsert(obj rest.SettingsObject) (api.DynatraceEntity, error) {
+	return api.DynatraceEntity{
+		Id:   obj.Id,
+		Name: obj.Id,
+	}, nil
+}

@@ -122,7 +122,8 @@ func TestUpsert(t *testing.T) {
 				}
 			}))
 
-			c := NewSettingsClient(server.URL, "", server.Client())
+			c, err := newDynatraceClient(server.URL, "token", server.Client())
+			assert.NilError(t, err)
 
 			resp, err := c.Upsert(SettingsObject{
 				Id:      "user-provided-id",

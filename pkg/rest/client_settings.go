@@ -19,9 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
-	"net/http"
 )
 
 const pathSettingsObjects = "/api/v2/settings/objects"
@@ -33,69 +31,6 @@ type SettingsObject struct {
 	Id, Schema, SchemaVersion, Scope string
 	// Content is the rendered config for the given settings object
 	Content []byte
-}
-
-// SettingsClient is the abstraction layer for CRUD operations on the Dynatrace Settings API.
-// Its design is intentionally not dependent on Monaco objects.
-//
-// This interface exclusively accesses the [settings api] of Dynatrace.
-//
-// The base mechanism for all methods is the same:
-// We identify objects to be updated/deleted by their external-id. If an object can not be found using its external-id, we assume
-// that it does not exist.
-// More documentation is written in each method's documentation.
-//
-// [settings api]: https://www.dynatrace.com/support/help/dynatrace-api/environment-api/settings
-type SettingsClient interface {
-	// Upsert either creates the supplied object, or updates an existing one.
-	// First, we try to find the external-id of the object. If we can't find it, we create the object, if we find it, we
-	// update the object.
-	Upsert(object SettingsObject) (api.DynatraceEntity, error) // create or update, first version only create
-}
-
-type settingsClient struct {
-	environmentUrl string
-	token          string
-	client         *http.Client
-}
-
-var _ SettingsClient = (*settingsClient)(nil)
-
-// NewSettingsClient creates a new [SettingsClient] to perform crud operations on Dynatrace settings objects.
-func NewSettingsClient(environmentUrl, token string, client *http.Client) SettingsClient {
-	return &settingsClient{
-		environmentUrl: environmentUrl,
-		token:          token,
-		client:         client,
-	}
-}
-
-func (c settingsClient) Upsert(obj SettingsObject) (api.DynatraceEntity, error) {
-	externalId := util.GenerateExternalId(obj.Schema, obj.Id)
-
-	// we could build multiple objects at once. improvement if we have time. https://www.dynatrace.com/support/help/dynatrace-api/basics/access-limit
-	payload, err := c.buildRequestPayload(obj, externalId)
-	if err != nil {
-		return api.DynatraceEntity{}, fmt.Errorf("failed to build settings object for upsert: %w", err)
-	}
-
-	requestUrl := c.environmentUrl + pathSettingsObjects
-
-	resp, err := post(c.client, requestUrl, payload, c.token)
-	if err != nil {
-		return api.DynatraceEntity{}, fmt.Errorf("failed to upsert dynatrace obj: %w", err)
-	}
-
-	if !success(resp) {
-		return api.DynatraceEntity{}, fmt.Errorf("failed to update settings object with externalId %s (HTTP %d)!\n\tResponse was: %s", externalId, resp.StatusCode, string(resp.Body))
-	}
-
-	entity, err := parseResponse(resp)
-	if err != nil {
-		return api.DynatraceEntity{}, fmt.Errorf("failed to parse response: %w", err)
-	}
-
-	return entity, nil
 }
 
 type settingsRequest struct {
@@ -112,7 +47,7 @@ type settingsRequest struct {
 // To do this, we have to wrap the template in another object and send this object to the server.
 // Currently, we only encode one object into an array of objects, but we can optimize it to contain multiple elements to update.
 // Note payload limitations: https://www.dynatrace.com/support/help/dynatrace-api/basics/access-limit#payload-limit
-func (c settingsClient) buildRequestPayload(obj SettingsObject, externalId string) ([]byte, error) {
+func buildRequestPayload(obj SettingsObject, externalId string) ([]byte, error) {
 	var value any
 	if err := json.Unmarshal(obj.Content, &value); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal rendered config: %w", err)
