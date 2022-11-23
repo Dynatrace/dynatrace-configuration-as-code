@@ -34,10 +34,8 @@ profile:
 [...]
 ```
 
-
-Every config needs to provide a name for unique identification. Omitting the name variable or using a duplicate name causes a validation / deployment error.
-
-Any defined `{config name}` represents a variable that can then be used in a [JSON template](configuration_structure.md#config-json-templates), and will be resolved and inserted into the config before deploying to Dynatrace.
+Any defined `- {key} : {value}` for a configuration represents a variable that can then be used in a [JSON template](configuration_structure.md#config-json-templates) by referencing
+the `{key}`. This will be resolved and the `{value}` inserted into the JSON before deploying to Dynatrace.
 
 Example: `projects/infrastructure/alerting-profile/profiles.yaml` defines a `name`, which is then used in `projects/infrastructure/alerting-profile/profile.json` as `{{.name}}`.
 
@@ -49,6 +47,31 @@ profile:
 [...]
 ```
 
+### Name Variable
+**Every config needs to provide a `name` for unique identification.** 
+
+**Omitting the `name` variable or using a duplicate name causes a validation / deployment error.**
+
+The `name` is used to identify configurations on a Dynatrace environment and ensure that they are updated when they already exist. 
+
+For this, the `name` needs to be used in the [JSON template](configuration_structure.md#config-json-templates) to fill the specific name property of the configuration. 
+Usually this is also just `name`, but for some configurations this may differ - please see the special cases described for [JSON templates](configuration_structure.md#config-json-templates) and refer to the [Dynatrace API documentation](https://www.dynatrace.com/support/help/dynatrace-api) if in doubt.
+
+> When [downloading](/commands/downloading-configuration.md) names will be automatically extracted and placed in the YAML for you!
+
+When referencing the `name` in a JSON Template it needs to be used as is, with no additional characters around it. See the single correct sample in the table below:
+
+| Name property in JSON            | Correct |
+|----------------------------------|---------|
+| `"{{ .name }}"`                  | ✅       |
+| `" {{ .name }}"`                 | ❌      |
+| `"{{ .name }} "`                 | ❌      |
+| `"Some extra text: {{ .name }}"` | ❌      |
+
+
+> Should you encounter issues of configurations not being created several times instead of updated,
+> check that your reference to the name does not contain any accidental spaces or other characters making
+> what is sent to Dynatrace in the JSON different from the name defined in the YAML!
 
 
 ### Skip configuration deployment
