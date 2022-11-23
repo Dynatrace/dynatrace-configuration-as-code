@@ -197,7 +197,7 @@ func createKnownEntityMap(apis map[string]api.Api) knownEntityMap {
 }
 
 func deployConfig(
-	client rest.DynatraceClient,
+	client rest.ConfigClient,
 	theApi api.Api,
 	entities parameter.ResolvedEntities,
 	knownEntityNames knownEntityMap,
@@ -210,7 +210,7 @@ func deployConfig(
 	parameters, sortErrs := topologysort.SortParameters(conf.Group, conf.Environment, conf.Coordinate, conf.Parameters)
 	errors = append(errors, sortErrs...)
 
-	properties, errs := ResolveParameterValues(client, conf, entities, parameters, dryRun)
+	properties, errs := ResolveParameterValues(conf, entities, parameters, dryRun)
 
 	errors = append(errors, errs...)
 
@@ -307,9 +307,8 @@ func ExtractConfigName(conf *config.Config, properties parameter.Properties) (st
 	return name, nil
 }
 
-func ResolveParameterValues(client rest.DynatraceClient, conf *config.Config,
-	entities map[coordinate.Coordinate]parameter.ResolvedEntity, parameters []topologysort.ParameterWithName,
-	dryRun bool) (parameter.Properties, []error) {
+func ResolveParameterValues(conf *config.Config, entities map[coordinate.Coordinate]parameter.ResolvedEntity,
+	parameters []topologysort.ParameterWithName, dryRun bool) (parameter.Properties, []error) {
 
 	var errors []error
 

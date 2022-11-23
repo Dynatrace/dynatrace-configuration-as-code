@@ -60,7 +60,6 @@ func TestResolveParameterValues(t *testing.T) {
 		},
 	}
 
-	client := &client.DummyClient{}
 	conf := config.Config{
 		Template: generateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
@@ -76,7 +75,7 @@ func TestResolveParameterValues(t *testing.T) {
 
 	entities := map[coordinate.Coordinate]parameter.ResolvedEntity{}
 
-	values, errors := ResolveParameterValues(client, &conf, entities, parameters, false)
+	values, errors := ResolveParameterValues(&conf, entities, parameters, false)
 
 	assert.Assert(t, len(errors) == 0, "there should be no errors (errors: %s)", errors)
 	assert.Equal(t, name, values[config.NameParameter])
@@ -104,7 +103,6 @@ func TestResolveParameterValuesShouldFailWhenReferencingNonExistingConfig(t *tes
 		},
 	}
 
-	client := &client.DummyClient{}
 	conf := config.Config{
 		Template: generateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
@@ -120,7 +118,7 @@ func TestResolveParameterValuesShouldFailWhenReferencingNonExistingConfig(t *tes
 
 	entities := map[coordinate.Coordinate]parameter.ResolvedEntity{}
 
-	_, errors := ResolveParameterValues(client, &conf, entities, parameters, false)
+	_, errors := ResolveParameterValues(&conf, entities, parameters, false)
 
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
@@ -146,7 +144,6 @@ func TestResolveParameterValuesShouldFailWhenReferencingSkippedConfig(t *testing
 		},
 	}
 
-	client := &client.DummyClient{}
 	conf := config.Config{
 		Template: generateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
@@ -169,7 +166,7 @@ func TestResolveParameterValuesShouldFailWhenReferencingSkippedConfig(t *testing
 		},
 	}
 
-	_, errors := ResolveParameterValues(client, &conf, entities, parameters, false)
+	_, errors := ResolveParameterValues(&conf, entities, parameters, false)
 
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
@@ -184,7 +181,6 @@ func TestResolveParameterValuesShouldFailWhenParameterResolveReturnsError(t *tes
 		},
 	}
 
-	client := &client.DummyClient{}
 	conf := config.Config{
 		Template: generateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
@@ -200,7 +196,7 @@ func TestResolveParameterValuesShouldFailWhenParameterResolveReturnsError(t *tes
 
 	entities := map[coordinate.Coordinate]parameter.ResolvedEntity{}
 
-	_, errors := ResolveParameterValues(client, &conf, entities, parameters, false)
+	_, errors := ResolveParameterValues(&conf, entities, parameters, false)
 
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }

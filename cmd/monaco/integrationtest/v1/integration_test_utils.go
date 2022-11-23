@@ -71,7 +71,7 @@ func AssertConfigAvailability(t *testing.T, config config.Config, environment en
 	AssertConfig(t, client, environment, available, config)
 }
 
-func AssertConfig(t *testing.T, client rest.DynatraceClient, environment environment.Environment, shouldBeAvailable bool, config config.Config) {
+func AssertConfig(t *testing.T, client rest.ConfigClient, environment environment.Environment, shouldBeAvailable bool, config config.Config) {
 	configType := config.GetType()
 	api := config.GetApi()
 	name := config.GetProperties()[config.GetId()]["name"]

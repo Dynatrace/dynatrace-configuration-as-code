@@ -131,7 +131,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 
 			parameters = append(parameters, configParameters...)
 
-			properties, errs := deploy.ResolveParameterValues(client, &theConfig, entities, parameters, false)
+			properties, errs := deploy.ResolveParameterValues(&theConfig, entities, parameters, false)
 			test.FailTestOnAnyError(t, errs, "resolving of parameter values failed")
 
 			properties[config.IdParameter] = "NO REAL ID NEEDED FOR CHECKING AVAILABILITY"
@@ -153,7 +153,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 	}
 }
 
-func AssertConfig(t *testing.T, client rest.DynatraceClient, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config, configType string, name string) {
+func AssertConfig(t *testing.T, client rest.ConfigClient, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config, configType string, name string) {
 
 	theApi := api.NewApis()[configType]
 

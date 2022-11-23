@@ -26,7 +26,7 @@ type DeletePointer struct {
 	DeleteIdentifier string
 }
 
-func DeleteConfigs(client rest.DynatraceClient, apis map[string]api.Api, entriesToDelete map[string][]DeletePointer) (errors []error) {
+func DeleteConfigs(client rest.ConfigClient, apis map[string]api.Api, entriesToDelete map[string][]DeletePointer) (errors []error) {
 
 	for targetApi, entries := range entriesToDelete {
 		theApi, found := apis[targetApi]
@@ -113,7 +113,7 @@ func filterValuesToDelete(entries []DeletePointer, existingValues []api.Value, a
 	return result, errs
 }
 
-func DeleteAllConfigs(client rest.DynatraceClient, apis map[string]api.Api) (errors []error) {
+func DeleteAllConfigs(client rest.ConfigClient, apis map[string]api.Api) (errors []error) {
 
 	for _, api := range apis {
 		log.Info("Collecting configs of type %s...", api.GetId())
