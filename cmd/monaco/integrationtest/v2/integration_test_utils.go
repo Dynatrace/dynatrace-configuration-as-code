@@ -19,6 +19,7 @@
 package v2
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
@@ -168,7 +169,7 @@ func AssertConfig(t *testing.T, client rest.ConfigClient, environment manifest.E
 	description := fmt.Sprintf("%s %s on environment %s", configType, name, environment.Name)
 
 	// To deal with delays of configs becoming available try for max 120 polling cycles (4min - at 2sec cycles) for expected state to be reached
-	err := rest.Wait(description, 120, func() bool {
+	err := wait(description, 120, func() bool {
 		exists, _, _ = client.ExistsByName(theApi, name)
 		return (shouldBeAvailable && exists) || (!shouldBeAvailable && !exists)
 	})
@@ -299,4 +300,19 @@ func appendUniqueSuffixToIntegrationTestConfigs(t *testing.T, fs afero.Fs, confi
 	}
 
 	return suffix
+}
+
+func wait(description string, maxPollCount int, condition func() bool) error {
+
+	for i := 0; i <= maxPollCount; i++ {
+
+		if condition() {
+			return nil
+		}
+		time.Sleep(2 * time.Second)
+	}
+
+	log.Error("Error: Waiting for '%s' timed out!", description)
+
+	return errors.New("Waiting for '" + description + "' timed out!")
 }

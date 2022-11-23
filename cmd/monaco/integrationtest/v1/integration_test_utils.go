@@ -20,6 +20,7 @@
 package v1
 
 import (
+	"errors"
 	"fmt"
 	projectV1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v1"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/test"
@@ -87,7 +88,7 @@ func AssertConfig(t *testing.T, client rest.ConfigClient, environment environmen
 	description := fmt.Sprintf("%s %s on environment %s", configType, name, environment.GetId())
 
 	// To deal with delays of configs becoming available try for max 120 polling cycles (4min - at 2sec cycles) for expected state to be reached
-	err := rest.Wait(description, 120, func() bool {
+	err := wait(description, 120, func() bool {
 		exists, _, _ = client.ExistsByName(api, name)
 		return (shouldBeAvailable && exists) || (!shouldBeAvailable && !exists)
 	})
@@ -216,4 +217,19 @@ func AbsOrPanicFromSlash(path string) string {
 	}
 
 	return result
+}
+
+func wait(description string, maxPollCount int, condition func() bool) error {
+
+	for i := 0; i <= maxPollCount; i++ {
+
+		if condition() {
+			return nil
+		}
+		time.Sleep(2 * time.Second)
+	}
+
+	log.Error("Error: Waiting for '%s' timed out!", description)
+
+	return errors.New("Waiting for '" + description + "' timed out!")
 }
