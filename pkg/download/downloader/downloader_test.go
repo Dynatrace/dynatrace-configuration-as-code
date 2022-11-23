@@ -218,7 +218,7 @@ func TestDownloadConfigForApi(t *testing.T) {
 
 	t.Run("project name and client is forwarded correctly", func(t *testing.T) {
 		a, _ := api.CreateAPIMockWithId(t, "api-1")
-		c := rest.CreateDynatraceClientMockFactory(t)
+		c := rest.NewMockDynatraceClient(gomock.NewController(t))
 
 		var downloadHasBeenCalled bool
 
