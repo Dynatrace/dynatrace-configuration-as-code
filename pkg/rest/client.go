@@ -29,18 +29,9 @@ import (
 	. "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 )
 
-//go:generate mockgen -source=client.go -destination=client_mock.go -package=rest -imports .=github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api DynatraceClient
-
-// DynatraceClient provides the functionality for performing basic CRUD operations on any Dynatrace API
-// supported by monaco.
-// It encapsulates the configuration-specific inconsistencies of certain APIs in one place to provide
-// a common interface to work with. After all: A user of DynatraceClient shouldn't care about the
-// implementation details of each individual Dynatrace API.
-// Its design is intentionally not dependant on the Config and Environment interfaces included in monaco.
-// This makes sure, that DynatraceClient can be used as a base for future tooling, which relies on
-// a standardized way to access Dynatrace APIs.
-type DynatraceClient interface {
-
+// ConfigClient is responsible for the classic Dynatrace configs. For settings objects, the [SettingsClient] is responsible.
+// Each config endpoint is described by an [Api] object to describe endpoints, structure, and behavior.
+type ConfigClient interface {
 	// List lists the available configs for an API.
 	// It calls the underlying GET endpoint of the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles
@@ -52,19 +43,19 @@ type DynatraceClient interface {
 	//    GET <environment-url>/api/config/v1/alertingProfiles/<id> ... to get the alerting profile
 	ReadById(a Api, id string) (json []byte, err error)
 
-	// Upsert creates a given Dynatrace config it it doesn't exists and updates it otherwise using its name
+	// UpsertByName creates a given Dynatrace config if it doesn't exist and updates it otherwise using its name.
 	// It calls the underlying GET, POST, and PUT endpoints for the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles ... to check if the config is already available
 	//    POST <environment-url>/api/config/v1/alertingProfiles ... afterwards, if the config is not yet available
 	//    PUT <environment-url>/api/config/v1/alertingProfiles/<id> ... instead of POST, if the config is already available
 	UpsertByName(a Api, name string, payload []byte) (entity DynatraceEntity, err error)
 
-	// UpsertByEntityId creates or updates an existing Dynatrace entity by it's id.
+	// UpsertByEntityId creates or updates an existing Dynatrace entity by its id.
 	// If the entity doesn't exist it is created with the according id. E.g. for alerting profiles this would be:
 	//    PUT <environment-url>/api/config/v1/alertingProfiles/<id> ... whether or not the config is already available
 	UpsertByEntityId(a Api, entityId string, name string, payload []byte) (entity DynatraceEntity, err error)
 
-	// Delete removes a given config for a given API using its id.
+	// DeleteById removes a given config for a given API using its id.
 	// It calls the DELETE endpoint for the API. E.g. for alerting profiles this would be:
 	//    DELETE <environment-url>/api/config/v1/alertingProfiles/<id> ... to delete the config
 	DeleteById(a Api, id string) error
@@ -73,6 +64,39 @@ type DynatraceClient interface {
 	// It calls the underlying GET endpoint for the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles
 	ExistsByName(a Api, name string) (exists bool, id string, err error)
+}
+
+// SettingsClient is the abstraction layer for CRUD operations on the Dynatrace Settings API.
+// Its design is intentionally not dependent on Monaco objects.
+//
+// This interface exclusively accesses the [settings api] of Dynatrace.
+//
+// The base mechanism for all methods is the same:
+// We identify objects to be updated/deleted by their external-id. If an object can not be found using its external-id, we assume
+// that it does not exist.
+// More documentation is written in each method's documentation.
+//
+// [settings api]: https://www.dynatrace.com/support/help/dynatrace-api/environment-api/settings
+type SettingsClient interface {
+	// Upsert either creates the supplied object, or updates an existing one.
+	// First, we try to find the external-id of the object. If we can't find it, we create the object, if we find it, we
+	// update the object.
+	Upsert(obj SettingsObject) (DynatraceEntity, error) // create or update, first version only create
+}
+
+//go:generate mockgen -source=client.go -destination=client_mock.go -package=rest -imports .=github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api DynatraceClient
+
+// DynatraceClient provides the functionality for performing basic CRUD operations on any Dynatrace API
+// supported by monaco.
+// It encapsulates the configuration-specific inconsistencies of certain APIs in one place to provide
+// a common interface to work with. After all: A user of DynatraceClient shouldn't care about the
+// implementation details of each individual Dynatrace API.
+// Its design is intentionally not dependant on the Config and Environment interfaces included in monaco.
+// This makes sure, that DynatraceClient can be used as a base for future tooling, which relies on
+// a standardized way to access Dynatrace APIs.
+type DynatraceClient interface {
+	ConfigClient
+	SettingsClient
 }
 
 type dynatraceClientImpl struct {
