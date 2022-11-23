@@ -27,7 +27,7 @@ Configs can then be downloaded via the respective GET endpoint defined in the Dy
 Checked-in configuration should **not** include:
 
 * The entity's `id` but only its `name`. The entity may be created or updated if one of the same name exists.
-  * The `name` must be defined as [a variable](yaml_config.md#config-yaml-structure).
+  * The `name` must be defined as [a variable](yaml_config.md#name-variable).
 * Hardcoded values for environment information such as references to other auto-deployed entities, tags, management-zones, etc.
   * These should all be referenced as variables as [described here](yaml_config.md#referencing-other-configurations).
 * Empty/null values that are optional for the creation of an object.
@@ -71,7 +71,7 @@ We recommend the following values for the `dashboardMetadata`:
 ```
 
 This config does the following:
-* Reference the name of the Dashboard as a [variable](yaml_config.md)
+* Reference the name of the Dashboard as a [variable](yaml_config.md#name-variable)
 * Share the dashboard with other users
 * Set a management zone filter on the complete dashboard, again as a variable, most likely [referenced from another config](yaml_config.md#referencing-other-configurations)
   * Filtering the whole dashboard by management zone makes sure no private data is accidentally picked up on tiles and removes the possible need to define filters for individual tiles
