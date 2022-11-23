@@ -99,19 +99,19 @@ type DynatraceClient interface {
 	SettingsClient
 }
 
-type dynatraceClientImpl struct {
+type dynatraceClient struct {
 	environmentUrl string
 	token          string
 	client         *http.Client
 }
 
 var (
-	_ SettingsClient  = (*dynatraceClientImpl)(nil)
-	_ ConfigClient    = (*dynatraceClientImpl)(nil)
-	_ DynatraceClient = (*dynatraceClientImpl)(nil)
+	_ SettingsClient  = (*dynatraceClient)(nil)
+	_ ConfigClient    = (*dynatraceClient)(nil)
+	_ DynatraceClient = (*dynatraceClient)(nil)
 )
 
-func (d *dynatraceClientImpl) Upsert(obj SettingsObject) (DynatraceEntity, error) {
+func (d *dynatraceClient) Upsert(obj SettingsObject) (DynatraceEntity, error) {
 	externalId := util.GenerateExternalId(obj.Schema, obj.Id)
 
 	// we could build multiple objects at once. improvement if we have time. https://www.dynatrace.com/support/help/dynatrace-api/basics/access-limit
@@ -167,7 +167,7 @@ func newDynatraceClient(environmentUrl, token string, client *http.Client) (Dyna
 		log.Warn("More information: https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication/#-dynatrace-version-1205--token-format")
 	}
 
-	return &dynatraceClientImpl{
+	return &dynatraceClient{
 		environmentUrl: environmentUrl,
 		token:          token,
 		client:         client,
@@ -178,14 +178,14 @@ func isNewDynatraceTokenFormat(token string) bool {
 	return strings.HasPrefix(token, "dt0c01.") && strings.Count(token, ".") == 2
 }
 
-func (d *dynatraceClientImpl) List(api Api) (values []Value, err error) {
+func (d *dynatraceClient) List(api Api) (values []Value, err error) {
 
 	fullUrl := api.GetUrl(d.environmentUrl)
 	values, err = getExistingValuesFromEndpoint(d.client, api, fullUrl, d.token)
 	return values, err
 }
 
-func (d *dynatraceClientImpl) ReadById(api Api, id string) (json []byte, err error) {
+func (d *dynatraceClient) ReadById(api Api, id string) (json []byte, err error) {
 	var dtUrl string
 	isSingleConfigurationApi := api.IsSingleConfigurationApi()
 
@@ -208,19 +208,19 @@ func (d *dynatraceClientImpl) ReadById(api Api, id string) (json []byte, err err
 	return response.Body, nil
 }
 
-func (d *dynatraceClientImpl) DeleteById(api Api, id string) error {
+func (d *dynatraceClient) DeleteById(api Api, id string) error {
 
 	return deleteConfig(d.client, api.GetUrl(d.environmentUrl), d.token, id)
 }
 
-func (d *dynatraceClientImpl) ExistsByName(api Api, name string) (exists bool, id string, err error) {
+func (d *dynatraceClient) ExistsByName(api Api, name string) (exists bool, id string, err error) {
 	url := api.GetUrl(d.environmentUrl)
 
 	existingObjectId, err := getObjectIdIfAlreadyExists(d.client, api, url, name, d.token)
 	return existingObjectId != "", existingObjectId, err
 }
 
-func (d *dynatraceClientImpl) UpsertByName(api Api, name string, payload []byte) (entity DynatraceEntity, err error) {
+func (d *dynatraceClient) UpsertByName(api Api, name string, payload []byte) (entity DynatraceEntity, err error) {
 
 	if api.GetId() == "extension" {
 		fullUrl := api.GetUrl(d.environmentUrl)
@@ -229,6 +229,6 @@ func (d *dynatraceClientImpl) UpsertByName(api Api, name string, payload []byte)
 	return upsertDynatraceObject(d.client, d.environmentUrl, name, api, payload, d.token)
 }
 
-func (d *dynatraceClientImpl) UpsertByEntityId(api Api, entityId string, name string, payload []byte) (entity DynatraceEntity, err error) {
+func (d *dynatraceClient) UpsertByEntityId(api Api, entityId string, name string, payload []byte) (entity DynatraceEntity, err error) {
 	return upsertDynatraceEntityById(d.client, d.environmentUrl, entityId, name, api, payload, d.token)
 }

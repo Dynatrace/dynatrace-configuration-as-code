@@ -32,7 +32,7 @@ import (
 
 // newDynatraceClientForTesting creates a new DynatraceClient for a given test-server
 func newDynatraceClientForTesting(server *httptest.Server) DynatraceClient {
-	return &dynatraceClientImpl{
+	return &dynatraceClient{
 		client:         server.Client(),
 		environmentUrl: server.URL,
 	}
