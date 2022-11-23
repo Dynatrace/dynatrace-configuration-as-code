@@ -111,34 +111,6 @@ var (
 	_ DynatraceClient = (*dynatraceClient)(nil)
 )
 
-func (d *dynatraceClient) Upsert(obj SettingsObject) (DynatraceEntity, error) {
-	externalId := util.GenerateExternalId(obj.Schema, obj.Id)
-
-	// we could build multiple objects at once. improvement if we have time. https://www.dynatrace.com/support/help/dynatrace-api/basics/access-limit
-	payload, err := buildRequestPayload(obj, externalId)
-	if err != nil {
-		return DynatraceEntity{}, fmt.Errorf("failed to build settings object for upsert: %w", err)
-	}
-
-	requestUrl := d.environmentUrl + pathSettingsObjects
-
-	resp, err := post(d.client, requestUrl, payload, d.token)
-	if err != nil {
-		return DynatraceEntity{}, fmt.Errorf("failed to upsert dynatrace obj: %w", err)
-	}
-
-	if !success(resp) {
-		return DynatraceEntity{}, fmt.Errorf("failed to update settings object with externalId %s (HTTP %d)!\n\tResponse was: %s", externalId, resp.StatusCode, string(resp.Body))
-	}
-
-	entity, err := parseResponse(resp)
-	if err != nil {
-		return DynatraceEntity{}, fmt.Errorf("failed to parse response: %w", err)
-	}
-
-	return entity, nil
-}
-
 // NewDynatraceClient creates a new DynatraceClient
 func NewDynatraceClient(environmentUrl, token string) (DynatraceClient, error) {
 	return newDynatraceClient(environmentUrl, token, &http.Client{})
@@ -176,6 +148,34 @@ func newDynatraceClient(environmentUrl, token string, client *http.Client) (Dyna
 
 func isNewDynatraceTokenFormat(token string) bool {
 	return strings.HasPrefix(token, "dt0c01.") && strings.Count(token, ".") == 2
+}
+
+func (d *dynatraceClient) Upsert(obj SettingsObject) (DynatraceEntity, error) {
+	externalId := util.GenerateExternalId(obj.Schema, obj.Id)
+
+	// we could build multiple objects at once. improvement if we have time. https://www.dynatrace.com/support/help/dynatrace-api/basics/access-limit
+	payload, err := buildRequestPayload(obj, externalId)
+	if err != nil {
+		return DynatraceEntity{}, fmt.Errorf("failed to build settings object for upsert: %w", err)
+	}
+
+	requestUrl := d.environmentUrl + pathSettingsObjects
+
+	resp, err := post(d.client, requestUrl, payload, d.token)
+	if err != nil {
+		return DynatraceEntity{}, fmt.Errorf("failed to upsert dynatrace obj: %w", err)
+	}
+
+	if !success(resp) {
+		return DynatraceEntity{}, fmt.Errorf("failed to update settings object with externalId %s (HTTP %d)!\n\tResponse was: %s", externalId, resp.StatusCode, string(resp.Body))
+	}
+
+	entity, err := parseResponse(resp)
+	if err != nil {
+		return DynatraceEntity{}, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return entity, nil
 }
 
 func (d *dynatraceClient) List(api Api) (values []Value, err error) {
