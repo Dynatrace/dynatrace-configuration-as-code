@@ -170,7 +170,7 @@ func DeployConfigs(client rest.DynatraceClient, apis map[string]api.Api,
 		var deploymentErrors []error
 
 		if config.Type.IsSettings() {
-			panic("Not yet implemented")
+			entity, deploymentErrors = deploySetting(client, entities, &config)
 		} else {
 			entity, deploymentErrors = deployConfig(client, apiToDeploy, entities, knownEntityNames, &sortedConfigs[i])
 
@@ -324,6 +324,41 @@ func ExtractConfigName(conf *config.Config, properties parameter.Properties) (st
 	}
 
 	return name, nil
+}
+
+func deploySetting(client rest.SettingsClient, entities map[coordinate.Coordinate]parameter.ResolvedEntity, c *config.Config) (parameter.ResolvedEntity, []error) {
+
+	properties, errors := resolveProperties(c, entities)
+	if len(errors) > 0 {
+		return parameter.ResolvedEntity{}, errors
+	}
+
+	renderedConfig, err := renderConfig(c, properties)
+	if err != nil {
+		return parameter.ResolvedEntity{}, []error{err}
+	}
+
+	e, err := client.Upsert(rest.SettingsObject{
+		Id:            c.Coordinate.ConfigId,
+		Schema:        c.Type.Schema,
+		SchemaVersion: c.Type.SchemaVersion,
+		Scope:         c.Type.Scope,
+		Content:       []byte(renderedConfig),
+	})
+	if err != nil {
+		return parameter.ResolvedEntity{}, []error{newConfigDeployError(c, err.Error())}
+	}
+
+	properties[config.IdParameter] = e.Id
+	properties[config.NameParameter] = e.Name
+
+	return parameter.ResolvedEntity{
+		EntityName: e.Name,
+		Coordinate: c.Coordinate,
+		Properties: properties,
+		Skip:       false,
+	}, nil
+
 }
 
 func ResolveParameterValues(
