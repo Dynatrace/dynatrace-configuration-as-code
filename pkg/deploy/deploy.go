@@ -139,6 +139,7 @@ func DeployConfigs(client rest.DynatraceClient, apis map[string]api.Api,
 	knownEntityNames := createKnownEntityMap(apis)
 
 	for _, c := range sortedConfigs {
+		c := c // to avoid implicit memory aliasing (gosec G601)
 		coord := c.Coordinate
 
 		if c.Skip {
@@ -148,10 +149,8 @@ func DeployConfigs(client rest.DynatraceClient, apis map[string]api.Api,
 				Properties: parameter.Properties{},
 				Skip:       true,
 			}
-
 			// if the config is skip we do not care if the same name
 			// has already been used
-
 			continue
 		}
 
