@@ -206,17 +206,12 @@ func createKnownEntityMap(apis map[string]api.Api) knownEntityMap {
 
 func deployConfig(client rest.ConfigClient, theApi api.Api, entities parameter.ResolvedEntities, knownEntityNames knownEntityMap, conf *config.Config) (parameter.ResolvedEntity, []error) {
 
-	var errors []error
-
-	parameters, sortErrs := topologysort.SortParameters(conf.Group, conf.Environment, conf.Coordinate, conf.Parameters)
-	errors = append(errors, sortErrs...)
-
-	properties, errs := ResolveParameterValues(conf, entities, parameters)
-
-	errors = append(errors, errs...)
+	properties, errors := resolveProperties(conf, entities)
+	if len(errors) > 0 {
+		return parameter.ResolvedEntity{}, errors
+	}
 
 	configName, err := ExtractConfigName(conf, properties)
-
 	if err != nil {
 		errors = append(errors, err)
 	} else {
@@ -224,33 +219,13 @@ func deployConfig(client rest.ConfigClient, theApi api.Api, entities parameter.R
 			errors = append(errors, newConfigDeployError(conf, fmt.Sprintf("duplicated config name `%s`", configName)))
 		}
 	}
-
-	if errors != nil {
+	if len(errors) > 0 {
 		return parameter.ResolvedEntity{}, errors
 	}
 
-	renderedConfig, err := template.Render(conf.Template, properties)
-
+	renderedConfig, err := renderConfig(conf, properties)
 	if err != nil {
 		return parameter.ResolvedEntity{}, []error{err}
-	}
-
-	err = util.ValidateJson(renderedConfig, util.Location{
-		Coordinate:       conf.Coordinate,
-		Group:            conf.Group,
-		Environment:      conf.Environment,
-		TemplateFilePath: conf.Template.Name(),
-	})
-
-	if err != nil {
-		return parameter.ResolvedEntity{}, []error{&invalidJsonError{
-			Config: conf.Coordinate,
-			EnvironmentDetails: configErrors.EnvironmentDetails{
-				Group:       conf.Group,
-				Environment: conf.Environment,
-			},
-			error: err,
-		}}
 	}
 
 	if theApi.IsDeprecatedApi() {
@@ -290,6 +265,49 @@ func deployConfig(client rest.ConfigClient, theApi api.Api, entities parameter.R
 		Properties: properties,
 		Skip:       false,
 	}, nil
+}
+
+func resolveProperties(c *config.Config, entities map[coordinate.Coordinate]parameter.ResolvedEntity) (parameter.Properties, []error) {
+	var errors []error
+
+	parameters, sortErrs := topologysort.SortParameters(c.Group, c.Environment, c.Coordinate, c.Parameters)
+	errors = append(errors, sortErrs...)
+
+	properties, errs := ResolveParameterValues(c, entities, parameters)
+	errors = append(errors, errs...)
+
+	if len(errors) > 0 {
+		return nil, errors
+	}
+
+	return properties, nil
+}
+
+func renderConfig(c *config.Config, properties parameter.Properties) (string, error) {
+	renderedConfig, err := template.Render(c.Template, properties)
+	if err != nil {
+		return "", err
+	}
+
+	err = util.ValidateJson(renderedConfig, util.Location{
+		Coordinate:       c.Coordinate,
+		Group:            c.Group,
+		Environment:      c.Environment,
+		TemplateFilePath: c.Template.Name(),
+	})
+
+	if err != nil {
+		return "", &invalidJsonError{
+			Config: c.Coordinate,
+			EnvironmentDetails: configErrors.EnvironmentDetails{
+				Group:       c.Group,
+				Environment: c.Environment,
+			},
+			error: err,
+		}
+	}
+
+	return renderedConfig, nil
 }
 
 func ExtractConfigName(conf *config.Config, properties parameter.Properties) (string, error) {
