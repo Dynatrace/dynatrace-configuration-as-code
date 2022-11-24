@@ -41,7 +41,7 @@ func (e invalidJsonError) Unwrap() error {
 
 var (
 	// invalidJsonError must support unwrap function
-	_ (interface{ Unwrap() error }) = (*invalidJsonError)(nil)
+	_ interface{ Unwrap() error } = (*invalidJsonError)(nil)
 )
 
 func (e invalidJsonError) Coordinates() coordinate.Coordinate {
@@ -138,10 +138,10 @@ func DeployConfigs(client rest.DynatraceClient, apis map[string]api.Api,
 
 	knownEntityNames := createKnownEntityMap(apis)
 
-	for _, config := range sortedConfigs {
-		coord := config.Coordinate
+	for _, c := range sortedConfigs {
+		coord := c.Coordinate
 
-		if config.Skip {
+		if c.Skip {
 			entities[coord] = parameter.ResolvedEntity{
 				EntityName: coord.ConfigId,
 				Coordinate: coord,
@@ -155,26 +155,25 @@ func DeployConfigs(client rest.DynatraceClient, apis map[string]api.Api,
 			continue
 		}
 
-		apiToDeploy := apis[coord.Type]
-		if apiToDeploy == nil {
-			errors = append(errors, fmt.Errorf("unknown api `%s`. this is most likely a bug", coord.Type))
-
-			if continueOnError || dryRun {
-				continue
-			} else {
-				return errors
-			}
-		}
-
 		var entity parameter.ResolvedEntity
 		var deploymentErrors []error
 
-		if config.Type.IsSettings() {
-			entity, deploymentErrors = deploySetting(client, entities, &config)
+		if c.Type.IsSettings() {
+			entity, deploymentErrors = deploySetting(client, entities, &c)
 		} else {
-			entity, deploymentErrors = deployConfig(client, apiToDeploy, entities, knownEntityNames, &config)
+			apiToDeploy := apis[coord.Type]
+			if apiToDeploy == nil {
+				errors = append(errors, fmt.Errorf("unknown api `%s`. this is most likely a bug", coord.Type))
 
-			knownEntityNames[config.Coordinate.Type][entity.EntityName] = struct{}{}
+				if continueOnError || dryRun {
+					continue
+				} else {
+					return errors
+				}
+			}
+			entity, deploymentErrors = deployConfig(client, apiToDeploy, entities, knownEntityNames, &c)
+
+			knownEntityNames[c.Coordinate.Type][entity.EntityName] = struct{}{}
 		}
 
 		if deploymentErrors != nil {
@@ -196,8 +195,8 @@ func DeployConfigs(client rest.DynatraceClient, apis map[string]api.Api,
 func createKnownEntityMap(apis map[string]api.Api) knownEntityMap {
 	var result = make(knownEntityMap)
 
-	for _, api := range apis {
-		result[api.GetId()] = make(map[string]struct{})
+	for _, a := range apis {
+		result[a.GetId()] = make(map[string]struct{})
 	}
 
 	return result
