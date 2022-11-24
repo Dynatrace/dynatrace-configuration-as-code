@@ -166,7 +166,7 @@ func DeployConfigs(client rest.DynatraceClient, apis map[string]api.Api,
 			}
 		}
 
-		entity, deploymentErrors := deployConfig(client, apiToDeploy, entities, knownEntityNames, &sortedConfigs[i], dryRun)
+		entity, deploymentErrors := deployConfig(client, apiToDeploy, entities, knownEntityNames, &sortedConfigs[i])
 
 		if deploymentErrors != nil {
 			errors = append(errors, deploymentErrors...)
@@ -196,21 +196,14 @@ func createKnownEntityMap(apis map[string]api.Api) knownEntityMap {
 
 }
 
-func deployConfig(
-	client rest.ConfigClient,
-	theApi api.Api,
-	entities parameter.ResolvedEntities,
-	knownEntityNames knownEntityMap,
-	conf *config.Config,
-	dryRun bool,
-) (parameter.ResolvedEntity, []error) {
+func deployConfig(client rest.ConfigClient, theApi api.Api, entities parameter.ResolvedEntities, knownEntityNames knownEntityMap, conf *config.Config) (parameter.ResolvedEntity, []error) {
 
 	var errors []error
 
 	parameters, sortErrs := topologysort.SortParameters(conf.Group, conf.Environment, conf.Coordinate, conf.Parameters)
 	errors = append(errors, sortErrs...)
 
-	properties, errs := ResolveParameterValues(conf, entities, parameters, dryRun)
+	properties, errs := ResolveParameterValues(conf, entities, parameters)
 
 	errors = append(errors, errs...)
 
@@ -307,8 +300,11 @@ func ExtractConfigName(conf *config.Config, properties parameter.Properties) (st
 	return name, nil
 }
 
-func ResolveParameterValues(conf *config.Config, entities map[coordinate.Coordinate]parameter.ResolvedEntity,
-	parameters []topologysort.ParameterWithName, dryRun bool) (parameter.Properties, []error) {
+func ResolveParameterValues(
+	conf *config.Config,
+	entities map[coordinate.Coordinate]parameter.ResolvedEntity,
+	parameters []topologysort.ParameterWithName,
+) (parameter.Properties, []error) {
 
 	var errors []error
 
@@ -332,7 +328,6 @@ func ResolveParameterValues(conf *config.Config, entities map[coordinate.Coordin
 			Environment:             conf.Environment,
 			ParameterName:           name,
 			ResolvedParameterValues: properties,
-			DryRun:                  dryRun,
 		})
 
 		if err != nil {

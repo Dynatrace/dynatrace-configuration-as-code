@@ -75,7 +75,7 @@ func TestResolveParameterValues(t *testing.T) {
 
 	entities := map[coordinate.Coordinate]parameter.ResolvedEntity{}
 
-	values, errors := ResolveParameterValues(&conf, entities, parameters, false)
+	values, errors := ResolveParameterValues(&conf, entities, parameters)
 
 	assert.Assert(t, len(errors) == 0, "there should be no errors (errors: %s)", errors)
 	assert.Equal(t, name, values[config.NameParameter])
@@ -118,7 +118,7 @@ func TestResolveParameterValuesShouldFailWhenReferencingNonExistingConfig(t *tes
 
 	entities := map[coordinate.Coordinate]parameter.ResolvedEntity{}
 
-	_, errors := ResolveParameterValues(&conf, entities, parameters, false)
+	_, errors := ResolveParameterValues(&conf, entities, parameters)
 
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
@@ -166,7 +166,7 @@ func TestResolveParameterValuesShouldFailWhenReferencingSkippedConfig(t *testing
 		},
 	}
 
-	_, errors := ResolveParameterValues(&conf, entities, parameters, false)
+	_, errors := ResolveParameterValues(&conf, entities, parameters)
 
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
@@ -196,7 +196,7 @@ func TestResolveParameterValuesShouldFailWhenParameterResolveReturnsError(t *tes
 
 	entities := map[coordinate.Coordinate]parameter.ResolvedEntity{}
 
-	_, errors := ResolveParameterValues(&conf, entities, parameters, false)
+	_, errors := ResolveParameterValues(&conf, entities, parameters)
 
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
@@ -452,7 +452,7 @@ func TestDeployConfig(t *testing.T) {
 
 	knownEntityNames := knownEntityMap{}
 
-	resolvedEntity, errors := deployConfig(client, dashboardApi, entities, knownEntityNames, &conf, false)
+	resolvedEntity, errors := deployConfig(client, dashboardApi, entities, knownEntityNames, &conf)
 
 	assert.Assert(t, len(errors) == 0, "there should be no errors (no errors: %d, %s)", len(errors), errors)
 	assert.Equal(t, name, resolvedEntity.EntityName, "%s == %s")
@@ -496,7 +496,7 @@ func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
 		},
 	}
 
-	_, errors := deployConfig(client, dashboardApi, entities, knownEntityNames, &conf, false)
+	_, errors := deployConfig(client, dashboardApi, entities, knownEntityNames, &conf)
 
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
@@ -552,7 +552,7 @@ func TestDeployConfigShouldFailCyclicParameterDependencies(t *testing.T) {
 
 	knownEntityNames := knownEntityMap{}
 
-	_, errors := deployConfig(client, dashboardApi, entities, knownEntityNames, &conf, false)
+	_, errors := deployConfig(client, dashboardApi, entities, knownEntityNames, &conf)
 
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
@@ -578,7 +578,7 @@ func TestDeployConfigShouldFailOnMissingNameParameter(t *testing.T) {
 
 	knownEntityNames := knownEntityMap{}
 
-	_, errors := deployConfig(client, dashboardApi, entities, knownEntityNames, &conf, false)
+	_, errors := deployConfig(client, dashboardApi, entities, knownEntityNames, &conf)
 
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
@@ -619,7 +619,7 @@ func TestDeployConfigShouldFailOnReferenceOnUnknownConfig(t *testing.T) {
 	entities := map[coordinate.Coordinate]parameter.ResolvedEntity{}
 	knownEntityNames := knownEntityMap{}
 
-	_, errors := deployConfig(client, dashboardApi, entities, knownEntityNames, &conf, false)
+	_, errors := deployConfig(client, dashboardApi, entities, knownEntityNames, &conf)
 
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
@@ -670,7 +670,7 @@ func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
 
 	knownEntityNames := knownEntityMap{}
 
-	_, errors := deployConfig(client, dashboardApi, entities, knownEntityNames, &conf, false)
+	_, errors := deployConfig(client, dashboardApi, entities, knownEntityNames, &conf)
 
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }

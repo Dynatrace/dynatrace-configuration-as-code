@@ -132,7 +132,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 
 			parameters = append(parameters, configParameters...)
 
-			properties, errs := deploy.ResolveParameterValues(&theConfig, entities, parameters, false)
+			properties, errs := deploy.ResolveParameterValues(&theConfig, entities, parameters)
 			test.FailTestOnAnyError(t, errs, "resolving of parameter values failed")
 
 			properties[config.IdParameter] = "NO REAL ID NEEDED FOR CHECKING AVAILABILITY"

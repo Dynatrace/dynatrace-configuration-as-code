@@ -66,9 +66,6 @@ type ResolveContext struct {
 
 	// resolved values of the current config
 	ResolvedParameterValues Properties
-
-	// dry run indicates that no persistent operations should be made
-	DryRun bool
 }
 
 type Parameter interface {
