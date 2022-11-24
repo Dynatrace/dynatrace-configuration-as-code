@@ -30,39 +30,39 @@ var mockApi = api.NewApi("mock-api", "/mock-api", "", true, true, "", false)
 var mockApiNotSingle = api.NewApi("mock-api", "/mock-api", "", false, true, "", false)
 
 func TestNewClientNoUrl(t *testing.T) {
-	client, err := NewDynatraceClient("", "abc")
+	_, err := NewDynatraceClient("", "abc")
 	assert.ErrorContains(t, err, "no environment url")
-	assert.Check(t, client == nil)
+}
+
+func TestUrlSuffixGetsTrimmed(t *testing.T) {
+	client, err := newDynatraceClient("https://my-environment.live.dynatrace.com/", "abc", nil)
+	assert.NilError(t, err)
+	assert.Equal(t, client.environmentUrl, "https://my-environment.live.dynatrace.com")
 }
 
 func TestNewClientNoToken(t *testing.T) {
-	client, err := NewDynatraceClient("http://my-environment.live.dynatrace.com/", "")
+	_, err := NewDynatraceClient("http://my-environment.live.dynatrace.com/", "")
 	assert.ErrorContains(t, err, "no token")
-	assert.Check(t, client == nil)
 }
 
 func TestNewClientNoValidUrlLocalPath(t *testing.T) {
-	client, err := NewDynatraceClient("/my-environment/live/dynatrace.com/", "abc")
+	_, err := NewDynatraceClient("/my-environment/live/dynatrace.com/", "abc")
 	assert.ErrorContains(t, err, "not valid")
-	assert.Check(t, client == nil)
 }
 
 func TestNewClientNoValidUrlTypo(t *testing.T) {
-	client, err := NewDynatraceClient("https//my-environment.live.dynatrace.com/", "abc")
+	_, err := NewDynatraceClient("https//my-environment.live.dynatrace.com/", "abc")
 	assert.ErrorContains(t, err, "not valid")
-	assert.Check(t, client == nil)
 }
 
 func TestNewClientNoValidUrlNoHttps(t *testing.T) {
-	client, err := NewDynatraceClient("http//my-environment.live.dynatrace.com/", "abc")
+	_, err := NewDynatraceClient("http//my-environment.live.dynatrace.com/", "abc")
 	assert.ErrorContains(t, err, "not valid")
-	assert.Check(t, client == nil)
 }
 
 func TestNewClient(t *testing.T) {
-	client, err := NewDynatraceClient("https://my-environment.live.dynatrace.com/", "abc")
+	_, err := NewDynatraceClient("https://my-environment.live.dynatrace.com/", "abc")
 	assert.NilError(t, err, "not valid")
-	assert.Check(t, client != nil)
 }
 
 func TestReadByIdReturnsAnErrorUponEncounteringAnError(t *testing.T) {

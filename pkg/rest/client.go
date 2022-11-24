@@ -116,7 +116,9 @@ func NewDynatraceClient(environmentUrl, token string) (DynatraceClient, error) {
 	return newDynatraceClient(environmentUrl, token, &http.Client{})
 }
 
-func newDynatraceClient(environmentUrl, token string, client *http.Client) (DynatraceClient, error) {
+func newDynatraceClient(environmentUrl, token string, client *http.Client) (*dynatraceClient, error) {
+	environmentUrl = strings.TrimSuffix(environmentUrl, "/")
+
 	if environmentUrl == "" {
 		return nil, errors.New("no environment url")
 	}
