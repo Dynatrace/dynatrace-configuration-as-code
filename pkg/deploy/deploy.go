@@ -166,19 +166,27 @@ func DeployConfigs(client rest.DynatraceClient, apis map[string]api.Api,
 			}
 		}
 
-		entity, deploymentErrors := deployConfig(client, apiToDeploy, entities, knownEntityNames, &sortedConfigs[i])
+		var entity parameter.ResolvedEntity
+		var deploymentErrors []error
 
-		if deploymentErrors != nil {
-			errors = append(errors, deploymentErrors...)
+		if config.Type.IsSettings() {
+			panic("Not yet implemented")
+		} else {
+			entity, deploymentErrors = deployConfig(client, apiToDeploy, entities, knownEntityNames, &sortedConfigs[i])
 
-			if continueOnError || dryRun {
-				continue
-			} else {
-				return errors
+			if deploymentErrors != nil {
+				errors = append(errors, deploymentErrors...)
+
+				if continueOnError || dryRun {
+					continue
+				} else {
+					return errors
+				}
 			}
+
+			knownEntityNames[config.Coordinate.Type][entity.EntityName] = struct{}{}
 		}
 
-		knownEntityNames[config.Coordinate.Type][entity.EntityName] = struct{}{}
 		entities[entity.Coordinate] = entity
 	}
 
