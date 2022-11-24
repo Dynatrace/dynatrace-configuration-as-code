@@ -138,7 +138,7 @@ func DeployConfigs(client rest.DynatraceClient, apis map[string]api.Api,
 
 	knownEntityNames := createKnownEntityMap(apis)
 
-	for i, config := range sortedConfigs {
+	for _, config := range sortedConfigs {
 		coord := config.Coordinate
 
 		if config.Skip {
@@ -172,19 +172,19 @@ func DeployConfigs(client rest.DynatraceClient, apis map[string]api.Api,
 		if config.Type.IsSettings() {
 			entity, deploymentErrors = deploySetting(client, entities, &config)
 		} else {
-			entity, deploymentErrors = deployConfig(client, apiToDeploy, entities, knownEntityNames, &sortedConfigs[i])
-
-			if deploymentErrors != nil {
-				errors = append(errors, deploymentErrors...)
-
-				if continueOnError || dryRun {
-					continue
-				} else {
-					return errors
-				}
-			}
+			entity, deploymentErrors = deployConfig(client, apiToDeploy, entities, knownEntityNames, &config)
 
 			knownEntityNames[config.Coordinate.Type][entity.EntityName] = struct{}{}
+		}
+
+		if deploymentErrors != nil {
+			errors = append(errors, deploymentErrors...)
+
+			if continueOnError || dryRun {
+				continue
+			} else {
+				return errors
+			}
 		}
 
 		entities[entity.Coordinate] = entity
