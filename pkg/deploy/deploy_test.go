@@ -18,6 +18,9 @@ package deploy
 
 import (
 	"errors"
+	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
+	"github.com/golang/mock/gomock"
 	"testing"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
@@ -463,6 +466,120 @@ func TestDeployConfig(t *testing.T) {
 	assert.Equal(t, false, resolvedEntity.Skip)
 }
 
+func TestDeploySettingShouldFailCyclicParameterDependencies(t *testing.T) {
+	ownerParameterName := "owner"
+	configCoordinates := coordinate.Coordinate{}
+
+	parameters := []topologysort.ParameterWithName{
+		{
+			Name: config.NameParameter,
+			Parameter: &parameter.DummyParameter{
+				References: []parameter.ParameterReference{
+					{
+						Config:   configCoordinates,
+						Property: ownerParameterName,
+					},
+				},
+			},
+		},
+		{
+			Name: ownerParameterName,
+			Parameter: &parameter.DummyParameter{
+				References: []parameter.ParameterReference{
+					{
+						Config:   configCoordinates,
+						Property: config.NameParameter,
+					},
+				},
+			},
+		},
+	}
+
+	client := &client.DummyClient{}
+	entities := make(map[coordinate.Coordinate]parameter.ResolvedEntity)
+
+	conf := &config.Config{
+		Template:   generateDummyTemplate(t),
+		Parameters: toParameterMap(parameters),
+	}
+	_, errors := deploySetting(client, entities, conf)
+	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
+}
+
+func TestDeploySettingShouldFailRenderTemplate(t *testing.T) {
+	client := &client.DummyClient{}
+	entities := make(map[coordinate.Coordinate]parameter.ResolvedEntity)
+
+	conf := &config.Config{
+		Template: generateFaultyTemplate(t),
+	}
+
+	_, errors := deploySetting(client, entities, conf)
+	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
+}
+
+func TestDeploySettingShouldFailUpsert(t *testing.T) {
+	name := "test"
+	owner := "hansi"
+	ownerParameterName := "owner"
+	parameters := []topologysort.ParameterWithName{
+		{
+			Name: config.NameParameter,
+			Parameter: &parameter.DummyParameter{
+				Value: name,
+			},
+		},
+		{
+			Name: ownerParameterName,
+			Parameter: &parameter.DummyParameter{
+				Value: owner,
+			},
+		},
+	}
+
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	client := rest.NewMockSettingsClient(mockCtrl)
+
+	client.EXPECT().Upsert(gomock.Any()).Return(api.DynatraceEntity{}, fmt.Errorf("upsert failed"))
+
+	entities := make(map[coordinate.Coordinate]parameter.ResolvedEntity)
+
+	conf := &config.Config{
+		Template:   generateDummyTemplate(t),
+		Parameters: toParameterMap(parameters),
+	}
+	_, errors := deploySetting(client, entities, conf)
+	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
+}
+
+func TestDeploySetting(t *testing.T) {
+	parameters := []topologysort.ParameterWithName{
+		{
+			Name: "franz",
+			Parameter: &parameter.DummyParameter{
+				Value: "foo",
+			},
+		},
+		{
+			Name: "hansi",
+			Parameter: &parameter.DummyParameter{
+				Value: "bar",
+			},
+		},
+	}
+
+	client := &client.DummyClient{}
+	entities := make(map[coordinate.Coordinate]parameter.ResolvedEntity)
+
+	conf := &config.Config{
+		Template:   generateDummyTemplate(t),
+		Parameters: toParameterMap(parameters),
+	}
+	_, errors := deploySetting(client, entities, conf)
+	assert.Assert(t, len(errors) == 0, "there should be no errors (no errors: %d, %s)", len(errors), errors)
+}
+
 func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
 	name := "test"
 	parameters := []topologysort.ParameterWithName{
@@ -705,10 +822,14 @@ func toReferences(params []topologysort.ParameterWithName) []coordinate.Coordina
 
 func generateDummyTemplate(t *testing.T) template.Template {
 	uuid, err := uuid.NewUUID()
-
 	assert.NilError(t, err)
-
 	templ := template.CreateTemplateFromString("deploy_test-"+uuid.String(), "{}")
+	return templ
+}
 
+func generateFaultyTemplate(t *testing.T) template.Template {
+	uuid, err := uuid.NewUUID()
+	assert.NilError(t, err)
+	templ := template.CreateTemplateFromString("deploy_test-"+uuid.String(), "{")
 	return templ
 }
