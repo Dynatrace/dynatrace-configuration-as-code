@@ -792,6 +792,121 @@ func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
+func TestDeployConfigsWithNoConfigs(t *testing.T) {
+	client := &client.DummyClient{}
+	var apis map[string]api.Api
+	var sortedConfigs []config.Config
+
+	errors := DeployConfigs(client, apis, sortedConfigs, false, false)
+	assert.Assert(t, len(errors) == 0, "there should be no errors (errors: %s)", errors)
+}
+
+func TestDeployConfigsWithOneConfigToSkip(t *testing.T) {
+	client := &client.DummyClient{}
+	var apis map[string]api.Api
+	sortedConfigs := []config.Config{
+		{Skip: true},
+	}
+	errors := DeployConfigs(client, apis, sortedConfigs, false, false)
+	assert.Assert(t, len(errors) == 0, "there should be no errors (errors: %s)", errors)
+}
+
+func TestDeployConfigsTargetingSettings(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	client := rest.NewMockDynatraceClient(mockCtrl)
+	var apis map[string]api.Api
+	sortedConfigs := []config.Config{
+		{
+			Template: generateDummyTemplate(t),
+			Type: config.Type{
+				Schema:        "schema",
+				SchemaVersion: "schemaversion",
+				Scope:         "scope",
+			},
+		},
+	}
+	client.EXPECT().Upsert(gomock.Any()).Times(1)
+	errors := DeployConfigs(client, apis, sortedConfigs, false, false)
+	assert.Assert(t, len(errors) == 0, "there should be no errors (errors: %s)", errors)
+}
+
+func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	theConfigName := "theConfigName"
+	theApiName := "theApiName"
+
+	theApi := api.NewMockApi(gomock.NewController(t))
+	theApi.EXPECT().GetId().AnyTimes().Return(theApiName)
+	theApi.EXPECT().IsDeprecatedApi().Return(false)
+	theApi.EXPECT().IsNonUniqueNameApi().Return(false)
+
+	client := rest.NewMockDynatraceClient(mockCtrl)
+	client.EXPECT().UpsertByName(gomock.Any(), theConfigName, gomock.Any()).Times(1)
+
+	apis := map[string]api.Api{theApiName: theApi}
+	parameters := []topologysort.ParameterWithName{
+		{
+			Name: config.NameParameter,
+			Parameter: &parameter.DummyParameter{
+				Value: theConfigName,
+			},
+		},
+	}
+	sortedConfigs := []config.Config{
+		{
+			Parameters: toParameterMap(parameters),
+			Coordinate: coordinate.Coordinate{Type: theApiName},
+			Template:   generateDummyTemplate(t),
+			Type: config.Type{
+				Api: theApiName,
+			},
+		},
+	}
+
+	errors := DeployConfigs(client, apis, sortedConfigs, false, false)
+	assert.Assert(t, len(errors) == 0, "there should be no errors (errors: %s)", errors)
+}
+
+func TestDeployConfigsTargetingClassicConfigNonUnique(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	theConfigName := "theConfigName"
+	theApiName := "theApiName"
+
+	theApi := api.NewMockApi(gomock.NewController(t))
+	theApi.EXPECT().GetId().AnyTimes().Return(theApiName)
+	theApi.EXPECT().IsDeprecatedApi().Return(false)
+	theApi.EXPECT().IsNonUniqueNameApi().Return(true)
+
+	client := rest.NewMockDynatraceClient(mockCtrl)
+	client.EXPECT().UpsertByEntityId(gomock.Any(), gomock.Any(), theConfigName, gomock.Any())
+
+	apis := map[string]api.Api{theApiName: theApi}
+	parameters := []topologysort.ParameterWithName{
+		{
+			Name: config.NameParameter,
+			Parameter: &parameter.DummyParameter{
+				Value: theConfigName,
+			},
+		},
+	}
+	sortedConfigs := []config.Config{
+		{
+			Parameters: toParameterMap(parameters),
+			Coordinate: coordinate.Coordinate{Type: theApiName},
+			Template:   generateDummyTemplate(t),
+			Type: config.Type{
+				Api: theApiName,
+			},
+		},
+	}
+
+	errors := DeployConfigs(client, apis, sortedConfigs, false, false)
+	assert.Assert(t, len(errors) == 0, "there should be no errors (errors: %s)", errors)
+}
+
 func toParameterMap(params []topologysort.ParameterWithName) map[string]parameter.Parameter {
 	result := make(map[string]parameter.Parameter)
 
