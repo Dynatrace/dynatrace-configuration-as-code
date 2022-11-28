@@ -74,7 +74,7 @@ func (p *CompoundParameter) ResolveValue(context parameter.ResolveContext) (inte
 	err := p.format.Execute(&out, compoundData)
 
 	if err != nil {
-		return nil, fmt.Errorf("error resolving compound value: %v", err)
+		return nil, fmt.Errorf("error resolving compound value: %w", err)
 	}
 
 	str := out.String()

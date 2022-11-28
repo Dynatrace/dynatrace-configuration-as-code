@@ -46,7 +46,7 @@ func Run() int {
 	err := rootCmd.Execute()
 
 	if err != nil {
-		if err != errWrongUsage {
+		if !errors.Is(err, errWrongUsage) {
 			// Log error if it wasn't a usage error
 			log.Error("%v\n", err)
 		}

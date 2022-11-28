@@ -42,7 +42,7 @@ func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironments []s
 	deploymentManifestPath, err := filepath.Abs(deploymentManifestPath)
 
 	if err != nil {
-		return fmt.Errorf("error while finding absolute path for `%s`: %s", deploymentManifestPath, err)
+		return fmt.Errorf("error while finding absolute path for `%s`: %w", deploymentManifestPath, err)
 	}
 
 	manifest, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{

@@ -93,7 +93,7 @@ func newEnvironment(id string, properties map[string]string) (Environment, error
 	}
 	envTokenName, err := util.CheckProperty(properties, "env-token-name")
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse config for environment %s: %v", environmentName, err)
+		return nil, fmt.Errorf("failed to parse config for environment %s: %w", environmentName, err)
 	}
 
 	return NewEnvironment(id, environmentName, environmentGroup, environmentUrl, envTokenName), nil

@@ -93,7 +93,7 @@ func (s *simpleSleepRateLimitStrategy) executeRequest(timelineProvider util.Time
 func (s *simpleSleepRateLimitStrategy) getSleepDurationFromResponseHeader(response Response, timelineProvider util.TimelineProvider) (sleepDuration time.Duration, humanReadableResetTimestamp string, err error) {
 	_, humanReadableTimestamp, timeInMicroseconds, err := s.extractRateLimitHeaders(response)
 	if err != nil {
-		return 0, "", fmt.Errorf("encountered response code 'STATUS_TOO_MANY_REQUESTS (429)' but failed to extract rate limit header: %v", err)
+		return 0, "", fmt.Errorf("encountered response code 'STATUS_TOO_MANY_REQUESTS (429)' but failed to extract rate limit header: %w", err)
 	}
 
 	// Attention: this uses client time:

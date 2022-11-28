@@ -43,7 +43,7 @@ func Deploy(fs afero.Fs, workingDir string, environmentsFile string,
 	workingDir, err := filepath.Abs(workingDir)
 
 	if err != nil {
-		return fmt.Errorf("cannot transform workingDir to absolute path: %s", err)
+		return fmt.Errorf("cannot transform workingDir to absolute path: %w", err)
 	}
 
 	m, projects, configLoadErrors := loadConfigs(fs, apis, environmentsFile,

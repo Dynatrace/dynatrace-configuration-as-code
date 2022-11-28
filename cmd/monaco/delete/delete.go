@@ -40,11 +40,11 @@ func Delete(fs afero.Fs, deploymentManifestPath string, deletePath string, envir
 	deleteFile := "delete.yaml"
 
 	if manifestErr != nil {
-		return fmt.Errorf("error while finding absolute path for `%s`: %s", deploymentManifestPath, manifestErr)
+		return fmt.Errorf("error while finding absolute path for `%s`: %w", deploymentManifestPath, manifestErr)
 	}
 
 	if deleteErr != nil {
-		return fmt.Errorf("error while finding absolute path for `%s`: %s", deletePath, deleteErr)
+		return fmt.Errorf("error while finding absolute path for `%s`: %w", deletePath, deleteErr)
 	}
 
 	apis := api.NewApis()
@@ -66,7 +66,7 @@ func Delete(fs afero.Fs, deploymentManifestPath string, deletePath string, envir
 
 	environments, err := manifest.FilterEnvironmentsByNames(environmentNames)
 	if err != nil {
-		return fmt.Errorf("Failed to load environments: %s", err)
+		return fmt.Errorf("Failed to load environments: %w", err)
 	}
 
 	deleteErrors := deleteConfigs(environments, apis, entriesToDelete)
@@ -98,7 +98,7 @@ func deleteConfigForEnvironment(env manifest.EnvironmentDefinition, apis map[str
 
 	if err != nil {
 		return []error{
-			fmt.Errorf("It was not possible to create a client for env `%s` due to the following error: %s", env.Name, err),
+			fmt.Errorf("It was not possible to create a client for env `%s` due to the following error: %w", env.Name, err),
 		}
 	}
 

@@ -149,7 +149,7 @@ func setupFileLogging() error {
 	}
 	logFile, err := os.OpenFile(filepath.Join(".logs", timestamp+".log"), os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		return fmt.Errorf("unable to create file logger: %v", err)
+		return fmt.Errorf("unable to create file logger: %w", err)
 	}
 	defaultLogger.fileLogger = log.New(logFile, "", log.LstdFlags)
 	return nil

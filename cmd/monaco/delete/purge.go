@@ -32,7 +32,7 @@ func Purge(fs afero.Fs, deploymentManifestPath string, environmentNames []string
 	deploymentManifestPath, manifestErr := filepath.Abs(deploymentManifestPath)
 
 	if manifestErr != nil {
-		return fmt.Errorf("error while finding absolute path for `%s`: %s", deploymentManifestPath, manifestErr)
+		return fmt.Errorf("error while finding absolute path for `%s`: %w", deploymentManifestPath, manifestErr)
 	}
 
 	apis := api.NewApis()
@@ -52,7 +52,7 @@ func Purge(fs afero.Fs, deploymentManifestPath string, environmentNames []string
 
 	environments, err := mani.FilterEnvironmentsByNames(environmentNames)
 	if err != nil {
-		return fmt.Errorf("Failed to load environments: %s", err)
+		return fmt.Errorf("failed to load environments: %w", err)
 	}
 
 	deleteErrors := purgeConfigs(environments, apis)
@@ -84,7 +84,7 @@ func purgeConfigsForEnvironment(env manifest.EnvironmentDefinition, apis map[str
 
 	if err != nil {
 		return []error{
-			fmt.Errorf("failed to create a client for env `%s` due to the following error: %s", env.Name, err),
+			fmt.Errorf("failed to create a client for env `%s` due to the following error: %w", env.Name, err),
 		}
 	}
 
