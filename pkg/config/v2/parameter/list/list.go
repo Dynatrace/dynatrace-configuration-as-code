@@ -85,7 +85,7 @@ func writeListParameter(context parameter.ParameterWriterContext) (map[string]in
 func toWritableValues(context parameter.ParameterWriterContext, values []value.ValueParameter) []interface{} {
 	writableValues := make([]interface{}, len(values))
 	for i, v := range values {
-
+		v := v // to avoid implicit memory aliasing (gosec G601)
 		if s, ok := v.Value.(string); ok {
 			writableValues[i] = s
 			continue
