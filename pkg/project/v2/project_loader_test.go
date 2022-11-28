@@ -256,7 +256,7 @@ func TestLoadProjects_LoadsKnownAndUnknownApiNames(t *testing.T) {
 	got, gotErrs := LoadProjects(testFs, context)
 
 	assert.Equal(t, len(gotErrs), 1, "Expected to load project with an error")
-	assert.ErrorContains(t, gotErrs[0], "unknown API: 'unknown-api'")
+	assert.ErrorContains(t, gotErrs[0], "unknown API: unknown-api")
 	assert.Equal(t, len(got), 0, "Expected no loaded projects")
 }
 
@@ -266,7 +266,26 @@ func TestLoadProjects_LoadsProjectWithConfigAndSettingsConfigurations(t *testing
 	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644)
 	_ = afero.WriteFile(testFs, "project/dashboard/board.yaml", []byte("configs:\n- id: board\n  config:\n    name: Test Dashboard\n    template: board.json\n  type:\n    api: dashboard"), 0644)
 	_ = afero.WriteFile(testFs, "project/dashboard/board.json", []byte("{}"), 0644)
-	_ = afero.WriteFile(testFs, "project/settings.yaml", []byte("configs:\n- id: setting_one\n  type:\n    schema: \"builtin:super.special.schema\"\n    schemaVersion: \"1.42.14\"\n    scope: \"tenant\"\n  config:\n    name: Setting One\n    template: my_first_setting.json\n- id: setting_two\n  type:\n    schema: \"builtin:other.cool.schema\"\n    scope: \"HOST-1234567\"\n  config:\n    name: Setting Two\n    template: my_second_setting.json"), 0644)
+	_ = afero.WriteFile(testFs, "project/settings.yaml", []byte(`
+configs:
+- id: setting_one
+  type:
+    settings:
+      schema: "builtin:super.special.schema"
+      schemaVersion: "1.42.14"
+      scope: "tenant"
+  config:
+    name: Setting One
+    template: my_first_setting.json
+- id: setting_two
+  type:
+    settings:
+      schema: "builtin:other.cool.schema"
+      scope: "HOST-1234567"
+  config:
+    name: Setting Two
+    template: my_second_setting.json
+`), 0644)
 	_ = afero.WriteFile(testFs, "project/my_first_setting.json", []byte("{}"), 0644)
 	_ = afero.WriteFile(testFs, "project/my_second_setting.json", []byte("{}"), 0644)
 
@@ -300,14 +319,31 @@ func TestLoadProjects_LoadsProjectWithConfigAndSettingsConfigurations(t *testing
 
 func TestLoadProjects_LoadsProjectConfigsWithCorrectTypeInformation(t *testing.T) {
 
-	t.Skip("Schema type checking skipped until CA-2000 is implemented") //TODO remove with CA-2000
-
 	testFs := afero.NewMemMapFs()
 	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.yaml", []byte("configs:\n- id: profile\n  config:\n    name: Test Profile\n    template: profile.json\n  type:\n    api: alerting-profile"), 0644)
 	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644)
 	_ = afero.WriteFile(testFs, "project/dashboard/board.yaml", []byte("configs:\n- id: board\n  config:\n    name: Test Dashboard\n    template: board.json\n  type:\n    api: dashboard"), 0644)
 	_ = afero.WriteFile(testFs, "project/dashboard/board.json", []byte("{}"), 0644)
-	_ = afero.WriteFile(testFs, "project/settings.yaml", []byte("configs:\n- id: setting_one\n  type:\n    schema: \"builtin:super.special.schema\"\n    schemaVersion: \"1.42.14\"\n    scope: \"tenant\"\n  config:\n    name: Setting One\n    template: my_first_setting.json\n- id: setting_two\n  type:\n    schema: \"builtin:other.cool.schema\"\n    scope: \"HOST-1234567\"\n  config:\n    name: Setting Two\n    template: my_second_setting.json"), 0644)
+	_ = afero.WriteFile(testFs, "project/settings.yaml", []byte(`
+configs:
+- id: setting_one
+  type:
+    settings:
+      schema: "builtin:super.special.schema"
+      schemaVersion: "1.42.14"
+      scope: "tenant"
+  config:
+    name: Setting One
+    template: my_first_setting.json
+- id: setting_two
+  type:
+    settings:
+      schema: "builtin:other.cool.schema"
+      scope: "HOST-1234567"
+  config:
+    name: Setting Two
+    template: my_second_setting.json
+`), 0644)
 	_ = afero.WriteFile(testFs, "project/my_first_setting.json", []byte("{}"), 0644)
 	_ = afero.WriteFile(testFs, "project/my_second_setting.json", []byte("{}"), 0644)
 

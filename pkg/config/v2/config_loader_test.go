@@ -89,7 +89,7 @@ func Test_parseConfigs(t *testing.T) {
 			"test-file.yaml",
 			"configs:\n- id: profile\n  config:\n    name: Star Trek Service\n    skip: false\n  type:\n    api: another-api",
 			nil,
-			[]string{"unknown API: 'another-api'"},
+			[]string{"unknown API: another-api"},
 		},
 		{
 			"reports error for empty v2 config",
@@ -103,13 +103,28 @@ func Test_parseConfigs(t *testing.T) {
 			"loads settings 2.0 config with all properties",
 			"test-file.yaml",
 			"test-file.yaml",
-			"configs:\n- id: profile-id\n  config:\n    name: 'Star Trek > Star Wars'\n    template: 'profile.json'\n  type:\n    schema: 'builtin:profile.test'\n    schemaVersion: '1.0'\n    scope: 'tenant'",
+			`
+configs:
+- id: profile-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+  type:
+    settings:
+      schema: 'builtin:profile.test'
+      schemaVersion: '1.0'
+      scope: 'tenant'`,
 			[]Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "builtin:profile.test",
 						ConfigId: "profile-id",
+					},
+					Type: Type{
+						Schema:        "builtin:profile.test",
+						SchemaVersion: "1.0",
+						Scope:         "tenant",
 					},
 					Parameters:  Parameters{"name": &value.ValueParameter{Value: string("Star Trek > Star Wars")}},
 					References:  []coordinate.Coordinate{},
@@ -121,44 +136,12 @@ func Test_parseConfigs(t *testing.T) {
 			nil,
 		},
 		{
-			"loading a config with both api and schema should fail",
+			"loading a config without type content",
 			"test-file.yaml",
 			"test-file.yaml",
-			"configs:\n- id: profile-id\n  config:\n    name: 'Star Trek > Star Wars'\n    template: 'profile.json'\n  type:\n    schema: 'builtin:profile.test'\n    schemaVersion: '1.0'\n    scope: 'tenant'\n    api: something",
+			"configs:\n- id: profile-id\n  config:\n    name: 'Star Trek > Star Wars'\n    template: 'profile.json'\n",
 			nil,
-			[]string{"mutually exclusive config-properties type.api and type.schema"},
-		},
-		{
-			"loading a config with neither api and schema should fail",
-			"test-file.yaml",
-			"test-file.yaml",
-			"configs:\n- id: profile-id\n  config:\n    name: 'Star Trek > Star Wars'\n    template: 'profile.json'\n  type:\n    schemaVersion: '1.0'\n    scope: 'tenant'",
-			nil,
-			[]string{"missing config-property type.api or type.schema"},
-		},
-		{
-			"loading a config with both api and schema-version should fail",
-			"test-file.yaml",
-			"test-file.yaml",
-			"configs:\n- id: profile-id\n  config:\n    name: 'Star Trek > Star Wars'\n    template: 'profile.json'\n  type:\n    api: 'something'\n    schemaVersion: '1.0'",
-			nil,
-			[]string{"mutually exclusive config-properties type.api and type.schemaVersion"},
-		},
-		{
-			"loading a config with both api and scope should fail",
-			"test-file.yaml",
-			"test-file.yaml",
-			"configs:\n- id: profile-id\n  config:\n    name: 'Star Trek > Star Wars'\n    template: 'profile.json'\n  type:\n    api: 'something'\n    scope: 'builtin:some.scope'",
-			nil,
-			[]string{"mutually exclusive config-properties type.api and type.scope"},
-		},
-		{
-			"loading a schema without scope fails",
-			"test-file.yaml",
-			"test-file.yaml",
-			"configs:\n- id: profile-id\n  config:\n    name: 'Star Trek > Star Wars'\n    template: 'profile.json'\n  type:\n    schema: 'builtin:profile.test'",
-			nil,
-			[]string{"type.scope is required"},
+			[]string{"type configuration is missing"},
 		},
 	}
 	for _, tt := range tests {

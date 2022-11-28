@@ -134,6 +134,7 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 				Environment: projectName,
 				References:  []coordinate.Coordinate{},
 				Template:    contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}"}`},
+				Type:        config.Type{Api: "fake-id"},
 			},
 		},
 	}, compareOptions...)
@@ -198,6 +199,7 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 				Environment: projectName,
 				References:  []coordinate.Coordinate{},
 				Template:    contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}"}`},
+				Type:        config.Type{Api: "fake-id"},
 			},
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.GetId(), ConfigId: "id-2"},
@@ -212,6 +214,7 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 					{Project: projectName, Type: fakeApi.GetId(), ConfigId: "id-1"},
 				},
 				Template: contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}", "reference-to-id1": "{{.fakeid__id1__id}}"}`},
+				Type:     config.Type{Api: "fake-id"},
 			},
 		},
 	}, compareOptions...)
@@ -285,6 +288,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 				Environment: projectName,
 				References:  []coordinate.Coordinate{},
 				Template:    contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}"}`},
+				Type:        config.Type{Api: "fake-id-1"},
 			},
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi1.GetId(), ConfigId: "id-2"},
@@ -299,6 +303,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 					{Project: projectName, Type: fakeApi1.GetId(), ConfigId: "id-1"},
 				},
 				Template: contentOnlyTemplate{`{"custom-response": false, "name": "{{.name}}", "reference-to-id1": "{{.fakeid1__id1__id}}"}`},
+				Type:     config.Type{Api: "fake-id-1"},
 			},
 		},
 		fakeApi2.GetId(): []config.Config{
@@ -315,6 +320,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 					{Project: projectName, Type: fakeApi1.GetId(), ConfigId: "id-1"},
 				},
 				Template: contentOnlyTemplate{`{"custom-response": "No!", "name": "{{.name}}", "subobject": {"something": "{{.fakeid1__id1__id}}"}}`},
+				Type:     config.Type{Api: "fake-id-2"},
 			},
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi2.GetId(), ConfigId: "id-4"},
@@ -329,6 +335,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 					{Project: projectName, Type: fakeApi2.GetId(), ConfigId: "id-3"},
 				},
 				Template: contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}", "reference-to-id3": "{{.fakeid2__id3__id}}"}`},
+				Type:     config.Type{Api: "fake-id-2"},
 			},
 		},
 		fakeApi3.GetId(): []config.Config{
@@ -346,8 +353,8 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 					{Project: projectName, Type: fakeApi1.GetId(), ConfigId: "id-2"},
 					{Project: projectName, Type: fakeApi2.GetId(), ConfigId: "id-4"},
 				},
-				Template: contentOnlyTemplate{`{"name": "{{.name}}", "custom-response": true, "reference-to-id6-of-another-api": ["{{.fakeid2__id4__id}}" ,{"o":  "{{.fakeid1__id2__id}}"}]}
-`},
+				Template: contentOnlyTemplate{`{"name": "{{.name}}", "custom-response": true, "reference-to-id6-of-another-api": ["{{.fakeid2__id4__id}}" ,{"o":  "{{.fakeid1__id2__id}}"}]}`},
+				Type:     config.Type{Api: "fake-id-3"},
 			},
 		},
 	}, compareOptions...)
@@ -411,6 +418,7 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 				Environment: projectName,
 				References:  []coordinate.Coordinate{},
 				Template:    contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}"}`},
+				Type:        config.Type{Api: "fake-id"},
 			},
 		},
 	}, compareOptions...)
@@ -477,6 +485,7 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 				Environment: projectName,
 				References:  []coordinate.Coordinate{},
 				Template:    contentOnlyTemplate{`{"type": "PRIVATE", "name": "{{.name}}"}`},
+				Type:        config.Type{Api: "synthetic-location"},
 			},
 		},
 	}, compareOptions...)
@@ -544,6 +553,7 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 				Environment: projectName,
 				References:  []coordinate.Coordinate{},
 				Template:    contentOnlyTemplate{`{"dashboardMetadata": {"name": "{{.name}}", "owner": "Q"}, "tiles": []}`},
+				Type:        config.Type{Api: "dashboard"},
 			},
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.GetId(), ConfigId: "id-2"},
@@ -555,6 +565,7 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 				Environment: projectName,
 				References:  []coordinate.Coordinate{},
 				Template:    contentOnlyTemplate{`{"dashboardMetadata": {"name": "{{.name}}", "owner": "Admiral Jean-Luc Picard"}, "tiles": []}`},
+				Type:        config.Type{Api: "dashboard"},
 			},
 		},
 	}, compareOptions...)
@@ -620,6 +631,7 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 				Environment: projectName,
 				References:  []coordinate.Coordinate{},
 				Template:    contentOnlyTemplate{`{}`},
+				Type:        config.Type{Api: "anomaly-detection-metrics"},
 			},
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.GetId(), ConfigId: "my.name"},
@@ -631,6 +643,7 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 				Environment: projectName,
 				References:  []coordinate.Coordinate{},
 				Template:    contentOnlyTemplate{`{}`},
+				Type:        config.Type{Api: "anomaly-detection-metrics"},
 			},
 		},
 	}, compareOptions...)
@@ -656,6 +669,7 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 					Environment: "valid",
 					References:  []coordinate.Coordinate{},
 					Template:    contentOnlyTemplate{`{"updateWindows":{"windows":[{"id":"3","name":"Daily maintenance window"}]}}`},
+					Type:        config.Type{Api: "hosts-auto-update"},
 				},
 			},
 		},
@@ -673,6 +687,7 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 					Environment: "updateWindows-empty",
 					References:  []coordinate.Coordinate{},
 					Template:    contentOnlyTemplate{`{}`},
+					Type:        config.Type{Api: "hosts-auto-update"},
 				},
 			},
 		},
@@ -695,6 +710,7 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 					Environment: "windows-missing",
 					References:  []coordinate.Coordinate{},
 					Template:    contentOnlyTemplate{`{"updateWindows":{}}`},
+					Type:        config.Type{Api: "hosts-auto-update"},
 				},
 			},
 		},

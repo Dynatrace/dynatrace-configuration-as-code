@@ -58,10 +58,10 @@ func LoadConfigs(fs afero.Fs, context *LoaderContext) (result []Config, errors [
 			continue
 		}
 
-		configs, configErrors := parseConfigs(fs, context, filepath.Join(context.Path, filename))
+		configs, configErrs := parseConfigs(fs, context, filepath.Join(context.Path, filename))
 
-		if configErrors != nil {
-			errors = append(errors, configErrors...)
+		if configErrs != nil {
+			errors = append(errors, configErrs...)
 			continue
 		}
 
@@ -212,17 +212,21 @@ func parseConfigs(fs afero.Fs, context *LoaderContext, filePath string) (configs
 }
 
 // parseDefinition parses a single config entry
-func parseDefinition(fs afero.Fs, context *ConfigLoaderContext,
-	configId string, definition topLevelConfigDefinition) ([]Config, []error) {
+func parseDefinition(
+	fs afero.Fs,
+	context *ConfigLoaderContext,
+	configId string,
+	definition topLevelConfigDefinition,
+) ([]Config, []error) {
 
 	results := make([]Config, 0)
 	var errors []error
 
-	if err := validateConfigType(context.KnownApis, definition); err != nil {
-		return nil, []error{fmt.Errorf("validation failed in config '%v': %w", context.Path, err)}
+	if b, e := definition.Type.IsSound(context.KnownApis); !b {
+		return nil, append(errors, e)
 	}
 
-	context.ApiId = getApiType(definition)
+	context.ApiId = definition.Type.GetApiType()
 
 	groupOverrideMap := toGroupOverrideMap(definition.GroupOverrides)
 	environmentOverrideMap := toEnvironmentOverrideMap(definition.EnvironmentOverrides)
@@ -246,42 +250,6 @@ func parseDefinition(fs afero.Fs, context *ConfigLoaderContext,
 	return results, nil
 }
 
-func getApiType(definition topLevelConfigDefinition) string {
-	if definition.Type.Schema != "" {
-		return definition.Type.Schema // FIXME: does not work if configs are loaded in parallel
-	}
-
-	return definition.Type.Api // FIXME: does not work if configs are loaded in parallel
-}
-
-func validateConfigType(knownApis map[string]struct{}, definition topLevelConfigDefinition) error {
-	if definition.Type.Api == "" && definition.Type.Schema == "" {
-		return fmt.Errorf("missing config-property type.api or type.schema")
-	}
-
-	if definition.Type.Api != "" && definition.Type.Schema != "" {
-		return fmt.Errorf("mutually exclusive config-properties type.api and type.schema")
-	}
-
-	if definition.Type.Api != "" && definition.Type.SchemaVersion != "" {
-		return fmt.Errorf("mutually exclusive config-properties type.api and type.schemaVersion")
-	}
-
-	if definition.Type.Api != "" && definition.Type.Scope != "" {
-		return fmt.Errorf("mutually exclusive config-properties type.api and type.scope")
-	}
-
-	if definition.Type.Schema != "" && definition.Type.Scope == "" {
-		return fmt.Errorf("type.scope is required")
-	}
-
-	if _, found := knownApis[definition.Type.Api]; definition.Type.Api != "" && !found {
-		return fmt.Errorf("unknown API: '%v'", definition.Type.Api)
-	}
-
-	return nil
-}
-
 func toEnvironmentOverrideMap(environments []environmentOverride) map[string]environmentOverride {
 	result := make(map[string]environmentOverride)
 
@@ -302,10 +270,15 @@ func toGroupOverrideMap(groups []groupOverride) map[string]groupOverride {
 	return result
 }
 
-func parseDefinitionForEnvironment(fs afero.Fs, context *ConfigLoaderContext,
-	configId string, environment manifest.EnvironmentDefinition,
-	definition topLevelConfigDefinition, groupOverrides map[string]groupOverride,
-	environmentOverride map[string]environmentOverride) (Config, []error) {
+func parseDefinitionForEnvironment(
+	fs afero.Fs,
+	context *ConfigLoaderContext,
+	configId string,
+	environment manifest.EnvironmentDefinition,
+	definition topLevelConfigDefinition,
+	groupOverrides map[string]groupOverride,
+	environmentOverride map[string]environmentOverride,
+) (Config, []error) {
 
 	configDefinition := configDefinition{
 		Parameters: make(map[string]configParameter),
@@ -323,7 +296,7 @@ func parseDefinitionForEnvironment(fs afero.Fs, context *ConfigLoaderContext,
 
 	configDefinition.Template = filepath.FromSlash(configDefinition.Template)
 
-	return getConfigFromDefinition(fs, context, configId, environment, configDefinition)
+	return getConfigFromDefinition(fs, context, configId, environment, configDefinition, definition.Type)
 }
 
 func applyOverrides(base *configDefinition, override configDefinition) {
@@ -345,9 +318,14 @@ func applyOverrides(base *configDefinition, override configDefinition) {
 
 }
 
-func getConfigFromDefinition(fs afero.Fs, context *ConfigLoaderContext,
-	configId string, environment manifest.EnvironmentDefinition,
-	definition configDefinition) (Config, []error) {
+func getConfigFromDefinition(
+	fs afero.Fs,
+	context *ConfigLoaderContext,
+	configId string,
+	environment manifest.EnvironmentDefinition,
+	definition configDefinition,
+	configType configType,
+) (Config, []error) {
 
 	if definition.Template == "" {
 		return Config{}, []error{
@@ -412,10 +390,10 @@ func getConfigFromDefinition(fs afero.Fs, context *ConfigLoaderContext,
 			ConfigId: configId,
 		},
 		Type: Type{
-			Schema:        "", //TODO fill in CA-2000
-			SchemaVersion: "", //TODO fill in CA-2000
-			Scope:         "", //TODO fill in CA-2000
-			Api:           "", //TODO fill in CA-2000
+			Schema:        configType.Settings.Schema,
+			SchemaVersion: configType.Settings.SchemaVersion,
+			Scope:         configType.Settings.Scope,
+			Api:           configType.Api,
 		},
 		Group:       environment.Group,
 		Environment: environment.Name,
