@@ -55,10 +55,11 @@ func (c *DummyClient) List(a api.Api) (values []api.Value, err error) {
 	result := make([]api.Value, len(entries))
 
 	for i, entry := range entries {
+		owner := entry.Owner
 		result[i] = api.Value{
 			Id:    entry.Id,
 			Name:  entry.Name,
-			Owner: &entry.Owner,
+			Owner: &owner,
 		}
 	}
 
