@@ -333,24 +333,17 @@ var _ error = (*TemplateConversionError)(nil)
 
 func convertTemplate(context *ConfigConvertContext, currentPath string, writeToPath string) (modifiedTemplate template.Template, envParams map[string]parameter.Parameter, listParameterIds map[string]struct{}, errs []error) {
 	data, err := afero.ReadFile(context.Fs, currentPath)
-
 	if err != nil {
 		return nil, nil, nil, []error{err}
 	}
 
-	templText, environmentParameters := convertEnvVarsReferencesInTemplate(string(data))
+	temporaryTemplate, environmentParameters := convertEnvVarsReferencesInTemplate(string(data))
+	temporaryTemplate, listParameterIds, errs = convertListsInTemplate(temporaryTemplate, currentPath)
 	if len(errs) > 0 {
 		return nil, nil, nil, errs
 	}
 
-	templText, listParameterIds, errs = convertListsInTemplate(templText, currentPath)
-	if len(errs) > 0 {
-		return nil, nil, nil, errs
-	}
-
-	templ := template.CreateTemplateFromString(writeToPath, templText)
-
-	return templ, environmentParameters, listParameterIds, nil
+	return template.CreateTemplateFromString(writeToPath, temporaryTemplate), environmentParameters, listParameterIds, nil
 }
 
 func convertEnvVarsReferencesInTemplate(currentTemplate string) (modifiedTemplate string, environmentParameters map[string]parameter.Parameter) {
