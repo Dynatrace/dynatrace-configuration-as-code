@@ -76,7 +76,7 @@ func NewConfig(fs afero.Fs, id string, project string, fileName string, properti
 
 	template, err := util.NewTemplate(fs, fileName)
 	if err != nil {
-		return nil, fmt.Errorf("loading config %s failed with %s", project+string(os.PathSeparator)+id, err)
+		return nil, fmt.Errorf("loading config %s failed with %w", project+string(os.PathSeparator)+id, err)
 	}
 
 	return newConfig(id, project, template, filterProperties(id, properties), api, fileName), nil
