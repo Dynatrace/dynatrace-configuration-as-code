@@ -494,3 +494,38 @@ func Test_getObjectIdIfAlreadyExists(t *testing.T) {
 		})
 	}
 }
+
+func Test_AdditionalQueryParamatersForNonStandardApisAreAdded(t *testing.T) {
+	tests := []struct {
+		name                    string
+		expectedQueryParam      string
+		expectedQueryParamValue string
+		apiKey                  string
+	}{
+		{
+			expectedQueryParam:      "enabledSlos",
+			expectedQueryParamValue: "all",
+			apiKey:                  "slo",
+		},
+		{
+			expectedQueryParam:      "includeEntityFilterMetricEvents",
+			expectedQueryParamValue: "true",
+			apiKey:                  "anomaly-detection-metrics",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				addedQueryParameter := req.URL.Query()[tt.expectedQueryParam]
+				assert.Check(t, addedQueryParameter != nil)
+				assert.Check(t, len(addedQueryParameter) > 0)
+				assert.Equal(t, addedQueryParameter[0], tt.expectedQueryParamValue)
+			}))
+			defer server.Close()
+			testApi := api.NewStandardApi(tt.apiKey, "", false, "", false)
+			_, _ = getObjectIdIfAlreadyExists(server.Client(), testApi, server.URL, "", "")
+		})
+
+	}
+}

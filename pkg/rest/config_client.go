@@ -414,57 +414,13 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlStrin
 	return existingValues, nil
 }
 
-// getWithRetry works similarly to retry does for PUT and POST
-// this method can be used for API calls we know to have occasional timing issues on GET - e.g. paginated queries that are impacted by replication lag, returning unequal amounts of objects/pages per node
-func getWithRetry(client *http.Client, url string, apiToken string, maxRetries int, timeout time.Duration) (Response, error) {
-	resp, err := get(client, url, apiToken)
-
-	if err == nil && success(resp) {
-		return resp, nil
-	}
-
-	for i := 0; i < maxRetries; i++ {
-		util.Log.Warn("Retrying failed GET request %s after error (HTTP %d): %w", url, resp.StatusCode, err)
-		time.Sleep(timeout)
-		resp, err = get(client, url, apiToken)
-		if err == nil && success(resp) {
-			return resp, err
-		}
-	}
-
-	var retryErr error
-	if err != nil {
-		retryErr = fmt.Errorf("GET request %s failed after %d retries: %w", url, maxRetries, err)
-	} else {
-		retryErr = fmt.Errorf("GET request %s failed after %d retries: (HTTP %d)!\n    Response was: %s", url, maxRetries, resp.StatusCode, resp.Body)
-	}
-	return Response{}, retryErr
-}
-
-func addQueryParamsForNonStandardApis(theApi api.Api, url *url.URL) *url.URL {
-
-	queryParams := url.Query()
-
+func addQueryParamsForNonStandardApis(theApi api.Api, url string) string {
 	if theApi.GetId() == "anomaly-detection-metrics" {
 		queryParams.Add("includeEntityFilterMetricEvents", "true")
 	}
 	if theApi.GetId() == "slo" {
-		queryParams.Add("enabledSlos", "all")
+		url = url + "?enabledSlos=all"
 	}
-	url.RawQuery = queryParams.Encode()
-	return url
-}
-
-func addNextPageQueryParams(theApi api.Api, url *url.URL, nextPage string) *url.URL {
-	queryParams := url.Query()
-
-	if theApi.GetId() == "slo" {
-		//SLO API requires enabledSlos to not be set together with nextPageKey, that information is already encoded in the key
-		queryParams.Del("enabledSlos")
-	}
-
-	queryParams.Set("nextPageKey", nextPage)
-	url.RawQuery = queryParams.Encode()
 	return url
 }
 
