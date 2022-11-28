@@ -140,7 +140,7 @@ func (s *simpleSleepRateLimitStrategy) generateSleepDuration(backoffMultiplier i
 		backoffMultiplier = 1
 	}
 
-	addedWaitMillis := rand.Int63n(minWaitDuration.Nanoseconds())
+	addedWaitMillis := rand.Int63n(minWaitDuration.Nanoseconds()) //nolint:gosec
 
 	sleepDuration = minWaitDuration + time.Duration(addedWaitMillis*int64(backoffMultiplier))
 
