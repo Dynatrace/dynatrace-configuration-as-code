@@ -495,7 +495,7 @@ func Test_getObjectIdIfAlreadyExists(t *testing.T) {
 	}
 }
 
-func Test_AdditionalQueryParamatersForNonStandardApisAreAdded(t *testing.T) {
+func Test_AdditionalQueryParametersForNonStandardApisAreAdded(t *testing.T) {
 	tests := []struct {
 		name                    string
 		expectedQueryParam      string
