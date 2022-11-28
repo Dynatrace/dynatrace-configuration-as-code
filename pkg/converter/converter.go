@@ -338,7 +338,7 @@ func convertTemplate(context *ConfigConvertContext, currentPath string, writeToP
 		return nil, nil, nil, []error{err}
 	}
 
-	templText, environmentParameters, errs := convertEnvVarsReferencesInTemplate(string(data))
+	templText, environmentParameters := convertEnvVarsReferencesInTemplate(string(data))
 	if len(errs) > 0 {
 		return nil, nil, nil, errs
 	}
@@ -353,7 +353,7 @@ func convertTemplate(context *ConfigConvertContext, currentPath string, writeToP
 	return templ, environmentParameters, listParameterIds, nil
 }
 
-func convertEnvVarsReferencesInTemplate(currentTemplate string) (modifiedTemplate string, environmentParameters map[string]parameter.Parameter, errors []error) {
+func convertEnvVarsReferencesInTemplate(currentTemplate string) (modifiedTemplate string, environmentParameters map[string]parameter.Parameter) {
 	environmentParameters = map[string]parameter.Parameter{}
 
 	templText := util.EnvVariableRegexPattern.ReplaceAllStringFunc(currentTemplate, func(p string) string {
@@ -366,7 +366,7 @@ func convertEnvVarsReferencesInTemplate(currentTemplate string) (modifiedTemplat
 
 		return transformToPropertyAccess(paramName)
 	})
-	return templText, environmentParameters, errors
+	return templText, environmentParameters
 }
 
 func transformEnvironmentToParamName(env string) string {
