@@ -10,6 +10,10 @@ configs:
         full_value:
           type: value
           value: "TEST VALUE"
+        complex_value:
+          type: value
+          value:
+            sub_property: true
         simple_reference: ["reference_cfg", "name"]
         multiline_reference:
           - "reference_cfg"
@@ -57,3 +61,23 @@ configs:
               value:
                 first: Anakin
                 last: Skywalker
+        compound_value:
+          type: compound
+          format: "{{.simple_value}} {{.full_value}} {{.environment}} {{.simple_reference}} {{.full_reference}} {{.complex_value.sub_property}}"
+          references:
+            - simple_value
+            - full_value
+            - environment
+            - simple_reference
+            - full_reference
+            - complex_value
+        empty_compound:
+          type: compound
+          format: ""
+          references: []
+        compound_on_compound:
+          type: compound
+          format: "{{.compound_value}} {{.empty_compound}}"
+          references:
+            - compound_value
+            - empty_compound

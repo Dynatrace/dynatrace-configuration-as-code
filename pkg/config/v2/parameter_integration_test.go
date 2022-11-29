@@ -19,6 +19,7 @@
 package v2
 
 import (
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/compound"
 	envParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/environment"
 	listParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/list"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/reference"
@@ -47,6 +48,7 @@ func TestParametersAreLoadedAsExpected(t *testing.T) {
 	cfg := cfgs[0]
 	assert.Equal(t, cfg.Parameters["simple_value"].GetType(), valueParam.ValueParameterType)
 	assert.Equal(t, cfg.Parameters["full_value"].GetType(), valueParam.ValueParameterType)
+	assert.Equal(t, cfg.Parameters["complex_value"].GetType(), valueParam.ValueParameterType)
 	assert.Equal(t, cfg.Parameters["simple_reference"].GetType(), reference.ReferenceParameterType)
 	assert.Equal(t, cfg.Parameters["multiline_reference"].GetType(), reference.ReferenceParameterType)
 	assert.Equal(t, cfg.Parameters["full_reference"].GetType(), reference.ReferenceParameterType)
@@ -55,4 +57,7 @@ func TestParametersAreLoadedAsExpected(t *testing.T) {
 	assert.Equal(t, cfg.Parameters["list_array"].GetType(), listParam.ListParameterType)
 	assert.Equal(t, cfg.Parameters["list_full_values"].GetType(), listParam.ListParameterType)
 	assert.Equal(t, cfg.Parameters["list_complex_values"].GetType(), listParam.ListParameterType)
+	assert.Equal(t, cfg.Parameters["compound_value"].GetType(), compound.CompoundParameterType)
+	assert.Equal(t, cfg.Parameters["empty_compound"].GetType(), compound.CompoundParameterType)
+	assert.Equal(t, cfg.Parameters["compound_on_compound"].GetType(), compound.CompoundParameterType)
 }
