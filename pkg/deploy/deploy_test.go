@@ -537,10 +537,7 @@ func TestDeploySettingShouldFailUpsert(t *testing.T) {
 		},
 	}
 
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-	client := rest.NewMockSettingsClient(mockCtrl)
-
+	client := rest.NewMockSettingsClient(gomock.NewController(t))
 	client.EXPECT().Upsert(gomock.Any()).Return(api.DynatraceEntity{}, fmt.Errorf("upsert failed"))
 
 	entities := make(map[coordinate.Coordinate]parameter.ResolvedEntity)
@@ -812,9 +809,7 @@ func TestDeployConfigsWithOneConfigToSkip(t *testing.T) {
 }
 
 func TestDeployConfigsTargetingSettings(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-	client := rest.NewMockDynatraceClient(mockCtrl)
+	client := rest.NewMockDynatraceClient(gomock.NewController(t))
 	var apis map[string]api.Api
 	sortedConfigs := []config.Config{
 		{
@@ -832,8 +827,6 @@ func TestDeployConfigsTargetingSettings(t *testing.T) {
 }
 
 func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
 	theConfigName := "theConfigName"
 	theApiName := "theApiName"
 
@@ -842,7 +835,7 @@ func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
 	theApi.EXPECT().IsDeprecatedApi().Return(false)
 	theApi.EXPECT().IsNonUniqueNameApi().Return(false)
 
-	client := rest.NewMockDynatraceClient(mockCtrl)
+	client := rest.NewMockDynatraceClient(gomock.NewController(t))
 	client.EXPECT().UpsertByName(gomock.Any(), theConfigName, gomock.Any()).Times(1)
 
 	apis := map[string]api.Api{theApiName: theApi}
@@ -870,8 +863,6 @@ func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
 }
 
 func TestDeployConfigsTargetingClassicConfigNonUnique(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
 	theConfigName := "theConfigName"
 	theApiName := "theApiName"
 
@@ -880,7 +871,7 @@ func TestDeployConfigsTargetingClassicConfigNonUnique(t *testing.T) {
 	theApi.EXPECT().IsDeprecatedApi().Return(false)
 	theApi.EXPECT().IsNonUniqueNameApi().Return(true)
 
-	client := rest.NewMockDynatraceClient(mockCtrl)
+	client := rest.NewMockDynatraceClient(gomock.NewController(t))
 	client.EXPECT().UpsertByEntityId(gomock.Any(), gomock.Any(), theConfigName, gomock.Any())
 
 	apis := map[string]api.Api{theApiName: theApi}
@@ -908,12 +899,10 @@ func TestDeployConfigsTargetingClassicConfigNonUnique(t *testing.T) {
 }
 
 func TestDeployConfigsNoApi(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
 	theConfigName := "theConfigName"
 	theApiName := "theApiName"
 
-	client := rest.NewMockDynatraceClient(mockCtrl)
+	client := rest.NewMockDynatraceClient(gomock.NewController(t))
 
 	apis := map[string]api.Api{}
 	parameters := []topologysort.ParameterWithName{
@@ -957,10 +946,7 @@ func TestDeployConfigsNoApi(t *testing.T) {
 }
 
 func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
 	theApiName := "theApiName"
-
 	theApi := api.NewMockApi(gomock.NewController(t))
 	theApi.EXPECT().GetId().AnyTimes().Return(theApiName)
 
