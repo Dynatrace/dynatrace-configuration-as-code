@@ -3,13 +3,13 @@ configs:
   config:
     name:
       configType: application-web
-      config: application
+      configId: application
       property: name
       type: reference
     parameters:
       applicationId:
         configType: application-web
-        config: application
+        configId: application
         property: id
         type: reference
       pattern: pattern

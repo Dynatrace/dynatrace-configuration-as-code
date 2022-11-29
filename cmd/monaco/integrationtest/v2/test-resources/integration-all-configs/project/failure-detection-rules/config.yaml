@@ -9,7 +9,7 @@ configs:
         services
       fdpId:
         configType: failure-detection-parametersets
-        config: parameterset
+        configId: parameterset
         property: id
         type: reference
     template: rule.json

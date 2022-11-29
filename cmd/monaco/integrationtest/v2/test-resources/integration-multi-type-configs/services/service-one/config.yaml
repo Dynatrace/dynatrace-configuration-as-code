@@ -36,7 +36,7 @@ configs:
         alertingProfileId:
           type: reference
           configType: alerting-profile
-          config: awesome-alerts
+          configId: awesome-alerts
           property: id
         environment: Env1
       template: slack.json

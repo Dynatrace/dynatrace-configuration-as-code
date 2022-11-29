@@ -27,7 +27,7 @@ configs:
         alertingProfileId:
           type: reference
           configType: alerting-profile
-          config: boring-alerts
+          configId: boring-alerts
           property: id
         environment: Env1
       template: slack.json

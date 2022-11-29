@@ -3,7 +3,7 @@ configs:
   config:
     name:
       configType: dashboard
-      config: dashboard
+      configId: dashboard
       property: id
       type: reference
     template: report.json

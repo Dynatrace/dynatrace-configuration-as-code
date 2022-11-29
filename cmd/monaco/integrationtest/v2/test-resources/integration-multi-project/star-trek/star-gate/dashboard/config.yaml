@@ -7,19 +7,19 @@ configs:
     parameters:
       mzone:
         configType: management-zone
-        config: zone-multiproject
+        configId: zone-multiproject
         project: cinema-infrastructure
         property: id
         type: reference
       mzoneName:
         configType: management-zone
-        config: zone-multiproject
+        configId: zone-multiproject
         project: cinema-infrastructure
         property: name
         type: reference
       someParam:
         configType: auto-tag
-        config: st-sg-tag-2
+        configId: st-sg-tag-2
         property: id
         type: reference
     template: overview-dashboard.json
@@ -32,19 +32,19 @@ configs:
     parameters:
       mzone:
         configType: management-zone
-        config: zone-multiproject
+        configId: zone-multiproject
         project: cinema-infrastructure
         property: id
         type: reference
       mzoneName:
         configType: management-zone
-        config: zone-multiproject
+        configId: zone-multiproject
         project: cinema-infrastructure
         property: name
         type: reference
       someParam:
         configType: auto-tag
-        config: st-sg-tag-3
+        configId: st-sg-tag-3
         property: id
         type: reference
     template: overview-dashboard.json
@@ -63,13 +63,13 @@ configs:
     parameters:
       mzone:
         configType: management-zone
-        config: zone-multiproject
+        configId: zone-multiproject
         project: cinema-infrastructure
         property: id
         type: reference
       mzoneName:
         configType: management-zone
-        config: zone-multiproject
+        configId: zone-multiproject
         project: cinema-infrastructure
         property: name
         type: reference

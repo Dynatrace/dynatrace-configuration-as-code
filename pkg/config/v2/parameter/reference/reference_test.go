@@ -35,7 +35,7 @@ func TestParseReferenceParameter(t *testing.T) {
 		Value: map[string]interface{}{
 			"project":    project,
 			"configType": configType,
-			"config":     config,
+			"configId":   config,
 			"property":   property,
 		},
 	})
@@ -281,8 +281,8 @@ func TestWriteReferenceParameter(t *testing.T) {
 	assert.Assert(t, ok, "should have parameter configType")
 	assert.Equal(t, api, refType)
 
-	config, ok := result["config"]
-	assert.Assert(t, ok, "should have parameter config")
+	config, ok := result["configId"]
+	assert.Assert(t, ok, "should have parameter configId")
 	assert.Equal(t, config, refConfig)
 
 	property, ok := result["property"]
@@ -315,8 +315,8 @@ func TestWriteReferenceParameterOnMatchingProject(t *testing.T) {
 	assert.Assert(t, ok, "should have parameter configType")
 	assert.Equal(t, api, refApi)
 
-	config, ok := result["config"]
-	assert.Assert(t, ok, "should have parameter config")
+	config, ok := result["configId"]
+	assert.Assert(t, ok, "should have parameter configId")
 	assert.Equal(t, config, refConfig)
 
 	property, ok := result["property"]
@@ -345,8 +345,8 @@ func TestWriteReferenceParameterOnMatchingApi(t *testing.T) {
 
 	assert.Equal(t, len(result), 2)
 
-	config, ok := result["config"]
-	assert.Assert(t, ok, "should have parameter config")
+	config, ok := result["configId"]
+	assert.Assert(t, ok, "should have parameter configId")
 	assert.Equal(t, config, refConfig)
 
 	property, ok := result["property"]

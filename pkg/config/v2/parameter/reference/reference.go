@@ -107,7 +107,7 @@ func (p *ReferenceParameter) ResolveValue(context parameter.ResolveContext) (int
 
 const projectField = "project"
 const typeField = "configType"
-const idField = "config"
+const idField = "configId"
 const propertyField = "property"
 
 func writeReferenceParameter(context parameter.ParameterWriterContext) (map[string]interface{}, error) {

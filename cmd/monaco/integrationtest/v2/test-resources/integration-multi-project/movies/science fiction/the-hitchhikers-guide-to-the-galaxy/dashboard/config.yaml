@@ -5,12 +5,12 @@ configs:
     parameters:
       mzone:
         configType: management-zone
-        config: zone-multiproject
+        configId: zone-multiproject
         property: id
         type: reference
       mzoneName:
         configType: management-zone
-        config: zone-multiproject
+        configId: zone-multiproject
         property: name
         type: reference
     template: overview-dashboard.json

@@ -6,7 +6,7 @@ configs:
       meId: HOST_GROUP-1234567890123456
       webAppTaggingName:
         configType: auto-tag
-        config: application-tagging-multiproject
+        configId: application-tagging-multiproject
         property: name
         type: reference
     template: ../../movies/science fiction/the-hitchhikers-guide-to-the-galaxy/management-zone/zone.json

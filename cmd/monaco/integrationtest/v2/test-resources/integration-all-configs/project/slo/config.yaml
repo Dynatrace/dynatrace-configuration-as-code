@@ -5,7 +5,7 @@ configs:
     parameters:
       mzone:
         configType: management-zone
-        config: zone
+        configId: zone
         property: name
         type: reference
       threshold:

@@ -7,7 +7,7 @@ configs:
     parameters:
       alertingProfileId:
         configType: alerting-profile
-        config: profile
+        configId: profile
         property: id
         type: reference
       environment: Env1
@@ -21,7 +21,7 @@ configs:
     parameters:
       alertingProfileId:
         configType: alerting-profile
-        config: profile
+        configId: profile
         property: id
         type: reference
       environment: Env1
@@ -40,7 +40,7 @@ configs:
     parameters:
       alertingProfileId:
         configType: alerting-profile
-        config: profile
+        configId: profile
         property: id
         type: reference
       environment: test-env
@@ -58,7 +58,7 @@ configs:
     parameters:
       alertingProfileId:
         configType: alerting-profile
-        config: profile
+        configId: profile
         property: id
         type: reference
       environment: test-env

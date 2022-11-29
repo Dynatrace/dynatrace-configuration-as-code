@@ -5,7 +5,7 @@ configs:
     parameters:
       appId:
         configType: application-mobile
-        config: mobile-application
+        configId: mobile-application
         project: project
         property: id
         type: reference

@@ -5,7 +5,7 @@ configs:
     parameters:
       tag:
         configType: auto-tag
-        config: application-tagging
+        configId: application-tagging
         property: name
         type: reference
     template: 5xxErrors.json

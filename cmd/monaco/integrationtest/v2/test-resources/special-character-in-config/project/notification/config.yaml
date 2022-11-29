@@ -5,7 +5,7 @@ configs:
     parameters:
       alertingProfileId:
         configType: alerting-profile
-        config: profile
+        configId: profile
         property: id
         type: reference
       environment: Env1

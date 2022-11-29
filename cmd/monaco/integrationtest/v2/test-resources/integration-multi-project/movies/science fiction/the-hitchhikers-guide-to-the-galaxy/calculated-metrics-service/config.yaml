@@ -6,7 +6,7 @@ configs:
       enabled: "true"
       requestAttribute:
         configType: request-attributes
-        config: ondemand-analysis-requestid
+        configId: ondemand-analysis-requestid
         project: cinema-infrastructure
         property: name
         type: reference

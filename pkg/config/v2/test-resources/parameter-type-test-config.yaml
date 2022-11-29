@@ -22,7 +22,7 @@ configs:
           type: reference
           project: "some project"
           configType: "some api"
-          config: "reference_cfg"
+          configId: "reference_cfg"
           property: "name"
         environment:
           type: environment

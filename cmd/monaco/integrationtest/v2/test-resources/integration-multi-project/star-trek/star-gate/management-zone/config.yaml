@@ -8,7 +8,7 @@ configs:
       meId: HOST_GROUP-1234567890123456
       webAppTaggingName:
         configType: auto-tag
-        config: application-tagging-multiproject
+        configId: application-tagging-multiproject
         project: cinema-infrastructure
         property: name
         type: reference
