@@ -385,7 +385,6 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlStrin
 
 	var existingValues []api.Value
 	for {
-
 		values, objmap, err := unmarshalJson(theApi, resp)
 		if err != nil {
 			return values, err
@@ -396,7 +395,7 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlStrin
 		if isPaginated, nextPage := isPaginatedResponse(objmap); isPaginated {
 			parsedUrl = addNextPageQueryParams(theApi, parsedUrl, nextPage)
 
-			resp, err = getWithRetry(client, parsedUrl.String(), apiToken, 3, 5*time.Second)
+			resp, err = get(client, parsedUrl.String(), apiToken)
 
 			if err != nil {
 				return nil, err
@@ -414,13 +413,29 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlStrin
 	return existingValues, nil
 }
 
-func addQueryParamsForNonStandardApis(theApi api.Api, url string) string {
+func addQueryParamsForNonStandardApis(theApi api.Api, url *url.URL) *url.URL {
+
+	queryParams := url.Query()
 	if theApi.GetId() == "anomaly-detection-metrics" {
 		queryParams.Add("includeEntityFilterMetricEvents", "true")
 	}
 	if theApi.GetId() == "slo" {
-		url = url + "?enabledSlos=all"
+		queryParams.Add("enabledSlos", "all")
 	}
+	url.RawQuery = queryParams.Encode()
+	return url
+}
+
+func addNextPageQueryParams(theApi api.Api, url *url.URL, nextPage string) *url.URL {
+	queryParams := url.Query()
+
+	if theApi.GetId() == "slo" {
+		//SLO API requires enabledSlos to not be set together with nextPageKey, that information is already encoded in the key
+		queryParams.Del("enabledSlos")
+	}
+
+	queryParams.Set("nextPageKey", nextPage)
+	url.RawQuery = queryParams.Encode()
 	return url
 }
 
