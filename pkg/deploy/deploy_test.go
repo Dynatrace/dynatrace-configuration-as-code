@@ -907,6 +907,95 @@ func TestDeployConfigsTargetingClassicConfigNonUnique(t *testing.T) {
 	assert.Assert(t, len(errors) == 0, "there should be no errors (errors: %s)", errors)
 }
 
+func TestDeployConfigsNoApi(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	theConfigName := "theConfigName"
+	theApiName := "theApiName"
+
+	client := rest.NewMockDynatraceClient(mockCtrl)
+
+	apis := map[string]api.Api{}
+	parameters := []topologysort.ParameterWithName{
+		{
+			Name: config.NameParameter,
+			Parameter: &parameter.DummyParameter{
+				Value: theConfigName,
+			},
+		},
+	}
+	sortedConfigs := []config.Config{
+		{
+			Parameters: toParameterMap(parameters),
+			Coordinate: coordinate.Coordinate{Type: theApiName},
+			Template:   generateDummyTemplate(t),
+			Type: config.Type{
+				Api: theApiName,
+			},
+		},
+		{
+			Parameters: toParameterMap(parameters),
+			Coordinate: coordinate.Coordinate{Type: theApiName},
+			Template:   generateDummyTemplate(t),
+			Type: config.Type{
+				Api: theApiName,
+			},
+		},
+	}
+
+	t.Run("missing api - continue on error", func(t *testing.T) {
+		errors := DeployConfigs(client, apis, sortedConfigs, true, false)
+		assert.Equal(t, 2, len(errors), fmt.Sprintf("Expected 2 errors, but just got %d", len(errors)))
+	})
+
+	t.Run("missing api - stop on error", func(t *testing.T) {
+		errors := DeployConfigs(client, apis, sortedConfigs, false, false)
+		assert.Equal(t, 1, len(errors), fmt.Sprintf("Expected 1 error, but just got %d", len(errors)))
+	})
+	// test continue on error
+
+}
+
+func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	theApiName := "theApiName"
+
+	theApi := api.NewMockApi(gomock.NewController(t))
+	theApi.EXPECT().GetId().AnyTimes().Return(theApiName)
+
+	apis := map[string]api.Api{theApiName: theApi}
+	sortedConfigs := []config.Config{
+		{
+			Parameters: toParameterMap([]topologysort.ParameterWithName{}), // missing name parameter leads to deployment failure
+			Coordinate: coordinate.Coordinate{Type: theApiName},
+			Template:   generateDummyTemplate(t),
+			Type: config.Type{
+				Api: theApiName,
+			},
+		},
+		{
+			Parameters: toParameterMap([]topologysort.ParameterWithName{}), // missing name parameter leads to deployment failure
+			Coordinate: coordinate.Coordinate{Type: theApiName},
+			Template:   generateDummyTemplate(t),
+			Type: config.Type{
+				Api: theApiName,
+			},
+		},
+	}
+
+	t.Run("deployment error - stop on error", func(t *testing.T) {
+		errors := DeployConfigs(&client.DummyClient{}, apis, sortedConfigs, false, false)
+		assert.Equal(t, 1, len(errors), fmt.Sprintf("Expected 1 error, but just got %d", len(errors)))
+	})
+
+	t.Run("deployment error - stop on error", func(t *testing.T) {
+		errors := DeployConfigs(&client.DummyClient{}, apis, sortedConfigs, true, false)
+		assert.Equal(t, 2, len(errors), fmt.Sprintf("Expected 1 error, but just got %d", len(errors)))
+	})
+
+}
+
 func toParameterMap(params []topologysort.ParameterWithName) map[string]parameter.Parameter {
 	result := make(map[string]parameter.Parameter)
 
