@@ -107,9 +107,9 @@ func Test_parseConfigs(t *testing.T) {
 			[]Config{
 				{
 					Coordinate: coordinate.Coordinate{
-						Project: "project",
-						Type:    "builtin:profile.test",
-						Config:  "profile-id",
+						Project:  "project",
+						Type:     "builtin:profile.test",
+						ConfigId: "profile-id",
 					},
 					Parameters:  Parameters{"name": &value.ValueParameter{Value: string("Star Trek > Star Wars")}},
 					References:  []coordinate.Coordinate{},

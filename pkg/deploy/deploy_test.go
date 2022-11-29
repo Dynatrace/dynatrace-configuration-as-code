@@ -63,9 +63,9 @@ func TestResolveParameterValues(t *testing.T) {
 	conf := config.Config{
 		Template: generateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
-			Project: "project1",
-			Type:    "dashboard",
-			Config:  "dashboard-1",
+			Project:  "project1",
+			Type:     "dashboard",
+			ConfigId: "dashboard-1",
 		},
 		Environment: "development",
 		Parameters:  toParameterMap(parameters),
@@ -85,9 +85,9 @@ func TestResolveParameterValues(t *testing.T) {
 
 func TestResolveParameterValuesShouldFailWhenReferencingNonExistingConfig(t *testing.T) {
 	nonExistingConfig := coordinate.Coordinate{
-		Project: "non-existing",
-		Type:    "management-zone",
-		Config:  "zone1",
+		Project:  "non-existing",
+		Type:     "management-zone",
+		ConfigId: "zone1",
 	}
 	parameters := []topologysort.ParameterWithName{
 		{
@@ -106,9 +106,9 @@ func TestResolveParameterValuesShouldFailWhenReferencingNonExistingConfig(t *tes
 	conf := config.Config{
 		Template: generateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
-			Project: "project1",
-			Type:    "dashboard",
-			Config:  "dashboard-1",
+			Project:  "project1",
+			Type:     "dashboard",
+			ConfigId: "dashboard-1",
 		},
 		Environment: "development",
 		Parameters:  toParameterMap(parameters),
@@ -125,9 +125,9 @@ func TestResolveParameterValuesShouldFailWhenReferencingNonExistingConfig(t *tes
 
 func TestResolveParameterValuesShouldFailWhenReferencingSkippedConfig(t *testing.T) {
 	referenceCoordinate := coordinate.Coordinate{
-		Project: "project1",
-		Type:    "management-zone",
-		Config:  "zone1",
+		Project:  "project1",
+		Type:     "management-zone",
+		ConfigId: "zone1",
 	}
 
 	parameters := []topologysort.ParameterWithName{
@@ -147,9 +147,9 @@ func TestResolveParameterValuesShouldFailWhenReferencingSkippedConfig(t *testing
 	conf := config.Config{
 		Template: generateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
-			Project: "project1",
-			Type:    "dashboard",
-			Config:  "dashboard-1",
+			Project:  "project1",
+			Type:     "dashboard",
+			ConfigId: "dashboard-1",
 		},
 		Environment: "development",
 		Parameters:  toParameterMap(parameters),
@@ -184,9 +184,9 @@ func TestResolveParameterValuesShouldFailWhenParameterResolveReturnsError(t *tes
 	conf := config.Config{
 		Template: generateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
-			Project: "project1",
-			Type:    "dashboard",
-			Config:  "dashboard-1",
+			Project:  "project1",
+			Type:     "dashboard",
+			ConfigId: "dashboard-1",
 		},
 		Environment: "development",
 		Parameters:  toParameterMap(parameters),
@@ -203,15 +203,15 @@ func TestResolveParameterValuesShouldFailWhenParameterResolveReturnsError(t *tes
 
 func TestValidateParameterReferences(t *testing.T) {
 	configCoordinates := coordinate.Coordinate{
-		Project: "project1",
-		Type:    "dashboard",
-		Config:  "dashboard-1",
+		Project:  "project1",
+		Type:     "dashboard",
+		ConfigId: "dashboard-1",
 	}
 
 	referencedConfigCoordinates := coordinate.Coordinate{
-		Project: "project2",
-		Type:    "management-zone",
-		Config:  "zone1",
+		Project:  "project2",
+		Type:     "management-zone",
+		ConfigId: "zone1",
 	}
 
 	param := &parameter.DummyParameter{
@@ -248,9 +248,9 @@ func TestValidateParameterReferencesShouldFailWhenReferencingSelf(t *testing.T) 
 	paramName := "name"
 
 	configCoordinates := coordinate.Coordinate{
-		Project: "project1",
-		Type:    "dashboard",
-		Config:  "dashboard-1",
+		Project:  "project1",
+		Type:     "dashboard",
+		ConfigId: "dashboard-1",
 	}
 
 	param := &parameter.DummyParameter{
@@ -272,15 +272,15 @@ func TestValidateParameterReferencesShouldFailWhenReferencingSelf(t *testing.T) 
 
 func TestValidateParameterReferencesShouldFailWhenReferencingSkippedConfig(t *testing.T) {
 	configCoordinates := coordinate.Coordinate{
-		Project: "project1",
-		Type:    "dashboard",
-		Config:  "dashboard-1",
+		Project:  "project1",
+		Type:     "dashboard",
+		ConfigId: "dashboard-1",
 	}
 
 	referencedConfigCoordinates := coordinate.Coordinate{
-		Project: "project2",
-		Type:    "management-zone",
-		Config:  "zone1",
+		Project:  "project2",
+		Type:     "management-zone",
+		ConfigId: "zone1",
 	}
 
 	param := &parameter.DummyParameter{
@@ -309,15 +309,15 @@ func TestValidateParameterReferencesShouldFailWhenReferencingSkippedConfig(t *te
 
 func TestValidateParameterReferencesShouldFailWhenReferencingUnknownConfig(t *testing.T) {
 	configCoordinates := coordinate.Coordinate{
-		Project: "project1",
-		Type:    "dashboard",
-		Config:  "dashboard-1",
+		Project:  "project1",
+		Type:     "dashboard",
+		ConfigId: "dashboard-1",
 	}
 
 	referencedConfigCoordinates := coordinate.Coordinate{
-		Project: "project2",
-		Type:    "management-zone",
-		Config:  "zone1",
+		Project:  "project2",
+		Type:     "management-zone",
+		ConfigId: "zone1",
 	}
 
 	param := &parameter.DummyParameter{
@@ -341,9 +341,9 @@ func TestExtractConfigName(t *testing.T) {
 	conf := config.Config{
 		Template: generateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
-			Project: "project1",
-			Type:    "dashboard",
-			Config:  "dashboard-1",
+			Project:  "project1",
+			Type:     "dashboard",
+			ConfigId: "dashboard-1",
 		},
 		Environment: "development",
 		Parameters:  map[string]parameter.Parameter{},
@@ -367,9 +367,9 @@ func TestExtractConfigNameShouldFailOnMissingName(t *testing.T) {
 	conf := config.Config{
 		Template: generateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
-			Project: "project1",
-			Type:    "dashboard",
-			Config:  "dashboard-1",
+			Project:  "project1",
+			Type:     "dashboard",
+			ConfigId: "dashboard-1",
 		},
 		Environment: "development",
 		Parameters:  map[string]parameter.Parameter{},
@@ -388,9 +388,9 @@ func TestExtractConfigNameShouldFailOnNameWithNonStringType(t *testing.T) {
 	conf := config.Config{
 		Template: generateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
-			Project: "project1",
-			Type:    "dashboard",
-			Config:  "dashboard-1",
+			Project:  "project1",
+			Type:     "dashboard",
+			ConfigId: "dashboard-1",
 		},
 		Environment: "development",
 		Parameters:  map[string]parameter.Parameter{},
@@ -438,9 +438,9 @@ func TestDeployConfig(t *testing.T) {
 	conf := config.Config{
 		Template: generateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
-			Project: "project1",
-			Type:    "dashboard",
-			Config:  "dashboard-1",
+			Project:  "project1",
+			Type:     "dashboard",
+			ConfigId: "dashboard-1",
 		},
 		Environment: "development",
 		Parameters:  toParameterMap(parameters),
@@ -478,9 +478,9 @@ func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
 	conf := config.Config{
 		Template: generateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
-			Project: "project1",
-			Type:    "dashboard",
-			Config:  "dashboard-1",
+			Project:  "project1",
+			Type:     "dashboard",
+			ConfigId: "dashboard-1",
 		},
 		Environment: "development",
 		Parameters:  toParameterMap(parameters),
@@ -504,9 +504,9 @@ func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
 func TestDeployConfigShouldFailCyclicParameterDependencies(t *testing.T) {
 	ownerParameterName := "owner"
 	configCoordinates := coordinate.Coordinate{
-		Project: "project1",
-		Type:    "dashboard",
-		Config:  "dashboard-1",
+		Project:  "project1",
+		Type:     "dashboard",
+		ConfigId: "dashboard-1",
 	}
 
 	parameters := []topologysort.ParameterWithName{
@@ -538,9 +538,9 @@ func TestDeployConfigShouldFailCyclicParameterDependencies(t *testing.T) {
 	conf := config.Config{
 		Template: generateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
-			Project: "project1",
-			Type:    "dashboard",
-			Config:  "dashboard-1",
+			Project:  "project1",
+			Type:     "dashboard",
+			ConfigId: "dashboard-1",
 		},
 		Environment: "development",
 		Parameters:  toParameterMap(parameters),
@@ -564,9 +564,9 @@ func TestDeployConfigShouldFailOnMissingNameParameter(t *testing.T) {
 	conf := config.Config{
 		Template: generateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
-			Project: "project1",
-			Type:    "dashboard",
-			Config:  "dashboard-1",
+			Project:  "project1",
+			Type:     "dashboard",
+			ConfigId: "dashboard-1",
 		},
 		Environment: "development",
 		Parameters:  toParameterMap(parameters),
@@ -591,9 +591,9 @@ func TestDeployConfigShouldFailOnReferenceOnUnknownConfig(t *testing.T) {
 				References: []parameter.ParameterReference{
 					{
 						Config: coordinate.Coordinate{
-							Project: "project2",
-							Type:    "dashboard",
-							Config:  "dashboard",
+							Project:  "project2",
+							Type:     "dashboard",
+							ConfigId: "dashboard",
 						},
 						Property: "managementZoneId",
 					},
@@ -606,9 +606,9 @@ func TestDeployConfigShouldFailOnReferenceOnUnknownConfig(t *testing.T) {
 	conf := config.Config{
 		Template: generateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
-			Project: "project1",
-			Type:    "dashboard",
-			Config:  "dashboard-1",
+			Project:  "project1",
+			Type:     "dashboard",
+			ConfigId: "dashboard-1",
 		},
 		Environment: "development",
 		Parameters:  toParameterMap(parameters),
@@ -626,9 +626,9 @@ func TestDeployConfigShouldFailOnReferenceOnUnknownConfig(t *testing.T) {
 
 func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
 	referenceCoordinates := coordinate.Coordinate{
-		Project: "project2",
-		Type:    "dashboard",
-		Config:  "dashboard",
+		Project:  "project2",
+		Type:     "dashboard",
+		ConfigId: "dashboard",
 	}
 
 	parameters := []topologysort.ParameterWithName{
@@ -649,9 +649,9 @@ func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
 	conf := config.Config{
 		Template: generateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
-			Project: "project1",
-			Type:    "dashboard",
-			Config:  "dashboard-1",
+			Project:  "project1",
+			Type:     "dashboard",
+			ConfigId: "dashboard-1",
 		},
 		Environment: "development",
 		Parameters:  toParameterMap(parameters),
@@ -661,7 +661,7 @@ func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
 
 	entities := map[coordinate.Coordinate]parameter.ResolvedEntity{
 		referenceCoordinates: {
-			EntityName: referenceCoordinates.Config,
+			EntityName: referenceCoordinates.ConfigId,
 			Coordinate: referenceCoordinates,
 			Properties: parameter.Properties{},
 			Skip:       true,

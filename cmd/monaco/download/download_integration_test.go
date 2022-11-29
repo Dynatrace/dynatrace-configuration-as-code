@@ -125,7 +125,7 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
 		fakeApi.GetId(): []config.Config{
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.GetId(), Config: "id-1"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.GetId(), ConfigId: "id-1"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name": &value.ValueParameter{Value: "Test-1"},
@@ -189,7 +189,7 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
 		fakeApi.GetId(): []config.Config{
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.GetId(), Config: "id-1"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.GetId(), ConfigId: "id-1"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name": &value.ValueParameter{Value: "Test-1"},
@@ -200,7 +200,7 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 				Template:    contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}"}`},
 			},
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.GetId(), Config: "id-2"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.GetId(), ConfigId: "id-2"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name":            &value.ValueParameter{Value: "Test-2"},
@@ -209,7 +209,7 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 				Group:       "default",
 				Environment: projectName,
 				References: []coordinate.Coordinate{
-					{Project: projectName, Type: fakeApi.GetId(), Config: "id-1"},
+					{Project: projectName, Type: fakeApi.GetId(), ConfigId: "id-1"},
 				},
 				Template: contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}", "reference-to-id1": "{{.fakeid__id1__id}}"}`},
 			},
@@ -276,7 +276,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
 		fakeApi1.GetId(): []config.Config{
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi1.GetId(), Config: "id-1"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi1.GetId(), ConfigId: "id-1"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name": &value.ValueParameter{Value: "Test-1"},
@@ -287,7 +287,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 				Template:    contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}"}`},
 			},
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi1.GetId(), Config: "id-2"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi1.GetId(), ConfigId: "id-2"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name":             &value.ValueParameter{Value: "Test-2"},
@@ -296,14 +296,14 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 				Group:       "default",
 				Environment: projectName,
 				References: []coordinate.Coordinate{
-					{Project: projectName, Type: fakeApi1.GetId(), Config: "id-1"},
+					{Project: projectName, Type: fakeApi1.GetId(), ConfigId: "id-1"},
 				},
 				Template: contentOnlyTemplate{`{"custom-response": false, "name": "{{.name}}", "reference-to-id1": "{{.fakeid1__id1__id}}"}`},
 			},
 		},
 		fakeApi2.GetId(): []config.Config{
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi2.GetId(), Config: "id-3"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi2.GetId(), ConfigId: "id-3"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name":             &value.ValueParameter{Value: "Test-3"},
@@ -312,12 +312,12 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 				Group:       "default",
 				Environment: projectName,
 				References: []coordinate.Coordinate{
-					{Project: projectName, Type: fakeApi1.GetId(), Config: "id-1"},
+					{Project: projectName, Type: fakeApi1.GetId(), ConfigId: "id-1"},
 				},
 				Template: contentOnlyTemplate{`{"custom-response": "No!", "name": "{{.name}}", "subobject": {"something": "{{.fakeid1__id1__id}}"}}`},
 			},
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi2.GetId(), Config: "id-4"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi2.GetId(), ConfigId: "id-4"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name":             &value.ValueParameter{Value: "Test-4"},
@@ -326,14 +326,14 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 				Group:       "default",
 				Environment: projectName,
 				References: []coordinate.Coordinate{
-					{Project: projectName, Type: fakeApi2.GetId(), Config: "id-3"},
+					{Project: projectName, Type: fakeApi2.GetId(), ConfigId: "id-3"},
 				},
 				Template: contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}", "reference-to-id3": "{{.fakeid2__id3__id}}"}`},
 			},
 		},
 		fakeApi3.GetId(): []config.Config{
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi3.GetId(), Config: "id-5"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi3.GetId(), ConfigId: "id-5"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name":             &value.ValueParameter{Value: "Test-5"},
@@ -343,8 +343,8 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 				Group:       "default",
 				Environment: projectName,
 				References: []coordinate.Coordinate{
-					{Project: projectName, Type: fakeApi1.GetId(), Config: "id-2"},
-					{Project: projectName, Type: fakeApi2.GetId(), Config: "id-4"},
+					{Project: projectName, Type: fakeApi1.GetId(), ConfigId: "id-2"},
+					{Project: projectName, Type: fakeApi2.GetId(), ConfigId: "id-4"},
 				},
 				Template: contentOnlyTemplate{`{"name": "{{.name}}", "custom-response": true, "reference-to-id6-of-another-api": ["{{.fakeid2__id4__id}}" ,{"o":  "{{.fakeid1__id2__id}}"}]}
 `},
@@ -402,7 +402,7 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
 		fakeApi.GetId(): []config.Config{
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.GetId(), Config: "fake-id"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.GetId(), ConfigId: "fake-id"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name": &value.ValueParameter{Value: "fake-id"},
@@ -468,7 +468,7 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
 		syntheticLocationApi.GetId(): []config.Config{
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: syntheticLocationApi.GetId(), Config: "id-2"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: syntheticLocationApi.GetId(), ConfigId: "id-2"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name": &value.ValueParameter{Value: "Private location - should be stored"},
@@ -535,7 +535,7 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
 		dashboardApi.GetId(): []config.Config{
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.GetId(), Config: "id-1"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.GetId(), ConfigId: "id-1"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name": &value.ValueParameter{Value: "Non-unique dashboard-name"},
@@ -546,7 +546,7 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 				Template:    contentOnlyTemplate{`{"dashboardMetadata": {"name": "{{.name}}", "owner": "Q"}, "tiles": []}`},
 			},
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.GetId(), Config: "id-2"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.GetId(), ConfigId: "id-2"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name": &value.ValueParameter{Value: "Non-unique dashboard-name"},
@@ -611,7 +611,7 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
 		dashboardApi.GetId(): []config.Config{
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.GetId(), Config: "b836ff25-24e3-496d-8dce-d94110815ab5"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.GetId(), ConfigId: "b836ff25-24e3-496d-8dce-d94110815ab5"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name": &value.ValueParameter{Value: "Test4"},
@@ -622,7 +622,7 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 				Template:    contentOnlyTemplate{`{}`},
 			},
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.GetId(), Config: "my.name"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.GetId(), ConfigId: "my.name"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name": &value.ValueParameter{Value: "Test1"},
@@ -647,7 +647,7 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 			shouldProjectExist: true,
 			expectedConfigs: []config.Config{
 				{
-					Coordinate: coordinate.Coordinate{Project: "valid", Type: "hosts-auto-update", Config: "hosts-auto-update"},
+					Coordinate: coordinate.Coordinate{Project: "valid", Type: "hosts-auto-update", ConfigId: "hosts-auto-update"},
 					Skip:       false,
 					Parameters: map[string]parameter.Parameter{
 						"name": &value.ValueParameter{Value: "hosts-auto-update"},
@@ -664,7 +664,7 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 			shouldProjectExist: true,
 			expectedConfigs: []config.Config{
 				{
-					Coordinate: coordinate.Coordinate{Project: "updateWindows-empty", Type: "hosts-auto-update", Config: "hosts-auto-update"},
+					Coordinate: coordinate.Coordinate{Project: "updateWindows-empty", Type: "hosts-auto-update", ConfigId: "hosts-auto-update"},
 					Skip:       false,
 					Parameters: map[string]parameter.Parameter{
 						"name": &value.ValueParameter{Value: "hosts-auto-update"},
@@ -686,7 +686,7 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 			shouldProjectExist: true,
 			expectedConfigs: []config.Config{
 				{
-					Coordinate: coordinate.Coordinate{Project: "windows-missing", Type: "hosts-auto-update", Config: "hosts-auto-update"},
+					Coordinate: coordinate.Coordinate{Project: "windows-missing", Type: "hosts-auto-update", ConfigId: "hosts-auto-update"},
 					Skip:       false,
 					Parameters: map[string]parameter.Parameter{
 						"name": &value.ValueParameter{Value: "hosts-auto-update"},

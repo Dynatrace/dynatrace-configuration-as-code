@@ -94,9 +94,9 @@ type ReferenceParserError struct {
 func newReferenceParserError(projectId string, config configV1.Config, parameterName string, reason string) ReferenceParserError {
 	return ReferenceParserError{
 		Location: coordinate.Coordinate{
-			Project: projectId,
-			Type:    config.GetApi().GetId(),
-			Config:  config.GetId(),
+			Project:  projectId,
+			Type:     config.GetApi().GetId(),
+			ConfigId: config.GetId(),
 		},
 		ParameterName: parameterName,
 		Reason:        reason,
@@ -268,9 +268,9 @@ func convertConfig(context *ConfigConvertContext, environment manifest.Environme
 	}
 
 	coord := coordinate.Coordinate{
-		Project: context.ProjectId,
-		Type:    apiId,
-		Config:  config.GetId(),
+		Project:  context.ProjectId,
+		Type:     apiId,
+		ConfigId: config.GetId(),
 	}
 
 	templ, envParams, listParamIds, errs := convertTemplate(context, config.GetFilePath(), convertedTemplatePath)
@@ -455,9 +455,9 @@ func parseSkipDeploymentParameter(context *ConfigConvertContext, config configV1
 	}
 
 	location := coordinate.Coordinate{
-		Project: context.ProjectId,
-		Type:    config.GetApi().GetId(),
-		Config:  config.GetId(),
+		Project:  context.ProjectId,
+		Type:     config.GetApi().GetId(),
+		ConfigId: config.GetId(),
 	}
 
 	return false, newConvertConfigError(location, fmt.Sprintf("invalid value for %s: `%s`. allowed values: true, false", configV1.SkipConfigDeploymentParameter, value))

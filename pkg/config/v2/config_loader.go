@@ -92,9 +92,9 @@ type DefinitionParserError struct {
 func newDefinitionParserError(configId string, context *ConfigLoaderContext, reason string) DefinitionParserError {
 	return DefinitionParserError{
 		Location: coordinate.Coordinate{
-			Project: context.ProjectId,
-			Type:    context.ApiId,
-			Config:  configId,
+			Project:  context.ProjectId,
+			Type:     context.ApiId,
+			ConfigId: configId,
 		},
 		Path:   context.Path,
 		Reason: reason,
@@ -407,9 +407,9 @@ func getConfigFromDefinition(fs afero.Fs, context *ConfigLoaderContext,
 	return Config{
 		Template: template,
 		Coordinate: coordinate.Coordinate{
-			Project: context.ProjectId,
-			Type:    context.ApiId,
-			Config:  configId,
+			Project:  context.ProjectId,
+			Type:     context.ApiId,
+			ConfigId: configId,
 		},
 		Type: Type{
 			Schema:        "", //TODO fill in CA-2000
@@ -514,9 +514,9 @@ func parseParameter(context *ConfigLoaderContext, environment manifest.Environme
 
 		return serDe.Deserializer(parameter.ParameterParserContext{
 			Coordinate: coordinate.Coordinate{
-				Project: context.ProjectId,
-				Type:    context.ApiId,
-				Config:  configId,
+				Project:  context.ProjectId,
+				Type:     context.ApiId,
+				ConfigId: configId,
 			},
 			ParameterName: name,
 			Value:         maps.ToStringMap(val),

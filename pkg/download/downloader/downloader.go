@@ -245,9 +245,9 @@ func createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api
 	params["name"] = &valueParam.ValueParameter{Value: templ.Name()}
 
 	coord := coordinate.Coordinate{
-		Project: projectId,
-		Config:  templ.Id(),
-		Type:    theApi.GetId(),
+		Project:  projectId,
+		ConfigId: templ.Id(),
+		Type:     theApi.GetId(),
 	}
 
 	return config.Config{

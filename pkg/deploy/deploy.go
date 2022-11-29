@@ -143,7 +143,7 @@ func DeployConfigs(client rest.DynatraceClient, apis map[string]api.Api,
 
 		if config.Skip {
 			entities[coord] = parameter.ResolvedEntity{
-				EntityName: coord.Config,
+				EntityName: coord.ConfigId,
 				Coordinate: coord,
 				Properties: parameter.Properties{},
 				Skip:       true,
@@ -258,7 +258,7 @@ func deployConfig(
 
 	var entity api.DynatraceEntity
 	if theApi.IsNonUniqueNameApi() {
-		configId := conf.Coordinate.Config
+		configId := conf.Coordinate.ConfigId
 		projectId := conf.Coordinate.Project
 
 		entityUuid := configId

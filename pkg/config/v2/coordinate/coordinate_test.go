@@ -23,15 +23,15 @@ import (
 
 func TestMatch(t *testing.T) {
 	coordinate := Coordinate{
-		Project: "project1",
-		Type:    "dashboard",
-		Config:  "dashboard1",
+		Project:  "project1",
+		Type:     "dashboard",
+		ConfigId: "dashboard1",
 	}
 
 	result := coordinate.Match(Coordinate{
-		Project: "project1",
-		Type:    "dashboard",
-		Config:  "dashboard1",
+		Project:  "project1",
+		Type:     "dashboard",
+		ConfigId: "dashboard1",
 	})
 
 	assert.Assert(t, result, "should match")
@@ -39,15 +39,15 @@ func TestMatch(t *testing.T) {
 
 func TestMatchShouldReturnFalseOnNonMatching(t *testing.T) {
 	coordinate := Coordinate{
-		Project: "project1",
-		Type:    "dashboard",
-		Config:  "dashboard1",
+		Project:  "project1",
+		Type:     "dashboard",
+		ConfigId: "dashboard1",
 	}
 
 	result := coordinate.Match(Coordinate{
-		Project: "project1",
-		Type:    "auto-tag",
-		Config:  "tags",
+		Project:  "project1",
+		Type:     "auto-tag",
+		ConfigId: "tags",
 	})
 
 	assert.Assert(t, !result, "shouldn't match")
@@ -55,15 +55,15 @@ func TestMatchShouldReturnFalseOnNonMatching(t *testing.T) {
 
 func TestMatchShouldReturnFalseOnNonMatchingSameApi(t *testing.T) {
 	coordinate := Coordinate{
-		Project: "project1",
-		Type:    "dashboard",
-		Config:  "dashboard1",
+		Project:  "project1",
+		Type:     "dashboard",
+		ConfigId: "dashboard1",
 	}
 
 	result := coordinate.Match(Coordinate{
-		Project: "project1",
-		Type:    "dashboard",
-		Config:  "dashboard2",
+		Project:  "project1",
+		Type:     "dashboard",
+		ConfigId: "dashboard2",
 	})
 
 	assert.Assert(t, !result, "shouldn't match")

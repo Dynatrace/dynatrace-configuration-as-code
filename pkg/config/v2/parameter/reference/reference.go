@@ -38,9 +38,9 @@ type ReferenceParameter struct {
 
 func New(project string, configType string, config string, property string) *ReferenceParameter {
 	coord := coordinate.Coordinate{
-		Project: project,
-		Type:    configType,
-		Config:  config,
+		Project:  project,
+		Type:     configType,
+		ConfigId: config,
 	}
 
 	return &ReferenceParameter{
@@ -120,7 +120,7 @@ func writeReferenceParameter(context parameter.ParameterWriterContext) (map[stri
 	result := make(map[string]interface{})
 	sameProject := context.Coordinate.Project == refParam.Config.Project
 	sameType := context.Coordinate.Type == refParam.Config.Type
-	sameConfig := context.Coordinate.Config == refParam.Config.Config
+	sameConfig := context.Coordinate.ConfigId == refParam.Config.ConfigId
 
 	if !sameProject {
 		result[projectField] = refParam.Config.Project
@@ -131,7 +131,7 @@ func writeReferenceParameter(context parameter.ParameterWriterContext) (map[stri
 	}
 
 	if !sameProject || !sameType || !sameConfig {
-		result[idField] = refParam.Config.Config
+		result[idField] = refParam.Config.ConfigId
 	}
 
 	result[propertyField] = refParam.Property
@@ -146,7 +146,7 @@ func writeReferenceParameter(context parameter.ParameterWriterContext) (map[stri
 func parseReferenceParameter(context parameter.ParameterParserContext) (parameter.Parameter, error) {
 	project := context.Coordinate.Project
 	configType := context.Coordinate.Type
-	config := context.Coordinate.Config
+	config := context.Coordinate.ConfigId
 	var property string
 	projectSet := false
 	typeSet := false

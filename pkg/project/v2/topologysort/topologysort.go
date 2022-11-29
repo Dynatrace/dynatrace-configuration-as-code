@@ -244,7 +244,7 @@ func getConfigs(m map[string][]config.Config) []config.Config {
 	}
 
 	s.SliceStable(result, func(i, j int) bool {
-		return strings.Compare(result[i].Coordinate.Config, result[j].Coordinate.Config) < 0
+		return strings.Compare(result[i].Coordinate.ConfigId, result[j].Coordinate.ConfigId) < 0
 	})
 
 	return result

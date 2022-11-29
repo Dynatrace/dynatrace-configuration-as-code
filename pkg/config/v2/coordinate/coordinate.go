@@ -18,23 +18,23 @@ import "fmt"
 
 // Coordinate struct used to specify the location of a certain configuration
 type Coordinate struct {
-	// Project specifies the id of an project
+	// Project specifies the id of a project
 	Project string
 
 	// Type specifies the id of an api, or a schema id
 	Type string
 
-	// Config specifies the id of an configuration
-	Config string
+	// ConfigId specifies the id of a monaco configuration definition
+	ConfigId string
 }
 
 func (c Coordinate) String() string {
-	return fmt.Sprintf("%s:%s:%s", c.Project, c.Type, c.Config)
+	return fmt.Sprintf("%s:%s:%s", c.Project, c.Type, c.ConfigId)
 }
 
 // Match tests if this coordinate is the same as the given one
 func (c Coordinate) Match(coordinate Coordinate) bool {
 	return c.Project == coordinate.Project &&
 		c.Type == coordinate.Type &&
-		c.Config == coordinate.Config
+		c.ConfigId == coordinate.ConfigId
 }

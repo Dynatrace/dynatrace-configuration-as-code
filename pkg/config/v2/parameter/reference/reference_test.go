@@ -49,7 +49,7 @@ func TestParseReferenceParameter(t *testing.T) {
 
 	assert.Equal(t, project, refParam.Config.Project)
 	assert.Equal(t, configType, refParam.Config.Type)
-	assert.Equal(t, config, refParam.Config.Config)
+	assert.Equal(t, config, refParam.Config.ConfigId)
 	assert.Equal(t, property, refParam.Property)
 }
 
@@ -60,7 +60,7 @@ func TestParseReferenceParameterShouldFillValuesFromCurrentConfigIfMissing(t *te
 	property := "title"
 
 	param, err := parseReferenceParameter(parameter.ParameterParserContext{
-		Coordinate: coordinate.Coordinate{Project: project, Type: configType, Config: config},
+		Coordinate: coordinate.Coordinate{Project: project, Type: configType, ConfigId: config},
 		Value: map[string]interface{}{
 			"property": property,
 		},
@@ -73,7 +73,7 @@ func TestParseReferenceParameterShouldFillValuesFromCurrentConfigIfMissing(t *te
 	assert.Assert(t, ok, "parsed parameter should be reference parameter")
 	assert.Equal(t, project, refParam.Config.Project)
 	assert.Equal(t, configType, refParam.Config.Type)
-	assert.Equal(t, config, refParam.Config.Config)
+	assert.Equal(t, config, refParam.Config.ConfigId)
 	assert.Equal(t, property, refParam.Property)
 }
 
@@ -169,7 +169,7 @@ func TestGetReferences(t *testing.T) {
 
 	assert.Equal(t, project, ref.Config.Project)
 	assert.Equal(t, configType, ref.Config.Type)
-	assert.Equal(t, config, ref.Config.Config)
+	assert.Equal(t, config, ref.Config.ConfigId)
 	assert.Equal(t, property, ref.Property)
 }
 
@@ -179,15 +179,15 @@ func TestResolveValue(t *testing.T) {
 	config := "alerting"
 	property := "title"
 	propertyValue := "THIS IS THE TITLE"
-	referenceCoordinate := coordinate.Coordinate{Project: project, Type: configType, Config: config}
+	referenceCoordinate := coordinate.Coordinate{Project: project, Type: configType, ConfigId: config}
 
 	fixture := New(project, configType, config, property)
 
 	result, err := fixture.ResolveValue(parameter.ResolveContext{
 		ConfigCoordinate: coordinate.Coordinate{
-			Project: "projectA",
-			Type:    "dashboard",
-			Config:  "super-important",
+			Project:  "projectA",
+			Type:     "dashboard",
+			ConfigId: "super-important",
 		},
 		ResolvedEntities: map[coordinate.Coordinate]parameter.ResolvedEntity{
 			referenceCoordinate: {
@@ -209,7 +209,7 @@ func TestResolveValueOnPropertyInSameConfig(t *testing.T) {
 	config := "alerting"
 	property := "title"
 	propertyValue := "THIS IS THE TITLE"
-	referenceCoordinate := coordinate.Coordinate{Project: project, Type: configType, Config: config}
+	referenceCoordinate := coordinate.Coordinate{Project: project, Type: configType, ConfigId: config}
 
 	fixture := New(project, configType, config, property)
 
@@ -242,7 +242,7 @@ func TestResolveValueOwnPropertyNotYetResolved(t *testing.T) {
 	configType := "alerting-profile"
 	config := "alerting"
 	property := "title"
-	referenceCoordinate := coordinate.Coordinate{Project: project, Type: configType, Config: config}
+	referenceCoordinate := coordinate.Coordinate{Project: project, Type: configType, ConfigId: config}
 
 	fixture := New(project, configType, config, property)
 
@@ -261,9 +261,9 @@ func TestWriteReferenceParameter(t *testing.T) {
 	refParam := New(refProject, refType, refConfig, refProperty)
 
 	coord := coordinate.Coordinate{
-		Project: "projectA",
-		Type:    "dashboard",
-		Config:  "hansi",
+		Project:  "projectA",
+		Type:     "dashboard",
+		ConfigId: "hansi",
 	}
 
 	context := parameter.ParameterWriterContext{Parameter: refParam, Coordinate: coord}
@@ -299,9 +299,9 @@ func TestWriteReferenceParameterOnMatchingProject(t *testing.T) {
 	refParam := New(refProject, refApi, refConfig, refProperty)
 
 	coord := coordinate.Coordinate{
-		Project: refProject,
-		Type:    "dashboard",
-		Config:  "hansi",
+		Project:  refProject,
+		Type:     "dashboard",
+		ConfigId: "hansi",
 	}
 
 	context := parameter.ParameterWriterContext{Parameter: refParam, Coordinate: coord}
@@ -333,9 +333,9 @@ func TestWriteReferenceParameterOnMatchingApi(t *testing.T) {
 	refParam := New(refProject, refApi, refConfig, refProperty)
 
 	coord := coordinate.Coordinate{
-		Project: refProject,
-		Type:    refApi,
-		Config:  "hansi",
+		Project:  refProject,
+		Type:     refApi,
+		ConfigId: "hansi",
 	}
 
 	context := parameter.ParameterWriterContext{Parameter: refParam, Coordinate: coord}
@@ -363,9 +363,9 @@ func TestWriteReferenceParameterOnMatchingConfig(t *testing.T) {
 	refParam := New(refProject, refApi, refConfig, refProperty)
 
 	coord := coordinate.Coordinate{
-		Project: refProject,
-		Type:    refApi,
-		Config:  refConfig,
+		Project:  refProject,
+		Type:     refApi,
+		ConfigId: refConfig,
 	}
 
 	context := parameter.ParameterWriterContext{Parameter: refParam, Coordinate: coord}

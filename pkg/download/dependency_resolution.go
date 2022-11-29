@@ -90,7 +90,7 @@ func findAndReplaceIds(apiName string, configToBeUpdated config.Config, configs 
 		if shouldReplaceReference(configToBeUpdated, conf, content, key) {
 			log.Debug("\treference: '%v/%v' referencing '%v' in coordinate '%v' ", apiName, configToBeUpdated.Template.Id(), key, conf.Coordinate)
 
-			parameterName := createParameterName(conf.Coordinate.Type, conf.Coordinate.Config)
+			parameterName := createParameterName(conf.Coordinate.Type, conf.Coordinate.ConfigId)
 			coord := conf.Coordinate
 
 			content = strings.ReplaceAll(content, key, "{{."+parameterName+"}}")

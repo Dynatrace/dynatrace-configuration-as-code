@@ -271,7 +271,7 @@ func groupConfigErrors(errors []configError.ConfigError) ProjectErrors {
 			typeErrors[coord.Type] = configErrors
 		}
 
-		configErrors[coord.Config] = append(configErrors[coord.Config], err)
+		configErrors[coord.ConfigId] = append(configErrors[coord.ConfigId], err)
 	}
 
 	return projectErrors

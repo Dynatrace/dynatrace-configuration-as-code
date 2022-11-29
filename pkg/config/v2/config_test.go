@@ -25,16 +25,16 @@ import (
 
 func TestHasDependencyOn(t *testing.T) {
 	referencedConfig := coordinate.Coordinate{
-		Project: "project1",
-		Type:    "auto-tag",
-		Config:  "tag",
+		Project:  "project1",
+		Type:     "auto-tag",
+		ConfigId: "tag",
 	}
 
 	conf := Config{
 		Coordinate: coordinate.Coordinate{
-			Project: "project1",
-			Type:    "dashboard",
-			Config:  "dashboard1",
+			Project:  "project1",
+			Type:     "dashboard",
+			ConfigId: "dashboard1",
 		},
 		Environment: "dev",
 		References: []coordinate.Coordinate{
@@ -55,18 +55,18 @@ func TestHasDependencyOn(t *testing.T) {
 func TestHasDependencyOnShouldReturnFalseIfNoDependenciesAreDefined(t *testing.T) {
 	conf := Config{
 		Coordinate: coordinate.Coordinate{
-			Project: "project1",
-			Type:    "dashboard",
-			Config:  "dashboard1",
+			Project:  "project1",
+			Type:     "dashboard",
+			ConfigId: "dashboard1",
 		},
 		Environment: "dev",
 	}
 
 	conf2 := Config{
 		Coordinate: coordinate.Coordinate{
-			Project: "project1",
-			Type:    "auto-tag",
-			Config:  "tag",
+			Project:  "project1",
+			Type:     "auto-tag",
+			ConfigId: "tag",
 		},
 		Environment: "dev",
 	}
@@ -79,17 +79,17 @@ func TestHasDependencyOnShouldReturnFalseIfNoDependenciesAreDefined(t *testing.T
 func TestMatchReference(t *testing.T) {
 	conf := Config{
 		Coordinate: coordinate.Coordinate{
-			Project: "project1",
-			Type:    "dashboard",
-			Config:  "dashboard1",
+			Project:  "project1",
+			Type:     "dashboard",
+			ConfigId: "dashboard1",
 		},
 		Environment: "dev",
 	}
 
 	result := conf.MatchReference(coordinate.Coordinate{
-		Project: "project1",
-		Type:    "dashboard",
-		Config:  "dashboard1",
+		Project:  "project1",
+		Type:     "dashboard",
+		ConfigId: "dashboard1",
 	})
 
 	assert.Assert(t, result, "should match reference")
@@ -98,17 +98,17 @@ func TestMatchReference(t *testing.T) {
 func TestMatchReferenceShouldReturnFalseIfNotMatching(t *testing.T) {
 	conf := Config{
 		Coordinate: coordinate.Coordinate{
-			Project: "project1",
-			Type:    "dashboard",
-			Config:  "dashboard1",
+			Project:  "project1",
+			Type:     "dashboard",
+			ConfigId: "dashboard1",
 		},
 		Environment: "dev",
 	}
 
 	result := conf.MatchReference(coordinate.Coordinate{
-		Project: "project2",
-		Type:    "auto-tag",
-		Config:  "tag",
+		Project:  "project2",
+		Type:     "auto-tag",
+		ConfigId: "tag",
 	})
 
 	assert.Assert(t, !result, "should not match reference")

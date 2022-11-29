@@ -119,7 +119,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 
 			if theConfig.Skip {
 				entities[coord] = parameter.ResolvedEntity{
-					EntityName: coord.Config,
+					EntityName: coord.ConfigId,
 					Coordinate: coord,
 					Properties: parameter.Properties{},
 					Skip:       true,
