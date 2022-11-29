@@ -412,6 +412,9 @@ func addQueryParamsForNonStandardApis(theApi api.Api, url string) string {
 	if theApi.GetId() == "anomaly-detection-metrics" {
 		url = url + "?includeEntityFilterMetricEvents=true"
 	}
+	if theApi.GetId() == "slo" {
+		url = url + "?enabledSlos=all"
+	}
 	return url
 }
 

@@ -1,8 +1,9 @@
 # Monitoring as Code Tool - Release Notes
 
 - Versions:
-    - [1.8.7](#187) 
-    - [1.8.6](#186) 
+    - [1.8.8](#188)
+    - [1.8.7](#187)
+    - [1.8.6](#186)
     - [1.8.5](#185)
     - [1.8.4](#184)
     - [1.8.3](#183)
@@ -23,118 +24,146 @@
     - [1.0.1](#101)
     - [1.0.0](#100)
 
+## 1.8.8
+
+Release 1.8.8 fixes one issue regarding updating of SLOs:
+
+* When getting the list of SLOs the API only responds with "enabled" SLOs.
+  To get all SLOs (including disabled) the query parameter enabledSlos=all needs to be set.
 
 ## 1.8.7
 
 Release 1.8.7 fixes three issues in monaco:
+
 * Download APIs where the id contains characters that need escaping no longer error
 * Predefined anomaly-detection-metrics are now ignored during download
 * HTTP errors and responses are logged when retrying
 
-Additionally, the documentation has been updated to include 
+Additionally, the documentation has been updated to include
+
 1) what and why configs are skipped during download, and
 2) how to migrate app-detection-rules.
 
 ### List of changes
+
 #### Bug fixes
+
 * 2c6b39cb fix(download): Don't double-escape ids
 * a4f51f6d fix(download): Skip plugin-definitions of ad-metrics
 * 8437d714 fix(rest): Log http error and response in case of retry failures
 
 #### Documentation
+
 * b4d55cc6 docs(download): Add documentation of the configurations skipped during download
 * dd15f330 docs: Document App Detection Rule ordering workaround
 * 865f4232 docs: Add migration guide for app-detection-rules renamed by settings migration
 
 #### Misc changes
+
 * e6f9c5b9 chore(deps): bump golangci/golangci-lint-action from 3.3.0 to 3.3.1
 * ee85da7c chore(deps): bump loader-utils from 2.0.2 to 2.0.3 in /documentation
 * cf45d54f chore(deps): bump github.com/urfave/cli/v2 from 2.23.4 to 2.23.5
 * 31eaf019 chore(deps): bump github.com/urfave/cli/v2 from 2.23.0 to 2.23.4
 
-
 ## 1.8.6
 
-Release 1.8.6 fixes an issue of monaco not ignoring hidden sub-folders - like it's own .logs/ - in some cases. 
+Release 1.8.6 fixes an issue of monaco not ignoring hidden sub-folders - like it's own .logs/ - in some cases.
 
-Up to now, hidden directories were ignored only if they were in the 'top' level of a loaded project. 
+Up to now, hidden directories were ignored only if they were in the 'top' level of a loaded project.
 If a hidden directory was inside a sub-folder below that, it was not.
 
 With this fix:
+
 1) hidden directories can no longer be projects
 2) having hidden directories inside project folders works now
 
 ### List of changes
+
 #### Bug fixes
+
 * fix: Project loading should ignore hidden directories
 
 #### Misc changes
+
 * chore(deps): bump github.com/urfave/cli/v2 from 2.20.2 to 2.23.0
 * chore(deps): bump github.com/urfave/cli/v2 from 2.17.1 to 2.20.2
 * chore(deps): bump github.com/urfave/cli/v2 from 2.16.3 to 2.17.1
 * chore(deps): bump golangci/golangci-lint-action from 3.2.0 to 3.3.0
 * chore(deps): bump actions/checkout from 3.0.2 to 3.1.0
 
-
 ## 1.8.5
 
 Release 1.8.4 introduced a 'fix' to always escape the content of variables (from a YAML) before placing it
-into a JSON template. 
+into a JSON template.
 
-This can cause issues for certain usecases in which the content filled into a template is needed to create 
+This can cause issues for certain usecases in which the content filled into a template is needed to create
 a valid JSON and must not be escaped - e.g. if the template introduces double-quotes needed in the JSON payload.
 
 1.8.5 reverts the eager escaping for JSON and instead escapes only known characters at specific points -
 double-quotes when downloading and newline characters when templating for deployment.
 
 ### List of changes
+
 #### Bug fixes
+
 52fff6a1 fix(download): Escape quotes in download name properties (#741)
 6c6eda7e fix: Revert escaping all JSON characters for templating (#741)
 
 ## 1.8.4
+
 ### List of changes
+
 #### Bug fixes
+
 * 9ef99e8b fix: Include already read response body in optional response log (#744)
 * 5cf194cf fix: Include last API error when failing retries (#744)
 * f8d307ce fix: Escape all characters for JSON templating (#741)
 * ec92caa5 fix: More leniently handle Dynatrace errors that are ususally caused by newly created applications not being found yet
-* e11c45bd fix(deploy): URL Path escape identifiers when reading Dynatrace entities by ID  
+* e11c45bd fix(deploy): URL Path escape identifiers when reading Dynatrace entities by ID
 
 #### Documentation
+
 * dc9818d7 docs: Fix MAC installation links
 * d1b66ba7 fix(docs): Configure all links as relative or absolute from content root (#738)
 * 4b1c5049 docs: Better describe special types of configuration (#718)
 * 647bb7ee fix(docs): Fix link to config types in add-new-api guide (#736)
 
 #### Misc changes
+
 * 084ad54e refactor: Replace deprecated ioutil.ReadAll
 * 2946ec1a test: Extend special character config E2E test (#121, #741)
 * 083c46ac fix(test): Add missing build tag on logging_test
 * bump github.com/urfave/cli/v2 dependency from 2.11.2 to 2.16.3
-  * cdf298c0 chore(deps): bump github.com/urfave/cli/v2 from 2.16.2 to 2.16.3
-  * 4ed67ac3 chore(deps): bump github.com/urfave/cli/v2 from 2.14.1 to 2.16.2
-  * 22da0533 chore(deps): bump github.com/urfave/cli/v2 from 2.11.2 to 2.14.1
+    * cdf298c0 chore(deps): bump github.com/urfave/cli/v2 from 2.16.2 to 2.16.3
+    * 4ed67ac3 chore(deps): bump github.com/urfave/cli/v2 from 2.14.1 to 2.16.2
+    * 22da0533 chore(deps): bump github.com/urfave/cli/v2 from 2.11.2 to 2.14.1
 * 7a3a6e8e chore(deps): bump github.com/google/go-cmp from 0.5.8 to 0.5.9
 
 ## 1.8.3
+
 ### List of changes
+
 #### Bug fixes
 
 * 6e0016 fix: Do not abort download after the first download error.
 
 ## 1.8.2
+
 ### List of changes
+
 #### Features
+
 * 086ebb5 Retry SLO creation on additional know error
 
 #### Bug fixes
+
 * 1d94584 Workaround synthetic API failing if Application ID can not (yet) be found
 * e090000 filter the mime types correctly for logging (#709)
 * 7b3ad72 (download) Deleting configs with slashes in the name does no longer error. (#706)
 * c707483 (download) Downloading single config Apis now report encountered errors
 
 #### Documentation
+
 * 04807b4 Update download link to latest monaco release
 * 373b8d8 Rename 1.8.0 sidebar to 1.8.1 as .0 docs where completely replaced
 * ad702cc Upgrade to docusaurus 2.0.1 release
@@ -144,6 +173,7 @@ double-quotes when downloading and newline characters when templating for deploy
 ### List of changes
 
 #### Misc changes
+
 * d920125 ci: Build static monaco binary
 * 414cc2d ci: Run build-release for each build
 * 7b13c4e ci: Remove no longer needed xgo github action step
@@ -153,6 +183,7 @@ double-quotes when downloading and newline characters when templating for deploy
 ### List of changes
 
 #### Features
+
 * 62e3862 feat(yaml_creator): order YAML-files Lexographically
 * 1acb1e7 feat: Allow newline characters in variables
 * 8808ab6 feat: Improve error handling and logging of Delete operation
@@ -168,21 +199,22 @@ double-quotes when downloading and newline characters when templating for deploy
 * 55bf694 feat(workflow): Add CODEOWNERS default reviewers
 * 241a4c0 feat(parse): produce more detailed error messages for YAML conversion issues
 
-
 #### Bugfixes
+
 * 2075820 fix(download): added filter for extensions
 * ff6e33a fix: Log JsonValidationErrors that do not have line information
 * ca745fc fix(download): Remove non standard identifier `entityId` during download
 * ddbc836 fix(download): Remove standard identifiers from configs during download
 * 109fce8 fix: added unit test
 * a840d83 fix: download-creates-folders-for-empty-configurations
-* 3ad8aad fix: incorptorated pullrequest #445* 
+* 3ad8aad fix: incorptorated pullrequest #445*
 * 2029bc8 fix: download help descriptions fixed
 * 4ea4135 fix: changed flag `downloadSpecificAPI` to `specific-api`
 * 33547b3 fix: Check for "Unknown management zone" (#651)
 * 7997ac4 fix: do not ignore vars that have "=" in the value
 
 #### Misc changes
+
 * 0d900d4 refactor: Remove unused symbols (#681)
 * 05eb9b1 test: skip dependency transformation (#612)
 * b73404d test: fix filter type
@@ -190,8 +222,8 @@ double-quotes when downloading and newline characters when templating for deploy
 * db45ac8 build: restrict go version to >= 1.16 and < 1.17
 * 7256eca test(parse): add tests for failing YAML conversion
 
+#### Documentation
 
-#### Documentation 
 * 36c1e22 docs: Minor fixes & rewordings to the documentation (#682)
 * bd8877b docs: Correct filepath in validation-configuration.md sample
 * ef36def docs: Fix case
@@ -217,8 +249,8 @@ double-quotes when downloading and newline characters when templating for deploy
 * 8ade72d docs: edits to bill of materials.md (#552)
 * 24fcbb2 Documentation fixes for 1.7 (#540)
 
-
 #### Library updates
+
 * ed51ede chore(deps): bump github.com/urfave/cli/v2 from 2.11.0 to 2.11.1
 * e56d5b7 chore(deps): bump terser from 4.8.0 to 4.8.1 in /documentation
 * 46955f6 chore(deps): bump github.com/spf13/afero from 1.9.0 to 1.9.2 (#688)
@@ -247,12 +279,12 @@ double-quotes when downloading and newline characters when templating for deploy
 * 898e2a6 chore(deps): bump url-parse from 1.5.4 to 1.5.10 in /documentation
 * b8fadb0 chore(deps): bump actions/setup-node from 2.5.0 to 2.5.1
 
-
 ## 1.7.0
 
 ### List of changes
 
 #### Features
+
 * f42141a feat: print warning if two or mode configurations having same name are detected in Dynatrace (#357)
 * 51d83f3 feat: Check Version before Extension upload (#386)
 * debc4cb feat(workflow): Add workflow for generating bill-of-materials (#471)
@@ -263,6 +295,7 @@ double-quotes when downloading and newline characters when templating for deploy
 * 27381b9 feat(rest): Add util to check Dynatrace version (#538)
 
 #### Bugfixes
+
 * 525f69e fix: update vulnerable security packages (#381)
 * 21feb04 fix: Check status code in extension validation to allow uploading new extensions again (#392)
 * d3287f7 fix: upgrade packages with security alerts (#420)
@@ -273,13 +306,15 @@ double-quotes when downloading and newline characters when templating for deploy
 * d7cddde fix(rest): Strip create only property from application-mobile on update (#538)
 
 #### Misc changes
+
 * a2f58cd fix: add prefix to dependabot commit messages to comply with (#361)
 * (several) refactor(rest): Structure REST code (#538)
 * 4e1bdaa refactor(rest): Build full URL in upsert method rather than caller (#538)
 * 02b088d ci: Activate verbose logging in intergation tests (#538)
 * 45e8a06 ci: Update Mobile Application ID in integration test config (#538)
 
-#### Documentation 
+#### Documentation
+
 * 1156003 docs: Adjust version in linux installation instructions (#362)
 * 5a7c00d docs: Removed duplicate lines in yaml_config.md
 * a3f8a35 docs: Adding a note about using --dry-run with the new CLI. (#355)
@@ -290,6 +325,7 @@ double-quotes when downloading and newline characters when templating for deploy
 * 26a6322 docs: update documentation for 1.7 release (#539)
 
 #### Library updates
+
 * da5c405 chore(deps): bump actions/setup-node from 2.1.5 to 2.2.0
 * ebdd4d1 chore(deps): Bump prismjs from 1.23.0 to 1.24.0 in /documentation
 * 6b3ecc3 chore(deps): bump github.com/google/uuid from 1.2.0 to 1.3.0
@@ -305,18 +341,22 @@ double-quotes when downloading and newline characters when templating for deploy
 ### List of changes
 
 #### Features
+
 * 04ec13c feat(api): add failuredetection api and fix broken contribution link (#283)
 * 67b163d feat: Remove unsupported macOS 32bit build target
 * ef01727 feat: Build monaco releases for macOS M1/arm
 
 #### Bugfixes
+
 * 1baf806 fix: Upsert objects with special chars no longer fail
 
-#### Documentation 
-* (several): Add Github Pages Documentation 
+#### Documentation
+
+* (several): Add Github Pages Documentation
 * 8fa751a doc: Fix install section in README
 
 #### Library updates
+
 * 15b650b Bump github.com/golang/mock from 1.5.0 to 1.6.0
 * 93eefbf Bump actions/setup-node from 1 to 2.1.5
 * d0440dd Bump github.com/google/go-cmp from 0.5.5 to 0.5.6
@@ -330,18 +370,20 @@ double-quotes when downloading and newline characters when templating for deploy
 ### List of changes
 
 #### Bugfixes
-* 7b0cfae Bugfix #307 multiple dependencies with relative path resolution not working
 
+* 7b0cfae Bugfix #307 multiple dependencies with relative path resolution not working
 
 ## 1.5.2
 
 ### List of changes
 
 #### Bugfixes
+
 * 422679b fix: Update mobile application config to fix integration tests (#289)
 * b3761ee fix: References on pre-existing SLOs do not work (#289)
 
 #### Misc changes
+
 * f5303a7 ci: Add static code analysis of PRs (#286)
 
 ## 1.5.1
@@ -349,6 +391,7 @@ double-quotes when downloading and newline characters when templating for deploy
 ### List of changes
 
 #### Bugfixes
+
 * bb125fb fix: Paging in monaco was not working (#276)
 * 7388bbd Fix absolute paths broken
 * 7bd5a7f Fix template loading for absolute template reference
@@ -358,6 +401,7 @@ double-quotes when downloading and newline characters when templating for deploy
 * 2440ee7 e2e test config restore environment (#266)
 
 #### Misc changes
+
 * 7e38119 Add licensecheck dependencies to go mod (#250)
 * 72721cf Handle possible error when creating a new go http request
 * cea13c5 Do not unmarshall json before sending it to api
@@ -366,10 +410,12 @@ double-quotes when downloading and newline characters when templating for deploy
 * ace1513 Improve check-license-headers.sh script
 
 #### Library updates
+
 * dd0ce7d Bump github.com/google/go-cmp from 0.5.4 to 0.5.5
 * aaf8c64 Bump github.com/spf13/afero from 1.5.1 to 1.6.0
 
 #### Documentation
+
 * a789838 Added documentation about custom extensions #113 (#251)
 * fc09d97 Added proxy documentation (#249)
 * e486bf5 Added dashboards documentation (#247)
@@ -377,18 +423,23 @@ double-quotes when downloading and newline characters when templating for deploy
 ## 1.5.0
 
 ### List of changes
+
 #### Features
+
 * 84c8ef9 Added option to allow deployment to proceed even if error occurred (#127)
 * c695dd4 Add response log (#228)
 
 #### Bugfixes
+
 * 7159440 Add missing license headers to files (#191)
 * 2462ba0 Fix dependency resolution not working if defined in overrides (#141)
 
 #### Library updates
+
 * e217ea8 Bump github.com/golang/mock from 1.4.4 to 1.5.0
 
 #### Misc changes
+
 * e178bc5 Fix path of PUT in how-to-add-a-new-api.md (#235)
 * 0faae65 Add missing go mod entries for addlincense
 * 080f2f1 Update README.md Updated supported configuration types table
@@ -398,6 +449,7 @@ double-quotes when downloading and newline characters when templating for deploy
 ## 1.4.0
 
 ### List of changes
+
 #### Features
 
 * f5a4f71 Add support for credentials vault API (#175)
@@ -406,6 +458,7 @@ double-quotes when downloading and newline characters when templating for deploy
 ## 1.3.1
 
 ### List of changes
+
 #### Bugfixes
 
 * 2e0e88a: Cope with faulty configs (name or id is null) (#169)
@@ -415,6 +468,7 @@ double-quotes when downloading and newline characters when templating for deploy
 ### List of changes
 
 #### Deprecation Warnings
+
 * Fix #146: `application-web` configuration type replaces `application` in the future (#149)
 * `application` config type is deprecated with 1.3.0 and will be removed with 2.0.0 (#149)
 
@@ -436,7 +490,7 @@ double-quotes when downloading and newline characters when templating for deploy
 #### Misc changes
 
 * 27a154c: Add possibility to log requests sent to Dynatrace (#151)
-  * To aid debugging it is now possible to have monaco log what exactly it sends to Dynatrace (fully filled out config JSONs)
+    * To aid debugging it is now possible to have monaco log what exactly it sends to Dynatrace (fully filled out config JSONs)
 * 3772697: Replace json unmarshall type with map - improves internal handling of responses from Dynatrace (#150)
 
 ## 1.2.0
@@ -445,7 +499,7 @@ double-quotes when downloading and newline characters when templating for deploy
 
 #### Features
 
-* 4c53146 and 8611bd5 #19: Download current environment configuration (#122) 
+* 4c53146 and 8611bd5 #19: Download current environment configuration (#122)
 * dfbad92 and f54c278 Fix #45: Introduce new experimental cli design (#100)
 
 #### Bugfixes
@@ -484,8 +538,8 @@ double-quotes when downloading and newline characters when templating for deploy
 
 #### Library updates
 
-* 1f0fa25 Bump gopkg.in/yaml.v2 from 2.2.5 to 2.4.0 
-* dff40d7 Bump github.com/google/go-cmp from 0.5.3 to 0.5.4 
+* 1f0fa25 Bump gopkg.in/yaml.v2 from 2.2.5 to 2.4.0
+* dff40d7 Bump github.com/google/go-cmp from 0.5.3 to 0.5.4
 
 #### Misc changes
 
@@ -498,8 +552,11 @@ double-quotes when downloading and newline characters when templating for deploy
 * 5e29711 Extend Documentation of Calculated Log Metrics (#56)
 
 ## 1.0.1
+
 * 75204ce Fix #43: Fix Logger Setup. Fixes verbose logging flag being ignored and file logs not being written. (#44)
 
 ## 1.0.0
+
 *Initial release*
+
 * Create, update and delete monitoring configuration on Dynatrace environments
