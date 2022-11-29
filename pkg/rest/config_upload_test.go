@@ -424,36 +424,151 @@ func Test_retryReturnContainsHttpErrorIfNotSuccess(t *testing.T) {
 	assert.ErrorContains(t, err, "{ err: 'failed to create thing'}")
 }
 
-func Test_AdditionalQueryParametersForNonStandardApisAreAdded(t *testing.T) {
+type testServerResponse struct {
+	statusCode int
+	body       string
+}
+
+type testQueryParams struct {
+	key   string
+	value string
+}
+
+func Test_GetObjectIdIfAlreadyExists_WorksCorrectlyForAddedQueryParameters(t *testing.T) {
+
 	tests := []struct {
-		name                    string
-		expectedQueryParam      string
-		expectedQueryParamValue string
-		apiKey                  string
+		name                          string
+		apiKey                        string
+		expectedQueryParamsPerApiCall [][]testQueryParams
+		expectedApiCalls              int
+		serverResponses               []testServerResponse
+		expectError                   bool
 	}{
 		{
-			expectedQueryParam:      "enabledSlos",
-			expectedQueryParamValue: "all",
-			apiKey:                  "slo",
+			name:                          "Sends no special query params for normal API",
+			expectedQueryParamsPerApiCall: [][]testQueryParams{},
+			expectedApiCalls:              1,
+			serverResponses: []testServerResponse{
+				{200, `{ "values": [ {"id": "1", "name": "name1"} ] }`},
+			},
+			apiKey:      "random-api", //not testing a real API, so this won't break if params are ever added to one
+			expectError: false,
 		},
 		{
-			expectedQueryParam:      "includeEntityFilterMetricEvents",
-			expectedQueryParamValue: "true",
-			apiKey:                  "anomaly-detection-metrics",
+			name:                          "Returns error if HTTP error is encountered",
+			expectedQueryParamsPerApiCall: [][]testQueryParams{},
+			expectedApiCalls:              1,
+			serverResponses: []testServerResponse{
+				{400, `epic fail`},
+			},
+			apiKey:      "random-api", //not testing a real API, so this won't break if params are ever added to one
+			expectError: true,
+		},
+		{
+			name: "Returns error if HTTP error is encountered getting further paginated responses",
+			expectedQueryParamsPerApiCall: [][]testQueryParams{
+				{},
+				{
+					{"nextPageKey", "page42"},
+				},
+			},
+			expectedApiCalls: 2,
+			serverResponses: []testServerResponse{
+				{200, `{ "nextPageKey": "page42", "values": [ {"id": "1", "name": "name1"} ] }`},
+				{400, `epic fail`},
+			},
+			apiKey:      "slo",
+			expectError: true,
+		},
+		{
+			name: "Sends correct param to get all SLOs",
+			expectedQueryParamsPerApiCall: [][]testQueryParams{
+				{
+					{"enabledSlos", "all"},
+				},
+			},
+			expectedApiCalls: 1,
+			serverResponses: []testServerResponse{
+				{200, `{ "values": [ {"id": "1", "name": "name1"} ] }`},
+			},
+			apiKey:      "slo",
+			expectError: false,
+		},
+		{
+			name: "Sends correct parameters for paginated SLO responses",
+			expectedQueryParamsPerApiCall: [][]testQueryParams{
+				{
+					{"enabledSlos", "all"},
+				},
+				{
+					{"nextPageKey", "page42"},
+				},
+				{
+					{"nextPageKey", "page43"},
+				},
+			},
+			expectedApiCalls: 3,
+			serverResponses: []testServerResponse{
+				{200, `{ "nextPageKey": "page42", "values": [ {"id": "1", "name": "name1"} ] }`},
+				{200, `{ "nextPageKey": "page43", "values": [ {"id": "2", "name": "name2"} ] }`},
+				{200, `{ "values": [ {"id": "3", "name": "name3"} ] }`},
+			},
+			apiKey:      "slo",
+			expectError: false,
+		},
+		{
+			name: "Sends correct param to get all anomaly detection metrics",
+			expectedQueryParamsPerApiCall: [][]testQueryParams{
+				{
+					{"includeEntityFilterMetricEvents", "true"},
+				},
+			},
+			expectedApiCalls: 1,
+			serverResponses: []testServerResponse{
+				{200, `{ "values": [ {"id": "1", "name": "name1"} ] }`},
+			},
+			apiKey:      "anomaly-detection-metrics",
+			expectError: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			apiCalls := 0
 			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-				addedQueryParameter := req.URL.Query()[tt.expectedQueryParam]
-				assert.Check(t, addedQueryParameter != nil)
-				assert.Check(t, len(addedQueryParameter) > 0)
-				assert.Equal(t, addedQueryParameter[0], tt.expectedQueryParamValue)
+				if len(tt.expectedQueryParamsPerApiCall) > 0 {
+					params := tt.expectedQueryParamsPerApiCall[apiCalls]
+					for _, param := range params {
+						addedQueryParameter := req.URL.Query()[param.key]
+						assert.Assert(t, addedQueryParameter != nil)
+						assert.Assert(t, len(addedQueryParameter) > 0)
+						assert.Equal(t, addedQueryParameter[0], param.value)
+					}
+				} else {
+					assert.Equal(t, "", req.URL.RawQuery, "expected no query params - but '%s' was sent", req.URL.RawQuery)
+				}
+
+				resp := tt.serverResponses[apiCalls]
+				if resp.statusCode != 200 {
+					http.Error(rw, resp.body, resp.statusCode)
+				} else {
+					_, _ = rw.Write([]byte(resp.body))
+				}
+
+				apiCalls++
+				assert.Check(t, apiCalls <= tt.expectedApiCalls, "expected at most %d API calls to happen, but encountered call %d", tt.expectedApiCalls, apiCalls)
 			}))
 			defer server.Close()
 			testApi := api.NewStandardApi(tt.apiKey, "", false, "")
-			_, _ = getObjectIdIfAlreadyExists(server.Client(), testApi, server.URL, "", "")
+			_, err := getObjectIdIfAlreadyExists(server.Client(), testApi, server.URL, "", "")
+
+			if tt.expectError {
+				assert.Assert(t, err != nil)
+			} else {
+				assert.NilError(t, err)
+			}
+
+			assert.Equal(t, apiCalls, tt.expectedApiCalls, "expected exactly %d API calls to happen but %d calls where made", tt.expectedApiCalls, apiCalls)
 		})
 
 	}
