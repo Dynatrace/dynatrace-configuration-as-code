@@ -24,6 +24,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"gotest.tools/assert"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
@@ -421,4 +422,39 @@ func Test_retryReturnContainsHttpErrorIfNotSuccess(t *testing.T) {
 	assert.Check(t, err != nil)
 	assert.ErrorContains(t, err, "400")
 	assert.ErrorContains(t, err, "{ err: 'failed to create thing'}")
+}
+
+func Test_AdditionalQueryParametersForNonStandardApisAreAdded(t *testing.T) {
+	tests := []struct {
+		name                    string
+		expectedQueryParam      string
+		expectedQueryParamValue string
+		apiKey                  string
+	}{
+		{
+			expectedQueryParam:      "enabledSlos",
+			expectedQueryParamValue: "all",
+			apiKey:                  "slo",
+		},
+		{
+			expectedQueryParam:      "includeEntityFilterMetricEvents",
+			expectedQueryParamValue: "true",
+			apiKey:                  "anomaly-detection-metrics",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				addedQueryParameter := req.URL.Query()[tt.expectedQueryParam]
+				assert.Check(t, addedQueryParameter != nil)
+				assert.Check(t, len(addedQueryParameter) > 0)
+				assert.Equal(t, addedQueryParameter[0], tt.expectedQueryParamValue)
+			}))
+			defer server.Close()
+			testApi := api.NewStandardApi(tt.apiKey, "", false, "")
+			_, _ = getObjectIdIfAlreadyExists(server.Client(), testApi, server.URL, "", "")
+		})
+
+	}
 }
