@@ -369,23 +369,27 @@ func isMobileApp(api api.Api) bool {
 	return api.GetId() == "application-mobile"
 }
 
-func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, url string, apiToken string) (values []api.Value, err error) {
+func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlString string, apiToken string) (values []api.Value, err error) {
 
-	url = addQueryParamsForNonStandardApis(theApi, url)
+	parsedUrl, err := url.Parse(urlString)
+	if err != nil {
+		return nil, err
+	}
 
-	var existingValues []api.Value
-	resp, err := get(client, url, apiToken)
+	parsedUrl = addQueryParamsForNonStandardApis(theApi, parsedUrl)
+
+	resp, err := get(client, parsedUrl.String(), apiToken)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if !success(resp) {
-		return nil, fmt.Errorf("Failed to get existing configs for api %s (HTTP %d)!\n    Response was: %s", theApi.GetId(), resp.StatusCode, string(resp.Body))
+		return nil, fmt.Errorf("Failed to get existing configs for API %s (HTTP %d)!\n    Response was: %s", theApi.GetId(), resp.StatusCode, string(resp.Body))
 	}
 
+	var existingValues []api.Value
 	for {
-
 		err, values, objmap := unmarshalJson(theApi, err, resp)
 		if err != nil {
 			return values, err
@@ -394,11 +398,18 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, url stri
 
 		// Does the API support paging?
 		if isPaginated, nextPage := isPaginatedResponse(objmap); isPaginated {
-			resp, err = get(client, url+"?nextPageKey="+nextPage, apiToken)
+			parsedUrl = addNextPageQueryParams(theApi, parsedUrl, nextPage)
+
+			resp, err = get(client, parsedUrl.String(), apiToken)
 
 			if err != nil {
 				return nil, err
 			}
+
+			if !success(resp) {
+				return nil, fmt.Errorf("Failed to get further configs from paginated API %s (HTTP %d)!\n    Response was: %s", theApi.GetId(), resp.StatusCode, string(resp.Body))
+			}
+
 		} else {
 			break
 		}
@@ -407,14 +418,30 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, url stri
 	return existingValues, nil
 }
 
-func addQueryParamsForNonStandardApis(theApi api.Api, url string) string {
+func addQueryParamsForNonStandardApis(theApi api.Api, url *url.URL) *url.URL {
+
+	queryParams := url.Query()
 
 	if theApi.GetId() == "anomaly-detection-metrics" {
-		url = url + "?includeEntityFilterMetricEvents=true"
+		queryParams.Add("includeEntityFilterMetricEvents", "true")
 	}
 	if theApi.GetId() == "slo" {
-		url = url + "?enabledSlos=all"
+		queryParams.Add("enabledSlos", "all")
 	}
+	url.RawQuery = queryParams.Encode()
+	return url
+}
+
+func addNextPageQueryParams(theApi api.Api, url *url.URL, nextPage string) *url.URL {
+	queryParams := url.Query()
+
+	if theApi.GetId() == "slo" {
+		//SLO API requires enabledSlos to not be set together with nextPageKey, that information is already encoded in the key
+		queryParams.Del("enabledSlos")
+	}
+
+	queryParams.Set("nextPageKey", nextPage)
+	url.RawQuery = queryParams.Encode()
 	return url
 }
 
