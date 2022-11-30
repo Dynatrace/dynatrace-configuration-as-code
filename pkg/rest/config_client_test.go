@@ -687,6 +687,15 @@ func Test_createDynatraceObject(t *testing.T) {
 			want:                api.DynatraceEntity{},
 			wantErr:             true,
 		},
+		{
+			name:                "Returns error if response can't be parsed",
+			objectName:          "Test object",
+			apiKey:              "auto-tag",
+			expectedQueryParams: []testQueryParams{},
+			serverResponse:      testServerResponse{statusCode: 200, body: `{ "not": "a value" }`},
+			want:                api.DynatraceEntity{},
+			wantErr:             true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

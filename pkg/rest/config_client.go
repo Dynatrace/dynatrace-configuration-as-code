@@ -153,6 +153,9 @@ func unmarshalResponse(resp Response, fullUrl string, configType string, objectN
 		if util.CheckError(err, "Cannot unmarshal API response") {
 			return api.DynatraceEntity{}, err
 		}
+		if dtEntity.Id == "" && dtEntity.Name == "" {
+			return api.DynatraceEntity{}, fmt.Errorf("cannot parse API response '%s' into Dynatrace Entity with Id and Name", resp.Body)
+		}
 	}
 	log.Debug("\tCreated new object for %s (%s)", dtEntity.Name, dtEntity.Id)
 
