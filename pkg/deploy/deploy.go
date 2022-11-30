@@ -349,7 +349,7 @@ func deploySetting(settings rest.KnownSettings, client rest.SettingsClient, enti
 		return parameter.ResolvedEntity{}, []error{err}
 	}
 
-	e, err := client.Upsert(rest.SettingsObject{
+	e, err := client.Upsert(settings, rest.SettingsObject{
 		Id:            c.Coordinate.ConfigId,
 		Schema:        c.Type.Schema,
 		SchemaVersion: c.Type.SchemaVersion,

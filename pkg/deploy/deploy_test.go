@@ -538,7 +538,7 @@ func TestDeploySettingShouldFailUpsert(t *testing.T) {
 	}
 
 	client := rest.NewMockSettingsClient(gomock.NewController(t))
-	client.EXPECT().Upsert(gomock.Any()).Return(api.DynatraceEntity{}, fmt.Errorf("upsert failed"))
+	client.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(api.DynatraceEntity{}, fmt.Errorf("upsert failed"))
 
 	entities := make(map[coordinate.Coordinate]parameter.ResolvedEntity)
 
@@ -821,7 +821,7 @@ func TestDeployConfigsTargetingSettings(t *testing.T) {
 			},
 		},
 	}
-	client.EXPECT().Upsert(gomock.Any()).Times(1)
+	client.EXPECT().Upsert(gomock.Any(), gomock.Any()).Times(1)
 	errors := DeployConfigs(client, apis, sortedConfigs, false, false)
 	assert.Assert(t, len(errors) == 0, "there should be no errors (errors: %s)", errors)
 }

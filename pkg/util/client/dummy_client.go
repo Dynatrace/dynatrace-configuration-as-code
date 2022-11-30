@@ -238,9 +238,13 @@ func (c *DummyClient) ExistsByName(a api.Api, name string) (exists bool, id stri
 	return false, "", nil
 }
 
-func (c *DummyClient) Upsert(obj rest.SettingsObject) (api.DynatraceEntity, error) {
+func (c *DummyClient) Upsert(k rest.KnownSettings, obj rest.SettingsObject) (api.DynatraceEntity, error) {
 	return api.DynatraceEntity{
 		Id:   obj.Id,
 		Name: obj.Id,
 	}, nil
+}
+
+func (c *DummyClient) ListKnownSettings(schemas []string) (rest.KnownSettings, error) {
+	return make(rest.KnownSettings), nil
 }

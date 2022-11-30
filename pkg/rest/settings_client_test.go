@@ -125,7 +125,7 @@ func TestUpsert(t *testing.T) {
 			c, err := newDynatraceClient(server.URL, "token", server.Client())
 			assert.NilError(t, err)
 
-			resp, err := c.Upsert(SettingsObject{
+			resp, err := c.Upsert(nil, SettingsObject{
 				Id:      "user-provided-id",
 				Schema:  "builtin:alerting.profile",
 				Scope:   "tenant",
