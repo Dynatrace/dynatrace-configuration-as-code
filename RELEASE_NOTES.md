@@ -1,6 +1,7 @@
 # Monitoring as Code Tool - Release Notes
 
 - Versions:
+    - [1.8.9](#189)
     - [1.8.8](#188)
     - [1.8.7](#187)
     - [1.8.6](#186)
@@ -23,6 +24,17 @@
     - [1.1.0](#110)
     - [1.0.1](#101)
     - [1.0.0](#100)
+
+## 1.8.9
+
+Release 1.8.9 fixes an issue introduced by the extended handling of SLOs in 1.8.8
+
+While 1.8.8 adds a query parameter to SLO API calls to ensure that disabled SLOs are fetched as well,
+this did interfere with query parameters sent for pagination (the SLO API returns pages of 10 objects), resulting
+in only the first 10 SLOs being fetched. 
+
+1.8.9 correctly handles both getting all SLOs from the API and dealing with pagination
+to fetch all existing SLOs for updates. 
 
 ## 1.8.8
 
