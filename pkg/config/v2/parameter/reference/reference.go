@@ -170,16 +170,16 @@ func parseReferenceParameter(context parameter.ParameterParserContext) (paramete
 	if val, ok := context.Value[propertyField]; ok {
 		property = util.ToString(val)
 	} else {
-		return nil, parameter.NewParameterParserError(context, "missing configuration `property`")
+		return nil, parameter.NewParameterParserError(context, fmt.Sprintf("missing configuration `%s`", projectField))
 	}
 
 	// ensure that we do not have "holes" in the reference definition
 	if projectSet && (!typeSet || !configSet) {
-		return nil, parameter.NewParameterParserError(context, "project is set, but either type or config isn't! please specify type and config")
+		return nil, parameter.NewParameterParserError(context, fmt.Sprintf("`%s` is set, but either `%s` or `%s` isn't! please specify `%s` and `%s`", projectField, typeField, idField, typeField, idField))
 	}
 
 	if typeSet && !configSet {
-		return nil, parameter.NewParameterParserError(context, "type is set, but config isn't! please specify config")
+		return nil, parameter.NewParameterParserError(context, fmt.Sprintf("`%s` is set, but `%s` isn't! please specify `%s`", typeField, idField, idField))
 	}
 
 	return New(project, configType, config, property), nil
