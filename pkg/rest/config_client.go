@@ -403,7 +403,7 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlStrin
 		if isPaginated, nextPage := isPaginatedResponse(objmap); isPaginated {
 			parsedUrl = addNextPageQueryParams(theApi, parsedUrl, nextPage)
 
-			resp, err = get(client, parsedUrl.String(), apiToken)
+			resp, err = getWithRetry(client, parsedUrl.String(), apiToken, 3, 5)
 
 			if err != nil {
 				return nil, err
@@ -419,6 +419,33 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlStrin
 	}
 
 	return existingValues, nil
+}
+
+// getWithRetry works similarly to retry does for PUT and POST
+// this method can be used for API calls we know to have occasional timing issues on GET - e.g. paginated queries that are impacted by replication lag, returning unequal amounts of objects/pages per node
+func getWithRetry(client *http.Client, url string, apiToken string, maxRetries int, timeout time.Duration) (Response, error) {
+	resp, err := get(client, url, apiToken)
+
+	if err == nil && success(resp) {
+		return resp, nil
+	}
+
+	for i := 0; i < maxRetries; i++ {
+		log.Warn("Retrying failed GET request %s after error (HTTP %d): %w", url, resp.StatusCode, err)
+		time.Sleep(timeout)
+		resp, err = get(client, url, apiToken)
+		if err == nil && success(resp) {
+			return resp, err
+		}
+	}
+
+	var retryErr error
+	if err != nil {
+		retryErr = fmt.Errorf("GET request %s failed after %d retries: %w", url, maxRetries, err)
+	} else {
+		retryErr = fmt.Errorf("GET request %s failed after %d retries: (HTTP %d)!\n    Response was: %s", url, maxRetries, resp.StatusCode, resp.Body)
+	}
+	return Response{}, retryErr
 }
 
 func addQueryParamsForNonStandardApis(theApi api.Api, url *url.URL) *url.URL {
