@@ -19,6 +19,8 @@
 package rest
 
 import (
+	"fmt"
+	"gotest.tools/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -79,4 +81,84 @@ func Test_deleteConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_sendWithsendWithRetryReturnsFirstSuccessfulResponse(t *testing.T) {
+	i := 0
+	mockCall := sendingRequest(func(client *http.Client, url string, data []byte, apiToken string) (Response, error) {
+		if i < 3 {
+			i++
+			return Response{}, fmt.Errorf("Something wrong")
+		}
+		return Response{
+			StatusCode: 200,
+			Body:       []byte("Success"),
+		}, nil
+	})
+
+	gotResp, err := sendWithRetry(nil, mockCall, "dont matter", "some/path", []byte("body"), "token", 5, 1)
+	assert.NilError(t, err)
+	assert.Equal(t, gotResp.StatusCode, 200)
+	assert.Equal(t, string(gotResp.Body), "Success")
+}
+
+func Test_sendWithRetryFailsAfterDefinedTries(t *testing.T) {
+	maxRetries := 2
+	i := 0
+	mockCall := sendingRequest(func(client *http.Client, url string, data []byte, apiToken string) (Response, error) {
+		if i < maxRetries+1 {
+			i++
+			return Response{}, fmt.Errorf("Something wrong")
+		}
+		return Response{
+			StatusCode: 200,
+			Body:       []byte("Success"),
+		}, nil
+	})
+
+	_, err := sendWithRetry(nil, mockCall, "dont matter", "some/path", []byte("body"), "token", maxRetries, 1)
+	assert.Check(t, err != nil)
+	assert.Equal(t, i, 2)
+}
+
+func Test_sendWithRetryReturnContainsOriginalApiError(t *testing.T) {
+	maxRetries := 2
+	i := 0
+	mockCall := sendingRequest(func(client *http.Client, url string, data []byte, apiToken string) (Response, error) {
+		if i < maxRetries+1 {
+			i++
+			return Response{}, fmt.Errorf("Something wrong")
+		}
+		return Response{
+			StatusCode: 200,
+			Body:       []byte("Success"),
+		}, nil
+	})
+
+	_, err := sendWithRetry(nil, mockCall, "dont matter", "some/path", []byte("body"), "token", maxRetries, 1)
+	assert.Check(t, err != nil)
+	assert.ErrorContains(t, err, "Something wrong")
+}
+
+func Test_sendWithRetryReturnContainsHttpErrorIfNotSuccess(t *testing.T) {
+	maxRetries := 2
+	i := 0
+	mockCall := sendingRequest(func(client *http.Client, url string, data []byte, apiToken string) (Response, error) {
+		if i < maxRetries+1 {
+			i++
+			return Response{
+				StatusCode: 400,
+				Body:       []byte("{ err: 'failed to create thing'}"),
+			}, nil
+		}
+		return Response{
+			StatusCode: 200,
+			Body:       []byte("Success"),
+		}, nil
+	})
+
+	_, err := sendWithRetry(nil, mockCall, "dont matter", "some/path", []byte("body"), "token", maxRetries, 1)
+	assert.Check(t, err != nil)
+	assert.ErrorContains(t, err, "400")
+	assert.ErrorContains(t, err, "{ err: 'failed to create thing'}")
 }

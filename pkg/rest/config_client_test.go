@@ -19,7 +19,6 @@
 package rest
 
 import (
-	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"gotest.tools/assert"
 	"net/http"
@@ -343,86 +342,6 @@ func Test_isApplicationNotReadyYet(t *testing.T) {
 	}
 }
 
-func Test_retryReturnsFirstSuccessfulResponse(t *testing.T) {
-	i := 0
-	mockCall := sendingRequest(func(client *http.Client, url string, data []byte, apiToken string) (Response, error) {
-		if i < 3 {
-			i++
-			return Response{}, fmt.Errorf("Something wrong")
-		}
-		return Response{
-			StatusCode: 200,
-			Body:       []byte("Success"),
-		}, nil
-	})
-
-	gotResp, err := retry(nil, mockCall, "dont matter", "some/path", []byte("body"), "token", 5, 1)
-	assert.NilError(t, err)
-	assert.Equal(t, gotResp.StatusCode, 200)
-	assert.Equal(t, string(gotResp.Body), "Success")
-}
-
-func Test_retryFailsAfterDefinedTries(t *testing.T) {
-	maxRetries := 2
-	i := 0
-	mockCall := sendingRequest(func(client *http.Client, url string, data []byte, apiToken string) (Response, error) {
-		if i < maxRetries+1 {
-			i++
-			return Response{}, fmt.Errorf("Something wrong")
-		}
-		return Response{
-			StatusCode: 200,
-			Body:       []byte("Success"),
-		}, nil
-	})
-
-	_, err := retry(nil, mockCall, "dont matter", "some/path", []byte("body"), "token", maxRetries, 1)
-	assert.Check(t, err != nil)
-	assert.Check(t, i == 2)
-}
-
-func Test_retryReturnContainsOriginalApiError(t *testing.T) {
-	maxRetries := 2
-	i := 0
-	mockCall := sendingRequest(func(client *http.Client, url string, data []byte, apiToken string) (Response, error) {
-		if i < maxRetries+1 {
-			i++
-			return Response{}, fmt.Errorf("Something wrong")
-		}
-		return Response{
-			StatusCode: 200,
-			Body:       []byte("Success"),
-		}, nil
-	})
-
-	_, err := retry(nil, mockCall, "dont matter", "some/path", []byte("body"), "token", maxRetries, 1)
-	assert.Check(t, err != nil)
-	assert.ErrorContains(t, err, "Something wrong")
-}
-
-func Test_retryReturnContainsHttpErrorIfNotSuccess(t *testing.T) {
-	maxRetries := 2
-	i := 0
-	mockCall := sendingRequest(func(client *http.Client, url string, data []byte, apiToken string) (Response, error) {
-		if i < maxRetries+1 {
-			i++
-			return Response{
-				StatusCode: 400,
-				Body:       []byte("{ err: 'failed to create thing'}"),
-			}, nil
-		}
-		return Response{
-			StatusCode: 200,
-			Body:       []byte("Success"),
-		}, nil
-	})
-
-	_, err := retry(nil, mockCall, "dont matter", "some/path", []byte("body"), "token", maxRetries, 1)
-	assert.Check(t, err != nil)
-	assert.ErrorContains(t, err, "400")
-	assert.ErrorContains(t, err, "{ err: 'failed to create thing'}")
-}
-
 func Test_getObjectIdIfAlreadyExists(t *testing.T) {
 
 	testApi := api.NewStandardApi("test", "/test/api", false, "", false)
@@ -542,14 +461,50 @@ func Test_GetObjectIdIfAlreadyExists_WorksCorrectlyForAddedQueryParameters(t *te
 				{
 					{"nextPageKey", "page42"},
 				},
+				{
+					{"nextPageKey", "page42"},
+				},
+				{
+					{"nextPageKey", "page42"},
+				},
+				{
+					{"nextPageKey", "page42"},
+				},
 			},
-			expectedApiCalls: 2,
+			expectedApiCalls: 5,
 			serverResponses: []testServerResponse{
 				{200, `{ "nextPageKey": "page42", "values": [ {"id": "1", "name": "name1"} ] }`},
-				{400, `epic fail`},
+				{400, `epic fail`}, // fail paginated request
+				{400, `epic fail`}, // still fail after retry
+				{400, `epic fail`}, // still fail after 2nd retry
+				{400, `epic fail`}, // still fail after 3rd retry
 			},
 			apiKey:      "slo",
 			expectError: true,
+		},
+		{
+			name: "Retries on HTTP error on paginated request and returns eventual success",
+			expectedQueryParamsPerApiCall: [][]testQueryParams{
+				{},
+				{
+					{"nextPageKey", "page42"},
+				},
+				{
+					{"nextPageKey", "page42"},
+				},
+				{
+					{"nextPageKey", "page42"},
+				},
+			},
+			expectedApiCalls: 4,
+			serverResponses: []testServerResponse{
+				{200, `{ "nextPageKey": "page42", "values": [ {"id": "1", "name": "name1"} ] }`},
+				{400, `epic fail`}, // fail paginated request
+				{400, `epic fail`}, // still fail after retry
+				{200, `{ "values": [ {"id": "1", "name": "name1"} ] }`},
+			},
+			apiKey:      "random-api", //not testing a real API, so this won't break if params are ever added to one
+			expectError: false,
 		},
 		{
 			name: "Sends correct param to get all SLOs",

@@ -22,6 +22,7 @@ import (
 	"io"
 	"net/http"
 	"runtime"
+	"time"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
@@ -35,9 +36,6 @@ type Response struct {
 	Headers    map[string][]string
 }
 
-// function type of put and post requests
-type sendingRequest func(client *http.Client, url string, data []byte, apiToken string) (Response, error)
-
 func get(client *http.Client, url string, apiToken string) (Response, error) {
 	req, err := request(http.MethodGet, url, apiToken)
 
@@ -46,6 +44,33 @@ func get(client *http.Client, url string, apiToken string) (Response, error) {
 	}
 
 	return executeRequest(client, req)
+}
+
+// getWithRetry works similarly to retry does for PUT and POST
+// this method can be used for API calls we know to have occasional timing issues on GET - e.g. paginated queries that are impacted by replication lag, returning unequal amounts of objects/pages per node
+func getWithRetry(client *http.Client, url string, apiToken string, maxRetries int, timeout time.Duration) (resp Response, err error) {
+	resp, err = get(client, url, apiToken)
+
+	if err == nil && success(resp) {
+		return resp, nil
+	}
+
+	for i := 0; i < maxRetries; i++ {
+		log.Warn("Retrying failed GET request %s after error (HTTP %d): %w", url, resp.StatusCode, err)
+		time.Sleep(timeout)
+		resp, err = get(client, url, apiToken)
+		if err == nil && success(resp) {
+			return resp, err
+		}
+	}
+
+	var retryErr error
+	if err != nil {
+		retryErr = fmt.Errorf("GET request %s failed after %d retries: %w", url, maxRetries, err)
+	} else {
+		retryErr = fmt.Errorf("GET request %s failed after %d retries: (HTTP %d)!\n    Response was: %s", url, maxRetries, resp.StatusCode, resp.Body)
+	}
+	return Response{}, retryErr
 }
 
 // the name delete() would collide with the built-in function
@@ -105,6 +130,29 @@ func put(client *http.Client, url string, data []byte, apiToken string) (Respons
 	}
 
 	return executeRequest(client, req)
+}
+
+// function type of put and post requests
+type sendingRequest func(client *http.Client, url string, data []byte, apiToken string) (Response, error)
+
+func sendWithRetry(client *http.Client, restCall sendingRequest, objectName string, path string, body []byte, apiToken string, maxRetries int, timeout time.Duration) (resp Response, err error) {
+
+	for i := 0; i < maxRetries; i++ {
+		log.Warn("\t\t\tDependency of config %s was not available. Waiting for %s before retry...", objectName, timeout)
+		time.Sleep(timeout)
+		resp, err = restCall(client, path, body, apiToken)
+		if err == nil && success(resp) {
+			return resp, err
+		}
+	}
+
+	var retryErr error
+	if err != nil {
+		retryErr = fmt.Errorf("dependency of config %s was not available after %d retries: %w", objectName, maxRetries, err)
+	} else {
+		retryErr = fmt.Errorf("dependency of config %s was not available after %d retries: (HTTP %d)!\n    Response was: %s", objectName, maxRetries, resp.StatusCode, resp.Body)
+	}
+	return Response{}, retryErr
 }
 
 func request(method string, url string, apiToken string) (*http.Request, error) {

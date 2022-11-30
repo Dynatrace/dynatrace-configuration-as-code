@@ -220,6 +220,9 @@ func callWithRetryOnKnowTimingIssue(client *http.Client, restCall sendingRequest
 		return resp, nil
 	}
 
+	retries := 0
+	var timeout time.Duration
+
 	// It can take longer until calculated service metrics are ready to be used in SLOs
 	if isCalculatedMetricNotReadyYet(resp) ||
 		// It can take longer until management zones are ready to be used in SLOs
@@ -229,39 +232,26 @@ func callWithRetryOnKnowTimingIssue(client *http.Client, restCall sendingRequest
 		// It can take some time for configurations to propagate to all cluster nodes - indicated by an incorrect constraint violation error
 		isGeneralDependencyNotReadyYet(resp) {
 
-		return retry(client, restCall, objectName, path, body, apiToken, 3, 5*time.Second)
+		retries = 3
+		timeout = 5
 	}
 
 	// It can take even longer until request attributes are ready to be used
 	if isRequestAttributeNotYetReady(resp) {
-		return retry(client, restCall, objectName, path, body, apiToken, 3, 10*time.Second)
+		retries = 3
+		timeout = 10
 	}
 
 	// It can take even longer until applications are ready to be used in synthetic tests
 	if isApplicationNotReadyYet(resp, theApi) {
-		return retry(client, restCall, objectName, path, body, apiToken, 5, 15*time.Second)
+		retries = 5
+		timeout = 15
 	}
 
+	if retries > 0 {
+		return sendWithRetry(client, restCall, objectName, path, body, apiToken, retries, timeout*time.Second)
+	}
 	return resp, nil
-}
-
-func retry(client *http.Client, restCall sendingRequest, objectName string, path string, body []byte, apiToken string, maxRetries int, timeout time.Duration) (resp Response, err error) {
-	for i := 0; i < maxRetries; i++ {
-		log.Warn("\t\t\tDependency of config %s was not available. Waiting for %s before retry...", objectName, timeout)
-		time.Sleep(timeout)
-		resp, err = restCall(client, path, body, apiToken)
-		if err == nil && success(resp) {
-			return resp, err
-		}
-	}
-
-	var retryErr error
-	if err != nil {
-		retryErr = fmt.Errorf("dependency of config %s was not available after %d retries: %w", objectName, maxRetries, err)
-	} else {
-		retryErr = fmt.Errorf("dependency of config %s was not available after %d retries: (HTTP %d)!\n    Response was: %s", objectName, maxRetries, resp.StatusCode, resp.Body)
-	}
-	return Response{}, retryErr
 }
 
 func isGeneralDependencyNotReadyYet(resp Response) bool {
@@ -403,7 +393,7 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlStrin
 		if isPaginated, nextPage := isPaginatedResponse(objmap); isPaginated {
 			parsedUrl = addNextPageQueryParams(theApi, parsedUrl, nextPage)
 
-			resp, err = getWithRetry(client, parsedUrl.String(), apiToken, 3, 5)
+			resp, err = getWithRetry(client, parsedUrl.String(), apiToken, 3, 5*time.Second)
 
 			if err != nil {
 				return nil, err
@@ -419,33 +409,6 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlStrin
 	}
 
 	return existingValues, nil
-}
-
-// getWithRetry works similarly to retry does for PUT and POST
-// this method can be used for API calls we know to have occasional timing issues on GET - e.g. paginated queries that are impacted by replication lag, returning unequal amounts of objects/pages per node
-func getWithRetry(client *http.Client, url string, apiToken string, maxRetries int, timeout time.Duration) (Response, error) {
-	resp, err := get(client, url, apiToken)
-
-	if err == nil && success(resp) {
-		return resp, nil
-	}
-
-	for i := 0; i < maxRetries; i++ {
-		log.Warn("Retrying failed GET request %s after error (HTTP %d): %w", url, resp.StatusCode, err)
-		time.Sleep(timeout)
-		resp, err = get(client, url, apiToken)
-		if err == nil && success(resp) {
-			return resp, err
-		}
-	}
-
-	var retryErr error
-	if err != nil {
-		retryErr = fmt.Errorf("GET request %s failed after %d retries: %w", url, maxRetries, err)
-	} else {
-		retryErr = fmt.Errorf("GET request %s failed after %d retries: (HTTP %d)!\n    Response was: %s", url, maxRetries, resp.StatusCode, resp.Body)
-	}
-	return Response{}, retryErr
 }
 
 func addQueryParamsForNonStandardApis(theApi api.Api, url *url.URL) *url.URL {
