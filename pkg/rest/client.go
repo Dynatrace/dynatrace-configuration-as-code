@@ -17,6 +17,7 @@
 package rest
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
@@ -66,6 +67,9 @@ type ConfigClient interface {
 	ExistsByName(a Api, name string) (exists bool, id string, err error)
 }
 
+// KnownSettings contains externalId -> objectId
+type KnownSettings map[string]string
+
 // SettingsClient is the abstraction layer for CRUD operations on the Dynatrace Settings API.
 // Its design is intentionally not dependent on Monaco objects.
 //
@@ -82,6 +86,10 @@ type SettingsClient interface {
 	// First, we try to find the external-id of the object. If we can't find it, we create the object, if we find it, we
 	// update the object.
 	Upsert(obj SettingsObject) (DynatraceEntity, error) // create or update, first version only create
+
+	// ListKnownSettings queries all settings for the given schemas.
+	// All queried objects that have an externalId will be returned.
+	ListKnownSettings(schemas []string) (KnownSettings, error)
 }
 
 //go:generate mockgen -source=client.go -destination=client_mock.go -package=rest -imports .=github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api DynatraceClient
@@ -233,4 +241,53 @@ func (d *dynatraceClient) UpsertByName(api Api, name string, payload []byte) (en
 
 func (d *dynatraceClient) UpsertByEntityId(api Api, entityId string, name string, payload []byte) (entity DynatraceEntity, err error) {
 	return upsertDynatraceEntityById(d.client, d.environmentUrl, entityId, name, api, payload, d.token)
+}
+
+type listEntry struct {
+	ObjectId   string `json:"objectId"`
+	ExternalId string `json:"externalId"`
+}
+
+type listResponse struct {
+	Items []listEntry `json:"items"`
+}
+
+func (d *dynatraceClient) ListKnownSettings(schemas []string) (KnownSettings, error) {
+
+	u, err := url.Parse(d.environmentUrl + pathSettingsObjects)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to parse url '%s': %w", d.environmentUrl+pathSettingsObjects, err)
+	}
+
+	// TODO: This will fail if any schema is unknown - has to be split up into multiple calls for each schema
+	params := url.Values{
+		"schemaIds": []string{strings.Join(schemas, ",")},
+		"pageSize":  []string{"500"},
+		"fields":    []string{"externalId,objectId"},
+	}
+	u.RawQuery = params.Encode()
+
+	// TODO: Add pagination (getExistingValuesFromEndpoint)
+	resp, err := get(d.client, u.String(), d.token)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build request: %w", err)
+	}
+
+	if !success(resp) {
+		return nil, fmt.Errorf("request failed with HTTP (%d).\n\tResponse content: %s", resp.StatusCode, string(resp.Body))
+	}
+
+	var parsed listResponse
+	if err := json.Unmarshal(resp.Body, &parsed); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	result := make(KnownSettings)
+	for _, v := range parsed.Items {
+		if v.ExternalId != "" {
+			result[v.ExternalId] = v.ObjectId
+		}
+	}
+
+	return result, nil
 }
