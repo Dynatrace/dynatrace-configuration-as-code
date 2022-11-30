@@ -17,6 +17,7 @@ package deploy
 import (
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
@@ -138,6 +139,18 @@ func DeployConfigs(client rest.DynatraceClient, apis map[string]api.Api,
 
 	knownEntityNames := createKnownEntityMap(apis)
 
+	schemas := map[string]struct{}{}
+	for _, c := range sortedConfigs {
+		if c.Type.IsSettings() { // add skip check? implications?
+			schemas[c.Type.Schema] = struct{}{}
+		}
+	}
+	knownSettings, err := client.ListKnownSettings(maps.Keys(schemas))
+	if err != nil {
+		// continue & dry run missing
+		return []error{fmt.Errorf("failed to list known settings: %w", err)}
+	}
+
 	for _, c := range sortedConfigs {
 		c := c // to avoid implicit memory aliasing (gosec G601)
 		coord := c.Coordinate
@@ -158,7 +171,7 @@ func DeployConfigs(client rest.DynatraceClient, apis map[string]api.Api,
 		var deploymentErrors []error
 
 		if c.Type.IsSettings() {
-			entity, deploymentErrors = deploySetting(client, entities, &c)
+			entity, deploymentErrors = deploySetting(knownSettings, client, entities, &c)
 		} else {
 			apiToDeploy := apis[coord.Type]
 			if apiToDeploy == nil {
@@ -324,7 +337,7 @@ func ExtractConfigName(conf *config.Config, properties parameter.Properties) (st
 	return name, nil
 }
 
-func deploySetting(client rest.SettingsClient, entities map[coordinate.Coordinate]parameter.ResolvedEntity, c *config.Config) (parameter.ResolvedEntity, []error) {
+func deploySetting(settings rest.KnownSettings, client rest.SettingsClient, entities map[coordinate.Coordinate]parameter.ResolvedEntity, c *config.Config) (parameter.ResolvedEntity, []error) {
 
 	properties, errors := resolveProperties(c, entities)
 	if len(errors) > 0 {

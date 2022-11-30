@@ -502,7 +502,7 @@ func TestDeploySettingShouldFailCyclicParameterDependencies(t *testing.T) {
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parameters),
 	}
-	_, errors := deploySetting(client, entities, conf)
+	_, errors := deploySetting(nil, client, entities, conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
@@ -514,7 +514,7 @@ func TestDeploySettingShouldFailRenderTemplate(t *testing.T) {
 		Template: generateFaultyTemplate(t),
 	}
 
-	_, errors := deploySetting(client, entities, conf)
+	_, errors := deploySetting(nil, client, entities, conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
@@ -546,7 +546,7 @@ func TestDeploySettingShouldFailUpsert(t *testing.T) {
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parameters),
 	}
-	_, errors := deploySetting(client, entities, conf)
+	_, errors := deploySetting(nil, client, entities, conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
@@ -573,7 +573,7 @@ func TestDeploySetting(t *testing.T) {
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parameters),
 	}
-	_, errors := deploySetting(client, entities, conf)
+	_, errors := deploySetting(nil, client, entities, conf)
 	assert.Assert(t, len(errors) == 0, "there should be no errors (no errors: %d, %s)", len(errors), errors)
 }
 
