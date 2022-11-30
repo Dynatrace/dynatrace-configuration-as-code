@@ -471,14 +471,50 @@ func Test_GetObjectIdIfAlreadyExists_WorksCorrectlyForAddedQueryParameters(t *te
 				{
 					{"nextPageKey", "page42"},
 				},
+				{
+					{"nextPageKey", "page42"},
+				},
+				{
+					{"nextPageKey", "page42"},
+				},
+				{
+					{"nextPageKey", "page42"},
+				},
 			},
-			expectedApiCalls: 2,
+			expectedApiCalls: 5,
 			serverResponses: []testServerResponse{
 				{200, `{ "nextPageKey": "page42", "values": [ {"id": "1", "name": "name1"} ] }`},
-				{400, `epic fail`},
+				{400, `epic fail`}, // fail paginated request
+				{400, `epic fail`}, // still fail after retry
+				{400, `epic fail`}, // still fail after 2nd retry
+				{400, `epic fail`}, // still fail after 3rd retry
 			},
 			apiKey:      "slo",
 			expectError: true,
+		},
+		{
+			name: "Retries on HTTP error on paginated request and returns eventual success",
+			expectedQueryParamsPerApiCall: [][]testQueryParams{
+				{},
+				{
+					{"nextPageKey", "page42"},
+				},
+				{
+					{"nextPageKey", "page42"},
+				},
+				{
+					{"nextPageKey", "page42"},
+				},
+			},
+			expectedApiCalls: 4,
+			serverResponses: []testServerResponse{
+				{200, `{ "nextPageKey": "page42", "values": [ {"id": "1", "name": "name1"} ] }`},
+				{400, `epic fail`}, // fail paginated request
+				{400, `epic fail`}, // still fail after retry
+				{200, `{ "values": [ {"id": "1", "name": "name1"} ] }`},
+			},
+			apiKey:      "random-api", //not testing a real API, so this won't break if params are ever added to one
+			expectError: false,
 		},
 		{
 			name: "Sends correct param to get all SLOs",
