@@ -644,3 +644,81 @@ func Test_GetObjectIdIfAlreadyExists_WorksCorrectlyForAddedQueryParameters(t *te
 
 	}
 }
+
+func Test_createDynatraceObject(t *testing.T) {
+	tests := []struct {
+		name                string
+		objectName          string
+		apiKey              string
+		expectedQueryParams []testQueryParams
+		serverResponse      testServerResponse
+		want                api.DynatraceEntity
+		wantErr             bool
+	}{
+		{
+			name:                "Calls correct POST endpoint",
+			objectName:          "Test object",
+			apiKey:              "dashboard",
+			expectedQueryParams: []testQueryParams{},
+			serverResponse:      testServerResponse{statusCode: 200, body: `{ "id": "42", "name": "Test object" }`},
+			want:                api.DynatraceEntity{Id: "42", Name: "Test object"},
+			wantErr:             false,
+		},
+		{
+			name:       "Sends expected query parameters when creating app-detection-rule",
+			objectName: "Test object",
+			apiKey:     "app-detection-rule",
+			expectedQueryParams: []testQueryParams{
+				{
+					key:   "position",
+					value: "PREPEND",
+				},
+			},
+			serverResponse: testServerResponse{statusCode: 200, body: `{ "id": "42", "name": "Test object" }`},
+			want:           api.DynatraceEntity{Id: "42", Name: "Test object"},
+			wantErr:        false,
+		},
+		{
+			name:                "Returns err on server error",
+			objectName:          "Test object",
+			apiKey:              "auto-tag",
+			expectedQueryParams: []testQueryParams{},
+			serverResponse:      testServerResponse{statusCode: 400, body: `{}`},
+			want:                api.DynatraceEntity{},
+			wantErr:             true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				if len(tt.expectedQueryParams) > 0 {
+
+					for _, param := range tt.expectedQueryParams {
+						addedQueryParameter := req.URL.Query()[param.key]
+						assert.Assert(t, addedQueryParameter != nil)
+						assert.Assert(t, len(addedQueryParameter) > 0)
+						assert.Equal(t, addedQueryParameter[0], param.value)
+					}
+				} else {
+					assert.Equal(t, "", req.URL.RawQuery, "expected no query params - but '%s' was sent", req.URL.RawQuery)
+				}
+
+				resp := tt.serverResponse
+				if resp.statusCode != 200 {
+					http.Error(rw, resp.body, resp.statusCode)
+				} else {
+					_, _ = rw.Write([]byte(resp.body))
+				}
+			}))
+			defer server.Close()
+			testApi := api.NewStandardApi(tt.apiKey, "", false, "", false)
+
+			got, err := createDynatraceObject(server.Client(), server.URL, tt.objectName, testApi, []byte("{}"), "token")
+			if (err != nil) != tt.wantErr {
+				t.Errorf("createDynatraceObject() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			assert.DeepEqual(t, got, tt.want)
+		})
+	}
+}

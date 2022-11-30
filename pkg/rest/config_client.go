@@ -87,17 +87,22 @@ func upsertDynatraceEntityById(
 	return updateDynatraceObject(client, fullUrl, objectName, entityId, theApi, body, apiToken)
 }
 
-func createDynatraceObject(client *http.Client, fullUrl string, objectName string, theApi api.Api, payload []byte, apiToken string) (api.DynatraceEntity, error) {
-	path := fullUrl
+func createDynatraceObject(client *http.Client, urlString string, objectName string, theApi api.Api, payload []byte, apiToken string) (api.DynatraceEntity, error) {
+	parsedUrl, err := url.Parse(urlString)
+	if err != nil {
+		return api.DynatraceEntity{}, err
+	}
 	body := payload
 
 	configType := theApi.GetId()
 
 	if configType == "app-detection-rule" {
-		path += "?position=PREPEND"
+		queryParams := parsedUrl.Query()
+		queryParams.Add("position", "PREPEND")
+		parsedUrl.RawQuery = queryParams.Encode()
 	}
 
-	resp, err := callWithRetryOnKnowTimingIssue(client, post, objectName, path, body, theApi, apiToken)
+	resp, err := callWithRetryOnKnowTimingIssue(client, post, objectName, parsedUrl.String(), body, theApi, apiToken)
 	if err != nil {
 		return api.DynatraceEntity{}, err
 	}
@@ -106,7 +111,7 @@ func createDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		return api.DynatraceEntity{}, fmt.Errorf("Failed to create DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
 	}
 
-	return unmarshalResponse(resp, fullUrl, configType, objectName)
+	return unmarshalResponse(resp, urlString, configType, objectName)
 }
 
 func unmarshalResponse(resp Response, fullUrl string, configType string, objectName string) (api.DynatraceEntity, error) {
