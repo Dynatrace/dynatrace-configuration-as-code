@@ -39,13 +39,13 @@ type settingsRequest struct {
 	SchemaVersion string `json:"schemaVersion,omitempty"`
 }
 
-// buildRequestPayload builds the json that is required as body in the settings api.
+// buildPostRequestPayload builds the json that is required as body in the settings api.
 // POST Request body: https://www.dynatrace.com/support/help/dynatrace-api/environment-api/settings/objects/post-object#request-body-json-model
 //
 // To do this, we have to wrap the template in another object and send this object to the server.
 // Currently, we only encode one object into an array of objects, but we can optimize it to contain multiple elements to update.
 // Note payload limitations: https://www.dynatrace.com/support/help/dynatrace-api/basics/access-limit#payload-limit
-func buildRequestPayload(obj SettingsObject, externalId string) ([]byte, error) {
+func buildPostRequestPayload(obj SettingsObject, externalId string) ([]byte, error) {
 	var value any
 	if err := json.Unmarshal(obj.Content, &value); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal rendered config: %w", err)
@@ -80,10 +80,10 @@ type postResponse struct {
 	ObjectId string `json:"objectId"`
 }
 
-// parseResponse unmarshalls and parses the settings response
+// parsePostResponse unmarshalls and parses the settings response
 // The response is returned as an array for each element we send.
 // Since we only send one object at the moment, we simply use the first one.
-func parseResponse(resp Response) (api.DynatraceEntity, error) {
+func parsePostResponse(resp Response) (api.DynatraceEntity, error) {
 
 	var parsed []postResponse
 	if err := json.Unmarshal(resp.Body, &parsed); err != nil {

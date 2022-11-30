@@ -156,7 +156,7 @@ func (d *dynatraceClient) Upsert(obj SettingsObject) (DynatraceEntity, error) {
 	externalId := util.GenerateExternalId(obj.Schema, obj.Id)
 
 	// we could build multiple objects at once. improvement if we have time. https://www.dynatrace.com/support/help/dynatrace-api/basics/access-limit
-	payload, err := buildRequestPayload(obj, externalId)
+	payload, err := buildPostRequestPayload(obj, externalId)
 	if err != nil {
 		return DynatraceEntity{}, fmt.Errorf("failed to build settings object for upsert: %w", err)
 	}
@@ -172,7 +172,7 @@ func (d *dynatraceClient) Upsert(obj SettingsObject) (DynatraceEntity, error) {
 		return DynatraceEntity{}, fmt.Errorf("failed to update settings object with externalId %s (HTTP %d)!\n\tResponse was: %s", externalId, resp.StatusCode, string(resp.Body))
 	}
 
-	entity, err := parseResponse(resp)
+	entity, err := parsePostResponse(resp)
 	if err != nil {
 		return DynatraceEntity{}, fmt.Errorf("failed to parse response: %w", err)
 	}
