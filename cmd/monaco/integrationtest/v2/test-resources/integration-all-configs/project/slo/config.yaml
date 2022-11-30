@@ -1,7 +1,9 @@
 configs:
-- id: demo_slo
+- id: demo_slo_1
+  type:
+    api: slo
   config:
-    name: My SLO
+    name: "My SLO #1"
     parameters:
       mzone:
         configType: management-zone
@@ -15,5 +17,201 @@ configs:
           warning: 97.5
     template: slo.json
     skip: false
+- id: demo_slo_2
   type:
     api: slo
+  config:
+    name: "My SLO #2"
+    parameters:
+      mzone:
+        configType: management-zone
+        configId: zone
+        property: name
+        type: reference
+      threshold:
+        type: value
+        value:
+          target: 95
+          warning: 97.5
+    template: slo.json
+    skip: false
+- id: demo_slo_3
+  type:
+    api: slo
+  config:
+    name: "My SLO #3"
+    parameters:
+      mzone:
+        configType: management-zone
+        configId: zone
+        property: name
+        type: reference
+      threshold:
+        type: value
+        value:
+          target: 95
+          warning: 97.5
+    template: slo.json
+    skip: false
+- id: demo_slo_4
+  type:
+    api: slo
+  config:
+    name: "My SLO #4"
+    parameters:
+      mzone:
+        configType: management-zone
+        configId: zone
+        property: name
+        type: reference
+      threshold:
+        type: value
+        value:
+          target: 95
+          warning: 97.5
+    template: slo.json
+    skip: false
+- id: demo_slo_5
+  type:
+    api: slo
+  config:
+    name: "My SLO #5"
+    parameters:
+      mzone:
+        configType: management-zone
+        configId: zone
+        property: name
+        type: reference
+      threshold:
+        type: value
+        value:
+          target: 95
+          warning: 97.5
+    template: slo.json
+    skip: false
+- id: demo_slo_6
+  type:
+    api: slo
+  config:
+    name: "My SLO #6"
+    parameters:
+      mzone:
+        configType: management-zone
+        configId: zone
+        property: name
+        type: reference
+      threshold:
+        type: value
+        value:
+          target: 95
+          warning: 97.5
+    template: slo.json
+    skip: false
+- id: demo_slo_7
+  type:
+    api: slo
+  config:
+    name: "My SLO #7"
+    parameters:
+      mzone:
+        configType: management-zone
+        configId: zone
+        property: name
+        type: reference
+      threshold:
+        type: value
+        value:
+          target: 95
+          warning: 97.5
+    template: slo.json
+    skip: false
+- id: demo_slo_8
+  type:
+    api: slo
+  config:
+    name: "My SLO #8"
+    parameters:
+      mzone:
+        configType: management-zone
+        configId: zone
+        property: name
+        type: reference
+      threshold:
+        type: value
+        value:
+          target: 95
+          warning: 97.5
+    template: slo.json
+    skip: false
+- id: demo_slo_9
+  type:
+    api: slo
+  config:
+    name: "My SLO #9"
+    parameters:
+      mzone:
+        configType: management-zone
+        configId: zone
+        property: name
+        type: reference
+      threshold:
+        type: value
+        value:
+          target: 95
+          warning: 97.5
+    template: slo.json
+    skip: false
+- id: demo_slo_10
+  type:
+    api: slo
+  config:
+    name: "My SLO #10"
+    parameters:
+      mzone:
+        configType: management-zone
+        configId: zone
+        property: name
+        type: reference
+      threshold:
+        type: value
+        value:
+          target: 95
+          warning: 97.5
+    template: slo.json
+    skip: false
+- id: demo_slo_11
+  type:
+    api: slo
+  config:
+    name: "My SLO #11"
+    parameters:
+      mzone:
+        configType: management-zone
+        configId: zone
+        property: name
+        type: reference
+      threshold:
+        type: value
+        value:
+          target: 95
+          warning: 97.5
+    template: slo.json
+    skip: false
+- id: demo_slo_12
+  type:
+    api: slo
+  config:
+    name: "My SLO #12"
+    parameters:
+      mzone:
+        configType: management-zone
+        configId: zone
+        property: name
+        type: reference
+      threshold:
+        type: value
+        value:
+          target: 95
+          warning: 97.5
+    template: slo.json
+    skip: false
