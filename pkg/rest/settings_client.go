@@ -76,11 +76,47 @@ func buildPostRequestPayload(obj SettingsObject, externalId string) ([]byte, err
 	return dest.Bytes(), nil
 }
 
+func buildPutRequestPayload(obj SettingsObject, externalId string) ([]byte, error) {
+	var value any
+	if err := json.Unmarshal(obj.Content, &value); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal rendered config: %w", err)
+	}
+
+	data := settingsRequest{
+		SchemaId:      obj.Schema,
+		ExternalId:    externalId,
+		Scope:         obj.Scope,
+		Value:         value,
+		SchemaVersion: obj.SchemaVersion,
+	}
+
+	// Create json obj. We currently marshal everything into an array, but we can optimize it to include multiple objects in the
+	// future. Look up limits when imp
+	fullObj, err := json.Marshal(data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal full object: %w", err)
+	}
+
+	// compress json to require less space
+	dest := bytes.Buffer{}
+	if err := json.Compact(&dest, fullObj); err != nil {
+		log.Debug("Failed to compact json: %w. Using uncompressed json.\n\tJson: %v", err, string(fullObj))
+		return fullObj, nil
+	}
+
+	return dest.Bytes(), nil
+}
+
 type postResponse struct {
 	ObjectId string `json:"objectId"`
 }
 
-// parsePostResponse unmarshalls and parses the settings response
+type putResponse struct {
+	ObjectId   string `json:"objectId"`
+	ExternalId string `json:"externalId"`
+}
+
+// parsePostResponse unmarshalls and parses the settings response for the post request
 // The response is returned as an array for each element we send.
 // Since we only send one object at the moment, we simply use the first one.
 func parsePostResponse(resp Response) (api.DynatraceEntity, error) {
@@ -101,5 +137,19 @@ func parsePostResponse(resp Response) (api.DynatraceEntity, error) {
 	return api.DynatraceEntity{
 		Id:   parsed[0].ObjectId,
 		Name: parsed[0].ObjectId,
+	}, nil
+}
+
+// parsePutResponse unmarshalls and parses the settings response for the put request
+func parsePutResponse(resp Response) (api.DynatraceEntity, error) {
+
+	var parsed putResponse
+	if err := json.Unmarshal(resp.Body, &parsed); err != nil {
+		return api.DynatraceEntity{}, fmt.Errorf("failed to unmarshal response: %w. Response was: %s", err, string(resp.Body))
+	}
+
+	return api.DynatraceEntity{
+		Id:   parsed.ObjectId,
+		Name: parsed.ObjectId,
 	}, nil
 }
