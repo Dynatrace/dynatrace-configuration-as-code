@@ -233,23 +233,23 @@ func callWithRetryOnKnowTimingIssue(client *http.Client, restCall sendingRequest
 		isGeneralDependencyNotReadyYet(resp) {
 
 		retries = 3
-		timeout = 5
+		timeout = 5 * time.Second
 	}
 
 	// It can take even longer until request attributes are ready to be used
 	if isRequestAttributeNotYetReady(resp) {
 		retries = 3
-		timeout = 10
+		timeout = 10 * time.Second
 	}
 
 	// It can take even longer until applications are ready to be used in synthetic tests
 	if isApplicationNotReadyYet(resp, theApi) {
 		retries = 5
-		timeout = 15
+		timeout = 15 * time.Second
 	}
 
 	if retries > 0 {
-		return sendWithRetry(client, restCall, objectName, path, body, apiToken, retries, timeout*time.Second)
+		return sendWithRetry(client, restCall, objectName, path, body, apiToken, retries, timeout)
 	}
 	return resp, nil
 }
