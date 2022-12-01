@@ -90,7 +90,7 @@ func upsertDynatraceEntityById(
 func createDynatraceObject(client *http.Client, urlString string, objectName string, theApi api.Api, payload []byte, apiToken string) (api.DynatraceEntity, error) {
 	parsedUrl, err := url.Parse(urlString)
 	if err != nil {
-		return api.DynatraceEntity{}, err
+		return api.DynatraceEntity{}, fmt.Errorf("invalid URL for creating Dynatrace config: %w", err)
 	}
 	body := payload
 
@@ -366,7 +366,7 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlStrin
 
 	parsedUrl, err := url.Parse(urlString)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid URL for getting existing Dynatrace configs: %w", err)
 	}
 
 	parsedUrl = addQueryParamsForNonStandardApis(theApi, parsedUrl)
