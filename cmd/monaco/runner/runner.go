@@ -142,7 +142,7 @@ func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 		Example:           "monaco deploy manifest.yaml -v -e dev-environment",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completion.DeployCompletion,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: handleRunErrors(func(cmd *cobra.Command, args []string) error {
 
 			manifestName = args[0]
 
@@ -152,7 +152,7 @@ func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 			}
 
 			return deploy.Deploy(fs, manifestName, environment, project, dryRun, continueOnError)
-		},
+		}),
 	}
 
 	deployCmd.Flags().StringSliceVarP(&environment, "environment", "e", make([]string, 0), "Environment to deploy to")
@@ -180,7 +180,7 @@ func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 		Short:   "Delete configurations defined in delete.yaml from the environments defined in the manifest",
 		Example: "monaco delete manifest.yaml delete.yaml -e dev-environment",
 		Args:    cobra.ExactArgs(2),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: handleRunErrors(func(cmd *cobra.Command, args []string) error {
 
 			manifestName = args[0]
 			deleteFile := args[1]
@@ -196,7 +196,7 @@ func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 			}
 
 			return delete.Delete(fs, manifestName, deleteFile, environment)
-		},
+		}),
 		ValidArgsFunction: completion.DeleteCompletion,
 	}
 
@@ -221,7 +221,7 @@ func getPurgeCommand(fs afero.Fs) (purgeCmd *cobra.Command) {
 		Example: "monaco purge manifest.yaml -e dev-environment",
 		Hidden:  true, // this command will not be suggested or shown in help
 		Args:    cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: handleRunErrors(func(cmd *cobra.Command, args []string) error {
 
 			manifestName = args[0]
 
@@ -231,7 +231,7 @@ func getPurgeCommand(fs afero.Fs) (purgeCmd *cobra.Command) {
 			}
 
 			return delete.Purge(fs, manifestName, environment, specificApis)
-		},
+		}),
 		ValidArgsFunction: completion.PurgeCompletion,
 	}
 
@@ -258,7 +258,7 @@ func getConvertCommand(fs afero.Fs) (convertCmd *cobra.Command) {
 		Example:           "monaco convert environment.yaml my-v1-project -o my-v2-project",
 		Args:              cobra.ExactArgs(2),
 		ValidArgsFunction: completion.ConvertCompletion,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: handleRunErrors(func(cmd *cobra.Command, args []string) error {
 
 			environmentsFile := args[0]
 			workingDir := args[1]
@@ -277,7 +277,7 @@ func getConvertCommand(fs afero.Fs) (convertCmd *cobra.Command) {
 			}
 
 			return convert.Convert(fs, workingDir, environmentsFile, outputFolder, manifestName)
-		},
+		}),
 	}
 
 	convertCmd.Flags().StringVarP(&manifestName, "manifest", "m", "manifest.yaml", "Name of the manifest file to create")
@@ -301,7 +301,7 @@ func getLegacyDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 		Use:     "deploy [configuration directory]",
 		Short:   "Deploy v1 configurations to Dynatrace environments",
 		Example: "monaco deploy -e environments.yaml",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: handleRunErrors(func(cmd *cobra.Command, args []string) error {
 
 			if len(args) > 1 {
 				log.Error("too many arguments")
@@ -313,7 +313,7 @@ func getLegacyDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 			}
 
 			return legacyDeploy.Deploy(fs, workingDir, environments, specificEnvironment, projects, dryRun, continueOnError)
-		},
+		}),
 	}
 
 	deployCmd.Flags().StringVarP(&environments, "environments", "e", "", "Yaml file containing environment to deploy to")
@@ -334,4 +334,20 @@ func getLegacyDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 func isEnvFlagEnabled(env string) bool {
 	val, ok := os.LookupEnv(env)
 	return ok && val != "0"
+}
+
+// handleRunErrors wraps around a cobra command, prints an error and exits
+//
+// Note: Cobra will print the usage if RunE returns an error. You can disable this
+// behavior by activating SilenceUsage, however then also Cobra's command/flag validation
+// will not display any usage anymore when failing. By using Run instead of RunE and
+// wrapping the execution of the command func with handleRunErrors we can enforce the wanted
+// behavior: printing usage when command structure is wrong  and not printing usage when something
+// else went wrong
+func handleRunErrors(f func(cmd *cobra.Command, args []string) error) func(cmd *cobra.Command, args []string) {
+	return func(cmd *cobra.Command, args []string) {
+		if err := f(cmd, args); err != nil {
+			log.Fatal(err.Error())
+		}
+	}
 }
