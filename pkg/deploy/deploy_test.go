@@ -502,7 +502,7 @@ func TestDeploySettingShouldFailCyclicParameterDependencies(t *testing.T) {
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parameters),
 	}
-	_, errors := deploySetting(nil, client, entities, conf)
+	_, errors := deploySetting(client, entities, conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
@@ -514,7 +514,7 @@ func TestDeploySettingShouldFailRenderTemplate(t *testing.T) {
 		Template: generateFaultyTemplate(t),
 	}
 
-	_, errors := deploySetting(nil, client, entities, conf)
+	_, errors := deploySetting(client, entities, conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
@@ -539,6 +539,7 @@ func TestDeploySettingShouldFailUpsert(t *testing.T) {
 
 	client := rest.NewMockSettingsClient(gomock.NewController(t))
 	client.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(api.DynatraceEntity{}, fmt.Errorf("upsert failed"))
+	client.EXPECT().ListKnownSettings(gomock.Any()).Return(nil, nil)
 
 	entities := make(map[coordinate.Coordinate]parameter.ResolvedEntity)
 
@@ -546,7 +547,7 @@ func TestDeploySettingShouldFailUpsert(t *testing.T) {
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parameters),
 	}
-	_, errors := deploySetting(nil, client, entities, conf)
+	_, errors := deploySetting(client, entities, conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
@@ -573,7 +574,7 @@ func TestDeploySetting(t *testing.T) {
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parameters),
 	}
-	_, errors := deploySetting(nil, client, entities, conf)
+	_, errors := deploySetting(client, entities, conf)
 	assert.Assert(t, len(errors) == 0, "there should be no errors (no errors: %d, %s)", len(errors), errors)
 }
 
@@ -821,6 +822,7 @@ func TestDeployConfigsTargetingSettings(t *testing.T) {
 			},
 		},
 	}
+	client.EXPECT().ListKnownSettings(gomock.Any()).Times(1)
 	client.EXPECT().Upsert(gomock.Any(), gomock.Any()).Times(1)
 	errors := DeployConfigs(client, apis, sortedConfigs, false, false)
 	assert.Assert(t, len(errors) == 0, "there should be no errors (errors: %s)", errors)
