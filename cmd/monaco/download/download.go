@@ -150,7 +150,13 @@ func doDownload(fs afero.Fs, environmentUrl, projectName, token, tokenEnvVarName
 
 	proj := download.CreateProjectData(downloadedConfigs, projectName)
 
-	err = download.WriteToDisk(fs, proj, tokenEnvVarName, environmentUrl, outputFolder)
+	downloadWriterContext := download.WriterContext{
+		ProjectToWrite:  proj,
+		TokenEnvVarName: tokenEnvVarName,
+		EnvironmentUrl:  environmentUrl,
+		OutputFolder:    outputFolder,
+	}
+	err = download.WriteToDisk(fs, downloadWriterContext)
 	if err != nil {
 		return err
 	}

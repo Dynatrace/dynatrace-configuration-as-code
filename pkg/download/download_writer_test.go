@@ -132,12 +132,48 @@ func TestWriteToDisk(t *testing.T) {
 			"manifest_TESTING_TIME.yaml",
 			false,
 		},
+		{
+			"overwrites existing manifest.yaml if forced overwrite",
+			args{
+				fs: testFsWithWithExistingManifest("test-output"),
+				downloadedConfigs: v2.ConfigsPerType{
+					"test-api": []config.Config{
+						{
+							Template:    template.CreateTemplateFromString("template.json", "{}"),
+							Coordinate:  coordinate.Coordinate{},
+							Group:       "",
+							Environment: "",
+							Parameters: config.Parameters{
+								"name": value.New("test-config"),
+							},
+							References: nil,
+							Skip:       false,
+						},
+					},
+				},
+				projectName:     "test-project",
+				tokenEnvVarName: "TEST_ENV_TOKEN",
+				environmentUrl:  "env.url.com",
+				outputFolder:    "test-output",
+				timestampString: "TESTING_TIME",
+			},
+			"test-output",
+			"manifest.yaml",
+			false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			proj := CreateProjectData(tt.args.downloadedConfigs, tt.args.projectName) //using CreateProject data to simplify test struct setup
+			writerContext := WriterContext{
+				ProjectToWrite:  proj,
+				TokenEnvVarName: tt.args.tokenEnvVarName,
+				EnvironmentUrl:  tt.args.environmentUrl,
+				OutputFolder:    tt.args.outputFolder,
+				timestampString: tt.args.timestampString,
+			}
 
-			if err := writeToDisk(tt.args.fs, proj, tt.args.tokenEnvVarName, tt.args.environmentUrl, tt.args.outputFolder, tt.args.timestampString); (err != nil) != tt.wantErr {
+			if err := writeToDisk(tt.args.fs, writerContext); (err != nil) != tt.wantErr {
 				t.Errorf("WriteToDisk() error = %v, wantErr %v", err, tt.wantErr)
 			}
 

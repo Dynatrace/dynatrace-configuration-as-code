@@ -29,28 +29,37 @@ import (
 	"time"
 )
 
-// WriteToDisk writes all projects to the disk
-func WriteToDisk(fs afero.Fs, proj project.Project, tokenEnvVarName, environmentUrl, outputFolder string) error {
-	timestampString := time.Now().Format("2006-01-02-150405")
+type WriterContext struct {
+	ProjectToWrite  project.Project
+	TokenEnvVarName string
+	EnvironmentUrl  string
+	OutputFolder    string
 
-	return writeToDisk(fs, proj, tokenEnvVarName, environmentUrl, outputFolder, timestampString)
+	timestampString string
 }
 
-func writeToDisk(fs afero.Fs, proj project.Project, tokenEnvVarName, environmentUrl, outputFolder, timestampString string) error {
+func (c WriterContext) GetOutputFolderFilePath() string {
+	if c.OutputFolder == "" {
+		return filepath.Clean(fmt.Sprintf("download_%s/", c.timestampString))
+	}
+	return c.OutputFolder
+}
+
+// WriteToDisk writes all projects to the disk
+func WriteToDisk(fs afero.Fs, writerContext WriterContext) error {
+	writerContext.timestampString = time.Now().Format("2006-01-02-150405")
+
+	return writeToDisk(fs, writerContext)
+}
+
+func writeToDisk(fs afero.Fs, writerContext WriterContext) error {
 
 	log.Debug("Preparing downloaded data for persisting")
 
-	if outputFolder == "" {
-		outputFolder = filepath.Clean(fmt.Sprintf("download_%s/", timestampString))
-	}
+	manifestName := getManifestFilePath(fs, writerContext)
+	m := createManifest(writerContext.ProjectToWrite, writerContext.TokenEnvVarName, writerContext.EnvironmentUrl)
 
-	manifestName := "manifest.yaml"
-	if exists, _ := afero.Exists(fs, filepath.Join(outputFolder, manifestName)); exists {
-		manifestName = fmt.Sprintf("manifest_%s.yaml", timestampString)
-		log.Warn("A manifest.yaml already exists in '%s', creating '%s' instead.", outputFolder, manifestName)
-	}
-
-	m := createManifest(proj, tokenEnvVarName, environmentUrl)
+	outputFolder := writerContext.GetOutputFolderFilePath()
 
 	log.Debug("Persisting downloaded configurations")
 	errs := writer.WriteToDisk(&writer.WriterContext{
@@ -58,7 +67,7 @@ func writeToDisk(fs afero.Fs, proj project.Project, tokenEnvVarName, environment
 		OutputDir:       outputFolder,
 		ManifestName:    manifestName,
 		ParametersSerde: config.DefaultParameterParsers,
-	}, m, []project.Project{proj})
+	}, m, []project.Project{writerContext.ProjectToWrite})
 
 	if len(errs) > 0 {
 		util.PrintErrors(errs)
@@ -67,6 +76,18 @@ func writeToDisk(fs afero.Fs, proj project.Project, tokenEnvVarName, environment
 
 	log.Info("Downloaded configurations written to '%s'", outputFolder)
 	return nil
+}
+
+func getManifestFilePath(fs afero.Fs, writerContext WriterContext) string {
+	manifestName := "manifest.yaml"
+	outputFolder := writerContext.GetOutputFolderFilePath()
+	defaultManifestPath := filepath.Join(outputFolder, manifestName)
+	if exists, _ := afero.Exists(fs, defaultManifestPath); !exists {
+		return manifestName
+	}
+
+	log.Warn("A manifest.yaml already exists in '%s', creating '%s' instead.", outputFolder, manifestName)
+	return fmt.Sprintf("manifest_%s.yaml", writerContext.timestampString)
 }
 
 func createManifest(proj project.Project, tokenEnvVarName string, environmentUrl string) manifest.Manifest {
