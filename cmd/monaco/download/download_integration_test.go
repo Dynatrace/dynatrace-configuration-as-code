@@ -34,6 +34,7 @@ import (
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 	"net/http/httptest"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -757,6 +758,95 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 			}, compareOptions...)
 		})
 	}
+}
+
+func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
+	// GIVEN apis, server responses, file system
+	const projectName = "integration-test-1"
+	const testBasePath = "test-resources/" + projectName
+
+	// APIs
+	fakeApi := api.NewStandardApi("fake-id", "/fake-id", false, "", false)
+	apiMap := api.ApiMap{
+		fakeApi.GetId(): fakeApi,
+	}
+
+	// Responses
+	responses := map[string]string{
+		"/fake-id":      "fake-api/__LIST.json",
+		"/fake-id/id-1": "fake-api/id-1.json",
+	}
+
+	// Server
+	server := rest.NewIntegrationTestServer(t, testBasePath, responses)
+
+	// GIVEN existing files
+	fs := afero.NewMemMapFs()
+	_ = fs.MkdirAll(testBasePath, 0777)
+	_ = fs.MkdirAll(filepath.Join(testBasePath, "fake-id"), 0777)
+	_ = afero.WriteFile(fs, filepath.Join(testBasePath, "manifest.yaml"), []byte("OVERWRITE ME"), 0777)
+	_ = afero.WriteFile(fs, filepath.Join(testBasePath, "fake-id", "id-1.json"), []byte{}, 0777)
+
+	// WHEN we set the input folder as output and force manifest overwrite on download
+	options := getTestingDownloadOptions(server, projectName, apiMap)
+	options.forceOverwriteManifest = true
+	options.outputFolder = testBasePath
+	err := doDownload(fs, options)
+
+	assert.NilError(t, err)
+
+	// THEN we can load the project again and verify its content
+	man, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
+		Fs:           fs,
+		ManifestPath: filepath.Join(testBasePath, "manifest.yaml"),
+	})
+	if len(errs) != 0 {
+		for _, err := range errs {
+			t.Fatalf("%v", err)
+		}
+	}
+
+	projects, errs := projectLoader.LoadProjects(fs, projectLoader.ProjectLoaderContext{
+		KnownApis:       api.GetApiNameLookup(apiMap),
+		WorkingDir:      testBasePath,
+		Manifest:        man,
+		ParametersSerde: config.DefaultParameterParsers,
+	})
+	if len(errs) != 0 {
+		for _, err := range errs {
+			t.Fatalf("%v", err)
+		}
+	}
+
+	writtenManifest, err := afero.ReadFile(fs, filepath.Join(testBasePath, "manifest.yaml"))
+	assert.NilError(t, err)
+	assert.Assert(t, string(writtenManifest) != "OVERWRITE ME", "Expected manifest to be overwritten with new data")
+
+	assert.Equal(t, len(projects), 1)
+	p := projects[0]
+	assert.Equal(t, p.Id, projectName)
+	assert.Equal(t, len(p.Configs), 1)
+
+	configs, found := p.Configs[projectName]
+	assert.Equal(t, found, true)
+	assert.Equal(t, len(configs), 1)
+
+	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
+		fakeApi.GetId(): []config.Config{
+			{
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.GetId(), ConfigId: "id-1"},
+				Skip:       false,
+				Parameters: map[string]parameter.Parameter{
+					"name": &value.ValueParameter{Value: "Test-1"},
+				},
+				Group:       "default",
+				Environment: projectName,
+				References:  []coordinate.Coordinate{},
+				Template:    contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}"}`},
+				Type:        config.Type{Api: "fake-id"},
+			},
+		},
+	}, compareOptions...)
 }
 
 func getTestingDownloadOptions(server *httptest.Server, projectName string, apiMap api.ApiMap) downloadOptions {

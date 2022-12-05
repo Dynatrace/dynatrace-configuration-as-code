@@ -39,8 +39,8 @@ import (
 //
 // The actual implementations are in the [DefaultCommand] struct.
 type Command interface {
-	DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile, projectName, specificEnvironmentName, outputFolder string, apiNamesToDownload []string) error
-	DownloadConfigs(fs afero.Fs, environmentUrl, projectName, envVarName, outputFolder string, apiNamesToDownload []string) error
+	DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile, projectName, specificEnvironmentName, outputFolder string, forceOverwrite bool, apiNamesToDownload []string) error
+	DownloadConfigs(fs afero.Fs, environmentUrl, projectName, envVarName, outputFolder string, forceOverwrite bool, apiNamesToDownload []string) error
 }
 
 // DefaultCommand is used to implement the [Command] interface.
@@ -51,7 +51,7 @@ var (
 	_ Command = (*DefaultCommand)(nil)
 )
 
-func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile, projectName, specificEnvironmentName, outputFolder string, apiNamesToDownload []string) error {
+func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile, projectName, specificEnvironmentName, outputFolder string, forceOverwrite bool, apiNamesToDownload []string) error {
 
 	man, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
 		Fs:           fs,
@@ -95,19 +95,24 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile
 		tokenEnvVar = envVarToken.EnvironmentVariableName
 	}
 
+	if !forceOverwrite {
+		projectName = fmt.Sprintf("%s_%s", projectName, specificEnvironmentName)
+	}
+
 	options := downloadOptions{
-		environmentUrl:  u,
-		token:           token,
-		tokenEnvVarName: tokenEnvVar,
-		outputFolder:    outputFolder,
-		projectName:     fmt.Sprintf("%s_%s", projectName, specificEnvironmentName),
-		apis:            apisToDownload,
-		clientFactory:   rest.NewDynatraceClient,
+		environmentUrl:         u,
+		token:                  token,
+		tokenEnvVarName:        tokenEnvVar,
+		outputFolder:           outputFolder,
+		projectName:            projectName,
+		forceOverwriteManifest: forceOverwrite,
+		apis:                   apisToDownload,
+		clientFactory:          rest.NewDynatraceClient,
 	}
 	return doDownload(fs, options)
 }
 
-func (d DefaultCommand) DownloadConfigs(fs afero.Fs, environmentUrl, projectName, envVarName, outputFolder string, apiNamesToDownload []string) error {
+func (d DefaultCommand) DownloadConfigs(fs afero.Fs, environmentUrl, projectName, envVarName, outputFolder string, forceOverwrite bool, apiNamesToDownload []string) error {
 
 	apis, errors := getApisToDownload(apiNamesToDownload)
 
@@ -126,13 +131,14 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, environmentUrl, projectName
 	}
 
 	options := downloadOptions{
-		environmentUrl:  environmentUrl,
-		token:           token,
-		tokenEnvVarName: envVarName,
-		outputFolder:    outputFolder,
-		projectName:     projectName,
-		apis:            apis,
-		clientFactory:   rest.NewDynatraceClient,
+		environmentUrl:         environmentUrl,
+		token:                  token,
+		tokenEnvVarName:        envVarName,
+		outputFolder:           outputFolder,
+		projectName:            projectName,
+		forceOverwriteManifest: forceOverwrite,
+		apis:                   apis,
+		clientFactory:          rest.NewDynatraceClient,
 	}
 	return doDownload(fs, options)
 }
@@ -140,13 +146,14 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, environmentUrl, projectName
 type dynatraceClientFactory func(environmentUrl, token string) (rest.DynatraceClient, error)
 
 type downloadOptions struct {
-	environmentUrl  string
-	token           string
-	tokenEnvVarName string
-	outputFolder    string
-	projectName     string
-	apis            api.ApiMap
-	clientFactory   dynatraceClientFactory
+	environmentUrl         string
+	token                  string
+	tokenEnvVarName        string
+	outputFolder           string
+	projectName            string
+	apis                   api.ApiMap
+	forceOverwriteManifest bool
+	clientFactory          dynatraceClientFactory
 }
 
 func (c downloadOptions) getDynatraceClient() (rest.DynatraceClient, error) {
@@ -183,10 +190,11 @@ func doDownload(fs afero.Fs, options downloadOptions) error {
 	proj := download.CreateProjectData(downloadedConfigs, options.projectName)
 
 	downloadWriterContext := download.WriterContext{
-		ProjectToWrite:  proj,
-		TokenEnvVarName: options.tokenEnvVarName,
-		EnvironmentUrl:  options.environmentUrl,
-		OutputFolder:    options.outputFolder,
+		ProjectToWrite:         proj,
+		TokenEnvVarName:        options.tokenEnvVarName,
+		EnvironmentUrl:         options.environmentUrl,
+		OutputFolder:           options.outputFolder,
+		ForceOverwriteManifest: options.forceOverwriteManifest,
 	}
 	err = download.WriteToDisk(fs, downloadWriterContext)
 	if err != nil {
