@@ -132,7 +132,7 @@ type knownEntityMap map[string]map[string]struct{}
 func DeployConfigs(client rest.DynatraceClient, apis map[string]api.Api,
 	sortedConfigs []config.Config, continueOnError, dryRun bool) []error {
 
-	entities := make(map[coordinate.Coordinate]parameter.ResolvedEntity)
+	resolvedEntities := make(map[coordinate.Coordinate]parameter.ResolvedEntity)
 	var errors []error
 
 	knownEntityNames := createKnownEntityMap(apis)
@@ -142,7 +142,7 @@ func DeployConfigs(client rest.DynatraceClient, apis map[string]api.Api,
 		coord := c.Coordinate
 
 		if c.Skip {
-			entities[coord] = parameter.ResolvedEntity{
+			resolvedEntities[coord] = parameter.ResolvedEntity{ //TODO where are entities used? why is this needed
 				EntityName: coord.ConfigId,
 				Coordinate: coord,
 				Properties: parameter.Properties{},
@@ -157,7 +157,7 @@ func DeployConfigs(client rest.DynatraceClient, apis map[string]api.Api,
 		var deploymentErrors []error
 
 		if c.Type.IsSettings() {
-			entity, deploymentErrors = deploySetting(client, entities, &c)
+			entity, deploymentErrors = deploySetting(client, resolvedEntities, &c)
 		} else {
 			apiToDeploy := apis[coord.Type]
 			if apiToDeploy == nil {
@@ -169,7 +169,7 @@ func DeployConfigs(client rest.DynatraceClient, apis map[string]api.Api,
 					return errors
 				}
 			}
-			entity, deploymentErrors = deployConfig(client, apiToDeploy, entities, knownEntityNames, &c)
+			entity, deploymentErrors = deployConfig(client, apiToDeploy, resolvedEntities, knownEntityNames, &c)
 
 			knownEntityNames[c.Coordinate.Type][entity.EntityName] = struct{}{}
 		}
@@ -184,7 +184,7 @@ func DeployConfigs(client rest.DynatraceClient, apis map[string]api.Api,
 			}
 		}
 
-		entities[entity.Coordinate] = entity
+		resolvedEntities[entity.Coordinate] = entity
 	}
 
 	return errors
