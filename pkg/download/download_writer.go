@@ -30,10 +30,11 @@ import (
 )
 
 type WriterContext struct {
-	ProjectToWrite  project.Project
-	TokenEnvVarName string
-	EnvironmentUrl  string
-	OutputFolder    string
+	ProjectToWrite         project.Project
+	TokenEnvVarName        string
+	EnvironmentUrl         string
+	OutputFolder           string
+	ForceOverwriteManifest bool
 
 	timestampString string
 }
@@ -83,6 +84,11 @@ func getManifestFilePath(fs afero.Fs, writerContext WriterContext) string {
 	outputFolder := writerContext.GetOutputFolderFilePath()
 	defaultManifestPath := filepath.Join(outputFolder, manifestName)
 	if exists, _ := afero.Exists(fs, defaultManifestPath); !exists {
+		return manifestName
+	}
+
+	if writerContext.ForceOverwriteManifest {
+		log.Info("Overwriting existing manifest.yaml in download target folder.")
 		return manifestName
 	}
 

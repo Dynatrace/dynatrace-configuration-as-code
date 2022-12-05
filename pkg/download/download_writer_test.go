@@ -23,6 +23,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
 	v2 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
 	"github.com/spf13/afero"
+	"gotest.tools/assert"
 	"path/filepath"
 	"testing"
 )
@@ -197,6 +198,64 @@ func TestWriteToDisk(t *testing.T) {
 
 		})
 	}
+}
+
+func TestWriteToDisk_OverwritesManifestIfForced(t *testing.T) {
+	//GIVEN
+	downloadedConfigs := v2.ConfigsPerType{
+		"test-api": []config.Config{
+			{
+				Template:    template.CreateTemplateFromString("template.json", "{}"),
+				Coordinate:  coordinate.Coordinate{},
+				Group:       "",
+				Environment: "",
+				Parameters: config.Parameters{
+					"name": value.New("test-config"),
+				},
+				References: nil,
+				Skip:       false,
+			},
+		},
+	}
+	projectName := "test-project"
+	tokenEnvVarName := "TEST_ENV_TOKEN"
+	environmentUrl := "env.url.com"
+	outputFolder := "test-output"
+	timestampString := "TESTING_TIME"
+	proj := CreateProjectData(downloadedConfigs, projectName) //using CreateProject data to simplify test struct setup
+	writerContext := WriterContext{
+		ProjectToWrite:  proj,
+		TokenEnvVarName: tokenEnvVarName,
+		EnvironmentUrl:  environmentUrl,
+		OutputFolder:    outputFolder,
+		timestampString: timestampString,
+	}
+
+	//GIVEN existing data on disk
+	manifestPath := filepath.Join(outputFolder, "manifest.yaml")
+	fs := testFsWithWithExistingManifest(outputFolder)
+	previousManifest, err := afero.ReadFile(fs, manifestPath)
+	assert.NilError(t, err)
+
+	//WHEN writing to disk with overwrite forced
+	writerContext.ForceOverwriteManifest = true
+	err = writeToDisk(fs, writerContext)
+	assert.NilError(t, err)
+
+	//THEN manifest.yaml is overwritten
+	if exists, err := afero.Exists(fs, "test-output/manifest.yaml"); err != nil || !exists {
+		t.Errorf("WriteToDisk(): expected manifest \"test-output/manifest.yaml\" to exist")
+	}
+
+	additionalManifestPath := filepath.Join(outputFolder, "manifest_TESTING_TIME.yaml")
+	if exists, err := afero.Exists(fs, additionalManifestPath); err != nil || exists {
+		t.Errorf("WriteToDisk(): expected no additional manifest %s to exist", additionalManifestPath)
+	}
+
+	writtenManifest, err := afero.ReadFile(fs, manifestPath)
+	assert.NilError(t, err)
+	assert.Assert(t, string(writtenManifest) != string(previousManifest), "Expected manifest to be overwritten with new data")
+
 }
 
 func emptyTestFs() afero.Fs {
