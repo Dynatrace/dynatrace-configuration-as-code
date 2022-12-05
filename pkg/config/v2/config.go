@@ -16,6 +16,7 @@ package v2
 
 import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
+	configErrors "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/errors"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
 	compoundParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/compound"
 	envParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/environment"
@@ -23,6 +24,7 @@ import (
 	refParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/reference"
 	valueParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 )
 
 const (
@@ -82,6 +84,33 @@ func (c *Config) HasDependencyOn(config Config) bool {
 	}
 
 	return false
+}
+
+func (c *Config) Render(properties map[string]interface{}) (string, error) {
+	renderedConfig, err := template.Render(c.Template, properties)
+	if err != nil {
+		return "", err
+	}
+
+	err = util.ValidateJson(renderedConfig, util.Location{
+		Coordinate:       c.Coordinate,
+		Group:            c.Group,
+		Environment:      c.Environment,
+		TemplateFilePath: c.Template.Name(),
+	})
+
+	if err != nil {
+		return "", &configErrors.InvalidJsonError{
+			Config: c.Coordinate,
+			EnvironmentDetails: configErrors.EnvironmentDetails{
+				Group:       c.Group,
+				Environment: c.Environment,
+			},
+			WrappedError: err,
+		}
+	}
+
+	return renderedConfig, nil
 }
 
 // DefaultParameterParsers map defining a set of default parsers which can be used to load configurations

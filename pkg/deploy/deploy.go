@@ -21,39 +21,11 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
 	configErrors "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/errors"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2/topologysort"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 )
-
-type invalidJsonError struct {
-	Config             coordinate.Coordinate
-	EnvironmentDetails configErrors.EnvironmentDetails
-	error              error
-}
-
-func (e invalidJsonError) Unwrap() error {
-	return e.error
-}
-
-var (
-	// invalidJsonError must support unwrap function
-	_ interface{ Unwrap() error } = (*invalidJsonError)(nil)
-)
-
-func (e invalidJsonError) Coordinates() coordinate.Coordinate {
-	return e.Config
-}
-
-func (e invalidJsonError) LocationDetails() configErrors.EnvironmentDetails {
-	return e.EnvironmentDetails
-}
-
-func (e invalidJsonError) Error() string {
-	return e.error.Error()
-}
 
 type configDeployError struct {
 	Config             coordinate.Coordinate
@@ -140,7 +112,7 @@ func DeployConfigs(client rest.DynatraceClient, apis api.ApiMap,
 		c := c // to avoid implicit memory aliasing (gosec G601)
 
 		if c.Skip {
-			resolvedEntities[c.Coordinate] = parameter.ResolvedEntity{ //TODO where are entities used? why is this needed
+			resolvedEntities[c.Coordinate] = parameter.ResolvedEntity{ //TODO this is used to produce useful errors when referencing a skipped config - maybe encapsulate with "resolvedEntities" and "knownEntityNames" in one component
 				EntityName: c.Coordinate.ConfigId,
 				Coordinate: c.Coordinate,
 				Properties: parameter.Properties{},
@@ -215,7 +187,7 @@ func deployConfig(client rest.ConfigClient, apis api.ApiMap, entities parameter.
 		return parameter.ResolvedEntity{}, errors
 	}
 
-	renderedConfig, err := renderConfig(conf, properties)
+	renderedConfig, err := conf.Render(properties)
 	if err != nil {
 		return parameter.ResolvedEntity{}, []error{err}
 	}
@@ -275,33 +247,6 @@ func resolveProperties(c *config.Config, entities map[coordinate.Coordinate]para
 	return properties, nil
 }
 
-func renderConfig(c *config.Config, properties parameter.Properties) (string, error) {
-	renderedConfig, err := template.Render(c.Template, properties)
-	if err != nil {
-		return "", err
-	}
-
-	err = util.ValidateJson(renderedConfig, util.Location{
-		Coordinate:       c.Coordinate,
-		Group:            c.Group,
-		Environment:      c.Environment,
-		TemplateFilePath: c.Template.Name(),
-	})
-
-	if err != nil {
-		return "", &invalidJsonError{
-			Config: c.Coordinate,
-			EnvironmentDetails: configErrors.EnvironmentDetails{
-				Group:       c.Group,
-				Environment: c.Environment,
-			},
-			error: err,
-		}
-	}
-
-	return renderedConfig, nil
-}
-
 func ExtractConfigName(conf *config.Config, properties parameter.Properties) (string, error) {
 	val, found := properties[config.NameParameter]
 
@@ -331,7 +276,7 @@ func deploySetting(client rest.SettingsClient, entities map[coordinate.Coordinat
 		return parameter.ResolvedEntity{}, errors
 	}
 
-	renderedConfig, err := renderConfig(c, properties)
+	renderedConfig, err := c.Render(properties)
 	if err != nil {
 		return parameter.ResolvedEntity{}, []error{err}
 	}

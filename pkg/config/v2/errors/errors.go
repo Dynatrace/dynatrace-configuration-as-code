@@ -30,3 +30,30 @@ type DetailedConfigError interface {
 	ConfigError
 	LocationDetails() EnvironmentDetails
 }
+
+type InvalidJsonError struct {
+	Config             coordinate.Coordinate
+	EnvironmentDetails EnvironmentDetails
+	WrappedError       error
+}
+
+func (e InvalidJsonError) Unwrap() error {
+	return e.WrappedError
+}
+
+var (
+	// invalidJsonError must support unwrap function
+	_ interface{ Unwrap() error } = (*InvalidJsonError)(nil)
+)
+
+func (e InvalidJsonError) Coordinates() coordinate.Coordinate {
+	return e.Config
+}
+
+func (e InvalidJsonError) LocationDetails() EnvironmentDetails {
+	return e.EnvironmentDetails
+}
+
+func (e InvalidJsonError) Error() string {
+	return e.WrappedError.Error()
+}
