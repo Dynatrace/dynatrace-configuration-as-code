@@ -33,6 +33,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
+	"net/http/httptest"
 	"reflect"
 	"strings"
 	"testing"
@@ -98,9 +99,7 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	// WHEN we download everything
-	err := doDownload(fs, server.URL, projectName, "token", "TOKEN_ENV_VAR", "out", apiMap, func(environmentUrl, token string) (rest.DynatraceClient, error) {
-		return rest.NewDynatraceClientForTesting(environmentUrl, token, server.Client())
-	})
+	err := doDownload(fs, getTestingDownloadOptions(server, projectName, apiMap))
 
 	assert.NilError(t, err)
 
@@ -164,9 +163,7 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	// WHEN we download everything
-	err := doDownload(fs, server.URL, projectName, "token", "TOKEN_ENV_VAR", "out", apiMap, func(environmentUrl, token string) (rest.DynatraceClient, error) {
-		return rest.NewDynatraceClientForTesting(environmentUrl, token, server.Client())
-	})
+	err := doDownload(fs, getTestingDownloadOptions(server, projectName, apiMap))
 
 	assert.NilError(t, err)
 
@@ -254,9 +251,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	// WHEN we download everything
-	err := doDownload(fs, server.URL, projectName, "token", "TOKEN_ENV_VAR", "out", apiMap, func(environmentUrl, token string) (rest.DynatraceClient, error) {
-		return rest.NewDynatraceClientForTesting(environmentUrl, token, server.Client())
-	})
+	err := doDownload(fs, getTestingDownloadOptions(server, projectName, apiMap))
 
 	assert.NilError(t, err)
 
@@ -382,9 +377,7 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	// WHEN we download everything
-	err := doDownload(fs, server.URL, projectName, "token", "TOKEN_ENV_VAR", "out", apiMap, func(environmentUrl, token string) (rest.DynatraceClient, error) {
-		return rest.NewDynatraceClientForTesting(environmentUrl, token, server.Client())
-	})
+	err := doDownload(fs, getTestingDownloadOptions(server, projectName, apiMap))
 
 	assert.NilError(t, err)
 
@@ -449,9 +442,7 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	// WHEN we download everything
-	err := doDownload(fs, server.URL, projectName, "token", "TOKEN_ENV_VAR", "out", apiMap, func(environmentUrl, token string) (rest.DynatraceClient, error) {
-		return rest.NewDynatraceClientForTesting(environmentUrl, token, server.Client())
-	})
+	err := doDownload(fs, getTestingDownloadOptions(server, projectName, apiMap))
 
 	assert.NilError(t, err)
 
@@ -517,9 +508,7 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	// WHEN we download everything
-	err := doDownload(fs, server.URL, projectName, "token", "TOKEN_ENV_VAR", "out", apiMap, func(environmentUrl, token string) (rest.DynatraceClient, error) {
-		return rest.NewDynatraceClientForTesting(environmentUrl, token, server.Client())
-	})
+	err := doDownload(fs, getTestingDownloadOptions(server, projectName, apiMap))
 
 	assert.NilError(t, err)
 
@@ -595,9 +584,7 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	// WHEN we download everything
-	err := doDownload(fs, server.URL, projectName, "token", "TOKEN_ENV_VAR", "out", apiMap, func(environmentUrl, token string) (rest.DynatraceClient, error) {
-		return rest.NewDynatraceClientForTesting(environmentUrl, token, server.Client())
-	})
+	err := doDownload(fs, getTestingDownloadOptions(server, projectName, apiMap))
 
 	assert.NilError(t, err)
 
@@ -737,9 +724,7 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 			fs := afero.NewMemMapFs()
 
 			// WHEN we download everything
-			err := doDownload(fs, server.URL, testcase.projectName, "token", "TOKEN_ENV_VAR", "out", apiMap, func(environmentUrl, token string) (rest.DynatraceClient, error) {
-				return rest.NewDynatraceClientForTesting(environmentUrl, token, server.Client())
-			})
+			err := doDownload(fs, getTestingDownloadOptions(server, testcase.projectName, apiMap))
 
 			assert.NilError(t, err)
 
@@ -771,6 +756,20 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 				hostAutoUpdateApi.GetId(): testcase.expectedConfigs,
 			}, compareOptions...)
 		})
+	}
+}
+
+func getTestingDownloadOptions(server *httptest.Server, projectName string, apiMap api.ApiMap) downloadOptions {
+	return downloadOptions{
+		environmentUrl:  server.URL,
+		token:           "token",
+		tokenEnvVarName: "TOKEN_ENV_VAR",
+		outputFolder:    "out",
+		projectName:     projectName,
+		apis:            apiMap,
+		clientFactory: func(environmentUrl, token string) (rest.DynatraceClient, error) {
+			return rest.NewDynatraceClientForTesting(environmentUrl, token, server.Client())
+		},
 	}
 }
 

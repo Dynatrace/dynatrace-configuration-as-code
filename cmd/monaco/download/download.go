@@ -95,7 +95,16 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile
 		tokenEnvVar = envVarToken.EnvironmentVariableName
 	}
 
-	return doDownload(fs, u, fmt.Sprintf("%s_%s", projectName, specificEnvironmentName), token, tokenEnvVar, outputFolder, apisToDownload, rest.NewDynatraceClient)
+	options := downloadOptions{
+		environmentUrl:  u,
+		token:           token,
+		tokenEnvVarName: tokenEnvVar,
+		outputFolder:    outputFolder,
+		projectName:     fmt.Sprintf("%s_%s", projectName, specificEnvironmentName),
+		apis:            apisToDownload,
+		clientFactory:   rest.NewDynatraceClient,
+	}
+	return doDownload(fs, options)
 }
 
 func (d DefaultCommand) DownloadConfigs(fs afero.Fs, environmentUrl, projectName, envVarName, outputFolder string, apiNamesToDownload []string) error {
@@ -116,24 +125,47 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, environmentUrl, projectName
 		return fmt.Errorf("not all necessary information is present to start downloading configurations")
 	}
 
-	return doDownload(fs, environmentUrl, projectName, token, envVarName, outputFolder, apis, rest.NewDynatraceClient)
+	options := downloadOptions{
+		environmentUrl:  environmentUrl,
+		token:           token,
+		tokenEnvVarName: envVarName,
+		outputFolder:    outputFolder,
+		projectName:     projectName,
+		apis:            apis,
+		clientFactory:   rest.NewDynatraceClient,
+	}
+	return doDownload(fs, options)
 }
 
 type dynatraceClientFactory func(environmentUrl, token string) (rest.DynatraceClient, error)
 
-func doDownload(fs afero.Fs, environmentUrl, projectName, token, tokenEnvVarName, outputFolder string, apis api.ApiMap, clientFactory dynatraceClientFactory) error {
+type downloadOptions struct {
+	environmentUrl  string
+	token           string
+	tokenEnvVarName string
+	outputFolder    string
+	projectName     string
+	apis            api.ApiMap
+	clientFactory   dynatraceClientFactory
+}
 
-	errors := validateOutputFolder(fs, outputFolder, projectName)
+func (c downloadOptions) getDynatraceClient() (rest.DynatraceClient, error) {
+	return c.clientFactory(c.environmentUrl, c.token)
+}
+
+func doDownload(fs afero.Fs, options downloadOptions) error {
+
+	errors := validateOutputFolder(fs, options.outputFolder, options.projectName)
 	if len(errors) > 0 {
 		util.PrintErrors(errors)
 
 		return fmt.Errorf("output folder is invalid")
 	}
 
-	log.Info("Downloading from environment '%v' into project '%v'", environmentUrl, projectName)
-	log.Debug("APIS to download: \n - %v", strings.Join(maps.Keys(apis), "\n - "))
+	log.Info("Downloading from environment '%v' into project '%v'", options.environmentUrl, options.projectName)
+	log.Debug("APIS to download: \n - %v", strings.Join(maps.Keys(options.apis), "\n - "))
 
-	downloadedConfigs, err := downloadConfigs(environmentUrl, token, apis, projectName, clientFactory)
+	downloadedConfigs, err := downloadConfigs(options)
 	if err != nil {
 		return err
 	}
@@ -148,13 +180,13 @@ func doDownload(fs afero.Fs, environmentUrl, projectName, token, tokenEnvVarName
 	log.Info("Resolving dependencies between configurations")
 	downloadedConfigs = download.ResolveDependencies(downloadedConfigs)
 
-	proj := download.CreateProjectData(downloadedConfigs, projectName)
+	proj := download.CreateProjectData(downloadedConfigs, options.projectName)
 
 	downloadWriterContext := download.WriterContext{
 		ProjectToWrite:  proj,
-		TokenEnvVarName: tokenEnvVarName,
-		EnvironmentUrl:  environmentUrl,
-		OutputFolder:    outputFolder,
+		TokenEnvVarName: options.tokenEnvVarName,
+		EnvironmentUrl:  options.environmentUrl,
+		OutputFolder:    options.outputFolder,
 	}
 	err = download.WriteToDisk(fs, downloadWriterContext)
 	if err != nil {
@@ -179,13 +211,13 @@ func reportForCircularDependencies(p project.Project) error {
 	return nil
 }
 
-func downloadConfigs(environmentUrl string, token string, apis api.ApiMap, projectName string, clientFactory dynatraceClientFactory) (project.ConfigsPerType, error) {
-	client, err := clientFactory(environmentUrl, token)
+func downloadConfigs(context downloadOptions) (project.ConfigsPerType, error) {
+	client, err := context.getDynatraceClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Dynatrace client: %w", err)
 	}
 
-	downloadedConfigs := downloader.DownloadAllConfigs(apis, client, projectName)
+	downloadedConfigs := downloader.DownloadAllConfigs(context.apis, client, context.projectName)
 	return downloadedConfigs, nil
 }
 
