@@ -142,9 +142,7 @@ func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 		Example:           "monaco deploy manifest.yaml -v -e dev-environment",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completion.DeployCompletion,
-		PreRun: func(cmd *cobra.Command, args []string) {
-			cmd.SilenceUsage = true
-		},
+		PreRun:            silenceUsageCommand(),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			manifestName = args[0]
@@ -173,6 +171,15 @@ func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 	return deployCmd
 }
 
+// silenceUsageCommand gives back a command that is just configured to skip printing of usage info.
+// We use it as a PreRun hook to enforce the behavior of printing usage info when the command structure
+// given by the user is faulty
+func silenceUsageCommand() func(cmd *cobra.Command, args []string) {
+	return func(cmd *cobra.Command, args []string) {
+		cmd.SilenceUsage = true
+	}
+}
+
 func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 
 	var environment []string
@@ -183,9 +190,7 @@ func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 		Short:   "Delete configurations defined in delete.yaml from the environments defined in the manifest",
 		Example: "monaco delete manifest.yaml delete.yaml -e dev-environment",
 		Args:    cobra.ExactArgs(2),
-		PreRun: func(cmd *cobra.Command, args []string) {
-			cmd.SilenceUsage = true
-		},
+		PreRun:  silenceUsageCommand(),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			manifestName = args[0]
@@ -227,9 +232,7 @@ func getPurgeCommand(fs afero.Fs) (purgeCmd *cobra.Command) {
 		Example: "monaco purge manifest.yaml -e dev-environment",
 		Hidden:  true, // this command will not be suggested or shown in help
 		Args:    cobra.ExactArgs(1),
-		PreRun: func(cmd *cobra.Command, args []string) {
-			cmd.SilenceUsage = true
-		},
+		PreRun:  silenceUsageCommand(),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			manifestName = args[0]
@@ -267,9 +270,7 @@ func getConvertCommand(fs afero.Fs) (convertCmd *cobra.Command) {
 		Example:           "monaco convert environment.yaml my-v1-project -o my-v2-project",
 		Args:              cobra.ExactArgs(2),
 		ValidArgsFunction: completion.ConvertCompletion,
-		PreRun: func(cmd *cobra.Command, args []string) {
-			cmd.SilenceUsage = true
-		},
+		PreRun:            silenceUsageCommand(),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			environmentsFile := args[0]
@@ -313,9 +314,7 @@ func getLegacyDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 		Use:     "deploy [configuration directory]",
 		Short:   "Deploy v1 configurations to Dynatrace environments",
 		Example: "monaco deploy -e environments.yaml",
-		PreRun: func(cmd *cobra.Command, args []string) {
-			cmd.SilenceUsage = true
-		},
+		PreRun:  silenceUsageCommand(),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			if len(args) > 1 {
