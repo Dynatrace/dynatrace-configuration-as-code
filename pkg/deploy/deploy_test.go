@@ -35,6 +35,7 @@ import (
 )
 
 var dashboardApi = api.NewStandardApi("dashboard", "dashboard", false, "dashboard-v2", false)
+var testApiMap = api.ApiMap{"dashboard": dashboardApi}
 
 func TestResolveParameterValues(t *testing.T) {
 	name := "test"
@@ -455,7 +456,7 @@ func TestDeployConfig(t *testing.T) {
 
 	knownEntityNames := knownEntityMap{}
 
-	resolvedEntity, errors := deployConfig(client, dashboardApi, entities, knownEntityNames, &conf)
+	resolvedEntity, errors := deployConfig(client, testApiMap, entities, knownEntityNames, &conf)
 
 	assert.Assert(t, len(errors) == 0, "there should be no errors (no errors: %d, %s)", len(errors), errors)
 	assert.Equal(t, name, resolvedEntity.EntityName, "%s == %s")
@@ -611,7 +612,7 @@ func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
 		},
 	}
 
-	_, errors := deployConfig(client, dashboardApi, entities, knownEntityNames, &conf)
+	_, errors := deployConfig(client, testApiMap, entities, knownEntityNames, &conf)
 
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
@@ -667,7 +668,7 @@ func TestDeployConfigShouldFailCyclicParameterDependencies(t *testing.T) {
 
 	knownEntityNames := knownEntityMap{}
 
-	_, errors := deployConfig(client, dashboardApi, entities, knownEntityNames, &conf)
+	_, errors := deployConfig(client, testApiMap, entities, knownEntityNames, &conf)
 
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
@@ -693,7 +694,7 @@ func TestDeployConfigShouldFailOnMissingNameParameter(t *testing.T) {
 
 	knownEntityNames := knownEntityMap{}
 
-	_, errors := deployConfig(client, dashboardApi, entities, knownEntityNames, &conf)
+	_, errors := deployConfig(client, testApiMap, entities, knownEntityNames, &conf)
 
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
@@ -734,7 +735,7 @@ func TestDeployConfigShouldFailOnReferenceOnUnknownConfig(t *testing.T) {
 	entities := map[coordinate.Coordinate]parameter.ResolvedEntity{}
 	knownEntityNames := knownEntityMap{}
 
-	_, errors := deployConfig(client, dashboardApi, entities, knownEntityNames, &conf)
+	_, errors := deployConfig(client, testApiMap, entities, knownEntityNames, &conf)
 
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
@@ -785,7 +786,7 @@ func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
 
 	knownEntityNames := knownEntityMap{}
 
-	_, errors := deployConfig(client, dashboardApi, entities, knownEntityNames, &conf)
+	_, errors := deployConfig(client, testApiMap, entities, knownEntityNames, &conf)
 
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
@@ -815,6 +816,11 @@ func TestDeployConfigsTargetingSettings(t *testing.T) {
 	sortedConfigs := []config.Config{
 		{
 			Template: generateDummyTemplate(t),
+			Coordinate: coordinate.Coordinate{
+				Project:  "some project",
+				Type:     "schema",
+				ConfigId: "some setting",
+			},
 			Type: config.Type{
 				Schema:        "schema",
 				SchemaVersion: "schemaversion",
@@ -823,7 +829,10 @@ func TestDeployConfigsTargetingSettings(t *testing.T) {
 		},
 	}
 	client.EXPECT().ListKnownSettings(gomock.Any()).Times(1)
-	client.EXPECT().Upsert(gomock.Any(), gomock.Any()).Times(1)
+	client.EXPECT().Upsert(gomock.Any(), gomock.Any()).Times(1).Return(api.DynatraceEntity{
+		Id:   "42",
+		Name: "Super Special Settings Object",
+	}, nil)
 	errors := DeployConfigs(client, apis, sortedConfigs, false, false)
 	assert.Assert(t, len(errors) == 0, "there should be no errors (errors: %s)", errors)
 }
