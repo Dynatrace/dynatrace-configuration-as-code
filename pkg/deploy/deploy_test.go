@@ -406,7 +406,7 @@ func TestDeployConfigsTargetingSettings(t *testing.T) {
 				ConfigId: "some setting",
 			},
 			Type: config.Type{
-				Schema:        "schema",
+				SchemaId:      "schema",
 				SchemaVersion: "schemaversion",
 				Scope:         "scope",
 			},

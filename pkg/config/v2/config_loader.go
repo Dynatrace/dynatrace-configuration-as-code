@@ -390,7 +390,7 @@ func getConfigFromDefinition(
 			ConfigId: configId,
 		},
 		Type: Type{
-			Schema:        configType.Settings.Schema,
+			SchemaId:      configType.Settings.Schema,
 			SchemaVersion: configType.Settings.SchemaVersion,
 			Scope:         configType.Settings.Scope,
 			Api:           configType.Api,

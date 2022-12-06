@@ -40,12 +40,12 @@ const (
 type Parameters map[string]parameter.Parameter
 
 type Type struct {
-	Schema, SchemaVersion, Scope, Api string
+	SchemaId, SchemaVersion, Scope, Api string
 }
 
-// IsSettings returns true if Schema is not empty
+// IsSettings returns true if SchemaId is not empty
 func (t Type) IsSettings() bool {
-	return t.Schema != ""
+	return t.SchemaId != ""
 }
 
 // Config struct defining a configuration which can be deployed.

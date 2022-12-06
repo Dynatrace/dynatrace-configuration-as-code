@@ -122,7 +122,7 @@ configs:
 						ConfigId: "profile-id",
 					},
 					Type: Type{
-						Schema:        "builtin:profile.test",
+						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 						Scope:         "tenant",
 					},

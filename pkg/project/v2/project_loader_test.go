@@ -372,7 +372,7 @@ configs:
 	s1, found := c["builtin:super.special.schema"]
 	assert.Assert(t, found, "Expected configs loaded for setting schema 'builtin:super.special.schema'")
 	assert.Equal(t, s1[0].Type, config.Type{
-		Schema:        "builtin:super.special.schema",
+		SchemaId:      "builtin:super.special.schema",
 		SchemaVersion: "1.42.14",
 		Scope:         "tenant",
 		Api:           "",
@@ -381,7 +381,7 @@ configs:
 	s2, found := c["builtin:other.cool.schema"]
 	assert.Assert(t, found, "Expected configs loaded for setting schema 'builtin:other.cool.schema'")
 	assert.Equal(t, s2[0].Type, config.Type{
-		Schema:        "builtin:other.cool.schema",
+		SchemaId:      "builtin:other.cool.schema",
 		SchemaVersion: "",
 		Scope:         "HOST-1234567",
 		Api:           "",
