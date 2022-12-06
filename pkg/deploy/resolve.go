@@ -102,7 +102,7 @@ func validateParameterReferences(configCoordinates coordinate.Coordinate,
 		if ref.Config == configCoordinates {
 			// parameters referencing themselves makes no sense
 			if ref.Property == paramName {
-				errors = append(errors, newParameterReferenceError(configCoordinates, group, environment, paramName, ref, "parameter referencing itself"))
+				errors = append(errors, newParamsRefErr(configCoordinates, group, environment, paramName, ref, "parameter referencing itself"))
 			}
 
 			continue
@@ -111,12 +111,12 @@ func validateParameterReferences(configCoordinates coordinate.Coordinate,
 		entity, found := entities[ref.Config]
 
 		if !found {
-			errors = append(errors, newParameterReferenceError(configCoordinates, group, environment, paramName, ref, "referenced config not found"))
+			errors = append(errors, newParamsRefErr(configCoordinates, group, environment, paramName, ref, "referenced config not found"))
 			continue
 		}
 
 		if entity.Skip {
-			errors = append(errors, newParameterReferenceError(configCoordinates, group, environment, paramName, ref, "referencing skipped config"))
+			errors = append(errors, newParamsRefErr(configCoordinates, group, environment, paramName, ref, "referencing skipped config"))
 			continue
 		}
 	}
@@ -128,13 +128,13 @@ func extractConfigName(conf *config.Config, properties parameter.Properties) (st
 	val, found := properties[config.NameParameter]
 
 	if !found {
-		return "", newConfigDeployError(conf, "missing `name` for config")
+		return "", newConfigDeployErr(conf, "missing `name` for config")
 	}
 
 	name, success := val.(string)
 
 	if !success {
-		return "", newConfigDeployError(conf, "`name` in config is not of type string")
+		return "", newConfigDeployErr(conf, "`name` in config is not of type string")
 	}
 
 	return name, nil

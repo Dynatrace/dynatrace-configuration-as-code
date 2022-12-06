@@ -18,81 +18,10 @@ import (
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
-	configErrors "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/errors"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
-)
-
-type configDeployError struct {
-	Config             coordinate.Coordinate
-	EnvironmentDetails configErrors.EnvironmentDetails
-	Reason             string
-}
-
-func newConfigDeployError(conf *config.Config, reason string) configDeployError {
-	return configDeployError{
-		Config: conf.Coordinate,
-		EnvironmentDetails: configErrors.EnvironmentDetails{
-			Group:       conf.Group,
-			Environment: conf.Environment,
-		},
-		Reason: reason,
-	}
-}
-
-func (e configDeployError) Coordinates() coordinate.Coordinate {
-	return e.Config
-}
-
-func (e configDeployError) LocationDetails() configErrors.EnvironmentDetails {
-	return e.EnvironmentDetails
-}
-
-func (e configDeployError) Error() string {
-	return e.Reason
-}
-
-type ParameterReferenceError struct {
-	Config             coordinate.Coordinate
-	EnvironmentDetails configErrors.EnvironmentDetails
-	Parameter          string
-	Reference          parameter.ParameterReference
-	Reason             string
-}
-
-func newParameterReferenceError(coord coordinate.Coordinate, group string, env string,
-	param string, ref parameter.ParameterReference, reason string) ParameterReferenceError {
-	return ParameterReferenceError{
-		Config: coord,
-		EnvironmentDetails: configErrors.EnvironmentDetails{
-			Group:       group,
-			Environment: env,
-		},
-		Parameter: param,
-		Reference: ref,
-		Reason:    reason,
-	}
-}
-
-func (e ParameterReferenceError) Coordinates() coordinate.Coordinate {
-	return e.Config
-}
-
-func (e ParameterReferenceError) LocationDetails() configErrors.EnvironmentDetails {
-	return e.EnvironmentDetails
-}
-
-func (e ParameterReferenceError) Error() string {
-	return fmt.Sprintf("parameter `%s` cannot reference `%s`: %s",
-		e.Parameter, e.Reference, e.Reason)
-}
-
-var (
-	_ configErrors.DetailedConfigError = (*configDeployError)(nil)
-	_ configErrors.DetailedConfigError = (*ParameterReferenceError)(nil)
 )
 
 // DeployConfigsOptions defines additional options used by DeployConfigs
@@ -166,7 +95,7 @@ func deployConfig(client rest.ConfigClient, apis api.ApiMap, entityMap *EntityMa
 		errors = append(errors, err)
 	} else {
 		if entityMap.Known(apiToDeploy.GetId(), configName) && !apiToDeploy.IsNonUniqueNameApi() {
-			errors = append(errors, newConfigDeployError(conf, fmt.Sprintf("duplicated config name `%s`", configName)))
+			errors = append(errors, newConfigDeployErr(conf, fmt.Sprintf("duplicated config name `%s`", configName)))
 		}
 	}
 	if len(errors) > 0 {
@@ -193,7 +122,7 @@ func deployConfig(client rest.ConfigClient, apis api.ApiMap, entityMap *EntityMa
 		if !isUuidOrMeId {
 			entityUuid, err = util.GenerateUuidFromConfigId(projectId, configId)
 			if err != nil {
-				return parameter.ResolvedEntity{}, []error{newConfigDeployError(conf, err.Error())}
+				return parameter.ResolvedEntity{}, []error{newConfigDeployErr(conf, err.Error())}
 			}
 		}
 
@@ -203,7 +132,7 @@ func deployConfig(client rest.ConfigClient, apis api.ApiMap, entityMap *EntityMa
 	}
 
 	if err != nil {
-		return parameter.ResolvedEntity{}, []error{newConfigDeployError(conf, err.Error())}
+		return parameter.ResolvedEntity{}, []error{newConfigDeployErr(conf, err.Error())}
 	}
 
 	properties[config.IdParameter] = entity.Id
@@ -243,7 +172,7 @@ func deploySetting(client rest.SettingsClient, entityMap *EntityMap, c *config.C
 		Content:       []byte(renderedConfig),
 	})
 	if err != nil {
-		return parameter.ResolvedEntity{}, []error{newConfigDeployError(c, err.Error())}
+		return parameter.ResolvedEntity{}, []error{newConfigDeployErr(c, err.Error())}
 	}
 
 	properties[config.IdParameter] = e.Id
