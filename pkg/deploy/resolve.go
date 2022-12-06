@@ -124,7 +124,7 @@ func validateParameterReferences(configCoordinates coordinate.Coordinate,
 	return errors
 }
 
-func ExtractConfigName(conf *config.Config, properties parameter.Properties) (string, error) {
+func extractConfigName(conf *config.Config, properties parameter.Properties) (string, error) {
 	val, found := properties[config.NameParameter]
 
 	if !found {

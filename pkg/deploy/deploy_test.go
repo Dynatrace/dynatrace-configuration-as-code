@@ -361,7 +361,7 @@ func TestExtractConfigName(t *testing.T) {
 		config.NameParameter: name,
 	}
 
-	val, err := ExtractConfigName(&conf, properties)
+	val, err := extractConfigName(&conf, properties)
 
 	assert.NilError(t, err)
 	assert.Equal(t, name, val)
@@ -383,7 +383,7 @@ func TestExtractConfigNameShouldFailOnMissingName(t *testing.T) {
 
 	properties := parameter.Properties{}
 
-	_, err := ExtractConfigName(&conf, properties)
+	_, err := extractConfigName(&conf, properties)
 
 	assert.Assert(t, err != nil, "error should not be nil (error val: %s)", err)
 }
@@ -406,7 +406,7 @@ func TestExtractConfigNameShouldFailOnNameWithNonStringType(t *testing.T) {
 		config.NameParameter: 1,
 	}
 
-	_, err := ExtractConfigName(&conf, properties)
+	_, err := extractConfigName(&conf, properties)
 
 	assert.Assert(t, err != nil, "error should not be nil (error val: %s)", err)
 }

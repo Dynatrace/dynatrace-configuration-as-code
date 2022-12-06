@@ -137,7 +137,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 
 			properties[config.IdParameter] = "NO REAL ID NEEDED FOR CHECKING AVAILABILITY"
 
-			configName, err := deploy.ExtractConfigName(&theConfig, properties)
+			configName, err := extractConfigName(&theConfig, properties)
 			assert.NilError(t, err)
 
 			entities[coord] = parameter.ResolvedEntity{
@@ -315,4 +315,20 @@ func wait(description string, maxPollCount int, condition func() bool) error {
 	log.Error("Error: Waiting for '%s' timed out!", description)
 
 	return errors.New("Waiting for '" + description + "' timed out!")
+}
+
+func extractConfigName(conf *config.Config, properties parameter.Properties) (string, error) {
+	val, found := properties[config.NameParameter]
+
+	if !found {
+		return "", fmt.Errorf("missing `name` for config")
+	}
+
+	name, success := val.(string)
+
+	if !success {
+		return "", fmt.Errorf("`name` in config is not of type string")
+	}
+
+	return name, nil
 }

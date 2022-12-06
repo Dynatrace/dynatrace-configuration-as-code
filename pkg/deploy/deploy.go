@@ -155,7 +155,7 @@ func deployConfig(client rest.ConfigClient, apis api.ApiMap, entityMap *EntityMa
 		return parameter.ResolvedEntity{}, errors
 	}
 
-	configName, err := ExtractConfigName(conf, properties)
+	configName, err := extractConfigName(conf, properties)
 	if err != nil {
 		errors = append(errors, err)
 	} else {
