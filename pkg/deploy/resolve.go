@@ -1,0 +1,141 @@
+// @license
+// Copyright 2021 Dynatrace LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package deploy
+
+import (
+	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2/topologysort"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+)
+
+// TODO: unexport this function
+func ResolveParameterValues(
+	conf *config.Config,
+	entities map[coordinate.Coordinate]parameter.ResolvedEntity,
+	parameters []topologysort.ParameterWithName,
+) (parameter.Properties, []error) {
+
+	var errors []error
+
+	properties := make(parameter.Properties)
+
+	for _, container := range parameters {
+		name := container.Name
+		param := container.Parameter
+
+		errs := validateParameterReferences(conf.Coordinate, conf.Group, conf.Environment, entities, name, param)
+
+		if errs != nil {
+			errors = append(errors, errs...)
+			continue
+		}
+
+		val, err := param.ResolveValue(parameter.ResolveContext{
+			ResolvedEntities:        entities,
+			ConfigCoordinate:        conf.Coordinate,
+			Group:                   conf.Group,
+			Environment:             conf.Environment,
+			ParameterName:           name,
+			ResolvedParameterValues: properties,
+		})
+
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+
+		if name == config.NameParameter {
+			properties[name] = util.ToString(val)
+		} else {
+			properties[name] = val
+		}
+	}
+
+	if len(errors) > 0 {
+		// we want to return the partially resolved properties here, to find
+		// more errors in the outer logic
+		return properties, errors
+	}
+
+	return properties, nil
+}
+
+func resolveProperties(c *config.Config, entities map[coordinate.Coordinate]parameter.ResolvedEntity) (parameter.Properties, []error) {
+	var errors []error
+
+	parameters, sortErrs := topologysort.SortParameters(c.Group, c.Environment, c.Coordinate, c.Parameters)
+	errors = append(errors, sortErrs...)
+
+	properties, errs := ResolveParameterValues(c, entities, parameters)
+	errors = append(errors, errs...)
+
+	if len(errors) > 0 {
+		return nil, errors
+	}
+
+	return properties, nil
+}
+
+func validateParameterReferences(configCoordinates coordinate.Coordinate,
+	group string, environment string,
+	entities map[coordinate.Coordinate]parameter.ResolvedEntity,
+	paramName string, param parameter.Parameter) (errors []error) {
+
+	for _, ref := range param.GetReferences() {
+		// we have to ignore references to the same config,
+		// as they will never be resolved before we validate
+		// the parameters
+		if ref.Config == configCoordinates {
+			// parameters referencing themselves makes no sense
+			if ref.Property == paramName {
+				errors = append(errors, newParameterReferenceError(configCoordinates, group, environment, paramName, ref, "parameter referencing itself"))
+			}
+
+			continue
+		}
+
+		entity, found := entities[ref.Config]
+
+		if !found {
+			errors = append(errors, newParameterReferenceError(configCoordinates, group, environment, paramName, ref, "referenced config not found"))
+			continue
+		}
+
+		if entity.Skip {
+			errors = append(errors, newParameterReferenceError(configCoordinates, group, environment, paramName, ref, "referencing skipped config"))
+			continue
+		}
+	}
+
+	return errors
+}
+
+func ExtractConfigName(conf *config.Config, properties parameter.Properties) (string, error) {
+	val, found := properties[config.NameParameter]
+
+	if !found {
+		return "", newConfigDeployError(conf, "missing `name` for config")
+	}
+
+	name, success := val.(string)
+
+	if !success {
+		return "", newConfigDeployError(conf, "`name` in config is not of type string")
+	}
+
+	return name, nil
+}
