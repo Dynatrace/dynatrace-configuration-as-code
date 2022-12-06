@@ -126,10 +126,10 @@ func TestUpsert(t *testing.T) {
 			assert.NilError(t, err)
 
 			resp, err := c.Upsert(nil, SettingsObject{
-				Id:      "user-provided-id",
-				Schema:  "builtin:alerting.profile",
-				Scope:   "tenant",
-				Content: []byte(test.content),
+				Id:       "user-provided-id",
+				SchemaID: "builtin:alerting.profile",
+				Scope:    "tenant",
+				Content:  []byte(test.content),
 			})
 
 			assert.Equal(t, err != nil, test.expectError)
