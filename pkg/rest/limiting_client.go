@@ -82,9 +82,9 @@ func (l limitingClient) ExistsByName(a api.Api, name string) (exists bool, id st
 	return
 }
 
-func (l limitingClient) Upsert(knownSettings KnownSettings, obj SettingsObject) (e api.DynatraceEntity, err error) {
+func (l limitingClient) UpsertSettings(knownSettings KnownSettings, obj SettingsObject) (e api.DynatraceEntity, err error) {
 	l.limiter.ExecuteBlocking(func() {
-		e, err = l.client.Upsert(knownSettings, obj)
+		e, err = l.client.UpsertSettings(knownSettings, obj)
 	})
 
 	return

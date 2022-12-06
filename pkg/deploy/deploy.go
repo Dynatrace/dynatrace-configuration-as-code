@@ -164,7 +164,7 @@ func deploySetting(client rest.SettingsClient, entityMap *EntityMap, c *config.C
 		return parameter.ResolvedEntity{}, []error{err}
 	}
 
-	e, err := client.Upsert(settings, rest.SettingsObject{
+	e, err := client.UpsertSettings(settings, rest.SettingsObject{
 		Id:            c.Coordinate.ConfigId,
 		SchemaID:      c.Type.SchemaId,
 		SchemaVersion: c.Type.SchemaVersion,

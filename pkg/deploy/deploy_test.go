@@ -159,7 +159,7 @@ func TestDeploySettingShouldFailUpsert(t *testing.T) {
 	}
 
 	client := rest.NewMockSettingsClient(gomock.NewController(t))
-	client.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(api.DynatraceEntity{}, fmt.Errorf("upsert failed"))
+	client.EXPECT().UpsertSettings(gomock.Any(), gomock.Any()).Return(api.DynatraceEntity{}, fmt.Errorf("upsert failed"))
 	client.EXPECT().ListKnownSettings(gomock.Any()).Return(nil, nil)
 
 	conf := &config.Config{
@@ -413,7 +413,7 @@ func TestDeployConfigsTargetingSettings(t *testing.T) {
 		},
 	}
 	client.EXPECT().ListKnownSettings(gomock.Any()).Times(1)
-	client.EXPECT().Upsert(gomock.Any(), gomock.Any()).Times(1).Return(api.DynatraceEntity{
+	client.EXPECT().UpsertSettings(gomock.Any(), gomock.Any()).Times(1).Return(api.DynatraceEntity{
 		Id:   "42",
 		Name: "Super Special Settings Object",
 	}, nil)
