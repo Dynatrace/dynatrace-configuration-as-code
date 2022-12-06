@@ -96,28 +96,25 @@ var (
 	_ configErrors.DetailedConfigError = (*ParameterReferenceError)(nil)
 )
 
-type knownEntityMap map[string]map[string]struct{}
-
 // DeployConfigs deploys the given configs with the given apis via the given client
 // NOTE: the given configs need to be sorted, otherwise deployment will
 // probably fail, as references cannot be resolved
 func DeployConfigs(client rest.DynatraceClient, apis api.ApiMap,
 	sortedConfigs []config.Config, continueOnError, dryRun bool) []error {
 
-	resolvedEntities := make(map[coordinate.Coordinate]parameter.ResolvedEntity)
-	knownEntityNames := createKnownEntityMap(apis)
+	entityMap := NewEntityMap(apis)
 	var errors []error
 
 	for _, c := range sortedConfigs {
 		c := c // to avoid implicit memory aliasing (gosec G601)
 
 		if c.Skip {
-			resolvedEntities[c.Coordinate] = parameter.ResolvedEntity{ //TODO this is used to produce useful errors when referencing a skipped config - maybe encapsulate with "resolvedEntities" and "knownEntityNames" in one component
+			entityMap.PutResolved(c.Coordinate, parameter.ResolvedEntity{
 				EntityName: c.Coordinate.ConfigId,
 				Coordinate: c.Coordinate,
 				Properties: parameter.Properties{},
 				Skip:       true,
-			}
+			})
 			// if the config is skip we do not care if the same name
 			// has already been used
 			continue
@@ -127,13 +124,9 @@ func DeployConfigs(client rest.DynatraceClient, apis api.ApiMap,
 		var deploymentErrors []error
 
 		if c.Type.IsSettings() {
-			entity, deploymentErrors = deploySetting(client, resolvedEntities, &c)
+			entity, deploymentErrors = deploySetting(client, entityMap, &c)
 		} else {
-			entity, deploymentErrors = deployConfig(client, apis, resolvedEntities, knownEntityNames, &c)
-			if len(deploymentErrors) == 0 && entity.EntityName != "" {
-				//known entity names only stored for Config APIs - if no error happened
-				knownEntityNames[c.Coordinate.Type][entity.EntityName] = struct{}{}
-			}
+			entity, deploymentErrors = deployConfig(client, apis, entityMap, &c)
 		}
 
 		if deploymentErrors != nil {
@@ -145,32 +138,20 @@ func DeployConfigs(client rest.DynatraceClient, apis api.ApiMap,
 				return errors
 			}
 		}
-
-		resolvedEntities[entity.Coordinate] = entity
+		entityMap.PutResolved(entity.Coordinate, entity)
 	}
 
 	return errors
 }
 
-func createKnownEntityMap(apis map[string]api.Api) knownEntityMap {
-	var result = make(knownEntityMap)
-
-	for _, a := range apis {
-		result[a.GetId()] = make(map[string]struct{})
-	}
-
-	return result
-
-}
-
-func deployConfig(client rest.ConfigClient, apis api.ApiMap, entities parameter.ResolvedEntities, knownEntityNames knownEntityMap, conf *config.Config) (parameter.ResolvedEntity, []error) {
+func deployConfig(client rest.ConfigClient, apis api.ApiMap, entityMap *EntityMap, conf *config.Config) (parameter.ResolvedEntity, []error) {
 
 	apiToDeploy := apis[conf.Coordinate.Type]
 	if apiToDeploy == nil {
 		return parameter.ResolvedEntity{}, []error{fmt.Errorf("unknown api `%s`. this is most likely a bug", conf.Type.Api)}
 	}
 
-	properties, errors := resolveProperties(conf, entities)
+	properties, errors := resolveProperties(conf, entityMap.Resolved())
 	if len(errors) > 0 {
 		return parameter.ResolvedEntity{}, errors
 	}
@@ -179,7 +160,7 @@ func deployConfig(client rest.ConfigClient, apis api.ApiMap, entities parameter.
 	if err != nil {
 		errors = append(errors, err)
 	} else {
-		if _, found := knownEntityNames[apiToDeploy.GetId()][configName]; found && !apiToDeploy.IsNonUniqueNameApi() {
+		if entityMap.Known(apiToDeploy.GetId(), configName) && !apiToDeploy.IsNonUniqueNameApi() {
 			errors = append(errors, newConfigDeployError(conf, fmt.Sprintf("duplicated config name `%s`", configName)))
 		}
 	}
@@ -263,7 +244,7 @@ func ExtractConfigName(conf *config.Config, properties parameter.Properties) (st
 	return name, nil
 }
 
-func deploySetting(client rest.SettingsClient, entities map[coordinate.Coordinate]parameter.ResolvedEntity, c *config.Config) (parameter.ResolvedEntity, []error) {
+func deploySetting(client rest.SettingsClient, entityMap *EntityMap, c *config.Config) (parameter.ResolvedEntity, []error) {
 
 	settings, err := client.ListKnownSettings([]string{c.Type.Schema})
 	if err != nil {
@@ -271,7 +252,7 @@ func deploySetting(client rest.SettingsClient, entities map[coordinate.Coordinat
 		return parameter.ResolvedEntity{}, []error{fmt.Errorf("failed to list known settings: %w", err)}
 	}
 
-	properties, errors := resolveProperties(c, entities)
+	properties, errors := resolveProperties(c, entityMap.Resolved())
 	if len(errors) > 0 {
 		return parameter.ResolvedEntity{}, errors
 	}
