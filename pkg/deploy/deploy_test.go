@@ -755,7 +755,7 @@ func TestDeployConfigsWithNoConfigs(t *testing.T) {
 	var apis map[string]api.Api
 	var sortedConfigs []config.Config
 
-	errors := DeployConfigs(client, apis, sortedConfigs, false, false)
+	errors := DeployConfigs(client, apis, sortedConfigs, DeployConfigsOptions{})
 	assert.Assert(t, len(errors) == 0, "there should be no errors (errors: %s)", errors)
 }
 
@@ -765,7 +765,7 @@ func TestDeployConfigsWithOneConfigToSkip(t *testing.T) {
 	sortedConfigs := []config.Config{
 		{Skip: true},
 	}
-	errors := DeployConfigs(client, apis, sortedConfigs, false, false)
+	errors := DeployConfigs(client, apis, sortedConfigs, DeployConfigsOptions{})
 	assert.Assert(t, len(errors) == 0, "there should be no errors (errors: %s)", errors)
 }
 
@@ -792,7 +792,7 @@ func TestDeployConfigsTargetingSettings(t *testing.T) {
 		Id:   "42",
 		Name: "Super Special Settings Object",
 	}, nil)
-	errors := DeployConfigs(client, apis, sortedConfigs, false, false)
+	errors := DeployConfigs(client, apis, sortedConfigs, DeployConfigsOptions{})
 	assert.Assert(t, len(errors) == 0, "there should be no errors (errors: %s)", errors)
 }
 
@@ -828,7 +828,7 @@ func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
 		},
 	}
 
-	errors := DeployConfigs(client, apis, sortedConfigs, false, false)
+	errors := DeployConfigs(client, apis, sortedConfigs, DeployConfigsOptions{})
 	assert.Assert(t, len(errors) == 0, "there should be no errors (errors: %s)", errors)
 }
 
@@ -864,7 +864,7 @@ func TestDeployConfigsTargetingClassicConfigNonUnique(t *testing.T) {
 		},
 	}
 
-	errors := DeployConfigs(client, apis, sortedConfigs, false, false)
+	errors := DeployConfigs(client, apis, sortedConfigs, DeployConfigsOptions{})
 	assert.Assert(t, len(errors) == 0, "there should be no errors (errors: %s)", errors)
 }
 
@@ -903,12 +903,12 @@ func TestDeployConfigsNoApi(t *testing.T) {
 	}
 
 	t.Run("missing api - continue on error", func(t *testing.T) {
-		errors := DeployConfigs(client, apis, sortedConfigs, true, false)
+		errors := DeployConfigs(client, apis, sortedConfigs, DeployConfigsOptions{ContinueOnErr: true})
 		assert.Equal(t, 2, len(errors), fmt.Sprintf("Expected 2 errors, but just got %d", len(errors)))
 	})
 
 	t.Run("missing api - stop on error", func(t *testing.T) {
-		errors := DeployConfigs(client, apis, sortedConfigs, false, false)
+		errors := DeployConfigs(client, apis, sortedConfigs, DeployConfigsOptions{})
 		assert.Equal(t, 1, len(errors), fmt.Sprintf("Expected 1 error, but just got %d", len(errors)))
 	})
 	// test continue on error
@@ -941,12 +941,12 @@ func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
 	}
 
 	t.Run("deployment error - stop on error", func(t *testing.T) {
-		errors := DeployConfigs(&client.DummyClient{}, apis, sortedConfigs, false, false)
+		errors := DeployConfigs(&client.DummyClient{}, apis, sortedConfigs, DeployConfigsOptions{})
 		assert.Equal(t, 1, len(errors), fmt.Sprintf("Expected 1 error, but just got %d", len(errors)))
 	})
 
 	t.Run("deployment error - stop on error", func(t *testing.T) {
-		errors := DeployConfigs(&client.DummyClient{}, apis, sortedConfigs, true, false)
+		errors := DeployConfigs(&client.DummyClient{}, apis, sortedConfigs, DeployConfigsOptions{ContinueOnErr: true})
 		assert.Equal(t, 2, len(errors), fmt.Sprintf("Expected 1 error, but just got %d", len(errors)))
 	})
 

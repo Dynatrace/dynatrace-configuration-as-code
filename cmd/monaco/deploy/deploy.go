@@ -160,7 +160,7 @@ func execDeployment(sortedConfigs map[string][]config.Config, environmentMap map
 			}
 		}
 
-		errors := deploy.DeployConfigs(client, apis, configs, continueOnError, dryRun)
+		errors := deploy.DeployConfigs(client, apis, configs, deploy.DeployConfigsOptions{ContinueOnErr: continueOnError, DryRun: dryRun})
 
 		deploymentErrors = append(deploymentErrors, errors...)
 	}

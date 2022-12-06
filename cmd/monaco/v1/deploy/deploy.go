@@ -146,7 +146,7 @@ func deployEnvironment(environment manifest.EnvironmentDefinition, apis map[stri
 		return []error{err}
 	}
 
-	return deploy.DeployConfigs(apiClient, apis, sortedConfigs, continueOnError, dryRun)
+	return deploy.DeployConfigs(apiClient, apis, sortedConfigs, deploy.DeployConfigsOptions{ContinueOnErr: continueOnError, DryRun: dryRun})
 }
 
 func createClient(environment manifest.EnvironmentDefinition, dryRun bool) (rest.DynatraceClient, error) {
