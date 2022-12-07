@@ -391,7 +391,7 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlStrin
 
 		// Does the API support paging?
 		if isPaginated, nextPage := isPaginatedResponse(objmap); isPaginated {
-			parsedUrl = addNextPageQueryParams(theApi, parsedUrl, nextPage)
+			parsedUrl = addNextPageQueryParams(parsedUrl, nextPage)
 
 			resp, err = getWithRetry(client, parsedUrl.String(), apiToken, 3, 5*time.Second)
 
@@ -420,19 +420,6 @@ func addQueryParamsForNonStandardApis(theApi api.Api, url *url.URL) *url.URL {
 	if theApi.GetId() == "slo" {
 		queryParams.Add("enabledSlos", "all")
 	}
-	url.RawQuery = queryParams.Encode()
-	return url
-}
-
-func addNextPageQueryParams(theApi api.Api, url *url.URL, nextPage string) *url.URL {
-	queryParams := url.Query()
-
-	if theApi.GetId() == "slo" {
-		//SLO API requires enabledSlos to not be set together with nextPageKey, that information is already encoded in the key
-		queryParams.Del("enabledSlos")
-	}
-
-	queryParams.Set("nextPageKey", nextPage)
 	url.RawQuery = queryParams.Encode()
 	return url
 }
@@ -505,13 +492,6 @@ func isResultArrayAvailable(jsonResponse map[string]interface{}, theApi api.Api)
 		return true, jsonResponse[theApi.GetPropertyNameOfGetAllResponse()].([]interface{})
 	}
 	return false, make([]interface{}, 0)
-}
-
-func isPaginatedResponse(jsonResponse map[string]interface{}) (paginated bool, pageKey string) {
-	if jsonResponse["nextPageKey"] != nil {
-		return true, jsonResponse["nextPageKey"].(string)
-	}
-	return false, ""
 }
 
 func translateGenericValues(inputValues []interface{}, configType string) ([]api.Value, error) {
