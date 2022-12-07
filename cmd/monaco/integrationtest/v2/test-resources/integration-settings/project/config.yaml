@@ -1,0 +1,35 @@
+configs:
+- id: tag
+  type:
+    settings:
+      schema: builtin:tags.auto-tagging
+      scope: environment
+  config:
+    name: Settings 2.0 Tag
+    template: auto-tag-setting.json
+- id: slo
+  type:
+    settings:
+      schema: builtin:monitoring.slo
+      scope: environment
+  config:
+    name: "Settings Test SLO"
+    parameters:
+      metricName: "settings_test_slo"
+      threshold:
+        type: value
+        value:
+          target: 95
+          warning: 97.5
+    template: slo-setting.json
+    skip: false
+- id: go-monitoring
+  type:
+    settings:
+      schema: builtin:monitored-technologies.go
+      scope: environment
+  config:
+    name: "Go monitoring"
+    parameters:
+      enabled: true
+    template: environment-go-monitoring.json
