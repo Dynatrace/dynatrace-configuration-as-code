@@ -56,7 +56,17 @@ Either downloading based on an existing manifest, or by defining environment URL
 		RunE: func(cmd *cobra.Command, args []string) error {
 			manifest := args[0]
 			specificEnvironment := args[1]
-			return command.DownloadConfigsBasedOnManifest(fs, manifest, project, specificEnvironment, outputFolder, forceOverwrite, specificApis)
+			options := manifestDownloadOptions{
+				manifestFile:            manifest,
+				specificEnvironmentName: specificEnvironment,
+				downloadCommandOptions: downloadCommandOptions{
+					projectName:        project,
+					outputFolder:       outputFolder,
+					forceOverwrite:     forceOverwrite,
+					apiNamesToDownload: specificApis,
+				},
+			}
+			return command.DownloadConfigsBasedOnManifest(fs, options)
 		},
 	}
 
@@ -75,7 +85,17 @@ Either downloading based on an existing manifest, or by defining environment URL
 		RunE: func(cmd *cobra.Command, args []string) error {
 			url := args[0]
 			tokenEnvVar := args[1]
-			return command.DownloadConfigs(fs, url, project, tokenEnvVar, outputFolder, forceOverwrite, specificApis)
+			options := directDownloadOptions{
+				environmentUrl: url,
+				envVarName:     tokenEnvVar,
+				downloadCommandOptions: downloadCommandOptions{
+					projectName:        project,
+					outputFolder:       outputFolder,
+					forceOverwrite:     forceOverwrite,
+					apiNamesToDownload: specificApis,
+				},
+			}
+			return command.DownloadConfigs(fs, options)
 
 		},
 	}

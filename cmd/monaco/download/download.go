@@ -39,8 +39,8 @@ import (
 //
 // The actual implementations are in the [DefaultCommand] struct.
 type Command interface {
-	DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile, projectName, specificEnvironmentName, outputFolder string, forceOverwrite bool, apiNamesToDownload []string) error
-	DownloadConfigs(fs afero.Fs, environmentUrl, projectName, envVarName, outputFolder string, forceOverwrite bool, apiNamesToDownload []string) error
+	DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions manifestDownloadOptions) error
+	DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOptions) error
 }
 
 // DefaultCommand is used to implement the [Command] interface.
@@ -51,24 +51,42 @@ var (
 	_ Command = (*DefaultCommand)(nil)
 )
 
-func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile, projectName, specificEnvironmentName, outputFolder string, forceOverwrite bool, apiNamesToDownload []string) error {
+type downloadCommandOptions struct {
+	projectName        string
+	outputFolder       string
+	forceOverwrite     bool
+	apiNamesToDownload []string
+}
+
+type manifestDownloadOptions struct {
+	manifestFile            string
+	specificEnvironmentName string
+	downloadCommandOptions
+}
+
+type directDownloadOptions struct {
+	environmentUrl, envVarName string
+	downloadCommandOptions
+}
+
+func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions manifestDownloadOptions) error {
 
 	man, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
 		Fs:           fs,
-		ManifestPath: manifestFile,
+		ManifestPath: cmdOptions.manifestFile,
 	})
 
 	if errs != nil {
 		util.PrintErrors(errs)
-		return fmt.Errorf("failed to load manifest '%v'", manifestFile)
+		return fmt.Errorf("failed to load manifest '%v'", cmdOptions.manifestFile)
 	}
 
-	env, found := man.Environments[specificEnvironmentName]
+	env, found := man.Environments[cmdOptions.specificEnvironmentName]
 	if !found {
-		return fmt.Errorf("environment '%v' was not available in manifest '%v'", specificEnvironmentName, manifestFile)
+		return fmt.Errorf("environment '%v' was not available in manifest '%v'", cmdOptions.specificEnvironmentName, cmdOptions.manifestFile)
 	}
 
-	apisToDownload, errs := getApisToDownload(apiNamesToDownload)
+	apisToDownload, errs := getApisToDownload(cmdOptions.apiNamesToDownload)
 
 	if len(errs) > 0 {
 		util.PrintErrors(errs)
@@ -90,39 +108,39 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, manifestFile
 		return fmt.Errorf("failed to load manifest data")
 	}
 
-	tokenEnvVar := fmt.Sprintf("TOKEN_%s", strings.ToUpper(projectName))
+	tokenEnvVar := fmt.Sprintf("TOKEN_%s", strings.ToUpper(cmdOptions.projectName))
 	if envVarToken, ok := env.Token.(*manifest.EnvironmentVariableToken); ok {
 		tokenEnvVar = envVarToken.EnvironmentVariableName
 	}
 
-	if !forceOverwrite {
-		projectName = fmt.Sprintf("%s_%s", projectName, specificEnvironmentName)
+	if !cmdOptions.forceOverwrite {
+		cmdOptions.projectName = fmt.Sprintf("%s_%s", cmdOptions.projectName, cmdOptions.specificEnvironmentName)
 	}
 
 	options := downloadOptions{
 		environmentUrl:         u,
 		token:                  token,
 		tokenEnvVarName:        tokenEnvVar,
-		outputFolder:           outputFolder,
-		projectName:            projectName,
-		forceOverwriteManifest: forceOverwrite,
+		outputFolder:           cmdOptions.outputFolder,
+		projectName:            cmdOptions.projectName,
+		forceOverwriteManifest: cmdOptions.forceOverwrite,
 		apis:                   apisToDownload,
 		clientFactory:          rest.NewDynatraceClient,
 	}
 	return doDownload(fs, options)
 }
 
-func (d DefaultCommand) DownloadConfigs(fs afero.Fs, environmentUrl, projectName, envVarName, outputFolder string, forceOverwrite bool, apiNamesToDownload []string) error {
+func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOptions) error {
 
-	apis, errors := getApisToDownload(apiNamesToDownload)
+	apis, errors := getApisToDownload(cmdOptions.apiNamesToDownload)
 
 	if len(errors) > 0 {
 		util.PrintErrors(errors)
 		return fmt.Errorf("failed to load apis")
 	}
 
-	token := os.Getenv(envVarName)
-	errors = validateParameters(envVarName, environmentUrl, projectName, token)
+	token := os.Getenv(cmdOptions.envVarName)
+	errors = validateParameters(cmdOptions.envVarName, cmdOptions.environmentUrl, cmdOptions.projectName, token)
 
 	if len(errors) > 0 {
 		util.PrintErrors(errors)
@@ -131,12 +149,12 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, environmentUrl, projectName
 	}
 
 	options := downloadOptions{
-		environmentUrl:         environmentUrl,
+		environmentUrl:         cmdOptions.environmentUrl,
 		token:                  token,
-		tokenEnvVarName:        envVarName,
-		outputFolder:           outputFolder,
-		projectName:            projectName,
-		forceOverwriteManifest: forceOverwrite,
+		tokenEnvVarName:        cmdOptions.envVarName,
+		outputFolder:           cmdOptions.outputFolder,
+		projectName:            cmdOptions.projectName,
+		forceOverwriteManifest: cmdOptions.forceOverwrite,
 		apis:                   apis,
 		clientFactory:          rest.NewDynatraceClient,
 	}
