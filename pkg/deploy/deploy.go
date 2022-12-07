@@ -49,8 +49,6 @@ func DeployConfigs(client rest.DynatraceClient, apis api.ApiMap,
 				Properties: parameter.Properties{},
 				Skip:       true,
 			})
-			// if the config is skip we do not care if the same name
-			// has already been used
 			continue
 		}
 
@@ -65,10 +63,7 @@ func DeployConfigs(client rest.DynatraceClient, apis api.ApiMap,
 
 		if deploymentErrors != nil {
 			errors = append(errors, deploymentErrors...)
-
-			if opts.ContinueOnErr || opts.DryRun {
-				continue
-			} else {
+			if !opts.ContinueOnErr && !opts.DryRun {
 				return errors
 			}
 		}
