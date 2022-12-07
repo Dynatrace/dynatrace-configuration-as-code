@@ -1,0 +1,253 @@
+configs:
+  - id: settings_slo_1
+    type:
+      settings:
+        schema: builtin:monitoring.slo
+        scope: environment
+    config:
+      name: "My Settings 2.0 SLO #1"
+      parameters:
+        metricName: "my_settings_slo_1"
+        mzone:
+          configType: management-zone
+          configId: zone
+          property: name
+          type: reference
+        threshold:
+          type: value
+          value:
+            target: 95
+            warning: 97.5
+      template: slo-setting.json
+      skip: false
+  - id: settings_slo_2
+    type:
+      settings:
+        schema: builtin:monitoring.slo
+        scope: environment
+    config:
+      name: "My Settings 2.0 SLO #2"
+      parameters:
+        metricName: "my_settings_slo_2"
+        mzone:
+          configType: management-zone
+          configId: zone
+          property: name
+          type: reference
+        threshold:
+          type: value
+          value:
+            target: 95
+            warning: 97.5
+      template: slo-setting.json
+      skip: false
+  - id: settings_slo_3
+    type:
+      settings:
+        schema: builtin:monitoring.slo
+        scope: environment
+    config:
+      name: "My Settings 2.0 SLO #3"
+      parameters:
+        metricName: "my_settings_slo_3"
+        mzone:
+          configType: management-zone
+          configId: zone
+          property: name
+          type: reference
+        threshold:
+          type: value
+          value:
+            target: 95
+            warning: 97.5
+      template: slo-setting.json
+      skip: false
+  - id: settings_slo_4
+    type:
+      settings:
+        schema: builtin:monitoring.slo
+        scope: environment
+    config:
+      name: "My Settings 2.0 SLO #4"
+      parameters:
+        metricName: "my_settings_slo_4"
+        mzone:
+          configType: management-zone
+          configId: zone
+          property: name
+          type: reference
+        threshold:
+          type: value
+          value:
+            target: 95
+            warning: 97.5
+      template: slo-setting.json
+      skip: false
+  - id: settings_slo_5
+    type:
+      settings:
+        schema: builtin:monitoring.slo
+        scope: environment
+    config:
+      name: "My Settings 2.0 SLO #5"
+      parameters:
+        metricName: "my_settings_slo_5"
+        mzone:
+          configType: management-zone
+          configId: zone
+          property: name
+          type: reference
+        threshold:
+          type: value
+          value:
+            target: 95
+            warning: 97.5
+      template: slo-setting.json
+      skip: false
+  - id: settings_slo_6
+    type:
+      settings:
+        schema: builtin:monitoring.slo
+        scope: environment
+    config:
+      name: "My Settings 2.0 SLO #6"
+      parameters:
+        metricName: "my_settings_slo_6"
+        mzone:
+          configType: management-zone
+          configId: zone
+          property: name
+          type: reference
+        threshold:
+          type: value
+          value:
+            target: 95
+            warning: 97.5
+      template: slo-setting.json
+      skip: false
+  - id: settings_slo_7
+    type:
+      settings:
+        schema: builtin:monitoring.slo
+        scope: environment
+    config:
+      name: "My Settings 2.0 SLO #7"
+      parameters:
+        metricName: "my_settings_slo_7"
+        mzone:
+          configType: management-zone
+          configId: zone
+          property: name
+          type: reference
+        threshold:
+          type: value
+          value:
+            target: 95
+            warning: 97.5
+      template: slo-setting.json
+      skip: false
+  - id: settings_slo_8
+    type:
+      settings:
+        schema: builtin:monitoring.slo
+        scope: environment
+    config:
+      name: "My Settings 2.0 SLO #8"
+      parameters:
+        metricName: "my_settings_slo_8"
+        mzone:
+          configType: management-zone
+          configId: zone
+          property: name
+          type: reference
+        threshold:
+          type: value
+          value:
+            target: 95
+            warning: 97.5
+      template: slo-setting.json
+      skip: false
+  - id: settings_slo_9
+    type:
+      settings:
+        schema: builtin:monitoring.slo
+        scope: environment
+    config:
+      name: "My Settings 2.0 SLO #9"
+      parameters:
+        metricName: "my_settings_slo_9"
+        mzone:
+          configType: management-zone
+          configId: zone
+          property: name
+          type: reference
+        threshold:
+          type: value
+          value:
+            target: 95
+            warning: 97.5
+      template: slo-setting.json
+      skip: false
+  - id: settings_slo_10
+    type:
+      settings:
+        schema: builtin:monitoring.slo
+        scope: environment
+    config:
+      name: "My Settings 2.0 SLO #10"
+      parameters:
+        metricName: "my_settings_slo_10"
+        mzone:
+          configType: management-zone
+          configId: zone
+          property: name
+          type: reference
+        threshold:
+          type: value
+          value:
+            target: 95
+            warning: 97.5
+      template: slo-setting.json
+      skip: false
+  - id: settings_slo_11
+    type:
+      settings:
+        schema: builtin:monitoring.slo
+        scope: environment
+    config:
+      name: "My Settings 2.0 SLO #11"
+      parameters:
+        metricName: "my_settings_slo_11"
+        mzone:
+          configType: management-zone
+          configId: zone
+          property: name
+          type: reference
+        threshold:
+          type: value
+          value:
+            target: 95
+            warning: 97.5
+      template: slo-setting.json
+      skip: false
+  - id: settings_slo_12
+    type:
+      settings:
+        schema: builtin:monitoring.slo
+        scope: environment
+    config:
+      name: "My Settings 2.0 SLO #12"
+      parameters:
+        metricName: "my_settings_slo_12"
+        mzone:
+          configType: management-zone
+          configId: zone
+          property: name
+          type: reference
+        threshold:
+          type: value
+          value:
+            target: 95
+            warning: 97.5
+      template: slo-setting.json
+      skip: false

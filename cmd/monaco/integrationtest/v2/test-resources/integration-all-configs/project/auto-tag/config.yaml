@@ -6,3 +6,11 @@ configs:
     skip: false
   type:
     api: auto-tag
+- id: tag-setting
+  type:
+    settings:
+      schema: builtin:tags.auto-tagging
+      scope: environment
+  config:
+    name: Resistance to Settings 2.0 is futile!
+    template: application-tagging-setting.json
