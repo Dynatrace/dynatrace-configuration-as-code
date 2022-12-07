@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 
@@ -294,7 +295,6 @@ func (d *dynatraceClient) ListKnownSettings(schemas []string) (KnownSettings, er
 	}
 	u.RawQuery = params.Encode()
 
-	// TODO: Add pagination (getExistingValuesFromEndpoint)
 	resp, err := get(d.client, u.String(), d.token)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build request: %w", err)
@@ -304,15 +304,40 @@ func (d *dynatraceClient) ListKnownSettings(schemas []string) (KnownSettings, er
 		return nil, fmt.Errorf("request failed with HTTP (%d).\n\tResponse content: %s", resp.StatusCode, string(resp.Body))
 	}
 
-	var parsed listResponse
-	if err := json.Unmarshal(resp.Body, &parsed); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
-	}
-
 	result := make(KnownSettings)
-	for _, v := range parsed.Items {
-		if v.ExternalId != "" {
-			result[v.ExternalId] = v.ObjectId
+	for {
+		var parsed listResponse
+		if err := json.Unmarshal(resp.Body, &parsed); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+		}
+
+		for _, v := range parsed.Items {
+			if v.ExternalId != "" {
+				result[v.ExternalId] = v.ObjectId
+			}
+		}
+
+		// Does the API support paging?
+		var objmap map[string]interface{}
+		if err := json.Unmarshal(resp.Body, &objmap); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+		}
+
+		if isPaginated, nextPage := isPaginatedResponse(objmap); isPaginated {
+			u = addNextPageQueryParams(u, nextPage)
+
+			resp, err = getWithRetry(d.client, u.String(), d.token, 3, 5*time.Second)
+
+			if err != nil {
+				return nil, err
+			}
+
+			if !success(resp) {
+				return nil, fmt.Errorf("Failed to get further configs from Settings API (HTTP %d)!\n    Response was: %s", resp.StatusCode, string(resp.Body))
+			}
+
+		} else {
+			break
 		}
 	}
 
