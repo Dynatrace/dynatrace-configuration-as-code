@@ -20,6 +20,7 @@
 package v2
 
 import (
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"testing"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner"
@@ -52,4 +53,17 @@ func TestIntegrationAllConfigs(t *testing.T) {
 		assert.NilError(t, err)
 
 	})
+}
+
+// Tests a dry run (validation)
+func TestIntegrationValidationAllConfigs(t *testing.T) {
+
+	configFolder := "test-resources/integration-all-configs/"
+	manifest := configFolder + "manifest.yaml"
+
+	cmd := runner.BuildCli(util.CreateTestFileSystem())
+	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
+	err := cmd.Execute()
+
+	assert.NilError(t, err)
 }
