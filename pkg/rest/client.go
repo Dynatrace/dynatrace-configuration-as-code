@@ -162,11 +162,8 @@ func isNewDynatraceTokenFormat(token string) bool {
 
 func (d *dynatraceClient) UpsertSettings(settings KnownSettings, obj SettingsObject) (DynatraceEntity, error) {
 	externalId := util.GenerateExternalId(obj.SchemaID, obj.Id)
-
-	// todo: move to callee?
 	objectId, found := settings[externalId]
 
-	// TODO: Split method?
 	if !found {
 		log.Debug("\tCreating object %s (%s) with externalId %s", obj.Id, obj.SchemaID, externalId)
 		payload, err := buildPostRequestPayload(obj, externalId)
