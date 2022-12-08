@@ -30,6 +30,21 @@ import (
 	"testing"
 )
 
+var testRetrySettings = retrySettings{
+	normal: retrySetting{
+		waitTime:   0,
+		maxRetries: defaultRetrySettings.normal.maxRetries,
+	},
+	long: retrySetting{
+		waitTime:   0,
+		maxRetries: defaultRetrySettings.long.maxRetries,
+	},
+	veryLong: retrySetting{
+		waitTime:   0,
+		maxRetries: defaultRetrySettings.veryLong.maxRetries,
+	},
+}
+
 // newDynatraceClientForTesting creates a new DynatraceClient for a given test-server
 func newDynatraceClientForTesting(server *httptest.Server) DynatraceClient {
 	return &dynatraceClient{
@@ -132,5 +147,5 @@ func NewIntegrationTestServer(t *testing.T, basePath string, mappings map[string
 }
 
 func NewDynatraceClientForTesting(environmentUrl, token string, client *http.Client) (DynatraceClient, error) {
-	return newDynatraceClient(environmentUrl, token, client)
+	return newDynatraceClient(environmentUrl, token, client, defaultRetrySettings)
 }

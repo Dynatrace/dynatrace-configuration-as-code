@@ -21,12 +21,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
-
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 
 	. "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 )
@@ -100,7 +98,7 @@ type SettingsClient interface {
 // It encapsulates the configuration-specific inconsistencies of certain APIs in one place to provide
 // a common interface to work with. After all: A user of DynatraceClient shouldn't care about the
 // implementation details of each individual Dynatrace API.
-// Its design is intentionally not dependant on the Config and Environment interfaces included in monaco.
+// Its design is intentionally not dependent on the Config and Environment interfaces included in monaco.
 // This makes sure, that DynatraceClient can be used as a base for future tooling, which relies on
 // a standardized way to access Dynatrace APIs.
 type DynatraceClient interface {
@@ -112,6 +110,7 @@ type dynatraceClient struct {
 	environmentUrl string
 	token          string
 	client         *http.Client
+	retrySettings  retrySettings
 }
 
 var (
@@ -122,10 +121,10 @@ var (
 
 // NewDynatraceClient creates a new DynatraceClient
 func NewDynatraceClient(environmentUrl, token string) (DynatraceClient, error) {
-	return newDynatraceClient(environmentUrl, token, &http.Client{})
+	return newDynatraceClient(environmentUrl, token, &http.Client{}, defaultRetrySettings)
 }
 
-func newDynatraceClient(environmentUrl, token string, client *http.Client) (*dynatraceClient, error) {
+func newDynatraceClient(environmentUrl, token string, client *http.Client, settings retrySettings) (*dynatraceClient, error) {
 	environmentUrl = strings.TrimSuffix(environmentUrl, "/")
 
 	if environmentUrl == "" {
@@ -154,6 +153,7 @@ func newDynatraceClient(environmentUrl, token string, client *http.Client) (*dyn
 		environmentUrl: environmentUrl,
 		token:          token,
 		client:         client,
+		retrySettings:  settings,
 	}, nil
 }
 
@@ -219,7 +219,7 @@ func (d *dynatraceClient) UpsertSettings(settings KnownSettings, obj SettingsObj
 func (d *dynatraceClient) List(api Api) (values []Value, err error) {
 
 	fullUrl := api.GetUrl(d.environmentUrl)
-	values, err = getExistingValuesFromEndpoint(d.client, api, fullUrl, d.token)
+	values, err = getExistingValuesFromEndpoint(d.client, api, fullUrl, d.token, d.retrySettings)
 	return values, err
 }
 
@@ -254,7 +254,7 @@ func (d *dynatraceClient) DeleteById(api Api, id string) error {
 func (d *dynatraceClient) ExistsByName(api Api, name string) (exists bool, id string, err error) {
 	url := api.GetUrl(d.environmentUrl)
 
-	existingObjectId, err := getObjectIdIfAlreadyExists(d.client, api, url, name, d.token)
+	existingObjectId, err := getObjectIdIfAlreadyExists(d.client, api, url, name, d.token, d.retrySettings)
 	return existingObjectId != "", existingObjectId, err
 }
 
@@ -264,11 +264,11 @@ func (d *dynatraceClient) UpsertByName(api Api, name string, payload []byte) (en
 		fullUrl := api.GetUrl(d.environmentUrl)
 		return uploadExtension(d.client, fullUrl, name, payload, d.token)
 	}
-	return upsertDynatraceObject(d.client, d.environmentUrl, name, api, payload, d.token)
+	return upsertDynatraceObject(d.client, d.environmentUrl, name, api, payload, d.token, d.retrySettings)
 }
 
 func (d *dynatraceClient) UpsertByEntityId(api Api, entityId string, name string, payload []byte) (entity DynatraceEntity, err error) {
-	return upsertDynatraceEntityById(d.client, d.environmentUrl, entityId, name, api, payload, d.token)
+	return upsertDynatraceEntityById(d.client, d.environmentUrl, entityId, name, api, payload, d.token, d.retrySettings)
 }
 
 type listEntry struct {
@@ -326,7 +326,7 @@ func (d *dynatraceClient) ListKnownSettings(schemas []string) (KnownSettings, er
 		if isPaginated, nextPage := isPaginatedResponse(objmap); isPaginated {
 			u = addNextPageQueryParams(u, nextPage)
 
-			resp, err = getWithRetry(d.client, u.String(), d.token, 3, 5*time.Second)
+			resp, err = getWithRetry(d.client, u.String(), d.token, d.retrySettings.normal)
 
 			if err != nil {
 				return nil, err

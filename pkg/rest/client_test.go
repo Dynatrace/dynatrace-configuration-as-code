@@ -35,7 +35,7 @@ func TestNewClientNoUrl(t *testing.T) {
 }
 
 func TestUrlSuffixGetsTrimmed(t *testing.T) {
-	client, err := newDynatraceClient("https://my-environment.live.dynatrace.com/", "abc", nil)
+	client, err := newDynatraceClient("https://my-environment.live.dynatrace.com/", "abc", nil, defaultRetrySettings)
 	assert.NilError(t, err)
 	assert.Equal(t, client.environmentUrl, "https://my-environment.live.dynatrace.com")
 }
@@ -285,7 +285,7 @@ func TestListKnownSettings(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client, err := newDynatraceClient(server.URL, "token", server.Client())
+			client, err := newDynatraceClient(server.URL, "token", server.Client(), testRetrySettings)
 			assert.NilError(t, err)
 
 			res, err := client.ListKnownSettings(tt.givenSchemas)

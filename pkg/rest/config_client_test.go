@@ -402,7 +402,7 @@ func Test_getObjectIdIfAlreadyExists(t *testing.T) {
 			}))
 			defer server.Close()
 
-			got, err := getObjectIdIfAlreadyExists(server.Client(), testApi, server.URL, tt.givenObjectName, "test-token")
+			got, err := getObjectIdIfAlreadyExists(server.Client(), testApi, server.URL, tt.givenObjectName, "test-token", testRetrySettings)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getObjectIdIfAlreadyExists() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -586,7 +586,13 @@ func Test_GetObjectIdIfAlreadyExists_WorksCorrectlyForAddedQueryParameters(t *te
 			}))
 			defer server.Close()
 			testApi := api.NewStandardApi(tt.apiKey, "", false, "", false)
-			_, err := getObjectIdIfAlreadyExists(server.Client(), testApi, server.URL, "", "")
+			s := retrySettings{
+				normal: retrySetting{
+					waitTime:   0,
+					maxRetries: 5,
+				},
+			}
+			_, err := getObjectIdIfAlreadyExists(server.Client(), testApi, server.URL, "", "", s)
 
 			if tt.expectError {
 				assert.Assert(t, err != nil)
@@ -677,7 +683,7 @@ func Test_createDynatraceObject(t *testing.T) {
 			defer server.Close()
 			testApi := api.NewStandardApi(tt.apiKey, "", false, "", false)
 
-			got, err := createDynatraceObject(server.Client(), server.URL, tt.objectName, testApi, []byte("{}"), "token")
+			got, err := createDynatraceObject(server.Client(), server.URL, tt.objectName, testApi, []byte("{}"), "token", testRetrySettings)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("createDynatraceObject() error = %v, wantErr %v", err, tt.wantErr)
 				return

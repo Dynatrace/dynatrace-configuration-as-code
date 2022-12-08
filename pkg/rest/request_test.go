@@ -96,7 +96,7 @@ func Test_sendWithsendWithRetryReturnsFirstSuccessfulResponse(t *testing.T) {
 		}, nil
 	})
 
-	gotResp, err := sendWithRetry(nil, mockCall, "dont matter", "some/path", []byte("body"), "token", 5, 1)
+	gotResp, err := sendWithRetry(nil, mockCall, "dont matter", "some/path", []byte("body"), "token", retrySetting{maxRetries: 5})
 	assert.NilError(t, err)
 	assert.Equal(t, gotResp.StatusCode, 200)
 	assert.Equal(t, string(gotResp.Body), "Success")
@@ -116,7 +116,7 @@ func Test_sendWithRetryFailsAfterDefinedTries(t *testing.T) {
 		}, nil
 	})
 
-	_, err := sendWithRetry(nil, mockCall, "dont matter", "some/path", []byte("body"), "token", maxRetries, 1)
+	_, err := sendWithRetry(nil, mockCall, "dont matter", "some/path", []byte("body"), "token", retrySetting{maxRetries: maxRetries})
 	assert.Check(t, err != nil)
 	assert.Equal(t, i, 2)
 }
@@ -135,7 +135,7 @@ func Test_sendWithRetryReturnContainsOriginalApiError(t *testing.T) {
 		}, nil
 	})
 
-	_, err := sendWithRetry(nil, mockCall, "dont matter", "some/path", []byte("body"), "token", maxRetries, 1)
+	_, err := sendWithRetry(nil, mockCall, "dont matter", "some/path", []byte("body"), "token", retrySetting{maxRetries: maxRetries})
 	assert.Check(t, err != nil)
 	assert.ErrorContains(t, err, "Something wrong")
 }
@@ -157,7 +157,7 @@ func Test_sendWithRetryReturnContainsHttpErrorIfNotSuccess(t *testing.T) {
 		}, nil
 	})
 
-	_, err := sendWithRetry(nil, mockCall, "dont matter", "some/path", []byte("body"), "token", maxRetries, 1)
+	_, err := sendWithRetry(nil, mockCall, "dont matter", "some/path", []byte("body"), "token", retrySetting{maxRetries: maxRetries})
 	assert.Check(t, err != nil)
 	assert.ErrorContains(t, err, "400")
 	assert.ErrorContains(t, err, "{ err: 'failed to create thing'}")
