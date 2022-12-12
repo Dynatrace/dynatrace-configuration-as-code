@@ -127,7 +127,7 @@ func TestUpsert(t *testing.T) {
 
 			resp, err := c.UpsertSettings(nil, SettingsObject{
 				Id:       "user-provided-id",
-				SchemaID: "builtin:alerting.profile",
+				SchemaId: "builtin:alerting.profile",
 				Scope:    "tenant",
 				Content:  []byte(test.content),
 			})

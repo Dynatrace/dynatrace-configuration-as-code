@@ -28,8 +28,8 @@ const pathSettingsObjects = "/api/v2/settings/objects"
 type SettingsObject struct {
 	// Id is the monaco related Configuration ID
 	Id,
-	// SchemaID is the Dynatrace settings schema ID
-	SchemaID,
+	// SchemaId is the Dynatrace settings schema ID
+	SchemaId,
 	// SchemaVersion is the version of the schema
 	SchemaVersion,
 	// Scope is the sope of he schema
@@ -59,7 +59,7 @@ func buildPostRequestPayload(obj SettingsObject, externalId string) ([]byte, err
 	}
 
 	data := settingsRequest{
-		SchemaId:      obj.SchemaID,
+		SchemaId:      obj.SchemaId,
 		ExternalId:    externalId,
 		Scope:         obj.Scope,
 		Value:         value,
@@ -90,7 +90,7 @@ func buildPutRequestPayload(obj SettingsObject, externalId string) ([]byte, erro
 	}
 
 	data := settingsRequest{
-		SchemaId:      obj.SchemaID,
+		SchemaId:      obj.SchemaId,
 		ExternalId:    externalId,
 		Scope:         obj.Scope,
 		Value:         value,

@@ -161,7 +161,7 @@ func deploySetting(client rest.SettingsClient, entityMap *EntityMap, c *config.C
 
 	e, err := client.UpsertSettings(settings, rest.SettingsObject{
 		Id:            c.Coordinate.ConfigId,
-		SchemaID:      c.Type.SchemaId,
+		SchemaId:      c.Type.SchemaId,
 		SchemaVersion: c.Type.SchemaVersion,
 		Scope:         c.Type.Scope,
 		Content:       []byte(renderedConfig),

@@ -162,11 +162,11 @@ func isNewDynatraceTokenFormat(token string) bool {
 }
 
 func (d *dynatraceClient) UpsertSettings(settings KnownSettings, obj SettingsObject) (DynatraceEntity, error) {
-	externalId := util.GenerateExternalId(obj.SchemaID, obj.Id)
+	externalId := util.GenerateExternalId(obj.SchemaId, obj.Id)
 	objectId, found := settings[externalId]
 
 	if !found {
-		log.Debug("\tCreating object %s (%s) with externalId %s", obj.Id, obj.SchemaID, externalId)
+		log.Debug("\tCreating object %s (%s) with externalId %s", obj.Id, obj.SchemaId, externalId)
 		payload, err := buildPostRequestPayload(obj, externalId)
 		if err != nil {
 			return DynatraceEntity{}, fmt.Errorf("failed to build settings object for upsert: %w", err)
@@ -190,7 +190,7 @@ func (d *dynatraceClient) UpsertSettings(settings KnownSettings, obj SettingsObj
 
 		return entity, nil
 	} else {
-		log.Debug("\tUpdating object %s (%s) with externalId %s", obj.Id, obj.SchemaID, externalId)
+		log.Debug("\tUpdating object %s (%s) with externalId %s", obj.Id, obj.SchemaId, externalId)
 		payload, err := buildPutRequestPayload(obj, externalId)
 		if err != nil {
 			return DynatraceEntity{}, fmt.Errorf("failed to build settings object for upsert: %w", err)
