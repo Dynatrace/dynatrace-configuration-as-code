@@ -317,14 +317,8 @@ func (d *dynatraceClient) ListKnownSettings(schemas []string) (KnownSettings, er
 			}
 		}
 
-		// Does the API support paging?
-		var objmap map[string]interface{}
-		if err := json.Unmarshal(resp.Body, &objmap); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal response: %w", err)
-		}
-
-		if isPaginated, nextPage := isPaginatedResponse(objmap); isPaginated {
-			u = addNextPageQueryParams(u, nextPage)
+		if resp.NextPageKey != "" {
+			u = addNextPageQueryParams(u, resp.NextPageKey)
 
 			resp, err = getWithRetry(d.client, u.String(), d.token, d.retrySettings.normal)
 

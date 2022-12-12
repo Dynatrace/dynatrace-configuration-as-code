@@ -379,15 +379,14 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlStrin
 
 	var existingValues []api.Value
 	for {
-		values, objmap, err := unmarshalJson(theApi, resp)
+		values, err := unmarshalJson(theApi, resp)
 		if err != nil {
 			return values, err
 		}
 		existingValues = append(existingValues, values...)
 
-		// Does the API support paging?
-		if isPaginated, nextPage := isPaginatedResponse(objmap); isPaginated {
-			parsedUrl = addNextPageQueryParams(parsedUrl, nextPage)
+		if resp.NextPageKey != "" {
+			parsedUrl = addNextPageQueryParams(parsedUrl, resp.NextPageKey)
 
 			resp, err = getWithRetry(client, parsedUrl.String(), apiToken, retrySettings.normal)
 
@@ -420,7 +419,7 @@ func addQueryParamsForNonStandardApis(theApi api.Api, url *url.URL) *url.URL {
 	return url
 }
 
-func unmarshalJson(theApi api.Api, resp Response) ([]api.Value, map[string]interface{}, error) {
+func unmarshalJson(theApi api.Api, resp Response) ([]api.Value, error) {
 
 	var values []api.Value
 	var objmap map[string]interface{}
@@ -431,22 +430,18 @@ func unmarshalJson(theApi api.Api, resp Response) ([]api.Value, map[string]inter
 		var jsonResp []api.Value
 		err := json.Unmarshal(resp.Body, &jsonResp)
 		if util.CheckError(err, "Cannot unmarshal API response for existing aws-credentials") {
-			return values, objmap, err
+			return values, err
 		}
 		values = jsonResp
 
 	} else {
-
-		if err := json.Unmarshal(resp.Body, &objmap); err != nil {
-			return nil, nil, err
-		}
 
 		if theApi.GetId() == "synthetic-location" {
 
 			var jsonResp api.SyntheticLocationResponse
 			err := json.Unmarshal(resp.Body, &jsonResp)
 			if util.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
-				return nil, nil, err
+				return nil, err
 			}
 			values = translateSyntheticValues(jsonResp.Locations)
 
@@ -455,16 +450,20 @@ func unmarshalJson(theApi api.Api, resp Response) ([]api.Value, map[string]inter
 			var jsonResp api.SyntheticMonitorsResponse
 			err := json.Unmarshal(resp.Body, &jsonResp)
 			if util.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
-				return nil, nil, err
+				return nil, err
 			}
 			values = translateSyntheticValues(jsonResp.Monitors)
 
 		} else if !theApi.IsStandardApi() || isReportsApi(theApi) {
 
+			if err := json.Unmarshal(resp.Body, &objmap); err != nil {
+				return nil, err
+			}
+
 			if available, array := isResultArrayAvailable(objmap, theApi); available {
 				jsonResp, err := translateGenericValues(array, theApi.GetId())
 				if err != nil {
-					return nil, nil, err
+					return nil, err
 				}
 				values = jsonResp
 			}
@@ -474,13 +473,13 @@ func unmarshalJson(theApi api.Api, resp Response) ([]api.Value, map[string]inter
 			var jsonResponse api.ValuesResponse
 			err := json.Unmarshal(resp.Body, &jsonResponse)
 			if util.CheckError(err, "Cannot unmarshal API response for existing objects") {
-				return nil, nil, err
+				return nil, err
 			}
 			values = jsonResponse.Values
 		}
 	}
 
-	return values, objmap, nil
+	return values, nil
 }
 
 func isResultArrayAvailable(jsonResponse map[string]interface{}, theApi api.Api) (resultArrayAvailable bool, results []interface{}) {

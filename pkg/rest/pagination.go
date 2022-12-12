@@ -15,21 +15,29 @@
 package rest
 
 import (
+	"encoding/json"
 	"net/url"
 	"strings"
 )
 
-//This pagination util handles 'standard' api/v2 Dynatrace pagination.
-//These APIs will contain "totalCount", "pageSize" and "nextPageKey" in their response body.
-//On requests for subsequent pages, nextPage MUST be the only query parameter all other have to be omitted.
-
-func isPaginatedResponse(jsonResponse map[string]interface{}) (paginated bool, pageKey string) {
-	if jsonResponse["nextPageKey"] != nil {
-		return true, jsonResponse["nextPageKey"].(string)
+// getNextPageKeyIfExists returns the "nextPageKey" if one is found in the response body.
+// This is the case for standard api/v2 pagination.
+// If the response was not in the format of a paginated response, or no key was in the response an empty string is returned.
+func getNextPageKeyIfExists(responseBody []byte) (nextPageKey string) {
+	var jsonResponse map[string]interface{}
+	if err := json.Unmarshal(responseBody, &jsonResponse); err != nil {
+		return ""
 	}
-	return false, ""
+
+	if jsonResponse["nextPageKey"] != nil {
+		return jsonResponse["nextPageKey"].(string)
+	}
+	return ""
 }
 
+// addNextPageQueryParams handles both Dynatrace v1 and v2 pagination logic.
+// For api/v2 URLs the given next page key will be the only query parameter of the modified URL
+// For any other ULRs the given next page key will be added to existing query parameters
 func addNextPageQueryParams(u *url.URL, nextPage string) *url.URL {
 	queryParams := u.Query()
 

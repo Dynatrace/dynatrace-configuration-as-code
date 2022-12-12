@@ -29,9 +29,10 @@ import (
 )
 
 type Response struct {
-	StatusCode int
-	Body       []byte
-	Headers    map[string][]string
+	StatusCode  int
+	Body        []byte
+	Headers     map[string][]string
+	NextPageKey string
 }
 
 func get(client *http.Client, url string, apiToken string) (Response, error) {
@@ -160,9 +161,10 @@ func executeRequest(client *http.Client, request *http.Request) (Response, error
 		}
 
 		return Response{
-			StatusCode: resp.StatusCode,
-			Body:       body,
-			Headers:    resp.Header,
+			StatusCode:  resp.StatusCode,
+			Body:        body,
+			Headers:     resp.Header,
+			NextPageKey: getNextPageKeyIfExists(body),
 		}, err
 	})
 
