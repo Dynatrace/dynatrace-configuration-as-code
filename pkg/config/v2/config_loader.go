@@ -16,7 +16,9 @@ package v2
 
 import (
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/environment"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/slices"
 	"path/filepath"
 	"strings"
 
@@ -33,6 +35,12 @@ import (
 )
 
 var reservedParameterNames = []string{IdParameter, ScopeParameter}
+
+var allowedScopeParameterTypes = []string{
+	refParam.ReferenceParameterType,
+	valueParam.ValueParameterType,
+	environment.EnvironmentVariableParameterType,
+}
 
 type LoaderContext struct {
 	ProjectId       string
@@ -390,8 +398,8 @@ func getConfigFromDefinition(
 			return Config{}, []error{fmt.Errorf("failed to parse scope: %w", err)}
 		}
 
-		if scopeParam.GetType() != valueParam.ValueParameterType && scopeParam.GetType() != refParam.ReferenceParameterType {
-			return Config{}, []error{fmt.Errorf("failed to parse scope: Cannot use parameter-type '%s' within the scope. Only parameters of type '%s' and '%s' are allowed", scopeParam.GetType(), valueParam.ValueParameterType, refParam.ReferenceParameterType)}
+		if !slices.Contains(allowedScopeParameterTypes, scopeParam.GetType()) {
+			return Config{}, []error{fmt.Errorf("failed to parse scope: Cannot use parameter-type '%s' within the scope. Allowed types: %v", scopeParam.GetType(), allowedScopeParameterTypes)}
 		}
 
 		parameters[ScopeParameter] = scopeParam

@@ -349,7 +349,7 @@ configs:
 			[]string{list.ListParameterType},
 		},
 		{
-			"fails to load with an environment parameter as scope",
+			"loads with an environment parameter as scope",
 			"test-file.yaml",
 			"test-file.yaml",
 			`
@@ -365,8 +365,28 @@ configs:
       scope:
         type: environment
         name: TEST`,
+			[]Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "builtin:profile.test",
+						ConfigId: "profile-id",
+					},
+					Type: Type{
+						SchemaId:      "builtin:profile.test",
+						SchemaVersion: "1.0",
+					},
+					Parameters: Parameters{
+						NameParameter:  &value.ValueParameter{Value: "Star Trek > Star Wars"},
+						ScopeParameter: &environment.EnvironmentVariableParameter{Name: "TEST"},
+					},
+					References:  []coordinate.Coordinate{},
+					Skip:        false,
+					Environment: "env name",
+					Group:       "default",
+				},
+			},
 			nil,
-			[]string{environment.EnvironmentVariableParameterType},
 		},
 		{
 			"fails to load with a parameter that is 'id'",
