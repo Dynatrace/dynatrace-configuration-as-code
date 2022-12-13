@@ -17,7 +17,7 @@ package v2
 import "fmt"
 import "errors"
 
-func (t configType) IsSound(knownApis map[string]struct{}) (bool, error) {
+func (t typeDefinition) IsSound(knownApis map[string]struct{}) (bool, error) {
 	isClassicSound, classicErrs := t.isClassicSound(knownApis)
 	isSettingsSound, settingsErrs := t.Settings.isSettings2Sound()
 
@@ -37,10 +37,10 @@ func (t configType) IsSound(knownApis map[string]struct{}) (bool, error) {
 	}
 }
 
-func (t configType) isSettingsPresent() bool {
-	return t.Settings != settingsType{}
+func (t typeDefinition) isSettingsPresent() bool {
+	return t.Settings != settingsDefinition{}
 }
-func (t settingsType) isSettings2Sound() (bool, error) {
+func (t settingsDefinition) isSettings2Sound() (bool, error) {
 	var s []string
 	if t.Schema == "" {
 		s = append(s, "type.schema")
@@ -54,10 +54,10 @@ func (t settingsType) isSettings2Sound() (bool, error) {
 	return false, fmt.Errorf("next property missing: %v", s)
 }
 
-func (t configType) isClassicPresent() bool {
+func (t typeDefinition) isClassicPresent() bool {
 	return t.Api != ""
 }
-func (t configType) isClassicSound(knownApis map[string]struct{}) (bool, error) {
+func (t typeDefinition) isClassicSound(knownApis map[string]struct{}) (bool, error) {
 	if !t.isClassicPresent() {
 		return false, errors.New("missing 'type.api' property")
 	} else if _, found := knownApis[t.Api]; !found {
@@ -66,7 +66,7 @@ func (t configType) isClassicSound(knownApis map[string]struct{}) (bool, error) 
 	return true, nil
 }
 
-func (t configType) GetApiType() string {
+func (t typeDefinition) GetApiType() string {
 	switch {
 	case t.isSettingsPresent():
 		return t.Settings.Schema

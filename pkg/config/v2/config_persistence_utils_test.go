@@ -23,7 +23,7 @@ import (
 
 func Test_configType_IsSound(t1 *testing.T) {
 	type fields struct {
-		configType configType
+		configType typeDefinition
 		knownApis  map[string]struct{}
 	}
 	type expect struct {
@@ -40,7 +40,7 @@ func Test_configType_IsSound(t1 *testing.T) {
 		{
 			"NO configuration at all",
 			fields{
-				*(new(configType)),
+				*(new(typeDefinition)),
 				nil,
 			},
 			expect{false, "type configuration is missing"},
@@ -48,9 +48,9 @@ func Test_configType_IsSound(t1 *testing.T) {
 		{
 			"Classical sound, settings incomplete",
 			fields{
-				configType{
+				typeDefinition{
 					Api: "some.classical.api",
-					Settings: settingsType{
+					Settings: settingsDefinition{
 						Schema: "some.schema",
 					},
 				},
@@ -61,7 +61,7 @@ func Test_configType_IsSound(t1 *testing.T) {
 		{
 			"Classical - sound",
 			fields{
-				configType{
+				typeDefinition{
 					Api: "some.classical.api",
 				},
 				map[string]struct{}{"some.classical.api": {}},
@@ -71,7 +71,7 @@ func Test_configType_IsSound(t1 *testing.T) {
 		{
 			"Classical - api is not known",
 			fields{
-				configType{
+				typeDefinition{
 					Api: "not.known.api",
 				},
 				map[string]struct{}{"some.classical.api": {}},
@@ -81,8 +81,8 @@ func Test_configType_IsSound(t1 *testing.T) {
 		{
 			"Settings 2.0 - sound",
 			fields{
-				configType{
-					Settings: settingsType{
+				typeDefinition{
+					Settings: settingsDefinition{
 						Schema: "some.schema",
 						Scope:  "scope",
 					},
@@ -94,8 +94,8 @@ func Test_configType_IsSound(t1 *testing.T) {
 		{
 			"Settings 2.0 - type.schema missing",
 			fields{
-				configType{
-					Settings: settingsType{
+				typeDefinition{
+					Settings: settingsDefinition{
 						Scope: "scope",
 					},
 				},
@@ -106,8 +106,8 @@ func Test_configType_IsSound(t1 *testing.T) {
 		{
 			"Settings 2.0 - type.scope missing",
 			fields{
-				configType{
-					Settings: settingsType{
+				typeDefinition{
+					Settings: settingsDefinition{
 						Schema: "some.schema",
 					},
 				},

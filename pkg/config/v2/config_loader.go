@@ -332,7 +332,7 @@ func getConfigFromDefinition(
 	configId string,
 	environment manifest.EnvironmentDefinition,
 	definition configDefinition,
-	configType configType,
+	configType typeDefinition,
 ) (Config, []error) {
 
 	if definition.Template == "" {
