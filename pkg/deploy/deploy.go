@@ -62,6 +62,10 @@ func DeployConfigs(client rest.DynatraceClient, apis api.ApiMap,
 		}
 
 		if deploymentErrors != nil {
+			for i, err := range deploymentErrors {
+				deploymentErrors[i] = fmt.Errorf("failed to deploy config %s: %w", c.Coordinate, err)
+			}
+
 			errors = append(errors, deploymentErrors...)
 			if !opts.ContinueOnErr && !opts.DryRun {
 				return errors
