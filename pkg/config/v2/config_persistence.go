@@ -42,9 +42,9 @@ type configType struct {
 }
 
 type settingsType struct {
-	Schema        string `yaml:"schema,omitempty"`
-	SchemaVersion string `yaml:"schemaVersion,omitempty"`
-	Scope         string `yaml:"scope,omitempty"`
+	Schema        string          `yaml:"schema,omitempty"`
+	SchemaVersion string          `yaml:"schemaVersion,omitempty"`
+	Scope         configParameter `yaml:"scope,omitempty"`
 }
 
 type topLevelConfigDefinition struct {

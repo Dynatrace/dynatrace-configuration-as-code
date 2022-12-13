@@ -20,6 +20,7 @@ import (
 	"fmt"
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/spf13/afero"
@@ -374,18 +375,18 @@ configs:
 	assert.Equal(t, s1[0].Type, config.Type{
 		SchemaId:      "builtin:super.special.schema",
 		SchemaVersion: "1.42.14",
-		Scope:         "tenant",
 		Api:           "",
 	})
+	assert.DeepEqual(t, s1[0].Parameters[config.ScopeParameter], &value.ValueParameter{Value: "tenant"})
 
 	s2, found := c["builtin:other.cool.schema"]
 	assert.Assert(t, found, "Expected configs loaded for setting schema 'builtin:other.cool.schema'")
 	assert.Equal(t, s2[0].Type, config.Type{
 		SchemaId:      "builtin:other.cool.schema",
 		SchemaVersion: "",
-		Scope:         "HOST-1234567",
 		Api:           "",
 	})
+	assert.DeepEqual(t, s2[0].Parameters[config.ScopeParameter], &value.ValueParameter{Value: "HOST-1234567"})
 
 }
 

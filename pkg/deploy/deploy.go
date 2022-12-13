@@ -158,11 +158,20 @@ func deploySetting(client rest.SettingsClient, entityMap *EntityMap, c *config.C
 		return parameter.ResolvedEntity{}, []error{err}
 	}
 
+	scope, ok := properties[config.ScopeParameter]
+	if !ok {
+		return parameter.ResolvedEntity{}, []error{fmt.Errorf("property '%s' not found, this is most likely a bug", config.ScopeParameter)}
+	}
+
+	if scope == "" {
+		return parameter.ResolvedEntity{}, []error{fmt.Errorf("resolved scope is empty")}
+	}
+
 	e, err := client.UpsertSettings(settings, rest.SettingsObject{
 		Id:            c.Coordinate.ConfigId,
 		SchemaId:      c.Type.SchemaId,
 		SchemaVersion: c.Type.SchemaVersion,
-		Scope:         c.Type.Scope,
+		Scope:         fmt.Sprint(scope),
 		Content:       []byte(renderedConfig),
 	})
 	if err != nil {

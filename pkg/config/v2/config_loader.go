@@ -32,6 +32,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+var reservedParameterNames = []string{IdParameter, ScopeParameter}
+
 type LoaderContext struct {
 	ProjectId       string
 	Path            string
@@ -382,6 +384,22 @@ func getConfigFromDefinition(
 		return Config{}, errors
 	}
 
+	if configType.isSettingsPresent() {
+		scopeParam, err := parseGenericParameter(context, environment, configId, ScopeParameter, configType.Settings.Scope)
+		if err != nil {
+			return Config{}, []error{fmt.Errorf("failed to parse scope: %w", err)}
+		}
+
+		if scopeParam.GetType() != valueParam.ValueParameterType && scopeParam.GetType() != refParam.ReferenceParameterType {
+			return Config{}, []error{fmt.Errorf("failed to parse scope: Cannot use parameter-type '%s' within the scope. Only parameters of type '%s' and '%s' are allowed", scopeParam.GetType(), valueParam.ValueParameterType, refParam.ReferenceParameterType)}
+		}
+
+		parameters[ScopeParameter] = scopeParam
+		for _, reference := range scopeParam.GetReferences() {
+			configReferences[reference.Config.String()] = reference.Config
+		}
+	}
+
 	return Config{
 		Template: template,
 		Coordinate: coordinate.Coordinate{
@@ -392,7 +410,6 @@ func getConfigFromDefinition(
 		Type: Type{
 			SchemaId:      configType.Settings.Schema,
 			SchemaVersion: configType.Settings.SchemaVersion,
-			Scope:         configType.Settings.Scope,
 			Api:           configType.Api,
 		},
 		Group:       environment.Group,
@@ -430,6 +447,7 @@ func getReferenceSlice(references map[string]coordinate.Coordinate) []coordinate
 	return maps.Values(references)
 }
 
+// References holds coordinate-string -> coordinate
 type References map[string]coordinate.Coordinate
 
 func parseParametersAndReferences(context *ConfigLoaderContext, environment manifest.EnvironmentDefinition,
@@ -468,10 +486,19 @@ func parseParametersAndReferences(context *ConfigLoaderContext, environment mani
 
 func parseParameter(context *ConfigLoaderContext, environment manifest.EnvironmentDefinition,
 	configId string, name string, param interface{}) (parameter.Parameter, error) {
-	if name == IdParameter {
-		return nil, newParameterDefinitionParserError(name, configId, context, environment,
-			fmt.Sprintf("parameter name `%s` is not allowed (reserved)", IdParameter))
+
+	for _, parameterName := range reservedParameterNames {
+		if name == parameterName {
+			return nil, newParameterDefinitionParserError(name, configId, context, environment,
+				fmt.Sprintf("parameter name `%s` is not allowed (reserved)", parameterName))
+		}
 	}
+
+	return parseGenericParameter(context, environment, configId, name, param)
+}
+
+func parseGenericParameter(context *ConfigLoaderContext, environment manifest.EnvironmentDefinition,
+	configId string, name string, param interface{}) (parameter.Parameter, error) {
 
 	if val, ok := param.([]interface{}); ok {
 		ref, err := arrayToReferenceParameter(context, environment, configId, name, val)

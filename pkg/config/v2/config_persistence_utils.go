@@ -45,7 +45,7 @@ func (t settingsType) isSettings2Sound() (bool, error) {
 	if t.Schema == "" {
 		s = append(s, "type.schema")
 	}
-	if t.Scope == "" {
+	if t.Scope == nil {
 		s = append(s, "type.scope")
 	}
 	if s == nil {

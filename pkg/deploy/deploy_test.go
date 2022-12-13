@@ -18,6 +18,7 @@ package deploy
 
 import (
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/golang/mock/gomock"
 	"testing"
@@ -156,6 +157,12 @@ func TestDeploySettingShouldFailUpsert(t *testing.T) {
 				Value: owner,
 			},
 		},
+		{
+			Name: config.ScopeParameter,
+			Parameter: &parameter.DummyParameter{
+				Value: "something",
+			},
+		},
 	}
 
 	client := rest.NewMockSettingsClient(gomock.NewController(t))
@@ -182,6 +189,12 @@ func TestDeploySetting(t *testing.T) {
 			Name: "hansi",
 			Parameter: &parameter.DummyParameter{
 				Value: "bar",
+			},
+		},
+		{
+			Name: config.ScopeParameter,
+			Parameter: &parameter.DummyParameter{
+				Value: "something",
 			},
 		},
 	}
@@ -408,7 +421,9 @@ func TestDeployConfigsTargetingSettings(t *testing.T) {
 			Type: config.Type{
 				SchemaId:      "schema",
 				SchemaVersion: "schemaversion",
-				Scope:         "scope",
+			},
+			Parameters: config.Parameters{
+				config.ScopeParameter: &value.ValueParameter{Value: "tenant"},
 			},
 		},
 	}

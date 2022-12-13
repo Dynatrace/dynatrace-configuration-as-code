@@ -34,13 +34,18 @@ const (
 
 	// NameParameter is special in that it needs to exist for a config.
 	NameParameter = "name"
+
+	// ScopeParameter is special. It is the set scope as a parameter.
+	// A user must not set it as a parameter in the config.
+	// It is only a parameter iff the config is a settings-config.
+	ScopeParameter = "scope"
 )
 
 // Parameters defines a map of name to parameter
 type Parameters map[string]parameter.Parameter
 
 type Type struct {
-	SchemaId, SchemaVersion, Scope, Api string
+	SchemaId, SchemaVersion, Api string
 }
 
 // IsSettings returns true if SchemaId is not empty
