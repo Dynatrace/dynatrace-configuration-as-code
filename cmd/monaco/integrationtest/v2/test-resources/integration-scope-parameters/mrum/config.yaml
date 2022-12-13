@@ -1,0 +1,17 @@
+configs:
+  - id: mobile-app
+    type:
+      api: application-mobile
+    config:
+      name: monaco-integration-scope-parameters-mobile-app
+      template: custom-mobile-app.json
+
+  - id: mobile-app-request-errors
+    type:
+      settings:
+        schema: builtin:rum.mobile.request-errors
+        scope: [application-mobile, mobile-app, id]
+    config:
+      name: Some name
+      template: request-errors.json
+

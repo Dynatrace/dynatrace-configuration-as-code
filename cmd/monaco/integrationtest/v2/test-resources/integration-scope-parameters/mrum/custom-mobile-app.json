@@ -1,0 +1,13 @@
+{
+    "name": "{{.name}}",
+    "applicationType": "MOBILE_APPLICATION",
+    "apdexSettings": {
+        "toleratedThreshold": 100,
+        "frustratingThreshold": 100,
+        "frustratedOnError": true
+    },
+    "sessionReplayOnCrashEnabled": true,
+    "beaconEndpointType": "CLUSTER_ACTIVE_GATE",
+    "optInModeEnabled": true,
+    "costControlUserSessionPercentage": 13
+}

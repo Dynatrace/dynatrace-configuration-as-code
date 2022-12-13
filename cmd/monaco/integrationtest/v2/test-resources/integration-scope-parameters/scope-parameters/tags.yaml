@@ -1,0 +1,30 @@
+configs:
+- id: shorthand-scope
+  type:
+    settings:
+      schema: builtin:tags.auto-tagging
+      scope: environment
+  config:
+    name: Settings 2.0 Tag shorthand
+    template: auto-tag-setting.json
+
+- id: value-scope
+  type:
+    settings:
+      schema: builtin:tags.auto-tagging
+      scope:
+        type: value
+        value: environment
+  config:
+    name: Settings 2.0 Tag value scope
+    template: auto-tag-setting.json
+
+- id: reference-scope
+  type:
+    settings:
+      schema: builtin:tags.auto-tagging
+      scope: ["builtin:tags.auto-tagging", "value-scope", "scope"]
+  config:
+    name: Settings 2.0 Tag reference scope
+    template: auto-tag-setting.json
+
