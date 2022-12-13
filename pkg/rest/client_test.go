@@ -106,7 +106,7 @@ func TestListKnownSettings(t *testing.T) {
 
 	tests := []struct {
 		name                      string
-		givenSchemas              []string
+		givenSchemaId             string
 		givenServerResponses      []testServerResponse
 		want                      KnownSettings
 		wantQueryParamsPerApiCall [][]testQueryParams
@@ -114,8 +114,8 @@ func TestListKnownSettings(t *testing.T) {
 		wantError                 bool
 	}{
 		{
-			name:         "Lists Settings objects as expected",
-			givenSchemas: []string{"builtin:something"},
+			name:          "Lists Settings objects as expected",
+			givenSchemaId: "builtin:something",
 			givenServerResponses: []testServerResponse{
 				{200, `{ "items": [ {"objectId": "f5823eca-4838-49d0-81d9-0514dd2c4640", "externalId": "RG9jdG9yIFdobwo="} ] }`},
 			},
@@ -133,8 +133,8 @@ func TestListKnownSettings(t *testing.T) {
 			wantError:            false,
 		},
 		{
-			name:         "Handles Pagination when listing settings objects",
-			givenSchemas: []string{"builtin:something"},
+			name:          "Handles Pagination when listing settings objects",
+			givenSchemaId: "builtin:something",
 			givenServerResponses: []testServerResponse{
 				{200, `{ "items": [ {"objectId": "f5823eca-4838-49d0-81d9-0514dd2c4640", "externalId": "RG9jdG9yIFdobwo="} ], "nextPageKey": "page42" }`},
 				{200, `{ "items": [ {"objectId": "b1d4c623-25e0-4b54-9eb5-6734f1a72041", "externalId": "VGhlIE1hc3Rlcgo="} ] }`},
@@ -157,8 +157,8 @@ func TestListKnownSettings(t *testing.T) {
 			wantError:            false,
 		},
 		{
-			name:         "Returns empty if list if no items exist",
-			givenSchemas: []string{"builtin:something"},
+			name:          "Returns empty if list if no items exist",
+			givenSchemaId: "builtin:something",
 			givenServerResponses: []testServerResponse{
 				{200, `{ "items": [ ] }`},
 			},
@@ -174,8 +174,8 @@ func TestListKnownSettings(t *testing.T) {
 			wantError:            false,
 		},
 		{
-			name:         "Returns error if HTTP error is encountered",
-			givenSchemas: []string{"builtin:something"},
+			name:          "Returns error if HTTP error is encountered",
+			givenSchemaId: "builtin:something",
 			givenServerResponses: []testServerResponse{
 				{400, `epic fail`},
 			},
@@ -191,8 +191,8 @@ func TestListKnownSettings(t *testing.T) {
 			wantError:            true,
 		},
 		{
-			name:         "Retries on HTTP error on paginated request and returns eventual success",
-			givenSchemas: []string{"builtin:something"},
+			name:          "Retries on HTTP error on paginated request and returns eventual success",
+			givenSchemaId: "builtin:something",
 			givenServerResponses: []testServerResponse{
 				{200, `{ "items": [ {"objectId": "f5823eca-4838-49d0-81d9-0514dd2c4640", "externalId": "RG9jdG9yIFdobwo="} ], "nextPageKey": "page42" }`},
 				{400, `get next page fail`},
@@ -223,8 +223,8 @@ func TestListKnownSettings(t *testing.T) {
 			wantError:            false,
 		},
 		{
-			name:         "Returns error if HTTP error is encountered getting further paginated responses",
-			givenSchemas: []string{"builtin:something"},
+			name:          "Returns error if HTTP error is encountered getting further paginated responses",
+			givenSchemaId: "builtin:something",
 			givenServerResponses: []testServerResponse{
 				{200, `{ "items": [ {"objectId": "f5823eca-4838-49d0-81d9-0514dd2c4640", "externalId": "RG9jdG9yIFdobwo="} ], "nextPageKey": "page42" }`},
 				{400, `get next page fail`},
@@ -288,7 +288,7 @@ func TestListKnownSettings(t *testing.T) {
 			client, err := newDynatraceClient(server.URL, "token", server.Client(), testRetrySettings)
 			assert.NilError(t, err)
 
-			res, err := client.ListKnownSettings(tt.givenSchemas)
+			res, err := client.ListKnownSettings(tt.givenSchemaId)
 
 			if tt.wantError {
 				assert.Assert(t, err != nil)

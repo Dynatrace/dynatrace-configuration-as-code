@@ -143,9 +143,8 @@ func deployConfig(client rest.ConfigClient, apis api.ApiMap, entityMap *EntityMa
 
 func deploySetting(client rest.SettingsClient, entityMap *EntityMap, c *config.Config) (parameter.ResolvedEntity, []error) {
 
-	settings, err := client.ListKnownSettings([]string{c.Type.SchemaId})
+	settings, err := client.ListKnownSettings(c.Type.SchemaId)
 	if err != nil {
-		// continue & dry run missing
 		return parameter.ResolvedEntity{}, []error{fmt.Errorf("failed to list known settings: %w", err)}
 	}
 

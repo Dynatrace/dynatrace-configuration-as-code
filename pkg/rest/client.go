@@ -86,9 +86,9 @@ type SettingsClient interface {
 	// update the object.
 	UpsertSettings(settings KnownSettings, obj SettingsObject) (DynatraceEntity, error) // create or update, first version only create
 
-	// ListKnownSettings queries all settings for the given schemas.
-	// All queried objects that have an externalId will be returned.
-	ListKnownSettings(schemas []string) (KnownSettings, error)
+	// ListKnownSettings queries all settings for the given schema ID.
+	// All queried objects that have an external ID will be returned.
+	ListKnownSettings(schemaId string) (KnownSettings, error)
 }
 
 //go:generate mockgen -source=client.go -destination=client_mock.go -package=rest -imports .=github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api DynatraceClient
@@ -280,7 +280,7 @@ type listResponse struct {
 	Items []listEntry `json:"items"`
 }
 
-func (d *dynatraceClient) ListKnownSettings(schemas []string) (KnownSettings, error) {
+func (d *dynatraceClient) ListKnownSettings(schemaId string) (KnownSettings, error) {
 
 	u, err := url.Parse(d.environmentUrl + pathSettingsObjects)
 	if err != nil {
@@ -289,7 +289,7 @@ func (d *dynatraceClient) ListKnownSettings(schemas []string) (KnownSettings, er
 
 	// TODO: This will fail if any schema is unknown - has to be split up into multiple calls for each schema
 	params := url.Values{
-		"schemaIds": []string{strings.Join(schemas, ",")},
+		"schemaIds": []string{schemaId},
 		"pageSize":  []string{"500"},
 		"fields":    []string{"externalId,objectId"},
 	}

@@ -245,6 +245,6 @@ func (c *DummyClient) UpsertSettings(k rest.KnownSettings, obj rest.SettingsObje
 	}, nil
 }
 
-func (c *DummyClient) ListKnownSettings(schemas []string) (rest.KnownSettings, error) {
+func (c *DummyClient) ListKnownSettings(schemaId string) (rest.KnownSettings, error) {
 	return make(rest.KnownSettings), nil
 }

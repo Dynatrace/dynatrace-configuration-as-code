@@ -90,9 +90,9 @@ func (l limitingClient) UpsertSettings(knownSettings KnownSettings, obj Settings
 	return
 }
 
-func (l limitingClient) ListKnownSettings(schemas []string) (k KnownSettings, err error) {
+func (l limitingClient) ListKnownSettings(schemaId string) (k KnownSettings, err error) {
 	l.limiter.ExecuteBlocking(func() {
-		k, err = l.client.ListKnownSettings(schemas)
+		k, err = l.client.ListKnownSettings(schemaId)
 	})
 
 	return
