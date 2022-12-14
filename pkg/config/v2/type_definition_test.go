@@ -17,11 +17,12 @@
 package v2
 
 import (
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v2"
 	"testing"
 )
 
-func Test_configType_IsSound(t1 *testing.T) {
+func Test_typeDefinition_isSound(t1 *testing.T) {
 	type fields struct {
 		configType typeDefinition
 		knownApis  map[string]struct{}
@@ -121,11 +122,117 @@ func Test_configType_IsSound(t1 *testing.T) {
 			configType := tt.fields.configType
 			knownApis := tt.fields.knownApis
 
-			actual, actualErr := configType.IsSound(knownApis)
+			actual, actualErr := configType.isSound(knownApis)
 			assert.Equal(t1, actual, tt.want.result, tt.name)
 			if tt.want.err != "" {
 				assert.ErrorContains(t1, actualErr, tt.want.err, tt.name)
 			}
+		})
+	}
+}
+
+func Test_typeDefinition_UnmarshalYAML(t *testing.T) {
+	type given struct {
+		ymlSample string
+	}
+	type expected struct {
+		typeDefinition typeDefinition
+		errorMessage   string
+	}
+
+	tests := []struct {
+		name     string
+		given    given
+		expected expected
+	}{
+		{
+			name:  "shorthand syntax",
+			given: given{"some.classical.api"},
+			expected: expected{
+				typeDefinition: typeDefinition{Api: "some.classical.api"},
+			},
+		},
+		{
+			name:  "Classical present",
+			given: given{"Api: some.classical.api"},
+			expected: expected{
+				typeDefinition: typeDefinition{Api: "some.classical.api"},
+			},
+		},
+		{
+			name: "Settings 2.0 present",
+			given: given{`
+settings:
+  schema: 'some.settings.schema'
+  schemaVersion: '1.0'
+  scope: 'scope'
+`,
+			},
+			expected: expected{
+				typeDefinition: typeDefinition{
+					Settings: settingsDefinition{
+						Schema:        "some.settings.schema",
+						Scope:         "scope",
+						SchemaVersion: "1.0",
+					}},
+			},
+		},
+		{
+			name:  "wrong data type",
+			given: given{"0x12d4"},
+			expected: expected{
+				errorMessage: "'type' section is not filed with proper values",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var actual typeDefinition
+			err := yaml.Unmarshal([]byte(tt.given.ymlSample), &actual)
+
+			if tt.expected.errorMessage == "" {
+				assert.EqualValues(t, tt.expected.typeDefinition, actual)
+			} else {
+				assert.EqualError(t, err, tt.expected.errorMessage)
+			}
+		})
+	}
+}
+
+func Test_typeDefinition_isSettings(t *testing.T) {
+	tests := []struct {
+		name  string
+		given typeDefinition
+		want  bool
+	}{
+		{
+			name:  "empty struct",
+			given: typeDefinition{},
+			want:  false,
+		},
+		{
+			name: "empty struct 2",
+			given: typeDefinition{Settings: settingsDefinition{
+				Schema:        "",
+				SchemaVersion: "",
+				Scope:         nil,
+			}},
+			want: false,
+		},
+		{
+			name: "empty struct 2",
+			given: typeDefinition{Settings: settingsDefinition{
+				Schema:        "some.schema",
+				SchemaVersion: "",
+				Scope:         nil,
+			}},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := tt.given.isSettings()
+			assert.Equal(t, tt.want, actual)
 		})
 	}
 }

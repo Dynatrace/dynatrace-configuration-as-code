@@ -230,7 +230,7 @@ func parseDefinition(
 	results := make([]Config, 0)
 	var errors []error
 
-	if b, e := definition.Type.IsSound(context.KnownApis); !b {
+	if b, e := definition.Type.isSound(context.KnownApis); !b {
 		return nil, append(errors, e)
 	}
 
@@ -390,7 +390,7 @@ func getConfigFromDefinition(
 		return Config{}, errors
 	}
 
-	if configType.isSettingsPresent() {
+	if configType.isSettings() {
 		scopeParam, err := parseParameter(context, environment, configId, ScopeParameter, configType.Settings.Scope)
 		if err != nil {
 			return Config{}, []error{fmt.Errorf("failed to parse scope: %w", err)}
