@@ -391,7 +391,7 @@ func getConfigFromDefinition(
 	}
 
 	if configType.isSettingsPresent() {
-		scopeParam, err := parseGenericParameter(context, environment, configId, ScopeParameter, configType.Settings.Scope)
+		scopeParam, err := parseParameter(context, environment, configId, ScopeParameter, configType.Settings.Scope)
 		if err != nil {
 			return Config{}, []error{fmt.Errorf("failed to parse scope: %w", err)}
 		}
@@ -469,6 +469,12 @@ func parseParametersAndReferences(context *ConfigLoaderContext, environment mani
 			continue
 		}
 
+		err := validateParameterName(context, environment, configId, name)
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+
 		result, err := parseParameter(context, environment, configId, name, param)
 
 		if err != nil {
@@ -490,20 +496,19 @@ func parseParametersAndReferences(context *ConfigLoaderContext, environment mani
 	return parameters, configReferences, nil
 }
 
-func parseParameter(context *ConfigLoaderContext, environment manifest.EnvironmentDefinition,
-	configId string, name string, param interface{}) (parameter.Parameter, error) {
+func validateParameterName(context *ConfigLoaderContext, environment manifest.EnvironmentDefinition, configId string, name string) error {
 
 	for _, parameterName := range ReservedParameterNames {
 		if name == parameterName {
-			return nil, newParameterDefinitionParserError(name, configId, context, environment,
+			return newParameterDefinitionParserError(name, configId, context, environment,
 				fmt.Sprintf("parameter name `%s` is not allowed (reserved)", parameterName))
 		}
 	}
 
-	return parseGenericParameter(context, environment, configId, name, param)
+	return nil
 }
 
-func parseGenericParameter(context *ConfigLoaderContext, environment manifest.EnvironmentDefinition,
+func parseParameter(context *ConfigLoaderContext, environment manifest.EnvironmentDefinition,
 	configId string, name string, param interface{}) (parameter.Parameter, error) {
 
 	if val, ok := param.([]interface{}); ok {
