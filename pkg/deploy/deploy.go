@@ -157,25 +157,21 @@ func deploySetting(client rest.SettingsClient, entityMap *EntityMap, c *config.C
 		return parameter.ResolvedEntity{}, errors
 	}
 
-	renderedConfig, err := c.Render(properties)
+	scope, err := extractScope(properties)
 	if err != nil {
 		return parameter.ResolvedEntity{}, []error{err}
 	}
 
-	scope, ok := properties[config.ScopeParameter]
-	if !ok {
-		return parameter.ResolvedEntity{}, []error{fmt.Errorf("property '%s' not found, this is most likely a bug", config.ScopeParameter)}
-	}
-
-	if scope == "" {
-		return parameter.ResolvedEntity{}, []error{fmt.Errorf("resolved scope is empty")}
+	renderedConfig, err := c.Render(properties)
+	if err != nil {
+		return parameter.ResolvedEntity{}, []error{err}
 	}
 
 	e, err := client.UpsertSettings(settings, rest.SettingsObject{
 		Id:            c.Coordinate.ConfigId,
 		SchemaId:      c.Type.SchemaId,
 		SchemaVersion: c.Type.SchemaVersion,
-		Scope:         fmt.Sprint(scope),
+		Scope:         scope,
 		Content:       []byte(renderedConfig),
 	})
 	if err != nil {
@@ -192,4 +188,17 @@ func deploySetting(client rest.SettingsClient, entityMap *EntityMap, c *config.C
 		Skip:       false,
 	}, nil
 
+}
+
+func extractScope(properties parameter.Properties) (string, error) {
+	scope, ok := properties[config.ScopeParameter]
+	if !ok {
+		return "", fmt.Errorf("property '%s' not found, this is most likely a bug", config.ScopeParameter)
+	}
+
+	if scope == "" {
+		return "", fmt.Errorf("resolved scope is empty")
+	}
+
+	return fmt.Sprint(scope), nil
 }
