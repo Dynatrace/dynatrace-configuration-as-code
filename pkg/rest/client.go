@@ -166,7 +166,6 @@ func (d *dynatraceClient) UpsertSettings(settings KnownSettings, obj SettingsObj
 	objectId, found := settings[externalId]
 
 	if !found {
-		log.Debug("\tCreating object %s (%s) with externalId %s", obj.Id, obj.SchemaId, externalId)
 		payload, err := buildPostRequestPayload(obj, externalId)
 		if err != nil {
 			return DynatraceEntity{}, fmt.Errorf("failed to build settings object for upsert: %w", err)
@@ -188,9 +187,9 @@ func (d *dynatraceClient) UpsertSettings(settings KnownSettings, obj SettingsObj
 			return DynatraceEntity{}, fmt.Errorf("failed to parse response: %w", err)
 		}
 
+		log.Debug("\tCreated object %s (%s) with externalId %s", obj.Id, obj.SchemaId, externalId)
 		return entity, nil
 	} else {
-		log.Debug("\tUpdating object %s (%s) with externalId %s", obj.Id, obj.SchemaId, externalId)
 		payload, err := buildPutRequestPayload(obj, externalId)
 		if err != nil {
 			return DynatraceEntity{}, fmt.Errorf("failed to build settings object for upsert: %w", err)
@@ -212,6 +211,7 @@ func (d *dynatraceClient) UpsertSettings(settings KnownSettings, obj SettingsObj
 			return DynatraceEntity{}, fmt.Errorf("failed to parse response: %w", err)
 		}
 
+		log.Debug("\tUpdated object %s (%s) with externalId %s", obj.Id, obj.SchemaId, externalId)
 		return entity, nil
 	}
 }
