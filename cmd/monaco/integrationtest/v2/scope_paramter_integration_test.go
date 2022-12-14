@@ -31,7 +31,11 @@ func TestIntegrationScopeParameters(t *testing.T) {
 	manifest := configFolder + "/manifest.yaml"
 	specificEnvironment := ""
 
-	RunIntegrationWithCleanup(t, configFolder, manifest, specificEnvironment, "SettingsTwo", func(fs afero.Fs) {
+	envVars := map[string]string{
+		"SCOPE_TEST_ENV_VAR": "environment",
+	}
+
+	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "ScopeParameters", envVars, func(fs afero.Fs) {
 
 		// This causes Creation of all Settings
 		cmd := runner.BuildCli(fs)
@@ -45,7 +49,6 @@ func TestIntegrationScopeParameters(t *testing.T) {
 		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
 		err = cmd.Execute()
 		assert.NilError(t, err)
-
 	})
 }
 
@@ -54,6 +57,9 @@ func TestIntegrationScopeParameterValidation(t *testing.T) {
 
 	configFolder := "test-resources/integration-scope-parameters/"
 	manifest := configFolder + "manifest.yaml"
+
+	envVar := "SCOPE_TEST_ENV_VAR"
+	t.Setenv(envVar, "environment")
 
 	cmd := runner.BuildCli(util.CreateTestFileSystem())
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})

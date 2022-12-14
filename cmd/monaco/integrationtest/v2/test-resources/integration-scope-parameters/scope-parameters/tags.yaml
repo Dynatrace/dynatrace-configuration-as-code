@@ -28,3 +28,28 @@ configs:
     name: Settings 2.0 Tag reference scope
     template: auto-tag-setting.json
 
+
+- id: reference-scope-full
+  type:
+    settings:
+      schema: builtin:tags.auto-tagging
+      scope:
+        type: reference
+        project: scope-parameters # optional
+        configId: 'value-scope'
+        configType: 'builtin:tags.auto-tagging'
+        property: 'scope'
+  config:
+    name: Settings 2.0 Tag reference scope full
+    template: auto-tag-setting.json
+
+- id: environment-scope
+  type:
+    settings:
+      schema: builtin:tags.auto-tagging
+      scope:
+        type: environment
+        name: SCOPE_TEST_ENV_VAR
+  config:
+    name: Settings 2.0 Tag environment-variable
+    template: auto-tag-setting.json

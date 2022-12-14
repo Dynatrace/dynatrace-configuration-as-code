@@ -265,10 +265,20 @@ func cleanupIntegrationTest(t *testing.T, loadedManifest manifest.Manifest, spec
 func RunIntegrationWithCleanup(t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, testFunc func(fs afero.Fs)) {
 
 	fs := util.CreateTestFileSystem()
-	RunIntegrationWithCleanupOnGivenFs(t, fs, configFolder, manifestPath, specificEnvironment, suffixTest, testFunc)
+	runIntegrationWithCleanup(t, fs, configFolder, manifestPath, specificEnvironment, suffixTest, nil, testFunc)
 }
 
 func RunIntegrationWithCleanupOnGivenFs(t *testing.T, testFs afero.Fs, configFolder, manifestPath, specificEnvironment, suffixTest string, testFunc func(fs afero.Fs)) {
+	runIntegrationWithCleanup(t, testFs, configFolder, manifestPath, specificEnvironment, suffixTest, nil, testFunc)
+}
+
+func RunIntegrationWithCleanupGivenEnvs(t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, envVars map[string]string, testFunc func(fs afero.Fs)) {
+	fs := util.CreateTestFileSystem()
+
+	runIntegrationWithCleanup(t, fs, configFolder, manifestPath, specificEnvironment, suffixTest, envVars, testFunc)
+}
+
+func runIntegrationWithCleanup(t *testing.T, testFs afero.Fs, configFolder, manifestPath, specificEnvironment, suffixTest string, envVars map[string]string, testFunc func(fs afero.Fs)) {
 	loadedManifest, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
 		Fs:           testFs,
 		ManifestPath: manifestPath,
@@ -282,6 +292,11 @@ func RunIntegrationWithCleanupOnGivenFs(t *testing.T, testFs afero.Fs, configFol
 	t.Cleanup(func() {
 		cleanupIntegrationTest(t, loadedManifest, specificEnvironment, suffix)
 	})
+
+	for k, v := range envVars {
+		t.Setenv(k, v) // register both just in case
+		t.Setenv(fmt.Sprintf("%s_%s", k, suffix), v)
+	}
 
 	testFunc(testFs)
 }
