@@ -5,7 +5,7 @@ configs:
     parameters:
       description: Sample set of credentials for API documentation
       ownerAccessOnly: "true"
-      scope: SYNTHETIC
+      credentialScope: SYNTHETIC
       type: USERNAME_PASSWORD
     template: credential.json
     skip: false
