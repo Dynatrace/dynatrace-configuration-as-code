@@ -34,8 +34,6 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-var reservedParameterNames = []string{IdParameter, ScopeParameter}
-
 var allowedScopeParameterTypes = []string{
 	refParam.ReferenceParameterType,
 	valueParam.ValueParameterType,
@@ -495,7 +493,7 @@ func parseParametersAndReferences(context *ConfigLoaderContext, environment mani
 func parseParameter(context *ConfigLoaderContext, environment manifest.EnvironmentDefinition,
 	configId string, name string, param interface{}) (parameter.Parameter, error) {
 
-	for _, parameterName := range reservedParameterNames {
+	for _, parameterName := range ReservedParameterNames {
 		if name == parameterName {
 			return nil, newParameterDefinitionParserError(name, configId, context, environment,
 				fmt.Sprintf("parameter name `%s` is not allowed (reserved)", parameterName))

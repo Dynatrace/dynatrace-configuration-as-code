@@ -21,6 +21,7 @@ import (
 	projectV1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v1"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/slices"
 	"regexp"
 	"strings"
 
@@ -338,12 +339,30 @@ func convertTemplate(context *ConfigConvertContext, currentPath string, writeToP
 	}
 
 	temporaryTemplate, environmentParameters := convertEnvVarsReferencesInTemplate(string(data))
+	temporaryTemplate = convertReservedParameters(temporaryTemplate)
 	temporaryTemplate, listParameterIds, errs = convertListsInTemplate(temporaryTemplate, currentPath)
 	if len(errs) > 0 {
 		return nil, nil, nil, errs
 	}
 
 	return template.CreateTemplateFromString(writeToPath, temporaryTemplate), environmentParameters, listParameterIds, nil
+}
+
+func convertReservedParameters(temporaryTemplate string) string {
+
+	for _, name := range configV2.ReservedParameterNames {
+		if name == configV2.NameParameter {
+			continue // name stays the same in the template
+		}
+
+		r := regexp.MustCompile(fmt.Sprintf(`{{ *\.%s *}}`, name))
+		newName := convertedParameterName(name)
+
+		temporaryTemplate = r.ReplaceAllString(temporaryTemplate, fmt.Sprintf("{{ .%s }}", newName))
+
+	}
+
+	return temporaryTemplate
 }
 
 func convertEnvVarsReferencesInTemplate(currentTemplate string) (modifiedTemplate string, environmentParameters map[string]parameter.Parameter) {
@@ -411,6 +430,8 @@ func convertParameters(context *ConfigConvertContext, environment manifest.Envir
 			continue
 		}
 
+		newName := convertedParameterName(name)
+
 		if configV1.IsDependency(value) {
 			ref, err := parseReference(context, config, name, value)
 
@@ -419,22 +440,22 @@ func convertParameters(context *ConfigConvertContext, environment manifest.Envir
 				continue
 			}
 
-			parameters[name] = ref
+			parameters[newName] = ref
 		} else if _, found := context.KnownListParameterIds[name]; found {
 			valueSlice, err := parseListStringToValueSlice(value)
 			if err != nil {
 				errors = append(errors, err)
 				continue
 			}
-			parameters[name] = &listParam.ListParameter{Values: valueSlice}
+			parameters[newName] = &listParam.ListParameter{Values: valueSlice}
 		} else if util.IsEnvVariable(value) {
 			envVarName := util.TrimToEnvVariableName(value)
-			parameters[name] = envParam.New(envVarName)
+			parameters[newName] = envParam.New(envVarName)
 		} else {
-			parameters[name] = &valueParam.ValueParameter{Value: value}
+			parameters[newName] = &valueParam.ValueParameter{Value: value}
 		}
 
-		for _, ref := range parameters[name].GetReferences() {
+		for _, ref := range parameters[newName].GetReferences() {
 			references = append(references, ref.Config)
 		}
 	}
@@ -444,6 +465,15 @@ func convertParameters(context *ConfigConvertContext, environment manifest.Envir
 	}
 
 	return parameters, references, skip, nil
+}
+
+func convertedParameterName(name string) string {
+
+	if slices.Contains(configV2.ReservedParameterNames, name) {
+		return name + "1"
+	}
+
+	return name
 }
 
 func parseSkipDeploymentParameter(context *ConfigConvertContext, config configV1.Config, value string) (bool, error) {

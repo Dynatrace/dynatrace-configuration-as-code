@@ -277,6 +277,7 @@ func TestConvertConfig(t *testing.T) {
 			"name":                 configName,
 			simpleParameterName:    simpleParameterValue,
 			referenceParameterName: referenceParameterValue,
+			"scope":                "value",
 		},
 	}
 
@@ -304,11 +305,12 @@ func TestConvertConfig(t *testing.T) {
 	assert.Equal(t, "management-zone", references[0].Type)
 	assert.Equal(t, "zone", references[0].ConfigId)
 
-	assert.Equal(t, 4, len(convertedConfig.Parameters))
+	assert.Equal(t, 5, len(convertedConfig.Parameters))
 	assert.Equal(t, configName, convertedConfig.Parameters["name"].(*valueParam.ValueParameter).Value)
 	assert.Equal(t, simpleParameterValue, convertedConfig.Parameters[simpleParameterName].(*valueParam.ValueParameter).Value)
-	assert.Equal(t, envVarName,
-		convertedConfig.Parameters[transformEnvironmentToParamName(envVarName)].(*envParam.EnvironmentVariableParameter).Name)
+	assert.Equal(t, envVarName, convertedConfig.Parameters[transformEnvironmentToParamName(envVarName)].(*envParam.EnvironmentVariableParameter).Name)
+	assert.Equal(t, "value", convertedConfig.Parameters["scope1"].(*valueParam.ValueParameter).Value)
+	assert.DeepEqual(t, refParam.New("projectB", "management-zone", "zone", "id"), convertedConfig.Parameters[referenceParameterName].(*refParam.ReferenceParameter))
 }
 
 func TestConvertDeprecatedConfigToLatest(t *testing.T) {
@@ -1020,6 +1022,38 @@ func Test_parseReference(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("parseReference() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_convertReservedParameters(t *testing.T) {
+
+	tests := []struct {
+		name     string
+		template string
+		want     string
+	}{
+		{
+			name:     "scope is replaced",
+			template: "{{ .scope }}",
+			want:     "{{ .scope1 }}",
+		},
+		{
+			name:     "name is not replaced",
+			template: "{{ .name }}",
+			want:     "{{ .name }}",
+		},
+		{
+			name:     "generic var is not replaced",
+			template: "{{ .scopeSomething }}",
+			want:     "{{ .scopeSomething }}",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := convertReservedParameters(tt.template); got != tt.want {
+				t.Errorf("convertReservedParameters() = %v, want %v", got, tt.want)
 			}
 		})
 	}
