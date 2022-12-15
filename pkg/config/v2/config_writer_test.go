@@ -17,6 +17,13 @@
 package v2
 
 import (
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
+	refParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/reference"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/spf13/afero"
+	"gopkg.in/yaml.v2"
+	"path/filepath"
 	"testing"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
@@ -527,4 +534,192 @@ func assertPropertyCheckResult(t *testing.T, expected propertyCheckResult, actua
 	assert.DeepEqual(t, expected.name, actual.name)
 	assert.DeepEqual(t, expected.template, actual.template)
 	assert.DeepEqual(t, expected.skip, actual.skip)
+}
+
+func TestWriteConfigs(t *testing.T) {
+
+	var tests = []struct {
+		name                  string
+		configs               []Config
+		expectedConfigs       map[string]topLevelDefinition
+		expectedTemplatePaths []string
+	}{
+		{
+			name: "Simple classic API write",
+			configs: []Config{
+				{
+					Template: template.CreateTemplateFromString("project/alerting-profile/a.json", ""),
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "alerting-profile",
+						ConfigId: "configId",
+					},
+					Type: Type{
+						Api: "alerting-profile",
+					},
+					Parameters: map[string]parameter.Parameter{
+						NameParameter: &value.ValueParameter{Value: "name"},
+					},
+					References: nil,
+				},
+			},
+			expectedConfigs: map[string]topLevelDefinition{
+				"alerting-profile": {
+					Configs: []topLevelConfigDefinition{
+						{
+							Id: "configId",
+							Config: configDefinition{
+								Name:       "name",
+								Parameters: nil,
+								Template:   "a.json",
+								Skip:       false,
+							},
+							Type: typeDefinition{
+								Api: "alerting-profile",
+							},
+						},
+					},
+				},
+			},
+			expectedTemplatePaths: []string{
+				"project/alerting-profile/a.json",
+			},
+		},
+		{
+			name: "Simple settings 2.0 write",
+			configs: []Config{
+				{
+					Template: template.CreateTemplateFromString("project/schemaid/a.json", ""),
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "schemaid",
+						ConfigId: "configId",
+					},
+					Type: Type{
+						SchemaId:      "schemaid",
+						SchemaVersion: "1.2.3",
+					},
+					Parameters: map[string]parameter.Parameter{
+						ScopeParameter: &value.ValueParameter{Value: "scope"},
+						NameParameter:  &value.ValueParameter{Value: "name"},
+					},
+				},
+			},
+			expectedConfigs: map[string]topLevelDefinition{
+				"schemaid": {
+					Configs: []topLevelConfigDefinition{
+						{
+							Id: "configId",
+							Config: configDefinition{
+								Name:       "name",
+								Parameters: nil,
+								Template:   "a.json",
+								Skip:       false,
+							},
+							Type: typeDefinition{
+								Settings: settingsDefinition{
+									Schema:        "schemaid",
+									SchemaVersion: "1.2.3",
+									Scope:         "scope",
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedTemplatePaths: []string{
+				"project/schemaid/a.json",
+			},
+		},
+		{
+			name: "Reference scope",
+			configs: []Config{
+				{
+					Template: template.CreateTemplateFromString("project/schemaid/a.json", ""),
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "schemaid",
+						ConfigId: "configId",
+					},
+					Type: Type{
+						SchemaId:      "schemaid",
+						SchemaVersion: "1.2.3",
+					},
+					Parameters: map[string]parameter.Parameter{
+						ScopeParameter: refParam.New("otherproject", "type", "id", "prop"),
+						NameParameter:  &value.ValueParameter{Value: "name"},
+					},
+				},
+			},
+			expectedConfigs: map[string]topLevelDefinition{
+				"schemaid": {
+					Configs: []topLevelConfigDefinition{
+						{
+							Id: "configId",
+							Config: configDefinition{
+								Name:       "name",
+								Parameters: nil,
+								Template:   "a.json",
+								Skip:       false,
+							},
+							Type: typeDefinition{
+								Settings: settingsDefinition{
+									Schema:        "schemaid",
+									SchemaVersion: "1.2.3",
+									Scope: map[any]any{
+										"type":       "reference",
+										"configType": "type",
+										"project":    "otherproject",
+										"property":   "prop",
+										"configId":   "id",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedTemplatePaths: []string{
+				"project/schemaid/a.json",
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			fs := afero.NewMemMapFs()
+
+			errs := WriteConfigs(&WriterContext{
+				Fs:                             fs,
+				OutputFolder:                   "test",
+				ProjectFolder:                  "project",
+				ParametersSerde:                DefaultParameterParsers,
+				UseShortSyntaxForSpecialParams: true,
+			}, tc.configs)
+			assert.Equal(t, len(errs), 0, "Writing configs should not produce an error")
+			util.PrintErrors(errs)
+
+			// check all api-folders config file
+			for apiType, definition := range tc.expectedConfigs {
+
+				content, err := afero.ReadFile(fs, "test/project/"+apiType+"/config.yaml")
+				assert.NilError(t, err, "reading config file should not produce an error")
+
+				var s topLevelDefinition
+				err = yaml.Unmarshal(content, &s)
+				assert.NilError(t, err, "unmarshalling config file should not produce an error")
+
+				assert.DeepEqual(t, s, definition)
+			}
+
+			// check that templates have been created
+			for _, path := range tc.expectedTemplatePaths {
+				found, err := afero.Exists(fs, filepath.Join("test", path))
+				assert.NilError(t, err)
+				assert.Equal(t, found, true)
+			}
+
+		})
+	}
+
 }

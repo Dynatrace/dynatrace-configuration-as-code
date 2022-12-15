@@ -246,15 +246,48 @@ func toTopLevelConfigDefinition(context *configConverterContext, configs []Confi
 		})
 	}
 
+	// We need to extract the configType from the original configs.
+	// Since they all should have the same configType (they have all the same coordinate), we can take any one.
+	ct, err := extractConfigType(context, configs[0])
+	if err != nil {
+		return topLevelConfigDefinition{}, nil, []error{fmt.Errorf("failed to extract config type: %w", err)}
+	}
+
 	return topLevelConfigDefinition{
-		Id:     context.config.ConfigId,
-		Config: config,
-		Type: typeDefinition{
-			Api: context.config.Type,
-		},
+		Id:                   context.config.ConfigId,
+		Config:               config,
+		Type:                 ct,
 		GroupOverrides:       groupOverrideConfigs,
 		EnvironmentOverrides: environmentOverrideConfigs,
 	}, templates, nil
+}
+
+func extractConfigType(context *configConverterContext, config Config) (typeDefinition, error) {
+	if !config.Type.IsSettings() {
+		return typeDefinition{
+			Api: config.Coordinate.Type,
+		}, nil
+	}
+
+	scopeParam, found := config.Parameters[ScopeParameter]
+	if !found {
+		return typeDefinition{}, fmt.Errorf("scope parameter not found. This is likely a bug")
+	}
+
+	serializedScope, err := toParameterDefinition(&detailedConfigConverterContext{
+		configConverterContext: context,
+	}, ScopeParameter, scopeParam)
+	if err != nil {
+		return typeDefinition{}, fmt.Errorf("failed to serialize scope-parameter: %w", err)
+	}
+
+	return typeDefinition{
+		Settings: settingsDefinition{
+			Schema:        config.Type.SchemaId,
+			SchemaVersion: config.Type.SchemaVersion,
+			Scope:         serializedScope,
+		},
+	}, nil
 }
 
 func groupByGroups(configs []extendedConfigDefinition) map[string][]extendedConfigDefinition {
@@ -549,8 +582,8 @@ func convertParameters(context *detailedConfigConverterContext, parameters Param
 	result := make(map[string]configParameter)
 
 	for name, param := range parameters {
-		// ignore NameParameter as it is handled in a special way
-		if name == NameParameter {
+		// ignore NameParameter and ScopeParameter as it is handled in a special way
+		if name == NameParameter || name == ScopeParameter {
 			continue
 		}
 
