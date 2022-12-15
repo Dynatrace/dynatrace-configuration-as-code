@@ -110,6 +110,16 @@ pipeline {
             }
         }
 
+        stage('🌙 Nightly Tests') {
+            when {
+                equals expected: true, actual: currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause').size() > 0
+            }
+            steps {
+                withVault(vaultSecrets: [credentialsEnvironment1, credentialsEnvironment2]) {
+                    sh "make nightly-test"
+                }
+            }
+        }
 
         stage('🧹 Cleanup') {
             when {

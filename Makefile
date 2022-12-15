@@ -85,6 +85,8 @@ download-restore-test:
 clean-environments:
 	@go test -tags=cleanup -v ./...
 
+nightly-test:
+	@go test -tags=nightly -timeout=60m -v ./...
 
 # Build and Test a single package supplied via pgk variable, without using test cache
 # Run as e.g. make test-package pkg=project
