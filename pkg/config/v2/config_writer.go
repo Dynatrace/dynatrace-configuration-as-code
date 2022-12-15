@@ -31,11 +31,10 @@ import (
 )
 
 type WriterContext struct {
-	Fs                             afero.Fs
-	OutputFolder                   string
-	ProjectFolder                  string
-	ParametersSerde                map[string]parameter.ParameterSerDe
-	UseShortSyntaxForSpecialParams bool
+	Fs              afero.Fs
+	OutputFolder    string
+	ProjectFolder   string
+	ParametersSerde map[string]parameter.ParameterSerDe
 }
 
 type configConverterContext struct {
@@ -623,8 +622,8 @@ func parseNameParameter(context *detailedConfigConverterContext, config Config) 
 func toParameterDefinition(context *detailedConfigConverterContext, parameterName string,
 	param parameter.Parameter) (configParameter, error) {
 
-	if context.UseShortSyntaxForSpecialParams && isSpecialParameter(param) {
-		return toSpecialParameterDefinition(context, parameterName, param)
+	if isValueParameter(param) {
+		return toValueShorthandDefinition(context, parameterName, param)
 	}
 
 	serde, found := context.ParametersSerde[param.GetType()]
@@ -645,11 +644,11 @@ func toParameterDefinition(context *detailedConfigConverterContext, parameterNam
 	return result, nil
 }
 
-func isSpecialParameter(param parameter.Parameter) bool {
+func isValueParameter(param parameter.Parameter) bool {
 	return param.GetType() == value.ValueParameterType
 }
 
-func toSpecialParameterDefinition(context *detailedConfigConverterContext, parameterName string,
+func toValueShorthandDefinition(context *detailedConfigConverterContext, parameterName string,
 	param parameter.Parameter) (configParameter, error) {
 	switch param.GetType() {
 	case value.ValueParameterType:

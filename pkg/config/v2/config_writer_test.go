@@ -304,7 +304,6 @@ func TestToParameterDefinition(t *testing.T) {
 						},
 					},
 				},
-				UseShortSyntaxForSpecialParams: false,
 			},
 		},
 	}
@@ -329,9 +328,7 @@ func TestToParameterDefinitionShouldDoSpecialParameterDefinitionIfActivatedAndSu
 
 	context := detailedConfigConverterContext{
 		configConverterContext: &configConverterContext{
-			WriterContext: &WriterContext{
-				UseShortSyntaxForSpecialParams: true,
-			},
+			WriterContext: &WriterContext{},
 		},
 	}
 
@@ -357,7 +354,6 @@ func TestToParameterDefinitionShouldWithShortSyntaxActiveShouldDoNormalWhenParam
 				ParametersSerde: map[string]parameter.ParameterSerDe{
 					value.ValueParameterType: value.ValueParameterSerde,
 				},
-				UseShortSyntaxForSpecialParams: true,
 			},
 		},
 	}
@@ -690,11 +686,10 @@ func TestWriteConfigs(t *testing.T) {
 			fs := afero.NewMemMapFs()
 
 			errs := WriteConfigs(&WriterContext{
-				Fs:                             fs,
-				OutputFolder:                   "test",
-				ProjectFolder:                  "project",
-				ParametersSerde:                DefaultParameterParsers,
-				UseShortSyntaxForSpecialParams: true,
+				Fs:              fs,
+				OutputFolder:    "test",
+				ProjectFolder:   "project",
+				ParametersSerde: DefaultParameterParsers,
 			}, tc.configs)
 			assert.Equal(t, len(errs), 0, "Writing configs should not produce an error")
 			util.PrintErrors(errs)

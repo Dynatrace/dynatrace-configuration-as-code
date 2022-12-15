@@ -75,11 +75,10 @@ func writeProjects(context *WriterContext, projectDefinitions manifest.ProjectDe
 		configs := collectAllConfigs(p)
 
 		errs := config.WriteConfigs(&config.WriterContext{
-			Fs:                             context.Fs,
-			OutputFolder:                   context.OutputDir,
-			ProjectFolder:                  definition.Path,
-			ParametersSerde:                context.ParametersSerde,
-			UseShortSyntaxForSpecialParams: true,
+			Fs:              context.Fs,
+			OutputFolder:    context.OutputDir,
+			ProjectFolder:   definition.Path,
+			ParametersSerde: context.ParametersSerde,
 		}, configs)
 
 		errors = append(errors, errs...)
