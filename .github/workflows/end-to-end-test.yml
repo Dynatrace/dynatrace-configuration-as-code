@@ -9,6 +9,8 @@ on:
   schedule:
     # nightly build ensure E2E tests run daily and catch any breaking API changes
     - cron: '0 0 * * *'
+  pull_request_target:
+    types: [labeled]
 
 defaults:
   run:
@@ -38,7 +40,7 @@ jobs:
 
       - name: 🌎 Integration test
         # Just executed on main branch or if the repo is cloned directly - not for forks:
-        if: github.event.pull_request.head.repo.full_name == github.repository || github.ref == 'refs/heads/main'
+        if: github.event.pull_request.head.repo.full_name == github.repository || github.ref == 'refs/heads/main' || github.event.label.name == 'run-e2e-test'
         run: make integration-test
         env:
           URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
@@ -48,7 +50,7 @@ jobs:
 
       - name: 🧓 Integration test (legacy)
         # Just executed on main branch or if the repo is cloned directly - not for forks:
-        if: github.event.pull_request.head.repo.full_name == github.repository || github.ref == 'refs/heads/main'
+        if: github.event.pull_request.head.repo.full_name == github.repository || github.ref == 'refs/heads/main' || github.event.label.name == 'run-e2e-test'
         run: make integration-test-v1
         env:
           URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
@@ -58,7 +60,7 @@ jobs:
 
       - name: 📥/📤 Download/Restore test
         # Just executed on main branch or if the repo is cloned directly - not for forks:
-        if: github.event.pull_request.head.repo.full_name == github.repository || github.ref == 'refs/heads/main'
+        if: github.event.pull_request.head.repo.full_name == github.repository || github.ref == 'refs/heads/main' || github.event.label.name == 'run-e2e-test'
         run: make download-restore-test
         env:
           URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
