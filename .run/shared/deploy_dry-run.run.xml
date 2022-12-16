@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="deploy (dry-run)" type="GoApplicationRunConfiguration" factoryName="Go Application" folderName="shared">
-    <module name="monitoring-as-code" />
+    <module name="internal-monitoring-as-code" />
     <working_directory value="$PROJECT_DIR$" />
     <useCustomBuildTags value="true" />
     <parameters value="deploy -d cmd/monaco/integrationtest/v2/test-resources/integration-all-configs/manifest.yaml" />

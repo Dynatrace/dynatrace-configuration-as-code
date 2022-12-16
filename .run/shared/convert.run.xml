@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="convert" type="GoApplicationRunConfiguration" factoryName="Go Application" folderName="shared">
-    <module name="monitoring-as-code" />
+    <module name="internal-monitoring-as-code" />
     <working_directory value="$PROJECT_DIR$" />
     <useCustomBuildTags value="true" />
     <parameters value="convert cmd/monaco/integrationtest/v1/test-resources/integration-all-configs/environments.yaml cmd/monaco/integrationtest/v1/test-resources/integration-all-configs/ -o cmd/monaco/integrationtest/v2/test-resources/converted-integration-all-configs/" />

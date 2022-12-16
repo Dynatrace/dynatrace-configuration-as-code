@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Unit Tests" type="GoTestRunConfiguration" factoryName="Go Test" folderName="shared">
-    <module name="monitoring-as-code" />
+    <module name="internal-monitoring-as-code" />
     <working_directory value="$PROJECT_DIR$" />
     <go_parameters value="--tags=unit" />
     <kind value="DIRECTORY" />
