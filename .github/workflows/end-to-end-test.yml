@@ -1,0 +1,85 @@
+name: E2E Test
+
+# This builds all binary versions and runs the end-to-end test against test Dynatrace environments
+# This currently only runs on push to main and nightly
+
+on:
+  push:
+    branches: [ main ]
+  schedule:
+    # nightly build ensure E2E tests run daily and catch any breaking API changes
+    - cron: '0 0 * * *'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+
+  build:
+    name: Build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    steps:
+
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v3
+        with:
+          go-version: '~1.19'
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3.0.2
+
+      - name: 🏁 Build release binaries
+        run: make build-release
+
+      - name: 🌎 Integration test
+        # Just executed on main branch or if the repo is cloned directly - not for forks:
+        if: github.event.pull_request.head.repo.full_name == github.repository || github.ref == 'refs/heads/main'
+        run: make integration-test
+        env:
+          URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
+          URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
+          TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
+          TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
+
+      - name: 🧓 Integration test (legacy)
+        # Just executed on main branch or if the repo is cloned directly - not for forks:
+        if: github.event.pull_request.head.repo.full_name == github.repository || github.ref == 'refs/heads/main'
+        run: make integration-test-v1
+        env:
+          URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
+          URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
+          TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
+          TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
+
+      - name: 📥/📤 Download/Restore test
+        # Just executed on main branch or if the repo is cloned directly - not for forks:
+        if: github.event.pull_request.head.repo.full_name == github.repository || github.ref == 'refs/heads/main'
+        run: make download-restore-test
+        env:
+          URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
+          URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
+          TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
+          TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
+
+      - name: 🌙 Nightly Tests
+        if: ${{ github.event_name == 'schedule' }}
+        run: make nightly-test
+        env:
+          URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
+          URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
+          TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
+          TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
+
+      - name: 🧹 Cleanup
+        if: ${{ github.event_name == 'schedule' }}
+        run: make clean-environments
+        env:
+          URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
+          URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
+          TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
+          TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}

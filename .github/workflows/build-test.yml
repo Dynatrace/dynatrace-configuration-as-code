@@ -12,9 +12,6 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  schedule:
-    # nightly build ensure E2E tests run daily and catch any breaking API changes
-    - cron: '0 0 * * *'
 
 defaults:
   run:
@@ -58,61 +55,3 @@ jobs:
 
       - name: 🚀 Binary starts
         run: make run
-
-      - name: 🌎 Integration test
-        # Just executed on main branch or if the repo is cloned directly - not for forks:
-        if: github.event.pull_request.head.repo.full_name == github.repository || github.ref == 'refs/heads/main'
-        run: make integration-test
-        env:
-          URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
-          URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
-          TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
-          TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
-
-      - name: 🧓 Integration test (legacy)
-        # Just executed on main branch or if the repo is cloned directly - not for forks:
-        if: github.event.pull_request.head.repo.full_name == github.repository || github.ref == 'refs/heads/main'
-        run: make integration-test-v1
-        env:
-          URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
-          URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
-          TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
-          TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
-
-      - name: 📥/📤 Download/Restore test
-        # Just executed on main branch or if the repo is cloned directly - not for forks:
-        if: github.event.pull_request.head.repo.full_name == github.repository || github.ref == 'refs/heads/main'
-        run: make download-restore-test
-        env:
-          URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
-          URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
-          TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
-          TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
-
-      - name: 🏁 Build release binaries
-        run: make build-release
-
-      - name: 🌙 Nightly Tests
-        if: ${{ github.event_name == 'schedule' }}
-        run: make nightly-test
-        env:
-          URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
-          URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
-          TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
-          TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
-
-      - name: 🧹 Cleanup
-        if: ${{ github.event_name == 'schedule' }}
-        run: make clean-environments
-        env:
-          URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
-          URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
-          TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
-          TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
-
-      - name: Upload Log Files
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v3
-        with:
-          name: logs
-          path: cmd/monaco/.logs/*.log
