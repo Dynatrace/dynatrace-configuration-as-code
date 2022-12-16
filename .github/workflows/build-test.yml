@@ -54,6 +54,7 @@ jobs:
 
       - name: 🔎 Static checks
         run: make check
+        continue-on-error: true
 
       - name: 🚀 Binary starts
         run: make run
