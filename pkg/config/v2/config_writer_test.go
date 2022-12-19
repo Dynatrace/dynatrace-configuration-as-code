@@ -292,8 +292,8 @@ func TestToParameterDefinition(t *testing.T) {
 	paramName := "test-param-1"
 	paramValue := "hello"
 
-	context := detailedConfigConverterContext{
-		configConverterContext: &configConverterContext{
+	context := detailedSerializerContext{
+		serializerContext: &serializerContext{
 			WriterContext: &WriterContext{
 				ParametersSerde: map[string]parameter.ParameterSerDe{
 					parameter.DummyParameterType: {
@@ -326,8 +326,8 @@ func TestToParameterDefinitionShouldDoSpecialParameterDefinitionIfActivatedAndSu
 	paramName := "test-param-1"
 	paramValue := "hello"
 
-	context := detailedConfigConverterContext{
-		configConverterContext: &configConverterContext{
+	context := detailedSerializerContext{
+		serializerContext: &serializerContext{
 			WriterContext: &WriterContext{},
 		},
 	}
@@ -348,8 +348,8 @@ func TestToParameterDefinitionShouldWithShortSyntaxActiveShouldDoNormalWhenParam
 		"name": "hansi",
 	}
 
-	context := detailedConfigConverterContext{
-		configConverterContext: &configConverterContext{
+	context := detailedSerializerContext{
+		serializerContext: &serializerContext{
 			WriterContext: &WriterContext{
 				ParametersSerde: map[string]parameter.ParameterSerDe{
 					value.ValueParameterType: value.ValueParameterSerde,

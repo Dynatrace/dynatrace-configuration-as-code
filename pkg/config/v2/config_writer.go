@@ -37,7 +37,7 @@ type WriterContext struct {
 	ParametersSerde map[string]parameter.ParameterSerDe
 }
 
-type configConverterContext struct {
+type serializerContext struct {
 	*WriterContext
 	configFolder string
 	config       coordinate.Coordinate
@@ -48,8 +48,8 @@ type environmentDetails struct {
 	environment string
 }
 
-type detailedConfigConverterContext struct {
-	*configConverterContext
+type detailedSerializerContext struct {
+	*serializerContext
 	environmentDetails environmentDetails
 }
 
@@ -129,7 +129,7 @@ func toTopLevelDefinitions(context *WriterContext, configs []Config) (map[apiCoo
 	var configTemplates []configTemplate
 
 	for coord, confs := range configsPerCoordinate {
-		configContext := &configConverterContext{
+		configContext := &serializerContext{
 			WriterContext: context,
 			configFolder:  filepath.Join(context.ProjectFolder, coord.Type),
 			config:        coord,
@@ -196,7 +196,7 @@ func writeTopLevelDefinitionToDisk(context *WriterContext, apiCoord apiCoordinat
 	return nil
 }
 
-func toTopLevelConfigDefinition(context *configConverterContext, configs []Config) (topLevelConfigDefinition, []configTemplate, []error) {
+func toTopLevelConfigDefinition(context *serializerContext, configs []Config) (topLevelConfigDefinition, []configTemplate, []error) {
 	configDefinitions, templates, errs := toConfigDefinitions(context, configs)
 
 	if len(errs) > 0 {
@@ -261,7 +261,7 @@ func toTopLevelConfigDefinition(context *configConverterContext, configs []Confi
 	}, templates, nil
 }
 
-func extractConfigType(context *configConverterContext, config Config) (typeDefinition, error) {
+func extractConfigType(context *serializerContext, config Config) (typeDefinition, error) {
 	if !config.Type.IsSettings() {
 		return typeDefinition{
 			Api: config.Coordinate.Type,
@@ -273,8 +273,8 @@ func extractConfigType(context *configConverterContext, config Config) (typeDefi
 		return typeDefinition{}, fmt.Errorf("scope parameter not found. This is likely a bug")
 	}
 
-	serializedScope, err := toParameterDefinition(&detailedConfigConverterContext{
-		configConverterContext: context,
+	serializedScope, err := toParameterDefinition(&detailedSerializerContext{
+		serializerContext: context,
 	}, ScopeParameter, scopeParam)
 	if err != nil {
 		return typeDefinition{}, fmt.Errorf("failed to serialize scope-parameter: %w", err)
@@ -483,7 +483,7 @@ type extendedConfigDefinition struct {
 	environment string
 }
 
-func toConfigDefinitions(context *configConverterContext, configs []Config) ([]extendedConfigDefinition, []configTemplate, []error) {
+func toConfigDefinitions(context *serializerContext, configs []Config) ([]extendedConfigDefinition, []configTemplate, []error) {
 	var errors []error
 	result := make([]extendedConfigDefinition, 0, len(configs))
 
@@ -513,10 +513,10 @@ func toConfigDefinitions(context *configConverterContext, configs []Config) ([]e
 	return result, templates, nil
 }
 
-func toConfigDefinition(context *configConverterContext, config Config) (configDefinition, configTemplate, []error) {
+func toConfigDefinition(context *serializerContext, config Config) (configDefinition, configTemplate, []error) {
 	var errors []error
-	detailedContext := detailedConfigConverterContext{
-		configConverterContext: context,
+	detailedContext := detailedSerializerContext{
+		serializerContext: context,
 		environmentDetails: environmentDetails{
 			group:       config.Group,
 			environment: config.Environment,
@@ -550,7 +550,7 @@ func toConfigDefinition(context *configConverterContext, config Config) (configD
 	}, template, nil
 }
 
-func extractTemplate(context *detailedConfigConverterContext, config Config) (string, configTemplate, error) {
+func extractTemplate(context *detailedSerializerContext, config Config) (string, configTemplate, error) {
 	switch templ := config.Template.(type) {
 	case template.FileBasedTemplate:
 		path, err := filepath.Rel(context.configFolder, filepath.Clean(templ.FilePath()))
@@ -576,7 +576,7 @@ func extractTemplate(context *detailedConfigConverterContext, config Config) (st
 	return "", configTemplate{}, errors.New("unknown template type")
 }
 
-func convertParameters(context *detailedConfigConverterContext, parameters Parameters) (map[string]configParameter, []error) {
+func convertParameters(context *detailedSerializerContext, parameters Parameters) (map[string]configParameter, []error) {
 	var errors []error
 	result := make(map[string]configParameter)
 
@@ -603,7 +603,7 @@ func convertParameters(context *detailedConfigConverterContext, parameters Param
 	return result, nil
 }
 
-func parseNameParameter(context *detailedConfigConverterContext, config Config) (configParameter, error) {
+func parseNameParameter(context *detailedSerializerContext, config Config) (configParameter, error) {
 	nameParam, found := config.Parameters[NameParameter]
 
 	if !found {
@@ -619,7 +619,7 @@ func parseNameParameter(context *detailedConfigConverterContext, config Config) 
 	return toParameterDefinition(context, NameParameter, nameParam)
 }
 
-func toParameterDefinition(context *detailedConfigConverterContext, parameterName string,
+func toParameterDefinition(context *detailedSerializerContext, parameterName string,
 	param parameter.Parameter) (configParameter, error) {
 
 	if isValueParameter(param) {
@@ -633,7 +633,7 @@ func toParameterDefinition(context *detailedConfigConverterContext, parameterNam
 			context.config, parameterName, param.GetType())
 	}
 
-	result, err := serde.Serializer(newParameterWriterContext(context, parameterName, param))
+	result, err := serde.Serializer(newParameterSerializerContext(context, parameterName, param))
 
 	if err != nil {
 		return nil, err
@@ -648,7 +648,7 @@ func isValueParameter(param parameter.Parameter) bool {
 	return param.GetType() == value.ValueParameterType
 }
 
-func toValueShorthandDefinition(context *detailedConfigConverterContext, parameterName string,
+func toValueShorthandDefinition(context *detailedSerializerContext, parameterName string,
 	param parameter.Parameter) (configParameter, error) {
 	switch param.GetType() {
 	case value.ValueParameterType:
@@ -661,7 +661,7 @@ func toValueShorthandDefinition(context *detailedConfigConverterContext, paramet
 		switch valueParam.Value.(type) {
 		// map/array values need special handling to not collide with other paramters
 		case map[string]interface{}, []interface{}:
-			result, err := context.ParametersSerde[param.GetType()].Serializer(newParameterWriterContext(context, parameterName, param))
+			result, err := context.ParametersSerde[param.GetType()].Serializer(newParameterSerializerContext(context, parameterName, param))
 
 			if err != nil {
 				return nil, err
@@ -688,7 +688,7 @@ func groupConfigs(configs []Config) map[coordinate.Coordinate][]Config {
 	return result
 }
 
-func newParameterWriterContext(context *detailedConfigConverterContext, name string,
+func newParameterSerializerContext(context *detailedSerializerContext, name string,
 	param parameter.Parameter) parameter.ParameterWriterContext {
 	return parameter.ParameterWriterContext{
 		Coordinate:    context.config,
