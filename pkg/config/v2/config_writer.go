@@ -121,7 +121,7 @@ func writeTemplates(context *WriterContext, templates []configTemplate) (errors 
 func toTopLevelDefinitions(context *WriterContext, configs []Config) (map[apiCoordinate]topLevelDefinition, []configTemplate, []error) {
 	configsPerCoordinate := groupConfigs(configs)
 
-	var errors []error
+	var errs []error
 	result := map[apiCoordinate]topLevelDefinition{}
 
 	configsPerApi := map[apiCoordinate][]topLevelConfigDefinition{}
@@ -135,10 +135,10 @@ func toTopLevelDefinitions(context *WriterContext, configs []Config) (map[apiCoo
 			config:        coord,
 		}
 
-		definition, templates, errs := toTopLevelConfigDefinition(configContext, confs)
+		definition, templates, convertErrs := toTopLevelConfigDefinition(configContext, confs)
 
-		if len(errs) > 0 {
-			errors = append(errors, errs...)
+		if len(convertErrs) > 0 {
+			errs = append(errs, convertErrs...)
 			continue
 		}
 
@@ -159,8 +159,8 @@ func toTopLevelDefinitions(context *WriterContext, configs []Config) (map[apiCoo
 		}
 	}
 
-	if len(errors) > 0 {
-		return nil, nil, errors
+	if len(errs) > 0 {
+		return nil, nil, errs
 	}
 
 	for apiCoord, confs := range configsPerApi {
@@ -433,7 +433,7 @@ type propertyCheckResult struct {
 
 func testForSameProperties(configs []extendedConfigDefinition) propertyCheckResult {
 	name := configs[0].Name
-	template := configs[0].Template
+	templ := configs[0].Template
 	skip := configs[0].Skip
 
 	var (
@@ -444,7 +444,7 @@ func testForSameProperties(configs []extendedConfigDefinition) propertyCheckResu
 
 	for _, c := range configs {
 		sameName = sameName && reflect.DeepEqual(name, c.Name)
-		sameTemplate = sameTemplate && template == c.Template
+		sameTemplate = sameTemplate && templ == c.Template
 		sameSkip = sameSkip && (reflect.DeepEqual(skip, c.Skip) ||
 			(skip == nil && c.Skip == false) ||
 			(skip == false && c.Skip == nil))
@@ -455,7 +455,7 @@ func testForSameProperties(configs []extendedConfigDefinition) propertyCheckResu
 	}
 
 	if !sameTemplate {
-		template = ""
+		templ = ""
 	}
 
 	if !sameSkip {
@@ -468,8 +468,8 @@ func testForSameProperties(configs []extendedConfigDefinition) propertyCheckResu
 		name:      name,
 
 		shareTemplate: sameTemplate,
-		foundTemplate: template != "" || !sameTemplate,
-		template:      template,
+		foundTemplate: templ != "" || !sameTemplate,
+		template:      templ,
 
 		shareSkip: sameSkip,
 		foundSkip: skip != nil || !sameSkip,
@@ -484,20 +484,20 @@ type extendedConfigDefinition struct {
 }
 
 func toConfigDefinitions(context *serializerContext, configs []Config) ([]extendedConfigDefinition, []configTemplate, []error) {
-	var errors []error
+	var errs []error
 	result := make([]extendedConfigDefinition, 0, len(configs))
 
 	var templates []configTemplate
 
 	for _, c := range configs {
-		definition, template, errs := toConfigDefinition(context, c)
+		definition, templ, convertErrs := toConfigDefinition(context, c)
 
-		if len(errs) > 0 {
-			errors = append(errors, errs...)
+		if len(convertErrs) > 0 {
+			errs = append(errs, convertErrs...)
 			continue
 		}
 
-		templates = append(templates, template)
+		templates = append(templates, templ)
 
 		result = append(result, extendedConfigDefinition{
 			configDefinition: definition,
@@ -506,15 +506,15 @@ func toConfigDefinitions(context *serializerContext, configs []Config) ([]extend
 		})
 	}
 
-	if len(errors) > 0 {
-		return nil, nil, errors
+	if len(errs) > 0 {
+		return nil, nil, errs
 	}
 
 	return result, templates, nil
 }
 
 func toConfigDefinition(context *serializerContext, config Config) (configDefinition, configTemplate, []error) {
-	var errors []error
+	var errs []error
 	detailedContext := detailedSerializerContext{
 		serializerContext: context,
 		environmentDetails: environmentDetails{
@@ -525,21 +525,21 @@ func toConfigDefinition(context *serializerContext, config Config) (configDefini
 	nameParam, err := parseNameParameter(&detailedContext, config)
 
 	if err != nil {
-		errors = append(errors, err)
+		errs = append(errs, err)
 	}
 
-	params, errs := convertParameters(&detailedContext, config.Parameters)
+	params, convertErrs := convertParameters(&detailedContext, config.Parameters)
 
-	errors = append(errors, errs...)
+	errs = append(errs, convertErrs...)
 
-	configTemplatePath, template, err := extractTemplate(&detailedContext, config)
+	configTemplatePath, templ, err := extractTemplate(&detailedContext, config)
 
 	if err != nil {
-		errors = append(errors, err)
+		errs = append(errs, err)
 	}
 
-	if len(errors) > 0 {
-		return configDefinition{}, configTemplate{}, errors
+	if len(errs) > 0 {
+		return configDefinition{}, configTemplate{}, errs
 	}
 
 	return configDefinition{
@@ -547,7 +547,7 @@ func toConfigDefinition(context *serializerContext, config Config) (configDefini
 		Parameters: params,
 		Template:   configTemplatePath,
 		Skip:       config.Skip,
-	}, template, nil
+	}, templ, nil
 }
 
 func extractTemplate(context *detailedSerializerContext, config Config) (string, configTemplate, error) {
@@ -577,7 +577,7 @@ func extractTemplate(context *detailedSerializerContext, config Config) (string,
 }
 
 func convertParameters(context *detailedSerializerContext, parameters Parameters) (map[string]configParameter, []error) {
-	var errors []error
+	var errs []error
 	result := make(map[string]configParameter)
 
 	for name, param := range parameters {
@@ -589,15 +589,15 @@ func convertParameters(context *detailedSerializerContext, parameters Parameters
 		parsed, err := toParameterDefinition(context, name, param)
 
 		if err != nil {
-			errors = append(errors, err)
+			errs = append(errs, err)
 			continue
 		}
 
 		result[name] = parsed
 	}
 
-	if len(errors) > 0 {
-		return nil, errors
+	if len(errs) > 0 {
+		return nil, errs
 	}
 
 	return result, nil
