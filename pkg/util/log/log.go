@@ -131,15 +131,19 @@ func Default() *extendedLogger {
 // stdout. Otherwise, the file logger will be set to a log
 // file whose name will be the current timestamp, in the
 // format of <YYYYMMDD-hhmmss>.log
-func SetupLogging(optionalAddedLogger *log.Logger) error {
+func SetupLogging(optionalAddedLogger *log.Logger) {
 	if err := setupFileLogging(); err != nil {
-		return nil
+		Error("failed to setup log files: %w", err)
 	}
+
 	if err := setupRequestLog(); err != nil {
-		return nil
+		Error("failed to setup request log: %w", err)
 	}
+
 	defaultLogger.additionalLogger = optionalAddedLogger
-	return setupResponseLog()
+	if err := setupResponseLog(); err != nil {
+		Error("failed to setup response log: %w", err)
+	}
 }
 
 func setupFileLogging() error {
