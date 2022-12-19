@@ -172,8 +172,8 @@ func toTopLevelDefinitions(context *WriterContext, configs []Config) (map[apiCoo
 	return result, configTemplates, nil
 }
 
-func writeTopLevelDefinitionToDisk(context *WriterContext, apiCoord apiCoordinate, definiton topLevelDefinition) error {
-	definitionYaml, err := yaml.Marshal(definiton)
+func writeTopLevelDefinitionToDisk(context *WriterContext, apiCoord apiCoordinate, definition topLevelDefinition) error {
+	definitionYaml, err := yaml.Marshal(definition)
 
 	if err != nil {
 		return err
@@ -659,7 +659,7 @@ func toValueShorthandDefinition(context *detailedSerializerContext, parameterNam
 		}
 
 		switch valueParam.Value.(type) {
-		// map/array values need special handling to not collide with other paramters
+		// map/array values need special handling to not collide with other parameters
 		case map[string]interface{}, []interface{}:
 			result, err := context.ParametersSerde[param.GetType()].Serializer(newParameterSerializerContext(context, parameterName, param))
 
