@@ -338,7 +338,7 @@ func extractCommonBase(configs []extendedConfigDefinition) (*configDefinition, [
 
 func createConfigDefinitionWithoutSharedValues(toReduce extendedConfigDefinition, checkResult propertyCheckResult,
 	sharedParameters map[string]configParameter) *configDefinition {
-	var allParametersShared bool = true
+	allParametersShared := true
 	reducedParameters := make(map[string]configParameter)
 
 	for k, v := range toReduce.Parameters {
