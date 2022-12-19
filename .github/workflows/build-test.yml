@@ -34,7 +34,7 @@ jobs:
         id: go
 
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v3.3.0
+        uses: actions/checkout@v3.2.0
 
       - name: Lint
         if: matrix.os == 'ubuntu-latest'
