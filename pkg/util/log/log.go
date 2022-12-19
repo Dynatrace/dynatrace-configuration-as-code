@@ -18,11 +18,14 @@ package log
 
 import (
 	"fmt"
+	"github.com/spf13/afero"
 	"log"
 	"os"
 	"path/filepath"
 	"time"
 )
+
+const logsDir = ".logs"
 
 const (
 	prefixFatal = "FATAL "
@@ -131,30 +134,37 @@ func Default() *extendedLogger {
 // stdout. Otherwise, the file logger will be set to a log
 // file whose name will be the current timestamp, in the
 // format of <YYYYMMDD-hhmmss>.log
-func SetupLogging(optionalAddedLogger *log.Logger) {
-	if err := setupFileLogging(); err != nil {
-		Error("failed to setup log files: %w", err)
-	}
-
-	if err := setupRequestLog(); err != nil {
-		Error("failed to setup request log: %w", err)
-	}
-
+func SetupLogging(fs afero.Fs, optionalAddedLogger *log.Logger) {
 	defaultLogger.additionalLogger = optionalAddedLogger
-	if err := setupResponseLog(); err != nil {
-		Error("failed to setup response log: %w", err)
+
+	if err := setupFileLogging(fs); err != nil {
+		Error("failed to setup monaco-logging: %s", err)
+	}
+
+	if err := setupRequestLog(fs); err != nil {
+		Error("failed to setup request-logging: %s", err)
+	}
+
+	if err := setupResponseLog(fs); err != nil {
+		Error("failed to setup response-logging: %s", err)
 	}
 }
 
-func setupFileLogging() error {
+func setupFileLogging(fs afero.Fs) error {
 	timestamp := time.Now().Format("20060102-150405")
-	if err := createDirIfNotExists(".logs"); err != nil {
-		return err
+
+	if err := fs.MkdirAll(logsDir, 0777); err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", logsDir, err)
 	}
-	logFile, err := os.OpenFile(filepath.Join(".logs", timestamp+".log"), os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+
+	logFilePath := filepath.Join(logsDir, timestamp+".log")
+	logFile, err := fs.OpenFile(logFilePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
-		return fmt.Errorf("unable to create file logger: %w", err)
+		return fmt.Errorf("unable to open file '%s' for logging: %w", logFilePath, err)
 	}
+
+	Debug("Writing logs to log file %s", logFilePath)
+
 	defaultLogger.fileLogger = log.New(logFile, "", log.LstdFlags)
 	return nil
 }
@@ -200,11 +210,4 @@ func doLog(logger *extendedLogger, level logLevel, msg string, a ...interface{})
 	if logger.additionalLogger != nil {
 		logger.additionalLogger.Println(msg)
 	}
-}
-
-func createDirIfNotExists(path string) error {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return os.Mkdir(path, 0777)
-	}
-	return nil
 }

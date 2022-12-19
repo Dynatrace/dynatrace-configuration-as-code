@@ -77,7 +77,7 @@ Examples:
   Deploy a specific environment within an manifest
     monaco deploy service.yaml -e dev`,
 
-		PersistentPreRun: configureDebugLogging(&verbose),
+		PersistentPreRun: configureDebugLogging(fs, &verbose),
 		Run: func(cmd *cobra.Command, args []string) {
 			_ = cmd.Help()
 		},
@@ -114,13 +114,13 @@ Examples:
 	return rootCmd
 }
 
-func configureDebugLogging(verbose *bool) func(cmd *cobra.Command, args []string) {
+func configureDebugLogging(fs afero.Fs, verbose *bool) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
 		if *verbose {
 			log.Default().SetLevel(log.LevelDebug)
 		}
 
-		log.SetupLogging(optionalAddedLogger)
+		log.SetupLogging(fs, optionalAddedLogger)
 
 		log.Info("Dynatrace Monitoring as Code v" + version.MonitoringAsCode)
 	}

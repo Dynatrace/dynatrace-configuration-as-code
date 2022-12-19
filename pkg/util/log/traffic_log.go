@@ -18,66 +18,55 @@ package log
 
 import (
 	"fmt"
+	"github.com/spf13/afero"
 	"net/http"
 	"net/http/httputil"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
+const envKeyRequestLog = "MONACO_REQUEST_LOG"
+const envKeyResponseLog = "MONACO_RESPONSE_LOG"
+
 var (
-	requestLogFile  *os.File
-	responseLogFile *os.File
+	requestLogFile  afero.File
+	responseLogFile afero.File
 )
 
-func setupRequestLog() error {
-	if logFilePath, found := os.LookupEnv("MONACO_REQUEST_LOG"); found {
-		logFilePath, err := filepath.Abs(logFilePath)
-
-		if err != nil {
-			return err
-		}
-
-		Debug("request log activated at %s", logFilePath)
-		handle, err := prepareLogFile(logFilePath)
-
-		if err != nil {
-			return err
-		}
-
-		requestLogFile = handle
-	} else {
+func setupRequestLog(fs afero.Fs) error {
+	logFilePath, found := os.LookupEnv(envKeyRequestLog)
+	if !found {
 		Debug("request log not activated")
+		return nil
 	}
+
+	file, err := fs.OpenFile(logFilePath, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to setup request log file: %w", err)
+	}
+
+	requestLogFile = file
+	Debug("request log activated at %s", logFilePath)
 
 	return nil
 }
 
-func setupResponseLog() error {
-	if logFilePath, found := os.LookupEnv("MONACO_RESPONSE_LOG"); found {
-		logFilePath, err := filepath.Abs(logFilePath)
-
-		if err != nil {
-			return err
-		}
-
-		Debug("response log activated at %s", logFilePath)
-		handle, err := prepareLogFile(logFilePath)
-
-		if err != nil {
-			return err
-		}
-
-		responseLogFile = handle
-	} else {
+func setupResponseLog(fs afero.Fs) error {
+	logFilePath, found := os.LookupEnv(envKeyResponseLog)
+	if !found {
 		Debug("response log not activated")
+		return nil
 	}
 
-	return nil
-}
+	file, err := fs.OpenFile(logFilePath, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to setup response log file: %w", err)
+	}
 
-func prepareLogFile(file string) (*os.File, error) {
-	return os.OpenFile(file, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
+	responseLogFile = file
+	Debug("response log activated at %s", logFilePath)
+
+	return nil
 }
 
 func IsRequestLoggingActive() bool {
