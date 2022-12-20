@@ -5,7 +5,9 @@ spec:
     - name: jnlp
       image: registry.lab.dynatrace.org/keptn/ca-jenkins-agent
       securityContext:
-        privileged: true
+        privileged: false
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
       imagePullPolicy: Always
       args:
         - "jenkins-slave"
