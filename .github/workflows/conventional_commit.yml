@@ -9,8 +9,8 @@ jobs:
   validate-commits:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3.2.0
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Commitsar check
-        uses: docker://aevea/commitsar:0.15.0
+        uses: docker://aevea/commitsar:0.20.1
