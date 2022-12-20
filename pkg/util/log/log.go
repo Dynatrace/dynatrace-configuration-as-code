@@ -138,15 +138,15 @@ func SetupLogging(fs afero.Fs, optionalAddedLogger *log.Logger) {
 	defaultLogger.additionalLogger = optionalAddedLogger
 
 	if err := setupFileLogging(fs); err != nil {
-		Error("failed to setup monaco-logging: %s", err)
+		Warn("failed to setup monaco-logging: %s", err)
 	}
 
 	if err := setupRequestLog(fs); err != nil {
-		Error("failed to setup request-logging: %s", err)
+		Warn("failed to setup request-logging: %s", err)
 	}
 
 	if err := setupResponseLog(fs); err != nil {
-		Error("failed to setup response-logging: %s", err)
+		Warn("failed to setup response-logging: %s", err)
 	}
 }
 

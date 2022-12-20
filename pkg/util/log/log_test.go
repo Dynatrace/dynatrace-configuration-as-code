@@ -38,10 +38,10 @@ func TestSetupLogging_noError(t *testing.T) {
 
 	logs := capturedLogs.String()
 
-	assert.NotContains(t, logs, "ERROR")
+	assert.NotContains(t, logs, "failed to setup")
 }
 
-func TestSetupLogging_logsFileExists(t *testing.T) {
+func TestSetupLogging_logsDirExists(t *testing.T) {
 	fs := createTempTestingDir(t)
 	mkdir(t, fs, logsDir, 0777)
 
@@ -52,7 +52,7 @@ func TestSetupLogging_logsFileExists(t *testing.T) {
 
 	logs := capturedLogs.String()
 
-	assert.NotContains(t, logs, "ERROR")
+	assert.NotContains(t, logs, "failed to setup")
 }
 
 func TestSetupLogging_logsReadonly(t *testing.T) {
@@ -67,7 +67,7 @@ func TestSetupLogging_logsReadonly(t *testing.T) {
 	logs := capturedLogs.String()
 	fmt.Println(logs)
 
-	assert.Contains(t, logs, "monaco-logging")
+	assert.Contains(t, logs, "failed to setup monaco-logging")
 }
 
 func TestSetupLogging_parentReadonly(t *testing.T) {
@@ -82,7 +82,7 @@ func TestSetupLogging_parentReadonly(t *testing.T) {
 	logs := capturedLogs.String()
 	fmt.Println(logs)
 
-	assert.Contains(t, logs, "monaco-logging")
+	assert.Contains(t, logs, "failed to setup monaco-logging")
 }
 
 func TestSetupLogging_requestLogReadonly(t *testing.T) {
@@ -99,7 +99,7 @@ func TestSetupLogging_requestLogReadonly(t *testing.T) {
 	logs := capturedLogs.String()
 	fmt.Println(logs)
 
-	assert.Contains(t, logs, "request-logging")
+	assert.Contains(t, logs, "failed to setup request-logging")
 }
 
 func TestSetupLogging_responseLogReadonly(t *testing.T) {
@@ -116,7 +116,7 @@ func TestSetupLogging_responseLogReadonly(t *testing.T) {
 	logs := capturedLogs.String()
 	fmt.Println(logs)
 
-	assert.Contains(t, logs, "response-logging")
+	assert.Contains(t, logs, "failed to setup response-logging")
 }
 
 func TestSetupLogging_allErrors(t *testing.T) {
@@ -136,9 +136,9 @@ func TestSetupLogging_allErrors(t *testing.T) {
 	logs := capturedLogs.String()
 	fmt.Println(logs)
 
-	assert.Contains(t, logs, "response-logging")
-	assert.Contains(t, logs, "request-logging")
-	assert.Contains(t, logs, "monaco-logging")
+	assert.Contains(t, logs, "failed to setup response-logging")
+	assert.Contains(t, logs, "failed to setup request-logging")
+	assert.Contains(t, logs, "failed to setup monaco-logging")
 }
 
 func TestSetupLogging_requestAndResponseFileExistsWithCorrectPermissions(t *testing.T) {
@@ -157,7 +157,7 @@ func TestSetupLogging_requestAndResponseFileExistsWithCorrectPermissions(t *test
 	logs := capturedLogs.String()
 	fmt.Println(logs)
 
-	assert.NotContains(t, logs, "ERROR")
+	assert.NotContains(t, logs, "WARN")
 	assert.Contains(t, logs, "request log activated")
 	assert.Contains(t, logs, "response log activated")
 }
