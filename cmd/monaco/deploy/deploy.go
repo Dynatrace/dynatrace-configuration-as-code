@@ -39,7 +39,7 @@ func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironments []s
 	specificProject []string, dryRun, continueOnError bool) error {
 
 	deploymentManifestPath = filepath.Clean(deploymentManifestPath)
-	deploymentManifestPath, err := filepath.Abs(deploymentManifestPath)
+	absManifestPath, err := filepath.Abs(deploymentManifestPath)
 
 	if err != nil {
 		return fmt.Errorf("error while finding absolute path for `%s`: %w", deploymentManifestPath, err)
@@ -47,7 +47,7 @@ func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironments []s
 
 	manifest, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
 		Fs:           fs,
-		ManifestPath: deploymentManifestPath,
+		ManifestPath: absManifestPath,
 	})
 
 	if errs != nil {
@@ -63,7 +63,7 @@ func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironments []s
 
 	environmentMap := toEnvironmentMap(environments)
 	environmentNames := toEnvironmentNames(environments)
-	workingDir := filepath.Dir(deploymentManifestPath)
+	workingDir := filepath.Dir(absManifestPath)
 
 	apis := api.NewApis()
 
