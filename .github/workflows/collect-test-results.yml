@@ -7,7 +7,7 @@ name: Test Results
 
 on:
   workflow_run:
-    workflows: ["Build and Test"]
+    workflows: [ "Build and Test" ]
     types:
       - completed
 
@@ -30,16 +30,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
         run: |
-           mkdir -p ${{ env.ARTIFACT_PATH }} && cd $ {{ env.ARTIFACT_PATH }}
+          mkdir -p ${{ env.ARTIFACT_PATH }} && cd $ {{ env.ARTIFACT_PATH }}
 
-           artifacts_url=${{ github.event.workflow_run.artifacts_url }}
+          artifacts_url=${{ github.event.workflow_run.artifacts_url }}
 
-           gh api "$artifacts_url" -q '.artifacts[] | [.name, .archive_download_url] | @tsv' | while read artifact
-           do
-             IFS=$'\t' read name url <<< "$artifact"
-             gh api $url > "$name.zip"
-             unzip -d "$name" "$name.zip"
-           done
+          gh api "$artifacts_url" -q '.artifacts[] | [.name, .archive_download_url] | @tsv' | while read artifact
+          do
+            IFS=$'\t' read name url <<< "$artifact"
+            gh api $url > "$name.zip"
+            unzip -d "$name" "$name.zip"
+          done
 
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action@v1

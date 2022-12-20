@@ -10,7 +10,7 @@ on:
     # nightly build ensure E2E tests run daily and catch any breaking API changes
     - cron: '0 0 * * *'
   pull_request_target:
-    types: [labeled]
+    types: [ labeled ]
 
 defaults:
   run:
