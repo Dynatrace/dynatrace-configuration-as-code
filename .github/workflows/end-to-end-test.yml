@@ -22,8 +22,8 @@ env:
 
 jobs:
 
-  build:
-    name: Build
+  e2e-test:
+    name: E2E Test
     runs-on: ubuntu-latest
     permissions:
       checks: write
