@@ -16,7 +16,7 @@
 
 package util
 
-import (
+import ( // nosemgrep: go.lang.security.audit.xss.import-text-template.import-text-template
 	"bytes"
 	"os"
 	"strings"
