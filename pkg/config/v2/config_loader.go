@@ -88,7 +88,11 @@ type ConfigLoaderContext struct {
 	*LoaderContext
 	Folder string
 	Path   string
-	ApiId  string
+}
+
+type SingleConfigLoadContext struct {
+	*ConfigLoaderContext
+	Type string
 }
 
 type DefinitionParserError struct {
@@ -97,11 +101,11 @@ type DefinitionParserError struct {
 	Reason   string
 }
 
-func newDefinitionParserError(configId string, context *ConfigLoaderContext, reason string) DefinitionParserError {
+func newDefinitionParserError(configId string, context *SingleConfigLoadContext, reason string) DefinitionParserError {
 	return DefinitionParserError{
 		Location: coordinate.Coordinate{
 			Project:  context.ProjectId,
-			Type:     context.ApiId,
+			Type:     context.Type,
 			ConfigId: configId,
 		},
 		Path:   context.Path,
@@ -114,7 +118,7 @@ type DetailedDefinitionParserError struct {
 	EnvironmentDetails configErrors.EnvironmentDetails
 }
 
-func newDetailedDefinitionParserError(configId string, context *ConfigLoaderContext, environment manifest.EnvironmentDefinition,
+func newDetailedDefinitionParserError(configId string, context *SingleConfigLoadContext, environment manifest.EnvironmentDefinition,
 	reason string) DetailedDefinitionParserError {
 
 	return DetailedDefinitionParserError{
@@ -140,7 +144,7 @@ type ParameterDefinitionParserError struct {
 	ParameterName string
 }
 
-func newParameterDefinitionParserError(name string, configId string, context *ConfigLoaderContext,
+func newParameterDefinitionParserError(name string, configId string, context *SingleConfigLoadContext,
 	environment manifest.EnvironmentDefinition, reason string) ParameterDefinitionParserError {
 
 	return ParameterDefinitionParserError{
@@ -234,13 +238,16 @@ func parseDefinition(
 		return nil, append(errors, e)
 	}
 
-	context.ApiId = definition.Type.GetApiType()
+	singleConfigContext := &SingleConfigLoadContext{
+		ConfigLoaderContext: context,
+		Type:                definition.Type.GetApiType(),
+	}
 
 	groupOverrideMap := toGroupOverrideMap(definition.GroupOverrides)
 	environmentOverrideMap := toEnvironmentOverrideMap(definition.EnvironmentOverrides)
 
 	for _, environment := range context.Environments {
-		result, definitionErrors := parseDefinitionForEnvironment(fs, context, configId, environment,
+		result, definitionErrors := parseDefinitionForEnvironment(fs, singleConfigContext, configId, environment,
 			definition, groupOverrideMap, environmentOverrideMap)
 
 		if definitionErrors != nil {
@@ -280,7 +287,7 @@ func toGroupOverrideMap(groups []groupOverride) map[string]groupOverride {
 
 func parseDefinitionForEnvironment(
 	fs afero.Fs,
-	context *ConfigLoaderContext,
+	context *SingleConfigLoadContext,
 	configId string,
 	environment manifest.EnvironmentDefinition,
 	definition topLevelConfigDefinition,
@@ -328,7 +335,7 @@ func applyOverrides(base *configDefinition, override configDefinition) {
 
 func getConfigFromDefinition(
 	fs afero.Fs,
-	context *ConfigLoaderContext,
+	context *SingleConfigLoadContext,
 	configId string,
 	environment manifest.EnvironmentDefinition,
 	definition configDefinition,
@@ -410,7 +417,7 @@ func getConfigFromDefinition(
 		Template: template,
 		Coordinate: coordinate.Coordinate{
 			Project:  context.ProjectId,
-			Type:     context.ApiId,
+			Type:     context.Type,
 			ConfigId: configId,
 		},
 		Type: Type{
@@ -426,7 +433,7 @@ func getConfigFromDefinition(
 	}, nil
 }
 
-func parseSkip(context *ConfigLoaderContext, environment manifest.EnvironmentDefinition,
+func parseSkip(context *SingleConfigLoadContext, environment manifest.EnvironmentDefinition,
 	configId string, param interface{}) (bool, error) {
 	switch param := param.(type) {
 	case bool:
@@ -456,7 +463,7 @@ func getReferenceSlice(references map[string]coordinate.Coordinate) []coordinate
 // References holds coordinate-string -> coordinate
 type References map[string]coordinate.Coordinate
 
-func parseParametersAndReferences(context *ConfigLoaderContext, environment manifest.EnvironmentDefinition,
+func parseParametersAndReferences(context *SingleConfigLoadContext, environment manifest.EnvironmentDefinition,
 	configId string, parameterMap map[string]configParameter) (Parameters, References, []error) {
 
 	parameters := make(map[string]parameter.Parameter)
@@ -496,7 +503,7 @@ func parseParametersAndReferences(context *ConfigLoaderContext, environment mani
 	return parameters, configReferences, nil
 }
 
-func validateParameterName(context *ConfigLoaderContext, environment manifest.EnvironmentDefinition, configId string, name string) error {
+func validateParameterName(context *SingleConfigLoadContext, environment manifest.EnvironmentDefinition, configId string, name string) error {
 
 	for _, parameterName := range ReservedParameterNames {
 		if name == parameterName {
@@ -508,7 +515,7 @@ func validateParameterName(context *ConfigLoaderContext, environment manifest.En
 	return nil
 }
 
-func parseParameter(context *ConfigLoaderContext, environment manifest.EnvironmentDefinition,
+func parseParameter(context *SingleConfigLoadContext, environment manifest.EnvironmentDefinition,
 	configId string, name string, param interface{}) (parameter.Parameter, error) {
 
 	if val, ok := param.([]interface{}); ok {
@@ -531,7 +538,7 @@ func parseParameter(context *ConfigLoaderContext, environment manifest.Environme
 		return serDe.Deserializer(parameter.ParameterParserContext{
 			Coordinate: coordinate.Coordinate{
 				Project:  context.ProjectId,
-				Type:     context.ApiId,
+				Type:     context.Type,
 				ConfigId: configId,
 			},
 			ParameterName: name,
@@ -543,7 +550,7 @@ func parseParameter(context *ConfigLoaderContext, environment manifest.Environme
 }
 
 // TODO come up with better way to handle this, as this is a hack
-func arrayToReferenceParameter(context *ConfigLoaderContext, environment manifest.EnvironmentDefinition,
+func arrayToReferenceParameter(context *SingleConfigLoadContext, environment manifest.EnvironmentDefinition,
 	configId string, parameterName string, arr []interface{}) (parameter.Parameter, error) {
 	if len(arr) == 0 || len(arr) > 4 {
 		return nil, newParameterDefinitionParserError(parameterName, configId, context, environment,
@@ -551,7 +558,7 @@ func arrayToReferenceParameter(context *ConfigLoaderContext, environment manifes
 	}
 
 	project := context.ProjectId
-	api := context.ApiId
+	configType := context.Type
 	config := configId
 	var property string
 
@@ -562,17 +569,17 @@ func arrayToReferenceParameter(context *ConfigLoaderContext, environment manifes
 		config = toString(arr[0])
 		property = toString(arr[1])
 	case 3:
-		api = toString(arr[0])
+		configType = toString(arr[0])
 		config = toString(arr[1])
 		property = toString(arr[2])
 	case 4:
 		project = toString(arr[0])
-		api = toString(arr[1])
+		configType = toString(arr[1])
 		config = toString(arr[2])
 		property = toString(arr[3])
 	}
 
-	return refParam.New(project, api, config, property), nil
+	return refParam.New(project, configType, config, property), nil
 }
 
 func toString(v interface{}) string {
