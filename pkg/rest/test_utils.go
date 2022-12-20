@@ -90,7 +90,7 @@ func (i integrationTestResources) handler() func(res http.ResponseWriter, req *h
 			http.Error(res, "Not found", http.StatusNotFound)
 			return
 		} else {
-			_, err := res.Write(content)
+			_, err := res.Write(content) // nosemgrep: go.lang.security.audit.xss.no-direct-write-to-responsewriter.no-direct-write-to-responsewriter
 			if err != nil {
 				http.Error(res, err.Error(), http.StatusInternalServerError)
 			}
