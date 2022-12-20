@@ -53,26 +53,31 @@ func (v Version) SmallerThan(other Version) bool {
 	return other.GreaterThan(v)
 }
 
-func ParseVersion(versionString string) (version Version, err error) {
+func ParseVersion(versionString string) (Version, error) {
 	split := strings.Split(versionString, ".")
 	if !(len(split) == 2 || len(split) == 3) {
-		return version, fmt.Errorf("failed to parse version: format did not meet expected MAJOR.MINOR or MAJOR.MINOR.PATCH pattern: %v", versionString)
+		return Version{}, fmt.Errorf("failed to parse version: format did not meet expected MAJOR.MINOR or MAJOR.MINOR.PATCH pattern: %v", versionString)
 	}
 
-	version.Major, err = strconv.Atoi(split[0])
+	majorVersion, err := strconv.Atoi(split[0])
 	if err != nil {
 		return Version{}, fmt.Errorf("failed to parse version: major %v is not a number", split[0])
 	}
-	version.Minor, err = strconv.Atoi(split[1])
+	minorVersion, err := strconv.Atoi(split[1])
 	if err != nil {
 		return Version{}, fmt.Errorf("failed to parse version: minor %v is not a number", split[1])
 	}
+	patchVersion := 0
 	if len(split) == 3 {
-		version.Patch, err = strconv.Atoi(split[2])
+		patchVersion, err = strconv.Atoi(split[2])
 		if err != nil {
 			return Version{}, fmt.Errorf("failed to parse version: patch %v is not a number", split[2])
 		}
 	}
 
-	return version, nil
+	return Version{
+		Major: majorVersion,
+		Minor: minorVersion,
+		Patch: patchVersion,
+	}, nil
 }
