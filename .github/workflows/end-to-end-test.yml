@@ -40,7 +40,10 @@ jobs:
         if: github.event.action != 'labeled'
         uses: actions/checkout@v3
 
-      - name: Check out PR
+      # If a PR was reviewed and deemed safe to run in the context of our repo and it's secrets, we label it to trigger E2E tests.
+      # In that case this Action is triggered in pull_request_target context and checks out the HEAD of the PR branch.
+      # This is a semi-secure manually reviewed way to ensure we only run code we're fine accessing our secrets
+      - name: Check out PR # nosemgrep:yaml.github-actions.security.pull-request-target-code-checkout.pull-request-target-code-checkout
         if: github.event.action == 'labeled' && github.event.label.name == env.E2E_TEST_LABEL
         uses: actions/checkout@v3
         with:
