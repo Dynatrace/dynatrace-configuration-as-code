@@ -381,7 +381,7 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlStrin
 	for {
 		values, err := unmarshalJson(theApi, resp)
 		if err != nil {
-			return values, err
+			return nil, err
 		}
 		existingValues = append(existingValues, values...)
 
