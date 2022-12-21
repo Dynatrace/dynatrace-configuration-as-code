@@ -36,13 +36,17 @@ func Download(client rest.SettingsClient) v2.ConfigsPerType {
 		return nil
 	}
 
-	results := make(v2.ConfigsPerType)
+	results := make(v2.ConfigsPerType, len(schemas))
 
 	for _, schema := range schemas {
 		log.Debug("Downloading all settings for schema %s", schema)
 		objects, err := client.ListSettings(schema.SchemaId)
 		if err != nil {
 			log.Error("Failed to fetch all settings for schema %s", schema)
+			continue
+		}
+
+		if len(objects) == 0 {
 			continue
 		}
 
@@ -84,8 +88,7 @@ func convertObject(o rest.DownloadSettingsObject) config.Config {
 			config.NameParameter:  &value.ValueParameter{Value: o.ObjectId},
 			config.ScopeParameter: &value.ValueParameter{Value: o.Scope},
 		},
-		References: nil,
-		Skip:       false,
+		Skip: false,
 	}
 
 }
