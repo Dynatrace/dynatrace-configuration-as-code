@@ -2,12 +2,10 @@ apiVersion: v1
 kind: Pod
 spec:
   containers:
-    - name: jnlp
+    - name: jnlp # nosemgrep
       image: registry.lab.dynatrace.org/keptn/ca-jenkins-agent
       securityContext:
-        privileged: false
-        allowPrivilegeEscalation: false
-        runAsNonRoot: true
+        privileged: true
       imagePullPolicy: Always
       args:
         - "jenkins-slave"
