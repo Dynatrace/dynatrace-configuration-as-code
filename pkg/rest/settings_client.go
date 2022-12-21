@@ -23,6 +23,7 @@ import (
 )
 
 const pathSettingsObjects = "/api/v2/settings/objects"
+const pathSchemas = "/api/v2/settings/schemas"
 
 // SettingsObject contains all the information necessary to create/update a settings object
 type SettingsObject struct {

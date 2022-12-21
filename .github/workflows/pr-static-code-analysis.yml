@@ -14,9 +14,18 @@ jobs:
     name: lint
     runs-on: ubuntu-latest
     steps:
+
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v3
+        with:
+          go-version: '~1.19'
+        id: go
+
       - uses: actions/checkout@v3
+
       - name: 🕵️ Go vet
         run: make vet
+
       - name: golangci-lint
         uses: reviewdog/action-golangci-lint@v2
         with:

@@ -36,7 +36,7 @@ mocks: setup
 	@echo "Generating mocks"
 	@go generate ./...
 
-vet:
+vet: mocks
 	@echo "Vetting files"
 	@go vet ./...
 
@@ -79,19 +79,19 @@ test: setup mocks lint
 	@echo "Testing ${BINARY}..."
 	@gotestsum ${testopts} -- -tags=unit -v ./...
 
-integration-test: setup
+integration-test: mocks
 	@gotestsum ${testopts} --format standard-verbose -- -tags=integration -timeout=30m -v ./...
 
-integration-test-v1:setup
+integration-test-v1:mocks
 	@gotestsum ${testopts} --format standard-verbose -- -tags=integration_v1 -timeout=30m -v ./...
 
-download-restore-test: setup
+download-restore-test: mocks
 	@gotestsum ${testopts} --format standard-verbose -- -tags=download_restore -timeout=30m -v ./...
 
 clean-environments:
 	@gotestsum ${testopts} --format standard-verbose -- -tags=cleanup -v ./...
 
-nightly-test:setup
+nightly-test:mocks
 	@gotestsum ${testopts} --format standard-verbose -- -tags=nightly -timeout=60m -v ./...
 
 # Build and Test a single package supplied via pgk variable, without using test cache

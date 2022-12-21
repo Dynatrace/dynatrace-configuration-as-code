@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package downloader
+package classic
 
 import (
 	"encoding/json"
@@ -154,7 +154,7 @@ func findConfigsToDownload(currentApi api.Api, client rest.DynatraceClient) ([]a
 	return client.List(currentApi)
 }
 
-func downloadConfigsOfApi(theApi api.Api, values []api.Value, client rest.DynatraceClient, projectId string) []config.Config {
+func downloadConfigsOfApi(theApi api.Api, values []api.Value, client rest.DynatraceClient, projectName string) []config.Config {
 	configs := make([]config.Config, 0, len(values))
 	configsMutex := sync.Mutex{}
 
@@ -166,7 +166,7 @@ func downloadConfigsOfApi(theApi api.Api, values []api.Value, client rest.Dynatr
 		value := value
 
 		go func() {
-			conf, skipConfig := downloadConfig(theApi, value, client, projectId)
+			conf, skipConfig := downloadConfig(theApi, value, client, projectName)
 
 			if !skipConfig {
 				configsMutex.Lock()
@@ -183,8 +183,8 @@ func downloadConfigsOfApi(theApi api.Api, values []api.Value, client rest.Dynatr
 	return configs
 }
 
-func downloadConfig(theApi api.Api, value api.Value, client rest.DynatraceClient, projectId string) (conf config.Config, skipConfig bool) {
-	return downloadConfigForTesting(theApi, value, client, projectId, shouldConfigBePersisted)
+func downloadConfig(theApi api.Api, value api.Value, client rest.DynatraceClient, projectName string) (conf config.Config, skipConfig bool) {
+	return downloadConfigForTesting(theApi, value, client, projectName, shouldConfigBePersisted)
 }
 
 type shouldConfigBePersistedFunc func(a api.Api, json map[string]interface{}) bool

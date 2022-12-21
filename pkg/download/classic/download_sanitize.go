@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package downloader
+package classic
 
 var apiSanitizeFunctions = map[string]func(properties map[string]interface{}) map[string]interface{}{
 	"service-detection-full-web-service":   removeOrderProperty,

@@ -18,7 +18,8 @@ import (
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download/downloader"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download/classic"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download/settings"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
 	project "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2/topologysort"
@@ -172,6 +173,7 @@ type downloadOptions struct {
 	apis                   api.ApiMap
 	forceOverwriteManifest bool
 	clientFactory          dynatraceClientFactory
+	skipSettings           bool
 }
 
 func (c downloadOptions) getDynatraceClient() (rest.DynatraceClient, error) {
@@ -243,8 +245,15 @@ func downloadConfigs(context downloadOptions) (project.ConfigsPerType, error) {
 		return nil, fmt.Errorf("failed to create Dynatrace client: %w", err)
 	}
 
-	downloadedConfigs := downloader.DownloadAllConfigs(context.apis, client, context.projectName)
-	return downloadedConfigs, nil
+	configObjects := classic.DownloadAllConfigs(context.apis, client, context.projectName)
+
+	if !context.skipSettings {
+		settingsObjects := settings.Download(client)
+
+		maps.Copy(configObjects, settingsObjects)
+	}
+
+	return configObjects, nil
 }
 
 func sumConfigs(configs project.ConfigsPerType) int {

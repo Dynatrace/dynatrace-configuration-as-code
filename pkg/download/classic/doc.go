@@ -48,4 +48,4 @@ The process looks like this:
 
 ```
 */
-package downloader
+package classic

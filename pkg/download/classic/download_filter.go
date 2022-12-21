@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package downloader
+package classic
 
 import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"

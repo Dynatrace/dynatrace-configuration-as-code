@@ -857,6 +857,7 @@ func getTestingDownloadOptions(server *httptest.Server, projectName string, apiM
 		outputFolder:    "out",
 		projectName:     projectName,
 		apis:            apiMap,
+		skipSettings:    true,
 		clientFactory: func(environmentUrl, token string) (rest.DynatraceClient, error) {
 			return rest.NewDynatraceClientForTesting(environmentUrl, token, server.Client())
 		},

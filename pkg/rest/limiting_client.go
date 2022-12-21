@@ -97,3 +97,19 @@ func (l limitingClient) ListKnownSettings(schemaId string) (k KnownSettings, err
 
 	return
 }
+
+func (l limitingClient) ListSchemas() (s SchemaList, err error) {
+	l.limiter.ExecuteBlocking(func() {
+		s, err = l.client.ListSchemas()
+	})
+
+	return
+}
+
+func (l limitingClient) ListSettings(schema string) (o []DownloadSettingsObject, err error) {
+	l.limiter.ExecuteBlocking(func() {
+		o, err = l.client.ListSettings(schema)
+	})
+
+	return
+}

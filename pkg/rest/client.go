@@ -69,6 +69,15 @@ type ConfigClient interface {
 // KnownSettings contains externalId -> objectId
 type KnownSettings map[string]string
 
+type DownloadSettingsObject struct {
+	ExternalId    string           `json:"externalId"`
+	SchemaVersion string           `json:"schemaVersion"`
+	SchemaId      string           `json:"schemaId"`
+	ObjectId      string           `json:"objectId"`
+	Scope         string           `json:"scope"`
+	Value         *json.RawMessage `json:"value"`
+}
+
 // SettingsClient is the abstraction layer for CRUD operations on the Dynatrace Settings API.
 // Its design is intentionally not dependent on Monaco objects.
 //
@@ -89,6 +98,12 @@ type SettingsClient interface {
 	// ListKnownSettings queries all settings for the given schema ID.
 	// All queried objects that have an external ID will be returned.
 	ListKnownSettings(schemaId string) (KnownSettings, error)
+
+	// ListSchemas returns all schemas that the Dynatrace environment reports
+	ListSchemas() (SchemaList, error)
+
+	// ListSettings returns all settings objects for a given schema.
+	ListSettings(schema string) ([]DownloadSettingsObject, error)
 }
 
 //go:generate mockgen -source=client.go -destination=client_mock.go -package=rest -imports .=github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api DynatraceClient
@@ -295,7 +310,7 @@ func (d *dynatraceClient) ListKnownSettings(schemaId string) (KnownSettings, err
 	}
 	u.RawQuery = params.Encode()
 
-	resp, err := get(d.client, u.String(), d.token)
+	resp, err := getWithRetry(d.client, u.String(), d.token, d.retrySettings.normal)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build request: %w", err)
 	}
@@ -316,6 +331,93 @@ func (d *dynatraceClient) ListKnownSettings(schemaId string) (KnownSettings, err
 				result[v.ExternalId] = v.ObjectId
 			}
 		}
+
+		if resp.NextPageKey != "" {
+			u = addNextPageQueryParams(u, resp.NextPageKey)
+
+			resp, err = getWithRetry(d.client, u.String(), d.token, d.retrySettings.normal)
+
+			if err != nil {
+				return nil, err
+			}
+
+			if !success(resp) {
+				return nil, fmt.Errorf("Failed to get further configs from Settings API (HTTP %d)!\n    Response was: %s", resp.StatusCode, string(resp.Body))
+			}
+
+		} else {
+			break
+		}
+	}
+
+	return result, nil
+}
+
+type SchemaListResponse struct {
+	Items SchemaList `json:"items"`
+}
+type SchemaList []struct {
+	SchemaId string `json:"schemaId"`
+}
+
+func (d *dynatraceClient) ListSchemas() (SchemaList, error) {
+	u, err := url.Parse(d.environmentUrl + pathSchemas)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse url: %w", err)
+	}
+
+	// getting all schemas does not have pagination
+	resp, err := get(d.client, u.String(), d.token)
+	if err != nil {
+		return nil, fmt.Errorf("failed to GET schemas: %w", err)
+	}
+
+	if !success(resp) {
+		return nil, fmt.Errorf("request failed with HTTP (%d).\n\tResponse content: %s", resp.StatusCode, string(resp.Body))
+	}
+
+	var result SchemaListResponse
+	err = json.Unmarshal(resp.Body, &result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return result.Items, nil
+}
+
+func (d *dynatraceClient) ListSettings(schema string) ([]DownloadSettingsObject, error) {
+
+	u, err := url.Parse(d.environmentUrl + pathSettingsObjects)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to parse url '%s': %w", d.environmentUrl+pathSettingsObjects, err)
+	}
+
+	params := url.Values{
+		"schemaIds": []string{schema},
+		"pageSize":  []string{"500"},
+		"fields":    []string{"objectId,value,externalId,schemaVersion,schemaId,scope"},
+	}
+	u.RawQuery = params.Encode()
+
+	resp, err := getWithRetry(d.client, u.String(), d.token, d.retrySettings.normal)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build request: %w", err)
+	}
+
+	if !success(resp) {
+		return nil, fmt.Errorf("request failed with HTTP (%d).\n\tResponse content: %s", resp.StatusCode, string(resp.Body))
+	}
+
+	result := make([]DownloadSettingsObject, 0)
+	for {
+		var parsed struct {
+			Items []DownloadSettingsObject `json:"items"`
+		}
+		if err := json.Unmarshal(resp.Body, &parsed); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+		}
+
+		result = append(result, parsed.Items...)
 
 		if resp.NextPageKey != "" {
 			u = addNextPageQueryParams(u, resp.NextPageKey)
