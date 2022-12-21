@@ -30,7 +30,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
         run: |
-          mkdir -p ${{ env.ARTIFACT_PATH }} && cd $ {{ env.ARTIFACT_PATH }}
+          mkdir -p ${{ env.ARTIFACT_PATH }} && cd ${{ env.ARTIFACT_PATH }}
 
           artifacts_url=${{ github.event.workflow_run.artifacts_url }}
 
