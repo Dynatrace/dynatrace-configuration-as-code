@@ -34,7 +34,7 @@ import (
 func TestDownload(t *testing.T) {
 	type mockValues struct {
 		Schemas           func() (rest.SchemaList, error)
-		ListSchamasCalls  int
+		ListSchemasCalls  int
 		Settings          func() ([]rest.DownloadSettingsObject, error)
 		ListSettingsCalls int
 	}
@@ -46,7 +46,7 @@ func TestDownload(t *testing.T) {
 		{
 			name: "DownloadSettings - List Schemas fails",
 			mockValues: mockValues{
-				ListSchamasCalls: 1,
+				ListSchemasCalls: 1,
 				Schemas: func() (rest.SchemaList, error) {
 					return nil, fmt.Errorf("oh no")
 				},
@@ -60,7 +60,7 @@ func TestDownload(t *testing.T) {
 		{
 			name: "DownloadSettings - List Settings fails",
 			mockValues: mockValues{
-				ListSchamasCalls: 1,
+				ListSchemasCalls: 1,
 				Schemas: func() (rest.SchemaList, error) {
 					return rest.SchemaList{{SchemaId: "id1"}, {SchemaId: "id2"}}, nil
 				},
@@ -74,7 +74,7 @@ func TestDownload(t *testing.T) {
 		{
 			name: "DownloadSettings",
 			mockValues: mockValues{
-				ListSchamasCalls: 1,
+				ListSchemasCalls: 1,
 				Schemas: func() (rest.SchemaList, error) {
 					return rest.SchemaList{{SchemaId: "id1"}}, nil
 				},
@@ -94,7 +94,7 @@ func TestDownload(t *testing.T) {
 				{
 					Template: template.NewDownloadTemplate("oid1", "oid1", string(json.RawMessage{})),
 					Coordinate: coordinate.Coordinate{
-						Project:  "project",
+						Project:  "projectName",
 						Type:     "sid1",
 						ConfigId: "oid1",
 					},
@@ -116,10 +116,10 @@ func TestDownload(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c := rest.NewMockDynatraceClient(gomock.NewController(t))
 			schemas, err := tt.mockValues.Schemas()
-			c.EXPECT().ListSchemas().Times(tt.mockValues.ListSchamasCalls).Return(schemas, err)
+			c.EXPECT().ListSchemas().Times(tt.mockValues.ListSchemasCalls).Return(schemas, err)
 			settings, err := tt.mockValues.Settings()
 			c.EXPECT().ListSettings(gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err)
-			res := Download(c)
+			res := Download(c, "projectName")
 			assert.Equal(t, tt.want, res)
 		})
 	}

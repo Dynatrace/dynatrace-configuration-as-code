@@ -27,7 +27,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 )
 
-func Download(client rest.SettingsClient) v2.ConfigsPerType {
+func Download(client rest.SettingsClient, projectName string) v2.ConfigsPerType {
 
 	log.Debug("Fetching schemas to download")
 	schemas, err := client.ListSchemas()
@@ -50,24 +50,24 @@ func Download(client rest.SettingsClient) v2.ConfigsPerType {
 			continue
 		}
 
-		configs := convertAllObjects(objects)
+		configs := convertAllObjects(objects, projectName)
 		results[schema.SchemaId] = configs
 	}
 
 	return results
 }
 
-func convertAllObjects(objects []rest.DownloadSettingsObject) []config.Config {
+func convertAllObjects(objects []rest.DownloadSettingsObject, projectName string) []config.Config {
 	result := make([]config.Config, 0, len(objects))
 
 	for _, o := range objects {
-		result = append(result, convertObject(o))
+		result = append(result, convertObject(o, projectName))
 	}
 
 	return result
 }
 
-func convertObject(o rest.DownloadSettingsObject) config.Config {
+func convertObject(o rest.DownloadSettingsObject, projectName string) config.Config {
 
 	content := string(*o.Value)
 
@@ -76,7 +76,7 @@ func convertObject(o rest.DownloadSettingsObject) config.Config {
 	return config.Config{
 		Template: templ,
 		Coordinate: coordinate.Coordinate{
-			Project:  "project",
+			Project:  projectName,
 			Type:     o.SchemaId,
 			ConfigId: o.ObjectId, // we need a unique id -> use the objectId as it is unique
 		},

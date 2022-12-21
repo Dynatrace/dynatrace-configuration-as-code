@@ -248,7 +248,7 @@ func downloadConfigs(context downloadOptions) (project.ConfigsPerType, error) {
 	configObjects := classic.DownloadAllConfigs(context.apis, client, context.projectName)
 
 	if !context.skipSettings {
-		settingsObjects := settings.Download(client)
+		settingsObjects := settings.Download(client, context.projectName)
 
 		maps.Copy(configObjects, settingsObjects)
 	}
