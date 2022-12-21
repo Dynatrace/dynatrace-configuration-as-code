@@ -85,7 +85,7 @@ func TestDownload(t *testing.T) {
 						SchemaId:      "sid1",
 						ObjectId:      "oid1",
 						Scope:         "tenant",
-						Value:         &json.RawMessage{},
+						Value:         json.RawMessage{},
 					}}, nil
 				},
 				ListSettingsCalls: 1,

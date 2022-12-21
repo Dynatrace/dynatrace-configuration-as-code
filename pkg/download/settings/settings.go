@@ -69,7 +69,7 @@ func convertAllObjects(objects []rest.DownloadSettingsObject, projectName string
 
 func convertObject(o rest.DownloadSettingsObject, projectName string) config.Config {
 
-	content := string(*o.Value)
+	content := string(o.Value)
 
 	templ := template.NewDownloadTemplate(o.ObjectId, o.ObjectId, content)
 

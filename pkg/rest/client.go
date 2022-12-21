@@ -70,12 +70,12 @@ type ConfigClient interface {
 type KnownSettings map[string]string
 
 type DownloadSettingsObject struct {
-	ExternalId    string           `json:"externalId"`
-	SchemaVersion string           `json:"schemaVersion"`
-	SchemaId      string           `json:"schemaId"`
-	ObjectId      string           `json:"objectId"`
-	Scope         string           `json:"scope"`
-	Value         *json.RawMessage `json:"value"`
+	ExternalId    string          `json:"externalId"`
+	SchemaVersion string          `json:"schemaVersion"`
+	SchemaId      string          `json:"schemaId"`
+	ObjectId      string          `json:"objectId"`
+	Scope         string          `json:"scope"`
+	Value         json.RawMessage `json:"value"`
 }
 
 // SettingsClient is the abstraction layer for CRUD operations on the Dynatrace Settings API.
