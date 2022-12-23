@@ -107,8 +107,9 @@ func TestListKnownSettings(t *testing.T) {
 	tests := []struct {
 		name                      string
 		givenSchemaId             string
+		givenListSettingsOpts     ListSettingsOptions
 		givenServerResponses      []testServerResponse
-		want                      KnownSettings
+		want                      []DownloadSettingsObject
 		wantQueryParamsPerApiCall [][]testQueryParams
 		wantNumberOfApiCalls      int
 		wantError                 bool
@@ -119,14 +120,66 @@ func TestListKnownSettings(t *testing.T) {
 			givenServerResponses: []testServerResponse{
 				{200, `{ "items": [ {"objectId": "f5823eca-4838-49d0-81d9-0514dd2c4640", "externalId": "RG9jdG9yIFdobwo="} ] }`},
 			},
-			want: KnownSettings{
-				"RG9jdG9yIFdobwo=": "f5823eca-4838-49d0-81d9-0514dd2c4640",
+			want: []DownloadSettingsObject{
+				{
+					ExternalId: "RG9jdG9yIFdobwo=",
+					ObjectId:   "f5823eca-4838-49d0-81d9-0514dd2c4640",
+				},
 			},
 			wantQueryParamsPerApiCall: [][]testQueryParams{
 				{
 					{"schemaIds", "builtin:something"},
 					{"pageSize", "500"},
-					{"fields", "externalId,objectId"},
+					{"fields", defaultListSettingsFields},
+				},
+			},
+			wantNumberOfApiCalls: 1,
+			wantError:            false,
+		},
+		{
+			name:                  "Lists Settings objects without value field as expected",
+			givenSchemaId:         "builtin:something",
+			givenListSettingsOpts: ListSettingsOptions{DiscardValue: true},
+			givenServerResponses: []testServerResponse{
+				{200, `{ "items": [ {"objectId": "f5823eca-4838-49d0-81d9-0514dd2c4640", "externalId": "RG9jdG9yIFdobwo="} ] }`},
+			},
+			want: []DownloadSettingsObject{
+				{
+					ExternalId: "RG9jdG9yIFdobwo=",
+					ObjectId:   "f5823eca-4838-49d0-81d9-0514dd2c4640",
+				},
+			},
+			wantQueryParamsPerApiCall: [][]testQueryParams{
+				{
+					{"schemaIds", "builtin:something"},
+					{"pageSize", "500"},
+					{"fields", reducedListSettingsFields},
+				},
+			},
+			wantNumberOfApiCalls: 1,
+			wantError:            false,
+		},
+		{
+			name:          "Lists Settings objects with filter as expected",
+			givenSchemaId: "builtin:something",
+			givenListSettingsOpts: ListSettingsOptions{Filter: func(o DownloadSettingsObject) bool {
+				return o.ExternalId == "RG9jdG9yIFdobwo="
+			}},
+			givenServerResponses: []testServerResponse{
+				{200, `{ "items": [ {"objectId": "f5823eca-4838-49d0-81d9-0514dd2c4640", "externalId": "RG9jdG9yIFdobwo="} ] }`},
+				{200, `{ "items": [ {"objectId": "f5823eca-4838-49d0-81d9-0514dd2c4641", "externalId": "RG9jdG9yIabcdef="} ] }`},
+			},
+			want: []DownloadSettingsObject{
+				{
+					ExternalId: "RG9jdG9yIFdobwo=",
+					ObjectId:   "f5823eca-4838-49d0-81d9-0514dd2c4640",
+				},
+			},
+			wantQueryParamsPerApiCall: [][]testQueryParams{
+				{
+					{"schemaIds", "builtin:something"},
+					{"pageSize", "500"},
+					{"fields", defaultListSettingsFields},
 				},
 			},
 			wantNumberOfApiCalls: 1,
@@ -139,15 +192,22 @@ func TestListKnownSettings(t *testing.T) {
 				{200, `{ "items": [ {"objectId": "f5823eca-4838-49d0-81d9-0514dd2c4640", "externalId": "RG9jdG9yIFdobwo="} ], "nextPageKey": "page42" }`},
 				{200, `{ "items": [ {"objectId": "b1d4c623-25e0-4b54-9eb5-6734f1a72041", "externalId": "VGhlIE1hc3Rlcgo="} ] }`},
 			},
-			want: KnownSettings{
-				"RG9jdG9yIFdobwo=": "f5823eca-4838-49d0-81d9-0514dd2c4640",
-				"VGhlIE1hc3Rlcgo=": "b1d4c623-25e0-4b54-9eb5-6734f1a72041",
+			want: []DownloadSettingsObject{
+				{
+					ExternalId: "RG9jdG9yIFdobwo=",
+					ObjectId:   "f5823eca-4838-49d0-81d9-0514dd2c4640",
+				},
+				{
+					ExternalId: "VGhlIE1hc3Rlcgo=",
+					ObjectId:   "b1d4c623-25e0-4b54-9eb5-6734f1a72041",
+				},
 			},
+
 			wantQueryParamsPerApiCall: [][]testQueryParams{
 				{
 					{"schemaIds", "builtin:something"},
 					{"pageSize", "500"},
-					{"fields", "externalId,objectId"},
+					{"fields", defaultListSettingsFields},
 				},
 				{
 					{"nextPageKey", "page42"},
@@ -162,12 +222,12 @@ func TestListKnownSettings(t *testing.T) {
 			givenServerResponses: []testServerResponse{
 				{200, `{ "items": [ ] }`},
 			},
-			want: KnownSettings{},
+			want: []DownloadSettingsObject{},
 			wantQueryParamsPerApiCall: [][]testQueryParams{
 				{
 					{"schemaIds", "builtin:something"},
 					{"pageSize", "500"},
-					{"fields", "externalId,objectId"},
+					{"fields", defaultListSettingsFields},
 				},
 			},
 			wantNumberOfApiCalls: 1,
@@ -184,7 +244,7 @@ func TestListKnownSettings(t *testing.T) {
 				{
 					{"schemaIds", "builtin:something"},
 					{"pageSize", "500"},
-					{"fields", "externalId,objectId"},
+					{"fields", defaultListSettingsFields},
 				},
 			},
 			wantNumberOfApiCalls: 1,
@@ -199,15 +259,21 @@ func TestListKnownSettings(t *testing.T) {
 				{400, `retry fail`},
 				{200, `{ "items": [ {"objectId": "b1d4c623-25e0-4b54-9eb5-6734f1a72041", "externalId": "VGhlIE1hc3Rlcgo="} ] }`},
 			},
-			want: KnownSettings{
-				"RG9jdG9yIFdobwo=": "f5823eca-4838-49d0-81d9-0514dd2c4640",
-				"VGhlIE1hc3Rlcgo=": "b1d4c623-25e0-4b54-9eb5-6734f1a72041",
+			want: []DownloadSettingsObject{
+				{
+					ExternalId: "RG9jdG9yIFdobwo=",
+					ObjectId:   "f5823eca-4838-49d0-81d9-0514dd2c4640",
+				},
+				{
+					ExternalId: "VGhlIE1hc3Rlcgo=",
+					ObjectId:   "b1d4c623-25e0-4b54-9eb5-6734f1a72041",
+				},
 			},
 			wantQueryParamsPerApiCall: [][]testQueryParams{
 				{
 					{"schemaIds", "builtin:something"},
 					{"pageSize", "500"},
-					{"fields", "externalId,objectId"},
+					{"fields", defaultListSettingsFields},
 				},
 				{
 					{"nextPageKey", "page42"},
@@ -237,7 +303,7 @@ func TestListKnownSettings(t *testing.T) {
 				{
 					{"schemaIds", "builtin:something"},
 					{"pageSize", "500"},
-					{"fields", "externalId,objectId"},
+					{"fields", defaultListSettingsFields},
 				},
 				{
 					{"nextPageKey", "page42"},
@@ -288,7 +354,7 @@ func TestListKnownSettings(t *testing.T) {
 			client, err := newDynatraceClient(server.URL, "token", server.Client(), testRetrySettings)
 			assert.NilError(t, err)
 
-			res, err := client.ListKnownSettings(tt.givenSchemaId)
+			res, err := client.ListSettings(tt.givenSchemaId, tt.givenListSettingsOpts)
 
 			if tt.wantError {
 				assert.Assert(t, err != nil)

@@ -238,21 +238,17 @@ func (c *DummyClient) ExistsByName(a api.Api, name string) (exists bool, id stri
 	return false, "", nil
 }
 
-func (c *DummyClient) UpsertSettings(_ rest.KnownSettings, obj rest.SettingsObject) (api.DynatraceEntity, error) {
+func (c *DummyClient) UpsertSettings(obj rest.SettingsObject) (api.DynatraceEntity, error) {
 	return api.DynatraceEntity{
 		Id:   obj.Id,
 		Name: obj.Id,
 	}, nil
 }
 
-func (c *DummyClient) ListKnownSettings(_ string) (rest.KnownSettings, error) {
-	return make(rest.KnownSettings), nil
-}
-
 func (c *DummyClient) ListSchemas() (rest.SchemaList, error) {
 	return make(rest.SchemaList, 0), nil
 }
 
-func (c *DummyClient) ListSettings(_ string) ([]rest.DownloadSettingsObject, error) {
+func (c *DummyClient) ListSettings(_ string, _ rest.ListSettingsOptions) ([]rest.DownloadSettingsObject, error) {
 	return make([]rest.DownloadSettingsObject, 0), nil
 }

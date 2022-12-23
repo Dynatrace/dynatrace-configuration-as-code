@@ -66,9 +66,7 @@ type ConfigClient interface {
 	ExistsByName(a Api, name string) (exists bool, id string, err error)
 }
 
-// KnownSettings contains externalId -> objectId
-type KnownSettings map[string]string
-
+// DownloadSettingsObject is the response type for the ListSettings operation
 type DownloadSettingsObject struct {
 	ExternalId    string          `json:"externalId"`
 	SchemaVersion string          `json:"schemaVersion"`
@@ -93,18 +91,35 @@ type SettingsClient interface {
 	// UpsertSettings either creates the supplied object, or updates an existing one.
 	// First, we try to find the external-id of the object. If we can't find it, we create the object, if we find it, we
 	// update the object.
-	UpsertSettings(settings KnownSettings, obj SettingsObject) (DynatraceEntity, error) // create or update, first version only create
-
-	// ListKnownSettings queries all settings for the given schema ID.
-	// All queried objects that have an external ID will be returned.
-	ListKnownSettings(schemaId string) (KnownSettings, error)
+	UpsertSettings(SettingsObject) (DynatraceEntity, error)
 
 	// ListSchemas returns all schemas that the Dynatrace environment reports
 	ListSchemas() (SchemaList, error)
 
 	// ListSettings returns all settings objects for a given schema.
-	ListSettings(schema string) ([]DownloadSettingsObject, error)
+	ListSettings(string, ListSettingsOptions) ([]DownloadSettingsObject, error)
 }
+
+// defaultListSettingsFields  are the fields we are interested in when getting setting objects
+const defaultListSettingsFields = "objectId,value,externalId,schemaVersion,schemaId,scope"
+
+// reducedListSettingsFields are the fields we are interested in when getting settings objects but don't care about the
+// actual value payload
+const reducedListSettingsFields = "objectId,externalId,schemaVersion,schemaId,scope"
+const defaultPageSize = "500"
+
+// ListSettingsOptions are additional options for the ListSettings method
+// of the Settings client
+type ListSettingsOptions struct {
+	// DiscardValue specifies whether the value field of the returned
+	// settings object shall be included in the payload
+	DiscardValue bool
+	// ListSettingsFilter can be set to pre-filter the result given a special logic
+	Filter ListSettingsFilter
+}
+
+// ListSettingsFilter can be used to filter fetched settings objects with custom criteria, e.g. o.ExternalId == ""
+type ListSettingsFilter func(DownloadSettingsObject) bool
 
 //go:generate mockgen -source=client.go -destination=client_mock.go -package=rest -imports .=github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api DynatraceClient
 
@@ -176,11 +191,28 @@ func isNewDynatraceTokenFormat(token string) bool {
 	return strings.HasPrefix(token, "dt0c01.") && strings.Count(token, ".") == 2
 }
 
-func (d *dynatraceClient) UpsertSettings(settings KnownSettings, obj SettingsObject) (DynatraceEntity, error) {
+func (d *dynatraceClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, error) {
 	externalId := util.GenerateExternalId(obj.SchemaId, obj.Id)
-	objectId, found := settings[externalId]
 
-	if !found {
+	// list all settings with matching external ID
+	settings, err := d.ListSettings(obj.SchemaId, ListSettingsOptions{
+		// we don't care about the actual value setting
+		DiscardValue: true,
+		// only consider objects with an external id that matches the expected one
+		Filter: func(o DownloadSettingsObject) bool {
+			return o.ExternalId == externalId
+		},
+	})
+	if err != nil {
+		return DynatraceEntity{}, fmt.Errorf("failed to retrieve known settings for upsert operation: %w", err)
+	}
+
+	// should never happen
+	if len(settings) > 1 {
+		return DynatraceEntity{}, fmt.Errorf("failed to perform upsert operation: found more than one settings object with the same external id: %s. Settings objects: %v", externalId, settings)
+	}
+
+	if len(settings) == 0 {
 		payload, err := buildPostRequestPayload(obj, externalId)
 		if err != nil {
 			return DynatraceEntity{}, fmt.Errorf("failed to build settings object for upsert: %w", err)
@@ -210,7 +242,7 @@ func (d *dynatraceClient) UpsertSettings(settings KnownSettings, obj SettingsObj
 			return DynatraceEntity{}, fmt.Errorf("failed to build settings object for upsert: %w", err)
 		}
 
-		requestUrl := d.environmentUrl + pathSettingsObjects + "/" + objectId
+		requestUrl := d.environmentUrl + pathSettingsObjects + "/" + settings[0].ObjectId
 
 		resp, err := put(d.client, requestUrl, payload, d.token)
 		if err != nil {
@@ -286,73 +318,7 @@ func (d *dynatraceClient) UpsertByEntityId(api Api, entityId string, name string
 	return upsertDynatraceEntityById(d.client, d.environmentUrl, entityId, name, api, payload, d.token, d.retrySettings)
 }
 
-type listEntry struct {
-	ObjectId   string `json:"objectId"`
-	ExternalId string `json:"externalId"`
-}
-
-type listResponse struct {
-	Items []listEntry `json:"items"`
-}
-
-func (d *dynatraceClient) ListKnownSettings(schemaId string) (KnownSettings, error) {
-
-	u, err := url.Parse(d.environmentUrl + pathSettingsObjects)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to parse url '%s': %w", d.environmentUrl+pathSettingsObjects, err)
-	}
-
-	// TODO: This will fail if any schema is unknown - has to be split up into multiple calls for each schema
-	params := url.Values{
-		"schemaIds": []string{schemaId},
-		"pageSize":  []string{"500"},
-		"fields":    []string{"externalId,objectId"},
-	}
-	u.RawQuery = params.Encode()
-
-	resp, err := getWithRetry(d.client, u.String(), d.token, d.retrySettings.normal)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build request: %w", err)
-	}
-
-	if !success(resp) {
-		return nil, fmt.Errorf("request failed with HTTP (%d).\n\tResponse content: %s", resp.StatusCode, string(resp.Body))
-	}
-
-	result := make(KnownSettings)
-	for {
-		var parsed listResponse
-		if err := json.Unmarshal(resp.Body, &parsed); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal response: %w", err)
-		}
-
-		for _, v := range parsed.Items {
-			if v.ExternalId != "" {
-				result[v.ExternalId] = v.ObjectId
-			}
-		}
-
-		if resp.NextPageKey != "" {
-			u = addNextPageQueryParams(u, resp.NextPageKey)
-
-			resp, err = getWithRetry(d.client, u.String(), d.token, d.retrySettings.normal)
-
-			if err != nil {
-				return nil, err
-			}
-
-			if !success(resp) {
-				return nil, fmt.Errorf("Failed to get further configs from Settings API (HTTP %d)!\n    Response was: %s", resp.StatusCode, string(resp.Body))
-			}
-
-		} else {
-			break
-		}
-	}
-
-	return result, nil
-}
-
+// SchemaListResponse is the response type returned by the ListSchemas operation
 type SchemaListResponse struct {
 	Items SchemaList `json:"items"`
 }
@@ -385,17 +351,20 @@ func (d *dynatraceClient) ListSchemas() (SchemaList, error) {
 	return result.Items, nil
 }
 
-func (d *dynatraceClient) ListSettings(schema string) ([]DownloadSettingsObject, error) {
-
+func (d *dynatraceClient) ListSettings(schemaId string, opts ListSettingsOptions) ([]DownloadSettingsObject, error) {
 	u, err := url.Parse(d.environmentUrl + pathSettingsObjects)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to parse url '%s': %w", d.environmentUrl+pathSettingsObjects, err)
+		return nil, fmt.Errorf("failed to parse URL '%s': %w", d.environmentUrl+pathSettingsObjects, err)
 	}
 
+	listSettingsFields := defaultListSettingsFields
+	if opts.DiscardValue {
+		listSettingsFields = reducedListSettingsFields
+	}
 	params := url.Values{
-		"schemaIds": []string{schema},
-		"pageSize":  []string{"500"},
-		"fields":    []string{"objectId,value,externalId,schemaVersion,schemaId,scope"},
+		"schemaIds": []string{schemaId},
+		"pageSize":  []string{defaultPageSize},
+		"fields":    []string{listSettingsFields},
 	}
 	u.RawQuery = params.Encode()
 
@@ -417,7 +386,16 @@ func (d *dynatraceClient) ListSettings(schema string) ([]DownloadSettingsObject,
 			return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 		}
 
-		result = append(result, parsed.Items...)
+		// eventually apply filter
+		if opts.Filter == nil {
+			result = append(result, parsed.Items...)
+		} else {
+			for _, i := range parsed.Items {
+				if opts.Filter(i) {
+					result = append(result, i)
+				}
+			}
+		}
 
 		if resp.NextPageKey != "" {
 			u = addNextPageQueryParams(u, resp.NextPageKey)
@@ -436,6 +414,5 @@ func (d *dynatraceClient) ListSettings(schema string) ([]DownloadSettingsObject,
 			break
 		}
 	}
-
 	return result, nil
 }

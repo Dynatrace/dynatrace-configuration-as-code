@@ -119,7 +119,6 @@ func TestDeploySettingShouldFailCyclicParameterDependencies(t *testing.T) {
 	}
 
 	client := &client.DummyClient{}
-	//entities := make(map[coordinate.Coordinate]parameter.ResolvedEntity)
 
 	conf := &config.Config{
 		Template:   generateDummyTemplate(t),
@@ -166,8 +165,7 @@ func TestDeploySettingShouldFailUpsert(t *testing.T) {
 	}
 
 	client := rest.NewMockSettingsClient(gomock.NewController(t))
-	client.EXPECT().UpsertSettings(gomock.Any(), gomock.Any()).Return(api.DynatraceEntity{}, fmt.Errorf("upsert failed"))
-	client.EXPECT().ListKnownSettings(gomock.Any()).Return(nil, nil)
+	client.EXPECT().UpsertSettings(gomock.Any()).Return(api.DynatraceEntity{}, fmt.Errorf("upsert failed"))
 
 	conf := &config.Config{
 		Template:   generateDummyTemplate(t),
@@ -199,7 +197,8 @@ func TestDeploySetting(t *testing.T) {
 		},
 	}
 
-	client := &client.DummyClient{}
+	client := rest.NewMockDynatraceClient(gomock.NewController(t))
+	client.EXPECT().UpsertSettings(gomock.Any()).Times(1)
 
 	conf := &config.Config{
 		Template:   generateDummyTemplate(t),
@@ -427,8 +426,8 @@ func TestDeployConfigsTargetingSettings(t *testing.T) {
 			},
 		},
 	}
-	client.EXPECT().ListKnownSettings(gomock.Any()).Times(1)
-	client.EXPECT().UpsertSettings(gomock.Any(), gomock.Any()).Times(1).Return(api.DynatraceEntity{
+	//client.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Times(1).Return([]rest.DownloadSettingsObject{{ExternalId: "externalId"}}, nil)
+	client.EXPECT().UpsertSettings(gomock.Any()).Times(1).Return(api.DynatraceEntity{
 		Id:   "42",
 		Name: "Super Special Settings Object",
 	}, nil)

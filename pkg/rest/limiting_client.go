@@ -82,17 +82,9 @@ func (l limitingClient) ExistsByName(a api.Api, name string) (exists bool, id st
 	return
 }
 
-func (l limitingClient) UpsertSettings(knownSettings KnownSettings, obj SettingsObject) (e api.DynatraceEntity, err error) {
+func (l limitingClient) UpsertSettings(obj SettingsObject) (e api.DynatraceEntity, err error) {
 	l.limiter.ExecuteBlocking(func() {
-		e, err = l.client.UpsertSettings(knownSettings, obj)
-	})
-
-	return
-}
-
-func (l limitingClient) ListKnownSettings(schemaId string) (k KnownSettings, err error) {
-	l.limiter.ExecuteBlocking(func() {
-		k, err = l.client.ListKnownSettings(schemaId)
+		e, err = l.client.UpsertSettings(obj)
 	})
 
 	return
@@ -106,9 +98,9 @@ func (l limitingClient) ListSchemas() (s SchemaList, err error) {
 	return
 }
 
-func (l limitingClient) ListSettings(schema string) (o []DownloadSettingsObject, err error) {
+func (l limitingClient) ListSettings(schemaId string, opts ListSettingsOptions) (o []DownloadSettingsObject, err error) {
 	l.limiter.ExecuteBlocking(func() {
-		o, err = l.client.ListSettings(schema)
+		o, err = l.client.ListSettings(schemaId, opts)
 	})
 
 	return

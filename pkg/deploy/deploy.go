@@ -145,12 +145,6 @@ func deployConfig(client rest.ConfigClient, apis api.ApiMap, entityMap *EntityMa
 }
 
 func deploySetting(client rest.SettingsClient, entityMap *EntityMap, c *config.Config) (parameter.ResolvedEntity, []error) {
-
-	settings, err := client.ListKnownSettings(c.Type.SchemaId)
-	if err != nil {
-		return parameter.ResolvedEntity{}, []error{fmt.Errorf("failed to list known settings: %w", err)}
-	}
-
 	properties, errors := resolveProperties(c, entityMap.Resolved())
 	if len(errors) > 0 {
 		return parameter.ResolvedEntity{}, errors
@@ -166,7 +160,7 @@ func deploySetting(client rest.SettingsClient, entityMap *EntityMap, c *config.C
 		return parameter.ResolvedEntity{}, []error{err}
 	}
 
-	e, err := client.UpsertSettings(settings, rest.SettingsObject{
+	entity, err := client.UpsertSettings(rest.SettingsObject{
 		Id:            c.Coordinate.ConfigId,
 		SchemaId:      c.Type.SchemaId,
 		SchemaVersion: c.Type.SchemaVersion,
@@ -177,11 +171,11 @@ func deploySetting(client rest.SettingsClient, entityMap *EntityMap, c *config.C
 		return parameter.ResolvedEntity{}, []error{newConfigDeployErr(c, err.Error())}
 	}
 
-	properties[config.IdParameter] = e.Id
-	properties[config.NameParameter] = e.Name
+	properties[config.IdParameter] = entity.Id
+	properties[config.NameParameter] = entity.Name
 
 	return parameter.ResolvedEntity{
-		EntityName: e.Name,
+		EntityName: entity.Name,
 		Coordinate: c.Coordinate,
 		Properties: properties,
 		Skip:       false,

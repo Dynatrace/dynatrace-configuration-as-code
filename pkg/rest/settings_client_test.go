@@ -27,14 +27,15 @@ import (
 )
 
 func TestUpsert(t *testing.T) {
-
 	tests := []struct {
-		name            string
-		content         string
-		expectError     bool
-		expectEntity    api.DynatraceEntity
-		responseCode    int
-		responseContent string
+		name                        string
+		content                     string
+		expectError                 bool
+		expectEntity                api.DynatraceEntity
+		postSettingsResponseCode    int
+		postSettingsResponseContent string
+		getSettingsResponseCode     int
+		getSettingsResponseContent  string
 	}{
 		{
 			name:         "Invalid json returns an error",
@@ -50,45 +51,36 @@ func TestUpsert(t *testing.T) {
 				Id:   "entity-id",
 				Name: "entity-id",
 			},
-			responseContent: `[{"objectId": "entity-id"}]`,
+			postSettingsResponseContent: `[{"objectId": "entity-id"}]`,
+			getSettingsResponseContent:  `{"items": [{"externalId": "string","objectId": "oid=","scope": "tenant"}]}`,
 		},
 		{
-			name:        "Simple valid call with valid response",
-			content:     "{}",
-			expectError: false,
-			expectEntity: api.DynatraceEntity{
-				Id:   "entity-id",
-				Name: "entity-id",
-			},
-			responseContent: `[{"objectId": "entity-id"}]`,
+			name:                        "Valid request, invalid response",
+			content:                     "{}",
+			expectError:                 true,
+			expectEntity:                api.DynatraceEntity{},
+			postSettingsResponseContent: `{`,
 		},
 		{
-			name:            "Valid request, invalid response",
-			content:         "{}",
-			expectError:     true,
-			expectEntity:    api.DynatraceEntity{},
-			responseContent: `{`,
+			name:                     "Valid request, 400 return",
+			content:                  "{}",
+			expectError:              true,
+			expectEntity:             api.DynatraceEntity{},
+			postSettingsResponseCode: 400,
 		},
 		{
-			name:         "Valid request, 400 return",
-			content:      "{}",
-			expectError:  true,
-			expectEntity: api.DynatraceEntity{},
-			responseCode: 400,
+			name:                        "Valid request, but empty response",
+			content:                     "{}",
+			expectError:                 true,
+			expectEntity:                api.DynatraceEntity{},
+			postSettingsResponseContent: `[]`,
 		},
 		{
-			name:            "Valid request, but empty response",
-			content:         "{}",
-			expectError:     true,
-			expectEntity:    api.DynatraceEntity{},
-			responseContent: `[]`,
-		},
-		{
-			name:            "Valid request, but multiple responses",
-			content:         "{}",
-			expectError:     true,
-			expectEntity:    api.DynatraceEntity{},
-			responseContent: `[{"objectId": "entity-id"},{"objectId": "entity-id"}]`,
+			name:                        "Valid request, but multiple responses",
+			content:                     "{}",
+			expectError:                 true,
+			expectEntity:                api.DynatraceEntity{},
+			postSettingsResponseContent: `[{"objectId": "entity-id"},{"objectId": "entity-id"}]`,
 		},
 	}
 	for _, test := range tests {
@@ -96,6 +88,17 @@ func TestUpsert(t *testing.T) {
 
 			server := httptest.NewTLSServer(http.HandlerFunc(func(writer http.ResponseWriter, r *http.Request) {
 
+				// handling GET settings requests
+				if r.Method == http.MethodGet && r.URL.Path == "/api/v2/settings/objects" {
+					// response to client
+					if test.getSettingsResponseCode != 0 {
+						http.Error(writer, test.getSettingsResponseContent, test.getSettingsResponseCode)
+					} else {
+						_, err := writer.Write([]byte(test.getSettingsResponseContent))
+						assert.NilError(t, err)
+					}
+					return
+				}
 				// Build  & assert object we expect Dynatrace to receive
 				var expectedSettingsObject any
 				err := json.Unmarshal([]byte(test.content), &expectedSettingsObject)
@@ -116,10 +119,10 @@ func TestUpsert(t *testing.T) {
 				assert.DeepEqual(t, obj, []settingsRequest{expectedRequestPayload})
 
 				// response to client
-				if test.responseCode != 0 {
-					http.Error(writer, test.responseContent, test.responseCode)
+				if test.postSettingsResponseCode != 0 {
+					http.Error(writer, test.postSettingsResponseContent, test.postSettingsResponseCode)
 				} else {
-					_, err := writer.Write([]byte(test.responseContent))
+					_, err := writer.Write([]byte(test.postSettingsResponseContent))
 					assert.NilError(t, err)
 				}
 			}))
@@ -127,7 +130,7 @@ func TestUpsert(t *testing.T) {
 			c, err := newDynatraceClient(server.URL, "token", server.Client(), defaultRetrySettings)
 			assert.NilError(t, err)
 
-			resp, err := c.UpsertSettings(nil, SettingsObject{
+			resp, err := c.UpsertSettings(SettingsObject{
 				Id:       "user-provided-id",
 				SchemaId: "builtin:alerting.profile",
 				Scope:    "tenant",

@@ -40,7 +40,7 @@ func Download(client rest.SettingsClient, projectName string) v2.ConfigsPerType 
 
 	for _, schema := range schemas {
 		log.Debug("Downloading all settings for schema %s", schema)
-		objects, err := client.ListSettings(schema.SchemaId)
+		objects, err := client.ListSettings(schema.SchemaId, rest.ListSettingsOptions{})
 		if err != nil {
 			log.Error("Failed to fetch all settings for schema %s", schema)
 			continue

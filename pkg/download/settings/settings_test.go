@@ -118,7 +118,7 @@ func TestDownload(t *testing.T) {
 			schemas, err := tt.mockValues.Schemas()
 			c.EXPECT().ListSchemas().Times(tt.mockValues.ListSchemasCalls).Return(schemas, err)
 			settings, err := tt.mockValues.Settings()
-			c.EXPECT().ListSettings(gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err)
+			c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err)
 			res := Download(c, "projectName")
 			assert.Equal(t, tt.want, res)
 		})
