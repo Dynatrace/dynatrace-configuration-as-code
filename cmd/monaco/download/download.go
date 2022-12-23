@@ -57,6 +57,7 @@ type downloadCommandOptions struct {
 	outputFolder       string
 	forceOverwrite     bool
 	apiNamesToDownload []string
+	skipSettings       bool
 }
 
 type manifestDownloadOptions struct {
@@ -158,6 +159,7 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOp
 		forceOverwriteManifest: cmdOptions.forceOverwrite,
 		apis:                   apis,
 		clientFactory:          rest.NewDynatraceClient,
+		skipSettings:           cmdOptions.skipSettings,
 	}
 	return doDownload(fs, options)
 }
@@ -180,19 +182,19 @@ func (c downloadOptions) getDynatraceClient() (rest.DynatraceClient, error) {
 	return c.clientFactory(c.environmentUrl, c.token)
 }
 
-func doDownload(fs afero.Fs, options downloadOptions) error {
+func doDownload(fs afero.Fs, opts downloadOptions) error {
 
-	errors := validateOutputFolder(fs, options.outputFolder, options.projectName)
+	errors := validateOutputFolder(fs, opts.outputFolder, opts.projectName)
 	if len(errors) > 0 {
 		util.PrintErrors(errors)
 
 		return fmt.Errorf("output folder is invalid")
 	}
 
-	log.Info("Downloading from environment '%v' into project '%v'", options.environmentUrl, options.projectName)
-	log.Debug("APIS to download: \n - %v", strings.Join(maps.Keys(options.apis), "\n - "))
+	log.Info("Downloading from environment '%v' into project '%v'", opts.environmentUrl, opts.projectName)
+	log.Debug("APIS to download: \n - %v", strings.Join(maps.Keys(opts.apis), "\n - "))
 
-	downloadedConfigs, err := downloadConfigs(options)
+	downloadedConfigs, err := downloadConfigs(opts)
 	if err != nil {
 		return err
 	}
@@ -207,14 +209,14 @@ func doDownload(fs afero.Fs, options downloadOptions) error {
 	log.Info("Resolving dependencies between configurations")
 	downloadedConfigs = download.ResolveDependencies(downloadedConfigs)
 
-	proj := download.CreateProjectData(downloadedConfigs, options.projectName)
+	proj := download.CreateProjectData(downloadedConfigs, opts.projectName)
 
 	downloadWriterContext := download.WriterContext{
 		ProjectToWrite:         proj,
-		TokenEnvVarName:        options.tokenEnvVarName,
-		EnvironmentUrl:         options.environmentUrl,
-		OutputFolder:           options.outputFolder,
-		ForceOverwriteManifest: options.forceOverwriteManifest,
+		TokenEnvVarName:        opts.tokenEnvVarName,
+		EnvironmentUrl:         opts.environmentUrl,
+		OutputFolder:           opts.outputFolder,
+		ForceOverwriteManifest: opts.forceOverwriteManifest,
 	}
 	err = download.WriteToDisk(fs, downloadWriterContext)
 	if err != nil {
@@ -239,20 +241,17 @@ func reportForCircularDependencies(p project.Project) error {
 	return nil
 }
 
-func downloadConfigs(context downloadOptions) (project.ConfigsPerType, error) {
-	client, err := context.getDynatraceClient()
+func downloadConfigs(opts downloadOptions) (project.ConfigsPerType, error) {
+	client, err := opts.getDynatraceClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Dynatrace client: %w", err)
 	}
+	configObjects := classic.DownloadAllConfigs(opts.apis, client, opts.projectName)
 
-	configObjects := classic.DownloadAllConfigs(context.apis, client, context.projectName)
-
-	if !context.skipSettings {
-		settingsObjects := settings.Download(client, context.projectName)
-
+	if !opts.skipSettings {
+		settingsObjects := settings.Download(client, opts.projectName)
 		maps.Copy(configObjects, settingsObjects)
 	}
-
 	return configObjects, nil
 }
 

@@ -27,6 +27,7 @@ func GetDownloadCommand(fs afero.Fs, command Command) (downloadCmd *cobra.Comman
 	var project, outputFolder string
 	var forceOverwrite bool
 	var specificApis []string
+	var skipSettings bool
 
 	downloadCmd = &cobra.Command{
 		Use:   "download",
@@ -64,6 +65,7 @@ Either downloading based on an existing manifest, or by defining environment URL
 					outputFolder:       outputFolder,
 					forceOverwrite:     forceOverwrite,
 					apiNamesToDownload: specificApis,
+					skipSettings:       skipSettings,
 				},
 			}
 			return command.DownloadConfigsBasedOnManifest(fs, options)
@@ -93,6 +95,7 @@ Either downloading based on an existing manifest, or by defining environment URL
 					outputFolder:       outputFolder,
 					forceOverwrite:     forceOverwrite,
 					apiNamesToDownload: specificApis,
+					skipSettings:       skipSettings,
 				},
 			}
 			return command.DownloadConfigs(fs, options)
@@ -100,8 +103,8 @@ Either downloading based on an existing manifest, or by defining environment URL
 		},
 	}
 
-	setupSharedFlags(manifestDownloadCmd, &project, &outputFolder, &forceOverwrite, &specificApis)
-	setupSharedFlags(directDownloadCmd, &project, &outputFolder, &forceOverwrite, &specificApis)
+	setupSharedFlags(manifestDownloadCmd, &project, &outputFolder, &forceOverwrite, &specificApis, &skipSettings)
+	setupSharedFlags(directDownloadCmd, &project, &outputFolder, &forceOverwrite, &specificApis, &skipSettings)
 
 	downloadCmd.AddCommand(manifestDownloadCmd)
 	downloadCmd.AddCommand(directDownloadCmd)
@@ -109,12 +112,13 @@ Either downloading based on an existing manifest, or by defining environment URL
 	return downloadCmd
 }
 
-func setupSharedFlags(cmd *cobra.Command, project, outputFolder *string, forceOverwrite *bool, specificApis *[]string) {
+func setupSharedFlags(cmd *cobra.Command, project, outputFolder *string, forceOverwrite *bool, specificApis *[]string, skipSettings *bool) {
 	// flags always available
 	cmd.Flags().StringSliceVarP(specificApis, "specific-api", "a", make([]string, 0), "APIs to download")
 	cmd.Flags().StringVarP(project, "project", "p", "project", "Project to create within the output-folder")
 	cmd.Flags().StringVarP(outputFolder, "output-folder", "o", "", "Folder to write downloaded configs to")
 	cmd.Flags().BoolVarP(forceOverwrite, "force", "f", false, "Force overwrite any existing manifest.yaml, rather than creating an additional manifest_{timestamp}.yaml. Manifest download: additionally never append source environment name to project folder name.")
+	cmd.Flags().BoolVar(skipSettings, "skip-settings", false, "Skip downloading settings 2.0 objects ")
 	err := cmd.MarkFlagDirname("output-folder")
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
