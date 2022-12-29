@@ -39,6 +39,7 @@ import (
 
 const simpleParameterName = "randomValue"
 const referenceParameterName = "managementZoneId"
+const referenceToCurProjName = "managementZoneId2"
 const listParameterName = "locations"
 
 func TestConvertParameters(t *testing.T) {
@@ -46,7 +47,8 @@ func TestConvertParameters(t *testing.T) {
 	configId := "alerting-profile-1"
 	configName := "Alerting Profile 1"
 	simpleParameterValue := "hello"
-	referenceParameterValue := "/projectB/management-zone/zone.id"
+	referenceToAnotherProjParameterValue := "/projectB/management-zone/zone.id"
+	referenceToCurrentProjParameterValue := "management-zone/zone.id"
 	listParameterValue := `"GEOLOCATION-41","GEOLOCATION-42","GEOLOCATION-43"`
 	envParameterName := "url"
 	envParameterValue := " {{ .Env.SOME_ENV_VAR }} "
@@ -71,7 +73,8 @@ func TestConvertParameters(t *testing.T) {
 		configId: {
 			"name":                 configName,
 			simpleParameterName:    simpleParameterValue,
-			referenceParameterName: referenceParameterValue,
+			referenceParameterName: referenceToAnotherProjParameterValue,
+			referenceToCurProjName: referenceToCurrentProjParameterValue,
 			listParameterName:      listParameterValue,
 			envParameterName:       envParameterValue,
 		},
@@ -89,8 +92,8 @@ func TestConvertParameters(t *testing.T) {
 	parameters, refs, skip, errors := convertParameters(convertContext, environment, testConfig)
 
 	assert.Assert(t, is.Nil(errors))
-	assert.Equal(t, 5, len(parameters))
-	assert.Equal(t, 1, len(refs))
+	assert.Equal(t, 6, len(parameters))
+	assert.Equal(t, 2, len(refs))
 	assert.Equal(t, false, skip, "should not be skipped")
 
 	nameParameter, found := parameters["name"]
@@ -103,20 +106,8 @@ func TestConvertParameters(t *testing.T) {
 	assert.Equal(t, true, found)
 	assert.Equal(t, simpleParameterValue, simpleParameter.(*valueParam.ValueParameter).Value)
 
-	referenceParameter, found := parameters[referenceParameterName]
-
-	assert.Equal(t, true, found)
-
-	references := referenceParameter.GetReferences()
-
-	assert.Equal(t, 1, len(references))
-
-	ref := references[0]
-
-	assert.Equal(t, "projectB", ref.Config.Project)
-	assert.Equal(t, "management-zone", ref.Config.Type)
-	assert.Equal(t, "zone", ref.Config.ConfigId)
-	assert.Equal(t, "id", ref.Property)
+	assert.DeepEqual(t, refParam.New("projectB", "management-zone", "zone", "id"), parameters[referenceParameterName].(*refParam.ReferenceParameter))
+	assert.DeepEqual(t, refParam.New("projectA", "management-zone", "zone", "id"), parameters[referenceToCurProjName].(*refParam.ReferenceParameter))
 
 	listParameter, found := parameters[listParameterName]
 	assert.Equal(t, true, found)
@@ -973,8 +964,8 @@ func Test_parseReference(t *testing.T) {
 			"test-param",
 			"/management-zone/zone.id",
 			api.NewV1Apis(),
-			nil,
-			true,
+			refParam.New("test-project", "management-zone", "zone", "id"),
+			false,
 		},
 		{
 			"returns error for non-reference",

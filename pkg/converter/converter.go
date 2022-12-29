@@ -503,16 +503,21 @@ func parseReference(context *ConfigConvertContext, config configV1.Config, param
 	configId = strings.TrimPrefix(configId, "/")
 
 	parts := strings.Split(configId, "/")
-	numberOfParts := len(parts)
 
-	if numberOfParts < 3 {
+	var projectId, referencedConfigId, referencedApiId string
+	switch numberOfParts := len(parts); numberOfParts {
+	case 2:
+		referencedConfigId = parts[numberOfParts-1]
+		referencedApiId = parts[numberOfParts-2]
+		projectId = context.ProjectId
+	case 3:
+		referencedConfigId = parts[numberOfParts-1]
+		referencedApiId = parts[numberOfParts-2]
+		projectId = strings.Join(parts[0:numberOfParts-2], ".")
+	default:
 		return nil, newReferenceParserError(context.ProjectId, config, parameterName,
-			"not enough parts. please provide <projectId>/<name>/<config>.<property>")
+			"wrong reference. please provide '<projectId>/<name>/<config>.<property>' for referencing to another project or '<name>/<config>.<property>' for referencing within the same project")
 	}
-
-	referencedConfigId := parts[numberOfParts-1]
-	referencedApiId := parts[numberOfParts-2]
-	projectId := strings.Join(parts[0:numberOfParts-2], ".")
 
 	if !context.V1Apis.IsApi(referencedApiId) {
 		return nil, newReferenceParserError(context.ProjectId, config, parameterName, fmt.Sprintf("referenced API '%s' does not exist", referencedApiId))
