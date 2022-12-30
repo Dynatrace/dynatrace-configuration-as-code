@@ -23,18 +23,17 @@ import (
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config"
-	configv1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config"
+	configV1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
 	envParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/environment"
 	listParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/list"
 	refParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/reference"
 	valueParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
-	projectv1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v1"
+	projectV1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v1"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
-	is "gotest.tools/assert/cmp"
+	"github.com/stretchr/testify/assert"
 )
 
 const simpleParameterName = "randomValue"
@@ -53,7 +52,7 @@ func TestConvertParameters(t *testing.T) {
 	envParameterName := "url"
 	envParameterValue := " {{ .Env.SOME_ENV_VAR }} "
 
-	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", &manifest.EnvironmentVariableToken{"token"})
+	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", &manifest.EnvironmentVariableToken{EnvironmentVariableName: "token"})
 
 	testApi := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
 
@@ -82,16 +81,16 @@ func TestConvertParameters(t *testing.T) {
 
 	template, err := util.NewTemplateFromString("test/test-config.json", "{}")
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
-	testConfig, err := configv1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
+	testConfig, err := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
 		template, properties, testApi)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	parameters, refs, skip, errors := convertParameters(convertContext, environment, testConfig)
 
-	assert.Assert(t, is.Nil(errors))
+	assert.Nil(t, errors)
 	assert.Equal(t, 6, len(parameters))
 	assert.Equal(t, 2, len(refs))
 	assert.Equal(t, false, skip, "should not be skipped")
@@ -106,16 +105,16 @@ func TestConvertParameters(t *testing.T) {
 	assert.Equal(t, true, found)
 	assert.Equal(t, simpleParameterValue, simpleParameter.(*valueParam.ValueParameter).Value)
 
-	assert.DeepEqual(t, refParam.New("projectB", "management-zone", "zone", "id"), parameters[referenceParameterName].(*refParam.ReferenceParameter))
-	assert.DeepEqual(t, refParam.New("projectA", "management-zone", "zone", "id"), parameters[referenceToCurProjName].(*refParam.ReferenceParameter))
+	assert.Equal(t, refParam.New("projectB", "management-zone", "zone", "id"), parameters[referenceParameterName].(*refParam.ReferenceParameter))
+	assert.Equal(t, refParam.New("projectA", "management-zone", "zone", "id"), parameters[referenceToCurProjName].(*refParam.ReferenceParameter))
 
 	listParameter, found := parameters[listParameterName]
 	assert.Equal(t, true, found)
-	assert.DeepEqual(t, []valueParam.ValueParameter{{"GEOLOCATION-41"}, {"GEOLOCATION-42"}, {"GEOLOCATION-43"}}, listParameter.(*listParam.ListParameter).Values)
+	assert.Equal(t, []valueParam.ValueParameter{{"GEOLOCATION-41"}, {"GEOLOCATION-42"}, {"GEOLOCATION-43"}}, listParameter.(*listParam.ListParameter).Values)
 
 	envParameter, found := parameters[envParameterName]
 	assert.Equal(t, true, found)
-	assert.DeepEqual(t, "SOME_ENV_VAR", envParameter.(*envParam.EnvironmentVariableParameter).Name)
+	assert.Equal(t, "SOME_ENV_VAR", envParameter.(*envParam.EnvironmentVariableParameter).Name)
 }
 
 func TestParseSkipDeploymentParameter(t *testing.T) {
@@ -129,23 +128,23 @@ func TestParseSkipDeploymentParameter(t *testing.T) {
 		ProjectId: "projectA",
 	}
 
-	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
+	testApi := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
 
 	properties := map[string]map[string]string{
 		configId: {
 			"name":                                 configName,
-			configv1.SkipConfigDeploymentParameter: "true",
+			configV1.SkipConfigDeploymentParameter: "true",
 		},
 	}
 
 	template, err := util.NewTemplateFromString("test/test-config.json", "{}")
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
-	config, err := configv1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
-		template, properties, api)
+	testConfig, err := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
+		template, properties, testApi)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	testCases := []struct {
 		shouldFail    bool
@@ -187,12 +186,12 @@ func TestParseSkipDeploymentParameter(t *testing.T) {
 	}
 
 	for _, c := range testCases {
-		skip, err := parseSkipDeploymentParameter(convertContext, config, c.testValue)
+		skip, err := parseSkipDeploymentParameter(convertContext, testConfig, c.testValue)
 
 		if c.shouldFail {
-			assert.Assert(t, err != nil, "there should be an error for `%s`", c.testValue)
+			assert.NotNilf(t, err, "there should be an error for `%s`", c.testValue)
 		} else {
-			assert.NilError(t, err, "there should be no error for `%s`", c.testValue)
+			assert.Nilf(t, err, "there should be no error for `%s`", c.testValue)
 			assert.Equal(t, c.expectedValue, skip, "should be `%t` for `%s`", c.expectedValue, c.testValue)
 		}
 	}
@@ -206,9 +205,9 @@ func TestLoadPropertiesForEnvironment(t *testing.T) {
 	simpleParameterValue := "hello"
 	referenceParameterValue := "/projectB/management-zone/zone.id"
 
-	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), groupName, &manifest.EnvironmentVariableToken{"token"})
+	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), groupName, &manifest.EnvironmentVariableToken{EnvironmentVariableName: "token"})
 
-	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
+	testApi := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
 
 	properties := map[string]map[string]string{
 		configId: {
@@ -229,14 +228,14 @@ func TestLoadPropertiesForEnvironment(t *testing.T) {
 
 	template, err := util.NewTemplateFromString("test/test-config.json", "{}")
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
-	config, err := configv1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
-		template, properties, api)
+	testConfig, err := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
+		template, properties, testApi)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
-	envProperties := loadPropertiesForEnvironment(environment, config)
+	envProperties := loadPropertiesForEnvironment(environment, testConfig)
 
 	assert.Equal(t, configName, envProperties["name"])
 	assert.Equal(t, simpleParameterValue, envProperties[simpleParameterName])
@@ -252,7 +251,7 @@ func TestConvertConfig(t *testing.T) {
 	referenceParameterValue := "/projectB/management-zone/zone.id"
 	envVarName := "TEST_VAR"
 
-	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", &manifest.EnvironmentVariableToken{"token"})
+	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", &manifest.EnvironmentVariableToken{EnvironmentVariableName: "token"})
 
 	testApi := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
 	convertContext := &ConfigConvertContext{
@@ -274,12 +273,12 @@ func TestConvertConfig(t *testing.T) {
 
 	template, err := util.NewTemplateFromString("test/test-config.json", "{}")
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
-	testConfig, err := configv1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
+	testConfig, err := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
 		template, properties, testApi)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	convertedConfig, errors := convertConfig(convertContext, environment, testConfig)
 
@@ -301,7 +300,7 @@ func TestConvertConfig(t *testing.T) {
 	assert.Equal(t, simpleParameterValue, convertedConfig.Parameters[simpleParameterName].(*valueParam.ValueParameter).Value)
 	assert.Equal(t, envVarName, convertedConfig.Parameters[transformEnvironmentToParamName(envVarName)].(*envParam.EnvironmentVariableParameter).Name)
 	assert.Equal(t, "value", convertedConfig.Parameters["scope1"].(*valueParam.ValueParameter).Value)
-	assert.DeepEqual(t, refParam.New("projectB", "management-zone", "zone", "id"), convertedConfig.Parameters[referenceParameterName].(*refParam.ReferenceParameter))
+	assert.Equal(t, refParam.New("projectB", "management-zone", "zone", "id"), convertedConfig.Parameters[referenceParameterName].(*refParam.ReferenceParameter))
 }
 
 func TestConvertDeprecatedConfigToLatest(t *testing.T) {
@@ -313,7 +312,7 @@ func TestConvertDeprecatedConfigToLatest(t *testing.T) {
 	referenceParameterValue := "/projectB/application/another-app.id"
 	envVarName := "TEST_VAR"
 
-	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", &manifest.EnvironmentVariableToken{"token"})
+	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", &manifest.EnvironmentVariableToken{EnvironmentVariableName: "token"})
 
 	deprecatedApi := api.NewStandardApi("application", "/api/config/v1/application/web", false, "application-web", false)
 
@@ -335,12 +334,12 @@ func TestConvertDeprecatedConfigToLatest(t *testing.T) {
 
 	template, err := util.NewTemplateFromString("test/test-config.json", "{}")
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
-	testConfig, err := configv1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
+	testConfig, err := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
 		template, properties, deprecatedApi)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	convertedConfig, errors := convertConfig(convertContext, environment, testConfig)
 
@@ -380,10 +379,9 @@ func TestConvertConfigWithEnvNameCollisionShouldFail(t *testing.T) {
 		ProjectId: "projectA",
 	}
 
-	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "",
-		&manifest.EnvironmentVariableToken{"token"})
+	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", &manifest.EnvironmentVariableToken{EnvironmentVariableName: "token"})
 
-	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
+	testApi := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
 
 	properties := map[string]map[string]string{
 		configId: {
@@ -394,16 +392,16 @@ func TestConvertConfigWithEnvNameCollisionShouldFail(t *testing.T) {
 
 	template, err := util.NewTemplateFromString("test/test-config.json", "{}")
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
-	config, err := configv1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
-		template, properties, api)
+	testConfig, err := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
+		template, properties, testApi)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
-	_, errors := convertConfig(convertContext, environment, config)
+	_, errors := convertConfig(convertContext, environment, testConfig)
 
-	assert.Assert(t, len(errors) > 0, "expected errors, but got none")
+	assert.Greater(t, len(errors), 0, "expected errors, but got none")
 }
 
 func TestConvertSkippedConfig(t *testing.T) {
@@ -419,9 +417,9 @@ func TestConvertSkippedConfig(t *testing.T) {
 		ProjectId: "projectA",
 	}
 
-	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", &manifest.EnvironmentVariableToken{"token"})
+	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", &manifest.EnvironmentVariableToken{EnvironmentVariableName: "token"})
 
-	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
+	testApi := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
 
 	properties := map[string]map[string]string{
 		configId: {
@@ -432,18 +430,18 @@ func TestConvertSkippedConfig(t *testing.T) {
 
 	template, err := util.NewTemplateFromString("test/test-config.json", "{}")
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
-	config, err := configv1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
-		template, properties, api)
+	testConfig, err := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
+		template, properties, testApi)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
-	convertedConfig, errors := convertConfig(convertContext, environment, config)
+	convertedConfig, errors := convertConfig(convertContext, environment, testConfig)
 
 	assert.Equal(t, 0, len(errors))
 	assert.Equal(t, projectId, convertedConfig.Coordinate.Project)
-	assert.Equal(t, api.GetId(), convertedConfig.Coordinate.Type)
+	assert.Equal(t, testApi.GetId(), convertedConfig.Coordinate.Type)
 	assert.Equal(t, configId, convertedConfig.Coordinate.ConfigId)
 	assert.Equal(t, environmentName, convertedConfig.Environment)
 	assert.Equal(t, true, convertedConfig.Skip)
@@ -465,8 +463,8 @@ func TestConvertConfigs(t *testing.T) {
 	envVariableName := "ENV_VAR"
 
 	environments := map[string]manifest.EnvironmentDefinition{
-		environmentName:  manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), environmentGroup, &manifest.EnvironmentVariableToken{"token"}),
-		environmentName2: manifest.NewEnvironmentDefinition(environmentName2, createSimpleUrlDefinition(), environmentGroup2, &manifest.EnvironmentVariableToken{"token"}),
+		environmentName:  manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), environmentGroup, &manifest.EnvironmentVariableToken{EnvironmentVariableName: "token"}),
+		environmentName2: manifest.NewEnvironmentDefinition(environmentName2, createSimpleUrlDefinition(), environmentGroup2, &manifest.EnvironmentVariableToken{EnvironmentVariableName: "token"}),
 	}
 
 	testApi := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
@@ -486,9 +484,9 @@ func TestConvertConfigs(t *testing.T) {
 
 	fs, template := setupFsWithFullTestTemplate(t, simpleParameterName, referenceParameterName, listParameterName, envVariableName)
 
-	testConfig, err := configv1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
+	testConfig, err := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
 		template, properties, testApi)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	convertContext := &ConfigConvertContext{
 		ConverterContext: &ConverterContext{
@@ -498,7 +496,7 @@ func TestConvertConfigs(t *testing.T) {
 		ProjectId: projectId,
 	}
 
-	convertedConfigs, errors := convertConfigs(convertContext, environments, []configv1.Config{testConfig})
+	convertedConfigs, errors := convertConfigs(convertContext, environments, []configV1.Config{testConfig})
 
 	assert.Equal(t, 0, len(errors))
 	assert.Equal(t, 2, len(convertedConfigs))
@@ -525,7 +523,7 @@ func TestConvertConfigs(t *testing.T) {
 	assert.Equal(t, "id", c.Parameters[referenceParameterName].(*refParam.ReferenceParameter).Property)
 
 	// assert list param is converted as expected
-	assert.DeepEqual(t, []valueParam.ValueParameter{{"GEOLOCATION-41"}, {"GEOLOCATION-42"}, {"GEOLOCATION-43"}}, c.Parameters[listParameterName].(*listParam.ListParameter).Values)
+	assert.Equal(t, []valueParam.ValueParameter{{"GEOLOCATION-41"}, {"GEOLOCATION-42"}, {"GEOLOCATION-43"}}, c.Parameters[listParameterName].(*listParam.ListParameter).Values)
 
 	// assert env reference in template has created correct env parameter
 	assert.Equal(t, envVariableName, c.Parameters[transformEnvironmentToParamName(envVariableName)].(*envParam.EnvironmentVariableParameter).Name)
@@ -545,7 +543,7 @@ func TestConvertConfigs(t *testing.T) {
 
 	// assert override list param is converted as expected
 	// assert list param is converted as expected
-	assert.DeepEqual(t, []valueParam.ValueParameter{{"james.t.kirk@dynatrace.com"}}, c.Parameters[listParameterName].(*listParam.ListParameter).Values)
+	assert.Equal(t, []valueParam.ValueParameter{{"james.t.kirk@dynatrace.com"}}, c.Parameters[listParameterName].(*listParam.ListParameter).Values)
 }
 
 func TestConvertProjects(t *testing.T) {
@@ -566,11 +564,11 @@ func TestConvertProjects(t *testing.T) {
 
 	environments := map[string]manifest.EnvironmentDefinition{
 
-		environmentName:  manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), environmentGroup, &manifest.EnvironmentVariableToken{"token"}),
-		environmentName2: manifest.NewEnvironmentDefinition(environmentName2, createSimpleUrlDefinition(), environmentGroup2, &manifest.EnvironmentVariableToken{"token"}),
+		environmentName:  manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), environmentGroup, &manifest.EnvironmentVariableToken{EnvironmentVariableName: "token"}),
+		environmentName2: manifest.NewEnvironmentDefinition(environmentName2, createSimpleUrlDefinition(), environmentGroup2, &manifest.EnvironmentVariableToken{EnvironmentVariableName: "token"}),
 	}
 
-	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
+	testApi := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
 
 	properties := map[string]map[string]string{
 		configId: {
@@ -585,17 +583,17 @@ func TestConvertProjects(t *testing.T) {
 
 	template := generateDummyTemplate(t)
 
-	config, err := configv1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
-		template, properties, api)
+	testConfig, err := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
+		template, properties, testApi)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
-	project := &projectv1.ProjectImpl{
+	project := &projectV1.ProjectImpl{
 		Id:      projectId,
-		Configs: []configv1.Config{config},
+		Configs: []configV1.Config{testConfig},
 	}
 
-	projectDefinitions, convertedProjects, errors := convertProjects(convertContext, environments, []projectv1.Project{project})
+	projectDefinitions, convertedProjects, errors := convertProjects(convertContext, environments, []projectV1.Project{project})
 
 	assert.Equal(t, 0, len(errors))
 	assert.Equal(t, 1, len(projectDefinitions))
@@ -621,7 +619,7 @@ func TestConvertProjects(t *testing.T) {
 	apiConfigs := convertedConfigs[environmentName]
 	assert.Equal(t, 1, len(apiConfigs))
 
-	configs := apiConfigs[api.GetId()]
+	configs := apiConfigs[testApi.GetId()]
 	assert.Equal(t, 1, len(configs))
 
 	c := configs[0]
@@ -632,7 +630,7 @@ func TestConvertProjects(t *testing.T) {
 	apiConfigs = convertedConfigs[environmentName2]
 	assert.Equal(t, 1, len(apiConfigs))
 
-	configs = apiConfigs[api.GetId()]
+	configs = apiConfigs[testApi.GetId()]
 	assert.Equal(t, 1, len(configs))
 
 	c = configs[0]
@@ -650,7 +648,7 @@ func TestConvertTemplate_ConvertsEnvReferences(t *testing.T) {
 		"test3": "{{  .Env.HELLO_WORLD}} {{ .Env.HE     }}",
 	}`), 0644)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	templ, envParams, _, errs := convertTemplate(&ConfigConvertContext{
 		ConverterContext: &ConverterContext{
@@ -659,8 +657,8 @@ func TestConvertTemplate_ConvertsEnvReferences(t *testing.T) {
 		ProjectId: "projectA",
 	}, "test.json", "test.json")
 
-	assert.Assert(t, len(errs) == 0, "expected no errors but got %d: %s", len(errs), errs)
-	assert.Assert(t, templ != nil)
+	assert.Len(t, errs, 0)
+	assert.NotNil(t, templ)
 
 	for _, env := range []string{
 		"HELLO",
@@ -669,15 +667,15 @@ func TestConvertTemplate_ConvertsEnvReferences(t *testing.T) {
 		"HE",
 	} {
 		paramName := transformEnvironmentToParamName(env)
-		param, found := envParams[paramName]
+		param := envParams[paramName]
 
-		assert.Assert(t, found, "should contain `%s`", paramName)
-		assert.Assert(t, param != nil, "param `%s` should be not nil", paramName)
+		assert.Containsf(t, envParams, paramName, "should contain `%s`", paramName)
+		assert.NotNilf(t, param, "param `%s` should be not nil", paramName)
 
-		envParam, ok := param.(*envParam.EnvironmentVariableParameter)
-		assert.Assert(t, ok, "param `%s` should be an environment variable", paramName)
-		assert.Assert(t, !envParam.HasDefaultValue, "param `%s` should have no default value")
-		assert.Equal(t, env, envParam.Name)
+		assert.IsTypef(t, &envParam.EnvironmentVariableParameter{}, param, "param `%s` should be an environment variable", paramName)
+		e := param.(*envParam.EnvironmentVariableParameter)
+		assert.Equalf(t, false, e.HasDefaultValue, "param `%v` should have no default value", e)
+		assert.Equal(t, env, e.Name)
 	}
 }
 
@@ -690,7 +688,7 @@ func TestConvertTemplate_ConvertsListVariables(t *testing.T) {
 		],
 	}`), 0644)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	templ, _, listParamIds, errs := convertTemplate(&ConfigConvertContext{
 		ConverterContext: &ConverterContext{
@@ -699,14 +697,12 @@ func TestConvertTemplate_ConvertsListVariables(t *testing.T) {
 		ProjectId: "projectA",
 	}, "test.json", "test.json")
 
-	assert.Assert(t, len(errs) == 0, "expected no errors but got %d: %s", len(errs), errs)
-	assert.Assert(t, templ != nil)
+	assert.Len(t, errs, 0)
+	assert.NotNil(t, templ)
 
 	assert.Equal(t, len(listParamIds), 2, " expected to list param ids to be found in template")
-	_, paramFound := listParamIds["list"]
-	assert.Assert(t, paramFound)
-	_, paramFound = listParamIds["list1"]
-	assert.Assert(t, paramFound)
+	assert.Contains(t, listParamIds, "list")
+	assert.Contains(t, listParamIds, "list1")
 	assert.Equal(t, templ.Content(), `{
 		"test": {{ .list }},
 		"test1": {{ .list1 }},
@@ -723,7 +719,7 @@ func TestConvertTemplate(t *testing.T) {
 		"key": "value"
 	}`), 0644)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	templ, envParams, listParamIds, errs := convertTemplate(&ConfigConvertContext{
 		ConverterContext: &ConverterContext{
@@ -732,25 +728,23 @@ func TestConvertTemplate(t *testing.T) {
 		ProjectId: "projectA",
 	}, "test.json", "test.json")
 
-	assert.Assert(t, len(errs) == 0, "expected no errors but got %d: %s", len(errs), errs)
-	assert.Assert(t, templ != nil)
+	assert.Len(t, errs, 0)
+	assert.NotNil(t, templ)
 
 	// check list parameter
 	assert.Equal(t, len(listParamIds), 1, " expected to list param ids to be found in template")
-	_, listParamFound := listParamIds["list_value"]
-	assert.Assert(t, listParamFound)
+	assert.Contains(t, listParamIds, "list_value")
 
 	// check env parameter
 	paramName := transformEnvironmentToParamName("ENV_VALUE")
-	param, found := envParams[paramName]
+	assert.Contains(t, envParams, paramName)
+	param := envParams[paramName]
+	assert.NotNil(t, param)
 
-	assert.Assert(t, found, "EnvParam should contain `%s`", paramName)
-	assert.Assert(t, param != nil, "EvnParam `%s` should be not nil", paramName)
-
-	envParam, ok := param.(*envParam.EnvironmentVariableParameter)
-	assert.Assert(t, ok, "EnvParam `%s` should be an environment variable", paramName)
-	assert.Assert(t, !envParam.HasDefaultValue, "EnvParam `%s` should have no default value")
-	assert.Equal(t, "ENV_VALUE", envParam.Name)
+	assert.IsTypef(t, &envParam.EnvironmentVariableParameter{}, param, "EnvParam `%s` should be an environment variable", paramName)
+	p := param.(*envParam.EnvironmentVariableParameter)
+	assert.Equal(t, false, p.HasDefaultValue)
+	assert.Equal(t, "ENV_VALUE", p.Name)
 
 	// check converted template
 	assert.Equal(t, templ.Content(), `{
@@ -772,13 +766,11 @@ func TestConvertListsInTemplate(t *testing.T) {
 		"test1": {{ .list1 }},
 	}`
 	result, paramIds, errs := convertListsInTemplate(input, "does/not/matter")
-	assert.Assert(t, len(errs) == 0, "expected no errors but got %d: %s", len(errs), errs)
-	assert.Equal(t, len(paramIds), 2, " expected to list param ids to be found in template")
+	assert.Len(t, errs, 0)
+	assert.Len(t, paramIds, 2)
 
-	_, paramFound := paramIds["list"]
-	assert.Assert(t, paramFound)
-	_, paramFound = paramIds["list1"]
-	assert.Assert(t, paramFound)
+	assert.Contains(t, paramIds, "list")
+	assert.Contains(t, paramIds, "list1")
 
 	assert.Equal(t, result, expected)
 }
@@ -788,11 +780,11 @@ func setupDummyFs(t *testing.T) afero.Fs {
 
 	err := fs.Mkdir("test", 0644)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	err = afero.WriteFile(fs, "test/test-config.json", []byte(`{}`), 0644)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	return fs
 }
@@ -802,11 +794,11 @@ func setupDummyFsWithEnvVariableInTemplate(t *testing.T, envVarName string) afer
 
 	err := fs.Mkdir("test", 0644)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	err = afero.WriteFile(fs, "test/test-config.json", []byte(fmt.Sprintf(`{"test": "{{.Env.%s}}"}`, envVarName)), 0644)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	return fs
 }
@@ -815,15 +807,15 @@ func setupFsWithFullTestTemplate(t *testing.T, simpleVar, refVar, listVar, envVa
 	fs := afero.NewMemMapFs()
 
 	err := fs.Mkdir("test", 0644)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	templateContent := fmt.Sprintf(`{ "simple": "{{ .%s }}", "reference": "{{ .%s }}", "list": [ {{ .%s }} ], "env": "{{ .Env.%s }}" }`, simpleVar, refVar, listVar, envVar)
 
 	template, err := util.NewTemplateFromString("test/test-config.json", templateContent)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	err = afero.WriteFile(fs, "test/test-config.json", []byte(templateContent), 0644)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	return fs, template
 }
@@ -831,26 +823,26 @@ func setupFsWithFullTestTemplate(t *testing.T, simpleVar, refVar, listVar, envVa
 func generateDummyTemplate(t *testing.T) util.Template {
 	template, err := util.NewTemplateFromString("test/test-config.json", "{}")
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	return template
 }
 
-func generateDummyConfig(t *testing.T) configv1.Config {
+func generateDummyConfig(t *testing.T) configV1.Config {
 	var configId = "alerting-profile-1"
 
-	api := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
+	testApi := api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
 
 	properties := map[string]map[string]string{}
 
 	template, err := util.NewTemplateFromString("test/test-config.json", "{}")
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
-	conf, err := configv1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
-		template, properties, api)
+	conf, err := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
+		template, properties, testApi)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	return conf
 }
@@ -976,7 +968,7 @@ func Test_parseReference(t *testing.T) {
 			true,
 		},
 		{
-			"returns error for unkown api reference",
+			"returns error for unknown api reference",
 			"test-param",
 			"/some-project/alerting-profile/some-config.id",
 			api.ApiMap{}, //no APIs known

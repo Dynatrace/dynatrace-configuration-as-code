@@ -41,7 +41,7 @@ import (
 )
 
 const (
-	// default group is used, when a legacy config does not specify a group. All
+	// DefaultGroup is used, when a legacy config does not specify a group. All
 	// new configs are required to be in a group.
 	DefaultGroup = "default"
 )
@@ -313,7 +313,6 @@ func convertConfig(context *ConfigConvertContext, environment manifest.Environme
 	}, nil
 }
 
-// TODO make groupable?
 type TemplateConversionError struct {
 	TemplatePath string
 	Reason       string
