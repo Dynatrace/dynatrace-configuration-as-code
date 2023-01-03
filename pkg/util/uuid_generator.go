@@ -21,19 +21,14 @@ import (
 )
 
 // UUID v3 (MD5 hash based) for "dynatrace.com" in the "URL" namespace
-const dynatraceNamespaceUuid = "a2673303-5d44-3a6e-999e-9a9d83487e64"
+var dynatraceNamespaceUuid = uuidLib.MustParse("a2673303-5d44-3a6e-999e-9a9d83487e64")
 
 // GenerateUuidFromName generates a fixed UUID from a given configuration name.
 // This is used when dealing with select Dynatrace APIs that do not/or no longer support unique name properties.
 // As a convention between monaco and such APIs, both monaco and Dynatrace will generate the same name-based UUID
 // using UUID v3 (MD5 hash based) with a "dynatrace.com" URL namespace UUID.
-func GenerateUuidFromName(name string) (string, error) {
-	namespaceUuid, err := uuidLib.Parse(dynatraceNamespaceUuid)
-	if err != nil {
-		return "", err
-	}
-	uuid := uuidLib.NewMD5(namespaceUuid, []byte(name)).String()
-	return uuid, nil
+func GenerateUuidFromName(name string) string {
+	return uuidLib.NewMD5(dynatraceNamespaceUuid, []byte(name)).String()
 }
 
 // IsUuid tests whether a potential configId is already a UUID
@@ -48,9 +43,8 @@ func IsUuid(configId string) bool {
 
 // GenerateUuidFromConfigId takes the unique project identifier within an environment, a config id and
 // generates a valid UUID based on provided information
-func GenerateUuidFromConfigId(projectUniqueId string, configId string) (string, error) {
+func GenerateUuidFromConfigId(projectUniqueId string, configId string) string {
 	projectUniqueConfigId := filepath.Join(projectUniqueId, configId)
 
-	uuid, err := GenerateUuidFromName(projectUniqueConfigId)
-	return uuid, err
+	return GenerateUuidFromName(projectUniqueConfigId)
 }

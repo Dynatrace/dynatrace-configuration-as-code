@@ -118,10 +118,7 @@ func deployConfig(client rest.ConfigClient, apis api.ApiMap, entityMap *EntityMa
 
 		isUuidOrMeId := util.IsUuid(entityUuid) || util.IsMeId(entityUuid)
 		if !isUuidOrMeId {
-			entityUuid, err = util.GenerateUuidFromConfigId(projectId, configId)
-			if err != nil {
-				return parameter.ResolvedEntity{}, []error{newConfigDeployErr(conf, err.Error())}
-			}
+			entityUuid = util.GenerateUuidFromConfigId(projectId, configId)
 		}
 
 		entity, err = client.UpsertByEntityId(apiToDeploy, entityUuid, configName, []byte(renderedConfig))

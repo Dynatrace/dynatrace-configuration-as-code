@@ -17,10 +17,13 @@
 package util
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
-
-	"gotest.tools/assert"
 )
+
+func TestDynatraceNamespaceUuidDoesNotPanic(t *testing.T) {
+	assert.NotNil(t, dynatraceNamespaceUuid)
+}
 
 func TestGenerateUuidFromName(t *testing.T) {
 	tests := []struct {
@@ -58,11 +61,8 @@ func TestGenerateUuidFromName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run("GenerateUuidFromName("+tt.givenName+")", func(t *testing.T) {
-			gotUuid, err := GenerateUuidFromName(tt.givenName)
-			if err != nil {
-				t.Errorf("GenerateUuidFromName() error = %v", err)
-				return
-			}
+			gotUuid := GenerateUuidFromName(tt.givenName)
+
 			if gotUuid != tt.expectUuid {
 				t.Errorf("GenerateUuidFromName() gotUuid = %v, want %v", gotUuid, tt.expectUuid)
 			}
@@ -86,7 +86,6 @@ func TestGenerateUuidFromConfigId(t *testing.T) {
 	configId := "my-config-id"
 	expectedUuidResult := "49ac3d5e-ca4a-35be-b94e-26913319bac4"
 
-	uuidToBeTested, err := GenerateUuidFromConfigId(projectUniqueId, configId)
-	assert.NilError(t, err)
+	uuidToBeTested := GenerateUuidFromConfigId(projectUniqueId, configId)
 	assert.Equal(t, expectedUuidResult, uuidToBeTested)
 }
