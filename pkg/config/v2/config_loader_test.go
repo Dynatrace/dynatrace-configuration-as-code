@@ -32,6 +32,8 @@ import (
 )
 
 func Test_parseConfigs(t *testing.T) {
+	t.Setenv("ENV_VAR_SKIP_TRUE", "true")
+	t.Setenv("ENV_VAR_SKIP_FALSE", "false")
 	testLoaderContext := &LoaderContext{
 		ProjectId: "project",
 		Path:      "some-dir/",
@@ -94,6 +96,209 @@ func Test_parseConfigs(t *testing.T) {
 			"configs:\n- id: profile\n  config:\n    name: Star Trek Service\n    skip: false\n  type:\n    api: another-api",
 			nil,
 			[]string{"unknown API: another-api"},
+		},
+		{
+			"Skip parameter is referenced to true",
+			"test-file.yaml",
+			"test-file.yaml",
+			`
+configs:
+- id: profile
+  config:
+    name: Star Trek Service
+    template: profile.json
+    skip:
+      type: environment
+      name: ENV_VAR_SKIP_TRUE
+      default: "false"
+  type:
+    api: some-api`,
+			[]Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "some-api",
+						ConfigId: "profile",
+					},
+					Type: Type{
+						Api: "some-api",
+					},
+					Parameters: Parameters{
+						"name": &value.ValueParameter{Value: "Star Trek Service"},
+					},
+					References:  []coordinate.Coordinate{},
+					Skip:        true,
+					Environment: "env name",
+					Group:       "default",
+				},
+			},
+			nil,
+		},
+		{
+			"Skip parameter is referenced to false",
+			"test-file.yaml",
+			"test-file.yaml",
+			`
+configs:
+- id: profile
+  config:
+    name: Star Trek Service
+    template: profile.json
+    skip:
+      type: environment
+      name: ENV_VAR_SKIP_FALSE
+  type:
+    api: some-api`,
+			[]Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "some-api",
+						ConfigId: "profile",
+					},
+					Type: Type{
+						Api: "some-api",
+					},
+					Parameters: Parameters{
+						"name": &value.ValueParameter{Value: "Star Trek Service"},
+					},
+					References:  []coordinate.Coordinate{},
+					Skip:        false,
+					Environment: "env name",
+					Group:       "default",
+				},
+			},
+			nil,
+		},
+		{
+			"Skip parameter is defined (with default value) but omit",
+			"test-file.yaml",
+			"test-file.yaml",
+			`
+configs:
+- id: profile
+  config:
+    name: Star Trek Service
+    template: profile.json
+    skip:
+      type: environment
+      name: ENV_VAR_SKIP_NOT_EXISTS
+      default: true
+  type:
+    api: some-api`,
+			[]Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "some-api",
+						ConfigId: "profile",
+					},
+					Type: Type{
+						Api: "some-api",
+					},
+					Parameters: Parameters{
+						"name": &value.ValueParameter{Value: "Star Trek Service"},
+					},
+					References:  []coordinate.Coordinate{},
+					Skip:        true,
+					Environment: "env name",
+					Group:       "default",
+				},
+			},
+			nil,
+		},
+		{
+			"Skip parameter is defined as a value",
+			"test-file.yaml",
+			"test-file.yaml",
+			`
+configs:
+- id: profile
+  config:
+    name: Star Trek Service
+    template: profile.json
+    skip:
+      type: value
+      value: true
+  type:
+    api: some-api`,
+			[]Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "some-api",
+						ConfigId: "profile",
+					},
+					Type: Type{
+						Api: "some-api",
+					},
+					Parameters: Parameters{
+						"name": &value.ValueParameter{Value: "Star Trek Service"},
+					},
+					References:  []coordinate.Coordinate{},
+					Skip:        true,
+					Environment: "env name",
+					Group:       "default",
+				},
+			},
+			nil,
+		},
+		{
+			"Skip parameter is defined (w/o default value) but omit - should throw an error",
+			"test-file.yaml",
+			"test-file.yaml",
+			`
+configs:
+- id: profile
+  config:
+    name: Star Trek Service
+    template: profile.json
+    skip:
+      type: environment
+      name: ENV_VAR_SKIP_NOT_EXISTS
+  type:
+    api: some-api`,
+			nil,
+			[]string{"skip: cannot parse parameter definition in `test-file.yaml`: failed to resolve value: skip: cannot parse parameter: environment variable `ENV_VAR_SKIP_NOT_EXISTS` not set"},
+		},
+		{
+			"Skip parameter is defined with a wrong value - should throw an error",
+			"test-file.yaml",
+			"test-file.yaml",
+			`
+configs:
+- id: profile
+  config:
+    name: Star Trek Service
+    template: profile.json
+    skip:
+      type: environment
+      name: ENV_VAR_SKIP_NOT_EXISTS
+      default: "wrong value"
+  type:
+    api: some-api`,
+			nil,
+			[]string{"resolved value can only be 'true' or 'false'"},
+		},
+		{
+			"Skip parameter is defined with a wrong value - should throw an error",
+			"test-file.yaml",
+			"test-file.yaml",
+			`
+configs:
+- id: profile
+  config:
+    name: Star Trek Service
+    template: profile.json
+    skip:
+        type: reference
+        configId: configId
+        property: id
+        configType: something
+  type:
+    api: some-api`,
+			nil,
+			[]string{"must be of type 'value' or 'environment'"},
 		},
 		{
 			"reports error for empty v2 config",

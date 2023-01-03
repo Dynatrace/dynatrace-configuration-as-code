@@ -33,7 +33,7 @@ type configDefinition struct {
 	Name       configParameter            `yaml:"name,omitempty"`
 	Parameters map[string]configParameter `yaml:"parameters,omitempty"`
 	Template   string                     `yaml:"template,omitempty"`
-	Skip       interface{}                `yaml:"skip,omitempty"`
+	Skip       configParameter            `yaml:"skip,omitempty"`
 }
 
 type topLevelConfigDefinition struct {

@@ -20,6 +20,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/slices"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
@@ -369,7 +370,6 @@ func getConfigFromDefinition(
 
 	if definition.Skip != nil {
 		skip, err := parseSkip(context, environment, configId, definition.Skip)
-
 		if err == nil {
 			skipConfig = skip
 		} else {
@@ -433,27 +433,53 @@ func getConfigFromDefinition(
 	}, nil
 }
 
-func parseSkip(context *SingleConfigLoadContext, environment manifest.EnvironmentDefinition,
-	configId string, param interface{}) (bool, error) {
-	switch param := param.(type) {
-	case bool:
-		return param, nil
-	case string:
-		strVal := param
-
-		switch strings.ToLower(strVal) {
-		case "true":
-			return true, nil
-		case "false":
-			return false, nil
-		}
-
-		return false, newDetailedDefinitionParserError(configId, context, environment,
-			fmt.Sprintf("invalid value for `skip`: `%s`. only `true` and `false` are allowed", strVal))
+func parseSkip(
+	context *SingleConfigLoadContext,
+	environmentDefinition manifest.EnvironmentDefinition,
+	configId string,
+	param interface{},
+) (bool, error) {
+	parsed, err := parseParameter(context, environmentDefinition, configId, SkipParameter, param)
+	if err != nil {
+		return false, err
 	}
 
-	return false, newDefinitionParserError(configId, context,
-		"invalid value for `skip`: only bool or string types are allowed")
+	if !isSupportedParamTypeForSkip(parsed) {
+		return false, newParameterDefinitionParserError(SkipParameter, configId, context, environmentDefinition, "must be of type 'value' or 'environment'")
+	}
+
+	resolved, err := parsed.ResolveValue(parameter.ResolveContext{
+		ConfigCoordinate: coordinate.Coordinate{
+			Project:  context.ProjectId,
+			Type:     context.Type,
+			ConfigId: configId,
+		},
+		Group:         environmentDefinition.Group,
+		Environment:   environmentDefinition.Name,
+		ParameterName: SkipParameter,
+	})
+	if err != nil {
+		return false, newParameterDefinitionParserError(SkipParameter, configId, context, environmentDefinition, fmt.Sprintf("failed to resolve value: %s", err))
+	}
+
+	retVal, err := strconv.ParseBool(fmt.Sprintf("%v", resolved))
+	if err != nil {
+		return false, newParameterDefinitionParserError(SkipParameter, configId, context, environmentDefinition, fmt.Sprintf("resolved value can only be 'true' or 'false' (current value is: '%v'", resolved))
+	}
+
+	return retVal, err
+}
+
+// isSupportedParamTypeForSkip check is 'skip' section of configuration supports specified param type
+func isSupportedParamTypeForSkip(p parameter.Parameter) bool {
+	switch p.GetType() {
+	case valueParam.ValueParameterType:
+		return true
+	case environment.EnvironmentVariableParameterType:
+		return true
+	default:
+		return false
+	}
 }
 
 func getReferenceSlice(references map[string]coordinate.Coordinate) []coordinate.Coordinate {

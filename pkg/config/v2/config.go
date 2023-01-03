@@ -39,10 +39,13 @@ const (
 	// A user must not set it as a parameter in the config.
 	// It is only a parameter iff the config is a settings-config.
 	ScopeParameter = "scope"
+
+	// SkipParameter is special in that config should be deployed or not
+	SkipParameter = "skip"
 )
 
 // ReservedParameterNames holds all parameter names that may not be specified by a user in a config.
-var ReservedParameterNames = []string{IdParameter, ScopeParameter}
+var ReservedParameterNames = []string{IdParameter, ScopeParameter, SkipParameter}
 
 // Parameters defines a map of name to parameter
 type Parameters map[string]parameter.Parameter
