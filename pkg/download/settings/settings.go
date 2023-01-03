@@ -24,6 +24,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
 	v2 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 )
 
@@ -73,7 +74,7 @@ func convertObject(o rest.DownloadSettingsObject, projectName string) config.Con
 
 	templ := template.NewDownloadTemplate(o.ObjectId, o.ObjectId, content)
 
-	configId := o.ObjectId
+	configId := util.GenerateUuidFromName(o.ObjectId)
 
 	return config.Config{
 		Template: templ,

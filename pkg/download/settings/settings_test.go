@@ -26,12 +26,15 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
 	v2 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestDownload(t *testing.T) {
+	uuid := util.GenerateUuidFromName("oid1")
+
 	type mockValues struct {
 		Schemas           func() (rest.SchemaList, error)
 		ListSchemasCalls  int
@@ -96,14 +99,14 @@ func TestDownload(t *testing.T) {
 					Coordinate: coordinate.Coordinate{
 						Project:  "projectName",
 						Type:     "sid1",
-						ConfigId: "oid1",
+						ConfigId: uuid,
 					},
 					Type: config.Type{
 						SchemaId:      "sid1",
 						SchemaVersion: "sv1",
 					},
 					Parameters: map[string]parameter.Parameter{
-						config.NameParameter:  &value.ValueParameter{Value: "oid1"},
+						config.NameParameter:  &value.ValueParameter{Value: uuid},
 						config.ScopeParameter: &value.ValueParameter{Value: "tenant"},
 					},
 					References: nil,
