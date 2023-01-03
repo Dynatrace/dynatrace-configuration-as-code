@@ -73,19 +73,21 @@ func convertObject(o rest.DownloadSettingsObject, projectName string) config.Con
 
 	templ := template.NewDownloadTemplate(o.ObjectId, o.ObjectId, content)
 
+	configId := o.ObjectId
+
 	return config.Config{
 		Template: templ,
 		Coordinate: coordinate.Coordinate{
 			Project:  projectName,
 			Type:     o.SchemaId,
-			ConfigId: o.ObjectId, // we need a unique id -> use the objectId as it is unique
+			ConfigId: configId,
 		},
 		Type: config.Type{
 			SchemaId:      o.SchemaId,
 			SchemaVersion: o.SchemaVersion,
 		},
 		Parameters: map[string]parameter.Parameter{
-			config.NameParameter:  &value.ValueParameter{Value: o.ObjectId},
+			config.NameParameter:  &value.ValueParameter{Value: configId},
 			config.ScopeParameter: &value.ValueParameter{Value: o.Scope},
 		},
 		Skip: false,
