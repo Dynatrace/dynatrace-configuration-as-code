@@ -17,7 +17,7 @@ defaults:
     shell: bash
 
 env:
-  BASE_REPO: 'Dynatrace/internal-monitoring-as-cde'  # Used to only execute directly if running in main repository, not on forks/PRs inside forks
+  BASE_REPO: 'Dynatrace/internal-monitoring-as-code'  # Used to only execute directly if running in main repository, not on forks/PRs inside forks
   E2E_TEST_LABEL: 'run-e2e-test'
 
 jobs:
