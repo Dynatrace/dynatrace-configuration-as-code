@@ -21,6 +21,7 @@ import (
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
 	refParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/reference"
+	valueParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
 	project "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
 	"github.com/google/go-cmp/cmp"
@@ -247,6 +248,162 @@ func TestDependencyResolution(t *testing.T) {
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api-3", ConfigId: "c3-id"},
 						Parameters: config.Parameters{},
 						References: nil,
+					},
+				},
+			},
+		},
+		{
+			name: "Scope is replaced in dependency resolution",
+			setup: project.ConfigsPerType{
+				"api": []config.Config{
+					{
+						Template:   template.NewDownloadTemplate("id1", "name1", ""),
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id1"},
+						Type:       config.Type{SchemaId: "api"},
+						Parameters: config.Parameters{
+							config.ScopeParameter: &valueParam.ValueParameter{Value: "id2"},
+						},
+					},
+					{
+						Template:   template.NewDownloadTemplate("id2", "name2", ""),
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id2"},
+						Type:       config.Type{SchemaId: "api"},
+						Parameters: config.Parameters{
+							config.ScopeParameter: &valueParam.ValueParameter{Value: "tenant"},
+						},
+					},
+				},
+			},
+			expected: project.ConfigsPerType{
+				"api": []config.Config{
+					{
+						Template:   template.NewDownloadTemplate("id1", "name1", ""),
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id1"},
+						Type:       config.Type{SchemaId: "api"},
+						Parameters: config.Parameters{
+							config.ScopeParameter: refParam.New("project", "api", "id2", "id"),
+						},
+						References: []coordinate.Coordinate{{Project: "project", Type: "api", ConfigId: "id2"}},
+					},
+					{
+						Template:   template.NewDownloadTemplate("id2", "name2", ""),
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id2"},
+						Type:       config.Type{SchemaId: "api"},
+						Parameters: config.Parameters{
+							config.ScopeParameter: &valueParam.ValueParameter{Value: "tenant"},
+						},
+						References: nil,
+					},
+				},
+			},
+		},
+		{
+			name: "Scope is not replaced if no dependency is present",
+			setup: project.ConfigsPerType{
+				"api": []config.Config{
+					{
+						Template:   template.NewDownloadTemplate("id1", "name1", ""),
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id1"},
+						Type:       config.Type{SchemaId: "api"},
+						Parameters: config.Parameters{
+							config.ScopeParameter: &valueParam.ValueParameter{Value: "tenant"},
+						},
+					},
+					{
+						Template:   template.NewDownloadTemplate("id2", "name2", ""),
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id2"},
+						Type:       config.Type{SchemaId: "api"},
+						Parameters: config.Parameters{
+							config.ScopeParameter: &valueParam.ValueParameter{Value: "HOST-1234"},
+						},
+						References: nil,
+					},
+				},
+			},
+			expected: project.ConfigsPerType{
+				"api": []config.Config{
+					{
+						Template:   template.NewDownloadTemplate("id1", "name1", ""),
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id1"},
+						Type:       config.Type{SchemaId: "api"},
+						Parameters: config.Parameters{
+							config.ScopeParameter: &valueParam.ValueParameter{Value: "tenant"},
+						},
+						References: nil,
+					},
+					{
+						Template:   template.NewDownloadTemplate("id2", "name2", ""),
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id2"},
+						Type:       config.Type{SchemaId: "api"},
+						Parameters: config.Parameters{
+							config.ScopeParameter: &valueParam.ValueParameter{Value: "HOST-1234"},
+						},
+						References: nil,
+					},
+				},
+			},
+		},
+		{
+			name: "Scope-resolution transitive",
+			setup: project.ConfigsPerType{
+				"api": []config.Config{
+					{
+						Template:   template.NewDownloadTemplate("id1", "name1", ""),
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id1"},
+						Type:       config.Type{SchemaId: "api"},
+						Parameters: config.Parameters{
+							config.ScopeParameter: &valueParam.ValueParameter{Value: "id2"},
+						},
+					},
+					{
+						Template:   template.NewDownloadTemplate("id2", "name2", ""),
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id2"},
+						Type:       config.Type{SchemaId: "api"},
+						Parameters: config.Parameters{
+							config.ScopeParameter: &valueParam.ValueParameter{Value: "id3"},
+						},
+					},
+				},
+				"api-2": []config.Config{
+					{
+						Template:   template.NewDownloadTemplate("id3", "name3", ""),
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api-2", ConfigId: "id3"},
+						Type:       config.Type{SchemaId: "api-2"},
+						Parameters: config.Parameters{
+							config.ScopeParameter: &valueParam.ValueParameter{Value: "environment"},
+						},
+					},
+				},
+			},
+			expected: project.ConfigsPerType{
+				"api": []config.Config{
+					{
+						Template:   template.NewDownloadTemplate("id1", "name1", ""),
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id1"},
+						Type:       config.Type{SchemaId: "api"},
+						Parameters: config.Parameters{
+							config.ScopeParameter: refParam.New("project", "api", "id2", "id"),
+						},
+						References: []coordinate.Coordinate{{Project: "project", Type: "api", ConfigId: "id2"}},
+					},
+					{
+						Template:   template.NewDownloadTemplate("id2", "name2", ""),
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id2"},
+						Type:       config.Type{SchemaId: "api"},
+						Parameters: config.Parameters{
+							config.ScopeParameter: refParam.New("project", "api-2", "id3", "id"),
+						},
+						References: []coordinate.Coordinate{{Project: "project", Type: "api-2", ConfigId: "id3"}},
+					},
+				},
+				"api-2": []config.Config{
+					{
+						Template:   template.NewDownloadTemplate("id3", "name3", ""),
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api-2", ConfigId: "id3"},
+						Type:       config.Type{SchemaId: "api-2"},
+						Parameters: config.Parameters{
+							config.ScopeParameter: &valueParam.ValueParameter{Value: "environment"},
+						},
 					},
 				},
 			},

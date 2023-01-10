@@ -19,6 +19,7 @@ package download
 import (
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
+	valueParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/value"
 	"strings"
 	"sync"
 
@@ -36,31 +37,24 @@ import (
 // If we find an occurrence, we replace it with a generic variable and reference the config.
 func ResolveDependencies(configs project.ConfigsPerType) project.ConfigsPerType {
 	log.Debug("Resolving dependencies between configs")
-
-	configsById := collectConfigsById(configs)
-
-	findAndSetDependencies(configs, configsById)
-
+	resolve(configs)
 	log.Debug("Finished resolving dependencies")
-
 	return configs
 }
 
-func findAndSetDependencies(configs project.ConfigsPerType, configsById map[string]config.Config) {
+func resolve(configs project.ConfigsPerType) {
+	configsById := collectConfigsById(configs)
 	wg := sync.WaitGroup{}
-
 	// currently a simple brute force attach
-	for theApi, configs := range configs {
+	for _, configs := range configs {
+		configs := configs
 		for i := range configs {
 			wg.Add(1)
 
 			configToBeUpdated := &configs[i]
 			go func() {
-				newContent, parameters, coordinates := findAndReplaceIds(theApi, *configToBeUpdated, configsById)
-
-				maps.Copy(configToBeUpdated.Parameters, parameters)
-				configToBeUpdated.Template.UpdateContent(newContent)
-				configToBeUpdated.References = append(configToBeUpdated.References, coordinates...)
+				resolveScope(configToBeUpdated, configsById)
+				resolveTemplate(configToBeUpdated, configsById)
 
 				wg.Done()
 			}()
@@ -68,6 +62,40 @@ func findAndSetDependencies(configs project.ConfigsPerType, configsById map[stri
 	}
 
 	wg.Wait()
+}
+
+func resolveScope(configToBeUpdated *config.Config, ids map[string]config.Config) {
+	if !configToBeUpdated.Type.IsSettings() {
+		return
+	}
+
+	scopeParam, found := configToBeUpdated.Parameters[config.ScopeParameter]
+	if !found {
+		log.Error(fmt.Sprintf("Setting found without a scope parameter. Skipping resolution for this config. Coordinate: %s.", configToBeUpdated.Coordinate))
+		return
+	}
+
+	value, ok := scopeParam.(*valueParam.ValueParameter)
+	if scopeParam.GetType() != valueParam.ValueParameterType || !ok {
+		log.Error(fmt.Sprintf("Expected scope parameter to be a value. Skipping resolution for this config. Coordinate: %s.", configToBeUpdated.Coordinate))
+		return
+	}
+
+	dependency, found := ids[fmt.Sprint(value.Value)]
+	if !found {
+		return
+	}
+
+	configToBeUpdated.Parameters[config.ScopeParameter] = reference.NewWithCoordinate(dependency.Coordinate, "id")
+	configToBeUpdated.References = append(configToBeUpdated.References, dependency.Coordinate)
+}
+
+func resolveTemplate(configToBeUpdated *config.Config, configsById map[string]config.Config) {
+	newContent, parameters, coordinates := findAndReplaceIds(configToBeUpdated.Coordinate.Type, *configToBeUpdated, configsById)
+
+	maps.Copy(configToBeUpdated.Parameters, parameters)
+	configToBeUpdated.Template.UpdateContent(newContent)
+	configToBeUpdated.References = append(configToBeUpdated.References, coordinates...)
 }
 
 func collectConfigsById(configs project.ConfigsPerType) map[string]config.Config {
