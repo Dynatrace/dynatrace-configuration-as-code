@@ -25,5 +25,8 @@
           }
         }
       ]
-    }
+    },
+    "locations": [
+        "{{ .location }}"
+    ]
   }
