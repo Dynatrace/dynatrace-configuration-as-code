@@ -74,27 +74,8 @@ type Config struct {
 	// map of all parameters which will be resolved and are then available
 	// in the template
 	Parameters Parameters
-	// References specified by the paramter. needed so that the
-	// configurations can be sorted in before the deployment phase.
-	References []coordinate.Coordinate
 	// Skip flag inidicating if the deployment of this configuration should be skipped
 	Skip bool
-}
-
-// MatchReference is used to determine if this config represents the given coordinates
-func (c *Config) MatchReference(ref coordinate.Coordinate) bool {
-	return c.Coordinate.Match(ref)
-}
-
-// HasDependencyOn tests if this config has a dependency on the given config.
-func (c *Config) HasDependencyOn(config Config) bool {
-	for _, ref := range c.References {
-		if config.MatchReference(ref) {
-			return true
-		}
-	}
-
-	return false
 }
 
 func (c *Config) Render(properties map[string]interface{}) (string, error) {
@@ -131,4 +112,17 @@ var DefaultParameterParsers = map[string]parameter.ParameterSerDe{
 	envParam.EnvironmentVariableParameterType: envParam.EnvironmentVariableParameterSerde,
 	compoundParam.CompoundParameterType:       compoundParam.CompoundParameterSerde,
 	listParam.ListParameterType:               listParam.ListParameterSerde,
+}
+
+func (c *Config) References() []coordinate.Coordinate {
+
+	refs := make([]coordinate.Coordinate, 0)
+
+	for _, p := range c.Parameters {
+		for _, r := range p.GetReferences() {
+			refs = append(refs, r.Config)
+		}
+	}
+
+	return refs
 }

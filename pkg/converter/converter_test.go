@@ -88,11 +88,10 @@ func TestConvertParameters(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	parameters, refs, skip, errors := convertParameters(convertContext, environment, testConfig)
+	parameters, skip, errors := convertParameters(convertContext, environment, testConfig)
 
 	assert.Nil(t, errors)
 	assert.Equal(t, 6, len(parameters))
-	assert.Equal(t, 2, len(refs))
 	assert.Equal(t, false, skip, "should not be skipped")
 
 	nameParameter, found := parameters["name"]
@@ -288,7 +287,7 @@ func TestConvertConfig(t *testing.T) {
 	assert.Equal(t, configId, convertedConfig.Coordinate.ConfigId)
 	assert.Equal(t, environmentName, convertedConfig.Environment)
 
-	references := convertedConfig.References
+	references := convertedConfig.References()
 
 	assert.Equal(t, 1, len(references))
 	assert.Equal(t, "projectB", references[0].Project)
@@ -349,7 +348,7 @@ func TestConvertDeprecatedConfigToLatest(t *testing.T) {
 	assert.Equal(t, configId, convertedConfig.Coordinate.ConfigId)
 	assert.Equal(t, environmentName, convertedConfig.Environment)
 
-	references := convertedConfig.References
+	references := convertedConfig.References()
 
 	assert.Equal(t, 1, len(references))
 	assert.Equal(t, "projectB", references[0].Project)

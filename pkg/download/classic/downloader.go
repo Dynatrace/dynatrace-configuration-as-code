@@ -253,7 +253,6 @@ func createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api
 	return config.Config{
 		Template:   templ,
 		Coordinate: coord,
-		References: []coordinate.Coordinate{},
 		Skip:       false,
 		Parameters: params,
 	}, nil

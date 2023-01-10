@@ -74,7 +74,6 @@ func TestDeployConfig(t *testing.T) {
 		},
 		Environment: "development",
 		Parameters:  toParameterMap(parameters),
-		References:  toReferences(parameters),
 		Skip:        false,
 	}
 
@@ -229,7 +228,6 @@ func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
 		},
 		Environment: "development",
 		Parameters:  toParameterMap(parameters),
-		References:  toReferences(parameters),
 		Skip:        false,
 	}
 	entityMap := NewEntityMap(testApiMap)
@@ -282,7 +280,6 @@ func TestDeployConfigShouldFailCyclicParameterDependencies(t *testing.T) {
 		},
 		Environment: "development",
 		Parameters:  toParameterMap(parameters),
-		References:  toReferences(parameters),
 		Skip:        false,
 	}
 
@@ -303,7 +300,6 @@ func TestDeployConfigShouldFailOnMissingNameParameter(t *testing.T) {
 		},
 		Environment: "development",
 		Parameters:  toParameterMap(parameters),
-		References:  toReferences(parameters),
 		Skip:        false,
 	}
 
@@ -340,7 +336,6 @@ func TestDeployConfigShouldFailOnReferenceOnUnknownConfig(t *testing.T) {
 		},
 		Environment: "development",
 		Parameters:  toParameterMap(parameters),
-		References:  toReferences(parameters),
 		Skip:        false,
 	}
 
@@ -379,7 +374,6 @@ func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
 		},
 		Environment: "development",
 		Parameters:  toParameterMap(parameters),
-		References:  toReferences(parameters),
 		Skip:        false,
 	}
 
@@ -596,24 +590,6 @@ func toParameterMap(params []topologysort.ParameterWithName) map[string]paramete
 
 	for _, p := range params {
 		result[p.Name] = p.Parameter
-	}
-
-	return result
-}
-
-func toReferences(params []topologysort.ParameterWithName) []coordinate.Coordinate {
-	var result []coordinate.Coordinate
-
-	for _, p := range params {
-		refs := p.Parameter.GetReferences()
-
-		if refs == nil {
-			continue
-		}
-
-		for _, ref := range refs {
-			result = append(result, ref.Config)
-		}
 	}
 
 	return result

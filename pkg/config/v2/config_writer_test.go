@@ -556,7 +556,6 @@ func TestWriteConfigs(t *testing.T) {
 					Parameters: map[string]parameter.Parameter{
 						NameParameter: &value.ValueParameter{Value: "name"},
 					},
-					References: nil,
 				},
 			},
 			expectedConfigs: map[string]topLevelDefinition{

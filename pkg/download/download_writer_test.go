@@ -60,8 +60,7 @@ func TestWriteToDisk(t *testing.T) {
 							Parameters: config.Parameters{
 								"name": value.New("test-config"),
 							},
-							References: nil,
-							Skip:       false,
+							Skip: false,
 						},
 					},
 				},
@@ -89,8 +88,7 @@ func TestWriteToDisk(t *testing.T) {
 							Parameters: config.Parameters{
 								"name": value.New("test-config"),
 							},
-							References: nil,
-							Skip:       false,
+							Skip: false,
 						},
 					},
 				},
@@ -118,8 +116,7 @@ func TestWriteToDisk(t *testing.T) {
 							Parameters: config.Parameters{
 								"name": value.New("test-config"),
 							},
-							References: nil,
-							Skip:       false,
+							Skip: false,
 						},
 					},
 				},
@@ -147,8 +144,7 @@ func TestWriteToDisk(t *testing.T) {
 							Parameters: config.Parameters{
 								"name": value.New("test-config"),
 							},
-							References: nil,
-							Skip:       false,
+							Skip: false,
 						},
 					},
 				},
@@ -212,8 +208,7 @@ func TestWriteToDisk_OverwritesManifestIfForced(t *testing.T) {
 				Parameters: config.Parameters{
 					"name": value.New("test-config"),
 				},
-				References: nil,
-				Skip:       false,
+				Skip: false,
 			},
 		},
 	}

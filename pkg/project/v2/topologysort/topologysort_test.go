@@ -198,23 +198,18 @@ func TestSortConfigs(t *testing.T) {
 			Coordinate:  configCoordinates,
 			Environment: "development",
 			Parameters:  map[string]parameter.Parameter{},
-			References: []coordinate.Coordinate{
-				referencedConfigCoordinates,
-			},
-			Skip: false,
+			Skip:        false,
 		},
 		{
 			Coordinate:  configCoordinates2,
 			Environment: "development",
 			Parameters:  map[string]parameter.Parameter{},
-			References:  []coordinate.Coordinate{},
 			Skip:        false,
 		},
 		{
 			Coordinate:  referencedConfigCoordinates,
 			Environment: "development",
 			Parameters:  map[string]parameter.Parameter{},
-			References:  []coordinate.Coordinate{},
 			Skip:        false,
 		},
 	}
@@ -246,18 +241,16 @@ func TestSortConfigsShouldFailOnCyclicDependency(t *testing.T) {
 		{
 			Coordinate:  configCoordinates,
 			Environment: "development",
-			Parameters:  map[string]parameter.Parameter{},
-			References: []coordinate.Coordinate{
-				referencedConfigCoordinates,
+			Parameters: config.Parameters{
+				"p": parameter.NewDummy(referencedConfigCoordinates),
 			},
 			Skip: false,
 		},
 		{
 			Coordinate:  referencedConfigCoordinates,
 			Environment: "development",
-			Parameters:  map[string]parameter.Parameter{},
-			References: []coordinate.Coordinate{
-				configCoordinates,
+			Parameters: config.Parameters{
+				"p": parameter.NewDummy(configCoordinates),
 			},
 			Skip: false,
 		},
@@ -289,27 +282,24 @@ func TestSortConfigsShouldReportAllLinksOfCyclicDependency(t *testing.T) {
 		{
 			Coordinate:  config1Coordinates,
 			Environment: "development",
-			Parameters:  map[string]parameter.Parameter{},
-			References: []coordinate.Coordinate{
-				config2Coordinates,
+			Parameters: config.Parameters{
+				"p": parameter.NewDummy(config2Coordinates),
 			},
 			Skip: false,
 		},
 		{
 			Coordinate:  config2Coordinates,
 			Environment: "development",
-			Parameters:  map[string]parameter.Parameter{},
-			References: []coordinate.Coordinate{
-				config3Coordinates,
+			Parameters: config.Parameters{
+				"p": parameter.NewDummy(config3Coordinates),
 			},
 			Skip: false,
 		},
 		{
 			Coordinate:  config3Coordinates,
 			Environment: "development",
-			Parameters:  map[string]parameter.Parameter{},
-			References: []coordinate.Coordinate{
-				config1Coordinates,
+			Parameters: config.Parameters{
+				"p": parameter.NewDummy(config1Coordinates),
 			},
 			Skip: false,
 		},
@@ -351,19 +341,13 @@ func TestSortConfigsShouldNotFailOnCyclicDependencyWhichAreSkip(t *testing.T) {
 			Coordinate:  configCoordinates,
 			Environment: "development",
 			Parameters:  map[string]parameter.Parameter{},
-			References: []coordinate.Coordinate{
-				referencedConfigCoordinates,
-			},
-			Skip: true,
+			Skip:        true,
 		},
 		{
 			Coordinate:  referencedConfigCoordinates,
 			Environment: "development",
 			Parameters:  map[string]parameter.Parameter{},
-			References: []coordinate.Coordinate{
-				configCoordinates,
-			},
-			Skip: true,
+			Skip:        true,
 		},
 		{
 			Coordinate: coordinate.Coordinate{
@@ -373,7 +357,6 @@ func TestSortConfigsShouldNotFailOnCyclicDependencyWhichAreSkip(t *testing.T) {
 			},
 			Environment: "development",
 			Parameters:  map[string]parameter.Parameter{},
-			References:  []coordinate.Coordinate{},
 			Skip:        false,
 		},
 	}
@@ -500,9 +483,6 @@ func TestGetSortedConfigsForEnvironments(t *testing.T) {
 										},
 									},
 								},
-							},
-							References: []coordinate.Coordinate{
-								autoTagCoordinates,
 							},
 						},
 						{
@@ -682,4 +662,57 @@ func Test_parseConfigSortErrors(t *testing.T) {
 			}))
 		})
 	}
+}
+
+func TestHasDependencyOn(t *testing.T) {
+	referencedConfig := coordinate.Coordinate{
+		Project:  "project1",
+		Type:     "auto-tag",
+		ConfigId: "tag",
+	}
+
+	conf := config.Config{
+		Coordinate: coordinate.Coordinate{
+			Project:  "project1",
+			Type:     "dashboard",
+			ConfigId: "dashboard1",
+		},
+		Environment: "dev",
+		Parameters: config.Parameters{
+			"p": parameter.NewDummy(referencedConfig),
+		},
+	}
+
+	referencedConf := config.Config{
+		Coordinate:  referencedConfig,
+		Environment: "dev",
+	}
+
+	result := hasDependencyOn(conf, referencedConf)
+
+	assert.Assert(t, result, "should have dependency")
+}
+
+func TestHasDependencyOnShouldReturnFalseIfNoDependenciesAreDefined(t *testing.T) {
+	conf := config.Config{
+		Coordinate: coordinate.Coordinate{
+			Project:  "project1",
+			Type:     "dashboard",
+			ConfigId: "dashboard1",
+		},
+		Environment: "dev",
+	}
+
+	conf2 := config.Config{
+		Coordinate: coordinate.Coordinate{
+			Project:  "project1",
+			Type:     "auto-tag",
+			ConfigId: "tag",
+		},
+		Environment: "dev",
+	}
+
+	result := hasDependencyOn(conf, conf2)
+
+	assert.Assert(t, !result, "should not have dependency")
 }

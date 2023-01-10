@@ -16,12 +16,24 @@
 
 package parameter
 
+import "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
+
 const DummyParameterType = "dummy"
 
 type DummyParameter struct {
 	Value      interface{}
 	Err        error
 	References []ParameterReference
+}
+
+func NewDummy(ref coordinate.Coordinate) *DummyParameter {
+	return &DummyParameter{
+		References: []ParameterReference{
+			{
+				Config: ref,
+			},
+		},
+	}
 }
 
 func (d *DummyParameter) GetType() string {

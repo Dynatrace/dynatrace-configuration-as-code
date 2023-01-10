@@ -223,7 +223,7 @@ func toDependenciesMap(projectId string,
 			continue
 		}
 
-		for _, ref := range c.References {
+		for _, ref := range c.References() {
 			// ignore project on same project
 			if projectId == ref.Project {
 				continue

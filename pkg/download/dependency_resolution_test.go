@@ -106,7 +106,6 @@ func TestDependencyResolution(t *testing.T) {
 						Parameters: config.Parameters{
 							createParameterName("api", "c1-id"): refParam.New("project", "api", "c1-id", "id"),
 						},
-						References: []coordinate.Coordinate{{Project: "project", Type: "api", ConfigId: "c1-id"}},
 					},
 				},
 			},
@@ -135,7 +134,6 @@ func TestDependencyResolution(t *testing.T) {
 						Parameters: config.Parameters{
 							createParameterName("api", "c2-id"): refParam.New("project", "api", "c2-id", "id"),
 						},
-						References: []coordinate.Coordinate{{Project: "project", Type: "api", ConfigId: "c2-id"}},
 					},
 					{
 						Template:   template.NewDownloadTemplate("c2-id", "name2", makeTemplateString("template of config 2 references config 1: %s", "api", "c1-id")),
@@ -143,7 +141,6 @@ func TestDependencyResolution(t *testing.T) {
 						Parameters: config.Parameters{
 							createParameterName("api", "c1-id"): refParam.New("project", "api", "c1-id", "id"),
 						},
-						References: []coordinate.Coordinate{{Project: "project", Type: "api", ConfigId: "c1-id"}},
 					},
 				},
 			},
@@ -177,7 +174,6 @@ func TestDependencyResolution(t *testing.T) {
 						Parameters: config.Parameters{
 							createParameterName("api", "c2-id"): refParam.New("project", "api", "c2-id", "id"),
 						},
-						References: []coordinate.Coordinate{{Project: "project", Type: "api", ConfigId: "c2-id"}},
 					},
 					{
 						Template:   template.NewDownloadTemplate("c2-id", "name2", makeTemplateString("template of config 2 references config 3: %s", "api", "c3-id")),
@@ -185,13 +181,11 @@ func TestDependencyResolution(t *testing.T) {
 						Parameters: config.Parameters{
 							createParameterName("api", "c3-id"): refParam.New("project", "api", "c3-id", "id"),
 						},
-						References: []coordinate.Coordinate{{Project: "project", Type: "api", ConfigId: "c3-id"}},
 					},
 					{
 						Template:   template.NewDownloadTemplate("c3-id", "name3", "template of config 3 references nothing"),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c3-id"},
 						Parameters: config.Parameters{},
-						References: nil,
 					},
 				},
 			},
@@ -229,7 +223,6 @@ func TestDependencyResolution(t *testing.T) {
 						Parameters: config.Parameters{
 							createParameterName("api-2", "c2-id"): refParam.New("project", "api-2", "c2-id", "id"),
 						},
-						References: []coordinate.Coordinate{{Project: "project", Type: "api-2", ConfigId: "c2-id"}},
 					},
 				},
 				"api-2": []config.Config{
@@ -239,7 +232,6 @@ func TestDependencyResolution(t *testing.T) {
 						Parameters: config.Parameters{
 							createParameterName("api-3", "c3-id"): refParam.New("project", "api-3", "c3-id", "id"),
 						},
-						References: []coordinate.Coordinate{{Project: "project", Type: "api-3", ConfigId: "c3-id"}},
 					},
 				},
 				"api-3": []config.Config{
@@ -247,7 +239,6 @@ func TestDependencyResolution(t *testing.T) {
 						Template:   template.NewDownloadTemplate("c3-id", "name3", "template of config 3 references nothing"),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api-3", ConfigId: "c3-id"},
 						Parameters: config.Parameters{},
-						References: nil,
 					},
 				},
 			},
@@ -283,7 +274,6 @@ func TestDependencyResolution(t *testing.T) {
 						Parameters: config.Parameters{
 							config.ScopeParameter: refParam.New("project", "api", "id2", "id"),
 						},
-						References: []coordinate.Coordinate{{Project: "project", Type: "api", ConfigId: "id2"}},
 					},
 					{
 						Template:   template.NewDownloadTemplate("id2", "name2", ""),
@@ -292,7 +282,6 @@ func TestDependencyResolution(t *testing.T) {
 						Parameters: config.Parameters{
 							config.ScopeParameter: &valueParam.ValueParameter{Value: "tenant"},
 						},
-						References: nil,
 					},
 				},
 			},
@@ -316,7 +305,6 @@ func TestDependencyResolution(t *testing.T) {
 						Parameters: config.Parameters{
 							config.ScopeParameter: &valueParam.ValueParameter{Value: "HOST-1234"},
 						},
-						References: nil,
 					},
 				},
 			},
@@ -329,7 +317,6 @@ func TestDependencyResolution(t *testing.T) {
 						Parameters: config.Parameters{
 							config.ScopeParameter: &valueParam.ValueParameter{Value: "tenant"},
 						},
-						References: nil,
 					},
 					{
 						Template:   template.NewDownloadTemplate("id2", "name2", ""),
@@ -338,7 +325,6 @@ func TestDependencyResolution(t *testing.T) {
 						Parameters: config.Parameters{
 							config.ScopeParameter: &valueParam.ValueParameter{Value: "HOST-1234"},
 						},
-						References: nil,
 					},
 				},
 			},
@@ -384,7 +370,6 @@ func TestDependencyResolution(t *testing.T) {
 						Parameters: config.Parameters{
 							config.ScopeParameter: refParam.New("project", "api", "id2", "id"),
 						},
-						References: []coordinate.Coordinate{{Project: "project", Type: "api", ConfigId: "id2"}},
 					},
 					{
 						Template:   template.NewDownloadTemplate("id2", "name2", ""),
@@ -393,7 +378,6 @@ func TestDependencyResolution(t *testing.T) {
 						Parameters: config.Parameters{
 							config.ScopeParameter: refParam.New("project", "api-2", "id3", "id"),
 						},
-						References: []coordinate.Coordinate{{Project: "project", Type: "api-2", ConfigId: "id3"}},
 					},
 				},
 				"api-2": []config.Config{

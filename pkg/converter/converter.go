@@ -186,7 +186,7 @@ func convertProject(context *ConverterContext, environments map[string]manifest.
 					continue
 				}
 
-				for _, ref := range config.References {
+				for _, ref := range config.References() {
 					// ignore references on own project
 					if ref.Project == config.Coordinate.Project {
 						continue
@@ -282,7 +282,7 @@ func convertConfig(context *ConfigConvertContext, environment manifest.Environme
 
 	context.KnownListParameterIds = listParamIds
 
-	parameters, references, skip, parameterErrors := convertParameters(context, environment, config)
+	parameters, skip, parameterErrors := convertParameters(context, environment, config)
 
 	if parameterErrors != nil {
 		errors = append(errors, parameterErrors...)
@@ -308,7 +308,6 @@ func convertConfig(context *ConfigConvertContext, environment manifest.Environme
 		Group:       environment.Group,
 		Environment: environment.Name,
 		Parameters:  parameters,
-		References:  references,
 		Skip:        skip,
 	}, nil
 }
@@ -407,12 +406,11 @@ func convertListsInTemplate(currentTemplate string, currentPath string) (modifie
 }
 
 func convertParameters(context *ConfigConvertContext, environment manifest.EnvironmentDefinition,
-	config configV1.Config) (map[string]parameter.Parameter, []coordinate.Coordinate, bool, []error) {
+	config configV1.Config) (map[string]parameter.Parameter, bool, []error) {
 
 	properties := loadPropertiesForEnvironment(environment, config)
 
 	parameters := make(map[string]parameter.Parameter)
-	var references []coordinate.Coordinate
 	var errors []error
 	var skip = false
 
@@ -453,17 +451,13 @@ func convertParameters(context *ConfigConvertContext, environment manifest.Envir
 		} else {
 			parameters[newName] = &valueParam.ValueParameter{Value: value}
 		}
-
-		for _, ref := range parameters[newName].GetReferences() {
-			references = append(references, ref.Config)
-		}
 	}
 
 	if errors != nil {
-		return parameters, nil, false, errors
+		return parameters, false, errors
 	}
 
-	return parameters, references, skip, nil
+	return parameters, skip, nil
 }
 
 func convertedParameterName(name string) string {

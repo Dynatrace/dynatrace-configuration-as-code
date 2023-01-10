@@ -87,15 +87,13 @@ func resolveScope(configToBeUpdated *config.Config, ids map[string]config.Config
 	}
 
 	configToBeUpdated.Parameters[config.ScopeParameter] = reference.NewWithCoordinate(dependency.Coordinate, "id")
-	configToBeUpdated.References = append(configToBeUpdated.References, dependency.Coordinate)
 }
 
 func resolveTemplate(configToBeUpdated *config.Config, configsById map[string]config.Config) {
-	newContent, parameters, coordinates := findAndReplaceIds(configToBeUpdated.Coordinate.Type, *configToBeUpdated, configsById)
+	newContent, parameters, _ := findAndReplaceIds(configToBeUpdated.Coordinate.Type, *configToBeUpdated, configsById)
 
 	maps.Copy(configToBeUpdated.Parameters, parameters)
 	configToBeUpdated.Template.UpdateContent(newContent)
-	configToBeUpdated.References = append(configToBeUpdated.References, coordinates...)
 }
 
 func collectConfigsById(configs project.ConfigsPerType) map[string]config.Config {

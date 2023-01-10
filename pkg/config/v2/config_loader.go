@@ -428,7 +428,6 @@ func getConfigFromDefinition(
 		Group:       environment.Group,
 		Environment: environment.Name,
 		Parameters:  parameters,
-		References:  getReferenceSlice(configReferences),
 		Skip:        skipConfig,
 	}, nil
 }
@@ -480,10 +479,6 @@ func isSupportedParamTypeForSkip(p parameter.Parameter) bool {
 	default:
 		return false
 	}
-}
-
-func getReferenceSlice(references map[string]coordinate.Coordinate) []coordinate.Coordinate {
-	return maps.Values(references)
 }
 
 // References holds coordinate-string -> coordinate

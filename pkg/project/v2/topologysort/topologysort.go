@@ -206,13 +206,11 @@ func parametersToSortData(conf coordinate.Coordinate, parameters []ParameterWith
 
 func GetSortedConfigsForEnvironments(projects []project.Project, environments []string) (map[string][]config.Config, []error) {
 	sortedProjectsPerEnvironment, errs := sortProjects(projects, environments)
-
 	if len(errs) > 0 {
 		return nil, errs
 	}
 
 	result := make(map[string][]config.Config)
-	var errors []error
 
 	for env, sortedProject := range sortedProjectsPerEnvironment {
 		sortedConfigResult := make([]config.Config, 0)
@@ -221,7 +219,7 @@ func GetSortedConfigsForEnvironments(projects []project.Project, environments []
 			configs := p.Configs[env]
 			sortedConfigs, cfgSortErrs := sortConfigs(getConfigs(configs))
 
-			errors = append(errors, cfgSortErrs...)
+			errs = append(errs, cfgSortErrs...)
 
 			sortedConfigResult = append(sortedConfigResult, sortedConfigs...)
 		}
@@ -229,8 +227,8 @@ func GetSortedConfigsForEnvironments(projects []project.Project, environments []
 		result[env] = sortedConfigResult
 	}
 
-	if errors != nil {
-		return nil, errors
+	if errs != nil {
+		return nil, errs
 	}
 
 	return result, nil
@@ -286,7 +284,7 @@ func configsToSortData(configs []config.Config) ([][]bool, []int) {
 				continue
 			}
 
-			if c.HasDependencyOn(conf) {
+			if hasDependencyOn(c, conf) {
 				logDependency("Configuration", c.Coordinate.String(), conf.Coordinate.String())
 				matrix[i][j] = true
 				inDegrees[i]++
@@ -332,7 +330,7 @@ func parseConfigSortErrors(sortErrs []sort.TopologySortError, configs []config.C
 }
 
 func sortProjects(projects []project.Project, environments []string) (ProjectsPerEnvironment, []error) {
-	var errors []error
+	var errs []error
 
 	resultByEnvironment := make(ProjectsPerEnvironment)
 
@@ -345,7 +343,7 @@ func sortProjects(projects []project.Project, environments []string) (ProjectsPe
 			for _, sortErr := range sortErrs {
 				p := projects[sortErr.OnId]
 
-				errors = append(errors, &CircualDependencyProjectSortError{
+				errs = append(errs, &CircualDependencyProjectSortError{
 					Environment: env,
 					Project:     p.Id,
 					DependsOn:   p.Dependencies[env],
@@ -362,8 +360,8 @@ func sortProjects(projects []project.Project, environments []string) (ProjectsPe
 		resultByEnvironment[env] = result
 	}
 
-	if errors != nil {
-		return nil, errors
+	if errs != nil {
+		return nil, errs
 	}
 
 	return resultByEnvironment, nil
@@ -374,7 +372,7 @@ func projectsToSortData(projects []project.Project, environment string) ([][]boo
 	matrix := make([][]bool, numProjects)
 	inDegrees := make([]int, len(projects))
 
-	for i, project := range projects {
+	for i, prj := range projects {
 		matrix[i] = make([]bool, numProjects)
 
 		for j, p := range projects {
@@ -382,8 +380,8 @@ func projectsToSortData(projects []project.Project, environment string) ([][]boo
 				continue
 			}
 
-			if p.HasDependencyOn(environment, project) {
-				logDependency("Project", p.Id, project.Id)
+			if p.HasDependencyOn(environment, prj) {
+				logDependency("Project", p.Id, prj.Id)
 				matrix[i][j] = true
 				inDegrees[i]++
 			}
@@ -395,4 +393,16 @@ func projectsToSortData(projects []project.Project, environment string) ([][]boo
 
 func logDependency(prefix string, depending string, dependedOn string) {
 	log.Debug("%s: %s has dependency on %s", prefix, depending, dependedOn)
+}
+
+// hasDependencyOn tests whether the config given by the first argument
+// has a dependency on the config given by the second argument
+func hasDependencyOn(from, to config.Config) bool {
+	for _, ref := range from.References() {
+		if to.Coordinate.Match(ref) {
+			return true
+		}
+	}
+
+	return false
 }

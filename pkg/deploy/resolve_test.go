@@ -62,7 +62,6 @@ func TestResolveParameterValues(t *testing.T) {
 		},
 		Environment: "development",
 		Parameters:  toParameterMap(parameters),
-		References:  toReferences(parameters),
 		Skip:        false,
 	}
 
@@ -105,7 +104,6 @@ func TestResolveParameterValuesShouldFailWhenReferencingNonExistingConfig(t *tes
 		},
 		Environment: "development",
 		Parameters:  toParameterMap(parameters),
-		References:  toReferences(parameters),
 		Skip:        false,
 	}
 
@@ -146,7 +144,6 @@ func TestResolveParameterValuesShouldFailWhenReferencingSkippedConfig(t *testing
 		},
 		Environment: "development",
 		Parameters:  toParameterMap(parameters),
-		References:  toReferences(parameters),
 		Skip:        false,
 	}
 
@@ -183,7 +180,6 @@ func TestResolveParameterValuesShouldFailWhenParameterResolveReturnsError(t *tes
 		},
 		Environment: "development",
 		Parameters:  toParameterMap(parameters),
-		References:  toReferences(parameters),
 		Skip:        false,
 	}
 
@@ -340,7 +336,6 @@ func TestExtractConfigName(t *testing.T) {
 		},
 		Environment: "development",
 		Parameters:  map[string]parameter.Parameter{},
-		References:  []coordinate.Coordinate{},
 		Skip:        false,
 	}
 
@@ -366,7 +361,6 @@ func TestExtractConfigNameShouldFailOnMissingName(t *testing.T) {
 		},
 		Environment: "development",
 		Parameters:  map[string]parameter.Parameter{},
-		References:  []coordinate.Coordinate{},
 		Skip:        false,
 	}
 
@@ -387,7 +381,6 @@ func TestExtractConfigNameShouldFailOnNameWithNonStringType(t *testing.T) {
 		},
 		Environment: "development",
 		Parameters:  map[string]parameter.Parameter{},
-		References:  []coordinate.Coordinate{},
 		Skip:        false,
 	}
 
