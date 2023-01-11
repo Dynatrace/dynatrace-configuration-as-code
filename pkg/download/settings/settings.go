@@ -17,6 +17,7 @@
 package settings
 
 import (
+	"encoding/json"
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
@@ -70,7 +71,13 @@ func convertAllObjects(objects []rest.DownloadSettingsObject, projectName string
 
 func convertObject(o rest.DownloadSettingsObject, projectName string) config.Config {
 
-	content := string(o.Value)
+	var content string
+	if bytes, err := json.MarshalIndent(o.Value, "", "  "); err == nil {
+		content = string(bytes)
+	} else {
+		log.Warn("Failed to indent settings template. Reason: %s", err)
+		content = string(o.Value)
+	}
 
 	configId := util.GenerateUuidFromName(o.ObjectId)
 
