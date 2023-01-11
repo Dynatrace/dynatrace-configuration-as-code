@@ -97,7 +97,7 @@ func TestDownload(t *testing.T) {
 			},
 			want: v2.ConfigsPerType{"id1": {
 				{
-					Template: template.NewDownloadTemplate("oid1", "oid1", string(json.RawMessage{})),
+					Template: template.NewDownloadTemplate(uuid, uuid, string(json.RawMessage{})),
 					Coordinate: coordinate.Coordinate{
 						Project:  "projectName",
 						Type:     "sid1",

@@ -72,9 +72,9 @@ func convertObject(o rest.DownloadSettingsObject, projectName string) config.Con
 
 	content := string(o.Value)
 
-	templ := template.NewDownloadTemplate(o.ObjectId, o.ObjectId, content)
-
 	configId := util.GenerateUuidFromName(o.ObjectId)
+
+	templ := template.NewDownloadTemplate(configId, configId, content)
 
 	return config.Config{
 		Template: templ,
