@@ -32,7 +32,7 @@ import (
 	"gotest.tools/assert"
 )
 
-type downloadFunction func(*testing.T, afero.Fs, string, string, string) error
+type downloadFunction func(*testing.T, afero.Fs, string, string, string, string) error
 
 //TestRestoreConfigs validates if the configurations can be restore from the downloaded version after being deleted
 //It has 5 stages:
@@ -68,6 +68,108 @@ func TestRestoreConfigs_FromDownloadWithCLIParameters(t *testing.T) {
 	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, execution_downloadConfigsWithCLIParameters)
 }
 
+func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
+	downloadFolder, _ := filepath.Abs("test-resources/download")
+	manifestFile, _ := filepath.Abs("test-resources/integration-download-configs/manifest.yaml")
+
+	tests := []struct {
+		name               string
+		fs                 afero.Fs
+		downloadFunc       downloadFunction
+		apisToDownload     string // comma separated list of apis
+		settingsToDownload string // comma setting list of schema IDs
+		projectFolder      string
+		manifest           string
+		expectedFolders    []string
+		wantErr            bool
+	}{
+		{
+			name:               "using --specific-api and --specific-settings",
+			fs:                 util.CreateTestFileSystem(),
+			downloadFunc:       execution_downloadConfigsWithCLIParameters,
+			projectFolder:      downloadFolder + "/project",
+			apisToDownload:     "application-mobile",
+			settingsToDownload: "builtin:alerting.profile",
+			expectedFolders: []string{
+				downloadFolder + "/project/application-mobile",
+				downloadFolder + "/project/builtin:alerting.profile"},
+			wantErr: false,
+		},
+		{
+			name:               "using --specific-api",
+			fs:                 util.CreateTestFileSystem(),
+			downloadFunc:       execution_downloadConfigsWithCLIParameters,
+			projectFolder:      downloadFolder + "/project",
+			apisToDownload:     "application-mobile",
+			settingsToDownload: "",
+			expectedFolders: []string{
+				downloadFolder + "/project/application-mobile"},
+			wantErr: false,
+		},
+		{
+			name:               "using --specific-settings",
+			fs:                 util.CreateTestFileSystem(),
+			downloadFunc:       execution_downloadConfigsWithCLIParameters,
+			projectFolder:      downloadFolder + "/project",
+			apisToDownload:     "",
+			settingsToDownload: "builtin:alerting.profile",
+			expectedFolders: []string{
+				downloadFolder + "/project/builtin:alerting.profile"},
+			wantErr: false,
+		},
+		{
+			name:               "using --specific-api and --specific-settings (manifest)",
+			fs:                 util.CreateTestFileSystem(),
+			downloadFunc:       execution_downloadConfigs,
+			projectFolder:      downloadFolder + "/project_environment1",
+			manifest:           manifestFile,
+			apisToDownload:     "application-mobile",
+			settingsToDownload: "builtin:alerting.profile",
+			expectedFolders: []string{
+				downloadFolder + "/project_environment1/application-mobile",
+				downloadFolder + "/project_environment1/builtin:alerting.profile"},
+			wantErr: false,
+		},
+		{
+			name:               "using --specific-api (manifest)",
+			fs:                 util.CreateTestFileSystem(),
+			downloadFunc:       execution_downloadConfigs,
+			projectFolder:      downloadFolder + "/project_environment1",
+			manifest:           manifestFile,
+			apisToDownload:     "application-mobile",
+			settingsToDownload: "",
+			expectedFolders: []string{
+				downloadFolder + "/project_environment1/application-mobile"},
+			wantErr: false,
+		},
+		{
+			name:               "using --specific-settings (manifest)",
+			fs:                 util.CreateTestFileSystem(),
+			downloadFunc:       execution_downloadConfigs,
+			projectFolder:      downloadFolder + "/project_environment1",
+			manifest:           manifestFile,
+			apisToDownload:     "",
+			settingsToDownload: "builtin:alerting.profile",
+			expectedFolders: []string{
+				downloadFolder + "/project_environment1/builtin:alerting.profile"},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.downloadFunc(t, tt.fs, downloadFolder, tt.manifest, tt.apisToDownload, tt.settingsToDownload)
+			assert.Equal(t, tt.wantErr, err != nil)
+			for _, f := range tt.expectedFolders {
+				folderExists, _ := afero.DirExists(tt.fs, f)
+				assert.Check(t, folderExists, "folder "+f+" does not exist")
+			}
+			files, _ := afero.ReadDir(tt.fs, tt.projectFolder)
+			assert.Equal(t, len(tt.expectedFolders), len(files))
+		})
+	}
+}
+
 // TestRestoreConfigsFull is currently
 // TestRestoreConfigsFull deploys, download and re-deploys from download the all-configs test-resources
 // As this downloads all configs from all APIs other tests and their cleanup are likely to interfere
@@ -94,7 +196,7 @@ func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolde
 
 	assert.NilError(t, err, "Error during download preparation stage")
 
-	err = downloadFunc(t, fs, downloadFolder, manifestFile, apisToDownload)
+	err = downloadFunc(t, fs, downloadFolder, manifestFile, apisToDownload, "")
 	assert.NilError(t, err, "Error during download execution stage")
 
 	cleanupDeployedConfiguration(t, fs, manifestFile, suffix) // remove previously deployed configs
@@ -129,15 +231,14 @@ func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, con
 }
 
 func execution_downloadConfigsWithCLIParameters(t *testing.T, fs afero.Fs, downloadFolder string, _ string,
-	apisToDownload string) error {
+	apisToDownload string, settingsToDownload string) error {
 	log.Info("BEGIN DOWNLOAD PROCESS")
 
 	downloadFolder, err := filepath.Abs(downloadFolder)
 	if err != nil {
 		return err
 	}
-	parameters := []string{}
-
+	var parameters []string
 	if apisToDownload == "all" {
 		parameters = []string{
 			"download",
@@ -154,9 +255,13 @@ func execution_downloadConfigsWithCLIParameters(t *testing.T, fs afero.Fs, downl
 			os.Getenv("URL_ENVIRONMENT_1"),
 			"TOKEN_ENVIRONMENT_1",
 			"--verbose",
-			"--specific-api",
-			apisToDownload,
 			"--output-folder", downloadFolder,
+		}
+		if apisToDownload != "" {
+			parameters = append(parameters, "--specific-api", apisToDownload)
+		}
+		if settingsToDownload != "" {
+			parameters = append(parameters, "--specific-settings", settingsToDownload)
 		}
 	}
 
@@ -168,7 +273,7 @@ func execution_downloadConfigsWithCLIParameters(t *testing.T, fs afero.Fs, downl
 }
 
 func execution_downloadConfigs(t *testing.T, fs afero.Fs, downloadFolder string, manifestFile string,
-	apisToDownload string) error {
+	apisToDownload string, settingsToDownload string) error {
 	log.Info("BEGIN DOWNLOAD PROCESS")
 
 	downloadFolder, err := filepath.Abs(downloadFolder)
@@ -193,9 +298,14 @@ func execution_downloadConfigs(t *testing.T, fs afero.Fs, downloadFolder string,
 			manifestFile,
 			"environment1",
 			"--verbose",
-			"--specific-api",
-			apisToDownload,
 			"--output-folder", downloadFolder,
+		}
+
+		if apisToDownload != "" {
+			parameters = append(parameters, "--specific-api", apisToDownload)
+		}
+		if settingsToDownload != "" {
+			parameters = append(parameters, "--specific-settings", settingsToDownload)
 		}
 	}
 

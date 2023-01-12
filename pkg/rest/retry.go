@@ -57,7 +57,7 @@ func getWithRetry(client *http.Client, url string, apiToken string, settings ret
 	}
 
 	for i := 0; i < settings.maxRetries; i++ {
-		log.Warn("Retrying failed GET request %s after error (HTTP %d): %w", url, resp.StatusCode, err)
+		log.Warn("Retrying failed GET request %s with error (HTTP %d)", url, resp.StatusCode)
 		time.Sleep(settings.waitTime)
 		resp, err = get(client, url, apiToken)
 		if err == nil && success(resp) {

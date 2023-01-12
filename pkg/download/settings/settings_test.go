@@ -34,7 +34,7 @@ import (
 	"testing"
 )
 
-func TestDownload(t *testing.T) {
+func TestDownloadAll(t *testing.T) {
 	uuid := util.GenerateUuidFromName("oid1")
 
 	type mockValues struct {
@@ -123,7 +123,81 @@ func TestDownload(t *testing.T) {
 			c.EXPECT().ListSchemas().Times(tt.mockValues.ListSchemasCalls).Return(schemas, err)
 			settings, err := tt.mockValues.Settings()
 			c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err)
-			res := Download(c, "projectName")
+			res := DownloadAll(c, "projectName")
+			assert.Equal(t, tt.want, res)
+		})
+	}
+}
+
+func TestDownload(t *testing.T) {
+	uuid := util.GenerateUuidFromName("oid1")
+
+	type mockValues struct {
+		Schemas           func() (rest.SchemaList, error)
+		Settings          func() ([]rest.DownloadSettingsObject, error)
+		ListSettingsCalls int
+	}
+	tests := []struct {
+		name       string
+		Schemas    []string
+		mockValues mockValues
+		want       v2.ConfigsPerType
+	}{
+		{
+			name: "DownloadSettings - empty list of schemas",
+			mockValues: mockValues{
+				Schemas:           func() (rest.SchemaList, error) { return rest.SchemaList{}, nil },
+				Settings:          func() ([]rest.DownloadSettingsObject, error) { return []rest.DownloadSettingsObject{}, nil },
+				ListSettingsCalls: 0,
+			},
+			want: v2.ConfigsPerType{},
+		},
+		{
+			name:    "DownloadSettings - empty list of schemas",
+			Schemas: []string{"builtin:alerting-profile"},
+			mockValues: mockValues{
+				Schemas: func() (rest.SchemaList, error) {
+					return rest.SchemaList{{SchemaId: "id1"}}, nil
+				},
+				Settings: func() ([]rest.DownloadSettingsObject, error) {
+					return []rest.DownloadSettingsObject{{
+						ExternalId:    "ex1",
+						SchemaVersion: "sv1",
+						SchemaId:      "sid1",
+						ObjectId:      "oid1",
+						Scope:         "tenant",
+						Value:         json.RawMessage{},
+					}}, nil
+				},
+				ListSettingsCalls: 1,
+			},
+			want: v2.ConfigsPerType{"builtin:alerting-profile": {
+				{
+					Template: template.NewDownloadTemplate(uuid, uuid, string(json.RawMessage{})),
+					Coordinate: coordinate.Coordinate{
+						Project:  "projectName",
+						Type:     "sid1",
+						ConfigId: uuid,
+					},
+					Type: config.Type{
+						SchemaId:      "sid1",
+						SchemaVersion: "sv1",
+					},
+					Parameters: map[string]parameter.Parameter{
+						config.NameParameter:  &value.ValueParameter{Value: uuid},
+						config.ScopeParameter: &value.ValueParameter{Value: "tenant"},
+					},
+					Skip: false,
+				},
+			}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := rest.NewMockDynatraceClient(gomock.NewController(t))
+			settings, err := tt.mockValues.Settings()
+			c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err)
+			res := Download(c, tt.Schemas, "projectName")
 			assert.Equal(t, tt.want, res)
 		})
 	}

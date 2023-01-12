@@ -29,22 +29,40 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 )
 
-func Download(client rest.SettingsClient, projectName string) v2.ConfigsPerType {
+// Download downloads all settings 2.0 objects for the given schema IDs and a given project
+// The returned value is a map of settings 2.0 objects with the schema ID as keys
+func Download(client rest.SettingsClient, schemaIDs []string, projectName string) v2.ConfigsPerType {
+	return download(client, schemaIDs, projectName)
+}
 
-	log.Debug("Fetching schemas to download")
+// DownloadAll downloads all settings 2.0 objects for a given project.
+// The returned value is a map of settings 2.0 objects with the schema ID as keys
+func DownloadAll(client rest.SettingsClient, projectName string) v2.ConfigsPerType {
+	log.Debug("Fetching all schemas to download")
+
+	// get ALL schemas
 	schemas, err := client.ListSchemas()
 	if err != nil {
 		log.Error("Failed to fetch all known schemas. Skipping settings download. Reason: %s", err)
 		return nil
 	}
 
-	results := make(v2.ConfigsPerType, len(schemas))
+	// convert to list of IDs
+	var ids []string
+	for _, i := range schemas {
+		ids = append(ids, i.SchemaId)
+	}
 
+	return download(client, ids, projectName)
+}
+
+func download(client rest.SettingsClient, schemas []string, projectName string) v2.ConfigsPerType {
+	results := make(v2.ConfigsPerType, len(schemas))
 	for _, schema := range schemas {
 		log.Debug("Downloading all settings for schema %s", schema)
-		objects, err := client.ListSettings(schema.SchemaId, rest.ListSettingsOptions{})
+		objects, err := client.ListSettings(schema, rest.ListSettingsOptions{})
 		if err != nil {
-			log.Error("Failed to fetch all settings for schema %s", schema)
+			log.Error("Failed to fetch all settings for schema %s: %v", schema, err)
 			continue
 		}
 
@@ -53,7 +71,7 @@ func Download(client rest.SettingsClient, projectName string) v2.ConfigsPerType 
 		}
 
 		configs := convertAllObjects(objects, projectName)
-		results[schema.SchemaId] = configs
+		results[schema] = configs
 	}
 
 	return results

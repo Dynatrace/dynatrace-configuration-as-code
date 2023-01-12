@@ -100,7 +100,7 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	// WHEN we download everything
-	err := doDownload(fs, getTestingDownloadOptions(server, projectName, apiMap))
+	err := doDownload(fs, apiMap, getTestingDownloadOptions(server, projectName))
 
 	assert.NilError(t, err)
 
@@ -163,7 +163,7 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	// WHEN we download everything
-	err := doDownload(fs, getTestingDownloadOptions(server, projectName, apiMap))
+	err := doDownload(fs, apiMap, getTestingDownloadOptions(server, projectName))
 
 	assert.NilError(t, err)
 
@@ -247,7 +247,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	// WHEN we download everything
-	err := doDownload(fs, getTestingDownloadOptions(server, projectName, apiMap))
+	err := doDownload(fs, apiMap, getTestingDownloadOptions(server, projectName))
 
 	assert.NilError(t, err)
 
@@ -359,7 +359,7 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	// WHEN we download everything
-	err := doDownload(fs, getTestingDownloadOptions(server, projectName, apiMap))
+	err := doDownload(fs, apiMap, getTestingDownloadOptions(server, projectName))
 
 	assert.NilError(t, err)
 
@@ -423,7 +423,7 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	// WHEN we download everything
-	err := doDownload(fs, getTestingDownloadOptions(server, projectName, apiMap))
+	err := doDownload(fs, apiMap, getTestingDownloadOptions(server, projectName))
 
 	assert.NilError(t, err)
 
@@ -488,7 +488,7 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	// WHEN we download everything
-	err := doDownload(fs, getTestingDownloadOptions(server, projectName, apiMap))
+	err := doDownload(fs, apiMap, getTestingDownloadOptions(server, projectName))
 
 	assert.NilError(t, err)
 
@@ -562,7 +562,7 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	// WHEN we download everything
-	err := doDownload(fs, getTestingDownloadOptions(server, projectName, apiMap))
+	err := doDownload(fs, apiMap, getTestingDownloadOptions(server, projectName))
 
 	assert.NilError(t, err)
 
@@ -697,7 +697,7 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 			fs := afero.NewMemMapFs()
 
 			// WHEN we download everything
-			err := doDownload(fs, getTestingDownloadOptions(server, testcase.projectName, apiMap))
+			err := doDownload(fs, apiMap, getTestingDownloadOptions(server, testcase.projectName))
 
 			assert.NilError(t, err)
 
@@ -760,10 +760,10 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 	_ = afero.WriteFile(fs, filepath.Join(testBasePath, "fake-id", "id-1.json"), []byte{}, 0777)
 
 	// WHEN we set the input folder as output and force manifest overwrite on download
-	options := getTestingDownloadOptions(server, projectName, apiMap)
+	options := getTestingDownloadOptions(server, projectName)
 	options.forceOverwriteManifest = true
 	options.outputFolder = testBasePath
-	err := doDownload(fs, options)
+	err := doDownload(fs, apiMap, options)
 
 	assert.NilError(t, err)
 
@@ -820,14 +820,13 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 	}, compareOptions...)
 }
 
-func getTestingDownloadOptions(server *httptest.Server, projectName string, apiMap api.ApiMap) downloadOptions {
+func getTestingDownloadOptions(server *httptest.Server, projectName string) downloadOptions {
 	return downloadOptions{
 		environmentUrl:  server.URL,
 		token:           "token",
 		tokenEnvVarName: "TOKEN_ENV_VAR",
 		outputFolder:    "out",
 		projectName:     projectName,
-		apis:            apiMap,
 		skipSettings:    true,
 		clientFactory: func(environmentUrl, token string) (rest.DynatraceClient, error) {
 			return rest.NewDynatraceClientForTesting(environmentUrl, token, server.Client())

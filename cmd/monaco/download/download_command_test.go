@@ -104,10 +104,11 @@ func TestValidCommands(t *testing.T) {
 					environmentUrl: "test.url",
 					envVarName:     "token",
 					downloadCommandOptions: downloadCommandOptions{
-						projectName:        "test",
-						outputFolder:       "",
-						forceOverwrite:     false,
-						apiNamesToDownload: []string{},
+						projectName:     "test",
+						outputFolder:    "",
+						forceOverwrite:  false,
+						specificAPIs:    []string{},
+						specificSchemas: []string{},
 					},
 				})
 			},
@@ -120,10 +121,11 @@ func TestValidCommands(t *testing.T) {
 					environmentUrl: "test.url",
 					envVarName:     "token",
 					downloadCommandOptions: downloadCommandOptions{
-						projectName:        "project",
-						outputFolder:       "",
-						forceOverwrite:     false,
-						apiNamesToDownload: []string{},
+						projectName:     "project",
+						outputFolder:    "",
+						forceOverwrite:  false,
+						specificAPIs:    []string{},
+						specificSchemas: []string{},
 					},
 				})
 			},
@@ -136,11 +138,12 @@ func TestValidCommands(t *testing.T) {
 					environmentUrl: "test.url",
 					envVarName:     "token",
 					downloadCommandOptions: downloadCommandOptions{
-						projectName:        "project",
-						outputFolder:       "",
-						forceOverwrite:     false,
-						apiNamesToDownload: []string{},
-						skipSettings:       true,
+						projectName:     "project",
+						outputFolder:    "",
+						forceOverwrite:  false,
+						specificAPIs:    []string{},
+						specificSchemas: []string{},
+						skipSettings:    true,
 					},
 				})
 			},
@@ -153,10 +156,11 @@ func TestValidCommands(t *testing.T) {
 					environmentUrl: "test.url",
 					envVarName:     "token",
 					downloadCommandOptions: downloadCommandOptions{
-						projectName:        "test",
-						outputFolder:       "",
-						forceOverwrite:     false,
-						apiNamesToDownload: []string{"test", "test2"},
+						projectName:     "test",
+						outputFolder:    "",
+						forceOverwrite:  false,
+						specificAPIs:    []string{"test", "test2"},
+						specificSchemas: []string{},
 					},
 				})
 			},
@@ -169,10 +173,11 @@ func TestValidCommands(t *testing.T) {
 					environmentUrl: "test.url",
 					envVarName:     "token",
 					downloadCommandOptions: downloadCommandOptions{
-						projectName:        "test",
-						outputFolder:       "",
-						forceOverwrite:     false,
-						apiNamesToDownload: []string{"test", "test2"},
+						projectName:     "test",
+						outputFolder:    "",
+						forceOverwrite:  false,
+						specificAPIs:    []string{"test", "test2"},
+						specificSchemas: []string{},
 					},
 				})
 			},
@@ -185,10 +190,41 @@ func TestValidCommands(t *testing.T) {
 					environmentUrl: "test.url",
 					envVarName:     "token",
 					downloadCommandOptions: downloadCommandOptions{
-						projectName:        "test",
-						outputFolder:       "",
-						forceOverwrite:     false,
-						apiNamesToDownload: []string{"test", "test2", "test3"},
+						projectName:     "test",
+						outputFolder:    "",
+						forceOverwrite:  false,
+						specificAPIs:    []string{"test", "test2", "test3"},
+						specificSchemas: []string{},
+					},
+				})
+			},
+		},
+		{
+			"direct download with specific settings (single flag)",
+			"direct test.url token --project test --specific-settings builtin:alerting.profile,builtin:problem.notifications",
+			func(cmd *MockCommand) {
+				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
+					environmentUrl: "test.url",
+					envVarName:     "token",
+					downloadCommandOptions: downloadCommandOptions{
+						projectName:     "test",
+						specificAPIs:    []string{},
+						specificSchemas: []string{"builtin:alerting.profile", "builtin:problem.notifications"},
+					},
+				})
+			},
+		},
+		{
+			"direct download with specific settings (mixed flags)",
+			"direct test.url token --project test --specific-settings builtin:alerting.profile,builtin:problem.notifications --specific-settings builtin:metric.metadata",
+			func(cmd *MockCommand) {
+				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
+					environmentUrl: "test.url",
+					envVarName:     "token",
+					downloadCommandOptions: downloadCommandOptions{
+						projectName:     "test",
+						specificAPIs:    []string{},
+						specificSchemas: []string{"builtin:alerting.profile", "builtin:problem.notifications", "builtin:metric.metadata"},
 					},
 				})
 			},
@@ -201,10 +237,11 @@ func TestValidCommands(t *testing.T) {
 					environmentUrl: "test.url",
 					envVarName:     "token",
 					downloadCommandOptions: downloadCommandOptions{
-						projectName:        "project",
-						outputFolder:       "myDownloads",
-						forceOverwrite:     false,
-						apiNamesToDownload: []string{},
+						projectName:     "project",
+						outputFolder:    "myDownloads",
+						forceOverwrite:  false,
+						specificAPIs:    []string{},
+						specificSchemas: []string{},
 					},
 				})
 			},
@@ -217,10 +254,11 @@ func TestValidCommands(t *testing.T) {
 					environmentUrl: "test.url",
 					envVarName:     "token",
 					downloadCommandOptions: downloadCommandOptions{
-						projectName:        "project",
-						outputFolder:       "myDownloads",
-						forceOverwrite:     true,
-						apiNamesToDownload: []string{},
+						projectName:     "project",
+						outputFolder:    "myDownloads",
+						forceOverwrite:  true,
+						specificAPIs:    []string{},
+						specificSchemas: []string{},
 					},
 				})
 			},
@@ -233,10 +271,11 @@ func TestValidCommands(t *testing.T) {
 					manifestFile:            "test.yaml",
 					specificEnvironmentName: "test_env",
 					downloadCommandOptions: downloadCommandOptions{
-						projectName:        "project",
-						outputFolder:       "",
-						forceOverwrite:     false,
-						apiNamesToDownload: []string{},
+						projectName:     "project",
+						outputFolder:    "",
+						forceOverwrite:  false,
+						specificAPIs:    []string{},
+						specificSchemas: []string{},
 					},
 				})
 			},
@@ -249,11 +288,12 @@ func TestValidCommands(t *testing.T) {
 					manifestFile:            "test.yaml",
 					specificEnvironmentName: "test_env",
 					downloadCommandOptions: downloadCommandOptions{
-						projectName:        "project",
-						outputFolder:       "",
-						forceOverwrite:     false,
-						apiNamesToDownload: []string{},
-						skipSettings:       true,
+						projectName:     "project",
+						outputFolder:    "",
+						forceOverwrite:  false,
+						specificAPIs:    []string{},
+						specificSchemas: []string{},
+						skipSettings:    true,
 					},
 				})
 			},
@@ -266,10 +306,11 @@ func TestValidCommands(t *testing.T) {
 					manifestFile:            "test.yaml",
 					specificEnvironmentName: "test_env",
 					downloadCommandOptions: downloadCommandOptions{
-						projectName:        "project",
-						outputFolder:       "",
-						forceOverwrite:     false,
-						apiNamesToDownload: []string{"test", "test2"},
+						projectName:     "project",
+						outputFolder:    "",
+						forceOverwrite:  false,
+						specificAPIs:    []string{"test", "test2"},
+						specificSchemas: []string{},
 					},
 				})
 			},
@@ -282,10 +323,11 @@ func TestValidCommands(t *testing.T) {
 					manifestFile:            "test.yaml",
 					specificEnvironmentName: "test_env",
 					downloadCommandOptions: downloadCommandOptions{
-						projectName:        "project",
-						outputFolder:       "",
-						forceOverwrite:     false,
-						apiNamesToDownload: []string{"test", "test2"},
+						projectName:     "project",
+						outputFolder:    "",
+						forceOverwrite:  false,
+						specificAPIs:    []string{"test", "test2"},
+						specificSchemas: []string{},
 					},
 				})
 			},
@@ -298,10 +340,41 @@ func TestValidCommands(t *testing.T) {
 					manifestFile:            "test.yaml",
 					specificEnvironmentName: "test_env",
 					downloadCommandOptions: downloadCommandOptions{
-						projectName:        "project",
-						outputFolder:       "",
-						forceOverwrite:     false,
-						apiNamesToDownload: []string{"test", "test2", "test3"},
+						projectName:     "project",
+						outputFolder:    "",
+						forceOverwrite:  false,
+						specificAPIs:    []string{"test", "test2", "test3"},
+						specificSchemas: []string{},
+					},
+				})
+			},
+		},
+		{
+			"manifest download with specific apis (single flag)",
+			"manifest test.yaml test_env --specific-settings builtin:alerting.profile,builtin:problem.notifications",
+			func(cmd *MockCommand) {
+				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), manifestDownloadOptions{
+					manifestFile:            "test.yaml",
+					specificEnvironmentName: "test_env",
+					downloadCommandOptions: downloadCommandOptions{
+						projectName:     "project",
+						specificAPIs:    []string{},
+						specificSchemas: []string{"builtin:alerting.profile", "builtin:problem.notifications"},
+					},
+				})
+			},
+		},
+		{
+			"manifest download with specific apis (mixed flags)",
+			"manifest test.yaml test_env --specific-settings builtin:alerting.profile,builtin:problem.notifications --specific-settings builtin:metric.metadata",
+			func(cmd *MockCommand) {
+				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), manifestDownloadOptions{
+					manifestFile:            "test.yaml",
+					specificEnvironmentName: "test_env",
+					downloadCommandOptions: downloadCommandOptions{
+						projectName:     "project",
+						specificAPIs:    []string{},
+						specificSchemas: []string{"builtin:alerting.profile", "builtin:problem.notifications", "builtin:metric.metadata"},
 					},
 				})
 			},
@@ -314,10 +387,11 @@ func TestValidCommands(t *testing.T) {
 					manifestFile:            "test.yaml",
 					specificEnvironmentName: "test_env",
 					downloadCommandOptions: downloadCommandOptions{
-						projectName:        "testproject",
-						outputFolder:       "",
-						forceOverwrite:     false,
-						apiNamesToDownload: []string{},
+						projectName:     "testproject",
+						outputFolder:    "",
+						forceOverwrite:  false,
+						specificAPIs:    []string{},
+						specificSchemas: []string{},
 					},
 				})
 			},
@@ -330,10 +404,11 @@ func TestValidCommands(t *testing.T) {
 					manifestFile:            "test.yaml",
 					specificEnvironmentName: "test_env",
 					downloadCommandOptions: downloadCommandOptions{
-						projectName:        "project",
-						outputFolder:       "myDownloads",
-						forceOverwrite:     false,
-						apiNamesToDownload: []string{},
+						projectName:     "project",
+						outputFolder:    "myDownloads",
+						forceOverwrite:  false,
+						specificAPIs:    []string{},
+						specificSchemas: []string{},
 					},
 				})
 			},
@@ -346,10 +421,11 @@ func TestValidCommands(t *testing.T) {
 					manifestFile:            "test.yaml",
 					specificEnvironmentName: "test_env",
 					downloadCommandOptions: downloadCommandOptions{
-						projectName:        "project",
-						outputFolder:       "myDownloads",
-						forceOverwrite:     true,
-						apiNamesToDownload: []string{},
+						projectName:     "project",
+						outputFolder:    "myDownloads",
+						forceOverwrite:  true,
+						specificAPIs:    []string{},
+						specificSchemas: []string{},
 					},
 				})
 			},

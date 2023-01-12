@@ -53,11 +53,12 @@ var (
 )
 
 type downloadCommandOptions struct {
-	projectName        string
-	outputFolder       string
-	forceOverwrite     bool
-	apiNamesToDownload []string
-	skipSettings       bool
+	projectName     string
+	outputFolder    string
+	forceOverwrite  bool
+	specificAPIs    []string
+	specificSchemas []string
+	skipSettings    bool
 }
 
 type manifestDownloadOptions struct {
@@ -87,8 +88,6 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 	if !found {
 		return fmt.Errorf("environment '%v' was not available in manifest '%v'", cmdOptions.specificEnvironmentName, cmdOptions.manifestFile)
 	}
-
-	apisToDownload, errs := getApisToDownload(cmdOptions.apiNamesToDownload)
 
 	if len(errs) > 0 {
 		util.PrintErrors(errs)
@@ -126,23 +125,17 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 		outputFolder:           cmdOptions.outputFolder,
 		projectName:            cmdOptions.projectName,
 		forceOverwriteManifest: cmdOptions.forceOverwrite,
-		apis:                   apisToDownload,
+		specificAPIs:           cmdOptions.specificAPIs,
+		specificSchemas:        cmdOptions.specificSchemas,
 		clientFactory:          rest.NewDynatraceClient,
+		skipSettings:           cmdOptions.skipSettings,
 	}
-	return doDownload(fs, options)
+	return doDownload(fs, api.NewApis(), options)
 }
 
 func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOptions) error {
-
-	apis, errors := getApisToDownload(cmdOptions.apiNamesToDownload)
-
-	if len(errors) > 0 {
-		util.PrintErrors(errors)
-		return fmt.Errorf("failed to load apis")
-	}
-
 	token := os.Getenv(cmdOptions.envVarName)
-	errors = validateParameters(cmdOptions.envVarName, cmdOptions.environmentUrl, cmdOptions.projectName, token)
+	errors := validateParameters(cmdOptions.envVarName, cmdOptions.environmentUrl, cmdOptions.projectName, token)
 
 	if len(errors) > 0 {
 		util.PrintErrors(errors)
@@ -157,11 +150,12 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOp
 		outputFolder:           cmdOptions.outputFolder,
 		projectName:            cmdOptions.projectName,
 		forceOverwriteManifest: cmdOptions.forceOverwrite,
-		apis:                   apis,
+		specificAPIs:           cmdOptions.specificAPIs,
+		specificSchemas:        cmdOptions.specificSchemas,
 		clientFactory:          rest.NewDynatraceClient,
 		skipSettings:           cmdOptions.skipSettings,
 	}
-	return doDownload(fs, options)
+	return doDownload(fs, api.NewApis(), options)
 }
 
 type dynatraceClientFactory func(environmentUrl, token string) (rest.DynatraceClient, error)
@@ -172,7 +166,8 @@ type downloadOptions struct {
 	tokenEnvVarName        string
 	outputFolder           string
 	projectName            string
-	apis                   api.ApiMap
+	specificAPIs           []string
+	specificSchemas        []string
 	forceOverwriteManifest bool
 	clientFactory          dynatraceClientFactory
 	skipSettings           bool
@@ -182,19 +177,15 @@ func (c downloadOptions) getDynatraceClient() (rest.DynatraceClient, error) {
 	return c.clientFactory(c.environmentUrl, c.token)
 }
 
-func doDownload(fs afero.Fs, opts downloadOptions) error {
-
+func doDownload(fs afero.Fs, apis api.ApiMap, opts downloadOptions) error {
 	errors := validateOutputFolder(fs, opts.outputFolder, opts.projectName)
 	if len(errors) > 0 {
 		util.PrintErrors(errors)
-
 		return fmt.Errorf("output folder is invalid")
 	}
 
 	log.Info("Downloading from environment '%v' into project '%v'", opts.environmentUrl, opts.projectName)
-	log.Debug("APIS to download: \n - %v", strings.Join(maps.Keys(opts.apis), "\n - "))
-
-	downloadedConfigs, err := downloadConfigs(opts)
+	downloadedConfigs, err := downloadConfigs(apis, opts)
 	if err != nil {
 		return err
 	}
@@ -241,15 +232,44 @@ func reportForCircularDependencies(p project.Project) error {
 	return nil
 }
 
-func downloadConfigs(opts downloadOptions) (project.ConfigsPerType, error) {
+func downloadConfigs(apis api.ApiMap, opts downloadOptions) (project.ConfigsPerType, error) {
 	client, err := opts.getDynatraceClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Dynatrace client: %w", err)
 	}
-	configObjects := classic.DownloadAllConfigs(opts.apis, client, opts.projectName)
 
+	apisToDownload, errors := getApisToDownload(apis, opts.specificAPIs)
+	if len(errors) > 0 {
+		util.PrintErrors(errors)
+		return nil, fmt.Errorf("failed to load apis")
+	}
+
+	configObjects := make(project.ConfigsPerType)
+
+	// download specific APIs only
+	if len(opts.specificAPIs) > 0 {
+		log.Debug("APIs to download: \n - %v", strings.Join(maps.Keys(apisToDownload), "\n - "))
+		c := classic.DownloadAllConfigs(apisToDownload, client, opts.projectName)
+		maps.Copy(configObjects, c)
+	}
+
+	// download specific settings only
+	if len(opts.specificSchemas) > 0 {
+		log.Debug("Settings to download: \n - %v", strings.Join(opts.specificSchemas, "\n - "))
+		s := settings.Download(client, opts.specificSchemas, opts.projectName)
+		maps.Copy(configObjects, s)
+	}
+
+	// return specific download objects
+	if len(opts.specificSchemas) > 0 || len(opts.specificAPIs) > 0 {
+		return configObjects, nil
+	}
+
+	// if nothing was specified specifically, lets download all configs and settings
+	log.Debug("APIs to download: \n - %v", strings.Join(maps.Keys(apisToDownload), "\n - "))
+	configObjects = classic.DownloadAllConfigs(apisToDownload, client, opts.projectName)
 	if !opts.skipSettings {
-		settingsObjects := settings.Download(client, opts.projectName)
+		settingsObjects := settings.DownloadAll(client, opts.projectName)
 		maps.Copy(configObjects, settingsObjects)
 	}
 	return configObjects, nil
@@ -321,16 +341,15 @@ func validateFolder(fs afero.Fs, path string) []error {
 }
 
 // Get all v2 apis and filter for the selected ones
-func getApisToDownload(apisToDownload []string) (api.ApiMap, []error) {
-
+func getApisToDownload(apis api.ApiMap, specificAPIs []string) (api.ApiMap, []error) {
 	var errors []error
 
-	apis, unknownApis := api.NewApis().FilterApisByName(apisToDownload)
+	apisToDownload, unknownApis := apis.FilterApisByName(specificAPIs)
 	if len(unknownApis) > 0 {
 		errors = append(errors, fmt.Errorf("APIs '%v' are not known. Please consult our documentation for known API-names", strings.Join(unknownApis, ",")))
 	}
 
-	apis, filtered := apis.Filter(func(api api.Api) bool {
+	apisToDownload, filtered := apisToDownload.Filter(func(api api.Api) bool {
 		return api.ShouldSkipDownload()
 	})
 
@@ -339,9 +358,9 @@ func getApisToDownload(apisToDownload []string) (api.ApiMap, []error) {
 		log.Info("APIs that won't be downloaded and need manual creation: '%v'.", keys)
 	}
 
-	if len(apis) == 0 {
+	if len(apisToDownload) == 0 {
 		errors = append(errors, fmt.Errorf("no APIs to download"))
 	}
 
-	return apis, errors
+	return apisToDownload, errors
 }

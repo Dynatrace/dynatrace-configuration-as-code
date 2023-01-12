@@ -299,9 +299,8 @@ func (d *dynatraceClient) DeleteById(api Api, id string) error {
 }
 
 func (d *dynatraceClient) ExistsByName(api Api, name string) (exists bool, id string, err error) {
-	url := api.GetUrl(d.environmentUrl)
-
-	existingObjectId, err := getObjectIdIfAlreadyExists(d.client, api, url, name, d.token, d.retrySettings)
+	apiURL := api.GetUrl(d.environmentUrl)
+	existingObjectId, err := getObjectIdIfAlreadyExists(d.client, api, apiURL, name, d.token, d.retrySettings)
 	return existingObjectId != "", existingObjectId, err
 }
 
@@ -370,7 +369,7 @@ func (d *dynatraceClient) ListSettings(schemaId string, opts ListSettingsOptions
 
 	resp, err := getWithRetry(d.client, u.String(), d.token, d.retrySettings.normal)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build request: %w", err)
+		return nil, err
 	}
 
 	if !success(resp) {
