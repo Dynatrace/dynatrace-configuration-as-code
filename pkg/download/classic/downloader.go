@@ -34,199 +34,148 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 )
 
-const defaultConcurrentDownloads = 50
-const concurrentRequestsEnvKey = "CONCURRENT_REQUESTS"
+const (
+	defaultConcurrentDownloads = 50
+	concurrentRequestsEnvKey   = "CONCURRENT_REQUESTS"
+)
 
-// DownloadAllConfigs downloads all specified apis from a given environment.
-//
-// See package documentation for implementation details.
 func DownloadAllConfigs(apisToDownload api.ApiMap, client rest.DynatraceClient, projectName string) project.ConfigsPerType {
-	return downloadAllConfigs(apisToDownload, client, projectName, downloadConfigForApi)
+	return NewDownloader(client, WithParallelRequestLimitFromEnv()).DownloadAll(apisToDownload, projectName)
 }
 
-type downloadConfigForApiFunc func(api.Api, rest.DynatraceClient, string, findConfigsToDownloadFunc, filterConfigsToSkipFunc, downloadConfigsOfApiFunc) []config.Config
+// Downloader is responsible for downloading classic Dynatrace APIs
+type Downloader struct {
+	// apiFilters contains logic to filter specific apis based on
+	// custom logic implemented in the apiFilter
+	apiFilters map[string]apiFilter
 
-func downloadAllConfigs(
-	apisToDownload api.ApiMap,
-	client rest.DynatraceClient,
-	projectName string,
-	downloadConfigForApi downloadConfigForApiFunc,
-) project.ConfigsPerType {
+	// client is the actual rest client used to call
+	// the dynatrace APIs
+	client rest.DynatraceClient
+}
 
-	// apis & mutex to lock it
-	apis := make(project.ConfigsPerType, len(apisToDownload))
-	apisMutex := sync.Mutex{}
+// WithAPIFilters sets the api filters for the Downloader
+func WithAPIFilters(apiFilters map[string]apiFilter) func(*Downloader) {
+	return func(d *Downloader) {
+		d.apiFilters = apiFilters
+	}
+}
 
-	waitGroup := sync.WaitGroup{}
-	waitGroup.Add(len(apisToDownload))
+// WithParallelRequestLimitFromEnv configures the download to acknowledge a limit of parallel requests
+// to the Dynatrace API. The limit will be read from the environment variable CONCURRENT_REQUESTS if set.
+// It defaults to 50 otherwise
+func WithParallelRequestLimitFromEnv() func(downloader *Downloader) {
+	return func(d *Downloader) {
+		d.client = rest.LimitClientParallelRequests(d.client, concurrentRequestLimitFromEnv())
+	}
+}
 
-	client = rest.LimitClientParallelRequests(client, getConcurrentDownloadLimit())
+// NewDownloader creates a new Downloader
+func NewDownloader(client rest.DynatraceClient, opts ...func(*Downloader)) *Downloader {
+	c := &Downloader{
+		apiFilters: apiFilters,
+		client:     client,
+	}
+	for _, o := range opts {
+		o(c)
+	}
+	return c
+}
+
+// DownloadAllConfigs downloads all specified APIs from a given environment.
+//
+// See package documentation for implementation details.
+func (d *Downloader) DownloadAll(apisToDownload api.ApiMap, projectName string) project.ConfigsPerType {
+	results := make(project.ConfigsPerType, len(apisToDownload))
+	mutex := sync.Mutex{}
+	wg := sync.WaitGroup{}
+	wg.Add(len(apisToDownload))
 
 	log.Debug("Fetching configs to download")
-
 	startTime := time.Now()
-
 	for _, currentApi := range apisToDownload {
 		currentApi := currentApi // prevent data race
-
 		go func() {
+			defer wg.Done()
+			configsToDownload, err := d.findConfigsToDownload(currentApi)
+			if err != nil {
+				log.Error("\tFailed to fetch configs of type '%v', skipping download of this type. Reason: %v", currentApi.GetId(), err)
+				return
+			}
+			// filter all configs we do not want to download. All remaining will be downloaded
+			configsToDownload = d.filterConfigsToSkip(currentApi, configsToDownload)
 
-			// download the configs for each api and fill them in the map
-			configs := downloadConfigForApi(currentApi, client, projectName, findConfigsToDownload, filterConfigsToSkip, downloadConfigsOfApi)
-
-			if len(configs) > 0 {
-				apisMutex.Lock()
-				apis[currentApi.GetId()] = configs
-				apisMutex.Unlock()
+			if len(configsToDownload) == 0 {
+				log.Debug("\tNo configs of type '%v' to download", currentApi.GetId())
+				return
 			}
 
-			waitGroup.Done()
+			log.Debug("\tFound %d configs of type '%v' to download", len(configsToDownload), currentApi.GetId())
+			configs := d.downloadConfigsOfAPI(currentApi, configsToDownload, projectName)
+
+			log.Debug("\tFinished downloading all configs of type '%v'", currentApi.GetId())
+			if len(configs) > 0 {
+				mutex.Lock()
+				results[currentApi.GetId()] = configs
+				mutex.Unlock()
+			}
+
 		}()
 	}
-
 	log.Debug("Started all downloads")
-	waitGroup.Wait()
+	wg.Wait()
 
 	duration := time.Now().Sub(startTime).Truncate(1 * time.Second)
 	log.Debug("Finished fetching all configs in %v", duration)
 
-	return apis
+	return results
 }
 
-func getConcurrentDownloadLimit() int {
-	concurrentRequests, err := strconv.Atoi(os.Getenv(concurrentRequestsEnvKey))
-	if err != nil || concurrentRequests < 0 {
-		return defaultConcurrentDownloads
-	}
-
-	return concurrentRequests
-}
-
-type (
-	findConfigsToDownloadFunc func(currentApi api.Api, client rest.DynatraceClient) ([]api.Value, error)
-	filterConfigsToSkipFunc   func(api.Api, []api.Value) []api.Value
-	downloadConfigsOfApiFunc  func(api.Api, []api.Value, rest.DynatraceClient, string) []config.Config
-)
-
-func downloadConfigForApi(
-	currentApi api.Api,
-	client rest.DynatraceClient,
-	projectName string,
-	findConfigsToDownload findConfigsToDownloadFunc,
-	filterConfigsToSkip filterConfigsToSkipFunc,
-	downloadConfigsOfApi downloadConfigsOfApiFunc,
-) []config.Config {
-
-	configsToDownload, err := findConfigsToDownload(currentApi, client)
-	if err != nil {
-		log.Error("\tFailed to fetch configs of type '%v', skipping download of this type. Reason: %v", currentApi.GetId(), err)
-		return []config.Config{}
-	}
-
-	// filter all configs we do not want to download. All remaining will be downloaded
-	configsToDownload = filterConfigsToSkip(currentApi, configsToDownload)
-
-	if len(configsToDownload) == 0 {
-		log.Debug("\tNo configs of type '%v' to download", currentApi.GetId())
-		return []config.Config{}
-	}
-
-	log.Debug("\tFound %d configs of type '%v' to download", len(configsToDownload), currentApi.GetId())
-	configs := downloadConfigsOfApi(currentApi, configsToDownload, client, projectName)
-
-	log.Debug("\tFinished downloading all configs of type '%v'", currentApi.GetId())
-
-	return configs
-
-}
-
-func findConfigsToDownload(currentApi api.Api, client rest.DynatraceClient) ([]api.Value, error) {
-
-	if currentApi.IsSingleConfigurationApi() {
-		log.Debug("\tFetching singleton-configuration '%v'", currentApi.GetId())
-
-		// singleton-config. We use the api-id as mock-id
-		singletonConfigToDownload := api.Value{Id: currentApi.GetId(), Name: currentApi.GetId()}
-		return []api.Value{singletonConfigToDownload}, nil
-	}
-
-	log.Debug("\tFetching all '%v' configs", currentApi.GetId())
-	return client.List(currentApi)
-}
-
-func downloadConfigsOfApi(theApi api.Api, values []api.Value, client rest.DynatraceClient, projectName string) []config.Config {
-	configs := make([]config.Config, 0, len(values))
-	configsMutex := sync.Mutex{}
-
-	waitGroup := sync.WaitGroup{}
-	waitGroup.Add(len(values))
+func (d *Downloader) downloadConfigsOfAPI(api api.Api, values []api.Value, projectName string) []config.Config {
+	results := make([]config.Config, 0, len(values))
+	mutex := sync.Mutex{}
+	wg := sync.WaitGroup{}
+	wg.Add(len(values))
 
 	for _, value := range values {
-
 		value := value
-
 		go func() {
-			conf, skipConfig := downloadConfig(theApi, value, client, projectName)
-
-			if !skipConfig {
-				configsMutex.Lock()
-				configs = append(configs, conf)
-				configsMutex.Unlock()
+			defer wg.Done()
+			downloadedJson, err := d.downloadAndUnmarshalConfig(api, value)
+			if err != nil {
+				log.Error("Error fetching config '%v' in api '%v': %v", value.Id, api.GetId(), err)
+				return
 			}
 
-			waitGroup.Done()
+			if !d.skipPersist(api, downloadedJson) {
+				log.Debug("\tSkipping persisting config %v (%v) in API %v", value.Id, value.Name, api.GetId())
+				return
+			}
+
+			c, err := d.createConfigForDownloadedJson(downloadedJson, api, value, projectName)
+			if err != nil {
+				log.Error("Error creating config for %v in api %v: %v", value.Id, api.GetId(), err)
+				return
+			}
+
+			mutex.Lock()
+			results = append(results, c)
+			mutex.Unlock()
+
 		}()
 	}
-
-	waitGroup.Wait()
-
-	return configs
+	wg.Wait()
+	return results
 }
 
-func downloadConfig(theApi api.Api, value api.Value, client rest.DynatraceClient, projectName string) (conf config.Config, skipConfig bool) {
-	return downloadConfigForTesting(theApi, value, client, projectName, shouldConfigBePersisted)
-}
-
-type shouldConfigBePersistedFunc func(a api.Api, json map[string]interface{}) bool
-
-func downloadConfigForTesting(
-	theApi api.Api,
-	value api.Value,
-	client rest.DynatraceClient,
-	projectId string,
-	shouldConfigBePersisted shouldConfigBePersistedFunc,
-) (conf config.Config, skipConfig bool) {
-	// download json and check if we should skip it
-	downloadedJson, err := downloadAndUnmarshalConfig(theApi, value, client)
-	if err != nil {
-		log.Error("Error fetching config '%v' in api '%v': %v", value.Id, theApi.GetId(), err)
-		return config.Config{}, true
-	}
-
-	if !shouldConfigBePersisted(theApi, downloadedJson) {
-		log.Debug("\tSkipping persisting config %v (%v) in API %v", value.Id, value.Name, theApi.GetId())
-		return config.Config{}, true
-	}
-
-	c, err := createConfigForDownloadedJson(downloadedJson, theApi, value, projectId)
-
-	if err != nil {
-		log.Error("Error creating config for %v in api %v: %v", value.Id, theApi.GetId(), err)
-		return config.Config{}, true
-	}
-
-	return c, false
-}
-
-func downloadAndUnmarshalConfig(theApi api.Api, value api.Value, client rest.DynatraceClient) (map[string]interface{}, error) {
-	response, err := client.ReadById(theApi, value.Id)
+func (d *Downloader) downloadAndUnmarshalConfig(theApi api.Api, value api.Value) (map[string]interface{}, error) {
+	response, err := d.client.ReadById(theApi, value.Id)
 
 	if err != nil {
 		return nil, err
 	}
 
 	var data map[string]interface{}
-
 	err = json.Unmarshal(response, &data)
 	if err != nil {
 		return nil, err
@@ -235,8 +184,8 @@ func downloadAndUnmarshalConfig(theApi api.Api, value api.Value, client rest.Dyn
 	return data, nil
 }
 
-func createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api.Api, value api.Value, projectId string) (config.Config, error) {
-	templ, err := createTemplate(mappedJson, value, theApi.GetId())
+func (d *Downloader) createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api.Api, value api.Value, projectId string) (config.Config, error) {
+	templ, err := d.createTemplate(mappedJson, value, theApi.GetId())
 	if err != nil {
 		return config.Config{}, err
 	}
@@ -258,15 +207,59 @@ func createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api
 	}, nil
 }
 
-func createTemplate(mappedJson map[string]interface{}, value api.Value, apiId string) (tmpl template.Template, err error) {
-
+func (d *Downloader) createTemplate(mappedJson map[string]interface{}, value api.Value, apiId string) (tmpl template.Template, err error) {
 	mappedJson = sanitizeProperties(mappedJson, apiId)
 	bytes, err := json.MarshalIndent(mappedJson, "", "  ")
 	if err != nil {
 		return nil, err
 	}
-
 	templ := template.NewDownloadTemplate(value.Id, value.Name, string(bytes))
-
 	return templ, nil
+}
+
+func (d *Downloader) findConfigsToDownload(currentApi api.Api) ([]api.Value, error) {
+	if currentApi.IsSingleConfigurationApi() {
+		log.Debug("\tFetching singleton-configuration '%v'", currentApi.GetId())
+
+		// singleton-config. We use the api-id as mock-id
+		singletonConfigToDownload := api.Value{Id: currentApi.GetId(), Name: currentApi.GetId()}
+		return []api.Value{singletonConfigToDownload}, nil
+	}
+	log.Debug("\tFetching all '%v' configs", currentApi.GetId())
+	return d.client.List(currentApi)
+}
+
+func (d *Downloader) skipPersist(a api.Api, json map[string]interface{}) bool {
+	if cases := d.apiFilters[a.GetId()]; cases.shouldConfigBePersisted != nil {
+		return cases.shouldConfigBePersisted(json)
+	}
+	return true
+}
+func (d *Downloader) skipDownload(a api.Api, value api.Value) bool {
+	if cases := d.apiFilters[a.GetId()]; cases.shouldBeSkippedPreDownload != nil {
+		return cases.shouldBeSkippedPreDownload(value)
+	}
+
+	return false
+}
+
+func (d *Downloader) filterConfigsToSkip(a api.Api, value []api.Value) []api.Value {
+	valuesToDownload := make([]api.Value, 0, len(value))
+
+	for _, value := range value {
+		if !d.skipDownload(a, value) {
+			valuesToDownload = append(valuesToDownload, value)
+		} else {
+			log.Debug("Skipping download of config  '%v' of API '%v'", value.Id, a.GetId())
+		}
+	}
+
+	return valuesToDownload
+}
+func concurrentRequestLimitFromEnv() int {
+	limit, err := strconv.Atoi(os.Getenv(concurrentRequestsEnvKey))
+	if err != nil || limit < 0 {
+		limit = defaultConcurrentDownloads
+	}
+	return limit
 }

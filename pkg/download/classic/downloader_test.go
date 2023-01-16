@@ -17,408 +17,231 @@
 package classic
 
 import (
-	"errors"
+	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
-	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
-	valueParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/golang/mock/gomock"
-	"gotest.tools/assert"
-	"os"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func TestGetDownloadLimit(t *testing.T) {
-	tests := []struct {
-		name     string
-		envValue string
-		expected int
-	}{
-		{
-			"no env supplied",
-			"",
-			defaultConcurrentDownloads,
-		},
-		{
-			"env invalid",
-			"invalid",
-			defaultConcurrentDownloads,
-		},
-		{
-			"negative",
-			"-1",
-			defaultConcurrentDownloads,
-		},
-		{
-			"valid env",
-			"1000",
-			1000,
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			err := os.Setenv(concurrentRequestsEnvKey, test.envValue)
-			assert.NilError(t, err)
+func TestDownloadAllConfigs_FailedToFindConfigsToDownload(t *testing.T) {
+	client := rest.NewMockDynatraceClient(gomock.NewController(t))
+	client.EXPECT().List(gomock.Any()).Return([]api.Value{}, fmt.Errorf("NO"))
+	downloader := NewDownloader(client)
+	testAPI := api.NewApi("API_ID", "API_PATH", "", false, true, "", false)
+	apiMap := api.ApiMap{"API_ID": testAPI}
 
-			limit := getConcurrentDownloadLimit()
-			assert.Equal(t, limit, test.expected)
-		})
-	}
+	assert.Len(t, downloader.DownloadAll(apiMap, "project"), 0)
 }
 
-func TestDownloadAllConfigs(t *testing.T) {
-	t.Run("empty api map returns nothing and does not call the download function", func(t *testing.T) {
-		callback := func(currentApi api.Api, client rest.DynatraceClient, projectName string, _ findConfigsToDownloadFunc, _ filterConfigsToSkipFunc, _ downloadConfigsOfApiFunc) []config.Config {
-			t.Error("callback should not have been called")
-			return nil
-		}
+func TestDownloadAll_NoConfigsToDownloadFound(t *testing.T) {
+	client := rest.NewMockDynatraceClient(gomock.NewController(t))
+	client.EXPECT().List(gomock.Any()).Return([]api.Value{}, nil)
+	downloader := NewDownloader(client)
+	testAPI := api.NewApi("API_ID", "API_PATH", "", false, true, "", false)
 
-		downloadAllConfigs(api.ApiMap{}, nil, "", callback)
-	})
+	apiMap := api.ApiMap{"API_ID": testAPI}
 
-	t.Run("one api is getting downloaded and inserted", func(t *testing.T) {
-		a, _ := api.CreateAPIMockWithId(t, "id")
-		c := config.Config{}
-
-		callback := func(currentApi api.Api, client rest.DynatraceClient, projectName string, _ findConfigsToDownloadFunc, _ filterConfigsToSkipFunc, _ downloadConfigsOfApiFunc) []config.Config {
-			assert.Equal(t, currentApi, a)
-
-			return []config.Config{c}
-		}
-
-		configsPerApi := downloadAllConfigs(api.ApiMap{"id": a}, nil, "", callback)
-		assert.Equal(t, len(configsPerApi), 1, "should contain one element")
-		configs, found := configsPerApi["id"]
-		assert.Equal(t, found, true, "api should be present in the result")
-		assert.DeepEqual(t, configs, []config.Config{c})
-	})
-
-	t.Run("one api without configs is not inserted", func(t *testing.T) {
-		a, _ := api.CreateAPIMockFactory(t)
-
-		callback := func(currentApi api.Api, client rest.DynatraceClient, projectName string, _ findConfigsToDownloadFunc, _ filterConfigsToSkipFunc, _ downloadConfigsOfApiFunc) []config.Config {
-			assert.Equal(t, currentApi, a)
-
-			return []config.Config{}
-		}
-
-		configsPerApi := downloadAllConfigs(api.ApiMap{"id": a}, nil, "", callback)
-		assert.Equal(t, len(configsPerApi), 0, "result should be empty")
-	})
-
-	t.Run("multiple apis produce the correct result", func(t *testing.T) {
-		a1, _ := api.CreateAPIMockWithId(t, "api-1")
-		a2, _ := api.CreateAPIMockWithId(t, "api-2")
-		a3, _ := api.CreateAPIMockWithId(t, "api-3")
-
-		c1 := config.Config{}
-		c2 := config.Config{}
-
-		callback := func(currentApi api.Api, client rest.DynatraceClient, projectName string, _ findConfigsToDownloadFunc, _ filterConfigsToSkipFunc, _ downloadConfigsOfApiFunc) []config.Config {
-			switch currentApi.GetId() { // return different results for different apis
-			case "api-1":
-				return []config.Config{}
-			case "api-2":
-				return []config.Config{c1}
-			case "api-3":
-				return []config.Config{c1, c2}
-			}
-
-			t.Error("unknown api encountered")
-
-			return nil
-		}
-
-		configsPerApi := downloadAllConfigs(api.ApiMap{"api-1": a1, "api-2": a2, "api-3": a3}, nil, "", callback)
-
-		assert.Equal(t, len(configsPerApi), 2, "should contain two elements")
-
-		configs, found := configsPerApi["api-2"]
-		assert.Equal(t, found, true, "api should be present in the result")
-		assert.DeepEqual(t, configs, []config.Config{c1})
-
-		configs, found = configsPerApi["api-3"]
-		assert.Equal(t, found, true, "api should be present in the result")
-		assert.DeepEqual(t, configs, []config.Config{c1, c2})
-	})
+	configurations := downloader.DownloadAll(apiMap, "project")
+	assert.Len(t, configurations, 0)
 }
 
-func TestDownloadConfigForApi(t *testing.T) {
-
-	t.Run("find configs returns an error and empty configs are returned", func(t *testing.T) {
-		a, _ := api.CreateAPIMockWithId(t, "api-1")
-
-		var find findConfigsToDownloadFunc = func(currentApi api.Api, client rest.DynatraceClient) ([]api.Value, error) {
-			return []api.Value{}, errors.New("some-reason")
+func TestDownloadAll_ConfigsDownloaded(t *testing.T) {
+	client := rest.NewMockDynatraceClient(gomock.NewController(t))
+	client.EXPECT().List(gomock.Any()).DoAndReturn(func(a api.Api) ([]api.Value, error) {
+		if a.GetId() == "API_ID_1" {
+			return []api.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil
+		} else if a.GetId() == "API_ID_2" {
+			return []api.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil
 		}
+		return nil, nil
+	}).Times(2)
+	downloader := NewDownloader(client)
+	testAPI1 := api.NewApi("API_ID_1", "API_PATH_1", "", false, true, "", false)
+	testAPI2 := api.NewApi("API_ID_2", "API_PATH_2", "", false, true, "", false)
+	client.EXPECT().ReadById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
+	client.EXPECT().ReadById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 
-		var filter filterConfigsToSkipFunc = func(a api.Api, values []api.Value) []api.Value {
-			t.Error("filter should never be called")
-			return nil
-		}
+	apiMap := api.ApiMap{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-		var download downloadConfigsOfApiFunc = func(a api.Api, values []api.Value, client rest.DynatraceClient, s string) []config.Config {
-			t.Error("download should never be called")
-			return nil
-		}
-
-		configs := downloadConfigForApi(a, nil, "", find, filter, download)
-		assert.Equal(t, len(configs), 0, "empty array should be returned")
-	})
-
-	t.Run("if filter filters nothing, an empty array is returned", func(t *testing.T) {
-		a, _ := api.CreateAPIMockWithId(t, "api-1")
-
-		vals := []api.Value{{}, {}}
-
-		var filterCalled bool // check that filter actually has been called
-
-		var find findConfigsToDownloadFunc = func(currentApi api.Api, client rest.DynatraceClient) ([]api.Value, error) {
-			return vals, nil
-		}
-
-		var filter filterConfigsToSkipFunc = func(a api.Api, values []api.Value) []api.Value {
-			filterCalled = true
-			assert.DeepEqual(t, values, vals)
-			return []api.Value{}
-		}
-
-		var download downloadConfigsOfApiFunc = func(a api.Api, values []api.Value, client rest.DynatraceClient, s string) []config.Config {
-			return nil
-		}
-
-		configs := downloadConfigForApi(a, nil, "", find, filter, download)
-		assert.Equal(t, filterCalled, true, "filter function has not been called")
-		assert.Equal(t, len(configs), 0, "configs should be empty")
-	})
-
-	t.Run("download is called with the correct values", func(t *testing.T) {
-		a, _ := api.CreateAPIMockWithId(t, "api-1")
-
-		vals := []api.Value{{}, {}, {}}
-		confs := []config.Config{{}, {}, {}}
-
-		var find findConfigsToDownloadFunc = func(currentApi api.Api, client rest.DynatraceClient) ([]api.Value, error) {
-			return vals, nil
-		}
-
-		var filter filterConfigsToSkipFunc = func(a api.Api, values []api.Value) []api.Value {
-			return vals
-		}
-
-		var download downloadConfigsOfApiFunc = func(a api.Api, values []api.Value, client rest.DynatraceClient, s string) []config.Config {
-			assert.DeepEqual(t, values, vals)
-			return confs
-		}
-
-		configs := downloadConfigForApi(a, nil, "", find, filter, download)
-		assert.DeepEqual(t, configs, confs)
-	})
-
-	t.Run("project name and client is forwarded correctly", func(t *testing.T) {
-		a, _ := api.CreateAPIMockWithId(t, "api-1")
-		c := rest.NewMockDynatraceClient(gomock.NewController(t))
-
-		var downloadHasBeenCalled bool
-
-		var find findConfigsToDownloadFunc = func(currentApi api.Api, client rest.DynatraceClient) ([]api.Value, error) {
-			return nil, nil
-		}
-
-		var filter filterConfigsToSkipFunc = func(a api.Api, values []api.Value) []api.Value {
-			return []api.Value{{}}
-		}
-
-		var download downloadConfigsOfApiFunc = func(a api.Api, values []api.Value, client rest.DynatraceClient, s string) []config.Config {
-			assert.Equal(t, a.GetId(), "api-1")
-			assert.Equal(t, s, "project-name")
-			assert.Equal(t, client, c)
-
-			downloadHasBeenCalled = true
-
-			return nil
-		}
-
-		downloadConfigForApi(a, c, "project-name", find, filter, download)
-		assert.Equal(t, downloadHasBeenCalled, true, "download has not been called")
-	})
+	configurations := downloader.DownloadAll(apiMap, "project")
+	assert.Len(t, configurations, 2)
 }
 
-func TestFindConfigsToDownload(t *testing.T) {
-	t.Run("singleton-apis return the config without invoking the client", func(t *testing.T) {
-		c := rest.NewMockDynatraceClient(gomock.NewController(t))
+func TestDownloadAll_ConfigsDownloaded_WithEmptyFilter(t *testing.T) {
+	client := rest.NewMockDynatraceClient(gomock.NewController(t))
+	client.EXPECT().List(gomock.Any()).DoAndReturn(func(a api.Api) ([]api.Value, error) {
+		if a.GetId() == "API_ID_1" {
+			return []api.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil
+		} else if a.GetId() == "API_ID_2" {
+			return []api.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil
+		}
+		return nil, nil
+	}).Times(2)
+	downloader := NewDownloader(client, WithAPIFilters(map[string]apiFilter{}))
+	testAPI1 := api.NewApi("API_ID_1", "API_PATH_1", "", false, true, "", false)
+	testAPI2 := api.NewApi("API_ID_2", "API_PATH_2", "", false, true, "", false)
+	client.EXPECT().ReadById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
+	client.EXPECT().ReadById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 
-		a := api.NewMockApi(gomock.NewController(t))
-		a.EXPECT().IsSingleConfigurationApi().Return(true)
-		a.EXPECT().GetId().AnyTimes().Return("api-id")
+	apiMap := api.ApiMap{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-		download, err := findConfigsToDownload(a, c)
-
-		assert.NilError(t, err)
-		assert.DeepEqual(t, download, []api.Value{{Id: "api-id", Name: "api-id"}})
-	})
-
-	t.Run("non-singletons fetch values from the client and return them", func(t *testing.T) {
-		vals := []api.Value{{}}
-
-		a := api.NewMockApi(gomock.NewController(t))
-		a.EXPECT().IsSingleConfigurationApi().Return(false)
-		a.EXPECT().GetId().AnyTimes().Return("api-id")
-
-		c := rest.NewMockDynatraceClient(gomock.NewController(t))
-		c.EXPECT().List(a).Return(vals, nil)
-
-		download, err := findConfigsToDownload(a, c)
-		assert.NilError(t, err)
-		assert.DeepEqual(t, download, vals)
-	})
-
-	t.Run("non-singletons fetch errors are returned", func(t *testing.T) {
-		a := api.NewMockApi(gomock.NewController(t))
-		a.EXPECT().IsSingleConfigurationApi().Return(false)
-		a.EXPECT().GetId().AnyTimes().Return("api-id")
-
-		c := rest.NewMockDynatraceClient(gomock.NewController(t))
-		c.EXPECT().List(a).Return(nil, errors.New("error"))
-
-		_, err := findConfigsToDownload(a, c)
-		assert.Error(t, err, "error")
-	})
+	configurations := downloader.DownloadAll(apiMap, "project")
+	assert.Len(t, configurations, 2)
 }
 
-func TestDownloadConfigs(t *testing.T) {
-	projectId := "my-project"
-	apiId := "api-id"
+func TestDownloadAll_SingleConfigurationAPI(t *testing.T) {
+	client := rest.NewMockDynatraceClient(gomock.NewController(t))
+	client.EXPECT().ReadById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
+	downloader := NewDownloader(client)
+	testAPI1 := api.NewApi("API_ID_1", "API_PATH_1", "", true, true, "", false)
+	apiMap := api.ApiMap{"API_ID_1": testAPI1}
 
-	value := api.Value{Id: "1", Name: "name"}
-
-	type args struct {
-		response          string
-		err               error
-		shouldBePersisted shouldConfigBePersistedFunc
-	}
-	type expect struct {
-		skip     bool
-		template string
-	}
-	tests := []struct {
-		name   string
-		args   args
-		expect expect
-	}{
-		{
-			name: "Empty object response is a valid download",
-			args: args{
-				response: "{}",
-				err:      nil,
-			},
-			expect: expect{
-				skip:     false,
-				template: "{}",
-			},
-		},
-		{
-			name: "Error does mean config is skipped",
-			args: args{
-				err: errors.New("error"),
-			},
-			expect: expect{
-				skip: true,
-			},
-		},
-		{
-			name: "Filtered configs should be skipped",
-			args: args{
-				response: "{}",
-				shouldBePersisted: func(_ api.Api, _ map[string]interface{}) bool {
-					return false
-				},
-			},
-			expect: expect{
-				skip: true,
-			},
-		},
-		{
-			name: "Invalid json is skipped",
-			args: args{
-				response: "asdf",
-			},
-			expect: expect{
-				skip: true,
-			},
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			a := api.NewMockApi(gomock.NewController(t)) // setup api
-			a.EXPECT().GetId().AnyTimes().Return(apiId)
-
-			client := rest.NewMockDynatraceClient(gomock.NewController(t)) // setup client
-			client.EXPECT().ReadById(a, "1").Return([]byte(test.args.response), test.args.err)
-
-			persist := test.args.shouldBePersisted
-			if persist == nil {
-				persist = shouldConfigBePersisted
-			}
-
-			conf, skip := downloadConfigForTesting(a, value, client, projectId, persist)
-
-			expectedCoordinate := coordinate.Coordinate{projectId, apiId, value.Id}
-
-			assert.Equal(t, skip, test.expect.skip, "skip")
-
-			if !test.expect.skip { // only verify rest if we don't skip
-				assert.DeepEqual(t, conf.Template.Content(), test.expect.template)
-				assert.DeepEqual(t, conf.Coordinate, expectedCoordinate)
-				assert.Equal(t, conf.Parameters["name"].(*valueParam.ValueParameter).Value, value.Name)
-			}
-		})
-	}
+	configurations := downloader.DownloadAll(apiMap, "project")
+	assert.Len(t, configurations, 1)
 }
 
-func TestDownloadConfigsOfApi(t *testing.T) {
-	t.Run("Multiple values", func(t *testing.T) {
-		a := api.NewMockApi(gomock.NewController(t))
-		a.EXPECT().GetId().AnyTimes().Return("api-id")
+func TestDownloadAll_ErrorFetchingConfig(t *testing.T) {
+	client := rest.NewMockDynatraceClient(gomock.NewController(t))
+	client.EXPECT().List(gomock.Any()).DoAndReturn(func(a api.Api) ([]api.Value, error) {
+		if a.GetId() == "API_ID_1" {
+			return []api.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil
+		} else if a.GetId() == "API_ID_2" {
+			return []api.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil
+		}
+		return nil, nil
+	}).Times(2)
 
-		client := rest.NewMockDynatraceClient(gomock.NewController(t))
-		client.EXPECT().ReadById(a, gomock.Any()).Times(3).Return([]byte("{}"), nil)
+	downloader := NewDownloader(client)
 
-		values := []api.Value{{Id: "1", Name: "1"}, {Id: "3", Name: "3"}, {Id: "3", Name: "3"}}
-		projectId := "project-id"
+	testAPI1 := api.NewApi("API_ID_1", "API_PATH_1", "", false, true, "", false)
+	testAPI2 := api.NewApi("API_ID_2", "API_PATH_2", "", false, true, "", false)
 
-		configs := downloadConfigsOfApi(a, values, client, projectId)
+	client.EXPECT().ReadById(gomock.Any(), gomock.Any()).DoAndReturn(func(a api.Api, id string) (json []byte, err error) {
+		if a.GetId() == "API_ID_1" {
+			return []byte("{}"), fmt.Errorf("NO")
+		}
+		return []byte("{}"), nil
+	}).Times(2)
 
-		assert.Equal(t, len(configs), 3)
-	})
+	apiMap := api.ApiMap{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
+	configurations := downloader.DownloadAll(apiMap, "project")
+	assert.Len(t, configurations, 1)
+}
 
-	t.Run("single value", func(t *testing.T) {
-		a := api.NewMockApi(gomock.NewController(t))
-		a.EXPECT().GetId().AnyTimes().Return("api-id")
+func TestDownloadAll_SkipConfigThatShouldNotBePersisted(t *testing.T) {
 
-		client := rest.NewMockDynatraceClient(gomock.NewController(t))
-		client.EXPECT().ReadById(a, gomock.Any()).Times(1).Return([]byte("{}"), nil)
+	client := rest.NewMockDynatraceClient(gomock.NewController(t))
+	client.EXPECT().List(gomock.Any()).DoAndReturn(func(a api.Api) ([]api.Value, error) {
+		if a.GetId() == "API_ID_1" {
+			return []api.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil
+		} else if a.GetId() == "API_ID_2" {
+			return []api.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil
+		}
+		return nil, nil
+	}).Times(2)
 
-		values := []api.Value{{Id: "1", Name: "1"}}
-		projectId := "project-id"
+	apiFilters := map[string]apiFilter{"API_ID_1": {
+		shouldConfigBePersisted: func(_ map[string]interface{}) bool {
+			return false
+		},
+	}}
+	downloader := NewDownloader(client, WithAPIFilters(apiFilters))
 
-		configs := downloadConfigsOfApi(a, values, client, projectId)
+	testAPI1 := api.NewApi("API_ID_1", "API_PATH_1", "", false, true, "", false)
+	testAPI2 := api.NewApi("API_ID_2", "API_PATH_2", "", false, true, "", false)
+	client.EXPECT().ReadById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil).Times(2)
 
-		assert.Equal(t, len(configs), 1)
-	})
+	apiMap := api.ApiMap{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	t.Run("no value", func(t *testing.T) {
-		a := api.NewMockApi(gomock.NewController(t))
-		a.EXPECT().GetId().AnyTimes().Return("api-id")
+	configurations := downloader.DownloadAll(apiMap, "project")
+	assert.Len(t, configurations, 1)
+}
 
-		client := rest.NewMockDynatraceClient(gomock.NewController(t))
+func TestDownloadAll_SkipConfigBeforeDownload(t *testing.T) {
 
-		values := []api.Value{}
-		projectId := "project-id"
+	client := rest.NewMockDynatraceClient(gomock.NewController(t))
+	client.EXPECT().List(gomock.Any()).DoAndReturn(func(a api.Api) ([]api.Value, error) {
+		if a.GetId() == "API_ID_1" {
+			return []api.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil
+		} else if a.GetId() == "API_ID_2" {
+			return []api.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil
+		}
+		return nil, nil
+	}).Times(2)
 
-		configs := downloadConfigsOfApi(a, values, client, projectId)
+	apiFilters := map[string]apiFilter{"API_ID_1": {
+		shouldBeSkippedPreDownload: func(_ api.Value) bool {
+			return true
+		},
+	}}
+	downloader := NewDownloader(client, WithAPIFilters(apiFilters))
 
-		assert.Equal(t, len(configs), 0)
-	})
+	testAPI1 := api.NewApi("API_ID_1", "API_PATH_1", "", false, true, "", false)
+	testAPI2 := api.NewApi("API_ID_2", "API_PATH_2", "", false, true, "", false)
+	client.EXPECT().ReadById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
+
+	apiMap := api.ApiMap{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
+
+	configurations := downloader.DownloadAll(apiMap, "project")
+	assert.Len(t, configurations, 1)
+}
+
+func TestDownloadAll_EmptyAPIMap_NothingIsDownloaded(t *testing.T) {
+	client := rest.NewMockDynatraceClient(gomock.NewController(t))
+	downloader := NewDownloader(client)
+
+	configurations := downloader.DownloadAll(api.ApiMap{}, "project")
+	assert.Len(t, configurations, 0)
+}
+
+func TestDownloadAll_APIWithoutAnyConfigAvailableAreNotDownloaded(t *testing.T) {
+	client := rest.NewMockDynatraceClient(gomock.NewController(t))
+	client.EXPECT().List(gomock.Any()).DoAndReturn(func(a api.Api) ([]api.Value, error) {
+		if a.GetId() == "API_ID_1" {
+			return []api.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil
+		} else if a.GetId() == "API_ID_2" {
+			return []api.Value{}, nil
+		}
+		return nil, nil
+	}).Times(2)
+	downloader := NewDownloader(client)
+	testAPI1 := api.NewApi("API_ID_1", "API_PATH_1", "", false, true, "", false)
+	testAPI2 := api.NewApi("API_ID_2", "API_PATH_2", "", false, true, "", false)
+	client.EXPECT().ReadById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
+
+	apiMap := api.ApiMap{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
+
+	configurations := downloader.DownloadAll(apiMap, "project")
+	assert.Len(t, configurations, 1)
+}
+
+func TestDownloadAll_MalformedResponseFromAnAPI(t *testing.T) {
+	client := rest.NewMockDynatraceClient(gomock.NewController(t))
+	client.EXPECT().List(gomock.Any()).DoAndReturn(func(a api.Api) ([]api.Value, error) {
+		if a.GetId() == "API_ID_1" {
+			return []api.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil
+		} else if a.GetId() == "API_ID_2" {
+			return []api.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil
+		}
+		return nil, nil
+	}).Times(2)
+	downloader := NewDownloader(client)
+	testAPI1 := api.NewApi("API_ID_1", "API_PATH_1", "", false, true, "", false)
+	testAPI2 := api.NewApi("API_ID_2", "API_PATH_2", "", false, true, "", false)
+	client.EXPECT().ReadById(gomock.Any(), gomock.Any()).Return([]byte("-1"), nil)
+	client.EXPECT().ReadById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
+
+	apiMap := api.ApiMap{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
+
+	configurations := downloader.DownloadAll(apiMap, "project")
+	assert.Len(t, configurations, 1)
+}
+
+func TestWithParallelRequestLimitFromEnvOption(t *testing.T) {
+	assert.Equal(t, defaultConcurrentDownloads, concurrentRequestLimitFromEnv())
+	t.Setenv(concurrentRequestsEnvKey, "51")
+	assert.Equal(t, 51, concurrentRequestLimitFromEnv())
+
 }
