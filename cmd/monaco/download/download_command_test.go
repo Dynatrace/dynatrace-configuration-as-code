@@ -150,7 +150,7 @@ func TestValidCommands(t *testing.T) {
 		},
 		{
 			"direct download with specific apis (multiple flags)",
-			"direct test.url token --project test --specific-api test --specific-api test2",
+			"direct test.url token --project test --specific-apis test --specific-apis test2",
 			func(cmd *MockCommand) {
 				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
 					environmentUrl: "test.url",
@@ -167,7 +167,7 @@ func TestValidCommands(t *testing.T) {
 		},
 		{
 			"direct download with specific apis (single flag)",
-			"direct test.url token --project test --specific-api test,test2",
+			"direct test.url token --project test --specific-apis test,test2",
 			func(cmd *MockCommand) {
 				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
 					environmentUrl: "test.url",
@@ -184,7 +184,7 @@ func TestValidCommands(t *testing.T) {
 		},
 		{
 			"direct download with specific apis (mixed flags)",
-			"direct test.url token --project test --specific-api test,test2 --specific-api test3",
+			"direct test.url token --project test --specific-apis test,test2 --specific-apis test3",
 			func(cmd *MockCommand) {
 				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
 					environmentUrl: "test.url",
@@ -300,7 +300,7 @@ func TestValidCommands(t *testing.T) {
 		},
 		{
 			"manifest download with specific apis (multiple flags)",
-			"manifest test.yaml test_env --specific-api test --specific-api test2",
+			"manifest test.yaml test_env --specific-apis test --specific-apis test2",
 			func(cmd *MockCommand) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), manifestDownloadOptions{
 					manifestFile:            "test.yaml",
@@ -317,7 +317,7 @@ func TestValidCommands(t *testing.T) {
 		},
 		{
 			"manifest download with specific apis (single flag)",
-			"manifest test.yaml test_env --specific-api test,test2",
+			"manifest test.yaml test_env --specific-apis test,test2",
 			func(cmd *MockCommand) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), manifestDownloadOptions{
 					manifestFile:            "test.yaml",
@@ -334,7 +334,7 @@ func TestValidCommands(t *testing.T) {
 		},
 		{
 			"manifest download with specific apis (mixed flags)",
-			"manifest test.yaml test_env --specific-api test,test2 --specific-api test3",
+			"manifest test.yaml test_env --specific-apis test,test2 --specific-apis test3",
 			func(cmd *MockCommand) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), manifestDownloadOptions{
 					manifestFile:            "test.yaml",

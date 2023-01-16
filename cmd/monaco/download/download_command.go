@@ -117,19 +117,19 @@ Either downloading based on an existing manifest, or by defining environment URL
 
 func setupSharedFlags(cmd *cobra.Command, project, outputFolder *string, forceOverwrite *bool, specificApis *[]string, specificSettings *[]string, skipSettings *bool) {
 	// flags always available
-	cmd.Flags().StringSliceVarP(specificApis, "specific-api", "a", make([]string, 0), "APIs to download")
+	cmd.Flags().StringSliceVarP(specificApis, "specific-apis", "a", make([]string, 0), "List of APIs to download")
 	cmd.Flags().StringVarP(project, "project", "p", "project", "Project to create within the output-folder")
 	cmd.Flags().StringVarP(outputFolder, "output-folder", "o", "", "Folder to write downloaded configs to")
-	cmd.Flags().BoolVarP(forceOverwrite, "force", "f", false, "Force overwrite any existing manifest.yaml, rather than creating an additional manifest_{timestamp}.yaml. Manifest download: additionally never append source environment name to project folder name.")
-	cmd.Flags().BoolVar(skipSettings, "skip-settings", false, "Skip downloading settings 2.0 objects ")
-	cmd.Flags().StringSliceVarP(specificSettings, "specific-settings", "s", make([]string, 0), "Settings to download")
+	cmd.Flags().BoolVarP(forceOverwrite, "force", "f", false, "Force overwrite any existing manifest.yaml, rather than creating an additional manifest_{timestamp}.yaml. Manifest download: additionally never append source environment name to project folder name")
+	cmd.Flags().BoolVar(skipSettings, "skip-settings", false, "Skip downloading settings 2.0 objects")
+	cmd.Flags().StringSliceVarP(specificSettings, "specific-settings", "s", make([]string, 0), "List of settings 2.0 schema IDs specifying which Settings 2.0 objects to download")
 	cmd.MarkFlagsMutuallyExclusive("specific-settings", "skip-settings")
 	err := cmd.MarkFlagDirname("output-folder")
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
 
-	err = cmd.RegisterFlagCompletionFunc("specific-api", completion.AllAvailableApis)
+	err = cmd.RegisterFlagCompletionFunc("specific-apis", completion.AllAvailableApis)
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}

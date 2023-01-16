@@ -84,7 +84,7 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 		wantErr            bool
 	}{
 		{
-			name:               "using --specific-api and --specific-settings",
+			name:               "using --specific-apis and --specific-settings",
 			fs:                 util.CreateTestFileSystem(),
 			downloadFunc:       execution_downloadConfigsWithCLIParameters,
 			projectFolder:      downloadFolder + "/project",
@@ -96,7 +96,7 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:               "using --specific-api",
+			name:               "using --specific-apis",
 			fs:                 util.CreateTestFileSystem(),
 			downloadFunc:       execution_downloadConfigsWithCLIParameters,
 			projectFolder:      downloadFolder + "/project",
@@ -118,7 +118,7 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:               "using --specific-api and --specific-settings (manifest)",
+			name:               "using --specific-apis and --specific-settings (manifest)",
 			fs:                 util.CreateTestFileSystem(),
 			downloadFunc:       execution_downloadConfigs,
 			projectFolder:      downloadFolder + "/project_environment1",
@@ -131,7 +131,7 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:               "using --specific-api (manifest)",
+			name:               "using --specific-apis (manifest)",
 			fs:                 util.CreateTestFileSystem(),
 			downloadFunc:       execution_downloadConfigs,
 			projectFolder:      downloadFolder + "/project_environment1",
@@ -258,7 +258,7 @@ func execution_downloadConfigsWithCLIParameters(t *testing.T, fs afero.Fs, downl
 			"--output-folder", downloadFolder,
 		}
 		if apisToDownload != "" {
-			parameters = append(parameters, "--specific-api", apisToDownload)
+			parameters = append(parameters, "--specific-apis", apisToDownload)
 		}
 		if settingsToDownload != "" {
 			parameters = append(parameters, "--specific-settings", settingsToDownload)
@@ -302,7 +302,7 @@ func execution_downloadConfigs(t *testing.T, fs afero.Fs, downloadFolder string,
 		}
 
 		if apisToDownload != "" {
-			parameters = append(parameters, "--specific-api", apisToDownload)
+			parameters = append(parameters, "--specific-apis", apisToDownload)
 		}
 		if settingsToDownload != "" {
 			parameters = append(parameters, "--specific-settings", settingsToDownload)
