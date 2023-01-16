@@ -319,7 +319,8 @@ func (d *dynatraceClient) UpsertByEntityId(api Api, entityId string, name string
 
 // SchemaListResponse is the response type returned by the ListSchemas operation
 type SchemaListResponse struct {
-	Items SchemaList `json:"items"`
+	Items      SchemaList `json:"items"`
+	TotalCount int        `json:"totalCount"`
 }
 type SchemaList []struct {
 	SchemaId string `json:"schemaId"`
@@ -345,6 +346,10 @@ func (d *dynatraceClient) ListSchemas() (SchemaList, error) {
 	err = json.Unmarshal(resp.Body, &result)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	if result.TotalCount != len(result.Items) {
+		log.Warn("Total count of settings 2.0 schemas (=%d) does not match with count of actually downloaded settings 2.0 schemas (=%d)", result.TotalCount, len(result.Items))
 	}
 
 	return result.Items, nil
