@@ -357,16 +357,15 @@ func getConfigFromDefinition(
 		errors = append(errors, newDetailedDefinitionParserError(configId, context, environment, fmt.Sprintf("error while loading template: `%s`", err)))
 	}
 
-	parameters, configReferences, parameterErrors := parseParametersAndReferences(context, environment, configId,
+	parameters, parameterErrors := parseParametersAndReferences(context, environment, configId,
 		definition.Parameters)
 
 	if parameterErrors != nil {
 		errors = append(errors, parameterErrors...)
 		parameters = make(map[string]parameter.Parameter)
-		configReferences = make(map[string]coordinate.Coordinate)
 	}
 
-	var skipConfig bool = false
+	skipConfig := false
 
 	if definition.Skip != nil {
 		skip, err := parseSkip(context, environment, configId, definition.Skip)
@@ -383,10 +382,6 @@ func getConfigFromDefinition(
 			errors = append(errors, err)
 		} else {
 			parameters[NameParameter] = name
-
-			for _, ref := range name.GetReferences() {
-				configReferences[ref.Config.String()] = ref.Config
-			}
 		}
 
 	} else {
@@ -408,9 +403,6 @@ func getConfigFromDefinition(
 		}
 
 		parameters[ScopeParameter] = scopeParam
-		for _, reference := range scopeParam.GetReferences() {
-			configReferences[reference.Config.String()] = reference.Config
-		}
 	}
 
 	return Config{
@@ -485,10 +477,9 @@ func isSupportedParamTypeForSkip(p parameter.Parameter) bool {
 type References map[string]coordinate.Coordinate
 
 func parseParametersAndReferences(context *SingleConfigLoadContext, environment manifest.EnvironmentDefinition,
-	configId string, parameterMap map[string]configParameter) (Parameters, References, []error) {
+	configId string, parameterMap map[string]configParameter) (Parameters, []error) {
 
 	parameters := make(map[string]parameter.Parameter)
-	configReferences := make(map[string]coordinate.Coordinate)
 	var errors []error
 
 	for name, param := range parameterMap {
@@ -511,17 +502,13 @@ func parseParametersAndReferences(context *SingleConfigLoadContext, environment 
 		}
 
 		parameters[name] = result
-
-		for _, ref := range result.GetReferences() {
-			configReferences[ref.Config.String()] = ref.Config
-		}
 	}
 
 	if errors != nil {
-		return nil, nil, errors
+		return nil, errors
 	}
 
-	return parameters, configReferences, nil
+	return parameters, nil
 }
 
 func validateParameterName(context *SingleConfigLoadContext, environment manifest.EnvironmentDefinition, configId string, name string) error {
