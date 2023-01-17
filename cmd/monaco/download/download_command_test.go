@@ -699,6 +699,7 @@ func TestValidCommands(t *testing.T) {
 // Otherwise, we would run into issues upon upgrading.
 // On th other hand, we could use the exact message to review the exact messages customers will see.
 func TestDisabledCommands(t *testing.T) {
+	t.Setenv("MONACO_FEAT_ENTITIES", "")
 
 	tests := []struct {
 		name                  string

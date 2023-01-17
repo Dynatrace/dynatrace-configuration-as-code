@@ -1,6 +1,6 @@
-/*
+/**
  * @license
- * Copyright 2023 Dynatrace LLC
+ * Copyright 2020 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,6 +23,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/timeutils"
 	"math/rand"
 	"net/http"
+	"os"
+	"strconv"
 	"time"
 )
 
@@ -63,7 +65,9 @@ func (s *simpleSleepRateLimitStrategy) executeRequest(timelineProvider timeutils
 		sleepDuration, humanReadableTimestamp, err := s.getSleepDurationFromResponseHeader(response, timelineProvider)
 
 		if err != nil {
-			log.Debug("Failed to Get rate limiting details from API response, generating wait time instead...")
+			log.Debug("Failed to get rate limiting details from API response, generating wait time instead...")
+			log.Debug("Response Headers: %s", response.Headers)
+			log.Debug("Response Body: %s", response.Body)
 			sleepDuration, humanReadableTimestamp = s.generateSleepDuration(currentIteration, timelineProvider)
 		}
 
@@ -157,4 +161,24 @@ func (s *simpleSleepRateLimitStrategy) applyMinMaxDefaults(sleepDuration time.Du
 		log.Debug("simpleSleepRateLimitStrategy: Reset sleep duration to %f seconds...", sleepDuration.Seconds())
 	}
 	return sleepDuration
+}
+
+const (
+	DefaultConcurrentDownloads = 50
+	ConcurrentRequestsEnvKey   = "CONCURRENT_REQUESTS"
+)
+
+func ConcurrentRequestLimitFromEnv(printLog bool) int {
+	limit, err := strconv.Atoi(os.Getenv(ConcurrentRequestsEnvKey))
+	if err != nil || limit < 0 {
+		limit = DefaultConcurrentDownloads
+		if printLog {
+			log.Debug("Concurrent Request Limit: %d, '%s' environment variable is NOT set, using default value", limit, ConcurrentRequestsEnvKey)
+		}
+	} else {
+		if printLog {
+			log.Debug("Concurrent Request Limit: %d, from '%s' environment variable", limit, ConcurrentRequestsEnvKey)
+		}
+	}
+	return limit
 }
