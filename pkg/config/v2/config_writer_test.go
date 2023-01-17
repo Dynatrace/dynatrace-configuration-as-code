@@ -18,6 +18,7 @@ package v2
 
 import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
+	envParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/environment"
 	refParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/reference"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
@@ -124,6 +125,184 @@ func TestExtractCommonBase(t *testing.T) {
 			assert.Assert(t, param == nil, "`%s` should not be present in override for `%s`", n, r.environment)
 		}
 	}
+}
+
+func TestExtractCommonBaseForEnvVarSkipsWithEqualValues(t *testing.T) {
+	configName := "test-config-1"
+	group := "development"
+	template := "test.json"
+
+	param1Name := "config number"
+	param1Value := "12"
+
+	param2Name := "dashboardId"
+	param2Value := []interface{}{"projectA", "dashboard", "important", "id"}
+
+	param3Name := "dashboardId2"
+	param3Value := map[interface{}]interface{}{
+		"type":     "reference",
+		"project":  "projectA",
+		"api":      "dashboard",
+		"config":   "test",
+		"property": "id",
+	}
+
+	parameterNotSharedName := "not-shared"
+
+	configs := []extendedConfigDefinition{
+		{
+			configDefinition: configDefinition{
+				Name: configName,
+				Parameters: map[string]configParameter{
+					param1Name:             param1Value,
+					param2Name:             param2Value,
+					param3Name:             param3Value,
+					parameterNotSharedName: 12,
+				},
+				Template: template,
+				Skip: map[any]any{
+					"type": "environment",
+					"name": "A",
+				},
+			},
+			group:       group,
+			environment: "test",
+		},
+		{
+			configDefinition: configDefinition{
+				Name: configName,
+				Parameters: map[string]configParameter{
+					param1Name:             param1Value,
+					param2Name:             param2Value,
+					param3Name:             param3Value,
+					parameterNotSharedName: 13,
+				},
+				Template: template,
+				Skip: map[any]any{
+					"type": "environment",
+					"name": "A",
+				},
+			},
+			group:       group,
+			environment: "test1",
+		},
+	}
+
+	base, rest := extractCommonBase(configs)
+
+	assert.Assert(t, base != nil, "there should be a common base")
+
+	assert.Assert(t, base.Name == configName, "name should be `%s`, but was `%s`", configName, base.Name)
+	assert.Assert(t, base.Template == template, "template should be `%s`, but was `%s`", template, base.Template)
+	assert.Assert(t, base.Skip != nil, "skip should not be nil")
+	assert.Assert(t, len(base.Parameters) == 3, "there should be 3 base-parameters, but there were `%d`", len(base.Parameters))
+
+	for _, n := range []string{param1Name, param2Name, param3Name} {
+		param := base.Parameters[n]
+		assert.Assert(t, param != nil, "`%s` should be present in base", n)
+	}
+
+	assert.Assert(t, base.Skip != nil, "skip should be in the base")
+
+	assert.DeepEqual(t, base.Skip, map[any]any{
+		"type": "environment",
+		"name": "A",
+	})
+
+	assert.Assert(t, len(rest) == 2, "there should be `2` overrides, but there were `%d`", len(rest))
+
+	for _, r := range rest {
+		for _, n := range []string{param1Name, param2Name, param3Name} {
+			param := r.Parameters[n]
+			assert.Assert(t, param == nil, "`%s` should not be present in override for `%s`", n, r.environment)
+		}
+	}
+}
+
+func TestExtractCommonBaseForEnvVarSkipsWithDifferentValues(t *testing.T) {
+	configName := "test-config-1"
+	group := "development"
+	template := "test.json"
+
+	param1Name := "config number"
+	param1Value := "12"
+
+	param2Name := "dashboardId"
+	param2Value := []interface{}{"projectA", "dashboard", "important", "id"}
+
+	param3Name := "dashboardId2"
+	param3Value := map[interface{}]interface{}{
+		"type":     "reference",
+		"project":  "projectA",
+		"api":      "dashboard",
+		"config":   "test",
+		"property": "id",
+	}
+
+	skipA := map[any]any{
+		"type": "environment",
+		"name": "A",
+	}
+	skipB := map[any]any{
+		"type": "environment",
+		"name": "B",
+	}
+	configs := []extendedConfigDefinition{
+		{
+			configDefinition: configDefinition{
+				Name: configName,
+				Parameters: map[string]configParameter{
+					param1Name: param1Value,
+					param2Name: param2Value,
+					param3Name: param3Value,
+				},
+				Template: template,
+				Skip:     skipA,
+			},
+			group:       group,
+			environment: "test",
+		},
+		{
+			configDefinition: configDefinition{
+				Name: configName,
+				Parameters: map[string]configParameter{
+					param1Name: param1Value,
+					param2Name: param2Value,
+					param3Name: param3Value,
+				},
+				Template: template,
+				Skip:     skipB,
+			},
+			group:       group,
+			environment: "test1",
+		},
+	}
+
+	base, rest := extractCommonBase(configs)
+
+	assert.Assert(t, base != nil, "there should be a common base")
+
+	assert.Assert(t, base.Name == configName, "name should be `%s`, but was `%s`", configName, base.Name)
+	assert.Assert(t, base.Template == template, "template should be `%s`, but was `%s`", template, base.Template)
+	assert.Assert(t, base.Skip == nil, "base skip should be nil")
+	assert.Assert(t, len(base.Parameters) == 3, "there should be 3 base-parameters, but there were `%d`", len(base.Parameters))
+
+	for _, n := range []string{param1Name, param2Name, param3Name} {
+		param := base.Parameters[n]
+		assert.Assert(t, param != nil, "`%s` should be present in base", n)
+	}
+
+	assert.Assert(t, len(rest) == 2, "there should be `2` overrides, but there were `%d`", len(rest))
+
+	for _, r := range rest {
+		for _, n := range []string{param1Name, param2Name, param3Name} {
+			param := r.Parameters[n]
+			assert.Assert(t, param == nil, "`%s` should not be present in override for `%s`", n, r.environment)
+		}
+	}
+
+	assert.DeepEqual(t, rest[0].Skip, skipA)
+	assert.DeepEqual(t, rest[1].Skip, skipB)
 }
 
 func TestExtractCommonBaseT(t *testing.T) {
@@ -556,6 +735,7 @@ func TestWriteConfigs(t *testing.T) {
 					Parameters: map[string]parameter.Parameter{
 						NameParameter: &value.ValueParameter{Value: "name"},
 					},
+					SkipForConversion: envParam.New("ENV_VAR_SKIP"),
 				},
 			},
 			expectedConfigs: map[string]topLevelDefinition{
@@ -567,7 +747,10 @@ func TestWriteConfigs(t *testing.T) {
 								Name:       "name",
 								Parameters: nil,
 								Template:   "a.json",
-								Skip:       false,
+								Skip: map[any]any{
+									"type": "environment",
+									"name": "ENV_VAR_SKIP",
+								},
 							},
 							Type: typeDefinition{
 								Api: "alerting-profile",
@@ -598,6 +781,7 @@ func TestWriteConfigs(t *testing.T) {
 						ScopeParameter: &value.ValueParameter{Value: "scope"},
 						NameParameter:  &value.ValueParameter{Value: "name"},
 					},
+					Skip: true,
 				},
 			},
 			expectedConfigs: map[string]topLevelDefinition{
@@ -609,7 +793,7 @@ func TestWriteConfigs(t *testing.T) {
 								Name:       "name",
 								Parameters: nil,
 								Template:   "a.json",
-								Skip:       false,
+								Skip:       true,
 							},
 							Type: typeDefinition{
 								Settings: settingsDefinition{
@@ -644,6 +828,7 @@ func TestWriteConfigs(t *testing.T) {
 						ScopeParameter: refParam.New("otherproject", "type", "id", "prop"),
 						NameParameter:  &value.ValueParameter{Value: "name"},
 					},
+					Skip: false,
 				},
 			},
 			expectedConfigs: map[string]topLevelDefinition{

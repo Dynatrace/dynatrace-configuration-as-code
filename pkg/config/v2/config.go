@@ -74,8 +74,13 @@ type Config struct {
 	// map of all parameters which will be resolved and are then available
 	// in the template
 	Parameters Parameters
-	// Skip flag inidicating if the deployment of this configuration should be skipped
+
+	// Skip flag indicates if the deployment of this configuration should be skipped. It is resolved during project loading.
 	Skip bool
+
+	// SkipForConversion is only used for converting v1-configs to v2-configs.
+	// It is required as the object itself does only store the resolved 'skip' value, not the actual parameter.
+	SkipForConversion parameter.Parameter
 }
 
 func (c *Config) Render(properties map[string]interface{}) (string, error) {

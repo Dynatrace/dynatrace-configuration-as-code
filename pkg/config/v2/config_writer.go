@@ -17,7 +17,6 @@ package v2
 import (
 	"errors"
 	"fmt"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"path/filepath"
 	"reflect"
 
@@ -523,7 +522,11 @@ func toConfigDefinition(context *serializerContext, config Config) (configDefini
 		},
 	}
 	nameParam, err := parseNameParameter(&detailedContext, config)
+	if err != nil {
+		errs = append(errs, err)
+	}
 
+	skipParam, err := parseSkipParameter(&detailedContext, config)
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -546,8 +549,20 @@ func toConfigDefinition(context *serializerContext, config Config) (configDefini
 		Name:       nameParam,
 		Parameters: params,
 		Template:   configTemplatePath,
-		Skip:       config.Skip,
+		Skip:       skipParam,
 	}, templ, nil
+}
+
+func parseSkipParameter(d *detailedSerializerContext, config Config) (configParameter, error) {
+	if config.SkipForConversion == nil {
+		return config.Skip, nil
+	}
+
+	skipDefinition, err := toParameterDefinition(d, SkipParameter, config.SkipForConversion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize skip parameter: %w", err)
+	}
+	return skipDefinition, nil
 }
 
 func extractTemplate(context *detailedSerializerContext, config Config) (string, configTemplate, error) {
@@ -607,11 +622,6 @@ func parseNameParameter(context *detailedSerializerContext, config Config) (conf
 	nameParam, found := config.Parameters[NameParameter]
 
 	if !found {
-		if config.Skip {
-			log.Warn("%s: Encountered skipped config without 'name', setting default name.", context.config)
-			return "SKIPPED CONFIG", nil
-		}
-
 		return nil, fmt.Errorf("%s: `name` parameter missing",
 			config.Coordinate)
 	}

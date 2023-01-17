@@ -48,6 +48,8 @@ const (
 
 type ConverterContext struct {
 	Fs afero.Fs
+
+	ResolveSkip bool
 }
 
 type ConfigConvertContext struct {
@@ -174,54 +176,13 @@ func convertProject(context *ConverterContext, environments map[string]manifest.
 		return manifest.ProjectDefinition{}, projectV2.Project{}, errors
 	}
 
-	dependenciesPerEnvironment := make(map[string][]string)
-
-	for env, apis := range convertedConfigs {
-		dependencies := make(map[string]struct{})
-
-		for _, configs := range apis {
-			for _, config := range configs {
-				// skipped configs have to be ignored
-				if config.Skip {
-					continue
-				}
-
-				for _, ref := range config.References() {
-					// ignore references on own project
-					if ref.Project == config.Coordinate.Project {
-						continue
-					}
-
-					dependencies[ref.Project] = struct{}{}
-				}
-			}
-		}
-
-		if len(dependencies) == 0 {
-			continue
-		}
-
-		dependenciesPerEnvironment[env] = mapKeysToSlice(dependencies)
-	}
-
 	return manifest.ProjectDefinition{
 			Name: adjustedId,
 			Path: project.GetId(),
 		}, projectV2.Project{
-			Id:           adjustedId,
-			Configs:      convertedConfigs,
-			Dependencies: dependenciesPerEnvironment,
+			Id:      adjustedId,
+			Configs: convertedConfigs,
 		}, nil
-}
-
-func mapKeysToSlice(m map[string]struct{}) []string {
-	var result []string
-
-	for k := range m {
-		result = append(result, k)
-	}
-
-	return result
 }
 
 func convertConfigs(context *ConfigConvertContext, environments map[string]manifest.EnvironmentDefinition,
@@ -282,7 +243,7 @@ func convertConfig(context *ConfigConvertContext, environment manifest.Environme
 
 	context.KnownListParameterIds = listParamIds
 
-	parameters, skip, parameterErrors := convertParameters(context, environment, config)
+	parameters, skipParameter, parameterErrors := convertParameters(context, environment, config)
 
 	if parameterErrors != nil {
 		errors = append(errors, parameterErrors...)
@@ -303,12 +264,13 @@ func convertConfig(context *ConfigConvertContext, environment manifest.Environme
 	}
 
 	return configV2.Config{
-		Template:    templ,
-		Coordinate:  coord,
-		Group:       environment.Group,
-		Environment: environment.Name,
-		Parameters:  parameters,
-		Skip:        skip,
+		Template:          templ,
+		Coordinate:        coord,
+		Group:             environment.Group,
+		Environment:       environment.Name,
+		Parameters:        parameters,
+		Skip:              false,
+		SkipForConversion: skipParameter,
 	}, nil
 }
 
@@ -406,24 +368,24 @@ func convertListsInTemplate(currentTemplate string, currentPath string) (modifie
 }
 
 func convertParameters(context *ConfigConvertContext, environment manifest.EnvironmentDefinition,
-	config configV1.Config) (map[string]parameter.Parameter, bool, []error) {
+	config configV1.Config) (map[string]parameter.Parameter, parameter.Parameter, []error) {
 
 	properties := loadPropertiesForEnvironment(environment, config)
 
 	parameters := make(map[string]parameter.Parameter)
 	var errors []error
-	var skip = false
+	var skip parameter.Parameter
 
 	for name, value := range properties {
 		if name == configV1.SkipConfigDeploymentParameter {
-			skipValue, err := parseSkipDeploymentParameter(context, config, value)
+			skipParameter, err := parseSkipDeploymentParameter(context, config, value)
 
 			if err != nil {
 				errors = append(errors, err)
 				continue
 			}
 
-			skip = skipValue
+			skip = skipParameter
 			continue
 		}
 
@@ -454,7 +416,7 @@ func convertParameters(context *ConfigConvertContext, environment manifest.Envir
 	}
 
 	if errors != nil {
-		return parameters, false, errors
+		return parameters, nil, errors
 	}
 
 	return parameters, skip, nil
@@ -469,12 +431,18 @@ func convertedParameterName(name string) string {
 	return name
 }
 
-func parseSkipDeploymentParameter(context *ConfigConvertContext, config configV1.Config, value string) (bool, error) {
+func parseSkipDeploymentParameter(context *ConfigConvertContext, config configV1.Config, value string) (parameter.Parameter, error) {
 	switch strings.ToLower(value) {
 	case "true":
-		return true, nil
+		return valueParam.New(true), nil
 	case "false":
-		return false, nil
+		return valueParam.New(false), nil
+	}
+
+	if util.IsEnvVariable(value) {
+		envVarName := util.TrimToEnvVariableName(value)
+
+		return envParam.New(envVarName), nil
 	}
 
 	location := coordinate.Coordinate{
@@ -483,7 +451,7 @@ func parseSkipDeploymentParameter(context *ConfigConvertContext, config configV1
 		ConfigId: config.GetId(),
 	}
 
-	return false, newConvertConfigError(location, fmt.Sprintf("invalid value for %s: `%s`. allowed values: true, false", configV1.SkipConfigDeploymentParameter, value))
+	return nil, newConvertConfigError(location, fmt.Sprintf("invalid value for %s: `%s`. allowed values: true, false", configV1.SkipConfigDeploymentParameter, value))
 }
 
 func parseReference(context *ConfigConvertContext, config configV1.Config, parameterName string, reference string) (*refParam.ReferenceParameter, error) {

@@ -18,6 +18,7 @@ package converter
 
 import (
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
 	"reflect"
 	"testing"
 
@@ -95,7 +96,7 @@ func TestConvertParameters(t *testing.T) {
 
 	assert.Nil(t, errors)
 	assert.Equal(t, 7, len(parameters))
-	assert.Equal(t, false, skip, "should not be skipped")
+	assert.Nil(t, skip, "should be empty")
 
 	nameParameter, found := parameters["name"]
 
@@ -152,27 +153,27 @@ func TestParseSkipDeploymentParameter(t *testing.T) {
 	testCases := []struct {
 		shouldFail    bool
 		testValue     string
-		expectedValue bool
+		expectedValue parameter.Parameter
 	}{
 		{
 			shouldFail:    false,
 			testValue:     "true",
-			expectedValue: true,
+			expectedValue: valueParam.New(true),
 		},
 		{
 			shouldFail:    false,
 			testValue:     "TRue",
-			expectedValue: true,
+			expectedValue: valueParam.New(true),
 		},
 		{
 			shouldFail:    false,
 			testValue:     "false",
-			expectedValue: false,
+			expectedValue: valueParam.New(false),
 		},
 		{
 			shouldFail:    false,
 			testValue:     "FaLse",
-			expectedValue: false,
+			expectedValue: valueParam.New(false),
 		},
 		{
 			shouldFail: true,
@@ -185,6 +186,20 @@ func TestParseSkipDeploymentParameter(t *testing.T) {
 		{
 			shouldFail: true,
 			testValue:  "aaaaaa",
+		},
+		{
+			shouldFail:    false,
+			testValue:     "{{          .Env.TEST_VAR           }}",
+			expectedValue: envParam.New("TEST_VAR"),
+		},
+		{
+			shouldFail:    false,
+			testValue:     "{{.Env.TEST_VAR}}",
+			expectedValue: envParam.New("TEST_VAR"),
+		},
+		{
+			shouldFail: true,
+			testValue:  "{{ .TEST_VAR }}",
 		},
 	}
 
@@ -447,7 +462,7 @@ func TestConvertSkippedConfig(t *testing.T) {
 	assert.Equal(t, testApi.GetId(), convertedConfig.Coordinate.Type)
 	assert.Equal(t, configId, convertedConfig.Coordinate.ConfigId)
 	assert.Equal(t, environmentName, convertedConfig.Environment)
-	assert.Equal(t, true, convertedConfig.Skip)
+	assert.Equal(t, valueParam.New(true), convertedConfig.SkipForConversion)
 }
 
 func TestConvertConfigs(t *testing.T) {
@@ -607,13 +622,7 @@ func TestConvertProjects(t *testing.T) {
 
 	assert.Equal(t, projectId, projectDefinition.Name)
 	assert.Equal(t, projectId, projectDefinition.Path)
-	assert.Equal(t, 2, len(convertedProject.Dependencies))
-
-	assert.Equal(t, 1, len(convertedProject.Dependencies[environmentName]))
-	assert.Equal(t, "projectB", convertedProject.Dependencies[environmentName][0])
-
-	assert.Equal(t, 1, len(convertedProject.Dependencies[environmentName2]))
-	assert.Equal(t, "projectB", convertedProject.Dependencies[environmentName2][0])
+	assert.Nil(t, convertedProject.Dependencies, "Dependencies should not be resolved")
 
 	convertedConfigs := convertedProject.Configs
 
