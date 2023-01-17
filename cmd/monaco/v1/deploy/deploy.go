@@ -245,7 +245,7 @@ func logDeleteInfo(entriesToDelete map[string][]configDelete.DeletePointer) {
 		log.Info("%s (%d):", a, len(entries))
 
 		for _, entry := range entries {
-			log.Info("\t%s", entry.DeleteIdentifier)
+			log.Info("\t%s", entry.ConfigId)
 		}
 	}
 }

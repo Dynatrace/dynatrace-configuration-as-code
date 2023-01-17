@@ -122,7 +122,7 @@ func parseDeleteFileDefinition(context *loaderContext, definition deleteFileDefi
 			continue
 		}
 
-		result[entry.ApiId] = append(result[entry.ApiId], entry)
+		result[entry.Type] = append(result[entry.Type], entry)
 	}
 
 	if errors != nil {
@@ -149,7 +149,7 @@ func parseDeleteEntry(context *loaderContext, index int, entry string) (DeletePo
 	}
 
 	return DeletePointer{
-		ApiId:            apiId,
-		DeleteIdentifier: deleteIdentifier,
+		Type:     apiId,
+		ConfigId: deleteIdentifier,
 	}, nil
 }

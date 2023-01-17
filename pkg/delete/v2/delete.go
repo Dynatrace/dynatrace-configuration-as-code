@@ -22,8 +22,8 @@ import (
 )
 
 type DeletePointer struct {
-	ApiId            string
-	DeleteIdentifier string
+	Type     string
+	ConfigId string
 }
 
 func DeleteConfigs(client rest.ConfigClient, apis map[string]api.Api, entriesToDelete map[string][]DeletePointer) (errors []error) {
@@ -74,12 +74,12 @@ func filterValuesToDelete(entries []DeletePointer, existingValues []api.Value, a
 		valuesById[v.Id] = v
 
 		for _, entry := range entries {
-			if toDeleteByName[entry.DeleteIdentifier] == nil {
-				toDeleteByName[entry.DeleteIdentifier] = []api.Value{}
+			if toDeleteByName[entry.ConfigId] == nil {
+				toDeleteByName[entry.ConfigId] = []api.Value{}
 			}
 
-			if v.Name == entry.DeleteIdentifier {
-				toDeleteByName[entry.DeleteIdentifier] = append(toDeleteByName[entry.DeleteIdentifier], v)
+			if v.Name == entry.ConfigId {
+				toDeleteByName[entry.ConfigId] = append(toDeleteByName[entry.ConfigId], v)
 			}
 		}
 	}
