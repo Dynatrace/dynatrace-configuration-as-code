@@ -30,7 +30,6 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/spf13/afero"
 )
 
@@ -40,7 +39,7 @@ var environmentsFile = filepath.Join(folder, "environments.yaml")
 // Tests all environments with all projects
 func TestIntegrationMultiEnvironment(t *testing.T) {
 
-	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironment", func(fs afero.Fs) {
+	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironment", func(fs afero.Fs, manifest string) {
 
 		environments, errs := environment.LoadEnvironmentList("", environmentsFile, fs)
 		assert.Check(t, len(errs) == 0, "didn't expect errors loading test environments")
@@ -52,8 +51,7 @@ func TestIntegrationMultiEnvironment(t *testing.T) {
 		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
-			"--environments", environmentsFile,
-			folder,
+			manifest,
 		})
 		err = cmd.Execute()
 
@@ -65,25 +63,25 @@ func TestIntegrationMultiEnvironment(t *testing.T) {
 
 // Tests a dry run (validation)
 func TestIntegrationValidationMultiEnvironment(t *testing.T) {
-	t.Setenv("CONFIG_V1", "1")
+	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "validationMultiEnv", func(fs afero.Fs, manifest string) {
 
-	cmd := runner.BuildCli(util.CreateTestFileSystem())
-	cmd.SetArgs([]string{
-		"deploy",
-		"--verbose",
-		"--environments", environmentsFile,
-		"--dry-run",
-		folder,
+		cmd := runner.BuildCli(fs)
+		cmd.SetArgs([]string{
+			"deploy",
+			"--verbose",
+			manifest,
+			"--dry-run",
+		})
+		err := cmd.Execute()
+
+		assert.NilError(t, err)
 	})
-	err := cmd.Execute()
-
-	assert.NilError(t, err)
 }
 
 // tests a single project
 func TestIntegrationMultiEnvironmentSingleProject(t *testing.T) {
 
-	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleProject", func(fs afero.Fs) {
+	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleProject", func(fs afero.Fs, manifest string) {
 
 		environments, errs := environment.LoadEnvironmentList("", environmentsFile, fs)
 		test.FailTestOnAnyError(t, errs, "loading of environments failed")
@@ -95,9 +93,8 @@ func TestIntegrationMultiEnvironmentSingleProject(t *testing.T) {
 		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
-			"--environments", environmentsFile,
+			manifest,
 			"-p", "cinema-infrastructure",
-			folder,
 		})
 		err = cmd.Execute()
 
@@ -110,7 +107,7 @@ func TestIntegrationMultiEnvironmentSingleProject(t *testing.T) {
 // Tests a single project with dependency
 func TestIntegrationMultiEnvironmentSingleProjectWithDependency(t *testing.T) {
 
-	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleProjectWithDependency", func(fs afero.Fs) {
+	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleProjectWithDependency", func(fs afero.Fs, manifest string) {
 
 		environments, errs := environment.LoadEnvironmentList("", environmentsFile, fs)
 		test.FailTestOnAnyError(t, errs, "loading of environments failed")
@@ -124,9 +121,8 @@ func TestIntegrationMultiEnvironmentSingleProjectWithDependency(t *testing.T) {
 		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
-			"--environments", environmentsFile,
+			manifest,
 			"-p", "star-trek",
-			folder,
 		})
 		err = cmd.Execute()
 
@@ -139,7 +135,7 @@ func TestIntegrationMultiEnvironmentSingleProjectWithDependency(t *testing.T) {
 // tests a single environment
 func TestIntegrationMultiEnvironmentSingleEnvironment(t *testing.T) {
 
-	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleEnvironment", func(fs afero.Fs) {
+	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleEnvironment", func(fs afero.Fs, manifest string) {
 
 		environments, errs := environment.LoadEnvironmentList("", environmentsFile, fs)
 		test.FailTestOnAnyError(t, errs, "loading of environments failed")
@@ -154,8 +150,7 @@ func TestIntegrationMultiEnvironmentSingleEnvironment(t *testing.T) {
 		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
-			"--environments", environmentsFile,
-			folder,
+			manifest,
 		})
 		err = cmd.Execute()
 

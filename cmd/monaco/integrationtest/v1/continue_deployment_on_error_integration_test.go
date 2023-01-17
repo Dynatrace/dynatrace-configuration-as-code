@@ -38,7 +38,7 @@ func TestIntegrationContinueDeploymentOnError(t *testing.T) {
 	allConfigsFolder := AbsOrPanicFromSlash("test-resources/integration-configs-with-errors/")
 	allConfigsEnvironmentsFile := filepath.Join(allConfigsFolder, "environments.yaml")
 
-	RunLegacyIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fs afero.Fs) {
+	RunLegacyIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fs afero.Fs, manifest string) {
 
 		environments, errs := environment.LoadEnvironmentList("", allConfigsEnvironmentsFile, fs)
 		assert.Check(t, len(errs) == 0, "didn't expect errors loading test environments")
@@ -50,9 +50,8 @@ func TestIntegrationContinueDeploymentOnError(t *testing.T) {
 		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
+			manifest,
 			"--continue-on-error",
-			"--environments", allConfigsEnvironmentsFile,
-			allConfigsFolder,
 		})
 		err = cmd.Execute()
 		// deployment should fail

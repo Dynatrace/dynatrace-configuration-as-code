@@ -20,6 +20,7 @@
 package v1
 
 import (
+	"github.com/spf13/afero"
 	"testing"
 
 	"gotest.tools/assert"
@@ -49,19 +50,19 @@ func TestValidationSkipDeployment(t *testing.T) {
 }
 
 func TestValidationSkipDeploymentWithBrokenDependency(t *testing.T) {
-	t.Setenv("CONFIG_V1", "1")
+	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, "SkipDeployment", func(fs afero.Fs, manifest string) {
 
-	cmd := runner.BuildCli(util.CreateTestFileSystem())
-	cmd.SetArgs([]string{
-		"deploy",
-		"--verbose",
-		"--dry-run",
-		"--environments", skipDeploymentEnvironmentsFile,
-		"--project", "projectB",
-		skipDeploymentFolder,
+		cmd := runner.BuildCli(fs)
+		cmd.SetArgs([]string{
+			"deploy",
+			"--verbose",
+			manifest,
+			"--dry-run",
+			"--project", "projectB",
+		})
+		err := cmd.Execute()
+		assert.Error(t, err, "errors during Validation")
 	})
-	err := cmd.Execute()
-	assert.Error(t, err, "dry run found 3 errors. check logs")
 }
 
 func TestValidationSkipDeploymentWithOverridingDependency(t *testing.T) {

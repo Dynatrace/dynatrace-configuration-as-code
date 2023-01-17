@@ -36,7 +36,7 @@ func TestSpecialCharactersAreCorrectlyEscapedWhereNeeded(t *testing.T) {
 	specialCharConfigFolder := AbsOrPanicFromSlash("test-resources/special-character-in-config/")
 	specialCharEnvironmentsFile := filepath.Join(specialCharConfigFolder, "environments.yaml")
 
-	RunLegacyIntegrationWithCleanup(t, specialCharConfigFolder, specialCharEnvironmentsFile, "SpecialCharacterInConfig", func(fs afero.Fs) {
+	RunLegacyIntegrationWithCleanup(t, specialCharConfigFolder, specialCharEnvironmentsFile, "SpecialCharacterInConfig", func(fs afero.Fs, manifest string) {
 
 		environments, errs := environment.LoadEnvironmentList("", specialCharEnvironmentsFile, fs)
 		assert.Check(t, len(errs) == 0, "didn't expect errors loading test environments")
@@ -48,8 +48,7 @@ func TestSpecialCharactersAreCorrectlyEscapedWhereNeeded(t *testing.T) {
 		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
-			"--environments", specialCharEnvironmentsFile,
-			specialCharConfigFolder,
+			manifest,
 		})
 		err = cmd.Execute()
 		assert.NilError(t, err)

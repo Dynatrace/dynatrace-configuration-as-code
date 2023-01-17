@@ -93,7 +93,9 @@ func resolveProperties(c *config.Config, entities map[coordinate.Coordinate]para
 func validateParameterReferences(configCoordinates coordinate.Coordinate,
 	group string, environment string,
 	entities map[coordinate.Coordinate]parameter.ResolvedEntity,
-	paramName string, param parameter.Parameter) (errors []error) {
+	paramName string,
+	param parameter.Parameter,
+) (errors []error) {
 
 	for _, ref := range param.GetReferences() {
 		// we have to ignore references to the same config,

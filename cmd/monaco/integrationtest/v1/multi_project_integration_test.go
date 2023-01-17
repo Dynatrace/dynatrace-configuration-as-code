@@ -28,7 +28,6 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 )
@@ -39,7 +38,7 @@ var multiProjectEnvironmentsFile = filepath.Join(multiProjectFolder, "environmen
 
 // Tests all environments with all projects
 func TestIntegrationMultiProject(t *testing.T) {
-	RunLegacyIntegrationWithCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "MultiProject", func(fs afero.Fs) {
+	RunLegacyIntegrationWithCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "MultiProject", func(fs afero.Fs, manifest string) {
 
 		environments, errs := environment.LoadEnvironmentList("", multiProjectEnvironmentsFile, fs)
 		assert.Check(t, len(errs) == 0, "didn't expect errors loading test environments")
@@ -51,8 +50,7 @@ func TestIntegrationMultiProject(t *testing.T) {
 		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
-			"--environments", multiProjectEnvironmentsFile,
-			multiProjectFolder,
+			manifest,
 		})
 		err = cmd.Execute()
 
@@ -64,42 +62,41 @@ func TestIntegrationMultiProject(t *testing.T) {
 
 // Tests a dry run (validation)
 func TestIntegrationValidationMultiProject(t *testing.T) {
-	t.Setenv("CONFIG_V1", "1")
+	RunLegacyIntegrationWithoutCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "validMultiProj", func(fs afero.Fs, manifest string) {
+		cmd := runner.BuildCli(fs)
+		cmd.SetArgs([]string{
+			"deploy",
+			"--verbose",
+			manifest,
+			"--dry-run",
+		})
+		err := cmd.Execute()
 
-	cmd := runner.BuildCli(util.CreateTestFileSystem())
-	cmd.SetArgs([]string{
-		"deploy",
-		"--verbose",
-		"--environments", multiProjectEnvironmentsFile,
-		"--dry-run",
-		multiProjectFolder,
+		assert.NilError(t, err)
 	})
-	err := cmd.Execute()
-
-	assert.NilError(t, err)
 }
 
 // Tests a dry run (validation)
 func TestIntegrationValidationMultiProjectWithoutEndingSlashInPath(t *testing.T) {
-	t.Setenv("CONFIG_V1", "1")
+	RunLegacyIntegrationWithoutCleanup(t, multiProjectFolderWithoutSlash, multiProjectEnvironmentsFile, "validMultiProj", func(fs afero.Fs, manifest string) {
+		cmd := runner.BuildCli(fs)
+		cmd.SetArgs([]string{
+			"deploy",
+			"--verbose",
+			manifest,
+			"--dry-run",
+		})
+		err := cmd.Execute()
 
-	cmd := runner.BuildCli(util.CreateTestFileSystem())
-	cmd.SetArgs([]string{
-		"deploy",
-		"--verbose",
-		"--environments", multiProjectEnvironmentsFile,
-		"--dry-run",
-		multiProjectFolderWithoutSlash,
+		assert.NilError(t, err)
 	})
-	err := cmd.Execute()
 
-	assert.NilError(t, err)
 }
 
 // tests a single project with dependencies
 func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 
-	RunLegacyIntegrationWithCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "MultiProjectSingleProject", func(fs afero.Fs) {
+	RunLegacyIntegrationWithCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "MultiProjectSingleProject", func(fs afero.Fs, manifest string) {
 
 		environments, errs := environment.LoadEnvironmentList("", multiProjectEnvironmentsFile, fs)
 		test.FailTestOnAnyError(t, errs, "loading of environments failed")
@@ -112,9 +109,8 @@ func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
-			"--environments", multiProjectEnvironmentsFile,
+			manifest,
 			"-p", "star-trek",
-			multiProjectFolder,
 		})
 		err = cmd.Execute()
 

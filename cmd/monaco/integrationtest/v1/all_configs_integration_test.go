@@ -33,33 +33,23 @@ func TestIntegrationAllConfigs(t *testing.T) {
 	allConfigsFolder := AbsOrPanicFromSlash("test-resources/integration-all-configs/")
 	allConfigsEnvironmentsFile := filepath.Join(allConfigsFolder, "environments.yaml")
 
-	RunLegacyIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fs afero.Fs) {
-
+	RunLegacyIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fs afero.Fs, manifest string) {
 		// This causes a POST for all configs:
 		cmd := runner.BuildCli(fs)
 		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
-			"--environments",
-			allConfigsEnvironmentsFile,
-			allConfigsFolder,
+			manifest,
 		})
 		err := cmd.Execute()
 		assert.NilError(t, err)
 
 		// This causes a PUT for all configs:
-
 		cmd = runner.BuildCli(fs)
 		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
-			"--environments", allConfigsEnvironmentsFile,
-			// Currently there are some APIs for which updating the config does not work. These configs are included in
-			// the project "only-post" (folder ./test-resources/integration-all-configs/only-post)
-			// The mobile application API will be fixed in the scope of
-			//     https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/issues/275
-			"--project", "project",
-			allConfigsFolder,
+			manifest,
 		})
 		err = cmd.Execute()
 		assert.NilError(t, err)

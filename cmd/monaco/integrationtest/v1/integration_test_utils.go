@@ -22,9 +22,11 @@ package v1
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner"
 	projectV1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v1"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/test"
 	"math/rand"
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -163,7 +165,9 @@ func cleanupIntegrationTest(t *testing.T, fs afero.Fs, envFile, suffix string) {
 	}
 }
 
-// RunIntegrationWithCleanup runs an integration test and cleans up the created configs afterwards
+type cleanupFunc func(t *testing.T, fs afero.Fs, envFile, suffix string)
+
+// RunLegacyIntegrationWithCleanup runs an integration test and cleans up the created configs afterwards
 // This is done by using InMemoryFileReader, which rewrites the names of the read configs internally. It ready all the
 // configs once and holds them in memory. Any subsequent modification of a config (applying them to an environment)
 // is done based on the data in memory. The re-writing of config names ensures, that they have an unique name and don't
@@ -176,21 +180,61 @@ func cleanupIntegrationTest(t *testing.T, fs afero.Fs, envFile, suffix string) {
 //
 // <original name>_<current timestamp><defined suffix>
 // e.g. my-config_1605258980000_Suffix
+func RunLegacyIntegrationWithCleanup(t *testing.T, configFolder, envFile, suffixTest string, testFunc func(fs afero.Fs, manifest string)) {
+	runLegacyIntegration(t, configFolder, envFile, suffixTest, testFunc, cleanupIntegrationTest)
+}
 
-func RunLegacyIntegrationWithCleanup(t *testing.T, configFolder, envFile, suffixTest string, testFunc func(fs afero.Fs)) {
+// RunLegacyIntegrationWithoutCleanup runs an integration test and cleans up the created configs afterwards
+// This is done by using InMemoryFileReader, which rewrites the names of the read configs internally. It ready all the
+// configs once and holds them in memory. Any subsequent modification of a config (applying them to an environment)
+// is done based on the data in memory. The re-writing of config names ensures, that they have an unique name and don't
+// conflict with other configs created by other integration tests
+//
+// The new naming scheme of created configs is defined in a transformer function. By default, this is:
+//
+// <original name>_<current timestamp><defined suffix>
+// e.g. my-config_1605258980000_Suffix
+func RunLegacyIntegrationWithoutCleanup(t *testing.T, configFolder, envFile, suffixTest string, testFunc func(fs afero.Fs, manifest string)) {
+	noopCleanup := func(_ *testing.T, _ afero.Fs, _, _ string) {}
+
+	runLegacyIntegration(t, configFolder, envFile, suffixTest, testFunc, noopCleanup)
+}
+
+func runLegacyIntegration(t *testing.T, configFolder, envFile, suffixTest string, testFunc func(fs afero.Fs, manifest string), cleanup cleanupFunc) {
 	configFolder, _ = filepath.Abs(configFolder)
 	envFile, _ = filepath.Abs(envFile)
-
-	t.Setenv("CONFIG_V1", "1")
 
 	var fs = util.CreateTestFileSystem()
 	suffix := appendUniqueSuffixToIntegrationTestConfigs(t, fs, configFolder, suffixTest)
 
 	t.Cleanup(func() {
-		cleanupIntegrationTest(t, fs, envFile, suffix)
+		cleanup(t, fs, envFile, suffix)
 	})
 
-	testFunc(fs)
+	targetDir, err := filepath.Abs("out")
+	assert.NilError(t, err)
+
+	t.Log("Converting monaco-v1 to monaco-v2")
+	cmd := runner.BuildCli(fs)
+	cmd.SetArgs([]string{
+		"convert",
+		"--verbose",
+		envFile,
+		configFolder,
+		"-o",
+		targetDir,
+	})
+	err = cmd.Execute()
+	assert.NilError(t, err, "Conversion should had happend without errors")
+
+	manifestPath := path.Join(targetDir, "manifest.yaml")
+	exists, err := afero.Exists(fs, manifestPath)
+	assert.NilError(t, err)
+	assert.Check(t, exists, "manifest should exist on path '%s' but does not", manifestPath)
+
+	t.Log("Running actual test...")
+
+	testFunc(fs, manifestPath)
 }
 
 func appendUniqueSuffixToIntegrationTestConfigs(t *testing.T, fs afero.Fs, configFolder string, generalSuffix string) string {
