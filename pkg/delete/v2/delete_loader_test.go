@@ -28,20 +28,21 @@ func TestParseDeleteEntry(t *testing.T) {
 	api := "auto-tag"
 	name := "test entity"
 
-	context := &loaderContext{
-		fs:         afero.NewReadOnlyFs(afero.NewOsFs()),
-		workingDir: ".",
-		deleteFile: "delete.yaml",
-		knownApis: toSetMap([]string{
-			"management-zone",
-			api,
-		}),
-	}
-
-	entry, err := parseDeleteEntry(context, 0, api+deleteDelimiter+name)
+	entry, err := parseDeleteEntry(0, api+deleteDelimiter+name)
 
 	assert.NilError(t, err)
 	assert.Equal(t, api, entry.Type)
+	assert.Equal(t, name, entry.ConfigId)
+}
+
+func TestParseSettingsDeleteEntry(t *testing.T) {
+	cfgType := "builtin:tagging.auto"
+	name := "test entity"
+
+	entry, err := parseDeleteEntry(0, cfgType+deleteDelimiter+name)
+
+	assert.NilError(t, err)
+	assert.Equal(t, cfgType, entry.Type)
 	assert.Equal(t, name, entry.ConfigId)
 }
 
@@ -49,17 +50,7 @@ func TestParseDeleteEntryWithMultipleSlashesShouldWork(t *testing.T) {
 	api := "auto-tag"
 	name := "test entity/entry"
 
-	context := &loaderContext{
-		fs:         afero.NewReadOnlyFs(afero.NewOsFs()),
-		workingDir: ".",
-		deleteFile: "delete.yaml",
-		knownApis: toSetMap([]string{
-			"management-zone",
-			api,
-		}),
-	}
-
-	entry, err := parseDeleteEntry(context, 0, api+deleteDelimiter+name)
+	entry, err := parseDeleteEntry(0, api+deleteDelimiter+name)
 
 	assert.NilError(t, err)
 	assert.Equal(t, api, entry.Type)
@@ -69,37 +60,9 @@ func TestParseDeleteEntryWithMultipleSlashesShouldWork(t *testing.T) {
 func TestParseDeleteEntryInvalidEntryWithoutDelimiterShouldFail(t *testing.T) {
 	value := "auto-tag"
 
-	context := &loaderContext{
-		fs:         afero.NewReadOnlyFs(afero.NewOsFs()),
-		workingDir: ".",
-		deleteFile: "delete.yaml",
-		knownApis: toSetMap([]string{
-			"auto-tag",
-		}),
-	}
-
-	_, err := parseDeleteEntry(context, 0, value)
+	_, err := parseDeleteEntry(0, value)
 
 	assert.Assert(t, err != nil, "value `%s` should return error", value)
-}
-
-func TestParseDeleteEntryInvalidApiShouldFail(t *testing.T) {
-	api := "auto-tag"
-	name := "test entity/entry"
-	value := api + deleteDelimiter + name
-
-	context := &loaderContext{
-		fs:         afero.NewReadOnlyFs(afero.NewOsFs()),
-		workingDir: ".",
-		deleteFile: "delete.yaml",
-		knownApis: toSetMap([]string{
-			"management-zone",
-		}),
-	}
-
-	_, err := parseDeleteEntry(context, 0, value)
-
-	assert.Assert(t, err != nil, "unkwon api value `%s` should return error", value)
 }
 
 func TestParseDeleteFileDefinitions(t *testing.T) {
@@ -111,17 +74,7 @@ func TestParseDeleteFileDefinitions(t *testing.T) {
 	name2 := "test entity/entry"
 	entity2 := api2 + deleteDelimiter + name2
 
-	context := &loaderContext{
-		fs:         afero.NewReadOnlyFs(afero.NewOsFs()),
-		workingDir: ".",
-		deleteFile: "delete.yaml",
-		knownApis: toSetMap([]string{
-			api,
-			api2,
-		}),
-	}
-
-	result, errors := parseDeleteFileDefinition(context, deleteFileDefinition{
+	result, errors := parseDeleteFileDefinition(deleteFileDefinition{
 		DeleteEntries: []string{
 			entity,
 			entity2,
@@ -157,17 +110,7 @@ func TestParseDeleteFileDefinitionsWithInvalidDefinition(t *testing.T) {
 	name2 := "test entity/entry"
 	entity2 := api2 + deleteDelimiter + name2
 
-	context := &loaderContext{
-		fs:         afero.NewReadOnlyFs(afero.NewOsFs()),
-		workingDir: ".",
-		deleteFile: "delete.yaml",
-		knownApis: toSetMap([]string{
-			api,
-			api2,
-		}),
-	}
-
-	result, errors := parseDeleteFileDefinition(context, deleteFileDefinition{
+	result, errors := parseDeleteFileDefinition(deleteFileDefinition{
 		DeleteEntries: []string{
 			entity,
 			entity2,

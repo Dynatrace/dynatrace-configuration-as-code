@@ -69,7 +69,7 @@ func LoadEntriesToDelete(fs afero.Fs, knownApis []string, workingDir string, del
 		return nil, []error{err}
 	}
 
-	return parseDeleteFileDefinition(context, definition)
+	return parseDeleteFileDefinition(definition)
 }
 
 func toSetMap(strs []string) map[string]struct{} {
@@ -110,12 +110,12 @@ func parseDeleteFile(context *loaderContext) (deleteFileDefinition, error) {
 	return result, nil
 }
 
-func parseDeleteFileDefinition(context *loaderContext, definition deleteFileDefinition) (map[string][]DeletePointer, []error) {
+func parseDeleteFileDefinition(definition deleteFileDefinition) (map[string][]DeletePointer, []error) {
 	var result = make(map[string][]DeletePointer)
 	var errors []error
 
 	for i, e := range definition.DeleteEntries {
-		entry, err := parseDeleteEntry(context, i, e)
+		entry, err := parseDeleteEntry(i, e)
 
 		if err != nil {
 			errors = append(errors, err)
@@ -132,7 +132,7 @@ func parseDeleteFileDefinition(context *loaderContext, definition deleteFileDefi
 	return result, nil
 }
 
-func parseDeleteEntry(context *loaderContext, index int, entry string) (DeletePointer, error) {
+func parseDeleteEntry(index int, entry string) (DeletePointer, error) {
 	if !strings.Contains(entry, deleteDelimiter) {
 		return DeletePointer{}, newDeleteEntryParserError(entry, index, fmt.Sprintf("invalid format. doesn't contain `%s`", deleteDelimiter))
 	}
@@ -143,10 +143,6 @@ func parseDeleteEntry(context *loaderContext, index int, entry string) (DeletePo
 	// split the entity by max two, we do not need to test for len of parts
 	apiId := parts[0]
 	deleteIdentifier := parts[1]
-
-	if _, found := context.knownApis[apiId]; !found {
-		return DeletePointer{}, newDeleteEntryParserError(entry, index, fmt.Sprintf("unknown api `%s`", apiId))
-	}
 
 	return DeletePointer{
 		Type:     apiId,
