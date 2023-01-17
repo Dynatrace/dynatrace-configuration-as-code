@@ -259,6 +259,10 @@ func convertConfig(context *ConfigConvertContext, environment manifest.Environme
 		parameters[paramName] = param
 	}
 
+	if _, found := parameters[configV2.NameParameter]; !found {
+		errors = append(errors, fmt.Errorf("no 'name' parameter found during conversion of config '%s/%s/%s'. Please provide one", config.GetProject(), config.GetType(), config.GetId()))
+	}
+
 	if errors != nil {
 		return configV2.Config{}, errors
 	}
