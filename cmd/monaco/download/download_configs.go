@@ -16,6 +16,7 @@ package download
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"os"
 	"strings"
 
@@ -60,7 +61,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 		cmdOptions.projectName = fmt.Sprintf("%s_%s", cmdOptions.projectName, cmdOptions.specificEnvironmentName)
 	}
 
-	concurrentDownloadLimit := concurrentRequestLimitFromEnv()
+	concurrentDownloadLimit := rest.ConcurrentRequestLimitFromEnv(true)
 
 	options := downloadOptions{
 		downloadOptionsShared: downloadOptionsShared{
@@ -83,7 +84,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 
 func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOptions) error {
 	token := os.Getenv(cmdOptions.envVarName)
-	concurrentDownloadLimit := concurrentRequestLimitFromEnv()
+	concurrentDownloadLimit := rest.ConcurrentRequestLimitFromEnv(true)
 	errors := validateParameters(cmdOptions.envVarName, cmdOptions.environmentUrl, cmdOptions.projectName, token)
 
 	if len(errors) > 0 {

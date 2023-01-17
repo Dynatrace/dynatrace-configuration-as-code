@@ -45,7 +45,7 @@ func NewEntitiesDownloader(c client.EntitiesClient) *Downloader {
 
 // Download downloads all entities objects for the given entities Types
 
-func Download(c client.EntitiesClient, entitiesTypes []string, projectName string) v2.ConfigsPerType {
+func Download(c client.EntitiesClient, entitiesTypes []client.EntitiesType, projectName string) v2.ConfigsPerType {
 	return NewEntitiesDownloader(c).Download(entitiesTypes, projectName)
 }
 
@@ -56,7 +56,7 @@ func DownloadAll(c client.EntitiesClient, projectName string) v2.ConfigsPerType 
 
 // Download downloads all entities objects for the given entities Types and a given project
 // The returned value is a map of entities objects with the entities Type as keys
-func (d *Downloader) Download(entitiesTypes []string, projectName string) v2.ConfigsPerType {
+func (d *Downloader) Download(entitiesTypes []client.EntitiesType, projectName string) v2.ConfigsPerType {
 	return d.download(entitiesTypes, projectName)
 }
 
@@ -71,39 +71,36 @@ func (d *Downloader) DownloadAll(projectName string) v2.ConfigsPerType {
 		log.Error("Failed to fetch all known entities types. Skipping entities download. Reason: %s", err)
 		return nil
 	}
-	// convert to list of types
-	var ids []string
-	for _, i := range entitiesTypes {
-		ids = append(ids, i.EntitiesType)
-	}
 
-	return d.download(ids, projectName)
+	return d.download(entitiesTypes, projectName)
 }
 
-func (d *Downloader) download(entitiesTypes []string, projectName string) v2.ConfigsPerType {
+func (d *Downloader) download(entitiesTypes []client.EntitiesType, projectName string) v2.ConfigsPerType {
 	results := make(v2.ConfigsPerType, len(entitiesTypes))
 	downloadMutex := sync.Mutex{}
 	wg := sync.WaitGroup{}
 	wg.Add(len(entitiesTypes))
 
-	for _, entitiesType := range entitiesTypes {
+	for _, entitiesTypeValue := range entitiesTypes {
 
-		go func(entityType string) {
+		go func(entityType client.EntitiesType) {
 			defer wg.Done()
-			log.Debug("Downloading all entities for entities Type %s", entityType)
+
 			objects, err := d.client.ListEntities(entityType)
 			if err != nil {
-				log.Error("Failed to fetch all entities for entities Type %s: %v", entityType, err)
+				log.Error("Failed to fetch all entities for entities Type %s: %v", entityType.EntitiesTypeId, err)
 				return
 			}
 			if len(objects) == 0 {
 				return
 			}
-			configs := d.convertObject(objects, entityType, projectName)
+			log.Debug("Downloaded %d entities for entities Type %s", len(objects), entityType.EntitiesTypeId)
+			configs := d.convertObject(objects, entityType.EntitiesTypeId, projectName)
 			downloadMutex.Lock()
-			results[entityType] = configs
+			results[entityType.EntitiesTypeId] = configs
 			downloadMutex.Unlock()
-		}(entitiesType)
+
+		}(entitiesTypeValue)
 
 	}
 

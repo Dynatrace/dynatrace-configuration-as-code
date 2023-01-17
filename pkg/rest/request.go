@@ -1,6 +1,6 @@
-/*
+/**
  * @license
- * Copyright 2023 Dynatrace LLC
+ * Copyright 2020 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,13 +19,14 @@ package rest
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"net/http"
+	"runtime"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"github.com/google/uuid"
-	"io"
-	"net/http"
-	"runtime"
 )
 
 func Get(client *http.Client, url string, apiToken string) (Response, error) {
@@ -153,12 +154,15 @@ func executeRequest(client *http.Client, request *http.Request) (Response, error
 			}
 		}
 
-		return Response{
-			StatusCode:  resp.StatusCode,
-			Body:        body,
-			Headers:     resp.Header,
-			NextPageKey: GetNextPageKeyIfExists(body),
-		}, err
+		returnResponse := Response{
+			StatusCode: resp.StatusCode,
+			Body:       body,
+			Headers:    resp.Header,
+		}
+
+		setAdditionalValuesIfExist(&returnResponse)
+
+		return returnResponse, err
 	})
 
 	if err != nil {

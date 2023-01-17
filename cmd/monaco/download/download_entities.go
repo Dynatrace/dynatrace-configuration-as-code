@@ -21,6 +21,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/entities"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
@@ -51,7 +52,7 @@ func (d DefaultCommand) DownloadEntitiesBasedOnManifest(fs afero.Fs, cmdOptions 
 		cmdOptions.projectName = fmt.Sprintf("%s_%s", cmdOptions.projectName, cmdOptions.specificEnvironmentName)
 	}
 
-	concurrentDownloadLimit := concurrentRequestLimitFromEnv()
+	concurrentDownloadLimit := rest.ConcurrentRequestLimitFromEnv(true)
 
 	options := downloadOptionsShared{
 		environmentUrl:          envUrl,
@@ -68,7 +69,7 @@ func (d DefaultCommand) DownloadEntitiesBasedOnManifest(fs afero.Fs, cmdOptions 
 
 func (d DefaultCommand) DownloadEntities(fs afero.Fs, cmdOptions entitiesDirectDownloadOptions) error {
 	token := os.Getenv(cmdOptions.envVarName)
-	concurrentDownloadLimit := concurrentRequestLimitFromEnv()
+	concurrentDownloadLimit := rest.ConcurrentRequestLimitFromEnv(true)
 	errors := validateParameters(cmdOptions.envVarName, cmdOptions.environmentUrl, cmdOptions.projectName, token)
 
 	if len(errors) > 0 {

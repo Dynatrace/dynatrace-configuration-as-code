@@ -19,6 +19,8 @@ package settings
 import (
 	"encoding/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"sync"
+
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
@@ -27,7 +29,6 @@ import (
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
-	"sync"
 )
 
 // Downloader is responsible for downloading Settings 2.0 objects
@@ -114,6 +115,7 @@ func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPe
 			if len(objects) == 0 {
 				return
 			}
+			log.Info("Downloaded %d settings for schema %s", len(objects), s)
 			configs := d.convertAllObjects(objects, projectName)
 			downloadMutex.Lock()
 			results[s] = configs

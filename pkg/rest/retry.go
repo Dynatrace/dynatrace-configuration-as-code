@@ -71,9 +71,14 @@ func GetWithRetry(client *http.Client, url string, apiToken string, settings Ret
 	if err != nil {
 		retryErr = fmt.Errorf("GET request %s failed after %d retries: %w", url, settings.MaxRetries, err)
 	} else {
-		retryErr = fmt.Errorf("GET request %s failed after %d retries: (HTTP %d)!\n    Response was: %s", url, settings.MaxRetries, resp.StatusCode, resp.Body)
+		additionalMessage := ""
+		if resp.StatusCode == 403 {
+			concurrentDownloadLimit := ConcurrentRequestLimitFromEnv(false)
+			additionalMessage = fmt.Sprintf("\n\n    A 403 error code probably means too many requests.\n    Reduce your CONCURRENT_REQUESTS environment variable (current value: %d). \n    Then wait a few minutes and retry ", concurrentDownloadLimit)
+		}
+		retryErr = fmt.Errorf("GET request %s failed after %d retries: (HTTP %d)!\n    Response was: %s %s", url, settings.MaxRetries, resp.StatusCode, resp.Body, additionalMessage)
 	}
-	return Response{}, retryErr
+	return resp, retryErr
 }
 
 // SendWithRetry will retry a SendingRequest(PUT or POST) for a given number of times, waiting a give duration between calls

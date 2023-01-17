@@ -16,13 +16,11 @@ package download
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"net/url"
-	"os"
 	"path"
-	"strconv"
 	"strings"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
@@ -30,11 +28,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"
-)
-
-const (
-	defaultConcurrentDownloads = 50
-	concurrentRequestsEnvKey   = "CONCURRENT_REQUESTS"
 )
 
 //go:generate mockgen -source=download.go -destination=download_mock.go -package=download -write_package_comment=false Command
@@ -238,12 +231,4 @@ func validateFolder(fs afero.Fs, path string) []error {
 	}
 
 	return errors
-}
-
-func concurrentRequestLimitFromEnv() int {
-	limit, err := strconv.Atoi(os.Getenv(concurrentRequestsEnvKey))
-	if err != nil || limit < 0 {
-		limit = defaultConcurrentDownloads
-	}
-	return limit
 }

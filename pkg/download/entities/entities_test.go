@@ -39,7 +39,7 @@ func TestDownloadAll(t *testing.T) {
 	uuid := util.GenerateUuidFromName(testType)
 
 	type mockValues struct {
-		EntitiesTypeList      func() (client.EntitiesTypeList, error)
+		EntitiesTypeList      func() ([]client.EntitiesType, error)
 		EntitiesTypeListCalls int
 		EntitiesList          func() ([]string, error)
 		EntitiesListCalls     int
@@ -53,7 +53,7 @@ func TestDownloadAll(t *testing.T) {
 			name: "DownloadEntities - List Entities Types fails",
 			mockValues: mockValues{
 				EntitiesTypeListCalls: 1,
-				EntitiesTypeList: func() (client.EntitiesTypeList, error) {
+				EntitiesTypeList: func() ([]client.EntitiesType, error) {
 					return nil, fmt.Errorf("oh no")
 				},
 				EntitiesList: func() ([]string, error) {
@@ -67,8 +67,8 @@ func TestDownloadAll(t *testing.T) {
 			name: "DownloadEntities - List Entities fails",
 			mockValues: mockValues{
 				EntitiesTypeListCalls: 1,
-				EntitiesTypeList: func() (client.EntitiesTypeList, error) {
-					return client.EntitiesTypeList{{EntitiesType: testType}, {EntitiesType: testType2}}, nil
+				EntitiesTypeList: func() ([]client.EntitiesType, error) {
+					return []client.EntitiesType{{EntitiesTypeId: testType}, {EntitiesTypeId: testType2}}, nil
 				},
 				EntitiesList: func() ([]string, error) {
 					return nil, fmt.Errorf("oh no")
@@ -81,8 +81,8 @@ func TestDownloadAll(t *testing.T) {
 			name: "DownloadEntities",
 			mockValues: mockValues{
 				EntitiesTypeListCalls: 1,
-				EntitiesTypeList: func() (client.EntitiesTypeList, error) {
-					return client.EntitiesTypeList{{EntitiesType: testType}}, nil
+				EntitiesTypeList: func() ([]client.EntitiesType, error) {
+					return []client.EntitiesType{{EntitiesTypeId: testType}}, nil
 				},
 				EntitiesList: func() ([]string, error) {
 					return []string{""}, nil
@@ -126,20 +126,20 @@ func TestDownload(t *testing.T) {
 	uuid := util.GenerateUuidFromName(testType)
 
 	type mockValues struct {
-		EntitiesTypeList  func() (client.EntitiesTypeList, error)
+		EntitiesTypeList  func() ([]client.EntitiesType, error)
 		EntitiesList      func() ([]string, error)
 		EntitiesListCalls int
 	}
 	tests := []struct {
 		name          string
-		EntitiesTypes []string
+		EntitiesTypes []client.EntitiesType
 		mockValues    mockValues
 		want          v2.ConfigsPerType
 	}{
 		{
 			name: "DownloadEntities - empty list of entities types",
 			mockValues: mockValues{
-				EntitiesTypeList:  func() (client.EntitiesTypeList, error) { return client.EntitiesTypeList{}, nil },
+				EntitiesTypeList:  func() ([]client.EntitiesType, error) { return []client.EntitiesType{}, nil },
 				EntitiesList:      func() ([]string, error) { return []string{}, nil },
 				EntitiesListCalls: 0,
 			},
@@ -147,10 +147,10 @@ func TestDownload(t *testing.T) {
 		},
 		{
 			name:          "DownloadEntities - entities list empty",
-			EntitiesTypes: []string{testType},
+			EntitiesTypes: []client.EntitiesType{{EntitiesTypeId: testType}},
 			mockValues: mockValues{
-				EntitiesTypeList: func() (client.EntitiesTypeList, error) {
-					return client.EntitiesTypeList{{EntitiesType: testType}}, nil
+				EntitiesTypeList: func() ([]client.EntitiesType, error) {
+					return []client.EntitiesType{{EntitiesTypeId: testType}}, nil
 				},
 				EntitiesList: func() ([]string, error) {
 					return make([]string, 0, 1), nil
@@ -161,10 +161,10 @@ func TestDownload(t *testing.T) {
 		},
 		{
 			name:          "DownloadEntities - entities found",
-			EntitiesTypes: []string{testType},
+			EntitiesTypes: []client.EntitiesType{{EntitiesTypeId: testType}},
 			mockValues: mockValues{
-				EntitiesTypeList: func() (client.EntitiesTypeList, error) {
-					return client.EntitiesTypeList{{EntitiesType: testType}}, nil
+				EntitiesTypeList: func() ([]client.EntitiesType, error) {
+					return []client.EntitiesType{{EntitiesTypeId: testType}}, nil
 				},
 				EntitiesList: func() ([]string, error) {
 					return []string{""}, nil
