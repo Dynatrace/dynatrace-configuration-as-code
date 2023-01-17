@@ -31,7 +31,13 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"strconv"
 	"strings"
+)
+
+const (
+	defaultConcurrentDownloads = 50
+	concurrentRequestsEnvKey   = "CONCURRENT_REQUESTS"
 )
 
 //go:generate mockgen -source=download.go -destination=download_mock.go -package=download -write_package_comment=false Command
@@ -118,23 +124,27 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 		cmdOptions.projectName = fmt.Sprintf("%s_%s", cmdOptions.projectName, cmdOptions.specificEnvironmentName)
 	}
 
+	concurrentDownloadLimit := concurrentRequestLimitFromEnv()
+
 	options := downloadOptions{
-		environmentUrl:         u,
-		token:                  token,
-		tokenEnvVarName:        tokenEnvVar,
-		outputFolder:           cmdOptions.outputFolder,
-		projectName:            cmdOptions.projectName,
-		forceOverwriteManifest: cmdOptions.forceOverwrite,
-		specificAPIs:           cmdOptions.specificAPIs,
-		specificSchemas:        cmdOptions.specificSchemas,
-		clientFactory:          rest.NewDynatraceClient,
-		skipSettings:           cmdOptions.skipSettings,
+		environmentUrl:          u,
+		token:                   token,
+		tokenEnvVarName:         tokenEnvVar,
+		outputFolder:            cmdOptions.outputFolder,
+		projectName:             cmdOptions.projectName,
+		forceOverwriteManifest:  cmdOptions.forceOverwrite,
+		specificAPIs:            cmdOptions.specificAPIs,
+		specificSchemas:         cmdOptions.specificSchemas,
+		clientFactory:           rest.NewDynatraceClient,
+		concurrentDownloadLimit: concurrentDownloadLimit,
+		skipSettings:            cmdOptions.skipSettings,
 	}
 	return doDownload(fs, api.NewApis(), options)
 }
 
 func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOptions) error {
 	token := os.Getenv(cmdOptions.envVarName)
+	concurrentDownloadLimit := concurrentRequestLimitFromEnv()
 	errors := validateParameters(cmdOptions.envVarName, cmdOptions.environmentUrl, cmdOptions.projectName, token)
 
 	if len(errors) > 0 {
@@ -144,16 +154,17 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOp
 	}
 
 	options := downloadOptions{
-		environmentUrl:         cmdOptions.environmentUrl,
-		token:                  token,
-		tokenEnvVarName:        cmdOptions.envVarName,
-		outputFolder:           cmdOptions.outputFolder,
-		projectName:            cmdOptions.projectName,
-		forceOverwriteManifest: cmdOptions.forceOverwrite,
-		specificAPIs:           cmdOptions.specificAPIs,
-		specificSchemas:        cmdOptions.specificSchemas,
-		clientFactory:          rest.NewDynatraceClient,
-		skipSettings:           cmdOptions.skipSettings,
+		environmentUrl:          cmdOptions.environmentUrl,
+		token:                   token,
+		tokenEnvVarName:         cmdOptions.envVarName,
+		outputFolder:            cmdOptions.outputFolder,
+		projectName:             cmdOptions.projectName,
+		forceOverwriteManifest:  cmdOptions.forceOverwrite,
+		specificAPIs:            cmdOptions.specificAPIs,
+		specificSchemas:         cmdOptions.specificSchemas,
+		clientFactory:           rest.NewDynatraceClient,
+		concurrentDownloadLimit: concurrentDownloadLimit,
+		skipSettings:            cmdOptions.skipSettings,
 	}
 	return doDownload(fs, api.NewApis(), options)
 }
@@ -161,16 +172,17 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOp
 type dynatraceClientFactory func(environmentUrl, token string) (rest.DynatraceClient, error)
 
 type downloadOptions struct {
-	environmentUrl         string
-	token                  string
-	tokenEnvVarName        string
-	outputFolder           string
-	projectName            string
-	specificAPIs           []string
-	specificSchemas        []string
-	forceOverwriteManifest bool
-	clientFactory          dynatraceClientFactory
-	skipSettings           bool
+	environmentUrl          string
+	token                   string
+	tokenEnvVarName         string
+	outputFolder            string
+	projectName             string
+	specificAPIs            []string
+	specificSchemas         []string
+	forceOverwriteManifest  bool
+	clientFactory           dynatraceClientFactory
+	concurrentDownloadLimit int
+	skipSettings            bool
 }
 
 func (c downloadOptions) getDynatraceClient() (rest.DynatraceClient, error) {
@@ -237,6 +249,8 @@ func downloadConfigs(apis api.ApiMap, opts downloadOptions) (project.ConfigsPerT
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Dynatrace client: %w", err)
 	}
+
+	client = rest.LimitClientParallelRequests(client, opts.concurrentDownloadLimit)
 
 	apisToDownload, errors := getApisToDownload(apis, opts.specificAPIs)
 	if len(errors) > 0 {
@@ -363,4 +377,12 @@ func getApisToDownload(apis api.ApiMap, specificAPIs []string) (api.ApiMap, []er
 	}
 
 	return apisToDownload, errors
+}
+
+func concurrentRequestLimitFromEnv() int {
+	limit, err := strconv.Atoi(os.Getenv(concurrentRequestsEnvKey))
+	if err != nil || limit < 0 {
+		limit = defaultConcurrentDownloads
+	}
+	return limit
 }

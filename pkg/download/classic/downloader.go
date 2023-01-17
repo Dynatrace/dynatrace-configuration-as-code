@@ -18,8 +18,6 @@ package classic
 
 import (
 	"encoding/json"
-	"os"
-	"strconv"
 	"sync"
 	"time"
 
@@ -34,13 +32,8 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 )
 
-const (
-	defaultConcurrentDownloads = 50
-	concurrentRequestsEnvKey   = "CONCURRENT_REQUESTS"
-)
-
 func DownloadAllConfigs(apisToDownload api.ApiMap, client rest.DynatraceClient, projectName string) project.ConfigsPerType {
-	return NewDownloader(client, WithParallelRequestLimitFromEnv()).DownloadAll(apisToDownload, projectName)
+	return NewDownloader(client).DownloadAll(apisToDownload, projectName)
 }
 
 // Downloader is responsible for downloading classic Dynatrace APIs
@@ -58,15 +51,6 @@ type Downloader struct {
 func WithAPIFilters(apiFilters map[string]apiFilter) func(*Downloader) {
 	return func(d *Downloader) {
 		d.apiFilters = apiFilters
-	}
-}
-
-// WithParallelRequestLimitFromEnv configures the download to acknowledge a limit of parallel requests
-// to the Dynatrace API. The limit will be read from the environment variable CONCURRENT_REQUESTS if set.
-// It defaults to 50 otherwise
-func WithParallelRequestLimitFromEnv() func(downloader *Downloader) {
-	return func(d *Downloader) {
-		d.client = rest.LimitClientParallelRequests(d.client, concurrentRequestLimitFromEnv())
 	}
 }
 
@@ -255,11 +239,4 @@ func (d *Downloader) filterConfigsToSkip(a api.Api, value []api.Value) []api.Val
 	}
 
 	return valuesToDownload
-}
-func concurrentRequestLimitFromEnv() int {
-	limit, err := strconv.Atoi(os.Getenv(concurrentRequestsEnvKey))
-	if err != nil || limit < 0 {
-		limit = defaultConcurrentDownloads
-	}
-	return limit
 }

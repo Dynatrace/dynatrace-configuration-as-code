@@ -123,7 +123,7 @@ func TestDownloadAll(t *testing.T) {
 			c.EXPECT().ListSchemas().Times(tt.mockValues.ListSchemasCalls).Return(schemas, err)
 			settings, err := tt.mockValues.Settings()
 			c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err)
-			res := DownloadAll(c, "projectName")
+			res := NewSettingsDownloader(c).DownloadAll("projectName")
 			assert.Equal(t, tt.want, res)
 		})
 	}
@@ -197,7 +197,7 @@ func TestDownload(t *testing.T) {
 			c := rest.NewMockDynatraceClient(gomock.NewController(t))
 			settings, err := tt.mockValues.Settings()
 			c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err)
-			res := Download(c, tt.Schemas, "projectName")
+			res := NewSettingsDownloader(c).Download(tt.Schemas, "projectName")
 			assert.Equal(t, tt.want, res)
 		})
 	}

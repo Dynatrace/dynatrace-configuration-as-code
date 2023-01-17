@@ -822,12 +822,13 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 
 func getTestingDownloadOptions(server *httptest.Server, projectName string) downloadOptions {
 	return downloadOptions{
-		environmentUrl:  server.URL,
-		token:           "token",
-		tokenEnvVarName: "TOKEN_ENV_VAR",
-		outputFolder:    "out",
-		projectName:     projectName,
-		skipSettings:    true,
+		environmentUrl:          server.URL,
+		token:                   "token",
+		tokenEnvVarName:         "TOKEN_ENV_VAR",
+		outputFolder:            "out",
+		projectName:             projectName,
+		skipSettings:            true,
+		concurrentDownloadLimit: 50,
 		clientFactory: func(environmentUrl, token string) (rest.DynatraceClient, error) {
 			return rest.NewDynatraceClientForTesting(environmentUrl, token, server.Client())
 		},

@@ -238,10 +238,3 @@ func TestDownloadAll_MalformedResponseFromAnAPI(t *testing.T) {
 	configurations := downloader.DownloadAll(apiMap, "project")
 	assert.Len(t, configurations, 1)
 }
-
-func TestWithParallelRequestLimitFromEnvOption(t *testing.T) {
-	assert.Equal(t, defaultConcurrentDownloads, concurrentRequestLimitFromEnv())
-	t.Setenv(concurrentRequestsEnvKey, "51")
-	assert.Equal(t, 51, concurrentRequestLimitFromEnv())
-
-}
