@@ -469,19 +469,19 @@ func parseReference(context *ConfigConvertContext, config configV1.Config, param
 
 	parts := strings.Split(configId, "/")
 
-	var projectId, referencedConfigId, referencedApiId string
-
 	numberOfParts := len(parts)
-	if numberOfParts < 2 { // invalid definition
+	if numberOfParts < 2 {
 		return nil, newReferenceParserError(context.ProjectId, config, parameterName,
-			fmt.Sprintf("wrong reference. please provide '<projectId>/<name>/<config>.<property>' for referencing to another project or '<name>/<config>.<property>' for referencing within the same project (actual value:%v)", configId))
-	} else if numberOfParts == 2 { //reference to current project
-		referencedConfigId = parts[numberOfParts-1]
-		referencedApiId = parts[numberOfParts-2]
+			"wrong reference. please provide '<projectId>/<name>/<config>.<property>' for referencing to another project or '<name>/<config>.<property>' for referencing within the same project")
+	}
+
+	referencedConfigId := parts[numberOfParts-1]
+	referencedApiId := parts[numberOfParts-2]
+
+	var projectId string
+	if numberOfParts == 2 { // project missing -> reference the current project
 		projectId = context.ProjectId
-	} else { // reference to another project
-		referencedConfigId = parts[numberOfParts-1]
-		referencedApiId = parts[numberOfParts-2]
+	} else {
 		projectId = strings.Join(parts[0:numberOfParts-2], ".")
 	}
 

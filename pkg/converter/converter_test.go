@@ -997,6 +997,14 @@ func Test_parseReference(t *testing.T) {
 			refParam.New("some-project", "new-api", "some-config", "some-property"),
 			false,
 		},
+		{
+			"resolve reference with longer path at the start",
+			"test-param",
+			"/movies/science fiction/the-hitchhikers-guide-to-the-galaxy/management-zone/zone-multiproject.id",
+			api.NewApis(),
+			refParam.New("movies.science fiction.the-hitchhikers-guide-to-the-galaxy", "management-zone", "zone-multiproject", "id"),
+			false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
