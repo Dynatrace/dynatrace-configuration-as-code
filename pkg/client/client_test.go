@@ -274,10 +274,27 @@ func TestListKnownSettings(t *testing.T) {
 			wantError:            false,
 		},
 		{
-			name:          "Returns error if HTTP error is encountered",
+			name:          "Returns error if HTTP error is encountered - 400",
 			givenSchemaId: "builtin:something",
 			givenServerResponses: []testServerResponse{
 				{400, `epic fail`},
+			},
+			want: nil,
+			wantQueryParamsPerApiCall: [][]testQueryParams{
+				{
+					{"schemaIds", "builtin:something"},
+					{"pageSize", "500"},
+					{"fields", defaultListSettingsFields},
+				},
+			},
+			wantNumberOfApiCalls: 1,
+			wantError:            true,
+		},
+		{
+			name:          "Returns error if HTTP error is encountered - 403",
+			givenSchemaId: "builtin:something",
+			givenServerResponses: []testServerResponse{
+				{403, `epic fail`},
 			},
 			want: nil,
 			wantQueryParamsPerApiCall: [][]testQueryParams{
@@ -546,7 +563,7 @@ func TestListEntities(t *testing.T) {
 
 	tests := []struct {
 		name                      string
-		givenEntitiesType         string
+		givenEntitiesType         EntitiesType
 		givenServerResponses      []testServerResponse
 		want                      []string
 		wantQueryParamsPerApiCall [][]testQueryParams
@@ -555,7 +572,7 @@ func TestListEntities(t *testing.T) {
 	}{
 		{
 			name:              "Lists Entities objects as expected",
-			givenEntitiesType: testType,
+			givenEntitiesType: EntitiesType{EntitiesTypeId: testType},
 			givenServerResponses: []testServerResponse{
 				{200, fmt.Sprintf(`{ "entities": [ {"entityId": "%s-1A28B791C329D741", "type": "%s"} ] }`, testType, testType)},
 			},
@@ -565,9 +582,8 @@ func TestListEntities(t *testing.T) {
 			wantQueryParamsPerApiCall: [][]testQueryParams{
 				{
 					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
-					{"pageSize", defaultPageSize},
+					{"pageSize", defaultPageSizeEntities},
 					{"fields", defaultListEntitiesFields},
-					{"from", defaultEntityRelativeTimeframe},
 				},
 			},
 			wantNumberOfApiCalls: 1,
@@ -575,7 +591,7 @@ func TestListEntities(t *testing.T) {
 		},
 		{
 			name:              "Handles Pagination when listing entities objects",
-			givenEntitiesType: "SOMETHING",
+			givenEntitiesType: EntitiesType{EntitiesTypeId: testType},
 			givenServerResponses: []testServerResponse{
 				{200, fmt.Sprintf(`{ "entities": [ {"entityId": "%s-1A28B791C329D741", "type": "%s"} ], "nextPageKey": "page42"  }`, testType, testType)},
 				{200, fmt.Sprintf(`{ "entities": [ {"entityId": "%s-C329D7411A28B791", "type": "%s"} ] }`, testType, testType)},
@@ -588,9 +604,8 @@ func TestListEntities(t *testing.T) {
 			wantQueryParamsPerApiCall: [][]testQueryParams{
 				{
 					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
-					{"pageSize", defaultPageSize},
+					{"pageSize", defaultPageSizeEntities},
 					{"fields", defaultListEntitiesFields},
-					{"from", defaultEntityRelativeTimeframe},
 				},
 				{
 					{"nextPageKey", "page42"},
@@ -601,7 +616,7 @@ func TestListEntities(t *testing.T) {
 		},
 		{
 			name:              "Returns empty if list if no entities exist",
-			givenEntitiesType: "SOMETHING",
+			givenEntitiesType: EntitiesType{EntitiesTypeId: testType},
 			givenServerResponses: []testServerResponse{
 				{200, `{ "entities": [ ] }`},
 			},
@@ -609,9 +624,8 @@ func TestListEntities(t *testing.T) {
 			wantQueryParamsPerApiCall: [][]testQueryParams{
 				{
 					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
-					{"pageSize", defaultPageSize},
+					{"pageSize", defaultPageSizeEntities},
 					{"fields", defaultListEntitiesFields},
-					{"from", defaultEntityRelativeTimeframe},
 				},
 			},
 			wantNumberOfApiCalls: 1,
@@ -619,7 +633,7 @@ func TestListEntities(t *testing.T) {
 		},
 		{
 			name:              "Returns error if HTTP error is encountered",
-			givenEntitiesType: "SOMETHING",
+			givenEntitiesType: EntitiesType{EntitiesTypeId: testType},
 			givenServerResponses: []testServerResponse{
 				{400, `epic fail`},
 			},
@@ -627,9 +641,8 @@ func TestListEntities(t *testing.T) {
 			wantQueryParamsPerApiCall: [][]testQueryParams{
 				{
 					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
-					{"pageSize", defaultPageSize},
+					{"pageSize", defaultPageSizeEntities},
 					{"fields", defaultListEntitiesFields},
-					{"from", defaultEntityRelativeTimeframe},
 				},
 			},
 			wantNumberOfApiCalls: 1,
@@ -637,7 +650,7 @@ func TestListEntities(t *testing.T) {
 		},
 		{
 			name:              "Retries on HTTP error on paginated request and returns eventual success",
-			givenEntitiesType: "SOMETHING",
+			givenEntitiesType: EntitiesType{EntitiesTypeId: testType},
 			givenServerResponses: []testServerResponse{
 				{200, fmt.Sprintf(`{ "entities": [ {"entityId": "%s-1A28B791C329D741", "type": "%s"} ], "nextPageKey": "page42"  }`, testType, testType)},
 				{400, `get next page fail`},
@@ -651,9 +664,8 @@ func TestListEntities(t *testing.T) {
 			wantQueryParamsPerApiCall: [][]testQueryParams{
 				{
 					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
-					{"pageSize", defaultPageSize},
+					{"pageSize", defaultPageSizeEntities},
 					{"fields", defaultListEntitiesFields},
-					{"from", defaultEntityRelativeTimeframe},
 				},
 				{
 					{"nextPageKey", "page42"},
@@ -670,7 +682,7 @@ func TestListEntities(t *testing.T) {
 		},
 		{
 			name:              "Returns error if HTTP error is encountered getting further paginated responses",
-			givenEntitiesType: "SOMETHING",
+			givenEntitiesType: EntitiesType{EntitiesTypeId: testType},
 			givenServerResponses: []testServerResponse{
 				{200, fmt.Sprintf(`{ "entities": [ {"entityId": "%s-1A28B791C329D741", "type": "%s"} ], "nextPageKey": "page42"  }`, testType, testType)},
 				{400, `get next page fail`},
@@ -682,9 +694,8 @@ func TestListEntities(t *testing.T) {
 			wantQueryParamsPerApiCall: [][]testQueryParams{
 				{
 					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
-					{"pageSize", defaultPageSize},
+					{"pageSize", defaultPageSizeEntities},
 					{"fields", defaultListEntitiesFields},
-					{"from", defaultEntityRelativeTimeframe},
 				},
 				{
 					{"nextPageKey", "page42"},

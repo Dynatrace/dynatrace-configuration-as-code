@@ -20,5 +20,5 @@ import "os"
 
 func FeatureFlagEnabled(env string) bool {
 	val, ok := os.LookupEnv(env)
-	return ok && val != "0"
+	return ok && val != "0" && val != ""
 }

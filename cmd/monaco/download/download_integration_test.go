@@ -477,7 +477,8 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 	responses := map[string]string{
 		"/dashboard":      "dashboard/__LIST.json",
 		"/dashboard/id-1": "dashboard/id-1.json",
-		"/dashboard/id-2": "dashboard/id-2.json", //"/dashboard/id-3": "dashboard/id-3.json", // MUST NEVER BE ACCESSED, pre-download filter remove the need to download it
+		"/dashboard/id-2": "dashboard/id-2.json",
+		//"/dashboard/id-3": "dashboard/id-3.json", // MUST NEVER BE ACCESSED, pre-download filter remove the need to download it
 		"/dashboard/id-4": "dashboard/id-4.json",
 	}
 

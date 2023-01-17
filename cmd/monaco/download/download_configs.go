@@ -16,11 +16,13 @@ package download
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
-	"os"
-	"strings"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
@@ -61,7 +63,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 		cmdOptions.projectName = fmt.Sprintf("%s_%s", cmdOptions.projectName, cmdOptions.specificEnvironmentName)
 	}
 
-	concurrentDownloadLimit := concurrentRequestLimitFromEnv()
+	concurrentDownloadLimit := rest.ConcurrentRequestLimitFromEnv(true)
 
 	options := downloadOptions{
 		downloadOptionsShared: downloadOptionsShared{
@@ -84,7 +86,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 
 func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOptions) error {
 	token := os.Getenv(cmdOptions.envVarName)
-	concurrentDownloadLimit := concurrentRequestLimitFromEnv()
+	concurrentDownloadLimit := rest.ConcurrentRequestLimitFromEnv(true)
 	errors := validateParameters(cmdOptions.envVarName, cmdOptions.environmentUrl, cmdOptions.projectName, token)
 
 	if len(errors) > 0 {
