@@ -730,8 +730,7 @@ func isRetryOnEmptyResponse(receivedCount int, emptyResponseRetryCount int, resp
 	if receivedCount == 0 {
 		if emptyResponseRetryCount < emptyResponseRetryMax {
 			emptyResponseRetryCount++
-			rateLimitStrategy := rest.CreateRateLimitStrategy()
-			rateLimitStrategy.ThrottleCallAfterError("Received empty array response, retrying with same nextPageKey (HTTP: %d) ", resp.StatusCode)
+			throttleTooManyRequests("Received empty array response, retrying with same nextPageKey (HTTP: %d) ", resp.StatusCode)
 			return true, emptyResponseRetryCount, nil
 		} else {
 			return false, emptyResponseRetryCount, fmt.Errorf("received too many empty responses (=%d)", emptyResponseRetryCount)
@@ -812,4 +811,10 @@ func logLongRunningExtractionProgress(lastLogTime *time.Time, startTime time.Tim
 
 		log.Debug("Running extration of: %s for %.1f minutes%s %.1f call/minute. %s", logLabel, runningMinutes, nbItemsMessage, nbCallsPerMinute, ETAMessage)
 	}
+}
+
+// Avoid HTTP codes like:  403, 429, 500 with redirect, etc
+func throttleTooManyRequests(message string, a ...any) {
+	log.Debug("%s, waiting 2 seconds to avoid Too Many Request errors", fmt.Sprintf(message, a...))
+	time.Sleep(time.Second * 2)
 }
