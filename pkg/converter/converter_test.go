@@ -363,7 +363,7 @@ func TestConvertDeprecatedConfigToLatest(t *testing.T) {
 
 	assert.Equal(t, 0, len(errors), "errors: %s", errors)
 	assert.Equal(t, projectId, convertedConfig.Coordinate.Project)
-	assert.Equal(t, deprecatedApi.IsDeprecatedBy(), convertedConfig.Coordinate.Type)
+	assert.Equal(t, deprecatedApi.DeprecatedBy(), convertedConfig.Coordinate.Type)
 	assert.Equal(t, configId, convertedConfig.Coordinate.ConfigId)
 	assert.Equal(t, environmentName, convertedConfig.Environment)
 

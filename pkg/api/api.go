@@ -245,7 +245,7 @@ type Api interface {
 	IsSingleConfigurationApi() bool
 	IsNonUniqueNameApi() bool
 	IsDeprecatedApi() bool
-	IsDeprecatedBy() string
+	DeprecatedBy() string
 
 	// ShouldSkipDownload indicates whether an API should be downloaded or not.
 	//
@@ -261,7 +261,7 @@ type apiInput struct {
 	propertyNameOfGetAllResponse string
 	isSingleConfigurationApi     bool
 	isNonUniqueNameApi           bool
-	isDeprecatedBy               string
+	deprecatedBy                 string
 	skipDownload                 bool
 }
 
@@ -271,7 +271,7 @@ type apiImpl struct {
 	propertyNameOfGetAllResponse string
 	isSingleConfigurationApi     bool
 	isNonUniqueNameApi           bool
-	isDeprecatedBy               string
+	deprecatedBy                 string
 	skipDownload                 bool
 }
 
@@ -317,14 +317,14 @@ func GetApiNameLookup(apis map[string]Api) map[string]struct{} {
 
 func newApi(id string, input apiInput) Api {
 	if input.isSingleConfigurationApi {
-		return NewSingleConfigurationApi(id, input.apiPath, input.isDeprecatedBy, input.skipDownload)
+		return NewSingleConfigurationApi(id, input.apiPath, input.deprecatedBy, input.skipDownload)
 	}
 
 	if input.propertyNameOfGetAllResponse == "" {
-		return NewStandardApi(id, input.apiPath, input.isNonUniqueNameApi, input.isDeprecatedBy, input.skipDownload)
+		return NewStandardApi(id, input.apiPath, input.isNonUniqueNameApi, input.deprecatedBy, input.skipDownload)
 	}
 
-	return NewApi(id, input.apiPath, input.propertyNameOfGetAllResponse, false, input.isNonUniqueNameApi, input.isDeprecatedBy, input.skipDownload)
+	return NewApi(id, input.apiPath, input.propertyNameOfGetAllResponse, false, input.isNonUniqueNameApi, input.deprecatedBy, input.skipDownload)
 }
 
 // NewStandardApi creates an API with propertyNameOfGetAllResponse set to "values"
@@ -367,7 +367,7 @@ func NewApi(
 		propertyNameOfGetAllResponse: propertyNameOfGetAllResponse,
 		isSingleConfigurationApi:     isSingleConfigurationApi,
 		isNonUniqueNameApi:           isNonUniqueNameApi,
-		isDeprecatedBy:               isDeprecatedBy,
+		deprecatedBy:                 isDeprecatedBy,
 		skipDownload:                 skipDownload,
 	}
 }
@@ -405,11 +405,11 @@ func (a *apiImpl) IsNonUniqueNameApi() bool {
 // are deprecated from DT's side. While shwoing a warning, deploying and downloading
 // such APIs works as long as it's supported by DT's API.
 func (a *apiImpl) IsDeprecatedApi() bool {
-	return a.isDeprecatedBy != ""
+	return a.deprecatedBy != ""
 }
 
-func (a *apiImpl) IsDeprecatedBy() string {
-	return a.isDeprecatedBy
+func (a *apiImpl) DeprecatedBy() string {
+	return a.deprecatedBy
 }
 
 func (a *apiImpl) ShouldSkipDownload() bool {

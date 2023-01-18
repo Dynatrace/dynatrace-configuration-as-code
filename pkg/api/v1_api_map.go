@@ -35,7 +35,7 @@ var v1ApiMap = map[string]apiInput{
 	"dashboard": {
 		apiPath:                      "/api/config/v1/dashboards",
 		propertyNameOfGetAllResponse: "dashboards",
-		isDeprecatedBy:               "dashboard-v2",
+		deprecatedBy:                 "dashboard-v2",
 	},
 	"dashboard-v2": {
 		apiPath:                      "/api/config/v1/dashboards",
@@ -81,8 +81,8 @@ var v1ApiMap = map[string]apiInput{
 		apiPath: "/api/v1/synthetic/monitors",
 	},
 	"application": {
-		apiPath:        "/api/config/v1/applications/web",
-		isDeprecatedBy: "application-web",
+		apiPath:      "/api/config/v1/applications/web",
+		deprecatedBy: "application-web",
 	},
 	"application-web": {
 		apiPath: "/api/config/v1/applications/web",
@@ -91,8 +91,8 @@ var v1ApiMap = map[string]apiInput{
 		apiPath: "/api/config/v1/applications/mobile",
 	},
 	"app-detection-rule": {
-		apiPath:        "/api/config/v1/applicationDetectionRules",
-		isDeprecatedBy: "app-detection-rule-v2",
+		apiPath:      "/api/config/v1/applicationDetectionRules",
+		deprecatedBy: "app-detection-rule-v2",
 	},
 	"app-detection-rule-v2": {
 		apiPath:            "/api/config/v1/applicationDetectionRules",
@@ -138,8 +138,8 @@ var v1ApiMap = map[string]apiInput{
 		apiPath: "/api/config/v1/maintenanceWindows",
 	},
 	"request-naming-service": {
-		apiPath:        "/api/config/v1/service/requestNaming",
-		isDeprecatedBy: "request-naming-service-v2",
+		apiPath:      "/api/config/v1/service/requestNaming",
+		deprecatedBy: "request-naming-service-v2",
 	},
 	"request-naming-service-v2": {
 		apiPath:            "/api/config/v1/service/requestNaming",
@@ -242,7 +242,7 @@ func GetV2ApiId(forV1Api Api) string {
 	currentApiId := forV1Api.GetId()
 
 	if forV1Api.IsDeprecatedApi() {
-		currentApiId = forV1Api.IsDeprecatedBy()
+		currentApiId = forV1Api.DeprecatedBy()
 	}
 
 	return strings.TrimSuffix(currentApiId, "-v2")
