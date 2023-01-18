@@ -196,7 +196,7 @@ func TestDeploySetting(t *testing.T) {
 		},
 	}
 
-	client := rest.NewMockDynatraceClient(gomock.NewController(t))
+	client := rest.NewMockClient(gomock.NewController(t))
 	client.EXPECT().UpsertSettings(gomock.Any()).Times(1)
 
 	conf := &config.Config{
@@ -401,7 +401,7 @@ func TestDeployConfigsWithOneConfigToSkip(t *testing.T) {
 }
 
 func TestDeployConfigsTargetingSettings(t *testing.T) {
-	client := rest.NewMockDynatraceClient(gomock.NewController(t))
+	client := rest.NewMockClient(gomock.NewController(t))
 	var apis map[string]api.Api
 	sortedConfigs := []config.Config{
 		{
@@ -438,7 +438,7 @@ func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
 	theApi.EXPECT().IsDeprecatedApi().Return(false)
 	theApi.EXPECT().IsNonUniqueNameApi().Return(false)
 
-	client := rest.NewMockDynatraceClient(gomock.NewController(t))
+	client := rest.NewMockClient(gomock.NewController(t))
 	client.EXPECT().UpsertByName(gomock.Any(), theConfigName, gomock.Any()).Times(1)
 
 	apis := map[string]api.Api{theApiName: theApi}
@@ -474,7 +474,7 @@ func TestDeployConfigsTargetingClassicConfigNonUnique(t *testing.T) {
 	theApi.EXPECT().IsDeprecatedApi().Return(false)
 	theApi.EXPECT().IsNonUniqueNameApi().Return(true)
 
-	client := rest.NewMockDynatraceClient(gomock.NewController(t))
+	client := rest.NewMockClient(gomock.NewController(t))
 	client.EXPECT().UpsertByEntityId(gomock.Any(), gomock.Any(), theConfigName, gomock.Any())
 
 	apis := map[string]api.Api{theApiName: theApi}
@@ -505,7 +505,7 @@ func TestDeployConfigsNoApi(t *testing.T) {
 	theConfigName := "theConfigName"
 	theApiName := "theApiName"
 
-	client := rest.NewMockDynatraceClient(gomock.NewController(t))
+	client := rest.NewMockClient(gomock.NewController(t))
 
 	apis := map[string]api.Api{}
 	parameters := []topologysort.ParameterWithName{

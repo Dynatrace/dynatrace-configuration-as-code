@@ -20,14 +20,14 @@ import (
 )
 
 type limitingClient struct {
-	client  DynatraceClient
+	client  Client
 	limiter *concurrency.Limiter
 }
 
-var _ DynatraceClient = (*limitingClient)(nil)
+var _ Client = (*limitingClient)(nil)
 
 // LimitClientParallelRequests utilizes the decorator pattern to limit parallel requests to the dynatrace API
-func LimitClientParallelRequests(client DynatraceClient, maxParallelRequests int) DynatraceClient {
+func LimitClientParallelRequests(client Client, maxParallelRequests int) Client {
 	return &limitingClient{
 		client,
 		concurrency.NewLimiter(maxParallelRequests),

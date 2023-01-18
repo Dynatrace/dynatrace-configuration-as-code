@@ -135,7 +135,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 		forceOverwriteManifest:  cmdOptions.forceOverwrite,
 		specificAPIs:            cmdOptions.specificAPIs,
 		specificSchemas:         cmdOptions.specificSchemas,
-		clientFactory:           rest.NewDynatraceClient,
+		clientProvider:          rest.NewDynatraceClient,
 		concurrentDownloadLimit: concurrentDownloadLimit,
 		skipSettings:            cmdOptions.skipSettings,
 	}
@@ -162,14 +162,14 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOp
 		forceOverwriteManifest:  cmdOptions.forceOverwrite,
 		specificAPIs:            cmdOptions.specificAPIs,
 		specificSchemas:         cmdOptions.specificSchemas,
-		clientFactory:           rest.NewDynatraceClient,
+		clientProvider:          rest.NewDynatraceClient,
 		concurrentDownloadLimit: concurrentDownloadLimit,
 		skipSettings:            cmdOptions.skipSettings,
 	}
 	return doDownload(fs, api.NewApis(), options)
 }
 
-type dynatraceClientFactory func(environmentUrl, token string) (rest.DynatraceClient, error)
+type DynatraceClientProvider func(string, string, ...func(*rest.DynatraceClient)) (*rest.DynatraceClient, error)
 
 type downloadOptions struct {
 	environmentUrl          string
@@ -180,13 +180,13 @@ type downloadOptions struct {
 	specificAPIs            []string
 	specificSchemas         []string
 	forceOverwriteManifest  bool
-	clientFactory           dynatraceClientFactory
+	clientProvider          DynatraceClientProvider
 	concurrentDownloadLimit int
 	skipSettings            bool
 }
 
-func (c downloadOptions) getDynatraceClient() (rest.DynatraceClient, error) {
-	return c.clientFactory(c.environmentUrl, c.token)
+func (c downloadOptions) getDynatraceClient() (rest.Client, error) {
+	return c.clientProvider(c.environmentUrl, c.token)
 }
 
 func doDownload(fs afero.Fs, apis api.ApiMap, opts downloadOptions) error {

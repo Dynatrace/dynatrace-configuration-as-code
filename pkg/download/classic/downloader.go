@@ -32,7 +32,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 )
 
-func DownloadAllConfigs(apisToDownload api.ApiMap, client rest.DynatraceClient, projectName string) project.ConfigsPerType {
+func DownloadAllConfigs(apisToDownload api.ApiMap, client rest.Client, projectName string) project.ConfigsPerType {
 	return NewDownloader(client).DownloadAll(apisToDownload, projectName)
 }
 
@@ -44,7 +44,7 @@ type Downloader struct {
 
 	// client is the actual rest client used to call
 	// the dynatrace APIs
-	client rest.DynatraceClient
+	client rest.Client
 }
 
 // WithAPIFilters sets the api filters for the Downloader
@@ -55,7 +55,7 @@ func WithAPIFilters(apiFilters map[string]apiFilter) func(*Downloader) {
 }
 
 // NewDownloader creates a new Downloader
-func NewDownloader(client rest.DynatraceClient, opts ...func(*Downloader)) *Downloader {
+func NewDownloader(client rest.Client, opts ...func(*Downloader)) *Downloader {
 	c := &Downloader{
 		apiFilters: apiFilters,
 		client:     client,

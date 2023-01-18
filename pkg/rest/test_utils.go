@@ -30,7 +30,7 @@ import (
 	"testing"
 )
 
-var testRetrySettings = retrySettings{
+var testRetrySettings = RetrySettings{
 	normal: retrySetting{
 		waitTime:   0,
 		maxRetries: defaultRetrySettings.normal.maxRetries,
@@ -43,14 +43,6 @@ var testRetrySettings = retrySettings{
 		waitTime:   0,
 		maxRetries: defaultRetrySettings.veryLong.maxRetries,
 	},
-}
-
-// newDynatraceClientForTesting creates a new DynatraceClient for a given test-server
-func newDynatraceClientForTesting(server *httptest.Server) DynatraceClient {
-	return &dynatraceClient{
-		client:         server.Client(),
-		environmentUrl: server.URL,
-	}
 }
 
 type integrationTestResources struct {
@@ -146,6 +138,7 @@ func NewIntegrationTestServer(t *testing.T, basePath string, mappings map[string
 	return testServer
 }
 
-func NewDynatraceClientForTesting(environmentUrl, token string, client *http.Client) (DynatraceClient, error) {
-	return newDynatraceClient(environmentUrl, token, client, defaultRetrySettings)
+func NewDynatraceClientForTesting(environmentUrl, token string, client *http.Client) (*DynatraceClient, error) {
+
+	return NewDynatraceClient(environmentUrl, token, WithHTTPClient(client))
 }

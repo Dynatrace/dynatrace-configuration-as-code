@@ -118,7 +118,7 @@ func TestDownloadAll(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := rest.NewMockDynatraceClient(gomock.NewController(t))
+			c := rest.NewMockClient(gomock.NewController(t))
 			schemas, err := tt.mockValues.Schemas()
 			c.EXPECT().ListSchemas().Times(tt.mockValues.ListSchemasCalls).Return(schemas, err)
 			settings, err := tt.mockValues.Settings()
@@ -194,7 +194,7 @@ func TestDownload(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := rest.NewMockDynatraceClient(gomock.NewController(t))
+			c := rest.NewMockClient(gomock.NewController(t))
 			settings, err := tt.mockValues.Settings()
 			c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err)
 			res := NewSettingsDownloader(c).Download(tt.Schemas, "projectName")

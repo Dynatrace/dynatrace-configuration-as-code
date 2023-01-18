@@ -42,7 +42,7 @@ type DummyClient struct {
 }
 
 var (
-	_ rest.DynatraceClient = (*DummyClient)(nil)
+	_ rest.Client = (*DummyClient)(nil)
 )
 
 func (c *DummyClient) List(a api.Api) (values []api.Value, err error) {

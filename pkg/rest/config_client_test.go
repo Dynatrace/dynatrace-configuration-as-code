@@ -586,7 +586,7 @@ func Test_GetObjectIdIfAlreadyExists_WorksCorrectlyForAddedQueryParameters(t *te
 			}))
 			defer server.Close()
 			testApi := api.NewStandardApi(tt.apiKey, "", false, "", false)
-			s := retrySettings{
+			s := RetrySettings{
 				normal: retrySetting{
 					waitTime:   0,
 					maxRetries: 5,

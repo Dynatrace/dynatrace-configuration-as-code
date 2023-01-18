@@ -125,7 +125,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 			apiMap := map[string]api.Api{a.GetId(): a}
 			entriesToDelete := map[string][]DeletePointer{a.GetId(): tc.args.entries}
 
-			client := rest.NewMockDynatraceClient(gomock.NewController(t))
+			client := rest.NewMockClient(gomock.NewController(t))
 			client.EXPECT().List(a).Return(tc.args.values, nil)
 
 			for _, id := range tc.expect.ids {
@@ -146,7 +146,7 @@ func TestSplitConfigsForDeletionClientReturnsError(t *testing.T) {
 	apiMap := map[string]api.Api{a.GetId(): a}
 	entriesToDelete := map[string][]DeletePointer{a.GetId(): {{}}}
 
-	client := rest.NewMockDynatraceClient(gomock.NewController(t))
+	client := rest.NewMockClient(gomock.NewController(t))
 	client.EXPECT().List(a).Return(nil, errors.New("error"))
 
 	errs := DeleteConfigs(client, apiMap, entriesToDelete)

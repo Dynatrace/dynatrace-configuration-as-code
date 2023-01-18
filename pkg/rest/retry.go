@@ -26,13 +26,13 @@ type retrySetting struct {
 	maxRetries int
 }
 
-type retrySettings struct {
+type RetrySettings struct {
 	normal   retrySetting
 	long     retrySetting
 	veryLong retrySetting
 }
 
-var defaultRetrySettings = retrySettings{
+var defaultRetrySettings = RetrySettings{
 	normal: retrySetting{
 		waitTime:   5 * time.Second,
 		maxRetries: 3,

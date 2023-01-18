@@ -34,8 +34,13 @@ func TestNewClientNoUrl(t *testing.T) {
 	assert.ErrorContains(t, err, "no environment url")
 }
 
+func TestNewClientInvalidURL(t *testing.T) {
+	_, err := NewDynatraceClient("INVALID_URL", "abc")
+	assert.ErrorContains(t, err, "environment url INVALID_URL was not valid")
+}
+
 func TestUrlSuffixGetsTrimmed(t *testing.T) {
-	client, err := newDynatraceClient("https://my-environment.live.dynatrace.com/", "abc", nil, defaultRetrySettings)
+	client, err := NewDynatraceClient("https://my-environment.live.dynatrace.com/", "abc")
 	assert.NilError(t, err)
 	assert.Equal(t, client.environmentUrl, "https://my-environment.live.dynatrace.com")
 }
@@ -66,11 +71,11 @@ func TestNewClient(t *testing.T) {
 }
 
 func TestReadByIdReturnsAnErrorUponEncounteringAnError(t *testing.T) {
-	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+	testServer := httptest.NewTLSServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		http.Error(res, "", http.StatusForbidden)
 	}))
 	defer func() { testServer.Close() }()
-	client := newDynatraceClientForTesting(testServer)
+	client, _ := NewDynatraceClient(testServer.URL, "abc", WithHTTPClient(testServer.Client()))
 
 	_, err := client.ReadById(mockApi, "test")
 	assert.ErrorContains(t, err, "Response was")
@@ -79,9 +84,9 @@ func TestReadByIdReturnsAnErrorUponEncounteringAnError(t *testing.T) {
 func TestReadByIdEscapesTheId(t *testing.T) {
 	unescapedId := "ruxit.perfmon.dotnetV4:%TimeInGC:time_in_gc_alert_high_generic"
 
-	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {}))
+	testServer := httptest.NewTLSServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {}))
 	defer func() { testServer.Close() }()
-	client := newDynatraceClientForTesting(testServer)
+	client, _ := NewDynatraceClient(testServer.URL, "abc", WithHTTPClient(testServer.Client()))
 
 	_, err := client.ReadById(mockApiNotSingle, unescapedId)
 	assert.NilError(t, err)
@@ -90,12 +95,12 @@ func TestReadByIdEscapesTheId(t *testing.T) {
 func TestReadByIdReturnsTheResponseGivenNoError(t *testing.T) {
 	body := []byte{1, 3, 3, 7}
 
-	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+	testServer := httptest.NewTLSServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		res.Write(body)
 	}))
 	defer func() { testServer.Close() }()
 
-	client := newDynatraceClientForTesting(testServer)
+	client, _ := NewDynatraceClient(testServer.URL, "abc", WithHTTPClient(testServer.Client()))
 
 	resp, err := client.ReadById(mockApi, "test")
 	assert.NilError(t, err, "there should not be an error")
@@ -351,7 +356,7 @@ func TestListKnownSettings(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client, err := newDynatraceClient(server.URL, "token", server.Client(), testRetrySettings)
+			client, err := NewDynatraceClient(server.URL, "abc", WithHTTPClient(server.Client()), WithRetrySettings(testRetrySettings))
 			assert.NilError(t, err)
 
 			res, err := client.ListSettings(tt.givenSchemaId, tt.givenListSettingsOpts)

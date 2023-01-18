@@ -829,7 +829,7 @@ func getTestingDownloadOptions(server *httptest.Server, projectName string) down
 		projectName:             projectName,
 		skipSettings:            true,
 		concurrentDownloadLimit: 50,
-		clientFactory: func(environmentUrl, token string) (rest.DynatraceClient, error) {
+		clientProvider: func(environmentUrl, token string, opts ...func(client *rest.DynatraceClient)) (*rest.DynatraceClient, error) {
 			return rest.NewDynatraceClientForTesting(environmentUrl, token, server.Client())
 		},
 	}

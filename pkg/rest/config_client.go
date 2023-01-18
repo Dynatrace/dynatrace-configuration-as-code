@@ -35,7 +35,7 @@ func upsertDynatraceObject(
 	theApi api.Api,
 	payload []byte,
 	apiToken string,
-	retrySettings retrySettings,
+	retrySettings RetrySettings,
 ) (api.DynatraceEntity, error) {
 	isSingleConfigurationApi := theApi.IsSingleConfigurationApi()
 	existingObjectId := ""
@@ -79,7 +79,7 @@ func upsertDynatraceEntityById(
 	theApi api.Api,
 	payload []byte,
 	apiToken string,
-	retrySettings retrySettings,
+	retrySettings RetrySettings,
 ) (api.DynatraceEntity, error) {
 	fullUrl := theApi.GetUrl(environmentUrl)
 	body := payload
@@ -87,7 +87,7 @@ func upsertDynatraceEntityById(
 	return updateDynatraceObject(client, fullUrl, objectName, entityId, theApi, body, apiToken, retrySettings)
 }
 
-func createDynatraceObject(client *http.Client, urlString string, objectName string, theApi api.Api, payload []byte, apiToken string, retrySettings retrySettings) (api.DynatraceEntity, error) {
+func createDynatraceObject(client *http.Client, urlString string, objectName string, theApi api.Api, payload []byte, apiToken string, retrySettings RetrySettings) (api.DynatraceEntity, error) {
 	parsedUrl, err := url.Parse(urlString)
 	if err != nil {
 		return api.DynatraceEntity{}, fmt.Errorf("invalid URL for creating Dynatrace config: %w", err)
@@ -162,7 +162,7 @@ func unmarshalResponse(resp Response, fullUrl string, configType string, objectN
 	return dtEntity, nil
 }
 
-func updateDynatraceObject(client *http.Client, fullUrl string, objectName string, existingObjectId string, theApi api.Api, payload []byte, apiToken string, retrySettings retrySettings) (api.DynatraceEntity, error) {
+func updateDynatraceObject(client *http.Client, fullUrl string, objectName string, existingObjectId string, theApi api.Api, payload []byte, apiToken string, retrySettings RetrySettings) (api.DynatraceEntity, error) {
 	path := joinUrl(fullUrl, existingObjectId)
 	body := payload
 
@@ -212,7 +212,7 @@ func stripCreateOnlyPropertiesFromAppMobile(payload []byte) []byte {
 // callWithRetryOnKnowTimingIssue handles several know cases in which Dynatrace has a slight delay before newly created objects
 // can be used in further configuration. This is a cheap way to allow monaco to work around this, by waiting, then
 // retrying in case of know errors on upload.
-func callWithRetryOnKnowTimingIssue(client *http.Client, restCall sendingRequest, objectName string, path string, body []byte, theApi api.Api, apiToken string, retrySettings retrySettings) (Response, error) {
+func callWithRetryOnKnowTimingIssue(client *http.Client, restCall sendingRequest, objectName string, path string, body []byte, theApi api.Api, apiToken string, retrySettings RetrySettings) (Response, error) {
 
 	resp, err := restCall(client, path, body, apiToken)
 
@@ -299,7 +299,7 @@ func isLocationHeaderAvailable(resp Response) (headerAvailable bool, headerArray
 	return false, make([]string, 0)
 }
 
-func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, objectName string, apiToken string, retrySettings retrySettings) (string, error) {
+func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, objectName string, apiToken string, retrySettings RetrySettings) (string, error) {
 	values, err := getExistingValuesFromEndpoint(client, api, url, apiToken, retrySettings)
 
 	if err != nil {
@@ -358,7 +358,7 @@ func isMobileApp(api api.Api) bool {
 	return api.GetId() == "application-mobile"
 }
 
-func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlString string, apiToken string, retrySettings retrySettings) (values []api.Value, err error) {
+func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlString string, apiToken string, retrySettings RetrySettings) (values []api.Value, err error) {
 
 	parsedUrl, err := url.Parse(urlString)
 	if err != nil {

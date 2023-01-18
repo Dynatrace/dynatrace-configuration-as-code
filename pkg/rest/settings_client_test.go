@@ -127,7 +127,7 @@ func TestUpsert(t *testing.T) {
 				}
 			}))
 
-			c, err := newDynatraceClient(server.URL, "token", server.Client(), defaultRetrySettings)
+			c, err := NewDynatraceClient(server.URL, "token", WithHTTPClient(server.Client()))
 			assert.NilError(t, err)
 
 			resp, err := c.UpsertSettings(SettingsObject{

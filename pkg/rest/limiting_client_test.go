@@ -30,7 +30,7 @@ var givenError = errors.New("error")
 func TestDecoratedClient_ReadById(t *testing.T) {
 	a := api.NewMockApi(gomock.NewController(t))
 
-	client := NewMockDynatraceClient(gomock.NewController(t))
+	client := NewMockClient(gomock.NewController(t))
 	limited := LimitClientParallelRequests(client, 1)
 
 	client.EXPECT().ReadById(a, "id").Return(givenJson, givenError)

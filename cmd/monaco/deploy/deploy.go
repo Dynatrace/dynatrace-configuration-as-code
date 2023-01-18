@@ -399,7 +399,7 @@ func toEnvironmentMap(environments []manifest.EnvironmentDefinition) map[string]
 	return result
 }
 
-func getClient(environment manifest.EnvironmentDefinition, dryRun bool) (rest.DynatraceClient, error) {
+func getClient(environment manifest.EnvironmentDefinition, dryRun bool) (rest.Client, error) {
 	if dryRun {
 		return &client.DummyClient{
 			Entries: map[api.Api][]client.DataEntry{},

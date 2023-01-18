@@ -107,7 +107,7 @@ func deleteConfigForEnvironment(env manifest.EnvironmentDefinition, apis map[str
 	return configDelete.DeleteConfigs(dynatraceClient, apis, entriesToDelete)
 }
 
-func createClient(environment manifest.EnvironmentDefinition, dryRun bool) (rest.DynatraceClient, error) {
+func createClient(environment manifest.EnvironmentDefinition, dryRun bool) (rest.Client, error) {
 	if dryRun {
 		return &client.DummyClient{}, nil
 	}
