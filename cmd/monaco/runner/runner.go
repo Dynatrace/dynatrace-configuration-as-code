@@ -17,12 +17,11 @@ package runner
 import (
 	"errors"
 	"fmt"
-	"io"
-	"os"
-	"path/filepath"
-
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"io"
+	"os"
+	"path"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/convert"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/delete"
@@ -280,8 +279,13 @@ func getConvertCommand(fs afero.Fs) (convertCmd *cobra.Command) {
 				manifestName = manifestName + ".yaml"
 			}
 
-			if outputFolder == "{project folder}-v2" {
-				outputFolder = filepath.Clean(workingDir) + "-v2"
+			if outputFolder == "" {
+				folder, err := os.Getwd()
+				if err != nil {
+					return err
+				}
+
+				outputFolder = path.Base(folder) + "-v2"
 			}
 
 			return convert.Convert(fs, workingDir, environmentsFile, outputFolder, manifestName)
@@ -289,7 +293,7 @@ func getConvertCommand(fs afero.Fs) (convertCmd *cobra.Command) {
 	}
 
 	convertCmd.Flags().StringVarP(&manifestName, "manifest", "m", "manifest.yaml", "Name of the manifest file to create")
-	convertCmd.Flags().StringVarP(&outputFolder, "output-folder", "o", "{project folder}-v2", "Folder where to write converted config to")
+	convertCmd.Flags().StringVarP(&outputFolder, "output-folder", "o", "", "Folder where to write converted config to")
 	err := convertCmd.MarkFlagDirname("output-folder")
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
