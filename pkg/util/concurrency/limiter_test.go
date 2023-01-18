@@ -116,6 +116,16 @@ func TestExecutionsAreActuallyParallel(t *testing.T) {
 	m.Unlock() // unlock to run all goroutines
 }
 
+func TestLimiterWithZeroLimit(t *testing.T) {
+	limiter := NewLimiter(0)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	limiter.ExecuteBlocking(func() {
+		wg.Done()
+	})
+	wg.Wait()
+}
+
 func TestExecuteBlockingDoesNotReturnImmediately(t *testing.T) {
 	limiter := NewLimiter(1) // 1 callback allowed, so we set up 2 callbacks to test that they have been called after one another
 

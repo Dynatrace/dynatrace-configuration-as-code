@@ -17,6 +17,7 @@
 package concurrency
 
 import (
+	"math"
 	"sync"
 )
 
@@ -37,7 +38,13 @@ func (l *Limiter) Lock()   {}
 func (l *Limiter) Unlock() {}
 
 // NewLimiter creates a new limiter with the given amount of max concurrent running functions.
+// Note, that if maxConcurrent <= 0 is equivalent of constructing a Limiter with maxConcurrent=MAX_INT
 func NewLimiter(maxConcurrent int) *Limiter {
+	if maxConcurrent <= 0 {
+		return &Limiter{
+			waitChan: make(chan struct{}, math.MaxInt),
+		}
+	}
 	return &Limiter{
 		waitChan: make(chan struct{}, maxConcurrent),
 	}
