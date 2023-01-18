@@ -26,26 +26,25 @@ import (
 	"gotest.tools/assert"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 )
 
 var skipDeploymentFolder = AbsOrPanicFromSlash("test-resources/skip-deployment-project/")
 var skipDeploymentEnvironmentsFile = AbsOrPanicFromSlash("test-resources/test-environments.yaml")
 
 func TestValidationSkipDeployment(t *testing.T) {
-	t.Setenv("CONFIG_V1", "1")
 
-	cmd := runner.BuildCli(util.CreateTestFileSystem())
-	cmd.SetArgs([]string{
-		"deploy",
-		"--verbose",
-		"--dry-run",
-		"--environments", skipDeploymentEnvironmentsFile,
-		"--project", "projectA",
-		skipDeploymentFolder,
+	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, t.Name(), func(fs afero.Fs, manifest string) {
+		cmd := runner.BuildCli(fs)
+		cmd.SetArgs([]string{
+			"deploy",
+			"--verbose",
+			"--dry-run",
+			manifest,
+			"--project", "projectA",
+		})
+		err := cmd.Execute()
+		assert.NilError(t, err)
 	})
-	err := cmd.Execute()
-	assert.NilError(t, err)
 
 }
 
@@ -61,57 +60,55 @@ func TestValidationSkipDeploymentWithBrokenDependency(t *testing.T) {
 			"--project", "projectB",
 		})
 		err := cmd.Execute()
-		assert.Error(t, err, "errors during Validation")
+		assert.Error(t, err, "encountered 3 errors during Validation")
 	})
 }
 
 func TestValidationSkipDeploymentWithOverridingDependency(t *testing.T) {
-	t.Setenv("CONFIG_V1", "1")
 
-	cmd := runner.BuildCli(util.CreateTestFileSystem())
-	cmd.SetArgs([]string{
-		"deploy",
-		"--verbose",
-		"--dry-run",
-		"--environments", skipDeploymentEnvironmentsFile,
-		"--project", "projectC",
-		skipDeploymentFolder,
+	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, t.Name(), func(fs afero.Fs, manifest string) {
+		cmd := runner.BuildCli(fs)
+		cmd.SetArgs([]string{
+			"deploy",
+			"--verbose",
+			manifest,
+			"--dry-run",
+			"--project", "projectC",
+		})
+		err := cmd.Execute()
+
+		assert.NilError(t, err)
 	})
-	err := cmd.Execute()
-
-	assert.NilError(t, err)
 }
 
 func TestValidationSkipDeploymentWithOverridingFlagValue(t *testing.T) {
-	t.Setenv("CONFIG_V1", "1")
+	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, t.Name(), func(fs afero.Fs, manifest string) {
+		cmd := runner.BuildCli(fs)
+		cmd.SetArgs([]string{
+			"deploy",
+			"--verbose",
+			manifest,
+			"--dry-run",
+			"--project", "projectE",
+		})
+		err := cmd.Execute()
 
-	cmd := runner.BuildCli(util.CreateTestFileSystem())
-	cmd.SetArgs([]string{
-		"deploy",
-		"--verbose",
-		"--dry-run",
-		"--environments", skipDeploymentEnvironmentsFile,
-		"--project", "projectE",
-		skipDeploymentFolder,
+		assert.NilError(t, err)
 	})
-	err := cmd.Execute()
-
-	assert.NilError(t, err)
 }
 
 func TestValidationSkipDeploymentInterProjectWithMissingDependency(t *testing.T) {
-	t.Setenv("CONFIG_V1", "1")
+	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, t.Name(), func(fs afero.Fs, manifest string) {
+		cmd := runner.BuildCli(fs)
+		cmd.SetArgs([]string{
+			"deploy",
+			"--verbose",
+			manifest,
+			"--dry-run",
+			"--project", "projectD",
+		})
+		err := cmd.Execute()
 
-	cmd := runner.BuildCli(util.CreateTestFileSystem())
-	cmd.SetArgs([]string{
-		"deploy",
-		"--verbose",
-		"--dry-run",
-		"--environments", skipDeploymentEnvironmentsFile,
-		"--project", "projectD",
-		skipDeploymentFolder,
+		assert.Error(t, err, "encountered 1 errors during Validation")
 	})
-	err := cmd.Execute()
-
-	assert.Error(t, err, "dry run found 1 errors. check logs")
 }
