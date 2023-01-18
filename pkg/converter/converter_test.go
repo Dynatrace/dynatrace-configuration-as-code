@@ -38,6 +38,7 @@ import (
 
 const simpleParameterName = "randomValue"
 const referenceParameterName = "managementZoneId"
+const referenceParameterLongName = "managementZoneIdLong"
 const referenceToCurProjName = "managementZoneId2"
 const listParameterName = "locations"
 
@@ -47,6 +48,7 @@ func TestConvertParameters(t *testing.T) {
 	configName := "Alerting Profile 1"
 	simpleParameterValue := "hello"
 	referenceToAnotherProjParameterValue := "/projectB/management-zone/zone.id"
+	referenceToAnotherProjParameterLongValue := "some_path/projectB/management-zone/zone.id"
 	referenceToCurrentProjParameterValue := "management-zone/zone.id"
 	listParameterValue := `"GEOLOCATION-41","GEOLOCATION-42","GEOLOCATION-43"`
 	envParameterName := "url"
@@ -70,12 +72,13 @@ func TestConvertParameters(t *testing.T) {
 
 	properties := map[string]map[string]string{
 		configId: {
-			"name":                 configName,
-			simpleParameterName:    simpleParameterValue,
-			referenceParameterName: referenceToAnotherProjParameterValue,
-			referenceToCurProjName: referenceToCurrentProjParameterValue,
-			listParameterName:      listParameterValue,
-			envParameterName:       envParameterValue,
+			"name":                     configName,
+			simpleParameterName:        simpleParameterValue,
+			referenceParameterName:     referenceToAnotherProjParameterValue,
+			referenceParameterLongName: referenceToAnotherProjParameterLongValue,
+			referenceToCurProjName:     referenceToCurrentProjParameterValue,
+			listParameterName:          listParameterValue,
+			envParameterName:           envParameterValue,
 		},
 	}
 
@@ -91,7 +94,7 @@ func TestConvertParameters(t *testing.T) {
 	parameters, skip, errors := convertParameters(convertContext, environment, testConfig)
 
 	assert.Nil(t, errors)
-	assert.Equal(t, 6, len(parameters))
+	assert.Equal(t, 7, len(parameters))
 	assert.Equal(t, false, skip, "should not be skipped")
 
 	nameParameter, found := parameters["name"]
@@ -105,6 +108,7 @@ func TestConvertParameters(t *testing.T) {
 	assert.Equal(t, simpleParameterValue, simpleParameter.(*valueParam.ValueParameter).Value)
 
 	assert.Equal(t, refParam.New("projectB", "management-zone", "zone", "id"), parameters[referenceParameterName].(*refParam.ReferenceParameter))
+	assert.Equal(t, refParam.New("some_path.projectB", "management-zone", "zone", "id"), parameters[referenceParameterLongName].(*refParam.ReferenceParameter))
 	assert.Equal(t, refParam.New("projectA", "management-zone", "zone", "id"), parameters[referenceToCurProjName].(*refParam.ReferenceParameter))
 
 	listParameter, found := parameters[listParameterName]
