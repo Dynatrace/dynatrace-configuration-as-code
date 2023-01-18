@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
 	projectV1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v1"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/test"
 	"math/rand"
@@ -122,10 +123,14 @@ func getTransformerFunc(suffix string) func(line string) string {
 }
 
 // Deletes all configs that end with "_suffix", where suffix == suffixTest+suffixTimestamp
-func cleanupIntegrationTest(t *testing.T, fs afero.Fs, envFile, suffix string) {
+func cleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestFile, suffix string) {
+	manifest, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
+		Fs:           fs,
+		ManifestPath: manifestFile,
+	})
+	test.FailTestOnAnyError(t, errs, "loading manifest failed")
 
-	environments, errs := environment.LoadEnvironmentList("", envFile, fs)
-	test.FailTestOnAnyError(t, errs, "loading of environments failed")
+	environments := manifest.Environments
 
 	apis := api.NewV1Apis()
 	suffix = "_" + suffix
@@ -135,7 +140,10 @@ func cleanupIntegrationTest(t *testing.T, fs afero.Fs, envFile, suffix string) {
 		token, err := environment.GetToken()
 		assert.NilError(t, err)
 
-		client, err := rest.NewDynatraceClient(environment.GetEnvironmentUrl(), token)
+		url, err := environment.GetUrl()
+		assert.NilError(t, err)
+
+		client, err := rest.NewDynatraceClient(url, token)
 		assert.NilError(t, err)
 
 		for _, api := range apis {
@@ -164,8 +172,6 @@ func cleanupIntegrationTest(t *testing.T, fs afero.Fs, envFile, suffix string) {
 	}
 }
 
-type cleanupFunc func(t *testing.T, fs afero.Fs, envFile, suffix string)
-
 // RunLegacyIntegrationWithCleanup runs an integration test and cleans up the created configs afterwards
 // This is done by using InMemoryFileReader, which rewrites the names of the read configs internally. It ready all the
 // configs once and holds them in memory. Any subsequent modification of a config (applying them to an environment)
@@ -180,7 +186,7 @@ type cleanupFunc func(t *testing.T, fs afero.Fs, envFile, suffix string)
 // <original name>_<current timestamp><defined suffix>
 // e.g. my-config_1605258980000_Suffix
 func RunLegacyIntegrationWithCleanup(t *testing.T, configFolder, envFile, suffixTest string, testFunc func(fs afero.Fs, manifest string)) {
-	runLegacyIntegration(t, configFolder, envFile, suffixTest, testFunc, cleanupIntegrationTest)
+	runLegacyIntegration(t, configFolder, envFile, suffixTest, testFunc, true)
 }
 
 // RunLegacyIntegrationWithoutCleanup runs an integration test and cleans up the created configs afterwards
@@ -194,24 +200,26 @@ func RunLegacyIntegrationWithCleanup(t *testing.T, configFolder, envFile, suffix
 // <original name>_<current timestamp><defined suffix>
 // e.g. my-config_1605258980000_Suffix
 func RunLegacyIntegrationWithoutCleanup(t *testing.T, configFolder, envFile, suffixTest string, testFunc func(fs afero.Fs, manifest string)) {
-	noopCleanup := func(_ *testing.T, _ afero.Fs, _, _ string) {}
-
-	runLegacyIntegration(t, configFolder, envFile, suffixTest, testFunc, noopCleanup)
+	runLegacyIntegration(t, configFolder, envFile, suffixTest, testFunc, false)
 }
 
-func runLegacyIntegration(t *testing.T, configFolder, envFile, suffixTest string, testFunc func(fs afero.Fs, manifest string), cleanup cleanupFunc) {
+func runLegacyIntegration(t *testing.T, configFolder, envFile, suffixTest string, testFunc func(fs afero.Fs, manifest string), doCleanup bool) {
 	configFolder, _ = filepath.Abs(configFolder)
 	envFile, _ = filepath.Abs(envFile)
 
 	var fs = util.CreateTestFileSystem()
 	suffix := appendUniqueSuffixToIntegrationTestConfigs(t, fs, configFolder, suffixTest)
 
-	t.Cleanup(func() {
-		cleanup(t, fs, envFile, suffix)
-	})
-
 	targetDir, err := filepath.Abs("out")
 	assert.NilError(t, err)
+
+	manifestPath := path.Join(targetDir, "manifest.yaml")
+
+	if doCleanup {
+		t.Cleanup(func() {
+			cleanupIntegrationTest(t, fs, manifestPath, suffix)
+		})
+	}
 
 	t.Log("Converting monaco-v1 to monaco-v2")
 	cmd := runner.BuildCli(fs)
@@ -224,9 +232,8 @@ func runLegacyIntegration(t *testing.T, configFolder, envFile, suffixTest string
 		targetDir,
 	})
 	err = cmd.Execute()
-	assert.NilError(t, err, "Conversion should had happend without errors")
+	assert.NilError(t, err, "Conversion should had happened without errors")
 
-	manifestPath := path.Join(targetDir, "manifest.yaml")
 	exists, err := afero.Exists(fs, manifestPath)
 	assert.NilError(t, err)
 	assert.Check(t, exists, "manifest should exist on path '%s' but does not", manifestPath)
