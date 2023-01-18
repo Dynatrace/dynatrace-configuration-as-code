@@ -241,7 +241,7 @@ var v1ApiMap = map[string]apiInput{
 func GetV2ApiId(forV1Api Api) string {
 	currentApiId := forV1Api.GetId()
 
-	if forV1Api.IsDeprecatedApi() {
+	if forV1Api.DeprecatedBy() != "" {
 		currentApiId = forV1Api.DeprecatedBy()
 	}
 

@@ -105,7 +105,7 @@ func deployConfig(client rest.ConfigClient, apis api.ApiMap, entityMap *EntityMa
 		return parameter.ResolvedEntity{}, []error{err}
 	}
 
-	if apiToDeploy.IsDeprecatedApi() {
+	if apiToDeploy.DeprecatedBy() != "" {
 		log.Warn("API for \"%s\" is deprecated! Please consider migrating to \"%s\"!", apiToDeploy.GetId(), apiToDeploy.DeprecatedBy())
 	}
 

@@ -80,14 +80,6 @@ func TestIsNonUniqueNameApi(t *testing.T) {
 	assert.Equal(t, false, isNonUniqueNameApi)
 }
 
-func TestIsDeprecatedApi(t *testing.T) {
-	isDeprecatedApi := testDashboardApi.IsDeprecatedApi()
-	assert.Equal(t, true, isDeprecatedApi)
-
-	isDeprecatedApi = testManagementZoneApi.IsDeprecatedApi()
-	assert.Equal(t, false, isDeprecatedApi)
-}
-
 func TestApiMap_Filter(t *testing.T) {
 
 	skip := createSkipableApi(t, true)

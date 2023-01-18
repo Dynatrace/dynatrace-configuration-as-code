@@ -244,7 +244,6 @@ type Api interface {
 	IsStandardApi() bool
 	IsSingleConfigurationApi() bool
 	IsNonUniqueNameApi() bool
-	IsDeprecatedApi() bool
 	DeprecatedBy() string
 
 	// ShouldSkipDownload indicates whether an API should be downloaded or not.
@@ -399,13 +398,6 @@ func (a *apiImpl) IsSingleConfigurationApi() bool {
 // such APIs require additional handling.
 func (a *apiImpl) IsNonUniqueNameApi() bool {
 	return a.isNonUniqueNameApi
-}
-
-// Deprecated APIs are those APIs that either implement a new Monaco handler or
-// are deprecated from DT's side. While shwoing a warning, deploying and downloading
-// such APIs works as long as it's supported by DT's API.
-func (a *apiImpl) IsDeprecatedApi() bool {
-	return a.deprecatedBy != ""
 }
 
 func (a *apiImpl) DeprecatedBy() string {

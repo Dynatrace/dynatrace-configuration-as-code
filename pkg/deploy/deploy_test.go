@@ -435,7 +435,7 @@ func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
 
 	theApi := api.NewMockApi(gomock.NewController(t))
 	theApi.EXPECT().GetId().AnyTimes().Return(theApiName)
-	theApi.EXPECT().IsDeprecatedApi().Return(false)
+	theApi.EXPECT().DeprecatedBy().Return("")
 	theApi.EXPECT().IsNonUniqueNameApi().Return(false)
 
 	client := rest.NewMockClient(gomock.NewController(t))
@@ -471,7 +471,7 @@ func TestDeployConfigsTargetingClassicConfigNonUnique(t *testing.T) {
 
 	theApi := api.NewMockApi(gomock.NewController(t))
 	theApi.EXPECT().GetId().AnyTimes().Return(theApiName)
-	theApi.EXPECT().IsDeprecatedApi().Return(false)
+	theApi.EXPECT().DeprecatedBy().Return("")
 	theApi.EXPECT().IsNonUniqueNameApi().Return(true)
 
 	client := rest.NewMockClient(gomock.NewController(t))
