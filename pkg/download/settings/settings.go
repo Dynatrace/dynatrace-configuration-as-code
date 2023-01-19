@@ -32,14 +32,32 @@ import (
 
 // Downloader is responsible for downloading Settings 2.0 objects
 type Downloader struct {
+	// client is the settings 2.0 client to be used by the Downloader
 	client rest.SettingsClient
+
+	// filters specifies which settings 2.0 objects need special treatment under
+	// certain conditions and need to be skipped
+	filters Filters
+}
+
+// WithFilters sets specific settings filters for settings 2.0 object that needs to be filtered following
+// to some custom criteria
+func WithFilters(filters Filters) func(*Downloader) {
+	return func(d *Downloader) {
+		d.filters = filters
+	}
 }
 
 // NewSettingsDownloader creates a new downloader for Settings 2.0 objects
-func NewSettingsDownloader(client rest.SettingsClient) *Downloader {
-	return &Downloader{
-		client: client,
+func NewSettingsDownloader(client rest.SettingsClient, opts ...func(*Downloader)) *Downloader {
+	d := &Downloader{
+		client:  client,
+		filters: defaultSettingsFilters,
 	}
+	for _, o := range opts {
+		o(d)
+	}
+	return d
 }
 
 // Download downloads all settings 2.0 objects for the given schema IDs
@@ -109,44 +127,48 @@ func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPe
 
 func (d *Downloader) convertAllObjects(objects []rest.DownloadSettingsObject, projectName string) []config.Config {
 	result := make([]config.Config, 0, len(objects))
-
 	for _, o := range objects {
-		result = append(result, d.convertObject(o, projectName))
-	}
 
+		// try to unmarshall settings value
+		var contentUnmarshalled map[string]interface{}
+		if err := json.Unmarshal(o.Value, &contentUnmarshalled); err != nil {
+			log.Error("Unable to unmarshal JSON value of settings 2.0 object: %v", err)
+			return result
+		}
+		// skip discarded settings objects
+		if d.filters.Get(o.SchemaId).ShouldDiscard(contentUnmarshalled) {
+			continue
+		}
+
+		// indent value payload
+		var content string
+		if bytes, err := json.MarshalIndent(o.Value, "", "  "); err == nil {
+			content = string(bytes)
+		} else {
+			log.Warn("Failed to indent settings template. Reason: %s", err)
+			content = string(o.Value)
+		}
+
+		// construct config object with generated config ID
+		configId := util.GenerateUuidFromName(o.ObjectId)
+		c := config.Config{
+			Template: template.NewDownloadTemplate(configId, configId, content),
+			Coordinate: coordinate.Coordinate{
+				Project:  projectName,
+				Type:     o.SchemaId,
+				ConfigId: configId,
+			},
+			Type: config.Type{
+				SchemaId:      o.SchemaId,
+				SchemaVersion: o.SchemaVersion,
+			},
+			Parameters: map[string]parameter.Parameter{
+				config.NameParameter:  &value.ValueParameter{Value: configId},
+				config.ScopeParameter: &value.ValueParameter{Value: o.Scope},
+			},
+			Skip: false,
+		}
+		result = append(result, c)
+	}
 	return result
-}
-
-func (d *Downloader) convertObject(o rest.DownloadSettingsObject, projectName string) config.Config {
-
-	var content string
-	if bytes, err := json.MarshalIndent(o.Value, "", "  "); err == nil {
-		content = string(bytes)
-	} else {
-		log.Warn("Failed to indent settings template. Reason: %s", err)
-		content = string(o.Value)
-	}
-
-	configId := util.GenerateUuidFromName(o.ObjectId)
-
-	templ := template.NewDownloadTemplate(configId, configId, content)
-
-	return config.Config{
-		Template: templ,
-		Coordinate: coordinate.Coordinate{
-			Project:  projectName,
-			Type:     o.SchemaId,
-			ConfigId: configId,
-		},
-		Type: config.Type{
-			SchemaId:      o.SchemaId,
-			SchemaVersion: o.SchemaVersion,
-		},
-		Parameters: map[string]parameter.Parameter{
-			config.NameParameter:  &value.ValueParameter{Value: configId},
-			config.ScopeParameter: &value.ValueParameter{Value: o.Scope},
-		},
-		Skip: false,
-	}
-
 }
