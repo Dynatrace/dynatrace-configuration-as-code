@@ -60,7 +60,7 @@ func TestValidationSkipDeploymentWithBrokenDependency(t *testing.T) {
 			"--project", "projectB",
 		})
 		err := cmd.Execute()
-		assert.Error(t, err, "encountered 3 errors during Validation")
+		assert.Error(t, err, "errors during Validation")
 	})
 }
 
@@ -109,6 +109,6 @@ func TestValidationSkipDeploymentInterProjectWithMissingDependency(t *testing.T)
 		})
 		err := cmd.Execute()
 
-		assert.Error(t, err, "encountered 1 errors during Validation")
+		assert.Error(t, err, "errors during Validation")
 	})
 }

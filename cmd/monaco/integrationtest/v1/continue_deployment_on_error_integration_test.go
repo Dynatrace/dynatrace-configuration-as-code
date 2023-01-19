@@ -21,15 +21,11 @@ package v1
 
 import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner"
-	projectV1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v1"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
+	"github.com/spf13/afero"
+	"gotest.tools/assert"
 	"path/filepath"
 	"testing"
-
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
-	"github.com/spf13/afero"
-
-	"gotest.tools/assert"
 )
 
 // tests all configs for a single environment
@@ -39,13 +35,6 @@ func TestIntegrationContinueDeploymentOnError(t *testing.T) {
 	allConfigsEnvironmentsFile := filepath.Join(allConfigsFolder, "environments.yaml")
 
 	RunLegacyIntegrationWithCleanup(t, allConfigsFolder, allConfigsEnvironmentsFile, "AllConfigs", func(fs afero.Fs, manifest string) {
-
-		environments, errs := environment.LoadEnvironmentList("", allConfigsEnvironmentsFile, fs)
-		assert.Check(t, len(errs) == 0, "didn't expect errors loading test environments")
-
-		projects, err := projectV1.LoadProjectsToDeploy(fs, "", api.NewV1Apis(), allConfigsFolder)
-		assert.NilError(t, err)
-
 		cmd := runner.BuildCli(fs)
 		cmd.SetArgs([]string{
 			"deploy",
@@ -53,13 +42,11 @@ func TestIntegrationContinueDeploymentOnError(t *testing.T) {
 			manifest,
 			"--continue-on-error",
 		})
-		err = cmd.Execute()
+		err := cmd.Execute()
 		// deployment should fail
 		assert.Assert(t, err != nil, "deployment should fail")
 
-		// dashboard should anyways be deployed
-		dashboardConfig, err := projects[0].GetConfig("dashboard")
-		assert.NilError(t, err)
-		AssertConfigAvailability(t, dashboardConfig, environments["environment1"], true)
+		deployedConfig := coordinate.Coordinate{Project: "project", Type: "dashboard", ConfigId: "dashboard"}
+		AssertConfigAvailability(t, fs, manifest, deployedConfig, "environment1", "project", true)
 	})
 }

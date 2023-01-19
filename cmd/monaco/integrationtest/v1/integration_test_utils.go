@@ -23,8 +23,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner"
+	v2 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
-	projectV1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v1"
+	projectsV2 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/test"
 	"math/rand"
 	"path"
@@ -34,8 +37,6 @@ import (
 	"time"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
@@ -43,64 +44,160 @@ import (
 	"gotest.tools/assert"
 )
 
-// checks all configurations of a given project with given availability
-func AssertAllConfigsAvailability(projects []projectV1.Project, t *testing.T, environments map[string]environment.Environment, available bool) {
-	for _, environment := range environments {
+// AssertAllConfigsAvailableInManifest checks all configurations of all environments/projects in the manifest
+func AssertAllConfigsAvailableInManifest(t *testing.T, fs afero.Fs, manifestFile string) {
+	mani := loadManifest(t, fs, manifestFile)
+	AssertAllConfigsAvailable(t, fs, manifestFile, mani, mani.Projects, mani.Environments)
+}
 
-		token, err := environment.GetToken()
-		assert.NilError(t, err)
+// AssertAllConfigsAvailable checks all configurations of a given project with given availability
+func AssertAllConfigsAvailable(t *testing.T, fs afero.Fs, manifestFile string, mani manifest.Manifest, projectDefinitions map[string]manifest.ProjectDefinition, environments map[string]manifest.EnvironmentDefinition) {
 
-		client, err := rest.NewDynatraceClient(environment.GetEnvironmentUrl(), token)
-		assert.NilError(t, err)
+	projects := loadProjects(t, fs, manifestFile, mani)
 
-		for _, project := range projects {
-			log.Info("Asserting Configs from project are available: %s", project.GetId())
-			for _, config := range project.GetConfigs() {
-				log.Info("Asserting Config is available: %s (%s)", config.GetProperties()[config.GetId()]["name"], config.GetType())
-				AssertConfig(t, client, environment, available, config)
+	for _, e := range environments {
+		client := clientFromEnvDef(t, e)
+
+		for _, projectDefinition := range projectDefinitions {
+			log.Info("Asserting Configs from project are available: %s", projectDefinition.Name)
+
+			p := findProjectByName(t, projects, projectDefinition.Name)
+
+			configsPerApi := getConfigsForEnv(t, p, e)
+
+			for _, configs := range configsPerApi {
+				for _, c := range configs {
+					log.Info("Asserting Config is available: %s", c.Coordinate)
+					assertConfigAvailable(t, client, e, true, c)
+				}
 			}
 		}
 	}
 }
 
-// checks specific configuration for availability
-func AssertConfigAvailability(t *testing.T, config config.Config, environment environment.Environment, available bool) {
+func loadManifest(t *testing.T, fs afero.Fs, manifestFile string) manifest.Manifest {
 
-	token, err := environment.GetToken()
-	assert.NilError(t, err)
+	mani, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
+		Fs:           fs,
+		ManifestPath: manifestFile,
+	})
+	test.FailTestOnAnyError(t, errs, "failed to load manifest")
 
-	client, err := rest.NewDynatraceClient(environment.GetEnvironmentUrl(), token)
-	assert.NilError(t, err)
-
-	AssertConfig(t, client, environment, available, config)
+	return mani
 }
 
-func AssertConfig(t *testing.T, client rest.ConfigClient, environment environment.Environment, shouldBeAvailable bool, config config.Config) {
-	configType := config.GetType()
-	api := config.GetApi()
-	name := config.GetProperties()[config.GetId()]["name"]
+func loadProjects(t *testing.T, fs afero.Fs, manifestFile string, mani manifest.Manifest) []projectsV2.Project {
+	dir := path.Dir(manifestFile)
+	projects, errs := projectsV2.LoadProjects(fs, projectsV2.ProjectLoaderContext{
+		KnownApis:       api.GetApiNameLookup(api.NewApis()),
+		WorkingDir:      dir,
+		Manifest:        mani,
+		ParametersSerde: v2.DefaultParameterParsers,
+	})
+	test.FailTestOnAnyError(t, errs, "failed to load configs")
+	assert.Assert(t, len(projects) != 0, "no projects loaded")
 
-	var exists bool
+	return projects
+}
 
-	if config.IsSkipDeployment(environment) {
-		exists, _, _ = client.ExistsByName(api, name)
-		assert.Check(t, !exists, "Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environment.GetId(), name, configType)
+func clientFromEnvDef(t *testing.T, envDefiniton manifest.EnvironmentDefinition) rest.ConfigClient {
+
+	u, err := envDefiniton.GetUrl()
+	assert.NilError(t, err)
+
+	token, err := envDefiniton.GetToken()
+	assert.NilError(t, err)
+
+	client, err := rest.NewDynatraceClient(u, token)
+	assert.NilError(t, err)
+
+	return client
+}
+
+// AssertConfigAvailability checks specific configuration for availability
+func AssertConfigAvailability(t *testing.T, fs afero.Fs, manifestFile string, coord coordinate.Coordinate, env, projName string, available bool) {
+
+	mani := loadManifest(t, fs, manifestFile)
+
+	envDefinition, found := mani.Environments[env]
+	assert.Assert(t, found, "environment %s not found", env)
+
+	client := clientFromEnvDef(t, envDefinition)
+
+	projects := loadProjects(t, fs, manifestFile, mani)
+	project := findProjectByName(t, projects, projName)
+
+	configsPerApi := getConfigsForEnv(t, project, envDefinition)
+
+	var conf *v2.Config = nil
+	for _, configs := range configsPerApi {
+		for _, c := range configs {
+			if c.Coordinate == coord {
+				conf = &c
+			}
+		}
+	}
+
+	assert.Assert(t, conf != nil, "config %s not found", coord)
+
+	assertConfigAvailable(t, client, envDefinition, available, *conf)
+}
+
+func getConfigsForEnv(t *testing.T, project projectsV2.Project, env manifest.EnvironmentDefinition) projectsV2.ConfigsPerType {
+	confsMap, found := project.Configs[env.Name]
+	assert.Assert(t, found != false, "env %s not found", env)
+
+	return confsMap
+}
+
+func findProjectByName(t *testing.T, projects []projectsV2.Project, projName string) projectsV2.Project {
+	var project *projectsV2.Project
+
+	for i := range projects {
+		if projects[i].Id == projName {
+			project = &projects[i]
+			break
+		}
+	}
+
+	assert.Assert(t, project != nil, "project %s not found", projName)
+
+	return *project
+}
+
+func assertConfigAvailable(t *testing.T, client rest.ConfigClient, env manifest.EnvironmentDefinition, shouldBeAvailable bool, config v2.Config) {
+
+	nameParam, found := config.Parameters["name"]
+	assert.Assert(t, found, "Config %s should have a name parameter", config.Coordinate)
+
+	name, err := nameParam.ResolveValue(parameter.ResolveContext{})
+	assert.NilError(t, err, "Config %s should have a trivial name to resolve", config.Coordinate)
+
+	a, found := api.NewApis()[config.Type.Api]
+	assert.Assert(t, found, "Config %s should have a known api, but does not. Api %s does not exist", config.Coordinate, config.Type.Api)
+
+	if config.Skip {
+		exists, _, err := client.ExistsByName(a, fmt.Sprint(name))
+		assert.NilError(t, err)
+		assert.Check(t, !exists, "Config '%s' should NOT be available on env '%s', but was. environment.", env.Name, config.Coordinate)
+
 		return
 	}
 
-	description := fmt.Sprintf("%s %s on environment %s", configType, name, environment.GetId())
+	description := fmt.Sprintf("%s on environment %s", config.Coordinate, env.Name)
 
+	exists := false
 	// To deal with delays of configs becoming available try for max 120 polling cycles (4min - at 2sec cycles) for expected state to be reached
-	err := wait(description, 120, func() bool {
-		exists, _, _ = client.ExistsByName(api, name)
+	err = wait(description, 120, func() bool {
+		exists, _, err = client.ExistsByName(a, fmt.Sprint(name))
 		return (shouldBeAvailable && exists) || (!shouldBeAvailable && !exists)
 	})
 	assert.NilError(t, err)
 
 	if shouldBeAvailable {
-		assert.Check(t, exists, "Object should be available, but wasn't. environment.Environment: '%s', failed for '%s' (%s)", environment.GetId(), name, configType)
+		assert.Check(t, exists, "Object %s on environment %s should be available, but wasn't. environment.", config.Coordinate, env.Name)
 	} else {
-		assert.Check(t, !exists, "Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environment.GetId(), name, configType)
+		assert.Check(t, !exists, "Object %s on environment %s should NOT be available, but was. environment.", config.Coordinate, env.Name)
 	}
 }
 
@@ -217,6 +314,7 @@ func runLegacyIntegration(t *testing.T, configFolder, envFile, suffixTest string
 
 	if doCleanup {
 		t.Cleanup(func() {
+			t.Log("Cleaning up environment")
 			cleanupIntegrationTest(t, fs, manifestPath, suffix)
 		})
 	}
@@ -236,7 +334,7 @@ func runLegacyIntegration(t *testing.T, configFolder, envFile, suffixTest string
 
 	exists, err := afero.Exists(fs, manifestPath)
 	assert.NilError(t, err)
-	assert.Check(t, exists, "manifest should exist on path '%s' but does not", manifestPath)
+	assert.Assert(t, exists, "manifest should exist on path '%s' but does not", manifestPath)
 
 	t.Log("Running actual test...")
 

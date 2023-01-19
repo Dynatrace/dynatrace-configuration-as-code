@@ -20,16 +20,13 @@
 package v1
 
 import (
-	projectV1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v1"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/test"
+	manifest2 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
 	"path/filepath"
 	"testing"
 
 	"gotest.tools/assert"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 	"github.com/spf13/afero"
 )
 
@@ -41,29 +38,22 @@ func TestIntegrationMultiEnvironment(t *testing.T) {
 
 	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironment", func(fs afero.Fs, manifest string) {
 
-		environments, errs := environment.LoadEnvironmentList("", environmentsFile, fs)
-		assert.Check(t, len(errs) == 0, "didn't expect errors loading test environments")
-
-		projects, err := projectV1.LoadProjectsToDeploy(fs, "", api.NewV1Apis(), folder)
-		assert.NilError(t, err)
-
 		cmd := runner.BuildCli(fs)
 		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
 			manifest,
 		})
-		err = cmd.Execute()
-
-		AssertAllConfigsAvailability(projects, t, environments, true)
-
+		err := cmd.Execute()
 		assert.NilError(t, err)
+
+		AssertAllConfigsAvailableInManifest(t, fs, manifest)
 	})
 }
 
 // Tests a dry run (validation)
 func TestIntegrationValidationMultiEnvironment(t *testing.T) {
-	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "validationMultiEnv", func(fs afero.Fs, manifest string) {
+	RunLegacyIntegrationWithoutCleanup(t, folder, environmentsFile, "validationMultiEnv", func(fs afero.Fs, manifest string) {
 
 		cmd := runner.BuildCli(fs)
 		cmd.SetArgs([]string{
@@ -81,81 +71,77 @@ func TestIntegrationValidationMultiEnvironment(t *testing.T) {
 // tests a single project
 func TestIntegrationMultiEnvironmentSingleProject(t *testing.T) {
 
-	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleProject", func(fs afero.Fs, manifest string) {
-
-		environments, errs := environment.LoadEnvironmentList("", environmentsFile, fs)
-		test.FailTestOnAnyError(t, errs, "loading of environments failed")
-
-		projects, err := projectV1.LoadProjectsToDeploy(fs, "cinema-infrastructure", api.NewV1Apis(), folder)
-		assert.NilError(t, err)
+	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleProject", func(fs afero.Fs, manifestFile string) {
 
 		cmd := runner.BuildCli(fs)
 		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
-			manifest,
+			manifestFile,
 			"-p", "cinema-infrastructure",
 		})
-		err = cmd.Execute()
-
-		AssertAllConfigsAvailability(projects, t, environments, true)
-
+		err := cmd.Execute()
 		assert.NilError(t, err)
+
+		t.Log("Asserting available configs")
+		manifest := loadManifest(t, fs, manifestFile)
+		projects := map[string]manifest2.ProjectDefinition{
+			"cinema-infrastructure": manifest.Projects["cinema-infrastructure"],
+		}
+
+		AssertAllConfigsAvailable(t, fs, manifestFile, manifest, projects, manifest.Environments)
+
 	})
 }
 
 // Tests a single project with dependency
 func TestIntegrationMultiEnvironmentSingleProjectWithDependency(t *testing.T) {
 
-	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleProjectWithDependency", func(fs afero.Fs, manifest string) {
-
-		environments, errs := environment.LoadEnvironmentList("", environmentsFile, fs)
-		test.FailTestOnAnyError(t, errs, "loading of environments failed")
-
-		projects, err := projectV1.LoadProjectsToDeploy(fs, "star-trek", api.NewV1Apis(), folder)
-		assert.NilError(t, err)
-
-		assert.Check(t, len(projects) == 2, "Projects should be star-trek and the dependency cinema-infrastructure")
+	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleProjectWithDependency", func(fs afero.Fs, manifestFile string) {
 
 		cmd := runner.BuildCli(fs)
 		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
-			manifest,
+			manifestFile,
 			"-p", "star-trek",
 		})
-		err = cmd.Execute()
-
-		AssertAllConfigsAvailability(projects, t, environments, true)
-
+		err := cmd.Execute()
 		assert.NilError(t, err)
+
+		manifest := loadManifest(t, fs, manifestFile)
+		projects := map[string]manifest2.ProjectDefinition{
+			"star-trek": manifest.Projects["star-trek"],
+		}
+
+		AssertAllConfigsAvailable(t, fs, manifestFile, manifest, projects, manifest.Environments)
 	})
 }
 
 // tests a single environment
 func TestIntegrationMultiEnvironmentSingleEnvironment(t *testing.T) {
 
-	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleEnvironment", func(fs afero.Fs, manifest string) {
-
-		environments, errs := environment.LoadEnvironmentList("", environmentsFile, fs)
-		test.FailTestOnAnyError(t, errs, "loading of environments failed")
-
-		projects, err := projectV1.LoadProjectsToDeploy(fs, "star-trek", api.NewV1Apis(), folder)
-		assert.NilError(t, err)
-
-		// remove environment odt69781, just keep dav48679
-		delete(environments, "odt69781")
+	RunLegacyIntegrationWithCleanup(t, folder, environmentsFile, "MultiEnvironmentSingleEnvironment", func(fs afero.Fs, manifestFile string) {
 
 		cmd := runner.BuildCli(fs)
 		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
-			manifest,
+			manifestFile,
 		})
-		err = cmd.Execute()
-
-		AssertAllConfigsAvailability(projects, t, environments, true)
-
+		err := cmd.Execute()
 		assert.NilError(t, err)
+
+		manifest := loadManifest(t, fs, manifestFile)
+
+		// remove environment odt69781, just keep dav48679
+		delete(manifest.Environments, "odt69781")
+
+		projects := map[string]manifest2.ProjectDefinition{
+			"star-trek": manifest.Projects["star-trek"],
+		}
+
+		AssertAllConfigsAvailable(t, fs, manifestFile, manifest, projects, manifest.Environments)
+
 	})
 }

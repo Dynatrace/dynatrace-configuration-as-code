@@ -21,9 +21,6 @@ package v1
 
 import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
-	projectV1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v1"
 	"github.com/spf13/afero"
 	"path/filepath"
 	"testing"
@@ -38,21 +35,15 @@ func TestSpecialCharactersAreCorrectlyEscapedWhereNeeded(t *testing.T) {
 
 	RunLegacyIntegrationWithCleanup(t, specialCharConfigFolder, specialCharEnvironmentsFile, "SpecialCharacterInConfig", func(fs afero.Fs, manifest string) {
 
-		environments, errs := environment.LoadEnvironmentList("", specialCharEnvironmentsFile, fs)
-		assert.Check(t, len(errs) == 0, "didn't expect errors loading test environments")
-
-		projects, err := projectV1.LoadProjectsToDeploy(fs, "", api.NewV1Apis(), specialCharConfigFolder)
-		assert.NilError(t, err)
-
 		cmd := runner.BuildCli(fs)
 		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
 			manifest,
 		})
-		err = cmd.Execute()
+		err := cmd.Execute()
 		assert.NilError(t, err)
 
-		AssertAllConfigsAvailability(projects, t, environments, true)
+		AssertAllConfigsAvailableInManifest(t, fs, manifest)
 	})
 }

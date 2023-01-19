@@ -20,14 +20,11 @@
 package v1
 
 import (
-	projectV1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v1"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/test"
+	manifest2 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
 	"path/filepath"
 	"testing"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 )
@@ -40,21 +37,15 @@ var multiProjectEnvironmentsFile = filepath.Join(multiProjectFolder, "environmen
 func TestIntegrationMultiProject(t *testing.T) {
 	RunLegacyIntegrationWithCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "MultiProject", func(fs afero.Fs, manifest string) {
 
-		environments, errs := environment.LoadEnvironmentList("", multiProjectEnvironmentsFile, fs)
-		assert.Check(t, len(errs) == 0, "didn't expect errors loading test environments")
-
-		projects, err := projectV1.LoadProjectsToDeploy(fs, "", api.NewV1Apis(), multiProjectFolder)
-		assert.NilError(t, err)
-
 		cmd := runner.BuildCli(fs)
 		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
 			manifest,
 		})
-		err = cmd.Execute()
+		err := cmd.Execute()
 
-		AssertAllConfigsAvailability(projects, t, environments, true)
+		AssertAllConfigsAvailableInManifest(t, fs, manifest)
 
 		assert.NilError(t, err)
 	})
@@ -96,26 +87,26 @@ func TestIntegrationValidationMultiProjectWithoutEndingSlashInPath(t *testing.T)
 // tests a single project with dependencies
 func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 
-	RunLegacyIntegrationWithCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "MultiProjectSingleProject", func(fs afero.Fs, manifest string) {
-
-		environments, errs := environment.LoadEnvironmentList("", multiProjectEnvironmentsFile, fs)
-		test.FailTestOnAnyError(t, errs, "loading of environments failed")
-
-		projects, err := projectV1.LoadProjectsToDeploy(fs, "star-trek", api.NewV1Apis(), multiProjectFolder)
-		assert.NilError(t, err)
+	RunLegacyIntegrationWithCleanup(t, multiProjectFolder, multiProjectEnvironmentsFile, "MultiProjectSingleProject", func(fs afero.Fs, manifestFile string) {
 
 		cmd := runner.BuildCli(fs)
 
 		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
-			manifest,
+			manifestFile,
 			"-p", "star-trek",
 		})
-		err = cmd.Execute()
-
-		AssertAllConfigsAvailability(projects, t, environments, true)
-
+		err := cmd.Execute()
 		assert.NilError(t, err)
+
+		t.Log("Asserting available configs")
+
+		manifest := loadManifest(t, fs, manifestFile)
+		projects := map[string]manifest2.ProjectDefinition{
+			"star-trek.star-wars": manifest.Projects["star-trek.star-wars"],
+		}
+
+		AssertAllConfigsAvailable(t, fs, manifestFile, manifest, projects, manifest.Environments)
 	})
 }
