@@ -18,14 +18,14 @@ package settings
 
 // noOpFilter is a settings 2.0 filter that does nothing
 var noOpFilter = Filter{
-	ShouldDiscard: func(settingsValue map[string]interface{}) bool { return false },
+	ShouldDiscard: func(settingsValue map[string]interface{}) (bool, string) { return false, "" },
 }
 
 // Filter can be used to filter/discard settings 2.0
 type Filter struct {
 	// ShouldDiscard contains logic whether a settings object should be discarded
 	// based on specific criteria on the settings value payload
-	ShouldDiscard func(settingsValue map[string]interface{}) bool
+	ShouldDiscard func(map[string]interface{}) (bool, string)
 }
 
 // Filters represents a map of settings 2.0 Filters
@@ -42,8 +42,8 @@ func (f Filters) Get(schemaID string) Filter {
 // defaultSettingsFilters is the default Filters used for settings 2.0
 var defaultSettingsFilters = Filters{
 	"builtin:logmonitoring.logs-on-grail-activate": {
-		ShouldDiscard: func(json map[string]interface{}) bool {
-			return json["activated"] == false
+		ShouldDiscard: func(json map[string]interface{}) (bool, string) {
+			return json["activated"] == false, "activated field is set to false"
 		},
 	},
 }

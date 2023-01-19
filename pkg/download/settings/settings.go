@@ -136,8 +136,8 @@ func (d *Downloader) convertAllObjects(objects []rest.DownloadSettingsObject, pr
 			return result
 		}
 		// skip discarded settings objects
-		if d.filters.Get(o.SchemaId).ShouldDiscard(contentUnmarshalled) {
-			log.Warn("Downloaded setting %s will be discarded.")
+		if shouldDiscard, reason := d.filters.Get(o.SchemaId).ShouldDiscard(contentUnmarshalled); shouldDiscard {
+			log.Warn("Downloaded setting %s will be discarded. Reason: %s", o.SchemaId, reason)
 			continue
 		}
 

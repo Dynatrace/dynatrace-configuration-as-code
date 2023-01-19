@@ -23,10 +23,13 @@ import (
 
 func TestShouldDiscard(t *testing.T) {
 	t.Run("log-on-grail-activate - should not be persisted when activated false", func(t *testing.T) {
-		assert.True(t, defaultSettingsFilters["builtin:logmonitoring.logs-on-grail-activate"].ShouldDiscard(map[string]interface{}{
+		shouldDiscard, reason := defaultSettingsFilters["builtin:logmonitoring.logs-on-grail-activate"].ShouldDiscard(map[string]interface{}{
 			"activated": false,
-		}))
+		})
+		assert.True(t, shouldDiscard)
+		assert.NotEmpty(t, reason)
 	})
+
 }
 
 func TestGetFilter(t *testing.T) {
@@ -34,5 +37,7 @@ func TestGetFilter(t *testing.T) {
 }
 
 func TestNoOpFilterDoesNothing(t *testing.T) {
-	assert.False(t, noOpFilter.ShouldDiscard(map[string]interface{}{}))
+	shouldDiscard, reason := noOpFilter.ShouldDiscard(map[string]interface{}{})
+	assert.False(t, shouldDiscard)
+	assert.Empty(t, reason)
 }

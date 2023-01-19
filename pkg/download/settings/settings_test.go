@@ -139,8 +139,8 @@ func TestDownloadAll(t *testing.T) {
 		},
 		{
 			name: "DownloadSettings - discard settings based on filter",
-			filters: map[string]Filter{"sid1": {ShouldDiscard: func(settingsValue map[string]interface{}) bool {
-				return settingsValue["skip"] == true
+			filters: map[string]Filter{"sid1": {ShouldDiscard: func(settingsValue map[string]interface{}) (bool, string) {
+				return settingsValue["skip"] == true, "skip is true"
 			}},
 			},
 			mockValues: mockValues{
