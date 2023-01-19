@@ -195,7 +195,7 @@ func NewDynatraceClient(environmentURL string, token string, opts ...func(dynatr
 		environmentUrl: environmentURL,
 		token:          token,
 		client:         &http.Client{},
-		retrySettings:  RetrySettings{},
+		retrySettings:  defaultRetrySettings,
 	}
 
 	for _, o := range opts {
