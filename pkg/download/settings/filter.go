@@ -43,7 +43,7 @@ func (f Filters) Get(schemaID string) Filter {
 var defaultSettingsFilters = Filters{
 	"builtin:logmonitoring.logs-on-grail-activate": {
 		ShouldDiscard: func(json map[string]interface{}) bool {
-			return json["activated"] != false
+			return json["activated"] == false
 		},
 	},
 }

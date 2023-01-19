@@ -21,9 +21,9 @@ import (
 	"testing"
 )
 
-func TestShouldPersist(t *testing.T) {
+func TestShouldDiscard(t *testing.T) {
 	t.Run("log-on-grail-activate - should not be persisted when activated false", func(t *testing.T) {
-		assert.False(t, defaultSettingsFilters["builtin:logmonitoring.logs-on-grail-activate"].ShouldDiscard(map[string]interface{}{
+		assert.True(t, defaultSettingsFilters["builtin:logmonitoring.logs-on-grail-activate"].ShouldDiscard(map[string]interface{}{
 			"activated": false,
 		}))
 	})
