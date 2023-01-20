@@ -238,7 +238,7 @@ func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, e
 
 		requestUrl := d.environmentUrl + pathSettingsObjects
 
-		resp, err := post(d.client, requestUrl, payload, d.token)
+		resp, err := sendWithRetry(d.client, post, obj.Id, requestUrl, payload, d.token, d.retrySettings.normal)
 		if err != nil {
 			return DynatraceEntity{}, fmt.Errorf("failed to upsert dynatrace obj: %w", err)
 		}
@@ -262,7 +262,7 @@ func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, e
 
 		requestUrl := d.environmentUrl + pathSettingsObjects + "/" + settings[0].ObjectId
 
-		resp, err := put(d.client, requestUrl, payload, d.token)
+		resp, err := sendWithRetry(d.client, put, obj.Id, requestUrl, payload, d.token, d.retrySettings.normal)
 		if err != nil {
 			return DynatraceEntity{}, fmt.Errorf("failed to upsert dynatrace obj: %w", err)
 		}
