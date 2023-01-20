@@ -24,8 +24,12 @@ var noOpFilter = Filter{
 // Filter can be used to filter/discard settings 2.0
 type Filter struct {
 	// ShouldDiscard contains logic whether a settings object should be discarded
-	// based on specific criteria on the settings value payload
-	ShouldDiscard func(map[string]interface{}) (bool, string)
+	// based on specific criteria on the settings value payload. It returns true or false
+	// depending on the specific implementation and a reason that gives more context to the
+	// evaluation result, e.g. a filter that discards settings that contain a field "foo"
+	// with a value "bar" in their payload would be implemented like:
+	// func (json map[string]interface{}) (bool, string) { return json["foo"] == "bar",  "foo is set to bar" }
+	ShouldDiscard func(map[string]interface{}) (discard bool, reason string)
 }
 
 // Filters represents a map of settings 2.0 Filters
