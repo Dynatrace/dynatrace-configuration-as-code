@@ -26,12 +26,18 @@ type DeletePointer struct {
 	ConfigId string
 }
 
-func DeleteConfigs(client rest.ConfigClient, apis map[string]api.Api, entriesToDelete map[string][]DeletePointer) (errors []error) {
+func DeleteConfigs(client rest.DynatraceClient, apis map[string]api.Api, entriesToDelete map[string][]DeletePointer) (errors []error) {
 
 	for targetApi, entries := range entriesToDelete {
 		theApi, found := apis[targetApi]
 
 		if !found {
+			/* TODO: don't fail if not a Config API, instead:
+			*  1. extId := util.GenerateExternalId(DeletePointer.Type, DeletePointer.Id)
+			*  2. look for a Settings object based on external ID
+			*  if found -> DeleteSetting
+			*  if not found -> fail
+			 */
 			errors = append(errors, fmt.Errorf("unknown api `%s`", targetApi))
 			continue
 		}

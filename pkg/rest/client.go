@@ -98,6 +98,8 @@ type SettingsClient interface {
 
 	// ListSettings returns all settings objects for a given schema.
 	ListSettings(string, ListSettingsOptions) ([]DownloadSettingsObject, error)
+
+	//TODO Add DeleteSetting
 }
 
 // defaultListSettingsFields  are the fields we are interested in when getting setting objects
