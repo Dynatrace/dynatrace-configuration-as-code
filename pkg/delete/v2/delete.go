@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 )
 
@@ -27,21 +28,36 @@ type DeletePointer struct {
 }
 
 func DeleteConfigs(client rest.Client, apis map[string]api.Api, entriesToDelete map[string][]DeletePointer) (errors []error) {
-
 	for targetApi, entries := range entriesToDelete {
 		theApi, found := apis[targetApi]
 
+		// handle settings 2.0 objects
 		if !found {
-			/* TODO: don't fail if not a Config API, instead:
-			*  1. extId := util.GenerateExternalId(DeletePointer.Type, DeletePointer.Id)
-			*  2. look for a Settings object based on external ID
-			*  if found -> DeleteSetting
-			*  if not found -> fail
-			 */
-			errors = append(errors, fmt.Errorf("unknown api `%s`", targetApi))
+			for _, e := range entries {
+				externalID := util.GenerateExternalId(e.Type, e.ConfigId)
+				// get settings objects with matching external ID
+				objects, err := client.ListSettings(e.Type, rest.ListSettingsOptions{DiscardValue: true, Filter: func(o rest.DownloadSettingsObject) bool { return o.ExternalId == externalID }})
+				if err != nil {
+					errors = append(errors, fmt.Errorf("could not fetch settings 2.0 objects with schema ID %s and external ID %s: %w", e.Type, externalID, err))
+					continue
+				}
+
+				if len(objects) <= 0 {
+					errors = append(errors, fmt.Errorf("could not find any settings 2.0 object with schema ID %s and external ID %s", e.Type, externalID))
+					continue
+				}
+
+				for _, obj := range objects {
+					err := client.DeleteSettings(obj.ObjectId)
+					if err != nil {
+						errors = append(errors, fmt.Errorf("could not delete settings 2.0 object with object ID %s", obj.ObjectId))
+					}
+				}
+			}
 			continue
 		}
 
+		// handle classic config APIs
 		values, err := client.List(theApi)
 		if err != nil {
 			errors = append(errors, fmt.Errorf("failed to fetch existing configs of api `%v`. Skipping deletion all configs of this api. Reason: %w", theApi.GetId(), err))

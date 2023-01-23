@@ -17,12 +17,100 @@ package v2
 
 import (
 	"errors"
+	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/golang/mock/gomock"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
+
+func TestDeleteSettings(t *testing.T) {
+	t.Run("TestDeleteSettings", func(t *testing.T) {
+		client := rest.NewMockClient(gomock.NewController(t))
+		client.EXPECT().ListSettings(gomock.Any(), gomock.Any()).DoAndReturn(func(schemaID string, listOpts rest.ListSettingsOptions) ([]rest.DownloadSettingsObject, error) {
+			assert.True(t, listOpts.Filter(rest.DownloadSettingsObject{ExternalId: "bW9uYWNvLWdlbmVyYXRlZC1pZFtidWlsdGluOmFsZXJ0aW5nLnByb2ZpbGUkaWQxXQ=="}))
+			return []rest.DownloadSettingsObject{
+				{
+					ExternalId:    "externalID",
+					SchemaVersion: "v1",
+					SchemaId:      "builtin:alerting.profile",
+					ObjectId:      "12345",
+					Scope:         "tenant",
+					Value:         nil,
+				},
+			}, nil
+
+		})
+		client.EXPECT().DeleteSettings(gomock.Eq("12345")).Return(nil)
+		entriesToDelete := map[string][]DeletePointer{
+			"builtin:alerting.profile": {
+				{
+					Type:     "builtin:alerting.profile",
+					ConfigId: "id1",
+				},
+			},
+		}
+		errs := DeleteConfigs(client, api.NewV1Apis(), entriesToDelete)
+		assert.Empty(t, errs, "errors should be empty")
+	})
+
+	t.Run("TestDeleteSettings - List settings with external ID fails", func(t *testing.T) {
+		client := rest.NewMockClient(gomock.NewController(t))
+		client.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Return([]rest.DownloadSettingsObject{}, fmt.Errorf("WHOPS"))
+		entriesToDelete := map[string][]DeletePointer{
+			"builtin:alerting.profile": {
+				{
+					Type:     "builtin:alerting.profile",
+					ConfigId: "id1",
+				},
+			},
+		}
+		errs := DeleteConfigs(client, api.NewV1Apis(), entriesToDelete)
+		assert.Len(t, errs, 1, "errors should have len 1")
+	})
+
+	t.Run("TestDeleteSettings - List settings returns no objects", func(t *testing.T) {
+		client := rest.NewMockClient(gomock.NewController(t))
+		client.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Return([]rest.DownloadSettingsObject{}, nil)
+		entriesToDelete := map[string][]DeletePointer{
+			"builtin:alerting.profile": {
+				{
+					Type:     "builtin:alerting.profile",
+					ConfigId: "id1",
+				},
+			},
+		}
+		errs := DeleteConfigs(client, api.NewV1Apis(), entriesToDelete)
+		assert.Len(t, errs, 1, "errors should have len 1")
+	})
+
+	t.Run("TestDeleteSettings - Delete settings based on object ID fails", func(t *testing.T) {
+		client := rest.NewMockClient(gomock.NewController(t))
+		client.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Return([]rest.DownloadSettingsObject{
+			{
+				ExternalId:    "externalID",
+				SchemaVersion: "v1",
+				SchemaId:      "builtin:alerting.profile",
+				ObjectId:      "12345",
+				Scope:         "tenant",
+				Value:         nil,
+			},
+		}, nil)
+		client.EXPECT().DeleteSettings(gomock.Eq("12345")).Return(fmt.Errorf("WHOPS"))
+		entriesToDelete := map[string][]DeletePointer{
+			"builtin:alerting.profile": {
+				{
+					Type:     "builtin:alerting.profile",
+					ConfigId: "id1",
+				},
+			},
+		}
+		errs := DeleteConfigs(client, api.NewV1Apis(), entriesToDelete)
+		assert.Len(t, errs, 1, "errors should have len 1")
+	})
+
+}
 
 func TestSplitConfigsForDeletion(t *testing.T) {
 	type expect struct {
@@ -151,5 +239,5 @@ func TestSplitConfigsForDeletionClientReturnsError(t *testing.T) {
 
 	errs := DeleteConfigs(client, apiMap, entriesToDelete)
 
-	assert.Assert(t, len(errs) > 0, "an error should be returned")
+	assert.NotEmpty(t, errs, "an error should be returned")
 }
