@@ -371,6 +371,104 @@ func TestListKnownSettings(t *testing.T) {
 
 			assert.Equal(t, apiCalls, tt.wantNumberOfApiCalls, "expected exactly %d API calls to happen but %d calls where made", tt.wantNumberOfApiCalls, apiCalls)
 		})
+	}
+}
 
+func TestDynatraceClient_DeleteSettings(t *testing.T) {
+	type fields struct {
+		environmentUrl string
+		token          string
+		client         *http.Client
+		retrySettings  RetrySettings
+	}
+	type args struct {
+		objectID string
+	}
+	tests := []struct {
+		name                string
+		fields              fields
+		args                args
+		givenTestServerResp *testServerResponse
+		wantURLPath         string
+		wantErr             bool
+	}{
+		{
+			name: "Delete Settings - malformed environment URL",
+			fields: fields{
+				environmentUrl: " https://leading-space.com",
+			},
+			args:        args{},
+			wantURLPath: "/api/v2/settings/objects/12345",
+			wantErr:     true,
+		},
+		{
+			name:   "Delete Settings - server response != 2xx",
+			fields: fields{},
+			args: args{
+				objectID: "12345",
+			},
+			givenTestServerResp: &testServerResponse{
+				statusCode: 500,
+				body:       "{}",
+			},
+			wantURLPath: "/api/v2/settings/objects/12345",
+			wantErr:     true,
+		},
+		{
+			name:   "Delete Settings - server response 404 does not result in an err",
+			fields: fields{},
+			args: args{
+				objectID: "12345",
+			},
+			givenTestServerResp: &testServerResponse{
+				statusCode: 404,
+				body:       "{}",
+			},
+			wantURLPath: "/api/v2/settings/objects/12345",
+			wantErr:     false,
+		},
+		{
+			name:   "Delete Settings - object ID is passed",
+			fields: fields{},
+			args: args{
+				objectID: "12345",
+			},
+			wantURLPath: "/api/v2/settings/objects/12345",
+			wantErr:     false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				assert.Equal(t, tt.wantURLPath, req.URL.Path)
+				if resp := tt.givenTestServerResp; resp != nil {
+					if resp.statusCode != 200 {
+						http.Error(rw, resp.body, resp.statusCode)
+					} else {
+						_, _ = rw.Write([]byte(resp.body))
+					}
+				}
+
+			}))
+			defer server.Close()
+
+			var envURL string
+			if tt.fields.environmentUrl != "" {
+				envURL = tt.fields.environmentUrl
+			} else {
+				envURL = server.URL
+			}
+
+			d := &DynatraceClient{
+				environmentUrl: envURL,
+				token:          tt.fields.token,
+				client:         server.Client(),
+				retrySettings:  tt.fields.retrySettings,
+			}
+			if err := d.DeleteSettings(tt.args.objectID); (err != nil) != tt.wantErr {
+				t.Errorf("DeleteSettings() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
 	}
 }

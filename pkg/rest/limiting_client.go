@@ -105,3 +105,11 @@ func (l limitingClient) ListSettings(schemaId string, opts ListSettingsOptions) 
 
 	return
 }
+
+func (l limitingClient) DeleteSettings(objectID string) (err error) {
+	l.limiter.ExecuteBlocking(func() {
+		err = l.client.DeleteSettings(objectID)
+	})
+
+	return
+}

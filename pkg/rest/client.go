@@ -99,7 +99,8 @@ type SettingsClient interface {
 	// ListSettings returns all settings objects for a given schema.
 	ListSettings(string, ListSettingsOptions) ([]DownloadSettingsObject, error)
 
-	//TODO Add DeleteSetting
+	// DeleteSettings deletes a settings object giving its object ID
+	DeleteSettings(string) error
 }
 
 // defaultListSettingsFields  are the fields we are interested in when getting setting objects
@@ -439,4 +440,14 @@ func (d *DynatraceClient) ListSettings(schemaId string, opts ListSettingsOptions
 		}
 	}
 	return result, nil
+}
+
+func (d *DynatraceClient) DeleteSettings(objectID string) error {
+	u, err := url.Parse(d.environmentUrl + pathSettingsObjects)
+	if err != nil {
+		return fmt.Errorf("failed to parse URL '%s': %w", d.environmentUrl+pathSettingsObjects, err)
+	}
+
+	return deleteConfig(d.client, u.String(), d.token, objectID)
+
 }

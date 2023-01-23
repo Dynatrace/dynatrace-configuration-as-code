@@ -252,3 +252,7 @@ func (c *DummyClient) ListSchemas() (rest.SchemaList, error) {
 func (c *DummyClient) ListSettings(_ string, _ rest.ListSettingsOptions) ([]rest.DownloadSettingsObject, error) {
 	return make([]rest.DownloadSettingsObject, 0), nil
 }
+
+func (l *DummyClient) DeleteSettings(_ string) error {
+	return nil
+}
