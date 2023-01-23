@@ -1001,7 +1001,7 @@ func Test_parseReference(t *testing.T) {
 			"resolve reference with longer path at the start",
 			"test-param",
 			"/movies/science fiction/the-hitchhikers-guide-to-the-galaxy/management-zone/zone-multiproject.id",
-			api.NewApis(),
+			api.NewV1Apis(),
 			refParam.New("movies.science fiction.the-hitchhikers-guide-to-the-galaxy", "management-zone", "zone-multiproject", "id"),
 			false,
 		},
