@@ -27,55 +27,75 @@ type DeletePointer struct {
 	ConfigId string
 }
 
-func DeleteConfigs(client rest.Client, apis map[string]api.Api, entriesToDelete map[string][]DeletePointer) (errors []error) {
+func DeleteConfigs(client rest.Client, apis map[string]api.Api, entriesToDelete map[string][]DeletePointer) []error {
+	errs := make([]error, 0)
+
 	for targetApi, entries := range entriesToDelete {
 		theApi, found := apis[targetApi]
 
 		// handle settings 2.0 objects
 		if !found {
-			for _, e := range entries {
-				externalID := util.GenerateExternalId(e.Type, e.ConfigId)
-				// get settings objects with matching external ID
-				objects, err := client.ListSettings(e.Type, rest.ListSettingsOptions{DiscardValue: true, Filter: func(o rest.DownloadSettingsObject) bool { return o.ExternalId == externalID }})
-				if err != nil {
-					errors = append(errors, fmt.Errorf("could not fetch settings 2.0 objects with schema ID %s and external ID %s: %w", e.Type, externalID, err))
-					continue
-				}
+			deleteErrs := deleteSettingsObject(client, entries)
+			errs = append(errs, deleteErrs...)
 
-				if len(objects) <= 0 {
-					errors = append(errors, fmt.Errorf("could not find any settings 2.0 object with schema ID %s and external ID %s", e.Type, externalID))
-					continue
-				}
+		} else {
+			deleteErrs := deleteClassicConfig(client, theApi, entries, targetApi)
+			errs = append(errs, deleteErrs...)
 
-				for _, obj := range objects {
-					err := client.DeleteSettings(obj.ObjectId)
-					if err != nil {
-						errors = append(errors, fmt.Errorf("could not delete settings 2.0 object with object ID %s", obj.ObjectId))
-					}
-				}
-			}
+		}
+	}
+
+	return errs
+}
+
+func deleteClassicConfig(client rest.Client, theApi api.Api, entries []DeletePointer, targetApi string) []error {
+	errors := make([]error, 0)
+
+	values, err := client.List(theApi)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("failed to fetch existing configs of api `%v`. Skipping deletion all configs of this api. Reason: %w", theApi.GetId(), err))
+	}
+
+	values, errs := filterValuesToDelete(entries, values, theApi.GetId())
+	errors = append(errors, errs...)
+
+	log.Info("Deleting configs of type %s...", theApi.GetId())
+
+	if len(values) == 0 {
+		log.Debug("No values found to delete (%s)", targetApi)
+	}
+
+	for _, v := range values {
+		log.Debug("Deleting %v (%v)", v, targetApi)
+		if err := client.DeleteById(theApi, v.Id); err != nil {
+			errors = append(errors, err)
+		}
+	}
+
+	return errors
+}
+
+func deleteSettingsObject(client rest.Client, entries []DeletePointer) []error {
+	errors := make([]error, 0)
+
+	for _, e := range entries {
+		externalID := util.GenerateExternalId(e.Type, e.ConfigId)
+		// get settings objects with matching external ID
+		objects, err := client.ListSettings(e.Type, rest.ListSettingsOptions{DiscardValue: true, Filter: func(o rest.DownloadSettingsObject) bool { return o.ExternalId == externalID }})
+		if err != nil {
+			errors = append(errors, fmt.Errorf("could not fetch settings 2.0 objects with schema ID %s: %w", e.Type, err))
 			continue
 		}
 
-		// handle classic config APIs
-		values, err := client.List(theApi)
-		if err != nil {
-			errors = append(errors, fmt.Errorf("failed to fetch existing configs of api `%v`. Skipping deletion all configs of this api. Reason: %w", theApi.GetId(), err))
+		if len(objects) <= 0 {
+			errors = append(errors, fmt.Errorf("could not find any settings 2.0 object with schema ID %s and external ID %s", e.Type, externalID))
+			continue
 		}
 
-		values, errs := filterValuesToDelete(entries, values, theApi.GetId())
-		errors = append(errors, errs...)
-
-		log.Info("Deleting configs of type %s...", theApi.GetId())
-
-		if len(values) == 0 {
-			log.Debug("No values found to delete (%s)", targetApi)
-		}
-
-		for _, v := range values {
-			log.Debug("Deleting %v (%v)", v, targetApi)
-			if err := client.DeleteById(theApi, v.Id); err != nil {
-				errors = append(errors, err)
+		for _, obj := range objects {
+			err := client.DeleteSettings(obj.ObjectId)
+			if err != nil {
+				errors = append(errors, fmt.Errorf("could not delete settings 2.0 object with object ID %s", obj.ObjectId))
 			}
 		}
 	}
