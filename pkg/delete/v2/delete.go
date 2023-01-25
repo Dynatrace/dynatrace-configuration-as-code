@@ -87,8 +87,8 @@ func deleteSettingsObject(client rest.Client, entries []DeletePointer) []error {
 			continue
 		}
 
-		if len(objects) <= 0 {
-			errors = append(errors, fmt.Errorf("could not find any settings 2.0 object with schema ID %s and external ID %s", e.Type, externalID))
+		if len(objects) == 0 {
+			log.Debug("No settings object found to delete: %s/%s", e.Type, e.ConfigId)
 			continue
 		}
 

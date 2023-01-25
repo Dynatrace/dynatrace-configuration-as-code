@@ -82,7 +82,7 @@ func TestDeleteSettings(t *testing.T) {
 			},
 		}
 		errs := DeleteConfigs(client, api.NewV1Apis(), entriesToDelete)
-		assert.Len(t, errs, 1, "errors should have len 1")
+		assert.Len(t, errs, 0)
 	})
 
 	t.Run("TestDeleteSettings - Delete settings based on object ID fails", func(t *testing.T) {
