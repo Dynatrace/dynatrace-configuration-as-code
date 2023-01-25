@@ -142,8 +142,7 @@ var configEndpoints = map[string]apiInput{
 		deprecatedBy: "builtin:alerting.maintenance-window",
 	},
 	"request-naming-service": {
-		apiPath: "/api/config/v1/service/requestNaming",
-		//deprecatedBy: "builtin:unified-request-name-ruleset", //not yet in production
+		apiPath:            "/api/config/v1/service/requestNaming",
 		isNonUniqueNameApi: true,
 	},
 	// Environment API not Config API
@@ -201,7 +200,7 @@ var configEndpoints = map[string]apiInput{
 	},
 	"anomaly-detection-applications": {
 		apiPath:                  "/api/config/v1/anomalyDetection/applications",
-		deprecatedBy:             "builtin:anomaly-detection.rum-web / -mobile",
+		deprecatedBy:             "builtin:anomaly-detection.rum-web, builtin:anomaly-detection.rum-mobile",
 		isSingleConfigurationApi: true,
 	},
 	"anomaly-detection-aws": {
@@ -230,8 +229,7 @@ var configEndpoints = map[string]apiInput{
 		isSingleConfigurationApi: true,
 	},
 	"service-resource-naming": {
-		apiPath: "/api/config/v1/service/resourceNaming",
-		//deprecatedBy:             "builtin:unified-request-name-ruleset", //not yet in production
+		apiPath:                  "/api/config/v1/service/resourceNaming",
 		isSingleConfigurationApi: true,
 	},
 	"app-detection-rule-host": {
