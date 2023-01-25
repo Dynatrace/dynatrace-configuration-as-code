@@ -94,3 +94,13 @@ func sendWithRetry(client *http.Client, restCall sendingRequest, objectName stri
 	}
 	return Response{}, retryErr
 }
+
+// sendWithRetryWithInitialTry will try to send a request and later retry a sendingRequest(PUT or POST) for a given number of times, waiting a give duration between calls
+func sendWithRetryWithInitialTry(client *http.Client, restCall sendingRequest, objectName string, path string, body []byte, apiToken string, setting retrySetting) (resp Response, err error) {
+	resp, err = restCall(client, path, body, apiToken)
+	if err == nil && success(resp) {
+		return resp, err
+	}
+
+	return sendWithRetry(client, restCall, objectName, path, body, apiToken, setting)
+}
