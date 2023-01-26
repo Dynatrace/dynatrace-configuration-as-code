@@ -25,6 +25,8 @@ bar:
     - env-token-name: "BAR_TOKEN_ENV_VAR"
 ```
 
+==env-token-name is the name of the env variable which holds your token. ex: `export BAR_TOKEN_ENV_VAR=XXXXXXXXX==`
+
 Environments can also be grouped, but only one group is allowed per environment. Assign environments to groups with `group.environment`:
 
 ```yaml title="environments.yaml"
