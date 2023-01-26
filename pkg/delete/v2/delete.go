@@ -93,6 +93,7 @@ func deleteSettingsObject(client rest.Client, entries []DeletePointer) []error {
 		}
 
 		for _, obj := range objects {
+			log.Debug("Deleting settings object %s/%s with objectId %s", e.Type, e.ConfigId, obj.ObjectId)
 			err := client.DeleteSettings(obj.ObjectId)
 			if err != nil {
 				errors = append(errors, fmt.Errorf("could not delete settings 2.0 object with object ID %s", obj.ObjectId))
