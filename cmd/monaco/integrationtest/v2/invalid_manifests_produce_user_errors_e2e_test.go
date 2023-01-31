@@ -73,7 +73,8 @@ func TestInvalidManifest_ReportsError(t *testing.T) {
 			assert.ErrorContains(t, err, "error while loading manifest")
 
 			runLog := strings.ToLower(logOutput.String())
-			assert.Assert(t, strings.Contains(runLog, tt.expectedErrorLog), "Expected command output to contain: %s", tt.expectedErrorLog)
+			lowerCaseExpectedErrorLog := strings.ToLower(tt.expectedErrorLog)
+			assert.Assert(t, strings.Contains(runLog, lowerCaseExpectedErrorLog), "Expected command output to contain: %s", tt.expectedErrorLog)
 
 		})
 	}
