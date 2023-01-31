@@ -150,8 +150,7 @@ func cleanupIntegrationTest(t *testing.T, fs afero.Fs, envFile, suffix string) {
 			}
 
 			for _, value := range values {
-				// For the calculated-metrics-log API, the suffix is part of the ID, not name
-				if strings.HasSuffix(value.Name, suffix) || strings.HasSuffix(value.Id, suffix) {
+				if strings.HasSuffix(value.Name, suffix) {
 					log.Info("Deleting %s (%s)", value.Name, api.GetId())
 					err := client.DeleteById(api, value.Id)
 					if err != nil {

@@ -229,6 +229,10 @@ func cleanupIntegrationTest(t *testing.T, loadedManifest manifest.Manifest, spec
 		assert.NilError(t, err)
 
 		for _, api := range apis {
+			if api.GetId() == "calculated-metrics-log" {
+				t.Logf("Skipping cleanup of legacy log monitoring API")
+				continue
+			}
 
 			values, err := client.List(api)
 			assert.NilError(t, err)
