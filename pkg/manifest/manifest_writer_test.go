@@ -175,8 +175,8 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 			},
 			[]group{
 				{
-					Group: "group1",
-					Entries: []environment{
+					Name: "group1",
+					Environments: []environment{
 						{
 							Name: "env1",
 							Url:  url{Value: "www.an.url"},
@@ -198,8 +198,8 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 					},
 				},
 				{
-					Group: "group2",
-					Entries: []environment{
+					Name: "group2",
+					Environments: []environment{
 						{
 							Name: "env3",
 							Url:  url{Value: "www.an.url"},
@@ -226,15 +226,15 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 
 				// sort Entries sub-slices before checking equality of got and wanted group slices
 				for _, g := range gotResult {
-					sort.Slice(g.Entries, func(i, j int) bool {
-						return g.Entries[i].Name < g.Entries[j].Name
+					sort.Slice(g.Environments, func(i, j int) bool {
+						return g.Environments[i].Name < g.Environments[j].Name
 					})
 				}
 
 				assert.DeepEqual(t,
 					gotResult,
 					tt.wantResult,
-					cmpopts.SortSlices(func(a, b group) bool { return a.Group < b.Group }),
+					cmpopts.SortSlices(func(a, b group) bool { return a.Name < b.Name }),
 				)
 			}
 		})

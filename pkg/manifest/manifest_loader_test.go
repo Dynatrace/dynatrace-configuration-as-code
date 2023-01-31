@@ -473,10 +473,10 @@ environmentGroups:
 						Name: "project",
 					},
 				},
-				Environments: []group{
+				EnvironmentGroups: []group{
 					{
-						Group: "default",
-						Entries: []environment{
+						Name: "default",
+						Environments: []environment{
 							{
 								Name: "env",
 								Url: url{

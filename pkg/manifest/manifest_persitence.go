@@ -40,12 +40,12 @@ type url struct {
 }
 
 type group struct {
-	Group   string        `yaml:"name"`
-	Entries []environment `yaml:"environments"`
+	Name         string        `yaml:"name"`
+	Environments []environment `yaml:"environments"`
 }
 
 type manifest struct {
-	ManifestVersion string    `yaml:"manifestVersion"`
-	Projects        []project `yaml:"projects"`
-	Environments    []group   `yaml:"environmentGroups"`
+	ManifestVersion   string    `yaml:"manifestVersion"`
+	Projects          []project `yaml:"projects"`
+	EnvironmentGroups []group   `yaml:"environmentGroups"`
 }

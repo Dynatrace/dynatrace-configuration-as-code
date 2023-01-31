@@ -144,7 +144,7 @@ func parseManifest(context *ManifestLoaderContext, data []byte) (Manifest, []err
 		errors = append(errors, newManifestLoaderError(context.ManifestPath, "no projects defined in manifest"))
 	}
 
-	environmentDefinitions, manifestErrors := toEnvironments(context, manifest.Environments)
+	environmentDefinitions, manifestErrors := toEnvironments(context, manifest.EnvironmentGroups)
 
 	if manifestErrors != nil {
 		errors = append(errors, manifestErrors...)
@@ -181,7 +181,7 @@ func parseManifestFile(context *ManifestLoaderContext, data []byte) (manifest, [
 		errs = append(errs, newManifestLoaderError(context.ManifestPath, "invalid manifest definition: no `projects` defined"))
 	}
 
-	if len(m.Environments) == 0 {
+	if len(m.EnvironmentGroups) == 0 {
 		errs = append(errs, newManifestLoaderError(context.ManifestPath, "invalid manifest definition: no `environmentGroups` defined"))
 	}
 
@@ -221,13 +221,13 @@ func toEnvironments(context *ManifestLoaderContext, groups []group) (map[string]
 	environments := make(map[string]EnvironmentDefinition)
 
 	for i, group := range groups {
-		if group.Group == "" {
+		if group.Name == "" {
 			errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("missing group name on index `%d`", i)))
 			continue
 		}
 
-		for _, conf := range group.Entries {
-			env, configErrors := toEnvironment(context, conf, group.Group)
+		for _, conf := range group.Environments {
+			env, configErrors := toEnvironment(context, conf, group.Name)
 
 			if configErrors != nil {
 				errors = append(errors, configErrors...)

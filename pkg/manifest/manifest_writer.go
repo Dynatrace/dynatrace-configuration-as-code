@@ -44,9 +44,9 @@ func WriteManifest(context *ManifestWriterContext, manifestToWrite Manifest) err
 	groups := toWriteableEnvironmentGroups(manifestToWrite.Environments)
 
 	m := manifest{
-		ManifestVersion: version.ManifestVersion,
-		Projects:        projects,
-		Environments:    groups,
+		ManifestVersion:   version.ManifestVersion,
+		Projects:          projects,
+		EnvironmentGroups: groups,
 	}
 
 	return persistManifestToDisk(context, m)
@@ -122,7 +122,7 @@ func toWriteableEnvironmentGroups(environments map[string]EnvironmentDefinition)
 	}
 
 	for g, envs := range environmentPerGroup {
-		result = append(result, group{Group: g, Entries: envs})
+		result = append(result, group{Name: g, Environments: envs})
 	}
 
 	return result
