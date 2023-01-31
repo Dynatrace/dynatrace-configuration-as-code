@@ -235,7 +235,9 @@ func cleanupIntegrationTest(t *testing.T, loadedManifest manifest.Manifest, spec
 			}
 
 			values, err := client.List(api)
-			assert.NilError(t, err)
+			if err != nil {
+				t.Logf("Failed to cleanup any test configs of type %q: %v", api.GetId(), err)
+			}
 
 			for _, value := range values {
 				// For the calculated-metrics-log API, the suffix is part of the ID, not name
