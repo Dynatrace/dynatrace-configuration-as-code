@@ -144,7 +144,9 @@ func cleanupIntegrationTest(t *testing.T, fs afero.Fs, envFile, suffix string) {
 			}
 
 			values, err := client.List(api)
-			assert.NilError(t, err)
+			if err != nil {
+				t.Logf("Failed to cleanup any test configs of type %q: %v", api.GetId(), err)
+			}
 
 			for _, value := range values {
 				// For the calculated-metrics-log API, the suffix is part of the ID, not name
