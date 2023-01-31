@@ -1,4 +1,4 @@
-manifest_version: "1.0"
+manifestVersion: "1.0"
 projects:
 # this will clash with a sub-project of the star-trek grouping
 - name: star-trek.star-gate
@@ -7,17 +7,17 @@ projects:
 - name: star-trek
   type: grouping
   path: star-trek
-environments:
-- group: development
-  entries:
+environmentGroups:
+- name: development
+  environments:
   - name: environment1
     url:
       type: environment
       value: URL_ENVIRONMENT_1
     token:
       name: TOKEN_ENVIRONMENT_1
-- group: production
-  entries:
+- name: production
+  environments:
     - name: environment2
       url:
         type: environment

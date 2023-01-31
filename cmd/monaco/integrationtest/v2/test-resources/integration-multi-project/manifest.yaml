@@ -1,23 +1,24 @@
-manifest_version: 1.0
+manifestVersion: 1.0
 projects:
-- name: cinema-infrastructure
-- name: star-trek
-  type: grouping
-  path: star-trek
-- name: movies.science fiction
-  type: grouping
-  path: movies/science fiction
-environments:
-- group: development
-  entries:
+  - name: cinema-infrastructure
+    type: simple
+  - name: star-trek
+    type: grouping
+    path: star-trek
+  - name: movies.science fiction
+    type: grouping
+    path: movies/science fiction
+environmentGroups:
+- name: development
+  environments:
   - name: environment1
     url:
       type: environment
       value: URL_ENVIRONMENT_1
     token:
       name: TOKEN_ENVIRONMENT_1
-- group: production
-  entries:
+- name: production
+  environments:
     - name: environment2
       url:
         type: environment

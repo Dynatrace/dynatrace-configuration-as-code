@@ -1,7 +1,7 @@
-manifest_version: 1.0
-environments:
-- group: default
-  entries:
+manifestVersion: 1.0
+environmentGroups:
+- name: default
+  environments:
   - name: environment1
     url:
       type: environment

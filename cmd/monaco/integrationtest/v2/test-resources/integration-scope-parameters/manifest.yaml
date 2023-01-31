@@ -1,12 +1,12 @@
-manifest_version: 1.0
+manifestVersion: 1.0
 
 projects:
 - name: scope-parameters
 - name: mrum
 
-environments:
-- group: default
-  entries:
+environmentGroups:
+- name: default
+  environments:
   - name: environment1
     url:
       type: environment

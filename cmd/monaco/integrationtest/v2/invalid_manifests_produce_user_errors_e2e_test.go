@@ -38,22 +38,22 @@ func TestInvalidManifest_ReportsError(t *testing.T) {
 		{
 			"version missing",
 			"manifest_missing_version.yaml",
-			"`manifest_version` missing",
+			"`manifestVersion` missing",
 		},
 		{
 			"unsupported old manifest version",
 			"manifest_too_low_version.yaml",
-			"`manifest_version` 0.0 is no longer supported",
+			"`manifestVersion` 0.0 is no longer supported",
 		},
 		{
 			"unsupported new manifest version",
 			"manifest_too_high_version.yaml",
-			"`manifest_version` 999999999.999999999 is not supported",
+			"`manifestVersion` 999999999.999999999 is not supported",
 		},
 		{
 			"environments missing",
 			"manifest_missing_envs.yaml",
-			"no `environments` defined",
+			"no `environmentGroups` defined",
 		},
 		{
 			"projects missing",
