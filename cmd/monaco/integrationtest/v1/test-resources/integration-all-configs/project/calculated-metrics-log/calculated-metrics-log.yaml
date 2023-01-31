@@ -1,6 +1,0 @@
-config:
-  - log-errors: "jira-log-errors.json"
-
-log-errors:
-  - displayName: "Jira Log Errors"
-  - name: "calc:log.jiralogerrors"

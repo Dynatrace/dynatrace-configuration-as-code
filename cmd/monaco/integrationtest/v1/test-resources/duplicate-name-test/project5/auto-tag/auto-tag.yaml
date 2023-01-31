@@ -1,0 +1,8 @@
+config:
+  - tag-a: "tag-a.json"
+
+tag-a.dev:
+  - name: "metric"
+
+tag-a.prod:
+  - name: "metric"
