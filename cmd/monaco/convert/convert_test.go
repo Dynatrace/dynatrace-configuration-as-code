@@ -81,11 +81,11 @@ func TestConvert_WorksIfThereIsJustEmptyProjects(t *testing.T) {
 	assert.Check(t, !emptyProjectExists)
 
 	manifestWithoutProjects := fmt.Sprintf(
-		`manifest_version: "%s"
+		`manifestVersion: "%s"
 projects: []
-environments:
-- group: default
-  entries:
+environmentGroups:
+- name: default
+  environments:
   - name: env
     url:
       type: environment
@@ -117,12 +117,12 @@ func assertExpectedConfigurationCreated(t *testing.T, testFs afero.Fs) {
 
 func assertExpectedManifestCreated(t *testing.T, testFs afero.Fs) {
 	expectedManifest := fmt.Sprintf(
-		`manifest_version: "%s"
+		`manifestVersion: "%s"
 projects:
 - name: project
-environments:
-- group: default
-  entries:
+environmentGroups:
+- name: default
+  environments:
   - name: env
     url:
       type: environment

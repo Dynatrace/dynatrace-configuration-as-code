@@ -453,12 +453,12 @@ func Test_parseManifestFile(t *testing.T) {
 			"parses simple manifest",
 			&ManifestLoaderContext{},
 			fmt.Sprintf(
-				`manifest_version: "%s"
+				`manifestVersion: "%s"
 projects:
 - name: project
-environments:
-- group: default
-  entries:
+environmentGroups:
+- name: default
+  environments:
   - name: env
     url:
       type: environment
@@ -515,7 +515,7 @@ environments:
 			"fails on missing projects",
 			&ManifestLoaderContext{},
 			fmt.Sprintf(
-				`manifest_version: "%s"
+				`manifestVersion: "%s"
 environments:
 - group: default
   entries:
@@ -533,7 +533,7 @@ environments:
 			"fails on missing environments",
 			&ManifestLoaderContext{},
 			fmt.Sprintf(
-				`manifest_version: "%s"
+				`manifestVersion: "%s"
 projects:
 - name: project
 `, version.ManifestVersion),
@@ -544,7 +544,7 @@ projects:
 			"fails on duplicate project definitions",
 			&ManifestLoaderContext{},
 			fmt.Sprintf(
-				`manifest_version: "%s"
+				`manifestVersion: "%s"
 projects:
 - name: project
 projects:
@@ -565,12 +565,12 @@ environments:
 		{
 			"fails on no longer supported manifest version",
 			&ManifestLoaderContext{},
-			`manifest_version: 0.0
+			`manifestVersion: 0.0
 projects:
 - name: project
-environments:
-- group: default
-  entries:
+environmentGroups:
+- name: default
+  environments:
   - name: env
     url:
       type: environment
@@ -585,14 +585,14 @@ environments:
 			"fails on not yet supported manifest version",
 			&ManifestLoaderContext{},
 			fmt.Sprintf(
-				`manifest_version: "%s"
+				`manifestVersion: "%s"
 projects:
 - name: project
 projects:
 - name: project2
-environments:
-- group: default
-  entries:
+environmentGroupss:
+- name: default
+  environments:
   - name: env
     url:
       type: environment
@@ -606,12 +606,12 @@ environments:
 		{
 			"fails on malformed manifest version",
 			&ManifestLoaderContext{},
-			`manifest_version: "random text"
+			`manifestVersion: "random text"
 projects:
 - name: project
-environments:
-- group: default
-  entries:
+environmentGroups:
+- name: default
+  environments:
   - name: env
     url:
       type: environment

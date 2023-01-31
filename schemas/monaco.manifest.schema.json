@@ -4,7 +4,7 @@
     "title": "Dynatrace Monitoring as Code Manifest File",
     "type": "object",
     "properties": {
-      "manifest_version": {
+      "manifestVersion": {
         "type": "string",
         "description": "The schema version this manifest conforms to - e.g. 1.0"
       },
@@ -40,17 +40,17 @@
             "required": [ "name" ]
         }
       },
-      "environments": {
+      "environmentGroups": {
         "description": "The Environment groups to which projects in this manifest are deployed",
         "type": "array",
         "items": {
             "type": "object",
             "properties": {
-                "group":  {
+                "name":  {
                     "type": "string",
                     "description": "The name of this environment group"
                 },
-                "entries": {
+                "environments": {
                     "description": "The environments in this group",
                     "type": "array",
                     "items": {
@@ -91,5 +91,5 @@
         }
       }
     },
-    "required": [ "manifest_version", "projects", "environments" ]
+    "required": [ "manifestVersion", "projects", "environmentGroups" ]
   }

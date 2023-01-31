@@ -182,7 +182,7 @@ func parseManifestFile(context *ManifestLoaderContext, data []byte) (manifest, [
 	}
 
 	if len(m.Environments) == 0 {
-		errs = append(errs, newManifestLoaderError(context.ManifestPath, "invalid manifest definition: no `environments` defined"))
+		errs = append(errs, newManifestLoaderError(context.ManifestPath, "invalid manifest definition: no `environmentGroups` defined"))
 	}
 
 	if len(errs) != 0 {
@@ -197,20 +197,20 @@ var minSupportedManifestVersion, _ = util.ParseVersion(version.MinManifestVersio
 
 func validateManifestVersion(manifestVersion string) error {
 	if len(manifestVersion) == 0 {
-		return fmt.Errorf("`manifest_version` missing")
+		return fmt.Errorf("`manifestVersion` missing")
 	}
 
 	v, err := util.ParseVersion(manifestVersion)
 	if err != nil {
-		return fmt.Errorf("invalid `manifest_version`: %w", err)
+		return fmt.Errorf("invalid `manifestVersion`: %w", err)
 	}
 
 	if v.SmallerThan(minSupportedManifestVersion) {
-		return fmt.Errorf("`manifest_version` %s is no longer supported. Min required version is %s, please update manifest", manifestVersion, version.MinManifestVersion)
+		return fmt.Errorf("`manifestVersion` %s is no longer supported. Min required version is %s, please update manifest", manifestVersion, version.MinManifestVersion)
 	}
 
 	if v.GreaterThan(maxSupportedManifestVersion) {
-		return fmt.Errorf("`manifest_version` %s is not supported by monaco %s. Max supported version is %s, please check manifest or update monaco", manifestVersion, version.MonitoringAsCode, version.ManifestVersion)
+		return fmt.Errorf("`manifestVersion` %s is not supported by monaco %s. Max supported version is %s, please check manifest or update monaco", manifestVersion, version.MonitoringAsCode, version.ManifestVersion)
 	}
 
 	return nil
