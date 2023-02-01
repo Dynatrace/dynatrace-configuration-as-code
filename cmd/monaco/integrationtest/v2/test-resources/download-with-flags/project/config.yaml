@@ -1,0 +1,17 @@
+configs:
+  - id: alerting-profile
+    config:
+      name: Resistance is futile!
+      template: alerting-profile.json
+    type:
+      settings:
+        schema: 'builtin:alerting.profile'
+        scope: environment
+
+  - id: application-tagging
+    type:
+      api: auto-tag
+    config:
+      name: Resistance is futile!
+      template: application-tagging.json
+      skip: false

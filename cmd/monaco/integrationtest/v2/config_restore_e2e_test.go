@@ -69,8 +69,10 @@ func TestRestoreConfigs_FromDownloadWithCLIParameters(t *testing.T) {
 }
 
 func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
+	configsFolder, _ := filepath.Abs("test-resources/download-with-flags")
+	configsFolderManifest := filepath.Join(configsFolder, "manifest.yaml")
+
 	downloadFolder, _ := filepath.Abs("test-resources/download")
-	manifestFile, _ := filepath.Abs("test-resources/integration-download-configs/manifest.yaml")
 
 	tests := []struct {
 		name               string
@@ -88,10 +90,10 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 			fs:                 util.CreateTestFileSystem(),
 			downloadFunc:       execution_downloadConfigsWithCLIParameters,
 			projectFolder:      downloadFolder + "/project",
-			apisToDownload:     "application-mobile",
+			apisToDownload:     "auto-tag",
 			settingsToDownload: "builtin:alerting.profile",
 			expectedFolders: []string{
-				downloadFolder + "/project/application-mobile",
+				downloadFolder + "/project/auto-tag",
 				downloadFolder + "/project/builtin:alerting.profile"},
 			wantErr: false,
 		},
@@ -100,10 +102,10 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 			fs:                 util.CreateTestFileSystem(),
 			downloadFunc:       execution_downloadConfigsWithCLIParameters,
 			projectFolder:      downloadFolder + "/project",
-			apisToDownload:     "application-mobile",
+			apisToDownload:     "auto-tag",
 			settingsToDownload: "",
 			expectedFolders: []string{
-				downloadFolder + "/project/application-mobile"},
+				downloadFolder + "/project/auto-tag"},
 			wantErr: false,
 		},
 		{
@@ -122,11 +124,11 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 			fs:                 util.CreateTestFileSystem(),
 			downloadFunc:       execution_downloadConfigs,
 			projectFolder:      downloadFolder + "/project_environment1",
-			manifest:           manifestFile,
-			apisToDownload:     "application-mobile",
+			manifest:           configsFolderManifest,
+			apisToDownload:     "auto-tag",
 			settingsToDownload: "builtin:alerting.profile",
 			expectedFolders: []string{
-				downloadFolder + "/project_environment1/application-mobile",
+				downloadFolder + "/project_environment1/auto-tag",
 				downloadFolder + "/project_environment1/builtin:alerting.profile"},
 			wantErr: false,
 		},
@@ -135,11 +137,11 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 			fs:                 util.CreateTestFileSystem(),
 			downloadFunc:       execution_downloadConfigs,
 			projectFolder:      downloadFolder + "/project_environment1",
-			manifest:           manifestFile,
-			apisToDownload:     "application-mobile",
+			manifest:           configsFolderManifest,
+			apisToDownload:     "auto-tag",
 			settingsToDownload: "",
 			expectedFolders: []string{
-				downloadFolder + "/project_environment1/application-mobile"},
+				downloadFolder + "/project_environment1/auto-tag"},
 			wantErr: false,
 		},
 		{
@@ -147,7 +149,7 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 			fs:                 util.CreateTestFileSystem(),
 			downloadFunc:       execution_downloadConfigs,
 			projectFolder:      downloadFolder + "/project_environment1",
-			manifest:           manifestFile,
+			manifest:           configsFolderManifest,
 			apisToDownload:     "",
 			settingsToDownload: "builtin:alerting.profile",
 			expectedFolders: []string{
@@ -158,14 +160,23 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.downloadFunc(t, tt.fs, downloadFolder, tt.manifest, tt.apisToDownload, tt.settingsToDownload)
-			assert.Equal(t, tt.wantErr, err != nil)
-			for _, f := range tt.expectedFolders {
-				folderExists, _ := afero.DirExists(tt.fs, f)
-				assert.Check(t, folderExists, "folder "+f+" does not exist")
-			}
-			files, _ := afero.ReadDir(tt.fs, tt.projectFolder)
-			assert.Equal(t, len(tt.expectedFolders), len(files))
+			RunIntegrationWithCleanup(t, configsFolder, configsFolderManifest, "", t.Name()[:20], func(fs afero.Fs) {
+
+				t.Log("Deploying configs")
+				cmd := runner.BuildCli(fs)
+				cmd.SetArgs([]string{"deploy", "-v", configsFolderManifest})
+				err := cmd.Execute()
+
+				t.Log("Downloading configs")
+				err = tt.downloadFunc(t, tt.fs, downloadFolder, tt.manifest, tt.apisToDownload, tt.settingsToDownload)
+				assert.Equal(t, tt.wantErr, err != nil)
+				for _, f := range tt.expectedFolders {
+					folderExists, _ := afero.DirExists(tt.fs, f)
+					assert.Check(t, folderExists, "folder "+f+" does not exist")
+				}
+				files, _ := afero.ReadDir(tt.fs, tt.projectFolder)
+				assert.Equal(t, len(tt.expectedFolders), len(files))
+			})
 		})
 	}
 }
