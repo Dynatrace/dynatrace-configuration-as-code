@@ -159,8 +159,8 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			RunIntegrationWithCleanup(t, configsFolder, configsFolderManifest, "", t.Name()[:20], func(fs afero.Fs) {
+		RunIntegrationWithCleanup(t, configsFolder, configsFolderManifest, "", tt.name, func(fs afero.Fs) {
+			t.Run(tt.name, func(t *testing.T) {
 
 				t.Log("Deploying configs")
 				cmd := runner.BuildCli(fs)
