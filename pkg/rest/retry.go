@@ -78,7 +78,7 @@ func getWithRetry(client *http.Client, url string, apiToken string, settings ret
 func sendWithRetry(client *http.Client, restCall sendingRequest, objectName string, path string, body []byte, apiToken string, setting retrySetting) (resp Response, err error) {
 
 	for i := 0; i < setting.maxRetries; i++ {
-		log.Warn("\t\t\tDependency of config %s was not available. Waiting for %s before retry...", objectName, setting.waitTime)
+		log.Warn("Failed to upsert config %q. Waiting for %s before retrying...", objectName, setting.waitTime)
 		time.Sleep(setting.waitTime)
 		resp, err = restCall(client, path, body, apiToken)
 		if err == nil && success(resp) {
@@ -88,9 +88,9 @@ func sendWithRetry(client *http.Client, restCall sendingRequest, objectName stri
 
 	var retryErr error
 	if err != nil {
-		retryErr = fmt.Errorf("dependency of config %s was not available after %d retries: %w", objectName, setting.maxRetries, err)
+		retryErr = fmt.Errorf("failed to upsert config %q after %d retries: %w", objectName, setting.maxRetries, err)
 	} else {
-		retryErr = fmt.Errorf("dependency of config %s was not available after %d retries: (HTTP %d)!\n    Response was: %s", objectName, setting.maxRetries, resp.StatusCode, resp.Body)
+		retryErr = fmt.Errorf("failed to upsert config %q after %d retries: (HTTP %d)!\n    Response was: %s", objectName, setting.maxRetries, resp.StatusCode, resp.Body)
 	}
 	return Response{}, retryErr
 }
