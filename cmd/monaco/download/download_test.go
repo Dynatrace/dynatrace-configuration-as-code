@@ -17,6 +17,7 @@
 package download
 
 import (
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
@@ -24,7 +25,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
 	project "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -175,7 +176,7 @@ func Test_checkForCircularDependencies(t *testing.T) {
 			if tt.wantErr {
 				assert.ErrorContains(t, err, "there are circular dependencies")
 			} else {
-				assert.NilError(t, err)
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -185,4 +186,64 @@ func TestWithParallelRequestLimitFromEnvOption(t *testing.T) {
 	assert.Equal(t, defaultConcurrentDownloads, concurrentRequestLimitFromEnv())
 	t.Setenv(concurrentRequestsEnvKey, "51")
 	assert.Equal(t, 51, concurrentRequestLimitFromEnv())
+}
+
+func TestGetApisToDownload(t *testing.T) {
+	type given struct {
+		apis         api.ApiMap
+		specificAPIs []string
+	}
+	type expected struct {
+		apis      []string
+		haveError bool
+	}
+	tests := []struct {
+		name     string
+		given    given
+		expected expected
+		want     api.ApiMap
+		want1    []error
+	}{
+		{
+			name: "if deprecated api is defined, do not filter it",
+			given: given{
+				apis: api.ApiMap{
+					"api_1":          api.NewApi("api_1", "", "", false, false, "", false),
+					"api_2":          api.NewApi("api_2", "", "", false, false, "", false),
+					"deprecated_api": api.NewApi("deprecated_api", "", "", false, false, "new_api", false),
+				},
+				specificAPIs: []string{"api_1", "deprecated_api"},
+			},
+			expected: expected{
+				apis:      []string{"api_1", "deprecated_api"},
+				haveError: false,
+			},
+		},
+		{
+			name: "if specific api is not requested, filter deprecated apis",
+			given: given{
+				apis: api.ApiMap{
+					"api_1":          api.NewApi("api_1", "", "", false, false, "", false),
+					"api_2":          api.NewApi("api_2", "", "", false, false, "", false),
+					"deprecated_api": api.NewApi("deprecated_api", "", "", false, false, "new_api", false),
+				},
+				specificAPIs: []string{},
+			},
+			expected: expected{
+				apis:      []string{"api_1", "api_2"},
+				haveError: false,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, err := getApisToDownload(tt.given.apis, tt.given.specificAPIs)
+			for _, e := range tt.expected.apis {
+				assert.Contains(t, actual, e)
+			}
+			if tt.expected.haveError {
+				assert.Nil(t, err)
+			}
+		})
+	}
 }

@@ -363,6 +363,14 @@ func getApisToDownload(apis api.ApiMap, specificAPIs []string) (api.ApiMap, []er
 		errors = append(errors, fmt.Errorf("APIs '%v' are not known. Please consult our documentation for known API-names", strings.Join(unknownApis, ",")))
 	}
 
+	if len(specificAPIs) == 0 {
+		var deprecated api.ApiMap
+		apisToDownload, deprecated = apisToDownload.Filter(deprecatedEndpointFilter)
+		for _, d := range deprecated {
+			log.Warn("API '%s' is deprecated by '%s' and will be skip", d.GetId(), d.DeprecatedBy())
+		}
+	}
+
 	apisToDownload, filtered := apisToDownload.Filter(func(api api.Api) bool {
 		return api.ShouldSkipDownload()
 	})
@@ -377,6 +385,10 @@ func getApisToDownload(apis api.ApiMap, specificAPIs []string) (api.ApiMap, []er
 	}
 
 	return apisToDownload, errors
+}
+
+func deprecatedEndpointFilter(api api.Api) bool {
+	return api.DeprecatedBy() != ""
 }
 
 func concurrentRequestLimitFromEnv() int {
