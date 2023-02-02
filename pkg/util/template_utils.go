@@ -50,6 +50,8 @@ func escapeSpecialCharactersInMap(properties map[string]interface{}, escapeFunc 
 // and v2 parameter values returns - with an escape function escaping strings to be fully JSON compliant
 func EscapeSpecialCharactersInValue(value interface{}, escapeFunc StringEscapeFunction) (interface{}, error) {
 	switch field := value.(type) {
+	case bool:
+		return field, nil
 	case string:
 		return escapeFunc(field)
 	case map[string]string:
