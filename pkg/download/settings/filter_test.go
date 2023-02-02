@@ -22,14 +22,60 @@ import (
 )
 
 func TestShouldDiscard(t *testing.T) {
-	t.Run("log-on-grail-activate - should not be persisted when activated false", func(t *testing.T) {
-		shouldDiscard, reason := defaultSettingsFilters["builtin:logmonitoring.logs-on-grail-activate"].ShouldDiscard(map[string]interface{}{
-			"activated": false,
-		})
-		assert.True(t, shouldDiscard)
-		assert.NotEmpty(t, reason)
-	})
+	tests := []struct {
+		name    string
+		schema  string
+		json    map[string]interface{}
+		discard bool
+	}{
+		{
+			name:    "log-on-grail-activate - should not be persisted when activated false",
+			schema:  "builtin:logmonitoring.logs-on-grail-activate",
+			json:    map[string]interface{}{"activated": false},
+			discard: true,
+		},
+		{
+			name:    "log-on-grail-activate - should be persisted when activated true",
+			schema:  "builtin:logmonitoring.logs-on-grail-activate",
+			json:    map[string]interface{}{"activated": true},
+			discard: false,
+		},
+		{
+			name:    "logmonitoring.log-buckets-rules - should not be persisted when name is 'default'",
+			schema:  "builtin:logmonitoring.log-buckets-rules",
+			json:    map[string]interface{}{"ruleName": "default"},
+			discard: true,
+		},
+		{
+			name:    "logmonitoring.log-buckets-rules - should be persisted when name is not 'default'",
+			schema:  "builtin:logmonitoring.log-buckets-rules",
+			json:    map[string]interface{}{"ruleName": "something"},
+			discard: false,
+		},
+		{
+			name:    "bizevents-processing-buckets.rule - should be not persisted when name is 'default'",
+			schema:  "builtin:bizevents-processing-buckets.rule",
+			json:    map[string]interface{}{"ruleName": "default"},
+			discard: true,
+		},
+		{
+			name:    "bizevents-processing-buckets.rule - should be persisted when name is not 'default'",
+			schema:  "builtin:bizevents-processing-buckets.rule",
+			json:    map[string]interface{}{"ruleName": "something"},
+			discard: false,
+		},
+	}
 
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			shouldDiscard, reason := defaultSettingsFilters[tc.schema].ShouldDiscard(tc.json)
+
+			assert.Equal(t, shouldDiscard, tc.discard)
+			if shouldDiscard {
+				assert.NotEmpty(t, reason)
+			}
+		})
+	}
 }
 
 func TestGetFilter(t *testing.T) {

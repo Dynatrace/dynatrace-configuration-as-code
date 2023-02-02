@@ -50,4 +50,14 @@ var defaultSettingsFilters = Filters{
 			return json["activated"] == false, "activated field is set to false"
 		},
 	},
+	"builtin:logmonitoring.log-buckets-rules": {
+		ShouldDiscard: func(json map[string]interface{}) (bool, string) {
+			return json["ruleName"] == "default", "default entity cannot be deleted or edited"
+		},
+	},
+	"builtin:bizevents-processing-buckets.rule": {
+		ShouldDiscard: func(json map[string]interface{}) (bool, string) {
+			return json["ruleName"] == "default", "default entity cannot be deleted or edited"
+		},
+	},
 }
