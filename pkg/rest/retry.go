@@ -38,8 +38,8 @@ var defaultRetrySettings = RetrySettings{
 		maxRetries: 3,
 	},
 	long: retrySetting{
-		waitTime:   10 * time.Second,
-		maxRetries: 3,
+		waitTime:   5 * time.Second,
+		maxRetries: 6,
 	},
 	veryLong: retrySetting{
 		waitTime:   15 * time.Second,
