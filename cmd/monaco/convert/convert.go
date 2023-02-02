@@ -45,6 +45,10 @@ func Convert(fs afero.Fs, workingDir string, environmentsFile string, outputFold
 		return fmt.Errorf("encountered errors while trying to load configs. check logs")
 	}
 
+	if len(projs) == 0 {
+		log.Warn("No projects found. Please ensure that you run the command within a directory that holds the projects to be converted.")
+	}
+
 	manifestPath := filepath.Join(outputFolder, manifestName)
 
 	errs := writer.WriteToDisk(&writer.WriterContext{
