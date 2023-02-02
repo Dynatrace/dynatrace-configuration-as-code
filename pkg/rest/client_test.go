@@ -374,7 +374,7 @@ func TestListKnownSettings(t *testing.T) {
 	}
 }
 
-func TestDynatraceClient_DeleteSettings(t *testing.T) {
+func TestDeleteSettings(t *testing.T) {
 	type fields struct {
 		environmentUrl string
 		token          string
@@ -471,4 +471,36 @@ func TestDynatraceClient_DeleteSettings(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUpsertSettingsRetries(t *testing.T) {
+	numApiCalls := 0
+	server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		if req.Method == http.MethodGet {
+			rw.WriteHeader(200)
+			rw.Write([]byte("{}"))
+			return
+		}
+
+		numApiCalls++
+		if numApiCalls < 3 {
+			rw.WriteHeader(409)
+			return
+		}
+		rw.WriteHeader(200)
+		rw.Write([]byte(`[{"objectId": "abcdefg"}]`))
+	}))
+	defer server.Close()
+
+	client, err := NewDynatraceClient(server.URL, "abc", WithHTTPClient(server.Client()), WithRetrySettings(testRetrySettings))
+	assert.NilError(t, err)
+
+	_, err = client.UpsertSettings(SettingsObject{
+		Id:       "42",
+		SchemaId: "some:schema",
+		Content:  []byte("{}"),
+	})
+
+	assert.NilError(t, err)
+	assert.Equal(t, numApiCalls, 3)
 }
