@@ -121,7 +121,7 @@ func configureDebugLogging(fs afero.Fs, verbose *bool) func(cmd *cobra.Command, 
 
 		log.SetupLogging(fs, optionalAddedLogger)
 
-		log.Info("Dynatrace Monitoring as Code v" + version.MonitoringAsCode)
+		log.Info("Dynatrace Configuration as Code v" + version.MonitoringAsCode)
 	}
 }
 
