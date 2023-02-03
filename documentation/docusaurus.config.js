@@ -7,7 +7,7 @@ module.exports = {
   title: 'Monaco',
   tagline: 'Automate Monitoring',
   url: ' https://dynatrace.github.io',
-  baseUrl: ' /dynatrace-configuration-as-code/',
+  baseUrl: '/dynatrace-configuration-as-code/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
   favicon: 'img/favicon.png',
