@@ -1,12 +1,12 @@
-# Contributing to the Monitoring as Code Tool
+# Contributing to the Configuration as Code Tool
 
-- [Contributing to the Monitoring as Code Tool](#contributing-to-the-monitoring-as-code-tool)
+- [Contributing to the Configuration as Code Tool](#contributing-to-the-Configuration-as-code-tool)
   - [What to contribute](#what-to-contribute)
   - [How to contribute](#how-to-contribute)
   - [Examples of Commit Style Messages](#examples-of-commit-style-messages)
   - [Code of Conduct and Shared Values](#code-of-conduct-and-shared-values)
-  - [Building the Dynatrace Monitoring as Code Tool](#building-the-dynatrace-monitoring-as-code-tool)
-  - [Testing the Dynatrace Monitoring as Code Tool](#testing-the-dynatrace-monitoring-as-code-tool)
+  - [Building the Dynatrace Configuration as Code Tool](#building-the-dynatrace-Configuration-as-code-tool)
+  - [Testing the Dynatrace Configuration as Code Tool](#testing-the-dynatrace-Configuration-as-code-tool)
     - [Integration Tests](#integration-tests)
     - [Writing Tests](#writing-tests)
   - [Checking in go mod and sum files](#checking-in-go-mod-and-sum-files)
@@ -20,23 +20,23 @@
 
 This tool was created out of the following needs but not limited to:
 
-* Provide an easy way to deploy numerous Dynatrace monitoring configurations for several applications across different environments such as Development, Pre-production, and Production environments to maintain consistency.
+* Provide an easy way to deploy numerous Dynatrace observability configurations for several applications across different environments such as Development, Pre-production, and Production environments to maintain consistency.
 
-Thus, this tool aims to provide a way to reproducibly deploy Dynatrace monitoring configuration in a "configuration as code"-way.
+Thus, this tool aims to provide a way to reproducibly deploy Dynatrace observability configuration in a "configuration as code"-way.
 
 As with all things Dynatrace, scalability is an important requirement, both in the number of configuration files and the number of environments.
 This is also the area currently offering the most opportunity to improve the tool.
 
 Another way to contribute is to extend the list of supported APIs. Please take a look at 
-[the detailed instructions](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/blob/main/docs/how-to-add-a-new-api.md).
+[the detailed instructions](https://github.com/dynatrace/dynatrace-configuration-as-code/blob/main/docs/how-to-add-a-new-api.md).
 
 ## How to contribute
 
-The easiest way to start contributing or helping with the Monitoring as Code project is to pick an existing [issue/bug](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/issues) and [get to work](#building-the-Dynatrace-Monitoring-as-Code-Tool).
+The easiest way to start contributing or helping with the observability as Code project is to pick an existing [issue/bug](https://github.com/dynatrace/dynatrace-configuration-as-code/issues) and [get to work](#building-the-Dynatrace-Configuration-as-Code-Tool).
 
 For proposing a change, we seek to discuss potential changes in GitHub issues in advance before implementation. 
 That will allow us to give design feedback up front and set expectations about the scope of the change and, for more significant changes, 
-how best to approach the work such that the Monitoring as Code team can review it and merge it with other concurrent work. 
+how best to approach the work such that the observability as Code team can review it and merge it with other concurrent work. 
 This allows being respectful of the time of community contributors.
 
 The repo follows a relatively standard branching & PR workflow.
@@ -81,9 +81,9 @@ More examples can be found [here](https://www.conventionalcommits.org/en/v1.0.0/
 
 ## Code of Conduct and Shared Values
 
-Before contributing, please read and approve [our Code Of Conduct](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/blob/main/CODE_OF_CONDUCT.md) outlining our shared values and expectations. 
+Before contributing, please read and approve [our Code Of Conduct](https://github.com/dynatrace/dynatrace-configuration-as-code/blob/main/CODE_OF_CONDUCT.md) outlining our shared values and expectations. 
 
-## Building the Dynatrace Monitoring as Code Tool
+## Building the Dynatrace Configuration as Code Tool
 
 The `monaco` tool is written in [Go](https://golang.org/), so you will need to have [installed Go](https://golang.org/dl/) to build it.
 
@@ -99,7 +99,7 @@ To build a platform specific executable run: `GOOS={OS} GOARCH={ARCH} make build
 
 For example, a Windows executable can be built with `GOOS=windows GOARCH=386 make build BINARY=monaco.exe`.
 
-## Testing the Dynatrace Monitoring as Code Tool
+## Testing the Dynatrace Configuration as Code Tool
 
 Run the unit tests for the whole module with `make test` in the root folder.
 
@@ -107,7 +107,7 @@ For convenience single package tests can be run with `make test-package pkg={PAC
 
 ### Integration Tests
 
-In addition to unit tests, the module contains integration tests that upload configuration to two test environments. Those are tagged `integration` and will be run for any pull request opened for Monitoring as Code.
+In addition to unit tests, the module contains integration tests that upload configuration to two test environments. Those are tagged `integration` and will be run for any pull request opened for observability as Code.
 
 To run the integration tests, you will need at least one Dynatrace environment - the tests run against two configurable environments.
 

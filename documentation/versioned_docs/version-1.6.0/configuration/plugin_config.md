@@ -29,4 +29,4 @@ to then construct the `metric-id` in the `json` as:
 ### Custom Extensions
 
 Monaco is able to deploy custom extensions and handles the zipping of extensions, as such the JSON file that defines an extension can just be checked in.
-An example of a custom extension can be found [here](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/tree/main/cmd/monaco/test-resources/integration-all-configs/project/extension).
+An example of a custom extension can be found [here](https://github.com/dynatrace/dynatrace-configuration-as-code/tree/main/cmd/monaco/test-resources/integration-all-configs/project/extension).

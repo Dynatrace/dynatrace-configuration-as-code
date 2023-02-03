@@ -8,7 +8,7 @@ import TabItem from "@theme/TabItem";
 
 This guide shows you how to download Monaco and install it on your operating system (Linux/macOS or Windows).
 
-1.	Go to the Monaco [release page](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases).
+1.	Go to the Monaco [release page](https://github.com/dynatrace/dynatrace-configuration-as-code/releases).
 2.	Download the appropriate version.
 3.	Check that the Monaco binary is available on your PATH. This process will differ depending on your operating system (see steps below). 
 
@@ -34,13 +34,13 @@ For Linux/macOS, we recommend using `curl`. You can download it from [here](http
 ```shell
 # Linux
 # x64
- curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/v1.7.0/monaco-linux-amd64 -o monaco
+ curl -L https://github.com/dynatrace/dynatrace-configuration-as-code/releases/download/v1.7.0/monaco-linux-amd64 -o monaco
 
 # x86
- curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/v1.7.0/monaco-linux-386 -o monaco
+ curl -L https://github.com/dynatrace/dynatrace-configuration-as-code/releases/download/v1.7.0/monaco-linux-386 -o monaco
 
 # macOS
- curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/v1.7.0/monaco-darwin-10.16-amd64 -o monaco
+ curl -L https://github.com/dynatrace/dynatrace-configuration-as-code/releases/download/v1.7.0/monaco-darwin-10.16-amd64 -o monaco
 ```
 
 Make the binary executable:

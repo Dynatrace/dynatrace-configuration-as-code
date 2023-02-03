@@ -12,7 +12,7 @@ To install Monaco, find the appropriate executable for your system and download 
 
 Ensure that the monaco binary is available on your PATH, using the appropriate process for your operating system. 
 
-Executables are available in the [release page](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases).
+Executables are available in the [release page](https://github.com/dynatrace/dynatrace-configuration-as-code/releases).
 
 <Tabs
   defaultValue="operating system"
@@ -36,13 +36,13 @@ This is an example using `curl`. If you don't have `curl`, install it, or use `w
 ```shell
 # Linux
 # x64
-$ curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/v1.6.0/monaco-linux-amd64 -o monaco
+$ curl -L https://github.com/dynatrace/dynatrace-configuration-as-code/releases/download/v1.6.0/monaco-linux-amd64 -o monaco
 
 # x86
-$ curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/v1.6.0/monaco-linux-386 -o monaco
+$ curl -L https://github.com/dynatrace/dynatrace-configuration-as-code/releases/download/v1.6.0/monaco-linux-386 -o monaco
 
 # macOS
-$ curl -L https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases/download/v1.6.0/monaco-darwin-10.12-amd64 -o monaco
+$ curl -L https://github.com/dynatrace/dynatrace-configuration-as-code/releases/download/v1.6.0/monaco-darwin-10.12-amd64 -o monaco
 ```
 
 Make the binary executable:

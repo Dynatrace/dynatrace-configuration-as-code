@@ -3,7 +3,7 @@ sidebar_position: 1
 title: Add a new API
 ---
 ​
-This guide shows you how to add a new API to Monaco that is not included in the [table of supported APIs](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code#configuration-types--apis) and how to determine whether an API is easy to add. 
+This guide shows you how to add a new API to Monaco that is not included in the [table of supported APIs](https://github.com/dynatrace/dynatrace-configuration-as-code#configuration-types--apis) and how to determine whether an API is easy to add. 
 ​
 > :warning: Adding APIs to Monaco is straightforward in most cases. However, some APIs require more coding.
 ​
@@ -57,7 +57,7 @@ to get implementation feedback from the maintainers.
 ​
 Take the following steps to add a new API to Monaco.
 
-1. Open your preferred CLI and enter the following code to add your API to [the map in api.go](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/blob/main/pkg/api/api.go#L25) and replace the placeholder values as described below. 
+1. Open your preferred CLI and enter the following code to add your API to [the map in api.go](https://github.com/dynatrace/dynatrace-configuration-as-code/blob/main/pkg/api/api.go#L25) and replace the placeholder values as described below. 
 ​
 
 ```json
@@ -68,11 +68,11 @@ Take the following steps to add a new API to Monaco.
 ```
 ​
 
-| Placeholder     | Description | 
-| ----------- | ----------- | 
-| <nobr>`<my-api-folder-name>`</nobr> | The name of the API, also used for the folder name for the configurations. Study the existing API names to get a feeling for the naming conventions and choose one accordingly.|
-| <nobr>`<path-to-my-api>`</nobr> | Path for your API. Monaco prefixes it with the environment URL to access the configs of your API. |
-| <nobr>`<property-name>`</nobr> | Name of the json property used in the `GET ALL` REST call to return the list of configs. E.g. it would be `extensions`, if the response of your PI's `GET ALL` REST call looks like the snippet below|
+| Placeholder                         | Description                                                                                                                                                                                           |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <nobr>`<my-api-folder-name>`</nobr> | The name of the API, also used for the folder name for the configurations. Study the existing API names to get a feeling for the naming conventions and choose one accordingly.                       |
+| <nobr>`<path-to-my-api>`</nobr>     | Path for your API. Monaco prefixes it with the environment URL to access the configs of your API.                                                                                                     |
+| <nobr>`<property-name>`</nobr>      | Name of the json property used in the `GET ALL` REST call to return the list of configs. E.g. it would be `extensions`, if the response of your PI's `GET ALL` REST call looks like the snippet below |
 ​
   
 ```json
@@ -90,7 +90,7 @@ Take the following steps to add a new API to Monaco.
 ```
 
 ​
-2. Add a sample config for the integration tests in [cmd/monaco/test-resources/integration-all-configs](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/tree/main/cmd/monaco/test-resources/integration-all-configs)
+2. Add a sample config for the integration tests in [cmd/monaco/test-resources/integration-all-configs](https://github.com/dynatrace/dynatrace-configuration-as-code/tree/main/cmd/monaco/test-resources/integration-all-configs)
 
 ​
 3. Add your API to the [table of supported APIs](../configuration/configTypes_tokenPermissions).

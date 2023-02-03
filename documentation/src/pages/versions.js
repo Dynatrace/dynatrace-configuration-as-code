@@ -12,7 +12,7 @@ const Version = () => {
   const pastVersions = versions.filter(
     (version) => version !== latestVersion && version.name !== "current"
   );
-  const repoUrl = `https://github.com/${siteConfig.organizationName}/dynatrace-monitoring-as-code`;
+  const repoUrl = `https://github.com/${siteConfig.organizationName}/dynatrace-configuration-as-code`;
 
   return (
     <Layout title="Versions" description="Documentation versions for monaco">

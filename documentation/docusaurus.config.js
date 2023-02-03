@@ -6,13 +6,13 @@ const latestVersion = versions[0];
 module.exports = {
   title: 'Monaco',
   tagline: 'Automate Monitoring',
-  url: 'https://dynatrace-oss.github.io',
-  baseUrl: '/dynatrace-monitoring-as-code/',
+  url: ' https://dynatrace.github.io',
+  baseUrl: ' /dynatrace-configuration-as-code/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
   favicon: 'img/favicon.png',
-  organizationName: 'dynatrace-oss',
-  projectName: 'dynatrace-monitoring-as-code',
+  organizationName: 'dynatrace',
+  projectName: 'dynatrace-configuration-as-code',
   themeConfig: {
     colorMode: {
       defaultMode: 'dark',
@@ -42,7 +42,7 @@ module.exports = {
           ],
         },
         {
-          href: 'https://github.com/dynatrace-oss/dynatrace-monitoring-as-code',
+          href: 'https://github.com/dynatrace/dynatrace-configuration-as-code',
           label: 'GitHub',
           position: 'right',
         },
@@ -60,7 +60,7 @@ module.exports = {
         docs: {
           routeBasePath: '/',
           sidebarPath: require.resolve('./sidebars.js'),
-          editUrl: 'https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/edit/main/documentation/',
+          editUrl: 'https://github.com/dynatrace/dynatrace-configuration-as-code/edit/main/documentation/',
           versions: {},
         },
         blog: false,
