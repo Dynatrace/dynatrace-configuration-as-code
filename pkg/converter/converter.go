@@ -223,10 +223,12 @@ func convertConfig(context *ConfigConvertContext, environment manifest.Environme
 	convertedTemplatePath := config.GetFilePath()
 	apiConversion := api.GetV2ApiId(config.GetApi())
 	if apiId != apiConversion {
-		log.Info("Converting config '%s' from deprecated API %s to %s", config.GetId(), apiId, apiConversion)
+		log.Info("Converting config %q from deprecated API %q to %q", config.GetId(), apiId, apiConversion)
 		convertedTemplatePath = strings.Replace(convertedTemplatePath, apiId, apiConversion, 1)
 		convertedTemplatePath = strings.Replace(convertedTemplatePath, ".json", "-"+apiId+".json", 1) //ensure modified template paths don't overlap with existing ones
 		apiId = apiConversion
+	} else if deprecatedBy := config.GetApi().DeprecatedBy(); deprecatedBy != "" && context.V1Apis.IsApi(deprecatedBy) && context.V1Apis[deprecatedBy].IsNonUniqueNameApi() {
+		log.Info("Converting config %q from deprecated API %q to config with non-unique-name handling (see https://dt-url.net/non-unique-name-config)", config.GetId(), apiId)
 	}
 
 	coord := coordinate.Coordinate{
