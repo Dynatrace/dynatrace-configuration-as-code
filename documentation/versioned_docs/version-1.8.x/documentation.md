@@ -92,7 +92,7 @@ Monaco is a "monitoring as code" tool that allows you to create, update and vers
 
    <li>
 
-[What's new](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/releases)
+[What's new](https://github.com/dynatrace/dynatrace-configuration-as-code/releases)
   </li>
 
   <li>

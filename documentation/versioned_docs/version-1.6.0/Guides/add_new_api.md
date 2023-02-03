@@ -5,7 +5,7 @@ sidebar_position: 1
 # How to add a new API
 
 You spotted a new API which you want to automate using `monaco`, but sadly it's not in the 
-[table of supported APIs](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code#configuration-types--apis)?
+[table of supported APIs](https://github.com/dynatrace/dynatrace-configuration-as-code#configuration-types--apis)?
 
 Usually, the addition of new APIs to `monaco` is straightforward and requires little programming 
 experience. Only some APIs require you to do more coding. There are certain criteria for differentiating the two cases.
@@ -50,7 +50,7 @@ to get implementation feedback from the maintainers.
 
 ## Steps to add an API
 
-* Add your API to [the map in api.go](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/blob/main/pkg/api/api.go#L25):
+* Add your API to [the map in api.go](https://github.com/dynatrace/dynatrace-configuration-as-code/blob/main/pkg/api/api.go#L25):
 
 ```json
   "<my-api-folder-name>": {
@@ -83,8 +83,8 @@ to get implementation feedback from the maintainers.
       }
 ```
 
-* Add a sample config for the integration tests in [cmd/monaco/test-resources/integration-all-configs](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/tree/main/cmd/monaco/test-resources/integration-all-configs)
-* Add your API to the [table of supported APIs](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code#configuration-types--apis).
+* Add a sample config for the integration tests in [cmd/monaco/test-resources/integration-all-configs](https://github.com/dynatrace/dynatrace-configuration-as-code/tree/main/cmd/monaco/test-resources/integration-all-configs)
+* Add your API to the [table of supported APIs](https://github.com/dynatrace/dynatrace-configuration-as-code#configuration-types--apis).
 
 After performing these steps, please create the pull request in the upstream repository.
 Other users of `monaco` will thank you! :rocket:
