@@ -1,19 +1,42 @@
-# Dynatrace Configuration as code
+# Dynatrace Configuration as Code
 
-The documentation for Monaco is available [here](https://www.dynatrace.com/support/help/setup-and-configuration/monitoring-as-code).
+Evolved from the Monitoring as Code CLI we provide Observability and Security as Code to fully automate configuration of the Dynatrace platform at any scale- from automating standard configuration of all your Dynatrace environments to meeting specific demands for individual ones.
 
-The documentation for Monaco is available [here](https://dynatrace.github.io/dynatrace-configuration-as-code).
+**The documentation for the Dynatrace Configuration as Code tool Monaco is available [here](https://www.dynatrace.com/support/help/setup-and-configuration/monitoring-as-code)**
 
-You can download a copy of the Software Bill of Materials (SBOM) [here](https://github.com/dynatrace/dynatrace-configuration-as-code/actions/runs/1841276071)
+> Documentation for the previous 1.x versions is still available [here](https://dynatrace.github.io/dynatrace-configuration-as-code/)
 
-If you're new to Monaco and want to learn more about the problem it aims to solve, please check out our [blog post](https://www.dynatrace.com/news/blog/monitoring-as-code/).
+You can download the CLI as well as a copy of the Software Bill of Materials (SBOM) from the [release page](https://github.com/Dynatrace/dynatrace-configuration-as-code/releases).
 
-Developing Monaco
---------------------
+If you're new to Monaco and want to learn more, check out the [Observability Clinic on Monaco 2.0](https://dt-url.net/monaco-observability-clinic).
 
-This repository contains Monaco core, which includes the command line interface and the API endpoints to Dynatrace.
-Please refer to the [contributing guide](./CONTRIBUTING.md) to learn more about compiling Monaco and contributing suggested changes.
-For release notes please see [release notes](./RELEASE_NOTES.md).
+## Support for Monaco
+
+The Dynatrace Configuration as Code tool Monaco is provided by Dynatrace Incorporated.
+
+Support for Monaco 2.0+ is provided by the Dynatrace Support team, as described on the [support page](https://support.dynatrace.com/).
+
+> ⚠️ Older Monaco 1.x versions are not officially supported - we strongly suggest you upgrade to 2.x as soon as possible.
+
+## Feature ideas for Monaco
+
+Please use the [Dynatrace Community](https://community.dynatrace.com/) to let us know any Product Ideas for Monaco, as well as for general discussion and questions.
+
+## Contributing to Monaco
+
+While Monaco development is driven by Dynatrace, we are still committed to keeping the tool open source to allow you to use it as a library or directly contribute improvements and features.
+
+If you wish to use Monaco as a library, please make sure you have read and comply to the terms of the [Apache License v2.0](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/blob/main/LICENSE).
+
+If you wish to contribute to Monaco directly, please refer to the [contributing guide](./CONTRIBUTING.md) to learn more about compiling Monaco and contributing changes.
 
 ## License
-[Apache License v2.0](https://github.com/dynatrace/dynatrace-configuration-as-code/blob/main/LICENSE).
+[Apache License v2.0](https://github.com/dynatrace-oss/dynatrace-monitoring-as-code/blob/main/LICENSE).
+
+## Other forms of Dynatrace Configuration as Code
+
+In addition to our official Configuration as Code tool Monaco there is also a [Dynatrace Terraform provider](https://github.com/dynatrace-oss/terraform-provider-dynatrace).
+
+**Please note that unlike Monaco there is no official support provided for the Terraform provider.**
+
+Unless you are already strongly invested in using Terraform for Infrastructure as Code we recommend using Monaco for Dynatrace configuration as code.

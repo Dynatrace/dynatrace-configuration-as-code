@@ -1,20 +1,20 @@
 # Contributing to the Configuration as Code Tool Monaco
 
 - [Contributing to the Configuration as Code Tool Monaco](#contributing-to-the-configuration-as-code-tool-monaco)
-    - [What to contribute](#what-to-contribute)
-    - [How to contribute](#how-to-contribute)
-    - [Examples of Commit Style Messages](#examples-of-commit-style-messages)
-    - [Code of Conduct and Shared Values](#code-of-conduct-and-shared-values)
-    - [Building the Dynatrace Configuration as Code Tool](#building-the-dynatrace-configuration-as-code-tool)
-    - [Testing the Dynatrace Configuration as Code Tool](#testing-the-dynatrace-configuration-as-code-tool)
-        - [Integration Tests](#integration-tests)
-        - [Writing Tests](#writing-tests)
-    - [Checking in go mod and sum files](#checking-in-go-mod-and-sum-files)
-    - [General information on code](#general-information-on-code)
-        - [Test Mocks](#test-mocks)
-        - [Formatting](#formatting)
-    - [Pre-Commit Hook](#pre-commit-hook)
-    - [A note on Dynatrace APIs](#a-note-on-dynatrace-apis)
+  - [What to contribute](#what-to-contribute)
+  - [How to contribute](#how-to-contribute)
+  - [Examples of Commit Style Messages](#examples-of-commit-style-messages)
+  - [Code of Conduct and Shared Values](#code-of-conduct-and-shared-values)
+  - [Building the Dynatrace Configuration as Code Tool](#building-the-dynatrace-configuration-as-code-tool)
+  - [Testing the Dynatrace Configuration as Code Tool](#testing-the-dynatrace-configuration-as-code-tool)
+    - [Integration Tests](#integration-tests)
+    - [Writing Tests](#writing-tests)
+  - [Checking in go mod and sum files](#checking-in-go-mod-and-sum-files)
+  - [General information on code](#general-information-on-code)
+    - [Test Mocks](#test-mocks)
+    - [Formatting](#formatting)
+  - [Pre-Commit Hook](#pre-commit-hook)
+  - [A note on Dynatrace APIs](#a-note-on-dynatrace-apis)
 
 ## What to contribute
 
@@ -31,9 +31,9 @@ This is also the area currently offering the most opportunity to improve the too
 
 The easiest way to start contributing or helping with the Configuration as Code project is to pick an existing [issue/bug](https://github.com/dynatrace-oss/dynatrace-configuration-as-code/issues) and [get to work](#building-the-Dynatrace-Configuration-as-Code-Tool).
 
-For proposing a change, we seek to discuss potential changes in GitHub issues in advance before implementation.
-That will allow us to give design feedback up front and set expectations about the scope of the change and, for more significant changes,
-how best to approach the work such that the Configuration as Code team can review it and merge it with other concurrent work.
+For proposing a change, we seek to discuss potential changes in GitHub issues in advance before implementation. 
+That will allow us to give design feedback up front and set expectations about the scope of the change and, for more significant changes, 
+how best to approach the work such that the Configuration as Code team can review it and merge it with other concurrent work. 
 This allows being respectful of the time of community contributors.
 
 The repo follows a relatively standard branching & PR workflow.
@@ -78,7 +78,7 @@ More examples can be found [here](https://www.conventionalcommits.org/en/v1.0.0/
 
 ## Code of Conduct and Shared Values
 
-Before contributing, please read and approve [our Code Of Conduct](https://github.com/dynatrace-oss/dynatrace-configuration-as-code/blob/main/CODE_OF_CONDUCT.md) outlining our shared values and expectations.
+Before contributing, please read and approve [our Code Of Conduct](https://github.com/dynatrace-oss/dynatrace-configuration-as-code/blob/main/CODE_OF_CONDUCT.md) outlining our shared values and expectations. 
 
 ## Building the Dynatrace Conitoring as Code Tool
 
