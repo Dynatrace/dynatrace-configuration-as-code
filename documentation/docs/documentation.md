@@ -8,7 +8,7 @@ slug: /
 # Welcome to the Monaco docs
 
 <p>
-Monaco is a "monitoring as code" tool that allows you to create, update and version your monitoring configurations in Dynatrace efficiently and at scale.
+Monaco is a "configuration as code" tool that allows you to create, update and version your observaiblity and security configurations in Dynatrace efficiently and at scale.
 </p>
 
 
