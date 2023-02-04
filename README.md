@@ -4,7 +4,7 @@ Easily configure Dynatrace at scale:
 - observability as code
 - security as code
 
-The documentation for Monaco is available [here](https://dynatrace.github.io/dynatrace-configuration-as-code//).
+The documentation for Monaco is available [here](https://dynatrace.github.io/dynatrace-configuration-as-code).
 
 You can download a copy of the Software Bill of Materials (SBOM) [here](https://github.com/dynatrace/dynatrace-configuration-as-code/actions/runs/1841276071)
 
