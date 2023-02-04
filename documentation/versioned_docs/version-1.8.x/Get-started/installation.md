@@ -70,7 +70,7 @@ Check out the beta of the new CLI by adding the environment variable
   "NEW_CLI".
 We can't wait for your feedback.
 NAME:
-   monaco-linux-amd64 - Automates the deployment of Dynatrace Monitoring Configuration to one or multiple Dynatrace environments.
+   monaco-linux-amd64 - Automates the deployment of Dynatrace Observability and Security Configuration to one or multiple Dynatrace environments.
 USAGE:
    monaco-linux-amd64 [global options] command [command options] [working directory]
 VERSION:
@@ -119,7 +119,7 @@ Check out the beta of the new CLI by adding the environment variable
 We can't wait for your feedback.
 
 NAME:
-   monaco.exe - Automates the deployment of Dynatrace Monitoring Configuration to one or multiple Dynatrace environments.
+   monaco.exe - Automates the deployment of Dynatrace Observability and Security Configuration to one or multiple Dynatrace environments.
 
 USAGE:
    monaco.exe [global options] command [command options] [working directory]
