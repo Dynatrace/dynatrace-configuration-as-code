@@ -1,4 +1,8 @@
-# Dynatrace Monitoring as Code
+# Dynatrace Configuration as code
+
+Easily configure Dynatrace at scale:
+- observability as code
+- security as code
 
 The documentation for Monaco is available [here](https://dynatrace.github.io/dynatrace-configuration-as-code//).
 

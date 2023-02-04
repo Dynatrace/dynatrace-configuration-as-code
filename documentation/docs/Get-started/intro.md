@@ -3,7 +3,7 @@ sidebar_position: 1
 title: What is Monaco?
 ---
 
-Monaco is a CLI tool that automates the deployment of Dynatrace Observability and Security Configuration to one or multiple Dynatrace environments.
+Monaco is a CLI tool that automates the deployment of Dynatrace Observability and Security Configuration to one or multiple Dynatrace environments. It initially started as "Monitoring as Code" - hence the naming Monaco.
 
 ## Why Monaco?
 
@@ -15,8 +15,8 @@ Configuration files allow you to create, update, and manage your observability a
 
 ## How does it work? 
 
-Developers define observability and security configuration files and check it into version control alongside the application’s source code.
-The code gets built and deployed with the next commit or pull request, automatically creating observability and security dashboards and alerting notifications.
+Developers define a observability and security configuration file and check it into version control alongside the application’s source code.
+The code gets built and deployed with the next commit or pull request, automatically creating observability dashboards and alerting notifications.
 
 <img
   src={require('./monaco-pipeline.jpg').default}
