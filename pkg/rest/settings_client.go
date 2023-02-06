@@ -33,18 +33,21 @@ type SettingsObject struct {
 	SchemaId,
 	// SchemaVersion is the version of the schema
 	SchemaVersion,
-	// Scope is the sope of he schema
+	// Scope is the scope of the schema
 	Scope string
 	// Content is the rendered config for the given settings object
 	Content []byte
+	// OriginObjectId is the object id of the Settings object when it was downloaded from an environment
+	OriginObjectId string
 }
 
 type settingsRequest struct {
 	SchemaId      string `json:"schemaId"`
-	ExternalId    string `json:"externalId"`
+	ExternalId    string `json:"externalId,omitempty"`
 	Scope         string `json:"scope"`
 	Value         any    `json:"value"`
 	SchemaVersion string `json:"schemaVersion,omitempty"`
+	ObjectId      string `json:"objectId,omitempty"`
 }
 
 // buildPostRequestPayload builds the json that is required as body in the settings api.
@@ -65,6 +68,7 @@ func buildPostRequestPayload(obj SettingsObject, externalId string) ([]byte, err
 		Scope:         obj.Scope,
 		Value:         value,
 		SchemaVersion: obj.SchemaVersion,
+		ObjectId:      obj.OriginObjectId,
 	}
 
 	// Create json obj. We currently marshal everything into an array, but we can optimize it to include multiple objects in the

@@ -296,9 +296,7 @@ func parseDefinitionForEnvironment(
 	environmentOverride map[string]environmentOverride,
 ) (Config, []error) {
 
-	configDefinition := configDefinition{
-		Parameters: make(map[string]configParameter),
-	}
+	configDefinition := definition.Config
 
 	applyOverrides(&configDefinition, definition.Config)
 
@@ -417,10 +415,11 @@ func getConfigFromDefinition(
 			SchemaVersion: configType.Settings.SchemaVersion,
 			Api:           configType.Api,
 		},
-		Group:       environment.Group,
-		Environment: environment.Name,
-		Parameters:  parameters,
-		Skip:        skipConfig,
+		Group:          environment.Group,
+		Environment:    environment.Name,
+		Parameters:     parameters,
+		Skip:           skipConfig,
+		OriginObjectId: definition.OriginObjectId,
 	}, nil
 }
 

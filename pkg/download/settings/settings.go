@@ -167,7 +167,8 @@ func (d *Downloader) convertAllObjects(objects []rest.DownloadSettingsObject, pr
 				config.NameParameter:  &value.ValueParameter{Value: configId},
 				config.ScopeParameter: &value.ValueParameter{Value: o.Scope},
 			},
-			Skip: false,
+			Skip:           false,
+			OriginObjectId: o.ObjectId,
 		}
 		result = append(result, c)
 	}

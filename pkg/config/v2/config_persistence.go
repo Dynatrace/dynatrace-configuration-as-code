@@ -30,10 +30,11 @@ type environmentOverride struct {
 }
 
 type configDefinition struct {
-	Name       configParameter            `yaml:"name,omitempty"`
-	Parameters map[string]configParameter `yaml:"parameters,omitempty"`
-	Template   string                     `yaml:"template,omitempty"`
-	Skip       configParameter            `yaml:"skip,omitempty"`
+	Name           configParameter            `yaml:"name,omitempty"`
+	Parameters     map[string]configParameter `yaml:"parameters,omitempty"`
+	Template       string                     `yaml:"template,omitempty"`
+	Skip           configParameter            `yaml:"skip,omitempty"`
+	OriginObjectId string                     `yaml:"originObjectId,omitempty"`
 }
 
 type topLevelConfigDefinition struct {

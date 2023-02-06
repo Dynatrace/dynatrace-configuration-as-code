@@ -60,4 +60,29 @@ var defaultSettingsFilters = Filters{
 			return json["ruleName"] == "default", "default entity cannot be deleted or edited"
 		},
 	},
+	"builtin:apis.detection-rules": {
+		ShouldDiscard: func(json map[string]interface{}) (bool, string) {
+			return true, "'Non-deletable default settings' issue. consider configuring these settings manually"
+		},
+	},
+	"builtin:logmonitoring.log-dpp-rules": {
+		ShouldDiscard: func(json map[string]interface{}) (bool, string) {
+			return true, "'Non-deletable default settings' issue. consider configuring these settings manually"
+		},
+	},
+	"builtin:monitoredentities.generic.type": {
+		ShouldDiscard: func(json map[string]interface{}) (bool, string) {
+			return true, "'Non-deletable default settings' issue. consider configuring these settings manually"
+		},
+	},
+	"builtin:alerting.profile": {
+		ShouldDiscard: func(json map[string]interface{}) (bool, string) {
+			return true, "'Non-deletable default settings' issue. consider configuring these settings manually"
+		},
+	},
+	"builtin:logmonitoring.log-events": {
+		ShouldDiscard: func(json map[string]interface{}) (bool, string) {
+			return true, "'Non-deletable default settings' issue. consider configuring these settings manually"
+		},
+	},
 }

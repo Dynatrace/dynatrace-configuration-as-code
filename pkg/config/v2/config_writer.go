@@ -546,10 +546,11 @@ func toConfigDefinition(context *serializerContext, config Config) (configDefini
 	}
 
 	return configDefinition{
-		Name:       nameParam,
-		Parameters: params,
-		Template:   configTemplatePath,
-		Skip:       skipParam,
+		Name:           nameParam,
+		Parameters:     params,
+		Template:       configTemplatePath,
+		Skip:           skipParam,
+		OriginObjectId: config.OriginObjectId,
 	}, templ, nil
 }
 
