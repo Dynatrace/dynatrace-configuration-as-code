@@ -45,7 +45,7 @@ check:
 	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1
 	@golangci-lint run ./...
 
-build: clean
+build: clean mocks
 	@echo "Building ${BINARY}..."
 	@CGO_ENABLED=0 go build -a -tags netgo -ldflags '-w -extldflags "-static"' -o ./bin/${BINARY} ./cmd/monaco
 
