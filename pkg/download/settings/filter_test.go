@@ -64,11 +64,32 @@ func TestShouldDiscard(t *testing.T) {
 			json:    map[string]interface{}{"ruleName": "something"},
 			discard: false,
 		},
+		{
+			name:    "alerting.profile - should not be persisted when name is 'Default'",
+			schema:  "builtin:alerting.profile",
+			json:    map[string]interface{}{"name": "Default"},
+			discard: true,
+		},
+		{
+			name:    "alerting.profile - should not be persisted when name is 'Default'",
+			schema:  "builtin:alerting.profile",
+			json:    map[string]interface{}{"name": "Default for ActiveGate Token Expiry"},
+			discard: true,
+		},
+		{
+			name:    "alerting.profile - should be persisted when name is 'Something'",
+			schema:  "builtin:alerting.profile",
+			json:    map[string]interface{}{"name": "Something"},
+			discard: false,
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			shouldDiscard, reason := defaultSettingsFilters[tc.schema].ShouldDiscard(tc.json)
+			filter, found := defaultSettingsFilters[tc.schema]
+			assert.True(t, found, "filter for schema %q not found", tc.schema)
+
+			shouldDiscard, reason := filter.ShouldDiscard(tc.json)
 
 			assert.Equal(t, shouldDiscard, tc.discard)
 			if shouldDiscard {

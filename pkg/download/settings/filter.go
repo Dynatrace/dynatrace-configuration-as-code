@@ -16,6 +16,8 @@
 
 package settings
 
+import "fmt"
+
 // noOpFilter is a settings 2.0 filter that does nothing
 var noOpFilter = Filter{
 	ShouldDiscard: func(settingsValue map[string]interface{}) (bool, string) { return false, "" },
@@ -77,7 +79,8 @@ var defaultSettingsFilters = Filters{
 	},
 	"builtin:alerting.profile": {
 		ShouldDiscard: func(json map[string]interface{}) (bool, string) {
-			return true, "'Non-deletable default settings' issue. consider configuring these settings manually"
+			return json["name"] == "Default" || json["name"] == "Default for ActiveGate Token Expiry",
+				fmt.Sprintf("entity %q cannot be deleted or edited", json["name"])
 		},
 	},
 	"builtin:logmonitoring.log-events": {
