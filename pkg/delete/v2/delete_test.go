@@ -29,7 +29,7 @@ func TestDeleteSettings(t *testing.T) {
 	t.Run("TestDeleteSettings", func(t *testing.T) {
 		c := client.NewMockClient(gomock.NewController(t))
 		c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).DoAndReturn(func(schemaID string, listOpts client.ListSettingsOptions) ([]client.DownloadSettingsObject, error) {
-			assert.True(t, listOpts.Filter(client.DownloadSettingsObject{ExternalId: "bW9uYWNvLWdlbmVyYXRlZC1pZFtidWlsdGluOmFsZXJ0aW5nLnByb2ZpbGUkaWQxXQ=="}))
+			assert.True(t, listOpts.Filter(client.DownloadSettingsObject{ExternalId: "monaco:YnVpbHRpbjphbGVydGluZy5wcm9maWxlJGlkMQ=="}))
 			return []client.DownloadSettingsObject{
 				{
 					ExternalId:    "externalID",

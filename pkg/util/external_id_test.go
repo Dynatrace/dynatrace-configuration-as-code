@@ -50,3 +50,26 @@ func TestGenerateExternalIdWithOver500CharsCutsIt(t *testing.T) {
 	assert.Assert(t, len(output2) <= 500)
 	assert.Assert(t, len(output3) <= 500)
 }
+
+func TestGenerateExternalIdWithOther500CharsIsStable(t *testing.T) {
+	output1 := GenerateExternalId(strings.Repeat("a", 250), strings.Repeat("a", 251))
+	output2 := GenerateExternalId(strings.Repeat("a", 250), strings.Repeat("a", 251))
+	output3 := GenerateExternalId(strings.Repeat("a", 250), strings.Repeat("a", 300))
+
+	assert.Equal(t, output1, output2)
+	assert.Assert(t, output1 != output3)
+}
+
+func TestGenerateExternalIdStartsWithKnownPrefix(t *testing.T) {
+	schemaId, id := "a", "b"
+
+	extId := GenerateExternalId(schemaId, id)
+
+	assert.Assert(t, strings.HasPrefix(extId, "monaco:"))
+}
+
+func TestGenerateExternalIdWithOther500CharsStartsWithKnownPrefix(t *testing.T) {
+	extId := GenerateExternalId(strings.Repeat("a", 250), strings.Repeat("a", 251))
+
+	assert.Assert(t, strings.HasPrefix(extId, "monaco:"))
+}

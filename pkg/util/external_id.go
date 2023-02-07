@@ -19,20 +19,23 @@ import (
 	"fmt"
 )
 
-const format = "monaco-generated-id[%s$%s]"
+const prefix = "monaco:"
+const format = "%s$%s"
 const externalIdMaxLength = 500
 
 // GenerateExternalId generates the external-id for settings 2.0 objects based on the schema, and id.
 // The result of the function is pure.
 // Max length for the external id is 500
 func GenerateExternalId(schema, id string) string {
-	fullId := fmt.Sprintf(format, schema, id)
+	localId := fmt.Sprintf(format, schema, id)
+	encodedId := base64.StdEncoding.EncodeToString([]byte(localId))
 
-	encodedExternalId := base64.StdEncoding.EncodeToString([]byte(fullId))
-
-	if len(encodedExternalId) > externalIdMaxLength {
-		return encodedExternalId[externalIdMaxLength:]
+	encodedIdMaxLength := externalIdMaxLength - len(prefix)
+	if len(encodedId) > encodedIdMaxLength {
+		encodedId = encodedId[encodedIdMaxLength:]
 	}
 
-	return encodedExternalId
+	externalId := fmt.Sprintf("monaco:%s", encodedId)
+
+	return externalId
 }
