@@ -42,10 +42,8 @@ func DeployConfigs(client client.Client, apis api.ApiMap,
 	for _, c := range sortedConfigs {
 		c := c // to avoid implicit memory aliasing (gosec G601)
 
-		log.Debug("\tDeploying config %s", c.Coordinate)
-
 		if c.Skip {
-			log.Debug("\t\tSkipping deployment of config %s", c.Coordinate)
+			log.Info("\tSkipping deployment of config %s", c.Coordinate)
 
 			entityMap.PutResolved(c.Coordinate, parameter.ResolvedEntity{
 				EntityName: c.Coordinate.ConfigId,
@@ -55,6 +53,8 @@ func DeployConfigs(client client.Client, apis api.ApiMap,
 			})
 			continue
 		}
+
+		log.Info("\tDeploying config %s", c.Coordinate)
 
 		var entity parameter.ResolvedEntity
 		var deploymentErrors []error
