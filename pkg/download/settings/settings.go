@@ -18,13 +18,13 @@ package settings
 
 import (
 	"encoding/json"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/client"
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
 	v2 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"sync"
@@ -33,7 +33,7 @@ import (
 // Downloader is responsible for downloading Settings 2.0 objects
 type Downloader struct {
 	// client is the settings 2.0 client to be used by the Downloader
-	client rest.SettingsClient
+	client client.SettingsClient
 
 	// filters specifies which settings 2.0 objects need special treatment under
 	// certain conditions and need to be skipped
@@ -49,7 +49,7 @@ func WithFilters(filters Filters) func(*Downloader) {
 }
 
 // NewSettingsDownloader creates a new downloader for Settings 2.0 objects
-func NewSettingsDownloader(client rest.SettingsClient, opts ...func(*Downloader)) *Downloader {
+func NewSettingsDownloader(client client.SettingsClient, opts ...func(*Downloader)) *Downloader {
 	d := &Downloader{
 		client:  client,
 		filters: defaultSettingsFilters,
@@ -62,12 +62,12 @@ func NewSettingsDownloader(client rest.SettingsClient, opts ...func(*Downloader)
 
 // Download downloads all settings 2.0 objects for the given schema IDs
 
-func Download(client rest.SettingsClient, schemaIDs []string, projectName string) v2.ConfigsPerType {
+func Download(client client.SettingsClient, schemaIDs []string, projectName string) v2.ConfigsPerType {
 	return NewSettingsDownloader(client).Download(schemaIDs, projectName)
 }
 
 // DownloadAll downloads all settings 2.0 objects for a given project
-func DownloadAll(client rest.SettingsClient, projectName string) v2.ConfigsPerType {
+func DownloadAll(client client.SettingsClient, projectName string) v2.ConfigsPerType {
 	return NewSettingsDownloader(client).DownloadAll(projectName)
 }
 
@@ -106,7 +106,7 @@ func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPe
 		go func(s string) {
 			defer wg.Done()
 			log.Debug("Downloading all settings for schema %s", s)
-			objects, err := d.client.ListSettings(s, rest.ListSettingsOptions{})
+			objects, err := d.client.ListSettings(s, client.ListSettingsOptions{})
 			if err != nil {
 				log.Error("Failed to fetch all settings for schema %s: %v", s, err)
 				return
@@ -125,7 +125,7 @@ func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPe
 	return results
 }
 
-func (d *Downloader) convertAllObjects(objects []rest.DownloadSettingsObject, projectName string) []config.Config {
+func (d *Downloader) convertAllObjects(objects []client.DownloadSettingsObject, projectName string) []config.Config {
 	result := make([]config.Config, 0, len(objects))
 	for _, o := range objects {
 

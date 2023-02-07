@@ -17,7 +17,7 @@ package v2
 import (
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/client"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 )
@@ -27,7 +27,7 @@ type DeletePointer struct {
 	ConfigId string
 }
 
-func DeleteConfigs(client rest.Client, apis map[string]api.Api, entriesToDelete map[string][]DeletePointer) []error {
+func DeleteConfigs(client client.Client, apis map[string]api.Api, entriesToDelete map[string][]DeletePointer) []error {
 	errs := make([]error, 0)
 
 	for targetApi, entries := range entriesToDelete {
@@ -48,7 +48,7 @@ func DeleteConfigs(client rest.Client, apis map[string]api.Api, entriesToDelete 
 	return errs
 }
 
-func deleteClassicConfig(client rest.Client, theApi api.Api, entries []DeletePointer, targetApi string) []error {
+func deleteClassicConfig(client client.Client, theApi api.Api, entries []DeletePointer, targetApi string) []error {
 	errors := make([]error, 0)
 
 	values, err := client.List(theApi)
@@ -75,13 +75,13 @@ func deleteClassicConfig(client rest.Client, theApi api.Api, entries []DeletePoi
 	return errors
 }
 
-func deleteSettingsObject(client rest.Client, entries []DeletePointer) []error {
+func deleteSettingsObject(c client.Client, entries []DeletePointer) []error {
 	errors := make([]error, 0)
 
 	for _, e := range entries {
 		externalID := util.GenerateExternalId(e.Type, e.ConfigId)
 		// get settings objects with matching external ID
-		objects, err := client.ListSettings(e.Type, rest.ListSettingsOptions{DiscardValue: true, Filter: func(o rest.DownloadSettingsObject) bool { return o.ExternalId == externalID }})
+		objects, err := c.ListSettings(e.Type, client.ListSettingsOptions{DiscardValue: true, Filter: func(o client.DownloadSettingsObject) bool { return o.ExternalId == externalID }})
 		if err != nil {
 			errors = append(errors, fmt.Errorf("could not fetch settings 2.0 objects with schema ID %s: %w", e.Type, err))
 			continue
@@ -94,7 +94,7 @@ func deleteSettingsObject(client rest.Client, entries []DeletePointer) []error {
 
 		for _, obj := range objects {
 			log.Debug("Deleting settings object %s/%s with objectId %s", e.Type, e.ConfigId, obj.ObjectId)
-			err := client.DeleteSettings(obj.ObjectId)
+			err := c.DeleteSettings(obj.ObjectId)
 			if err != nil {
 				errors = append(errors, fmt.Errorf("could not delete settings 2.0 object with object ID %s", obj.ObjectId))
 			}
@@ -156,7 +156,7 @@ func filterValuesToDelete(entries []DeletePointer, existingValues []api.Value, a
 	return result, errs
 }
 
-func DeleteAllConfigs(client rest.ConfigClient, apis map[string]api.Api) (errors []error) {
+func DeleteAllConfigs(client client.ConfigClient, apis map[string]api.Api) (errors []error) {
 
 	for _, api := range apis {
 		log.Info("Collecting configs of type %s...", api.GetId())

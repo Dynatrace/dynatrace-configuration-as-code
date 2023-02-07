@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package rest
+package client
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"net/http"
@@ -128,7 +129,7 @@ type ListSettingsOptions struct {
 // ListSettingsFilter can be used to filter fetched settings objects with custom criteria, e.g. o.ExternalId == ""
 type ListSettingsFilter func(DownloadSettingsObject) bool
 
-//go:generate mockgen -source=client.go -destination=client_mock.go -package=rest -imports .=github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api DynatraceClient
+//go:generate mockgen -source=client.go -destination=client_mock.go -package=client -imports .=github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api DynatraceClient
 
 // Client provides the functionality for performing basic CRUD operations on any Dynatrace API
 // supported by monaco.
@@ -149,7 +150,7 @@ type DynatraceClient struct {
 	environmentUrl string
 	token          string
 	client         *http.Client
-	retrySettings  RetrySettings
+	retrySettings  rest.RetrySettings
 }
 
 var (
@@ -159,7 +160,7 @@ var (
 )
 
 // WithRetrySettings sets the retry settings to be used by the DynatraceClient
-func WithRetrySettings(retrySettings RetrySettings) func(*DynatraceClient) {
+func WithRetrySettings(retrySettings rest.RetrySettings) func(*DynatraceClient) {
 	return func(d *DynatraceClient) {
 		d.retrySettings = retrySettings
 	}
@@ -202,7 +203,7 @@ func NewDynatraceClient(environmentURL string, token string, opts ...func(dynatr
 		environmentUrl: environmentURL,
 		token:          token,
 		client:         &http.Client{},
-		retrySettings:  defaultRetrySettings,
+		retrySettings:  rest.DefaultRetrySettings,
 	}
 
 	for _, o := range opts {
@@ -252,7 +253,7 @@ func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, e
 
 		requestUrl := d.environmentUrl + pathSettingsObjects
 
-		resp, err := sendWithRetryWithInitialTry(d.client, post, obj.Id, requestUrl, payload, d.token, d.retrySettings.normal)
+		resp, err := rest.SendWithRetryWithInitialTry(d.client, rest.Post, obj.Id, requestUrl, payload, d.token, d.retrySettings.Normal)
 		if err != nil {
 			return DynatraceEntity{}, fmt.Errorf("failed to upsert dynatrace obj: %w", err)
 		}
@@ -276,7 +277,7 @@ func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, e
 
 		requestUrl := d.environmentUrl + pathSettingsObjects + "/" + settings[0].ObjectId
 
-		resp, err := sendWithRetryWithInitialTry(d.client, put, obj.Id, requestUrl, payload, d.token, d.retrySettings.long)
+		resp, err := rest.SendWithRetryWithInitialTry(d.client, rest.Put, obj.Id, requestUrl, payload, d.token, d.retrySettings.Long)
 		if err != nil {
 			return DynatraceEntity{}, fmt.Errorf("failed to upsert dynatrace obj: %w", err)
 		}
@@ -312,7 +313,7 @@ func (d *DynatraceClient) ReadById(api Api, id string) (json []byte, err error) 
 		dtUrl = api.GetUrl(d.environmentUrl) + "/" + url.PathEscape(id)
 	}
 
-	response, err := get(d.client, dtUrl, d.token)
+	response, err := rest.Get(d.client, dtUrl, d.token)
 
 	if err != nil {
 		return nil, err
@@ -327,7 +328,7 @@ func (d *DynatraceClient) ReadById(api Api, id string) (json []byte, err error) 
 
 func (d *DynatraceClient) DeleteById(api Api, id string) error {
 
-	return deleteConfig(d.client, api.GetUrl(d.environmentUrl), d.token, id)
+	return rest.DeleteConfig(d.client, api.GetUrl(d.environmentUrl), d.token, id)
 }
 
 func (d *DynatraceClient) ExistsByName(api Api, name string) (exists bool, id string, err error) {
@@ -365,7 +366,7 @@ func (d *DynatraceClient) ListSchemas() (SchemaList, error) {
 	}
 
 	// getting all schemas does not have pagination
-	resp, err := get(d.client, u.String(), d.token)
+	resp, err := rest.Get(d.client, u.String(), d.token)
 	if err != nil {
 		return nil, fmt.Errorf("failed to GET schemas: %w", err)
 	}
@@ -404,7 +405,7 @@ func (d *DynatraceClient) ListSettings(schemaId string, opts ListSettingsOptions
 	}
 	u.RawQuery = params.Encode()
 
-	resp, err := getWithRetry(d.client, u.String(), d.token, d.retrySettings.normal)
+	resp, err := rest.GetWithRetry(d.client, u.String(), d.token, d.retrySettings.Normal)
 	if err != nil {
 		return nil, err
 	}
@@ -434,9 +435,9 @@ func (d *DynatraceClient) ListSettings(schemaId string, opts ListSettingsOptions
 		}
 
 		if resp.NextPageKey != "" {
-			u = addNextPageQueryParams(u, resp.NextPageKey)
+			u = rest.AddNextPageQueryParams(u, resp.NextPageKey)
 
-			resp, err = getWithRetry(d.client, u.String(), d.token, d.retrySettings.normal)
+			resp, err = rest.GetWithRetry(d.client, u.String(), d.token, d.retrySettings.Normal)
 
 			if err != nil {
 				return nil, err
@@ -459,6 +460,6 @@ func (d *DynatraceClient) DeleteSettings(objectID string) error {
 		return fmt.Errorf("failed to parse URL '%s': %w", d.environmentUrl+pathSettingsObjects, err)
 	}
 
-	return deleteConfig(d.client, u.String(), d.token, objectID)
+	return rest.DeleteConfig(d.client, u.String(), d.token, objectID)
 
 }

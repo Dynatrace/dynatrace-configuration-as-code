@@ -14,7 +14,7 @@
 
 //go:build unit
 
-package rest
+package client
 
 import (
 	"encoding/json"

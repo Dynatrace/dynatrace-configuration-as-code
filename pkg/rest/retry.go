@@ -1,16 +1,18 @@
-// @license
-// Copyright 2022 Dynatrace LLC
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * @license
+ * Copyright 2023 Dynatrace LLC
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package rest
 
@@ -21,86 +23,86 @@ import (
 	"time"
 )
 
-type retrySetting struct {
-	waitTime   time.Duration
-	maxRetries int
+type RetrySetting struct {
+	WaitTime   time.Duration
+	MaxRetries int
 }
 
 type RetrySettings struct {
-	normal   retrySetting
-	long     retrySetting
-	veryLong retrySetting
+	Normal   RetrySetting
+	Long     RetrySetting
+	VeryLong RetrySetting
 }
 
-var defaultRetrySettings = RetrySettings{
-	normal: retrySetting{
-		waitTime:   5 * time.Second,
-		maxRetries: 3,
+var DefaultRetrySettings = RetrySettings{
+	Normal: RetrySetting{
+		WaitTime:   5 * time.Second,
+		MaxRetries: 3,
 	},
-	long: retrySetting{
-		waitTime:   5 * time.Second,
-		maxRetries: 6,
+	Long: RetrySetting{
+		WaitTime:   5 * time.Second,
+		MaxRetries: 6,
 	},
-	veryLong: retrySetting{
-		waitTime:   15 * time.Second,
-		maxRetries: 5,
+	VeryLong: RetrySetting{
+		WaitTime:   15 * time.Second,
+		MaxRetries: 5,
 	},
 }
 
-// getWithRetry will retry a GET request for a given number of times, waiting a give duration between calls
+// GetWithRetry will retry a GET request for a given number of times, waiting a give duration between calls
 // this method can be used for API calls we know to have occasional timing issues on GET - e.g. paginated queries that are impacted by replication lag, returning unequal amounts of objects/pages per node
-func getWithRetry(client *http.Client, url string, apiToken string, settings retrySetting) (resp Response, err error) {
-	resp, err = get(client, url, apiToken)
+func GetWithRetry(client *http.Client, url string, apiToken string, settings RetrySetting) (resp Response, err error) {
+	resp, err = Get(client, url, apiToken)
 
-	if err == nil && success(resp) {
+	if err == nil && resp.IsSuccess() {
 		return resp, nil
 	}
 
-	for i := 0; i < settings.maxRetries; i++ {
+	for i := 0; i < settings.MaxRetries; i++ {
 		log.Warn("Retrying failed GET request %s with error (HTTP %d)", url, resp.StatusCode)
-		time.Sleep(settings.waitTime)
-		resp, err = get(client, url, apiToken)
-		if err == nil && success(resp) {
+		time.Sleep(settings.WaitTime)
+		resp, err = Get(client, url, apiToken)
+		if err == nil && resp.IsSuccess() {
 			return resp, err
 		}
 	}
 
 	var retryErr error
 	if err != nil {
-		retryErr = fmt.Errorf("GET request %s failed after %d retries: %w", url, settings.maxRetries, err)
+		retryErr = fmt.Errorf("GET request %s failed after %d retries: %w", url, settings.MaxRetries, err)
 	} else {
-		retryErr = fmt.Errorf("GET request %s failed after %d retries: (HTTP %d)!\n    Response was: %s", url, settings.maxRetries, resp.StatusCode, resp.Body)
+		retryErr = fmt.Errorf("GET request %s failed after %d retries: (HTTP %d)!\n    Response was: %s", url, settings.MaxRetries, resp.StatusCode, resp.Body)
 	}
 	return Response{}, retryErr
 }
 
-// getWithRetry will retry a sendingRequest(PUT or POST) for a given number of times, waiting a give duration between calls
-func sendWithRetry(client *http.Client, restCall sendingRequest, objectName string, path string, body []byte, apiToken string, setting retrySetting) (resp Response, err error) {
+// SendWithRetry will retry a SendingRequest(PUT or POST) for a given number of times, waiting a give duration between calls
+func SendWithRetry(client *http.Client, restCall SendingRequest, objectName string, path string, body []byte, apiToken string, setting RetrySetting) (resp Response, err error) {
 
-	for i := 0; i < setting.maxRetries; i++ {
-		log.Warn("Failed to upsert config %q. Waiting for %s before retrying...", objectName, setting.waitTime)
-		time.Sleep(setting.waitTime)
+	for i := 0; i < setting.MaxRetries; i++ {
+		log.Warn("Failed to upsert config %q. Waiting for %s before retrying...", objectName, setting.WaitTime)
+		time.Sleep(setting.WaitTime)
 		resp, err = restCall(client, path, body, apiToken)
-		if err == nil && success(resp) {
+		if err == nil && resp.IsSuccess() {
 			return resp, err
 		}
 	}
 
 	var retryErr error
 	if err != nil {
-		retryErr = fmt.Errorf("failed to upsert config %q after %d retries: %w", objectName, setting.maxRetries, err)
+		retryErr = fmt.Errorf("failed to upsert config %q after %d retries: %w", objectName, setting.MaxRetries, err)
 	} else {
-		retryErr = fmt.Errorf("failed to upsert config %q after %d retries: (HTTP %d)!\n    Response was: %s", objectName, setting.maxRetries, resp.StatusCode, resp.Body)
+		retryErr = fmt.Errorf("failed to upsert config %q after %d retries: (HTTP %d)!\n    Response was: %s", objectName, setting.MaxRetries, resp.StatusCode, resp.Body)
 	}
 	return Response{}, retryErr
 }
 
-// sendWithRetryWithInitialTry will try to send a request and later retry a sendingRequest(PUT or POST) for a given number of times, waiting a give duration between calls
-func sendWithRetryWithInitialTry(client *http.Client, restCall sendingRequest, objectName string, path string, body []byte, apiToken string, setting retrySetting) (resp Response, err error) {
+// SendWithRetryWithInitialTry will try to send a request and later retry a SendingRequest(PUT or POST) for a given number of times, waiting a give duration between calls
+func SendWithRetryWithInitialTry(client *http.Client, restCall SendingRequest, objectName string, path string, body []byte, apiToken string, setting RetrySetting) (resp Response, err error) {
 	resp, err = restCall(client, path, body, apiToken)
-	if err == nil && success(resp) {
+	if err == nil && resp.IsSuccess() {
 		return resp, err
 	}
 
-	return sendWithRetry(client, restCall, objectName, path, body, apiToken, setting)
+	return SendWithRetry(client, restCall, objectName, path, body, apiToken, setting)
 }

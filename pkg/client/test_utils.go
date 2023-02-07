@@ -16,9 +16,10 @@
  * limitations under the License.
  */
 
-package rest
+package client
 
 import (
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/slices"
@@ -30,18 +31,18 @@ import (
 	"testing"
 )
 
-var testRetrySettings = RetrySettings{
-	normal: retrySetting{
-		waitTime:   0,
-		maxRetries: defaultRetrySettings.normal.maxRetries,
+var testRetrySettings = rest.RetrySettings{
+	Normal: rest.RetrySetting{
+		WaitTime:   0,
+		MaxRetries: rest.DefaultRetrySettings.Normal.MaxRetries,
 	},
-	long: retrySetting{
-		waitTime:   0,
-		maxRetries: defaultRetrySettings.long.maxRetries,
+	Long: rest.RetrySetting{
+		WaitTime:   0,
+		MaxRetries: rest.DefaultRetrySettings.Long.MaxRetries,
 	},
-	veryLong: retrySetting{
-		waitTime:   0,
-		maxRetries: defaultRetrySettings.veryLong.maxRetries,
+	VeryLong: rest.RetrySetting{
+		WaitTime:   0,
+		MaxRetries: rest.DefaultRetrySettings.VeryLong.MaxRetries,
 	},
 }
 

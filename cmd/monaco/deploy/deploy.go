@@ -23,14 +23,13 @@ import (
 	"strings"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/client"
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 	configError "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/errors"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
 	project "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2/topologysort"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/client"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
@@ -399,7 +398,7 @@ func toEnvironmentMap(environments []manifest.EnvironmentDefinition) map[string]
 	return result
 }
 
-func getClient(environment manifest.EnvironmentDefinition, dryRun bool) (rest.Client, error) {
+func getClient(environment manifest.EnvironmentDefinition, dryRun bool) (client.Client, error) {
 	if dryRun {
 		return &client.DummyClient{
 			Entries: map[api.Api][]client.DataEntry{},
@@ -416,6 +415,6 @@ func getClient(environment manifest.EnvironmentDefinition, dryRun bool) (rest.Cl
 			return nil, err
 		}
 
-		return rest.NewDynatraceClient(url, token)
+		return client.NewDynatraceClient(url, token)
 	}
 }

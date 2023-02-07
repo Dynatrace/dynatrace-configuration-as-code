@@ -35,8 +35,8 @@ import (
 	"time"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/client"
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/spf13/afero"
@@ -108,7 +108,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 		url, err := env.GetUrl()
 		assert.NilError(t, err)
 
-		client, err := rest.NewDynatraceClient(url, token)
+		client, err := client.NewDynatraceClient(url, token)
 		assert.NilError(t, err)
 
 		entities := make(map[coordinate.Coordinate]parameter.ResolvedEntity)
@@ -154,7 +154,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 	}
 }
 
-func AssertConfig(t *testing.T, client rest.ConfigClient, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config, configType string, name string) {
+func AssertConfig(t *testing.T, client client.ConfigClient, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config, configType string, name string) {
 
 	theApi := api.NewApis()[configType]
 
@@ -225,7 +225,7 @@ func cleanupIntegrationTest(t *testing.T, loadedManifest manifest.Manifest, spec
 		url, err := environment.GetUrl()
 		assert.NilError(t, err)
 
-		client, err := rest.NewDynatraceClient(url, token)
+		client, err := client.NewDynatraceClient(url, token)
 		assert.NilError(t, err)
 
 		for _, api := range apis {

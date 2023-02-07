@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/client"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
@@ -54,7 +55,7 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 
 	httpClient := &http.Client{}
 
-	c, err := rest.NewDynatraceClient(url, token, rest.WithHTTPClient(httpClient))
+	c, err := client.NewDynatraceClient(url, token, client.WithHTTPClient(httpClient))
 	assert.NilError(t, err)
 
 	a := api.NewApis()["alerting-profile"]
@@ -99,7 +100,7 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 	assert.Assert(t, len(getConfigsOfName(t, c, a, name)) == 3, "Expected three configs of name %q but found %d", name, len(existing))
 }
 
-func getConfigsOfName(t *testing.T, c rest.Client, a api.Api, name string) []api.Value {
+func getConfigsOfName(t *testing.T, c client.Client, a api.Api, name string) []api.Value {
 	var existingEntities []api.Value
 	entities, err := c.List(a)
 	assert.NilError(t, err)

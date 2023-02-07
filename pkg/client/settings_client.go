@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package rest
+package client
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 )
 
@@ -131,7 +132,7 @@ type putResponse struct {
 // parsePostResponse unmarshalls and parses the settings response for the post request
 // The response is returned as an array for each element we send.
 // Since we only send one object at the moment, we simply use the first one.
-func parsePostResponse(resp Response) (api.DynatraceEntity, error) {
+func parsePostResponse(resp rest.Response) (api.DynatraceEntity, error) {
 
 	var parsed []postResponse
 	if err := json.Unmarshal(resp.Body, &parsed); err != nil {
@@ -152,8 +153,8 @@ func parsePostResponse(resp Response) (api.DynatraceEntity, error) {
 	}, nil
 }
 
-// parsePutResponse unmarshalls and parses the settings response for the put request
-func parsePutResponse(resp Response) (api.DynatraceEntity, error) {
+// parsePutResponse unmarshalls and parses the settings response for the Put request
+func parsePutResponse(resp rest.Response) (api.DynatraceEntity, error) {
 
 	var parsed putResponse
 	if err := json.Unmarshal(resp.Body, &parsed); err != nil {

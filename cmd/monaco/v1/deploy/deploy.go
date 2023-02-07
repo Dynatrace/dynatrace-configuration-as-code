@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/client"
 	configV2 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/converter"
 	configDelete "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/delete/v2"
@@ -28,9 +29,7 @@ import (
 	projectV1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v1"
 	projectV2 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2/topologysort"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/client"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/spf13/afero"
@@ -149,7 +148,7 @@ func deployEnvironment(environment manifest.EnvironmentDefinition, apis map[stri
 	return deploy.DeployConfigs(apiClient, apis, sortedConfigs, deploy.DeployConfigsOptions{ContinueOnErr: continueOnError, DryRun: dryRun})
 }
 
-func createClient(environment manifest.EnvironmentDefinition, dryRun bool) (rest.Client, error) {
+func createClient(environment manifest.EnvironmentDefinition, dryRun bool) (client.Client, error) {
 	if dryRun {
 		return &client.DummyClient{}, nil
 	}
@@ -165,7 +164,7 @@ func createClient(environment manifest.EnvironmentDefinition, dryRun bool) (rest
 		return nil, err
 	}
 
-	return rest.NewDynatraceClient(url, token)
+	return client.NewDynatraceClient(url, token)
 }
 
 func loadConfigs(fs afero.Fs, apis map[string]api.Api, environmentsFile string,

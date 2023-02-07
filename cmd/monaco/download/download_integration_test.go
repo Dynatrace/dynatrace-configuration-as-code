@@ -19,6 +19,7 @@ package download
 import (
 	"encoding/json"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/client"
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
@@ -27,7 +28,6 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
 	projectLoader "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -95,7 +95,7 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 	}
 
 	// Server
-	server := rest.NewIntegrationTestServer(t, testBasePath, responses)
+	server := client.NewIntegrationTestServer(t, testBasePath, responses)
 
 	fs := afero.NewMemMapFs()
 
@@ -158,7 +158,7 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 	}
 
 	// Server
-	server := rest.NewIntegrationTestServer(t, testBasePath, responses)
+	server := client.NewIntegrationTestServer(t, testBasePath, responses)
 
 	fs := afero.NewMemMapFs()
 
@@ -243,7 +243,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 	}
 
 	// Server
-	server := rest.NewIntegrationTestServer(t, testBasePath, responses)
+	server := client.NewIntegrationTestServer(t, testBasePath, responses)
 	fs := afero.NewMemMapFs()
 
 	// WHEN we download everything
@@ -354,7 +354,7 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 	}
 
 	// Server
-	server := rest.NewIntegrationTestServer(t, testBasePath, responses)
+	server := client.NewIntegrationTestServer(t, testBasePath, responses)
 
 	fs := afero.NewMemMapFs()
 
@@ -418,7 +418,7 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 	}
 
 	// Server
-	server := rest.NewIntegrationTestServer(t, testBasePath, responses)
+	server := client.NewIntegrationTestServer(t, testBasePath, responses)
 
 	fs := afero.NewMemMapFs()
 
@@ -483,7 +483,7 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 	}
 
 	// Server
-	server := rest.NewIntegrationTestServer(t, testBasePath, responses)
+	server := client.NewIntegrationTestServer(t, testBasePath, responses)
 
 	fs := afero.NewMemMapFs()
 
@@ -557,7 +557,7 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 	}
 
 	// Server
-	server := rest.NewIntegrationTestServer(t, testBasePath, responses)
+	server := client.NewIntegrationTestServer(t, testBasePath, responses)
 
 	fs := afero.NewMemMapFs()
 
@@ -692,7 +692,7 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 			}
 
 			// Server
-			server := rest.NewIntegrationTestServer(t, testBasePath, responses)
+			server := client.NewIntegrationTestServer(t, testBasePath, responses)
 
 			fs := afero.NewMemMapFs()
 
@@ -750,7 +750,7 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 	}
 
 	// Server
-	server := rest.NewIntegrationTestServer(t, testBasePath, responses)
+	server := client.NewIntegrationTestServer(t, testBasePath, responses)
 
 	// GIVEN existing files
 	fs := afero.NewMemMapFs()
@@ -829,8 +829,8 @@ func getTestingDownloadOptions(server *httptest.Server, projectName string) down
 		projectName:             projectName,
 		skipSettings:            true,
 		concurrentDownloadLimit: 50,
-		clientProvider: func(environmentUrl, token string, opts ...func(client *rest.DynatraceClient)) (*rest.DynatraceClient, error) {
-			return rest.NewDynatraceClientForTesting(environmentUrl, token, server.Client())
+		clientProvider: func(environmentUrl, token string, opts ...func(client *client.DynatraceClient)) (*client.DynatraceClient, error) {
+			return client.NewDynatraceClientForTesting(environmentUrl, token, server.Client())
 		},
 	}
 }

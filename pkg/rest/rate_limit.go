@@ -1,6 +1,6 @@
-/**
+/*
  * @license
- * Copyright 2020 Dynatrace LLC
+ * Copyright 2023 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -64,7 +64,7 @@ func (s *simpleSleepRateLimitStrategy) executeRequest(timelineProvider util.Time
 		sleepDuration, humanReadableTimestamp, err := s.getSleepDurationFromResponseHeader(response, timelineProvider)
 
 		if err != nil {
-			log.Debug("Failed to get rate limiting details from API response, generating wait time instead...")
+			log.Debug("Failed to Get rate limiting details from API response, generating wait time instead...")
 			sleepDuration, humanReadableTimestamp = s.generateSleepDuration(currentIteration, timelineProvider)
 		}
 

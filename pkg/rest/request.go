@@ -1,6 +1,6 @@
-/**
+/*
  * @license
- * Copyright 2020 Dynatrace LLC
+ * Copyright 2023 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -28,14 +28,7 @@ import (
 	"runtime"
 )
 
-type Response struct {
-	StatusCode  int
-	Body        []byte
-	Headers     map[string][]string
-	NextPageKey string
-}
-
-func get(client *http.Client, url string, apiToken string) (Response, error) {
+func Get(client *http.Client, url string, apiToken string) (Response, error) {
 	req, err := request(http.MethodGet, url, apiToken)
 
 	if err != nil {
@@ -46,7 +39,7 @@ func get(client *http.Client, url string, apiToken string) (Response, error) {
 }
 
 // the name delete() would collide with the built-in function
-func deleteConfig(client *http.Client, url string, apiToken string, id string) error {
+func DeleteConfig(client *http.Client, url string, apiToken string, id string) error {
 	fullPath := url + "/" + id
 	req, err := request(http.MethodDelete, fullPath, apiToken)
 
@@ -65,14 +58,14 @@ func deleteConfig(client *http.Client, url string, apiToken string, id string) e
 		return nil
 	}
 
-	if !success(resp) {
+	if !resp.IsSuccess() {
 		return fmt.Errorf("failed call to DELETE %s (HTTP %d)!\n Response was:\n %s", fullPath, resp.StatusCode, string(resp.Body))
 	}
 
 	return nil
 }
 
-func post(client *http.Client, url string, data []byte, apiToken string) (Response, error) {
+func Post(client *http.Client, url string, data []byte, apiToken string) (Response, error) {
 	req, err := requestWithBody(http.MethodPost, url, bytes.NewBuffer(data), apiToken)
 
 	if err != nil {
@@ -82,7 +75,7 @@ func post(client *http.Client, url string, data []byte, apiToken string) (Respon
 	return executeRequest(client, req)
 }
 
-func postMultiPartFile(client *http.Client, url string, data *bytes.Buffer, contentType string, apiToken string) (Response, error) {
+func PostMultiPartFile(client *http.Client, url string, data *bytes.Buffer, contentType string, apiToken string) (Response, error) {
 	req, err := requestWithBody(http.MethodPost, url, data, apiToken)
 
 	if err != nil {
@@ -94,7 +87,7 @@ func postMultiPartFile(client *http.Client, url string, data *bytes.Buffer, cont
 	return executeRequest(client, req)
 }
 
-func put(client *http.Client, url string, data []byte, apiToken string) (Response, error) {
+func Put(client *http.Client, url string, data []byte, apiToken string) (Response, error) {
 	req, err := requestWithBody(http.MethodPut, url, bytes.NewBuffer(data), apiToken)
 
 	if err != nil {
@@ -104,8 +97,8 @@ func put(client *http.Client, url string, data []byte, apiToken string) (Respons
 	return executeRequest(client, req)
 }
 
-// function type of put and post requests
-type sendingRequest func(client *http.Client, url string, data []byte, apiToken string) (Response, error)
+// function type of Put and Post requests
+type SendingRequest func(client *http.Client, url string, data []byte, apiToken string) (Response, error)
 
 func request(method string, url string, apiToken string) (*http.Request, error) {
 	return requestWithBody(method, url, nil, apiToken)
@@ -164,7 +157,7 @@ func executeRequest(client *http.Client, request *http.Request) (Response, error
 			StatusCode:  resp.StatusCode,
 			Body:        body,
 			Headers:     resp.Header,
-			NextPageKey: getNextPageKeyIfExists(body),
+			NextPageKey: GetNextPageKeyIfExists(body),
 		}, err
 	})
 

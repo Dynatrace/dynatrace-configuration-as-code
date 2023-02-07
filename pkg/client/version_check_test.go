@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package rest
+package client
 
 import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"

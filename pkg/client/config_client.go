@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package rest
+package client
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"net/http"
@@ -35,7 +36,7 @@ func upsertDynatraceObject(
 	theApi api.Api,
 	payload []byte,
 	apiToken string,
-	retrySettings RetrySettings,
+	retrySettings rest.RetrySettings,
 ) (api.DynatraceEntity, error) {
 	isSingleConfigurationApi := theApi.IsSingleConfigurationApi()
 	existingObjectId := ""
@@ -79,7 +80,7 @@ func upsertDynatraceEntityByNonUniqueNameAndId(
 	theApi api.Api,
 	payload []byte,
 	apiToken string,
-	retrySettings RetrySettings,
+	retrySettings rest.RetrySettings,
 ) (api.DynatraceEntity, error) {
 	fullUrl := theApi.GetUrl(environmentUrl)
 	body := payload
@@ -124,7 +125,7 @@ func upsertDynatraceEntityByNonUniqueNameAndId(
 	return updateDynatraceObject(client, fullUrl, objectName, entityId, theApi, body, apiToken, retrySettings)
 }
 
-func createDynatraceObject(client *http.Client, urlString string, objectName string, theApi api.Api, payload []byte, apiToken string, retrySettings RetrySettings) (api.DynatraceEntity, error) {
+func createDynatraceObject(client *http.Client, urlString string, objectName string, theApi api.Api, payload []byte, apiToken string, retrySettings rest.RetrySettings) (api.DynatraceEntity, error) {
 	parsedUrl, err := url.Parse(urlString)
 	if err != nil {
 		return api.DynatraceEntity{}, fmt.Errorf("invalid URL for creating Dynatrace config: %w", err)
@@ -139,7 +140,7 @@ func createDynatraceObject(client *http.Client, urlString string, objectName str
 		parsedUrl.RawQuery = queryParams.Encode()
 	}
 
-	resp, err := callWithRetryOnKnowTimingIssue(client, post, objectName, parsedUrl.String(), body, theApi, apiToken, retrySettings)
+	resp, err := callWithRetryOnKnowTimingIssue(client, rest.Post, objectName, parsedUrl.String(), body, theApi, apiToken, retrySettings)
 	if err != nil {
 		return api.DynatraceEntity{}, err
 	}
@@ -151,7 +152,7 @@ func createDynatraceObject(client *http.Client, urlString string, objectName str
 	return unmarshalResponse(resp, urlString, configType, objectName)
 }
 
-func unmarshalResponse(resp Response, fullUrl string, configType string, objectName string) (api.DynatraceEntity, error) {
+func unmarshalResponse(resp rest.Response, fullUrl string, configType string, objectName string) (api.DynatraceEntity, error) {
 	var dtEntity api.DynatraceEntity
 
 	if configType == "synthetic-monitor" || configType == "synthetic-location" {
@@ -199,7 +200,7 @@ func unmarshalResponse(resp Response, fullUrl string, configType string, objectN
 	return dtEntity, nil
 }
 
-func updateDynatraceObject(client *http.Client, fullUrl string, objectName string, existingObjectId string, theApi api.Api, payload []byte, apiToken string, retrySettings RetrySettings) (api.DynatraceEntity, error) {
+func updateDynatraceObject(client *http.Client, fullUrl string, objectName string, existingObjectId string, theApi api.Api, payload []byte, apiToken string, retrySettings rest.RetrySettings) (api.DynatraceEntity, error) {
 	path := joinUrl(fullUrl, existingObjectId)
 	body := payload
 
@@ -214,7 +215,7 @@ func updateDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		body = stripCreateOnlyPropertiesFromAppMobile(body)
 	}
 
-	resp, err := callWithRetryOnKnowTimingIssue(client, put, objectName, path, body, theApi, apiToken, retrySettings)
+	resp, err := callWithRetryOnKnowTimingIssue(client, rest.Put, objectName, path, body, theApi, apiToken, retrySettings)
 
 	if err != nil {
 		return api.DynatraceEntity{}, err
@@ -249,7 +250,7 @@ func stripCreateOnlyPropertiesFromAppMobile(payload []byte) []byte {
 // callWithRetryOnKnowTimingIssue handles several know cases in which Dynatrace has a slight delay before newly created objects
 // can be used in further configuration. This is a cheap way to allow monaco to work around this, by waiting, then
 // retrying in case of know errors on upload.
-func callWithRetryOnKnowTimingIssue(client *http.Client, restCall sendingRequest, objectName string, path string, body []byte, theApi api.Api, apiToken string, retrySettings RetrySettings) (Response, error) {
+func callWithRetryOnKnowTimingIssue(client *http.Client, restCall rest.SendingRequest, objectName string, path string, body []byte, theApi api.Api, apiToken string, retrySettings rest.RetrySettings) (rest.Response, error) {
 
 	resp, err := restCall(client, path, body, apiToken)
 
@@ -257,7 +258,7 @@ func callWithRetryOnKnowTimingIssue(client *http.Client, restCall sendingRequest
 		return resp, nil
 	}
 
-	var setting retrySetting
+	var setting rest.RetrySetting
 
 	// It can take longer until calculated service metrics are ready to be used in SLOs
 	if isCalculatedMetricNotReadyYet(resp) ||
@@ -268,51 +269,51 @@ func callWithRetryOnKnowTimingIssue(client *http.Client, restCall sendingRequest
 		// It can take some time for configurations to propagate to all cluster nodes - indicated by an incorrect constraint violation error
 		isGeneralDependencyNotReadyYet(resp) {
 
-		setting = retrySettings.normal
+		setting = retrySettings.Normal
 	}
 
 	// It can take even longer until request attributes are ready to be used
 	if isRequestAttributeNotYetReady(resp) {
-		setting = retrySettings.long
+		setting = retrySettings.Long
 	}
 
 	// It can take even longer until applications are ready to be used in synthetic tests
 	if isApplicationNotReadyYet(resp, theApi) {
-		setting = retrySettings.veryLong
+		setting = retrySettings.VeryLong
 	}
 
-	if setting.maxRetries > 0 {
-		return sendWithRetry(client, restCall, objectName, path, body, apiToken, setting)
+	if setting.MaxRetries > 0 {
+		return rest.SendWithRetry(client, restCall, objectName, path, body, apiToken, setting)
 	}
 	return resp, nil
 }
 
-func isGeneralDependencyNotReadyYet(resp Response) bool {
+func isGeneralDependencyNotReadyYet(resp rest.Response) bool {
 	return strings.Contains(string(resp.Body), "must have a unique name")
 }
 
-func isCalculatedMetricNotReadyYet(resp Response) bool {
+func isCalculatedMetricNotReadyYet(resp rest.Response) bool {
 	return strings.Contains(string(resp.Body), "Metric selector") &&
 		strings.Contains(string(resp.Body), "invalid")
 }
 
-func isRequestAttributeNotYetReady(resp Response) bool {
+func isRequestAttributeNotYetReady(resp rest.Response) bool {
 	return strings.Contains(string(resp.Body), "must specify a known request attribute")
 }
 
-func isManagementZoneNotReadyYet(resp Response) bool {
+func isManagementZoneNotReadyYet(resp rest.Response) bool {
 	return strings.Contains(string(resp.Body), "Entity selector is invalid") ||
 		(strings.Contains(string(resp.Body), "SLO validation failed") &&
 			strings.Contains(string(resp.Body), "Management-Zone not found")) ||
 		strings.Contains(string(resp.Body), "Unknown management zone")
 }
 
-func isApplicationNotReadyYet(resp Response, theApi api.Api) bool {
+func isApplicationNotReadyYet(resp rest.Response, theApi api.Api) bool {
 	return isServerError(resp) && (theApi.GetId() == "synthetic-monitor" || isAnyApplicationApi(theApi)) ||
 		strings.Contains(string(resp.Body), "Unknown application(s)")
 }
 
-func isCredentialNotReadyYet(resp Response) bool {
+func isCredentialNotReadyYet(resp rest.Response) bool {
 	s := string(resp.Body)
 	return strings.Contains(s, "credential-vault") &&
 		strings.Contains(s, "was not available")
@@ -329,14 +330,14 @@ func joinUrl(urlBase string, path string) string {
 	return trimmedUrl + "/" + url.PathEscape(trimmedPath)
 }
 
-func isLocationHeaderAvailable(resp Response) (headerAvailable bool, headerArray []string) {
+func isLocationHeaderAvailable(resp rest.Response) (headerAvailable bool, headerArray []string) {
 	if resp.Headers["Location"] != nil {
 		return true, resp.Headers["Location"]
 	}
 	return false, make([]string, 0)
 }
 
-func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, objectName string, apiToken string, retrySettings RetrySettings) (string, error) {
+func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, objectName string, apiToken string, retrySettings rest.RetrySettings) (string, error) {
 	values, err := getExistingValuesFromEndpoint(client, api, url, apiToken, retrySettings)
 
 	if err != nil {
@@ -395,7 +396,7 @@ func isMobileApp(api api.Api) bool {
 	return api.GetId() == "application-mobile"
 }
 
-func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlString string, apiToken string, retrySettings RetrySettings) (values []api.Value, err error) {
+func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlString string, apiToken string, retrySettings rest.RetrySettings) (values []api.Value, err error) {
 
 	parsedUrl, err := url.Parse(urlString)
 	if err != nil {
@@ -404,7 +405,7 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlStrin
 
 	parsedUrl = addQueryParamsForNonStandardApis(theApi, parsedUrl)
 
-	resp, err := get(client, parsedUrl.String(), apiToken)
+	resp, err := rest.Get(client, parsedUrl.String(), apiToken)
 
 	if err != nil {
 		return nil, err
@@ -423,9 +424,9 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlStrin
 		existingValues = append(existingValues, values...)
 
 		if resp.NextPageKey != "" {
-			parsedUrl = addNextPageQueryParams(parsedUrl, resp.NextPageKey)
+			parsedUrl = rest.AddNextPageQueryParams(parsedUrl, resp.NextPageKey)
 
-			resp, err = getWithRetry(client, parsedUrl.String(), apiToken, retrySettings.normal)
+			resp, err = rest.GetWithRetry(client, parsedUrl.String(), apiToken, retrySettings.Normal)
 
 			if err != nil {
 				return nil, err
@@ -456,7 +457,7 @@ func addQueryParamsForNonStandardApis(theApi api.Api, url *url.URL) *url.URL {
 	return url
 }
 
-func unmarshalJson(theApi api.Api, resp Response) ([]api.Value, error) {
+func unmarshalJson(theApi api.Api, resp rest.Response) ([]api.Value, error) {
 
 	var values []api.Value
 	var objmap map[string]interface{}
@@ -599,10 +600,10 @@ func translateSyntheticEntityResponse(resp api.SyntheticEntity, objectName strin
 	}
 }
 
-func success(resp Response) bool {
+func success(resp rest.Response) bool {
 	return resp.StatusCode >= 200 && resp.StatusCode <= 299
 }
 
-func isServerError(resp Response) bool {
+func isServerError(resp rest.Response) bool {
 	return resp.StatusCode >= 500 && resp.StatusCode <= 599
 }

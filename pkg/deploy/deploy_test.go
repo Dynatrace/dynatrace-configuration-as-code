@@ -18,8 +18,8 @@ package deploy
 
 import (
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/client"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/value"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/golang/mock/gomock"
 	"testing"
 
@@ -29,7 +29,6 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2/topologysort"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/client"
 	"github.com/google/uuid"
 	"gotest.tools/assert"
 )
@@ -163,7 +162,7 @@ func TestDeploySettingShouldFailUpsert(t *testing.T) {
 		},
 	}
 
-	client := rest.NewMockSettingsClient(gomock.NewController(t))
+	client := client.NewMockSettingsClient(gomock.NewController(t))
 	client.EXPECT().UpsertSettings(gomock.Any()).Return(api.DynatraceEntity{}, fmt.Errorf("upsert failed"))
 
 	conf := &config.Config{
@@ -196,7 +195,7 @@ func TestDeploySetting(t *testing.T) {
 		},
 	}
 
-	client := rest.NewMockClient(gomock.NewController(t))
+	client := client.NewMockClient(gomock.NewController(t))
 	client.EXPECT().UpsertSettings(gomock.Any()).Times(1)
 
 	conf := &config.Config{
@@ -401,7 +400,7 @@ func TestDeployConfigsWithOneConfigToSkip(t *testing.T) {
 }
 
 func TestDeployConfigsTargetingSettings(t *testing.T) {
-	client := rest.NewMockClient(gomock.NewController(t))
+	client := client.NewMockClient(gomock.NewController(t))
 	var apis map[string]api.Api
 	sortedConfigs := []config.Config{
 		{
@@ -438,7 +437,7 @@ func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
 	theApi.EXPECT().DeprecatedBy().Return("")
 	theApi.EXPECT().IsNonUniqueNameApi().Return(false)
 
-	client := rest.NewMockClient(gomock.NewController(t))
+	client := client.NewMockClient(gomock.NewController(t))
 	client.EXPECT().UpsertByName(gomock.Any(), theConfigName, gomock.Any()).Times(1)
 
 	apis := map[string]api.Api{theApiName: theApi}
@@ -474,7 +473,7 @@ func TestDeployConfigsTargetingClassicConfigNonUniqueWithExistingCfgsOfSameName(
 	theApi.EXPECT().DeprecatedBy().Return("")
 	theApi.EXPECT().IsNonUniqueNameApi().Return(true)
 
-	client := rest.NewMockClient(gomock.NewController(t))
+	client := client.NewMockClient(gomock.NewController(t))
 	client.EXPECT().UpsertByNonUniqueNameAndId(gomock.Any(), gomock.Any(), theConfigName, gomock.Any())
 
 	apis := map[string]api.Api{theApiName: theApi}
@@ -505,7 +504,7 @@ func TestDeployConfigsNoApi(t *testing.T) {
 	theConfigName := "theConfigName"
 	theApiName := "theApiName"
 
-	client := rest.NewMockClient(gomock.NewController(t))
+	client := client.NewMockClient(gomock.NewController(t))
 
 	apis := map[string]api.Api{}
 	parameters := []topologysort.ParameterWithName{

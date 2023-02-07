@@ -22,17 +22,17 @@ import (
 	"time"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/client"
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
 	valueParam "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
 	project "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 )
 
-func DownloadAllConfigs(apisToDownload api.ApiMap, client rest.Client, projectName string) project.ConfigsPerType {
+func DownloadAllConfigs(apisToDownload api.ApiMap, client client.Client, projectName string) project.ConfigsPerType {
 	return NewDownloader(client).DownloadAll(apisToDownload, projectName)
 }
 
@@ -44,7 +44,7 @@ type Downloader struct {
 
 	// client is the actual rest client used to call
 	// the dynatrace APIs
-	client rest.Client
+	client client.Client
 }
 
 // WithAPIFilters sets the api filters for the Downloader
@@ -55,7 +55,7 @@ func WithAPIFilters(apiFilters map[string]apiFilter) func(*Downloader) {
 }
 
 // NewDownloader creates a new Downloader
-func NewDownloader(client rest.Client, opts ...func(*Downloader)) *Downloader {
+func NewDownloader(client client.Client, opts ...func(*Downloader)) *Downloader {
 	c := &Downloader{
 		apiFilters: apiFilters,
 		client:     client,

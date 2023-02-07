@@ -17,13 +17,13 @@ package download
 import (
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/client"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download/classic"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download/settings"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
 	project "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2/topologysort"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
@@ -135,7 +135,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 		forceOverwriteManifest:  cmdOptions.forceOverwrite,
 		specificAPIs:            cmdOptions.specificAPIs,
 		specificSchemas:         cmdOptions.specificSchemas,
-		clientProvider:          rest.NewDynatraceClient,
+		clientProvider:          client.NewDynatraceClient,
 		concurrentDownloadLimit: concurrentDownloadLimit,
 		skipSettings:            cmdOptions.skipSettings,
 	}
@@ -162,14 +162,14 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOp
 		forceOverwriteManifest:  cmdOptions.forceOverwrite,
 		specificAPIs:            cmdOptions.specificAPIs,
 		specificSchemas:         cmdOptions.specificSchemas,
-		clientProvider:          rest.NewDynatraceClient,
+		clientProvider:          client.NewDynatraceClient,
 		concurrentDownloadLimit: concurrentDownloadLimit,
 		skipSettings:            cmdOptions.skipSettings,
 	}
 	return doDownload(fs, api.NewApis(), options)
 }
 
-type DynatraceClientProvider func(string, string, ...func(*rest.DynatraceClient)) (*rest.DynatraceClient, error)
+type DynatraceClientProvider func(string, string, ...func(*client.DynatraceClient)) (*client.DynatraceClient, error)
 
 type downloadOptions struct {
 	environmentUrl          string
@@ -185,7 +185,7 @@ type downloadOptions struct {
 	skipSettings            bool
 }
 
-func (c downloadOptions) getDynatraceClient() (rest.Client, error) {
+func (c downloadOptions) getDynatraceClient() (client.Client, error) {
 	return c.clientProvider(c.environmentUrl, c.token)
 }
 
@@ -245,12 +245,12 @@ func reportForCircularDependencies(p project.Project) error {
 }
 
 func downloadConfigs(apis api.ApiMap, opts downloadOptions) (project.ConfigsPerType, error) {
-	client, err := opts.getDynatraceClient()
+	c, err := opts.getDynatraceClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Dynatrace client: %w", err)
 	}
 
-	client = rest.LimitClientParallelRequests(client, opts.concurrentDownloadLimit)
+	c = client.LimitClientParallelRequests(c, opts.concurrentDownloadLimit)
 
 	apisToDownload, errors := getApisToDownload(apis, opts.specificAPIs)
 	if len(errors) > 0 {
@@ -263,14 +263,14 @@ func downloadConfigs(apis api.ApiMap, opts downloadOptions) (project.ConfigsPerT
 	// download specific APIs only
 	if len(opts.specificAPIs) > 0 {
 		log.Debug("APIs to download: \n - %v", strings.Join(maps.Keys(apisToDownload), "\n - "))
-		c := classic.DownloadAllConfigs(apisToDownload, client, opts.projectName)
-		maps.Copy(configObjects, c)
+		cfgs := classic.DownloadAllConfigs(apisToDownload, c, opts.projectName)
+		maps.Copy(configObjects, cfgs)
 	}
 
 	// download specific settings only
 	if len(opts.specificSchemas) > 0 {
 		log.Debug("Settings to download: \n - %v", strings.Join(opts.specificSchemas, "\n - "))
-		s := settings.Download(client, opts.specificSchemas, opts.projectName)
+		s := settings.Download(c, opts.specificSchemas, opts.projectName)
 		maps.Copy(configObjects, s)
 	}
 
@@ -281,9 +281,9 @@ func downloadConfigs(apis api.ApiMap, opts downloadOptions) (project.ConfigsPerT
 
 	// if nothing was specified specifically, lets download all configs and settings
 	log.Debug("APIs to download: \n - %v", strings.Join(maps.Keys(apisToDownload), "\n - "))
-	configObjects = classic.DownloadAllConfigs(apisToDownload, client, opts.projectName)
+	configObjects = classic.DownloadAllConfigs(apisToDownload, c, opts.projectName)
 	if !opts.skipSettings {
-		settingsObjects := settings.DownloadAll(client, opts.projectName)
+		settingsObjects := settings.DownloadAll(c, opts.projectName)
 		maps.Copy(configObjects, settingsObjects)
 	}
 	return configObjects, nil

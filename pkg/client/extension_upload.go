@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package rest
+package client
 
 import (
 	"archive/zip"
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"mime/multipart"
 	"net/http"
 	"time"
@@ -59,7 +60,7 @@ func uploadExtension(client *http.Client, apiPath string, extensionName string, 
 		}, err
 	}
 
-	resp, err := postMultiPartFile(client, apiPath, buffer, contentType, apiToken)
+	resp, err := rest.PostMultiPartFile(client, apiPath, buffer, contentType, apiToken)
 
 	if err != nil {
 		return api.DynatraceEntity{}, err
@@ -82,15 +83,19 @@ func uploadExtension(client *http.Client, apiPath string, extensionName string, 
 
 }
 
+type Properties struct {
+	Version *string `json:"version"`
+}
+
 func validateIfExtensionShouldBeUploaded(client *http.Client, apiPath string, extensionName string, payload []byte, apiToken string) (status extensionStatus, err error) {
-	response, err := get(client, apiPath+"/"+extensionName, apiToken)
+	response, err := rest.Get(client, apiPath+"/"+extensionName, apiToken)
 	if err != nil {
 		return extensionValidationError, err
 	}
 	if response.StatusCode == http.StatusNotFound {
 		return extensionNeedsUpdate, nil
 	}
-	var extProperties struct{ Version *string }
+	var extProperties Properties
 	if err := json.Unmarshal(response.Body, &extProperties); err != nil {
 		return extensionValidationError, err
 	}
@@ -100,7 +105,7 @@ func validateIfExtensionShouldBeUploaded(client *http.Client, apiPath string, ex
 	}
 	curVersion := *extProperties.Version
 
-	var extension struct{ Version *string }
+	var extension Properties
 	if err := json.Unmarshal(payload, &extension); err != nil {
 		return extensionValidationError, err
 	}

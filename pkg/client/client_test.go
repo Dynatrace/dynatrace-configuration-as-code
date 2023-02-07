@@ -16,10 +16,11 @@
  * limitations under the License.
  */
 
-package rest
+package client
 
 import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"gotest.tools/assert"
 	"net/http"
 	"net/http/httptest"
@@ -379,7 +380,7 @@ func TestDeleteSettings(t *testing.T) {
 		environmentUrl string
 		token          string
 		client         *http.Client
-		retrySettings  RetrySettings
+		retrySettings  rest.RetrySettings
 	}
 	type args struct {
 		objectID string

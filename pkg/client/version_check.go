@@ -16,11 +16,12 @@
  * limitations under the License.
  */
 
-package rest
+package client
 
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"net/http"
 	"strings"
@@ -34,7 +35,7 @@ const versionPath = "/api/v1/config/clusterversion"
 
 func GetDynatraceVersion(client *http.Client, environmentUrl string, apiToken string) (util.Version, error) {
 	versionUrl := environmentUrl + versionPath
-	resp, err := get(client, versionUrl, apiToken)
+	resp, err := rest.get(client, versionUrl, apiToken)
 	if err != nil {
 		return util.Version{}, fmt.Errorf("failed to query version of Dynatrace environment: %w", err)
 	}

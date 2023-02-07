@@ -37,7 +37,7 @@ import (
 	"time"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/client"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/spf13/afero"
@@ -100,7 +100,7 @@ func loadProjects(t *testing.T, fs afero.Fs, manifestFile string, mani manifest.
 	return projects
 }
 
-func clientFromEnvDef(t *testing.T, envDefiniton manifest.EnvironmentDefinition) rest.ConfigClient {
+func clientFromEnvDef(t *testing.T, envDefiniton manifest.EnvironmentDefinition) client.ConfigClient {
 
 	u, err := envDefiniton.GetUrl()
 	assert.NilError(t, err)
@@ -108,7 +108,7 @@ func clientFromEnvDef(t *testing.T, envDefiniton manifest.EnvironmentDefinition)
 	token, err := envDefiniton.GetToken()
 	assert.NilError(t, err)
 
-	client, err := rest.NewDynatraceClient(u, token)
+	client, err := client.NewDynatraceClient(u, token)
 	assert.NilError(t, err)
 
 	return client
@@ -165,7 +165,7 @@ func findProjectByName(t *testing.T, projects []projectsV2.Project, projName str
 	return *project
 }
 
-func assertConfigAvailable(t *testing.T, client rest.ConfigClient, env manifest.EnvironmentDefinition, shouldBeAvailable bool, config v2.Config) {
+func assertConfigAvailable(t *testing.T, client client.ConfigClient, env manifest.EnvironmentDefinition, shouldBeAvailable bool, config v2.Config) {
 
 	nameParam, found := config.Parameters["name"]
 	assert.Assert(t, found, "Config %s should have a name parameter", config.Coordinate)
@@ -240,7 +240,7 @@ func cleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestFile, suffix stri
 		url, err := environment.GetUrl()
 		assert.NilError(t, err)
 
-		client, err := rest.NewDynatraceClient(url, token)
+		client, err := client.NewDynatraceClient(url, token)
 		assert.NilError(t, err)
 
 		for _, api := range apis {

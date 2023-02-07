@@ -16,11 +16,12 @@
  * limitations under the License.
  */
 
-package rest
+package client
 
 import (
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"gotest.tools/assert"
 	"net/http"
@@ -177,33 +178,33 @@ func TestIsApiDashboard(t *testing.T) {
 func Test_success(t *testing.T) {
 	tests := []struct {
 		name string
-		resp Response
+		resp rest.Response
 		want bool
 	}{
 		{
 			"200 is success",
-			Response{
+			rest.Response{
 				StatusCode: 200,
 			},
 			true,
 		},
 		{
 			"201 is success",
-			Response{
+			rest.Response{
 				StatusCode: 201,
 			},
 			true,
 		},
 		{
 			"401 is NOT success",
-			Response{
+			rest.Response{
 				StatusCode: 401,
 			},
 			false,
 		},
 		{
 			"503 is NOT success",
-			Response{
+			rest.Response{
 				StatusCode: 503,
 			},
 			false,
@@ -221,47 +222,47 @@ func Test_success(t *testing.T) {
 func Test_isServerError(t *testing.T) {
 	tests := []struct {
 		name string
-		resp Response
+		resp rest.Response
 		want bool
 	}{
 		{
 			"200 is NOT server error",
-			Response{
+			rest.Response{
 				StatusCode: 200,
 			},
 			false,
 		},
 		{
 			"201 is NOT server error",
-			Response{
+			rest.Response{
 				StatusCode: 201,
 			},
 			false,
 		},
 		{
 			"401 is NOT server error",
-			Response{
+			rest.Response{
 				StatusCode: 401,
 			},
 			false,
 		},
 		{
 			"503 is server error",
-			Response{
+			rest.Response{
 				StatusCode: 503,
 			},
 			true,
 		},
 		{
 			"500 is server error",
-			Response{
+			rest.Response{
 				StatusCode: 500,
 			},
 			true,
 		},
 		{
 			"greater than 599 is NOT server error",
-			Response{
+			rest.Response{
 				StatusCode: 600,
 			},
 			false,
@@ -278,7 +279,7 @@ func Test_isServerError(t *testing.T) {
 
 func Test_isApplicationNotReadyYet(t *testing.T) {
 	type args struct {
-		resp   Response
+		resp   rest.Response
 		theApi api.Api
 	}
 	tests := []struct {
@@ -289,7 +290,7 @@ func Test_isApplicationNotReadyYet(t *testing.T) {
 		{
 			"Server Error on synthetic counted as app not ready (issue in error reporting for unknown App IDs in some Dynatrace versions)",
 			args{
-				Response{
+				rest.Response{
 					StatusCode: 500,
 					Body:       nil,
 					Headers:    nil,
@@ -301,7 +302,7 @@ func Test_isApplicationNotReadyYet(t *testing.T) {
 		{
 			"Server Error on application API counts as not ready (can happen on update)",
 			args{
-				Response{
+				rest.Response{
 					StatusCode: 503,
 					Body:       nil,
 					Headers:    nil,
@@ -313,7 +314,7 @@ func Test_isApplicationNotReadyYet(t *testing.T) {
 		{
 			"Server Error on unexpected API not counted as App not ready",
 			args{
-				Response{
+				rest.Response{
 					StatusCode: 503,
 					Body:       nil,
 					Headers:    nil,
@@ -325,7 +326,7 @@ func Test_isApplicationNotReadyYet(t *testing.T) {
 		{
 			"User error response of 'Unknown Application' counted as not ready (can happen if App was just created)",
 			args{
-				Response{
+				rest.Response{
 					StatusCode: 400,
 					Body:       []byte("Unknown application(s) APP-422142"),
 					Headers:    nil,
@@ -588,10 +589,10 @@ func Test_GetObjectIdIfAlreadyExists_WorksCorrectlyForAddedQueryParameters(t *te
 			}))
 			defer server.Close()
 			testApi := api.NewStandardApi(tt.apiKey, "", false, "", false)
-			s := RetrySettings{
-				normal: retrySetting{
-					waitTime:   0,
-					maxRetries: 5,
+			s := rest.RetrySettings{
+				Normal: rest.RetrySetting{
+					WaitTime:   0,
+					MaxRetries: 5,
 				},
 			}
 			_, err := getObjectIdIfAlreadyExists(server.Client(), testApi, server.URL, "", "", s)

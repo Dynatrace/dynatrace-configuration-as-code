@@ -17,9 +17,9 @@ package deploy
 import (
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/client"
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 )
@@ -33,7 +33,7 @@ type DeployConfigsOptions struct {
 // DeployConfigs deploys the given configs with the given apis via the given client
 // NOTE: the given configs need to be sorted, otherwise deployment will
 // probably fail, as references cannot be resolved
-func DeployConfigs(client rest.Client, apis api.ApiMap,
+func DeployConfigs(client client.Client, apis api.ApiMap,
 	sortedConfigs []config.Config, opts DeployConfigsOptions) []error {
 
 	entityMap := NewEntityMap(apis)
@@ -80,7 +80,7 @@ func DeployConfigs(client rest.Client, apis api.ApiMap,
 	return errors
 }
 
-func deployConfig(client rest.ConfigClient, apis api.ApiMap, entityMap *EntityMap, conf *config.Config) (parameter.ResolvedEntity, []error) {
+func deployConfig(client client.ConfigClient, apis api.ApiMap, entityMap *EntityMap, conf *config.Config) (parameter.ResolvedEntity, []error) {
 
 	apiToDeploy := apis[conf.Coordinate.Type]
 	if apiToDeploy == nil {
@@ -135,7 +135,7 @@ func deployConfig(client rest.ConfigClient, apis api.ApiMap, entityMap *EntityMa
 	}, nil
 }
 
-func upsertNonUniqueNameConfig(client rest.ConfigClient, apiToDeploy api.Api, conf *config.Config, configName string, renderedConfig string) (api.DynatraceEntity, error) {
+func upsertNonUniqueNameConfig(client client.ConfigClient, apiToDeploy api.Api, conf *config.Config, configName string, renderedConfig string) (api.DynatraceEntity, error) {
 	configId := conf.Coordinate.ConfigId
 	projectId := conf.Coordinate.Project
 
@@ -149,7 +149,7 @@ func upsertNonUniqueNameConfig(client rest.ConfigClient, apiToDeploy api.Api, co
 	return client.UpsertByNonUniqueNameAndId(apiToDeploy, entityUuid, configName, []byte(renderedConfig))
 }
 
-func deploySetting(client rest.SettingsClient, entityMap *EntityMap, c *config.Config) (parameter.ResolvedEntity, []error) {
+func deploySetting(settingsClient client.SettingsClient, entityMap *EntityMap, c *config.Config) (parameter.ResolvedEntity, []error) {
 	properties, errors := resolveProperties(c, entityMap.Resolved())
 	if len(errors) > 0 {
 		return parameter.ResolvedEntity{}, errors
@@ -165,7 +165,7 @@ func deploySetting(client rest.SettingsClient, entityMap *EntityMap, c *config.C
 		return parameter.ResolvedEntity{}, []error{err}
 	}
 
-	entity, err := client.UpsertSettings(rest.SettingsObject{
+	entity, err := settingsClient.UpsertSettings(client.SettingsObject{
 		Id:             c.Coordinate.ConfigId,
 		SchemaId:       c.Type.SchemaId,
 		SchemaVersion:  c.Type.SchemaVersion,

@@ -27,7 +27,7 @@ import (
 	"testing"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/client"
 	"gotest.tools/assert"
 )
 
@@ -55,7 +55,7 @@ func TestDoCleanup(t *testing.T) {
 		envUrl, err := environment.GetUrl()
 		assert.NilError(t, err)
 
-		client, err := rest.NewDynatraceClient(envUrl, token)
+		client, err := client.NewDynatraceClient(envUrl, token)
 		assert.NilError(t, err)
 
 		for _, api := range apis {

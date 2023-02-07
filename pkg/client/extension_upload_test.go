@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package rest
+package client
 
 import (
 	"gotest.tools/assert"
