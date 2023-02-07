@@ -43,13 +43,15 @@ func TestIntegrationSettings(t *testing.T) {
 		err := cmd.Execute()
 
 		assert.NilError(t, err)
+		AssertAllConfigsAvailability(t, fs, manifest, []string{}, specificEnvironment, true)
 
 		// This causes an Update of all Settings
 		cmd = runner.BuildCli(fs)
 		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
 		err = cmd.Execute()
-		assert.NilError(t, err)
 
+		assert.NilError(t, err)
+		AssertAllConfigsAvailability(t, fs, manifest, []string{}, specificEnvironment, true)
 	})
 }
 
