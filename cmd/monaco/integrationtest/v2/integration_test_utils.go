@@ -308,10 +308,7 @@ func runIntegrationWithCleanup(t *testing.T, testFs afero.Fs, configFolder, mani
 }
 
 func appendUniqueSuffixToIntegrationTestConfigs(t *testing.T, fs afero.Fs, configFolder string, generalSuffix string) string {
-	rand.Seed(time.Now().UnixNano())
-	randomNumber := rand.Intn(10000)
-
-	suffix := fmt.Sprintf("%s_%d_%s", getTimestamp(), randomNumber, generalSuffix)
+	suffix := generateTestSuffix(generalSuffix)
 	transformers := []func(string) string{getTransformerFunc(suffix)}
 
 	err := util.RewriteConfigNames(configFolder, fs, transformers)
@@ -321,6 +318,13 @@ func appendUniqueSuffixToIntegrationTestConfigs(t *testing.T, fs afero.Fs, confi
 	}
 
 	return suffix
+}
+
+func generateTestSuffix(generalSuffix string) string {
+	rand.Seed(time.Now().UnixNano())
+	randomNumber := rand.Intn(10000)
+
+	return fmt.Sprintf("%s_%d_%s", getTimestamp(), randomNumber, generalSuffix)
 }
 
 func wait(description string, maxPollCount int, condition func() bool) error {
