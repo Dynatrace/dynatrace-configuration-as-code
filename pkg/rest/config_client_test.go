@@ -19,7 +19,9 @@
 package rest
 
 import (
+	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"gotest.tools/assert"
 	"net/http"
 	"net/http/httptest"
@@ -689,6 +691,56 @@ func Test_createDynatraceObject(t *testing.T) {
 				return
 			}
 			assert.DeepEqual(t, got, tt.want)
+		})
+	}
+}
+
+func TestDeployConfigsTargetingClassicConfigNonUnique(t *testing.T) {
+	theConfigName := "theConfigName"
+	theCfgId := "monaco_cfg_id"
+	theProject := "project"
+
+	generatedUuid := util.GenerateUuidFromConfigId(theProject, theCfgId)
+
+	tests := []struct {
+		name                   string
+		existingValues         string
+		expectedIdToBeUpserted string
+	}{
+		{
+			name:                   "upserts new config",
+			existingValues:         `{ "values": [] }`,
+			expectedIdToBeUpserted: generatedUuid,
+		},
+		{
+			name:                   "upserts new config with existing duplicate names",
+			existingValues:         fmt.Sprintf(`{"values": [{ "id": "42", "name": "%s" }, { "id": "43", "name": "%s" }, { "id": "44", "name": "%s" }, { "id": "45", "name": "%s" }]}`, theConfigName, theConfigName, theConfigName, theConfigName),
+			expectedIdToBeUpserted: generatedUuid,
+		},
+		{
+			name:                   "updates config with exact match",
+			existingValues:         fmt.Sprintf(`{"values": [{ "id": "42", "name": "%s" }, { "id": "%s", "name": "%s" }]}`, theConfigName, generatedUuid, theConfigName),
+			expectedIdToBeUpserted: generatedUuid,
+		},
+		{
+			name:                   "updates single known config with name is currently unique",
+			existingValues:         fmt.Sprintf(`{"values": [{ "id": "42", "name": "%s" }, { "id": "43", "name": "some_other_config" }]}`, theConfigName),
+			expectedIdToBeUpserted: "42",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				_, _ = rw.Write([]byte(tt.existingValues))
+			}))
+			defer server.Close()
+
+			testApi := api.NewStandardApi("some-api", "", true, "", false)
+
+			got, err := upsertDynatraceEntityByNonUniqueNameAndId(server.Client(), server.URL, generatedUuid, theConfigName, testApi, []byte("{}"), "token", testRetrySettings)
+			assert.NilError(t, err)
+			assert.Equal(t, got.Id, tt.expectedIdToBeUpserted)
 		})
 	}
 }

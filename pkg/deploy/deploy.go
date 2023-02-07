@@ -22,7 +22,6 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
-	"strings"
 )
 
 // DeployConfigsOptions defines additional options used by DeployConfigs
@@ -147,45 +146,7 @@ func upsertNonUniqueNameConfig(client rest.ConfigClient, apiToDeploy api.Api, co
 		entityUuid = util.GenerateUuidFromConfigId(projectId, configId)
 	}
 
-	existingEntities, err := client.List(apiToDeploy)
-	if err != nil {
-		return api.DynatraceEntity{}, fmt.Errorf("failed to query existing entities for upsert: %w", err)
-	}
-
-	var entitiesWithSameName []api.Value
-	var entityExists bool
-
-	for _, e := range existingEntities {
-		if e.Name == configName {
-			entitiesWithSameName = append(entitiesWithSameName, e)
-			if e.Id == entityUuid {
-				entityExists = true
-			}
-		}
-	}
-
-	if entityExists || len(entitiesWithSameName) == 0 { //create with fixed ID or update (if this moves to client logging can clearly state things)
-		entity, err := client.UpsertByEntityId(apiToDeploy, entityUuid, configName, []byte(renderedConfig))
-		return entity, err
-	}
-
-	if len(entitiesWithSameName) == 1 { //name is currently unique, update know entity
-		existingUuid := entitiesWithSameName[0].Id
-		entity, err := client.UpsertByEntityId(apiToDeploy, existingUuid, configName, []byte(renderedConfig))
-		return entity, err
-	}
-
-	msg := strings.Builder{} // builder errors are ignored as write string always return nil error
-	msg.WriteString("%d %q entities with name %q exist - monaco will create a new entity with known UUID %q to allow automated updates")
-	msg.WriteString("\n\tYou may have to manually remove pre-existing configuration if this duplicates manually created configuration, and if possible consider giving your configurations unique names.")
-	msg.WriteString("\n\tPre-existing %q configurations with same name:")
-	for _, e := range entitiesWithSameName {
-		msg.WriteString(fmt.Sprintf("\n\t- %s", e.Id))
-	}
-	log.Warn(msg.String(), len(entitiesWithSameName), apiToDeploy.GetId(), configName, entityUuid, apiToDeploy.GetId())
-
-	entity, err := client.UpsertByEntityId(apiToDeploy, entityUuid, configName, []byte(renderedConfig))
-	return entity, err
+	return client.UpsertByNonUniqueNameAndId(apiToDeploy, entityUuid, configName, []byte(renderedConfig))
 }
 
 func deploySetting(client rest.SettingsClient, entityMap *EntityMap, c *config.Config) (parameter.ResolvedEntity, []error) {

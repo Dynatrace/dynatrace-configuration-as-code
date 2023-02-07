@@ -139,7 +139,7 @@ func (c *DummyClient) UpsertByName(a api.Api, name string, data []byte) (entity 
 	}, nil
 }
 
-func (c *DummyClient) UpsertByEntityId(a api.Api, entityId string, name string, data []byte) (entity api.DynatraceEntity, err error) {
+func (c *DummyClient) UpsertByNonUniqueNameAndId(a api.Api, entityId string, name string, data []byte) (entity api.DynatraceEntity, err error) {
 	entries, found := c.Entries[a]
 
 	if c.Entries == nil {

@@ -58,9 +58,9 @@ func (l limitingClient) UpsertByName(a api.Api, name string, payload []byte) (en
 	return
 }
 
-func (l limitingClient) UpsertByEntityId(a api.Api, entityId string, name string, payload []byte) (entity api.DynatraceEntity, err error) {
+func (l limitingClient) UpsertByNonUniqueNameAndId(a api.Api, entityId string, name string, payload []byte) (entity api.DynatraceEntity, err error) {
 	l.limiter.ExecuteBlocking(func() {
-		entity, err = l.client.UpsertByEntityId(a, entityId, name, payload)
+		entity, err = l.client.UpsertByNonUniqueNameAndId(a, entityId, name, payload)
 	})
 
 	return

@@ -50,10 +50,14 @@ type ConfigClient interface {
 	//    PUT <environment-url>/api/config/v1/alertingProfiles/<id> ... instead of POST, if the config is already available
 	UpsertByName(a Api, name string, payload []byte) (entity DynatraceEntity, err error)
 
-	// UpsertByEntityId creates or updates an existing Dynatrace entity by its id.
-	// If the entity doesn't exist it is created with the according id. E.g. for alerting profiles this would be:
-	//    PUT <environment-url>/api/config/v1/alertingProfiles/<id> ... whether or not the config is already available
-	UpsertByEntityId(a Api, entityId string, name string, payload []byte) (entity DynatraceEntity, err error)
+	// UpsertByNonUniqueNameAndId creates a given Dynatrace config if it doesn't exist and updates it based on specific rules if it does not
+	// - if only one config with the name exist, behave like any other type and just update this entity
+	// - if an exact match is found (same name and same generated UUID) update that entity
+	// - if several configs exist, but non match the generated UUID create a new entity with generated UUID
+	// It calls the underlying GET and PUT endpoints for the API. E.g. for alerting profiles this would be:
+	//	 GET <environment-url>/api/config/v1/alertingProfiles ... to check if the config is already available
+	//	 PUT <environment-url>/api/config/v1/alertingProfiles/<id> ... with the given (or found by unique name) entity ID
+	UpsertByNonUniqueNameAndId(a Api, entityId string, name string, payload []byte) (entity DynatraceEntity, err error)
 
 	// DeleteById removes a given config for a given API using its id.
 	// It calls the DELETE endpoint for the API. E.g. for alerting profiles this would be:
@@ -341,8 +345,8 @@ func (d *DynatraceClient) UpsertByName(api Api, name string, payload []byte) (en
 	return upsertDynatraceObject(d.client, d.environmentUrl, name, api, payload, d.token, d.retrySettings)
 }
 
-func (d *DynatraceClient) UpsertByEntityId(api Api, entityId string, name string, payload []byte) (entity DynatraceEntity, err error) {
-	return upsertDynatraceEntityById(d.client, d.environmentUrl, entityId, name, api, payload, d.token, d.retrySettings)
+func (d *DynatraceClient) UpsertByNonUniqueNameAndId(api Api, entityId string, name string, payload []byte) (entity DynatraceEntity, err error) {
+	return upsertDynatraceEntityByNonUniqueNameAndId(d.client, d.environmentUrl, entityId, name, api, payload, d.token, d.retrySettings)
 }
 
 // SchemaListResponse is the response type returned by the ListSchemas operation

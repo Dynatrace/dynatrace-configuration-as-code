@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 	"github.com/golang/mock/gomock"
 	"testing"
 
@@ -466,118 +465,6 @@ func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
 	assert.Assert(t, len(errors) == 0, "there should be no errors (errors: %s)", errors)
 }
 
-func TestDeployConfigsTargetingClassicConfigNonUnique(t *testing.T) {
-	theConfigName := "theConfigName"
-	theCfgId := "monaco_cfg_id"
-	theProject := "project"
-
-	generatedUuid := util.GenerateUuidFromConfigId(theProject, theCfgId)
-
-	tests := []struct {
-		name                   string
-		existingValues         []api.Value
-		expectedIdToBeUpserted string
-	}{
-		{
-			name:                   "upserts new config",
-			existingValues:         []api.Value{},
-			expectedIdToBeUpserted: generatedUuid,
-		},
-		{
-			name: "upserts new config with existing duplicate names",
-			existingValues: []api.Value{
-				{
-					Id:   "42",
-					Name: theConfigName,
-				},
-				{
-					Id:   "43",
-					Name: theConfigName,
-				},
-				{
-					Id:   "44",
-					Name: theConfigName,
-				},
-				{
-					Id:   "45",
-					Name: theConfigName,
-				},
-			},
-			expectedIdToBeUpserted: generatedUuid,
-		},
-		{
-			name: "updates config with exact match",
-			existingValues: []api.Value{
-				{
-					Id:   "42",
-					Name: theConfigName,
-				},
-				{
-					Id:   generatedUuid,
-					Name: theConfigName,
-				},
-			},
-			expectedIdToBeUpserted: generatedUuid,
-		},
-		{
-			name: "updates single known config with name is currently unique",
-			existingValues: []api.Value{
-				{
-					Id:   "42",
-					Name: theConfigName,
-				},
-				{
-					Id:   "43",
-					Name: "some other config",
-				},
-			},
-			expectedIdToBeUpserted: "42",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			theApiName := "theApiName"
-
-			theApi := api.NewMockApi(gomock.NewController(t))
-			theApi.EXPECT().GetId().AnyTimes().Return(theApiName)
-			theApi.EXPECT().DeprecatedBy().Return("")
-			theApi.EXPECT().IsNonUniqueNameApi().Return(true)
-
-			client := rest.NewMockClient(gomock.NewController(t))
-			client.EXPECT().List(theApi).Return(tt.existingValues, nil)
-			client.EXPECT().UpsertByEntityId(gomock.Any(), tt.expectedIdToBeUpserted, theConfigName, gomock.Any())
-
-			apis := map[string]api.Api{theApiName: theApi}
-			parameters := []topologysort.ParameterWithName{
-				{
-					Name: config.NameParameter,
-					Parameter: &parameter.DummyParameter{
-						Value: theConfigName,
-					},
-				},
-			}
-			sortedConfigs := []config.Config{
-				{
-					Parameters: toParameterMap(parameters),
-					Coordinate: coordinate.Coordinate{
-						Type:     theApiName,
-						Project:  theProject,
-						ConfigId: theCfgId,
-					},
-					Template: generateDummyTemplate(t),
-					Type: config.Type{
-						Api: theApiName,
-					},
-				},
-			}
-
-			errors := DeployConfigs(client, apis, sortedConfigs, DeployConfigsOptions{})
-			assert.Assert(t, len(errors) == 0, "there should be no errors (errors: %s)", errors)
-		})
-	}
-}
-
 func TestDeployConfigsTargetingClassicConfigNonUniqueWithExistingCfgsOfSameName(t *testing.T) {
 	theConfigName := "theConfigName"
 	theApiName := "theApiName"
@@ -588,25 +475,7 @@ func TestDeployConfigsTargetingClassicConfigNonUniqueWithExistingCfgsOfSameName(
 	theApi.EXPECT().IsNonUniqueNameApi().Return(true)
 
 	client := rest.NewMockClient(gomock.NewController(t))
-	client.EXPECT().List(theApi).Return([]api.Value{
-		{
-			Id:   "42",
-			Name: theConfigName,
-		},
-		{
-			Id:   "43",
-			Name: theConfigName,
-		},
-		{
-			Id:   "44",
-			Name: theConfigName,
-		},
-		{
-			Id:   "45",
-			Name: theConfigName,
-		},
-	}, nil)
-	client.EXPECT().UpsertByEntityId(gomock.Any(), gomock.Any(), theConfigName, gomock.Any())
+	client.EXPECT().UpsertByNonUniqueNameAndId(gomock.Any(), gomock.Any(), theConfigName, gomock.Any())
 
 	apis := map[string]api.Api{theApiName: theApi}
 	parameters := []topologysort.ParameterWithName{
