@@ -2,4 +2,4 @@
 # https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
 # Per default maintainer review is requested
-* @Dynatrace/monaco
+* @Dynatrace/monaco-maintainers
