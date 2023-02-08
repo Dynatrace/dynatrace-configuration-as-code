@@ -297,7 +297,8 @@ func parseDefinitionForEnvironment(
 ) (Config, []error) {
 
 	configDefinition := configDefinition{
-		Parameters: make(map[string]configParameter),
+		Parameters:     make(map[string]configParameter),
+		OriginObjectId: definition.Config.OriginObjectId,
 	}
 
 	applyOverrides(&configDefinition, definition.Config)

@@ -314,6 +314,7 @@ configs:
   config:
     name: 'Star Trek > Star Wars'
     template: 'profile.json'
+    originObjectId: origin-object-id
   type:
     settings:
       schema: 'builtin:profile.test'
@@ -334,9 +335,10 @@ configs:
 						"name":         &value.ValueParameter{Value: "Star Trek > Star Wars"},
 						ScopeParameter: &value.ValueParameter{Value: "tenant"},
 					},
-					Skip:        false,
-					Environment: "env name",
-					Group:       "default",
+					Skip:           false,
+					Environment:    "env name",
+					Group:          "default",
+					OriginObjectId: "origin-object-id",
 				},
 			},
 			nil,
@@ -351,6 +353,7 @@ configs:
   config:
     name: 'Star Trek > Star Wars'
     template: 'profile.json'
+    originObjectId: origin-object-id
   type:
     settings:
       schema: 'builtin:profile.test'
@@ -373,9 +376,10 @@ configs:
 						"name":         &value.ValueParameter{Value: "Star Trek > Star Wars"},
 						ScopeParameter: &value.ValueParameter{Value: "environment"},
 					},
-					Skip:        false,
-					Environment: "env name",
-					Group:       "default",
+					Skip:           false,
+					Environment:    "env name",
+					Group:          "default",
+					OriginObjectId: "origin-object-id",
 				},
 			},
 			nil,
@@ -390,6 +394,7 @@ configs:
   config:
     name: 'Star Trek > Star Wars'
     template: 'profile.json'
+    originObjectId: origin-object-id
   type:
     settings:
       schema: 'builtin:profile.test'
@@ -414,9 +419,10 @@ configs:
 						NameParameter:  &value.ValueParameter{Value: "Star Trek > Star Wars"},
 						ScopeParameter: ref.New("project", "something", "configId", "id"),
 					},
-					Skip:        false,
-					Environment: "env name",
-					Group:       "default",
+					Skip:           false,
+					Environment:    "env name",
+					Group:          "default",
+					OriginObjectId: "origin-object-id",
 				},
 			},
 			nil,
@@ -431,6 +437,7 @@ configs:
   config:
     name: 'Star Trek > Star Wars'
     template: 'profile.json'
+    originObjectId: origin-object-id
   type:
     settings:
       schema: 'builtin:profile.test'
@@ -451,9 +458,10 @@ configs:
 						NameParameter:  &value.ValueParameter{Value: "Star Trek > Star Wars"},
 						ScopeParameter: ref.New("project", "something", "configId", "id"),
 					},
-					Skip:        false,
-					Environment: "env name",
-					Group:       "default",
+					Skip:           false,
+					Environment:    "env name",
+					Group:          "default",
+					OriginObjectId: "origin-object-id",
 				},
 			},
 			nil,
@@ -468,6 +476,7 @@ configs:
   config:
     name: 'Star Trek > Star Wars'
     template: 'profile.json'
+    originObjectId: origin-object-id
   type:
     settings:
       schema: 'builtin:profile.test'
@@ -488,9 +497,10 @@ configs:
 						NameParameter:  &value.ValueParameter{Value: "Star Trek > Star Wars"},
 						ScopeParameter: ref.New("proj2", "something", "configId", "id"),
 					},
-					Skip:        false,
-					Environment: "env name",
-					Group:       "default",
+					Skip:           false,
+					Environment:    "env name",
+					Group:          "default",
+					OriginObjectId: "origin-object-id",
 				},
 			},
 			nil,
@@ -513,6 +523,7 @@ configs:
   config:
     name: 'Star Trek > Star Wars'
     template: 'profile.json'
+    originObjectId: origin-object-id
   type:
     settings:
       schema: 'builtin:profile.test'
@@ -534,6 +545,7 @@ configs:
   config:
     name: 'Star Trek > Star Wars'
     template: 'profile.json'
+    originObjectId: origin-object-id
   type:
     settings:
       schema: 'builtin:profile.test'
@@ -554,6 +566,7 @@ configs:
   config:
     name: 'Star Trek > Star Wars'
     template: 'profile.json'
+    originObjectId: origin-object-id
   type:
     settings:
       schema: 'builtin:profile.test'
@@ -576,9 +589,10 @@ configs:
 						NameParameter:  &value.ValueParameter{Value: "Star Trek > Star Wars"},
 						ScopeParameter: &environment.EnvironmentVariableParameter{Name: "TEST"},
 					},
-					Skip:        false,
-					Environment: "env name",
-					Group:       "default",
+					Skip:           false,
+					Environment:    "env name",
+					Group:          "default",
+					OriginObjectId: "origin-object-id",
 				},
 			},
 			nil,
@@ -593,6 +607,8 @@ configs:
   config:
     name: 'Star Trek > Star Wars'
     template: 'profile.json'
+    originObjectId: origin-object-id
+
     parameters:
       id: "test"
   type:
@@ -613,6 +629,7 @@ configs:
   config:
     name: 'Star Trek > Star Wars'
     template: 'profile.json'
+    originObjectId: origin-object-id
     parameters:
       scope: "test"
   type:
