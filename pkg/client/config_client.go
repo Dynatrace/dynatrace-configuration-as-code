@@ -319,7 +319,8 @@ func isSyntheticMonitorServerError(resp rest.Response, theApi api.Api) bool {
 }
 
 func isApplicationAPIError(resp rest.Response, theApi api.Api) bool {
-	return isAnyApplicationApi(theApi) && (resp.IsServerError() || resp.StatusCode == http.StatusConflict)
+	return isAnyApplicationApi(theApi) &&
+		(resp.IsServerError() || resp.StatusCode == http.StatusConflict || resp.StatusCode == http.StatusNotFound)
 }
 
 func isCredentialNotReadyYet(resp rest.Response) bool {
