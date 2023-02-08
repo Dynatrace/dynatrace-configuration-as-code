@@ -66,39 +66,13 @@ func TestConvert_WorksIfNoDeleteYamlExists(t *testing.T) {
 	assertExpectedManifestCreated(t, testFs)
 }
 
-func TestConvert_WorksIfThereIsJustEmptyProjects(t *testing.T) {
+func TestConvert_FailsIfThereIsJustEmptyProjects(t *testing.T) {
 	testFs := afero.NewMemMapFs()
 	_ = testFs.MkdirAll("project/", 0755)
 	_ = afero.WriteFile(testFs, "environments.yaml", []byte("env:\n  - name: \"My_Environment\"\n  - env-url: \"{{ .Env.ENV_URL }}\"\n  - env-token-name: \"ENV_TOKEN\""), 0644)
 
 	err := Convert(testFs, ".", "environments.yaml", "converted", "manifest.yaml")
-	assert.NilError(t, err)
-
-	outputFolderExists, _ := afero.Exists(testFs, "converted/")
-	assert.Check(t, outputFolderExists)
-
-	emptyProjectExists, _ := afero.Exists(testFs, "converted/project")
-	assert.Check(t, !emptyProjectExists)
-
-	manifestWithoutProjects := fmt.Sprintf(
-		`manifestVersion: "%s"
-projects: []
-environmentGroups:
-- name: default
-  environments:
-  - name: env
-    url:
-      type: environment
-      value: ENV_URL
-    token:
-      name: ENV_TOKEN
-`, version.ManifestVersion)
-
-	manifestExists, _ := afero.Exists(testFs, "converted/manifest.yaml")
-	assert.Check(t, manifestExists)
-	manifestContent, err := afero.ReadFile(testFs, "converted/manifest.yaml")
-	assert.NilError(t, err)
-	assert.Equal(t, string(manifestContent), manifestWithoutProjects)
+	assert.ErrorContains(t, err, "no projects to convert")
 }
 
 func assertExpectedConfigurationCreated(t *testing.T, testFs afero.Fs) {
