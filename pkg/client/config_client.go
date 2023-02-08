@@ -309,8 +309,17 @@ func isManagementZoneNotReadyYet(resp rest.Response) bool {
 }
 
 func isApplicationNotReadyYet(resp rest.Response, theApi api.Api) bool {
-	return isServerError(resp) && (theApi.GetId() == "synthetic-monitor" || isAnyApplicationApi(theApi)) ||
+	return isSyntheticMonitorServerError(resp, theApi) ||
+		isApplicationAPIError(resp, theApi) ||
 		strings.Contains(string(resp.Body), "Unknown application(s)")
+}
+
+func isSyntheticMonitorServerError(resp rest.Response, theApi api.Api) bool {
+	return theApi.GetId() == "synthetic-monitor" && resp.IsServerError()
+}
+
+func isApplicationAPIError(resp rest.Response, theApi api.Api) bool {
+	return isAnyApplicationApi(theApi) && (resp.IsServerError() || resp.StatusCode == http.StatusConflict)
 }
 
 func isCredentialNotReadyYet(resp rest.Response) bool {
