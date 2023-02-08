@@ -19,14 +19,14 @@ import (
 	"fmt"
 )
 
-const prefix = "monaco:"
-const format = "%s$%s"
-const externalIdMaxLength = 500
-
 // GenerateExternalId generates the external-id for settings 2.0 objects based on the schema, and id.
 // The result of the function is pure.
 // Max length for the external id is 500
 func GenerateExternalId(schema, id string) string {
+	const prefix = "monaco:"
+	const format = "%s$%s"
+	const externalIdMaxLength = 500
+
 	localId := fmt.Sprintf(format, schema, id)
 	encodedId := base64.StdEncoding.EncodeToString([]byte(localId))
 
