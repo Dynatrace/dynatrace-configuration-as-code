@@ -25,16 +25,16 @@ import (
 func TestGenerateExternalIdIsStable(t *testing.T) {
 	schemaId, id := "a", "b"
 
-	output1 := GenerateExternalId(schemaId, id)
-	output2 := GenerateExternalId(schemaId, id)
+	output1 := GenerateExternalID(schemaId, id)
+	output2 := GenerateExternalID(schemaId, id)
 
 	assert.Equal(t, output1, output2)
 }
 
 func TestGenerateExternalIdGeneratesDifferentValuesForDifferentInput(t *testing.T) {
-	output1 := GenerateExternalId("a", "a")
-	output2 := GenerateExternalId("a", "b")
-	output3 := GenerateExternalId("b", "b")
+	output1 := GenerateExternalID("a", "a")
+	output2 := GenerateExternalID("a", "b")
+	output3 := GenerateExternalID("b", "b")
 
 	assert.Assert(t, output1 != output2)
 	assert.Assert(t, output2 != output3)
@@ -42,9 +42,9 @@ func TestGenerateExternalIdGeneratesDifferentValuesForDifferentInput(t *testing.
 }
 
 func TestGenerateExternalIdWithOver500CharsCutsIt(t *testing.T) {
-	output1 := GenerateExternalId(strings.Repeat("a", 501), "")
-	output2 := GenerateExternalId("", strings.Repeat("a", 501))
-	output3 := GenerateExternalId(strings.Repeat("a", 250), strings.Repeat("a", 251))
+	output1 := GenerateExternalID(strings.Repeat("a", 501), "")
+	output2 := GenerateExternalID("", strings.Repeat("a", 501))
+	output3 := GenerateExternalID(strings.Repeat("a", 250), strings.Repeat("a", 251))
 
 	assert.Assert(t, len(output1) <= 500)
 	assert.Assert(t, len(output2) <= 500)
@@ -52,9 +52,9 @@ func TestGenerateExternalIdWithOver500CharsCutsIt(t *testing.T) {
 }
 
 func TestGenerateExternalIdWithOther500CharsIsStable(t *testing.T) {
-	output1 := GenerateExternalId(strings.Repeat("a", 250), strings.Repeat("a", 251))
-	output2 := GenerateExternalId(strings.Repeat("a", 250), strings.Repeat("a", 251))
-	output3 := GenerateExternalId(strings.Repeat("a", 250), strings.Repeat("a", 300))
+	output1 := GenerateExternalID(strings.Repeat("a", 250), strings.Repeat("a", 251))
+	output2 := GenerateExternalID(strings.Repeat("a", 250), strings.Repeat("a", 251))
+	output3 := GenerateExternalID(strings.Repeat("a", 250), strings.Repeat("a", 300))
 
 	assert.Equal(t, output1, output2)
 	assert.Assert(t, output1 != output3)
@@ -63,13 +63,13 @@ func TestGenerateExternalIdWithOther500CharsIsStable(t *testing.T) {
 func TestGenerateExternalIdStartsWithKnownPrefix(t *testing.T) {
 	schemaId, id := "a", "b"
 
-	extId := GenerateExternalId(schemaId, id)
+	extId := GenerateExternalID(schemaId, id)
 
 	assert.Assert(t, strings.HasPrefix(extId, "monaco:"))
 }
 
 func TestGenerateExternalIdWithOther500CharsStartsWithKnownPrefix(t *testing.T) {
-	extId := GenerateExternalId(strings.Repeat("a", 250), strings.Repeat("a", 251))
+	extId := GenerateExternalID(strings.Repeat("a", 250), strings.Repeat("a", 251))
 
 	assert.Assert(t, strings.HasPrefix(extId, "monaco:"))
 }

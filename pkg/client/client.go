@@ -218,7 +218,7 @@ func isNewDynatraceTokenFormat(token string) bool {
 }
 
 func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, error) {
-	externalId := util.GenerateExternalId(obj.SchemaId, obj.Id)
+	externalId := util.GenerateExternalID(obj.SchemaId, obj.Id)
 
 	// list all settings with matching external ID
 	settings, err := d.ListSettings(obj.SchemaId, ListSettingsOptions{

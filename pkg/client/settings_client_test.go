@@ -105,7 +105,7 @@ func TestUpsert(t *testing.T) {
 				assert.NilError(t, err)
 
 				expectedRequestPayload := settingsRequest{
-					ExternalId:    util.GenerateExternalId("builtin:alerting.profile", "user-provided-id"),
+					ExternalId:    util.GenerateExternalID("builtin:alerting.profile", "user-provided-id"),
 					Scope:         "tenant",
 					Value:         expectedSettingsObject,
 					SchemaId:      "builtin:alerting.profile",

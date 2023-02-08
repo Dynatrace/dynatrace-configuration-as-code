@@ -79,7 +79,7 @@ func deleteSettingsObject(c client.Client, entries []DeletePointer) []error {
 	errors := make([]error, 0)
 
 	for _, e := range entries {
-		externalID := util.GenerateExternalId(e.Type, e.ConfigId)
+		externalID := util.GenerateExternalID(e.Type, e.ConfigId)
 		// get settings objects with matching external ID
 		objects, err := c.ListSettings(e.Type, client.ListSettingsOptions{DiscardValue: true, Filter: func(o client.DownloadSettingsObject) bool { return o.ExternalId == externalID }})
 		if err != nil {
