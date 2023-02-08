@@ -681,7 +681,7 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 			testBasePath := "test-resources/integration-test-auto-update/" + testcase.projectName
 
 			// APIs
-			hostAutoUpdateApi := api.NewSingleConfigurationApi("hosts-auto-update", "/hosts-auto-update", "dashboards", false)
+			hostAutoUpdateApi := api.NewSingleConfigurationApi("hosts-auto-update", "/hosts-auto-update", "", false)
 			apiMap := api.ApiMap{
 				hostAutoUpdateApi.GetId(): hostAutoUpdateApi,
 			}
