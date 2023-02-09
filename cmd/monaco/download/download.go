@@ -367,7 +367,7 @@ func getApisToDownload(apis api.ApiMap, specificAPIs []string) (api.ApiMap, []er
 		var deprecated api.ApiMap
 		apisToDownload, deprecated = apisToDownload.Filter(deprecatedEndpointFilter)
 		for _, d := range deprecated {
-			log.Warn("API '%s' is deprecated by '%s' and will be skip", d.GetId(), d.DeprecatedBy())
+			log.Warn("API '%s' is deprecated by '%s' and will not be downloaded", d.GetId(), d.DeprecatedBy())
 		}
 	}
 

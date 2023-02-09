@@ -194,17 +194,27 @@ func TestGetApisToDownload(t *testing.T) {
 		specificAPIs []string
 	}
 	type expected struct {
-		apis      []string
-		haveError bool
+		apis []string
 	}
 	tests := []struct {
 		name     string
 		given    given
 		expected expected
-		want     api.ApiMap
 		want1    []error
 	}{
 		{
+			name: "filter all specific defined api",
+			given: given{
+				apis: api.ApiMap{
+					"api_1": api.NewApi("api_1", "", "", false, false, "", false),
+					"api_2": api.NewApi("api_2", "", "", false, false, "", false),
+				},
+				specificAPIs: []string{"api_1"},
+			},
+			expected: expected{
+				apis: []string{"api_1"},
+			},
+		}, {
 			name: "if deprecated api is defined, do not filter it",
 			given: given{
 				apis: api.ApiMap{
@@ -215,8 +225,7 @@ func TestGetApisToDownload(t *testing.T) {
 				specificAPIs: []string{"api_1", "deprecated_api"},
 			},
 			expected: expected{
-				apis:      []string{"api_1", "deprecated_api"},
-				haveError: false,
+				apis: []string{"api_1", "deprecated_api"},
 			},
 		},
 		{
@@ -230,8 +239,7 @@ func TestGetApisToDownload(t *testing.T) {
 				specificAPIs: []string{},
 			},
 			expected: expected{
-				apis:      []string{"api_1", "api_2"},
-				haveError: false,
+				apis: []string{"api_1", "api_2"},
 			},
 		},
 	}
@@ -241,9 +249,7 @@ func TestGetApisToDownload(t *testing.T) {
 			for _, e := range tt.expected.apis {
 				assert.Contains(t, actual, e)
 			}
-			if tt.expected.haveError {
-				assert.Nil(t, err)
-			}
+			assert.Nil(t, err)
 		})
 	}
 }
