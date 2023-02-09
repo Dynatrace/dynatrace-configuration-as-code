@@ -16,7 +16,10 @@
 
 package settings
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // noOpFilter is a settings 2.0 filter that does nothing
 var noOpFilter = Filter{
@@ -45,47 +48,50 @@ func (f Filters) Get(schemaID string) Filter {
 	return noOpFilter
 }
 
+func formatDefaultDiscardReasonMsg(entityName interface{}) string {
+	return fmt.Sprintf("%q cannot be managed via configuration as code", entityName)
+}
+
 // defaultSettingsFilters is the default Filters used for settings 2.0
 var defaultSettingsFilters = Filters{
 	"builtin:logmonitoring.logs-on-grail-activate": {
 		ShouldDiscard: func(json map[string]interface{}) (bool, string) {
-			return json["activated"] == false, "activated field is set to false"
+			return json["activated"] == false, "'activated' field is set to false"
 		},
 	},
 	"builtin:logmonitoring.log-buckets-rules": {
 		ShouldDiscard: func(json map[string]interface{}) (bool, string) {
-			return json["ruleName"] == "default", "default entity cannot be deleted or edited"
+			return json["ruleName"] == "default", formatDefaultDiscardReasonMsg(json["ruleName"])
 		},
 	},
 	"builtin:bizevents-processing-buckets.rule": {
 		ShouldDiscard: func(json map[string]interface{}) (bool, string) {
-			return json["ruleName"] == "default", "default entity cannot be deleted or edited"
+			return json["ruleName"] == "default", formatDefaultDiscardReasonMsg(json["ruleName"])
 		},
 	},
 	"builtin:apis.detection-rules": {
 		ShouldDiscard: func(json map[string]interface{}) (bool, string) {
-			return true, "'Non-deletable default settings' issue. consider configuring these settings manually"
+			return strings.HasPrefix(fmt.Sprintf("%v", json["apiName"]), "Built-In"), formatDefaultDiscardReasonMsg(json["apiName"])
 		},
 	},
 	"builtin:logmonitoring.log-dpp-rules": {
 		ShouldDiscard: func(json map[string]interface{}) (bool, string) {
-			return true, "'Non-deletable default settings' issue. consider configuring these settings manually"
+			return strings.HasPrefix(fmt.Sprintf("%v", json["ruleName"]), "[Built-in]"), formatDefaultDiscardReasonMsg(json["ruleName"])
 		},
 	},
 	"builtin:monitoredentities.generic.type": {
 		ShouldDiscard: func(json map[string]interface{}) (bool, string) {
-			return true, "'Non-deletable default settings' issue. consider configuring these settings manually"
+			return json["createdBy"] == "Dynatrace", formatDefaultDiscardReasonMsg(json["name"])
 		},
 	},
 	"builtin:alerting.profile": {
 		ShouldDiscard: func(json map[string]interface{}) (bool, string) {
-			return json["name"] == "Default" || json["name"] == "Default for ActiveGate Token Expiry",
-				fmt.Sprintf("entity %q cannot be deleted or edited", json["name"])
+			return json["name"] == "Default" || json["name"] == "Default for ActiveGate Token Expiry", formatDefaultDiscardReasonMsg(json["name"])
 		},
 	},
 	"builtin:logmonitoring.log-events": {
 		ShouldDiscard: func(json map[string]interface{}) (bool, string) {
-			return true, "'Non-deletable default settings' issue. consider configuring these settings manually"
+			return json["summary"] == "Default Kubernetes Log Events", formatDefaultDiscardReasonMsg("Default Kubernetes Log Events")
 		},
 	},
 }
