@@ -57,6 +57,7 @@ func GetDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.
 	var specificApis []string
 	var specificSettings []string
 	var onlyAPIs bool
+	var onlySettings bool
 
 	manifestDownloadCmd := &cobra.Command{
 		Use:     "manifest [manifest file] [environment to download]",
@@ -85,6 +86,7 @@ func GetDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.
 					specificAPIs:    specificApis,
 					specificSchemas: specificSettings,
 					onlyAPIs:        onlyAPIs,
+					onlySettings:    onlySettings,
 				},
 			}
 			return command.DownloadConfigsBasedOnManifest(fs, options)
@@ -118,6 +120,7 @@ func GetDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.
 					specificAPIs:    specificApis,
 					specificSchemas: specificSettings,
 					onlyAPIs:        onlyAPIs,
+					onlySettings:    onlySettings,
 				},
 			}
 			return command.DownloadConfigs(fs, options)
@@ -125,8 +128,8 @@ func GetDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.
 		},
 	}
 
-	setupSharedConfigsFlags(manifestDownloadCmd, &project, &outputFolder, &forceOverwrite, &specificApis, &specificSettings, &onlyAPIs)
-	setupSharedConfigsFlags(directDownloadCmd, &project, &outputFolder, &forceOverwrite, &specificApis, &specificSettings, &onlyAPIs)
+	setupSharedConfigsFlags(manifestDownloadCmd, &project, &outputFolder, &forceOverwrite, &specificApis, &specificSettings, &onlyAPIs, &onlySettings)
+	setupSharedConfigsFlags(directDownloadCmd, &project, &outputFolder, &forceOverwrite, &specificApis, &specificSettings, &onlyAPIs, &onlySettings)
 
 	downloadCmd.AddCommand(manifestDownloadCmd)
 	downloadCmd.AddCommand(directDownloadCmd)
@@ -219,13 +222,16 @@ Either downloading based on an existing manifest, or by defining environment URL
 	downloadCmd.AddCommand(downloadEntitiesCmd)
 }
 
-func setupSharedConfigsFlags(cmd *cobra.Command, project, outputFolder *string, forceOverwrite *bool, specificApis *[]string, specificSettings *[]string, onlyAPIs *bool) {
+func setupSharedConfigsFlags(cmd *cobra.Command, project, outputFolder *string, forceOverwrite *bool, specificApis *[]string, specificSettings *[]string, onlyAPIs, onlySettings *bool) {
 	setupSharedFlags(cmd, project, outputFolder, forceOverwrite)
 	// flags always available
 	cmd.Flags().StringSliceVarP(specificApis, "specific-apis", "a", make([]string, 0), "List of APIs to download")
 	cmd.Flags().StringSliceVarP(specificSettings, "specific-settings", "s", make([]string, 0), "List of settings 2.0 schema IDs specifying which Settings 2.0 objects to download")
 	cmd.Flags().BoolVar(onlyAPIs, "only-apis", false, "Only download config APIs, skip downloading settings 2.0 objects")
+	cmd.Flags().BoolVar(onlySettings, "only-settings", false, "Only download settings 2.0 objects, skip downloading config APIs")
 	cmd.MarkFlagsMutuallyExclusive("specific-settings", "only-apis")
+	cmd.MarkFlagsMutuallyExclusive("specific-apis", "only-settings")
+	cmd.MarkFlagsMutuallyExclusive("only-apis", "only-settings")
 
 	err := cmd.RegisterFlagCompletionFunc("specific-apis", completion.AllAvailableApis)
 	if err != nil {

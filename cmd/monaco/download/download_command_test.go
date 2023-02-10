@@ -179,6 +179,28 @@ func TestValidCommands(t *testing.T) {
 						specificAPIs:    []string{},
 						specificSchemas: []string{},
 						onlyAPIs:        true,
+						onlySettings:    false,
+					},
+				})
+			},
+		},
+		{
+			"direct download - skip download of APIs",
+			"direct test.url token --only-settings",
+			func(cmd *MockCommand) {
+				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
+					environmentUrl: "test.url",
+					envVarName:     "token",
+					downloadCommandOptions: downloadCommandOptions{
+						downloadCommandOptionsShared: downloadCommandOptionsShared{
+							projectName:    "project",
+							outputFolder:   "",
+							forceOverwrite: false,
+						},
+						specificAPIs:    []string{},
+						specificSchemas: []string{},
+						onlyAPIs:        false,
+						onlySettings:    true,
 					},
 				})
 			},
@@ -347,6 +369,28 @@ func TestValidCommands(t *testing.T) {
 						specificAPIs:    []string{},
 						specificSchemas: []string{},
 						onlyAPIs:        true,
+						onlySettings:    false,
+					},
+				})
+			},
+		},
+		{
+			"manifest download - skip download of APIs ",
+			"manifest test.yaml test_env --only-settings",
+			func(cmd *MockCommand) {
+				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), manifestDownloadOptions{
+					manifestFile:            "test.yaml",
+					specificEnvironmentName: "test_env",
+					downloadCommandOptions: downloadCommandOptions{
+						downloadCommandOptionsShared: downloadCommandOptionsShared{
+							projectName:    "project",
+							outputFolder:   "",
+							forceOverwrite: false,
+						},
+						specificAPIs:    []string{},
+						specificSchemas: []string{},
+						onlyAPIs:        false,
+						onlySettings:    true,
 					},
 				})
 			},

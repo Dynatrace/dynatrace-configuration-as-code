@@ -1,0 +1,34 @@
+{
+    "items": [
+        {
+            "externalId": "abc",
+            "schemaVersion": "1",
+            "schemaId": "settings-schema",
+            "objectId": "so_1",
+            "scope": "test",
+            "value": {
+                "name": "SettingsTest-1"
+            }
+        },
+        {
+            "externalId": "def",
+            "schemaVersion": "1",
+            "schemaId": "settings-schema",
+            "objectId": "so_2",
+            "scope": "test",
+            "value": {
+                "name": "SettingsTest-2"
+            }
+        },
+        {
+            "externalId": "ghi",
+            "schemaVersion": "1",
+            "schemaId": "settings-schema",
+            "objectId": "so_3",
+            "scope": "test",
+            "value": {
+                "name": "SettingsTest-3"
+            }
+        }
+    ]
+}

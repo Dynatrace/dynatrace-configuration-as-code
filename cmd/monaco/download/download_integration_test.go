@@ -477,8 +477,7 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 	responses := map[string]string{
 		"/dashboard":      "dashboard/__LIST.json",
 		"/dashboard/id-1": "dashboard/id-1.json",
-		"/dashboard/id-2": "dashboard/id-2.json",
-		//"/dashboard/id-3": "dashboard/id-3.json", // MUST NEVER BE ACCESSED, pre-download filter remove the need to download it
+		"/dashboard/id-2": "dashboard/id-2.json", //"/dashboard/id-3": "dashboard/id-3.json", // MUST NEVER BE ACCESSED, pre-download filter remove the need to download it
 		"/dashboard/id-4": "dashboard/id-4.json",
 	}
 
@@ -818,6 +817,178 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 			},
 		},
 	}, compareOptions...)
+}
+
+func TestDownloadIntegrationDownloadsAPIsAndSettings(t *testing.T) {
+	// GIVEN apis, server responses, file system
+	const projectName = "integration-test-full"
+	const testBasePath = "test-resources/" + projectName
+
+	// APIs
+	fakeApi := api.NewStandardApi("fake-api", "/fake-api", false, "", false)
+	apiMap := api.ApiMap{
+		fakeApi.GetId(): fakeApi,
+	}
+
+	// Responses
+	responses := map[string]string{
+		"/fake-api":                "fake-api/__LIST.json",
+		"/fake-api/id-1":           "fake-api/id-1.json",
+		"/fake-api/id-2":           "fake-api/id-2.json",
+		"/api/v2/settings/schemas": "settings/__SCHEMAS.json",
+		"/api/v2/settings/objects": "settings/objects.json",
+	}
+
+	// Server
+	server := client.NewIntegrationTestServer(t, testBasePath, responses)
+
+	fs := afero.NewMemMapFs()
+
+	opts := getTestingDownloadOptions(server, projectName)
+	opts.onlySettings = false
+	opts.onlyAPIs = false
+	err := doDownloadConfigs(fs, apiMap, opts)
+
+	assert.NilError(t, err)
+
+	// THEN we can load the project again and verify its content
+	projects, errs := loadDownloadedProjects(fs, apiMap)
+	if len(errs) != 0 {
+		for _, err := range errs {
+			t.Errorf("%v", err)
+		}
+		return
+	}
+
+	assert.Equal(t, len(projects), 1)
+	p := projects[0]
+	assert.Equal(t, p.Id, projectName)
+	assert.Equal(t, len(p.Configs), 1)
+
+	configs, found := p.Configs[projectName]
+	assert.Equal(t, found, true)
+	assert.Equal(t, len(configs), 2, "Expected one config API and one Settings schema to be downloaded")
+
+	_, fakeApiDownloaded := configs[fakeApi.GetId()]
+	assert.Assert(t, fakeApiDownloaded)
+	assert.Equal(t, len(configs[fakeApi.GetId()]), 2, "Expected 2 config objects")
+
+	_, settingsDownloaded := configs["settings-schema"]
+	assert.Assert(t, settingsDownloaded)
+	assert.Equal(t, len(configs["settings-schema"]), 3, "Expected 3 settings objects")
+}
+
+func TestDownloadIntegrationDownloadsOnlyAPIsIfConfigured(t *testing.T) {
+	// GIVEN apis, server responses, file system
+	const projectName = "integration-test-full"
+	const testBasePath = "test-resources/" + projectName
+
+	// APIs
+	fakeApi := api.NewStandardApi("fake-api", "/fake-api", false, "", false)
+	apiMap := api.ApiMap{
+		fakeApi.GetId(): fakeApi,
+	}
+
+	// Responses
+	responses := map[string]string{
+		"/fake-api":      "fake-api/__LIST.json",
+		"/fake-api/id-1": "fake-api/id-1.json",
+		"/fake-api/id-2": "fake-api/id-2.json",
+	}
+
+	// Server
+	server := client.NewIntegrationTestServer(t, testBasePath, responses)
+
+	fs := afero.NewMemMapFs()
+
+	opts := getTestingDownloadOptions(server, projectName)
+	opts.onlySettings = false
+	opts.onlyAPIs = true
+
+	err := doDownloadConfigs(fs, apiMap, opts)
+
+	assert.NilError(t, err)
+
+	// THEN we can load the project again and verify its content
+	projects, errs := loadDownloadedProjects(fs, apiMap)
+	if len(errs) != 0 {
+		for _, err := range errs {
+			t.Errorf("%v", err)
+		}
+		return
+	}
+
+	assert.Equal(t, len(projects), 1)
+	p := projects[0]
+	assert.Equal(t, p.Id, projectName)
+	assert.Equal(t, len(p.Configs), 1)
+
+	configs, found := p.Configs[projectName]
+	assert.Equal(t, found, true)
+	assert.Equal(t, len(configs), 1, "Expected one config API to be downloaded")
+
+	_, fakeApiDownloaded := configs[fakeApi.GetId()]
+	assert.Assert(t, fakeApiDownloaded)
+	assert.Equal(t, len(configs[fakeApi.GetId()]), 2, "Expected 2 config objects")
+
+	_, settingsDownloaded := configs["settings-schema"]
+	assert.Assert(t, !settingsDownloaded, "Expected no Settings to the downloaded, when onlyAPIs is set")
+}
+
+func TestDownloadIntegrationDownloadsOnlySettingsIfConfigured(t *testing.T) {
+	// GIVEN apis, server responses, file system
+	const projectName = "integration-test-full"
+	const testBasePath = "test-resources/" + projectName
+
+	// APIs
+	fakeApi := api.NewStandardApi("fake-api", "/fake-api", false, "", false)
+	apiMap := api.ApiMap{
+		fakeApi.GetId(): fakeApi,
+	}
+
+	// Responses
+	responses := map[string]string{
+		"/api/v2/settings/schemas": "settings/__SCHEMAS.json",
+		"/api/v2/settings/objects": "settings/objects.json",
+	}
+
+	// Server
+	server := client.NewIntegrationTestServer(t, testBasePath, responses)
+
+	fs := afero.NewMemMapFs()
+
+	opts := getTestingDownloadOptions(server, projectName)
+	opts.onlySettings = true
+	opts.onlyAPIs = false
+
+	err := doDownloadConfigs(fs, apiMap, opts)
+
+	assert.NilError(t, err)
+
+	// THEN we can load the project again and verify its content
+	projects, errs := loadDownloadedProjects(fs, apiMap)
+	if len(errs) != 0 {
+		for _, err := range errs {
+			t.Errorf("%v", err)
+		}
+		return
+	}
+
+	assert.Equal(t, len(projects), 1)
+	p := projects[0]
+	assert.Equal(t, p.Id, projectName)
+	assert.Equal(t, len(p.Configs), 1)
+
+	configs, found := p.Configs[projectName]
+	assert.Equal(t, found, true)
+	assert.Equal(t, len(configs), 1, "Expected one one Settings schema to be downloaded")
+
+	_, fakeApiDownloaded := configs[fakeApi.GetId()]
+	assert.Assert(t, !fakeApiDownloaded, "Expected no Config APIs to the downloaded, when onlySettings is set")
+
+	_, settingsDownloaded := configs["settings-schema"]
+	assert.Assert(t, settingsDownloaded)
+	assert.Equal(t, len(configs["settings-schema"]), 3, "Expected 3 settings objects")
 }
 
 func getTestingDownloadOptions(server *httptest.Server, projectName string) downloadOptions {
