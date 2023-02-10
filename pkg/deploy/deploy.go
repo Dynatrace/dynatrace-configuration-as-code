@@ -55,7 +55,8 @@ func DeployConfigs(client client.Client, apis api.ApiMap,
 			continue
 		}
 
-		log.Info("\tDeploying config %s", c.Coordinate)
+		logAction, logVerb := getWordsForLogging(opts.DryRun)
+		log.Info("\t%s config %s", logAction, c.Coordinate)
 
 		var entity parameter.ResolvedEntity
 		var deploymentErrors []error
@@ -71,7 +72,7 @@ func DeployConfigs(client client.Client, apis api.ApiMap,
 
 		if deploymentErrors != nil {
 			for _, err := range deploymentErrors {
-				errors = append(errors, fmt.Errorf("failed to deploy config %s: %w", c.Coordinate, err))
+				errors = append(errors, fmt.Errorf("failed to %s config %s: %w", logVerb, c.Coordinate, err))
 			}
 
 			if !opts.ContinueOnErr && !opts.DryRun {
@@ -82,6 +83,15 @@ func DeployConfigs(client client.Client, apis api.ApiMap,
 	}
 
 	return errors
+}
+
+// getWordsForLogging returns fitting action and verb words to clearly tell a user if configuration is
+// deployed or validated when logging based on the dry-run boolean
+func getWordsForLogging(isDryRun bool) (action, verb string) {
+	if isDryRun {
+		return "Validating", "validate"
+	}
+	return "Deploying", "deploy"
 }
 
 func deployConfig(client client.ConfigClient, apis api.ApiMap, entityMap *EntityMap, conf *config.Config) (parameter.ResolvedEntity, []error) {
