@@ -833,7 +833,7 @@ func getTestingDownloadOptions(server *httptest.Server, projectName string) down
 				return client.NewDynatraceClientForTesting(environmentUrl, token, server.Client())
 			},
 		},
-		skipSettings: true,
+		onlyAPIs: true,
 	}
 }
 

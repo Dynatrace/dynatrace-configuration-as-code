@@ -34,7 +34,7 @@ type downloadCommandOptions struct {
 	downloadCommandOptionsShared
 	specificAPIs    []string
 	specificSchemas []string
-	skipSettings    bool
+	onlyAPIs        bool
 }
 
 type manifestDownloadOptions struct {
@@ -74,7 +74,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 		},
 		specificAPIs:    cmdOptions.specificAPIs,
 		specificSchemas: cmdOptions.specificSchemas,
-		skipSettings:    cmdOptions.skipSettings,
+		onlyAPIs:        cmdOptions.onlyAPIs,
 	}
 	return doDownloadConfigs(fs, api.NewApis(), options)
 }
@@ -101,7 +101,7 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOp
 		},
 		specificAPIs:    cmdOptions.specificAPIs,
 		specificSchemas: cmdOptions.specificSchemas,
-		skipSettings:    cmdOptions.skipSettings,
+		onlyAPIs:        cmdOptions.onlyAPIs,
 	}
 	return doDownloadConfigs(fs, api.NewApis(), options)
 }
@@ -110,7 +110,7 @@ type downloadOptions struct {
 	downloadOptionsShared
 	specificAPIs    []string
 	specificSchemas []string
-	skipSettings    bool
+	onlyAPIs        bool
 }
 
 func doDownloadConfigs(fs afero.Fs, apis api.ApiMap, opts downloadOptions) error {
@@ -171,7 +171,7 @@ func downloadConfigs(apis api.ApiMap, opts downloadOptions) (project.ConfigsPerT
 	// if nothing was specified specifically, lets download all configs and settings
 	log.Debug("APIs to download: \n - %v", strings.Join(maps.Keys(apisToDownload), "\n - "))
 	configObjects = classic.DownloadAllConfigs(apisToDownload, c, opts.projectName)
-	if !opts.skipSettings {
+	if !opts.onlyAPIs {
 		settingsObjects := settings.DownloadAll(c, opts.projectName)
 		maps.Copy(configObjects, settingsObjects)
 	}

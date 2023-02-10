@@ -165,7 +165,7 @@ func TestValidCommands(t *testing.T) {
 		},
 		{
 			"direct download - skip download of settings",
-			"direct test.url token --skip-settings",
+			"direct test.url token --only-apis",
 			func(cmd *MockCommand) {
 				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
 					environmentUrl: "test.url",
@@ -178,7 +178,7 @@ func TestValidCommands(t *testing.T) {
 						},
 						specificAPIs:    []string{},
 						specificSchemas: []string{},
-						skipSettings:    true,
+						onlyAPIs:        true,
 					},
 				})
 			},
@@ -333,7 +333,7 @@ func TestValidCommands(t *testing.T) {
 		},
 		{
 			"manifest download - skip download of settings ",
-			"manifest test.yaml test_env --skip-settings",
+			"manifest test.yaml test_env --only-apis",
 			func(cmd *MockCommand) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), manifestDownloadOptions{
 					manifestFile:            "test.yaml",
@@ -346,7 +346,7 @@ func TestValidCommands(t *testing.T) {
 						},
 						specificAPIs:    []string{},
 						specificSchemas: []string{},
-						skipSettings:    true,
+						onlyAPIs:        true,
 					},
 				})
 			},
