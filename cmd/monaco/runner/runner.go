@@ -17,11 +17,14 @@ package runner
 import (
 	"errors"
 	"fmt"
-	"github.com/spf13/afero"
-	"github.com/spf13/cobra"
 	"io"
 	"os"
 	"path"
+
+	"github.com/spf13/afero"
+	"github.com/spf13/cobra"
+
+	builtinLog "log"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/convert"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/delete"
@@ -29,10 +32,10 @@ import (
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/download"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner/completion"
 	legacyDeploy "github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/v1/deploy"
+	utilEnv "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/environment"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/version"
-	builtinLog "log"
 )
 
 var errWrongUsage = errors.New("")
@@ -92,7 +95,7 @@ Examples:
 	deleteCommand := getDeleteCommand(fs)
 	purgeCommand := getPurgeCommand(fs)
 
-	if isEnvFlagEnabled("CONFIG_V1") {
+	if utilEnv.FeatureFlagEnabled("CONFIG_V1") {
 		log.Warn("CONFIG_V1 environment var detected!")
 		log.Warn("Please convert your config to v2 format, as the migration layer will get removed in one of the next releases!")
 		deployCommand = getLegacyDeployCommand(fs)
@@ -103,7 +106,7 @@ Examples:
 	rootCmd.AddCommand(deployCommand)
 	rootCmd.AddCommand(deleteCommand)
 
-	if isEnvFlagEnabled("MONACO_ENABLE_DANGEROUS_COMMANDS") {
+	if utilEnv.FeatureFlagEnabled("MONACO_ENABLE_DANGEROUS_COMMANDS") {
 		log.Warn("MONACO_ENABLE_DANGEROUS_COMMANDS environment var detected!")
 		log.Warn("Use additional commands with care, they might have heavy impact on configurations or environments")
 
@@ -342,9 +345,4 @@ func getLegacyDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 		log.Fatal("failed to setup CLI %v", err)
 	}
 	return deployCmd
-}
-
-func isEnvFlagEnabled(env string) bool {
-	val, ok := os.LookupEnv(env)
-	return ok && val != "0"
 }

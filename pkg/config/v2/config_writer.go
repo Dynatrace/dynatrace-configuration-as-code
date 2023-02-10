@@ -261,12 +261,17 @@ func toTopLevelConfigDefinition(context *serializerContext, configs []Config) (t
 }
 
 func extractConfigType(context *serializerContext, config Config) (typeDefinition, error) {
-	if !config.Type.IsSettings() {
-		return typeDefinition{
-			Api: config.Coordinate.Type,
-		}, nil
+	if config.Type.IsSettings() {
+		return getConfigTypeSettings(config, context)
+	} else if config.Type.IsEntities() {
+		return getConfigTypeEntities(config)
+	} else {
+		return getConfigTypeApi(config)
 	}
 
+}
+
+func getConfigTypeSettings(config Config, context *serializerContext) (typeDefinition, error) {
 	scopeParam, found := config.Parameters[ScopeParameter]
 	if !found {
 		return typeDefinition{}, fmt.Errorf("scope parameter not found. This is likely a bug")
@@ -285,6 +290,20 @@ func extractConfigType(context *serializerContext, config Config) (typeDefinitio
 			SchemaVersion: config.Type.SchemaVersion,
 			Scope:         serializedScope,
 		},
+	}, nil
+}
+
+func getConfigTypeEntities(config Config) (typeDefinition, error) {
+	return typeDefinition{
+		Entities: entitiesDefinition{
+			EntitiesType: config.Type.EntitiesType,
+		},
+	}, nil
+}
+
+func getConfigTypeApi(config Config) (typeDefinition, error) {
+	return typeDefinition{
+		Api: config.Coordinate.Type,
 	}, nil
 }
 

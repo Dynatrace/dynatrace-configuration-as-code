@@ -257,3 +257,11 @@ func (c *DummyClient) ListSettings(_ string, _ ListSettingsOptions) ([]DownloadS
 func (l *DummyClient) DeleteSettings(_ string) error {
 	return nil
 }
+
+func (c *DummyClient) ListEntitiesTypes() (EntitiesTypeList, error) {
+	return make(EntitiesTypeList, 0), nil
+}
+
+func (c *DummyClient) ListEntities(_ string) ([]string, error) {
+	return make([]string, 0), nil
+}

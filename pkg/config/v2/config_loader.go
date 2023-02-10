@@ -16,12 +16,13 @@ package v2
 
 import (
 	"fmt"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/environment"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/slices"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter/environment"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/slices"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
 	configErrors "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/errors"
@@ -417,6 +418,7 @@ func getConfigFromDefinition(
 			SchemaId:      configType.Settings.Schema,
 			SchemaVersion: configType.Settings.SchemaVersion,
 			Api:           configType.Api,
+			EntitiesType:  configType.Entities.EntitiesType,
 		},
 		Group:          environment.Group,
 		Environment:    environment.Name,

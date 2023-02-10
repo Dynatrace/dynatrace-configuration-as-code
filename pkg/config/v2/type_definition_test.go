@@ -116,6 +116,44 @@ func Test_typeDefinition_isSound(t1 *testing.T) {
 			},
 			expect{false, "property missing: [type.scope]"},
 		},
+		{
+			"Entities - sound",
+			fields{
+				typeDefinition{
+					Entities: entitiesDefinition{
+						EntitiesType: "SOMETHING",
+					},
+				},
+				nil,
+			},
+			expect{true, ""},
+		},
+		{
+			"Entities - EntitiesType missing",
+			fields{
+				typeDefinition{
+					Entities: entitiesDefinition{},
+				},
+				nil,
+			},
+			expect{false, "type configuration is missing"},
+		},
+		{
+			"Entities - wrong type",
+			fields{
+				typeDefinition{
+					Api: "some.classical.api",
+					Settings: settingsDefinition{
+						Schema: "some.schema",
+					},
+					Entities: entitiesDefinition{
+						EntitiesType: "SOMETHING",
+					},
+				},
+				map[string]struct{}{"some.classical.api": {}},
+			},
+			expect{false, "wrong configuration of type property"},
+		},
 	}
 	for _, tt := range tests {
 		t1.Run(tt.name, func(t1 *testing.T) {

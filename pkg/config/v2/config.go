@@ -51,12 +51,19 @@ var ReservedParameterNames = []string{IdParameter, ScopeParameter, SkipParameter
 type Parameters map[string]parameter.Parameter
 
 type Type struct {
-	SchemaId, SchemaVersion, Api string
+	SchemaId,
+	SchemaVersion,
+	Api string
+	EntitiesType string
 }
 
 // IsSettings returns true if SchemaId is not empty
 func (t Type) IsSettings() bool {
 	return t.SchemaId != ""
+}
+
+func (t Type) IsEntities() bool {
+	return t.EntitiesType != ""
 }
 
 // Config struct defining a configuration which can be deployed.
@@ -69,7 +76,7 @@ type Config struct {
 	Group string
 	// name of the environment this configuration is for
 	Environment string
-	// Type holds information of the underlying config type (classic, settings)
+	// Type holds information of the underlying config type (classic, settings, entities)
 	Type Type
 	// map of all parameters which will be resolved and are then available
 	// in the template

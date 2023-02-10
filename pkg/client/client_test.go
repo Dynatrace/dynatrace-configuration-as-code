@@ -19,6 +19,8 @@
 package client
 
 import (
+	"fmt"
+
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
 	"gotest.tools/assert"
@@ -504,4 +506,216 @@ func TestUpsertSettingsRetries(t *testing.T) {
 
 	assert.NilError(t, err)
 	assert.Equal(t, numApiCalls, 3)
+}
+
+func TestListEntities(t *testing.T) {
+
+	testType := "SOMETHING"
+
+	tests := []struct {
+		name                      string
+		givenEntitiesType         string
+		givenServerResponses      []testServerResponse
+		want                      []string
+		wantQueryParamsPerApiCall [][]testQueryParams
+		wantNumberOfApiCalls      int
+		wantError                 bool
+	}{
+		{
+			name:              "Lists Entities objects as expected",
+			givenEntitiesType: testType,
+			givenServerResponses: []testServerResponse{
+				{200, fmt.Sprintf(`{ "entities": [ {"entityId": "%s-1A28B791C329D741", "type": "%s"} ] }`, testType, testType)},
+			},
+			want: []string{
+				fmt.Sprintf(`{"entityId": "%s-1A28B791C329D741", "type": "%s"}`, testType, testType),
+			},
+			wantQueryParamsPerApiCall: [][]testQueryParams{
+				{
+					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
+					{"pageSize", defaultPageSize},
+					{"fields", defaultListEntitiesFields},
+					{"from", defaultEntityRelativeTimeframe},
+				},
+			},
+			wantNumberOfApiCalls: 1,
+			wantError:            false,
+		},
+		{
+			name:              "Handles Pagination when listing entities objects",
+			givenEntitiesType: "SOMETHING",
+			givenServerResponses: []testServerResponse{
+				{200, fmt.Sprintf(`{ "entities": [ {"entityId": "%s-1A28B791C329D741", "type": "%s"} ], "nextPageKey": "page42"  }`, testType, testType)},
+				{200, fmt.Sprintf(`{ "entities": [ {"entityId": "%s-C329D7411A28B791", "type": "%s"} ] }`, testType, testType)},
+			},
+			want: []string{
+				fmt.Sprintf(`{"entityId": "%s-1A28B791C329D741", "type": "%s"}`, testType, testType),
+				fmt.Sprintf(`{"entityId": "%s-C329D7411A28B791", "type": "%s"}`, testType, testType),
+			},
+
+			wantQueryParamsPerApiCall: [][]testQueryParams{
+				{
+					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
+					{"pageSize", defaultPageSize},
+					{"fields", defaultListEntitiesFields},
+					{"from", defaultEntityRelativeTimeframe},
+				},
+				{
+					{"nextPageKey", "page42"},
+				},
+			},
+			wantNumberOfApiCalls: 2,
+			wantError:            false,
+		},
+		{
+			name:              "Returns empty if list if no entities exist",
+			givenEntitiesType: "SOMETHING",
+			givenServerResponses: []testServerResponse{
+				{200, `{ "entities": [ ] }`},
+			},
+			want: []string{},
+			wantQueryParamsPerApiCall: [][]testQueryParams{
+				{
+					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
+					{"pageSize", defaultPageSize},
+					{"fields", defaultListEntitiesFields},
+					{"from", defaultEntityRelativeTimeframe},
+				},
+			},
+			wantNumberOfApiCalls: 1,
+			wantError:            false,
+		},
+		{
+			name:              "Returns error if HTTP error is encountered",
+			givenEntitiesType: "SOMETHING",
+			givenServerResponses: []testServerResponse{
+				{400, `epic fail`},
+			},
+			want: nil,
+			wantQueryParamsPerApiCall: [][]testQueryParams{
+				{
+					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
+					{"pageSize", defaultPageSize},
+					{"fields", defaultListEntitiesFields},
+					{"from", defaultEntityRelativeTimeframe},
+				},
+			},
+			wantNumberOfApiCalls: 1,
+			wantError:            true,
+		},
+		{
+			name:              "Retries on HTTP error on paginated request and returns eventual success",
+			givenEntitiesType: "SOMETHING",
+			givenServerResponses: []testServerResponse{
+				{200, fmt.Sprintf(`{ "entities": [ {"entityId": "%s-1A28B791C329D741", "type": "%s"} ], "nextPageKey": "page42"  }`, testType, testType)},
+				{400, `get next page fail`},
+				{400, `retry fail`},
+				{200, fmt.Sprintf(`{ "entities": [ {"entityId": "%s-C329D7411A28B791", "type": "%s"} ] }`, testType, testType)},
+			},
+			want: []string{
+				fmt.Sprintf(`{"entityId": "%s-1A28B791C329D741", "type": "%s"}`, testType, testType),
+				fmt.Sprintf(`{"entityId": "%s-C329D7411A28B791", "type": "%s"}`, testType, testType),
+			},
+			wantQueryParamsPerApiCall: [][]testQueryParams{
+				{
+					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
+					{"pageSize", defaultPageSize},
+					{"fields", defaultListEntitiesFields},
+					{"from", defaultEntityRelativeTimeframe},
+				},
+				{
+					{"nextPageKey", "page42"},
+				},
+				{
+					{"nextPageKey", "page42"},
+				},
+				{
+					{"nextPageKey", "page42"},
+				},
+			},
+			wantNumberOfApiCalls: 4,
+			wantError:            false,
+		},
+		{
+			name:              "Returns error if HTTP error is encountered getting further paginated responses",
+			givenEntitiesType: "SOMETHING",
+			givenServerResponses: []testServerResponse{
+				{200, fmt.Sprintf(`{ "entities": [ {"entityId": "%s-1A28B791C329D741", "type": "%s"} ], "nextPageKey": "page42"  }`, testType, testType)},
+				{400, `get next page fail`},
+				{400, `retry fail 1`},
+				{400, `retry fail 2`},
+				{400, `retry fail 3`},
+			},
+			want: nil,
+			wantQueryParamsPerApiCall: [][]testQueryParams{
+				{
+					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
+					{"pageSize", defaultPageSize},
+					{"fields", defaultListEntitiesFields},
+					{"from", defaultEntityRelativeTimeframe},
+				},
+				{
+					{"nextPageKey", "page42"},
+				},
+				{
+					{"nextPageKey", "page42"},
+				},
+				{
+					{"nextPageKey", "page42"},
+				},
+				{
+					{"nextPageKey", "page42"},
+				},
+			},
+			wantNumberOfApiCalls: 5,
+			wantError:            true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			apiCalls := 0
+			server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				if len(tt.wantQueryParamsPerApiCall) > 0 {
+					params := tt.wantQueryParamsPerApiCall[apiCalls]
+					for _, param := range params {
+						addedQueryParameter := req.URL.Query()[param.key]
+						assert.Assert(t, addedQueryParameter != nil)
+						assert.Assert(t, len(addedQueryParameter) > 0)
+						assert.Equal(t, addedQueryParameter[0], param.value)
+					}
+				} else {
+					assert.Equal(t, "", req.URL.RawQuery, "expected no query params - but '%s' was sent", req.URL.RawQuery)
+				}
+
+				resp := tt.givenServerResponses[apiCalls]
+				if resp.statusCode != 200 {
+					http.Error(rw, resp.body, resp.statusCode)
+				} else {
+					_, _ = rw.Write([]byte(resp.body))
+				}
+
+				apiCalls++
+				assert.Check(t, apiCalls <= tt.wantNumberOfApiCalls, "expected at most %d API calls to happen, but encountered call %d", tt.wantNumberOfApiCalls, apiCalls)
+			}))
+			defer server.Close()
+
+			client, err := NewDynatraceClient(server.URL, "abc", WithHTTPClient(server.Client()), WithRetrySettings(testRetrySettings))
+			assert.NilError(t, err)
+
+			res, err := client.ListEntities(tt.givenEntitiesType)
+
+			if tt.wantError {
+				assert.Assert(t, err != nil)
+			} else {
+				assert.NilError(t, err)
+			}
+
+			assert.DeepEqual(t, res, tt.want)
+
+			assert.Equal(t, apiCalls, tt.wantNumberOfApiCalls, "expected exactly %d API calls to happen but %d calls where made", tt.wantNumberOfApiCalls, apiCalls)
+		})
+
+	}
+
 }

@@ -16,11 +16,14 @@ package v2
 
 import (
 	"fmt"
+
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
 )
 
 // ConfigsPerType is a map of configType (api or schema id) to configs
 type ConfigsPerType map[string][]config.Config
+
+type EntitiesPerType map[string][]string
 
 // ConfigsPerTypePerEnvironments is a map of environment to api to configs
 type ConfigsPerTypePerEnvironments map[string]ConfigsPerType

@@ -201,7 +201,7 @@ func TestDownload(t *testing.T) {
 			want: v2.ConfigsPerType{},
 		},
 		{
-			name:    "DownloadSettings",
+			name:    "DownloadSettings - Settings found",
 			Schemas: []string{"builtin:alerting-profile"},
 			mockValues: mockValues{
 				Schemas: func() (client.SchemaList, error) {

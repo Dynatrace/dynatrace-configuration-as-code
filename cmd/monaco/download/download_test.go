@@ -183,6 +183,7 @@ func Test_checkForCircularDependencies(t *testing.T) {
 }
 
 func TestWithParallelRequestLimitFromEnvOption(t *testing.T) {
+	t.Setenv(concurrentRequestsEnvKey, "")
 	assert.Equal(t, defaultConcurrentDownloads, concurrentRequestLimitFromEnv())
 	t.Setenv(concurrentRequestsEnvKey, "51")
 	assert.Equal(t, 51, concurrentRequestLimitFromEnv())

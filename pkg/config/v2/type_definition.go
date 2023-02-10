@@ -17,18 +17,24 @@ package v2
 import (
 	"errors"
 	"fmt"
+
 	"github.com/mitchellh/mapstructure"
 )
 
 type typeDefinition struct {
 	Api      string             `yaml:"api,omitempty"`
 	Settings settingsDefinition `yaml:"settings,omitempty"`
+	Entities entitiesDefinition `yaml:"entities,omitempty"`
 }
 
 type settingsDefinition struct {
 	Schema        string          `yaml:"schema,omitempty"`
 	SchemaVersion string          `yaml:"schemaVersion,omitempty"`
 	Scope         configParameter `yaml:"scope,omitempty"`
+}
+
+type entitiesDefinition struct {
+	EntitiesType string `yaml:"entitiesType,omitempty"`
 }
 
 // UnmarshalYAML Custom unmarshaler that knows how to handle typeDefinition.
@@ -58,18 +64,40 @@ func (c *typeDefinition) UnmarshalYAML(unmarshal func(interface{}) error) error 
 func (c *typeDefinition) isSound(knownApis map[string]struct{}) (bool, error) {
 	isClassicSound, classicErrs := c.isClassicSound(knownApis)
 	isSettingsSound, settingsErrs := c.Settings.isSettingsSound()
+	isEntitiesSound, entitiesErrs := c.Entities.isEntitiesSound()
+
+	types := 0
+	var err error
+
+	if c.isClassic() {
+		types += 1
+		err = classicErrs
+	}
+	if c.isSettings() {
+		types += 1
+		err = settingsErrs
+	}
+	if c.isEntities() {
+		types += 1
+		err = entitiesErrs
+	}
+
+	typesSound := 0
+	for _, isSound := range []bool{isClassicSound, isSettingsSound, isEntitiesSound} {
+		if isSound {
+			typesSound += 1
+		}
+	}
 
 	switch {
-	case c.isSettings() && c.isClassic():
+	case types >= 2:
 		return false, errors.New("wrong configuration of type property")
-	case isClassicSound != isSettingsSound:
+	case typesSound == 1:
 		return true, nil
-	case !c.isSettings() && !c.isClassic():
+	case types == 0:
 		return false, errors.New("type configuration is missing")
-	case c.isSettings():
-		return false, settingsErrs
-	case c.isClassic():
-		return false, classicErrs
+	case types == 1:
+		return false, err
 	default:
 		return false, errors.New("wrong configuration of type property")
 	}
@@ -92,6 +120,19 @@ func (t *settingsDefinition) isSettingsSound() (bool, error) {
 	}
 	return false, fmt.Errorf("next property missing: %v", s)
 }
+func (c *typeDefinition) isEntities() bool {
+	return c.Entities != entitiesDefinition{}
+}
+func (f *entitiesDefinition) isEntitiesSound() (bool, error) {
+	var e []string
+	if f.EntitiesType == "" {
+		e = append(e, "type.entitiesType")
+	}
+	if e == nil {
+		return true, nil
+	}
+	return false, fmt.Errorf("next property missing: %v", e)
+}
 
 func (c *typeDefinition) isClassic() bool {
 	return c.Api != ""
@@ -111,6 +152,8 @@ func (c *typeDefinition) GetApiType() string {
 		return c.Settings.Schema
 	case c.isClassic():
 		return c.Api
+	case c.isEntities():
+		return c.Entities.EntitiesType
 	default:
 		return ""
 	}

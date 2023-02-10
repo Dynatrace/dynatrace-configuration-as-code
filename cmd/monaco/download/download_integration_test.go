@@ -100,7 +100,7 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	// WHEN we download everything
-	err := doDownload(fs, apiMap, getTestingDownloadOptions(server, projectName))
+	err := doDownloadConfigs(fs, apiMap, getTestingDownloadOptions(server, projectName))
 
 	assert.NilError(t, err)
 
@@ -163,7 +163,7 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	// WHEN we download everything
-	err := doDownload(fs, apiMap, getTestingDownloadOptions(server, projectName))
+	err := doDownloadConfigs(fs, apiMap, getTestingDownloadOptions(server, projectName))
 
 	assert.NilError(t, err)
 
@@ -247,7 +247,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	// WHEN we download everything
-	err := doDownload(fs, apiMap, getTestingDownloadOptions(server, projectName))
+	err := doDownloadConfigs(fs, apiMap, getTestingDownloadOptions(server, projectName))
 
 	assert.NilError(t, err)
 
@@ -359,7 +359,7 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	// WHEN we download everything
-	err := doDownload(fs, apiMap, getTestingDownloadOptions(server, projectName))
+	err := doDownloadConfigs(fs, apiMap, getTestingDownloadOptions(server, projectName))
 
 	assert.NilError(t, err)
 
@@ -423,7 +423,7 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	// WHEN we download everything
-	err := doDownload(fs, apiMap, getTestingDownloadOptions(server, projectName))
+	err := doDownloadConfigs(fs, apiMap, getTestingDownloadOptions(server, projectName))
 
 	assert.NilError(t, err)
 
@@ -488,7 +488,7 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	// WHEN we download everything
-	err := doDownload(fs, apiMap, getTestingDownloadOptions(server, projectName))
+	err := doDownloadConfigs(fs, apiMap, getTestingDownloadOptions(server, projectName))
 
 	assert.NilError(t, err)
 
@@ -562,7 +562,7 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	// WHEN we download everything
-	err := doDownload(fs, apiMap, getTestingDownloadOptions(server, projectName))
+	err := doDownloadConfigs(fs, apiMap, getTestingDownloadOptions(server, projectName))
 
 	assert.NilError(t, err)
 
@@ -697,7 +697,7 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 			fs := afero.NewMemMapFs()
 
 			// WHEN we download everything
-			err := doDownload(fs, apiMap, getTestingDownloadOptions(server, testcase.projectName))
+			err := doDownloadConfigs(fs, apiMap, getTestingDownloadOptions(server, testcase.projectName))
 
 			assert.NilError(t, err)
 
@@ -763,7 +763,7 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 	options := getTestingDownloadOptions(server, projectName)
 	options.forceOverwriteManifest = true
 	options.outputFolder = testBasePath
-	err := doDownload(fs, apiMap, options)
+	err := doDownloadConfigs(fs, apiMap, options)
 
 	assert.NilError(t, err)
 
@@ -822,16 +822,18 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 
 func getTestingDownloadOptions(server *httptest.Server, projectName string) downloadOptions {
 	return downloadOptions{
-		environmentUrl:          server.URL,
-		token:                   "token",
-		tokenEnvVarName:         "TOKEN_ENV_VAR",
-		outputFolder:            "out",
-		projectName:             projectName,
-		skipSettings:            true,
-		concurrentDownloadLimit: 50,
-		clientProvider: func(environmentUrl, token string, opts ...func(client *client.DynatraceClient)) (*client.DynatraceClient, error) {
-			return client.NewDynatraceClientForTesting(environmentUrl, token, server.Client())
+		downloadOptionsShared: downloadOptionsShared{
+			environmentUrl:          server.URL,
+			token:                   "token",
+			tokenEnvVarName:         "TOKEN_ENV_VAR",
+			outputFolder:            "out",
+			projectName:             projectName,
+			concurrentDownloadLimit: 50,
+			clientProvider: func(environmentUrl, token string, opts ...func(client *client.DynatraceClient)) (*client.DynatraceClient, error) {
+				return client.NewDynatraceClientForTesting(environmentUrl, token, server.Client())
+			},
 		},
+		skipSettings: true,
 	}
 }
 

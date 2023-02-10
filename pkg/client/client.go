@@ -20,12 +20,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
 
 	. "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 )
@@ -110,11 +111,13 @@ type SettingsClient interface {
 
 // defaultListSettingsFields  are the fields we are interested in when getting setting objects
 const defaultListSettingsFields = "objectId,value,externalId,schemaVersion,schemaId,scope"
+const defaultListEntitiesFields = "+lastSeenTms,+firstSeenTms,+tags,+managementZones,+toRelationships,+fromRelationships,+icon,+properties"
 
 // reducedListSettingsFields are the fields we are interested in when getting settings objects but don't care about the
 // actual value payload
 const reducedListSettingsFields = "objectId,externalId,schemaVersion,schemaId,scope"
 const defaultPageSize = "500"
+const defaultEntityRelativeTimeframe = "now-5w"
 
 // ListSettingsOptions are additional options for the ListSettings method
 // of the Settings client
@@ -129,6 +132,23 @@ type ListSettingsOptions struct {
 // ListSettingsFilter can be used to filter fetched settings objects with custom criteria, e.g. o.ExternalId == ""
 type ListSettingsFilter func(DownloadSettingsObject) bool
 
+// EntitiesClient is the abstraction layer for read-only operations on the Dynatrace Entities v2 API.
+// Its design is intentionally not dependent on Monaco objects.
+//
+// This interface exclusively accesses the [entities api] of Dynatrace.
+//
+// More documentation is written in each method's documentation.
+//
+// [entities api]: https://www.dynatrace.com/support/help/dynatrace-api/environment-api/entity-v2
+type EntitiesClient interface {
+
+	// ListSchemas returns all schemas that the Dynatrace environment reports
+	ListEntitiesTypes() (EntitiesTypeList, error)
+
+	// ListEntities returns all settings objects for a given schema.
+	ListEntities(string) ([]string, error)
+}
+
 //go:generate mockgen -source=client.go -destination=client_mock.go -package=client -imports .=github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api DynatraceClient
 
 // Client provides the functionality for performing basic CRUD operations on any Dynatrace API
@@ -142,6 +162,7 @@ type ListSettingsFilter func(DownloadSettingsObject) bool
 type Client interface {
 	ConfigClient
 	SettingsClient
+	EntitiesClient
 }
 
 // DynatraceClient is the default implementation of the HTTP
@@ -154,6 +175,7 @@ type DynatraceClient struct {
 }
 
 var (
+	_ EntitiesClient = (*DynatraceClient)(nil)
 	_ SettingsClient = (*DynatraceClient)(nil)
 	_ ConfigClient   = (*DynatraceClient)(nil)
 	_ Client         = (*DynatraceClient)(nil)
@@ -389,10 +411,6 @@ func (d *DynatraceClient) ListSchemas() (SchemaList, error) {
 }
 
 func (d *DynatraceClient) ListSettings(schemaId string, opts ListSettingsOptions) ([]DownloadSettingsObject, error) {
-	u, err := url.Parse(d.environmentUrl + pathSettingsObjects)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse URL '%s': %w", d.environmentUrl+pathSettingsObjects, err)
-	}
 
 	listSettingsFields := defaultListSettingsFields
 	if opts.DiscardValue {
@@ -403,24 +421,15 @@ func (d *DynatraceClient) ListSettings(schemaId string, opts ListSettingsOptions
 		"pageSize":  []string{defaultPageSize},
 		"fields":    []string{listSettingsFields},
 	}
-	u.RawQuery = params.Encode()
-
-	resp, err := rest.GetWithRetry(d.client, u.String(), d.token, d.retrySettings.Normal)
-	if err != nil {
-		return nil, err
-	}
-
-	if !success(resp) {
-		return nil, fmt.Errorf("request failed with HTTP (%d).\n\tResponse content: %s", resp.StatusCode, string(resp.Body))
-	}
 
 	result := make([]DownloadSettingsObject, 0)
-	for {
+
+	addToResult := func(body []byte) error {
 		var parsed struct {
 			Items []DownloadSettingsObject `json:"items"`
 		}
-		if err := json.Unmarshal(resp.Body, &parsed); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+		if err := json.Unmarshal(body, &parsed); err != nil {
+			return fmt.Errorf("failed to unmarshal response: %w", err)
 		}
 
 		// eventually apply filter
@@ -434,24 +443,139 @@ func (d *DynatraceClient) ListSettings(schemaId string, opts ListSettingsOptions
 			}
 		}
 
+		return nil
+	}
+
+	err := d.ListPaginated(pathSettingsObjects, params, addToResult)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, err
+}
+
+type EntitiesTypeListResponse struct {
+	Types EntitiesTypeList `json:"types"`
+}
+type EntitiesTypeList []struct {
+	EntitiesType string `json:"type"`
+}
+
+func (d *DynatraceClient) ListEntitiesTypes() (EntitiesTypeList, error) {
+
+	params := url.Values{
+		"pageSize": []string{defaultPageSize},
+	}
+
+	result := make(EntitiesTypeList, 0)
+
+	addToResult := func(body []byte) error {
+		var parsed EntitiesTypeListResponse
+
+		if err1 := json.Unmarshal(body, &parsed); err1 != nil {
+			return fmt.Errorf("failed to unmarshal response: %w", err1)
+		}
+
+		result = append(result, parsed.Types...)
+
+		return nil
+	}
+
+	err := d.ListPaginated(pathEntitiesTypes, params, addToResult)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, err
+}
+
+type EntityListResponseRaw struct {
+	Entities []json.RawMessage `json:"entities"`
+}
+
+func (d *DynatraceClient) ListEntities(entityType string) ([]string, error) {
+
+	params := url.Values{
+		"entitySelector": []string{"type(\"" + entityType + "\")"},
+		"pageSize":       []string{defaultPageSize},
+		"fields":         []string{defaultListEntitiesFields},
+		"from":           []string{defaultEntityRelativeTimeframe},
+	}
+
+	result := make([]string, 0)
+
+	addToResult := func(body []byte) error {
+		var parsedRaw EntityListResponseRaw
+
+		if err1 := json.Unmarshal(body, &parsedRaw); err1 != nil {
+			return fmt.Errorf("failed to unmarshal response: %w", err1)
+		}
+
+		entitiesContentList := make([]string, len(parsedRaw.Entities))
+
+		for idx, str := range parsedRaw.Entities {
+			entitiesContentList[idx] = string(str)
+		}
+
+		result = append(result, entitiesContentList...)
+
+		return nil
+	}
+
+	err := d.ListPaginated(pathEntitiesObjects, params, addToResult)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, err
+}
+
+func (d *DynatraceClient) ListPaginated(urlPath string, params url.Values, addToResult func(body []byte) error) error {
+	u, err := url.Parse(d.environmentUrl + urlPath)
+	if err != nil {
+		return fmt.Errorf("failed to parse URL '%s': %w", d.environmentUrl+urlPath, err)
+	}
+
+	u.RawQuery = params.Encode()
+
+	resp, err := rest.GetWithRetry(d.client, u.String(), d.token, d.retrySettings.Normal)
+	if err != nil {
+		return err
+	}
+
+	if !success(resp) {
+		return fmt.Errorf("request failed with HTTP (%d).\n\tResponse content: %s", resp.StatusCode, string(resp.Body))
+	}
+
+	for {
+		err = addToResult(resp.Body)
+		if err != nil {
+			return err
+		}
+
 		if resp.NextPageKey != "" {
 			u = rest.AddNextPageQueryParams(u, resp.NextPageKey)
 
 			resp, err = rest.GetWithRetry(d.client, u.String(), d.token, d.retrySettings.Normal)
 
 			if err != nil {
-				return nil, err
+				return err
 			}
 
 			if !success(resp) {
-				return nil, fmt.Errorf("Failed to get further configs from Settings API (HTTP %d)!\n    Response was: %s", resp.StatusCode, string(resp.Body))
+				return fmt.Errorf("Failed to get further data from api: %v (HTTP %d)!\n    Response was: %s", urlPath, resp.StatusCode, string(resp.Body))
 			}
 
 		} else {
 			break
 		}
 	}
-	return result, nil
+
+	return nil
+
 }
 
 func (d *DynatraceClient) DeleteSettings(objectID string) error {

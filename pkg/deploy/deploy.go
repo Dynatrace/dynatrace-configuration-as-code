@@ -16,6 +16,7 @@ package deploy
 
 import (
 	"fmt"
+
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/client"
 	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
@@ -59,9 +60,12 @@ func DeployConfigs(client client.Client, apis api.ApiMap,
 		var entity parameter.ResolvedEntity
 		var deploymentErrors []error
 
-		if c.Type.IsSettings() {
+		switch {
+		case c.Type.IsEntities():
+			log.Debug("Entities are not deployable, skipping entity type: %s", c.Type.EntitiesType)
+		case c.Type.IsSettings():
 			entity, deploymentErrors = deploySetting(client, entityMap, &c)
-		} else {
+		default:
 			entity, deploymentErrors = deployConfig(client, apis, entityMap, &c)
 		}
 
