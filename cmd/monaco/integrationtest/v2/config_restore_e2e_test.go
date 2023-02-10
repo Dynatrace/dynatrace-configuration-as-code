@@ -86,7 +86,7 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 		wantErr            bool
 	}{
 		{
-			name:               "using --specific-apis and --specific-settings",
+			name:               "using --api and --settings-schema",
 			fs:                 util.CreateTestFileSystem(),
 			downloadFunc:       execution_downloadConfigsWithCLIParameters,
 			projectFolder:      downloadFolder + "/project",
@@ -98,7 +98,7 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:               "using --specific-apis",
+			name:               "using --api",
 			fs:                 util.CreateTestFileSystem(),
 			downloadFunc:       execution_downloadConfigsWithCLIParameters,
 			projectFolder:      downloadFolder + "/project",
@@ -109,7 +109,7 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:               "using --specific-settings",
+			name:               "using --settings-schema",
 			fs:                 util.CreateTestFileSystem(),
 			downloadFunc:       execution_downloadConfigsWithCLIParameters,
 			projectFolder:      downloadFolder + "/project",
@@ -120,7 +120,7 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:               "using --specific-apis and --specific-settings (manifest)",
+			name:               "using --api and --settings-schema (manifest)",
 			fs:                 util.CreateTestFileSystem(),
 			downloadFunc:       execution_downloadConfigs,
 			projectFolder:      downloadFolder + "/project_environment1",
@@ -133,7 +133,7 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:               "using --specific-apis (manifest)",
+			name:               "using --api (manifest)",
 			fs:                 util.CreateTestFileSystem(),
 			downloadFunc:       execution_downloadConfigs,
 			projectFolder:      downloadFolder + "/project_environment1",
@@ -269,10 +269,10 @@ func execution_downloadConfigsWithCLIParameters(t *testing.T, fs afero.Fs, downl
 			"--output-folder", downloadFolder,
 		}
 		if apisToDownload != "" {
-			parameters = append(parameters, "--specific-apis", apisToDownload)
+			parameters = append(parameters, "--api", apisToDownload)
 		}
 		if settingsToDownload != "" {
-			parameters = append(parameters, "--specific-settings", settingsToDownload)
+			parameters = append(parameters, "--settings-schema", settingsToDownload)
 		}
 	}
 
@@ -313,10 +313,10 @@ func execution_downloadConfigs(t *testing.T, fs afero.Fs, downloadFolder string,
 		}
 
 		if apisToDownload != "" {
-			parameters = append(parameters, "--specific-apis", apisToDownload)
+			parameters = append(parameters, "--api", apisToDownload)
 		}
 		if settingsToDownload != "" {
-			parameters = append(parameters, "--specific-settings", settingsToDownload)
+			parameters = append(parameters, "--settings-schema", settingsToDownload)
 		}
 	}
 

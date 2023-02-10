@@ -225,15 +225,15 @@ Either downloading based on an existing manifest, or by defining environment URL
 func setupSharedConfigsFlags(cmd *cobra.Command, project, outputFolder *string, forceOverwrite *bool, specificApis *[]string, specificSettings *[]string, onlyAPIs, onlySettings *bool) {
 	setupSharedFlags(cmd, project, outputFolder, forceOverwrite)
 	// flags always available
-	cmd.Flags().StringSliceVarP(specificApis, "specific-apis", "a", make([]string, 0), "List of APIs to download")
-	cmd.Flags().StringSliceVarP(specificSettings, "specific-settings", "s", make([]string, 0), "List of settings 2.0 schema IDs specifying which Settings 2.0 objects to download")
+	cmd.Flags().StringSliceVarP(specificApis, "api", "a", make([]string, 0), "One or more APIs to download (flag can be repeated or value defined as comma-separated list)")
+	cmd.Flags().StringSliceVarP(specificSettings, "settings-schema", "s", make([]string, 0), "One or more settings 2.0 schemas to download (flag can be repeated or value defined as comma-separated list)")
 	cmd.Flags().BoolVar(onlyAPIs, "only-apis", false, "Only download config APIs, skip downloading settings 2.0 objects")
 	cmd.Flags().BoolVar(onlySettings, "only-settings", false, "Only download settings 2.0 objects, skip downloading config APIs")
-	cmd.MarkFlagsMutuallyExclusive("specific-settings", "only-apis")
-	cmd.MarkFlagsMutuallyExclusive("specific-apis", "only-settings")
+	cmd.MarkFlagsMutuallyExclusive("settings-schema", "only-apis")
+	cmd.MarkFlagsMutuallyExclusive("api", "only-settings")
 	cmd.MarkFlagsMutuallyExclusive("only-apis", "only-settings")
 
-	err := cmd.RegisterFlagCompletionFunc("specific-apis", completion.AllAvailableApis)
+	err := cmd.RegisterFlagCompletionFunc("api", completion.AllAvailableApis)
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}

@@ -92,7 +92,7 @@ func ConvertCompletion(_ *cobra.Command, args []string, _ string) ([]string, cob
 }
 
 func AllAvailableApis(cmd *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
-	value, ok := cmd.Flag("specific-apis").Value.(pflag.SliceValue)
+	value, ok := cmd.Flag("api").Value.(pflag.SliceValue)
 	if !ok {
 		return nil, cobra.ShellCompDirectiveError
 	}
