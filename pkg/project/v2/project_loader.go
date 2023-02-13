@@ -16,8 +16,6 @@ package v2
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/slices"
 	"os"
 	"strings"
 
@@ -26,6 +24,8 @@ import (
 	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/slices"
 	"github.com/spf13/afero"
 )
 
@@ -64,8 +64,22 @@ func newDuplicateConfigIdentifierError(c config.Config) DuplicateConfigIdentifie
 }
 
 func LoadProjects(fs afero.Fs, context ProjectLoaderContext) ([]Project, []error) {
-	environments := toEnvironmentSlice(context.Manifest.Environments)
-	projects := make([]Project, 0)
+	return LoadProjectsSpecific(fs, context, []string{}, []string{})
+}
+
+func LoadProjectsSpecificProjects(fs afero.Fs, context ProjectLoaderContext, specificProjects []string) ([]Project, []error) {
+	return LoadProjectsSpecific(fs, context, specificProjects, []string{})
+}
+
+func LoadProjectsSpecificEnvironments(fs afero.Fs, context ProjectLoaderContext, specificEnvironments []string) ([]Project, []error) {
+	return LoadProjectsSpecific(fs, context, []string{}, specificEnvironments)
+}
+
+func LoadProjectsSpecific(fs afero.Fs, context ProjectLoaderContext, specificProjects []string, specificEnvironments []string) ([]Project, []error) {
+	filteredEnvironmentsSlice, err := filterRequiredEnvironments(context.Manifest.Environments, specificEnvironments)
+	if err != nil {
+		return nil, []error{err}
+	}
 
 	var workingDirFs afero.Fs
 
@@ -75,10 +89,16 @@ func LoadProjects(fs afero.Fs, context ProjectLoaderContext) ([]Project, []error
 		workingDirFs = afero.NewBasePathFs(fs, context.WorkingDir)
 	}
 
-	var errors []error
+	filteredProjects, err := filterRequiredProjects(context.Manifest.Projects, specificProjects)
+	if err != nil {
+		return nil, []error{err}
+	}
 
-	for _, projectDefinition := range context.Manifest.Projects {
-		project, projectErrors := loadProject(workingDirFs, context, projectDefinition, environments)
+	var errors []error
+	projects := make([]Project, 0)
+	for _, projectDefinition := range filteredProjects {
+
+		project, projectErrors := loadProject(workingDirFs, context, projectDefinition, filteredEnvironmentsSlice)
 
 		if projectErrors != nil {
 			errors = append(errors, projectErrors...)
@@ -93,6 +113,54 @@ func LoadProjects(fs afero.Fs, context ProjectLoaderContext) ([]Project, []error
 	}
 
 	return projects, nil
+}
+
+func filterRequiredEnvironments(environmentsMap map[string]manifest.EnvironmentDefinition, specificEnvironments []string) ([]manifest.EnvironmentDefinition, error) {
+
+	environments := toEnvironmentSlice(environmentsMap)
+
+	if len(specificEnvironments) == 0 {
+		return environments, nil
+	}
+
+	filteredEnvironments := make([]manifest.EnvironmentDefinition, len(specificEnvironments))
+	nbEnvironementsFound := 0
+
+	for _, environmentDefinition := range environments {
+		if slices.Contains(specificEnvironments, environmentDefinition.Name) {
+			filteredEnvironments[nbEnvironementsFound] = environmentDefinition
+			nbEnvironementsFound++
+		}
+	}
+
+	if nbEnvironementsFound != len(specificEnvironments) {
+		return nil, fmt.Errorf("only %d projects found in the manifest, requested projects: %v", nbEnvironementsFound, specificEnvironments)
+	}
+
+	return filteredEnvironments, nil
+}
+
+func filterRequiredProjects(projects manifest.ProjectDefinitionByProjectId, specificProjects []string) (manifest.ProjectDefinitionByProjectId, error) {
+
+	if len(specificProjects) == 0 {
+		return projects, nil
+	}
+
+	filteredProjects := manifest.ProjectDefinitionByProjectId{}
+	nbProjectFound := 0
+
+	for id, projectDefinition := range projects {
+		if slices.Contains(specificProjects, projectDefinition.Name) {
+			filteredProjects[id] = projectDefinition
+			nbProjectFound++
+		}
+	}
+
+	if nbProjectFound != len(specificProjects) {
+		return nil, fmt.Errorf("only %d projects found in the manifest, requested projects: %v", nbProjectFound, specificProjects)
+	}
+
+	return filteredProjects, nil
 }
 
 func toEnvironmentSlice(environments map[string]manifest.EnvironmentDefinition) []manifest.EnvironmentDefinition {

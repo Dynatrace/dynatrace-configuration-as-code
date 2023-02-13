@@ -153,7 +153,7 @@ type EntitiesClient interface {
 	ListEntitiesTypes() ([]EntitiesType, error)
 
 	// ListEntities returns all settings objects for a given schema.
-	ListEntities(EntitiesType) ([]string, error)
+	ListEntities(EntitiesType) (EntitiesList, error)
 }
 
 //go:generate mockgen -source=client.go -destination=client_mock.go -package=client -imports .=github.com/dynatrace/dynatrace-configuration-as-code/pkg/api DynatraceClient
@@ -505,22 +505,32 @@ type EntityListResponseRaw struct {
 	Entities []json.RawMessage `json:"entities"`
 }
 
+type EntitiesList struct {
+	From     string
+	To       string
+	Entities []string
+}
+
 func GenTimeframeUnixMilliString(duration time.Duration) string {
 	return strconv.FormatInt(time.Now().Add(duration).UnixMilli(), 10)
 }
 
-func (d *DynatraceClient) ListEntities(entitiesType EntitiesType) ([]string, error) {
+func (d *DynatraceClient) ListEntities(entitiesType EntitiesType) (EntitiesList, error) {
 
 	entityType := entitiesType.EntitiesTypeId
 	log.Debug("Downloading all entities for entities Type %s", entityType)
 
-	result := make([]string, 0)
+	entityList := EntitiesList{
+		From:     string(GenTimeframeUnixMilliString(defaultEntityDurationTimeframeFrom)),
+		To:       string(GenTimeframeUnixMilliString(defaultEntityDurationTimeframeTo)),
+		Entities: make([]string, 0),
+	}
 
 	addToResult := func(body []byte) (int, int, error) {
 		var parsedRaw EntityListResponseRaw
 
 		if err1 := json.Unmarshal(body, &parsedRaw); err1 != nil {
-			return 0, len(result), fmt.Errorf("failed to unmarshal response: %w", err1)
+			return 0, len(entityList.Entities), fmt.Errorf("failed to unmarshal response: %w", err1)
 		}
 
 		entitiesContentList := make([]string, len(parsedRaw.Entities))
@@ -529,21 +539,23 @@ func (d *DynatraceClient) ListEntities(entitiesType EntitiesType) ([]string, err
 			entitiesContentList[idx] = string(str)
 		}
 
-		result = append(result, entitiesContentList...)
+		entityList.Entities = append(entityList.Entities, entitiesContentList...)
 
-		return len(parsedRaw.Entities), len(result), nil
+		return len(parsedRaw.Entities), len(entityList.Entities), nil
 	}
 
 	run_extraction := true
 	ignoreProperties := []string{}
+	from := string(GenTimeframeUnixMilliString(defaultEntityDurationTimeframeFrom))
+	to := string(GenTimeframeUnixMilliString(defaultEntityDurationTimeframeTo))
 
 	for run_extraction {
 		params := url.Values{
 			"entitySelector": []string{"type(\"" + entityType + "\")"},
 			"pageSize":       []string{defaultPageSizeEntities},
 			"fields":         []string{getEntitiesTypeFields(entitiesType, ignoreProperties)},
-			"from":           []string{GenTimeframeUnixMilliString(defaultEntityDurationTimeframeFrom)},
-			"to":             []string{GenTimeframeUnixMilliString(defaultEntityDurationTimeframeTo)},
+			"from":           []string{from},
+			"to":             []string{to},
 		}
 		resp, err := d.ListPaginated(pathEntitiesObjects, params, entityType, addToResult)
 
@@ -554,14 +566,14 @@ func (d *DynatraceClient) ListEntities(entitiesType EntitiesType) ([]string, err
 			if retryWithIgnore {
 
 			} else {
-				return nil, err
+				return EntitiesList{}, err
 			}
 		} else {
 			run_extraction = false
 		}
 	}
 
-	return result, nil
+	return entityList, nil
 }
 
 type ErrorResponseStruct struct {

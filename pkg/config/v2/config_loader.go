@@ -419,6 +419,8 @@ func getConfigFromDefinition(
 			SchemaVersion: configType.Settings.SchemaVersion,
 			Api:           configType.Api,
 			EntitiesType:  configType.Entities.EntitiesType,
+			From:          configType.Entities.From,
+			To:            configType.Entities.To,
 		},
 		Group:          environment.Group,
 		Environment:    environment.Name,

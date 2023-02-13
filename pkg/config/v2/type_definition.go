@@ -35,6 +35,8 @@ type settingsDefinition struct {
 
 type entitiesDefinition struct {
 	EntitiesType string `yaml:"entitiesType,omitempty"`
+	From         string `yaml:"from,omitempty"`
+	To           string `yaml:"to,omitempty"`
 }
 
 // UnmarshalYAML Custom unmarshaler that knows how to handle typeDefinition.

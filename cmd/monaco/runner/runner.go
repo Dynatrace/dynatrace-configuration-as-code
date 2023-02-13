@@ -30,6 +30,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/delete"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/deploy"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/download"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/match"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner/completion"
 	legacyDeploy "github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/v1/deploy"
 	utilEnv "github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/environment"
@@ -94,6 +95,7 @@ Examples:
 	deployCommand := getDeployCommand(fs)
 	deleteCommand := getDeleteCommand(fs)
 	purgeCommand := getPurgeCommand(fs)
+	matchCommand := getMatchCommand(fs)
 
 	if utilEnv.FeatureFlagEnabled("CONFIG_V1") {
 		log.Warn("CONFIG_V1 environment var detected!")
@@ -112,6 +114,7 @@ Examples:
 
 		rootCmd.AddCommand(purgeCommand)
 	}
+	rootCmd.AddCommand(matchCommand)
 
 	return rootCmd
 }
@@ -224,6 +227,34 @@ func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 	deleteCmd.MarkFlagsMutuallyExclusive("environment", "group")
 
 	return deleteCmd
+}
+
+func getMatchCommand(fs afero.Fs) (matchCmd *cobra.Command) {
+
+	matchCmd = &cobra.Command{
+		Use:     "match <match.yaml>",
+		Short:   "Match environments defined in match.yaml from the environments defined in the manifest",
+		Example: "monaco match match.yaml",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) >= 2 {
+				return fmt.Errorf(`only the match.yaml file can be provided and optional`)
+			}
+			return nil
+		},
+		PreRun: silenceUsageCommand(),
+		RunE: func(cmd *cobra.Command, args []string) error {
+
+			matchFile := "match.yaml"
+			if len(args) >= 1 {
+				matchFile = args[0]
+			}
+
+			return match.Match(fs, matchFile)
+		},
+		ValidArgsFunction: completion.MatchCompletion,
+	}
+
+	return matchCmd
 }
 
 func getPurgeCommand(fs afero.Fs) (purgeCmd *cobra.Command) {

@@ -19,10 +19,12 @@ import (
 	"os"
 	"strings"
 
+	cmdUtil "github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/util"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/entities"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
@@ -50,7 +52,7 @@ type downloadEntitiesOptions struct {
 
 func (d DefaultCommand) DownloadEntitiesBasedOnManifest(fs afero.Fs, cmdOptions entitiesManifestDownloadOptions) error {
 
-	envUrl, token, tokenEnvVar, err := getEnvFromManifest(fs, cmdOptions.manifestFile, cmdOptions.specificEnvironmentName, cmdOptions.projectName)
+	envCredentials, err := cmdUtil.GetEnvFromManifest(fs, cmdOptions.manifestFile, cmdOptions.specificEnvironmentName)
 	if err != nil {
 		return err
 	}
@@ -63,9 +65,9 @@ func (d DefaultCommand) DownloadEntitiesBasedOnManifest(fs afero.Fs, cmdOptions 
 
 	options := downloadEntitiesOptions{
 		downloadOptionsShared: downloadOptionsShared{
-			environmentUrl:          envUrl,
-			token:                   token,
-			tokenEnvVarName:         tokenEnvVar,
+			environmentUrl:          envCredentials.EnvUrl,
+			token:                   envCredentials.Token,
+			tokenEnvVarName:         envCredentials.TokenEnvVar,
 			outputFolder:            cmdOptions.outputFolder,
 			projectName:             cmdOptions.projectName,
 			forceOverwriteManifest:  cmdOptions.forceOverwrite,
@@ -83,7 +85,7 @@ func (d DefaultCommand) DownloadEntities(fs afero.Fs, cmdOptions entitiesDirectD
 	errors := validateParameters(cmdOptions.envVarName, cmdOptions.environmentUrl, cmdOptions.projectName, token)
 
 	if len(errors) > 0 {
-		return PrintAndFormatErrors(errors, "not all necessary information is present to start downloading configurations")
+		return util.PrintAndFormatErrors(errors, "not all necessary information is present to start downloading configurations")
 	}
 
 	options := downloadEntitiesOptions{

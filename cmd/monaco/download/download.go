@@ -18,11 +18,9 @@ import (
 	"fmt"
 	"net/url"
 	"path"
-	"strings"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2/topologysort"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
@@ -54,52 +52,6 @@ type downloadCommandOptionsShared struct {
 	projectName    string
 	outputFolder   string
 	forceOverwrite bool
-}
-
-func getEnvFromManifest(fs afero.Fs, manifestPath string, specificEnvironmentName string, projectName string) (envUrl string, token string, tokenEnvVar string, err error) {
-
-	man, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
-		Fs:           fs,
-		ManifestPath: manifestPath,
-	})
-
-	if errs != nil {
-		err = PrintAndFormatErrors(errs, "failed to load manifest '%v'", manifestPath)
-		return
-	}
-
-	env, found := man.Environments[specificEnvironmentName]
-	if !found {
-		err = PrintAndFormatErrors(errs, "environment '%v' was not available in manifest '%v'", specificEnvironmentName, manifestPath)
-		return
-	}
-
-	if len(errs) > 0 {
-		err = PrintAndFormatErrors(errs, "failed to load apis")
-		return
-	}
-
-	envUrl, err = env.GetUrl()
-	if err != nil {
-		errs = append(errs, err)
-	}
-
-	token, err = env.GetToken()
-	if err != nil {
-		errs = append(errs, err)
-	}
-
-	if len(errs) > 0 {
-		err = PrintAndFormatErrors(errs, "failed to load manifest data")
-		return
-	}
-
-	tokenEnvVar = fmt.Sprintf("TOKEN_%s", strings.ToUpper(projectName))
-	if envVarToken, ok := env.Token.(*manifest.EnvironmentVariableToken); ok {
-		tokenEnvVar = envVarToken.EnvironmentVariableName
-	}
-
-	return
 }
 
 type DynatraceClientProvider func(string, string, ...func(*client.DynatraceClient)) (*client.DynatraceClient, error)
@@ -191,7 +143,7 @@ func preDownloadValidations(fs afero.Fs, opts downloadOptionsShared) error {
 
 	errs := validateOutputFolder(fs, opts.outputFolder, opts.projectName)
 	if len(errs) > 0 {
-		return PrintAndFormatErrors(errs, "output folder is invalid")
+		return util.PrintAndFormatErrors(errs, "output folder is invalid")
 	}
 
 	return nil
@@ -207,11 +159,6 @@ func validateOutputFolder(fs afero.Fs, outputFolder, project string) []error {
 	errors = append(errors, validateFolder(fs, path.Join(outputFolder, project))...)
 	return errors
 
-}
-
-func PrintAndFormatErrors(errors []error, message string, a ...any) error {
-	util.PrintErrors(errors)
-	return fmt.Errorf(message, a...)
 }
 
 func validateFolder(fs afero.Fs, path string) []error {

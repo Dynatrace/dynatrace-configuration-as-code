@@ -41,7 +41,7 @@ func TestDownloadAll(t *testing.T) {
 	type mockValues struct {
 		EntitiesTypeList      func() ([]client.EntitiesType, error)
 		EntitiesTypeListCalls int
-		EntitiesList          func() ([]string, error)
+		EntitiesList          func() (client.EntitiesList, error)
 		EntitiesListCalls     int
 	}
 	tests := []struct {
@@ -56,8 +56,8 @@ func TestDownloadAll(t *testing.T) {
 					return nil, fmt.Errorf("oh no")
 				},
 				EntitiesTypeListCalls: 1,
-				EntitiesList: func() ([]string, error) {
-					return nil, nil
+				EntitiesList: func() (client.EntitiesList, error) {
+					return client.EntitiesList{}, nil
 				},
 				EntitiesListCalls: 0,
 			},
@@ -70,8 +70,8 @@ func TestDownloadAll(t *testing.T) {
 					return []client.EntitiesType{{EntitiesTypeId: testType}, {EntitiesTypeId: testType2}}, nil
 				},
 				EntitiesTypeListCalls: 1,
-				EntitiesList: func() ([]string, error) {
-					return nil, fmt.Errorf("oh no")
+				EntitiesList: func() (client.EntitiesList, error) {
+					return client.EntitiesList{}, fmt.Errorf("oh no")
 				},
 				EntitiesListCalls: 2,
 			},
@@ -84,8 +84,10 @@ func TestDownloadAll(t *testing.T) {
 					return []client.EntitiesType{{EntitiesTypeId: testType}}, nil
 				},
 				EntitiesTypeListCalls: 1,
-				EntitiesList: func() ([]string, error) {
-					return []string{""}, nil
+				EntitiesList: func() (client.EntitiesList, error) {
+					return client.EntitiesList{
+						Entities: []string{""},
+					}, nil
 				},
 				EntitiesListCalls: 1,
 			},
@@ -128,7 +130,7 @@ func TestDownload(t *testing.T) {
 	type mockValues struct {
 		EntitiesTypeList      func() ([]client.EntitiesType, error)
 		EntitiesTypeListCalls int
-		EntitiesList          func() ([]string, error)
+		EntitiesList          func() (client.EntitiesList, error)
 		EntitiesListCalls     int
 	}
 	tests := []struct {
@@ -142,7 +144,7 @@ func TestDownload(t *testing.T) {
 			mockValues: mockValues{
 				EntitiesTypeList:      func() ([]client.EntitiesType, error) { return []client.EntitiesType{}, nil },
 				EntitiesTypeListCalls: 0,
-				EntitiesList:          func() ([]string, error) { return []string{}, nil },
+				EntitiesList:          func() (client.EntitiesList, error) { return client.EntitiesList{}, nil },
 				EntitiesListCalls:     0,
 			},
 			want: nil,
@@ -155,8 +157,12 @@ func TestDownload(t *testing.T) {
 					return []client.EntitiesType{{EntitiesTypeId: testType}}, nil
 				},
 				EntitiesTypeListCalls: 1,
-				EntitiesList: func() ([]string, error) {
-					return make([]string, 0, 1), nil
+				EntitiesList: func() (client.EntitiesList, error) {
+					return client.EntitiesList{
+						From:     "",
+						To:       "",
+						Entities: make([]string, 0, 1),
+					}, nil
 				},
 				EntitiesListCalls: 1,
 			},
@@ -170,8 +176,12 @@ func TestDownload(t *testing.T) {
 					return []client.EntitiesType{{EntitiesTypeId: testType}}, nil
 				},
 				EntitiesTypeListCalls: 1,
-				EntitiesList: func() ([]string, error) {
-					return []string{""}, nil
+				EntitiesList: func() (client.EntitiesList, error) {
+					return client.EntitiesList{
+						From:     "",
+						To:       "",
+						Entities: []string{""},
+					}, nil
 				},
 				EntitiesListCalls: 1,
 			},

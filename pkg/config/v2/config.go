@@ -55,6 +55,8 @@ type Type struct {
 	SchemaVersion,
 	Api string
 	EntitiesType string
+	From         string
+	To           string
 }
 
 // IsSettings returns true if SchemaId is not empty

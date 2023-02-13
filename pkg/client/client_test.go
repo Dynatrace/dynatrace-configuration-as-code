@@ -793,7 +793,7 @@ func TestListEntities(t *testing.T) {
 				assert.NilError(t, err)
 			}
 
-			assert.DeepEqual(t, res, tt.want)
+			assert.DeepEqual(t, res.Entities, tt.want)
 
 			assert.Equal(t, apiCalls, tt.wantNumberOfApiCalls, "expected exactly %d API calls to happen but %d calls where made", tt.wantNumberOfApiCalls, apiCalls)
 		})

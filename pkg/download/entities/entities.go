@@ -131,16 +131,16 @@ func (d *Downloader) download(entitiesTypes []client.EntitiesType, projectName s
 		go func(entityType client.EntitiesType) {
 			defer wg.Done()
 
-			objects, err := d.client.ListEntities(entityType)
+			entityList, err := d.client.ListEntities(entityType)
 			if err != nil {
 				log.Error("Failed to fetch all entities for entities Type %s: %v", entityType.EntitiesTypeId, err)
 				return
 			}
-			if len(objects) == 0 {
+			if len(entityList.Entities) == 0 {
 				return
 			}
-			log.Debug("Downloaded %d entities for entities Type %s", len(objects), entityType.EntitiesTypeId)
-			configs := d.convertObject(objects, entityType.EntitiesTypeId, projectName)
+			log.Debug("Downloaded %d entities for entities Type %s", len(entityList.Entities), entityType.EntitiesTypeId)
+			configs := d.convertObject(entityList, entityType.EntitiesTypeId, projectName)
 			downloadMutex.Lock()
 			results[entityType.EntitiesTypeId] = configs
 			downloadMutex.Unlock()
@@ -154,9 +154,9 @@ func (d *Downloader) download(entitiesTypes []client.EntitiesType, projectName s
 	return results
 }
 
-func (d *Downloader) convertObject(str []string, entitiesType string, projectName string) []config.Config {
+func (d *Downloader) convertObject(entitiesList client.EntitiesList, entitiesType string, projectName string) []config.Config {
 
-	content := joinJsonElementsToArray(str)
+	content := joinJsonElementsToArray(entitiesList.Entities)
 
 	templ := template.NewDownloadTemplate(entitiesType, entitiesType, content)
 
@@ -171,6 +171,8 @@ func (d *Downloader) convertObject(str []string, entitiesType string, projectNam
 		},
 		Type: config.Type{
 			EntitiesType: entitiesType,
+			From:         entitiesList.From,
+			To:           entitiesList.To,
 		},
 		Parameters: map[string]parameter.Parameter{
 			config.NameParameter: &value.ValueParameter{Value: configId},

@@ -18,6 +18,7 @@ package util
 
 import (
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
@@ -39,6 +40,11 @@ func ErrorString(err error) string {
 	} else {
 		return err.Error()
 	}
+}
+
+func PrintAndFormatErrors(errors []error, message string, a ...any) error {
+	PrintErrors(errors)
+	return fmt.Errorf(message, a...)
 }
 
 // PrintError should pretty-print the error using a more user-friendly format

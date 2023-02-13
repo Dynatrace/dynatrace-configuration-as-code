@@ -19,6 +19,7 @@ import (
 	"os"
 	"strings"
 
+	cmdUtil "github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/util"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download"
@@ -26,6 +27,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/settings"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/maps"
 	"github.com/spf13/afero"
@@ -52,7 +54,7 @@ type directDownloadOptions struct {
 
 func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions manifestDownloadOptions) error {
 
-	envUrl, token, tokenEnvVar, err := getEnvFromManifest(fs, cmdOptions.manifestFile, cmdOptions.specificEnvironmentName, cmdOptions.projectName)
+	envCredentials, err := cmdUtil.GetEnvFromManifest(fs, cmdOptions.manifestFile, cmdOptions.specificEnvironmentName)
 	if err != nil {
 		return err
 	}
@@ -65,9 +67,9 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 
 	options := downloadConfigsOptions{
 		downloadOptionsShared: downloadOptionsShared{
-			environmentUrl:          envUrl,
-			token:                   token,
-			tokenEnvVarName:         tokenEnvVar,
+			environmentUrl:          envCredentials.EnvUrl,
+			token:                   envCredentials.Token,
+			tokenEnvVarName:         envCredentials.TokenEnvVar,
 			outputFolder:            cmdOptions.outputFolder,
 			projectName:             cmdOptions.projectName,
 			forceOverwriteManifest:  cmdOptions.forceOverwrite,
@@ -88,7 +90,7 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOp
 	errors := validateParameters(cmdOptions.envVarName, cmdOptions.environmentUrl, cmdOptions.projectName, token)
 
 	if len(errors) > 0 {
-		return PrintAndFormatErrors(errors, "not all necessary information is present to start downloading configurations")
+		return util.PrintAndFormatErrors(errors, "not all necessary information is present to start downloading configurations")
 	}
 
 	options := downloadConfigsOptions{
@@ -148,7 +150,7 @@ func downloadConfigs(apis api.ApiMap, opts downloadConfigsOptions) (project.Conf
 
 	apisToDownload, errors := getApisToDownload(apis, opts.specificAPIs)
 	if len(errors) > 0 {
-		err = PrintAndFormatErrors(errors, "failed to load apis")
+		err = util.PrintAndFormatErrors(errors, "failed to load apis")
 		return nil, err
 	}
 

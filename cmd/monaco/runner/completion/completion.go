@@ -17,12 +17,13 @@
 package completion
 
 import (
+	"os"
+	"strings"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/maps"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/slices"
 	"github.com/spf13/pflag"
-	"os"
-	"strings"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
@@ -35,6 +36,16 @@ func DeleteCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobr
 		return ManifestFile()
 	} else if len(args) == 1 {
 		return DeleteFile()
+	} else {
+		return make([]string, 0), cobra.ShellCompDirectiveDefault
+	}
+}
+
+func MatchCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
+	if len(args) == 0 {
+		return ManifestFile()
+	} else if len(args) == 1 {
+		return MatchFile()
 	} else {
 		return make([]string, 0), cobra.ShellCompDirectiveDefault
 	}
@@ -136,6 +147,10 @@ func ManifestFile() ([]string, cobra.ShellCompDirective) {
 
 func DeleteFile() ([]string, cobra.ShellCompDirective) {
 	return deepFileSearch(".", "delete.yaml"), cobra.ShellCompDirectiveDefault
+}
+
+func MatchFile() ([]string, cobra.ShellCompDirective) {
+	return deepFileSearch(".", "match.yaml"), cobra.ShellCompDirectiveDefault
 }
 
 func EnvironmentFile() ([]string, cobra.ShellCompDirective) {

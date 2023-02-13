@@ -302,6 +302,8 @@ func getConfigTypeEntities(config Config) (typeDefinition, error) {
 	return typeDefinition{
 		Entities: entitiesDefinition{
 			EntitiesType: config.Type.EntitiesType,
+			From:         config.Type.From,
+			To:           config.Type.To,
 		},
 	}, nil
 }

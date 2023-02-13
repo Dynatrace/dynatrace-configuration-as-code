@@ -123,7 +123,7 @@ func (l limitingClient) ListEntitiesTypes() (e []EntitiesType, err error) {
 	return
 }
 
-func (l limitingClient) ListEntities(entitiesType EntitiesType) (o []string, err error) {
+func (l limitingClient) ListEntities(entitiesType EntitiesType) (o EntitiesList, err error) {
 	l.limiter.ExecuteBlocking(func() {
 		o, err = l.client.ListEntities(entitiesType)
 	})
