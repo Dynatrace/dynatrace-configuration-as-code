@@ -114,7 +114,8 @@ func (l limitingClient) DeleteSettings(objectID string) (err error) {
 	return
 }
 
-func (l limitingClient) ListEntitiesTypes() (e EntitiesTypeList, err error) {
+func (l limitingClient) ListEntitiesTypes() (e []EntitiesType, err error) {
+
 	l.limiter.ExecuteBlocking(func() {
 		e, err = l.client.ListEntitiesTypes()
 	})
@@ -122,9 +123,9 @@ func (l limitingClient) ListEntitiesTypes() (e EntitiesTypeList, err error) {
 	return
 }
 
-func (l limitingClient) ListEntities(entityType string) (o []string, err error) {
+func (l limitingClient) ListEntities(entitiesType EntitiesType) (o []string, err error) {
 	l.limiter.ExecuteBlocking(func() {
-		o, err = l.client.ListEntities(entityType)
+		o, err = l.client.ListEntities(entitiesType)
 	})
 
 	return

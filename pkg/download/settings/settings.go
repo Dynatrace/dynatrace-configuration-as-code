@@ -18,6 +18,8 @@ package settings
 
 import (
 	"encoding/json"
+	"sync"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
@@ -27,7 +29,6 @@ import (
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
-	"sync"
 )
 
 // Downloader is responsible for downloading Settings 2.0 objects
@@ -105,7 +106,6 @@ func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPe
 	for _, schema := range schemas {
 		go func(s string) {
 			defer wg.Done()
-			log.Debug("Downloading all settings for schema %s", s)
 			objects, err := d.client.ListSettings(s, client.ListSettingsOptions{})
 			if err != nil {
 				log.Error("Failed to fetch all settings for schema %s: %v", s, err)
@@ -114,6 +114,7 @@ func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPe
 			if len(objects) == 0 {
 				return
 			}
+			log.Debug("Downloaded %d settings for schema %s", len(objects), s)
 			configs := d.convertAllObjects(objects, projectName)
 			downloadMutex.Lock()
 			results[s] = configs

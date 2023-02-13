@@ -25,16 +25,23 @@ import (
 // GetNextPageKeyIfExists returns the "nextPageKey" if one is found in the response body.
 // This is the case for standard api/v2 pagination.
 // If the response was not in the format of a paginated response, or no key was in the response an empty string is returned.
-func GetNextPageKeyIfExists(responseBody []byte) (nextPageKey string) {
+func setAdditionalValuesIfExist(response *Response) {
 	var jsonResponse map[string]interface{}
-	if err := json.Unmarshal(responseBody, &jsonResponse); err != nil {
-		return ""
+	if err := json.Unmarshal(response.Body, &jsonResponse); err != nil {
+		return
 	}
 
 	if jsonResponse["nextPageKey"] != nil {
-		return jsonResponse["nextPageKey"].(string)
+		response.NextPageKey = jsonResponse["nextPageKey"].(string)
 	}
-	return ""
+
+	if jsonResponse["totalCount"] != nil {
+		response.TotalCount = int(jsonResponse["totalCount"].(float64))
+	}
+
+	if jsonResponse["pageSize"] != nil {
+		response.PageSize = int(jsonResponse["pageSize"].(float64))
+	}
 }
 
 // AddNextPageQueryParams handles both Dynatrace v1 and v2 pagination logic.
