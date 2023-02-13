@@ -245,12 +245,12 @@ func getPurgeCommand(fs afero.Fs) (purgeCmd *cobra.Command) {
 	}
 
 	purgeCmd.Flags().StringSliceVarP(&environment, "environment", "e", make([]string, 0), "Deletes configuration only for specified envs. If not set, delete will be executed on all environments defined in manifest.")
-	purgeCmd.Flags().StringSliceVarP(&specificApis, "specific-apis", "a", make([]string, 0), "APIs to purge")
+	purgeCmd.Flags().StringSliceVarP(&specificApis, "api", "a", make([]string, 0), "One or more specific APIs to delete from (flag can be repeated or value defined as comma-separated list)")
 
 	if err := purgeCmd.RegisterFlagCompletionFunc("environment", completion.EnvironmentByArg0); err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
-	if err := purgeCmd.RegisterFlagCompletionFunc("specific-apis", completion.AllAvailableApis); err != nil {
+	if err := purgeCmd.RegisterFlagCompletionFunc("api", completion.AllAvailableApis); err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
 
