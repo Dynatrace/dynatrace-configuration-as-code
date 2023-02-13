@@ -17,16 +17,19 @@ package download
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/entities"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
 
 type entitiesDownloadCommandOptions struct {
 	downloadCommandOptionsShared
+	specificEntitiesTypes []string
 }
 
 type entitiesManifestDownloadOptions struct {
@@ -40,6 +43,11 @@ type entitiesDirectDownloadOptions struct {
 	entitiesDownloadCommandOptions
 }
 
+type downloadEntitiesOptions struct {
+	downloadOptionsShared
+	specificEntitiesTypes []string
+}
+
 func (d DefaultCommand) DownloadEntitiesBasedOnManifest(fs afero.Fs, cmdOptions entitiesManifestDownloadOptions) error {
 
 	envUrl, token, tokenEnvVar, err := getEnvFromManifest(fs, cmdOptions.manifestFile, cmdOptions.specificEnvironmentName, cmdOptions.projectName)
@@ -51,45 +59,51 @@ func (d DefaultCommand) DownloadEntitiesBasedOnManifest(fs afero.Fs, cmdOptions 
 		cmdOptions.projectName = fmt.Sprintf("%s_%s", cmdOptions.projectName, cmdOptions.specificEnvironmentName)
 	}
 
-	concurrentDownloadLimit := concurrentRequestLimitFromEnv()
+	concurrentDownloadLimit := rest.ConcurrentRequestLimitFromEnv(true)
 
-	options := downloadOptionsShared{
-		environmentUrl:          envUrl,
-		token:                   token,
-		tokenEnvVarName:         tokenEnvVar,
-		outputFolder:            cmdOptions.outputFolder,
-		projectName:             cmdOptions.projectName,
-		forceOverwriteManifest:  cmdOptions.forceOverwrite,
-		clientProvider:          client.NewDynatraceClient,
-		concurrentDownloadLimit: concurrentDownloadLimit,
+	options := downloadEntitiesOptions{
+		downloadOptionsShared: downloadOptionsShared{
+			environmentUrl:          envUrl,
+			token:                   token,
+			tokenEnvVarName:         tokenEnvVar,
+			outputFolder:            cmdOptions.outputFolder,
+			projectName:             cmdOptions.projectName,
+			forceOverwriteManifest:  cmdOptions.forceOverwrite,
+			clientProvider:          client.NewDynatraceClient,
+			concurrentDownloadLimit: concurrentDownloadLimit,
+		},
+		specificEntitiesTypes: cmdOptions.specificEntitiesTypes,
 	}
 	return doDownloadEntities(fs, options)
 }
 
 func (d DefaultCommand) DownloadEntities(fs afero.Fs, cmdOptions entitiesDirectDownloadOptions) error {
 	token := os.Getenv(cmdOptions.envVarName)
-	concurrentDownloadLimit := concurrentRequestLimitFromEnv()
+	concurrentDownloadLimit := rest.ConcurrentRequestLimitFromEnv(true)
 	errors := validateParameters(cmdOptions.envVarName, cmdOptions.environmentUrl, cmdOptions.projectName, token)
 
 	if len(errors) > 0 {
 		return PrintAndFormatErrors(errors, "not all necessary information is present to start downloading configurations")
 	}
 
-	options := downloadOptionsShared{
-		environmentUrl:          cmdOptions.environmentUrl,
-		token:                   token,
-		tokenEnvVarName:         cmdOptions.envVarName,
-		outputFolder:            cmdOptions.outputFolder,
-		projectName:             cmdOptions.projectName,
-		forceOverwriteManifest:  cmdOptions.forceOverwrite,
-		clientProvider:          client.NewDynatraceClient,
-		concurrentDownloadLimit: concurrentDownloadLimit,
+	options := downloadEntitiesOptions{
+		downloadOptionsShared: downloadOptionsShared{
+			environmentUrl:          cmdOptions.environmentUrl,
+			token:                   token,
+			tokenEnvVarName:         cmdOptions.envVarName,
+			outputFolder:            cmdOptions.outputFolder,
+			projectName:             cmdOptions.projectName,
+			forceOverwriteManifest:  cmdOptions.forceOverwrite,
+			clientProvider:          client.NewDynatraceClient,
+			concurrentDownloadLimit: concurrentDownloadLimit,
+		},
+		specificEntitiesTypes: cmdOptions.specificEntitiesTypes,
 	}
 	return doDownloadEntities(fs, options)
 }
 
-func doDownloadEntities(fs afero.Fs, opts downloadOptionsShared) error {
-	err := preDownloadValidations(fs, opts)
+func doDownloadEntities(fs afero.Fs, opts downloadEntitiesOptions) error {
+	err := preDownloadValidations(fs, opts.downloadOptionsShared)
 	if err != nil {
 		return err
 	}
@@ -102,19 +116,27 @@ func doDownloadEntities(fs afero.Fs, opts downloadOptionsShared) error {
 		return err
 	}
 
-	return writeConfigs(downloadedConfigs, opts, err, fs)
+	return writeConfigs(downloadedConfigs, opts.downloadOptionsShared, err, fs)
 }
 
-func downloadEntities(opts downloadOptionsShared) (project.ConfigsPerType, error) {
+func downloadEntities(opts downloadEntitiesOptions) (project.ConfigsPerType, error) {
 
-	c, err := opts.getDynatraceClient()
+	c, err := opts.downloadOptionsShared.getDynatraceClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Dynatrace client: %w", err)
 	}
 
-	c = client.LimitClientParallelRequests(c, opts.concurrentDownloadLimit)
+	c = client.LimitClientParallelRequests(c, opts.downloadOptionsShared.concurrentDownloadLimit)
 
-	entitiesObjects := entities.DownloadAll(c, opts.projectName)
+	var entitiesObjects project.ConfigsPerType
+
+	// download specific entity types only
+	if len(opts.specificEntitiesTypes) > 0 {
+		log.Debug("Entity Types to download: \n - %v", strings.Join(opts.specificEntitiesTypes, "\n - "))
+		entitiesObjects = entities.Download(c, opts.specificEntitiesTypes, opts.projectName)
+	} else {
+		entitiesObjects = entities.DownloadAll(c, opts.downloadOptionsShared.projectName)
+	}
 
 	if numEntities := sumConfigs(entitiesObjects); numEntities > 0 {
 		log.Info("Downloaded %d entities types.", numEntities)

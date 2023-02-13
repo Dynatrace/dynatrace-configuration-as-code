@@ -25,6 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/settings"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/maps"
 	"github.com/spf13/afero"
@@ -60,9 +61,9 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 		cmdOptions.projectName = fmt.Sprintf("%s_%s", cmdOptions.projectName, cmdOptions.specificEnvironmentName)
 	}
 
-	concurrentDownloadLimit := concurrentRequestLimitFromEnv()
+	concurrentDownloadLimit := rest.ConcurrentRequestLimitFromEnv(true)
 
-	options := downloadOptions{
+	options := downloadConfigsOptions{
 		downloadOptionsShared: downloadOptionsShared{
 			environmentUrl:          envUrl,
 			token:                   token,
@@ -83,14 +84,14 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 
 func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOptions) error {
 	token := os.Getenv(cmdOptions.envVarName)
-	concurrentDownloadLimit := concurrentRequestLimitFromEnv()
+	concurrentDownloadLimit := rest.ConcurrentRequestLimitFromEnv(true)
 	errors := validateParameters(cmdOptions.envVarName, cmdOptions.environmentUrl, cmdOptions.projectName, token)
 
 	if len(errors) > 0 {
 		return PrintAndFormatErrors(errors, "not all necessary information is present to start downloading configurations")
 	}
 
-	options := downloadOptions{
+	options := downloadConfigsOptions{
 		downloadOptionsShared: downloadOptionsShared{
 			environmentUrl:          cmdOptions.environmentUrl,
 			token:                   token,
@@ -109,7 +110,7 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOp
 	return doDownloadConfigs(fs, api.NewApis(), options)
 }
 
-type downloadOptions struct {
+type downloadConfigsOptions struct {
 	downloadOptionsShared
 	specificAPIs    []string
 	specificSchemas []string
@@ -117,7 +118,7 @@ type downloadOptions struct {
 	onlySettings    bool
 }
 
-func doDownloadConfigs(fs afero.Fs, apis api.ApiMap, opts downloadOptions) error {
+func doDownloadConfigs(fs afero.Fs, apis api.ApiMap, opts downloadConfigsOptions) error {
 	err := preDownloadValidations(fs, opts.downloadOptionsShared)
 	if err != nil {
 		return err
@@ -137,7 +138,7 @@ func doDownloadConfigs(fs afero.Fs, apis api.ApiMap, opts downloadOptions) error
 	return writeConfigs(downloadedConfigs, opts.downloadOptionsShared, err, fs)
 }
 
-func downloadConfigs(apis api.ApiMap, opts downloadOptions) (project.ConfigsPerType, error) {
+func downloadConfigs(apis api.ApiMap, opts downloadConfigsOptions) (project.ConfigsPerType, error) {
 	c, err := opts.getDynatraceClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Dynatrace client: %w", err)

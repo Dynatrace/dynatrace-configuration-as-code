@@ -991,8 +991,8 @@ func TestDownloadIntegrationDownloadsOnlySettingsIfConfigured(t *testing.T) {
 	assert.Equal(t, len(configs["settings-schema"]), 3, "Expected 3 settings objects")
 }
 
-func getTestingDownloadOptions(server *httptest.Server, projectName string) downloadOptions {
-	return downloadOptions{
+func getTestingDownloadOptions(server *httptest.Server, projectName string) downloadConfigsOptions {
+	return downloadConfigsOptions{
 		downloadOptionsShared: downloadOptionsShared{
 			environmentUrl:          server.URL,
 			token:                   "token",
