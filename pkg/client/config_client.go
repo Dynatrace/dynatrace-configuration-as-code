@@ -613,7 +613,3 @@ func translateSyntheticEntityResponse(resp api.SyntheticEntity, objectName strin
 func success(resp rest.Response) bool {
 	return resp.StatusCode >= 200 && resp.StatusCode <= 299
 }
-
-func isServerError(resp rest.Response) bool {
-	return resp.StatusCode >= 500 && resp.StatusCode <= 599
-}

@@ -31,7 +31,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/deploy"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/download"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner/completion"
-	legacyDeploy "github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/v1/deploy"
 	utilEnv "github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
@@ -94,12 +93,6 @@ Examples:
 	deployCommand := getDeployCommand(fs)
 	deleteCommand := getDeleteCommand(fs)
 	purgeCommand := getPurgeCommand(fs)
-
-	if utilEnv.FeatureFlagEnabled("CONFIG_V1") {
-		log.Warn("CONFIG_V1 environment var detected!")
-		log.Warn("Please convert your config to v2 format, as the migration layer will get removed in one of the next releases!")
-		deployCommand = getLegacyDeployCommand(fs)
-	}
 
 	rootCmd.AddCommand(downloadCommand)
 	rootCmd.AddCommand(convertCommand)
@@ -315,43 +308,4 @@ func getConvertCommand(fs afero.Fs) (convertCmd *cobra.Command) {
 		log.Fatal("failed to setup CLI %v", err)
 	}
 	return convertCmd
-}
-
-func getLegacyDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
-	var dryRun, continueOnError bool
-	var specificEnvironment, environments, projects string
-
-	deployCmd = &cobra.Command{
-		Use:     "deploy [configuration directory]",
-		Short:   "Deploy v1 configurations to Dynatrace environments",
-		Example: "monaco deploy -e environments.yaml",
-		PreRun:  silenceUsageCommand(),
-		RunE: func(cmd *cobra.Command, args []string) error {
-
-			if len(args) > 1 {
-				log.Error("too many arguments")
-				return errWrongUsage
-			}
-			workingDir := "."
-			if len(args) != 0 {
-				workingDir = args[0]
-			}
-
-			return legacyDeploy.Deploy(fs, workingDir, environments, specificEnvironment, projects, dryRun, continueOnError)
-		},
-	}
-
-	deployCmd.Flags().StringVarP(&environments, "environments", "e", "", "Yaml file containing environment to deploy to")
-	deployCmd.Flags().StringVarP(&projects, "project", "p", "", "Project configuration to deploy (also deploys any dependent configurations)")
-	deployCmd.Flags().BoolVarP(&dryRun, "dry-run", "d", false, "Switches to just validation instead of actual deployment")
-	deployCmd.Flags().BoolVarP(&continueOnError, "continue-on-error", "c", false, "Proceed deployment even if config upload fails")
-	err := deployCmd.MarkFlagFilename("environments", files.YamlExtensions...)
-	if err != nil {
-		log.Fatal("failed to setup CLI %v", err)
-	}
-	err = deployCmd.MarkFlagRequired("environments")
-	if err != nil {
-		log.Fatal("failed to setup CLI %v", err)
-	}
-	return deployCmd
 }

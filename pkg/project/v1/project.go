@@ -31,18 +31,13 @@ import (
 )
 
 type Project interface {
-	HasDependencyOn(project Project) bool
 	GetConfigs() []config.Config
-	GetConfig(id string) (config.Config, error)
 	GetId() string
-	GetCleanId() (string, error)
 }
 
 type ProjectImpl struct {
-	Id                string
-	Configs           []config.Config
-	projectRootFolder string
-	getRelFilepath    func(basePath string, targetPath string) (string, error)
+	Id      string
+	Configs []config.Config
 }
 
 type projectBuilder struct {
@@ -86,10 +81,8 @@ func newProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolde
 	warnIfProjectNameClashesWithApiName(projectFolderName, apis, sanitizedProjectRootFolder)
 
 	return &ProjectImpl{
-		Id:                fullQualifiedProjectFolderName,
-		Configs:           builder.configs,
-		projectRootFolder: projectRootFolder,
-		getRelFilepath:    filepath.Rel,
+		Id:      fullQualifiedProjectFolderName,
+		Configs: builder.configs,
 	}, nil
 }
 
@@ -250,38 +243,7 @@ func (p *ProjectImpl) GetConfigs() []config.Config {
 	return p.Configs
 }
 
-// GetConfig searches for a config with the given id in the current project
-// If no such config is found, an error is returned
-func (p *ProjectImpl) GetConfig(id string) (config config.Config, err error) {
-	for _, conf := range p.GetConfigs() {
-		if id == conf.GetId() {
-			return conf, err
-		}
-	}
-
-	return config, fmt.Errorf("config with id %s not found", id)
-}
-
 // GetId returns the id for this project
 func (p *ProjectImpl) GetId() string {
 	return p.Id
-}
-
-// GetCleanId returns a sanitized project id, cleaned from all path attributes
-func (p *ProjectImpl) GetCleanId() (string, error) {
-	return p.getRelFilepath(p.projectRootFolder, p.Id)
-}
-
-// HasDependencyOn checks if one project depends on the given parameter config
-// Having a dependency means, that the project having the dependency needs to be applied AFTER the project it depends on
-func (p *ProjectImpl) HasDependencyOn(project Project) bool {
-
-	for _, myConfig := range p.Configs {
-		for _, otherConfig := range project.GetConfigs() {
-			if myConfig.HasDependencyOn(otherConfig) {
-				return true
-			}
-		}
-	}
-	return false
 }

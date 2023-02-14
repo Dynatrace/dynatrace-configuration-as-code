@@ -219,64 +219,6 @@ func Test_success(t *testing.T) {
 	}
 }
 
-func Test_isServerError(t *testing.T) {
-	tests := []struct {
-		name string
-		resp rest.Response
-		want bool
-	}{
-		{
-			"200 is NOT server error",
-			rest.Response{
-				StatusCode: 200,
-			},
-			false,
-		},
-		{
-			"201 is NOT server error",
-			rest.Response{
-				StatusCode: 201,
-			},
-			false,
-		},
-		{
-			"401 is NOT server error",
-			rest.Response{
-				StatusCode: 401,
-			},
-			false,
-		},
-		{
-			"503 is server error",
-			rest.Response{
-				StatusCode: 503,
-			},
-			true,
-		},
-		{
-			"500 is server error",
-			rest.Response{
-				StatusCode: 500,
-			},
-			true,
-		},
-		{
-			"greater than 599 is NOT server error",
-			rest.Response{
-				StatusCode: 600,
-			},
-			false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := isServerError(tt.resp); got != tt.want {
-				t.Errorf("isServerError() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func Test_isApplicationNotReadyYet(t *testing.T) {
 	type args struct {
 		resp   rest.Response
