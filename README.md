@@ -7,7 +7,7 @@
 
 Evolved from the Monitoring as Code CLI we provide Observability and Security as Code to fully automate configuration of the Dynatrace platform at any scale- from automating standard configuration of all your Dynatrace environments to meeting specific demands for individual ones.
 
-**The documentation for the Dynatrace Configuration as Code tool Monaco is available [here](https://www.dynatrace.com/support/help/setup-and-configuration/monitoring-as-code)**
+**The documentation for the Dynatrace Configuration as Code tool Monaco is available [here](https://www.dynatrace.com/support/help/shortlink/configuration-as-code)**
 
 > Documentation for the previous 1.x versions is still available [here](https://dynatrace.github.io/dynatrace-configuration-as-code/)
 
