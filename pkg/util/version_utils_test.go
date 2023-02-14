@@ -18,6 +18,7 @@ package util
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
 )
@@ -134,6 +135,15 @@ func TestVersion_SmallerThan(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestVersion_Valid(t *testing.T) {
+	assert.True(t, Version{0, 0, 0}.Invalid())
+	assert.True(t, Version{-1, 1, 1}.Invalid())
+	assert.True(t, Version{0, -1, 1}.Invalid())
+	assert.True(t, Version{0, 1, -1}.Invalid())
+	assert.False(t, Version{0, 1, 0}.Invalid())
+
 }
 
 func Test_parseDynatraceVersion(t *testing.T) {

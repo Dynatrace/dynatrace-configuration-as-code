@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"net/http"
 	"net/url"
 	"strings"
@@ -168,10 +169,18 @@ type Client interface {
 // DynatraceClient is the default implementation of the HTTP
 // client targeting the relevant Dynatrace APIs for Monaco
 type DynatraceClient struct {
+	// serverVersion is the Dynatrace server version the
+	// client will be interacting with
+	serverVersion util.Version
+	// environmentUrl is the base URL of the Dynatrace server the
+	// client will be interacting with
 	environmentUrl string
-	token          string
-	client         *http.Client
-	retrySettings  rest.RetrySettings
+	// token is the Auth Token that will be used when interacting with the Dynatrace server
+	token string
+	// client is the HTTP client that will be used by the dynatrace client
+	client *http.Client
+	// retrySettings specify the retry behavior of the dynatrace client in case something goes wrong
+	retrySettings rest.RetrySettings
 }
 
 var (
@@ -193,6 +202,43 @@ func WithHTTPClient(client *http.Client) func(dynatraceClient *DynatraceClient) 
 	return func(d *DynatraceClient) {
 		d.client = client
 	}
+}
+
+// WithServerVersion sets the Dynatrace version of the Dynatrace server/tenant the client will be interacting with
+func WithServerVersion(serverVersion util.Version) func(client *DynatraceClient) {
+	return func(d *DynatraceClient) {
+		d.serverVersion = serverVersion
+	}
+}
+
+// WithAutoServerVersion can be used to let the client automatically determine the Dynatrace server version
+// during creation using NewDynatraceClient. If the server version is already known WithServerVersion should be used
+func WithAutoServerVersion() func(client *DynatraceClient) {
+	return func(d *DynatraceClient) {
+		serverVersion, err := GetDynatraceVersion(d.client, d.environmentUrl, d.token)
+		if err != nil {
+			log.Error("Unable to determine Dynatrace server version: %v", err)
+			d.serverVersion = util.UnknownVersion
+		} else {
+			d.serverVersion = serverVersion
+		}
+	}
+}
+
+// CreateClientForEnvironment takes an EnvironmentDefinition and creates a Dynatrace client to be used for
+// this Dynatrace environment/tenant.
+func CreateClientForEnvironment(environment manifest.EnvironmentDefinition) (Client, error) {
+	envToken, err := environment.GetToken()
+	if err != nil {
+		return nil, fmt.Errorf("unable to get token for environment %q: %w", environment.Name, err)
+	}
+
+	envURL, err := environment.GetUrl()
+	if err != nil {
+		return nil, fmt.Errorf("unable to get URL for environment %q: %w", environment.Name, err)
+	}
+
+	return NewDynatraceClient(envURL, envToken, WithAutoServerVersion())
 }
 
 // NewDynatraceClient creates a new DynatraceClient
@@ -226,10 +272,15 @@ func NewDynatraceClient(environmentURL string, token string, opts ...func(dynatr
 		token:          token,
 		client:         &http.Client{},
 		retrySettings:  rest.DefaultRetrySettings,
+		serverVersion:  util.Version{},
 	}
 
 	for _, o := range opts {
 		o(dtClient)
+	}
+
+	if dtClient.serverVersion.Invalid() {
+		log.Warn("Dynatrace Client was created without specifying a version of the targeting Dynatrace server. This can result in faulty behavior.")
 	}
 
 	return dtClient, nil
@@ -260,6 +311,22 @@ func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, e
 		return DynatraceEntity{}, fmt.Errorf("failed to perform upsert operation: found more than one settings object with the same external id: %s. Settings objects: %v", externalId, settings)
 	}
 
+	// special handling for updating settings 2.0 objects on tenants with version pre 1.262.0
+	// Tenants with versions < 1.262 are not able to handle updates of existing
+	// settings 2.0 objects that are non-deletable
+	if !d.serverVersion.Invalid() &&
+		d.serverVersion.SmallerThan(util.Version{Major: 1, Minor: 262, Patch: 0}) &&
+		len(settings) > 0 &&
+		settings[0].ObjectId == obj.OriginObjectId {
+		log.Error("Unable to update Settings 2.0 object of schema %q and object id %q on Dynatrace tenant with a version < 1.262.0", obj.SchemaId, obj.OriginObjectId)
+		return DynatraceEntity{
+			Id:   settings[0].ObjectId,
+			Name: settings[0].ObjectId,
+		}, nil
+	}
+
+	// if no settings object yet exists, create a new one
+	// otherwise try to use PUT to update
 	if len(settings) == 0 {
 		// special handling of this Settings object.
 		// It is delete-protected BUT has a key property which is internally

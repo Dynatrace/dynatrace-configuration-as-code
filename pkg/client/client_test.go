@@ -20,6 +20,7 @@ package client
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
@@ -69,7 +70,16 @@ func TestNewClientNoValidUrlNoHttps(t *testing.T) {
 }
 
 func TestNewClient(t *testing.T) {
-	_, err := NewDynatraceClient("https://my-environment.live.dynatrace.com/", "abc")
+	httpClient := &http.Client{}
+	c, err := NewDynatraceClient("https://my-environment.live.dynatrace.com/", "abc",
+		WithServerVersion(util.Version{Major: 1, Minor: 2, Patch: 3}),
+		WithRetrySettings(rest.DefaultRetrySettings),
+		WithHTTPClient(httpClient))
+	assert.Equal(t, util.Version{Major: 1, Minor: 2, Patch: 3}, c.serverVersion)
+	assert.Equal(t, rest.DefaultRetrySettings, c.retrySettings)
+	assert.Equal(t, httpClient, c.client)
+	assert.Equal(t, "abc", c.token)
+	assert.Equal(t, "https://my-environment.live.dynatrace.com", c.environmentUrl)
 	assert.NilError(t, err, "not valid")
 }
 
@@ -715,7 +725,33 @@ func TestListEntities(t *testing.T) {
 
 			assert.Equal(t, apiCalls, tt.wantNumberOfApiCalls, "expected exactly %d API calls to happen but %d calls where made", tt.wantNumberOfApiCalls, apiCalls)
 		})
-
 	}
+}
 
+func TestCreateDynatraceClientWithAutoServerVersion(t *testing.T) {
+	t.Run("Server version is correctly set to determined value", func(t *testing.T) {
+		server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			rw.Write([]byte(`{"version" : "1.262.0.20230214-193525"}`))
+		}))
+
+		dcl, err := NewDynatraceClient(server.URL, "token",
+			WithHTTPClient(server.Client()),
+			WithAutoServerVersion())
+		server.Close()
+		assert.NilError(t, err)
+		assert.Equal(t, util.Version{Major: 1, Minor: 262}, dcl.serverVersion)
+	})
+
+	t.Run("Server version is correctly set to unknown", func(t *testing.T) {
+		server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			rw.Write([]byte(`{}`))
+		}))
+
+		dcl, err := NewDynatraceClient(server.URL, "token",
+			WithHTTPClient(server.Client()),
+			WithAutoServerVersion())
+		server.Close()
+		assert.NilError(t, err)
+		assert.Equal(t, util.UnknownVersion, dcl.serverVersion)
+	})
 }

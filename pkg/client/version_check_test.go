@@ -1,4 +1,4 @@
-//go:build unit && unused
+//go:build unit
 
 /**
  * @license
