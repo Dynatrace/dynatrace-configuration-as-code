@@ -220,11 +220,18 @@ func toEnvironments(context *ManifestLoaderContext, groups []group) (map[string]
 	var errors []error
 	environments := make(map[string]EnvironmentDefinition)
 
+	groupNames := make(map[string]bool, len(groups))
+
 	for i, group := range groups {
 		if group.Name == "" {
 			errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("missing group name on index `%d`", i)))
-			continue
 		}
+
+		if groupNames[group.Name] {
+			errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("duplicated group name %q", group.Name)))
+		}
+
+		groupNames[group.Name] = true
 
 		for _, conf := range group.Environments {
 			env, configErrors := toEnvironment(context, conf, group.Name)
