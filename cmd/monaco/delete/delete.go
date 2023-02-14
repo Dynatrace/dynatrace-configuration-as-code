@@ -17,6 +17,7 @@ package delete
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
 	"path/filepath"
 	"strings"
 
@@ -63,12 +64,12 @@ func Delete(fs afero.Fs, deploymentManifestPath string, deletePath string, envir
 		return fmt.Errorf("encountered errors while parsing delete.yaml: %s", errs)
 	}
 
-	environments, err := manifest.FilterEnvironmentsByNames(environmentNames)
+	environments, err := manifest.Environments.FilterByNames(environmentNames)
 	if err != nil {
 		return fmt.Errorf("Failed to load environments: %w", err)
 	}
 
-	deleteErrors := deleteConfigs(environments, apis, entriesToDelete)
+	deleteErrors := deleteConfigs(maps.Values(environments), apis, entriesToDelete)
 
 	for _, e := range deleteErrors {
 		log.Error("Deletion error: %s", e)

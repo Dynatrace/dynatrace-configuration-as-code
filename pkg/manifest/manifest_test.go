@@ -130,21 +130,6 @@ func createValueEnvironmentDefinition() EnvironmentDefinition {
 	}
 }
 
-func TestGetEnvironmentsAsSlice(t *testing.T) {
-	envs := map[string]EnvironmentDefinition{
-		"Test":  {Name: "Test"},
-		"Test2": {Name: "Test2"},
-	}
-
-	manifest := Manifest{
-		Environments: envs,
-	}
-
-	actual := manifest.GetEnvironmentsAsSlice()
-
-	assertEnvironmentsWithNames(t, actual, []string{"Test", "Test2"})
-}
-
 func TestManifestFilterEnvironmentsByNamesWithEmptyNames(t *testing.T) {
 	envs := map[string]EnvironmentDefinition{
 		"Test":  {Name: "Test"},
@@ -155,7 +140,7 @@ func TestManifestFilterEnvironmentsByNamesWithEmptyNames(t *testing.T) {
 		Environments: envs,
 	}
 
-	actual, err := manifest.FilterEnvironmentsByNames([]string{})
+	actual, err := manifest.Environments.FilterByNames([]string{})
 	assert.NilError(t, err, "empty array should not be an error")
 
 	assertEnvironmentsWithNames(t, actual, []string{"Test", "Test2"})
@@ -171,7 +156,7 @@ func TestManifestFilterEnvironmentsByNamesWithNil(t *testing.T) {
 		Environments: envs,
 	}
 
-	actual, err := manifest.FilterEnvironmentsByNames(nil)
+	actual, err := manifest.Environments.FilterByNames(nil)
 	assert.NilError(t, err, "empty array should not be an error")
 
 	assertEnvironmentsWithNames(t, actual, []string{"Test", "Test2"})
@@ -187,7 +172,7 @@ func TestManifestFilterEnvironmentsByNamesWithAllNames(t *testing.T) {
 		Environments: envs,
 	}
 
-	actual, err := manifest.FilterEnvironmentsByNames([]string{"Test", "Test2"})
+	actual, err := manifest.Environments.FilterByNames([]string{"Test", "Test2"})
 	assert.NilError(t, err, "empty array should not be an error")
 
 	assertEnvironmentsWithNames(t, actual, []string{"Test", "Test2"})
@@ -203,7 +188,7 @@ func TestManifestFilterEnvironmentsByNamesWithOneName(t *testing.T) {
 		Environments: envs,
 	}
 
-	actual, err := manifest.FilterEnvironmentsByNames([]string{"Test"})
+	actual, err := manifest.Environments.FilterByNames([]string{"Test"})
 	assert.NilError(t, err, "empty array should not be an error")
 
 	assertEnvironmentsWithNames(t, actual, []string{"Test"})
@@ -219,17 +204,64 @@ func TestManifestFilterEnvironmentsByNamesWithAnUnknownName(t *testing.T) {
 		Environments: envs,
 	}
 
-	_, err := manifest.FilterEnvironmentsByNames([]string{"Test4"})
+	_, err := manifest.Environments.FilterByNames([]string{"Test4"})
 	assert.ErrorContains(t, err, "Test4", "Unknown environment should give an error")
 }
 
-func assertEnvironmentsWithNames(t *testing.T, environments []EnvironmentDefinition, expectedNames []string) {
+func assertEnvironmentsWithNames(t *testing.T, environments Environments, expectedNames []string) {
 	assert.Equal(t, len(environments), len(expectedNames), "Unexpected amount of environments")
 
 	var environmentNames []string
-	for _, env := range environments {
-		environmentNames = append(environmentNames, env.Name)
+	for k := range environments {
+		environmentNames = append(environmentNames, k)
 	}
 
 	assert.DeepEqual(t, environmentNames, expectedNames, sortStrings)
+}
+
+func TestFilterByGroup(t *testing.T) {
+	tests := []struct {
+		name  string
+		envs  Environments
+		group string
+		exp   Environments
+	}{
+		{
+			name:  "empty",
+			envs:  Environments{},
+			group: "a",
+			exp:   Environments{},
+		},
+		{
+			name:  "simple",
+			envs:  Environments{"a": EnvironmentDefinition{Group: "b"}},
+			group: "b",
+			exp:   Environments{"a": EnvironmentDefinition{Group: "b"}},
+		},
+		{
+			name: "filter",
+			envs: Environments{
+				"a": EnvironmentDefinition{Group: "b"},
+				"b": EnvironmentDefinition{Group: "c"},
+			},
+			group: "b",
+			exp:   Environments{"a": EnvironmentDefinition{Group: "b"}},
+		},
+		{
+			name: "empty",
+			envs: Environments{
+				"a": EnvironmentDefinition{Group: "b"},
+				"b": EnvironmentDefinition{Group: "c"},
+			},
+			group: "",
+			exp:   Environments{},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			r := test.envs.FilterByGroup(test.group)
+
+			assert.DeepEqual(t, test.exp, r, cmpopts.IgnoreUnexported(EnvironmentDefinition{}))
+		})
+	}
 }

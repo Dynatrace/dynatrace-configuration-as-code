@@ -130,7 +130,7 @@ func configureDebugLogging(fs afero.Fs, verbose *bool) func(cmd *cobra.Command, 
 
 func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 	var dryRun, continueOnError bool
-	var manifestName string
+	var manifestName, group string
 	var environment, project []string
 
 	deployCmd = &cobra.Command{
@@ -149,22 +149,28 @@ func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 				return err
 			}
 
-			return deploy.Deploy(fs, manifestName, environment, project, dryRun, continueOnError)
+			return deploy.Deploy(fs, manifestName, environment, group, project, dryRun, continueOnError)
 		},
 	}
 
-	deployCmd.Flags().StringSliceVarP(&environment, "environment", "e", make([]string, 0), "Environment to deploy to")
+	deployCmd.Flags().StringSliceVarP(&environment, "environment", "e", make([]string, 0), "Specify one (or multiple) environments to deploy to. To set multiple environments either repeat this flag, or seperate them using a comma (,). This flag is mutually exclusive with '--group'.")
+	deployCmd.Flags().StringVarP(&group, "group", "g", "", "Specify the environmentGroup that should be used for deployment. If this flag is specified, all environments within this group will be used for deployment. This flag is mutually exclusive with '--environment'")
 	deployCmd.Flags().StringSliceVarP(&project, "project", "p", make([]string, 0), "Project configuration to deploy (also deploys any dependent configurations)")
 	deployCmd.Flags().BoolVarP(&dryRun, "dry-run", "d", false, "Switches to just validation instead of actual deployment")
 	deployCmd.Flags().BoolVarP(&continueOnError, "continue-on-error", "c", false, "Proceed deployment even if config upload fails")
+
 	err := deployCmd.RegisterFlagCompletionFunc("environment", completion.EnvironmentByManifestFlag)
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
+
 	err = deployCmd.RegisterFlagCompletionFunc("project", completion.ProjectsFromManifest)
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
+
+	deployCmd.MarkFlagsMutuallyExclusive("environment", "group")
+
 	return deployCmd
 }
 
