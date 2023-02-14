@@ -1,7 +1,0 @@
-
-config:
-  - application-tagging: "application-tagging.json"
-
-application-tagging:
-  - name: "Application"
-  - dep: "/projectB/management-zone/mg-zone.name"
