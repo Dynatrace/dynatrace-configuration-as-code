@@ -17,6 +17,7 @@ package delete
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/maps"
 	"path/filepath"
 	"strings"
 
@@ -29,7 +30,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-func Delete(fs afero.Fs, deploymentManifestPath string, deletePath string, environmentNames []string) error {
+func Delete(fs afero.Fs, deploymentManifestPath string, deletePath string, environmentNames []string, environmentGroup string) error {
 
 	deploymentManifestPath = filepath.Clean(deploymentManifestPath)
 	deploymentManifestPath, manifestErr := filepath.Abs(deploymentManifestPath)
@@ -63,12 +64,26 @@ func Delete(fs afero.Fs, deploymentManifestPath string, deletePath string, envir
 		return fmt.Errorf("encountered errors while parsing delete.yaml: %s", errs)
 	}
 
-	environments, err := manifest.FilterEnvironmentsByNames(environmentNames)
-	if err != nil {
-		return fmt.Errorf("Failed to load environments: %w", err)
+	environments := manifest.Environments
+	if environmentGroup != "" {
+		environments = environments.FilterByGroup(environmentGroup)
+
+		if len(environments) == 0 {
+			return fmt.Errorf("no environments in group %q", environmentGroup)
+		} else {
+			log.Info("Environments loaded in group %q: %v", environmentGroup, maps.Keys(environments))
+		}
 	}
 
-	deleteErrors := deleteConfigs(environments, apis, entriesToDelete)
+	if len(environmentNames) > 0 {
+		var err error
+		environments, err = manifest.Environments.FilterByNames(environmentNames)
+		if err != nil {
+			return fmt.Errorf("failed to load environments: %w", err)
+		}
+	}
+
+	deleteErrors := deleteConfigs(maps.Values(environments), apis, entriesToDelete)
 
 	for _, e := range deleteErrors {
 		log.Error("Deletion error: %s", e)

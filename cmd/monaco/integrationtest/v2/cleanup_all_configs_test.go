@@ -47,7 +47,7 @@ func TestDoCleanup(t *testing.T) {
 	// match anything ending in test suffixes of {timestamp}_{random numbers}_{some suffix test}
 	testSuffixRegex := regexp.MustCompile(`^.+_\d+_\d+_.*$`)
 
-	for _, environment := range loadedManifest.GetEnvironmentsAsSlice() {
+	for _, environment := range loadedManifest.Environments {
 		deletedConfigs := 0
 		token, err := environment.GetToken()
 		assert.NilError(t, err)

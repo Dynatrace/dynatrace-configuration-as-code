@@ -123,7 +123,7 @@ func configureDebugLogging(fs afero.Fs, verbose *bool) func(cmd *cobra.Command, 
 
 func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 	var dryRun, continueOnError bool
-	var manifestName string
+	var manifestName, group string
 	var environment, project []string
 
 	deployCmd = &cobra.Command{
@@ -142,22 +142,28 @@ func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 				return err
 			}
 
-			return deploy.Deploy(fs, manifestName, environment, project, dryRun, continueOnError)
+			return deploy.Deploy(fs, manifestName, environment, group, project, dryRun, continueOnError)
 		},
 	}
 
-	deployCmd.Flags().StringSliceVarP(&environment, "environment", "e", make([]string, 0), "Environment to deploy to")
+	deployCmd.Flags().StringSliceVarP(&environment, "environment", "e", make([]string, 0), "Specify one (or multiple) environments to deploy to. To set multiple environments either repeat this flag, or seperate them using a comma (,). This flag is mutually exclusive with '--group'.")
+	deployCmd.Flags().StringVarP(&group, "group", "g", "", "Specify the environmentGroup that should be used for deployment. If this flag is specified, all environments within this group will be used for deployment. This flag is mutually exclusive with '--environment'")
 	deployCmd.Flags().StringSliceVarP(&project, "project", "p", make([]string, 0), "Project configuration to deploy (also deploys any dependent configurations)")
 	deployCmd.Flags().BoolVarP(&dryRun, "dry-run", "d", false, "Switches to just validation instead of actual deployment")
 	deployCmd.Flags().BoolVarP(&continueOnError, "continue-on-error", "c", false, "Proceed deployment even if config upload fails")
+
 	err := deployCmd.RegisterFlagCompletionFunc("environment", completion.EnvironmentByManifestFlag)
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
+
 	err = deployCmd.RegisterFlagCompletionFunc("project", completion.ProjectsFromManifest)
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
+
+	deployCmd.MarkFlagsMutuallyExclusive("environment", "group")
+
 	return deployCmd
 }
 
@@ -172,8 +178,8 @@ func silenceUsageCommand() func(cmd *cobra.Command, args []string) {
 
 func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 
-	var environment []string
-	var manifestName string
+	var environments []string
+	var manifestName, group string
 
 	deleteCmd = &cobra.Command{
 		Use:     "delete <manifest.yaml> <delete.yaml>",
@@ -196,16 +202,19 @@ func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 				return err
 			}
 
-			return delete.Delete(fs, manifestName, deleteFile, environment)
+			return delete.Delete(fs, manifestName, deleteFile, environments, group)
 		},
 		ValidArgsFunction: completion.DeleteCompletion,
 	}
 
-	deleteCmd.Flags().StringSliceVarP(&environment, "environment", "e", make([]string, 0), "Deletes configuration only for specified envs. If not set, delete will be executed on all environments defined in manifest.")
+	deleteCmd.Flags().StringVarP(&group, "group", "g", "", "Specify the environmentGroup that should be used for deletion. This flag is mutually exclusive with '--environment'. If this flag is specified, configuration will be deleted from all environments within the specified group.")
+	deleteCmd.Flags().StringSliceVarP(&environments, "environment", "e", make([]string, 0), "Deletes configuration only for specified environments. This flag is mutually exclusive with '--group' If not set, delete will be executed on all environments defined in manifest.")
 
 	if err := deleteCmd.RegisterFlagCompletionFunc("environment", completion.EnvironmentByArg0); err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
+
+	deleteCmd.MarkFlagsMutuallyExclusive("environment", "group")
 
 	return deleteCmd
 }

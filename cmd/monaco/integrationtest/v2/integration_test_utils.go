@@ -55,7 +55,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 	if specificEnvironment != "" {
 		specificEnvs = append(specificEnvs, specificEnvironment)
 	}
-	environments, err := loadedManifest.FilterEnvironmentsByNames(specificEnvs)
+	environments, err := loadedManifest.Environments.FilterByNames(specificEnvs)
 	if err != nil {
 		t.Fatalf("Failed to filter environments: %v", err)
 	}
@@ -240,7 +240,7 @@ func cleanupIntegrationTest(t *testing.T, loadedManifest manifest.Manifest, spec
 	if specificEnvironment != "" {
 		specificEnvs = append(specificEnvs, specificEnvironment)
 	}
-	environments, err := loadedManifest.FilterEnvironmentsByNames(specificEnvs)
+	environments, err := loadedManifest.Environments.FilterByNames(specificEnvs)
 	if err != nil {
 		log.Fatal("Failed to filter environments: %v", err)
 	}

@@ -69,42 +69,42 @@ pipeline {
                 stage('🐧 Deliver Linux 32bit') {
                     steps {
                         script {
-                            releaseToArtifactStorage(artifactorySecrets, "${VERSION}", "monaco-linux-386")
+                            releaseToArtifactStorage(artifactStorageSecrets, "${VERSION}", "monaco-linux-386")
                         }
                     }
                 }
                 stage('🐧 Deliver Linux 64bit') {
                     steps {
                         script {
-                            releaseToArtifactStorage(artifactorySecrets, "${VERSION}", "monaco-linux-amd64")
+                            releaseToArtifactStorage(artifactStorageSecrets, "${VERSION}", "monaco-linux-amd64")
                         }
                     }
                 }
                 stage('🪟 Deliver Windows 32bit') {
                     steps {
                         script {
-                            releaseToArtifactStorage(artifactorySecrets, "${VERSION}", "monaco-windows-386.exe")
+                            releaseToArtifactStorage(artifactStorageSecrets, "${VERSION}", "monaco-windows-386.exe")
                         }
                     }
                 }
                 stage('🪟 Deliver Windows 64bit') {
                     steps {
                         script {
-                            releaseToArtifactStorage(artifactorySecrets, "${VERSION}", "monaco-windows-amd64.exe")
+                            releaseToArtifactStorage(artifactStorageSecrets, "${VERSION}", "monaco-windows-amd64.exe")
                         }
                     }
                 }
                 stage('🍏 Deliver Mac OS Apple Silicon') {
                     steps {
                         script {
-                            releaseToArtifactStorage(artifactorySecrets, "${VERSION}", "monaco-darwin-arm64")
+                            releaseToArtifactStorage(artifactStorageSecrets, "${VERSION}", "monaco-darwin-arm64")
                         }
                     }
                 }
                 stage('🍏 Deliver Mac OS 64bit') {
                     steps {
                         script {
-                            releaseToArtifactStorage(artifactorySecrets, "${VERSION}", "monaco-darwin-amd64")
+                            releaseToArtifactStorage(artifactStorageSecrets, "${VERSION}", "monaco-darwin-amd64")
                         }
                     }
                 }
@@ -113,7 +113,7 @@ pipeline {
                         withEnv(["VERSION=${VERSION}"]) {
                             withVault(vaultSecrets: [registrySecrets]) {
                                 script {
-                                    sh 'docker login $REGISTRY -u "$REGISTRY_USERNAME" -p "$REGISTRY_PASSWORD" '
+                                    sh 'docker login $REGISTRY_PATH -u "$REGISTRY_USERNAME" -p "$REGISTRY_PASSWORD" '
                                     sh 'docker build -t $REGISTRY_PATH/monaco/dynatrace-monitoring-as-code:$VERSION .'
                                     sh 'docker push $REGISTRY_PATH/monaco/dynatrace-monitoring-as-code:$VERSION'
                                 }
