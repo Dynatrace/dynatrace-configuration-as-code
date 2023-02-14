@@ -20,7 +20,7 @@
 package v1
 
 import (
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
 	"github.com/spf13/afero"
 	"path/filepath"
 	"testing"

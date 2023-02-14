@@ -16,12 +16,12 @@ package manifest
 
 import (
 	"fmt"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/maps"
 	"os"
 	"strings"
 
-	environmentv1 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
+	environmentv1 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/environment"
 )
 
 type ProjectDefinition struct {

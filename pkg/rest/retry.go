@@ -18,7 +18,7 @@ package rest
 
 import (
 	"fmt"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"net/http"
 	"time"
 )

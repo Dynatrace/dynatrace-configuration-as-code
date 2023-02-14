@@ -24,11 +24,11 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 
-	. "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
+	. "github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 )
 
 // ConfigClient is responsible for the classic Dynatrace configs. For settings objects, the [SettingsClient] is responsible.
@@ -149,7 +149,7 @@ type EntitiesClient interface {
 	ListEntities(string) ([]string, error)
 }
 
-//go:generate mockgen -source=client.go -destination=client_mock.go -package=client -imports .=github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api DynatraceClient
+//go:generate mockgen -source=client.go -destination=client_mock.go -package=client -imports .=github.com/dynatrace/dynatrace-configuration-as-code/pkg/api DynatraceClient
 
 // Client provides the functionality for performing basic CRUD operations on any Dynatrace API
 // supported by monaco.

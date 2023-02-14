@@ -19,7 +19,7 @@
 package client
 
 import (
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"net/http"
 	"net/http/httptest"
 	"reflect"

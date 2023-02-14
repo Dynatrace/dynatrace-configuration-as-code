@@ -25,7 +25,7 @@ Basically, the download happens in 3 steps.
 
 # Downloading
 
-Entry point: [pkg/github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download/downloader.DownloadAllConfigs]
+Entry point: [pkg/github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/downloader.DownloadAllConfigs]
 
 Downloading happens in the downloader-subpackage.
 

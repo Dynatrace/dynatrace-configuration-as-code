@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="download " type="GoApplicationRunConfiguration" factoryName="Go Application" folderName="shared">
-    <module name="internal-monitoring-as-code" />
+    <module name="dynatrace-configuration-as-code" />
     <working_directory value="$PROJECT_DIR$" />
     <useCustomBuildTags value="true" />
     <parameters value="download direct {YOUR ENV URL HERE} TOKEN -v" />
@@ -8,7 +8,7 @@
       <env name="TOKEN" value="FILL ME" />
     </envs>
     <kind value="PACKAGE" />
-    <package value="github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco" />
+    <package value="github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco" />
     <directory value="$PROJECT_DIR$" />
     <filePath value="$PROJECT_DIR$/cmd/monaco/main.go" />
     <method v="2" />

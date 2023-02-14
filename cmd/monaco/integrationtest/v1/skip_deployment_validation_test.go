@@ -25,7 +25,7 @@ import (
 
 	"gotest.tools/assert"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
 )
 
 var skipDeploymentFolder = AbsOrPanicFromSlash("test-resources/skip-deployment-project/")

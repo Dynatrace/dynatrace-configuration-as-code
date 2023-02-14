@@ -20,13 +20,13 @@ import (
 
 	s "sort"
 
-	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/errors"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
-	project "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/sort"
+	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
+	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/sort"
 )
 
 type ProjectsPerEnvironment map[string][]project.Project

@@ -20,7 +20,7 @@ package rest
 
 import (
 	"errors"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/golang/mock/gomock"
 	"gotest.tools/assert"
 	"net/http"

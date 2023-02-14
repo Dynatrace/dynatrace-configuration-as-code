@@ -20,7 +20,7 @@ package convert
 
 import (
 	"fmt"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 	"io/fs"

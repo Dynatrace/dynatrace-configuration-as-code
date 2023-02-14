@@ -18,10 +18,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/client"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download/entities"
-	project "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/entities"
+	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
 

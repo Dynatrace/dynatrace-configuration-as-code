@@ -1,10 +1,10 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Unit Tests" type="GoTestRunConfiguration" factoryName="Go Test" folderName="shared">
-    <module name="internal-monitoring-as-code" />
+    <module name="dynatrace-configuration-as-code" />
     <working_directory value="$PROJECT_DIR$" />
     <go_parameters value="--tags=unit" />
     <kind value="DIRECTORY" />
-    <package value="github.com/dynatrace-oss/dynatrace-monitoring-as-code" />
+    <package value="github.com/dynatrace/dynatrace-configuration-as-code" />
     <directory value="$PROJECT_DIR$" />
     <filePath value="$PROJECT_DIR$" />
     <framework value="gotest" />
