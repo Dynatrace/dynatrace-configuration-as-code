@@ -120,38 +120,55 @@ func (e *EnvironmentDefinition) GetUrl() (string, error) {
 	}
 }
 
+// Environments is a map of environment-name -> EnvironmentDefinition
+type Environments map[string]EnvironmentDefinition
+
 type Manifest struct {
 	// Projects defined in the manifest, split by project-name
 	Projects ProjectDefinitionByProjectId
 
 	// Environments defined in the manifest, split by environment-name
-	Environments map[string]EnvironmentDefinition
+	Environments Environments
 }
 
-func (m *Manifest) GetEnvironmentsAsSlice() []EnvironmentDefinition {
+// todo remove
+func (m Manifest) GetEnvironmentsAsSlice() []EnvironmentDefinition {
 	return maps.Values(m.Environments)
 }
 
-// FilterEnvironmentsByNames filters the environments by name and returns all environments that match the given names.
+// FilterByNames filters the environments by name and returns all environments that match the given names.
 // Given an empty slice, all environments are returned.
 // The resulting slice is never empty.
 //
 // An error is returned if a given name is not available as environment
-func (m *Manifest) FilterEnvironmentsByNames(names []string) ([]EnvironmentDefinition, error) {
+func (e Environments) FilterByNames(names []string) (Environments, error) {
 
 	if len(names) == 0 {
-		return m.GetEnvironmentsAsSlice(), nil
+		return e, nil
 	}
 
-	result := make([]EnvironmentDefinition, 0, len(names))
+	result := make(Environments, len(names))
 
 	for _, environmentName := range names {
-		if env, ok := m.Environments[environmentName]; ok {
-			result = append(result, env)
+		if env, ok := e[environmentName]; ok {
+			result[environmentName] = env
 		} else {
 			return nil, fmt.Errorf("environment '%s' not found", environmentName)
 		}
 	}
 
 	return result, nil
+}
+
+// FilterByGroup returns all environments whose group-name matches the given name.
+func (e Environments) FilterByGroup(groupName string) Environments {
+	result := make(map[string]EnvironmentDefinition, len(e))
+
+	for k, definition := range e {
+		if definition.Group == groupName {
+			result[k] = definition
+		}
+	}
+
+	return result
 }

@@ -22,6 +22,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/maps"
 	"github.com/spf13/afero"
 	"path/filepath"
 )
@@ -50,12 +51,12 @@ func Purge(fs afero.Fs, deploymentManifestPath string, environmentNames []string
 		return errors.New("error while loading manifest")
 	}
 
-	environments, err := mani.FilterEnvironmentsByNames(environmentNames)
+	environments, err := mani.Environments.FilterByNames(environmentNames)
 	if err != nil {
 		return fmt.Errorf("failed to load environments: %w", err)
 	}
 
-	deleteErrors := purgeConfigs(environments, apis)
+	deleteErrors := purgeConfigs(maps.Values(environments), apis)
 
 	for _, e := range deleteErrors {
 		log.Error("Deletion error: %s", e)

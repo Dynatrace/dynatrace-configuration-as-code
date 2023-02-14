@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/deploy"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/maps"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/slices"
 	"path/filepath"
 	"strings"
@@ -34,7 +35,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironments []string,
+func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironments []string, environmentGroup string,
 	specificProject []string, dryRun, continueOnError bool) error {
 
 	deploymentManifestPath = filepath.Clean(deploymentManifestPath)
@@ -55,13 +56,26 @@ func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironments []s
 		return errors.New("error while loading manifest")
 	}
 
-	environments, err := manifest.FilterEnvironmentsByNames(specificEnvironments)
-	if err != nil {
-		return err
+	environments := manifest.Environments
+	if environmentGroup != "" {
+		environments = environments.FilterByGroup(environmentGroup)
+
+		if len(environments) == 0 {
+			return fmt.Errorf("no environments in group %q", environmentGroup)
+		} else {
+			log.Info("Environments loaded in group %q: %v", environmentGroup, maps.Keys(environments))
+		}
+
 	}
 
-	environmentMap := toEnvironmentMap(environments)
-	environmentNames := toEnvironmentNames(environments)
+	if len(specificEnvironments) > 0 {
+		environments, err = environments.FilterByNames(specificEnvironments)
+		if err != nil {
+			return fmt.Errorf("failed to filter environments: %w", err)
+		}
+	}
+
+	environmentNames := maps.Keys(environments)
 	workingDir := filepath.Dir(absManifestPath)
 
 	apis := api.NewApis()
@@ -103,7 +117,7 @@ func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironments []s
 		log.Info("  - %s", name)
 	}
 
-	err = execDeployment(sortedConfigs, environmentMap, continueOnError, dryRun, apis)
+	err = execDeployment(sortedConfigs, environments, continueOnError, dryRun, apis)
 
 	if err != nil {
 		return err
