@@ -8,6 +8,8 @@ defaults:
 jobs:
   generate-dependencies:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout Core Repo
         uses: actions/checkout@v3

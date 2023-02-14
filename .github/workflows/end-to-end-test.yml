@@ -26,8 +26,8 @@ jobs:
     name: E2E Test
     runs-on: ubuntu-latest
     permissions:
-      checks: write
       contents: read
+      checks: write
     steps:
 
       - name: Set up Go 1.x

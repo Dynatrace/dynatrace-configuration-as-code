@@ -12,6 +12,9 @@ jobs:
   semgrep:
     name: Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
 
     container:
       # A Docker image with Semgrep installed. Do not change this.
