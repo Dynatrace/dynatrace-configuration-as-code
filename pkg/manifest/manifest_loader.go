@@ -242,7 +242,7 @@ func toEnvironments(context *ManifestLoaderContext, groups []group) (map[string]
 			}
 
 			if _, found := environments[env.Name]; found {
-				errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("environment with name `%s` already exists", env.Name)))
+				errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("duplicated environment name `%s`", env.Name)))
 				continue
 			}
 
@@ -316,11 +316,16 @@ func parseToken(context *ManifestLoaderContext, config environment, group string
 		return parseEnvironmentToken(context, group, config, token)
 	}
 
-	return nil, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("unknwon token type `%s`", tokenType))
+	return nil, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("unknown token type `%s`", tokenType))
 }
 
 func parseEnvironmentToken(context *ManifestLoaderContext, group string, config environment, token tokenConfig) (Token, error) {
 	if val, found := token.Config["name"]; found {
+
+		if val == "" {
+			return nil, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, "empty key `name` in token config")
+		}
+
 		return &EnvironmentVariableToken{util.ToString(val)}, nil
 	}
 
