@@ -1,26 +1,25 @@
-def artifactoryCredentials = [
-    path        : 'keptn-jenkins/monaco/artifactory-deploy',
+def artifactStorageSecrets = [
+    path        : 'keptn-jenkins/monaco/artifact-storage-deploy',
     secretValues: [
-        [envVar: 'ARTIFACTORY_USER', vaultKey: 'username', isRequired: true],
-        [envVar: 'ARTIFACTORY_PASSWORD', vaultKey: 'password', isRequired: true],
+        [envVar: 'ARTIFACT_REPO', vaultKey: 'repo_path', isRequired: true],
+        [envVar: 'ARTIFACT_USER', vaultKey: 'username', isRequired: true],
+        [envVar: 'ARTIFACT_PASSWORD', vaultKey: 'password', isRequired: true],
     ]
 ]
 
-def harbor = [
-    registry   : 'registry.lab.dynatrace.org/monaco',
-    credentials: [
-        path        : 'keptn-jenkins/monaco/harbor-account',
-        secretValues: [
-            [envVar: 'username', vaultKey: 'username', isRequired: true],
-            [envVar: 'password', vaultKey: 'password', isRequired: true]
-        ]
+def registrySecrets = [
+    path        : 'keptn-jenkins/monaco/registry-deploy',
+    secretValues: [
+        [envVar: 'REGISTRY_PATH', vaultKey: 'registry_path', isRequired: true],
+        [envVar: 'REGISTRY_USERNAME', vaultKey: 'username', isRequired: true],
+        [envVar: 'REGISTRY_PASSWORD', vaultKey: 'password', isRequired: true]
     ]
 ]
 
-def releaseToArtifactory(def credentials, def version, def binary) {
+def releaseToArtifactStorage(def secrets, def version, def binary) {
     withEnv(["VERSION=${version}", "BINARY=${binary}"]) {
-        withVault(vaultSecrets: [credentials]) {
-            sh 'curl -u "$ARTIFACTORY_USER":"$ARTIFACTORY_PASSWORD" -X PUT https://artifactory.lab.dynatrace.org/artifactory/monaco-local/monaco/$VERSION/$BINARY -T ./build/$BINARY'
+        withVault(vaultSecrets: [secrets]) {
+            sh 'curl -u "$ARTIFACT_USER":"$ARTIFACT_PASSWORD" -X PUT $ARTIFACT_REPO/monaco/$VERSION/$BINARY -T ./build/$BINARY'
         }
     }
 }
@@ -70,61 +69,61 @@ pipeline {
                 stage('🐧 Deliver Linux 32bit') {
                     steps {
                         script {
-                            releaseToArtifactory(artifactoryCredentials, "${VERSION}", "monaco-linux-386")
+                            releaseToArtifactStorage(artifactorySecrets, "${VERSION}", "monaco-linux-386")
                         }
                     }
                 }
                 stage('🐧 Deliver Linux 64bit') {
                     steps {
                         script {
-                            releaseToArtifactory(artifactoryCredentials, "${VERSION}", "monaco-linux-amd64")
+                            releaseToArtifactStorage(artifactorySecrets, "${VERSION}", "monaco-linux-amd64")
                         }
                     }
                 }
                 stage('🪟 Deliver Windows 32bit') {
                     steps {
                         script {
-                            releaseToArtifactory(artifactoryCredentials, "${VERSION}", "monaco-windows-386.exe")
+                            releaseToArtifactStorage(artifactorySecrets, "${VERSION}", "monaco-windows-386.exe")
                         }
                     }
                 }
                 stage('🪟 Deliver Windows 64bit') {
                     steps {
                         script {
-                            releaseToArtifactory(artifactoryCredentials, "${VERSION}", "monaco-windows-amd64.exe")
+                            releaseToArtifactStorage(artifactorySecrets, "${VERSION}", "monaco-windows-amd64.exe")
                         }
                     }
                 }
                 stage('🍏 Deliver Mac OS Apple Silicon') {
                     steps {
                         script {
-                            releaseToArtifactory(artifactoryCredentials, "${VERSION}", "monaco-darwin-arm64")
+                            releaseToArtifactStorage(artifactorySecrets, "${VERSION}", "monaco-darwin-arm64")
                         }
                     }
                 }
                 stage('🍏 Deliver Mac OS 64bit') {
                     steps {
                         script {
-                            releaseToArtifactory(artifactoryCredentials, "${VERSION}", "monaco-darwin-amd64")
+                            releaseToArtifactStorage(artifactorySecrets, "${VERSION}", "monaco-darwin-amd64")
                         }
                     }
                 }
                 stage('📦 Release Container Image') {
                     steps {
-                        withEnv(["VERSION=${VERSION}", "REGISTRY=${harbor.registry}"]) {
-                            withVault(vaultSecrets: [harbor.credentials]) {
+                        withEnv(["VERSION=${VERSION}"]) {
+                            withVault(vaultSecrets: [registrySecrets]) {
                                 script {
-                                    sh 'docker login $REGISTRY -u "$username" -p "$password" '
-                                    sh 'docker build -t $REGISTRY/monaco/dynatrace-monitoring-as-code:$VERSION .'
-                                    sh 'docker push $REGISTRY/monaco/dynatrace-monitoring-as-code:$VERSION'
+                                    sh 'docker login $REGISTRY -u "$REGISTRY_USERNAME" -p "$REGISTRY_PASSWORD" '
+                                    sh 'docker build -t $REGISTRY_PATH/monaco/dynatrace-monitoring-as-code:$VERSION .'
+                                    sh 'docker push $REGISTRY_PATH/monaco/dynatrace-monitoring-as-code:$VERSION'
                                 }
                             }
                         }
                     }
                     post {
                         always {
-                            withEnv(["REGISTRY=${harbor.registry}"]) {
-                                sh 'docker logout $REGISTRY'
+                            withVault(vaultSecrets: [registrySecrets]) {
+                                sh 'docker logout $REGISTRY_PATH'
                             }
                         }
                     }
