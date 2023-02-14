@@ -16,12 +16,12 @@ package manifest
 
 import (
 	"fmt"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"path/filepath"
 	"strings"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/files"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/files"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 )

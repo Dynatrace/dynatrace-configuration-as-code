@@ -20,11 +20,11 @@
 package v1
 
 import (
-	manifest2 "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
+	manifest2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"path/filepath"
 	"testing"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 )

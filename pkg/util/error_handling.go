@@ -20,7 +20,7 @@ import (
 	"errors"
 	"os"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 )
 
 type PrettyPrintableError interface {

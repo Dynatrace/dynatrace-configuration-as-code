@@ -18,15 +18,15 @@ package v1
 
 import (
 	"fmt"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/spf13/afero"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 )
 
 // LoadProjectsToDeploy returns a list of projects for deployment

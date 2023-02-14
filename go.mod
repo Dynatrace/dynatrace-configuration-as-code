@@ -1,4 +1,4 @@
-module github.com/dynatrace-oss/dynatrace-monitoring-as-code
+module github.com/dynatrace/dynatrace-configuration-as-code
 
 require (
 	github.com/golang/mock v1.6.0

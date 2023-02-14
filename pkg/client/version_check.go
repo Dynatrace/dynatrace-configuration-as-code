@@ -21,8 +21,8 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"net/http"
 	"strings"
 )

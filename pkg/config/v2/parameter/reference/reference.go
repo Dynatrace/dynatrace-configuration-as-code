@@ -17,10 +17,10 @@ package reference
 import (
 	"fmt"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/errors"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 )
 
 // ReferenceParameterType specifies the type of the parameter used in config files

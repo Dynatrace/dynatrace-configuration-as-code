@@ -19,7 +19,7 @@ package environment
 import (
 	"errors"
 	"fmt"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/spf13/afero"
 )
 

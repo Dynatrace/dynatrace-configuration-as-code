@@ -18,7 +18,7 @@ package client
 
 import (
 	"errors"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/golang/mock/gomock"
 	"gotest.tools/assert"
 	"testing"

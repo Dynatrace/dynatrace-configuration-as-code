@@ -22,8 +22,8 @@ package v2
 import (
 	"testing"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 )

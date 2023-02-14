@@ -18,7 +18,7 @@ package util
 
 import (
 	"encoding/json"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"reflect"
 	"strings"
 )

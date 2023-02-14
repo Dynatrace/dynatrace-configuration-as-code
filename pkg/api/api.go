@@ -17,7 +17,7 @@
 package api
 
 import (
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/maps"
 	"strings"
 )
 

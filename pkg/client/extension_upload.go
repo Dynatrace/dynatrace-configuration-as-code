@@ -21,14 +21,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"mime/multipart"
 	"net/http"
 	"time"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 )
 
 type extensionStatus int

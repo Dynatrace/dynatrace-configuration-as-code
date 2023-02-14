@@ -18,8 +18,8 @@ package client
 
 import (
 	"encoding/json"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"gotest.tools/assert"
 	"net/http"
 	"net/http/httptest"

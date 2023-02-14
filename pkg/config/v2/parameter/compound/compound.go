@@ -19,10 +19,10 @@ import ( // nosemgrep: go.lang.security.audit.xss.import-text-template.import-te
 	"fmt"
 	templ "text/template"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/template"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 )
 
 // CompoundParameterType specifies the type of the parameter used in config files

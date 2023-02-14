@@ -19,11 +19,11 @@ package util
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"strconv"
 	"strings"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 )
 
 // JsonValidationError is an error which contains more information about

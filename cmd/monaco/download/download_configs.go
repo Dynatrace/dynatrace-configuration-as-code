@@ -19,14 +19,14 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/client"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download/classic"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/download/settings"
-	project "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/project/v2"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/maps"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/classic"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/settings"
+	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/maps"
 	"github.com/spf13/afero"
 )
 

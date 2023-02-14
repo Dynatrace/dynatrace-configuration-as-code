@@ -17,12 +17,12 @@ package deploy
 import (
 	"fmt"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/client"
-	config "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config/v2/parameter"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 )
 
 // DeployConfigsOptions defines additional options used by DeployConfigs

@@ -20,7 +20,7 @@ package maps
 
 import (
 	"fmt"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/test"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/test"
 	"gotest.tools/assert"
 	"reflect"
 	"testing"

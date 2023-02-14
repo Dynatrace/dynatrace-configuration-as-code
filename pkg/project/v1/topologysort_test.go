@@ -25,9 +25,9 @@ import (
 
 	"gotest.tools/assert"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 )
 
 func createTestConfig(name string, filePrefix string, property string) config.Config {

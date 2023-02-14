@@ -22,7 +22,7 @@ import ( // nosemgrep: go.lang.security.audit.xss.import-text-template.import-te
 	"strings"
 	"text/template"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
 

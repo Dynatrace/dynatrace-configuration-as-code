@@ -19,15 +19,15 @@
 package v2
 
 import (
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/manifest"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/test"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/test"
 	"github.com/spf13/afero"
 	"regexp"
 	"testing"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/api"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"gotest.tools/assert"
 )
 

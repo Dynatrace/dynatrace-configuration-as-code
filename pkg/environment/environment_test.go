@@ -24,7 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"gotest.tools/assert"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 )
 
 const testYamlEnvironment = `

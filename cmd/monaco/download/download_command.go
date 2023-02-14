@@ -20,9 +20,9 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/cmd/monaco/runner/completion"
-	utilEnv "github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/environment"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner/completion"
+	utilEnv "github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/environment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 )
 
 func GetDownloadCommand(fs afero.Fs, command Command) (downloadCmd *cobra.Command) {

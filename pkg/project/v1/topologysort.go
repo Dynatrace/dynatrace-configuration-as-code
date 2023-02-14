@@ -19,8 +19,8 @@ package v1
 import (
 	"fmt"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/config"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 )
 
 func sortProjects(projects []Project) (sorted []Project, err error) {

@@ -22,7 +22,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/environment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/environment"
 	"gotest.tools/assert"
 )
 

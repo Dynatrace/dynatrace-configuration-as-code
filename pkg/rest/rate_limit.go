@@ -23,8 +23,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
-	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 )
 
 // rateLimitStrategy ensures that the concrete implementation of the rate limiting strategy can be hidden
