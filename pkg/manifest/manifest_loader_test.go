@@ -692,3 +692,189 @@ func Test_validateManifestVersion(t *testing.T) {
 		})
 	}
 }
+
+func TestLoadManifest(t *testing.T) {
+	tests := []struct {
+		name            string
+		manifestContent string
+		errsContain     []string
+	}{
+		{
+			name:        "Everything missing",
+			errsContain: []string{"manifestVersion", "project", "environmentGroups"},
+		},
+		{
+			name: "Everything good",
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: a}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: e}}]}]
+`,
+			errsContain: []string{},
+		},
+		{
+			name: "No manifestVersion",
+			manifestContent: `
+projects: [{name: a}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: e}}]}]
+`,
+			errsContain: []string{"manifestVersion"},
+		},
+		{
+			name: "Invalid manifestVersion",
+			manifestContent: `
+manifestVersion: a
+projects: [{name: a}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: e}}]}]
+`,
+			errsContain: []string{"manifestVersion"},
+		},
+		{
+			name: "Smaller version",
+			manifestContent: `
+manifestVersion: 0.0
+projects: [{name: a}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: e}}]}]
+`,
+			errsContain: []string{"manifestVersion"},
+		},
+		{
+			name: "Larger Version",
+			manifestContent: `
+manifestVersion: 10000.0
+projects: [{name: a}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: e}}]}]
+`,
+			errsContain: []string{"manifestVersion"},
+		},
+		{
+			name: "No projects",
+			manifestContent: `
+manifestVersion: 1.0
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: e}}]}]
+`,
+			errsContain: []string{"projects"},
+		},
+		{
+			name: "No environmentGroups",
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: a}]
+`,
+			errsContain: []string{"environmentGroups"},
+		},
+		{
+			name: "Empty projects",
+			manifestContent: `
+manifestVersion: 1.0
+projects: []
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: e}}]}]
+`,
+			errsContain: []string{"projects"},
+		},
+		{
+			name: "Empty environments",
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: a}]
+environmentGroups: [{name: b, environments: []}]
+`,
+			errsContain: []string{"no environments"},
+		},
+		{
+			name: "Duplicated environment names",
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: a}]
+environmentGroups:
+  - {name: b, environments: [{name: c, url: {value: d}, token: {name: e}}]}
+  - {name: f, environments: [{name: c, url: {value: d}, token: {name: e}}]}
+`,
+			errsContain: []string{"duplicated environment name"},
+		},
+		{
+			name: "Duplicated project names",
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: a},{name: a}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: e}}]}]
+`,
+			errsContain: []string{"duplicated project name"},
+		},
+		{
+			name: "Duplicated group names",
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: a}]
+environmentGroups:
+  - {name: b, environments: [{name: c, url: {value: d}, token: {name: e}}]}
+  - {name: b, environments: [{name: f, url: {value: d}, token: {name: e}}]}
+`,
+			errsContain: []string{"duplicated group name"},
+		},
+		{
+			name: "Empty Groupname",
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: a}]
+environmentGroups: [{name: '', environments: [{name: c, url: {value: d}, token: {name: e}}]}]
+`,
+			errsContain: []string{"missing group name"},
+		},
+		{
+			name: "Invalid token-type",
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: a}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: e, type: f}}]}]
+`,
+			errsContain: []string{"unknown token type"},
+		},
+		{
+			name: "Empty token",
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: a}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: ''}}]}]
+`,
+			errsContain: []string{"empty key"},
+		},
+		{
+			name: "Empty url",
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: a}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: ''}, token: {name: e}}]}]
+`,
+			errsContain: []string{"configured or value is blank"},
+		},
+		{
+			name: "unknown url type",
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: a}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d, type: f}, token: {name: e}}]}]
+`,
+			errsContain: []string{"f is not a valid"},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			fs := afero.NewMemMapFs()
+			assert.NilError(t, afero.WriteFile(fs, "manifest.yaml", []byte(test.manifestContent), 0400))
+
+			_, errs := LoadManifest(&ManifestLoaderContext{
+				Fs:           fs,
+				ManifestPath: "manifest.yaml",
+			})
+
+			if len(errs) == len(test.errsContain) {
+				for i := range test.errsContain {
+					assert.ErrorContains(t, errs[i], test.errsContain[i])
+				}
+			} else {
+				t.Errorf("Unexpected amount of errors: %#v", errs)
+			}
+		})
+	}
+}
