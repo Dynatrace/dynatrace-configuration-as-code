@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Integration Tests - v2" type="GoTestRunConfiguration" factoryName="Go Test" folderName="shared">
-    <module name="internal-monitoring-as-code" />
+    <module name="dynatrace-configuration-as-code" />
     <working_directory value="$PROJECT_DIR$/cmd" />
     <go_parameters value="--tags=integration" />
     <envs>
