@@ -185,8 +185,8 @@ func silenceUsageCommand() func(cmd *cobra.Command, args []string) {
 
 func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 
-	var environment []string
-	var manifestName string
+	var environments []string
+	var manifestName, group string
 
 	deleteCmd = &cobra.Command{
 		Use:     "delete <manifest.yaml> <delete.yaml>",
@@ -209,16 +209,19 @@ func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 				return err
 			}
 
-			return delete.Delete(fs, manifestName, deleteFile, environment)
+			return delete.Delete(fs, manifestName, deleteFile, environments, group)
 		},
 		ValidArgsFunction: completion.DeleteCompletion,
 	}
 
-	deleteCmd.Flags().StringSliceVarP(&environment, "environment", "e", make([]string, 0), "Deletes configuration only for specified envs. If not set, delete will be executed on all environments defined in manifest.")
+	deleteCmd.Flags().StringVarP(&group, "group", "g", "", "Specify the environmentGroup that should be used for deletion. This flag is mutually exclusive with '--environment'. If this flag is specified, configuration will be deleted from all environments within the specified group.")
+	deleteCmd.Flags().StringSliceVarP(&environments, "environment", "e", make([]string, 0), "Deletes configuration only for specified environments. This flag is mutually exclusive with '--group' If not set, delete will be executed on all environments defined in manifest.")
 
 	if err := deleteCmd.RegisterFlagCompletionFunc("environment", completion.EnvironmentByArg0); err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
+
+	deleteCmd.MarkFlagsMutuallyExclusive("environment", "group")
 
 	return deleteCmd
 }
