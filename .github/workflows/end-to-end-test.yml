@@ -47,7 +47,7 @@ jobs:
         if: github.event.action == 'labeled' && github.event.label.name == env.E2E_TEST_LABEL
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: 🏁 Build release binaries
         run: make build-release
