@@ -21,7 +21,7 @@ package v1
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/config/v2/coordinate"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 	"path/filepath"

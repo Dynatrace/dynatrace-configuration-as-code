@@ -17,13 +17,13 @@
 package download
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
-	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/api"
+	config "github.com/dynatrace/dynatrace-configuration-as-code/internal/config/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/config/v2/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/config/v2/parameter"
+	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/internal/config/v2/parameter/value"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/config/v2/template"
+	project "github.com/dynatrace/dynatrace-configuration-as-code/internal/project/v2"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"testing"

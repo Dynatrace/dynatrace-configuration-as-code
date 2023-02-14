@@ -22,13 +22,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2/topologysort"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/download"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/manifest"
+	project "github.com/dynatrace/dynatrace-configuration-as-code/internal/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/project/v2/topologysort"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/util/log"
 	"github.com/spf13/afero"
 )
 

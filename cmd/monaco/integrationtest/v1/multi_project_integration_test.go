@@ -20,7 +20,7 @@
 package v1
 
 import (
-	manifest2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
+	manifest2 "github.com/dynatrace/dynatrace-configuration-as-code/internal/manifest"
 	"path/filepath"
 	"testing"
 

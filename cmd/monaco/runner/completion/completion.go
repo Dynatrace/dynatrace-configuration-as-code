@@ -17,15 +17,15 @@
 package completion
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/files"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/maps"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/slices"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/util/files"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/util/maps"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/util/slices"
 	"github.com/spf13/pflag"
 	"os"
 	"strings"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/manifest"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )

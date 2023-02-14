@@ -20,7 +20,7 @@
 package v2
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/util"
 	"path"
 	"path/filepath"
 	"testing"

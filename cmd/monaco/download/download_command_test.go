@@ -25,7 +25,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/util"
 )
 
 // TestInvalidCliCommands is a very basic test testing that invalid commands error.

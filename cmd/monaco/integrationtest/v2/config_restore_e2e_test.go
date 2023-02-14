@@ -20,14 +20,14 @@ package v2
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/test"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/manifest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/util/test"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/util/log"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 )

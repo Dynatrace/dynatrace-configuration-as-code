@@ -19,14 +19,14 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/classic"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/settings"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/maps"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/download"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/download/classic"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/download/settings"
+	project "github.com/dynatrace/dynatrace-configuration-as-code/internal/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/util/maps"
 	"github.com/spf13/afero"
 )
 

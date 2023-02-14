@@ -32,10 +32,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/download"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner/completion"
 	legacyDeploy "github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/v1/deploy"
-	utilEnv "github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/environment"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/files"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
+	utilEnv "github.com/dynatrace/dynatrace-configuration-as-code/internal/util/environment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/util/files"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 )
 
 var errWrongUsage = errors.New("")
