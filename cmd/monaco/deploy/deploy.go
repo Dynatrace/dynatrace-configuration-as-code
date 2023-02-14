@@ -312,16 +312,6 @@ func groupEnvironmentConfigErrors(errors []configError.DetailedConfigError) Grou
 	return groupErrors
 }
 
-func toEnvironmentNames(environments []manifest.EnvironmentDefinition) []string {
-	result := make([]string, 0, len(environments))
-
-	for _, env := range environments {
-		result = append(result, env.Name)
-	}
-
-	return result
-}
-
 func filterProjectsByName(projects []project.Project, names []string) ([]string, error) {
 	var result []string
 
@@ -400,16 +390,6 @@ func toProjectMap(projects []project.Project) map[string]project.Project {
 
 func containsName(names []string, name string) bool {
 	return slices.Contains(names, name)
-}
-
-func toEnvironmentMap(environments []manifest.EnvironmentDefinition) map[string]manifest.EnvironmentDefinition {
-	result := make(map[string]manifest.EnvironmentDefinition)
-
-	for _, env := range environments {
-		result[env.Name] = env
-	}
-
-	return result
 }
 
 func getClient(environment manifest.EnvironmentDefinition, dryRun bool) (client.Client, error) {

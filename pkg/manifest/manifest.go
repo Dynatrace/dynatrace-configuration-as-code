@@ -17,7 +17,6 @@ package manifest
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/maps"
 	"os"
 	"strings"
 
@@ -129,11 +128,6 @@ type Manifest struct {
 
 	// Environments defined in the manifest, split by environment-name
 	Environments Environments
-}
-
-// todo remove
-func (m Manifest) GetEnvironmentsAsSlice() []EnvironmentDefinition {
-	return maps.Values(m.Environments)
 }
 
 // FilterByNames filters the environments by name and returns all environments that match the given names.
