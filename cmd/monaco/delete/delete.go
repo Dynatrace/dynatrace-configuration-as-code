@@ -23,7 +23,7 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
-	configDelete "github.com/dynatrace/dynatrace-configuration-as-code/pkg/delete/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/delete"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
@@ -59,7 +59,7 @@ func Delete(fs afero.Fs, deploymentManifestPath string, deletePath string, envir
 		return errors.New("error while loading manifest")
 	}
 
-	entriesToDelete, errs := configDelete.LoadEntriesToDelete(fs, api.GetApiNames(apis), deleteFileWorkingDir, deleteFile)
+	entriesToDelete, errs := delete.LoadEntriesToDelete(fs, api.GetApiNames(apis), deleteFileWorkingDir, deleteFile)
 	if errs != nil {
 		return fmt.Errorf("encountered errors while parsing delete.yaml: %s", errs)
 	}
@@ -94,7 +94,7 @@ func Delete(fs afero.Fs, deploymentManifestPath string, deletePath string, envir
 	return nil
 }
 
-func deleteConfigs(environments []manifest.EnvironmentDefinition, apis map[string]api.Api, entriesToDelete map[string][]configDelete.DeletePointer) (errors []error) {
+func deleteConfigs(environments []manifest.EnvironmentDefinition, apis map[string]api.Api, entriesToDelete map[string][]delete.DeletePointer) (errors []error) {
 
 	for _, env := range environments {
 		deleteErrors := deleteConfigForEnvironment(env, apis, entriesToDelete)
@@ -107,7 +107,7 @@ func deleteConfigs(environments []manifest.EnvironmentDefinition, apis map[strin
 	return errors
 }
 
-func deleteConfigForEnvironment(env manifest.EnvironmentDefinition, apis map[string]api.Api, entriesToDelete map[string][]configDelete.DeletePointer) []error {
+func deleteConfigForEnvironment(env manifest.EnvironmentDefinition, apis map[string]api.Api, entriesToDelete map[string][]delete.DeletePointer) []error {
 	dynatraceClient, err := createClient(env, false)
 
 	if err != nil {
@@ -118,7 +118,7 @@ func deleteConfigForEnvironment(env manifest.EnvironmentDefinition, apis map[str
 
 	log.Info("Deleting configs for environment `%s`", env.Name)
 
-	return configDelete.DeleteConfigs(dynatraceClient, apis, entriesToDelete)
+	return delete.DeleteConfigs(dynatraceClient, apis, entriesToDelete)
 }
 
 func createClient(environment manifest.EnvironmentDefinition, dryRun bool) (client.Client, error) {

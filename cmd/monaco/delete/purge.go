@@ -18,7 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	configDelete "github.com/dynatrace/dynatrace-configuration-as-code/pkg/delete/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/delete"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
@@ -91,5 +91,5 @@ func purgeConfigsForEnvironment(env manifest.EnvironmentDefinition, apis map[str
 
 	log.Info("Deleting configs for environment `%s`", env.Name)
 
-	return configDelete.DeleteAllConfigs(dynatraceClient, apis)
+	return delete.DeleteAllConfigs(dynatraceClient, apis)
 }
