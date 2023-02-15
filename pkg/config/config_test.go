@@ -20,30 +20,14 @@ package config
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"gotest.tools/assert"
 )
 
-const testTemplate = `{"msg": "Follow the {{.color}} {{.animalType}}"}`
-
-var testProductionEnvironment = environment.NewEnvironment("prod-environment", "prod-environment", "production", "https://url/to/production/environment", "PRODUCTION")
 var testManagementZoneApi = api.NewStandardApi("management-zone", "/api/config/v1/managementZones", false, "", false)
-
-func createConfigForTest(id string, project string, template util.Template, properties map[string]map[string]string, api api.Api, fileName string) configImpl {
-	return configImpl{
-		id:         id,
-		project:    project,
-		template:   template,
-		properties: properties,
-		api:        api,
-		fileName:   fileName,
-	}
-}
 
 func TestFilterProperties(t *testing.T) {
 
@@ -140,97 +124,6 @@ func TestFilterPropertiesToReturnNoGeneralPropertiesForMissingSpecificOnes(t *te
 	assert.Check(t, len(properties["dashboard.dev"]) == 1)
 }
 
-func TestSkipConfigDeployment(t *testing.T) {
-
-	m := getTestPropertiesWithGroupAndEnvironment()
-	templ := getTestTemplate(t)
-	config := newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
-
-	skipDeployment := config.IsSkipDeployment(testProductionEnvironment)
-	assert.Equal(t, true, skipDeployment)
-
-	delete(m["test.prod-environment"], SkipConfigDeploymentParameter)
-	m["test.production"][SkipConfigDeploymentParameter] = "true"
-	config = newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
-	skipDeployment = config.IsSkipDeployment(testProductionEnvironment)
-	assert.Equal(t, true, skipDeployment)
-
-	delete(m["test.production"], SkipConfigDeploymentParameter)
-	m["test"][SkipConfigDeploymentParameter] = "true"
-	config = newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
-	skipDeployment = config.IsSkipDeployment(testProductionEnvironment)
-	assert.Equal(t, true, skipDeployment)
-
-	delete(m["test"], SkipConfigDeploymentParameter)
-	config = newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
-	skipDeployment = config.IsSkipDeployment(testProductionEnvironment)
-	assert.Equal(t, false, skipDeployment)
-}
-
-// Test getting object name for environment
-// considering environment and group overrides
-func TestGetObjectNameForEnvironment(t *testing.T) {
-
-	m := getTestPropertiesWithGroupAndEnvironment()
-	templ := getTestTemplate(t)
-	config := newConfig("test", "testproject", templ, m, testManagementZoneApi, "")
-
-	productionResult, err := config.GetObjectNameForEnvironment(testProductionEnvironment, make(map[string]api.DynatraceEntity))
-	assert.NilError(t, err)
-	assert.Equal(t, "Prod environment config name", productionResult)
-
-	// remove name parameter from test.prod-environment
-	// and check if group `name` parameter is set
-	delete(m["test.prod-environment"], "name")
-	productionResult, err = config.GetObjectNameForEnvironment(testProductionEnvironment, make(map[string]api.DynatraceEntity))
-	assert.NilError(t, err)
-	assert.Equal(t, "Production config name", productionResult)
-
-	// remove name parameter from test.production
-	// and check if group `name` parameter is set
-	delete(m["test.production"], "name")
-	productionResult, err = config.GetObjectNameForEnvironment(testProductionEnvironment, make(map[string]api.DynatraceEntity))
-	assert.NilError(t, err)
-	assert.Equal(t, "Config name", productionResult)
-
-	// remove name parameter from test config
-	// this test should fail as no name parameter is defined
-	delete(m["test"], "name")
-	productionResult, err = config.GetObjectNameForEnvironment(testProductionEnvironment, make(map[string]api.DynatraceEntity))
-
-	expected := util.ReplacePathSeparators("could not find name property in config testproject/management-zone/test, please make sure `name` is defined and not empty")
-	assert.Error(t, err, expected)
-}
-
-func getTestTemplate(t *testing.T) util.Template {
-	template, e := util.NewTemplateFromString("test", testTemplate)
-	assert.NilError(t, e)
-	return template
-}
-
-func getTestPropertiesWithGroupAndEnvironment() map[string]map[string]string {
-
-	m := make(map[string]map[string]string)
-
-	m["test"] = make(map[string]string)
-	m["test"]["name"] = "Config name"
-	m["test"]["color"] = "white"
-	m["test"]["animalType"] = "rabbit"
-
-	m["test.production"] = make(map[string]string)
-	m["test.production"]["name"] = "Production config name"
-	m["test.production"]["color"] = "brown"
-	m["test.production"]["animalType"] = "dog"
-
-	m["test.prod-environment"] = make(map[string]string)
-	m["test.prod-environment"]["name"] = "Prod environment config name"
-	m["test.prod-environment"]["color"] = "red"
-	m["test.prod-environment"]["animalType"] = "cat"
-	m["test.prod-environment"][SkipConfigDeploymentParameter] = "true"
-
-	return m
-}
-
 func TestHasDependencyCheck(t *testing.T) {
 	prop := make(map[string]map[string]string)
 	prop["test"] = make(map[string]string)
@@ -261,46 +154,4 @@ func TestHasDependencyWithMultipleDependenciesCheck(t *testing.T) {
 	otherConfig := newConfig("other", "testproject", temp, make(map[string]map[string]string), testManagementZoneApi, "other.json")
 
 	assert.Equal(t, true, config.HasDependencyOn(otherConfig))
-}
-
-func TestParseDependencyWithAbsolutePath(t *testing.T) {
-
-	prop := make(map[string]map[string]string)
-	templ := getTestTemplate(t)
-
-	config := createConfigForTest("test", "testproject", templ, prop, testManagementZoneApi, "")
-
-	managementZonePath := util.ReplacePathSeparators("infrastructure/management-zone/zone")
-
-	dynatraceEntity := api.DynatraceEntity{
-		Description: "bla",
-		Name:        "Test Management Zone",
-		Id:          managementZonePath,
-	}
-	dict := make(map[string]api.DynatraceEntity)
-	dict[managementZonePath] = dynatraceEntity
-
-	managementZoneId, err := config.parseDependency(string(os.PathSeparator)+managementZonePath+".name", dict)
-	assert.NilError(t, err)
-	assert.Equal(t, "Test Management Zone", managementZoneId)
-}
-
-func TestParseDependencyWithRelativePath(t *testing.T) {
-
-	prop := make(map[string]map[string]string)
-	templ := getTestTemplate(t)
-
-	config := createConfigForTest("test", "testproject", templ, prop, testManagementZoneApi, "")
-
-	dynatraceEntity := api.DynatraceEntity{
-		Description: "bla",
-		Name:        "Test Management Zone",
-		Id:          "zone",
-	}
-	dict := make(map[string]api.DynatraceEntity)
-	dict["infrastructure/management-zone/zone"] = dynatraceEntity
-
-	managementZoneId, err := config.parseDependency("infrastructure/management-zone/zone.id", dict)
-	assert.NilError(t, err)
-	assert.Equal(t, "zone", managementZoneId)
 }
