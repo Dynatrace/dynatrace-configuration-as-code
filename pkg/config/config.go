@@ -75,11 +75,6 @@ func NewConfig(fs afero.Fs, id string, project string, fileName string, properti
 	return newConfig(id, project, template, filterProperties(id, properties), api, fileName), nil
 }
 
-func NewConfigWithTemplate(id string, project string, fileName string, template util.Template,
-	properties map[string]map[string]string, api api.Api) (Config, error) {
-	return newConfig(id, project, template, filterProperties(id, properties), api, fileName), nil
-}
-
 func newConfig(id string, project string, template util.Template, properties map[string]map[string]string, api api.Api, fileName string) Config {
 	return &configImpl{
 		id:         id,

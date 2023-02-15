@@ -19,23 +19,10 @@
 package config
 
 import (
-	"testing"
-
-	"github.com/golang/mock/gomock"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 )
 
-func CreateConfigMockFactory(t *testing.T) *MockConfigFactory {
-
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	return NewMockConfigFactory(mockCtrl)
-}
-
-func GetMockConfig(id string, project string, template util.Template, properties map[string]map[string]string, api api.Api, fileName string) Config {
-
-	return newConfig(id, project, template, properties, api, fileName)
+func NewConfigWithTemplate(id string, project string, fileName string, template util.Template, properties map[string]map[string]string, api api.Api) Config {
+	return newConfig(id, project, template, filterProperties(id, properties), api, fileName)
 }

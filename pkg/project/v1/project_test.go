@@ -147,7 +147,7 @@ func TestGetApiFromLocationApiNotFound(t *testing.T) {
 
 func TestProcessConfigSection(t *testing.T) {
 
-	factory := config.CreateConfigMockFactory(t)
+	factory := config.NewMockConfigFactory(gomock.NewController(t))
 	fs := util.CreateTestFileSystem()
 	builder := testCreateProjectBuilderWithMock(factory, fs, "testProject", "")
 
@@ -170,7 +170,7 @@ func TestProcessConfigSection(t *testing.T) {
 
 func TestProcessConfigSectionWithProjectRootParameter(t *testing.T) {
 
-	factory := config.CreateConfigMockFactory(t)
+	factory := config.NewMockConfigFactory(gomock.NewController(t))
 	fileReaderMock := util.CreateTestFileSystem()
 	builder := testCreateProjectBuilderWithMock(factory, fileReaderMock, "test", "testProjectsRoot")
 
@@ -234,7 +234,7 @@ dashboard.dev:
 
 func TestProcessYaml(t *testing.T) {
 
-	factory := config.CreateConfigMockFactory(t)
+	factory := config.NewMockConfigFactory(gomock.NewController(t))
 	fs := util.CreateTestFileSystem()
 	err := fs.Mkdir("test/dashboard/", 0777)
 	err = afero.WriteFile(fs, "test/dashboard/test-file.yaml", []byte(projectTestYaml), 0664)
@@ -245,9 +245,10 @@ func TestProcessYaml(t *testing.T) {
 
 	yamlFile := util.ReplacePathSeparators("test/dashboard/test-file.yaml")
 
+	var template util.Template = nil
 	factory.EXPECT().
 		NewConfig(gomock.Any(), "dashboard", "testproject", util.ReplacePathSeparators("test/dashboard/my-project-dashboard.json"), gomock.Any(), testDashboardApi).
-		Return(config.GetMockConfig("my-project-dashboard", "testproject", nil, properties, testDashboardApi, util.ReplacePathSeparators("dashboard/test-file.yaml")), nil)
+		Return(config.NewConfigWithTemplate("my-project-dashboard", "testproject", util.ReplacePathSeparators("dashboard/test-file.yaml"), template, properties, api), nil)
 
 	err = builder.processYaml(yamlFile, util.UnmarshalYaml)
 

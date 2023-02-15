@@ -87,7 +87,7 @@ func TestConvertParameters(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	testConfig, err := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
+	testConfig := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
 		template, properties, testApi)
 
 	assert.NoError(t, err)
@@ -145,7 +145,7 @@ func TestParseSkipDeploymentParameter(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	testConfig, err := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
+	testConfig := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
 		template, properties, testApi)
 
 	assert.NoError(t, err)
@@ -248,7 +248,7 @@ func TestLoadPropertiesForEnvironment(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	testConfig, err := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
+	testConfig := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
 		template, properties, testApi)
 
 	assert.NoError(t, err)
@@ -293,7 +293,7 @@ func TestConvertConfig(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	testConfig, err := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
+	testConfig := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
 		template, properties, testApi)
 
 	assert.NoError(t, err)
@@ -354,7 +354,7 @@ func TestConvertDeprecatedConfigToLatest(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	testConfig, err := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
+	testConfig := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
 		template, properties, deprecatedApi)
 
 	assert.NoError(t, err)
@@ -412,7 +412,7 @@ func TestConvertConfigWithEnvNameCollisionShouldFail(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	testConfig, err := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
+	testConfig := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
 		template, properties, testApi)
 
 	assert.NoError(t, err)
@@ -450,7 +450,7 @@ func TestConvertSkippedConfig(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	testConfig, err := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
+	testConfig := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
 		template, properties, testApi)
 
 	assert.NoError(t, err)
@@ -502,9 +502,8 @@ func TestConvertConfigs(t *testing.T) {
 
 	fs, template := setupFsWithFullTestTemplate(t, simpleParameterName, referenceParameterName, listParameterName, envVariableName)
 
-	testConfig, err := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
+	testConfig := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
 		template, properties, testApi)
-	assert.NoError(t, err)
 
 	convertContext := &ConfigConvertContext{
 		ConverterContext: &ConverterContext{
@@ -601,10 +600,8 @@ func TestConvertProjects(t *testing.T) {
 
 	template := generateDummyTemplate(t)
 
-	testConfig, err := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
+	testConfig := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
 		template, properties, testApi)
-
-	assert.NoError(t, err)
 
 	project := &projectV1.ProjectImpl{
 		Id:      projectId,
@@ -851,7 +848,7 @@ func generateDummyConfig(t *testing.T) configV1.Config {
 
 	assert.NoError(t, err)
 
-	conf, err := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
+	conf := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-config.json",
 		template, properties, testApi)
 
 	assert.NoError(t, err)
