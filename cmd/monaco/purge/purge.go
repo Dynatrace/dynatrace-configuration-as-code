@@ -66,7 +66,7 @@ func purge(fs afero.Fs, deploymentManifestPath string, environmentNames []string
 func purgeConfigs(environments []manifest.EnvironmentDefinition, apis api.APIs) (errors []error) {
 
 	for _, env := range environments {
-		deleteErrors := purgeConfigsForEnvironment(env, apis)
+		deleteErrors := purgeForEnvironment(env, apis)
 
 		if deleteErrors != nil {
 			errors = append(errors, deleteErrors...)
@@ -76,7 +76,7 @@ func purgeConfigs(environments []manifest.EnvironmentDefinition, apis api.APIs) 
 	return errors
 }
 
-func purgeConfigsForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs) []error {
+func purgeForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs) []error {
 	dynatraceClient, err := cmdutils.CreateDTClient(env, false)
 
 	if err != nil {
@@ -87,5 +87,8 @@ func purgeConfigsForEnvironment(env manifest.EnvironmentDefinition, apis api.API
 
 	log.Info("Deleting configs for environment `%s`", env.Name)
 
-	return delete.DeleteAllConfigs(dynatraceClient, apis)
+	errs := delete.DeleteAllConfigs(dynatraceClient, apis)
+	errs = append(errs, delete.DeleteAllSettingsObjects(dynatraceClient)...)
+
+	return errs
 }

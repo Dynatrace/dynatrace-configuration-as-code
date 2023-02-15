@@ -170,6 +170,7 @@ func DeleteAllConfigs(client client.ConfigClient, apis api.APIs) (errors []error
 		log.Info("Deleting %d configs of type %s...", len(values), api.ID)
 
 		for _, v := range values {
+			log.Debug("Deleting config %s/%s", api.ID, v.Id)
 			// TODO(improvement): this could be improved by filtering for default configs the same way as Download does
 			err := client.DeleteConfigById(api, v.Id)
 
@@ -180,4 +181,41 @@ func DeleteAllConfigs(client client.ConfigClient, apis api.APIs) (errors []error
 	}
 
 	return errors
+}
+
+// DeleteAllSettingsObjects deletes all settings objects that can be queried.
+func DeleteAllSettingsObjects(c client.SettingsClient) []error {
+	var errs []error
+
+	schemas, err := c.ListSchemas()
+	if err != nil {
+		return []error{fmt.Errorf("failed to fetch settings schemas. No settings will be deleted. Reason: %w", err)}
+	}
+
+	schemaIds := make([]string, len(schemas))
+	for i := range schemas {
+		schemaIds[i] = schemas[i].SchemaId
+	}
+
+	log.Debug("Deleting settings of schemas %v", schemaIds)
+
+	for _, s := range schemaIds {
+		log.Info("Collecting configs of type %s...", s)
+		settings, err := c.ListSettings(s, client.ListSettingsOptions{DiscardValue: true})
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		log.Info("Deleting %d configs of type %s...", len(settings), s)
+		for _, setting := range settings {
+			log.Debug("Deleting settings object with objectId=%s", setting.ObjectId)
+			err := c.DeleteSettings(setting.ObjectId)
+			if err != nil {
+				errs = append(errs, err)
+			}
+		}
+	}
+
+	return errs
 }
