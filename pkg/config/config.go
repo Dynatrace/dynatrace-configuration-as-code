@@ -17,14 +17,12 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"
@@ -33,9 +31,7 @@ import (
 //go:generate mockgen -source=config.go -destination=config_mock.go -package=config Config
 
 type Config interface {
-	IsSkipDeployment(environment environment.Environment) bool
 	GetApi() api.Api
-	GetObjectNameForEnvironment(environment environment.Environment, dict map[string]api.DynatraceEntity) (string, error)
 	HasDependencyOn(config Config) bool
 	GetFilePath() string
 	GetFullQualifiedId() string
@@ -43,8 +39,6 @@ type Config interface {
 	GetId() string
 	GetProject() string
 	GetProperties() map[string]map[string]string
-	GetRequiredByConfigIdList() []string
-	addToRequiredByConfigIdList(config string)
 }
 
 var dependencySuffixes = []string{".id", ".name"}
@@ -52,13 +46,12 @@ var dependencySuffixes = []string{".id", ".name"}
 const SkipConfigDeploymentParameter = "skipDeployment"
 
 type configImpl struct {
-	id                  string
-	project             string
-	properties          map[string]map[string]string
-	template            util.Template
-	api                 api.Api
-	fileName            string
-	requiredByConfigIds []string
+	id         string
+	project    string
+	properties map[string]map[string]string
+	template   util.Template
+	api        api.Api
+	fileName   string
 }
 
 // configFactory is used to create new Configs - this is needed for testing purposes
@@ -112,77 +105,6 @@ func filterProperties(id string, properties map[string]map[string]string) map[st
 	return result
 }
 
-func (c *configImpl) IsSkipDeployment(environment environment.Environment) bool {
-	environmentKey := c.id + "." + environment.GetId()
-
-	if properties, ok := c.properties[environmentKey]; ok {
-		if value, ok := properties[SkipConfigDeploymentParameter]; ok {
-			return strings.EqualFold(value, "true")
-		}
-	}
-
-	environmentGroupKey := c.id + "." + environment.GetGroup()
-
-	if properties, ok := c.properties[environmentGroupKey]; ok {
-		if value, ok := properties[SkipConfigDeploymentParameter]; ok {
-			return strings.EqualFold(value, "true")
-		}
-	}
-
-	if properties, ok := c.properties[c.id]; ok {
-		if value, ok := properties[SkipConfigDeploymentParameter]; ok {
-			return strings.EqualFold(value, "true")
-		}
-	}
-
-	return false
-}
-
-func (c *configImpl) GetObjectNameForEnvironment(environment environment.Environment, dict map[string]api.DynatraceEntity) (string, error) {
-	environmentKey := c.id + "." + environment.GetId()
-	environmentGroupKey := c.id + "." + environment.GetGroup()
-	name := c.properties[environmentKey]["name"]
-	// assign group value if exists
-	if name == "" {
-		name = c.properties[environmentGroupKey]["name"]
-	}
-	// assign default value
-	if name == "" {
-		name = c.properties[c.id]["name"]
-	}
-	if name == "" {
-		return "", fmt.Errorf("could not find name property in config %s, please make sure `name` is defined and not empty", c.GetFullQualifiedId())
-	}
-	if IsDependency(name) {
-		return c.parseDependency(name, dict)
-	}
-	return name, nil
-}
-
-func (c *configImpl) parseDependency(dependency string, dict map[string]api.DynatraceEntity) (string, error) {
-
-	// in case of an absolute path within the dependency:
-	dependency = strings.TrimPrefix(dependency, string(os.PathSeparator))
-
-	id, access, err := SplitDependency(dependency)
-	if err != nil {
-		return "", err
-	}
-	dtObject, ok := dict[id]
-	if !ok {
-		return "", errors.New("Id '" + id + "' was not available. Please make sure the reference exists.")
-	}
-
-	switch access {
-	case "id":
-		return dtObject.Id, nil
-	case "name":
-		return dtObject.Name, nil
-	default:
-		return "", fmt.Errorf("accessor %s not found for dependcy id %s", access, id)
-	}
-}
-
 func IsDependency(property string) bool {
 	for _, suffix := range dependencySuffixes {
 		if strings.HasSuffix(property, suffix) {
@@ -209,14 +131,6 @@ func SplitDependency(property string) (id string, access string, err error) {
 
 func (c *configImpl) GetApi() api.Api {
 	return c.api
-}
-
-func (c *configImpl) GetRequiredByConfigIdList() []string {
-	return c.requiredByConfigIds
-}
-
-func (c *configImpl) addToRequiredByConfigIdList(config string) {
-	c.requiredByConfigIds = append(c.requiredByConfigIds, config)
 }
 
 func (c *configImpl) GetType() string {
@@ -254,7 +168,6 @@ func (c *configImpl) HasDependencyOn(config Config) bool {
 				// should match config.type and config.id
 				if len(strings.Split(valueString, string(os.PathSeparator))) < 3 && c.GetProject() == config.GetProject() {
 					if valueString == strings.Join([]string{config.GetType(), config.GetId()}, string(os.PathSeparator)) {
-						config.addToRequiredByConfigIdList(c.GetFullQualifiedId())
 						return true
 					}
 				}
@@ -271,7 +184,6 @@ func (c *configImpl) HasDependencyOn(config Config) bool {
 				// id collisions. It is therefore advisable, to always use full paths in
 				// multi-project environments
 				if strings.HasSuffix(configFullPath, valueString) {
-					config.addToRequiredByConfigIdList(c.GetFullQualifiedId())
 					return true
 				}
 			}
