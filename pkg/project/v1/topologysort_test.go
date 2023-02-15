@@ -19,14 +19,14 @@
 package v1
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v1"
 	"os"
 	"strings"
 	"testing"
 
 	"gotest.tools/assert"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 )
 
@@ -42,7 +42,7 @@ func createTestConfig(name string, filePrefix string, property string) config.Co
 	project := strings.Join(path[0:len(path)-2], string(os.PathSeparator))
 	var testManagementZoneApi = api.NewStandardApi(zoneId[0], "/api/config/v1/foobar", false, "", false)
 
-	configA := config.GetMockConfig(name, project, nil, propA, testManagementZoneApi, filePrefix+name+".json")
+	configA := config.NewConfigWithTemplate(name, project, filePrefix+name+".json", nil, propA, testManagementZoneApi)
 
 	return configA
 }
