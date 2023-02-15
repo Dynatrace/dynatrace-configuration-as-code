@@ -20,14 +20,13 @@ package v1
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v1"
+	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v1"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+
+	"gotest.tools/assert"
 	"os"
 	"strings"
 	"testing"
-
-	"gotest.tools/assert"
-
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 )
 
 func createTestConfig(name string, filePrefix string, property string) config.Config {
