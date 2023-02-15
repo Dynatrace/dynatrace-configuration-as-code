@@ -318,7 +318,7 @@ func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, e
 		d.serverVersion.SmallerThan(util.Version{Major: 1, Minor: 262, Patch: 0}) &&
 		len(settings) > 0 &&
 		settings[0].ObjectId == obj.OriginObjectId {
-		log.Error("Unable to update Settings 2.0 object of schema %q and object id %q on Dynatrace tenant with a version < 1.262.0", obj.SchemaId, obj.OriginObjectId)
+		log.Warn("Unable to update Settings 2.0 object of schema %q and object id %q on Dynatrace tenant with a version < 1.262.0", obj.SchemaId, obj.OriginObjectId)
 		return DynatraceEntity{
 			Id:   settings[0].ObjectId,
 			Name: settings[0].ObjectId,

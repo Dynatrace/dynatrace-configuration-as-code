@@ -162,8 +162,7 @@ func execDeployment(sortedConfigs map[string][]config.Config, environmentMap map
 			}
 		}
 
-		client, err := getClient(env, dryRun)
-
+		dtClient, err := createDynatraceClient(env, dryRun)
 		if err != nil {
 			if continueOnError {
 				deploymentErrors = append(deploymentErrors, err)
@@ -173,9 +172,8 @@ func execDeployment(sortedConfigs map[string][]config.Config, environmentMap map
 			}
 		}
 
-		errors := deploy.DeployConfigs(client, apis, configs, deploy.DeployConfigsOptions{ContinueOnErr: continueOnError, DryRun: dryRun})
-
-		deploymentErrors = append(deploymentErrors, errors...)
+		errs := deploy.DeployConfigs(dtClient, apis, configs, deploy.DeployConfigsOptions{ContinueOnErr: continueOnError, DryRun: dryRun})
+		deploymentErrors = append(deploymentErrors, errs...)
 	}
 
 	if deploymentErrors != nil {
@@ -392,23 +390,9 @@ func containsName(names []string, name string) bool {
 	return slices.Contains(names, name)
 }
 
-func getClient(environment manifest.EnvironmentDefinition, dryRun bool) (client.Client, error) {
+func createDynatraceClient(environment manifest.EnvironmentDefinition, dryRun bool) (client.Client, error) {
 	if dryRun {
-		return &client.DummyClient{
-			Entries: map[api.Api][]client.DataEntry{},
-		}, nil
-	} else {
-		token, err := environment.GetToken()
-
-		if err != nil {
-			return nil, err
-		}
-
-		url, err := environment.GetUrl()
-		if err != nil {
-			return nil, err
-		}
-
-		return client.NewDynatraceClient(url, token)
+		return client.NewDummyClient(), nil
 	}
+	return client.CreateClientForEnvironment(environment)
 }

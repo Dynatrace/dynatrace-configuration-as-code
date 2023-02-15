@@ -16,6 +16,10 @@ package download
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"net/http"
+	"os"
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -105,6 +109,9 @@ func GetDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.
 			return nil
 		},
 		ValidArgsFunction: completion.DownloadDirectCompletion,
+		PreRun: func(cmd *cobra.Command, args []string) {
+			printUploadToSameEnvironmentWarning(args[0], os.Getenv(args[1]))
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			url := args[0]
 			tokenEnvVar := args[1]
@@ -251,5 +258,21 @@ func setupSharedFlags(cmd *cobra.Command, project, outputFolder *string, forceOv
 	err := cmd.MarkFlagDirname("output-folder")
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
+	}
+}
+
+// printUploadToSameEnvironmentWarning function may display a warning message on the console,
+// notifying the user that downloaded objects cannot be uploaded to the same environment.
+// It verifies the version of the tenant and, depending on the result, it may or may not display the warning.
+func printUploadToSameEnvironmentWarning(environmentURL, token string) {
+	serverVersion, err := client.GetDynatraceVersion(&http.Client{}, environmentURL, token)
+	if err != nil {
+		log.Error("Unable to determine server version %q", environmentURL)
+		return
+	}
+	if serverVersion.SmallerThan(util.Version{Major: 1, Minor: 262}) {
+		log.Warn("Uploading Settings 2.0 objects to the same environment is not possible due to your cluster version " +
+			"being below 1.262.0, which Monaco does not support for reliably updating downloaded settings without having " +
+			"duplicate configurations. Consider upgrading to 1.262+")
 	}
 }

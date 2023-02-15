@@ -46,6 +46,11 @@ var (
 	_ Client = (*DummyClient)(nil)
 )
 
+// NewDummyClient creates a new DummyClient
+func NewDummyClient() *DummyClient {
+	return &DummyClient{Entries: map[api.Api][]DataEntry{}}
+}
+
 func (c *DummyClient) List(a api.Api) (values []api.Value, err error) {
 	entries, found := c.Entries[a]
 
