@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config"
+	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v1"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/golang/mock/gomock"
 	"github.com/spf13/afero"
@@ -245,10 +245,9 @@ func TestProcessYaml(t *testing.T) {
 
 	yamlFile := util.ReplacePathSeparators("test/dashboard/test-file.yaml")
 
-	var template util.Template = nil
 	factory.EXPECT().
 		NewConfig(gomock.Any(), "dashboard", "testproject", util.ReplacePathSeparators("test/dashboard/my-project-dashboard.json"), gomock.Any(), testDashboardApi).
-		Return(config.NewConfigWithTemplate("my-project-dashboard", "testproject", util.ReplacePathSeparators("dashboard/test-file.yaml"), template, properties, api), nil)
+		Return(config.NewConfigWithTemplate("my-project-dashboard", "testproject", util.ReplacePathSeparators("dashboard/test-file.yaml"), nil, properties, testDashboardApi), nil)
 
 	err = builder.processYaml(yamlFile, util.UnmarshalYaml)
 

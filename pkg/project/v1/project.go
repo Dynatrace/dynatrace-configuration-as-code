@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config"
+	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v1"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"

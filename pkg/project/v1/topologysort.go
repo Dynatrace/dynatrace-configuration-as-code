@@ -19,7 +19,7 @@ package v1
 import (
 	"fmt"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config"
+	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v1"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 )
 
