@@ -17,6 +17,7 @@ package runner
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"io"
 	"os"
 	"path"
@@ -34,7 +35,6 @@ import (
 	utilEnv "github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 )
 
 var errWrongUsage = errors.New("")
@@ -93,11 +93,13 @@ Examples:
 	deployCommand := getDeployCommand(fs)
 	deleteCommand := getDeleteCommand(fs)
 	purgeCommand := getPurgeCommand(fs)
+	versionCommand := getVersionCommand()
 
 	rootCmd.AddCommand(downloadCommand)
 	rootCmd.AddCommand(convertCommand)
 	rootCmd.AddCommand(deployCommand)
 	rootCmd.AddCommand(deleteCommand)
+	rootCmd.AddCommand(versionCommand)
 
 	if utilEnv.FeatureFlagEnabled("MONACO_ENABLE_DANGEROUS_COMMANDS") {
 		log.Warn("MONACO_ENABLE_DANGEROUS_COMMANDS environment var detected!")
@@ -114,10 +116,7 @@ func configureDebugLogging(fs afero.Fs, verbose *bool) func(cmd *cobra.Command, 
 		if *verbose {
 			log.Default().SetLevel(log.LevelDebug)
 		}
-
 		log.SetupLogging(fs, optionalAddedLogger)
-
-		log.Info("Dynatrace Configuration as Code v" + version.MonitoringAsCode)
 	}
 }
 
@@ -308,4 +307,17 @@ func getConvertCommand(fs afero.Fs) (convertCmd *cobra.Command) {
 		log.Fatal("failed to setup CLI %v", err)
 	}
 	return convertCmd
+}
+
+func getVersionCommand() (convertCmd *cobra.Command) {
+	versionCmd := &cobra.Command{
+		Use:     "version",
+		Short:   "Prints out the version of the monaco cli",
+		Example: "monaco version",
+		PreRun:  silenceUsageCommand(),
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("monaco version " + version.MonitoringAsCode)
+		},
+	}
+	return versionCmd
 }
