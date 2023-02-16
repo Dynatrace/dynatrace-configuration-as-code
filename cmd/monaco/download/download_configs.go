@@ -16,6 +16,7 @@ package download
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"os"
 	"strings"
 
@@ -123,10 +124,13 @@ func doDownloadConfigs(fs afero.Fs, apis api.ApiMap, opts downloadOptions) error
 		return err
 	}
 
+	if ok, unknownApis := validateSpecificAPIs(apis, opts.specificAPIs); !ok {
+		util.PrintError(fmt.Errorf("APIs '%v' are not known. Please consult our documentation for known API-names", strings.Join(unknownApis, ",")))
+		return fmt.Errorf("failed to load apis")
+	}
+
 	log.Info("Downloading from environment '%v' into project '%v'", opts.environmentUrl, opts.projectName)
-
 	downloadedConfigs, err := downloadConfigs(apis, opts)
-
 	if err != nil {
 		return err
 	}
@@ -137,6 +141,15 @@ func doDownloadConfigs(fs afero.Fs, apis api.ApiMap, opts downloadOptions) error
 	return writeConfigs(downloadedConfigs, opts.downloadOptionsShared, err, fs)
 }
 
+func validateSpecificAPIs(a api.ApiMap, apiNames []string) (valid bool, unknownAPIs []string) {
+	for _, v := range apiNames {
+		if !a.Contains(v) {
+			unknownAPIs = append(unknownAPIs, v)
+		}
+	}
+	return len(unknownAPIs) == 0, unknownAPIs
+}
+
 func downloadConfigs(apis api.ApiMap, opts downloadOptions) (project.ConfigsPerType, error) {
 	c, err := opts.getDynatraceClient()
 	if err != nil {
@@ -145,10 +158,10 @@ func downloadConfigs(apis api.ApiMap, opts downloadOptions) (project.ConfigsPerT
 
 	c = client.LimitClientParallelRequests(c, opts.concurrentDownloadLimit)
 
-	apisToDownload, errors := getApisToDownload(apis, opts.specificAPIs)
-	if len(errors) > 0 {
-		err = PrintAndFormatErrors(errors, "failed to load apis")
-		return nil, err
+	apisToDownload := getApisToDownload(apis, opts.specificAPIs)
+	if len(apisToDownload) == 0 {
+		util.PrintError(fmt.Errorf("no APIs to download"))
+		return nil, fmt.Errorf("no APIs to download")
 	}
 
 	configObjects := make(project.ConfigsPerType)
@@ -185,38 +198,26 @@ func downloadConfigs(apis api.ApiMap, opts downloadOptions) (project.ConfigsPerT
 }
 
 // Get all v2 apis and filter for the selected ones
-func getApisToDownload(apis api.ApiMap, specificAPIs []string) (api.ApiMap, []error) {
-	var errors []error
-
-	apisToDownload, unknownApis := apis.FilterApisByName(specificAPIs)
-	if len(unknownApis) > 0 {
-		errors = append(errors, fmt.Errorf("APIs '%v' are not known. Please consult our documentation for known API-names", strings.Join(unknownApis, ",")))
+func getApisToDownload(apis api.ApiMap, specificAPIs []string) api.ApiMap {
+	if len(specificAPIs) > 0 {
+		return apis.Filter(api.RetainByName(specificAPIs), skipDownloadFilter)
+	} else {
+		return apis.Filter(skipDownloadFilter, removeDeprecatedEndpoints)
 	}
-
-	if len(specificAPIs) == 0 {
-		var deprecated api.ApiMap
-		apisToDownload, deprecated = apisToDownload.Filter(deprecatedEndpointFilter)
-		for _, d := range deprecated {
-			log.Warn("API '%s' is deprecated by '%s' and will not be downloaded", d.GetId(), d.DeprecatedBy())
-		}
-	}
-
-	apisToDownload, filtered := apisToDownload.Filter(func(api api.Api) bool {
-		return api.ShouldSkipDownload()
-	})
-
-	if len(filtered) > 0 {
-		keys := strings.Join(maps.Keys(filtered), ", ")
-		log.Info("APIs that won't be downloaded and need manual creation: '%v'.", keys)
-	}
-
-	if len(apisToDownload) == 0 {
-		errors = append(errors, fmt.Errorf("no APIs to download"))
-	}
-
-	return apisToDownload, errors
 }
 
-func deprecatedEndpointFilter(api api.Api) bool {
-	return api.DeprecatedBy() != ""
+func skipDownloadFilter(api api.Api) bool {
+	if api.ShouldSkipDownload() {
+		log.Info("API can not be downloaded and needs manual creation: '%v'.", api.GetId())
+		return true
+	}
+	return false
+}
+
+func removeDeprecatedEndpoints(api api.Api) bool {
+	if api.DeprecatedBy() != "" {
+		log.Warn("API %q is deprecated by %q and will not be downloaded", api.GetId(), api.DeprecatedBy())
+		return true
+	}
+	return false
 }

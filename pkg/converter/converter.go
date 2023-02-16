@@ -227,7 +227,7 @@ func convertConfig(context *ConfigConvertContext, environment manifest.Environme
 		convertedTemplatePath = strings.Replace(convertedTemplatePath, apiId, apiConversion, 1)
 		convertedTemplatePath = strings.Replace(convertedTemplatePath, ".json", "-"+apiId+".json", 1) //ensure modified template paths don't overlap with existing ones
 		apiId = apiConversion
-	} else if deprecatedBy := config.GetApi().DeprecatedBy(); deprecatedBy != "" && context.V1Apis.IsApi(deprecatedBy) && context.V1Apis[deprecatedBy].IsNonUniqueNameApi() {
+	} else if deprecatedBy := config.GetApi().DeprecatedBy(); deprecatedBy != "" && context.V1Apis.Contains(deprecatedBy) && context.V1Apis[deprecatedBy].IsNonUniqueNameApi() {
 		log.Info("Converting config %q from deprecated API %q to config with non-unique-name handling (see https://dt-url.net/non-unique-name-config)", config.GetId(), apiId)
 	}
 
@@ -487,7 +487,7 @@ func parseReference(context *ConfigConvertContext, config configV1.Config, param
 		projectId = strings.Join(parts[0:numberOfParts-2], ".")
 	}
 
-	if !context.V1Apis.IsApi(referencedApiId) {
+	if !context.V1Apis.Contains(referencedApiId) {
 		return nil, newReferenceParserError(context.ProjectId, config, parameterName, fmt.Sprintf("referenced API '%s' does not exist", referencedApiId))
 	}
 

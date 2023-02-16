@@ -151,7 +151,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 			if _, found := projectsToValidate[coord.Project]; found {
 				if theConfig.Type.IsSettings() {
 					assertSetting(t, client, env, available, theConfig)
-				} else if apis.IsApi(theConfig.Type.Api) {
+				} else if apis.Contains(theConfig.Type.Api) {
 					AssertConfig(t, client, apis[theConfig.Type.Api], env, available, theConfig, configName)
 				} else {
 					t.Errorf("Can not assert config of unknown type %q", theConfig.Coordinate.Type)

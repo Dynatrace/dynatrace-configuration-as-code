@@ -137,7 +137,7 @@ func subprojectsMixedWithApi(fs afero.Fs, availableApis api.ApiMap, path string)
 			continue
 		}
 
-		if availableApis.IsApi(d.Name()) {
+		if availableApis.Contains(d.Name()) {
 			apiFound = true
 		} else if d.IsDir() {
 			subprojectFound = true
