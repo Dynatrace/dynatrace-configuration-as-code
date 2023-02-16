@@ -9,9 +9,9 @@ name: Build and Test
 
 on:
   push:
-    branches: [ main ]
+    branches: [ 1.x ]
   pull_request:
-    branches: [ main ]
+    branches: [ 1.x ]
   schedule:
     # this is checking periodically if there are any breaking API changes
     # Every day at 00:00

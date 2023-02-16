@@ -2,9 +2,9 @@ name: gh-documentation
 
 on:
   pull_request:
-    branches: [main]
+    branches: [1.x]
   push:
-    branches: [main]
+    branches: [1.x]
 
 jobs:
   checks:
