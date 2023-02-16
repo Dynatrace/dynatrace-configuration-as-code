@@ -196,8 +196,9 @@ func (a *apiImpl) ShouldSkipDownload() bool {
 	return a.skipDownload
 }
 
-func (m ApiMap) IsApi(dir string) bool {
-	_, ok := m[dir]
+// Contains return true iff requested API is part of particular ApiMap
+func (m ApiMap) Contains(api string) bool {
+	_, ok := m[api]
 	return ok
 }
 
@@ -211,43 +212,4 @@ func (m ApiMap) ContainsApiName(path string) bool {
 	}
 
 	return false
-}
-
-// Filter filters the APIs into two maps based on the provided callback.
-// If the value is true (the value is filtered), the value is put into the second return value, otherwise the first.
-func (m ApiMap) Filter(filter func(api Api) bool) (ApiMap, ApiMap) {
-	apis := make(ApiMap, len(m))
-	filteredApis := ApiMap{}
-
-	for key, value := range m {
-		if filter(value) {
-			filteredApis[key] = value
-		} else {
-			apis[key] = value
-		}
-	}
-
-	return apis, filteredApis
-}
-
-// FilterApisByName filters the object for the api names passed.
-// Given an emtpy slice, the object is unchanged.
-// The second return value contains all apiNames which were not found in the original map, otherwise an empty slice.
-func (m ApiMap) FilterApisByName(apiNames []string) (apis ApiMap, unknownApis []string) {
-	unknownApis = make([]string, 0)
-
-	if len(apiNames) == 0 {
-		return m, unknownApis
-	}
-
-	apis = make(ApiMap, len(m))
-	for _, name := range apiNames {
-		if api, found := m[name]; found {
-			apis[name] = api
-		} else {
-			unknownApis = append(unknownApis, name)
-		}
-	}
-
-	return apis, unknownApis
 }

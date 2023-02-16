@@ -201,7 +201,6 @@ func TestGetApisToDownload(t *testing.T) {
 		name     string
 		given    given
 		expected expected
-		want1    []error
 	}{
 		{
 			name: "filter all specific defined api",
@@ -246,11 +245,10 @@ func TestGetApisToDownload(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual, err := getApisToDownload(tt.given.apis, tt.given.specificAPIs)
+			actual := getApisToDownload(tt.given.apis, tt.given.specificAPIs)
 			for _, e := range tt.expected.apis {
 				assert.Contains(t, actual, e)
 			}
-			assert.Nil(t, err)
 		})
 	}
 }
