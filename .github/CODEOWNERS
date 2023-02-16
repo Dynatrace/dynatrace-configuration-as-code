@@ -2,9 +2,4 @@
 # https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
 # Per default maintainer review is requested
-* @dynatrace-oss/mac-maintainers
-
-# doc-owners review documentation/ and any markdown file
-documentation/** @dynatrace-oss/mac-doc-owners
-*.md @dynatrace-oss/mac-doc-owners
-*.MD @dynatrace-oss/mac-doc-owners
+* @dynatrace/monaco-maintainers
