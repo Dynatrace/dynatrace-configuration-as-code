@@ -20,16 +20,22 @@ import (
 	"strings"
 )
 
+// UnknownVersion is just a version that is not set
+var UnknownVersion = Version{}
+
+// Version represents a software version composed of
 type Version struct {
 	Major int
 	Minor int
 	Patch int
 }
 
+// String returns the version in a printable format, e.g.: 1.2.3
 func (v Version) String() string {
 	return fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
 }
 
+// GreaterThan determines whether this version is greater than the other version
 func (v Version) GreaterThan(other Version) bool {
 	if v == other {
 		return false
@@ -49,10 +55,23 @@ func (v Version) GreaterThan(other Version) bool {
 	return true
 }
 
+// SmallerThan determines whether this version is smaller than the given version
 func (v Version) SmallerThan(other Version) bool {
 	return other.GreaterThan(v)
 }
 
+// Invalid returns whether this version is valid or not.
+// A version is considered to be "invalid" if it is equal to "0.0.0" or
+// contains a negative number, e.e. "0.-1.2"
+func (v Version) Invalid() bool {
+	return (v.Major <= 0 && v.Minor <= 0 && v.Patch <= 0) ||
+		v.Major < 0 || v.Minor < 0 || v.Patch < 0
+
+}
+
+// ParseVersion takes a version as string and tries to parse it to convert it to a
+// Version value. It returns the Version value and possibly an error if the string could not be parsed
+// according to the expected format: "MAJOR.MINOR.PATCH" or "MAJOR.MINOR" each component being a non-negative number
 func ParseVersion(versionString string) (Version, error) {
 	split := strings.Split(versionString, ".")
 	if !(len(split) == 2 || len(split) == 3) {

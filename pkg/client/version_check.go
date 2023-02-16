@@ -1,5 +1,3 @@
-//go:build unused
-
 /**
  * @license
  * Copyright 2020 Dynatrace LLC
@@ -35,7 +33,7 @@ const versionPath = "/api/v1/config/clusterversion"
 
 func GetDynatraceVersion(client *http.Client, environmentUrl string, apiToken string) (util.Version, error) {
 	versionUrl := environmentUrl + versionPath
-	resp, err := rest.get(client, versionUrl, apiToken)
+	resp, err := rest.Get(client, versionUrl, apiToken)
 	if err != nil {
 		return util.Version{}, fmt.Errorf("failed to query version of Dynatrace environment: %w", err)
 	}

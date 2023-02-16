@@ -50,11 +50,11 @@ type directDownloadOptions struct {
 }
 
 func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions manifestDownloadOptions) error {
-
 	envUrl, token, tokenEnvVar, err := getEnvFromManifest(fs, cmdOptions.manifestFile, cmdOptions.specificEnvironmentName, cmdOptions.projectName)
 	if err != nil {
 		return err
 	}
+	printUploadToSameEnvironmentWarning(envUrl, token)
 
 	if !cmdOptions.forceOverwrite {
 		cmdOptions.projectName = fmt.Sprintf("%s_%s", cmdOptions.projectName, cmdOptions.specificEnvironmentName)
