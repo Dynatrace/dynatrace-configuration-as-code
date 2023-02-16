@@ -1,0 +1,60 @@
+name: E2E Test
+
+# This builds all binary versions and runs the end-to-end test against test Dynatrace environments
+# This currently only runs on push to main and nightly
+
+on:
+  push:
+    branches: [ 1.x ]
+  pull_request_target:
+    types: [ labeled ]
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  BASE_REPO: 'Dynatrace/dynatrace-configuration-as-code'  # Used to only execute directly if running in main repository, not on forks/PRs inside forks
+  E2E_TEST_LABEL: 'run-e2e-test'
+
+jobs:
+
+  e2e-test:
+    name: E2E Test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+    steps:
+
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v3
+        with:
+          go-version: '~1.16'
+        id: go
+
+      - name: Check out base repo
+        if: github.event.action != 'labeled'
+        uses: actions/checkout@v3
+
+      # If a PR was reviewed and deemed safe to run in the context of our repo and it's secrets, we label it to trigger E2E tests.
+      # In that case this Action is triggered in pull_request_target context and checks out the HEAD of the PR branch.
+      # This is a semi-secure manually reviewed way to ensure we only run code we're fine accessing our secrets
+      - name: Check out PR # nosemgrep:yaml.github-actions.security.pull-request-target-code-checkout.pull-request-target-code-checkout
+        if: github.event.action == 'labeled' && github.event.label.name == env.E2E_TEST_LABEL
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: 🏁 Build release binaries
+        if: github.repository == env.BASE_REPO || github.event.label.name == env.E2E_TEST_LABEL
+        run: make build-release
+
+      - name: 🌎 Integration test
+        if: github.repository == env.BASE_REPO || github.event.label.name == env.E2E_TEST_LABEL
+        run: make integration-test
+        env:
+          URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
+          URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
+          TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
+          TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
