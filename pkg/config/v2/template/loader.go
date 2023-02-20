@@ -94,13 +94,6 @@ func (d *DownloadTemplate) UpdateContent(newContent string) {
 	d.content = newContent
 }
 
-func (d DownloadTemplate) AsFileTemplate(path string) FileBasedTemplate {
-	return &fileBasedTemplate{
-		path:    path,
-		content: d.content,
-	}
-}
-
 // Force the compiler to check whether the structs implement the interfaces
 var (
 	_ FileBasedTemplate = (*fileBasedTemplate)(nil)
