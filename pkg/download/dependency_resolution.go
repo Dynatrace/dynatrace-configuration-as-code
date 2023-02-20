@@ -20,13 +20,13 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
+	"regexp"
 	"strings"
 	"sync"
 
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/reference"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/maps"
 )
@@ -141,5 +141,13 @@ func shouldReplaceReference(configToBeUpdated config.Config, configToUpdateFrom 
 }
 
 func createParameterName(api, configId string) string {
-	return util.SanitizeTemplateVar(fmt.Sprintf("%v__%v__id", api, configId))
+	return sanitizeTemplateVar(fmt.Sprintf("%v__%v__id", api, configId))
+}
+
+// matches any non-alphanumerical chars including _
+var templatePattern = regexp.MustCompile(`[^a-zA-Z0-9_]+`)
+
+// SanitizeTemplateVar removes all except alphanumerical chars and underscores (_)
+func sanitizeTemplateVar(templateVarName string) string {
+	return templatePattern.ReplaceAllString(templateVarName, "")
 }
