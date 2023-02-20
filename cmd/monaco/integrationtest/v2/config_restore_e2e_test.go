@@ -94,7 +94,7 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 			settingsToDownload: "builtin:alerting.profile",
 			expectedFolders: []string{
 				downloadFolder + "/project/auto-tag",
-				downloadFolder + "/project/builtin:alerting.profile"},
+				downloadFolder + "/project/builtinalerting.profile"},
 			wantErr: false,
 		},
 		{
@@ -116,7 +116,7 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 			apisToDownload:     "",
 			settingsToDownload: "builtin:alerting.profile",
 			expectedFolders: []string{
-				downloadFolder + "/project/builtin:alerting.profile"},
+				downloadFolder + "/project/builtinalerting.profile"},
 			wantErr: false,
 		},
 		{
@@ -129,7 +129,7 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 			settingsToDownload: "builtin:alerting.profile",
 			expectedFolders: []string{
 				downloadFolder + "/project_environment1/auto-tag",
-				downloadFolder + "/project_environment1/builtin:alerting.profile"},
+				downloadFolder + "/project_environment1/builtinalerting.profile"},
 			wantErr: false,
 		},
 		{
@@ -153,7 +153,7 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 			apisToDownload:     "",
 			settingsToDownload: "builtin:alerting.profile",
 			expectedFolders: []string{
-				downloadFolder + "/project_environment1/builtin:alerting.profile"},
+				downloadFolder + "/project_environment1/builtinalerting.profile"},
 			wantErr: false,
 		},
 	}

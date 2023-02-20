@@ -35,18 +35,41 @@ var mockApiNotSingle = api.NewApi("mock-api", "/mock-api", "", false, true, "", 
 
 func TestNewClientNoUrl(t *testing.T) {
 	_, err := NewDynatraceClient("", "abc")
-	assert.ErrorContains(t, err, "no environment url")
+	assert.ErrorContains(t, err, "empty url")
 }
 
 func TestNewClientInvalidURL(t *testing.T) {
 	_, err := NewDynatraceClient("INVALID_URL", "abc")
-	assert.ErrorContains(t, err, "environment url INVALID_URL was not valid")
+	assert.ErrorContains(t, err, "not valid")
 }
 
 func TestUrlSuffixGetsTrimmed(t *testing.T) {
 	client, err := NewDynatraceClient("https://my-environment.live.dynatrace.com/", "abc")
 	assert.NilError(t, err)
 	assert.Equal(t, client.environmentUrl, "https://my-environment.live.dynatrace.com")
+}
+
+func TestNewDynatraceClientWithHTTP(t *testing.T) {
+	client, err := NewDynatraceClient("http://my-environment.live.dynatrace.com", "abc")
+	assert.NilError(t, err)
+	assert.Equal(t, client.environmentUrl, "http://my-environment.live.dynatrace.com")
+}
+
+func TestNewDynatraceClientWithoutScheme(t *testing.T) {
+	_, err := NewDynatraceClient("my-environment.live.dynatrace.com", "abc")
+	assert.ErrorContains(t, err, "not valid")
+}
+
+func TestNewDynatraceClientWithIPv4(t *testing.T) {
+	client, err := NewDynatraceClient("https://127.0.0.1", "abc")
+	assert.NilError(t, err)
+	assert.Equal(t, client.environmentUrl, "https://127.0.0.1")
+}
+
+func TestNewDynatraceClientWithIPv6(t *testing.T) {
+	client, err := NewDynatraceClient("https://[0000:0000:0000:0000:0000:0000:0000:0001]", "abc")
+	assert.NilError(t, err)
+	assert.Equal(t, client.environmentUrl, "https://[0000:0000:0000:0000:0000:0000:0000:0001]")
 }
 
 func TestNewClientNoToken(t *testing.T) {
@@ -56,7 +79,7 @@ func TestNewClientNoToken(t *testing.T) {
 
 func TestNewClientNoValidUrlLocalPath(t *testing.T) {
 	_, err := NewDynatraceClient("/my-environment/live/dynatrace.com/", "abc")
-	assert.ErrorContains(t, err, "not valid")
+	assert.ErrorContains(t, err, "no host specified")
 }
 
 func TestNewClientNoValidUrlTypo(t *testing.T) {
