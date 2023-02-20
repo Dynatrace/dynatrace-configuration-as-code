@@ -18,10 +18,10 @@
 
 package template
 
-import ( // nosemgrep: go.lang.security.audit.xss.import-text-template.import-text-template
+import (
 	"reflect"
 	"testing"
-	templ "text/template"
+	templ "text/template" // nosemgrep: go.lang.security.audit.xss.import-text-template.import-text-template
 )
 
 const (

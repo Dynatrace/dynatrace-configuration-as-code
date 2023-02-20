@@ -16,11 +16,11 @@
 
 package util
 
-import ( // nosemgrep: go.lang.security.audit.xss.import-text-template.import-text-template
+import (
 	"bytes"
 	"os"
 	"strings"
-	"text/template"
+	"text/template" // nosemgrep: go.lang.security.audit.xss.import-text-template.import-text-template
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"

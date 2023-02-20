@@ -14,10 +14,10 @@
 
 package compound
 
-import ( // nosemgrep: go.lang.security.audit.xss.import-text-template.import-text-template
+import (
 	"bytes"
 	"fmt"
-	templ "text/template"
+	templ "text/template" // nosemgrep: go.lang.security.audit.xss.import-text-template.import-text-template
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
