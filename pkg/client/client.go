@@ -243,28 +243,28 @@ func CreateClientForEnvironment(environment manifest.EnvironmentDefinition) (Cli
 
 // NewDynatraceClient creates a new DynatraceClient
 func NewDynatraceClient(environmentURL string, token string, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
-	environmentURL = strings.TrimSuffix(environmentURL, "/")
-
-	if environmentURL == "" {
-		return nil, errors.New("no environment url")
-	}
 
 	if token == "" {
 		return nil, errors.New("no token")
 	}
 
+	environmentURL = strings.TrimSuffix(environmentURL, "/")
 	parsedUrl, err := url.ParseRequestURI(environmentURL)
 	if err != nil {
-		return nil, errors.New("environment url " + environmentURL + " was not valid")
+		return nil, fmt.Errorf("environment url %q was not valid: %w", environmentURL, err)
+	}
+
+	if parsedUrl.Host == "" {
+		return nil, fmt.Errorf("no host specified in the url %q", environmentURL)
 	}
 
 	if parsedUrl.Scheme != "https" {
-		return nil, errors.New("environment url " + environmentURL + " was not valid")
+		log.Warn("You are using an insecure connection (%s). Consider switching to HTTPS.", parsedUrl.Scheme)
 	}
 
 	if !isNewDynatraceTokenFormat(token) {
 		log.Warn("You used an old token format. Please consider switching to the new 1.205+ token format.")
-		log.Warn("More information: https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication/#-dynatrace-version-1205--token-format")
+		log.Warn("More information: https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication")
 	}
 
 	dtClient := &DynatraceClient{
