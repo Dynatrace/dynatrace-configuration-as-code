@@ -128,9 +128,10 @@ func toTopLevelDefinitions(context *WriterContext, configs []Config) (map[apiCoo
 	var configTemplates []configTemplate
 
 	for coord, confs := range configsPerCoordinate {
+		sanitizedType := util.SanitizeName(coord.Type)
 		configContext := &serializerContext{
 			WriterContext: context,
-			configFolder:  filepath.Join(context.ProjectFolder, coord.Type),
+			configFolder:  filepath.Join(context.ProjectFolder, sanitizedType),
 			config:        coord,
 		}
 
@@ -178,7 +179,8 @@ func writeTopLevelDefinitionToDisk(context *WriterContext, apiCoord apiCoordinat
 		return err
 	}
 
-	targetConfigFile := filepath.Join(context.OutputFolder, context.ProjectFolder, apiCoord.api, "config.yaml")
+	sanitizedApi := util.SanitizeName(apiCoord.api)
+	targetConfigFile := filepath.Join(context.OutputFolder, context.ProjectFolder, sanitizedApi, "config.yaml")
 
 	err = context.Fs.MkdirAll(filepath.Dir(targetConfigFile), 0777)
 
