@@ -761,6 +761,53 @@ func TestWriteConfigs(t *testing.T) {
 			},
 			expectedTemplatePaths: []string{
 				"project/alerting-profile/a.json",
+				"project/alerting-profile/config.yaml",
+			},
+		},
+		{
+			name: "Settings 2.0 schema write sanitizes names",
+			configs: []Config{
+				{
+					Template: template.NewDownloadTemplate("a", "", ""),
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "builtin:alerting-profile",
+						ConfigId: "configId",
+					},
+					Type: Type{
+						SchemaId: "builtin:alerting-profile",
+					},
+					Parameters: map[string]parameter.Parameter{
+						NameParameter:  &value.ValueParameter{Value: "name"},
+						ScopeParameter: value.New("tenant"),
+					},
+					SkipForConversion: value.New("true"),
+				},
+			},
+			expectedConfigs: map[string]topLevelDefinition{
+				"builtinalerting-profile": {
+					Configs: []topLevelConfigDefinition{
+						{
+							Id: "configId",
+							Config: configDefinition{
+								Name:       "name",
+								Parameters: nil,
+								Template:   "a.json",
+								Skip:       "true",
+							},
+							Type: typeDefinition{
+								Settings: settingsDefinition{
+									Schema: "builtin:alerting-profile",
+									Scope:  "tenant",
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedTemplatePaths: []string{
+				"project/builtinalerting-profile/config.yaml",
+				"project/builtinalerting-profile/a.json",
 			},
 		},
 		{
@@ -875,8 +922,8 @@ func TestWriteConfigs(t *testing.T) {
 				ProjectFolder:   "project",
 				ParametersSerde: DefaultParameterParsers,
 			}, tc.configs)
-			assert.Equal(t, len(errs), 0, "Writing configs should not produce an error")
 			util.PrintErrors(errs)
+			assert.Equal(t, len(errs), 0, "Writing configs should not produce an error")
 
 			// check all api-folders config file
 			for apiType, definition := range tc.expectedConfigs {
@@ -893,9 +940,10 @@ func TestWriteConfigs(t *testing.T) {
 
 			// check that templates have been created
 			for _, path := range tc.expectedTemplatePaths {
-				found, err := afero.Exists(fs, filepath.Join("test", path))
+				expectedPath := filepath.Join("test", path)
+				found, err := afero.Exists(fs, expectedPath)
 				assert.NilError(t, err)
-				assert.Equal(t, found, true)
+				assert.Equal(t, found, true, "could not find %q", expectedPath)
 			}
 
 		})
