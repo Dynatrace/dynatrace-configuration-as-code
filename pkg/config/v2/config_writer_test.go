@@ -22,6 +22,7 @@ import (
 	refParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/reference"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 	"path/filepath"
@@ -713,6 +714,8 @@ func assertPropertyCheckResult(t *testing.T, expected propertyCheckResult, actua
 
 func TestWriteConfigs(t *testing.T) {
 
+	log.Default().SetLevel(log.LevelDebug)
+
 	var tests = []struct {
 		name                  string
 		configs               []Config
@@ -914,7 +917,7 @@ func TestWriteConfigs(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			fs := afero.NewMemMapFs()
+			fs := util.TempFs(t)
 
 			errs := WriteConfigs(&WriterContext{
 				Fs:              fs,

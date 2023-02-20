@@ -16,18 +16,7 @@ package util
 
 import (
 	"regexp"
-
-	"github.com/spf13/afero"
 )
-
-// CreateTestFileSystem creates a virtual filesystem with 2 layers.
-// The first layer allows to read file from the disk
-// the second layer allows to modify files on a virtual filesystem
-func CreateTestFileSystem() afero.Fs {
-	base := afero.NewOsFs()
-	baseLayer := afero.NewReadOnlyFs(base)
-	return afero.NewCopyOnWriteFs(baseLayer, afero.NewMemMapFs())
-}
 
 // matches any non-alphanumerical chars including -, _, .
 var namePattern = regexp.MustCompile(`[^a-zA-Z0-9-_.]+`)
