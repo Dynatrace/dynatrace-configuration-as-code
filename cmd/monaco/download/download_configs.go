@@ -160,7 +160,6 @@ func downloadConfigs(apis api.ApiMap, opts downloadOptions) (project.ConfigsPerT
 
 	apisToDownload := getApisToDownload(apis, opts.specificAPIs)
 	if len(apisToDownload) == 0 {
-		util.PrintError(fmt.Errorf("no APIs to download"))
 		return nil, fmt.Errorf("no APIs to download")
 	}
 
