@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package util
+package v2
 
 import (
 	"regexp"
@@ -21,13 +21,10 @@ import (
 // matches any non-alphanumerical chars including -, _, .
 var namePattern = regexp.MustCompile(`[^a-zA-Z0-9-_.]+`)
 
-// matches any non-alphanumerical chars including _
-var templatePattern = regexp.MustCompile(`[^a-zA-Z0-9_]+`)
-
 const MaxFilenameLengthWithoutFileExtension = 254
 
-// SanitizeName removes special characters, limits to max 254 characters in name, no special characters except '-', '_', and '.'
-func SanitizeName(name string) string {
+// sanitize removes special characters, limits to max 254 characters in name, no special characters except '-', '_', and '.'
+func sanitize(name string) string {
 	processedString := namePattern.ReplaceAllString(name, "")
 
 	runes := []rune(processedString)
@@ -36,9 +33,4 @@ func SanitizeName(name string) string {
 	}
 
 	return processedString
-}
-
-// SanitizeTemplateVar removes all except alphanumerical chars and underscores (_)
-func SanitizeTemplateVar(templateVarName string) string {
-	return templatePattern.ReplaceAllString(templateVarName, "")
 }
