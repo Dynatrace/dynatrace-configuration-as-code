@@ -353,5 +353,5 @@ func cleanupDeployedConfiguration(t *testing.T, fs afero.Fs, manifestFilepath st
 	})
 	testutils.FailTestOnAnyError(t, errs, "loading of manifest failed")
 
-	cleanupIntegrationTest(t, loadedManifest, "", testSuffix)
+	cleanupIntegrationTest(t, fs, manifestFilepath, loadedManifest, "", testSuffix)
 }

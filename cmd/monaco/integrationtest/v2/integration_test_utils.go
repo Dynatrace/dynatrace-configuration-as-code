@@ -61,16 +61,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 		t.Fatalf("Failed to filter environments: %v", err)
 	}
 
-	cwd, err := filepath.Abs(filepath.Dir(manifestPath))
-	assert.NilError(t, err)
-
-	projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
-		KnownApis:       api.GetApiNameLookup(api.NewApis()),
-		WorkingDir:      cwd,
-		Manifest:        loadedManifest,
-		ParametersSerde: config.DefaultParameterParsers,
-	})
-	testutils.FailTestOnAnyError(t, errs, "loading of projects failed")
+	projects := loadProjects(t, fs, manifestPath, loadedManifest)
 
 	envNames := make([]string, 0, len(environments))
 
@@ -162,6 +153,20 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 	}
 }
 
+func loadProjects(t *testing.T, fs afero.Fs, manifestPath string, loadedManifest manifest.Manifest) []project.Project {
+	cwd, err := filepath.Abs(filepath.Dir(manifestPath))
+	assert.NilError(t, err)
+
+	projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
+		KnownApis:       api.GetApiNameLookup(api.NewApis()),
+		WorkingDir:      cwd,
+		Manifest:        loadedManifest,
+		ParametersSerde: config.DefaultParameterParsers,
+	})
+	testutils.FailTestOnAnyError(t, errs, "loading of projects failed")
+	return projects
+}
+
 func AssertConfig(t *testing.T, client client.ConfigClient, theApi api.Api, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config, name string) {
 
 	configType := config.Coordinate.Type
@@ -226,7 +231,7 @@ func addSuffix(suffix string) func(line string) string {
 }
 
 // Deletes all configs that end with "_suffix", where suffix == suffixTest+suffixTimestamp
-func cleanupIntegrationTest(t *testing.T, loadedManifest manifest.Manifest, specificEnvironment, suffix string) {
+func cleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestPath string, loadedManifest manifest.Manifest, specificEnvironment, suffix string) {
 
 	log.Info("### Cleaning up after integration test ###")
 
@@ -253,28 +258,73 @@ func cleanupIntegrationTest(t *testing.T, loadedManifest manifest.Manifest, spec
 		client, err := client.NewDynatraceClient(url, token)
 		assert.NilError(t, err)
 
-		for _, api := range apis {
-			if api.GetId() == "calculated-metrics-log" {
-				t.Logf("Skipping cleanup of legacy log monitoring API")
-				continue
-			}
+		cleanupSettings(t, fs, manifestPath, loadedManifest, environment.Name, client)
+		cleanupConfigs(t, apis, client, suffix)
+	}
+}
 
-			values, err := client.List(api)
-			if err != nil {
-				t.Logf("Failed to cleanup any test configs of type %q: %v", api.GetId(), err)
-			}
+func cleanupConfigs(t *testing.T, apis api.ApiMap, c client.ConfigClient, suffix string) {
+	for _, api := range apis {
+		if api.GetId() == "calculated-metrics-log" {
+			t.Logf("Skipping cleanup of legacy log monitoring API")
+			continue
+		}
 
-			for _, value := range values {
-				// For the calculated-metrics-log API, the suffix is part of the ID, not name
-				if strings.HasSuffix(value.Name, suffix) || strings.HasSuffix(value.Id, suffix) {
-					err := client.DeleteById(api, value.Id)
-					if err != nil {
-						t.Logf("Failed to cleanup test config: %s (%s): %v", value.Name, api.GetId(), err)
-					} else {
-						log.Info("Cleaned up test config %s (%s)", value.Name, value.Id)
-					}
+		values, err := c.List(api)
+		if err != nil {
+			t.Logf("Failed to cleanup any test configs of type %q: %v", api.GetId(), err)
+		}
+
+		for _, value := range values {
+			// For the calculated-metrics-log API, the suffix is part of the ID, not name
+			if strings.HasSuffix(value.Name, suffix) || strings.HasSuffix(value.Id, suffix) {
+				err := c.DeleteById(api, value.Id)
+				if err != nil {
+					t.Logf("Failed to cleanup test config: %s (%s): %v", value.Name, api.GetId(), err)
+				} else {
+					log.Info("Cleaned up test config %s (%s)", value.Name, value.Id)
 				}
 			}
+		}
+	}
+}
+
+func cleanupSettings(t *testing.T, fs afero.Fs, manifestPath string, loadedManifest manifest.Manifest, environment string, c client.SettingsClient) {
+	projects := loadProjects(t, fs, manifestPath, loadedManifest)
+	for _, p := range projects {
+		cfgsForEnv, ok := p.Configs[environment]
+		if !ok {
+			t.Logf("Failed to cleanup Settings for env %s - no configs found", environment)
+		}
+		for _, configs := range cfgsForEnv {
+			for _, cfg := range configs {
+				if cfg.Type.IsSettings() {
+					extID := idutils.GenerateExternalID(cfg.Type.SchemaId, cfg.Coordinate.ConfigId)
+					deleteSettingsObjects(t, cfg.Type.SchemaId, extID, c)
+				}
+			}
+		}
+	}
+}
+
+func deleteSettingsObjects(t *testing.T, schema, externalID string, c client.SettingsClient) {
+	objects, err := c.ListSettings(schema, client.ListSettingsOptions{DiscardValue: true, Filter: func(o client.DownloadSettingsObject) bool { return o.ExternalId == externalID }})
+	if err != nil {
+		t.Logf("Failed to cleanup test config: could not fetch settings 2.0 objects with schema ID %s: %v", schema, err)
+		return
+	}
+
+	if len(objects) == 0 {
+		t.Logf("No %s settings object found to cleanup: %s", schema, externalID)
+		return
+	}
+
+	for _, obj := range objects {
+		err := c.DeleteSettings(obj.ObjectId)
+		if err != nil {
+			t.Logf("Failed to cleanup test config: could not delete settings 2.0 object with object ID %s: %v", obj.ObjectId, err)
+		} else {
+			log.Info("Cleaned up test Setting %s (%s)", externalID, schema)
 		}
 	}
 }
@@ -321,7 +371,7 @@ func runIntegrationWithCleanup(t *testing.T, testFs afero.Fs, configFolder, mani
 	suffix := appendUniqueSuffixToIntegrationTestConfigs(t, testFs, configFolder, suffixTest)
 
 	t.Cleanup(func() {
-		cleanupIntegrationTest(t, loadedManifest, specificEnvironment, suffix)
+		cleanupIntegrationTest(t, testFs, manifestPath, loadedManifest, specificEnvironment, suffix)
 	})
 
 	for k, v := range envVars {
