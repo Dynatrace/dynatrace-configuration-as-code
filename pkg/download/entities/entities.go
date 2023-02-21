@@ -17,8 +17,8 @@
 package entities
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/uuid"
 	"strings"
 	"sync"
 
@@ -118,7 +118,7 @@ func (d *Downloader) convertObject(str []string, entitiesType string, projectNam
 
 	templ := template.NewDownloadTemplate(entitiesType, entitiesType, content)
 
-	configId := uuid.GenerateUuidFromName(entitiesType)
+	configId := idutils.GenerateUuidFromName(entitiesType)
 
 	return []config.Config{{
 		Template: templ,

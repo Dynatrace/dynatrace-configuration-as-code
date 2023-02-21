@@ -18,9 +18,9 @@ package client
 
 import (
 	"encoding/json"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/extid"
 	"gotest.tools/assert"
 	"net/http"
 	"net/http/httptest"
@@ -125,7 +125,7 @@ func TestUpsert(t *testing.T) {
 				assert.NilError(t, err)
 
 				expectedRequestPayload := settingsRequest{
-					ExternalId:    extid.GenerateExternalID("builtin:alerting.profile", "user-provided-id"),
+					ExternalId:    idutils.GenerateExternalID("builtin:alerting.profile", "user-provided-id"),
 					Scope:         "tenant",
 					Value:         expectedSettingsObject,
 					SchemaId:      "builtin:alerting.profile",

@@ -16,9 +16,8 @@ package deploy
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/utils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/uuid"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
@@ -155,9 +154,9 @@ func upsertNonUniqueNameConfig(client client.ConfigClient, apiToDeploy api.Api, 
 
 	entityUuid := configId
 
-	isUuidOrMeId := uuid.IsUuid(entityUuid) || utils.IsMeId(entityUuid)
+	isUuidOrMeId := idutils.IsUuid(entityUuid) || idutils.IsMeId(entityUuid)
 	if !isUuidOrMeId {
-		entityUuid = uuid.GenerateUuidFromConfigId(projectId, configId)
+		entityUuid = idutils.GenerateUuidFromConfigId(projectId, configId)
 	}
 
 	return client.UpsertByNonUniqueNameAndId(apiToDeploy, entityUuid, configName, []byte(renderedConfig))

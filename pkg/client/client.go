@@ -20,9 +20,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/extid"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"net/http"
 	"net/url"
@@ -291,7 +291,7 @@ func isNewDynatraceTokenFormat(token string) bool {
 }
 
 func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, error) {
-	externalId := extid.GenerateExternalID(obj.SchemaId, obj.Id)
+	externalId := idutils.GenerateExternalID(obj.SchemaId, obj.Id)
 
 	// list all settings with matching external ID
 	settings, err := d.ListSettings(obj.SchemaId, ListSettingsOptions{

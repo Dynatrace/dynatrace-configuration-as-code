@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uuid
+package idutils
 
 import (
 	"path/filepath"

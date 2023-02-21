@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package utils
+package idutils
 
 import "testing"
 

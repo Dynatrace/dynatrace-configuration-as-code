@@ -21,7 +21,7 @@ package settings
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/uuid"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
@@ -35,7 +35,7 @@ import (
 )
 
 func TestDownloadAll(t *testing.T) {
-	uuid := uuid.GenerateUuidFromName("oid1")
+	uuid := idutils.GenerateUuidFromName("oid1")
 
 	type mockValues struct {
 		Schemas           func() (client.SchemaList, error)
@@ -178,7 +178,7 @@ func TestDownloadAll(t *testing.T) {
 }
 
 func TestDownload(t *testing.T) {
-	uuid := uuid.GenerateUuidFromName("oid1")
+	uuid := idutils.GenerateUuidFromName("oid1")
 
 	type mockValues struct {
 		Schemas           func() (client.SchemaList, error)
