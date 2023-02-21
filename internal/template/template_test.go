@@ -67,7 +67,6 @@ func TestGetStringWithEnvVarAndProperty(t *testing.T) {
 
 	t.Setenv("ANIMAL", "cow")
 	result, err := template.ExecuteTemplate(getTemplateTestPropertiesClashingWithEnvVars())
-	//testing2.UnsetEnv(t, "ANIMAL")
 
 	assert.NilError(t, err)
 	assert.Equal(t, "Follow the white rabbit", result)
@@ -80,7 +79,6 @@ func TestGetStringWithEnvVarIncludingEqualSigns(t *testing.T) {
 
 	t.Setenv("ANIMAL", "cow=rabbit=chicken")
 	result, err := template.ExecuteTemplate(getTemplateTestProperties())
-	//testing2.UnsetEnv(t, "ANIMAL")
 
 	assert.NilError(t, err)
 	assert.Equal(t, "Follow the white cow=rabbit=chicken", result)
