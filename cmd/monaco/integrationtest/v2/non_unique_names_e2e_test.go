@@ -27,6 +27,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"github.com/google/uuid"
+	"github.com/spf13/afero"
 	"gotest.tools/assert"
 	"net/http"
 	"os"
@@ -39,6 +40,8 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 	t.Cleanup(func() {
 		cleanupIntegrationTest(
 			t,
+			afero.NewMemMapFs(),
+			"",
 			manifest.Manifest{
 				Projects: nil,
 				Environments: map[string]manifest.EnvironmentDefinition{
