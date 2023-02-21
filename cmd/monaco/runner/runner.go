@@ -17,7 +17,7 @@ package runner
 import (
 	"errors"
 	"fmt"
-	utilEnv "github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
@@ -101,7 +101,7 @@ Examples:
 	rootCmd.AddCommand(deleteCommand)
 	rootCmd.AddCommand(versionCommand)
 
-	if utilEnv.FeatureFlagEnabled("MONACO_ENABLE_DANGEROUS_COMMANDS") {
+	if featureflags.FeatureFlagEnabled("MONACO_ENABLE_DANGEROUS_COMMANDS") {
 		log.Warn("MONACO_ENABLE_DANGEROUS_COMMANDS environment var detected!")
 		log.Warn("Use additional commands with care, they might have heavy impact on configurations or environments")
 

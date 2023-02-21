@@ -1,5 +1,3 @@
-//go:build unit
-
 /*
  * @license
  * Copyright 2023 Dynatrace LLC
@@ -16,20 +14,11 @@
  * limitations under the License.
  */
 
-package environment
+package featureflags
 
-import (
-	"gotest.tools/assert"
-	"testing"
-)
+import "os"
 
-func TestFeatureFlagEnabled(t *testing.T) {
-	assert.Equal(t, false, FeatureFlagEnabled("Test"), "Feature Flag - Not Set")
-	t.Setenv("Test", "1")
-	assert.Equal(t, true, FeatureFlagEnabled("Test"), "Feature Flag - Enabled")
-	t.Setenv("Test", "A")
-	assert.Equal(t, true, FeatureFlagEnabled("Test"), "Feature Flag with wrong value")
-	t.Setenv("Test", "0")
-	assert.Equal(t, false, FeatureFlagEnabled("Test"), "Feature Flag - Disabled")
-
+func FeatureFlagEnabled(env string) bool {
+	val, ok := os.LookupEnv(env)
+	return ok && val != "0"
 }

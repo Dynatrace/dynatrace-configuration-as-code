@@ -16,7 +16,7 @@ package download
 
 import (
 	"fmt"
-	utilEnv "github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
@@ -48,7 +48,7 @@ To download entities, use download entities`,
 
 	GetDownloadConfigsCommand(fs, command, downloadCmd)
 
-	if utilEnv.FeatureFlagEnabled("MONACO_FEAT_ENTITIES") {
+	if featureflags.FeatureFlagEnabled("MONACO_FEAT_ENTITIES") {
 		GetDownloadEntitiesCommand(fs, command, downloadCmd)
 	}
 
