@@ -16,7 +16,6 @@ package download
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"os"
 	"strings"
 
@@ -26,6 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/settings"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
+	utilEnv "github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/maps"
 	"github.com/spf13/afero"
@@ -61,7 +61,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 		cmdOptions.projectName = fmt.Sprintf("%s_%s", cmdOptions.projectName, cmdOptions.specificEnvironmentName)
 	}
 
-	concurrentDownloadLimit := rest.ConcurrentRequestLimitFromEnv(true)
+	concurrentDownloadLimit := utilEnv.GetEnvValueIntLog(utilEnv.ConcurrentRequestsEnvKey)
 
 	options := downloadOptions{
 		downloadOptionsShared: downloadOptionsShared{
@@ -84,7 +84,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 
 func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOptions) error {
 	token := os.Getenv(cmdOptions.envVarName)
-	concurrentDownloadLimit := rest.ConcurrentRequestLimitFromEnv(true)
+	concurrentDownloadLimit := utilEnv.GetEnvValueIntLog(utilEnv.ConcurrentRequestsEnvKey)
 	errors := validateParameters(cmdOptions.envVarName, cmdOptions.environmentUrl, cmdOptions.projectName, token)
 
 	if len(errors) > 0 {

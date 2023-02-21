@@ -21,8 +21,6 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
-	"os"
-	"strconv"
 	"time"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
@@ -33,13 +31,14 @@ import (
 // behind this interface
 type rateLimitStrategy interface {
 	executeRequest(timelineProvider util.TimelineProvider, callback func() (Response, error)) (Response, error)
+	ThrottleCallAfterError(message string, a ...any)
 }
 
-// createRateLimitStrategy creates a rateLimitStrategy. In the future this can be extended to instantiate
+// CreateRateLimitStrategy creates a rateLimitStrategy. In the future this can be extended to instantiate
 // different rate limiting strategies based on e.g. environment variables. The current implementation
 // always returns the strategy simpleSleepRateLimitStrategy, which suspends the current goroutine until
 // the time in the rate limiting header 'X-RateLimit-Reset' is up.
-func createRateLimitStrategy() rateLimitStrategy {
+func CreateRateLimitStrategy() rateLimitStrategy {
 	return &simpleSleepRateLimitStrategy{}
 }
 
@@ -168,22 +167,13 @@ func (s *simpleSleepRateLimitStrategy) applyMinMaxDefaults(sleepDuration time.Du
 	return sleepDuration
 }
 
-const (
-	DefaultConcurrentDownloads = 50
-	ConcurrentRequestsEnvKey   = "CONCURRENT_REQUESTS"
-)
+// Sleep a little bit after an error message to avoid hitting rate limits and getting the IP banned
+func (s *simpleSleepRateLimitStrategy) ThrottleCallAfterError(message string, a ...any) {
+	timelineProvider := util.NewTimelineProvider()
+	sleepDuration, humanReadableTimestamp := s.generateSleepDuration(1, timelineProvider)
+	sleepDuration = s.applyMinMaxDefaults(sleepDuration)
 
-func ConcurrentRequestLimitFromEnv(printLog bool) int {
-	limit, err := strconv.Atoi(os.Getenv(ConcurrentRequestsEnvKey))
-	if err != nil || limit < 0 {
-		limit = DefaultConcurrentDownloads
-		if printLog {
-			log.Debug("Concurrent Request Limit: %d, '%s' environment variable is NOT set, using default value", limit, ConcurrentRequestsEnvKey)
-		}
-	} else {
-		if printLog {
-			log.Debug("Concurrent Request Limit: %d, from '%s' environment variable", limit, ConcurrentRequestsEnvKey)
-		}
-	}
-	return limit
+	log.Debug("simpleSleepRateLimitStrategy: %s, waiting %d seconds until %s to avoid Too Many Request errors", fmt.Sprintf(message, a...), sleepDuration.Seconds(), humanReadableTimestamp)
+	timelineProvider.Sleep(sleepDuration)
+	log.Debug("simpleSleepRateLimitStrategy: Slept for %f seconds", sleepDuration.Seconds())
 }

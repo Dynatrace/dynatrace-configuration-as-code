@@ -18,9 +18,11 @@ package rest
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"net/http"
 	"time"
+
+	utilEnv "github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/environment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 )
 
 type RetrySetting struct {
@@ -51,8 +53,8 @@ var DefaultRetrySettings = RetrySettings{
 
 // GetWithRetry will retry a GET request for a given number of times, waiting a give duration between calls
 // this method can be used for API calls we know to have occasional timing issues on GET - e.g. paginated queries that are impacted by replication lag, returning unequal amounts of objects/pages per node
-func GetWithRetry(client *http.Client, url string, apiToken string, settings RetrySetting) (resp Response, err error) {
-	resp, err = Get(client, url, apiToken)
+func GetWithRetry(c *http.Client, url string, apiToken string, settings RetrySetting) (resp Response, err error) {
+	resp, err = Get(c, url, apiToken)
 
 	if err == nil && resp.IsSuccess() {
 		return resp, nil
@@ -61,7 +63,7 @@ func GetWithRetry(client *http.Client, url string, apiToken string, settings Ret
 	for i := 0; i < settings.MaxRetries; i++ {
 		log.Warn("Retrying failed GET request %s with error (HTTP %d)", url, resp.StatusCode)
 		time.Sleep(settings.WaitTime)
-		resp, err = Get(client, url, apiToken)
+		resp, err = Get(c, url, apiToken)
 		if err == nil && resp.IsSuccess() {
 			return resp, err
 		}
@@ -73,7 +75,7 @@ func GetWithRetry(client *http.Client, url string, apiToken string, settings Ret
 	} else {
 		additionalMessage := ""
 		if resp.StatusCode == 403 {
-			concurrentDownloadLimit := ConcurrentRequestLimitFromEnv(false)
+			concurrentDownloadLimit := utilEnv.GetEnvValueInt(utilEnv.ConcurrentRequestsEnvKey)
 			additionalMessage = fmt.Sprintf("\n\n    A 403 error code probably means too many requests.\n    Reduce your CONCURRENT_REQUESTS environment variable (current value: %d). \n    Then wait a few minutes and retry ", concurrentDownloadLimit)
 		}
 		retryErr = fmt.Errorf("GET request %s failed after %d retries: (HTTP %d)!\n    Response was: %s %s", url, settings.MaxRetries, resp.StatusCode, resp.Body, additionalMessage)
