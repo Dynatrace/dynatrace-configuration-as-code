@@ -138,7 +138,7 @@ func doDownloadConfigs(fs afero.Fs, apis api.ApiMap, opts downloadOptions) error
 	log.Info("Resolving dependencies between configurations")
 	downloadedConfigs = download.ResolveDependencies(downloadedConfigs)
 
-	return writeConfigs(downloadedConfigs, opts.downloadOptionsShared, err, fs)
+	return writeConfigs(downloadedConfigs, opts.downloadOptionsShared, fs)
 }
 
 func validateSpecificAPIs(a api.ApiMap, apiNames []string) (valid bool, unknownAPIs []string) {

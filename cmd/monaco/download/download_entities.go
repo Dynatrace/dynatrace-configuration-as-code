@@ -102,7 +102,7 @@ func doDownloadEntities(fs afero.Fs, opts downloadOptionsShared) error {
 		return err
 	}
 
-	return writeConfigs(downloadedConfigs, opts, err, fs)
+	return writeConfigs(downloadedConfigs, opts, fs)
 }
 
 func downloadEntities(opts downloadOptionsShared) (project.ConfigsPerType, error) {
