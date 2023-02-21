@@ -71,6 +71,8 @@ func TestReplaceNameMatching(t *testing.T) {
 	assert.Equal(t, "	-name: test_postfix  ", nameReplacingPostfixFunc("	-name: test  "))
 	assert.Equal(t, "	-name: \"test_postfix\"  ", nameReplacingPostfixFunc("	-name: \"test\"  "))
 	assert.Equal(t, "	-name: 'test_postfix'  ", nameReplacingPostfixFunc("	-name: 'test'  "))
+	assert.Equal(t, "name: calc:synthetic.browser.delorean.speed_postfix", nameReplacingPostfixFunc("name: calc:synthetic.browser.delorean.speed"))
+	assert.Equal(t, "  - name: calc:synthetic.browser.delorean.speed_postfix", nameReplacingPostfixFunc("  - name: calc:synthetic.browser.delorean.speed"))
 }
 
 func TestReplaceNameMatchingConfigV2(t *testing.T) {

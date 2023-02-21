@@ -32,14 +32,16 @@ func ReplaceName(line string, idChange func(string) string) string {
 	if strings.Contains(line, "name:") {
 
 		trimmed := strings.TrimSpace(line)
+		split := strings.SplitN(trimmed, ":", 2)
 
-		if strings.HasPrefix(trimmed, "-") {
-			trimmed = trimmed[1:]
-			trimmed = strings.TrimSpace(trimmed)
+		key := split[0]
+		val := split[1]
+
+		if !isNameKey(key) {
+			return line
 		}
 
-		withoutPrefix := strings.TrimLeft(trimmed, "name:")
-		name := strings.TrimSpace(withoutPrefix)
+		name := strings.TrimSpace(val)
 
 		if name == "" { //line only contained the name, can't do anything here and probably a non-shorthand v2 reference
 			return line
@@ -58,6 +60,13 @@ func ReplaceName(line string, idChange func(string) string) string {
 		return replaced
 	}
 	return line
+}
+
+func isNameKey(key string) bool {
+	key = strings.TrimSpace(key)
+	key = strings.TrimPrefix(key, "-")
+	key = strings.TrimSpace(key)
+	return key == "name"
 }
 
 func ReplaceId(line string, idChange func(string) string) string {
