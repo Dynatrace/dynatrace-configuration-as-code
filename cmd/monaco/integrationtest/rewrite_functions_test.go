@@ -16,9 +16,10 @@
  * limitations under the License.
  */
 
-package testutils
+package integrationtest
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
@@ -115,12 +116,11 @@ func TestInMemoryReplaceNameAdvancedMatching(t *testing.T) {
 }
 
 func assertInMemoryReplace(t *testing.T, transformers []func(string) string, expected string) {
-
-	var reader = CreateTestFileSystem()
-	err := RewriteConfigNames("test-resources", reader, transformers)
+	var reader = testutils.CreateTestFileSystem()
+	err := RewriteConfigNames("rewrite-test-resources", reader, transformers)
 	assert.NoError(t, err)
 
-	content, err := afero.ReadFile(reader, "test-resources/test-environments.yaml")
+	content, err := afero.ReadFile(reader, "rewrite-test-resources/test-environments.yaml")
 	assert.NoError(t, err)
 
 	assert.True(t, strings.Contains(string(content), expected), "content '%s' was invalid", content)
