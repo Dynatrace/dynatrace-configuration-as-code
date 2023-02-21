@@ -18,10 +18,10 @@ package delete
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/extid"
 )
 
 type DeletePointer struct {
@@ -81,7 +81,7 @@ func deleteSettingsObject(c client.Client, entries []DeletePointer) []error {
 	errors := make([]error, 0)
 
 	for _, e := range entries {
-		externalID := util.GenerateExternalID(e.Type, e.ConfigId)
+		externalID := extid.GenerateExternalID(e.Type, e.ConfigId)
 		// get settings objects with matching external ID
 		objects, err := c.ListSettings(e.Type, client.ListSettingsOptions{DiscardValue: true, Filter: func(o client.DownloadSettingsObject) bool { return o.ExternalId == externalID }})
 		if err != nil {

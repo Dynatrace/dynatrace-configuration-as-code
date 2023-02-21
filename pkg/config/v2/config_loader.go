@@ -16,22 +16,21 @@ package v2
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
 	"path/filepath"
 	"strconv"
 	"strings"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/environment"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/maps"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/slices"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/environment"
 	refParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/reference"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/files"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 )

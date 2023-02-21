@@ -18,15 +18,16 @@ package v1
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/template"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v1"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/files"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
 
@@ -50,7 +51,7 @@ type projectBuilder struct {
 }
 
 // newProject loads a new project from folder. Returns either project or a reading/sorting error respectively.
-func newProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolderName string, apis map[string]api.Api, projectRootFolder string, unmarshalYaml util.UnmarshalYamlFunc) (Project, error) {
+func newProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolderName string, apis map[string]api.Api, projectRootFolder string, unmarshalYaml template.UnmarshalYamlFunc) (Project, error) {
 
 	var configs = make([]config.Config, 0)
 
@@ -95,10 +96,10 @@ func warnIfProjectNameClashesWithApiName(projectFolderName string, apis map[stri
 	}
 }
 
-func (p *projectBuilder) readFolder(folder string, isProjectRoot bool, unmarshalYaml util.UnmarshalYamlFunc) error {
+func (p *projectBuilder) readFolder(folder string, isProjectRoot bool, unmarshalYaml template.UnmarshalYamlFunc) error {
 	filesInFolder, err := afero.ReadDir(p.fs, folder)
 
-	if util.CheckError(err, "Folder "+folder+" could not be read") {
+	if errutils.CheckError(err, "Folder "+folder+" could not be read") {
 		return err
 	}
 
@@ -118,23 +119,23 @@ func (p *projectBuilder) readFolder(folder string, isProjectRoot bool, unmarshal
 	return err
 }
 
-func (p *projectBuilder) processYaml(filename string, unmarshalYaml util.UnmarshalYamlFunc) error {
+func (p *projectBuilder) processYaml(filename string, unmarshalYaml template.UnmarshalYamlFunc) error {
 
 	log.Debug("Processing file: " + filename)
 
 	bytes, err := afero.ReadFile(p.fs, filename)
 
-	if util.CheckError(err, "Error while reading file "+filename) {
+	if errutils.CheckError(err, "Error while reading file "+filename) {
 		return err
 	}
 
 	properties, err := unmarshalYaml(string(bytes), filename)
-	if util.CheckError(err, "Error while converting file "+filename) {
+	if errutils.CheckError(err, "Error while converting file "+filename) {
 		return err
 	}
 
 	err, folderPath := p.removeYamlFileFromPath(filename)
-	if util.CheckError(err, "Error while stripping yaml from file path "+filename) {
+	if errutils.CheckError(err, "Error while stripping yaml from file path "+filename) {
 		return err
 	}
 
@@ -156,12 +157,12 @@ func (p *projectBuilder) processConfigSection(properties map[string]map[string]s
 		location = p.standardizeLocation(location, folderPath)
 
 		err, a := p.getExtendedInformationFromLocation(location)
-		if util.CheckError(err, "Could not find API fom location") {
+		if errutils.CheckError(err, "Could not find API fom location") {
 			return err
 		}
 
 		c, err := p.configFactory.NewConfig(p.fs, configName, p.projectId, location, properties, a)
-		if util.CheckError(err, "Could not create config"+configName) {
+		if errutils.CheckError(err, "Could not create config"+configName) {
 			return err
 		}
 

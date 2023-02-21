@@ -17,12 +17,13 @@
 package v2
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	envParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/environment"
 	refParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/reference"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 	"path/filepath"
@@ -917,7 +918,7 @@ func TestWriteConfigs(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			fs := util.TempFs(t)
+			fs := testutils.TempFs(t)
 
 			errs := WriteConfigs(&WriterContext{
 				Fs:              fs,
@@ -925,7 +926,7 @@ func TestWriteConfigs(t *testing.T) {
 				ProjectFolder:   "project",
 				ParametersSerde: DefaultParameterParsers,
 			}, tc.configs)
-			util.PrintErrors(errs)
+			errutils.PrintErrors(errs)
 			assert.Equal(t, len(errs), 0, "Writing configs should not produce an error")
 
 			// check all api-folders config file

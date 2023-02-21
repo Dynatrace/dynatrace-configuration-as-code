@@ -17,9 +17,11 @@ package deploy
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/deploy"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/maps"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/slices"
 	"path/filepath"
 	"strings"
 
@@ -30,8 +32,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2/topologysort"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
 
@@ -52,7 +52,7 @@ func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironments []s
 
 	if errs != nil {
 		// TODO add grouping and print proper error repot
-		util.PrintErrors(errs)
+		errutils.PrintErrors(errs)
 		return errors.New("error while loading manifest")
 	}
 
@@ -103,7 +103,7 @@ func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironments []s
 
 	if errs != nil {
 		// TODO add grouping and print proper error repot
-		util.PrintErrors(errs)
+		errutils.PrintErrors(errs)
 		return errors.New("error during sort")
 	}
 
@@ -218,7 +218,7 @@ func printErrorReport(deploymentErrors []error) {
 	if len(generalErrors) > 0 {
 		log.Error("=== General Errors ===")
 		for _, err := range generalErrors {
-			log.Error(util.ErrorString(err))
+			log.Error(errutils.ErrorString(err))
 		}
 	}
 
@@ -242,13 +242,13 @@ func printErrorReport(deploymentErrors []error) {
 				groupErrors := groupEnvironmentConfigErrors(detailedConfigErrors)
 
 				for _, err := range generalConfigErrors {
-					log.Error("%s:%s:%s %s", project, api, config, util.ErrorString(err))
+					log.Error("%s:%s:%s %s", project, api, config, errutils.ErrorString(err))
 				}
 
 				for group, environmentErrors := range groupErrors {
 					for env, errs := range environmentErrors {
 						for _, err := range errs {
-							log.Error("%s(%s) %s:%s:%s %T %s", env, group, project, api, config, err, util.ErrorString(err))
+							log.Error("%s(%s) %s:%s:%s %T %s", env, group, project, api, config, err, errutils.ErrorString(err))
 						}
 					}
 				}

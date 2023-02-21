@@ -21,13 +21,15 @@ package v2
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/deploy"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/extid"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2/topologysort"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/test"
 	"math/rand"
 	"path/filepath"
 	"strings"
@@ -37,8 +39,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 )
@@ -49,7 +49,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 		Fs:           fs,
 		ManifestPath: manifestPath,
 	})
-	test.FailTestOnAnyError(t, errs, "loading of environments failed")
+	testutils.FailTestOnAnyError(t, errs, "loading of environments failed")
 
 	var specificEnvs []string
 	if specificEnvironment != "" {
@@ -69,7 +69,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 		Manifest:        loadedManifest,
 		ParametersSerde: config.DefaultParameterParsers,
 	})
-	test.FailTestOnAnyError(t, errs, "loading of projects failed")
+	testutils.FailTestOnAnyError(t, errs, "loading of projects failed")
 
 	envNames := make([]string, 0, len(environments))
 
@@ -78,7 +78,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 	}
 
 	sortedConfigs, errs := topologysort.GetSortedConfigsForEnvironments(projects, envNames)
-	test.FailTestOnAnyError(t, errs, "sorting configurations failed")
+	testutils.FailTestOnAnyError(t, errs, "sorting configurations failed")
 
 	checkString := "exist"
 	if !available {
@@ -128,12 +128,12 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 			}
 
 			configParameters, errs := topologysort.SortParameters(theConfig.Group, theConfig.Environment, theConfig.Coordinate, theConfig.Parameters)
-			test.FailTestOnAnyError(t, errs, "sorting of parameter values failed")
+			testutils.FailTestOnAnyError(t, errs, "sorting of parameter values failed")
 
 			parameters = append(parameters, configParameters...)
 
 			properties, errs := deploy.ResolveParameterValues(&theConfig, entities, parameters)
-			test.FailTestOnAnyError(t, errs, "resolving of parameter values failed")
+			testutils.FailTestOnAnyError(t, errs, "resolving of parameter values failed")
 
 			properties[config.IdParameter] = "NO REAL ID NEEDED FOR CHECKING AVAILABILITY"
 
@@ -190,7 +190,7 @@ func AssertConfig(t *testing.T, client client.ConfigClient, theApi api.Api, envi
 }
 
 func assertSetting(t *testing.T, c client.SettingsClient, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config) {
-	expectedExtId := util.GenerateExternalID(config.Type.SchemaId, config.Coordinate.ConfigId)
+	expectedExtId := extid.GenerateExternalID(config.Type.SchemaId, config.Coordinate.ConfigId)
 	objects, err := c.ListSettings(config.Type.SchemaId, client.ListSettingsOptions{DiscardValue: true, Filter: func(o client.DownloadSettingsObject) bool { return o.ExternalId == expectedExtId }})
 	assert.NilError(t, err)
 
@@ -226,7 +226,7 @@ func addSuffix(suffix string) func(line string) string {
 
 func getTransformerFunc(suffix string) func(line string) string {
 	var f = func(name string) string {
-		return util.ReplaceName(name, addSuffix(suffix))
+		return testutils.ReplaceName(name, addSuffix(suffix))
 	}
 	return f
 }
@@ -301,7 +301,7 @@ func cleanupIntegrationTest(t *testing.T, loadedManifest manifest.Manifest, spec
 
 func RunIntegrationWithCleanup(t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, testFunc func(fs afero.Fs)) {
 
-	fs := util.CreateTestFileSystem()
+	fs := testutils.CreateTestFileSystem()
 	runIntegrationWithCleanup(t, fs, configFolder, manifestPath, specificEnvironment, suffixTest, nil, testFunc)
 }
 
@@ -310,7 +310,7 @@ func RunIntegrationWithCleanupOnGivenFs(t *testing.T, testFs afero.Fs, configFol
 }
 
 func RunIntegrationWithCleanupGivenEnvs(t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, envVars map[string]string, testFunc func(fs afero.Fs)) {
-	fs := util.CreateTestFileSystem()
+	fs := testutils.CreateTestFileSystem()
 
 	runIntegrationWithCleanup(t, fs, configFolder, manifestPath, specificEnvironment, suffixTest, envVars, testFunc)
 }
@@ -320,7 +320,7 @@ func runIntegrationWithCleanup(t *testing.T, testFs afero.Fs, configFolder, mani
 		Fs:           testFs,
 		ManifestPath: manifestPath,
 	})
-	test.FailTestOnAnyError(t, errs, "loading of manifest failed")
+	testutils.FailTestOnAnyError(t, errs, "loading of manifest failed")
 
 	configFolder, _ = filepath.Abs(configFolder)
 
@@ -342,7 +342,7 @@ func appendUniqueSuffixToIntegrationTestConfigs(t *testing.T, fs afero.Fs, confi
 	suffix := generateTestSuffix(generalSuffix)
 	transformers := []func(string) string{getTransformerFunc(suffix)}
 
-	err := util.RewriteConfigNames(configFolder, fs, transformers)
+	err := testutils.RewriteConfigNames(configFolder, fs, transformers)
 	if err != nil {
 		t.Fatalf("Error rewriting configs names: %s", err)
 		return suffix

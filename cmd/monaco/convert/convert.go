@@ -16,6 +16,8 @@ package convert
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"path"
 	"path/filepath"
 
@@ -26,8 +28,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	projectv1 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v1"
 	projectv2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/writer"
 	"github.com/spf13/afero"
 )
@@ -40,7 +40,7 @@ func Convert(fs afero.Fs, workingDir string, environmentsFile string, outputFold
 	man, projs, configLoadErrors := loadConfigs(fs, workingDir, apis, environmentsFile)
 
 	if len(configLoadErrors) > 0 {
-		util.PrintErrors(configLoadErrors)
+		errutils.PrintErrors(configLoadErrors)
 
 		return fmt.Errorf("encountered errors while trying to load configs. check logs")
 	}
@@ -62,7 +62,7 @@ func Convert(fs afero.Fs, workingDir string, environmentsFile string, outputFold
 
 	if len(errs) > 0 {
 		log.Error("Encountered %d errors while converting %s:", len(errs), workingDir)
-		util.PrintErrors(errs)
+		errutils.PrintErrors(errs)
 
 		return fmt.Errorf("encountered errors while converting configs. check logs")
 	}

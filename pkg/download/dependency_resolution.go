@@ -18,6 +18,8 @@ package download
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"regexp"
@@ -27,8 +29,6 @@ import (
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/reference"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/maps"
 )
 
 // ResolveDependencies resolves all id-dependencies between downloaded configs.

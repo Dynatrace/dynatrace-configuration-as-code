@@ -20,7 +20,7 @@ package manifest
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	version2 "github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/spf13/afero"
@@ -636,9 +636,9 @@ environmentGroups:
 }
 
 func TestManifestVersionsCanBeParsedToVersionStruct(t *testing.T) {
-	_, err := util.ParseVersion(version.MinManifestVersion)
+	_, err := version2.ParseVersion(version.MinManifestVersion)
 	assert.NilError(t, err, "expected version.MinManifestVersion (%s) to parse to Version struct", version.MinManifestVersion)
-	_, err = util.ParseVersion(version.ManifestVersion)
+	_, err = version2.ParseVersion(version.ManifestVersion)
 	assert.NilError(t, err, "expected version.ManifestVersion (%s) to parse to Version struct", version.ManifestVersion)
 }
 

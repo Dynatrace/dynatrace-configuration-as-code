@@ -19,7 +19,8 @@ package environment
 import (
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/template"
 	"github.com/spf13/afero"
 )
 
@@ -32,10 +33,10 @@ func LoadEnvironmentsWithoutTemplating(environmentsFile string, fs afero.Fs) (en
 	}
 
 	dat, err := afero.ReadFile(fs, environmentsFile)
-	util.FailOnError(err, "Error while reading file")
+	errutils.FailOnError(err, "Error while reading file")
 
-	environmentMaps, err := util.UnmarshalYamlWithoutTemplating(string(dat), environmentsFile)
-	util.FailOnError(err, "Error while converting file")
+	environmentMaps, err := template.UnmarshalYamlWithoutTemplating(string(dat), environmentsFile)
+	errutils.FailOnError(err, "Error while converting file")
 
 	environments, envErrs := NewEnvironments(environmentMaps)
 

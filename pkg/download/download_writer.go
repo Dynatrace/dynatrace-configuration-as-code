@@ -18,11 +18,11 @@ package download
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/writer"
 	"github.com/spf13/afero"
 	"path/filepath"
@@ -71,7 +71,7 @@ func writeToDisk(fs afero.Fs, writerContext WriterContext) error {
 	}, m, []project.Project{writerContext.ProjectToWrite})
 
 	if len(errs) > 0 {
-		util.PrintErrors(errs)
+		errutils.PrintErrors(errs)
 		return fmt.Errorf("failed to persist downloaded configurations")
 	}
 

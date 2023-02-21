@@ -15,8 +15,8 @@
 package client
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/concurrency"
 )
 
 type limitingClient struct {

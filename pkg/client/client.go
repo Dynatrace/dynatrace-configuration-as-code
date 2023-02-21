@@ -20,16 +20,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/extid"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"net/http"
 	"net/url"
 	"strings"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
-
 	. "github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 )
 
 // ConfigClient is responsible for the classic Dynatrace configs. For settings objects, the [SettingsClient] is responsible.
@@ -171,7 +171,7 @@ type Client interface {
 type DynatraceClient struct {
 	// serverVersion is the Dynatrace server version the
 	// client will be interacting with
-	serverVersion util.Version
+	serverVersion version.Version
 	// environmentUrl is the base URL of the Dynatrace server the
 	// client will be interacting with
 	environmentUrl string
@@ -205,7 +205,7 @@ func WithHTTPClient(client *http.Client) func(dynatraceClient *DynatraceClient) 
 }
 
 // WithServerVersion sets the Dynatrace version of the Dynatrace server/tenant the client will be interacting with
-func WithServerVersion(serverVersion util.Version) func(client *DynatraceClient) {
+func WithServerVersion(serverVersion version.Version) func(client *DynatraceClient) {
 	return func(d *DynatraceClient) {
 		d.serverVersion = serverVersion
 	}
@@ -218,7 +218,7 @@ func WithAutoServerVersion() func(client *DynatraceClient) {
 		serverVersion, err := GetDynatraceVersion(d.client, d.environmentUrl, d.token)
 		if err != nil {
 			log.Error("Unable to determine Dynatrace server version: %v", err)
-			d.serverVersion = util.UnknownVersion
+			d.serverVersion = version.UnknownVersion
 		} else {
 			d.serverVersion = serverVersion
 		}
@@ -272,7 +272,7 @@ func NewDynatraceClient(environmentURL string, token string, opts ...func(dynatr
 		token:          token,
 		client:         &http.Client{},
 		retrySettings:  rest.DefaultRetrySettings,
-		serverVersion:  util.Version{},
+		serverVersion:  version.Version{},
 	}
 
 	for _, o := range opts {
@@ -291,7 +291,7 @@ func isNewDynatraceTokenFormat(token string) bool {
 }
 
 func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, error) {
-	externalId := util.GenerateExternalID(obj.SchemaId, obj.Id)
+	externalId := extid.GenerateExternalID(obj.SchemaId, obj.Id)
 
 	// list all settings with matching external ID
 	settings, err := d.ListSettings(obj.SchemaId, ListSettingsOptions{
@@ -315,7 +315,7 @@ func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, e
 	// Tenants with versions < 1.262 are not able to handle updates of existing
 	// settings 2.0 objects that are non-deletable
 	if !d.serverVersion.Invalid() &&
-		d.serverVersion.SmallerThan(util.Version{Major: 1, Minor: 262, Patch: 0}) &&
+		d.serverVersion.SmallerThan(version.Version{Major: 1, Minor: 262, Patch: 0}) &&
 		len(settings) > 0 &&
 		settings[0].ObjectId == obj.OriginObjectId {
 		log.Warn("Unable to update Settings 2.0 object of schema %q and object id %q on Dynatrace tenant with a version < 1.262.0", obj.SchemaId, obj.OriginObjectId)

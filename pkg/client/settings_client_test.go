@@ -18,8 +18,9 @@ package client
 
 import (
 	"encoding/json"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/extid"
 	"gotest.tools/assert"
 	"net/http"
 	"net/http/httptest"
@@ -30,7 +31,7 @@ func TestUpsert(t *testing.T) {
 	tests := []struct {
 		name                        string
 		content                     string
-		serverVersion               util.Version
+		serverVersion               version.Version
 		expectError                 bool
 		expectEntity                api.DynatraceEntity
 		postSettingsResponseCode    int
@@ -46,7 +47,7 @@ func TestUpsert(t *testing.T) {
 		},
 		{
 			name: "Simple valid call with valid response",
-			serverVersion: util.Version{
+			serverVersion: version.Version{
 				Major: 1,
 				Minor: 262,
 				Patch: 0,
@@ -88,7 +89,7 @@ func TestUpsert(t *testing.T) {
 		{
 			name:    "Upsert existing settings 2.0 object on tenant < 1.262.0",
 			content: "{}",
-			serverVersion: util.Version{
+			serverVersion: version.Version{
 				Major: 1,
 				Minor: 260,
 				Patch: 0,
@@ -124,7 +125,7 @@ func TestUpsert(t *testing.T) {
 				assert.NilError(t, err)
 
 				expectedRequestPayload := settingsRequest{
-					ExternalId:    util.GenerateExternalID("builtin:alerting.profile", "user-provided-id"),
+					ExternalId:    extid.GenerateExternalID("builtin:alerting.profile", "user-provided-id"),
 					Scope:         "tenant",
 					Value:         expectedSettingsObject,
 					SchemaId:      "builtin:alerting.profile",

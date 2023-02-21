@@ -19,8 +19,8 @@ package rest
 import (
 	"bytes"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/timeutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"github.com/google/uuid"
 	"io"
@@ -130,7 +130,7 @@ func executeRequest(client *http.Client, request *http.Request) (Response, error
 
 	rateLimitStrategy := createRateLimitStrategy()
 
-	response, err := rateLimitStrategy.executeRequest(util.NewTimelineProvider(), func() (Response, error) {
+	response, err := rateLimitStrategy.executeRequest(timeutils.NewTimelineProvider(), func() (Response, error) {
 		resp, err := client.Do(request)
 		if err != nil {
 			log.Error("HTTP Request failed with Error: " + err.Error())

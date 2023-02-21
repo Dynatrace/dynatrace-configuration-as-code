@@ -23,12 +23,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	projectsV2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/test"
 	"math/rand"
 	"path"
 	"path/filepath"
@@ -38,8 +39,6 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 )
@@ -81,7 +80,7 @@ func loadManifest(t *testing.T, fs afero.Fs, manifestFile string) manifest.Manif
 		Fs:           fs,
 		ManifestPath: manifestFile,
 	})
-	test.FailTestOnAnyError(t, errs, "failed to load manifest")
+	testutils.FailTestOnAnyError(t, errs, "failed to load manifest")
 
 	return mani
 }
@@ -94,7 +93,7 @@ func loadProjects(t *testing.T, fs afero.Fs, manifestFile string, mani manifest.
 		Manifest:        mani,
 		ParametersSerde: v2.DefaultParameterParsers,
 	})
-	test.FailTestOnAnyError(t, errs, "failed to load configs")
+	testutils.FailTestOnAnyError(t, errs, "failed to load configs")
 	assert.Assert(t, len(projects) != 0, "no projects loaded")
 
 	return projects
@@ -214,7 +213,7 @@ func addSuffix(suffix string) func(line string) string {
 
 func getTransformerFunc(suffix string) func(line string) string {
 	var f = func(name string) string {
-		return util.ReplaceName(name, addSuffix(suffix))
+		return testutils.ReplaceName(name, addSuffix(suffix))
 	}
 	return f
 }
@@ -225,7 +224,7 @@ func cleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestFile, suffix stri
 		Fs:           fs,
 		ManifestPath: manifestFile,
 	})
-	test.FailTestOnAnyError(t, errs, "loading manifest failed")
+	testutils.FailTestOnAnyError(t, errs, "loading manifest failed")
 
 	environments := manifest.Environments
 
@@ -304,7 +303,7 @@ func runLegacyIntegration(t *testing.T, configFolder, envFile, suffixTest string
 	configFolder, _ = filepath.Abs(configFolder)
 	envFile, _ = filepath.Abs(envFile)
 
-	var fs = util.CreateTestFileSystem()
+	var fs = testutils.CreateTestFileSystem()
 	suffix := appendUniqueSuffixToIntegrationTestConfigs(t, fs, configFolder, suffixTest)
 
 	targetDir, err := filepath.Abs("out")
@@ -348,7 +347,7 @@ func appendUniqueSuffixToIntegrationTestConfigs(t *testing.T, fs afero.Fs, confi
 	suffix := fmt.Sprintf("%s_%d_%s", getTimestamp(), randomNumber, generalSuffix)
 	transformers := []func(string) string{getTransformerFunc(suffix)}
 
-	err := util.RewriteConfigNames(configFolder, fs, transformers)
+	err := testutils.RewriteConfigNames(configFolder, fs, transformers)
 	if err != nil {
 		t.Fatalf("Error rewriting configs names: %s", err)
 		return suffix

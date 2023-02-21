@@ -17,12 +17,13 @@ package compound
 import (
 	"bytes"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/strings"
+	template2 "github.com/dynatrace/dynatrace-configuration-as-code/internal/template"
 	templ "text/template" // nosemgrep: go.lang.security.audit.xss.import-text-template.import-text-template
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 )
 
 // CompoundParameterType specifies the type of the parameter used in config files
@@ -78,7 +79,7 @@ func (p *CompoundParameter) ResolveValue(context parameter.ResolveContext) (inte
 	}
 
 	str := out.String()
-	return util.EscapeSpecialCharactersInValue(str, util.FullStringEscapeFunction)
+	return template2.EscapeSpecialCharactersInValue(str, template2.FullStringEscapeFunction)
 
 }
 
@@ -107,7 +108,7 @@ func parseCompoundParameter(context parameter.ParameterParserContext) (parameter
 		return nil, parameter.NewParameterParserError(context, fmt.Sprintf("invalid parameter references: %v", err))
 	}
 
-	return New(context.ParameterName, util.ToString(format), referencedParameters)
+	return New(context.ParameterName, strings.ToString(format), referencedParameters)
 }
 
 func writeCompoundParameter(context parameter.ParameterWriterContext) (map[string]interface{}, error) {
@@ -146,7 +147,7 @@ func toParameterReferences(params []interface{}, coord coordinate.Coordinate) (p
 
 		paramRefs = append(paramRefs, parameter.ParameterReference{
 			Config:   coord,
-			Property: util.ToString(param),
+			Property: strings.ToString(param),
 		})
 	}
 	return paramRefs, nil

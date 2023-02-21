@@ -18,7 +18,8 @@ package v1
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/template"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,16 +27,15 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 )
 
 // LoadProjectsToConvert returns a list of projects to be converted to v2
 func LoadProjectsToConvert(fs afero.Fs, apis map[string]api.Api, path string) ([]Project, error) {
-	_, projects, err := loadAllProjects(fs, apis, path, util.UnmarshalYamlWithoutTemplating)
+	_, projects, err := loadAllProjects(fs, apis, path, template.UnmarshalYamlWithoutTemplating)
 	return projects, err
 }
 
-func loadAllProjects(fs afero.Fs, apis map[string]api.Api, projectsFolder string, unmarshalYaml util.UnmarshalYamlFunc) (projectFolders []string, projects []Project, err error) {
+func loadAllProjects(fs afero.Fs, apis map[string]api.Api, projectsFolder string, unmarshalYaml template.UnmarshalYamlFunc) (projectFolders []string, projects []Project, err error) {
 	projectsFolder = filepath.Clean(projectsFolder)
 
 	log.Debug("Reading projects...")

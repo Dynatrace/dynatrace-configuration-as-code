@@ -16,13 +16,13 @@ package deploy
 
 import (
 	"fmt"
-
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/utils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/uuid"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 )
 
 // DeployConfigsOptions defines additional options used by DeployConfigs
@@ -155,9 +155,9 @@ func upsertNonUniqueNameConfig(client client.ConfigClient, apiToDeploy api.Api, 
 
 	entityUuid := configId
 
-	isUuidOrMeId := util.IsUuid(entityUuid) || util.IsMeId(entityUuid)
+	isUuidOrMeId := uuid.IsUuid(entityUuid) || utils.IsMeId(entityUuid)
 	if !isUuidOrMeId {
-		entityUuid = util.GenerateUuidFromConfigId(projectId, configId)
+		entityUuid = uuid.GenerateUuidFromConfigId(projectId, configId)
 	}
 
 	return client.UpsertByNonUniqueNameAndId(apiToDeploy, entityUuid, configName, []byte(renderedConfig))

@@ -24,8 +24,6 @@ import (
 	"io"
 	"strings"
 	"testing"
-
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 )
 
 // TestInvalidCliCommands is a very basic test testing that invalid commands error.
@@ -33,7 +31,7 @@ import (
 // Otherwise, we would run into issues upon upgrading.
 // On th other hand, we could use the exact message to review the exact messages customers will see.
 func TestInvalidCliCommands(t *testing.T) {
-	util.SetEnv(t, "MONACO_FEAT_ENTITIES", "1")
+	t.Setenv("MONACO_FEAT_ENTITIES", "1")
 
 	tests := []struct {
 		name                  string
@@ -117,7 +115,7 @@ func TestInvalidCliCommands(t *testing.T) {
 }
 
 func TestValidCommands(t *testing.T) {
-	util.SetEnv(t, "MONACO_FEAT_ENTITIES", "1")
+	t.Setenv("MONACO_FEAT_ENTITIES", "1")
 
 	tests := []struct {
 		name  string
@@ -701,7 +699,6 @@ func TestValidCommands(t *testing.T) {
 // Otherwise, we would run into issues upon upgrading.
 // On th other hand, we could use the exact message to review the exact messages customers will see.
 func TestDisabledCommands(t *testing.T) {
-	util.UnsetEnv(t, "MONACO_FEAT_ENTITIES")
 
 	tests := []struct {
 		name                  string

@@ -21,7 +21,7 @@ package v2
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 	"path/filepath"
@@ -35,7 +35,7 @@ func TestPagination(t *testing.T) {
 	manifestPath := configFolder + "manifest.yaml"
 	specificEnvironment := ""
 
-	fs := util.CreateTestFileSystem()
+	fs := testutils.CreateTestFileSystem()
 
 	//create config yaml
 	settingsPageSize := 500

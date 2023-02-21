@@ -16,8 +16,8 @@ package v2
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/slices"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
 	"os"
 	"strings"
 

@@ -16,12 +16,13 @@ package manifest
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
+	strings2 "github.com/dynatrace/dynatrace-configuration-as-code/internal/strings"
+	version2 "github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"path/filepath"
 	"strings"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/files"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 )
@@ -192,15 +193,15 @@ func parseManifestFile(context *ManifestLoaderContext, data []byte) (manifest, [
 	return m, nil
 }
 
-var maxSupportedManifestVersion, _ = util.ParseVersion(version.ManifestVersion)
-var minSupportedManifestVersion, _ = util.ParseVersion(version.MinManifestVersion)
+var maxSupportedManifestVersion, _ = version2.ParseVersion(version.ManifestVersion)
+var minSupportedManifestVersion, _ = version2.ParseVersion(version.MinManifestVersion)
 
 func validateManifestVersion(manifestVersion string) error {
 	if len(manifestVersion) == 0 {
 		return fmt.Errorf("`manifestVersion` missing")
 	}
 
-	v, err := util.ParseVersion(manifestVersion)
+	v, err := version2.ParseVersion(manifestVersion)
 	if err != nil {
 		return fmt.Errorf("invalid `manifestVersion`: %w", err)
 	}
@@ -291,11 +292,11 @@ func toEnvironment(context *ManifestLoaderContext, config environment, group str
 }
 
 func extractUrlType(config environment) (UrlType, error) {
-	if config.Url.Type == "" || config.Url.Type == util.ToString(ValueUrlType) {
+	if config.Url.Type == "" || config.Url.Type == strings2.ToString(ValueUrlType) {
 		return ValueUrlType, nil
 	}
 
-	if config.Url.Type == util.ToString(EnvironmentUrlType) {
+	if config.Url.Type == strings2.ToString(EnvironmentUrlType) {
 		return EnvironmentUrlType, nil
 	}
 
@@ -326,7 +327,7 @@ func parseEnvironmentToken(context *ManifestLoaderContext, group string, config 
 			return nil, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, "empty key `name` in token config")
 		}
 
-		return &EnvironmentVariableToken{util.ToString(val)}, nil
+		return &EnvironmentVariableToken{strings2.ToString(val)}, nil
 	}
 
 	return nil, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, "missing key `name` in token config")

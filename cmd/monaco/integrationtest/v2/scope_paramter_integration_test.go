@@ -20,7 +20,7 @@ package v2
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 	"testing"
@@ -61,7 +61,7 @@ func TestIntegrationScopeParameterValidation(t *testing.T) {
 	envVar := "SCOPE_TEST_ENV_VAR"
 	t.Setenv(envVar, "environment")
 
-	cmd := runner.BuildCli(util.CreateTestFileSystem())
+	cmd := runner.BuildCli(testutils.CreateTestFileSystem())
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
 	err := cmd.Execute()
 

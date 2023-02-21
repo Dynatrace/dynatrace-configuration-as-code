@@ -18,7 +18,7 @@ package value
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/json"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
@@ -178,7 +178,7 @@ func TestValuesWithSpecialCharactersReturnContentValidForJson(t *testing.T) {
 
 			sampleJson := fmt.Sprintf(`{ "val": "%s"}`, resString)
 
-			err = util.ValidateJson(sampleJson, util.Location{})
+			err = json.ValidateJson(sampleJson, json.Location{})
 			assert.NilError(t, err)
 		})
 	}

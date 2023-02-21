@@ -17,6 +17,9 @@ package runner
 import (
 	"errors"
 	"fmt"
+	utilEnv "github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"io"
 	"os"
@@ -32,9 +35,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/deploy"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/download"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner/completion"
-	utilEnv "github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/environment"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/files"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 )
 
 var errWrongUsage = errors.New("")

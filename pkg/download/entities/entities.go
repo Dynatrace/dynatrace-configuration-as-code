@@ -17,6 +17,8 @@
 package entities
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/uuid"
 	"strings"
 	"sync"
 
@@ -27,8 +29,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 )
 
 // Downloader is responsible for downloading Settings 2.0 objects
@@ -118,7 +118,7 @@ func (d *Downloader) convertObject(str []string, entitiesType string, projectNam
 
 	templ := template.NewDownloadTemplate(entitiesType, entitiesType, content)
 
-	configId := util.GenerateUuidFromName(entitiesType)
+	configId := uuid.GenerateUuidFromName(entitiesType)
 
 	return []config.Config{{
 		Template: templ,

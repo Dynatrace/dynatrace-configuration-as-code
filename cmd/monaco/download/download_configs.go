@@ -16,7 +16,9 @@ package download
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
 	"os"
 	"strings"
 
@@ -26,8 +28,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/settings"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/maps"
 	"github.com/spf13/afero"
 )
 
@@ -125,7 +125,7 @@ func doDownloadConfigs(fs afero.Fs, apis api.ApiMap, opts downloadOptions) error
 	}
 
 	if ok, unknownApis := validateSpecificAPIs(apis, opts.specificAPIs); !ok {
-		util.PrintError(fmt.Errorf("APIs '%v' are not known. Please consult our documentation for known API-names", strings.Join(unknownApis, ",")))
+		errutils.PrintError(fmt.Errorf("APIs '%v' are not known. Please consult our documentation for known API-names", strings.Join(unknownApis, ",")))
 		return fmt.Errorf("failed to load apis")
 	}
 

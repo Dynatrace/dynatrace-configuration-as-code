@@ -20,8 +20,7 @@ package client
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"gotest.tools/assert"
@@ -95,10 +94,10 @@ func TestNewClientNoValidUrlNoHttps(t *testing.T) {
 func TestNewClient(t *testing.T) {
 	httpClient := &http.Client{}
 	c, err := NewDynatraceClient("https://my-environment.live.dynatrace.com/", "abc",
-		WithServerVersion(util.Version{Major: 1, Minor: 2, Patch: 3}),
+		WithServerVersion(version.Version{Major: 1, Minor: 2, Patch: 3}),
 		WithRetrySettings(rest.DefaultRetrySettings),
 		WithHTTPClient(httpClient))
-	assert.Equal(t, util.Version{Major: 1, Minor: 2, Patch: 3}, c.serverVersion)
+	assert.Equal(t, version.Version{Major: 1, Minor: 2, Patch: 3}, c.serverVersion)
 	assert.Equal(t, rest.DefaultRetrySettings, c.retrySettings)
 	assert.Equal(t, httpClient, c.client)
 	assert.Equal(t, "abc", c.token)
@@ -762,7 +761,7 @@ func TestCreateDynatraceClientWithAutoServerVersion(t *testing.T) {
 			WithAutoServerVersion())
 		server.Close()
 		assert.NilError(t, err)
-		assert.Equal(t, util.Version{Major: 1, Minor: 262}, dcl.serverVersion)
+		assert.Equal(t, version.Version{Major: 1, Minor: 262}, dcl.serverVersion)
 	})
 
 	t.Run("Server version is correctly set to unknown", func(t *testing.T) {
@@ -775,6 +774,6 @@ func TestCreateDynatraceClientWithAutoServerVersion(t *testing.T) {
 			WithAutoServerVersion())
 		server.Close()
 		assert.NilError(t, err)
-		assert.Equal(t, util.UnknownVersion, dcl.serverVersion)
+		assert.Equal(t, version.UnknownVersion, dcl.serverVersion)
 	})
 }
