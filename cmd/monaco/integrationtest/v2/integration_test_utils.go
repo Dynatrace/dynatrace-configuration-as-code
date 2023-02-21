@@ -225,13 +225,6 @@ func addSuffix(suffix string) func(line string) string {
 	return f
 }
 
-func getTransformerFunc(suffix string) func(line string) string {
-	var f = func(name string) string {
-		return integrationtest.ReplaceName(name, addSuffix(suffix))
-	}
-	return f
-}
-
 // Deletes all configs that end with "_suffix", where suffix == suffixTest+suffixTimestamp
 func cleanupIntegrationTest(t *testing.T, loadedManifest manifest.Manifest, specificEnvironment, suffix string) {
 
@@ -341,7 +334,14 @@ func runIntegrationWithCleanup(t *testing.T, testFs afero.Fs, configFolder, mani
 
 func appendUniqueSuffixToIntegrationTestConfigs(t *testing.T, fs afero.Fs, configFolder string, generalSuffix string) string {
 	suffix := generateTestSuffix(generalSuffix)
-	transformers := []func(string) string{getTransformerFunc(suffix)}
+	transformers := []func(line string) string{
+		func(name string) string {
+			return integrationtest.ReplaceName(name, addSuffix(suffix))
+		},
+		func(id string) string {
+			return integrationtest.ReplaceId(id, addSuffix(suffix))
+		},
+	}
 
 	err := integrationtest.RewriteConfigNames(configFolder, fs, transformers)
 	if err != nil {
