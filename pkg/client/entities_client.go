@@ -15,8 +15,13 @@
 package client
 
 import (
+	"encoding/json"
+	"net/url"
 	reflect "reflect"
+	"regexp"
 	"unicode"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 )
 
 const pathEntitiesObjects = "/api/v2/entities"
@@ -121,4 +126,78 @@ func isInvalidReflectionValue(value reflect.Value) bool {
 	} else {
 		return false
 	}
+}
+
+func GenListEntitiesParams(entityType string, entitiesType EntitiesType, ignoreProperties []string) url.Values {
+	params := url.Values{
+		"entitySelector": []string{"type(\"" + entityType + "\")"},
+		"pageSize":       []string{defaultPageSizeEntities},
+		"fields":         []string{getEntitiesTypeFields(entitiesType, ignoreProperties)},
+		"from":           []string{genTimeframeUnixMilliString(defaultEntityDurationTimeframeFrom)},
+		"to":             []string{genTimeframeUnixMilliString(defaultEntityDurationTimeframeTo)},
+	}
+
+	return params
+}
+
+func HandleListEntitiesError(entityType string, resp rest.Response, run_extraction bool, ignoreProperties []string, err error) (bool, []string, error) {
+	if err != nil {
+		retryWithIgnore := false
+		retryWithIgnore, ignoreProperties = ValidateForPropertyErrors(resp, ignoreProperties, entityType)
+
+		if retryWithIgnore {
+			return run_extraction, ignoreProperties, nil
+		} else {
+			return run_extraction, ignoreProperties, err
+		}
+	} else {
+		return false, ignoreProperties, nil
+	}
+}
+
+type ErrorResponseStruct struct {
+	ErrorResponse ErrorResponse `json:"error"`
+}
+
+type ErrorResponse struct {
+	ErrorCode               int                   `json:"code"`
+	Message                 string                `json:"message"`
+	ConstraintViolationList []ConstraintViolation `json:"constraintViolations"`
+}
+
+type ConstraintViolation struct {
+	Path              string `json:"path"`
+	Message           string `json:"message"`
+	ParameterLocation string `json:"parameterLocation"`
+	Location          string `json:"location"`
+}
+
+func ValidateForPropertyErrors(resp rest.Response, ignoreProperties []string, entityType string) (bool, []string) {
+	retryWithIgnore := false
+
+	var errorResponse ErrorResponseStruct
+	err2 := json.Unmarshal(resp.Body, &errorResponse)
+
+	if err2 == nil {
+		if errorResponse.ErrorResponse.ErrorCode == 400 {
+			constraintViolationList := errorResponse.ErrorResponse.ConstraintViolationList
+			for _, constraintViolation := range constraintViolationList {
+				if constraintViolation.Path == "fields" {
+					re := regexp.MustCompile(`'([^']+)'.*`)
+					matches := re.FindStringSubmatch(constraintViolation.Message)
+					if len(matches) >= 2 {
+						if contains(ignoreProperties, matches[1]) {
+							continue
+						}
+						ignoreProperties = append(ignoreProperties, matches[1])
+						rateLimitStrategy := rest.CreateRateLimitStrategy()
+						rateLimitStrategy.ThrottleCallAfterError("Property error in type: %s: will not extract: %s", entityType, matches[1])
+						retryWithIgnore = true
+					}
+				}
+			}
+		}
+	}
+
+	return retryWithIgnore, ignoreProperties
 }
