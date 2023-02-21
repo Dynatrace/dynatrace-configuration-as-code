@@ -103,7 +103,7 @@ func (c downloadOptionsShared) getDynatraceClient() (client.Client, error) {
 	return c.clientProvider(client.NewTokenAuthClient(c.token), c.environmentUrl, client.WithAutoServerVersion())
 }
 
-func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptionsShared, err error, fs afero.Fs) error {
+func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptionsShared, fs afero.Fs) error {
 	proj := download.CreateProjectData(downloadedConfigs, opts.projectName)
 
 	downloadWriterContext := download.WriterContext{
@@ -113,7 +113,7 @@ func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptions
 		OutputFolder:           opts.outputFolder,
 		ForceOverwriteManifest: opts.forceOverwriteManifest,
 	}
-	err = download.WriteToDisk(fs, downloadWriterContext)
+	err := download.WriteToDisk(fs, downloadWriterContext)
 	if err != nil {
 		return err
 	}
