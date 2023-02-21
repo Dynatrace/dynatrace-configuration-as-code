@@ -50,7 +50,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: 🏁 Build release binaries
-        if: github.repository == env.BASE_REPO || github.event.label.name == env.E2E_TEST_LABEL
+        if: github.event.action != 'labeled' || (github.event.action == 'labeled' && github.event.label.name == env.E2E_TEST_LABEL)
         run: make build-release
 
       - name: 🌎 Integration test
