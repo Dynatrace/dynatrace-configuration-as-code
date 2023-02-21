@@ -26,7 +26,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -573,7 +572,7 @@ type EntityListResponseRaw struct {
 	Entities []json.RawMessage `json:"entities"`
 }
 
-func GenTimeframeUnixMilliString(duration time.Duration) string {
+func genTimeframeUnixMilliString(duration time.Duration) string {
 	return strconv.FormatInt(time.Now().Add(duration).UnixMilli(), 10)
 }
 
@@ -602,80 +601,20 @@ func (d *DynatraceClient) ListEntities(entitiesType EntitiesType) ([]string, err
 		return len(parsedRaw.Entities), len(result), nil
 	}
 
-	run_extraction := true
+	runExtraction := true
 	ignoreProperties := []string{}
 
-	for run_extraction {
-		params := url.Values{
-			"entitySelector": []string{"type(\"" + entityType + "\")"},
-			"pageSize":       []string{defaultPageSizeEntities},
-			"fields":         []string{getEntitiesTypeFields(entitiesType, ignoreProperties)},
-			"from":           []string{GenTimeframeUnixMilliString(defaultEntityDurationTimeframeFrom)},
-			"to":             []string{GenTimeframeUnixMilliString(defaultEntityDurationTimeframeTo)},
-		}
+	for runExtraction {
+		params := GenListEntitiesParams(entityType, entitiesType, ignoreProperties)
 		resp, err := d.ListPaginated(pathEntitiesObjects, params, entityType, addToResult)
 
+		runExtraction, ignoreProperties, err = HandleListEntitiesError(entityType, resp, runExtraction, ignoreProperties, err)
 		if err != nil {
-			retryWithIgnore := false
-			retryWithIgnore, ignoreProperties = validateForPropertyErrors(resp, ignoreProperties, entityType)
-
-			if retryWithIgnore {
-
-			} else {
-				return nil, err
-			}
-		} else {
-			run_extraction = false
+			return nil, err
 		}
 	}
 
 	return result, nil
-}
-
-type ErrorResponseStruct struct {
-	ErrorResponse ErrorResponse `json:"error"`
-}
-
-type ErrorResponse struct {
-	ErrorCode               int                   `json:"code"`
-	Message                 string                `json:"message"`
-	ConstraintViolationList []ConstraintViolation `json:"constraintViolations"`
-}
-
-type ConstraintViolation struct {
-	Path              string `json:"path"`
-	Message           string `json:"message"`
-	ParameterLocation string `json:"parameterLocation"`
-	Location          string `json:"location"`
-}
-
-func validateForPropertyErrors(resp rest.Response, ignoreProperties []string, entityType string) (bool, []string) {
-	retryWithIgnore := false
-
-	var errorResponse ErrorResponseStruct
-	err2 := json.Unmarshal(resp.Body, &errorResponse)
-
-	if err2 == nil {
-		if errorResponse.ErrorResponse.ErrorCode == 400 {
-			constraintViolationList := errorResponse.ErrorResponse.ConstraintViolationList
-			for _, constraintViolation := range constraintViolationList {
-				if constraintViolation.Path == "fields" {
-					re := regexp.MustCompile(`'([^']+)'.*`)
-					matches := re.FindStringSubmatch(constraintViolation.Message)
-					if len(matches) >= 2 {
-						if contains(ignoreProperties, matches[1]) {
-							continue
-						}
-						ignoreProperties = append(ignoreProperties, matches[1])
-						throttleTooManyRequests("Property error in type: %s: will not extract: %s", entityType, matches[1])
-						retryWithIgnore = true
-					}
-				}
-			}
-		}
-	}
-
-	return retryWithIgnore, ignoreProperties
 }
 
 func (d *DynatraceClient) ListPaginated(urlPath string, params url.Values, logLabel string,
@@ -691,7 +630,7 @@ func (d *DynatraceClient) ListPaginated(urlPath string, params url.Values, logLa
 		return resp, err
 	}
 
-	resp, err = d.runAndProcessResponse(u, addToResult, &receivedCount, &totalReceivedCount, urlPath, logLabel)
+	resp, receivedCount, totalReceivedCount, err = d.runAndProcessResponse(u, addToResult, receivedCount, totalReceivedCount, urlPath, logLabel)
 	if err != nil {
 		return resp, err
 	}
@@ -709,12 +648,13 @@ func (d *DynatraceClient) ListPaginated(urlPath string, params url.Values, logLa
 
 			u = rest.AddNextPageQueryParams(u, nextPageKey)
 
-			resp, err = d.runAndProcessResponse(u, addToResult, &receivedCount, &totalReceivedCount, urlPath, logLabel)
+			resp, receivedCount, totalReceivedCount, err = d.runAndProcessResponse(u, addToResult, receivedCount, totalReceivedCount, urlPath, logLabel)
 			if err != nil {
 				return resp, err
 			}
 
-			retry, err := isRetryOnEmptyResponse(receivedCount, &emptyResponseRetryCount, resp)
+			retry := false
+			retry, emptyResponseRetryCount, err = isRetryOnEmptyResponse(receivedCount, emptyResponseRetryCount, resp)
 			if err != nil {
 				return resp, err
 			}
@@ -751,33 +691,34 @@ func (d *DynatraceClient) DeleteSettings(objectID string) error {
 
 const emptyResponseRetryMax = 10
 
-func isRetryOnEmptyResponse(receivedCount int, emptyResponseRetryCount *int, resp rest.Response) (bool, error) {
+func isRetryOnEmptyResponse(receivedCount int, emptyResponseRetryCount int, resp rest.Response) (bool, int, error) {
 	if receivedCount == 0 {
-		if *emptyResponseRetryCount < emptyResponseRetryMax {
-			*emptyResponseRetryCount++
-			throttleTooManyRequests("Received empty array response, retrying with same nextPageKey (HTTP: %d) ", resp.StatusCode)
-			return true, nil
+		if emptyResponseRetryCount < emptyResponseRetryMax {
+			emptyResponseRetryCount++
+			rateLimitStrategy := rest.CreateRateLimitStrategy()
+			rateLimitStrategy.ThrottleCallAfterError("Received empty array response, retrying with same nextPageKey (HTTP: %d) ", resp.StatusCode)
+			return true, emptyResponseRetryCount, nil
 		} else {
-			return false, fmt.Errorf("received too many empty responses (=%d)", *emptyResponseRetryCount)
+			return false, emptyResponseRetryCount, fmt.Errorf("received too many empty responses (=%d)", emptyResponseRetryCount)
 		}
 	}
 
-	return false, nil
+	return false, emptyResponseRetryCount, nil
 }
 
 func (d *DynatraceClient) runAndProcessResponse(u *url.URL,
 	addToResult func(body []byte) (int, int, error),
-	receivedCount *int, totalReceivedCount *int, urlPath string, logLabel string) (rest.Response, error) {
+	receivedCount int, totalReceivedCount int, urlPath string, logLabel string) (rest.Response, int, int, error) {
 
 	resp, err := rest.GetWithRetry(d.client, u.String(), d.token, d.retrySettings.Normal)
 	err = validateRespErrors(err, resp, urlPath, logLabel)
 	if err != nil {
-		return resp, err
+		return resp, receivedCount, totalReceivedCount, err
 	}
 
-	*receivedCount, *totalReceivedCount, err = addToResult(resp.Body)
+	receivedCount, totalReceivedCount, err = addToResult(resp.Body)
 
-	return resp, err
+	return resp, receivedCount, totalReceivedCount, err
 }
 
 func buildUrl(environmentUrl, urlPath string, params url.Values) (*url.URL, error) {
@@ -825,10 +766,4 @@ func logLongRunningExtractionProgress(lastLogTime *time.Time, startTime time.Tim
 
 		log.Debug("Running extration of: %s for %.1f minutes%s %.1f call/minute. %s", logLabel, runningMinutes, nbItemsMessage, nbCallsPerMinute, ETAMessage)
 	}
-}
-
-// Avoid HTTP codes like:  403, 429, 500 with redirect, etc
-func throttleTooManyRequests(message string, a ...any) {
-	log.Debug("%s, waiting 2 seconds to avoid Too Many Request errors", fmt.Sprintf(message, a...))
-	time.Sleep(time.Second * 2)
 }

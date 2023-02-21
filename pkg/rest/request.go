@@ -130,7 +130,7 @@ func executeRequest(client *http.Client, request *http.Request) (Response, error
 		}
 	}
 
-	rateLimitStrategy := createRateLimitStrategy()
+	rateLimitStrategy := CreateRateLimitStrategy()
 
 	response, err := rateLimitStrategy.executeRequest(timeutils.NewTimelineProvider(), func() (Response, error) {
 		resp, err := client.Do(request)
@@ -155,13 +155,16 @@ func executeRequest(client *http.Client, request *http.Request) (Response, error
 			}
 		}
 
-		returnResponse := Response{
-			StatusCode: resp.StatusCode,
-			Body:       body,
-			Headers:    resp.Header,
-		}
+		nextPageKey, totalCount, pageSize := GetPaginationValues(body)
 
-		setAdditionalValuesIfExist(&returnResponse)
+		returnResponse := Response{
+			StatusCode:  resp.StatusCode,
+			Body:        body,
+			Headers:     resp.Header,
+			NextPageKey: nextPageKey,
+			TotalCount:  totalCount,
+			PageSize:    pageSize,
+		}
 
 		return returnResponse, err
 	})

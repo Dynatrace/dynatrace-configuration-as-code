@@ -83,12 +83,6 @@ func TestDurationWillBeTheMaximumIfInputIsLargerThanMaxLimit(t *testing.T) {
 	value = rateLimitStrategy.applyMinMaxDefaults(3600 * time.Second)
 	assert.Equal(t, 60, int(value.Seconds()))
 }
-func TestWithParallelRequestLimitFromEnvOption(t *testing.T) {
-	t.Setenv(ConcurrentRequestsEnvKey, "")
-	assert.Equal(t, DefaultConcurrentDownloads, ConcurrentRequestLimitFromEnv(false))
-	t.Setenv(ConcurrentRequestsEnvKey, "51")
-	assert.Equal(t, 51, ConcurrentRequestLimitFromEnv(false))
-}
 
 func TestRateLimitHeaderExtractionForCorrectHeaders(t *testing.T) {
 
