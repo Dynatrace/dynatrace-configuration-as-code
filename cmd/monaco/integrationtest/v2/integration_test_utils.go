@@ -21,6 +21,7 @@ package v2
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
@@ -226,7 +227,7 @@ func addSuffix(suffix string) func(line string) string {
 
 func getTransformerFunc(suffix string) func(line string) string {
 	var f = func(name string) string {
-		return testutils.ReplaceName(name, addSuffix(suffix))
+		return integrationtest.ReplaceName(name, addSuffix(suffix))
 	}
 	return f
 }
@@ -342,7 +343,7 @@ func appendUniqueSuffixToIntegrationTestConfigs(t *testing.T, fs afero.Fs, confi
 	suffix := generateTestSuffix(generalSuffix)
 	transformers := []func(string) string{getTransformerFunc(suffix)}
 
-	err := testutils.RewriteConfigNames(configFolder, fs, transformers)
+	err := integrationtest.RewriteConfigNames(configFolder, fs, transformers)
 	if err != nil {
 		t.Fatalf("Error rewriting configs names: %s", err)
 		return suffix
