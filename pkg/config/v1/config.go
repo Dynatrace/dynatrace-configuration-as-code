@@ -18,13 +18,13 @@ package v1
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/template"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
 
@@ -49,7 +49,7 @@ type configImpl struct {
 	id         string
 	project    string
 	properties map[string]map[string]string
-	template   util.Template
+	template   template.Template
 	api        api.Api
 	fileName   string
 }
@@ -67,7 +67,7 @@ func NewConfigFactory() ConfigFactory {
 
 func NewConfig(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (Config, error) {
 
-	template, err := util.NewTemplate(fs, fileName)
+	template, err := template.NewTemplate(fs, fileName)
 	if err != nil {
 		return nil, fmt.Errorf("loading config %s failed with %w", project+string(os.PathSeparator)+id, err)
 	}
@@ -75,7 +75,7 @@ func NewConfig(fs afero.Fs, id string, project string, fileName string, properti
 	return newConfig(id, project, template, filterProperties(id, properties), api, fileName), nil
 }
 
-func newConfig(id string, project string, template util.Template, properties map[string]map[string]string, api api.Api, fileName string) Config {
+func newConfig(id string, project string, template template.Template, properties map[string]map[string]string, api api.Api, fileName string) Config {
 	return &configImpl{
 		id:         id,
 		project:    project,

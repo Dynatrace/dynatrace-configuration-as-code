@@ -16,12 +16,12 @@ package converter
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/regex"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	listParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/list"
 	projectV1 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v1"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/slices"
 	"regexp"
 	"strings"
 
@@ -334,8 +334,8 @@ func convertReservedParameters(temporaryTemplate string) string {
 func convertEnvVarsReferencesInTemplate(currentTemplate string) (modifiedTemplate string, environmentParameters map[string]parameter.Parameter) {
 	environmentParameters = map[string]parameter.Parameter{}
 
-	templText := util.EnvVariableRegexPattern.ReplaceAllStringFunc(currentTemplate, func(p string) string {
-		envVar := util.TrimToEnvVariableName(p)
+	templText := regex.EnvVariableRegexPattern.ReplaceAllStringFunc(currentTemplate, func(p string) string {
+		envVar := regex.TrimToEnvVariableName(p)
 		paramName := transformEnvironmentToParamName(envVar)
 
 		if _, found := environmentParameters[paramName]; !found {
@@ -358,9 +358,9 @@ func transformToPropertyAccess(property string) string {
 func convertListsInTemplate(currentTemplate string, currentPath string) (modifiedTemplate string, listParameterIds map[string]struct{}, errors []error) {
 	listParameterIds = map[string]struct{}{}
 
-	templText := util.ListVariableRegexPattern.ReplaceAllStringFunc(currentTemplate, func(s string) string {
+	templText := regex.ListVariableRegexPattern.ReplaceAllStringFunc(currentTemplate, func(s string) string {
 
-		fullMatch, fullListMatch, varName, err := util.MatchListVariable(s)
+		fullMatch, fullListMatch, varName, err := regex.MatchListVariable(s)
 		if err != nil {
 			errors = append(errors, newTemplateConversionError(currentPath, err.Error()))
 			return ""
@@ -413,8 +413,8 @@ func convertParameters(context *ConfigConvertContext, environment manifest.Envir
 				continue
 			}
 			parameters[newName] = &listParam.ListParameter{Values: valueSlice}
-		} else if util.IsEnvVariable(value) {
-			envVarName := util.TrimToEnvVariableName(value)
+		} else if regex.IsEnvVariable(value) {
+			envVarName := regex.TrimToEnvVariableName(value)
 			parameters[newName] = envParam.New(envVarName)
 		} else {
 			parameters[newName] = &valueParam.ValueParameter{Value: value}
@@ -445,8 +445,8 @@ func parseSkipDeploymentParameter(context *ConfigConvertContext, config configV1
 		return valueParam.New(false), nil
 	}
 
-	if util.IsEnvVariable(value) {
-		envVarName := util.TrimToEnvVariableName(value)
+	if regex.IsEnvVariable(value) {
+		envVarName := regex.TrimToEnvVariableName(value)
 
 		return envParam.New(envVarName), nil
 	}
@@ -515,7 +515,7 @@ func loadPropertiesForEnvironment(environment manifest.EnvironmentDefinition, co
 }
 
 func parseListStringToValueSlice(s string) ([]valueParam.ValueParameter, error) {
-	if !util.IsListDefinition(s) && !util.IsSimpleValueDefinition(s) {
+	if !regex.IsListDefinition(s) && !regex.IsSimpleValueDefinition(s) {
 		return []valueParam.ValueParameter{}, fmt.Errorf("failed to parse value for list parameter, '%s' is not in expected list format", s)
 	}
 

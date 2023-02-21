@@ -19,9 +19,9 @@
 package v2
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/test"
 	"github.com/spf13/afero"
 	"regexp"
 	"testing"
@@ -40,7 +40,7 @@ func TestDoCleanup(t *testing.T) {
 		Fs:           fs,
 		ManifestPath: manifestPath,
 	})
-	test.FailTestOnAnyError(t, errs, "failed to load manifest to delete for")
+	testutils.FailTestOnAnyError(t, errs, "failed to load manifest to delete for")
 
 	apis := api.NewApis()
 

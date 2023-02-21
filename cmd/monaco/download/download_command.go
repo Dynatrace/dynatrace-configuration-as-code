@@ -16,8 +16,10 @@ package download
 
 import (
 	"fmt"
+	utilEnv "github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"net/http"
 	"os"
 
@@ -25,8 +27,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner/completion"
-	utilEnv "github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/environment"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 )
 
 func GetDownloadCommand(fs afero.Fs, command Command) (downloadCmd *cobra.Command) {
@@ -270,7 +270,7 @@ func printUploadToSameEnvironmentWarning(environmentURL, token string) {
 		log.Error("Unable to determine server version %q", environmentURL)
 		return
 	}
-	if serverVersion.SmallerThan(util.Version{Major: 1, Minor: 262}) {
+	if serverVersion.SmallerThan(version.Version{Major: 1, Minor: 262}) {
 		log.Warn("Uploading Settings 2.0 objects to the same environment is not possible due to your cluster version " +
 			"being below 1.262.0, which Monaco does not support for reliably updating downloaded settings without having " +
 			"duplicate configurations. Consider upgrading to 1.262+")

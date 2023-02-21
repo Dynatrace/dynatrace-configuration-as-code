@@ -20,9 +20,9 @@ package client
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/uuid"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"gotest.tools/assert"
 	"net/http"
 	"net/http/httptest"
@@ -643,7 +643,7 @@ func TestDeployConfigsTargetingClassicConfigNonUnique(t *testing.T) {
 	theCfgId := "monaco_cfg_id"
 	theProject := "project"
 
-	generatedUuid := util.GenerateUuidFromConfigId(theProject, theCfgId)
+	generatedUuid := uuid.GenerateUuidFromConfigId(theProject, theCfgId)
 
 	tests := []struct {
 		name                   string

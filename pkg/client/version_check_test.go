@@ -19,7 +19,7 @@
 package client
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -30,61 +30,61 @@ func TestGetDynatraceVersion(t *testing.T) {
 	tests := []struct {
 		name           string
 		serverResponse string
-		want           util.Version
+		want           version.Version
 		wantErr        bool
 	}{
 		{
 			"GetDynatraceVersion_AsExpected_1",
 			`{ "version": "1.236.0.20220203-192004" }`,
-			util.Version{1, 236, 0},
+			version.Version{1, 236, 0},
 			false,
 		},
 		{
 			"GetDynatraceVersion_AsExpected_2",
 			`{ "version": "1.236.5.20220203-192004" }`,
-			util.Version{1, 236, 5},
+			version.Version{1, 236, 5},
 			false,
 		},
 		{
 			"GetDynatraceVersion_AsExpected_3",
 			`{ "version": "2.234.0.20220203-192004" }`,
-			util.Version{2, 234, 0},
+			version.Version{2, 234, 0},
 			false,
 		},
 		{
 			"GetDynatraceVersion_FailOnIncompleteVersionString",
 			`{ "version": "236.0.20220203-192004" }`,
-			util.Version{},
+			version.Version{},
 			true,
 		},
 		{
 			"GetDynatraceVersion_FailOnInvalidVersionString",
 			`{ "version": "hello.236.0.20220203-192004 }"`,
-			util.Version{},
+			version.Version{},
 			true,
 		},
 		{
 			"GetDynatraceVersion_IgnoreUnknownJsonProperties",
 			`{ "version": "1.236.0.20220203-192004", "thing": "some" }`,
-			util.Version{1, 236, 0},
+			version.Version{1, 236, 0},
 			false,
 		},
 		{
 			"GetDynatraceVersion_FailOnIncompleteJsonResponse",
 			`{ "version": "1.236.0.20220203-192004" `,
-			util.Version{},
+			version.Version{},
 			true,
 		},
 		{
 			"GetDynatraceVersion_FailOnUnexpectedJsonResponse_1",
 			`{ "1.236.0.20220203-192004" }"`,
-			util.Version{},
+			version.Version{},
 			true,
 		},
 		{
 			"GetDynatraceVersion_FailOnUnexpectedJsonResponse_2",
 			`{ "version": { "major": 1, "minor": 236, "patch": 0 } }`,
-			util.Version{},
+			version.Version{},
 			true,
 		},
 	}
@@ -110,57 +110,57 @@ func TestGetDynatraceVersion(t *testing.T) {
 func Test_parseDynatraceVersion(t *testing.T) {
 	tests := []struct {
 		versionString string
-		wantVersion   util.Version
+		wantVersion   version.Version
 		wantErr       bool
 	}{
 		{
 			"1.236.0.20220203-192004",
-			util.Version{1, 236, 0},
+			version.Version{1, 236, 0},
 			false,
 		},
 		{
 			"1.236.5.20220203-192004",
-			util.Version{1, 236, 5},
+			version.Version{1, 236, 5},
 			false,
 		},
 		{
 			"2.234.0.20220203-192004",
-			util.Version{2, 234, 0},
+			version.Version{2, 234, 0},
 			false,
 		},
 		{
 			"1.234.0.20220203-192004",
-			util.Version{1, 234, 0},
+			version.Version{1, 234, 0},
 			false,
 		},
 		{
 			"2.241345.353.20220203-192004",
-			util.Version{2, 241345, 353},
+			version.Version{2, 241345, 353},
 			false,
 		},
 		{
 			"236.0.20220203-192004",
-			util.Version{},
+			version.Version{},
 			true,
 		},
 		{
 			"1.2.236.0.20220203-192004",
-			util.Version{},
+			version.Version{},
 			true,
 		},
 		{
 			"hello.236.0.20220203-192004",
-			util.Version{},
+			version.Version{},
 			true,
 		},
 		{
 			"version 42",
-			util.Version{},
+			version.Version{},
 			true,
 		},
 		{
 			"1.236.0",
-			util.Version{},
+			version.Version{},
 			true,
 		},
 	}

@@ -20,7 +20,7 @@ package rest
 
 import (
 	"errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/timeutils"
 	"github.com/golang/mock/gomock"
 	"gotest.tools/assert"
 	"net/http"
@@ -46,12 +46,12 @@ func createTestHeaders(resetTimestamp int64) map[string][]string {
 	return headers
 }
 
-func createTimelineProviderMock(t *testing.T) *util.MockTimelineProvider {
+func createTimelineProviderMock(t *testing.T) *timeutils.MockTimelineProvider {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	return util.NewMockTimelineProvider(mockCtrl)
+	return timeutils.NewMockTimelineProvider(mockCtrl)
 }
 
 func TestDurationStaysTheSameIfInputIsWithinMinMaxLimits(t *testing.T) {

@@ -19,10 +19,10 @@
 package v1
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 )
 
-func NewConfigWithTemplate(id string, project string, fileName string, template util.Template, properties map[string]map[string]string, api api.Api) Config {
+func NewConfigWithTemplate(id string, project string, fileName string, template template.Template, properties map[string]map[string]string, api api.Api) Config {
 	return newConfig(id, project, template, filterProperties(id, properties), api, fileName)
 }

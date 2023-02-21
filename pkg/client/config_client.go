@@ -19,10 +19,11 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -158,7 +159,7 @@ func unmarshalResponse(resp rest.Response, fullUrl string, configType string, ob
 	if configType == "synthetic-monitor" || configType == "synthetic-location" {
 		var entity api.SyntheticEntity
 		err := json.Unmarshal(resp.Body, &entity)
-		if util.CheckError(err, "Cannot unmarshal Synthetic API response") {
+		if errutils.CheckError(err, "Cannot unmarshal Synthetic API response") {
 			return api.DynatraceEntity{}, err
 		}
 		dtEntity = translateSyntheticEntityResponse(entity, objectName)
@@ -188,7 +189,7 @@ func unmarshalResponse(resp rest.Response, fullUrl string, configType string, ob
 
 	} else {
 		err := json.Unmarshal(resp.Body, &dtEntity)
-		if util.CheckError(err, "Cannot unmarshal API response") {
+		if errutils.CheckError(err, "Cannot unmarshal API response") {
 			return api.DynatraceEntity{}, err
 		}
 		if dtEntity.Id == "" && dtEntity.Name == "" {
@@ -378,7 +379,7 @@ func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, ob
 }
 
 func escapeApiValueName(value api.Value) string {
-	valueName, err := util.EscapeSpecialCharactersInValue(value.Name, util.FullStringEscapeFunction)
+	valueName, err := template.EscapeSpecialCharactersInValue(value.Name, template.FullStringEscapeFunction)
 	if err != nil {
 		log.Warn("failed to string escape API value '%s' while checking if object exists, check directly", value.Name)
 		return value.Name
@@ -477,7 +478,7 @@ func unmarshalJson(theApi api.Api, resp rest.Response) ([]api.Value, error) {
 
 		var jsonResp []api.Value
 		err := json.Unmarshal(resp.Body, &jsonResp)
-		if util.CheckError(err, "Cannot unmarshal API response for existing aws-credentials") {
+		if errutils.CheckError(err, "Cannot unmarshal API response for existing aws-credentials") {
 			return values, err
 		}
 		values = jsonResp
@@ -488,7 +489,7 @@ func unmarshalJson(theApi api.Api, resp rest.Response) ([]api.Value, error) {
 
 			var jsonResp api.SyntheticLocationResponse
 			err := json.Unmarshal(resp.Body, &jsonResp)
-			if util.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
+			if errutils.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
 				return nil, err
 			}
 			values = translateSyntheticValues(jsonResp.Locations)
@@ -497,7 +498,7 @@ func unmarshalJson(theApi api.Api, resp rest.Response) ([]api.Value, error) {
 
 			var jsonResp api.SyntheticMonitorsResponse
 			err := json.Unmarshal(resp.Body, &jsonResp)
-			if util.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
+			if errutils.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
 				return nil, err
 			}
 			values = translateSyntheticValues(jsonResp.Monitors)
@@ -520,7 +521,7 @@ func unmarshalJson(theApi api.Api, resp rest.Response) ([]api.Value, error) {
 
 			var jsonResponse api.ValuesResponse
 			err := json.Unmarshal(resp.Body, &jsonResponse)
-			if util.CheckError(err, "Cannot unmarshal API response for existing objects") {
+			if errutils.CheckError(err, "Cannot unmarshal API response for existing objects") {
 				return nil, err
 			}
 			values = jsonResponse.Values

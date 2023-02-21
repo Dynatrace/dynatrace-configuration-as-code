@@ -16,7 +16,7 @@ package manifest
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/regex"
 	"os"
 	"strings"
 
@@ -73,10 +73,10 @@ func NewEnvironmentDefinitionFromV1(env environmentv1.Environment, group string)
 }
 
 func newUrlDefinitionFromV1(env environmentv1.Environment) UrlDefinition {
-	if util.IsEnvVariable(env.GetEnvironmentUrl()) {
+	if regex.IsEnvVariable(env.GetEnvironmentUrl()) {
 		return UrlDefinition{
 			Type:  EnvironmentUrlType,
-			Value: util.TrimToEnvVariableName(env.GetEnvironmentUrl()),
+			Value: regex.TrimToEnvVariableName(env.GetEnvironmentUrl()),
 		}
 	}
 

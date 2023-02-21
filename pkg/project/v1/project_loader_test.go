@@ -19,6 +19,8 @@
 package v1
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"strings"
 	"testing"
@@ -26,13 +28,12 @@ import (
 	"gotest.tools/assert"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 )
 
 func TestIfProjectHasSubproject(t *testing.T) {
-	mt := util.ReplacePathSeparators("marvin/trillian")
-	mth := util.ReplacePathSeparators("marvin/trillian/hacktar")
-	rth := util.ReplacePathSeparators("robot/trillian/hacktar")
+	mt := files.ReplacePathSeparators("marvin/trillian")
+	mth := files.ReplacePathSeparators("marvin/trillian/hacktar")
+	rth := files.ReplacePathSeparators("robot/trillian/hacktar")
 	projects := []string{"zem", "marvin", mt, mth, rth}
 	assert.Equal(t, hasSubprojectFolder("marvin", projects), true, "Check if `marvin` project has subprojects")
 	assert.Equal(t, hasSubprojectFolder(mt, projects), true, "Check if `marvin/trillian` project has subprojects")
@@ -43,9 +44,9 @@ func TestIfProjectHasSubproject(t *testing.T) {
 }
 
 func TestFilterProjectsWithSubproject(t *testing.T) {
-	ca := util.ReplacePathSeparators("caveman/anjie")
-	cag := util.ReplacePathSeparators("caveman/anjie/garkbit")
-	mt := util.ReplacePathSeparators("marvin/trillian")
+	ca := files.ReplacePathSeparators("caveman/anjie")
+	cag := files.ReplacePathSeparators("caveman/anjie/garkbit")
+	mt := files.ReplacePathSeparators("marvin/trillian")
 	allProjectFolders := []string{"zem", ca, cag, mt, "trillian"}
 	allProjectFolders = filterProjectsWithSubproject(allProjectFolders)
 
@@ -57,43 +58,43 @@ func TestFilterProjectsWithSubproject(t *testing.T) {
 }
 
 func TestGetAllProjectFoldersRecursivelyFailsOnMixedFolder(t *testing.T) {
-	path := util.ReplacePathSeparators("test-resources/configs-and-api-mixed-test/project1")
-	fs := util.CreateTestFileSystem()
+	path := files.ReplacePathSeparators("test-resources/configs-and-api-mixed-test/project1")
+	fs := testutils.CreateTestFileSystem()
 	apis := api.NewApis()
 	_, err := getAllProjectFoldersRecursively(fs, apis, path)
 
-	expected := util.ReplacePathSeparators("found folder with projects and configurations in test-resources/configs-and-api-mixed-test/project1")
+	expected := files.ReplacePathSeparators("found folder with projects and configurations in test-resources/configs-and-api-mixed-test/project1")
 	assert.Error(t, err, expected)
 }
 
 func TestGetAllProjectFoldersRecursivelyFailsOnMixedFolderInSubproject(t *testing.T) {
-	path := util.ReplacePathSeparators("test-resources/configs-and-api-mixed-test/project2")
-	fs := util.CreateTestFileSystem()
+	path := files.ReplacePathSeparators("test-resources/configs-and-api-mixed-test/project2")
+	fs := testutils.CreateTestFileSystem()
 	apis := api.NewApis()
 	_, err := getAllProjectFoldersRecursively(fs, apis, path)
 
-	expected := util.ReplacePathSeparators("found folder with projects and configurations in test-resources/configs-and-api-mixed-test/project2/subproject2")
+	expected := files.ReplacePathSeparators("found folder with projects and configurations in test-resources/configs-and-api-mixed-test/project2/subproject2")
 	assert.Error(t, err, expected)
 }
 
 func TestGetAllProjectFoldersRecursivelyPassesOnSeparatedFolders(t *testing.T) {
-	path := util.ReplacePathSeparators("test-resources/configs-and-api-mixed-test/project3")
-	fs := util.CreateTestFileSystem()
+	path := files.ReplacePathSeparators("test-resources/configs-and-api-mixed-test/project3")
+	fs := testutils.CreateTestFileSystem()
 	apis := api.NewApis()
 	_, err := getAllProjectFoldersRecursively(fs, apis, path)
 	assert.NilError(t, err)
 }
 
 func TestGetAllProjectsFoldersRecursivelyPassesOnHiddenFolders(t *testing.T) {
-	path := util.ReplacePathSeparators("test-resources/hidden-directories/project1")
-	fs := util.CreateTestFileSystem()
+	path := files.ReplacePathSeparators("test-resources/hidden-directories/project1")
+	fs := testutils.CreateTestFileSystem()
 	_, err := getAllProjectFoldersRecursively(fs, api.NewV1Apis(), path)
 	assert.NilError(t, err)
 }
 
 func TestGetAllProjectsFoldersRecursivelyPassesOnProjectsWithinHiddenFolders(t *testing.T) {
-	path := util.ReplacePathSeparators("test-resources/hidden-directories/project2")
-	fs := util.CreateTestFileSystem()
+	path := files.ReplacePathSeparators("test-resources/hidden-directories/project2")
+	fs := testutils.CreateTestFileSystem()
 	projects, err := getAllProjectFoldersRecursively(fs, api.NewV1Apis(), path)
 
 	assert.NilError(t, err)
@@ -103,8 +104,8 @@ func TestGetAllProjectsFoldersRecursivelyPassesOnProjectsWithinHiddenFolders(t *
 }
 
 func TestGetAllProjectsFoldersRecursivelyPassesOnProjects(t *testing.T) {
-	path := util.ReplacePathSeparators("test-resources/hidden-directories")
-	fs := util.CreateTestFileSystem()
+	path := files.ReplacePathSeparators("test-resources/hidden-directories")
+	fs := testutils.CreateTestFileSystem()
 	projects, err := getAllProjectFoldersRecursively(fs, api.NewV1Apis(), path)
 
 	assert.NilError(t, err)

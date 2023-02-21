@@ -15,6 +15,7 @@
 package v2
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
@@ -24,7 +25,6 @@ import (
 	refParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/reference"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 )
 
 const (
@@ -99,7 +99,7 @@ func (c *Config) Render(properties map[string]interface{}) (string, error) {
 		return "", err
 	}
 
-	err = util.ValidateJson(renderedConfig, util.Location{
+	err = json.ValidateJson(renderedConfig, json.Location{
 		Coordinate:       c.Coordinate,
 		Group:            c.Group,
 		Environment:      c.Environment,

@@ -19,18 +19,17 @@ package rest
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/timeutils"
 	"math/rand"
 	"net/http"
 	"time"
-
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 )
 
 // rateLimitStrategy ensures that the concrete implementation of the rate limiting strategy can be hidden
 // behind this interface
 type rateLimitStrategy interface {
-	executeRequest(timelineProvider util.TimelineProvider, callback func() (Response, error)) (Response, error)
+	executeRequest(timelineProvider timeutils.TimelineProvider, callback func() (Response, error)) (Response, error)
 }
 
 // createRateLimitStrategy creates a rateLimitStrategy. In the future this can be extended to instantiate
@@ -49,7 +48,7 @@ type simpleSleepRateLimitStrategy struct{}
 
 const minWaitDuration = 1 * time.Second
 
-func (s *simpleSleepRateLimitStrategy) executeRequest(timelineProvider util.TimelineProvider, callback func() (Response, error)) (Response, error) {
+func (s *simpleSleepRateLimitStrategy) executeRequest(timelineProvider timeutils.TimelineProvider, callback func() (Response, error)) (Response, error) {
 
 	response, err := callback()
 	if err != nil {
@@ -90,7 +89,7 @@ func (s *simpleSleepRateLimitStrategy) executeRequest(timelineProvider util.Time
 	return response, nil
 }
 
-func (s *simpleSleepRateLimitStrategy) getSleepDurationFromResponseHeader(response Response, timelineProvider util.TimelineProvider) (sleepDuration time.Duration, humanReadableResetTimestamp string, err error) {
+func (s *simpleSleepRateLimitStrategy) getSleepDurationFromResponseHeader(response Response, timelineProvider timeutils.TimelineProvider) (sleepDuration time.Duration, humanReadableResetTimestamp string, err error) {
 	_, humanReadableTimestamp, timeInMicroseconds, err := s.extractRateLimitHeaders(response)
 	if err != nil {
 		return 0, "", fmt.Errorf("encountered response code 'STATUS_TOO_MANY_REQUESTS (429)' but failed to extract rate limit header: %w", err)
@@ -100,7 +99,7 @@ func (s *simpleSleepRateLimitStrategy) getSleepDurationFromResponseHeader(respon
 	now := timelineProvider.Now()
 
 	// Attention: this uses server time:
-	resetTime := util.ConvertMicrosecondsToUnixTime(timeInMicroseconds)
+	resetTime := timeutils.ConvertMicrosecondsToUnixTime(timeInMicroseconds)
 
 	// Attention: this mixes client and server time:
 	sleepDuration = resetTime.Sub(now)
@@ -122,7 +121,7 @@ func (s *simpleSleepRateLimitStrategy) extractRateLimitHeaders(response Response
 	}
 
 	limit = limitAsArray[0]
-	humanReadableResetTimestamp, resetTimeInMicroseconds, err = util.StringTimestampToHumanReadableFormat(resetAsArray[0])
+	humanReadableResetTimestamp, resetTimeInMicroseconds, err = timeutils.StringTimestampToHumanReadableFormat(resetAsArray[0])
 	if err != nil {
 		return "", "", 0, err
 	}
@@ -133,7 +132,7 @@ func (s *simpleSleepRateLimitStrategy) extractRateLimitHeaders(response Response
 // generateSleepDuration will generate a random sleep duration time between minWaitTime and minWaitTime * backoffMultiplier
 // generated sleep durations are used in case the API did not reply with a limit and reset time
 // and called with the current retry iteration count to implement increasing possible wait times per iteration
-func (s *simpleSleepRateLimitStrategy) generateSleepDuration(backoffMultiplier int, timelineProvider util.TimelineProvider) (sleepDuration time.Duration, humanReadableResetTimestamp string) {
+func (s *simpleSleepRateLimitStrategy) generateSleepDuration(backoffMultiplier int, timelineProvider timeutils.TimelineProvider) (sleepDuration time.Duration, humanReadableResetTimestamp string) {
 	rand.Seed(time.Now().UnixNano())
 
 	if backoffMultiplier < 1 {

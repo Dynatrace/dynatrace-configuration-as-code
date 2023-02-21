@@ -20,10 +20,10 @@
 package v2
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 )
@@ -51,7 +51,7 @@ func TestIntegrationMultiProject(t *testing.T) {
 // Tests a dry run (validation)
 func TestIntegrationValidationMultiProject(t *testing.T) {
 
-	cmd := runner.BuildCli(util.CreateTestFileSystem())
+	cmd := runner.BuildCli(testutils.CreateTestFileSystem())
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", multiProjectManifest})
 	err := cmd.Execute()
 
@@ -84,7 +84,7 @@ func TestIntegrationMultiProject_ReturnsErrorOnInvalidProjectDefinitions(t *test
 
 	invalidManifest := multiProjectFolder + "invalid-manifest-with-duplicate-projects.yaml"
 
-	cmd := runner.BuildCli(util.CreateTestFileSystem())
+	cmd := runner.BuildCli(testutils.CreateTestFileSystem())
 	cmd.SetArgs([]string{"deploy", "--verbose", invalidManifest})
 	err := cmd.Execute()
 

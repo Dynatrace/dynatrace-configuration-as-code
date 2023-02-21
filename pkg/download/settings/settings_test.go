@@ -21,6 +21,7 @@ package settings
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/uuid"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
@@ -28,14 +29,13 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestDownloadAll(t *testing.T) {
-	uuid := util.GenerateUuidFromName("oid1")
+	uuid := uuid.GenerateUuidFromName("oid1")
 
 	type mockValues struct {
 		Schemas           func() (client.SchemaList, error)
@@ -178,7 +178,7 @@ func TestDownloadAll(t *testing.T) {
 }
 
 func TestDownload(t *testing.T) {
-	uuid := util.GenerateUuidFromName("oid1")
+	uuid := uuid.GenerateUuidFromName("oid1")
 
 	type mockValues struct {
 		Schemas           func() (client.SchemaList, error)

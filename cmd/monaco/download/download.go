@@ -16,6 +16,8 @@ package download
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"net/url"
 	"os"
 	"path"
@@ -27,8 +29,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2/topologysort"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
 
@@ -153,7 +153,7 @@ func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptions
 func reportForCircularDependencies(p project.Project) error {
 	_, errs := topologysort.GetSortedConfigsForEnvironments([]project.Project{p}, []string{p.Id})
 	if len(errs) != 0 {
-		util.PrintWarnings(errs)
+		errutils.PrintWarnings(errs)
 		return fmt.Errorf("there are circular dependencies between %d configurations that need to be resolved manually", len(errs))
 	}
 	return nil
@@ -217,7 +217,7 @@ func validateOutputFolder(fs afero.Fs, outputFolder, project string) []error {
 }
 
 func PrintAndFormatErrors(errors []error, message string, a ...any) error {
-	util.PrintErrors(errors)
+	errutils.PrintErrors(errors)
 	return fmt.Errorf(message, a...)
 }
 

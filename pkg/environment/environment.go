@@ -18,10 +18,9 @@ package environment
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"os"
 	"strings"
-
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 )
 
 type Environment interface {
@@ -83,15 +82,15 @@ func newEnvironment(id string, properties map[string]string) (Environment, error
 		return nil, fmt.Errorf("group name must differ from environment name %s", id)
 	}
 
-	environmentName, err := util.CheckProperty(properties, "name")
+	environmentName, err := errutils.CheckProperty(properties, "name")
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config for environment %s: %w", id, err)
 	}
-	environmentUrl, err := util.CheckProperty(properties, "env-url")
+	environmentUrl, err := errutils.CheckProperty(properties, "env-url")
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config for environment %s: %w", id, err)
 	}
-	envTokenName, err := util.CheckProperty(properties, "env-token-name")
+	envTokenName, err := errutils.CheckProperty(properties, "env-token-name")
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config for environment %s: %w", id, err)
 	}

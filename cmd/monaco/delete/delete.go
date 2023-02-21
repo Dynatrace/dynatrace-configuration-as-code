@@ -17,7 +17,9 @@ package delete
 import (
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/maps"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
 	"path/filepath"
 	"strings"
 
@@ -25,8 +27,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/delete"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
 
@@ -55,7 +55,7 @@ func Delete(fs afero.Fs, deploymentManifestPath string, deletePath string, envir
 	})
 
 	if manifestLoadError != nil {
-		util.PrintErrors(manifestLoadError)
+		errutils.PrintErrors(manifestLoadError)
 		return errors.New("error while loading manifest")
 	}
 

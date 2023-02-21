@@ -16,7 +16,7 @@ package template
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"path/filepath"
 
 	"github.com/spf13/afero"

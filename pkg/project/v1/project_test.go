@@ -19,11 +19,13 @@
 package v1
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/template"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v1"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/golang/mock/gomock"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
@@ -68,7 +70,7 @@ var testDashboardApi = api.NewStandardApi("dashboard", "/api/config/v1/dashboard
 func TestGetPathSuccess(t *testing.T) {
 
 	builder := testCreateProjectBuilder("")
-	json := util.ReplacePathSeparators("management-zone/testytest.json")
+	json := files.ReplacePathSeparators("management-zone/testytest.json")
 
 	err, configType := builder.getConfigTypeFromLocation(json)
 
@@ -92,8 +94,8 @@ func TestGetPathTooLittleArgs(t *testing.T) {
 func TestRemoveYamlFromPath(t *testing.T) {
 
 	builder := testCreateProjectBuilder("")
-	yaml := util.ReplacePathSeparators("project/dashboards/config.yaml")
-	expected := util.ReplacePathSeparators("project/dashboards")
+	yaml := files.ReplacePathSeparators("project/dashboards/config.yaml")
+	expected := files.ReplacePathSeparators("project/dashboards")
 	err, result := builder.removeYamlFileFromPath(yaml)
 
 	assert.NilError(t, err)
@@ -111,7 +113,7 @@ func TestRemoveYamlFromPathWhenPathIsTooShort(t *testing.T) {
 func TestGetApiInformationFromLocation(t *testing.T) {
 
 	builder := testCreateProjectBuilder("")
-	json := util.ReplacePathSeparators("test/management-zone/testytest.json")
+	json := files.ReplacePathSeparators("test/management-zone/testytest.json")
 	err, apiInfo := builder.getExtendedInformationFromLocation(json)
 
 	assert.NilError(t, err)
@@ -121,9 +123,9 @@ func TestGetApiInformationFromLocation(t *testing.T) {
 func TestGetConfigTypeInformationFromLocation(t *testing.T) {
 
 	builder := testCreateProjectBuilder("")
-	json := util.ReplacePathSeparators("test/alerting-profile/testytest.json")
-	json1 := util.ReplacePathSeparators("cluster/test/alerting-profile/testytest.json")
-	json2 := util.ReplacePathSeparators("config/cluster/test/alerting-profile/testytest.json")
+	json := files.ReplacePathSeparators("test/alerting-profile/testytest.json")
+	json1 := files.ReplacePathSeparators("cluster/test/alerting-profile/testytest.json")
+	json2 := files.ReplacePathSeparators("config/cluster/test/alerting-profile/testytest.json")
 	err, api := builder.getExtendedInformationFromLocation(json)
 	err1, api1 := builder.getExtendedInformationFromLocation(json1)
 	err2, api2 := builder.getExtendedInformationFromLocation(json2)
@@ -139,7 +141,7 @@ func TestGetConfigTypeInformationFromLocation(t *testing.T) {
 func TestGetApiFromLocationApiNotFound(t *testing.T) {
 
 	builder := testCreateProjectBuilder("")
-	json := util.ReplacePathSeparators("test/notexisting/testytest.json")
+	json := files.ReplacePathSeparators("test/notexisting/testytest.json")
 	err, _ := builder.getExtendedInformationFromLocation(json)
 
 	assert.ErrorContains(t, err, "API was unknown")
@@ -148,22 +150,22 @@ func TestGetApiFromLocationApiNotFound(t *testing.T) {
 func TestProcessConfigSection(t *testing.T) {
 
 	factory := config.NewMockConfigFactory(gomock.NewController(t))
-	fs := util.CreateTestFileSystem()
+	fs := testutils.CreateTestFileSystem()
 	builder := testCreateProjectBuilderWithMock(factory, fs, "testProject", "")
 
 	m := make(map[string]map[string]string)
 
 	m["config"] = make(map[string]string)
 
-	m["config"]["test1"] = util.ReplacePathSeparators("/test/management-zone/zoneA.json")
-	m["config"]["test2"] = util.ReplacePathSeparators("/test/alerting-profile/profile.json")
+	m["config"]["test1"] = files.ReplacePathSeparators("/test/management-zone/zoneA.json")
+	m["config"]["test2"] = files.ReplacePathSeparators("/test/alerting-profile/profile.json")
 
-	zoneA := util.ReplacePathSeparators("/test/management-zone/zoneA.json")
-	profile := util.ReplacePathSeparators("/test/alerting-profile/profile.json")
+	zoneA := files.ReplacePathSeparators("/test/management-zone/zoneA.json")
+	profile := files.ReplacePathSeparators("/test/alerting-profile/profile.json")
 	factory.EXPECT().NewConfig(fs, "test1", "testProject", zoneA, m, testManagementZoneApi).Times(1)
 	factory.EXPECT().NewConfig(fs, "test2", "testProject", profile, m, testAlertingProfileApi).Times(1)
 
-	folderPath := util.ReplacePathSeparators("test/management-zone")
+	folderPath := files.ReplacePathSeparators("test/management-zone")
 	err := builder.processConfigSection(m, folderPath)
 	assert.NilError(t, err)
 }
@@ -171,22 +173,22 @@ func TestProcessConfigSection(t *testing.T) {
 func TestProcessConfigSectionWithProjectRootParameter(t *testing.T) {
 
 	factory := config.NewMockConfigFactory(gomock.NewController(t))
-	fileReaderMock := util.CreateTestFileSystem()
+	fileReaderMock := testutils.CreateTestFileSystem()
 	builder := testCreateProjectBuilderWithMock(factory, fileReaderMock, "test", "testProjectsRoot")
 
 	m := make(map[string]map[string]string)
 
 	m["config"] = make(map[string]string)
 
-	m["config"]["testconfig1"] = util.ReplacePathSeparators("/test/management-zone/zoneA.json")
-	m["config"]["testconfig2"] = util.ReplacePathSeparators("/test/alerting-profile/profile.json")
+	m["config"]["testconfig1"] = files.ReplacePathSeparators("/test/management-zone/zoneA.json")
+	m["config"]["testconfig2"] = files.ReplacePathSeparators("/test/alerting-profile/profile.json")
 
-	zoneA := util.ReplacePathSeparators("testProjectsRoot/test/management-zone/zoneA.json")
-	profile := util.ReplacePathSeparators("testProjectsRoot/test/alerting-profile/profile.json")
+	zoneA := files.ReplacePathSeparators("testProjectsRoot/test/management-zone/zoneA.json")
+	profile := files.ReplacePathSeparators("testProjectsRoot/test/alerting-profile/profile.json")
 	factory.EXPECT().NewConfig(fileReaderMock, "testconfig1", "test", zoneA, m, testManagementZoneApi).Times(1)
 	factory.EXPECT().NewConfig(fileReaderMock, "testconfig2", "test", profile, m, testAlertingProfileApi).Times(1)
 
-	folderPath := util.ReplacePathSeparators("test/management-zone")
+	folderPath := files.ReplacePathSeparators("test/management-zone")
 	err := builder.processConfigSection(m, folderPath)
 	assert.NilError(t, err)
 }
@@ -194,13 +196,13 @@ func TestProcessConfigSectionWithProjectRootParameter(t *testing.T) {
 func TestStandardizeLocationWithAbsolutePath(t *testing.T) {
 
 	builder := testCreateProjectBuilder("")
-	json := util.ReplacePathSeparators("/general/dashboard/dashboard.json")
-	json1 := util.ReplacePathSeparators("/cluster/general/dashboard/dashboard.json")
+	json := files.ReplacePathSeparators("/general/dashboard/dashboard.json")
+	json1 := files.ReplacePathSeparators("/cluster/general/dashboard/dashboard.json")
 	standardizedLocation := builder.standardizeLocation(json, "foo")
 	standardizedLocation1 := builder.standardizeLocation(json1, "foo")
 
-	expected := util.ReplacePathSeparators("/general/dashboard/dashboard.json")
-	expected1 := util.ReplacePathSeparators("/cluster/general/dashboard/dashboard.json")
+	expected := files.ReplacePathSeparators("/general/dashboard/dashboard.json")
+	expected1 := files.ReplacePathSeparators("/cluster/general/dashboard/dashboard.json")
 	assert.Equal(t, expected, standardizedLocation)
 	assert.Equal(t, expected1, standardizedLocation1)
 }
@@ -208,13 +210,13 @@ func TestStandardizeLocationWithAbsolutePath(t *testing.T) {
 func TestStandardizeLocationWithLocalPath(t *testing.T) {
 
 	builder := testCreateProjectBuilder("")
-	path := util.ReplacePathSeparators("general/dashboard")
-	path1 := util.ReplacePathSeparators("cluster/general/dashboard")
+	path := files.ReplacePathSeparators("general/dashboard")
+	path1 := files.ReplacePathSeparators("cluster/general/dashboard")
 	standardizedLocation := builder.standardizeLocation("dashboard.json", path)
 	standardizedLocation1 := builder.standardizeLocation("dashboard.json", path1)
 
-	expected := util.ReplacePathSeparators("general/dashboard/dashboard.json")
-	expected1 := util.ReplacePathSeparators("cluster/general/dashboard/dashboard.json")
+	expected := files.ReplacePathSeparators("general/dashboard/dashboard.json")
+	expected1 := files.ReplacePathSeparators("cluster/general/dashboard/dashboard.json")
 	assert.Equal(t, expected, standardizedLocation)
 	assert.Equal(t, expected1, standardizedLocation1)
 }
@@ -235,7 +237,7 @@ dashboard.dev:
 func TestProcessYaml(t *testing.T) {
 
 	factory := config.NewMockConfigFactory(gomock.NewController(t))
-	fs := util.CreateTestFileSystem()
+	fs := testutils.CreateTestFileSystem()
 	err := fs.Mkdir("test/dashboard/", 0777)
 	err = afero.WriteFile(fs, "test/dashboard/test-file.yaml", []byte(projectTestYaml), 0664)
 
@@ -243,13 +245,13 @@ func TestProcessYaml(t *testing.T) {
 
 	properties := make(map[string]map[string]string)
 
-	yamlFile := util.ReplacePathSeparators("test/dashboard/test-file.yaml")
+	yamlFile := files.ReplacePathSeparators("test/dashboard/test-file.yaml")
 
 	factory.EXPECT().
-		NewConfig(gomock.Any(), "dashboard", "testproject", util.ReplacePathSeparators("test/dashboard/my-project-dashboard.json"), gomock.Any(), testDashboardApi).
-		Return(config.NewConfigWithTemplate("my-project-dashboard", "testproject", util.ReplacePathSeparators("dashboard/test-file.yaml"), nil, properties, testDashboardApi), nil)
+		NewConfig(gomock.Any(), "dashboard", "testproject", files.ReplacePathSeparators("test/dashboard/my-project-dashboard.json"), gomock.Any(), testDashboardApi).
+		Return(config.NewConfigWithTemplate("my-project-dashboard", "testproject", files.ReplacePathSeparators("dashboard/test-file.yaml"), nil, properties, testDashboardApi), nil)
 
-	err = builder.processYaml(yamlFile, util.UnmarshalYaml)
+	err = builder.processYaml(yamlFile, template.UnmarshalYaml)
 
 	assert.NilError(t, err)
 	assert.Equal(t, 1, len(builder.configs))

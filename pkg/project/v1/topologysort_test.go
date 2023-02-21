@@ -19,10 +19,9 @@
 package v1
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v1"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-
 	"gotest.tools/assert"
 	"os"
 	"strings"
@@ -48,8 +47,8 @@ func createTestConfig(name string, filePrefix string, property string) config.Co
 
 func TestSortingByConfigDependencyWithRootDirectory(t *testing.T) {
 
-	pathA := util.ReplacePathSeparators("projects/infrastructure/management-zone/")
-	pathB := util.ReplacePathSeparators("projects/infrastructure/alerting-profile/")
+	pathA := files.ReplacePathSeparators("projects/infrastructure/management-zone/")
+	pathB := files.ReplacePathSeparators("projects/infrastructure/alerting-profile/")
 	configA := createTestConfig("zone-a", pathA, "foo")
 	configB := createTestConfig("profile", pathB, pathA+"zone-a.id")
 
@@ -67,8 +66,8 @@ func TestSortingByConfigDependencyWithRootDirectory(t *testing.T) {
 
 func TestFailsOnCircularConfigDependency(t *testing.T) {
 
-	pathA := util.ReplacePathSeparators("projects/infrastructure/management-zone/")
-	pathB := util.ReplacePathSeparators("projects/infrastructure/alerting-profile/")
+	pathA := files.ReplacePathSeparators("projects/infrastructure/management-zone/")
+	pathB := files.ReplacePathSeparators("projects/infrastructure/alerting-profile/")
 	configA := createTestConfig("zone-a", pathA, pathB+"profile.name")
 	configB := createTestConfig("profile", pathB, pathA+"zone-a.id")
 
@@ -83,8 +82,8 @@ func TestFailsOnCircularConfigDependency(t *testing.T) {
 
 func TestSortingByConfigDependencyWithoutRootDirectory(t *testing.T) {
 
-	pathA := util.ReplacePathSeparators("infrastructure/management-zone/")
-	pathB := util.ReplacePathSeparators("infrastructure/synthetic/")
+	pathA := files.ReplacePathSeparators("infrastructure/management-zone/")
+	pathB := files.ReplacePathSeparators("infrastructure/synthetic/")
 	configA := createTestConfig("zone-d", pathA, "bar")
 	configB := createTestConfig("profile", pathB, pathA+"zone-d.id")
 
@@ -101,8 +100,8 @@ func TestSortingByConfigDependencyWithoutRootDirectory(t *testing.T) {
 
 func TestSortingByConfigDependencyWithRelativePath(t *testing.T) {
 
-	pathA := util.ReplacePathSeparators("infrastructure/management-zone/")
-	pathB := util.ReplacePathSeparators("infrastructure/synthetic/")
+	pathA := files.ReplacePathSeparators("infrastructure/management-zone/")
+	pathB := files.ReplacePathSeparators("infrastructure/synthetic/")
 	configA := createTestConfig("testzone", pathA, "prop")
 	configB := createTestConfig("profile", pathB, "management-zone"+string(os.PathSeparator)+"testzone.id")
 

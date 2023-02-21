@@ -21,14 +21,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"mime/multipart"
 	"net/http"
 	"time"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 )
 
 type extensionStatus int
@@ -157,7 +157,7 @@ func writeInMemoryZip(fileName string, fileContent []byte) (*bytes.Buffer, error
 	buffer := new(bytes.Buffer)
 	zipWriter := zip.NewWriter(buffer)
 	zipFile, err := zipWriter.Create(fileName)
-	if util.CheckError(err, "Failed to create .zip file") {
+	if errutils.CheckError(err, "Failed to create .zip file") {
 		return buffer, err
 	}
 	_, err = zipFile.Write(fileContent)

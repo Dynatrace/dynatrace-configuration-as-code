@@ -19,12 +19,11 @@
 package environment
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/template"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"gotest.tools/assert"
-
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 )
 
 const testYamlEnvironment = `
@@ -86,7 +85,7 @@ var testTrailingSlashEnvironment = NewEnvironment("trailing-slash-environment", 
 
 func TestShouldParseYaml(t *testing.T) {
 
-	result, e := util.UnmarshalYaml(testYamlEnvironment, "test-yaml")
+	result, e := template.UnmarshalYaml(testYamlEnvironment, "test-yaml")
 	assert.NilError(t, e)
 
 	environments, errorList := NewEnvironments(result)
@@ -108,7 +107,7 @@ func TestShouldParseYaml(t *testing.T) {
 }
 
 func TestParsingEnvironmentsWithMultipleGroups(t *testing.T) {
-	result, e := util.UnmarshalYaml(testYamlEnvironmentWithGroups, "test-yaml")
+	result, e := template.UnmarshalYaml(testYamlEnvironmentWithGroups, "test-yaml")
 	assert.NilError(t, e)
 
 	environments, errorList := NewEnvironments(result)
@@ -122,7 +121,7 @@ func TestParsingEnvironmentsWithMultipleGroups(t *testing.T) {
 }
 
 func TestParsingEnvironmentsWithSameIds(t *testing.T) {
-	result, e := util.UnmarshalYaml(testYamlEnvironmentSameIds, "test-yaml")
+	result, e := template.UnmarshalYaml(testYamlEnvironmentSameIds, "test-yaml")
 	assert.NilError(t, e)
 
 	environments, errorList := NewEnvironments(result)
@@ -136,13 +135,12 @@ func TestParsingEnvironmentsWithSameIds(t *testing.T) {
 func TestTokenAvailableOnGetterCall(t *testing.T) {
 	e, devEnvironment := setupEnvironment(t, testYamlEnvironment, "development")
 
-	util.SetEnv(t, "DEV", "1234")
+	t.Setenv("DEV", "1234")
 	token, e := devEnvironment.GetToken()
 
 	assert.NilError(t, e)
 	assert.Equal(t, "1234", token)
 
-	util.UnsetEnv(t, "DEV")
 }
 
 func TestTokenNotAvailableOnGetterCall(t *testing.T) {
@@ -154,18 +152,17 @@ func TestTokenNotAvailableOnGetterCall(t *testing.T) {
 
 func TestUrlAvailableWithTemplating(t *testing.T) {
 
-	util.SetEnv(t, "URL", "1234")
+	t.Setenv("URL", "1234")
 	e, devEnvironment := setupEnvironment(t, testYamlEnvironmentWithNewPropertyFormat, "development")
 
 	assert.NilError(t, e)
 	assert.Equal(t, "1234", devEnvironment.GetEnvironmentUrl())
 
-	util.UnsetEnv(t, "URL")
 }
 
 func TestTokenNotAvailableOnGetterCallWithTemplating(t *testing.T) {
 
-	_, e := util.UnmarshalYaml(testYamlEnvironmentWithNewPropertyFormat, "test-yaml")
+	_, e := template.UnmarshalYaml(testYamlEnvironmentWithNewPropertyFormat, "test-yaml")
 	assert.ErrorContains(t, e, "map has no entry for key \"URL\"")
 }
 
@@ -180,7 +177,7 @@ func TestTrailingSlashTrimmedFromEnvironmentURL(t *testing.T) {
 
 func setupEnvironment(t *testing.T, environmentYamlContent string, environmentOfInterest string) (error, Environment) {
 
-	result, e := util.UnmarshalYaml(environmentYamlContent, "test-yaml")
+	result, e := template.UnmarshalYaml(environmentYamlContent, "test-yaml")
 	assert.NilError(t, e)
 
 	environments, errorList := NewEnvironments(result)

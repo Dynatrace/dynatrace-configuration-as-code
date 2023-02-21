@@ -20,10 +20,11 @@ package v1
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/template"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"gotest.tools/assert"
 )
 
@@ -128,8 +129,8 @@ func TestHasDependencyCheck(t *testing.T) {
 	prop := make(map[string]map[string]string)
 	prop["test"] = make(map[string]string)
 	prop["test"]["name"] = "A name"
-	prop["test"]["somethingelse"] = util.ReplacePathSeparators("testproject/management-zone/other.id")
-	temp, e := util.NewTemplateFromString("test", "{{.name}}{{.somethingelse}}")
+	prop["test"]["somethingelse"] = files.ReplacePathSeparators("testproject/management-zone/other.id")
+	temp, e := template.NewTemplateFromString("test", "{{.name}}{{.somethingelse}}")
 	assert.NilError(t, e)
 
 	config := newConfig("test", "testproject", temp, prop, testManagementZoneApi, "test.json")
@@ -145,8 +146,8 @@ func TestHasDependencyWithMultipleDependenciesCheck(t *testing.T) {
 	prop["test"]["name"] = "A name"
 
 	prop["test"]["someDependency"] = "management-zone/not-existing-dep.name"
-	prop["test"]["somethingelse"] = util.ReplacePathSeparators("management-zone/other.id")
-	temp, e := util.NewTemplateFromString("test", "{{.name}}{{.somethingelse}}")
+	prop["test"]["somethingelse"] = files.ReplacePathSeparators("management-zone/other.id")
+	temp, e := template.NewTemplateFromString("test", "{{.name}}{{.somethingelse}}")
 	assert.NilError(t, e)
 
 	config := newConfig("test", "testproject", temp, prop, testManagementZoneApi, "test.json")

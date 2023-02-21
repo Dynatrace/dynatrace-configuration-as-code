@@ -17,8 +17,8 @@
 package list
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/strings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"reflect"
 	"testing"
 
@@ -165,7 +165,7 @@ func TestResolveValue(t *testing.T) {
 	result, err := compoundParameter.ResolveValue(context)
 	assert.NilError(t, err)
 
-	assert.Equal(t, `[ "a","b","c" ]`, util.ToString(result))
+	assert.Equal(t, `[ "a","b","c" ]`, strings.ToString(result))
 }
 
 func TestResolveSingleValue(t *testing.T) {
@@ -176,7 +176,7 @@ func TestResolveSingleValue(t *testing.T) {
 	result, err := compoundParameter.ResolveValue(context)
 	assert.NilError(t, err)
 
-	assert.Equal(t, `[ "a" ]`, util.ToString(result))
+	assert.Equal(t, `[ "a" ]`, strings.ToString(result))
 }
 
 func TestResolveEmptyValue(t *testing.T) {
@@ -187,7 +187,7 @@ func TestResolveEmptyValue(t *testing.T) {
 	result, err := compoundParameter.ResolveValue(context)
 	assert.NilError(t, err)
 
-	assert.Equal(t, `[  ]`, util.ToString(result))
+	assert.Equal(t, `[  ]`, strings.ToString(result))
 }
 
 func Test_writeListParameter(t *testing.T) {

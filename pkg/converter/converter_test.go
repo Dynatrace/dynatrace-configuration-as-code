@@ -18,6 +18,7 @@ package converter
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 	"reflect"
 	"testing"
@@ -31,7 +32,6 @@ import (
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	projectV1 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v1"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
@@ -82,7 +82,7 @@ func TestConvertParameters(t *testing.T) {
 		},
 	}
 
-	template, err := util.NewTemplateFromString("test/test-configV1.json", "{}")
+	template, err := template.NewTemplateFromString("test/test-configV1.json", "{}")
 
 	assert.NoError(t, err)
 
@@ -140,7 +140,7 @@ func TestParseSkipDeploymentParameter(t *testing.T) {
 		},
 	}
 
-	template, err := util.NewTemplateFromString("test/test-configV1.json", "{}")
+	template, err := template.NewTemplateFromString("test/test-configV1.json", "{}")
 
 	assert.NoError(t, err)
 
@@ -243,7 +243,7 @@ func TestLoadPropertiesForEnvironment(t *testing.T) {
 		},
 	}
 
-	template, err := util.NewTemplateFromString("test/test-configV1.json", "{}")
+	template, err := template.NewTemplateFromString("test/test-configV1.json", "{}")
 
 	assert.NoError(t, err)
 
@@ -288,7 +288,7 @@ func TestConvertConfig(t *testing.T) {
 		},
 	}
 
-	template, err := util.NewTemplateFromString("test/test-configV1.json", "{}")
+	template, err := template.NewTemplateFromString("test/test-configV1.json", "{}")
 
 	assert.NoError(t, err)
 
@@ -349,7 +349,7 @@ func TestConvertDeprecatedConfigToLatest(t *testing.T) {
 		},
 	}
 
-	template, err := util.NewTemplateFromString("test/test-configV1.json", "{}")
+	template, err := template.NewTemplateFromString("test/test-configV1.json", "{}")
 
 	assert.NoError(t, err)
 
@@ -407,7 +407,7 @@ func TestConvertConfigWithEnvNameCollisionShouldFail(t *testing.T) {
 		},
 	}
 
-	template, err := util.NewTemplateFromString("test/test-configV1.json", "{}")
+	template, err := template.NewTemplateFromString("test/test-configV1.json", "{}")
 
 	assert.NoError(t, err)
 
@@ -445,7 +445,7 @@ func TestConvertSkippedConfig(t *testing.T) {
 		},
 	}
 
-	template, err := util.NewTemplateFromString("test/test-configV1.json", "{}")
+	template, err := template.NewTemplateFromString("test/test-configV1.json", "{}")
 
 	assert.NoError(t, err)
 
@@ -811,7 +811,7 @@ func setupDummyFsWithEnvVariableInTemplate(t *testing.T, envVarName string) afer
 	return fs
 }
 
-func setupFsWithFullTestTemplate(t *testing.T, simpleVar, refVar, listVar, envVar string) (afero.Fs, util.Template) {
+func setupFsWithFullTestTemplate(t *testing.T, simpleVar, refVar, listVar, envVar string) (afero.Fs, template.Template) {
 	fs := afero.NewMemMapFs()
 
 	err := fs.Mkdir("test", 0644)
@@ -819,7 +819,7 @@ func setupFsWithFullTestTemplate(t *testing.T, simpleVar, refVar, listVar, envVa
 
 	templateContent := fmt.Sprintf(`{ "simple": "{{ .%s }}", "reference": "{{ .%s }}", "list": [ {{ .%s }} ], "env": "{{ .Env.%s }}" }`, simpleVar, refVar, listVar, envVar)
 
-	template, err := util.NewTemplateFromString("test/test-configV1.json", templateContent)
+	template, err := template.NewTemplateFromString("test/test-configV1.json", templateContent)
 	assert.NoError(t, err)
 
 	err = afero.WriteFile(fs, "test/test-configV1.json", []byte(templateContent), 0644)
@@ -828,8 +828,8 @@ func setupFsWithFullTestTemplate(t *testing.T, simpleVar, refVar, listVar, envVa
 	return fs, template
 }
 
-func generateDummyTemplate(t *testing.T) util.Template {
-	template, err := util.NewTemplateFromString("test/test-configV1.json", "{}")
+func generateDummyTemplate(t *testing.T) template.Template {
+	template, err := template.NewTemplateFromString("test/test-configV1.json", "{}")
 
 	assert.NoError(t, err)
 
@@ -843,7 +843,7 @@ func generateDummyConfig(t *testing.T) configV1.Config {
 
 	properties := map[string]map[string]string{}
 
-	template, err := util.NewTemplateFromString("test/test-configV1.json", "{}")
+	template, err := template.NewTemplateFromString("test/test-configV1.json", "{}")
 
 	assert.NoError(t, err)
 
