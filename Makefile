@@ -1,7 +1,8 @@
 BINARY=monaco
 VERSION=2.x
+RELEASES = $(BINARY)-windows-amd64.exe $(BINARY)-windows-386.exe $(BINARY)-linux-amd64 $(BINARY)-linux-386 $(BINARY)-darwin-amd64 $(BINARY)-darwin-arm64
 
-.PHONY: lint format mocks build install clean test integration-test integration-test-v1 test-package default add-license-headers
+.PHONY: lint format mocks build install clean test integration-test integration-test-v1 test-package default add-license-headers build-release RELEASES
 
 default: build
 
@@ -49,14 +50,14 @@ build: clean mocks
 	@echo "Building ${BINARY}..."
 	@CGO_ENABLED=0 go build -a -tags netgo -ldflags '-w -extldflags "-static"' -o ./bin/${BINARY} ./cmd/monaco
 
-build-release: clean
+build-release: clean $(RELEASES)
 	@echo Release build ${BINARY} ${VERSION}
-	@ GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -a -tags netgo -ldflags '-X github.com/dynatrace/dynatrace-configuration-as-code/pkg/version.MonitoringAsCode=${VERSION} -w -extldflags "-static"' -o ./build/${BINARY}-windows-amd64.exe ./cmd/monaco
-	@ GOOS=windows GOARCH=386   CGO_ENABLED=0 go build -a -tags netgo -ldflags '-X github.com/dynatrace/dynatrace-configuration-as-code/pkg/version.MonitoringAsCode=${VERSION} -w -extldflags "-static"' -o ./build/${BINARY}-windows-386.exe   ./cmd/monaco
-	@ GOOS=linux   GOARCH=amd64 CGO_ENABLED=0 go build -a -tags netgo -ldflags '-X github.com/dynatrace/dynatrace-configuration-as-code/pkg/version.MonitoringAsCode=${VERSION} -w -extldflags "-static"' -o ./build/${BINARY}-linux-amd64       ./cmd/monaco
-	@ GOOS=linux   GOARCH=386   CGO_ENABLED=0 go build -a -tags netgo -ldflags '-X github.com/dynatrace/dynatrace-configuration-as-code/pkg/version.MonitoringAsCode=${VERSION} -w -extldflags "-static"' -o ./build/${BINARY}-linux-386         ./cmd/monaco
-	@ GOOS=darwin  GOARCH=amd64 CGO_ENABLED=0 go build -a -tags netgo -ldflags '-X github.com/dynatrace/dynatrace-configuration-as-code/pkg/version.MonitoringAsCode=${VERSION} -w -extldflags "-static"' -o ./build/${BINARY}-darwin-amd64      ./cmd/monaco
-	@ GOOS=darwin  GOARCH=arm64 CGO_ENABLED=0 go build -a -tags netgo -ldflags '-X github.com/dynatrace/dynatrace-configuration-as-code/pkg/version.MonitoringAsCode=${VERSION} -w -extldflags "-static"' -o ./build/${BINARY}-darwin-arm64      ./cmd/monaco
+
+argument = $(word $1, $(subst -,$(empty) $(empty), $(subst .exe,$(empty) $(empty) , $2)))
+OUTDIR ?= ./build
+$(RELEASES):
+	GOOS=$(call argument, 2, $@) GOARCH=$(call argument, 3, $@) CGO_ENABLED=0 go build -a -tags netgo -ldflags '-X github.com/dynatrace/dynatrace-configuration-as-code/pkg/version.MonitoringAsCode=${VERSION} -w -extldflags "-static"' -o ${OUTDIR}/$@ ./cmd/monaco
+
 
 install:
 	@echo "Installing ${BINARY}..."
@@ -82,7 +83,7 @@ test: setup mocks lint
 integration-test: mocks
 	@gotestsum ${testopts} --format standard-verbose -- -tags=integration -timeout=30m -v -race ./...
 
-integration-test-v1:mocks
+integration-test-v1: mocks
 	@gotestsum ${testopts} --format standard-verbose -- -tags=integration_v1 -timeout=30m -v -race ./...
 
 download-restore-test: mocks
