@@ -20,6 +20,7 @@ package testutils
 
 import (
 	"bufio"
+	"fmt"
 	"github.com/spf13/afero"
 	"path/filepath"
 	"strings"
@@ -142,15 +143,73 @@ func applyLineTransformers(line string, transformers []func(string) string) stri
 	return line
 }
 
+func ReplaceId(line string, idChange func(string) string) string {
+	if strings.Contains(line, "id:") || strings.Contains(line, "configId:") {
+		trimmed := strings.TrimSpace(line)
+
+		if strings.HasPrefix(trimmed, "-") {
+			trimmed = trimmed[1:]
+			trimmed = strings.TrimSpace(trimmed)
+		}
+
+		withoutPrefix := strings.TrimLeft(trimmed, "id:")
+		id := strings.TrimSpace(withoutPrefix)
+
+		if id == "" { //line only contained the name, can't do anything here and probably a non-shorthand v2 reference
+			return line
+		}
+
+		id = strings.Trim(id, `"'`)
+
+		replaced := strings.ReplaceAll(line, id, idChange(id))
+		return replaced
+	}
+
+	entries := strings.Split(line, ":")
+	if len(entries) != 2 { //not a key:value pair
+		return line
+	}
+	key := entries[0]
+	property := entries[1]
+
+	if property := strings.Trim(property, ` "'`); isV1Dependency(property) {
+		ref := strings.Split(property, "/")
+		configRef := strings.Split(ref[len(ref)-1], ".")
+		if len(configRef) != 2 { //unexpected format
+			return line
+		}
+		config := configRef[0]
+		cfgType := configRef[1]
+
+		config = idChange(config)
+		ref[len(ref)-1] = config + "." + cfgType
+		return fmt.Sprintf(`%s: "%s"`, key, strings.Join(ref, "/"))
+	}
+	if isV2Dependency(property) {
+		property := strings.TrimSpace(property)
+		property = strings.Trim(property, "[]")
+
+		ref := strings.Split(property, ",")
+		config := ref[len(ref)-2] // 2nd to last is cfgID
+		config = strings.TrimSpace(config)
+		config = strings.Trim(config, `"'`)
+
+		ref[len(ref)-2] = fmt.Sprintf(`"%s"`, idChange(config))
+		return fmt.Sprintf("%s: [%s]", key, strings.Join(ref, ","))
+	}
+	return line
+}
+
 func isV1Dependency(name string) bool {
 	return strings.HasSuffix(name, ".id") || strings.HasSuffix(name, ".name")
 }
 
 func isV2Dependency(name string) bool {
-	if !(strings.HasPrefix(name, "[") && strings.HasSuffix(name, "]")) {
+	s := strings.TrimSpace(name)
+	if !(strings.HasPrefix(s, "[") && strings.HasSuffix(s, "]")) {
 		return false
 	}
-	s := strings.TrimSuffix(name, "]")
+	s = strings.TrimSuffix(s, "]")
 	s = strings.TrimSpace(s)
 	return strings.HasSuffix(s, `"id"`) || strings.HasSuffix(s, `"name"`)
 }

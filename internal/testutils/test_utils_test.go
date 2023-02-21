@@ -1,0 +1,197 @@
+//go:build unit
+
+/*
+ * @license
+ * Copyright 2023 Dynatrace LLC
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package testutils
+
+import (
+	"github.com/stretchr/testify/assert"
+	"strings"
+	"testing"
+
+	"github.com/spf13/afero"
+)
+
+var appendNameFunc = func(name string) string {
+	return name + "_postfix"
+}
+
+var prependNameFunc = func(name string) string {
+	return "prefix_" + name
+}
+
+var nameReplacingPostfixFunc = func(line string) string {
+	return ReplaceName(line, appendNameFunc)
+}
+
+var nameReplacingPostfixFuncForFileContent = func(fileContent string) string {
+
+	var result = ""
+	lines := strings.Split(fileContent, "\n")
+	for i, line := range lines {
+		result += ReplaceName(line, appendNameFunc)
+		if i < len(lines)-1 {
+			result += "\n"
+		}
+	}
+	return result
+}
+
+var nameReplacingPrefixFunc = func(line string) string {
+	return ReplaceName(line, prependNameFunc)
+}
+
+func TestReplaceNameNotMatching(t *testing.T) {
+
+	assert.Equal(t, "management-zone", nameReplacingPostfixFunc("management-zone"))
+	assert.Equal(t, "config:", nameReplacingPostfixFunc("config:"))
+}
+
+func TestReplaceNameMatching(t *testing.T) {
+
+	assert.Equal(t, "- name: test_postfix", nameReplacingPostfixFunc("- name: test"))
+	assert.Equal(t, "   - name: test_postfix", nameReplacingPostfixFunc("   - name: test"))
+	assert.Equal(t, "   -name: test_postfix", nameReplacingPostfixFunc("   -name: test"))
+	assert.Equal(t, "	-name: test_postfix", nameReplacingPostfixFunc("	-name: test"))
+	assert.Equal(t, "	-name: test_postfix  ", nameReplacingPostfixFunc("	-name: test  "))
+	assert.Equal(t, "	-name: \"test_postfix\"  ", nameReplacingPostfixFunc("	-name: \"test\"  "))
+	assert.Equal(t, "	-name: 'test_postfix'  ", nameReplacingPostfixFunc("	-name: 'test'  "))
+}
+
+func TestReplaceNameMatchingConfigV2(t *testing.T) {
+
+	const configV2Config = `configs:
+- id: profile
+  config:
+    name: Star Trek Service
+    template: profile.json
+    skip: false`
+
+	const configV2ConfigExpected = `configs:
+- id: profile
+  config:
+    name: Star Trek Service_postfix
+    template: profile.json
+    skip: false`
+
+	result := nameReplacingPostfixFuncForFileContent(configV2Config)
+	assert.Equal(t, configV2ConfigExpected, result)
+}
+
+func TestReplaceNameDependency(t *testing.T) {
+	assert.Equal(t, "- name: test_postfix.id", nameReplacingPostfixFunc("- name: test_postfix.id"))
+	assert.Equal(t, "- name: test_postfix.name", nameReplacingPostfixFunc("- name: test_postfix.name"))
+}
+
+func TestReplaceNameDependencyV2(t *testing.T) {
+	assert.Equal(t, " name: [ \"project\",\"api\",\"test_postfix\",\"id\" ]", nameReplacingPostfixFunc(" name: [ \"project\",\"api\",\"test_postfix\",\"id\" ]"))
+	assert.Equal(t, " name: [ \"project\",\"api\",\"test_postfix\",\"name\" ]", nameReplacingPostfixFunc(" name: [ \"project\",\"api\",\"test_postfix\",\"name\" ]"))
+}
+
+func TestInMemoryReplaceNameSimpleMatching(t *testing.T) {
+
+	transformers := []func(string) string{nameReplacingPostfixFunc}
+	assertInMemoryReplace(t, transformers, "    - name: \"Test1_postfix\"")
+}
+
+func TestInMemoryReplaceNameAdvancedMatching(t *testing.T) {
+
+	transformers := []func(string) string{nameReplacingPostfixFunc, nameReplacingPrefixFunc}
+	assertInMemoryReplace(t, transformers, "    - name: \"prefix_Test1_postfix\"")
+}
+
+func assertInMemoryReplace(t *testing.T, transformers []func(string) string, expected string) {
+
+	var reader = CreateTestFileSystem()
+	err := RewriteConfigNames("test-resources", reader, transformers)
+	assert.NoError(t, err)
+
+	content, err := afero.ReadFile(reader, "test-resources/test-environments.yaml")
+	assert.NoError(t, err)
+
+	assert.True(t, strings.Contains(string(content), expected), "content '%s' was invalid", content)
+}
+
+func TestReplaceId(t *testing.T) {
+
+	tests := []struct {
+		name  string
+		given string
+		want  string
+	}{
+		{
+			"leaves empty string unchanged",
+			"",
+			"",
+		},
+		{
+			"leaves non-id string unchanged",
+			"someproperty: value",
+			"someproperty: value",
+		},
+		{
+			"leaves non-id string with id unchanged",
+			"someproperty: id",
+			"someproperty: id",
+		},
+		{
+			"replaces config property",
+			"- id: theConfigId",
+			"- id: theConfigId_postfix",
+		},
+		{
+			"replaces configId reference prop",
+			"   configId: theConfigId",
+			"   configId: theConfigId_postfix",
+		},
+		{
+			"replaces configId in shorthand v2 reference #1",
+			`someRef: ["project", "type", "theConfigId", "id"]`,
+			`someRef: ["project", "type","theConfigId_postfix", "id"]`,
+		},
+		{
+			"replaces configId in shorthand v2 reference #2",
+			`someRef: ["theConfigId", "id" ]`,
+			`someRef: ["theConfigId_postfix", "id" ]`,
+		},
+		{
+			"replaces configId in shorthand v2 reference #3",
+			`someRef: ["project","type","theConfigId","name"]`,
+			`someRef: ["project","type","theConfigId_postfix","name"]`,
+		},
+		{
+			"replaces configId in v1 reference #1",
+			"someRef: \"/project/type/theConfigId.id\"",
+			"someRef: \"/project/type/theConfigId_postfix.id\"",
+		},
+		{
+			"replaces configId in v1 reference #2",
+			"someRef: \"type/theConfigId.id\"",
+			"someRef: \"type/theConfigId_postfix.id\"",
+		},
+		{
+			"replaces configId in v1 reference #3",
+			"someRef: \"project/type/theConfigId.name\"",
+			"someRef: \"project/type/theConfigId_postfix.name\"",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, ReplaceId(tt.given, appendNameFunc))
+		})
+	}
+}
