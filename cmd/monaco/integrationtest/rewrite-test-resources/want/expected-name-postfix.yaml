@@ -1,0 +1,17 @@
+configs:
+  - id: "id_to_be_rewritten"
+    type:
+      api: notification
+    config:
+      name: "name_to_be_rewritten_postfix"
+      parameters:
+        reference:
+          configType: alerting-profile
+          configId: "ref_id_to_be_rewritten"
+          property: id
+          type: reference
+        not_a_name: "unchanged"
+        someotherId: "unchanged"
+        shortRef: ["project", "type", "short_id_to_be_rewritten", "name"]
+        oldRef: "/project/type/old_id_to_be_rewritten.id"
+      template: do/not/care.json

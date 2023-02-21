@@ -27,16 +27,16 @@ import (
 	"github.com/spf13/afero"
 )
 
-var appendNameFunc = func(name string) string {
-	return name + "_postfix"
+var postfixFunc = func(s string) string {
+	return s + "_postfix"
 }
 
-var prependNameFunc = func(name string) string {
-	return "prefix_" + name
+var prefixFunc = func(s string) string {
+	return "prefix_" + s
 }
 
 var nameReplacingPostfixFunc = func(line string) string {
-	return ReplaceName(line, appendNameFunc)
+	return ReplaceName(line, postfixFunc)
 }
 
 var nameReplacingPostfixFuncForFileContent = func(fileContent string) string {
@@ -44,7 +44,7 @@ var nameReplacingPostfixFuncForFileContent = func(fileContent string) string {
 	var result = ""
 	lines := strings.Split(fileContent, "\n")
 	for i, line := range lines {
-		result += ReplaceName(line, appendNameFunc)
+		result += ReplaceName(line, postfixFunc)
 		if i < len(lines)-1 {
 			result += "\n"
 		}
@@ -53,7 +53,11 @@ var nameReplacingPostfixFuncForFileContent = func(fileContent string) string {
 }
 
 var nameReplacingPrefixFunc = func(line string) string {
-	return ReplaceName(line, prependNameFunc)
+	return ReplaceName(line, prefixFunc)
+}
+
+var idReplacingPostfixFunc = func(line string) string {
+	return ReplaceId(line, postfixFunc)
 }
 
 func TestReplaceNameNotMatching(t *testing.T) {
@@ -105,27 +109,48 @@ func TestReplaceNameDependencyV2(t *testing.T) {
 	assert.Equal(t, " name: [ \"project\",\"api\",\"test_postfix\",\"name\" ]", nameReplacingPostfixFunc(" name: [ \"project\",\"api\",\"test_postfix\",\"name\" ]"))
 }
 
-func TestInMemoryReplaceNameSimpleMatching(t *testing.T) {
+func TestRewriteConfigNames(t *testing.T) {
+	tests := []struct {
+		name              string
+		givenTransformers []func(string) string
+		expectedFile      string
+	}{
+		{
+			"appends postfix to name",
+			[]func(string) string{nameReplacingPostfixFunc},
+			"expected-name-postfix.yaml",
+		},
+		{
+			"surrounds name with pre- and postfix",
+			[]func(string) string{nameReplacingPostfixFunc, nameReplacingPrefixFunc},
+			"expected-name-full.yaml",
+		},
+		{
+			"appends postfix to config IDs",
+			[]func(string) string{idReplacingPostfixFunc},
+			"expected-id-postfix.yaml",
+		},
+		{
+			"appends postfix to name and config IDs",
+			[]func(string) string{nameReplacingPostfixFunc, idReplacingPostfixFunc},
+			"expected-both-postfix.yaml",
+		},
+	}
 
-	transformers := []func(string) string{nameReplacingPostfixFunc}
-	assertInMemoryReplace(t, transformers, "    - name: \"Test1_postfix\"")
-}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var reader = testutils.CreateTestFileSystem()
+			err := RewriteConfigNames("rewrite-test-resources/given", reader, tt.givenTransformers)
+			assert.NoError(t, err)
 
-func TestInMemoryReplaceNameAdvancedMatching(t *testing.T) {
+			got, err := afero.ReadFile(reader, "rewrite-test-resources/given/rewrite-test-config.yaml")
+			assert.NoError(t, err)
+			want, err := afero.ReadFile(reader, "rewrite-test-resources/want/"+tt.expectedFile)
+			assert.NoError(t, err)
 
-	transformers := []func(string) string{nameReplacingPostfixFunc, nameReplacingPrefixFunc}
-	assertInMemoryReplace(t, transformers, "    - name: \"prefix_Test1_postfix\"")
-}
-
-func assertInMemoryReplace(t *testing.T, transformers []func(string) string, expected string) {
-	var reader = testutils.CreateTestFileSystem()
-	err := RewriteConfigNames("rewrite-test-resources", reader, transformers)
-	assert.NoError(t, err)
-
-	content, err := afero.ReadFile(reader, "rewrite-test-resources/test-environments.yaml")
-	assert.NoError(t, err)
-
-	assert.True(t, strings.Contains(string(content), expected), "content '%s' was invalid", content)
+			assert.Equal(t, string(want), string(got))
+		})
+	}
 }
 
 func TestReplaceId(t *testing.T) {
@@ -181,8 +206,8 @@ func TestReplaceId(t *testing.T) {
 			"someRef: \"/project/type/theConfigId_postfix.id\"",
 		},
 		{
-			"replaces configId in v1 reference #2",
-			"someRef: \"type/theConfigId.id\"",
+			"replaces configId in shorthand v2 reference #2",
+			"someRef: 'type/theConfigId.id'",
 			"someRef: \"type/theConfigId_postfix.id\"",
 		},
 		{
@@ -193,7 +218,7 @@ func TestReplaceId(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, ReplaceId(tt.given, appendNameFunc))
+			assert.Equal(t, tt.want, ReplaceId(tt.given, postfixFunc))
 		})
 	}
 }
