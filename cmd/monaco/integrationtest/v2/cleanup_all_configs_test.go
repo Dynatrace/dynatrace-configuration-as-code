@@ -48,7 +48,6 @@ func TestDoCleanup(t *testing.T) {
 	testSuffixRegex := regexp.MustCompile(`^.+_\d+_\d+_.*$`)
 
 	for _, environment := range loadedManifest.Environments {
-		deletedConfigs := 0
 		token, err := environment.GetToken()
 		assert.NilError(t, err)
 
@@ -58,28 +57,69 @@ func TestDoCleanup(t *testing.T) {
 		client, err := client.NewDynatraceClient(envUrl, token)
 		assert.NilError(t, err)
 
-		for _, api := range apis {
-			if api.GetId() == "calculated-metrics-log" {
-				t.Logf("Skipping cleanup of legacy log monitoring API")
-				continue
-			}
+		deletedConfigs := cleanupTestConfigs(t, apis, client, testSuffixRegex)
+		t.Logf("Deleted %d leftover test configurations from %s (%s)", deletedConfigs, environment.Name, envUrl)
 
-			values, err := client.List(api)
-			assert.NilError(t, err)
+		deletedSettings := cleanupTestSettings(t, client)
+		t.Logf("Deleted %d leftover test Settings from %s (%s)", deletedSettings, environment.Name, envUrl)
+	}
 
-			for _, value := range values {
-				if testSuffixRegex.MatchString(value.Name) || testSuffixRegex.MatchString(value.Id) {
-					err := client.DeleteById(api, value.Id)
-					if err != nil {
-						t.Errorf("failed to delete %s (%s): %v", value.Name, api.GetId(), err)
-					} else {
-						log.Info("Deleted %s (%s)", value.Name, api.GetId())
-						deletedConfigs++
-					}
+}
+
+func cleanupTestConfigs(t *testing.T, apis api.ApiMap, client client.ConfigClient, testSuffixRegex *regexp.Regexp) int {
+	deletedConfigs := 0
+	for _, api := range apis {
+		if api.GetId() == "calculated-metrics-log" {
+			t.Logf("Skipping cleanup of legacy log monitoring API")
+			continue
+		}
+
+		values, err := client.List(api)
+		assert.NilError(t, err)
+
+		for _, value := range values {
+			if testSuffixRegex.MatchString(value.Name) || testSuffixRegex.MatchString(value.Id) {
+				err := client.DeleteById(api, value.Id)
+				if err != nil {
+					t.Errorf("failed to delete %s (%s): %v", value.Name, api.GetId(), err)
+				} else {
+					log.Info("Deleted %s (%s)", value.Name, api.GetId())
+					deletedConfigs++
 				}
 			}
 		}
-		t.Logf("Deleted %d leftover test configurations from %s (%s)", deletedConfigs, environment.Name, envUrl)
 	}
+	return deletedConfigs
+}
+
+func cleanupTestSettings(t *testing.T, c client.SettingsClient) int {
+	deletedSettings := 0
+
+	schemas, err := c.ListSchemas()
+	assert.NilError(t, err)
+
+	for _, s := range schemas {
+		schemaId := s.SchemaId
+		objects, err := c.ListSettings(schemaId, client.ListSettingsOptions{DiscardValue: true, Filter: func(o client.DownloadSettingsObject) bool { return o.ExternalId != "" }})
+		if err != nil {
+			t.Errorf("could not fetch settings 2.0 objects with schema %s: %v", schemaId, err)
+		}
+
+		if len(objects) == 0 {
+			continue
+		}
+
+		for _, obj := range objects {
+			err := c.DeleteSettings(obj.ObjectId)
+			if err != nil {
+				t.Errorf("failed to delete %q object: %s (extId: %s): %v", obj.ObjectId, obj.ExternalId, schemaId, err)
+			} else {
+				log.Info("Deleted %q object: %s (extId: %s)", obj.ObjectId, obj.ExternalId, schemaId)
+				deletedSettings++
+			}
+		}
+	}
+
+	return deletedSettings
 
 }
