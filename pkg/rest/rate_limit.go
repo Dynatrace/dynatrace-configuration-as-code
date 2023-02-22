@@ -70,12 +70,9 @@ func (s *simpleSleepRateLimitStrategy) executeRequest(timelineProvider timeutils
 		// That's why we need plausible min/max wait time defaults:
 		sleepDuration = s.applyMinMaxDefaults(sleepDuration)
 
-		log.Info("Rate limit reached: Applying rate limit strategy (simpleSleepRateLimitStrategy, iteration: %d)", currentIteration+1)
-		log.Info("simpleSleepRateLimitStrategy: Attempting to sleep until %s", humanReadableTimestamp)
+		log.Debug("Rate limit reached (iteration: %d/%d). Sleeping until %s (%s)", currentIteration+1, maxIterationCount, humanReadableTimestamp, sleepDuration)
 
-		log.Debug("simpleSleepRateLimitStrategy: Sleeping for %f seconds...", sleepDuration.Seconds())
 		timelineProvider.Sleep(sleepDuration)
-		log.Debug("simpleSleepRateLimitStrategy: Slept for %f seconds", sleepDuration.Seconds())
 
 		// Checking again:
 		currentIteration++
@@ -104,7 +101,6 @@ func (s *simpleSleepRateLimitStrategy) getSleepDurationFromResponseHeader(respon
 	// Attention: this mixes client and server time:
 	sleepDuration = resetTime.Sub(now)
 
-	log.Debug("simpleSleepRateLimitStrategy: Calculated sleep duration of %f seconds...", sleepDuration.Seconds())
 	return sleepDuration, humanReadableTimestamp, nil
 }
 
