@@ -267,7 +267,7 @@ func setupSharedFlags(cmd *cobra.Command, project, outputFolder *string, forceOv
 func printUploadToSameEnvironmentWarning(environmentURL, token string) {
 	serverVersion, err := client.GetDynatraceVersion(&http.Client{}, environmentURL, token)
 	if err != nil {
-		log.Error("Unable to determine server version %q", environmentURL)
+		log.Error("Unable to determine server version %q: %w", environmentURL, err)
 		return
 	}
 	if serverVersion.SmallerThan(version.Version{Major: 1, Minor: 262}) {

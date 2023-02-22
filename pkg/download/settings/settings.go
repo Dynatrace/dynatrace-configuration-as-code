@@ -118,6 +118,8 @@ func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPe
 			downloadMutex.Lock()
 			results[s] = configs
 			downloadMutex.Unlock()
+
+			log.Debug("Finished downloading all (%d) settings for schema %s", len(objects), s)
 		}(schema)
 	}
 	wg.Wait()
