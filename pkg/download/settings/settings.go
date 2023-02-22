@@ -18,8 +18,8 @@ package settings
 
 import (
 	"encoding/json"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/uuid"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
@@ -151,7 +151,7 @@ func (d *Downloader) convertAllObjects(objects []client.DownloadSettingsObject, 
 		}
 
 		// construct config object with generated config ID
-		configId := uuid.GenerateUuidFromName(o.ObjectId)
+		configId := idutils.GenerateUuidFromName(o.ObjectId)
 		c := config.Config{
 			Template: template.NewDownloadTemplate(configId, configId, content),
 			Coordinate: coordinate.Coordinate{

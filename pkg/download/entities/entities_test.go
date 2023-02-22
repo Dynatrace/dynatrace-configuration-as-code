@@ -20,7 +20,7 @@ package entities
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/uuid"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
@@ -36,7 +36,7 @@ import (
 func TestDownloadAll(t *testing.T) {
 	testType := "SOMETHING"
 	testType2 := "SOMETHINGELSE"
-	uuid := uuid.GenerateUuidFromName(testType)
+	uuid := idutils.GenerateUuidFromName(testType)
 
 	type mockValues struct {
 		EntitiesTypeList      func() (client.EntitiesTypeList, error)
@@ -123,7 +123,7 @@ func TestDownloadAll(t *testing.T) {
 
 func TestDownload(t *testing.T) {
 	testType := "SOMETHING"
-	uuid := uuid.GenerateUuidFromName(testType)
+	uuid := idutils.GenerateUuidFromName(testType)
 
 	type mockValues struct {
 		EntitiesTypeList  func() (client.EntitiesTypeList, error)

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package extid
+package idutils
 
 import (
 	"gotest.tools/assert"

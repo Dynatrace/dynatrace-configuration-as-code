@@ -21,12 +21,12 @@ package v2
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/deploy"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/extid"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2/topologysort"
@@ -190,7 +190,7 @@ func AssertConfig(t *testing.T, client client.ConfigClient, theApi api.Api, envi
 }
 
 func assertSetting(t *testing.T, c client.SettingsClient, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config) {
-	expectedExtId := extid.GenerateExternalID(config.Type.SchemaId, config.Coordinate.ConfigId)
+	expectedExtId := idutils.GenerateExternalID(config.Type.SchemaId, config.Coordinate.ConfigId)
 	objects, err := c.ListSettings(config.Type.SchemaId, client.ListSettingsOptions{DiscardValue: true, Filter: func(o client.DownloadSettingsObject) bool { return o.ExternalId == expectedExtId }})
 	assert.NilError(t, err)
 

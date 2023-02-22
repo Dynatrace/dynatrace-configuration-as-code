@@ -21,7 +21,7 @@ package v2
 import (
 	"encoding/json"
 	"fmt"
-	uuid2 "github.com/dynatrace/dynatrace-configuration-as-code/internal/uuid"
+	uuid2 "github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
@@ -113,9 +113,9 @@ func getConfigsOfName(t *testing.T, c client.Client, a api.Api, name string) []a
 }
 
 func getRandomUUID(t *testing.T) string {
-	uuid, err := uuid.NewUUID()
+	id, err := uuid.NewUUID()
 	assert.NilError(t, err)
-	return uuid.String()
+	return id.String()
 }
 
 func createObjectViaDirectPut(t *testing.T, client *http.Client, url string, a api.Api, apiToken string, id string, payload []byte) {

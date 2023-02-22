@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uuid
+package idutils
 
 import (
 	"github.com/stretchr/testify/assert"

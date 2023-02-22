@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package extid
+package idutils
 
 import (
 	"encoding/base64"
