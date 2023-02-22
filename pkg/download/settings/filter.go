@@ -18,7 +18,6 @@ package settings
 
 import (
 	"fmt"
-	"strings"
 )
 
 // noOpFilter is a settings 2.0 filter that does nothing
@@ -59,36 +58,29 @@ var defaultSettingsFilters = Filters{
 			return json["activated"] == false, "'activated' field is set to false"
 		},
 	},
+	// following settings20 obj needs to be discarded bc of error during deploy:
+	// "Given property 'matcher' with value: '*' Invalid DQL query: token recognition error at: '*' at 1:0"
 	"builtin:logmonitoring.log-buckets-rules": {
 		ShouldDiscard: func(json map[string]interface{}) (bool, string) {
 			return json["ruleName"] == "default", formatDefaultDiscardReasonMsg(json["ruleName"])
 		},
 	},
+	// following settings20 obj needs to be discarded bc of error during deploy:
+	// "Given property 'matcher' with value: '*' Invalid DQL query: token recognition error at: '*' at 1:0"
 	"builtin:bizevents-processing-buckets.rule": {
 		ShouldDiscard: func(json map[string]interface{}) (bool, string) {
 			return json["ruleName"] == "default", formatDefaultDiscardReasonMsg(json["ruleName"])
 		},
 	},
-	"builtin:apis.detection-rules": {
-		ShouldDiscard: func(json map[string]interface{}) (bool, string) {
-			return strings.HasPrefix(fmt.Sprintf("%v", json["apiName"]), "Built-In"), formatDefaultDiscardReasonMsg(json["apiName"])
-		},
-	},
-	"builtin:logmonitoring.log-dpp-rules": {
-		ShouldDiscard: func(json map[string]interface{}) (bool, string) {
-			return strings.HasPrefix(fmt.Sprintf("%v", json["ruleName"]), "[Built-in]"), formatDefaultDiscardReasonMsg(json["ruleName"])
-		},
-	},
-	"builtin:monitoredentities.generic.type": {
-		ShouldDiscard: func(json map[string]interface{}) (bool, string) {
-			return json["createdBy"] == "Dynatrace", formatDefaultDiscardReasonMsg(json["name"])
-		},
-	},
+	// following settings20 obj needs to be discarded bc it is strictly read only and causes problems during deploy:
+	// "cannot be modified"
 	"builtin:alerting.profile": {
 		ShouldDiscard: func(json map[string]interface{}) (bool, string) {
 			return json["name"] == "Default" || json["name"] == "Default for ActiveGate Token Expiry", formatDefaultDiscardReasonMsg(json["name"])
 		},
 	},
+	// following settings20 obj needs to be discarded bc it is strictly read only and causes problems during deploy:
+	// "cannot be modified"
 	"builtin:logmonitoring.log-events": {
 		ShouldDiscard: func(json map[string]interface{}) (bool, string) {
 			return json["summary"] == "Default Kubernetes Log Events", formatDefaultDiscardReasonMsg("Default Kubernetes Log Events")
