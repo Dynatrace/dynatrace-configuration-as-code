@@ -15,3 +15,24 @@ configs:
         shortRef: ["project", "type","short_id_to_be_rewritten_postfix", "name"]
         oldRef: "/project/type/old_id_to_be_rewritten_postfix.id"
       template: do/not/care.json
+  - id: "id_to_be_rewritten_postfix"
+    type:
+      settings:
+        schema: builtin:rum.mobile.request-errors
+        scope: [ type,"short_id_to_be_rewritten_postfix", some_prop ]
+    config:
+      name: "name_to_be_rewritten_postfix"
+      template: do/not/care.json
+  - id: "id_to_be_rewritten_postfix"
+    type:
+      settings:
+        schema: builtin:rum.mobile.request-errors
+        scope:
+          type: reference
+          project: project
+          configType: 'type'
+          configId: 'id_to_be_rewritten_postfix'
+          property: 'scope'
+    config:
+      name: "name_to_be_rewritten_postfix"
+      template: do/not/care.json

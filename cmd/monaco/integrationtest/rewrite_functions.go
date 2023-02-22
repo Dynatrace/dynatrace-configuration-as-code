@@ -135,7 +135,14 @@ func isV2Dependency(name string) bool {
 	if !(strings.HasPrefix(s, "[") && strings.HasSuffix(s, "]")) {
 		return false
 	}
-	s = strings.TrimSuffix(s, "]")
-	s = strings.TrimSpace(s)
-	return strings.HasSuffix(s, `"id"`) || strings.HasSuffix(s, `"name"`)
+	s = strings.Trim(s, "[]")
+	if s == "" {
+		return false
+	}
+	split := strings.Split(s, ",")
+	if len(split) < 2 || len(split) > 4 {
+		// does not contain cfgID or is too long for ref
+		return false
+	}
+	return true
 }

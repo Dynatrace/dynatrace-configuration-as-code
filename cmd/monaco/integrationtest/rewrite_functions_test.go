@@ -201,12 +201,32 @@ func TestReplaceId(t *testing.T) {
 			`someRef: ["project","type","theConfigId_postfix","name"]`,
 		},
 		{
+			"replaces configId in shorthand v2 reference #4",
+			`someRef: ["theConfigId", "prop" ]`,
+			`someRef: ["theConfigId_postfix", "prop" ]`,
+		},
+		{
+			"replaces configId in shorthand v2 reference #5",
+			`someRef: [project,type,theConfigId,name]`,
+			`someRef: [project,type,"theConfigId_postfix",name]`,
+		},
+		{
+			"does not replace in random array #1",
+			`someArr: []`,
+			`someArr: []`,
+		},
+		{
+			"does not replace in random array #2",
+			`someArr: [ project, type, configId, property, oneTooMany, twoTooMany]`,
+			`someArr: [ project, type, configId, property, oneTooMany, twoTooMany]`,
+		},
+		{
 			"replaces configId in v1 reference #1",
 			"someRef: \"/project/type/theConfigId.id\"",
 			"someRef: \"/project/type/theConfigId_postfix.id\"",
 		},
 		{
-			"replaces configId in shorthand v2 reference #2",
+			"replaces configId in v1 reference #2",
 			"someRef: 'type/theConfigId.id'",
 			"someRef: \"type/theConfigId_postfix.id\"",
 		},
