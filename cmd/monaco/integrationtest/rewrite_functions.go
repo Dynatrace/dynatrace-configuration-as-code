@@ -91,12 +91,16 @@ func ReplaceId(line string, idChange func(string) string) string {
 		return replaced
 	}
 
-	entries := strings.Split(line, ":")
+	entries := strings.SplitN(line, ":", 2)
 	if len(entries) != 2 { //not a key:value pair
 		return line
 	}
 	key := entries[0]
 	property := entries[1]
+
+	if strings.TrimSpace(key) == "values" { //very likely list-type array, don't touch
+		return line
+	}
 
 	if property := strings.Trim(property, ` "'`); isV1Dependency(property) {
 		ref := strings.Split(property, "/")

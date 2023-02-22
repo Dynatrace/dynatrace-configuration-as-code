@@ -186,6 +186,11 @@ func TestReplaceId(t *testing.T) {
 			"   configId: theConfigId_postfix",
 		},
 		{
+			"replaces id with colors in value",
+			"   id: extra:colons",
+			"   id: extra:colons_postfix",
+		},
+		{
 			"replaces configId in shorthand v2 reference #1",
 			`someRef: ["project", "type", "theConfigId", "id"]`,
 			`someRef: ["project", "type","theConfigId_postfix", "id"]`,
@@ -211,6 +216,11 @@ func TestReplaceId(t *testing.T) {
 			`someRef: [project,type,"theConfigId_postfix",name]`,
 		},
 		{
+			"replaces configId in shorthand v2 reference #6",
+			`scope: ["builtin:tags.auto-tagging", "value-scope", "scope"]`,
+			`scope: ["builtin:tags.auto-tagging","value-scope_postfix", "scope"]`,
+		},
+		{
 			"does not replace in random array #1",
 			`someArr: []`,
 			`someArr: []`,
@@ -219,6 +229,16 @@ func TestReplaceId(t *testing.T) {
 			"does not replace in random array #2",
 			`someArr: [ project, type, configId, property, oneTooMany, twoTooMany]`,
 			`someArr: [ project, type, configId, property, oneTooMany, twoTooMany]`,
+		},
+		{
+			"does not replace in values (list type) array",
+			`values: [ some_val, some_val2, some_val3]`,
+			`values: [ some_val, some_val2, some_val3]`,
+		},
+		{
+			"does not replace in values (list type) array #2",
+			` values  : [ some_val, some_val2, some_val3]`,
+			` values  : [ some_val, some_val2, some_val3]`,
 		},
 		{
 			"replaces configId in v1 reference #1",
