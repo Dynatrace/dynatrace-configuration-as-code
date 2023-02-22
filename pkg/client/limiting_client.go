@@ -98,6 +98,13 @@ func (l limitingClient) ListSchemas() (s SchemaList, err error) {
 	return
 }
 
+func (l limitingClient) GetSettingById(objectId string) (o *DownloadSettingsObject, err error) {
+	l.limiter.ExecuteBlocking(func() {
+		o, err = l.client.GetSettingById(objectId)
+	})
+
+	return
+}
 func (l limitingClient) ListSettings(schemaId string, opts ListSettingsOptions) (o []DownloadSettingsObject, err error) {
 	l.limiter.ExecuteBlocking(func() {
 		o, err = l.client.ListSettings(schemaId, opts)

@@ -83,6 +83,9 @@ type DownloadSettingsObject struct {
 	Value         json.RawMessage `json:"value"`
 }
 
+// ErrSettingNotFound is returned when no settings 2.0 object could be found
+var ErrSettingNotFound = errors.New("settings object not found")
+
 // SettingsClient is the abstraction layer for CRUD operations on the Dynatrace Settings API.
 // Its design is intentionally not dependent on Monaco objects.
 //
@@ -105,6 +108,9 @@ type SettingsClient interface {
 
 	// ListSettings returns all settings objects for a given schema.
 	ListSettings(string, ListSettingsOptions) ([]DownloadSettingsObject, error)
+
+	// GetSettingById returns the setting with the given object ID
+	GetSettingById(string) (*DownloadSettingsObject, error)
 
 	// DeleteSettings deletes a settings object giving its object ID
 	DeleteSettings(string) error
@@ -291,98 +297,57 @@ func isNewDynatraceTokenFormat(token string) bool {
 }
 
 func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, error) {
-	externalId := idutils.GenerateExternalID(obj.SchemaId, obj.Id)
-
-	// list all settings with matching external ID
-	settings, err := d.ListSettings(obj.SchemaId, ListSettingsOptions{
-		// we don't care about the actual value setting
-		DiscardValue: true,
-		// only consider objects with an external id that matches the expected one
-		Filter: func(o DownloadSettingsObject) bool {
-			return o.ExternalId == externalId
-		},
-	})
-	if err != nil {
-		return DynatraceEntity{}, fmt.Errorf("failed to retrieve known settings for upsert operation: %w", err)
-	}
-
-	// should never happen
-	if len(settings) > 1 {
-		return DynatraceEntity{}, fmt.Errorf("failed to perform upsert operation: found more than one settings object with the same external id: %s. Settings objects: %v", externalId, settings)
-	}
 
 	// special handling for updating settings 2.0 objects on tenants with version pre 1.262.0
 	// Tenants with versions < 1.262 are not able to handle updates of existing
-	// settings 2.0 objects that are non-deletable
-	if !d.serverVersion.Invalid() &&
-		d.serverVersion.SmallerThan(version.Version{Major: 1, Minor: 262, Patch: 0}) &&
-		len(settings) > 0 &&
-		settings[0].ObjectId == obj.OriginObjectId {
-		log.Warn("Unable to update Settings 2.0 object of schema %q and object id %q on Dynatrace tenant with a version < 1.262.0", obj.SchemaId, obj.OriginObjectId)
-		return DynatraceEntity{
-			Id:   settings[0].ObjectId,
-			Name: settings[0].ObjectId,
-		}, nil
+	// settings 2.0 objects that are non-deletable.
+	// So we check if the object with originObjectID already exists, if yes and the tenant is older than 1.262
+	// then we cannot perform the upsert operation
+	if !d.serverVersion.Invalid() && d.serverVersion.SmallerThan(version.Version{Major: 1, Minor: 262, Patch: 0}) {
+		fetchedSettingObj, err := d.GetSettingById(obj.OriginObjectId)
+		if err != nil && !errors.Is(err, ErrSettingNotFound) {
+			return DynatraceEntity{}, fmt.Errorf("unable to fetch settings object with object id %q: %w", obj.OriginObjectId, err)
+		}
+		if fetchedSettingObj != nil {
+			log.Warn("Unable to update Settings 2.0 object of schema %q and object id %q on Dynatrace environment with a version < 1.262.0", obj.SchemaId, obj.OriginObjectId)
+			return DynatraceEntity{
+				Id:   fetchedSettingObj.ObjectId,
+				Name: fetchedSettingObj.ObjectId,
+			}, nil
+		}
 	}
 
-	// if no settings object yet exists, create a new one
-	// otherwise try to use PUT to update
-	if len(settings) == 0 {
-		// special handling of this Settings object.
-		// It is delete-protected BUT has a key property which is internally
-		// used to find the object to be updated
-		if obj.SchemaId == "builtin:oneagent.features" {
-			externalId = ""
-			obj.OriginObjectId = ""
-		}
-		payload, err := buildPostRequestPayload(obj, externalId)
-		if err != nil {
-			return DynatraceEntity{}, fmt.Errorf("failed to build settings object for upsert: %w", err)
-		}
-
-		requestUrl := d.environmentUrl + pathSettingsObjects
-
-		resp, err := rest.SendWithRetryWithInitialTry(d.client, rest.Post, obj.Id, requestUrl, payload, d.token, d.retrySettings.Normal)
-		if err != nil {
-			return DynatraceEntity{}, fmt.Errorf("failed to upsert dynatrace obj: %w", err)
-		}
-
-		if !success(resp) {
-			return DynatraceEntity{}, fmt.Errorf("failed to update settings object with externalId %s (HTTP %d)!\n\tResponse was: %s", externalId, resp.StatusCode, string(resp.Body))
-		}
-
-		entity, err := parsePostResponse(resp)
-		if err != nil {
-			return DynatraceEntity{}, fmt.Errorf("failed to parse response: %w", err)
-		}
-
-		log.Debug("\tCreated object %s (%s) with externalId %s", obj.Id, obj.SchemaId, externalId)
-		return entity, nil
-	} else {
-		payload, err := buildPutRequestPayload(obj, externalId)
-		if err != nil {
-			return DynatraceEntity{}, fmt.Errorf("failed to build settings object for upsert: %w", err)
-		}
-
-		requestUrl := d.environmentUrl + pathSettingsObjects + "/" + settings[0].ObjectId
-
-		resp, err := rest.SendWithRetryWithInitialTry(d.client, rest.Put, obj.Id, requestUrl, payload, d.token, d.retrySettings.Long)
-		if err != nil {
-			return DynatraceEntity{}, fmt.Errorf("failed to upsert dynatrace obj: %w", err)
-		}
-
-		if !success(resp) {
-			return DynatraceEntity{}, fmt.Errorf("failed to update settings object with externalId %s (HTTP %d)!\n\tResponse was: %s", externalId, resp.StatusCode, string(resp.Body))
-		}
-
-		entity, err := parsePutResponse(resp)
-		if err != nil {
-			return DynatraceEntity{}, fmt.Errorf("failed to parse response: %w", err)
-		}
-
-		log.Debug("\tUpdated object %s (%s) with externalId %s", obj.Id, obj.SchemaId, externalId)
-		return entity, nil
+	externalId := idutils.GenerateExternalID(obj.SchemaId, obj.Id)
+	// special handling of this Settings object.
+	// It is delete-protected BUT has a key property which is internally
+	// used to find the object to be updated
+	if obj.SchemaId == "builtin:oneagent.features" {
+		externalId = ""
+		obj.OriginObjectId = ""
 	}
+	payload, err := buildPostRequestPayload(obj, externalId)
+	if err != nil {
+		return DynatraceEntity{}, fmt.Errorf("failed to build settings object for upsert: %w", err)
+	}
+
+	requestUrl := d.environmentUrl + pathSettingsObjects
+
+	resp, err := rest.SendWithRetryWithInitialTry(d.client, rest.Post, obj.Id, requestUrl, payload, d.token, d.retrySettings.Normal)
+	if err != nil {
+		return DynatraceEntity{}, fmt.Errorf("failed to upsert dynatrace obj: %w", err)
+	}
+
+	if !success(resp) {
+		return DynatraceEntity{}, fmt.Errorf("failed to upsert settings object with externalId %s (HTTP %d)!\n\tResponse was: %s", externalId, resp.StatusCode, string(resp.Body))
+	}
+
+	entity, err := parsePostResponse(resp)
+	if err != nil {
+		return DynatraceEntity{}, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	log.Debug("\tUpserted object %s (%s) with externalId %s", obj.Id, obj.SchemaId, externalId)
+	return entity, nil
 }
 
 func (d *DynatraceClient) List(api Api) (values []Value, err error) {
@@ -475,6 +440,34 @@ func (d *DynatraceClient) ListSchemas() (SchemaList, error) {
 	}
 
 	return result.Items, nil
+}
+
+func (d *DynatraceClient) GetSettingById(objectId string) (*DownloadSettingsObject, error) {
+	u, err := url.Parse(d.environmentUrl + pathSettingsObjects + "/" + objectId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse URL '%s': %w", d.environmentUrl+pathSettingsObjects, err)
+	}
+
+	resp, err := rest.Get(d.client, u.String(), d.token)
+	if err != nil {
+		return nil, fmt.Errorf("failed to GET settings object with object id %q: %w", objectId, err)
+	}
+
+	if !success(resp) {
+		// special case of settings API: If you give it any object ID for a setting object that does not exist, it will give back 400 BadRequest instead
+		// of 404 Not found. So we interpret both status codes, 400 and 404, as "not found"
+		if resp.StatusCode == http.StatusBadRequest || resp.StatusCode == http.StatusNotFound {
+			return nil, ErrSettingNotFound
+		}
+		return nil, fmt.Errorf("request failed with HTTP (%d).\n\tResponse content: %s", resp.StatusCode, string(resp.Body))
+	}
+
+	var result DownloadSettingsObject
+	if err = json.Unmarshal(resp.Body, &result); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &result, nil
 }
 
 func (d *DynatraceClient) ListSettings(schemaId string, opts ListSettingsOptions) ([]DownloadSettingsObject, error) {

@@ -255,6 +255,9 @@ func (c *DummyClient) ListSchemas() (SchemaList, error) {
 	return make(SchemaList, 0), nil
 }
 
+func (c *DummyClient) GetSettingById(_ string) (*DownloadSettingsObject, error) {
+	return &DownloadSettingsObject{}, nil
+}
 func (c *DummyClient) ListSettings(_ string, _ ListSettingsOptions) ([]DownloadSettingsObject, error) {
 	return make([]DownloadSettingsObject, 0), nil
 }
