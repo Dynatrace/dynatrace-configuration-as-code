@@ -18,9 +18,8 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/sort"
-	"strings"
-
 	s "sort"
+	"strings"
 
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
@@ -266,30 +265,51 @@ func sortConfigs(configs []config.Config) ([]config.Config, []error) {
 	return result, nil
 }
 
+// referencesLookup is a double lookup map to check dependencies between configs using their coordinates
+type referencesLookup map[coordinate.Coordinate]map[coordinate.Coordinate]struct{}
+
 func configsToSortData(configs []config.Config) ([][]bool, []int) {
 	numConfigs := len(configs)
 	matrix := make([][]bool, numConfigs)
 	inDegrees := make([]int, len(configs))
 
-	for i, conf := range configs {
-		matrix[i] = make([]bool, numConfigs)
+	// build lookup tables for References between configs.
+	// with this we need to calculate the references only once and can use the map-lookup with takes O(1)
+	refLookup := make(referencesLookup, len(configs))
+	for i := range configs {
+		refs := configs[i].References()
+		c := make(map[coordinate.Coordinate]struct{}, len(refs))
+		for ir := range refs {
+			c[refs[ir]] = struct{}{}
+		}
 
-		for j, c := range configs {
+		refLookup[configs[i].Coordinate] = c
+	}
+
+	for i := range configs {
+		row := make([]bool, numConfigs)
+
+		for j := range configs {
+			// don't check the same config
 			if i == j {
 				continue
 			}
 
 			// we do not care about skipped configs
-			if c.Skip {
+			if configs[j].Skip {
 				continue
 			}
 
-			if hasDependencyOn(c, conf) {
-				logDependency("Configuration", c.Coordinate.String(), conf.Coordinate.String())
-				matrix[i][j] = true
+			// check if we have a reference between the configs.
+			// We check the inner config-loop against the outer one
+			if _, f := refLookup[configs[j].Coordinate][configs[i].Coordinate]; f {
+				logDependency("Configuration", configs[j].Coordinate.String(), configs[i].Coordinate.String())
+				row[j] = true
 				inDegrees[i]++
 			}
 		}
+
+		matrix[i] = row
 	}
 
 	return matrix, inDegrees
@@ -393,16 +413,4 @@ func projectsToSortData(projects []project.Project, environment string) ([][]boo
 
 func logDependency(prefix string, depending string, dependedOn string) {
 	log.Debug("%s: %s has dependency on %s", prefix, depending, dependedOn)
-}
-
-// hasDependencyOn tests whether the config given by the first argument
-// has a dependency on the config given by the second argument
-func hasDependencyOn(from, to config.Config) bool {
-	for _, ref := range from.References() {
-		if to.Coordinate.Match(ref) {
-			return true
-		}
-	}
-
-	return false
 }
