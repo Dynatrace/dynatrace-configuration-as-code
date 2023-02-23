@@ -18,8 +18,10 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/sort"
-	s "sort"
 	"strings"
+	"sync"
+
+	s "sort"
 
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
@@ -286,31 +288,39 @@ func configsToSortData(configs []config.Config) ([][]bool, []int) {
 		refLookup[configs[i].Coordinate] = c
 	}
 
+	wg := sync.WaitGroup{}
+	wg.Add(len(configs))
+
 	for i := range configs {
-		row := make([]bool, numConfigs)
+		go func(i int) {
+			row := make([]bool, numConfigs)
 
-		for j := range configs {
-			// don't check the same config
-			if i == j {
-				continue
+			for j := range configs {
+				// don't check the same config
+				if i == j {
+					continue
+				}
+
+				// we do not care about skipped configs
+				if configs[j].Skip {
+					continue
+				}
+
+				// check if we have a reference between the configs.
+				// We check the inner config-loop against the outer one
+				if _, f := refLookup[configs[j].Coordinate][configs[i].Coordinate]; f {
+					logDependency("Configuration", configs[j].Coordinate.String(), configs[i].Coordinate.String())
+					row[j] = true
+					inDegrees[i]++
+				}
 			}
 
-			// we do not care about skipped configs
-			if configs[j].Skip {
-				continue
-			}
-
-			// check if we have a reference between the configs.
-			// We check the inner config-loop against the outer one
-			if _, f := refLookup[configs[j].Coordinate][configs[i].Coordinate]; f {
-				logDependency("Configuration", configs[j].Coordinate.String(), configs[i].Coordinate.String())
-				row[j] = true
-				inDegrees[i]++
-			}
-		}
-
-		matrix[i] = row
+			matrix[i] = row
+			wg.Done()
+		}(i)
 	}
+
+	wg.Wait()
 
 	return matrix, inDegrees
 }
