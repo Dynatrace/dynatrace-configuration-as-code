@@ -131,11 +131,16 @@ var DefaultParameterParsers = map[string]parameter.ParameterSerDe{
 
 func (c *Config) References() []coordinate.Coordinate {
 
-	refs := make([]coordinate.Coordinate, 0)
-
+	count := 0
 	for _, p := range c.Parameters {
-		for _, r := range p.GetReferences() {
-			refs = append(refs, r.Config)
+		count += len(p.GetReferences())
+	}
+
+	refs := make([]coordinate.Coordinate, 0, count)
+	for _, p := range c.Parameters {
+		references := p.GetReferences()
+		for i := range references {
+			refs = append(refs, references[i].Config)
 		}
 	}
 
