@@ -25,7 +25,7 @@ jobs:
       - name: GO dependencies and licenses
         run: |
           TMP_DIR=$(mktemp -d 2>/dev/null)
-          ( cd dynatrace-monitoring-as-code || return ; go mod tidy > /dev/null 2>&1; go list -m -json all | go-licence-detector -depsTemplate=.dependencies/templates/dependencies.csv.tmpl -depsOut="${TMP_DIR}"/dependencies.txt )
+          ( cd dynatrace-monitoring-as-code || return ; go mod tidy > /dev/null 2>&1; go list -m -json all | go-licence-detector -includeIndirect -depsTemplate=.dependencies/templates/dependencies.csv.tmpl -depsOut="${TMP_DIR}"/dependencies.txt )
           cat "$TMP_DIR"/*.txt | sort | uniq > dependencies-and-licenses-go.txt
           echo
           echo "👍 done. written results to ./dependencies-and-licenses-go.txt"
