@@ -58,6 +58,8 @@ func TestIntegrationAllConfigs(t *testing.T) {
 // Tests a dry run (validation)
 func TestIntegrationValidationAllConfigs(t *testing.T) {
 
+	t.Setenv("UNIQUE_TEST_SUFFIX", "can-be-nonunique-for-validation")
+
 	configFolder := "test-resources/integration-all-configs/"
 	manifest := configFolder + "manifest.yaml"
 
