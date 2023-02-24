@@ -375,11 +375,17 @@ func runIntegrationWithCleanup(t *testing.T, testFs afero.Fs, configFolder, mani
 	})
 
 	for k, v := range envVars {
-		t.Setenv(k, v) // register both just in case
-		t.Setenv(fmt.Sprintf("%s_%s", k, suffix), v)
+		setTestEnvVar(t, k, v, suffix)
 	}
 
+	setTestEnvVar(t, "UNIQUE_TEST_SUFFIX", suffix, suffix)
+
 	testFunc(testFs)
+}
+
+func setTestEnvVar(t *testing.T, key, value, testSuffix string) {
+	t.Setenv(key, value)                                   // expose directly
+	t.Setenv(fmt.Sprintf("%s_%s", key, testSuffix), value) // expose with suffix (env parameter "name" is subject to rewrite)
 }
 
 func appendUniqueSuffixToIntegrationTestConfigs(t *testing.T, fs afero.Fs, configFolder string, generalSuffix string) string {
@@ -406,7 +412,8 @@ func generateTestSuffix(generalSuffix string) string {
 	rand.Seed(time.Now().UnixNano())
 	randomNumber := rand.Intn(10000)
 
-	return fmt.Sprintf("%s_%d_%s", getTimestamp(), randomNumber, generalSuffix)
+	suffix := fmt.Sprintf("%s_%d_%s", getTimestamp(), randomNumber, generalSuffix)
+	return strings.ToLower(suffix)
 }
 
 func wait(description string, maxPollCount int, condition func() bool) error {
