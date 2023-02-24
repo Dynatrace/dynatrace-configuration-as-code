@@ -625,8 +625,11 @@ func (d *DynatraceClient) ListPaginated(urlPath string, params url.Values, addTo
 				return err
 			}
 
-			if !success(resp) {
-				return fmt.Errorf("Failed to get further data from api: %v (HTTP %d)!\n    Response was: %s", urlPath, resp.StatusCode, string(resp.Body))
+			if !success(resp) && resp.StatusCode != http.StatusBadRequest {
+				return fmt.Errorf("Failed to get further data from paginated API %s (HTTP %d)!\n    Response was: %s", urlPath, resp.StatusCode, string(resp.Body))
+			} else if resp.StatusCode == http.StatusBadRequest {
+				log.Warn("Failed to get additional data from paginated API %s - pages may have been removed during request.\n    Response was: %s", urlPath, string(resp.Body))
+				break
 			}
 
 		} else {

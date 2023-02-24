@@ -443,8 +443,11 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlStrin
 				return nil, err
 			}
 
-			if !success(resp) {
+			if !success(resp) && resp.StatusCode != http.StatusBadRequest {
 				return nil, fmt.Errorf("Failed to get further configs from paginated API %s (HTTP %d)!\n    Response was: %s", theApi.GetId(), resp.StatusCode, string(resp.Body))
+			} else if resp.StatusCode == http.StatusBadRequest {
+				log.Warn("Failed to get additional data from paginated API %s - pages may have been removed during request.\n    Response was: %s", theApi.GetId(), string(resp.Body))
+				break
 			}
 
 		} else {
