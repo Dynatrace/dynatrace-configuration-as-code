@@ -7,7 +7,16 @@ configs:
     config:
       name: "My Settings 2.0 SLO #1"
       parameters:
-        metricName: "my_settings_slo_1"
+        metricName:
+          type: compound
+          format: "{{.baseMetric}}_{{.testSuffix}}"
+          references:
+            - baseMetric
+            - testSuffix
+        baseMetric: "my_settings_slo_1"
+        testSuffix:
+          type: environment
+          name: "UNIQUE_TEST_SUFFIX"
         mzone:
           configType: management-zone
           configId: zone
@@ -28,7 +37,16 @@ configs:
     config:
       name: "My Settings 2.0 SLO #2"
       parameters:
-        metricName: "my_settings_slo_2"
+        metricName:
+          type: compound
+          format: "{{.baseMetric}}_{{.testSuffix}}"
+          references:
+            - baseMetric
+            - testSuffix
+        baseMetric: "my_settings_slo_2"
+        testSuffix:
+          type: environment
+          name: "UNIQUE_TEST_SUFFIX"
         mzone:
           configType: management-zone
           configId: zone
@@ -49,7 +67,16 @@ configs:
     config:
       name: "My Settings 2.0 SLO #3"
       parameters:
-        metricName: "my_settings_slo_3"
+        metricName:
+          type: compound
+          format: "{{.baseMetric}}_{{.testSuffix}}"
+          references:
+            - baseMetric
+            - testSuffix
+        baseMetric: "my_settings_slo_3"
+        testSuffix:
+          type: environment
+          name: "UNIQUE_TEST_SUFFIX"
         mzone:
           configType: management-zone
           configId: zone
@@ -70,7 +97,16 @@ configs:
     config:
       name: "My Settings 2.0 SLO #4"
       parameters:
-        metricName: "my_settings_slo_4"
+        metricName:
+          type: compound
+          format: "{{.baseMetric}}_{{.testSuffix}}"
+          references:
+            - baseMetric
+            - testSuffix
+        baseMetric: "my_settings_slo_4"
+        testSuffix:
+          type: environment
+          name: "UNIQUE_TEST_SUFFIX"
         mzone:
           configType: management-zone
           configId: zone
@@ -91,7 +127,16 @@ configs:
     config:
       name: "My Settings 2.0 SLO #5"
       parameters:
-        metricName: "my_settings_slo_5"
+        metricName:
+          type: compound
+          format: "{{.baseMetric}}_{{.testSuffix}}"
+          references:
+            - baseMetric
+            - testSuffix
+        baseMetric: "my_settings_slo_5"
+        testSuffix:
+          type: environment
+          name: "UNIQUE_TEST_SUFFIX"
         mzone:
           configType: management-zone
           configId: zone
@@ -112,7 +157,16 @@ configs:
     config:
       name: "My Settings 2.0 SLO #6"
       parameters:
-        metricName: "my_settings_slo_6"
+        metricName:
+          type: compound
+          format: "{{.baseMetric}}_{{.testSuffix}}"
+          references:
+            - baseMetric
+            - testSuffix
+        baseMetric: "my_settings_slo_6"
+        testSuffix:
+          type: environment
+          name: "UNIQUE_TEST_SUFFIX"
         mzone:
           configType: management-zone
           configId: zone
@@ -133,7 +187,16 @@ configs:
     config:
       name: "My Settings 2.0 SLO #7"
       parameters:
-        metricName: "my_settings_slo_7"
+        metricName:
+          type: compound
+          format: "{{.baseMetric}}_{{.testSuffix}}"
+          references:
+            - baseMetric
+            - testSuffix
+        baseMetric: "my_settings_slo_7"
+        testSuffix:
+          type: environment
+          name: "UNIQUE_TEST_SUFFIX"
         mzone:
           configType: management-zone
           configId: zone
@@ -154,7 +217,16 @@ configs:
     config:
       name: "My Settings 2.0 SLO #8"
       parameters:
-        metricName: "my_settings_slo_8"
+        metricName:
+          type: compound
+          format: "{{.baseMetric}}_{{.testSuffix}}"
+          references:
+            - baseMetric
+            - testSuffix
+        baseMetric: "my_settings_slo_8"
+        testSuffix:
+          type: environment
+          name: "UNIQUE_TEST_SUFFIX"
         mzone:
           configType: management-zone
           configId: zone
@@ -175,7 +247,16 @@ configs:
     config:
       name: "My Settings 2.0 SLO #9"
       parameters:
-        metricName: "my_settings_slo_9"
+        metricName:
+          type: compound
+          format: "{{.baseMetric}}_{{.testSuffix}}"
+          references:
+            - baseMetric
+            - testSuffix
+        baseMetric: "my_settings_slo_9"
+        testSuffix:
+          type: environment
+          name: "UNIQUE_TEST_SUFFIX"
         mzone:
           configType: management-zone
           configId: zone
@@ -196,7 +277,16 @@ configs:
     config:
       name: "My Settings 2.0 SLO #10"
       parameters:
-        metricName: "my_settings_slo_10"
+        metricName:
+          type: compound
+          format: "{{.baseMetric}}_{{.testSuffix}}"
+          references:
+            - baseMetric
+            - testSuffix
+        baseMetric: "my_settings_slo_10"
+        testSuffix:
+          type: environment
+          name: "UNIQUE_TEST_SUFFIX"
         mzone:
           configType: management-zone
           configId: zone
@@ -217,7 +307,16 @@ configs:
     config:
       name: "My Settings 2.0 SLO #11"
       parameters:
-        metricName: "my_settings_slo_11"
+        metricName:
+          type: compound
+          format: "{{.baseMetric}}_{{.testSuffix}}"
+          references:
+            - baseMetric
+            - testSuffix
+        baseMetric: "my_settings_slo_11"
+        testSuffix:
+          type: environment
+          name: "UNIQUE_TEST_SUFFIX"
         mzone:
           configType: management-zone
           configId: zone
@@ -238,7 +337,16 @@ configs:
     config:
       name: "My Settings 2.0 SLO #12"
       parameters:
-        metricName: "my_settings_slo_12"
+        metricName:
+          type: compound
+          format: "{{.baseMetric}}_{{.testSuffix}}"
+          references:
+            - baseMetric
+            - testSuffix
+        baseMetric: "my_settings_slo_12"
+        testSuffix:
+          type: environment
+          name: "UNIQUE_TEST_SUFFIX"
         mzone:
           configType: management-zone
           configId: zone
