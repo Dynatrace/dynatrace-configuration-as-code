@@ -51,7 +51,7 @@ func NewDummyClient() *DummyClient {
 	return &DummyClient{Entries: map[api.Api][]DataEntry{}}
 }
 
-func (c *DummyClient) List(a api.Api) (values []api.Value, err error) {
+func (c *DummyClient) ListConfigs(a api.Api) (values []api.Value, err error) {
 	entries, found := c.Entries[a]
 
 	if !found {
@@ -88,7 +88,7 @@ func (c *DummyClient) ReadByName(a api.Api, name string) ([]byte, error) {
 	return nil, fmt.Errorf("nothing found for name %s in api %s", name, a.GetId())
 }
 
-func (c *DummyClient) ReadById(a api.Api, id string) ([]byte, error) {
+func (c *DummyClient) ReadConfigById(a api.Api, id string) ([]byte, error) {
 	entries, found := c.Entries[a]
 
 	if !found {
@@ -104,7 +104,7 @@ func (c *DummyClient) ReadById(a api.Api, id string) ([]byte, error) {
 	return nil, fmt.Errorf("nothing found for id %s in api %s", id, a.GetId())
 }
 
-func (c *DummyClient) UpsertByName(a api.Api, name string, data []byte) (entity api.DynatraceEntity, err error) {
+func (c *DummyClient) UpsertConfigByName(a api.Api, name string, data []byte) (entity api.DynatraceEntity, err error) {
 	entries, found := c.Entries[a]
 
 	if c.Entries == nil {
@@ -145,7 +145,7 @@ func (c *DummyClient) UpsertByName(a api.Api, name string, data []byte) (entity 
 	}, nil
 }
 
-func (c *DummyClient) UpsertByNonUniqueNameAndId(a api.Api, entityId string, name string, data []byte) (entity api.DynatraceEntity, err error) {
+func (c *DummyClient) UpsertConfigByNonUniqueNameAndId(a api.Api, entityId string, name string, data []byte) (entity api.DynatraceEntity, err error) {
 	entries, found := c.Entries[a]
 
 	if c.Entries == nil {
@@ -205,7 +205,7 @@ func (c *DummyClient) writeRequest(a api.Api, name string, payload []byte) {
 	}
 }
 
-func (c *DummyClient) DeleteById(a api.Api, id string) error {
+func (c *DummyClient) DeleteConfigById(a api.Api, id string) error {
 	entries, found := c.Entries[a]
 
 	if !found {
@@ -228,7 +228,7 @@ func (c *DummyClient) DeleteById(a api.Api, id string) error {
 	return nil
 }
 
-func (c *DummyClient) ExistsByName(a api.Api, name string) (exists bool, id string, err error) {
+func (c *DummyClient) ConfigExistsByName(a api.Api, name string) (exists bool, id string, err error) {
 	entries, found := c.Entries[a]
 
 	if !found {

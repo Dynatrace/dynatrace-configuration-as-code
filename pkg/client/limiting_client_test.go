@@ -33,8 +33,8 @@ func TestDecoratedClient_ReadById(t *testing.T) {
 	client := NewMockClient(gomock.NewController(t))
 	limited := LimitClientParallelRequests(client, 1)
 
-	client.EXPECT().ReadById(a, "id").Return(givenJson, givenError)
-	j, e := limited.ReadById(a, "id")
+	client.EXPECT().ReadConfigById(a, "id").Return(givenJson, givenError)
+	j, e := limited.ReadConfigById(a, "id")
 
 	assert.DeepEqual(t, j, givenJson)
 	assert.Equal(t, e, givenError)

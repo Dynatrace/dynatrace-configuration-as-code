@@ -74,12 +74,12 @@ func cleanupTestConfigs(t *testing.T, apis api.ApiMap, client client.ConfigClien
 			continue
 		}
 
-		values, err := client.List(api)
+		values, err := client.ListConfigs(api)
 		assert.NilError(t, err)
 
 		for _, value := range values {
 			if testSuffixRegex.MatchString(value.Name) || testSuffixRegex.MatchString(value.Id) {
-				err := client.DeleteById(api, value.Id)
+				err := client.DeleteConfigById(api, value.Id)
 				if err != nil {
 					t.Errorf("failed to delete %s (%s): %v", value.Name, api.GetId(), err)
 				} else {

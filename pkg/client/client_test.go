@@ -112,7 +112,7 @@ func TestReadByIdReturnsAnErrorUponEncounteringAnError(t *testing.T) {
 	defer func() { testServer.Close() }()
 	client, _ := NewDynatraceClient(testServer.URL, "abc", WithHTTPClient(testServer.Client()))
 
-	_, err := client.ReadById(mockApi, "test")
+	_, err := client.ReadConfigById(mockApi, "test")
 	assert.ErrorContains(t, err, "Response was")
 }
 
@@ -123,7 +123,7 @@ func TestReadByIdEscapesTheId(t *testing.T) {
 	defer func() { testServer.Close() }()
 	client, _ := NewDynatraceClient(testServer.URL, "abc", WithHTTPClient(testServer.Client()))
 
-	_, err := client.ReadById(mockApiNotSingle, unescapedId)
+	_, err := client.ReadConfigById(mockApiNotSingle, unescapedId)
 	assert.NilError(t, err)
 }
 
@@ -137,7 +137,7 @@ func TestReadByIdReturnsTheResponseGivenNoError(t *testing.T) {
 
 	client, _ := NewDynatraceClient(testServer.URL, "abc", WithHTTPClient(testServer.Client()))
 
-	resp, err := client.ReadById(mockApi, "test")
+	resp, err := client.ReadConfigById(mockApi, "test")
 	assert.NilError(t, err, "there should not be an error")
 	assert.DeepEqual(t, body, resp)
 }
