@@ -345,7 +345,7 @@ func appendUniqueSuffixToIntegrationTestConfigs(t *testing.T, fs afero.Fs, confi
 	rand.Seed(time.Now().UnixNano())
 	randomNumber := rand.Intn(10000)
 
-	suffix := fmt.Sprintf("%s_%d_%s", getTimestamp(), randomNumber, generalSuffix)
+	suffix := fmt.Sprintf("%s_%d_%s_%s", getTimestamp(), randomNumber, generalSuffix, "v1")
 	transformers := []func(string) string{getTransformerFunc(suffix)}
 
 	err := integrationtest.RewriteConfigNames(configFolder, fs, transformers)
