@@ -112,7 +112,7 @@ func TestReadByIdReturnsAnErrorUponEncounteringAnError(t *testing.T) {
 	defer func() { testServer.Close() }()
 	client, _ := NewDynatraceClient(testServer.URL, "abc", WithHTTPClient(testServer.Client()))
 
-	_, err := client.ReadById(mockApi, "test")
+	_, err := client.ReadConfigById(mockApi, "test")
 	assert.ErrorContains(t, err, "Response was")
 }
 
@@ -123,7 +123,7 @@ func TestReadByIdEscapesTheId(t *testing.T) {
 	defer func() { testServer.Close() }()
 	client, _ := NewDynatraceClient(testServer.URL, "abc", WithHTTPClient(testServer.Client()))
 
-	_, err := client.ReadById(mockApiNotSingle, unescapedId)
+	_, err := client.ReadConfigById(mockApiNotSingle, unescapedId)
 	assert.NilError(t, err)
 }
 
@@ -137,7 +137,7 @@ func TestReadByIdReturnsTheResponseGivenNoError(t *testing.T) {
 
 	client, _ := NewDynatraceClient(testServer.URL, "abc", WithHTTPClient(testServer.Client()))
 
-	resp, err := client.ReadById(mockApi, "test")
+	resp, err := client.ReadConfigById(mockApi, "test")
 	assert.NilError(t, err, "there should not be an error")
 	assert.DeepEqual(t, body, resp)
 }
@@ -407,6 +407,128 @@ func TestListKnownSettings(t *testing.T) {
 			assert.Equal(t, apiCalls, tt.wantNumberOfApiCalls, "expected exactly %d API calls to happen but %d calls where made", tt.wantNumberOfApiCalls, apiCalls)
 		})
 	}
+}
+
+func TestGetSettingById(t *testing.T) {
+	type fields struct {
+		environmentUrl string
+		token          string
+		client         *http.Client
+		retrySettings  rest.RetrySettings
+	}
+	type args struct {
+		objectID string
+	}
+	tests := []struct {
+		name                string
+		fields              fields
+		args                args
+		givenTestServerResp *testServerResponse
+		wantURLPath         string
+		wantResult          *DownloadSettingsObject
+		wantErr             bool
+	}{
+		{
+			name: "Get Setting by ID - malformed environment URL",
+			fields: fields{
+				environmentUrl: " https://leading-space.com",
+			},
+			args:        args{},
+			wantURLPath: "/api/v2/settings/objects/12345",
+			wantResult:  nil,
+			wantErr:     true,
+		},
+		{
+			name:   "Get Setting by ID - server response != 2xx",
+			fields: fields{},
+			args: args{
+				objectID: "12345",
+			},
+			givenTestServerResp: &testServerResponse{
+				statusCode: 500,
+				body:       "{}",
+			},
+			wantURLPath: "/api/v2/settings/objects/12345",
+			wantResult:  nil,
+			wantErr:     true,
+		},
+		{
+			name:   "Get Setting by ID - invalid server response",
+			fields: fields{},
+			args: args{
+				objectID: "12345",
+			},
+			givenTestServerResp: &testServerResponse{
+				statusCode: 200,
+				body:       `{bs}`,
+			},
+			wantURLPath: "/api/v2/settings/objects/12345",
+			wantResult:  nil,
+			wantErr:     true,
+		},
+		{
+			name:   "Get Setting by ID",
+			fields: fields{},
+			args: args{
+				objectID: "12345",
+			},
+			givenTestServerResp: &testServerResponse{
+				statusCode: 200,
+				body:       `{"objectId":"12345","externalId":"54321", "schemaVersion":"1.0","schemaId":"builtin:bla","scope":"tenant"}`,
+			},
+			wantURLPath: "/api/v2/settings/objects/12345",
+			wantResult: &DownloadSettingsObject{
+				ExternalId:    "54321",
+				SchemaVersion: "1.0",
+				SchemaId:      "builtin:bla",
+				ObjectId:      "12345",
+				Scope:         "tenant",
+				Value:         nil,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				assert.Equal(t, tt.wantURLPath, req.URL.Path)
+				if resp := tt.givenTestServerResp; resp != nil {
+					if resp.statusCode != 200 {
+						http.Error(rw, resp.body, resp.statusCode)
+					} else {
+						_, _ = rw.Write([]byte(resp.body))
+					}
+				}
+
+			}))
+			defer server.Close()
+
+			var envURL string
+			if tt.fields.environmentUrl != "" {
+				envURL = tt.fields.environmentUrl
+			} else {
+				envURL = server.URL
+			}
+
+			d := &DynatraceClient{
+				environmentUrl: envURL,
+				token:          tt.fields.token,
+				client:         server.Client(),
+				retrySettings:  tt.fields.retrySettings,
+			}
+
+			settingsObj, err := d.GetSettingById(tt.args.objectID)
+			if tt.wantErr {
+				assert.Assert(t, err != nil)
+			} else {
+				assert.NilError(t, err)
+			}
+			assert.DeepEqual(t, tt.wantResult, settingsObj)
+
+		})
+	}
+
 }
 
 func TestDeleteSettings(t *testing.T) {

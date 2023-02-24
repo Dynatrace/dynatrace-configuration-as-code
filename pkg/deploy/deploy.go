@@ -130,7 +130,7 @@ func deployConfig(client client.ConfigClient, apis api.ApiMap, entityMap *Entity
 	if apiToDeploy.IsNonUniqueNameApi() {
 		entity, err = upsertNonUniqueNameConfig(client, apiToDeploy, conf, configName, renderedConfig)
 	} else {
-		entity, err = client.UpsertByName(apiToDeploy, configName, []byte(renderedConfig))
+		entity, err = client.UpsertConfigByName(apiToDeploy, configName, []byte(renderedConfig))
 	}
 
 	if err != nil {
@@ -159,7 +159,7 @@ func upsertNonUniqueNameConfig(client client.ConfigClient, apiToDeploy api.Api, 
 		entityUuid = idutils.GenerateUuidFromConfigId(projectId, configId)
 	}
 
-	return client.UpsertByNonUniqueNameAndId(apiToDeploy, entityUuid, configName, []byte(renderedConfig))
+	return client.UpsertConfigByNonUniqueNameAndId(apiToDeploy, entityUuid, configName, []byte(renderedConfig))
 }
 
 func deploySetting(settingsClient client.SettingsClient, entityMap *EntityMap, c *config.Config) (parameter.ResolvedEntity, []error) {

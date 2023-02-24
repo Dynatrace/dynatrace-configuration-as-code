@@ -174,7 +174,7 @@ func AssertConfig(t *testing.T, client client.ConfigClient, theApi api.Api, envi
 	var exists bool
 
 	if config.Skip {
-		exists, _, _ = client.ExistsByName(theApi, name)
+		exists, _, _ = client.ConfigExistsByName(theApi, name)
 		assert.Check(t, !exists, "Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, name, configType)
 		return
 	}
@@ -183,7 +183,7 @@ func AssertConfig(t *testing.T, client client.ConfigClient, theApi api.Api, envi
 
 	// To deal with delays of configs becoming available try for max 120 polling cycles (4min - at 2sec cycles) for expected state to be reached
 	err := wait(description, 120, func() bool {
-		exists, _, _ = client.ExistsByName(theApi, name)
+		exists, _, _ = client.ConfigExistsByName(theApi, name)
 		return (shouldBeAvailable && exists) || (!shouldBeAvailable && !exists)
 	})
 	assert.NilError(t, err)
@@ -270,7 +270,7 @@ func cleanupConfigs(t *testing.T, apis api.ApiMap, c client.ConfigClient, suffix
 			continue
 		}
 
-		values, err := c.List(api)
+		values, err := c.ListConfigs(api)
 		if err != nil {
 			t.Logf("Failed to cleanup any test configs of type %q: %v", api.GetId(), err)
 		}
@@ -278,7 +278,7 @@ func cleanupConfigs(t *testing.T, apis api.ApiMap, c client.ConfigClient, suffix
 		for _, value := range values {
 			// For the calculated-metrics-log API, the suffix is part of the ID, not name
 			if strings.HasSuffix(value.Name, suffix) || strings.HasSuffix(value.Id, suffix) {
-				err := c.DeleteById(api, value.Id)
+				err := c.DeleteConfigById(api, value.Id)
 				if err != nil {
 					t.Logf("Failed to cleanup test config: %s (%s): %v", value.Name, api.GetId(), err)
 				} else {

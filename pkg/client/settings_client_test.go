@@ -24,10 +24,11 @@ import (
 	"gotest.tools/assert"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
-func TestUpsert(t *testing.T) {
+func TestUpsertSettings(t *testing.T) {
 	tests := []struct {
 		name                        string
 		content                     string
@@ -58,26 +59,29 @@ func TestUpsert(t *testing.T) {
 				Id:   "entity-id",
 				Name: "entity-id",
 			},
-			postSettingsResponseContent: `{"objectId": "entity-id"}`,
-			getSettingsResponseContent:  `{"items": [{"externalId": "monaco:YnVpbHRpbjphbGVydGluZy5wcm9maWxlJHVzZXItcHJvdmlkZWQtaWQ=","objectId": "anObjectID","scope": "tenant"}]}`,
+			postSettingsResponseContent: `[{"objectId": "entity-id"}]`,
+			getSettingsResponseContent:  `{"externalId": "monaco:YnVpbHRpbjphbGVydGluZy5wcm9maWxlJHVzZXItcHJvdmlkZWQtaWQ=","objectId": "anObjectID","scope": "tenant"}`,
 		},
 		{
 			name:                        "Valid request, invalid response",
 			content:                     "{}",
 			expectError:                 true,
 			postSettingsResponseContent: `{`,
+			getSettingsResponseContent:  `{"externalId": "monaco:YnVpbHRpbjphbGVydGluZy5wcm9maWxlJHVzZXItcHJvdmlkZWQtaWQ=","objectId": "anObjectID","scope": "tenant"}`,
 		},
 		{
-			name:                     "Valid request, 400 return",
-			content:                  "{}",
-			expectError:              true,
-			postSettingsResponseCode: 400,
+			name:                       "Valid request, 400 return",
+			content:                    "{}",
+			expectError:                true,
+			postSettingsResponseCode:   400,
+			getSettingsResponseContent: `{"externalId": "monaco:YnVpbHRpbjphbGVydGluZy5wcm9maWxlJHVzZXItcHJvdmlkZWQtaWQ=","objectId": "anObjectID","scope": "tenant"}`,
 		},
 		{
 			name:                        "Valid request, but empty response",
 			content:                     "{}",
 			expectError:                 true,
 			postSettingsResponseContent: `[]`,
+			getSettingsResponseContent:  `{"externalId": "monaco:YnVpbHRpbjphbGVydGluZy5wcm9maWxlJHVzZXItcHJvdmlkZWQtaWQ=","objectId": "anObjectID","scope": "tenant"}`,
 		},
 		{
 			name:                        "Valid request, but multiple responses",
@@ -85,6 +89,7 @@ func TestUpsert(t *testing.T) {
 			expectError:                 true,
 			expectEntity:                api.DynatraceEntity{},
 			postSettingsResponseContent: `[{"objectId": "entity-id"},{"objectId": "entity-id"}]`,
+			getSettingsResponseContent:  `{"externalId": "monaco:YnVpbHRpbjphbGVydGluZy5wcm9maWxlJHVzZXItcHJvdmlkZWQtaWQ=","objectId": "anObjectID","scope": "tenant"}`,
 		},
 		{
 			name:    "Upsert existing settings 2.0 object on tenant < 1.262.0",
@@ -99,8 +104,9 @@ func TestUpsert(t *testing.T) {
 				Id:   "anObjectID",
 				Name: "anObjectID",
 			},
+			getSettingsResponseCode:     200,
 			postSettingsResponseContent: `{"objectId": "entity-id"}`,
-			getSettingsResponseContent:  `{"items": [{"externalId": "monaco:YnVpbHRpbjphbGVydGluZy5wcm9maWxlJHVzZXItcHJvdmlkZWQtaWQ=","objectId": "anObjectID","scope": "tenant"}]}`,
+			getSettingsResponseContent:  `{"externalId": "monaco:YnVpbHRpbjphbGVydGluZy5wcm9maWxlJHVzZXItcHJvdmlkZWQtaWQ=","objectId": "anObjectID","scope": "tenant"}`,
 		},
 	}
 	for _, test := range tests {
@@ -109,7 +115,7 @@ func TestUpsert(t *testing.T) {
 			server := httptest.NewTLSServer(http.HandlerFunc(func(writer http.ResponseWriter, r *http.Request) {
 
 				// handling GET settings requests
-				if r.Method == http.MethodGet && r.URL.Path == "/api/v2/settings/objects" {
+				if r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/api/v2/settings/objects") {
 					// response to client
 					if test.getSettingsResponseCode != 0 {
 						http.Error(writer, test.getSettingsResponseContent, test.getSettingsResponseCode)
@@ -124,15 +130,17 @@ func TestUpsert(t *testing.T) {
 				err := json.Unmarshal([]byte(test.content), &expectedSettingsObject)
 				assert.NilError(t, err)
 
-				expectedRequestPayload := settingsRequest{
+				expectedRequestPayload := []settingsRequest{{
 					ExternalId:    idutils.GenerateExternalID("builtin:alerting.profile", "user-provided-id"),
 					Scope:         "tenant",
 					Value:         expectedSettingsObject,
 					SchemaId:      "builtin:alerting.profile",
 					SchemaVersion: "",
+					ObjectId:      "anObjectID",
+				},
 				}
 
-				var obj settingsRequest
+				var obj []settingsRequest
 				err = json.NewDecoder(r.Body).Decode(&obj)
 				assert.NilError(t, err)
 
@@ -151,7 +159,8 @@ func TestUpsert(t *testing.T) {
 				server.URL,
 				"token",
 				WithHTTPClient(server.Client()),
-				WithServerVersion(test.serverVersion))
+				WithServerVersion(test.serverVersion),
+				WithRetrySettings(testRetrySettings))
 			assert.NilError(t, err)
 
 			resp, err := c.UpsertSettings(SettingsObject{

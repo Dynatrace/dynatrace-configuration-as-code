@@ -177,7 +177,7 @@ func assertConfigAvailable(t *testing.T, client client.ConfigClient, env manifes
 	assert.Assert(t, found, "Config %s should have a known api, but does not. Api %s does not exist", config.Coordinate, config.Type.Api)
 
 	if config.Skip {
-		exists, _, err := client.ExistsByName(a, fmt.Sprint(name))
+		exists, _, err := client.ConfigExistsByName(a, fmt.Sprint(name))
 		assert.NilError(t, err)
 		assert.Check(t, !exists, "Config '%s' should NOT be available on env '%s', but was. environment.", env.Name, config.Coordinate)
 
@@ -189,7 +189,7 @@ func assertConfigAvailable(t *testing.T, client client.ConfigClient, env manifes
 	exists := false
 	// To deal with delays of configs becoming available try for max 120 polling cycles (4min - at 2sec cycles) for expected state to be reached
 	err = wait(description, 120, func() bool {
-		exists, _, err = client.ExistsByName(a, fmt.Sprint(name))
+		exists, _, err = client.ConfigExistsByName(a, fmt.Sprint(name))
 		return (shouldBeAvailable && exists) || (!shouldBeAvailable && !exists)
 	})
 	assert.NilError(t, err)
@@ -249,7 +249,7 @@ func cleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestFile, suffix stri
 				continue
 			}
 
-			values, err := client.List(api)
+			values, err := client.ListConfigs(api)
 			if err != nil {
 				t.Logf("Failed to cleanup any test configs of type %q: %v", api.GetId(), err)
 			}
@@ -257,7 +257,7 @@ func cleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestFile, suffix stri
 			for _, value := range values {
 				if strings.HasSuffix(value.Name, suffix) {
 					log.Info("Deleting %s (%s)", value.Name, api.GetId())
-					err := client.DeleteById(api, value.Id)
+					err := client.DeleteConfigById(api, value.Id)
 					if err != nil {
 						t.Logf("Failed to cleanup test config: %s (%s): %v", value.Name, api.GetId(), err)
 					} else {

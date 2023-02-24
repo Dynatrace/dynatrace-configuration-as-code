@@ -153,7 +153,7 @@ func (d *Downloader) downloadConfigsOfAPI(api api.Api, values []api.Value, proje
 }
 
 func (d *Downloader) downloadAndUnmarshalConfig(theApi api.Api, value api.Value) (map[string]interface{}, error) {
-	response, err := d.client.ReadById(theApi, value.Id)
+	response, err := d.client.ReadConfigById(theApi, value.Id)
 
 	if err != nil {
 		return nil, err
@@ -210,7 +210,7 @@ func (d *Downloader) findConfigsToDownload(currentApi api.Api) ([]api.Value, err
 		return []api.Value{singletonConfigToDownload}, nil
 	}
 	log.Debug("\tFetching all '%v' configs", currentApi.GetId())
-	return d.client.List(currentApi)
+	return d.client.ListConfigs(currentApi)
 }
 
 func (d *Downloader) skipPersist(a api.Api, json map[string]interface{}) bool {

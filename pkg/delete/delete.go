@@ -53,7 +53,7 @@ func DeleteConfigs(client client.Client, apis map[string]api.Api, entriesToDelet
 func deleteClassicConfig(client client.Client, theApi api.Api, entries []DeletePointer, targetApi string) []error {
 	errors := make([]error, 0)
 
-	values, err := client.List(theApi)
+	values, err := client.ListConfigs(theApi)
 	if err != nil {
 		errors = append(errors, fmt.Errorf("failed to fetch existing configs of api `%v`. Skipping deletion all configs of this api. Reason: %w", theApi.GetId(), err))
 	}
@@ -69,7 +69,7 @@ func deleteClassicConfig(client client.Client, theApi api.Api, entries []DeleteP
 
 	for _, v := range values {
 		log.Debug("Deleting %v (%v)", v, targetApi)
-		if err := client.DeleteById(theApi, v.Id); err != nil {
+		if err := client.DeleteConfigById(theApi, v.Id); err != nil {
 			errors = append(errors, err)
 		}
 	}
@@ -162,7 +162,7 @@ func DeleteAllConfigs(client client.ConfigClient, apis map[string]api.Api) (erro
 
 	for _, api := range apis {
 		log.Info("Collecting configs of type %s...", api.GetId())
-		values, err := client.List(api)
+		values, err := client.ListConfigs(api)
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -172,7 +172,7 @@ func DeleteAllConfigs(client client.ConfigClient, apis map[string]api.Api) (erro
 
 		for _, v := range values {
 			// TODO(improvement): this could be improved by filtering for default configs the same way as Download does
-			err := client.DeleteById(api, v.Id)
+			err := client.DeleteConfigById(api, v.Id)
 
 			if err != nil {
 				errors = append(errors, err)

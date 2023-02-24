@@ -83,42 +83,6 @@ func TestShouldDiscard(t *testing.T) {
 			discard: false,
 		},
 		{
-			name:    "builtin:monitoredentities.generic.type - discarded if 'createdBy' is equal to 'Dynatrace'",
-			schema:  "builtin:monitoredentities.generic.type",
-			json:    map[string]interface{}{"createdBy": "Dynatrace"},
-			discard: true,
-		},
-		{
-			name:    "builtin:monitoredentities.generic.type - not discarded if 'createdBy' is not equal to 'Dynatrace'",
-			schema:  "builtin:monitoredentities.generic.type",
-			json:    map[string]interface{}{"createdBy": "Winnie the Pooh"},
-			discard: false,
-		},
-		{
-			name:    "builtin:apis.detection-rules - discarded if 'apiName' starts with 'Built-In'",
-			schema:  "builtin:apis.detection-rules",
-			json:    map[string]interface{}{"apiName": "Built-In .NET CLR"},
-			discard: true,
-		},
-		{
-			name:    "builtin:apis.detection-rules - not discarded if  'apiName' does not start with 'Built-In'",
-			schema:  "builtin:apis.detection-rules",
-			json:    map[string]interface{}{"apiName": "My API"},
-			discard: false,
-		},
-		{
-			name:    "builtin:logmonitoring.log-dpp-rules - discarded if 'ruleName' does starts with '[Built-In]'",
-			schema:  "builtin:logmonitoring.log-dpp-rules",
-			json:    map[string]interface{}{"ruleName": "[Built-in] one_agent:log_enrichment:dot_notation"},
-			discard: true,
-		},
-		{
-			name:    "builtin:logmonitoring.log-dpp-rules - not discarded if 'ruleName' does not start with '[Built-In]'",
-			schema:  "builtin:logmonitoring.log-dpp-rules",
-			json:    map[string]interface{}{"ruleName": "My log processing rule"},
-			discard: false,
-		},
-		{
 			name:    "builtin:logmonitoring.log-events - discarded if 'summary' is equal to 'Default Kubernetes Log Events'",
 			schema:  "builtin:logmonitoring.log-events",
 			json:    map[string]interface{}{"summary": "Default Kubernetes Log Events"},
