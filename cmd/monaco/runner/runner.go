@@ -77,24 +77,17 @@ Examples:
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable debug logging")
 
 	// commands
-	downloadCommand := download.GetDownloadCommand(fs, &download.DefaultCommand{})
-	convertCommand := convert.GetConvertCommand(fs)
-	deployCommand := deploy.GetDeployCommand(fs)
-	deleteCommand := delete.GetDeleteCommand(fs)
-	purgeCommand := purge.GetPurgeCommand(fs)
-	versionCommand := version.GetVersionCommand()
-
-	rootCmd.AddCommand(downloadCommand)
-	rootCmd.AddCommand(convertCommand)
-	rootCmd.AddCommand(deployCommand)
-	rootCmd.AddCommand(deleteCommand)
-	rootCmd.AddCommand(versionCommand)
+	rootCmd.AddCommand(download.GetDownloadCommand(fs, &download.DefaultCommand{}))
+	rootCmd.AddCommand(convert.GetConvertCommand(fs))
+	rootCmd.AddCommand(deploy.GetDeployCommand(fs))
+	rootCmd.AddCommand(delete.GetDeleteCommand(fs))
+	rootCmd.AddCommand(version.GetVersionCommand())
 
 	if featureflags.FeatureFlagEnabled("MONACO_ENABLE_DANGEROUS_COMMANDS") {
 		log.Warn("MONACO_ENABLE_DANGEROUS_COMMANDS environment var detected!")
 		log.Warn("Use additional commands with care, they might have heavy impact on configurations or environments")
 
-		rootCmd.AddCommand(purgeCommand)
+		rootCmd.AddCommand(purge.GetPurgeCommand(fs))
 	}
 
 	return rootCmd
