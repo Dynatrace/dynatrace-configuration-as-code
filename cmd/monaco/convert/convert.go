@@ -32,7 +32,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-func Convert(fs afero.Fs, workingDir string, environmentsFile string, outputFolder string,
+func convert(fs afero.Fs, workingDir string, environmentsFile string, outputFolder string,
 	manifestName string) error {
 	apis := api.NewV1Apis()
 
