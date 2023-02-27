@@ -15,20 +15,20 @@
 package runner
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/convert"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/delete"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/deploy"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/download"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/purge"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+
 	"io"
-
 	builtinLog "log"
-
-	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/convert"
-	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/deploy"
-	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/download"
 )
 
 var optionalAddedLogger *builtinLog.Logger
