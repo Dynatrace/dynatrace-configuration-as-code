@@ -1,4 +1,4 @@
-//go:build integration || integration_v1 || download_restore || unit || nightly
+//go:build integration || integration_v1 || cleanup || download_restore || unit || nightly
 
 /*
  * @license
@@ -20,12 +20,23 @@ package integrationtest
 
 import (
 	"bufio"
+	"fmt"
 	"github.com/spf13/afero"
+	"math/rand"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
-// rewriteConfigNames reads the config from the config folder and rewrites the files on a inmemory filesystem.
+func GenerateTestSuffix(generalSuffix string) string {
+	rand.Seed(time.Now().UnixNano())
+	randomNumber := rand.Intn(10000)
+
+	timestamp := time.Now().Format("20060102150405")
+	suffix := fmt.Sprintf("%s_%d_%s", timestamp, randomNumber, generalSuffix)
+	return strings.ToLower(suffix)
+}
+
 func RewriteConfigNames(path string, fs afero.Fs, transformers []func(string) string) error {
 	files, err := afero.ReadDir(fs, path)
 	if err != nil {

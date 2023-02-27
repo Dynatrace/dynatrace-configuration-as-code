@@ -19,6 +19,7 @@
 package v2
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
@@ -353,5 +354,5 @@ func cleanupDeployedConfiguration(t *testing.T, fs afero.Fs, manifestFilepath st
 	})
 	testutils.FailTestOnAnyError(t, errs, "loading of manifest failed")
 
-	cleanupIntegrationTest(t, fs, manifestFilepath, loadedManifest, "", testSuffix)
+	integrationtest.CleanupIntegrationTest(t, fs, manifestFilepath, loadedManifest, "", testSuffix)
 }

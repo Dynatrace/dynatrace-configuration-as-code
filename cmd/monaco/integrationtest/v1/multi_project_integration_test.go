@@ -20,7 +20,7 @@
 package v1
 
 import (
-	manifest2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
 	"path/filepath"
 	"testing"
 
@@ -44,10 +44,9 @@ func TestIntegrationMultiProject(t *testing.T) {
 			manifest,
 		})
 		err := cmd.Execute()
-
-		AssertAllConfigsAvailableInManifest(t, fs, manifest)
-
 		assert.NilError(t, err)
+
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{}, "", true)
 	})
 }
 
@@ -102,11 +101,6 @@ func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 
 		t.Log("Asserting available configs")
 
-		manifest := loadManifest(t, fs, manifestFile)
-		projects := map[string]manifest2.ProjectDefinition{
-			"star-trek.star-wars": manifest.Projects["star-trek.star-wars"],
-		}
-
-		AssertAllConfigsAvailable(t, fs, manifestFile, manifest, projects, manifest.Environments)
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{"star-trek.star-wars"}, "", true)
 	})
 }

@@ -20,6 +20,7 @@
 package v2
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
 	"github.com/spf13/afero"
 	"path/filepath"
@@ -44,6 +45,6 @@ func TestSpecialCharactersAreCorrectlyEscapedWhereNeeded(t *testing.T) {
 		err := cmd.Execute()
 		assert.NilError(t, err)
 
-		AssertAllConfigsAvailability(t, fs, specialCharManifest, []string{}, "", true)
+		integrationtest.AssertAllConfigsAvailability(t, fs, specialCharManifest, []string{}, "", true)
 	})
 }

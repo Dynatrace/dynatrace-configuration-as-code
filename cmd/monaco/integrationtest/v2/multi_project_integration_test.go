@@ -20,6 +20,7 @@
 package v2
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"testing"
 
@@ -44,7 +45,7 @@ func TestIntegrationMultiProject(t *testing.T) {
 
 		assert.NilError(t, err)
 
-		AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{}, multiProjectSpecificEnvironment, true)
+		integrationtest.AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{}, multiProjectSpecificEnvironment, true)
 	})
 }
 
@@ -73,10 +74,10 @@ func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 		assert.NilError(t, err)
 
 		// Validate Star Trek sub-projects were deployed
-		AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{"star-trek.star-wars", "star-trek.star-gate"}, multiProjectSpecificEnvironment, true)
+		integrationtest.AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{"star-trek.star-wars", "star-trek.star-gate"}, multiProjectSpecificEnvironment, true)
 
 		// Validate movies project was not deployed
-		AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{"movies.science fiction.the-hitchhikers-guide-to-the-galaxy"}, multiProjectSpecificEnvironment, false)
+		integrationtest.AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{"movies.science fiction.the-hitchhikers-guide-to-the-galaxy"}, multiProjectSpecificEnvironment, false)
 	})
 }
 

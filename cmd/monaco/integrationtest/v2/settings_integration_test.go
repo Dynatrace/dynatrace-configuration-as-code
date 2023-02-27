@@ -20,6 +20,7 @@
 package v2
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"testing"
 
@@ -43,7 +44,7 @@ func TestIntegrationSettings(t *testing.T) {
 		err := cmd.Execute()
 
 		assert.NilError(t, err)
-		AssertAllConfigsAvailability(t, fs, manifest, []string{}, specificEnvironment, true)
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{}, specificEnvironment, true)
 
 		// This causes an Update of all Settings
 		cmd = runner.BuildCli(fs)
@@ -51,7 +52,7 @@ func TestIntegrationSettings(t *testing.T) {
 		err = cmd.Execute()
 
 		assert.NilError(t, err)
-		AssertAllConfigsAvailability(t, fs, manifest, []string{}, specificEnvironment, true)
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{}, specificEnvironment, true)
 	})
 }
 

@@ -20,6 +20,7 @@ package v2
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/spf13/afero"
@@ -63,7 +64,7 @@ func TestPagination(t *testing.T) {
 		assert.NilError(t, err)
 		assert.Equal(t, strings.Count(logOutput.String(), "Upserted"), totalSettings)
 
-		AssertAllConfigsAvailability(t, fs, manifestPath, []string{}, "", true)
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{}, "", true)
 
 		logOutput.Reset()
 
@@ -74,6 +75,6 @@ func TestPagination(t *testing.T) {
 		assert.NilError(t, err)
 		assert.Equal(t, strings.Count(logOutput.String(), "Upserted"), totalSettings)
 
-		AssertAllConfigsAvailability(t, fs, manifestPath, []string{}, "", true)
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{}, "", true)
 	})
 }
