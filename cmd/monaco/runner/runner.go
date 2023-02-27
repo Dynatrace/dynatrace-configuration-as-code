@@ -15,7 +15,6 @@
 package runner
 
 import (
-	"errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/delete"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/purge"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/version"
@@ -32,8 +31,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/download"
 )
 
-var errWrongUsage = errors.New("")
-
 var optionalAddedLogger *builtinLog.Logger
 
 func Run() int {
@@ -42,10 +39,7 @@ func Run() int {
 	err := rootCmd.Execute()
 
 	if err != nil {
-		if !errors.Is(err, errWrongUsage) {
-			// Log error if it wasn't a usage error
-			log.Error("%v\n", err)
-		}
+		log.Error("%v\n", err)
 		return 1
 	}
 
