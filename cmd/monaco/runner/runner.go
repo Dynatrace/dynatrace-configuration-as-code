@@ -16,13 +16,11 @@ package runner
 
 import (
 	"errors"
-	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/delete"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/purge"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"io"
@@ -90,7 +88,7 @@ Examples:
 	deployCommand := deploy.GetDeployCommand(fs)
 	deleteCommand := delete.GetDeleteCommand(fs)
 	purgeCommand := purge.GetPurgeCommand(fs)
-	versionCommand := getVersionCommand()
+	versionCommand := version.GetVersionCommand()
 
 	rootCmd.AddCommand(downloadCommand)
 	rootCmd.AddCommand(convertCommand)
@@ -115,17 +113,4 @@ func configureDebugLogging(fs afero.Fs, verbose *bool) func(cmd *cobra.Command, 
 		}
 		log.SetupLogging(fs, optionalAddedLogger)
 	}
-}
-
-func getVersionCommand() (convertCmd *cobra.Command) {
-	versionCmd := &cobra.Command{
-		Use:     "version",
-		Short:   "Prints out the version of the monaco cli",
-		Example: "monaco version",
-		PreRun:  cmdutils.SilenceUsageCommand(),
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("monaco version " + version.MonitoringAsCode)
-		},
-	}
-	return versionCmd
 }
