@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/cmdutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/delete"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/purge"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
@@ -30,7 +31,6 @@ import (
 	builtinLog "log"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/convert"
-	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/delete"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/deploy"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/download"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner/completion"
@@ -90,7 +90,7 @@ Examples:
 	downloadCommand := download.GetDownloadCommand(fs, &download.DefaultCommand{})
 	convertCommand := convert.GetConvertCommand(fs)
 	deployCommand := getDeployCommand(fs)
-	deleteCommand := getDeleteCommand(fs)
+	deleteCommand := delete.GetDeleteCommand(fs)
 	purgeCommand := purge.GetPurgeCommand(fs)
 	versionCommand := getVersionCommand()
 
@@ -163,49 +163,6 @@ func getDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 	deployCmd.MarkFlagsMutuallyExclusive("environment", "group")
 
 	return deployCmd
-}
-
-func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
-
-	var environments []string
-	var manifestName, group string
-
-	deleteCmd = &cobra.Command{
-		Use:     "delete <manifest.yaml> <delete.yaml>",
-		Short:   "Delete configurations defined in delete.yaml from the environments defined in the manifest",
-		Example: "monaco delete manifest.yaml delete.yaml -e dev-environment",
-		Args:    cobra.ExactArgs(2),
-		PreRun:  cmdutils.SilenceUsageCommand(),
-		RunE: func(cmd *cobra.Command, args []string) error {
-
-			manifestName = args[0]
-			deleteFile := args[1]
-
-			if !files.IsYamlFileExtension(manifestName) {
-				err := fmt.Errorf("wrong format for manifest file! expected a .yaml file, but got %s", manifestName)
-				return err
-			}
-
-			if deleteFile != "delete.yaml" {
-				err := fmt.Errorf("wrong format for delete file! Has to be named 'delete.yaml', but got %s", deleteFile)
-				return err
-			}
-
-			return delete.Delete(fs, manifestName, deleteFile, environments, group)
-		},
-		ValidArgsFunction: completion.DeleteCompletion,
-	}
-
-	deleteCmd.Flags().StringVarP(&group, "group", "g", "", "Specify the environmentGroup that should be used for deletion. This flag is mutually exclusive with '--environment'. If this flag is specified, configuration will be deleted from all environments within the specified group.")
-	deleteCmd.Flags().StringSliceVarP(&environments, "environment", "e", make([]string, 0), "Deletes configuration only for specified environments. This flag is mutually exclusive with '--group' If not set, delete will be executed on all environments defined in manifest.")
-
-	if err := deleteCmd.RegisterFlagCompletionFunc("environment", completion.EnvironmentByArg0); err != nil {
-		log.Fatal("failed to setup CLI %v", err)
-	}
-
-	deleteCmd.MarkFlagsMutuallyExclusive("environment", "group")
-
-	return deleteCmd
 }
 
 func getVersionCommand() (convertCmd *cobra.Command) {
