@@ -1,4 +1,4 @@
-//go:build integration || integration_v1 || download_restore || unit || nightly
+//go:build integration || integration_v1 || cleanup || download_restore || unit || nightly
 
 /*
  * @license
@@ -22,6 +22,13 @@ import (
 	"fmt"
 	"strings"
 )
+
+func AddSuffix(suffix string) func(line string) string {
+	var f = func(name string) string {
+		return name + "_" + suffix
+	}
+	return f
+}
 
 func ReplaceName(line string, idChange func(string) string) string {
 

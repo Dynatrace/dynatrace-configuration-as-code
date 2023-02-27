@@ -21,6 +21,7 @@ package v2
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
 	uuid2 "github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
@@ -35,10 +36,10 @@ import (
 )
 
 func TestNonUniqueNameUpserts(t *testing.T) {
-	testSuffix := generateTestSuffix("NonUniqueName")
+	testSuffix := integrationtest.GenerateTestSuffix("NonUniqueName")
 
 	t.Cleanup(func() {
-		cleanupIntegrationTest(
+		integrationtest.CleanupIntegrationTest(
 			t,
 			afero.NewMemMapFs(),
 			"",

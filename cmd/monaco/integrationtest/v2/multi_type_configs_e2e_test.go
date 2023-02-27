@@ -20,6 +20,7 @@
 package v2
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"testing"
 
@@ -41,7 +42,7 @@ func TestMultiTypeConfigsDeployment(t *testing.T) {
 
 		assert.NilError(t, err)
 
-		AssertAllConfigsAvailability(t, fs, multiTypeManifest, []string{}, "", true)
+		integrationtest.AssertAllConfigsAvailability(t, fs, multiTypeManifest, []string{}, "", true)
 	})
 }
 
