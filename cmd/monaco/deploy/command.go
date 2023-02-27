@@ -1,0 +1,73 @@
+/*
+ * @license
+ * Copyright 2023 Dynatrace LLC
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package deploy
+
+import (
+	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/cmdutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner/completion"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/spf13/afero"
+	"github.com/spf13/cobra"
+)
+
+func GetDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
+	var dryRun, continueOnError bool
+	var manifestName, group string
+	var environment, project []string
+
+	deployCmd = &cobra.Command{
+		Use:               "deploy <manifest.yaml>",
+		Short:             "Deploy configurations to Dynatrace environments",
+		Example:           "monaco deploy manifest.yaml -v -e dev-environment",
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: completion.DeployCompletion,
+		PreRun:            cmdutils.SilenceUsageCommand(),
+		RunE: func(cmd *cobra.Command, args []string) error {
+
+			manifestName = args[0]
+
+			if !files.IsYamlFileExtension(manifestName) {
+				err := fmt.Errorf("wrong format for manifest file! expected a .yaml file, but got %s", manifestName)
+				return err
+			}
+
+			return Deploy(fs, manifestName, environment, group, project, dryRun, continueOnError)
+		},
+	}
+
+	deployCmd.Flags().StringSliceVarP(&environment, "environment", "e", make([]string, 0), "Specify one (or multiple) environments to deploy to. To set multiple environments either repeat this flag, or seperate them using a comma (,). This flag is mutually exclusive with '--group'.")
+	deployCmd.Flags().StringVarP(&group, "group", "g", "", "Specify the environmentGroup that should be used for deployment. If this flag is specified, all environments within this group will be used for deployment. This flag is mutually exclusive with '--environment'")
+	deployCmd.Flags().StringSliceVarP(&project, "project", "p", make([]string, 0), "Project configuration to deploy (also deploys any dependent configurations)")
+	deployCmd.Flags().BoolVarP(&dryRun, "dry-run", "d", false, "Switches to just validation instead of actual deployment")
+	deployCmd.Flags().BoolVarP(&continueOnError, "continue-on-error", "c", false, "Proceed deployment even if config upload fails")
+
+	err := deployCmd.RegisterFlagCompletionFunc("environment", completion.EnvironmentByManifestFlag)
+	if err != nil {
+		log.Fatal("failed to setup CLI %v", err)
+	}
+
+	err = deployCmd.RegisterFlagCompletionFunc("project", completion.ProjectsFromManifest)
+	if err != nil {
+		log.Fatal("failed to setup CLI %v", err)
+	}
+
+	deployCmd.MarkFlagsMutuallyExclusive("environment", "group")
+
+	return deployCmd
+}
