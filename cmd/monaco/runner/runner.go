@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/cmdutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/purge"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
@@ -90,7 +91,7 @@ Examples:
 	convertCommand := convert.GetConvertCommand(fs)
 	deployCommand := getDeployCommand(fs)
 	deleteCommand := getDeleteCommand(fs)
-	purgeCommand := getPurgeCommand(fs)
+	purgeCommand := purge.GetPurgeCommand(fs)
 	versionCommand := getVersionCommand()
 
 	rootCmd.AddCommand(downloadCommand)
@@ -205,46 +206,6 @@ func getDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 	deleteCmd.MarkFlagsMutuallyExclusive("environment", "group")
 
 	return deleteCmd
-}
-
-func getPurgeCommand(fs afero.Fs) (purgeCmd *cobra.Command) {
-
-	var environment []string
-	var manifestName string
-	var specificApis []string
-
-	purgeCmd = &cobra.Command{
-		Use:     "purge <manifest.yaml>",
-		Short:   "Delete ALL configurations from the environments defined in the manifest",
-		Example: "monaco purge manifest.yaml -e dev-environment",
-		Hidden:  true, // this command will not be suggested or shown in help
-		Args:    cobra.ExactArgs(1),
-		PreRun:  cmdutils.SilenceUsageCommand(),
-		RunE: func(cmd *cobra.Command, args []string) error {
-
-			manifestName = args[0]
-
-			if !files.IsYamlFileExtension(manifestName) {
-				err := fmt.Errorf("wrong format for manifest file! expected a .yaml file, but got %s", manifestName)
-				return err
-			}
-
-			return delete.Purge(fs, manifestName, environment, specificApis)
-		},
-		ValidArgsFunction: completion.PurgeCompletion,
-	}
-
-	purgeCmd.Flags().StringSliceVarP(&environment, "environment", "e", make([]string, 0), "Deletes configuration only for specified envs. If not set, delete will be executed on all environments defined in manifest.")
-	purgeCmd.Flags().StringSliceVarP(&specificApis, "api", "a", make([]string, 0), "One or more specific APIs to delete from (flag can be repeated or value defined as comma-separated list)")
-
-	if err := purgeCmd.RegisterFlagCompletionFunc("environment", completion.EnvironmentByArg0); err != nil {
-		log.Fatal("failed to setup CLI %v", err)
-	}
-	if err := purgeCmd.RegisterFlagCompletionFunc("api", completion.AllAvailableApis); err != nil {
-		log.Fatal("failed to setup CLI %v", err)
-	}
-
-	return purgeCmd
 }
 
 func getVersionCommand() (convertCmd *cobra.Command) {
