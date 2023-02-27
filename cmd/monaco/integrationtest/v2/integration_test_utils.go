@@ -94,8 +94,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 
 		env := loadedManifest.Environments[envName]
 
-		c, err := client.CreateClientForEnvironment(env)
-		assert.NilError(t, err)
+		c := createDynatraceClient(t, env)
 
 		entities := make(map[coordinate.Coordinate]parameter.ResolvedEntity)
 		var parameters []topologysort.ParameterWithName
@@ -243,8 +242,7 @@ func cleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestPath string, load
 
 	for _, environment := range environments {
 
-		c, err := client.CreateClientForEnvironment(environment)
-		assert.NilError(t, err)
+		c := createDynatraceClient(t, environment)
 
 		cleanupSettings(t, fs, manifestPath, loadedManifest, environment.Name, c)
 		cleanupConfigs(t, apis, c, suffix)
@@ -433,4 +431,17 @@ func extractConfigName(conf *config.Config, properties parameter.Properties) (st
 	}
 
 	return name, nil
+}
+
+func createDynatraceClient(t *testing.T, environment manifest.EnvironmentDefinition) client.Client {
+	envToken, err := environment.GetToken()
+	assert.NilError(t, err, "unable to get token for test environment %q", environment.Name)
+
+	envURL, err := environment.GetUrl()
+	assert.NilError(t, err, "unable to get URL for test environment %q", environment.Name)
+
+	c, err := client.NewDynatraceClient(envURL, envToken, client.WithAutoServerVersion())
+	assert.NilError(t, err, "failed to create test client")
+
+	return c
 }

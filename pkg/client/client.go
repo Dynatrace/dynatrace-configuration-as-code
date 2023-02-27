@@ -23,7 +23,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"net/http"
 	"net/url"
 	"strings"
@@ -229,22 +228,6 @@ func WithAutoServerVersion() func(client *DynatraceClient) {
 			d.serverVersion = serverVersion
 		}
 	}
-}
-
-// CreateClientForEnvironment takes an EnvironmentDefinition and creates a Dynatrace client to be used for
-// this Dynatrace environment/tenant.
-func CreateClientForEnvironment(environment manifest.EnvironmentDefinition) (Client, error) {
-	envToken, err := environment.GetToken()
-	if err != nil {
-		return nil, fmt.Errorf("unable to get token for environment %q: %w", environment.Name, err)
-	}
-
-	envURL, err := environment.GetUrl()
-	if err != nil {
-		return nil, fmt.Errorf("unable to get URL for environment %q: %w", environment.Name, err)
-	}
-
-	return NewDynatraceClient(envURL, envToken, WithAutoServerVersion())
 }
 
 // NewDynatraceClient creates a new DynatraceClient

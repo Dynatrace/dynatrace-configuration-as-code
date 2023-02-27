@@ -56,8 +56,7 @@ func AssertAllConfigsAvailable(t *testing.T, fs afero.Fs, manifestFile string, m
 	projects := loadProjects(t, fs, manifestFile, mani)
 
 	for _, e := range environments {
-		c, err := client.CreateClientForEnvironment(e)
-		assert.NilError(t, err)
+		c := createDynatraceClient(t, e)
 
 		for _, projectDefinition := range projectDefinitions {
 			log.Info("Asserting Configs from project are available: %s", projectDefinition.Name)
@@ -109,8 +108,7 @@ func AssertConfigAvailability(t *testing.T, fs afero.Fs, manifestFile string, co
 	envDefinition, found := mani.Environments[env]
 	assert.Assert(t, found, "environment %s not found", env)
 
-	c, err := client.CreateClientForEnvironment(envDefinition)
-	assert.NilError(t, err)
+	c := createDynatraceClient(t, envDefinition)
 
 	projects := loadProjects(t, fs, manifestFile, mani)
 	project := findProjectByName(t, projects, projName)
@@ -221,8 +219,7 @@ func cleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestFile, suffix stri
 	suffix = "_" + suffix
 
 	for _, environment := range environments {
-		c, err := client.CreateClientForEnvironment(environment)
-		assert.NilError(t, err)
+		c := createDynatraceClient(t, environment)
 
 		for _, api := range apis {
 			if api.GetId() == "calculated-metrics-log" {
@@ -361,4 +358,17 @@ func wait(description string, maxPollCount int, condition func() bool) error {
 	log.Error("Error: Waiting for '%s' timed out!", description)
 
 	return errors.New("Waiting for '" + description + "' timed out!")
+}
+
+func createDynatraceClient(t *testing.T, environment manifest.EnvironmentDefinition) client.Client {
+	envToken, err := environment.GetToken()
+	assert.NilError(t, err, "unable to get token for test environment %q", environment.Name)
+
+	envURL, err := environment.GetUrl()
+	assert.NilError(t, err, "unable to get URL for test environment %q", environment.Name)
+
+	c, err := client.NewDynatraceClient(envURL, envToken, client.WithAutoServerVersion())
+	assert.NilError(t, err, "failed to create test client")
+
+	return c
 }
