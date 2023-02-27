@@ -56,7 +56,8 @@ func AssertAllConfigsAvailable(t *testing.T, fs afero.Fs, manifestFile string, m
 	projects := loadProjects(t, fs, manifestFile, mani)
 
 	for _, e := range environments {
-		client := clientFromEnvDef(t, e)
+		c, err := client.CreateClientForEnvironment(e)
+		assert.NilError(t, err)
 
 		for _, projectDefinition := range projectDefinitions {
 			log.Info("Asserting Configs from project are available: %s", projectDefinition.Name)
@@ -66,9 +67,9 @@ func AssertAllConfigsAvailable(t *testing.T, fs afero.Fs, manifestFile string, m
 			configsPerApi := getConfigsForEnv(t, p, e)
 
 			for _, configs := range configsPerApi {
-				for _, c := range configs {
-					log.Info("Asserting Config is available: %s", c.Coordinate)
-					assertConfigAvailable(t, client, e, true, c)
+				for _, cfg := range configs {
+					log.Info("Asserting Config is available: %s", cfg.Coordinate)
+					assertConfigAvailable(t, c, e, true, cfg)
 				}
 			}
 		}
@@ -100,20 +101,6 @@ func loadProjects(t *testing.T, fs afero.Fs, manifestFile string, mani manifest.
 	return projects
 }
 
-func clientFromEnvDef(t *testing.T, envDefiniton manifest.EnvironmentDefinition) client.ConfigClient {
-
-	u, err := envDefiniton.GetUrl()
-	assert.NilError(t, err)
-
-	token, err := envDefiniton.GetToken()
-	assert.NilError(t, err)
-
-	client, err := client.NewDynatraceClient(u, token)
-	assert.NilError(t, err)
-
-	return client
-}
-
 // AssertConfigAvailability checks specific configuration for availability
 func AssertConfigAvailability(t *testing.T, fs afero.Fs, manifestFile string, coord coordinate.Coordinate, env, projName string, available bool) {
 
@@ -122,7 +109,8 @@ func AssertConfigAvailability(t *testing.T, fs afero.Fs, manifestFile string, co
 	envDefinition, found := mani.Environments[env]
 	assert.Assert(t, found, "environment %s not found", env)
 
-	client := clientFromEnvDef(t, envDefinition)
+	c, err := client.CreateClientForEnvironment(envDefinition)
+	assert.NilError(t, err)
 
 	projects := loadProjects(t, fs, manifestFile, mani)
 	project := findProjectByName(t, projects, projName)
@@ -140,7 +128,7 @@ func AssertConfigAvailability(t *testing.T, fs afero.Fs, manifestFile string, co
 
 	assert.Assert(t, conf != nil, "config %s not found", coord)
 
-	assertConfigAvailable(t, client, envDefinition, available, *conf)
+	assertConfigAvailable(t, c, envDefinition, available, *conf)
 }
 
 func getConfigsForEnv(t *testing.T, project projectsV2.Project, env manifest.EnvironmentDefinition) projectsV2.ConfigsPerType {
@@ -233,14 +221,7 @@ func cleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestFile, suffix stri
 	suffix = "_" + suffix
 
 	for _, environment := range environments {
-
-		token, err := environment.GetToken()
-		assert.NilError(t, err)
-
-		url, err := environment.GetUrl()
-		assert.NilError(t, err)
-
-		client, err := client.NewDynatraceClient(url, token)
+		c, err := client.CreateClientForEnvironment(environment)
 		assert.NilError(t, err)
 
 		for _, api := range apis {
@@ -249,7 +230,7 @@ func cleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestFile, suffix stri
 				continue
 			}
 
-			values, err := client.ListConfigs(api)
+			values, err := c.ListConfigs(api)
 			if err != nil {
 				t.Logf("Failed to cleanup any test configs of type %q: %v", api.GetId(), err)
 			}
@@ -257,7 +238,7 @@ func cleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestFile, suffix stri
 			for _, value := range values {
 				if strings.HasSuffix(value.Name, suffix) {
 					log.Info("Deleting %s (%s)", value.Name, api.GetId())
-					err := client.DeleteConfigById(api, value.Id)
+					err := c.DeleteConfigById(api, value.Id)
 					if err != nil {
 						t.Logf("Failed to cleanup test config: %s (%s): %v", value.Name, api.GetId(), err)
 					} else {

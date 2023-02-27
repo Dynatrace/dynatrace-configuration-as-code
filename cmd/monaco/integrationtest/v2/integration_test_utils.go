@@ -94,13 +94,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 
 		env := loadedManifest.Environments[envName]
 
-		token, err := env.GetToken()
-		assert.NilError(t, err)
-
-		url, err := env.GetUrl()
-		assert.NilError(t, err)
-
-		client, err := client.NewDynatraceClient(url, token)
+		c, err := client.CreateClientForEnvironment(env)
 		assert.NilError(t, err)
 
 		entities := make(map[coordinate.Coordinate]parameter.ResolvedEntity)
@@ -142,9 +136,9 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 			apis := api.NewApis()
 			if _, found := projectsToValidate[coord.Project]; found {
 				if theConfig.Type.IsSettings() {
-					assertSetting(t, client, env, available, theConfig)
+					assertSetting(t, c, env, available, theConfig)
 				} else if apis.Contains(theConfig.Type.Api) {
-					AssertConfig(t, client, apis[theConfig.Type.Api], env, available, theConfig, configName)
+					AssertConfig(t, c, apis[theConfig.Type.Api], env, available, theConfig, configName)
 				} else {
 					t.Errorf("Can not assert config of unknown type %q", theConfig.Coordinate.Type)
 				}
@@ -249,17 +243,11 @@ func cleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestPath string, load
 
 	for _, environment := range environments {
 
-		token, err := environment.GetToken()
+		c, err := client.CreateClientForEnvironment(environment)
 		assert.NilError(t, err)
 
-		url, err := environment.GetUrl()
-		assert.NilError(t, err)
-
-		client, err := client.NewDynatraceClient(url, token)
-		assert.NilError(t, err)
-
-		cleanupSettings(t, fs, manifestPath, loadedManifest, environment.Name, client)
-		cleanupConfigs(t, apis, client, suffix)
+		cleanupSettings(t, fs, manifestPath, loadedManifest, environment.Name, c)
+		cleanupConfigs(t, apis, c, suffix)
 	}
 }
 
