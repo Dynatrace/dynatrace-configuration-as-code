@@ -534,7 +534,7 @@ func Test_GetObjectIdIfAlreadyExists_WorksCorrectlyForAddedQueryParameters(t *te
 			s := rest.RetrySettings{
 				Normal: rest.RetrySetting{
 					WaitTime:   0,
-					MaxRetries: 5,
+					MaxRetries: 3,
 				},
 			}
 			_, err := getObjectIdIfAlreadyExists(server.Client(), testApi, server.URL, "", "", s)
