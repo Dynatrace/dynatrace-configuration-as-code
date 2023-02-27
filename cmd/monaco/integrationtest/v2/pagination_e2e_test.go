@@ -61,8 +61,9 @@ func TestPagination(t *testing.T) {
 		cmd.SetArgs([]string{"deploy", "--verbose", manifestPath})
 		err := cmd.Execute()
 		assert.NilError(t, err)
-		assert.Equal(t, strings.Count(logOutput.String(), "Created"), totalSettings)
-		assert.Assert(t, !strings.Contains(logOutput.String(), "Updated"))
+		assert.Equal(t, strings.Count(logOutput.String(), "Upserted"), totalSettings)
+
+		AssertAllConfigsAvailability(t, fs, manifestPath, []string{}, "", true)
 
 		logOutput.Reset()
 
@@ -71,7 +72,8 @@ func TestPagination(t *testing.T) {
 		cmd.SetArgs([]string{"deploy", "--verbose", manifestPath})
 		err = cmd.Execute()
 		assert.NilError(t, err)
-		assert.Assert(t, !strings.Contains(logOutput.String(), "Created"))
-		assert.Equal(t, strings.Count(logOutput.String(), "Updated"), totalSettings)
+		assert.Equal(t, strings.Count(logOutput.String(), "Upserted"), totalSettings)
+
+		AssertAllConfigsAvailability(t, fs, manifestPath, []string{}, "", true)
 	})
 }
