@@ -61,7 +61,7 @@ type downloadCommandOptionsShared struct {
 	forceOverwrite bool
 }
 
-func getEnvFromManifest(fs afero.Fs, manifestPath string, specificEnvironmentName string, _ string) (envUrl string, token string, tokenEnvVar string, err error) {
+func getEnvFromManifest(fs afero.Fs, manifestPath string, specificEnvironmentName string) (envUrl string, token manifest.Token, err error) {
 
 	man, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
 		Fs:           fs,
@@ -70,13 +70,13 @@ func getEnvFromManifest(fs afero.Fs, manifestPath string, specificEnvironmentNam
 
 	if len(errs) > 0 {
 		err = PrintAndFormatErrors(errs, "failed to load manifest '%v'", manifestPath)
-		return "", "", "", err
+		return "", manifest.Token{}, err
 	}
 
 	env, found := man.Environments[specificEnvironmentName]
 	if !found {
 		err = PrintAndFormatErrors(errs, "environment '%v' was not available in manifest '%v'", specificEnvironmentName, manifestPath)
-		return "", "", "", err
+		return "", manifest.Token{}, err
 	}
 
 	envUrl, err = env.GetUrl()
@@ -86,11 +86,10 @@ func getEnvFromManifest(fs afero.Fs, manifestPath string, specificEnvironmentNam
 
 	if len(errs) > 0 {
 		err = PrintAndFormatErrors(errs, "failed to load manifest data")
-		return "", "", "", err
+		return "", manifest.Token{}, err
 	}
 
-	// todo: return token directly and remove parameter
-	return envUrl, env.Token.Value, env.Token.Name, nil
+	return envUrl, env.Token, nil
 }
 
 type DynatraceClientProvider func(string, string, ...func(*client.DynatraceClient)) (*client.DynatraceClient, error)
