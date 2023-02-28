@@ -19,8 +19,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/regex"
 	"os"
 	"strings"
-
-	environmentv1 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/environment"
 )
 
 type ProjectDefinition struct {
@@ -63,7 +61,18 @@ type EnvironmentVariableToken struct {
 
 type ProjectDefinitionByProjectId map[string]ProjectDefinition
 
-func NewEnvironmentDefinitionFromV1(env environmentv1.Environment, group string) EnvironmentDefinition {
+// environmentV1 represents an environment as it was loaded for
+// monaco v1
+type environmentV1 interface {
+	GetId() string
+	GetEnvironmentUrl() string
+	GetToken() (string, error)
+	GetGroup() string
+	GetTokenName() string
+}
+
+// NewEnvironmentDefinitionFromV1 creates an EnvironmentDefinition from an environment loaded by monaco v1
+func NewEnvironmentDefinitionFromV1(env environmentV1, group string) EnvironmentDefinition {
 	return EnvironmentDefinition{
 		Name:  env.GetId(),
 		url:   newUrlDefinitionFromV1(env),
@@ -72,7 +81,7 @@ func NewEnvironmentDefinitionFromV1(env environmentv1.Environment, group string)
 	}
 }
 
-func newUrlDefinitionFromV1(env environmentv1.Environment) UrlDefinition {
+func newUrlDefinitionFromV1(env environmentV1) UrlDefinition {
 	if regex.IsEnvVariable(env.GetEnvironmentUrl()) {
 		return UrlDefinition{
 			Type:  EnvironmentUrlType,
@@ -86,6 +95,7 @@ func newUrlDefinitionFromV1(env environmentv1.Environment) UrlDefinition {
 	}
 }
 
+// NewEnvironmentDefinition creates a new EnvironmentDefinition
 func NewEnvironmentDefinition(name string, url UrlDefinition, group string, token *EnvironmentVariableToken) EnvironmentDefinition {
 	return EnvironmentDefinition{
 		Name:  name,

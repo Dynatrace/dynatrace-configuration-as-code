@@ -18,13 +18,13 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/converter/v1environment"
 	"path"
 	"path/filepath"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	configv2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/converter"
-	environmentv1 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	projectv1 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v1"
 	projectv2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
@@ -79,7 +79,7 @@ func convert(fs afero.Fs, workingDir string, environmentsFile string, outputFold
 func loadConfigs(fs afero.Fs, workingDir string, apis map[string]api.Api,
 	environmentsFile string) (manifest.Manifest, []projectv2.Project, []error) {
 
-	environments, errors := environmentv1.LoadEnvironmentsWithoutTemplating(environmentsFile, fs)
+	environments, errors := v1environment.LoadEnvironmentsWithoutTemplating(environmentsFile, fs)
 
 	if len(errors) > 0 {
 		return manifest.Manifest{}, nil, errors

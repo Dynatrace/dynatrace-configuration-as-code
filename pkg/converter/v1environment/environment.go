@@ -1,6 +1,6 @@
-/**
+/*
  * @license
- * Copyright 2020 Dynatrace LLC
+ * Copyright 2023 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package environment
+package v1environment
 
 import (
 	"fmt"
@@ -23,15 +23,7 @@ import (
 	"strings"
 )
 
-type Environment interface {
-	GetId() string
-	GetEnvironmentUrl() string
-	GetToken() (string, error)
-	GetGroup() string
-	GetTokenName() string
-}
-
-type environmentImpl struct {
+type EnvironmentV1 struct {
 	id             string
 	name           string
 	group          string
@@ -39,13 +31,13 @@ type environmentImpl struct {
 	envTokenName   string
 }
 
-func NewEnvironments(maps map[string]map[string]string) (map[string]Environment, []error) {
+func newEnvironmentsV1(maps map[string]map[string]string) (map[string]*EnvironmentV1, []error) {
 
-	environments := make(map[string]Environment)
+	environments := make(map[string]*EnvironmentV1)
 	errors := make([]error, 0)
 
 	for id, details := range maps {
-		environment, err := newEnvironment(id, details)
+		environment, err := newEnvironmentV1(id, details)
 		if err != nil {
 			errors = append(errors, err)
 		} else {
@@ -61,7 +53,7 @@ func NewEnvironments(maps map[string]map[string]string) (map[string]Environment,
 	return environments, errors
 }
 
-func newEnvironment(id string, properties map[string]string) (Environment, error) {
+func newEnvironmentV1(id string, properties map[string]string) (*EnvironmentV1, error) {
 
 	// only one group per environment is allowed
 	// ignore environments with leading or trailing `.`
@@ -95,13 +87,13 @@ func newEnvironment(id string, properties map[string]string) (Environment, error
 		return nil, fmt.Errorf("failed to parse config for environment %s: %w", id, err)
 	}
 
-	return NewEnvironment(id, environmentName, environmentGroup, environmentUrl, envTokenName), nil
+	return NewEnvironmentV1(id, environmentName, environmentGroup, environmentUrl, envTokenName), nil
 }
 
-func NewEnvironment(id string, name string, group string, environmentUrl string, envTokenName string) Environment {
+func NewEnvironmentV1(id string, name string, group string, environmentUrl string, envTokenName string) *EnvironmentV1 {
 	environmentUrl = strings.TrimSuffix(environmentUrl, "/")
 
-	return &environmentImpl{
+	return &EnvironmentV1{
 		id:             id,
 		name:           name,
 		group:          group,
@@ -110,15 +102,15 @@ func NewEnvironment(id string, name string, group string, environmentUrl string,
 	}
 }
 
-func (s *environmentImpl) GetId() string {
+func (s *EnvironmentV1) GetId() string {
 	return s.id
 }
 
-func (s *environmentImpl) GetEnvironmentUrl() string {
+func (s *EnvironmentV1) GetEnvironmentUrl() string {
 	return s.environmentUrl
 }
 
-func (s *environmentImpl) GetToken() (string, error) {
+func (s *EnvironmentV1) GetToken() (string, error) {
 	value := os.Getenv(s.envTokenName)
 	if value == "" {
 		return value, fmt.Errorf("environment variable " + s.envTokenName + " not found")
@@ -126,10 +118,10 @@ func (s *environmentImpl) GetToken() (string, error) {
 	return value, nil
 }
 
-func (s *environmentImpl) GetTokenName() string {
+func (s *EnvironmentV1) GetTokenName() string {
 	return s.envTokenName
 }
 
-func (s *environmentImpl) GetGroup() string {
+func (s *EnvironmentV1) GetGroup() string {
 	return s.group
 }

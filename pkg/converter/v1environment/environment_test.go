@@ -1,8 +1,8 @@
 //go:build unit
 
-/**
+/*
  * @license
- * Copyright 2020 Dynatrace LLC
+ * Copyright 2023 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package environment
+package v1environment
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/template"
@@ -78,17 +78,17 @@ development:
     - env-token-name: "DEV"
 `
 
-var testDevEnvironment = NewEnvironment("development", "Dev", "", "https://url/to/dev/environment", "DEV")
-var testHardeningEnvironment = NewEnvironment("hardening", "Hardening", "", "https://url/to/hardening/environment", "HARDENING")
-var testProductionEnvironment = NewEnvironment("prod-environment", "prod-environment", "production", "https://url/to/production/environment", "PRODUCTION")
-var testTrailingSlashEnvironment = NewEnvironment("trailing-slash-environment", "trailing-slash-environment", "", "https://url/to/production/environment/", "TRAILINGSLASH")
+var testDevEnvironment = NewEnvironmentV1("development", "Dev", "", "https://url/to/dev/environment", "DEV")
+var testHardeningEnvironment = NewEnvironmentV1("hardening", "Hardening", "", "https://url/to/hardening/environment", "HARDENING")
+var testProductionEnvironment = NewEnvironmentV1("prod-environment", "prod-environment", "production", "https://url/to/production/environment", "PRODUCTION")
+var testTrailingSlashEnvironment = NewEnvironmentV1("trailing-slash-environment", "trailing-slash-environment", "", "https://url/to/production/environment/", "TRAILINGSLASH")
 
 func TestShouldParseYaml(t *testing.T) {
 
 	result, e := template.UnmarshalYaml(testYamlEnvironment, "test-yaml")
 	assert.NilError(t, e)
 
-	environments, errorList := NewEnvironments(result)
+	environments, errorList := newEnvironmentsV1(result)
 
 	assert.Check(t, len(errorList) == 0)
 	assert.Check(t, len(environments) == 3)
@@ -101,22 +101,22 @@ func TestShouldParseYaml(t *testing.T) {
 	assert.Check(t, hardening != nil)
 	assert.Check(t, production != nil)
 
-	assert.DeepEqual(t, dev, testDevEnvironment, cmp.AllowUnexported(environmentImpl{}))
-	assert.DeepEqual(t, hardening, testHardeningEnvironment, cmp.AllowUnexported(environmentImpl{}))
-	assert.DeepEqual(t, production, testProductionEnvironment, cmp.AllowUnexported(environmentImpl{}))
+	assert.DeepEqual(t, dev, testDevEnvironment, cmp.AllowUnexported(EnvironmentV1{}))
+	assert.DeepEqual(t, hardening, testHardeningEnvironment, cmp.AllowUnexported(EnvironmentV1{}))
+	assert.DeepEqual(t, production, testProductionEnvironment, cmp.AllowUnexported(EnvironmentV1{}))
 }
 
 func TestParsingEnvironmentsWithMultipleGroups(t *testing.T) {
 	result, e := template.UnmarshalYaml(testYamlEnvironmentWithGroups, "test-yaml")
 	assert.NilError(t, e)
 
-	environments, errorList := NewEnvironments(result)
+	environments, errorList := newEnvironmentsV1(result)
 	assert.Check(t, len(errorList) == 3)
 	assert.Check(t, len(environments) == 1)
 
 	production := environments["prod-environment"]
 	assert.Check(t, production != nil)
-	assert.DeepEqual(t, production, testProductionEnvironment, cmp.AllowUnexported(environmentImpl{}))
+	assert.DeepEqual(t, production, testProductionEnvironment, cmp.AllowUnexported(EnvironmentV1{}))
 
 }
 
@@ -124,7 +124,7 @@ func TestParsingEnvironmentsWithSameIds(t *testing.T) {
 	result, e := template.UnmarshalYaml(testYamlEnvironmentSameIds, "test-yaml")
 	assert.NilError(t, e)
 
-	environments, errorList := NewEnvironments(result)
+	environments, errorList := newEnvironmentsV1(result)
 	assert.Check(t, len(errorList) == 1)
 	assert.Check(t, len(environments) == 1)
 
@@ -175,12 +175,12 @@ func TestTrailingSlashTrimmedFromEnvironmentURL(t *testing.T) {
 	}
 }
 
-func setupEnvironment(t *testing.T, environmentYamlContent string, environmentOfInterest string) (error, Environment) {
+func setupEnvironment(t *testing.T, environmentYamlContent string, environmentOfInterest string) (error, *EnvironmentV1) {
 
 	result, e := template.UnmarshalYaml(environmentYamlContent, "test-yaml")
 	assert.NilError(t, e)
 
-	environments, errorList := NewEnvironments(result)
+	environments, errorList := newEnvironmentsV1(result)
 	assert.Check(t, len(errorList) == 0)
 
 	devEnvironment := environments[environmentOfInterest]

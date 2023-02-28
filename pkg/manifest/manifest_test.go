@@ -16,7 +16,7 @@
 package manifest
 
 import (
-	environmentv1 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/environment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/converter/v1environment"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"gotest.tools/assert"
 	"reflect"
@@ -27,7 +27,7 @@ var sortStrings = cmpopts.SortSlices(func(a, b string) bool { return a < b })
 
 func TestNewEnvironmentDefinitionFromV1(t *testing.T) {
 	type args struct {
-		env   environmentv1.Environment
+		env   environmentV1
 		group string
 	}
 	tests := []struct {
@@ -38,7 +38,7 @@ func TestNewEnvironmentDefinitionFromV1(t *testing.T) {
 		{
 			"simple v1 environment is converted",
 			args{
-				environmentv1.NewEnvironment("test", "name", "group", "http://google.com", "NAME"),
+				v1environment.NewEnvironmentV1("test", "name", "group", "http://google.com", "NAME"),
 				"group",
 			},
 			createValueEnvironmentDefinition(),
@@ -46,7 +46,7 @@ func TestNewEnvironmentDefinitionFromV1(t *testing.T) {
 		{
 			"v1 environment with env var is converted",
 			args{
-				environmentv1.NewEnvironment("test", "name", "group", "{{ .Env.ENV_VAR }}", "NAME"),
+				v1environment.NewEnvironmentV1("test", "name", "group", "{{ .Env.ENV_VAR }}", "NAME"),
 				"group",
 			},
 			createEnvEnvironmentDefinition(),
