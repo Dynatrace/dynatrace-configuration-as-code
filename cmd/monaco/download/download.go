@@ -85,7 +85,7 @@ func getEnvFromManifest(fs afero.Fs, manifestPath string, specificEnvironmentNam
 	return envUrl, env.Token, nil
 }
 
-type DynatraceClientProvider func(string, string, ...func(*client.DynatraceClient)) (*client.DynatraceClient, error)
+type DynatraceClientProvider func(string, ...func(*client.DynatraceClient)) (*client.DynatraceClient, error)
 
 type downloadOptionsShared struct {
 	environmentUrl          string
@@ -99,7 +99,9 @@ type downloadOptionsShared struct {
 }
 
 func (c downloadOptionsShared) getDynatraceClient() (client.Client, error) {
-	return c.clientProvider(c.environmentUrl, c.token)
+	return c.clientProvider(c.environmentUrl,
+		client.WithTokenAuthorization(c.token),
+		client.WithAutoServerVersion())
 }
 
 func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptionsShared, err error, fs afero.Fs) error {

@@ -1003,8 +1003,8 @@ func setupTestingDownloadOptions(t *testing.T, server *httptest.Server, projectN
 			outputFolder:            "out",
 			projectName:             projectName,
 			concurrentDownloadLimit: 50,
-			clientProvider: func(environmentUrl, token string, opts ...func(client *client.DynatraceClient)) (*client.DynatraceClient, error) {
-				return client.NewDynatraceClientForTesting(environmentUrl, token, server.Client())
+			clientProvider: func(environmentUrl string, opts ...func(client *client.DynatraceClient)) (*client.DynatraceClient, error) {
+				return client.NewDynatraceClientForTesting(environmentUrl, server.Client())
 			},
 		},
 		onlyAPIs: true,

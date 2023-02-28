@@ -17,12 +17,15 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/clientcredentials"
 	"net/http"
 	"net/url"
 	"strings"
@@ -188,6 +191,15 @@ type DynatraceClient struct {
 	retrySettings rest.RetrySettings
 }
 
+// OauthCredentials holds information for authenticating to Dynatrace
+// using Oauth2.0 client credential flow
+type OauthCredentials struct {
+	ClientID     string
+	ClientSecret string
+	TokenURL     string
+	Scopes       []string
+}
+
 var (
 	_ EntitiesClient = (*DynatraceClient)(nil)
 	_ SettingsClient = (*DynatraceClient)(nil)
@@ -230,12 +242,32 @@ func WithAutoServerVersion() func(client *DynatraceClient) {
 	}
 }
 
-// NewDynatraceClient creates a new DynatraceClient
-func NewDynatraceClient(environmentURL string, token string, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
-
-	if token == "" {
-		return nil, errors.New("no token")
+// WithOAuthAuthorization configures the DynatraceClient to use a
+// 2-legged OAuth2 flow (aka. client credentials flow)
+// Using this, as well as WithTokenAuthorization is not allowed and results in an error
+func WithOAuthAuthorization(oauthCredentials OauthCredentials) func(client *DynatraceClient) {
+	return func(d *DynatraceClient) {
+		config := clientcredentials.Config{
+			ClientID:     oauthCredentials.ClientID,
+			ClientSecret: oauthCredentials.ClientSecret,
+			TokenURL:     oauthCredentials.TokenURL,
+			Scopes:       oauthCredentials.Scopes,
+		}
+		d.client = config.Client(context.TODO())
 	}
+}
+
+// WithTokenAuthorization configures the DynatraceClient to use the
+// regular Token authorization.
+// Using this, as well as WithOAuthAuthorization is not allowed and results in an error
+func WithTokenAuthorization(token string) func(client *DynatraceClient) {
+	return func(d *DynatraceClient) {
+		d.token = token
+	}
+}
+
+// NewDynatraceClient creates a new DynatraceClient
+func NewDynatraceClient(environmentURL string, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
 
 	environmentURL = strings.TrimSuffix(environmentURL, "/")
 	parsedUrl, err := url.ParseRequestURI(environmentURL)
@@ -251,14 +283,8 @@ func NewDynatraceClient(environmentURL string, token string, opts ...func(dynatr
 		log.Warn("You are using an insecure connection (%s). Consider switching to HTTPS.", parsedUrl.Scheme)
 	}
 
-	if !isNewDynatraceTokenFormat(token) {
-		log.Warn("You used an old token format. Please consider switching to the new 1.205+ token format.")
-		log.Warn("More information: https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication")
-	}
-
 	dtClient := &DynatraceClient{
 		environmentUrl: environmentURL,
-		token:          token,
 		client:         &http.Client{},
 		retrySettings:  rest.DefaultRetrySettings,
 		serverVersion:  version.Version{},
@@ -266,6 +292,17 @@ func NewDynatraceClient(environmentURL string, token string, opts ...func(dynatr
 
 	for _, o := range opts {
 		o(dtClient)
+	}
+
+	if dtClient.token != "" && isOAuth2Client(dtClient.client) {
+		return nil, fmt.Errorf("dynatrace client cannot be configured to use both, token authorization and oauth2 authorization")
+	}
+
+	if dtClient.token != "" {
+		if !isNewDynatraceTokenFormat(dtClient.token) {
+			log.Warn("You used an old token format. Please consider switching to the new 1.205+ token format.")
+			log.Warn("More information: https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication")
+		}
 	}
 
 	if dtClient.serverVersion.Invalid() {
@@ -277,6 +314,12 @@ func NewDynatraceClient(environmentURL string, token string, opts ...func(dynatr
 
 func isNewDynatraceTokenFormat(token string) bool {
 	return strings.HasPrefix(token, "dt0c01.") && strings.Count(token, ".") == 2
+}
+
+// isOAuth2Client checks whether the given http client is configured to use Oauth2 authorization
+func isOAuth2Client(client *http.Client) bool {
+	_, ok := client.Transport.(*oauth2.Transport)
+	return ok
 }
 
 func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, error) {
