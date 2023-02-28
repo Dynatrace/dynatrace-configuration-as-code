@@ -67,7 +67,6 @@ func getEnvFromManifest(fs afero.Fs, manifestPath string, specificEnvironmentNam
 		Fs:           fs,
 		ManifestPath: manifestPath,
 	})
-
 	if len(errs) > 0 {
 		err = PrintAndFormatErrors(errs, "failed to load manifest '%v'", manifestPath)
 		return "", manifest.Token{}, err
@@ -75,18 +74,12 @@ func getEnvFromManifest(fs afero.Fs, manifestPath string, specificEnvironmentNam
 
 	env, found := man.Environments[specificEnvironmentName]
 	if !found {
-		err = PrintAndFormatErrors(errs, "environment '%v' was not available in manifest '%v'", specificEnvironmentName, manifestPath)
-		return "", manifest.Token{}, err
+		return "", manifest.Token{}, fmt.Errorf("environment %q was not available in manifest %q", specificEnvironmentName, manifestPath)
 	}
 
 	envUrl, err = env.GetUrl()
 	if err != nil {
-		errs = append(errs, err)
-	}
-
-	if len(errs) > 0 {
-		err = PrintAndFormatErrors(errs, "failed to load manifest data")
-		return "", manifest.Token{}, err
+		return "", manifest.Token{}, fmt.Errorf("failed to load manifest %q: %w", manifestPath, err)
 	}
 
 	return envUrl, env.Token, nil
