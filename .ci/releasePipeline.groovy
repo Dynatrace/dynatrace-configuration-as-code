@@ -4,6 +4,8 @@ import groovy.transform.Field
                   signedDir  : "./signed"]
 
 def version
+def releaseID
+
 pipeline {
     agent {
         kubernetes {
@@ -33,6 +35,28 @@ pipeline {
                         }
                     }
                 }
+                stage('Create GitHub release draft') {
+                    steps {
+                        script {
+                            withEnv(["VERSION=${version}",]) {
+                                withVault(vaultSecrets: [[path        : 'keptn-jenkins/monaco/github-credentials',
+                                                          secretValues: [
+                                                              [envVar: 'token', vaultKey: 'access_token', isRequired: true]
+                                                          ]]]
+                                ) {
+                                    releaseID = sh(returnStdout: true, script: '''curl \
+                                      -X POST \
+                                      -H "Accept: application/vnd.github+json" \
+                                      -H "Authorization: Bearer $TOKEN"\
+                                      -H "X-GitHub-Api-Version: 2022-11-28" \
+                                      https://api.github.com/repos/Dynatrace/dynatrace-configuration-as-code/releases \
+                                      -d "{\"tag_name\":\"v$VERSION\",\"target_commitish\":\"main\",\"name\":\"$VERSION\",\"draft\":true,\"prerelease\":false,\"generate_release_notes\":true}" \
+                                      | jq -r ".id" ''')
+                                }
+                            }
+                        }
+                    }
+                }
                 stage('matrix') {
                     matrix {
                         axes {
@@ -47,6 +71,7 @@ pipeline {
                                     buildBinary(binary: env.PLATFORM, version: version)
                                     signBinaries(binary: env.PLATFORM, version: version)
                                     releaseBinaryToArtifactory(binary: env.PLATFORM, version: version)
+                                    releaseBinaryToGithub(binary: env.PLATFORM, version: version, releaseID: releaseID)
                                 }
                             }
                         }
@@ -133,7 +158,7 @@ void signWinBinaries(Map args = [binary: '', version: '', ctx: null]) {
 
 def releaseBinaryToArtifactory(Map args = [binary: '', version: '', ctx: null]) {
     args.ctx = args.ctx ?: ctx
-    stage('Deliver ' + args.binary) {
+    stage('Deliver ' + args.binary + ' internally') {
         withEnv(["binary=${args.binary}", "version=${args.version}", "signedDir=${args.ctx.signedDir}",]) {
             withVault(vaultSecrets: [[path        : 'keptn-jenkins/monaco/artifact-storage-deploy',
                                       secretValues: [
@@ -142,6 +167,26 @@ def releaseBinaryToArtifactory(Map args = [binary: '', version: '', ctx: null]) 
                                           [envVar: 'password', vaultKey: 'password', isRequired: true]]]]
             ) {
                 sh 'curl -u "$username":"$password" -X PUT $repo_path/monaco/$version/$binary -T $signedDir/$binary'
+            }
+        }
+    }
+}
+
+def releaseBinaryToGithub(Map args = [binary: '', version: '', releaseID: '', ctx: null]) {
+    args.ctx = args.ctx ?: ctx
+    stage('Deliver ' + args.binary + ' to GitHub') {
+        withEnv(["binary=${args.binary}", "version=${args.version}", "signedDir=${args.ctx.signedDir}", "releaseID=${args.releaseID}",]) {
+            withVault(vaultSecrets: [[path        : 'keptn-jenkins/monaco/github-credentials',
+                                      secretValues: [
+                                          [envVar: 'token', vaultKey: 'access_token', isRequired: true]
+                                      ]]]
+            ) {
+                sh '''curl -X POST -H "Accept: application/vnd.github+json" \
+                -H "Authorization: Bearer $token"\
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                -H "Content-Type: application/octet-stream" \
+                https://uploads.github.com/repos/Dynatrace/dynatrace-configuration-as-code/releases/$releaseID/assets?name=$binary \
+                --data-binary "$signedDir/$binary"'''
             }
         }
     }
