@@ -16,7 +16,7 @@
 package manifest
 
 import (
-	environmentv1 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/environment"
+	environmentv1 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/environment/v1"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"gotest.tools/assert"
 	"reflect"

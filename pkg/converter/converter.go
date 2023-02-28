@@ -21,7 +21,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	listParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/list"
-	environmentV1 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/environment"
+	environmentV1 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/environment/v1"
 	projectV1 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v1"
 	"regexp"
 	"strings"
