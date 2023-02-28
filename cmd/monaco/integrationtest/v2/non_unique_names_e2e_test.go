@@ -38,6 +38,9 @@ import (
 func TestNonUniqueNameUpserts(t *testing.T) {
 	testSuffix := integrationtest.GenerateTestSuffix("NonUniqueName")
 
+	url := os.Getenv("URL_ENVIRONMENT_1")
+	token := os.Getenv("TOKEN_ENVIRONMENT_1")
+
 	t.Cleanup(func() {
 		integrationtest.CleanupIntegrationTest(
 			t,
@@ -46,16 +49,13 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 			manifest.Manifest{
 				Projects: nil,
 				Environments: map[string]manifest.EnvironmentDefinition{
-					"test": manifest.NewEnvironmentDefinition("test", manifest.UrlDefinition{Type: manifest.EnvironmentUrlType, Value: "URL_ENVIRONMENT_1"}, "default", &manifest.EnvironmentVariableToken{EnvironmentVariableName: "TOKEN_ENVIRONMENT_1"}),
+					"test": manifest.NewEnvironmentDefinition("test", manifest.UrlDefinition{Type: manifest.EnvironmentUrlType, Value: "URL_ENVIRONMENT_1"}, "default", manifest.Token{Name: "TOKEN_ENVIRONMENT_1", Value: token}),
 				},
 			},
 			"test",
 			testSuffix,
 		)
 	})
-
-	url := os.Getenv("URL_ENVIRONMENT_1")
-	token := os.Getenv("TOKEN_ENVIRONMENT_1")
 
 	httpClient := &http.Client{}
 

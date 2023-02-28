@@ -32,6 +32,7 @@ var skipDeploymentFolder = AbsOrPanicFromSlash("test-resources/skip-deployment-p
 var skipDeploymentEnvironmentsFile = AbsOrPanicFromSlash("test-resources/test-environments.yaml")
 
 func TestValidationSkipDeployment(t *testing.T) {
+	t.Setenv("TEST_TOKEN", "mock test token")
 
 	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, t.Name(), func(fs afero.Fs, manifest string) {
 		cmd := runner.BuildCli(fs)
@@ -49,6 +50,8 @@ func TestValidationSkipDeployment(t *testing.T) {
 }
 
 func TestValidationSkipDeploymentWithBrokenDependency(t *testing.T) {
+	t.Setenv("TEST_TOKEN", "mock test token")
+
 	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, "SkipDeployment", func(fs afero.Fs, manifest string) {
 
 		cmd := runner.BuildCli(fs)
@@ -65,6 +68,7 @@ func TestValidationSkipDeploymentWithBrokenDependency(t *testing.T) {
 }
 
 func TestValidationSkipDeploymentWithOverridingDependency(t *testing.T) {
+	t.Setenv("TEST_TOKEN", "mock test token")
 
 	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, t.Name(), func(fs afero.Fs, manifest string) {
 		cmd := runner.BuildCli(fs)
@@ -82,6 +86,8 @@ func TestValidationSkipDeploymentWithOverridingDependency(t *testing.T) {
 }
 
 func TestValidationSkipDeploymentWithOverridingFlagValue(t *testing.T) {
+	t.Setenv("TEST_TOKEN", "mock test token")
+
 	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, t.Name(), func(fs afero.Fs, manifest string) {
 		cmd := runner.BuildCli(fs)
 		cmd.SetArgs([]string{
@@ -98,6 +104,8 @@ func TestValidationSkipDeploymentWithOverridingFlagValue(t *testing.T) {
 }
 
 func TestValidationSkipDeploymentInterProjectWithMissingDependency(t *testing.T) {
+	t.Setenv("TEST_TOKEN", "mock test token")
+
 	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, t.Name(), func(fs afero.Fs, manifest string) {
 		cmd := runner.BuildCli(fs)
 		cmd.SetArgs([]string{

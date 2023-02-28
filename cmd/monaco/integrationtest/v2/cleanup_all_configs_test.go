@@ -19,6 +19,7 @@
 package v2
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
@@ -48,14 +49,10 @@ func TestDoCleanup(t *testing.T) {
 	testSuffixRegex := regexp.MustCompile(`^.+_\d+_\d+_.*$`)
 
 	for _, environment := range loadedManifest.Environments {
-		token, err := environment.GetToken()
-		assert.NilError(t, err)
-
 		envUrl, err := environment.GetUrl()
 		assert.NilError(t, err)
 
-		client, err := client.NewDynatraceClient(envUrl, token)
-		assert.NilError(t, err)
+		client := integrationtest.CreateDynatraceClient(t, environment)
 
 		deletedConfigs := cleanupTestConfigs(t, apis, client, testSuffixRegex)
 		t.Logf("Deleted %d leftover test configurations from %s (%s)", deletedConfigs, environment.Name, envUrl)
