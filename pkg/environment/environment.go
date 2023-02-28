@@ -23,15 +23,7 @@ import (
 	"strings"
 )
 
-type Environment interface {
-	GetId() string
-	GetEnvironmentUrl() string
-	GetToken() (string, error)
-	GetGroup() string
-	GetTokenName() string
-}
-
-type environmentImpl struct {
+type Environment struct {
 	id             string
 	name           string
 	group          string
@@ -39,9 +31,9 @@ type environmentImpl struct {
 	envTokenName   string
 }
 
-func NewEnvironments(maps map[string]map[string]string) (map[string]Environment, []error) {
+func NewEnvironments(maps map[string]map[string]string) (map[string]*Environment, []error) {
 
-	environments := make(map[string]Environment)
+	environments := make(map[string]*Environment)
 	errors := make([]error, 0)
 
 	for id, details := range maps {
@@ -61,7 +53,7 @@ func NewEnvironments(maps map[string]map[string]string) (map[string]Environment,
 	return environments, errors
 }
 
-func newEnvironment(id string, properties map[string]string) (Environment, error) {
+func newEnvironment(id string, properties map[string]string) (*Environment, error) {
 
 	// only one group per environment is allowed
 	// ignore environments with leading or trailing `.`
@@ -98,10 +90,10 @@ func newEnvironment(id string, properties map[string]string) (Environment, error
 	return NewEnvironment(id, environmentName, environmentGroup, environmentUrl, envTokenName), nil
 }
 
-func NewEnvironment(id string, name string, group string, environmentUrl string, envTokenName string) Environment {
+func NewEnvironment(id string, name string, group string, environmentUrl string, envTokenName string) *Environment {
 	environmentUrl = strings.TrimSuffix(environmentUrl, "/")
 
-	return &environmentImpl{
+	return &Environment{
 		id:             id,
 		name:           name,
 		group:          group,
@@ -110,15 +102,15 @@ func NewEnvironment(id string, name string, group string, environmentUrl string,
 	}
 }
 
-func (s *environmentImpl) GetId() string {
+func (s *Environment) GetId() string {
 	return s.id
 }
 
-func (s *environmentImpl) GetEnvironmentUrl() string {
+func (s *Environment) GetEnvironmentUrl() string {
 	return s.environmentUrl
 }
 
-func (s *environmentImpl) GetToken() (string, error) {
+func (s *Environment) GetToken() (string, error) {
 	value := os.Getenv(s.envTokenName)
 	if value == "" {
 		return value, fmt.Errorf("environment variable " + s.envTokenName + " not found")
@@ -126,10 +118,10 @@ func (s *environmentImpl) GetToken() (string, error) {
 	return value, nil
 }
 
-func (s *environmentImpl) GetTokenName() string {
+func (s *Environment) GetTokenName() string {
 	return s.envTokenName
 }
 
-func (s *environmentImpl) GetGroup() string {
+func (s *Environment) GetGroup() string {
 	return s.group
 }

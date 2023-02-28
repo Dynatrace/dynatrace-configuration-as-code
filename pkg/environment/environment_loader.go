@@ -26,7 +26,7 @@ import (
 
 // LoadEnvironmentsWithoutTemplating loads environments from a yaml file without templating. No variable references will
 // be replaced on loading.
-func LoadEnvironmentsWithoutTemplating(environmentsFile string, fs afero.Fs) (environments map[string]Environment, errorList []error) {
+func LoadEnvironmentsWithoutTemplating(environmentsFile string, fs afero.Fs) (environments map[string]*Environment, errorList []error) {
 	if environmentsFile == "" {
 		errorList = append(errorList, errors.New("no environment file provided"))
 		return environments, errorList

@@ -27,7 +27,7 @@ var sortStrings = cmpopts.SortSlices(func(a, b string) bool { return a < b })
 
 func TestNewEnvironmentDefinitionFromV1(t *testing.T) {
 	type args struct {
-		env   environmentv1.Environment
+		env   *environmentv1.Environment
 		group string
 	}
 	tests := []struct {

@@ -21,6 +21,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	listParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/list"
+	environmentV1 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/environment"
 	projectV1 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v1"
 	"regexp"
 	"strings"
@@ -34,7 +35,6 @@ import (
 	refParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/reference"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
-	environmentV1 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	projectV2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/spf13/afero"
@@ -120,7 +120,8 @@ var (
 	_ configErrors.ConfigError = (*ReferenceParserError)(nil)
 )
 
-func Convert(context ConverterContext, environments map[string]environmentV1.Environment,
+// Convert takes v1 environments and projects and converts them into a v2 manifest and projects
+func Convert(context ConverterContext, environments map[string]*environmentV1.Environment,
 	projects []projectV1.Project) (manifest.Manifest, []projectV2.Project, []error) {
 	environmentDefinitions := convertEnvironments(environments)
 	projectDefinitions, convertedProjects, errors := convertProjects(&context, environmentDefinitions, projects)
@@ -532,7 +533,7 @@ func parseListStringToValueSlice(s string) ([]valueParam.ValueParameter, error) 
 	return slice, nil
 }
 
-func convertEnvironments(environments map[string]environmentV1.Environment) map[string]manifest.EnvironmentDefinition {
+func convertEnvironments(environments map[string]*environmentV1.Environment) map[string]manifest.EnvironmentDefinition {
 	result := make(map[string]manifest.EnvironmentDefinition)
 
 	for _, env := range environments {

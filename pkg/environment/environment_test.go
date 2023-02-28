@@ -101,9 +101,9 @@ func TestShouldParseYaml(t *testing.T) {
 	assert.Check(t, hardening != nil)
 	assert.Check(t, production != nil)
 
-	assert.DeepEqual(t, dev, testDevEnvironment, cmp.AllowUnexported(environmentImpl{}))
-	assert.DeepEqual(t, hardening, testHardeningEnvironment, cmp.AllowUnexported(environmentImpl{}))
-	assert.DeepEqual(t, production, testProductionEnvironment, cmp.AllowUnexported(environmentImpl{}))
+	assert.DeepEqual(t, dev, testDevEnvironment, cmp.AllowUnexported(Environment{}))
+	assert.DeepEqual(t, hardening, testHardeningEnvironment, cmp.AllowUnexported(Environment{}))
+	assert.DeepEqual(t, production, testProductionEnvironment, cmp.AllowUnexported(Environment{}))
 }
 
 func TestParsingEnvironmentsWithMultipleGroups(t *testing.T) {
@@ -116,7 +116,7 @@ func TestParsingEnvironmentsWithMultipleGroups(t *testing.T) {
 
 	production := environments["prod-environment"]
 	assert.Check(t, production != nil)
-	assert.DeepEqual(t, production, testProductionEnvironment, cmp.AllowUnexported(environmentImpl{}))
+	assert.DeepEqual(t, production, testProductionEnvironment, cmp.AllowUnexported(Environment{}))
 
 }
 
@@ -175,7 +175,7 @@ func TestTrailingSlashTrimmedFromEnvironmentURL(t *testing.T) {
 	}
 }
 
-func setupEnvironment(t *testing.T, environmentYamlContent string, environmentOfInterest string) (error, Environment) {
+func setupEnvironment(t *testing.T, environmentYamlContent string, environmentOfInterest string) (error, *Environment) {
 
 	result, e := template.UnmarshalYaml(environmentYamlContent, "test-yaml")
 	assert.NilError(t, e)
