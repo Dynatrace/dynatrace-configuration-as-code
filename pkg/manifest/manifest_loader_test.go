@@ -694,6 +694,8 @@ func Test_validateManifestVersion(t *testing.T) {
 }
 
 func TestLoadManifest(t *testing.T) {
+	t.Setenv("e", "mock token")
+
 	tests := []struct {
 		name            string
 		manifestContent string
@@ -856,6 +858,15 @@ projects: [{name: a}]
 environmentGroups: [{name: b, environments: [{name: c, url: {value: d, type: f}, token: {name: e}}]}]
 `,
 			errsContain: []string{"f is not a valid"},
+		},
+		{
+			name: "env token not present",
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: a}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: doesNotExist}}]}]
+`,
+			errsContain: []string{`no environment variable found for token "doesNotExist"`},
 		},
 	}
 	for _, test := range tests {

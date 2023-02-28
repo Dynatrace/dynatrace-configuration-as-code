@@ -142,18 +142,15 @@ func toWriteableUrl(environment EnvironmentDefinition) url {
 }
 
 func toWritableToken(environment EnvironmentDefinition) tokenConfig {
-	var envVarName string
+	token := environment.Name + "_TOKEN"
 
-	switch token := environment.Token.(type) {
-	case *EnvironmentVariableToken:
-		envVarName = token.EnvironmentVariableName
-	default:
-		envVarName = environment.Name + "_TOKEN"
+	if environment.Token.Name != "" {
+		token = environment.Token.Name
 	}
 
 	return tokenConfig{
 		Config: map[string]interface{}{
-			"name": envVarName,
+			"name": token,
 		},
 	}
 }

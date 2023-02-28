@@ -18,18 +18,16 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"net/url"
-	"os"
-	"path"
-	"strconv"
-	"strings"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2/topologysort"
 	"github.com/spf13/afero"
+	"net/url"
+	"os"
+	"path"
+	"strconv"
 )
 
 const (
@@ -63,7 +61,7 @@ type downloadCommandOptionsShared struct {
 	forceOverwrite bool
 }
 
-func getEnvFromManifest(fs afero.Fs, manifestPath string, specificEnvironmentName string, projectName string) (envUrl string, token string, tokenEnvVar string, err error) {
+func getEnvFromManifest(fs afero.Fs, manifestPath string, specificEnvironmentName string, _ string) (envUrl string, token string, tokenEnvVar string, err error) {
 
 	man, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
 		Fs:           fs,
@@ -86,22 +84,13 @@ func getEnvFromManifest(fs afero.Fs, manifestPath string, specificEnvironmentNam
 		errs = append(errs, err)
 	}
 
-	token, err = env.GetToken()
-	if err != nil {
-		errs = append(errs, err)
-	}
-
 	if len(errs) > 0 {
 		err = PrintAndFormatErrors(errs, "failed to load manifest data")
 		return "", "", "", err
 	}
 
-	tokenEnvVar = fmt.Sprintf("TOKEN_%s", strings.ToUpper(projectName))
-	if envVarToken, ok := env.Token.(*manifest.EnvironmentVariableToken); ok {
-		tokenEnvVar = envVarToken.EnvironmentVariableName
-	}
-
-	return envUrl, token, tokenEnvVar, nil
+	// todo: return token directly and remove parameter
+	return envUrl, env.Token.Value, env.Token.Name, nil
 }
 
 type DynatraceClientProvider func(string, string, ...func(*client.DynatraceClient)) (*client.DynatraceClient, error)

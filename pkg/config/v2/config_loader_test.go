@@ -34,6 +34,7 @@ import (
 func Test_parseConfigs(t *testing.T) {
 	t.Setenv("ENV_VAR_SKIP_TRUE", "true")
 	t.Setenv("ENV_VAR_SKIP_FALSE", "false")
+
 	testLoaderContext := &LoaderContext{
 		ProjectId: "project",
 		Path:      "some-dir/",
@@ -43,7 +44,7 @@ func Test_parseConfigs(t *testing.T) {
 				"env name",
 				manifest.UrlDefinition{Type: manifest.ValueUrlType, Value: "env url"},
 				"default",
-				&manifest.EnvironmentVariableToken{EnvironmentVariableName: "token var"},
+				manifest.Token{Name: "token var"},
 			),
 		},
 		ParametersSerDe: DefaultParameterParsers,

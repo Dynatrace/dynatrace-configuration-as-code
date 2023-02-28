@@ -99,7 +99,7 @@ func TestEnvironmentDefinitionGetUrlFailsOnUnkownType(t *testing.T) {
 			Value: "http://google.com",
 		},
 		Group: "group",
-		Token: &EnvironmentVariableToken{EnvironmentVariableName: "NAME"},
+		Token: Token{Name: "NAME"},
 	}
 	_, err := definition.GetUrl()
 
@@ -114,7 +114,7 @@ func createEnvEnvironmentDefinition() EnvironmentDefinition {
 			Value: "ENV_VAR",
 		},
 		Group: "group",
-		Token: &EnvironmentVariableToken{EnvironmentVariableName: "NAME"},
+		Token: Token{Name: "NAME"},
 	}
 }
 
@@ -126,7 +126,7 @@ func createValueEnvironmentDefinition() EnvironmentDefinition {
 			Value: "http://google.com",
 		},
 		Group: "group",
-		Token: &EnvironmentVariableToken{EnvironmentVariableName: "NAME"},
+		Token: Token{Name: "NAME"},
 	}
 }
 

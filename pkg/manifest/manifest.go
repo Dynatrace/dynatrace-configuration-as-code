@@ -38,7 +38,7 @@ type EnvironmentDefinition struct {
 	Name  string
 	url   UrlDefinition
 	Group string
-	Token
+	Token Token
 }
 
 type UrlType string
@@ -51,12 +51,14 @@ type UrlDefinition struct {
 	Value string
 }
 
-type Token interface {
-	GetToken() (string, error)
-}
+// Token is the API-Token for Dynatrace Platform API-Access
+type Token struct {
+	// Name is the name of the environment-variable of the token. It is used for converting monaco-v1 to monaco-v2 environments
+	// where the value is not resolved, but the env-name has to be kept.
+	Name string
 
-type EnvironmentVariableToken struct {
-	EnvironmentVariableName string
+	// Value holds the actual token value for the given [Name]. It is empty when converting vom monaco-v1 to monaco-v2
+	Value string
 }
 
 type ProjectDefinitionByProjectId map[string]ProjectDefinition
@@ -77,7 +79,7 @@ func NewEnvironmentDefinitionFromV1(env environmentV1, group string) Environment
 		Name:  env.GetId(),
 		url:   newUrlDefinitionFromV1(env),
 		Group: group,
-		Token: &EnvironmentVariableToken{EnvironmentVariableName: env.GetTokenName()},
+		Token: Token{Name: env.GetTokenName()},
 	}
 }
 
@@ -96,21 +98,13 @@ func newUrlDefinitionFromV1(env environmentV1) UrlDefinition {
 }
 
 // NewEnvironmentDefinition creates a new EnvironmentDefinition
-func NewEnvironmentDefinition(name string, url UrlDefinition, group string, token *EnvironmentVariableToken) EnvironmentDefinition {
+func NewEnvironmentDefinition(name string, url UrlDefinition, group string, token Token) EnvironmentDefinition {
 	return EnvironmentDefinition{
 		Name:  name,
 		url:   url,
 		Group: group,
 		Token: token,
 	}
-}
-
-func (t *EnvironmentVariableToken) GetToken() (string, error) {
-	if token, found := os.LookupEnv(t.EnvironmentVariableName); found {
-		return token, nil
-	}
-
-	return "", fmt.Errorf("no environment variable `%s` set", t.EnvironmentVariableName)
 }
 
 func (e *EnvironmentDefinition) GetUrl() (string, error) {

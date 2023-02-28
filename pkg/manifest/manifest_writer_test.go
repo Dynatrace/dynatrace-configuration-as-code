@@ -154,7 +154,9 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						Value: "www.an.url",
 					},
 					Group: "group1",
-					Token: nil,
+					Token: Token{
+						Name: "TokenTest",
+					},
 				},
 				"env2": {
 					Name: "env2",
@@ -162,7 +164,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						Value: "www.an.url",
 					},
 					Group: "group1",
-					Token: nil,
+					Token: Token{},
 				},
 				"env3": {
 					Name: "env3",
@@ -170,7 +172,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						Value: "www.an.url",
 					},
 					Group: "group2",
-					Token: nil,
+					Token: Token{},
 				},
 			},
 			[]group{
@@ -182,7 +184,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							Url:  url{Value: "www.an.url"},
 							Token: tokenConfig{
 								Config: map[string]interface{}{
-									"name": "env1_TOKEN",
+									"name": "TokenTest",
 								},
 							},
 						},
@@ -256,7 +258,7 @@ func Test_toWriteableUrl(t *testing.T) {
 					Value: "{{ .Env.VARIABLE }}",
 				},
 				Group: "GROUP",
-				Token: nil,
+				Token: Token{},
 			},
 			url{
 				Type:  "environment",
@@ -272,7 +274,7 @@ func Test_toWriteableUrl(t *testing.T) {
 					Value: "www.an.url",
 				},
 				Group: "GROUP",
-				Token: nil,
+				Token: Token{},
 			},
 			url{
 				Value: "www.an.url",
@@ -286,7 +288,7 @@ func Test_toWriteableUrl(t *testing.T) {
 					Value: "www.an.url",
 				},
 				Group: "GROUP",
-				Token: nil,
+				Token: Token{},
 			},
 			url{
 				Value: "www.an.url",
@@ -314,7 +316,7 @@ func Test_toWritableToken(t *testing.T) {
 				Name:  "NAME",
 				url:   UrlDefinition{},
 				Group: "GROUP",
-				Token: &EnvironmentVariableToken{EnvironmentVariableName: "VARIABLE"},
+				Token: Token{Name: "VARIABLE"},
 			},
 			tokenConfig{
 				Config: map[string]interface{}{
@@ -328,7 +330,7 @@ func Test_toWritableToken(t *testing.T) {
 				Name:  "NAME",
 				url:   UrlDefinition{},
 				Group: "GROUP",
-				Token: nil,
+				Token: Token{},
 			},
 			tokenConfig{
 				Config: map[string]interface{}{

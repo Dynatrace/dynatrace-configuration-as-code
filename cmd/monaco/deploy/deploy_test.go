@@ -164,6 +164,8 @@ func Test_filterProjectsByName(t *testing.T) {
 }
 
 func TestDeploy_ReportsErrorWhenRunningOnV1Config(t *testing.T) {
+	t.Setenv("ENV_TOKEN", "mock env token")
+
 	testFs := afero.NewMemMapFs()
 	// Create v1 configuration
 	configPath, _ := filepath.Abs("project/alerting-profile/profile.yaml")
@@ -180,6 +182,8 @@ func TestDeploy_ReportsErrorWhenRunningOnV1Config(t *testing.T) {
 }
 
 func TestDeploy_ReportsErrorForBrokenV2Config(t *testing.T) {
+	t.Setenv("ENV_TOKEN", "mock env token")
+
 	testFs := afero.NewMemMapFs()
 	// Create v1 configuration
 	configPath, _ := filepath.Abs("project/alerting-profile/profile.yaml")

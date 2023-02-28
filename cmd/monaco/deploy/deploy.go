@@ -50,7 +50,7 @@ func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironments []s
 		ManifestPath: absManifestPath,
 	})
 
-	if errs != nil {
+	if len(errs) > 0 {
 		// TODO add grouping and print proper error repot
 		errutils.PrintErrors(errs)
 		return errors.New("error while loading manifest")
@@ -394,15 +394,11 @@ func createDynatraceClient(environment manifest.EnvironmentDefinition, dryRun bo
 	if dryRun {
 		return client.NewDummyClient(), nil
 	}
-	envToken, err := environment.GetToken()
-	if err != nil {
-		return nil, fmt.Errorf("unable to get token for environment %q: %w", environment.Name, err)
-	}
 
 	envURL, err := environment.GetUrl()
 	if err != nil {
 		return nil, fmt.Errorf("unable to get URL for environment %q: %w", environment.Name, err)
 	}
 
-	return client.NewDynatraceClient(envURL, envToken, client.WithAutoServerVersion())
+	return client.NewDynatraceClient(envURL, environment.Token.Value, client.WithAutoServerVersion())
 }

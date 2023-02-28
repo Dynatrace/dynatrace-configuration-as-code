@@ -20,6 +20,7 @@ import (
 	strings2 "github.com/dynatrace/dynatrace-configuration-as-code/internal/strings"
 	version2 "github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -317,20 +318,31 @@ func parseToken(context *ManifestLoaderContext, config environment, group string
 		return parseEnvironmentToken(context, group, config, token)
 	}
 
-	return nil, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("unknown token type `%s`", tokenType))
+	return Token{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("unknown token type `%s`", tokenType))
 }
 
 func parseEnvironmentToken(context *ManifestLoaderContext, group string, config environment, token tokenConfig) (Token, error) {
-	if val, found := token.Config["name"]; found {
+	if name, found := token.Config["name"]; found {
 
-		if val == "" {
-			return nil, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, "empty key `name` in token config")
+		if name == "" {
+			return Token{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, "empty key `name` in token config")
 		}
 
-		return &EnvironmentVariableToken{strings2.ToString(val)}, nil
+		// resolve token value immediately
+		nameStr := fmt.Sprint(name)
+		val, found := os.LookupEnv(nameStr)
+		if !found {
+			return Token{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("no environment variable found for token %q", nameStr))
+		}
+
+		if val == "" {
+			return Token{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("environment variable for token %q is empty", nameStr))
+		}
+
+		return Token{Name: nameStr, Value: val}, nil
 	}
 
-	return nil, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, "missing key `name` in token config")
+	return Token{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, "missing key `name` in token config")
 }
 
 func toProjectDefinitions(context *projectLoaderContext, definitions []project) (map[string]ProjectDefinition, []error) {
