@@ -88,7 +88,7 @@ func TestShouldParseYaml(t *testing.T) {
 	result, e := template.UnmarshalYaml(testYamlEnvironment, "test-yaml")
 	assert.NilError(t, e)
 
-	environments, errorList := NewEnvironments(result)
+	environments, errorList := newEnvironments(result)
 
 	assert.Check(t, len(errorList) == 0)
 	assert.Check(t, len(environments) == 3)
@@ -110,7 +110,7 @@ func TestParsingEnvironmentsWithMultipleGroups(t *testing.T) {
 	result, e := template.UnmarshalYaml(testYamlEnvironmentWithGroups, "test-yaml")
 	assert.NilError(t, e)
 
-	environments, errorList := NewEnvironments(result)
+	environments, errorList := newEnvironments(result)
 	assert.Check(t, len(errorList) == 3)
 	assert.Check(t, len(environments) == 1)
 
@@ -124,7 +124,7 @@ func TestParsingEnvironmentsWithSameIds(t *testing.T) {
 	result, e := template.UnmarshalYaml(testYamlEnvironmentSameIds, "test-yaml")
 	assert.NilError(t, e)
 
-	environments, errorList := NewEnvironments(result)
+	environments, errorList := newEnvironments(result)
 	assert.Check(t, len(errorList) == 1)
 	assert.Check(t, len(environments) == 1)
 
@@ -180,7 +180,7 @@ func setupEnvironment(t *testing.T, environmentYamlContent string, environmentOf
 	result, e := template.UnmarshalYaml(environmentYamlContent, "test-yaml")
 	assert.NilError(t, e)
 
-	environments, errorList := NewEnvironments(result)
+	environments, errorList := newEnvironments(result)
 	assert.Check(t, len(errorList) == 0)
 
 	devEnvironment := environments[environmentOfInterest]

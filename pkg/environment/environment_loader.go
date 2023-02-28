@@ -38,7 +38,7 @@ func LoadEnvironmentsWithoutTemplating(environmentsFile string, fs afero.Fs) (en
 	environmentMaps, err := template.UnmarshalYamlWithoutTemplating(string(dat), environmentsFile)
 	errutils.FailOnError(err, "Error while converting file")
 
-	environments, envErrs := NewEnvironments(environmentMaps)
+	environments, envErrs := newEnvironments(environmentMaps)
 
 	if len(envErrs) > 0 {
 		errorList = append(errorList, envErrs...)

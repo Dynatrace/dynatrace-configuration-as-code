@@ -58,7 +58,7 @@ func TestConvertParameters(t *testing.T) {
 
 	testApi := api.NewStandardApi("alerting-profile", "/api/configV1/v1/alertingProfiles", false, "", false)
 
-	convertContext := &ConfigConvertContext{
+	convertContext := &configConvertContext{
 		ConverterContext: &ConverterContext{
 			Fs: setupDummyFs(t),
 		},
@@ -124,7 +124,7 @@ func TestParseSkipDeploymentParameter(t *testing.T) {
 	configId := "alerting-profile-1"
 	configName := "Alerting Profile 1"
 
-	convertContext := &ConfigConvertContext{
+	convertContext := &configConvertContext{
 		ConverterContext: &ConverterContext{
 			Fs: setupDummyFs(t),
 		},
@@ -271,7 +271,7 @@ func TestConvertConfig(t *testing.T) {
 	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", &manifest.EnvironmentVariableToken{EnvironmentVariableName: "token"})
 
 	testApi := api.NewStandardApi("alerting-profile", "/api/configV1/v1/alertingProfiles", false, "", false)
-	convertContext := &ConfigConvertContext{
+	convertContext := &configConvertContext{
 		ConverterContext: &ConverterContext{
 			Fs: setupDummyFsWithEnvVariableInTemplate(t, envVarName),
 		},
@@ -333,7 +333,7 @@ func TestConvertDeprecatedConfigToLatest(t *testing.T) {
 
 	deprecatedApi := api.NewStandardApi("application", "/api/configV1/v1/application/web", false, "application-web", false)
 
-	convertContext := &ConfigConvertContext{
+	convertContext := &configConvertContext{
 		ConverterContext: &ConverterContext{
 			Fs: setupDummyFsWithEnvVariableInTemplate(t, envVarName),
 		},
@@ -389,7 +389,7 @@ func TestConvertConfigWithEnvNameCollisionShouldFail(t *testing.T) {
 	simpleParameterName := transformEnvironmentToParamName(envVarName)
 	simpleParameterValue := "hello"
 
-	convertContext := &ConfigConvertContext{
+	convertContext := &configConvertContext{
 		ConverterContext: &ConverterContext{
 			Fs: setupDummyFsWithEnvVariableInTemplate(t, envVarName),
 		},
@@ -427,7 +427,7 @@ func TestConvertSkippedConfig(t *testing.T) {
 	configId := "alerting-profile-1"
 	configName := "Alerting Profile 1"
 
-	convertContext := &ConfigConvertContext{
+	convertContext := &configConvertContext{
 		ConverterContext: &ConverterContext{
 			Fs: setupDummyFs(t),
 		},
@@ -504,7 +504,7 @@ func TestConvertConfigs(t *testing.T) {
 	testConfig := configV1.NewConfigWithTemplate(configId, "test-project", "test/test-configV1.json",
 		template, properties, testApi)
 
-	convertContext := &ConfigConvertContext{
+	convertContext := &configConvertContext{
 		ConverterContext: &ConverterContext{
 			Fs: fs,
 		},
@@ -658,7 +658,7 @@ func TestConvertTemplate_ConvertsEnvReferences(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	templ, envParams, _, errs := convertTemplate(&ConfigConvertContext{
+	templ, envParams, _, errs := convertTemplate(&configConvertContext{
 		ConverterContext: &ConverterContext{
 			Fs: fs,
 		},
@@ -698,7 +698,7 @@ func TestConvertTemplate_ConvertsListVariables(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	templ, _, listParamIds, errs := convertTemplate(&ConfigConvertContext{
+	templ, _, listParamIds, errs := convertTemplate(&configConvertContext{
 		ConverterContext: &ConverterContext{
 			Fs: fs,
 		},
@@ -729,7 +729,7 @@ func TestConvertTemplate(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	templ, envParams, listParamIds, errs := convertTemplate(&ConfigConvertContext{
+	templ, envParams, listParamIds, errs := convertTemplate(&configConvertContext{
 		ConverterContext: &ConverterContext{
 			Fs: fs,
 		},
@@ -1006,7 +1006,7 @@ func Test_parseReference(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			testConfig := generateDummyConfig(t)
 
-			testContext := &ConfigConvertContext{
+			testContext := &configConvertContext{
 				ConverterContext: &ConverterContext{
 					Fs: setupDummyFs(t),
 				},

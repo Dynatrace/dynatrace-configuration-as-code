@@ -31,7 +31,7 @@ type Environment struct {
 	envTokenName   string
 }
 
-func NewEnvironments(maps map[string]map[string]string) (map[string]*Environment, []error) {
+func newEnvironments(maps map[string]map[string]string) (map[string]*Environment, []error) {
 
 	environments := make(map[string]*Environment)
 	errors := make([]error, 0)

@@ -52,20 +52,11 @@ type ConverterContext struct {
 	ResolveSkip bool
 }
 
-type ConfigConvertContext struct {
+type configConvertContext struct {
 	*ConverterContext
 	ProjectId             string
 	KnownListParameterIds map[string]struct{}
 	V1Apis                api.ApiMap
-}
-
-type ProjectConverterError struct {
-	Project string
-	Reason  string
-}
-
-func (e ProjectConverterError) Error() string {
-	return fmt.Sprintf("%s: cannot convert project: %s", e.Project, e.Reason)
 }
 
 type ConvertConfigError struct {
@@ -88,14 +79,14 @@ func (e ConvertConfigError) Error() string {
 	return fmt.Sprintf("cannot convert config: %s", e.Reason)
 }
 
-type ReferenceParserError struct {
+type ReferenceParseError struct {
 	Location      coordinate.Coordinate
 	ParameterName string
 	Reason        string
 }
 
-func newReferenceParserError(projectId string, config configV1.Config, parameterName string, reason string) ReferenceParserError {
-	return ReferenceParserError{
+func newReferenceParserError(projectId string, config configV1.Config, parameterName string, reason string) ReferenceParseError {
+	return ReferenceParseError{
 		Location: coordinate.Coordinate{
 			Project:  projectId,
 			Type:     config.GetApi().GetId(),
@@ -106,18 +97,18 @@ func newReferenceParserError(projectId string, config configV1.Config, parameter
 	}
 }
 
-func (e ReferenceParserError) Coordinates() coordinate.Coordinate {
+func (e ReferenceParseError) Coordinates() coordinate.Coordinate {
 	return e.Location
 }
 
-func (e ReferenceParserError) Error() string {
+func (e ReferenceParseError) Error() string {
 	return fmt.Sprintf("%s: cannot parse reference: %s",
 		e.ParameterName, e.Reason)
 }
 
 var (
 	_ configErrors.ConfigError = (*ConvertConfigError)(nil)
-	_ configErrors.ConfigError = (*ReferenceParserError)(nil)
+	_ configErrors.ConfigError = (*ReferenceParseError)(nil)
 )
 
 // Convert takes v1 environments and projects and converts them into a v2 manifest and projects
@@ -167,7 +158,7 @@ func adjustProjectId(projectId string) string {
 func convertProject(context *ConverterContext, environments map[string]manifest.EnvironmentDefinition,
 	adjustedId string, project projectV1.Project) (manifest.ProjectDefinition, projectV2.Project, []error) {
 
-	convertedConfigs, errors := convertConfigs(&ConfigConvertContext{
+	convertedConfigs, errors := convertConfigs(&configConvertContext{
 		ConverterContext: context,
 		ProjectId:        adjustedId,
 		V1Apis:           api.NewV1Apis(),
@@ -186,7 +177,7 @@ func convertProject(context *ConverterContext, environments map[string]manifest.
 		}, nil
 }
 
-func convertConfigs(context *ConfigConvertContext, environments map[string]manifest.EnvironmentDefinition,
+func convertConfigs(context *configConvertContext, environments map[string]manifest.EnvironmentDefinition,
 	configs []configV1.Config) (projectV2.ConfigsPerTypePerEnvironments, []error) {
 
 	result := make(projectV2.ConfigsPerTypePerEnvironments)
@@ -217,7 +208,7 @@ func convertConfigs(context *ConfigConvertContext, environments map[string]manif
 	return result, nil
 }
 
-func convertConfig(context *ConfigConvertContext, environment manifest.EnvironmentDefinition, config configV1.Config) (configV2.Config, []error) {
+func convertConfig(context *configConvertContext, environment manifest.EnvironmentDefinition, config configV1.Config) (configV2.Config, []error) {
 	var errors []error
 
 	apiId := config.GetApi().GetId()
@@ -299,7 +290,7 @@ func (e TemplateConversionError) Error() string {
 
 var _ error = (*TemplateConversionError)(nil)
 
-func convertTemplate(context *ConfigConvertContext, currentPath string, writeToPath string) (modifiedTemplate template.Template, envParams map[string]parameter.Parameter, listParameterIds map[string]struct{}, errs []error) {
+func convertTemplate(context *configConvertContext, currentPath string, writeToPath string) (modifiedTemplate template.Template, envParams map[string]parameter.Parameter, listParameterIds map[string]struct{}, errs []error) {
 	data, err := afero.ReadFile(context.Fs, currentPath)
 	if err != nil {
 		return nil, nil, nil, []error{err}
@@ -374,7 +365,7 @@ func convertListsInTemplate(currentTemplate string, currentPath string) (modifie
 	return templText, listParameterIds, errors
 }
 
-func convertParameters(context *ConfigConvertContext, environment manifest.EnvironmentDefinition,
+func convertParameters(context *configConvertContext, environment manifest.EnvironmentDefinition,
 	config configV1.Config) (map[string]parameter.Parameter, parameter.Parameter, []error) {
 
 	properties := loadPropertiesForEnvironment(environment, config)
@@ -438,7 +429,7 @@ func convertedParameterName(name string) string {
 	return name
 }
 
-func parseSkipDeploymentParameter(context *ConfigConvertContext, config configV1.Config, value string) (parameter.Parameter, error) {
+func parseSkipDeploymentParameter(context *configConvertContext, config configV1.Config, value string) (parameter.Parameter, error) {
 	switch strings.ToLower(value) {
 	case "true":
 		return valueParam.New(true), nil
@@ -461,7 +452,7 @@ func parseSkipDeploymentParameter(context *ConfigConvertContext, config configV1
 	return nil, newConvertConfigError(location, fmt.Sprintf("invalid value for %s: `%s`. allowed values: true, false", configV1.SkipConfigDeploymentParameter, value))
 }
 
-func parseReference(context *ConfigConvertContext, config configV1.Config, parameterName string, reference string) (*refParam.ReferenceParameter, error) {
+func parseReference(context *configConvertContext, config configV1.Config, parameterName string, reference string) (*refParam.ReferenceParameter, error) {
 	configId, property, err := configV1.SplitDependency(reference)
 
 	if err != nil {
