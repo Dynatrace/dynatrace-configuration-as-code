@@ -72,18 +72,18 @@ func getEnvFromManifest(fs afero.Fs, manifestPath string, specificEnvironmentNam
 
 	if errs != nil {
 		err = PrintAndFormatErrors(errs, "failed to load manifest '%v'", manifestPath)
-		return
+		return "", "", "", err
 	}
 
 	env, found := man.Environments[specificEnvironmentName]
 	if !found {
 		err = PrintAndFormatErrors(errs, "environment '%v' was not available in manifest '%v'", specificEnvironmentName, manifestPath)
-		return
+		return "", "", "", err
 	}
 
 	if len(errs) > 0 {
 		err = PrintAndFormatErrors(errs, "failed to load apis")
-		return
+		return "", "", "", err
 	}
 
 	envUrl, err = env.GetUrl()
@@ -98,7 +98,7 @@ func getEnvFromManifest(fs afero.Fs, manifestPath string, specificEnvironmentNam
 
 	if len(errs) > 0 {
 		err = PrintAndFormatErrors(errs, "failed to load manifest data")
-		return
+		return "", "", "", err
 	}
 
 	tokenEnvVar = fmt.Sprintf("TOKEN_%s", strings.ToUpper(projectName))
@@ -106,7 +106,7 @@ func getEnvFromManifest(fs afero.Fs, manifestPath string, specificEnvironmentNam
 		tokenEnvVar = envVarToken.EnvironmentVariableName
 	}
 
-	return
+	return envUrl, token, tokenEnvVar, nil
 }
 
 type DynatraceClientProvider func(string, string, ...func(*client.DynatraceClient)) (*client.DynatraceClient, error)
