@@ -21,7 +21,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	listParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/list"
-	environmentV1 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/environment/v1"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/converter/v1environment"
 	projectV1 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v1"
 	"regexp"
 	"strings"
@@ -112,7 +112,7 @@ var (
 )
 
 // Convert takes v1 environments and projects and converts them into a v2 manifest and projects
-func Convert(context ConverterContext, environments map[string]*environmentV1.Environment,
+func Convert(context ConverterContext, environments map[string]*v1environment.EnvironmentV1,
 	projects []projectV1.Project) (manifest.Manifest, []projectV2.Project, []error) {
 	environmentDefinitions := convertEnvironments(environments)
 	projectDefinitions, convertedProjects, errors := convertProjects(&context, environmentDefinitions, projects)
@@ -524,7 +524,7 @@ func parseListStringToValueSlice(s string) ([]valueParam.ValueParameter, error) 
 	return slice, nil
 }
 
-func convertEnvironments(environments map[string]*environmentV1.Environment) map[string]manifest.EnvironmentDefinition {
+func convertEnvironments(environments map[string]*v1environment.EnvironmentV1) map[string]manifest.EnvironmentDefinition {
 	result := make(map[string]manifest.EnvironmentDefinition)
 
 	for _, env := range environments {

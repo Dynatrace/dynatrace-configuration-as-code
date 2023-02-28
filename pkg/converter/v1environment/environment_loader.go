@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package v1
+package v1environment
 
 import (
 	"errors"
@@ -26,7 +26,7 @@ import (
 
 // LoadEnvironmentsWithoutTemplating loads environments from a yaml file without templating. No variable references will
 // be replaced on loading.
-func LoadEnvironmentsWithoutTemplating(environmentsFile string, fs afero.Fs) (environments map[string]*Environment, errorList []error) {
+func LoadEnvironmentsWithoutTemplating(environmentsFile string, fs afero.Fs) (environments map[string]*EnvironmentV1, errorList []error) {
 	if environmentsFile == "" {
 		errorList = append(errorList, errors.New("no environment file provided"))
 		return environments, errorList
@@ -38,7 +38,7 @@ func LoadEnvironmentsWithoutTemplating(environmentsFile string, fs afero.Fs) (en
 	environmentMaps, err := template.UnmarshalYamlWithoutTemplating(string(dat), environmentsFile)
 	errutils.FailOnError(err, "Error while converting file")
 
-	environments, envErrs := newEnvironments(environmentMaps)
+	environments, envErrs := newEnvironmentsV1(environmentMaps)
 
 	if len(envErrs) > 0 {
 		errorList = append(errorList, envErrs...)

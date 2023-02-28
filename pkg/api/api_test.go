@@ -19,13 +19,13 @@
 package api
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/environment/v1"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/converter/v1environment"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-var testDevEnvironment = v1.NewEnvironment("development", "Dev", "", "https://url/to/dev/environment", "DEV")
+var testDevEnvironment = v1environment.NewEnvironmentV1("development", "Dev", "", "https://url/to/dev/environment", "DEV")
 var testManagementZoneApi = NewStandardApi("management-zone", "/api/config/v1/managementZones", false, "", false)
 var testDashboardApi = NewStandardApi("dashboard", "/api/config/v1/dashboards", true, "dashboard-v2", false)
 
