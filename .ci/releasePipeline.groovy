@@ -38,7 +38,7 @@ pipeline {
                         axes {
                             axis {
                                 name 'PLATFORM'
-                                values 'monaco-windows-386.exe', 'monaco-windows-amd64.exe'
+                                values 'monaco-windows-386.exe', 'monaco-windows-amd64.exe', 'monaco-linux-386', 'monaco-linux-amd64', 'monaco-darwin-amd64', 'monaco-darwin-arm64'
                             }
                         }
                         stages {
@@ -94,21 +94,22 @@ void buildBinary(Map args = [binary: '', version: '', ctx: null]) {
 
 void signBinaries(Map args = [binary: '', version: '', ctx: null]) {
     args.ctx = args.ctx ?: ctx
-    def os = args.binary.split('-')
-    echo "${os}"
-    echo "${os[1]}"
     stage('Sign ' + args.binary) {
         script {
-            switch (args.binary.split('-')[1]) {
+            switch (getOs(args.binary)) {
                 case "windows":
                     signWinBinaries(args)
+                    break
+                case "linux":
+                case "darwin":
+                    signLinuxBinaries(args)
                     break
             }
         }
     }
 }
 
-void signWinBinaries(Map args = [binary: '', version: '', ctx: null]) {
+void signWinBinaries(Map args) {
     withEnv(["binarySource=${args.ctx.unsignedDir}/${args.binary}", "version=${args.version}", "destinationDir=${args.ctx.signedDir}"]) {
         withVault(vaultSecrets: [[path        : 'signing-service-authentication/monaco',
                                   secretValues: [
@@ -129,7 +130,36 @@ void signWinBinaries(Map args = [binary: '', version: '', ctx: null]) {
     }
 }
 
+void signLinuxBinaries(Map args) {
+    def shaSumFile = "SHA256SUMS"
+    def sourceDir = "${args.ctx.signedDir}/${args.binary}"
+    sh "mkdir -p ${sourceDir}"
 
+    sh "mv ${args.ctx.unsignedDir}/${args.binary} -t ${sourceDir}"
+
+    sh "cd ${sourceDir} && sha256sum ${args.binary} > ${shaSumFile} && cd -"
+
+    withEnv(["source=${sourceDir}/${shaSumFile}", "version=${args.version}", "destinationDir=${sourceDir}"]) {
+        withVault(vaultSecrets: [[path        : 'signing-service-authentication/monaco',
+                                  secretValues: [
+                                      [envVar: 'username', vaultKey: 'username', isRequired: true],
+                                      [envVar: 'password', vaultKey: 'password', isRequired: true]]]]
+        ) {
+            sh '''java -jar sign-client.jar \
+                        --action ENVELOPE \
+                        --digestAlg SHA256 \
+                        --downloadPath $destinationDir \
+                        --kernelMode false  \
+                        --triggeringProject datasource-go \
+                        --triggeringVersion $version \
+                        --username $username \
+                        --password $password \
+                        $source'''
+        }
+    }
+
+    sh "cat ${sourceDir}/${shaSumFile}"
+}
 
 def releaseBinaryToArtifactory(Map args = [binary: '', version: '', ctx: null]) {
     args.ctx = args.ctx ?: ctx
@@ -145,6 +175,10 @@ def releaseBinaryToArtifactory(Map args = [binary: '', version: '', ctx: null]) 
             }
         }
     }
+}
+
+String getOs(String fileName) {
+    return fileName.split('-')[1]
 }
 
 void releaseContainerToArtifactory() {
