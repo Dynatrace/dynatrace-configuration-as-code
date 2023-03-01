@@ -24,8 +24,8 @@ type project struct {
 }
 
 type tokenConfig struct {
-	Type   string                 `yaml:"type,omitempty"` //TODO drop
-	Config map[string]interface{} `yaml:",inline"`
+	Type string `yaml:"type,omitempty"`
+	Name string `yaml:"name"`
 }
 
 type environment struct {

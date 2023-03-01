@@ -162,8 +162,7 @@ func toWritableToken(environment EnvironmentDefinition) tokenConfig {
 	}
 
 	return tokenConfig{
-		Config: map[string]interface{}{
-			"name": token,
-		},
+		Type: "environment",
+		Name: token,
 	}
 }

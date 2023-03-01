@@ -32,7 +32,7 @@ import (
 	"gotest.tools/assert"
 )
 
-var testTokenCfg = tokenConfig{Type: "environment", Config: map[string]interface{}{"name": "VAR"}}
+var testTokenCfg = tokenConfig{Type: "environment", Name: "VAR"}
 
 func Test_extractUrlType(t *testing.T) {
 	tests := []struct {
@@ -485,7 +485,7 @@ environmentGroups:
 									Value: "ENV_URL",
 								},
 								Token: tokenConfig{
-									Config: map[string]interface{}{"name": "ENV_TOKEN"},
+									Name: "ENV_TOKEN",
 								},
 							},
 						},
@@ -928,7 +928,7 @@ manifestVersion: 1.0
 projects: [{name: a}]
 environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: ''}}]}]
 `,
-			errsContain: []string{"empty key"},
+			errsContain: []string{"missing or empty"},
 		},
 		{
 			name: "Empty url",
