@@ -21,15 +21,13 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/timeutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"github.com/google/uuid"
 	"io"
 	"net/http"
-	"runtime"
 )
 
-func Get(client *http.Client, url string, apiToken string) (Response, error) {
-	req, err := request(http.MethodGet, url, apiToken)
+func Get(client *http.Client, url string) (Response, error) {
+	req, err := request(http.MethodGet, url)
 
 	if err != nil {
 		return Response{}, err
@@ -39,9 +37,9 @@ func Get(client *http.Client, url string, apiToken string) (Response, error) {
 }
 
 // the name delete() would collide with the built-in function
-func DeleteConfig(client *http.Client, url string, apiToken string, id string) error {
+func DeleteConfig(client *http.Client, url string, id string) error {
 	fullPath := url + "/" + id
-	req, err := request(http.MethodDelete, fullPath, apiToken)
+	req, err := request(http.MethodDelete, fullPath)
 
 	if err != nil {
 		return err
@@ -65,8 +63,8 @@ func DeleteConfig(client *http.Client, url string, apiToken string, id string) e
 	return nil
 }
 
-func Post(client *http.Client, url string, data []byte, apiToken string) (Response, error) {
-	req, err := requestWithBody(http.MethodPost, url, bytes.NewBuffer(data), apiToken)
+func Post(client *http.Client, url string, data []byte) (Response, error) {
+	req, err := requestWithBody(http.MethodPost, url, bytes.NewBuffer(data))
 
 	if err != nil {
 		return Response{}, err
@@ -75,8 +73,8 @@ func Post(client *http.Client, url string, data []byte, apiToken string) (Respon
 	return executeRequest(client, req)
 }
 
-func PostMultiPartFile(client *http.Client, url string, data *bytes.Buffer, contentType string, apiToken string) (Response, error) {
-	req, err := requestWithBody(http.MethodPost, url, data, apiToken)
+func PostMultiPartFile(client *http.Client, url string, data *bytes.Buffer, contentType string) (Response, error) {
+	req, err := requestWithBody(http.MethodPost, url, data)
 
 	if err != nil {
 		return Response{}, err
@@ -87,8 +85,8 @@ func PostMultiPartFile(client *http.Client, url string, data *bytes.Buffer, cont
 	return executeRequest(client, req)
 }
 
-func Put(client *http.Client, url string, data []byte, apiToken string) (Response, error) {
-	req, err := requestWithBody(http.MethodPut, url, bytes.NewBuffer(data), apiToken)
+func Put(client *http.Client, url string, data []byte) (Response, error) {
+	req, err := requestWithBody(http.MethodPut, url, bytes.NewBuffer(data))
 
 	if err != nil {
 		return Response{}, err
@@ -98,22 +96,22 @@ func Put(client *http.Client, url string, data []byte, apiToken string) (Respons
 }
 
 // function type of Put and Post requests
-type SendingRequest func(client *http.Client, url string, data []byte, apiToken string) (Response, error)
+type SendingRequest func(client *http.Client, url string, data []byte) (Response, error)
 
-func request(method string, url string, apiToken string) (*http.Request, error) {
-	return requestWithBody(method, url, nil, apiToken)
+func request(method string, url string) (*http.Request, error) {
+	return requestWithBody(method, url, nil)
 }
 
-func requestWithBody(method string, url string, body io.Reader, apiToken string) (*http.Request, error) {
+func requestWithBody(method string, url string, body io.Reader) (*http.Request, error) {
 	req, err := http.NewRequest(method, url, body)
 
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Set("Authorization", "Api-Token "+apiToken)
-	req.Header.Set("Content-type", "application/json")
-	req.Header.Set("User-Agent", "Dynatrace Monitoring as Code/"+version.MonitoringAsCode+" "+(runtime.GOOS+" "+runtime.GOARCH))
+	//req.Header.Set("Authorization", "Api-Token "+apiToken)
+	//req.Header.Set("Content-type", "application/json")
+	//req.Header.Set("User-Agent", "Dynatrace Monitoring as Code/"+version.MonitoringAsCode+" "+(runtime.GOOS+" "+runtime.GOARCH))
 	return req, nil
 }
 

@@ -76,7 +76,7 @@ func Test_deleteConfig(t *testing.T) {
 			}))
 			defer server.Close()
 
-			if err := DeleteConfig(server.Client(), server.URL, "API TOKEN", "checked ID does not matter"); (err != nil) != tt.wantErr {
+			if err := DeleteConfig(server.Client(), server.URL, "checked ID does not matter"); (err != nil) != tt.wantErr {
 				t.Errorf("DeleteConfig() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -85,7 +85,7 @@ func Test_deleteConfig(t *testing.T) {
 
 func Test_sendWithsendWithRetryReturnsFirstSuccessfulResponse(t *testing.T) {
 	i := 0
-	mockCall := SendingRequest(func(client *http.Client, url string, data []byte, apiToken string) (Response, error) {
+	mockCall := SendingRequest(func(client *http.Client, url string, data []byte) (Response, error) {
 		if i < 3 {
 			i++
 			return Response{}, fmt.Errorf("Something wrong")
@@ -96,7 +96,7 @@ func Test_sendWithsendWithRetryReturnsFirstSuccessfulResponse(t *testing.T) {
 		}, nil
 	})
 
-	gotResp, err := SendWithRetry(nil, mockCall, "dont matter", "some/path", []byte("body"), "token", RetrySetting{MaxRetries: 5})
+	gotResp, err := SendWithRetry(nil, mockCall, "dont matter", "some/path", []byte("body"), RetrySetting{MaxRetries: 5})
 	assert.NilError(t, err)
 	assert.Equal(t, gotResp.StatusCode, 200)
 	assert.Equal(t, string(gotResp.Body), "Success")
@@ -105,7 +105,7 @@ func Test_sendWithsendWithRetryReturnsFirstSuccessfulResponse(t *testing.T) {
 func Test_sendWithRetryFailsAfterDefinedTries(t *testing.T) {
 	maxRetries := 2
 	i := 0
-	mockCall := SendingRequest(func(client *http.Client, url string, data []byte, apiToken string) (Response, error) {
+	mockCall := SendingRequest(func(client *http.Client, url string, data []byte) (Response, error) {
 		if i < maxRetries+1 {
 			i++
 			return Response{}, fmt.Errorf("Something wrong")
@@ -116,7 +116,7 @@ func Test_sendWithRetryFailsAfterDefinedTries(t *testing.T) {
 		}, nil
 	})
 
-	_, err := SendWithRetry(nil, mockCall, "dont matter", "some/path", []byte("body"), "token", RetrySetting{MaxRetries: maxRetries})
+	_, err := SendWithRetry(nil, mockCall, "dont matter", "some/path", []byte("body"), RetrySetting{MaxRetries: maxRetries})
 	assert.Check(t, err != nil)
 	assert.Equal(t, i, 2)
 }
@@ -124,7 +124,7 @@ func Test_sendWithRetryFailsAfterDefinedTries(t *testing.T) {
 func Test_sendWithRetryReturnContainsOriginalApiError(t *testing.T) {
 	maxRetries := 2
 	i := 0
-	mockCall := SendingRequest(func(client *http.Client, url string, data []byte, apiToken string) (Response, error) {
+	mockCall := SendingRequest(func(client *http.Client, url string, data []byte) (Response, error) {
 		if i < maxRetries+1 {
 			i++
 			return Response{}, fmt.Errorf("Something wrong")
@@ -135,7 +135,7 @@ func Test_sendWithRetryReturnContainsOriginalApiError(t *testing.T) {
 		}, nil
 	})
 
-	_, err := SendWithRetry(nil, mockCall, "dont matter", "some/path", []byte("body"), "token", RetrySetting{MaxRetries: maxRetries})
+	_, err := SendWithRetry(nil, mockCall, "dont matter", "some/path", []byte("body"), RetrySetting{MaxRetries: maxRetries})
 	assert.Check(t, err != nil)
 	assert.ErrorContains(t, err, "Something wrong")
 }
@@ -143,7 +143,7 @@ func Test_sendWithRetryReturnContainsOriginalApiError(t *testing.T) {
 func Test_sendWithRetryReturnContainsHttpErrorIfNotSuccess(t *testing.T) {
 	maxRetries := 2
 	i := 0
-	mockCall := SendingRequest(func(client *http.Client, url string, data []byte, apiToken string) (Response, error) {
+	mockCall := SendingRequest(func(client *http.Client, url string, data []byte) (Response, error) {
 		if i < maxRetries+1 {
 			i++
 			return Response{
@@ -157,7 +157,7 @@ func Test_sendWithRetryReturnContainsHttpErrorIfNotSuccess(t *testing.T) {
 		}, nil
 	})
 
-	_, err := SendWithRetry(nil, mockCall, "dont matter", "some/path", []byte("body"), "token", RetrySetting{MaxRetries: maxRetries})
+	_, err := SendWithRetry(nil, mockCall, "dont matter", "some/path", []byte("body"), RetrySetting{MaxRetries: maxRetries})
 	assert.Check(t, err != nil)
 	assert.ErrorContains(t, err, "400")
 	assert.ErrorContains(t, err, "{ err: 'failed to create thing'}")

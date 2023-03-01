@@ -71,13 +71,6 @@ func TestNewDynatraceClientWithIPv6(t *testing.T) {
 	assert.Equal(t, client.environmentUrl, "https://[0000:0000:0000:0000:0000:0000:0000:0001]")
 }
 
-func TestNewClientWithInvalidAuthConfig(t *testing.T) {
-	_, err := NewDynatraceClient("https://my-environment.live.dynatrace.com/",
-		WithTokenAuthorization("TOKEN"),
-		WithOAuthAuthorization(OauthCredentials{}))
-	assert.ErrorContains(t, err, "dynatrace client cannot be configured")
-}
-
 func TestNewClientNoValidUrlLocalPath(t *testing.T) {
 	_, err := NewDynatraceClient("/my-environment/live/dynatrace.com/")
 	assert.ErrorContains(t, err, "no host specified")
@@ -103,7 +96,6 @@ func TestNewClient(t *testing.T) {
 	assert.Equal(t, version.Version{Major: 1, Minor: 2, Patch: 3}, c.serverVersion)
 	assert.Equal(t, rest.DefaultRetrySettings, c.retrySettings)
 	assert.Equal(t, httpClient, c.client)
-	assert.Equal(t, "abc", c.token)
 	assert.Equal(t, "https://my-environment.live.dynatrace.com", c.environmentUrl)
 	assert.NilError(t, err, "not valid")
 }
@@ -415,7 +407,6 @@ func TestListKnownSettings(t *testing.T) {
 func TestGetSettingById(t *testing.T) {
 	type fields struct {
 		environmentUrl string
-		token          string
 		client         *http.Client
 		retrySettings  rest.RetrySettings
 	}
@@ -516,7 +507,6 @@ func TestGetSettingById(t *testing.T) {
 
 			d := &DynatraceClient{
 				environmentUrl: envURL,
-				token:          tt.fields.token,
 				client:         server.Client(),
 				retrySettings:  tt.fields.retrySettings,
 			}
@@ -537,7 +527,6 @@ func TestGetSettingById(t *testing.T) {
 func TestDeleteSettings(t *testing.T) {
 	type fields struct {
 		environmentUrl string
-		token          string
 		client         *http.Client
 		retrySettings  rest.RetrySettings
 	}
@@ -622,7 +611,6 @@ func TestDeleteSettings(t *testing.T) {
 
 			d := &DynatraceClient{
 				environmentUrl: envURL,
-				token:          tt.fields.token,
 				client:         server.Client(),
 				retrySettings:  tt.fields.retrySettings,
 			}

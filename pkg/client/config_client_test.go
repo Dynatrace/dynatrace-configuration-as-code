@@ -347,7 +347,7 @@ func Test_getObjectIdIfAlreadyExists(t *testing.T) {
 			}))
 			defer server.Close()
 
-			got, err := getObjectIdIfAlreadyExists(server.Client(), testApi, server.URL, tt.givenObjectName, "test-token", testRetrySettings)
+			got, err := getObjectIdIfAlreadyExists(server.Client(), testApi, server.URL, tt.givenObjectName, testRetrySettings)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getObjectIdIfAlreadyExists() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -537,7 +537,7 @@ func Test_GetObjectIdIfAlreadyExists_WorksCorrectlyForAddedQueryParameters(t *te
 					MaxRetries: 3,
 				},
 			}
-			_, err := getObjectIdIfAlreadyExists(server.Client(), testApi, server.URL, "", "", s)
+			_, err := getObjectIdIfAlreadyExists(server.Client(), testApi, server.URL, "", s)
 
 			if tt.expectError {
 				assert.Assert(t, err != nil)
@@ -628,7 +628,7 @@ func Test_createDynatraceObject(t *testing.T) {
 			defer server.Close()
 			testApi := api.NewStandardApi(tt.apiKey, "", false, "", false)
 
-			got, err := createDynatraceObject(server.Client(), server.URL, tt.objectName, testApi, []byte("{}"), "token", testRetrySettings)
+			got, err := createDynatraceObject(server.Client(), server.URL, tt.objectName, testApi, []byte("{}"), testRetrySettings)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("createDynatraceObject() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -681,7 +681,7 @@ func TestDeployConfigsTargetingClassicConfigNonUnique(t *testing.T) {
 
 			testApi := api.NewStandardApi("some-api", "", true, "", false)
 
-			got, err := upsertDynatraceEntityByNonUniqueNameAndId(server.Client(), server.URL, generatedUuid, theConfigName, testApi, []byte("{}"), "token", testRetrySettings)
+			got, err := upsertDynatraceEntityByNonUniqueNameAndId(server.Client(), server.URL, generatedUuid, theConfigName, testApi, []byte("{}"), testRetrySettings)
 			assert.NilError(t, err)
 			assert.Equal(t, got.Id, tt.expectedIdToBeUpserted)
 		})
