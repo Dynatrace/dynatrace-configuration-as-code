@@ -1,7 +1,7 @@
 BINARY=monaco
 VERSION=2.x
 
-.PHONY: lint format mocks build install clean test integration-test integration-test-v1 test-package default add-license-headers
+.PHONY: lint format mocks build install clean test integration-test integration-test-v1 test-package default add-license-headers compile
 
 default: build
 
@@ -44,6 +44,9 @@ check:
 	@echo "Static code analysis"
 	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1
 	@golangci-lint run ./...
+
+compile: clean mocks
+	go build -tags "unit integration nightly cleanup integration_v1 download_restore" ./...
 
 build: clean mocks
 	@echo "Building ${BINARY}..."
