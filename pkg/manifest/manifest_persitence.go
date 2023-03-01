@@ -30,6 +30,7 @@ type tokenConfig struct {
 
 type environment struct {
 	Name  string      `yaml:"name"`
+	Type  string      `yaml:"type"`
 	Url   url         `yaml:"url"`
 	Token tokenConfig `yaml:"token"`
 }

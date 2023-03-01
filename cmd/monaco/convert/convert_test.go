@@ -98,10 +98,12 @@ environmentGroups:
 - name: default
   environments:
   - name: env
+    type: classic
     url:
       type: environment
       value: ENV_URL
     token:
+      type: environment
       name: ENV_TOKEN
 `, version.ManifestVersion)
 
