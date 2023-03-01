@@ -341,27 +341,22 @@ func parseToken(context *ManifestLoaderContext, config environment, group string
 }
 
 func parseEnvironmentToken(context *ManifestLoaderContext, group string, config environment, token tokenConfig) (Token, error) {
-	if name, found := token.Config["name"]; found {
 
-		if name == "" {
-			return Token{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, "empty key `name` in token config")
-		}
-
-		// resolve token value immediately
-		nameStr := fmt.Sprint(name)
-		val, found := os.LookupEnv(nameStr)
-		if !found {
-			return Token{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("no environment variable found for token %q", nameStr))
-		}
-
-		if val == "" {
-			return Token{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("environment variable for token %q is empty", nameStr))
-		}
-
-		return Token{Name: nameStr, Value: val}, nil
+	if token.Name == "" {
+		return Token{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, "token `name` is missing or empty")
 	}
 
-	return Token{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, "missing key `name` in token config")
+	// resolve token value immediately
+	val, found := os.LookupEnv(token.Name)
+	if !found {
+		return Token{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("no environment variable found for token %q", token.Name))
+	}
+
+	if val == "" {
+		return Token{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("environment variable for token %q is empty", token.Name))
+	}
+
+	return Token{Name: token.Name, Value: val}, nil
 }
 
 func toProjectDefinitions(context *projectLoaderContext, definitions []project) (map[string]ProjectDefinition, []error) {

@@ -187,9 +187,8 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							Type: "classic",
 							Url:  url{Value: "www.an.url"},
 							Token: tokenConfig{
-								Config: map[string]interface{}{
-									"name": "TokenTest",
-								},
+								Name: "TokenTest",
+								Type: "environment",
 							},
 						},
 						{
@@ -197,9 +196,8 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							Type: "platform",
 							Url:  url{Value: "www.an.url"},
 							Token: tokenConfig{
-								Config: map[string]interface{}{
-									"name": "env2_TOKEN",
-								},
+								Name: "env2_TOKEN",
+								Type: "environment",
 							},
 						},
 					},
@@ -212,9 +210,8 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							Type: "classic",
 							Url:  url{Value: "www.an.url"},
 							Token: tokenConfig{
-								Config: map[string]interface{}{
-									"name": "env3_TOKEN",
-								},
+								Name: "env3_TOKEN",
+								Type: "environment",
 							},
 						},
 					},
@@ -325,9 +322,8 @@ func Test_toWritableToken(t *testing.T) {
 				Token: Token{Name: "VARIABLE"},
 			},
 			tokenConfig{
-				Config: map[string]interface{}{
-					"name": "VARIABLE",
-				},
+				Name: "VARIABLE",
+				Type: "environment",
 			},
 		},
 		{
@@ -339,9 +335,8 @@ func Test_toWritableToken(t *testing.T) {
 				Token: Token{},
 			},
 			tokenConfig{
-				Config: map[string]interface{}{
-					"name": "NAME_TOKEN",
-				},
+				Name: "NAME_TOKEN",
+				Type: "environment",
 			},
 		},
 	}
