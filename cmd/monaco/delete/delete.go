@@ -131,5 +131,5 @@ func createClient(environment manifest.EnvironmentDefinition, dryRun bool) (clie
 		return nil, err
 	}
 
-	return client.NewDynatraceClient(url, client.WithTokenAuthorization(environment.Token.Value))
+	return client.NewDynatraceClient(client.NewTokenAuthClient(environment.Token.Value), url)
 }

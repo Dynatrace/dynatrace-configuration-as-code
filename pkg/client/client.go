@@ -213,13 +213,6 @@ func WithRetrySettings(retrySettings rest.RetrySettings) func(*DynatraceClient) 
 	}
 }
 
-// WithHTTPClient sets the http client to be used by the DynatraceClient
-func WithHTTPClient(client *http.Client) func(dynatraceClient *DynatraceClient) {
-	return func(d *DynatraceClient) {
-		d.client = client
-	}
-}
-
 // WithServerVersion sets the Dynatrace version of the Dynatrace server/tenant the client will be interacting with
 func WithServerVersion(serverVersion version.Version) func(client *DynatraceClient) {
 	return func(d *DynatraceClient) {
@@ -238,34 +231,6 @@ func WithAutoServerVersion() func(client *DynatraceClient) {
 		} else {
 			d.serverVersion = serverVersion
 		}
-	}
-}
-
-// WithOAuthAuthorization configures the DynatraceClient to use a
-// 2-legged OAuth2 flow (aka. client credentials flow)
-// Using this, as well as WithTokenAuthorization is not allowed and results in an error
-func WithOAuthAuthorization(oauthCredentials OauthCredentials) func(client *DynatraceClient) {
-	return func(d *DynatraceClient) {
-		config := clientcredentials.Config{
-			ClientID:     oauthCredentials.ClientID,
-			ClientSecret: oauthCredentials.ClientSecret,
-			TokenURL:     oauthCredentials.TokenURL,
-			Scopes:       oauthCredentials.Scopes,
-		}
-		d.client = config.Client(context.TODO())
-	}
-}
-
-// WithTokenAuthorization configures the DynatraceClient to use the
-// regular Token authorization.
-// Using this, as well as WithOAuthAuthorization is not allowed and results in an error
-func WithTokenAuthorization(token string) func(client *DynatraceClient) {
-	return func(d *DynatraceClient) {
-		if !isNewDynatraceTokenFormat(token) {
-			log.Warn("You used an old token format. Please consider switching to the new 1.205+ token format.")
-			log.Warn("More information: https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication")
-		}
-		d.client.Transport = NewTokenAuthTransport(d.client.Transport, token)
 	}
 }
 
@@ -306,12 +271,29 @@ func (t *TokenAuthTransport) setHeader(key, value string) {
 
 // NewTokenAuthClient creates a new HTTP client that supports token based authorization
 func NewTokenAuthClient(token string) *http.Client {
+	if !isNewDynatraceTokenFormat(token) {
+		log.Warn("You used an old token format. Please consider switching to the new 1.205+ token format.")
+		log.Warn("More information: https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication")
+	}
 	return &http.Client{Transport: NewTokenAuthTransport(nil, token)}
 }
 
-// NewDynatraceClient creates a new DynatraceClient
-func NewDynatraceClient(environmentURL string, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
+// NewOAuthClient creates a new HTTP client that supports OAuth2 client credentials based authorization
+func NewOAuthClient(oauthConfig OauthCredentials) *http.Client {
+	config := clientcredentials.Config{
+		ClientID:     oauthConfig.ClientID,
+		ClientSecret: oauthConfig.ClientSecret,
+		TokenURL:     oauthConfig.TokenURL,
+		Scopes:       oauthConfig.Scopes,
+	}
+	return config.Client(context.TODO())
+}
 
+// NewDynatraceClient creates a new DynatraceClient.
+// It takes a http.Client to do its HTTP communication, a URL to the targeting Dynatrace
+// environment and an optional list of options to further configure the behavior of the client
+// It is also allowed to pass nil as httpClient
+func NewDynatraceClient(httpClient *http.Client, environmentURL string, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
 	environmentURL = strings.TrimSuffix(environmentURL, "/")
 	parsedUrl, err := url.ParseRequestURI(environmentURL)
 	if err != nil {
@@ -326,9 +308,13 @@ func NewDynatraceClient(environmentURL string, opts ...func(dynatraceClient *Dyn
 		log.Warn("You are using an insecure connection (%s). Consider switching to HTTPS.", parsedUrl.Scheme)
 	}
 
+	if httpClient == nil {
+		httpClient = &http.Client{}
+	}
+
 	dtClient := &DynatraceClient{
 		environmentUrl: environmentURL,
-		client:         &http.Client{},
+		client:         httpClient,
 		retrySettings:  rest.DefaultRetrySettings,
 		serverVersion:  version.Version{},
 	}

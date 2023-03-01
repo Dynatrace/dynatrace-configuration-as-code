@@ -141,5 +141,5 @@ func NewIntegrationTestServer(t *testing.T, basePath string, mappings map[string
 
 func NewDynatraceClientForTesting(environmentUrl string, client *http.Client) (*DynatraceClient, error) {
 
-	return NewDynatraceClient(environmentUrl, WithHTTPClient(client))
+	return NewDynatraceClient(client, environmentUrl)
 }

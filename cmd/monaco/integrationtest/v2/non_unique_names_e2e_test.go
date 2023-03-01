@@ -57,9 +57,8 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 		)
 	})
 
-	httpClient := &http.Client{}
-
-	c, err := client.NewDynatraceClient(url, token, client.WithHTTPClient(httpClient))
+	httpClient := client.NewTokenAuthClient(token)
+	c, err := client.NewDynatraceClient(client.NewTokenAuthClient(token), url)
 	assert.NilError(t, err)
 
 	a := api.NewApis()["alerting-profile"]
@@ -74,7 +73,7 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 
 	// create initial object of unknown UUID via direct PUT
 	randomUUID := getRandomUUID(t)
-	createObjectViaDirectPut(t, httpClient, url, a, token, randomUUID, payload)
+	createObjectViaDirectPut(t, httpClient, url, a, randomUUID, payload)
 	assert.Assert(t, len(getConfigsOfName(t, c, a, name)) == 1, "Expected single configs of name %q but found %d", name, len(existing))
 
 	// 1. if only one config of non-unique-name exist it MUST be updated
@@ -86,7 +85,7 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 
 	// generate additional config
 	additionalUUID := getRandomUUID(t)
-	createObjectViaDirectPut(t, httpClient, url, a, token, additionalUUID, payload)
+	createObjectViaDirectPut(t, httpClient, url, a, additionalUUID, payload)
 	assert.Assert(t, len(getConfigsOfName(t, c, a, name)) == 2, "Expected two configs of name %q but found %d", name, len(existing))
 
 	// 2. if several configs of non-unique-name exist an additional config with monaco controlled UUID is created
@@ -122,8 +121,8 @@ func getRandomUUID(t *testing.T) string {
 	return id.String()
 }
 
-func createObjectViaDirectPut(t *testing.T, client *http.Client, url string, a api.Api, apiToken string, id string, payload []byte) {
-	res, err := rest.Put(client, a.GetUrl(url)+"/"+id, payload, apiToken)
+func createObjectViaDirectPut(t *testing.T, client *http.Client, url string, a api.Api, id string, payload []byte) {
+	res, err := rest.Put(client, a.GetUrl(url)+"/"+id, payload)
 	assert.NilError(t, err)
 	assert.Assert(t, res.StatusCode >= 200 && res.StatusCode < 300)
 
