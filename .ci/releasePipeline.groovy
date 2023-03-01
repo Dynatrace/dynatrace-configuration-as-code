@@ -28,8 +28,8 @@ pipeline {
                         script {
                             version = getVersionFromGitTagName()
                             getSignClient()
-                            sh "mkdir -p ${ctx.unsignedDir}"
-                            sh "mkdir -p ${ctx.signedDir}"
+                            sh "rm -rf ${ctx.unsignedDir} && mkdir -p ${ctx.unsignedDir}"
+                            sh "rm -rf ${ctx.signedDir} && mkdir -p ${ctx.signedDir}"
                         }
                     }
                 }
@@ -46,7 +46,7 @@ pipeline {
                                 steps {
                                     buildBinary(binary: env.PLATFORM, version: version)
                                     signBinaries(binary: env.PLATFORM, version: version)
-                                    releaseBinaryToArtifactory(binary: env.PLATFORM, version: version)
+                                    pushToStorage(binary: env.PLATFORM, version: version)
                                 }
                             }
                         }
@@ -121,7 +121,7 @@ void signWinBinaries(Map args) {
                         --digestAlg SHA256 \
                         --downloadPath $destinationDir \
                         --kernelMode false  \
-                        --triggeringProject datasource-go \
+                        --triggeringProject monaco \
                         --triggeringVersion $version \
                         --username $username \
                         --password $password \
@@ -150,7 +150,7 @@ void signLinuxBinaries(Map args) {
                         --digestAlg SHA256 \
                         --downloadPath $destinationDir \
                         --kernelMode false  \
-                        --triggeringProject datasource-go \
+                        --triggeringProject monaco \
                         --triggeringVersion $version \
                         --username $username \
                         --password $password \
@@ -159,10 +159,15 @@ void signLinuxBinaries(Map args) {
     }
 
     sh "cat ${sourceDir}/${shaSumFile}"
+
+    tar file: "${args.ctx.signedDir}/${args.binary}.tar", dir: "${sourceDir}"
 }
 
-def releaseBinaryToArtifactory(Map args = [binary: '', version: '', ctx: null]) {
+def pushToStorage(Map args = [binary: '', version: '', ctx: null]) {
     args.ctx = args.ctx ?: ctx
+    if (getOs(args.binary) != "windows") {
+        args.binary += ".tar"
+    }
     stage('Deliver ' + args.binary) {
         withEnv(["binary=${args.binary}", "version=${args.version}", "signedDir=${args.ctx.signedDir}",]) {
             withVault(vaultSecrets: [[path        : 'keptn-jenkins/monaco/artifact-storage-deploy',
