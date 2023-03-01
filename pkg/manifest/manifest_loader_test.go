@@ -22,6 +22,7 @@ import (
 	"fmt"
 	version2 "github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/spf13/afero"
 	"math"
@@ -697,9 +698,10 @@ func TestLoadManifest(t *testing.T) {
 	t.Setenv("e", "mock token")
 
 	tests := []struct {
-		name            string
-		manifestContent string
-		errsContain     []string
+		name             string
+		manifestContent  string
+		errsContain      []string
+		expectedManifest Manifest
 	}{
 		{
 			name:        "Everything missing",
@@ -709,10 +711,97 @@ func TestLoadManifest(t *testing.T) {
 			name: "Everything good",
 			manifestContent: `
 manifestVersion: 1.0
-projects: [{name: a}]
+projects: [{name: a, path: p}]
 environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: e}}]}]
 `,
 			errsContain: []string{},
+			expectedManifest: Manifest{
+				Projects: map[string]ProjectDefinition{
+					"a": {
+						Name: "a",
+						Path: "p",
+					},
+				},
+				Environments: map[string]EnvironmentDefinition{
+					"c": {
+						Name: "c",
+						Type: Classic,
+						url: UrlDefinition{
+							Type:  "value",
+							Value: "d",
+						},
+						Group: "b",
+						Token: Token{
+							Name:  "e",
+							Value: "mock token",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "No errors with type = Platform",
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: a, path: p}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: e}, type: Platform}]}]
+`,
+			errsContain: []string{},
+			expectedManifest: Manifest{
+				Projects: map[string]ProjectDefinition{
+					"a": {
+						Name: "a",
+						Path: "p",
+					},
+				},
+				Environments: map[string]EnvironmentDefinition{
+					"c": {
+						Name: "c",
+						Type: Platform,
+						url: UrlDefinition{
+							Type:  "value",
+							Value: "d",
+						},
+						Group: "b",
+						Token: Token{
+							Name:  "e",
+							Value: "mock token",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "No errors with type = Classic",
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: a, path: p}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: e}, type: Classic}]}]
+`,
+			errsContain: []string{},
+			expectedManifest: Manifest{
+				Projects: map[string]ProjectDefinition{
+					"a": {
+						Name: "a",
+						Path: "p",
+					},
+				},
+				Environments: map[string]EnvironmentDefinition{
+					"c": {
+						Name: "c",
+						Type: Classic,
+						url: UrlDefinition{
+							Type:  "value",
+							Value: "d",
+						},
+						Group: "b",
+						Token: Token{
+							Name:  "e",
+							Value: "mock token",
+						},
+					},
+				},
+			},
 		},
 		{
 			name: "No manifestVersion",
@@ -868,13 +957,22 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {
 `,
 			errsContain: []string{`no environment variable found for token "doesNotExist"`},
 		},
+		{
+			name: "config type is invalid",
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: a}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: e}, type: doesNotExist}]}]
+`,
+			errsContain: []string{`invalid environment-type "doesNotExist"`},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			fs := afero.NewMemMapFs()
 			assert.NilError(t, afero.WriteFile(fs, "manifest.yaml", []byte(test.manifestContent), 0400))
 
-			_, errs := LoadManifest(&ManifestLoaderContext{
+			mani, errs := LoadManifest(&ManifestLoaderContext{
 				Fs:           fs,
 				ManifestPath: "manifest.yaml",
 			})
@@ -886,6 +984,9 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {
 			} else {
 				t.Errorf("Unexpected amount of errors: %#v", errs)
 			}
+
+			assert.DeepEqual(t, test.expectedManifest, mani, cmp.AllowUnexported(EnvironmentDefinition{}))
+
 		})
 	}
 }

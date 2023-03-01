@@ -262,6 +262,11 @@ func toEnvironments(context *ManifestLoaderContext, groups []group) (map[string]
 func toEnvironment(context *ManifestLoaderContext, config environment, group string) (EnvironmentDefinition, []error) {
 	var errors []error
 
+	envType, err := parseEnvironmentType(context, config, group)
+	if err != nil {
+		errors = append(errors, err)
+	}
+
 	token, err := parseToken(context, config, group, config.Token)
 
 	if err != nil {
@@ -283,6 +288,7 @@ func toEnvironment(context *ManifestLoaderContext, config environment, group str
 
 	return EnvironmentDefinition{
 		Name: config.Name,
+		Type: envType,
 		url: UrlDefinition{
 			Type:  urlType,
 			Value: strings.TrimSuffix(config.Url.Value, "/"),
@@ -302,6 +308,19 @@ func extractUrlType(config environment) (UrlType, error) {
 	}
 
 	return "", fmt.Errorf("%s is not a valid URL Type", config.Url.Type)
+}
+
+func parseEnvironmentType(context *ManifestLoaderContext, config environment, g string) (EnvironmentType, error) {
+	switch strings.ToLower(config.Type) {
+	case "":
+		fallthrough
+	case "classic":
+		return Classic, nil
+	case "platform":
+		return Platform, nil
+	}
+
+	return Classic, newManifestEnvironmentLoaderError(context.ManifestPath, g, config.Name, fmt.Sprintf(`invalid environment-type %q. Allowed values are "classic" (default) and "platform"`, config.Type))
 }
 
 func parseToken(context *ManifestLoaderContext, config environment, group string, token tokenConfig) (Token, error) {

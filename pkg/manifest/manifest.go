@@ -21,6 +21,18 @@ import (
 	"strings"
 )
 
+// EnvironmentType is used to identify the type of the environment.
+// Possible values are  [Classic] and [Platform]
+type EnvironmentType int
+
+const (
+	// Classic identifies a Dynatrace Classic environment
+	Classic EnvironmentType = iota
+
+	// Platform identifies a Dynatrace Platform environment
+	Platform
+)
+
 type ProjectDefinition struct {
 	Name  string
 	Group string
@@ -34,8 +46,10 @@ func (p ProjectDefinition) String() string {
 	return fmt.Sprintf("%s (path: %s)", p.Name, p.Path)
 }
 
+// EnvironmentDefinition holds all information about a Dynatrace environment
 type EnvironmentDefinition struct {
 	Name  string
+	Type  EnvironmentType
 	url   UrlDefinition
 	Group string
 	Token Token

@@ -150,6 +150,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 			map[string]EnvironmentDefinition{
 				"env1": {
 					Name: "env1",
+					Type: Classic,
 					url: UrlDefinition{
 						Value: "www.an.url",
 					},
@@ -160,6 +161,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 				},
 				"env2": {
 					Name: "env2",
+					Type: Platform,
 					url: UrlDefinition{
 						Value: "www.an.url",
 					},
@@ -168,6 +170,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 				},
 				"env3": {
 					Name: "env3",
+					Type: Classic,
 					url: UrlDefinition{
 						Value: "www.an.url",
 					},
@@ -181,6 +184,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 					Environments: []environment{
 						{
 							Name: "env1",
+							Type: "classic",
 							Url:  url{Value: "www.an.url"},
 							Token: tokenConfig{
 								Config: map[string]interface{}{
@@ -190,6 +194,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						},
 						{
 							Name: "env2",
+							Type: "platform",
 							Url:  url{Value: "www.an.url"},
 							Token: tokenConfig{
 								Config: map[string]interface{}{
@@ -204,6 +209,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 					Environments: []environment{
 						{
 							Name: "env3",
+							Type: "classic",
 							Url:  url{Value: "www.an.url"},
 							Token: tokenConfig{
 								Config: map[string]interface{}{
