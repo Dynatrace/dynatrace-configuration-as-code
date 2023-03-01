@@ -68,7 +68,6 @@ type ProjectDefinitionByProjectId map[string]ProjectDefinition
 type environmentV1 interface {
 	GetId() string
 	GetEnvironmentUrl() string
-	GetToken() (string, error)
 	GetGroup() string
 	GetTokenName() string
 }
