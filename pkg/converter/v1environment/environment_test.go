@@ -132,24 +132,6 @@ func TestParsingEnvironmentsWithSameIds(t *testing.T) {
 	assert.Check(t, myenvironment != nil)
 }
 
-func TestTokenAvailableOnGetterCall(t *testing.T) {
-	e, devEnvironment := setupEnvironment(t, testYamlEnvironment, "development")
-
-	t.Setenv("DEV", "1234")
-	token, e := devEnvironment.GetToken()
-
-	assert.NilError(t, e)
-	assert.Equal(t, "1234", token)
-
-}
-
-func TestTokenNotAvailableOnGetterCall(t *testing.T) {
-	e, devEnvironment := setupEnvironment(t, testYamlEnvironment, "development")
-	_, e = devEnvironment.GetToken()
-
-	assert.Error(t, e, "environment variable DEV not found")
-}
-
 func TestUrlAvailableWithTemplating(t *testing.T) {
 
 	t.Setenv("URL", "1234")

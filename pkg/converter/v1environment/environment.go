@@ -19,7 +19,6 @@ package v1environment
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
-	"os"
 	"strings"
 )
 
@@ -108,14 +107,6 @@ func (s *EnvironmentV1) GetId() string {
 
 func (s *EnvironmentV1) GetEnvironmentUrl() string {
 	return s.environmentUrl
-}
-
-func (s *EnvironmentV1) GetToken() (string, error) {
-	value := os.Getenv(s.envTokenName)
-	if value == "" {
-		return value, fmt.Errorf("environment variable " + s.envTokenName + " not found")
-	}
-	return value, nil
 }
 
 func (s *EnvironmentV1) GetTokenName() string {
