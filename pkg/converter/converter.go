@@ -460,23 +460,29 @@ func parseReference(context *configConvertContext, config configV1.Config, param
 	}
 
 	configId = strings.TrimPrefix(configId, "/")
-
 	parts := strings.Split(configId, "/")
 
-	numberOfParts := len(parts)
-	if numberOfParts < 2 {
+	var projectId, referencedApiId, referencedConfigId string
+
+	switch numberOfParts := len(parts); numberOfParts {
+	case 0:
 		return nil, newReferenceParserError(context.ProjectId, config, parameterName,
-			"wrong reference. please provide '<projectId>/<name>/<config>.<property>' for referencing to another project or '<name>/<config>.<property>' for referencing within the same project")
-	}
+			"wrong reference format. Please provide '<projectId>/<name>/<config>.<property>' for referencing another project, '<name>/<config>.<property>' for referencing within the same project, or <config>.<property> for referencing within the same config")
 
-	referencedConfigId := parts[numberOfParts-1]
-	referencedApiId := parts[numberOfParts-2]
-
-	var projectId string
-	if numberOfParts == 2 { // project missing -> reference the current project
+	case 1:
 		projectId = context.ProjectId
-	} else {
+		referencedApiId = config.GetApi().GetId()
+		referencedConfigId = parts[0]
+
+	case 2:
+		projectId = context.ProjectId
+		referencedApiId = parts[0]
+		referencedConfigId = parts[1]
+
+	default:
 		projectId = strings.Join(parts[0:numberOfParts-2], ".")
+		referencedApiId = parts[numberOfParts-2]
+		referencedConfigId = parts[numberOfParts-1]
 	}
 
 	if !context.V1Apis.Contains(referencedApiId) {
