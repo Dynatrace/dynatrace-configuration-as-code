@@ -1001,6 +1001,14 @@ func Test_parseReference(t *testing.T) {
 			refParam.New("movies.science fiction.the-hitchhikers-guide-to-the-galaxy", "management-zone", "zone-multiproject", "id"),
 			false,
 		},
+		{
+			"resolve reference within the same config",
+			"test-param",
+			"zone-multiproject.id",
+			api.NewV1Apis(),
+			refParam.New("test-project", "alerting-profile", "zone-multiproject", "id"),
+			false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
