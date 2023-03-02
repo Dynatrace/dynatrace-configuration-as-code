@@ -56,8 +56,9 @@ build-release: clean $(RELEASES)
 	@echo Release build $(BINARY_NAME) $(VERSION)
 
 
-RELEASES = $(BINARY_NAME)-windows-amd64.exe $(BINARY_NAME)-windows-386.exe $(BINARY_NAME)-linux-amd64 $(BINARY_NAME)-linux-386 $(BINARY_NAME)-darwin-amd64 $(BINARY_NAME)-darwin-arm64
-.PHONY: RELEASES
+RELEASES = $(BINARY_NAME)-windows-amd64.exe $(BINARY_NAME)-windows-386.exe $(BINARY_NAME)-linux-arm64 $(BINARY_NAME)-linux-amd64 $(BINARY_NAME)-linux-386 $(BINARY_NAME)-darwin-amd64 $(BINARY_NAME)-darwin-arm64
+.PHONY: $(RELEASES)
+#argument - splits the name of command to array and return required element
 argument = $(word $1, $(subst -,$(empty) $(empty), $(subst .exe,$(empty) $(empty) , $2)))
 # OUTPUT - name (and path) of output binaries
 $(RELEASES):
