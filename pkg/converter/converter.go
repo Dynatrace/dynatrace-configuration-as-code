@@ -253,8 +253,11 @@ func convertConfig(context *configConvertContext, environment manifest.Environme
 		parameters[paramName] = param
 	}
 
+	// if the name is missing in the v1 config, create one and log it.
 	if _, found := parameters[configV2.NameParameter]; !found {
-		errors = append(errors, fmt.Errorf("no 'name' parameter found during conversion of config '%s/%s/%s'. Please provide one", config.GetProject(), config.GetType(), config.GetId()))
+		name := config.GetId() + " - monaco-conversion created name"
+		parameters[configV2.NameParameter] = valueParam.New(name)
+		log.Info(`Missing name in config "%s/%s/%s". Using name %q.`, config.GetProject(), config.GetType(), config.GetId(), name)
 	}
 
 	if errors != nil {

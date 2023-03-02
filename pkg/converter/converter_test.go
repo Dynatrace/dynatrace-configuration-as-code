@@ -19,6 +19,7 @@ package converter
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/template"
+	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 	"reflect"
 	"testing"
@@ -560,6 +561,56 @@ func TestConvertConfigs(t *testing.T) {
 	// assert override list param is converted as expected
 	// assert list param is converted as expected
 	assert.Equal(t, []valueParam.ValueParameter{{"james.t.kirk@dynatrace.com"}}, c.Parameters[listParameterName].(*listParam.ListParameter).Values)
+}
+
+func TestConvertWithMissingName(t *testing.T) {
+	environments := map[string]manifest.EnvironmentDefinition{
+		"dev": manifest.NewEnvironmentDefinition("dev", createSimpleUrlDefinition(), "development", manifest.Token{Name: "token"}),
+	}
+
+	testApi := api.NewStandardApi("alerting-profile", "/api/configV1/v1/alertingProfiles", false, "", false)
+
+	properties := map[string]map[string]string{
+		"alerting-profile-1": {},
+	}
+
+	fs := afero.NewMemMapFs()
+	err := fs.Mkdir("test", 0644)
+	assert.NoError(t, err)
+
+	templ, err := template.NewTemplateFromString("test/test-configV1.json", "")
+	assert.NoError(t, err)
+
+	err = afero.WriteFile(fs, "test/test-configV1.json", []byte(""), 0644)
+	assert.NoError(t, err)
+
+	testConfig := configV1.NewConfigWithTemplate("alerting-profile-1", "test-project", "test/test-configV1.json", templ, properties, testApi)
+
+	convertContext := &configConvertContext{
+		ConverterContext: &ConverterContext{
+			Fs: fs,
+		},
+		V1Apis:    api.NewV1Apis(),
+		ProjectId: "projectA",
+	}
+
+	convertedConfigs, errors := convertConfigs(convertContext, environments, []configV1.Config{testConfig})
+
+	assert.Equal(t, 0, len(errors))
+	assert.Equal(t, 1, len(convertedConfigs))
+
+	apiConfigs := convertedConfigs[("dev")]
+	assert.Equal(t, 1, len(apiConfigs))
+
+	configs := apiConfigs[testApi.GetId()]
+	assert.Equal(t, 1, len(configs))
+
+	c := configs[0]
+	assert.Equal(t, "alerting-profile-1", c.Coordinate.ConfigId)
+	assert.Equal(t, 1, len(c.Parameters))
+
+	// assert value param is converted as expected
+	assert.Equal(t, "alerting-profile-1 - monaco-conversion created name", c.Parameters[config.NameParameter].(*valueParam.ValueParameter).Value)
 }
 
 func TestConvertProjects(t *testing.T) {
