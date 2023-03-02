@@ -108,10 +108,7 @@ func requestWithBody(method string, url string, body io.Reader) (*http.Request, 
 	if err != nil {
 		return nil, err
 	}
-
-	//req.Header.Set("Authorization", "Api-Token "+apiToken)
-	//req.Header.Set("Content-type", "application/json")
-	//req.Header.Set("User-Agent", "Dynatrace Monitoring as Code/"+version.MonitoringAsCode+" "+(runtime.GOOS+" "+runtime.GOARCH))
+	req.Header.Set("Content-type", "application/json")
 	return req, nil
 }
 

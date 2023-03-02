@@ -252,7 +252,6 @@ func NewTokenAuthTransport(baseTransport http.RoundTripper, token string) *Token
 		header:       http.Header{},
 	}
 	t.setHeader("Authorization", "Api-Token "+token)
-	t.setHeader("Content-type", "application/json")
 	t.setHeader("User-Agent", "Dynatrace Monitoring as Code/"+version2.MonitoringAsCode+" "+(runtime.GOOS+" "+runtime.GOARCH))
 	return t
 }
