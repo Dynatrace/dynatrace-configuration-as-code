@@ -1,9 +1,7 @@
-import groovy.transform.Field
-
-@Field Map ctx = [unsignedDir: "./unsigned",
-                  signedDir  : "./signed"]
-
+final String PROJECT = 'monaco'
 def version
+def releaseId
+
 pipeline {
     agent {
         kubernetes {
@@ -18,7 +16,7 @@ pipeline {
     }
 
     stages {
-        stage('process tags') {
+        stage('🚀 Release') {
             when {
                 tag 'v*'
             }
@@ -26,27 +24,94 @@ pipeline {
                 stage('Prepare for build') {
                     steps {
                         script {
-                            version = getVersionFromGitTagName()
                             getSignClient()
-                            sh "rm -rf ${ctx.unsignedDir} && mkdir -p ${ctx.unsignedDir}"
-                            sh "rm -rf ${ctx.signedDir} && mkdir -p ${ctx.signedDir}"
+
+                            version = getVersionFromGitTagName()
+                            releaseId = createGitHubRelease(version: version)
+
+                            echo "version= ${version}"
+                            echo "GitHub releaseId= ${releaseId}"
                         }
                     }
                 }
+
                 stage('matrix') {
                     matrix {
                         axes {
                             axis {
-                                name 'PLATFORM'
-                                values 'monaco-windows-386.exe', 'monaco-windows-amd64.exe', 'monaco-linux-386', 'monaco-linux-amd64', 'monaco-darwin-amd64', 'monaco-darwin-arm64'
+                                name 'OS'
+                                values 'windows', 'linux', 'darwin', 'container'
+                            }
+                            axis {
+                                name 'ARCH'
+                                values '386', 'amd64', 'arm64'
+                            }
+                        }
+                        excludes {
+                            exclude {
+                                axis {
+                                    name 'OS'
+                                    values 'windows'
+                                }
+                                axis {
+                                    name 'ARCH'
+                                    values 'arm64'
+                                }
+                            }
+                            exclude {
+                                axis {
+                                    name 'OS'
+                                    values 'darwin'
+                                }
+                                axis {
+                                    name 'ARCH'
+                                    values '386'
+                                }
+                            }
+                            exclude {
+                                axis {
+                                    name 'OS'
+                                    values 'container'
+                                }
+                                axis {
+                                    name 'ARCH'
+                                    values '386', 'arm64'
+                                }
                             }
                         }
                         stages {
                             stage('build') {
                                 steps {
-                                    buildBinary(binary: env.PLATFORM, version: version)
-                                    signBinaries(binary: env.PLATFORM, version: version)
-                                    pushToStorage(binary: env.PLATFORM, version: version)
+                                    script {
+                                        switch (env.OS) {
+                                            case "windows":
+                                                def release = "${PROJECT}-${env.OS}-${env.ARCH}.exe"
+
+                                                sh "rm -rf ${release}" //ensure to delete old build
+
+                                                buildBinary(command: release, version: version, dest: "${release}")
+                                                signWinBinaries(source: release, version: version, destDir: '.', projectName: PROJECT)
+                                                pushToDynatraceStorage(source: release, version: version)
+                                                pushToGithub(source: release, releaseId: releaseId)
+                                                break
+                                            case "linux":
+                                            case "darwin":
+                                                def release = "${PROJECT}-${env.OS}-${env.ARCH}" //name of the tar archive
+
+                                                sh "rm -rf ${release}" //ensure to delete old build
+
+                                                buildBinary(command: release, version: version, dest: "${release}/${PROJECT}")
+                                                createShaSum(source: "${release}/${PROJECT}", dest: "${release}/${PROJECT}.p7m")
+                                                signShaSum(source: "${release}/${PROJECT}.p7m", version: version, destDir: release, projectName: PROJECT)
+                                                createTarArchive(source: release, dest: release + '.tar')
+                                                pushToDynatraceStorage(source: release + '.tar', version: version)
+                                                pushToGithub(source: release + '.tar', releaseId: releaseId)
+                                                break
+                                            case "container":
+                                                createContainerAndPushToStorage(version: version)
+                                                break
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -71,7 +136,6 @@ String getVersionFromGitTagName() {
     def ver = sh(returnStdout: true, script: "git tag -l --points-at HEAD --sort=-creatordate | head -n 1")
         .trim()
         .substring(1)  // drop v prefix
-    echo "version= ${ver}"
     return ver
 }
 
@@ -80,146 +144,161 @@ void getSignClient() {
                               secretValues: [[envVar: 'repository', vaultKey: 'client_repository_url ', isRequired: true]]]]
     ) {
         if (!fileExists('sign-client.jar')) {
-            sh 'curl -Ss -g -o sign-client.jar $repository/testautomation-release-local/com/dynatrace/services/signservice/client/1.0.[RELEASE]/client-1.0.[RELEASE].jar'
+            sh '''
+                curl --request GET $repository/testautomation-release-local/com/dynatrace/services/signservice/client/1.0.[RELEASE]/client-1.0.[RELEASE].jar
+                     --show-error
+                     --silent
+                     --globoff
+                     --fail-with-body
+                     --output sign-client.jar
+               '''.replaceAll("\n", " ").replaceAll(/ +/, " ")
         }
     }
 }
 
-void buildBinary(Map args = [binary: '', version: '', ctx: null]) {
-    args.ctx = args.ctx ?: ctx
-    stage('🏁 Build ' + args.binary) {
-        sh "make ${args.binary} VERSION=${args.version} OUTDIR=${args.ctx.unsignedDir}"
+void buildBinary(Map args = [command: null, version: null, dest: null]) {
+    stage('🏁 Build ' + args.command) {
+        sh "make ${args.command} VERSION=${args.version} OUTPUT=${args.dest}"
     }
 }
 
-void signBinaries(Map args = [binary: '', version: '', ctx: null]) {
-    args.ctx = args.ctx ?: ctx
-    stage('Sign ' + args.binary) {
-        script {
-            switch (getOs(args.binary)) {
-                case "windows":
-                    signWinBinaries(args)
-                    break
-                case "linux":
-                case "darwin":
-                    signLinuxBinaries(args)
-                    break
-            }
-        }
+void signWinBinaries(Map args = [source: null, version: null, destDir: null, projectName: null]) {
+    stage('Sign binaries') {
+        signWithSignService(source: args.source, version: args.version, destDir: args.destDir, signAction: "SIGN", projectName: args.projectName)
     }
 }
 
-void signWinBinaries(Map args) {
-    withEnv(["binarySource=${args.ctx.unsignedDir}/${args.binary}", "version=${args.version}", "destinationDir=${args.ctx.signedDir}"]) {
-        withVault(vaultSecrets: [[path        : 'signing-service-authentication/monaco',
-                                  secretValues: [
-                                      [envVar: 'username', vaultKey: 'username', isRequired: true],
-                                      [envVar: 'password', vaultKey: 'password', isRequired: true]]]]
-        ) {
-            sh '''java -jar sign-client.jar \
-                        --action SIGN \
-                        --digestAlg SHA256 \
-                        --downloadPath $destinationDir \
-                        --kernelMode false  \
-                        --triggeringProject monaco \
-                        --triggeringVersion $version \
-                        --username $username \
-                        --password $password \
-                        $binarySource'''
-        }
+void createShaSum(Map args = [source: null, dest: null]) {
+    stage('Compute SHA sum') {
+        sh "sha256sum ${args.source} | sed 's, .*/, ,' > ${args.dest}"
     }
 }
 
-void signLinuxBinaries(Map args) {
-    def shaSumFile = "SHA256SUMS"
-    def sourceDir = "${args.ctx.signedDir}/${args.binary}"
-    sh "mkdir -p ${sourceDir}"
-
-    sh "mv ${args.ctx.unsignedDir}/${args.binary} -t ${sourceDir}"
-
-    sh "cd ${sourceDir} && sha256sum ${args.binary} > ${shaSumFile} && cd -"
-
-    withEnv(["source=${sourceDir}/${shaSumFile}", "version=${args.version}", "destinationDir=${sourceDir}"]) {
-        withVault(vaultSecrets: [[path        : 'signing-service-authentication/monaco',
-                                  secretValues: [
-                                      [envVar: 'username', vaultKey: 'username', isRequired: true],
-                                      [envVar: 'password', vaultKey: 'password', isRequired: true]]]]
-        ) {
-            sh '''java -jar sign-client.jar \
-                        --action ENVELOPE \
-                        --digestAlg SHA256 \
-                        --downloadPath $destinationDir \
-                        --kernelMode false  \
-                        --triggeringProject monaco \
-                        --triggeringVersion $version \
-                        --username $username \
-                        --password $password \
-                        $source'''
-        }
+void signShaSum(Map args = [source: null, version: null, destDir: null, projectName: null]) {
+    stage('Sign SHA sum') {
+        signWithSignService(source: args.source, version: args.version, destDir: args.destDir, signAction: "ENVELOPE", projectName: args.projectName)
+        sh "cat ${args.source}"
     }
-
-    sh "cat ${sourceDir}/${shaSumFile}"
-
-    tar file: "${args.ctx.signedDir}/${args.binary}.tar", dir: "${sourceDir}"
 }
 
-def pushToStorage(Map args = [binary: '', version: '', ctx: null]) {
-    args.ctx = args.ctx ?: ctx
-    if (getOs(args.binary) != "windows") {
-        args.binary += ".tar"
+void createTarArchive(Map args = [source: null, dest: null]) {
+    stage('Create tar archive') {
+        tar(dir: args.source, file: args.dest)
     }
-    stage('Deliver ' + args.binary) {
-        withEnv(["binary=${args.binary}", "version=${args.version}", "signedDir=${args.ctx.signedDir}",]) {
+}
+
+def pushToDynatraceStorage(Map args = [source: null, version: null]) {
+    stage('Deliver tar to storage') {
+        withEnv(["source=${args.source}", "version=${args.version}",]) {
             withVault(vaultSecrets: [[path        : 'keptn-jenkins/monaco/artifact-storage-deploy',
                                       secretValues: [
                                           [envVar: 'repo_path', vaultKey: 'repo_path', isRequired: true],
                                           [envVar: 'username', vaultKey: 'username', isRequired: true],
                                           [envVar: 'password', vaultKey: 'password', isRequired: true]]]]
             ) {
-                sh 'curl -u "$username":"$password" -X PUT $repo_path/monaco/$version/$binary -T $signedDir/$binary'
+                sh '''
+                    curl --request PUT $repo_path/monaco/$version/$source
+                         --user "$username":"$password"
+                         --fail-with-body
+                         --upload-file $source
+                   '''.replaceAll("\n", " ").replaceAll(/ +/, " ")
             }
         }
     }
 }
 
-String getOs(String fileName) {
-    return fileName.split('-')[1]
+void signWithSignService(Map args = [source: null, version: null, destDir: null, signAction: null, projectName: null]) {
+    withEnv(["source=${args.source}", "version=${args.version}", "destDir=${args.destDir}", "signAction=${args.signAction}", "project=${args.projectName}"]) {
+        withVault(vaultSecrets: [[path        : 'signing-service-authentication/monaco',
+                                  secretValues: [
+                                      [envVar: 'username', vaultKey: 'username', isRequired: true],
+                                      [envVar: 'password', vaultKey: 'password', isRequired: true]]]]
+        ) {
+            sh '''
+                java -jar sign-client.jar
+                  --action $signAction
+                  --digestAlg SHA256
+                  --downloadPath $destDir
+                  --kernelMode false
+                  --triggeringProject $project
+                  --triggeringVersion $version
+                  --username $username
+                  --password $password
+                  $source
+               '''.replaceAll("\n", " ").replaceAll(/ +/, " ")
+        }
+    }
+
 }
 
-void releaseContainerToArtifactory() {
-    def registrySecrets = [
-        path        : 'keptn-jenkins/monaco/registry-deploy',
-        secretValues: [
-            [envVar: 'REGISTRY_PATH', vaultKey: 'registry_path', isRequired: true],
-            [envVar: 'REGISTRY_USERNAME', vaultKey: 'username', isRequired: true],
-            [envVar: 'REGISTRY_PASSWORD', vaultKey: 'password', isRequired: true]
-        ]
-    ]
-
+void createContainerAndPushToStorage(Map args = [version: null]) {
     stage('📦 Release Container Image') {
-        steps {
-            withEnv(["VERSION=${VERSION}"]) {
-                withVault(vaultSecrets: [[path        : 'keptn-jenkins/monaco/registry-deploy',
-                                          secretValues: [
-                                              [envVar: 'REGISTRY_PATH', vaultKey: 'registry_path', isRequired: true],
-                                              [envVar: 'REGISTRY_USERNAME', vaultKey: 'username', isRequired: true],
-                                              [envVar: 'REGISTRY_PASSWORD', vaultKey: 'password', isRequired: true]]]]
-                ) {
-                    script {
-                        sh 'docker login $REGISTRY_PATH -u "$REGISTRY_USERNAME" -p "$REGISTRY_PASSWORD" '
-                        sh 'docker build -t $REGISTRY_PATH/monaco/dynatrace-monitoring-as-code:$VERSION .'
-                        sh 'docker push $REGISTRY_PATH/monaco/dynatrace-monitoring-as-code:$VERSION'
+        withEnv(["version=${args.version}"]) {
+            withVault(vaultSecrets: [[path        : 'keptn-jenkins/monaco/registry-deploy',
+                                      secretValues: [[envVar: 'registry', vaultKey: 'registry_path', isRequired: true],
+                                                     [envVar: 'username', vaultKey: 'username', isRequired: true],
+                                                     [envVar: 'password', vaultKey: 'password', isRequired: true]]]]) {
+                script {
+                    try {
+                        sh 'docker login --username $username --password $password $registry'
+                        sh 'DOCKER_BUILDKIT=1 make docker-container OUTPUT=./build/docker/monaco CONTAINER_NAME=$registry/monaco/dynatrace-monitoring-as-code VERSION=$version'
+                        sh 'docker push $registry/monaco/dynatrace-monitoring-as-code:$version'
+                    } finally {
+                        sh 'docker logout $registry'
                     }
                 }
             }
         }
-        post {
-            always {
-                withVault(vaultSecrets: [registrySecrets]) {
-                    sh 'docker logout $REGISTRY_PATH'
+    }
+}
+
+int createGitHubRelease(Map args = [version: null]) {
+    stage('Create GitHub release draft') {
+        script {
+            withEnv(["version=${args.version}",]) {
+                withVault(vaultSecrets: [[path        : 'keptn-jenkins/monaco/github-credentials',
+                                          secretValues: [[envVar: 'token', vaultKey: 'access_token', isRequired: true]]]]
+                ) {
+                    def jsonRes = sh(returnStdout: true, script: '''
+                        curl --request POST https://api.github.com/repos/Dynatrace/dynatrace-configuration-as-code/releases
+                             --header "Accept: application/vnd.github+json"
+                             --header "Authorization: Bearer $token"
+                             --header "X-GitHub-Api-Version: 2022-11-28"
+                             --fail-with-body
+                             --data \'{
+                                        "tag_name":"v\'$version\'",
+                                        "target_commitish":"main",
+                                        "name":"\'$version\'",
+                                        "draft":true,
+                                        "prerelease":false,
+                                        "generate_release_notes":true
+                                    }\'
+                        '''.replaceAll("\n", " ").replaceAll(/ +/, " "))
+                    def jsonResObj = readJSON(text: jsonRes)
+                    return jsonResObj.id
                 }
             }
         }
     }
+}
 
+void pushToGithub(Map args = [source: '', releaseId: '']) {
+    stage('Deliver to GitHub') {
+        withEnv(["source=${args.source}", "releaseId=${args.releaseId}",
+        ]) {
+            withVault(vaultSecrets: [[path        : 'keptn-jenkins/monaco/github-credentials',
+                                      secretValues: [[envVar: 'token', vaultKey: 'access_token', isRequired: true]]]]
+            ) {
+                sh '''
+                    curl --request POST https://uploads.github.com/repos/Dynatrace/dynatrace-configuration-as-code/releases/$releaseId/assets?name=$source
+                         --header "Accept: application/vnd.github+json"
+                         --header "Authorization: Bearer $token"
+                         --header "X-GitHub-Api-Version: 2022-11-28"
+                         --header "Content-Type: application/octet-stream"
+                         --fail-with-body
+                         --data-binary @$source
+                    '''.replaceAll("\n", " ").replaceAll(/ +/, " ")
+            }
+        }
+    }
 }
