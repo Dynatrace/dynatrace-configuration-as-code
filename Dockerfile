@@ -1,17 +1,19 @@
 FROM amd64/alpine:3.16
 
+ARG NAME=monaco
+ARG SOURCE=/build/${NAME}-linux-amd64
+
 RUN apk add --update --no-cache \
     curl \
     jq \
     ca-certificates
 
-RUN addgroup monaco && adduser -s /bin/false -G monaco -D monaco
+RUN addgroup ${NAME} ; \
+    adduser -s /bin/false -G ${NAME} -D ${NAME}
 
-COPY /build/monaco-linux-amd64 /usr/local/bin/monaco
-RUN chown -R monaco:monaco /usr/local/bin/monaco
-RUN chmod +x /usr/local/bin/monaco
+COPY --chown=${NAME}:${NAME} --chmod=755 ${SOURCE} /usr/local/bin/${NAME}
 
-USER monaco
+USER ${NAME}
 
-ENTRYPOINT ["/usr/local/bin/monaco"]
+ENTRYPOINT ["/usr/local/bin/${NAME}"]
 CMD ["--help"]
