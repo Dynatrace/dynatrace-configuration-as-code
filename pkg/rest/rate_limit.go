@@ -129,13 +129,13 @@ func (s *simpleSleepRateLimitStrategy) extractRateLimitHeaders(response Response
 // generated sleep durations are used in case the API did not reply with a limit and reset time
 // and called with the current retry iteration count to implement increasing possible wait times per iteration
 func (s *simpleSleepRateLimitStrategy) generateSleepDuration(backoffMultiplier int, timelineProvider timeutils.TimelineProvider) (sleepDuration time.Duration, humanReadableResetTimestamp string) {
-	rand.Seed(time.Now().UnixNano())
+	r := rand.New(rand.NewSource(time.Now().UnixNano())) //nolint:gosec
 
 	if backoffMultiplier < 1 {
 		backoffMultiplier = 1
 	}
 
-	addedWaitMillis := rand.Int63n(minWaitDuration.Nanoseconds()) //nolint:gosec
+	addedWaitMillis := r.Int63n(minWaitDuration.Nanoseconds()) //nolint:gosec
 
 	sleepDuration = minWaitDuration + time.Duration(addedWaitMillis*int64(backoffMultiplier))
 
