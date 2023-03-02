@@ -20,7 +20,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
-	"net/http"
 	"os"
 
 	"github.com/spf13/afero"
@@ -265,7 +264,7 @@ func setupSharedFlags(cmd *cobra.Command, project, outputFolder *string, forceOv
 // notifying the user that downloaded objects cannot be uploaded to the same environment.
 // It verifies the version of the tenant and, depending on the result, it may or may not display the warning.
 func printUploadToSameEnvironmentWarning(environmentURL, token string) {
-	serverVersion, err := client.GetDynatraceVersion(&http.Client{}, environmentURL, token)
+	serverVersion, err := client.GetDynatraceVersion(client.NewTokenAuthClient(token), environmentURL)
 	if err != nil {
 		log.Error("Unable to determine server version %q: %w", environmentURL, err)
 		return

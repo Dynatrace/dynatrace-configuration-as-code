@@ -24,6 +24,7 @@ import (
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2/topologysort"
 	"github.com/spf13/afero"
+	"net/http"
 	"net/url"
 	"os"
 	"path"
@@ -85,7 +86,7 @@ func getEnvFromManifest(fs afero.Fs, manifestPath string, specificEnvironmentNam
 	return envUrl, env.Token, nil
 }
 
-type DynatraceClientProvider func(string, string, ...func(*client.DynatraceClient)) (*client.DynatraceClient, error)
+type DynatraceClientProvider func(*http.Client, string, ...func(*client.DynatraceClient)) (*client.DynatraceClient, error)
 
 type downloadOptionsShared struct {
 	environmentUrl          string
@@ -99,7 +100,7 @@ type downloadOptionsShared struct {
 }
 
 func (c downloadOptionsShared) getDynatraceClient() (client.Client, error) {
-	return c.clientProvider(c.environmentUrl, c.token)
+	return c.clientProvider(client.NewTokenAuthClient(c.token), c.environmentUrl, client.WithAutoServerVersion())
 }
 
 func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptionsShared, err error, fs afero.Fs) error {

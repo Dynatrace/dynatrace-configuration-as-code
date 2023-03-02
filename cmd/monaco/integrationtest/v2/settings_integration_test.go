@@ -59,6 +59,8 @@ func TestIntegrationSettings(t *testing.T) {
 // Tests a dry run (validation)
 func TestIntegrationValidationSettings(t *testing.T) {
 
+	t.Setenv("UNIQUE_TEST_SUFFIX", "can-be-nonunique-for-validation")
+
 	configFolder := "test-resources/integration-settings/"
 	manifest := configFolder + "manifest.yaml"
 

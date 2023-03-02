@@ -31,9 +31,9 @@ type ApiVersionObject struct {
 
 const versionPath = "/api/v1/config/clusterversion"
 
-func GetDynatraceVersion(client *http.Client, environmentUrl string, apiToken string) (version.Version, error) {
+func GetDynatraceVersion(client *http.Client, environmentUrl string) (version.Version, error) {
 	versionUrl := environmentUrl + versionPath
-	resp, err := rest.Get(client, versionUrl, apiToken)
+	resp, err := rest.Get(client, versionUrl)
 	if err != nil {
 		return version.Version{}, fmt.Errorf("failed to query version of Dynatrace environment: %w", err)
 	}

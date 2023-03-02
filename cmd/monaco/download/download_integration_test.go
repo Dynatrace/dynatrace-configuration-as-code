@@ -33,6 +33,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
+	"net/http"
 	"net/http/httptest"
 	"path/filepath"
 	"reflect"
@@ -1003,8 +1004,8 @@ func setupTestingDownloadOptions(t *testing.T, server *httptest.Server, projectN
 			outputFolder:            "out",
 			projectName:             projectName,
 			concurrentDownloadLimit: 50,
-			clientProvider: func(environmentUrl, token string, opts ...func(client *client.DynatraceClient)) (*client.DynatraceClient, error) {
-				return client.NewDynatraceClientForTesting(environmentUrl, token, server.Client())
+			clientProvider: func(httpClient *http.Client, environmentUrl string, opts ...func(client *client.DynatraceClient)) (*client.DynatraceClient, error) {
+				return client.NewDynatraceClientForTesting(environmentUrl, server.Client())
 			},
 		},
 		onlyAPIs: true,

@@ -17,14 +17,18 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
+	version2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
+	"golang.org/x/oauth2/clientcredentials"
 	"net/http"
 	"net/url"
+	"runtime"
 	"strings"
 
 	. "github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
@@ -180,12 +184,19 @@ type DynatraceClient struct {
 	// environmentUrl is the base URL of the Dynatrace server the
 	// client will be interacting with
 	environmentUrl string
-	// token is the Auth Token that will be used when interacting with the Dynatrace server
-	token string
 	// client is the HTTP client that will be used by the dynatrace client
 	client *http.Client
 	// retrySettings specify the retry behavior of the dynatrace client in case something goes wrong
 	retrySettings rest.RetrySettings
+}
+
+// OauthCredentials holds information for authenticating to Dynatrace
+// using Oauth2.0 client credential flow
+type OauthCredentials struct {
+	ClientID     string
+	ClientSecret string
+	TokenURL     string
+	Scopes       []string
 }
 
 var (
@@ -202,13 +213,6 @@ func WithRetrySettings(retrySettings rest.RetrySettings) func(*DynatraceClient) 
 	}
 }
 
-// WithHTTPClient sets the http client to be used by the DynatraceClient
-func WithHTTPClient(client *http.Client) func(dynatraceClient *DynatraceClient) {
-	return func(d *DynatraceClient) {
-		d.client = client
-	}
-}
-
 // WithServerVersion sets the Dynatrace version of the Dynatrace server/tenant the client will be interacting with
 func WithServerVersion(serverVersion version.Version) func(client *DynatraceClient) {
 	return func(d *DynatraceClient) {
@@ -220,7 +224,7 @@ func WithServerVersion(serverVersion version.Version) func(client *DynatraceClie
 // during creation using NewDynatraceClient. If the server version is already known WithServerVersion should be used
 func WithAutoServerVersion() func(client *DynatraceClient) {
 	return func(d *DynatraceClient) {
-		serverVersion, err := GetDynatraceVersion(d.client, d.environmentUrl, d.token)
+		serverVersion, err := GetDynatraceVersion(d.client, d.environmentUrl)
 		if err != nil {
 			log.Error("Unable to determine Dynatrace server version: %v", err)
 			d.serverVersion = version.UnknownVersion
@@ -230,13 +234,65 @@ func WithAutoServerVersion() func(client *DynatraceClient) {
 	}
 }
 
-// NewDynatraceClient creates a new DynatraceClient
-func NewDynatraceClient(environmentURL string, token string, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
+// TokenAuthTransport should be used to enable a client
+// to use dynatrace token authorization
+type TokenAuthTransport struct {
+	http.RoundTripper
+	header http.Header
+}
 
-	if token == "" {
-		return nil, errors.New("no token")
+// NewTokenAuthTransport creates a new http transport to be used for
+// token authorization
+func NewTokenAuthTransport(baseTransport http.RoundTripper, token string) *TokenAuthTransport {
+	if baseTransport == nil {
+		baseTransport = http.DefaultTransport
 	}
+	t := &TokenAuthTransport{
+		RoundTripper: baseTransport,
+		header:       http.Header{},
+	}
+	t.setHeader("Authorization", "Api-Token "+token)
+	t.setHeader("User-Agent", "Dynatrace Monitoring as Code/"+version2.MonitoringAsCode+" "+(runtime.GOOS+" "+runtime.GOARCH))
+	return t
+}
 
+func (t *TokenAuthTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	// Add the custom headers to the request
+	for k, v := range t.header {
+		req.Header[k] = v
+	}
+	return t.RoundTripper.RoundTrip(req)
+}
+
+func (t *TokenAuthTransport) setHeader(key, value string) {
+	t.header.Set(key, value)
+}
+
+// NewTokenAuthClient creates a new HTTP client that supports token based authorization
+func NewTokenAuthClient(token string) *http.Client {
+	if !isNewDynatraceTokenFormat(token) {
+		log.Warn("You used an old token format. Please consider switching to the new 1.205+ token format.")
+		log.Warn("More information: https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication")
+	}
+	return &http.Client{Transport: NewTokenAuthTransport(nil, token)}
+}
+
+// NewOAuthClient creates a new HTTP client that supports OAuth2 client credentials based authorization
+func NewOAuthClient(oauthConfig OauthCredentials) *http.Client {
+	config := clientcredentials.Config{
+		ClientID:     oauthConfig.ClientID,
+		ClientSecret: oauthConfig.ClientSecret,
+		TokenURL:     oauthConfig.TokenURL,
+		Scopes:       oauthConfig.Scopes,
+	}
+	return config.Client(context.TODO())
+}
+
+// NewDynatraceClient creates a new DynatraceClient.
+// It takes a http.Client to do its HTTP communication, a URL to the targeting Dynatrace
+// environment and an optional list of options to further configure the behavior of the client
+// It is also allowed to pass nil as httpClient
+func NewDynatraceClient(httpClient *http.Client, environmentURL string, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
 	environmentURL = strings.TrimSuffix(environmentURL, "/")
 	parsedUrl, err := url.ParseRequestURI(environmentURL)
 	if err != nil {
@@ -251,15 +307,13 @@ func NewDynatraceClient(environmentURL string, token string, opts ...func(dynatr
 		log.Warn("You are using an insecure connection (%s). Consider switching to HTTPS.", parsedUrl.Scheme)
 	}
 
-	if !isNewDynatraceTokenFormat(token) {
-		log.Warn("You used an old token format. Please consider switching to the new 1.205+ token format.")
-		log.Warn("More information: https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication")
+	if httpClient == nil {
+		httpClient = &http.Client{}
 	}
 
 	dtClient := &DynatraceClient{
 		environmentUrl: environmentURL,
-		token:          token,
-		client:         &http.Client{},
+		client:         httpClient,
 		retrySettings:  rest.DefaultRetrySettings,
 		serverVersion:  version.Version{},
 	}
@@ -315,7 +369,7 @@ func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, e
 
 	requestUrl := d.environmentUrl + pathSettingsObjects
 
-	resp, err := rest.SendWithRetryWithInitialTry(d.client, rest.Post, obj.Id, requestUrl, payload, d.token, d.retrySettings.Normal)
+	resp, err := rest.SendWithRetryWithInitialTry(d.client, rest.Post, obj.Id, requestUrl, payload, d.retrySettings.Normal)
 	if err != nil {
 		return DynatraceEntity{}, fmt.Errorf("failed to upsert dynatrace obj: %w", err)
 	}
@@ -336,7 +390,7 @@ func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, e
 func (d *DynatraceClient) ListConfigs(api Api) (values []Value, err error) {
 
 	fullUrl := api.GetUrl(d.environmentUrl)
-	values, err = getExistingValuesFromEndpoint(d.client, api, fullUrl, d.token, d.retrySettings)
+	values, err = getExistingValuesFromEndpoint(d.client, api, fullUrl, d.retrySettings)
 	return values, err
 }
 
@@ -350,7 +404,7 @@ func (d *DynatraceClient) ReadConfigById(api Api, id string) (json []byte, err e
 		dtUrl = api.GetUrl(d.environmentUrl) + "/" + url.PathEscape(id)
 	}
 
-	response, err := rest.Get(d.client, dtUrl, d.token)
+	response, err := rest.Get(d.client, dtUrl)
 
 	if err != nil {
 		return nil, err
@@ -365,12 +419,12 @@ func (d *DynatraceClient) ReadConfigById(api Api, id string) (json []byte, err e
 
 func (d *DynatraceClient) DeleteConfigById(api Api, id string) error {
 
-	return rest.DeleteConfig(d.client, api.GetUrl(d.environmentUrl), d.token, id)
+	return rest.DeleteConfig(d.client, api.GetUrl(d.environmentUrl), id)
 }
 
 func (d *DynatraceClient) ConfigExistsByName(api Api, name string) (exists bool, id string, err error) {
 	apiURL := api.GetUrl(d.environmentUrl)
-	existingObjectId, err := getObjectIdIfAlreadyExists(d.client, api, apiURL, name, d.token, d.retrySettings)
+	existingObjectId, err := getObjectIdIfAlreadyExists(d.client, api, apiURL, name, d.retrySettings)
 	return existingObjectId != "", existingObjectId, err
 }
 
@@ -378,13 +432,13 @@ func (d *DynatraceClient) UpsertConfigByName(api Api, name string, payload []byt
 
 	if api.GetId() == "extension" {
 		fullUrl := api.GetUrl(d.environmentUrl)
-		return uploadExtension(d.client, fullUrl, name, payload, d.token)
+		return uploadExtension(d.client, fullUrl, name, payload)
 	}
-	return upsertDynatraceObject(d.client, d.environmentUrl, name, api, payload, d.token, d.retrySettings)
+	return upsertDynatraceObject(d.client, d.environmentUrl, name, api, payload, d.retrySettings)
 }
 
 func (d *DynatraceClient) UpsertConfigByNonUniqueNameAndId(api Api, entityId string, name string, payload []byte) (entity DynatraceEntity, err error) {
-	return upsertDynatraceEntityByNonUniqueNameAndId(d.client, d.environmentUrl, entityId, name, api, payload, d.token, d.retrySettings)
+	return upsertDynatraceEntityByNonUniqueNameAndId(d.client, d.environmentUrl, entityId, name, api, payload, d.retrySettings)
 }
 
 // SchemaListResponse is the response type returned by the ListSchemas operation
@@ -403,7 +457,7 @@ func (d *DynatraceClient) ListSchemas() (SchemaList, error) {
 	}
 
 	// getting all schemas does not have pagination
-	resp, err := rest.Get(d.client, u.String(), d.token)
+	resp, err := rest.Get(d.client, u.String())
 	if err != nil {
 		return nil, fmt.Errorf("failed to GET schemas: %w", err)
 	}
@@ -431,7 +485,7 @@ func (d *DynatraceClient) GetSettingById(objectId string) (*DownloadSettingsObje
 		return nil, fmt.Errorf("failed to parse URL '%s': %w", d.environmentUrl+pathSettingsObjects, err)
 	}
 
-	resp, err := rest.Get(d.client, u.String(), d.token)
+	resp, err := rest.Get(d.client, u.String())
 	if err != nil {
 		return nil, fmt.Errorf("failed to GET settings object with object id %q: %w", objectId, err)
 	}
@@ -584,7 +638,7 @@ func (d *DynatraceClient) ListPaginated(urlPath string, params url.Values, addTo
 
 	u.RawQuery = params.Encode()
 
-	resp, err := rest.GetWithRetry(d.client, u.String(), d.token, d.retrySettings.Normal)
+	resp, err := rest.GetWithRetry(d.client, u.String(), d.retrySettings.Normal)
 	if err != nil {
 		return err
 	}
@@ -602,7 +656,7 @@ func (d *DynatraceClient) ListPaginated(urlPath string, params url.Values, addTo
 		if resp.NextPageKey != "" {
 			u = rest.AddNextPageQueryParams(u, resp.NextPageKey)
 
-			resp, err = rest.GetWithRetry(d.client, u.String(), d.token, d.retrySettings.Normal)
+			resp, err = rest.GetWithRetry(d.client, u.String(), d.retrySettings.Normal)
 
 			if err != nil {
 				return err
@@ -630,6 +684,6 @@ func (d *DynatraceClient) DeleteSettings(objectID string) error {
 		return fmt.Errorf("failed to parse URL '%s': %w", d.environmentUrl+pathSettingsObjects, err)
 	}
 
-	return rest.DeleteConfig(d.client, u.String(), d.token, objectID)
+	return rest.DeleteConfig(d.client, u.String(), objectID)
 
 }

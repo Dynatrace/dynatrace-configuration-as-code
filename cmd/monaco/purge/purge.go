@@ -100,5 +100,5 @@ func createClient(environment manifest.EnvironmentDefinition) (client.Client, er
 		return nil, err
 	}
 
-	return client.NewDynatraceClient(url, environment.Token.Value)
+	return client.NewDynatraceClient(client.NewTokenAuthClient(environment.Token.Value), url, client.WithAutoServerVersion())
 }

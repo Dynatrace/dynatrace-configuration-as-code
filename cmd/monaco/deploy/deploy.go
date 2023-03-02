@@ -400,5 +400,5 @@ func createDynatraceClient(environment manifest.EnvironmentDefinition, dryRun bo
 		return nil, fmt.Errorf("unable to get URL for environment %q: %w", environment.Name, err)
 	}
 
-	return client.NewDynatraceClient(envURL, environment.Token.Value, client.WithAutoServerVersion())
+	return client.NewDynatraceClient(client.NewTokenAuthClient(environment.Token.Value), envURL, client.WithAutoServerVersion())
 }
