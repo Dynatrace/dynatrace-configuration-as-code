@@ -27,7 +27,7 @@ import (
 	"testing"
 )
 
-func createTestConfig(name string, filePrefix string, property string) *ConfigImpl {
+func createTestConfig(name string, filePrefix string, property string) *Config {
 
 	propA := make(map[string]map[string]string)
 	propA[name] = make(map[string]string)
@@ -51,7 +51,7 @@ func TestSortingByConfigDependencyWithRootDirectory(t *testing.T) {
 	configA := createTestConfig("zone-a", pathA, "foo")
 	configB := createTestConfig("profile", pathB, pathA+"zone-a.id")
 
-	configs := []*ConfigImpl{configB, configA} // reverse ordering
+	configs := []*Config{configB, configA} // reverse ordering
 
 	configs, err := sortConfigurations(configs)
 	assert.NilError(t, err)
@@ -70,7 +70,7 @@ func TestFailsOnCircularConfigDependency(t *testing.T) {
 	configA := createTestConfig("zone-a", pathA, pathB+"profile.name")
 	configB := createTestConfig("profile", pathB, pathA+"zone-a.id")
 
-	configs := []*ConfigImpl{configB, configA} // reverse ordering
+	configs := []*Config{configB, configA} // reverse ordering
 
 	configs, err := sortConfigurations(configs)
 	assert.Error(t, err, "failed to sort configs, circular dependency on config "+pathB+"profile detected, please check dependencies")
@@ -86,7 +86,7 @@ func TestSortingByConfigDependencyWithoutRootDirectory(t *testing.T) {
 	configA := createTestConfig("zone-d", pathA, "bar")
 	configB := createTestConfig("profile", pathB, pathA+"zone-d.id")
 
-	configs := []*ConfigImpl{configB, configA} // reverse ordering
+	configs := []*Config{configB, configA} // reverse ordering
 
 	configs, err := sortConfigurations(configs)
 	assert.NilError(t, err)
@@ -104,7 +104,7 @@ func TestSortingByConfigDependencyWithRelativePath(t *testing.T) {
 	configA := createTestConfig("testzone", pathA, "prop")
 	configB := createTestConfig("profile", pathB, "management-zone"+string(os.PathSeparator)+"testzone.id")
 
-	configs := []*ConfigImpl{configB, configA} // reverse ordering
+	configs := []*Config{configB, configA} // reverse ordering
 
 	configs, err := sortConfigurations(configs)
 	assert.NilError(t, err)

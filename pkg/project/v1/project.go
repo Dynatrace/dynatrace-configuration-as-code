@@ -31,19 +31,19 @@ import (
 )
 
 type Project interface {
-	GetConfigs() []*ConfigImpl
+	GetConfigs() []*Config
 	GetId() string
 }
 
 type ProjectImpl struct {
 	Id      string
-	Configs []*ConfigImpl
+	Configs []*Config
 }
 
 type projectBuilder struct {
 	projectRootFolder string
 	projectId         string
-	configs           []*ConfigImpl
+	configs           []*Config
 	apis              map[string]api.Api
 	configFactory     ConfigFactory
 	fs                afero.Fs
@@ -52,7 +52,7 @@ type projectBuilder struct {
 // newProject loads a new project from folder. Returns either project or a reading/sorting error respectively.
 func newProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolderName string, apis map[string]api.Api, projectRootFolder string, unmarshalYaml template.UnmarshalYamlFunc) (Project, error) {
 
-	var configs = make([]*ConfigImpl, 0)
+	var configs = make([]*Config, 0)
 
 	// standardize projectRootFolder
 	// trim path separator from projectRoot
@@ -252,7 +252,7 @@ func (p *projectBuilder) resolveDuplicateIDs() {
 }
 
 // GetConfigs returns the configs for this project
-func (p *ProjectImpl) GetConfigs() []*ConfigImpl {
+func (p *ProjectImpl) GetConfigs() []*Config {
 	return p.Configs
 }
 

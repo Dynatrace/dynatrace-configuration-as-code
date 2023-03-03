@@ -35,7 +35,7 @@ func testCreateProjectBuilder(projectsRoot string) projectBuilder {
 		projectRootFolder: projectsRoot,
 		apis:              createTestApis(),
 		configFactory:     NewConfigFactory(),
-		configs:           make([]*ConfigImpl, 10),
+		configs:           make([]*Config, 10),
 	}
 }
 
@@ -45,7 +45,7 @@ func testCreateProjectBuilderWithMock(factory ConfigFactory, fs afero.Fs, projec
 		projectRootFolder: projectsRoot,
 		projectId:         projectId,
 		apis:              createTestApis(),
-		configs:           make([]*ConfigImpl, 0),
+		configs:           make([]*Config, 0),
 		configFactory:     factory,
 		fs:                fs,
 	}
@@ -54,8 +54,8 @@ func testCreateProjectBuilderWithMock(factory ConfigFactory, fs afero.Fs, projec
 type configFactoryMock struct {
 }
 
-func (c *configFactoryMock) NewConfig(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (*ConfigImpl, error) {
-	return &ConfigImpl{
+func (c *configFactoryMock) NewConfig(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (*Config, error) {
+	return &Config{
 		id:         id,
 		project:    project,
 		properties: properties,

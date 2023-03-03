@@ -84,7 +84,7 @@ type ReferenceParseError struct {
 	Reason        string
 }
 
-func newReferenceParserError(projectId string, config *projectV1.ConfigImpl, parameterName string, reason string) ReferenceParseError {
+func newReferenceParserError(projectId string, config *projectV1.Config, parameterName string, reason string) ReferenceParseError {
 	return ReferenceParseError{
 		Location: coordinate.Coordinate{
 			Project:  projectId,
@@ -177,7 +177,7 @@ func convertProject(context *ConverterContext, environments map[string]manifest.
 }
 
 func convertConfigs(context *configConvertContext, environments map[string]manifest.EnvironmentDefinition,
-	configs []*projectV1.ConfigImpl) (projectV2.ConfigsPerTypePerEnvironments, []error) {
+	configs []*projectV1.Config) (projectV2.ConfigsPerTypePerEnvironments, []error) {
 
 	result := make(projectV2.ConfigsPerTypePerEnvironments)
 	var errors []error
@@ -207,7 +207,7 @@ func convertConfigs(context *configConvertContext, environments map[string]manif
 	return result, nil
 }
 
-func convertConfig(context *configConvertContext, environment manifest.EnvironmentDefinition, config *projectV1.ConfigImpl) (configV2.Config, []error) {
+func convertConfig(context *configConvertContext, environment manifest.EnvironmentDefinition, config *projectV1.Config) (configV2.Config, []error) {
 	var errors []error
 
 	apiId := config.GetApi().GetId()
@@ -368,7 +368,7 @@ func convertListsInTemplate(currentTemplate string, currentPath string) (modifie
 }
 
 func convertParameters(context *configConvertContext, environment manifest.EnvironmentDefinition,
-	config *projectV1.ConfigImpl) (map[string]parameter.Parameter, parameter.Parameter, []error) {
+	config *projectV1.Config) (map[string]parameter.Parameter, parameter.Parameter, []error) {
 
 	properties := loadPropertiesForEnvironment(environment, config)
 
@@ -431,7 +431,7 @@ func convertedParameterName(name string) string {
 	return name
 }
 
-func parseSkipDeploymentParameter(context *configConvertContext, config *projectV1.ConfigImpl, value string) (parameter.Parameter, error) {
+func parseSkipDeploymentParameter(context *configConvertContext, config *projectV1.Config, value string) (parameter.Parameter, error) {
 	switch strings.ToLower(value) {
 	case "true":
 		return valueParam.New(true), nil
@@ -454,7 +454,7 @@ func parseSkipDeploymentParameter(context *configConvertContext, config *project
 	return nil, newConvertConfigError(location, fmt.Sprintf("invalid value for %s: `%s`. allowed values: true, false", projectV1.SkipConfigDeploymentParameter, value))
 }
 
-func parseReference(context *configConvertContext, config *projectV1.ConfigImpl, parameterName string, reference string) (*refParam.ReferenceParameter, error) {
+func parseReference(context *configConvertContext, config *projectV1.Config, parameterName string, reference string) (*refParam.ReferenceParameter, error) {
 	configId, property, err := projectV1.SplitDependency(reference)
 
 	if err != nil {
@@ -496,7 +496,7 @@ func parseReference(context *configConvertContext, config *projectV1.ConfigImpl,
 	return refParam.New(projectId, currentApiId, referencedConfigId, property), nil
 }
 
-func loadPropertiesForEnvironment(environment manifest.EnvironmentDefinition, config *projectV1.ConfigImpl) map[string]string {
+func loadPropertiesForEnvironment(environment manifest.EnvironmentDefinition, config *projectV1.Config) map[string]string {
 	result := make(map[string]string)
 
 	for _, propertyName := range []string{config.GetId(), config.GetId() + "." + environment.Group, config.GetId() + "." + environment.Name} {

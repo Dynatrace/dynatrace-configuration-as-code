@@ -512,7 +512,7 @@ func TestConvertConfigs(t *testing.T) {
 		ProjectId: projectId,
 	}
 
-	convertedConfigs, errors := convertConfigs(convertContext, environments, []*projectV1.ConfigImpl{testConfig})
+	convertedConfigs, errors := convertConfigs(convertContext, environments, []*projectV1.Config{testConfig})
 
 	assert.Equal(t, 0, len(errors))
 	assert.Equal(t, 2, len(convertedConfigs))
@@ -593,7 +593,7 @@ func TestConvertWithMissingName(t *testing.T) {
 		ProjectId: "projectA",
 	}
 
-	convertedConfigs, errors := convertConfigs(convertContext, environments, []*projectV1.ConfigImpl{testConfig})
+	convertedConfigs, errors := convertConfigs(convertContext, environments, []*projectV1.Config{testConfig})
 
 	assert.Equal(t, 0, len(errors))
 	assert.Equal(t, 1, len(convertedConfigs))
@@ -654,7 +654,7 @@ func TestConvertProjects(t *testing.T) {
 
 	project := &projectV1.ProjectImpl{
 		Id:      projectId,
-		Configs: []*projectV1.ConfigImpl{testConfig},
+		Configs: []*projectV1.Config{testConfig},
 	}
 
 	projectDefinitions, convertedProjects, errors := convertProjects(convertContext, environments, []projectV1.Project{project})
@@ -886,7 +886,7 @@ func generateDummyTemplate(t *testing.T) template.Template {
 	return template
 }
 
-func generateDummyConfig(t *testing.T) *projectV1.ConfigImpl {
+func generateDummyConfig(t *testing.T) *projectV1.Config {
 	var configId = "alerting-profile-1"
 
 	testApi := api.NewStandardApi("alerting-profile", "/api/configV1/v1/alertingProfiles", false, "", false)

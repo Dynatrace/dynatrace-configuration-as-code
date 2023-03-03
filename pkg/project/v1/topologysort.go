@@ -21,8 +21,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 )
 
-func sortConfigurations(configs []*ConfigImpl) (sorted []*ConfigImpl, err error) {
-	sorted = []*ConfigImpl{}
+func sortConfigurations(configs []*Config) (sorted []*Config, err error) {
+	sorted = []*Config{}
 	incomingDeps, inDegrees := calculateIncomingConfigDependencies(configs)
 	reverse, err, errorOn := topologySort(incomingDeps, inDegrees)
 	if err != nil {
@@ -37,7 +37,7 @@ func sortConfigurations(configs []*ConfigImpl) (sorted []*ConfigImpl, err error)
 	return sorted, nil
 }
 
-func calculateIncomingConfigDependencies(configs []*ConfigImpl) (adjacencyMatrix [][]bool, inDegrees []int) {
+func calculateIncomingConfigDependencies(configs []*Config) (adjacencyMatrix [][]bool, inDegrees []int) {
 	adjacencyMatrix = make([][]bool, len(configs))
 	inDegrees = make([]int, len(configs))
 
