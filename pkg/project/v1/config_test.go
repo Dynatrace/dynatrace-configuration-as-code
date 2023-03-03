@@ -28,8 +28,6 @@ import (
 	"gotest.tools/assert"
 )
 
-var testManagementZoneApi = api.NewStandardApi("management-zone", "/api/config/v1/managementZones", false, "", false)
-
 func TestFilterProperties(t *testing.T) {
 
 	m := make(map[string]map[string]string)
@@ -126,6 +124,7 @@ func TestFilterPropertiesToReturnNoGeneralPropertiesForMissingSpecificOnes(t *te
 }
 
 func TestHasDependencyCheck(t *testing.T) {
+	testManagementZoneApi := api.NewStandardApi("management-zone", "/api/config/v1/managementZones", false, "", false)
 	prop := make(map[string]map[string]string)
 	prop["test"] = make(map[string]string)
 	prop["test"]["name"] = "A name"
@@ -141,6 +140,8 @@ func TestHasDependencyCheck(t *testing.T) {
 }
 
 func TestHasDependencyWithMultipleDependenciesCheck(t *testing.T) {
+	testManagementZoneApi := api.NewStandardApi("management-zone", "/api/config/v1/managementZones", false, "", false)
+
 	prop := make(map[string]map[string]string)
 	prop["test"] = make(map[string]string)
 	prop["test"]["name"] = "A name"

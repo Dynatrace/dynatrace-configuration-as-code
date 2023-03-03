@@ -21,14 +21,13 @@ package v1
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v1"
 	"gotest.tools/assert"
 	"os"
 	"strings"
 	"testing"
 )
 
-func createTestConfig(name string, filePrefix string, property string) config.Config {
+func createTestConfig(name string, filePrefix string, property string) *ConfigImpl {
 
 	propA := make(map[string]map[string]string)
 	propA[name] = make(map[string]string)
@@ -40,7 +39,7 @@ func createTestConfig(name string, filePrefix string, property string) config.Co
 	project := strings.Join(path[0:len(path)-2], string(os.PathSeparator))
 	var testManagementZoneApi = api.NewStandardApi(zoneId[0], "/api/config/v1/foobar", false, "", false)
 
-	configA := config.NewConfigWithTemplate(name, project, filePrefix+name+".json", nil, propA, testManagementZoneApi)
+	configA := NewConfigWithTemplate(name, project, filePrefix+name+".json", nil, propA, testManagementZoneApi)
 
 	return configA
 }
@@ -52,7 +51,7 @@ func TestSortingByConfigDependencyWithRootDirectory(t *testing.T) {
 	configA := createTestConfig("zone-a", pathA, "foo")
 	configB := createTestConfig("profile", pathB, pathA+"zone-a.id")
 
-	configs := []config.Config{configB, configA} // reverse ordering
+	configs := []*ConfigImpl{configB, configA} // reverse ordering
 
 	configs, err := sortConfigurations(configs)
 	assert.NilError(t, err)
@@ -71,7 +70,7 @@ func TestFailsOnCircularConfigDependency(t *testing.T) {
 	configA := createTestConfig("zone-a", pathA, pathB+"profile.name")
 	configB := createTestConfig("profile", pathB, pathA+"zone-a.id")
 
-	configs := []config.Config{configB, configA} // reverse ordering
+	configs := []*ConfigImpl{configB, configA} // reverse ordering
 
 	configs, err := sortConfigurations(configs)
 	assert.Error(t, err, "failed to sort configs, circular dependency on config "+pathB+"profile detected, please check dependencies")
@@ -87,7 +86,7 @@ func TestSortingByConfigDependencyWithoutRootDirectory(t *testing.T) {
 	configA := createTestConfig("zone-d", pathA, "bar")
 	configB := createTestConfig("profile", pathB, pathA+"zone-d.id")
 
-	configs := []config.Config{configB, configA} // reverse ordering
+	configs := []*ConfigImpl{configB, configA} // reverse ordering
 
 	configs, err := sortConfigurations(configs)
 	assert.NilError(t, err)
@@ -105,7 +104,7 @@ func TestSortingByConfigDependencyWithRelativePath(t *testing.T) {
 	configA := createTestConfig("testzone", pathA, "prop")
 	configB := createTestConfig("profile", pathB, "management-zone"+string(os.PathSeparator)+"testzone.id")
 
-	configs := []config.Config{configB, configA} // reverse ordering
+	configs := []*ConfigImpl{configB, configA} // reverse ordering
 
 	configs, err := sortConfigurations(configs)
 	assert.NilError(t, err)

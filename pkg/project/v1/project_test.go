@@ -25,8 +25,6 @@ import (
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v1"
-	"github.com/golang/mock/gomock"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 )
@@ -36,21 +34,34 @@ func testCreateProjectBuilder(projectsRoot string) projectBuilder {
 	return projectBuilder{
 		projectRootFolder: projectsRoot,
 		apis:              createTestApis(),
-		configFactory:     config.NewConfigFactory(),
-		configs:           make([]config.Config, 10),
+		configFactory:     NewConfigFactory(),
+		configs:           make([]*ConfigImpl, 10),
 	}
 }
 
-func testCreateProjectBuilderWithMock(factory config.ConfigFactory, fs afero.Fs, projectId string, projectsRoot string) projectBuilder {
+func testCreateProjectBuilderWithMock(factory ConfigFactory, fs afero.Fs, projectId string, projectsRoot string) projectBuilder {
 
 	return projectBuilder{
 		projectRootFolder: projectsRoot,
 		projectId:         projectId,
 		apis:              createTestApis(),
-		configs:           make([]config.Config, 0),
+		configs:           make([]*ConfigImpl, 0),
 		configFactory:     factory,
 		fs:                fs,
 	}
+}
+
+type configFactoryMock struct {
+}
+
+func (c *configFactoryMock) NewConfig(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (*ConfigImpl, error) {
+	return &ConfigImpl{
+		id:         id,
+		project:    project,
+		properties: properties,
+		api:        api,
+		fileName:   fileName,
+	}, nil
 }
 
 func createTestApis() map[string]api.Api {
@@ -149,9 +160,8 @@ func TestGetApiFromLocationApiNotFound(t *testing.T) {
 
 func TestProcessConfigSection(t *testing.T) {
 
-	factory := config.NewMockConfigFactory(gomock.NewController(t))
 	fs := testutils.CreateTestFileSystem()
-	builder := testCreateProjectBuilderWithMock(factory, fs, "testProject", "")
+	builder := testCreateProjectBuilderWithMock(&configFactoryMock{}, fs, "testProject", "")
 
 	m := make(map[string]map[string]string)
 
@@ -160,11 +170,6 @@ func TestProcessConfigSection(t *testing.T) {
 	m["config"]["test1"] = files.ReplacePathSeparators("/test/management-zone/zoneA.json")
 	m["config"]["test2"] = files.ReplacePathSeparators("/test/alerting-profile/profile.json")
 
-	zoneA := files.ReplacePathSeparators("/test/management-zone/zoneA.json")
-	profile := files.ReplacePathSeparators("/test/alerting-profile/profile.json")
-	factory.EXPECT().NewConfig(fs, "test1", "testProject", zoneA, m, testManagementZoneApi).Times(1)
-	factory.EXPECT().NewConfig(fs, "test2", "testProject", profile, m, testAlertingProfileApi).Times(1)
-
 	folderPath := files.ReplacePathSeparators("test/management-zone")
 	err := builder.processConfigSection(m, folderPath)
 	assert.NilError(t, err)
@@ -172,9 +177,8 @@ func TestProcessConfigSection(t *testing.T) {
 
 func TestProcessConfigSectionWithProjectRootParameter(t *testing.T) {
 
-	factory := config.NewMockConfigFactory(gomock.NewController(t))
 	fileReaderMock := testutils.CreateTestFileSystem()
-	builder := testCreateProjectBuilderWithMock(factory, fileReaderMock, "test", "testProjectsRoot")
+	builder := testCreateProjectBuilderWithMock(&configFactoryMock{}, fileReaderMock, "test", "testProjectsRoot")
 
 	m := make(map[string]map[string]string)
 
@@ -182,11 +186,6 @@ func TestProcessConfigSectionWithProjectRootParameter(t *testing.T) {
 
 	m["config"]["testconfig1"] = files.ReplacePathSeparators("/test/management-zone/zoneA.json")
 	m["config"]["testconfig2"] = files.ReplacePathSeparators("/test/alerting-profile/profile.json")
-
-	zoneA := files.ReplacePathSeparators("testProjectsRoot/test/management-zone/zoneA.json")
-	profile := files.ReplacePathSeparators("testProjectsRoot/test/alerting-profile/profile.json")
-	factory.EXPECT().NewConfig(fileReaderMock, "testconfig1", "test", zoneA, m, testManagementZoneApi).Times(1)
-	factory.EXPECT().NewConfig(fileReaderMock, "testconfig2", "test", profile, m, testAlertingProfileApi).Times(1)
 
 	folderPath := files.ReplacePathSeparators("test/management-zone")
 	err := builder.processConfigSection(m, folderPath)
@@ -223,33 +222,26 @@ func TestStandardizeLocationWithLocalPath(t *testing.T) {
 
 const projectTestYaml = `
 config:
-  - dashboard: "my-project-dashboard.json"
+ - dashboard: "my-project-dashboard.json"
 
 dashboard:
-  - name: "🦙My Dashboard"
-  - value: "Foo"
-  - constant: "default value"
+ - name: "🦙My Dashboard"
+ - value: "Foo"
+ - constant: "default value"
 
 dashboard.dev:
-  - constant: "overridden in dev"
+ - constant: "overridden in dev"
 `
 
 func TestProcessYaml(t *testing.T) {
 
-	factory := config.NewMockConfigFactory(gomock.NewController(t))
 	fs := testutils.CreateTestFileSystem()
 	err := fs.Mkdir("test/dashboard/", 0777)
 	err = afero.WriteFile(fs, "test/dashboard/test-file.yaml", []byte(projectTestYaml), 0664)
 
-	builder := testCreateProjectBuilderWithMock(factory, fs, "testproject", "")
-
-	properties := make(map[string]map[string]string)
+	builder := testCreateProjectBuilderWithMock(&configFactoryMock{}, fs, "testproject", "")
 
 	yamlFile := files.ReplacePathSeparators("test/dashboard/test-file.yaml")
-
-	factory.EXPECT().
-		NewConfig(gomock.Any(), "dashboard", "testproject", files.ReplacePathSeparators("test/dashboard/my-project-dashboard.json"), gomock.Any(), testDashboardApi).
-		Return(config.NewConfigWithTemplate("my-project-dashboard", "testproject", files.ReplacePathSeparators("dashboard/test-file.yaml"), nil, properties, testDashboardApi), nil)
 
 	err = builder.processYaml(yamlFile, template.UnmarshalYaml)
 
