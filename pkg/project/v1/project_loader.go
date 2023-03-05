@@ -30,12 +30,12 @@ import (
 )
 
 // LoadProjectsToConvert returns a list of projects to be converted to v2
-func LoadProjectsToConvert(fs afero.Fs, apis map[string]api.Api, path string) ([]Project, error) {
+func LoadProjectsToConvert(fs afero.Fs, apis api.ApiMap, path string) ([]Project, error) {
 	_, projects, err := loadAllProjects(fs, apis, path, template.UnmarshalYamlWithoutTemplating)
 	return projects, err
 }
 
-func loadAllProjects(fs afero.Fs, apis map[string]api.Api, projectsFolder string, unmarshalYaml template.UnmarshalYamlFunc) (projectFolders []string, projects []Project, err error) {
+func loadAllProjects(fs afero.Fs, apis api.ApiMap, projectsFolder string, unmarshalYaml template.UnmarshalYamlFunc) (projectFolders []string, projects []Project, err error) {
 	projectsFolder = filepath.Clean(projectsFolder)
 
 	log.Debug("Reading projects...")

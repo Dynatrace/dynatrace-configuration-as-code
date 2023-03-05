@@ -17,7 +17,7 @@
 package api
 
 // Filter return true iff specific api needs to be filtered/ removed from list
-type Filter func(api Api) bool
+type Filter func(api *Api) bool
 
 // Filter apply all passed filters and return new filtered array
 func (m ApiMap) Filter(filters ...Filter) ApiMap {
@@ -38,7 +38,7 @@ func (m ApiMap) Filter(filters ...Filter) ApiMap {
 }
 
 // NoFilter is dummy filter that do nothing.
-func NoFilter(Api) bool {
+func NoFilter(*Api) bool {
 	return false
 }
 
@@ -48,7 +48,7 @@ func RetainByName(APIs []string) Filter {
 		return NoFilter
 	}
 
-	return func(api Api) bool {
+	return func(api *Api) bool {
 		for _, v := range APIs {
 			if v == api.GetId() {
 				return false

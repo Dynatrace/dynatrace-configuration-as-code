@@ -28,7 +28,7 @@ var givenJson = []byte{1, 2, 3}
 var givenError = errors.New("error")
 
 func TestDecoratedClient_ReadById(t *testing.T) {
-	a := api.NewMockApi(gomock.NewController(t))
+	a := api.NewApi("", "", "", false, false, "", false)
 
 	client := NewMockClient(gomock.NewController(t))
 	limited := LimitClientParallelRequests(client, 1)

@@ -34,7 +34,7 @@ func upsertDynatraceObject(
 	client *http.Client,
 	environmentUrl string,
 	objectName string,
-	theApi api.Api,
+	theApi *api.Api,
 	payload []byte,
 	retrySettings rest.RetrySettings,
 ) (api.DynatraceEntity, error) {
@@ -77,7 +77,7 @@ func upsertDynatraceEntityByNonUniqueNameAndId(
 	environmentUrl string,
 	entityId string,
 	objectName string,
-	theApi api.Api,
+	theApi *api.Api,
 	payload []byte,
 	retrySettings rest.RetrySettings,
 ) (api.DynatraceEntity, error) {
@@ -124,7 +124,7 @@ func upsertDynatraceEntityByNonUniqueNameAndId(
 	return updateDynatraceObject(client, fullUrl, objectName, entityId, theApi, body, retrySettings)
 }
 
-func createDynatraceObject(client *http.Client, urlString string, objectName string, theApi api.Api, payload []byte, retrySettings rest.RetrySettings) (api.DynatraceEntity, error) {
+func createDynatraceObject(client *http.Client, urlString string, objectName string, theApi *api.Api, payload []byte, retrySettings rest.RetrySettings) (api.DynatraceEntity, error) {
 	parsedUrl, err := url.Parse(urlString)
 	if err != nil {
 		return api.DynatraceEntity{}, fmt.Errorf("invalid URL for creating Dynatrace config: %w", err)
@@ -199,7 +199,7 @@ func unmarshalResponse(resp rest.Response, fullUrl string, configType string, ob
 	return dtEntity, nil
 }
 
-func updateDynatraceObject(client *http.Client, fullUrl string, objectName string, existingObjectId string, theApi api.Api, payload []byte, retrySettings rest.RetrySettings) (api.DynatraceEntity, error) {
+func updateDynatraceObject(client *http.Client, fullUrl string, objectName string, existingObjectId string, theApi *api.Api, payload []byte, retrySettings rest.RetrySettings) (api.DynatraceEntity, error) {
 	path := joinUrl(fullUrl, existingObjectId)
 	body := payload
 
@@ -249,7 +249,7 @@ func stripCreateOnlyPropertiesFromAppMobile(payload []byte) []byte {
 // callWithRetryOnKnowTimingIssue handles several know cases in which Dynatrace has a slight delay before newly created objects
 // can be used in further configuration. This is a cheap way to allow monaco to work around this, by waiting, then
 // retrying in case of know errors on upload.
-func callWithRetryOnKnowTimingIssue(client *http.Client, restCall rest.SendingRequest, objectName string, path string, body []byte, theApi api.Api, retrySettings rest.RetrySettings) (rest.Response, error) {
+func callWithRetryOnKnowTimingIssue(client *http.Client, restCall rest.SendingRequest, objectName string, path string, body []byte, theApi *api.Api, retrySettings rest.RetrySettings) (rest.Response, error) {
 
 	resp, err := restCall(client, path, body)
 
@@ -307,17 +307,17 @@ func isManagementZoneNotReadyYet(resp rest.Response) bool {
 		strings.Contains(string(resp.Body), "Unknown management zone")
 }
 
-func isApplicationNotReadyYet(resp rest.Response, theApi api.Api) bool {
+func isApplicationNotReadyYet(resp rest.Response, theApi *api.Api) bool {
 	return isSyntheticMonitorServerError(resp, theApi) ||
 		isApplicationAPIError(resp, theApi) ||
 		strings.Contains(string(resp.Body), "Unknown application(s)")
 }
 
-func isSyntheticMonitorServerError(resp rest.Response, theApi api.Api) bool {
+func isSyntheticMonitorServerError(resp rest.Response, theApi *api.Api) bool {
 	return theApi.GetId() == "synthetic-monitor" && resp.IsServerError()
 }
 
-func isApplicationAPIError(resp rest.Response, theApi api.Api) bool {
+func isApplicationAPIError(resp rest.Response, theApi *api.Api) bool {
 	return isAnyApplicationApi(theApi) &&
 		(resp.IsServerError() || resp.StatusCode == http.StatusConflict || resp.StatusCode == http.StatusNotFound)
 }
@@ -346,7 +346,7 @@ func isLocationHeaderAvailable(resp rest.Response) (headerAvailable bool, header
 	return false, make([]string, 0)
 }
 
-func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, objectName string, retrySettings rest.RetrySettings) (string, error) {
+func getObjectIdIfAlreadyExists(client *http.Client, api *api.Api, url string, objectName string, retrySettings rest.RetrySettings) (string, error) {
 	values, err := getExistingValuesFromEndpoint(client, api, url, retrySettings)
 
 	if err != nil {
@@ -385,27 +385,27 @@ func escapeApiValueName(value api.Value) string {
 	return valueName.(string)
 }
 
-func isApiDashboard(api api.Api) bool {
+func isApiDashboard(api *api.Api) bool {
 	return api.GetId() == "dashboard" || api.GetId() == "dashboard-v2"
 }
 
-func isReportsApi(api api.Api) bool {
+func isReportsApi(api *api.Api) bool {
 	return api.GetId() == "reports"
 }
 
-func isAnyServiceDetectionApi(api api.Api) bool {
+func isAnyServiceDetectionApi(api *api.Api) bool {
 	return strings.HasPrefix(api.GetId(), "service-detection-")
 }
 
-func isAnyApplicationApi(api api.Api) bool {
+func isAnyApplicationApi(api *api.Api) bool {
 	return strings.HasPrefix(api.GetId(), "application-")
 }
 
-func isMobileApp(api api.Api) bool {
+func isMobileApp(api *api.Api) bool {
 	return api.GetId() == "application-mobile"
 }
 
-func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlString string, retrySettings rest.RetrySettings) (values []api.Value, err error) {
+func getExistingValuesFromEndpoint(client *http.Client, theApi *api.Api, urlString string, retrySettings rest.RetrySettings) (values []api.Value, err error) {
 
 	parsedUrl, err := url.Parse(urlString)
 	if err != nil {
@@ -456,7 +456,7 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlStrin
 	return existingValues, nil
 }
 
-func addQueryParamsForNonStandardApis(theApi api.Api, url *url.URL) *url.URL {
+func addQueryParamsForNonStandardApis(theApi *api.Api, url *url.URL) *url.URL {
 
 	queryParams := url.Query()
 	if theApi.GetId() == "anomaly-detection-metrics" {
@@ -469,7 +469,7 @@ func addQueryParamsForNonStandardApis(theApi api.Api, url *url.URL) *url.URL {
 	return url
 }
 
-func unmarshalJson(theApi api.Api, resp rest.Response) ([]api.Value, error) {
+func unmarshalJson(theApi *api.Api, resp rest.Response) ([]api.Value, error) {
 
 	var values []api.Value
 	var objmap map[string]interface{}
@@ -532,7 +532,7 @@ func unmarshalJson(theApi api.Api, resp rest.Response) ([]api.Value, error) {
 	return values, nil
 }
 
-func isResultArrayAvailable(jsonResponse map[string]interface{}, theApi api.Api) (resultArrayAvailable bool, results []interface{}) {
+func isResultArrayAvailable(jsonResponse map[string]interface{}, theApi *api.Api) (resultArrayAvailable bool, results []interface{}) {
 	if jsonResponse[theApi.GetPropertyNameOfGetAllResponse()] != nil {
 		return true, jsonResponse[theApi.GetPropertyNameOfGetAllResponse()].([]interface{})
 	}

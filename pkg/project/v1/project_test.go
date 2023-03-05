@@ -34,7 +34,7 @@ func testCreateProjectBuilder(projectsRoot string) projectBuilder {
 	return projectBuilder{
 		projectRootFolder: projectsRoot,
 		apis:              createTestApis(),
-		configProvider: func(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (*Config, error) {
+		configProvider: func(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api *api.Api) (*Config, error) {
 			return &Config{id,
 				project,
 				properties,
@@ -58,9 +58,9 @@ func testCreateProjectBuilderWithMock(configProvider configProvider, fs afero.Fs
 	}
 }
 
-func createTestApis() map[string]api.Api {
+func createTestApis() api.ApiMap {
 
-	apis := make(map[string]api.Api)
+	apis := make(api.ApiMap)
 	apis["alerting-profile"] = testAlertingProfileApi
 	apis["management-zone"] = testManagementZoneApi
 	apis["dashboard"] = testDashboardApi
@@ -155,7 +155,7 @@ func TestGetApiFromLocationApiNotFound(t *testing.T) {
 func TestProcessConfigSection(t *testing.T) {
 
 	fs := testutils.CreateTestFileSystem()
-	builder := testCreateProjectBuilderWithMock(func(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (*Config, error) {
+	builder := testCreateProjectBuilderWithMock(func(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api *api.Api) (*Config, error) {
 		return &Config{id, project, properties, nil, api, fileName}, nil
 	}, fs, "testProject", "")
 
@@ -174,7 +174,7 @@ func TestProcessConfigSection(t *testing.T) {
 func TestProcessConfigSectionWithProjectRootParameter(t *testing.T) {
 
 	fileReaderMock := testutils.CreateTestFileSystem()
-	builder := testCreateProjectBuilderWithMock(func(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (*Config, error) {
+	builder := testCreateProjectBuilderWithMock(func(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api *api.Api) (*Config, error) {
 		return &Config{id,
 			project,
 			properties,
@@ -243,7 +243,7 @@ func TestProcessYaml(t *testing.T) {
 	err := fs.Mkdir("test/dashboard/", 0777)
 	err = afero.WriteFile(fs, "test/dashboard/test-file.yaml", []byte(projectTestYaml), 0664)
 
-	builder := testCreateProjectBuilderWithMock(func(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (*Config, error) {
+	builder := testCreateProjectBuilderWithMock(func(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api *api.Api) (*Config, error) {
 		return &Config{id,
 			project,
 			properties,
