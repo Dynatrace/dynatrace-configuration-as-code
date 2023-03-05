@@ -44,13 +44,13 @@ type projectBuilder struct {
 	projectRootFolder string
 	projectId         string
 	configs           []*Config
-	apis              map[string]api.Api
+	apis              api.ApiMap
 	configProvider    configProvider
 	fs                afero.Fs
 }
 
 // newProject loads a new project from folder. Returns either project or a reading/sorting error respectively.
-func newProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolderName string, apis map[string]api.Api, projectRootFolder string, unmarshalYaml template.UnmarshalYamlFunc) (Project, error) {
+func newProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolderName string, apis api.ApiMap, projectRootFolder string, unmarshalYaml template.UnmarshalYamlFunc) (Project, error) {
 
 	var configs = make([]*Config, 0)
 
@@ -83,7 +83,7 @@ func newProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolde
 	}, nil
 }
 
-func warnIfProjectNameClashesWithApiName(projectFolderName string, apis map[string]api.Api, projectRootFolder string) {
+func warnIfProjectNameClashesWithApiName(projectFolderName string, apis api.ApiMap, projectRootFolder string) {
 
 	lowerCaseProjectFolderName := strings.ToLower(projectFolderName)
 	_, ok := apis[lowerCaseProjectFolderName]
@@ -187,7 +187,7 @@ func (p *projectBuilder) standardizeLocation(location string, folderPath string)
 	return location
 }
 
-func (p *projectBuilder) getExtendedInformationFromLocation(location string) (err error, api api.Api) {
+func (p *projectBuilder) getExtendedInformationFromLocation(location string) (err error, api *api.Api) {
 
 	return p.getConfigTypeFromLocation(location)
 }
@@ -206,7 +206,7 @@ func (p *projectBuilder) removeYamlFileFromPath(location string) (error, string)
 	return nil, strings.Join(split[:len(split)-1], string(os.PathSeparator))
 }
 
-func (p *projectBuilder) getConfigTypeFromLocation(location string) (error, api.Api) {
+func (p *projectBuilder) getConfigTypeFromLocation(location string) (error, *api.Api) {
 
 	split := strings.Split(location, string(os.PathSeparator))
 	if len(split) <= 1 {

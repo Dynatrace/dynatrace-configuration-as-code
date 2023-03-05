@@ -22,7 +22,7 @@ import "testing"
 
 func TestGetV2ApiId(t *testing.T) {
 	type args struct {
-		forV1Api Api
+		forV1Api *Api
 	}
 	tests := []struct {
 		name string

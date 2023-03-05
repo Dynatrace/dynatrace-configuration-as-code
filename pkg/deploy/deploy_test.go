@@ -382,7 +382,7 @@ func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
 
 func TestDeployConfigsWithNoConfigs(t *testing.T) {
 	client := &client.DummyClient{}
-	var apis map[string]api.Api
+	var apis api.ApiMap
 	var sortedConfigs []config.Config
 
 	errors := DeployConfigs(client, apis, sortedConfigs, DeployConfigsOptions{})
@@ -391,7 +391,7 @@ func TestDeployConfigsWithNoConfigs(t *testing.T) {
 
 func TestDeployConfigsWithOneConfigToSkip(t *testing.T) {
 	client := &client.DummyClient{}
-	var apis map[string]api.Api
+	var apis api.ApiMap
 	sortedConfigs := []config.Config{
 		{Skip: true},
 	}
@@ -401,7 +401,7 @@ func TestDeployConfigsWithOneConfigToSkip(t *testing.T) {
 
 func TestDeployConfigsTargetingSettings(t *testing.T) {
 	client := client.NewMockClient(gomock.NewController(t))
-	var apis map[string]api.Api
+	var apis api.ApiMap
 	sortedConfigs := []config.Config{
 		{
 			Template: generateDummyTemplate(t),
@@ -432,15 +432,12 @@ func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
 	theConfigName := "theConfigName"
 	theApiName := "theApiName"
 
-	theApi := api.NewMockApi(gomock.NewController(t))
-	theApi.EXPECT().GetId().AnyTimes().Return(theApiName)
-	theApi.EXPECT().DeprecatedBy().Return("")
-	theApi.EXPECT().IsNonUniqueNameApi().Return(false)
+	theApi := api.NewApi(theApiName, "path", "", false, false, "", false)
 
 	client := client.NewMockClient(gomock.NewController(t))
 	client.EXPECT().UpsertConfigByName(gomock.Any(), theConfigName, gomock.Any()).Times(1)
 
-	apis := map[string]api.Api{theApiName: theApi}
+	apis := api.ApiMap{theApiName: theApi}
 	parameters := []topologysort.ParameterWithName{
 		{
 			Name: config.NameParameter,
@@ -468,15 +465,12 @@ func TestDeployConfigsTargetingClassicConfigNonUniqueWithExistingCfgsOfSameName(
 	theConfigName := "theConfigName"
 	theApiName := "theApiName"
 
-	theApi := api.NewMockApi(gomock.NewController(t))
-	theApi.EXPECT().GetId().AnyTimes().Return(theApiName)
-	theApi.EXPECT().DeprecatedBy().Return("")
-	theApi.EXPECT().IsNonUniqueNameApi().Return(true)
+	theApi := api.NewApi(theApiName, "path", "", false, true, "", false)
 
 	client := client.NewMockClient(gomock.NewController(t))
 	client.EXPECT().UpsertConfigByNonUniqueNameAndId(gomock.Any(), gomock.Any(), theConfigName, gomock.Any())
 
-	apis := map[string]api.Api{theApiName: theApi}
+	apis := api.ApiMap{theApiName: theApi}
 	parameters := []topologysort.ParameterWithName{
 		{
 			Name: config.NameParameter,
@@ -506,7 +500,7 @@ func TestDeployConfigsNoApi(t *testing.T) {
 
 	client := client.NewMockClient(gomock.NewController(t))
 
-	apis := map[string]api.Api{}
+	apis := api.ApiMap{}
 	parameters := []topologysort.ParameterWithName{
 		{
 			Name: config.NameParameter,
@@ -549,10 +543,8 @@ func TestDeployConfigsNoApi(t *testing.T) {
 
 func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
 	theApiName := "theApiName"
-	theApi := api.NewMockApi(gomock.NewController(t))
-	theApi.EXPECT().GetId().AnyTimes().Return(theApiName)
-
-	apis := map[string]api.Api{theApiName: theApi}
+	theApi := api.NewApi(theApiName, "path", "", false, false, "", false)
+	apis := api.ApiMap{theApiName: theApi}
 	sortedConfigs := []config.Config{
 		{
 			Parameters: toParameterMap([]topologysort.ParameterWithName{}), // missing name parameter leads to deployment failure

@@ -238,7 +238,7 @@ var v1ApiMap = map[string]apiInput{
 
 // GetV2ApiId returns the ID of APIs in v2 - replacing deprecated APIs with their new version and dropping the -v2 marker
 // from APIs introducing the breaking change of handling non-unique-names. This is used in v1 -> v2 conversion
-func GetV2ApiId(forV1Api Api) string {
+func GetV2ApiId(forV1Api *Api) string {
 	currentApiId := forV1Api.GetId()
 
 	if forV1Api.DeprecatedBy() != "" {

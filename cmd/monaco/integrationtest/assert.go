@@ -137,7 +137,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 	}
 }
 
-func assertConfig(t *testing.T, client client.ConfigClient, theApi api.Api, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config, name string) {
+func assertConfig(t *testing.T, client client.ConfigClient, theApi *api.Api, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config, name string) {
 
 	configType := config.Coordinate.Type
 

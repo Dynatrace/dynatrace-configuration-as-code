@@ -72,7 +72,7 @@ func TestConvertParameters(t *testing.T) {
 			Fs: setupDummyFs(t),
 		},
 		KnownListParameterIds: map[string]struct{}{listParameterName: {}},
-		V1Apis: map[string]api.Api{
+		V1Apis: api.ApiMap{
 			"alerting-profile": testApi,
 			"management-zone":  api.NewStandardApi("management-zone", "/api/path", false, "", false),
 		},
@@ -367,7 +367,7 @@ func TestConvertDeprecatedConfigToLatest(t *testing.T) {
 		ConverterContext: &ConverterContext{
 			Fs: setupDummyFsWithEnvVariableInTemplate(t, envVarName),
 		},
-		V1Apis:    map[string]api.Api{"application": deprecatedApi},
+		V1Apis:    api.ApiMap{"application": deprecatedApi},
 		ProjectId: "projectA",
 	}
 

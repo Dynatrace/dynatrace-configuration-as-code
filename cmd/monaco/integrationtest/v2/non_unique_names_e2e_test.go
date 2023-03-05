@@ -111,7 +111,7 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 	assert.Assert(t, len(getConfigsOfName(t, c, a, name)) == 3, "Expected three configs of name %q but found %d", name, len(existing))
 }
 
-func getConfigsOfName(t *testing.T, c client.Client, a api.Api, name string) []api.Value {
+func getConfigsOfName(t *testing.T, c client.Client, a *api.Api, name string) []api.Value {
 	var existingEntities []api.Value
 	entities, err := c.ListConfigs(a)
 	assert.NilError(t, err)
@@ -129,7 +129,7 @@ func getRandomUUID(t *testing.T) string {
 	return id.String()
 }
 
-func createObjectViaDirectPut(t *testing.T, client *http.Client, url string, a api.Api, id string, payload []byte) {
+func createObjectViaDirectPut(t *testing.T, client *http.Client, url string, a *api.Api, id string, payload []byte) {
 	res, err := rest.Put(client, a.GetUrl(url)+"/"+id, payload)
 	assert.NilError(t, err)
 	assert.Assert(t, res.StatusCode >= 200 && res.StatusCode < 300)

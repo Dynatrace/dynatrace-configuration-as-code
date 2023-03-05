@@ -46,19 +46,19 @@ type ConfigClient interface {
 	// It calls the underlying GET endpoint of the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles
 	// The result is expressed using a list of Value (id and name tuples).
-	ListConfigs(a Api) (values []Value, err error)
+	ListConfigs(a *Api) (values []Value, err error)
 
 	// ReadConfigById reads a Dynatrace config identified by id from the given API.
 	// It calls the underlying GET endpoint for the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles/<id> ... to get the alerting profile
-	ReadConfigById(a Api, id string) (json []byte, err error)
+	ReadConfigById(a *Api, id string) (json []byte, err error)
 
 	// UpsertConfigByName creates a given Dynatrace config if it doesn't exist and updates it otherwise using its name.
 	// It calls the underlying GET, POST, and PUT endpoints for the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles ... to check if the config is already available
 	//    POST <environment-url>/api/config/v1/alertingProfiles ... afterwards, if the config is not yet available
 	//    PUT <environment-url>/api/config/v1/alertingProfiles/<id> ... instead of POST, if the config is already available
-	UpsertConfigByName(a Api, name string, payload []byte) (entity DynatraceEntity, err error)
+	UpsertConfigByName(a *Api, name string, payload []byte) (entity DynatraceEntity, err error)
 
 	// UpsertConfigByNonUniqueNameAndId creates a given Dynatrace config if it doesn't exist and updates it based on specific rules if it does not
 	// - if only one config with the name exist, behave like any other type and just update this entity
@@ -67,17 +67,17 @@ type ConfigClient interface {
 	// It calls the underlying GET and PUT endpoints for the API. E.g. for alerting profiles this would be:
 	//	 GET <environment-url>/api/config/v1/alertingProfiles ... to check if the config is already available
 	//	 PUT <environment-url>/api/config/v1/alertingProfiles/<id> ... with the given (or found by unique name) entity ID
-	UpsertConfigByNonUniqueNameAndId(a Api, entityId string, name string, payload []byte) (entity DynatraceEntity, err error)
+	UpsertConfigByNonUniqueNameAndId(a *Api, entityId string, name string, payload []byte) (entity DynatraceEntity, err error)
 
 	// DeleteConfigById removes a given config for a given API using its id.
 	// It calls the DELETE endpoint for the API. E.g. for alerting profiles this would be:
 	//    DELETE <environment-url>/api/config/v1/alertingProfiles/<id> ... to delete the config
-	DeleteConfigById(a Api, id string) error
+	DeleteConfigById(a *Api, id string) error
 
 	// ConfigExistsByName checks if a config with the given name exists for the given API.
 	// It calls the underlying GET endpoint for the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles
-	ConfigExistsByName(a Api, name string) (exists bool, id string, err error)
+	ConfigExistsByName(a *Api, name string) (exists bool, id string, err error)
 }
 
 // DownloadSettingsObject is the response type for the ListSettings operation
@@ -392,14 +392,14 @@ func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, e
 	return entity, nil
 }
 
-func (d *DynatraceClient) ListConfigs(api Api) (values []Value, err error) {
+func (d *DynatraceClient) ListConfigs(api *Api) (values []Value, err error) {
 
 	fullUrl := api.GetUrl(d.environmentUrl)
 	values, err = getExistingValuesFromEndpoint(d.client, api, fullUrl, d.retrySettings)
 	return values, err
 }
 
-func (d *DynatraceClient) ReadConfigById(api Api, id string) (json []byte, err error) {
+func (d *DynatraceClient) ReadConfigById(api *Api, id string) (json []byte, err error) {
 	var dtUrl string
 	isSingleConfigurationApi := api.IsSingleConfigurationApi()
 
@@ -422,18 +422,18 @@ func (d *DynatraceClient) ReadConfigById(api Api, id string) (json []byte, err e
 	return response.Body, nil
 }
 
-func (d *DynatraceClient) DeleteConfigById(api Api, id string) error {
+func (d *DynatraceClient) DeleteConfigById(api *Api, id string) error {
 
 	return rest.DeleteConfig(d.client, api.GetUrl(d.environmentUrl), id)
 }
 
-func (d *DynatraceClient) ConfigExistsByName(api Api, name string) (exists bool, id string, err error) {
+func (d *DynatraceClient) ConfigExistsByName(api *Api, name string) (exists bool, id string, err error) {
 	apiURL := api.GetUrl(d.environmentUrl)
 	existingObjectId, err := getObjectIdIfAlreadyExists(d.client, api, apiURL, name, d.retrySettings)
 	return existingObjectId != "", existingObjectId, err
 }
 
-func (d *DynatraceClient) UpsertConfigByName(api Api, name string, payload []byte) (entity DynatraceEntity, err error) {
+func (d *DynatraceClient) UpsertConfigByName(api *Api, name string, payload []byte) (entity DynatraceEntity, err error) {
 
 	if api.GetId() == "extension" {
 		fullUrl := api.GetUrl(d.environmentUrl)
@@ -442,7 +442,7 @@ func (d *DynatraceClient) UpsertConfigByName(api Api, name string, payload []byt
 	return upsertDynatraceObject(d.client, d.environmentUrl, name, api, payload, d.retrySettings)
 }
 
-func (d *DynatraceClient) UpsertConfigByNonUniqueNameAndId(api Api, entityId string, name string, payload []byte) (entity DynatraceEntity, err error) {
+func (d *DynatraceClient) UpsertConfigByNonUniqueNameAndId(api *Api, entityId string, name string, payload []byte) (entity DynatraceEntity, err error) {
 	return upsertDynatraceEntityByNonUniqueNameAndId(d.client, d.environmentUrl, entityId, name, api, payload, d.retrySettings)
 }
 

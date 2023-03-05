@@ -21,27 +21,7 @@ import (
 	"strings"
 )
 
-//go:generate mockgen -source=api.go -destination=api_mock.go -package=api Api
-
 var standardApiPropertyNameOfGetAllResponse = "values"
-
-type Api interface {
-	GetUrl(environmentUrl string) string
-	GetId() string
-	GetPropertyNameOfGetAllResponse() string
-	IsStandardApi() bool
-	IsSingleConfigurationApi() bool
-	IsNonUniqueNameApi() bool
-	DeprecatedBy() string
-
-	// ShouldSkipDownload indicates whether an API should be downloaded or not.
-	//
-	// Some APIs are not re-uploadable by design, either as they require hidden credentials,
-	// or if they require a special format, e.g. a zip file.
-	//
-	// Those configs include all configs handling credentials, as well as the extension-API.
-	ShouldSkipDownload() bool
-}
 
 type apiInput struct {
 	apiPath                      string
@@ -52,7 +32,7 @@ type apiInput struct {
 	skipDownload                 bool
 }
 
-type apiImpl struct {
+type Api struct {
 	id                           string
 	apiPath                      string
 	propertyNameOfGetAllResponse string
@@ -62,12 +42,7 @@ type apiImpl struct {
 	skipDownload                 bool
 }
 
-var (
-	// apiImpl needs to implement the API interface
-	_ Api = (*apiImpl)(nil)
-)
-
-type ApiMap map[string]Api
+type ApiMap map[string]*Api
 
 func NewApis() ApiMap {
 	return getApiMap(configEndpoints)
@@ -79,7 +54,7 @@ func NewV1Apis() ApiMap {
 
 func getApiMap(fromApiInputs map[string]apiInput) ApiMap {
 
-	apis := make(map[string]Api)
+	apis := make(ApiMap)
 
 	for id, details := range fromApiInputs {
 		apis[id] = newApi(id, details)
@@ -88,11 +63,11 @@ func getApiMap(fromApiInputs map[string]apiInput) ApiMap {
 	return apis
 }
 
-func GetApiNames(apis map[string]Api) []string {
+func GetApiNames(apis ApiMap) []string {
 	return maps.Keys(apis)
 }
 
-func GetApiNameLookup(apis map[string]Api) map[string]struct{} {
+func GetApiNameLookup(apis ApiMap) map[string]struct{} {
 	lookup := make(map[string]struct{}, len(apis))
 
 	for k := range apis {
@@ -102,7 +77,7 @@ func GetApiNameLookup(apis map[string]Api) map[string]struct{} {
 	return lookup
 }
 
-func newApi(id string, input apiInput) Api {
+func newApi(id string, input apiInput) *Api {
 	if input.isSingleConfigurationApi {
 		return NewSingleConfigurationApi(id, input.apiPath, input.deprecatedBy, input.skipDownload)
 	}
@@ -121,7 +96,7 @@ func NewStandardApi(
 	isNonUniqueNameApi bool,
 	isDeprecatedBy string,
 	skipDownload bool,
-) Api {
+) *Api {
 	return NewApi(id, apiPath, standardApiPropertyNameOfGetAllResponse, false, isNonUniqueNameApi, isDeprecatedBy, skipDownload)
 }
 
@@ -131,7 +106,7 @@ func NewSingleConfigurationApi(
 	apiPath string,
 	isDeprecatedBy string,
 	skipDownload bool,
-) Api {
+) *Api {
 	return NewApi(id, apiPath, "", true, false, isDeprecatedBy, skipDownload)
 }
 
@@ -143,12 +118,12 @@ func NewApi(
 	isNonUniqueNameApi bool,
 	isDeprecatedBy string,
 	skipDownload bool,
-) Api {
+) *Api {
 
 	// TODO log warning if the user tries to create an API with a id not present in map above
 	// This means that a user runs monaco with an untested api
 
-	return &apiImpl{
+	return &Api{
 		id:                           id,
 		apiPath:                      apiPath,
 		propertyNameOfGetAllResponse: propertyNameOfGetAllResponse,
@@ -159,40 +134,46 @@ func NewApi(
 	}
 }
 
-func (a *apiImpl) GetUrl(environmentUrl string) string {
+func (a *Api) GetUrl(environmentUrl string) string {
 	return environmentUrl + a.apiPath
 }
 
-func (a *apiImpl) GetId() string {
+func (a *Api) GetId() string {
 	return a.id
 }
 
-func (a *apiImpl) GetPropertyNameOfGetAllResponse() string {
+func (a *Api) GetPropertyNameOfGetAllResponse() string {
 	return a.propertyNameOfGetAllResponse
 }
 
-func (a *apiImpl) IsStandardApi() bool {
+func (a *Api) IsStandardApi() bool {
 	return a.propertyNameOfGetAllResponse == standardApiPropertyNameOfGetAllResponse
 }
 
 // Single configuration APIs are those APIs that configure an environment global setting.
 // Such settings require additional handling and can't be deleted.
-func (a *apiImpl) IsSingleConfigurationApi() bool {
+func (a *Api) IsSingleConfigurationApi() bool {
 	return a.isSingleConfigurationApi
 }
 
 // Non unique name APIs are those APIs that don't work with an environment wide unique id.
 // For such APIs, the name attribute can't be used as a id (Monaco default behavior), hence
 // such APIs require additional handling.
-func (a *apiImpl) IsNonUniqueNameApi() bool {
+func (a *Api) IsNonUniqueNameApi() bool {
 	return a.isNonUniqueNameApi
 }
 
-func (a *apiImpl) DeprecatedBy() string {
+func (a *Api) DeprecatedBy() string {
 	return a.deprecatedBy
 }
 
-func (a *apiImpl) ShouldSkipDownload() bool {
+// ShouldSkipDownload indicates whether an API should be downloaded or not.
+//
+// Some APIs are not re-uploadable by design, either as they require hidden credentials,
+// or if they require a special format, e.g. a zip file.
+//
+// Those configs include all configs handling credentials, as well as the extension-API.
+func (a *Api) ShouldSkipDownload() bool {
 	return a.skipDownload
 }
 

@@ -115,7 +115,7 @@ func (d *Downloader) DownloadAll(apisToDownload api.ApiMap, projectName string) 
 	return results
 }
 
-func (d *Downloader) downloadConfigsOfAPI(api api.Api, values []api.Value, projectName string) []config.Config {
+func (d *Downloader) downloadConfigsOfAPI(api *api.Api, values []api.Value, projectName string) []config.Config {
 	results := make([]config.Config, 0, len(values))
 	mutex := sync.Mutex{}
 	wg := sync.WaitGroup{}
@@ -152,7 +152,7 @@ func (d *Downloader) downloadConfigsOfAPI(api api.Api, values []api.Value, proje
 	return results
 }
 
-func (d *Downloader) downloadAndUnmarshalConfig(theApi api.Api, value api.Value) (map[string]interface{}, error) {
+func (d *Downloader) downloadAndUnmarshalConfig(theApi *api.Api, value api.Value) (map[string]interface{}, error) {
 	response, err := d.client.ReadConfigById(theApi, value.Id)
 
 	if err != nil {
@@ -168,7 +168,7 @@ func (d *Downloader) downloadAndUnmarshalConfig(theApi api.Api, value api.Value)
 	return data, nil
 }
 
-func (d *Downloader) createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api.Api, value api.Value, projectId string) (config.Config, error) {
+func (d *Downloader) createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi *api.Api, value api.Value, projectId string) (config.Config, error) {
 	templ, err := d.createTemplate(mappedJson, value, theApi.GetId())
 	if err != nil {
 		return config.Config{}, err
@@ -201,7 +201,7 @@ func (d *Downloader) createTemplate(mappedJson map[string]interface{}, value api
 	return templ, nil
 }
 
-func (d *Downloader) findConfigsToDownload(currentApi api.Api) ([]api.Value, error) {
+func (d *Downloader) findConfigsToDownload(currentApi *api.Api) ([]api.Value, error) {
 	if currentApi.IsSingleConfigurationApi() {
 		log.Debug("\tFetching singleton-configuration '%v'", currentApi.GetId())
 
@@ -213,13 +213,13 @@ func (d *Downloader) findConfigsToDownload(currentApi api.Api) ([]api.Value, err
 	return d.client.ListConfigs(currentApi)
 }
 
-func (d *Downloader) skipPersist(a api.Api, json map[string]interface{}) bool {
+func (d *Downloader) skipPersist(a *api.Api, json map[string]interface{}) bool {
 	if cases := d.apiFilters[a.GetId()]; cases.shouldConfigBePersisted != nil {
 		return cases.shouldConfigBePersisted(json)
 	}
 	return true
 }
-func (d *Downloader) skipDownload(a api.Api, value api.Value) bool {
+func (d *Downloader) skipDownload(a *api.Api, value api.Value) bool {
 	if cases := d.apiFilters[a.GetId()]; cases.shouldBeSkippedPreDownload != nil {
 		return cases.shouldBeSkippedPreDownload(value)
 	}
@@ -227,7 +227,7 @@ func (d *Downloader) skipDownload(a api.Api, value api.Value) bool {
 	return false
 }
 
-func (d *Downloader) filterConfigsToSkip(a api.Api, value []api.Value) []api.Value {
+func (d *Downloader) filterConfigsToSkip(a *api.Api, value []api.Value) []api.Value {
 	valuesToDownload := make([]api.Value, 0, len(value))
 
 	for _, value := range value {
