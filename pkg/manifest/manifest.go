@@ -55,13 +55,25 @@ type EnvironmentDefinition struct {
 	Token Token
 }
 
+// UrlType describes from where the url is loaded.
+// Possible values are [EnvironmentUrlType] and [ValueUrlType].
 type UrlType string
 
-const EnvironmentUrlType UrlType = "environment"
-const ValueUrlType UrlType = "value"
+const (
+	// EnvironmentUrlType describes that the url has been loaded from an environment variable
+	EnvironmentUrlType UrlType = "environment"
 
+	// ValueUrlType describes that the url has been loaded directly as a value
+	ValueUrlType = "value"
+)
+
+// UrlDefinition holds the value and origin of an environment-url.
 type UrlDefinition struct {
-	Type  UrlType
+	// Type defines whether the [UrlDefinition.Value] is loaded from an env var, or directly.
+	Type UrlType
+
+	// Value is the resolved value of the Url.
+	// It is resolved during manifest reading.
 	Value string
 }
 
