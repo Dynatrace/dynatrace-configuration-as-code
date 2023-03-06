@@ -47,7 +47,7 @@ func (p ProjectDefinition) String() string {
 type EnvironmentDefinition struct {
 	Name  string
 	Type  EnvironmentType
-	url   UrlDefinition
+	Url   UrlDefinition
 	Group string
 	Token Token
 }
@@ -93,14 +93,14 @@ type ProjectDefinitionByProjectId map[string]ProjectDefinition
 func NewEnvironmentDefinition(name string, url UrlDefinition, group string, token Token) EnvironmentDefinition {
 	return EnvironmentDefinition{
 		Name:  name,
-		url:   url,
+		Url:   url,
 		Group: group,
 		Token: token,
 	}
 }
 
 func (e *EnvironmentDefinition) GetUrl() string {
-	return e.url.Value
+	return e.Url.Value
 }
 
 // Environments is a map of environment-name -> EnvironmentDefinition
