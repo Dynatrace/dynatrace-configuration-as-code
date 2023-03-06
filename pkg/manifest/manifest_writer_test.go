@@ -151,8 +151,8 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 				"env1": {
 					Name: "env1",
 					Type: Classic,
-					url: UrlDefinition{
-						Value: "www.an.url",
+					Url: UrlDefinition{
+						Value: "www.an.Url",
 					},
 					Group: "group1",
 					Token: Token{
@@ -162,8 +162,8 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 				"env2": {
 					Name: "env2",
 					Type: Platform,
-					url: UrlDefinition{
-						Value: "www.an.url",
+					Url: UrlDefinition{
+						Value: "www.an.Url",
 					},
 					Group: "group1",
 					Token: Token{},
@@ -171,8 +171,8 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 				"env3": {
 					Name: "env3",
 					Type: Classic,
-					url: UrlDefinition{
-						Value: "www.an.url",
+					Url: UrlDefinition{
+						Value: "www.an.Url",
 					},
 					Group: "group2",
 					Token: Token{},
@@ -185,7 +185,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						{
 							Name: "env1",
 							Type: "classic",
-							Url:  url{Value: "www.an.url"},
+							Url:  url{Value: "www.an.Url"},
 							Token: tokenConfig{
 								Name: "TokenTest",
 								Type: "environment",
@@ -194,7 +194,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						{
 							Name: "env2",
 							Type: "platform",
-							Url:  url{Value: "www.an.url"},
+							Url:  url{Value: "www.an.Url"},
 							Token: tokenConfig{
 								Name: "env2_TOKEN",
 								Type: "environment",
@@ -208,7 +208,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						{
 							Name: "env3",
 							Type: "classic",
-							Url:  url{Value: "www.an.url"},
+							Url:  url{Value: "www.an.Url"},
 							Token: tokenConfig{
 								Name: "env3_TOKEN",
 								Type: "environment",
@@ -253,10 +253,10 @@ func Test_toWriteableUrl(t *testing.T) {
 		want  url
 	}{
 		{
-			"correctly transforms env var url",
+			"correctly transforms env var Url",
 			EnvironmentDefinition{
 				Name: "NAME",
-				url: UrlDefinition{
+				Url: UrlDefinition{
 					Type:  EnvironmentUrlType,
 					Name:  "{{ .Env.VARIABLE }}",
 					Value: "Some previously resolved value",
@@ -270,32 +270,32 @@ func Test_toWriteableUrl(t *testing.T) {
 			},
 		},
 		{
-			"correctly transforms value url",
+			"correctly transforms value Url",
 			EnvironmentDefinition{
 				Name: "NAME",
-				url: UrlDefinition{
+				Url: UrlDefinition{
 					Type:  ValueUrlType,
-					Value: "www.an.url",
+					Value: "www.an.Url",
 				},
 				Group: "GROUP",
 				Token: Token{},
 			},
 			url{
-				Value: "www.an.url",
+				Value: "www.an.Url",
 			},
 		},
 		{
-			"defaults to value url if no type is defined",
+			"defaults to value Url if no type is defined",
 			EnvironmentDefinition{
 				Name: "NAME",
-				url: UrlDefinition{
-					Value: "www.an.url",
+				Url: UrlDefinition{
+					Value: "www.an.Url",
 				},
 				Group: "GROUP",
 				Token: Token{},
 			},
 			url{
-				Value: "www.an.url",
+				Value: "www.an.Url",
 			},
 		},
 	}
@@ -318,7 +318,7 @@ func Test_toWritableToken(t *testing.T) {
 			"correctly transforms env var token",
 			EnvironmentDefinition{
 				Name:  "NAME",
-				url:   UrlDefinition{},
+				Url:   UrlDefinition{},
 				Group: "GROUP",
 				Token: Token{Name: "VARIABLE"},
 			},
@@ -331,7 +331,7 @@ func Test_toWritableToken(t *testing.T) {
 			"defaults to assumed token name if nothing is defined",
 			EnvironmentDefinition{
 				Name:  "NAME",
-				url:   UrlDefinition{},
+				Url:   UrlDefinition{},
 				Group: "GROUP",
 				Token: Token{},
 			},

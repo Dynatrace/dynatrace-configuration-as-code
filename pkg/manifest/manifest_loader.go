@@ -284,7 +284,7 @@ func toEnvironment(context *ManifestLoaderContext, config environment, group str
 	return EnvironmentDefinition{
 		Name:  config.Name,
 		Type:  envType,
-		url:   urlDef,
+		Url:   urlDef,
 		Token: token,
 		Group: group,
 	}, nil
@@ -294,7 +294,7 @@ func parseUrlDefinition(context *ManifestLoaderContext, config environment, grou
 
 	// Depending on the type, the url.value either contains the env var name or the direct value of the url
 	if config.Url.Value == "" {
-		return UrlDefinition{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, "no `url` configured or value is blank")
+		return UrlDefinition{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, "no `Url` configured or value is blank")
 	}
 
 	if config.Url.Type == "" || config.Url.Type == string(ValueUrlType) {
