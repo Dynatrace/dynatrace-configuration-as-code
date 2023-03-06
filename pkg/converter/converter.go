@@ -544,8 +544,27 @@ func convertEnvironments(environments map[string]*v1environment.EnvironmentV1) m
 			group = env.GetGroup()
 		}
 
-		result[env.GetId()] = manifest.NewEnvironmentDefinitionFromV1(env, group)
+		result[env.GetId()] = newEnvironmentDefinitionFromV1(env, group)
 	}
 
 	return result
+}
+
+func newEnvironmentDefinitionFromV1(env *v1environment.EnvironmentV1, group string) manifest.EnvironmentDefinition {
+	return manifest.NewEnvironmentDefinition(env.GetId(), newUrlDefinitionFromV1(env), group, manifest.Token{Name: env.GetTokenName()})
+}
+
+func newUrlDefinitionFromV1(env *v1environment.EnvironmentV1) manifest.UrlDefinition {
+	if regex.IsEnvVariable(env.GetEnvironmentUrl()) {
+		// no need to resolve the value for conversion
+		return manifest.UrlDefinition{
+			Type: manifest.EnvironmentUrlType,
+			Name: regex.TrimToEnvVariableName(env.GetEnvironmentUrl()),
+		}
+	}
+
+	return manifest.UrlDefinition{
+		Type:  manifest.ValueUrlType,
+		Value: strings.TrimSuffix(env.GetEnvironmentUrl(), "/"),
+	}
 }
