@@ -16,8 +16,6 @@ package manifest
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/regex"
-	"strings"
 )
 
 // EnvironmentType is used to identify the type of the environment.
@@ -90,40 +88,6 @@ type Token struct {
 }
 
 type ProjectDefinitionByProjectId map[string]ProjectDefinition
-
-// environmentV1 represents an environment as it was loaded for
-// monaco v1
-type environmentV1 interface {
-	GetId() string
-	GetEnvironmentUrl() string
-	GetGroup() string
-	GetTokenName() string
-}
-
-// NewEnvironmentDefinitionFromV1 creates an EnvironmentDefinition from an environment loaded by monaco v1
-func NewEnvironmentDefinitionFromV1(env environmentV1, group string) EnvironmentDefinition {
-	return EnvironmentDefinition{
-		Name:  env.GetId(),
-		url:   newUrlDefinitionFromV1(env),
-		Group: group,
-		Token: Token{Name: env.GetTokenName()},
-	}
-}
-
-func newUrlDefinitionFromV1(env environmentV1) UrlDefinition {
-	if regex.IsEnvVariable(env.GetEnvironmentUrl()) {
-		// no need to resolve the value for conversion
-		return UrlDefinition{
-			Type: EnvironmentUrlType,
-			Name: regex.TrimToEnvVariableName(env.GetEnvironmentUrl()),
-		}
-	}
-
-	return UrlDefinition{
-		Type:  ValueUrlType,
-		Value: strings.TrimSuffix(env.GetEnvironmentUrl(), "/"),
-	}
-}
 
 // NewEnvironmentDefinition creates a new EnvironmentDefinition
 func NewEnvironmentDefinition(name string, url UrlDefinition, group string, token Token) EnvironmentDefinition {

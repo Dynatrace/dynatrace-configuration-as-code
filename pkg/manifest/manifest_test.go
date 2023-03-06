@@ -16,50 +16,12 @@
 package manifest
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/converter/v1environment"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"gotest.tools/assert"
-	"reflect"
 	"testing"
 )
 
 var sortStrings = cmpopts.SortSlices(func(a, b string) bool { return a < b })
-
-func TestNewEnvironmentDefinitionFromV1(t *testing.T) {
-	type args struct {
-		env   environmentV1
-		group string
-	}
-	tests := []struct {
-		name string
-		args args
-		want EnvironmentDefinition
-	}{
-		{
-			"simple v1 environment is converted",
-			args{
-				v1environment.NewEnvironmentV1("test", "name", "group", "http://google.com", "NAME"),
-				"group",
-			},
-			createValueEnvironmentDefinition(),
-		},
-		{
-			"v1 environment with env var is converted",
-			args{
-				v1environment.NewEnvironmentV1("test", "name", "group", "{{ .Env.ENV_VAR }}", "NAME"),
-				"group",
-			},
-			createEnvEnvironmentDefinition(),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := NewEnvironmentDefinitionFromV1(tt.args.env, tt.args.group); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewEnvironmentDefinitionFromV1() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
 func TestEnvironmentDefinitionGetUrl(t *testing.T) {
 
@@ -68,18 +30,6 @@ func TestEnvironmentDefinitionGetUrl(t *testing.T) {
 
 	assert.NilError(t, err)
 	assert.Equal(t, url, "http://google.com")
-}
-
-func createEnvEnvironmentDefinition() EnvironmentDefinition {
-	return EnvironmentDefinition{
-		Name: "test",
-		url: UrlDefinition{
-			Type: EnvironmentUrlType,
-			Name: "ENV_VAR",
-		},
-		Group: "group",
-		Token: Token{Name: "NAME"},
-	}
 }
 
 func createValueEnvironmentDefinition() EnvironmentDefinition {
