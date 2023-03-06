@@ -23,27 +23,6 @@ import (
 
 var sortStrings = cmpopts.SortSlices(func(a, b string) bool { return a < b })
 
-func TestEnvironmentDefinitionGetUrl(t *testing.T) {
-
-	definition := createValueEnvironmentDefinition()
-	url, err := definition.GetUrl()
-
-	assert.NilError(t, err)
-	assert.Equal(t, url, "http://google.com")
-}
-
-func createValueEnvironmentDefinition() EnvironmentDefinition {
-	return EnvironmentDefinition{
-		Name: "test",
-		url: UrlDefinition{
-			Type:  ValueUrlType,
-			Value: "http://google.com",
-		},
-		Group: "group",
-		Token: Token{Name: "NAME"},
-	}
-}
-
 func TestManifestFilterEnvironmentsByNamesWithEmptyNames(t *testing.T) {
 	envs := map[string]EnvironmentDefinition{
 		"Test":  {Name: "Test"},

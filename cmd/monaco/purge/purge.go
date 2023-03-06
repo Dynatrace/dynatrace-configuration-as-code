@@ -95,10 +95,5 @@ func purgeConfigsForEnvironment(env manifest.EnvironmentDefinition, apis map[str
 }
 
 func createClient(environment manifest.EnvironmentDefinition) (client.Client, error) {
-	url, err := environment.GetUrl()
-	if err != nil {
-		return nil, err
-	}
-
-	return client.NewDynatraceClient(client.NewTokenAuthClient(environment.Token.Value), url, client.WithAutoServerVersion())
+	return client.NewDynatraceClient(client.NewTokenAuthClient(environment.Token.Value), environment.GetUrl(), client.WithAutoServerVersion())
 }
