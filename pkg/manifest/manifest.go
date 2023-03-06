@@ -54,14 +54,15 @@ type EnvironmentDefinition struct {
 
 // UrlType describes from where the url is loaded.
 // Possible values are [EnvironmentUrlType] and [ValueUrlType].
-type UrlType string
+// [ValueUrlType] is the default value.
+type UrlType int
 
 const (
-	// EnvironmentUrlType describes that the url has been loaded from an environment variable
-	EnvironmentUrlType UrlType = "environment"
-
 	// ValueUrlType describes that the url has been loaded directly as a value
-	ValueUrlType = "value"
+	ValueUrlType UrlType = iota
+
+	// EnvironmentUrlType describes that the url has been loaded from an environment variable
+	EnvironmentUrlType
 )
 
 // UrlDefinition holds the value and origin of an environment-url.
