@@ -145,7 +145,7 @@ func toWriteableUrl(environment EnvironmentDefinition) url {
 	if environment.url.Type == EnvironmentUrlType {
 		return url{
 			Type:  string(environment.url.Type),
-			Value: environment.url.Value,
+			Value: environment.url.Name,
 		}
 	}
 
