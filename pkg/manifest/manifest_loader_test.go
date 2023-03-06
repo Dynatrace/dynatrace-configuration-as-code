@@ -35,10 +35,12 @@ import (
 var testTokenCfg = tokenConfig{Type: "environment", Name: "VAR"}
 
 func Test_extractUrlType(t *testing.T) {
+	t.Setenv("TEST_TOKEN", "resolved url value")
+
 	tests := []struct {
 		name        string
 		inputConfig environment
-		want        UrlType
+		want        UrlDefinition
 		wantErr     bool
 	}{
 		{
@@ -48,7 +50,10 @@ func Test_extractUrlType(t *testing.T) {
 				Url:   url{Value: "TEST URL", Type: "value"},
 				Token: testTokenCfg,
 			},
-			ValueUrlType,
+			UrlDefinition{
+				Type:  ValueUrlType,
+				Value: "TEST URL",
+			},
 			false,
 		},
 		{
@@ -58,17 +63,24 @@ func Test_extractUrlType(t *testing.T) {
 				Url:   url{Value: "TEST URL", Type: ""},
 				Token: testTokenCfg,
 			},
-			ValueUrlType,
+			UrlDefinition{
+				Type:  ValueUrlType,
+				Value: "TEST URL",
+			},
 			false,
 		},
 		{
 			"extracts_environment_url",
 			environment{
 				Name:  "TEST ENV",
-				Url:   url{Value: "TEST URL", Type: "environment"},
+				Url:   url{Value: "TEST_TOKEN", Type: "environment"},
 				Token: testTokenCfg,
 			},
-			EnvironmentUrlType,
+			UrlDefinition{
+				Type:  EnvironmentUrlType,
+				Name:  "TEST_TOKEN",
+				Value: "resolved url value",
+			},
 			false,
 		},
 		{
@@ -78,13 +90,13 @@ func Test_extractUrlType(t *testing.T) {
 				Url:   url{Value: "TEST URL", Type: "this-is-not-a-type"},
 				Token: testTokenCfg,
 			},
-			"",
+			UrlDefinition{},
 			true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got, gotErr := extractUrlType(tt.inputConfig); got != tt.want || (!tt.wantErr && gotErr != nil) {
+			if got, gotErr := parseUrlDefinition(&ManifestLoaderContext{}, tt.inputConfig, "test-group"); got != tt.want || (!tt.wantErr && gotErr != nil) {
 				t.Errorf("extractUrlType() = %v, %v, want %v, %v", got, gotErr, tt.want, tt.wantErr)
 			}
 		})
@@ -946,7 +958,7 @@ manifestVersion: 1.0
 projects: [{name: a}]
 environmentGroups: [{name: b, environments: [{name: c, url: {value: d, type: f}, token: {name: e}}]}]
 `,
-			errsContain: []string{"f is not a valid"},
+			errsContain: []string{`"f" is not a valid URL type`},
 		},
 		{
 			name: "env token not present",

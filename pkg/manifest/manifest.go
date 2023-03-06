@@ -17,7 +17,6 @@ package manifest
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/regex"
-	"os"
 	"strings"
 )
 
@@ -72,6 +71,9 @@ type UrlDefinition struct {
 	// Type defines whether the [UrlDefinition.Value] is loaded from an env var, or directly.
 	Type UrlType
 
+	// Name is the name of the environment-variable of the token. It only has a value if [UrlDefinition.Type] is "[EnvironmentUrlType]"
+	Name string
+
 	// Value is the resolved value of the Url.
 	// It is resolved during manifest reading.
 	Value string
@@ -110,9 +112,10 @@ func NewEnvironmentDefinitionFromV1(env environmentV1, group string) Environment
 
 func newUrlDefinitionFromV1(env environmentV1) UrlDefinition {
 	if regex.IsEnvVariable(env.GetEnvironmentUrl()) {
+		// no need to resolve the value for conversion
 		return UrlDefinition{
-			Type:  EnvironmentUrlType,
-			Value: regex.TrimToEnvVariableName(env.GetEnvironmentUrl()),
+			Type: EnvironmentUrlType,
+			Name: regex.TrimToEnvVariableName(env.GetEnvironmentUrl()),
 		}
 	}
 
@@ -133,19 +136,7 @@ func NewEnvironmentDefinition(name string, url UrlDefinition, group string, toke
 }
 
 func (e *EnvironmentDefinition) GetUrl() (string, error) {
-
-	switch e.url.Type {
-	case EnvironmentUrlType:
-		if url, found := os.LookupEnv(e.url.Value); found {
-			return url, nil
-		} else {
-			return "", fmt.Errorf("no environment variable set for %s", e.url.Value)
-		}
-	case ValueUrlType:
-		return e.url.Value, nil
-	default:
-		return "", fmt.Errorf("url.type `%s` is not a valid type for enviroment URL. Supported are %s and %s", e.url.Type, EnvironmentUrlType, ValueUrlType)
-	}
+	return e.url.Value, nil
 }
 
 // Environments is a map of environment-name -> EnvironmentDefinition

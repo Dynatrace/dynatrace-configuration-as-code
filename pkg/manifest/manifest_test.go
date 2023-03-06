@@ -70,48 +70,12 @@ func TestEnvironmentDefinitionGetUrl(t *testing.T) {
 	assert.Equal(t, url, "http://google.com")
 }
 
-func TestEnvironmentDefinitionGetUrlMissingEnvVar(t *testing.T) {
-
-	definition := createEnvEnvironmentDefinition()
-	_, err := definition.GetUrl()
-
-	assert.ErrorContains(t, err, "no environment variable set for ENV_VAR")
-}
-
-func TestEnvironmentDefinitionGetUrlResolveEnvVar(t *testing.T) {
-	t.Setenv("ENV_VAR", "http://monaco-is-great.com")
-
-	definition := createEnvEnvironmentDefinition()
-
-	url, err := definition.GetUrl()
-
-	assert.NilError(t, err)
-	assert.Equal(t, url, "http://monaco-is-great.com")
-
-}
-
-func TestEnvironmentDefinitionGetUrlFailsOnUnkownType(t *testing.T) {
-
-	definition := EnvironmentDefinition{
-		Name: "test",
-		url: UrlDefinition{
-			Type:  "!!!THIS IS NOT A TYPE!!!",
-			Value: "http://google.com",
-		},
-		Group: "group",
-		Token: Token{Name: "NAME"},
-	}
-	_, err := definition.GetUrl()
-
-	assert.ErrorContains(t, err, "url.type `!!!THIS IS NOT A TYPE!!!` is not a valid type")
-}
-
 func createEnvEnvironmentDefinition() EnvironmentDefinition {
 	return EnvironmentDefinition{
 		Name: "test",
 		url: UrlDefinition{
-			Type:  EnvironmentUrlType,
-			Value: "ENV_VAR",
+			Type: EnvironmentUrlType,
+			Name: "ENV_VAR",
 		},
 		Group: "group",
 		Token: Token{Name: "NAME"},

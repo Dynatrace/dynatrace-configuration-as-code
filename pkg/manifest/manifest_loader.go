@@ -17,7 +17,6 @@ package manifest
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
-	strings2 "github.com/dynatrace/dynatrace-configuration-as-code/internal/strings"
 	version2 "github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"os"
@@ -273,13 +272,9 @@ func toEnvironment(context *ManifestLoaderContext, config environment, group str
 		errors = append(errors, err)
 	}
 
-	if config.Url.Value == "" {
-		errors = append(errors, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, "no `url` configured or value is blank"))
-	}
-
-	urlType, err := extractUrlType(config)
+	urlDef, err := parseUrlDefinition(context, config, group)
 	if err != nil {
-		errors = append(errors, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("failed to parse URL %v", err)))
+		errors = append(errors, err)
 	}
 
 	if len(errors) > 0 {
@@ -287,27 +282,47 @@ func toEnvironment(context *ManifestLoaderContext, config environment, group str
 	}
 
 	return EnvironmentDefinition{
-		Name: config.Name,
-		Type: envType,
-		url: UrlDefinition{
-			Type:  urlType,
-			Value: strings.TrimSuffix(config.Url.Value, "/"),
-		},
+		Name:  config.Name,
+		Type:  envType,
+		url:   urlDef,
 		Token: token,
 		Group: group,
 	}, nil
 }
 
-func extractUrlType(config environment) (UrlType, error) {
-	if config.Url.Type == "" || config.Url.Type == strings2.ToString(ValueUrlType) {
-		return ValueUrlType, nil
+func parseUrlDefinition(context *ManifestLoaderContext, config environment, group string) (UrlDefinition, error) {
+
+	// Depending on the type, the url.value either contains the env var name or the direct value of the url
+	if config.Url.Value == "" {
+		return UrlDefinition{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, "no `url` configured or value is blank")
 	}
 
-	if config.Url.Type == strings2.ToString(EnvironmentUrlType) {
-		return EnvironmentUrlType, nil
+	if config.Url.Type == "" || config.Url.Type == string(ValueUrlType) {
+		return UrlDefinition{
+			Type:  ValueUrlType,
+			Value: config.Url.Value,
+		}, nil
 	}
 
-	return "", fmt.Errorf("%s is not a valid URL Type", config.Url.Type)
+	if config.Url.Type == string(EnvironmentUrlType) {
+		val, found := os.LookupEnv(config.Url.Value)
+		if !found {
+			return UrlDefinition{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("environment variable %q could not be found", config.Url.Value))
+		}
+
+		if val == "" {
+			return UrlDefinition{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("environment variable %q is defined but has no value", config.Url.Value))
+		}
+
+		return UrlDefinition{
+			Type:  EnvironmentUrlType,
+			Value: val,
+			Name:  config.Url.Value,
+		}, nil
+
+	}
+
+	return UrlDefinition{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("%q is not a valid URL type", config.Url.Type))
 }
 
 func parseEnvironmentType(context *ManifestLoaderContext, config environment, g string) (EnvironmentType, error) {
