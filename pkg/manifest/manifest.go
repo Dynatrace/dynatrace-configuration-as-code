@@ -99,10 +99,6 @@ func NewEnvironmentDefinition(name string, url UrlDefinition, group string, toke
 	}
 }
 
-func (e *EnvironmentDefinition) GetUrl() string {
-	return e.Url.Value
-}
-
 // Environments is a map of environment-name -> EnvironmentDefinition
 type Environments map[string]EnvironmentDefinition
 
