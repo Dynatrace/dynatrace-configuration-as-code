@@ -41,28 +41,19 @@ type Config struct {
 	fileName   string
 }
 
-// ConfigFactory is used to create new Configs - this is needed for testing purposes
-type ConfigFactory interface {
-	NewConfig(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (*Config, error)
-}
+type configProvider func(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (*Config, error)
 
-type configFactoryImpl struct{}
+func newConfig(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (*Config, error) {
 
-func NewConfigFactory() ConfigFactory {
-	return &configFactoryImpl{}
-}
-
-func NewConfig(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (*Config, error) {
-
-	template, err := template.NewTemplate(fs, fileName)
+	tmpl, err := template.NewTemplate(fs, fileName)
 	if err != nil {
 		return nil, fmt.Errorf("loading config %s failed with %w", project+string(os.PathSeparator)+id, err)
 	}
 
-	return newConfig(id, project, template, filterProperties(id, properties), api, fileName), nil
+	return newConfigWithTemplate(id, project, tmpl, filterProperties(id, properties), api, fileName), nil
 }
 
-func newConfig(id string, project string, template template.Template, properties map[string]map[string]string, api api.Api, fileName string) *Config {
+func newConfigWithTemplate(id string, project string, template template.Template, properties map[string]map[string]string, api api.Api, fileName string) *Config {
 	return &Config{
 		id:         id,
 		project:    project,
@@ -182,13 +173,4 @@ func (c *Config) GetFilePath() string {
 // GetFullQualifiedId returns the full qualified id of the config based on project, api and config id
 func (c *Config) GetFullQualifiedId() string {
 	return strings.Join([]string{c.GetProject(), c.GetApi().GetId(), c.GetId()}, string(os.PathSeparator))
-}
-
-// NewConfig creates a new Config
-func (c *configFactoryImpl) NewConfig(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (*Config, error) {
-	config, err := NewConfig(fs, id, project, fileName, properties, api)
-	if err != nil {
-		return nil, err
-	}
-	return config, nil
 }

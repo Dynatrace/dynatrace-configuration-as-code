@@ -24,5 +24,5 @@ import (
 )
 
 func NewConfigWithTemplate(id string, project string, fileName string, template template.Template, properties map[string]map[string]string, api api.Api) *Config {
-	return newConfig(id, project, template, filterProperties(id, properties), api, fileName)
+	return newConfigWithTemplate(id, project, template, filterProperties(id, properties), api, fileName)
 }

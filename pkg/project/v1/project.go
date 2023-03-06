@@ -45,7 +45,7 @@ type projectBuilder struct {
 	projectId         string
 	configs           []*Config
 	apis              map[string]api.Api
-	configFactory     ConfigFactory
+	configProvider    configProvider
 	fs                afero.Fs
 }
 
@@ -63,7 +63,7 @@ func newProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolde
 		projectId:         fullQualifiedProjectFolderName,
 		configs:           configs,
 		apis:              apis,
-		configFactory:     NewConfigFactory(),
+		configProvider:    newConfig,
 		fs:                fs,
 	}
 	if err := builder.readFolder(fullQualifiedProjectFolderName, true, unmarshalYaml); err != nil {
@@ -157,7 +157,7 @@ func (p *projectBuilder) processConfigSection(properties map[string]map[string]s
 			return err
 		}
 
-		c, err := p.configFactory.NewConfig(p.fs, configName, p.projectId, location, properties, a)
+		c, err := p.configProvider(p.fs, configName, p.projectId, location, properties, a)
 		if errutils.CheckError(err, "Could not create config"+configName) {
 			return err
 		}
