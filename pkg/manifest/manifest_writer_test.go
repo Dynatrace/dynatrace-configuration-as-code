@@ -265,7 +265,7 @@ func Test_toWriteableUrl(t *testing.T) {
 				Token: Token{},
 			},
 			url{
-				Type:  "environment",
+				Type:  urlTypeEnvironment,
 				Value: "{{ .Env.VARIABLE }}",
 			},
 		},

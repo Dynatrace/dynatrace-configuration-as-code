@@ -47,7 +47,7 @@ func Test_extractUrlType(t *testing.T) {
 			"extracts_value_url",
 			environment{
 				Name:  "TEST ENV",
-				Url:   url{Value: "TEST URL", Type: "value"},
+				Url:   url{Value: "TEST URL", Type: urlTypeValue},
 				Token: testTokenCfg,
 			},
 			UrlDefinition{
@@ -73,7 +73,7 @@ func Test_extractUrlType(t *testing.T) {
 			"extracts_environment_url",
 			environment{
 				Name:  "TEST ENV",
-				Url:   url{Value: "TEST_TOKEN", Type: "environment"},
+				Url:   url{Value: "TEST_TOKEN", Type: urlTypeEnvironment},
 				Token: testTokenCfg,
 			},
 			UrlDefinition{
@@ -493,7 +493,7 @@ environmentGroups:
 							{
 								Name: "env",
 								Url: url{
-									Type:  "environment",
+									Type:  urlTypeEnvironment,
 									Value: "ENV_URL",
 								},
 								Token: tokenConfig{

@@ -297,14 +297,14 @@ func parseUrlDefinition(context *ManifestLoaderContext, config environment, grou
 		return UrlDefinition{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, "no `Url` configured or value is blank")
 	}
 
-	if config.Url.Type == "" || config.Url.Type == string(ValueUrlType) {
+	if config.Url.Type == "" || config.Url.Type == urlTypeValue {
 		return UrlDefinition{
 			Type:  ValueUrlType,
 			Value: config.Url.Value,
 		}, nil
 	}
 
-	if config.Url.Type == string(EnvironmentUrlType) {
+	if config.Url.Type == urlTypeEnvironment {
 		val, found := os.LookupEnv(config.Url.Value)
 		if !found {
 			return UrlDefinition{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("environment variable %q could not be found", config.Url.Value))
