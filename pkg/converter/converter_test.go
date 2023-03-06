@@ -72,7 +72,7 @@ func TestConvertParameters(t *testing.T) {
 			Fs: setupDummyFs(t),
 		},
 		KnownListParameterIds: map[string]struct{}{listParameterName: {}},
-		V1Apis: api.ApiMap{
+		V1Apis: api.APIs{
 			"alerting-profile": testApi,
 			"management-zone":  api.NewStandardApi("management-zone", "/api/path", false, "", false),
 		},
@@ -367,7 +367,7 @@ func TestConvertDeprecatedConfigToLatest(t *testing.T) {
 		ConverterContext: &ConverterContext{
 			Fs: setupDummyFsWithEnvVariableInTemplate(t, envVarName),
 		},
-		V1Apis:    api.ApiMap{"application": deprecatedApi},
+		V1Apis:    api.APIs{"application": deprecatedApi},
 		ProjectId: "projectA",
 	}
 
@@ -1068,7 +1068,7 @@ func Test_parseReference(t *testing.T) {
 		name               string
 		givenParameterName string
 		givenReference     string
-		givenKnownApis     api.ApiMap
+		givenKnownApis     api.APIs
 		want               *refParam.ReferenceParameter
 		wantErr            bool
 	}{
@@ -1108,7 +1108,7 @@ func Test_parseReference(t *testing.T) {
 			"returns error for unknown api reference",
 			"test-param",
 			"/some-project/alerting-profile/some-configV1.id",
-			api.ApiMap{}, //no APIs known
+			api.APIs{}, //no APIs known
 			nil,
 			true,
 		},
@@ -1116,7 +1116,7 @@ func Test_parseReference(t *testing.T) {
 			"replaces deprecated APIs",
 			"test-param",
 			"/some-project/deprecated-api/some-configV1.some-property",
-			api.ApiMap{
+			api.APIs{
 				"deprecated-api": api.NewStandardApi("deprecated-api", "/api/path", false, "new-api", false),
 			},
 			refParam.New("some-project", "new-api", "some-configV1", "some-property"),

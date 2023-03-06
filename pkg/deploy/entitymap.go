@@ -25,7 +25,7 @@ type entityMap struct {
 	knownEntityNames map[string]map[string]struct{}
 }
 
-func newEntityMap(apis api.ApiMap) *entityMap {
+func newEntityMap(apis api.APIs) *entityMap {
 	knownEntityNames := make(map[string]map[string]struct{})
 	for _, a := range apis {
 		knownEntityNames[a.GetId()] = make(map[string]struct{})

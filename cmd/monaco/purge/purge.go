@@ -67,7 +67,7 @@ func purge(fs afero.Fs, deploymentManifestPath string, environmentNames []string
 	return nil
 }
 
-func purgeConfigs(environments []manifest.EnvironmentDefinition, apis api.ApiMap) (errors []error) {
+func purgeConfigs(environments []manifest.EnvironmentDefinition, apis api.APIs) (errors []error) {
 
 	for _, env := range environments {
 		deleteErrors := purgeConfigsForEnvironment(env, apis)
@@ -80,7 +80,7 @@ func purgeConfigs(environments []manifest.EnvironmentDefinition, apis api.ApiMap
 	return errors
 }
 
-func purgeConfigsForEnvironment(env manifest.EnvironmentDefinition, apis api.ApiMap) []error {
+func purgeConfigsForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs) []error {
 	dynatraceClient, err := createClient(env)
 
 	if err != nil {

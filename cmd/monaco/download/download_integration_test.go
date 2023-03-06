@@ -85,7 +85,7 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 
 	// APIs
 	fakeApi := api.NewStandardApi("fake-id", "/fake-id", false, "", false)
-	apiMap := api.ApiMap{
+	apiMap := api.APIs{
 		fakeApi.GetId(): fakeApi,
 	}
 
@@ -147,7 +147,7 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 
 	// APIs
 	fakeApi := api.NewStandardApi("fake-id", "/fake-id", false, "", false)
-	apiMap := api.ApiMap{
+	apiMap := api.APIs{
 		fakeApi.GetId(): fakeApi,
 	}
 
@@ -223,7 +223,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 	fakeApi1 := api.NewStandardApi("fake-id-1", "/fake-api-1", false, "", false)
 	fakeApi2 := api.NewStandardApi("fake-id-2", "/fake-api-2", false, "", false)
 	fakeApi3 := api.NewStandardApi("fake-id-3", "/fake-api-3", false, "", false)
-	apiMap := api.ApiMap{
+	apiMap := api.APIs{
 		fakeApi1.GetId(): fakeApi1,
 		fakeApi2.GetId(): fakeApi2,
 		fakeApi3.GetId(): fakeApi3,
@@ -345,7 +345,7 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 
 	// APIs
 	fakeApi := api.NewSingleConfigurationApi("fake-id", "/fake-id", "", false)
-	apiMap := api.ApiMap{
+	apiMap := api.APIs{
 		fakeApi.GetId(): fakeApi,
 	}
 
@@ -406,7 +406,7 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 
 	// APIs
 	syntheticLocationApi := api.NewStandardApi("synthetic-location", "/synthetic-location", false, "", false)
-	apiMap := api.ApiMap{
+	apiMap := api.APIs{
 		syntheticLocationApi.GetId(): syntheticLocationApi,
 	}
 
@@ -470,7 +470,7 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 
 	// APIs
 	dashboardApi := api.NewApi("dashboard", "/dashboard", "dashboards", false, false, "", false)
-	apiMap := api.ApiMap{
+	apiMap := api.APIs{
 		dashboardApi.GetId(): dashboardApi,
 	}
 
@@ -545,7 +545,7 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 
 	// APIs
 	dashboardApi := api.NewStandardApi("anomaly-detection-metrics", "/ad-metrics", false, "", false)
-	apiMap := api.ApiMap{
+	apiMap := api.APIs{
 		dashboardApi.GetId(): dashboardApi,
 	}
 
@@ -682,7 +682,7 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 
 			// APIs
 			hostAutoUpdateApi := api.NewSingleConfigurationApi("hosts-auto-update", "/hosts-auto-update", "", false)
-			apiMap := api.ApiMap{
+			apiMap := api.APIs{
 				hostAutoUpdateApi.GetId(): hostAutoUpdateApi,
 			}
 
@@ -739,7 +739,7 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 
 	// APIs
 	fakeApi := api.NewStandardApi("fake-id", "/fake-id", false, "", false)
-	apiMap := api.ApiMap{
+	apis := api.APIs{
 		fakeApi.GetId(): fakeApi,
 	}
 
@@ -763,7 +763,7 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 	options := setupTestingDownloadOptions(t, server, projectName)
 	options.forceOverwriteManifest = true
 	options.outputFolder = testBasePath
-	err := doDownloadConfigs(fs, apiMap, options)
+	err := doDownloadConfigs(fs, apis, options)
 
 	assert.NilError(t, err)
 
@@ -779,7 +779,7 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 	}
 
 	projects, errs := projectLoader.LoadProjects(fs, projectLoader.ProjectLoaderContext{
-		KnownApis:       api.GetApiNameLookup(apiMap),
+		KnownApis:       apis.GetApiNameLookup(),
 		WorkingDir:      testBasePath,
 		Manifest:        man,
 		ParametersSerde: config.DefaultParameterParsers,
@@ -827,7 +827,7 @@ func TestDownloadIntegrationDownloadsAPIsAndSettings(t *testing.T) {
 
 	// APIs
 	fakeApi := api.NewStandardApi("fake-api", "/fake-api", false, "", false)
-	apiMap := api.ApiMap{
+	apis := api.APIs{
 		fakeApi.GetId(): fakeApi,
 	}
 
@@ -848,12 +848,12 @@ func TestDownloadIntegrationDownloadsAPIsAndSettings(t *testing.T) {
 	opts := setupTestingDownloadOptions(t, server, projectName)
 	opts.onlySettings = false
 	opts.onlyAPIs = false
-	err := doDownloadConfigs(fs, apiMap, opts)
+	err := doDownloadConfigs(fs, apis, opts)
 
 	assert.NilError(t, err)
 
 	// THEN we can load the project again and verify its content
-	projects, errs := loadDownloadedProjects(fs, apiMap)
+	projects, errs := loadDownloadedProjects(fs, apis)
 	if len(errs) != 0 {
 		for _, err := range errs {
 			t.Errorf("%v", err)
@@ -887,7 +887,7 @@ func TestDownloadIntegrationDownloadsOnlyAPIsIfConfigured(t *testing.T) {
 
 	// APIs
 	fakeApi := api.NewStandardApi("fake-api", "/fake-api", false, "", false)
-	apiMap := api.ApiMap{
+	apis := api.APIs{
 		fakeApi.GetId(): fakeApi,
 	}
 
@@ -907,12 +907,12 @@ func TestDownloadIntegrationDownloadsOnlyAPIsIfConfigured(t *testing.T) {
 	opts.onlySettings = false
 	opts.onlyAPIs = true
 
-	err := doDownloadConfigs(fs, apiMap, opts)
+	err := doDownloadConfigs(fs, apis, opts)
 
 	assert.NilError(t, err)
 
 	// THEN we can load the project again and verify its content
-	projects, errs := loadDownloadedProjects(fs, apiMap)
+	projects, errs := loadDownloadedProjects(fs, apis)
 	if len(errs) != 0 {
 		for _, err := range errs {
 			t.Errorf("%v", err)
@@ -944,7 +944,7 @@ func TestDownloadIntegrationDownloadsOnlySettingsIfConfigured(t *testing.T) {
 
 	// APIs
 	fakeApi := api.NewStandardApi("fake-api", "/fake-api", false, "", false)
-	apiMap := api.ApiMap{
+	apis := api.APIs{
 		fakeApi.GetId(): fakeApi,
 	}
 
@@ -963,12 +963,12 @@ func TestDownloadIntegrationDownloadsOnlySettingsIfConfigured(t *testing.T) {
 	opts.onlySettings = true
 	opts.onlyAPIs = false
 
-	err := doDownloadConfigs(fs, apiMap, opts)
+	err := doDownloadConfigs(fs, apis, opts)
 
 	assert.NilError(t, err)
 
 	// THEN we can load the project again and verify its content
-	projects, errs := loadDownloadedProjects(fs, apiMap)
+	projects, errs := loadDownloadedProjects(fs, apis)
 	if len(errs) != 0 {
 		for _, err := range errs {
 			t.Errorf("%v", err)
@@ -1012,7 +1012,7 @@ func setupTestingDownloadOptions(t *testing.T, server *httptest.Server, projectN
 	}
 }
 
-func loadDownloadedProjects(fs afero.Fs, apiMap api.ApiMap) ([]projectLoader.Project, []error) {
+func loadDownloadedProjects(fs afero.Fs, apis api.APIs) ([]projectLoader.Project, []error) {
 	man, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
 		Fs:           fs,
 		ManifestPath: "out/manifest.yaml",
@@ -1022,7 +1022,7 @@ func loadDownloadedProjects(fs afero.Fs, apiMap api.ApiMap) ([]projectLoader.Pro
 	}
 
 	return projectLoader.LoadProjects(fs, projectLoader.ProjectLoaderContext{
-		KnownApis:       api.GetApiNameLookup(apiMap),
+		KnownApis:       apis.GetApiNameLookup(),
 		WorkingDir:      "out",
 		Manifest:        man,
 		ParametersSerde: config.DefaultParameterParsers,

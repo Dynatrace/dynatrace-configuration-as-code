@@ -50,7 +50,7 @@ func Delete(fs afero.Fs, deploymentManifestPath string, deleteFile string, envir
 		return errors.New("error while loading manifest")
 	}
 
-	entriesToDelete, errs := delete.LoadEntriesToDelete(fs, api.GetApiNames(apis), deleteFile)
+	entriesToDelete, errs := delete.LoadEntriesToDelete(fs, apis.GetApiNames(), deleteFile)
 	if errs != nil {
 		return fmt.Errorf("encountered errors while parsing delete.yaml: %s", errs)
 	}
@@ -85,7 +85,7 @@ func Delete(fs afero.Fs, deploymentManifestPath string, deleteFile string, envir
 	return nil
 }
 
-func deleteConfigs(environments []manifest.EnvironmentDefinition, apis api.ApiMap, entriesToDelete map[string][]delete.DeletePointer) (errors []error) {
+func deleteConfigs(environments []manifest.EnvironmentDefinition, apis api.APIs, entriesToDelete map[string][]delete.DeletePointer) (errors []error) {
 
 	for _, env := range environments {
 		deleteErrors := deleteConfigForEnvironment(env, apis, entriesToDelete)
@@ -98,7 +98,7 @@ func deleteConfigs(environments []manifest.EnvironmentDefinition, apis api.ApiMa
 	return errors
 }
 
-func deleteConfigForEnvironment(env manifest.EnvironmentDefinition, apis api.ApiMap, entriesToDelete map[string][]delete.DeletePointer) []error {
+func deleteConfigForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs, entriesToDelete map[string][]delete.DeletePointer) []error {
 	dynatraceClient, err := createClient(env, false)
 
 	if err != nil {

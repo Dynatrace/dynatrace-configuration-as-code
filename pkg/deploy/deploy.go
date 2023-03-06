@@ -37,7 +37,7 @@ type DeployConfigsOptions struct {
 // DeployConfigs deploys the given configs with the given apis via the given client
 // NOTE: the given configs need to be sorted, otherwise deployment will
 // probably fail, as references cannot be resolved
-func DeployConfigs(client client.Client, apis api.ApiMap, sortedConfigs []config.Config, opts DeployConfigsOptions) []error {
+func DeployConfigs(client client.Client, apis api.APIs, sortedConfigs []config.Config, opts DeployConfigsOptions) []error {
 	entityMap := newEntityMap(apis)
 	var errors []error
 
@@ -95,7 +95,7 @@ func getWordsForLogging(isDryRun bool) (action, verb string) {
 	return "Deploying", "deploy"
 }
 
-func deployConfig(client client.ConfigClient, apis api.ApiMap, entityMap *entityMap, conf *config.Config) (parameter.ResolvedEntity, []error) {
+func deployConfig(client client.ConfigClient, apis api.APIs, entityMap *entityMap, conf *config.Config) (parameter.ResolvedEntity, []error) {
 
 	apiToDeploy := apis[conf.Coordinate.Type]
 	if apiToDeploy == nil {

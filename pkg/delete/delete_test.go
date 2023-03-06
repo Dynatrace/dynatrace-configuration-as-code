@@ -212,7 +212,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			a := api.NewApi("some-id", "", "", false, false, "", false)
 
-			apiMap := api.ApiMap{a.GetId(): a}
+			apiMap := api.APIs{a.GetId(): a}
 			entriesToDelete := map[string][]DeletePointer{a.GetId(): tc.args.entries}
 
 			client := client.NewMockClient(gomock.NewController(t))
@@ -232,7 +232,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 func TestSplitConfigsForDeletionClientReturnsError(t *testing.T) {
 	a := api.NewApi("some-id", "", "", false, false, "", false)
 
-	apiMap := api.ApiMap{a.GetId(): a}
+	apiMap := api.APIs{a.GetId(): a}
 	entriesToDelete := map[string][]DeletePointer{a.GetId(): {{}}}
 
 	client := client.NewMockClient(gomock.NewController(t))

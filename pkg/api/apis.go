@@ -16,12 +16,37 @@
 
 package api
 
+import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
+	"strings"
+)
+
+type APIs map[string]*Api
+
+// Contains return true iff requested API is part APIs set
+func (m APIs) Contains(api string) bool {
+	_, ok := m[api]
+	return ok
+}
+
+// ContainsApiName tests if part of project folder path contains an API
+// folders with API in path are not valid projects
+func (m APIs) ContainsApiName(path string) bool {
+	for api := range m {
+		if strings.Contains(path, api) {
+			return true
+		}
+	}
+
+	return false
+}
+
 // Filter return true iff specific api needs to be filtered/ removed from list
 type Filter func(api *Api) bool
 
 // Filter apply all passed filters and return new filtered array
-func (m ApiMap) Filter(filters ...Filter) ApiMap {
-	apis := make(ApiMap)
+func (m APIs) Filter(filters ...Filter) APIs {
+	apis := make(APIs)
 	for k, v := range m {
 		var keep = true
 		for _, f := range filters {
@@ -56,4 +81,18 @@ func RetainByName(APIs []string) Filter {
 		}
 		return true
 	}
+}
+
+func (apis APIs) GetApiNames() []string {
+	return maps.Keys(apis)
+}
+
+func (apis APIs) GetApiNameLookup() map[string]struct{} {
+	lookup := make(map[string]struct{}, len(apis))
+
+	for k := range apis {
+		lookup[k] = struct{}{}
+	}
+
+	return lookup
 }

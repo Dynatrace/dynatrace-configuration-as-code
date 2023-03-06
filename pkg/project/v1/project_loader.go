@@ -30,12 +30,12 @@ import (
 )
 
 // LoadProjectsToConvert returns a list of projects to be converted to v2
-func LoadProjectsToConvert(fs afero.Fs, apis api.ApiMap, path string) ([]Project, error) {
+func LoadProjectsToConvert(fs afero.Fs, apis api.APIs, path string) ([]Project, error) {
 	_, projects, err := loadAllProjects(fs, apis, path, template.UnmarshalYamlWithoutTemplating)
 	return projects, err
 }
 
-func loadAllProjects(fs afero.Fs, apis api.ApiMap, projectsFolder string, unmarshalYaml template.UnmarshalYamlFunc) (projectFolders []string, projects []Project, err error) {
+func loadAllProjects(fs afero.Fs, apis api.APIs, projectsFolder string, unmarshalYaml template.UnmarshalYamlFunc) (projectFolders []string, projects []Project, err error) {
 	projectsFolder = filepath.Clean(projectsFolder)
 
 	log.Debug("Reading projects...")
@@ -102,7 +102,7 @@ func hasSubprojectFolder(projectFolder string, projectFolders []string) bool {
 // walks through a path recursively and searches for all folders
 // ignores folders with configurations (containing api configs) and hidden folders
 // fails if a folder with both sub projects and api configs are found
-func getAllProjectFoldersRecursively(fs afero.Fs, availableApis api.ApiMap, path string) ([]string, error) {
+func getAllProjectFoldersRecursively(fs afero.Fs, availableApis api.APIs, path string) ([]string, error) {
 	var allProjectsFolders []string
 	err := afero.Walk(fs, path, func(path string, info os.FileInfo, err error) error {
 		if info == nil {
@@ -122,7 +122,7 @@ func getAllProjectFoldersRecursively(fs afero.Fs, availableApis api.ApiMap, path
 	return filterProjectsWithSubproject(allProjectsFolders), nil
 }
 
-func subprojectsMixedWithApi(fs afero.Fs, availableApis api.ApiMap, path string) error {
+func subprojectsMixedWithApi(fs afero.Fs, availableApis api.APIs, path string) error {
 	apiFound, subprojectFound := false, false
 	_, err := fs.Open(path)
 	if err != nil {

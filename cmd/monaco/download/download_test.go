@@ -184,7 +184,7 @@ func Test_checkForCircularDependencies(t *testing.T) {
 
 func TestGetApisToDownload(t *testing.T) {
 	type given struct {
-		apis         api.ApiMap
+		apis         api.APIs
 		specificAPIs []string
 	}
 	type expected struct {
@@ -198,7 +198,7 @@ func TestGetApisToDownload(t *testing.T) {
 		{
 			name: "filter all specific defined api",
 			given: given{
-				apis: api.ApiMap{
+				apis: api.APIs{
 					"api_1": api.NewApi("api_1", "", "", false, false, "", false),
 					"api_2": api.NewApi("api_2", "", "", false, false, "", false),
 				},
@@ -210,7 +210,7 @@ func TestGetApisToDownload(t *testing.T) {
 		}, {
 			name: "if deprecated api is defined, do not filter it",
 			given: given{
-				apis: api.ApiMap{
+				apis: api.APIs{
 					"api_1":          api.NewApi("api_1", "", "", false, false, "", false),
 					"api_2":          api.NewApi("api_2", "", "", false, false, "", false),
 					"deprecated_api": api.NewApi("deprecated_api", "", "", false, false, "new_api", false),
@@ -224,7 +224,7 @@ func TestGetApisToDownload(t *testing.T) {
 		{
 			name: "if specific api is not requested, filter deprecated apis",
 			given: given{
-				apis: api.ApiMap{
+				apis: api.APIs{
 					"api_1":          api.NewApi("api_1", "", "", false, false, "", false),
 					"api_2":          api.NewApi("api_2", "", "", false, false, "", false),
 					"deprecated_api": api.NewApi("deprecated_api", "", "", false, false, "new_api", false),

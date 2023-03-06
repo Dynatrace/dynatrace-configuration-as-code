@@ -44,13 +44,13 @@ type projectBuilder struct {
 	projectRootFolder string
 	projectId         string
 	configs           []*Config
-	apis              api.ApiMap
+	apis              api.APIs
 	configProvider    configProvider
 	fs                afero.Fs
 }
 
 // newProject loads a new project from folder. Returns either project or a reading/sorting error respectively.
-func newProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolderName string, apis api.ApiMap, projectRootFolder string, unmarshalYaml template.UnmarshalYamlFunc) (Project, error) {
+func newProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolderName string, apis api.APIs, projectRootFolder string, unmarshalYaml template.UnmarshalYamlFunc) (Project, error) {
 
 	var configs = make([]*Config, 0)
 
@@ -83,7 +83,7 @@ func newProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolde
 	}, nil
 }
 
-func warnIfProjectNameClashesWithApiName(projectFolderName string, apis api.ApiMap, projectRootFolder string) {
+func warnIfProjectNameClashesWithApiName(projectFolderName string, apis api.APIs, projectRootFolder string) {
 
 	lowerCaseProjectFolderName := strings.ToLower(projectFolderName)
 	_, ok := apis[lowerCaseProjectFolderName]

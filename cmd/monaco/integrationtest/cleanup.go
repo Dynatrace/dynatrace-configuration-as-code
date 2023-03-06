@@ -56,7 +56,7 @@ func CleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestPath string, load
 	}
 }
 
-func cleanupConfigs(t *testing.T, apis api.ApiMap, c client.ConfigClient, suffix string) {
+func cleanupConfigs(t *testing.T, apis api.APIs, c client.ConfigClient, suffix string) {
 	for _, api := range apis {
 		if api.GetId() == "calculated-metrics-log" {
 			t.Logf("Skipping cleanup of legacy log monitoring API")

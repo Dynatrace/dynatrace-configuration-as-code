@@ -21,13 +21,29 @@ package api
 import "testing"
 import "github.com/stretchr/testify/assert"
 
+func TestContains(t *testing.T) {
+	apis := NewApis()
+	assert.True(t, apis.Contains("alerting-profile"))
+	assert.False(t, apis.Contains("something"))
+
+	assert.False(t, APIs{}.Contains("something"))
+}
+
+func TestContainsApiName(t *testing.T) {
+	apis := NewApis()
+	assert.False(t, apis.ContainsApiName("trillian"), "Check if `trillian` is an API")
+	assert.True(t, apis.ContainsApiName("extension"), "Check if `extension` is an API")
+	assert.True(t, apis.ContainsApiName("/project/sub-project/extension/subfolder"), "Check if `extension` is an API")
+	assert.False(t, apis.ContainsApiName("/project/sub-project"), "Check if `extension` is an API")
+}
+
 func TestApiMapFilter(t *testing.T) {
 	type given struct {
-		apis    ApiMap
+		apis    APIs
 		filters []Filter
 	}
 	type expected struct {
-		apis ApiMap
+		apis APIs
 	}
 	tests := []struct {
 		name     string
@@ -37,14 +53,14 @@ func TestApiMapFilter(t *testing.T) {
 		{
 			name: "without filter",
 			given: given{
-				apis: ApiMap{
+				apis: APIs{
 					"api_1": NewApi("api_1", "", "", false, false, "", false),
 					"api_2": NewApi("api_2", "", "", false, false, "", false),
 				},
 				filters: nil,
 			},
 			expected: expected{
-				apis: ApiMap{
+				apis: APIs{
 					"api_1": NewApi("api_1", "", "", false, false, "", false),
 					"api_2": NewApi("api_2", "", "", false, false, "", false),
 				},
@@ -53,7 +69,7 @@ func TestApiMapFilter(t *testing.T) {
 		{
 			name: "filter with one filter",
 			given: given{
-				apis: ApiMap{
+				apis: APIs{
 					"api_1": NewApi("api_1", "", "", false, false, "", false),
 					"api_2": NewApi("api_2", "", "", false, false, "", false),
 				},
@@ -62,7 +78,7 @@ func TestApiMapFilter(t *testing.T) {
 				},
 			},
 			expected: expected{
-				apis: ApiMap{
+				apis: APIs{
 					"api_2": NewApi("api_2", "", "", false, false, "", false),
 				},
 			},
@@ -70,7 +86,7 @@ func TestApiMapFilter(t *testing.T) {
 		{
 			name: "filter with two filters",
 			given: given{
-				apis: ApiMap{
+				apis: APIs{
 					"api_1": NewApi("api_1", "", "", false, false, "", false),
 					"api_2": NewApi("api_2", "", "", false, false, "", false),
 				},
@@ -80,20 +96,20 @@ func TestApiMapFilter(t *testing.T) {
 				},
 			},
 			expected: expected{
-				apis: ApiMap{},
+				apis: APIs{},
 			},
 		},
 		{
 			name: "NoFilter",
 			given: given{
-				apis: ApiMap{
+				apis: APIs{
 					"api_1": NewApi("api_1", "", "", false, false, "", false),
 					"api_2": NewApi("api_2", "", "", false, false, "", false),
 				},
 				filters: []Filter{NoFilter},
 			},
 			expected: expected{
-				apis: ApiMap{
+				apis: APIs{
 					"api_1": NewApi("api_1", "", "", false, false, "", false),
 					"api_2": NewApi("api_2", "", "", false, false, "", false),
 				},
@@ -102,14 +118,14 @@ func TestApiMapFilter(t *testing.T) {
 		{
 			name: "RetainByName - without arguments",
 			given: given{
-				apis: ApiMap{
+				apis: APIs{
 					"api_1": NewApi("api_1", "", "", false, false, "", false),
 					"api_2": NewApi("api_2", "", "", false, false, "", false),
 				},
 				filters: []Filter{RetainByName([]string{})},
 			},
 			expected: expected{
-				apis: ApiMap{
+				apis: APIs{
 					"api_1": NewApi("api_1", "", "", false, false, "", false),
 					"api_2": NewApi("api_2", "", "", false, false, "", false),
 				},
@@ -118,28 +134,28 @@ func TestApiMapFilter(t *testing.T) {
 		{
 			name: "RetainByName - with arguments",
 			given: given{
-				apis: ApiMap{
+				apis: APIs{
 					"api_1": NewApi("api_1", "", "", false, false, "", false),
 					"api_2": NewApi("api_2", "", "", false, false, "", false),
 				},
 				filters: []Filter{RetainByName([]string{"api_1"})},
 			},
 			expected: expected{
-				apis: ApiMap{
+				apis: APIs{
 					"api_1": NewApi("api_1", "", "", false, false, "", false),
 				},
 			},
 		}, {
 			name: "RetainByName - with non existing argument",
 			given: given{
-				apis: ApiMap{
+				apis: APIs{
 					"api_1": NewApi("api_1", "", "", false, false, "", false),
 					"api_2": NewApi("api_2", "", "", false, false, "", false),
 				},
 				filters: []Filter{RetainByName([]string{"api_3"})},
 			},
 			expected: expected{
-				apis: ApiMap{},
+				apis: APIs{},
 			},
 		},
 	}

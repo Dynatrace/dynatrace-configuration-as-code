@@ -27,7 +27,7 @@ import (
 
 func TestNewEntityMap(t *testing.T) {
 	type args struct {
-		apis api.ApiMap
+		apis api.APIs
 	}
 	tests := []struct {
 		name string
@@ -36,7 +36,7 @@ func TestNewEntityMap(t *testing.T) {
 	}{
 		{
 			name: "Test crate entity map",
-			args: args{api.ApiMap{"dashboard": api.NewStandardApi("dashboard", "dashboard", false, "dashboard-v2", false)}},
+			args: args{api.APIs{"dashboard": api.NewStandardApi("dashboard", "dashboard", false, "dashboard-v2", false)}},
 			want: &entityMap{
 				resolvedEntities: parameter.ResolvedEntities{},
 				knownEntityNames: map[string]map[string]struct{}{"dashboard": {}},
@@ -66,7 +66,7 @@ func TestEntityMap_PutResolved(t *testing.T) {
 			Coordinate: c1,
 		}
 
-		entityMap := newEntityMap(api.ApiMap{"dashboard": api.NewStandardApi("dashboard", "dashboard", false, "dashboard-v2", false)})
+		entityMap := newEntityMap(api.APIs{"dashboard": api.NewStandardApi("dashboard", "dashboard", false, "dashboard-v2", false)})
 		entityMap.put(c1, r1)
 		assert.Equal(t, entityMap.contains("type", "entityName"), true)
 		assert.DeepEqual(t, entityMap.get(), parameter.ResolvedEntities{
@@ -87,7 +87,7 @@ func TestEntityMap_PutResolved(t *testing.T) {
 			Skip:       true,
 		}
 
-		entityMap := newEntityMap(api.ApiMap{"dashboard": api.NewStandardApi("dashboard", "dashboard", false, "dashboard-v2", false)})
+		entityMap := newEntityMap(api.APIs{"dashboard": api.NewStandardApi("dashboard", "dashboard", false, "dashboard-v2", false)})
 		entityMap.put(c1, r1)
 		assert.Equal(t, entityMap.contains("type", "entityName"), false)
 		assert.DeepEqual(t, entityMap.get(), parameter.ResolvedEntities{
@@ -104,7 +104,7 @@ func TestEntityMap_PutResolved(t *testing.T) {
 
 		r1 := parameter.ResolvedEntity{Coordinate: c1}
 
-		entityMap := newEntityMap(api.ApiMap{"dashboard": api.NewStandardApi("dashboard", "dashboard", false, "dashboard-v2", false)})
+		entityMap := newEntityMap(api.APIs{"dashboard": api.NewStandardApi("dashboard", "dashboard", false, "dashboard-v2", false)})
 		entityMap.put(c1, r1)
 		assert.Equal(t, entityMap.contains("type", ""), false)
 		assert.DeepEqual(t, entityMap.get(), parameter.ResolvedEntities{
