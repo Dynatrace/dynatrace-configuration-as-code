@@ -76,7 +76,7 @@ func TestDeployConfig(t *testing.T) {
 		Skip:        false,
 	}
 
-	resolvedEntity, errors := deployConfig(client, testApiMap, NewEntityMap(testApiMap), &conf)
+	resolvedEntity, errors := deployConfig(client, testApiMap, newEntityMap(testApiMap), &conf)
 
 	assert.Assert(t, len(errors) == 0, "there should be no errors (no errors: %d, %s)", len(errors), errors)
 	assert.Equal(t, name, resolvedEntity.EntityName, "%s == %s")
@@ -122,7 +122,7 @@ func TestDeploySettingShouldFailCyclicParameterDependencies(t *testing.T) {
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parameters),
 	}
-	_, errors := deploySetting(client, NewEntityMap(testApiMap), conf)
+	_, errors := deploySetting(client, newEntityMap(testApiMap), conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
@@ -133,7 +133,7 @@ func TestDeploySettingShouldFailRenderTemplate(t *testing.T) {
 		Template: generateFaultyTemplate(t),
 	}
 
-	_, errors := deploySetting(client, NewEntityMap(testApiMap), conf)
+	_, errors := deploySetting(client, newEntityMap(testApiMap), conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
@@ -169,7 +169,7 @@ func TestDeploySettingShouldFailUpsert(t *testing.T) {
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parameters),
 	}
-	_, errors := deploySetting(client, NewEntityMap(testApiMap), conf)
+	_, errors := deploySetting(client, newEntityMap(testApiMap), conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
@@ -202,7 +202,7 @@ func TestDeploySetting(t *testing.T) {
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parameters),
 	}
-	_, errors := deploySetting(client, NewEntityMap(testApiMap), conf)
+	_, errors := deploySetting(client, newEntityMap(testApiMap), conf)
 	assert.Assert(t, len(errors) == 0, "there should be no errors (no errors: %d, %s)", len(errors), errors)
 }
 
@@ -229,8 +229,8 @@ func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
 		Parameters:  toParameterMap(parameters),
 		Skip:        false,
 	}
-	entityMap := NewEntityMap(testApiMap)
-	entityMap.PutResolved(coordinate.Coordinate{Type: "dashboard"}, parameter.ResolvedEntity{EntityName: name})
+	entityMap := newEntityMap(testApiMap)
+	entityMap.put(coordinate.Coordinate{Type: "dashboard"}, parameter.ResolvedEntity{EntityName: name})
 	_, errors := deployConfig(client, testApiMap, entityMap, &conf)
 
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
@@ -282,7 +282,7 @@ func TestDeployConfigShouldFailCyclicParameterDependencies(t *testing.T) {
 		Skip:        false,
 	}
 
-	_, errors := deployConfig(client, testApiMap, NewEntityMap(testApiMap), &conf)
+	_, errors := deployConfig(client, testApiMap, newEntityMap(testApiMap), &conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
@@ -302,7 +302,7 @@ func TestDeployConfigShouldFailOnMissingNameParameter(t *testing.T) {
 		Skip:        false,
 	}
 
-	_, errors := deployConfig(client, testApiMap, NewEntityMap(testApiMap), &conf)
+	_, errors := deployConfig(client, testApiMap, newEntityMap(testApiMap), &conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
@@ -338,7 +338,7 @@ func TestDeployConfigShouldFailOnReferenceOnUnknownConfig(t *testing.T) {
 		Skip:        false,
 	}
 
-	_, errors := deployConfig(client, testApiMap, NewEntityMap(testApiMap), &conf)
+	_, errors := deployConfig(client, testApiMap, newEntityMap(testApiMap), &conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
@@ -376,7 +376,7 @@ func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
 		Skip:        false,
 	}
 
-	_, errors := deployConfig(client, testApiMap, NewEntityMap(testApiMap), &conf)
+	_, errors := deployConfig(client, testApiMap, newEntityMap(testApiMap), &conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 

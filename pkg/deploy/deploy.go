@@ -26,17 +26,19 @@ import (
 
 // DeployConfigsOptions defines additional options used by DeployConfigs
 type DeployConfigsOptions struct {
+	// ContinueOnErr states that the deployment continues even when there happens to be an
+	// error while deploying a certain configuration
 	ContinueOnErr bool
-	DryRun        bool
+	// DryRun states that the deployment shall just run in dry-run mode, meaning
+	// that actual deployment of the configuration to a tenant will be skipped
+	DryRun bool
 }
 
 // DeployConfigs deploys the given configs with the given apis via the given client
 // NOTE: the given configs need to be sorted, otherwise deployment will
 // probably fail, as references cannot be resolved
-func DeployConfigs(client client.Client, apis api.ApiMap,
-	sortedConfigs []config.Config, opts DeployConfigsOptions) []error {
-
-	entityMap := NewEntityMap(apis)
+func DeployConfigs(client client.Client, apis api.ApiMap, sortedConfigs []config.Config, opts DeployConfigsOptions) []error {
+	entityMap := newEntityMap(apis)
 	var errors []error
 
 	for _, c := range sortedConfigs {
@@ -45,7 +47,7 @@ func DeployConfigs(client client.Client, apis api.ApiMap,
 		if c.Skip {
 			log.Info("\tSkipping deployment of config %s", c.Coordinate)
 
-			entityMap.PutResolved(c.Coordinate, parameter.ResolvedEntity{
+			entityMap.put(c.Coordinate, parameter.ResolvedEntity{
 				EntityName: c.Coordinate.ConfigId,
 				Coordinate: c.Coordinate,
 				Properties: parameter.Properties{},
@@ -78,7 +80,7 @@ func DeployConfigs(client client.Client, apis api.ApiMap,
 				return errors
 			}
 		}
-		entityMap.PutResolved(entity.Coordinate, entity)
+		entityMap.put(entity.Coordinate, entity)
 	}
 
 	return errors
@@ -93,14 +95,14 @@ func getWordsForLogging(isDryRun bool) (action, verb string) {
 	return "Deploying", "deploy"
 }
 
-func deployConfig(client client.ConfigClient, apis api.ApiMap, entityMap *EntityMap, conf *config.Config) (parameter.ResolvedEntity, []error) {
+func deployConfig(client client.ConfigClient, apis api.ApiMap, entityMap *entityMap, conf *config.Config) (parameter.ResolvedEntity, []error) {
 
 	apiToDeploy := apis[conf.Coordinate.Type]
 	if apiToDeploy == nil {
 		return parameter.ResolvedEntity{}, []error{fmt.Errorf("unknown api `%s`. this is most likely a bug", conf.Type.Api)}
 	}
 
-	properties, errors := resolveProperties(conf, entityMap.Resolved())
+	properties, errors := resolveProperties(conf, entityMap.get())
 	if len(errors) > 0 {
 		return parameter.ResolvedEntity{}, errors
 	}
@@ -109,7 +111,7 @@ func deployConfig(client client.ConfigClient, apis api.ApiMap, entityMap *Entity
 	if err != nil {
 		errors = append(errors, err)
 	} else {
-		if entityMap.Known(apiToDeploy.GetId(), configName) && !apiToDeploy.IsNonUniqueNameApi() {
+		if entityMap.contains(apiToDeploy.GetId(), configName) && !apiToDeploy.IsNonUniqueNameApi() {
 			errors = append(errors, newConfigDeployErr(conf, fmt.Sprintf("duplicated config name `%s`", configName)))
 		}
 	}
@@ -162,8 +164,8 @@ func upsertNonUniqueNameConfig(client client.ConfigClient, apiToDeploy api.Api, 
 	return client.UpsertConfigByNonUniqueNameAndId(apiToDeploy, entityUuid, configName, []byte(renderedConfig))
 }
 
-func deploySetting(settingsClient client.SettingsClient, entityMap *EntityMap, c *config.Config) (parameter.ResolvedEntity, []error) {
-	properties, errors := resolveProperties(c, entityMap.Resolved())
+func deploySetting(settingsClient client.SettingsClient, entityMap *entityMap, c *config.Config) (parameter.ResolvedEntity, []error) {
+	properties, errors := resolveProperties(c, entityMap.get())
 	if len(errors) > 0 {
 		return parameter.ResolvedEntity{}, errors
 	}
