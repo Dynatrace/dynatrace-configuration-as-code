@@ -78,12 +78,7 @@ func getEnvFromManifest(fs afero.Fs, manifestPath string, specificEnvironmentNam
 		return "", manifest.Token{}, fmt.Errorf("environment %q was not available in manifest %q", specificEnvironmentName, manifestPath)
 	}
 
-	envUrl, err = env.GetUrl()
-	if err != nil {
-		return "", manifest.Token{}, fmt.Errorf("failed to load manifest %q: %w", manifestPath, err)
-	}
-
-	return envUrl, env.Token, nil
+	return env.GetUrl(), env.Token, nil
 }
 
 type DynatraceClientProvider func(*http.Client, string, ...func(*client.DynatraceClient)) (*client.DynatraceClient, error)

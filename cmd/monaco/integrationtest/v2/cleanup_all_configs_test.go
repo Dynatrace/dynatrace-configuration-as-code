@@ -49,8 +49,7 @@ func TestDoCleanup(t *testing.T) {
 	testSuffixRegex := regexp.MustCompile(`^.+_\d+_\d+_.*$`)
 
 	for _, environment := range loadedManifest.Environments {
-		envUrl, err := environment.GetUrl()
-		assert.NilError(t, err)
+		envUrl := environment.GetUrl()
 
 		client := integrationtest.CreateDynatraceClient(t, environment)
 

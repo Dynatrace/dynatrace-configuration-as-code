@@ -126,10 +126,5 @@ func createClient(environment manifest.EnvironmentDefinition, dryRun bool) (clie
 		return &client.DummyClient{}, nil
 	}
 
-	url, err := environment.GetUrl()
-	if err != nil {
-		return nil, err
-	}
-
-	return client.NewDynatraceClient(client.NewTokenAuthClient(environment.Token.Value), url)
+	return client.NewDynatraceClient(client.NewTokenAuthClient(environment.Token.Value), environment.GetUrl())
 }

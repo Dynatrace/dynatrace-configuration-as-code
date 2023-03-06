@@ -32,8 +32,7 @@ import (
 )
 
 func CreateDynatraceClient(t *testing.T, environment manifest.EnvironmentDefinition) client.Client {
-	envURL, err := environment.GetUrl()
-	assert.NilError(t, err, "unable to get URL for test environment %q", environment.Name)
+	envURL := environment.GetUrl()
 
 	c, err := client.NewDynatraceClient(client.NewTokenAuthClient(environment.Token.Value), envURL, client.WithAutoServerVersion())
 	assert.NilError(t, err, "failed to create test client")
