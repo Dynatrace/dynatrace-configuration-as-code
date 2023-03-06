@@ -150,7 +150,7 @@ func deployConfig(client client.ConfigClient, apis api.APIs, entityMap *entityMa
 	}, nil
 }
 
-func upsertNonUniqueNameConfig(client client.ConfigClient, apiToDeploy *api.Api, conf *config.Config, configName string, renderedConfig string) (api.DynatraceEntity, error) {
+func upsertNonUniqueNameConfig(client client.ConfigClient, apiToDeploy *api.API, conf *config.Config, configName string, renderedConfig string) (api.DynatraceEntity, error) {
 	configId := conf.Coordinate.ConfigId
 	projectId := conf.Coordinate.Project
 

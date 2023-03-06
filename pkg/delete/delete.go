@@ -51,7 +51,7 @@ func DeleteConfigs(client client.Client, apis api.APIs, entriesToDelete map[stri
 	return errs
 }
 
-func deleteClassicConfig(client client.Client, theApi *api.Api, entries []DeletePointer, targetApi string) []error {
+func deleteClassicConfig(client client.Client, theApi *api.API, entries []DeletePointer, targetApi string) []error {
 	errors := make([]error, 0)
 
 	values, err := client.ListConfigs(theApi)

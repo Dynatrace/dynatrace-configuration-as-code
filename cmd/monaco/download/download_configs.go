@@ -219,7 +219,7 @@ func getApisToDownload(apis api.APIs, specificAPIs []string) api.APIs {
 	}
 }
 
-func skipDownloadFilter(api *api.Api) bool {
+func skipDownloadFilter(api *api.API) bool {
 	if api.ShouldSkipDownload() {
 		log.Info("API can not be downloaded and needs manual creation: '%v'.", api.GetId())
 		return true
@@ -227,7 +227,7 @@ func skipDownloadFilter(api *api.Api) bool {
 	return false
 }
 
-func removeDeprecatedEndpoints(api *api.Api) bool {
+func removeDeprecatedEndpoints(api *api.API) bool {
 	if api.DeprecatedBy() != "" {
 		log.Warn("API %q is deprecated by %q and will not be downloaded", api.GetId(), api.DeprecatedBy())
 		return true
