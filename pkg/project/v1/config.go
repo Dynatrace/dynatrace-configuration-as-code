@@ -37,13 +37,13 @@ type Config struct {
 	project    string
 	properties map[string]map[string]string
 	template   template.Template
-	api        *api.Api
+	api        *api.API
 	fileName   string
 }
 
-type configProvider func(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api *api.Api) (*Config, error)
+type configProvider func(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api *api.API) (*Config, error)
 
-func newConfig(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api *api.Api) (*Config, error) {
+func newConfig(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api *api.API) (*Config, error) {
 
 	tmpl, err := template.NewTemplate(fs, fileName)
 	if err != nil {
@@ -53,7 +53,7 @@ func newConfig(fs afero.Fs, id string, project string, fileName string, properti
 	return newConfigWithTemplate(id, project, tmpl, filterProperties(id, properties), api, fileName), nil
 }
 
-func newConfigWithTemplate(id string, project string, template template.Template, properties map[string]map[string]string, api *api.Api, fileName string) *Config {
+func newConfigWithTemplate(id string, project string, template template.Template, properties map[string]map[string]string, api *api.API, fileName string) *Config {
 	return &Config{
 		id:         id,
 		project:    project,
@@ -102,7 +102,7 @@ func SplitDependency(property string) (id string, access string, err error) {
 	return filepath.ToSlash(firstPart), secondPart, nil
 }
 
-func (c *Config) GetApi() *api.Api {
+func (c *Config) GetApi() *api.API {
 	return c.api
 }
 

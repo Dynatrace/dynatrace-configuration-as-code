@@ -21,7 +21,7 @@ import (
 	"strings"
 )
 
-type APIs map[string]*Api
+type APIs map[string]*API
 
 // Contains return true iff requested API is part APIs set
 func (m APIs) Contains(api string) bool {
@@ -42,7 +42,7 @@ func (m APIs) ContainsApiName(path string) bool {
 }
 
 // Filter return true iff specific api needs to be filtered/ removed from list
-type Filter func(api *Api) bool
+type Filter func(api *API) bool
 
 // Filter apply all passed filters and return new filtered array
 func (m APIs) Filter(filters ...Filter) APIs {
@@ -63,7 +63,7 @@ func (m APIs) Filter(filters ...Filter) APIs {
 }
 
 // NoFilter is dummy filter that do nothing.
-func NoFilter(*Api) bool {
+func NoFilter(*API) bool {
 	return false
 }
 
@@ -73,7 +73,7 @@ func RetainByName(APIs []string) Filter {
 		return NoFilter
 	}
 
-	return func(api *Api) bool {
+	return func(api *API) bool {
 		for _, v := range APIs {
 			if v == api.GetId() {
 				return false

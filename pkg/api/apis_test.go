@@ -74,7 +74,7 @@ func TestApiMapFilter(t *testing.T) {
 					"api_2": NewApi("api_2", "", "", false, false, "", false),
 				},
 				filters: []Filter{
-					func(api *Api) bool { return api.GetId() == "api_1" },
+					func(api *API) bool { return api.GetId() == "api_1" },
 				},
 			},
 			expected: expected{
@@ -91,8 +91,8 @@ func TestApiMapFilter(t *testing.T) {
 					"api_2": NewApi("api_2", "", "", false, false, "", false),
 				},
 				filters: []Filter{
-					Filter(func(api *Api) bool { return api.GetId() == "api_1" }),
-					Filter(func(api *Api) bool { return api.GetId() == "api_2" }),
+					Filter(func(api *API) bool { return api.GetId() == "api_1" }),
+					Filter(func(api *API) bool { return api.GetId() == "api_2" }),
 				},
 			},
 			expected: expected{

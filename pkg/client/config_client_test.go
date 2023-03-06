@@ -222,7 +222,7 @@ func Test_success(t *testing.T) {
 func Test_isApplicationNotReadyYet(t *testing.T) {
 	type args struct {
 		resp   rest.Response
-		theApi *api.Api
+		theApi *api.API
 	}
 	tests := []struct {
 		name string
