@@ -18,15 +18,6 @@ package api
 
 var standardApiPropertyNameOfGetAllResponse = "values"
 
-type apiInput struct {
-	apiPath                      string
-	propertyNameOfGetAllResponse string
-	isSingleConfigurationApi     bool
-	isNonUniqueNameApi           bool
-	deprecatedBy                 string
-	skipDownload                 bool
-}
-
 type API struct {
 	id                           string
 	apiPath                      string
@@ -35,82 +26,6 @@ type API struct {
 	isNonUniqueNameApi           bool
 	deprecatedBy                 string
 	skipDownload                 bool
-}
-
-func NewApis() APIs {
-	return getApiMap(configEndpoints)
-}
-
-func NewV1Apis() APIs {
-	return getApiMap(v1ApiMap)
-}
-
-func getApiMap(fromApiInputs map[string]apiInput) APIs {
-
-	apis := make(APIs)
-
-	for id, details := range fromApiInputs {
-		apis[id] = newApi(id, details)
-	}
-
-	return apis
-}
-
-func newApi(id string, input apiInput) *API {
-	if input.isSingleConfigurationApi {
-		return NewSingleConfigurationApi(id, input.apiPath, input.deprecatedBy, input.skipDownload)
-	}
-
-	if input.propertyNameOfGetAllResponse == "" {
-		return NewStandardApi(id, input.apiPath, input.isNonUniqueNameApi, input.deprecatedBy, input.skipDownload)
-	}
-
-	return NewApi(id, input.apiPath, input.propertyNameOfGetAllResponse, false, input.isNonUniqueNameApi, input.deprecatedBy, input.skipDownload)
-}
-
-// NewStandardApi creates an API with propertyNameOfGetAllResponse set to "values"
-func NewStandardApi(
-	id string,
-	apiPath string,
-	isNonUniqueNameApi bool,
-	isDeprecatedBy string,
-	skipDownload bool,
-) *API {
-	return NewApi(id, apiPath, standardApiPropertyNameOfGetAllResponse, false, isNonUniqueNameApi, isDeprecatedBy, skipDownload)
-}
-
-// NewSingleConfigurationApi creates an API with isSingleConfigurationApi set to true
-func NewSingleConfigurationApi(
-	id string,
-	apiPath string,
-	isDeprecatedBy string,
-	skipDownload bool,
-) *API {
-	return NewApi(id, apiPath, "", true, false, isDeprecatedBy, skipDownload)
-}
-
-func NewApi(
-	id string,
-	apiPath string,
-	propertyNameOfGetAllResponse string,
-	isSingleConfigurationApi bool,
-	isNonUniqueNameApi bool,
-	isDeprecatedBy string,
-	skipDownload bool,
-) *API {
-
-	// TODO log warning if the user tries to create an API with a id not present in map above
-	// This means that a user runs monaco with an untested api
-
-	return &API{
-		id:                           id,
-		apiPath:                      apiPath,
-		propertyNameOfGetAllResponse: propertyNameOfGetAllResponse,
-		isSingleConfigurationApi:     isSingleConfigurationApi,
-		isNonUniqueNameApi:           isNonUniqueNameApi,
-		deprecatedBy:                 isDeprecatedBy,
-		skipDownload:                 skipDownload,
-	}
 }
 
 func (a *API) GetUrl(environmentUrl string) string {
@@ -154,4 +69,36 @@ func (a *API) DeprecatedBy() string {
 // Those configs include all configs handling credentials, as well as the extension-API.
 func (a *API) ShouldSkipDownload() bool {
 	return a.skipDownload
+}
+
+// newAPI create new API as a copy of template with a given name
+func newAPI(name string, template *API) *API {
+	n := *template // if API structure is contains pointers or substructure, perform deep copy!!!
+	n.id = name
+	n.applyRules(nameOfGetAllResponse, singleConfigurationApi) //order of applying roles is important!!!
+	return &n
+}
+
+type rule func(*API)
+
+func (a *API) applyRules(rules ...rule) *API {
+	//NOTE: make sure that API structure is composed of only simple/prime data types
+	// api is already a copy!!! (call by value)
+	for _, r := range rules {
+		r(a)
+	}
+	return a
+}
+
+func singleConfigurationApi(api *API) {
+	if api.isSingleConfigurationApi == true {
+		api.propertyNameOfGetAllResponse = ""
+		api.isNonUniqueNameApi = false
+	}
+}
+
+func nameOfGetAllResponse(api *API) {
+	if api.propertyNameOfGetAllResponse == "" {
+		api.propertyNameOfGetAllResponse = standardApiPropertyNameOfGetAllResponse
+	}
 }

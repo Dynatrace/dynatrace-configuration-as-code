@@ -19,50 +19,20 @@
 package api
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/converter/v1environment"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-var testDevEnvironment = v1environment.NewEnvironmentV1("development", "Dev", "", "https://url/to/dev/environment", "DEV")
-var testManagementZoneApi = NewStandardApi("management-zone", "/api/config/v1/managementZones", false, "", false)
-var testDashboardApi = NewStandardApi("dashboard", "/api/config/v1/dashboards", true, "dashboard-v2", false)
-
-var hostsAutoUpdateApiId = "hosts-auto-update"
-var testHostsAutoUpdateApi = NewSingleConfigurationApi(hostsAutoUpdateApiId, "/api/config/v1/hosts/autoupdate", "", false)
-
 func TestGetUrl(t *testing.T) {
-
-	url := testManagementZoneApi.GetUrl(testDevEnvironment.GetEnvironmentUrl())
-	assert.Equal(t, "https://url/to/dev/environment/api/config/v1/managementZones", url)
+	assert.Equal(t, "https://url/to/dev/environment/api/config/v1/managementZones", (&API{apiPath: "/api/config/v1/managementZones"}).GetUrl(testDevEnvironment.GetEnvironmentUrl()))
 }
 
-func TestCreateApis(t *testing.T) {
-	apis := NewApis()
+func Test_newAPI(t *testing.T) {
+	template := &API{apiPath: "path_to_heaven"}
+	actual := newAPI("newID", template)
+	assert.NotSame(t, template, actual, "references must be different")
 
-	assert.Contains(t, apis, "notification", "Expected `notification` key in KnownApis")
-	assert.Equal(t, "https://url/to/dev/environment/api/config/v1/notifications", apis["notification"].GetUrl(testDevEnvironment.GetEnvironmentUrl()), "Expected to get `notification` API url")
-}
-
-func TestCreateApisResultsInError(t *testing.T) {
-	apis := NewApis()
-
-	assert.NotContainsf(t, apis, "notexistingkey", "Expected error on `notexistingkey` key in createApis")
-}
-
-func TestIsSingleConfigurationApi(t *testing.T) {
-	isSingleConfigurationApi := testDashboardApi.IsSingleConfigurationApi()
-	assert.False(t, isSingleConfigurationApi)
-
-	isSingleConfigurationApi = testHostsAutoUpdateApi.IsSingleConfigurationApi()
-	assert.True(t, isSingleConfigurationApi)
-}
-
-func TestIsNonUniqueNameApi(t *testing.T) {
-	isNonUniqueNameApi := testDashboardApi.IsNonUniqueNameApi()
-	assert.True(t, isNonUniqueNameApi)
-
-	isNonUniqueNameApi = testHostsAutoUpdateApi.IsNonUniqueNameApi()
-	assert.False(t, isNonUniqueNameApi)
+	basicAPI := newAPI("name", &API{apiPath: "path_to_heaven"})
+	assert.Equal(t, API{id: "name", apiPath: "path_to_heaven", propertyNameOfGetAllResponse: standardApiPropertyNameOfGetAllResponse}, *basicAPI)
 }
