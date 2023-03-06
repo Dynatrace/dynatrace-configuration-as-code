@@ -18,8 +18,20 @@
 
 package api
 
-import "testing"
-import "github.com/stretchr/testify/assert"
+import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/converter/v1environment"
+	"github.com/stretchr/testify/assert"
+	"testing"
+)
+
+var testDevEnvironment = v1environment.NewEnvironmentV1("development", "Dev", "", "https://url/to/dev/environment", "DEV")
+
+func TestNewApis(t *testing.T) {
+	apis := NewApis()
+
+	assert.Contains(t, apis, "notification", "Expected `notification` key in KnownApis")
+	assert.Equal(t, "https://url/to/dev/environment/api/config/v1/notifications", apis["notification"].GetUrl(testDevEnvironment.GetEnvironmentUrl()), "Expected to get `notification` API url")
+}
 
 func TestContains(t *testing.T) {
 	apis := NewApis()
@@ -54,15 +66,15 @@ func TestApiMapFilter(t *testing.T) {
 			name: "without filter",
 			given: given{
 				apis: APIs{
-					"api_1": NewApi("api_1", "", "", false, false, "", false),
-					"api_2": NewApi("api_2", "", "", false, false, "", false),
+					"api_1": &API{id: "api_1"},
+					"api_2": &API{id: "api_2"},
 				},
 				filters: nil,
 			},
 			expected: expected{
 				apis: APIs{
-					"api_1": NewApi("api_1", "", "", false, false, "", false),
-					"api_2": NewApi("api_2", "", "", false, false, "", false),
+					"api_1": &API{id: "api_1"},
+					"api_2": &API{id: "api_2"},
 				},
 			},
 		},
@@ -70,8 +82,8 @@ func TestApiMapFilter(t *testing.T) {
 			name: "filter with one filter",
 			given: given{
 				apis: APIs{
-					"api_1": NewApi("api_1", "", "", false, false, "", false),
-					"api_2": NewApi("api_2", "", "", false, false, "", false),
+					"api_1": &API{id: "api_1"},
+					"api_2": &API{id: "api_2"},
 				},
 				filters: []Filter{
 					func(api *API) bool { return api.GetId() == "api_1" },
@@ -79,7 +91,7 @@ func TestApiMapFilter(t *testing.T) {
 			},
 			expected: expected{
 				apis: APIs{
-					"api_2": NewApi("api_2", "", "", false, false, "", false),
+					"api_2": &API{id: "api_2"},
 				},
 			},
 		},
@@ -87,8 +99,8 @@ func TestApiMapFilter(t *testing.T) {
 			name: "filter with two filters",
 			given: given{
 				apis: APIs{
-					"api_1": NewApi("api_1", "", "", false, false, "", false),
-					"api_2": NewApi("api_2", "", "", false, false, "", false),
+					"api_1": &API{id: "api_1"},
+					"api_2": &API{id: "api_2"},
 				},
 				filters: []Filter{
 					Filter(func(api *API) bool { return api.GetId() == "api_1" }),
@@ -103,15 +115,15 @@ func TestApiMapFilter(t *testing.T) {
 			name: "NoFilter",
 			given: given{
 				apis: APIs{
-					"api_1": NewApi("api_1", "", "", false, false, "", false),
-					"api_2": NewApi("api_2", "", "", false, false, "", false),
+					"api_1": &API{id: "api_1"},
+					"api_2": &API{id: "api_2"},
 				},
 				filters: []Filter{NoFilter},
 			},
 			expected: expected{
 				apis: APIs{
-					"api_1": NewApi("api_1", "", "", false, false, "", false),
-					"api_2": NewApi("api_2", "", "", false, false, "", false),
+					"api_1": &API{id: "api_1"},
+					"api_2": &API{id: "api_2"},
 				},
 			},
 		},
@@ -119,15 +131,15 @@ func TestApiMapFilter(t *testing.T) {
 			name: "RetainByName - without arguments",
 			given: given{
 				apis: APIs{
-					"api_1": NewApi("api_1", "", "", false, false, "", false),
-					"api_2": NewApi("api_2", "", "", false, false, "", false),
+					"api_1": &API{id: "api_1"},
+					"api_2": &API{id: "api_2"},
 				},
 				filters: []Filter{RetainByName([]string{})},
 			},
 			expected: expected{
 				apis: APIs{
-					"api_1": NewApi("api_1", "", "", false, false, "", false),
-					"api_2": NewApi("api_2", "", "", false, false, "", false),
+					"api_1": &API{id: "api_1"},
+					"api_2": &API{id: "api_2"},
 				},
 			},
 		},
@@ -135,22 +147,22 @@ func TestApiMapFilter(t *testing.T) {
 			name: "RetainByName - with arguments",
 			given: given{
 				apis: APIs{
-					"api_1": NewApi("api_1", "", "", false, false, "", false),
-					"api_2": NewApi("api_2", "", "", false, false, "", false),
+					"api_1": &API{id: "api_1"},
+					"api_2": &API{id: "api_2"},
 				},
 				filters: []Filter{RetainByName([]string{"api_1"})},
 			},
 			expected: expected{
 				apis: APIs{
-					"api_1": NewApi("api_1", "", "", false, false, "", false),
+					"api_1": &API{id: "api_1"},
 				},
 			},
 		}, {
 			name: "RetainByName - with non existing argument",
 			given: given{
 				apis: APIs{
-					"api_1": NewApi("api_1", "", "", false, false, "", false),
-					"api_2": NewApi("api_2", "", "", false, false, "", false),
+					"api_1": &API{id: "api_1"},
+					"api_2": &API{id: "api_2"},
 				},
 				filters: []Filter{RetainByName([]string{"api_3"})},
 			},

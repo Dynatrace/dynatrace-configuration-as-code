@@ -23,6 +23,25 @@ import (
 
 type APIs map[string]*API
 
+func NewApis() APIs {
+	return getAPIs(configEndpoints)
+}
+
+func NewV1Apis() APIs {
+	return getAPIs(configEndpointsV1)
+}
+
+func getAPIs(fromApiInputs APIs) APIs {
+	apis := make(APIs)
+	for id, a := range fromApiInputs {
+		apis[id] = newAPI(id, a)
+		//a.copy().setID(id).applyRules(nameOfGetAllResponse, singleConfigurationApi)
+		//newAPI(*a, setId(id), nameOfGetAllResponse, singleConfigurationApi) //order of applying roles is important!!!
+	}
+
+	return apis
+}
+
 // Contains return true iff requested API is part APIs set
 func (m APIs) Contains(api string) bool {
 	_, ok := m[api]
@@ -41,9 +60,6 @@ func (m APIs) ContainsApiName(path string) bool {
 	return false
 }
 
-// Filter return true iff specific api needs to be filtered/ removed from list
-type Filter func(api *API) bool
-
 // Filter apply all passed filters and return new filtered array
 func (m APIs) Filter(filters ...Filter) APIs {
 	apis := make(APIs)
@@ -61,6 +77,9 @@ func (m APIs) Filter(filters ...Filter) APIs {
 	}
 	return apis
 }
+
+// Filter return true iff specific api needs to be filtered/ removed from list
+type Filter func(api *API) bool
 
 // NoFilter is dummy filter that do nothing.
 func NoFilter(*API) bool {
