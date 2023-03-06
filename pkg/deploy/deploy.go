@@ -26,16 +26,18 @@ import (
 
 // DeployConfigsOptions defines additional options used by DeployConfigs
 type DeployConfigsOptions struct {
+	// ContinueOnErr states that the deployment continues even when there happens to be an
+	// error while deploying a certain configuration
 	ContinueOnErr bool
-	DryRun        bool
+	// DryRun states that the deployment shall just run in dry-run mode, meaning
+	// that actual deployment of the configuration to a tenant will be skipped
+	DryRun bool
 }
 
 // DeployConfigs deploys the given configs with the given apis via the given client
 // NOTE: the given configs need to be sorted, otherwise deployment will
 // probably fail, as references cannot be resolved
-func DeployConfigs(client client.Client, apis api.ApiMap,
-	sortedConfigs []config.Config, opts DeployConfigsOptions) []error {
-
+func DeployConfigs(client client.Client, apis api.ApiMap, sortedConfigs []config.Config, opts DeployConfigsOptions) []error {
 	entityMap := newEntityMap(apis)
 	var errors []error
 

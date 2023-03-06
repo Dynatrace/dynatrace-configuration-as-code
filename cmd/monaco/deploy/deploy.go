@@ -36,7 +36,7 @@ import (
 )
 
 func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironments []string, environmentGroup string,
-	specificProject []string, dryRun, continueOnError bool) error {
+	specificProject []string, opts deploy.DeployConfigsOptions) error {
 
 	deploymentManifestPath = filepath.Clean(deploymentManifestPath)
 	absManifestPath, err := filepath.Abs(deploymentManifestPath)
@@ -117,7 +117,7 @@ func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironments []s
 		log.Info("  - %s", name)
 	}
 
-	err = execDeployment(sortedConfigs, environments, continueOnError, dryRun, apis)
+	err = execDeployment(sortedConfigs, environments, apis, opts)
 
 	if err != nil {
 		return err
@@ -146,15 +146,15 @@ func loadProjectsToDeploy(specificProject []string, projects []project.Project, 
 	return projects, nil
 }
 
-func execDeployment(sortedConfigs map[string][]config.Config, environmentMap map[string]manifest.EnvironmentDefinition, continueOnError bool, dryRun bool, apis map[string]api.Api) error {
+func execDeployment(sortedConfigs project.ConfigsPerType, environments manifest.Environments, apis api.ApiMap, opts deploy.DeployConfigsOptions) error {
 	var deploymentErrors []error
 
 	for envName, configs := range sortedConfigs {
-		logDeploymentInfo(dryRun, envName)
-		env, found := environmentMap[envName]
+		logDeploymentInfo(opts.DryRun, envName)
+		env, found := environments[envName]
 
 		if !found {
-			if continueOnError {
+			if opts.ContinueOnErr {
 				deploymentErrors = append(deploymentErrors, fmt.Errorf("cannot find environment `%s`", envName))
 				continue
 			} else {
@@ -162,9 +162,9 @@ func execDeployment(sortedConfigs map[string][]config.Config, environmentMap map
 			}
 		}
 
-		dtClient, err := createDynatraceClient(env, dryRun)
+		dtClient, err := createDynatraceClient(env, opts.DryRun)
 		if err != nil {
-			if continueOnError {
+			if opts.ContinueOnErr {
 				deploymentErrors = append(deploymentErrors, err)
 				continue
 			} else {
@@ -172,16 +172,16 @@ func execDeployment(sortedConfigs map[string][]config.Config, environmentMap map
 			}
 		}
 
-		errs := deploy.DeployConfigs(dtClient, apis, configs, deploy.DeployConfigsOptions{ContinueOnErr: continueOnError, DryRun: dryRun})
+		errs := deploy.DeployConfigs(dtClient, apis, configs, opts)
 		deploymentErrors = append(deploymentErrors, errs...)
 	}
 
 	if deploymentErrors != nil {
 		printErrorReport(deploymentErrors)
 
-		return fmt.Errorf("errors during %s", getOperationNounForLogging(dryRun))
+		return fmt.Errorf("errors during %s", getOperationNounForLogging(opts.DryRun))
 	} else {
-		log.Info("%s finished without errors", getOperationNounForLogging(dryRun))
+		log.Info("%s finished without errors", getOperationNounForLogging(opts.DryRun))
 	}
 
 	return nil

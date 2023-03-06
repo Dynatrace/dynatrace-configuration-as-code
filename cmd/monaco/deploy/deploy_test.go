@@ -17,6 +17,7 @@
 package deploy
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/deploy"
 	p "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
@@ -177,7 +178,7 @@ func TestDeploy_ReportsErrorWhenRunningOnV1Config(t *testing.T) {
 	manifestPath, _ := filepath.Abs("manifest.yaml")
 	_ = afero.WriteFile(testFs, manifestPath, []byte("manifestVersion: 1.0\nprojects:\n- name: project\nenvironmentGroups:\n- name: default\n  environments:\n  - name: environment1\n    url:\n      type: environment\n      value: ENV_URL\n    token:\n      name: ENV_TOKEN\n"), 0644)
 
-	err := Deploy(testFs, "manifest.yaml", []string{}, "", []string{}, true, false)
+	err := Deploy(testFs, "manifest.yaml", []string{}, "", []string{}, deploy.DeployConfigsOptions{DryRun: true})
 	assert.ErrorContains(t, err, "error while loading projects")
 }
 
@@ -195,6 +196,6 @@ func TestDeploy_ReportsErrorForBrokenV2Config(t *testing.T) {
 	manifestPath, _ := filepath.Abs("manifest.yaml")
 	_ = afero.WriteFile(testFs, manifestPath, []byte("manifestVersion: 1.0\nprojects:\n- name: project\nenvironmentGroups:\n- name: default\n  environments:\n  - name: environment1\n    url:\n      type: environment\n      value: ENV_URL\n    token:\n      name: ENV_TOKEN\n"), 0644)
 
-	err := Deploy(testFs, "manifest.yaml", []string{}, "", []string{}, true, false)
+	err := Deploy(testFs, "manifest.yaml", []string{}, "", []string{}, deploy.DeployConfigsOptions{DryRun: true})
 	assert.ErrorContains(t, err, "error while loading projects")
 }

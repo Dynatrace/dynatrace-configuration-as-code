@@ -22,6 +22,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner/completion"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/deploy"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -47,7 +48,7 @@ func GetDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 				return err
 			}
 
-			return Deploy(fs, manifestName, environment, group, project, dryRun, continueOnError)
+			return Deploy(fs, manifestName, environment, group, project, deploy.DeployConfigsOptions{ContinueOnErr: continueOnError, DryRun: dryRun})
 		},
 	}
 
