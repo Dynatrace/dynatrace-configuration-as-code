@@ -158,7 +158,7 @@ func filterEnvironments(environments manifest.Environments, environmentGroup str
 
 func loadProjects(fs afero.Fs, manifestPath string, man *manifest.Manifest) ([]project.Project, error) {
 	projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
-		KnownApis:       api.GetApiNameLookup(api.NewApis()),
+		KnownApis:       api.NewApis().GetApiNameLookup(),
 		WorkingDir:      filepath.Dir(manifestPath),
 		Manifest:        *man,
 		ParametersSerde: config.DefaultParameterParsers,

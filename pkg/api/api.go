@@ -16,11 +16,6 @@
 
 package api
 
-import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
-	"strings"
-)
-
 var standardApiPropertyNameOfGetAllResponse = "values"
 
 type apiInput struct {
@@ -42,39 +37,23 @@ type Api struct {
 	skipDownload                 bool
 }
 
-type ApiMap map[string]*Api
-
-func NewApis() ApiMap {
+func NewApis() APIs {
 	return getApiMap(configEndpoints)
 }
 
-func NewV1Apis() ApiMap {
+func NewV1Apis() APIs {
 	return getApiMap(v1ApiMap)
 }
 
-func getApiMap(fromApiInputs map[string]apiInput) ApiMap {
+func getApiMap(fromApiInputs map[string]apiInput) APIs {
 
-	apis := make(ApiMap)
+	apis := make(APIs)
 
 	for id, details := range fromApiInputs {
 		apis[id] = newApi(id, details)
 	}
 
 	return apis
-}
-
-func GetApiNames(apis ApiMap) []string {
-	return maps.Keys(apis)
-}
-
-func GetApiNameLookup(apis ApiMap) map[string]struct{} {
-	lookup := make(map[string]struct{}, len(apis))
-
-	for k := range apis {
-		lookup[k] = struct{}{}
-	}
-
-	return lookup
 }
 
 func newApi(id string, input apiInput) *Api {
@@ -175,22 +154,4 @@ func (a *Api) DeprecatedBy() string {
 // Those configs include all configs handling credentials, as well as the extension-API.
 func (a *Api) ShouldSkipDownload() bool {
 	return a.skipDownload
-}
-
-// Contains return true iff requested API is part of particular ApiMap
-func (m ApiMap) Contains(api string) bool {
-	_, ok := m[api]
-	return ok
-}
-
-// ContainsApiName tests if part of project folder path contains an API
-// folders with API in path are not valid projects
-func (m ApiMap) ContainsApiName(path string) bool {
-	for api := range m {
-		if strings.Contains(path, api) {
-			return true
-		}
-	}
-
-	return false
 }

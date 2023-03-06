@@ -58,9 +58,9 @@ func testCreateProjectBuilderWithMock(configProvider configProvider, fs afero.Fs
 	}
 }
 
-func createTestApis() api.ApiMap {
+func createTestApis() api.APIs {
 
-	apis := make(api.ApiMap)
+	apis := make(api.APIs)
 	apis["alerting-profile"] = testAlertingProfileApi
 	apis["management-zone"] = testManagementZoneApi
 	apis["dashboard"] = testDashboardApi

@@ -62,7 +62,7 @@ func TestDoCleanup(t *testing.T) {
 
 }
 
-func cleanupTestConfigs(t *testing.T, apis api.ApiMap, client client.ConfigClient, testSuffixRegex *regexp.Regexp) int {
+func cleanupTestConfigs(t *testing.T, apis api.APIs, client client.ConfigClient, testSuffixRegex *regexp.Regexp) int {
 	deletedConfigs := 0
 	for _, api := range apis {
 		if api.GetId() == "calculated-metrics-log" {

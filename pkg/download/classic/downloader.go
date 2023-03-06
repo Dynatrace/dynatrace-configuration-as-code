@@ -32,7 +32,7 @@ import (
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 )
 
-func DownloadAllConfigs(apisToDownload api.ApiMap, client client.Client, projectName string) project.ConfigsPerType {
+func DownloadAllConfigs(apisToDownload api.APIs, client client.Client, projectName string) project.ConfigsPerType {
 	return NewDownloader(client).DownloadAll(apisToDownload, projectName)
 }
 
@@ -69,7 +69,7 @@ func NewDownloader(client client.Client, opts ...func(*Downloader)) *Downloader 
 // DownloadAllConfigs downloads all specified APIs from a given environment.
 //
 // See package documentation for implementation details.
-func (d *Downloader) DownloadAll(apisToDownload api.ApiMap, projectName string) project.ConfigsPerType {
+func (d *Downloader) DownloadAll(apisToDownload api.APIs, projectName string) project.ConfigsPerType {
 	results := make(project.ConfigsPerType, len(apisToDownload))
 	mutex := sync.Mutex{}
 	wg := sync.WaitGroup{}

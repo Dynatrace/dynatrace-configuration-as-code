@@ -30,7 +30,7 @@ type DeletePointer struct {
 	ConfigId string
 }
 
-func DeleteConfigs(client client.Client, apis api.ApiMap, entriesToDelete map[string][]DeletePointer) []error {
+func DeleteConfigs(client client.Client, apis api.APIs, entriesToDelete map[string][]DeletePointer) []error {
 	errs := make([]error, 0)
 
 	for targetApi, entries := range entriesToDelete {
@@ -159,7 +159,7 @@ func filterValuesToDelete(entries []DeletePointer, existingValues []api.Value, a
 	return result, errs
 }
 
-func DeleteAllConfigs(client client.ConfigClient, apis api.ApiMap) (errors []error) {
+func DeleteAllConfigs(client client.ConfigClient, apis api.APIs) (errors []error) {
 
 	for _, api := range apis {
 		log.Info("Collecting configs of type %s...", api.GetId())

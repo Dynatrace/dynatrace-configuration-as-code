@@ -30,7 +30,7 @@ func TestDownloadAllConfigs_FailedToFindConfigsToDownload(t *testing.T) {
 	client.EXPECT().ListConfigs(gomock.Any()).Return([]api.Value{}, fmt.Errorf("NO"))
 	downloader := NewDownloader(client)
 	testAPI := api.NewApi("API_ID", "API_PATH", "", false, true, "", false)
-	apiMap := api.ApiMap{"API_ID": testAPI}
+	apiMap := api.APIs{"API_ID": testAPI}
 
 	assert.Len(t, downloader.DownloadAll(apiMap, "project"), 0)
 }
@@ -41,7 +41,7 @@ func TestDownloadAll_NoConfigsToDownloadFound(t *testing.T) {
 	downloader := NewDownloader(client)
 	testAPI := api.NewApi("API_ID", "API_PATH", "", false, true, "", false)
 
-	apiMap := api.ApiMap{"API_ID": testAPI}
+	apiMap := api.APIs{"API_ID": testAPI}
 
 	configurations := downloader.DownloadAll(apiMap, "project")
 	assert.Len(t, configurations, 0)
@@ -63,7 +63,7 @@ func TestDownloadAll_ConfigsDownloaded(t *testing.T) {
 	client.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 	client.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 
-	apiMap := api.ApiMap{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
+	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
 	configurations := downloader.DownloadAll(apiMap, "project")
 	assert.Len(t, configurations, 2)
@@ -85,7 +85,7 @@ func TestDownloadAll_ConfigsDownloaded_WithEmptyFilter(t *testing.T) {
 	client.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 	client.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 
-	apiMap := api.ApiMap{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
+	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
 	configurations := downloader.DownloadAll(apiMap, "project")
 	assert.Len(t, configurations, 2)
@@ -96,7 +96,7 @@ func TestDownloadAll_SingleConfigurationAPI(t *testing.T) {
 	client.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 	downloader := NewDownloader(client)
 	testAPI1 := api.NewApi("API_ID_1", "API_PATH_1", "", true, true, "", false)
-	apiMap := api.ApiMap{"API_ID_1": testAPI1}
+	apiMap := api.APIs{"API_ID_1": testAPI1}
 
 	configurations := downloader.DownloadAll(apiMap, "project")
 	assert.Len(t, configurations, 1)
@@ -125,7 +125,7 @@ func TestDownloadAll_ErrorFetchingConfig(t *testing.T) {
 		return []byte("{}"), nil
 	}).Times(2)
 
-	apiMap := api.ApiMap{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
+	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 	configurations := downloader.DownloadAll(apiMap, "project")
 	assert.Len(t, configurations, 1)
 }
@@ -153,7 +153,7 @@ func TestDownloadAll_SkipConfigThatShouldNotBePersisted(t *testing.T) {
 	testAPI2 := api.NewApi("API_ID_2", "API_PATH_2", "", false, true, "", false)
 	client.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil).Times(2)
 
-	apiMap := api.ApiMap{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
+	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
 	configurations := downloader.DownloadAll(apiMap, "project")
 	assert.Len(t, configurations, 1)
@@ -182,7 +182,7 @@ func TestDownloadAll_SkipConfigBeforeDownload(t *testing.T) {
 	testAPI2 := api.NewApi("API_ID_2", "API_PATH_2", "", false, true, "", false)
 	client.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 
-	apiMap := api.ApiMap{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
+	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
 	configurations := downloader.DownloadAll(apiMap, "project")
 	assert.Len(t, configurations, 1)
@@ -192,7 +192,7 @@ func TestDownloadAll_EmptyAPIMap_NothingIsDownloaded(t *testing.T) {
 	client := client.NewMockClient(gomock.NewController(t))
 	downloader := NewDownloader(client)
 
-	configurations := downloader.DownloadAll(api.ApiMap{}, "project")
+	configurations := downloader.DownloadAll(api.APIs{}, "project")
 	assert.Len(t, configurations, 0)
 }
 
@@ -211,7 +211,7 @@ func TestDownloadAll_APIWithoutAnyConfigAvailableAreNotDownloaded(t *testing.T) 
 	testAPI2 := api.NewApi("API_ID_2", "API_PATH_2", "", false, true, "", false)
 	client.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 
-	apiMap := api.ApiMap{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
+	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
 	configurations := downloader.DownloadAll(apiMap, "project")
 	assert.Len(t, configurations, 1)
@@ -233,7 +233,7 @@ func TestDownloadAll_MalformedResponseFromAnAPI(t *testing.T) {
 	client.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("-1"), nil)
 	client.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 
-	apiMap := api.ApiMap{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
+	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
 	configurations := downloader.DownloadAll(apiMap, "project")
 	assert.Len(t, configurations, 1)

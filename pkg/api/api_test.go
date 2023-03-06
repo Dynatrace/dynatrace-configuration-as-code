@@ -51,14 +51,6 @@ func TestCreateApisResultsInError(t *testing.T) {
 	assert.NotContainsf(t, apis, "notexistingkey", "Expected error on `notexistingkey` key in createApis")
 }
 
-func TestIfFolderContainsApiInPath(t *testing.T) {
-	apis := NewApis()
-	assert.False(t, apis.ContainsApiName("trillian"), "Check if `trillian` is an API")
-	assert.True(t, apis.ContainsApiName("extension"), "Check if `extension` is an API")
-	assert.True(t, apis.ContainsApiName("/project/sub-project/extension/subfolder"), "Check if `extension` is an API")
-	assert.False(t, apis.ContainsApiName("/project/sub-project"), "Check if `extension` is an API")
-}
-
 func TestIsSingleConfigurationApi(t *testing.T) {
 	isSingleConfigurationApi := testDashboardApi.IsSingleConfigurationApi()
 	assert.False(t, isSingleConfigurationApi)
@@ -73,10 +65,4 @@ func TestIsNonUniqueNameApi(t *testing.T) {
 
 	isNonUniqueNameApi = testHostsAutoUpdateApi.IsNonUniqueNameApi()
 	assert.False(t, isNonUniqueNameApi)
-}
-
-func TestContains(t *testing.T) {
-	apis := NewApis()
-	assert.True(t, apis.Contains("alerting-profile"))
-	assert.False(t, apis.Contains("something"))
 }

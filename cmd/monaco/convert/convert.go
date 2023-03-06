@@ -76,7 +76,7 @@ func convert(fs afero.Fs, workingDir string, environmentsFile string, outputFold
 	return nil
 }
 
-func loadConfigs(fs afero.Fs, workingDir string, apis api.ApiMap,
+func loadConfigs(fs afero.Fs, workingDir string, apis api.APIs,
 	environmentsFile string) (manifest.Manifest, []projectv2.Project, []error) {
 
 	environments, errors := v1environment.LoadEnvironmentsWithoutTemplating(environmentsFile, fs)

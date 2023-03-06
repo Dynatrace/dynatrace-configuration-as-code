@@ -34,7 +34,7 @@ import (
 )
 
 var dashboardApi = api.NewStandardApi("dashboard", "dashboard", false, "dashboard-v2", false)
-var testApiMap = api.ApiMap{"dashboard": dashboardApi}
+var testApiMap = api.APIs{"dashboard": dashboardApi}
 
 func TestDeployConfig(t *testing.T) {
 	name := "test"
@@ -382,7 +382,7 @@ func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
 
 func TestDeployConfigsWithNoConfigs(t *testing.T) {
 	client := &client.DummyClient{}
-	var apis api.ApiMap
+	var apis api.APIs
 	var sortedConfigs []config.Config
 
 	errors := DeployConfigs(client, apis, sortedConfigs, DeployConfigsOptions{})
@@ -391,7 +391,7 @@ func TestDeployConfigsWithNoConfigs(t *testing.T) {
 
 func TestDeployConfigsWithOneConfigToSkip(t *testing.T) {
 	client := &client.DummyClient{}
-	var apis api.ApiMap
+	var apis api.APIs
 	sortedConfigs := []config.Config{
 		{Skip: true},
 	}
@@ -401,7 +401,7 @@ func TestDeployConfigsWithOneConfigToSkip(t *testing.T) {
 
 func TestDeployConfigsTargetingSettings(t *testing.T) {
 	client := client.NewMockClient(gomock.NewController(t))
-	var apis api.ApiMap
+	var apis api.APIs
 	sortedConfigs := []config.Config{
 		{
 			Template: generateDummyTemplate(t),
@@ -437,7 +437,7 @@ func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
 	client := client.NewMockClient(gomock.NewController(t))
 	client.EXPECT().UpsertConfigByName(gomock.Any(), theConfigName, gomock.Any()).Times(1)
 
-	apis := api.ApiMap{theApiName: theApi}
+	apis := api.APIs{theApiName: theApi}
 	parameters := []topologysort.ParameterWithName{
 		{
 			Name: config.NameParameter,
@@ -470,7 +470,7 @@ func TestDeployConfigsTargetingClassicConfigNonUniqueWithExistingCfgsOfSameName(
 	client := client.NewMockClient(gomock.NewController(t))
 	client.EXPECT().UpsertConfigByNonUniqueNameAndId(gomock.Any(), gomock.Any(), theConfigName, gomock.Any())
 
-	apis := api.ApiMap{theApiName: theApi}
+	apis := api.APIs{theApiName: theApi}
 	parameters := []topologysort.ParameterWithName{
 		{
 			Name: config.NameParameter,
@@ -500,7 +500,7 @@ func TestDeployConfigsNoApi(t *testing.T) {
 
 	client := client.NewMockClient(gomock.NewController(t))
 
-	apis := api.ApiMap{}
+	apis := api.APIs{}
 	parameters := []topologysort.ParameterWithName{
 		{
 			Name: config.NameParameter,
@@ -544,7 +544,7 @@ func TestDeployConfigsNoApi(t *testing.T) {
 func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
 	theApiName := "theApiName"
 	theApi := api.NewApi(theApiName, "path", "", false, false, "", false)
-	apis := api.ApiMap{theApiName: theApi}
+	apis := api.APIs{theApiName: theApi}
 	sortedConfigs := []config.Config{
 		{
 			Parameters: toParameterMap([]topologysort.ParameterWithName{}), // missing name parameter leads to deployment failure

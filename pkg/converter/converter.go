@@ -55,7 +55,7 @@ type configConvertContext struct {
 	*ConverterContext
 	ProjectId             string
 	KnownListParameterIds map[string]struct{}
-	V1Apis                api.ApiMap
+	V1Apis                api.APIs
 }
 
 type ConvertConfigError struct {

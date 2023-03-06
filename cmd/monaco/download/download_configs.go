@@ -132,7 +132,7 @@ type downloadOptions struct {
 	onlySettings    bool
 }
 
-func doDownloadConfigs(fs afero.Fs, apis api.ApiMap, opts downloadOptions) error {
+func doDownloadConfigs(fs afero.Fs, apis api.APIs, opts downloadOptions) error {
 	err := preDownloadValidations(fs, opts.downloadOptionsShared)
 	if err != nil {
 		return err
@@ -155,7 +155,7 @@ func doDownloadConfigs(fs afero.Fs, apis api.ApiMap, opts downloadOptions) error
 	return writeConfigs(downloadedConfigs, opts.downloadOptionsShared, fs)
 }
 
-func validateSpecificAPIs(a api.ApiMap, apiNames []string) (valid bool, unknownAPIs []string) {
+func validateSpecificAPIs(a api.APIs, apiNames []string) (valid bool, unknownAPIs []string) {
 	for _, v := range apiNames {
 		if !a.Contains(v) {
 			unknownAPIs = append(unknownAPIs, v)
@@ -164,7 +164,7 @@ func validateSpecificAPIs(a api.ApiMap, apiNames []string) (valid bool, unknownA
 	return len(unknownAPIs) == 0, unknownAPIs
 }
 
-func downloadConfigs(apis api.ApiMap, opts downloadOptions) (project.ConfigsPerType, error) {
+func downloadConfigs(apis api.APIs, opts downloadOptions) (project.ConfigsPerType, error) {
 	c, err := opts.getDynatraceClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Dynatrace client: %w", err)
@@ -211,7 +211,7 @@ func downloadConfigs(apis api.ApiMap, opts downloadOptions) (project.ConfigsPerT
 }
 
 // Get all v2 apis and filter for the selected ones
-func getApisToDownload(apis api.ApiMap, specificAPIs []string) api.ApiMap {
+func getApisToDownload(apis api.APIs, specificAPIs []string) api.APIs {
 	if len(specificAPIs) > 0 {
 		return apis.Filter(api.RetainByName(specificAPIs), skipDownloadFilter)
 	} else {
