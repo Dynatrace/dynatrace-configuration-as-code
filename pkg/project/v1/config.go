@@ -28,24 +28,11 @@ import (
 	"github.com/spf13/afero"
 )
 
-//go:generate mockgen -source=config.go -destination=config_mock.go -package=v1 Config
-
-type Config interface {
-	GetApi() api.Api
-	HasDependencyOn(config Config) bool
-	GetFilePath() string
-	GetFullQualifiedId() string
-	GetType() string
-	GetId() string
-	GetProject() string
-	GetProperties() map[string]map[string]string
-}
-
 var dependencySuffixes = []string{".id", ".name"}
 
 const SkipConfigDeploymentParameter = "skipDeployment"
 
-type configImpl struct {
+type Config struct {
 	id         string
 	project    string
 	properties map[string]map[string]string
@@ -54,29 +41,20 @@ type configImpl struct {
 	fileName   string
 }
 
-// configFactory is used to create new Configs - this is needed for testing purposes
-type ConfigFactory interface {
-	NewConfig(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (Config, error)
-}
+type configProvider func(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (*Config, error)
 
-type configFactoryImpl struct{}
+func newConfig(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (*Config, error) {
 
-func NewConfigFactory() ConfigFactory {
-	return &configFactoryImpl{}
-}
-
-func NewConfig(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (Config, error) {
-
-	template, err := template.NewTemplate(fs, fileName)
+	tmpl, err := template.NewTemplate(fs, fileName)
 	if err != nil {
 		return nil, fmt.Errorf("loading config %s failed with %w", project+string(os.PathSeparator)+id, err)
 	}
 
-	return newConfig(id, project, template, filterProperties(id, properties), api, fileName), nil
+	return newConfigWithTemplate(id, project, tmpl, filterProperties(id, properties), api, fileName), nil
 }
 
-func newConfig(id string, project string, template template.Template, properties map[string]map[string]string, api api.Api, fileName string) Config {
-	return &configImpl{
+func newConfigWithTemplate(id string, project string, template template.Template, properties map[string]map[string]string, api api.Api, fileName string) *Config {
+	return &Config{
 		id:         id,
 		project:    project,
 		template:   template,
@@ -124,29 +102,29 @@ func SplitDependency(property string) (id string, access string, err error) {
 	return filepath.ToSlash(firstPart), secondPart, nil
 }
 
-func (c *configImpl) GetApi() api.Api {
+func (c *Config) GetApi() api.Api {
 	return c.api
 }
 
-func (c *configImpl) GetType() string {
+func (c *Config) GetType() string {
 	return c.api.GetId()
 }
 
-func (c *configImpl) GetId() string {
+func (c *Config) GetId() string {
 	return c.id
 }
 
-func (c *configImpl) GetProject() string {
+func (c *Config) GetProject() string {
 	return c.project
 }
 
-func (c *configImpl) GetProperties() map[string]map[string]string {
+func (c *Config) GetProperties() map[string]map[string]string {
 	return c.properties
 }
 
 // HasDependencyOn checks if one config depends on the given parameter config
 // Having a dependency means, that the config having the dependency needs to be applied AFTER the config it depends on
-func (c *configImpl) HasDependencyOn(config Config) bool {
+func (c *Config) HasDependencyOn(config *Config) bool {
 	for _, v := range c.properties {
 		for _, value := range v {
 			valueIndex := strings.LastIndex(value, ".")
@@ -188,20 +166,11 @@ func (c *configImpl) HasDependencyOn(config Config) bool {
 }
 
 // GetFilePath returns the path (file name) of the config json
-func (c *configImpl) GetFilePath() string {
+func (c *Config) GetFilePath() string {
 	return c.fileName
 }
 
 // GetFullQualifiedId returns the full qualified id of the config based on project, api and config id
-func (c *configImpl) GetFullQualifiedId() string {
+func (c *Config) GetFullQualifiedId() string {
 	return strings.Join([]string{c.GetProject(), c.GetApi().GetId(), c.GetId()}, string(os.PathSeparator))
-}
-
-// NewConfig creates a new Config
-func (c *configFactoryImpl) NewConfig(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api api.Api) (Config, error) {
-	config, err := NewConfig(fs, id, project, fileName, properties, api)
-	if err != nil {
-		return nil, err
-	}
-	return config, nil
 }

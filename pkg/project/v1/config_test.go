@@ -28,8 +28,6 @@ import (
 	"gotest.tools/assert"
 )
 
-var testManagementZoneApi = api.NewStandardApi("management-zone", "/api/config/v1/managementZones", false, "", false)
-
 func TestFilterProperties(t *testing.T) {
 
 	m := make(map[string]map[string]string)
@@ -126,6 +124,7 @@ func TestFilterPropertiesToReturnNoGeneralPropertiesForMissingSpecificOnes(t *te
 }
 
 func TestHasDependencyCheck(t *testing.T) {
+	testManagementZoneApi := api.NewStandardApi("management-zone", "/api/config/v1/managementZones", false, "", false)
 	prop := make(map[string]map[string]string)
 	prop["test"] = make(map[string]string)
 	prop["test"]["name"] = "A name"
@@ -133,14 +132,16 @@ func TestHasDependencyCheck(t *testing.T) {
 	temp, e := template.NewTemplateFromString("test", "{{.name}}{{.somethingelse}}")
 	assert.NilError(t, e)
 
-	config := newConfig("test", "testproject", temp, prop, testManagementZoneApi, "test.json")
+	config := newConfigWithTemplate("test", "testproject", temp, prop, testManagementZoneApi, "test.json")
 
-	otherConfig := newConfig("other", "testproject", temp, make(map[string]map[string]string), testManagementZoneApi, "other.json")
+	otherConfig := newConfigWithTemplate("other", "testproject", temp, make(map[string]map[string]string), testManagementZoneApi, "other.json")
 
 	assert.Equal(t, true, config.HasDependencyOn(otherConfig))
 }
 
 func TestHasDependencyWithMultipleDependenciesCheck(t *testing.T) {
+	testManagementZoneApi := api.NewStandardApi("management-zone", "/api/config/v1/managementZones", false, "", false)
+
 	prop := make(map[string]map[string]string)
 	prop["test"] = make(map[string]string)
 	prop["test"]["name"] = "A name"
@@ -150,9 +151,9 @@ func TestHasDependencyWithMultipleDependenciesCheck(t *testing.T) {
 	temp, e := template.NewTemplateFromString("test", "{{.name}}{{.somethingelse}}")
 	assert.NilError(t, e)
 
-	config := newConfig("test", "testproject", temp, prop, testManagementZoneApi, "test.json")
+	config := newConfigWithTemplate("test", "testproject", temp, prop, testManagementZoneApi, "test.json")
 
-	otherConfig := newConfig("other", "testproject", temp, make(map[string]map[string]string), testManagementZoneApi, "other.json")
+	otherConfig := newConfigWithTemplate("other", "testproject", temp, make(map[string]map[string]string), testManagementZoneApi, "other.json")
 
 	assert.Equal(t, true, config.HasDependencyOn(otherConfig))
 }

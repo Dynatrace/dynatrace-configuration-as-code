@@ -27,33 +27,32 @@ import (
 	"strings"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v1"
 	"github.com/spf13/afero"
 )
 
 type Project interface {
-	GetConfigs() []config.Config
+	GetConfigs() []*Config
 	GetId() string
 }
 
 type ProjectImpl struct {
 	Id      string
-	Configs []config.Config
+	Configs []*Config
 }
 
 type projectBuilder struct {
 	projectRootFolder string
 	projectId         string
-	configs           []config.Config
+	configs           []*Config
 	apis              map[string]api.Api
-	configFactory     config.ConfigFactory
+	configProvider    configProvider
 	fs                afero.Fs
 }
 
 // newProject loads a new project from folder. Returns either project or a reading/sorting error respectively.
 func newProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolderName string, apis map[string]api.Api, projectRootFolder string, unmarshalYaml template.UnmarshalYamlFunc) (Project, error) {
 
-	var configs = make([]config.Config, 0)
+	var configs = make([]*Config, 0)
 
 	// standardize projectRootFolder
 	// trim path separator from projectRoot
@@ -64,20 +63,17 @@ func newProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolde
 		projectId:         fullQualifiedProjectFolderName,
 		configs:           configs,
 		apis:              apis,
-		configFactory:     config.NewConfigFactory(),
+		configProvider:    newConfig,
 		fs:                fs,
 	}
-	err := builder.readFolder(fullQualifiedProjectFolderName, true, unmarshalYaml)
-	if err != nil {
-		//debug log here?
+	if err := builder.readFolder(fullQualifiedProjectFolderName, true, unmarshalYaml); err != nil {
 		return nil, err
 	}
 
-	err = builder.sortConfigsAccordingToDependencies()
-	if err != nil {
-		//debug log here?
+	if err := builder.sortConfigsAccordingToDependencies(); err != nil {
 		return nil, err
 	}
+	builder.resolveDuplicateIDs()
 
 	warnIfProjectNameClashesWithApiName(projectFolderName, apis, sanitizedProjectRootFolder)
 
@@ -161,7 +157,7 @@ func (p *projectBuilder) processConfigSection(properties map[string]map[string]s
 			return err
 		}
 
-		c, err := p.configFactory.NewConfig(p.fs, configName, p.projectId, location, properties, a)
+		c, err := p.configProvider(p.fs, configName, p.projectId, location, properties, a)
 		if errutils.CheckError(err, "Could not create config"+configName) {
 			return err
 		}
@@ -239,8 +235,24 @@ func (p *projectBuilder) sortConfigsAccordingToDependencies() error {
 	return err
 }
 
+func (p *projectBuilder) resolveDuplicateIDs() {
+	// rewrite id in case the id of a config was already used in a different config
+	for i, c1 := range p.configs {
+		for j := i + 1; j < len(p.configs); j++ {
+			if c1.id == p.configs[j].id {
+				newID := fmt.Sprintf("%s-%d", c1.id, i)
+				log.Warn("Detected duplicate config id %q. Renamed it to %q", c1.id, newID)
+				c1.properties[newID] = c1.properties[c1.id]
+				c1.id = newID
+
+				break
+			}
+		}
+	}
+}
+
 // GetConfigs returns the configs for this project
-func (p *ProjectImpl) GetConfigs() []config.Config {
+func (p *ProjectImpl) GetConfigs() []*Config {
 	return p.Configs
 }
 

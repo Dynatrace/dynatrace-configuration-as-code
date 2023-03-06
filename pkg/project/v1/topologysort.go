@@ -19,12 +19,10 @@ package v1
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-
-	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v1"
 )
 
-func sortConfigurations(configs []config.Config) (sorted []config.Config, err error) {
-	sorted = []config.Config{}
+func sortConfigurations(configs []*Config) (sorted []*Config, err error) {
+	sorted = []*Config{}
 	incomingDeps, inDegrees := calculateIncomingConfigDependencies(configs)
 	reverse, err, errorOn := topologySort(incomingDeps, inDegrees)
 	if err != nil {
@@ -39,7 +37,7 @@ func sortConfigurations(configs []config.Config) (sorted []config.Config, err er
 	return sorted, nil
 }
 
-func calculateIncomingConfigDependencies(configs []config.Config) (adjacencyMatrix [][]bool, inDegrees []int) {
+func calculateIncomingConfigDependencies(configs []*Config) (adjacencyMatrix [][]bool, inDegrees []int) {
 	adjacencyMatrix = make([][]bool, len(configs))
 	inDegrees = make([]int, len(configs))
 
