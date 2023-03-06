@@ -727,7 +727,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {
 						Name: "c",
 						Type: Classic,
 						url: UrlDefinition{
-							Type:  "value",
+							Type:  ValueUrlType,
 							Value: "d",
 						},
 						Group: "b",
@@ -759,7 +759,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {
 						Name: "c",
 						Type: Platform,
 						url: UrlDefinition{
-							Type:  "value",
+							Type:  ValueUrlType,
 							Value: "d",
 						},
 						Group: "b",
@@ -791,7 +791,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {
 						Name: "c",
 						Type: Classic,
 						url: UrlDefinition{
-							Type:  "value",
+							Type:  ValueUrlType,
 							Value: "d",
 						},
 						Group: "b",

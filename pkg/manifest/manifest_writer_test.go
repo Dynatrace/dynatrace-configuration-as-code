@@ -257,7 +257,7 @@ func Test_toWriteableUrl(t *testing.T) {
 			EnvironmentDefinition{
 				Name: "NAME",
 				url: UrlDefinition{
-					Type:  "environment",
+					Type:  EnvironmentUrlType,
 					Value: "{{ .Env.VARIABLE }}",
 				},
 				Group: "GROUP",
@@ -273,7 +273,7 @@ func Test_toWriteableUrl(t *testing.T) {
 			EnvironmentDefinition{
 				Name: "NAME",
 				url: UrlDefinition{
-					Type:  "value",
+					Type:  ValueUrlType,
 					Value: "www.an.url",
 				},
 				Group: "GROUP",
