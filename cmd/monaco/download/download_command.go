@@ -92,6 +92,7 @@ func GetDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.
 					onlySettings:    onlySettings,
 				},
 			}
+
 			return command.DownloadConfigsBasedOnManifest(fs, options)
 		},
 	}
