@@ -22,22 +22,22 @@ import (
 )
 
 const (
-	DefaultEnvValueInt         = 0
-	ConcurrentRequestsEnvKey   = "CONCURRENT_REQUESTS"
-	DefaultConcurrentDownloads = 50
-	baseMessageInt             = "Environment variable %s: %d"
-	baseMessageIntDefault      = "Environment variable %s: %d, variable is NOT set, using default value"
+	ConcurrentRequestsEnvKey = "CONCURRENT_REQUESTS"
+	defaultValueKey          = "DEFAULT"
 )
 
 var defaultValuesInt = map[string]int{
-	ConcurrentRequestsEnvKey: DefaultConcurrentDownloads,
+	ConcurrentRequestsEnvKey: 50,
+	defaultValueKey:          0,
 }
 
 var logStringInt = map[string]string{
 	ConcurrentRequestsEnvKey: "Concurrent Request Limit: %d, from '%s' environment variable",
+	defaultValueKey:          "Environment variable %s: %d",
 }
 var logStringIntDefault = map[string]string{
 	ConcurrentRequestsEnvKey: "Concurrent Request Limit: %d, '%s' environment variable is NOT set, using default value",
+	defaultValueKey:          "Environment variable %s: %d, variable is NOT set, using default value",
 }
 
 func getDefaultInt(env string) int {
@@ -45,7 +45,7 @@ func getDefaultInt(env string) int {
 	if ok {
 		return defValue
 	}
-	return DefaultEnvValueInt
+	return defaultValuesInt[defaultValueKey]
 }
 
 func parseEnvToInt(env string, val string) (int, bool) {
@@ -64,12 +64,12 @@ func getEnvValueIntInternal(env string) (int, bool) {
 	return getDefaultInt(env), true
 }
 
-func getLogMessage(env string, messageMap map[string]string, baseMessage string) string {
+func getLogMessage(env string, messageMap map[string]string) string {
 	logMessage, ok := messageMap[env]
 	if ok {
 		return logMessage
 	}
-	return baseMessage
+	return messageMap[defaultValueKey]
 }
 
 func GetEnvValueInt(env string) int {
@@ -83,9 +83,9 @@ func GetEnvValueIntLog(env string) int {
 	var logMessage string
 
 	if isDefault {
-		logMessage = getLogMessage(env, logStringIntDefault, baseMessageIntDefault)
+		logMessage = getLogMessage(env, logStringIntDefault)
 	} else {
-		logMessage = getLogMessage(env, logStringInt, baseMessageIntDefault)
+		logMessage = getLogMessage(env, logStringInt)
 	}
 
 	log.Debug(logMessage, value, env)

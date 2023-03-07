@@ -14,7 +14,12 @@
 
 package errors
 
-import "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
+import (
+	"fmt"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
+)
 
 type ConfigError interface {
 	error
@@ -36,6 +41,10 @@ type InvalidJsonError struct {
 	EnvironmentDetails EnvironmentDetails
 	WrappedError       error
 }
+type RespError struct {
+	WrappedError error
+	StatusCode   int
+}
 
 func (e InvalidJsonError) Unwrap() error {
 	return e.WrappedError
@@ -56,4 +65,19 @@ func (e InvalidJsonError) LocationDetails() EnvironmentDetails {
 
 func (e InvalidJsonError) Error() string {
 	return e.WrappedError.Error()
+}
+
+func (e RespError) Error() string {
+	return e.WrappedError.Error()
+}
+
+func (e RespError) ConcurrentError() string {
+	additionalMessage := ""
+	if e.StatusCode == 403 {
+		concurrentDownloadLimit := environment.GetEnvValueInt(environment.ConcurrentRequestsEnvKey)
+		additionalMessage = fmt.Sprintf("\n\n    A 403 error code probably means too many requests.\n    Reduce your CONCURRENT_REQUESTS environment variable (current value: %d). \n    Then wait a few minutes and retry ", concurrentDownloadLimit)
+	}
+	retryErr := fmt.Sprintf("%s\n%s", e.WrappedError.Error(), additionalMessage)
+
+	return retryErr
 }

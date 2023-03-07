@@ -155,7 +155,7 @@ func executeRequest(client *http.Client, request *http.Request) (Response, error
 			}
 		}
 
-		nextPageKey, totalCount, pageSize := GetPaginationValues(body)
+		nextPageKey, totalCount, pageSize := getPaginationValues(body)
 
 		returnResponse := Response{
 			StatusCode:  resp.StatusCode,

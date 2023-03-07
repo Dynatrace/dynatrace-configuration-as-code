@@ -17,10 +17,11 @@
 package entities
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"strings"
 	"sync"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
@@ -67,7 +68,7 @@ func (d *Downloader) DownloadAll(projectName string) v2.ConfigsPerType {
 
 	// get ALL entities types
 	entitiesTypes, err := d.client.ListEntitiesTypes()
-	if err != nil {
+	if err.WrappedError != nil {
 		log.Error("Failed to fetch all known entities types. Skipping entities download. Reason: %s", err)
 		return nil
 	}
@@ -87,8 +88,8 @@ func (d *Downloader) download(entitiesTypes []client.EntitiesType, projectName s
 			defer wg.Done()
 
 			objects, err := d.client.ListEntities(entityType)
-			if err != nil {
-				log.Error("Failed to fetch all entities for entities Type %s: %v", entityType.EntitiesTypeId, err)
+			if err.WrappedError != nil {
+				log.Error("Failed to fetch all entities for entities Type %s: %v", entityType.EntitiesTypeId, err.ConcurrentError())
 				return
 			}
 			if len(objects) == 0 {

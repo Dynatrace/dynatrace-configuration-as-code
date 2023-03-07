@@ -16,12 +16,13 @@ package download
 
 import (
 	"fmt"
+	"net/http"
+	"os"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
-	"net/http"
-	"os"
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -46,16 +47,16 @@ To download entities, use download entities`,
 		},
 	}
 
-	GetDownloadConfigsCommand(fs, command, downloadCmd)
+	getDownloadConfigsCommand(fs, command, downloadCmd)
 
 	if featureflags.FeatureFlagEnabled("MONACO_FEAT_ENTITIES") {
-		GetDownloadEntitiesCommand(fs, command, downloadCmd)
+		getDownloadEntitiesCommand(fs, command, downloadCmd)
 	}
 
 	return downloadCmd
 }
 
-func GetDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.Command) {
+func getDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.Command) {
 	var project, outputFolder string
 	var forceOverwrite bool
 	var specificApis []string
@@ -142,7 +143,7 @@ func GetDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.
 	downloadCmd.AddCommand(directDownloadCmd)
 }
 
-func GetDownloadEntitiesCommand(fs afero.Fs, command Command, downloadCmd *cobra.Command) {
+func getDownloadEntitiesCommand(fs afero.Fs, command Command, downloadCmd *cobra.Command) {
 	var project, outputFolder string
 	var forceOverwrite bool
 

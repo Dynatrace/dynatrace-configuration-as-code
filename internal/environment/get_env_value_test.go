@@ -25,28 +25,35 @@ import (
 
 func TestWithParallelRequestLimitFromEnvOption(t *testing.T) {
 
+	testEnvVar := ConcurrentRequestsEnvKey
 	t.Setenv(ConcurrentRequestsEnvKey, "")
-	assert.Equal(t, DefaultConcurrentDownloads, GetEnvValueInt(ConcurrentRequestsEnvKey))
-	assert.Equal(t, DefaultConcurrentDownloads, GetEnvValueIntLog(ConcurrentRequestsEnvKey))
-
-	t.Setenv(ConcurrentRequestsEnvKey, "NOT_AN_INT")
-	assert.Equal(t, DefaultConcurrentDownloads, GetEnvValueInt(ConcurrentRequestsEnvKey))
-	assert.Equal(t, DefaultConcurrentDownloads, GetEnvValueIntLog(ConcurrentRequestsEnvKey))
-
-	t.Setenv(ConcurrentRequestsEnvKey, "51")
-	assert.Equal(t, 51, GetEnvValueInt(ConcurrentRequestsEnvKey))
-	assert.Equal(t, 51, GetEnvValueIntLog(ConcurrentRequestsEnvKey))
-
-	testEnvVar := "TEST_ENV_VAR_GET_ENV_VALUE"
-	t.Setenv(testEnvVar, "")
-	assert.Equal(t, DefaultEnvValueInt, GetEnvValueInt(testEnvVar))
-	assert.Equal(t, DefaultEnvValueInt, GetEnvValueIntLog(testEnvVar))
+	assert.Equal(t, 50, GetEnvValueInt(testEnvVar))
+	assert.Equal(t, 50, GetEnvValueIntLog(testEnvVar))
+	assert.Equal(t, "Concurrent Request Limit: %d, '%s' environment variable is NOT set, using default value", getLogMessage(testEnvVar, logStringIntDefault))
 
 	t.Setenv(testEnvVar, "NOT_AN_INT")
-	assert.Equal(t, DefaultEnvValueInt, GetEnvValueInt(testEnvVar))
-	assert.Equal(t, DefaultEnvValueInt, GetEnvValueIntLog(testEnvVar))
+	assert.Equal(t, 50, GetEnvValueInt(testEnvVar))
+	assert.Equal(t, 50, GetEnvValueIntLog(testEnvVar))
+	assert.Equal(t, "Concurrent Request Limit: %d, '%s' environment variable is NOT set, using default value", getLogMessage(testEnvVar, logStringIntDefault))
+
+	t.Setenv(testEnvVar, "51")
+	assert.Equal(t, 51, GetEnvValueInt(testEnvVar))
+	assert.Equal(t, 51, GetEnvValueIntLog(testEnvVar))
+	assert.Equal(t, "Concurrent Request Limit: %d, from '%s' environment variable", getLogMessage(testEnvVar, logStringInt))
+
+	testEnvVar = "TEST_ENV_VAR_GET_ENV_VALUE"
+	t.Setenv(testEnvVar, "")
+	assert.Equal(t, 0, GetEnvValueInt(testEnvVar))
+	assert.Equal(t, 0, GetEnvValueIntLog(testEnvVar))
+	assert.Equal(t, "Environment variable %s: %d, variable is NOT set, using default value", getLogMessage(testEnvVar, logStringIntDefault))
+
+	t.Setenv(testEnvVar, "NOT_AN_INT")
+	assert.Equal(t, 0, GetEnvValueInt(testEnvVar))
+	assert.Equal(t, 0, GetEnvValueIntLog(testEnvVar))
+	assert.Equal(t, "Environment variable %s: %d, variable is NOT set, using default value", getLogMessage(testEnvVar, logStringIntDefault))
 
 	t.Setenv(testEnvVar, "11")
 	assert.Equal(t, 11, GetEnvValueInt(testEnvVar))
 	assert.Equal(t, 11, GetEnvValueIntLog(testEnvVar))
+	assert.Equal(t, "Environment variable %s: %d", getLogMessage(testEnvVar, logStringInt))
 }

@@ -21,6 +21,8 @@ import (
 	"regexp"
 	"unicode"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/throttle"
+	respError "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 )
 
@@ -128,7 +130,7 @@ func isInvalidReflectionValue(value reflect.Value) bool {
 	}
 }
 
-func GenListEntitiesParams(entityType string, entitiesType EntitiesType, ignoreProperties []string) url.Values {
+func genListEntitiesParams(entityType string, entitiesType EntitiesType, ignoreProperties []string) url.Values {
 	params := url.Values{
 		"entitySelector": []string{"type(\"" + entityType + "\")"},
 		"pageSize":       []string{defaultPageSizeEntities},
@@ -140,18 +142,18 @@ func GenListEntitiesParams(entityType string, entitiesType EntitiesType, ignoreP
 	return params
 }
 
-func HandleListEntitiesError(entityType string, resp rest.Response, run_extraction bool, ignoreProperties []string, err error) (bool, []string, error) {
-	if err != nil {
+func handleListEntitiesError(entityType string, resp rest.Response, run_extraction bool, ignoreProperties []string, err respError.RespError) (bool, []string, respError.RespError) {
+	if err.WrappedError != nil {
 		retryWithIgnore := false
-		retryWithIgnore, ignoreProperties = ValidateForPropertyErrors(resp, ignoreProperties, entityType)
+		retryWithIgnore, ignoreProperties = validateForPropertyErrors(resp, ignoreProperties, entityType)
 
 		if retryWithIgnore {
-			return run_extraction, ignoreProperties, nil
+			return run_extraction, ignoreProperties, respError.RespError{}
 		} else {
 			return run_extraction, ignoreProperties, err
 		}
 	} else {
-		return false, ignoreProperties, nil
+		return false, ignoreProperties, respError.RespError{}
 	}
 }
 
@@ -172,7 +174,7 @@ type ConstraintViolation struct {
 	Location          string `json:"location"`
 }
 
-func ValidateForPropertyErrors(resp rest.Response, ignoreProperties []string, entityType string) (bool, []string) {
+func validateForPropertyErrors(resp rest.Response, ignoreProperties []string, entityType string) (bool, []string) {
 	retryWithIgnore := false
 
 	var errorResponse ErrorResponseStruct
@@ -190,8 +192,7 @@ func ValidateForPropertyErrors(resp rest.Response, ignoreProperties []string, en
 							continue
 						}
 						ignoreProperties = append(ignoreProperties, matches[1])
-						rateLimitStrategy := rest.CreateRateLimitStrategy()
-						rateLimitStrategy.ThrottleCallAfterError("Property error in type: %s: will not extract: %s", entityType, matches[1])
+						throttle.ThrottleCallAfterError(1, "Property error in type: %s: will not extract: %s", entityType, matches[1])
 						retryWithIgnore = true
 					}
 				}

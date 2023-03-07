@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	respError "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/errors"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -42,7 +43,7 @@ func TestDeleteSettings(t *testing.T) {
 					Scope:         "tenant",
 					Value:         nil,
 				},
-			}, nil
+			}, respError.RespError{}
 
 		})
 		c.EXPECT().DeleteSettings(gomock.Eq("12345")).Return(nil)
@@ -60,7 +61,7 @@ func TestDeleteSettings(t *testing.T) {
 
 	t.Run("TestDeleteSettings - List settings with external ID fails", func(t *testing.T) {
 		c := client.NewMockClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Return([]client.DownloadSettingsObject{}, fmt.Errorf("WHOPS"))
+		c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Return([]client.DownloadSettingsObject{}, respError.RespError{WrappedError: fmt.Errorf("WHOPS"), StatusCode: 0})
 		entriesToDelete := map[string][]DeletePointer{
 			"builtin:alerting.profile": {
 				{
@@ -75,7 +76,7 @@ func TestDeleteSettings(t *testing.T) {
 
 	t.Run("TestDeleteSettings - List settings returns no objects", func(t *testing.T) {
 		c := client.NewMockClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Return([]client.DownloadSettingsObject{}, nil)
+		c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Return([]client.DownloadSettingsObject{}, respError.RespError{})
 		entriesToDelete := map[string][]DeletePointer{
 			"builtin:alerting.profile": {
 				{
@@ -99,7 +100,7 @@ func TestDeleteSettings(t *testing.T) {
 				Scope:         "tenant",
 				Value:         nil,
 			},
-		}, nil)
+		}, respError.RespError{})
 		c.EXPECT().DeleteSettings(gomock.Eq("12345")).Return(fmt.Errorf("WHOPS"))
 		entriesToDelete := map[string][]DeletePointer{
 			"builtin:alerting.profile": {

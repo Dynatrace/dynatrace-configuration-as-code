@@ -109,8 +109,8 @@ func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPe
 			defer wg.Done()
 			log.Debug("Downloading all settings for schema %s", s)
 			objects, err := d.client.ListSettings(s, client.ListSettingsOptions{})
-			if err != nil {
-				log.Error("Failed to fetch all settings for schema %s: %v", s, err)
+			if err.WrappedError != nil {
+				log.Error("Failed to fetch all settings for schema %s: %v", s, err.ConcurrentError())
 				return
 			}
 			if len(objects) == 0 {
