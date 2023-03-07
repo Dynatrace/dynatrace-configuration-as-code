@@ -19,6 +19,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"os"
 	"strings"
 
@@ -51,11 +52,22 @@ type directDownloadOptions struct {
 }
 
 func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions manifestDownloadOptions) error {
-	envUrl, token, err := getEnvFromManifest(fs, cmdOptions.manifestFile, cmdOptions.specificEnvironmentName)
-	if err != nil {
+
+	m, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
+		Fs:           fs,
+		ManifestPath: cmdOptions.manifestFile,
+	})
+	if len(errs) > 0 {
+		err := PrintAndFormatErrors(errs, "failed to load manifest '%v'", cmdOptions.manifestFile)
 		return err
 	}
-	printUploadToSameEnvironmentWarning(envUrl, token.Value)
+
+	env, found := m.Environments[cmdOptions.specificEnvironmentName]
+	if !found {
+		return fmt.Errorf("environment %q was not available in manifest %q", cmdOptions.specificEnvironmentName, cmdOptions.manifestFile)
+	}
+
+	printUploadToSameEnvironmentWarning(env.Url.Value, env.Auth.Token.Value)
 
 	if !cmdOptions.forceOverwrite {
 		cmdOptions.projectName = fmt.Sprintf("%s_%s", cmdOptions.projectName, cmdOptions.specificEnvironmentName)
@@ -65,9 +77,9 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 
 	options := downloadOptions{
 		downloadOptionsShared: downloadOptionsShared{
-			environmentUrl:          envUrl,
-			token:                   token.Value,
-			tokenEnvVarName:         token.Name,
+			environmentUrl:          env.Url.Value,
+			token:                   env.Auth.Token.Value,
+			tokenEnvVarName:         env.Auth.Token.Name,
 			outputFolder:            cmdOptions.outputFolder,
 			projectName:             cmdOptions.projectName,
 			forceOverwriteManifest:  cmdOptions.forceOverwrite,

@@ -17,6 +17,7 @@ package download
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"os"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
@@ -42,9 +43,18 @@ type entitiesDirectDownloadOptions struct {
 
 func (d DefaultCommand) DownloadEntitiesBasedOnManifest(fs afero.Fs, cmdOptions entitiesManifestDownloadOptions) error {
 
-	envUrl, token, err := getEnvFromManifest(fs, cmdOptions.manifestFile, cmdOptions.specificEnvironmentName)
-	if err != nil {
+	m, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
+		Fs:           fs,
+		ManifestPath: cmdOptions.manifestFile,
+	})
+	if len(errs) > 0 {
+		err := PrintAndFormatErrors(errs, "failed to load manifest '%q'", cmdOptions.manifestFile)
 		return err
+	}
+
+	env, found := m.Environments[cmdOptions.specificEnvironmentName]
+	if !found {
+		return fmt.Errorf("environment %q was not available in manifest %q", cmdOptions.specificEnvironmentName, cmdOptions.manifestFile)
 	}
 
 	if !cmdOptions.forceOverwrite {
@@ -54,9 +64,9 @@ func (d DefaultCommand) DownloadEntitiesBasedOnManifest(fs afero.Fs, cmdOptions 
 	concurrentDownloadLimit := concurrentRequestLimitFromEnv()
 
 	options := downloadOptionsShared{
-		environmentUrl:          envUrl,
-		token:                   token.Value,
-		tokenEnvVarName:         token.Name,
+		environmentUrl:          env.Url.Value,
+		token:                   env.Auth.Token.Value,
+		tokenEnvVarName:         env.Auth.Token.Name,
 		outputFolder:            cmdOptions.outputFolder,
 		projectName:             cmdOptions.projectName,
 		forceOverwriteManifest:  cmdOptions.forceOverwrite,

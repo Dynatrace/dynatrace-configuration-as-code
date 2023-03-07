@@ -20,7 +20,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2/topologysort"
 	"github.com/spf13/afero"
@@ -60,25 +59,6 @@ type downloadCommandOptionsShared struct {
 	projectName    string
 	outputFolder   string
 	forceOverwrite bool
-}
-
-func getEnvFromManifest(fs afero.Fs, manifestPath string, specificEnvironmentName string) (envUrl string, token manifest.Token, err error) {
-
-	man, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
-		Fs:           fs,
-		ManifestPath: manifestPath,
-	})
-	if len(errs) > 0 {
-		err = PrintAndFormatErrors(errs, "failed to load manifest '%v'", manifestPath)
-		return "", manifest.Token{}, err
-	}
-
-	env, found := man.Environments[specificEnvironmentName]
-	if !found {
-		return "", manifest.Token{}, fmt.Errorf("environment %q was not available in manifest %q", specificEnvironmentName, manifestPath)
-	}
-
-	return env.Url.Value, env.Auth.Token, nil
 }
 
 type DynatraceClientProvider func(*http.Client, string, ...func(*client.DynatraceClient)) (*client.DynatraceClient, error)
