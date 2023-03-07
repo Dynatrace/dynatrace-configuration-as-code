@@ -282,10 +282,12 @@ func toEnvironment(context *ManifestLoaderContext, config environment, group str
 	}
 
 	return EnvironmentDefinition{
-		Name:  config.Name,
-		Type:  envType,
-		Url:   urlDef,
-		Token: token,
+		Name: config.Name,
+		Type: envType,
+		Url:  urlDef,
+		Auth: Auth{
+			Token: token,
+		},
 		Group: group,
 	}, nil
 }

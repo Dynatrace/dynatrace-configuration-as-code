@@ -743,9 +743,11 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {
 							Value: "d",
 						},
 						Group: "b",
-						Token: Token{
-							Name:  "e",
-							Value: "mock token",
+						Auth: Auth{
+							Token: Token{
+								Name:  "e",
+								Value: "mock token",
+							},
 						},
 					},
 				},
@@ -775,9 +777,11 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {
 							Value: "d",
 						},
 						Group: "b",
-						Token: Token{
-							Name:  "e",
-							Value: "mock token",
+						Auth: Auth{
+							Token: Token{
+								Name:  "e",
+								Value: "mock token",
+							},
 						},
 					},
 				},
@@ -807,9 +811,11 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {
 							Value: "d",
 						},
 						Group: "b",
-						Token: Token{
-							Name:  "e",
-							Value: "mock token",
+						Auth: Auth{
+							Token: Token{
+								Name:  "e",
+								Value: "mock token",
+							},
 						},
 					},
 				},

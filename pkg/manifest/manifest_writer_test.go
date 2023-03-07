@@ -155,8 +155,10 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						Value: "www.an.Url",
 					},
 					Group: "group1",
-					Token: Token{
-						Name: "TokenTest",
+					Auth: Auth{
+						Token: Token{
+							Name: "TokenTest",
+						},
 					},
 				},
 				"env2": {
@@ -166,7 +168,9 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						Value: "www.an.Url",
 					},
 					Group: "group1",
-					Token: Token{},
+					Auth: Auth{
+						Token: Token{},
+					},
 				},
 				"env3": {
 					Name: "env3",
@@ -175,7 +179,9 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						Value: "www.an.Url",
 					},
 					Group: "group2",
-					Token: Token{},
+					Auth: Auth{
+						Token: Token{},
+					},
 				},
 			},
 			[]group{
@@ -262,7 +268,9 @@ func Test_toWriteableUrl(t *testing.T) {
 					Value: "Some previously resolved value",
 				},
 				Group: "GROUP",
-				Token: Token{},
+				Auth: Auth{
+					Token: Token{},
+				},
 			},
 			url{
 				Type:  urlTypeEnvironment,
@@ -278,7 +286,9 @@ func Test_toWriteableUrl(t *testing.T) {
 					Value: "www.an.Url",
 				},
 				Group: "GROUP",
-				Token: Token{},
+				Auth: Auth{
+					Token: Token{},
+				},
 			},
 			url{
 				Value: "www.an.Url",
@@ -292,7 +302,9 @@ func Test_toWriteableUrl(t *testing.T) {
 					Value: "www.an.Url",
 				},
 				Group: "GROUP",
-				Token: Token{},
+				Auth: Auth{
+					Token: Token{},
+				},
 			},
 			url{
 				Value: "www.an.Url",
@@ -320,7 +332,9 @@ func Test_toWritableToken(t *testing.T) {
 				Name:  "NAME",
 				Url:   UrlDefinition{},
 				Group: "GROUP",
-				Token: Token{Name: "VARIABLE"},
+				Auth: Auth{
+					Token: Token{Name: "VARIABLE"},
+				},
 			},
 			tokenConfig{
 				Name: "VARIABLE",
@@ -333,7 +347,10 @@ func Test_toWritableToken(t *testing.T) {
 				Name:  "NAME",
 				Url:   UrlDefinition{},
 				Group: "GROUP",
-				Token: Token{},
+
+				Auth: Auth{
+					Token: Token{},
+				},
 			},
 			tokenConfig{
 				Name: "NAME_TOKEN",

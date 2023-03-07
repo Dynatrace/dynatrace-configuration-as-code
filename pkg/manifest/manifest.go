@@ -44,12 +44,23 @@ func (p ProjectDefinition) String() string {
 }
 
 // EnvironmentDefinition holds all information about a Dynatrace environment
+type OAuth struct {
+	ClientId     string
+	ClientSecret string
+}
+
+type Auth struct {
+	Token Token
+	OAuth OAuth
+}
+
 type EnvironmentDefinition struct {
 	Name  string
 	Type  EnvironmentType
 	Url   UrlDefinition
 	Group string
-	Token Token
+
+	Auth Auth
 }
 
 // UrlType describes from where the url is loaded.
@@ -96,7 +107,9 @@ func NewEnvironmentDefinition(name string, url UrlDefinition, group string, toke
 		Name:  name,
 		Url:   url,
 		Group: group,
-		Token: token,
+		Auth: Auth{
+			Token: token,
+		},
 	}
 }
 
