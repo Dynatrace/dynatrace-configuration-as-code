@@ -404,12 +404,12 @@ func TestListKnownSettings(t *testing.T) {
 			client, err := NewDynatraceClient(server.Client(), server.URL, WithRetrySettings(testRetrySettings))
 			assert.NilError(t, err)
 
-			res, err := client.ListSettings(tt.givenSchemaId, tt.givenListSettingsOpts)
+			res, err1 := client.ListSettings(tt.givenSchemaId, tt.givenListSettingsOpts)
 
 			if tt.wantError {
-				assert.Assert(t, err != nil)
+				assert.Assert(t, err1.WrappedError != nil)
 			} else {
-				assert.NilError(t, err)
+				assert.NilError(t, err1.WrappedError)
 			}
 
 			assert.DeepEqual(t, res, tt.want)
@@ -857,12 +857,12 @@ func TestListEntities(t *testing.T) {
 			client, err := NewDynatraceClient(server.Client(), server.URL, WithRetrySettings(testRetrySettings))
 			assert.NilError(t, err)
 
-			res, err := client.ListEntities(tt.givenEntitiesType)
+			res, err1 := client.ListEntities(tt.givenEntitiesType)
 
 			if tt.wantError {
-				assert.Assert(t, err != nil)
+				assert.Assert(t, err1.WrappedError != nil)
 			} else {
-				assert.NilError(t, err)
+				assert.NilError(t, err1.WrappedError)
 			}
 
 			assert.DeepEqual(t, res, tt.want)
