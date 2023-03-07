@@ -103,9 +103,11 @@ pipeline {
                                                 buildBinary(command: release, version: version, dest: "${release}/${PROJECT}")
                                                 createShaSum(source: "${release}/${PROJECT}", dest: "${release}/${PROJECT}.p7m")
                                                 signShaSum(source: "${release}/${PROJECT}.p7m", version: version, destDir: release, projectName: PROJECT)
-                                                createTarArchive(source: release, dest: release + '.tar')
-                                                pushToDynatraceStorage(source: release + '.tar', version: version)
-                                                pushToGithub(source: release + '.tar', releaseId: releaseId)
+//                                                createTarArchive(source: release, dest: release + '.tar')
+                                                pushToDynatraceStorage(source: "${release}/${PROJECT}.p7m", version: version)
+                                                pushToDynatraceStorage(source: "${release}/${PROJECT}", version: version)
+                                                pushToGithub(source: "${release}/${PROJECT}.p7m", releaseId: releaseId)
+                                                pushToGithub(source: "${release}/${PROJECT}", releaseId: releaseId)
                                                 break
                                             case "container":
                                                 createContainerAndPushToStorage(version: version)
