@@ -542,8 +542,10 @@ func getFullProjectLoaderContext(apis []string, projects []string, environments 
 	envDefinitions := make(map[string]manifest.EnvironmentDefinition, len(environments))
 	for _, e := range environments {
 		envDefinitions[e] = manifest.EnvironmentDefinition{
-			Name:  e,
-			Token: manifest.Token{Name: fmt.Sprintf("%s_VAR", e)},
+			Name: e,
+			Auth: manifest.Auth{
+				Token: manifest.Token{Name: fmt.Sprintf("%s_VAR", e)},
+			},
 		}
 	}
 

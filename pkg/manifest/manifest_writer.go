@@ -157,8 +157,8 @@ func toWriteableUrl(environment EnvironmentDefinition) url {
 func toWritableToken(environment EnvironmentDefinition) tokenConfig {
 	token := environment.Name + "_TOKEN"
 
-	if environment.Token.Name != "" {
-		token = environment.Token.Name
+	if environment.Auth.Token.Name != "" {
+		token = environment.Auth.Token.Name
 	}
 
 	return tokenConfig{
