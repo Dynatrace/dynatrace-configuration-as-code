@@ -20,9 +20,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
-	delete "github.com/dynatrace/dynatrace-configuration-as-code/pkg/delete"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/delete"
 	"path/filepath"
-	"strings"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
@@ -30,21 +29,13 @@ import (
 	"github.com/spf13/afero"
 )
 
-func Delete(fs afero.Fs, deploymentManifestPath string, deletePath string, environmentNames []string, environmentGroup string) error {
+func Delete(fs afero.Fs, deploymentManifestPath string, deleteFile string, environmentNames []string, environmentGroup string) error {
 
 	deploymentManifestPath = filepath.Clean(deploymentManifestPath)
 	deploymentManifestPath, manifestErr := filepath.Abs(deploymentManifestPath)
-	deletePath = filepath.Clean(deletePath)
-	deletePath, deleteErr := filepath.Abs(deletePath)
-	deleteFileWorkingDir := strings.ReplaceAll(deletePath, "delete.yaml", "")
-	deleteFile := "delete.yaml"
 
 	if manifestErr != nil {
 		return fmt.Errorf("error while finding absolute path for `%s`: %w", deploymentManifestPath, manifestErr)
-	}
-
-	if deleteErr != nil {
-		return fmt.Errorf("error while finding absolute path for `%s`: %w", deletePath, deleteErr)
 	}
 
 	apis := api.NewApis()
@@ -59,7 +50,7 @@ func Delete(fs afero.Fs, deploymentManifestPath string, deletePath string, envir
 		return errors.New("error while loading manifest")
 	}
 
-	entriesToDelete, errs := delete.LoadEntriesToDelete(fs, api.GetApiNames(apis), deleteFileWorkingDir, deleteFile)
+	entriesToDelete, errs := delete.LoadEntriesToDelete(fs, api.GetApiNames(apis), deleteFile)
 	if errs != nil {
 		return fmt.Errorf("encountered errors while parsing delete.yaml: %s", errs)
 	}
