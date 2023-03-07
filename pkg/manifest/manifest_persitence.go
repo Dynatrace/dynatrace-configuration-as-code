@@ -28,10 +28,45 @@ type tokenConfig struct {
 	Name string `yaml:"name"`
 }
 
+type valueType string
+
+const (
+	typeEnvironment valueType = "environment"
+
+	typeValue valueType = "value"
+)
+
+// value represents a user-defined value. It has a [Type] which is either [typeValue] (default) or [typeEnvironment].
+//
+// If the type is [typeEnvironment], [Name] contains the environment-variable to resolve the value.
+// If the type is [typeValue], [Value] contains the resolved value.
+//
+// This struct is meant to be reused for fields that require the same behavior.
+type value struct {
+	Type  valueType `yaml:"type"`
+	Name  string    `yaml:"name"`
+	Value string    `yaml:"value"`
+}
+
+type oAuth struct {
+	ClientID     value
+	ClientSecret value
+}
+
+type auth struct {
+	Token tokenConfig
+	OAuth oAuth
+}
+
 type environment struct {
-	Name  string      `yaml:"name"`
-	Type  string      `yaml:"type"`
-	Url   url         `yaml:"url"`
+	Name string `yaml:"name"`
+	Type string `yaml:"type"`
+	Url  url    `yaml:"url"`
+	Auth auth   `yaml:"auth"`
+
+	// Token is the user-provided Dynatrace Classic API token
+	//
+	// Deprecated: Use [Auth.Token] instead. This field is still available to support existing manifests.
 	Token tokenConfig `yaml:"token"`
 }
 
