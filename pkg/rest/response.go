@@ -21,6 +21,8 @@ type Response struct {
 	Body        []byte
 	Headers     map[string][]string
 	NextPageKey string
+	TotalCount  int
+	PageSize    int
 }
 
 func (resp Response) IsSuccess() bool {

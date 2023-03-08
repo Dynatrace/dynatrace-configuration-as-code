@@ -20,9 +20,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"path/filepath"
 	"time"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/google/uuid"
@@ -258,18 +259,18 @@ func (c *DummyClient) ListSchemas() (SchemaList, error) {
 func (c *DummyClient) GetSettingById(_ string) (*DownloadSettingsObject, error) {
 	return &DownloadSettingsObject{}, nil
 }
-func (c *DummyClient) ListSettings(_ string, _ ListSettingsOptions) ([]DownloadSettingsObject, error) {
-	return make([]DownloadSettingsObject, 0), nil
+func (c *DummyClient) ListSettings(_ string, _ ListSettingsOptions) ([]DownloadSettingsObject, RespError) {
+	return make([]DownloadSettingsObject, 0), RespError{}
 }
 
 func (l *DummyClient) DeleteSettings(_ string) error {
 	return nil
 }
 
-func (c *DummyClient) ListEntitiesTypes() (EntitiesTypeList, error) {
-	return make(EntitiesTypeList, 0), nil
+func (c *DummyClient) ListEntitiesTypes() ([]EntitiesType, RespError) {
+	return make([]EntitiesType, 0), RespError{}
 }
 
-func (c *DummyClient) ListEntities(_ string) ([]string, error) {
-	return make([]string, 0), nil
+func (c *DummyClient) ListEntities(_ EntitiesType) ([]string, RespError) {
+	return make([]string, 0), RespError{}
 }

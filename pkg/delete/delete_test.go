@@ -31,7 +31,7 @@ import (
 func TestDeleteSettings(t *testing.T) {
 	t.Run("TestDeleteSettings", func(t *testing.T) {
 		c := client.NewMockClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).DoAndReturn(func(schemaID string, listOpts client.ListSettingsOptions) ([]client.DownloadSettingsObject, error) {
+		c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).DoAndReturn(func(schemaID string, listOpts client.ListSettingsOptions) ([]client.DownloadSettingsObject, client.RespError) {
 			assert.True(t, listOpts.Filter(client.DownloadSettingsObject{ExternalId: "monaco:YnVpbHRpbjphbGVydGluZy5wcm9maWxlJGlkMQ=="}))
 			return []client.DownloadSettingsObject{
 				{
@@ -42,7 +42,7 @@ func TestDeleteSettings(t *testing.T) {
 					Scope:         "tenant",
 					Value:         nil,
 				},
-			}, nil
+			}, client.RespError{}
 
 		})
 		c.EXPECT().DeleteSettings(gomock.Eq("12345")).Return(nil)
@@ -60,7 +60,7 @@ func TestDeleteSettings(t *testing.T) {
 
 	t.Run("TestDeleteSettings - List settings with external ID fails", func(t *testing.T) {
 		c := client.NewMockClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Return([]client.DownloadSettingsObject{}, fmt.Errorf("WHOPS"))
+		c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Return([]client.DownloadSettingsObject{}, client.RespError{WrappedError: fmt.Errorf("WHOPS"), StatusCode: 0})
 		entriesToDelete := map[string][]DeletePointer{
 			"builtin:alerting.profile": {
 				{
@@ -75,7 +75,7 @@ func TestDeleteSettings(t *testing.T) {
 
 	t.Run("TestDeleteSettings - List settings returns no objects", func(t *testing.T) {
 		c := client.NewMockClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Return([]client.DownloadSettingsObject{}, nil)
+		c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Return([]client.DownloadSettingsObject{}, client.RespError{})
 		entriesToDelete := map[string][]DeletePointer{
 			"builtin:alerting.profile": {
 				{
@@ -99,7 +99,7 @@ func TestDeleteSettings(t *testing.T) {
 				Scope:         "tenant",
 				Value:         nil,
 			},
-		}, nil)
+		}, client.RespError{})
 		c.EXPECT().DeleteSettings(gomock.Eq("12345")).Return(fmt.Errorf("WHOPS"))
 		entriesToDelete := map[string][]DeletePointer{
 			"builtin:alerting.profile": {

@@ -18,9 +18,10 @@ package rest
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"net/http"
 	"time"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 )
 
 type RetrySetting struct {
@@ -73,7 +74,7 @@ func GetWithRetry(client *http.Client, url string, settings RetrySetting) (resp 
 	} else {
 		retryErr = fmt.Errorf("GET request %s failed after %d retries: (HTTP %d)!\n    Response was: %s", url, settings.MaxRetries, resp.StatusCode, resp.Body)
 	}
-	return Response{}, retryErr
+	return resp, retryErr
 }
 
 // SendWithRetry will retry a SendingRequest(PUT or POST) for a given number of times, waiting a give duration between calls

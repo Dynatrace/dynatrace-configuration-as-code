@@ -19,11 +19,12 @@ package rest
 import (
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/timeutils"
-	"math/rand"
 	"net/http"
 	"time"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/throttle"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/timeutils"
 )
 
 // rateLimitStrategy ensures that the concrete implementation of the rate limiting strategy can be hidden
@@ -46,8 +47,6 @@ func createRateLimitStrategy() rateLimitStrategy {
 // polling iterations before giving up.
 type simpleSleepRateLimitStrategy struct{}
 
-const minWaitDuration = 1 * time.Second
-
 func (s *simpleSleepRateLimitStrategy) executeRequest(timelineProvider timeutils.TimelineProvider, callback func() (Response, error)) (Response, error) {
 
 	response, err := callback()
@@ -63,12 +62,14 @@ func (s *simpleSleepRateLimitStrategy) executeRequest(timelineProvider timeutils
 		sleepDuration, humanReadableTimestamp, err := s.getSleepDurationFromResponseHeader(response, timelineProvider)
 
 		if err != nil {
-			log.Debug("Failed to Get rate limiting details from API response, generating wait time instead...")
-			sleepDuration, humanReadableTimestamp = s.generateSleepDuration(currentIteration, timelineProvider)
+			log.Debug("Failed to get rate limiting details from API response, generating wait time instead...")
+			log.Debug("Response Headers: %s", response.Headers)
+			log.Debug("Response Body: %s", response.Body)
+			sleepDuration, humanReadableTimestamp = throttle.GenerateSleepDuration(currentIteration, timelineProvider)
 		}
 
 		// That's why we need plausible min/max wait time defaults:
-		sleepDuration = s.applyMinMaxDefaults(sleepDuration)
+		sleepDuration = throttle.ApplyMinMaxDefaults(sleepDuration)
 
 		log.Debug("Rate limit reached (iteration: %d/%d). Sleeping until %s (%s)", currentIteration+1, maxIterationCount, humanReadableTimestamp, sleepDuration)
 
@@ -123,38 +124,4 @@ func (s *simpleSleepRateLimitStrategy) extractRateLimitHeaders(response Response
 	}
 
 	return limit, humanReadableResetTimestamp, resetTimeInMicroseconds, nil
-}
-
-// generateSleepDuration will generate a random sleep duration time between minWaitTime and minWaitTime * backoffMultiplier
-// generated sleep durations are used in case the API did not reply with a limit and reset time
-// and called with the current retry iteration count to implement increasing possible wait times per iteration
-func (s *simpleSleepRateLimitStrategy) generateSleepDuration(backoffMultiplier int, timelineProvider timeutils.TimelineProvider) (sleepDuration time.Duration, humanReadableResetTimestamp string) {
-	r := rand.New(rand.NewSource(time.Now().UnixNano())) //nolint:gosec
-
-	if backoffMultiplier < 1 {
-		backoffMultiplier = 1
-	}
-
-	addedWaitMillis := r.Int63n(minWaitDuration.Nanoseconds()) //nolint:gosec
-
-	sleepDuration = minWaitDuration + time.Duration(addedWaitMillis*int64(backoffMultiplier))
-
-	humanReadableResetTimestamp = timelineProvider.Now().Add(sleepDuration).Format(time.RFC3339)
-
-	return sleepDuration, humanReadableResetTimestamp
-}
-
-func (s *simpleSleepRateLimitStrategy) applyMinMaxDefaults(sleepDuration time.Duration) time.Duration {
-
-	maxWaitTimeInNanoseconds := 1 * time.Minute
-
-	if sleepDuration.Nanoseconds() < minWaitDuration.Nanoseconds() {
-		sleepDuration = minWaitDuration
-		log.Debug("simpleSleepRateLimitStrategy: Reset sleep duration to %f seconds...", sleepDuration.Seconds())
-	}
-	if sleepDuration.Nanoseconds() > maxWaitTimeInNanoseconds.Nanoseconds() {
-		sleepDuration = maxWaitTimeInNanoseconds
-		log.Debug("simpleSleepRateLimitStrategy: Reset sleep duration to %f seconds...", sleepDuration.Seconds())
-	}
-	return sleepDuration
 }

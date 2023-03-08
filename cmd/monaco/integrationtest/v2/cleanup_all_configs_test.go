@@ -97,7 +97,7 @@ func cleanupTestSettings(t *testing.T, c client.SettingsClient) int {
 	for _, s := range schemas {
 		schemaId := s.SchemaId
 		objects, err := c.ListSettings(schemaId, client.ListSettingsOptions{DiscardValue: true, Filter: func(o client.DownloadSettingsObject) bool { return o.ExternalId != "" }})
-		if err != nil {
+		if err.WrappedError != nil {
 			t.Errorf("could not fetch settings 2.0 objects with schema %s: %v", schemaId, err)
 		}
 
