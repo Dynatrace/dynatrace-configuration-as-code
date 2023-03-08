@@ -113,11 +113,13 @@ func toWriteableEnvironmentGroups(environments map[string]EnvironmentDefinition)
 	environmentPerGroup := make(map[string][]environment)
 
 	for name, env := range environments {
+		token := toWritableToken(env)
+
 		e := environment{
 			Name:  name,
 			Type:  getType(env),
 			Url:   toWriteableUrl(env),
-			Token: toWritableToken(env),
+			Token: &token,
 		}
 
 		environmentPerGroup[env.Group] = append(environmentPerGroup[env.Group], e)
