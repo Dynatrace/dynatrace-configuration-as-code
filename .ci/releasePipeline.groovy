@@ -89,23 +89,27 @@ pipeline {
 
                                                 sh "rm -rf ${release}" //ensure to delete old build
 
-                                                buildBinary(command: release, version: version, dest: "${release}")
+                                                buildBinary(command: release, version: version, dest: release)
                                                 signWinBinaries(source: release, version: version, destDir: '.', projectName: PROJECT)
-                                                pushToDynatraceStorage(source: release, version: version)
-                                                pushToGithub(source: release, releaseId: releaseId)
+                                                pushToDynatraceStorage(source: release, dest: "${PROJECT}/${version}/${release}")
+                                                pushToGithub(rleaseName: release, source: release, releaseId: releaseId)
                                                 break
                                             case "linux":
                                             case "darwin":
-                                                def release = "${PROJECT}-${env.OS}-${env.ARCH}" //name of the tar archive
+                                                def release = "${PROJECT}-${env.OS}-${env.ARCH}"
 
                                                 sh "rm -rf ${release}" //ensure to delete old build
 
-                                                buildBinary(command: release, version: version, dest: "${release}/${PROJECT}")
-                                                createShaSum(source: "${release}/${PROJECT}", dest: "${release}/${PROJECT}.p7m")
-                                                signShaSum(source: "${release}/${PROJECT}.p7m", version: version, destDir: release, projectName: PROJECT)
-                                                createTarArchive(source: release, dest: release + '.tar')
-                                                pushToDynatraceStorage(source: release + '.tar', version: version)
-                                                pushToGithub(source: release + '.tar', releaseId: releaseId)
+                                                buildBinary(command: release, version: version, dest: "${release}/${release}")
+                                                createShaSum(source: "${release}/${release}", dest: "${release}/${release}.sha256")
+//                                                signShaSum(source: "${release}/${release}.p7m", version: version, destDir: "${release}", projectName: PROJECT)
+//                                                createTarArchive(source: release, dest: release + '.tar')
+
+                                                def pathInStorage = "${PROJECT}/${version}/$release"
+                                                pushToDynatraceStorage(source: "${release}/${release}", dest: pathInStorage)
+                                                pushToDynatraceStorage(source: "${release}/${release}.sha256", dest: pathInStorage + ".sha256")
+                                                pushToGithub(rleaseName: release, source: "${release}/${release}", releaseId: releaseId)
+                                                pushToGithub(rleaseName: release + ".sha256", source: "${release}/${release}.sha256", releaseId: releaseId)
                                                 break
                                             case "container":
                                                 createContainerAndPushToStorage(version: version)
@@ -164,7 +168,7 @@ void buildBinary(Map args = [command: null, version: null, dest: null]) {
 
 void signWinBinaries(Map args = [source: null, version: null, destDir: null, projectName: null]) {
     stage('Sign binaries') {
-        signWithSignService(source: args.source, version: args.version, destDir: args.destDir, signAction: "SIGN", projectName: args.projectName)
+        signWithSignService(source: args.source, version: args.version, destDir: args.destDir, projectName: args.projectName, signAction: "SIGN")
     }
 }
 
@@ -176,8 +180,8 @@ void createShaSum(Map args = [source: null, dest: null]) {
 
 void signShaSum(Map args = [source: null, version: null, destDir: null, projectName: null]) {
     stage('Sign SHA sum') {
-        signWithSignService(source: args.source, version: args.version, destDir: args.destDir, signAction: "ENVELOPE", projectName: args.projectName)
-        sh "cat ${args.source}"
+        signWithSignService(source: args.source, version: args.version, destDir: args.destDir, projectName: args.projectName, signAction: "ENVELOPE")
+        sh "cat -v ${args.source}"
     }
 }
 
@@ -187,9 +191,9 @@ void createTarArchive(Map args = [source: null, dest: null]) {
     }
 }
 
-def pushToDynatraceStorage(Map args = [source: null, version: null]) {
-    stage('Deliver tar to storage') {
-        withEnv(["source=${args.source}", "version=${args.version}",]) {
+def pushToDynatraceStorage(Map args = [source: null, dest: null]) {
+    stage('Deliver to storage') {
+        withEnv(["source=${args.source}", "dest=$args.dest"]) {
             withVault(vaultSecrets: [[path        : 'keptn-jenkins/monaco/artifact-storage-deploy',
                                       secretValues: [
                                           [envVar: 'repo_path', vaultKey: 'repo_path', isRequired: true],
@@ -197,7 +201,7 @@ def pushToDynatraceStorage(Map args = [source: null, version: null]) {
                                           [envVar: 'password', vaultKey: 'password', isRequired: true]]]]
             ) {
                 sh '''
-                    curl --request PUT $repo_path/monaco/$version/$source
+                    curl --request PUT $repo_path/$dest
                          --user "$username":"$password"
                          --fail-with-body
                          --upload-file $source
@@ -207,7 +211,7 @@ def pushToDynatraceStorage(Map args = [source: null, version: null]) {
     }
 }
 
-void signWithSignService(Map args = [source: null, version: null, destDir: null, signAction: null, projectName: null]) {
+void signWithSignService(Map args = [source: null, version: null, destDir: '.', signAction: null, projectName: null]) {
     withEnv(["source=${args.source}", "version=${args.version}", "destDir=${args.destDir}", "signAction=${args.signAction}", "project=${args.projectName}"]) {
         withVault(vaultSecrets: [[path        : 'signing-service-authentication/monaco',
                                   secretValues: [
@@ -282,15 +286,15 @@ int createGitHubRelease(Map args = [version: null]) {
     }
 }
 
-void pushToGithub(Map args = [source: '', releaseId: '']) {
+void pushToGithub(Map args = [rleaseName: null, source: null, releaseId: null]) {
     stage('Deliver to GitHub') {
-        withEnv(["source=${args.source}", "releaseId=${args.releaseId}",
+        withEnv(["rleaseName=${args.rleaseName}", "source=${args.source}", "releaseId=${args.releaseId}",
         ]) {
             withVault(vaultSecrets: [[path        : 'keptn-jenkins/monaco/github-credentials',
                                       secretValues: [[envVar: 'token', vaultKey: 'access_token', isRequired: true]]]]
             ) {
                 sh '''
-                    curl --request POST https://uploads.github.com/repos/Dynatrace/dynatrace-configuration-as-code/releases/$releaseId/assets?name=$source
+                    curl --request POST https://uploads.github.com/repos/Dynatrace/dynatrace-configuration-as-code/releases/$releaseId/assets?name=$rleaseName
                          --header "Accept: application/vnd.github+json"
                          --header "Authorization: Bearer $token"
                          --header "X-GitHub-Api-Version: 2022-11-28"
