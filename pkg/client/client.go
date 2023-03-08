@@ -673,7 +673,7 @@ func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLa
 		}
 	}
 
-	resp, receivedCount, totalReceivedCount, _, err = d.runAndProcessResponse(false, u, addToResult, receivedCount, totalReceivedCount, urlPath, logLabel)
+	resp, receivedCount, totalReceivedCount, _, err = d.runAndProcessResponse(false, u, addToResult, receivedCount, totalReceivedCount, urlPath)
 	if err != nil {
 		return resp, respError.RespError{
 			WrappedError: err,
@@ -695,7 +695,7 @@ func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLa
 			u = rest.AddNextPageQueryParams(u, nextPageKey)
 
 			var doBreak bool
-			resp, receivedCount, totalReceivedCount, doBreak, err = d.runAndProcessResponse(true, u, addToResult, receivedCount, totalReceivedCount, urlPath, logLabel)
+			resp, receivedCount, totalReceivedCount, doBreak, err = d.runAndProcessResponse(true, u, addToResult, receivedCount, totalReceivedCount, urlPath)
 			if err != nil {
 				return resp, respError.RespError{
 					WrappedError: err,
@@ -763,11 +763,11 @@ func isRetryOnEmptyResponse(receivedCount int, emptyResponseRetryCount int, resp
 
 func (d *DynatraceClient) runAndProcessResponse(isNextCall bool, u *url.URL,
 	addToResult func(body []byte) (int, int, error),
-	receivedCount int, totalReceivedCount int, urlPath string, logLabel string) (rest.Response, int, int, bool, error) {
+	receivedCount int, totalReceivedCount int, urlPath string) (rest.Response, int, int, bool, error) {
 	var doBreak bool
 
 	resp, err := rest.GetWithRetry(d.client, u.String(), d.retrySettings.Normal)
-	doBreak, err = validateRespErrors(isNextCall, err, resp, urlPath, logLabel)
+	doBreak, err = validateRespErrors(isNextCall, err, resp, urlPath)
 	if err != nil || doBreak {
 		return resp, receivedCount, totalReceivedCount, doBreak, err
 	}
@@ -788,7 +788,7 @@ func buildUrl(environmentUrl, urlPath string, params url.Values) (*url.URL, erro
 	return u, nil
 }
 
-func validateRespErrors(isNextCall bool, err error, resp rest.Response, urlPath string, logLabel string) (bool, error) {
+func validateRespErrors(isNextCall bool, err error, resp rest.Response, urlPath string) (bool, error) {
 	if err != nil {
 		return false, err
 	}

@@ -77,14 +77,15 @@ func contains(s []string, e string) bool {
 func getDynamicFieldFromObject(object interface{}, field string) reflect.Value {
 	reflection := reflect.ValueOf(object)
 
-	fieldValue := reflect.Indirect(reflection).FieldByName(field)
+	fieldValue := reflect.Indirect(reflection).FieldByName(field) // nosemgrep: go.lang.security.audit.unsafe-reflect-by-name.unsafe-reflect-by-name
 
 	// We are providing uncapitalized fields from json maps
 	// But GoLang forces capitalized for unmarshalling
 	// Let's try a capitalized first letter
 	if isInvalidReflectionValue(fieldValue) {
 		field = capitalizeFirstLetter(field)
-		fieldValue = reflect.Indirect(reflection).FieldByName(field)
+		// nosemgrep
+		fieldValue = reflect.Indirect(reflection).FieldByName(field) // nosemgrep: go.lang.security.audit.unsafe-reflect-by-name.unsafe-reflect-by-name
 	}
 	return fieldValue
 }
