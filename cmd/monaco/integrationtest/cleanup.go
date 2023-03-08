@@ -19,14 +19,15 @@
 package integrationtest
 
 import (
+	"strings"
+	"testing"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"github.com/spf13/afero"
-	"strings"
-	"testing"
 )
 
 // Deletes all configs that end with a test suffix and any Settings created by the given manifest
@@ -101,7 +102,7 @@ func cleanupSettings(t *testing.T, fs afero.Fs, manifestPath string, loadedManif
 
 func deleteSettingsObjects(t *testing.T, schema, externalID string, c client.SettingsClient) {
 	objects, err := c.ListSettings(schema, client.ListSettingsOptions{DiscardValue: true, Filter: func(o client.DownloadSettingsObject) bool { return o.ExternalId == externalID }})
-	if err != nil {
+	if err.WrappedError != nil {
 		t.Logf("Failed to cleanup test config: could not fetch settings 2.0 objects with schema ID %s: %v", schema, err)
 		return
 	}

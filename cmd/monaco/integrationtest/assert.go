@@ -21,6 +21,9 @@ package integrationtest
 import (
 	"errors"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
@@ -34,8 +37,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2/topologysort"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
-	"testing"
-	"time"
 )
 
 // AssertAllConfigsAvailability checks all configurations of a given project with given availability
@@ -167,7 +168,7 @@ func assertConfig(t *testing.T, client client.ConfigClient, theApi api.Api, envi
 func assertSetting(t *testing.T, c client.SettingsClient, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config) {
 	expectedExtId := idutils.GenerateExternalID(config.Type.SchemaId, config.Coordinate.ConfigId)
 	objects, err := c.ListSettings(config.Type.SchemaId, client.ListSettingsOptions{DiscardValue: true, Filter: func(o client.DownloadSettingsObject) bool { return o.ExternalId == expectedExtId }})
-	assert.NilError(t, err)
+	assert.NilError(t, err.WrappedError)
 
 	if len(objects) > 1 {
 		t.Errorf("Expected a specific Settings Object with externalId %q, but %d are present instead.", expectedExtId, len(objects))

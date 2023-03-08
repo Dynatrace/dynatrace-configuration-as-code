@@ -20,12 +20,12 @@ package rest
 
 import (
 	"errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/throttle"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/timeutils"
 	"github.com/golang/mock/gomock"
 	"gotest.tools/assert"
 	"net/http"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 )
@@ -52,36 +52,6 @@ func createTimelineProviderMock(t *testing.T) *timeutils.MockTimelineProvider {
 	defer mockCtrl.Finish()
 
 	return timeutils.NewMockTimelineProvider(mockCtrl)
-}
-
-func TestDurationStaysTheSameIfInputIsWithinMinMaxLimits(t *testing.T) {
-
-	rateLimitStrategy := simpleSleepRateLimitStrategy{}
-
-	value := rateLimitStrategy.applyMinMaxDefaults(6 * time.Second)
-	assert.Equal(t, 6, int(value.Seconds()))
-	value = rateLimitStrategy.applyMinMaxDefaults(59 * time.Second)
-	assert.Equal(t, 59, int(value.Seconds()))
-}
-
-func TestDurationWillBeTheMinimumIfInputIsSmallerThanMinLimit(t *testing.T) {
-
-	rateLimitStrategy := simpleSleepRateLimitStrategy{}
-
-	value := rateLimitStrategy.applyMinMaxDefaults(500 * time.Millisecond)
-	assert.Equal(t, 1, int(value.Seconds()))
-	value = rateLimitStrategy.applyMinMaxDefaults(-19 * time.Second)
-	assert.Equal(t, 1, int(value.Seconds()))
-}
-
-func TestDurationWillBeTheMaximumIfInputIsLargerThanMaxLimit(t *testing.T) {
-
-	rateLimitStrategy := simpleSleepRateLimitStrategy{}
-
-	value := rateLimitStrategy.applyMinMaxDefaults(61 * time.Second)
-	assert.Equal(t, 60, int(value.Seconds()))
-	value = rateLimitStrategy.applyMinMaxDefaults(3600 * time.Second)
-	assert.Equal(t, 60, int(value.Seconds()))
 }
 
 func TestRateLimitHeaderExtractionForCorrectHeaders(t *testing.T) {
@@ -175,7 +145,7 @@ func TestSimpleRateLimitStrategySleepsGeneratedTimeout_IfHeaderIsMissingLimit(t 
 
 	timelineProvider.EXPECT().Now().Times(1).Return(time.Unix(0, 0)) // time travel to the 70s
 	timelineProvider.EXPECT().Sleep(gomock.Any()).Times(1).Do(func(duration time.Duration) {
-		assert.Assert(t, duration >= minWaitDuration)
+		assert.Assert(t, duration >= throttle.MinWaitDuration)
 	})
 
 	response, err := rateLimitStrategy.executeRequest(timelineProvider, callback)
@@ -224,61 +194,4 @@ func TestHandleEmptyResponse(t *testing.T) {
 
 	_, err := rateLimitStrategy.executeRequest(timelineProvider, callback)
 	assert.ErrorContains(t, err, "foo Error")
-}
-
-func TestGeneratedSleepDurationsAreWithinExpectedBoundsAndDistribution(t *testing.T) {
-	s := &simpleSleepRateLimitStrategy{}
-
-	timelineProvider := createTimelineProviderMock(t)
-	timelineProvider.EXPECT().Now().Times(100).Return(time.Unix(0, 0))
-
-	expectedMinSleepDuration := minWaitDuration
-	expectedMaxSleepDuration := 2 * minWaitDuration
-
-	producedDurations := map[time.Duration]int{}
-	for i := 0; i < 100; i++ {
-		gotSleepDuration, _ := s.generateSleepDuration(1, timelineProvider)
-		assert.Assert(t, gotSleepDuration > expectedMinSleepDuration)
-		assert.Assert(t, gotSleepDuration <= expectedMaxSleepDuration)
-
-		producedDurations[gotSleepDuration] += 1
-	}
-
-	for _, times := range producedDurations {
-		assert.Assert(t, times < 5, "expected it less than 5% of random sleep durations to overlap")
-	}
-}
-
-func TestGenerateSleepDurationSetsBackoffMultiplierOfAtLeastOne(t *testing.T) {
-	s := &simpleSleepRateLimitStrategy{}
-
-	timelineProvider := createTimelineProviderMock(t)
-	timelineProvider.EXPECT().Now().Return(time.Unix(0, 0))
-
-	expectedMinSleepDuration := minWaitDuration
-	expectedMaxSleepDuration := 2 * minWaitDuration
-
-	gotSleepDuration, _ := s.generateSleepDuration(0, timelineProvider)
-	assert.Assert(t, gotSleepDuration > expectedMinSleepDuration, "if backoff multiplier was >=1 sleep duration should be more than min wait")
-	assert.Assert(t, gotSleepDuration <= expectedMaxSleepDuration)
-}
-
-func TestGenerateSleepDurationGeneratesLongerWaitBasedOnMultiplier(t *testing.T) {
-	s := &simpleSleepRateLimitStrategy{}
-
-	timelineProvider := createTimelineProviderMock(t)
-	timelineProvider.EXPECT().Now().Times(2).Return(time.Unix(0, 0))
-
-	smallMultiplierDuration, _ := s.generateSleepDuration(1, timelineProvider)
-	bigMultiplierDuration, _ := s.generateSleepDuration(100, timelineProvider)
-	assert.Assert(t, smallMultiplierDuration < bigMultiplierDuration)
-}
-
-func TestGenerateSleepDurationProducesHumanReadableTimestamp(t *testing.T) {
-	s := &simpleSleepRateLimitStrategy{}
-
-	timelineProvider := createTimelineProviderMock(t)
-	timelineProvider.EXPECT().Now().Return(time.Date(2022, 10, 18, 0, 0, 0, 0, time.UTC))
-	_, gotHumanReadableTimestamp := s.generateSleepDuration(1, timelineProvider)
-	assert.Assert(t, strings.Contains(gotHumanReadableTimestamp, "2022-10-18T00:00:"), "expected human readable timestamp containing '2022-10-18T00:00:' but got '%s'", gotHumanReadableTimestamp)
 }

@@ -19,11 +19,13 @@ package rest
 import (
 	"bytes"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/timeutils"
-	"github.com/google/uuid"
 	"io"
 	"net/http"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/timeutils"
+
+	"github.com/google/uuid"
 )
 
 func Get(client *http.Client, url string) (Response, error) {
@@ -148,12 +150,18 @@ func executeRequest(client *http.Client, request *http.Request) (Response, error
 			}
 		}
 
-		return Response{
+		nextPageKey, totalCount, pageSize := getPaginationValues(body)
+
+		returnResponse := Response{
 			StatusCode:  resp.StatusCode,
 			Body:        body,
 			Headers:     resp.Header,
-			NextPageKey: GetNextPageKeyIfExists(body),
-		}, err
+			NextPageKey: nextPageKey,
+			TotalCount:  totalCount,
+			PageSize:    pageSize,
+		}
+
+		return returnResponse, err
 	})
 
 	if err != nil {

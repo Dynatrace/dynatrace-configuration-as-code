@@ -21,16 +21,17 @@ package integrationtest
 import (
 	"bufio"
 	"fmt"
-	"github.com/spf13/afero"
 	"math/rand"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/spf13/afero"
 )
 
 func GenerateTestSuffix(generalSuffix string) string {
-	rand.Seed(time.Now().UnixNano())
-	randomNumber := rand.Intn(10000)
+	newRand := rand.New(rand.NewSource(time.Now().UnixNano())) //nolint:gosec
+	randomNumber := newRand.Intn(10000)
 
 	timestamp := time.Now().Format("20060102150405")
 	suffix := fmt.Sprintf("%s_%d_%s", timestamp, randomNumber, generalSuffix)

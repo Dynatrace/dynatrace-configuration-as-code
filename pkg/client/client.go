@@ -21,15 +21,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
-	version2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
-	"golang.org/x/oauth2/clientcredentials"
 	"net/http"
 	"net/url"
 	"runtime"
+	"strconv"
 	"strings"
+	"time"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/throttle"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
+	version2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
+	"golang.org/x/oauth2/clientcredentials"
 
 	. "github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
@@ -110,7 +114,7 @@ type SettingsClient interface {
 	ListSchemas() (SchemaList, error)
 
 	// ListSettings returns all settings objects for a given schema.
-	ListSettings(string, ListSettingsOptions) ([]DownloadSettingsObject, error)
+	ListSettings(string, ListSettingsOptions) ([]DownloadSettingsObject, RespError)
 
 	// GetSettingById returns the setting with the given object ID
 	GetSettingById(string) (*DownloadSettingsObject, error)
@@ -121,13 +125,18 @@ type SettingsClient interface {
 
 // defaultListSettingsFields  are the fields we are interested in when getting setting objects
 const defaultListSettingsFields = "objectId,value,externalId,schemaVersion,schemaId,scope"
-const defaultListEntitiesFields = "+lastSeenTms,+firstSeenTms,+tags,+managementZones,+toRelationships,+fromRelationships,+icon,+properties"
 
 // reducedListSettingsFields are the fields we are interested in when getting settings objects but don't care about the
 // actual value payload
 const reducedListSettingsFields = "objectId,externalId,schemaVersion,schemaId,scope"
 const defaultPageSize = "500"
-const defaultEntityRelativeTimeframe = "now-5w"
+const defaultPageSizeEntities = "4000"
+
+const defaultEntityDurationTimeframeFrom = -5 * 7 * 24 * time.Hour
+
+// Not extracting the last 10 minutes to make sure what we extract is stable
+// And avoid extracting more entities than the TotalCount from the first page of extraction
+const defaultEntityDurationTimeframeTo = -10 * time.Minute
 
 // ListSettingsOptions are additional options for the ListSettings method
 // of the Settings client
@@ -153,10 +162,10 @@ type ListSettingsFilter func(DownloadSettingsObject) bool
 type EntitiesClient interface {
 
 	// ListEntitiesTypes returns all entities types
-	ListEntitiesTypes() (EntitiesTypeList, error)
+	ListEntitiesTypes() ([]EntitiesType, RespError)
 
 	// ListEntities returns all entities objects for a given type.
-	ListEntities(string) ([]string, error)
+	ListEntities(EntitiesType) ([]string, RespError)
 }
 
 //go:generate mockgen -source=client.go -destination=client_mock.go -package=client -imports .=github.com/dynatrace/dynatrace-configuration-as-code/pkg/api DynatraceClient
@@ -407,7 +416,7 @@ func (d *DynatraceClient) ReadConfigById(api Api, id string) (json []byte, err e
 	}
 
 	if !success(response) {
-		return nil, fmt.Errorf("Failed to get existing config for api %v (HTTP %v)!\n    Response was: %v", api.GetId(), response.StatusCode, string(response.Body))
+		return nil, fmt.Errorf("failed to get existing config for api %v (HTTP %v)!\n    Response was: %v", api.GetId(), response.StatusCode, string(response.Body))
 	}
 
 	return response.Body, nil
@@ -503,7 +512,8 @@ func (d *DynatraceClient) GetSettingById(objectId string) (*DownloadSettingsObje
 	return &result, nil
 }
 
-func (d *DynatraceClient) ListSettings(schemaId string, opts ListSettingsOptions) ([]DownloadSettingsObject, error) {
+func (d *DynatraceClient) ListSettings(schemaId string, opts ListSettingsOptions) ([]DownloadSettingsObject, RespError) {
+	log.Debug("Downloading all settings for schema %s", schemaId)
 
 	listSettingsFields := defaultListSettingsFields
 	if opts.DiscardValue {
@@ -517,12 +527,12 @@ func (d *DynatraceClient) ListSettings(schemaId string, opts ListSettingsOptions
 
 	result := make([]DownloadSettingsObject, 0)
 
-	addToResult := func(body []byte) error {
+	addToResult := func(body []byte) (int, int, error) {
 		var parsed struct {
 			Items []DownloadSettingsObject `json:"items"`
 		}
 		if err := json.Unmarshal(body, &parsed); err != nil {
-			return fmt.Errorf("failed to unmarshal response: %w", err)
+			return 0, len(result), fmt.Errorf("failed to unmarshal response: %w", err)
 		}
 
 		// eventually apply filter
@@ -536,12 +546,12 @@ func (d *DynatraceClient) ListSettings(schemaId string, opts ListSettingsOptions
 			}
 		}
 
-		return nil
+		return len(parsed.Items), len(result), nil
 	}
 
-	err := d.ListPaginated(pathSettingsObjects, params, addToResult)
+	_, err := d.listPaginated(pathSettingsObjects, params, schemaId, addToResult)
 
-	if err != nil {
+	if err.WrappedError != nil {
 		return nil, err
 	}
 
@@ -549,61 +559,69 @@ func (d *DynatraceClient) ListSettings(schemaId string, opts ListSettingsOptions
 }
 
 type EntitiesTypeListResponse struct {
-	Types EntitiesTypeList `json:"types"`
+	Types []EntitiesType `json:"types"`
 }
-type EntitiesTypeList []struct {
-	EntitiesType string `json:"type"`
+type EntitiesType struct {
+	EntitiesTypeId  string                   `json:"type"`
+	ToRelationships []map[string]interface{} `json:"toRelationships"`
+	Properties      []map[string]interface{} `json:"properties"`
 }
 
-func (d *DynatraceClient) ListEntitiesTypes() (EntitiesTypeList, error) {
+func (d *DynatraceClient) ListEntitiesTypes() ([]EntitiesType, RespError) {
 
 	params := url.Values{
 		"pageSize": []string{defaultPageSize},
 	}
 
-	result := make(EntitiesTypeList, 0)
+	result := make([]EntitiesType, 0)
 
-	addToResult := func(body []byte) error {
+	addToResult := func(body []byte) (int, int, error) {
 		var parsed EntitiesTypeListResponse
 
 		if err1 := json.Unmarshal(body, &parsed); err1 != nil {
-			return fmt.Errorf("failed to unmarshal response: %w", err1)
+			return 0, len(result), fmt.Errorf("failed to unmarshal response: %w", err1)
 		}
 
 		result = append(result, parsed.Types...)
 
-		return nil
+		return len(parsed.Types), len(result), nil
 	}
 
-	err := d.ListPaginated(pathEntitiesTypes, params, addToResult)
+	resp, err := d.listPaginated(pathEntitiesTypes, params, "EntityTypeList", addToResult)
 
-	if err != nil {
-		return nil, err
+	if err.WrappedError != nil {
+		return nil, RespError{
+			WrappedError: err,
+			StatusCode:   resp.StatusCode,
+		}
 	}
 
-	return result, err
+	return result, RespError{
+		WrappedError: err,
+		StatusCode:   resp.StatusCode,
+	}
 }
 
 type EntityListResponseRaw struct {
 	Entities []json.RawMessage `json:"entities"`
 }
 
-func (d *DynatraceClient) ListEntities(entityType string) ([]string, error) {
+func genTimeframeUnixMilliString(duration time.Duration) string {
+	return strconv.FormatInt(time.Now().Add(duration).UnixMilli(), 10)
+}
 
-	params := url.Values{
-		"entitySelector": []string{"type(\"" + entityType + "\")"},
-		"pageSize":       []string{defaultPageSize},
-		"fields":         []string{defaultListEntitiesFields},
-		"from":           []string{defaultEntityRelativeTimeframe},
-	}
+func (d *DynatraceClient) ListEntities(entitiesType EntitiesType) ([]string, RespError) {
+
+	entityType := entitiesType.EntitiesTypeId
+	log.Debug("Downloading all entities for entities Type %s", entityType)
 
 	result := make([]string, 0)
 
-	addToResult := func(body []byte) error {
+	addToResult := func(body []byte) (int, int, error) {
 		var parsedRaw EntityListResponseRaw
 
 		if err1 := json.Unmarshal(body, &parsedRaw); err1 != nil {
-			return fmt.Errorf("failed to unmarshal response: %w", err1)
+			return 0, len(result), fmt.Errorf("failed to unmarshal response: %w", err1)
 		}
 
 		entitiesContentList := make([]string, len(parsedRaw.Entities))
@@ -614,63 +632,101 @@ func (d *DynatraceClient) ListEntities(entityType string) ([]string, error) {
 
 		result = append(result, entitiesContentList...)
 
-		return nil
+		return len(parsedRaw.Entities), len(result), nil
 	}
 
-	err := d.ListPaginated(pathEntitiesObjects, params, addToResult)
+	runExtraction := true
+	ignoreProperties := []string{}
 
-	if err != nil {
-		return nil, err
+	for runExtraction {
+		params := genListEntitiesParams(entityType, entitiesType, ignoreProperties)
+		resp, err := d.listPaginated(pathEntitiesObjects, params, entityType, addToResult)
+
+		runExtraction, ignoreProperties, err = handleListEntitiesError(entityType, resp, runExtraction, ignoreProperties, err)
+
+		if err.WrappedError != nil {
+			return nil, err
+		}
 	}
 
-	return result, err
+	return result, RespError{}
 }
 
-func (d *DynatraceClient) ListPaginated(urlPath string, params url.Values, addToResult func(body []byte) error) error {
-	u, err := url.Parse(d.environmentUrl + urlPath)
+func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLabel string,
+	addToResult func(body []byte) (int, int, error)) (rest.Response, RespError) {
+
+	var resp rest.Response
+	startTime := time.Now()
+	receivedCount := 0
+	totalReceivedCount := 0
+
+	u, err := buildUrl(d.environmentUrl, urlPath, params)
 	if err != nil {
-		return fmt.Errorf("failed to parse URL '%s': %w", d.environmentUrl+urlPath, err)
+		return resp, RespError{
+			WrappedError: err,
+			StatusCode:   0,
+		}
 	}
 
-	u.RawQuery = params.Encode()
-
-	resp, err := rest.GetWithRetry(d.client, u.String(), d.retrySettings.Normal)
+	resp, receivedCount, totalReceivedCount, _, err = d.runAndProcessResponse(false, u, addToResult, receivedCount, totalReceivedCount, urlPath)
 	if err != nil {
-		return err
+		return resp, RespError{
+			WrappedError: err,
+			StatusCode:   resp.StatusCode,
+		}
 	}
 
-	if !success(resp) {
-		return fmt.Errorf("request failed with HTTP (%d).\n\tResponse content: %s", resp.StatusCode, string(resp.Body))
-	}
+	nbCalls := 1
+	lastLogTime := time.Now()
+	expectedTotalCount := resp.TotalCount
+	nextPageKey := resp.NextPageKey
+	emptyResponseRetryCount := 0
 
 	for {
-		err = addToResult(resp.Body)
-		if err != nil {
-			return err
-		}
 
-		if resp.NextPageKey != "" {
-			u = rest.AddNextPageQueryParams(u, resp.NextPageKey)
+		if nextPageKey != "" {
+			logLongRunningExtractionProgress(&lastLogTime, startTime, nbCalls, resp, logLabel)
 
-			resp, err = rest.GetWithRetry(d.client, u.String(), d.retrySettings.Normal)
+			u = rest.AddNextPageQueryParams(u, nextPageKey)
 
+			var isLastAvailablePage bool
+			resp, receivedCount, totalReceivedCount, isLastAvailablePage, err = d.runAndProcessResponse(true, u, addToResult, receivedCount, totalReceivedCount, urlPath)
 			if err != nil {
-				return err
+				return resp, RespError{
+					WrappedError: err,
+					StatusCode:   resp.StatusCode,
+				}
 			}
-
-			if !success(resp) && resp.StatusCode != http.StatusBadRequest {
-				return fmt.Errorf("Failed to get further data from paginated API %s (HTTP %d)!\n    Response was: %s", urlPath, resp.StatusCode, string(resp.Body))
-			} else if resp.StatusCode == http.StatusBadRequest {
-				log.Warn("Failed to get additional data from paginated API %s - pages may have been removed during request.\n    Response was: %s", urlPath, string(resp.Body))
+			if isLastAvailablePage {
 				break
 			}
 
+			retry := false
+			retry, emptyResponseRetryCount, err = isRetryOnEmptyResponse(receivedCount, emptyResponseRetryCount, resp)
+			if err != nil {
+				return resp, RespError{
+					WrappedError: err,
+					StatusCode:   resp.StatusCode,
+				}
+			}
+
+			if retry {
+				continue
+			} else {
+				validateWrongCountExtracted(resp, totalReceivedCount, expectedTotalCount, urlPath, logLabel, nextPageKey, params)
+
+				nextPageKey = resp.NextPageKey
+				nbCalls++
+				emptyResponseRetryCount = 0
+			}
+
 		} else {
+
 			break
 		}
 	}
 
-	return nil
+	return resp, RespError{}
 
 }
 
@@ -682,4 +738,96 @@ func (d *DynatraceClient) DeleteSettings(objectID string) error {
 
 	return rest.DeleteConfig(d.client, u.String(), objectID)
 
+}
+
+const emptyResponseRetryMax = 10
+
+func isRetryOnEmptyResponse(receivedCount int, emptyResponseRetryCount int, resp rest.Response) (bool, int, error) {
+	if receivedCount == 0 {
+		if emptyResponseRetryCount < emptyResponseRetryMax {
+			emptyResponseRetryCount++
+			throttle.ThrottleCallAfterError(emptyResponseRetryCount, "Received empty array response, retrying with same nextPageKey (HTTP: %d) ", resp.StatusCode)
+			return true, emptyResponseRetryCount, nil
+		} else {
+			return false, emptyResponseRetryCount, fmt.Errorf("received too many empty responses (=%d)", emptyResponseRetryCount)
+		}
+	}
+
+	return false, emptyResponseRetryCount, nil
+}
+
+func (d *DynatraceClient) runAndProcessResponse(isNextCall bool, u *url.URL,
+	addToResult func(body []byte) (int, int, error),
+	receivedCount int, totalReceivedCount int, urlPath string) (rest.Response, int, int, bool, error) {
+	isLastAvailablePage := false
+
+	resp, err := rest.GetWithRetry(d.client, u.String(), d.retrySettings.Normal)
+	isLastAvailablePage, err = validateRespErrors(isNextCall, err, resp, urlPath)
+	if err != nil || isLastAvailablePage {
+		return resp, receivedCount, totalReceivedCount, isLastAvailablePage, err
+	}
+
+	receivedCount, totalReceivedCount, err = addToResult(resp.Body)
+
+	return resp, receivedCount, totalReceivedCount, isLastAvailablePage, err
+}
+
+func buildUrl(environmentUrl, urlPath string, params url.Values) (*url.URL, error) {
+	u, err := url.Parse(environmentUrl + urlPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse URL '%s': %w", environmentUrl+urlPath, err)
+	}
+
+	u.RawQuery = params.Encode()
+
+	return u, nil
+}
+
+func validateRespErrors(isNextCall bool, err error, resp rest.Response, urlPath string) (bool, error) {
+	isLastAvailablePage := false
+
+	if err != nil {
+		return isLastAvailablePage, err
+	}
+
+	if success(resp) {
+		return isLastAvailablePage, nil
+
+	} else if isNextCall {
+		if resp.StatusCode == http.StatusBadRequest {
+			isLastAvailablePage = true
+			log.Warn("Failed to get additional data from paginated API %s - pages may have been removed during request.\n    Response was: %s", urlPath, string(resp.Body))
+			return isLastAvailablePage, nil
+		} else {
+			return isLastAvailablePage, fmt.Errorf("failed to get further data from paginated API %s (HTTP %d)!\n    Response was: %s", urlPath, resp.StatusCode, string(resp.Body))
+		}
+	} else {
+		return isLastAvailablePage, fmt.Errorf("failed to get data from paginated API %s (HTTP %d)!\n    Response was: %s", urlPath, resp.StatusCode, string(resp.Body))
+	}
+
+}
+
+func validateWrongCountExtracted(resp rest.Response, totalReceivedCount int, expectedTotalCount int, urlPath string, logLabel string, nextPageKey string, params url.Values) {
+	if resp.NextPageKey == "" && totalReceivedCount != expectedTotalCount {
+		log.Warn("Total count of items from api: %v for: %s does not match with count of actually downloaded items. Expected: %d Got: %d, last next page key received: %s \n   params: %v", urlPath, logLabel, expectedTotalCount, totalReceivedCount, nextPageKey, params)
+	}
+}
+
+func logLongRunningExtractionProgress(lastLogTime *time.Time, startTime time.Time, nbCalls int, resp rest.Response, logLabel string) {
+	if time.Since(*lastLogTime).Minutes() >= 1 {
+		*lastLogTime = time.Now()
+		nbItemsMessage := ""
+		ETAMessage := ""
+		runningMinutes := time.Since(startTime).Minutes()
+		nbCallsPerMinute := (float64(nbCalls) / runningMinutes)
+		if resp.PageSize > 0 && resp.TotalCount > 0 {
+			nbProcessed := (nbCalls * resp.PageSize)
+			nbLeft := resp.TotalCount - nbProcessed
+			ETAMinutes := float64(nbLeft) / (nbCallsPerMinute * float64(resp.PageSize))
+			nbItemsMessage = fmt.Sprintf(", processed %d of %d at %d items/call and", nbProcessed, resp.TotalCount, resp.PageSize)
+			ETAMessage = fmt.Sprintf("ETA: %.1f minutes", (ETAMinutes))
+		}
+
+		log.Debug("Running extration of: %s for %.1f minutes%s %.1f call/minute. %s", logLabel, runningMinutes, nbItemsMessage, nbCallsPerMinute, ETAMessage)
+	}
 }
