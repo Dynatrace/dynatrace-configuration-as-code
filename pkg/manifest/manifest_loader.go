@@ -15,8 +15,10 @@
 package manifest
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	version2 "github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"os"
@@ -163,12 +165,84 @@ func parseManifest(context *ManifestLoaderContext, data []byte) (Manifest, []err
 	}, nil
 }
 
+func parseAuth(t EnvironmentType, a auth) (Auth, error) {
+	token, err := parseToken(a.Token)
+	if err != nil {
+		return Auth{}, fmt.Errorf("error parsing token: %w", err)
+	}
+
+	o, err := parseOAuth(a.OAuth)
+
+	if t == Platform {
+		if err != nil {
+			return Auth{}, fmt.Errorf("failed to parse OAuth credentials: %w", err)
+		}
+
+		return Auth{
+			Token: token,
+			OAuth: o,
+		}, nil
+	}
+
+	if o.ClientId != "" || o.ClientSecret != "" {
+		return Auth{}, errors.New("found OAuth credentials on a Dynatrace Classic environment. If the environment is a Dynatrace Platform environment, change the type to 'Platform'")
+	}
+
+	return Auth{
+		Token: token,
+		OAuth: o,
+	}, nil
+}
+
+func parseOAuthSecret(s authSecret) (string, error) {
+
+	if s.Type == "" || s.Type == typeValue {
+
+		if s.Value == "" {
+			return "", errors.New("type is value, but no value given or empty")
+		}
+
+		return s.Value, nil
+	}
+
+	if s.Name == "" {
+		return "", errors.New("type is environment, but no name given or empty")
+	}
+
+	v, f := os.LookupEnv(s.Name)
+	if !f {
+		return "", fmt.Errorf("environment-variable name given, but not found")
+	}
+
+	if v == "" {
+		return "", errors.New("environment-variable found but the value is empty")
+	}
+
+	return v, nil
+}
+
+func parseOAuth(a oAuth) (OAuth, error) {
+	clientID, err := parseOAuthSecret(a.ClientID)
+	if err != nil {
+		return OAuth{}, fmt.Errorf("failed to parse ClientID: %w", err)
+	}
+
+	clientSecret, err := parseOAuthSecret(a.ClientSecret)
+	if err != nil {
+		return OAuth{}, fmt.Errorf("failed to parse ClientSecret: %w", err)
+	}
+
+	return OAuth{
+		ClientId:     clientID,
+		ClientSecret: clientSecret,
+	}, nil
+}
+
 func parseManifestFile(context *ManifestLoaderContext, data []byte) (manifest, []error) {
 	var m manifest
 	var errs []error
 
 	err := yaml.UnmarshalStrict(data, &m)
-
 	if err != nil {
 		errs = append(errs, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("error during parsing the manifest: %s", err)))
 	}
@@ -266,10 +340,9 @@ func toEnvironment(context *ManifestLoaderContext, config environment, group str
 		errors = append(errors, err)
 	}
 
-	token, err := parseToken(context, config, group, config.Token)
-
+	a, err := parseCredentials(config, envType)
 	if err != nil {
-		errors = append(errors, err)
+		errors = append(errors, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, err.Error()))
 	}
 
 	urlDef, err := parseUrlDefinition(context, config, group)
@@ -282,14 +355,39 @@ func toEnvironment(context *ManifestLoaderContext, config environment, group str
 	}
 
 	return EnvironmentDefinition{
-		Name: config.Name,
-		Type: envType,
-		Url:  urlDef,
-		Auth: Auth{
-			Token: token,
-		},
+		Name:  config.Name,
+		Type:  envType,
+		Url:   urlDef,
+		Auth:  a,
 		Group: group,
 	}, nil
+}
+
+func parseCredentials(config environment, envType EnvironmentType) (Auth, error) {
+	if config.Token == nil && config.Auth == nil {
+		return Auth{}, errors.New("'auth' property missing")
+	}
+
+	if config.Token != nil && config.Auth != nil {
+		return Auth{}, errors.New("both auth and token are present. Please move the token into the auth property")
+	}
+
+	if config.Token != nil {
+		log.Warn("Environment %s: The field 'Token' is deprecated, use 'Auth.Token' instead.", config.Name)
+		token, err := parseToken(*config.Token)
+		if err != nil {
+			return Auth{}, fmt.Errorf("failed to parse token: %w", err)
+		}
+
+		return Auth{Token: token}, nil
+	}
+
+	a, err := parseAuth(envType, *config.Auth)
+	if err != nil {
+		return Auth{}, fmt.Errorf("failed to parse auth section: %w", err)
+	}
+
+	return a, nil
 }
 
 func parseUrlDefinition(context *ManifestLoaderContext, config environment, group string) (UrlDefinition, error) {
@@ -340,7 +438,7 @@ func parseEnvironmentType(context *ManifestLoaderContext, config environment, g 
 	return Classic, newManifestEnvironmentLoaderError(context.ManifestPath, g, config.Name, fmt.Sprintf(`invalid environment-type %q. Allowed values are "classic" (default) and "platform"`, config.Type))
 }
 
-func parseToken(context *ManifestLoaderContext, config environment, group string, token tokenConfig) (Token, error) {
+func parseToken(token tokenConfig) (Token, error) {
 	var tokenType string
 
 	if token.Type == "" {
@@ -351,26 +449,26 @@ func parseToken(context *ManifestLoaderContext, config environment, group string
 
 	switch tokenType {
 	case "environment":
-		return parseEnvironmentToken(context, group, config, token)
+		return parseEnvironmentToken(token)
 	}
 
-	return Token{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("unknown token type `%s`", tokenType))
+	return Token{}, fmt.Errorf("unknown token type `%s`", tokenType)
 }
 
-func parseEnvironmentToken(context *ManifestLoaderContext, group string, config environment, token tokenConfig) (Token, error) {
+func parseEnvironmentToken(token tokenConfig) (Token, error) {
 
 	if token.Name == "" {
-		return Token{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, "token `name` is missing or empty")
+		return Token{}, errors.New("token `name` is missing or empty")
 	}
 
 	// resolve token value immediately
 	val, found := os.LookupEnv(token.Name)
 	if !found {
-		return Token{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("no environment variable found for token %q", token.Name))
+		return Token{}, fmt.Errorf("no environment variable found for token %q", token.Name)
 	}
 
 	if val == "" {
-		return Token{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("environment variable for token %q is empty", token.Name))
+		return Token{}, fmt.Errorf("environment variable for token %q is empty", token.Name)
 	}
 
 	return Token{Name: token.Name, Value: val}, nil
