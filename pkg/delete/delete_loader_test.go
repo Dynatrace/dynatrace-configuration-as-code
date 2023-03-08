@@ -131,15 +131,14 @@ func TestLoadEntriesToDelete(t *testing.T) {
 `
 
 	workingDir := filepath.FromSlash("/home/test/monaco")
-	deleteFileName := "delete.yaml"
-	deleteFilePath := filepath.Join(workingDir, deleteFileName)
+	deleteFile := "delete.yaml"
 
 	fs := afero.NewMemMapFs()
 	err := fs.MkdirAll(workingDir, 0777)
 
 	assert.NilError(t, err)
 
-	err = afero.WriteFile(fs, deleteFilePath, []byte(fileContent), 0666)
+	err = afero.WriteFile(fs, filepath.Join(workingDir, deleteFile), []byte(fileContent), 0666)
 	assert.NilError(t, err)
 
 	knownApis := []string{
@@ -147,7 +146,7 @@ func TestLoadEntriesToDelete(t *testing.T) {
 		"auto-tag",
 	}
 
-	result, errors := LoadEntriesToDelete(fs, knownApis, deleteFilePath)
+	result, errors := LoadEntriesToDelete(fs, knownApis, workingDir, deleteFile)
 
 	assert.Equal(t, 0, len(errors))
 	assert.Equal(t, 2, len(result))
@@ -176,15 +175,14 @@ func TestLoadEntriesToDeleteWithInvalidEntry(t *testing.T) {
 `
 
 	workingDir := filepath.FromSlash("/home/test/monaco")
-	deleteFileName := "delete.yaml"
-	deleteFilePath := filepath.Join(workingDir, deleteFileName)
+	deleteFile := "delete.yaml"
 
 	fs := afero.NewMemMapFs()
 	err := fs.MkdirAll(workingDir, 0777)
 
 	assert.NilError(t, err)
 
-	err = afero.WriteFile(fs, deleteFilePath, []byte(fileContent), 0666)
+	err = afero.WriteFile(fs, filepath.Join(workingDir, deleteFile), []byte(fileContent), 0666)
 	assert.NilError(t, err)
 
 	knownApis := []string{
@@ -192,7 +190,7 @@ func TestLoadEntriesToDeleteWithInvalidEntry(t *testing.T) {
 		"auto-tag",
 	}
 
-	result, errors := LoadEntriesToDelete(fs, knownApis, deleteFilePath)
+	result, errors := LoadEntriesToDelete(fs, knownApis, workingDir, deleteFile)
 
 	assert.Equal(t, 1, len(errors))
 	assert.Equal(t, 0, len(result))
@@ -211,7 +209,7 @@ func TestLoadEntriesToDeleteNonExistingFile(t *testing.T) {
 		"auto-tag",
 	}
 
-	result, errors := LoadEntriesToDelete(fs, knownApis, "/home/test/monaco/non-existing-delete.yaml")
+	result, errors := LoadEntriesToDelete(fs, knownApis, workingDir, "delete.yaml")
 
 	assert.Equal(t, 1, len(errors))
 	assert.Equal(t, 0, len(result))
@@ -223,15 +221,14 @@ func TestLoadEntriesToDeleteWithMalformedFile(t *testing.T) {
 `
 
 	workingDir := filepath.FromSlash("/home/test/monaco")
-	deleteFileName := "delete.yaml"
-	deleteFilePath := filepath.Join(workingDir, deleteFileName)
+	deleteFile := "delete.yaml"
 
 	fs := afero.NewMemMapFs()
 	err := fs.MkdirAll(workingDir, 0777)
 
 	assert.NilError(t, err)
 
-	err = afero.WriteFile(fs, deleteFilePath, []byte(fileContent), 0666)
+	err = afero.WriteFile(fs, filepath.Join(workingDir, deleteFile), []byte(fileContent), 0666)
 	assert.NilError(t, err)
 
 	knownApis := []string{
@@ -239,7 +236,7 @@ func TestLoadEntriesToDeleteWithMalformedFile(t *testing.T) {
 		"auto-tag",
 	}
 
-	result, errors := LoadEntriesToDelete(fs, knownApis, deleteFilePath)
+	result, errors := LoadEntriesToDelete(fs, knownApis, workingDir, deleteFile)
 
 	assert.Equal(t, 1, len(errors))
 	assert.Equal(t, 0, len(result))
@@ -247,15 +244,14 @@ func TestLoadEntriesToDeleteWithMalformedFile(t *testing.T) {
 
 func TestLoadEntriesToDeleteWithEmptyFile(t *testing.T) {
 	workingDir := filepath.FromSlash("/home/test/monaco")
-	deleteFileName := "empty_delete_file.yaml"
-	deleteFilePath := filepath.Join(workingDir, deleteFileName)
+	deleteFile := "delete.yaml"
 
 	fs := afero.NewMemMapFs()
 	err := fs.MkdirAll(workingDir, 0777)
 
 	assert.NilError(t, err)
 
-	err = afero.WriteFile(fs, deleteFilePath, []byte{}, 0666)
+	err = afero.WriteFile(fs, filepath.Join(workingDir, deleteFile), []byte{}, 0666)
 	assert.NilError(t, err)
 
 	knownApis := []string{
@@ -263,7 +259,7 @@ func TestLoadEntriesToDeleteWithEmptyFile(t *testing.T) {
 		"auto-tag",
 	}
 
-	result, errors := LoadEntriesToDelete(fs, knownApis, deleteFilePath)
+	result, errors := LoadEntriesToDelete(fs, knownApis, workingDir, deleteFile)
 
 	assert.Equal(t, 1, len(errors))
 	assert.Equal(t, 0, len(result))

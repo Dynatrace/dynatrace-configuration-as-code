@@ -43,12 +43,12 @@ func GetDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 			deleteFile := args[1]
 
 			if !files.IsYamlFileExtension(manifestName) {
-				err := fmt.Errorf("wrong format for manifest file! Expected a .yaml file, but got %s", manifestName)
+				err := fmt.Errorf("wrong format for manifest file! expected a .yaml file, but got %s", manifestName)
 				return err
 			}
 
-			if !files.IsYamlFileExtension(deleteFile) {
-				err := fmt.Errorf("wrong format for delete file! Expected a .yaml file, but got %s", deleteFile)
+			if deleteFile != "delete.yaml" {
+				err := fmt.Errorf("wrong format for delete file! Has to be named 'delete.yaml', but got %s", deleteFile)
 				return err
 			}
 

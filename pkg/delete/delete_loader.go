@@ -29,6 +29,7 @@ const deleteDelimiter = "/"
 
 type loaderContext struct {
 	fs         afero.Fs
+	workingDir string
 	deleteFile string
 	knownApis  map[string]struct{}
 }
@@ -56,9 +57,10 @@ func (e DeleteEntryParserError) Error() string {
 		e.Value, e.Index, e.Reason)
 }
 
-func LoadEntriesToDelete(fs afero.Fs, knownApis []string, deleteFile string) (map[string][]DeletePointer, []error) {
+func LoadEntriesToDelete(fs afero.Fs, knownApis []string, workingDir string, deleteFile string) (map[string][]DeletePointer, []error) {
 	context := &loaderContext{
 		fs:         fs,
+		workingDir: filepath.Clean(workingDir),
 		deleteFile: filepath.Clean(deleteFile),
 		knownApis:  toSetMap(knownApis),
 	}
@@ -83,9 +85,10 @@ func toSetMap(strs []string) map[string]struct{} {
 }
 
 func parseDeleteFile(context *loaderContext) (deleteFileDefinition, error) {
-	targetFile, err := filepath.Abs(context.deleteFile)
-	if err != nil {
-		return deleteFileDefinition{}, fmt.Errorf("could not parse absoulte path to file `%s`: %w", context.deleteFile, err)
+	targetFile := context.deleteFile
+
+	if !filepath.IsAbs(targetFile) {
+		targetFile = filepath.Join(context.workingDir, targetFile)
 	}
 
 	data, err := afero.ReadFile(context.fs, targetFile)

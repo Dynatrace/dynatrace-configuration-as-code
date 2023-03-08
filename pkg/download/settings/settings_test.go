@@ -25,6 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
+	respError "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
@@ -40,7 +41,7 @@ func TestDownloadAll(t *testing.T) {
 	type mockValues struct {
 		Schemas           func() (client.SchemaList, error)
 		ListSchemasCalls  int
-		Settings          func() ([]client.DownloadSettingsObject, error)
+		Settings          func() ([]client.DownloadSettingsObject, respError.RespError)
 		ListSettingsCalls int
 	}
 	tests := []struct {
@@ -56,8 +57,8 @@ func TestDownloadAll(t *testing.T) {
 				Schemas: func() (client.SchemaList, error) {
 					return nil, fmt.Errorf("oh no")
 				},
-				Settings: func() ([]client.DownloadSettingsObject, error) {
-					return nil, nil
+				Settings: func() ([]client.DownloadSettingsObject, respError.RespError) {
+					return nil, respError.RespError{}
 				},
 				ListSettingsCalls: 0,
 			},
@@ -70,8 +71,8 @@ func TestDownloadAll(t *testing.T) {
 				Schemas: func() (client.SchemaList, error) {
 					return client.SchemaList{{SchemaId: "id1"}, {SchemaId: "id2"}}, nil
 				},
-				Settings: func() ([]client.DownloadSettingsObject, error) {
-					return nil, fmt.Errorf("oh no")
+				Settings: func() ([]client.DownloadSettingsObject, respError.RespError) {
+					return nil, respError.RespError{WrappedError: fmt.Errorf("oh no"), StatusCode: 0}
 				},
 				ListSettingsCalls: 2,
 			},
@@ -84,7 +85,7 @@ func TestDownloadAll(t *testing.T) {
 				Schemas: func() (client.SchemaList, error) {
 					return client.SchemaList{{SchemaId: "id1"}}, nil
 				},
-				Settings: func() ([]client.DownloadSettingsObject, error) {
+				Settings: func() ([]client.DownloadSettingsObject, respError.RespError) {
 					return []client.DownloadSettingsObject{{
 						ExternalId:    "ex1",
 						SchemaVersion: "sv1",
@@ -92,7 +93,7 @@ func TestDownloadAll(t *testing.T) {
 						ObjectId:      "oid1",
 						Scope:         "tenant",
 						Value:         json.RawMessage{},
-					}}, nil
+					}}, respError.RespError{}
 				},
 				ListSettingsCalls: 1,
 			},
@@ -105,7 +106,7 @@ func TestDownloadAll(t *testing.T) {
 				Schemas: func() (client.SchemaList, error) {
 					return client.SchemaList{{SchemaId: "id1"}}, nil
 				},
-				Settings: func() ([]client.DownloadSettingsObject, error) {
+				Settings: func() ([]client.DownloadSettingsObject, respError.RespError) {
 					return []client.DownloadSettingsObject{{
 						ExternalId:    "ex1",
 						SchemaVersion: "sv1",
@@ -113,7 +114,7 @@ func TestDownloadAll(t *testing.T) {
 						ObjectId:      "oid1",
 						Scope:         "tenant",
 						Value:         json.RawMessage("{}"),
-					}}, nil
+					}}, respError.RespError{}
 				},
 				ListSettingsCalls: 1,
 			},
@@ -149,7 +150,7 @@ func TestDownloadAll(t *testing.T) {
 				Schemas: func() (client.SchemaList, error) {
 					return client.SchemaList{{SchemaId: "id1"}}, nil
 				},
-				Settings: func() ([]client.DownloadSettingsObject, error) {
+				Settings: func() ([]client.DownloadSettingsObject, respError.RespError) {
 					return []client.DownloadSettingsObject{{
 						ExternalId:    "ex1",
 						SchemaVersion: "sv1",
@@ -157,7 +158,7 @@ func TestDownloadAll(t *testing.T) {
 						ObjectId:      "oid1",
 						Scope:         "tenant",
 						Value:         json.RawMessage(`{"skip" : true}`),
-					}}, nil
+					}}, respError.RespError{}
 				},
 				ListSettingsCalls: 1,
 			},
@@ -182,7 +183,7 @@ func TestDownload(t *testing.T) {
 
 	type mockValues struct {
 		Schemas           func() (client.SchemaList, error)
-		Settings          func() ([]client.DownloadSettingsObject, error)
+		Settings          func() ([]client.DownloadSettingsObject, respError.RespError)
 		ListSettingsCalls int
 	}
 	tests := []struct {
@@ -194,8 +195,10 @@ func TestDownload(t *testing.T) {
 		{
 			name: "DownloadSettings - empty list of schemas",
 			mockValues: mockValues{
-				Schemas:           func() (client.SchemaList, error) { return client.SchemaList{}, nil },
-				Settings:          func() ([]client.DownloadSettingsObject, error) { return []client.DownloadSettingsObject{}, nil },
+				Schemas: func() (client.SchemaList, error) { return client.SchemaList{}, nil },
+				Settings: func() ([]client.DownloadSettingsObject, respError.RespError) {
+					return []client.DownloadSettingsObject{}, respError.RespError{}
+				},
 				ListSettingsCalls: 0,
 			},
 			want: v2.ConfigsPerType{},
@@ -207,7 +210,7 @@ func TestDownload(t *testing.T) {
 				Schemas: func() (client.SchemaList, error) {
 					return client.SchemaList{{SchemaId: "id1"}}, nil
 				},
-				Settings: func() ([]client.DownloadSettingsObject, error) {
+				Settings: func() ([]client.DownloadSettingsObject, respError.RespError) {
 					return []client.DownloadSettingsObject{{
 						ExternalId:    "ex1",
 						SchemaVersion: "sv1",
@@ -215,7 +218,7 @@ func TestDownload(t *testing.T) {
 						ObjectId:      "oid1",
 						Scope:         "tenant",
 						Value:         json.RawMessage(`{}`),
-					}}, nil
+					}}, respError.RespError{}
 				},
 				ListSettingsCalls: 1,
 			},

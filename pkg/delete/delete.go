@@ -18,6 +18,7 @@ package delete
 
 import (
 	"fmt"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
@@ -84,7 +85,7 @@ func deleteSettingsObject(c client.Client, entries []DeletePointer) []error {
 		externalID := idutils.GenerateExternalID(e.Type, e.ConfigId)
 		// get settings objects with matching external ID
 		objects, err := c.ListSettings(e.Type, client.ListSettingsOptions{DiscardValue: true, Filter: func(o client.DownloadSettingsObject) bool { return o.ExternalId == externalID }})
-		if err != nil {
+		if err.WrappedError != nil {
 			errors = append(errors, fmt.Errorf("could not fetch settings 2.0 objects with schema ID %s: %w", e.Type, err))
 			continue
 		}

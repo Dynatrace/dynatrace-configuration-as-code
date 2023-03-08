@@ -24,6 +24,7 @@ import (
 )
 
 func TestFeatureFlagEnabled(t *testing.T) {
+	t.Setenv("Test", "")
 	assert.Equal(t, false, FeatureFlagEnabled("Test"), "Feature Flag - Not Set")
 	t.Setenv("Test", "1")
 	assert.Equal(t, true, FeatureFlagEnabled("Test"), "Feature Flag - Enabled")
@@ -31,5 +32,4 @@ func TestFeatureFlagEnabled(t *testing.T) {
 	assert.Equal(t, true, FeatureFlagEnabled("Test"), "Feature Flag with wrong value")
 	t.Setenv("Test", "0")
 	assert.Equal(t, false, FeatureFlagEnabled("Test"), "Feature Flag - Disabled")
-
 }

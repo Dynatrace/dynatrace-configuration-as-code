@@ -101,3 +101,12 @@ func configureDebugLogging(fs afero.Fs, verbose *bool) func(cmd *cobra.Command, 
 		log.SetupLogging(fs, optionalAddedLogger)
 	}
 }
+
+// silenceUsageCommand gives back a command that is just configured to skip printing of usage info.
+// We use it as a PreRun hook to enforce the behavior of printing usage info when the command structure
+// given by the user is faulty
+func silenceUsageCommand() func(cmd *cobra.Command, args []string) {
+	return func(cmd *cobra.Command, args []string) {
+		cmd.SilenceUsage = true
+	}
+}

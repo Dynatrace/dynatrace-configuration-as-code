@@ -17,6 +17,7 @@ package client
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	respError "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/errors"
 )
 
 type limitingClient struct {
@@ -105,7 +106,7 @@ func (l limitingClient) GetSettingById(objectId string) (o *DownloadSettingsObje
 
 	return
 }
-func (l limitingClient) ListSettings(schemaId string, opts ListSettingsOptions) (o []DownloadSettingsObject, err error) {
+func (l limitingClient) ListSettings(schemaId string, opts ListSettingsOptions) (o []DownloadSettingsObject, err respError.RespError) {
 	l.limiter.ExecuteBlocking(func() {
 		o, err = l.client.ListSettings(schemaId, opts)
 	})
@@ -121,7 +122,7 @@ func (l limitingClient) DeleteSettings(objectID string) (err error) {
 	return
 }
 
-func (l limitingClient) ListEntitiesTypes() (e EntitiesTypeList, err error) {
+func (l limitingClient) ListEntitiesTypes() (e []EntitiesType, err respError.RespError) {
 	l.limiter.ExecuteBlocking(func() {
 		e, err = l.client.ListEntitiesTypes()
 	})
@@ -129,9 +130,9 @@ func (l limitingClient) ListEntitiesTypes() (e EntitiesTypeList, err error) {
 	return
 }
 
-func (l limitingClient) ListEntities(entityType string) (o []string, err error) {
+func (l limitingClient) ListEntities(entitiesType EntitiesType) (o []string, err respError.RespError) {
 	l.limiter.ExecuteBlocking(func() {
-		o, err = l.client.ListEntities(entityType)
+		o, err = l.client.ListEntities(entitiesType)
 	})
 
 	return
