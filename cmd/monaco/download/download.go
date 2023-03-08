@@ -22,8 +22,8 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2/topologysort"
