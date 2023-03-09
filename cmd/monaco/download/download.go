@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	defaultConcurrentDownloads = 50
+	defaultConcurrentDownloads = 5
 	concurrentRequestsEnvKey   = "CONCURRENT_REQUESTS"
 )
 
