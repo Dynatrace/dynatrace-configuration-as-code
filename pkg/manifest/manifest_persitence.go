@@ -54,7 +54,7 @@ type oAuth struct {
 
 type auth struct {
 	Token tokenConfig `yaml:"token"`
-	OAuth oAuth       `yaml:"oAuth"`
+	OAuth *oAuth      `yaml:"oAuth,omitempty"`
 }
 
 type environment struct {

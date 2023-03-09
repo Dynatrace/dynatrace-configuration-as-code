@@ -171,27 +171,31 @@ func parseAuth(t EnvironmentType, a auth) (Auth, error) {
 		return Auth{}, fmt.Errorf("error parsing token: %w", err)
 	}
 
-	o, err := parseOAuth(a.OAuth)
-
-	if t == Platform {
-		if err != nil {
-			return Auth{}, fmt.Errorf("failed to parse OAuth credentials: %w", err)
+	if t == Classic {
+		if a.OAuth != nil {
+			return Auth{}, errors.New("found OAuth credentials on a Dynatrace Classic environment. If the environment is a Dynatrace Platform environment, change the type to 'Platform'")
 		}
 
 		return Auth{
 			Token: token,
-			OAuth: o,
 		}, nil
 	}
 
-	if o.ClientId != "" || o.ClientSecret != "" {
-		return Auth{}, errors.New("found OAuth credentials on a Dynatrace Classic environment. If the environment is a Dynatrace Platform environment, change the type to 'Platform'")
+	//  Platform
+	if a.OAuth == nil {
+		return Auth{}, errors.New("type is 'Platform', but no OAuth credentials defined")
+	}
+
+	o, err := parseOAuth(*a.OAuth)
+	if err != nil {
+		return Auth{}, fmt.Errorf("failed to parse OAuth credentials: %w", err)
 	}
 
 	return Auth{
 		Token: token,
 		OAuth: o,
 	}, nil
+
 }
 
 func parseOAuthSecret(s authSecret) (string, error) {
@@ -369,7 +373,7 @@ func parseCredentials(config environment, envType EnvironmentType) (Auth, error)
 	}
 
 	if config.Token != nil && config.Auth != nil {
-		return Auth{}, errors.New("both auth and token are present. Please move the token into the auth property")
+		return Auth{}, errors.New("both 'auth' and 'token' are present")
 	}
 
 	if config.Token != nil {
