@@ -40,12 +40,15 @@ func Test_parseConfigs(t *testing.T) {
 		Path:      "some-dir/",
 		KnownApis: map[string]struct{}{"some-api": {}},
 		Environments: []manifest.EnvironmentDefinition{
-			manifest.NewEnvironmentDefinition(
-				"env name",
-				manifest.UrlDefinition{Type: manifest.ValueUrlType, Value: "env url"},
-				"default",
-				manifest.AuthSecret{Name: "token var"},
-			),
+			{
+				Name:  "env name",
+				Type:  manifest.Classic,
+				Url:   manifest.UrlDefinition{Type: manifest.ValueUrlType, Value: "env url"},
+				Group: "default",
+				Auth: manifest.Auth{
+					Token: manifest.AuthSecret{Name: "token var"},
+				},
+			},
 		},
 		ParametersSerDe: DefaultParameterParsers,
 	}

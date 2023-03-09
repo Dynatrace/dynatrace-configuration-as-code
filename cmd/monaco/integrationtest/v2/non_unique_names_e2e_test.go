@@ -49,7 +49,15 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 			manifest.Manifest{
 				Projects: nil,
 				Environments: map[string]manifest.EnvironmentDefinition{
-					"test": manifest.NewEnvironmentDefinition("test", manifest.UrlDefinition{Type: manifest.EnvironmentUrlType, Name: "URL_ENVIRONMENT_1", Value: url}, "default", manifest.AuthSecret{Name: "TOKEN_ENVIRONMENT_1", Value: token}),
+					"test": {
+						Name:  "test",
+						Type:  manifest.Classic,
+						Url:   manifest.UrlDefinition{Type: manifest.EnvironmentUrlType, Name: "URL_ENVIRONMENT_1", Value: url},
+						Group: "default",
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{Name: "TOKEN_ENVIRONMENT_1", Value: token},
+						},
+					},
 				},
 			},
 			"test",
