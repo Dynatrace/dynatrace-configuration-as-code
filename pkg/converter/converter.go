@@ -551,7 +551,7 @@ func convertEnvironments(environments map[string]*v1environment.EnvironmentV1) m
 }
 
 func newEnvironmentDefinitionFromV1(env *v1environment.EnvironmentV1, group string) manifest.EnvironmentDefinition {
-	return manifest.NewEnvironmentDefinition(env.GetId(), newUrlDefinitionFromV1(env), group, manifest.Token{Name: env.GetTokenName()})
+	return manifest.NewEnvironmentDefinition(env.GetId(), newUrlDefinitionFromV1(env), group, manifest.AuthSecret{Name: env.GetTokenName()})
 }
 
 func newUrlDefinitionFromV1(env *v1environment.EnvironmentV1) manifest.UrlDefinition {

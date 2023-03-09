@@ -166,7 +166,7 @@ func parseManifest(context *ManifestLoaderContext, data []byte) (Manifest, []err
 }
 
 func parseAuth(t EnvironmentType, a auth) (Auth, error) {
-	token, err := parseToken(a.Token)
+	token, err := parseAuthSecret(a.Token)
 	if err != nil {
 		return Auth{}, fmt.Errorf("error parsing token: %w", err)
 	}
@@ -198,40 +198,35 @@ func parseAuth(t EnvironmentType, a auth) (Auth, error) {
 
 }
 
-func parseOAuthSecret(s authSecret) (string, error) {
+func parseAuthSecret(s authSecret) (AuthSecret, error) {
 
-	if s.Type == "" || s.Type == typeValue {
-
-		if s.Value == "" {
-			return "", errors.New("type is value, but no value given or empty")
-		}
-
-		return s.Value, nil
+	if !(s.Type == typeEnvironment || s.Type == "") {
+		return AuthSecret{}, errors.New("type must be 'environment'")
 	}
 
 	if s.Name == "" {
-		return "", errors.New("type is environment, but no name given or empty")
+		return AuthSecret{}, errors.New("no name given or empty")
 	}
 
 	v, f := os.LookupEnv(s.Name)
 	if !f {
-		return "", fmt.Errorf("environment-variable name given, but not found")
+		return AuthSecret{}, fmt.Errorf("environment-variable %q was not found", s.Name)
 	}
 
 	if v == "" {
-		return "", errors.New("environment-variable found but the value is empty")
+		return AuthSecret{}, fmt.Errorf("environment-variable %q found, but the value resolved is empty", s.Name)
 	}
 
-	return v, nil
+	return AuthSecret{Name: s.Name, Value: v}, nil
 }
 
 func parseOAuth(a oAuth) (OAuth, error) {
-	clientID, err := parseOAuthSecret(a.ClientID)
+	clientID, err := parseAuthSecret(a.ClientID)
 	if err != nil {
 		return OAuth{}, fmt.Errorf("failed to parse ClientID: %w", err)
 	}
 
-	clientSecret, err := parseOAuthSecret(a.ClientSecret)
+	clientSecret, err := parseAuthSecret(a.ClientSecret)
 	if err != nil {
 		return OAuth{}, fmt.Errorf("failed to parse ClientSecret: %w", err)
 	}
@@ -378,7 +373,7 @@ func parseCredentials(config environment, envType EnvironmentType) (Auth, error)
 
 	if config.Token != nil {
 		log.Warn("Environment %s: The field 'Token' is deprecated, use 'Auth.Token' instead.", config.Name)
-		token, err := parseToken(*config.Token)
+		token, err := parseAuthSecret(*config.Token)
 		if err != nil {
 			return Auth{}, fmt.Errorf("failed to parse token: %w", err)
 		}
@@ -440,42 +435,6 @@ func parseEnvironmentType(context *ManifestLoaderContext, config environment, g 
 	}
 
 	return Classic, newManifestEnvironmentLoaderError(context.ManifestPath, g, config.Name, fmt.Sprintf(`invalid environment-type %q. Allowed values are "classic" (default) and "platform"`, config.Type))
-}
-
-func parseToken(token tokenConfig) (Token, error) {
-	var tokenType string
-
-	if token.Type == "" {
-		tokenType = "environment"
-	} else {
-		tokenType = token.Type
-	}
-
-	switch tokenType {
-	case "environment":
-		return parseEnvironmentToken(token)
-	}
-
-	return Token{}, fmt.Errorf("unknown token type `%s`", tokenType)
-}
-
-func parseEnvironmentToken(token tokenConfig) (Token, error) {
-
-	if token.Name == "" {
-		return Token{}, errors.New("token `name` is missing or empty")
-	}
-
-	// resolve token value immediately
-	val, found := os.LookupEnv(token.Name)
-	if !found {
-		return Token{}, fmt.Errorf("no environment variable found for token %q", token.Name)
-	}
-
-	if val == "" {
-		return Token{}, fmt.Errorf("environment variable for token %q is empty", token.Name)
-	}
-
-	return Token{Name: token.Name, Value: val}, nil
 }
 
 func toProjectDefinitions(context *projectLoaderContext, definitions []project) (map[string]ProjectDefinition, []error) {

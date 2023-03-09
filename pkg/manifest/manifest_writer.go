@@ -134,23 +134,20 @@ func toWriteableEnvironmentGroups(environments map[string]EnvironmentDefinition)
 
 func getAuth(env EnvironmentDefinition) auth {
 	if env.Type == Classic {
-		return auth{Token: toWritableToken(env)}
+		return auth{Token: getTokenSecret(env)}
 	}
 
-	oa := toWritableOAuth(env.Auth.OAuth)
 	return auth{
-		Token: toWritableToken(env),
-		OAuth: &oa,
-	}
-}
-
-func toWritableOAuth(a OAuth) oAuth {
-	return oAuth{
-		ClientID: authSecret{
-			Value: a.ClientId,
-		},
-		ClientSecret: authSecret{
-			Value: a.ClientSecret,
+		Token: getTokenSecret(env),
+		OAuth: &oAuth{
+			ClientID: authSecret{
+				Type: typeEnvironment,
+				Name: env.Auth.OAuth.ClientId.Name,
+			},
+			ClientSecret: authSecret{
+				Type: typeEnvironment,
+				Name: env.Auth.OAuth.ClientSecret.Name,
+			},
 		},
 	}
 }
@@ -179,15 +176,16 @@ func toWriteableUrl(environment EnvironmentDefinition) url {
 	}
 }
 
-func toWritableToken(environment EnvironmentDefinition) tokenConfig {
+// getTokenSecret returns the tokenConfig with some legacy magic string append that still might be used (?)
+func getTokenSecret(environment EnvironmentDefinition) authSecret {
 	token := environment.Name + "_TOKEN"
 
 	if environment.Auth.Token.Name != "" {
 		token = environment.Auth.Token.Name
 	}
 
-	return tokenConfig{
-		Type: "environment",
+	return authSecret{
+		Type: typeEnvironment,
 		Name: token,
 	}
 }

@@ -23,28 +23,19 @@ type project struct {
 	Path string `yaml:"path,omitempty"`
 }
 
-type tokenConfig struct {
-	Type string `yaml:"type,omitempty"`
-	Name string `yaml:"name"`
-}
-
 type secretType string
 
-const (
-	typeEnvironment secretType = "environment"
+const typeEnvironment secretType = "environment"
 
-	typeValue valueType = "value"
-)
-
-// authSecret represents a user-defined client id or client secret. It has a [Type] which is either [typeValue] (default) or [typeEnvironment].
+// authSecret represents a user-defined client id or client secret. It has a [Type] which is [typeEnvironment] (default).
+// Secrets must never be provided as plain text, but always loaded from somewhere else. Currently, loading is only allowed from environment variables.
 //
-// If the type is [typeEnvironment], [Name] contains the environment-variable to resolve the authSecret.
-// If the type is [typeValue], [Value] contains the resolved authSecret.
+// [Name] contains the environment-variable to resolve the authSecret.
 //
 // This struct is meant to be reused for fields that require the same behavior.
 type authSecret struct {
-	Type  secretType `yaml:"type"`
-	Name string     `yaml:"name"`Value string    `yaml:"value"`
+	Type secretType `yaml:"type"`
+	Name string     `yaml:"name"`
 }
 
 type oAuth struct {
@@ -53,20 +44,22 @@ type oAuth struct {
 }
 
 type auth struct {
-	Token tokenConfig `yaml:"token"`
-	OAuth *oAuth      `yaml:"oAuth,omitempty"`
+	Token authSecret `yaml:"token"`
+	OAuth *oAuth     `yaml:"oAuth,omitempty"`
 }
 
 type environment struct {
 	Name string `yaml:"name"`
 	Type string `yaml:"type"`
 	Url  url    `yaml:"url"`
-	Auth *auth  `yaml:"auth,omitempty"`
+
+	// Auth contains all authentication related information
+	Auth *auth `yaml:"auth,omitempty"`
 
 	// Token is the user-provided Dynatrace Classic API token
 	//
 	// Deprecated: Use [Auth.Token] instead. This field is still available to support existing manifests.
-	Token *tokenConfig `yaml:"token,omitempty"`
+	Token *authSecret `yaml:"token,omitempty"`
 }
 
 type urlType string
