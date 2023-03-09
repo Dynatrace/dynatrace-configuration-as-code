@@ -39,53 +39,53 @@ type projectLoaderContext struct {
 	manifestPath string
 }
 
-type ManifestLoaderError struct {
+type manifestLoaderError struct {
 	ManifestPath string
 	Reason       string
 }
 
-func newManifestLoaderError(manifest string, reason string) ManifestLoaderError {
-	return ManifestLoaderError{
+func newManifestLoaderError(manifest string, reason string) manifestLoaderError {
+	return manifestLoaderError{
 		ManifestPath: manifest,
 		Reason:       reason,
 	}
 }
 
-func (e ManifestLoaderError) Error() string {
+func (e manifestLoaderError) Error() string {
 	return fmt.Sprintf("%s: %s", e.ManifestPath, e.Reason)
 }
 
-type ManifestEnvironmentLoaderError struct {
-	ManifestLoaderError
+type environmentLoaderError struct {
+	manifestLoaderError
 	Group       string
 	Environment string
 }
 
-func newManifestEnvironmentLoaderError(manifest string, group string, env string, reason string) ManifestEnvironmentLoaderError {
-	return ManifestEnvironmentLoaderError{
-		ManifestLoaderError: newManifestLoaderError(manifest, reason),
+func newManifestEnvironmentLoaderError(manifest string, group string, env string, reason string) environmentLoaderError {
+	return environmentLoaderError{
+		manifestLoaderError: newManifestLoaderError(manifest, reason),
 		Group:               group,
 		Environment:         env,
 	}
 }
 
-func (e ManifestEnvironmentLoaderError) Error() string {
+func (e environmentLoaderError) Error() string {
 	return fmt.Sprintf("%s:%s:%s: %s", e.ManifestPath, e.Group, e.Environment, e.Reason)
 }
 
-type ManifestProjectLoaderError struct {
-	ManifestLoaderError
+type projectLoaderError struct {
+	manifestLoaderError
 	Project string
 }
 
-func newManifestProjectLoaderError(manifest string, project string, reason string) ManifestProjectLoaderError {
-	return ManifestProjectLoaderError{
-		ManifestLoaderError: newManifestLoaderError(manifest, reason),
+func newManifestProjectLoaderError(manifest string, project string, reason string) projectLoaderError {
+	return projectLoaderError{
+		manifestLoaderError: newManifestLoaderError(manifest, reason),
 		Project:             project,
 	}
 }
 
-func (e ManifestProjectLoaderError) Error() string {
+func (e projectLoaderError) Error() string {
 	return fmt.Sprintf("%s:%s: %s", e.ManifestPath, e.Project, e.Reason)
 }
 
