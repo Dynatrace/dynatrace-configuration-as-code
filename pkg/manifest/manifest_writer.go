@@ -113,13 +113,13 @@ func toWriteableEnvironmentGroups(environments map[string]EnvironmentDefinition)
 	environmentPerGroup := make(map[string][]environment)
 
 	for name, env := range environments {
-		token := toWritableToken(env)
+		a := getAuth(env)
 
 		e := environment{
-			Name:  name,
-			Type:  getType(env),
-			Url:   toWriteableUrl(env),
-			Token: &token,
+			Name: name,
+			Type: getType(env),
+			Url:  toWriteableUrl(env),
+			Auth: &a,
 		}
 
 		environmentPerGroup[env.Group] = append(environmentPerGroup[env.Group], e)
@@ -130,6 +130,29 @@ func toWriteableEnvironmentGroups(environments map[string]EnvironmentDefinition)
 	}
 
 	return result
+}
+
+func getAuth(env EnvironmentDefinition) auth {
+	if env.Type == Classic {
+		return auth{Token: toWritableToken(env)}
+	}
+
+	oa := toWritableOAuth(env.Auth.OAuth)
+	return auth{
+		Token: toWritableToken(env),
+		OAuth: &oa,
+	}
+}
+
+func toWritableOAuth(a OAuth) oAuth {
+	return oAuth{
+		ClientID: authSecret{
+			Value: a.ClientId,
+		},
+		ClientSecret: authSecret{
+			Value: a.ClientSecret,
+		},
+	}
 }
 
 func getType(env EnvironmentDefinition) string {
