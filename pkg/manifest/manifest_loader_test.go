@@ -229,7 +229,7 @@ func Test_parseProjectDefinition_FailsOnUnknownType(t *testing.T) {
 	_, gotErrs := parseProjectDefinition(&context, project)
 
 	assert.Assert(t, len(gotErrs) == 1)
-	assert.ErrorType(t, gotErrs[0], ManifestProjectLoaderError{})
+	assert.ErrorType(t, gotErrs[0], projectLoaderError{})
 }
 
 func Test_parseProjectDefinition_FailsOnInvalidProjectDefinitions(t *testing.T) {
@@ -270,7 +270,7 @@ func Test_parseProjectDefinition_FailsOnInvalidProjectDefinitions(t *testing.T) 
 			_, gotErrs := parseProjectDefinition(&context, tt.project)
 
 			assert.Assert(t, len(gotErrs) == 1)
-			assert.ErrorType(t, gotErrs[0], ManifestProjectLoaderError{})
+			assert.ErrorType(t, gotErrs[0], projectLoaderError{})
 		})
 	}
 
