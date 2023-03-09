@@ -44,12 +44,12 @@ func (p ProjectDefinition) String() string {
 }
 
 type OAuth struct {
-	ClientId     string
-	ClientSecret string
+	ClientId     AuthSecret
+	ClientSecret AuthSecret
 }
 
 type Auth struct {
-	Token Token
+	Token AuthSecret
 	OAuth OAuth
 }
 
@@ -89,8 +89,8 @@ type UrlDefinition struct {
 	Value string
 }
 
-// Token is the API-Token for Dynatrace Platform API-Access
-type Token struct {
+// AuthSecret contains a resolved secret value. It is used for the API-Token, ClientId, and ClientSecret.
+type AuthSecret struct {
 	// Name is the name of the environment-variable of the token. It is used for converting monaco-v1 to monaco-v2 environments
 	// where the value is not resolved, but the env-name has to be kept.
 	Name string
@@ -102,7 +102,7 @@ type Token struct {
 type ProjectDefinitionByProjectId map[string]ProjectDefinition
 
 // NewEnvironmentDefinition creates a new EnvironmentDefinition
-func NewEnvironmentDefinition(name string, url UrlDefinition, group string, token Token) EnvironmentDefinition {
+func NewEnvironmentDefinition(name string, url UrlDefinition, group string, token AuthSecret) EnvironmentDefinition {
 	return EnvironmentDefinition{
 		Name:  name,
 		Url:   url,

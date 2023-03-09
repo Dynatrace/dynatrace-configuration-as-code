@@ -55,7 +55,7 @@ func TestConvertParameters(t *testing.T) {
 	envParameterName := "url"
 	envParameterValue := " {{ .Env.SOME_ENV_VAR }} "
 
-	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", manifest.Token{Name: "token"})
+	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", manifest.AuthSecret{Name: "token"})
 
 	testApi := api.NewStandardApi("alerting-profile", "/api/configV1/v1/alertingProfiles", false, "", false)
 
@@ -223,7 +223,7 @@ func TestLoadPropertiesForEnvironment(t *testing.T) {
 	simpleParameterValue := "hello"
 	referenceParameterValue := "/projectB/management-zone/zone.id"
 
-	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), groupName, manifest.Token{Name: "token"})
+	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), groupName, manifest.AuthSecret{Name: "token"})
 
 	testApi := api.NewStandardApi("alerting-profile", "/api/configV1/v1/alertingProfiles", false, "", false)
 
@@ -269,7 +269,7 @@ func TestConvertConfig(t *testing.T) {
 	referenceParameterValue := "/projectB/management-zone/zone.id"
 	envVarName := "TEST_VAR"
 
-	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", manifest.Token{Name: "token"})
+	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", manifest.AuthSecret{Name: "token"})
 
 	testApi := api.NewStandardApi("alerting-profile", "/api/configV1/v1/alertingProfiles", false, "", false)
 	convertContext := &configConvertContext{
@@ -330,7 +330,7 @@ func TestConvertDeprecatedConfigToLatest(t *testing.T) {
 	referenceParameterValue := "/projectB/application/another-app.id"
 	envVarName := "TEST_VAR"
 
-	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", manifest.Token{Name: "token"})
+	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", manifest.AuthSecret{Name: "token"})
 
 	deprecatedApi := api.NewStandardApi("application", "/api/configV1/v1/application/web", false, "application-web", false)
 
@@ -397,7 +397,7 @@ func TestConvertConfigWithEnvNameCollisionShouldFail(t *testing.T) {
 		ProjectId: "projectA",
 	}
 
-	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", manifest.Token{Name: "token"})
+	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", manifest.AuthSecret{Name: "token"})
 
 	testApi := api.NewStandardApi("alerting-profile", "/api/configV1/v1/alertingProfiles", false, "", false)
 
@@ -435,7 +435,7 @@ func TestConvertSkippedConfig(t *testing.T) {
 		ProjectId: "projectA",
 	}
 
-	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", manifest.Token{Name: "token"})
+	environment := manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), "", manifest.AuthSecret{Name: "token"})
 
 	testApi := api.NewStandardApi("alerting-profile", "/api/configV1/v1/alertingProfiles", false, "", false)
 
@@ -481,8 +481,8 @@ func TestConvertConfigs(t *testing.T) {
 	envVariableName := "ENV_VAR"
 
 	environments := map[string]manifest.EnvironmentDefinition{
-		environmentName:  manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), environmentGroup, manifest.Token{Name: "token"}),
-		environmentName2: manifest.NewEnvironmentDefinition(environmentName2, createSimpleUrlDefinition(), environmentGroup2, manifest.Token{Name: "token"}),
+		environmentName:  manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), environmentGroup, manifest.AuthSecret{Name: "token"}),
+		environmentName2: manifest.NewEnvironmentDefinition(environmentName2, createSimpleUrlDefinition(), environmentGroup2, manifest.AuthSecret{Name: "token"}),
 	}
 
 	testApi := api.NewStandardApi("alerting-profile", "/api/configV1/v1/alertingProfiles", false, "", false)
@@ -565,7 +565,7 @@ func TestConvertConfigs(t *testing.T) {
 
 func TestConvertWithMissingName(t *testing.T) {
 	environments := map[string]manifest.EnvironmentDefinition{
-		"dev": manifest.NewEnvironmentDefinition("dev", createSimpleUrlDefinition(), "development", manifest.Token{Name: "token"}),
+		"dev": manifest.NewEnvironmentDefinition("dev", createSimpleUrlDefinition(), "development", manifest.AuthSecret{Name: "token"}),
 	}
 
 	testApi := api.NewStandardApi("alerting-profile", "/api/configV1/v1/alertingProfiles", false, "", false)
@@ -631,8 +631,8 @@ func TestConvertProjects(t *testing.T) {
 
 	environments := map[string]manifest.EnvironmentDefinition{
 
-		environmentName:  manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), environmentGroup, manifest.Token{Name: "token"}),
-		environmentName2: manifest.NewEnvironmentDefinition(environmentName2, createSimpleUrlDefinition(), environmentGroup2, manifest.Token{Name: "token"}),
+		environmentName:  manifest.NewEnvironmentDefinition(environmentName, createSimpleUrlDefinition(), environmentGroup, manifest.AuthSecret{Name: "token"}),
+		environmentName2: manifest.NewEnvironmentDefinition(environmentName2, createSimpleUrlDefinition(), environmentGroup2, manifest.AuthSecret{Name: "token"}),
 	}
 
 	testApi := api.NewStandardApi("alerting-profile", "/api/configV1/v1/alertingProfiles", false, "", false)
@@ -1146,7 +1146,7 @@ func TestNewEnvironmentDefinitionFromV1(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := manifest.NewEnvironmentDefinition(tt.args.env.GetId(), newUrlDefinitionFromV1(tt.args.env), tt.args.group, manifest.Token{Name: tt.args.env.GetTokenName()}); !reflect.DeepEqual(got, tt.want) {
+			if got := manifest.NewEnvironmentDefinition(tt.args.env.GetId(), newUrlDefinitionFromV1(tt.args.env), tt.args.group, manifest.AuthSecret{Name: tt.args.env.GetTokenName()}); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewEnvironmentDefinitionFromV1() = %v, want %v", got, tt.want)
 			}
 		})
@@ -1160,7 +1160,7 @@ func createEnvEnvironmentDefinition() manifest.EnvironmentDefinition {
 			Name: "ENV_VAR",
 		},
 		"group",
-		manifest.Token{Name: "NAME"},
+		manifest.AuthSecret{Name: "NAME"},
 	)
 }
 
@@ -1172,6 +1172,6 @@ func createValueEnvironmentDefinition() manifest.EnvironmentDefinition {
 			Value: "http://google.com",
 		},
 		"group",
-		manifest.Token{Name: "NAME"},
+		manifest.AuthSecret{Name: "NAME"},
 	)
 }

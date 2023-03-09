@@ -156,7 +156,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 					},
 					Group: "group1",
 					Auth: Auth{
-						Token: Token{
+						Token: AuthSecret{
 							Name: "TokenTest",
 						},
 					},
@@ -169,7 +169,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 					},
 					Group: "group1",
 					Auth: Auth{
-						Token: Token{},
+						Token: AuthSecret{},
 						OAuth: OAuth{
 							ClientId: AuthSecret{
 								Name:  "client-id-key",
@@ -190,7 +190,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 					},
 					Group: "group2",
 					Auth: Auth{
-						Token: Token{},
+						Token: AuthSecret{},
 					},
 				},
 			},
@@ -295,7 +295,7 @@ func Test_toWriteableUrl(t *testing.T) {
 				},
 				Group: "GROUP",
 				Auth: Auth{
-					Token: Token{},
+					Token: AuthSecret{},
 				},
 			},
 			url{
@@ -313,7 +313,7 @@ func Test_toWriteableUrl(t *testing.T) {
 				},
 				Group: "GROUP",
 				Auth: Auth{
-					Token: Token{},
+					Token: AuthSecret{},
 				},
 			},
 			url{
@@ -329,7 +329,7 @@ func Test_toWriteableUrl(t *testing.T) {
 				},
 				Group: "GROUP",
 				Auth: Auth{
-					Token: Token{},
+					Token: AuthSecret{},
 				},
 			},
 			url{
@@ -359,7 +359,7 @@ func Test_toWritableToken(t *testing.T) {
 				Url:   UrlDefinition{},
 				Group: "GROUP",
 				Auth: Auth{
-					Token: Token{Name: "VARIABLE"},
+					Token: AuthSecret{Name: "VARIABLE"},
 				},
 			},
 			authSecret{
@@ -375,7 +375,7 @@ func Test_toWritableToken(t *testing.T) {
 				Group: "GROUP",
 
 				Auth: Auth{
-					Token: Token{},
+					Token: AuthSecret{},
 				},
 			},
 			authSecret{
@@ -386,8 +386,8 @@ func Test_toWritableToken(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := toWritableToken(tt.input); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("toWritableToken() = %v, want %v", got, tt.want)
+			if got := getTokenSecret(tt.input); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getTokenSecret() = %v, want %v", got, tt.want)
 			}
 		})
 	}

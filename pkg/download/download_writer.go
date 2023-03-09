@@ -113,7 +113,7 @@ func createManifest(proj project.Project, tokenEnvVarName string, environmentUrl
 					Value: environmentUrl,
 				},
 				"default",
-				manifest.Token{
+				manifest.AuthSecret{
 					Name: tokenEnvVarName,
 				}),
 		},

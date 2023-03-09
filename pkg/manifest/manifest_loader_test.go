@@ -32,8 +32,6 @@ import (
 	"gotest.tools/assert"
 )
 
-var testTokenCfg = &tokenConfig{Type: "environment", Name: "VAR"}
-
 func Test_extractUrlType(t *testing.T) {
 	t.Setenv("TEST_TOKEN", "resolved url value")
 
@@ -48,7 +46,7 @@ func Test_extractUrlType(t *testing.T) {
 			environment{
 				Name:  "TEST ENV",
 				Url:   url{Value: "TEST URL", Type: urlTypeValue},
-				Token: testTokenCfg,
+				Token: &authSecret{Type: "environment", Name: "VAR"},
 			},
 			UrlDefinition{
 				Type:  ValueUrlType,
@@ -61,7 +59,7 @@ func Test_extractUrlType(t *testing.T) {
 			environment{
 				Name:  "TEST ENV",
 				Url:   url{Value: "TEST URL", Type: ""},
-				Token: testTokenCfg,
+				Token: &authSecret{Type: "environment", Name: "VAR"},
 			},
 			UrlDefinition{
 				Type:  ValueUrlType,
@@ -74,7 +72,7 @@ func Test_extractUrlType(t *testing.T) {
 			environment{
 				Name:  "TEST ENV",
 				Url:   url{Value: "TEST_TOKEN", Type: urlTypeEnvironment},
-				Token: testTokenCfg,
+				Token: &authSecret{Type: "environment", Name: "VAR"},
 			},
 			UrlDefinition{
 				Type:  EnvironmentUrlType,
@@ -88,7 +86,7 @@ func Test_extractUrlType(t *testing.T) {
 			environment{
 				Name:  "TEST ENV",
 				Url:   url{Value: "TEST URL", Type: "this-is-not-a-type"},
-				Token: testTokenCfg,
+				Token: &authSecret{Type: "environment", Name: "VAR"},
 			},
 			UrlDefinition{},
 			true,
@@ -496,7 +494,7 @@ environmentGroups:
 									Type:  urlTypeEnvironment,
 									Value: "ENV_URL",
 								},
-								Token: &tokenConfig{
+								Token: &authSecret{
 									Name: "ENV_TOKEN",
 								},
 							},
@@ -709,6 +707,8 @@ func Test_validateManifestVersion(t *testing.T) {
 func TestLoadManifest(t *testing.T) {
 	t.Setenv("e", "mock token")
 	t.Setenv("empty-env-var", "")
+	t.Setenv("client-id", "resolved-client-id")
+	t.Setenv("client-secret", "resolved-client-secret")
 
 	tests := []struct {
 		name             string
@@ -745,7 +745,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {
 						},
 						Group: "b",
 						Auth: Auth{
-							Token: Token{
+							Token: AuthSecret{
 								Name:  "e",
 								Value: "mock token",
 							},
@@ -779,7 +779,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {
 						},
 						Group: "b",
 						Auth: Auth{
-							Token: Token{
+							Token: AuthSecret{
 								Name:  "e",
 								Value: "mock token",
 							},
@@ -813,7 +813,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {
 						},
 						Group: "b",
 						Auth: Auth{
-							Token: Token{
+							Token: AuthSecret{
 								Name:  "e",
 								Value: "mock token",
 							},
@@ -938,7 +938,7 @@ manifestVersion: 1.0
 projects: [{name: a}]
 environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: e, type: f}}]}]
 `,
-			errsContain: []string{"unknown token type"},
+			errsContain: []string{"type must be 'environment'"},
 		},
 		{
 			name: "Empty token",
@@ -947,7 +947,7 @@ manifestVersion: 1.0
 projects: [{name: a}]
 environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: ''}}]}]
 `,
-			errsContain: []string{"missing or empty"},
+			errsContain: []string{"no name given or empty"},
 		},
 		{
 			name: "Empty url",
@@ -974,7 +974,7 @@ manifestVersion: 1.0
 projects: [{name: a}]
 environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: doesNotExist}}]}]
 `,
-			errsContain: []string{`no environment variable found for token "doesNotExist"`},
+			errsContain: []string{`environment-variable "doesNotExist" was not found`},
 		},
 		{
 			name: "config type is invalid",
@@ -1010,7 +1010,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 						},
 						Group: "b",
 						Auth: Auth{
-							Token: Token{
+							Token: AuthSecret{
 								Name:  "e",
 								Value: "mock token",
 							},
@@ -1023,7 +1023,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 			manifestContent: `
 manifestVersion: 1.0
 projects: [{name: a, path: p}]
-environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientId: {value: f}, clientSecret: {value: g}}}, type: Platform}]}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientId: {name: client-id}, clientSecret: {name: client-secret}}}, type: Platform}]}]
 `,
 			errsContain: []string{},
 			expectedManifest: Manifest{
@@ -1043,13 +1043,19 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 						},
 						Group: "b",
 						Auth: Auth{
-							Token: Token{
+							Token: AuthSecret{
 								Name:  "e",
 								Value: "mock token",
 							},
 							OAuth: OAuth{
-								ClientId:     "f",
-								ClientSecret: "g",
+								ClientId: AuthSecret{
+									Name:  "client-id",
+									Value: "resolved-client-id",
+								},
+								ClientSecret: AuthSecret{
+									Name:  "client-secret",
+									Value: "resolved-client-secret",
+								},
 							},
 						},
 					},
@@ -1061,7 +1067,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 			manifestContent: `
 manifestVersion: 1.0
 projects: [{name: a, path: p}]
-environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientId: {value: f}, clientSecret: {value: g}}}, type: Classic}]}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientId: {name: client-id}, clientSecret: {name: client-secret}}}, type: Classic}]}]
 `,
 			errsContain: []string{"found OAuth credentials on a Dynatrace Classic environment"},
 		},
@@ -1070,7 +1076,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 			manifestContent: `
 manifestVersion: 1.0
 projects: [{name: a, path: p}]
-environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientSecret: {value: g}}}, type: Platform}]}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientSecret: {name: client-secret}}}, type: Platform}]}]
 `,
 			errsContain: []string{"failed to parse ClientID"},
 		},
@@ -1079,7 +1085,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 			manifestContent: `
 manifestVersion: 1.0
 projects: [{name: a, path: p}]
-environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientId: {value: f}}}, type: Platform}]}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientId: {name: client-id}}}, type: Platform}]}]
 `,
 			errsContain: []string{"failed to parse ClientSecret"},
 		},
@@ -1090,7 +1096,7 @@ manifestVersion: 1.0
 projects: [{name: a, path: p}]
 environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}}, type: Platform}]}]
 `,
-			errsContain: []string{"failed to parse OAuth credentials"},
+			errsContain: []string{"type is 'Platform', but no OAuth credentials defined"},
 		},
 		{
 			name: "No auth configured",
@@ -1108,7 +1114,7 @@ manifestVersion: 1.0
 projects: [{name: a, path: p}]
 environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: l}, auth: {token: {name: e}}, type: Platform}]}]
 `,
-			errsContain: []string{"both auth and token are present"},
+			errsContain: []string{"both 'auth' and 'token' are present"},
 		},
 		{
 			name: "Unknown type",
@@ -1117,83 +1123,7 @@ manifestVersion: 1.0
 projects: [{name: a, path: p}]
 environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {type: x}, type: Platform}]}]
 `,
-			errsContain: []string{"unknown token type"},
-		},
-		{
-			name: "ClientId as env var works",
-			manifestContent: `
-manifestVersion: 1.0
-projects: [{name: a, path: p}]
-environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientId: {type: environment, name: e}, clientSecret: {value: g}}}, type: Platform}]}]
-`,
-			expectedManifest: Manifest{
-				Projects: map[string]ProjectDefinition{
-					"a": {
-						Name: "a",
-						Path: "p",
-					},
-				},
-				Environments: map[string]EnvironmentDefinition{
-					"c": {
-						Name: "c",
-						Type: Platform,
-						Url: UrlDefinition{
-							Type:  ValueUrlType,
-							Value: "d",
-						},
-						Group: "b",
-						Auth: Auth{
-							Token: Token{
-								Name:  "e",
-								Value: "mock token",
-							},
-							OAuth: OAuth{
-								ClientId:     "mock token",
-								ClientSecret: "g",
-							},
-						},
-					},
-				},
-			},
-			errsContain: []string{},
-		},
-		{
-			name: "ClientSecret as env var works",
-			manifestContent: `
-manifestVersion: 1.0
-projects: [{name: a, path: p}]
-environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientSecret: {type: environment, name: e}, clientId: {value: g}}}, type: Platform}]}]
-`,
-			expectedManifest: Manifest{
-				Projects: map[string]ProjectDefinition{
-					"a": {
-						Name: "a",
-						Path: "p",
-					},
-				},
-				Environments: map[string]EnvironmentDefinition{
-					"c": {
-						Name: "c",
-						Type: Platform,
-						Url: UrlDefinition{
-							Type:  ValueUrlType,
-							Value: "d",
-						},
-						Group: "b",
-						Auth: Auth{
-							Token: Token{
-								Name:  "e",
-								Value: "mock token",
-							},
-							OAuth: OAuth{
-								ClientId:     "g",
-								ClientSecret: "mock token",
-							},
-						},
-					},
-				},
-			},
-			errsContain: []string{},
+			errsContain: []string{"type must be 'environment'"},
 		},
 		{
 			name: "load url from env var",
@@ -1220,7 +1150,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {type: environment, 
 						},
 						Group: "b",
 						Auth: Auth{
-							Token: Token{
+							Token: AuthSecret{
 								Name:  "e",
 								Value: "mock token",
 							},
@@ -1255,7 +1185,7 @@ manifestVersion: 1.0
 projects: [{name: a, path: p}]
 environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {type: environment, name: not-found}}, type: Classic}]}]
 `,
-			errsContain: []string{"no environment variable found"},
+			errsContain: []string{`environment-variable "not-found" was not found`},
 		},
 		{
 			name: "token env var not set",
@@ -1271,7 +1201,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 			manifestContent: `
 manifestVersion: 1.0
 projects: [{name: a, path: p}]
-environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientId: {type: environment, name: ""}, clientSecret: {value: m}}}, type: Platform}]}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientId: {type: environment, name: ""}, clientSecret: {name: client-secret}}}, type: Platform}]}]
 `,
 			errsContain: []string{"no name given or empty"},
 		},
@@ -1280,7 +1210,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 			manifestContent: `
 manifestVersion: 1.0
 projects: [{name: a, path: p}]
-environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientSecret: {type: environment, name: ""}, clientId: {value: m}}}, type: Platform}]}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientSecret: {type: environment, name: ""}, clientId: {name: client-id}}}, type: Platform}]}]
 `,
 			errsContain: []string{"no name given or empty"},
 		},
@@ -1289,18 +1219,18 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 			manifestContent: `
 manifestVersion: 1.0
 projects: [{name: a, path: p}]
-environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientId: {type: environment, name: "not-found"}, clientSecret: {value: m}}}, type: Platform}]}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientId: {type: environment, name: "not-found"}, clientSecret: {name: client-secret}}}, type: Platform}]}]
 `,
-			errsContain: []string{"environment-variable name given, but not found"},
+			errsContain: []string{`environment-variable "not-found" was not found`},
 		},
 		{
 			name: "ClientSecret env var not found",
 			manifestContent: `
 manifestVersion: 1.0
 projects: [{name: a, path: p}]
-environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientSecret: {type: environment, name: "not-found"}, clientId: {value: m}}}, type: Platform}]}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientSecret: {type: environment, name: "not-found"}, clientId: {name: client-id}}}, type: Platform}]}]
 `,
-			errsContain: []string{"environment-variable name given, but not found"},
+			errsContain: []string{`environment-variable "not-found" was not found`},
 		},
 	}
 	for _, test := range tests {
