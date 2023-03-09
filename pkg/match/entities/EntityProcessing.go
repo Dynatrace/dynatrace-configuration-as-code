@@ -65,12 +65,12 @@ func (e *EntityProcessing) AdjustRemainingEntities(singleToSingleMatch []Compare
 
 }
 
-func (e *EntityProcessing) PrepareRemainingEntities(indexRuleType IndexRuleType, resultListPtr *IndexCompareResultList) {
+func (e *EntityProcessing) PrepareRemainingEntities(keepSeeded bool, keepUnseeded bool, resultListPtr *IndexCompareResultList) {
 
-	if indexRuleType.IsSeed {
+	if keepSeeded && keepUnseeded {
 		e.Source.CurrentRemainingEntities = &(e.Source.RemainingEntities)
 		e.Target.CurrentRemainingEntities = &(e.Target.RemainingEntities)
-	} else {
+	} else if keepSeeded {
 		sort.Sort(ByLeft(resultListPtr.CompareResults))
 		e.Source.GenSeededEntities(resultListPtr.CompareResults, GetLeftId)
 		e.Source.CurrentRemainingEntities = &(e.Source.RemainingEntitiesSeeded)
@@ -78,6 +78,14 @@ func (e *EntityProcessing) PrepareRemainingEntities(indexRuleType IndexRuleType,
 		sort.Sort(ByRight(resultListPtr.CompareResults))
 		e.Target.GenSeededEntities(resultListPtr.CompareResults, GetRightId)
 		e.Target.CurrentRemainingEntities = &(e.Target.RemainingEntitiesSeeded)
+	} else if keepUnseeded {
+		sort.Sort(ByLeft(resultListPtr.CompareResults))
+		e.Source.GenUnSeededEntities(resultListPtr.CompareResults, GetLeftId, &(e.Source.RemainingEntities))
+		e.Source.CurrentRemainingEntities = &(e.Source.RemainingEntitiesUnSeeded)
+
+		sort.Sort(ByRight(resultListPtr.CompareResults))
+		e.Target.GenUnSeededEntities(resultListPtr.CompareResults, GetRightId, &(e.Target.RemainingEntities))
+		e.Target.CurrentRemainingEntities = &(e.Target.RemainingEntitiesUnSeeded)
 	}
 
 }

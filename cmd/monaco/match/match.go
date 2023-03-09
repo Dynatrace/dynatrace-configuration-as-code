@@ -43,9 +43,13 @@ func Match(fs afero.Fs, matchFileName string) error {
 		return err
 	}
 
-	nbEntitiesSource, nbEntitiesTarget, err := matchEntities.CompareConfigs(configsSource, configsTarget)
+	stats, nbEntitiesSource, nbEntitiesTarget, err := matchEntities.CompareConfigs(fs, matchParameters, configsSource, configsTarget)
 	if err != nil {
 		return err
+	}
+
+	for _, stat := range stats {
+		log.Info(stat)
 	}
 
 	p := message.NewPrinter(language.English)
@@ -73,7 +77,7 @@ func loadProjects(fs afero.Fs, matchParameters matchEntities.MatchParameters) (p
 
 func loadProject(fs afero.Fs, env matchEntities.MatchParametersEnv) (project.ConfigsPerType, error) {
 
-	log.Info("Loading project %s of %s environement %s ...", env.Project, env.EnvType, env.Environment)
+	log.Info("Loading project %s of %s environment %s ...", env.Project, env.EnvType, env.Environment)
 
 	context := project.ProjectLoaderContext{
 		KnownApis:       nil,

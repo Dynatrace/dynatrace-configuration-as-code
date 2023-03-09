@@ -21,6 +21,7 @@ import (
 	cmdUtil "github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/util"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 )
@@ -42,6 +43,7 @@ type MatchParameters struct {
 	Name       string
 	Type       string
 	WorkingDir string
+	OutputDir  string
 	Source     MatchParametersEnv
 	Target     MatchParametersEnv
 }
@@ -55,10 +57,11 @@ type MatchParametersEnv struct {
 }
 
 type MatchFileDefinition struct {
-	Name   string            `yaml:"name"`
-	Type   string            `yaml:"type"`
-	Source EnvInfoDefinition `yaml:"sourceInfo"`
-	Target EnvInfoDefinition `yaml:"targetInfo"`
+	Name       string            `yaml:"name"`
+	Type       string            `yaml:"type"`
+	OutputPath string            `yaml:"outputPath"`
+	Source     EnvInfoDefinition `yaml:"sourceInfo"`
+	Target     EnvInfoDefinition `yaml:"targetInfo"`
 }
 
 type EnvInfoDefinition struct {
@@ -102,6 +105,13 @@ func LoadMatchingParameters(fs afero.Fs, matchFileName string) (matchParameters 
 		matchParameters.Type = matchFileDef.Type
 	} else {
 		errors = append(errors, fmt.Errorf("matches type should be: %s, but was: %s", strings.Join(getMapKeys(validMatchTypes), " or "), matchFileDef.Type))
+	}
+
+	matchParameters.OutputDir, _, err = cmdUtil.GetFilePaths(matchFileDef.OutputPath)
+	if err != nil {
+		errors = append(errors, err)
+	} else {
+		log.Info("Output Directory: %s", matchParameters.OutputDir)
 	}
 
 	var errList []error

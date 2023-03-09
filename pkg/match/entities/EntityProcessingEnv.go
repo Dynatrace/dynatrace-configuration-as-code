@@ -22,11 +22,12 @@ import (
 )
 
 type EntityProcessingEnv struct {
-	RawEntityListPtr         *RawEntityList
-	Type                     config.Type
-	CurrentRemainingEntities *[]int
-	RemainingEntities        []int
-	RemainingEntitiesSeeded  []int
+	RawEntityListPtr          *RawEntityList
+	Type                      config.Type
+	CurrentRemainingEntities  *[]int
+	RemainingEntities         []int
+	RemainingEntitiesSeeded   []int
+	RemainingEntitiesUnSeeded []int
 }
 
 func (e *EntityProcessingEnv) GenSeededEntities(resultList []CompareResult, getId func(CompareResult) int) {
@@ -45,6 +46,32 @@ func (e *EntityProcessingEnv) GenSeededEntities(resultList []CompareResult, getI
 			// pass
 		} else {
 			e.RemainingEntitiesSeeded = append(e.RemainingEntitiesSeeded, entityId)
+		}
+	}
+
+}
+
+func (e *EntityProcessingEnv) GenUnSeededEntities(resultList []CompareResult, getId func(CompareResult) int, remainingEntities *[]int) {
+	e.RemainingEntitiesUnSeeded = []int{}
+
+	if len(*remainingEntities) == 0 {
+		return
+	}
+
+	e.RemainingEntitiesUnSeeded = make([]int, 0, len(*remainingEntities))
+
+	resultIdx := 0
+	entityId := 0
+
+	for _, remainingEntity := range *remainingEntities {
+		for ; resultIdx < len(resultList); resultIdx++ {
+			entityId = getId(resultList[resultIdx])
+			if entityId >= remainingEntity {
+				break
+			}
+		}
+		if remainingEntity != entityId || resultIdx >= len(resultList) {
+			e.RemainingEntitiesUnSeeded = append(e.RemainingEntitiesUnSeeded, remainingEntity)
 		}
 	}
 

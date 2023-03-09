@@ -16,15 +16,20 @@ package entities
 
 import (
 	"encoding/json"
+	"fmt"
+	"path/filepath"
 
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
+	"github.com/spf13/afero"
 )
 
-func CompareConfigs(entityPerTypeSource project.ConfigsPerType, entityPerTypeTarget project.ConfigsPerType) (int, int, error) {
+func CompareConfigs(fs afero.Fs, matchParameters MatchParameters, entityPerTypeSource project.ConfigsPerType, entityPerTypeTarget project.ConfigsPerType) ([]string, int, int, error) {
 	nbEntitiesSource := 0
 	nbEntitiesTarget := 0
+	stats := []string{fmt.Sprintf("%65s %10s %10s %10s %10s %10s", "Type", "Matched", "LeftOvers", "UnMatched", "Total", "Source")}
 
 	for entitiesType := range entityPerTypeTarget {
 
@@ -32,20 +37,28 @@ func CompareConfigs(entityPerTypeSource project.ConfigsPerType, entityPerTypeTar
 
 		entityProcessingPtr, err := genEntityProcessing(entityPerTypeSource, entityPerTypeTarget, entitiesType)
 		if err != nil {
-			return 0, 0, err
+			return []string{}, 0, 0, err
 		}
-		nbEntitiesSource += len(entityProcessingPtr.Source.RemainingEntities)
-		nbEntitiesTarget += len(entityProcessingPtr.Target.RemainingEntities)
+		nbEntitiesSourceType := len(entityProcessingPtr.Target.RemainingEntities)
+		nbEntitiesSource += nbEntitiesSourceType
+		nbEntitiesTargetType := len(entityProcessingPtr.Target.RemainingEntities)
+		nbEntitiesTarget += nbEntitiesTargetType
 
-		err = runIndexRuleAll(entityProcessingPtr, entitiesType)
+		var output MatchOutputType
+		output, err = runIndexRuleAll(entityProcessingPtr, entitiesType)
 		if err != nil {
-			return 0, 0, err
+			return []string{}, 0, 0, err
 		}
 
-		log.Debug("Completed Type: %s", entitiesType)
+		err = writeMatches(fs, matchParameters, entitiesType, output)
+		if err != nil {
+			return []string{}, 0, 0, fmt.Errorf("failed to persist matches of type: %s, see error: %s", entitiesType, err)
+		}
+
+		stats = append(stats, fmt.Sprintf("%65s %10d %10d %10d %10d %10d", entitiesType, len(output.Matches), len(output.LeftOvers), len(output.UnMatched), nbEntitiesTargetType, nbEntitiesSourceType))
 	}
 
-	return nbEntitiesSource, nbEntitiesTarget, nil
+	return stats, nbEntitiesSource, nbEntitiesTarget, nil
 }
 
 func genEntityProcessing(entityPerTypeSource project.ConfigsPerType, entityPerTypeTarget project.ConfigsPerType, entitiesType string) (*EntityProcessing, error) {
@@ -78,7 +91,7 @@ func unmarshalEntities(entityPerType []config.Config) (*RawEntityList, error) {
 	return rawEntityList, err
 }
 
-func runIndexRuleAll(entityProcessingPtr *EntityProcessing, entitiesType string) error {
+func runIndexRuleAll(entityProcessingPtr *EntityProcessing, entitiesType string) (MatchOutputType, error) {
 
 	matchedEntities := map[int]int{}
 	oldResultsPtr := &IndexCompareResultList{}
@@ -87,7 +100,7 @@ func runIndexRuleAll(entityProcessingPtr *EntityProcessing, entitiesType string)
 
 	for _, indexRuleType := range sortedActiveIndexRuleTypes {
 		resultListPtr := NewIndexCompareResultList(indexRuleType)
-		entityProcessingPtr.PrepareRemainingEntities(indexRuleType, oldResultsPtr)
+		entityProcessingPtr.PrepareRemainingEntities(true, indexRuleType.IsSeed, oldResultsPtr)
 
 		for _, indexRule := range indexRuleType.IndexRules {
 			runIndexRule(indexRule, entityProcessingPtr, resultListPtr)
@@ -106,29 +119,35 @@ func runIndexRuleAll(entityProcessingPtr *EntityProcessing, entitiesType string)
 		entitiesType, len(matchedEntities),
 		len(*entityProcessingPtr.Source.RawEntityListPtr), len(*entityProcessingPtr.Target.RawEntityListPtr))
 
-	printLeftoverSample(oldResultsPtr, entityProcessingPtr)
+	leftOverMap := getLeftOvers(oldResultsPtr, entityProcessingPtr)
+	outputPayload := genOutputPayload(entitiesType, entityProcessingPtr, oldResultsPtr, matchedEntities, leftOverMap)
 
-	outputPayload := genOutputPayload(entityProcessingPtr, matchedEntities)
-	log.Debug("outputPayload: %v", outputPayload)
-
-	return nil
+	return outputPayload, nil
 
 }
 
+type MatchOutputPerType map[string]MatchOutputType
+
 type MatchOutputType struct {
-	Source  ExtractionInfo
-	Target  ExtractionInfo
-	Matches map[string]string
+	Type      string              `json:"type"`
+	Source    ExtractionInfo      `json:"source"`
+	Target    ExtractionInfo      `json:"target"`
+	Matches   map[string]string   `json:"matches"`
+	LeftOvers map[string][]string `json:"leftOvers"`
+	UnMatched []string            `json:"unmatched"`
 }
 
 type ExtractionInfo struct {
-	From string
-	To   string
+	From string `json:"from"`
+	To   string `json:"to"`
 }
 
-func genOutputPayload(entityProcessingPtr *EntityProcessing, matchedEntities map[int]int) MatchOutputType {
+func genOutputPayload(entitiesType string, entityProcessingPtr *EntityProcessing, oldResultsPtr *IndexCompareResultList, matchedEntities map[int]int, leftOverMap map[string][]string) MatchOutputType {
+
+	entityProcessingPtr.PrepareRemainingEntities(false, true, oldResultsPtr)
 
 	matchOutput := MatchOutputType{
+		Type: entitiesType,
 		Source: ExtractionInfo{
 			From: entityProcessingPtr.Source.Type.From,
 			To:   entityProcessingPtr.Source.Type.To,
@@ -137,7 +156,9 @@ func genOutputPayload(entityProcessingPtr *EntityProcessing, matchedEntities map
 			From: entityProcessingPtr.Target.Type.From,
 			To:   entityProcessingPtr.Target.Type.To,
 		},
-		Matches: make(map[string]string, len(matchedEntities)),
+		LeftOvers: leftOverMap,
+		Matches:   make(map[string]string, len(matchedEntities)),
+		UnMatched: make([]string, len(*entityProcessingPtr.Source.CurrentRemainingEntities)),
 	}
 
 	for sourceI, targetI := range matchedEntities {
@@ -145,7 +166,56 @@ func genOutputPayload(entityProcessingPtr *EntityProcessing, matchedEntities map
 			(*(entityProcessingPtr.Source.RawEntityListPtr))[sourceI].(map[string]interface{})["entityId"].(string)
 	}
 
+	for idx, targetI := range *entityProcessingPtr.Source.CurrentRemainingEntities {
+		matchOutput.UnMatched[idx] = (*(entityProcessingPtr.Target.RawEntityListPtr))[targetI].(map[string]interface{})["entityId"].(string)
+	}
+
 	return matchOutput
+}
+
+func getLeftOvers(oldResultsPtr *IndexCompareResultList, entityProcessingPtr *EntityProcessing) map[string][]string {
+	printLeftoverSample(oldResultsPtr, entityProcessingPtr)
+
+	return genLeftOverMap(oldResultsPtr, entityProcessingPtr)
+
+}
+
+func genLeftOverMap(oldResultsPtr *IndexCompareResultList, entityProcessingPtr *EntityProcessing) map[string][]string {
+
+	leftOvers := map[string][]string{}
+
+	if len(oldResultsPtr.CompareResults) <= 0 {
+		return leftOvers
+	}
+
+	firstIdx := 0
+	currentId := oldResultsPtr.CompareResults[0].LeftId
+
+	addMatchingLeftOvers := func(nbMatches int) {
+		leftOverMatches := make([]string, nbMatches)
+		for j := 0; j < nbMatches; j++ {
+			sourceId := oldResultsPtr.CompareResults[(j + firstIdx)].RightId
+			leftOverMatches[j] = (*(entityProcessingPtr.Target.RawEntityListPtr))[sourceId].(map[string]interface{})["entityId"].(string)
+		}
+		leftOvers[(*(entityProcessingPtr.Target.RawEntityListPtr))[currentId].(map[string]interface{})["entityId"].(string)] = leftOverMatches
+	}
+
+	for i, result := range oldResultsPtr.CompareResults[1:] {
+		if result.LeftId == currentId {
+
+		} else {
+			nbMatches := i - firstIdx
+			addMatchingLeftOvers(nbMatches)
+
+			currentId = result.LeftId
+			firstIdx = i
+		}
+	}
+	nbMatches := len(oldResultsPtr.CompareResults) - firstIdx
+	addMatchingLeftOvers(nbMatches)
+
+	return leftOvers
+
 }
 
 func printLeftoverSample(oldResultsPtr *IndexCompareResultList, entityProcessingPtr *EntityProcessing) {
@@ -193,4 +263,34 @@ func keepMatches(matchedEntities map[int]int, singleToSingleMatch []CompareResul
 	}
 
 	return matchedEntities
+}
+
+func writeMatches(fs afero.Fs, matchParameters MatchParameters, entitiesType string, output MatchOutputType) error {
+
+	sanitizedOutputDir := filepath.Clean(matchParameters.OutputDir)
+
+	if sanitizedOutputDir != "." {
+		err := fs.MkdirAll(sanitizedOutputDir, 0777)
+		if err != nil {
+			return err
+		}
+	}
+
+	outputAsJson, err := json.Marshal(output)
+
+	if err != nil {
+		return err
+	}
+
+	sanitizedType := util.SanitizeName(entitiesType)
+	fullMatchPath := filepath.Join(sanitizedOutputDir, fmt.Sprintf("%s.json", sanitizedType))
+
+	err = afero.WriteFile(fs, fullMatchPath, outputAsJson, 0664)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+
 }
