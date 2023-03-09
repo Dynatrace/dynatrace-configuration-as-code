@@ -107,15 +107,20 @@ func createManifest(proj project.Project, tokenEnvVarName string, environmentUrl
 	return manifest.Manifest{
 		Projects: projectDefinition,
 		Environments: map[string]manifest.EnvironmentDefinition{
-			proj.Id: manifest.NewEnvironmentDefinition(proj.Id,
-				manifest.UrlDefinition{
+			proj.Id: {
+				Type: manifest.Classic,
+				Name: proj.Id,
+				Url: manifest.UrlDefinition{
 					Type:  manifest.ValueUrlType,
 					Value: environmentUrl,
 				},
-				"default",
-				manifest.AuthSecret{
-					Name: tokenEnvVarName,
-				}),
+				Group: "default",
+				Auth: manifest.Auth{
+					Token: manifest.AuthSecret{
+						Name: tokenEnvVarName,
+					},
+				},
+			},
 		},
 	}
 }

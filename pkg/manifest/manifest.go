@@ -101,18 +101,6 @@ type AuthSecret struct {
 
 type ProjectDefinitionByProjectId map[string]ProjectDefinition
 
-// NewEnvironmentDefinition creates a new EnvironmentDefinition
-func NewEnvironmentDefinition(name string, url UrlDefinition, group string, token AuthSecret) EnvironmentDefinition {
-	return EnvironmentDefinition{
-		Name:  name,
-		Url:   url,
-		Group: group,
-		Auth: Auth{
-			Token: token,
-		},
-	}
-}
-
 // Environments is a map of environment-name -> EnvironmentDefinition
 type Environments map[string]EnvironmentDefinition
 
