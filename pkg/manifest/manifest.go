@@ -43,7 +43,6 @@ func (p ProjectDefinition) String() string {
 	return fmt.Sprintf("%s (path: %s)", p.Name, p.Path)
 }
 
-// EnvironmentDefinition holds all information about a Dynatrace environment
 type OAuth struct {
 	ClientId     string
 	ClientSecret string
@@ -54,6 +53,7 @@ type Auth struct {
 	OAuth OAuth
 }
 
+// EnvironmentDefinition holds all information about a Dynatrace environment
 type EnvironmentDefinition struct {
 	Name  string
 	Type  EnvironmentType
