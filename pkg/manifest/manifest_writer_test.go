@@ -170,6 +170,16 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 					Group: "group1",
 					Auth: Auth{
 						Token: Token{},
+						OAuth: OAuth{
+							ClientId: AuthSecret{
+								Name:  "client-id-key",
+								Value: "client-id-val",
+							},
+							ClientSecret: AuthSecret{
+								Name:  "client-secret-key",
+								Value: "client-secret-val",
+							},
+						},
 					},
 				},
 				"env3": {
@@ -192,18 +202,32 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							Name: "env1",
 							Type: "classic",
 							Url:  url{Value: "www.an.Url"},
-							Token: &tokenConfig{
-								Name: "TokenTest",
-								Type: "environment",
+							Auth: &auth{
+								Token: authSecret{
+									Name: "TokenTest",
+									Type: "environment",
+								},
 							},
 						},
 						{
 							Name: "env2",
 							Type: "platform",
 							Url:  url{Value: "www.an.Url"},
-							Token: &tokenConfig{
-								Name: "env2_TOKEN",
-								Type: "environment",
+							Auth: &auth{
+								Token: authSecret{
+									Name: "env2_TOKEN",
+									Type: "environment",
+								},
+								OAuth: &oAuth{
+									ClientID: authSecret{
+										Type: typeEnvironment,
+										Name: "client-id-key",
+									},
+									ClientSecret: authSecret{
+										Type: typeEnvironment,
+										Name: "client-secret-key",
+									},
+								},
 							},
 						},
 					},
@@ -215,9 +239,11 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							Name: "env3",
 							Type: "classic",
 							Url:  url{Value: "www.an.Url"},
-							Token: &tokenConfig{
-								Name: "env3_TOKEN",
-								Type: "environment",
+							Auth: &auth{
+								Token: authSecret{
+									Name: "env3_TOKEN",
+									Type: "environment",
+								},
 							},
 						},
 					},
@@ -324,7 +350,7 @@ func Test_toWritableToken(t *testing.T) {
 	tests := []struct {
 		name  string
 		input EnvironmentDefinition
-		want  tokenConfig
+		want  authSecret
 	}{
 		{
 			"correctly transforms env var token",
@@ -336,7 +362,7 @@ func Test_toWritableToken(t *testing.T) {
 					Token: Token{Name: "VARIABLE"},
 				},
 			},
-			tokenConfig{
+			authSecret{
 				Name: "VARIABLE",
 				Type: "environment",
 			},
@@ -352,7 +378,7 @@ func Test_toWritableToken(t *testing.T) {
 					Token: Token{},
 				},
 			},
-			tokenConfig{
+			authSecret{
 				Name: "NAME_TOKEN",
 				Type: "environment",
 			},

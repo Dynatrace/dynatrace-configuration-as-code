@@ -102,9 +102,10 @@ environmentGroups:
     url:
       type: environment
       value: ENV_URL
-    token:
-      type: environment
-      name: ENV_TOKEN
+    auth:
+      token:
+        type: environment
+        name: ENV_TOKEN
 `, version.ManifestVersion)
 
 	manifestExists, _ := afero.Exists(testFs, "converted/manifest.yaml")
