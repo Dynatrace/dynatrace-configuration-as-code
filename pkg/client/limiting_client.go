@@ -105,7 +105,7 @@ func (l limitingClient) GetSettingById(objectId string) (o *DownloadSettingsObje
 
 	return
 }
-func (l limitingClient) ListSettings(schemaId string, opts ListSettingsOptions) (o []DownloadSettingsObject, err RespError) {
+func (l limitingClient) ListSettings(schemaId string, opts ListSettingsOptions) (o []DownloadSettingsObject, err error) {
 	l.limiter.ExecuteBlocking(func() {
 		o, err = l.client.ListSettings(schemaId, opts)
 	})
@@ -121,7 +121,7 @@ func (l limitingClient) DeleteSettings(objectID string) (err error) {
 	return
 }
 
-func (l limitingClient) ListEntitiesTypes() (e []EntitiesType, err RespError) {
+func (l limitingClient) ListEntitiesTypes() (e []EntitiesType, err error) {
 	l.limiter.ExecuteBlocking(func() {
 		e, err = l.client.ListEntitiesTypes()
 	})
@@ -129,7 +129,7 @@ func (l limitingClient) ListEntitiesTypes() (e []EntitiesType, err RespError) {
 	return
 }
 
-func (l limitingClient) ListEntities(entitiesType EntitiesType) (o []string, err RespError) {
+func (l limitingClient) ListEntities(entitiesType EntitiesType) (o []string, err error) {
 	l.limiter.ExecuteBlocking(func() {
 		o, err = l.client.ListEntities(entitiesType)
 	})

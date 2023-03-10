@@ -102,7 +102,7 @@ func cleanupSettings(t *testing.T, fs afero.Fs, manifestPath string, loadedManif
 
 func deleteSettingsObjects(t *testing.T, schema, externalID string, c client.SettingsClient) {
 	objects, err := c.ListSettings(schema, client.ListSettingsOptions{DiscardValue: true, Filter: func(o client.DownloadSettingsObject) bool { return o.ExternalId == externalID }})
-	if err.WrappedError != nil {
+	if err != nil {
 		t.Logf("Failed to cleanup test config: could not fetch settings 2.0 objects with schema ID %s: %v", schema, err)
 		return
 	}

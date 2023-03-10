@@ -18,6 +18,7 @@ package settings
 
 import (
 	"encoding/json"
+	"errors"
 	"sync"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
@@ -109,8 +110,15 @@ func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPe
 			defer wg.Done()
 			log.Debug("Downloading all settings for schema %s", s)
 			objects, err := d.client.ListSettings(s, client.ListSettingsOptions{})
-			if err.WrappedError != nil {
-				log.Error("Failed to fetch all settings for schema %s: %v", s, err.ConcurrentError())
+			if err != nil {
+				var errMsg string
+				var respErr client.RespError
+				if errors.As(err, &respErr) {
+					errMsg = respErr.ConcurrentError()
+				} else {
+					errMsg = err.Error()
+				}
+				log.Error("Failed to fetch all settings for schema %s: %v", s, errMsg)
 				return
 			}
 			if len(objects) == 0 {

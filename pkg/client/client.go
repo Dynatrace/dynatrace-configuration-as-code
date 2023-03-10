@@ -114,7 +114,7 @@ type SettingsClient interface {
 	ListSchemas() (SchemaList, error)
 
 	// ListSettings returns all settings objects for a given schema.
-	ListSettings(string, ListSettingsOptions) ([]DownloadSettingsObject, RespError)
+	ListSettings(string, ListSettingsOptions) ([]DownloadSettingsObject, error)
 
 	// GetSettingById returns the setting with the given object ID
 	GetSettingById(string) (*DownloadSettingsObject, error)
@@ -162,10 +162,10 @@ type ListSettingsFilter func(DownloadSettingsObject) bool
 type EntitiesClient interface {
 
 	// ListEntitiesTypes returns all entities types
-	ListEntitiesTypes() ([]EntitiesType, RespError)
+	ListEntitiesTypes() ([]EntitiesType, error)
 
 	// ListEntities returns all entities objects for a given type.
-	ListEntities(EntitiesType) ([]string, RespError)
+	ListEntities(EntitiesType) ([]string, error)
 }
 
 //go:generate mockgen -source=client.go -destination=client_mock.go -package=client -imports .=github.com/dynatrace/dynatrace-configuration-as-code/pkg/api DynatraceClient
@@ -512,7 +512,7 @@ func (d *DynatraceClient) GetSettingById(objectId string) (*DownloadSettingsObje
 	return &result, nil
 }
 
-func (d *DynatraceClient) ListSettings(schemaId string, opts ListSettingsOptions) ([]DownloadSettingsObject, RespError) {
+func (d *DynatraceClient) ListSettings(schemaId string, opts ListSettingsOptions) ([]DownloadSettingsObject, error) {
 	log.Debug("Downloading all settings for schema %s", schemaId)
 
 	listSettingsFields := defaultListSettingsFields
@@ -551,11 +551,11 @@ func (d *DynatraceClient) ListSettings(schemaId string, opts ListSettingsOptions
 
 	_, err := d.listPaginated(pathSettingsObjects, params, schemaId, addToResult)
 
-	if err.WrappedError != nil {
+	if err != nil {
 		return nil, err
 	}
 
-	return result, err
+	return result, nil
 }
 
 type EntitiesTypeListResponse struct {
@@ -567,7 +567,7 @@ type EntitiesType struct {
 	Properties      []map[string]interface{} `json:"properties"`
 }
 
-func (d *DynatraceClient) ListEntitiesTypes() ([]EntitiesType, RespError) {
+func (d *DynatraceClient) ListEntitiesTypes() ([]EntitiesType, error) {
 
 	params := url.Values{
 		"pageSize": []string{defaultPageSize},
@@ -589,17 +589,14 @@ func (d *DynatraceClient) ListEntitiesTypes() ([]EntitiesType, RespError) {
 
 	resp, err := d.listPaginated(pathEntitiesTypes, params, "EntityTypeList", addToResult)
 
-	if err.WrappedError != nil {
+	if err != nil {
 		return nil, RespError{
-			WrappedError: err,
-			StatusCode:   resp.StatusCode,
+			Err:        err,
+			StatusCode: resp.StatusCode,
 		}
 	}
 
-	return result, RespError{
-		WrappedError: err,
-		StatusCode:   resp.StatusCode,
-	}
+	return result, nil
 }
 
 type EntityListResponseRaw struct {
@@ -610,7 +607,7 @@ func genTimeframeUnixMilliString(duration time.Duration) string {
 	return strconv.FormatInt(time.Now().Add(duration).UnixMilli(), 10)
 }
 
-func (d *DynatraceClient) ListEntities(entitiesType EntitiesType) ([]string, RespError) {
+func (d *DynatraceClient) ListEntities(entitiesType EntitiesType) ([]string, error) {
 
 	entityType := entitiesType.EntitiesTypeId
 	log.Debug("Downloading all entities for entities Type %s", entityType)
@@ -644,16 +641,16 @@ func (d *DynatraceClient) ListEntities(entitiesType EntitiesType) ([]string, Res
 
 		runExtraction, ignoreProperties, err = handleListEntitiesError(entityType, resp, runExtraction, ignoreProperties, err)
 
-		if err.WrappedError != nil {
+		if err != nil {
 			return nil, err
 		}
 	}
 
-	return result, RespError{}
+	return result, nil
 }
 
 func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLabel string,
-	addToResult func(body []byte) (int, int, error)) (rest.Response, RespError) {
+	addToResult func(body []byte) (int, int, error)) (rest.Response, error) {
 
 	var resp rest.Response
 	startTime := time.Now()
@@ -663,16 +660,16 @@ func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLa
 	u, err := buildUrl(d.environmentUrl, urlPath, params)
 	if err != nil {
 		return resp, RespError{
-			WrappedError: err,
-			StatusCode:   0,
+			Err:        err,
+			StatusCode: 0,
 		}
 	}
 
 	resp, receivedCount, totalReceivedCount, _, err = d.runAndProcessResponse(false, u, addToResult, receivedCount, totalReceivedCount, urlPath)
 	if err != nil {
 		return resp, RespError{
-			WrappedError: err,
-			StatusCode:   resp.StatusCode,
+			Err:        err,
+			StatusCode: resp.StatusCode,
 		}
 	}
 
@@ -693,8 +690,8 @@ func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLa
 			resp, receivedCount, totalReceivedCount, isLastAvailablePage, err = d.runAndProcessResponse(true, u, addToResult, receivedCount, totalReceivedCount, urlPath)
 			if err != nil {
 				return resp, RespError{
-					WrappedError: err,
-					StatusCode:   resp.StatusCode,
+					Err:        err,
+					StatusCode: resp.StatusCode,
 				}
 			}
 			if isLastAvailablePage {
@@ -705,8 +702,8 @@ func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLa
 			retry, emptyResponseRetryCount, err = isRetryOnEmptyResponse(receivedCount, emptyResponseRetryCount, resp)
 			if err != nil {
 				return resp, RespError{
-					WrappedError: err,
-					StatusCode:   resp.StatusCode,
+					Err:        err,
+					StatusCode: resp.StatusCode,
 				}
 			}
 
@@ -726,7 +723,7 @@ func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLa
 		}
 	}
 
-	return resp, RespError{}
+	return resp, nil
 
 }
 

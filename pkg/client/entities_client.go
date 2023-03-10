@@ -17,7 +17,7 @@ package client
 import (
 	"encoding/json"
 	"net/url"
-	reflect "reflect"
+	"reflect"
 	"regexp"
 	"unicode"
 
@@ -141,18 +141,18 @@ func genListEntitiesParams(entityType string, entitiesType EntitiesType, ignoreP
 	return params
 }
 
-func handleListEntitiesError(entityType string, resp rest.Response, run_extraction bool, ignoreProperties []string, err RespError) (bool, []string, RespError) {
-	if err.WrappedError != nil {
+func handleListEntitiesError(entityType string, resp rest.Response, run_extraction bool, ignoreProperties []string, err error) (bool, []string, error) {
+	if err != nil {
 		retryWithIgnore := false
 		retryWithIgnore, ignoreProperties = validateForPropertyErrors(resp, ignoreProperties, entityType)
 
 		if retryWithIgnore {
-			return run_extraction, ignoreProperties, RespError{}
+			return run_extraction, ignoreProperties, nil
 		} else {
 			return run_extraction, ignoreProperties, err
 		}
 	} else {
-		return false, ignoreProperties, RespError{}
+		return false, ignoreProperties, nil
 	}
 }
 

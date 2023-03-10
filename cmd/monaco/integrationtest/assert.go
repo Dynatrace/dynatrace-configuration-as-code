@@ -168,7 +168,7 @@ func assertConfig(t *testing.T, client client.ConfigClient, theApi api.Api, envi
 func assertSetting(t *testing.T, c client.SettingsClient, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config) {
 	expectedExtId := idutils.GenerateExternalID(config.Type.SchemaId, config.Coordinate.ConfigId)
 	objects, err := c.ListSettings(config.Type.SchemaId, client.ListSettingsOptions{DiscardValue: true, Filter: func(o client.DownloadSettingsObject) bool { return o.ExternalId == expectedExtId }})
-	assert.NilError(t, err.WrappedError)
+	assert.NilError(t, err)
 
 	if len(objects) > 1 {
 		t.Errorf("Expected a specific Settings Object with externalId %q, but %d are present instead.", expectedExtId, len(objects))

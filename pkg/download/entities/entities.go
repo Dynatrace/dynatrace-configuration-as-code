@@ -17,6 +17,7 @@
 package entities
 
 import (
+	"errors"
 	"strings"
 	"sync"
 
@@ -68,7 +69,7 @@ func (d *Downloader) DownloadAll(projectName string) v2.ConfigsPerType {
 
 	// get ALL entities types
 	entitiesTypes, err := d.client.ListEntitiesTypes()
-	if err.WrappedError != nil {
+	if err != nil {
 		log.Error("Failed to fetch all known entities types. Skipping entities download. Reason: %s", err)
 		return nil
 	}
@@ -88,8 +89,15 @@ func (d *Downloader) download(entitiesTypes []client.EntitiesType, projectName s
 			defer wg.Done()
 
 			objects, err := d.client.ListEntities(entityType)
-			if err.WrappedError != nil {
-				log.Error("Failed to fetch all entities for entities Type %s: %v", entityType.EntitiesTypeId, err.ConcurrentError())
+			if err != nil {
+				var errMsg string
+				var respErr client.RespError
+				if errors.As(err, &respErr) {
+					errMsg = respErr.ConcurrentError()
+				} else {
+					errMsg = err.Error()
+				}
+				log.Error("Failed to fetch all entities for entities Type %s: %v", entityType.EntitiesTypeId, errMsg)
 				return
 			}
 			if len(objects) == 0 {
