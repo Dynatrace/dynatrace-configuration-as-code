@@ -60,7 +60,7 @@ func TestFilterProjectsWithSubproject(t *testing.T) {
 func TestGetAllProjectFoldersRecursivelyFailsOnMixedFolder(t *testing.T) {
 	path := files.ReplacePathSeparators("test-resources/configs-and-api-mixed-test/project1")
 	fs := testutils.CreateTestFileSystem()
-	apis := api.NewApis()
+	apis := api.NewAPIs()
 	_, err := getAllProjectFoldersRecursively(fs, apis, path)
 
 	expected := files.ReplacePathSeparators("found folder with projects and configurations in test-resources/configs-and-api-mixed-test/project1")
@@ -70,7 +70,7 @@ func TestGetAllProjectFoldersRecursivelyFailsOnMixedFolder(t *testing.T) {
 func TestGetAllProjectFoldersRecursivelyFailsOnMixedFolderInSubproject(t *testing.T) {
 	path := files.ReplacePathSeparators("test-resources/configs-and-api-mixed-test/project2")
 	fs := testutils.CreateTestFileSystem()
-	apis := api.NewApis()
+	apis := api.NewAPIs()
 	_, err := getAllProjectFoldersRecursively(fs, apis, path)
 
 	expected := files.ReplacePathSeparators("found folder with projects and configurations in test-resources/configs-and-api-mixed-test/project2/subproject2")
@@ -80,7 +80,7 @@ func TestGetAllProjectFoldersRecursivelyFailsOnMixedFolderInSubproject(t *testin
 func TestGetAllProjectFoldersRecursivelyPassesOnSeparatedFolders(t *testing.T) {
 	path := files.ReplacePathSeparators("test-resources/configs-and-api-mixed-test/project3")
 	fs := testutils.CreateTestFileSystem()
-	apis := api.NewApis()
+	apis := api.NewAPIs()
 	_, err := getAllProjectFoldersRecursively(fs, apis, path)
 	assert.NoError(t, err)
 }
@@ -88,14 +88,14 @@ func TestGetAllProjectFoldersRecursivelyPassesOnSeparatedFolders(t *testing.T) {
 func TestGetAllProjectsFoldersRecursivelyPassesOnHiddenFolders(t *testing.T) {
 	path := files.ReplacePathSeparators("test-resources/hidden-directories/project1")
 	fs := testutils.CreateTestFileSystem()
-	_, err := getAllProjectFoldersRecursively(fs, api.NewV1Apis(), path)
+	_, err := getAllProjectFoldersRecursively(fs, api.NewV1APIs(), path)
 	assert.NoError(t, err)
 }
 
 func TestGetAllProjectsFoldersRecursivelyPassesOnProjectsWithinHiddenFolders(t *testing.T) {
 	path := files.ReplacePathSeparators("test-resources/hidden-directories/project2")
 	fs := testutils.CreateTestFileSystem()
-	projects, err := getAllProjectFoldersRecursively(fs, api.NewV1Apis(), path)
+	projects, err := getAllProjectFoldersRecursively(fs, api.NewV1APIs(), path)
 
 	assert.NoError(t, err)
 
@@ -106,7 +106,7 @@ func TestGetAllProjectsFoldersRecursivelyPassesOnProjectsWithinHiddenFolders(t *
 func TestGetAllProjectsFoldersRecursivelyPassesOnProjects(t *testing.T) {
 	path := files.ReplacePathSeparators("test-resources/hidden-directories")
 	fs := testutils.CreateTestFileSystem()
-	projects, err := getAllProjectFoldersRecursively(fs, api.NewV1Apis(), path)
+	projects, err := getAllProjectFoldersRecursively(fs, api.NewV1APIs(), path)
 
 	assert.NoError(t, err)
 
@@ -119,7 +119,7 @@ func TestGetAllProjectsFoldersRecursivelyPassesOnProjects(t *testing.T) {
 }
 
 func TestContainsApiName(t *testing.T) {
-	apis := api.NewApis()
+	apis := api.NewAPIs()
 	assert.False(t, containsApiName(apis, "trillian"), "Check if `trillian` is an API")
 	assert.True(t, containsApiName(apis, "extension"), "Check if `extension` is an API")
 	assert.True(t, containsApiName(apis, "/project/sub-project/extension/subfolder"), "Check if `extension` is an API")

@@ -26,7 +26,7 @@ import (
 )
 
 func Test_AllDefinedApiFiltersHaveApis(t *testing.T) {
-	definedApis := api.NewApis()
+	definedApis := api.NewAPIs()
 
 	for apiId := range apiFilters {
 		_, found := definedApis[apiId]

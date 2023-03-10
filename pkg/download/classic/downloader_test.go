@@ -29,7 +29,7 @@ func TestDownloadAllConfigs_FailedToFindConfigsToDownload(t *testing.T) {
 	c := client.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(gomock.Any()).Return([]client.Value{}, fmt.Errorf("NO"))
 	downloader := NewDownloader(c)
-	testAPI := api.API{ID: "API_ID", URLPath: "API_PATH", NonUniqueNameApi: true}
+	testAPI := api.API{ID: "API_ID", URLPath: "API_PATH", NonUniqueName: true}
 	apiMap := api.APIs{"API_ID": testAPI}
 
 	assert.Len(t, downloader.DownloadAll(apiMap, "project"), 0)
@@ -39,7 +39,7 @@ func TestDownloadAll_NoConfigsToDownloadFound(t *testing.T) {
 	c := client.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(gomock.Any()).Return([]client.Value{}, nil)
 	downloader := NewDownloader(c)
-	testAPI := api.API{ID: "API_ID", URLPath: "API_PATH", NonUniqueNameApi: true}
+	testAPI := api.API{ID: "API_ID", URLPath: "API_PATH", NonUniqueName: true}
 
 	apiMap := api.APIs{"API_ID": testAPI}
 
@@ -58,8 +58,8 @@ func TestDownloadAll_ConfigsDownloaded(t *testing.T) {
 		return nil, nil
 	}).Times(2)
 	downloader := NewDownloader(c)
-	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", NonUniqueNameApi: true}
-	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueNameApi: true}
+	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", NonUniqueName: true}
+	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueName: true}
 	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 
@@ -80,8 +80,8 @@ func TestDownloadAll_ConfigsDownloaded_WithEmptyFilter(t *testing.T) {
 		return nil, nil
 	}).Times(2)
 	downloader := NewDownloader(c, WithAPIFilters(map[string]apiFilter{}))
-	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", NonUniqueNameApi: true}
-	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueNameApi: true}
+	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", NonUniqueName: true}
+	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueName: true}
 	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 
@@ -95,7 +95,7 @@ func TestDownloadAll_SingleConfigurationAPI(t *testing.T) {
 	client := client.NewMockClient(gomock.NewController(t))
 	client.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 	downloader := NewDownloader(client)
-	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", SingleConfigurationApi: true, NonUniqueNameApi: true}
+	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", SingleConfiguration: true, NonUniqueName: true}
 	apiMap := api.APIs{"API_ID_1": testAPI1}
 
 	configurations := downloader.DownloadAll(apiMap, "project")
@@ -115,8 +115,8 @@ func TestDownloadAll_ErrorFetchingConfig(t *testing.T) {
 
 	downloader := NewDownloader(c)
 
-	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", NonUniqueNameApi: true}
-	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueNameApi: true}
+	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", NonUniqueName: true}
+	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueName: true}
 
 	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).DoAndReturn(func(a api.API, id string) (json []byte, err error) {
 		if a.ID == "API_ID_1" {
@@ -149,8 +149,8 @@ func TestDownloadAll_SkipConfigThatShouldNotBePersisted(t *testing.T) {
 	}}
 	downloader := NewDownloader(c, WithAPIFilters(apiFilters))
 
-	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", NonUniqueNameApi: true}
-	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueNameApi: true}
+	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", NonUniqueName: true}
+	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueName: true}
 	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil).Times(2)
 
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
@@ -178,8 +178,8 @@ func TestDownloadAll_SkipConfigBeforeDownload(t *testing.T) {
 	}}
 	downloader := NewDownloader(c, WithAPIFilters(apiFilters))
 
-	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", NonUniqueNameApi: true}
-	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueNameApi: true}
+	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", NonUniqueName: true}
+	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueName: true}
 	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
@@ -207,8 +207,8 @@ func TestDownloadAll_APIWithoutAnyConfigAvailableAreNotDownloaded(t *testing.T) 
 		return nil, nil
 	}).Times(2)
 	downloader := NewDownloader(c)
-	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", NonUniqueNameApi: true}
-	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueNameApi: true}
+	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", NonUniqueName: true}
+	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueName: true}
 	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
@@ -228,8 +228,8 @@ func TestDownloadAll_MalformedResponseFromAnAPI(t *testing.T) {
 		return nil, nil
 	}).Times(2)
 	downloader := NewDownloader(c)
-	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", NonUniqueNameApi: true}
-	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueNameApi: true}
+	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", NonUniqueName: true}
+	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueName: true}
 	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("-1"), nil)
 	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 

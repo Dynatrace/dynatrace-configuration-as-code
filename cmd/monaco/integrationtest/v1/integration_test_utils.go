@@ -100,7 +100,7 @@ func assertConfigAvailable(t *testing.T, client client.ConfigClient, env manifes
 	name, err := nameParam.ResolveValue(parameter.ResolveContext{})
 	assert.NilError(t, err, "Config %s should have a trivial name to resolve", config.Coordinate)
 
-	a, found := api.NewApis()[config.Type.Api]
+	a, found := api.NewAPIs()[config.Type.Api]
 	assert.Assert(t, found, "Config %s should have a known api, but does not. Api %s does not exist", config.Coordinate, config.Type.Api)
 
 	if config.Skip {

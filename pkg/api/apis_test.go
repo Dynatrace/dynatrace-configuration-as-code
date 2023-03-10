@@ -27,14 +27,14 @@ import (
 var testDevEnvironment = v1environment.NewEnvironmentV1("development", "Dev", "", "https://url/to/dev/environment", "DEV")
 
 func TestNewApis(t *testing.T) {
-	apis := NewApis()
+	apis := NewAPIs()
 
 	assert.Contains(t, apis, "notification", "Expected `notification` key in KnownApis")
-	assert.Equal(t, "https://url/to/dev/environment/api/config/v1/notifications", apis["notification"].GetUrl(testDevEnvironment.GetEnvironmentUrl()), "Expected to get `notification` API url")
+	assert.Equal(t, "https://url/to/dev/environment/api/config/v1/notifications", apis["notification"].CreateURL(testDevEnvironment.GetEnvironmentUrl()), "Expected to get `notification` API url")
 }
 
 func TestContains(t *testing.T) {
-	apis := NewApis()
+	apis := NewAPIs()
 	assert.True(t, apis.Contains("alerting-profile"))
 	assert.False(t, apis.Contains("something"))
 
@@ -104,13 +104,13 @@ func TestApiMapFilter(t *testing.T) {
 			},
 		},
 		{
-			name: "NoFilter",
+			name: "noFilter",
 			given: given{
 				apis: APIs{
 					"api_1": API{ID: "api_1"},
 					"api_2": API{ID: "api_2"},
 				},
-				filters: []Filter{NoFilter},
+				filters: []Filter{noFilter},
 			},
 			expected: expected{
 				apis: APIs{

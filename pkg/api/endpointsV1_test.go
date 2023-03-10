@@ -41,19 +41,19 @@ func TestGetV2ApiId(t *testing.T) {
 		},
 		{
 			"Strips -v2 for breaking change APIs from v1",
-			args{API{ID: "type_id-v2", URLPath: "config/v1/type", NonUniqueNameApi: true}},
+			args{API{ID: "type_id-v2", URLPath: "config/v1/type", NonUniqueName: true}},
 			"type_id",
 		},
 		{
 			"Strips -v2 if deprecating ID was a breaking change API in v1",
-			args{API{ID: "og_type_id", URLPath: "config/v1/type", NonUniqueNameApi: true, DeprecatedBy: "type_id-v2"}},
+			args{API{ID: "og_type_id", URLPath: "config/v1/type", NonUniqueName: true, DeprecatedBy: "type_id-v2"}},
 			"type_id",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GetV2ApiId(tt.args.forV1Api); got != tt.want {
-				t.Errorf("GetV2ApiId() = %v, want %v", got, tt.want)
+			if got := GetV2ID(tt.args.forV1Api); got != tt.want {
+				t.Errorf("GetV2ID() = %v, want %v", got, tt.want)
 			}
 		})
 	}

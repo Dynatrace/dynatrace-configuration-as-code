@@ -97,11 +97,11 @@ func getWordsForLogging(isDryRun bool) (action, verb string) {
 
 func deployConfig(configClient client.ConfigClient, apis api.APIs, entityMap *entityMap, conf *config.Config) (parameter.ResolvedEntity, []error) {
 
-	apiToDeploy := apis[conf.Coordinate.Type]
-	if apiToDeploy == (api.API{}) {
+	if !apis.Contains(conf.Coordinate.Type) {
 		return parameter.ResolvedEntity{}, []error{fmt.Errorf("unknown api `%s`. this is most likely a bug", conf.Type.Api)}
 	}
 
+	apiToDeploy := apis[conf.Coordinate.Type]
 	properties, errors := resolveProperties(conf, entityMap.get())
 	if len(errors) > 0 {
 		return parameter.ResolvedEntity{}, errors
@@ -111,7 +111,7 @@ func deployConfig(configClient client.ConfigClient, apis api.APIs, entityMap *en
 	if err != nil {
 		errors = append(errors, err)
 	} else {
-		if entityMap.contains(apiToDeploy.ID, configName) && !apiToDeploy.NonUniqueNameApi {
+		if entityMap.contains(apiToDeploy.ID, configName) && !apiToDeploy.NonUniqueName {
 			errors = append(errors, newConfigDeployErr(conf, fmt.Sprintf("duplicated config name `%s`", configName)))
 		}
 	}
@@ -129,7 +129,7 @@ func deployConfig(configClient client.ConfigClient, apis api.APIs, entityMap *en
 	}
 
 	var entity client.DynatraceEntity
-	if apiToDeploy.NonUniqueNameApi {
+	if apiToDeploy.NonUniqueName {
 		entity, err = upsertNonUniqueNameConfig(configClient, apiToDeploy, conf, configName, renderedConfig)
 	} else {
 		entity, err = configClient.UpsertConfigByName(apiToDeploy, configName, []byte(renderedConfig))

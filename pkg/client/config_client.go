@@ -38,10 +38,10 @@ func upsertDynatraceObject(
 	payload []byte,
 	retrySettings rest.RetrySettings,
 ) (DynatraceEntity, error) {
-	isSingleConfigurationApi := theApi.SingleConfigurationApi
+	isSingleConfigurationApi := theApi.SingleConfiguration
 	existingObjectId := ""
 
-	fullUrl := theApi.GetUrl(environmentUrl)
+	fullUrl := theApi.CreateURL(environmentUrl)
 
 	// Single configuration APIs don't have an id which allows skipping this step
 	if !isSingleConfigurationApi {
@@ -81,7 +81,7 @@ func upsertDynatraceEntityByNonUniqueNameAndId(
 	payload []byte,
 	retrySettings rest.RetrySettings,
 ) (DynatraceEntity, error) {
-	fullUrl := theApi.GetUrl(environmentUrl)
+	fullUrl := theApi.CreateURL(environmentUrl)
 	body := payload
 
 	existingEntities, err := getExistingValuesFromEndpoint(client, theApi, fullUrl, retrySettings)
@@ -224,7 +224,7 @@ func updateDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		return DynatraceEntity{}, fmt.Errorf("Failed to update DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
 	}
 
-	if theApi.NonUniqueNameApi {
+	if theApi.NonUniqueName {
 		log.Debug("\tCreated/Updated object by ID for %s (%s)", objectName, existingObjectId)
 	} else {
 		log.Debug("\tUpdated existing object for %s (%s)", objectName, existingObjectId)

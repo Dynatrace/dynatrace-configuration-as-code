@@ -99,7 +99,7 @@ func doDeploy(configs project.ConfigsPerEnvironment, environments manifest.Envir
 			}
 		}
 
-		errs := deploy.DeployConfigs(dtClient, api.NewApis(), configs, deploy.DeployConfigsOptions{
+		errs := deploy.DeployConfigs(dtClient, api.NewAPIs(), configs, deploy.DeployConfigsOptions{
 			ContinueOnErr: continueOnErr,
 			DryRun:        dryRun,
 		})
@@ -158,7 +158,7 @@ func filterEnvironments(environments manifest.Environments, environmentGroup str
 
 func loadProjects(fs afero.Fs, manifestPath string, man *manifest.Manifest) ([]project.Project, error) {
 	projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
-		KnownApis:       api.NewApis().GetApiNameLookup(),
+		KnownApis:       api.NewAPIs().GetApiNameLookup(),
 		WorkingDir:      filepath.Dir(manifestPath),
 		Manifest:        *man,
 		ParametersSerde: config.DefaultParameterParsers,

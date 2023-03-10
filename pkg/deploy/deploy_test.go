@@ -465,7 +465,7 @@ func TestDeployConfigsTargetingClassicConfigNonUniqueWithExistingCfgsOfSameName(
 	theConfigName := "theConfigName"
 	theApiName := "theApiName"
 
-	theApi := api.API{ID: theApiName, URLPath: "path", NonUniqueNameApi: true}
+	theApi := api.API{ID: theApiName, URLPath: "path", NonUniqueName: true}
 
 	client := client.NewMockClient(gomock.NewController(t))
 	client.EXPECT().UpsertConfigByNonUniqueNameAndId(gomock.Any(), gomock.Any(), theConfigName, gomock.Any())

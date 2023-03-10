@@ -123,7 +123,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 				Skip:       false,
 			}
 
-			apis := api.NewApis()
+			apis := api.NewAPIs()
 			if _, found := projectsToValidate[coord.Project]; found {
 				if theConfig.Type.IsSettings() {
 					assertSetting(t, c, env, available, theConfig)

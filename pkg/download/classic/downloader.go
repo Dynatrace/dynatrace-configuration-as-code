@@ -202,7 +202,7 @@ func (d *Downloader) createTemplate(mappedJson map[string]interface{}, value cli
 }
 
 func (d *Downloader) findConfigsToDownload(currentApi api.API) ([]client.Value, error) {
-	if currentApi.SingleConfigurationApi {
+	if currentApi.SingleConfiguration {
 		log.Debug("\tFetching singleton-configuration '%v'", currentApi.ID)
 
 		// singleton-config. We use the api-id as mock-id

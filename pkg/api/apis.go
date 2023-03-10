@@ -20,18 +20,22 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
 )
 
+// APIs is a collection of API
 type APIs map[string]API
 
-func NewApis() APIs {
+// NewAPIs returns collection of predefined API to work with Dynatrace
+func NewAPIs() APIs {
 	return newAPIs(configEndpoints)
 }
 
-func NewV1Apis() APIs {
+// NewV1APIs returns collection of predefined API to work with Dynatrace
+// Deprecated: Please use NewAPIs. This one is legacy and is used only to convert old to new stype of
+func NewV1APIs() APIs {
 	return newAPIs(configEndpointsV1)
 }
 
 func newAPIs(t []API) APIs {
-	apis := make(APIs)
+	apis := make(APIs, len(t))
 	for _, a := range t {
 		apis[a.ID] = a
 	}
@@ -65,19 +69,19 @@ func (apis APIs) Filter(filters ...Filter) APIs {
 // Filter return true iff specific api needs to be filtered/ removed from list
 type Filter func(api API) bool
 
-// NoFilter is dummy filter that do nothing.
-func NoFilter(API) bool {
+// noFilter is dummy filter that do nothing.
+func noFilter(API) bool {
 	return false
 }
 
-// RetainByName leave ony given apis. If api is not provided, nothing is removed.
-func RetainByName(APIs []string) Filter {
-	if len(APIs) == 0 {
-		return NoFilter
+// RetainByName creates a Filter that leaves the API in the map if API.ID is part of the provided list. If the provided list is empty, a no-op filter is returned.
+func RetainByName(apis []string) Filter {
+	if len(apis) == 0 {
+		return noFilter
 	}
 
 	return func(api API) bool {
-		for _, v := range APIs {
+		for _, v := range apis {
 			if v == api.ID {
 				return false
 			}
@@ -86,7 +90,8 @@ func RetainByName(APIs []string) Filter {
 	}
 }
 
-func (apis APIs) GetApiNames() []string {
+// GetNames return names of API contained by this structure
+func (apis APIs) GetNames() []string {
 	return maps.Keys(apis)
 }
 

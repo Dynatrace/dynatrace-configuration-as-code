@@ -43,7 +43,7 @@ func TestDoCleanup(t *testing.T) {
 	})
 	testutils.FailTestOnAnyError(t, errs, "failed to load manifest to delete for")
 
-	apis := api.NewApis()
+	apis := api.NewAPIs()
 
 	// match anything ending in test suffixes of {timestamp}_{random numbers}_{some suffix test}
 	testSuffixRegex := regexp.MustCompile(`^.+_\d+_\d+_.*$`)

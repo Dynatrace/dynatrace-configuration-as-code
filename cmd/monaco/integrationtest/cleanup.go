@@ -44,7 +44,7 @@ func CleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestPath string, load
 		log.Fatal("Failed to filter environments: %v", err)
 	}
 
-	apis := api.NewApis()
+	apis := api.NewAPIs()
 	suffix = "_" + suffix
 
 	for _, environment := range environments {

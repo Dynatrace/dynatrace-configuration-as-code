@@ -55,7 +55,7 @@ func LoadProjects(t *testing.T, fs afero.Fs, manifestPath string, loadedManifest
 	assert.NilError(t, err)
 
 	projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
-		KnownApis:       api.NewApis().GetApiNameLookup(),
+		KnownApis:       api.NewAPIs().GetApiNameLookup(),
 		WorkingDir:      cwd,
 		Manifest:        loadedManifest,
 		ParametersSerde: config.DefaultParameterParsers,

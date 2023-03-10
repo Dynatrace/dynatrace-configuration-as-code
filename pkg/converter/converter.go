@@ -160,7 +160,7 @@ func convertProject(context *ConverterContext, environments map[string]manifest.
 	convertedConfigs, errors := convertConfigs(&configConvertContext{
 		ConverterContext: context,
 		ProjectId:        adjustedId,
-		V1Apis:           api.NewV1Apis(),
+		V1Apis:           api.NewV1APIs(),
 	}, environments, project.GetConfigs())
 
 	if errors != nil {
@@ -212,13 +212,13 @@ func convertConfig(context *configConvertContext, environment manifest.Environme
 
 	apiId := config.GetApi().ID
 	convertedTemplatePath := config.GetFilePath()
-	apiConversion := api.GetV2ApiId(config.GetApi())
+	apiConversion := api.GetV2ID(config.GetApi())
 	if apiId != apiConversion {
 		log.Info("Converting config %q from deprecated API %q to %q", config.GetId(), apiId, apiConversion)
 		convertedTemplatePath = strings.Replace(convertedTemplatePath, apiId, apiConversion, 1)
 		convertedTemplatePath = strings.Replace(convertedTemplatePath, ".json", "-"+apiId+".json", 1) //ensure modified template paths don't overlap with existing ones
 		apiId = apiConversion
-	} else if deprecatedBy := config.GetApi().DeprecatedBy; deprecatedBy != "" && context.V1Apis.Contains(deprecatedBy) && context.V1Apis[deprecatedBy].NonUniqueNameApi {
+	} else if deprecatedBy := config.GetApi().DeprecatedBy; deprecatedBy != "" && context.V1Apis.Contains(deprecatedBy) && context.V1Apis[deprecatedBy].NonUniqueName {
 		log.Info("Converting config %q from deprecated API %q to config with non-unique-name handling (see https://dt-url.net/non-unique-name-config)", config.GetId(), apiId)
 	}
 
@@ -491,7 +491,7 @@ func parseReference(context *configConvertContext, config *projectV1.Config, par
 		return nil, newReferenceParserError(context.ProjectId, config, parameterName, fmt.Sprintf("referenced API '%s' does not exist", referencedApiId))
 	}
 
-	currentApiId := api.GetV2ApiId(context.V1Apis[referencedApiId])
+	currentApiId := api.GetV2ID(context.V1Apis[referencedApiId])
 
 	return refParam.New(projectId, currentApiId, referencedConfigId, property), nil
 }

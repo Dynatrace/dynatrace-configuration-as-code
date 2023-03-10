@@ -16,18 +16,19 @@
 
 package api
 
+// API structure present definition of config endpoints
 type API struct {
 	ID                           string
 	URLPath                      string
 	PropertyNameOfGetAllResponse string
-	// SingleConfigurationApi are those APIs that configure an environment global setting.
+	// SingleConfiguration are those APIs that configure an environment global setting.
 	// Such settings require additional handling and can't be deleted.
-	SingleConfigurationApi bool
-	// NonUniqueNameApi name APIs are those APIs that don't work with an environment wide unique ID.
+	SingleConfiguration bool
+	// NonUniqueName name APIs are those APIs that don't work with an environment wide unique ID.
 	// For such APIs, the name attribute can't be used as a ID (Monaco default behavior), hence
 	// such APIs require additional handling.
-	NonUniqueNameApi bool
-	DeprecatedBy     string
+	NonUniqueName bool
+	DeprecatedBy  string
 	// SkipDownload indicates whether an API should be downloaded or not.
 	//
 	// Some APIs are not re-uploadable by design, either as they require hidden credentials,
@@ -37,8 +38,9 @@ type API struct {
 	SkipDownload bool
 }
 
-func (a API) GetUrl(environmentUrl string) string {
-	return environmentUrl + a.URLPath
+// CreateURL creates final URL for given environmentUrl/domain
+func (a API) CreateURL(environmentURL string) string {
+	return environmentURL + a.URLPath
 }
 
 func (a API) IsStandardAPI() bool {

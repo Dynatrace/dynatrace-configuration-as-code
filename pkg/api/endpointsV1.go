@@ -49,7 +49,7 @@ var configEndpointsV1 = []API{
 		ID:                           "dashboard-v2",
 		URLPath:                      "/api/config/v1/dashboards",
 		PropertyNameOfGetAllResponse: "dashboards",
-		NonUniqueNameApi:             true,
+		NonUniqueName:                true,
 	},
 	{
 		ID:                           "notification",
@@ -62,9 +62,9 @@ var configEndpointsV1 = []API{
 		PropertyNameOfGetAllResponse: "extensions",
 	},
 	{
-		ID:                     "extension-elasticsearch",
-		URLPath:                "/api/config/v1/extensions/dynatrace.python.elasticsearch/global",
-		SingleConfigurationApi: true,
+		ID:                  "extension-elasticsearch",
+		URLPath:             "/api/config/v1/extensions/dynatrace.python.elasticsearch/global",
+		SingleConfiguration: true,
 	},
 	{
 		ID:                           "custom-service-java",
@@ -137,7 +137,7 @@ var configEndpointsV1 = []API{
 		ID:                           "app-detection-rule-v2",
 		URLPath:                      "/api/config/v1/applicationDetectionRules",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
-		NonUniqueNameApi:             true,
+		NonUniqueName:                true,
 	},
 	{
 		ID:                           "aws-credentials",
@@ -214,7 +214,7 @@ var configEndpointsV1 = []API{
 		ID:                           "request-naming-service-v2",
 		URLPath:                      "/api/config/v1/service/requestNaming",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
-		NonUniqueNameApi:             true,
+		NonUniqueName:                true,
 	},
 	{
 		ID:                           "slo",
@@ -262,90 +262,88 @@ var configEndpointsV1 = []API{
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
 	},
 	{
-		ID:                     "frequent-issue-detection",
-		URLPath:                "/api/config/v1/frequentIssueDetection",
-		SingleConfigurationApi: true,
+		ID:                  "frequent-issue-detection",
+		URLPath:             "/api/config/v1/frequentIssueDetection",
+		SingleConfiguration: true,
 	},
 	{
-		ID:                     "data-privacy",
-		URLPath:                "/api/config/v1/dataPrivacy",
-		SingleConfigurationApi: true,
+		ID:                  "data-privacy",
+		URLPath:             "/api/config/v1/dataPrivacy",
+		SingleConfiguration: true,
 	},
 	{
-		ID:                     "hosts-auto-update",
-		URLPath:                "/api/config/v1/hosts/autoupdate",
-		SingleConfigurationApi: true,
+		ID:                  "hosts-auto-update",
+		URLPath:             "/api/config/v1/hosts/autoupdate",
+		SingleConfiguration: true,
 	},
 	{
-		ID:                     "anomaly-detection-applications",
-		URLPath:                "/api/config/v1/anomalyDetection/applications",
-		SingleConfigurationApi: true,
+		ID:                  "anomaly-detection-applications",
+		URLPath:             "/api/config/v1/anomalyDetection/applications",
+		SingleConfiguration: true,
 	},
 	{
-		ID:                     "anomaly-detection-aws",
-		URLPath:                "/api/config/v1/anomalyDetection/aws",
-		SingleConfigurationApi: true,
+		ID:                  "anomaly-detection-aws",
+		URLPath:             "/api/config/v1/anomalyDetection/aws",
+		SingleConfiguration: true,
 	},
 	{
-		ID:                     "anomaly-detection-database-services",
-		URLPath:                "/api/config/v1/anomalyDetection/databaseServices",
-		SingleConfigurationApi: true,
+		ID:                  "anomaly-detection-database-services",
+		URLPath:             "/api/config/v1/anomalyDetection/databaseServices",
+		SingleConfiguration: true,
 	},
 	{
-		ID:                     "anomaly-detection-hosts",
-		URLPath:                "/api/config/v1/anomalyDetection/hosts",
-		SingleConfigurationApi: true,
+		ID:                  "anomaly-detection-hosts",
+		URLPath:             "/api/config/v1/anomalyDetection/hosts",
+		SingleConfiguration: true,
 	},
 	{
-		ID:                     "anomaly-detection-services",
-		URLPath:                "/api/config/v1/anomalyDetection/services",
-		SingleConfigurationApi: true,
+		ID:                  "anomaly-detection-services",
+		URLPath:             "/api/config/v1/anomalyDetection/services",
+		SingleConfiguration: true,
 	},
 	{
-		ID:                     "anomaly-detection-vmware",
-		URLPath:                "/api/config/v1/anomalyDetection/vmware",
-		SingleConfigurationApi: true,
+		ID:                  "anomaly-detection-vmware",
+		URLPath:             "/api/config/v1/anomalyDetection/vmware",
+		SingleConfiguration: true,
 	},
 	{
-		ID:                     "service-resource-naming",
-		URLPath:                "/api/config/v1/service/resourceNaming",
-		SingleConfigurationApi: true,
+		ID:                  "service-resource-naming",
+		URLPath:             "/api/config/v1/service/resourceNaming",
+		SingleConfiguration: true,
 	},
 	{
-		ID:                     "app-detection-rule-host",
-		URLPath:                "/api/config/v1/applicationDetectionRules/hostDetection",
-		SingleConfigurationApi: true,
+		ID:                  "app-detection-rule-host",
+		URLPath:             "/api/config/v1/applicationDetectionRules/hostDetection",
+		SingleConfiguration: true,
 	},
 	{
-		ID:                     "content-resources",
-		URLPath:                "/api/config/v1/contentResources",
-		SingleConfigurationApi: true,
+		ID:                  "content-resources",
+		URLPath:             "/api/config/v1/contentResources",
+		SingleConfiguration: true,
 	},
 	{
-		ID:                     "allowed-beacon-origins",
-		URLPath:                "/api/config/v1/allowedBeaconOriginsForCors",
-		SingleConfigurationApi: true,
+		ID:                  "allowed-beacon-origins",
+		URLPath:             "/api/config/v1/allowedBeaconOriginsForCors",
+		SingleConfiguration: true,
 	},
 	{
-		ID:                     "geo-ip-detection-headers",
-		URLPath:                "/api/config/v1/geographicRegions/ipDetectionHeaders",
-		SingleConfigurationApi: true,
+		ID:                  "geo-ip-detection-headers",
+		URLPath:             "/api/config/v1/geographicRegions/ipDetectionHeaders",
+		SingleConfiguration: true,
 	},
 	{
-		ID:                     "geo-ip-address-mappings",
-		URLPath:                "/api/config/v1/geographicRegions/ipAddressMappings",
-		SingleConfigurationApi: true,
+		ID:                  "geo-ip-address-mappings",
+		URLPath:             "/api/config/v1/geographicRegions/ipAddressMappings",
+		SingleConfiguration: true,
 	},
 }
 
-// GetV2ApiId returns the ID of APIs in v2 - replacing deprecated APIs with their new version and dropping the -v2 marker
+// GetV2ID returns the ID of APIs in v2 - replacing deprecated APIs with their new version and dropping the -v2 marker
 // from APIs introducing the breaking change of handling non-unique-names. This is used in v1 -> v2 conversion
-func GetV2ApiId(forV1Api API) string {
-	currentApiId := forV1Api.ID
-
+func GetV2ID(forV1Api API) string {
+	n := forV1Api.ID
 	if forV1Api.DeprecatedBy != "" {
-		currentApiId = forV1Api.DeprecatedBy
+		n = forV1Api.DeprecatedBy
 	}
-
-	return strings.TrimSuffix(currentApiId, "-v2")
+	return strings.TrimSuffix(n, "-v2")
 }

@@ -25,7 +25,7 @@ import (
 )
 
 func TestGetUrl(t *testing.T) {
-	assert.Equal(t, "https://url/to/dev/environment/api/config/v1/managementZones", (API{URLPath: "/api/config/v1/managementZones"}).GetUrl(testDevEnvironment.GetEnvironmentUrl()))
+	assert.Equal(t, "https://url/to/dev/environment/api/config/v1/managementZones", (API{URLPath: "/api/config/v1/managementZones"}).CreateURL(testDevEnvironment.GetEnvironmentUrl()))
 }
 
 func Test_configEndpoints(t *testing.T) {
@@ -42,9 +42,9 @@ func Test_configEndpointsV1(t *testing.T) {
 
 func (a API) testConfiguredApi(t *testing.T) {
 	assert.NotEmptyf(t, a.ID, "endpoint %+v have empty ID!", a)
-	if a.SingleConfigurationApi == true {
-		assert.Emptyf(t, a.PropertyNameOfGetAllResponse, "endpoint %q have forbiden value combination - when \"SingleConfigurationApi\" is true, \"PropertyNameOfGetAllResponse\" must be empty! (actual values: %+v)", a.ID, a)
-		assert.Falsef(t, a.NonUniqueNameApi, "endpoint %q have forbiden value combination - when \"SingleConfigurationApi\" is true, \"NonUniqueNameApi\" must be false! (actual values: %+v)", a.ID, a)
+	if a.SingleConfiguration == true {
+		assert.Emptyf(t, a.PropertyNameOfGetAllResponse, "endpoint %q have forbiden value combination - when \"SingleConfiguration\" is true, \"PropertyNameOfGetAllResponse\" must be empty! (actual values: %+v)", a.ID, a)
+		assert.Falsef(t, a.NonUniqueName, "endpoint %q have forbiden value combination - when \"SingleConfiguration\" is true, \"NonUniqueName\" must be false! (actual values: %+v)", a.ID, a)
 	} else {
 		assert.NotZerof(t, a.PropertyNameOfGetAllResponse, "endpoint %v doesnt have populated field \"PropertyNameOfGetAllResponse\"! (actual values: %+v)", a.ID, a)
 	}
