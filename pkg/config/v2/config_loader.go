@@ -235,13 +235,13 @@ func parseDefinition(
 	results := make([]Config, 0)
 	var errors []error
 
-	if b, e := definition.Type.isSound(context.KnownApis); !b {
-		return nil, append(errors, e)
-	}
-
 	singleConfigContext := &SingleConfigLoadContext{
 		ConfigLoaderContext: context,
 		Type:                definition.Type.GetApiType(),
+	}
+
+	if b, e := definition.Type.isSound(context.KnownApis); !b {
+		return nil, append(errors, newDefinitionParserError(configId, singleConfigContext, e.Error()))
 	}
 
 	groupOverrideMap := toGroupOverrideMap(definition.GroupOverrides)
