@@ -37,7 +37,7 @@ func createTestConfig(name string, filePrefix string, property string) *Config {
 	path := strings.Split(filePrefix, string(os.PathSeparator))
 	zoneId := path[len(path)-2 : len(path)-1]
 	project := strings.Join(path[0:len(path)-2], string(os.PathSeparator))
-	var testManagementZoneApi = api.NewStandardApi(zoneId[0], "/api/config/v1/foobar", false, "", false)
+	var testManagementZoneApi = api.API{ID: zoneId[0], URLPath: "/api/config/v1/foobar"}
 
 	configA := NewConfigWithTemplate(name, project, filePrefix+name+".json", nil, propA, testManagementZoneApi)
 

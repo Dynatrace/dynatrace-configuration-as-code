@@ -88,7 +88,7 @@ func newReferenceParserError(projectId string, config *projectV1.Config, paramet
 	return ReferenceParseError{
 		Location: coordinate.Coordinate{
 			Project:  projectId,
-			Type:     config.GetApi().GetId(),
+			Type:     config.GetApi().ID,
 			ConfigId: config.GetId(),
 		},
 		ParameterName: parameterName,
@@ -210,7 +210,7 @@ func convertConfigs(context *configConvertContext, environments map[string]manif
 func convertConfig(context *configConvertContext, environment manifest.EnvironmentDefinition, config *projectV1.Config) (configV2.Config, []error) {
 	var errors []error
 
-	apiId := config.GetApi().GetId()
+	apiId := config.GetApi().ID
 	convertedTemplatePath := config.GetFilePath()
 	apiConversion := api.GetV2ApiId(config.GetApi())
 	if apiId != apiConversion {
@@ -218,7 +218,7 @@ func convertConfig(context *configConvertContext, environment manifest.Environme
 		convertedTemplatePath = strings.Replace(convertedTemplatePath, apiId, apiConversion, 1)
 		convertedTemplatePath = strings.Replace(convertedTemplatePath, ".json", "-"+apiId+".json", 1) //ensure modified template paths don't overlap with existing ones
 		apiId = apiConversion
-	} else if deprecatedBy := config.GetApi().DeprecatedBy(); deprecatedBy != "" && context.V1Apis.Contains(deprecatedBy) && context.V1Apis[deprecatedBy].IsNonUniqueNameApi() {
+	} else if deprecatedBy := config.GetApi().DeprecatedBy; deprecatedBy != "" && context.V1Apis.Contains(deprecatedBy) && context.V1Apis[deprecatedBy].NonUniqueNameApi {
 		log.Info("Converting config %q from deprecated API %q to config with non-unique-name handling (see https://dt-url.net/non-unique-name-config)", config.GetId(), apiId)
 	}
 
@@ -447,7 +447,7 @@ func parseSkipDeploymentParameter(context *configConvertContext, config *project
 
 	location := coordinate.Coordinate{
 		Project:  context.ProjectId,
-		Type:     config.GetApi().GetId(),
+		Type:     config.GetApi().ID,
 		ConfigId: config.GetId(),
 	}
 
@@ -473,7 +473,7 @@ func parseReference(context *configConvertContext, config *projectV1.Config, par
 
 	case 1:
 		projectId = context.ProjectId
-		referencedApiId = config.GetApi().GetId()
+		referencedApiId = config.GetApi().ID
 		referencedConfigId = parts[0]
 
 	case 2:

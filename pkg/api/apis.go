@@ -18,52 +18,36 @@ package api
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
-	"strings"
 )
 
-type APIs map[string]*API
+type APIs map[string]API
 
 func NewApis() APIs {
-	return getAPIs(configEndpoints)
+	return newAPIs(configEndpoints)
 }
 
 func NewV1Apis() APIs {
-	return getAPIs(configEndpointsV1)
+	return newAPIs(configEndpointsV1)
 }
 
-func getAPIs(fromApiInputs APIs) APIs {
+func newAPIs(t []API) APIs {
 	apis := make(APIs)
-	for id, a := range fromApiInputs {
-		apis[id] = newAPI(id, a)
-		//a.copy().setID(id).applyRules(nameOfGetAllResponse, singleConfigurationApi)
-		//newAPI(*a, setId(id), nameOfGetAllResponse, singleConfigurationApi) //order of applying roles is important!!!
+	for _, a := range t {
+		apis[a.ID] = a
 	}
-
 	return apis
 }
 
 // Contains return true iff requested API is part APIs set
-func (m APIs) Contains(api string) bool {
-	_, ok := m[api]
+func (apis APIs) Contains(api string) bool {
+	_, ok := apis[api]
 	return ok
 }
 
-// ContainsApiName tests if part of project folder path contains an API
-// folders with API in path are not valid projects
-func (m APIs) ContainsApiName(path string) bool {
-	for api := range m {
-		if strings.Contains(path, api) {
-			return true
-		}
-	}
-
-	return false
-}
-
 // Filter apply all passed filters and return new filtered array
-func (m APIs) Filter(filters ...Filter) APIs {
-	apis := make(APIs)
-	for k, v := range m {
+func (apis APIs) Filter(filters ...Filter) APIs {
+	ret := make(APIs)
+	for k, v := range apis {
 		var keep = true
 		for _, f := range filters {
 			if f(v) && keep {
@@ -72,17 +56,17 @@ func (m APIs) Filter(filters ...Filter) APIs {
 			}
 		}
 		if keep {
-			apis[k] = v
+			ret[k] = v
 		}
 	}
-	return apis
+	return ret
 }
 
 // Filter return true iff specific api needs to be filtered/ removed from list
-type Filter func(api *API) bool
+type Filter func(api API) bool
 
 // NoFilter is dummy filter that do nothing.
-func NoFilter(*API) bool {
+func NoFilter(API) bool {
 	return false
 }
 
@@ -92,9 +76,9 @@ func RetainByName(APIs []string) Filter {
 		return NoFilter
 	}
 
-	return func(api *API) bool {
+	return func(api API) bool {
 		for _, v := range APIs {
-			if v == api.GetId() {
+			if v == api.ID {
 				return false
 			}
 		}

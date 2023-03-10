@@ -219,17 +219,17 @@ func getApisToDownload(apis api.APIs, specificAPIs []string) api.APIs {
 	}
 }
 
-func skipDownloadFilter(api *api.API) bool {
-	if api.ShouldSkipDownload() {
-		log.Info("API can not be downloaded and needs manual creation: '%v'.", api.GetId())
+func skipDownloadFilter(api api.API) bool {
+	if api.SkipDownload {
+		log.Info("API can not be downloaded and needs manual creation: '%v'.", api.ID)
 		return true
 	}
 	return false
 }
 
-func removeDeprecatedEndpoints(api *api.API) bool {
-	if api.DeprecatedBy() != "" {
-		log.Warn("API %q is deprecated by %q and will not be downloaded", api.GetId(), api.DeprecatedBy())
+func removeDeprecatedEndpoints(api api.API) bool {
+	if api.DeprecatedBy != "" {
+		log.Warn("API %q is deprecated by %q and will not be downloaded", api.ID, api.DeprecatedBy)
 		return true
 	}
 	return false

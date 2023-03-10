@@ -58,14 +58,14 @@ func CleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestPath string, load
 
 func cleanupConfigs(t *testing.T, apis api.APIs, c client.ConfigClient, suffix string) {
 	for _, api := range apis {
-		if api.GetId() == "calculated-metrics-log" {
+		if api.ID == "calculated-metrics-log" {
 			t.Logf("Skipping cleanup of legacy log monitoring API")
 			continue
 		}
 
 		values, err := c.ListConfigs(api)
 		if err != nil {
-			t.Logf("Failed to cleanup any test configs of type %q: %v", api.GetId(), err)
+			t.Logf("Failed to cleanup any test configs of type %q: %v", api.ID, err)
 		}
 
 		for _, value := range values {
@@ -73,7 +73,7 @@ func cleanupConfigs(t *testing.T, apis api.APIs, c client.ConfigClient, suffix s
 			if strings.HasSuffix(value.Name, suffix) || strings.HasSuffix(value.Id, suffix) {
 				err := c.DeleteConfigById(api, value.Id)
 				if err != nil {
-					t.Logf("Failed to cleanup test config: %s (%s): %v", value.Name, api.GetId(), err)
+					t.Logf("Failed to cleanup test config: %s (%s): %v", value.Name, api.ID, err)
 				} else {
 					log.Info("Cleaned up test config %s (%s)", value.Name, value.Id)
 				}

@@ -84,9 +84,9 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 	const testBasePath = "test-resources/" + projectName
 
 	// APIs
-	fakeApi := api.NewStandardApi("fake-id", "/fake-id", false, "", false)
+	fakeApi := api.API{ID: "fake-id", URLPath: "/fake-id", PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
 	apiMap := api.APIs{
-		fakeApi.GetId(): fakeApi,
+		fakeApi.ID: fakeApi,
 	}
 
 	// Responses
@@ -124,9 +124,9 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 	assert.Equal(t, len(configs), 1)
 
 	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
-		fakeApi.GetId(): []config.Config{
+		fakeApi.ID: []config.Config{
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.GetId(), ConfigId: "id-1"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.ID, ConfigId: "id-1"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name": &value.ValueParameter{Value: "Test-1"},
@@ -146,9 +146,9 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 	const testBasePath = "test-resources/" + projectName
 
 	// APIs
-	fakeApi := api.NewStandardApi("fake-id", "/fake-id", false, "", false)
+	fakeApi := api.API{ID: "fake-id", URLPath: "/fake-id", PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
 	apiMap := api.APIs{
-		fakeApi.GetId(): fakeApi,
+		fakeApi.ID: fakeApi,
 	}
 
 	// Responses
@@ -186,9 +186,9 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 	assert.Equal(t, found, true)
 
 	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
-		fakeApi.GetId(): []config.Config{
+		fakeApi.ID: []config.Config{
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.GetId(), ConfigId: "id-1"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.ID, ConfigId: "id-1"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name": &value.ValueParameter{Value: "Test-1"},
@@ -199,11 +199,11 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 				Type:        config.Type{Api: "fake-id"},
 			},
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.GetId(), ConfigId: "id-2"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.ID, ConfigId: "id-2"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name":            &value.ValueParameter{Value: "Test-2"},
-					"fakeid__id1__id": reference.New(projectName, fakeApi.GetId(), "id-1", "id"),
+					"fakeid__id1__id": reference.New(projectName, fakeApi.ID, "id-1", "id"),
 				},
 				Group:       "default",
 				Environment: projectName,
@@ -220,13 +220,13 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 	const testBasePath = "test-resources/" + projectName
 
 	// APIs
-	fakeApi1 := api.NewStandardApi("fake-id-1", "/fake-api-1", false, "", false)
-	fakeApi2 := api.NewStandardApi("fake-id-2", "/fake-api-2", false, "", false)
-	fakeApi3 := api.NewStandardApi("fake-id-3", "/fake-api-3", false, "", false)
+	fakeApi1 := api.API{ID: "fake-id-1", URLPath: "/fake-api-1", PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
+	fakeApi2 := api.API{ID: "fake-id-2", URLPath: "/fake-api-2", PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
+	fakeApi3 := api.API{ID: "fake-id-3", URLPath: "/fake-api-3", PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
 	apiMap := api.APIs{
-		fakeApi1.GetId(): fakeApi1,
-		fakeApi2.GetId(): fakeApi2,
-		fakeApi3.GetId(): fakeApi3,
+		fakeApi1.ID: fakeApi1,
+		fakeApi2.ID: fakeApi2,
+		fakeApi3.ID: fakeApi3,
 	}
 
 	// Responses
@@ -269,9 +269,9 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 	assert.Equal(t, found, true)
 
 	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
-		fakeApi1.GetId(): []config.Config{
+		fakeApi1.ID: []config.Config{
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi1.GetId(), ConfigId: "id-1"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi1.ID, ConfigId: "id-1"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name": &value.ValueParameter{Value: "Test-1"},
@@ -282,11 +282,11 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 				Type:        config.Type{Api: "fake-id-1"},
 			},
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi1.GetId(), ConfigId: "id-2"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi1.ID, ConfigId: "id-2"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name":             &value.ValueParameter{Value: "Test-2"},
-					"fakeid1__id1__id": reference.New(projectName, fakeApi1.GetId(), "id-1", "id"),
+					"fakeid1__id1__id": reference.New(projectName, fakeApi1.ID, "id-1", "id"),
 				},
 				Group:       "default",
 				Environment: projectName,
@@ -294,13 +294,13 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 				Type:        config.Type{Api: "fake-id-1"},
 			},
 		},
-		fakeApi2.GetId(): []config.Config{
+		fakeApi2.ID: []config.Config{
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi2.GetId(), ConfigId: "id-3"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi2.ID, ConfigId: "id-3"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name":             &value.ValueParameter{Value: "Test-3"},
-					"fakeid1__id1__id": reference.New(projectName, fakeApi1.GetId(), "id-1", "id"),
+					"fakeid1__id1__id": reference.New(projectName, fakeApi1.ID, "id-1", "id"),
 				},
 				Group:       "default",
 				Environment: projectName,
@@ -308,11 +308,11 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 				Type:        config.Type{Api: "fake-id-2"},
 			},
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi2.GetId(), ConfigId: "id-4"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi2.ID, ConfigId: "id-4"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name":             &value.ValueParameter{Value: "Test-4"},
-					"fakeid2__id3__id": reference.New(projectName, fakeApi2.GetId(), "id-3", "id"),
+					"fakeid2__id3__id": reference.New(projectName, fakeApi2.ID, "id-3", "id"),
 				},
 				Group:       "default",
 				Environment: projectName,
@@ -320,14 +320,14 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 				Type:        config.Type{Api: "fake-id-2"},
 			},
 		},
-		fakeApi3.GetId(): []config.Config{
+		fakeApi3.ID: []config.Config{
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi3.GetId(), ConfigId: "id-5"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi3.ID, ConfigId: "id-5"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name":             &value.ValueParameter{Value: "Test-5"},
-					"fakeid1__id2__id": reference.New(projectName, fakeApi1.GetId(), "id-2", "id"),
-					"fakeid2__id4__id": reference.New(projectName, fakeApi2.GetId(), "id-4", "id"),
+					"fakeid1__id2__id": reference.New(projectName, fakeApi1.ID, "id-2", "id"),
+					"fakeid2__id4__id": reference.New(projectName, fakeApi2.ID, "id-4", "id"),
 				},
 				Group:       "default",
 				Environment: projectName,
@@ -344,9 +344,9 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 	const testBasePath = "test-resources/" + projectName
 
 	// APIs
-	fakeApi := api.NewSingleConfigurationApi("fake-id", "/fake-id", "", false)
+	fakeApi := api.API{ID: "fake-id", URLPath: "/fake-id", SingleConfigurationApi: true}
 	apiMap := api.APIs{
-		fakeApi.GetId(): fakeApi,
+		fakeApi.ID: fakeApi,
 	}
 
 	// Responses
@@ -383,9 +383,9 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 	assert.Equal(t, len(configs), 1)
 
 	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
-		fakeApi.GetId(): []config.Config{
+		fakeApi.ID: []config.Config{
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.GetId(), ConfigId: "fake-id"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.ID, ConfigId: "fake-id"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name": &value.ValueParameter{Value: "fake-id"},
@@ -405,9 +405,9 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 	const testBasePath = "test-resources/" + projectName
 
 	// APIs
-	syntheticLocationApi := api.NewStandardApi("synthetic-location", "/synthetic-location", false, "", false)
+	syntheticLocationApi := api.API{ID: "synthetic-location", URLPath: "/synthetic-location", PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
 	apiMap := api.APIs{
-		syntheticLocationApi.GetId(): syntheticLocationApi,
+		syntheticLocationApi.ID: syntheticLocationApi,
 	}
 
 	// Responses
@@ -447,9 +447,9 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 	assert.Equal(t, len(configs), 1)
 
 	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
-		syntheticLocationApi.GetId(): []config.Config{
+		syntheticLocationApi.ID: []config.Config{
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: syntheticLocationApi.GetId(), ConfigId: "id-2"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: syntheticLocationApi.ID, ConfigId: "id-2"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name": &value.ValueParameter{Value: "Private location - should be stored"},
@@ -469,9 +469,9 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 	const testBasePath = "test-resources/" + projectName
 
 	// APIs
-	dashboardApi := api.NewApi("dashboard", "/dashboard", "dashboards", false, false, "", false)
+	dashboardApi := api.API{ID: "dashboard", URLPath: "/dashboard", PropertyNameOfGetAllResponse: "dashboards", SingleConfigurationApi: false, NonUniqueNameApi: false, DeprecatedBy: "", SkipDownload: false}
 	apiMap := api.APIs{
-		dashboardApi.GetId(): dashboardApi,
+		dashboardApi.ID: dashboardApi,
 	}
 
 	// Responses
@@ -511,9 +511,9 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 	assert.Equal(t, len(configs), 1)
 
 	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
-		dashboardApi.GetId(): []config.Config{
+		dashboardApi.ID: []config.Config{
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.GetId(), ConfigId: "id-1"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.ID, ConfigId: "id-1"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name": &value.ValueParameter{Value: "Non-unique dashboard-name"},
@@ -524,7 +524,7 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 				Type:        config.Type{Api: "dashboard"},
 			},
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.GetId(), ConfigId: "id-2"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.ID, ConfigId: "id-2"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name": &value.ValueParameter{Value: "Non-unique dashboard-name"},
@@ -544,9 +544,9 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 	const testBasePath = "test-resources/" + projectName
 
 	// APIs
-	dashboardApi := api.NewStandardApi("anomaly-detection-metrics", "/ad-metrics", false, "", false)
+	dashboardApi := api.API{ID: "anomaly-detection-metrics", URLPath: "/ad-metrics", PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
 	apiMap := api.APIs{
-		dashboardApi.GetId(): dashboardApi,
+		dashboardApi.ID: dashboardApi,
 	}
 
 	// Responses
@@ -585,9 +585,9 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 	assert.Equal(t, len(configs), 1)
 
 	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
-		dashboardApi.GetId(): []config.Config{
+		dashboardApi.ID: []config.Config{
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.GetId(), ConfigId: "b836ff25-24e3-496d-8dce-d94110815ab5"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.ID, ConfigId: "b836ff25-24e3-496d-8dce-d94110815ab5"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name": &value.ValueParameter{Value: "Test4"},
@@ -598,7 +598,7 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 				Type:        config.Type{Api: "anomaly-detection-metrics"},
 			},
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.GetId(), ConfigId: "my.name"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.ID, ConfigId: "my.name"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name": &value.ValueParameter{Value: "Test1"},
@@ -681,9 +681,9 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 			testBasePath := "test-resources/integration-test-auto-update/" + testcase.projectName
 
 			// APIs
-			hostAutoUpdateApi := api.NewSingleConfigurationApi("hosts-auto-update", "/hosts-auto-update", "", false)
+			hostAutoUpdateApi := api.API{ID: "hosts-auto-update", URLPath: "/hosts-auto-update", SingleConfigurationApi: true}
 			apiMap := api.APIs{
-				hostAutoUpdateApi.GetId(): hostAutoUpdateApi,
+				hostAutoUpdateApi.ID: hostAutoUpdateApi,
 			}
 
 			// Responses
@@ -726,7 +726,7 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 			assert.Equal(t, len(configs), 1)
 
 			assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
-				hostAutoUpdateApi.GetId(): testcase.expectedConfigs,
+				hostAutoUpdateApi.ID: testcase.expectedConfigs,
 			}, compareOptions...)
 		})
 	}
@@ -738,9 +738,9 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 	const testBasePath = "test-resources/" + projectName
 
 	// APIs
-	fakeApi := api.NewStandardApi("fake-id", "/fake-id", false, "", false)
+	fakeApi := api.API{ID: "fake-id", URLPath: "/fake-id", PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
 	apis := api.APIs{
-		fakeApi.GetId(): fakeApi,
+		fakeApi.ID: fakeApi,
 	}
 
 	// Responses
@@ -804,9 +804,9 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 	assert.Equal(t, len(configs), 1)
 
 	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
-		fakeApi.GetId(): []config.Config{
+		fakeApi.ID: []config.Config{
 			{
-				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.GetId(), ConfigId: "id-1"},
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.ID, ConfigId: "id-1"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name": &value.ValueParameter{Value: "Test-1"},
@@ -826,9 +826,9 @@ func TestDownloadIntegrationDownloadsAPIsAndSettings(t *testing.T) {
 	const testBasePath = "test-resources/" + projectName
 
 	// APIs
-	fakeApi := api.NewStandardApi("fake-api", "/fake-api", false, "", false)
+	fakeApi := api.API{ID: "fake-api", URLPath: "/fake-api", PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
 	apis := api.APIs{
-		fakeApi.GetId(): fakeApi,
+		fakeApi.ID: fakeApi,
 	}
 
 	// Responses
@@ -870,9 +870,9 @@ func TestDownloadIntegrationDownloadsAPIsAndSettings(t *testing.T) {
 	assert.Equal(t, found, true)
 	assert.Equal(t, len(configs), 2, "Expected one config API and one Settings schema to be downloaded")
 
-	_, fakeApiDownloaded := configs[fakeApi.GetId()]
+	_, fakeApiDownloaded := configs[fakeApi.ID]
 	assert.Assert(t, fakeApiDownloaded)
-	assert.Equal(t, len(configs[fakeApi.GetId()]), 2, "Expected 2 config objects")
+	assert.Equal(t, len(configs[fakeApi.ID]), 2, "Expected 2 config objects")
 
 	_, settingsDownloaded := configs["settings-schema"]
 	assert.Assert(t, settingsDownloaded)
@@ -886,9 +886,9 @@ func TestDownloadIntegrationDownloadsOnlyAPIsIfConfigured(t *testing.T) {
 	const testBasePath = "test-resources/" + projectName
 
 	// APIs
-	fakeApi := api.NewStandardApi("fake-api", "/fake-api", false, "", false)
+	fakeApi := api.API{ID: "fake-api", URLPath: "/fake-api", PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
 	apis := api.APIs{
-		fakeApi.GetId(): fakeApi,
+		fakeApi.ID: fakeApi,
 	}
 
 	// Responses
@@ -929,9 +929,9 @@ func TestDownloadIntegrationDownloadsOnlyAPIsIfConfigured(t *testing.T) {
 	assert.Equal(t, found, true)
 	assert.Equal(t, len(configs), 1, "Expected one config API to be downloaded")
 
-	_, fakeApiDownloaded := configs[fakeApi.GetId()]
+	_, fakeApiDownloaded := configs[fakeApi.ID]
 	assert.Assert(t, fakeApiDownloaded)
-	assert.Equal(t, len(configs[fakeApi.GetId()]), 2, "Expected 2 config objects")
+	assert.Equal(t, len(configs[fakeApi.ID]), 2, "Expected 2 config objects")
 
 	_, settingsDownloaded := configs["settings-schema"]
 	assert.Assert(t, !settingsDownloaded, "Expected no Settings to the downloaded, when onlyAPIs is set")
@@ -943,9 +943,9 @@ func TestDownloadIntegrationDownloadsOnlySettingsIfConfigured(t *testing.T) {
 	const testBasePath = "test-resources/" + projectName
 
 	// APIs
-	fakeApi := api.NewStandardApi("fake-api", "/fake-api", false, "", false)
+	fakeApi := api.API{ID: "fake-api", URLPath: "/fake-api", PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
 	apis := api.APIs{
-		fakeApi.GetId(): fakeApi,
+		fakeApi.ID: fakeApi,
 	}
 
 	// Responses
@@ -985,7 +985,7 @@ func TestDownloadIntegrationDownloadsOnlySettingsIfConfigured(t *testing.T) {
 	assert.Equal(t, found, true)
 	assert.Equal(t, len(configs), 1, "Expected one one Settings schema to be downloaded")
 
-	_, fakeApiDownloaded := configs[fakeApi.GetId()]
+	_, fakeApiDownloaded := configs[fakeApi.ID]
 	assert.Assert(t, !fakeApiDownloaded, "Expected no Config APIs to the downloaded, when onlySettings is set")
 
 	_, settingsDownloaded := configs["settings-schema"]

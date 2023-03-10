@@ -65,7 +65,7 @@ func TestConvertParameters(t *testing.T) {
 		},
 	}
 
-	testApi := api.NewStandardApi("alerting-profile", "/api/configV1/v1/alertingProfiles", false, "", false)
+	testApi := api.API{ID: "alerting-profile", URLPath: "/api/configV1/v1/alertingProfiles"}
 
 	convertContext := &configConvertContext{
 		ConverterContext: &ConverterContext{
@@ -74,7 +74,7 @@ func TestConvertParameters(t *testing.T) {
 		KnownListParameterIds: map[string]struct{}{listParameterName: {}},
 		V1Apis: api.APIs{
 			"alerting-profile": testApi,
-			"management-zone":  api.NewStandardApi("management-zone", "/api/path", false, "", false),
+			"management-zone":  api.API{ID: "management-zone", URLPath: "/api/path"},
 		},
 		ProjectId: "projectA",
 	}
@@ -140,7 +140,7 @@ func TestParseSkipDeploymentParameter(t *testing.T) {
 		ProjectId: "projectA",
 	}
 
-	testApi := api.NewStandardApi("alerting-profile", "/api/configV1/v1/alertingProfiles", false, "", false)
+	testApi := api.API{ID: "alerting-profile", URLPath: "/api/configV1/v1/alertingProfiles"}
 
 	properties := map[string]map[string]string{
 		configId: {
@@ -240,7 +240,7 @@ func TestLoadPropertiesForEnvironment(t *testing.T) {
 		},
 	}
 
-	testApi := api.NewStandardApi("alerting-profile", "/api/configV1/v1/alertingProfiles", false, "", false)
+	testApi := api.API{ID: "alerting-profile", URLPath: "/api/configV1/v1/alertingProfiles"}
 
 	properties := map[string]map[string]string{
 		configId: {
@@ -293,7 +293,7 @@ func TestConvertConfig(t *testing.T) {
 		},
 	}
 
-	testApi := api.NewStandardApi("alerting-profile", "/api/configV1/v1/alertingProfiles", false, "", false)
+	testApi := api.API{ID: "alerting-profile", URLPath: "/api/configV1/v1/alertingProfiles"}
 	convertContext := &configConvertContext{
 		ConverterContext: &ConverterContext{
 			Fs: setupDummyFsWithEnvVariableInTemplate(t, envVarName),
@@ -324,7 +324,7 @@ func TestConvertConfig(t *testing.T) {
 
 	assert.Equal(t, 0, len(errors), "errors: %s", errors)
 	assert.Equal(t, projectId, convertedConfig.Coordinate.Project)
-	assert.Equal(t, testApi.GetId(), convertedConfig.Coordinate.Type)
+	assert.Equal(t, testApi.ID, convertedConfig.Coordinate.Type)
 	assert.Equal(t, configId, convertedConfig.Coordinate.ConfigId)
 	assert.Equal(t, environmentName, convertedConfig.Environment)
 
@@ -361,7 +361,7 @@ func TestConvertDeprecatedConfigToLatest(t *testing.T) {
 		},
 	}
 
-	deprecatedApi := api.NewStandardApi("application", "/api/configV1/v1/application/web", false, "application-web", false)
+	deprecatedApi := api.API{ID: "application", URLPath: "/api/configV1/v1/application/web", DeprecatedBy: "application-web"}
 
 	convertContext := &configConvertContext{
 		ConverterContext: &ConverterContext{
@@ -392,7 +392,7 @@ func TestConvertDeprecatedConfigToLatest(t *testing.T) {
 
 	assert.Equal(t, 0, len(errors), "errors: %s", errors)
 	assert.Equal(t, projectId, convertedConfig.Coordinate.Project)
-	assert.Equal(t, deprecatedApi.DeprecatedBy(), convertedConfig.Coordinate.Type)
+	assert.Equal(t, deprecatedApi.DeprecatedBy, convertedConfig.Coordinate.Type)
 	assert.Equal(t, configId, convertedConfig.Coordinate.ConfigId)
 	assert.Equal(t, environmentName, convertedConfig.Environment)
 
@@ -435,7 +435,7 @@ func TestConvertConfigWithEnvNameCollisionShouldFail(t *testing.T) {
 		},
 	}
 
-	testApi := api.NewStandardApi("alerting-profile", "/api/configV1/v1/alertingProfiles", false, "", false)
+	testApi := api.API{ID: "alerting-profile", URLPath: "/api/configV1/v1/alertingProfiles"}
 
 	properties := map[string]map[string]string{
 		configId: {
@@ -480,7 +480,7 @@ func TestConvertSkippedConfig(t *testing.T) {
 		},
 	}
 
-	testApi := api.NewStandardApi("alerting-profile", "/api/configV1/v1/alertingProfiles", false, "", false)
+	testApi := api.API{ID: "alerting-profile", URLPath: "/api/configV1/v1/alertingProfiles"}
 
 	properties := map[string]map[string]string{
 		configId: {
@@ -502,7 +502,7 @@ func TestConvertSkippedConfig(t *testing.T) {
 
 	assert.Equal(t, 0, len(errors))
 	assert.Equal(t, projectId, convertedConfig.Coordinate.Project)
-	assert.Equal(t, testApi.GetId(), convertedConfig.Coordinate.Type)
+	assert.Equal(t, testApi.ID, convertedConfig.Coordinate.Type)
 	assert.Equal(t, configId, convertedConfig.Coordinate.ConfigId)
 	assert.Equal(t, environmentName, convertedConfig.Environment)
 	assert.Equal(t, valueParam.New(true), convertedConfig.SkipForConversion)
@@ -542,7 +542,7 @@ func TestConvertConfigs(t *testing.T) {
 		},
 	}
 
-	testApi := api.NewStandardApi("alerting-profile", "/api/configV1/v1/alertingProfiles", false, "", false)
+	testApi := api.API{ID: "alerting-profile", URLPath: "/api/configV1/v1/alertingProfiles"}
 
 	properties := map[string]map[string]string{
 		configId: {
@@ -578,7 +578,7 @@ func TestConvertConfigs(t *testing.T) {
 	apiConfigs := convertedConfigs[environmentName]
 	assert.Equal(t, 1, len(apiConfigs))
 
-	configs := apiConfigs[testApi.GetId()]
+	configs := apiConfigs[testApi.ID]
 	assert.Equal(t, 1, len(configs))
 
 	c := configs[0]
@@ -605,7 +605,7 @@ func TestConvertConfigs(t *testing.T) {
 	apiConfigs = convertedConfigs[environmentName2]
 	assert.Equal(t, 1, len(apiConfigs))
 
-	configs = apiConfigs[testApi.GetId()]
+	configs = apiConfigs[testApi.ID]
 	assert.Equal(t, 1, len(configs))
 
 	c = configs[0]
@@ -632,7 +632,7 @@ func TestConvertWithMissingName(t *testing.T) {
 		},
 	}
 
-	testApi := api.NewStandardApi("alerting-profile", "/api/configV1/v1/alertingProfiles", false, "", false)
+	testApi := api.API{ID: "alerting-profile", URLPath: "/api/configV1/v1/alertingProfiles"}
 
 	properties := map[string]map[string]string{
 		"alerting-profile-1": {},
@@ -666,7 +666,7 @@ func TestConvertWithMissingName(t *testing.T) {
 	apiConfigs := convertedConfigs[("dev")]
 	assert.Equal(t, 1, len(apiConfigs))
 
-	configs := apiConfigs[testApi.GetId()]
+	configs := apiConfigs[testApi.ID]
 	assert.Equal(t, 1, len(configs))
 
 	c := configs[0]
@@ -713,7 +713,7 @@ func TestConvertProjects(t *testing.T) {
 		},
 	}
 
-	testApi := api.NewStandardApi("alerting-profile", "/api/configV1/v1/alertingProfiles", false, "", false)
+	testApi := api.API{ID: "alerting-profile", URLPath: "/api/configV1/v1/alertingProfiles"}
 
 	properties := map[string]map[string]string{
 		configId: {
@@ -756,7 +756,7 @@ func TestConvertProjects(t *testing.T) {
 	apiConfigs := convertedConfigs[environmentName]
 	assert.Equal(t, 1, len(apiConfigs))
 
-	configs := apiConfigs[testApi.GetId()]
+	configs := apiConfigs[testApi.ID]
 	assert.Equal(t, 1, len(configs))
 
 	c := configs[0]
@@ -767,7 +767,7 @@ func TestConvertProjects(t *testing.T) {
 	apiConfigs = convertedConfigs[environmentName2]
 	assert.Equal(t, 1, len(apiConfigs))
 
-	configs = apiConfigs[testApi.GetId()]
+	configs = apiConfigs[testApi.ID]
 	assert.Equal(t, 1, len(configs))
 
 	c = configs[0]
@@ -968,7 +968,7 @@ func generateDummyTemplate(t *testing.T) template.Template {
 func generateDummyConfig(t *testing.T) *projectV1.Config {
 	var configId = "alerting-profile-1"
 
-	testApi := api.NewStandardApi("alerting-profile", "/api/configV1/v1/alertingProfiles", false, "", false)
+	testApi := api.API{ID: "alerting-profile", URLPath: "/api/configV1/v1/alertingProfiles"}
 
 	properties := map[string]map[string]string{}
 
@@ -1117,7 +1117,7 @@ func Test_parseReference(t *testing.T) {
 			"test-param",
 			"/some-project/deprecated-api/some-configV1.some-property",
 			api.APIs{
-				"deprecated-api": api.NewStandardApi("deprecated-api", "/api/path", false, "new-api", false),
+				"deprecated-api": api.API{ID: "deprecated-api", URLPath: "/api/path", DeprecatedBy: "new-api"},
 			},
 			refParam.New("some-project", "new-api", "some-configV1", "some-property"),
 			false,

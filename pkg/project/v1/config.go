@@ -37,13 +37,13 @@ type Config struct {
 	project    string
 	properties map[string]map[string]string
 	template   template.Template
-	api        *api.API
+	api        api.API
 	fileName   string
 }
 
-type configProvider func(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api *api.API) (*Config, error)
+type configProvider func(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api api.API) (*Config, error)
 
-func newConfig(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api *api.API) (*Config, error) {
+func newConfig(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api api.API) (*Config, error) {
 
 	tmpl, err := template.NewTemplate(fs, fileName)
 	if err != nil {
@@ -53,7 +53,7 @@ func newConfig(fs afero.Fs, id string, project string, fileName string, properti
 	return newConfigWithTemplate(id, project, tmpl, filterProperties(id, properties), api, fileName), nil
 }
 
-func newConfigWithTemplate(id string, project string, template template.Template, properties map[string]map[string]string, api *api.API, fileName string) *Config {
+func newConfigWithTemplate(id string, project string, template template.Template, properties map[string]map[string]string, api api.API, fileName string) *Config {
 	return &Config{
 		id:         id,
 		project:    project,
@@ -102,12 +102,12 @@ func SplitDependency(property string) (id string, access string, err error) {
 	return filepath.ToSlash(firstPart), secondPart, nil
 }
 
-func (c *Config) GetApi() *api.API {
+func (c *Config) GetApi() api.API {
 	return c.api
 }
 
 func (c *Config) GetType() string {
-	return c.api.GetId()
+	return c.api.ID
 }
 
 func (c *Config) GetId() string {
@@ -172,5 +172,5 @@ func (c *Config) GetFilePath() string {
 
 // GetFullQualifiedId returns the full qualified id of the config based on project, api and config id
 func (c *Config) GetFullQualifiedId() string {
-	return strings.Join([]string{c.GetProject(), c.GetApi().GetId(), c.GetId()}, string(os.PathSeparator))
+	return strings.Join([]string{c.GetProject(), c.GetApi().ID, c.GetId()}, string(os.PathSeparator))
 }

@@ -22,7 +22,7 @@ import "testing"
 
 func TestGetV2ApiId(t *testing.T) {
 	type args struct {
-		forV1Api *API
+		forV1Api API
 	}
 	tests := []struct {
 		name string
@@ -31,22 +31,22 @@ func TestGetV2ApiId(t *testing.T) {
 	}{
 		{
 			"Returns ID for non deprecated API",
-			args{NewStandardApi("type_id", "config/v1/type", false, "", false)},
+			args{API{ID: "type_id", URLPath: "config/v1/type"}},
 			"type_id",
 		},
 		{
 			"Returns deprecating ID for deprecated API",
-			args{NewStandardApi("type_id", "config/v1/type", false, "new_type_id", false)},
+			args{API{ID: "type_id", URLPath: "config/v1/type", DeprecatedBy: "new_type_id"}},
 			"new_type_id",
 		},
 		{
 			"Strips -v2 for breaking change APIs from v1",
-			args{NewStandardApi("type_id-v2", "config/v1/type", true, "", false)},
+			args{API{ID: "type_id-v2", URLPath: "config/v1/type", NonUniqueNameApi: true}},
 			"type_id",
 		},
 		{
 			"Strips -v2 if deprecating ID was a breaking change API in v1",
-			args{NewStandardApi("og_type_id", "config/v1/type", true, "type_id-v2", false)},
+			args{API{ID: "og_type_id", URLPath: "config/v1/type", NonUniqueNameApi: true, DeprecatedBy: "type_id-v2"}},
 			"type_id",
 		},
 	}

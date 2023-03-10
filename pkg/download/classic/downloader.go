@@ -83,24 +83,24 @@ func (d *Downloader) DownloadAll(apisToDownload api.APIs, projectName string) pr
 			defer wg.Done()
 			configsToDownload, err := d.findConfigsToDownload(currentApi)
 			if err != nil {
-				log.Error("\tFailed to fetch configs of type '%v', skipping download of this type. Reason: %v", currentApi.GetId(), err)
+				log.Error("\tFailed to fetch configs of type '%v', skipping download of this type. Reason: %v", currentApi.ID, err)
 				return
 			}
 			// filter all configs we do not want to download. All remaining will be downloaded
 			configsToDownload = d.filterConfigsToSkip(currentApi, configsToDownload)
 
 			if len(configsToDownload) == 0 {
-				log.Debug("\tNo configs of type '%v' to download", currentApi.GetId())
+				log.Debug("\tNo configs of type '%v' to download", currentApi.ID)
 				return
 			}
 
-			log.Debug("\tFound %d configs of type '%v' to download", len(configsToDownload), currentApi.GetId())
+			log.Debug("\tFound %d configs of type '%v' to download", len(configsToDownload), currentApi.ID)
 			configs := d.downloadConfigsOfAPI(currentApi, configsToDownload, projectName)
 
-			log.Debug("\tFinished downloading all configs of type '%v'", currentApi.GetId())
+			log.Debug("\tFinished downloading all configs of type '%v'", currentApi.ID)
 			if len(configs) > 0 {
 				mutex.Lock()
-				results[currentApi.GetId()] = configs
+				results[currentApi.ID] = configs
 				mutex.Unlock()
 			}
 
@@ -115,7 +115,7 @@ func (d *Downloader) DownloadAll(apisToDownload api.APIs, projectName string) pr
 	return results
 }
 
-func (d *Downloader) downloadConfigsOfAPI(api *api.API, values []api.Value, projectName string) []config.Config {
+func (d *Downloader) downloadConfigsOfAPI(api api.API, values []api.Value, projectName string) []config.Config {
 	results := make([]config.Config, 0, len(values))
 	mutex := sync.Mutex{}
 	wg := sync.WaitGroup{}
@@ -127,18 +127,18 @@ func (d *Downloader) downloadConfigsOfAPI(api *api.API, values []api.Value, proj
 			defer wg.Done()
 			downloadedJson, err := d.downloadAndUnmarshalConfig(api, value)
 			if err != nil {
-				log.Error("Error fetching config '%v' in api '%v': %v", value.Id, api.GetId(), err)
+				log.Error("Error fetching config '%v' in api '%v': %v", value.Id, api.ID, err)
 				return
 			}
 
 			if !d.skipPersist(api, downloadedJson) {
-				log.Debug("\tSkipping persisting config %v (%v) in API %v", value.Id, value.Name, api.GetId())
+				log.Debug("\tSkipping persisting config %v (%v) in API %v", value.Id, value.Name, api.ID)
 				return
 			}
 
 			c, err := d.createConfigForDownloadedJson(downloadedJson, api, value, projectName)
 			if err != nil {
-				log.Error("Error creating config for %v in api %v: %v", value.Id, api.GetId(), err)
+				log.Error("Error creating config for %v in api %v: %v", value.Id, api.ID, err)
 				return
 			}
 
@@ -152,7 +152,7 @@ func (d *Downloader) downloadConfigsOfAPI(api *api.API, values []api.Value, proj
 	return results
 }
 
-func (d *Downloader) downloadAndUnmarshalConfig(theApi *api.API, value api.Value) (map[string]interface{}, error) {
+func (d *Downloader) downloadAndUnmarshalConfig(theApi api.API, value api.Value) (map[string]interface{}, error) {
 	response, err := d.client.ReadConfigById(theApi, value.Id)
 
 	if err != nil {
@@ -168,8 +168,8 @@ func (d *Downloader) downloadAndUnmarshalConfig(theApi *api.API, value api.Value
 	return data, nil
 }
 
-func (d *Downloader) createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi *api.API, value api.Value, projectId string) (config.Config, error) {
-	templ, err := d.createTemplate(mappedJson, value, theApi.GetId())
+func (d *Downloader) createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api.API, value api.Value, projectId string) (config.Config, error) {
+	templ, err := d.createTemplate(mappedJson, value, theApi.ID)
 	if err != nil {
 		return config.Config{}, err
 	}
@@ -180,7 +180,7 @@ func (d *Downloader) createConfigForDownloadedJson(mappedJson map[string]interfa
 	coord := coordinate.Coordinate{
 		Project:  projectId,
 		ConfigId: templ.Id(),
-		Type:     theApi.GetId(),
+		Type:     theApi.ID,
 	}
 
 	return config.Config{
@@ -201,40 +201,40 @@ func (d *Downloader) createTemplate(mappedJson map[string]interface{}, value api
 	return templ, nil
 }
 
-func (d *Downloader) findConfigsToDownload(currentApi *api.API) ([]api.Value, error) {
-	if currentApi.IsSingleConfigurationApi() {
-		log.Debug("\tFetching singleton-configuration '%v'", currentApi.GetId())
+func (d *Downloader) findConfigsToDownload(currentApi api.API) ([]api.Value, error) {
+	if currentApi.SingleConfigurationApi {
+		log.Debug("\tFetching singleton-configuration '%v'", currentApi.ID)
 
 		// singleton-config. We use the api-id as mock-id
-		singletonConfigToDownload := api.Value{Id: currentApi.GetId(), Name: currentApi.GetId()}
+		singletonConfigToDownload := api.Value{Id: currentApi.ID, Name: currentApi.ID}
 		return []api.Value{singletonConfigToDownload}, nil
 	}
-	log.Debug("\tFetching all '%v' configs", currentApi.GetId())
+	log.Debug("\tFetching all '%v' configs", currentApi.ID)
 	return d.client.ListConfigs(currentApi)
 }
 
-func (d *Downloader) skipPersist(a *api.API, json map[string]interface{}) bool {
-	if cases := d.apiFilters[a.GetId()]; cases.shouldConfigBePersisted != nil {
+func (d *Downloader) skipPersist(a api.API, json map[string]interface{}) bool {
+	if cases := d.apiFilters[a.ID]; cases.shouldConfigBePersisted != nil {
 		return cases.shouldConfigBePersisted(json)
 	}
 	return true
 }
-func (d *Downloader) skipDownload(a *api.API, value api.Value) bool {
-	if cases := d.apiFilters[a.GetId()]; cases.shouldBeSkippedPreDownload != nil {
+func (d *Downloader) skipDownload(a api.API, value api.Value) bool {
+	if cases := d.apiFilters[a.ID]; cases.shouldBeSkippedPreDownload != nil {
 		return cases.shouldBeSkippedPreDownload(value)
 	}
 
 	return false
 }
 
-func (d *Downloader) filterConfigsToSkip(a *api.API, value []api.Value) []api.Value {
+func (d *Downloader) filterConfigsToSkip(a api.API, value []api.Value) []api.Value {
 	valuesToDownload := make([]api.Value, 0, len(value))
 
 	for _, value := range value {
 		if !d.skipDownload(a, value) {
 			valuesToDownload = append(valuesToDownload, value)
 		} else {
-			log.Debug("Skipping download of config  '%v' of API '%v'", value.Id, a.GetId())
+			log.Debug("Skipping download of config  '%v' of API '%v'", value.Id, a.ID)
 		}
 	}
 

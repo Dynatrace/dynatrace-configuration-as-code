@@ -34,7 +34,7 @@ func testCreateProjectBuilder(projectsRoot string) projectBuilder {
 	return projectBuilder{
 		projectRootFolder: projectsRoot,
 		apis:              createTestApis(),
-		configProvider: func(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api *api.API) (*Config, error) {
+		configProvider: func(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api api.API) (*Config, error) {
 			return &Config{id,
 				project,
 				properties,
@@ -68,9 +68,9 @@ func createTestApis() api.APIs {
 	return apis
 }
 
-var testAlertingProfileApi = api.NewStandardApi("alerting-profile", "/api/config/v1/alertingProfiles", false, "", false)
-var testManagementZoneApi = api.NewStandardApi("management-zone", "/api/config/v1/managementZones", false, "", false)
-var testDashboardApi = api.NewStandardApi("dashboard", "/api/config/v1/dashboards", true, "dashboard-v2", false)
+var testAlertingProfileApi = api.API{ID: "alerting-profile", URLPath: "/api/config/v1/alertingProfiles"}
+var testManagementZoneApi = api.API{ID: "management-zone", URLPath: "/api/config/v1/managementZones"}
+var testDashboardApi = api.API{ID: "dashboard", URLPath: "/api/config/v1/dashboards", NonUniqueNameApi: true, DeprecatedBy: "dashboard-v2"}
 
 func TestGetPathSuccess(t *testing.T) {
 
@@ -80,12 +80,12 @@ func TestGetPathSuccess(t *testing.T) {
 	err, configType := builder.getConfigTypeFromLocation(json)
 
 	assert.NilError(t, err)
-	assert.Equal(t, "management-zone", configType.GetId())
+	assert.Equal(t, "management-zone", configType.ID)
 
 	err, configType = builder.getConfigTypeFromLocation(json)
 
 	assert.NilError(t, err)
-	assert.Equal(t, "management-zone", configType.GetId())
+	assert.Equal(t, "management-zone", configType.ID)
 }
 
 func TestGetPathTooLittleArgs(t *testing.T) {
@@ -138,9 +138,9 @@ func TestGetConfigTypeInformationFromLocation(t *testing.T) {
 	assert.NilError(t, err)
 	assert.NilError(t, err1)
 	assert.NilError(t, err2)
-	assert.Equal(t, "alerting-profile", api.GetId())
-	assert.Equal(t, "alerting-profile", api1.GetId())
-	assert.Equal(t, "alerting-profile", api2.GetId())
+	assert.Equal(t, "alerting-profile", api.ID)
+	assert.Equal(t, "alerting-profile", api1.ID)
+	assert.Equal(t, "alerting-profile", api2.ID)
 }
 
 func TestGetApiFromLocationApiNotFound(t *testing.T) {
@@ -155,7 +155,7 @@ func TestGetApiFromLocationApiNotFound(t *testing.T) {
 func TestProcessConfigSection(t *testing.T) {
 
 	fs := testutils.CreateTestFileSystem()
-	builder := testCreateProjectBuilderWithMock(func(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api *api.API) (*Config, error) {
+	builder := testCreateProjectBuilderWithMock(func(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api api.API) (*Config, error) {
 		return &Config{id, project, properties, nil, api, fileName}, nil
 	}, fs, "testProject", "")
 
@@ -174,7 +174,7 @@ func TestProcessConfigSection(t *testing.T) {
 func TestProcessConfigSectionWithProjectRootParameter(t *testing.T) {
 
 	fileReaderMock := testutils.CreateTestFileSystem()
-	builder := testCreateProjectBuilderWithMock(func(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api *api.API) (*Config, error) {
+	builder := testCreateProjectBuilderWithMock(func(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api api.API) (*Config, error) {
 		return &Config{id,
 			project,
 			properties,
@@ -243,7 +243,7 @@ func TestProcessYaml(t *testing.T) {
 	err := fs.Mkdir("test/dashboard/", 0777)
 	err = afero.WriteFile(fs, "test/dashboard/test-file.yaml", []byte(projectTestYaml), 0664)
 
-	builder := testCreateProjectBuilderWithMock(func(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api *api.API) (*Config, error) {
+	builder := testCreateProjectBuilderWithMock(func(fs afero.Fs, id string, project string, fileName string, properties map[string]map[string]string, api api.API) (*Config, error) {
 		return &Config{id,
 			project,
 			properties,

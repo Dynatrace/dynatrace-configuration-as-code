@@ -33,7 +33,7 @@ import (
 	"gotest.tools/assert"
 )
 
-var dashboardApi = api.NewStandardApi("dashboard", "dashboard", false, "dashboard-v2", false)
+var dashboardApi = api.API{ID: "dashboard", URLPath: "dashboard", DeprecatedBy: "dashboard-v2"}
 var testApiMap = api.APIs{"dashboard": dashboardApi}
 
 func TestDeployConfig(t *testing.T) {
@@ -432,7 +432,7 @@ func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
 	theConfigName := "theConfigName"
 	theApiName := "theApiName"
 
-	theApi := api.NewApi(theApiName, "path", "", false, false, "", false)
+	theApi := api.API{ID: theApiName, URLPath: "path"}
 
 	client := client.NewMockClient(gomock.NewController(t))
 	client.EXPECT().UpsertConfigByName(gomock.Any(), theConfigName, gomock.Any()).Times(1)
@@ -465,7 +465,7 @@ func TestDeployConfigsTargetingClassicConfigNonUniqueWithExistingCfgsOfSameName(
 	theConfigName := "theConfigName"
 	theApiName := "theApiName"
 
-	theApi := api.NewApi(theApiName, "path", "", false, true, "", false)
+	theApi := api.API{ID: theApiName, URLPath: "path", NonUniqueNameApi: true}
 
 	client := client.NewMockClient(gomock.NewController(t))
 	client.EXPECT().UpsertConfigByNonUniqueNameAndId(gomock.Any(), gomock.Any(), theConfigName, gomock.Any())
@@ -543,7 +543,7 @@ func TestDeployConfigsNoApi(t *testing.T) {
 
 func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
 	theApiName := "theApiName"
-	theApi := api.NewApi(theApiName, "path", "", false, false, "", false)
+	theApi := api.API{ID: theApiName, URLPath: "path"}
 	apis := api.APIs{theApiName: theApi}
 	sortedConfigs := []config.Config{
 		{

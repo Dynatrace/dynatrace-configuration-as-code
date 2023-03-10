@@ -34,7 +34,7 @@ func LimitClientParallelRequests(client Client, maxParallelRequests int) Client 
 	}
 }
 
-func (l limitingClient) ListConfigs(a *api.API) (values []api.Value, err error) {
+func (l limitingClient) ListConfigs(a api.API) (values []api.Value, err error) {
 	l.limiter.ExecuteBlocking(func() {
 		values, err = l.client.ListConfigs(a)
 	})
@@ -42,7 +42,7 @@ func (l limitingClient) ListConfigs(a *api.API) (values []api.Value, err error) 
 	return
 }
 
-func (l limitingClient) ReadConfigById(a *api.API, id string) (json []byte, err error) {
+func (l limitingClient) ReadConfigById(a api.API, id string) (json []byte, err error) {
 	l.limiter.ExecuteBlocking(func() {
 		json, err = l.client.ReadConfigById(a, id)
 	})
@@ -50,7 +50,7 @@ func (l limitingClient) ReadConfigById(a *api.API, id string) (json []byte, err 
 	return
 }
 
-func (l limitingClient) UpsertConfigByName(a *api.API, name string, payload []byte) (entity api.DynatraceEntity, err error) {
+func (l limitingClient) UpsertConfigByName(a api.API, name string, payload []byte) (entity api.DynatraceEntity, err error) {
 	l.limiter.ExecuteBlocking(func() {
 		entity, err = l.client.UpsertConfigByName(a, name, payload)
 	})
@@ -58,7 +58,7 @@ func (l limitingClient) UpsertConfigByName(a *api.API, name string, payload []by
 	return
 }
 
-func (l limitingClient) UpsertConfigByNonUniqueNameAndId(a *api.API, entityId string, name string, payload []byte) (entity api.DynatraceEntity, err error) {
+func (l limitingClient) UpsertConfigByNonUniqueNameAndId(a api.API, entityId string, name string, payload []byte) (entity api.DynatraceEntity, err error) {
 	l.limiter.ExecuteBlocking(func() {
 		entity, err = l.client.UpsertConfigByNonUniqueNameAndId(a, entityId, name, payload)
 	})
@@ -66,7 +66,7 @@ func (l limitingClient) UpsertConfigByNonUniqueNameAndId(a *api.API, entityId st
 	return
 }
 
-func (l limitingClient) DeleteConfigById(a *api.API, id string) (err error) {
+func (l limitingClient) DeleteConfigById(a api.API, id string) (err error) {
 	l.limiter.ExecuteBlocking(func() {
 		err = l.client.DeleteConfigById(a, id)
 	})
@@ -74,7 +74,7 @@ func (l limitingClient) DeleteConfigById(a *api.API, id string) (err error) {
 	return
 }
 
-func (l limitingClient) ConfigExistsByName(a *api.API, name string) (exists bool, id string, err error) {
+func (l limitingClient) ConfigExistsByName(a api.API, name string) (exists bool, id string, err error) {
 	l.limiter.ExecuteBlocking(func() {
 		exists, id, err = l.client.ConfigExistsByName(a, name)
 	})

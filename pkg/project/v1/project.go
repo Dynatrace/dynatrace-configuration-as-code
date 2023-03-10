@@ -187,7 +187,7 @@ func (p *projectBuilder) standardizeLocation(location string, folderPath string)
 	return location
 }
 
-func (p *projectBuilder) getExtendedInformationFromLocation(location string) (err error, api *api.API) {
+func (p *projectBuilder) getExtendedInformationFromLocation(location string) (err error, api api.API) {
 
 	return p.getConfigTypeFromLocation(location)
 }
@@ -206,11 +206,11 @@ func (p *projectBuilder) removeYamlFileFromPath(location string) (error, string)
 	return nil, strings.Join(split[:len(split)-1], string(os.PathSeparator))
 }
 
-func (p *projectBuilder) getConfigTypeFromLocation(location string) (error, *api.API) {
+func (p *projectBuilder) getConfigTypeFromLocation(location string) (error, api.API) {
 
 	split := strings.Split(location, string(os.PathSeparator))
 	if len(split) <= 1 {
-		return fmt.Errorf("path %s too short", location), nil
+		return fmt.Errorf("path %s too short", location), api.API{}
 	}
 
 	// iterate from end of path:
@@ -223,7 +223,7 @@ func (p *projectBuilder) getConfigTypeFromLocation(location string) (error, *api
 		}
 	}
 
-	return fmt.Errorf("API was unknown. Not found in %s", location), nil
+	return fmt.Errorf("API was unknown. Not found in %s", location), api.API{}
 }
 
 func (p *projectBuilder) sortConfigsAccordingToDependencies() error {
