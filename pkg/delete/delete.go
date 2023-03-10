@@ -51,18 +51,18 @@ func DeleteConfigs(client client.Client, apis api.APIs, entriesToDelete map[stri
 	return errs
 }
 
-func deleteClassicConfig(client client.Client, theApi *api.API, entries []DeletePointer, targetApi string) []error {
+func deleteClassicConfig(client client.Client, theApi api.API, entries []DeletePointer, targetApi string) []error {
 	errors := make([]error, 0)
 
 	values, err := client.ListConfigs(theApi)
 	if err != nil {
-		errors = append(errors, fmt.Errorf("failed to fetch existing configs of api `%v`. Skipping deletion all configs of this api. Reason: %w", theApi.GetId(), err))
+		errors = append(errors, fmt.Errorf("failed to fetch existing configs of api `%v`. Skipping deletion all configs of this api. Reason: %w", theApi.ID, err))
 	}
 
-	values, errs := filterValuesToDelete(entries, values, theApi.GetId())
+	values, errs := filterValuesToDelete(entries, values, theApi.ID)
 	errors = append(errors, errs...)
 
-	log.Info("Deleting configs of type %s...", theApi.GetId())
+	log.Info("Deleting configs of type %s...", theApi.ID)
 
 	if len(values) == 0 {
 		log.Debug("No values found to delete (%s)", targetApi)
@@ -162,14 +162,14 @@ func filterValuesToDelete(entries []DeletePointer, existingValues []api.Value, a
 func DeleteAllConfigs(client client.ConfigClient, apis api.APIs) (errors []error) {
 
 	for _, api := range apis {
-		log.Info("Collecting configs of type %s...", api.GetId())
+		log.Info("Collecting configs of type %s...", api.ID)
 		values, err := client.ListConfigs(api)
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
 
-		log.Info("Deleting %d configs of type %s...", len(values), api.GetId())
+		log.Info("Deleting %d configs of type %s...", len(values), api.ID)
 
 		for _, v := range values {
 			// TODO(improvement): this could be improved by filtering for default configs the same way as Download does

@@ -65,7 +65,7 @@ func TestDoCleanup(t *testing.T) {
 func cleanupTestConfigs(t *testing.T, apis api.APIs, client client.ConfigClient, testSuffixRegex *regexp.Regexp) int {
 	deletedConfigs := 0
 	for _, api := range apis {
-		if api.GetId() == "calculated-metrics-log" {
+		if api.ID == "calculated-metrics-log" {
 			t.Logf("Skipping cleanup of legacy log monitoring API")
 			continue
 		}
@@ -77,9 +77,9 @@ func cleanupTestConfigs(t *testing.T, apis api.APIs, client client.ConfigClient,
 			if testSuffixRegex.MatchString(value.Name) || testSuffixRegex.MatchString(value.Id) {
 				err := client.DeleteConfigById(api, value.Id)
 				if err != nil {
-					t.Errorf("failed to delete %s (%s): %v", value.Name, api.GetId(), err)
+					t.Errorf("failed to delete %s (%s): %v", value.Name, api.ID, err)
 				} else {
-					log.Info("Deleted %s (%s)", value.Name, api.GetId())
+					log.Info("Deleted %s (%s)", value.Name, api.ID)
 					deletedConfigs++
 				}
 			}

@@ -124,7 +124,7 @@ func TestFilterPropertiesToReturnNoGeneralPropertiesForMissingSpecificOnes(t *te
 }
 
 func TestHasDependencyCheck(t *testing.T) {
-	testManagementZoneApi := api.NewStandardApi("management-zone", "/api/config/v1/managementZones", false, "", false)
+	testManagementZoneApi := api.API{ID: "management-zone", URLPath: "/api/config/v1/managementZones"}
 	prop := make(map[string]map[string]string)
 	prop["test"] = make(map[string]string)
 	prop["test"]["name"] = "A name"
@@ -140,7 +140,7 @@ func TestHasDependencyCheck(t *testing.T) {
 }
 
 func TestHasDependencyWithMultipleDependenciesCheck(t *testing.T) {
-	testManagementZoneApi := api.NewStandardApi("management-zone", "/api/config/v1/managementZones", false, "", false)
+	testManagementZoneApi := api.API{ID: "management-zone", URLPath: "/api/config/v1/managementZones"}
 
 	prop := make(map[string]map[string]string)
 	prop["test"] = make(map[string]string)

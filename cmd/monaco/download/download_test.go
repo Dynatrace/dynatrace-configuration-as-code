@@ -199,8 +199,8 @@ func TestGetApisToDownload(t *testing.T) {
 			name: "filter all specific defined api",
 			given: given{
 				apis: api.APIs{
-					"api_1": api.NewApi("api_1", "", "", false, false, "", false),
-					"api_2": api.NewApi("api_2", "", "", false, false, "", false),
+					"api_1": api.API{ID: "api_1"},
+					"api_2": api.API{ID: "api_2"},
 				},
 				specificAPIs: []string{"api_1"},
 			},
@@ -211,9 +211,9 @@ func TestGetApisToDownload(t *testing.T) {
 			name: "if deprecated api is defined, do not filter it",
 			given: given{
 				apis: api.APIs{
-					"api_1":          api.NewApi("api_1", "", "", false, false, "", false),
-					"api_2":          api.NewApi("api_2", "", "", false, false, "", false),
-					"deprecated_api": api.NewApi("deprecated_api", "", "", false, false, "new_api", false),
+					"api_1":          api.API{ID: "api_1"},
+					"api_2":          api.API{ID: "api_2"},
+					"deprecated_api": api.API{ID: "deprecated_api", DeprecatedBy: "new_api"},
 				},
 				specificAPIs: []string{"api_1", "deprecated_api"},
 			},
@@ -225,9 +225,9 @@ func TestGetApisToDownload(t *testing.T) {
 			name: "if specific api is not requested, filter deprecated apis",
 			given: given{
 				apis: api.APIs{
-					"api_1":          api.NewApi("api_1", "", "", false, false, "", false),
-					"api_2":          api.NewApi("api_2", "", "", false, false, "", false),
-					"deprecated_api": api.NewApi("deprecated_api", "", "", false, false, "new_api", false),
+					"api_1":          api.API{ID: "api_1"},
+					"api_2":          api.API{ID: "api_2"},
+					"deprecated_api": api.API{ID: "deprecated_api", DeprecatedBy: "new_api"},
 				},
 				specificAPIs: []string{},
 			},

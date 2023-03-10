@@ -98,7 +98,7 @@ func getWordsForLogging(isDryRun bool) (action, verb string) {
 func deployConfig(client client.ConfigClient, apis api.APIs, entityMap *entityMap, conf *config.Config) (parameter.ResolvedEntity, []error) {
 
 	apiToDeploy := apis[conf.Coordinate.Type]
-	if apiToDeploy == nil {
+	if apiToDeploy == (api.API{}) {
 		return parameter.ResolvedEntity{}, []error{fmt.Errorf("unknown api `%s`. this is most likely a bug", conf.Type.Api)}
 	}
 
@@ -111,7 +111,7 @@ func deployConfig(client client.ConfigClient, apis api.APIs, entityMap *entityMa
 	if err != nil {
 		errors = append(errors, err)
 	} else {
-		if entityMap.contains(apiToDeploy.GetId(), configName) && !apiToDeploy.IsNonUniqueNameApi() {
+		if entityMap.contains(apiToDeploy.ID, configName) && !apiToDeploy.NonUniqueNameApi {
 			errors = append(errors, newConfigDeployErr(conf, fmt.Sprintf("duplicated config name `%s`", configName)))
 		}
 	}
@@ -124,12 +124,12 @@ func deployConfig(client client.ConfigClient, apis api.APIs, entityMap *entityMa
 		return parameter.ResolvedEntity{}, []error{err}
 	}
 
-	if apiToDeploy.DeprecatedBy() != "" {
-		log.Warn("API for \"%s\" is deprecated! Please consider migrating to \"%s\"!", apiToDeploy.GetId(), apiToDeploy.DeprecatedBy())
+	if apiToDeploy.DeprecatedBy != "" {
+		log.Warn("API for \"%s\" is deprecated! Please consider migrating to \"%s\"!", apiToDeploy.ID, apiToDeploy.DeprecatedBy)
 	}
 
 	var entity api.DynatraceEntity
-	if apiToDeploy.IsNonUniqueNameApi() {
+	if apiToDeploy.NonUniqueNameApi {
 		entity, err = upsertNonUniqueNameConfig(client, apiToDeploy, conf, configName, renderedConfig)
 	} else {
 		entity, err = client.UpsertConfigByName(apiToDeploy, configName, []byte(renderedConfig))
@@ -150,7 +150,7 @@ func deployConfig(client client.ConfigClient, apis api.APIs, entityMap *entityMa
 	}, nil
 }
 
-func upsertNonUniqueNameConfig(client client.ConfigClient, apiToDeploy *api.API, conf *config.Config, configName string, renderedConfig string) (api.DynatraceEntity, error) {
+func upsertNonUniqueNameConfig(client client.ConfigClient, apiToDeploy api.API, conf *config.Config, configName string, renderedConfig string) (api.DynatraceEntity, error) {
 	configId := conf.Coordinate.ConfigId
 	projectId := conf.Coordinate.Project
 

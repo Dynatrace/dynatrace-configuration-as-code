@@ -25,9 +25,9 @@ import (
 	"strings"
 	"testing"
 
-	"gotest.tools/assert"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/stretchr/testify/assert"
+	assert2 "gotest.tools/assert"
 )
 
 func TestIfProjectHasSubproject(t *testing.T) {
@@ -82,14 +82,14 @@ func TestGetAllProjectFoldersRecursivelyPassesOnSeparatedFolders(t *testing.T) {
 	fs := testutils.CreateTestFileSystem()
 	apis := api.NewApis()
 	_, err := getAllProjectFoldersRecursively(fs, apis, path)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 }
 
 func TestGetAllProjectsFoldersRecursivelyPassesOnHiddenFolders(t *testing.T) {
 	path := files.ReplacePathSeparators("test-resources/hidden-directories/project1")
 	fs := testutils.CreateTestFileSystem()
 	_, err := getAllProjectFoldersRecursively(fs, api.NewV1Apis(), path)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 }
 
 func TestGetAllProjectsFoldersRecursivelyPassesOnProjectsWithinHiddenFolders(t *testing.T) {
@@ -97,10 +97,10 @@ func TestGetAllProjectsFoldersRecursivelyPassesOnProjectsWithinHiddenFolders(t *
 	fs := testutils.CreateTestFileSystem()
 	projects, err := getAllProjectFoldersRecursively(fs, api.NewV1Apis(), path)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	// NOT test-resources/hidden-directories/project2/.logs
-	assert.DeepEqual(t, projects, []string{"test-resources/hidden-directories/project2/subproject"})
+	assert.Equal(t, []string{"test-resources/hidden-directories/project2/subproject"}, projects)
 }
 
 func TestGetAllProjectsFoldersRecursivelyPassesOnProjects(t *testing.T) {
@@ -108,12 +108,20 @@ func TestGetAllProjectsFoldersRecursivelyPassesOnProjects(t *testing.T) {
 	fs := testutils.CreateTestFileSystem()
 	projects, err := getAllProjectFoldersRecursively(fs, api.NewV1Apis(), path)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	// NOT test-resources/hidden-directories/.logs
 	// NOT test-resources/hidden-directories/project2/.logs
-	assert.DeepEqual(t, projects, []string{
+	assert2.DeepEqual(t, projects, []string{
 		"test-resources/hidden-directories/project1",
 		"test-resources/hidden-directories/project2/subproject",
 	}, cmpopts.SortSlices(func(a, b string) bool { return strings.Compare(a, b) < 0 }))
+}
+
+func TestContainsApiName(t *testing.T) {
+	apis := api.NewApis()
+	assert.False(t, containsApiName(apis, "trillian"), "Check if `trillian` is an API")
+	assert.True(t, containsApiName(apis, "extension"), "Check if `extension` is an API")
+	assert.True(t, containsApiName(apis, "/project/sub-project/extension/subfolder"), "Check if `extension` is an API")
+	assert.False(t, containsApiName(apis, "/project/sub-project"), "Check if `extension` is an API")
 }

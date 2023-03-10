@@ -28,7 +28,7 @@ type entityMap struct {
 func newEntityMap(apis api.APIs) *entityMap {
 	knownEntityNames := make(map[string]map[string]struct{})
 	for _, a := range apis {
-		knownEntityNames[a.GetId()] = make(map[string]struct{})
+		knownEntityNames[a.ID] = make(map[string]struct{})
 	}
 	resolvedEntities := make(parameter.ResolvedEntities)
 	return &entityMap{

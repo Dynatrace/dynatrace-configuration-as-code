@@ -25,14 +25,27 @@ import (
 )
 
 func TestGetUrl(t *testing.T) {
-	assert.Equal(t, "https://url/to/dev/environment/api/config/v1/managementZones", (&API{apiPath: "/api/config/v1/managementZones"}).GetUrl(testDevEnvironment.GetEnvironmentUrl()))
+	assert.Equal(t, "https://url/to/dev/environment/api/config/v1/managementZones", (API{URLPath: "/api/config/v1/managementZones"}).GetUrl(testDevEnvironment.GetEnvironmentUrl()))
 }
 
-func Test_newAPI(t *testing.T) {
-	template := &API{apiPath: "path_to_heaven"}
-	actual := newAPI("newID", template)
-	assert.NotSame(t, template, actual, "references must be different")
+func Test_configEndpoints(t *testing.T) {
+	for _, v := range configEndpoints {
+		v.testConfiguredApi(t)
+	}
+}
 
-	basicAPI := newAPI("name", &API{apiPath: "path_to_heaven"})
-	assert.Equal(t, API{id: "name", apiPath: "path_to_heaven", propertyNameOfGetAllResponse: standardApiPropertyNameOfGetAllResponse}, *basicAPI)
+func Test_configEndpointsV1(t *testing.T) {
+	for _, v := range configEndpointsV1 {
+		v.testConfiguredApi(t)
+	}
+}
+
+func (a API) testConfiguredApi(t *testing.T) {
+	assert.NotEmptyf(t, a.ID, "endpoint %+v have empty ID!", a)
+	if a.SingleConfigurationApi == true {
+		assert.Emptyf(t, a.PropertyNameOfGetAllResponse, "endpoint %q have forbiden value combination - when \"SingleConfigurationApi\" is true, \"PropertyNameOfGetAllResponse\" must be empty! (actual values: %+v)", a.ID, a)
+		assert.Falsef(t, a.NonUniqueNameApi, "endpoint %q have forbiden value combination - when \"SingleConfigurationApi\" is true, \"NonUniqueNameApi\" must be false! (actual values: %+v)", a.ID, a)
+	} else {
+		assert.NotZerof(t, a.PropertyNameOfGetAllResponse, "endpoint %v doesnt have populated field \"PropertyNameOfGetAllResponse\"! (actual values: %+v)", a.ID, a)
+	}
 }

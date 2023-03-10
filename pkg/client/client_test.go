@@ -29,8 +29,8 @@ import (
 	"testing"
 )
 
-var mockApi = api.NewApi("mock-api", "/mock-api", "", true, true, "", false)
-var mockApiNotSingle = api.NewApi("mock-api", "/mock-api", "", false, true, "", false)
+var mockApi = api.API{ID: "mock-api", SingleConfigurationApi: true}
+var mockApiNotSingle = api.API{ID: "mock-api", SingleConfigurationApi: false}
 
 func TestNewClientNoUrl(t *testing.T) {
 	_, err := NewDynatraceClient(nil, "")
@@ -422,7 +422,6 @@ func TestListKnownSettings(t *testing.T) {
 func TestGetSettingById(t *testing.T) {
 	type fields struct {
 		environmentUrl string
-		client         *http.Client
 		retrySettings  rest.RetrySettings
 	}
 	type args struct {

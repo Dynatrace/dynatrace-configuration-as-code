@@ -29,11 +29,11 @@ import (
 	"testing"
 )
 
-var testReportsApi = api.NewStandardApi("reports", "/api/config/v1/reports", false, "", false)
-var testDashboardApi = api.NewStandardApi("dashboard", "/api/config/v1/dashboards", true, "dashboard-v2", false)
-var testMobileAppApi = api.NewStandardApi("application-mobile", "/api/config/v1/applications/mobile", false, "", false)
-var testServiceDetectionApi = api.NewStandardApi("service-detection-full-web-request", "/api/config/v1/service/detectionRules/FULL_WEB_REQUEST", false, "", false)
-var testSyntheticApi = api.NewStandardApi("synthetic-monitor", "/api/environment/v1/synthetic/monitor", false, "", false)
+var testReportsApi = api.API{ID: "reports", URLPath: "/api/config/v1/reports"}
+var testDashboardApi = api.API{ID: "dashboard", URLPath: "/api/config/v1/dashboards", NonUniqueNameApi: true, DeprecatedBy: "dashboard-v2"}
+var testMobileAppApi = api.API{ID: "application-mobile", URLPath: "/api/config/v1/applications/mobile"}
+var testServiceDetectionApi = api.API{ID: "service-detection-full-web-request", URLPath: "/api/config/v1/service/detectionRules/FULL_WEB_REQUEST"}
+var testSyntheticApi = api.API{ID: "synthetic-monitor", URLPath: "/api/environment/v1/synthetic/monitor"}
 
 func TestTranslateGenericValuesOnStandardResponse(t *testing.T) {
 
@@ -145,7 +145,7 @@ func TestIsAnyApplicationApi(t *testing.T) {
 
 	assert.Equal(t, true, isAnyApplicationApi(testMobileAppApi))
 
-	testWebApi := api.NewStandardApi("application-web", "/api/config/v1/applications/web", false, "", false)
+	testWebApi := api.API{ID: "application-web", URLPath: "/api/config/v1/applications/web"}
 	assert.Equal(t, true, isAnyApplicationApi(testWebApi))
 
 	assert.Equal(t, false, isAnyApplicationApi(testDashboardApi))
@@ -222,7 +222,7 @@ func Test_success(t *testing.T) {
 func Test_isApplicationNotReadyYet(t *testing.T) {
 	type args struct {
 		resp   rest.Response
-		theApi *api.API
+		theApi api.API
 	}
 	tests := []struct {
 		name string
@@ -289,7 +289,7 @@ func Test_isApplicationNotReadyYet(t *testing.T) {
 
 func Test_getObjectIdIfAlreadyExists(t *testing.T) {
 
-	testApi := api.NewStandardApi("test", "/test/api", false, "", false)
+	testApi := api.API{ID: "test", URLPath: "/test/api", PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
 
 	tests := []struct {
 		name                    string
@@ -530,7 +530,7 @@ func Test_GetObjectIdIfAlreadyExists_WorksCorrectlyForAddedQueryParameters(t *te
 				assert.Check(t, apiCalls <= tt.expectedApiCalls, "expected at most %d API calls to happen, but encountered call %d", tt.expectedApiCalls, apiCalls)
 			}))
 			defer server.Close()
-			testApi := api.NewStandardApi(tt.apiKey, "", false, "", false)
+			testApi := api.API{ID: tt.apiKey}
 			s := rest.RetrySettings{
 				Normal: rest.RetrySetting{
 					WaitTime:   0,
@@ -626,7 +626,7 @@ func Test_createDynatraceObject(t *testing.T) {
 				}
 			}))
 			defer server.Close()
-			testApi := api.NewStandardApi(tt.apiKey, "", false, "", false)
+			testApi := api.API{ID: tt.apiKey}
 
 			got, err := createDynatraceObject(server.Client(), server.URL, tt.objectName, testApi, []byte("{}"), testRetrySettings)
 			if (err != nil) != tt.wantErr {
@@ -679,7 +679,7 @@ func TestDeployConfigsTargetingClassicConfigNonUnique(t *testing.T) {
 			}))
 			defer server.Close()
 
-			testApi := api.NewStandardApi("some-api", "", true, "", false)
+			testApi := api.API{ID: "some-api", NonUniqueNameApi: true, PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
 
 			got, err := upsertDynatraceEntityByNonUniqueNameAndId(server.Client(), server.URL, generatedUuid, theConfigName, testApi, []byte("{}"), testRetrySettings)
 			assert.NilError(t, err)

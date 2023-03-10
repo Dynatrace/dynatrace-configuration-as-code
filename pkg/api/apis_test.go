@@ -41,14 +41,6 @@ func TestContains(t *testing.T) {
 	assert.False(t, APIs{}.Contains("something"))
 }
 
-func TestContainsApiName(t *testing.T) {
-	apis := NewApis()
-	assert.False(t, apis.ContainsApiName("trillian"), "Check if `trillian` is an API")
-	assert.True(t, apis.ContainsApiName("extension"), "Check if `extension` is an API")
-	assert.True(t, apis.ContainsApiName("/project/sub-project/extension/subfolder"), "Check if `extension` is an API")
-	assert.False(t, apis.ContainsApiName("/project/sub-project"), "Check if `extension` is an API")
-}
-
 func TestApiMapFilter(t *testing.T) {
 	type given struct {
 		apis    APIs
@@ -66,15 +58,15 @@ func TestApiMapFilter(t *testing.T) {
 			name: "without filter",
 			given: given{
 				apis: APIs{
-					"api_1": &API{id: "api_1"},
-					"api_2": &API{id: "api_2"},
+					"api_1": API{ID: "api_1"},
+					"api_2": API{ID: "api_2"},
 				},
 				filters: nil,
 			},
 			expected: expected{
 				apis: APIs{
-					"api_1": &API{id: "api_1"},
-					"api_2": &API{id: "api_2"},
+					"api_1": API{ID: "api_1"},
+					"api_2": API{ID: "api_2"},
 				},
 			},
 		},
@@ -82,16 +74,16 @@ func TestApiMapFilter(t *testing.T) {
 			name: "filter with one filter",
 			given: given{
 				apis: APIs{
-					"api_1": &API{id: "api_1"},
-					"api_2": &API{id: "api_2"},
+					"api_1": API{ID: "api_1"},
+					"api_2": API{ID: "api_2"},
 				},
 				filters: []Filter{
-					func(api *API) bool { return api.GetId() == "api_1" },
+					func(api API) bool { return api.ID == "api_1" },
 				},
 			},
 			expected: expected{
 				apis: APIs{
-					"api_2": &API{id: "api_2"},
+					"api_2": API{ID: "api_2"},
 				},
 			},
 		},
@@ -99,12 +91,12 @@ func TestApiMapFilter(t *testing.T) {
 			name: "filter with two filters",
 			given: given{
 				apis: APIs{
-					"api_1": &API{id: "api_1"},
-					"api_2": &API{id: "api_2"},
+					"api_1": API{ID: "api_1"},
+					"api_2": API{ID: "api_2"},
 				},
 				filters: []Filter{
-					Filter(func(api *API) bool { return api.GetId() == "api_1" }),
-					Filter(func(api *API) bool { return api.GetId() == "api_2" }),
+					Filter(func(api API) bool { return api.ID == "api_1" }),
+					Filter(func(api API) bool { return api.ID == "api_2" }),
 				},
 			},
 			expected: expected{
@@ -115,15 +107,15 @@ func TestApiMapFilter(t *testing.T) {
 			name: "NoFilter",
 			given: given{
 				apis: APIs{
-					"api_1": &API{id: "api_1"},
-					"api_2": &API{id: "api_2"},
+					"api_1": API{ID: "api_1"},
+					"api_2": API{ID: "api_2"},
 				},
 				filters: []Filter{NoFilter},
 			},
 			expected: expected{
 				apis: APIs{
-					"api_1": &API{id: "api_1"},
-					"api_2": &API{id: "api_2"},
+					"api_1": API{ID: "api_1"},
+					"api_2": API{ID: "api_2"},
 				},
 			},
 		},
@@ -131,15 +123,15 @@ func TestApiMapFilter(t *testing.T) {
 			name: "RetainByName - without arguments",
 			given: given{
 				apis: APIs{
-					"api_1": &API{id: "api_1"},
-					"api_2": &API{id: "api_2"},
+					"api_1": API{ID: "api_1"},
+					"api_2": API{ID: "api_2"},
 				},
 				filters: []Filter{RetainByName([]string{})},
 			},
 			expected: expected{
 				apis: APIs{
-					"api_1": &API{id: "api_1"},
-					"api_2": &API{id: "api_2"},
+					"api_1": API{ID: "api_1"},
+					"api_2": API{ID: "api_2"},
 				},
 			},
 		},
@@ -147,22 +139,22 @@ func TestApiMapFilter(t *testing.T) {
 			name: "RetainByName - with arguments",
 			given: given{
 				apis: APIs{
-					"api_1": &API{id: "api_1"},
-					"api_2": &API{id: "api_2"},
+					"api_1": API{ID: "api_1"},
+					"api_2": API{ID: "api_2"},
 				},
 				filters: []Filter{RetainByName([]string{"api_1"})},
 			},
 			expected: expected{
 				apis: APIs{
-					"api_1": &API{id: "api_1"},
+					"api_1": API{ID: "api_1"},
 				},
 			},
 		}, {
 			name: "RetainByName - with non existing argument",
 			given: given{
 				apis: APIs{
-					"api_1": &API{id: "api_1"},
-					"api_2": &API{id: "api_2"},
+					"api_1": API{ID: "api_1"},
+					"api_2": API{ID: "api_2"},
 				},
 				filters: []Filter{RetainByName([]string{"api_3"})},
 			},
