@@ -587,13 +587,10 @@ func (d *DynatraceClient) ListEntitiesTypes() ([]EntitiesType, error) {
 		return len(parsed.Types), len(result), nil
 	}
 
-	resp, err := d.listPaginated(pathEntitiesTypes, params, "EntityTypeList", addToResult)
+	_, err := d.listPaginated(pathEntitiesTypes, params, "EntityTypeList", addToResult)
 
 	if err != nil {
-		return nil, RespError{
-			Err:        err,
-			StatusCode: resp.StatusCode,
-		}
+		return nil, err
 	}
 
 	return result, nil
