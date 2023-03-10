@@ -85,7 +85,7 @@ func deleteSettingsObject(c client.Client, entries []DeletePointer) []error {
 		externalID := idutils.GenerateExternalID(e.Type, e.ConfigId)
 		// get settings objects with matching external ID
 		objects, err := c.ListSettings(e.Type, client.ListSettingsOptions{DiscardValue: true, Filter: func(o client.DownloadSettingsObject) bool { return o.ExternalId == externalID }})
-		if err.WrappedError != nil {
+		if err != nil {
 			errors = append(errors, fmt.Errorf("could not fetch settings 2.0 objects with schema ID %s: %w", e.Type, err))
 			continue
 		}
