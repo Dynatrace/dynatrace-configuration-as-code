@@ -30,7 +30,7 @@ import (
 )
 
 var testReportsApi = api.API{ID: "reports", URLPath: "/api/config/v1/reports"}
-var testDashboardApi = api.API{ID: "dashboard", URLPath: "/api/config/v1/dashboards", NonUniqueNameApi: true, DeprecatedBy: "dashboard-v2"}
+var testDashboardApi = api.API{ID: "dashboard", URLPath: "/api/config/v1/dashboards", NonUniqueName: true, DeprecatedBy: "dashboard-v2"}
 var testMobileAppApi = api.API{ID: "application-mobile", URLPath: "/api/config/v1/applications/mobile"}
 var testServiceDetectionApi = api.API{ID: "service-detection-full-web-request", URLPath: "/api/config/v1/service/detectionRules/FULL_WEB_REQUEST"}
 var testSyntheticApi = api.API{ID: "synthetic-monitor", URLPath: "/api/environment/v1/synthetic/monitor"}
@@ -679,7 +679,7 @@ func TestDeployConfigsTargetingClassicConfigNonUnique(t *testing.T) {
 			}))
 			defer server.Close()
 
-			testApi := api.API{ID: "some-api", NonUniqueNameApi: true, PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
+			testApi := api.API{ID: "some-api", NonUniqueName: true, PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
 
 			got, err := upsertDynatraceEntityByNonUniqueNameAndId(server.Client(), server.URL, generatedUuid, theConfigName, testApi, []byte("{}"), testRetrySettings)
 			assert.NilError(t, err)

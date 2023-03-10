@@ -93,7 +93,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 		onlyAPIs:        cmdOptions.onlyAPIs,
 		onlySettings:    cmdOptions.onlySettings,
 	}
-	return doDownloadConfigs(fs, api.NewApis(), options)
+	return doDownloadConfigs(fs, api.NewAPIs(), options)
 }
 
 func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOptions) error {
@@ -121,7 +121,7 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOp
 		onlyAPIs:        cmdOptions.onlyAPIs,
 		onlySettings:    cmdOptions.onlySettings,
 	}
-	return doDownloadConfigs(fs, api.NewApis(), options)
+	return doDownloadConfigs(fs, api.NewAPIs(), options)
 }
 
 type downloadOptions struct {

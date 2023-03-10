@@ -70,7 +70,7 @@ func createTestApis() api.APIs {
 
 var testAlertingProfileApi = api.API{ID: "alerting-profile", URLPath: "/api/config/v1/alertingProfiles"}
 var testManagementZoneApi = api.API{ID: "management-zone", URLPath: "/api/config/v1/managementZones"}
-var testDashboardApi = api.API{ID: "dashboard", URLPath: "/api/config/v1/dashboards", NonUniqueNameApi: true, DeprecatedBy: "dashboard-v2"}
+var testDashboardApi = api.API{ID: "dashboard", URLPath: "/api/config/v1/dashboards", NonUniqueName: true, DeprecatedBy: "dashboard-v2"}
 
 func TestGetPathSuccess(t *testing.T) {
 

@@ -125,14 +125,15 @@ func getAllProjectFoldersRecursively(fs afero.Fs, availableApis api.APIs, path s
 // containsApiName tests if part of project folder path contains an API
 // folders with API in path are not valid projects
 func containsApiName(apis api.APIs, path string) bool {
-	for api := range apis {
-		if strings.Contains(path, api) {
+	for a := range apis {
+		if strings.Contains(path, a) {
 			return true
 		}
 	}
 
 	return false
 }
+
 func subprojectsMixedWithApi(fs afero.Fs, availableApis api.APIs, path string) error {
 	apiFound, subprojectFound := false, false
 	_, err := fs.Open(path)

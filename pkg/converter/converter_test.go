@@ -298,7 +298,7 @@ func TestConvertConfig(t *testing.T) {
 		ConverterContext: &ConverterContext{
 			Fs: setupDummyFsWithEnvVariableInTemplate(t, envVarName),
 		},
-		V1Apis:    api.NewV1Apis(),
+		V1Apis:    api.NewV1APIs(),
 		ProjectId: "projectA",
 	}
 
@@ -566,7 +566,7 @@ func TestConvertConfigs(t *testing.T) {
 		ConverterContext: &ConverterContext{
 			Fs: fs,
 		},
-		V1Apis:    api.NewV1Apis(),
+		V1Apis:    api.NewV1APIs(),
 		ProjectId: projectId,
 	}
 
@@ -654,7 +654,7 @@ func TestConvertWithMissingName(t *testing.T) {
 		ConverterContext: &ConverterContext{
 			Fs: fs,
 		},
-		V1Apis:    api.NewV1Apis(),
+		V1Apis:    api.NewV1APIs(),
 		ProjectId: "projectA",
 	}
 
@@ -1076,7 +1076,7 @@ func Test_parseReference(t *testing.T) {
 			"parses relative reference",
 			"test-param",
 			"some-project/alerting-profile/some-configV1.id",
-			api.NewV1Apis(),
+			api.NewV1APIs(),
 			refParam.New("some-project", "alerting-profile", "some-configV1", "id"),
 			false,
 		},
@@ -1084,7 +1084,7 @@ func Test_parseReference(t *testing.T) {
 			"parses absolute reference",
 			"test-param",
 			"/some-project/alerting-profile/some-configV1.id",
-			api.NewV1Apis(),
+			api.NewV1APIs(),
 			refParam.New("some-project", "alerting-profile", "some-configV1", "id"),
 			false,
 		},
@@ -1092,7 +1092,7 @@ func Test_parseReference(t *testing.T) {
 			"returns error for invalid reference",
 			"test-param",
 			"/management-zone/zone.id",
-			api.NewV1Apis(),
+			api.NewV1APIs(),
 			refParam.New("test-project", "management-zone", "zone", "id"),
 			false,
 		},
@@ -1100,7 +1100,7 @@ func Test_parseReference(t *testing.T) {
 			"returns error for non-reference",
 			"test-param",
 			"not-a-reference",
-			api.NewV1Apis(),
+			api.NewV1APIs(),
 			nil,
 			true,
 		},
@@ -1126,7 +1126,7 @@ func Test_parseReference(t *testing.T) {
 			"resolve reference with longer path at the start",
 			"test-param",
 			"/movies/science fiction/the-hitchhikers-guide-to-the-galaxy/management-zone/zone-multiproject.id",
-			api.NewV1Apis(),
+			api.NewV1APIs(),
 			refParam.New("movies.science fiction.the-hitchhikers-guide-to-the-galaxy", "management-zone", "zone-multiproject", "id"),
 			false,
 		},
@@ -1134,7 +1134,7 @@ func Test_parseReference(t *testing.T) {
 			"resolve reference within the same config",
 			"test-param",
 			"zone-multiproject.id",
-			api.NewV1Apis(),
+			api.NewV1APIs(),
 			refParam.New("test-project", "alerting-profile", "zone-multiproject", "id"),
 			false,
 		},

@@ -38,7 +38,7 @@ func Delete(fs afero.Fs, deploymentManifestPath string, deleteFile string, envir
 		return fmt.Errorf("error while finding absolute path for `%s`: %w", deploymentManifestPath, manifestErr)
 	}
 
-	apis := api.NewApis()
+	apis := api.NewAPIs()
 
 	manifest, manifestLoadError := manifest.LoadManifest(&manifest.ManifestLoaderContext{
 		Fs:           fs,
@@ -50,7 +50,7 @@ func Delete(fs afero.Fs, deploymentManifestPath string, deleteFile string, envir
 		return errors.New("error while loading manifest")
 	}
 
-	entriesToDelete, errs := delete.LoadEntriesToDelete(fs, apis.GetApiNames(), deleteFile)
+	entriesToDelete, errs := delete.LoadEntriesToDelete(fs, apis.GetNames(), deleteFile)
 	if errs != nil {
 		return fmt.Errorf("encountered errors while parsing delete.yaml: %s", errs)
 	}

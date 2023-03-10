@@ -394,19 +394,19 @@ func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, e
 
 func (d *DynatraceClient) ListConfigs(api API) (values []Value, err error) {
 
-	fullUrl := api.GetUrl(d.environmentUrl)
+	fullUrl := api.CreateURL(d.environmentUrl)
 	values, err = getExistingValuesFromEndpoint(d.client, api, fullUrl, d.retrySettings)
 	return values, err
 }
 
 func (d *DynatraceClient) ReadConfigById(api API, id string) (json []byte, err error) {
 	var dtUrl string
-	isSingleConfigurationApi := api.SingleConfigurationApi
+	isSingleConfigurationApi := api.SingleConfiguration
 
 	if isSingleConfigurationApi {
-		dtUrl = api.GetUrl(d.environmentUrl)
+		dtUrl = api.CreateURL(d.environmentUrl)
 	} else {
-		dtUrl = api.GetUrl(d.environmentUrl) + "/" + url.PathEscape(id)
+		dtUrl = api.CreateURL(d.environmentUrl) + "/" + url.PathEscape(id)
 	}
 
 	response, err := rest.Get(d.client, dtUrl)
@@ -424,11 +424,11 @@ func (d *DynatraceClient) ReadConfigById(api API, id string) (json []byte, err e
 
 func (d *DynatraceClient) DeleteConfigById(api API, id string) error {
 
-	return rest.DeleteConfig(d.client, api.GetUrl(d.environmentUrl), id)
+	return rest.DeleteConfig(d.client, api.CreateURL(d.environmentUrl), id)
 }
 
 func (d *DynatraceClient) ConfigExistsByName(api API, name string) (exists bool, id string, err error) {
-	apiURL := api.GetUrl(d.environmentUrl)
+	apiURL := api.CreateURL(d.environmentUrl)
 	existingObjectId, err := getObjectIdIfAlreadyExists(d.client, api, apiURL, name, d.retrySettings)
 	return existingObjectId != "", existingObjectId, err
 }
@@ -436,7 +436,7 @@ func (d *DynatraceClient) ConfigExistsByName(api API, name string) (exists bool,
 func (d *DynatraceClient) UpsertConfigByName(api API, name string, payload []byte) (entity DynatraceEntity, err error) {
 
 	if api.ID == "extension" {
-		fullUrl := api.GetUrl(d.environmentUrl)
+		fullUrl := api.CreateURL(d.environmentUrl)
 		return uploadExtension(d.client, fullUrl, name, payload)
 	}
 	return upsertDynatraceObject(d.client, d.environmentUrl, name, api, payload, d.retrySettings)

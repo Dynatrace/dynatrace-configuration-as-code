@@ -344,7 +344,7 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 	const testBasePath = "test-resources/" + projectName
 
 	// APIs
-	fakeApi := api.API{ID: "fake-id", URLPath: "/fake-id", SingleConfigurationApi: true}
+	fakeApi := api.API{ID: "fake-id", URLPath: "/fake-id", SingleConfiguration: true}
 	apiMap := api.APIs{
 		fakeApi.ID: fakeApi,
 	}
@@ -469,7 +469,7 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 	const testBasePath = "test-resources/" + projectName
 
 	// APIs
-	dashboardApi := api.API{ID: "dashboard", URLPath: "/dashboard", PropertyNameOfGetAllResponse: "dashboards", SingleConfigurationApi: false, NonUniqueNameApi: false, DeprecatedBy: "", SkipDownload: false}
+	dashboardApi := api.API{ID: "dashboard", URLPath: "/dashboard", PropertyNameOfGetAllResponse: "dashboards", SingleConfiguration: false, NonUniqueName: false, DeprecatedBy: "", SkipDownload: false}
 	apiMap := api.APIs{
 		dashboardApi.ID: dashboardApi,
 	}
@@ -681,7 +681,7 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 			testBasePath := "test-resources/integration-test-auto-update/" + testcase.projectName
 
 			// APIs
-			hostAutoUpdateApi := api.API{ID: "hosts-auto-update", URLPath: "/hosts-auto-update", SingleConfigurationApi: true}
+			hostAutoUpdateApi := api.API{ID: "hosts-auto-update", URLPath: "/hosts-auto-update", SingleConfiguration: true}
 			apiMap := api.APIs{
 				hostAutoUpdateApi.ID: hostAutoUpdateApi,
 			}

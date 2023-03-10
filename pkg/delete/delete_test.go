@@ -54,7 +54,7 @@ func TestDeleteSettings(t *testing.T) {
 				},
 			},
 		}
-		errs := DeleteConfigs(c, api.NewV1Apis(), entriesToDelete)
+		errs := DeleteConfigs(c, api.NewV1APIs(), entriesToDelete)
 		assert.Empty(t, errs, "errors should be empty")
 	})
 
@@ -69,7 +69,7 @@ func TestDeleteSettings(t *testing.T) {
 				},
 			},
 		}
-		errs := DeleteConfigs(c, api.NewV1Apis(), entriesToDelete)
+		errs := DeleteConfigs(c, api.NewV1APIs(), entriesToDelete)
 		assert.Len(t, errs, 1, "errors should have len 1")
 	})
 
@@ -84,7 +84,7 @@ func TestDeleteSettings(t *testing.T) {
 				},
 			},
 		}
-		errs := DeleteConfigs(c, api.NewV1Apis(), entriesToDelete)
+		errs := DeleteConfigs(c, api.NewV1APIs(), entriesToDelete)
 		assert.Len(t, errs, 0)
 	})
 
@@ -109,7 +109,7 @@ func TestDeleteSettings(t *testing.T) {
 				},
 			},
 		}
-		errs := DeleteConfigs(c, api.NewV1Apis(), entriesToDelete)
+		errs := DeleteConfigs(c, api.NewV1APIs(), entriesToDelete)
 		assert.Len(t, errs, 1, "errors should have len 1")
 	})
 

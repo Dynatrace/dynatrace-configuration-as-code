@@ -69,8 +69,8 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 	c, err := client.NewDynatraceClient(client.NewTokenAuthClient(token), url)
 	assert.NilError(t, err)
 
-	a := api.NewApis()["alerting-profile"]
-	assert.Assert(t, a.NonUniqueNameApi)
+	a := api.NewAPIs()["alerting-profile"]
+	assert.Assert(t, a.NonUniqueName)
 
 	name := "TestObject_" + testSuffix
 	payload := []byte(fmt.Sprintf(`{ "displayName": "%s", "rules": [] }`, name))
@@ -130,7 +130,7 @@ func getRandomUUID(t *testing.T) string {
 }
 
 func createObjectViaDirectPut(t *testing.T, c *http.Client, url string, a api.API, id string, payload []byte) {
-	res, err := rest.Put(c, a.GetUrl(url)+"/"+id, payload)
+	res, err := rest.Put(c, a.CreateURL(url)+"/"+id, payload)
 	assert.NilError(t, err)
 	assert.Assert(t, res.StatusCode >= 200 && res.StatusCode < 300)
 

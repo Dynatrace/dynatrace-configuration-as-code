@@ -97,7 +97,7 @@ func AllAvailableApis(cmd *cobra.Command, _ []string, _ string) ([]string, cobra
 		return nil, cobra.ShellCompDirectiveError
 	}
 
-	allApis := maps.Keys(api.NewApis())
+	allApis := maps.Keys(api.NewAPIs())
 
 	return slices.Difference(allApis, value.GetSlice()), cobra.ShellCompDirectiveDefault
 }

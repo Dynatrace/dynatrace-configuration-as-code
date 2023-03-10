@@ -34,7 +34,7 @@ import (
 
 func convert(fs afero.Fs, workingDir string, environmentsFile string, outputFolder string,
 	manifestName string) error {
-	apis := api.NewV1Apis()
+	apis := api.NewV1APIs()
 
 	log.Info("Converting configurations from '%s' ...", workingDir)
 	man, projs, configLoadErrors := loadConfigs(fs, workingDir, apis, environmentsFile)

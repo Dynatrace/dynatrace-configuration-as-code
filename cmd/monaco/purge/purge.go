@@ -39,7 +39,7 @@ func purge(fs afero.Fs, deploymentManifestPath string, environmentNames []string
 		return fmt.Errorf("error while finding absolute path for `%s`: %w", deploymentManifestPath, manifestErr)
 	}
 
-	apis := api.NewApis().Filter(api.RetainByName(apiNames))
+	apis := api.NewAPIs().Filter(api.RetainByName(apiNames))
 
 	mani, manifestLoadError := manifest.LoadManifest(&manifest.ManifestLoaderContext{
 		Fs:           fs,
