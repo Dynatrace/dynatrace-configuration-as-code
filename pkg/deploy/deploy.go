@@ -95,7 +95,7 @@ func getWordsForLogging(isDryRun bool) (action, verb string) {
 	return "Deploying", "deploy"
 }
 
-func deployConfig(client client.ConfigClient, apis api.APIs, entityMap *entityMap, conf *config.Config) (parameter.ResolvedEntity, []error) {
+func deployConfig(configClient client.ConfigClient, apis api.APIs, entityMap *entityMap, conf *config.Config) (parameter.ResolvedEntity, []error) {
 
 	apiToDeploy := apis[conf.Coordinate.Type]
 	if apiToDeploy == (api.API{}) {
@@ -128,11 +128,11 @@ func deployConfig(client client.ConfigClient, apis api.APIs, entityMap *entityMa
 		log.Warn("API for \"%s\" is deprecated! Please consider migrating to \"%s\"!", apiToDeploy.ID, apiToDeploy.DeprecatedBy)
 	}
 
-	var entity api.DynatraceEntity
+	var entity client.DynatraceEntity
 	if apiToDeploy.NonUniqueNameApi {
-		entity, err = upsertNonUniqueNameConfig(client, apiToDeploy, conf, configName, renderedConfig)
+		entity, err = upsertNonUniqueNameConfig(configClient, apiToDeploy, conf, configName, renderedConfig)
 	} else {
-		entity, err = client.UpsertConfigByName(apiToDeploy, configName, []byte(renderedConfig))
+		entity, err = configClient.UpsertConfigByName(apiToDeploy, configName, []byte(renderedConfig))
 	}
 
 	if err != nil {
@@ -150,7 +150,7 @@ func deployConfig(client client.ConfigClient, apis api.APIs, entityMap *entityMa
 	}, nil
 }
 
-func upsertNonUniqueNameConfig(client client.ConfigClient, apiToDeploy api.API, conf *config.Config, configName string, renderedConfig string) (api.DynatraceEntity, error) {
+func upsertNonUniqueNameConfig(client client.ConfigClient, apiToDeploy api.API, conf *config.Config, configName string, renderedConfig string) (client.DynatraceEntity, error) {
 	configId := conf.Coordinate.ConfigId
 	projectId := conf.Coordinate.Project
 

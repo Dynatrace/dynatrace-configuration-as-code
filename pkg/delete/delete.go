@@ -111,17 +111,17 @@ func deleteSettingsObject(c client.Client, entries []DeletePointer) []error {
 // We first search the names of the config-to-be-deleted, and if we find it, return them.
 // If we don't find it, we look if the name is actually an id, and if we find it, return them.
 // If a given name is found multiple times, we return an error for each name.
-func filterValuesToDelete(entries []DeletePointer, existingValues []api.Value, apiName string) ([]api.Value, []error) {
+func filterValuesToDelete(entries []DeletePointer, existingValues []client.Value, apiName string) ([]client.Value, []error) {
 
-	toDeleteByName := make(map[string][]api.Value, len(entries))
-	valuesById := make(map[string]api.Value, len(existingValues))
+	toDeleteByName := make(map[string][]client.Value, len(entries))
+	valuesById := make(map[string]client.Value, len(existingValues))
 
 	for _, v := range existingValues {
 		valuesById[v.Id] = v
 
 		for _, entry := range entries {
 			if toDeleteByName[entry.ConfigId] == nil {
-				toDeleteByName[entry.ConfigId] = []api.Value{}
+				toDeleteByName[entry.ConfigId] = []client.Value{}
 			}
 
 			if v.Name == entry.ConfigId {
@@ -130,7 +130,7 @@ func filterValuesToDelete(entries []DeletePointer, existingValues []api.Value, a
 		}
 	}
 
-	result := make([]api.Value, 0, len(entries))
+	result := make([]client.Value, 0, len(entries))
 
 	var errs []error
 

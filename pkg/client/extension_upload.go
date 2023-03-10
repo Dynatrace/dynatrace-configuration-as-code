@@ -27,8 +27,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"time"
-
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 )
 
 type extensionStatus int
@@ -40,22 +38,22 @@ const (
 	extensionNeedsUpdate
 )
 
-func uploadExtension(client *http.Client, apiPath string, extensionName string, payload []byte) (api.DynatraceEntity, error) {
+func uploadExtension(client *http.Client, apiPath string, extensionName string, payload []byte) (DynatraceEntity, error) {
 
 	status, err := validateIfExtensionShouldBeUploaded(client, apiPath, extensionName, payload)
 	if err != nil {
-		return api.DynatraceEntity{}, err
+		return DynatraceEntity{}, err
 	}
 
 	if status == extensionUpToDate {
-		return api.DynatraceEntity{
+		return DynatraceEntity{
 			Name: extensionName,
 		}, nil
 	}
 
 	buffer, contentType, err := writeMultiPartForm(extensionName, payload)
 	if err != nil {
-		return api.DynatraceEntity{
+		return DynatraceEntity{
 			Name: extensionName,
 		}, err
 	}
@@ -63,11 +61,11 @@ func uploadExtension(client *http.Client, apiPath string, extensionName string, 
 	resp, err := rest.PostMultiPartFile(client, apiPath, buffer, contentType)
 
 	if err != nil {
-		return api.DynatraceEntity{}, err
+		return DynatraceEntity{}, err
 	}
 
 	if resp.StatusCode != http.StatusCreated {
-		return api.DynatraceEntity{
+		return DynatraceEntity{
 			Name: extensionName,
 		}, fmt.Errorf("upload of %s failed with status %d! Response: %s", extensionName, resp.StatusCode, string(resp.Body))
 	} else {
@@ -77,7 +75,7 @@ func uploadExtension(client *http.Client, apiPath string, extensionName string, 
 		time.Sleep(1 * time.Second)
 	}
 
-	return api.DynatraceEntity{
+	return DynatraceEntity{
 		Name: extensionName,
 	}, nil
 

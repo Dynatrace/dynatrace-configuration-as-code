@@ -37,7 +37,7 @@ func upsertDynatraceObject(
 	theApi api.API,
 	payload []byte,
 	retrySettings rest.RetrySettings,
-) (api.DynatraceEntity, error) {
+) (DynatraceEntity, error) {
 	isSingleConfigurationApi := theApi.SingleConfigurationApi
 	existingObjectId := ""
 
@@ -48,7 +48,7 @@ func upsertDynatraceObject(
 		var err error
 		existingObjectId, err = getObjectIdIfAlreadyExists(client, theApi, fullUrl, objectName, retrySettings)
 		if err != nil {
-			return api.DynatraceEntity{}, err
+			return DynatraceEntity{}, err
 		}
 	}
 
@@ -80,16 +80,16 @@ func upsertDynatraceEntityByNonUniqueNameAndId(
 	theApi api.API,
 	payload []byte,
 	retrySettings rest.RetrySettings,
-) (api.DynatraceEntity, error) {
+) (DynatraceEntity, error) {
 	fullUrl := theApi.GetUrl(environmentUrl)
 	body := payload
 
 	existingEntities, err := getExistingValuesFromEndpoint(client, theApi, fullUrl, retrySettings)
 	if err != nil {
-		return api.DynatraceEntity{}, fmt.Errorf("failed to query existing entities for upsert: %w", err)
+		return DynatraceEntity{}, fmt.Errorf("failed to query existing entities for upsert: %w", err)
 	}
 
-	var entitiesWithSameName []api.Value
+	var entitiesWithSameName []Value
 	var entityExists bool
 
 	for _, e := range existingEntities {
@@ -124,10 +124,10 @@ func upsertDynatraceEntityByNonUniqueNameAndId(
 	return updateDynatraceObject(client, fullUrl, objectName, entityId, theApi, body, retrySettings)
 }
 
-func createDynatraceObject(client *http.Client, urlString string, objectName string, theApi api.API, payload []byte, retrySettings rest.RetrySettings) (api.DynatraceEntity, error) {
+func createDynatraceObject(client *http.Client, urlString string, objectName string, theApi api.API, payload []byte, retrySettings rest.RetrySettings) (DynatraceEntity, error) {
 	parsedUrl, err := url.Parse(urlString)
 	if err != nil {
-		return api.DynatraceEntity{}, fmt.Errorf("invalid URL for creating Dynatrace config: %w", err)
+		return DynatraceEntity{}, fmt.Errorf("invalid URL for creating Dynatrace config: %w", err)
 	}
 	body := payload
 
@@ -141,24 +141,24 @@ func createDynatraceObject(client *http.Client, urlString string, objectName str
 
 	resp, err := callWithRetryOnKnowTimingIssue(client, rest.Post, objectName, parsedUrl.String(), body, theApi, retrySettings)
 	if err != nil {
-		return api.DynatraceEntity{}, err
+		return DynatraceEntity{}, err
 	}
 
 	if !success(resp) {
-		return api.DynatraceEntity{}, fmt.Errorf("Failed to create DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
+		return DynatraceEntity{}, fmt.Errorf("Failed to create DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
 	}
 
 	return unmarshalResponse(resp, urlString, configType, objectName)
 }
 
-func unmarshalResponse(resp rest.Response, fullUrl string, configType string, objectName string) (api.DynatraceEntity, error) {
-	var dtEntity api.DynatraceEntity
+func unmarshalResponse(resp rest.Response, fullUrl string, configType string, objectName string) (DynatraceEntity, error) {
+	var dtEntity DynatraceEntity
 
 	if configType == "synthetic-monitor" || configType == "synthetic-location" {
-		var entity api.SyntheticEntity
+		var entity SyntheticEntity
 		err := json.Unmarshal(resp.Body, &entity)
 		if errutils.CheckError(err, "Cannot unmarshal Synthetic API response") {
-			return api.DynatraceEntity{}, err
+			return DynatraceEntity{}, err
 		}
 		dtEntity = translateSyntheticEntityResponse(entity, objectName)
 
@@ -169,7 +169,7 @@ func unmarshalResponse(resp rest.Response, fullUrl string, configType string, ob
 		// ID of the config.
 
 		if len(locationSlice) == 0 {
-			return api.DynatraceEntity{},
+			return DynatraceEntity{},
 				fmt.Errorf("location response header was empty for API %s (name: %s)", configType, objectName)
 		}
 
@@ -179,7 +179,7 @@ func unmarshalResponse(resp rest.Response, fullUrl string, configType string, ob
 		objectId := strings.TrimPrefix(location, fullUrl)
 		objectId = strings.TrimPrefix(objectId, "/")
 
-		dtEntity = api.DynatraceEntity{
+		dtEntity = DynatraceEntity{
 			Id:          objectId,
 			Name:        objectName,
 			Description: "Created object",
@@ -188,10 +188,10 @@ func unmarshalResponse(resp rest.Response, fullUrl string, configType string, ob
 	} else {
 		err := json.Unmarshal(resp.Body, &dtEntity)
 		if errutils.CheckError(err, "Cannot unmarshal API response") {
-			return api.DynatraceEntity{}, err
+			return DynatraceEntity{}, err
 		}
 		if dtEntity.Id == "" && dtEntity.Name == "" {
-			return api.DynatraceEntity{}, fmt.Errorf("cannot parse API response '%s' into Dynatrace Entity with Id and Name", resp.Body)
+			return DynatraceEntity{}, fmt.Errorf("cannot parse API response '%s' into Dynatrace Entity with Id and Name", resp.Body)
 		}
 	}
 	log.Debug("\tCreated new object for %s (%s)", dtEntity.Name, dtEntity.Id)
@@ -199,7 +199,7 @@ func unmarshalResponse(resp rest.Response, fullUrl string, configType string, ob
 	return dtEntity, nil
 }
 
-func updateDynatraceObject(client *http.Client, fullUrl string, objectName string, existingObjectId string, theApi api.API, payload []byte, retrySettings rest.RetrySettings) (api.DynatraceEntity, error) {
+func updateDynatraceObject(client *http.Client, fullUrl string, objectName string, existingObjectId string, theApi api.API, payload []byte, retrySettings rest.RetrySettings) (DynatraceEntity, error) {
 	path := joinUrl(fullUrl, existingObjectId)
 	body := payload
 
@@ -217,11 +217,11 @@ func updateDynatraceObject(client *http.Client, fullUrl string, objectName strin
 	resp, err := callWithRetryOnKnowTimingIssue(client, rest.Put, objectName, path, body, theApi, retrySettings)
 
 	if err != nil {
-		return api.DynatraceEntity{}, err
+		return DynatraceEntity{}, err
 	}
 
 	if !success(resp) {
-		return api.DynatraceEntity{}, fmt.Errorf("Failed to update DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
+		return DynatraceEntity{}, fmt.Errorf("Failed to update DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
 	}
 
 	if theApi.NonUniqueNameApi {
@@ -230,7 +230,7 @@ func updateDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		log.Debug("\tUpdated existing object for %s (%s)", objectName, existingObjectId)
 	}
 
-	return api.DynatraceEntity{
+	return DynatraceEntity{
 		Id:          existingObjectId,
 		Name:        objectName,
 		Description: "Updated existing object",
@@ -376,7 +376,7 @@ func getObjectIdIfAlreadyExists(client *http.Client, api api.API, url string, ob
 	return objectId, nil
 }
 
-func escapeApiValueName(value api.Value) string {
+func escapeApiValueName(value Value) string {
 	valueName, err := template.EscapeSpecialCharactersInValue(value.Name, template.FullStringEscapeFunction)
 	if err != nil {
 		log.Warn("failed to string escape API value '%s' while checking if object exists, check directly", value.Name)
@@ -405,7 +405,7 @@ func isMobileApp(api api.API) bool {
 	return api.ID == "application-mobile"
 }
 
-func getExistingValuesFromEndpoint(client *http.Client, theApi api.API, urlString string, retrySettings rest.RetrySettings) (values []api.Value, err error) {
+func getExistingValuesFromEndpoint(client *http.Client, theApi api.API, urlString string, retrySettings rest.RetrySettings) (values []Value, err error) {
 
 	parsedUrl, err := url.Parse(urlString)
 	if err != nil {
@@ -424,7 +424,7 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.API, urlStrin
 		return nil, fmt.Errorf("Failed to get existing configs for API %s (HTTP %d)!\n    Response was: %s", theApi.ID, resp.StatusCode, string(resp.Body))
 	}
 
-	var existingValues []api.Value
+	var existingValues []Value
 	for {
 		values, err := unmarshalJson(theApi, resp)
 		if err != nil {
@@ -469,15 +469,15 @@ func addQueryParamsForNonStandardApis(theApi api.API, url *url.URL) *url.URL {
 	return url
 }
 
-func unmarshalJson(theApi api.API, resp rest.Response) ([]api.Value, error) {
+func unmarshalJson(theApi api.API, resp rest.Response) ([]Value, error) {
 
-	var values []api.Value
+	var values []Value
 	var objmap map[string]interface{}
 
 	// This API returns an untyped list as a response -> it needs a special handling
 	if theApi.ID == "aws-credentials" {
 
-		var jsonResp []api.Value
+		var jsonResp []Value
 		err := json.Unmarshal(resp.Body, &jsonResp)
 		if errutils.CheckError(err, "Cannot unmarshal API response for existing aws-credentials") {
 			return values, err
@@ -488,7 +488,7 @@ func unmarshalJson(theApi api.API, resp rest.Response) ([]api.Value, error) {
 
 		if theApi.ID == "synthetic-location" {
 
-			var jsonResp api.SyntheticLocationResponse
+			var jsonResp SyntheticLocationResponse
 			err := json.Unmarshal(resp.Body, &jsonResp)
 			if errutils.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
 				return nil, err
@@ -497,7 +497,7 @@ func unmarshalJson(theApi api.API, resp rest.Response) ([]api.Value, error) {
 
 		} else if theApi.ID == "synthetic-monitor" {
 
-			var jsonResp api.SyntheticMonitorsResponse
+			var jsonResp SyntheticMonitorsResponse
 			err := json.Unmarshal(resp.Body, &jsonResp)
 			if errutils.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
 				return nil, err
@@ -520,7 +520,7 @@ func unmarshalJson(theApi api.API, resp rest.Response) ([]api.Value, error) {
 
 		} else {
 
-			var jsonResponse api.ValuesResponse
+			var jsonResponse ValuesResponse
 			err := json.Unmarshal(resp.Body, &jsonResponse)
 			if errutils.CheckError(err, "Cannot unmarshal API response for existing objects") {
 				return nil, err
@@ -539,9 +539,9 @@ func isResultArrayAvailable(jsonResponse map[string]interface{}, theApi api.API)
 	return false, make([]interface{}, 0)
 }
 
-func translateGenericValues(inputValues []interface{}, configType string) ([]api.Value, error) {
+func translateGenericValues(inputValues []interface{}, configType string) ([]Value, error) {
 
-	values := make([]api.Value, 0, len(inputValues))
+	values := make([]Value, 0, len(inputValues))
 
 	for _, input := range inputValues {
 		input := input.(map[string]interface{})
@@ -573,14 +573,14 @@ func translateGenericValues(inputValues []interface{}, configType string) ([]api
 				log.Debug("Rewriting response of config-type '%v', name missing. Using id as name. Invalid json: %v", configType, string(jsonStr))
 			}
 
-			values = append(values, api.Value{
+			values = append(values, Value{
 				Id:   input["id"].(string),
 				Name: substitutedName,
 			})
 			continue
 		}
 
-		value := api.Value{
+		value := Value{
 			Id:   input["id"].(string),
 			Name: input["name"].(string),
 		}
@@ -594,10 +594,10 @@ func translateGenericValues(inputValues []interface{}, configType string) ([]api
 	return values, nil
 }
 
-func translateSyntheticValues(syntheticValues []api.SyntheticValue) []api.Value {
-	values := make([]api.Value, 0, len(syntheticValues))
+func translateSyntheticValues(syntheticValues []SyntheticValue) []Value {
+	values := make([]Value, 0, len(syntheticValues))
 	for _, loc := range syntheticValues {
-		values = append(values, api.Value{
+		values = append(values, Value{
 			Id:   loc.EntityId,
 			Name: loc.Name,
 		})
@@ -605,8 +605,8 @@ func translateSyntheticValues(syntheticValues []api.SyntheticValue) []api.Value 
 	return values
 }
 
-func translateSyntheticEntityResponse(resp api.SyntheticEntity, objectName string) api.DynatraceEntity {
-	return api.DynatraceEntity{
+func translateSyntheticEntityResponse(resp SyntheticEntity, objectName string) DynatraceEntity {
+	return DynatraceEntity{
 		Name: objectName,
 		Id:   resp.EntityId,
 	}

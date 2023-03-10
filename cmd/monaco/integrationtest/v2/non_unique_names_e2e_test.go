@@ -111,8 +111,8 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 	assert.Assert(t, len(getConfigsOfName(t, c, a, name)) == 3, "Expected three configs of name %q but found %d", name, len(existing))
 }
 
-func getConfigsOfName(t *testing.T, c client.Client, a api.API, name string) []api.Value {
-	var existingEntities []api.Value
+func getConfigsOfName(t *testing.T, c client.Client, a api.API, name string) []client.Value {
+	var existingEntities []client.Value
 	entities, err := c.ListConfigs(a)
 	assert.NilError(t, err)
 	for _, e := range entities {
@@ -129,12 +129,12 @@ func getRandomUUID(t *testing.T) string {
 	return id.String()
 }
 
-func createObjectViaDirectPut(t *testing.T, client *http.Client, url string, a api.API, id string, payload []byte) {
-	res, err := rest.Put(client, a.GetUrl(url)+"/"+id, payload)
+func createObjectViaDirectPut(t *testing.T, c *http.Client, url string, a api.API, id string, payload []byte) {
+	res, err := rest.Put(c, a.GetUrl(url)+"/"+id, payload)
 	assert.NilError(t, err)
 	assert.Assert(t, res.StatusCode >= 200 && res.StatusCode < 300)
 
-	var dtEntity api.DynatraceEntity
+	var dtEntity client.DynatraceEntity
 	err = json.Unmarshal(res.Body, &dtEntity)
 	assert.NilError(t, err)
 

@@ -115,7 +115,7 @@ func (d *Downloader) DownloadAll(apisToDownload api.APIs, projectName string) pr
 	return results
 }
 
-func (d *Downloader) downloadConfigsOfAPI(api api.API, values []api.Value, projectName string) []config.Config {
+func (d *Downloader) downloadConfigsOfAPI(api api.API, values []client.Value, projectName string) []config.Config {
 	results := make([]config.Config, 0, len(values))
 	mutex := sync.Mutex{}
 	wg := sync.WaitGroup{}
@@ -152,7 +152,7 @@ func (d *Downloader) downloadConfigsOfAPI(api api.API, values []api.Value, proje
 	return results
 }
 
-func (d *Downloader) downloadAndUnmarshalConfig(theApi api.API, value api.Value) (map[string]interface{}, error) {
+func (d *Downloader) downloadAndUnmarshalConfig(theApi api.API, value client.Value) (map[string]interface{}, error) {
 	response, err := d.client.ReadConfigById(theApi, value.Id)
 
 	if err != nil {
@@ -168,7 +168,7 @@ func (d *Downloader) downloadAndUnmarshalConfig(theApi api.API, value api.Value)
 	return data, nil
 }
 
-func (d *Downloader) createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api.API, value api.Value, projectId string) (config.Config, error) {
+func (d *Downloader) createConfigForDownloadedJson(mappedJson map[string]interface{}, theApi api.API, value client.Value, projectId string) (config.Config, error) {
 	templ, err := d.createTemplate(mappedJson, value, theApi.ID)
 	if err != nil {
 		return config.Config{}, err
@@ -191,7 +191,7 @@ func (d *Downloader) createConfigForDownloadedJson(mappedJson map[string]interfa
 	}, nil
 }
 
-func (d *Downloader) createTemplate(mappedJson map[string]interface{}, value api.Value, apiId string) (tmpl template.Template, err error) {
+func (d *Downloader) createTemplate(mappedJson map[string]interface{}, value client.Value, apiId string) (tmpl template.Template, err error) {
 	mappedJson = sanitizeProperties(mappedJson, apiId)
 	bytes, err := json.MarshalIndent(mappedJson, "", "  ")
 	if err != nil {
@@ -201,13 +201,13 @@ func (d *Downloader) createTemplate(mappedJson map[string]interface{}, value api
 	return templ, nil
 }
 
-func (d *Downloader) findConfigsToDownload(currentApi api.API) ([]api.Value, error) {
+func (d *Downloader) findConfigsToDownload(currentApi api.API) ([]client.Value, error) {
 	if currentApi.SingleConfigurationApi {
 		log.Debug("\tFetching singleton-configuration '%v'", currentApi.ID)
 
 		// singleton-config. We use the api-id as mock-id
-		singletonConfigToDownload := api.Value{Id: currentApi.ID, Name: currentApi.ID}
-		return []api.Value{singletonConfigToDownload}, nil
+		singletonConfigToDownload := client.Value{Id: currentApi.ID, Name: currentApi.ID}
+		return []client.Value{singletonConfigToDownload}, nil
 	}
 	log.Debug("\tFetching all '%v' configs", currentApi.ID)
 	return d.client.ListConfigs(currentApi)
@@ -219,7 +219,7 @@ func (d *Downloader) skipPersist(a api.API, json map[string]interface{}) bool {
 	}
 	return true
 }
-func (d *Downloader) skipDownload(a api.API, value api.Value) bool {
+func (d *Downloader) skipDownload(a api.API, value client.Value) bool {
 	if cases := d.apiFilters[a.ID]; cases.shouldBeSkippedPreDownload != nil {
 		return cases.shouldBeSkippedPreDownload(value)
 	}
@@ -227,8 +227,8 @@ func (d *Downloader) skipDownload(a api.API, value api.Value) bool {
 	return false
 }
 
-func (d *Downloader) filterConfigsToSkip(a api.API, value []api.Value) []api.Value {
-	valuesToDownload := make([]api.Value, 0, len(value))
+func (d *Downloader) filterConfigsToSkip(a api.API, value []client.Value) []client.Value {
+	valuesToDownload := make([]client.Value, 0, len(value))
 
 	for _, value := range value {
 		if !d.skipDownload(a, value) {

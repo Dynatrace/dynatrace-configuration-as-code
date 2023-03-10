@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 )
 
@@ -96,22 +95,22 @@ type postResponse struct {
 // parsePostResponse unmarshalls and parses the settings response for the post request
 // The response is returned as an array for each element we send.
 // Since we only send one object at the moment, we simply use the first one.
-func parsePostResponse(resp rest.Response) (api.DynatraceEntity, error) {
+func parsePostResponse(resp rest.Response) (DynatraceEntity, error) {
 
 	var parsed []postResponse
 	if err := json.Unmarshal(resp.Body, &parsed); err != nil {
-		return api.DynatraceEntity{}, fmt.Errorf("failed to unmarshal response: %w. Response was: %s", err, string(resp.Body))
+		return DynatraceEntity{}, fmt.Errorf("failed to unmarshal response: %w. Response was: %s", err, string(resp.Body))
 	}
 
 	if len(parsed) == 0 {
-		return api.DynatraceEntity{}, fmt.Errorf("response did not contain a single element")
+		return DynatraceEntity{}, fmt.Errorf("response did not contain a single element")
 	}
 
 	if len(parsed) > 1 {
-		return api.DynatraceEntity{}, fmt.Errorf("response did contain too many elements")
+		return DynatraceEntity{}, fmt.Errorf("response did contain too many elements")
 	}
 
-	return api.DynatraceEntity{
+	return DynatraceEntity{
 		Id:   parsed[0].ObjectId,
 		Name: parsed[0].ObjectId,
 	}, nil
