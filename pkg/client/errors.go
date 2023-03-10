@@ -38,7 +38,7 @@ func (e RespError) Unwrap() error {
 func (e RespError) ConcurrentError() string {
 	if e.StatusCode == 403 {
 		concurrentDownloadLimit := environment.GetEnvValueInt(environment.ConcurrentRequestsEnvKey)
-		additionalMessage := fmt.Sprintf("\n\n    A 403 error code probably means too many requests.\n    Reduce your CONCURRENT_REQUESTS environment variable (current value: %d). \n    Then wait a few minutes and retry ", concurrentDownloadLimit)
+		additionalMessage := fmt.Sprintf("\n\n    A 403 error code probably means too many requests.\n    Reduce the number of concurrent requests by setting the %q environment variable (current value: %d). \n    Then wait a few minutes and retry ", environment.ConcurrentRequestsEnvKey, concurrentDownloadLimit)
 		return fmt.Sprintf("%s\n%s", e.Err.Error(), additionalMessage)
 	}
 
