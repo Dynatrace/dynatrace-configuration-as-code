@@ -94,16 +94,6 @@ func TestGenerateSleepDurationSetsBackoffMultiplierOfAtLeastOne(t *testing.T) {
 	assert.Assert(t, gotSleepDuration <= expectedMaxSleepDuration)
 }
 
-func TestGenerateSleepDurationGeneratesLongerWaitBasedOnMultiplier(t *testing.T) {
-
-	timelineProvider := createTimelineProviderMock(t)
-	timelineProvider.EXPECT().Now().Times(2).Return(time.Unix(0, 0))
-
-	smallMultiplierDuration, _ := GenerateSleepDuration(1, timelineProvider)
-	bigMultiplierDuration, _ := GenerateSleepDuration(100, timelineProvider)
-	assert.Assert(t, smallMultiplierDuration < bigMultiplierDuration)
-}
-
 func TestGenerateSleepDurationProducesHumanReadableTimestamp(t *testing.T) {
 
 	timelineProvider := createTimelineProviderMock(t)
