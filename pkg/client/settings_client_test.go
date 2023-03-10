@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"gotest.tools/assert"
 	"net/http"
 	"net/http/httptest"
@@ -34,7 +33,7 @@ func TestUpsertSettings(t *testing.T) {
 		content                     string
 		serverVersion               version.Version
 		expectError                 bool
-		expectEntity                api.DynatraceEntity
+		expectEntity                DynatraceEntity
 		postSettingsResponseCode    int
 		postSettingsResponseContent string
 		getSettingsResponseCode     int
@@ -44,7 +43,7 @@ func TestUpsertSettings(t *testing.T) {
 			name:         "Invalid json returns an error",
 			content:      "{",
 			expectError:  true,
-			expectEntity: api.DynatraceEntity{},
+			expectEntity: DynatraceEntity{},
 		},
 		{
 			name: "Simple valid call with valid response",
@@ -55,7 +54,7 @@ func TestUpsertSettings(t *testing.T) {
 			},
 			content:     "{}",
 			expectError: false,
-			expectEntity: api.DynatraceEntity{
+			expectEntity: DynatraceEntity{
 				Id:   "entity-id",
 				Name: "entity-id",
 			},
@@ -87,7 +86,7 @@ func TestUpsertSettings(t *testing.T) {
 			name:                        "Valid request, but multiple responses",
 			content:                     "{}",
 			expectError:                 true,
-			expectEntity:                api.DynatraceEntity{},
+			expectEntity:                DynatraceEntity{},
 			postSettingsResponseContent: `[{"objectId": "entity-id"},{"objectId": "entity-id"}]`,
 			getSettingsResponseContent:  `{"externalId": "monaco:YnVpbHRpbjphbGVydGluZy5wcm9maWxlJHVzZXItcHJvdmlkZWQtaWQ=","objectId": "anObjectID","scope": "tenant"}`,
 		},
@@ -100,7 +99,7 @@ func TestUpsertSettings(t *testing.T) {
 				Patch: 0,
 			},
 			expectError: false,
-			expectEntity: api.DynatraceEntity{
+			expectEntity: DynatraceEntity{
 				Id:   "anObjectID",
 				Name: "anObjectID",
 			},

@@ -52,18 +52,18 @@ func NewDummyClient() *DummyClient {
 	return &DummyClient{Entries: map[api.API][]DataEntry{}}
 }
 
-func (c *DummyClient) ListConfigs(a api.API) (values []api.Value, err error) {
+func (c *DummyClient) ListConfigs(a api.API) (values []Value, err error) {
 	entries, found := c.Entries[a]
 
 	if !found {
 		return nil, nil
 	}
 
-	result := make([]api.Value, len(entries))
+	result := make([]Value, len(entries))
 
 	for i, entry := range entries {
 		owner := entry.Owner
-		result[i] = api.Value{
+		result[i] = Value{
 			Id:    entry.Id,
 			Name:  entry.Name,
 			Owner: &owner,
@@ -105,7 +105,7 @@ func (c *DummyClient) ReadConfigById(a api.API, id string) ([]byte, error) {
 	return nil, fmt.Errorf("nothing found for id %s in api %s", id, a.ID)
 }
 
-func (c *DummyClient) UpsertConfigByName(a api.API, name string, data []byte) (entity api.DynatraceEntity, err error) {
+func (c *DummyClient) UpsertConfigByName(a api.API, name string, data []byte) (entity DynatraceEntity, err error) {
 	entries, found := c.Entries[a]
 
 	if c.Entries == nil {
@@ -140,13 +140,13 @@ func (c *DummyClient) UpsertConfigByName(a api.API, name string, data []byte) (e
 	dataEntry.Payload = data
 	c.writeRequest(a, name, data)
 
-	return api.DynatraceEntity{
+	return DynatraceEntity{
 		Id:   dataEntry.Id,
 		Name: dataEntry.Name,
 	}, nil
 }
 
-func (c *DummyClient) UpsertConfigByNonUniqueNameAndId(a api.API, entityId string, name string, data []byte) (entity api.DynatraceEntity, err error) {
+func (c *DummyClient) UpsertConfigByNonUniqueNameAndId(a api.API, entityId string, name string, data []byte) (entity DynatraceEntity, err error) {
 	entries, found := c.Entries[a]
 
 	if c.Entries == nil {
@@ -181,7 +181,7 @@ func (c *DummyClient) UpsertConfigByNonUniqueNameAndId(a api.API, entityId strin
 	dataEntry.Payload = data
 	c.writeRequest(a, name, data)
 
-	return api.DynatraceEntity{
+	return DynatraceEntity{
 		Id:   dataEntry.Id,
 		Name: dataEntry.Name,
 	}, nil
@@ -245,8 +245,8 @@ func (c *DummyClient) ConfigExistsByName(a api.API, name string) (exists bool, i
 	return false, "", nil
 }
 
-func (c *DummyClient) UpsertSettings(obj SettingsObject) (api.DynatraceEntity, error) {
-	return api.DynatraceEntity{
+func (c *DummyClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, error) {
+	return DynatraceEntity{
 		Id:   obj.Id,
 		Name: obj.Id,
 	}, nil

@@ -162,14 +162,14 @@ func TestDeploySettingShouldFailUpsert(t *testing.T) {
 		},
 	}
 
-	client := client.NewMockSettingsClient(gomock.NewController(t))
-	client.EXPECT().UpsertSettings(gomock.Any()).Return(api.DynatraceEntity{}, fmt.Errorf("upsert failed"))
+	c := client.NewMockSettingsClient(gomock.NewController(t))
+	c.EXPECT().UpsertSettings(gomock.Any()).Return(client.DynatraceEntity{}, fmt.Errorf("upsert failed"))
 
 	conf := &config.Config{
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parameters),
 	}
-	_, errors := deploySetting(client, newEntityMap(testApiMap), conf)
+	_, errors := deploySetting(c, newEntityMap(testApiMap), conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
@@ -400,7 +400,7 @@ func TestDeployConfigsWithOneConfigToSkip(t *testing.T) {
 }
 
 func TestDeployConfigsTargetingSettings(t *testing.T) {
-	client := client.NewMockClient(gomock.NewController(t))
+	c := client.NewMockClient(gomock.NewController(t))
 	var apis api.APIs
 	sortedConfigs := []config.Config{
 		{
@@ -420,11 +420,11 @@ func TestDeployConfigsTargetingSettings(t *testing.T) {
 		},
 	}
 	//client.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Times(1).Return([]rest.DownloadSettingsObject{{ExternalId: "externalId"}}, nil)
-	client.EXPECT().UpsertSettings(gomock.Any()).Times(1).Return(api.DynatraceEntity{
+	c.EXPECT().UpsertSettings(gomock.Any()).Times(1).Return(client.DynatraceEntity{
 		Id:   "42",
 		Name: "Super Special Settings Object",
 	}, nil)
-	errors := DeployConfigs(client, apis, sortedConfigs, DeployConfigsOptions{})
+	errors := DeployConfigs(c, apis, sortedConfigs, DeployConfigsOptions{})
 	assert.Assert(t, len(errors) == 0, "there should be no errors (errors: %s)", errors)
 }
 

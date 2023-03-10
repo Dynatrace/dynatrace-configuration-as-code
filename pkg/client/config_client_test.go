@@ -558,7 +558,7 @@ func Test_createDynatraceObject(t *testing.T) {
 		apiKey              string
 		expectedQueryParams []testQueryParams
 		serverResponse      testServerResponse
-		want                api.DynatraceEntity
+		want                DynatraceEntity
 		wantErr             bool
 	}{
 		{
@@ -567,7 +567,7 @@ func Test_createDynatraceObject(t *testing.T) {
 			apiKey:              "dashboard",
 			expectedQueryParams: []testQueryParams{},
 			serverResponse:      testServerResponse{statusCode: 200, body: `{ "id": "42", "name": "Test object" }`},
-			want:                api.DynatraceEntity{Id: "42", Name: "Test object"},
+			want:                DynatraceEntity{Id: "42", Name: "Test object"},
 			wantErr:             false,
 		},
 		{
@@ -581,7 +581,7 @@ func Test_createDynatraceObject(t *testing.T) {
 				},
 			},
 			serverResponse: testServerResponse{statusCode: 200, body: `{ "id": "42", "name": "Test object" }`},
-			want:           api.DynatraceEntity{Id: "42", Name: "Test object"},
+			want:           DynatraceEntity{Id: "42", Name: "Test object"},
 			wantErr:        false,
 		},
 		{
@@ -590,7 +590,7 @@ func Test_createDynatraceObject(t *testing.T) {
 			apiKey:              "auto-tag",
 			expectedQueryParams: []testQueryParams{},
 			serverResponse:      testServerResponse{statusCode: 400, body: `{}`},
-			want:                api.DynatraceEntity{},
+			want:                DynatraceEntity{},
 			wantErr:             true,
 		},
 		{
@@ -599,7 +599,7 @@ func Test_createDynatraceObject(t *testing.T) {
 			apiKey:              "auto-tag",
 			expectedQueryParams: []testQueryParams{},
 			serverResponse:      testServerResponse{statusCode: 200, body: `{ "not": "a value" }`},
-			want:                api.DynatraceEntity{},
+			want:                DynatraceEntity{},
 			wantErr:             true,
 		},
 	}
