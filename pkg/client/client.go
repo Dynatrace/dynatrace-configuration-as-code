@@ -322,10 +322,6 @@ func NewDynatraceClient(httpClient *http.Client, environmentURL string, opts ...
 		o(dtClient)
 	}
 
-	if dtClient.serverVersion.Invalid() {
-		log.Warn("Dynatrace Client was created without specifying a version of the targeting Dynatrace server. This can result in faulty behavior.")
-	}
-
 	return dtClient, nil
 }
 
