@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	ConcurrentRequestsEnvKey = "CONCURRENT_REQUESTS"
+	ConcurrentRequestsEnvKey = "MONACO_CONCURRENT_REQUESTS"
 	defaultValueKey          = "DEFAULT"
 )
 
