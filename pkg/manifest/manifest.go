@@ -16,6 +16,7 @@ package manifest
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
 )
 
 // EnvironmentType is used to identify the type of the environment.
@@ -103,6 +104,11 @@ type ProjectDefinitionByProjectId map[string]ProjectDefinition
 
 // Environments is a map of environment-name -> EnvironmentDefinition
 type Environments map[string]EnvironmentDefinition
+
+// Names returns the slice of environment names
+func (e Environments) Names() []string {
+	return maps.Keys(e)
+}
 
 type Manifest struct {
 	// Projects defined in the manifest, split by project-name
