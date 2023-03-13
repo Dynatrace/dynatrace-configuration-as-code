@@ -68,7 +68,7 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroup string, sp
 	logEnvironmentsInfo(filteredEnvironments)
 
 	if err = doDeploy(sortedConfigs, filteredEnvironments, continueOnErr, dryRun); err != nil {
-		return fmt.Errorf("error during deployment: %w", err)
+		return err
 	}
 
 	return nil
