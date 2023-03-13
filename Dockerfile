@@ -8,12 +8,12 @@ RUN apk add --update --no-cache \
     jq \
     ca-certificates
 
-RUN addgroup ${NAME} ; \
-    adduser -s /bin/false -G ${NAME} -D ${NAME}
+RUN addgroup monaco ; \
+    adduser -s /bin/false -G monaco -D monaco
 
-COPY --chown=${NAME}:${NAME} --chmod=755 ${SOURCE} /usr/local/bin/${NAME}
+COPY --chown=monaco:monaco --chmod=755 ${SOURCE} /usr/local/bin/monaco
 
-USER ${NAME}
+USER monaco
 
-ENTRYPOINT ["/usr/local/bin/${NAME}"]
+ENTRYPOINT "/usr/local/bin/monaco"
 CMD ["--help"]
