@@ -17,10 +17,10 @@
 package deploy
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/deploy"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	p "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -164,40 +164,252 @@ func Test_filterProjectsByName(t *testing.T) {
 	}
 }
 
-func TestDeploy_ReportsErrorWhenRunningOnV1Config(t *testing.T) {
-	t.Setenv("ENV_TOKEN", "mock env token")
-	t.Setenv("ENV_URL", "https://example.com")
-
-	testFs := afero.NewMemMapFs()
-	// Create v1 configuration
-	configPath, _ := filepath.Abs("project/alerting-profile/profile.yaml")
-	_ = afero.WriteFile(testFs, configPath, []byte("config:\n  - profile: \"profile.json\"\n\nprofile:\n  - name: \"Star Trek Service\""), 0644)
-	templatePath, _ := filepath.Abs("project/alerting-profile/profile.json")
-	_ = afero.WriteFile(testFs, templatePath, []byte("{}"), 0644)
-
-	// Add v2 manifest
-	manifestPath, _ := filepath.Abs("manifest.yaml")
-	_ = afero.WriteFile(testFs, manifestPath, []byte("manifestVersion: 1.0\nprojects:\n- name: project\nenvironmentGroups:\n- name: default\n  environments:\n  - name: environment1\n    url:\n      type: environment\n      value: ENV_URL\n    token:\n      name: ENV_TOKEN\n"), 0644)
-
-	err := Deploy(testFs, "manifest.yaml", []string{}, "", []string{}, deploy.DeployConfigsOptions{DryRun: true})
-	assert.ErrorContains(t, err, "error while loading projects")
+func Test_FilterEnvironments(t *testing.T) {
+	type args struct {
+		environments         manifest.Environments
+		environmentGroup     string
+		specificEnvironments []string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    manifest.Environments
+		wantErr bool
+	}{
+		{
+			name: "empty environments",
+			args: args{
+				environments:         manifest.Environments{},
+				environmentGroup:     "group",
+				specificEnvironments: []string{},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "group name not found",
+			args: args{
+				environments:         manifest.Environments{"e1": {Name: "an-env", Group: "a-group"}},
+				environmentGroup:     "another-group",
+				specificEnvironments: []string{},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "filter by group",
+			args: args{
+				environments:         manifest.Environments{"e1": {Name: "an-env", Group: "a-group"}},
+				environmentGroup:     "a-group",
+				specificEnvironments: []string{},
+			},
+			want:    manifest.Environments{"e1": {Name: "an-env", Group: "a-group"}},
+			wantErr: false,
+		},
+		{
+			name: "filter by group and specific environment - env not found",
+			args: args{
+				environments:         manifest.Environments{"en-env": {Name: "an-env", Group: "a-group"}},
+				environmentGroup:     "a-group",
+				specificEnvironments: []string{"another-env"},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "filter by group and specific environment",
+			args: args{
+				environments:         manifest.Environments{"an-env": {Name: "an-env", Group: "a-group"}, "another-env": {Name: "another-env", Group: "a-group"}},
+				environmentGroup:     "a-group",
+				specificEnvironments: []string{"an-env"},
+			},
+			want:    manifest.Environments{"an-env": {Name: "an-env", Group: "a-group"}},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := filterEnvironments(tt.args.environments, tt.args.environmentGroup, tt.args.specificEnvironments)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("filterEnvironments() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("filterEnvironments() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
 
-func TestDeploy_ReportsErrorForBrokenV2Config(t *testing.T) {
+func Test_filterProjects(t *testing.T) {
+	type args struct {
+		projects             []p.Project
+		specificProjects     []string
+		specificEnvironments []string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []p.Project
+		wantErr bool
+	}{
+		{
+			name: "empty projects",
+			args: args{
+				projects:             []p.Project{},
+				specificProjects:     []string{"a-project"},
+				specificEnvironments: []string{"an-env"},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "specific project not found",
+			args: args{
+				projects:             []p.Project{{Id: "a-project"}},
+				specificProjects:     []string{"another-project"},
+				specificEnvironments: []string{"an-env"},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "filter by specific project",
+			args: args{
+				projects:             []p.Project{{Id: "a-project"}, {Id: "another-project"}},
+				specificProjects:     []string{"a-project"},
+				specificEnvironments: []string{"an-env"},
+			},
+			want:    []p.Project{{Id: "a-project"}},
+			wantErr: false,
+		},
+		{
+			name: "filter by specific project and specific environment",
+			args: args{
+				projects: []p.Project{
+					{
+						Id:           "a-project",
+						Dependencies: p.DependenciesPerEnvironment{"another-env": []string{"another-project"}},
+					},
+					{
+						Id: "another-project",
+					},
+				},
+				specificProjects:     []string{"a-project"},
+				specificEnvironments: []string{"another-env"},
+			},
+			want: []p.Project{
+				{
+					Id:           "a-project",
+					Dependencies: p.DependenciesPerEnvironment{"another-env": []string{"another-project"}},
+				},
+				{
+					Id: "another-project",
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := filterProjects(tt.args.projects, tt.args.specificProjects, tt.args.specificEnvironments)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("filterProjects() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("filterProjects() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_DoDeploy_InvalidManifest(t *testing.T) {
 	t.Setenv("ENV_TOKEN", "mock env token")
 	t.Setenv("ENV_URL", "https://example.com")
 
+	manifestYaml := `manifestVersion: "1.0"`
+
+	configYaml := `configs:
+- id: profile
+  config:
+    name: alerting-profile
+    template: profile.json
+    skip: false
+  type:
+    api: alerting-profile
+`
 	testFs := afero.NewMemMapFs()
 	// Create v1 configuration
 	configPath, _ := filepath.Abs("project/alerting-profile/profile.yaml")
-	_ = afero.WriteFile(testFs, configPath, []byte("configs:\n- id: profile\n  config:\n    name: Star Trek Service\n    skip: false\n"), 0644)
+	_ = afero.WriteFile(testFs, configPath, []byte(configYaml), 0644)
+	templatePath, _ := filepath.Abs("project/alerting-profile/profile.json")
+	_ = afero.WriteFile(testFs, templatePath, []byte("{}"), 0644)
+	manifestPath, _ := filepath.Abs("manifest.yaml")
+	_ = afero.WriteFile(testFs, manifestPath, []byte(manifestYaml), 0644)
+
+	err := deployConfigs(testFs, manifestPath, "", []string{}, []string{}, true, true)
+	assert.Error(t, err)
+}
+
+func Test_DoDeploy(t *testing.T) {
+	t.Setenv("ENV_TOKEN", "mock env token")
+
+	manifestYaml := `manifestVersion: "1.0"
+projects:
+- name: project
+environmentGroups:
+- name: default
+  environments:
+  - name: project
+    type: classic
+    url:
+      value: https://abcde.dev.dynatracelabs.com
+    token:
+      type: environment
+      name: ENV_TOKEN
+`
+	configYaml := `configs:
+- id: profile
+  config:
+    name: alerting-profile
+    template: profile.json
+    skip: false
+  type:
+    api: alerting-profile
+`
+	testFs := afero.NewMemMapFs()
+	// Create v1 configuration
+	configPath, _ := filepath.Abs("project/alerting-profile/profile.yaml")
+	_ = afero.WriteFile(testFs, configPath, []byte(configYaml), 0644)
 	templatePath, _ := filepath.Abs("project/alerting-profile/profile.json")
 	_ = afero.WriteFile(testFs, templatePath, []byte("{}"), 0644)
 
-	// Add v2 manifest
 	manifestPath, _ := filepath.Abs("manifest.yaml")
-	_ = afero.WriteFile(testFs, manifestPath, []byte("manifestVersion: 1.0\nprojects:\n- name: project\nenvironmentGroups:\n- name: default\n  environments:\n  - name: environment1\n    url:\n      type: environment\n      value: ENV_URL\n    token:\n      name: ENV_TOKEN\n"), 0644)
+	_ = afero.WriteFile(testFs, manifestPath, []byte(manifestYaml), 0644)
 
-	err := Deploy(testFs, "manifest.yaml", []string{}, "", []string{}, deploy.DeployConfigsOptions{DryRun: true})
-	assert.ErrorContains(t, err, "error while loading projects")
+	t.Run("Wrong environment group", func(t *testing.T) {
+		err := deployConfigs(testFs, manifestPath, "NOT_EXISTING_GROUP", []string{}, []string{}, true, true)
+		assert.Error(t, err)
+	})
+	t.Run("Wrong environment name", func(t *testing.T) {
+		err := deployConfigs(testFs, manifestPath, "default", []string{"NOT_EXISTING_ENV"}, []string{}, true, true)
+		assert.Error(t, err)
+	})
+
+	t.Run("Wrong project name", func(t *testing.T) {
+		err := deployConfigs(testFs, manifestPath, "default", []string{"project"}, []string{"NON_EXISTING_PROJECT"}, true, true)
+		assert.Error(t, err)
+	})
+
+	t.Run("no parameters", func(t *testing.T) {
+		err := deployConfigs(testFs, manifestPath, "", []string{}, []string{}, true, true)
+		assert.NoError(t, err)
+	})
+
+	t.Run("correct parameters", func(t *testing.T) {
+		err := deployConfigs(testFs, manifestPath, "default", []string{"project"}, []string{"project"}, true, true)
+		assert.NoError(t, err)
+	})
+
 }

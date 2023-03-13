@@ -28,6 +28,9 @@ type EntitiesPerType map[string][]string
 // ConfigsPerTypePerEnvironments is a map of environment to api to configs
 type ConfigsPerTypePerEnvironments map[string]ConfigsPerType
 
+// ConfigsPerEnvironment is a map of environment to configs
+type ConfigsPerEnvironment map[string][]config.Config
+
 // DependenciesPerEnvironment is a map of environment to project ids
 type DependenciesPerEnvironment map[string][]string
 

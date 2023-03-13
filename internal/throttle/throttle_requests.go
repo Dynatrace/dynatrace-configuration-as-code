@@ -27,7 +27,7 @@ import (
 
 const MinWaitDuration = 1 * time.Second
 
-// Sleep a little bit after an error message to avoid hitting rate limits and getting the IP banned
+// ThrottleCallAfterError sleeps a bit after an error message to avoid hitting rate limits and getting the IP banned
 func ThrottleCallAfterError(backoffMultiplier int, message string, a ...any) {
 	timelineProvider := timeutils.NewTimelineProvider()
 	sleepDuration, humanReadableTimestamp := GenerateSleepDuration(backoffMultiplier, timelineProvider)
@@ -38,7 +38,7 @@ func ThrottleCallAfterError(backoffMultiplier int, message string, a ...any) {
 	log.Debug("simpleSleepRateLimitStrategy: Slept for %f seconds", sleepDuration.Seconds())
 }
 
-// generateSleepDuration will generate a random sleep duration time between minWaitTime and minWaitTime * backoffMultiplier
+// GenerateSleepDuration will generate a random sleep duration time between minWaitTime and minWaitTime * backoffMultiplier
 // generated sleep durations are used in case the API did not reply with a limit and reset time
 // and called with the current retry iteration count to implement increasing possible wait times per iteration
 func GenerateSleepDuration(backoffMultiplier int, timelineProvider timeutils.TimelineProvider) (sleepDuration time.Duration, humanReadableResetTimestamp string) {
