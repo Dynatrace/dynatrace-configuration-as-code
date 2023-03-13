@@ -59,13 +59,6 @@ type manifestLoaderError struct {
 	Reason       string
 }
 
-func newManifestLoaderError(manifest string, reason string) manifestLoaderError {
-	return manifestLoaderError{
-		ManifestPath: manifest,
-		Reason:       reason,
-	}
-}
-
 func (e manifestLoaderError) Error() string {
 	return fmt.Sprintf("%s: %s", e.ManifestPath, e.Reason)
 }
@@ -78,7 +71,7 @@ type environmentLoaderError struct {
 
 func newManifestEnvironmentLoaderError(manifest string, group string, env string, reason string) environmentLoaderError {
 	return environmentLoaderError{
-		manifestLoaderError: newManifestLoaderError(manifest, reason),
+		manifestLoaderError: manifestLoaderError{manifest, reason},
 		Group:               group,
 		Environment:         env,
 	}
@@ -95,7 +88,7 @@ type projectLoaderError struct {
 
 func newManifestProjectLoaderError(manifest string, project string, reason string) projectLoaderError {
 	return projectLoaderError{
-		manifestLoaderError: newManifestLoaderError(manifest, reason),
+		manifestLoaderError: manifestLoaderError{manifest, reason},
 		Project:             project,
 	}
 }
@@ -110,7 +103,7 @@ func LoadManifest(context *ManifestLoaderContext) (Manifest, []error) {
 	log.Debug("Loading manifest %q. Restrictions: groups=%q, environments=%q", context.ManifestPath, context.Groups, context.Environments)
 
 	if !files.IsYamlFileExtension(manifestPath) {
-		return Manifest{}, []error{newManifestLoaderError(context.ManifestPath, "manifest file is not a yaml")}
+		return Manifest{}, []error{manifestLoaderError{context.ManifestPath, "manifest file is not a yaml"}}
 	}
 
 	exists, err := files.DoesFileExist(context.Fs, manifestPath)
@@ -120,13 +113,13 @@ func LoadManifest(context *ManifestLoaderContext) (Manifest, []error) {
 	}
 
 	if !exists {
-		return Manifest{}, []error{newManifestLoaderError(context.ManifestPath, "specified manifest file is either no file or does not exist")}
+		return Manifest{}, []error{manifestLoaderError{context.ManifestPath, "specified manifest file is either no file or does not exist"}}
 	}
 
 	data, err := afero.ReadFile(context.Fs, manifestPath)
 
 	if err != nil {
-		return Manifest{}, []error{newManifestLoaderError(context.ManifestPath, fmt.Sprintf("error while reading the manifest: %s", err))}
+		return Manifest{}, []error{manifestLoaderError{context.ManifestPath, fmt.Sprintf("error while reading the manifest: %s", err)}}
 	}
 
 	return parseManifest(context, data)
@@ -161,7 +154,7 @@ func parseManifest(context *ManifestLoaderContext, data []byte) (Manifest, []err
 	if projectErrors != nil {
 		errors = append(errors, projectErrors...)
 	} else if len(projectDefinitions) == 0 {
-		errors = append(errors, newManifestLoaderError(context.ManifestPath, "no projects defined in manifest"))
+		errors = append(errors, manifestLoaderError{context.ManifestPath, "no projects defined in manifest"})
 	}
 
 	environmentDefinitions, manifestErrors := toEnvironments(context, manifest.EnvironmentGroups)
@@ -169,7 +162,7 @@ func parseManifest(context *ManifestLoaderContext, data []byte) (Manifest, []err
 	if manifestErrors != nil {
 		errors = append(errors, manifestErrors...)
 	} else if len(environmentDefinitions) == 0 {
-		errors = append(errors, newManifestLoaderError(context.ManifestPath, "no environments defined in manifest"))
+		errors = append(errors, manifestLoaderError{context.ManifestPath, "no environments defined in manifest"})
 	}
 
 	if errors != nil {
@@ -260,20 +253,20 @@ func parseManifestFile(context *ManifestLoaderContext, data []byte) (manifest, [
 
 	err := yaml.UnmarshalStrict(data, &m)
 	if err != nil {
-		errs = append(errs, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("error during parsing the manifest: %s", err)))
+		errs = append(errs, manifestLoaderError{context.ManifestPath, fmt.Sprintf("error during parsing the manifest: %s", err)})
 	}
 
 	err = validateManifestVersion(m.ManifestVersion)
 	if err != nil {
-		errs = append(errs, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("invalid manifest definition: %s", err)))
+		errs = append(errs, manifestLoaderError{context.ManifestPath, fmt.Sprintf("invalid manifest definition: %s", err)})
 	}
 
 	if len(m.Projects) == 0 {
-		errs = append(errs, newManifestLoaderError(context.ManifestPath, "invalid manifest definition: no `projects` defined"))
+		errs = append(errs, manifestLoaderError{context.ManifestPath, "invalid manifest definition: no `projects` defined"})
 	}
 
 	if len(m.EnvironmentGroups) == 0 {
-		errs = append(errs, newManifestLoaderError(context.ManifestPath, "invalid manifest definition: no `environmentGroups` defined"))
+		errs = append(errs, manifestLoaderError{context.ManifestPath, "invalid manifest definition: no `environmentGroups` defined"})
 	}
 
 	if len(errs) != 0 {
@@ -316,11 +309,11 @@ func toEnvironments(context *ManifestLoaderContext, groups []group) (map[string]
 
 	for i, group := range groups {
 		if group.Name == "" {
-			errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("missing group name on index `%d`", i)))
+			errors = append(errors, manifestLoaderError{context.ManifestPath, fmt.Sprintf("missing group name on index `%d`", i)})
 		}
 
 		if groupNames[group.Name] {
-			errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("duplicated group name %q", group.Name)))
+			errors = append(errors, manifestLoaderError{context.ManifestPath, fmt.Sprintf("duplicated group name %q", group.Name)})
 		}
 
 		groupNames[group.Name] = true
@@ -328,12 +321,12 @@ func toEnvironments(context *ManifestLoaderContext, groups []group) (map[string]
 		for j, env := range group.Environments {
 
 			if env.Name == "" {
-				errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("missing environment name in group %q on index `%d`", group.Name, j)))
+				errors = append(errors, manifestLoaderError{context.ManifestPath, fmt.Sprintf("missing environment name in group %q on index `%d`", group.Name, j)})
 				continue
 			}
 
 			if envNames[env.Name] {
-				errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("duplicated environment name %q", env.Name)))
+				errors = append(errors, manifestLoaderError{context.ManifestPath, fmt.Sprintf("duplicated environment name %q", env.Name)})
 				continue
 			}
 			envNames[env.Name] = true
@@ -358,13 +351,13 @@ func toEnvironments(context *ManifestLoaderContext, groups []group) (map[string]
 	// validate that all required groups & environments are included
 	for _, g := range context.Groups {
 		if !groupNames[g] {
-			errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("requested group %q not found", g)))
+			errors = append(errors, manifestLoaderError{context.ManifestPath, fmt.Sprintf("requested group %q not found", g)})
 		}
 	}
 
 	for _, e := range context.Environments {
 		if !envNames[e] {
-			errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("requested environment %q not found", e)))
+			errors = append(errors, manifestLoaderError{context.ManifestPath, fmt.Sprintf("requested environment %q not found", e)})
 		}
 	}
 
@@ -517,7 +510,7 @@ func toProjectDefinitions(context *projectLoaderContext, definitions []project) 
 
 		for _, project := range parsed {
 			if p, found := result[project.Name]; found {
-				errors = append(errors, newManifestLoaderError(context.manifestPath, fmt.Sprintf("duplicated project name `%s` used by %s and %s", project.Name, p, project)))
+				errors = append(errors, manifestLoaderError{context.manifestPath, fmt.Sprintf("duplicated project name `%s` used by %s and %s", project.Name, p, project)})
 				continue
 			}
 
@@ -536,7 +529,7 @@ func checkForDuplicateDefinitions(context *projectLoaderContext, definitions []p
 	definedIds := map[string]struct{}{}
 	for _, project := range definitions {
 		if _, found := definedIds[project.Name]; found {
-			errors = append(errors, newManifestLoaderError(context.manifestPath, fmt.Sprintf("duplicated project name `%s`", project.Name)))
+			errors = append(errors, manifestLoaderError{context.manifestPath, fmt.Sprintf("duplicated project name `%s`", project.Name)})
 		}
 		definedIds[project.Name] = struct{}{}
 	}
