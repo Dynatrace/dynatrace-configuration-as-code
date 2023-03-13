@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
 	version2 "github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"os"
@@ -32,6 +33,20 @@ import (
 type ManifestLoaderContext struct {
 	Fs           afero.Fs
 	ManifestPath string
+
+	// Environments is a filter to what environments should be loaded.
+	// If it's empty, all environments are loaded.
+	// If both Environments and Groups are specified, the union of both results is returned.
+	//
+	// If Environments contains items that do not match any environment in the specified manifest file, the loading errors.
+	Environments []string
+
+	// Groups is a filter to what environment-groups (and thus environments) should be loaded.
+	// If it's empty, all environment-groups are loaded.
+	// If both Environments and Groups are specified, the union of both results is returned.
+	//
+	// If Groups contains items that do not match any environment in the specified manifest file, the loading errors.
+	Groups []string
 }
 
 type projectLoaderContext struct {
@@ -91,6 +106,8 @@ func (e projectLoaderError) Error() string {
 
 func LoadManifest(context *ManifestLoaderContext) (Manifest, []error) {
 	manifestPath := filepath.Clean(context.ManifestPath)
+
+	log.Debug("Loading manifest %q. Restrictions: groups=%q, environments=%q", context.ManifestPath, context.Groups, context.Environments)
 
 	if !files.IsYamlFileExtension(manifestPath) {
 		return Manifest{}, []error{newManifestLoaderError(context.ManifestPath, "manifest file is not a yaml")}
@@ -295,6 +312,7 @@ func toEnvironments(context *ManifestLoaderContext, groups []group) (map[string]
 	environments := make(map[string]EnvironmentDefinition)
 
 	groupNames := make(map[string]bool, len(groups))
+	envNames := make(map[string]bool, len(groups))
 
 	for i, group := range groups {
 		if group.Name == "" {
@@ -307,20 +325,33 @@ func toEnvironments(context *ManifestLoaderContext, groups []group) (map[string]
 
 		groupNames[group.Name] = true
 
-		for _, conf := range group.Environments {
-			env, configErrors := toEnvironment(context, conf, group.Name)
+		for j, env := range group.Environments {
+
+			if env.Name == "" {
+				errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("missing environment name in group %q on index `%d`", group.Name, j)))
+				continue
+			}
+
+			if envNames[env.Name] {
+				errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("duplicated environment name %q", env.Name)))
+				continue
+			}
+			envNames[env.Name] = true
+
+			// skip loading if environments is not empty, the environments does not contain the env name, or the group should not be included
+			if shouldSkipEnv(context, group, env) {
+				log.Debug("skipping loading of environment %q", env.Name)
+				continue
+			}
+
+			parsedEnv, configErrors := parseEnvironment(context, env, group.Name)
 
 			if configErrors != nil {
 				errors = append(errors, configErrors...)
 				continue
 			}
 
-			if _, found := environments[env.Name]; found {
-				errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("duplicated environment name `%s`", env.Name)))
-				continue
-			}
-
-			environments[env.Name] = env
+			environments[parsedEnv.Name] = parsedEnv
 		}
 	}
 
@@ -331,7 +362,24 @@ func toEnvironments(context *ManifestLoaderContext, groups []group) (map[string]
 	return environments, nil
 }
 
-func toEnvironment(context *ManifestLoaderContext, config environment, group string) (EnvironmentDefinition, []error) {
+func shouldSkipEnv(context *ManifestLoaderContext, group group, env environment) bool {
+	// if nothing is restricted, everything is allowed
+	if len(context.Groups) == 0 && len(context.Environments) == 0 {
+		return false
+	}
+
+	if slices.Contains(context.Groups, group.Name) {
+		return false
+	}
+
+	if slices.Contains(context.Environments, env.Name) {
+		return false
+	}
+
+	return true
+}
+
+func parseEnvironment(context *ManifestLoaderContext, config environment, group string) (EnvironmentDefinition, []error) {
 	var errors []error
 
 	envType, err := parseEnvironmentType(context, config, group)

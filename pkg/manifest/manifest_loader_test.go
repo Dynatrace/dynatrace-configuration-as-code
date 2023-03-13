@@ -20,6 +20,7 @@ package manifest
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	monacoVersion "github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"github.com/google/go-cmp/cmp"
@@ -706,13 +707,19 @@ func Test_validateManifestVersion(t *testing.T) {
 
 func TestLoadManifest(t *testing.T) {
 	t.Setenv("e", "mock token")
+	t.Setenv("token-env-var", "mock token")
 	t.Setenv("empty-env-var", "")
 	t.Setenv("client-id", "resolved-client-id")
 	t.Setenv("client-secret", "resolved-client-secret")
 
+	log.Default().SetLevel(log.LevelDebug)
+
 	tests := []struct {
-		name             string
-		manifestContent  string
+		name            string
+		manifestContent string
+		groups          []string
+		envs            []string
+
 		errsContain      []string
 		expectedManifest Manifest
 	}{
@@ -747,6 +754,390 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {
 						Auth: Auth{
 							Token: AuthSecret{
 								Name:  "e",
+								Value: "mock token",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Everything good with multiple environments in multiple groups",
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: projectA, path: pathA}]
+environmentGroups:
+- {name: groupA, environments: [{name: envA, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
+- {name: groupB, environments: [{name: envB, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
+`,
+			expectedManifest: Manifest{
+				Projects: map[string]ProjectDefinition{
+					"projectA": {
+						Name: "projectA",
+						Path: "pathA",
+					},
+				},
+				Environments: map[string]EnvironmentDefinition{
+					"envA": {
+						Name: "envA",
+						Type: Classic,
+						Url: UrlDefinition{
+							Type:  ValueUrlType,
+							Value: "https://example.com",
+						},
+						Group: "groupA",
+						Auth: Auth{
+							Token: AuthSecret{
+								Name:  "token-env-var",
+								Value: "mock token",
+							},
+						},
+					},
+					"envB": {
+						Name: "envB",
+						Type: Classic,
+						Url: UrlDefinition{
+							Type:  ValueUrlType,
+							Value: "https://example.com",
+						},
+						Group: "groupB",
+						Auth: Auth{
+							Token: AuthSecret{
+								Name:  "token-env-var",
+								Value: "mock token",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Everything good with multiple environments in one group",
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: projectA, path: pathA}]
+environmentGroups:
+- {name: groupA, environments: [
+   {name: envA, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}},
+   {name: envB, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}
+  ]}
+`,
+			expectedManifest: Manifest{
+				Projects: map[string]ProjectDefinition{
+					"projectA": {
+						Name: "projectA",
+						Path: "pathA",
+					},
+				},
+				Environments: map[string]EnvironmentDefinition{
+					"envA": {
+						Name: "envA",
+						Type: Classic,
+						Url: UrlDefinition{
+							Type:  ValueUrlType,
+							Value: "https://example.com",
+						},
+						Group: "groupA",
+						Auth: Auth{
+							Token: AuthSecret{
+								Name:  "token-env-var",
+								Value: "mock token",
+							},
+						},
+					},
+					"envB": {
+						Name: "envB",
+						Type: Classic,
+						Url: UrlDefinition{
+							Type:  ValueUrlType,
+							Value: "https://example.com",
+						},
+						Group: "groupA",
+						Auth: Auth{
+							Token: AuthSecret{
+								Name:  "token-env-var",
+								Value: "mock token",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:   "Only one env is loaded if group is loading restricted",
+			groups: []string{"groupA"},
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: projectA, path: pathA}]
+environmentGroups:
+- {name: groupA, environments: [{name: envA, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
+- {name: groupB, environments: [{name: envB, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
+`,
+			expectedManifest: Manifest{
+				Projects: map[string]ProjectDefinition{
+					"projectA": {
+						Name: "projectA",
+						Path: "pathA",
+					},
+				},
+				Environments: map[string]EnvironmentDefinition{
+					"envA": {
+						Name: "envA",
+						Type: Classic,
+						Url: UrlDefinition{
+							Type:  ValueUrlType,
+							Value: "https://example.com",
+						},
+						Group: "groupA",
+						Auth: Auth{
+							Token: AuthSecret{
+								Name:  "token-env-var",
+								Value: "mock token",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Only one env is loaded if env is loading restricted",
+			envs: []string{"envA"},
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: projectA, path: pathA}]
+environmentGroups:
+- {name: groupA, environments: [{name: envA, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
+- {name: groupB, environments: [{name: envB, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
+`,
+			expectedManifest: Manifest{
+				Projects: map[string]ProjectDefinition{
+					"projectA": {
+						Name: "projectA",
+						Path: "pathA",
+					},
+				},
+				Environments: map[string]EnvironmentDefinition{
+					"envA": {
+						Name: "envA",
+						Type: Classic,
+						Url: UrlDefinition{
+							Type:  ValueUrlType,
+							Value: "https://example.com",
+						},
+						Group: "groupA",
+						Auth: Auth{
+							Token: AuthSecret{
+								Name:  "token-env-var",
+								Value: "mock token",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:   "Two of three envs are loaded if env and group is loading restricted",
+			envs:   []string{"envA"},
+			groups: []string{"groupB"},
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: projectA, path: pathA}]
+environmentGroups:
+- {name: groupA, environments: [{name: envA, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
+- {name: groupB, environments: [{name: envB, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
+- {name: groupC, environments: [{name: envC, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
+`,
+			expectedManifest: Manifest{
+				Projects: map[string]ProjectDefinition{
+					"projectA": {
+						Name: "projectA",
+						Path: "pathA",
+					},
+				},
+				Environments: map[string]EnvironmentDefinition{
+					"envA": {
+						Name: "envA",
+						Type: Classic,
+						Url: UrlDefinition{
+							Type:  ValueUrlType,
+							Value: "https://example.com",
+						},
+						Group: "groupA",
+						Auth: Auth{
+							Token: AuthSecret{
+								Name:  "token-env-var",
+								Value: "mock token",
+							},
+						},
+					},
+					"envB": {
+						Name: "envB",
+						Type: Classic,
+						Url: UrlDefinition{
+							Type:  ValueUrlType,
+							Value: "https://example.com",
+						},
+						Group: "groupB",
+						Auth: Auth{
+							Token: AuthSecret{
+								Name:  "token-env-var",
+								Value: "mock token",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Two of three envs are loaded if multiple envs restricted",
+			envs: []string{"envA", "envB"},
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: projectA, path: pathA}]
+environmentGroups:
+- {name: groupA, environments: [{name: envA, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
+- {name: groupB, environments: [{name: envB, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
+- {name: groupC, environments: [{name: envC, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
+`,
+			expectedManifest: Manifest{
+				Projects: map[string]ProjectDefinition{
+					"projectA": {
+						Name: "projectA",
+						Path: "pathA",
+					},
+				},
+				Environments: map[string]EnvironmentDefinition{
+					"envA": {
+						Name: "envA",
+						Type: Classic,
+						Url: UrlDefinition{
+							Type:  ValueUrlType,
+							Value: "https://example.com",
+						},
+						Group: "groupA",
+						Auth: Auth{
+							Token: AuthSecret{
+								Name:  "token-env-var",
+								Value: "mock token",
+							},
+						},
+					},
+					"envB": {
+						Name: "envB",
+						Type: Classic,
+						Url: UrlDefinition{
+							Type:  ValueUrlType,
+							Value: "https://example.com",
+						},
+						Group: "groupB",
+						Auth: Auth{
+							Token: AuthSecret{
+								Name:  "token-env-var",
+								Value: "mock token",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:   "Two of three envs are loaded if multiple groups restricted",
+			groups: []string{"groupA", "groupB"},
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: projectA, path: pathA}]
+environmentGroups:
+- {name: groupA, environments: [{name: envA, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
+- {name: groupB, environments: [{name: envB, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
+- {name: groupC, environments: [{name: envC, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
+`,
+			expectedManifest: Manifest{
+				Projects: map[string]ProjectDefinition{
+					"projectA": {
+						Name: "projectA",
+						Path: "pathA",
+					},
+				},
+				Environments: map[string]EnvironmentDefinition{
+					"envA": {
+						Name: "envA",
+						Type: Classic,
+						Url: UrlDefinition{
+							Type:  ValueUrlType,
+							Value: "https://example.com",
+						},
+						Group: "groupA",
+						Auth: Auth{
+							Token: AuthSecret{
+								Name:  "token-env-var",
+								Value: "mock token",
+							},
+						},
+					},
+					"envB": {
+						Name: "envB",
+						Type: Classic,
+						Url: UrlDefinition{
+							Type:  ValueUrlType,
+							Value: "https://example.com",
+						},
+						Group: "groupB",
+						Auth: Auth{
+							Token: AuthSecret{
+								Name:  "token-env-var",
+								Value: "mock token",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:   "Same configs in group and env restrictions",
+			envs:   []string{"envA", "groupB"},
+			groups: []string{"groupA", "groupB"},
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: projectA, path: pathA}]
+environmentGroups:
+- {name: groupA, environments: [{name: envA, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
+- {name: groupB, environments: [{name: envB, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
+- {name: groupC, environments: [{name: envC, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
+`,
+			expectedManifest: Manifest{
+				Projects: map[string]ProjectDefinition{
+					"projectA": {
+						Name: "projectA",
+						Path: "pathA",
+					},
+				},
+				Environments: map[string]EnvironmentDefinition{
+					"envA": {
+						Name: "envA",
+						Type: Classic,
+						Url: UrlDefinition{
+							Type:  ValueUrlType,
+							Value: "https://example.com",
+						},
+						Group: "groupA",
+						Auth: Auth{
+							Token: AuthSecret{
+								Name:  "token-env-var",
+								Value: "mock token",
+							},
+						},
+					},
+					"envB": {
+						Name: "envB",
+						Type: Classic,
+						Url: UrlDefinition{
+							Type:  ValueUrlType,
+							Value: "https://example.com",
+						},
+						Group: "groupB",
+						Auth: Auth{
+							Token: AuthSecret{
+								Name:  "token-env-var",
 								Value: "mock token",
 							},
 						},
@@ -1241,6 +1632,8 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 			mani, errs := LoadManifest(&ManifestLoaderContext{
 				Fs:           fs,
 				ManifestPath: "manifest.yaml",
+				Groups:       test.groups,
+				Environments: test.envs,
 			})
 
 			if len(errs) == len(test.errsContain) {
