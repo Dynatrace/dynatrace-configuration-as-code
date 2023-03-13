@@ -29,10 +29,19 @@ type ApiVersionObject struct {
 	Version string `json:"version"`
 }
 
-const versionPath = "/api/v1/config/clusterversion"
+const versionPath2ndGen = "/api/v1/config/clusterversion"
+const versionPath3rdGen = "/platform/core/v1/version"
 
-func GetDynatraceVersion(client *http.Client, environmentUrl string) (version.Version, error) {
-	versionUrl := environmentUrl + versionPath
+func GetDynatraceVersion3rdGen(client *http.Client, environmentURL string) (version.Version, error) {
+	return GetDynatraceVersion(client, environmentURL, versionPath3rdGen)
+}
+
+func GetDynatraceVersion2ndGen(client *http.Client, environmentURL string) (version.Version, error) {
+	return GetDynatraceVersion(client, environmentURL, versionPath2ndGen)
+}
+
+func GetDynatraceVersion(client *http.Client, environmentUrl string, apiPath string) (version.Version, error) {
+	versionUrl := environmentUrl + apiPath
 	resp, err := rest.Get(client, versionUrl)
 	if err != nil {
 		return version.Version{}, fmt.Errorf("failed to query version of Dynatrace environment: %w", err)
