@@ -8,8 +8,17 @@ Licence: {{ $dep.LicenceType }}
 {{- end }}
 {{- end -}}
 
+{{- define "shortDep" -}}
+{{- range $i, $dep := . }}
+{{ $dep.Name }},{{ $dep.Version }},{{ $dep.LicenceType }}
+{{- end }}
+{{- end -}}
+
 {{ "=" | line }}
 Third party libraries used by dynatrace-configuration-as-code
+{{ "=" | line }}
+Overview:
+{{ template "shortDep" .Direct  }}
 {{ "=" | line }}
 {{ template "depRow" .Direct  }}
 
@@ -17,6 +26,9 @@ Third party libraries used by dynatrace-configuration-as-code
 {{ "=" | line }}
 Indirect Dependencies
 Dependencies of third party libraries used by dynatrace-configuration-as-code
+{{ "=" | line }}
+Overview:
+{{ template "shortDep" .Indirect  }}
 {{ "=" | line }}
 {{ template "depRow" .Indirect  }}
 {{ end }}
