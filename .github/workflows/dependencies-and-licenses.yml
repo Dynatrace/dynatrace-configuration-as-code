@@ -9,12 +9,10 @@ jobs:
   generate-dependencies:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     steps:
       - name: Checkout Core Repo
         uses: actions/checkout@v3
-        with:
-          path: 'dynatrace-monitoring-as-code'
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
@@ -22,14 +20,10 @@ jobs:
       - name: Install go-licence-detector
         run: |
           go install go.elastic.co/go-licence-detector@latest
-      - name: GO dependencies and licenses
-        run: |
-          TMP_DIR=$(mktemp -d 2>/dev/null)
-          ( cd dynatrace-monitoring-as-code || return ; go mod tidy > /dev/null 2>&1; go list -m -json all | go-licence-detector -includeIndirect -depsTemplate=.dependencies/templates/dependencies.csv.tmpl -depsOut="${TMP_DIR}"/dependencies.txt )
-          cat "$TMP_DIR"/*.txt | sort | uniq > dependencies-and-licenses-go.txt
-          echo
-          echo "👍 done. written results to ./dependencies-and-licenses-go.txt"
-          cat dependencies-and-licenses-go.txt
+      - name: Clean Go mod
+        run: go mod tidy
+      - name: Generate Dependencies and Licenses
+        run: go list -m -json all | go-licence-detector -includeIndirect -depsTemplate=.dependencies/templates/dependencies.csv.tmpl -depsOut=dependencies-and-licenses.txt
       - name: Upload dependencies and licenses artifact
         uses: actions/upload-artifact@v3
         with:
