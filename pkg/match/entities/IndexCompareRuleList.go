@@ -62,17 +62,27 @@ func (i *IndexCompareResultList) ProcessMatches() []CompareResult {
 
 	i.sumMatchWeightValues()
 
-	reverseResults := NewReversedIndexCompareResultList(i)
+	reverseResults := i.reduceBothForwardAndBackward()
 
-	singleMatchSourceTarget := i.keepSingleMatchEntities()
-	singleMatchTargetSource := reverseResults.keepSingleMatchEntities()
+	singleMatchLeftRight := i.keepSingleMatchEntities()
+	singleMatchRightLeft := reverseResults.keepSingleMatchEntities()
 
-	singleToSingleMatchEntities := KeepSingleToSingleMatchEntitiesLeftRight(singleMatchSourceTarget, singleMatchTargetSource)
+	singleToSingleMatchEntities := KeepSingleToSingleMatchEntitiesLeftRight(singleMatchLeftRight, singleMatchRightLeft)
 
 	i.trimSingleToSingleMatches(singleToSingleMatchEntities)
 
 	return singleToSingleMatchEntities
 
+}
+
+func (i *IndexCompareResultList) reduceBothForwardAndBackward() *IndexCompareResultList {
+	i.reduce()
+	reverseResults := NewReversedIndexCompareResultList(i)
+	reverseResults.reduce()
+
+	i.CompareResults = NewReversedIndexCompareResultList(reverseResults).CompareResults
+
+	return reverseResults
 }
 
 func (i *IndexCompareResultList) keepSingleMatchEntities() []CompareResult {
@@ -81,7 +91,7 @@ func (i *IndexCompareResultList) keepSingleMatchEntities() []CompareResult {
 		return []CompareResult{}
 	}
 
-	i.reduce()
+	i.sort()
 
 	singleMatchEntities := []CompareResult{}
 
@@ -222,7 +232,6 @@ func (i *IndexCompareResultList) trimSingleToSingleMatches(singleToSingleMatchEn
 		if diff < 0 {
 			trimmedList[trmI] = i.CompareResults[curI]
 			trmI++
-
 			curI++
 
 		} else if diff == 0 {

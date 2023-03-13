@@ -14,7 +14,9 @@
 
 package entities
 
-import "sort"
+import (
+	"sort"
+)
 
 type IndexRuleType struct {
 	IsSeed      bool
@@ -27,6 +29,60 @@ type IndexRule struct {
 	Path              []string
 	WeightValue       int
 	SelfMatchDisabled bool
+}
+
+var INDEX_CONFIG_LIST_ALL = []IndexRuleType{
+	{
+		IsSeed:      true,
+		WeightValue: 100,
+		IndexRules: []IndexRule{
+			{
+				Name:              "DetectedName",
+				Path:              []string{"properties", "detectedName"},
+				WeightValue:       2,
+				SelfMatchDisabled: false,
+			},
+			{
+				Name:              "oneAgentCustomHostName",
+				Path:              []string{"properties", "oneAgentCustomHostName"},
+				WeightValue:       2,
+				SelfMatchDisabled: false,
+			},
+			{
+				Name:              "Entity Id",
+				Path:              []string{"entityId"},
+				WeightValue:       10000,
+				SelfMatchDisabled: true,
+			},
+		},
+	},
+	{
+		IsSeed:      true,
+		WeightValue: 90,
+		IndexRules: []IndexRule{
+			{
+				Name:              "displayName",
+				Path:              []string{"displayName"},
+				WeightValue:       1,
+				SelfMatchDisabled: false,
+			},
+		},
+	},
+	// ipAddress was tested with IsSeed = false on 5 million RBC Pre-Prod entities
+	// All matches were identical, except for Network Interfaces the were not matching as well
+	// Keeping IsSeed = true only has positive return
+	{
+		IsSeed:      true,
+		WeightValue: 50,
+		IndexRules: []IndexRule{
+			{
+				Name:              "ipAddress",
+				Path:              []string{"properties", "ipAddress"},
+				WeightValue:       2,
+				SelfMatchDisabled: false,
+			},
+		},
+	},
 }
 
 // ByWeightTypeValue implements sort.Interface for []IndexRule based on
@@ -63,15 +119,9 @@ func (i *IndexRuleMapGenerator) genActiveList() []IndexRuleType {
 			IndexRules:  make([]IndexRule, 0, len(confType.IndexRules)),
 		}
 		for _, conf := range confType.IndexRules {
-			if conf.SelfMatchDisabled {
-
-				if i.SelfMatch {
-
-				} else {
-					continue
-				}
+			if conf.SelfMatchDisabled && i.SelfMatch {
+				continue
 			}
-
 			ruleType.IndexRules = append(ruleType.IndexRules, conf)
 		}
 		if len(ruleType.IndexRules) >= 1 {
@@ -89,58 +139,4 @@ func (i *IndexRuleMapGenerator) GenSortedActiveList() []IndexRuleType {
 	sort.Sort(ByWeightTypeValue(activeList))
 
 	return activeList
-}
-
-var INDEX_CONFIG_LIST_ALL = []IndexRuleType{
-	{
-		IsSeed:      true,
-		WeightValue: 100,
-		IndexRules: []IndexRule{
-			{
-				Name:              "Entity Id",
-				Path:              []string{"entityId"},
-				WeightValue:       1,
-				SelfMatchDisabled: true,
-			},
-		},
-	},
-	{
-		IsSeed:      true,
-		WeightValue: 100,
-		IndexRules: []IndexRule{
-			{
-				Name:              "DetectedName",
-				Path:              []string{"properties", "detectedName"},
-				WeightValue:       10,
-				SelfMatchDisabled: false,
-			},
-			{
-				Name:              "displayName",
-				Path:              []string{"displayName"},
-				WeightValue:       5,
-				SelfMatchDisabled: false,
-			},
-			{
-				Name:              "oneAgentCustomHostName",
-				Path:              []string{"properties", "oneAgentCustomHostName"},
-				WeightValue:       10,
-				SelfMatchDisabled: false,
-			},
-		},
-	},
-	// ipAddress was tested with IsSeed = false on 5 million RBC Pre-Prod entities
-	// All matches were identical, except for Network Interfaces the were not matching as well
-	// Keeping IsSeed = true only has positive return
-	{
-		IsSeed:      true,
-		WeightValue: 100,
-		IndexRules: []IndexRule{
-			{
-				Name:              "ipAddress",
-				Path:              []string{"properties", "ipAddress"},
-				WeightValue:       10,
-				SelfMatchDisabled: false,
-			},
-		},
-	},
 }

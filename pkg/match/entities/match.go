@@ -29,7 +29,7 @@ import (
 func CompareConfigs(fs afero.Fs, matchParameters MatchParameters, entityPerTypeSource project.ConfigsPerType, entityPerTypeTarget project.ConfigsPerType) ([]string, int, int, error) {
 	nbEntitiesSource := 0
 	nbEntitiesTarget := 0
-	stats := []string{fmt.Sprintf("%65s %10s %10s %10s %10s %10s", "Type", "Matched", "LeftOvers", "UnMatched", "Total", "Source")}
+	stats := []string{fmt.Sprintf("%65s %10s %10s %10s %10s %10s", "Type", "Matched", "MultiMatched", "UnMatched", "Total", "Source")}
 
 	for entitiesType := range entityPerTypeTarget {
 
@@ -45,7 +45,7 @@ func CompareConfigs(fs afero.Fs, matchParameters MatchParameters, entityPerTypeS
 		nbEntitiesTarget += nbEntitiesTargetType
 
 		var output MatchOutputType
-		output, err = runIndexRuleAll(entityProcessingPtr, entitiesType)
+		output, err = runIndexRuleAll(entityProcessingPtr, entitiesType, matchParameters)
 		if err != nil {
 			return []string{}, 0, 0, err
 		}
@@ -55,7 +55,7 @@ func CompareConfigs(fs afero.Fs, matchParameters MatchParameters, entityPerTypeS
 			return []string{}, 0, 0, fmt.Errorf("failed to persist matches of type: %s, see error: %s", entitiesType, err)
 		}
 
-		stats = append(stats, fmt.Sprintf("%65s %10d %10d %10d %10d %10d", entitiesType, len(output.Matches), len(output.LeftOvers), len(output.UnMatched), nbEntitiesTargetType, nbEntitiesSourceType))
+		stats = append(stats, fmt.Sprintf("%65s %10d %10d %10d %10d %10d", entitiesType, len(output.Matches), len(output.MultiMatched), len(output.UnMatched), nbEntitiesTargetType, nbEntitiesSourceType))
 	}
 
 	return stats, nbEntitiesSource, nbEntitiesTarget, nil
@@ -86,17 +86,25 @@ func genEntityProcessing(entityPerTypeSource project.ConfigsPerType, entityPerTy
 
 func unmarshalEntities(entityPerType []config.Config) (*RawEntityList, error) {
 	rawEntityList := new(RawEntityList)
-	err := json.Unmarshal([]byte(entityPerType[0].Template.Content()), rawEntityList)
+	var err error = nil
+
+	if len(entityPerType) > 0 {
+		err = json.Unmarshal([]byte(entityPerType[0].Template.Content()), rawEntityList)
+	}
 
 	return rawEntityList, err
 }
 
-func runIndexRuleAll(entityProcessingPtr *EntityProcessing, entitiesType string) (MatchOutputType, error) {
+func runIndexRuleAll(entityProcessingPtr *EntityProcessing, entitiesType string, matchParameters MatchParameters) (MatchOutputType, error) {
 
 	matchedEntities := map[int]int{}
 	oldResultsPtr := &IndexCompareResultList{}
 
-	sortedActiveIndexRuleTypes := NewIndexRuleMapGenerator(false).GenSortedActiveList()
+	sortedActiveIndexRuleTypes := NewIndexRuleMapGenerator(matchParameters.SelfMatch).GenSortedActiveList()
+
+	log.Info("Type: %s -> nb source %d and nb target %d",
+		entitiesType,
+		len(*entityProcessingPtr.Source.RawEntityListPtr), len(*entityProcessingPtr.Target.RawEntityListPtr))
 
 	for _, indexRuleType := range sortedActiveIndexRuleTypes {
 		resultListPtr := NewIndexCompareResultList(indexRuleType)
@@ -115,26 +123,27 @@ func runIndexRuleAll(entityProcessingPtr *EntityProcessing, entitiesType string)
 		matchedEntities = keepMatches(matchedEntities, singleToSingleMatchEntities)
 	}
 
-	log.Info("Type: %s -> Matched: %d of source %d and target %d",
+	log.Info("Type: %s -> nb source %d and nb target %d -> Matched: %d",
 		entitiesType, len(matchedEntities),
 		len(*entityProcessingPtr.Source.RawEntityListPtr), len(*entityProcessingPtr.Target.RawEntityListPtr))
 
-	leftOverMap := getLeftOvers(oldResultsPtr, entityProcessingPtr)
-	outputPayload := genOutputPayload(entitiesType, entityProcessingPtr, oldResultsPtr, matchedEntities, leftOverMap)
+	outputPayload := genOutputPayload(entitiesType, entityProcessingPtr, oldResultsPtr, matchedEntities)
 
 	return outputPayload, nil
 
 }
 
-type MatchOutputPerType map[string]MatchOutputType
-
 type MatchOutputType struct {
-	Type      string              `json:"type"`
-	Source    ExtractionInfo      `json:"source"`
-	Target    ExtractionInfo      `json:"target"`
-	Matches   map[string]string   `json:"matches"`
-	LeftOvers map[string][]string `json:"leftOvers"`
-	UnMatched []string            `json:"unmatched"`
+	Type         string              `json:"type"`
+	MatchKey     MatchKey            `json:"matchKey"`
+	Matches      map[string]string   `json:"matches"`
+	MultiMatched map[string][]string `json:"multiMatched"`
+	UnMatched    []string            `json:"unmatched"`
+}
+
+type MatchKey struct {
+	Source ExtractionInfo `json:"source"`
+	Target ExtractionInfo `json:"target"`
 }
 
 type ExtractionInfo struct {
@@ -142,23 +151,26 @@ type ExtractionInfo struct {
 	To   string `json:"to"`
 }
 
-func genOutputPayload(entitiesType string, entityProcessingPtr *EntityProcessing, oldResultsPtr *IndexCompareResultList, matchedEntities map[int]int, leftOverMap map[string][]string) MatchOutputType {
+func genOutputPayload(entitiesType string, entityProcessingPtr *EntityProcessing, oldResultsPtr *IndexCompareResultList, matchedEntities map[int]int) MatchOutputType {
 
+	multiMatchedMap := getMultiMatched(oldResultsPtr, entityProcessingPtr)
 	entityProcessingPtr.PrepareRemainingEntities(false, true, oldResultsPtr)
 
 	matchOutput := MatchOutputType{
 		Type: entitiesType,
-		Source: ExtractionInfo{
-			From: entityProcessingPtr.Source.Type.From,
-			To:   entityProcessingPtr.Source.Type.To,
+		MatchKey: MatchKey{
+			Source: ExtractionInfo{
+				From: entityProcessingPtr.Source.Type.From,
+				To:   entityProcessingPtr.Source.Type.To,
+			},
+			Target: ExtractionInfo{
+				From: entityProcessingPtr.Target.Type.From,
+				To:   entityProcessingPtr.Target.Type.To,
+			},
 		},
-		Target: ExtractionInfo{
-			From: entityProcessingPtr.Target.Type.From,
-			To:   entityProcessingPtr.Target.Type.To,
-		},
-		LeftOvers: leftOverMap,
-		Matches:   make(map[string]string, len(matchedEntities)),
-		UnMatched: make([]string, len(*entityProcessingPtr.Source.CurrentRemainingEntities)),
+		MultiMatched: multiMatchedMap,
+		Matches:      make(map[string]string, len(matchedEntities)),
+		UnMatched:    make([]string, len(*entityProcessingPtr.Source.CurrentRemainingEntities)),
 	}
 
 	for sourceI, targetI := range matchedEntities {
@@ -166,38 +178,38 @@ func genOutputPayload(entitiesType string, entityProcessingPtr *EntityProcessing
 			(*(entityProcessingPtr.Source.RawEntityListPtr))[sourceI].(map[string]interface{})["entityId"].(string)
 	}
 
-	for idx, targetI := range *entityProcessingPtr.Source.CurrentRemainingEntities {
-		matchOutput.UnMatched[idx] = (*(entityProcessingPtr.Target.RawEntityListPtr))[targetI].(map[string]interface{})["entityId"].(string)
+	for idx, sourceI := range *entityProcessingPtr.Source.CurrentRemainingEntities {
+		matchOutput.UnMatched[idx] = (*(entityProcessingPtr.Source.RawEntityListPtr))[sourceI].(map[string]interface{})["entityId"].(string)
 	}
 
 	return matchOutput
 }
 
-func getLeftOvers(oldResultsPtr *IndexCompareResultList, entityProcessingPtr *EntityProcessing) map[string][]string {
-	printLeftoverSample(oldResultsPtr, entityProcessingPtr)
+func getMultiMatched(oldResultsPtr *IndexCompareResultList, entityProcessingPtr *EntityProcessing) map[string][]string {
+	printMultiMatchedSample(oldResultsPtr, entityProcessingPtr)
 
-	return genLeftOverMap(oldResultsPtr, entityProcessingPtr)
+	return genMultiMatchedMap(oldResultsPtr, entityProcessingPtr)
 
 }
 
-func genLeftOverMap(oldResultsPtr *IndexCompareResultList, entityProcessingPtr *EntityProcessing) map[string][]string {
+func genMultiMatchedMap(oldResultsPtr *IndexCompareResultList, entityProcessingPtr *EntityProcessing) map[string][]string {
 
-	leftOvers := map[string][]string{}
+	multiMatched := map[string][]string{}
 
 	if len(oldResultsPtr.CompareResults) <= 0 {
-		return leftOvers
+		return multiMatched
 	}
 
 	firstIdx := 0
 	currentId := oldResultsPtr.CompareResults[0].LeftId
 
-	addMatchingLeftOvers := func(nbMatches int) {
-		leftOverMatches := make([]string, nbMatches)
+	addMatchingMultiMatched := func(nbMatches int) {
+		multiMatchedMatches := make([]string, nbMatches)
 		for j := 0; j < nbMatches; j++ {
 			sourceId := oldResultsPtr.CompareResults[(j + firstIdx)].RightId
-			leftOverMatches[j] = (*(entityProcessingPtr.Target.RawEntityListPtr))[sourceId].(map[string]interface{})["entityId"].(string)
+			multiMatchedMatches[j] = (*(entityProcessingPtr.Target.RawEntityListPtr))[sourceId].(map[string]interface{})["entityId"].(string)
 		}
-		leftOvers[(*(entityProcessingPtr.Target.RawEntityListPtr))[currentId].(map[string]interface{})["entityId"].(string)] = leftOverMatches
+		multiMatched[(*(entityProcessingPtr.Source.RawEntityListPtr))[currentId].(map[string]interface{})["entityId"].(string)] = multiMatchedMatches
 	}
 
 	for i, result := range oldResultsPtr.CompareResults[1:] {
@@ -205,31 +217,31 @@ func genLeftOverMap(oldResultsPtr *IndexCompareResultList, entityProcessingPtr *
 
 		} else {
 			nbMatches := i - firstIdx
-			addMatchingLeftOvers(nbMatches)
+			addMatchingMultiMatched(nbMatches)
 
 			currentId = result.LeftId
 			firstIdx = i
 		}
 	}
 	nbMatches := len(oldResultsPtr.CompareResults) - firstIdx
-	addMatchingLeftOvers(nbMatches)
+	addMatchingMultiMatched(nbMatches)
 
-	return leftOvers
+	return multiMatched
 
 }
 
-func printLeftoverSample(oldResultsPtr *IndexCompareResultList, entityProcessingPtr *EntityProcessing) {
-	nbLeftOvers := len(oldResultsPtr.CompareResults)
+func printMultiMatchedSample(oldResultsPtr *IndexCompareResultList, entityProcessingPtr *EntityProcessing) {
+	nbMultiMatched := len(oldResultsPtr.CompareResults)
 
-	if nbLeftOvers <= 0 {
+	if nbMultiMatched <= 0 {
 		return
 	}
 
 	var maxPrint int
-	if nbLeftOvers > 10 {
+	if nbMultiMatched > 10 {
 		maxPrint = 10
 	} else {
-		maxPrint = nbLeftOvers
+		maxPrint = nbMultiMatched
 	}
 
 	for i := 0; i < maxPrint; i++ {

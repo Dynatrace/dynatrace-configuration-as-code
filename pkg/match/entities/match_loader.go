@@ -44,6 +44,7 @@ type MatchParameters struct {
 	Type       string
 	WorkingDir string
 	OutputDir  string
+	SelfMatch  bool
 	Source     MatchParametersEnv
 	Target     MatchParametersEnv
 }
@@ -60,6 +61,7 @@ type MatchFileDefinition struct {
 	Name       string            `yaml:"name"`
 	Type       string            `yaml:"type"`
 	OutputPath string            `yaml:"outputPath"`
+	SelfMatch  bool              `yaml:"selfMatch"`
 	Source     EnvInfoDefinition `yaml:"sourceInfo"`
 	Target     EnvInfoDefinition `yaml:"targetInfo"`
 }
@@ -107,7 +109,7 @@ func LoadMatchingParameters(fs afero.Fs, matchFileName string) (matchParameters 
 		errors = append(errors, fmt.Errorf("matches type should be: %s, but was: %s", strings.Join(getMapKeys(validMatchTypes), " or "), matchFileDef.Type))
 	}
 
-	matchParameters.OutputDir, _, err = cmdUtil.GetFilePaths(matchFileDef.OutputPath)
+	_, matchParameters.OutputDir, err = cmdUtil.GetFilePaths(matchFileDef.OutputPath)
 	if err != nil {
 		errors = append(errors, err)
 	} else {
@@ -125,6 +127,18 @@ func LoadMatchingParameters(fs afero.Fs, matchFileName string) (matchParameters 
 
 	if errList != nil {
 		errors = append(errors, errList...)
+	}
+
+	matchParameters.SelfMatch = matchFileDef.SelfMatch
+
+	if matchFileDef.Source.ManifestPath == matchFileDef.Target.ManifestPath &&
+		matchFileDef.Source.Environment == matchFileDef.Target.Environment &&
+		matchFileDef.Source.Project == matchFileDef.Target.Project {
+
+		matchParameters.SelfMatch = true
+	}
+	if matchParameters.SelfMatch {
+		log.Debug("This is a Self Match, some rules will be disabled.")
 	}
 
 	if len(errors) > 0 {
