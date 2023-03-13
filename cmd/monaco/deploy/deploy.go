@@ -17,6 +17,7 @@ package deploy
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
@@ -47,6 +48,11 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroup string, sp
 	filteredEnvironments, err := filterEnvironments(loadedManifest.Environments, environmentGroup, specificEnvironments)
 	if err != nil {
 		return fmt.Errorf("error while loading relevant environments to deploy to: %w", err)
+	}
+
+	err = verifyClusterGen(filteredEnvironments, dryRun)
+	if err != nil {
+		return fmt.Errorf("unable to verify cluster generation: %w", err)
 	}
 
 	loadedProjects, err := loadProjects(fs, absManifestPath, loadedManifest)
@@ -154,6 +160,16 @@ func filterEnvironments(environments manifest.Environments, environmentGroup str
 	}
 
 	return environments, nil
+}
+
+func verifyClusterGen(environments manifest.Environments, dryRun bool) error {
+	if !dryRun {
+		err := cmdutils.VerifyClusterGen(environments)
+		if err != nil {
+			return fmt.Errorf("unable to verify cluster generation: %w", err)
+		}
+	}
+	return nil
 }
 
 func loadProjects(fs afero.Fs, manifestPath string, man *manifest.Manifest) ([]project.Project, error) {

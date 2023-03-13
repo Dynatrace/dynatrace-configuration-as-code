@@ -16,12 +16,12 @@ package download
 
 import (
 	"fmt"
-	"os"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
+	"os"
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -111,7 +111,14 @@ func getDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.
 		},
 		ValidArgsFunction: completion.DownloadDirectCompletion,
 		PreRun: func(cmd *cobra.Command, args []string) {
-			printUploadToSameEnvironmentWarning(args[0], os.Getenv(args[1]))
+			serverVersion, err := client.GetDynatraceVersion2ndGen(client.NewTokenAuthClient(os.Getenv(args[1])), args[0])
+			if err != nil {
+				log.Error("Unable to determine server version %q: %w", args[0], err)
+				return
+			}
+			if serverVersion.SmallerThan(version.Version{Major: 1, Minor: 262}) {
+				logUploadToSameEnvironmentWarning()
+			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			url := args[0]
@@ -265,15 +272,30 @@ func setupSharedFlags(cmd *cobra.Command, project, outputFolder *string, forceOv
 // printUploadToSameEnvironmentWarning function may display a warning message on the console,
 // notifying the user that downloaded objects cannot be uploaded to the same environment.
 // It verifies the version of the tenant and, depending on the result, it may or may not display the warning.
-func printUploadToSameEnvironmentWarning(environmentURL, token string) {
-	serverVersion, err := client.GetDynatraceVersion(client.NewTokenAuthClient(token), environmentURL)
+func printUploadToSameEnvironmentWarning(env manifest.EnvironmentDefinition) {
+	var serverVersion version.Version
+	var err error
+	if env.Type == manifest.Classic {
+		serverVersion, err = client.GetDynatraceVersion2ndGen(client.NewTokenAuthClient(env.Auth.Token.Value), env.Url.Value)
+	} else {
+		credentials := client.OauthCredentials{
+			ClientID:     env.Auth.OAuth.ClientId.Value,
+			ClientSecret: env.Auth.OAuth.ClientSecret.Value,
+			TokenURL:     "https://sso-dev.dynatracelabs.com/sso/oauth2/token",
+		}
+		serverVersion, err = client.GetDynatraceVersion2ndGen(client.NewOAuthClient(credentials), env.Url.Value)
+	}
 	if err != nil {
-		log.Error("Unable to determine server version %q: %w", environmentURL, err)
+		log.Error("Unable to determine server version %q: %w", env.Url.Value, err)
 		return
 	}
 	if serverVersion.SmallerThan(version.Version{Major: 1, Minor: 262}) {
-		log.Warn("Uploading Settings 2.0 objects to the same environment is not possible due to your cluster version " +
-			"being below 1.262.0, which Monaco does not support for reliably updating downloaded settings without having " +
-			"duplicate configurations. Consider upgrading to 1.262+")
+		logUploadToSameEnvironmentWarning()
 	}
+}
+
+func logUploadToSameEnvironmentWarning() {
+	log.Warn("Uploading Settings 2.0 objects to the same environment is not possible due to your cluster version " +
+		"being below 1.262.0, which Monaco does not support for reliably updating downloaded settings without having " +
+		"duplicate configurations. Consider upgrading to 1.262+")
 }

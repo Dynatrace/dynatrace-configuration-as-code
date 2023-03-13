@@ -69,7 +69,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 		return fmt.Errorf("environment %q was not available in manifest %q", cmdOptions.specificEnvironmentName, cmdOptions.manifestFile)
 	}
 
-	printUploadToSameEnvironmentWarning(env.Url.Value, env.Auth.Token.Value)
+	printUploadToSameEnvironmentWarning(env)
 
 	if !cmdOptions.forceOverwrite {
 		cmdOptions.projectName = fmt.Sprintf("%s_%s", cmdOptions.projectName, cmdOptions.specificEnvironmentName)
