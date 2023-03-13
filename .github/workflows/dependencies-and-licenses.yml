@@ -1,7 +1,7 @@
 name: Dependencies and Licenses
 on:
-  push:
-    branches: [ main ]
+  release:
+    types: [ created ]
 defaults:
   run:
     shell: bash
@@ -25,7 +25,11 @@ jobs:
       - name: Generate Dependencies and Licenses
         run: go list -m -json all | go-licence-detector -includeIndirect -depsTemplate=.dependencies/templates/dependencies.csv.tmpl -depsOut=dependencies-and-licenses.txt
       - name: Upload dependencies and licenses artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: dependencies-and-licenses
-          path: dependencies-and-licenses-go.txt
+        run: |
+          curl --request POST "${{ github.event.release.upload_url }}?name=dependencies-and-licenses.txt" \
+               --header "Accept: application/vnd.github+json" \
+               --header "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+               --header "X-GitHub-Api-Version: 2022-11-28" \
+               --header "Content-Type: application/octet-stream" \
+               --fail \
+               --data-binary @dependencies-and-licenses.txt
