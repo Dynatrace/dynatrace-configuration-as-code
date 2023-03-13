@@ -1094,7 +1094,7 @@ environmentGroups:
 		},
 		{
 			name:   "Same configs in group and env restrictions",
-			envs:   []string{"envA", "groupB"},
+			envs:   []string{"envA", "envB"},
 			groups: []string{"groupA", "groupB"},
 			manifestContent: `
 manifestVersion: 1.0
@@ -1102,7 +1102,7 @@ projects: [{name: projectA, path: pathA}]
 environmentGroups:
 - {name: groupA, environments: [{name: envA, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
 - {name: groupB, environments: [{name: envB, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
-- {name: groupC, environments: [{name: envC, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
+- {name: groupC, environments: [{name: envC, url: {value: "https://example.com"}, auth: {token: {name: token-does-not-exist-but-it-should-not-error-because-envC-is-not-loaded}}}]}
 `,
 			expectedManifest: Manifest{
 				Projects: map[string]ProjectDefinition{
@@ -1144,6 +1144,34 @@ environmentGroups:
 					},
 				},
 			},
+		},
+		{
+			name:   "Missing group errors",
+			envs:   []string{"envA", "envB"},
+			groups: []string{"groupA", "groupB", "doesnotexist"},
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: projectA, path: pathA}]
+environmentGroups:
+- {name: groupA, environments: [{name: envA, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
+- {name: groupB, environments: [{name: envB, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
+- {name: groupC, environments: [{name: envC, url: {value: "https://example.com"}, auth: {token: {name: token-does-not-exist-but-it-should-not-error-because-envC-is-not-loaded}}}]}
+`,
+			errsContain: []string{`requested group "doesnotexist" not found`},
+		},
+		{
+			name:   "Missing env errors",
+			envs:   []string{"envA", "envB", "doesnotexist"},
+			groups: []string{"groupA", "groupB"},
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: projectA, path: pathA}]
+environmentGroups:
+- {name: groupA, environments: [{name: envA, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
+- {name: groupB, environments: [{name: envB, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
+- {name: groupC, environments: [{name: envC, url: {value: "https://example.com"}, auth: {token: {name: token-does-not-exist-but-it-should-not-error-because-envC-is-not-loaded}}}]}
+`,
+			errsContain: []string{`requested environment "doesnotexist" not found`},
 		},
 		{
 			name: "No errors with type = Platform",
