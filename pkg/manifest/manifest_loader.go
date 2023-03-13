@@ -355,6 +355,19 @@ func toEnvironments(context *ManifestLoaderContext, groups []group) (map[string]
 		}
 	}
 
+	// validate that all required groups & environments are included
+	for _, g := range context.Groups {
+		if !groupNames[g] {
+			errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("requested group %q not found", g)))
+		}
+	}
+
+	for _, e := range context.Environments {
+		if !envNames[e] {
+			errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("requested environment %q not found", e)))
+		}
+	}
+
 	if errors != nil {
 		return nil, errors
 	}
