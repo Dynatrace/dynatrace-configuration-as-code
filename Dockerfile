@@ -9,11 +9,11 @@ RUN apk add --update --no-cache \
     ca-certificates
 
 RUN addgroup monaco ; \
-    adduser -s /bin/false -G monaco -D monaco
+    adduser --shell /bin/false --ingroup monaco --disabled-password --home /monaco monaco
 
 COPY --chown=monaco:monaco --chmod=755 ${SOURCE} /usr/local/bin/monaco
 
 USER monaco
-
+WORKDIR /monaco
 ENTRYPOINT "/usr/local/bin/monaco"
 CMD ["--help"]
