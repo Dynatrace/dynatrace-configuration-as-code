@@ -49,7 +49,7 @@ func doDeploy(fs afero.Fs, manifestPath string, environmentGroup string, specifi
 		return fmt.Errorf("error while loading relevant environments to deploy to: %w", err)
 	}
 
-	loadedProjects, err := loadProjects(fs, manifestPath, loadedManifest)
+	loadedProjects, err := loadProjects(fs, absManifestPath, loadedManifest)
 	if err != nil {
 		return err
 	}
