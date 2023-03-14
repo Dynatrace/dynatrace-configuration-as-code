@@ -311,15 +311,10 @@ func convertTemplate(context *configConvertContext, currentPath string, writeToP
 func convertReservedParameters(temporaryTemplate string) string {
 
 	for _, name := range configV2.ReservedParameterNames {
-		if name == configV2.NameParameter {
-			continue // name stays the same in the template
-		}
-
 		r := regexp.MustCompile(fmt.Sprintf(`{{ *\.%s *}}`, name))
-		newName := convertedParameterName(name)
+		newName := convertReservedParameterNames(name)
 
 		temporaryTemplate = r.ReplaceAllString(temporaryTemplate, fmt.Sprintf("{{ .%s }}", newName))
-
 	}
 
 	return temporaryTemplate
@@ -389,7 +384,7 @@ func convertParameters(context *configConvertContext, environment manifest.Envir
 			continue
 		}
 
-		newName := convertedParameterName(name)
+		newName := convertReservedParameterNames(name)
 
 		if projectV1.IsDependency(value) {
 			ref, err := parseReference(context, config, name, value)
@@ -422,13 +417,20 @@ func convertParameters(context *configConvertContext, environment manifest.Envir
 	return parameters, skip, nil
 }
 
-func convertedParameterName(name string) string {
+// convertReservedParametersNames will return a new name for any v1 parameter name that overlaps with a reserved name that is part of toplevel v2 configuration.
+// While the 'name' parameter is reserved in v2 as well, it is not converted as it means the same in v1 and v2.
+// If the passed paramName does not match a reserved parameter, it will be returned as is
+func convertReservedParameterNames(paramName string) string {
 
-	if slices.Contains(configV2.ReservedParameterNames, name) {
-		return name + "1"
+	if paramName == configV2.NameParameter {
+		return paramName // 'name' stays the same between v1 and v2
 	}
 
-	return name
+	if slices.Contains(configV2.ReservedParameterNames, paramName) {
+		return paramName + "1"
+	}
+
+	return paramName
 }
 
 func parseSkipDeploymentParameter(context *configConvertContext, config *projectV1.Config, value string) (parameter.Parameter, error) {

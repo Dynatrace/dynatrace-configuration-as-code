@@ -644,6 +644,23 @@ configs:
 			nil,
 			[]string{ScopeParameter},
 		},
+		{
+			"fails to load with a parameter that is 'name'",
+			"test-file.yaml",
+			"test-file.yaml",
+			`
+configs:
+- id: profile-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+    originObjectId: origin-object-id
+    parameters:
+      name: "some other name"
+  type: some-api`,
+			nil,
+			[]string{NameParameter},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
