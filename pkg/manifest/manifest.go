@@ -141,16 +141,3 @@ func (e Environments) FilterByNames(names []string) (Environments, error) {
 
 	return result, nil
 }
-
-// FilterByGroup returns all environments whose group-name matches the given name.
-func (e Environments) FilterByGroup(groupName string) Environments {
-	result := make(map[string]EnvironmentDefinition, len(e))
-
-	for k, definition := range e {
-		if definition.Group == groupName {
-			result[k] = definition
-		}
-	}
-
-	return result
-}
