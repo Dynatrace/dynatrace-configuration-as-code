@@ -117,27 +117,3 @@ type Manifest struct {
 	// Environments defined in the manifest, split by environment-name
 	Environments Environments
 }
-
-// FilterByNames filters the environments by name and returns all environments that match the given names.
-// Given an empty slice, all environments are returned.
-// The resulting slice is never empty.
-//
-// An error is returned if a given name is not available as environment
-func (e Environments) FilterByNames(names []string) (Environments, error) {
-
-	if len(names) == 0 {
-		return e, nil
-	}
-
-	result := make(Environments, len(names))
-
-	for _, environmentName := range names {
-		if env, ok := e[environmentName]; ok {
-			result[environmentName] = env
-		} else {
-			return nil, fmt.Errorf("environment '%s' not found", environmentName)
-		}
-	}
-
-	return result, nil
-}
