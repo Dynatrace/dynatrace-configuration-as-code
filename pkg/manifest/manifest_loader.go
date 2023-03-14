@@ -22,12 +22,11 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
 	version2 "github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
+	"github.com/spf13/afero"
+	"gopkg.in/yaml.v2"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/spf13/afero"
-	"gopkg.in/yaml.v2"
 )
 
 type ManifestLoaderContext struct {
@@ -98,41 +97,21 @@ func (e projectLoaderError) Error() string {
 }
 
 func LoadManifest(context *ManifestLoaderContext) (Manifest, []error) {
-	manifestPath := filepath.Clean(context.ManifestPath)
-
 	log.Debug("Loading manifest %q. Restrictions: groups=%q, environments=%q", context.ManifestPath, context.Groups, context.Environments)
 
-	if !files.IsYamlFileExtension(manifestPath) {
-		return Manifest{}, []error{manifestLoaderError{context.ManifestPath, "manifest file is not a yaml"}}
-	}
-
-	exists, err := files.DoesFileExist(context.Fs, manifestPath)
-
+	manifestYAML, err := readManifestYAML(context)
 	if err != nil {
 		return Manifest{}, []error{err}
 	}
-
-	if !exists {
-		return Manifest{}, []error{manifestLoaderError{context.ManifestPath, "specified manifest file is either no file or does not exist"}}
+	if errs := verifyManifestYAML(manifestYAML); errs != nil {
+		var retErrs []error
+		for _, e := range errs {
+			retErrs = append(retErrs, manifestLoaderError{context.ManifestPath, fmt.Sprintf("invalid manifest definition: %s", e)})
+		}
+		return Manifest{}, retErrs
 	}
 
-	data, err := afero.ReadFile(context.Fs, manifestPath)
-
-	if err != nil {
-		return Manifest{}, []error{manifestLoaderError{context.ManifestPath, fmt.Sprintf("error while reading the manifest: %s", err)}}
-	}
-
-	return parseManifest(context, data)
-}
-
-func parseManifest(context *ManifestLoaderContext, data []byte) (Manifest, []error) {
 	manifestPath := filepath.Clean(context.ManifestPath)
-
-	manifest, err := parseManifestFile(context, data)
-	if err != nil {
-		return Manifest{}, err
-	}
-
 	var errors []error
 
 	workingDir := filepath.Dir(manifestPath)
@@ -149,7 +128,7 @@ func parseManifest(context *ManifestLoaderContext, data []byte) (Manifest, []err
 	projectDefinitions, projectErrors := toProjectDefinitions(&projectLoaderContext{
 		fs:           workingDirFs,
 		manifestPath: relativeManifestPath,
-	}, manifest.Projects)
+	}, manifestYAML.Projects)
 
 	if projectErrors != nil {
 		errors = append(errors, projectErrors...)
@@ -157,7 +136,7 @@ func parseManifest(context *ManifestLoaderContext, data []byte) (Manifest, []err
 		errors = append(errors, manifestLoaderError{context.ManifestPath, "no projects defined in manifest"})
 	}
 
-	environmentDefinitions, manifestErrors := toEnvironments(context, manifest.EnvironmentGroups)
+	environmentDefinitions, manifestErrors := toEnvironments(context, manifestYAML.EnvironmentGroups)
 
 	if manifestErrors != nil {
 		errors = append(errors, manifestErrors...)
@@ -247,33 +226,49 @@ func parseOAuth(a oAuth) (OAuth, error) {
 	}, nil
 }
 
-func parseManifestFile(context *ManifestLoaderContext, data []byte) (manifest, []error) {
+func readManifestYAML(context *ManifestLoaderContext) (manifest, error) {
+	manifestPath := filepath.Clean(context.ManifestPath)
+
+	if !files.IsYamlFileExtension(manifestPath) {
+		return manifest{}, manifestLoaderError{context.ManifestPath, "manifest file is not a yaml"}
+	}
+
+	if exists, err := files.DoesFileExist(context.Fs, manifestPath); err != nil {
+		return manifest{}, err
+	} else if !exists {
+		return manifest{}, manifestLoaderError{context.ManifestPath, "specified manifest file is either no file or does not exist"}
+	}
+
+	rawData, err := afero.ReadFile(context.Fs, manifestPath)
+	if err != nil {
+		return manifest{}, manifestLoaderError{context.ManifestPath, fmt.Sprintf("error while reading the manifest: %s", err)}
+	}
+
 	var m manifest
+
+	err = yaml.UnmarshalStrict(rawData, &m)
+	if err != nil {
+		return manifest{}, manifestLoaderError{context.ManifestPath, fmt.Sprintf("error during parsing the manifest: %s", err)}
+	}
+	return m, nil
+}
+
+func verifyManifestYAML(m manifest) []error {
 	var errs []error
 
-	err := yaml.UnmarshalStrict(data, &m)
-	if err != nil {
-		errs = append(errs, manifestLoaderError{context.ManifestPath, fmt.Sprintf("error during parsing the manifest: %s", err)})
+	if err := validateManifestVersion(m.ManifestVersion); err != nil {
+		errs = append(errs, err)
 	}
 
-	err = validateManifestVersion(m.ManifestVersion)
-	if err != nil {
-		errs = append(errs, manifestLoaderError{context.ManifestPath, fmt.Sprintf("invalid manifest definition: %s", err)})
+	if len(m.Projects) == 0 { //this should be checked over the Manifest
+		errs = append(errs, fmt.Errorf("no `projects` defined"))
 	}
 
-	if len(m.Projects) == 0 {
-		errs = append(errs, manifestLoaderError{context.ManifestPath, "invalid manifest definition: no `projects` defined"})
+	if len(m.EnvironmentGroups) == 0 { //this should be checked over the Manifest
+		errs = append(errs, fmt.Errorf("no `environmentGroups` defined"))
 	}
 
-	if len(m.EnvironmentGroups) == 0 {
-		errs = append(errs, manifestLoaderError{context.ManifestPath, "invalid manifest definition: no `environmentGroups` defined"})
-	}
-
-	if len(errs) != 0 {
-		return manifest{}, errs
-	}
-
-	return m, nil
+	return errs
 }
 
 var maxSupportedManifestVersion, _ = version2.ParseVersion(version.ManifestVersion)

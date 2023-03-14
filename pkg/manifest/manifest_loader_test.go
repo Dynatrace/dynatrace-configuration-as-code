@@ -23,14 +23,12 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	monacoVersion "github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v2"
 	"math"
 	"reflect"
 	"testing"
-
-	"gotest.tools/assert"
 )
 
 func Test_extractUrlType(t *testing.T) {
@@ -209,11 +207,10 @@ func Test_parseProjectDefinition_GroupingType(t *testing.T) {
 	}
 	got, gotErrs := parseProjectDefinition(&context, project)
 
+	assert.Empty(t, gotErrs)
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("parseProjectDefinition() got = %v, want %v", got, want)
 	}
-
-	assert.Assert(t, len(gotErrs) == 0)
 }
 
 func Test_parseProjectDefinition_FailsOnUnknownType(t *testing.T) {
@@ -229,8 +226,8 @@ func Test_parseProjectDefinition_FailsOnUnknownType(t *testing.T) {
 
 	_, gotErrs := parseProjectDefinition(&context, project)
 
-	assert.Assert(t, len(gotErrs) == 1)
-	assert.ErrorType(t, gotErrs[0], projectLoaderError{})
+	assert.Len(t, gotErrs, 1)
+	assert.IsType(t, projectLoaderError{}, gotErrs[0])
 }
 
 func Test_parseProjectDefinition_FailsOnInvalidProjectDefinitions(t *testing.T) {
@@ -270,8 +267,8 @@ func Test_parseProjectDefinition_FailsOnInvalidProjectDefinitions(t *testing.T) 
 		t.Run(tt.name, func(t *testing.T) {
 			_, gotErrs := parseProjectDefinition(&context, tt.project)
 
-			assert.Assert(t, len(gotErrs) == 1)
-			assert.ErrorType(t, gotErrs[0], projectLoaderError{})
+			assert.Len(t, gotErrs, 1)
+			assert.IsType(t, projectLoaderError{}, gotErrs[0])
 		})
 	}
 
@@ -448,24 +445,99 @@ func Test_toProjectDefinitions(t *testing.T) {
 				t.Errorf("toProjectDefinitions() returned unexpected Errors = %v", gotErrs)
 			}
 
-			assert.DeepEqual(t, got, tt.want, cmpopts.SortSlices(func(a, b ProjectDefinition) bool { return a.Name < b.Name }))
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 
-func Test_parseManifestFile(t *testing.T) {
-	tests := []struct {
+func TestVerifyManifestYAML(t *testing.T) {
+	type given struct {
+		manifest manifest
+	}
+	type expected struct {
+		errorMessage string
+	}
+
+	var tests = []struct {
 		name     string
-		context  *ManifestLoaderContext
-		data     string
-		want     manifest
-		wantErrs bool
+		given    given
+		expected expected
 	}{
 		{
-			"parses simple manifest",
-			&ManifestLoaderContext{},
-			fmt.Sprintf(
-				`manifestVersion: "%s"
+			name:     "fails on missing version",
+			given:    given{manifest: manifest{}},
+			expected: expected{errorMessage: "`manifestVersion` missing"},
+		},
+		{
+			name:     "fails on missing projects",
+			given:    given{},
+			expected: expected{errorMessage: "no `projects` defined"},
+		},
+		{
+			name:     "fails on missing environments",
+			given:    given{},
+			expected: expected{errorMessage: "no `environmentGroups` defined"},
+		},
+		{
+			name:     "fails on missing version",
+			given:    given{manifest: manifest{}},
+			expected: expected{errorMessage: "`manifestVersion` missing"},
+		},
+		{
+			name: "fails on no longer supported manifest version",
+			given: given{
+				manifest: manifest{
+					ManifestVersion: "0.0",
+				},
+			},
+			expected: expected{errorMessage: "`manifestVersion` 0.0 is no longer supported. Min required version is 1.0, please update manifest"},
+		},
+		{
+			name: "fails on not yet supported manifest version",
+			given: given{
+				manifest: manifest{
+					ManifestVersion: fmt.Sprintf("%d.%d", math.MaxInt32, math.MaxInt32),
+				},
+			},
+			expected: expected{errorMessage: fmt.Sprintf("`manifestVersion` %d.%d is not supported by monaco 2.x. Max supported version is 1.0, please check manifest or update monaco", math.MaxInt32, math.MaxInt32)},
+		},
+		{
+			name: "fails on malformed manifest version",
+			given: given{
+				manifest: manifest{
+					ManifestVersion: "random text",
+				},
+			},
+			expected: expected{errorMessage: "invalid `manifestVersion`: failed to parse version: format did not meet expected MAJOR.MINOR or MAJOR.MINOR.PATCH pattern: random text"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			errors := verifyManifestYAML(tt.given.manifest)
+			var errorMessages []string
+			for _, err := range errors {
+				errorMessages = append(errorMessages, err.Error())
+			}
+			fmt.Println(errors)
+			assert.Contains(t, errorMessages, tt.expected.errorMessage)
+		})
+	}
+}
+
+func TestUnmarshallingYAML(t *testing.T) {
+	type expected struct {
+		manifest manifest
+		wantErr  bool
+	}
+	var tests = []struct {
+		name     string
+		given    string
+		expected expected
+	}{
+		{
+			name: "unmarshall simple manifest",
+			given: `
+manifestVersion: "1.0"
 projects:
 - name: project
 environmentGroups:
@@ -477,171 +549,55 @@ environmentGroups:
       value: ENV_URL
     token:
       name: ENV_TOKEN
-`, version.ManifestVersion),
-			manifest{
-				ManifestVersion: version.ManifestVersion,
-				Projects: []project{
-					{
-						Name: "project",
+`,
+			expected: expected{
+				manifest: manifest{
+					ManifestVersion: "1.0",
+					Projects: []project{
+						{
+							Name: "project",
+						},
 					},
-				},
-				EnvironmentGroups: []group{
-					{
-						Name: "default",
-						Environments: []environment{
-							{
-								Name: "env",
-								Url: url{
-									Type:  urlTypeEnvironment,
-									Value: "ENV_URL",
-								},
-								Token: &authSecret{
-									Name: "ENV_TOKEN",
+					EnvironmentGroups: []group{
+						{
+							Name: "default",
+							Environments: []environment{
+								{
+									Name: "env",
+									Url: url{
+										Type:  urlTypeEnvironment,
+										Value: "ENV_URL",
+									},
+									Token: &authSecret{
+										Name: "ENV_TOKEN",
+									},
 								},
 							},
 						},
 					},
 				},
 			},
-			false,
 		},
 		{
-			"fails on missing version",
-			&ManifestLoaderContext{},
-			`projects:
-- name: project
-environments:
-- group: default
-  entries:
-  - name: env
-    url:
-      type: environment
-      value: ENV_URL
-    token:
-      name: ENV_TOKEN
-`,
-			manifest{},
-			true,
-		},
-		{
-			"fails on missing projects",
-			&ManifestLoaderContext{},
-			fmt.Sprintf(
-				`manifestVersion: "%s"
-environments:
-- group: default
-  entries:
-  - name: env
-    url:
-      type: environment
-      value: ENV_URL
-    token:
-      name: ENV_TOKEN
-`, version.ManifestVersion),
-			manifest{},
-			true,
-		},
-		{
-			"fails on missing environments",
-			&ManifestLoaderContext{},
-			fmt.Sprintf(
-				`manifestVersion: "%s"
-projects:
-- name: project
-`, version.ManifestVersion),
-			manifest{},
-			true,
-		},
-		{
-			"fails on duplicate project definitions",
-			&ManifestLoaderContext{},
-			fmt.Sprintf(
-				`manifestVersion: "%s"
+			name: "fails on duplicate project definitions",
+			given: `
 projects:
 - name: project
 projects:
 - name: project2
-environments:
-- group: default
-  entries:
-  - name: env
-    url:
-      type: environment
-      value: ENV_URL
-    token:
-      name: ENV_TOKEN
-`, version.ManifestVersion),
-			manifest{},
-			true,
-		},
-		{
-			"fails on no longer supported manifest version",
-			&ManifestLoaderContext{},
-			`manifestVersion: 0.0
-projects:
-- name: project
-environmentGroups:
-- name: default
-  environments:
-  - name: env
-    url:
-      type: environment
-      value: ENV_URL
-    token:
-      name: ENV_TOKEN
 `,
-			manifest{},
-			true,
-		},
-		{
-			"fails on not yet supported manifest version",
-			&ManifestLoaderContext{},
-			fmt.Sprintf(
-				`manifestVersion: "%s"
-projects:
-- name: project
-projects:
-- name: project2
-environmentGroupss:
-- name: default
-  environments:
-  - name: env
-    url:
-      type: environment
-      value: ENV_URL
-    token:
-      name: ENV_TOKEN
-`, fmt.Sprintf("%d.%d", math.MaxInt32, math.MaxInt32)),
-			manifest{},
-			true,
-		},
-		{
-			"fails on malformed manifest version",
-			&ManifestLoaderContext{},
-			`manifestVersion: "random text"
-projects:
-- name: project
-environmentGroups:
-- name: default
-  environments:
-  - name: env
-    url:
-      type: environment
-      value: ENV_URL
-    token:
-      name: ENV_TOKEN
-`,
-			manifest{},
-			true,
+			expected: expected{wantErr: true},
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, gotErrs := parseManifestFile(tt.context, []byte(tt.data))
-			if (tt.wantErrs && len(gotErrs) < 1) || (!tt.wantErrs && len(gotErrs) > 0) {
-				t.Errorf("parseManifest() gotErrs = %v, wantErrs = %v", gotErrs, tt.wantErrs)
-			} else if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("parseManifest() got = %v, want %v", got, tt.want)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var actual manifest
+			err := yaml.UnmarshalStrict([]byte(tc.given), &actual)
+			if tc.expected.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tc.expected.manifest, actual)
 			}
 		})
 	}
@@ -649,9 +605,9 @@ environmentGroups:
 
 func TestManifestVersionsCanBeParsedToVersionStruct(t *testing.T) {
 	_, err := monacoVersion.ParseVersion(version.MinManifestVersion)
-	assert.NilError(t, err, "expected version.MinManifestVersion (%s) to parse to Version struct", version.MinManifestVersion)
+	assert.NoErrorf(t, err, "expected version.MinManifestVersion (%s) to parse to Version struct", version.MinManifestVersion)
 	_, err = monacoVersion.ParseVersion(version.ManifestVersion)
-	assert.NilError(t, err, "expected version.ManifestVersion (%s) to parse to Version struct", version.ManifestVersion)
+	assert.NoErrorf(t, err, "expected version.ManifestVersion (%s) to parse to Version struct", version.ManifestVersion)
 }
 
 func Test_validateManifestVersion(t *testing.T) {
@@ -1655,7 +1611,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			fs := afero.NewMemMapFs()
-			assert.NilError(t, afero.WriteFile(fs, "manifest.yaml", []byte(test.manifestContent), 0400))
+			assert.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(test.manifestContent), 0400))
 
 			mani, errs := LoadManifest(&ManifestLoaderContext{
 				Fs:           fs,
@@ -1672,7 +1628,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 				t.Errorf("Unexpected amount of errors: %#v", errs)
 			}
 
-			assert.DeepEqual(t, test.expectedManifest, mani, cmp.AllowUnexported(EnvironmentDefinition{}))
+			assert.Equal(t, test.expectedManifest, mani)
 
 		})
 	}
