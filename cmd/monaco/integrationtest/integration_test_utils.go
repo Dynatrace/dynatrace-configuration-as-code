@@ -40,10 +40,16 @@ func CreateDynatraceClient(t *testing.T, environment manifest.EnvironmentDefinit
 	return c
 }
 
-func LoadManifest(t *testing.T, fs afero.Fs, manifestFile string) manifest.Manifest {
+func LoadManifest(t *testing.T, fs afero.Fs, manifestFile string, specificEnvironment string) manifest.Manifest {
+	var specificEnvs []string
+	if specificEnvironment != "" {
+		specificEnvs = append(specificEnvs, specificEnvironment)
+	}
+
 	m, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
 		Fs:           fs,
 		ManifestPath: manifestFile,
+		Environments: specificEnvs,
 	})
 	testutils.FailTestOnAnyError(t, errs, "failed to load manifest")
 

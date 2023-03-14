@@ -31,23 +31,14 @@ import (
 )
 
 // Deletes all configs that end with a test suffix and any Settings created by the given manifest
-func CleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestPath string, loadedManifest manifest.Manifest, specificEnvironment, suffix string) {
+func CleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestPath string, loadedManifest manifest.Manifest, suffix string) {
 
 	log.Info("### Cleaning up after integration test ###")
-
-	var specificEnvs []string
-	if specificEnvironment != "" {
-		specificEnvs = append(specificEnvs, specificEnvironment)
-	}
-	environments, err := loadedManifest.Environments.FilterByNames(specificEnvs)
-	if err != nil {
-		log.Fatal("Failed to filter environments: %v", err)
-	}
 
 	apis := api.NewAPIs()
 	suffix = "_" + suffix
 
-	for _, environment := range environments {
+	for _, environment := range loadedManifest.Environments {
 
 		c := CreateDynatraceClient(t, environment)
 
