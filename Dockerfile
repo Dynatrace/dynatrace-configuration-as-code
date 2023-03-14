@@ -15,5 +15,5 @@ COPY --chown=monaco:monaco --chmod=755 ${SOURCE} /usr/local/bin/monaco
 
 USER monaco
 WORKDIR /monaco
-ENTRYPOINT "/usr/local/bin/monaco"
+ENTRYPOINT ["/usr/local/bin/monaco"]
 CMD ["--help"]
