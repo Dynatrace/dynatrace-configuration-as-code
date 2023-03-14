@@ -41,22 +41,13 @@ import (
 
 // AssertAllConfigsAvailability checks all configurations of a given project with given availability
 func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string, specificProjects []string, specificEnvironment string, available bool) {
-	loadedManifest := LoadManifest(t, fs, manifestPath)
-
-	var specificEnvs []string
-	if specificEnvironment != "" {
-		specificEnvs = append(specificEnvs, specificEnvironment)
-	}
-	environments, err := loadedManifest.Environments.FilterByNames(specificEnvs)
-	if err != nil {
-		t.Fatalf("Failed to filter environments: %v", err)
-	}
+	loadedManifest := LoadManifest(t, fs, manifestPath, specificEnvironment)
 
 	projects := LoadProjects(t, fs, manifestPath, loadedManifest)
 
-	envNames := make([]string, 0, len(environments))
+	envNames := make([]string, 0, len(loadedManifest.Environments))
 
-	for _, env := range environments {
+	for _, env := range loadedManifest.Environments {
 		envNames = append(envNames, env.Name)
 	}
 

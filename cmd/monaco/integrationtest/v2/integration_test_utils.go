@@ -58,9 +58,15 @@ func RunIntegrationWithCleanupGivenEnvs(t *testing.T, configFolder, manifestPath
 }
 
 func runIntegrationWithCleanup(t *testing.T, testFs afero.Fs, configFolder, manifestPath, specificEnvironment, suffixTest string, envVars map[string]string, testFunc func(fs afero.Fs)) {
+	var envs []string
+	if len(specificEnvironment) > 0 {
+		envs = append(envs, specificEnvironment)
+	}
+
 	loadedManifest, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
 		Fs:           testFs,
 		ManifestPath: manifestPath,
+		Environments: envs,
 	})
 	testutils.FailTestOnAnyError(t, errs, "loading of manifest failed")
 
@@ -69,7 +75,7 @@ func runIntegrationWithCleanup(t *testing.T, testFs afero.Fs, configFolder, mani
 	suffix := appendUniqueSuffixToIntegrationTestConfigs(t, testFs, configFolder, suffixTest)
 
 	t.Cleanup(func() {
-		integrationtest.CleanupIntegrationTest(t, testFs, manifestPath, loadedManifest, specificEnvironment, suffix)
+		integrationtest.CleanupIntegrationTest(t, testFs, manifestPath, loadedManifest, suffix)
 	})
 
 	for k, v := range envVars {

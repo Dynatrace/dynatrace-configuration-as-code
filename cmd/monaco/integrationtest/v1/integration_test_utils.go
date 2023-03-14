@@ -44,7 +44,7 @@ import (
 // AssertConfigAvailability checks specific configuration for availability
 func AssertConfigAvailability(t *testing.T, fs afero.Fs, manifestFile string, coord coordinate.Coordinate, env, projName string, available bool) {
 
-	mani := integrationtest.LoadManifest(t, fs, manifestFile)
+	mani := integrationtest.LoadManifest(t, fs, manifestFile, "")
 
 	envDefinition, found := mani.Environments[env]
 	assert.Assert(t, found, "environment %s not found", env)
@@ -212,7 +212,7 @@ func runLegacyIntegration(t *testing.T, configFolder, envFile, suffixTest string
 	if doCleanup {
 		t.Cleanup(func() {
 			t.Log("Cleaning up environment")
-			integrationtest.CleanupIntegrationTest(t, fs, manifestPath, loadedManifest, "", suffix)
+			integrationtest.CleanupIntegrationTest(t, fs, manifestPath, loadedManifest, suffix)
 		})
 	}
 

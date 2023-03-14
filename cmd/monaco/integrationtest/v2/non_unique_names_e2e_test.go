@@ -60,7 +60,6 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 					},
 				},
 			},
-			"test",
 			testSuffix,
 		)
 	})
