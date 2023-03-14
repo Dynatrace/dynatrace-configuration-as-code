@@ -44,6 +44,7 @@ func purge(fs afero.Fs, deploymentManifestPath string, environmentNames []string
 	mani, manifestLoadError := manifest.LoadManifest(&manifest.ManifestLoaderContext{
 		Fs:           fs,
 		ManifestPath: deploymentManifestPath,
+		Environments: environmentNames,
 	})
 
 	if manifestLoadError != nil {
@@ -51,12 +52,7 @@ func purge(fs afero.Fs, deploymentManifestPath string, environmentNames []string
 		return errors.New("error while loading manifest")
 	}
 
-	environments, err := mani.Environments.FilterByNames(environmentNames)
-	if err != nil {
-		return fmt.Errorf("failed to load environments: %w", err)
-	}
-
-	deleteErrors := purgeConfigs(maps.Values(environments), apis)
+	deleteErrors := purgeConfigs(maps.Values(mani.Environments), apis)
 
 	for _, e := range deleteErrors {
 		log.Error("Deletion error: %s", e)
