@@ -45,7 +45,7 @@ const (
 )
 
 // ReservedParameterNames holds all parameter names that may not be specified by a user in a config.
-var ReservedParameterNames = []string{IdParameter, ScopeParameter, SkipParameter}
+var ReservedParameterNames = []string{IdParameter, NameParameter, ScopeParameter, SkipParameter}
 
 // Parameters defines a map of name to parameter
 type Parameters map[string]parameter.Parameter
