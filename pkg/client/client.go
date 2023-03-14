@@ -237,9 +237,15 @@ func WithAutoServerVersion() func(client *DynatraceClient) {
 		var serverVersion version.Version
 		var err error
 		if _, ok := d.client.Transport.(*oauth2.Transport); ok {
-			serverVersion, err = GetDynatraceVersion3rdGen(d.client, d.environmentUrl)
+			serverVersion, err = GetDynatraceVersion(d.client, Environment{
+				URL:  d.environmentUrl,
+				Type: Platform,
+			})
 		} else {
-			serverVersion, err = GetDynatraceVersion2ndGen(d.client, d.environmentUrl)
+			serverVersion, err = GetDynatraceVersion(d.client, Environment{
+				URL:  d.environmentUrl,
+				Type: Classic,
+			})
 		}
 
 		if err != nil {

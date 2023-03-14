@@ -52,7 +52,7 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroup string, sp
 
 	err = verifyClusterGen(filteredEnvironments, dryRun)
 	if err != nil {
-		return fmt.Errorf("unable to verify cluster generation: %w", err)
+		return err
 	}
 
 	loadedProjects, err := loadProjects(fs, absManifestPath, loadedManifest)
@@ -166,7 +166,7 @@ func verifyClusterGen(environments manifest.Environments, dryRun bool) error {
 	if !dryRun {
 		err := cmdutils.VerifyClusterGen(environments)
 		if err != nil {
-			return fmt.Errorf("unable to verify cluster generation: %w", err)
+			return err
 		}
 	}
 	return nil

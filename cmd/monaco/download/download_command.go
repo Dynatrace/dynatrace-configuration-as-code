@@ -21,6 +21,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
+	"net/http"
 	"os"
 
 	"github.com/spf13/afero"
@@ -111,7 +112,10 @@ func getDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.
 		},
 		ValidArgsFunction: completion.DownloadDirectCompletion,
 		PreRun: func(cmd *cobra.Command, args []string) {
-			serverVersion, err := client.GetDynatraceVersion2ndGen(client.NewTokenAuthClient(os.Getenv(args[1])), args[0])
+			serverVersion, err := client.GetDynatraceVersion(client.NewTokenAuthClient(os.Getenv(args[1])), client.Environment{
+				URL:  args[0],
+				Type: client.Classic,
+			})
 			if err != nil {
 				log.Error("Unable to determine server version %q: %w", args[0], err)
 				return
@@ -275,16 +279,23 @@ func setupSharedFlags(cmd *cobra.Command, project, outputFolder *string, forceOv
 func printUploadToSameEnvironmentWarning(env manifest.EnvironmentDefinition) {
 	var serverVersion version.Version
 	var err error
+
+	var httpClient *http.Client
 	if env.Type == manifest.Classic {
-		serverVersion, err = client.GetDynatraceVersion2ndGen(client.NewTokenAuthClient(env.Auth.Token.Value), env.Url.Value)
+		httpClient = client.NewTokenAuthClient(env.Auth.Token.Value)
 	} else {
 		credentials := client.OauthCredentials{
 			ClientID:     env.Auth.OAuth.ClientId.Value,
 			ClientSecret: env.Auth.OAuth.ClientSecret.Value,
-			TokenURL:     "https://sso-dev.dynatracelabs.com/sso/oauth2/token",
+			TokenURL:     "https://sso.dynatrace.com/sso/oauth2/token",
 		}
-		serverVersion, err = client.GetDynatraceVersion2ndGen(client.NewOAuthClient(credentials), env.Url.Value)
+		httpClient = client.NewOAuthClient(credentials)
 	}
+
+	serverVersion, err = client.GetDynatraceVersion(httpClient, client.Environment{
+		URL:  env.Url.Value,
+		Type: client.EnvironmentType(env.Type),
+	})
 	if err != nil {
 		log.Error("Unable to determine server version %q: %w", env.Url.Value, err)
 		return

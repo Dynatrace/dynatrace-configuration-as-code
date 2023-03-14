@@ -18,7 +18,6 @@ package cmdutils
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"github.com/spf13/cobra"
@@ -33,33 +32,31 @@ func SilenceUsageCommand() func(cmd *cobra.Command, args []string) {
 	}
 }
 
+var ssoTokenURL = "https://sso.dynatrace.com/sso/oauth2/token" //nolint:gosec
+
 // VerifyClusterGen takes a manifestEnvironments map and tries to call the version endpoint of each environment
 // in order to verify that the user has configured the environments correctly.
 // Depending on the configured environment "type" the function tries to call the version endpoint of either
-// 2nd gen cluster (classic) or 3rd gen cluster (platform). The function will return an error as soon as
+// classic gen or platform gen. The function will return an error as soon as
 // it receives an error from calling the version endpoint of an environment
 func VerifyClusterGen(envs manifest.Environments) error {
 	for _, env := range envs {
-		// Assume 2nd gen cluster and check version endpoint
-		if env.Type == manifest.Classic {
-			if _, err := client.GetDynatraceVersion2ndGen(client.NewTokenAuthClient(env.Auth.Token.Value), env.Url.Value); err != nil {
-				log.Error("Could not verify Dynatrace cluster generation of environment %q (%q). Please check the configured Auth credentials in the manifest", env.Name, env.Url)
-				return fmt.Errorf("unable to call version endpoint of environment %q: %w", env.Name, err)
+		switch env.Type {
+		case manifest.Classic:
+			if _, err := client.GetDynatraceVersion(client.NewTokenAuthClient(env.Auth.Token.Value), client.Environment{URL: env.Url.Value, Type: client.Classic}); err != nil {
+				return fmt.Errorf("could not verify Dynatrace cluster generation of environment %q (%q). Please check the configured Auth credentials in the manifest", env.Name, env.Url)
 			}
-			return nil
-		}
-
-		// Assume 3rd gen cluster an check version endpoint
-		if env.Type == manifest.Platform {
+		case manifest.Platform:
 			oauthCredentials := client.OauthCredentials{
 				ClientID:     env.Auth.OAuth.ClientId.Value,
 				ClientSecret: env.Auth.OAuth.ClientSecret.Value,
-				TokenURL:     "https://sso-dev.dynatracelabs.com/sso/oauth2/token",
+				TokenURL:     ssoTokenURL,
 			}
-			if _, err := client.GetDynatraceVersion2ndGen(client.NewOAuthClient(oauthCredentials), env.Url.Value); err != nil {
-				log.Error("Could not verify Dynatrace cluster generation of environment %q (%q). Please check the configured Auth credentials in the manifest", env.Name, env.Url)
-				return fmt.Errorf("unable to call version endpoint of environment %q: %w", env.Name, err)
+			if _, err := client.GetDynatraceVersion(client.NewOAuthClient(oauthCredentials), client.Environment{URL: env.Url.Value, Type: client.Platform}); err != nil {
+				return fmt.Errorf("could not verify Dynatrace cluster generation of environment %q (%q). Please check the configured Auth credentials in the manifest", env.Name, env.Url)
 			}
+		default:
+			return fmt.Errorf("invalid environment type")
 		}
 	}
 	return nil
