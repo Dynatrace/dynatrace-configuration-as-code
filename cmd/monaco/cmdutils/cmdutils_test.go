@@ -75,8 +75,8 @@ func TestVerifyClusterGen(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := VerifyClusterGen(tt.args.envs); (err != nil) != tt.wantErr {
-				t.Errorf("VerifyClusterGen() error = %v, wantErr %v", err, tt.wantErr)
+			if ok := VerifyEnvironmentGeneration(tt.args.envs); ok == tt.wantErr {
+				t.Errorf("VerifyEnvironmentGeneration() error = %v, wantErr %v", ok, tt.wantErr)
 			}
 		})
 	}
@@ -88,7 +88,7 @@ func TestVerifyClusterGen(t *testing.T) {
 		}))
 		defer server.Close()
 
-		err := VerifyClusterGen(manifest.Environments{
+		ok := VerifyEnvironmentGeneration(manifest.Environments{
 			"env": manifest.EnvironmentDefinition{
 				Name: "env",
 				Type: manifest.Classic,
@@ -99,7 +99,7 @@ func TestVerifyClusterGen(t *testing.T) {
 				},
 			},
 		})
-		assert.NoError(t, err)
+		assert.True(t, ok)
 	})
 
 	t.Run("Call Platform Version EP - ok", func(t *testing.T) {
@@ -117,11 +117,11 @@ func TestVerifyClusterGen(t *testing.T) {
 			}
 
 			rw.WriteHeader(200)
-			_, _ = rw.Write([]byte(`{"version" : "1.262.0.20230303"}`))
+			_, _ = rw.Write([]byte(`{"version" : "0.59.3.20231603"}`))
 		}))
 		defer server.Close()
 
-		err := VerifyClusterGen(manifest.Environments{
+		ok := VerifyEnvironmentGeneration(manifest.Environments{
 			"env": manifest.EnvironmentDefinition{
 				Name: "env",
 				Type: manifest.Platform,
@@ -139,17 +139,17 @@ func TestVerifyClusterGen(t *testing.T) {
 				},
 			},
 		})
-		assert.NoError(t, err)
+		assert.True(t, ok)
 	})
 
 	t.Run("version EP not available ", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			rw.WriteHeader(404)
-			_, _ = rw.Write([]byte(`{"version" : "1.262.0.20230303"}`))
+			_, _ = rw.Write([]byte(`{"version" : "0.59.1.20231603"}`))
 		}))
 		defer server.Close()
 
-		err := VerifyClusterGen(manifest.Environments{
+		ok := VerifyEnvironmentGeneration(manifest.Environments{
 			"env": manifest.EnvironmentDefinition{
 				Name: "env",
 				Type: manifest.Classic,
@@ -160,9 +160,9 @@ func TestVerifyClusterGen(t *testing.T) {
 				},
 			},
 		})
-		assert.Error(t, err)
+		assert.False(t, ok)
 
-		err = VerifyClusterGen(manifest.Environments{
+		ok = VerifyEnvironmentGeneration(manifest.Environments{
 			"env": manifest.EnvironmentDefinition{
 				Name: "env",
 				Type: manifest.Platform,
@@ -173,7 +173,7 @@ func TestVerifyClusterGen(t *testing.T) {
 				},
 			},
 		})
-		assert.Error(t, err)
+		assert.False(t, ok)
 
 	})
 

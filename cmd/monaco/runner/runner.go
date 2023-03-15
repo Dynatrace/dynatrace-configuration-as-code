@@ -37,7 +37,6 @@ func Run() int {
 	rootCmd := BuildCli(afero.NewOsFs())
 
 	if err := rootCmd.Execute(); err != nil {
-		log.Error("%v\n", err)
 		return 1
 	}
 	return 0
