@@ -28,8 +28,8 @@ import (
 
 func GetDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 
-	var environments []string
-	var manifestName, group string
+	var environments, groups []string
+	var manifestName string
 
 	deleteCmd = &cobra.Command{
 		Use:     "delete <manifest.yaml> <delete.yaml>",
@@ -52,18 +52,23 @@ func GetDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 				return err
 			}
 
-			var groups []string
-			if group != "" {
-				groups = []string{group}
-			}
-
 			return Delete(fs, manifestName, deleteFile, environments, groups)
 		},
 		ValidArgsFunction: completion.DeleteCompletion,
 	}
 
-	deleteCmd.Flags().StringVarP(&group, "group", "g", "", "Specify the environmentGroup that should be used for deletion. This flag is mutually exclusive with '--environment'. If this flag is specified, configuration will be deleted from all environments within the specified group.")
-	deleteCmd.Flags().StringSliceVarP(&environments, "environment", "e", make([]string, 0), "Deletes configuration only for specified environments. This flag is mutually exclusive with '--group' If not set, delete will be executed on all environments defined in manifest.")
+	deleteCmd.Flags().StringSliceVarP(&groups, "group", "g", []string{},
+		"Specify one (or multiple) environmentGroup(s) that should be used for deletion. "+
+			"To set multiple groups either repeat this flag, or separate them using a comma (,). "+
+			"This flag is mutually exclusive with '--environment'. "+
+			"If this flag is specified, configuration will be deleted from all environments within the specified groups. "+
+			"If neither --groups nor --environment is present, all environments will be used for deletion")
+	deleteCmd.Flags().StringSliceVarP(&environments, "environment", "e", []string{},
+		"Specify one (or multiple) environments(s) that should be used for deletion. "+
+			"To set multiple environments either repeat this flag, or separate them using a comma (,). "+
+			"This flag is mutually exclusive with '--group'. "+
+			"If this flag is specified, configuration will be deleted from all specified environments. "+
+			"If neither --groups nor --environment is present, all environments will be used for deletion")
 
 	if err := deleteCmd.RegisterFlagCompletionFunc("environment", completion.EnvironmentByArg0); err != nil {
 		log.Fatal("failed to setup CLI %v", err)
