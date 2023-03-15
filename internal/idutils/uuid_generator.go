@@ -35,12 +35,10 @@ func GenerateUuidFromName(name string) string {
 
 // IsUuid tests whether a potential configId is already a UUID
 func IsUuid(configId string) bool {
-	_, err := uuidLib.Parse(configId)
-	if err == nil {
-		return true
-	} else {
+	if _, err := uuidLib.Parse(configId); err != nil {
 		return false
 	}
+	return true
 }
 
 // GenerateUuidFromConfigId takes the unique project identifier within an environment, a config id and

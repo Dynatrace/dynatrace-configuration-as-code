@@ -110,10 +110,8 @@ func deployConfig(configClient client.ConfigClient, apis api.APIs, entityMap *en
 	configName, err := extractConfigName(conf, properties)
 	if err != nil {
 		errors = append(errors, err)
-	} else {
-		if entityMap.contains(apiToDeploy.ID, configName) && !apiToDeploy.NonUniqueName {
-			errors = append(errors, newConfigDeployErr(conf, fmt.Sprintf("duplicated config name `%s`", configName)))
-		}
+	} else if entityMap.contains(apiToDeploy.ID, configName) && !apiToDeploy.NonUniqueName {
+		errors = append(errors, newConfigDeployErr(conf, fmt.Sprintf("duplicated config name `%s`", configName)))
 	}
 	if len(errors) > 0 {
 		return parameter.ResolvedEntity{}, errors

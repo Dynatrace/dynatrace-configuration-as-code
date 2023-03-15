@@ -36,13 +36,10 @@ var optionalAddedLogger *builtinLog.Logger
 func Run() int {
 	rootCmd := BuildCli(afero.NewOsFs())
 
-	err := rootCmd.Execute()
-
-	if err != nil {
+	if err := rootCmd.Execute(); err != nil {
 		log.Error("%v\n", err)
 		return 1
 	}
-
 	return 0
 }
 

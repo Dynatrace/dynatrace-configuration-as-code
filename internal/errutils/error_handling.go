@@ -46,10 +46,8 @@ func PrintError(err error) {
 
 	if errors.As(err, &prettyPrintError) {
 		log.Error(prettyPrintError.PrettyError())
-	} else {
-		if err != nil {
-			log.Error(err.Error())
-		}
+	} else if err != nil {
+		log.Error(err.Error())
 	}
 }
 
@@ -90,10 +88,8 @@ func PrintWarning(err error) {
 
 	if errors.As(err, &prettyPrintError) {
 		log.Warn(prettyPrintError.PrettyError())
-	} else {
-		if err != nil {
-			log.Warn(err.Error())
-		}
+	} else if err != nil {
+		log.Warn(err.Error())
 	}
 }
 

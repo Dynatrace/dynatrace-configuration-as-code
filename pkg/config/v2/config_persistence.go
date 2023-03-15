@@ -15,7 +15,6 @@
 package v2
 
 import (
-	"fmt"
 	"reflect"
 )
 
@@ -52,5 +51,5 @@ type topLevelDefinition struct {
 type configParameter interface{}
 
 func getTopLevelDefinitionYamlTypeName() string {
-	return fmt.Sprintf("%s", reflect.ValueOf(topLevelDefinition{}).Type())
+	return reflect.ValueOf(topLevelDefinition{}).Type().String()
 }

@@ -680,8 +680,7 @@ func isValueParameter(param parameter.Parameter) bool {
 
 func toValueShorthandDefinition(context *detailedSerializerContext, parameterName string,
 	param parameter.Parameter) (configParameter, error) {
-	switch param.GetType() {
-	case value.ValueParameterType:
+	if param.GetType() == value.ValueParameterType {
 		valueParam, ok := param.(*value.ValueParameter)
 
 		if !ok {

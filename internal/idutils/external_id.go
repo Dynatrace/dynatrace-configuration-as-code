@@ -24,12 +24,12 @@ import (
 // GenerateExternalID generates the externalID for settings 2.0 objects based on the schema, and ID.
 // The result of the function is pure.
 // Max length for the external ID is 500
-func GenerateExternalID(schema, ID string) string {
+func GenerateExternalID(schema, id string) string {
 	const prefix = "monaco:"
 	const format = "%s$%s"
 	const externalIDMaxLength = 500
 
-	formattedID := fmt.Sprintf(format, schema, ID)
+	formattedID := fmt.Sprintf(format, schema, id)
 	encodedID := base64.StdEncoding.EncodeToString([]byte(formattedID))
 
 	encodedIDMaxLength := externalIDMaxLength - len(prefix)

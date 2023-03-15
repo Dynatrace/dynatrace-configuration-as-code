@@ -792,14 +792,12 @@ func buildUrl(environmentUrl, urlPath string, params url.Values) (*url.URL, erro
 }
 
 func validateRespErrors(isNextCall bool, err error, resp rest.Response, urlPath string) (bool, error) {
-	isLastAvailablePage := false
-
 	if err != nil {
-		return isLastAvailablePage, err
+		return false, err
 	}
-
+	isLastAvailablePage := false
 	if success(resp) {
-		return isLastAvailablePage, nil
+		return false, nil
 
 	} else if isNextCall {
 		if resp.StatusCode == http.StatusBadRequest {

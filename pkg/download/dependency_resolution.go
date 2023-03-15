@@ -152,7 +152,7 @@ func findAndReplaceIds(apiName string, configToBeUpdated config.Config, c depend
 		}
 
 		if configToBeUpdated.Coordinate.Type == "dashboard" && conf.Coordinate.Type == "dashboard" {
-			continue //dashboards can not actually reference each other, but often contain a link to another inside a markdown tile
+			continue // dashboards can not actually reference each other, but often contain a link to another inside a markdown tile
 		}
 
 		if conf.Coordinate == configToBeUpdated.Coordinate {

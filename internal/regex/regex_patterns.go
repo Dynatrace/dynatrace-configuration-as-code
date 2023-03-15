@@ -45,7 +45,7 @@ func TrimToEnvVariableName(envReference string) string {
 		log.Error("RegEx pattern matching returned %d matches, rather than expected 2 - full match & variable name capture group", len(matches))
 		return envReference
 	}
-	return matches[1] //first and only capture group content returned on index 1, with full match on index 0
+	return matches[1] // first and only capture group content returned on index 1, with full match on index 0
 }
 
 // pattern matching strings of the format '"value", "value", ...' which are sometimes used to set lists into JSON templates

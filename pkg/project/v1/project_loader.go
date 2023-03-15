@@ -136,8 +136,7 @@ func containsApiName(apis api.APIs, path string) bool {
 
 func subprojectsMixedWithApi(fs afero.Fs, availableApis api.APIs, path string) error {
 	apiFound, subprojectFound := false, false
-	_, err := fs.Open(path)
-	if err != nil {
+	if _, err := fs.Open(path); err != nil {
 		return err
 	}
 	dirs, err := afero.ReadDir(fs, path)
