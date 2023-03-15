@@ -20,25 +20,25 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 )
 
-func CompareIndexes(resultListPtr *IndexCompareResultList, indexSource []IndexEntry, indexTarget []IndexEntry, indexRule IndexRule) {
+func compareIndexes(resultListPtr *IndexCompareResultList, indexSource []IndexEntry, indexTarget []IndexEntry, indexRule IndexRule) {
 
 	srcI := 0
 	tgtI := 0
 
 	for srcI < len(indexSource) && tgtI < len(indexTarget) {
-		diff := strings.Compare(indexSource[srcI].IndexValue, indexTarget[tgtI].IndexValue)
+		diff := strings.Compare(indexSource[srcI].indexValue, indexTarget[tgtI].indexValue)
 
 		if diff < 0 {
 			srcI++
 
 		} else if diff == 0 {
-			totalMatches := len(indexSource[srcI].MatchedIds) * len(indexTarget[tgtI].MatchedIds)
+			totalMatches := len(indexSource[srcI].matchedIds) * len(indexTarget[tgtI].matchedIds)
 			if totalMatches > 1000 {
-				log.Debug("too many matches for: %s, Nb of matches: %d", indexSource[srcI].IndexValue, totalMatches)
+				log.Debug("too many matches for: %s, Nb of matches: %d", indexSource[srcI].indexValue, totalMatches)
 			} else {
-				for _, entityIdSource := range indexSource[srcI].MatchedIds {
-					for _, entityIdTarget := range indexTarget[tgtI].MatchedIds {
-						(*resultListPtr).AddResult(entityIdSource, entityIdTarget, indexRule.WeightValue)
+				for _, entityIdSource := range indexSource[srcI].matchedIds {
+					for _, entityIdTarget := range indexTarget[tgtI].matchedIds {
+						(*resultListPtr).addResult(entityIdSource, entityIdTarget, indexRule.weightValue)
 					}
 				}
 

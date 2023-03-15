@@ -22,43 +22,43 @@ import (
 )
 
 type EntityProcessingEnv struct {
-	RawEntityListPtr          *RawEntityList
-	Type                      config.Type
-	CurrentRemainingEntities  *[]int
-	RemainingEntities         []int
-	RemainingEntitiesSeeded   []int
-	RemainingEntitiesUnSeeded []int
+	rawEntityListPtr          *RawEntityList
+	configType                config.Type
+	currentremainingEntities  *[]int
+	remainingEntities         []int
+	remainingEntitiesSeeded   []int
+	remainingEntitiesUnSeeded []int
 }
 
-func (e *EntityProcessingEnv) GenSeededEntities(resultList []CompareResult, getId func(CompareResult) int) {
-	e.RemainingEntitiesSeeded = []int{}
+func (e *EntityProcessingEnv) genSeededEntities(resultList []CompareResult, getId func(CompareResult) int) {
+	e.remainingEntitiesSeeded = []int{}
 
 	if len(resultList) == 0 {
 		return
 	}
 
-	e.RemainingEntitiesSeeded = make([]int, 1, len(resultList))
-	e.RemainingEntitiesSeeded[0] = getId(resultList[0])
+	e.remainingEntitiesSeeded = make([]int, 1, len(resultList))
+	e.remainingEntitiesSeeded[0] = getId(resultList[0])
 
 	for _, result := range resultList[1:] {
 		entityId := getId(result)
-		if entityId == e.RemainingEntitiesSeeded[len(e.RemainingEntitiesSeeded)-1] {
+		if entityId == e.remainingEntitiesSeeded[len(e.remainingEntitiesSeeded)-1] {
 			// pass
 		} else {
-			e.RemainingEntitiesSeeded = append(e.RemainingEntitiesSeeded, entityId)
+			e.remainingEntitiesSeeded = append(e.remainingEntitiesSeeded, entityId)
 		}
 	}
 
 }
 
-func (e *EntityProcessingEnv) GenUnSeededEntities(resultList []CompareResult, getId func(CompareResult) int, remainingEntities *[]int) {
-	e.RemainingEntitiesUnSeeded = []int{}
+func (e *EntityProcessingEnv) genUnSeededEntities(resultList []CompareResult, getId func(CompareResult) int, remainingEntities *[]int) {
+	e.remainingEntitiesUnSeeded = []int{}
 
 	if len(*remainingEntities) == 0 {
 		return
 	}
 
-	e.RemainingEntitiesUnSeeded = make([]int, 0, len(*remainingEntities))
+	e.remainingEntitiesUnSeeded = make([]int, 0, len(*remainingEntities))
 
 	resultIdx := 0
 	entityId := 0
@@ -71,13 +71,13 @@ func (e *EntityProcessingEnv) GenUnSeededEntities(resultList []CompareResult, ge
 			}
 		}
 		if remainingEntity != entityId || resultIdx >= len(resultList) {
-			e.RemainingEntitiesUnSeeded = append(e.RemainingEntitiesUnSeeded, remainingEntity)
+			e.remainingEntitiesUnSeeded = append(e.remainingEntitiesUnSeeded, remainingEntity)
 		}
 	}
 
 }
 
-func (e *EntityProcessingEnv) ReduceRemainingEntityList(singleToSingleMatch []CompareResult, getId func(CompareResult) int) {
+func (e *EntityProcessingEnv) reduceRemainingEntityList(singleToSingleMatch []CompareResult, getId func(CompareResult) int) {
 	entityIdList := make([]int, len(singleToSingleMatch))
 
 	i := 0
@@ -87,36 +87,36 @@ func (e *EntityProcessingEnv) ReduceRemainingEntityList(singleToSingleMatch []Co
 		i++
 	}
 
-	e.trimRemainingEntities(entityIdList)
+	e.trimremainingEntities(entityIdList)
 }
 
-func (e *EntityProcessingEnv) trimRemainingEntities(idsToDrop []int) {
+func (e *EntityProcessingEnv) trimremainingEntities(idsToDrop []int) {
 
 	sort.Slice(idsToDrop, func(i, j int) bool { return idsToDrop[i] < idsToDrop[j] })
 
-	nbRemaining := len(e.RemainingEntities) - len(idsToDrop)
-	newRemainingEntities := make([]int, nbRemaining)
+	nbRemaining := len(e.remainingEntities) - len(idsToDrop)
+	newremainingEntities := make([]int, nbRemaining)
 
 	dropI := 0
 	oldI := 0
 	newI := 0
 
-	for oldI < len(e.RemainingEntities) {
+	for oldI < len(e.remainingEntities) {
 
 		if dropI < len(idsToDrop) {
-			if idsToDrop[dropI] < e.RemainingEntities[oldI] {
+			if idsToDrop[dropI] < e.remainingEntities[oldI] {
 				log.Error("Dropping a non-remaining ID?? dropI: %d idsToDrop[dropI]: %d", dropI, idsToDrop[dropI])
 				dropI++
 				continue
 
-			} else if idsToDrop[dropI] == e.RemainingEntities[oldI] {
+			} else if idsToDrop[dropI] == e.remainingEntities[oldI] {
 				dropI++
 				oldI++
 				continue
 			}
 		}
 
-		newRemainingEntities[newI] = e.RemainingEntities[oldI]
+		newremainingEntities[newI] = e.remainingEntities[oldI]
 		newI++
 
 		oldI++
@@ -126,9 +126,9 @@ func (e *EntityProcessingEnv) trimRemainingEntities(idsToDrop []int) {
 	if newI != nbRemaining {
 
 		log.Error("Did not trim properly?? nbRemaining: %d newI: %d", nbRemaining, newI)
-		log.Error("Did not trim properly?? len(e.RemainingEntities): %d len(idsToDrop): %d", len(e.RemainingEntities), len(idsToDrop))
+		log.Error("Did not trim properly?? len(e.remainingEntities): %d len(idsToDrop): %d", len(e.remainingEntities), len(idsToDrop))
 
 	}
 
-	e.RemainingEntities = newRemainingEntities
+	e.remainingEntities = newremainingEntities
 }

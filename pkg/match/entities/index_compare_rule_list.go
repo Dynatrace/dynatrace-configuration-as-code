@@ -21,26 +21,26 @@ import (
 )
 
 type IndexCompareResultList struct {
-	RuleType       IndexRuleType
-	CompareResults []CompareResult
+	ruleType       IndexRuleType
+	compareResults []CompareResult
 }
 
-func NewIndexCompareResultList(ruleType IndexRuleType) *IndexCompareResultList {
+func newIndexCompareResultList(ruleType IndexRuleType) *IndexCompareResultList {
 	i := new(IndexCompareResultList)
-	i.RuleType = ruleType
-	i.CompareResults = []CompareResult{}
+	i.ruleType = ruleType
+	i.compareResults = []CompareResult{}
 	return i
 }
 
-func NewReversedIndexCompareResultList(sourceList *IndexCompareResultList) *IndexCompareResultList {
+func newReversedIndexCompareResultList(sourceList *IndexCompareResultList) *IndexCompareResultList {
 	i := new(IndexCompareResultList)
-	i.RuleType = sourceList.RuleType
-	size := len(sourceList.CompareResults)
-	i.CompareResults = make([]CompareResult, size)
+	i.ruleType = sourceList.ruleType
+	size := len(sourceList.compareResults)
+	i.compareResults = make([]CompareResult, size)
 	resI := 0
 
-	for _, result := range sourceList.CompareResults {
-		i.CompareResults[resI] = CompareResult{result.RightId, result.LeftId, result.Weight}
+	for _, result := range sourceList.compareResults {
+		i.compareResults[resI] = CompareResult{result.rightId, result.leftId, result.weight}
 		resI++
 	}
 
@@ -50,13 +50,13 @@ func NewReversedIndexCompareResultList(sourceList *IndexCompareResultList) *Inde
 	return i
 }
 
-func (i *IndexCompareResultList) AddResult(entityIdSource int, entityIdTarget int, weightValue int) {
-	i.CompareResults = append(i.CompareResults, CompareResult{entityIdSource, entityIdTarget, weightValue})
+func (i *IndexCompareResultList) addResult(entityIdSource int, entityIdTarget int, weightValue int) {
+	i.compareResults = append(i.compareResults, CompareResult{entityIdSource, entityIdTarget, weightValue})
 }
 
-func (i *IndexCompareResultList) ProcessMatches() []CompareResult {
+func (i *IndexCompareResultList) processMatches() []CompareResult {
 
-	if len(i.CompareResults) == 0 {
+	if len(i.compareResults) == 0 {
 		return []CompareResult{}
 	}
 
@@ -67,7 +67,7 @@ func (i *IndexCompareResultList) ProcessMatches() []CompareResult {
 	singleMatchLeftRight := i.keepSingleMatchEntities()
 	singleMatchRightLeft := reverseResults.keepSingleMatchEntities()
 
-	singleToSingleMatchEntities := KeepSingleToSingleMatchEntitiesLeftRight(singleMatchLeftRight, singleMatchRightLeft)
+	singleToSingleMatchEntities := keepSingleToSingleMatchEntitiesLeftRight(singleMatchLeftRight, singleMatchRightLeft)
 
 	i.trimSingleToSingleMatches(singleToSingleMatchEntities)
 
@@ -76,18 +76,20 @@ func (i *IndexCompareResultList) ProcessMatches() []CompareResult {
 }
 
 func (i *IndexCompareResultList) reduceBothForwardAndBackward() *IndexCompareResultList {
-	i.reduce()
-	reverseResults := NewReversedIndexCompareResultList(i)
-	reverseResults.reduce()
 
-	i.CompareResults = NewReversedIndexCompareResultList(reverseResults).CompareResults
+	i.keepTopMatchesOnly()
+
+	reverseResults := newReversedIndexCompareResultList(i)
+	reverseResults.keepTopMatchesOnly()
+
+	i.compareResults = newReversedIndexCompareResultList(reverseResults).compareResults
 
 	return reverseResults
 }
 
 func (i *IndexCompareResultList) keepSingleMatchEntities() []CompareResult {
 
-	if len(i.CompareResults) == 0 {
+	if len(i.compareResults) == 0 {
 		return []CompareResult{}
 	}
 
@@ -95,7 +97,7 @@ func (i *IndexCompareResultList) keepSingleMatchEntities() []CompareResult {
 
 	singleMatchEntities := []CompareResult{}
 
-	prevResult := i.CompareResults[0]
+	prevResult := i.compareResults[0]
 	prevTotalSeen := 1
 
 	keepSingleMatch := func() {
@@ -104,8 +106,8 @@ func (i *IndexCompareResultList) keepSingleMatchEntities() []CompareResult {
 		}
 	}
 
-	for _, compareResult := range i.CompareResults[1:] {
-		if compareResult.LeftId == prevResult.LeftId {
+	for _, compareResult := range i.compareResults[1:] {
+		if compareResult.leftId == prevResult.leftId {
 			prevTotalSeen += 1
 		} else {
 			keepSingleMatch()
@@ -118,18 +120,9 @@ func (i *IndexCompareResultList) keepSingleMatchEntities() []CompareResult {
 	return singleMatchEntities
 }
 
-func (i *IndexCompareResultList) reduce() {
-
-	if len(i.CompareResults) == 0 {
-		return
-	}
-
-	i.keepTopMatchesOnly()
-}
-
 func (i *IndexCompareResultList) sort() {
 
-	sort.Sort(ByLeftRight(i.CompareResults))
+	sort.Sort(ByLeftRight(i.compareResults))
 
 }
 
@@ -138,17 +131,17 @@ func (i *IndexCompareResultList) sumMatchWeightValues() {
 	i.sort()
 
 	summedMatchResults := []CompareResult{}
-	prevTotal := i.CompareResults[0]
+	prevTotal := i.compareResults[0]
 
 	aI := 0
 	bI := 1
 
-	for bI < len(i.CompareResults) {
-		a := i.CompareResults[aI]
-		b := i.CompareResults[bI]
+	for bI < len(i.compareResults) {
+		a := i.compareResults[aI]
+		b := i.compareResults[bI]
 
 		if a.areIdsEqual(b) {
-			prevTotal.Weight += b.Weight
+			prevTotal.weight += b.weight
 		} else {
 			summedMatchResults = append(summedMatchResults, prevTotal)
 			prevTotal = b
@@ -160,15 +153,15 @@ func (i *IndexCompareResultList) sumMatchWeightValues() {
 
 	summedMatchResults = append(summedMatchResults, prevTotal)
 
-	i.CompareResults = summedMatchResults
+	i.compareResults = summedMatchResults
 
 }
 
 func (i *IndexCompareResultList) getMaxWeight() int {
 	var max_weight int = 0
-	for _, result := range i.CompareResults {
-		if result.Weight > max_weight {
-			max_weight = result.Weight
+	for _, result := range i.compareResults {
+		if result.weight > max_weight {
+			max_weight = result.weight
 		}
 	}
 
@@ -176,22 +169,26 @@ func (i *IndexCompareResultList) getMaxWeight() int {
 }
 
 func (i *IndexCompareResultList) elevateWeight(lowerMaxWeight int) {
-	for _, result := range i.CompareResults {
-		result.Weight += lowerMaxWeight
+	for _, result := range i.compareResults {
+		result.weight += lowerMaxWeight
 	}
 }
 
 func (i *IndexCompareResultList) keepTopMatchesOnly() {
 
+	if len(i.compareResults) == 0 {
+		return
+	}
+
 	i.sortTopMatches()
 
 	topMatchesResults := []CompareResult{}
-	prevTop := i.CompareResults[0]
+	prevTop := i.compareResults[0]
 
-	for _, result := range i.CompareResults {
+	for _, result := range i.compareResults {
 
-		if result.LeftId == prevTop.LeftId {
-			if result.Weight == prevTop.Weight {
+		if result.leftId == prevTop.leftId {
+			if result.weight == prevTop.weight {
 
 			} else {
 				continue
@@ -204,13 +201,13 @@ func (i *IndexCompareResultList) keepTopMatchesOnly() {
 
 	}
 
-	i.CompareResults = topMatchesResults
+	i.compareResults = topMatchesResults
 
 }
 
 func (i *IndexCompareResultList) trimSingleToSingleMatches(singleToSingleMatchEntities []CompareResult) {
 
-	newLen := len(i.CompareResults) - len(singleToSingleMatchEntities)
+	newLen := len(i.compareResults) - len(singleToSingleMatchEntities)
 	trimmedList := make([]CompareResult, newLen)
 
 	i.sort()
@@ -221,16 +218,16 @@ func (i *IndexCompareResultList) trimSingleToSingleMatches(singleToSingleMatchEn
 	trmI := 0
 	var diff int
 
-	for curI < len(i.CompareResults) {
+	for curI < len(i.compareResults) {
 
 		if sglI >= len(singleToSingleMatchEntities) {
 			diff = -1
 		} else {
-			diff = CompareResults(i.CompareResults[curI], singleToSingleMatchEntities[sglI])
+			diff = compareCompareResults(i.compareResults[curI], singleToSingleMatchEntities[sglI])
 		}
 
 		if diff < 0 {
-			trimmedList[trmI] = i.CompareResults[curI]
+			trimmedList[trmI] = i.compareResults[curI]
 			trmI++
 			curI++
 
@@ -246,10 +243,10 @@ func (i *IndexCompareResultList) trimSingleToSingleMatches(singleToSingleMatchEn
 
 	if trmI != newLen {
 		log.Error("Did not trim properly?? newLen: %d trmI: %d", newLen, trmI)
-		log.Error("Did not trim properly?? len(i.CompareResults): %d len(singleToSingleMatchEntities): %d", len(i.CompareResults), len(singleToSingleMatchEntities))
+		log.Error("Did not trim properly?? len(i.compareResults): %d len(singleToSingleMatchEntities): %d", len(i.compareResults), len(singleToSingleMatchEntities))
 	}
 
-	i.CompareResults = trimmedList
+	i.compareResults = trimmedList
 
 }
 
@@ -260,11 +257,11 @@ func (i *IndexCompareResultList) MergeOldWeightType(oldResults *IndexCompareResu
 	lowerMaxWeight := i.getMaxWeight()
 	oldResults.elevateWeight(lowerMaxWeight)
 
-	i.CompareResults = append(i.CompareResults, oldResults.CompareResults...)
+	i.compareResults = append(i.compareResults, oldResults.compareResults...)
 }
 
 func (i *IndexCompareResultList) sortTopMatches() {
 
-	sort.Sort(ByTopMatch(i.CompareResults))
+	sort.Sort(ByTopMatch(i.compareResults))
 
 }

@@ -21,33 +21,33 @@ import (
 )
 
 type EntityProcessing struct {
-	Source          EntityProcessingEnv
-	Target          EntityProcessingEnv
-	MatchedEntities map[int]int
+	source          EntityProcessingEnv
+	target          EntityProcessingEnv
+	matchedEntities map[int]int
 }
 
-func NewEntityProcessing(rawEntityListPtrSource *RawEntityList, sourceType config.Type, rawEntityListPtrTarget *RawEntityList, targetType config.Type) *EntityProcessing {
+func newEntityProcessing(rawEntityListPtrSource *RawEntityList, sourceType config.Type, rawEntityListPtrTarget *RawEntityList, targetType config.Type) *EntityProcessing {
 	e := new(EntityProcessing)
-	e.MatchedEntities = map[int]int{}
+	e.matchedEntities = map[int]int{}
 
 	rawEntityListPtrSource.Sort()
 	rawEntityListPtrTarget.Sort()
 
-	e.Source = EntityProcessingEnv{
-		RawEntityListPtr:  rawEntityListPtrSource,
-		Type:              sourceType,
-		RemainingEntities: genRemainingEntitiesList(rawEntityListPtrSource),
+	e.source = EntityProcessingEnv{
+		rawEntityListPtr:  rawEntityListPtrSource,
+		configType:        sourceType,
+		remainingEntities: genremainingEntitiesList(rawEntityListPtrSource),
 	}
-	e.Target = EntityProcessingEnv{
-		RawEntityListPtr:  rawEntityListPtrTarget,
-		Type:              targetType,
-		RemainingEntities: genRemainingEntitiesList(rawEntityListPtrTarget),
+	e.target = EntityProcessingEnv{
+		rawEntityListPtr:  rawEntityListPtrTarget,
+		configType:        targetType,
+		remainingEntities: genremainingEntitiesList(rawEntityListPtrTarget),
 	}
 
 	return e
 }
 
-func genRemainingEntitiesList(rawEntityListPtr *RawEntityList) []int {
+func genremainingEntitiesList(rawEntityListPtr *RawEntityList) []int {
 	remainingEntitiesList := make([]int, len(*rawEntityListPtr))
 	for i := range *rawEntityListPtr {
 		remainingEntitiesList[i] = i
@@ -56,36 +56,36 @@ func genRemainingEntitiesList(rawEntityListPtr *RawEntityList) []int {
 	return remainingEntitiesList
 }
 
-func (e *EntityProcessing) AdjustRemainingEntities(singleToSingleMatch []CompareResult, resultList []CompareResult) {
+func (e *EntityProcessing) adjustremainingEntities(singleToSingleMatch []CompareResult, resultList []CompareResult) {
 
 	sort.Sort(ByLeft(singleToSingleMatch))
-	e.Source.ReduceRemainingEntityList(singleToSingleMatch, GetLeftId)
+	e.source.reduceRemainingEntityList(singleToSingleMatch, getLeftId)
 	sort.Sort(ByRight(singleToSingleMatch))
-	e.Target.ReduceRemainingEntityList(singleToSingleMatch, GetRightId)
+	e.target.reduceRemainingEntityList(singleToSingleMatch, getRightId)
 
 }
 
-func (e *EntityProcessing) PrepareRemainingEntities(keepSeeded bool, keepUnseeded bool, resultListPtr *IndexCompareResultList) {
+func (e *EntityProcessing) prepareremainingEntities(keepSeeded bool, keepUnseeded bool, resultListPtr *IndexCompareResultList) {
 
 	if keepSeeded && keepUnseeded {
-		e.Source.CurrentRemainingEntities = &(e.Source.RemainingEntities)
-		e.Target.CurrentRemainingEntities = &(e.Target.RemainingEntities)
+		e.source.currentremainingEntities = &(e.source.remainingEntities)
+		e.target.currentremainingEntities = &(e.target.remainingEntities)
 	} else if keepSeeded {
-		sort.Sort(ByLeft(resultListPtr.CompareResults))
-		e.Source.GenSeededEntities(resultListPtr.CompareResults, GetLeftId)
-		e.Source.CurrentRemainingEntities = &(e.Source.RemainingEntitiesSeeded)
+		sort.Sort(ByLeft(resultListPtr.compareResults))
+		e.source.genSeededEntities(resultListPtr.compareResults, getLeftId)
+		e.source.currentremainingEntities = &(e.source.remainingEntitiesSeeded)
 
-		sort.Sort(ByRight(resultListPtr.CompareResults))
-		e.Target.GenSeededEntities(resultListPtr.CompareResults, GetRightId)
-		e.Target.CurrentRemainingEntities = &(e.Target.RemainingEntitiesSeeded)
+		sort.Sort(ByRight(resultListPtr.compareResults))
+		e.target.genSeededEntities(resultListPtr.compareResults, getRightId)
+		e.target.currentremainingEntities = &(e.target.remainingEntitiesSeeded)
 	} else if keepUnseeded {
-		sort.Sort(ByLeft(resultListPtr.CompareResults))
-		e.Source.GenUnSeededEntities(resultListPtr.CompareResults, GetLeftId, &(e.Source.RemainingEntities))
-		e.Source.CurrentRemainingEntities = &(e.Source.RemainingEntitiesUnSeeded)
+		sort.Sort(ByLeft(resultListPtr.compareResults))
+		e.source.genUnSeededEntities(resultListPtr.compareResults, getLeftId, &(e.source.remainingEntities))
+		e.source.currentremainingEntities = &(e.source.remainingEntitiesUnSeeded)
 
-		sort.Sort(ByRight(resultListPtr.CompareResults))
-		e.Target.GenUnSeededEntities(resultListPtr.CompareResults, GetRightId, &(e.Target.RemainingEntities))
-		e.Target.CurrentRemainingEntities = &(e.Target.RemainingEntitiesUnSeeded)
+		sort.Sort(ByRight(resultListPtr.compareResults))
+		e.target.genUnSeededEntities(resultListPtr.compareResults, getRightId, &(e.target.remainingEntities))
+		e.target.currentremainingEntities = &(e.target.remainingEntitiesUnSeeded)
 	}
 
 }

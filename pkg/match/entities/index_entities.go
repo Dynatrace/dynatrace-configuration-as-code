@@ -19,23 +19,23 @@ import "sort"
 type IndexMap map[string][]int
 
 type IndexEntry struct {
-	IndexValue string
-	MatchedIds []int
+	indexValue string
+	matchedIds []int
 }
 
 type ByIndexValue []IndexEntry
 
 func (a ByIndexValue) Len() int           { return len(a) }
 func (a ByIndexValue) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByIndexValue) Less(i, j int) bool { return a[i].IndexValue < a[j].IndexValue }
+func (a ByIndexValue) Less(i, j int) bool { return a[i].indexValue < a[j].indexValue }
 
-func GenSortedEntitiesIndex(indexRule IndexRule, entities *EntityProcessingEnv) []IndexEntry {
+func genSortedEntitiesIndex(indexRule IndexRule, entities *EntityProcessingEnv) []IndexEntry {
 
 	index := IndexMap{}
 
-	for _, entityIdx := range *(entities.CurrentRemainingEntities) {
+	for _, entityIdx := range *(entities.currentremainingEntities) {
 
-		value := getValueFromPath((*entities.RawEntityListPtr)[entityIdx], indexRule.Path)
+		value := getValueFromPath((*entities.rawEntityListPtr)[entityIdx], indexRule.path)
 		if value == nil {
 			// pass
 		} else {
@@ -56,8 +56,8 @@ func flattenSortIndex(index *IndexMap) []IndexEntry {
 
 	for indexValue, matchedIds := range *index {
 		flatIndex[idx] = IndexEntry{
-			IndexValue: indexValue,
-			MatchedIds: matchedIds,
+			indexValue: indexValue,
+			matchedIds: matchedIds,
 		}
 		idx++
 	}

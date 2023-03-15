@@ -19,13 +19,13 @@ import (
 )
 
 type CompareResult struct {
-	LeftId  int
-	RightId int
-	Weight  int
+	leftId  int
+	rightId int
+	weight  int
 }
 
 func (a CompareResult) areIdsEqual(b CompareResult) bool {
-	if a.LeftId == b.LeftId && a.RightId == b.RightId {
+	if a.leftId == b.leftId && a.rightId == b.rightId {
 		return true
 	}
 	return false
@@ -38,7 +38,7 @@ type ByLeft []CompareResult
 func (a ByLeft) Len() int      { return len(a) }
 func (a ByLeft) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a ByLeft) Less(i, j int) bool {
-	return a[i].LeftId < a[j].LeftId
+	return a[i].leftId < a[j].leftId
 }
 
 // ByLeftRight implements sort.Interface for []CompareResult based on
@@ -48,11 +48,11 @@ type ByLeftRight []CompareResult
 func (a ByLeftRight) Len() int      { return len(a) }
 func (a ByLeftRight) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a ByLeftRight) Less(i, j int) bool {
-	if a[i].LeftId == a[j].LeftId {
-		return a[i].RightId < a[j].RightId
+	if a[i].leftId == a[j].leftId {
+		return a[i].rightId < a[j].rightId
 	}
 
-	return a[i].LeftId < a[j].LeftId
+	return a[i].leftId < a[j].leftId
 }
 
 // ByLeftRight implements sort.Interface for []CompareResult based on
@@ -62,7 +62,7 @@ type ByRight []CompareResult
 func (a ByRight) Len() int      { return len(a) }
 func (a ByRight) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a ByRight) Less(i, j int) bool {
-	return a[i].RightId < a[j].RightId
+	return a[i].rightId < a[j].rightId
 }
 
 // ByLeftRight implements sort.Interface for []CompareResult based on
@@ -72,11 +72,11 @@ type ByRightLeft []CompareResult
 func (a ByRightLeft) Len() int      { return len(a) }
 func (a ByRightLeft) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a ByRightLeft) Less(i, j int) bool {
-	if a[i].RightId == a[j].RightId {
-		return a[i].LeftId < a[j].LeftId
+	if a[i].rightId == a[j].rightId {
+		return a[i].leftId < a[j].leftId
 	}
 
-	return a[i].RightId < a[j].RightId
+	return a[i].rightId < a[j].rightId
 }
 
 // ByTopMatch implements sort.Interface for []CompareResult based on
@@ -86,45 +86,45 @@ type ByTopMatch []CompareResult
 func (a ByTopMatch) Len() int      { return len(a) }
 func (a ByTopMatch) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a ByTopMatch) Less(i, j int) bool {
-	if a[i].LeftId == a[j].LeftId {
-		return a[j].Weight < a[i].Weight
+	if a[i].leftId == a[j].leftId {
+		return a[j].weight < a[i].weight
 	}
-	return a[i].LeftId < a[j].LeftId
+	return a[i].leftId < a[j].leftId
 }
 
 func compareLeftRightResult(leftRight CompareResult, rightLeft CompareResult) int {
-	if leftRight.LeftId == rightLeft.RightId {
-		if leftRight.RightId == rightLeft.LeftId {
+	if leftRight.leftId == rightLeft.rightId {
+		if leftRight.rightId == rightLeft.leftId {
 			return 0
-		} else if leftRight.RightId < rightLeft.LeftId {
+		} else if leftRight.rightId < rightLeft.leftId {
 			return -1
 		} else {
 			return 1
 		}
-	} else if leftRight.LeftId < rightLeft.RightId {
+	} else if leftRight.leftId < rightLeft.rightId {
 		return -2
 	} else {
 		return 2
 	}
 }
 
-func CompareResults(a CompareResult, b CompareResult) int {
-	if a.LeftId == b.LeftId {
-		if a.RightId == b.RightId {
+func compareCompareResults(a CompareResult, b CompareResult) int {
+	if a.leftId == b.leftId {
+		if a.rightId == b.rightId {
 			return 0
-		} else if a.RightId < b.RightId {
+		} else if a.rightId < b.rightId {
 			return -1
 		} else {
 			return 1
 		}
-	} else if a.LeftId < b.LeftId {
+	} else if a.leftId < b.leftId {
 		return -2
 	} else {
 		return 2
 	}
 }
 
-func KeepSingleToSingleMatchEntitiesLeftRight(leftRight []CompareResult, rightLeft []CompareResult) []CompareResult {
+func keepSingleToSingleMatchEntitiesLeftRight(leftRight []CompareResult, rightLeft []CompareResult) []CompareResult {
 
 	singleMatchEntities := []CompareResult{}
 
@@ -156,10 +156,10 @@ func KeepSingleToSingleMatchEntitiesLeftRight(leftRight []CompareResult, rightLe
 	return singleMatchEntities
 }
 
-func GetLeftId(compareResult CompareResult) int {
-	return compareResult.LeftId
+func getLeftId(compareResult CompareResult) int {
+	return compareResult.leftId
 }
 
-func GetRightId(compareResult CompareResult) int {
-	return compareResult.RightId
+func getRightId(compareResult CompareResult) int {
+	return compareResult.rightId
 }

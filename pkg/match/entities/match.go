@@ -39,9 +39,9 @@ func CompareConfigs(fs afero.Fs, matchParameters MatchParameters, entityPerTypeS
 		if err != nil {
 			return []string{}, 0, 0, err
 		}
-		nbEntitiesSourceType := len(entityProcessingPtr.Target.RemainingEntities)
+		nbEntitiesSourceType := len(entityProcessingPtr.target.remainingEntities)
 		nbEntitiesSource += nbEntitiesSourceType
-		nbEntitiesTargetType := len(entityProcessingPtr.Target.RemainingEntities)
+		nbEntitiesTargetType := len(entityProcessingPtr.target.remainingEntities)
 		nbEntitiesTarget += nbEntitiesTargetType
 
 		var output MatchOutputType
@@ -81,7 +81,7 @@ func genEntityProcessing(entityPerTypeSource project.ConfigsPerType, entityPerTy
 		targetType = entityPerTypeTarget[entitiesType][0].Type
 	}
 
-	return NewEntityProcessing(rawEntitiesSource, sourceType, rawEntitiesTarget, targetType), nil
+	return newEntityProcessing(rawEntitiesSource, sourceType, rawEntitiesTarget, targetType), nil
 }
 
 func unmarshalEntities(entityPerType []config.Config) (*RawEntityList, error) {
@@ -100,32 +100,32 @@ func runIndexRuleAll(entityProcessingPtr *EntityProcessing, entitiesType string,
 	matchedEntities := map[int]int{}
 	oldResultsPtr := &IndexCompareResultList{}
 
-	sortedActiveIndexRuleTypes := NewIndexRuleMapGenerator(matchParameters.SelfMatch).GenSortedActiveList()
+	sortedActiveIndexRuleTypes := newIndexRuleMapGenerator(matchParameters.SelfMatch).genSortedActiveList()
 
 	log.Info("Type: %s -> nb source %d and nb target %d",
 		entitiesType,
-		len(*entityProcessingPtr.Source.RawEntityListPtr), len(*entityProcessingPtr.Target.RawEntityListPtr))
+		len(*entityProcessingPtr.source.rawEntityListPtr), len(*entityProcessingPtr.target.rawEntityListPtr))
 
 	for _, indexRuleType := range sortedActiveIndexRuleTypes {
-		resultListPtr := NewIndexCompareResultList(indexRuleType)
-		entityProcessingPtr.PrepareRemainingEntities(true, indexRuleType.IsSeed, oldResultsPtr)
+		resultListPtr := newIndexCompareResultList(indexRuleType)
+		entityProcessingPtr.prepareremainingEntities(true, indexRuleType.isSeed, oldResultsPtr)
 
-		for _, indexRule := range indexRuleType.IndexRules {
+		for _, indexRule := range indexRuleType.indexRules {
 			runIndexRule(indexRule, entityProcessingPtr, resultListPtr)
 		}
 
 		resultListPtr.MergeOldWeightType(oldResultsPtr)
-		singleToSingleMatchEntities := resultListPtr.ProcessMatches()
+		singleToSingleMatchEntities := resultListPtr.processMatches()
 		oldResultsPtr = resultListPtr
 
-		entityProcessingPtr.AdjustRemainingEntities(singleToSingleMatchEntities, resultListPtr.CompareResults)
+		entityProcessingPtr.adjustremainingEntities(singleToSingleMatchEntities, resultListPtr.compareResults)
 
 		matchedEntities = keepMatches(matchedEntities, singleToSingleMatchEntities)
 	}
 
 	log.Info("Type: %s -> nb source %d and nb target %d -> Matched: %d",
-		entitiesType, len(*entityProcessingPtr.Source.RawEntityListPtr),
-		len(*entityProcessingPtr.Target.RawEntityListPtr), len(matchedEntities))
+		entitiesType, len(*entityProcessingPtr.source.rawEntityListPtr),
+		len(*entityProcessingPtr.target.rawEntityListPtr), len(matchedEntities))
 
 	outputPayload := genOutputPayload(entitiesType, entityProcessingPtr, oldResultsPtr, matchedEntities)
 
@@ -154,32 +154,32 @@ type ExtractionInfo struct {
 func genOutputPayload(entitiesType string, entityProcessingPtr *EntityProcessing, oldResultsPtr *IndexCompareResultList, matchedEntities map[int]int) MatchOutputType {
 
 	multiMatchedMap := getMultiMatched(oldResultsPtr, entityProcessingPtr)
-	entityProcessingPtr.PrepareRemainingEntities(false, true, oldResultsPtr)
+	entityProcessingPtr.prepareremainingEntities(false, true, oldResultsPtr)
 
 	matchOutput := MatchOutputType{
 		Type: entitiesType,
 		MatchKey: MatchKey{
 			Source: ExtractionInfo{
-				From: entityProcessingPtr.Source.Type.From,
-				To:   entityProcessingPtr.Source.Type.To,
+				From: entityProcessingPtr.source.configType.From,
+				To:   entityProcessingPtr.source.configType.To,
 			},
 			Target: ExtractionInfo{
-				From: entityProcessingPtr.Target.Type.From,
-				To:   entityProcessingPtr.Target.Type.To,
+				From: entityProcessingPtr.target.configType.From,
+				To:   entityProcessingPtr.target.configType.To,
 			},
 		},
 		Matches:      make(map[string]string, len(matchedEntities)),
 		MultiMatched: multiMatchedMap,
-		UnMatched:    make([]string, len(*entityProcessingPtr.Source.CurrentRemainingEntities)),
+		UnMatched:    make([]string, len(*entityProcessingPtr.source.currentremainingEntities)),
 	}
 
 	for sourceI, targetI := range matchedEntities {
-		matchOutput.Matches[(*(entityProcessingPtr.Target.RawEntityListPtr))[targetI].(map[string]interface{})["entityId"].(string)] =
-			(*(entityProcessingPtr.Source.RawEntityListPtr))[sourceI].(map[string]interface{})["entityId"].(string)
+		matchOutput.Matches[(*(entityProcessingPtr.target.rawEntityListPtr))[targetI].(map[string]interface{})["entityId"].(string)] =
+			(*(entityProcessingPtr.source.rawEntityListPtr))[sourceI].(map[string]interface{})["entityId"].(string)
 	}
 
-	for idx, sourceI := range *entityProcessingPtr.Source.CurrentRemainingEntities {
-		matchOutput.UnMatched[idx] = (*(entityProcessingPtr.Source.RawEntityListPtr))[sourceI].(map[string]interface{})["entityId"].(string)
+	for idx, sourceI := range *entityProcessingPtr.source.currentremainingEntities {
+		matchOutput.UnMatched[idx] = (*(entityProcessingPtr.source.rawEntityListPtr))[sourceI].(map[string]interface{})["entityId"].(string)
 	}
 
 	return matchOutput
@@ -196,37 +196,37 @@ func genMultiMatchedMap(oldResultsPtr *IndexCompareResultList, entityProcessingP
 
 	multiMatched := map[string][]string{}
 
-	if len(oldResultsPtr.CompareResults) <= 0 {
+	if len(oldResultsPtr.compareResults) <= 0 {
 		return multiMatched
 	}
 
 	firstIdx := 0
-	currentId := oldResultsPtr.CompareResults[0].LeftId
+	currentId := oldResultsPtr.compareResults[0].leftId
 
 	addMatchingMultiMatched := func(nbMatches int) {
 		multiMatchedMatches := make([]string, nbMatches)
 		for j := 0; j < nbMatches; j++ {
-			compareResult := oldResultsPtr.CompareResults[(j + firstIdx)]
-			targetId := compareResult.RightId
+			compareResult := oldResultsPtr.compareResults[(j + firstIdx)]
+			targetId := compareResult.rightId
 
-			multiMatchedMatches[j] = (*(entityProcessingPtr.Target.RawEntityListPtr))[targetId].(map[string]interface{})["entityId"].(string)
+			multiMatchedMatches[j] = (*(entityProcessingPtr.target.rawEntityListPtr))[targetId].(map[string]interface{})["entityId"].(string)
 		}
-		multiMatched[(*(entityProcessingPtr.Source.RawEntityListPtr))[currentId].(map[string]interface{})["entityId"].(string)] = multiMatchedMatches
+		multiMatched[(*(entityProcessingPtr.source.rawEntityListPtr))[currentId].(map[string]interface{})["entityId"].(string)] = multiMatchedMatches
 	}
 
-	for i := 1; i < len(oldResultsPtr.CompareResults); i++ {
-		result := oldResultsPtr.CompareResults[i]
-		if result.LeftId == currentId {
+	for i := 1; i < len(oldResultsPtr.compareResults); i++ {
+		result := oldResultsPtr.compareResults[i]
+		if result.leftId == currentId {
 
 		} else {
 			nbMatches := i - firstIdx
 			addMatchingMultiMatched(nbMatches)
 
-			currentId = result.LeftId
+			currentId = result.leftId
 			firstIdx = i
 		}
 	}
-	nbMatches := len(oldResultsPtr.CompareResults) - firstIdx
+	nbMatches := len(oldResultsPtr.compareResults) - firstIdx
 	addMatchingMultiMatched(nbMatches)
 
 	return multiMatched
@@ -234,7 +234,7 @@ func genMultiMatchedMap(oldResultsPtr *IndexCompareResultList, entityProcessingP
 }
 
 func printMultiMatchedSample(oldResultsPtr *IndexCompareResultList, entityProcessingPtr *EntityProcessing) {
-	nbMultiMatched := len(oldResultsPtr.CompareResults)
+	nbMultiMatched := len(oldResultsPtr.compareResults)
 
 	if nbMultiMatched <= 0 {
 		return
@@ -248,10 +248,10 @@ func printMultiMatchedSample(oldResultsPtr *IndexCompareResultList, entityProces
 	}
 
 	for i := 0; i < maxPrint; i++ {
-		result := oldResultsPtr.CompareResults[i]
+		result := oldResultsPtr.compareResults[i]
 		log.Debug("Left: %v, Source: %v, Target: %v", result,
-			(*entityProcessingPtr.Source.RawEntityListPtr)[result.LeftId],
-			(*entityProcessingPtr.Target.RawEntityListPtr)[result.RightId])
+			(*entityProcessingPtr.source.rawEntityListPtr)[result.leftId],
+			(*entityProcessingPtr.target.rawEntityListPtr)[result.rightId])
 	}
 
 }
@@ -259,22 +259,22 @@ func printMultiMatchedSample(oldResultsPtr *IndexCompareResultList, entityProces
 func runIndexRule(indexRule IndexRule, entityProcessingPtr *EntityProcessing,
 	resultListPtr *IndexCompareResultList) {
 
-	sortedIndexSource := GenSortedEntitiesIndex(indexRule, &(*entityProcessingPtr).Source)
-	sortedIndexTarget := GenSortedEntitiesIndex(indexRule, &(*entityProcessingPtr).Target)
+	sortedIndexSource := genSortedEntitiesIndex(indexRule, &(*entityProcessingPtr).source)
+	sortedIndexTarget := genSortedEntitiesIndex(indexRule, &(*entityProcessingPtr).target)
 
-	CompareIndexes(resultListPtr, sortedIndexSource, sortedIndexTarget, indexRule)
+	compareIndexes(resultListPtr, sortedIndexSource, sortedIndexTarget, indexRule)
 
 }
 
 func keepMatches(matchedEntities map[int]int, singleToSingleMatch []CompareResult) map[int]int {
 	for _, result := range singleToSingleMatch {
-		_, found := matchedEntities[result.LeftId]
+		_, found := matchedEntities[result.leftId]
 
 		if found {
 			log.Error("Should never find multiple exact matches for an entity, %v", result)
 		}
 
-		matchedEntities[result.LeftId] = result.RightId
+		matchedEntities[result.leftId] = result.rightId
 	}
 
 	return matchedEntities
