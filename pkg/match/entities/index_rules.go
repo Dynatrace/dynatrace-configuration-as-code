@@ -49,13 +49,13 @@ var INDEX_CONFIG_LIST_ALL = []IndexRuleType{
 		weightValue: 100,
 		indexRules: []IndexRule{
 			{
-				name:              "DetectedName",
+				name:              "Detected Name",
 				path:              []string{"properties", "detectedName"},
 				weightValue:       1,
 				selfMatchDisabled: false,
 			},
 			{
-				name:              "oneAgentCustomHostName",
+				name:              "One Agent Custom Host Name",
 				path:              []string{"properties", "oneAgentCustomHostName"},
 				weightValue:       1,
 				selfMatchDisabled: false,
@@ -73,7 +73,7 @@ var INDEX_CONFIG_LIST_ALL = []IndexRuleType{
 				selfMatchDisabled: true,
 			},
 			{
-				name:              "displayName",
+				name:              "Display Name",
 				path:              []string{"displayName"},
 				weightValue:       1,
 				selfMatchDisabled: false,
@@ -88,7 +88,7 @@ var INDEX_CONFIG_LIST_ALL = []IndexRuleType{
 		weightValue: 50,
 		indexRules: []IndexRule{
 			{
-				name:              "ipAddress",
+				name:              "Ip Addresses List",
 				path:              []string{"properties", "ipAddress"},
 				weightValue:       2,
 				selfMatchDisabled: false,

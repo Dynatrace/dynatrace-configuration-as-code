@@ -124,11 +124,14 @@ func compareCompareResults(a CompareResult, b CompareResult) int {
 	}
 }
 
-func keepSingleToSingleMatchEntitiesLeftRight(leftRight []CompareResult, rightLeft []CompareResult) []CompareResult {
+func keepSingleToSingleMatchEntitiesLeftRight(results *IndexCompareResultList, reversedResults *IndexCompareResultList) []CompareResult {
 
 	singleMatchEntities := []CompareResult{}
 
+	leftRight := results.keepSingleMatchEntities()
 	sort.Sort(ByLeftRight(leftRight))
+
+	rightLeft := reversedResults.keepSingleMatchEntities()
 	sort.Sort(ByRightLeft(rightLeft))
 
 	leftI := 0

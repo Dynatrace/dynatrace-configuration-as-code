@@ -61,13 +61,8 @@ func (i *IndexCompareResultList) processMatches() []CompareResult {
 	}
 
 	i.sumMatchWeightValues()
-
 	reverseResults := i.reduceBothForwardAndBackward()
-
-	singleMatchLeftRight := i.keepSingleMatchEntities()
-	singleMatchRightLeft := reverseResults.keepSingleMatchEntities()
-
-	singleToSingleMatchEntities := keepSingleToSingleMatchEntitiesLeftRight(singleMatchLeftRight, singleMatchRightLeft)
+	singleToSingleMatchEntities := keepSingleToSingleMatchEntitiesLeftRight(i, reverseResults)
 
 	i.trimSingleToSingleMatches(singleToSingleMatchEntities)
 

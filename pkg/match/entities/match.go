@@ -102,8 +102,7 @@ func runIndexRuleAll(entityProcessingPtr *EntityProcessing, entitiesType string,
 
 	sortedActiveIndexRuleTypes := newIndexRuleMapGenerator(matchParameters.SelfMatch).genSortedActiveList()
 
-	log.Info("Type: %s -> nb source %d and nb target %d",
-		entitiesType,
+	log.Info("Type: %s -> nb source %d and nb target %d", entitiesType,
 		len(*entityProcessingPtr.source.rawEntityListPtr), len(*entityProcessingPtr.target.rawEntityListPtr))
 
 	for _, indexRuleType := range sortedActiveIndexRuleTypes {
