@@ -109,7 +109,7 @@ func (d *Downloader) DownloadAll(apisToDownload api.APIs, projectName string) pr
 	log.Debug("Started all downloads")
 	wg.Wait()
 
-	duration := time.Now().Sub(startTime).Truncate(1 * time.Second)
+	duration := time.Since(startTime).Truncate(1 * time.Second)
 	log.Debug("Finished fetching all configs in %v", duration)
 
 	return results

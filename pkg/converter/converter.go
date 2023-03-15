@@ -216,7 +216,7 @@ func convertConfig(context *configConvertContext, environment manifest.Environme
 	if apiId != apiConversion {
 		log.Info("Converting config %q from deprecated API %q to %q", config.GetId(), apiId, apiConversion)
 		convertedTemplatePath = strings.Replace(convertedTemplatePath, apiId, apiConversion, 1)
-		convertedTemplatePath = strings.Replace(convertedTemplatePath, ".json", "-"+apiId+".json", 1) //ensure modified template paths don't overlap with existing ones
+		convertedTemplatePath = strings.Replace(convertedTemplatePath, ".json", "-"+apiId+".json", 1) // ensure modified template paths don't overlap with existing ones
 		apiId = apiConversion
 	} else if deprecatedBy := config.GetApi().DeprecatedBy; deprecatedBy != "" && context.V1Apis.Contains(deprecatedBy) && context.V1Apis[deprecatedBy].NonUniqueName {
 		log.Info("Converting config %q from deprecated API %q to config with non-unique-name handling (see https://dt-url.net/non-unique-name-config)", config.GetId(), apiId)

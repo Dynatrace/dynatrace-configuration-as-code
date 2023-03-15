@@ -108,7 +108,7 @@ func escapeCharactersForJson(rawString string) (string, error) {
 		return "", err
 	}
 	s := string(b)
-	s = s[1 : len(s)-1] //marshalling places quotes around the json string which we don't want
+	s = s[1 : len(s)-1] // marshalling places quotes around the json string which we don't want
 	return s, nil
 }
 

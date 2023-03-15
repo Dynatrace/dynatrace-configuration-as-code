@@ -139,8 +139,6 @@ func filterValuesToDelete(entries []DeletePointer, existingValues []client.Value
 		switch len(valuesToDelete) {
 		case 1:
 			result = append(result, valuesToDelete[0])
-			break
-
 		case 0:
 			v, found := valuesById[name]
 

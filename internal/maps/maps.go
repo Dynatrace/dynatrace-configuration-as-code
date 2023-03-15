@@ -49,7 +49,7 @@ func Values[K comparable, V any, M ~map[K]V](m M) []V {
 }
 
 // ToStringMap turns the Keys of a map[interface{}]interface{} into string keys
-// keys will be transformed using fmt.Sprintf
+// will be transformed using fmt.Sprintf
 func ToStringMap(m map[interface{}]interface{}) map[string]interface{} {
 	result := make(map[string]interface{})
 

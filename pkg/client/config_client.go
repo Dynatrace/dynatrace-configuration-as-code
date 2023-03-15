@@ -101,12 +101,12 @@ func upsertDynatraceEntityByNonUniqueNameAndId(
 		}
 	}
 
-	if entityExists || len(entitiesWithSameName) == 0 { //create with fixed ID or update (if this moves to client logging can clearly state things)
+	if entityExists || len(entitiesWithSameName) == 0 { // create with fixed ID or update (if this moves to client logging can clearly state things)
 		entity, err := updateDynatraceObject(client, fullUrl, objectName, entityId, theApi, body, retrySettings)
 		return entity, err
 	}
 
-	if len(entitiesWithSameName) == 1 { //name is currently unique, update know entity
+	if len(entitiesWithSameName) == 1 { // name is currently unique, update know entity
 		existingUuid := entitiesWithSameName[0].Id
 		entity, err := updateDynatraceObject(client, fullUrl, objectName, existingUuid, theApi, body, retrySettings)
 		return entity, err
@@ -238,7 +238,7 @@ func updateDynatraceObject(client *http.Client, fullUrl string, objectName strin
 }
 
 func stripCreateOnlyPropertiesFromAppMobile(payload []byte) []byte {
-	//applicationType is required on creation, but not allowed to be updated
+	// applicationType is required on creation, but not allowed to be updated
 	r := regexp.MustCompile(`"applicationType":.*?,`)
 	tmp := r.ReplaceAllString(string(payload), "")
 	newPayload := []byte(tmp)

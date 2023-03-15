@@ -50,7 +50,7 @@ func GetConvertCommand(fs afero.Fs) (convertCmd *cobra.Command) {
 			}
 
 			if !files.IsYamlFileExtension(manifestName) {
-				manifestName = manifestName + ".yaml"
+				manifestName += ".yaml"
 			}
 
 			if outputFolder == "" {
