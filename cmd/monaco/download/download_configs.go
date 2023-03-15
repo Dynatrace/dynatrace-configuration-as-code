@@ -16,6 +16,7 @@ package download
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/cmdutils"
 	"os"
 	"strings"
 
@@ -69,7 +70,12 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 		return fmt.Errorf("environment %q was not available in manifest %q", cmdOptions.specificEnvironmentName, cmdOptions.manifestFile)
 	}
 
-	printUploadToSameEnvironmentWarning(env.Url.Value, env.Auth.Token.Value)
+	err := cmdutils.VerifyClusterGen(manifest.Environments{env.Name: env})
+	if err != nil {
+		return err
+	}
+
+	printUploadToSameEnvironmentWarning(env)
 
 	if !cmdOptions.forceOverwrite {
 		cmdOptions.projectName = fmt.Sprintf("%s_%s", cmdOptions.projectName, cmdOptions.specificEnvironmentName)

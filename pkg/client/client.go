@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"golang.org/x/oauth2"
 	"net/http"
 	"net/url"
 	"runtime"
@@ -233,7 +234,20 @@ func WithServerVersion(serverVersion version.Version) func(client *DynatraceClie
 // during creation using NewDynatraceClient. If the server version is already known WithServerVersion should be used
 func WithAutoServerVersion() func(client *DynatraceClient) {
 	return func(d *DynatraceClient) {
-		serverVersion, err := GetDynatraceVersion(d.client, d.environmentUrl)
+		var serverVersion version.Version
+		var err error
+		if _, ok := d.client.Transport.(*oauth2.Transport); ok {
+			serverVersion, err = GetDynatraceVersion(d.client, Environment{
+				URL:  d.environmentUrl,
+				Type: Platform,
+			})
+		} else {
+			serverVersion, err = GetDynatraceVersion(d.client, Environment{
+				URL:  d.environmentUrl,
+				Type: Classic,
+			})
+		}
+
 		if err != nil {
 			log.Error("Unable to determine Dynatrace server version: %v", err)
 			d.serverVersion = version.UnknownVersion

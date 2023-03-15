@@ -29,11 +29,42 @@ type ApiVersionObject struct {
 	Version string `json:"version"`
 }
 
-const versionPath = "/api/v1/config/clusterversion"
+const (
+	versionPathClassic  = "/api/v1/config/clusterversion"
+	versionPathPlatform = "/platform/core/v1/version"
+)
 
-func GetDynatraceVersion(client *http.Client, environmentUrl string) (version.Version, error) {
-	versionUrl := environmentUrl + versionPath
-	resp, err := rest.Get(client, versionUrl)
+// EnvironmentType represents the type / generation of an environment
+type EnvironmentType int
+
+const (
+	// Classic identifies a Dynatrace Classic environment
+	Classic EnvironmentType = iota
+
+	// Platform identifies a Dynatrace Platform environment
+	Platform
+)
+
+// Environment represents a Dynatrace environment
+type Environment struct {
+	// URL is the base URL of the environment
+	URL string
+	// Type is the type / generation of environment
+	Type EnvironmentType
+}
+
+// GetDynatraceVersion returns the version of an environment
+func GetDynatraceVersion(client *http.Client, environment Environment) (version.Version, error) {
+	var versionURL string
+	switch environment.Type {
+	case Classic:
+		versionURL = environment.URL + versionPathClassic
+	case Platform:
+		versionURL = environment.URL + versionPathPlatform
+	default:
+		return version.Version{}, fmt.Errorf("usupported environment type")
+	}
+	resp, err := rest.Get(client, versionURL)
 	if err != nil {
 		return version.Version{}, fmt.Errorf("failed to query version of Dynatrace environment: %w", err)
 	}

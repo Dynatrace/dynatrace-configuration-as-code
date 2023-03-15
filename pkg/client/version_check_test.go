@@ -95,7 +95,10 @@ func TestGetDynatraceVersion(t *testing.T) {
 			}))
 			defer server.Close()
 
-			got, err := GetDynatraceVersion(server.Client(), server.URL)
+			got, err := GetDynatraceVersion(server.Client(), Environment{
+				URL:  server.URL,
+				Type: Classic,
+			})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetDynatraceVersion() error = %v, wantErr %v", err, tt.wantErr)
 				return
