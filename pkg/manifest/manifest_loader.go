@@ -21,6 +21,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
 	version2 "github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/oauth2/endpoints"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
@@ -220,9 +221,20 @@ func parseOAuth(a oAuth) (OAuth, error) {
 		return OAuth{}, fmt.Errorf("failed to parse ClientSecret: %w", err)
 	}
 
+	var urlDef UrlDefinition
+	if a.TokenEndpoint == nil {
+		urlDef = UrlDefinition{
+			Value: endpoints.Dynatrace.TokenURL,
+			Type:  Absent,
+		}
+	} else if urlDef, err = parseUrlDefinition(*a.TokenEndpoint); err != nil {
+		return OAuth{}, fmt.Errorf("failed to parse \"tokenEndpoint\": %w", err)
+	}
+
 	return OAuth{
-		ClientId:     clientID,
-		ClientSecret: clientSecret,
+		ClientId:      clientID,
+		ClientSecret:  clientSecret,
+		TokenEndpoint: urlDef,
 	}, nil
 }
 
@@ -393,9 +405,9 @@ func parseEnvironment(context *ManifestLoaderContext, config environment, group 
 		errors = append(errors, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, err.Error()))
 	}
 
-	urlDef, err := parseUrlDefinition(context, config, group)
+	urlDef, err := parseUrlDefinition(config.Url)
 	if err != nil {
-		errors = append(errors, err)
+		errors = append(errors, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, err.Error()))
 	}
 
 	if len(errors) > 0 {
@@ -438,39 +450,39 @@ func parseCredentials(config environment, envType EnvironmentType) (Auth, error)
 	return a, nil
 }
 
-func parseUrlDefinition(context *ManifestLoaderContext, config environment, group string) (UrlDefinition, error) {
+func parseUrlDefinition(u url) (UrlDefinition, error) {
 
 	// Depending on the type, the url.value either contains the env var name or the direct value of the url
-	if config.Url.Value == "" {
-		return UrlDefinition{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, "no `Url` configured or value is blank")
+	if u.Value == "" {
+		return UrlDefinition{}, errors.New("no `Url` configured or value is blank")
 	}
 
-	if config.Url.Type == "" || config.Url.Type == urlTypeValue {
+	if u.Type == "" || u.Type == urlTypeValue {
 		return UrlDefinition{
 			Type:  ValueUrlType,
-			Value: config.Url.Value,
+			Value: u.Value,
 		}, nil
 	}
 
-	if config.Url.Type == urlTypeEnvironment {
-		val, found := os.LookupEnv(config.Url.Value)
+	if u.Type == urlTypeEnvironment {
+		val, found := os.LookupEnv(u.Value)
 		if !found {
-			return UrlDefinition{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("environment variable %q could not be found", config.Url.Value))
+			return UrlDefinition{}, fmt.Errorf("environment variable %q could not be found", u.Value)
 		}
 
 		if val == "" {
-			return UrlDefinition{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("environment variable %q is defined but has no value", config.Url.Value))
+			return UrlDefinition{}, fmt.Errorf("environment variable %q is defined but has no value", u.Value)
 		}
 
 		return UrlDefinition{
 			Type:  EnvironmentUrlType,
 			Value: val,
-			Name:  config.Url.Value,
+			Name:  u.Value,
 		}, nil
 
 	}
 
-	return UrlDefinition{}, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("%q is not a valid URL type", config.Url.Type))
+	return UrlDefinition{}, fmt.Errorf("%q is not a valid URL type", u.Type)
 }
 
 func parseEnvironmentType(context *ManifestLoaderContext, config environment, g string) (EnvironmentType, error) {

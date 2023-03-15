@@ -45,8 +45,9 @@ func (p ProjectDefinition) String() string {
 }
 
 type OAuth struct {
-	ClientId     AuthSecret
-	ClientSecret AuthSecret
+	ClientId      AuthSecret
+	ClientSecret  AuthSecret
+	TokenEndpoint UrlDefinition
 }
 
 type Auth struct {
@@ -75,6 +76,9 @@ const (
 
 	// EnvironmentUrlType describes that the url has been loaded from an environment variable
 	EnvironmentUrlType
+
+	// Absent indicates absence of declaration (e.g. not declared via manifest.yaml or environment variables)
+	Absent
 )
 
 // UrlDefinition holds the value and origin of an environment-url.

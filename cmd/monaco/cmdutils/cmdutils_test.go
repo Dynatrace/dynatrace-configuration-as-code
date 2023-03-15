@@ -121,8 +121,6 @@ func TestVerifyClusterGen(t *testing.T) {
 		}))
 		defer server.Close()
 
-		ssoTokenURL = server.URL + "/sso"
-
 		err := VerifyClusterGen(manifest.Environments{
 			"env": manifest.EnvironmentDefinition{
 				Name: "env",
@@ -131,6 +129,13 @@ func TestVerifyClusterGen(t *testing.T) {
 					Type:  manifest.ValueUrlType,
 					Name:  "URL",
 					Value: server.URL,
+				},
+				Auth: manifest.Auth{
+					OAuth: manifest.OAuth{
+						TokenEndpoint: manifest.UrlDefinition{
+							Value: server.URL + "/sso",
+						},
+					},
 				},
 			},
 		})

@@ -77,10 +77,10 @@ func getDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.
 		},
 		ValidArgsFunction: completion.DownloadManifestCompletion,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			manifest := args[0]
+			m := args[0]
 			specificEnvironment := args[1]
 			options := manifestDownloadOptions{
-				manifestFile:            manifest,
+				manifestFile:            m,
 				specificEnvironmentName: specificEnvironment,
 				downloadCommandOptions: downloadCommandOptions{
 					downloadCommandOptionsShared: downloadCommandOptionsShared{
@@ -184,10 +184,10 @@ Either downloading based on an existing manifest, or by defining environment URL
 		},
 		ValidArgsFunction: completion.DownloadManifestCompletion,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			manifest := args[0]
+			m := args[0]
 			specificEnvironment := args[1]
 			options := entitiesManifestDownloadOptions{
-				manifestFile:            manifest,
+				manifestFile:            m,
 				specificEnvironmentName: specificEnvironment,
 				entitiesDownloadCommandOptions: entitiesDownloadCommandOptions{
 					downloadCommandOptionsShared: downloadCommandOptionsShared{
@@ -287,7 +287,7 @@ func printUploadToSameEnvironmentWarning(env manifest.EnvironmentDefinition) {
 		credentials := client.OauthCredentials{
 			ClientID:     env.Auth.OAuth.ClientId.Value,
 			ClientSecret: env.Auth.OAuth.ClientSecret.Value,
-			TokenURL:     "https://sso.dynatrace.com/sso/oauth2/token",
+			TokenURL:     env.Auth.OAuth.TokenEndpoint.Value,
 		}
 		httpClient = client.NewOAuthClient(credentials)
 	}
