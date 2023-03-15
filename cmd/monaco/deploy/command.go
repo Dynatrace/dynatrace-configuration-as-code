@@ -28,8 +28,8 @@ import (
 
 func GetDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 	var dryRun, continueOnError bool
-	var manifestName, group string
-	var environment, project []string
+	var manifestName string
+	var environment, project, groups []string
 
 	deployCmd = &cobra.Command{
 		Use:               "deploy <manifest.yaml>",
@@ -47,17 +47,19 @@ func GetDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 				return err
 			}
 
-			var groups []string
-			if group != "" {
-				groups = []string{group}
-			}
-
 			return deployConfigs(fs, manifestName, groups, environment, project, continueOnError, dryRun)
 		},
 	}
 
-	deployCmd.Flags().StringSliceVarP(&environment, "environment", "e", make([]string, 0), "Specify one (or multiple) environments to deploy to. To set multiple environments either repeat this flag, or seperate them using a comma (,). This flag is mutually exclusive with '--group'.")
-	deployCmd.Flags().StringVarP(&group, "group", "g", "", "Specify the environmentGroup that should be used for deployment. If this flag is specified, all environments within this group will be used for deployment. This flag is mutually exclusive with '--environment'")
+	deployCmd.Flags().StringSliceVarP(&environment, "environment", "e", []string{},
+		"Specify one (or multiple) environment(s) to deploy to. "+
+			"To set multiple environments either repeat this flag, or separate them using a comma (,). "+
+			"This flag is mutually exclusive with '--group'.")
+	deployCmd.Flags().StringSliceVarP(&groups, "group", "g", []string{},
+		"Specify one (or multiple) environmentGroup(s) to deploy to. "+
+			"To set multiple groups either repeat this flag, or seprate them using a comma (,). "+
+			"If this flag is specified, all environments within this group will be used for deployment. "+
+			"This flag is mutually exclusive with '--environment'")
 	deployCmd.Flags().StringSliceVarP(&project, "project", "p", make([]string, 0), "Project configuration to deploy (also deploys any dependent configurations)")
 	deployCmd.Flags().BoolVarP(&dryRun, "dry-run", "d", false, "Switches to just validation instead of actual deployment")
 	deployCmd.Flags().BoolVarP(&continueOnError, "continue-on-error", "c", false, "Proceed deployment even if config upload fails")
