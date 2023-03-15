@@ -29,7 +29,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-func Delete(fs afero.Fs, deploymentManifestPath string, deleteFile string, environmentNames []string, environmentGroup string) error {
+func Delete(fs afero.Fs, deploymentManifestPath string, deleteFile string, environmentNames []string, environmentGroups []string) error {
 
 	deploymentManifestPath = filepath.Clean(deploymentManifestPath)
 	deploymentManifestPath, manifestErr := filepath.Abs(deploymentManifestPath)
@@ -43,6 +43,8 @@ func Delete(fs afero.Fs, deploymentManifestPath string, deleteFile string, envir
 	manifest, manifestLoadError := manifest.LoadManifest(&manifest.ManifestLoaderContext{
 		Fs:           fs,
 		ManifestPath: deploymentManifestPath,
+		Environments: environmentNames,
+		Groups:       environmentGroups,
 	})
 
 	if manifestLoadError != nil {
@@ -55,26 +57,7 @@ func Delete(fs afero.Fs, deploymentManifestPath string, deleteFile string, envir
 		return fmt.Errorf("encountered errors while parsing delete.yaml: %s", errs)
 	}
 
-	environments := manifest.Environments
-	if environmentGroup != "" {
-		environments = environments.FilterByGroup(environmentGroup)
-
-		if len(environments) == 0 {
-			return fmt.Errorf("no environments in group %q", environmentGroup)
-		} else {
-			log.Info("Environments loaded in group %q: %v", environmentGroup, maps.Keys(environments))
-		}
-	}
-
-	if len(environmentNames) > 0 {
-		var err error
-		environments, err = manifest.Environments.FilterByNames(environmentNames)
-		if err != nil {
-			return fmt.Errorf("failed to load environments: %w", err)
-		}
-	}
-
-	deleteErrors := deleteConfigs(maps.Values(environments), apis, entriesToDelete)
+	deleteErrors := deleteConfigs(maps.Values(manifest.Environments), apis, entriesToDelete)
 
 	for _, e := range deleteErrors {
 		log.Error("Deletion error: %s", e)
