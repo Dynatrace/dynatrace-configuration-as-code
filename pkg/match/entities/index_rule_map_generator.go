@@ -39,20 +39,14 @@ var INDEX_CONFIG_LIST_ALL = []IndexRuleType{
 			{
 				Name:              "DetectedName",
 				Path:              []string{"properties", "detectedName"},
-				WeightValue:       2,
+				WeightValue:       1,
 				SelfMatchDisabled: false,
 			},
 			{
 				Name:              "oneAgentCustomHostName",
 				Path:              []string{"properties", "oneAgentCustomHostName"},
-				WeightValue:       2,
+				WeightValue:       1,
 				SelfMatchDisabled: false,
-			},
-			{
-				Name:              "Entity Id",
-				Path:              []string{"entityId"},
-				WeightValue:       10000,
-				SelfMatchDisabled: true,
 			},
 		},
 	},
@@ -60,6 +54,12 @@ var INDEX_CONFIG_LIST_ALL = []IndexRuleType{
 		IsSeed:      true,
 		WeightValue: 90,
 		IndexRules: []IndexRule{
+			{
+				Name:              "Entity Id",
+				Path:              []string{"entityId"},
+				WeightValue:       1,
+				SelfMatchDisabled: true,
+			},
 			{
 				Name:              "displayName",
 				Path:              []string{"displayName"},

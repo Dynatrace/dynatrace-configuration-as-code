@@ -124,8 +124,8 @@ func runIndexRuleAll(entityProcessingPtr *EntityProcessing, entitiesType string,
 	}
 
 	log.Info("Type: %s -> nb source %d and nb target %d -> Matched: %d",
-		entitiesType, len(matchedEntities),
-		len(*entityProcessingPtr.Source.RawEntityListPtr), len(*entityProcessingPtr.Target.RawEntityListPtr))
+		entitiesType, len(*entityProcessingPtr.Source.RawEntityListPtr),
+		len(*entityProcessingPtr.Target.RawEntityListPtr), len(matchedEntities))
 
 	outputPayload := genOutputPayload(entitiesType, entityProcessingPtr, oldResultsPtr, matchedEntities)
 
@@ -168,8 +168,8 @@ func genOutputPayload(entitiesType string, entityProcessingPtr *EntityProcessing
 				To:   entityProcessingPtr.Target.Type.To,
 			},
 		},
-		MultiMatched: multiMatchedMap,
 		Matches:      make(map[string]string, len(matchedEntities)),
+		MultiMatched: multiMatchedMap,
 		UnMatched:    make([]string, len(*entityProcessingPtr.Source.CurrentRemainingEntities)),
 	}
 
@@ -206,13 +206,16 @@ func genMultiMatchedMap(oldResultsPtr *IndexCompareResultList, entityProcessingP
 	addMatchingMultiMatched := func(nbMatches int) {
 		multiMatchedMatches := make([]string, nbMatches)
 		for j := 0; j < nbMatches; j++ {
-			sourceId := oldResultsPtr.CompareResults[(j + firstIdx)].RightId
-			multiMatchedMatches[j] = (*(entityProcessingPtr.Target.RawEntityListPtr))[sourceId].(map[string]interface{})["entityId"].(string)
+			compareResult := oldResultsPtr.CompareResults[(j + firstIdx)]
+			targetId := compareResult.RightId
+
+			multiMatchedMatches[j] = (*(entityProcessingPtr.Target.RawEntityListPtr))[targetId].(map[string]interface{})["entityId"].(string)
 		}
 		multiMatched[(*(entityProcessingPtr.Source.RawEntityListPtr))[currentId].(map[string]interface{})["entityId"].(string)] = multiMatchedMatches
 	}
 
-	for i, result := range oldResultsPtr.CompareResults[1:] {
+	for i := 1; i < len(oldResultsPtr.CompareResults); i++ {
+		result := oldResultsPtr.CompareResults[i]
 		if result.LeftId == currentId {
 
 		} else {
