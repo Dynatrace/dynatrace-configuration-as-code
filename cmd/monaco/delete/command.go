@@ -52,7 +52,12 @@ func GetDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 				return err
 			}
 
-			return Delete(fs, manifestName, deleteFile, environments, group)
+			var groups []string
+			if group != "" {
+				groups = []string{group}
+			}
+
+			return Delete(fs, manifestName, deleteFile, environments, groups)
 		},
 		ValidArgsFunction: completion.DeleteCompletion,
 	}
