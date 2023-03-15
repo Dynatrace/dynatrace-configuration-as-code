@@ -17,6 +17,7 @@
 package manifest
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/oauth2/endpoints"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"gotest.tools/assert"
 	"reflect"
@@ -31,8 +32,8 @@ func Test_toWriteableProjects(t *testing.T) {
 		wantResult    []project
 	}{
 		{
-			"creates_simple_projects",
-			map[string]ProjectDefinition{
+			name: "creates_simple_projects",
+			givenProjects: map[string]ProjectDefinition{
 				"project_a": {
 					Name: "a",
 					Path: "projects/a",
@@ -46,7 +47,7 @@ func Test_toWriteableProjects(t *testing.T) {
 					Path: "projects/c",
 				},
 			},
-			[]project{
+			wantResult: []project{
 				{
 					Name: "a",
 					Path: "projects/a",
@@ -86,8 +87,8 @@ func Test_toWriteableProjects(t *testing.T) {
 			},
 		},
 		{
-			"creates_mixed_projects",
-			map[string]ProjectDefinition{
+			name: "creates_mixed_projects",
+			givenProjects: map[string]ProjectDefinition{
 				"project_a": {
 					Name: "projects.a",
 					Path: "projects/a",
@@ -113,7 +114,7 @@ func Test_toWriteableProjects(t *testing.T) {
 					Path: "nested/projects/deeply/grouped/two",
 				},
 			},
-			[]project{
+			wantResult: []project{
 				{
 					Name: "alpha",
 					Path: "special_projects/alpha",
@@ -146,8 +147,8 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 		wantResult []group
 	}{
 		{
-			"correctly transforms simple env groups",
-			map[string]EnvironmentDefinition{
+			name: "correctly transforms simple env groups",
+			input: map[string]EnvironmentDefinition{
 				"env1": {
 					Name: "env1",
 					Type: Classic,
@@ -179,6 +180,61 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 								Name:  "client-secret-key",
 								Value: "client-secret-val",
 							},
+							TokenEndpoint: UrlDefinition{
+								Value: endpoints.Dynatrace.TokenURL,
+								Type:  EnvironmentUrlType,
+								Name:  "ENV_TOKEN_ENDPOINT",
+							},
+						},
+					},
+				},
+				"env2a": {
+					Name: "env2",
+					Type: Platform,
+					Url: UrlDefinition{
+						Value: "www.an.Url",
+					},
+					Group: "group1",
+					Auth: Auth{
+						Token: AuthSecret{},
+						OAuth: OAuth{
+							ClientId: AuthSecret{
+								Name:  "client-id-key",
+								Value: "client-id-val",
+							},
+							ClientSecret: AuthSecret{
+								Name:  "client-secret-key",
+								Value: "client-secret-val",
+							},
+							TokenEndpoint: UrlDefinition{
+								Value: endpoints.Dynatrace.TokenURL,
+								Type:  Absent,
+							},
+						},
+					},
+				},
+				"env2b": {
+					Name: "env2",
+					Type: Platform,
+					Url: UrlDefinition{
+						Value: "www.an.Url",
+					},
+					Group: "group1",
+					Auth: Auth{
+						Token: AuthSecret{},
+						OAuth: OAuth{
+							ClientId: AuthSecret{
+								Name:  "client-id-key",
+								Value: "client-id-val",
+							},
+							ClientSecret: AuthSecret{
+								Name:  "client-secret-key",
+								Value: "client-secret-val",
+							},
+							TokenEndpoint: UrlDefinition{
+								Value: "http://custom.sso.token.endpoint",
+								Type:  ValueUrlType,
+							},
 						},
 					},
 				},
@@ -194,7 +250,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 					},
 				},
 			},
-			[]group{
+			wantResult: []group{
 				{
 					Name: "group1",
 					Environments: []environment{
@@ -226,6 +282,55 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 									ClientSecret: authSecret{
 										Type: typeEnvironment,
 										Name: "client-secret-key",
+									},
+									TokenEndpoint: &url{
+										Type:  urlTypeEnvironment,
+										Value: "ENV_TOKEN_ENDPOINT",
+									},
+								},
+							},
+						},
+						{
+							Name: "env2a",
+							Type: "platform",
+							Url:  url{Value: "www.an.Url"},
+							Auth: &auth{
+								Token: authSecret{
+									Name: "env2_TOKEN",
+									Type: "environment",
+								},
+								OAuth: &oAuth{
+									ClientID: authSecret{
+										Type: typeEnvironment,
+										Name: "client-id-key",
+									},
+									ClientSecret: authSecret{
+										Type: typeEnvironment,
+										Name: "client-secret-key",
+									},
+								},
+							},
+						},
+						{
+							Name: "env2b",
+							Type: "platform",
+							Url:  url{Value: "www.an.Url"},
+							Auth: &auth{
+								Token: authSecret{
+									Name: "env2_TOKEN",
+									Type: "environment",
+								},
+								OAuth: &oAuth{
+									ClientID: authSecret{
+										Type: typeEnvironment,
+										Name: "client-id-key",
+									},
+									ClientSecret: authSecret{
+										Type: typeEnvironment,
+										Name: "client-secret-key",
+									},
+									TokenEndpoint: &url{
+										Value: "http://custom.sso.token.endpoint",
 									},
 								},
 							},
@@ -269,8 +374,8 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 				}
 
 				assert.DeepEqual(t,
-					gotResult,
 					tt.wantResult,
+					gotResult,
 					cmpopts.SortSlices(func(a, b group) bool { return a.Name < b.Name }),
 				)
 			}

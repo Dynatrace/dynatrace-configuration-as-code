@@ -137,6 +137,21 @@ func getAuth(env EnvironmentDefinition) auth {
 		return auth{Token: getTokenSecret(env)}
 	}
 
+	var te *url
+	switch env.Auth.OAuth.TokenEndpoint.Type {
+	case ValueUrlType:
+		te = &url{
+			Value: env.Auth.OAuth.TokenEndpoint.Value,
+		}
+	case EnvironmentUrlType:
+		te = &url{
+			Type:  urlTypeEnvironment,
+			Value: env.Auth.OAuth.TokenEndpoint.Name,
+		}
+	case Absent:
+		te = nil
+	}
+
 	return auth{
 		Token: getTokenSecret(env),
 		OAuth: &oAuth{
@@ -148,6 +163,7 @@ func getAuth(env EnvironmentDefinition) auth {
 				Type: typeEnvironment,
 				Name: env.Auth.OAuth.ClientSecret.Name,
 			},
+			TokenEndpoint: te,
 		},
 	}
 }

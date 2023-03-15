@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	monacoVersion "github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/oauth2/endpoints"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -93,7 +94,7 @@ func Test_extractUrlType(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got, gotErr := parseUrlDefinition(&ManifestLoaderContext{}, tt.inputConfig, "test-group"); got != tt.want || (!tt.wantErr && gotErr != nil) {
+			if got, gotErr := parseUrlDefinition(tt.inputConfig.Url); got != tt.want || (!tt.wantErr && gotErr != nil) {
 				t.Errorf("extractUrlType() = %v, %v, want %v, %v", got, gotErr, tt.want, tt.wantErr)
 			}
 		})
@@ -588,6 +589,40 @@ projects:
 `,
 			expected: expected{wantErr: true},
 		},
+		{
+			name: "Load OAuth section",
+			given: `
+environmentGroups:
+  - environments:
+    - auth:
+        oAuth:
+          clientId:
+            name: ENV_CLIENT_ID
+          clientSecret:
+            name: ENV_CLIENT_SECRET
+          tokenEndpoint:
+            value: "https://sso.token.endpoint"
+`,
+			expected: expected{
+				manifest: manifest{
+					EnvironmentGroups: []group{
+						{
+							Environments: []environment{
+								{
+									Auth: &auth{
+										OAuth: &oAuth{
+											ClientID:      authSecret{Name: "ENV_CLIENT_ID"},
+											ClientSecret:  authSecret{Name: "ENV_CLIENT_SECRET"},
+											TokenEndpoint: &url{Value: "https://sso.token.endpoint"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -667,6 +702,7 @@ func TestLoadManifest(t *testing.T) {
 	t.Setenv("empty-env-var", "")
 	t.Setenv("client-id", "resolved-client-id")
 	t.Setenv("client-secret", "resolved-client-secret")
+	t.Setenv("ENV_OAUTH_ENDPOINT", "resolved-oauth-endpoint")
 
 	log.Default().SetLevel(log.LevelDebug)
 
@@ -1393,8 +1429,9 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 					},
 				},
 			},
-		}, {
-			name: "No errors with oAuth and token",
+		},
+		{
+			name: "No errors with oAuth and token; OAuth token endpoint is not specified",
 			manifestContent: `
 manifestVersion: 1.0
 projects: [{name: a, path: p}]
@@ -1431,11 +1468,129 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 									Name:  "client-secret",
 									Value: "resolved-client-secret",
 								},
+								TokenEndpoint: UrlDefinition{
+									Type:  Absent,
+									Value: endpoints.Dynatrace.TokenURL,
+								},
 							},
 						},
 					},
 				},
 			},
+		},
+		{
+			name: "No errors with oAuth and token; OAuth token endpoint is custom",
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: a, path: p}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientId: {name: client-id}, clientSecret: {name: client-secret}, tokenEndpoint: {value: https://custom.sso.token.endpoint}}}, type: Platform}]}]
+`,
+			errsContain: []string{},
+			expectedManifest: Manifest{
+				Projects: map[string]ProjectDefinition{
+					"a": {
+						Name: "a",
+						Path: "p",
+					},
+				},
+				Environments: map[string]EnvironmentDefinition{
+					"c": {
+						Name: "c",
+						Type: Platform,
+						Url: UrlDefinition{
+							Type:  ValueUrlType,
+							Value: "d",
+						},
+						Group: "b",
+						Auth: Auth{
+							Token: AuthSecret{
+								Name:  "e",
+								Value: "mock token",
+							},
+							OAuth: OAuth{
+								ClientId: AuthSecret{
+									Name:  "client-id",
+									Value: "resolved-client-id",
+								},
+								ClientSecret: AuthSecret{
+									Name:  "client-secret",
+									Value: "resolved-client-secret",
+								},
+								TokenEndpoint: UrlDefinition{
+									Value: "https://custom.sso.token.endpoint",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "No errors with oAuth and token; OAuth token endpoint is specified via environment variable",
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: a, path: p}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientId: {name: client-id}, clientSecret: {name: client-secret}, tokenEndpoint: {type: environment, value: ENV_OAUTH_ENDPOINT}}}, type: Platform}]}]
+`,
+			errsContain: []string{},
+			expectedManifest: Manifest{
+				Projects: map[string]ProjectDefinition{
+					"a": {
+						Name: "a",
+						Path: "p",
+					},
+				},
+				Environments: map[string]EnvironmentDefinition{
+					"c": {
+						Name: "c",
+						Type: Platform,
+						Url: UrlDefinition{
+							Type:  ValueUrlType,
+							Value: "d",
+						},
+						Group: "b",
+						Auth: Auth{
+							Token: AuthSecret{
+								Name:  "e",
+								Value: "mock token",
+							},
+							OAuth: OAuth{
+								ClientId: AuthSecret{
+									Name:  "client-id",
+									Value: "resolved-client-id",
+								},
+								ClientSecret: AuthSecret{
+									Name:  "client-secret",
+									Value: "resolved-client-secret",
+								},
+								TokenEndpoint: UrlDefinition{
+									Type:  EnvironmentUrlType,
+									Name:  "ENV_OAUTH_ENDPOINT",
+									Value: "resolved-oauth-endpoint",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "OAuth token endpoint is specified via environment variable that doesn't exists",
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: a, path: p}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientId: {name: client-id}, clientSecret: {name: client-secret}, tokenEndpoint: {type: environment, value: ENV_NOT_EXISTS}}}, type: Platform}]}]
+`,
+			errsContain: []string{"environment variable \"ENV_NOT_EXISTS\" could not be found"},
+		},
+		{
+			name: "OAuth token endpoint is specified with nonexistent type",
+			manifestContent: `
+manifestVersion: 1.0
+projects: [{name: a, path: p}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientId: {name: client-id}, clientSecret: {name: client-secret}, tokenEndpoint: {type: nonexistent, value: ENV_NOT_EXISTS}}}, type: Platform}]}]
+`,
+			errsContain: []string{"\"nonexistent\" is not a valid URL type"},
 		},
 		{
 			name: "OAuth credentials on a classic env",

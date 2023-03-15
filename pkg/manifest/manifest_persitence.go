@@ -39,8 +39,9 @@ type authSecret struct {
 }
 
 type oAuth struct {
-	ClientID     authSecret `yaml:"clientId"`
-	ClientSecret authSecret `yaml:"clientSecret"`
+	ClientID      authSecret `yaml:"clientId"`
+	ClientSecret  authSecret `yaml:"clientSecret"`
+	TokenEndpoint *url       `yaml:"tokenEndpoint,omitempty"`
 }
 
 type auth struct {

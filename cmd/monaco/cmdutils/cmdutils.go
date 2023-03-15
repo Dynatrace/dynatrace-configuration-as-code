@@ -32,8 +32,6 @@ func SilenceUsageCommand() func(cmd *cobra.Command, args []string) {
 	}
 }
 
-var ssoTokenURL = "https://sso.dynatrace.com/sso/oauth2/token" //nolint:gosec
-
 // VerifyClusterGen takes a manifestEnvironments map and tries to call the version endpoint of each environment
 // in order to verify that the user has configured the environments correctly.
 // Depending on the configured environment "type" the function tries to call the version endpoint of either
@@ -50,7 +48,7 @@ func VerifyClusterGen(envs manifest.Environments) error {
 			oauthCredentials := client.OauthCredentials{
 				ClientID:     env.Auth.OAuth.ClientId.Value,
 				ClientSecret: env.Auth.OAuth.ClientSecret.Value,
-				TokenURL:     ssoTokenURL,
+				TokenURL:     env.Auth.OAuth.TokenEndpoint.Value,
 			}
 			if _, err := client.GetDynatraceVersion(client.NewOAuthClient(oauthCredentials), client.Environment{URL: env.Url.Value, Type: client.Platform}); err != nil {
 				return fmt.Errorf("could not verify Dynatrace cluster generation of environment %q (%q). Please check the configured Auth credentials in the manifest", env.Name, env.Url)
