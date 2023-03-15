@@ -17,7 +17,6 @@
 package deploy
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	p "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -164,83 +163,6 @@ func Test_filterProjectsByName(t *testing.T) {
 	}
 }
 
-func Test_FilterEnvironments(t *testing.T) {
-	type args struct {
-		environments         manifest.Environments
-		environmentGroup     string
-		specificEnvironments []string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    manifest.Environments
-		wantErr bool
-	}{
-		{
-			name: "empty environments",
-			args: args{
-				environments:         manifest.Environments{},
-				environmentGroup:     "group",
-				specificEnvironments: []string{},
-			},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name: "group name not found",
-			args: args{
-				environments:         manifest.Environments{"e1": {Name: "an-env", Group: "a-group"}},
-				environmentGroup:     "another-group",
-				specificEnvironments: []string{},
-			},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name: "filter by group",
-			args: args{
-				environments:         manifest.Environments{"e1": {Name: "an-env", Group: "a-group"}},
-				environmentGroup:     "a-group",
-				specificEnvironments: []string{},
-			},
-			want:    manifest.Environments{"e1": {Name: "an-env", Group: "a-group"}},
-			wantErr: false,
-		},
-		{
-			name: "filter by group and specific environment - env not found",
-			args: args{
-				environments:         manifest.Environments{"en-env": {Name: "an-env", Group: "a-group"}},
-				environmentGroup:     "a-group",
-				specificEnvironments: []string{"another-env"},
-			},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name: "filter by group and specific environment",
-			args: args{
-				environments:         manifest.Environments{"an-env": {Name: "an-env", Group: "a-group"}, "another-env": {Name: "another-env", Group: "a-group"}},
-				environmentGroup:     "a-group",
-				specificEnvironments: []string{"an-env"},
-			},
-			want:    manifest.Environments{"an-env": {Name: "an-env", Group: "a-group"}},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := filterEnvironments(tt.args.environments, tt.args.environmentGroup, tt.args.specificEnvironments)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("filterEnvironments() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("filterEnvironments() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func Test_filterProjects(t *testing.T) {
 	type args struct {
 		projects             []p.Project
@@ -348,7 +270,7 @@ func Test_DoDeploy_InvalidManifest(t *testing.T) {
 	manifestPath, _ := filepath.Abs("manifest.yaml")
 	_ = afero.WriteFile(testFs, manifestPath, []byte(manifestYaml), 0644)
 
-	err := deployConfigs(testFs, manifestPath, "", []string{}, []string{}, true, true)
+	err := deployConfigs(testFs, manifestPath, []string{}, []string{}, []string{}, true, true)
 	assert.Error(t, err)
 }
 
@@ -389,26 +311,26 @@ environmentGroups:
 	_ = afero.WriteFile(testFs, manifestPath, []byte(manifestYaml), 0644)
 
 	t.Run("Wrong environment group", func(t *testing.T) {
-		err := deployConfigs(testFs, manifestPath, "NOT_EXISTING_GROUP", []string{}, []string{}, true, true)
+		err := deployConfigs(testFs, manifestPath, []string{"NOT_EXISTING_GROUP"}, []string{}, []string{}, true, true)
 		assert.Error(t, err)
 	})
 	t.Run("Wrong environment name", func(t *testing.T) {
-		err := deployConfigs(testFs, manifestPath, "default", []string{"NOT_EXISTING_ENV"}, []string{}, true, true)
+		err := deployConfigs(testFs, manifestPath, []string{"default"}, []string{"NOT_EXISTING_ENV"}, []string{}, true, true)
 		assert.Error(t, err)
 	})
 
 	t.Run("Wrong project name", func(t *testing.T) {
-		err := deployConfigs(testFs, manifestPath, "default", []string{"project"}, []string{"NON_EXISTING_PROJECT"}, true, true)
+		err := deployConfigs(testFs, manifestPath, []string{"default"}, []string{"project"}, []string{"NON_EXISTING_PROJECT"}, true, true)
 		assert.Error(t, err)
 	})
 
 	t.Run("no parameters", func(t *testing.T) {
-		err := deployConfigs(testFs, manifestPath, "", []string{}, []string{}, true, true)
+		err := deployConfigs(testFs, manifestPath, []string{}, []string{}, []string{}, true, true)
 		assert.NoError(t, err)
 	})
 
 	t.Run("correct parameters", func(t *testing.T) {
-		err := deployConfigs(testFs, manifestPath, "default", []string{"project"}, []string{"project"}, true, true)
+		err := deployConfigs(testFs, manifestPath, []string{"default"}, []string{"project"}, []string{"project"}, true, true)
 		assert.NoError(t, err)
 	})
 

@@ -47,7 +47,12 @@ func GetDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 				return err
 			}
 
-			return deployConfigs(fs, manifestName, group, environment, project, continueOnError, dryRun)
+			var groups []string
+			if group != "" {
+				groups = []string{group}
+			}
+
+			return deployConfigs(fs, manifestName, groups, environment, project, continueOnError, dryRun)
 		},
 	}
 

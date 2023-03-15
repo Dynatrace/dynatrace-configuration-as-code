@@ -35,22 +35,17 @@ import (
 	"github.com/spf13/afero"
 )
 
-func deployConfigs(fs afero.Fs, manifestPath string, environmentGroup string, specificEnvironments []string, specificProjects []string, continueOnErr bool, dryRun bool) error {
+func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string, specificEnvironments []string, specificProjects []string, continueOnErr bool, dryRun bool) error {
 	absManifestPath, err := absPath(manifestPath)
 	if err != nil {
 		return fmt.Errorf("error while finding absolute path for `%s`: %w", manifestPath, err)
 	}
-	loadedManifest, err := loadManifest(fs, absManifestPath)
+	loadedManifest, err := loadManifest(fs, absManifestPath, environmentGroups, specificEnvironments)
 	if err != nil {
 		return err
 	}
 
-	filteredEnvironments, err := filterEnvironments(loadedManifest.Environments, environmentGroup, specificEnvironments)
-	if err != nil {
-		return fmt.Errorf("error while loading relevant environments to deploy to: %w", err)
-	}
-
-	err = verifyClusterGen(filteredEnvironments, dryRun)
+	err = verifyClusterGen(loadedManifest.Environments, dryRun)
 	if err != nil {
 		return err
 	}
@@ -60,20 +55,20 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroup string, sp
 		return err
 	}
 
-	filteredProjects, err := filterProjects(loadedProjects, specificProjects, filteredEnvironments.Names())
+	filteredProjects, err := filterProjects(loadedProjects, specificProjects, loadedManifest.Environments.Names())
 	if err != nil {
 		return fmt.Errorf("error while loading relevant projects to deploy: %w", err)
 	}
 
-	sortedConfigs, err := sortConfigs(filteredProjects, filteredEnvironments.Names())
+	sortedConfigs, err := sortConfigs(filteredProjects, loadedManifest.Environments.Names())
 	if err != nil {
 		return fmt.Errorf("error during configuration sort: %w", err)
 	}
 
 	logProjectsInfo(filteredProjects)
-	logEnvironmentsInfo(filteredEnvironments)
+	logEnvironmentsInfo(loadedManifest.Environments)
 
-	if err = doDeploy(sortedConfigs, filteredEnvironments, continueOnErr, dryRun); err != nil {
+	if err = doDeploy(sortedConfigs, loadedManifest.Environments, continueOnErr, dryRun); err != nil {
 		return err
 	}
 
@@ -125,10 +120,12 @@ func absPath(manifestPath string) (string, error) {
 	return filepath.Abs(manifestPath)
 }
 
-func loadManifest(fs afero.Fs, manifestPath string) (*manifest.Manifest, error) {
+func loadManifest(fs afero.Fs, manifestPath string, groups []string, environments []string) (*manifest.Manifest, error) {
 	m, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
 		Fs:           fs,
 		ManifestPath: manifestPath,
+		Groups:       groups,
+		Environments: environments,
 	})
 
 	if len(errs) > 0 {
@@ -137,29 +134,6 @@ func loadManifest(fs afero.Fs, manifestPath string) (*manifest.Manifest, error) 
 	}
 
 	return &m, nil
-}
-
-func filterEnvironments(environments manifest.Environments, environmentGroup string, specificEnvironments []string) (manifest.Environments, error) {
-	var err error
-
-	if environmentGroup != "" {
-		environments = environments.FilterByGroup(environmentGroup)
-
-		if len(environments) == 0 {
-			return nil, fmt.Errorf("no environments in group %q", environmentGroup)
-		} else {
-			log.Info("Environments loaded in group %q: %v", environmentGroup, environments.Names())
-		}
-	}
-
-	if len(specificEnvironments) > 0 {
-		environments, err = environments.FilterByNames(specificEnvironments)
-		if err != nil {
-			return nil, fmt.Errorf("failed to filter environments: %w", err)
-		}
-	}
-
-	return environments, nil
 }
 
 func verifyClusterGen(environments manifest.Environments, dryRun bool) error {
