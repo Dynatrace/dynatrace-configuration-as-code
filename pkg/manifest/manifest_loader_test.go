@@ -44,9 +44,9 @@ func Test_extractUrlType(t *testing.T) {
 		{
 			"extracts_value_url",
 			environment{
-				Name:  "TEST ENV",
-				URL:   url{Value: "TEST URL", Type: urlTypeValue},
-				Token: &authSecret{Type: "environment", Name: "VAR"},
+				Name: "TEST ENV",
+				URL:  url{Value: "TEST URL", Type: urlTypeValue},
+				Auth: auth{Token: authSecret{Type: "environment", Name: "VAR"}},
 			},
 			URLDefinition{
 				Type:  ValueURLType,
@@ -57,9 +57,9 @@ func Test_extractUrlType(t *testing.T) {
 		{
 			"extracts_value_if_type_empty",
 			environment{
-				Name:  "TEST ENV",
-				URL:   url{Value: "TEST URL", Type: ""},
-				Token: &authSecret{Type: "environment", Name: "VAR"},
+				Name: "TEST ENV",
+				URL:  url{Value: "TEST URL", Type: ""},
+				Auth: auth{Token: authSecret{Type: "environment", Name: "VAR"}},
 			},
 			URLDefinition{
 				Type:  ValueURLType,
@@ -70,9 +70,9 @@ func Test_extractUrlType(t *testing.T) {
 		{
 			"extracts_environment_url",
 			environment{
-				Name:  "TEST ENV",
-				URL:   url{Value: "TEST_TOKEN", Type: urlTypeEnvironment},
-				Token: &authSecret{Type: "environment", Name: "VAR"},
+				Name: "TEST ENV",
+				URL:  url{Value: "TEST_TOKEN", Type: urlTypeEnvironment},
+				Auth: auth{Token: authSecret{Type: "environment", Name: "VAR"}},
 			},
 			URLDefinition{
 				Type:  EnvironmentURLType,
@@ -84,9 +84,9 @@ func Test_extractUrlType(t *testing.T) {
 		{
 			"fails_on_unknown_type",
 			environment{
-				Name:  "TEST ENV",
-				URL:   url{Value: "TEST URL", Type: "this-is-not-a-type"},
-				Token: &authSecret{Type: "environment", Name: "VAR"},
+				Name: "TEST ENV",
+				URL:  url{Value: "TEST URL", Type: "this-is-not-a-type"},
+				Auth: auth{Token: authSecret{Type: "environment", Name: "VAR"}},
 			},
 			URLDefinition{},
 			true,
@@ -548,8 +548,9 @@ environmentGroups:
     url:
       type: environment
       value: ENV_URL
-    token:
-      name: ENV_TOKEN
+    auth:
+      token:
+        name: ENV_TOKEN
 `,
 			expected: expected{
 				manifest: manifest{
@@ -569,8 +570,10 @@ environmentGroups:
 										Type:  urlTypeEnvironment,
 										Value: "ENV_URL",
 									},
-									Token: &authSecret{
-										Name: "ENV_TOKEN",
+									Auth: auth{
+										Token: authSecret{
+											Name: "ENV_TOKEN",
+										},
 									},
 								},
 							},
@@ -609,7 +612,7 @@ environmentGroups:
 						{
 							Environments: []environment{
 								{
-									Auth: &auth{
+									Auth: auth{
 										OAuth: &oAuth{
 											ClientID:      authSecret{Name: "ENV_CLIENT_ID"},
 											ClientSecret:  authSecret{Name: "ENV_CLIENT_SECRET"},
@@ -724,7 +727,7 @@ func TestLoadManifest(t *testing.T) {
 			manifestContent: `
 manifestVersion: 1.0
 projects: [{name: a, path: p}]
-environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: e}}]}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}}}]}]
 `,
 			errsContain: []string{},
 			expectedManifest: Manifest{
@@ -1161,7 +1164,7 @@ projects: [{name: projectA, path: pathA}]
 environmentGroups:
 - {name: groupA, environments: [{name: envA, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
 - {name: groupB, environments: [{name: envB, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
-- {name: groupC, environments: [{name: envC, url: {value: "https://example.com"}, auth: {token: {name: token-does-not-exist-but-it-should-not-error-because-envC-is-not-loaded}}}]}
+- {name: groupC, environments: [{name: envC, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
 `,
 			errsContain: []string{`requested environment "doesnotexist" not found`},
 		},
@@ -1237,7 +1240,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {
 			name: "No manifestVersion",
 			manifestContent: `
 projects: [{name: a}]
-environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: e}}]}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}}}]}]
 `,
 			errsContain: []string{"manifestVersion"},
 		},
@@ -1246,7 +1249,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {
 			manifestContent: `
 manifestVersion: a
 projects: [{name: a}]
-environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: e}}]}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}}} ]}]
 `,
 			errsContain: []string{"manifestVersion"},
 		},
@@ -1255,7 +1258,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {
 			manifestContent: `
 manifestVersion: 0.0
 projects: [{name: a}]
-environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: e}}]}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}}} ]}]
 `,
 			errsContain: []string{"manifestVersion"},
 		},
@@ -1264,7 +1267,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {
 			manifestContent: `
 manifestVersion: 10000.0
 projects: [{name: a}]
-environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: e}}]}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}}} ]}]
 `,
 			errsContain: []string{"manifestVersion"},
 		},
@@ -1272,7 +1275,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {
 			name: "No projects",
 			manifestContent: `
 manifestVersion: 1.0
-environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: e}}]}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}}} ]}]
 `,
 			errsContain: []string{"projects"},
 		},
@@ -1289,7 +1292,7 @@ projects: [{name: a}]
 			manifestContent: `
 manifestVersion: 1.0
 projects: []
-environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: e}}]}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}}} ]}]
 `,
 			errsContain: []string{"projects"},
 		},
@@ -1308,8 +1311,8 @@ environmentGroups: [{name: b, environments: []}]
 manifestVersion: 1.0
 projects: [{name: a}]
 environmentGroups:
-  - {name: b, environments: [{name: c, url: {value: d}, token: {name: e}}]}
-  - {name: f, environments: [{name: c, url: {value: d}, token: {name: e}}]}
+  - {name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}}} ]}
+  - {name: f, environments: [{name: c, url: {value: d}, auth: {token: {name: e}}} ]}
 `,
 			errsContain: []string{"duplicated environment name"},
 		},
@@ -1318,7 +1321,7 @@ environmentGroups:
 			manifestContent: `
 manifestVersion: 1.0
 projects: [{name: a},{name: a}]
-environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: e}}]}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}}} ]}]
 `,
 			errsContain: []string{"duplicated project name"},
 		},
@@ -1328,8 +1331,8 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {
 manifestVersion: 1.0
 projects: [{name: a}]
 environmentGroups:
-  - {name: b, environments: [{name: c, url: {value: d}, token: {name: e}}]}
-  - {name: b, environments: [{name: f, url: {value: d}, token: {name: e}}]}
+  - {name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}}} ]}
+  - {name: b, environments: [{name: f, url: {value: d}, auth: {token: {name: e}}} ]}
 `,
 			errsContain: []string{"duplicated group name"},
 		},
@@ -1338,7 +1341,7 @@ environmentGroups:
 			manifestContent: `
 manifestVersion: 1.0
 projects: [{name: a}]
-environmentGroups: [{name: '', environments: [{name: c, url: {value: d}, token: {name: e}}]}]
+environmentGroups: [{name: '', environments: [{name: c, url: {value: d}, auth: {token: {name: e}}} ]}]
 `,
 			errsContain: []string{"missing group name"},
 		},
@@ -1347,7 +1350,7 @@ environmentGroups: [{name: '', environments: [{name: c, url: {value: d}, token: 
 			manifestContent: `
 manifestVersion: 1.0
 projects: [{name: a}]
-environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: e, type: f}}]}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e, type: f}}} ]}]
 `,
 			errsContain: []string{"type must be 'environment'"},
 		},
@@ -1356,7 +1359,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {
 			manifestContent: `
 manifestVersion: 1.0
 projects: [{name: a}]
-environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: ''}}]}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: ''}}} ]}]
 `,
 			errsContain: []string{"no name given or empty"},
 		},
@@ -1365,7 +1368,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {
 			manifestContent: `
 manifestVersion: 1.0
 projects: [{name: a}]
-environmentGroups: [{name: b, environments: [{name: c, url: {value: ''}, token: {name: e}}]}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: ''}, auth: {token: {name: e}}} ]}]
 `,
 			errsContain: []string{"configured or value is blank"},
 		},
@@ -1374,7 +1377,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: ''}, token: 
 			manifestContent: `
 manifestVersion: 1.0
 projects: [{name: a}]
-environmentGroups: [{name: b, environments: [{name: c, url: {value: d, type: f}, token: {name: e}}]}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d, type: f}, auth: {token: {name: e}}} ]}]
 `,
 			errsContain: []string{`"f" is not a valid URL type`},
 		},
@@ -1383,7 +1386,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d, type: f},
 			manifestContent: `
 manifestVersion: 1.0
 projects: [{name: a}]
-environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {name: doesNotExist}}]}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: doesNotExist}}} ]}]
 `,
 			errsContain: []string{`environment-variable "doesNotExist" was not found`},
 		},
@@ -1651,7 +1654,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {
 			manifestContent: `
 manifestVersion: 1.0
 projects: [{name: a, path: p}]
-environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {type: x}, type: Platform}]}]
+environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {type: x}}, type: Platform}]}]
 `,
 			errsContain: []string{"type must be 'environment'"},
 		},

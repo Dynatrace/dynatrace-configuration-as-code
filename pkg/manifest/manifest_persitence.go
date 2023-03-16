@@ -55,12 +55,7 @@ type environment struct {
 	URL  url    `yaml:"url"`
 
 	// Auth contains all authentication related information
-	Auth *auth `yaml:"auth,omitempty"`
-
-	// Token is the user-provided Dynatrace Classic API token
-	//
-	// Deprecated: Use [Auth.Token] instead. This field is still available to support existing manifests.
-	Token *authSecret `yaml:"token,omitempty"`
+	Auth auth `yaml:"auth,omitempty"`
 }
 
 type urlType string
