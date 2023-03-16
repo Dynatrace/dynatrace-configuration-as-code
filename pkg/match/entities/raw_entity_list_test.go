@@ -1,5 +1,5 @@
 // @license
-// Copyright 2021 Dynatrace LLC
+// Copyright 2023 Dynatrace LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,13 +18,12 @@ package entities
 
 import (
 	"encoding/json"
-	"reflect"
 	"testing"
 
 	"gotest.tools/assert"
 )
 
-func SortRawEntityList(t *testing.T) {
+func TestSortRawEntityList(t *testing.T) {
 
 	entityListJson := `[{
 		"entityId": "AZURE_VM-109729BAB28C66E8",
@@ -103,7 +102,12 @@ func SortRawEntityList(t *testing.T) {
 			}
 			json.Unmarshal([]byte(tt.wantJson), rawEntityListWanted.Values)
 
-			assert.Assert(t, reflect.DeepEqual(rawEntityListInput, rawEntityListWanted), "SortRawEntityList() = %v, want %v", rawEntityListInput, rawEntityListWanted)
+			assert.Equal(t, rawEntityListInput.Len(), rawEntityListWanted.Len())
+			for i, _ := range *rawEntityListInput.GetValues() {
+				assert.Equal(t, ((*rawEntityListInput.GetValues())[i].(map[string]interface{}))["entityId"].(string),
+					((*rawEntityListWanted.GetValues())[i].(map[string]interface{}))["entityId"].(string))
+			}
+
 		})
 	}
 }

@@ -1,5 +1,5 @@
 // @license
-// Copyright 2021 Dynatrace LLC
+// Copyright 2023 Dynatrace LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -50,8 +50,8 @@ func newReversedIndexCompareResultList(sourceList *IndexCompareResultList) *Inde
 	return i
 }
 
-func (i *IndexCompareResultList) addResult(entityIdSource int, entityIdTarget int, weightValue int) {
-	i.CompareResults = append(i.CompareResults, CompareResult{entityIdSource, entityIdTarget, weightValue})
+func (i *IndexCompareResultList) addResult(entityIdSource int, entityIdTarget int, WeightValue int) {
+	i.CompareResults = append(i.CompareResults, CompareResult{entityIdSource, entityIdTarget, WeightValue})
 }
 
 func (i *IndexCompareResultList) ProcessMatches() []CompareResult {
@@ -61,8 +61,7 @@ func (i *IndexCompareResultList) ProcessMatches() []CompareResult {
 	}
 
 	i.sumMatchWeightValues()
-	reverseResults := i.reduceBothForwardAndBackward()
-	singleToSingleMatchItems := keepSingleToSingleMatchItemsLeftRight(i, reverseResults)
+	singleToSingleMatchItems := keepSingleToSingleMatchItemsLeftRight(i)
 
 	i.trimSingleToSingleMatches(singleToSingleMatchItems)
 

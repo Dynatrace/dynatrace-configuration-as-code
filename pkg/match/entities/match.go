@@ -1,5 +1,5 @@
 // @license
-// Copyright 2021 Dynatrace LLC
+// Copyright 2023 Dynatrace LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -100,7 +100,7 @@ func unmarshalEntities(entityPerType []config.Config) (*RawEntityList, error) {
 
 func runRules(entityProcessingPtr *match.MatchProcessing, entitiesType string, matchParameters match.MatchParameters) (MatchOutputType, error) {
 
-	activeIndexRuleTypes := match.NewIndexRuleMapGenerator(matchParameters.SelfMatch)
+	activeIndexRuleTypes := match.NewIndexRuleMapGenerator(matchParameters.SelfMatch, INDEX_CONFIG_LIST_ENTITIES)
 
 	oldResultsPtr, matchedEntities := activeIndexRuleTypes.RunIndexRuleAll(entitiesType, entityProcessingPtr)
 

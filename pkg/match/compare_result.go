@@ -1,5 +1,5 @@
 // @license
-// Copyright 2021 Dynatrace LLC
+// Copyright 2023 Dynatrace LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -124,9 +124,11 @@ func compareCompareResults(a CompareResult, b CompareResult) int {
 	}
 }
 
-func keepSingleToSingleMatchItemsLeftRight(results *IndexCompareResultList, reversedResults *IndexCompareResultList) []CompareResult {
+func keepSingleToSingleMatchItemsLeftRight(results *IndexCompareResultList) []CompareResult {
 
 	singleMatchItems := []CompareResult{}
+
+	reversedResults := results.reduceBothForwardAndBackward()
 
 	leftRight := results.keepSingleMatchItems()
 	sort.Sort(ByLeftRight(leftRight))
