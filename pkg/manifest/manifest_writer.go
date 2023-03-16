@@ -15,7 +15,6 @@
 package manifest
 
 import (
-	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"path/filepath"
 	"strings"
@@ -115,7 +114,6 @@ func toWriteableEnvironmentGroups(environments map[string]EnvironmentDefinition)
 	for name, env := range environments {
 		e := environment{
 			Name: name,
-			Type: getType(env),
 			URL:  toWriteableURL(env),
 			Auth: getAuth(env),
 		}
@@ -164,17 +162,6 @@ func getAuth(env EnvironmentDefinition) auth {
 			TokenEndpoint: te,
 		},
 	}
-}
-
-func getType(env EnvironmentDefinition) string {
-	switch env.Type {
-	case Classic:
-		return "classic"
-	case Platform:
-		return "platform"
-	}
-
-	panic(fmt.Sprintf("Unexpected environment type %q in environment %q.", env.Type, env.Name))
 }
 
 func toWriteableURL(environment EnvironmentDefinition) url {
