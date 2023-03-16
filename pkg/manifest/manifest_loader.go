@@ -433,7 +433,7 @@ func parseCredentials(config environment, envType EnvironmentType) (Auth, error)
 	}
 
 	if config.Token != nil {
-		log.Warn("Environment %s: The field 'Token' is deprecated, use 'Auth.Token' instead.", config.Name)
+		log.Warn("Environment %s: Field 'token' is deprecated, use 'auth.token' instead.", config.Name)
 		token, err := parseAuthSecret(*config.Token)
 		if err != nil {
 			return Auth{}, fmt.Errorf("failed to parse token: %w", err)
