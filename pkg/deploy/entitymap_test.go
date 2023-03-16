@@ -35,7 +35,7 @@ func TestNewEntityMap(t *testing.T) {
 		want *EntityMap
 	}{
 		{
-			name: "Test crate entity map",
+			name: "Test create entity map",
 			args: args{api.ApiMap{"dashboard": api.NewStandardApi("dashboard", "dashboard", false, "dashboard-v2", false)}},
 			want: &EntityMap{
 				resolvedEntities: parameter.ResolvedEntities{},
