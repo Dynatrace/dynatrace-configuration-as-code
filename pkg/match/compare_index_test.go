@@ -42,10 +42,10 @@ func TestCompareIndex(t *testing.T) {
 				IndexEntry{"Test", []int{1, 2, 3}},
 			},
 			indexRule: IndexRule{
-				name:              "Detected Name",
-				path:              []string{"properties", "detectedName"},
+				Name:              "Detected Name",
+				Path:              []string{"properties", "detectedName"},
 				WeightValue:       1,
-				selfMatchDisabled: false,
+				SelfMatchDisabled: false,
 			},
 			want: IndexCompareResultList{
 				ruleType: IndexRuleType{},
@@ -73,10 +73,10 @@ func TestCompareIndex(t *testing.T) {
 				IndexEntry{"Test", []int{1, 2, 3}},
 			},
 			indexRule: IndexRule{
-				name:              "Detected Name",
-				path:              []string{"properties", "detectedName"},
+				Name:              "Detected Name",
+				Path:              []string{"properties", "detectedName"},
 				WeightValue:       1,
-				selfMatchDisabled: false,
+				SelfMatchDisabled: false,
 			},
 			want: IndexCompareResultList{
 				ruleType: IndexRuleType{},
@@ -104,10 +104,10 @@ func TestCompareIndex(t *testing.T) {
 				IndexEntry{"Orphan", []int{1, 2, 3}},
 			},
 			indexRule: IndexRule{
-				name:              "Detected Name",
-				path:              []string{"properties", "detectedName"},
+				Name:              "Detected Name",
+				Path:              []string{"properties", "detectedName"},
 				WeightValue:       1,
-				selfMatchDisabled: false,
+				SelfMatchDisabled: false,
 			},
 			want: IndexCompareResultList{
 				ruleType: IndexRuleType{},
@@ -136,10 +136,10 @@ func TestCompareIndex(t *testing.T) {
 				IndexEntry{"Orphan2", []int{1, 2, 3}},
 			},
 			indexRule: IndexRule{
-				name:              "Detected Name",
-				path:              []string{"properties", "detectedName"},
+				Name:              "Detected Name",
+				Path:              []string{"properties", "detectedName"},
 				WeightValue:       1,
-				selfMatchDisabled: false,
+				SelfMatchDisabled: false,
 			},
 			want: IndexCompareResultList{
 				ruleType: IndexRuleType{},
@@ -168,10 +168,10 @@ func TestCompareIndex(t *testing.T) {
 				IndexEntry{"1000+ matches", []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32}},
 			},
 			indexRule: IndexRule{
-				name:              "Detected Name",
-				path:              []string{"properties", "detectedName"},
+				Name:              "Detected Name",
+				Path:              []string{"properties", "detectedName"},
 				WeightValue:       1,
-				selfMatchDisabled: false,
+				SelfMatchDisabled: false,
 			},
 			want: IndexCompareResultList{
 				ruleType: IndexRuleType{},
