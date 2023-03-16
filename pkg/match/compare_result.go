@@ -12,20 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package entities
+package match
 
 import (
 	"sort"
 )
 
 type CompareResult struct {
-	leftId  int
-	rightId int
+	LeftId  int
+	RightId int
 	weight  int
 }
 
 func (a CompareResult) areIdsEqual(b CompareResult) bool {
-	if a.leftId == b.leftId && a.rightId == b.rightId {
+	if a.LeftId == b.LeftId && a.RightId == b.RightId {
 		return true
 	}
 	return false
@@ -38,7 +38,7 @@ type ByLeft []CompareResult
 func (a ByLeft) Len() int      { return len(a) }
 func (a ByLeft) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a ByLeft) Less(i, j int) bool {
-	return a[i].leftId < a[j].leftId
+	return a[i].LeftId < a[j].LeftId
 }
 
 // ByLeftRight implements sort.Interface for []CompareResult based on
@@ -48,11 +48,11 @@ type ByLeftRight []CompareResult
 func (a ByLeftRight) Len() int      { return len(a) }
 func (a ByLeftRight) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a ByLeftRight) Less(i, j int) bool {
-	if a[i].leftId == a[j].leftId {
-		return a[i].rightId < a[j].rightId
+	if a[i].LeftId == a[j].LeftId {
+		return a[i].RightId < a[j].RightId
 	}
 
-	return a[i].leftId < a[j].leftId
+	return a[i].LeftId < a[j].LeftId
 }
 
 // ByLeftRight implements sort.Interface for []CompareResult based on
@@ -62,7 +62,7 @@ type ByRight []CompareResult
 func (a ByRight) Len() int      { return len(a) }
 func (a ByRight) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a ByRight) Less(i, j int) bool {
-	return a[i].rightId < a[j].rightId
+	return a[i].RightId < a[j].RightId
 }
 
 // ByLeftRight implements sort.Interface for []CompareResult based on
@@ -72,11 +72,11 @@ type ByRightLeft []CompareResult
 func (a ByRightLeft) Len() int      { return len(a) }
 func (a ByRightLeft) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a ByRightLeft) Less(i, j int) bool {
-	if a[i].rightId == a[j].rightId {
-		return a[i].leftId < a[j].leftId
+	if a[i].RightId == a[j].RightId {
+		return a[i].LeftId < a[j].LeftId
 	}
 
-	return a[i].rightId < a[j].rightId
+	return a[i].RightId < a[j].RightId
 }
 
 // ByTopMatch implements sort.Interface for []CompareResult based on
@@ -86,22 +86,22 @@ type ByTopMatch []CompareResult
 func (a ByTopMatch) Len() int      { return len(a) }
 func (a ByTopMatch) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a ByTopMatch) Less(i, j int) bool {
-	if a[i].leftId == a[j].leftId {
+	if a[i].LeftId == a[j].LeftId {
 		return a[j].weight < a[i].weight
 	}
-	return a[i].leftId < a[j].leftId
+	return a[i].LeftId < a[j].LeftId
 }
 
 func compareLeftRightResult(leftRight CompareResult, rightLeft CompareResult) int {
-	if leftRight.leftId == rightLeft.rightId {
-		if leftRight.rightId == rightLeft.leftId {
+	if leftRight.LeftId == rightLeft.RightId {
+		if leftRight.RightId == rightLeft.LeftId {
 			return 0
-		} else if leftRight.rightId < rightLeft.leftId {
+		} else if leftRight.RightId < rightLeft.LeftId {
 			return -1
 		} else {
 			return 1
 		}
-	} else if leftRight.leftId < rightLeft.rightId {
+	} else if leftRight.LeftId < rightLeft.RightId {
 		return -2
 	} else {
 		return 2
@@ -109,29 +109,29 @@ func compareLeftRightResult(leftRight CompareResult, rightLeft CompareResult) in
 }
 
 func compareCompareResults(a CompareResult, b CompareResult) int {
-	if a.leftId == b.leftId {
-		if a.rightId == b.rightId {
+	if a.LeftId == b.LeftId {
+		if a.RightId == b.RightId {
 			return 0
-		} else if a.rightId < b.rightId {
+		} else if a.RightId < b.RightId {
 			return -1
 		} else {
 			return 1
 		}
-	} else if a.leftId < b.leftId {
+	} else if a.LeftId < b.LeftId {
 		return -2
 	} else {
 		return 2
 	}
 }
 
-func keepSingleToSingleMatchEntitiesLeftRight(results *IndexCompareResultList, reversedResults *IndexCompareResultList) []CompareResult {
+func keepSingleToSingleMatchItemsLeftRight(results *IndexCompareResultList, reversedResults *IndexCompareResultList) []CompareResult {
 
-	singleMatchEntities := []CompareResult{}
+	singleMatchItems := []CompareResult{}
 
-	leftRight := results.keepSingleMatchEntities()
+	leftRight := results.keepSingleMatchItems()
 	sort.Sort(ByLeftRight(leftRight))
 
-	rightLeft := reversedResults.keepSingleMatchEntities()
+	rightLeft := reversedResults.keepSingleMatchItems()
 	sort.Sort(ByRightLeft(rightLeft))
 
 	leftI := 0
@@ -145,7 +145,7 @@ func keepSingleToSingleMatchEntitiesLeftRight(results *IndexCompareResultList, r
 			leftI++
 
 		} else if diff == 0 {
-			singleMatchEntities = append(singleMatchEntities, leftRight[leftI])
+			singleMatchItems = append(singleMatchItems, leftRight[leftI])
 
 			leftI++
 			rightI++
@@ -156,13 +156,13 @@ func keepSingleToSingleMatchEntitiesLeftRight(results *IndexCompareResultList, r
 		}
 	}
 
-	return singleMatchEntities
+	return singleMatchItems
 }
 
 func getLeftId(compareResult CompareResult) int {
-	return compareResult.leftId
+	return compareResult.LeftId
 }
 
 func getRightId(compareResult CompareResult) int {
-	return compareResult.rightId
+	return compareResult.RightId
 }

@@ -12,16 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package entities
+package match
 
 import (
 	"sort"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 )
 
 type IndexRuleType struct {
-	isSeed      bool
+	IsSeed      bool
 	weightValue int
-	indexRules  []IndexRule
+	IndexRules  []IndexRule
 }
 
 type IndexRule struct {
@@ -45,9 +47,9 @@ type IndexRuleMapGenerator struct {
 
 var INDEX_CONFIG_LIST_ALL = []IndexRuleType{
 	{
-		isSeed:      true,
+		IsSeed:      true,
 		weightValue: 100,
-		indexRules: []IndexRule{
+		IndexRules: []IndexRule{
 			{
 				name:              "Detected Name",
 				path:              []string{"properties", "detectedName"},
@@ -63,9 +65,9 @@ var INDEX_CONFIG_LIST_ALL = []IndexRuleType{
 		},
 	},
 	{
-		isSeed:      true,
+		IsSeed:      true,
 		weightValue: 90,
-		indexRules: []IndexRule{
+		IndexRules: []IndexRule{
 			{
 				name:              "Entity Id",
 				path:              []string{"entityId"},
@@ -80,13 +82,13 @@ var INDEX_CONFIG_LIST_ALL = []IndexRuleType{
 			},
 		},
 	},
-	// ipAddress was tested with isSeed = false on 5 million RBC Pre-Prod entities
+	// ipAddress was tested with IsSeed = false on 5 million RBC Pre-Prod entities
 	// All matches were identical, except for Network Interfaces the were not matching as well
-	// Keeping isSeed = true only has positive return
+	// Keeping IsSeed = true only has positive return
 	{
-		isSeed:      true,
+		IsSeed:      true,
 		weightValue: 50,
-		indexRules: []IndexRule{
+		IndexRules: []IndexRule{
 			{
 				name:              "Ip Addresses List",
 				path:              []string{"properties", "ipAddress"},
@@ -97,7 +99,7 @@ var INDEX_CONFIG_LIST_ALL = []IndexRuleType{
 	},
 }
 
-func newIndexRuleMapGenerator(selfMatch bool) *IndexRuleMapGenerator {
+func NewIndexRuleMapGenerator(selfMatch bool) *IndexRuleMapGenerator {
 	i := new(IndexRuleMapGenerator)
 	i.SelfMatch = selfMatch
 	return i
@@ -109,17 +111,17 @@ func (i *IndexRuleMapGenerator) genActiveList() []IndexRuleType {
 
 	for _, confType := range INDEX_CONFIG_LIST_ALL {
 		ruleType := IndexRuleType{
-			isSeed:      confType.isSeed,
+			IsSeed:      confType.IsSeed,
 			weightValue: confType.weightValue,
-			indexRules:  make([]IndexRule, 0, len(confType.indexRules)),
+			IndexRules:  make([]IndexRule, 0, len(confType.IndexRules)),
 		}
-		for _, conf := range confType.indexRules {
+		for _, conf := range confType.IndexRules {
 			if conf.selfMatchDisabled && i.SelfMatch {
 				continue
 			}
-			ruleType.indexRules = append(ruleType.indexRules, conf)
+			ruleType.IndexRules = append(ruleType.IndexRules, conf)
 		}
-		if len(ruleType.indexRules) >= 1 {
+		if len(ruleType.IndexRules) >= 1 {
 			activeList = append(activeList, ruleType)
 		}
 	}
@@ -134,4 +136,60 @@ func (i *IndexRuleMapGenerator) genSortedActiveList() []IndexRuleType {
 	sort.Sort(ByWeightTypeValue(activeList))
 
 	return activeList
+}
+
+func (i *IndexRuleMapGenerator) RunIndexRuleAll(itemsType string, matchProcessingPtr *MatchProcessing) (*IndexCompareResultList, *map[int]int) {
+	matchedEntities := map[int]int{}
+	oldResultsPtr := &IndexCompareResultList{}
+
+	ruleTypes := i.genSortedActiveList()
+
+	log.Info("Type: %s -> nb source %d and nb target %d", itemsType,
+		matchProcessingPtr.Source.RawMatchList.Len(), matchProcessingPtr.Target.RawMatchList.Len())
+
+	for _, indexRuleType := range ruleTypes {
+		resultListPtr := newIndexCompareResultList(indexRuleType)
+		matchProcessingPtr.PrepareRemainingMatch(true, indexRuleType.IsSeed, oldResultsPtr)
+
+		for _, indexRule := range indexRuleType.IndexRules {
+			indexRule.runIndexRule(matchProcessingPtr, resultListPtr)
+		}
+
+		resultListPtr.MergeOldWeightType(oldResultsPtr)
+		singleToSingleMatchEntities := resultListPtr.ProcessMatches()
+		oldResultsPtr = resultListPtr
+
+		matchProcessingPtr.adjustremainingMatch(singleToSingleMatchEntities, resultListPtr.CompareResults)
+
+		matchedEntities = keepMatches(matchedEntities, singleToSingleMatchEntities)
+	}
+
+	log.Info("Type: %s -> nb source %d and nb target %d -> Matched: %d",
+		itemsType, len(*matchProcessingPtr.Source.RawMatchList.GetValues()),
+		len(*matchProcessingPtr.Target.RawMatchList.GetValues()), len(matchedEntities))
+
+	return oldResultsPtr, &matchedEntities
+}
+
+func (i *IndexRule) runIndexRule(entityProcessingPtr *MatchProcessing, resultListPtr *IndexCompareResultList) {
+
+	sortedIndexSource := genSortedItemsIndex(*i, &(*entityProcessingPtr).Source)
+	sortedIndexTarget := genSortedItemsIndex(*i, &(*entityProcessingPtr).Target)
+
+	compareIndexes(resultListPtr, sortedIndexSource, sortedIndexTarget, *i)
+
+}
+
+func keepMatches(matchedEntities map[int]int, singleToSingleMatch []CompareResult) map[int]int {
+	for _, result := range singleToSingleMatch {
+		_, found := matchedEntities[result.LeftId]
+
+		if found {
+			log.Error("Should never find multiple exact matches for an entity, %v", result)
+		}
+
+		matchedEntities[result.LeftId] = result.RightId
+	}
+
+	return matchedEntities
 }

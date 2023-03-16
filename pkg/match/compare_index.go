@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package entities
+package match
 
 import (
 	"strings"
@@ -36,9 +36,9 @@ func compareIndexes(resultListPtr *IndexCompareResultList, indexSource []IndexEn
 			if totalMatches > 1000 {
 				log.Debug("too many matches for: %s, Nb of matches: %d", indexSource[srcI].indexValue, totalMatches)
 			} else {
-				for _, entityIdSource := range indexSource[srcI].matchedIds {
-					for _, entityIdTarget := range indexTarget[tgtI].matchedIds {
-						(*resultListPtr).addResult(entityIdSource, entityIdTarget, indexRule.weightValue)
+				for _, itemIdSource := range indexSource[srcI].matchedIds {
+					for _, itemIdTarget := range indexTarget[tgtI].matchedIds {
+						(*resultListPtr).addResult(itemIdSource, itemIdTarget, indexRule.weightValue)
 					}
 				}
 

@@ -18,7 +18,9 @@ import (
 	"sort"
 )
 
-type RawEntityList []interface{}
+type RawEntityList struct {
+	Values *[]interface{}
+}
 
 // ByRawEntityId implements sort.Interface for []RawEntity] based on
 // the EntityId string field.
@@ -32,6 +34,18 @@ func (a ByRawEntityId) Less(i, j int) bool {
 
 func (r *RawEntityList) Sort() {
 
-	sort.Sort(ByRawEntityId(*r))
+	sort.Sort(ByRawEntityId(*r.GetValues()))
+
+}
+
+func (r *RawEntityList) Len() int {
+
+	return len(*r.GetValues())
+
+}
+
+func (r *RawEntityList) GetValues() *[]interface{} {
+
+	return r.Values
 
 }

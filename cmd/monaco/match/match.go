@@ -19,6 +19,7 @@ import (
 	"time"
 
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/match"
 	matchEntities "github.com/dynatrace/dynatrace-configuration-as-code/pkg/match/entities"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
@@ -33,7 +34,7 @@ func Match(fs afero.Fs, matchFileName string) error {
 
 	startTime := time.Now()
 
-	matchParameters, err := matchEntities.LoadMatchingParameters(fs, matchFileName)
+	matchParameters, err := match.LoadMatchingParameters(fs, matchFileName)
 	if err != nil {
 		return err
 	}
@@ -43,7 +44,7 @@ func Match(fs afero.Fs, matchFileName string) error {
 		return err
 	}
 
-	stats, nbEntitiesSource, nbEntitiesTarget, err := matchEntities.CompareConfigs(fs, matchParameters, configsSource, configsTarget)
+	stats, nbEntitiesSource, nbEntitiesTarget, err := matchEntities.CompareEntities(fs, matchParameters, configsSource, configsTarget)
 	if err != nil {
 		return err
 	}
@@ -59,7 +60,7 @@ func Match(fs afero.Fs, matchFileName string) error {
 	return nil
 }
 
-func loadProjects(fs afero.Fs, matchParameters matchEntities.MatchParameters) (project.ConfigsPerType, project.ConfigsPerType, error) {
+func loadProjects(fs afero.Fs, matchParameters match.MatchParameters) (project.ConfigsPerType, project.ConfigsPerType, error) {
 
 	sourceConfigs, err := loadProject(fs, matchParameters.Source)
 	if err != nil {
@@ -75,7 +76,7 @@ func loadProjects(fs afero.Fs, matchParameters matchEntities.MatchParameters) (p
 
 }
 
-func loadProject(fs afero.Fs, env matchEntities.MatchParametersEnv) (project.ConfigsPerType, error) {
+func loadProject(fs afero.Fs, env match.MatchParametersEnv) (project.ConfigsPerType, error) {
 
 	log.Info("Loading project %s of %s environment %s ...", env.Project, env.EnvType, env.Environment)
 

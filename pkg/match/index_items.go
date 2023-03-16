@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package entities
+package match
 
 import "sort"
 
@@ -29,13 +29,13 @@ func (a ByIndexValue) Len() int           { return len(a) }
 func (a ByIndexValue) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByIndexValue) Less(i, j int) bool { return a[i].indexValue < a[j].indexValue }
 
-func genSortedEntitiesIndex(indexRule IndexRule, entities *EntityProcessingEnv) []IndexEntry {
+func genSortedItemsIndex(indexRule IndexRule, items *MatchProcessingEnv) []IndexEntry {
 
 	index := IndexMap{}
 
-	for _, entityIdx := range *(entities.currentremainingEntities) {
+	for _, entityIdx := range *(items.CurrentremainingMatch) {
 
-		value := getValueFromPath((*entities.rawEntityListPtr)[entityIdx], indexRule.path)
+		value := getValueFromPath((*items.RawMatchList.GetValues())[entityIdx], indexRule.path)
 		if value == nil {
 			// pass
 		} else {
