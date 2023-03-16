@@ -245,8 +245,8 @@ void createContainerAndPushToStorage(Map args = [version: null]) {
                 script {
                     try {
                         sh 'docker login --username $username --password $password $registry'
-                        sh 'DOCKER_BUILDKIT=1 make docker-container OUTPUT=./build/docker/monaco CONTAINER_NAME=$registry/monaco/dynatrace-monitoring-as-code VERSION=$version'
-                        sh 'docker push $registry/monaco/dynatrace-monitoring-as-code:$version'
+                        sh 'DOCKER_BUILDKIT=1 make docker-container OUTPUT=./build/docker/monaco CONTAINER_NAME=$registry/dynatrace-configuration-as-code VERSION=$version'
+                        sh 'docker push $registry/dynatrace-configuration-as-code:$version'
                     } finally {
                         sh 'docker logout $registry'
                     }
