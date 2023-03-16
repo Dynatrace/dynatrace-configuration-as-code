@@ -287,9 +287,10 @@ environmentGroups:
     type: classic
     url:
       value: https://abcde.dev.dynatracelabs.com
-    token:
-      type: environment
-      name: ENV_TOKEN
+    auth:
+      token:
+        type: environment
+        name: ENV_TOKEN
 `
 	configYaml := `configs:
 - id: profile

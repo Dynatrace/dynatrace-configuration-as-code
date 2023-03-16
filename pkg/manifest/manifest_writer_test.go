@@ -258,7 +258,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							Name: "env1",
 							Type: "classic",
 							URL:  url{Value: "www.an.Url"},
-							Auth: &auth{
+							Auth: auth{
 								Token: authSecret{
 									Name: "TokenTest",
 									Type: "environment",
@@ -269,7 +269,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							Name: "env2",
 							Type: "platform",
 							URL:  url{Value: "www.an.Url"},
-							Auth: &auth{
+							Auth: auth{
 								Token: authSecret{
 									Name: "env2_TOKEN",
 									Type: "environment",
@@ -294,7 +294,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							Name: "env2a",
 							Type: "platform",
 							URL:  url{Value: "www.an.Url"},
-							Auth: &auth{
+							Auth: auth{
 								Token: authSecret{
 									Name: "env2_TOKEN",
 									Type: "environment",
@@ -315,7 +315,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							Name: "env2b",
 							Type: "platform",
 							URL:  url{Value: "www.an.Url"},
-							Auth: &auth{
+							Auth: auth{
 								Token: authSecret{
 									Name: "env2_TOKEN",
 									Type: "environment",
@@ -344,7 +344,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 							Name: "env3",
 							Type: "classic",
 							URL:  url{Value: "www.an.Url"},
-							Auth: &auth{
+							Auth: auth{
 								Token: authSecret{
 									Name: "env3_TOKEN",
 									Type: "environment",

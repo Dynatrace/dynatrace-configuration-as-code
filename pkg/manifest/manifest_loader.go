@@ -393,61 +393,34 @@ func shouldSkipEnv(context *ManifestLoaderContext, group group, env environment)
 }
 
 func parseEnvironment(context *ManifestLoaderContext, config environment, group string) (EnvironmentDefinition, []error) {
-	var errors []error
+	var errs []error
 
-	envType, err := parseEnvironmentType(context, config, group)
+	auth, err := parseAuth(config.Auth)
 	if err != nil {
-		errors = append(errors, err)
-	}
-
-	a, err := parseCredentials(config, envType)
-	if err != nil {
-		errors = append(errors, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, err.Error()))
+		errs = append(errs, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("failed to parse auth section: %s", err)))
 	}
 
 	urlDef, err := parseURLDefinition(config.URL)
 	if err != nil {
-		errors = append(errors, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, err.Error()))
+		errs = append(errs, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, err.Error()))
 	}
 
-	if len(errors) > 0 {
-		return EnvironmentDefinition{}, errors
+	if len(errs) > 0 {
+		return EnvironmentDefinition{}, errs
+	}
+
+	envType := Platform
+	if auth.OAuth == (OAuth{}) {
+		envType = Classic
 	}
 
 	return EnvironmentDefinition{
 		Name:  config.Name,
 		Type:  envType,
 		URL:   urlDef,
-		Auth:  a,
+		Auth:  auth,
 		Group: group,
 	}, nil
-}
-
-func parseCredentials(config environment, envType EnvironmentType) (Auth, error) {
-	if config.Token == nil && config.Auth == nil {
-		return Auth{}, errors.New("'auth' property missing")
-	}
-
-	if config.Token != nil && config.Auth != nil {
-		return Auth{}, errors.New("both 'auth' and 'token' are present")
-	}
-
-	if config.Token != nil {
-		log.Warn("Environment %s: Field 'token' is deprecated, use 'auth.token' instead.", config.Name)
-		token, err := parseAuthSecret(*config.Token)
-		if err != nil {
-			return Auth{}, fmt.Errorf("failed to parse token: %w", err)
-		}
-
-		return Auth{Token: token}, nil
-	}
-
-	a, err := parseAuth(envType, *config.Auth)
-	if err != nil {
-		return Auth{}, fmt.Errorf("failed to parse auth section: %w", err)
-	}
-
-	return a, nil
 }
 
 func parseURLDefinition(u url) (URLDefinition, error) {
