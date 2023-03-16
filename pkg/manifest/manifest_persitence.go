@@ -51,7 +51,6 @@ type auth struct {
 
 type environment struct {
 	Name string `yaml:"name"`
-	Type string `yaml:"type"`
 	URL  url    `yaml:"url"`
 
 	// Auth contains all authentication related information

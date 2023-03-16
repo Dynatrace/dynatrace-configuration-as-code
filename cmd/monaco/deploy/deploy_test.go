@@ -284,7 +284,6 @@ environmentGroups:
 - name: default
   environments:
   - name: project
-    type: classic
     url:
       value: https://abcde.dev.dynatracelabs.com
     auth:

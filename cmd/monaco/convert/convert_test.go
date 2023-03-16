@@ -98,7 +98,6 @@ environmentGroups:
 - name: default
   environments:
   - name: env
-    type: classic
     url:
       type: environment
       value: ENV_URL

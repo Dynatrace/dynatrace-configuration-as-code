@@ -155,25 +155,16 @@ func LoadManifest(context *ManifestLoaderContext) (Manifest, []error) {
 	}, nil
 }
 
-func parseAuth(t EnvironmentType, a auth) (Auth, error) {
+func parseAuth(a auth) (Auth, error) {
 	token, err := parseAuthSecret(a.Token)
 	if err != nil {
 		return Auth{}, fmt.Errorf("error parsing token: %w", err)
 	}
 
-	if t == Classic {
-		if a.OAuth != nil {
-			return Auth{}, errors.New("found OAuth credentials on a Dynatrace Classic environment. If the environment is a Dynatrace Platform environment, change the type to 'Platform'")
-		}
-
+	if a.OAuth == nil {
 		return Auth{
 			Token: token,
 		}, nil
-	}
-
-	//  Platform
-	if a.OAuth == nil {
-		return Auth{}, errors.New("type is 'Platform', but no OAuth credentials defined")
 	}
 
 	o, err := parseOAuth(*a.OAuth)
@@ -456,19 +447,6 @@ func parseURLDefinition(u url) (URLDefinition, error) {
 	}
 
 	return URLDefinition{}, fmt.Errorf("%q is not a valid URL type", u.Type)
-}
-
-func parseEnvironmentType(context *ManifestLoaderContext, config environment, g string) (EnvironmentType, error) {
-	switch strings.ToLower(config.Type) {
-	case "":
-		fallthrough
-	case "classic":
-		return Classic, nil
-	case "platform":
-		return Platform, nil
-	}
-
-	return Classic, newManifestEnvironmentLoaderError(context.ManifestPath, g, config.Name, fmt.Sprintf(`invalid environment-type %q. Allowed values are "classic" (default) and "platform"`, config.Type))
 }
 
 func toProjectDefinitions(context *projectLoaderContext, definitions []project) (map[string]ProjectDefinition, []error) {
