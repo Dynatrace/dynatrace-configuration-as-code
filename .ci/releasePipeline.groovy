@@ -112,7 +112,7 @@ pipeline {
                                                 pushToGithub(rleaseName: release + ".sha256", source: "${release}/${release}.sha256", releaseId: releaseId)
                                                 break
                                             case "container":
-                                                createContainerAndPushToStorage(version: version)
+                                                createContainerAndPushToStorage(version: version, registrySecretsPath: 'keptn-jenkins/monaco/registry-deploy')
                                                 break
                                         }
                                     }
@@ -235,10 +235,10 @@ void signWithSignService(Map args = [source: null, version: null, destDir: '.', 
 
 }
 
-void createContainerAndPushToStorage(Map args = [version: null]) {
+void createContainerAndPushToStorage(Map args = [version: null, registrySecretsPath: null]) {
     stage('📦 Release Container Image') {
         withEnv(["version=${args.version}"]) {
-            withVault(vaultSecrets: [[path        : 'keptn-jenkins/monaco/registry-deploy',
+            withVault(vaultSecrets: [[path        : "${args.registrySecretsPath}",
                                       secretValues: [[envVar: 'registry', vaultKey: 'registry_path', isRequired: true],
                                                      [envVar: 'username', vaultKey: 'username', isRequired: true],
                                                      [envVar: 'password', vaultKey: 'password', isRequired: true]]]]) {
