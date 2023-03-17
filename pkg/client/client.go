@@ -21,14 +21,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"golang.org/x/oauth2"
 	"net/http"
 	"net/url"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
-
-	"golang.org/x/oauth2"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
@@ -731,6 +730,7 @@ func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLa
 	}
 
 	return resp, nil
+
 }
 
 func (d *DynatraceClient) DeleteSettings(objectID string) error {
