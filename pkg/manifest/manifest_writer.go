@@ -139,6 +139,7 @@ func getAuth(env EnvironmentDefinition) auth {
 
 	var te *url
 	switch env.Auth.OAuth.TokenEndpoint.Type {
+	case Absent:
 	case ValueURLType:
 		te = &url{
 			Value: env.Auth.OAuth.TokenEndpoint.Value,
@@ -148,8 +149,6 @@ func getAuth(env EnvironmentDefinition) auth {
 			Type:  urlTypeEnvironment,
 			Value: env.Auth.OAuth.TokenEndpoint.Name,
 		}
-	case Absent:
-		te = nil
 	}
 
 	return auth{

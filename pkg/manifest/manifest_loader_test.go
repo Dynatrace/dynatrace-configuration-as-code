@@ -1518,6 +1518,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 								},
 								TokenEndpoint: URLDefinition{
 									Value: "https://custom.sso.token.endpoint",
+									Type:  ValueURLType,
 								},
 							},
 						},

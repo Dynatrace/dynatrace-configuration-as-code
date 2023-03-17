@@ -71,14 +71,14 @@ type EnvironmentDefinition struct {
 type URLType int
 
 const (
+	// Absent indicates absence of declaration (e.g. not declared via manifest.yaml or environment variables)
+	Absent URLType = iota
+
 	// ValueURLType describes that the url has been loaded directly as a value
-	ValueURLType URLType = iota
+	ValueURLType
 
 	// EnvironmentURLType describes that the url has been loaded from an environment variable
 	EnvironmentURLType
-
-	// Absent indicates absence of declaration (e.g. not declared via manifest.yaml or environment variables)
-	Absent
 )
 
 // URLDefinition holds the value and origin of an environment-url.
