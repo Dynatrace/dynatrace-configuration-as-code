@@ -103,7 +103,13 @@ func (i *IndexCompareResultList) reduceBothForwardAndBackward() *IndexCompareRes
 	return reverseResults
 }
 
-func (i *IndexCompareResultList) keepSingleMatchItems() []CompareResult {
+func (i *IndexCompareResultList) sort() {
+
+	sort.Sort(ByLeftRight(i.CompareResults))
+
+}
+
+func (i *IndexCompareResultList) getSingleMatchItems() []CompareResult {
 
 	if len(i.CompareResults) == 0 {
 		return []CompareResult{}
@@ -134,12 +140,6 @@ func (i *IndexCompareResultList) keepSingleMatchItems() []CompareResult {
 	keepSingleMatch()
 
 	return singleMatchItems
-}
-
-func (i *IndexCompareResultList) sort() {
-
-	sort.Sort(ByLeftRight(i.CompareResults))
-
 }
 
 func (i *IndexCompareResultList) sumMatchWeightValues() {
@@ -185,8 +185,8 @@ func (i *IndexCompareResultList) getMaxWeight() int {
 }
 
 func (i *IndexCompareResultList) elevateWeight(lowerMaxWeight int) {
-	for _, result := range i.CompareResults {
-		result.weight += lowerMaxWeight
+	for idx, _ := range i.CompareResults {
+		i.CompareResults[idx].weight += lowerMaxWeight
 	}
 }
 
@@ -251,11 +251,9 @@ func (i *IndexCompareResultList) ProcessMatches() []CompareResult {
 }
 
 func (i *IndexCompareResultList) MergeOldWeightType(oldResults *IndexCompareResultList) {
-	i.sort()
-	oldResults.sort()
-
 	lowerMaxWeight := i.getMaxWeight()
 	oldResults.elevateWeight(lowerMaxWeight)
 
 	i.CompareResults = append(i.CompareResults, oldResults.CompareResults...)
+	i.sort()
 }

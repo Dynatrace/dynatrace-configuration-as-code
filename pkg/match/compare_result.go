@@ -130,10 +130,10 @@ func keepSingleToSingleMatchItemsLeftRight(results *IndexCompareResultList) []Co
 
 	reversedResults := results.reduceBothForwardAndBackward()
 
-	leftRight := results.keepSingleMatchItems()
+	leftRight := results.getSingleMatchItems()
 	sort.Sort(ByLeftRight(leftRight))
 
-	rightLeft := reversedResults.keepSingleMatchItems()
+	rightLeft := reversedResults.getSingleMatchItems()
 	sort.Sort(ByRightLeft(rightLeft))
 
 	leftI := 0
