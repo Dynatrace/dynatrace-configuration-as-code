@@ -203,7 +203,7 @@ func runLegacyIntegration(t *testing.T, configFolder, envFile, suffixTest string
 	assert.NilError(t, err)
 	assert.Assert(t, exists, "manifest should exist on path '%s' but does not", manifestPath)
 
-	loadedManifest, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
+	loadedManifest, errs := manifest.LoadManifest(&manifest.LoaderContext{
 		Fs:           fs,
 		ManifestPath: manifestPath,
 	})

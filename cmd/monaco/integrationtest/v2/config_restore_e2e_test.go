@@ -348,7 +348,7 @@ func validation_uploadDownloadedConfigs(t *testing.T, fs afero.Fs, downloadFolde
 }
 
 func cleanupDeployedConfiguration(t *testing.T, fs afero.Fs, manifestFilepath string, testSuffix string) {
-	loadedManifest, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
+	loadedManifest, errs := manifest.LoadManifest(&manifest.LoaderContext{
 		Fs:           fs,
 		ManifestPath: manifestFilepath,
 	})

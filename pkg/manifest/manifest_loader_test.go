@@ -1658,7 +1658,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 			fs := afero.NewMemMapFs()
 			assert.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(test.manifestContent), 0400))
 
-			mani, errs := LoadManifest(&ManifestLoaderContext{
+			mani, errs := LoadManifest(&LoaderContext{
 				Fs:           fs,
 				ManifestPath: "manifest.yaml",
 				Groups:       test.groups,

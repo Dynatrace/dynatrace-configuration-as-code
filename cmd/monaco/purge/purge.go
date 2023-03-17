@@ -41,7 +41,7 @@ func purge(fs afero.Fs, deploymentManifestPath string, environmentNames []string
 
 	apis := api.NewAPIs().Filter(api.RetainByName(apiNames))
 
-	mani, manifestLoadError := manifest.LoadManifest(&manifest.ManifestLoaderContext{
+	mani, manifestLoadError := manifest.LoadManifest(&manifest.LoaderContext{
 		Fs:           fs,
 		ManifestPath: deploymentManifestPath,
 		Environments: environmentNames,
