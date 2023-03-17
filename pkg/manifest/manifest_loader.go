@@ -298,7 +298,7 @@ func validateManifestVersion(manifestVersion string) error {
 	return nil
 }
 
-func toEnvironments(context *ManifestLoaderContext, groups []group) (map[string]EnvironmentDefinition, []error) {
+func toEnvironments(context *ManifestLoaderContext, groups []group) (map[string]EnvironmentDefinition, []error) { // nolint:gocognit
 	var errors []error
 	environments := make(map[string]EnvironmentDefinition)
 
