@@ -823,8 +823,79 @@ func TestListEntities(t *testing.T) {
 			wantNumberOfApiCalls: 5,
 			wantError:            true,
 		},
+		{
+			name:              "Retries on empty paginated response",
+			givenEntitiesType: EntitiesType{EntitiesTypeId: testType},
+			givenServerResponses: []testServerResponse{
+				{200, fmt.Sprintf(`{ "entities": [ {"entityId": "%s-1A28B791C329D741", "type": "%s"} ], "nextPageKey": "page42"  }`, testType, testType)},
+				{200, fmt.Sprintf(`{ "entities": [] }`)},
+				{200, fmt.Sprintf(`{ "entities": [] }`)},
+				{200, fmt.Sprintf(`{ "entities": [ {"entityId": "%s-C329D7411A28B791", "type": "%s"} ] }`, testType, testType)},
+			},
+			want: []string{
+				fmt.Sprintf(`{"entityId": "%s-1A28B791C329D741", "type": "%s"}`, testType, testType),
+				fmt.Sprintf(`{"entityId": "%s-C329D7411A28B791", "type": "%s"}`, testType, testType),
+			},
+			wantQueryParamsPerApiCall: [][]testQueryParams{
+				{
+					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
+					{"pageSize", defaultPageSizeEntities},
+					{"fields", defaultListEntitiesFields},
+				},
+				{
+					{"nextPageKey", "page42"},
+				},
+				{
+					{"nextPageKey", "page42"},
+				},
+				{
+					{"nextPageKey", "page42"},
+				},
+			},
+			wantNumberOfApiCalls: 4,
+			wantError:            false,
+		},
+		{
+			name:              "Retries on wrong field for entity type",
+			givenEntitiesType: EntitiesType{EntitiesTypeId: testType},
+			givenServerResponses: []testServerResponse{
+				{200, fmt.Sprintf(`{ "entities": [ {"entityId": "%s-1A28B791C329D741", "type": "%s"} ], "nextPageKey": "page42"  }`, testType, testType)},
+				{400, fmt.Sprintf(`{{
+					"error":{
+						"code":400,
+						"message":"Constraints violated.",
+						"constraintViolations":[{
+							"path":"fields",
+							"message":"'ipAddress' is not a valid property for type '%s'",
+							"parameterLocation":"QUERY",
+							"location":null
+						}]
+					}
+				} 
+				}`, testType)},
+				{200, fmt.Sprintf(`{ "entities": [ {"entityId": "%s-C329D7411A28B791", "type": "%s"} ] }`, testType, testType)},
+			},
+			want: []string{
+				fmt.Sprintf(`{"entityId": "%s-1A28B791C329D741", "type": "%s"}`, testType, testType),
+				fmt.Sprintf(`{"entityId": "%s-C329D7411A28B791", "type": "%s"}`, testType, testType),
+			},
+			wantQueryParamsPerApiCall: [][]testQueryParams{
+				{
+					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
+					{"pageSize", defaultPageSizeEntities},
+					{"fields", defaultListEntitiesFields},
+				},
+				{
+					{"nextPageKey", "page42"},
+				},
+				{
+					{"nextPageKey", "page42"},
+				},
+			},
+			wantNumberOfApiCalls: 3,
+			wantError:            false,
+		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			apiCalls := 0

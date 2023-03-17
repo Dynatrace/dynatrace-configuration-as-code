@@ -154,6 +154,7 @@ func getDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.
 func getDownloadEntitiesCommand(fs afero.Fs, command Command, downloadCmd *cobra.Command) {
 	var project, outputFolder string
 	var forceOverwrite bool
+	var specificEntitiesTypes []string
 
 	downloadEntitiesCmd := &cobra.Command{
 		Use:   "entities",
@@ -192,6 +193,7 @@ Either downloading based on an existing manifest, or by defining environment URL
 						outputFolder:   outputFolder,
 						forceOverwrite: forceOverwrite,
 					},
+					specificEntitiesTypes: specificEntitiesTypes,
 				},
 			}
 			return command.DownloadEntitiesBasedOnManifest(fs, options)
@@ -222,6 +224,7 @@ Either downloading based on an existing manifest, or by defining environment URL
 						outputFolder:   outputFolder,
 						forceOverwrite: forceOverwrite,
 					},
+					specificEntitiesTypes: specificEntitiesTypes,
 				},
 			}
 			return command.DownloadEntities(fs, options)
@@ -229,8 +232,8 @@ Either downloading based on an existing manifest, or by defining environment URL
 		},
 	}
 
-	setupSharedEntitiesFlags(manifestDownloadCmd, &project, &outputFolder, &forceOverwrite)
-	setupSharedEntitiesFlags(directDownloadCmd, &project, &outputFolder, &forceOverwrite)
+	setupSharedEntitiesFlags(manifestDownloadCmd, &project, &outputFolder, &forceOverwrite, &specificEntitiesTypes)
+	setupSharedEntitiesFlags(directDownloadCmd, &project, &outputFolder, &forceOverwrite, &specificEntitiesTypes)
 
 	downloadEntitiesCmd.AddCommand(manifestDownloadCmd)
 	downloadEntitiesCmd.AddCommand(directDownloadCmd)
@@ -255,10 +258,11 @@ func setupSharedConfigsFlags(cmd *cobra.Command, project, outputFolder *string, 
 	}
 }
 
-func setupSharedEntitiesFlags(cmd *cobra.Command, project, outputFolder *string, forceOverwrite *bool) {
+func setupSharedEntitiesFlags(cmd *cobra.Command, project, outputFolder *string, forceOverwrite *bool, specificEntitiesTypes *[]string) {
 	setupSharedFlags(cmd, project, outputFolder, forceOverwrite)
-}
+	cmd.Flags().StringSliceVarP(specificEntitiesTypes, "specific-types", "s", make([]string, 0), "List of entity type IDs specifying which entity types to download")
 
+}
 func setupSharedFlags(cmd *cobra.Command, project, outputFolder *string, forceOverwrite *bool) {
 	// flags always available
 	cmd.Flags().StringVarP(project, "project", "p", "project", "Project to create within the output-folder")
