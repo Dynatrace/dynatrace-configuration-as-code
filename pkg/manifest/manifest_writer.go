@@ -23,12 +23,16 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type ManifestWriterContext struct {
-	Fs           afero.Fs
+// WriterContext holds all information for [WriteManifest]
+type WriterContext struct {
+	// Fs holds the abstraction of the file system.
+	Fs afero.Fs
+
+	// ManifestPath holds the path from where the manifest should be written to.
 	ManifestPath string
 }
 
-func WriteManifest(context *ManifestWriterContext, manifestToWrite Manifest) error {
+func WriteManifest(context *WriterContext, manifestToWrite Manifest) error {
 	sanitizedPath := filepath.Clean(context.ManifestPath)
 	folder := filepath.Dir(sanitizedPath)
 
@@ -52,7 +56,7 @@ func WriteManifest(context *ManifestWriterContext, manifestToWrite Manifest) err
 	return persistManifestToDisk(context, m)
 }
 
-func persistManifestToDisk(context *ManifestWriterContext, m manifest) error {
+func persistManifestToDisk(context *WriterContext, m manifest) error {
 	manifestAsYaml, err := yaml.Marshal(m)
 
 	if err != nil {

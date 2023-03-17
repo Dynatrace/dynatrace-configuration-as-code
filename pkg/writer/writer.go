@@ -41,7 +41,7 @@ func WriteToDisk(context *WriterContext, manifestToWrite manifest.Manifest, proj
 		return []error{err}
 	}
 
-	err = manifest.WriteManifest(&manifest.ManifestWriterContext{
+	err = manifest.WriteManifest(&manifest.WriterContext{
 		Fs:           context.Fs,
 		ManifestPath: filepath.Join(sanitizedOutputDir, context.ManifestName),
 	}, manifestToWrite)
