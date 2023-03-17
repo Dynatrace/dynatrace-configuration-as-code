@@ -37,7 +37,7 @@ func TestDoCleanup(t *testing.T) {
 	manifestPath := "test-resources/test_environments_manifest.yaml"
 
 	fs := afero.NewOsFs()
-	loadedManifest, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
+	loadedManifest, errs := manifest.LoadManifest(&manifest.LoaderContext{
 		Fs:           fs,
 		ManifestPath: manifestPath,
 	})

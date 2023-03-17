@@ -46,7 +46,7 @@ func LoadManifest(t *testing.T, fs afero.Fs, manifestFile string, specificEnviro
 		specificEnvs = append(specificEnvs, specificEnvironment)
 	}
 
-	m, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
+	m, errs := manifest.LoadManifest(&manifest.LoaderContext{
 		Fs:           fs,
 		ManifestPath: manifestFile,
 		Environments: specificEnvs,

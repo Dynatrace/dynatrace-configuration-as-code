@@ -30,8 +30,12 @@ import (
 	"strings"
 )
 
-type ManifestLoaderContext struct {
-	Fs           afero.Fs
+// LoaderContext holds all information for [LoadManifest]
+type LoaderContext struct {
+	// Fs holds the abstraction of the file system.
+	Fs afero.Fs
+
+	// ManifestPath holds the path from where the manifest should be loaded.
 	ManifestPath string
 
 	// Environments is a filter to what environments should be loaded.
@@ -97,7 +101,7 @@ func (e projectLoaderError) Error() string {
 	return fmt.Sprintf("%s:%s: %s", e.ManifestPath, e.Project, e.Reason)
 }
 
-func LoadManifest(context *ManifestLoaderContext) (Manifest, []error) {
+func LoadManifest(context *LoaderContext) (Manifest, []error) {
 	log.Debug("Loading manifest %q. Restrictions: groups=%q, environments=%q", context.ManifestPath, context.Groups, context.Environments)
 
 	manifestYAML, err := readManifestYAML(context)
@@ -229,7 +233,7 @@ func parseOAuth(a oAuth) (OAuth, error) {
 	}, nil
 }
 
-func readManifestYAML(context *ManifestLoaderContext) (manifest, error) {
+func readManifestYAML(context *LoaderContext) (manifest, error) {
 	manifestPath := filepath.Clean(context.ManifestPath)
 
 	if !files.IsYamlFileExtension(manifestPath) {
@@ -298,7 +302,7 @@ func validateManifestVersion(manifestVersion string) error {
 	return nil
 }
 
-func toEnvironments(context *ManifestLoaderContext, groups []group) (map[string]EnvironmentDefinition, []error) { // nolint:gocognit
+func toEnvironments(context *LoaderContext, groups []group) (map[string]EnvironmentDefinition, []error) { // nolint:gocognit
 	var errors []error
 	environments := make(map[string]EnvironmentDefinition)
 
@@ -366,7 +370,7 @@ func toEnvironments(context *ManifestLoaderContext, groups []group) (map[string]
 	return environments, nil
 }
 
-func shouldSkipEnv(context *ManifestLoaderContext, group group, env environment) bool {
+func shouldSkipEnv(context *LoaderContext, group group, env environment) bool {
 	// if nothing is restricted, everything is allowed
 	if len(context.Groups) == 0 && len(context.Environments) == 0 {
 		return false
@@ -383,7 +387,7 @@ func shouldSkipEnv(context *ManifestLoaderContext, group group, env environment)
 	return true
 }
 
-func parseEnvironment(context *ManifestLoaderContext, config environment, group string) (EnvironmentDefinition, []error) {
+func parseEnvironment(context *LoaderContext, config environment, group string) (EnvironmentDefinition, []error) {
 	var errs []error
 
 	auth, err := parseAuth(config.Auth)

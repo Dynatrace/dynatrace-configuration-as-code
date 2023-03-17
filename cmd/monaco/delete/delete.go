@@ -40,7 +40,7 @@ func Delete(fs afero.Fs, deploymentManifestPath string, deleteFile string, envir
 
 	apis := api.NewAPIs()
 
-	manifest, manifestLoadError := manifest.LoadManifest(&manifest.ManifestLoaderContext{
+	manifest, manifestLoadError := manifest.LoadManifest(&manifest.LoaderContext{
 		Fs:           fs,
 		ManifestPath: deploymentManifestPath,
 		Environments: environmentNames,

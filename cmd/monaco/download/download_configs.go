@@ -56,7 +56,7 @@ type directDownloadOptions struct {
 
 func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions manifestDownloadOptions) error {
 
-	m, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
+	m, errs := manifest.LoadManifest(&manifest.LoaderContext{
 		Fs:           fs,
 		ManifestPath: cmdOptions.manifestFile,
 	})

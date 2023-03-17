@@ -63,7 +63,7 @@ func runIntegrationWithCleanup(t *testing.T, testFs afero.Fs, configFolder, mani
 		envs = append(envs, specificEnvironment)
 	}
 
-	loadedManifest, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
+	loadedManifest, errs := manifest.LoadManifest(&manifest.LoaderContext{
 		Fs:           testFs,
 		ManifestPath: manifestPath,
 		Environments: envs,
