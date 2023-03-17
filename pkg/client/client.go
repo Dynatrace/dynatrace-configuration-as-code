@@ -237,17 +237,12 @@ func WithAutoServerVersion() func(client *DynatraceClient) {
 		var serverVersion version.Version
 		var err error
 		if _, ok := d.client.Transport.(*oauth2.Transport); ok {
-			serverVersion, err = GetDynatraceVersion(d.client, Environment{
-				URL:  d.environmentUrl,
-				Type: Platform,
-			})
+			// for platform enabled tenants there is no dedicated version endpoint
+			// so this call would need to be "redirected" to the second gen URL, which do not currently resolve
+			d.serverVersion = version.UnknownVersion
 		} else {
-			serverVersion, err = GetDynatraceVersion(d.client, Environment{
-				URL:  d.environmentUrl,
-				Type: Classic,
-			})
+			serverVersion, err = GetDynatraceVersion(d.client, d.environmentUrl)
 		}
-
 		if err != nil {
 			log.Error("Unable to determine Dynatrace server version: %v", err)
 			d.serverVersion = version.UnknownVersion

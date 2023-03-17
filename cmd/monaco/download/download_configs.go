@@ -70,9 +70,9 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 		return fmt.Errorf("environment %q was not available in manifest %q", cmdOptions.specificEnvironmentName, cmdOptions.manifestFile)
 	}
 
-	err := cmdutils.VerifyClusterGen(manifest.Environments{env.Name: env})
-	if err != nil {
-		return err
+	ok := cmdutils.VerifyEnvironmentGeneration(manifest.Environments{env.Name: env})
+	if !ok {
+		return fmt.Errorf("unable to verify Dynatrace environment generation")
 	}
 
 	printUploadToSameEnvironmentWarning(env)

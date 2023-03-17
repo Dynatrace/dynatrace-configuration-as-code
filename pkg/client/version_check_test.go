@@ -95,10 +95,7 @@ func TestGetDynatraceVersion(t *testing.T) {
 			}))
 			defer server.Close()
 
-			got, err := GetDynatraceVersion(server.Client(), Environment{
-				URL:  server.URL,
-				Type: Classic,
-			})
+			got, err := GetDynatraceVersion(server.Client(), server.URL)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetDynatraceVersion() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -169,7 +166,7 @@ func Test_parseDynatraceVersion(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run("parseVersion("+tt.versionString+")", func(t *testing.T) {
-			gotVersion, err := parseDynatraceVersion(tt.versionString)
+			gotVersion, err := parseDynatraceClassicVersion(tt.versionString)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("parseVersion() error = %v, wantErr %v", err, tt.wantErr)
 				return

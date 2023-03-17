@@ -17,10 +17,12 @@
 package cmdutils
 
 import (
-	"fmt"
+	"errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"github.com/spf13/cobra"
+	"net/http"
 )
 
 // SilenceUsageCommand gives back a command that is just configured to skip printing of usage info.
@@ -32,30 +34,60 @@ func SilenceUsageCommand() func(cmd *cobra.Command, args []string) {
 	}
 }
 
-// VerifyClusterGen takes a manifestEnvironments map and tries to call the version endpoint of each environment
-// in order to verify that the user has configured the environments correctly.
-// Depending on the configured environment "type" the function tries to call the version endpoint of either
-// classic gen or platform gen. The function will return an error as soon as
-// it receives an error from calling the version endpoint of an environment
-func VerifyClusterGen(envs manifest.Environments) error {
+// VerifyEnvironmentGeneration takes a manifestEnvironments map and tries to verify that each environment can be reached
+// using the configured credentials
+func VerifyEnvironmentGeneration(envs manifest.Environments) bool {
 	for _, env := range envs {
 		switch env.Type {
 		case manifest.Classic:
-			if _, err := client.GetDynatraceVersion(client.NewTokenAuthClient(env.Auth.Token.Value), client.Environment{URL: env.Url.Value, Type: client.Classic}); err != nil {
-				return fmt.Errorf("could not verify Dynatrace cluster generation of environment %q (%q). Please check the configured Auth credentials in the manifest", env.Name, env.Url)
-			}
+			return isClassicEnvironment(env)
 		case manifest.Platform:
-			oauthCredentials := client.OauthCredentials{
-				ClientID:     env.Auth.OAuth.ClientId.Value,
-				ClientSecret: env.Auth.OAuth.ClientSecret.Value,
-				TokenURL:     env.Auth.OAuth.TokenEndpoint.Value,
-			}
-			if _, err := client.GetDynatraceVersion(client.NewOAuthClient(oauthCredentials), client.Environment{URL: env.Url.Value, Type: client.Platform}); err != nil {
-				return fmt.Errorf("could not verify Dynatrace cluster generation of environment %q (%q). Please check the configured Auth credentials in the manifest", env.Name, env.Url)
-			}
+			return isPlatformEnvironment(env)
 		default:
-			return fmt.Errorf("invalid environment type")
+			log.Error("Could not authorize against the environment with name %q (%s). Unknown environment type.", env.Name, env.Url.Value)
+			return false
 		}
 	}
-	return nil
+	return true
+}
+
+func isClassicEnvironment(env manifest.EnvironmentDefinition) bool {
+	if _, err := client.GetDynatraceVersion(client.NewTokenAuthClient(env.Auth.Token.Value), env.Url.Value); err != nil {
+		var respErr client.RespError
+		if errors.As(err, &respErr) {
+			log.Error("Could not authorize against the environment with name %q (%s) using token authorization.", env.Name, env.Url.Value)
+			if respErr.StatusCode != http.StatusForbidden {
+				log.Error("Please verify that this environment is a Dynatrace Classic environment.")
+			} else {
+				log.Error(err.Error())
+			}
+		} else {
+			log.Error("Could not connect to environment %q (%s)", env.Name, env.Url.Value)
+		}
+		return false
+	}
+	return true
+}
+
+func isPlatformEnvironment(env manifest.EnvironmentDefinition) bool {
+	oauthCredentials := client.OauthCredentials{
+		ClientID:     env.Auth.OAuth.ClientId.Value,
+		ClientSecret: env.Auth.OAuth.ClientSecret.Value,
+		TokenURL:     env.Auth.OAuth.TokenEndpoint.Value,
+	}
+	if _, err := client.GetDynatraceClassicURL(client.NewOAuthClient(oauthCredentials), env.Url.Value); err != nil {
+		var respErr client.RespError
+		if errors.As(err, &respErr) {
+			log.Error("Could not authorize against the environment with name %q (%s) using oAuth authorization.", env.Name, env.Url.Value)
+			if respErr.StatusCode != http.StatusForbidden {
+				log.Error("Please verify that this environment is a Dynatrace Platform environment.")
+			} else {
+				log.Error(err.Error())
+			}
+		} else {
+			log.Error("Could not connect to environment %q (%s)", env.Name, env.Url.Value)
+		}
+		return false
+	}
+	return true
 }

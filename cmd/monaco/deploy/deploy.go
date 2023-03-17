@@ -45,9 +45,9 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 		return err
 	}
 
-	err = verifyClusterGen(loadedManifest.Environments, dryRun)
-	if err != nil {
-		return err
+	ok := verifyEnvironmentGen(loadedManifest.Environments, dryRun)
+	if !ok {
+		return fmt.Errorf("unable to verify Dynatrace environment generation")
 	}
 
 	loadedProjects, err := loadProjects(fs, absManifestPath, loadedManifest)
@@ -136,14 +136,12 @@ func loadManifest(fs afero.Fs, manifestPath string, groups []string, environment
 	return &m, nil
 }
 
-func verifyClusterGen(environments manifest.Environments, dryRun bool) error {
+func verifyEnvironmentGen(environments manifest.Environments, dryRun bool) bool {
 	if !dryRun {
-		err := cmdutils.VerifyClusterGen(environments)
-		if err != nil {
-			return err
-		}
+		return cmdutils.VerifyEnvironmentGeneration(environments)
+
 	}
-	return nil
+	return true
 }
 
 func loadProjects(fs afero.Fs, manifestPath string, man *manifest.Manifest) ([]project.Project, error) {

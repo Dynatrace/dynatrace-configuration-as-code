@@ -29,47 +29,21 @@ type ApiVersionObject struct {
 	Version string `json:"version"`
 }
 
-const (
-	versionPathClassic  = "/api/v1/config/clusterversion"
-	versionPathPlatform = "/platform/core/v1/version"
-)
-
-// EnvironmentType represents the type / generation of an environment
-type EnvironmentType int
-
-const (
-	// Classic identifies a Dynatrace Classic environment
-	Classic EnvironmentType = iota
-
-	// Platform identifies a Dynatrace Platform environment
-	Platform
-)
-
-// Environment represents a Dynatrace environment
-type Environment struct {
-	// URL is the base URL of the environment
-	URL string
-	// Type is the type / generation of environment
-	Type EnvironmentType
-}
+const versionPathClassic = "/api/v1/config/clusterversion"
 
 // GetDynatraceVersion returns the version of an environment
-func GetDynatraceVersion(client *http.Client, environment Environment) (version.Version, error) {
-	var versionURL string
-	switch environment.Type {
-	case Classic:
-		versionURL = environment.URL + versionPathClassic
-	case Platform:
-		versionURL = environment.URL + versionPathPlatform
-	default:
-		return version.Version{}, fmt.Errorf("usupported environment type")
-	}
+func GetDynatraceVersion(client *http.Client, environmentURL string) (version.Version, error) {
+	versionURL := environmentURL + versionPathClassic
+
 	resp, err := rest.Get(client, versionURL)
 	if err != nil {
 		return version.Version{}, fmt.Errorf("failed to query version of Dynatrace environment: %w", err)
 	}
-	if resp.StatusCode != http.StatusOK {
-		return version.Version{}, fmt.Errorf("failed to query version of Dynatrace environment: (HTTP %v) %v", resp.StatusCode, string(resp.Body))
+	if !resp.IsSuccess() {
+		return version.Version{}, RespError{
+			Err:        fmt.Errorf("failed to query version of Dynatrace environment: (HTTP %d) Response was: %s", resp.StatusCode, string(resp.Body)),
+			StatusCode: resp.StatusCode,
+		}
 	}
 
 	var jsonResp ApiVersionObject
@@ -77,13 +51,20 @@ func GetDynatraceVersion(client *http.Client, environment Environment) (version.
 		return version.Version{}, fmt.Errorf("failed to parse Dynatrace version JSON: %w", err)
 	}
 
-	return parseDynatraceVersion(jsonResp.Version)
+	v, err := parseDynatraceClassicVersion(jsonResp.Version)
+	if err != nil {
+		return version.Version{}, RespError{
+			Err:        err,
+			StatusCode: resp.StatusCode,
+		}
+	}
+	return v, nil
 }
 
-// parseDynatraceVersion turns a Dynatrace version string in the format MAJOR.MINOR.PATCH.DATE into a Version object
+// parseDynatraceClassicVersion turns a Dynatrace version string in the format MAJOR.MINOR.PATCH.DATE into a Version object
 // for the version check purposes of monaco the build date part is ignored, assuming correct semantic versioning and
 // not needing to check anything but >= feature versions for our compatibility usecases
-func parseDynatraceVersion(versionString string) (v version.Version, err error) {
+func parseDynatraceClassicVersion(versionString string) (v version.Version, err error) {
 	if len(strings.Split(versionString, ".")) != 4 {
 		return v, fmt.Errorf("failed to parse Dynatrace version: format did not meet expected MAJOR.MINOR.PATCH.DATE pattern: %v", versionString)
 	}

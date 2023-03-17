@@ -112,10 +112,7 @@ func getDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.
 		},
 		ValidArgsFunction: completion.DownloadDirectCompletion,
 		PreRun: func(cmd *cobra.Command, args []string) {
-			serverVersion, err := client.GetDynatraceVersion(client.NewTokenAuthClient(os.Getenv(args[1])), client.Environment{
-				URL:  args[0],
-				Type: client.Classic,
-			})
+			serverVersion, err := client.GetDynatraceVersion(client.NewTokenAuthClient(os.Getenv(args[1])), args[0])
 			if err != nil {
 				log.Error("Unable to determine server version %q: %w", args[0], err)
 				return
@@ -292,10 +289,7 @@ func printUploadToSameEnvironmentWarning(env manifest.EnvironmentDefinition) {
 		httpClient = client.NewOAuthClient(credentials)
 	}
 
-	serverVersion, err = client.GetDynatraceVersion(httpClient, client.Environment{
-		URL:  env.Url.Value,
-		Type: client.EnvironmentType(env.Type),
-	})
+	serverVersion, err = client.GetDynatraceVersion(httpClient, env.Url.Value)
 	if err != nil {
 		log.Error("Unable to determine server version %q: %w", env.Url.Value, err)
 		return
