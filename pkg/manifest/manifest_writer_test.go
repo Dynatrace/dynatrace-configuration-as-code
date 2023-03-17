@@ -152,7 +152,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 				"env1": {
 					Name: "env1",
 					Type: Classic,
-					Url: UrlDefinition{
+					URL: URLDefinition{
 						Value: "www.an.Url",
 					},
 					Group: "group1",
@@ -165,14 +165,14 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 				"env2": {
 					Name: "env2",
 					Type: Platform,
-					Url: UrlDefinition{
+					URL: URLDefinition{
 						Value: "www.an.Url",
 					},
 					Group: "group1",
 					Auth: Auth{
 						Token: AuthSecret{},
 						OAuth: OAuth{
-							ClientId: AuthSecret{
+							ClientID: AuthSecret{
 								Name:  "client-id-key",
 								Value: "client-id-val",
 							},
@@ -180,9 +180,9 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 								Name:  "client-secret-key",
 								Value: "client-secret-val",
 							},
-							TokenEndpoint: UrlDefinition{
+							TokenEndpoint: URLDefinition{
 								Value: endpoints.Dynatrace.TokenURL,
-								Type:  EnvironmentUrlType,
+								Type:  EnvironmentURLType,
 								Name:  "ENV_TOKEN_ENDPOINT",
 							},
 						},
@@ -191,14 +191,14 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 				"env2a": {
 					Name: "env2",
 					Type: Platform,
-					Url: UrlDefinition{
+					URL: URLDefinition{
 						Value: "www.an.Url",
 					},
 					Group: "group1",
 					Auth: Auth{
 						Token: AuthSecret{},
 						OAuth: OAuth{
-							ClientId: AuthSecret{
+							ClientID: AuthSecret{
 								Name:  "client-id-key",
 								Value: "client-id-val",
 							},
@@ -206,7 +206,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 								Name:  "client-secret-key",
 								Value: "client-secret-val",
 							},
-							TokenEndpoint: UrlDefinition{
+							TokenEndpoint: URLDefinition{
 								Value: endpoints.Dynatrace.TokenURL,
 								Type:  Absent,
 							},
@@ -216,14 +216,14 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 				"env2b": {
 					Name: "env2",
 					Type: Platform,
-					Url: UrlDefinition{
+					URL: URLDefinition{
 						Value: "www.an.Url",
 					},
 					Group: "group1",
 					Auth: Auth{
 						Token: AuthSecret{},
 						OAuth: OAuth{
-							ClientId: AuthSecret{
+							ClientID: AuthSecret{
 								Name:  "client-id-key",
 								Value: "client-id-val",
 							},
@@ -231,9 +231,9 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 								Name:  "client-secret-key",
 								Value: "client-secret-val",
 							},
-							TokenEndpoint: UrlDefinition{
+							TokenEndpoint: URLDefinition{
 								Value: "http://custom.sso.token.endpoint",
-								Type:  ValueUrlType,
+								Type:  ValueURLType,
 							},
 						},
 					},
@@ -241,7 +241,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 				"env3": {
 					Name: "env3",
 					Type: Classic,
-					Url: UrlDefinition{
+					URL: URLDefinition{
 						Value: "www.an.Url",
 					},
 					Group: "group2",
@@ -257,7 +257,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						{
 							Name: "env1",
 							Type: "classic",
-							Url:  url{Value: "www.an.Url"},
+							URL:  url{Value: "www.an.Url"},
 							Auth: &auth{
 								Token: authSecret{
 									Name: "TokenTest",
@@ -268,7 +268,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						{
 							Name: "env2",
 							Type: "platform",
-							Url:  url{Value: "www.an.Url"},
+							URL:  url{Value: "www.an.Url"},
 							Auth: &auth{
 								Token: authSecret{
 									Name: "env2_TOKEN",
@@ -293,7 +293,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						{
 							Name: "env2a",
 							Type: "platform",
-							Url:  url{Value: "www.an.Url"},
+							URL:  url{Value: "www.an.Url"},
 							Auth: &auth{
 								Token: authSecret{
 									Name: "env2_TOKEN",
@@ -314,7 +314,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						{
 							Name: "env2b",
 							Type: "platform",
-							Url:  url{Value: "www.an.Url"},
+							URL:  url{Value: "www.an.Url"},
 							Auth: &auth{
 								Token: authSecret{
 									Name: "env2_TOKEN",
@@ -343,7 +343,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						{
 							Name: "env3",
 							Type: "classic",
-							Url:  url{Value: "www.an.Url"},
+							URL:  url{Value: "www.an.Url"},
 							Auth: &auth{
 								Token: authSecret{
 									Name: "env3_TOKEN",
@@ -393,8 +393,8 @@ func Test_toWriteableUrl(t *testing.T) {
 			"correctly transforms env var Url",
 			EnvironmentDefinition{
 				Name: "NAME",
-				Url: UrlDefinition{
-					Type:  EnvironmentUrlType,
+				URL: URLDefinition{
+					Type:  EnvironmentURLType,
 					Name:  "{{ .Env.VARIABLE }}",
 					Value: "Some previously resolved value",
 				},
@@ -412,8 +412,8 @@ func Test_toWriteableUrl(t *testing.T) {
 			"correctly transforms value Url",
 			EnvironmentDefinition{
 				Name: "NAME",
-				Url: UrlDefinition{
-					Type:  ValueUrlType,
+				URL: URLDefinition{
+					Type:  ValueURLType,
 					Value: "www.an.Url",
 				},
 				Group: "GROUP",
@@ -429,7 +429,7 @@ func Test_toWriteableUrl(t *testing.T) {
 			"defaults to value Url if no type is defined",
 			EnvironmentDefinition{
 				Name: "NAME",
-				Url: UrlDefinition{
+				URL: URLDefinition{
 					Value: "www.an.Url",
 				},
 				Group: "GROUP",
@@ -444,8 +444,8 @@ func Test_toWriteableUrl(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := toWriteableUrl(tt.input); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("toWriteableUrl() = %v, want %v", got, tt.want)
+			if got := toWriteableURL(tt.input); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("toWriteableURL() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -461,7 +461,7 @@ func Test_toWritableToken(t *testing.T) {
 			"correctly transforms env var token",
 			EnvironmentDefinition{
 				Name:  "NAME",
-				Url:   UrlDefinition{},
+				URL:   URLDefinition{},
 				Group: "GROUP",
 				Auth: Auth{
 					Token: AuthSecret{Name: "VARIABLE"},
@@ -476,7 +476,7 @@ func Test_toWritableToken(t *testing.T) {
 			"defaults to assumed token name if nothing is defined",
 			EnvironmentDefinition{
 				Name:  "NAME",
-				Url:   UrlDefinition{},
+				URL:   URLDefinition{},
 				Group: "GROUP",
 
 				Auth: Auth{

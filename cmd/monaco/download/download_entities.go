@@ -66,7 +66,7 @@ func (d DefaultCommand) DownloadEntitiesBasedOnManifest(fs afero.Fs, cmdOptions 
 	concurrentDownloadLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
 
 	options := downloadOptionsShared{
-		environmentUrl:          env.Url.Value,
+		environmentUrl:          env.URL.Value,
 		token:                   env.Auth.Token.Value,
 		tokenEnvVarName:         env.Auth.Token.Name,
 		outputFolder:            cmdOptions.outputFolder,

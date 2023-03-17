@@ -118,7 +118,7 @@ func toWriteableEnvironmentGroups(environments map[string]EnvironmentDefinition)
 		e := environment{
 			Name: name,
 			Type: getType(env),
-			Url:  toWriteableUrl(env),
+			URL:  toWriteableURL(env),
 			Auth: &a,
 		}
 
@@ -139,11 +139,11 @@ func getAuth(env EnvironmentDefinition) auth {
 
 	var te *url
 	switch env.Auth.OAuth.TokenEndpoint.Type {
-	case ValueUrlType:
+	case ValueURLType:
 		te = &url{
 			Value: env.Auth.OAuth.TokenEndpoint.Value,
 		}
-	case EnvironmentUrlType:
+	case EnvironmentURLType:
 		te = &url{
 			Type:  urlTypeEnvironment,
 			Value: env.Auth.OAuth.TokenEndpoint.Name,
@@ -157,7 +157,7 @@ func getAuth(env EnvironmentDefinition) auth {
 		OAuth: &oAuth{
 			ClientID: authSecret{
 				Type: typeEnvironment,
-				Name: env.Auth.OAuth.ClientId.Name,
+				Name: env.Auth.OAuth.ClientID.Name,
 			},
 			ClientSecret: authSecret{
 				Type: typeEnvironment,
@@ -179,16 +179,16 @@ func getType(env EnvironmentDefinition) string {
 	panic(fmt.Sprintf("Unexpected environment type %q in environment %q.", env.Type, env.Name))
 }
 
-func toWriteableUrl(environment EnvironmentDefinition) url {
-	if environment.Url.Type == EnvironmentUrlType {
+func toWriteableURL(environment EnvironmentDefinition) url {
+	if environment.URL.Type == EnvironmentURLType {
 		return url{
 			Type:  urlTypeEnvironment,
-			Value: environment.Url.Name,
+			Value: environment.URL.Name,
 		}
 	}
 
 	return url{
-		Value: environment.Url.Value,
+		Value: environment.URL.Value,
 	}
 }
 

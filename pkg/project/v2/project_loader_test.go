@@ -531,7 +531,7 @@ func getTestProjectLoaderContext(apis []string, projects []string) ProjectLoader
 
 func getFullProjectLoaderContext(apis []string, projects []string, environments []string) ProjectLoaderContext {
 
-	projectDefinitions := make(manifest.ProjectDefinitionByProjectId, len(projects))
+	projectDefinitions := make(manifest.ProjectDefinitionByProjectID, len(projects))
 	for _, p := range projects {
 		projectDefinitions[p] = manifest.ProjectDefinition{
 			Name: p,

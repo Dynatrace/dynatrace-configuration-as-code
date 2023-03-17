@@ -85,7 +85,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 
 	options := downloadOptions{
 		downloadOptionsShared: downloadOptionsShared{
-			environmentUrl:          env.Url.Value,
+			environmentUrl:          env.URL.Value,
 			token:                   env.Auth.Token.Value,
 			tokenEnvVarName:         env.Auth.Token.Name,
 			outputFolder:            cmdOptions.outputFolder,

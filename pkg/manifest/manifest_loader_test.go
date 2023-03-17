@@ -38,18 +38,18 @@ func Test_extractUrlType(t *testing.T) {
 	tests := []struct {
 		name        string
 		inputConfig environment
-		want        UrlDefinition
+		want        URLDefinition
 		wantErr     bool
 	}{
 		{
 			"extracts_value_url",
 			environment{
 				Name:  "TEST ENV",
-				Url:   url{Value: "TEST URL", Type: urlTypeValue},
+				URL:   url{Value: "TEST URL", Type: urlTypeValue},
 				Token: &authSecret{Type: "environment", Name: "VAR"},
 			},
-			UrlDefinition{
-				Type:  ValueUrlType,
+			URLDefinition{
+				Type:  ValueURLType,
 				Value: "TEST URL",
 			},
 			false,
@@ -58,11 +58,11 @@ func Test_extractUrlType(t *testing.T) {
 			"extracts_value_if_type_empty",
 			environment{
 				Name:  "TEST ENV",
-				Url:   url{Value: "TEST URL", Type: ""},
+				URL:   url{Value: "TEST URL", Type: ""},
 				Token: &authSecret{Type: "environment", Name: "VAR"},
 			},
-			UrlDefinition{
-				Type:  ValueUrlType,
+			URLDefinition{
+				Type:  ValueURLType,
 				Value: "TEST URL",
 			},
 			false,
@@ -71,11 +71,11 @@ func Test_extractUrlType(t *testing.T) {
 			"extracts_environment_url",
 			environment{
 				Name:  "TEST ENV",
-				Url:   url{Value: "TEST_TOKEN", Type: urlTypeEnvironment},
+				URL:   url{Value: "TEST_TOKEN", Type: urlTypeEnvironment},
 				Token: &authSecret{Type: "environment", Name: "VAR"},
 			},
-			UrlDefinition{
-				Type:  EnvironmentUrlType,
+			URLDefinition{
+				Type:  EnvironmentURLType,
 				Name:  "TEST_TOKEN",
 				Value: "resolved url value",
 			},
@@ -85,16 +85,16 @@ func Test_extractUrlType(t *testing.T) {
 			"fails_on_unknown_type",
 			environment{
 				Name:  "TEST ENV",
-				Url:   url{Value: "TEST URL", Type: "this-is-not-a-type"},
+				URL:   url{Value: "TEST URL", Type: "this-is-not-a-type"},
 				Token: &authSecret{Type: "environment", Name: "VAR"},
 			},
-			UrlDefinition{},
+			URLDefinition{},
 			true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got, gotErr := parseUrlDefinition(tt.inputConfig.Url); got != tt.want || (!tt.wantErr && gotErr != nil) {
+			if got, gotErr := parseURLDefinition(tt.inputConfig.URL); got != tt.want || (!tt.wantErr && gotErr != nil) {
 				t.Errorf("extractUrlType() = %v, %v, want %v, %v", got, gotErr, tt.want, tt.wantErr)
 			}
 		})
@@ -565,7 +565,7 @@ environmentGroups:
 							Environments: []environment{
 								{
 									Name: "env",
-									Url: url{
+									URL: url{
 										Type:  urlTypeEnvironment,
 										Value: "ENV_URL",
 									},
@@ -738,8 +738,8 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {
 					"c": {
 						Name: "c",
 						Type: Classic,
-						Url: UrlDefinition{
-							Type:  ValueUrlType,
+						URL: URLDefinition{
+							Type:  ValueURLType,
 							Value: "d",
 						},
 						Group: "b",
@@ -773,8 +773,8 @@ environmentGroups:
 					"envA": {
 						Name: "envA",
 						Type: Classic,
-						Url: UrlDefinition{
-							Type:  ValueUrlType,
+						URL: URLDefinition{
+							Type:  ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupA",
@@ -788,8 +788,8 @@ environmentGroups:
 					"envB": {
 						Name: "envB",
 						Type: Classic,
-						Url: UrlDefinition{
-							Type:  ValueUrlType,
+						URL: URLDefinition{
+							Type:  ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupB",
@@ -825,8 +825,8 @@ environmentGroups:
 					"envA": {
 						Name: "envA",
 						Type: Classic,
-						Url: UrlDefinition{
-							Type:  ValueUrlType,
+						URL: URLDefinition{
+							Type:  ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupA",
@@ -840,8 +840,8 @@ environmentGroups:
 					"envB": {
 						Name: "envB",
 						Type: Classic,
-						Url: UrlDefinition{
-							Type:  ValueUrlType,
+						URL: URLDefinition{
+							Type:  ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupA",
@@ -876,8 +876,8 @@ environmentGroups:
 					"envA": {
 						Name: "envA",
 						Type: Classic,
-						Url: UrlDefinition{
-							Type:  ValueUrlType,
+						URL: URLDefinition{
+							Type:  ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupA",
@@ -912,8 +912,8 @@ environmentGroups:
 					"envA": {
 						Name: "envA",
 						Type: Classic,
-						Url: UrlDefinition{
-							Type:  ValueUrlType,
+						URL: URLDefinition{
+							Type:  ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupA",
@@ -950,8 +950,8 @@ environmentGroups:
 					"envA": {
 						Name: "envA",
 						Type: Classic,
-						Url: UrlDefinition{
-							Type:  ValueUrlType,
+						URL: URLDefinition{
+							Type:  ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupA",
@@ -965,8 +965,8 @@ environmentGroups:
 					"envB": {
 						Name: "envB",
 						Type: Classic,
-						Url: UrlDefinition{
-							Type:  ValueUrlType,
+						URL: URLDefinition{
+							Type:  ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupB",
@@ -1002,8 +1002,8 @@ environmentGroups:
 					"envA": {
 						Name: "envA",
 						Type: Classic,
-						Url: UrlDefinition{
-							Type:  ValueUrlType,
+						URL: URLDefinition{
+							Type:  ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupA",
@@ -1017,8 +1017,8 @@ environmentGroups:
 					"envB": {
 						Name: "envB",
 						Type: Classic,
-						Url: UrlDefinition{
-							Type:  ValueUrlType,
+						URL: URLDefinition{
+							Type:  ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupB",
@@ -1054,8 +1054,8 @@ environmentGroups:
 					"envA": {
 						Name: "envA",
 						Type: Classic,
-						Url: UrlDefinition{
-							Type:  ValueUrlType,
+						URL: URLDefinition{
+							Type:  ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupA",
@@ -1069,8 +1069,8 @@ environmentGroups:
 					"envB": {
 						Name: "envB",
 						Type: Classic,
-						Url: UrlDefinition{
-							Type:  ValueUrlType,
+						URL: URLDefinition{
+							Type:  ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupB",
@@ -1107,8 +1107,8 @@ environmentGroups:
 					"envA": {
 						Name: "envA",
 						Type: Classic,
-						Url: UrlDefinition{
-							Type:  ValueUrlType,
+						URL: URLDefinition{
+							Type:  ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupA",
@@ -1122,8 +1122,8 @@ environmentGroups:
 					"envB": {
 						Name: "envB",
 						Type: Classic,
-						Url: UrlDefinition{
-							Type:  ValueUrlType,
+						URL: URLDefinition{
+							Type:  ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupB",
@@ -1184,8 +1184,8 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {
 					"c": {
 						Name: "c",
 						Type: Platform,
-						Url: UrlDefinition{
-							Type:  ValueUrlType,
+						URL: URLDefinition{
+							Type:  ValueURLType,
 							Value: "d",
 						},
 						Group: "b",
@@ -1218,8 +1218,8 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, token: {
 					"c": {
 						Name: "c",
 						Type: Classic,
-						Url: UrlDefinition{
-							Type:  ValueUrlType,
+						URL: URLDefinition{
+							Type:  ValueURLType,
 							Value: "d",
 						},
 						Group: "b",
@@ -1415,8 +1415,8 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 					"c": {
 						Name: "c",
 						Type: Classic,
-						Url: UrlDefinition{
-							Type:  ValueUrlType,
+						URL: URLDefinition{
+							Type:  ValueURLType,
 							Value: "d",
 						},
 						Group: "b",
@@ -1449,8 +1449,8 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 					"c": {
 						Name: "c",
 						Type: Platform,
-						Url: UrlDefinition{
-							Type:  ValueUrlType,
+						URL: URLDefinition{
+							Type:  ValueURLType,
 							Value: "d",
 						},
 						Group: "b",
@@ -1460,7 +1460,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 								Value: "mock token",
 							},
 							OAuth: OAuth{
-								ClientId: AuthSecret{
+								ClientID: AuthSecret{
 									Name:  "client-id",
 									Value: "resolved-client-id",
 								},
@@ -1468,7 +1468,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 									Name:  "client-secret",
 									Value: "resolved-client-secret",
 								},
-								TokenEndpoint: UrlDefinition{
+								TokenEndpoint: URLDefinition{
 									Type:  Absent,
 									Value: endpoints.Dynatrace.TokenURL,
 								},
@@ -1497,8 +1497,8 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 					"c": {
 						Name: "c",
 						Type: Platform,
-						Url: UrlDefinition{
-							Type:  ValueUrlType,
+						URL: URLDefinition{
+							Type:  ValueURLType,
 							Value: "d",
 						},
 						Group: "b",
@@ -1508,7 +1508,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 								Value: "mock token",
 							},
 							OAuth: OAuth{
-								ClientId: AuthSecret{
+								ClientID: AuthSecret{
 									Name:  "client-id",
 									Value: "resolved-client-id",
 								},
@@ -1516,7 +1516,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 									Name:  "client-secret",
 									Value: "resolved-client-secret",
 								},
-								TokenEndpoint: UrlDefinition{
+								TokenEndpoint: URLDefinition{
 									Value: "https://custom.sso.token.endpoint",
 								},
 							},
@@ -1544,8 +1544,8 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 					"c": {
 						Name: "c",
 						Type: Platform,
-						Url: UrlDefinition{
-							Type:  ValueUrlType,
+						URL: URLDefinition{
+							Type:  ValueURLType,
 							Value: "d",
 						},
 						Group: "b",
@@ -1555,7 +1555,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 								Value: "mock token",
 							},
 							OAuth: OAuth{
-								ClientId: AuthSecret{
+								ClientID: AuthSecret{
 									Name:  "client-id",
 									Value: "resolved-client-id",
 								},
@@ -1563,8 +1563,8 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 									Name:  "client-secret",
 									Value: "resolved-client-secret",
 								},
-								TokenEndpoint: UrlDefinition{
-									Type:  EnvironmentUrlType,
+								TokenEndpoint: URLDefinition{
+									Type:  EnvironmentURLType,
 									Name:  "ENV_OAUTH_ENDPOINT",
 									Value: "resolved-oauth-endpoint",
 								},
@@ -1602,7 +1602,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 			errsContain: []string{"found OAuth credentials on a Dynatrace Classic environment"},
 		},
 		{
-			name: "OAuth credentials are missing the ClientId",
+			name: "OAuth credentials are missing the ClientID",
 			manifestContent: `
 manifestVersion: 1.0
 projects: [{name: a, path: p}]
@@ -1673,8 +1673,8 @@ environmentGroups: [{name: b, environments: [{name: c, url: {type: environment, 
 					"c": {
 						Name: "c",
 						Type: Classic,
-						Url: UrlDefinition{
-							Type:  EnvironmentUrlType,
+						URL: URLDefinition{
+							Type:  EnvironmentURLType,
 							Value: "mock token",
 							Name:  "e",
 						},
@@ -1727,7 +1727,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 			errsContain: []string{"empty"},
 		},
 		{
-			name: "ClientId empty var name",
+			name: "ClientID empty var name",
 			manifestContent: `
 manifestVersion: 1.0
 projects: [{name: a, path: p}]
@@ -1745,7 +1745,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 			errsContain: []string{"no name given or empty"},
 		},
 		{
-			name: "ClientId env var not found",
+			name: "ClientID env var not found",
 			manifestContent: `
 manifestVersion: 1.0
 projects: [{name: a, path: p}]

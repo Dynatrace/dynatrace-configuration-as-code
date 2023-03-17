@@ -282,16 +282,16 @@ func printUploadToSameEnvironmentWarning(env manifest.EnvironmentDefinition) {
 		httpClient = client.NewTokenAuthClient(env.Auth.Token.Value)
 	} else {
 		credentials := client.OauthCredentials{
-			ClientID:     env.Auth.OAuth.ClientId.Value,
+			ClientID:     env.Auth.OAuth.ClientID.Value,
 			ClientSecret: env.Auth.OAuth.ClientSecret.Value,
 			TokenURL:     env.Auth.OAuth.TokenEndpoint.Value,
 		}
 		httpClient = client.NewOAuthClient(credentials)
 	}
 
-	serverVersion, err = client.GetDynatraceVersion(httpClient, env.Url.Value)
+	serverVersion, err = client.GetDynatraceVersion(httpClient, env.URL.Value)
 	if err != nil {
-		log.Error("Unable to determine server version %q: %w", env.Url.Value, err)
+		log.Error("Unable to determine server version %q: %w", env.URL.Value, err)
 		return
 	}
 	if serverVersion.SmallerThan(version.Version{Major: 1, Minor: 262}) {

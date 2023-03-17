@@ -45,9 +45,9 @@ func (p ProjectDefinition) String() string {
 }
 
 type OAuth struct {
-	ClientId      AuthSecret
+	ClientID      AuthSecret
 	ClientSecret  AuthSecret
-	TokenEndpoint UrlDefinition
+	TokenEndpoint URLDefinition
 }
 
 type Auth struct {
@@ -59,42 +59,42 @@ type Auth struct {
 type EnvironmentDefinition struct {
 	Name  string
 	Type  EnvironmentType
-	Url   UrlDefinition
+	URL   URLDefinition
 	Group string
 
 	Auth Auth
 }
 
-// UrlType describes from where the url is loaded.
-// Possible values are [EnvironmentUrlType] and [ValueUrlType].
-// [ValueUrlType] is the default value.
-type UrlType int
+// URLType describes from where the url is loaded.
+// Possible values are [EnvironmentURLType] and [ValueURLType].
+// [ValueURLType] is the default value.
+type URLType int
 
 const (
-	// ValueUrlType describes that the url has been loaded directly as a value
-	ValueUrlType UrlType = iota
+	// ValueURLType describes that the url has been loaded directly as a value
+	ValueURLType URLType = iota
 
-	// EnvironmentUrlType describes that the url has been loaded from an environment variable
-	EnvironmentUrlType
+	// EnvironmentURLType describes that the url has been loaded from an environment variable
+	EnvironmentURLType
 
 	// Absent indicates absence of declaration (e.g. not declared via manifest.yaml or environment variables)
 	Absent
 )
 
-// UrlDefinition holds the value and origin of an environment-url.
-type UrlDefinition struct {
-	// Type defines whether the [UrlDefinition.Value] is loaded from an env var, or directly.
-	Type UrlType
+// URLDefinition holds the value and origin of an environment-url.
+type URLDefinition struct {
+	// Type defines whether the [URLDefinition.Value] is loaded from an env var, or directly.
+	Type URLType
 
-	// Name is the name of the environment-variable of the token. It only has a value if [UrlDefinition.Type] is "[EnvironmentUrlType]"
+	// Name is the name of the environment-variable of the token. It only has a value if [URLDefinition.Type] is "[EnvironmentURLType]"
 	Name string
 
-	// Value is the resolved value of the Url.
+	// Value is the resolved value of the URL.
 	// It is resolved during manifest reading.
 	Value string
 }
 
-// AuthSecret contains a resolved secret value. It is used for the API-Token, ClientId, and ClientSecret.
+// AuthSecret contains a resolved secret value. It is used for the API-Token, ClientID, and ClientSecret.
 type AuthSecret struct {
 	// Name is the name of the environment-variable of the token. It is used for converting monaco-v1 to monaco-v2 environments
 	// where the value is not resolved, but the env-name has to be kept.
@@ -104,7 +104,7 @@ type AuthSecret struct {
 	Value string
 }
 
-type ProjectDefinitionByProjectId map[string]ProjectDefinition
+type ProjectDefinitionByProjectID map[string]ProjectDefinition
 
 // Environments is a map of environment-name -> EnvironmentDefinition
 type Environments map[string]EnvironmentDefinition
@@ -116,7 +116,7 @@ func (e Environments) Names() []string {
 
 type Manifest struct {
 	// Projects defined in the manifest, split by project-name
-	Projects ProjectDefinitionByProjectId
+	Projects ProjectDefinitionByProjectID
 
 	// Environments defined in the manifest, split by environment-name
 	Environments Environments
