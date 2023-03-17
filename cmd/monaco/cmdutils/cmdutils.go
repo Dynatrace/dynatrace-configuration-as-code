@@ -62,7 +62,7 @@ func isClassicEnvironment(env manifest.EnvironmentDefinition) bool {
 				log.Error(err.Error())
 			}
 		} else {
-			log.Error("Could not connect to environment %q (%s)", env.Name, env.URL.Value)
+			log.Error("Could not connect to environment %q (%s): %v", env.Name, env.URL.Value, err)
 		}
 		return false
 	}
@@ -85,7 +85,7 @@ func isPlatformEnvironment(env manifest.EnvironmentDefinition) bool {
 				log.Error(err.Error())
 			}
 		} else {
-			log.Error("Could not connect to environment %q (%s)", env.Name, env.URL.Value)
+			log.Error("Could not connect to environment %q (%s): %v", env.Name, env.URL.Value, err)
 		}
 		return false
 	}
