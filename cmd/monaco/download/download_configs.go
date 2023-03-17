@@ -16,9 +16,10 @@ package download
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/cmdutils"
 	"os"
 	"strings"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/cmdutils"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
@@ -83,7 +84,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 
 	concurrentDownloadLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
 
-	options := downloadOptions{
+	options := downloadConfigsOptions{
 		downloadOptionsShared: downloadOptionsShared{
 			environmentUrl:          env.URL.Value,
 			token:                   env.Auth.Token.Value,
@@ -111,7 +112,7 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOp
 		return PrintAndFormatErrors(errors, "not all necessary information is present to start downloading configurations")
 	}
 
-	options := downloadOptions{
+	options := downloadConfigsOptions{
 		downloadOptionsShared: downloadOptionsShared{
 			environmentUrl:          cmdOptions.environmentUrl,
 			token:                   token,
@@ -130,7 +131,7 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOp
 	return doDownloadConfigs(fs, api.NewAPIs(), options)
 }
 
-type downloadOptions struct {
+type downloadConfigsOptions struct {
 	downloadOptionsShared
 	specificAPIs    []string
 	specificSchemas []string
@@ -138,7 +139,7 @@ type downloadOptions struct {
 	onlySettings    bool
 }
 
-func doDownloadConfigs(fs afero.Fs, apis api.APIs, opts downloadOptions) error {
+func doDownloadConfigs(fs afero.Fs, apis api.APIs, opts downloadConfigsOptions) error {
 	err := preDownloadValidations(fs, opts.downloadOptionsShared)
 	if err != nil {
 		return err
@@ -170,7 +171,7 @@ func validateSpecificAPIs(a api.APIs, apiNames []string) (valid bool, unknownAPI
 	return len(unknownAPIs) == 0, unknownAPIs
 }
 
-func downloadConfigs(apis api.APIs, opts downloadOptions) (project.ConfigsPerType, error) {
+func downloadConfigs(apis api.APIs, opts downloadConfigsOptions) (project.ConfigsPerType, error) {
 	c, err := opts.getDynatraceClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Dynatrace client: %w", err)
