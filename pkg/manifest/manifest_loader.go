@@ -113,7 +113,6 @@ func LoadManifest(context *ManifestLoaderContext) (Manifest, []error) {
 	}
 
 	manifestPath := filepath.Clean(context.ManifestPath)
-	var errors []error
 
 	workingDir := filepath.Dir(manifestPath)
 	var workingDirFs afero.Fs
@@ -131,22 +130,23 @@ func LoadManifest(context *ManifestLoaderContext) (Manifest, []error) {
 		manifestPath: relativeManifestPath,
 	}, manifestYAML.Projects)
 
+	var errs []error
 	if projectErrors != nil {
-		errors = append(errors, projectErrors...)
+		errs = append(errs, projectErrors...)
 	} else if len(projectDefinitions) == 0 {
-		errors = append(errors, manifestLoaderError{context.ManifestPath, "no projects defined in manifest"})
+		errs = append(errs, manifestLoaderError{context.ManifestPath, "no projects defined in manifest"})
 	}
 
 	environmentDefinitions, manifestErrors := toEnvironments(context, manifestYAML.EnvironmentGroups)
 
 	if manifestErrors != nil {
-		errors = append(errors, manifestErrors...)
+		errs = append(errs, manifestErrors...)
 	} else if len(environmentDefinitions) == 0 {
-		errors = append(errors, manifestLoaderError{context.ManifestPath, "no environments defined in manifest"})
+		errs = append(errs, manifestLoaderError{context.ManifestPath, "no environments defined in manifest"})
 	}
 
-	if errors != nil {
-		return Manifest{}, errors
+	if errs != nil {
+		return Manifest{}, errs
 	}
 
 	return Manifest{
@@ -221,18 +221,18 @@ func parseOAuth(a oAuth) (OAuth, error) {
 		return OAuth{}, fmt.Errorf("failed to parse ClientSecret: %w", err)
 	}
 
-	var urlDef UrlDefinition
+	var urlDef URLDefinition
 	if a.TokenEndpoint == nil {
-		urlDef = UrlDefinition{
+		urlDef = URLDefinition{
 			Value: endpoints.Dynatrace.TokenURL,
 			Type:  Absent,
 		}
-	} else if urlDef, err = parseUrlDefinition(*a.TokenEndpoint); err != nil {
+	} else if urlDef, err = parseURLDefinition(*a.TokenEndpoint); err != nil {
 		return OAuth{}, fmt.Errorf("failed to parse \"tokenEndpoint\": %w", err)
 	}
 
 	return OAuth{
-		ClientId:      clientID,
+		ClientID:      clientID,
 		ClientSecret:  clientSecret,
 		TokenEndpoint: urlDef,
 	}, nil
@@ -405,7 +405,7 @@ func parseEnvironment(context *ManifestLoaderContext, config environment, group 
 		errors = append(errors, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, err.Error()))
 	}
 
-	urlDef, err := parseUrlDefinition(config.Url)
+	urlDef, err := parseURLDefinition(config.URL)
 	if err != nil {
 		errors = append(errors, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, err.Error()))
 	}
@@ -417,7 +417,7 @@ func parseEnvironment(context *ManifestLoaderContext, config environment, group 
 	return EnvironmentDefinition{
 		Name:  config.Name,
 		Type:  envType,
-		Url:   urlDef,
+		URL:   urlDef,
 		Auth:  a,
 		Group: group,
 	}, nil
@@ -450,16 +450,16 @@ func parseCredentials(config environment, envType EnvironmentType) (Auth, error)
 	return a, nil
 }
 
-func parseUrlDefinition(u url) (UrlDefinition, error) {
+func parseURLDefinition(u url) (URLDefinition, error) {
 
 	// Depending on the type, the url.value either contains the env var name or the direct value of the url
 	if u.Value == "" {
-		return UrlDefinition{}, errors.New("no `Url` configured or value is blank")
+		return URLDefinition{}, errors.New("no `Url` configured or value is blank")
 	}
 
 	if u.Type == "" || u.Type == urlTypeValue {
-		return UrlDefinition{
-			Type:  ValueUrlType,
+		return URLDefinition{
+			Type:  ValueURLType,
 			Value: u.Value,
 		}, nil
 	}
@@ -467,22 +467,22 @@ func parseUrlDefinition(u url) (UrlDefinition, error) {
 	if u.Type == urlTypeEnvironment {
 		val, found := os.LookupEnv(u.Value)
 		if !found {
-			return UrlDefinition{}, fmt.Errorf("environment variable %q could not be found", u.Value)
+			return URLDefinition{}, fmt.Errorf("environment variable %q could not be found", u.Value)
 		}
 
 		if val == "" {
-			return UrlDefinition{}, fmt.Errorf("environment variable %q is defined but has no value", u.Value)
+			return URLDefinition{}, fmt.Errorf("environment variable %q is defined but has no value", u.Value)
 		}
 
-		return UrlDefinition{
-			Type:  EnvironmentUrlType,
+		return URLDefinition{
+			Type:  EnvironmentURLType,
 			Value: val,
 			Name:  u.Value,
 		}, nil
 
 	}
 
-	return UrlDefinition{}, fmt.Errorf("%q is not a valid URL type", u.Type)
+	return URLDefinition{}, fmt.Errorf("%q is not a valid URL type", u.Type)
 }
 
 func parseEnvironmentType(context *ManifestLoaderContext, config environment, g string) (EnvironmentType, error) {

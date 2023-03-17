@@ -52,7 +52,7 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 					"test": {
 						Name:  "test",
 						Type:  manifest.Classic,
-						Url:   manifest.UrlDefinition{Type: manifest.EnvironmentUrlType, Name: "URL_ENVIRONMENT_1", Value: url},
+						URL:   manifest.URLDefinition{Type: manifest.EnvironmentURLType, Name: "URL_ENVIRONMENT_1", Value: url},
 						Group: "default",
 						Auth: manifest.Auth{
 							Token: manifest.AuthSecret{Name: "TOKEN_ENVIRONMENT_1", Value: token},

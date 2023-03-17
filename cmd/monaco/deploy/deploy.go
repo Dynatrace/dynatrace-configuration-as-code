@@ -411,5 +411,5 @@ func createDynatraceClient(environment manifest.EnvironmentDefinition, dryRun bo
 		return client.NewDummyClient(), nil
 	}
 
-	return client.NewDynatraceClient(client.NewTokenAuthClient(environment.Auth.Token.Value), environment.Url.Value, client.WithAutoServerVersion())
+	return client.NewDynatraceClient(client.NewTokenAuthClient(environment.Auth.Token.Value), environment.URL.Value, client.WithAutoServerVersion())
 }

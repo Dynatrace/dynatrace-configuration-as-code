@@ -123,10 +123,10 @@ func Convert(context ConverterContext, environments map[string]*v1environment.En
 }
 
 func convertProjects(context *ConverterContext, environments map[string]manifest.EnvironmentDefinition,
-	projects []projectV1.Project) (manifest.ProjectDefinitionByProjectId, []projectV2.Project, []error) {
+	projects []projectV1.Project) (manifest.ProjectDefinitionByProjectID, []projectV2.Project, []error) {
 	var errors []error
 	var convertedProjects []projectV2.Project
-	projectDefinitions := make(manifest.ProjectDefinitionByProjectId)
+	projectDefinitions := make(manifest.ProjectDefinitionByProjectID)
 
 	for _, p := range projects {
 		adjustedId := adjustProjectId(p.GetId())
@@ -555,7 +555,7 @@ func convertEnvironments(environments map[string]*v1environment.EnvironmentV1) m
 func newEnvironmentDefinitionFromV1(env *v1environment.EnvironmentV1, group string) manifest.EnvironmentDefinition {
 	return manifest.EnvironmentDefinition{
 		Name:  env.GetId(),
-		Url:   newUrlDefinitionFromV1(env),
+		URL:   newUrlDefinitionFromV1(env),
 		Group: group,
 		Auth: manifest.Auth{
 			Token: manifest.AuthSecret{Name: env.GetTokenName()},
@@ -563,17 +563,17 @@ func newEnvironmentDefinitionFromV1(env *v1environment.EnvironmentV1, group stri
 	}
 }
 
-func newUrlDefinitionFromV1(env *v1environment.EnvironmentV1) manifest.UrlDefinition {
+func newUrlDefinitionFromV1(env *v1environment.EnvironmentV1) manifest.URLDefinition {
 	if regex.IsEnvVariable(env.GetEnvironmentUrl()) {
 		// no need to resolve the value for conversion
-		return manifest.UrlDefinition{
-			Type: manifest.EnvironmentUrlType,
+		return manifest.URLDefinition{
+			Type: manifest.EnvironmentURLType,
 			Name: regex.TrimToEnvVariableName(env.GetEnvironmentUrl()),
 		}
 	}
 
-	return manifest.UrlDefinition{
-		Type:  manifest.ValueUrlType,
+	return manifest.URLDefinition{
+		Type:  manifest.ValueURLType,
 		Value: strings.TrimSuffix(env.GetEnvironmentUrl(), "/"),
 	}
 }

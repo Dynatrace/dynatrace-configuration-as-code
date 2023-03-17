@@ -62,8 +62,8 @@ func TestVerifyClusterGen(t *testing.T) {
 					"env1": manifest.EnvironmentDefinition{
 						Name: "env1",
 						Type: -6,
-						Url: manifest.UrlDefinition{
-							Type:  manifest.ValueUrlType,
+						URL: manifest.URLDefinition{
+							Type:  manifest.ValueURLType,
 							Name:  "URL",
 							Value: "",
 						},
@@ -94,8 +94,8 @@ func TestVerifyClusterGen(t *testing.T) {
 			"env": manifest.EnvironmentDefinition{
 				Name: "env",
 				Type: manifest.Classic,
-				Url: manifest.UrlDefinition{
-					Type:  manifest.ValueUrlType,
+				URL: manifest.URLDefinition{
+					Type:  manifest.ValueURLType,
 					Name:  "URL",
 					Value: server.URL,
 				},
@@ -127,14 +127,14 @@ func TestVerifyClusterGen(t *testing.T) {
 			"env": manifest.EnvironmentDefinition{
 				Name: "env",
 				Type: manifest.Platform,
-				Url: manifest.UrlDefinition{
-					Type:  manifest.ValueUrlType,
+				URL: manifest.URLDefinition{
+					Type:  manifest.ValueURLType,
 					Name:  "URL",
 					Value: server.URL,
 				},
 				Auth: manifest.Auth{
 					OAuth: manifest.OAuth{
-						TokenEndpoint: manifest.UrlDefinition{
+						TokenEndpoint: manifest.URLDefinition{
 							Value: server.URL + "/sso",
 						},
 					},
@@ -155,8 +155,8 @@ func TestVerifyClusterGen(t *testing.T) {
 			"env": manifest.EnvironmentDefinition{
 				Name: "env",
 				Type: manifest.Classic,
-				Url: manifest.UrlDefinition{
-					Type:  manifest.ValueUrlType,
+				URL: manifest.URLDefinition{
+					Type:  manifest.ValueURLType,
 					Name:  "URL",
 					Value: server.URL + "/WRONG_URL",
 				},
@@ -168,8 +168,8 @@ func TestVerifyClusterGen(t *testing.T) {
 			"env": manifest.EnvironmentDefinition{
 				Name: "env",
 				Type: manifest.Platform,
-				Url: manifest.UrlDefinition{
-					Type:  manifest.ValueUrlType,
+				URL: manifest.URLDefinition{
+					Type:  manifest.ValueURLType,
 					Name:  "URL",
 					Value: server.URL + "/WRONG_URL",
 				},

@@ -97,7 +97,7 @@ func getManifestFilePath(fs afero.Fs, writerContext WriterContext) string {
 }
 
 func createManifest(proj project.Project, tokenEnvVarName string, environmentUrl string) manifest.Manifest {
-	projectDefinition := manifest.ProjectDefinitionByProjectId{
+	projectDefinition := manifest.ProjectDefinitionByProjectID{
 		proj.Id: {
 			Name: proj.Id,
 			Path: proj.Id,
@@ -110,8 +110,8 @@ func createManifest(proj project.Project, tokenEnvVarName string, environmentUrl
 			proj.Id: {
 				Type: manifest.Classic,
 				Name: proj.Id,
-				Url: manifest.UrlDefinition{
-					Type:  manifest.ValueUrlType,
+				URL: manifest.URLDefinition{
+					Type:  manifest.ValueURLType,
 					Value: environmentUrl,
 				},
 				Group: "default",
