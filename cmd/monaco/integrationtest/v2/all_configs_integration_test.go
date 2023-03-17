@@ -20,7 +20,7 @@
 package v2
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
@@ -58,10 +58,12 @@ func TestIntegrationAllConfigs(t *testing.T) {
 // Tests a dry run (validation)
 func TestIntegrationValidationAllConfigs(t *testing.T) {
 
+	t.Setenv("UNIQUE_TEST_SUFFIX", "can-be-nonunique-for-validation")
+
 	configFolder := "test-resources/integration-all-configs/"
 	manifest := configFolder + "manifest.yaml"
 
-	cmd := runner.BuildCli(util.CreateTestFileSystem())
+	cmd := runner.BuildCli(testutils.CreateTestFileSystem())
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
 	err := cmd.Execute()
 

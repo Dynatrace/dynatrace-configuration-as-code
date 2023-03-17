@@ -23,8 +23,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/google/uuid"
 	"github.com/spf13/afero"
 )
@@ -37,7 +38,7 @@ type DataEntry struct {
 }
 
 type DummyClient struct {
-	Entries          map[api.Api][]DataEntry
+	Entries          map[api.API][]DataEntry
 	Fs               afero.Fs
 	RequestOutputDir string
 }
@@ -46,18 +47,23 @@ var (
 	_ Client = (*DummyClient)(nil)
 )
 
-func (c *DummyClient) List(a api.Api) (values []api.Value, err error) {
+// NewDummyClient creates a new DummyClient
+func NewDummyClient() *DummyClient {
+	return &DummyClient{Entries: map[api.API][]DataEntry{}}
+}
+
+func (c *DummyClient) ListConfigs(a api.API) (values []Value, err error) {
 	entries, found := c.Entries[a]
 
 	if !found {
 		return nil, nil
 	}
 
-	result := make([]api.Value, len(entries))
+	result := make([]Value, len(entries))
 
 	for i, entry := range entries {
 		owner := entry.Owner
-		result[i] = api.Value{
+		result[i] = Value{
 			Id:    entry.Id,
 			Name:  entry.Name,
 			Owner: &owner,
@@ -67,7 +73,7 @@ func (c *DummyClient) List(a api.Api) (values []api.Value, err error) {
 	return result, nil
 }
 
-func (c *DummyClient) ReadByName(a api.Api, name string) ([]byte, error) {
+func (c *DummyClient) ReadByName(a api.API, name string) ([]byte, error) {
 	entries, found := c.Entries[a]
 
 	if !found {
@@ -80,10 +86,10 @@ func (c *DummyClient) ReadByName(a api.Api, name string) ([]byte, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("nothing found for name %s in api %s", name, a.GetId())
+	return nil, fmt.Errorf("nothing found for name %s in api %s", name, a.ID)
 }
 
-func (c *DummyClient) ReadById(a api.Api, id string) ([]byte, error) {
+func (c *DummyClient) ReadConfigById(a api.API, id string) ([]byte, error) {
 	entries, found := c.Entries[a]
 
 	if !found {
@@ -96,14 +102,14 @@ func (c *DummyClient) ReadById(a api.Api, id string) ([]byte, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("nothing found for id %s in api %s", id, a.GetId())
+	return nil, fmt.Errorf("nothing found for id %s in api %s", id, a.ID)
 }
 
-func (c *DummyClient) UpsertByName(a api.Api, name string, data []byte) (entity api.DynatraceEntity, err error) {
+func (c *DummyClient) UpsertConfigByName(a api.API, name string, data []byte) (entity DynatraceEntity, err error) {
 	entries, found := c.Entries[a]
 
 	if c.Entries == nil {
-		c.Entries = make(map[api.Api][]DataEntry)
+		c.Entries = make(map[api.API][]DataEntry)
 	}
 
 	if !found {
@@ -134,17 +140,17 @@ func (c *DummyClient) UpsertByName(a api.Api, name string, data []byte) (entity 
 	dataEntry.Payload = data
 	c.writeRequest(a, name, data)
 
-	return api.DynatraceEntity{
+	return DynatraceEntity{
 		Id:   dataEntry.Id,
 		Name: dataEntry.Name,
 	}, nil
 }
 
-func (c *DummyClient) UpsertByNonUniqueNameAndId(a api.Api, entityId string, name string, data []byte) (entity api.DynatraceEntity, err error) {
+func (c *DummyClient) UpsertConfigByNonUniqueNameAndId(a api.API, entityId string, name string, data []byte) (entity DynatraceEntity, err error) {
 	entries, found := c.Entries[a]
 
 	if c.Entries == nil {
-		c.Entries = make(map[api.Api][]DataEntry)
+		c.Entries = make(map[api.API][]DataEntry)
 	}
 
 	if !found {
@@ -175,18 +181,18 @@ func (c *DummyClient) UpsertByNonUniqueNameAndId(a api.Api, entityId string, nam
 	dataEntry.Payload = data
 	c.writeRequest(a, name, data)
 
-	return api.DynatraceEntity{
+	return DynatraceEntity{
 		Id:   dataEntry.Id,
 		Name: dataEntry.Name,
 	}, nil
 }
 
-func (c *DummyClient) writeRequest(a api.Api, name string, payload []byte) {
+func (c *DummyClient) writeRequest(a api.API, name string, payload []byte) {
 	if c.Fs == nil {
 		return
 	}
 
-	filename := fmt.Sprintf("%s-%s-%d.json", a.GetId(), name, time.Now().UnixNano())
+	filename := fmt.Sprintf("%s-%s-%d.json", a.ID, name, time.Now().UnixNano())
 	dir := c.RequestOutputDir
 
 	if dir == "" {
@@ -200,7 +206,7 @@ func (c *DummyClient) writeRequest(a api.Api, name string, payload []byte) {
 	}
 }
 
-func (c *DummyClient) DeleteById(a api.Api, id string) error {
+func (c *DummyClient) DeleteConfigById(a api.API, id string) error {
 	entries, found := c.Entries[a]
 
 	if !found {
@@ -223,7 +229,7 @@ func (c *DummyClient) DeleteById(a api.Api, id string) error {
 	return nil
 }
 
-func (c *DummyClient) ExistsByName(a api.Api, name string) (exists bool, id string, err error) {
+func (c *DummyClient) ConfigExistsByName(a api.API, name string) (exists bool, id string, err error) {
 	entries, found := c.Entries[a]
 
 	if !found {
@@ -239,8 +245,8 @@ func (c *DummyClient) ExistsByName(a api.Api, name string) (exists bool, id stri
 	return false, "", nil
 }
 
-func (c *DummyClient) UpsertSettings(obj SettingsObject) (api.DynatraceEntity, error) {
-	return api.DynatraceEntity{
+func (c *DummyClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, error) {
+	return DynatraceEntity{
 		Id:   obj.Id,
 		Name: obj.Id,
 	}, nil
@@ -250,6 +256,9 @@ func (c *DummyClient) ListSchemas() (SchemaList, error) {
 	return make(SchemaList, 0), nil
 }
 
+func (c *DummyClient) GetSettingById(_ string) (*DownloadSettingsObject, error) {
+	return &DownloadSettingsObject{}, nil
+}
 func (c *DummyClient) ListSettings(_ string, _ ListSettingsOptions) ([]DownloadSettingsObject, error) {
 	return make([]DownloadSettingsObject, 0), nil
 }

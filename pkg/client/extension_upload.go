@@ -21,14 +21,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"mime/multipart"
 	"net/http"
 	"time"
-
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 )
 
 type extensionStatus int
@@ -40,34 +38,34 @@ const (
 	extensionNeedsUpdate
 )
 
-func uploadExtension(client *http.Client, apiPath string, extensionName string, payload []byte, apiToken string) (api.DynatraceEntity, error) {
+func uploadExtension(client *http.Client, apiPath string, extensionName string, payload []byte) (DynatraceEntity, error) {
 
-	status, err := validateIfExtensionShouldBeUploaded(client, apiPath, extensionName, payload, apiToken)
+	status, err := validateIfExtensionShouldBeUploaded(client, apiPath, extensionName, payload)
 	if err != nil {
-		return api.DynatraceEntity{}, err
+		return DynatraceEntity{}, err
 	}
 
 	if status == extensionUpToDate {
-		return api.DynatraceEntity{
+		return DynatraceEntity{
 			Name: extensionName,
 		}, nil
 	}
 
 	buffer, contentType, err := writeMultiPartForm(extensionName, payload)
 	if err != nil {
-		return api.DynatraceEntity{
+		return DynatraceEntity{
 			Name: extensionName,
 		}, err
 	}
 
-	resp, err := rest.PostMultiPartFile(client, apiPath, buffer, contentType, apiToken)
+	resp, err := rest.PostMultiPartFile(client, apiPath, buffer, contentType)
 
 	if err != nil {
-		return api.DynatraceEntity{}, err
+		return DynatraceEntity{}, err
 	}
 
 	if resp.StatusCode != http.StatusCreated {
-		return api.DynatraceEntity{
+		return DynatraceEntity{
 			Name: extensionName,
 		}, fmt.Errorf("upload of %s failed with status %d! Response: %s", extensionName, resp.StatusCode, string(resp.Body))
 	} else {
@@ -77,7 +75,7 @@ func uploadExtension(client *http.Client, apiPath string, extensionName string, 
 		time.Sleep(1 * time.Second)
 	}
 
-	return api.DynatraceEntity{
+	return DynatraceEntity{
 		Name: extensionName,
 	}, nil
 
@@ -87,8 +85,8 @@ type Properties struct {
 	Version *string `json:"version"`
 }
 
-func validateIfExtensionShouldBeUploaded(client *http.Client, apiPath string, extensionName string, payload []byte, apiToken string) (status extensionStatus, err error) {
-	response, err := rest.Get(client, apiPath+"/"+extensionName, apiToken)
+func validateIfExtensionShouldBeUploaded(client *http.Client, apiPath string, extensionName string, payload []byte) (status extensionStatus, err error) {
+	response, err := rest.Get(client, apiPath+"/"+extensionName)
 	if err != nil {
 		return extensionValidationError, err
 	}
@@ -157,7 +155,7 @@ func writeInMemoryZip(fileName string, fileContent []byte) (*bytes.Buffer, error
 	buffer := new(bytes.Buffer)
 	zipWriter := zip.NewWriter(buffer)
 	zipFile, err := zipWriter.Create(fileName)
-	if util.CheckError(err, "Failed to create .zip file") {
+	if errutils.CheckError(err, "Failed to create .zip file") {
 		return buffer, err
 	}
 	_, err = zipFile.Write(fileContent)

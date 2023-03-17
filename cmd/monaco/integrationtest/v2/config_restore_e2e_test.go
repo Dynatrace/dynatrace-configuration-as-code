@@ -19,15 +19,15 @@
 package v2
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/test"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 )
@@ -87,19 +87,19 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 	}{
 		{
 			name:               "using --api and --settings-schema",
-			fs:                 util.CreateTestFileSystem(),
+			fs:                 testutils.CreateTestFileSystem(),
 			downloadFunc:       execution_downloadConfigsWithCLIParameters,
 			projectFolder:      downloadFolder + "/project",
 			apisToDownload:     "auto-tag",
 			settingsToDownload: "builtin:alerting.profile",
 			expectedFolders: []string{
 				downloadFolder + "/project/auto-tag",
-				downloadFolder + "/project/builtin:alerting.profile"},
+				downloadFolder + "/project/builtinalerting.profile"},
 			wantErr: false,
 		},
 		{
 			name:               "using --api",
-			fs:                 util.CreateTestFileSystem(),
+			fs:                 testutils.CreateTestFileSystem(),
 			downloadFunc:       execution_downloadConfigsWithCLIParameters,
 			projectFolder:      downloadFolder + "/project",
 			apisToDownload:     "auto-tag",
@@ -110,18 +110,18 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 		},
 		{
 			name:               "using --settings-schema",
-			fs:                 util.CreateTestFileSystem(),
+			fs:                 testutils.CreateTestFileSystem(),
 			downloadFunc:       execution_downloadConfigsWithCLIParameters,
 			projectFolder:      downloadFolder + "/project",
 			apisToDownload:     "",
 			settingsToDownload: "builtin:alerting.profile",
 			expectedFolders: []string{
-				downloadFolder + "/project/builtin:alerting.profile"},
+				downloadFolder + "/project/builtinalerting.profile"},
 			wantErr: false,
 		},
 		{
 			name:               "using --api and --settings-schema (manifest)",
-			fs:                 util.CreateTestFileSystem(),
+			fs:                 testutils.CreateTestFileSystem(),
 			downloadFunc:       execution_downloadConfigs,
 			projectFolder:      downloadFolder + "/project_environment1",
 			manifest:           configsFolderManifest,
@@ -129,12 +129,12 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 			settingsToDownload: "builtin:alerting.profile",
 			expectedFolders: []string{
 				downloadFolder + "/project_environment1/auto-tag",
-				downloadFolder + "/project_environment1/builtin:alerting.profile"},
+				downloadFolder + "/project_environment1/builtinalerting.profile"},
 			wantErr: false,
 		},
 		{
 			name:               "using --api (manifest)",
-			fs:                 util.CreateTestFileSystem(),
+			fs:                 testutils.CreateTestFileSystem(),
 			downloadFunc:       execution_downloadConfigs,
 			projectFolder:      downloadFolder + "/project_environment1",
 			manifest:           configsFolderManifest,
@@ -146,14 +146,14 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 		},
 		{
 			name:               "using --specific-settings (manifest)",
-			fs:                 util.CreateTestFileSystem(),
+			fs:                 testutils.CreateTestFileSystem(),
 			downloadFunc:       execution_downloadConfigs,
 			projectFolder:      downloadFolder + "/project_environment1",
 			manifest:           configsFolderManifest,
 			apisToDownload:     "",
 			settingsToDownload: "builtin:alerting.profile",
 			expectedFolders: []string{
-				downloadFolder + "/project_environment1/builtin:alerting.profile"},
+				downloadFolder + "/project_environment1/builtinalerting.profile"},
 			wantErr: false,
 		},
 	}
@@ -202,7 +202,7 @@ func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolde
 	downloadFolder, _ = filepath.Abs(downloadFolder)
 	manifestFile, _ = filepath.Abs(manifestFile)
 
-	fs := util.CreateTestFileSystem()
+	fs := testutils.CreateTestFileSystem()
 	suffix, err := preparation_uploadConfigs(t, fs, suffixTest, initialConfigsFolder, manifestFile)
 
 	assert.NilError(t, err, "Error during download preparation stage")
@@ -352,7 +352,7 @@ func cleanupDeployedConfiguration(t *testing.T, fs afero.Fs, manifestFilepath st
 		Fs:           fs,
 		ManifestPath: manifestFilepath,
 	})
-	test.FailTestOnAnyError(t, errs, "loading of manifest failed")
+	testutils.FailTestOnAnyError(t, errs, "loading of manifest failed")
 
-	cleanupIntegrationTest(t, loadedManifest, "", testSuffix)
+	integrationtest.CleanupIntegrationTest(t, fs, manifestFilepath, loadedManifest, testSuffix)
 }

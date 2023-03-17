@@ -17,11 +17,11 @@
 package compound
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/strings"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"gotest.tools/assert"
 )
 
@@ -121,7 +121,7 @@ func TestResolveValue(t *testing.T) {
 	result, err := compoundParameter.ResolveValue(context)
 	assert.NilError(t, err)
 
-	assert.Equal(t, "Hello World!", util.ToString(result))
+	assert.Equal(t, "Hello World!", strings.ToString(result))
 }
 
 func TestResolveComplexValue(t *testing.T) {
@@ -141,7 +141,7 @@ func TestResolveComplexValue(t *testing.T) {
 	result, err := compoundParameter.ResolveValue(context)
 	assert.NilError(t, err)
 
-	assert.Equal(t, "Hansi is 12 years old", util.ToString(result))
+	assert.Equal(t, "Hansi is 12 years old", strings.ToString(result))
 }
 
 func TestResolveValueErrorOnUndefinedReference(t *testing.T) {

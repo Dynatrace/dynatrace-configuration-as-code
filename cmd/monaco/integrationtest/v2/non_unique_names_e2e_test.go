@@ -21,12 +21,14 @@ package v2
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
+	uuid2 "github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/google/uuid"
+	"github.com/spf13/afero"
 	"gotest.tools/assert"
 	"net/http"
 	"os"
@@ -34,32 +36,40 @@ import (
 )
 
 func TestNonUniqueNameUpserts(t *testing.T) {
-	testSuffix := generateTestSuffix("NonUniqueName")
-
-	t.Cleanup(func() {
-		cleanupIntegrationTest(
-			t,
-			manifest.Manifest{
-				Projects: nil,
-				Environments: map[string]manifest.EnvironmentDefinition{
-					"test": manifest.NewEnvironmentDefinition("test", manifest.UrlDefinition{Type: manifest.EnvironmentUrlType, Value: "URL_ENVIRONMENT_1"}, "default", &manifest.EnvironmentVariableToken{EnvironmentVariableName: "TOKEN_ENVIRONMENT_1"}),
-				},
-			},
-			"test",
-			testSuffix,
-		)
-	})
+	testSuffix := integrationtest.GenerateTestSuffix("NonUniqueName")
 
 	url := os.Getenv("URL_ENVIRONMENT_1")
 	token := os.Getenv("TOKEN_ENVIRONMENT_1")
 
-	httpClient := &http.Client{}
+	t.Cleanup(func() {
+		integrationtest.CleanupIntegrationTest(
+			t,
+			afero.NewMemMapFs(),
+			"",
+			manifest.Manifest{
+				Projects: nil,
+				Environments: map[string]manifest.EnvironmentDefinition{
+					"test": {
+						Name:  "test",
+						Type:  manifest.Classic,
+						URL:   manifest.URLDefinition{Type: manifest.EnvironmentURLType, Name: "URL_ENVIRONMENT_1", Value: url},
+						Group: "default",
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{Name: "TOKEN_ENVIRONMENT_1", Value: token},
+						},
+					},
+				},
+			},
+			testSuffix,
+		)
+	})
 
-	c, err := client.NewDynatraceClient(url, token, client.WithHTTPClient(httpClient))
+	httpClient := client.NewTokenAuthClient(token)
+	c, err := client.NewDynatraceClient(client.NewTokenAuthClient(token), url)
 	assert.NilError(t, err)
 
-	a := api.NewApis()["alerting-profile"]
-	assert.Assert(t, a.IsNonUniqueNameApi())
+	a := api.NewAPIs()["alerting-profile"]
+	assert.Assert(t, a.NonUniqueName)
 
 	name := "TestObject_" + testSuffix
 	payload := []byte(fmt.Sprintf(`{ "displayName": "%s", "rules": [] }`, name))
@@ -70,39 +80,39 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 
 	// create initial object of unknown UUID via direct PUT
 	randomUUID := getRandomUUID(t)
-	createObjectViaDirectPut(t, httpClient, url, a, token, randomUUID, payload)
+	createObjectViaDirectPut(t, httpClient, url, a, randomUUID, payload)
 	assert.Assert(t, len(getConfigsOfName(t, c, a, name)) == 1, "Expected single configs of name %q but found %d", name, len(existing))
 
 	// 1. if only one config of non-unique-name exist it MUST be updated
-	expectedUUID := util.GenerateUuidFromConfigId("test_project", name)
-	e, err := c.UpsertByNonUniqueNameAndId(a, expectedUUID, name, payload)
+	expectedUUID := uuid2.GenerateUuidFromConfigId("test_project", name)
+	e, err := c.UpsertConfigByNonUniqueNameAndId(a, expectedUUID, name, payload)
 	assert.NilError(t, err)
 	assert.Equal(t, e.Id, randomUUID, "expected existing single config %d to be updated, but reply UUID was", randomUUID, e.Id)
 	assert.Assert(t, len(getConfigsOfName(t, c, a, name)) == 1, "Expected single configs of name %q but found %d", name, len(existing))
 
 	// generate additional config
 	additionalUUID := getRandomUUID(t)
-	createObjectViaDirectPut(t, httpClient, url, a, token, additionalUUID, payload)
+	createObjectViaDirectPut(t, httpClient, url, a, additionalUUID, payload)
 	assert.Assert(t, len(getConfigsOfName(t, c, a, name)) == 2, "Expected two configs of name %q but found %d", name, len(existing))
 
 	// 2. if several configs of non-unique-name exist an additional config with monaco controlled UUID is created
 	assert.NilError(t, err)
-	e, err = c.UpsertByNonUniqueNameAndId(a, expectedUUID, name, payload)
+	e, err = c.UpsertConfigByNonUniqueNameAndId(a, expectedUUID, name, payload)
 	assert.NilError(t, err)
 	assert.Equal(t, e.Id, expectedUUID)
 	assert.Assert(t, len(getConfigsOfName(t, c, a, name)) == 3, "Expected three configs of name %q but found %d", name, len(existing))
 
 	// 3. if several configs of non-unique-name exist and one with known monaco-controlled UUID is found that MUST be updated
 	assert.NilError(t, err)
-	e, err = c.UpsertByNonUniqueNameAndId(a, expectedUUID, name, payload)
+	e, err = c.UpsertConfigByNonUniqueNameAndId(a, expectedUUID, name, payload)
 	assert.NilError(t, err)
 	assert.Equal(t, e.Id, expectedUUID)
 	assert.Assert(t, len(getConfigsOfName(t, c, a, name)) == 3, "Expected three configs of name %q but found %d", name, len(existing))
 }
 
-func getConfigsOfName(t *testing.T, c client.Client, a api.Api, name string) []api.Value {
-	var existingEntities []api.Value
-	entities, err := c.List(a)
+func getConfigsOfName(t *testing.T, c client.Client, a api.API, name string) []client.Value {
+	var existingEntities []client.Value
+	entities, err := c.ListConfigs(a)
 	assert.NilError(t, err)
 	for _, e := range entities {
 		if e.Name == name {
@@ -113,17 +123,17 @@ func getConfigsOfName(t *testing.T, c client.Client, a api.Api, name string) []a
 }
 
 func getRandomUUID(t *testing.T) string {
-	uuid, err := uuid.NewUUID()
+	id, err := uuid.NewUUID()
 	assert.NilError(t, err)
-	return uuid.String()
+	return id.String()
 }
 
-func createObjectViaDirectPut(t *testing.T, client *http.Client, url string, a api.Api, apiToken string, id string, payload []byte) {
-	res, err := rest.Put(client, a.GetUrl(url)+"/"+id, payload, apiToken)
+func createObjectViaDirectPut(t *testing.T, c *http.Client, url string, a api.API, id string, payload []byte) {
+	res, err := rest.Put(c, a.CreateURL(url)+"/"+id, payload)
 	assert.NilError(t, err)
 	assert.Assert(t, res.StatusCode >= 200 && res.StatusCode < 300)
 
-	var dtEntity api.DynatraceEntity
+	var dtEntity client.DynatraceEntity
 	err = json.Unmarshal(res.Body, &dtEntity)
 	assert.NilError(t, err)
 

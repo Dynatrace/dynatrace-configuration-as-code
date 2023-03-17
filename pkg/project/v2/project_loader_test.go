@@ -18,11 +18,11 @@ package v2
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/spf13/afero"
 	"reflect"
 	"testing"
@@ -198,7 +198,7 @@ func TestLoadProjects_LoadsProjectInManyDirs(t *testing.T) {
 
 	got, gotErrs := LoadProjects(testFs, context)
 
-	util.PrintErrors(gotErrs)
+	errutils.PrintErrors(gotErrs)
 	assert.Equal(t, len(gotErrs), 0, "Expected to load project without error")
 	assert.Equal(t, len(got), 1, "Expected a single loaded project")
 
@@ -228,7 +228,7 @@ func TestLoadProjects_LoadsProjectInHiddenDirDoesNotLoad(t *testing.T) {
 
 	got, gotErrs := LoadProjects(testFs, context)
 
-	util.PrintErrors(gotErrs)
+	errutils.PrintErrors(gotErrs)
 	assert.Equal(t, len(gotErrs), 0, "Expected to load project without error")
 	assert.Equal(t, len(got), 1, "Expected a single loaded project")
 
@@ -531,7 +531,7 @@ func getTestProjectLoaderContext(apis []string, projects []string) ProjectLoader
 
 func getFullProjectLoaderContext(apis []string, projects []string, environments []string) ProjectLoaderContext {
 
-	projectDefinitions := make(manifest.ProjectDefinitionByProjectId, len(projects))
+	projectDefinitions := make(manifest.ProjectDefinitionByProjectID, len(projects))
 	for _, p := range projects {
 		projectDefinitions[p] = manifest.ProjectDefinition{
 			Name: p,
@@ -542,8 +542,10 @@ func getFullProjectLoaderContext(apis []string, projects []string, environments 
 	envDefinitions := make(map[string]manifest.EnvironmentDefinition, len(environments))
 	for _, e := range environments {
 		envDefinitions[e] = manifest.EnvironmentDefinition{
-			Name:  e,
-			Token: &manifest.EnvironmentVariableToken{EnvironmentVariableName: fmt.Sprintf("%s_VAR", e)},
+			Name: e,
+			Auth: manifest.Auth{
+				Token: manifest.AuthSecret{Name: fmt.Sprintf("%s_VAR", e)},
+			},
 		}
 	}
 

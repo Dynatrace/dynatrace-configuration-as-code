@@ -18,17 +18,19 @@ package settings
 
 import (
 	"encoding/json"
+	"errors"
 	"sync"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 )
 
 // Downloader is responsible for downloading Settings 2.0 objects
@@ -108,17 +110,26 @@ func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPe
 			defer wg.Done()
 			objects, err := d.client.ListSettings(s, client.ListSettingsOptions{})
 			if err != nil {
-				log.Error("Failed to fetch all settings for schema %s: %v", s, err)
+				var errMsg string
+				var respErr client.RespError
+				if errors.As(err, &respErr) {
+					errMsg = respErr.ConcurrentError()
+				} else {
+					errMsg = err.Error()
+				}
+				log.Error("Failed to fetch all settings for schema %s: %v", s, errMsg)
 				return
 			}
 			if len(objects) == 0 {
 				return
 			}
-			log.Debug("Downloaded %d settings for schema %s", len(objects), s)
+			log.Info("Downloaded %d settings for schema %s", len(objects), s)
 			configs := d.convertAllObjects(objects, projectName)
 			downloadMutex.Lock()
 			results[s] = configs
 			downloadMutex.Unlock()
+
+			log.Debug("Finished downloading all (%d) settings for schema %s", len(objects), s)
 		}(schema)
 	}
 	wg.Wait()
@@ -152,7 +163,7 @@ func (d *Downloader) convertAllObjects(objects []client.DownloadSettingsObject, 
 		}
 
 		// construct config object with generated config ID
-		configId := util.GenerateUuidFromName(o.ObjectId)
+		configId := idutils.GenerateUuidFromName(o.ObjectId)
 		c := config.Config{
 			Template: template.NewDownloadTemplate(configId, configId, content),
 			Coordinate: coordinate.Coordinate{

@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 )
 
 type RetrySetting struct {
@@ -52,8 +52,8 @@ var DefaultRetrySettings = RetrySettings{
 
 // GetWithRetry will retry a GET request for a given number of times, waiting a give duration between calls
 // this method can be used for API calls we know to have occasional timing issues on GET - e.g. paginated queries that are impacted by replication lag, returning unequal amounts of objects/pages per node
-func GetWithRetry(c *http.Client, url string, apiToken string, settings RetrySetting) (resp Response, err error) {
-	resp, err = Get(c, url, apiToken)
+func GetWithRetry(client *http.Client, url string, settings RetrySetting) (resp Response, err error) {
+	resp, err = Get(client, url)
 
 	if err == nil && resp.IsSuccess() {
 		return resp, nil
@@ -62,7 +62,7 @@ func GetWithRetry(c *http.Client, url string, apiToken string, settings RetrySet
 	for i := 0; i < settings.MaxRetries; i++ {
 		log.Warn("Retrying failed GET request %s with error (HTTP %d)", url, resp.StatusCode)
 		time.Sleep(settings.WaitTime)
-		resp, err = Get(c, url, apiToken)
+		resp, err = Get(client, url)
 		if err == nil && resp.IsSuccess() {
 			return resp, err
 		}
@@ -72,23 +72,18 @@ func GetWithRetry(c *http.Client, url string, apiToken string, settings RetrySet
 	if err != nil {
 		retryErr = fmt.Errorf("GET request %s failed after %d retries: %w", url, settings.MaxRetries, err)
 	} else {
-		additionalMessage := ""
-		if resp.StatusCode == 403 {
-			concurrentDownloadLimit := ConcurrentRequestLimitFromEnv(false)
-			additionalMessage = fmt.Sprintf("\n\n    A 403 error code probably means too many requests.\n    Reduce your CONCURRENT_REQUESTS environment variable (current value: %d). \n    Then wait a few minutes and retry ", concurrentDownloadLimit)
-		}
-		retryErr = fmt.Errorf("GET request %s failed after %d retries: (HTTP %d)!\n    Response was: %s %s", url, settings.MaxRetries, resp.StatusCode, resp.Body, additionalMessage)
+		retryErr = fmt.Errorf("GET request %s failed after %d retries: (HTTP %d)!\n    Response was: %s", url, settings.MaxRetries, resp.StatusCode, resp.Body)
 	}
 	return resp, retryErr
 }
 
 // SendWithRetry will retry a SendingRequest(PUT or POST) for a given number of times, waiting a give duration between calls
-func SendWithRetry(client *http.Client, restCall SendingRequest, objectName string, path string, body []byte, apiToken string, setting RetrySetting) (resp Response, err error) {
+func SendWithRetry(client *http.Client, restCall SendingRequest, objectName string, path string, body []byte, setting RetrySetting) (resp Response, err error) {
 
 	for i := 0; i < setting.MaxRetries; i++ {
 		log.Warn("Failed to upsert config %q. Waiting for %s before retrying...", objectName, setting.WaitTime)
 		time.Sleep(setting.WaitTime)
-		resp, err = restCall(client, path, body, apiToken)
+		resp, err = restCall(client, path, body)
 		if err == nil && resp.IsSuccess() {
 			return resp, err
 		}
@@ -104,11 +99,11 @@ func SendWithRetry(client *http.Client, restCall SendingRequest, objectName stri
 }
 
 // SendWithRetryWithInitialTry will try to send a request and later retry a SendingRequest(PUT or POST) for a given number of times, waiting a give duration between calls
-func SendWithRetryWithInitialTry(client *http.Client, restCall SendingRequest, objectName string, path string, body []byte, apiToken string, setting RetrySetting) (resp Response, err error) {
-	resp, err = restCall(client, path, body, apiToken)
+func SendWithRetryWithInitialTry(client *http.Client, restCall SendingRequest, objectName string, path string, body []byte, setting RetrySetting) (resp Response, err error) {
+	resp, err = restCall(client, path, body)
 	if err == nil && resp.IsSuccess() {
 		return resp, err
 	}
 
-	return SendWithRetry(client, restCall, objectName, path, body, apiToken, setting)
+	return SendWithRetry(client, restCall, objectName, path, body, setting)
 }

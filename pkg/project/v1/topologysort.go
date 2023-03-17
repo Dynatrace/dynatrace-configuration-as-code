@@ -18,49 +18,11 @@ package v1
 
 import (
 	"fmt"
-
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 )
 
-func sortProjects(projects []Project) (sorted []Project, err error) {
-	sorted = []Project{}
-	incomingDeps, inDegrees := calculateIncomingProjectDependencies(projects)
-	reverse, err, errorOn := topologySort(incomingDeps, inDegrees)
-	if err != nil {
-		return sorted, fmt.Errorf("failed to sort projects, circular dependency on project %s detected, please check dependencies in project configs", projects[errorOn].GetId())
-	}
-
-	for i := len(reverse) - 1; i >= 0; i-- {
-		sorted = append(sorted, projects[reverse[i]])
-	}
-	return sorted, nil
-}
-
-func calculateIncomingProjectDependencies(projects []Project) (adjacencyMatrix [][]bool, inDegrees []int) {
-	adjacencyMatrix = make([][]bool, len(projects))
-	inDegrees = make([]int, len(projects))
-
-	for i := range projects {
-		p1 := projects[i]
-		adjacencyMatrix[i] = make([]bool, len(projects))
-		for j := range projects {
-			if i != j {
-				p2 := projects[j]
-				if p2.HasDependencyOn(p1) {
-					logDependency(p2.GetId(), p1.GetId())
-					adjacencyMatrix[i][j] = true
-					inDegrees[i]++
-				}
-			}
-		}
-	}
-
-	return adjacencyMatrix, inDegrees
-}
-
-func sortConfigurations(configs []config.Config) (sorted []config.Config, err error) {
-	sorted = []config.Config{}
+func sortConfigurations(configs []*Config) (sorted []*Config, err error) {
+	sorted = []*Config{}
 	incomingDeps, inDegrees := calculateIncomingConfigDependencies(configs)
 	reverse, err, errorOn := topologySort(incomingDeps, inDegrees)
 	if err != nil {
@@ -75,7 +37,7 @@ func sortConfigurations(configs []config.Config) (sorted []config.Config, err er
 	return sorted, nil
 }
 
-func calculateIncomingConfigDependencies(configs []config.Config) (adjacencyMatrix [][]bool, inDegrees []int) {
+func calculateIncomingConfigDependencies(configs []*Config) (adjacencyMatrix [][]bool, inDegrees []int) {
 	adjacencyMatrix = make([][]bool, len(configs))
 	inDegrees = make([]int, len(configs))
 

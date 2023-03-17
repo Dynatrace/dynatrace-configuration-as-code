@@ -15,7 +15,16 @@ configs:
   config:
     name: "Settings Test SLO"
     parameters:
-      metricName: "settings_test_slo"
+      metricName:
+        type: compound
+        format: "{{.baseMetric}}_{{.testSuffix}}"
+        references:
+          - baseMetric
+          - testSuffix
+      baseMetric: "my_settings_slo"
+      testSuffix:
+        type: environment
+        name: "UNIQUE_TEST_SUFFIX"
       threshold:
         type: value
         value:

@@ -20,10 +20,11 @@
 package v2
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 )
@@ -44,14 +45,14 @@ func TestIntegrationMultiProject(t *testing.T) {
 
 		assert.NilError(t, err)
 
-		AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{}, multiProjectSpecificEnvironment, true)
+		integrationtest.AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{}, multiProjectSpecificEnvironment, true)
 	})
 }
 
 // Tests a dry run (validation)
 func TestIntegrationValidationMultiProject(t *testing.T) {
 
-	cmd := runner.BuildCli(util.CreateTestFileSystem())
+	cmd := runner.BuildCli(testutils.CreateTestFileSystem())
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", multiProjectManifest})
 	err := cmd.Execute()
 
@@ -73,10 +74,10 @@ func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 		assert.NilError(t, err)
 
 		// Validate Star Trek sub-projects were deployed
-		AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{"star-trek.star-wars", "star-trek.star-gate"}, multiProjectSpecificEnvironment, true)
+		integrationtest.AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{"star-trek.star-wars", "star-trek.star-gate"}, multiProjectSpecificEnvironment, true)
 
 		// Validate movies project was not deployed
-		AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{"movies.science fiction.the-hitchhikers-guide-to-the-galaxy"}, multiProjectSpecificEnvironment, false)
+		integrationtest.AssertAllConfigsAvailability(t, fs, multiProjectManifest, []string{"movies.science fiction.the-hitchhikers-guide-to-the-galaxy"}, multiProjectSpecificEnvironment, false)
 	})
 }
 
@@ -84,7 +85,7 @@ func TestIntegrationMultiProject_ReturnsErrorOnInvalidProjectDefinitions(t *test
 
 	invalidManifest := multiProjectFolder + "invalid-manifest-with-duplicate-projects.yaml"
 
-	cmd := runner.BuildCli(util.CreateTestFileSystem())
+	cmd := runner.BuildCli(testutils.CreateTestFileSystem())
 	cmd.SetArgs([]string{"deploy", "--verbose", invalidManifest})
 	err := cmd.Execute()
 

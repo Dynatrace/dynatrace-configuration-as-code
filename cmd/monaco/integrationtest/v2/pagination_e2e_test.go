@@ -20,8 +20,9 @@ package v2
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 	"path/filepath"
@@ -35,7 +36,7 @@ func TestPagination(t *testing.T) {
 	manifestPath := configFolder + "manifest.yaml"
 	specificEnvironment := ""
 
-	fs := util.CreateTestFileSystem()
+	fs := testutils.CreateTestFileSystem()
 
 	//create config yaml
 	settingsPageSize := 500
@@ -61,8 +62,9 @@ func TestPagination(t *testing.T) {
 		cmd.SetArgs([]string{"deploy", "--verbose", manifestPath})
 		err := cmd.Execute()
 		assert.NilError(t, err)
-		assert.Equal(t, strings.Count(logOutput.String(), "Created"), totalSettings)
-		assert.Assert(t, !strings.Contains(logOutput.String(), "Updated"))
+		assert.Equal(t, strings.Count(logOutput.String(), "Upserted"), totalSettings)
+
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{}, "", true)
 
 		logOutput.Reset()
 
@@ -71,7 +73,8 @@ func TestPagination(t *testing.T) {
 		cmd.SetArgs([]string{"deploy", "--verbose", manifestPath})
 		err = cmd.Execute()
 		assert.NilError(t, err)
-		assert.Assert(t, !strings.Contains(logOutput.String(), "Created"))
-		assert.Equal(t, strings.Count(logOutput.String(), "Updated"), totalSettings)
+		assert.Equal(t, strings.Count(logOutput.String(), "Upserted"), totalSettings)
+
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{}, "", true)
 	})
 }

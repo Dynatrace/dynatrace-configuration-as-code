@@ -15,20 +15,38 @@
 package manifest
 
 import (
+	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
+	version2 "github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/oauth2/endpoints"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
-	"path/filepath"
-	"strings"
-
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/files"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 type ManifestLoaderContext struct {
 	Fs           afero.Fs
 	ManifestPath string
+
+	// Environments is a filter to what environments should be loaded.
+	// If it's empty, all environments are loaded.
+	// If both Environments and Groups are specified, the union of both results is returned.
+	//
+	// If Environments contains items that do not match any environment in the specified manifest file, the loading errors.
+	Environments []string
+
+	// Groups is a filter to what environment-groups (and thus environments) should be loaded.
+	// If it's empty, all environment-groups are loaded.
+	// If both Environments and Groups are specified, the union of both results is returned.
+	//
+	// If Groups contains items that do not match any environment in the specified manifest file, the loading errors.
+	Groups []string
 }
 
 type projectLoaderContext struct {
@@ -36,91 +54,65 @@ type projectLoaderContext struct {
 	manifestPath string
 }
 
-type ManifestLoaderError struct {
+type manifestLoaderError struct {
 	ManifestPath string
 	Reason       string
 }
 
-func newManifestLoaderError(manifest string, reason string) ManifestLoaderError {
-	return ManifestLoaderError{
-		ManifestPath: manifest,
-		Reason:       reason,
-	}
-}
-
-func (e ManifestLoaderError) Error() string {
+func (e manifestLoaderError) Error() string {
 	return fmt.Sprintf("%s: %s", e.ManifestPath, e.Reason)
 }
 
-type ManifestEnvironmentLoaderError struct {
-	ManifestLoaderError
+type environmentLoaderError struct {
+	manifestLoaderError
 	Group       string
 	Environment string
 }
 
-func newManifestEnvironmentLoaderError(manifest string, group string, env string, reason string) ManifestEnvironmentLoaderError {
-	return ManifestEnvironmentLoaderError{
-		ManifestLoaderError: newManifestLoaderError(manifest, reason),
+func newManifestEnvironmentLoaderError(manifest string, group string, env string, reason string) environmentLoaderError {
+	return environmentLoaderError{
+		manifestLoaderError: manifestLoaderError{manifest, reason},
 		Group:               group,
 		Environment:         env,
 	}
 }
 
-func (e ManifestEnvironmentLoaderError) Error() string {
+func (e environmentLoaderError) Error() string {
 	return fmt.Sprintf("%s:%s:%s: %s", e.ManifestPath, e.Group, e.Environment, e.Reason)
 }
 
-type ManifestProjectLoaderError struct {
-	ManifestLoaderError
+type projectLoaderError struct {
+	manifestLoaderError
 	Project string
 }
 
-func newManifestProjectLoaderError(manifest string, project string, reason string) ManifestProjectLoaderError {
-	return ManifestProjectLoaderError{
-		ManifestLoaderError: newManifestLoaderError(manifest, reason),
+func newManifestProjectLoaderError(manifest string, project string, reason string) projectLoaderError {
+	return projectLoaderError{
+		manifestLoaderError: manifestLoaderError{manifest, reason},
 		Project:             project,
 	}
 }
 
-func (e ManifestProjectLoaderError) Error() string {
+func (e projectLoaderError) Error() string {
 	return fmt.Sprintf("%s:%s: %s", e.ManifestPath, e.Project, e.Reason)
 }
 
 func LoadManifest(context *ManifestLoaderContext) (Manifest, []error) {
-	manifestPath := filepath.Clean(context.ManifestPath)
+	log.Debug("Loading manifest %q. Restrictions: groups=%q, environments=%q", context.ManifestPath, context.Groups, context.Environments)
 
-	if !files.IsYamlFileExtension(manifestPath) {
-		return Manifest{}, []error{newManifestLoaderError(context.ManifestPath, "manifest file is not a yaml")}
-	}
-
-	exists, err := files.DoesFileExist(context.Fs, manifestPath)
-
+	manifestYAML, err := readManifestYAML(context)
 	if err != nil {
 		return Manifest{}, []error{err}
 	}
-
-	if !exists {
-		return Manifest{}, []error{newManifestLoaderError(context.ManifestPath, "specified manifest file is either no file or does not exist")}
+	if errs := verifyManifestYAML(manifestYAML); errs != nil {
+		var retErrs []error
+		for _, e := range errs {
+			retErrs = append(retErrs, manifestLoaderError{context.ManifestPath, fmt.Sprintf("invalid manifest definition: %s", e)})
+		}
+		return Manifest{}, retErrs
 	}
 
-	data, err := afero.ReadFile(context.Fs, manifestPath)
-
-	if err != nil {
-		return Manifest{}, []error{newManifestLoaderError(context.ManifestPath, fmt.Sprintf("error while reading the manifest: %s", err))}
-	}
-
-	return parseManifest(context, data)
-}
-
-func parseManifest(context *ManifestLoaderContext, data []byte) (Manifest, []error) {
 	manifestPath := filepath.Clean(context.ManifestPath)
-
-	manifest, err := parseManifestFile(context, data)
-	if err != nil {
-		return Manifest{}, err
-	}
-
-	var errors []error
 
 	workingDir := filepath.Dir(manifestPath)
 	var workingDirFs afero.Fs
@@ -136,24 +128,25 @@ func parseManifest(context *ManifestLoaderContext, data []byte) (Manifest, []err
 	projectDefinitions, projectErrors := toProjectDefinitions(&projectLoaderContext{
 		fs:           workingDirFs,
 		manifestPath: relativeManifestPath,
-	}, manifest.Projects)
+	}, manifestYAML.Projects)
 
+	var errs []error
 	if projectErrors != nil {
-		errors = append(errors, projectErrors...)
+		errs = append(errs, projectErrors...)
 	} else if len(projectDefinitions) == 0 {
-		errors = append(errors, newManifestLoaderError(context.ManifestPath, "no projects defined in manifest"))
+		errs = append(errs, manifestLoaderError{context.ManifestPath, "no projects defined in manifest"})
 	}
 
-	environmentDefinitions, manifestErrors := toEnvironments(context, manifest.EnvironmentGroups)
+	environmentDefinitions, manifestErrors := toEnvironments(context, manifestYAML.EnvironmentGroups)
 
 	if manifestErrors != nil {
-		errors = append(errors, manifestErrors...)
+		errs = append(errs, manifestErrors...)
 	} else if len(environmentDefinitions) == 0 {
-		errors = append(errors, newManifestLoaderError(context.ManifestPath, "no environments defined in manifest"))
+		errs = append(errs, manifestLoaderError{context.ManifestPath, "no environments defined in manifest"})
 	}
 
-	if errors != nil {
-		return Manifest{}, errors
+	if errs != nil {
+		return Manifest{}, errs
 	}
 
 	return Manifest{
@@ -162,45 +155,143 @@ func parseManifest(context *ManifestLoaderContext, data []byte) (Manifest, []err
 	}, nil
 }
 
-func parseManifestFile(context *ManifestLoaderContext, data []byte) (manifest, []error) {
+func parseAuth(t EnvironmentType, a auth) (Auth, error) {
+	token, err := parseAuthSecret(a.Token)
+	if err != nil {
+		return Auth{}, fmt.Errorf("error parsing token: %w", err)
+	}
+
+	if t == Classic {
+		if a.OAuth != nil {
+			return Auth{}, errors.New("found OAuth credentials on a Dynatrace Classic environment. If the environment is a Dynatrace Platform environment, change the type to 'Platform'")
+		}
+
+		return Auth{
+			Token: token,
+		}, nil
+	}
+
+	//  Platform
+	if a.OAuth == nil {
+		return Auth{}, errors.New("type is 'Platform', but no OAuth credentials defined")
+	}
+
+	o, err := parseOAuth(*a.OAuth)
+	if err != nil {
+		return Auth{}, fmt.Errorf("failed to parse OAuth credentials: %w", err)
+	}
+
+	return Auth{
+		Token: token,
+		OAuth: o,
+	}, nil
+
+}
+
+func parseAuthSecret(s authSecret) (AuthSecret, error) {
+
+	if !(s.Type == typeEnvironment || s.Type == "") {
+		return AuthSecret{}, errors.New("type must be 'environment'")
+	}
+
+	if s.Name == "" {
+		return AuthSecret{}, errors.New("no name given or empty")
+	}
+
+	v, f := os.LookupEnv(s.Name)
+	if !f {
+		return AuthSecret{}, fmt.Errorf("environment-variable %q was not found", s.Name)
+	}
+
+	if v == "" {
+		return AuthSecret{}, fmt.Errorf("environment-variable %q found, but the value resolved is empty", s.Name)
+	}
+
+	return AuthSecret{Name: s.Name, Value: v}, nil
+}
+
+func parseOAuth(a oAuth) (OAuth, error) {
+	clientID, err := parseAuthSecret(a.ClientID)
+	if err != nil {
+		return OAuth{}, fmt.Errorf("failed to parse ClientID: %w", err)
+	}
+
+	clientSecret, err := parseAuthSecret(a.ClientSecret)
+	if err != nil {
+		return OAuth{}, fmt.Errorf("failed to parse ClientSecret: %w", err)
+	}
+
+	var urlDef URLDefinition
+	if a.TokenEndpoint == nil {
+		urlDef = URLDefinition{
+			Value: endpoints.Dynatrace.TokenURL,
+			Type:  Absent,
+		}
+	} else if urlDef, err = parseURLDefinition(*a.TokenEndpoint); err != nil {
+		return OAuth{}, fmt.Errorf("failed to parse \"tokenEndpoint\": %w", err)
+	}
+
+	return OAuth{
+		ClientID:      clientID,
+		ClientSecret:  clientSecret,
+		TokenEndpoint: urlDef,
+	}, nil
+}
+
+func readManifestYAML(context *ManifestLoaderContext) (manifest, error) {
+	manifestPath := filepath.Clean(context.ManifestPath)
+
+	if !files.IsYamlFileExtension(manifestPath) {
+		return manifest{}, manifestLoaderError{context.ManifestPath, "manifest file is not a yaml"}
+	}
+
+	if exists, err := files.DoesFileExist(context.Fs, manifestPath); err != nil {
+		return manifest{}, err
+	} else if !exists {
+		return manifest{}, manifestLoaderError{context.ManifestPath, "specified manifest file is either no file or does not exist"}
+	}
+
+	rawData, err := afero.ReadFile(context.Fs, manifestPath)
+	if err != nil {
+		return manifest{}, manifestLoaderError{context.ManifestPath, fmt.Sprintf("error while reading the manifest: %s", err)}
+	}
+
 	var m manifest
-	var errs []error
 
-	err := yaml.UnmarshalStrict(data, &m)
-
+	err = yaml.UnmarshalStrict(rawData, &m)
 	if err != nil {
-		errs = append(errs, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("error during parsing the manifest: %s", err)))
+		return manifest{}, manifestLoaderError{context.ManifestPath, fmt.Sprintf("error during parsing the manifest: %s", err)}
 	}
-
-	err = validateManifestVersion(m.ManifestVersion)
-	if err != nil {
-		errs = append(errs, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("invalid manifest definition: %s", err)))
-	}
-
-	if len(m.Projects) == 0 {
-		errs = append(errs, newManifestLoaderError(context.ManifestPath, "invalid manifest definition: no `projects` defined"))
-	}
-
-	if len(m.EnvironmentGroups) == 0 {
-		errs = append(errs, newManifestLoaderError(context.ManifestPath, "invalid manifest definition: no `environmentGroups` defined"))
-	}
-
-	if len(errs) != 0 {
-		return manifest{}, errs
-	}
-
 	return m, nil
 }
 
-var maxSupportedManifestVersion, _ = util.ParseVersion(version.ManifestVersion)
-var minSupportedManifestVersion, _ = util.ParseVersion(version.MinManifestVersion)
+func verifyManifestYAML(m manifest) []error {
+	var errs []error
+
+	if err := validateManifestVersion(m.ManifestVersion); err != nil {
+		errs = append(errs, err)
+	}
+
+	if len(m.Projects) == 0 { //this should be checked over the Manifest
+		errs = append(errs, fmt.Errorf("no `projects` defined"))
+	}
+
+	if len(m.EnvironmentGroups) == 0 { //this should be checked over the Manifest
+		errs = append(errs, fmt.Errorf("no `environmentGroups` defined"))
+	}
+
+	return errs
+}
+
+var maxSupportedManifestVersion, _ = version2.ParseVersion(version.ManifestVersion)
+var minSupportedManifestVersion, _ = version2.ParseVersion(version.MinManifestVersion)
 
 func validateManifestVersion(manifestVersion string) error {
 	if len(manifestVersion) == 0 {
 		return fmt.Errorf("`manifestVersion` missing")
 	}
 
-	v, err := util.ParseVersion(manifestVersion)
+	v, err := version2.ParseVersion(manifestVersion)
 	if err != nil {
 		return fmt.Errorf("invalid `manifestVersion`: %w", err)
 	}
@@ -221,32 +312,59 @@ func toEnvironments(context *ManifestLoaderContext, groups []group) (map[string]
 	environments := make(map[string]EnvironmentDefinition)
 
 	groupNames := make(map[string]bool, len(groups))
+	envNames := make(map[string]bool, len(groups))
 
 	for i, group := range groups {
 		if group.Name == "" {
-			errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("missing group name on index `%d`", i)))
+			errors = append(errors, manifestLoaderError{context.ManifestPath, fmt.Sprintf("missing group name on index `%d`", i)})
 		}
 
 		if groupNames[group.Name] {
-			errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("duplicated group name %q", group.Name)))
+			errors = append(errors, manifestLoaderError{context.ManifestPath, fmt.Sprintf("duplicated group name %q", group.Name)})
 		}
 
 		groupNames[group.Name] = true
 
-		for _, conf := range group.Environments {
-			env, configErrors := toEnvironment(context, conf, group.Name)
+		for j, env := range group.Environments {
+
+			if env.Name == "" {
+				errors = append(errors, manifestLoaderError{context.ManifestPath, fmt.Sprintf("missing environment name in group %q on index `%d`", group.Name, j)})
+				continue
+			}
+
+			if envNames[env.Name] {
+				errors = append(errors, manifestLoaderError{context.ManifestPath, fmt.Sprintf("duplicated environment name %q", env.Name)})
+				continue
+			}
+			envNames[env.Name] = true
+
+			// skip loading if environments is not empty, the environments does not contain the env name, or the group should not be included
+			if shouldSkipEnv(context, group, env) {
+				log.Debug("skipping loading of environment %q", env.Name)
+				continue
+			}
+
+			parsedEnv, configErrors := parseEnvironment(context, env, group.Name)
 
 			if configErrors != nil {
 				errors = append(errors, configErrors...)
 				continue
 			}
 
-			if _, found := environments[env.Name]; found {
-				errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("duplicated environment name `%s`", env.Name)))
-				continue
-			}
+			environments[parsedEnv.Name] = parsedEnv
+		}
+	}
 
-			environments[env.Name] = env
+	// validate that all required groups & environments are included
+	for _, g := range context.Groups {
+		if !groupNames[g] {
+			errors = append(errors, manifestLoaderError{context.ManifestPath, fmt.Sprintf("requested group %q not found", g)})
+		}
+	}
+
+	for _, e := range context.Environments {
+		if !envNames[e] {
+			errors = append(errors, manifestLoaderError{context.ManifestPath, fmt.Sprintf("requested environment %q not found", e)})
 		}
 	}
 
@@ -257,22 +375,39 @@ func toEnvironments(context *ManifestLoaderContext, groups []group) (map[string]
 	return environments, nil
 }
 
-func toEnvironment(context *ManifestLoaderContext, config environment, group string) (EnvironmentDefinition, []error) {
+func shouldSkipEnv(context *ManifestLoaderContext, group group, env environment) bool {
+	// if nothing is restricted, everything is allowed
+	if len(context.Groups) == 0 && len(context.Environments) == 0 {
+		return false
+	}
+
+	if slices.Contains(context.Groups, group.Name) {
+		return false
+	}
+
+	if slices.Contains(context.Environments, env.Name) {
+		return false
+	}
+
+	return true
+}
+
+func parseEnvironment(context *ManifestLoaderContext, config environment, group string) (EnvironmentDefinition, []error) {
 	var errors []error
 
-	token, err := parseToken(context, config, group, config.Token)
-
+	envType, err := parseEnvironmentType(context, config, group)
 	if err != nil {
 		errors = append(errors, err)
 	}
 
-	if config.Url.Value == "" {
-		errors = append(errors, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, "no `url` configured or value is blank"))
+	a, err := parseCredentials(config, envType)
+	if err != nil {
+		errors = append(errors, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, err.Error()))
 	}
 
-	urlType, err := extractUrlType(config)
+	urlDef, err := parseURLDefinition(config.URL)
 	if err != nil {
-		errors = append(errors, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("failed to parse URL %v", err)))
+		errors = append(errors, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, err.Error()))
 	}
 
 	if len(errors) > 0 {
@@ -280,56 +415,87 @@ func toEnvironment(context *ManifestLoaderContext, config environment, group str
 	}
 
 	return EnvironmentDefinition{
-		Name: config.Name,
-		url: UrlDefinition{
-			Type:  urlType,
-			Value: strings.TrimSuffix(config.Url.Value, "/"),
-		},
-		Token: token,
+		Name:  config.Name,
+		Type:  envType,
+		URL:   urlDef,
+		Auth:  a,
 		Group: group,
 	}, nil
 }
 
-func extractUrlType(config environment) (UrlType, error) {
-	if config.Url.Type == "" || config.Url.Type == util.ToString(ValueUrlType) {
-		return ValueUrlType, nil
+func parseCredentials(config environment, envType EnvironmentType) (Auth, error) {
+	if config.Token == nil && config.Auth == nil {
+		return Auth{}, errors.New("'auth' property missing")
 	}
 
-	if config.Url.Type == util.ToString(EnvironmentUrlType) {
-		return EnvironmentUrlType, nil
+	if config.Token != nil && config.Auth != nil {
+		return Auth{}, errors.New("both 'auth' and 'token' are present")
 	}
 
-	return "", fmt.Errorf("%s is not a valid URL Type", config.Url.Type)
-}
-
-func parseToken(context *ManifestLoaderContext, config environment, group string, token tokenConfig) (Token, error) {
-	var tokenType string
-
-	if token.Type == "" {
-		tokenType = "environment"
-	} else {
-		tokenType = token.Type
-	}
-
-	switch tokenType {
-	case "environment":
-		return parseEnvironmentToken(context, group, config, token)
-	}
-
-	return nil, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("unknown token type `%s`", tokenType))
-}
-
-func parseEnvironmentToken(context *ManifestLoaderContext, group string, config environment, token tokenConfig) (Token, error) {
-	if val, found := token.Config["name"]; found {
-
-		if val == "" {
-			return nil, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, "empty key `name` in token config")
+	if config.Token != nil {
+		log.Warn("Environment %s: Field 'token' is deprecated, use 'auth.token' instead.", config.Name)
+		token, err := parseAuthSecret(*config.Token)
+		if err != nil {
+			return Auth{}, fmt.Errorf("failed to parse token: %w", err)
 		}
 
-		return &EnvironmentVariableToken{util.ToString(val)}, nil
+		return Auth{Token: token}, nil
 	}
 
-	return nil, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, "missing key `name` in token config")
+	a, err := parseAuth(envType, *config.Auth)
+	if err != nil {
+		return Auth{}, fmt.Errorf("failed to parse auth section: %w", err)
+	}
+
+	return a, nil
+}
+
+func parseURLDefinition(u url) (URLDefinition, error) {
+
+	// Depending on the type, the url.value either contains the env var name or the direct value of the url
+	if u.Value == "" {
+		return URLDefinition{}, errors.New("no `Url` configured or value is blank")
+	}
+
+	if u.Type == "" || u.Type == urlTypeValue {
+		return URLDefinition{
+			Type:  ValueURLType,
+			Value: u.Value,
+		}, nil
+	}
+
+	if u.Type == urlTypeEnvironment {
+		val, found := os.LookupEnv(u.Value)
+		if !found {
+			return URLDefinition{}, fmt.Errorf("environment variable %q could not be found", u.Value)
+		}
+
+		if val == "" {
+			return URLDefinition{}, fmt.Errorf("environment variable %q is defined but has no value", u.Value)
+		}
+
+		return URLDefinition{
+			Type:  EnvironmentURLType,
+			Value: val,
+			Name:  u.Value,
+		}, nil
+
+	}
+
+	return URLDefinition{}, fmt.Errorf("%q is not a valid URL type", u.Type)
+}
+
+func parseEnvironmentType(context *ManifestLoaderContext, config environment, g string) (EnvironmentType, error) {
+	switch strings.ToLower(config.Type) {
+	case "":
+		fallthrough
+	case "classic":
+		return Classic, nil
+	case "platform":
+		return Platform, nil
+	}
+
+	return Classic, newManifestEnvironmentLoaderError(context.ManifestPath, g, config.Name, fmt.Sprintf(`invalid environment-type %q. Allowed values are "classic" (default) and "platform"`, config.Type))
 }
 
 func toProjectDefinitions(context *projectLoaderContext, definitions []project) (map[string]ProjectDefinition, []error) {
@@ -351,7 +517,7 @@ func toProjectDefinitions(context *projectLoaderContext, definitions []project) 
 
 		for _, project := range parsed {
 			if p, found := result[project.Name]; found {
-				errors = append(errors, newManifestLoaderError(context.manifestPath, fmt.Sprintf("duplicated project name `%s` used by %s and %s", project.Name, p, project)))
+				errors = append(errors, manifestLoaderError{context.manifestPath, fmt.Sprintf("duplicated project name `%s` used by %s and %s", project.Name, p, project)})
 				continue
 			}
 
@@ -370,7 +536,7 @@ func checkForDuplicateDefinitions(context *projectLoaderContext, definitions []p
 	definedIds := map[string]struct{}{}
 	for _, project := range definitions {
 		if _, found := definedIds[project.Name]; found {
-			errors = append(errors, newManifestLoaderError(context.manifestPath, fmt.Sprintf("duplicated project name `%s`", project.Name)))
+			errors = append(errors, manifestLoaderError{context.manifestPath, fmt.Sprintf("duplicated project name `%s`", project.Name)})
 		}
 		definedIds[project.Name] = struct{}{}
 	}

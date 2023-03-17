@@ -16,11 +16,11 @@ package reference
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/strings"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 )
 
 // ReferenceParameterType specifies the type of the parameter used in config files
@@ -154,21 +154,21 @@ func parseReferenceParameter(context parameter.ParameterParserContext) (paramete
 
 	if val, ok := context.Value[projectField]; ok {
 		projectSet = true
-		project = util.ToString(val)
+		project = strings.ToString(val)
 	}
 
 	if val, ok := context.Value[typeField]; ok {
 		typeSet = true
-		configType = util.ToString(val)
+		configType = strings.ToString(val)
 	}
 
 	if val, ok := context.Value[idField]; ok {
 		configSet = true
-		config = util.ToString(val)
+		config = strings.ToString(val)
 	}
 
 	if val, ok := context.Value[propertyField]; ok {
-		property = util.ToString(val)
+		property = strings.ToString(val)
 	} else {
 		return nil, parameter.NewParameterParserError(context, fmt.Sprintf("missing configuration `%s`", projectField))
 	}

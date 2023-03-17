@@ -18,46 +18,41 @@ package v1
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/template"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/files"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
 
 type Project interface {
-	HasDependencyOn(project Project) bool
-	GetConfigs() []config.Config
-	GetConfig(id string) (config.Config, error)
+	GetConfigs() []*Config
 	GetId() string
-	GetCleanId() (string, error)
 }
 
 type ProjectImpl struct {
-	Id                string
-	Configs           []config.Config
-	projectRootFolder string
-	getRelFilepath    func(basePath string, targetPath string) (string, error)
+	Id      string
+	Configs []*Config
 }
 
 type projectBuilder struct {
 	projectRootFolder string
 	projectId         string
-	configs           []config.Config
-	apis              map[string]api.Api
-	configFactory     config.ConfigFactory
+	configs           []*Config
+	apis              api.APIs
+	configProvider    configProvider
 	fs                afero.Fs
 }
 
 // newProject loads a new project from folder. Returns either project or a reading/sorting error respectively.
-func newProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolderName string, apis map[string]api.Api, projectRootFolder string, unmarshalYaml util.UnmarshalYamlFunc) (Project, error) {
+func newProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolderName string, apis api.APIs, projectRootFolder string, unmarshalYaml template.UnmarshalYamlFunc) (Project, error) {
 
-	var configs = make([]config.Config, 0)
+	var configs = make([]*Config, 0)
 
 	// standardize projectRootFolder
 	// trim path separator from projectRoot
@@ -68,32 +63,27 @@ func newProject(fs afero.Fs, fullQualifiedProjectFolderName string, projectFolde
 		projectId:         fullQualifiedProjectFolderName,
 		configs:           configs,
 		apis:              apis,
-		configFactory:     config.NewConfigFactory(),
+		configProvider:    newConfig,
 		fs:                fs,
 	}
-	err := builder.readFolder(fullQualifiedProjectFolderName, true, unmarshalYaml)
-	if err != nil {
-		//debug log here?
+	if err := builder.readFolder(fullQualifiedProjectFolderName, true, unmarshalYaml); err != nil {
 		return nil, err
 	}
 
-	err = builder.sortConfigsAccordingToDependencies()
-	if err != nil {
-		//debug log here?
+	if err := builder.sortConfigsAccordingToDependencies(); err != nil {
 		return nil, err
 	}
+	builder.resolveDuplicateIDs()
 
 	warnIfProjectNameClashesWithApiName(projectFolderName, apis, sanitizedProjectRootFolder)
 
 	return &ProjectImpl{
-		Id:                fullQualifiedProjectFolderName,
-		Configs:           builder.configs,
-		projectRootFolder: projectRootFolder,
-		getRelFilepath:    filepath.Rel,
+		Id:      fullQualifiedProjectFolderName,
+		Configs: builder.configs,
 	}, nil
 }
 
-func warnIfProjectNameClashesWithApiName(projectFolderName string, apis map[string]api.Api, projectRootFolder string) {
+func warnIfProjectNameClashesWithApiName(projectFolderName string, apis api.APIs, projectRootFolder string) {
 
 	lowerCaseProjectFolderName := strings.ToLower(projectFolderName)
 	_, ok := apis[lowerCaseProjectFolderName]
@@ -102,10 +92,10 @@ func warnIfProjectNameClashesWithApiName(projectFolderName string, apis map[stri
 	}
 }
 
-func (p *projectBuilder) readFolder(folder string, isProjectRoot bool, unmarshalYaml util.UnmarshalYamlFunc) error {
+func (p *projectBuilder) readFolder(folder string, isProjectRoot bool, unmarshalYaml template.UnmarshalYamlFunc) error {
 	filesInFolder, err := afero.ReadDir(p.fs, folder)
 
-	if util.CheckError(err, "Folder "+folder+" could not be read") {
+	if errutils.CheckError(err, "Folder "+folder+" could not be read") {
 		return err
 	}
 
@@ -125,23 +115,23 @@ func (p *projectBuilder) readFolder(folder string, isProjectRoot bool, unmarshal
 	return err
 }
 
-func (p *projectBuilder) processYaml(filename string, unmarshalYaml util.UnmarshalYamlFunc) error {
+func (p *projectBuilder) processYaml(filename string, unmarshalYaml template.UnmarshalYamlFunc) error {
 
 	log.Debug("Processing file: " + filename)
 
 	bytes, err := afero.ReadFile(p.fs, filename)
 
-	if util.CheckError(err, "Error while reading file "+filename) {
+	if errutils.CheckError(err, "Error while reading file "+filename) {
 		return err
 	}
 
 	properties, err := unmarshalYaml(string(bytes), filename)
-	if util.CheckError(err, "Error while converting file "+filename) {
+	if errutils.CheckError(err, "Error while converting file "+filename) {
 		return err
 	}
 
 	err, folderPath := p.removeYamlFileFromPath(filename)
-	if util.CheckError(err, "Error while stripping yaml from file path "+filename) {
+	if errutils.CheckError(err, "Error while stripping yaml from file path "+filename) {
 		return err
 	}
 
@@ -163,12 +153,12 @@ func (p *projectBuilder) processConfigSection(properties map[string]map[string]s
 		location = p.standardizeLocation(location, folderPath)
 
 		err, a := p.getExtendedInformationFromLocation(location)
-		if util.CheckError(err, "Could not find API fom location") {
+		if errutils.CheckError(err, "Could not find API fom location") {
 			return err
 		}
 
-		c, err := p.configFactory.NewConfig(p.fs, configName, p.projectId, location, properties, a)
-		if util.CheckError(err, "Could not create config"+configName) {
+		c, err := p.configProvider(p.fs, configName, p.projectId, location, properties, a)
+		if errutils.CheckError(err, "Could not create config"+configName) {
 			return err
 		}
 
@@ -197,7 +187,7 @@ func (p *projectBuilder) standardizeLocation(location string, folderPath string)
 	return location
 }
 
-func (p *projectBuilder) getExtendedInformationFromLocation(location string) (err error, api api.Api) {
+func (p *projectBuilder) getExtendedInformationFromLocation(location string) (err error, api api.API) {
 
 	return p.getConfigTypeFromLocation(location)
 }
@@ -216,11 +206,11 @@ func (p *projectBuilder) removeYamlFileFromPath(location string) (error, string)
 	return nil, strings.Join(split[:len(split)-1], string(os.PathSeparator))
 }
 
-func (p *projectBuilder) getConfigTypeFromLocation(location string) (error, api.Api) {
+func (p *projectBuilder) getConfigTypeFromLocation(location string) (error, api.API) {
 
 	split := strings.Split(location, string(os.PathSeparator))
 	if len(split) <= 1 {
-		return fmt.Errorf("path %s too short", location), nil
+		return fmt.Errorf("path %s too short", location), api.API{}
 	}
 
 	// iterate from end of path:
@@ -233,7 +223,7 @@ func (p *projectBuilder) getConfigTypeFromLocation(location string) (error, api.
 		}
 	}
 
-	return fmt.Errorf("API was unknown. Not found in %s", location), nil
+	return fmt.Errorf("API was unknown. Not found in %s", location), api.API{}
 }
 
 func (p *projectBuilder) sortConfigsAccordingToDependencies() error {
@@ -245,43 +235,28 @@ func (p *projectBuilder) sortConfigsAccordingToDependencies() error {
 	return err
 }
 
-// GetConfigs returns the configs for this project
-func (p *ProjectImpl) GetConfigs() []config.Config {
-	return p.Configs
-}
+func (p *projectBuilder) resolveDuplicateIDs() {
+	// rewrite id in case the id of a config was already used in a different config
+	for i, c1 := range p.configs {
+		for j := i + 1; j < len(p.configs); j++ {
+			if c1.id == p.configs[j].id {
+				newID := fmt.Sprintf("%s-%d", c1.id, i)
+				log.Warn("Detected duplicate config id %q. Renamed it to %q", c1.id, newID)
+				c1.properties[newID] = c1.properties[c1.id]
+				c1.id = newID
 
-// GetConfig searches for a config with the given id in the current project
-// If no such config is found, an error is returned
-func (p *ProjectImpl) GetConfig(id string) (config config.Config, err error) {
-	for _, conf := range p.GetConfigs() {
-		if id == conf.GetId() {
-			return conf, err
+				break
+			}
 		}
 	}
+}
 
-	return config, fmt.Errorf("config with id %s not found", id)
+// GetConfigs returns the configs for this project
+func (p *ProjectImpl) GetConfigs() []*Config {
+	return p.Configs
 }
 
 // GetId returns the id for this project
 func (p *ProjectImpl) GetId() string {
 	return p.Id
-}
-
-// GetCleanId returns a sanitized project id, cleaned from all path attributes
-func (p *ProjectImpl) GetCleanId() (string, error) {
-	return p.getRelFilepath(p.projectRootFolder, p.Id)
-}
-
-// HasDependencyOn checks if one project depends on the given parameter config
-// Having a dependency means, that the project having the dependency needs to be applied AFTER the project it depends on
-func (p *ProjectImpl) HasDependencyOn(project Project) bool {
-
-	for _, myConfig := range p.Configs {
-		for _, otherConfig := range project.GetConfigs() {
-			if myConfig.HasDependencyOn(otherConfig) {
-				return true
-			}
-		}
-	}
-	return false
 }

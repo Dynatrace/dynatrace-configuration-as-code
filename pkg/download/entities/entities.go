@@ -17,8 +17,12 @@
 package entities
 
 import (
+	"errors"
 	"strings"
 	"sync"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
@@ -27,8 +31,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 )
 
 // Downloader is responsible for downloading Settings 2.0 objects
@@ -133,7 +135,14 @@ func (d *Downloader) download(entitiesTypes []client.EntitiesType, projectName s
 
 			objects, err := d.client.ListEntities(entityType)
 			if err != nil {
-				log.Error("Failed to fetch all entities for entities Type %s: %v", entityType.EntitiesTypeId, err)
+				var errMsg string
+				var respErr client.RespError
+				if errors.As(err, &respErr) {
+					errMsg = respErr.ConcurrentError()
+				} else {
+					errMsg = err.Error()
+				}
+				log.Error("Failed to fetch all entities for entities Type %s: %v", entityType.EntitiesTypeId, errMsg)
 				return
 			}
 			if len(objects) == 0 {
@@ -160,7 +169,7 @@ func (d *Downloader) convertObject(str []string, entitiesType string, projectNam
 
 	templ := template.NewDownloadTemplate(entitiesType, entitiesType, content)
 
-	configId := util.GenerateUuidFromName(entitiesType)
+	configId := idutils.GenerateUuidFromName(entitiesType)
 
 	return []config.Config{{
 		Template: templ,

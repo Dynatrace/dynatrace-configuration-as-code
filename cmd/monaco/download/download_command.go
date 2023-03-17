@@ -16,13 +16,18 @@ package download
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
+	"net/http"
+	"os"
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner/completion"
-	utilEnv "github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/environment"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 )
 
 func GetDownloadCommand(fs afero.Fs, command Command) (downloadCmd *cobra.Command) {
@@ -42,16 +47,16 @@ To download entities, use download entities`,
 		},
 	}
 
-	GetDownloadConfigsCommand(fs, command, downloadCmd)
+	getDownloadConfigsCommand(fs, command, downloadCmd)
 
-	if utilEnv.FeatureFlagEnabled("MONACO_FEAT_ENTITIES") {
-		GetDownloadEntitiesCommand(fs, command, downloadCmd)
+	if featureflags.FeatureFlagEnabled("MONACO_FEAT_ENTITIES") {
+		getDownloadEntitiesCommand(fs, command, downloadCmd)
 	}
 
 	return downloadCmd
 }
 
-func GetDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.Command) {
+func getDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.Command) {
 	var project, outputFolder string
 	var forceOverwrite bool
 	var specificApis []string
@@ -72,10 +77,10 @@ func GetDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.
 		},
 		ValidArgsFunction: completion.DownloadManifestCompletion,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			manifest := args[0]
+			m := args[0]
 			specificEnvironment := args[1]
 			options := manifestDownloadOptions{
-				manifestFile:            manifest,
+				manifestFile:            m,
 				specificEnvironmentName: specificEnvironment,
 				downloadCommandOptions: downloadCommandOptions{
 					downloadCommandOptionsShared: downloadCommandOptionsShared{
@@ -89,6 +94,7 @@ func GetDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.
 					onlySettings:    onlySettings,
 				},
 			}
+
 			return command.DownloadConfigsBasedOnManifest(fs, options)
 		},
 	}
@@ -105,6 +111,16 @@ func GetDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.
 			return nil
 		},
 		ValidArgsFunction: completion.DownloadDirectCompletion,
+		PreRun: func(cmd *cobra.Command, args []string) {
+			serverVersion, err := client.GetDynatraceVersion(client.NewTokenAuthClient(os.Getenv(args[1])), args[0])
+			if err != nil {
+				log.Error("Unable to determine server version %q: %w", args[0], err)
+				return
+			}
+			if serverVersion.SmallerThan(version.Version{Major: 1, Minor: 262}) {
+				logUploadToSameEnvironmentWarning()
+			}
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			url := args[0]
 			tokenEnvVar := args[1]
@@ -135,7 +151,7 @@ func GetDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.
 	downloadCmd.AddCommand(directDownloadCmd)
 }
 
-func GetDownloadEntitiesCommand(fs afero.Fs, command Command, downloadCmd *cobra.Command) {
+func getDownloadEntitiesCommand(fs afero.Fs, command Command, downloadCmd *cobra.Command) {
 	var project, outputFolder string
 	var forceOverwrite bool
 	var specificEntitiesTypes []string
@@ -166,10 +182,10 @@ Either downloading based on an existing manifest, or by defining environment URL
 		},
 		ValidArgsFunction: completion.DownloadManifestCompletion,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			manifest := args[0]
+			m := args[0]
 			specificEnvironment := args[1]
 			options := entitiesManifestDownloadOptions{
-				manifestFile:            manifest,
+				manifestFile:            m,
 				specificEnvironmentName: specificEnvironment,
 				entitiesDownloadCommandOptions: entitiesDownloadCommandOptions{
 					downloadCommandOptionsShared: downloadCommandOptionsShared{
@@ -256,4 +272,39 @@ func setupSharedFlags(cmd *cobra.Command, project, outputFolder *string, forceOv
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}
+}
+
+// printUploadToSameEnvironmentWarning function may display a warning message on the console,
+// notifying the user that downloaded objects cannot be uploaded to the same environment.
+// It verifies the version of the tenant and, depending on the result, it may or may not display the warning.
+func printUploadToSameEnvironmentWarning(env manifest.EnvironmentDefinition) {
+	var serverVersion version.Version
+	var err error
+
+	var httpClient *http.Client
+	if env.Type == manifest.Classic {
+		httpClient = client.NewTokenAuthClient(env.Auth.Token.Value)
+	} else {
+		credentials := client.OauthCredentials{
+			ClientID:     env.Auth.OAuth.ClientID.Value,
+			ClientSecret: env.Auth.OAuth.ClientSecret.Value,
+			TokenURL:     env.Auth.OAuth.TokenEndpoint.Value,
+		}
+		httpClient = client.NewOAuthClient(credentials)
+	}
+
+	serverVersion, err = client.GetDynatraceVersion(httpClient, env.URL.Value)
+	if err != nil {
+		log.Error("Unable to determine server version %q: %w", env.URL.Value, err)
+		return
+	}
+	if serverVersion.SmallerThan(version.Version{Major: 1, Minor: 262}) {
+		logUploadToSameEnvironmentWarning()
+	}
+}
+
+func logUploadToSameEnvironmentWarning() {
+	log.Warn("Uploading Settings 2.0 objects to the same environment is not possible due to your cluster version " +
+		"being below 1.262.0, which Monaco does not support for reliably updating downloaded settings without having " +
+		"duplicate configurations. Consider upgrading to 1.262+")
 }

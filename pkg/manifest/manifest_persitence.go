@@ -23,20 +23,56 @@ type project struct {
 	Path string `yaml:"path,omitempty"`
 }
 
-type tokenConfig struct {
-	Type   string                 `yaml:"type,omitempty"` //TODO drop
-	Config map[string]interface{} `yaml:",inline"`
+type secretType string
+
+const typeEnvironment secretType = "environment"
+
+// authSecret represents a user-defined client id or client secret. It has a [Type] which is [typeEnvironment] (default).
+// Secrets must never be provided as plain text, but always loaded from somewhere else. Currently, loading is only allowed from environment variables.
+//
+// [Name] contains the environment-variable to resolve the authSecret.
+//
+// This struct is meant to be reused for fields that require the same behavior.
+type authSecret struct {
+	Type secretType `yaml:"type"`
+	Name string     `yaml:"name"`
+}
+
+type oAuth struct {
+	ClientID      authSecret `yaml:"clientId"`
+	ClientSecret  authSecret `yaml:"clientSecret"`
+	TokenEndpoint *url       `yaml:"tokenEndpoint,omitempty"`
+}
+
+type auth struct {
+	Token authSecret `yaml:"token"`
+	OAuth *oAuth     `yaml:"oAuth,omitempty"`
 }
 
 type environment struct {
-	Name  string      `yaml:"name"`
-	Url   url         `yaml:"url"`
-	Token tokenConfig `yaml:"token"`
+	Name string `yaml:"name"`
+	Type string `yaml:"type"`
+	URL  url    `yaml:"url"`
+
+	// Auth contains all authentication related information
+	Auth *auth `yaml:"auth,omitempty"`
+
+	// Token is the user-provided Dynatrace Classic API token
+	//
+	// Deprecated: Use [Auth.Token] instead. This field is still available to support existing manifests.
+	Token *authSecret `yaml:"token,omitempty"`
 }
 
+type urlType string
+
+const (
+	urlTypeEnvironment urlType = "environment"
+	urlTypeValue       urlType = "value"
+)
+
 type url struct {
-	Type  string `yaml:"type,omitempty"`
-	Value string `yaml:"value"`
+	Type  urlType `yaml:"type,omitempty"`
+	Value string  `yaml:"value"`
 }
 
 type group struct {

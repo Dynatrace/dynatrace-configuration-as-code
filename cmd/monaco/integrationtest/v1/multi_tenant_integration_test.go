@@ -20,7 +20,7 @@
 package v1
 
 import (
-	manifest2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
 	"path/filepath"
 	"testing"
 
@@ -47,7 +47,7 @@ func TestIntegrationMultiEnvironment(t *testing.T) {
 		err := cmd.Execute()
 		assert.NilError(t, err)
 
-		AssertAllConfigsAvailableInManifest(t, fs, manifest)
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{}, "", true)
 	})
 }
 
@@ -83,14 +83,7 @@ func TestIntegrationMultiEnvironmentSingleProject(t *testing.T) {
 		err := cmd.Execute()
 		assert.NilError(t, err)
 
-		t.Log("Asserting available configs")
-		manifest := loadManifest(t, fs, manifestFile)
-		projects := map[string]manifest2.ProjectDefinition{
-			"cinema-infrastructure": manifest.Projects["cinema-infrastructure"],
-		}
-
-		AssertAllConfigsAvailable(t, fs, manifestFile, manifest, projects, manifest.Environments)
-
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{"cinema-infrastructure"}, "", true)
 	})
 }
 
@@ -109,12 +102,7 @@ func TestIntegrationMultiEnvironmentSingleProjectWithDependency(t *testing.T) {
 		err := cmd.Execute()
 		assert.NilError(t, err)
 
-		manifest := loadManifest(t, fs, manifestFile)
-		projects := map[string]manifest2.ProjectDefinition{
-			"star-trek": manifest.Projects["star-trek"],
-		}
-
-		AssertAllConfigsAvailable(t, fs, manifestFile, manifest, projects, manifest.Environments)
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{"star-trek"}, "", true)
 	})
 }
 
@@ -128,20 +116,11 @@ func TestIntegrationMultiEnvironmentSingleEnvironment(t *testing.T) {
 			"deploy",
 			"--verbose",
 			manifestFile,
+			"-e", "environment2",
 		})
 		err := cmd.Execute()
 		assert.NilError(t, err)
 
-		manifest := loadManifest(t, fs, manifestFile)
-
-		// remove environment odt69781, just keep dav48679
-		delete(manifest.Environments, "odt69781")
-
-		projects := map[string]manifest2.ProjectDefinition{
-			"star-trek": manifest.Projects["star-trek"],
-		}
-
-		AssertAllConfigsAvailable(t, fs, manifestFile, manifest, projects, manifest.Environments)
-
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifestFile, []string{"star-trek"}, "environment2", true)
 	})
 }

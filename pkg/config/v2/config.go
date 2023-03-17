@@ -15,6 +15,7 @@
 package v2
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
@@ -24,7 +25,6 @@ import (
 	refParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/reference"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 )
 
 const (
@@ -45,7 +45,7 @@ const (
 )
 
 // ReservedParameterNames holds all parameter names that may not be specified by a user in a config.
-var ReservedParameterNames = []string{IdParameter, ScopeParameter, SkipParameter}
+var ReservedParameterNames = []string{IdParameter, NameParameter, ScopeParameter, SkipParameter}
 
 // Parameters defines a map of name to parameter
 type Parameters map[string]parameter.Parameter
@@ -99,7 +99,7 @@ func (c *Config) Render(properties map[string]interface{}) (string, error) {
 		return "", err
 	}
 
-	err = util.ValidateJson(renderedConfig, util.Location{
+	err = json.ValidateJson(renderedConfig, json.Location{
 		Coordinate:       c.Coordinate,
 		Group:            c.Group,
 		Environment:      c.Environment,
@@ -131,11 +131,16 @@ var DefaultParameterParsers = map[string]parameter.ParameterSerDe{
 
 func (c *Config) References() []coordinate.Coordinate {
 
-	refs := make([]coordinate.Coordinate, 0)
-
+	count := 0
 	for _, p := range c.Parameters {
-		for _, r := range p.GetReferences() {
-			refs = append(refs, r.Config)
+		count += len(p.GetReferences())
+	}
+
+	refs := make([]coordinate.Coordinate, 0, count)
+	for _, p := range c.Parameters {
+		references := p.GetReferences()
+		for i := range references {
+			refs = append(refs, references[i].Config)
 		}
 	}
 

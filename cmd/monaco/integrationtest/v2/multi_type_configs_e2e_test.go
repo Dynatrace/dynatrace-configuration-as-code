@@ -20,7 +20,8 @@
 package v2
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
@@ -41,13 +42,13 @@ func TestMultiTypeConfigsDeployment(t *testing.T) {
 
 		assert.NilError(t, err)
 
-		AssertAllConfigsAvailability(t, fs, multiTypeManifest, []string{}, "", true)
+		integrationtest.AssertAllConfigsAvailability(t, fs, multiTypeManifest, []string{}, "", true)
 	})
 }
 
 func TestMultiTypeConfigsValidation(t *testing.T) {
 
-	cmd := runner.BuildCli(util.CreateTestFileSystem())
+	cmd := runner.BuildCli(testutils.CreateTestFileSystem())
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", multiTypeManifest})
 	err := cmd.Execute()
 

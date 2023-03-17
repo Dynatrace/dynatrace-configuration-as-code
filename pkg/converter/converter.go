@@ -16,16 +16,16 @@ package converter
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/regex"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	listParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/list"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/converter/v1environment"
 	projectV1 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v1"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/slices"
 	"regexp"
 	"strings"
 
-	configV1 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config"
 	configV2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/errors"
@@ -34,7 +34,6 @@ import (
 	refParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/reference"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
-	environmentV1 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	projectV2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/spf13/afero"
@@ -52,20 +51,11 @@ type ConverterContext struct {
 	ResolveSkip bool
 }
 
-type ConfigConvertContext struct {
+type configConvertContext struct {
 	*ConverterContext
 	ProjectId             string
 	KnownListParameterIds map[string]struct{}
-	V1Apis                api.ApiMap
-}
-
-type ProjectConverterError struct {
-	Project string
-	Reason  string
-}
-
-func (e ProjectConverterError) Error() string {
-	return fmt.Sprintf("%s: cannot convert project: %s", e.Project, e.Reason)
+	V1Apis                api.APIs
 }
 
 type ConvertConfigError struct {
@@ -88,17 +78,17 @@ func (e ConvertConfigError) Error() string {
 	return fmt.Sprintf("cannot convert config: %s", e.Reason)
 }
 
-type ReferenceParserError struct {
+type ReferenceParseError struct {
 	Location      coordinate.Coordinate
 	ParameterName string
 	Reason        string
 }
 
-func newReferenceParserError(projectId string, config configV1.Config, parameterName string, reason string) ReferenceParserError {
-	return ReferenceParserError{
+func newReferenceParserError(projectId string, config *projectV1.Config, parameterName string, reason string) ReferenceParseError {
+	return ReferenceParseError{
 		Location: coordinate.Coordinate{
 			Project:  projectId,
-			Type:     config.GetApi().GetId(),
+			Type:     config.GetApi().ID,
 			ConfigId: config.GetId(),
 		},
 		ParameterName: parameterName,
@@ -106,21 +96,22 @@ func newReferenceParserError(projectId string, config configV1.Config, parameter
 	}
 }
 
-func (e ReferenceParserError) Coordinates() coordinate.Coordinate {
+func (e ReferenceParseError) Coordinates() coordinate.Coordinate {
 	return e.Location
 }
 
-func (e ReferenceParserError) Error() string {
+func (e ReferenceParseError) Error() string {
 	return fmt.Sprintf("%s: cannot parse reference: %s",
 		e.ParameterName, e.Reason)
 }
 
 var (
 	_ configErrors.ConfigError = (*ConvertConfigError)(nil)
-	_ configErrors.ConfigError = (*ReferenceParserError)(nil)
+	_ configErrors.ConfigError = (*ReferenceParseError)(nil)
 )
 
-func Convert(context ConverterContext, environments map[string]environmentV1.Environment,
+// Convert takes v1 environments and projects and converts them into a v2 manifest and projects
+func Convert(context ConverterContext, environments map[string]*v1environment.EnvironmentV1,
 	projects []projectV1.Project) (manifest.Manifest, []projectV2.Project, []error) {
 	environmentDefinitions := convertEnvironments(environments)
 	projectDefinitions, convertedProjects, errors := convertProjects(&context, environmentDefinitions, projects)
@@ -132,10 +123,10 @@ func Convert(context ConverterContext, environments map[string]environmentV1.Env
 }
 
 func convertProjects(context *ConverterContext, environments map[string]manifest.EnvironmentDefinition,
-	projects []projectV1.Project) (manifest.ProjectDefinitionByProjectId, []projectV2.Project, []error) {
+	projects []projectV1.Project) (manifest.ProjectDefinitionByProjectID, []projectV2.Project, []error) {
 	var errors []error
 	var convertedProjects []projectV2.Project
-	projectDefinitions := make(manifest.ProjectDefinitionByProjectId)
+	projectDefinitions := make(manifest.ProjectDefinitionByProjectID)
 
 	for _, p := range projects {
 		adjustedId := adjustProjectId(p.GetId())
@@ -166,10 +157,10 @@ func adjustProjectId(projectId string) string {
 func convertProject(context *ConverterContext, environments map[string]manifest.EnvironmentDefinition,
 	adjustedId string, project projectV1.Project) (manifest.ProjectDefinition, projectV2.Project, []error) {
 
-	convertedConfigs, errors := convertConfigs(&ConfigConvertContext{
+	convertedConfigs, errors := convertConfigs(&configConvertContext{
 		ConverterContext: context,
 		ProjectId:        adjustedId,
-		V1Apis:           api.NewV1Apis(),
+		V1Apis:           api.NewV1APIs(),
 	}, environments, project.GetConfigs())
 
 	if errors != nil {
@@ -185,8 +176,8 @@ func convertProject(context *ConverterContext, environments map[string]manifest.
 		}, nil
 }
 
-func convertConfigs(context *ConfigConvertContext, environments map[string]manifest.EnvironmentDefinition,
-	configs []configV1.Config) (projectV2.ConfigsPerTypePerEnvironments, []error) {
+func convertConfigs(context *configConvertContext, environments map[string]manifest.EnvironmentDefinition,
+	configs []*projectV1.Config) (projectV2.ConfigsPerTypePerEnvironments, []error) {
 
 	result := make(projectV2.ConfigsPerTypePerEnvironments)
 	var errors []error
@@ -216,18 +207,18 @@ func convertConfigs(context *ConfigConvertContext, environments map[string]manif
 	return result, nil
 }
 
-func convertConfig(context *ConfigConvertContext, environment manifest.EnvironmentDefinition, config configV1.Config) (configV2.Config, []error) {
+func convertConfig(context *configConvertContext, environment manifest.EnvironmentDefinition, config *projectV1.Config) (configV2.Config, []error) {
 	var errors []error
 
-	apiId := config.GetApi().GetId()
+	apiId := config.GetApi().ID
 	convertedTemplatePath := config.GetFilePath()
-	apiConversion := api.GetV2ApiId(config.GetApi())
+	apiConversion := api.GetV2ID(config.GetApi())
 	if apiId != apiConversion {
 		log.Info("Converting config %q from deprecated API %q to %q", config.GetId(), apiId, apiConversion)
 		convertedTemplatePath = strings.Replace(convertedTemplatePath, apiId, apiConversion, 1)
-		convertedTemplatePath = strings.Replace(convertedTemplatePath, ".json", "-"+apiId+".json", 1) //ensure modified template paths don't overlap with existing ones
+		convertedTemplatePath = strings.Replace(convertedTemplatePath, ".json", "-"+apiId+".json", 1) // ensure modified template paths don't overlap with existing ones
 		apiId = apiConversion
-	} else if deprecatedBy := config.GetApi().DeprecatedBy(); deprecatedBy != "" && context.V1Apis.IsApi(deprecatedBy) && context.V1Apis[deprecatedBy].IsNonUniqueNameApi() {
+	} else if deprecatedBy := config.GetApi().DeprecatedBy; deprecatedBy != "" && context.V1Apis.Contains(deprecatedBy) && context.V1Apis[deprecatedBy].NonUniqueName {
 		log.Info("Converting config %q from deprecated API %q to config with non-unique-name handling (see https://dt-url.net/non-unique-name-config)", config.GetId(), apiId)
 	}
 
@@ -261,8 +252,11 @@ func convertConfig(context *ConfigConvertContext, environment manifest.Environme
 		parameters[paramName] = param
 	}
 
+	// if the name is missing in the v1 config, create one and log it.
 	if _, found := parameters[configV2.NameParameter]; !found {
-		errors = append(errors, fmt.Errorf("no 'name' parameter found during conversion of config '%s/%s/%s'. Please provide one", config.GetProject(), config.GetType(), config.GetId()))
+		name := config.GetId() + " - monaco-conversion created name"
+		parameters[configV2.NameParameter] = valueParam.New(name)
+		log.Info(`Missing name in config "%s/%s/%s". Using name %q.`, config.GetProject(), config.GetType(), config.GetId(), name)
 	}
 
 	if errors != nil {
@@ -298,7 +292,7 @@ func (e TemplateConversionError) Error() string {
 
 var _ error = (*TemplateConversionError)(nil)
 
-func convertTemplate(context *ConfigConvertContext, currentPath string, writeToPath string) (modifiedTemplate template.Template, envParams map[string]parameter.Parameter, listParameterIds map[string]struct{}, errs []error) {
+func convertTemplate(context *configConvertContext, currentPath string, writeToPath string) (modifiedTemplate template.Template, envParams map[string]parameter.Parameter, listParameterIds map[string]struct{}, errs []error) {
 	data, err := afero.ReadFile(context.Fs, currentPath)
 	if err != nil {
 		return nil, nil, nil, []error{err}
@@ -317,15 +311,10 @@ func convertTemplate(context *ConfigConvertContext, currentPath string, writeToP
 func convertReservedParameters(temporaryTemplate string) string {
 
 	for _, name := range configV2.ReservedParameterNames {
-		if name == configV2.NameParameter {
-			continue // name stays the same in the template
-		}
-
 		r := regexp.MustCompile(fmt.Sprintf(`{{ *\.%s *}}`, name))
-		newName := convertedParameterName(name)
+		newName := convertReservedParameterNames(name)
 
 		temporaryTemplate = r.ReplaceAllString(temporaryTemplate, fmt.Sprintf("{{ .%s }}", newName))
-
 	}
 
 	return temporaryTemplate
@@ -334,8 +323,8 @@ func convertReservedParameters(temporaryTemplate string) string {
 func convertEnvVarsReferencesInTemplate(currentTemplate string) (modifiedTemplate string, environmentParameters map[string]parameter.Parameter) {
 	environmentParameters = map[string]parameter.Parameter{}
 
-	templText := util.EnvVariableRegexPattern.ReplaceAllStringFunc(currentTemplate, func(p string) string {
-		envVar := util.TrimToEnvVariableName(p)
+	templText := regex.EnvVariableRegexPattern.ReplaceAllStringFunc(currentTemplate, func(p string) string {
+		envVar := regex.TrimToEnvVariableName(p)
 		paramName := transformEnvironmentToParamName(envVar)
 
 		if _, found := environmentParameters[paramName]; !found {
@@ -358,9 +347,9 @@ func transformToPropertyAccess(property string) string {
 func convertListsInTemplate(currentTemplate string, currentPath string) (modifiedTemplate string, listParameterIds map[string]struct{}, errors []error) {
 	listParameterIds = map[string]struct{}{}
 
-	templText := util.ListVariableRegexPattern.ReplaceAllStringFunc(currentTemplate, func(s string) string {
+	templText := regex.ListVariableRegexPattern.ReplaceAllStringFunc(currentTemplate, func(s string) string {
 
-		fullMatch, fullListMatch, varName, err := util.MatchListVariable(s)
+		fullMatch, fullListMatch, varName, err := regex.MatchListVariable(s)
 		if err != nil {
 			errors = append(errors, newTemplateConversionError(currentPath, err.Error()))
 			return ""
@@ -373,8 +362,8 @@ func convertListsInTemplate(currentTemplate string, currentPath string) (modifie
 	return templText, listParameterIds, errors
 }
 
-func convertParameters(context *ConfigConvertContext, environment manifest.EnvironmentDefinition,
-	config configV1.Config) (map[string]parameter.Parameter, parameter.Parameter, []error) {
+func convertParameters(context *configConvertContext, environment manifest.EnvironmentDefinition,
+	config *projectV1.Config) (map[string]parameter.Parameter, parameter.Parameter, []error) {
 
 	properties := loadPropertiesForEnvironment(environment, config)
 
@@ -383,7 +372,7 @@ func convertParameters(context *ConfigConvertContext, environment manifest.Envir
 	var skip parameter.Parameter
 
 	for name, value := range properties {
-		if name == configV1.SkipConfigDeploymentParameter {
+		if name == projectV1.SkipConfigDeploymentParameter {
 			skipParameter, err := parseSkipDeploymentParameter(context, config, value)
 
 			if err != nil {
@@ -395,9 +384,9 @@ func convertParameters(context *ConfigConvertContext, environment manifest.Envir
 			continue
 		}
 
-		newName := convertedParameterName(name)
+		newName := convertReservedParameterNames(name)
 
-		if configV1.IsDependency(value) {
+		if projectV1.IsDependency(value) {
 			ref, err := parseReference(context, config, name, value)
 
 			if err != nil {
@@ -413,8 +402,8 @@ func convertParameters(context *ConfigConvertContext, environment manifest.Envir
 				continue
 			}
 			parameters[newName] = &listParam.ListParameter{Values: valueSlice}
-		} else if util.IsEnvVariable(value) {
-			envVarName := util.TrimToEnvVariableName(value)
+		} else if regex.IsEnvVariable(value) {
+			envVarName := regex.TrimToEnvVariableName(value)
 			parameters[newName] = envParam.New(envVarName)
 		} else {
 			parameters[newName] = &valueParam.ValueParameter{Value: value}
@@ -428,16 +417,23 @@ func convertParameters(context *ConfigConvertContext, environment manifest.Envir
 	return parameters, skip, nil
 }
 
-func convertedParameterName(name string) string {
+// convertReservedParametersNames will return a new name for any v1 parameter name that overlaps with a reserved name that is part of toplevel v2 configuration.
+// While the 'name' parameter is reserved in v2 as well, it is not converted as it means the same in v1 and v2.
+// If the passed paramName does not match a reserved parameter, it will be returned as is
+func convertReservedParameterNames(paramName string) string {
 
-	if slices.Contains(configV2.ReservedParameterNames, name) {
-		return name + "1"
+	if paramName == configV2.NameParameter {
+		return paramName // 'name' stays the same between v1 and v2
 	}
 
-	return name
+	if slices.Contains(configV2.ReservedParameterNames, paramName) {
+		return paramName + "1"
+	}
+
+	return paramName
 }
 
-func parseSkipDeploymentParameter(context *ConfigConvertContext, config configV1.Config, value string) (parameter.Parameter, error) {
+func parseSkipDeploymentParameter(context *configConvertContext, config *projectV1.Config, value string) (parameter.Parameter, error) {
 	switch strings.ToLower(value) {
 	case "true":
 		return valueParam.New(true), nil
@@ -445,58 +441,64 @@ func parseSkipDeploymentParameter(context *ConfigConvertContext, config configV1
 		return valueParam.New(false), nil
 	}
 
-	if util.IsEnvVariable(value) {
-		envVarName := util.TrimToEnvVariableName(value)
+	if regex.IsEnvVariable(value) {
+		envVarName := regex.TrimToEnvVariableName(value)
 
 		return envParam.New(envVarName), nil
 	}
 
 	location := coordinate.Coordinate{
 		Project:  context.ProjectId,
-		Type:     config.GetApi().GetId(),
+		Type:     config.GetApi().ID,
 		ConfigId: config.GetId(),
 	}
 
-	return nil, newConvertConfigError(location, fmt.Sprintf("invalid value for %s: `%s`. allowed values: true, false", configV1.SkipConfigDeploymentParameter, value))
+	return nil, newConvertConfigError(location, fmt.Sprintf("invalid value for %s: `%s`. allowed values: true, false", projectV1.SkipConfigDeploymentParameter, value))
 }
 
-func parseReference(context *ConfigConvertContext, config configV1.Config, parameterName string, reference string) (*refParam.ReferenceParameter, error) {
-	configId, property, err := configV1.SplitDependency(reference)
+func parseReference(context *configConvertContext, config *projectV1.Config, parameterName string, reference string) (*refParam.ReferenceParameter, error) {
+	configId, property, err := projectV1.SplitDependency(reference)
 
 	if err != nil {
 		return nil, err
 	}
 
 	configId = strings.TrimPrefix(configId, "/")
-
 	parts := strings.Split(configId, "/")
 
-	numberOfParts := len(parts)
-	if numberOfParts < 2 {
+	var projectId, referencedApiId, referencedConfigId string
+
+	switch numberOfParts := len(parts); numberOfParts {
+	case 0:
 		return nil, newReferenceParserError(context.ProjectId, config, parameterName,
-			"wrong reference. please provide '<projectId>/<name>/<config>.<property>' for referencing to another project or '<name>/<config>.<property>' for referencing within the same project")
-	}
+			"wrong reference format. Please provide '<projectId>/<name>/<config>.<property>' for referencing another project, '<name>/<config>.<property>' for referencing within the same project, or <config>.<property> for referencing within the same config")
 
-	referencedConfigId := parts[numberOfParts-1]
-	referencedApiId := parts[numberOfParts-2]
-
-	var projectId string
-	if numberOfParts == 2 { // project missing -> reference the current project
+	case 1:
 		projectId = context.ProjectId
-	} else {
+		referencedApiId = config.GetApi().ID
+		referencedConfigId = parts[0]
+
+	case 2:
+		projectId = context.ProjectId
+		referencedApiId = parts[0]
+		referencedConfigId = parts[1]
+
+	default:
 		projectId = strings.Join(parts[0:numberOfParts-2], ".")
+		referencedApiId = parts[numberOfParts-2]
+		referencedConfigId = parts[numberOfParts-1]
 	}
 
-	if !context.V1Apis.IsApi(referencedApiId) {
+	if !context.V1Apis.Contains(referencedApiId) {
 		return nil, newReferenceParserError(context.ProjectId, config, parameterName, fmt.Sprintf("referenced API '%s' does not exist", referencedApiId))
 	}
 
-	currentApiId := api.GetV2ApiId(context.V1Apis[referencedApiId])
+	currentApiId := api.GetV2ID(context.V1Apis[referencedApiId])
 
 	return refParam.New(projectId, currentApiId, referencedConfigId, property), nil
 }
 
-func loadPropertiesForEnvironment(environment manifest.EnvironmentDefinition, config configV1.Config) map[string]string {
+func loadPropertiesForEnvironment(environment manifest.EnvironmentDefinition, config *projectV1.Config) map[string]string {
 	result := make(map[string]string)
 
 	for _, propertyName := range []string{config.GetId(), config.GetId() + "." + environment.Group, config.GetId() + "." + environment.Name} {
@@ -515,7 +517,7 @@ func loadPropertiesForEnvironment(environment manifest.EnvironmentDefinition, co
 }
 
 func parseListStringToValueSlice(s string) ([]valueParam.ValueParameter, error) {
-	if !util.IsListDefinition(s) && !util.IsSimpleValueDefinition(s) {
+	if !regex.IsListDefinition(s) && !regex.IsSimpleValueDefinition(s) {
 		return []valueParam.ValueParameter{}, fmt.Errorf("failed to parse value for list parameter, '%s' is not in expected list format", s)
 	}
 
@@ -532,7 +534,7 @@ func parseListStringToValueSlice(s string) ([]valueParam.ValueParameter, error) 
 	return slice, nil
 }
 
-func convertEnvironments(environments map[string]environmentV1.Environment) map[string]manifest.EnvironmentDefinition {
+func convertEnvironments(environments map[string]*v1environment.EnvironmentV1) map[string]manifest.EnvironmentDefinition {
 	result := make(map[string]manifest.EnvironmentDefinition)
 
 	for _, env := range environments {
@@ -544,8 +546,34 @@ func convertEnvironments(environments map[string]environmentV1.Environment) map[
 			group = env.GetGroup()
 		}
 
-		result[env.GetId()] = manifest.NewEnvironmentDefinitionFromV1(env, group)
+		result[env.GetId()] = newEnvironmentDefinitionFromV1(env, group)
 	}
 
 	return result
+}
+
+func newEnvironmentDefinitionFromV1(env *v1environment.EnvironmentV1, group string) manifest.EnvironmentDefinition {
+	return manifest.EnvironmentDefinition{
+		Name:  env.GetId(),
+		URL:   newUrlDefinitionFromV1(env),
+		Group: group,
+		Auth: manifest.Auth{
+			Token: manifest.AuthSecret{Name: env.GetTokenName()},
+		},
+	}
+}
+
+func newUrlDefinitionFromV1(env *v1environment.EnvironmentV1) manifest.URLDefinition {
+	if regex.IsEnvVariable(env.GetEnvironmentUrl()) {
+		// no need to resolve the value for conversion
+		return manifest.URLDefinition{
+			Type: manifest.EnvironmentURLType,
+			Name: regex.TrimToEnvVariableName(env.GetEnvironmentUrl()),
+		}
+	}
+
+	return manifest.URLDefinition{
+		Type:  manifest.ValueURLType,
+		Value: strings.TrimSuffix(env.GetEnvironmentUrl(), "/"),
+	}
 }

@@ -34,17 +34,21 @@ import (
 func Test_parseConfigs(t *testing.T) {
 	t.Setenv("ENV_VAR_SKIP_TRUE", "true")
 	t.Setenv("ENV_VAR_SKIP_FALSE", "false")
+
 	testLoaderContext := &LoaderContext{
 		ProjectId: "project",
 		Path:      "some-dir/",
 		KnownApis: map[string]struct{}{"some-api": {}},
 		Environments: []manifest.EnvironmentDefinition{
-			manifest.NewEnvironmentDefinition(
-				"env name",
-				manifest.UrlDefinition{Type: manifest.ValueUrlType, Value: "env url"},
-				"default",
-				&manifest.EnvironmentVariableToken{EnvironmentVariableName: "token var"},
-			),
+			{
+				Name:  "env name",
+				Type:  manifest.Classic,
+				URL:   manifest.URLDefinition{Type: manifest.ValueURLType, Value: "env url"},
+				Group: "default",
+				Auth: manifest.Auth{
+					Token: manifest.AuthSecret{Name: "token var"},
+				},
+			},
 		},
 		ParametersSerDe: DefaultParameterParsers,
 	}
@@ -639,6 +643,23 @@ configs:
       scope: validScope`,
 			nil,
 			[]string{ScopeParameter},
+		},
+		{
+			"fails to load with a parameter that is 'name'",
+			"test-file.yaml",
+			"test-file.yaml",
+			`
+configs:
+- id: profile-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+    originObjectId: origin-object-id
+    parameters:
+      name: "some other name"
+  type: some-api`,
+			nil,
+			[]string{NameParameter},
 		},
 	}
 	for _, tt := range tests {

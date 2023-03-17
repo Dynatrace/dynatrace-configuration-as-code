@@ -15,8 +15,14 @@
 package client
 
 import (
-	reflect "reflect"
+	"encoding/json"
+	"net/url"
+	"reflect"
+	"regexp"
 	"unicode"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/throttle"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 )
 
 const pathEntitiesObjects = "/api/v2/entities"
@@ -39,18 +45,18 @@ func getEntitiesTypeFields(entitiesType EntitiesType, ignoreProperties []string)
 		if contains(ignoreProperties, topField) {
 			continue
 		}
+
 		fieldSliceObject := getDynamicFieldFromObject(entitiesType, topField)
 
 		if isInvalidReflectionValue(fieldSliceObject) {
-
-		} else {
-			for _, subField := range subFieldList {
-				if contains(ignoreProperties, subField) {
-					continue
-				}
-				if hasSpecificFieldValueInSlice(fieldSliceObject, "id", subField) {
-					typeFields = typeFields + ",+" + topField + "." + subField
-				}
+			continue
+		}
+		for _, subField := range subFieldList {
+			if contains(ignoreProperties, subField) {
+				continue
+			}
+			if hasSpecificFieldValueInSlice(fieldSliceObject, "id", subField) {
+				typeFields = typeFields + ",+" + topField + "." + subField
 			}
 		}
 	}
@@ -70,14 +76,14 @@ func contains(s []string, e string) bool {
 func getDynamicFieldFromObject(object interface{}, field string) reflect.Value {
 	reflection := reflect.ValueOf(object)
 
-	fieldValue := reflect.Indirect(reflection).FieldByName(field)
+	fieldValue := reflect.Indirect(reflection).FieldByName(field) // nosemgrep: go.lang.security.audit.unsafe-reflect-by-name.unsafe-reflect-by-name
 
 	// We are providing uncapitalized fields from json maps
 	// But GoLang forces capitalized for unmarshalling
 	// Let's try a capitalized first letter
 	if isInvalidReflectionValue(fieldValue) {
 		field = capitalizeFirstLetter(field)
-		fieldValue = reflect.Indirect(reflection).FieldByName(field)
+		fieldValue = reflect.Indirect(reflection).FieldByName(field) // nosemgrep: go.lang.security.audit.unsafe-reflect-by-name.unsafe-reflect-by-name
 	}
 	return fieldValue
 }
@@ -121,4 +127,81 @@ func isInvalidReflectionValue(value reflect.Value) bool {
 	} else {
 		return false
 	}
+}
+
+func genListEntitiesParams(entityType string, entitiesType EntitiesType, ignoreProperties []string) url.Values {
+	params := url.Values{
+		"entitySelector": []string{"type(\"" + entityType + "\")"},
+		"pageSize":       []string{defaultPageSizeEntities},
+		"fields":         []string{getEntitiesTypeFields(entitiesType, ignoreProperties)},
+		"from":           []string{genTimeframeUnixMilliString(defaultEntityDurationTimeframeFrom)},
+		"to":             []string{genTimeframeUnixMilliString(defaultEntityDurationTimeframeTo)},
+	}
+
+	return params
+}
+
+func handleListEntitiesError(entityType string, resp rest.Response, run_extraction bool, ignoreProperties []string, err error) (bool, []string, error) {
+	if err != nil {
+		retryWithIgnore := false
+		retryWithIgnore, ignoreProperties = validateForPropertyErrors(resp, ignoreProperties, entityType)
+
+		if retryWithIgnore {
+			return run_extraction, ignoreProperties, nil
+		} else {
+			return run_extraction, ignoreProperties, err
+		}
+	} else {
+		return false, ignoreProperties, nil
+	}
+}
+
+type ErrorResponseStruct struct {
+	ErrorResponse ErrorResponse `json:"error"`
+}
+
+type ErrorResponse struct {
+	ErrorCode               int                   `json:"code"`
+	Message                 string                `json:"message"`
+	ConstraintViolationList []ConstraintViolation `json:"constraintViolations"`
+}
+
+type ConstraintViolation struct {
+	Path              string `json:"path"`
+	Message           string `json:"message"`
+	ParameterLocation string `json:"parameterLocation"`
+	Location          string `json:"location"`
+}
+
+// errorPropertyNameRegexPattern extract from error text
+// capturing the property name between single quotes
+// Sample format: "message": "'test' is not a valid property for type 'SOFTWARE_COMPONENT'"
+var errorPropertyNameRegexPattern = regexp.MustCompile(`'([^']+)'.*`)
+
+func validateForPropertyErrors(resp rest.Response, ignoreProperties []string, entityType string) (bool, []string) {
+	retryWithIgnore := false
+
+	var errorResponse ErrorResponseStruct
+	err := json.Unmarshal(resp.Body, &errorResponse)
+
+	if err == nil {
+		if errorResponse.ErrorResponse.ErrorCode == 400 {
+			constraintViolationList := errorResponse.ErrorResponse.ConstraintViolationList
+			for _, constraintViolation := range constraintViolationList {
+				if constraintViolation.Path == "fields" {
+					matches := errorPropertyNameRegexPattern.FindStringSubmatch(constraintViolation.Message)
+					if len(matches) >= 2 {
+						if contains(ignoreProperties, matches[1]) {
+							continue
+						}
+						ignoreProperties = append(ignoreProperties, matches[1])
+						throttle.ThrottleCallAfterError(1, "Property error in type: %s: will not extract: %s", entityType, matches[1])
+						retryWithIgnore = true
+					}
+				}
+			}
+		}
+	}
+
+	return retryWithIgnore, ignoreProperties
 }

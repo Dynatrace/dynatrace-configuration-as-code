@@ -16,17 +16,17 @@ package download
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"path"
-	"strings"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2/topologysort"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
 
@@ -56,53 +56,7 @@ type downloadCommandOptionsShared struct {
 	forceOverwrite bool
 }
 
-func getEnvFromManifest(fs afero.Fs, manifestPath string, specificEnvironmentName string, projectName string) (envUrl string, token string, tokenEnvVar string, err error) {
-
-	man, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
-		Fs:           fs,
-		ManifestPath: manifestPath,
-	})
-
-	if errs != nil {
-		err = PrintAndFormatErrors(errs, "failed to load manifest '%v'", manifestPath)
-		return
-	}
-
-	env, found := man.Environments[specificEnvironmentName]
-	if !found {
-		err = PrintAndFormatErrors(errs, "environment '%v' was not available in manifest '%v'", specificEnvironmentName, manifestPath)
-		return
-	}
-
-	if len(errs) > 0 {
-		err = PrintAndFormatErrors(errs, "failed to load apis")
-		return
-	}
-
-	envUrl, err = env.GetUrl()
-	if err != nil {
-		errs = append(errs, err)
-	}
-
-	token, err = env.GetToken()
-	if err != nil {
-		errs = append(errs, err)
-	}
-
-	if len(errs) > 0 {
-		err = PrintAndFormatErrors(errs, "failed to load manifest data")
-		return
-	}
-
-	tokenEnvVar = fmt.Sprintf("TOKEN_%s", strings.ToUpper(projectName))
-	if envVarToken, ok := env.Token.(*manifest.EnvironmentVariableToken); ok {
-		tokenEnvVar = envVarToken.EnvironmentVariableName
-	}
-
-	return
-}
-
-type DynatraceClientProvider func(string, string, ...func(*client.DynatraceClient)) (*client.DynatraceClient, error)
+type DynatraceClientProvider func(*http.Client, string, ...func(*client.DynatraceClient)) (*client.DynatraceClient, error)
 
 type downloadOptionsShared struct {
 	environmentUrl          string
@@ -116,10 +70,10 @@ type downloadOptionsShared struct {
 }
 
 func (c downloadOptionsShared) getDynatraceClient() (client.Client, error) {
-	return c.clientProvider(c.environmentUrl, c.token)
+	return c.clientProvider(client.NewTokenAuthClient(c.token), c.environmentUrl, client.WithAutoServerVersion())
 }
 
-func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptionsShared, err error, fs afero.Fs) error {
+func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptionsShared, fs afero.Fs) error {
 	proj := download.CreateProjectData(downloadedConfigs, opts.projectName)
 
 	downloadWriterContext := download.WriterContext{
@@ -129,24 +83,26 @@ func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptions
 		OutputFolder:           opts.outputFolder,
 		ForceOverwriteManifest: opts.forceOverwriteManifest,
 	}
-	err = download.WriteToDisk(fs, downloadWriterContext)
+	err := download.WriteToDisk(fs, downloadWriterContext)
 	if err != nil {
 		return err
 	}
 
+	log.Info("Searching for circular dependencies")
 	if depErr := reportForCircularDependencies(proj); depErr != nil {
 		log.Warn("Download finished with problems: %s", depErr)
 	} else {
-		log.Info("Finished download")
+		log.Info("No circular dependencies found")
 	}
 
+	log.Info("Finished download")
 	return nil
 }
 
 func reportForCircularDependencies(p project.Project) error {
 	_, errs := topologysort.GetSortedConfigsForEnvironments([]project.Project{p}, []string{p.Id})
 	if len(errs) != 0 {
-		util.PrintWarnings(errs)
+		errutils.PrintWarnings(errs)
 		return fmt.Errorf("there are circular dependencies between %d configurations that need to be resolved manually", len(errs))
 	}
 	return nil
@@ -210,7 +166,7 @@ func validateOutputFolder(fs afero.Fs, outputFolder, project string) []error {
 }
 
 func PrintAndFormatErrors(errors []error, message string, a ...any) error {
-	util.PrintErrors(errors)
+	errutils.PrintErrors(errors)
 	return fmt.Errorf(message, a...)
 }
 

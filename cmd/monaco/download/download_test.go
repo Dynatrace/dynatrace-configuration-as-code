@@ -184,7 +184,7 @@ func Test_checkForCircularDependencies(t *testing.T) {
 
 func TestGetApisToDownload(t *testing.T) {
 	type given struct {
-		apis         api.ApiMap
+		apis         api.APIs
 		specificAPIs []string
 	}
 	type expected struct {
@@ -194,14 +194,13 @@ func TestGetApisToDownload(t *testing.T) {
 		name     string
 		given    given
 		expected expected
-		want1    []error
 	}{
 		{
 			name: "filter all specific defined api",
 			given: given{
-				apis: api.ApiMap{
-					"api_1": api.NewApi("api_1", "", "", false, false, "", false),
-					"api_2": api.NewApi("api_2", "", "", false, false, "", false),
+				apis: api.APIs{
+					"api_1": api.API{ID: "api_1"},
+					"api_2": api.API{ID: "api_2"},
 				},
 				specificAPIs: []string{"api_1"},
 			},
@@ -211,10 +210,10 @@ func TestGetApisToDownload(t *testing.T) {
 		}, {
 			name: "if deprecated api is defined, do not filter it",
 			given: given{
-				apis: api.ApiMap{
-					"api_1":          api.NewApi("api_1", "", "", false, false, "", false),
-					"api_2":          api.NewApi("api_2", "", "", false, false, "", false),
-					"deprecated_api": api.NewApi("deprecated_api", "", "", false, false, "new_api", false),
+				apis: api.APIs{
+					"api_1":          api.API{ID: "api_1"},
+					"api_2":          api.API{ID: "api_2"},
+					"deprecated_api": api.API{ID: "deprecated_api", DeprecatedBy: "new_api"},
 				},
 				specificAPIs: []string{"api_1", "deprecated_api"},
 			},
@@ -225,10 +224,10 @@ func TestGetApisToDownload(t *testing.T) {
 		{
 			name: "if specific api is not requested, filter deprecated apis",
 			given: given{
-				apis: api.ApiMap{
-					"api_1":          api.NewApi("api_1", "", "", false, false, "", false),
-					"api_2":          api.NewApi("api_2", "", "", false, false, "", false),
-					"deprecated_api": api.NewApi("deprecated_api", "", "", false, false, "new_api", false),
+				apis: api.APIs{
+					"api_1":          api.API{ID: "api_1"},
+					"api_2":          api.API{ID: "api_2"},
+					"deprecated_api": api.API{ID: "deprecated_api", DeprecatedBy: "new_api"},
 				},
 				specificAPIs: []string{},
 			},
@@ -239,11 +238,10 @@ func TestGetApisToDownload(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual, err := getApisToDownload(tt.given.apis, tt.given.specificAPIs)
+			actual := getApisToDownload(tt.given.apis, tt.given.specificAPIs)
 			for _, e := range tt.expected.apis {
 				assert.Contains(t, actual, e)
 			}
-			assert.Nil(t, err)
 		})
 	}
 }

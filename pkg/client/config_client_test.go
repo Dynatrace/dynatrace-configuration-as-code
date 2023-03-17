@@ -20,20 +20,20 @@ package client
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"gotest.tools/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
-var testReportsApi = api.NewStandardApi("reports", "/api/config/v1/reports", false, "", false)
-var testDashboardApi = api.NewStandardApi("dashboard", "/api/config/v1/dashboards", true, "dashboard-v2", false)
-var testMobileAppApi = api.NewStandardApi("application-mobile", "/api/config/v1/applications/mobile", false, "", false)
-var testServiceDetectionApi = api.NewStandardApi("service-detection-full-web-request", "/api/config/v1/service/detectionRules/FULL_WEB_REQUEST", false, "", false)
-var testSyntheticApi = api.NewStandardApi("synthetic-monitor", "/api/environment/v1/synthetic/monitor", false, "", false)
+var testReportsApi = api.API{ID: "reports", URLPath: "/api/config/v1/reports"}
+var testDashboardApi = api.API{ID: "dashboard", URLPath: "/api/config/v1/dashboards", NonUniqueName: true, DeprecatedBy: "dashboard-v2"}
+var testMobileAppApi = api.API{ID: "application-mobile", URLPath: "/api/config/v1/applications/mobile"}
+var testServiceDetectionApi = api.API{ID: "service-detection-full-web-request", URLPath: "/api/config/v1/service/detectionRules/FULL_WEB_REQUEST"}
+var testSyntheticApi = api.API{ID: "synthetic-monitor", URLPath: "/api/environment/v1/synthetic/monitor"}
 
 func TestTranslateGenericValuesOnStandardResponse(t *testing.T) {
 
@@ -145,7 +145,7 @@ func TestIsAnyApplicationApi(t *testing.T) {
 
 	assert.Equal(t, true, isAnyApplicationApi(testMobileAppApi))
 
-	testWebApi := api.NewStandardApi("application-web", "/api/config/v1/applications/web", false, "", false)
+	testWebApi := api.API{ID: "application-web", URLPath: "/api/config/v1/applications/web"}
 	assert.Equal(t, true, isAnyApplicationApi(testWebApi))
 
 	assert.Equal(t, false, isAnyApplicationApi(testDashboardApi))
@@ -219,68 +219,10 @@ func Test_success(t *testing.T) {
 	}
 }
 
-func Test_isServerError(t *testing.T) {
-	tests := []struct {
-		name string
-		resp rest.Response
-		want bool
-	}{
-		{
-			"200 is NOT server error",
-			rest.Response{
-				StatusCode: 200,
-			},
-			false,
-		},
-		{
-			"201 is NOT server error",
-			rest.Response{
-				StatusCode: 201,
-			},
-			false,
-		},
-		{
-			"401 is NOT server error",
-			rest.Response{
-				StatusCode: 401,
-			},
-			false,
-		},
-		{
-			"503 is server error",
-			rest.Response{
-				StatusCode: 503,
-			},
-			true,
-		},
-		{
-			"500 is server error",
-			rest.Response{
-				StatusCode: 500,
-			},
-			true,
-		},
-		{
-			"greater than 599 is NOT server error",
-			rest.Response{
-				StatusCode: 600,
-			},
-			false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := isServerError(tt.resp); got != tt.want {
-				t.Errorf("isServerError() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func Test_isApplicationNotReadyYet(t *testing.T) {
 	type args struct {
 		resp   rest.Response
-		theApi api.Api
+		theApi api.API
 	}
 	tests := []struct {
 		name string
@@ -347,7 +289,7 @@ func Test_isApplicationNotReadyYet(t *testing.T) {
 
 func Test_getObjectIdIfAlreadyExists(t *testing.T) {
 
-	testApi := api.NewStandardApi("test", "/test/api", false, "", false)
+	testApi := api.API{ID: "test", URLPath: "/test/api", PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
 
 	tests := []struct {
 		name                    string
@@ -405,7 +347,7 @@ func Test_getObjectIdIfAlreadyExists(t *testing.T) {
 			}))
 			defer server.Close()
 
-			got, err := getObjectIdIfAlreadyExists(server.Client(), testApi, server.URL, tt.givenObjectName, "test-token", testRetrySettings)
+			got, err := getObjectIdIfAlreadyExists(server.Client(), testApi, server.URL, tt.givenObjectName, testRetrySettings)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getObjectIdIfAlreadyExists() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -588,14 +530,14 @@ func Test_GetObjectIdIfAlreadyExists_WorksCorrectlyForAddedQueryParameters(t *te
 				assert.Check(t, apiCalls <= tt.expectedApiCalls, "expected at most %d API calls to happen, but encountered call %d", tt.expectedApiCalls, apiCalls)
 			}))
 			defer server.Close()
-			testApi := api.NewStandardApi(tt.apiKey, "", false, "", false)
+			testApi := api.API{ID: tt.apiKey}
 			s := rest.RetrySettings{
 				Normal: rest.RetrySetting{
 					WaitTime:   0,
-					MaxRetries: 5,
+					MaxRetries: 3,
 				},
 			}
-			_, err := getObjectIdIfAlreadyExists(server.Client(), testApi, server.URL, "", "", s)
+			_, err := getObjectIdIfAlreadyExists(server.Client(), testApi, server.URL, "", s)
 
 			if tt.expectError {
 				assert.Assert(t, err != nil)
@@ -616,7 +558,7 @@ func Test_createDynatraceObject(t *testing.T) {
 		apiKey              string
 		expectedQueryParams []testQueryParams
 		serverResponse      testServerResponse
-		want                api.DynatraceEntity
+		want                DynatraceEntity
 		wantErr             bool
 	}{
 		{
@@ -625,7 +567,7 @@ func Test_createDynatraceObject(t *testing.T) {
 			apiKey:              "dashboard",
 			expectedQueryParams: []testQueryParams{},
 			serverResponse:      testServerResponse{statusCode: 200, body: `{ "id": "42", "name": "Test object" }`},
-			want:                api.DynatraceEntity{Id: "42", Name: "Test object"},
+			want:                DynatraceEntity{Id: "42", Name: "Test object"},
 			wantErr:             false,
 		},
 		{
@@ -639,7 +581,7 @@ func Test_createDynatraceObject(t *testing.T) {
 				},
 			},
 			serverResponse: testServerResponse{statusCode: 200, body: `{ "id": "42", "name": "Test object" }`},
-			want:           api.DynatraceEntity{Id: "42", Name: "Test object"},
+			want:           DynatraceEntity{Id: "42", Name: "Test object"},
 			wantErr:        false,
 		},
 		{
@@ -648,7 +590,7 @@ func Test_createDynatraceObject(t *testing.T) {
 			apiKey:              "auto-tag",
 			expectedQueryParams: []testQueryParams{},
 			serverResponse:      testServerResponse{statusCode: 400, body: `{}`},
-			want:                api.DynatraceEntity{},
+			want:                DynatraceEntity{},
 			wantErr:             true,
 		},
 		{
@@ -657,7 +599,7 @@ func Test_createDynatraceObject(t *testing.T) {
 			apiKey:              "auto-tag",
 			expectedQueryParams: []testQueryParams{},
 			serverResponse:      testServerResponse{statusCode: 200, body: `{ "not": "a value" }`},
-			want:                api.DynatraceEntity{},
+			want:                DynatraceEntity{},
 			wantErr:             true,
 		},
 	}
@@ -684,9 +626,9 @@ func Test_createDynatraceObject(t *testing.T) {
 				}
 			}))
 			defer server.Close()
-			testApi := api.NewStandardApi(tt.apiKey, "", false, "", false)
+			testApi := api.API{ID: tt.apiKey}
 
-			got, err := createDynatraceObject(server.Client(), server.URL, tt.objectName, testApi, []byte("{}"), "token", testRetrySettings)
+			got, err := createDynatraceObject(server.Client(), server.URL, tt.objectName, testApi, []byte("{}"), testRetrySettings)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("createDynatraceObject() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -701,7 +643,7 @@ func TestDeployConfigsTargetingClassicConfigNonUnique(t *testing.T) {
 	theCfgId := "monaco_cfg_id"
 	theProject := "project"
 
-	generatedUuid := util.GenerateUuidFromConfigId(theProject, theCfgId)
+	generatedUuid := idutils.GenerateUuidFromConfigId(theProject, theCfgId)
 
 	tests := []struct {
 		name                   string
@@ -737,9 +679,9 @@ func TestDeployConfigsTargetingClassicConfigNonUnique(t *testing.T) {
 			}))
 			defer server.Close()
 
-			testApi := api.NewStandardApi("some-api", "", true, "", false)
+			testApi := api.API{ID: "some-api", NonUniqueName: true, PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
 
-			got, err := upsertDynatraceEntityByNonUniqueNameAndId(server.Client(), server.URL, generatedUuid, theConfigName, testApi, []byte("{}"), "token", testRetrySettings)
+			got, err := upsertDynatraceEntityByNonUniqueNameAndId(server.Client(), server.URL, generatedUuid, theConfigName, testApi, []byte("{}"), testRetrySettings)
 			assert.NilError(t, err)
 			assert.Equal(t, got.Id, tt.expectedIdToBeUpserted)
 		})

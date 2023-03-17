@@ -24,37 +24,37 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 )
 
 func upsertDynatraceObject(
 	client *http.Client,
 	environmentUrl string,
 	objectName string,
-	theApi api.Api,
+	theApi api.API,
 	payload []byte,
-	apiToken string,
 	retrySettings rest.RetrySettings,
-) (api.DynatraceEntity, error) {
-	isSingleConfigurationApi := theApi.IsSingleConfigurationApi()
+) (DynatraceEntity, error) {
+	isSingleConfigurationApi := theApi.SingleConfiguration
 	existingObjectId := ""
 
-	fullUrl := theApi.GetUrl(environmentUrl)
+	fullUrl := theApi.CreateURL(environmentUrl)
 
 	// Single configuration APIs don't have an id which allows skipping this step
 	if !isSingleConfigurationApi {
 		var err error
-		existingObjectId, err = getObjectIdIfAlreadyExists(client, theApi, fullUrl, objectName, apiToken, retrySettings)
+		existingObjectId, err = getObjectIdIfAlreadyExists(client, theApi, fullUrl, objectName, retrySettings)
 		if err != nil {
-			return api.DynatraceEntity{}, err
+			return DynatraceEntity{}, err
 		}
 	}
 
 	body := payload
-	configType := theApi.GetId()
+	configType := theApi.ID
 
 	// The calculated-metrics-log API doesn't have a POST endpoint, to create a new log metric we need to use PUT which
 	// requires a metric key for which we can just take the objectName
@@ -67,9 +67,9 @@ func upsertDynatraceObject(
 	// Single configuration APIs don't have a POST, but a PUT endpoint
 	// and therefore always require an update
 	if isUpdate || isSingleConfigurationApi {
-		return updateDynatraceObject(client, fullUrl, objectName, existingObjectId, theApi, body, apiToken, retrySettings)
+		return updateDynatraceObject(client, fullUrl, objectName, existingObjectId, theApi, body, retrySettings)
 	} else {
-		return createDynatraceObject(client, fullUrl, objectName, theApi, body, apiToken, retrySettings)
+		return createDynatraceObject(client, fullUrl, objectName, theApi, body, retrySettings)
 	}
 }
 
@@ -78,20 +78,19 @@ func upsertDynatraceEntityByNonUniqueNameAndId(
 	environmentUrl string,
 	entityId string,
 	objectName string,
-	theApi api.Api,
+	theApi api.API,
 	payload []byte,
-	apiToken string,
 	retrySettings rest.RetrySettings,
-) (api.DynatraceEntity, error) {
-	fullUrl := theApi.GetUrl(environmentUrl)
+) (DynatraceEntity, error) {
+	fullUrl := theApi.CreateURL(environmentUrl)
 	body := payload
 
-	existingEntities, err := getExistingValuesFromEndpoint(client, theApi, fullUrl, apiToken, retrySettings)
+	existingEntities, err := getExistingValuesFromEndpoint(client, theApi, fullUrl, retrySettings)
 	if err != nil {
-		return api.DynatraceEntity{}, fmt.Errorf("failed to query existing entities for upsert: %w", err)
+		return DynatraceEntity{}, fmt.Errorf("failed to query existing entities for upsert: %w", err)
 	}
 
-	var entitiesWithSameName []api.Value
+	var entitiesWithSameName []Value
 	var entityExists bool
 
 	for _, e := range existingEntities {
@@ -103,14 +102,14 @@ func upsertDynatraceEntityByNonUniqueNameAndId(
 		}
 	}
 
-	if entityExists || len(entitiesWithSameName) == 0 { //create with fixed ID or update (if this moves to client logging can clearly state things)
-		entity, err := updateDynatraceObject(client, fullUrl, objectName, entityId, theApi, body, apiToken, retrySettings)
+	if entityExists || len(entitiesWithSameName) == 0 { // create with fixed ID or update (if this moves to client logging can clearly state things)
+		entity, err := updateDynatraceObject(client, fullUrl, objectName, entityId, theApi, body, retrySettings)
 		return entity, err
 	}
 
-	if len(entitiesWithSameName) == 1 { //name is currently unique, update know entity
+	if len(entitiesWithSameName) == 1 { // name is currently unique, update know entity
 		existingUuid := entitiesWithSameName[0].Id
-		entity, err := updateDynatraceObject(client, fullUrl, objectName, existingUuid, theApi, body, apiToken, retrySettings)
+		entity, err := updateDynatraceObject(client, fullUrl, objectName, existingUuid, theApi, body, retrySettings)
 		return entity, err
 	}
 
@@ -121,19 +120,19 @@ func upsertDynatraceEntityByNonUniqueNameAndId(
 	for _, e := range entitiesWithSameName {
 		msg.WriteString(fmt.Sprintf("\n\t- %s", e.Id))
 	}
-	log.Warn(msg.String(), len(entitiesWithSameName), theApi.GetId(), objectName, entityId, theApi.GetId())
+	log.Warn(msg.String(), len(entitiesWithSameName), theApi.ID, objectName, entityId, theApi.ID)
 
-	return updateDynatraceObject(client, fullUrl, objectName, entityId, theApi, body, apiToken, retrySettings)
+	return updateDynatraceObject(client, fullUrl, objectName, entityId, theApi, body, retrySettings)
 }
 
-func createDynatraceObject(client *http.Client, urlString string, objectName string, theApi api.Api, payload []byte, apiToken string, retrySettings rest.RetrySettings) (api.DynatraceEntity, error) {
+func createDynatraceObject(client *http.Client, urlString string, objectName string, theApi api.API, payload []byte, retrySettings rest.RetrySettings) (DynatraceEntity, error) {
 	parsedUrl, err := url.Parse(urlString)
 	if err != nil {
-		return api.DynatraceEntity{}, fmt.Errorf("invalid URL for creating Dynatrace config: %w", err)
+		return DynatraceEntity{}, fmt.Errorf("invalid URL for creating Dynatrace config: %w", err)
 	}
 	body := payload
 
-	configType := theApi.GetId()
+	configType := theApi.ID
 
 	if configType == "app-detection-rule" {
 		queryParams := parsedUrl.Query()
@@ -141,26 +140,26 @@ func createDynatraceObject(client *http.Client, urlString string, objectName str
 		parsedUrl.RawQuery = queryParams.Encode()
 	}
 
-	resp, err := callWithRetryOnKnowTimingIssue(client, rest.Post, objectName, parsedUrl.String(), body, theApi, apiToken, retrySettings)
+	resp, err := callWithRetryOnKnowTimingIssue(client, rest.Post, objectName, parsedUrl.String(), body, theApi, retrySettings)
 	if err != nil {
-		return api.DynatraceEntity{}, err
+		return DynatraceEntity{}, err
 	}
 
 	if !success(resp) {
-		return api.DynatraceEntity{}, fmt.Errorf("Failed to create DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
+		return DynatraceEntity{}, fmt.Errorf("Failed to create DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
 	}
 
 	return unmarshalResponse(resp, urlString, configType, objectName)
 }
 
-func unmarshalResponse(resp rest.Response, fullUrl string, configType string, objectName string) (api.DynatraceEntity, error) {
-	var dtEntity api.DynatraceEntity
+func unmarshalResponse(resp rest.Response, fullUrl string, configType string, objectName string) (DynatraceEntity, error) {
+	var dtEntity DynatraceEntity
 
 	if configType == "synthetic-monitor" || configType == "synthetic-location" {
-		var entity api.SyntheticEntity
+		var entity SyntheticEntity
 		err := json.Unmarshal(resp.Body, &entity)
-		if util.CheckError(err, "Cannot unmarshal Synthetic API response") {
-			return api.DynatraceEntity{}, err
+		if errutils.CheckError(err, "Cannot unmarshal Synthetic API response") {
+			return DynatraceEntity{}, err
 		}
 		dtEntity = translateSyntheticEntityResponse(entity, objectName)
 
@@ -171,7 +170,7 @@ func unmarshalResponse(resp rest.Response, fullUrl string, configType string, ob
 		// ID of the config.
 
 		if len(locationSlice) == 0 {
-			return api.DynatraceEntity{},
+			return DynatraceEntity{},
 				fmt.Errorf("location response header was empty for API %s (name: %s)", configType, objectName)
 		}
 
@@ -181,7 +180,7 @@ func unmarshalResponse(resp rest.Response, fullUrl string, configType string, ob
 		objectId := strings.TrimPrefix(location, fullUrl)
 		objectId = strings.TrimPrefix(objectId, "/")
 
-		dtEntity = api.DynatraceEntity{
+		dtEntity = DynatraceEntity{
 			Id:          objectId,
 			Name:        objectName,
 			Description: "Created object",
@@ -189,11 +188,11 @@ func unmarshalResponse(resp rest.Response, fullUrl string, configType string, ob
 
 	} else {
 		err := json.Unmarshal(resp.Body, &dtEntity)
-		if util.CheckError(err, "Cannot unmarshal API response") {
-			return api.DynatraceEntity{}, err
+		if errutils.CheckError(err, "Cannot unmarshal API response") {
+			return DynatraceEntity{}, err
 		}
 		if dtEntity.Id == "" && dtEntity.Name == "" {
-			return api.DynatraceEntity{}, fmt.Errorf("cannot parse API response '%s' into Dynatrace Entity with Id and Name", resp.Body)
+			return DynatraceEntity{}, fmt.Errorf("cannot parse API response '%s' into Dynatrace Entity with Id and Name", resp.Body)
 		}
 	}
 	log.Debug("\tCreated new object for %s (%s)", dtEntity.Name, dtEntity.Id)
@@ -201,7 +200,7 @@ func unmarshalResponse(resp rest.Response, fullUrl string, configType string, ob
 	return dtEntity, nil
 }
 
-func updateDynatraceObject(client *http.Client, fullUrl string, objectName string, existingObjectId string, theApi api.Api, payload []byte, apiToken string, retrySettings rest.RetrySettings) (api.DynatraceEntity, error) {
+func updateDynatraceObject(client *http.Client, fullUrl string, objectName string, existingObjectId string, theApi api.API, payload []byte, retrySettings rest.RetrySettings) (DynatraceEntity, error) {
 	path := joinUrl(fullUrl, existingObjectId)
 	body := payload
 
@@ -216,23 +215,23 @@ func updateDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		body = stripCreateOnlyPropertiesFromAppMobile(body)
 	}
 
-	resp, err := callWithRetryOnKnowTimingIssue(client, rest.Put, objectName, path, body, theApi, apiToken, retrySettings)
+	resp, err := callWithRetryOnKnowTimingIssue(client, rest.Put, objectName, path, body, theApi, retrySettings)
 
 	if err != nil {
-		return api.DynatraceEntity{}, err
+		return DynatraceEntity{}, err
 	}
 
 	if !success(resp) {
-		return api.DynatraceEntity{}, fmt.Errorf("Failed to update DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
+		return DynatraceEntity{}, fmt.Errorf("Failed to update DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
 	}
 
-	if theApi.IsNonUniqueNameApi() {
+	if theApi.NonUniqueName {
 		log.Debug("\tCreated/Updated object by ID for %s (%s)", objectName, existingObjectId)
 	} else {
 		log.Debug("\tUpdated existing object for %s (%s)", objectName, existingObjectId)
 	}
 
-	return api.DynatraceEntity{
+	return DynatraceEntity{
 		Id:          existingObjectId,
 		Name:        objectName,
 		Description: "Updated existing object",
@@ -240,7 +239,7 @@ func updateDynatraceObject(client *http.Client, fullUrl string, objectName strin
 }
 
 func stripCreateOnlyPropertiesFromAppMobile(payload []byte) []byte {
-	//applicationType is required on creation, but not allowed to be updated
+	// applicationType is required on creation, but not allowed to be updated
 	r := regexp.MustCompile(`"applicationType":.*?,`)
 	tmp := r.ReplaceAllString(string(payload), "")
 	newPayload := []byte(tmp)
@@ -251,9 +250,9 @@ func stripCreateOnlyPropertiesFromAppMobile(payload []byte) []byte {
 // callWithRetryOnKnowTimingIssue handles several know cases in which Dynatrace has a slight delay before newly created objects
 // can be used in further configuration. This is a cheap way to allow monaco to work around this, by waiting, then
 // retrying in case of know errors on upload.
-func callWithRetryOnKnowTimingIssue(client *http.Client, restCall rest.SendingRequest, objectName string, path string, body []byte, theApi api.Api, apiToken string, retrySettings rest.RetrySettings) (rest.Response, error) {
+func callWithRetryOnKnowTimingIssue(client *http.Client, restCall rest.SendingRequest, objectName string, path string, body []byte, theApi api.API, retrySettings rest.RetrySettings) (rest.Response, error) {
 
-	resp, err := restCall(client, path, body, apiToken)
+	resp, err := restCall(client, path, body)
 
 	if err == nil && success(resp) {
 		return resp, nil
@@ -284,7 +283,7 @@ func callWithRetryOnKnowTimingIssue(client *http.Client, restCall rest.SendingRe
 	}
 
 	if setting.MaxRetries > 0 {
-		return rest.SendWithRetry(client, restCall, objectName, path, body, apiToken, setting)
+		return rest.SendWithRetry(client, restCall, objectName, path, body, setting)
 	}
 	return resp, nil
 }
@@ -309,17 +308,17 @@ func isManagementZoneNotReadyYet(resp rest.Response) bool {
 		strings.Contains(string(resp.Body), "Unknown management zone")
 }
 
-func isApplicationNotReadyYet(resp rest.Response, theApi api.Api) bool {
+func isApplicationNotReadyYet(resp rest.Response, theApi api.API) bool {
 	return isSyntheticMonitorServerError(resp, theApi) ||
 		isApplicationAPIError(resp, theApi) ||
 		strings.Contains(string(resp.Body), "Unknown application(s)")
 }
 
-func isSyntheticMonitorServerError(resp rest.Response, theApi api.Api) bool {
-	return theApi.GetId() == "synthetic-monitor" && resp.IsServerError()
+func isSyntheticMonitorServerError(resp rest.Response, theApi api.API) bool {
+	return theApi.ID == "synthetic-monitor" && resp.IsServerError()
 }
 
-func isApplicationAPIError(resp rest.Response, theApi api.Api) bool {
+func isApplicationAPIError(resp rest.Response, theApi api.API) bool {
 	return isAnyApplicationApi(theApi) &&
 		(resp.IsServerError() || resp.StatusCode == http.StatusConflict || resp.StatusCode == http.StatusNotFound)
 }
@@ -348,8 +347,8 @@ func isLocationHeaderAvailable(resp rest.Response) (headerAvailable bool, header
 	return false, make([]string, 0)
 }
 
-func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, objectName string, apiToken string, retrySettings rest.RetrySettings) (string, error) {
-	values, err := getExistingValuesFromEndpoint(client, api, url, apiToken, retrySettings)
+func getObjectIdIfAlreadyExists(client *http.Client, api api.API, url string, objectName string, retrySettings rest.RetrySettings) (string, error) {
+	values, err := getExistingValuesFromEndpoint(client, api, url, retrySettings)
 
 	if err != nil {
 		return "", err
@@ -372,14 +371,14 @@ func getObjectIdIfAlreadyExists(client *http.Client, api api.Api, url string, ob
 	}
 
 	if objectId != "" {
-		log.Debug("Found existing config %s (%s) with id %s", objectName, api.GetId(), objectId)
+		log.Debug("Found existing config %s (%s) with id %s", objectName, api.ID, objectId)
 	}
 
 	return objectId, nil
 }
 
-func escapeApiValueName(value api.Value) string {
-	valueName, err := util.EscapeSpecialCharactersInValue(value.Name, util.FullStringEscapeFunction)
+func escapeApiValueName(value Value) string {
+	valueName, err := template.EscapeSpecialCharactersInValue(value.Name, template.FullStringEscapeFunction)
 	if err != nil {
 		log.Warn("failed to string escape API value '%s' while checking if object exists, check directly", value.Name)
 		return value.Name
@@ -387,27 +386,27 @@ func escapeApiValueName(value api.Value) string {
 	return valueName.(string)
 }
 
-func isApiDashboard(api api.Api) bool {
-	return api.GetId() == "dashboard" || api.GetId() == "dashboard-v2"
+func isApiDashboard(api api.API) bool {
+	return api.ID == "dashboard" || api.ID == "dashboard-v2"
 }
 
-func isReportsApi(api api.Api) bool {
-	return api.GetId() == "reports"
+func isReportsApi(api api.API) bool {
+	return api.ID == "reports"
 }
 
-func isAnyServiceDetectionApi(api api.Api) bool {
-	return strings.HasPrefix(api.GetId(), "service-detection-")
+func isAnyServiceDetectionApi(api api.API) bool {
+	return strings.HasPrefix(api.ID, "service-detection-")
 }
 
-func isAnyApplicationApi(api api.Api) bool {
-	return strings.HasPrefix(api.GetId(), "application-")
+func isAnyApplicationApi(api api.API) bool {
+	return strings.HasPrefix(api.ID, "application-")
 }
 
-func isMobileApp(api api.Api) bool {
-	return api.GetId() == "application-mobile"
+func isMobileApp(api api.API) bool {
+	return api.ID == "application-mobile"
 }
 
-func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlString string, apiToken string, retrySettings rest.RetrySettings) (values []api.Value, err error) {
+func getExistingValuesFromEndpoint(client *http.Client, theApi api.API, urlString string, retrySettings rest.RetrySettings) (values []Value, err error) {
 
 	parsedUrl, err := url.Parse(urlString)
 	if err != nil {
@@ -416,17 +415,17 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlStrin
 
 	parsedUrl = addQueryParamsForNonStandardApis(theApi, parsedUrl)
 
-	resp, err := rest.Get(client, parsedUrl.String(), apiToken)
+	resp, err := rest.Get(client, parsedUrl.String())
 
 	if err != nil {
 		return nil, err
 	}
 
 	if !success(resp) {
-		return nil, fmt.Errorf("Failed to get existing configs for API %s (HTTP %d)!\n    Response was: %s", theApi.GetId(), resp.StatusCode, string(resp.Body))
+		return nil, fmt.Errorf("Failed to get existing configs for API %s (HTTP %d)!\n    Response was: %s", theApi.ID, resp.StatusCode, string(resp.Body))
 	}
 
-	var existingValues []api.Value
+	var existingValues []Value
 	for {
 		values, err := unmarshalJson(theApi, resp)
 		if err != nil {
@@ -437,14 +436,17 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlStrin
 		if resp.NextPageKey != "" {
 			parsedUrl = rest.AddNextPageQueryParams(parsedUrl, resp.NextPageKey)
 
-			resp, err = rest.GetWithRetry(client, parsedUrl.String(), apiToken, retrySettings.Normal)
+			resp, err = rest.GetWithRetry(client, parsedUrl.String(), retrySettings.Normal)
 
 			if err != nil {
 				return nil, err
 			}
 
-			if !success(resp) {
-				return nil, fmt.Errorf("Failed to get further configs from paginated API %s (HTTP %d)!\n    Response was: %s", theApi.GetId(), resp.StatusCode, string(resp.Body))
+			if !success(resp) && resp.StatusCode != http.StatusBadRequest {
+				return nil, fmt.Errorf("Failed to get further configs from paginated API %s (HTTP %d)!\n    Response was: %s", theApi.ID, resp.StatusCode, string(resp.Body))
+			} else if resp.StatusCode == http.StatusBadRequest {
+				log.Warn("Failed to get additional data from paginated API %s - pages may have been removed during request.\n    Response was: %s", theApi.ID, string(resp.Body))
+				break
 			}
 
 		} else {
@@ -455,62 +457,62 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.Api, urlStrin
 	return existingValues, nil
 }
 
-func addQueryParamsForNonStandardApis(theApi api.Api, url *url.URL) *url.URL {
+func addQueryParamsForNonStandardApis(theApi api.API, url *url.URL) *url.URL {
 
 	queryParams := url.Query()
-	if theApi.GetId() == "anomaly-detection-metrics" {
+	if theApi.ID == "anomaly-detection-metrics" {
 		queryParams.Add("includeEntityFilterMetricEvents", "true")
 	}
-	if theApi.GetId() == "slo" {
+	if theApi.ID == "slo" {
 		queryParams.Add("enabledSlos", "all")
 	}
 	url.RawQuery = queryParams.Encode()
 	return url
 }
 
-func unmarshalJson(theApi api.Api, resp rest.Response) ([]api.Value, error) {
+func unmarshalJson(theApi api.API, resp rest.Response) ([]Value, error) {
 
-	var values []api.Value
+	var values []Value
 	var objmap map[string]interface{}
 
 	// This API returns an untyped list as a response -> it needs a special handling
-	if theApi.GetId() == "aws-credentials" {
+	if theApi.ID == "aws-credentials" {
 
-		var jsonResp []api.Value
+		var jsonResp []Value
 		err := json.Unmarshal(resp.Body, &jsonResp)
-		if util.CheckError(err, "Cannot unmarshal API response for existing aws-credentials") {
+		if errutils.CheckError(err, "Cannot unmarshal API response for existing aws-credentials") {
 			return values, err
 		}
 		values = jsonResp
 
 	} else {
 
-		if theApi.GetId() == "synthetic-location" {
+		if theApi.ID == "synthetic-location" {
 
-			var jsonResp api.SyntheticLocationResponse
+			var jsonResp SyntheticLocationResponse
 			err := json.Unmarshal(resp.Body, &jsonResp)
-			if util.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
+			if errutils.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
 				return nil, err
 			}
 			values = translateSyntheticValues(jsonResp.Locations)
 
-		} else if theApi.GetId() == "synthetic-monitor" {
+		} else if theApi.ID == "synthetic-monitor" {
 
-			var jsonResp api.SyntheticMonitorsResponse
+			var jsonResp SyntheticMonitorsResponse
 			err := json.Unmarshal(resp.Body, &jsonResp)
-			if util.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
+			if errutils.CheckError(err, "Cannot unmarshal API response for existing synthetic location") {
 				return nil, err
 			}
 			values = translateSyntheticValues(jsonResp.Monitors)
 
-		} else if !theApi.IsStandardApi() || isReportsApi(theApi) {
+		} else if !theApi.IsStandardAPI() || isReportsApi(theApi) {
 
 			if err := json.Unmarshal(resp.Body, &objmap); err != nil {
 				return nil, err
 			}
 
 			if available, array := isResultArrayAvailable(objmap, theApi); available {
-				jsonResp, err := translateGenericValues(array, theApi.GetId())
+				jsonResp, err := translateGenericValues(array, theApi.ID)
 				if err != nil {
 					return nil, err
 				}
@@ -519,9 +521,9 @@ func unmarshalJson(theApi api.Api, resp rest.Response) ([]api.Value, error) {
 
 		} else {
 
-			var jsonResponse api.ValuesResponse
+			var jsonResponse ValuesResponse
 			err := json.Unmarshal(resp.Body, &jsonResponse)
-			if util.CheckError(err, "Cannot unmarshal API response for existing objects") {
+			if errutils.CheckError(err, "Cannot unmarshal API response for existing objects") {
 				return nil, err
 			}
 			values = jsonResponse.Values
@@ -531,16 +533,16 @@ func unmarshalJson(theApi api.Api, resp rest.Response) ([]api.Value, error) {
 	return values, nil
 }
 
-func isResultArrayAvailable(jsonResponse map[string]interface{}, theApi api.Api) (resultArrayAvailable bool, results []interface{}) {
-	if jsonResponse[theApi.GetPropertyNameOfGetAllResponse()] != nil {
-		return true, jsonResponse[theApi.GetPropertyNameOfGetAllResponse()].([]interface{})
+func isResultArrayAvailable(jsonResponse map[string]interface{}, theApi api.API) (resultArrayAvailable bool, results []interface{}) {
+	if jsonResponse[theApi.PropertyNameOfGetAllResponse] != nil {
+		return true, jsonResponse[theApi.PropertyNameOfGetAllResponse].([]interface{})
 	}
 	return false, make([]interface{}, 0)
 }
 
-func translateGenericValues(inputValues []interface{}, configType string) ([]api.Value, error) {
+func translateGenericValues(inputValues []interface{}, configType string) ([]Value, error) {
 
-	values := make([]api.Value, 0, len(inputValues))
+	values := make([]Value, 0, len(inputValues))
 
 	for _, input := range inputValues {
 		input := input.(map[string]interface{})
@@ -572,14 +574,14 @@ func translateGenericValues(inputValues []interface{}, configType string) ([]api
 				log.Debug("Rewriting response of config-type '%v', name missing. Using id as name. Invalid json: %v", configType, string(jsonStr))
 			}
 
-			values = append(values, api.Value{
+			values = append(values, Value{
 				Id:   input["id"].(string),
 				Name: substitutedName,
 			})
 			continue
 		}
 
-		value := api.Value{
+		value := Value{
 			Id:   input["id"].(string),
 			Name: input["name"].(string),
 		}
@@ -593,10 +595,10 @@ func translateGenericValues(inputValues []interface{}, configType string) ([]api
 	return values, nil
 }
 
-func translateSyntheticValues(syntheticValues []api.SyntheticValue) []api.Value {
-	values := make([]api.Value, 0, len(syntheticValues))
+func translateSyntheticValues(syntheticValues []SyntheticValue) []Value {
+	values := make([]Value, 0, len(syntheticValues))
 	for _, loc := range syntheticValues {
-		values = append(values, api.Value{
+		values = append(values, Value{
 			Id:   loc.EntityId,
 			Name: loc.Name,
 		})
@@ -604,8 +606,8 @@ func translateSyntheticValues(syntheticValues []api.SyntheticValue) []api.Value 
 	return values
 }
 
-func translateSyntheticEntityResponse(resp api.SyntheticEntity, objectName string) api.DynatraceEntity {
-	return api.DynatraceEntity{
+func translateSyntheticEntityResponse(resp SyntheticEntity, objectName string) DynatraceEntity {
+	return DynatraceEntity{
 		Name: objectName,
 		Id:   resp.EntityId,
 	}
@@ -613,8 +615,4 @@ func translateSyntheticEntityResponse(resp api.SyntheticEntity, objectName strin
 
 func success(resp rest.Response) bool {
 	return resp.StatusCode >= 200 && resp.StatusCode <= 299
-}
-
-func isServerError(resp rest.Response) bool {
-	return resp.StatusCode >= 500 && resp.StatusCode <= 599
 }

@@ -17,11 +17,13 @@
 package v2
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	envParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/environment"
 	refParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/reference"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 	"path/filepath"
@@ -713,6 +715,8 @@ func assertPropertyCheckResult(t *testing.T, expected propertyCheckResult, actua
 
 func TestWriteConfigs(t *testing.T) {
 
+	log.Default().SetLevel(log.LevelDebug)
+
 	var tests = []struct {
 		name                  string
 		configs               []Config
@@ -761,6 +765,53 @@ func TestWriteConfigs(t *testing.T) {
 			},
 			expectedTemplatePaths: []string{
 				"project/alerting-profile/a.json",
+				"project/alerting-profile/config.yaml",
+			},
+		},
+		{
+			name: "Settings 2.0 schema write sanitizes names",
+			configs: []Config{
+				{
+					Template: template.NewDownloadTemplate("a", "", ""),
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "builtin:alerting-profile",
+						ConfigId: "configId",
+					},
+					Type: Type{
+						SchemaId: "builtin:alerting-profile",
+					},
+					Parameters: map[string]parameter.Parameter{
+						NameParameter:  &value.ValueParameter{Value: "name"},
+						ScopeParameter: value.New("tenant"),
+					},
+					SkipForConversion: value.New("true"),
+				},
+			},
+			expectedConfigs: map[string]topLevelDefinition{
+				"builtinalerting-profile": {
+					Configs: []topLevelConfigDefinition{
+						{
+							Id: "configId",
+							Config: configDefinition{
+								Name:       "name",
+								Parameters: nil,
+								Template:   "a.json",
+								Skip:       "true",
+							},
+							Type: typeDefinition{
+								Settings: settingsDefinition{
+									Schema: "builtin:alerting-profile",
+									Scope:  "tenant",
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedTemplatePaths: []string{
+				"project/builtinalerting-profile/config.yaml",
+				"project/builtinalerting-profile/a.json",
 			},
 		},
 		{
@@ -867,7 +918,7 @@ func TestWriteConfigs(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			fs := afero.NewMemMapFs()
+			fs := testutils.TempFs(t)
 
 			errs := WriteConfigs(&WriterContext{
 				Fs:              fs,
@@ -875,8 +926,8 @@ func TestWriteConfigs(t *testing.T) {
 				ProjectFolder:   "project",
 				ParametersSerde: DefaultParameterParsers,
 			}, tc.configs)
+			errutils.PrintErrors(errs)
 			assert.Equal(t, len(errs), 0, "Writing configs should not produce an error")
-			util.PrintErrors(errs)
 
 			// check all api-folders config file
 			for apiType, definition := range tc.expectedConfigs {
@@ -893,9 +944,10 @@ func TestWriteConfigs(t *testing.T) {
 
 			// check that templates have been created
 			for _, path := range tc.expectedTemplatePaths {
-				found, err := afero.Exists(fs, filepath.Join("test", path))
+				expectedPath := filepath.Join("test", path)
+				found, err := afero.Exists(fs, expectedPath)
 				assert.NilError(t, err)
-				assert.Equal(t, found, true)
+				assert.Equal(t, found, true, "could not find %q", expectedPath)
 			}
 
 		})

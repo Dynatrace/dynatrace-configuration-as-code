@@ -34,7 +34,7 @@ func TestCorrectlyIdentifiesLowerLocalVersion(t *testing.T) {
 	}))
 	defer server.Close()
 
-	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", []byte(localPayload), "token")
+	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", []byte(localPayload))
 	assert.Assert(t, err != nil)
 	assert.Equal(t, status, extensionConfigOutdated)
 }
@@ -48,7 +48,7 @@ func TestCorrectlyIdentifiesEqualVersion(t *testing.T) {
 	}))
 	defer server.Close()
 
-	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", []byte(localPayload), "token")
+	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", []byte(localPayload))
 	assert.NilError(t, err)
 	assert.Equal(t, status, extensionUpToDate)
 }
@@ -62,7 +62,7 @@ func TestCorrectlyIdentifiesNecessaryUpdate(t *testing.T) {
 	}))
 	defer server.Close()
 
-	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", []byte(localPayload), "token")
+	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", []byte(localPayload))
 	assert.NilError(t, err)
 	assert.Equal(t, status, extensionNeedsUpdate)
 }
@@ -73,7 +73,7 @@ func TestCorrectlyIdentifiesMissingExtension(t *testing.T) {
 	}))
 	defer server.Close()
 
-	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", nil, "token")
+	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", nil)
 	assert.NilError(t, err)
 	assert.Equal(t, status, extensionNeedsUpdate)
 }
@@ -87,7 +87,7 @@ func TestThrowsErrorOnRemoteParsingProblems(t *testing.T) {
 	}))
 	defer server.Close()
 
-	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", []byte(localPayload), "token")
+	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", []byte(localPayload))
 	assert.Assert(t, err != nil)
 	assert.Equal(t, status, extensionValidationError)
 }
@@ -101,7 +101,7 @@ func TestThrowsErrorOnLocalParsingProblems(t *testing.T) {
 	}))
 	defer server.Close()
 
-	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", []byte(localPayload), "token")
+	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", []byte(localPayload))
 	assert.Assert(t, err != nil)
 	assert.Equal(t, status, extensionValidationError)
 }
@@ -115,7 +115,7 @@ func TestThrowsErrorOnRemoteMissingVersions(t *testing.T) {
 	}))
 	defer server.Close()
 
-	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", []byte(localPayload), "token")
+	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", []byte(localPayload))
 	assert.Assert(t, err != nil)
 	assert.Equal(t, status, extensionValidationError)
 }
@@ -129,7 +129,7 @@ func TestThrowsErrorOnLocalMissingVersions(t *testing.T) {
 	}))
 	defer server.Close()
 
-	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", []byte(localPayload), "token")
+	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", []byte(localPayload))
 	assert.Assert(t, err != nil)
 	assert.Equal(t, status, extensionValidationError)
 }
@@ -142,7 +142,7 @@ func TestThrowsErrorOnRemoteNilReturn(t *testing.T) {
 	}))
 	defer server.Close()
 
-	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", []byte(localPayload), "token")
+	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", []byte(localPayload))
 	assert.Assert(t, err != nil)
 	assert.Equal(t, status, extensionValidationError)
 }
@@ -155,7 +155,7 @@ func TestThrowsErrorOnLocalNilPayload(t *testing.T) {
 	}))
 	defer server.Close()
 
-	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", nil, "token")
+	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", nil)
 	assert.Assert(t, err != nil)
 	assert.Equal(t, status, extensionValidationError)
 }

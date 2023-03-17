@@ -20,7 +20,7 @@
 package v2
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"path"
 	"path/filepath"
 	"testing"
@@ -37,7 +37,7 @@ func setupConvertedConfig(t *testing.T) (testFs afero.Fs, convertedFolder string
 	convertedConfigV2Folder, err := filepath.Abs("./test-resources/converted-v1-integration-all-configs")
 	assert.NilError(t, err)
 
-	fs := util.CreateTestFileSystem()
+	fs := testutils.CreateTestFileSystem()
 
 	cmd := runner.BuildCli(fs)
 	cmd.SetArgs(
