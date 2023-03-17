@@ -29,52 +29,41 @@ func (a ByIndexValue) Len() int           { return len(a) }
 func (a ByIndexValue) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByIndexValue) Less(i, j int) bool { return a[i].indexValue < a[j].indexValue }
 
-func genSortedItemsIndex(indexRule IndexRule, items *MatchProcessingEnv) []IndexEntry {
+func addSingleValueToIndex(index *IndexMap, value string, itemId int) {
 
-	index := IndexMap{}
-
-	for _, entityIdx := range *(items.CurrentremainingMatch) {
-
-		value := getValueFromPath((*items.RawMatchList.GetValues())[entityIdx], indexRule.Path)
-		if value == nil {
-			// pass
-		} else {
-			addValueToIndex(&index, value, entityIdx)
-		}
-
+	if value == "" {
+		return
 	}
 
-	flatSortedIndex := flattenSortIndex(&index)
+	(*index)[value] = append((*index)[value], itemId)
 
-	return flatSortedIndex
 }
 
-func flattenSortIndex(index *IndexMap) []IndexEntry {
+func addValueToIndex(index *IndexMap, value interface{}, itemId int) {
 
-	flatIndex := make([]IndexEntry, len(*index))
-	idx := 0
+	stringValue, isString := value.(string)
 
-	for indexValue, matchedIds := range *index {
-		flatIndex[idx] = IndexEntry{
-			indexValue: indexValue,
-			matchedIds: matchedIds,
+	if isString {
+		addSingleValueToIndex(
+			index, stringValue, itemId)
+	} else {
+		sliceValue := value.([]interface{})
+
+		for _, singleValue := range sliceValue {
+			addSingleValueToIndex(
+				index, singleValue.(string), itemId)
 		}
-		idx++
 	}
-
-	sort.Sort(ByIndexValue(flatIndex))
-
-	return flatIndex
 }
 
-func getValueFromPath(entity interface{}, path []string) interface{} {
+func getValueFromPath(item interface{}, path []string) interface{} {
 
 	if len(path) <= 0 {
 		return nil
 	}
 
 	var current interface{}
-	current = entity
+	current = item
 
 	for _, field := range path {
 
@@ -95,29 +84,38 @@ func getValueFromPath(entity interface{}, path []string) interface{} {
 	}
 }
 
-func addValueToIndex(index *IndexMap, value interface{}, entityId int) {
+func flattenSortIndex(index *IndexMap) []IndexEntry {
 
-	stringValue, isString := value.(string)
+	flatIndex := make([]IndexEntry, len(*index))
+	idx := 0
 
-	if isString {
-		addSingleValueToIndex(
-			index, stringValue, entityId)
-	} else {
-		sliceValue := value.([]interface{})
-
-		for _, singleValue := range sliceValue {
-			addSingleValueToIndex(
-				index, singleValue.(string), entityId)
+	for indexValue, matchedIds := range *index {
+		flatIndex[idx] = IndexEntry{
+			indexValue: indexValue,
+			matchedIds: matchedIds,
 		}
+		idx++
 	}
+
+	sort.Sort(ByIndexValue(flatIndex))
+
+	return flatIndex
 }
 
-func addSingleValueToIndex(index *IndexMap, value string, entityId int) {
+func genSortedItemsIndex(indexRule IndexRule, items *MatchProcessingEnv) []IndexEntry {
 
-	if value == "" {
-		return
+	index := IndexMap{}
+
+	for _, itemIdx := range *(items.CurrentremainingMatch) {
+
+		value := getValueFromPath((*items.RawMatchList.GetValues())[itemIdx], indexRule.Path)
+		if value != nil {
+			addValueToIndex(&index, value, itemIdx)
+		}
+
 	}
 
-	(*index)[value] = append((*index)[value], entityId)
+	flatSortedIndex := flattenSortIndex(&index)
 
+	return flatSortedIndex
 }

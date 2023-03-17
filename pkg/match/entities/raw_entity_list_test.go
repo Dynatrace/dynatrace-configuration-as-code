@@ -23,6 +23,15 @@ import (
 	"gotest.tools/assert"
 )
 
+func getRawEntityListFromJson(jsonData string) RawEntityList {
+	rawEntityList := &RawEntityList{
+		Values: new([]interface{}),
+	}
+	json.Unmarshal([]byte(jsonData), rawEntityList.Values)
+
+	return *rawEntityList
+}
+
 func TestSortRawEntityList(t *testing.T) {
 
 	entityListJson := `[{
@@ -78,34 +87,25 @@ func TestSortRawEntityList(t *testing.T) {
 	}]`
 
 	tests := []struct {
-		name           string
-		entityListJson string
-		wantJson       string
+		name       string
+		entityList RawEntityList
+		want       RawEntityList
 	}{
 		{
-			name:           "Test sort raw entity list",
-			entityListJson: entityListJson,
-			wantJson:       entityListJsonSorted,
+			name:       "Test sort raw entity list",
+			entityList: getRawEntityListFromJson(entityListJson),
+			want:       getRawEntityListFromJson(entityListJsonSorted),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rawEntityListInput := &RawEntityList{
-				Values: new([]interface{}),
-			}
-			json.Unmarshal([]byte(tt.entityListJson), rawEntityListInput.Values)
-			rawEntityListInput.Sort()
+			tt.entityList.Sort()
 
-			rawEntityListWanted := &RawEntityList{
-				Values: new([]interface{}),
-			}
-			json.Unmarshal([]byte(tt.wantJson), rawEntityListWanted.Values)
-
-			assert.Equal(t, rawEntityListInput.Len(), rawEntityListWanted.Len())
-			for i, _ := range *rawEntityListInput.GetValues() {
-				assert.Equal(t, ((*rawEntityListInput.GetValues())[i].(map[string]interface{}))["entityId"].(string),
-					((*rawEntityListWanted.GetValues())[i].(map[string]interface{}))["entityId"].(string))
+			assert.Equal(t, tt.entityList.Len(), tt.want.Len())
+			for i, _ := range *tt.entityList.GetValues() {
+				assert.Equal(t, ((*tt.entityList.GetValues())[i].(map[string]interface{}))["entityId"].(string),
+					((*tt.want.GetValues())[i].(map[string]interface{}))["entityId"].(string))
 			}
 
 		})
