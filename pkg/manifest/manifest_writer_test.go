@@ -180,7 +180,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 								Name:  "client-secret-key",
 								Value: "client-secret-val",
 							},
-							TokenEndpoint: URLDefinition{
+							TokenEndpoint: &URLDefinition{
 								Value: endpoints.Dynatrace.TokenURL,
 								Type:  EnvironmentURLType,
 								Name:  "ENV_TOKEN_ENDPOINT",
@@ -206,10 +206,6 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 								Name:  "client-secret-key",
 								Value: "client-secret-val",
 							},
-							TokenEndpoint: URLDefinition{
-								Value: endpoints.Dynatrace.TokenURL,
-								Type:  Absent,
-							},
 						},
 					},
 				},
@@ -231,7 +227,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 								Name:  "client-secret-key",
 								Value: "client-secret-val",
 							},
-							TokenEndpoint: URLDefinition{
+							TokenEndpoint: &URLDefinition{
 								Value: "http://custom.sso.token.endpoint",
 								Type:  ValueURLType,
 							},

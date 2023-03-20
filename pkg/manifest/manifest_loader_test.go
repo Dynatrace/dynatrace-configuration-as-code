@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	monacoVersion "github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/oauth2/endpoints"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -1424,10 +1423,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 									Name:  "client-secret",
 									Value: "resolved-client-secret",
 								},
-								TokenEndpoint: URLDefinition{
-									Type:  Absent,
-									Value: endpoints.Dynatrace.TokenURL,
-								},
+								TokenEndpoint: nil,
 							},
 						},
 					},
@@ -1472,7 +1468,8 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 									Name:  "client-secret",
 									Value: "resolved-client-secret",
 								},
-								TokenEndpoint: URLDefinition{
+								TokenEndpoint: &URLDefinition{
+									Type:  ValueURLType,
 									Value: "https://custom.sso.token.endpoint",
 								},
 							},
@@ -1519,7 +1516,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 									Name:  "client-secret",
 									Value: "resolved-client-secret",
 								},
-								TokenEndpoint: URLDefinition{
+								TokenEndpoint: &URLDefinition{
 									Type:  EnvironmentURLType,
 									Name:  "ENV_OAUTH_ENDPOINT",
 									Value: "resolved-oauth-endpoint",

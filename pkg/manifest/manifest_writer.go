@@ -138,18 +138,18 @@ func getAuth(env EnvironmentDefinition) auth {
 	}
 
 	var te *url
-	switch env.Auth.OAuth.TokenEndpoint.Type {
-	case ValueURLType:
-		te = &url{
-			Value: env.Auth.OAuth.TokenEndpoint.Value,
+	if env.Auth.OAuth.TokenEndpoint != nil {
+		switch env.Auth.OAuth.TokenEndpoint.Type {
+		case ValueURLType:
+			te = &url{
+				Value: env.Auth.OAuth.TokenEndpoint.Value,
+			}
+		case EnvironmentURLType:
+			te = &url{
+				Type:  urlTypeEnvironment,
+				Value: env.Auth.OAuth.TokenEndpoint.Name,
+			}
 		}
-	case EnvironmentURLType:
-		te = &url{
-			Type:  urlTypeEnvironment,
-			Value: env.Auth.OAuth.TokenEndpoint.Name,
-		}
-	case Absent:
-		te = nil
 	}
 
 	return auth{

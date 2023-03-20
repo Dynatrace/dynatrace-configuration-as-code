@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/oauth2/endpoints"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
@@ -1099,4 +1100,38 @@ func TestCreateDynatraceClientWithAutoServerVersion(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, version.UnknownVersion, dcl.serverVersion)
 	})
+}
+
+func TestDefaultTokenUrl(t *testing.T) {
+	tests := []struct {
+		name        string
+		oauthConfig OauthCredentials
+		want        string
+	}{
+		{
+			"uses token url from input",
+			OauthCredentials{
+				ClientID:     "ID",
+				ClientSecret: "SEC",
+				TokenURL:     "URL",
+				Scopes:       nil,
+			},
+			"URL",
+		},
+		{
+			"uses default URL if none defined",
+			OauthCredentials{
+				ClientID:     "ID",
+				ClientSecret: "SEC",
+				TokenURL:     "",
+				Scopes:       nil,
+			},
+			endpoints.Dynatrace.TokenURL,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, getClientCredentialsConfig(tt.oauthConfig).TokenURL)
+		})
+	}
 }
