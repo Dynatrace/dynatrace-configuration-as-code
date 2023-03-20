@@ -56,7 +56,7 @@ func isClassicEnvironment(env manifest.EnvironmentDefinition) bool {
 		var respErr client.RespError
 		if errors.As(err, &respErr) {
 			log.Error("Could not authorize against the environment with name %q (%s) using token authorization.", env.Name, env.URL.Value)
-			if respErr.StatusCode != http.StatusForbidden {
+			if respErr.StatusCode != http.StatusForbidden && respErr.StatusCode != http.StatusUnauthorized {
 				log.Error("Please verify that this environment is a Dynatrace Classic environment.")
 			} else {
 				log.Error(err.Error())
@@ -79,7 +79,7 @@ func isPlatformEnvironment(env manifest.EnvironmentDefinition) bool {
 		var respErr client.RespError
 		if errors.As(err, &respErr) {
 			log.Error("Could not authorize against the environment with name %q (%s) using oAuth authorization.", env.Name, env.URL.Value)
-			if respErr.StatusCode != http.StatusForbidden {
+			if respErr.StatusCode != http.StatusForbidden && respErr.StatusCode != http.StatusUnauthorized {
 				log.Error("Please verify that this environment is a Dynatrace Platform environment.")
 			} else {
 				log.Error(err.Error())
