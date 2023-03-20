@@ -50,18 +50,31 @@ var ReservedParameterNames = []string{IdParameter, NameParameter, ScopeParameter
 // Parameters defines a map of name to parameter
 type Parameters map[string]parameter.Parameter
 
+// Type describes the type a config can have.
+//
+// Currently, we support
+//   - Dynatrace Classic Apis (Api)
+//   - Dynatrace Classic Settings (SchemaId + SchemaVersion)
+//   - Dynatrace Classic Entities (EntitiesType)
 type Type struct {
-	SchemaId,
-	SchemaVersion,
+	// SchemaId is set if the config is a settings config.
+	//
+	// SchemaVersion is the version of this setting.
+	SchemaId, SchemaVersion string
+
+	// Api holds the API-id. See package [github.com/dynatrace/dynatrace-configuration-as-code/pkg/api]
 	Api string
+
+	// EntitiesType holds the type of the entity
 	EntitiesType string
 }
 
-// IsSettings returns true if SchemaId is not empty
+// IsSettings returns true if SchemaId is not empty, indicating that the config is a settings-config
 func (t Type) IsSettings() bool {
 	return t.SchemaId != ""
 }
 
+// IsEntities returns true whether the config is an entity.
 func (t Type) IsEntities() bool {
 	return t.EntitiesType != ""
 }
