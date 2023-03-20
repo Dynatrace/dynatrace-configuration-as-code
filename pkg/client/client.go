@@ -261,8 +261,10 @@ func WithAutoServerVersion() func(client *DynatraceClient) {
 	}
 }
 
-// WithClassicURLResovler tries to determine the URL of the classic environment using the Dynatrace API
-func WithClassicURLResolver() func(client *DynatraceClient) {
+// WithRedirectToClassicEnv tries to determine the URL of the classic environment using the
+// platform Dynatrace API and uses that URL for all API calls that need to be targeted at
+// the classic APIs
+func WithRedirectToClassicEnv(client *http.Client) func(client *DynatraceClient) {
 	return func(d *DynatraceClient) {
 		classicURL, err := GetDynatraceClassicURL(d.client, d.environmentUrl)
 		if err != nil {
@@ -270,6 +272,7 @@ func WithClassicURLResolver() func(client *DynatraceClient) {
 			return
 		}
 		d.environmentURLClassic = classicURL
+		d.clientClassic = client
 	}
 }
 
@@ -327,80 +330,10 @@ func NewOAuthClient(oauthConfig OauthCredentials) *http.Client {
 	return config.Client(context.TODO())
 }
 
-// EnvironmentType is used to identify the type of the environment.
-// Possible values are  [Classic] and [Platform]
-type EnvironmentType int
-
-const (
-	// Classic identifies a Dynatrace Classic environment
-	Classic EnvironmentType = iota
-
-	// Platform identifies a Dynatrace Platform environment
-	Platform
-)
-
-// Environment holds information about a Dynatrace environment
-type Environment struct {
-	URL   string
-	OAuth *OauthCredentials
-	Token *string
-	Type  EnvironmentType
-}
-
-// Validate checks whether the environment is set correctly
-func (e *Environment) Validate() error {
-	if e.Type == Classic {
-		if e.Token == nil {
-			return fmt.Errorf("missing auth token")
-		}
-		return nil
-	}
-	if e.Type == Platform {
-		if e.Token == nil {
-			return fmt.Errorf("missing auth token")
-		}
-		if e.OAuth == nil {
-			return fmt.Errorf("missing Oauth credentials")
-		}
-		return nil
-	}
-	return fmt.Errorf("unsupported environment type")
-}
-
-// CreateDynatraceClient creates a new DynatraceClient to be used
-// for the given environment.
-func CreateDynatraceClient(environment Environment, dryRun bool) (Client, error) {
-	if dryRun {
-		return NewDummyClient(), nil
-	}
-
-	if err := environment.Validate(); err != nil {
-		return nil, err
-	}
-
-	if environment.Type == Classic {
-		return NewDynatraceClient(NewTokenAuthClient(*environment.Token), environment.URL, nil)
-	}
-
-	if environment.Type == Platform {
-		client, err := NewDynatraceClient(NewOAuthClient(*environment.OAuth), environment.URL, WithClassicURLResolver())
-		if err != nil {
-			return nil, err
-		}
-		// TODO: should client expose every field?
-		client.clientClassic = NewTokenAuthClient(*environment.Token)
-		return client, nil
-	}
-
-	return nil, fmt.Errorf("unable to create authorizing HTTP Client for environment %s - no oauth credentials given", environment.URL)
-}
-
 // NewDynatraceClient creates a new DynatraceClient.
 // It takes a http.Client to do its HTTP communication, a URL to the targeting Dynatrace
 // environment and an optional list of options to further configure the behavior of the client
 // It is also allowed to pass nil as httpClient
-
-// TODO: think about unexporting that if not needed anymore
 func NewDynatraceClient(httpClient *http.Client, environmentURL string, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
 	environmentURL = strings.TrimSuffix(environmentURL, "/")
 	parsedUrl, err := url.ParseRequestURI(environmentURL)
@@ -424,6 +357,7 @@ func NewDynatraceClient(httpClient *http.Client, environmentURL string, opts ...
 		environmentUrl:        environmentURL,
 		environmentURLClassic: environmentURL,
 		client:                httpClient,
+		clientClassic:         httpClient,
 		retrySettings:         rest.DefaultRetrySettings,
 		serverVersion:         version.Version{},
 	}

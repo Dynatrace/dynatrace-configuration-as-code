@@ -18,6 +18,7 @@ package cmdutils
 
 import (
 	"errors"
+	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
@@ -32,6 +33,43 @@ func SilenceUsageCommand() func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
 		cmd.SilenceUsage = true
 	}
+}
+
+// CreateDTClient creates a new client based to be used or an environment
+// If dryRun is true, it will return a dummy client that doesn't do anything
+func CreateDTClient(env manifest.EnvironmentDefinition, dryRun bool) (client.Client, error) {
+	if dryRun {
+		return client.NewDummyClient(), nil
+	}
+	if env.Type == manifest.Classic {
+		return CreateClassicDTClient(env.URL.Value, env.Auth.Token.Value)
+	}
+
+	if env.Type == manifest.Platform {
+
+		oauthCredentials := client.OauthCredentials{
+			ClientID:     env.Auth.OAuth.ClientID.Value,
+			ClientSecret: env.Auth.OAuth.ClientSecret.Value,
+			TokenURL:     env.Auth.OAuth.TokenEndpoint.Value,
+		}
+
+		return CreatePlatformDTClient(env.URL.Value, env.Auth.Token.Value, oauthCredentials)
+	}
+	return nil, fmt.Errorf("unable to create authorizing HTTP Client for environment %s - no oauth credentials given", env.URL.Value)
+}
+
+// CreateClassicDTClient creates a new Dynatrace client to be used
+// for a classic dynatrace tenant
+func CreateClassicDTClient(envURL string, token string) (client.Client, error) {
+	return client.NewDynatraceClient(client.NewTokenAuthClient(token), envURL)
+}
+
+// CreatePlatformDTClient creates a new Dynatrace client to be used
+// for a Platform enabled dynatrace tenant
+func CreatePlatformDTClient(envURL string, token string, oauthCredentials client.OauthCredentials) (client.Client, error) {
+	oauthClient := client.NewOAuthClient(oauthCredentials)
+	tokenAuthClient := client.NewTokenAuthClient(token)
+	return client.NewDynatraceClient(oauthClient, envURL, client.WithRedirectToClassicEnv(tokenAuthClient))
 }
 
 // VerifyEnvironmentGeneration takes a manifestEnvironments map and tries to verify that each environment can be reached

@@ -21,7 +21,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/deploy"
 	"path/filepath"
 	"strings"
@@ -90,16 +89,8 @@ func doDeploy(configs project.ConfigsPerEnvironment, environments manifest.Envir
 			}
 		}
 
-		dtClient, err := client.CreateDynatraceClient(client.Environment{
-			URL: env.URL.Value,
-			OAuth: &client.OauthCredentials{
-				ClientID:     env.Auth.OAuth.ClientID.Value,
-				ClientSecret: env.Auth.OAuth.ClientSecret.Value,
-				TokenURL:     env.Auth.OAuth.TokenEndpoint.Value,
-			},
-			Token: &env.Auth.Token.Value,
-			Type:  client.EnvironmentType(env.Type),
-		}, dryRun)
+		dtClient, err := cmdutils.CreateDTClient(env, dryRun)
+
 		if err != nil {
 			if continueOnErr {
 				deployErrs = append(deployErrs, err)
