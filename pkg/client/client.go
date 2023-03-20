@@ -195,8 +195,16 @@ type DynatraceClient struct {
 	// environmentUrl is the base URL of the Dynatrace server the
 	// client will be interacting with
 	environmentUrl string
-	// client is the HTTP client that will be used by the dynatrace client
+	// environmentURLClassic is the base URL of the classic generation
+	// Dynatrace tenant
+	environmentURLClassic string
+	// client is the underlying HTTP client that will be used to communicate
+	// with platform gen environments
 	client *http.Client
+
+	// client is the underlying HTTP client that will be used to communicate
+	// with second gen environments
+	clientClassic *http.Client
 	// retrySettings specify the retry behavior of the dynatrace client in case something goes wrong
 	retrySettings rest.RetrySettings
 }
@@ -250,6 +258,18 @@ func WithAutoServerVersion() func(client *DynatraceClient) {
 		} else {
 			d.serverVersion = serverVersion
 		}
+	}
+}
+
+// WithClassicURLResovler tries to determine the URL of the classic environment using the Dynatrace API
+func WithClassicURLResolver() func(client *DynatraceClient) {
+	return func(d *DynatraceClient) {
+		classicURL, err := GetDynatraceClassicURL(d.client, d.environmentUrl)
+		if err != nil {
+			log.Error("Unable to determine Dynatrace classic environment URL: %v", err)
+			return
+		}
+		d.environmentURLClassic = classicURL
 	}
 }
 
@@ -307,10 +327,80 @@ func NewOAuthClient(oauthConfig OauthCredentials) *http.Client {
 	return config.Client(context.TODO())
 }
 
+// EnvironmentType is used to identify the type of the environment.
+// Possible values are  [Classic] and [Platform]
+type EnvironmentType int
+
+const (
+	// Classic identifies a Dynatrace Classic environment
+	Classic EnvironmentType = iota
+
+	// Platform identifies a Dynatrace Platform environment
+	Platform
+)
+
+// Environment holds information about a Dynatrace environment
+type Environment struct {
+	URL   string
+	OAuth *OauthCredentials
+	Token *string
+	Type  EnvironmentType
+}
+
+// Validate checks whether the environment is set correctly
+func (e *Environment) Validate() error {
+	if e.Type == Classic {
+		if e.Token == nil {
+			return fmt.Errorf("missing auth token")
+		}
+		return nil
+	}
+	if e.Type == Platform {
+		if e.Token == nil {
+			return fmt.Errorf("missing auth token")
+		}
+		if e.OAuth == nil {
+			return fmt.Errorf("missing Oauth credentials")
+		}
+		return nil
+	}
+	return fmt.Errorf("unsupported environment type")
+}
+
+// CreateDynatraceClient creates a new DynatraceClient to be used
+// for the given environment.
+func CreateDynatraceClient(environment Environment, dryRun bool) (Client, error) {
+	if dryRun {
+		return NewDummyClient(), nil
+	}
+
+	if err := environment.Validate(); err != nil {
+		return nil, err
+	}
+
+	if environment.Type == Classic {
+		return NewDynatraceClient(NewTokenAuthClient(*environment.Token), environment.URL, nil)
+	}
+
+	if environment.Type == Platform {
+		client, err := NewDynatraceClient(NewOAuthClient(*environment.OAuth), environment.URL, WithClassicURLResolver())
+		if err != nil {
+			return nil, err
+		}
+		// TODO: should client expose every field?
+		client.clientClassic = NewTokenAuthClient(*environment.Token)
+		return client, nil
+	}
+
+	return nil, fmt.Errorf("unable to create authorizing HTTP Client for environment %s - no oauth credentials given", environment.URL)
+}
+
 // NewDynatraceClient creates a new DynatraceClient.
 // It takes a http.Client to do its HTTP communication, a URL to the targeting Dynatrace
 // environment and an optional list of options to further configure the behavior of the client
 // It is also allowed to pass nil as httpClient
+
+// TODO: think about unexporting that if not needed anymore
 func NewDynatraceClient(httpClient *http.Client, environmentURL string, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
 	environmentURL = strings.TrimSuffix(environmentURL, "/")
 	parsedUrl, err := url.ParseRequestURI(environmentURL)
@@ -331,10 +421,11 @@ func NewDynatraceClient(httpClient *http.Client, environmentURL string, opts ...
 	}
 
 	dtClient := &DynatraceClient{
-		environmentUrl: environmentURL,
-		client:         httpClient,
-		retrySettings:  rest.DefaultRetrySettings,
-		serverVersion:  version.Version{},
+		environmentUrl:        environmentURL,
+		environmentURLClassic: environmentURL,
+		client:                httpClient,
+		retrySettings:         rest.DefaultRetrySettings,
+		serverVersion:         version.Version{},
 	}
 
 	for _, o := range opts {
@@ -404,8 +495,8 @@ func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, e
 
 func (d *DynatraceClient) ListConfigs(api API) (values []Value, err error) {
 
-	fullUrl := api.CreateURL(d.environmentUrl)
-	values, err = getExistingValuesFromEndpoint(d.client, api, fullUrl, d.retrySettings)
+	fullUrl := api.CreateURL(d.environmentURLClassic)
+	values, err = getExistingValuesFromEndpoint(d.clientClassic, api, fullUrl, d.retrySettings)
 	return values, err
 }
 
@@ -414,12 +505,12 @@ func (d *DynatraceClient) ReadConfigById(api API, id string) (json []byte, err e
 	isSingleConfigurationApi := api.SingleConfiguration
 
 	if isSingleConfigurationApi {
-		dtUrl = api.CreateURL(d.environmentUrl)
+		dtUrl = api.CreateURL(d.environmentURLClassic)
 	} else {
-		dtUrl = api.CreateURL(d.environmentUrl) + "/" + url.PathEscape(id)
+		dtUrl = api.CreateURL(d.environmentURLClassic) + "/" + url.PathEscape(id)
 	}
 
-	response, err := rest.Get(d.client, dtUrl)
+	response, err := rest.Get(d.clientClassic, dtUrl)
 
 	if err != nil {
 		return nil, err
@@ -434,26 +525,26 @@ func (d *DynatraceClient) ReadConfigById(api API, id string) (json []byte, err e
 
 func (d *DynatraceClient) DeleteConfigById(api API, id string) error {
 
-	return rest.DeleteConfig(d.client, api.CreateURL(d.environmentUrl), id)
+	return rest.DeleteConfig(d.clientClassic, api.CreateURL(d.environmentURLClassic), id)
 }
 
 func (d *DynatraceClient) ConfigExistsByName(api API, name string) (exists bool, id string, err error) {
-	apiURL := api.CreateURL(d.environmentUrl)
-	existingObjectId, err := getObjectIdIfAlreadyExists(d.client, api, apiURL, name, d.retrySettings)
+	apiURL := api.CreateURL(d.environmentURLClassic)
+	existingObjectId, err := getObjectIdIfAlreadyExists(d.clientClassic, api, apiURL, name, d.retrySettings)
 	return existingObjectId != "", existingObjectId, err
 }
 
 func (d *DynatraceClient) UpsertConfigByName(api API, name string, payload []byte) (entity DynatraceEntity, err error) {
 
 	if api.ID == "extension" {
-		fullUrl := api.CreateURL(d.environmentUrl)
-		return uploadExtension(d.client, fullUrl, name, payload)
+		fullUrl := api.CreateURL(d.environmentURLClassic)
+		return uploadExtension(d.clientClassic, fullUrl, name, payload)
 	}
-	return upsertDynatraceObject(d.client, d.environmentUrl, name, api, payload, d.retrySettings)
+	return upsertDynatraceObject(d.clientClassic, d.environmentURLClassic, name, api, payload, d.retrySettings)
 }
 
 func (d *DynatraceClient) UpsertConfigByNonUniqueNameAndId(api API, entityId string, name string, payload []byte) (entity DynatraceEntity, err error) {
-	return upsertDynatraceEntityByNonUniqueNameAndId(d.client, d.environmentUrl, entityId, name, api, payload, d.retrySettings)
+	return upsertDynatraceEntityByNonUniqueNameAndId(d.clientClassic, d.environmentURLClassic, entityId, name, api, payload, d.retrySettings)
 }
 
 // SchemaListResponse is the response type returned by the ListSchemas operation
