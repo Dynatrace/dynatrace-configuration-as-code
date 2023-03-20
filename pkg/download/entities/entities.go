@@ -83,28 +83,24 @@ func (d *Downloader) Download(specificEntitiesTypes []string, projectName string
 }
 
 func filterSpecificEntitiesTypes(specificEntitiesTypes []string, entitiesTypes []client.EntitiesType) []client.EntitiesType {
-	filteredEntitiesTypes := make([]client.EntitiesType, len(specificEntitiesTypes))
-	foundEntitiesTypes := make([]string, len(specificEntitiesTypes))
-	foundIdx := 0
+	filteredEntitiesTypes := client.EntitiesTypeListResponse{Types: make([]client.EntitiesType, 0, len(specificEntitiesTypes))}
 
 	for _, entitiesType := range entitiesTypes {
 		for _, specificEntitiesType := range specificEntitiesTypes {
 			if entitiesType.EntitiesTypeId == specificEntitiesType {
-				filteredEntitiesTypes[foundIdx] = entitiesType
-				foundEntitiesTypes[foundIdx] = specificEntitiesType
-				foundIdx += 1
+				filteredEntitiesTypes.Types = append(filteredEntitiesTypes.Types, entitiesType)
 				break
 			}
 		}
 	}
 
-	if len(specificEntitiesTypes) != foundIdx {
-		log.Error("Did not find all provided entities Types. \n %d Types provided: %v \n %d Types found: %v.",
-			len(specificEntitiesTypes), specificEntitiesTypes, foundIdx, foundEntitiesTypes)
+	if len(specificEntitiesTypes) != len(filteredEntitiesTypes.Types) {
+		log.Error("Did not find all provided entities Types. \n- %d Types provided: %v \n- %d Types found: %s.",
+			len(specificEntitiesTypes), specificEntitiesTypes, len(filteredEntitiesTypes.Types), filteredEntitiesTypes.Strings())
 		return nil
 	}
 
-	return filteredEntitiesTypes
+	return filteredEntitiesTypes.Types
 }
 
 // DownloadAll downloads all entities objects for a given project.
