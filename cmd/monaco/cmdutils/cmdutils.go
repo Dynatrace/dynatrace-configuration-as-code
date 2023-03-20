@@ -95,7 +95,7 @@ func isPlatformEnvironment(env manifest.EnvironmentDefinition) bool {
 	oauthCredentials := client.OauthCredentials{
 		ClientID:     env.Auth.OAuth.ClientID.Value,
 		ClientSecret: env.Auth.OAuth.ClientSecret.Value,
-		TokenURL:     env.Auth.OAuth.TokenEndpoint.Value,
+		TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
 	}
 	if _, err := client.GetDynatraceClassicURL(client.NewOAuthClient(oauthCredentials), env.URL.Value); err != nil {
 		var respErr client.RespError

@@ -47,7 +47,16 @@ func (p ProjectDefinition) String() string {
 type OAuth struct {
 	ClientID      AuthSecret
 	ClientSecret  AuthSecret
-	TokenEndpoint URLDefinition
+	TokenEndpoint *URLDefinition
+}
+
+// GetTokenEndpointValue returns the defined token endpoint or an empty string if it's not set.
+func (o OAuth) GetTokenEndpointValue() string {
+	if o.TokenEndpoint == nil {
+		return ""
+	}
+
+	return o.TokenEndpoint.Value
 }
 
 type Auth struct {
@@ -76,9 +85,6 @@ const (
 
 	// EnvironmentURLType describes that the url has been loaded from an environment variable
 	EnvironmentURLType
-
-	// Absent indicates absence of declaration (e.g. not declared via manifest.yaml or environment variables)
-	Absent
 )
 
 // URLDefinition holds the value and origin of an environment-url.

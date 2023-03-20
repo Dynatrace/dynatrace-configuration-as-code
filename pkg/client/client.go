@@ -26,6 +26,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/throttle"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/oauth2/endpoints"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	version2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"golang.org/x/oauth2"
@@ -310,13 +311,25 @@ func NewTokenAuthClient(token string) *http.Client {
 
 // NewOAuthClient creates a new HTTP client that supports OAuth2 client credentials based authorization
 func NewOAuthClient(oauthConfig OauthCredentials) *http.Client {
+
+	config := getClientCredentialsConfig(oauthConfig)
+	return config.Client(context.TODO())
+}
+
+func getClientCredentialsConfig(oauthConfig OauthCredentials) clientcredentials.Config {
+	tokenUrl := oauthConfig.TokenURL
+	if tokenUrl == "" {
+		log.Debug("using default tokenURL %s", tokenUrl)
+		tokenUrl = endpoints.Dynatrace.TokenURL
+	}
+
 	config := clientcredentials.Config{
 		ClientID:     oauthConfig.ClientID,
 		ClientSecret: oauthConfig.ClientSecret,
-		TokenURL:     oauthConfig.TokenURL,
+		TokenURL:     tokenUrl,
 		Scopes:       oauthConfig.Scopes,
 	}
-	return config.Client(context.TODO())
+	return config
 }
 
 const (
