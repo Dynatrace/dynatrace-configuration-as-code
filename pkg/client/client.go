@@ -429,7 +429,9 @@ func NewDynatraceClient(httpClient *http.Client, environmentURL string, opts ...
 	}
 
 	for _, o := range opts {
-		o(dtClient)
+		if o != nil {
+			o(dtClient)
+		}
 	}
 
 	return dtClient, nil
