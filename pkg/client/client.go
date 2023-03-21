@@ -322,6 +322,7 @@ func NewOAuthClient(oauthConfig OauthCredentials) *http.Client {
 	return config.Client(context.TODO())
 }
 
+// NewPlatformClient creates a new dynatrace client to be used for platform enabled environments
 func NewPlatformClient(dtURL string, token string, oauthCredentials OauthCredentials, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
 	dtURL = strings.TrimSuffix(dtURL, "/")
 	if err := validateURL(dtURL); err != nil {
@@ -343,6 +344,7 @@ func NewPlatformClient(dtURL string, token string, oauthCredentials OauthCredent
 		environmentURLClassic: classicURL,
 		client:                oauthClient,
 		clientClassic:         tokenClient,
+		retrySettings:         rest.DefaultRetrySettings,
 		settingsSchemaAPIPath: "/platform/classic/environment-api/v2/settings/schemas",
 		settingsObjectAPIPath: "/platform/classic/environment-api/v2/settings/objects",
 	}
@@ -355,6 +357,7 @@ func NewPlatformClient(dtURL string, token string, oauthCredentials OauthCredent
 	return d, nil
 }
 
+// NewClassicClient creates a new dynatrace client to be used for classic environments
 func NewClassicClient(dtURL string, token string, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
 	dtURL = strings.TrimSuffix(dtURL, "/")
 	if err := validateURL(dtURL); err != nil {
@@ -369,6 +372,7 @@ func NewClassicClient(dtURL string, token string, opts ...func(dynatraceClient *
 		environmentURLClassic: dtURL,
 		client:                tokenClient,
 		clientClassic:         tokenClient,
+		retrySettings:         rest.DefaultRetrySettings,
 		settingsSchemaAPIPath: "/api/v2/settings/schemas",
 		settingsObjectAPIPath: "/api/v2/settings/objects",
 	}
