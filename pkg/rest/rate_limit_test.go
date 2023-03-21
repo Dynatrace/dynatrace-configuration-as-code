@@ -53,13 +53,6 @@ func createTimelineProviderMock(t *testing.T) *timeutils.MockTimelineProvider {
 
 	return timeutils.NewMockTimelineProvider(mockCtrl)
 }
-func TestWithParallelRequestLimitFromEnvOption(t *testing.T) {
-	t.Setenv(ConcurrentRequestsEnvKey, "")
-	assert.Equal(t, DefaultConcurrentDownloads, ConcurrentRequestLimitFromEnv(false))
-	t.Setenv(ConcurrentRequestsEnvKey, "51")
-	assert.Equal(t, 51, ConcurrentRequestLimitFromEnv(false))
-}
-
 func TestRateLimitHeaderExtractionForCorrectHeaders(t *testing.T) {
 
 	rateLimitStrategy := simpleSleepRateLimitStrategy{}

@@ -17,7 +17,7 @@ package interfaces
 import (
 	"reflect"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/string_util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/string_util"
 )
 
 func GetDynamicFieldFromObject(object interface{}, field string) reflect.Value {

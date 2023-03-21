@@ -177,8 +177,12 @@ func TestDownload(t *testing.T) {
 					return []client.EntitiesType{{EntitiesTypeId: testType}}, nil
 				},
 				EntitiesTypeListCalls: 1,
-				EntitiesList: func() ([]string, error) {
-					return make([]string, 0, 1), nil
+				EntitiesList: func() (client.EntitiesList, error) {
+					return client.EntitiesList{
+						From:     "",
+						To:       "",
+						Entities: []string{""},
+					}, nil
 				},
 				EntitiesListCalls: 0,
 			},
