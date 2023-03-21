@@ -571,18 +571,15 @@ func (d *DynatraceClient) ListSettings(schemaId string, opts ListSettingsOptions
 type EntitiesTypeListResponse struct {
 	Types []EntitiesType `json:"types"`
 }
+
 type EntitiesType struct {
 	EntitiesTypeId  string                   `json:"type"`
 	ToRelationships []map[string]interface{} `json:"toRelationships"`
 	Properties      []map[string]interface{} `json:"properties"`
 }
 
-func (e *EntitiesTypeListResponse) Strings() []string {
-	strs := make([]string, 0, len(e.Types))
-	for _, entitiesType := range e.Types {
-		strs = append(strs, entitiesType.EntitiesTypeId)
-	}
-	return strs
+func (e EntitiesType) String() string {
+	return e.EntitiesTypeId
 }
 
 func (d *DynatraceClient) ListEntitiesTypes() ([]EntitiesType, error) {
