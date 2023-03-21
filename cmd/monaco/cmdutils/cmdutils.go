@@ -42,7 +42,7 @@ func CreateDTClient(env manifest.EnvironmentDefinition, dryRun bool) (client.Cli
 		return client.NewDummyClient(), nil
 	}
 	if env.Type == manifest.Classic {
-		return CreateClassicDTClient(env.URL.Value, env.Auth.Token.Value)
+		return createClassicDTClient(env.URL.Value, env.Auth.Token.Value)
 	}
 
 	if env.Type == manifest.Platform {
@@ -53,20 +53,20 @@ func CreateDTClient(env manifest.EnvironmentDefinition, dryRun bool) (client.Cli
 			TokenURL:     env.Auth.OAuth.TokenEndpoint.Value,
 		}
 
-		return CreatePlatformDTClient(env.URL.Value, env.Auth.Token.Value, oauthCredentials)
+		return createPlatformDTClient(env.URL.Value, env.Auth.Token.Value, oauthCredentials)
 	}
 	return nil, fmt.Errorf("unable to create authorizing HTTP Client for environment %s - no oauth credentials given", env.URL.Value)
 }
 
-// CreateClassicDTClient creates a new Dynatrace client to be used
+// createClassicDTClient creates a new Dynatrace client to be used
 // for a classic dynatrace tenant
-func CreateClassicDTClient(envURL string, token string) (client.Client, error) {
+func createClassicDTClient(envURL string, token string) (client.Client, error) {
 	return client.NewDynatraceClient(client.NewTokenAuthClient(token), envURL)
 }
 
-// CreatePlatformDTClient creates a new Dynatrace client to be used
+// createPlatformDTClient creates a new Dynatrace client to be used
 // for a Platform enabled dynatrace tenant
-func CreatePlatformDTClient(envURL string, token string, oauthCredentials client.OauthCredentials) (client.Client, error) {
+func createPlatformDTClient(envURL string, token string, oauthCredentials client.OauthCredentials) (client.Client, error) {
 	oauthClient := client.NewOAuthClient(oauthCredentials)
 	tokenAuthClient := client.NewTokenAuthClient(token)
 	return client.NewDynatraceClient(oauthClient, envURL, client.WithRedirectToClassicEnv(tokenAuthClient))
