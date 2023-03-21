@@ -113,7 +113,7 @@ func (d DefaultCommand) DownloadEntities(fs afero.Fs, cmdOptions entitiesDirectD
 		specificEntitiesTypes: cmdOptions.specificEntitiesTypes,
 	}
 
-	dtClient, err := client.NewDynatraceClient(client.NewTokenAuthClient(token), cmdOptions.environmentUrl)
+	dtClient, err := client.NewClassicClient(cmdOptions.environmentUrl, token)
 	if err != nil {
 		return err
 	}

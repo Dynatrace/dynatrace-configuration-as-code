@@ -17,6 +17,7 @@ package delete
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
@@ -24,7 +25,6 @@ import (
 	"path/filepath"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"github.com/spf13/afero"
 )
@@ -82,7 +82,7 @@ func deleteConfigs(environments []manifest.EnvironmentDefinition, apis api.APIs,
 }
 
 func deleteConfigForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs, entriesToDelete map[string][]delete.DeletePointer) []error {
-	dynatraceClient, err := createClient(env, false)
+	dynatraceClient, err := cmdutils.CreateDTClient(env, false)
 
 	if err != nil {
 		return []error{
@@ -93,12 +93,4 @@ func deleteConfigForEnvironment(env manifest.EnvironmentDefinition, apis api.API
 	log.Info("Deleting configs for environment `%s`", env.Name)
 
 	return delete.DeleteConfigs(dynatraceClient, apis, entriesToDelete)
-}
-
-func createClient(environment manifest.EnvironmentDefinition, dryRun bool) (client.Client, error) {
-	if dryRun {
-		return &client.DummyClient{}, nil
-	}
-
-	return client.NewDynatraceClient(client.NewTokenAuthClient(environment.Auth.Token.Value), environment.URL.Value)
 }

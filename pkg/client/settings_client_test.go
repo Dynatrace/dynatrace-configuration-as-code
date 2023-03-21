@@ -154,7 +154,7 @@ func TestUpsertSettings(t *testing.T) {
 				}
 			}))
 
-			c, err := NewDynatraceClient(
+			c, err := newDynatraceClient(
 				server.Client(), server.URL,
 				WithServerVersion(test.serverVersion),
 				WithRetrySettings(testRetrySettings))

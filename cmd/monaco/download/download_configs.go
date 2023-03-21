@@ -129,7 +129,7 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOp
 		onlySettings:    cmdOptions.onlySettings,
 	}
 
-	dtClient, err := client.NewDynatraceClient(client.NewTokenAuthClient(token), cmdOptions.environmentUrl)
+	dtClient, err := client.NewClassicClient(cmdOptions.environmentUrl, token)
 	if err != nil {
 		return err
 	}

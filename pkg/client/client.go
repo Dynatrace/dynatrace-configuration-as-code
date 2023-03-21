@@ -247,7 +247,7 @@ func WithServerVersion(serverVersion version.Version) func(client *DynatraceClie
 }
 
 // WithAutoServerVersion can be used to let the client automatically determine the Dynatrace server version
-// during creation using NewDynatraceClient. If the server version is already known WithServerVersion should be used
+// during creation using newDynatraceClient. If the server version is already known WithServerVersion should be used
 func WithAutoServerVersion() func(client *DynatraceClient) {
 	return func(d *DynatraceClient) {
 		var serverVersion version.Version
@@ -257,38 +257,14 @@ func WithAutoServerVersion() func(client *DynatraceClient) {
 			// so this call would need to be "redirected" to the second gen URL, which do not currently resolve
 			d.serverVersion = version.UnknownVersion
 		} else {
-			serverVersion, err = GetDynatraceVersion(d.client, d.environmentUrl)
+			serverVersion, err = GetDynatraceVersion(d.clientClassic, d.environmentURLClassic)
 		}
 		if err != nil {
-			log.Error("Unable to determine Dynatrace server version: %v", err)
+			log.Warn("Unable to determine Dynatrace server version: %v", err)
 			d.serverVersion = version.UnknownVersion
 		} else {
 			d.serverVersion = serverVersion
 		}
-	}
-}
-
-// TODO: remove
-func WithOverrideSettingsAPIPath(settingsSchemaPath, settingsObjectPath string) func(client *DynatraceClient) {
-	return func(d *DynatraceClient) {
-		d.settingsSchemaAPIPath = settingsSchemaPath
-		d.settingsObjectAPIPath = settingsObjectPath
-	}
-}
-
-// WithRedirectToClassicEnv tries to determine the URL of the classic environment using the
-// platform Dynatrace API and uses that URL for all API calls that need to be targeted at
-// the classic APIs
-// TODO: remove
-func WithRedirectToClassicEnv(client *http.Client) func(client *DynatraceClient) {
-	return func(d *DynatraceClient) {
-		classicURL, err := GetDynatraceClassicURL(d.client, d.environmentUrl)
-		if err != nil {
-			log.Error("Unable to determine Dynatrace classic environment URL: %v", err)
-			return
-		}
-		d.environmentURLClassic = classicURL
-		d.clientClassic = client
 	}
 }
 
@@ -346,10 +322,15 @@ func NewOAuthClient(oauthConfig OauthCredentials) *http.Client {
 	return config.Client(context.TODO())
 }
 
-func NewPlatformClient(url string, token string, oauthCredentials OauthCredentials, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
+func NewPlatformClient(dtURL string, token string, oauthCredentials OauthCredentials, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
+	dtURL = strings.TrimSuffix(dtURL, "/")
+	if err := validateURL(dtURL); err != nil {
+		return nil, err
+	}
+
 	tokenClient := NewTokenAuthClient(token)
 	oauthClient := NewOAuthClient(oauthCredentials)
-	classicURL, err := GetDynatraceClassicURL(oauthClient, url)
+	classicURL, err := GetDynatraceClassicURL(oauthClient, dtURL)
 
 	if err != nil {
 		log.Error("Unable to determine Dynatrace classic environment URL: %v", err)
@@ -358,12 +339,12 @@ func NewPlatformClient(url string, token string, oauthCredentials OauthCredentia
 
 	d := &DynatraceClient{
 		serverVersion:         version.Version{},
-		environmentUrl:        url,
+		environmentUrl:        dtURL,
 		environmentURLClassic: classicURL,
 		client:                oauthClient,
 		clientClassic:         tokenClient,
-		settingsSchemaAPIPath: PathSettingsSchemasPlatform,
-		settingsObjectAPIPath: PathSettingsObjectsPlatform,
+		settingsSchemaAPIPath: "/platform/classic/environment-api/v2/settings/schemas",
+		settingsObjectAPIPath: "/platform/classic/environment-api/v2/settings/objects",
 	}
 
 	for _, o := range opts {
@@ -374,16 +355,50 @@ func NewPlatformClient(url string, token string, oauthCredentials OauthCredentia
 	return d, nil
 }
 
-func NewClassicClient(url string, token string, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
-	// TODO implement
-	return nil, nil
+func NewClassicClient(dtURL string, token string, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
+	dtURL = strings.TrimSuffix(dtURL, "/")
+	if err := validateURL(dtURL); err != nil {
+		return nil, err
+	}
+
+	tokenClient := NewTokenAuthClient(token)
+
+	d := &DynatraceClient{
+		serverVersion:         version.Version{},
+		environmentUrl:        dtURL,
+		environmentURLClassic: dtURL,
+		client:                tokenClient,
+		clientClassic:         tokenClient,
+		settingsSchemaAPIPath: "/api/v2/settings/schemas",
+		settingsObjectAPIPath: "/api/v2/settings/objects",
+	}
+
+	for _, o := range opts {
+		if o != nil {
+			o(d)
+		}
+	}
+	return d, nil
 }
 
-// NewDynatraceClient creates a new DynatraceClient.
-// It takes a http.Client to do its HTTP communication, a URL to the targeting Dynatrace
-// environment and an optional list of options to further configure the behavior of the client
-// It is also allowed to pass nil as httpClient
-func NewDynatraceClient(httpClient *http.Client, environmentURL string, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
+func validateURL(dtURL string) error {
+	parsedUrl, err := url.ParseRequestURI(dtURL)
+	if err != nil {
+		return fmt.Errorf("environment url %q was not valid: %w", dtURL, err)
+	}
+
+	if parsedUrl.Host == "" {
+		return fmt.Errorf("no host specified in the url %q", dtURL)
+	}
+
+	if parsedUrl.Scheme != "https" {
+		log.Warn("You are using an insecure connection (%s). Consider switching to HTTPS.", parsedUrl.Scheme)
+	}
+	return nil
+}
+
+// TODO: delete :)
+func newDynatraceClient(httpClient *http.Client, environmentURL string, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
 	environmentURL = strings.TrimSuffix(environmentURL, "/")
 	parsedUrl, err := url.ParseRequestURI(environmentURL)
 	if err != nil {
@@ -407,8 +422,8 @@ func NewDynatraceClient(httpClient *http.Client, environmentURL string, opts ...
 		environmentURLClassic: environmentURL,
 		client:                httpClient,
 		clientClassic:         httpClient,
-		settingsObjectAPIPath: PathSettingsObjectsClassic,
-		settingsSchemaAPIPath: PathSettingsSchemasClassic,
+		settingsObjectAPIPath: "/api/v2/settings/objects",
+		settingsSchemaAPIPath: "/api/v2/settings/schemas",
 		retrySettings:         rest.DefaultRetrySettings,
 		serverVersion:         version.Version{},
 	}

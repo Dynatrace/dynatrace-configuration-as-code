@@ -58,10 +58,6 @@ type downloadCommandOptionsShared struct {
 
 type DynatraceClientProvider func(*http.Client, string, ...func(*client.DynatraceClient)) (client.Client, error)
 
-func defaultDynatraceClientProvider(httpClient *http.Client, environmentURL string, opts ...func(*client.DynatraceClient)) (client.Client, error) {
-	return client.NewDynatraceClient(httpClient, environmentURL, opts...)
-}
-
 type downloadOptionsShared struct {
 	environmentUrl          string
 	token                   string

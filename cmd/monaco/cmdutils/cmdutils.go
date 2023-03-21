@@ -37,40 +37,23 @@ func SilenceUsageCommand() func(cmd *cobra.Command, args []string) {
 
 // CreateDTClient creates a new client based to be used or an environment
 // If dryRun is true, it will return a dummy client that doesn't do anything
-// TODO: use appropriate dynatrace client constructors
 func CreateDTClient(env manifest.EnvironmentDefinition, dryRun bool) (client.Client, error) {
 	if dryRun {
 		return client.NewDummyClient(), nil
 	}
 	if env.Type == manifest.Classic {
-		return createClassicDTClient(env.URL.Value, env.Auth.Token.Value)
+		return client.NewClassicClient(env.URL.Value, env.Auth.Token.Value)
 	}
 
 	if env.Type == manifest.Platform {
-
 		oauthCredentials := client.OauthCredentials{
 			ClientID:     env.Auth.OAuth.ClientID.Value,
 			ClientSecret: env.Auth.OAuth.ClientSecret.Value,
 			TokenURL:     env.Auth.OAuth.TokenEndpoint.Value,
 		}
-
-		return createPlatformDTClient(env.URL.Value, env.Auth.Token.Value, oauthCredentials)
+		return client.NewPlatformClient(env.URL.Value, env.Auth.Token.Value, oauthCredentials)
 	}
 	return nil, fmt.Errorf("unable to create authorizing HTTP Client for environment %s - no oauth credentials given", env.URL.Value)
-}
-
-// createClassicDTClient creates a new Dynatrace client to be used
-// for a classic dynatrace tenant
-func createClassicDTClient(envURL string, token string) (client.Client, error) {
-	return client.NewDynatraceClient(client.NewTokenAuthClient(token), envURL)
-}
-
-// createPlatformDTClient creates a new Dynatrace client to be used
-// for a Platform enabled dynatrace tenant
-func createPlatformDTClient(envURL string, token string, oauthCredentials client.OauthCredentials) (client.Client, error) {
-	oauthClient := client.NewOAuthClient(oauthCredentials)
-	tokenAuthClient := client.NewTokenAuthClient(token)
-	return client.NewDynatraceClient(oauthClient, envURL, client.WithRedirectToClassicEnv(tokenAuthClient), client.WithOverrideSettingsAPIPath(client.PathSettingsSchemasPlatform, client.PathSettingsObjectsPlatform))
 }
 
 // VerifyEnvironmentGeneration takes a manifestEnvironments map and tries to verify that each environment can be reached
