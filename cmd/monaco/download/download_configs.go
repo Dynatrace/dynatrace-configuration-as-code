@@ -145,13 +145,20 @@ func doDownloadConfigs(fs afero.Fs, apis api.APIs, opts downloadConfigsOptions) 
 		return err
 	}
 
+	c, err := opts.getDynatraceClient()
+	if err != nil {
+		return fmt.Errorf("failed to create Dynatrace client: %w", err)
+	}
+
+	c = client.LimitClientParallelRequests(c, opts.concurrentDownloadLimit)
+
 	if ok, unknownApis := validateSpecificAPIs(apis, opts.specificAPIs); !ok {
 		errutils.PrintError(fmt.Errorf("APIs '%v' are not known. Please consult our documentation for known API-names", strings.Join(unknownApis, ",")))
 		return fmt.Errorf("failed to load apis")
 	}
 
 	log.Info("Downloading from environment '%v' into project '%v'", opts.environmentUrl, opts.projectName)
-	downloadedConfigs, err := downloadConfigs(apis, opts)
+	downloadedConfigs, err := downloadConfigs(c, apis, opts)
 	if err != nil {
 		return err
 	}
@@ -171,14 +178,7 @@ func validateSpecificAPIs(a api.APIs, apiNames []string) (valid bool, unknownAPI
 	return len(unknownAPIs) == 0, unknownAPIs
 }
 
-func downloadConfigs(apis api.APIs, opts downloadConfigsOptions) (project.ConfigsPerType, error) {
-	c, err := opts.getDynatraceClient()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Dynatrace client: %w", err)
-	}
-
-	c = client.LimitClientParallelRequests(c, opts.concurrentDownloadLimit)
-
+func downloadConfigs(c client.Client, apis api.APIs, opts downloadConfigsOptions) (project.ConfigsPerType, error) {
 	configObjects := make(project.ConfigsPerType)
 
 	if shouldDownloadClassicConfigs(opts) {
