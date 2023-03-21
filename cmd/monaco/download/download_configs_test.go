@@ -490,7 +490,7 @@ func TestDownloadConfigsExitsEarlyForUnknownAPI(t *testing.T) {
 
 	givenDefaultAPIs := api.NewAPIs()
 	err := doDownloadConfigs(afero.NewMemMapFs(), givenDefaultAPIs, givenOpts)
-	assert.ErrorContains(t, err, "failed to load apis", "expected download to fail for unkown API")
+	assert.ErrorContains(t, err, "not known", "expected download to fail for unkown API")
 }
 
 func TestDownloadConfigsExitsEarlyForUnknownSettingsSchema(t *testing.T) {
