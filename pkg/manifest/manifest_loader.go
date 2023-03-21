@@ -426,9 +426,11 @@ func parseURLDefinition(u url) (URLDefinition, error) {
 	}
 
 	if u.Type == "" || u.Type == urlTypeValue {
+		val := strings.TrimSuffix(u.Value, "/")
+
 		return URLDefinition{
 			Type:  ValueURLType,
-			Value: u.Value,
+			Value: val,
 		}, nil
 	}
 
@@ -441,6 +443,8 @@ func parseURLDefinition(u url) (URLDefinition, error) {
 		if val == "" {
 			return URLDefinition{}, fmt.Errorf("environment variable %q is defined but has no value", u.Value)
 		}
+
+		val = strings.TrimSuffix(val, "/")
 
 		return URLDefinition{
 			Type:  EnvironmentURLType,
