@@ -19,13 +19,13 @@ import (
 	"os"
 	"strings"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/slices"
 	"github.com/spf13/afero"
 )
 
@@ -140,13 +140,13 @@ func filterRequiredEnvironments(environmentsMap map[string]manifest.EnvironmentD
 	return filteredEnvironments, nil
 }
 
-func filterRequiredProjects(projects manifest.ProjectDefinitionByProjectId, specificProjects []string) (manifest.ProjectDefinitionByProjectId, error) {
+func filterRequiredProjects(projects manifest.ProjectDefinitionByProjectID, specificProjects []string) (manifest.ProjectDefinitionByProjectID, error) {
 
 	if len(specificProjects) == 0 {
 		return projects, nil
 	}
 
-	filteredProjects := manifest.ProjectDefinitionByProjectId{}
+	filteredProjects := manifest.ProjectDefinitionByProjectID{}
 	nbProjectFound := 0
 
 	for id, projectDefinition := range projects {

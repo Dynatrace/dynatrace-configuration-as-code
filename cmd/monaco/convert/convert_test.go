@@ -36,7 +36,7 @@ func TestConvert_WorksOnFullConfiguration(t *testing.T) {
 	_ = afero.WriteFile(testFs, "environments.yaml", []byte("env:\n  - name: \"My_Environment\"\n  - env-url: \"{{ .Env.ENV_URL }}\"\n  - env-token-name: \"ENV_TOKEN\""), 0644)
 	_ = afero.WriteFile(testFs, "delete.yaml", []byte("delete:\n-\"some/config\""), 0644)
 
-	err := Convert(testFs, ".", "environments.yaml", "converted", "manifest.yaml")
+	err := convert(testFs, ".", "environments.yaml", "converted", "manifest.yaml")
 	assert.NilError(t, err)
 
 	outputFolderExists, _ := afero.Exists(testFs, "converted/")
@@ -55,7 +55,7 @@ func TestConvert_WorksIfNoDeleteYamlExists(t *testing.T) {
 	_ = afero.WriteFile(testFs, "project/alerting-profile/profile.json", []byte("{}"), 0644)
 	_ = afero.WriteFile(testFs, "environments.yaml", []byte("env:\n  - name: \"My_Environment\"\n  - env-url: \"{{ .Env.ENV_URL }}\"\n  - env-token-name: \"ENV_TOKEN\""), 0644)
 
-	err := Convert(testFs, ".", "environments.yaml", "converted", "manifest.yaml")
+	err := convert(testFs, ".", "environments.yaml", "converted", "manifest.yaml")
 	assert.NilError(t, err)
 
 	outputFolderExists, _ := afero.Exists(testFs, "converted/")
@@ -71,7 +71,7 @@ func TestConvert_FailsIfThereIsJustEmptyProjects(t *testing.T) {
 	_ = testFs.MkdirAll("project/", 0755)
 	_ = afero.WriteFile(testFs, "environments.yaml", []byte("env:\n  - name: \"My_Environment\"\n  - env-url: \"{{ .Env.ENV_URL }}\"\n  - env-token-name: \"ENV_TOKEN\""), 0644)
 
-	err := Convert(testFs, ".", "environments.yaml", "converted", "manifest.yaml")
+	err := convert(testFs, ".", "environments.yaml", "converted", "manifest.yaml")
 	assert.ErrorContains(t, err, "no projects to convert")
 }
 
@@ -101,8 +101,10 @@ environmentGroups:
     url:
       type: environment
       value: ENV_URL
-    token:
-      name: ENV_TOKEN
+    auth:
+      token:
+        type: environment
+        name: ENV_TOKEN
 `, version.ManifestVersion)
 
 	manifestExists, _ := afero.Exists(testFs, "converted/manifest.yaml")

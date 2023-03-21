@@ -21,7 +21,7 @@ package v2
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -66,7 +66,7 @@ func TestInvalidManifest_ReportsError(t *testing.T) {
 			manifest := filepath.Join("test-resources/invalid-manifests/", tt.manifestFileName)
 
 			logOutput := strings.Builder{}
-			cmd := runner.BuildCliWithCapturedLog(util.CreateTestFileSystem(), &logOutput)
+			cmd := runner.BuildCliWithCapturedLog(testutils.CreateTestFileSystem(), &logOutput)
 			cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
 			err := cmd.Execute()
 
@@ -84,7 +84,7 @@ func TestNonExistentProjectInManifestReturnsError(t *testing.T) {
 	manifest := filepath.Join("test-resources/invalid-manifests/", "manifest_non_existent_project.yaml")
 
 	logOutput := strings.Builder{}
-	cmd := runner.BuildCliWithCapturedLog(util.CreateTestFileSystem(), &logOutput)
+	cmd := runner.BuildCliWithCapturedLog(testutils.CreateTestFileSystem(), &logOutput)
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
 	err := cmd.Execute()
 

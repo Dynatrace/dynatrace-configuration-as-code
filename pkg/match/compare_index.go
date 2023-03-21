@@ -17,7 +17,7 @@ package match
 import (
 	"strings"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 )
 
 func compareIndexes(resultListPtr *IndexCompareResultList, indexSource []IndexEntry, indexTarget []IndexEntry, indexRule IndexRule) {

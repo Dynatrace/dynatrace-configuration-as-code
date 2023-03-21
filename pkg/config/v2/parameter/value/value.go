@@ -15,8 +15,8 @@
 package value
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 )
 
 // ValueParameterType specifies the type of the parameter used in config files
@@ -50,7 +50,7 @@ func (p *ValueParameter) GetReferences() []parameter.ParameterReference {
 }
 
 func (p *ValueParameter) ResolveValue(_ parameter.ResolveContext) (interface{}, error) {
-	return util.EscapeSpecialCharactersInValue(p.Value, util.FullStringEscapeFunction)
+	return template.EscapeSpecialCharactersInValue(p.Value, template.FullStringEscapeFunction)
 }
 
 // parseValueParameter parses a given context into an instance of ValueParameter.

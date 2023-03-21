@@ -16,7 +16,7 @@ package template
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"path/filepath"
 
 	"github.com/spf13/afero"
@@ -92,13 +92,6 @@ func (d *DownloadTemplate) Content() string {
 
 func (d *DownloadTemplate) UpdateContent(newContent string) {
 	d.content = newContent
-}
-
-func (d DownloadTemplate) AsFileTemplate(path string) FileBasedTemplate {
-	return &fileBasedTemplate{
-		path:    path,
-		content: d.content,
-	}
 }
 
 // Force the compiler to check whether the structs implement the interfaces

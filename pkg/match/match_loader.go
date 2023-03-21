@@ -18,10 +18,10 @@ import (
 	"fmt"
 	"strings"
 
-	cmdUtil "github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/cmdutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 )
@@ -79,7 +79,7 @@ type MatchEntryParserError struct {
 }
 
 func LoadMatchingParameters(fs afero.Fs, matchFileName string) (matchParameters MatchParameters, err error) {
-	matchWorkingDir, matchFilePath, err := cmdUtil.GetFilePaths(matchFileName)
+	matchWorkingDir, matchFilePath, err := cmdutils.GetFilePaths(matchFileName)
 	if err != nil {
 		return
 	}
@@ -109,7 +109,7 @@ func LoadMatchingParameters(fs afero.Fs, matchFileName string) (matchParameters 
 		errors = append(errors, fmt.Errorf("matches type should be: %s, but was: %s", strings.Join(getMapKeys(validMatchTypes), " or "), matchFileDef.Type))
 	}
 
-	_, matchParameters.OutputDir, err = cmdUtil.GetFilePaths(matchFileDef.OutputPath)
+	_, matchParameters.OutputDir, err = cmdutils.GetFilePaths(matchFileDef.OutputPath)
 	if err != nil {
 		errors = append(errors, err)
 	} else {
@@ -142,7 +142,7 @@ func LoadMatchingParameters(fs afero.Fs, matchFileName string) (matchParameters 
 	}
 
 	if len(errors) > 0 {
-		err = util.PrintAndFormatErrors(errors, "Could not load Config Parameters, see errors for details")
+		err = errutils.PrintAndFormatErrors(errors, "Could not load Config Parameters, see errors for details")
 	}
 
 	return
@@ -153,12 +153,12 @@ func getParameterEnv(context *matchLoaderContext, matchInfoDef EnvInfoDefinition
 	var err error
 	var errors []error
 
-	matchParametersEnv.Manifest, err = cmdUtil.GetManifest(context.fs, matchInfoDef.ManifestPath)
+	matchParametersEnv.Manifest, err = cmdutils.GetManifest(context.fs, matchInfoDef.ManifestPath)
 	if err != nil {
 		errors = append(errors, err)
 	}
 
-	matchParametersEnv.WorkingDir, _, err = cmdUtil.GetFilePaths(matchInfoDef.ManifestPath)
+	matchParametersEnv.WorkingDir, _, err = cmdutils.GetFilePaths(matchInfoDef.ManifestPath)
 	if err != nil {
 		errors = append(errors, err)
 	}

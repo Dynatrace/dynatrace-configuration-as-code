@@ -16,10 +16,11 @@ package environment
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/strings"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/template"
 	"os"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 )
 
 // EnvironmentVariableParameterType specifies the type of the parameter used in config files
@@ -82,7 +83,7 @@ func (p *EnvironmentVariableParameter) ResolveValue(context parameter.ResolveCon
 		return nil, parameter.NewParameterResolveValueError(context, fmt.Sprintf("environment variable `%s` not set", p.Name))
 	}
 
-	return util.EscapeSpecialCharactersInValue(val, util.FullStringEscapeFunction)
+	return template.EscapeSpecialCharactersInValue(val, template.FullStringEscapeFunction)
 }
 
 // parseEnvironmentValueParameter parses an EnvironmentVariableParameter from a given context.
@@ -92,10 +93,10 @@ func parseEnvironmentValueParameter(context parameter.ParameterParserContext) (p
 		defaultValue := ""
 
 		if val, ok := context.Value["default"]; ok {
-			defaultValue = util.ToString(val)
-			return NewWithDefault(util.ToString(name), defaultValue), nil
+			defaultValue = strings.ToString(val)
+			return NewWithDefault(strings.ToString(name), defaultValue), nil
 		}
-		return New(util.ToString(name)), nil
+		return New(strings.ToString(name)), nil
 
 	}
 	return nil, parameter.NewParameterParserError(context, "missing property `name`")

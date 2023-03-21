@@ -17,9 +17,11 @@ package deploy
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/cmdutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/deploy"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/maps"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/slices"
 	"path/filepath"
 	"strings"
 
@@ -30,111 +32,144 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2/topologysort"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
 
-func Deploy(fs afero.Fs, deploymentManifestPath string, specificEnvironments []string, environmentGroup string,
-	specificProject []string, dryRun, continueOnError bool) error {
-
-	deploymentManifestPath = filepath.Clean(deploymentManifestPath)
-	absManifestPath, err := filepath.Abs(deploymentManifestPath)
-
+func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string, specificEnvironments []string, specificProjects []string, continueOnErr bool, dryRun bool) error {
+	absManifestPath, err := absPath(manifestPath)
 	if err != nil {
-		return fmt.Errorf("error while finding absolute path for `%s`: %w", deploymentManifestPath, err)
+		return fmt.Errorf("error while finding absolute path for `%s`: %w", manifestPath, err)
 	}
-
-	manifest, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
-		Fs:           fs,
-		ManifestPath: absManifestPath,
-	})
-
-	if errs != nil {
-		// TODO add grouping and print proper error repot
-		util.PrintErrors(errs)
-		return errors.New("error while loading manifest")
-	}
-
-	environments := manifest.Environments
-	if environmentGroup != "" {
-		environments = environments.FilterByGroup(environmentGroup)
-
-		if len(environments) == 0 {
-			return fmt.Errorf("no environments in group %q", environmentGroup)
-		} else {
-			log.Info("Environments loaded in group %q: %v", environmentGroup, maps.Keys(environments))
-		}
-
-	}
-
-	if len(specificEnvironments) > 0 {
-		environments, err = environments.FilterByNames(specificEnvironments)
-		if err != nil {
-			return fmt.Errorf("failed to filter environments: %w", err)
-		}
-	}
-
-	environmentNames := maps.Keys(environments)
-	workingDir := filepath.Dir(absManifestPath)
-
-	apis := api.NewApis()
-
-	log.Debug("Loading configuration projects ...")
-	projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
-		KnownApis:       api.GetApiNameLookup(apis),
-		WorkingDir:      workingDir,
-		Manifest:        manifest,
-		ParametersSerde: config.DefaultParameterParsers,
-	})
-
-	if errs != nil {
-		printErrorReport(errs)
-
-		return errors.New("error while loading projects - you may be loading v1 projects, please 'convert' to v2")
-	}
-
-	projects, err = loadProjectsToDeploy(specificProject, projects, environmentNames)
+	loadedManifest, err := loadManifest(fs, absManifestPath, environmentGroups, specificEnvironments)
 	if err != nil {
 		return err
 	}
 
-	sortedConfigs, errs := topologysort.GetSortedConfigsForEnvironments(projects, environmentNames)
-
-	if errs != nil {
-		// TODO add grouping and print proper error repot
-		util.PrintErrors(errs)
-		return errors.New("error during sort")
+	ok := verifyEnvironmentGen(loadedManifest.Environments, dryRun)
+	if !ok {
+		return fmt.Errorf("unable to verify Dynatrace environment generation")
 	}
 
-	log.Info("Projects to be deployed:")
-	for _, p := range projects {
-		log.Info("  - %s", p)
-	}
-
-	log.Info("Environments to deploy to:")
-	for _, name := range environmentNames {
-		log.Info("  - %s", name)
-	}
-
-	err = execDeployment(sortedConfigs, environments, continueOnError, dryRun, apis)
-
+	loadedProjects, err := loadProjects(fs, absManifestPath, loadedManifest)
 	if err != nil {
+		return err
+	}
+
+	filteredProjects, err := filterProjects(loadedProjects, specificProjects, loadedManifest.Environments.Names())
+	if err != nil {
+		return fmt.Errorf("error while loading relevant projects to deploy: %w", err)
+	}
+
+	sortedConfigs, err := sortConfigs(filteredProjects, loadedManifest.Environments.Names())
+	if err != nil {
+		return fmt.Errorf("error during configuration sort: %w", err)
+	}
+
+	logProjectsInfo(filteredProjects)
+	logEnvironmentsInfo(loadedManifest.Environments)
+
+	if err = doDeploy(sortedConfigs, loadedManifest.Environments, continueOnErr, dryRun); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func loadProjectsToDeploy(specificProject []string, projects []project.Project, environmentNames []string) ([]project.Project, error) {
-	if len(specificProject) > 0 {
-		filtered, err := filterProjectsByName(projects, specificProject)
+func doDeploy(configs project.ConfigsPerEnvironment, environments manifest.Environments, continueOnErr bool, dryRun bool) error {
+	var deployErrs []error
+	for envName, configs := range configs {
+		logDeploymentInfo(dryRun, envName)
+		env, found := environments[envName]
+
+		if !found {
+			if continueOnErr {
+				deployErrs = append(deployErrs, fmt.Errorf("cannot find environment `%s`", envName))
+				continue
+			} else {
+				return fmt.Errorf("cannot find environment `%s`", envName)
+			}
+		}
+
+		dtClient, err := createDynatraceClient(env, dryRun)
+		if err != nil {
+			if continueOnErr {
+				deployErrs = append(deployErrs, err)
+				continue
+			} else {
+				return err
+			}
+		}
+
+		errs := deploy.DeployConfigs(dtClient, api.NewAPIs(), configs, deploy.DeployConfigsOptions{
+			ContinueOnErr: continueOnErr,
+			DryRun:        dryRun,
+		})
+		deployErrs = append(deployErrs, errs...)
+	}
+
+	if deployErrs != nil {
+		printErrorReport(deployErrs)
+		return fmt.Errorf("errors during %s", getOperationNounForLogging(dryRun))
+	}
+	log.Info("%s finished without errors", getOperationNounForLogging(dryRun))
+	return nil
+}
+
+func absPath(manifestPath string) (string, error) {
+	manifestPath = filepath.Clean(manifestPath)
+	return filepath.Abs(manifestPath)
+}
+
+func loadManifest(fs afero.Fs, manifestPath string, groups []string, environments []string) (*manifest.Manifest, error) {
+	m, errs := manifest.LoadManifest(&manifest.LoaderContext{
+		Fs:           fs,
+		ManifestPath: manifestPath,
+		Groups:       groups,
+		Environments: environments,
+	})
+
+	if len(errs) > 0 {
+		errutils.PrintErrors(errs)
+		return nil, errors.New("error while loading manifest")
+	}
+
+	return &m, nil
+}
+
+func verifyEnvironmentGen(environments manifest.Environments, dryRun bool) bool {
+	if !dryRun {
+		return cmdutils.VerifyEnvironmentGeneration(environments)
+
+	}
+	return true
+}
+
+func loadProjects(fs afero.Fs, manifestPath string, man *manifest.Manifest) ([]project.Project, error) {
+	projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
+		KnownApis:       api.NewAPIs().GetApiNameLookup(),
+		WorkingDir:      filepath.Dir(manifestPath),
+		Manifest:        *man,
+		ParametersSerde: config.DefaultParameterParsers,
+	})
+
+	if errs != nil {
+		printErrorReport(errs)
+		return nil, errors.New("error while loading projects - you may be loading v1 projects, please 'convert' to v2")
+	}
+
+	return projects, nil
+}
+
+func filterProjects(projects []project.Project, specificProjects []string, specificEnvironments []string) ([]project.Project, error) {
+
+	if len(specificProjects) > 0 {
+		filtered, err := filterProjectsByName(projects, specificProjects)
 
 		if err != nil {
 			return nil, err
 		}
 
-		projectsWithDependencies, err := loadProjectsWithDependencies(projects, filtered, environmentNames)
+		projectsWithDependencies, err := loadProjectsWithDependencies(projects, filtered, specificEnvironments)
 
 		if err != nil {
 			return nil, err
@@ -146,49 +181,28 @@ func loadProjectsToDeploy(specificProject []string, projects []project.Project, 
 	return projects, nil
 }
 
-func execDeployment(sortedConfigs map[string][]config.Config, environmentMap map[string]manifest.EnvironmentDefinition, continueOnError bool, dryRun bool, apis map[string]api.Api) error {
-	var deploymentErrors []error
-
-	for envName, configs := range sortedConfigs {
-		logDeploymentInfo(dryRun, envName)
-		env, found := environmentMap[envName]
-
-		if !found {
-			if continueOnError {
-				deploymentErrors = append(deploymentErrors, fmt.Errorf("cannot find environment `%s`", envName))
-				continue
-			} else {
-				return fmt.Errorf("cannot find environment `%s`", envName)
-			}
-		}
-
-		client, err := getClient(env, dryRun)
-
-		if err != nil {
-			if continueOnError {
-				deploymentErrors = append(deploymentErrors, err)
-				continue
-			} else {
-				return err
-			}
-		}
-
-		errors := deploy.DeployConfigs(client, apis, configs, deploy.DeployConfigsOptions{ContinueOnErr: continueOnError, DryRun: dryRun})
-
-		deploymentErrors = append(deploymentErrors, errors...)
+func sortConfigs(projects []project.Project, environmentNames []string) (project.ConfigsPerEnvironment, error) {
+	sortedConfigs, errs := topologysort.GetSortedConfigsForEnvironments(projects, environmentNames)
+	if errs != nil {
+		errutils.PrintErrors(errs)
+		return nil, errors.New("error during sort")
 	}
-
-	if deploymentErrors != nil {
-		printErrorReport(deploymentErrors)
-
-		return fmt.Errorf("errors during %s", getOperationNounForLogging(dryRun))
-	} else {
-		log.Info("%s finished without errors", getOperationNounForLogging(dryRun))
-	}
-
-	return nil
+	return sortedConfigs, nil
 }
 
+func logProjectsInfo(projects []project.Project) {
+	log.Info("Projects to be deployed:")
+	for _, p := range projects {
+		log.Info("  - %s", p)
+	}
+}
+
+func logEnvironmentsInfo(environments manifest.Environments) {
+	log.Info("Environments to deploy to:")
+	for _, name := range environments.Names() {
+		log.Info("  - %s", name)
+	}
+}
 func logDeploymentInfo(dryRun bool, envName string) {
 	if dryRun {
 		log.Info("Validating configurations for environment `%s`...", envName)
@@ -220,7 +234,7 @@ func printErrorReport(deploymentErrors []error) {
 	if len(generalErrors) > 0 {
 		log.Error("=== General Errors ===")
 		for _, err := range generalErrors {
-			log.Error(util.ErrorString(err))
+			log.Error(errutils.ErrorString(err))
 		}
 	}
 
@@ -244,13 +258,13 @@ func printErrorReport(deploymentErrors []error) {
 				groupErrors := groupEnvironmentConfigErrors(detailedConfigErrors)
 
 				for _, err := range generalConfigErrors {
-					log.Error("%s:%s:%s %s", project, api, config, util.ErrorString(err))
+					log.Error("%s:%s:%s %s", project, api, config, errutils.ErrorString(err))
 				}
 
 				for group, environmentErrors := range groupErrors {
 					for env, errs := range environmentErrors {
 						for _, err := range errs {
-							log.Error("%s(%s) %s:%s:%s %T %s", env, group, project, api, config, err, util.ErrorString(err))
+							log.Error("%s(%s) %s:%s:%s %T %s", env, group, project, api, config, err, errutils.ErrorString(err))
 						}
 					}
 				}
@@ -392,23 +406,10 @@ func containsName(names []string, name string) bool {
 	return slices.Contains(names, name)
 }
 
-func getClient(environment manifest.EnvironmentDefinition, dryRun bool) (client.Client, error) {
+func createDynatraceClient(environment manifest.EnvironmentDefinition, dryRun bool) (client.Client, error) {
 	if dryRun {
-		return &client.DummyClient{
-			Entries: map[api.Api][]client.DataEntry{},
-		}, nil
-	} else {
-		token, err := environment.GetToken()
-
-		if err != nil {
-			return nil, err
-		}
-
-		url, err := environment.GetUrl()
-		if err != nil {
-			return nil, err
-		}
-
-		return client.NewDynatraceClient(url, token)
+		return client.NewDummyClient(), nil
 	}
+
+	return client.NewDynatraceClient(client.NewTokenAuthClient(environment.Auth.Token.Value), environment.URL.Value, client.WithAutoServerVersion())
 }

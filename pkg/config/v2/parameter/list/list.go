@@ -16,9 +16,9 @@ package list
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/maps"
 	"strings"
 )
 
@@ -32,7 +32,7 @@ var ListParameterSerde = parameter.ParameterSerDe{
 
 // ListParameter represents a simple list of string values.
 type ListParameter struct {
-	Values []value.ValueParameter //TODO(CA-1517): allow for parameter.Parameter
+	Values []value.ValueParameter // TODO(CA-1517): allow for parameter.Parameter
 }
 
 func New(values []value.ValueParameter) *ListParameter {
@@ -47,7 +47,7 @@ func (p *ListParameter) GetType() string {
 }
 
 func (p *ListParameter) GetReferences() []parameter.ParameterReference {
-	//TODO(CA-1517): implement handling of references in list values
+	// TODO(CA-1517): implement handling of references in list values
 	// the value parameter cannot have references, as it is a simple value
 	return []parameter.ParameterReference{}
 }

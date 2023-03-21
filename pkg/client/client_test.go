@@ -20,7 +20,7 @@ package client
 
 import (
 	"fmt"
-
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"gotest.tools/assert"
@@ -29,47 +29,72 @@ import (
 	"testing"
 )
 
-var mockApi = api.NewApi("mock-api", "/mock-api", "", true, true, "", false)
-var mockApiNotSingle = api.NewApi("mock-api", "/mock-api", "", false, true, "", false)
+var mockApi = api.API{ID: "mock-api", SingleConfiguration: true}
+var mockApiNotSingle = api.API{ID: "mock-api", SingleConfiguration: false}
 
 func TestNewClientNoUrl(t *testing.T) {
-	_, err := NewDynatraceClient("", "abc")
-	assert.ErrorContains(t, err, "no environment url")
+	_, err := NewDynatraceClient(nil, "")
+	assert.ErrorContains(t, err, "empty url")
 }
 
 func TestNewClientInvalidURL(t *testing.T) {
-	_, err := NewDynatraceClient("INVALID_URL", "abc")
-	assert.ErrorContains(t, err, "environment url INVALID_URL was not valid")
+	_, err := NewDynatraceClient(nil, "INVALID_URL")
+	assert.ErrorContains(t, err, "not valid")
 }
 
 func TestUrlSuffixGetsTrimmed(t *testing.T) {
-	client, err := NewDynatraceClient("https://my-environment.live.dynatrace.com/", "abc")
+	client, err := NewDynatraceClient(nil, "https://my-environment.live.dynatrace.com/")
 	assert.NilError(t, err)
 	assert.Equal(t, client.environmentUrl, "https://my-environment.live.dynatrace.com")
 }
 
-func TestNewClientNoToken(t *testing.T) {
-	_, err := NewDynatraceClient("http://my-environment.live.dynatrace.com/", "")
-	assert.ErrorContains(t, err, "no token")
+func TestNewDynatraceClientWithHTTP(t *testing.T) {
+	client, err := NewDynatraceClient(nil, "http://my-environment.live.dynatrace.com")
+	assert.NilError(t, err)
+	assert.Equal(t, client.environmentUrl, "http://my-environment.live.dynatrace.com")
 }
 
-func TestNewClientNoValidUrlLocalPath(t *testing.T) {
-	_, err := NewDynatraceClient("/my-environment/live/dynatrace.com/", "abc")
+func TestNewDynatraceClientWithoutScheme(t *testing.T) {
+	_, err := NewDynatraceClient(nil, "my-environment.live.dynatrace.com")
 	assert.ErrorContains(t, err, "not valid")
 }
 
+func TestNewDynatraceClientWithIPv4(t *testing.T) {
+	client, err := NewDynatraceClient(nil, "https://127.0.0.1")
+	assert.NilError(t, err)
+	assert.Equal(t, client.environmentUrl, "https://127.0.0.1")
+}
+
+func TestNewDynatraceClientWithIPv6(t *testing.T) {
+	client, err := NewDynatraceClient(nil, "https://[0000:0000:0000:0000:0000:0000:0000:0001]")
+	assert.NilError(t, err)
+	assert.Equal(t, client.environmentUrl, "https://[0000:0000:0000:0000:0000:0000:0000:0001]")
+}
+
+func TestNewClientNoValidUrlLocalPath(t *testing.T) {
+	_, err := NewDynatraceClient(nil, "/my-environment/live/dynatrace.com/")
+	assert.ErrorContains(t, err, "no host specified")
+}
+
 func TestNewClientNoValidUrlTypo(t *testing.T) {
-	_, err := NewDynatraceClient("https//my-environment.live.dynatrace.com/", "abc")
+	_, err := NewDynatraceClient(nil, "https//my-environment.live.dynatrace.com/")
 	assert.ErrorContains(t, err, "not valid")
 }
 
 func TestNewClientNoValidUrlNoHttps(t *testing.T) {
-	_, err := NewDynatraceClient("http//my-environment.live.dynatrace.com/", "abc")
+	_, err := NewDynatraceClient(nil, "http//my-environment.live.dynatrace.com/")
 	assert.ErrorContains(t, err, "not valid")
 }
 
 func TestNewClient(t *testing.T) {
-	_, err := NewDynatraceClient("https://my-environment.live.dynatrace.com/", "abc")
+	httpClient := &http.Client{}
+	c, err := NewDynatraceClient(httpClient, "https://my-environment.live.dynatrace.com/",
+		WithServerVersion(version.Version{Major: 1, Minor: 2, Patch: 3}),
+		WithRetrySettings(rest.DefaultRetrySettings))
+	assert.Equal(t, version.Version{Major: 1, Minor: 2, Patch: 3}, c.serverVersion)
+	assert.Equal(t, rest.DefaultRetrySettings, c.retrySettings)
+	assert.Equal(t, httpClient, c.client)
+	assert.Equal(t, "https://my-environment.live.dynatrace.com", c.environmentUrl)
 	assert.NilError(t, err, "not valid")
 }
 
@@ -78,9 +103,9 @@ func TestReadByIdReturnsAnErrorUponEncounteringAnError(t *testing.T) {
 		http.Error(res, "", http.StatusForbidden)
 	}))
 	defer func() { testServer.Close() }()
-	client, _ := NewDynatraceClient(testServer.URL, "abc", WithHTTPClient(testServer.Client()))
+	client, _ := NewDynatraceClient(testServer.Client(), testServer.URL)
 
-	_, err := client.ReadById(mockApi, "test")
+	_, err := client.ReadConfigById(mockApi, "test")
 	assert.ErrorContains(t, err, "Response was")
 }
 
@@ -89,9 +114,9 @@ func TestReadByIdEscapesTheId(t *testing.T) {
 
 	testServer := httptest.NewTLSServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {}))
 	defer func() { testServer.Close() }()
-	client, _ := NewDynatraceClient(testServer.URL, "abc", WithHTTPClient(testServer.Client()))
+	client, _ := NewDynatraceClient(testServer.Client(), testServer.URL)
 
-	_, err := client.ReadById(mockApiNotSingle, unescapedId)
+	_, err := client.ReadConfigById(mockApiNotSingle, unescapedId)
 	assert.NilError(t, err)
 }
 
@@ -103,9 +128,9 @@ func TestReadByIdReturnsTheResponseGivenNoError(t *testing.T) {
 	}))
 	defer func() { testServer.Close() }()
 
-	client, _ := NewDynatraceClient(testServer.URL, "abc", WithHTTPClient(testServer.Client()))
+	client, _ := NewDynatraceClient(testServer.Client(), testServer.URL)
 
-	resp, err := client.ReadById(mockApi, "test")
+	resp, err := client.ReadConfigById(mockApi, "test")
 	assert.NilError(t, err, "there should not be an error")
 	assert.DeepEqual(t, body, resp)
 }
@@ -376,15 +401,15 @@ func TestListKnownSettings(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client, err := NewDynatraceClient(server.URL, "abc", WithHTTPClient(server.Client()), WithRetrySettings(testRetrySettings))
+			client, err := NewDynatraceClient(server.Client(), server.URL, WithRetrySettings(testRetrySettings))
 			assert.NilError(t, err)
 
-			res, err := client.ListSettings(tt.givenSchemaId, tt.givenListSettingsOpts)
+			res, err1 := client.ListSettings(tt.givenSchemaId, tt.givenListSettingsOpts)
 
 			if tt.wantError {
-				assert.Assert(t, err != nil)
+				assert.Assert(t, err1 != nil)
 			} else {
-				assert.NilError(t, err)
+				assert.NilError(t, err1)
 			}
 
 			assert.DeepEqual(t, res, tt.want)
@@ -394,10 +419,128 @@ func TestListKnownSettings(t *testing.T) {
 	}
 }
 
+func TestGetSettingById(t *testing.T) {
+	type fields struct {
+		environmentUrl string
+		retrySettings  rest.RetrySettings
+	}
+	type args struct {
+		objectID string
+	}
+	tests := []struct {
+		name                string
+		fields              fields
+		args                args
+		givenTestServerResp *testServerResponse
+		wantURLPath         string
+		wantResult          *DownloadSettingsObject
+		wantErr             bool
+	}{
+		{
+			name: "Get Setting by ID - malformed environment URL",
+			fields: fields{
+				environmentUrl: " https://leading-space.com",
+			},
+			args:        args{},
+			wantURLPath: "/api/v2/settings/objects/12345",
+			wantResult:  nil,
+			wantErr:     true,
+		},
+		{
+			name:   "Get Setting by ID - server response != 2xx",
+			fields: fields{},
+			args: args{
+				objectID: "12345",
+			},
+			givenTestServerResp: &testServerResponse{
+				statusCode: 500,
+				body:       "{}",
+			},
+			wantURLPath: "/api/v2/settings/objects/12345",
+			wantResult:  nil,
+			wantErr:     true,
+		},
+		{
+			name:   "Get Setting by ID - invalid server response",
+			fields: fields{},
+			args: args{
+				objectID: "12345",
+			},
+			givenTestServerResp: &testServerResponse{
+				statusCode: 200,
+				body:       `{bs}`,
+			},
+			wantURLPath: "/api/v2/settings/objects/12345",
+			wantResult:  nil,
+			wantErr:     true,
+		},
+		{
+			name:   "Get Setting by ID",
+			fields: fields{},
+			args: args{
+				objectID: "12345",
+			},
+			givenTestServerResp: &testServerResponse{
+				statusCode: 200,
+				body:       `{"objectId":"12345","externalId":"54321", "schemaVersion":"1.0","schemaId":"builtin:bla","scope":"tenant"}`,
+			},
+			wantURLPath: "/api/v2/settings/objects/12345",
+			wantResult: &DownloadSettingsObject{
+				ExternalId:    "54321",
+				SchemaVersion: "1.0",
+				SchemaId:      "builtin:bla",
+				ObjectId:      "12345",
+				Scope:         "tenant",
+				Value:         nil,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				assert.Equal(t, tt.wantURLPath, req.URL.Path)
+				if resp := tt.givenTestServerResp; resp != nil {
+					if resp.statusCode != 200 {
+						http.Error(rw, resp.body, resp.statusCode)
+					} else {
+						_, _ = rw.Write([]byte(resp.body))
+					}
+				}
+
+			}))
+			defer server.Close()
+
+			var envURL string
+			if tt.fields.environmentUrl != "" {
+				envURL = tt.fields.environmentUrl
+			} else {
+				envURL = server.URL
+			}
+
+			d := &DynatraceClient{
+				environmentUrl: envURL,
+				client:         server.Client(),
+				retrySettings:  tt.fields.retrySettings,
+			}
+
+			settingsObj, err := d.GetSettingById(tt.args.objectID)
+			if tt.wantErr {
+				assert.Assert(t, err != nil)
+			} else {
+				assert.NilError(t, err)
+			}
+			assert.DeepEqual(t, tt.wantResult, settingsObj)
+
+		})
+	}
+
+}
+
 func TestDeleteSettings(t *testing.T) {
 	type fields struct {
 		environmentUrl string
-		token          string
 		client         *http.Client
 		retrySettings  rest.RetrySettings
 	}
@@ -482,7 +625,6 @@ func TestDeleteSettings(t *testing.T) {
 
 			d := &DynatraceClient{
 				environmentUrl: envURL,
-				token:          tt.fields.token,
 				client:         server.Client(),
 				retrySettings:  tt.fields.retrySettings,
 			}
@@ -512,7 +654,7 @@ func TestUpsertSettingsRetries(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client, err := NewDynatraceClient(server.URL, "abc", WithHTTPClient(server.Client()), WithRetrySettings(testRetrySettings))
+	client, err := NewDynatraceClient(server.Client(), server.URL, WithRetrySettings(testRetrySettings))
 	assert.NilError(t, err)
 
 	_, err = client.UpsertSettings(SettingsObject{
@@ -782,22 +924,44 @@ func TestListEntities(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client, err := NewDynatraceClient(server.URL, "abc", WithHTTPClient(server.Client()), WithRetrySettings(testRetrySettings))
+			client, err := NewDynatraceClient(server.Client(), server.URL, WithRetrySettings(testRetrySettings))
 			assert.NilError(t, err)
 
-			res, err := client.ListEntities(tt.givenEntitiesType)
+			res, err1 := client.ListEntities(tt.givenEntitiesType)
 
 			if tt.wantError {
-				assert.Assert(t, err != nil)
+				assert.Assert(t, err1 != nil)
 			} else {
-				assert.NilError(t, err)
+				assert.NilError(t, err1)
 			}
 
 			assert.DeepEqual(t, res.Entities, tt.want)
 
 			assert.Equal(t, apiCalls, tt.wantNumberOfApiCalls, "expected exactly %d API calls to happen but %d calls where made", tt.wantNumberOfApiCalls, apiCalls)
 		})
-
 	}
+}
 
+func TestCreateDynatraceClientWithAutoServerVersion(t *testing.T) {
+	t.Run("Server version is correctly set to determined value", func(t *testing.T) {
+		server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			rw.Write([]byte(`{"version" : "1.262.0.20230214-193525"}`))
+		}))
+
+		dcl, err := NewDynatraceClient(server.Client(), server.URL, WithAutoServerVersion())
+		server.Close()
+		assert.NilError(t, err)
+		assert.Equal(t, version.Version{Major: 1, Minor: 262}, dcl.serverVersion)
+	})
+
+	t.Run("Server version is correctly set to unknown", func(t *testing.T) {
+		server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			rw.Write([]byte(`{}`))
+		}))
+
+		dcl, err := NewDynatraceClient(server.Client(), server.URL, WithAutoServerVersion())
+		server.Close()
+		assert.NilError(t, err)
+		assert.Equal(t, version.UnknownVersion, dcl.serverVersion)
+	})
 }

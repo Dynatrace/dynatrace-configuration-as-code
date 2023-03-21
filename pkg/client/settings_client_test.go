@@ -18,20 +18,22 @@ package client
 
 import (
 	"encoding/json"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"gotest.tools/assert"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
-func TestUpsert(t *testing.T) {
+func TestUpsertSettings(t *testing.T) {
 	tests := []struct {
 		name                        string
 		content                     string
+		serverVersion               version.Version
 		expectError                 bool
-		expectEntity                api.DynatraceEntity
+		expectEntity                DynatraceEntity
 		postSettingsResponseCode    int
 		postSettingsResponseContent string
 		getSettingsResponseCode     int
@@ -41,46 +43,69 @@ func TestUpsert(t *testing.T) {
 			name:         "Invalid json returns an error",
 			content:      "{",
 			expectError:  true,
-			expectEntity: api.DynatraceEntity{},
+			expectEntity: DynatraceEntity{},
 		},
 		{
-			name:        "Simple valid call with valid response",
+			name: "Simple valid call with valid response",
+			serverVersion: version.Version{
+				Major: 1,
+				Minor: 262,
+				Patch: 0,
+			},
 			content:     "{}",
 			expectError: false,
-			expectEntity: api.DynatraceEntity{
+			expectEntity: DynatraceEntity{
 				Id:   "entity-id",
 				Name: "entity-id",
 			},
 			postSettingsResponseContent: `[{"objectId": "entity-id"}]`,
-			getSettingsResponseContent:  `{"items": [{"externalId": "string","objectId": "oid=","scope": "tenant"}]}`,
+			getSettingsResponseContent:  `{"externalId": "monaco:YnVpbHRpbjphbGVydGluZy5wcm9maWxlJHVzZXItcHJvdmlkZWQtaWQ=","objectId": "anObjectID","scope": "tenant"}`,
 		},
 		{
 			name:                        "Valid request, invalid response",
 			content:                     "{}",
 			expectError:                 true,
-			expectEntity:                api.DynatraceEntity{},
 			postSettingsResponseContent: `{`,
+			getSettingsResponseContent:  `{"externalId": "monaco:YnVpbHRpbjphbGVydGluZy5wcm9maWxlJHVzZXItcHJvdmlkZWQtaWQ=","objectId": "anObjectID","scope": "tenant"}`,
 		},
 		{
-			name:                     "Valid request, 400 return",
-			content:                  "{}",
-			expectError:              true,
-			expectEntity:             api.DynatraceEntity{},
-			postSettingsResponseCode: 400,
+			name:                       "Valid request, 400 return",
+			content:                    "{}",
+			expectError:                true,
+			postSettingsResponseCode:   400,
+			getSettingsResponseContent: `{"externalId": "monaco:YnVpbHRpbjphbGVydGluZy5wcm9maWxlJHVzZXItcHJvdmlkZWQtaWQ=","objectId": "anObjectID","scope": "tenant"}`,
 		},
 		{
 			name:                        "Valid request, but empty response",
 			content:                     "{}",
 			expectError:                 true,
-			expectEntity:                api.DynatraceEntity{},
 			postSettingsResponseContent: `[]`,
+			getSettingsResponseContent:  `{"externalId": "monaco:YnVpbHRpbjphbGVydGluZy5wcm9maWxlJHVzZXItcHJvdmlkZWQtaWQ=","objectId": "anObjectID","scope": "tenant"}`,
 		},
 		{
 			name:                        "Valid request, but multiple responses",
 			content:                     "{}",
 			expectError:                 true,
-			expectEntity:                api.DynatraceEntity{},
+			expectEntity:                DynatraceEntity{},
 			postSettingsResponseContent: `[{"objectId": "entity-id"},{"objectId": "entity-id"}]`,
+			getSettingsResponseContent:  `{"externalId": "monaco:YnVpbHRpbjphbGVydGluZy5wcm9maWxlJHVzZXItcHJvdmlkZWQtaWQ=","objectId": "anObjectID","scope": "tenant"}`,
+		},
+		{
+			name:    "Upsert existing settings 2.0 object on tenant < 1.262.0",
+			content: "{}",
+			serverVersion: version.Version{
+				Major: 1,
+				Minor: 260,
+				Patch: 0,
+			},
+			expectError: false,
+			expectEntity: DynatraceEntity{
+				Id:   "anObjectID",
+				Name: "anObjectID",
+			},
+			getSettingsResponseCode:     200,
+			postSettingsResponseContent: `{"objectId": "entity-id"}`,
+			getSettingsResponseContent:  `{"externalId": "monaco:YnVpbHRpbjphbGVydGluZy5wcm9maWxlJHVzZXItcHJvdmlkZWQtaWQ=","objectId": "anObjectID","scope": "tenant"}`,
 		},
 	}
 	for _, test := range tests {
@@ -89,7 +114,7 @@ func TestUpsert(t *testing.T) {
 			server := httptest.NewTLSServer(http.HandlerFunc(func(writer http.ResponseWriter, r *http.Request) {
 
 				// handling GET settings requests
-				if r.Method == http.MethodGet && r.URL.Path == "/api/v2/settings/objects" {
+				if r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/api/v2/settings/objects") {
 					// response to client
 					if test.getSettingsResponseCode != 0 {
 						http.Error(writer, test.getSettingsResponseContent, test.getSettingsResponseCode)
@@ -104,19 +129,21 @@ func TestUpsert(t *testing.T) {
 				err := json.Unmarshal([]byte(test.content), &expectedSettingsObject)
 				assert.NilError(t, err)
 
-				expectedRequestPayload := settingsRequest{
-					ExternalId:    util.GenerateExternalID("builtin:alerting.profile", "user-provided-id"),
+				expectedRequestPayload := []settingsRequest{{
+					ExternalId:    idutils.GenerateExternalID("builtin:alerting.profile", "user-provided-id"),
 					Scope:         "tenant",
 					Value:         expectedSettingsObject,
 					SchemaId:      "builtin:alerting.profile",
 					SchemaVersion: "",
+					ObjectId:      "anObjectID",
+				},
 				}
 
 				var obj []settingsRequest
 				err = json.NewDecoder(r.Body).Decode(&obj)
 				assert.NilError(t, err)
 
-				assert.DeepEqual(t, obj, []settingsRequest{expectedRequestPayload})
+				assert.DeepEqual(t, obj, expectedRequestPayload)
 
 				// response to client
 				if test.postSettingsResponseCode != 0 {
@@ -127,14 +154,18 @@ func TestUpsert(t *testing.T) {
 				}
 			}))
 
-			c, err := NewDynatraceClient(server.URL, "token", WithHTTPClient(server.Client()))
+			c, err := NewDynatraceClient(
+				server.Client(), server.URL,
+				WithServerVersion(test.serverVersion),
+				WithRetrySettings(testRetrySettings))
 			assert.NilError(t, err)
 
 			resp, err := c.UpsertSettings(SettingsObject{
-				Id:       "user-provided-id",
-				SchemaId: "builtin:alerting.profile",
-				Scope:    "tenant",
-				Content:  []byte(test.content),
+				OriginObjectId: "anObjectID",
+				Id:             "user-provided-id",
+				SchemaId:       "builtin:alerting.profile",
+				Scope:          "tenant",
+				Content:        []byte(test.content),
 			})
 
 			assert.Equal(t, err != nil, test.expectError)

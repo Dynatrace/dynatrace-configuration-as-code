@@ -16,20 +16,24 @@ package download
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 
-	cmdUtil "github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/cmdutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/settings"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/maps"
 	"github.com/spf13/afero"
 )
 
@@ -54,22 +58,24 @@ type directDownloadOptions struct {
 
 func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions manifestDownloadOptions) error {
 
-	envCredentials, err := cmdUtil.GetEnvFromManifest(fs, cmdOptions.manifestFile, cmdOptions.specificEnvironmentName)
+	env, err := cmdutils.GetEnvFromManifest(fs, cmdOptions.manifestFile, cmdOptions.specificEnvironmentName)
 	if err != nil {
 		return err
 	}
+
+	printUploadToSameEnvironmentWarning(env)
 
 	if !cmdOptions.forceOverwrite {
 		cmdOptions.projectName = fmt.Sprintf("%s_%s", cmdOptions.projectName, cmdOptions.specificEnvironmentName)
 	}
 
-	concurrentDownloadLimit := rest.ConcurrentRequestLimitFromEnv(true)
+	concurrentDownloadLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
 
 	options := downloadConfigsOptions{
 		downloadOptionsShared: downloadOptionsShared{
-			environmentUrl:          envCredentials.EnvUrl,
-			token:                   envCredentials.Token,
-			tokenEnvVarName:         envCredentials.TokenEnvVar,
+			environmentUrl:          env.URL.Value,
+			token:                   env.Auth.Token.Value,
+			tokenEnvVarName:         env.Auth.Token.Name,
 			outputFolder:            cmdOptions.outputFolder,
 			projectName:             cmdOptions.projectName,
 			forceOverwriteManifest:  cmdOptions.forceOverwrite,
@@ -81,16 +87,16 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 		onlyAPIs:        cmdOptions.onlyAPIs,
 		onlySettings:    cmdOptions.onlySettings,
 	}
-	return doDownloadConfigs(fs, api.NewApis(), options)
+	return doDownloadConfigs(fs, api.NewAPIs(), options)
 }
 
 func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOptions) error {
 	token := os.Getenv(cmdOptions.envVarName)
-	concurrentDownloadLimit := rest.ConcurrentRequestLimitFromEnv(true)
+	concurrentDownloadLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
 	errors := validateParameters(cmdOptions.envVarName, cmdOptions.environmentUrl, cmdOptions.projectName, token)
 
 	if len(errors) > 0 {
-		return util.PrintAndFormatErrors(errors, "not all necessary information is present to start downloading configurations")
+		return errutils.PrintAndFormatErrors(errors, "not all necessary information is present to start downloading configurations")
 	}
 
 	options := downloadConfigsOptions{
@@ -109,7 +115,7 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOp
 		onlyAPIs:        cmdOptions.onlyAPIs,
 		onlySettings:    cmdOptions.onlySettings,
 	}
-	return doDownloadConfigs(fs, api.NewApis(), options)
+	return doDownloadConfigs(fs, api.NewAPIs(), options)
 }
 
 type downloadConfigsOptions struct {
@@ -120,16 +126,19 @@ type downloadConfigsOptions struct {
 	onlySettings    bool
 }
 
-func doDownloadConfigs(fs afero.Fs, apis api.ApiMap, opts downloadConfigsOptions) error {
+func doDownloadConfigs(fs afero.Fs, apis api.APIs, opts downloadConfigsOptions) error {
 	err := preDownloadValidations(fs, opts.downloadOptionsShared)
 	if err != nil {
 		return err
 	}
 
+	if ok, unknownApis := validateSpecificAPIs(apis, opts.specificAPIs); !ok {
+		errutils.PrintError(fmt.Errorf("APIs '%v' are not known. Please consult our documentation for known API-names", strings.Join(unknownApis, ",")))
+		return fmt.Errorf("failed to load apis")
+	}
+
 	log.Info("Downloading from environment '%v' into project '%v'", opts.environmentUrl, opts.projectName)
-
 	downloadedConfigs, err := downloadConfigs(apis, opts)
-
 	if err != nil {
 		return err
 	}
@@ -137,10 +146,19 @@ func doDownloadConfigs(fs afero.Fs, apis api.ApiMap, opts downloadConfigsOptions
 	log.Info("Resolving dependencies between configurations")
 	downloadedConfigs = download.ResolveDependencies(downloadedConfigs)
 
-	return writeConfigs(downloadedConfigs, opts.downloadOptionsShared, err, fs)
+	return writeConfigs(downloadedConfigs, opts.downloadOptionsShared, fs)
 }
 
-func downloadConfigs(apis api.ApiMap, opts downloadConfigsOptions) (project.ConfigsPerType, error) {
+func validateSpecificAPIs(a api.APIs, apiNames []string) (valid bool, unknownAPIs []string) {
+	for _, v := range apiNames {
+		if !a.Contains(v) {
+			unknownAPIs = append(unknownAPIs, v)
+		}
+	}
+	return len(unknownAPIs) == 0, unknownAPIs
+}
+
+func downloadConfigs(apis api.APIs, opts downloadConfigsOptions) (project.ConfigsPerType, error) {
 	c, err := opts.getDynatraceClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Dynatrace client: %w", err)
@@ -148,10 +166,9 @@ func downloadConfigs(apis api.ApiMap, opts downloadConfigsOptions) (project.Conf
 
 	c = client.LimitClientParallelRequests(c, opts.concurrentDownloadLimit)
 
-	apisToDownload, errors := getApisToDownload(apis, opts.specificAPIs)
-	if len(errors) > 0 {
-		err = util.PrintAndFormatErrors(errors, "failed to load apis")
-		return nil, err
+	apisToDownload := getApisToDownload(apis, opts.specificAPIs)
+	if len(apisToDownload) == 0 {
+		return nil, fmt.Errorf("no APIs to download")
 	}
 
 	configObjects := make(project.ConfigsPerType)
@@ -188,38 +205,55 @@ func downloadConfigs(apis api.ApiMap, opts downloadConfigsOptions) (project.Conf
 }
 
 // Get all v2 apis and filter for the selected ones
-func getApisToDownload(apis api.ApiMap, specificAPIs []string) (api.ApiMap, []error) {
-	var errors []error
-
-	apisToDownload, unknownApis := apis.FilterApisByName(specificAPIs)
-	if len(unknownApis) > 0 {
-		errors = append(errors, fmt.Errorf("APIs '%v' are not known. Please consult our documentation for known API-names", strings.Join(unknownApis, ",")))
+func getApisToDownload(apis api.APIs, specificAPIs []string) api.APIs {
+	if len(specificAPIs) > 0 {
+		return apis.Filter(api.RetainByName(specificAPIs), skipDownloadFilter)
+	} else {
+		return apis.Filter(skipDownloadFilter, removeDeprecatedEndpoints)
 	}
-
-	if len(specificAPIs) == 0 {
-		var deprecated api.ApiMap
-		apisToDownload, deprecated = apisToDownload.Filter(deprecatedEndpointFilter)
-		for _, d := range deprecated {
-			log.Warn("API '%s' is deprecated by '%s' and will not be downloaded", d.GetId(), d.DeprecatedBy())
-		}
-	}
-
-	apisToDownload, filtered := apisToDownload.Filter(func(api api.Api) bool {
-		return api.ShouldSkipDownload()
-	})
-
-	if len(filtered) > 0 {
-		keys := strings.Join(maps.Keys(filtered), ", ")
-		log.Info("APIs that won't be downloaded and need manual creation: '%v'.", keys)
-	}
-
-	if len(apisToDownload) == 0 {
-		errors = append(errors, fmt.Errorf("no APIs to download"))
-	}
-
-	return apisToDownload, errors
 }
 
-func deprecatedEndpointFilter(api api.Api) bool {
-	return api.DeprecatedBy() != ""
+func skipDownloadFilter(api api.API) bool {
+	if api.SkipDownload {
+		log.Info("API can not be downloaded and needs manual creation: '%v'.", api.ID)
+		return true
+	}
+	return false
+}
+
+func removeDeprecatedEndpoints(api api.API) bool {
+	if api.DeprecatedBy != "" {
+		log.Warn("API %q is deprecated by %q and will not be downloaded", api.ID, api.DeprecatedBy)
+		return true
+	}
+	return false
+}
+
+// printUploadToSameEnvironmentWarning function may display a warning message on the console,
+// notifying the user that downloaded objects cannot be uploaded to the same environment.
+// It verifies the version of the tenant and, depending on the result, it may or may not display the warning.
+func printUploadToSameEnvironmentWarning(env manifest.EnvironmentDefinition) {
+	var serverVersion version.Version
+	var err error
+
+	var httpClient *http.Client
+	if env.Type == manifest.Classic {
+		httpClient = client.NewTokenAuthClient(env.Auth.Token.Value)
+	} else {
+		credentials := client.OauthCredentials{
+			ClientID:     env.Auth.OAuth.ClientID.Value,
+			ClientSecret: env.Auth.OAuth.ClientSecret.Value,
+			TokenURL:     env.Auth.OAuth.TokenEndpoint.Value,
+		}
+		httpClient = client.NewOAuthClient(credentials)
+	}
+
+	serverVersion, err = client.GetDynatraceVersion(httpClient, env.URL.Value)
+	if err != nil {
+		log.Error("Unable to determine server version %q: %w", env.URL.Value, err)
+		return
+	}
+	if serverVersion.SmallerThan(version.Version{Major: 1, Minor: 262}) {
+		logUploadToSameEnvironmentWarning()
+	}
 }

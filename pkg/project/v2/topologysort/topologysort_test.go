@@ -17,7 +17,7 @@
 package topologysort
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/sort"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/sort"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"testing"
 
@@ -662,57 +662,4 @@ func Test_parseConfigSortErrors(t *testing.T) {
 			}))
 		})
 	}
-}
-
-func TestHasDependencyOn(t *testing.T) {
-	referencedConfig := coordinate.Coordinate{
-		Project:  "project1",
-		Type:     "auto-tag",
-		ConfigId: "tag",
-	}
-
-	conf := config.Config{
-		Coordinate: coordinate.Coordinate{
-			Project:  "project1",
-			Type:     "dashboard",
-			ConfigId: "dashboard1",
-		},
-		Environment: "dev",
-		Parameters: config.Parameters{
-			"p": parameter.NewDummy(referencedConfig),
-		},
-	}
-
-	referencedConf := config.Config{
-		Coordinate:  referencedConfig,
-		Environment: "dev",
-	}
-
-	result := hasDependencyOn(conf, referencedConf)
-
-	assert.Assert(t, result, "should have dependency")
-}
-
-func TestHasDependencyOnShouldReturnFalseIfNoDependenciesAreDefined(t *testing.T) {
-	conf := config.Config{
-		Coordinate: coordinate.Coordinate{
-			Project:  "project1",
-			Type:     "dashboard",
-			ConfigId: "dashboard1",
-		},
-		Environment: "dev",
-	}
-
-	conf2 := config.Config{
-		Coordinate: coordinate.Coordinate{
-			Project:  "project1",
-			Type:     "auto-tag",
-			ConfigId: "tag",
-		},
-		Environment: "dev",
-	}
-
-	result := hasDependencyOn(conf, conf2)
-
-	assert.Assert(t, !result, "should not have dependency")
 }

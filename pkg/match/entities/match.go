@@ -19,11 +19,10 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/match"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
 
@@ -250,7 +249,7 @@ func writeMatches(fs afero.Fs, matchParameters match.MatchParameters, entitiesTy
 		return err
 	}
 
-	sanitizedType := util.SanitizeName(entitiesType)
+	sanitizedType := config.Sanitize(entitiesType)
 	fullMatchPath := filepath.Join(sanitizedOutputDir, fmt.Sprintf("%s.json", sanitizedType))
 
 	err = afero.WriteFile(fs, fullMatchPath, outputAsJson, 0664)

@@ -20,12 +20,13 @@ package classic
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func Test_AllDefinedApiFiltersHaveApis(t *testing.T) {
-	definedApis := api.NewApis()
+	definedApis := api.NewAPIs()
 
 	for apiId := range apiFilters {
 		_, found := definedApis[apiId]
@@ -99,38 +100,38 @@ func TestShouldConfigBeSkipped(t *testing.T) {
 
 	t.Run("dashboard - Owner 'Dynatrace' is skipped", func(t *testing.T) {
 		owner := "Dynatrace"
-		assert.True(t, apiFilters["dashboard"].shouldBeSkippedPreDownload(api.Value{Owner: &owner}))
+		assert.True(t, apiFilters["dashboard"].shouldBeSkippedPreDownload(client.Value{Owner: &owner}))
 	})
 
 	t.Run("dashboard - Owner 'Not Dynatrace' is not skipped", func(t *testing.T) {
 		owner := "Not Dynatrace"
-		assert.False(t, apiFilters["dashboard"].shouldBeSkippedPreDownload(api.Value{Owner: &owner}))
+		assert.False(t, apiFilters["dashboard"].shouldBeSkippedPreDownload(client.Value{Owner: &owner}))
 	})
 
 	t.Run("dashboard - No owner is not skipped", func(t *testing.T) {
-		assert.False(t, apiFilters["dashboard"].shouldBeSkippedPreDownload(api.Value{}))
+		assert.False(t, apiFilters["dashboard"].shouldBeSkippedPreDownload(client.Value{}))
 	})
 
 	t.Run("anomaly-detection-metrics - ruxit. should be skipped", func(t *testing.T) {
-		assert.True(t, apiFilters["anomaly-detection-metrics"].shouldBeSkippedPreDownload(api.Value{
+		assert.True(t, apiFilters["anomaly-detection-metrics"].shouldBeSkippedPreDownload(client.Value{
 			Id: "ruxit.",
 		}))
 	})
 
 	t.Run("anomaly-detection-metrics - dynatrace. should be skipped", func(t *testing.T) {
-		assert.True(t, apiFilters["anomaly-detection-metrics"].shouldBeSkippedPreDownload(api.Value{
+		assert.True(t, apiFilters["anomaly-detection-metrics"].shouldBeSkippedPreDownload(client.Value{
 			Id: "dynatrace.",
 		}))
 	})
 
 	t.Run("anomaly-detection-metrics - ids should not be skipped", func(t *testing.T) {
-		assert.False(t, apiFilters["anomaly-detection-metrics"].shouldBeSkippedPreDownload(api.Value{
+		assert.False(t, apiFilters["anomaly-detection-metrics"].shouldBeSkippedPreDownload(client.Value{
 			Id: "b836ff25-24e3-496d-8dce-d94110815ab5",
 		}))
 	})
 
 	t.Run("anomaly-detection-metrics - random strings should not be skipped", func(t *testing.T) {
-		assert.False(t, apiFilters["anomaly-detection-metrics"].shouldBeSkippedPreDownload(api.Value{
+		assert.False(t, apiFilters["anomaly-detection-metrics"].shouldBeSkippedPreDownload(client.Value{
 			Id: "test.something",
 		}))
 	})

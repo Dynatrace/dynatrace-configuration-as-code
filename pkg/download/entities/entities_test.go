@@ -20,6 +20,7 @@ package entities
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
@@ -27,7 +28,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -36,7 +36,7 @@ import (
 func TestDownloadAll(t *testing.T) {
 	testType := "SOMETHING"
 	testType2 := "SOMETHINGELSE"
-	uuid := util.GenerateUuidFromName(testType)
+	uuid := idutils.GenerateUuidFromName(testType)
 
 	type mockValues struct {
 		EntitiesTypeList      func() ([]client.EntitiesType, error)
@@ -53,7 +53,7 @@ func TestDownloadAll(t *testing.T) {
 			name: "DownloadEntities - List Entities Types fails",
 			mockValues: mockValues{
 				EntitiesTypeList: func() ([]client.EntitiesType, error) {
-					return nil, fmt.Errorf("oh no")
+					return nil, client.RespError{Err: fmt.Errorf("oh no"), StatusCode: 0}
 				},
 				EntitiesTypeListCalls: 1,
 				EntitiesList: func() (client.EntitiesList, error) {
@@ -71,7 +71,7 @@ func TestDownloadAll(t *testing.T) {
 				},
 				EntitiesTypeListCalls: 1,
 				EntitiesList: func() (client.EntitiesList, error) {
-					return client.EntitiesList{}, fmt.Errorf("oh no")
+					return client.EntitiesList{}, client.RespError{Err: fmt.Errorf("oh no"), StatusCode: 0}
 				},
 				EntitiesListCalls: 2,
 			},
@@ -111,6 +111,7 @@ func TestDownloadAll(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+
 		t.Run(tt.name, func(t *testing.T) {
 			c := client.NewMockClient(gomock.NewController(t))
 			entityTypeList, err := tt.mockValues.EntitiesTypeList()
@@ -125,7 +126,7 @@ func TestDownloadAll(t *testing.T) {
 
 func TestDownload(t *testing.T) {
 	testType := "SOMETHING"
-	uuid := util.GenerateUuidFromName(testType)
+	uuid := idutils.GenerateUuidFromName(testType)
 
 	type mockValues struct {
 		EntitiesTypeList      func() ([]client.EntitiesType, error)
@@ -167,6 +168,21 @@ func TestDownload(t *testing.T) {
 				EntitiesListCalls: 1,
 			},
 			want: v2.ConfigsPerType{},
+		},
+		{
+			name:          "DownloadEntities - Not all entities found",
+			EntitiesTypes: []string{testType, "SOMETHING_ELSE"},
+			mockValues: mockValues{
+				EntitiesTypeList: func() ([]client.EntitiesType, error) {
+					return []client.EntitiesType{{EntitiesTypeId: testType}}, nil
+				},
+				EntitiesTypeListCalls: 1,
+				EntitiesList: func() ([]string, error) {
+					return make([]string, 0, 1), nil
+				},
+				EntitiesListCalls: 0,
+			},
+			want: nil,
 		},
 		{
 			name:          "DownloadEntities - entities found",

@@ -17,7 +17,7 @@ package match
 import (
 	"sort"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 )
 
 type IndexCompareResultList struct {

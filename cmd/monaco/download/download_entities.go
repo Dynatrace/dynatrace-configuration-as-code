@@ -19,13 +19,14 @@ import (
 	"os"
 	"strings"
 
-	cmdUtil "github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/cmdutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/entities"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
 
@@ -52,7 +53,7 @@ type downloadEntitiesOptions struct {
 
 func (d DefaultCommand) DownloadEntitiesBasedOnManifest(fs afero.Fs, cmdOptions entitiesManifestDownloadOptions) error {
 
-	envCredentials, err := cmdUtil.GetEnvFromManifest(fs, cmdOptions.manifestFile, cmdOptions.specificEnvironmentName)
+	env, err := cmdutils.GetEnvFromManifest(fs, cmdOptions.manifestFile, cmdOptions.specificEnvironmentName)
 	if err != nil {
 		return err
 	}
@@ -61,13 +62,13 @@ func (d DefaultCommand) DownloadEntitiesBasedOnManifest(fs afero.Fs, cmdOptions 
 		cmdOptions.projectName = fmt.Sprintf("%s_%s", cmdOptions.projectName, cmdOptions.specificEnvironmentName)
 	}
 
-	concurrentDownloadLimit := rest.ConcurrentRequestLimitFromEnv(true)
+	concurrentDownloadLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
 
 	options := downloadEntitiesOptions{
 		downloadOptionsShared: downloadOptionsShared{
-			environmentUrl:          envCredentials.EnvUrl,
-			token:                   envCredentials.Token,
-			tokenEnvVarName:         envCredentials.TokenEnvVar,
+			environmentUrl:          env.URL.Value,
+			token:                   env.Auth.Token.Value,
+			tokenEnvVarName:         env.Auth.Token.Name,
 			outputFolder:            cmdOptions.outputFolder,
 			projectName:             cmdOptions.projectName,
 			forceOverwriteManifest:  cmdOptions.forceOverwrite,
@@ -81,11 +82,11 @@ func (d DefaultCommand) DownloadEntitiesBasedOnManifest(fs afero.Fs, cmdOptions 
 
 func (d DefaultCommand) DownloadEntities(fs afero.Fs, cmdOptions entitiesDirectDownloadOptions) error {
 	token := os.Getenv(cmdOptions.envVarName)
-	concurrentDownloadLimit := rest.ConcurrentRequestLimitFromEnv(true)
+	concurrentDownloadLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
 	errors := validateParameters(cmdOptions.envVarName, cmdOptions.environmentUrl, cmdOptions.projectName, token)
 
 	if len(errors) > 0 {
-		return util.PrintAndFormatErrors(errors, "not all necessary information is present to start downloading configurations")
+		return errutils.PrintAndFormatErrors(errors, "not all necessary information is present to start downloading configurations")
 	}
 
 	options := downloadEntitiesOptions{
@@ -118,7 +119,7 @@ func doDownloadEntities(fs afero.Fs, opts downloadEntitiesOptions) error {
 		return err
 	}
 
-	return writeConfigs(downloadedConfigs, opts.downloadOptionsShared, err, fs)
+	return writeConfigs(downloadedConfigs, opts.downloadOptionsShared, fs)
 }
 
 func downloadEntities(opts downloadEntitiesOptions) (project.ConfigsPerType, error) {

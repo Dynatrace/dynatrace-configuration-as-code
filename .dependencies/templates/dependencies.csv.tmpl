@@ -1,11 +1,34 @@
 {{- define "depRow" -}}
 {{- range $i, $dep := . }}
+Dependency: {{ $dep.Name }},{{ $dep.Version }}
+Licence: {{ $dep.LicenceType }}
+
+{{ $dep | licenceText }}
+{{ "-" | line }}
+{{- end }}
+{{- end -}}
+
+{{- define "shortDep" -}}
+{{- range $i, $dep := . }}
 {{ $dep.Name }},{{ $dep.Version }},{{ $dep.LicenceType }}
 {{- end }}
 {{- end -}}
 
+{{ "=" | line }}
+Third party libraries used by dynatrace-configuration-as-code
+{{ "=" | line }}
+Overview:
+{{ template "shortDep" .Direct  }}
+{{ "=" | line }}
 {{ template "depRow" .Direct  }}
 
 {{ if .Indirect }}
+{{ "=" | line }}
+Indirect Dependencies
+Dependencies of third party libraries used by dynatrace-configuration-as-code
+{{ "=" | line }}
+Overview:
+{{ template "shortDep" .Indirect  }}
+{{ "=" | line }}
 {{ template "depRow" .Indirect  }}
 {{ end }}

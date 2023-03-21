@@ -21,6 +21,7 @@ package settings
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
@@ -28,14 +29,13 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestDownloadAll(t *testing.T) {
-	uuid := util.GenerateUuidFromName("oid1")
+	uuid := idutils.GenerateUuidFromName("oid1")
 
 	type mockValues struct {
 		Schemas           func() (client.SchemaList, error)
@@ -71,7 +71,7 @@ func TestDownloadAll(t *testing.T) {
 					return client.SchemaList{{SchemaId: "id1"}, {SchemaId: "id2"}}, nil
 				},
 				Settings: func() ([]client.DownloadSettingsObject, error) {
-					return nil, fmt.Errorf("oh no")
+					return nil, client.RespError{Err: fmt.Errorf("oh no"), StatusCode: 0}
 				},
 				ListSettingsCalls: 2,
 			},
@@ -178,7 +178,7 @@ func TestDownloadAll(t *testing.T) {
 }
 
 func TestDownload(t *testing.T) {
-	uuid := util.GenerateUuidFromName("oid1")
+	uuid := idutils.GenerateUuidFromName("oid1")
 
 	type mockValues struct {
 		Schemas           func() (client.SchemaList, error)
@@ -194,8 +194,10 @@ func TestDownload(t *testing.T) {
 		{
 			name: "DownloadSettings - empty list of schemas",
 			mockValues: mockValues{
-				Schemas:           func() (client.SchemaList, error) { return client.SchemaList{}, nil },
-				Settings:          func() ([]client.DownloadSettingsObject, error) { return []client.DownloadSettingsObject{}, nil },
+				Schemas: func() (client.SchemaList, error) { return client.SchemaList{}, nil },
+				Settings: func() ([]client.DownloadSettingsObject, error) {
+					return []client.DownloadSettingsObject{}, nil
+				},
 				ListSettingsCalls: 0,
 			},
 			want: v2.ConfigsPerType{},

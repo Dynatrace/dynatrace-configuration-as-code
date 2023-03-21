@@ -21,7 +21,7 @@ package v2
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -35,7 +35,7 @@ func TestAllDuplicateErrorsAreReported(t *testing.T) {
 	manifest := filepath.Join(configFolder, "manifest.yaml")
 
 	logOutput := strings.Builder{}
-	cmd := runner.BuildCliWithCapturedLog(util.CreateTestFileSystem(), &logOutput)
+	cmd := runner.BuildCliWithCapturedLog(testutils.CreateTestFileSystem(), &logOutput)
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
 	err := cmd.Execute()
 

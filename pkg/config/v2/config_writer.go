@@ -24,7 +24,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 )
@@ -128,9 +127,7 @@ func toTopLevelDefinitions(context *WriterContext, configs []Config) (map[apiCoo
 	var configTemplates []configTemplate
 
 	for coord, confs := range configsPerCoordinate {
-
-		sanitizedType := util.SanitizeName(coord.Type)
-
+		sanitizedType := Sanitize(coord.Type)
 		configContext := &serializerContext{
 			WriterContext: context,
 			configFolder:  filepath.Join(context.ProjectFolder, sanitizedType),
@@ -181,9 +178,8 @@ func writeTopLevelDefinitionToDisk(context *WriterContext, apiCoord apiCoordinat
 		return err
 	}
 
-	sanitizedAPI := util.SanitizeName(apiCoord.api)
-
-	targetConfigFile := filepath.Join(context.OutputFolder, context.ProjectFolder, sanitizedAPI, "config.yaml")
+	sanitizedApi := Sanitize(apiCoord.api)
+	targetConfigFile := filepath.Join(context.OutputFolder, context.ProjectFolder, sanitizedApi, "config.yaml")
 
 	err = context.Fs.MkdirAll(filepath.Dir(targetConfigFile), 0777)
 
@@ -606,7 +602,7 @@ func extractTemplate(context *detailedSerializerContext, config Config) (string,
 			content:      templ.Content(),
 		}, nil
 	case template.Template:
-		sanitizedName := util.SanitizeName(templ.Id()) + ".json"
+		sanitizedName := Sanitize(templ.Id()) + ".json"
 
 		return sanitizedName, configTemplate{
 			templatePath: filepath.Join(context.configFolder, sanitizedName),
@@ -687,8 +683,7 @@ func isValueParameter(param parameter.Parameter) bool {
 
 func toValueShorthandDefinition(context *detailedSerializerContext, parameterName string,
 	param parameter.Parameter) (configParameter, error) {
-	switch param.GetType() {
-	case value.ValueParameterType:
+	if param.GetType() == value.ValueParameterType {
 		valueParam, ok := param.(*value.ValueParameter)
 
 		if !ok {

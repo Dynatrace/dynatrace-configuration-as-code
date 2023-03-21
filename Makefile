@@ -1,7 +1,8 @@
-BINARY=monaco
-VERSION=2.x
+BINARY_NAME ?= monaco
+VERSION ?= 2.x
+RELEASES = $(BINARY_NAME)-windows-amd64.exe $(BINARY_NAME)-windows-386.exe $(BINARY_NAME)-linux-arm64 $(BINARY_NAME)-linux-amd64 $(BINARY_NAME)-linux-386 $(BINARY_NAME)-darwin-amd64 $(BINARY_NAME)-darwin-arm64
 
-.PHONY: lint format mocks build install clean test integration-test integration-test-v1 test-package default add-license-headers
+.PHONY: lint format mocks build install clean test integration-test integration-test-v1 test-package default add-license-headers compile build-release $(RELEASES)
 
 default: build
 
@@ -45,28 +46,34 @@ check:
 	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1
 	@golangci-lint run ./...
 
-build: clean mocks
-	@echo "Building ${BINARY}..."
-	@CGO_ENABLED=0 go build -a -tags netgo -ldflags '-w -extldflags "-static"' -o ./bin/${BINARY} ./cmd/monaco
+compile: clean mocks
+	go build -tags "unit integration nightly cleanup integration_v1 download_restore" ./...
 
-build-release: clean
-	@echo Release build ${BINARY} ${VERSION}
-	@ GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -a -tags netgo -ldflags '-X github.com/dynatrace/dynatrace-configuration-as-code/pkg/version.MonitoringAsCode=${VERSION} -w -extldflags "-static"' -o ./build/${BINARY}-windows-amd64.exe ./cmd/monaco
-	@ GOOS=windows GOARCH=386   CGO_ENABLED=0 go build -a -tags netgo -ldflags '-X github.com/dynatrace/dynatrace-configuration-as-code/pkg/version.MonitoringAsCode=${VERSION} -w -extldflags "-static"' -o ./build/${BINARY}-windows-386.exe   ./cmd/monaco
-	@ GOOS=linux   GOARCH=amd64 CGO_ENABLED=0 go build -a -tags netgo -ldflags '-X github.com/dynatrace/dynatrace-configuration-as-code/pkg/version.MonitoringAsCode=${VERSION} -w -extldflags "-static"' -o ./build/${BINARY}-linux-amd64       ./cmd/monaco
-	@ GOOS=linux   GOARCH=386   CGO_ENABLED=0 go build -a -tags netgo -ldflags '-X github.com/dynatrace/dynatrace-configuration-as-code/pkg/version.MonitoringAsCode=${VERSION} -w -extldflags "-static"' -o ./build/${BINARY}-linux-386         ./cmd/monaco
-	@ GOOS=darwin  GOARCH=amd64 CGO_ENABLED=0 go build -a -tags netgo -ldflags '-X github.com/dynatrace/dynatrace-configuration-as-code/pkg/version.MonitoringAsCode=${VERSION} -w -extldflags "-static"' -o ./build/${BINARY}-darwin-amd64      ./cmd/monaco
-	@ GOOS=darwin  GOARCH=arm64 CGO_ENABLED=0 go build -a -tags netgo -ldflags '-X github.com/dynatrace/dynatrace-configuration-as-code/pkg/version.MonitoringAsCode=${VERSION} -w -extldflags "-static"' -o ./build/${BINARY}-darwin-arm64      ./cmd/monaco
+build: clean mocks
+	@echo "Building $(BINARY_NAME)..."
+	@CGO_ENABLED=0 go build -a -tags netgo -ldflags '-w -extldflags "-static"' -o ./bin/${BINARY_NAME} ./cmd/monaco
+
+build-release: clean $(RELEASES)
+	@echo Release build $(BINARY_NAME) $(VERSION)
+
+#argument - splits the name of command to array and return required element
+argument = $(word $1, $(subst -,$(empty) $(empty), $(subst .exe,$(empty) $(empty) , $2)))
+# OUTPUT - name (and path) of output binaries
+$(RELEASES):
+	$(eval OUTPUT ?= ./build/$@)
+	@echo Building binaries for $@...
+	@GOOS=$(call argument, 2, $@) GOARCH=$(call argument, 3, $@) CGO_ENABLED=0 go build -a -tags netgo -ldflags '-X github.com/dynatrace/dynatrace-configuration-as-code/pkg/version.MonitoringAsCode=$(VERSION) -w -extldflags "-static"' -o $(OUTPUT) ./cmd/monaco
+
 
 install:
-	@echo "Installing ${BINARY}..."
+	@echo "Installing $(BINARY_NAME)..."
 	@CGO_ENABLED=0 go install -a -tags netgo -ldflags '-w -extldflags "-static"' ./cmd/monaco
 
 run:
 	@CGO_ENABLED=0 go run -a -tags netgo -ldflags '-w -extldflags "-static"' ./cmd/monaco
 
 clean:
-	@echo "Removing ${BINARY}, bin/ and /build ..."
+	@echo "Removing $(BINARY_NAME), bin/ and /build ..."
 ifeq ($(OS),Windows_NT)
 	@if exist bin rd /S /Q bin
 	@if exist bin rd /S /Q build
@@ -76,13 +83,13 @@ else
 endif
 
 test: setup mocks lint
-	@echo "Testing ${BINARY}..."
+	@echo "Testing $(BINARY_NAME)..."
 	@gotestsum ${testopts} -- -tags=unit -v -race ./...
 
 integration-test: mocks
 	@gotestsum ${testopts} --format standard-verbose -- -tags=integration -timeout=30m -v -race ./...
 
-integration-test-v1:mocks
+integration-test-v1: mocks
 	@gotestsum ${testopts} --format standard-verbose -- -tags=integration_v1 -timeout=30m -v -race ./...
 
 download-restore-test: mocks
@@ -105,3 +112,12 @@ update-dependencies:
 	@echo Update go dependencies
 	@go get -u ./...
 	@go mod tidy
+
+
+
+#TAG - specify tag value. The main purpose is to define public tag during a release build.
+CONTAINER_NAME ?= $(BINARY_NAME)
+.PHONY: docker-container
+docker-container: $(BINARY_NAME)-linux-amd64
+	@echo Building docker container...
+	DOCKER_BUILDKIT=1 docker build --build-arg NAME=$(BINARY_NAME) --build-arg SOURCE=$(OUTPUT) --tag $(CONTAINER_NAME):$(VERSION) .

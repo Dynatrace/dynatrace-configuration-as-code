@@ -6,5 +6,6 @@ environmentGroups:
     url:
       type: environment
       value: URL_ENVIRONMENT_1
-    token:
-      name: TOKEN_ENVIRONMENT_1
+    auth:
+      token:
+        name: TOKEN_ENVIRONMENT_1

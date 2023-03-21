@@ -19,10 +19,10 @@
 package v2
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 	"testing"
@@ -51,7 +51,7 @@ func TestConfigurationTemplatingFromFilesProducesValidJson(t *testing.T) {
 	rendered, err := template.Render(testCfg.Template, properties)
 	assert.NilError(t, err, "Expected template to render without error:\n %s", rendered)
 
-	err = util.ValidateJson(rendered, util.Location{})
+	err = json.ValidateJson(rendered, json.Location{})
 	assert.NilError(t, err, "Expected rendered template to be valid JSON:\n %s", rendered)
 }
 

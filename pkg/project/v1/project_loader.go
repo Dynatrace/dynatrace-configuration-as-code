@@ -18,7 +18,8 @@ package v1
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/template"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,60 +27,15 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 )
 
-// LoadProjectsToDeploy returns a list of projects for deployment
-// if projects specified with -p parameter then it takes only those projects and
-// it also resolves all project dependencies
-// if no -p parameter specified, then it creates a list of all projects
-func LoadProjectsToDeploy(fs afero.Fs, specificProjectToDeploy string, apis map[string]api.Api, path string) (projectsToDeploy []Project, err error) {
-
-	projectsFolder := filepath.Clean(path)
-
-	availableProjectFolders, availableProjects, err := loadAllProjects(fs, apis, projectsFolder, util.UnmarshalYaml)
-	if err != nil {
-		return nil, err
-	}
-
-	// return all projects if no projects specified by -p parameter
-	// otherwise only add projects specified by parameter
-	if specificProjectToDeploy == "" {
-		projectsToDeploy = availableProjects
-		return returnSortedProjects(projectsToDeploy)
-	}
-
-	projectsToDeploy, err = createProjectsListFromFolderList(fs, projectsFolder, specificProjectToDeploy, projectsFolder, apis, availableProjectFolders, util.UnmarshalYaml)
-
-	if err != nil {
-		return nil, err
-	}
-
-	// goes through the list of projectToDeploy and searches for dependencies
-	// it searches the list recursively as long as dependencies are found
-	foundDependency := true
-	for foundDependency {
-		foundDependency = false
-		for _, project := range projectsToDeploy {
-			for _, availableProject := range availableProjects {
-				if project.HasDependencyOn(availableProject) && !isProjectAlreadyAdded(availableProject, projectsToDeploy) {
-					projectsToDeploy = append(projectsToDeploy, availableProject)
-					foundDependency = true
-				}
-			}
-		}
-	}
-
-	return returnSortedProjects(projectsToDeploy)
-}
-
 // LoadProjectsToConvert returns a list of projects to be converted to v2
-func LoadProjectsToConvert(fs afero.Fs, apis map[string]api.Api, path string) ([]Project, error) {
-	_, projects, err := loadAllProjects(fs, apis, path, util.UnmarshalYamlWithoutTemplating)
+func LoadProjectsToConvert(fs afero.Fs, apis api.APIs, path string) ([]Project, error) {
+	_, projects, err := loadAllProjects(fs, apis, path, template.UnmarshalYamlWithoutTemplating)
 	return projects, err
 }
 
-func loadAllProjects(fs afero.Fs, apis map[string]api.Api, projectsFolder string, unmarshalYaml util.UnmarshalYamlFunc) (projectFolders []string, projects []Project, err error) {
+func loadAllProjects(fs afero.Fs, apis api.APIs, projectsFolder string, unmarshalYaml template.UnmarshalYamlFunc) (projectFolders []string, projects []Project, err error) {
 	projectsFolder = filepath.Clean(projectsFolder)
 
 	log.Debug("Reading projects...")
@@ -102,60 +58,6 @@ func loadAllProjects(fs afero.Fs, apis map[string]api.Api, projectsFolder string
 	}
 
 	return availableProjectFolders, availableProjects, nil
-}
-
-func returnSortedProjects(projectsToDeploy []Project) ([]Project, error) {
-	log.Debug("Sorting projects...")
-	projectsToDeploy, err := sortProjects(projectsToDeploy)
-	if err != nil {
-		return nil, err
-	}
-
-	return projectsToDeploy, nil
-}
-
-// takes project folder parameter and creates []Project slice
-// if project specified contains subprojects, then it adds subprojects instead
-func createProjectsListFromFolderList(fs afero.Fs, path, specificProjectToDeploy string, projectsFolder string, apis map[string]api.Api, availableProjectFolders []string, unmarshalYaml util.UnmarshalYamlFunc) ([]Project, error) {
-	projectsToDeploy := make([]Project, 0)
-	multiProjects := strings.Split(specificProjectToDeploy, ",")
-	for _, projectFolderName := range multiProjects {
-
-		projectFolderName = strings.TrimSpace(projectFolderName)
-		fullQualifiedProjectFolderName := filepath.Join(projectsFolder, projectFolderName)
-
-		// if specified project has subprojects then add them instead
-		if !hasSubprojectFolder(fullQualifiedProjectFolderName, availableProjectFolders) {
-			_, err := fs.Stat(fullQualifiedProjectFolderName)
-
-			if err != nil {
-				return nil, fmt.Errorf("project %s does not exist (%w)", specificProjectToDeploy, err)
-			}
-
-			newProject, err := newProject(fs, fullQualifiedProjectFolderName, projectFolderName, apis, path, unmarshalYaml)
-			if err != nil {
-				return nil, err
-			}
-			projectsToDeploy = append(projectsToDeploy, newProject)
-		} else {
-			// get list of folders only for this path
-			subProjectFolders, err := getAllProjectFoldersRecursively(fs, apis, fullQualifiedProjectFolderName)
-			if err != nil {
-				return nil, err
-			}
-			for _, fullQualifiedSubProjectFolderName := range subProjectFolders {
-
-				subProjectFolderName := extractFolderNameFromFullPath(fullQualifiedSubProjectFolderName)
-				newProject, err := newProject(fs, fullQualifiedSubProjectFolderName, subProjectFolderName, apis, path, unmarshalYaml)
-				if err != nil {
-					return nil, err
-				}
-				projectsToDeploy = append(projectsToDeploy, newProject)
-			}
-		}
-
-	}
-	return projectsToDeploy, nil
 }
 
 func extractFolderNameFromFullPath(fullQualifiedProjectFolderName string) string {
@@ -200,13 +102,13 @@ func hasSubprojectFolder(projectFolder string, projectFolders []string) bool {
 // walks through a path recursively and searches for all folders
 // ignores folders with configurations (containing api configs) and hidden folders
 // fails if a folder with both sub projects and api configs are found
-func getAllProjectFoldersRecursively(fs afero.Fs, availableApis api.ApiMap, path string) ([]string, error) {
+func getAllProjectFoldersRecursively(fs afero.Fs, availableApis api.APIs, path string) ([]string, error) {
 	var allProjectsFolders []string
 	err := afero.Walk(fs, path, func(path string, info os.FileInfo, err error) error {
 		if info == nil {
 			return fmt.Errorf("Project path does not exist: %s. (This needs to be a relative path from the current directory)", path)
 		}
-		if info.IsDir() && !isIgnoredPath(path) && !availableApis.ContainsApiName(path) {
+		if info.IsDir() && !isIgnoredPath(path) && !containsApiName(availableApis, path) {
 			allProjectsFolders = append(allProjectsFolders, path)
 			err := subprojectsMixedWithApi(fs, availableApis, path)
 			return err
@@ -220,10 +122,21 @@ func getAllProjectFoldersRecursively(fs afero.Fs, availableApis api.ApiMap, path
 	return filterProjectsWithSubproject(allProjectsFolders), nil
 }
 
-func subprojectsMixedWithApi(fs afero.Fs, availableApis api.ApiMap, path string) error {
+// containsApiName tests if part of project folder path contains an API
+// folders with API in path are not valid projects
+func containsApiName(apis api.APIs, path string) bool {
+	for a := range apis {
+		if strings.Contains(path, a) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func subprojectsMixedWithApi(fs afero.Fs, availableApis api.APIs, path string) error {
 	apiFound, subprojectFound := false, false
-	_, err := fs.Open(path)
-	if err != nil {
+	if _, err := fs.Open(path); err != nil {
 		return err
 	}
 	dirs, err := afero.ReadDir(fs, path)
@@ -235,7 +148,7 @@ func subprojectsMixedWithApi(fs afero.Fs, availableApis api.ApiMap, path string)
 			continue
 		}
 
-		if availableApis.IsApi(d.Name()) {
+		if availableApis.Contains(d.Name()) {
 			apiFound = true
 		} else if d.IsDir() {
 			subprojectFound = true
@@ -253,15 +166,4 @@ func isIgnoredPath(path string) bool {
 	baseName := filepath.Base(path)
 
 	return strings.HasPrefix(path, ".") || strings.HasPrefix(baseName, ".")
-}
-
-// Searches for project in projects array and returns true if
-// project found. Projects are compared by IDs
-func isProjectAlreadyAdded(findProject Project, projects []Project) bool {
-	for _, project := range projects {
-		if project.GetId() == findProject.GetId() {
-			return true
-		}
-	}
-	return false
 }

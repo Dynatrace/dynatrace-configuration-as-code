@@ -22,109 +22,36 @@ package v1
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
-	projectsV2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/test"
-	"math/rand"
-	"path"
-	"path/filepath"
-	"strings"
-	"testing"
-	"time"
-
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
+	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
+	"path"
+	"path/filepath"
+	"testing"
+	"time"
 )
-
-// AssertAllConfigsAvailableInManifest checks all configurations of all environments/projects in the manifest
-func AssertAllConfigsAvailableInManifest(t *testing.T, fs afero.Fs, manifestFile string) {
-	mani := loadManifest(t, fs, manifestFile)
-	AssertAllConfigsAvailable(t, fs, manifestFile, mani, mani.Projects, mani.Environments)
-}
-
-// AssertAllConfigsAvailable checks all configurations of a given project with given availability
-func AssertAllConfigsAvailable(t *testing.T, fs afero.Fs, manifestFile string, mani manifest.Manifest, projectDefinitions map[string]manifest.ProjectDefinition, environments map[string]manifest.EnvironmentDefinition) {
-
-	projects := loadProjects(t, fs, manifestFile, mani)
-
-	for _, e := range environments {
-		client := clientFromEnvDef(t, e)
-
-		for _, projectDefinition := range projectDefinitions {
-			log.Info("Asserting Configs from project are available: %s", projectDefinition.Name)
-
-			p := findProjectByName(t, projects, projectDefinition.Name)
-
-			configsPerApi := getConfigsForEnv(t, p, e)
-
-			for _, configs := range configsPerApi {
-				for _, c := range configs {
-					log.Info("Asserting Config is available: %s", c.Coordinate)
-					assertConfigAvailable(t, client, e, true, c)
-				}
-			}
-		}
-	}
-}
-
-func loadManifest(t *testing.T, fs afero.Fs, manifestFile string) manifest.Manifest {
-
-	mani, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
-		Fs:           fs,
-		ManifestPath: manifestFile,
-	})
-	test.FailTestOnAnyError(t, errs, "failed to load manifest")
-
-	return mani
-}
-
-func loadProjects(t *testing.T, fs afero.Fs, manifestFile string, mani manifest.Manifest) []projectsV2.Project {
-	dir := path.Dir(manifestFile)
-	projects, errs := projectsV2.LoadProjects(fs, projectsV2.ProjectLoaderContext{
-		KnownApis:       api.GetApiNameLookup(api.NewApis()),
-		WorkingDir:      dir,
-		Manifest:        mani,
-		ParametersSerde: v2.DefaultParameterParsers,
-	})
-	test.FailTestOnAnyError(t, errs, "failed to load configs")
-	assert.Assert(t, len(projects) != 0, "no projects loaded")
-
-	return projects
-}
-
-func clientFromEnvDef(t *testing.T, envDefiniton manifest.EnvironmentDefinition) client.ConfigClient {
-
-	u, err := envDefiniton.GetUrl()
-	assert.NilError(t, err)
-
-	token, err := envDefiniton.GetToken()
-	assert.NilError(t, err)
-
-	client, err := client.NewDynatraceClient(u, token)
-	assert.NilError(t, err)
-
-	return client
-}
 
 // AssertConfigAvailability checks specific configuration for availability
 func AssertConfigAvailability(t *testing.T, fs afero.Fs, manifestFile string, coord coordinate.Coordinate, env, projName string, available bool) {
 
-	mani := loadManifest(t, fs, manifestFile)
+	mani := integrationtest.LoadManifest(t, fs, manifestFile, "")
 
 	envDefinition, found := mani.Environments[env]
 	assert.Assert(t, found, "environment %s not found", env)
 
-	client := clientFromEnvDef(t, envDefinition)
+	c := integrationtest.CreateDynatraceClient(t, envDefinition)
 
-	projects := loadProjects(t, fs, manifestFile, mani)
+	projects := integrationtest.LoadProjects(t, fs, manifestFile, mani)
 	project := findProjectByName(t, projects, projName)
 
 	configsPerApi := getConfigsForEnv(t, project, envDefinition)
@@ -140,18 +67,18 @@ func AssertConfigAvailability(t *testing.T, fs afero.Fs, manifestFile string, co
 
 	assert.Assert(t, conf != nil, "config %s not found", coord)
 
-	assertConfigAvailable(t, client, envDefinition, available, *conf)
+	assertConfigAvailable(t, c, envDefinition, available, *conf)
 }
 
-func getConfigsForEnv(t *testing.T, project projectsV2.Project, env manifest.EnvironmentDefinition) projectsV2.ConfigsPerType {
+func getConfigsForEnv(t *testing.T, project project.Project, env manifest.EnvironmentDefinition) project.ConfigsPerType {
 	confsMap, found := project.Configs[env.Name]
 	assert.Assert(t, found != false, "env %s not found", env)
 
 	return confsMap
 }
 
-func findProjectByName(t *testing.T, projects []projectsV2.Project, projName string) projectsV2.Project {
-	var project *projectsV2.Project
+func findProjectByName(t *testing.T, projects []project.Project, projName string) project.Project {
+	var project *project.Project
 
 	for i := range projects {
 		if projects[i].Id == projName {
@@ -173,11 +100,11 @@ func assertConfigAvailable(t *testing.T, client client.ConfigClient, env manifes
 	name, err := nameParam.ResolveValue(parameter.ResolveContext{})
 	assert.NilError(t, err, "Config %s should have a trivial name to resolve", config.Coordinate)
 
-	a, found := api.NewApis()[config.Type.Api]
+	a, found := api.NewAPIs()[config.Type.Api]
 	assert.Assert(t, found, "Config %s should have a known api, but does not. Api %s does not exist", config.Coordinate, config.Type.Api)
 
 	if config.Skip {
-		exists, _, err := client.ExistsByName(a, fmt.Sprint(name))
+		exists, _, err := client.ConfigExistsByName(a, fmt.Sprint(name))
 		assert.NilError(t, err)
 		assert.Check(t, !exists, "Config '%s' should NOT be available on env '%s', but was. environment.", env.Name, config.Coordinate)
 
@@ -189,7 +116,7 @@ func assertConfigAvailable(t *testing.T, client client.ConfigClient, env manifes
 	exists := false
 	// To deal with delays of configs becoming available try for max 120 polling cycles (4min - at 2sec cycles) for expected state to be reached
 	err = wait(description, 120, func() bool {
-		exists, _, err = client.ExistsByName(a, fmt.Sprint(name))
+		exists, _, err = client.ConfigExistsByName(a, fmt.Sprint(name))
 		return (shouldBeAvailable && exists) || (!shouldBeAvailable && !exists)
 	})
 	assert.NilError(t, err)
@@ -201,72 +128,19 @@ func assertConfigAvailable(t *testing.T, client client.ConfigClient, env manifes
 	}
 }
 
-func getTimestamp() string {
-	return time.Now().Format("20060102150405")
-}
+func wait(description string, maxPollCount int, condition func() bool) error {
 
-func addSuffix(suffix string) func(line string) string {
-	var f = func(name string) string {
-		return name + "_" + suffix
-	}
-	return f
-}
+	for i := 0; i <= maxPollCount; i++ {
 
-func getTransformerFunc(suffix string) func(line string) string {
-	var f = func(name string) string {
-		return util.ReplaceName(name, addSuffix(suffix))
-	}
-	return f
-}
-
-// Deletes all configs that end with "_suffix", where suffix == suffixTest+suffixTimestamp
-func cleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestFile, suffix string) {
-	manifest, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
-		Fs:           fs,
-		ManifestPath: manifestFile,
-	})
-	test.FailTestOnAnyError(t, errs, "loading manifest failed")
-
-	environments := manifest.Environments
-
-	apis := api.NewV1Apis()
-	suffix = "_" + suffix
-
-	for _, environment := range environments {
-
-		token, err := environment.GetToken()
-		assert.NilError(t, err)
-
-		url, err := environment.GetUrl()
-		assert.NilError(t, err)
-
-		client, err := client.NewDynatraceClient(url, token)
-		assert.NilError(t, err)
-
-		for _, api := range apis {
-			if api.GetId() == "calculated-metrics-log" {
-				t.Logf("Skipping cleanup of legacy log monitoring API")
-				continue
-			}
-
-			values, err := client.List(api)
-			if err != nil {
-				t.Logf("Failed to cleanup any test configs of type %q: %v", api.GetId(), err)
-			}
-
-			for _, value := range values {
-				if strings.HasSuffix(value.Name, suffix) {
-					log.Info("Deleting %s (%s)", value.Name, api.GetId())
-					err := client.DeleteById(api, value.Id)
-					if err != nil {
-						t.Logf("Failed to cleanup test config: %s (%s): %v", value.Name, api.GetId(), err)
-					} else {
-						log.Info("Cleaned up test config %s (%s)", value.Name, value.Id)
-					}
-				}
-			}
+		if condition() {
+			return nil
 		}
+		time.Sleep(2 * time.Second)
 	}
+
+	log.Error("Error: Waiting for '%s' timed out!", description)
+
+	return errors.New("Waiting for '" + description + "' timed out!")
 }
 
 // RunLegacyIntegrationWithCleanup runs an integration test and cleans up the created configs afterwards
@@ -304,20 +178,13 @@ func runLegacyIntegration(t *testing.T, configFolder, envFile, suffixTest string
 	configFolder, _ = filepath.Abs(configFolder)
 	envFile, _ = filepath.Abs(envFile)
 
-	var fs = util.CreateTestFileSystem()
+	var fs = testutils.CreateTestFileSystem()
 	suffix := appendUniqueSuffixToIntegrationTestConfigs(t, fs, configFolder, suffixTest)
 
 	targetDir, err := filepath.Abs("out")
 	assert.NilError(t, err)
 
 	manifestPath := path.Join(targetDir, "manifest.yaml")
-
-	if doCleanup {
-		t.Cleanup(func() {
-			t.Log("Cleaning up environment")
-			cleanupIntegrationTest(t, fs, manifestPath, suffix)
-		})
-	}
 
 	t.Log("Converting monaco-v1 to monaco-v2")
 	cmd := runner.BuildCli(fs)
@@ -336,19 +203,33 @@ func runLegacyIntegration(t *testing.T, configFolder, envFile, suffixTest string
 	assert.NilError(t, err)
 	assert.Assert(t, exists, "manifest should exist on path '%s' but does not", manifestPath)
 
+	loadedManifest, errs := manifest.LoadManifest(&manifest.LoaderContext{
+		Fs:           fs,
+		ManifestPath: manifestPath,
+	})
+	testutils.FailTestOnAnyError(t, errs, "loading of environments failed")
+
+	if doCleanup {
+		t.Cleanup(func() {
+			t.Log("Cleaning up environment")
+			integrationtest.CleanupIntegrationTest(t, fs, manifestPath, loadedManifest, suffix)
+		})
+	}
+
 	t.Log("Running actual test...")
 
 	testFunc(fs, manifestPath)
 }
 
 func appendUniqueSuffixToIntegrationTestConfigs(t *testing.T, fs afero.Fs, configFolder string, generalSuffix string) string {
-	rand.Seed(time.Now().UnixNano())
-	randomNumber := rand.Intn(10000)
+	suffix := integrationtest.GenerateTestSuffix(fmt.Sprintf("%s_%s", generalSuffix, "v1"))
+	transformers := []func(line string) string{
+		func(name string) string {
+			return integrationtest.ReplaceName(name, integrationtest.AddSuffix(suffix))
+		},
+	}
 
-	suffix := fmt.Sprintf("%s_%d_%s", getTimestamp(), randomNumber, generalSuffix)
-	transformers := []func(string) string{getTransformerFunc(suffix)}
-
-	err := util.RewriteConfigNames(configFolder, fs, transformers)
+	err := integrationtest.RewriteConfigNames(configFolder, fs, transformers)
 	if err != nil {
 		t.Fatalf("Error rewriting configs names: %s", err)
 		return suffix
@@ -365,19 +246,4 @@ func AbsOrPanicFromSlash(path string) string {
 	}
 
 	return result
-}
-
-func wait(description string, maxPollCount int, condition func() bool) error {
-
-	for i := 0; i <= maxPollCount; i++ {
-
-		if condition() {
-			return nil
-		}
-		time.Sleep(2 * time.Second)
-	}
-
-	log.Error("Error: Waiting for '%s' timed out!", description)
-
-	return errors.New("Waiting for '" + description + "' timed out!")
 }

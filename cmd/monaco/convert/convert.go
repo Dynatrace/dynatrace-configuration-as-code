@@ -16,31 +16,31 @@ package convert
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/converter/v1environment"
 	"path"
 	"path/filepath"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	configv2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/converter"
-	environmentv1 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	projectv1 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v1"
 	projectv2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/writer"
 	"github.com/spf13/afero"
 )
 
-func Convert(fs afero.Fs, workingDir string, environmentsFile string, outputFolder string,
+func convert(fs afero.Fs, workingDir string, environmentsFile string, outputFolder string,
 	manifestName string) error {
-	apis := api.NewV1Apis()
+	apis := api.NewV1APIs()
 
 	log.Info("Converting configurations from '%s' ...", workingDir)
 	man, projs, configLoadErrors := loadConfigs(fs, workingDir, apis, environmentsFile)
 
 	if len(configLoadErrors) > 0 {
-		util.PrintErrors(configLoadErrors)
+		errutils.PrintErrors(configLoadErrors)
 
 		return fmt.Errorf("encountered errors while trying to load configs. check logs")
 	}
@@ -62,7 +62,7 @@ func Convert(fs afero.Fs, workingDir string, environmentsFile string, outputFold
 
 	if len(errs) > 0 {
 		log.Error("Encountered %d errors while converting %s:", len(errs), workingDir)
-		util.PrintErrors(errs)
+		errutils.PrintErrors(errs)
 
 		return fmt.Errorf("encountered errors while converting configs. check logs")
 	}
@@ -76,10 +76,10 @@ func Convert(fs afero.Fs, workingDir string, environmentsFile string, outputFold
 	return nil
 }
 
-func loadConfigs(fs afero.Fs, workingDir string, apis map[string]api.Api,
+func loadConfigs(fs afero.Fs, workingDir string, apis api.APIs,
 	environmentsFile string) (manifest.Manifest, []projectv2.Project, []error) {
 
-	environments, errors := environmentv1.LoadEnvironmentsWithoutTemplating(environmentsFile, fs)
+	environments, errors := v1environment.LoadEnvironmentsWithoutTemplating(environmentsFile, fs)
 
 	if len(errors) > 0 {
 		return manifest.Manifest{}, nil, errors

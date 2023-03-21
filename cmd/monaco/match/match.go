@@ -18,13 +18,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/match"
 	matchEntities "github.com/dynatrace/dynatrace-configuration-as-code/pkg/match/entities"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/maps"
 	"github.com/spf13/afero"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -90,7 +90,7 @@ func loadProject(fs afero.Fs, env match.MatchParametersEnv) (project.ConfigsPerT
 	projects, errs := project.LoadProjectsSpecific(fs, context, []string{env.Project}, []string{env.Environment})
 
 	if errs != nil {
-		return nil, util.PrintAndFormatErrors(errs, "could not load projects from manifest")
+		return nil, errutils.PrintAndFormatErrors(errs, "could not load projects from manifest")
 	}
 
 	nbProjects := len(projects)

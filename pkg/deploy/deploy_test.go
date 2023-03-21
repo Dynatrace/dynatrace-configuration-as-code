@@ -33,8 +33,8 @@ import (
 	"gotest.tools/assert"
 )
 
-var dashboardApi = api.NewStandardApi("dashboard", "dashboard", false, "dashboard-v2", false)
-var testApiMap = api.ApiMap{"dashboard": dashboardApi}
+var dashboardApi = api.API{ID: "dashboard", URLPath: "dashboard", DeprecatedBy: "dashboard-v2"}
+var testApiMap = api.APIs{"dashboard": dashboardApi}
 
 func TestDeployConfig(t *testing.T) {
 	name := "test"
@@ -76,7 +76,7 @@ func TestDeployConfig(t *testing.T) {
 		Skip:        false,
 	}
 
-	resolvedEntity, errors := deployConfig(client, testApiMap, NewEntityMap(testApiMap), &conf)
+	resolvedEntity, errors := deployConfig(client, testApiMap, newEntityMap(testApiMap), &conf)
 
 	assert.Assert(t, len(errors) == 0, "there should be no errors (no errors: %d, %s)", len(errors), errors)
 	assert.Equal(t, name, resolvedEntity.EntityName, "%s == %s")
@@ -122,7 +122,7 @@ func TestDeploySettingShouldFailCyclicParameterDependencies(t *testing.T) {
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parameters),
 	}
-	_, errors := deploySetting(client, NewEntityMap(testApiMap), conf)
+	_, errors := deploySetting(client, newEntityMap(testApiMap), conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
@@ -133,7 +133,7 @@ func TestDeploySettingShouldFailRenderTemplate(t *testing.T) {
 		Template: generateFaultyTemplate(t),
 	}
 
-	_, errors := deploySetting(client, NewEntityMap(testApiMap), conf)
+	_, errors := deploySetting(client, newEntityMap(testApiMap), conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
@@ -162,14 +162,14 @@ func TestDeploySettingShouldFailUpsert(t *testing.T) {
 		},
 	}
 
-	client := client.NewMockSettingsClient(gomock.NewController(t))
-	client.EXPECT().UpsertSettings(gomock.Any()).Return(api.DynatraceEntity{}, fmt.Errorf("upsert failed"))
+	c := client.NewMockSettingsClient(gomock.NewController(t))
+	c.EXPECT().UpsertSettings(gomock.Any()).Return(client.DynatraceEntity{}, fmt.Errorf("upsert failed"))
 
 	conf := &config.Config{
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parameters),
 	}
-	_, errors := deploySetting(client, NewEntityMap(testApiMap), conf)
+	_, errors := deploySetting(c, newEntityMap(testApiMap), conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
@@ -202,7 +202,7 @@ func TestDeploySetting(t *testing.T) {
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parameters),
 	}
-	_, errors := deploySetting(client, NewEntityMap(testApiMap), conf)
+	_, errors := deploySetting(client, newEntityMap(testApiMap), conf)
 	assert.Assert(t, len(errors) == 0, "there should be no errors (no errors: %d, %s)", len(errors), errors)
 }
 
@@ -229,8 +229,8 @@ func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
 		Parameters:  toParameterMap(parameters),
 		Skip:        false,
 	}
-	entityMap := NewEntityMap(testApiMap)
-	entityMap.PutResolved(coordinate.Coordinate{Type: "dashboard"}, parameter.ResolvedEntity{EntityName: name})
+	entityMap := newEntityMap(testApiMap)
+	entityMap.put(coordinate.Coordinate{Type: "dashboard"}, parameter.ResolvedEntity{EntityName: name})
 	_, errors := deployConfig(client, testApiMap, entityMap, &conf)
 
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
@@ -282,7 +282,7 @@ func TestDeployConfigShouldFailCyclicParameterDependencies(t *testing.T) {
 		Skip:        false,
 	}
 
-	_, errors := deployConfig(client, testApiMap, NewEntityMap(testApiMap), &conf)
+	_, errors := deployConfig(client, testApiMap, newEntityMap(testApiMap), &conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
@@ -302,7 +302,7 @@ func TestDeployConfigShouldFailOnMissingNameParameter(t *testing.T) {
 		Skip:        false,
 	}
 
-	_, errors := deployConfig(client, testApiMap, NewEntityMap(testApiMap), &conf)
+	_, errors := deployConfig(client, testApiMap, newEntityMap(testApiMap), &conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
@@ -338,7 +338,7 @@ func TestDeployConfigShouldFailOnReferenceOnUnknownConfig(t *testing.T) {
 		Skip:        false,
 	}
 
-	_, errors := deployConfig(client, testApiMap, NewEntityMap(testApiMap), &conf)
+	_, errors := deployConfig(client, testApiMap, newEntityMap(testApiMap), &conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
@@ -376,13 +376,13 @@ func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
 		Skip:        false,
 	}
 
-	_, errors := deployConfig(client, testApiMap, NewEntityMap(testApiMap), &conf)
+	_, errors := deployConfig(client, testApiMap, newEntityMap(testApiMap), &conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
 func TestDeployConfigsWithNoConfigs(t *testing.T) {
 	client := &client.DummyClient{}
-	var apis map[string]api.Api
+	var apis api.APIs
 	var sortedConfigs []config.Config
 
 	errors := DeployConfigs(client, apis, sortedConfigs, DeployConfigsOptions{})
@@ -391,7 +391,7 @@ func TestDeployConfigsWithNoConfigs(t *testing.T) {
 
 func TestDeployConfigsWithOneConfigToSkip(t *testing.T) {
 	client := &client.DummyClient{}
-	var apis map[string]api.Api
+	var apis api.APIs
 	sortedConfigs := []config.Config{
 		{Skip: true},
 	}
@@ -400,8 +400,8 @@ func TestDeployConfigsWithOneConfigToSkip(t *testing.T) {
 }
 
 func TestDeployConfigsTargetingSettings(t *testing.T) {
-	client := client.NewMockClient(gomock.NewController(t))
-	var apis map[string]api.Api
+	c := client.NewMockClient(gomock.NewController(t))
+	var apis api.APIs
 	sortedConfigs := []config.Config{
 		{
 			Template: generateDummyTemplate(t),
@@ -420,11 +420,11 @@ func TestDeployConfigsTargetingSettings(t *testing.T) {
 		},
 	}
 	//client.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Times(1).Return([]rest.DownloadSettingsObject{{ExternalId: "externalId"}}, nil)
-	client.EXPECT().UpsertSettings(gomock.Any()).Times(1).Return(api.DynatraceEntity{
+	c.EXPECT().UpsertSettings(gomock.Any()).Times(1).Return(client.DynatraceEntity{
 		Id:   "42",
 		Name: "Super Special Settings Object",
 	}, nil)
-	errors := DeployConfigs(client, apis, sortedConfigs, DeployConfigsOptions{})
+	errors := DeployConfigs(c, apis, sortedConfigs, DeployConfigsOptions{})
 	assert.Assert(t, len(errors) == 0, "there should be no errors (errors: %s)", errors)
 }
 
@@ -432,15 +432,12 @@ func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
 	theConfigName := "theConfigName"
 	theApiName := "theApiName"
 
-	theApi := api.NewMockApi(gomock.NewController(t))
-	theApi.EXPECT().GetId().AnyTimes().Return(theApiName)
-	theApi.EXPECT().DeprecatedBy().Return("")
-	theApi.EXPECT().IsNonUniqueNameApi().Return(false)
+	theApi := api.API{ID: theApiName, URLPath: "path"}
 
 	client := client.NewMockClient(gomock.NewController(t))
-	client.EXPECT().UpsertByName(gomock.Any(), theConfigName, gomock.Any()).Times(1)
+	client.EXPECT().UpsertConfigByName(gomock.Any(), theConfigName, gomock.Any()).Times(1)
 
-	apis := map[string]api.Api{theApiName: theApi}
+	apis := api.APIs{theApiName: theApi}
 	parameters := []topologysort.ParameterWithName{
 		{
 			Name: config.NameParameter,
@@ -468,15 +465,12 @@ func TestDeployConfigsTargetingClassicConfigNonUniqueWithExistingCfgsOfSameName(
 	theConfigName := "theConfigName"
 	theApiName := "theApiName"
 
-	theApi := api.NewMockApi(gomock.NewController(t))
-	theApi.EXPECT().GetId().AnyTimes().Return(theApiName)
-	theApi.EXPECT().DeprecatedBy().Return("")
-	theApi.EXPECT().IsNonUniqueNameApi().Return(true)
+	theApi := api.API{ID: theApiName, URLPath: "path", NonUniqueName: true}
 
 	client := client.NewMockClient(gomock.NewController(t))
-	client.EXPECT().UpsertByNonUniqueNameAndId(gomock.Any(), gomock.Any(), theConfigName, gomock.Any())
+	client.EXPECT().UpsertConfigByNonUniqueNameAndId(gomock.Any(), gomock.Any(), theConfigName, gomock.Any())
 
-	apis := map[string]api.Api{theApiName: theApi}
+	apis := api.APIs{theApiName: theApi}
 	parameters := []topologysort.ParameterWithName{
 		{
 			Name: config.NameParameter,
@@ -506,7 +500,7 @@ func TestDeployConfigsNoApi(t *testing.T) {
 
 	client := client.NewMockClient(gomock.NewController(t))
 
-	apis := map[string]api.Api{}
+	apis := api.APIs{}
 	parameters := []topologysort.ParameterWithName{
 		{
 			Name: config.NameParameter,
@@ -549,10 +543,8 @@ func TestDeployConfigsNoApi(t *testing.T) {
 
 func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
 	theApiName := "theApiName"
-	theApi := api.NewMockApi(gomock.NewController(t))
-	theApi.EXPECT().GetId().AnyTimes().Return(theApiName)
-
-	apis := map[string]api.Api{theApiName: theApi}
+	theApi := api.API{ID: theApiName, URLPath: "path"}
+	apis := api.APIs{theApiName: theApi}
 	sortedConfigs := []config.Config{
 		{
 			Parameters: toParameterMap([]topologysort.ParameterWithName{}), // missing name parameter leads to deployment failure

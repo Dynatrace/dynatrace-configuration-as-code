@@ -1,5 +1,3 @@
-//go:build unused
-
 /**
  * @license
  * Copyright 2020 Dynatrace LLC
@@ -21,8 +19,8 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 	"net/http"
 	"strings"
 )
@@ -31,36 +29,48 @@ type ApiVersionObject struct {
 	Version string `json:"version"`
 }
 
-const versionPath = "/api/v1/config/clusterversion"
+const versionPathClassic = "/api/v1/config/clusterversion"
 
-func GetDynatraceVersion(client *http.Client, environmentUrl string, apiToken string) (util.Version, error) {
-	versionUrl := environmentUrl + versionPath
-	resp, err := rest.get(client, versionUrl, apiToken)
+// GetDynatraceVersion returns the version of an environment
+func GetDynatraceVersion(client *http.Client, environmentURL string) (version.Version, error) {
+	versionURL := environmentURL + versionPathClassic
+
+	resp, err := rest.Get(client, versionURL)
 	if err != nil {
-		return util.Version{}, fmt.Errorf("failed to query version of Dynatrace environment: %w", err)
+		return version.Version{}, fmt.Errorf("failed to query version of Dynatrace environment: %w", err)
 	}
-	if resp.StatusCode != http.StatusOK {
-		return util.Version{}, fmt.Errorf("failed to query version of Dynatrace environment: (HTTP %v) %v", resp.StatusCode, string(resp.Body))
+	if !resp.IsSuccess() {
+		return version.Version{}, RespError{
+			Err:        fmt.Errorf("failed to query version of Dynatrace environment: (HTTP %d) Response was: %s", resp.StatusCode, string(resp.Body)),
+			StatusCode: resp.StatusCode,
+		}
 	}
 
 	var jsonResp ApiVersionObject
 	if err := json.Unmarshal(resp.Body, &jsonResp); err != nil {
-		return util.Version{}, fmt.Errorf("failed to parse Dynatrace version JSON: %w", err)
+		return version.Version{}, fmt.Errorf("failed to parse Dynatrace version JSON: %w", err)
 	}
 
-	return parseDynatraceVersion(jsonResp.Version)
+	v, err := parseDynatraceClassicVersion(jsonResp.Version)
+	if err != nil {
+		return version.Version{}, RespError{
+			Err:        err,
+			StatusCode: resp.StatusCode,
+		}
+	}
+	return v, nil
 }
 
-// parseDynatraceVersion turns a Dynatrace version string in the format MAJOR.MINOR.PATCH.DATE into a Version object
+// parseDynatraceClassicVersion turns a Dynatrace version string in the format MAJOR.MINOR.PATCH.DATE into a Version object
 // for the version check purposes of monaco the build date part is ignored, assuming correct semantic versioning and
 // not needing to check anything but >= feature versions for our compatibility usecases
-func parseDynatraceVersion(versionString string) (version util.Version, err error) {
+func parseDynatraceClassicVersion(versionString string) (v version.Version, err error) {
 	if len(strings.Split(versionString, ".")) != 4 {
-		return version, fmt.Errorf("failed to parse Dynatrace version: format did not meet expected MAJOR.MINOR.PATCH.DATE pattern: %v", versionString)
+		return v, fmt.Errorf("failed to parse Dynatrace version: format did not meet expected MAJOR.MINOR.PATCH.DATE pattern: %v", versionString)
 	}
 
 	i := strings.LastIndex(versionString, ".")
 	trimmed := versionString[:i] // remove trailing .DATE part
 
-	return util.ParseVersion(trimmed)
+	return version.ParseVersion(trimmed)
 }

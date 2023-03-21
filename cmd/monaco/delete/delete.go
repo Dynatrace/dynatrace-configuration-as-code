@@ -17,73 +17,47 @@ package delete
 import (
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/maps"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/delete"
 	"path/filepath"
-	"strings"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
-	configDelete "github.com/dynatrace/dynatrace-configuration-as-code/pkg/delete/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
 
-func Delete(fs afero.Fs, deploymentManifestPath string, deletePath string, environmentNames []string, environmentGroup string) error {
+func Delete(fs afero.Fs, deploymentManifestPath string, deleteFile string, environmentNames []string, environmentGroups []string) error {
 
 	deploymentManifestPath = filepath.Clean(deploymentManifestPath)
 	deploymentManifestPath, manifestErr := filepath.Abs(deploymentManifestPath)
-	deletePath = filepath.Clean(deletePath)
-	deletePath, deleteErr := filepath.Abs(deletePath)
-	deleteFileWorkingDir := strings.ReplaceAll(deletePath, "delete.yaml", "")
-	deleteFile := "delete.yaml"
 
 	if manifestErr != nil {
 		return fmt.Errorf("error while finding absolute path for `%s`: %w", deploymentManifestPath, manifestErr)
 	}
 
-	if deleteErr != nil {
-		return fmt.Errorf("error while finding absolute path for `%s`: %w", deletePath, deleteErr)
-	}
+	apis := api.NewAPIs()
 
-	apis := api.NewApis()
-
-	manifest, manifestLoadError := manifest.LoadManifest(&manifest.ManifestLoaderContext{
+	manifest, manifestLoadError := manifest.LoadManifest(&manifest.LoaderContext{
 		Fs:           fs,
 		ManifestPath: deploymentManifestPath,
+		Environments: environmentNames,
+		Groups:       environmentGroups,
 	})
 
 	if manifestLoadError != nil {
-		util.PrintErrors(manifestLoadError)
+		errutils.PrintErrors(manifestLoadError)
 		return errors.New("error while loading manifest")
 	}
 
-	entriesToDelete, errs := configDelete.LoadEntriesToDelete(fs, api.GetApiNames(apis), deleteFileWorkingDir, deleteFile)
+	entriesToDelete, errs := delete.LoadEntriesToDelete(fs, apis.GetNames(), deleteFile)
 	if errs != nil {
 		return fmt.Errorf("encountered errors while parsing delete.yaml: %s", errs)
 	}
 
-	environments := manifest.Environments
-	if environmentGroup != "" {
-		environments = environments.FilterByGroup(environmentGroup)
-
-		if len(environments) == 0 {
-			return fmt.Errorf("no environments in group %q", environmentGroup)
-		} else {
-			log.Info("Environments loaded in group %q: %v", environmentGroup, maps.Keys(environments))
-		}
-	}
-
-	if len(environmentNames) > 0 {
-		var err error
-		environments, err = manifest.Environments.FilterByNames(environmentNames)
-		if err != nil {
-			return fmt.Errorf("failed to load environments: %w", err)
-		}
-	}
-
-	deleteErrors := deleteConfigs(maps.Values(environments), apis, entriesToDelete)
+	deleteErrors := deleteConfigs(maps.Values(manifest.Environments), apis, entriesToDelete)
 
 	for _, e := range deleteErrors {
 		log.Error("Deletion error: %s", e)
@@ -94,7 +68,7 @@ func Delete(fs afero.Fs, deploymentManifestPath string, deletePath string, envir
 	return nil
 }
 
-func deleteConfigs(environments []manifest.EnvironmentDefinition, apis map[string]api.Api, entriesToDelete map[string][]configDelete.DeletePointer) (errors []error) {
+func deleteConfigs(environments []manifest.EnvironmentDefinition, apis api.APIs, entriesToDelete map[string][]delete.DeletePointer) (errors []error) {
 
 	for _, env := range environments {
 		deleteErrors := deleteConfigForEnvironment(env, apis, entriesToDelete)
@@ -107,7 +81,7 @@ func deleteConfigs(environments []manifest.EnvironmentDefinition, apis map[strin
 	return errors
 }
 
-func deleteConfigForEnvironment(env manifest.EnvironmentDefinition, apis map[string]api.Api, entriesToDelete map[string][]configDelete.DeletePointer) []error {
+func deleteConfigForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs, entriesToDelete map[string][]delete.DeletePointer) []error {
 	dynatraceClient, err := createClient(env, false)
 
 	if err != nil {
@@ -118,7 +92,7 @@ func deleteConfigForEnvironment(env manifest.EnvironmentDefinition, apis map[str
 
 	log.Info("Deleting configs for environment `%s`", env.Name)
 
-	return configDelete.DeleteConfigs(dynatraceClient, apis, entriesToDelete)
+	return delete.DeleteConfigs(dynatraceClient, apis, entriesToDelete)
 }
 
 func createClient(environment manifest.EnvironmentDefinition, dryRun bool) (client.Client, error) {
@@ -126,16 +100,5 @@ func createClient(environment manifest.EnvironmentDefinition, dryRun bool) (clie
 		return &client.DummyClient{}, nil
 	}
 
-	token, err := environment.GetToken()
-
-	if err != nil {
-		return nil, err
-	}
-
-	url, err := environment.GetUrl()
-	if err != nil {
-		return nil, err
-	}
-
-	return client.NewDynatraceClient(url, token)
+	return client.NewDynatraceClient(client.NewTokenAuthClient(environment.Auth.Token.Value), environment.URL.Value)
 }

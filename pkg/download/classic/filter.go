@@ -17,13 +17,13 @@
 package classic
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"strings"
 )
 
 type apiFilter struct {
 	// shouldBeSkippedPreDownload is an optional callback indicating that a config should not be downloaded after the list of the configs
-	shouldBeSkippedPreDownload func(value api.Value) bool
+	shouldBeSkippedPreDownload func(value client.Value) bool
 
 	// shouldConfigBePersisted is an optional callback to check whether a config should be persisted after being downloaded
 	shouldConfigBePersisted func(json map[string]interface{}) bool
@@ -31,7 +31,7 @@ type apiFilter struct {
 
 var apiFilters = map[string]apiFilter{
 	"dashboard": {
-		shouldBeSkippedPreDownload: func(value api.Value) bool {
+		shouldBeSkippedPreDownload: func(value client.Value) bool {
 			return value.Owner != nil && *value.Owner == "Dynatrace"
 		},
 		shouldConfigBePersisted: func(json map[string]interface{}) bool {
@@ -68,7 +68,7 @@ var apiFilters = map[string]apiFilter{
 		},
 	},
 	"anomaly-detection-metrics": {
-		shouldBeSkippedPreDownload: func(value api.Value) bool {
+		shouldBeSkippedPreDownload: func(value client.Value) bool {
 			return strings.HasPrefix(value.Id, "dynatrace.") || strings.HasPrefix(value.Id, "ruxit.")
 		},
 	},

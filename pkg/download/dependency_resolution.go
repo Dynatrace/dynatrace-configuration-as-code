@@ -18,17 +18,18 @@ package download
 
 import (
 	"fmt"
+	"github.com/cloudflare/ahocorasick"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
+	"regexp"
 	"strings"
 	"sync"
 
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/reference"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/maps"
 )
 
 // ResolveDependencies resolves all id-dependencies between downloaded configs.
@@ -42,8 +43,25 @@ func ResolveDependencies(configs project.ConfigsPerType) project.ConfigsPerType 
 	return configs
 }
 
+// dependencyResolutionContext holds the important information for depdenency resolution.
+// The core information is in the [idMatcher] that returns the index of the found strings in the initial dictionary.
+// Since not the ids, but the indexes are returned, we need also the original dictionary ([ids] to look up the actual content of the key,
+// and with this key we can look up the actual config using the [configsById] field.
+type dependencyResolutionContext struct {
+	// the original dictionary that initialized the [idMatcher].
+	// it is used to get the actual key after the matcher returns the index(es)
+	ids []string
+
+	// idMatcher is the matcher that returns all found strings within a searched string as the index of the dictionary
+	idMatcher *ahocorasick.Matcher
+
+	// configsById holds all configs by their id. It is used to get the config for a given key
+	configsById map[string]config.Config
+}
+
 func resolve(configs project.ConfigsPerType) {
-	configsById := collectConfigsById(configs)
+	c := newResolutionContext(configs)
+
 	wg := sync.WaitGroup{}
 	// currently a simple brute force attach
 	for _, configs := range configs {
@@ -53,8 +71,8 @@ func resolve(configs project.ConfigsPerType) {
 
 			configToBeUpdated := &configs[i]
 			go func() {
-				resolveScope(configToBeUpdated, configsById)
-				resolveTemplate(configToBeUpdated, configsById)
+				resolveScope(configToBeUpdated, c.configsById)
+				resolveTemplate(configToBeUpdated, c)
 
 				wg.Done()
 			}()
@@ -62,6 +80,17 @@ func resolve(configs project.ConfigsPerType) {
 	}
 
 	wg.Wait()
+}
+
+func newResolutionContext(configs project.ConfigsPerType) dependencyResolutionContext {
+	configsById := collectConfigsById(configs)
+	ids := maps.Keys(configsById)
+
+	return dependencyResolutionContext{
+		ids:         ids,
+		idMatcher:   ahocorasick.NewStringMatcher(ids),
+		configsById: configsById,
+	}
 }
 
 func resolveScope(configToBeUpdated *config.Config, ids map[string]config.Config) {
@@ -89,8 +118,8 @@ func resolveScope(configToBeUpdated *config.Config, ids map[string]config.Config
 	configToBeUpdated.Parameters[config.ScopeParameter] = reference.NewWithCoordinate(dependency.Coordinate, "id")
 }
 
-func resolveTemplate(configToBeUpdated *config.Config, configsById map[string]config.Config) {
-	newContent, parameters, _ := findAndReplaceIds(configToBeUpdated.Coordinate.Type, *configToBeUpdated, configsById)
+func resolveTemplate(configToBeUpdated *config.Config, c dependencyResolutionContext) {
+	newContent, parameters, _ := findAndReplaceIds(configToBeUpdated.Coordinate.Type, *configToBeUpdated, c)
 
 	maps.Copy(configToBeUpdated.Parameters, parameters)
 	configToBeUpdated.Template.UpdateContent(newContent)
@@ -107,39 +136,52 @@ func collectConfigsById(configs project.ConfigsPerType) map[string]config.Config
 	return configsById
 }
 
-func findAndReplaceIds(apiName string, configToBeUpdated config.Config, configs map[string]config.Config) (string, config.Parameters, []coordinate.Coordinate) {
+func findAndReplaceIds(apiName string, configToBeUpdated config.Config, c dependencyResolutionContext) (string, config.Parameters, []coordinate.Coordinate) {
 	parameters := make(config.Parameters, 0)
 	content := configToBeUpdated.Template.Content()
 	coordinates := make([]coordinate.Coordinate, 0)
 
-	for key, conf := range configs {
-		if shouldReplaceReference(configToBeUpdated, conf, content, key) {
-			log.Debug("\treference: '%v/%v' referencing '%v' in coordinate '%v' ", apiName, configToBeUpdated.Template.Id(), key, conf.Coordinate)
+	indexes := c.idMatcher.MatchThreadSafe([]byte(configToBeUpdated.Template.Content()))
+	for _, v := range indexes {
 
-			parameterName := createParameterName(conf.Coordinate.Type, conf.Coordinate.ConfigId)
-			coord := conf.Coordinate
-
-			content = strings.ReplaceAll(content, key, "{{."+parameterName+"}}")
-			ref := reference.NewWithCoordinate(coord, "id")
-			parameters[parameterName] = ref
-			coordinates = append(coordinates, coord)
+		// get the actual key and config for a given match
+		key := c.ids[v]
+		conf, f := c.configsById[key]
+		if !f {
+			panic(fmt.Sprintf("No config found for given key %q", key))
 		}
+
+		if configToBeUpdated.Coordinate.Type == "dashboard" && conf.Coordinate.Type == "dashboard" {
+			continue // dashboards can not actually reference each other, but often contain a link to another inside a markdown tile
+		}
+
+		if conf.Coordinate == configToBeUpdated.Coordinate {
+			continue // skip self referencing configs
+		}
+
+		log.Debug("\treference: '%v/%v' referencing '%v' in coordinate '%v' ", apiName, configToBeUpdated.Template.Id(), key, conf.Coordinate)
+
+		parameterName := createParameterName(conf.Coordinate.Type, conf.Coordinate.ConfigId)
+		coord := conf.Coordinate
+
+		content = strings.ReplaceAll(content, key, "{{."+parameterName+"}}")
+		ref := reference.NewWithCoordinate(coord, "id")
+		parameters[parameterName] = ref
+		coordinates = append(coordinates, coord)
+
 	}
 
 	return content, parameters, coordinates
 }
 
-// shouldReplaceReference checks if a given key is found in the content of another config and should be replaced
-// in case two configs are actually the same, or if they are both dashboards no replacement will happen as in these
-// cases there is no real valid reference even if the key is found in the content.
-func shouldReplaceReference(configToBeUpdated config.Config, configToUpdateFrom config.Config, contentToBeUpdated, keyToReplace string) bool {
-	if configToBeUpdated.Coordinate.Type == "dashboard" && configToUpdateFrom.Coordinate.Type == "dashboard" {
-		return false //dashboards can not actually reference each other, but often contain a link to another inside a markdown tile
-	}
-
-	return configToUpdateFrom.Template.Id() != configToBeUpdated.Template.Id() && strings.Contains(contentToBeUpdated, keyToReplace)
+func createParameterName(api, configId string) string {
+	return sanitizeTemplateVar(fmt.Sprintf("%v__%v__id", api, configId))
 }
 
-func createParameterName(api, configId string) string {
-	return util.SanitizeTemplateVar(fmt.Sprintf("%v__%v__id", api, configId))
+// matches any non-alphanumerical chars including _
+var templatePattern = regexp.MustCompile(`[^a-zA-Z0-9_]+`)
+
+// SanitizeTemplateVar removes all except alphanumerical chars and underscores (_)
+func sanitizeTemplateVar(templateVarName string) string {
+	return templatePattern.ReplaceAllString(templateVarName, "")
 }

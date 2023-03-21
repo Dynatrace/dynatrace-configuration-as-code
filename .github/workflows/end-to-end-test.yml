@@ -26,12 +26,12 @@ jobs:
     name: E2E Test
     runs-on: ubuntu-latest
     permissions:
-      checks: write
       contents: read
+      checks: write
     steps:
 
       - name: Set up Go 1.x
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version: '~1.20'
         id: go
@@ -47,9 +47,10 @@ jobs:
         if: github.event.action == 'labeled' && github.event.label.name == env.E2E_TEST_LABEL
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: 🏁 Build release binaries
+        if: github.event.action != 'labeled' || (github.event.action == 'labeled' && github.event.label.name == env.E2E_TEST_LABEL)
         run: make build-release
 
       - name: 🌎 Integration test

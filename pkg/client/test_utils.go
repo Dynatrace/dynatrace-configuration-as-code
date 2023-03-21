@@ -19,10 +19,10 @@
 package client
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/maps"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/slices"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -139,7 +139,7 @@ func NewIntegrationTestServer(t *testing.T, basePath string, mappings map[string
 	return testServer
 }
 
-func NewDynatraceClientForTesting(environmentUrl, token string, client *http.Client) (*DynatraceClient, error) {
+func NewDynatraceClientForTesting(environmentUrl string, client *http.Client) (*DynatraceClient, error) {
 
-	return NewDynatraceClient(environmentUrl, token, WithHTTPClient(client))
+	return NewDynatraceClient(client, environmentUrl)
 }

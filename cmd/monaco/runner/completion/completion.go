@@ -20,9 +20,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/files"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/maps"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/slices"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
 	"github.com/spf13/pflag"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
@@ -108,7 +108,7 @@ func AllAvailableApis(cmd *cobra.Command, _ []string, _ string) ([]string, cobra
 		return nil, cobra.ShellCompDirectiveError
 	}
 
-	allApis := maps.Keys(api.NewApis())
+	allApis := maps.Keys(api.NewAPIs())
 
 	return slices.Difference(allApis, value.GetSlice()), cobra.ShellCompDirectiveDefault
 }
@@ -122,7 +122,7 @@ func EnvironmentByArg0(_ *cobra.Command, args []string, _ string) ([]string, cob
 }
 
 func loadEnvironmentsFromManifest(manifestPath string) ([]string, cobra.ShellCompDirective) {
-	man, _ := manifest.LoadManifest(&manifest.ManifestLoaderContext{
+	man, _ := manifest.LoadManifest(&manifest.LoaderContext{
 		Fs:           afero.NewOsFs(),
 		ManifestPath: manifestPath,
 	})
@@ -133,7 +133,7 @@ func loadEnvironmentsFromManifest(manifestPath string) ([]string, cobra.ShellCom
 func ProjectsFromManifest(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
 
 	manifestPath := args[0]
-	mani, _ := manifest.LoadManifest(&manifest.ManifestLoaderContext{
+	mani, _ := manifest.LoadManifest(&manifest.LoaderContext{
 		Fs:           afero.NewOsFs(),
 		ManifestPath: manifestPath,
 	})

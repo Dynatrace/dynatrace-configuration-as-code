@@ -23,12 +23,16 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type ManifestWriterContext struct {
-	Fs           afero.Fs
+// WriterContext holds all information for [WriteManifest]
+type WriterContext struct {
+	// Fs holds the abstraction of the file system.
+	Fs afero.Fs
+
+	// ManifestPath holds the path from where the manifest should be written to.
 	ManifestPath string
 }
 
-func WriteManifest(context *ManifestWriterContext, manifestToWrite Manifest) error {
+func WriteManifest(context *WriterContext, manifestToWrite Manifest) error {
 	sanitizedPath := filepath.Clean(context.ManifestPath)
 	folder := filepath.Dir(sanitizedPath)
 
@@ -52,7 +56,7 @@ func WriteManifest(context *ManifestWriterContext, manifestToWrite Manifest) err
 	return persistManifestToDisk(context, m)
 }
 
-func persistManifestToDisk(context *ManifestWriterContext, m manifest) error {
+func persistManifestToDisk(context *WriterContext, m manifest) error {
 	manifestAsYaml, err := yaml.Marshal(m)
 
 	if err != nil {
@@ -113,9 +117,9 @@ func toWriteableEnvironmentGroups(environments map[string]EnvironmentDefinition)
 
 	for name, env := range environments {
 		e := environment{
-			Name:  name,
-			Url:   toWriteableUrl(env),
-			Token: toWritableToken(env),
+			Name: name,
+			URL:  toWriteableURL(env),
+			Auth: getAuth(env),
 		}
 
 		environmentPerGroup[env.Group] = append(environmentPerGroup[env.Group], e)
@@ -128,32 +132,65 @@ func toWriteableEnvironmentGroups(environments map[string]EnvironmentDefinition)
 	return result
 }
 
-func toWriteableUrl(environment EnvironmentDefinition) url {
-	if environment.url.Type == EnvironmentUrlType {
+func getAuth(env EnvironmentDefinition) auth {
+	if env.Type == Classic {
+		return auth{Token: getTokenSecret(env)}
+	}
+
+	var te *url
+	switch env.Auth.OAuth.TokenEndpoint.Type {
+	case ValueURLType:
+		te = &url{
+			Value: env.Auth.OAuth.TokenEndpoint.Value,
+		}
+	case EnvironmentURLType:
+		te = &url{
+			Type:  urlTypeEnvironment,
+			Value: env.Auth.OAuth.TokenEndpoint.Name,
+		}
+	case Absent:
+		te = nil
+	}
+
+	return auth{
+		Token: getTokenSecret(env),
+		OAuth: &oAuth{
+			ClientID: authSecret{
+				Type: typeEnvironment,
+				Name: env.Auth.OAuth.ClientID.Name,
+			},
+			ClientSecret: authSecret{
+				Type: typeEnvironment,
+				Name: env.Auth.OAuth.ClientSecret.Name,
+			},
+			TokenEndpoint: te,
+		},
+	}
+}
+
+func toWriteableURL(environment EnvironmentDefinition) url {
+	if environment.URL.Type == EnvironmentURLType {
 		return url{
-			Type:  string(environment.url.Type),
-			Value: environment.url.Value,
+			Type:  urlTypeEnvironment,
+			Value: environment.URL.Name,
 		}
 	}
 
 	return url{
-		Value: environment.url.Value,
+		Value: environment.URL.Value,
 	}
 }
 
-func toWritableToken(environment EnvironmentDefinition) tokenConfig {
-	var envVarName string
+// getTokenSecret returns the tokenConfig with some legacy magic string append that still might be used (?)
+func getTokenSecret(environment EnvironmentDefinition) authSecret {
+	token := environment.Name + "_TOKEN"
 
-	switch token := environment.Token.(type) {
-	case *EnvironmentVariableToken:
-		envVarName = token.EnvironmentVariableName
-	default:
-		envVarName = environment.Name + "_TOKEN"
+	if environment.Auth.Token.Name != "" {
+		token = environment.Auth.Token.Name
 	}
 
-	return tokenConfig{
-		Config: map[string]interface{}{
-			"name": envVarName,
-		},
+	return authSecret{
+		Type: typeEnvironment,
+		Name: token,
 	}
 }

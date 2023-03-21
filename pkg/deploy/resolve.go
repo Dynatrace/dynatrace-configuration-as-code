@@ -15,11 +15,11 @@
 package deploy
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/strings"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2/topologysort"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
 )
 
 // TODO: unexport this function
@@ -59,7 +59,7 @@ func ResolveParameterValues(
 		}
 
 		if name == config.NameParameter {
-			properties[name] = util.ToString(val)
+			properties[name] = strings.ToString(val)
 		} else {
 			properties[name] = val
 		}

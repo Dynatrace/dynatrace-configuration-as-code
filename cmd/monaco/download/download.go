@@ -16,15 +16,17 @@ package download
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"path"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2/topologysort"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
 
@@ -54,7 +56,7 @@ type downloadCommandOptionsShared struct {
 	forceOverwrite bool
 }
 
-type DynatraceClientProvider func(string, string, ...func(*client.DynatraceClient)) (*client.DynatraceClient, error)
+type DynatraceClientProvider func(*http.Client, string, ...func(*client.DynatraceClient)) (*client.DynatraceClient, error)
 
 type downloadOptionsShared struct {
 	environmentUrl          string
@@ -68,10 +70,10 @@ type downloadOptionsShared struct {
 }
 
 func (c downloadOptionsShared) getDynatraceClient() (client.Client, error) {
-	return c.clientProvider(c.environmentUrl, c.token)
+	return c.clientProvider(client.NewTokenAuthClient(c.token), c.environmentUrl, client.WithAutoServerVersion())
 }
 
-func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptionsShared, err error, fs afero.Fs) error {
+func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptionsShared, fs afero.Fs) error {
 	proj := download.CreateProjectData(downloadedConfigs, opts.projectName)
 
 	downloadWriterContext := download.WriterContext{
@@ -81,24 +83,26 @@ func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptions
 		OutputFolder:           opts.outputFolder,
 		ForceOverwriteManifest: opts.forceOverwriteManifest,
 	}
-	err = download.WriteToDisk(fs, downloadWriterContext)
+	err := download.WriteToDisk(fs, downloadWriterContext)
 	if err != nil {
 		return err
 	}
 
+	log.Info("Searching for circular dependencies")
 	if depErr := reportForCircularDependencies(proj); depErr != nil {
 		log.Warn("Download finished with problems: %s", depErr)
 	} else {
-		log.Info("Finished download")
+		log.Info("No circular dependencies found")
 	}
 
+	log.Info("Finished download")
 	return nil
 }
 
 func reportForCircularDependencies(p project.Project) error {
 	_, errs := topologysort.GetSortedConfigsForEnvironments([]project.Project{p}, []string{p.Id})
 	if len(errs) != 0 {
-		util.PrintWarnings(errs)
+		errutils.PrintWarnings(errs)
 		return fmt.Errorf("there are circular dependencies between %d configurations that need to be resolved manually", len(errs))
 	}
 	return nil
@@ -143,7 +147,7 @@ func preDownloadValidations(fs afero.Fs, opts downloadOptionsShared) error {
 
 	errs := validateOutputFolder(fs, opts.outputFolder, opts.projectName)
 	if len(errs) > 0 {
-		return util.PrintAndFormatErrors(errs, "output folder is invalid")
+		return errutils.PrintAndFormatErrors(errs, "output folder is invalid")
 	}
 
 	return nil

@@ -19,9 +19,10 @@
 package v2
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/test"
 	"github.com/spf13/afero"
 	"regexp"
 	"testing"
@@ -36,50 +37,85 @@ func TestDoCleanup(t *testing.T) {
 	manifestPath := "test-resources/test_environments_manifest.yaml"
 
 	fs := afero.NewOsFs()
-	loadedManifest, errs := manifest.LoadManifest(&manifest.ManifestLoaderContext{
+	loadedManifest, errs := manifest.LoadManifest(&manifest.LoaderContext{
 		Fs:           fs,
 		ManifestPath: manifestPath,
 	})
-	test.FailTestOnAnyError(t, errs, "failed to load manifest to delete for")
+	testutils.FailTestOnAnyError(t, errs, "failed to load manifest to delete for")
 
-	apis := api.NewApis()
+	apis := api.NewAPIs()
 
 	// match anything ending in test suffixes of {timestamp}_{random numbers}_{some suffix test}
 	testSuffixRegex := regexp.MustCompile(`^.+_\d+_\d+_.*$`)
 
 	for _, environment := range loadedManifest.Environments {
-		deletedConfigs := 0
-		token, err := environment.GetToken()
+		envUrl := environment.URL.Value
+
+		client := integrationtest.CreateDynatraceClient(t, environment)
+
+		deletedConfigs := cleanupTestConfigs(t, apis, client, testSuffixRegex)
+		t.Logf("Deleted %d leftover test configurations from %s (%s)", deletedConfigs, environment.Name, envUrl)
+
+		deletedSettings := cleanupTestSettings(t, client)
+		t.Logf("Deleted %d leftover test Settings from %s (%s)", deletedSettings, environment.Name, envUrl)
+	}
+
+}
+
+func cleanupTestConfigs(t *testing.T, apis api.APIs, client client.ConfigClient, testSuffixRegex *regexp.Regexp) int {
+	deletedConfigs := 0
+	for _, api := range apis {
+		if api.ID == "calculated-metrics-log" {
+			t.Logf("Skipping cleanup of legacy log monitoring API")
+			continue
+		}
+
+		values, err := client.ListConfigs(api)
 		assert.NilError(t, err)
 
-		envUrl, err := environment.GetUrl()
-		assert.NilError(t, err)
-
-		client, err := client.NewDynatraceClient(envUrl, token)
-		assert.NilError(t, err)
-
-		for _, api := range apis {
-			if api.GetId() == "calculated-metrics-log" {
-				t.Logf("Skipping cleanup of legacy log monitoring API")
-				continue
-			}
-
-			values, err := client.List(api)
-			assert.NilError(t, err)
-
-			for _, value := range values {
-				if testSuffixRegex.MatchString(value.Name) || testSuffixRegex.MatchString(value.Id) {
-					err := client.DeleteById(api, value.Id)
-					if err != nil {
-						t.Errorf("failed to delete %s (%s): %v", value.Name, api.GetId(), err)
-					} else {
-						log.Info("Deleted %s (%s)", value.Name, api.GetId())
-						deletedConfigs++
-					}
+		for _, value := range values {
+			if testSuffixRegex.MatchString(value.Name) || testSuffixRegex.MatchString(value.Id) {
+				err := client.DeleteConfigById(api, value.Id)
+				if err != nil {
+					t.Errorf("failed to delete %s (%s): %v", value.Name, api.ID, err)
+				} else {
+					log.Info("Deleted %s (%s)", value.Name, api.ID)
+					deletedConfigs++
 				}
 			}
 		}
-		t.Logf("Deleted %d leftover test configurations from %s (%s)", deletedConfigs, environment.Name, envUrl)
 	}
+	return deletedConfigs
+}
+
+func cleanupTestSettings(t *testing.T, c client.SettingsClient) int {
+	deletedSettings := 0
+
+	schemas, err := c.ListSchemas()
+	assert.NilError(t, err)
+
+	for _, s := range schemas {
+		schemaId := s.SchemaId
+		objects, err := c.ListSettings(schemaId, client.ListSettingsOptions{DiscardValue: true, Filter: func(o client.DownloadSettingsObject) bool { return o.ExternalId != "" }})
+		if err != nil {
+			t.Errorf("could not fetch settings 2.0 objects with schema %s: %v", schemaId, err)
+		}
+
+		if len(objects) == 0 {
+			continue
+		}
+
+		for _, obj := range objects {
+			err := c.DeleteSettings(obj.ObjectId)
+			if err != nil {
+				t.Errorf("failed to delete %q object: %s (extId: %s): %v", obj.ObjectId, obj.ExternalId, schemaId, err)
+			} else {
+				log.Info("Deleted %q object: %s (extId: %s)", obj.ObjectId, obj.ExternalId, schemaId)
+				deletedSettings++
+			}
+		}
+	}
+
+	return deletedSettings
 
 }

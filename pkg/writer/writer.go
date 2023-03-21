@@ -15,13 +15,13 @@
 package writer
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"path/filepath"
 
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 	"github.com/spf13/afero"
 )
 
@@ -41,7 +41,7 @@ func WriteToDisk(context *WriterContext, manifestToWrite manifest.Manifest, proj
 		return []error{err}
 	}
 
-	err = manifest.WriteManifest(&manifest.ManifestWriterContext{
+	err = manifest.WriteManifest(&manifest.WriterContext{
 		Fs:           context.Fs,
 		ManifestPath: filepath.Join(sanitizedOutputDir, context.ManifestName),
 	}, manifestToWrite)
@@ -53,7 +53,7 @@ func WriteToDisk(context *WriterContext, manifestToWrite manifest.Manifest, proj
 	return writeProjects(context, manifestToWrite.Projects, projects)
 }
 
-func writeProjects(context *WriterContext, projectDefinitions manifest.ProjectDefinitionByProjectId,
+func writeProjects(context *WriterContext, projectDefinitions manifest.ProjectDefinitionByProjectID,
 	projects []project.Project) []error {
 	sanitizedOutputDir := filepath.Clean(context.OutputDir)
 	err := context.Fs.MkdirAll(sanitizedOutputDir, 0777)

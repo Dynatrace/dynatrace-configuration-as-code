@@ -20,7 +20,8 @@
 package v2
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
@@ -43,7 +44,7 @@ func TestIntegrationSettings(t *testing.T) {
 		err := cmd.Execute()
 
 		assert.NilError(t, err)
-		AssertAllConfigsAvailability(t, fs, manifest, []string{}, specificEnvironment, true)
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{}, specificEnvironment, true)
 
 		// This causes an Update of all Settings
 		cmd = runner.BuildCli(fs)
@@ -51,17 +52,19 @@ func TestIntegrationSettings(t *testing.T) {
 		err = cmd.Execute()
 
 		assert.NilError(t, err)
-		AssertAllConfigsAvailability(t, fs, manifest, []string{}, specificEnvironment, true)
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{}, specificEnvironment, true)
 	})
 }
 
 // Tests a dry run (validation)
 func TestIntegrationValidationSettings(t *testing.T) {
 
+	t.Setenv("UNIQUE_TEST_SUFFIX", "can-be-nonunique-for-validation")
+
 	configFolder := "test-resources/integration-settings/"
 	manifest := configFolder + "manifest.yaml"
 
-	cmd := runner.BuildCli(util.CreateTestFileSystem())
+	cmd := runner.BuildCli(testutils.CreateTestFileSystem())
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
 	err := cmd.Execute()
 

@@ -17,8 +17,8 @@ package match
 import (
 	"sort"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/util/log"
 )
 
 type MatchProcessingEnv struct {
