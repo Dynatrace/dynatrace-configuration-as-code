@@ -21,7 +21,6 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/cmdutils"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
@@ -153,8 +152,9 @@ func doDownloadConfigs(fs afero.Fs, apis api.APIs, opts downloadConfigsOptions) 
 	c = client.LimitClientParallelRequests(c, opts.concurrentDownloadLimit)
 
 	if ok, unknownApis := validateSpecificAPIs(apis, opts.specificAPIs); !ok {
-		errutils.PrintError(fmt.Errorf("APIs '%v' are not known. Please consult our documentation for known API-names", strings.Join(unknownApis, ",")))
-		return fmt.Errorf("failed to load apis")
+		err := fmt.Errorf("requested APIs '%v' are not known", strings.Join(unknownApis, ","))
+		log.Error("%v. Please consult our documentation for known API names.", err)
+		return err
 	}
 
 	if ok, unknownSchemas := validateSpecificSchemas(c, opts.specificSchemas); !ok {
