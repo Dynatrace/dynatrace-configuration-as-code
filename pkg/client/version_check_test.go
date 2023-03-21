@@ -20,6 +20,7 @@ package client
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -91,7 +92,12 @@ func TestGetDynatraceVersion(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-				_, _ = rw.Write([]byte(tt.serverResponse))
+				if req.URL.Path == versionPathClassic {
+					rw.WriteHeader(http.StatusOK)
+					_, _ = rw.Write([]byte(tt.serverResponse))
+				} else {
+					rw.WriteHeader(http.StatusNotFound)
+				}
 			}))
 			defer server.Close()
 
@@ -105,6 +111,22 @@ func TestGetDynatraceVersion(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetDynatraceVersionWorksWithTrailingSlash(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == versionPathClassic {
+			rw.WriteHeader(http.StatusOK)
+			_, _ = rw.Write([]byte(`{ "version": "1.236.5.20220203-192004" }`))
+		} else {
+			rw.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+
+	got, err := GetDynatraceVersion(&http.Client{}, server.URL+"/")
+	assert.Equal(t, version.Version{1, 236, 5}, got)
+	assert.NoError(t, err)
 }
 
 func Test_parseDynatraceVersion(t *testing.T) {
