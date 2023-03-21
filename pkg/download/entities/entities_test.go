@@ -164,6 +164,21 @@ func TestDownload(t *testing.T) {
 			want: v2.ConfigsPerType{},
 		},
 		{
+			name:          "DownloadEntities - Not all entities found",
+			EntitiesTypes: []string{testType, "SOMETHING_ELSE"},
+			mockValues: mockValues{
+				EntitiesTypeList: func() ([]client.EntitiesType, error) {
+					return []client.EntitiesType{{EntitiesTypeId: testType}}, nil
+				},
+				EntitiesTypeListCalls: 1,
+				EntitiesList: func() ([]string, error) {
+					return make([]string, 0, 1), nil
+				},
+				EntitiesListCalls: 0,
+			},
+			want: nil,
+		},
+		{
 			name:          "DownloadEntities - entities found",
 			EntitiesTypes: []string{testType},
 			mockValues: mockValues{
