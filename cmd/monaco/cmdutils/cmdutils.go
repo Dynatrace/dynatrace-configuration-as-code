@@ -37,6 +37,7 @@ func SilenceUsageCommand() func(cmd *cobra.Command, args []string) {
 
 // CreateDTClient creates a new client based to be used or an environment
 // If dryRun is true, it will return a dummy client that doesn't do anything
+// TODO: use appropriate dynatrace client constructors
 func CreateDTClient(env manifest.EnvironmentDefinition, dryRun bool) (client.Client, error) {
 	if dryRun {
 		return client.NewDummyClient(), nil
@@ -69,7 +70,7 @@ func createClassicDTClient(envURL string, token string) (client.Client, error) {
 func createPlatformDTClient(envURL string, token string, oauthCredentials client.OauthCredentials) (client.Client, error) {
 	oauthClient := client.NewOAuthClient(oauthCredentials)
 	tokenAuthClient := client.NewTokenAuthClient(token)
-	return client.NewDynatraceClient(oauthClient, envURL, client.WithRedirectToClassicEnv(tokenAuthClient), client.WithOverrideSettingsAPIPath(client.PathSchemasPlatform, client.PathSettingsObjectsPlatform))
+	return client.NewDynatraceClient(oauthClient, envURL, client.WithRedirectToClassicEnv(tokenAuthClient), client.WithOverrideSettingsAPIPath(client.PathSettingsSchemasPlatform, client.PathSettingsObjectsPlatform))
 }
 
 // VerifyEnvironmentGeneration takes a manifestEnvironments map and tries to verify that each environment can be reached

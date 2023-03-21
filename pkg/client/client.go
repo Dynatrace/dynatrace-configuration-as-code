@@ -268,6 +268,7 @@ func WithAutoServerVersion() func(client *DynatraceClient) {
 	}
 }
 
+// TODO: remove
 func WithOverrideSettingsAPIPath(settingsSchemaPath, settingsObjectPath string) func(client *DynatraceClient) {
 	return func(d *DynatraceClient) {
 		d.settingsSchemaAPIPath = settingsSchemaPath
@@ -278,6 +279,7 @@ func WithOverrideSettingsAPIPath(settingsSchemaPath, settingsObjectPath string) 
 // WithRedirectToClassicEnv tries to determine the URL of the classic environment using the
 // platform Dynatrace API and uses that URL for all API calls that need to be targeted at
 // the classic APIs
+// TODO: remove
 func WithRedirectToClassicEnv(client *http.Client) func(client *DynatraceClient) {
 	return func(d *DynatraceClient) {
 		classicURL, err := GetDynatraceClassicURL(d.client, d.environmentUrl)
@@ -344,6 +346,39 @@ func NewOAuthClient(oauthConfig OauthCredentials) *http.Client {
 	return config.Client(context.TODO())
 }
 
+func NewPlatformClient(url string, token string, oauthCredentials OauthCredentials, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
+	tokenClient := NewTokenAuthClient(token)
+	oauthClient := NewOAuthClient(oauthCredentials)
+	classicURL, err := GetDynatraceClassicURL(oauthClient, url)
+
+	if err != nil {
+		log.Error("Unable to determine Dynatrace classic environment URL: %v", err)
+		return nil, err
+	}
+
+	d := &DynatraceClient{
+		serverVersion:         version.Version{},
+		environmentUrl:        url,
+		environmentURLClassic: classicURL,
+		client:                oauthClient,
+		clientClassic:         tokenClient,
+		settingsSchemaAPIPath: PathSettingsSchemasPlatform,
+		settingsObjectAPIPath: PathSettingsObjectsPlatform,
+	}
+
+	for _, o := range opts {
+		if o != nil {
+			o(d)
+		}
+	}
+	return d, nil
+}
+
+func NewClassicClient(url string, token string, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
+	// TODO implement
+	return nil, nil
+}
+
 // NewDynatraceClient creates a new DynatraceClient.
 // It takes a http.Client to do its HTTP communication, a URL to the targeting Dynatrace
 // environment and an optional list of options to further configure the behavior of the client
@@ -373,7 +408,7 @@ func NewDynatraceClient(httpClient *http.Client, environmentURL string, opts ...
 		client:                httpClient,
 		clientClassic:         httpClient,
 		settingsObjectAPIPath: PathSettingsObjectsClassic,
-		settingsSchemaAPIPath: PathSchemasClassic,
+		settingsSchemaAPIPath: PathSettingsSchemasClassic,
 		retrySettings:         rest.DefaultRetrySettings,
 		serverVersion:         version.Version{},
 	}

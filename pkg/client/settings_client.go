@@ -25,8 +25,8 @@ import (
 const (
 	PathSettingsObjectsClassic  = "/api/v2/settings/objects"
 	PathSettingsObjectsPlatform = "/platform/classic/environment-api/v2/settings/objects"
-	PathSchemasClassic          = "/api/v2/settings/schemas"
-	PathSchemasPlatform         = "/platform/classic/environment-api/v2/settings/schemas"
+	PathSettingsSchemasClassic  = "/api/v2/settings/schemas"
+	PathSettingsSchemasPlatform = "/platform/classic/environment-api/v2/settings/schemas"
 )
 
 // SettingsObject contains all the information necessary to create/update a settings object
