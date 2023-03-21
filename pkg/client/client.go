@@ -206,6 +206,13 @@ type DynatraceClient struct {
 	// with second gen environments
 	clientClassic *http.Client
 	// retrySettings specify the retry behavior of the dynatrace client in case something goes wrong
+
+	// settingsSchemaAPIPath is the API path to use for accessing settings schemas
+	settingsSchemaAPIPath string
+
+	//  settingsObjectAPIPath is the API path to use for accessing settings objects
+	settingsObjectAPIPath string
+
 	retrySettings rest.RetrySettings
 }
 
@@ -258,6 +265,13 @@ func WithAutoServerVersion() func(client *DynatraceClient) {
 		} else {
 			d.serverVersion = serverVersion
 		}
+	}
+}
+
+func WithOverrideSettingsAPIPath(settingsSchemaPath, settingsObjectPath string) func(client *DynatraceClient) {
+	return func(d *DynatraceClient) {
+		d.settingsSchemaAPIPath = settingsSchemaPath
+		d.settingsObjectAPIPath = settingsObjectPath
 	}
 }
 
@@ -358,6 +372,8 @@ func NewDynatraceClient(httpClient *http.Client, environmentURL string, opts ...
 		environmentURLClassic: environmentURL,
 		client:                httpClient,
 		clientClassic:         httpClient,
+		settingsObjectAPIPath: PathSettingsObjectsClassic,
+		settingsSchemaAPIPath: PathSchemasClassic,
 		retrySettings:         rest.DefaultRetrySettings,
 		serverVersion:         version.Version{},
 	}
@@ -409,7 +425,7 @@ func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, e
 		return DynatraceEntity{}, fmt.Errorf("failed to build settings object for upsert: %w", err)
 	}
 
-	requestUrl := d.environmentUrl + pathSettingsObjects
+	requestUrl := d.environmentUrl + d.settingsObjectAPIPath
 
 	resp, err := rest.SendWithRetryWithInitialTry(d.client, rest.Post, obj.Id, requestUrl, payload, d.retrySettings.Normal)
 	if err != nil {
@@ -493,7 +509,7 @@ type SchemaList []struct {
 }
 
 func (d *DynatraceClient) ListSchemas() (SchemaList, error) {
-	u, err := url.Parse(d.environmentUrl + pathSchemas)
+	u, err := url.Parse(d.environmentUrl + d.settingsSchemaAPIPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse url: %w", err)
 	}
@@ -522,9 +538,9 @@ func (d *DynatraceClient) ListSchemas() (SchemaList, error) {
 }
 
 func (d *DynatraceClient) GetSettingById(objectId string) (*DownloadSettingsObject, error) {
-	u, err := url.Parse(d.environmentUrl + pathSettingsObjects + "/" + objectId)
+	u, err := url.Parse(d.environmentUrl + d.settingsObjectAPIPath + "/" + objectId)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse URL '%s': %w", d.environmentUrl+pathSettingsObjects, err)
+		return nil, fmt.Errorf("failed to parse URL '%s': %w", d.environmentUrl+d.settingsObjectAPIPath, err)
 	}
 
 	resp, err := rest.Get(d.client, u.String())
@@ -586,7 +602,7 @@ func (d *DynatraceClient) ListSettings(schemaId string, opts ListSettingsOptions
 		return len(parsed.Items), len(result), nil
 	}
 
-	_, err := d.listPaginated(pathSettingsObjects, params, schemaId, addToResult)
+	_, err := d.listPaginated(d.settingsObjectAPIPath, params, schemaId, addToResult)
 
 	if err != nil {
 		return nil, err
@@ -767,9 +783,9 @@ func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLa
 }
 
 func (d *DynatraceClient) DeleteSettings(objectID string) error {
-	u, err := url.Parse(d.environmentUrl + pathSettingsObjects)
+	u, err := url.Parse(d.environmentUrl + d.settingsObjectAPIPath)
 	if err != nil {
-		return fmt.Errorf("failed to parse URL '%s': %w", d.environmentUrl+pathSettingsObjects, err)
+		return fmt.Errorf("failed to parse URL '%s': %w", d.environmentUrl+d.settingsObjectAPIPath, err)
 	}
 
 	return rest.DeleteConfig(d.client, u.String(), objectID)

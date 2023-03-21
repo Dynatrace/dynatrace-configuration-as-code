@@ -24,7 +24,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"net/http"
 	"testing"
 )
 
@@ -482,14 +481,11 @@ func TestDownloadConfigsExitsEarlyForUnknownAPI(t *testing.T) {
 			projectName:             "project",
 			forceOverwriteManifest:  false,
 			concurrentDownloadLimit: 1,
-			clientProvider: func(h *http.Client, s string, f ...func(*client.DynatraceClient)) (client.Client, error) {
-				return c, nil
-			},
 		},
 	}
 
 	givenDefaultAPIs := api.NewAPIs()
-	err := doDownloadConfigs(afero.NewMemMapFs(), givenDefaultAPIs, givenOpts)
+	err := doDownloadConfigs(afero.NewMemMapFs(), c, givenDefaultAPIs, givenOpts)
 	assert.ErrorContains(t, err, "not known", "expected download to fail for unkown API")
 }
 
@@ -509,16 +505,13 @@ func TestDownloadConfigsExitsEarlyForUnknownSettingsSchema(t *testing.T) {
 			projectName:             "project",
 			forceOverwriteManifest:  false,
 			concurrentDownloadLimit: 1,
-			clientProvider: func(h *http.Client, s string, f ...func(*client.DynatraceClient)) (client.Client, error) {
-				return c, nil
-			},
 		},
 	}
 
 	c.EXPECT().ListSchemas().Return(client.SchemaList{{"builtin:some.schema"}}, nil)
 
 	givenDefaultAPIs := api.NewAPIs()
-	err := doDownloadConfigs(afero.NewMemMapFs(), givenDefaultAPIs, givenOpts)
+	err := doDownloadConfigs(afero.NewMemMapFs(), c, givenDefaultAPIs, givenOpts)
 	assert.ErrorContains(t, err, "not known", "expected download to fail for unkown Settings Schema")
 	c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Times(0) // no downloads should even be attempted for unknown schema
 }

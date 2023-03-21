@@ -69,7 +69,7 @@ func createClassicDTClient(envURL string, token string) (client.Client, error) {
 func createPlatformDTClient(envURL string, token string, oauthCredentials client.OauthCredentials) (client.Client, error) {
 	oauthClient := client.NewOAuthClient(oauthCredentials)
 	tokenAuthClient := client.NewTokenAuthClient(token)
-	return client.NewDynatraceClient(oauthClient, envURL, client.WithRedirectToClassicEnv(tokenAuthClient))
+	return client.NewDynatraceClient(oauthClient, envURL, client.WithRedirectToClassicEnv(tokenAuthClient), client.WithOverrideSettingsAPIPath(client.PathSchemasPlatform, client.PathSettingsObjectsPlatform))
 }
 
 // VerifyEnvironmentGeneration takes a manifestEnvironments map and tries to verify that each environment can be reached

@@ -48,6 +48,11 @@ func TestUrlSuffixGetsTrimmed(t *testing.T) {
 	assert.Equal(t, client.environmentUrl, "https://my-environment.live.dynatrace.com")
 }
 
+func TestUrlWithLeadingSpaceReturnsErr(t *testing.T) {
+	_, err := NewDynatraceClient(nil, " https://my-environment.live.dynatrace.com/")
+	assert.Check(t, err != nil)
+}
+
 func TestNewDynatraceClientWithHTTP(t *testing.T) {
 	client, err := NewDynatraceClient(nil, "http://my-environment.live.dynatrace.com")
 	assert.NilError(t, err)
@@ -437,16 +442,6 @@ func TestGetSettingById(t *testing.T) {
 		wantErr             bool
 	}{
 		{
-			name: "Get Setting by ID - malformed environment URL",
-			fields: fields{
-				environmentUrl: " https://leading-space.com",
-			},
-			args:        args{},
-			wantURLPath: "/api/v2/settings/objects/12345",
-			wantResult:  nil,
-			wantErr:     true,
-		},
-		{
 			name:   "Get Setting by ID - server response != 2xx",
 			fields: fields{},
 			args: args{
@@ -519,11 +514,7 @@ func TestGetSettingById(t *testing.T) {
 				envURL = server.URL
 			}
 
-			d := &DynatraceClient{
-				environmentUrl: envURL,
-				client:         server.Client(),
-				retrySettings:  tt.fields.retrySettings,
-			}
+			d, _ := NewDynatraceClient(server.Client(), envURL, WithRetrySettings(tt.fields.retrySettings))
 
 			settingsObj, err := d.GetSettingById(tt.args.objectID)
 			if tt.wantErr {
@@ -555,15 +546,6 @@ func TestDeleteSettings(t *testing.T) {
 		wantURLPath         string
 		wantErr             bool
 	}{
-		{
-			name: "Delete Settings - malformed environment URL",
-			fields: fields{
-				environmentUrl: " https://leading-space.com",
-			},
-			args:        args{},
-			wantURLPath: "/api/v2/settings/objects/12345",
-			wantErr:     true,
-		},
 		{
 			name:   "Delete Settings - server response != 2xx",
 			fields: fields{},
@@ -623,11 +605,8 @@ func TestDeleteSettings(t *testing.T) {
 				envURL = server.URL
 			}
 
-			d := &DynatraceClient{
-				environmentUrl: envURL,
-				client:         server.Client(),
-				retrySettings:  tt.fields.retrySettings,
-			}
+			d, _ := NewDynatraceClient(server.Client(), envURL, WithRetrySettings(tt.fields.retrySettings))
+
 			if err := d.DeleteSettings(tt.args.objectID); (err != nil) != tt.wantErr {
 				t.Errorf("DeleteSettings() error = %v, wantErr %v", err, tt.wantErr)
 			}

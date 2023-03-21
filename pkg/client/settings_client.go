@@ -22,8 +22,12 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 )
 
-const pathSettingsObjects = "/api/v2/settings/objects"
-const pathSchemas = "/api/v2/settings/schemas"
+const (
+	PathSettingsObjectsClassic  = "/api/v2/settings/objects"
+	PathSettingsObjectsPlatform = "/platform/classic/environment-api/v2/settings/objects"
+	PathSchemasClassic          = "/api/v2/settings/schemas"
+	PathSchemasPlatform         = "/platform/classic/environment-api/v2/settings/schemas"
+)
 
 // SettingsObject contains all the information necessary to create/update a settings object
 type SettingsObject struct {

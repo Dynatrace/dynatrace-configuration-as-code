@@ -33,7 +33,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
-	"net/http"
 	"net/http/httptest"
 	"path/filepath"
 	"reflect"
@@ -100,8 +99,10 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 
+	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
+
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, dtClient, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -163,8 +164,9 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 
+	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, dtClient, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -247,8 +249,10 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 	server := client.NewIntegrationTestServer(t, testBasePath, responses)
 	fs := afero.NewMemMapFs()
 
+	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
+
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, dtClient, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -359,8 +363,10 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 
+	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
+
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, dtClient, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -406,9 +412,7 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 
 	// APIs
 	syntheticLocationApi := api.API{ID: "synthetic-location", URLPath: "/synthetic-location", PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
-	apiMap := api.APIs{
-		syntheticLocationApi.ID: syntheticLocationApi,
-	}
+	apiMap := api.APIs{syntheticLocationApi.ID: syntheticLocationApi}
 
 	// Responses
 	responses := map[string]string{
@@ -423,8 +427,10 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 
+	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
+
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, dtClient, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -487,8 +493,9 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 
+	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, dtClient, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -561,8 +568,10 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 
+	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
+
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, dtClient, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -696,8 +705,9 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 
 			fs := afero.NewMemMapFs()
 
+			dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
 			// WHEN we download everything
-			err := doDownloadConfigs(fs, apiMap, setupTestingDownloadOptions(t, server, testcase.projectName))
+			err := doDownloadConfigs(fs, dtClient, apiMap, setupTestingDownloadOptions(t, server, testcase.projectName))
 
 			assert.NilError(t, err)
 
@@ -763,7 +773,10 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 	options := setupTestingDownloadOptions(t, server, projectName)
 	options.forceOverwriteManifest = true
 	options.outputFolder = testBasePath
-	err := doDownloadConfigs(fs, apis, options)
+
+	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
+
+	err := doDownloadConfigs(fs, dtClient, apis, options)
 
 	assert.NilError(t, err)
 
@@ -848,7 +861,10 @@ func TestDownloadIntegrationDownloadsAPIsAndSettings(t *testing.T) {
 	opts := setupTestingDownloadOptions(t, server, projectName)
 	opts.onlySettings = false
 	opts.onlyAPIs = false
-	err := doDownloadConfigs(fs, apis, opts)
+
+	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
+
+	err := doDownloadConfigs(fs, dtClient, apis, opts)
 
 	assert.NilError(t, err)
 
@@ -906,8 +922,9 @@ func TestDownloadIntegrationDownloadsOnlyAPIsIfConfigured(t *testing.T) {
 	opts := setupTestingDownloadOptions(t, server, projectName)
 	opts.onlySettings = false
 	opts.onlyAPIs = true
+	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
 
-	err := doDownloadConfigs(fs, apis, opts)
+	err := doDownloadConfigs(fs, dtClient, apis, opts)
 
 	assert.NilError(t, err)
 
@@ -962,8 +979,9 @@ func TestDownloadIntegrationDownloadsOnlySettingsIfConfigured(t *testing.T) {
 	opts := setupTestingDownloadOptions(t, server, projectName)
 	opts.onlySettings = true
 	opts.onlyAPIs = false
+	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
 
-	err := doDownloadConfigs(fs, apis, opts)
+	err := doDownloadConfigs(fs, dtClient, apis, opts)
 
 	assert.NilError(t, err)
 
@@ -1004,9 +1022,6 @@ func setupTestingDownloadOptions(t *testing.T, server *httptest.Server, projectN
 			outputFolder:            "out",
 			projectName:             projectName,
 			concurrentDownloadLimit: 50,
-			clientProvider: func(httpClient *http.Client, environmentUrl string, opts ...func(client *client.DynatraceClient)) (client.Client, error) {
-				return client.NewDynatraceClientForTesting(environmentUrl, server.Client())
-			},
 		},
 		onlyAPIs: true,
 	}
