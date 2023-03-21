@@ -108,6 +108,7 @@ func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPe
 	for _, schema := range schemas {
 		go func(s string) {
 			defer wg.Done()
+			log.Debug("Downloading all settings for schema %s", s)
 			objects, err := d.client.ListSettings(s, client.ListSettingsOptions{})
 			if err != nil {
 				var errMsg string

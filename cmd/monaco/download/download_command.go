@@ -16,12 +16,14 @@ package download
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -270,6 +272,35 @@ func setupSharedFlags(cmd *cobra.Command, project, outputFolder *string, forceOv
 	err := cmd.MarkFlagDirname("output-folder")
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
+	}
+}
+
+// printUploadToSameEnvironmentWarning function may display a warning message on the console,
+// notifying the user that downloaded objects cannot be uploaded to the same environment.
+// It verifies the version of the tenant and, depending on the result, it may or may not display the warning.
+func printUploadToSameEnvironmentWarning(env manifest.EnvironmentDefinition) {
+	var serverVersion version.Version
+	var err error
+
+	var httpClient *http.Client
+	if env.Type == manifest.Classic {
+		httpClient = client.NewTokenAuthClient(env.Auth.Token.Value)
+	} else {
+		credentials := client.OauthCredentials{
+			ClientID:     env.Auth.OAuth.ClientID.Value,
+			ClientSecret: env.Auth.OAuth.ClientSecret.Value,
+			TokenURL:     env.Auth.OAuth.TokenEndpoint.Value,
+		}
+		httpClient = client.NewOAuthClient(credentials)
+	}
+
+	serverVersion, err = client.GetDynatraceVersion(httpClient, env.URL.Value)
+	if err != nil {
+		log.Error("Unable to determine server version %q: %w", env.URL.Value, err)
+		return
+	}
+	if serverVersion.SmallerThan(version.Version{Major: 1, Minor: 262}) {
+		logUploadToSameEnvironmentWarning()
 	}
 }
 

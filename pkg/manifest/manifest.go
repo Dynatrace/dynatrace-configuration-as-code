@@ -16,7 +16,6 @@ package manifest
 
 import (
 	"fmt"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
 )
 

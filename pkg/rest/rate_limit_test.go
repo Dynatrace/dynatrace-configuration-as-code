@@ -53,6 +53,7 @@ func createTimelineProviderMock(t *testing.T) *timeutils.MockTimelineProvider {
 
 	return timeutils.NewMockTimelineProvider(mockCtrl)
 }
+
 func TestRateLimitHeaderExtractionForCorrectHeaders(t *testing.T) {
 
 	rateLimitStrategy := simpleSleepRateLimitStrategy{}

@@ -749,12 +749,6 @@ func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLa
 
 }
 
-// Avoid HTTP codes like:  403, 429, 500 with redirect, etc
-func throttleTooManyRequests(message string, a ...any) {
-	log.Debug("%s, waiting 2 seconds to avoid Too Many Request errors", fmt.Sprintf(message, a...))
-	time.Sleep(time.Second * 2)
-}
-
 func (d *DynatraceClient) DeleteSettings(objectID string) error {
 	u, err := url.Parse(d.environmentUrl + pathSettingsObjects)
 	if err != nil {
