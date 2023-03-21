@@ -23,7 +23,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"net/http"
 	"testing"
 )
 
@@ -199,14 +198,11 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 				projectName:             "project",
 				forceOverwriteManifest:  false,
 				concurrentDownloadLimit: 1,
-				clientProvider: func(h *http.Client, s string, f ...func(*client.DynatraceClient)) (client.Client, error) {
-					return c, nil
-				},
 			}
 
 			tt.expectedBehaviour(c)
 
-			_, err := downloadConfigs(api.NewAPIs(), tt.givenOpts)
+			_, err := downloadConfigs(c, api.NewAPIs(), tt.givenOpts)
 			assert.NoError(t, err)
 		})
 	}
