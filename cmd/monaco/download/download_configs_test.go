@@ -211,3 +211,163 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 		})
 	}
 }
+
+func Test_shouldDownloadAPIs(t *testing.T) {
+	tests := []struct {
+		name  string
+		given downloadConfigsOptions
+		want  bool
+	}{
+		{
+			name: "true if not 'onlySettings'",
+			given: downloadConfigsOptions{
+				downloadOptionsShared: downloadOptionsShared{},
+				specificAPIs:          nil,
+				specificSchemas:       nil,
+				onlyAPIs:              false,
+				onlySettings:          false,
+			},
+			want: true,
+		},
+		{
+			name: "true if 'onlyAPIs'",
+			given: downloadConfigsOptions{
+				downloadOptionsShared: downloadOptionsShared{},
+				specificAPIs:          nil,
+				specificSchemas:       nil,
+				onlyAPIs:              true,
+				onlySettings:          false,
+			},
+			want: true,
+		},
+		{
+			name: "true if 'specificAPIs' defined",
+			given: downloadConfigsOptions{
+				downloadOptionsShared: downloadOptionsShared{},
+				specificAPIs:          []string{"some-api", "other-api"},
+				specificSchemas:       nil,
+				onlyAPIs:              false,
+				onlySettings:          false,
+			},
+			want: true,
+		},
+		{
+			name: "false if just 'specificSchemas' defined",
+			given: downloadConfigsOptions{
+				downloadOptionsShared: downloadOptionsShared{},
+				specificAPIs:          nil,
+				specificSchemas:       []string{"some-schema", "other-schema"},
+				onlyAPIs:              false,
+				onlySettings:          false,
+			},
+			want: false,
+		},
+		{
+			name: "true if 'specificAPIs' and 'specificSchemas' defined",
+			given: downloadConfigsOptions{
+				downloadOptionsShared: downloadOptionsShared{},
+				specificAPIs:          []string{"some-api", "other-api"},
+				specificSchemas:       []string{"some-schema", "other-schema"},
+				onlyAPIs:              false,
+				onlySettings:          false,
+			},
+			want: true,
+		},
+		{
+			name: "false if 'specificSchemas' and onlySettings defined",
+			given: downloadConfigsOptions{
+				downloadOptionsShared: downloadOptionsShared{},
+				specificAPIs:          nil,
+				specificSchemas:       []string{"some-schema", "other-schema"},
+				onlyAPIs:              false,
+				onlySettings:          true,
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, shouldDownloadClassicConfigs(tt.given), "shouldDownloadApis(%v)", tt.given)
+		})
+	}
+}
+
+func Test_shouldDownloadSettings(t *testing.T) {
+	tests := []struct {
+		name  string
+		given downloadConfigsOptions
+		want  bool
+	}{
+		{
+			name: "true if not 'onlyAPIs'",
+			given: downloadConfigsOptions{
+				downloadOptionsShared: downloadOptionsShared{},
+				specificAPIs:          nil,
+				specificSchemas:       nil,
+				onlyAPIs:              false,
+				onlySettings:          false,
+			},
+			want: true,
+		},
+		{
+			name: "true if 'onlySettings'",
+			given: downloadConfigsOptions{
+				downloadOptionsShared: downloadOptionsShared{},
+				specificAPIs:          nil,
+				specificSchemas:       nil,
+				onlyAPIs:              false,
+				onlySettings:          true,
+			},
+			want: true,
+		},
+		{
+			name: "true if only 'specificSettings' defined",
+			given: downloadConfigsOptions{
+				downloadOptionsShared: downloadOptionsShared{},
+				specificAPIs:          nil,
+				specificSchemas:       []string{"some-schema", "other-schema"},
+				onlyAPIs:              false,
+				onlySettings:          false,
+			},
+			want: true,
+		},
+		{
+			name: "false if 'specificAPIs' defined",
+			given: downloadConfigsOptions{
+				downloadOptionsShared: downloadOptionsShared{},
+				specificAPIs:          []string{"some-api", "other-api"},
+				specificSchemas:       nil,
+				onlyAPIs:              false,
+				onlySettings:          false,
+			},
+			want: false,
+		},
+		{
+			name: "true if 'specificAPIs' and 'specificSchemas' defined",
+			given: downloadConfigsOptions{
+				downloadOptionsShared: downloadOptionsShared{},
+				specificAPIs:          []string{"some-api", "other-api"},
+				specificSchemas:       []string{"some-schema", "other-schema"},
+				onlyAPIs:              false,
+				onlySettings:          false,
+			},
+			want: true,
+		},
+		{
+			name: "false if 'specificAPIs' and onlyAPIs defined",
+			given: downloadConfigsOptions{
+				downloadOptionsShared: downloadOptionsShared{},
+				specificAPIs:          []string{"some-api", "other-api"},
+				specificSchemas:       nil,
+				onlyAPIs:              true,
+				onlySettings:          false,
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, shouldDownloadSettings(tt.given), "shouldDownloadSettings(%v)", tt.given)
+		})
+	}
+}
