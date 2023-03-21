@@ -16,14 +16,14 @@ package download
 
 import (
 	"fmt"
-	"net/http"
-	"os"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
+        "net/http"
+        "os"
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
