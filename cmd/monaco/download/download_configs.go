@@ -157,6 +157,12 @@ func doDownloadConfigs(fs afero.Fs, apis api.APIs, opts downloadConfigsOptions) 
 		return fmt.Errorf("failed to load apis")
 	}
 
+	if ok, unknownSchemas := validateSpecificSchemas(c, opts.specificSchemas); !ok {
+		err := fmt.Errorf("requested settings-schema(s) '%v' are not known", strings.Join(unknownSchemas, ","))
+		log.Error("%v. Please consult the documentation for available schemas and verify they are available in your environment.", err)
+		return err
+	}
+
 	log.Info("Downloading from environment '%v' into project '%v'", opts.environmentUrl, opts.projectName)
 	downloadedConfigs, err := downloadConfigs(c, apis, opts)
 	if err != nil {
@@ -176,6 +182,29 @@ func validateSpecificAPIs(a api.APIs, apiNames []string) (valid bool, unknownAPI
 		}
 	}
 	return len(unknownAPIs) == 0, unknownAPIs
+}
+
+func validateSpecificSchemas(c client.SettingsClient, schemas []string) (valid bool, unknownSchemas []string) {
+	if len(schemas) == 0 {
+		return true, nil
+	}
+
+	schemaList, err := c.ListSchemas()
+	if err != nil {
+		log.Error("failed to query available Settings Schemas: %v", err)
+		return false, schemas
+	}
+	knownSchemas := make(map[string]struct{}, len(schemaList))
+	for _, s := range schemaList {
+		knownSchemas[s.SchemaId] = struct{}{}
+	}
+
+	for _, s := range schemas {
+		if _, exists := knownSchemas[s]; !exists {
+			unknownSchemas = append(unknownSchemas, s)
+		}
+	}
+	return len(unknownSchemas) == 0, unknownSchemas
 }
 
 func downloadConfigs(c client.Client, apis api.APIs, opts downloadConfigsOptions) (project.ConfigsPerType, error) {

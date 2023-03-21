@@ -22,7 +22,9 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/golang/mock/gomock"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"net/http"
 	"testing"
 )
 
@@ -366,4 +368,157 @@ func Test_shouldDownloadSettings(t *testing.T) {
 			assert.Equalf(t, tt.want, shouldDownloadSettings(tt.given), "shouldDownloadSettings(%v)", tt.given)
 		})
 	}
+}
+
+func Test_validateSpecificSettings(t *testing.T) {
+	type given struct {
+		settingsOnEnvironment     client.SchemaList
+		specificSettingsRequested []string
+	}
+	tests := []struct {
+		name               string
+		given              given
+		wantValid          bool
+		wantUnknownSchemas []string
+	}{
+		{
+			"valid if setting is found",
+			given{
+				settingsOnEnvironment:     client.SchemaList{{"builtin:magic.setting"}},
+				specificSettingsRequested: []string{"builtin:magic.setting"},
+			},
+			true,
+			nil,
+		},
+		{
+			"not valid if setting not found",
+			given{
+				settingsOnEnvironment:     client.SchemaList{{"builtin:magic.setting"}},
+				specificSettingsRequested: []string{"builtin:unknown"},
+			},
+			false,
+			[]string{"builtin:unknown"},
+		},
+		{
+			"not valid if one setting not found",
+			given{
+				settingsOnEnvironment:     client.SchemaList{{"builtin:magic.setting"}},
+				specificSettingsRequested: []string{"builtin:magic.setting", "builtin:unknown"},
+			},
+			false,
+			[]string{"builtin:unknown"},
+		},
+		{
+			"valid if no specific schemas requested (empty)",
+			given{
+				settingsOnEnvironment:     client.SchemaList{{"builtin:magic.setting"}},
+				specificSettingsRequested: []string{},
+			},
+			true,
+			nil,
+		},
+		{
+			"valid if no specific schemas requested (nil)",
+			given{
+				settingsOnEnvironment:     client.SchemaList{{"builtin:magic.setting"}},
+				specificSettingsRequested: nil,
+			},
+			true,
+			nil,
+		},
+		{
+			"valid if no specific schemas requested (empty) and none exist",
+			given{
+				settingsOnEnvironment:     client.SchemaList{},
+				specificSettingsRequested: []string{},
+			},
+			true,
+			nil,
+		},
+		{
+			"valid if no specific schemas requested (nil) and none exist",
+			given{
+				settingsOnEnvironment:     client.SchemaList{},
+				specificSettingsRequested: nil,
+			},
+			true,
+			nil,
+		},
+		{
+			"not valid if specific schemas requested but none exist",
+			given{
+				settingsOnEnvironment:     client.SchemaList{},
+				specificSettingsRequested: []string{"builtin:magic.setting"},
+			},
+			false,
+			[]string{"builtin:magic.setting"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := client.NewMockClient(gomock.NewController(t))
+			c.EXPECT().ListSchemas().AnyTimes().Return(tt.given.settingsOnEnvironment, nil)
+
+			gotValid, gotUnknownSchemas := validateSpecificSchemas(c, tt.given.specificSettingsRequested)
+			assert.Equalf(t, tt.wantValid, gotValid, "validateSpecificSchemas(%v) for available settings %v", tt.given.specificSettingsRequested, tt.given.specificSettingsRequested)
+			assert.Equalf(t, tt.wantUnknownSchemas, gotUnknownSchemas, "validateSpecificSchemas(%v) for available settings %v", tt.given.specificSettingsRequested, tt.given.specificSettingsRequested)
+		})
+	}
+}
+
+func TestDownloadConfigsExitsEarlyForUnknownAPI(t *testing.T) {
+	c := client.NewMockClient(gomock.NewController(t))
+
+	givenOpts := downloadConfigsOptions{
+		specificAPIs:    []string{"UNKOWN API"},
+		specificSchemas: nil,
+		onlyAPIs:        false,
+		onlySettings:    false,
+		downloadOptionsShared: downloadOptionsShared{
+			environmentUrl:          "testurl.com",
+			token:                   "test.token",
+			tokenEnvVarName:         "TEST_TOKEN_VAR",
+			outputFolder:            "folder",
+			projectName:             "project",
+			forceOverwriteManifest:  false,
+			concurrentDownloadLimit: 1,
+			clientProvider: func(h *http.Client, s string, f ...func(*client.DynatraceClient)) (client.Client, error) {
+				return c, nil
+			},
+		},
+	}
+
+	givenDefaultAPIs := api.NewAPIs()
+	err := doDownloadConfigs(afero.NewMemMapFs(), givenDefaultAPIs, givenOpts)
+	assert.ErrorContains(t, err, "failed to load apis", "expected download to fail for unkown API")
+}
+
+func TestDownloadConfigsExitsEarlyForUnknownSettingsSchema(t *testing.T) {
+	c := client.NewMockClient(gomock.NewController(t))
+
+	givenOpts := downloadConfigsOptions{
+		specificAPIs:    nil,
+		specificSchemas: []string{"UNKOWN SCHEMA"},
+		onlyAPIs:        false,
+		onlySettings:    false,
+		downloadOptionsShared: downloadOptionsShared{
+			environmentUrl:          "testurl.com",
+			token:                   "test.token",
+			tokenEnvVarName:         "TEST_TOKEN_VAR",
+			outputFolder:            "folder",
+			projectName:             "project",
+			forceOverwriteManifest:  false,
+			concurrentDownloadLimit: 1,
+			clientProvider: func(h *http.Client, s string, f ...func(*client.DynatraceClient)) (client.Client, error) {
+				return c, nil
+			},
+		},
+	}
+
+	c.EXPECT().ListSchemas().Return(client.SchemaList{{"builtin:some.schema"}}, nil)
+
+	givenDefaultAPIs := api.NewAPIs()
+	err := doDownloadConfigs(afero.NewMemMapFs(), givenDefaultAPIs, givenOpts)
+	assert.ErrorContains(t, err, "not known", "expected download to fail for unkown Settings Schema")
+	c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Times(0) // no downloads should even be attempted for unknown schema
 }
