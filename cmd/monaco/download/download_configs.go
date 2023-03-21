@@ -179,42 +179,60 @@ func downloadConfigs(apis api.APIs, opts downloadConfigsOptions) (project.Config
 
 	c = client.LimitClientParallelRequests(c, opts.concurrentDownloadLimit)
 
-	apisToDownload := getApisToDownload(apis, opts.specificAPIs)
+	configObjects := make(project.ConfigsPerType)
+
+	if shouldDownloadClassicConfigs(opts) {
+		classicCfgs, err := downloadClassicConfigs(c, apis, opts.specificAPIs, opts.projectName)
+		if err != nil {
+			return nil, err
+		}
+		maps.Copy(configObjects, classicCfgs)
+	}
+
+	if shouldDownloadSettings(opts) {
+		settingsObjects := downloadSettings(c, opts.specificSchemas, opts.projectName)
+		maps.Copy(configObjects, settingsObjects)
+	}
+
+	return configObjects, nil
+}
+
+// shouldDownloadClassicConfigs returns true unless onlySettings or specificSchemas but no specificAPIs are defined
+func shouldDownloadClassicConfigs(opts downloadConfigsOptions) bool {
+	return !opts.onlySettings && (len(opts.specificSchemas) == 0 || len(opts.specificAPIs) > 0)
+}
+
+// shouldDownloadSettings returns true unless onlyAPIs or specificAPIs but no specificSchemas are defined
+func shouldDownloadSettings(opts downloadConfigsOptions) bool {
+	return !opts.onlyAPIs && (len(opts.specificAPIs) == 0 || len(opts.specificSchemas) > 0)
+}
+
+func downloadClassicConfigs(c client.Client, apis api.APIs, specificAPIs []string, projectName string) (project.ConfigsPerType, error) {
+	apisToDownload := getApisToDownload(apis, specificAPIs)
 	if len(apisToDownload) == 0 {
 		return nil, fmt.Errorf("no APIs to download")
 	}
 
-	configObjects := make(project.ConfigsPerType)
-
-	// download specific APIs only
-	if len(opts.specificAPIs) > 0 {
+	if len(specificAPIs) > 0 {
 		log.Debug("APIs to download: \n - %v", strings.Join(maps.Keys(apisToDownload), "\n - "))
-		c := classic.DownloadAllConfigs(apisToDownload, c, opts.projectName)
-		maps.Copy(configObjects, c)
+		cfgs := classic.DownloadAllConfigs(apisToDownload, c, projectName)
+		return cfgs, nil
 	}
 
-	// download specific settings only
-	if len(opts.specificSchemas) > 0 {
-		log.Debug("Settings to download: \n - %v", strings.Join(opts.specificSchemas, "\n - "))
-		s := settings.Download(c, opts.specificSchemas, opts.projectName)
-		maps.Copy(configObjects, s)
+	log.Debug("APIs to download: \n - %v", strings.Join(maps.Keys(apisToDownload), "\n - "))
+	cfgs := classic.DownloadAllConfigs(apisToDownload, c, projectName)
+	return cfgs, nil
+}
+
+func downloadSettings(c client.Client, specificSchemas []string, projectName string) project.ConfigsPerType {
+	if len(specificSchemas) > 0 {
+		log.Debug("Settings to download: \n - %v", strings.Join(specificSchemas, "\n - "))
+		s := settings.Download(c, specificSchemas, projectName)
+		return s
 	}
 
-	// return specific download objects
-	if len(opts.specificSchemas) > 0 || len(opts.specificAPIs) > 0 {
-		return configObjects, nil
-	}
-
-	// if nothing was specified specifically, lets download all configs and settings
-	if !opts.onlySettings {
-		log.Debug("APIs to download: \n - %v", strings.Join(maps.Keys(apisToDownload), "\n - "))
-		configObjects = classic.DownloadAllConfigs(apisToDownload, c, opts.projectName)
-	}
-	if !opts.onlyAPIs {
-		settingsObjects := settings.DownloadAll(c, opts.projectName)
-		maps.Copy(configObjects, settingsObjects)
-	}
-	return configObjects, nil
+	s := settings.DownloadAll(c, projectName)
+	return s
 }
 
 // Get all v2 apis and filter for the selected ones
