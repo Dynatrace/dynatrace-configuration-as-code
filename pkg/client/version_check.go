@@ -22,6 +22,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -33,7 +34,10 @@ const versionPathClassic = "/api/v1/config/clusterversion"
 
 // GetDynatraceVersion returns the version of an environment
 func GetDynatraceVersion(client *http.Client, environmentURL string) (version.Version, error) {
-	versionURL := environmentURL + versionPathClassic
+	versionURL, err := url.JoinPath(environmentURL, versionPathClassic)
+	if err != nil {
+		return version.Version{}, fmt.Errorf("failed to build URL for API %q on environment URL %q", versionPathClassic, environmentURL)
+	}
 
 	resp, err := rest.Get(client, versionURL)
 	if err != nil {
