@@ -47,8 +47,8 @@ func NewEntitiesDownloader(c client.EntitiesClient) *Downloader {
 
 // Download downloads all entities objects for the given entities Types
 
-func Download(c client.EntitiesClient, entitiesTypes []client.EntitiesType, projectName string) v2.ConfigsPerType {
-	return NewEntitiesDownloader(c).Download(entitiesTypes, projectName)
+func Download(c client.EntitiesClient, specificEntitiesTypes []string, projectName string) v2.ConfigsPerType {
+	return NewEntitiesDownloader(c).Download(specificEntitiesTypes, projectName)
 }
 
 // DownloadAll downloads all entities objects for a given project
@@ -56,10 +56,51 @@ func DownloadAll(c client.EntitiesClient, projectName string) v2.ConfigsPerType 
 	return NewEntitiesDownloader(c).DownloadAll(projectName)
 }
 
-// Download downloads all entities objects for the given entities Types and a given project
+// Download downloads specific entities objects for the given entities Types and a given project
 // The returned value is a map of entities objects with the entities Type as keys
-func (d *Downloader) Download(entitiesTypes []client.EntitiesType, projectName string) v2.ConfigsPerType {
-	return d.download(entitiesTypes, projectName)
+func (d *Downloader) Download(specificEntitiesTypes []string, projectName string) v2.ConfigsPerType {
+	if len(specificEntitiesTypes) == 0 {
+		log.Error("No Specific entity type profided for the specific-types option ")
+		return nil
+	}
+
+	log.Debug("Fetching specific entities types to download")
+
+	// get ALL entities types
+	entitiesTypes, err := d.client.ListEntitiesTypes()
+	if err != nil {
+		log.Error("Failed to fetch all known entities types. Skipping entities download. Reason: %s", err)
+		return nil
+	}
+
+	filteredEntitiesTypes := filterSpecificEntitiesTypes(specificEntitiesTypes, entitiesTypes)
+
+	if filteredEntitiesTypes == nil {
+		return nil
+	}
+
+	return d.download(filteredEntitiesTypes, projectName)
+}
+
+func filterSpecificEntitiesTypes(specificEntitiesTypes []string, entitiesTypes []client.EntitiesType) []client.EntitiesType {
+	filteredEntitiesTypes := make([]client.EntitiesType, 0, len(specificEntitiesTypes))
+
+	for _, entitiesType := range entitiesTypes {
+		for _, specificEntitiesType := range specificEntitiesTypes {
+			if entitiesType.EntitiesTypeId == specificEntitiesType {
+				filteredEntitiesTypes = append(filteredEntitiesTypes, entitiesType)
+				break
+			}
+		}
+	}
+
+	if len(specificEntitiesTypes) != len(filteredEntitiesTypes) {
+		log.Error("Did not find all provided entities Types. \n- %d Types provided: %v \n- %d Types found: %s.",
+			len(specificEntitiesTypes), specificEntitiesTypes, len(filteredEntitiesTypes), filteredEntitiesTypes)
+		return nil
+	}
+
+	return filteredEntitiesTypes
 }
 
 // DownloadAll downloads all entities objects for a given project.

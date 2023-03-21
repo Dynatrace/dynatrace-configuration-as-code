@@ -21,13 +21,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/oauth2"
 	"net/http"
 	"net/url"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/oauth2"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
@@ -570,10 +571,15 @@ func (d *DynatraceClient) ListSettings(schemaId string, opts ListSettingsOptions
 type EntitiesTypeListResponse struct {
 	Types []EntitiesType `json:"types"`
 }
+
 type EntitiesType struct {
 	EntitiesTypeId  string                   `json:"type"`
 	ToRelationships []map[string]interface{} `json:"toRelationships"`
 	Properties      []map[string]interface{} `json:"properties"`
+}
+
+func (e EntitiesType) String() string {
+	return e.EntitiesTypeId
 }
 
 func (d *DynatraceClient) ListEntitiesTypes() ([]EntitiesType, error) {

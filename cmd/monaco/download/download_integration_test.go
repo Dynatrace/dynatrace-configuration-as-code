@@ -993,10 +993,10 @@ func TestDownloadIntegrationDownloadsOnlySettingsIfConfigured(t *testing.T) {
 	assert.Equal(t, len(configs["settings-schema"]), 3, "Expected 3 settings objects")
 }
 
-func setupTestingDownloadOptions(t *testing.T, server *httptest.Server, projectName string) downloadOptions {
+func setupTestingDownloadOptions(t *testing.T, server *httptest.Server, projectName string) downloadConfigsOptions {
 	t.Setenv("TOKEN_ENV_VAR", "mock env var")
 
-	return downloadOptions{
+	return downloadConfigsOptions{
 		downloadOptionsShared: downloadOptionsShared{
 			environmentUrl:          server.URL,
 			token:                   "token",

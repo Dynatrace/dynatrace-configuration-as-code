@@ -555,6 +555,7 @@ func TestValidCommands(t *testing.T) {
 							outputFolder:   "",
 							forceOverwrite: false,
 						},
+						specificEntitiesTypes: []string{},
 					},
 				})
 			},
@@ -572,6 +573,7 @@ func TestValidCommands(t *testing.T) {
 							outputFolder:   "",
 							forceOverwrite: false,
 						},
+						specificEntitiesTypes: []string{},
 					},
 				})
 			},
@@ -589,6 +591,7 @@ func TestValidCommands(t *testing.T) {
 							outputFolder:   "myDownloads",
 							forceOverwrite: false,
 						},
+						specificEntitiesTypes: []string{},
 					},
 				})
 			},
@@ -606,6 +609,7 @@ func TestValidCommands(t *testing.T) {
 							outputFolder:   "myDownloads",
 							forceOverwrite: true,
 						},
+						specificEntitiesTypes: []string{},
 					},
 				})
 			},
@@ -623,6 +627,7 @@ func TestValidCommands(t *testing.T) {
 							outputFolder:   "",
 							forceOverwrite: false,
 						},
+						specificEntitiesTypes: []string{},
 					},
 				})
 			},
@@ -640,6 +645,7 @@ func TestValidCommands(t *testing.T) {
 							outputFolder:   "",
 							forceOverwrite: false,
 						},
+						specificEntitiesTypes: []string{},
 					},
 				})
 			},
@@ -657,6 +663,7 @@ func TestValidCommands(t *testing.T) {
 							outputFolder:   "myDownloads",
 							forceOverwrite: false,
 						},
+						specificEntitiesTypes: []string{},
 					},
 				})
 			},
@@ -674,6 +681,25 @@ func TestValidCommands(t *testing.T) {
 							outputFolder:   "myDownloads",
 							forceOverwrite: true,
 						},
+						specificEntitiesTypes: []string{},
+					},
+				})
+			},
+		},
+		{
+			"entities manifest download with specific types",
+			"entities manifest test.yaml test_env --specific-types HOST,SERVICE",
+			func(cmd *MockCommand) {
+				cmd.EXPECT().DownloadEntitiesBasedOnManifest(gomock.Any(), entitiesManifestDownloadOptions{
+					manifestFile:            "test.yaml",
+					specificEnvironmentName: "test_env",
+					entitiesDownloadCommandOptions: entitiesDownloadCommandOptions{
+						downloadCommandOptionsShared: downloadCommandOptionsShared{
+							projectName:    "project",
+							outputFolder:   "",
+							forceOverwrite: false,
+						},
+						specificEntitiesTypes: []string{"HOST", "SERVICE"},
 					},
 				})
 			},
