@@ -154,11 +154,13 @@ func TestUpsertSettings(t *testing.T) {
 				}
 			}))
 
-			c, err := newDynatraceClient(
-				server.Client(), server.URL,
-				WithServerVersion(test.serverVersion),
-				WithRetrySettings(testRetrySettings))
-			assert.NilError(t, err)
+			c := DynatraceClient{
+				environmentUrl:        server.URL,
+				client:                server.Client(),
+				serverVersion:         test.serverVersion,
+				retrySettings:         testRetrySettings,
+				settingsObjectAPIPath: settingsObjectAPIPathClassic,
+			}
 
 			resp, err := c.UpsertSettings(SettingsObject{
 				OriginObjectId: "anObjectID",

@@ -322,6 +322,13 @@ func NewOAuthClient(oauthConfig OauthCredentials) *http.Client {
 	return config.Client(context.TODO())
 }
 
+const (
+	settingsSchemaAPIPathClassic  = "/api/v2/settings/schemas"
+	settingsSchemaAPIPathPlatform = "/platform/classic/environment-api/v2/settings/schemas"
+	settingsObjectAPIPathClassic  = "/api/v2/settings/objects"
+	settingsObjectAPIPathPlatform = "/platform/classic/environment-api/v2/settings/objects"
+)
+
 // NewPlatformClient creates a new dynatrace client to be used for platform enabled environments
 func NewPlatformClient(dtURL string, token string, oauthCredentials OauthCredentials, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
 	dtURL = strings.TrimSuffix(dtURL, "/")
@@ -331,8 +338,8 @@ func NewPlatformClient(dtURL string, token string, oauthCredentials OauthCredent
 
 	tokenClient := NewTokenAuthClient(token)
 	oauthClient := NewOAuthClient(oauthCredentials)
-	classicURL, err := GetDynatraceClassicURL(oauthClient, dtURL)
 
+	classicURL, err := GetDynatraceClassicURL(oauthClient, dtURL)
 	if err != nil {
 		log.Error("Unable to determine Dynatrace classic environment URL: %v", err)
 		return nil, err
@@ -345,8 +352,8 @@ func NewPlatformClient(dtURL string, token string, oauthCredentials OauthCredent
 		client:                oauthClient,
 		clientClassic:         tokenClient,
 		retrySettings:         rest.DefaultRetrySettings,
-		settingsSchemaAPIPath: "/platform/classic/environment-api/v2/settings/schemas",
-		settingsObjectAPIPath: "/platform/classic/environment-api/v2/settings/objects",
+		settingsSchemaAPIPath: settingsSchemaAPIPathPlatform,
+		settingsObjectAPIPath: settingsObjectAPIPathPlatform,
 	}
 
 	for _, o := range opts {
@@ -373,8 +380,8 @@ func NewClassicClient(dtURL string, token string, opts ...func(dynatraceClient *
 		client:                tokenClient,
 		clientClassic:         tokenClient,
 		retrySettings:         rest.DefaultRetrySettings,
-		settingsSchemaAPIPath: "/api/v2/settings/schemas",
-		settingsObjectAPIPath: "/api/v2/settings/objects",
+		settingsSchemaAPIPath: settingsSchemaAPIPathClassic,
+		settingsObjectAPIPath: settingsObjectAPIPathClassic,
 	}
 
 	for _, o := range opts {
@@ -399,46 +406,6 @@ func validateURL(dtURL string) error {
 		log.Warn("You are using an insecure connection (%s). Consider switching to HTTPS.", parsedUrl.Scheme)
 	}
 	return nil
-}
-
-// TODO: delete :)
-func newDynatraceClient(httpClient *http.Client, environmentURL string, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
-	environmentURL = strings.TrimSuffix(environmentURL, "/")
-	parsedUrl, err := url.ParseRequestURI(environmentURL)
-	if err != nil {
-		return nil, fmt.Errorf("environment url %q was not valid: %w", environmentURL, err)
-	}
-
-	if parsedUrl.Host == "" {
-		return nil, fmt.Errorf("no host specified in the url %q", environmentURL)
-	}
-
-	if parsedUrl.Scheme != "https" {
-		log.Warn("You are using an insecure connection (%s). Consider switching to HTTPS.", parsedUrl.Scheme)
-	}
-
-	if httpClient == nil {
-		httpClient = &http.Client{}
-	}
-
-	dtClient := &DynatraceClient{
-		environmentUrl:        environmentURL,
-		environmentURLClassic: environmentURL,
-		client:                httpClient,
-		clientClassic:         httpClient,
-		settingsObjectAPIPath: "/api/v2/settings/objects",
-		settingsSchemaAPIPath: "/api/v2/settings/schemas",
-		retrySettings:         rest.DefaultRetrySettings,
-		serverVersion:         version.Version{},
-	}
-
-	for _, o := range opts {
-		if o != nil {
-			o(dtClient)
-		}
-	}
-
-	return dtClient, nil
 }
 
 func isNewDynatraceTokenFormat(token string) bool {
