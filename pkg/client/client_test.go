@@ -29,8 +29,8 @@ import (
 	"testing"
 )
 
-var mockApi = api.API{ID: "mock-api", SingleConfiguration: true}
-var mockApiNotSingle = api.API{ID: "mock-api", SingleConfiguration: false}
+var mockAPI = api.API{ID: "mock-api", SingleConfiguration: true}
+var mockAPINotSingle = api.API{ID: "mock-api", SingleConfiguration: false}
 
 func TestNewClientNoUrl(t *testing.T) {
 	_, err := newDynatraceClient(nil, "")
@@ -110,18 +110,18 @@ func TestReadByIdReturnsAnErrorUponEncounteringAnError(t *testing.T) {
 	defer func() { testServer.Close() }()
 	client, _ := newDynatraceClient(testServer.Client(), testServer.URL)
 
-	_, err := client.ReadConfigById(mockApi, "test")
+	_, err := client.ReadConfigById(mockAPI, "test")
 	assert.ErrorContains(t, err, "Response was")
 }
 
 func TestReadByIdEscapesTheId(t *testing.T) {
-	unescapedId := "ruxit.perfmon.dotnetV4:%TimeInGC:time_in_gc_alert_high_generic"
+	unescapedID := "ruxit.perfmon.dotnetV4:%TimeInGC:time_in_gc_alert_high_generic"
 
 	testServer := httptest.NewTLSServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {}))
 	defer func() { testServer.Close() }()
 	client, _ := newDynatraceClient(testServer.Client(), testServer.URL)
 
-	_, err := client.ReadConfigById(mockApiNotSingle, unescapedId)
+	_, err := client.ReadConfigById(mockAPINotSingle, unescapedID)
 	assert.NoError(t, err)
 }
 
@@ -129,13 +129,13 @@ func TestReadByIdReturnsTheResponseGivenNoError(t *testing.T) {
 	body := []byte{1, 3, 3, 7}
 
 	testServer := httptest.NewTLSServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		res.Write(body)
+		_, _ = res.Write(body)
 	}))
 	defer func() { testServer.Close() }()
 
 	client, _ := newDynatraceClient(testServer.Client(), testServer.URL)
 
-	resp, err := client.ReadConfigById(mockApi, "test")
+	resp, err := client.ReadConfigById(mockAPI, "test")
 	assert.NoError(t, err, "there should not be an error")
 	assert.Equal(t, body, resp)
 }
@@ -144,17 +144,17 @@ func TestListKnownSettings(t *testing.T) {
 
 	tests := []struct {
 		name                      string
-		givenSchemaId             string
+		givenSchemaID             string
 		givenListSettingsOpts     ListSettingsOptions
 		givenServerResponses      []testServerResponse
 		want                      []DownloadSettingsObject
-		wantQueryParamsPerApiCall [][]testQueryParams
-		wantNumberOfApiCalls      int
+		wantQueryParamsPerAPICall [][]testQueryParams
+		wantNumberOfAPICalls      int
 		wantError                 bool
 	}{
 		{
 			name:          "Lists Settings objects as expected",
-			givenSchemaId: "builtin:something",
+			givenSchemaID: "builtin:something",
 			givenServerResponses: []testServerResponse{
 				{200, `{ "items": [ {"objectId": "f5823eca-4838-49d0-81d9-0514dd2c4640", "externalId": "RG9jdG9yIFdobwo="} ] }`},
 			},
@@ -164,19 +164,19 @@ func TestListKnownSettings(t *testing.T) {
 					ObjectId:   "f5823eca-4838-49d0-81d9-0514dd2c4640",
 				},
 			},
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"schemaIds", "builtin:something"},
 					{"pageSize", "500"},
 					{"fields", defaultListSettingsFields},
 				},
 			},
-			wantNumberOfApiCalls: 1,
+			wantNumberOfAPICalls: 1,
 			wantError:            false,
 		},
 		{
 			name:                  "Lists Settings objects without value field as expected",
-			givenSchemaId:         "builtin:something",
+			givenSchemaID:         "builtin:something",
 			givenListSettingsOpts: ListSettingsOptions{DiscardValue: true},
 			givenServerResponses: []testServerResponse{
 				{200, `{ "items": [ {"objectId": "f5823eca-4838-49d0-81d9-0514dd2c4640", "externalId": "RG9jdG9yIFdobwo="} ] }`},
@@ -187,19 +187,19 @@ func TestListKnownSettings(t *testing.T) {
 					ObjectId:   "f5823eca-4838-49d0-81d9-0514dd2c4640",
 				},
 			},
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"schemaIds", "builtin:something"},
 					{"pageSize", "500"},
 					{"fields", reducedListSettingsFields},
 				},
 			},
-			wantNumberOfApiCalls: 1,
+			wantNumberOfAPICalls: 1,
 			wantError:            false,
 		},
 		{
 			name:          "Lists Settings objects with filter as expected",
-			givenSchemaId: "builtin:something",
+			givenSchemaID: "builtin:something",
 			givenListSettingsOpts: ListSettingsOptions{Filter: func(o DownloadSettingsObject) bool {
 				return o.ExternalId == "RG9jdG9yIFdobwo="
 			}},
@@ -213,19 +213,19 @@ func TestListKnownSettings(t *testing.T) {
 					ObjectId:   "f5823eca-4838-49d0-81d9-0514dd2c4640",
 				},
 			},
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"schemaIds", "builtin:something"},
 					{"pageSize", "500"},
 					{"fields", defaultListSettingsFields},
 				},
 			},
-			wantNumberOfApiCalls: 1,
+			wantNumberOfAPICalls: 1,
 			wantError:            false,
 		},
 		{
 			name:          "Handles Pagination when listing settings objects",
-			givenSchemaId: "builtin:something",
+			givenSchemaID: "builtin:something",
 			givenServerResponses: []testServerResponse{
 				{200, `{ "items": [ {"objectId": "f5823eca-4838-49d0-81d9-0514dd2c4640", "externalId": "RG9jdG9yIFdobwo="} ], "nextPageKey": "page42" }`},
 				{200, `{ "items": [ {"objectId": "b1d4c623-25e0-4b54-9eb5-6734f1a72041", "externalId": "VGhlIE1hc3Rlcgo="} ] }`},
@@ -241,7 +241,7 @@ func TestListKnownSettings(t *testing.T) {
 				},
 			},
 
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"schemaIds", "builtin:something"},
 					{"pageSize", "500"},
@@ -251,63 +251,63 @@ func TestListKnownSettings(t *testing.T) {
 					{"nextPageKey", "page42"},
 				},
 			},
-			wantNumberOfApiCalls: 2,
+			wantNumberOfAPICalls: 2,
 			wantError:            false,
 		},
 		{
 			name:          "Returns empty if list if no items exist",
-			givenSchemaId: "builtin:something",
+			givenSchemaID: "builtin:something",
 			givenServerResponses: []testServerResponse{
 				{200, `{ "items": [ ] }`},
 			},
 			want: []DownloadSettingsObject{},
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"schemaIds", "builtin:something"},
 					{"pageSize", "500"},
 					{"fields", defaultListSettingsFields},
 				},
 			},
-			wantNumberOfApiCalls: 1,
+			wantNumberOfAPICalls: 1,
 			wantError:            false,
 		},
 		{
 			name:          "Returns error if HTTP error is encountered - 400",
-			givenSchemaId: "builtin:something",
+			givenSchemaID: "builtin:something",
 			givenServerResponses: []testServerResponse{
 				{400, `epic fail`},
 			},
 			want: nil,
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"schemaIds", "builtin:something"},
 					{"pageSize", "500"},
 					{"fields", defaultListSettingsFields},
 				},
 			},
-			wantNumberOfApiCalls: 1,
+			wantNumberOfAPICalls: 1,
 			wantError:            true,
 		},
 		{
 			name:          "Returns error if HTTP error is encountered - 403",
-			givenSchemaId: "builtin:something",
+			givenSchemaID: "builtin:something",
 			givenServerResponses: []testServerResponse{
 				{403, `epic fail`},
 			},
 			want: nil,
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"schemaIds", "builtin:something"},
 					{"pageSize", "500"},
 					{"fields", defaultListSettingsFields},
 				},
 			},
-			wantNumberOfApiCalls: 1,
+			wantNumberOfAPICalls: 1,
 			wantError:            true,
 		},
 		{
 			name:          "Retries on HTTP error on paginated request and returns eventual success",
-			givenSchemaId: "builtin:something",
+			givenSchemaID: "builtin:something",
 			givenServerResponses: []testServerResponse{
 				{200, `{ "items": [ {"objectId": "f5823eca-4838-49d0-81d9-0514dd2c4640", "externalId": "RG9jdG9yIFdobwo="} ], "nextPageKey": "page42" }`},
 				{400, `get next page fail`},
@@ -324,7 +324,7 @@ func TestListKnownSettings(t *testing.T) {
 					ObjectId:   "b1d4c623-25e0-4b54-9eb5-6734f1a72041",
 				},
 			},
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"schemaIds", "builtin:something"},
 					{"pageSize", "500"},
@@ -340,12 +340,12 @@ func TestListKnownSettings(t *testing.T) {
 					{"nextPageKey", "page42"},
 				},
 			},
-			wantNumberOfApiCalls: 4,
+			wantNumberOfAPICalls: 4,
 			wantError:            false,
 		},
 		{
 			name:          "Returns error if HTTP error is encountered getting further paginated responses",
-			givenSchemaId: "builtin:something",
+			givenSchemaID: "builtin:something",
 			givenServerResponses: []testServerResponse{
 				{200, `{ "items": [ {"objectId": "f5823eca-4838-49d0-81d9-0514dd2c4640", "externalId": "RG9jdG9yIFdobwo="} ], "nextPageKey": "page42" }`},
 				{400, `get next page fail`},
@@ -354,7 +354,7 @@ func TestListKnownSettings(t *testing.T) {
 				{400, `retry fail 3`},
 			},
 			want: nil,
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"schemaIds", "builtin:something"},
 					{"pageSize", "500"},
@@ -373,7 +373,7 @@ func TestListKnownSettings(t *testing.T) {
 					{"nextPageKey", "page42"},
 				},
 			},
-			wantNumberOfApiCalls: 5,
+			wantNumberOfAPICalls: 5,
 			wantError:            true,
 		},
 	}
@@ -382,8 +382,8 @@ func TestListKnownSettings(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			apiCalls := 0
 			server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-				if len(tt.wantQueryParamsPerApiCall) > 0 {
-					params := tt.wantQueryParamsPerApiCall[apiCalls]
+				if len(tt.wantQueryParamsPerAPICall) > 0 {
+					params := tt.wantQueryParamsPerAPICall[apiCalls]
 					for _, param := range params {
 						addedQueryParameter := req.URL.Query()[param.key]
 						assert.NotNil(t, addedQueryParameter)
@@ -402,14 +402,14 @@ func TestListKnownSettings(t *testing.T) {
 				}
 
 				apiCalls++
-				assert.LessOrEqualf(t, apiCalls, tt.wantNumberOfApiCalls, "expected at most %d API calls to happen, but encountered call %d", tt.wantNumberOfApiCalls, apiCalls)
+				assert.LessOrEqualf(t, apiCalls, tt.wantNumberOfAPICalls, "expected at most %d API calls to happen, but encountered call %d", tt.wantNumberOfAPICalls, apiCalls)
 			}))
 			defer server.Close()
 
 			client, err := newDynatraceClient(server.Client(), server.URL, WithRetrySettings(testRetrySettings))
 			assert.NoError(t, err)
 
-			res, err1 := client.ListSettings(tt.givenSchemaId, tt.givenListSettingsOpts)
+			res, err1 := client.ListSettings(tt.givenSchemaID, tt.givenListSettingsOpts)
 
 			if tt.wantError {
 				assert.Error(t, err1)
@@ -419,14 +419,14 @@ func TestListKnownSettings(t *testing.T) {
 
 			assert.Equal(t, tt.want, res)
 
-			assert.Equal(t, apiCalls, tt.wantNumberOfApiCalls, "expected exactly %d API calls to happen but %d calls where made", tt.wantNumberOfApiCalls, apiCalls)
+			assert.Equal(t, apiCalls, tt.wantNumberOfAPICalls, "expected exactly %d API calls to happen but %d calls where made", tt.wantNumberOfAPICalls, apiCalls)
 		})
 	}
 }
 
 func TestGetSettingById(t *testing.T) {
 	type fields struct {
-		environmentUrl string
+		environmentURL string
 		retrySettings  rest.RetrySettings
 	}
 	type args struct {
@@ -508,8 +508,8 @@ func TestGetSettingById(t *testing.T) {
 			defer server.Close()
 
 			var envURL string
-			if tt.fields.environmentUrl != "" {
-				envURL = tt.fields.environmentUrl
+			if tt.fields.environmentURL != "" {
+				envURL = tt.fields.environmentURL
 			} else {
 				envURL = server.URL
 			}
@@ -531,8 +531,7 @@ func TestGetSettingById(t *testing.T) {
 
 func TestDeleteSettings(t *testing.T) {
 	type fields struct {
-		environmentUrl string
-		client         *http.Client
+		environmentURL string
 		retrySettings  rest.RetrySettings
 	}
 	type args struct {
@@ -599,8 +598,8 @@ func TestDeleteSettings(t *testing.T) {
 			defer server.Close()
 
 			var envURL string
-			if tt.fields.environmentUrl != "" {
-				envURL = tt.fields.environmentUrl
+			if tt.fields.environmentURL != "" {
+				envURL = tt.fields.environmentURL
 			} else {
 				envURL = server.URL
 			}
@@ -615,21 +614,21 @@ func TestDeleteSettings(t *testing.T) {
 }
 
 func TestUpsertSettingsRetries(t *testing.T) {
-	numApiCalls := 0
+	numAPICalls := 0
 	server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.Method == http.MethodGet {
 			rw.WriteHeader(200)
-			rw.Write([]byte("{}"))
+			_, _ = rw.Write([]byte("{}"))
 			return
 		}
 
-		numApiCalls++
-		if numApiCalls < 3 {
+		numAPICalls++
+		if numAPICalls < 3 {
 			rw.WriteHeader(409)
 			return
 		}
 		rw.WriteHeader(200)
-		rw.Write([]byte(`[{"objectId": "abcdefg"}]`))
+		_, _ = rw.Write([]byte(`[{"objectId": "abcdefg"}]`))
 	}))
 	defer server.Close()
 
@@ -643,7 +642,7 @@ func TestUpsertSettingsRetries(t *testing.T) {
 	})
 
 	assert.NoError(t, err)
-	assert.Equal(t, numApiCalls, 3)
+	assert.Equal(t, numAPICalls, 3)
 }
 
 func TestListEntities(t *testing.T) {
@@ -655,8 +654,8 @@ func TestListEntities(t *testing.T) {
 		givenEntitiesType         EntitiesType
 		givenServerResponses      []testServerResponse
 		want                      []string
-		wantQueryParamsPerApiCall [][]testQueryParams
-		wantNumberOfApiCalls      int
+		wantQueryParamsPerAPICall [][]testQueryParams
+		wantNumberOfAPICalls      int
 		wantError                 bool
 	}{
 		{
@@ -668,14 +667,14 @@ func TestListEntities(t *testing.T) {
 			want: []string{
 				fmt.Sprintf(`{"entityId": "%s-1A28B791C329D741", "type": "%s"}`, testType, testType),
 			},
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
 					{"pageSize", defaultPageSizeEntities},
 					{"fields", defaultListEntitiesFields},
 				},
 			},
-			wantNumberOfApiCalls: 1,
+			wantNumberOfAPICalls: 1,
 			wantError:            false,
 		},
 		{
@@ -690,7 +689,7 @@ func TestListEntities(t *testing.T) {
 				fmt.Sprintf(`{"entityId": "%s-C329D7411A28B791", "type": "%s"}`, testType, testType),
 			},
 
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
 					{"pageSize", defaultPageSizeEntities},
@@ -700,7 +699,7 @@ func TestListEntities(t *testing.T) {
 					{"nextPageKey", "page42"},
 				},
 			},
-			wantNumberOfApiCalls: 2,
+			wantNumberOfAPICalls: 2,
 			wantError:            false,
 		},
 		{
@@ -710,14 +709,14 @@ func TestListEntities(t *testing.T) {
 				{200, `{ "entities": [ ] }`},
 			},
 			want: []string{},
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
 					{"pageSize", defaultPageSizeEntities},
 					{"fields", defaultListEntitiesFields},
 				},
 			},
-			wantNumberOfApiCalls: 1,
+			wantNumberOfAPICalls: 1,
 			wantError:            false,
 		},
 		{
@@ -727,14 +726,14 @@ func TestListEntities(t *testing.T) {
 				{400, `epic fail`},
 			},
 			want: nil,
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
 					{"pageSize", defaultPageSizeEntities},
 					{"fields", defaultListEntitiesFields},
 				},
 			},
-			wantNumberOfApiCalls: 1,
+			wantNumberOfAPICalls: 1,
 			wantError:            true,
 		},
 		{
@@ -750,7 +749,7 @@ func TestListEntities(t *testing.T) {
 				fmt.Sprintf(`{"entityId": "%s-1A28B791C329D741", "type": "%s"}`, testType, testType),
 				fmt.Sprintf(`{"entityId": "%s-C329D7411A28B791", "type": "%s"}`, testType, testType),
 			},
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
 					{"pageSize", defaultPageSizeEntities},
@@ -766,7 +765,7 @@ func TestListEntities(t *testing.T) {
 					{"nextPageKey", "page42"},
 				},
 			},
-			wantNumberOfApiCalls: 4,
+			wantNumberOfAPICalls: 4,
 			wantError:            false,
 		},
 		{
@@ -780,7 +779,7 @@ func TestListEntities(t *testing.T) {
 				{400, `retry fail 3`},
 			},
 			want: nil,
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
 					{"pageSize", defaultPageSizeEntities},
@@ -799,7 +798,7 @@ func TestListEntities(t *testing.T) {
 					{"nextPageKey", "page42"},
 				},
 			},
-			wantNumberOfApiCalls: 5,
+			wantNumberOfAPICalls: 5,
 			wantError:            true,
 		},
 		{
@@ -815,7 +814,7 @@ func TestListEntities(t *testing.T) {
 				fmt.Sprintf(`{"entityId": "%s-1A28B791C329D741", "type": "%s"}`, testType, testType),
 				fmt.Sprintf(`{"entityId": "%s-C329D7411A28B791", "type": "%s"}`, testType, testType),
 			},
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
 					{"pageSize", defaultPageSizeEntities},
@@ -831,7 +830,7 @@ func TestListEntities(t *testing.T) {
 					{"nextPageKey", "page42"},
 				},
 			},
-			wantNumberOfApiCalls: 4,
+			wantNumberOfAPICalls: 4,
 			wantError:            false,
 		},
 		{
@@ -858,7 +857,7 @@ func TestListEntities(t *testing.T) {
 				fmt.Sprintf(`{"entityId": "%s-1A28B791C329D741", "type": "%s"}`, testType, testType),
 				fmt.Sprintf(`{"entityId": "%s-C329D7411A28B791", "type": "%s"}`, testType, testType),
 			},
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
 					{"pageSize", defaultPageSizeEntities},
@@ -871,7 +870,7 @@ func TestListEntities(t *testing.T) {
 					{"nextPageKey", "page42"},
 				},
 			},
-			wantNumberOfApiCalls: 3,
+			wantNumberOfAPICalls: 3,
 			wantError:            false,
 		},
 	}
@@ -879,8 +878,8 @@ func TestListEntities(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			apiCalls := 0
 			server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-				if len(tt.wantQueryParamsPerApiCall) > 0 {
-					params := tt.wantQueryParamsPerApiCall[apiCalls]
+				if len(tt.wantQueryParamsPerAPICall) > 0 {
+					params := tt.wantQueryParamsPerAPICall[apiCalls]
 					for _, param := range params {
 						addedQueryParameter := req.URL.Query()[param.key]
 						assert.NotNil(t, addedQueryParameter)
@@ -899,7 +898,7 @@ func TestListEntities(t *testing.T) {
 				}
 
 				apiCalls++
-				assert.LessOrEqualf(t, apiCalls, tt.wantNumberOfApiCalls, "expected at most %d API calls to happen, but encountered call %d", tt.wantNumberOfApiCalls, apiCalls)
+				assert.LessOrEqualf(t, apiCalls, tt.wantNumberOfAPICalls, "expected at most %d API calls to happen, but encountered call %d", tt.wantNumberOfAPICalls, apiCalls)
 			}))
 			defer server.Close()
 
@@ -916,7 +915,7 @@ func TestListEntities(t *testing.T) {
 
 			assert.Equal(t, tt.want, res)
 
-			assert.Equal(t, apiCalls, tt.wantNumberOfApiCalls, "expected exactly %d API calls to happen but %d calls where made", tt.wantNumberOfApiCalls, apiCalls)
+			assert.Equal(t, apiCalls, tt.wantNumberOfAPICalls, "expected exactly %d API calls to happen but %d calls where made", tt.wantNumberOfAPICalls, apiCalls)
 		})
 	}
 }
@@ -924,7 +923,7 @@ func TestListEntities(t *testing.T) {
 func TestCreateDynatraceClientWithAutoServerVersion(t *testing.T) {
 	t.Run("Server version is correctly set to determined value", func(t *testing.T) {
 		server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			rw.Write([]byte(`{"version" : "1.262.0.20230214-193525"}`))
+			_, _ = rw.Write([]byte(`{"version" : "1.262.0.20230214-193525"}`))
 		}))
 
 		dcl, err := newDynatraceClient(server.Client(), server.URL, WithAutoServerVersion())
@@ -935,7 +934,7 @@ func TestCreateDynatraceClientWithAutoServerVersion(t *testing.T) {
 
 	t.Run("Server version is correctly set to unknown", func(t *testing.T) {
 		server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			rw.Write([]byte(`{}`))
+			_, _ = rw.Write([]byte(`{}`))
 		}))
 
 		dcl, err := newDynatraceClient(server.Client(), server.URL, WithAutoServerVersion())
