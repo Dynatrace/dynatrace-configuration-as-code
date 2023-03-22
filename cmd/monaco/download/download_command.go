@@ -15,6 +15,7 @@
 package download
 
 import (
+	"context"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
@@ -291,7 +292,7 @@ func printUploadToSameEnvironmentWarning(env manifest.EnvironmentDefinition) {
 			ClientSecret: env.Auth.OAuth.ClientSecret.Value,
 			TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
 		}
-		httpClient = client.NewOAuthClient(credentials)
+		httpClient = client.NewOAuthClient(context.TODO(), credentials)
 	}
 
 	serverVersion, err = client.GetDynatraceVersion(httpClient, env.URL.Value)

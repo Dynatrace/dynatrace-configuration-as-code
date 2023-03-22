@@ -17,6 +17,7 @@
 package cmdutils
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
@@ -97,7 +98,7 @@ func isPlatformEnvironment(env manifest.EnvironmentDefinition) bool {
 		ClientSecret: env.Auth.OAuth.ClientSecret.Value,
 		TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
 	}
-	if _, err := client.GetDynatraceClassicURL(client.NewOAuthClient(oauthCredentials), env.URL.Value); err != nil {
+	if _, err := client.GetDynatraceClassicURL(client.NewOAuthClient(context.TODO(), oauthCredentials), env.URL.Value); err != nil {
 		var respErr client.RespError
 		if errors.As(err, &respErr) {
 			log.Error("Could not authorize against the environment with name %q (%s) using oAuth authorization.", env.Name, env.URL.Value)
