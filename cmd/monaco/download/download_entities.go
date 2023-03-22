@@ -74,8 +74,7 @@ func (d DefaultCommand) DownloadEntitiesBasedOnManifest(fs afero.Fs, cmdOptions 
 	options := downloadEntitiesOptions{
 		downloadOptionsShared: downloadOptionsShared{
 			environmentUrl:          env.URL.Value,
-			token:                   env.Auth.Token.Value,
-			tokenEnvVarName:         env.Auth.Token.Name,
+			auth:                    env.Auth,
 			outputFolder:            cmdOptions.outputFolder,
 			projectName:             cmdOptions.projectName,
 			forceOverwriteManifest:  cmdOptions.forceOverwrite,
@@ -102,9 +101,13 @@ func (d DefaultCommand) DownloadEntities(fs afero.Fs, cmdOptions entitiesDirectD
 
 	options := downloadEntitiesOptions{
 		downloadOptionsShared: downloadOptionsShared{
-			environmentUrl:          cmdOptions.environmentUrl,
-			token:                   token,
-			tokenEnvVarName:         cmdOptions.envVarName,
+			environmentUrl: cmdOptions.environmentUrl,
+			auth: manifest.Auth{
+				Token: manifest.AuthSecret{
+					Name:  cmdOptions.envVarName,
+					Value: token,
+				},
+			},
 			outputFolder:            cmdOptions.outputFolder,
 			projectName:             cmdOptions.projectName,
 			forceOverwriteManifest:  cmdOptions.forceOverwrite,

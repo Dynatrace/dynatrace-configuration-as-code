@@ -21,6 +21,7 @@ package download
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"github.com/golang/mock/gomock"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -192,9 +193,13 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 			c := client.NewMockClient(gomock.NewController(t))
 
 			tt.givenOpts.downloadOptionsShared = downloadOptionsShared{
-				environmentUrl:          "testurl.com",
-				token:                   "test.token",
-				tokenEnvVarName:         "TEST_TOKEN_VAR",
+				environmentUrl: "testurl.com",
+				auth: manifest.Auth{
+					Token: manifest.AuthSecret{
+						Name:  "TEST_TOKEN_VAR",
+						Value: "test.token",
+					},
+				},
 				outputFolder:            "folder",
 				projectName:             "project",
 				forceOverwriteManifest:  false,
@@ -474,9 +479,13 @@ func TestDownloadConfigsExitsEarlyForUnknownAPI(t *testing.T) {
 		onlyAPIs:        false,
 		onlySettings:    false,
 		downloadOptionsShared: downloadOptionsShared{
-			environmentUrl:          "testurl.com",
-			token:                   "test.token",
-			tokenEnvVarName:         "TEST_TOKEN_VAR",
+			environmentUrl: "testurl.com",
+			auth: manifest.Auth{
+				Token: manifest.AuthSecret{
+					Name:  "TEST_TOKEN_VAR",
+					Value: "test.token",
+				},
+			},
 			outputFolder:            "folder",
 			projectName:             "project",
 			forceOverwriteManifest:  false,
@@ -498,9 +507,13 @@ func TestDownloadConfigsExitsEarlyForUnknownSettingsSchema(t *testing.T) {
 		onlyAPIs:        false,
 		onlySettings:    false,
 		downloadOptionsShared: downloadOptionsShared{
-			environmentUrl:          "testurl.com",
-			token:                   "test.token",
-			tokenEnvVarName:         "TEST_TOKEN_VAR",
+			environmentUrl: "testurl.com",
+			auth: manifest.Auth{
+				Token: manifest.AuthSecret{
+					Name:  "TEST_TOKEN_VAR",
+					Value: "test.token",
+				},
+			},
 			outputFolder:            "folder",
 			projectName:             "project",
 			forceOverwriteManifest:  false,
