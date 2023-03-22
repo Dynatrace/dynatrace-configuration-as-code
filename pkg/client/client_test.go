@@ -48,16 +48,16 @@ func TestNewClassicClient(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.NotEmpty(t, c.serverVersion)
-		assert.NotEmpty(t, c.environmentUrl)
-		assert.NotEmpty(t, c.environmentUrl)
+		assert.NotEmpty(t, c.environmentURL)
+		assert.NotEmpty(t, c.environmentURL)
 		assert.NotEmpty(t, c.client)
 		assert.NotEmpty(t, c.clientClassic)
 		assert.NotEmpty(t, c.retrySettings)
 		assert.Equal(t, settingsSchemaAPIPathClassic, c.settingsSchemaAPIPath)
 		assert.Equal(t, settingsObjectAPIPathClassic, c.settingsObjectAPIPath)
 
-		assert.Equal(t, dtURL, c.environmentUrl)
-		assert.Equal(t, c.environmentUrl, c.environmentURLClassic, "'environmentURLClassic' should be same as 'environmentUrl'")
+		assert.Equal(t, dtURL, c.environmentURL)
+		assert.Equal(t, c.environmentURL, c.environmentURLClassic, "'environmentURLClassic' should be same as 'environmentURL'")
 		assert.Equal(t, c.client, c.clientClassic, "'classicClassic' should be same as 'client'")
 		assert.Equal(t, ver, c.serverVersion, "'serverVersion' should be modified with 'WithServerVersion'")
 		assert.Equal(t, rest.DefaultRetrySettings, c.retrySettings, "'retrySettings' should be modified with 'WithRetrySettings' modifier")
@@ -75,7 +75,7 @@ func TestNewClassicClient(t *testing.T) {
 	t.Run("URL suffix is trimmed", func(t *testing.T) {
 		client, err := NewClassicClient("https://my-environment.live.dynatrace.com/", "")
 		assert.NoError(t, err)
-		assert.Equal(t, client.environmentUrl, "https://my-environment.live.dynatrace.com")
+		assert.Equal(t, client.environmentURL, "https://my-environment.live.dynatrace.com")
 	})
 
 	t.Run("URL with leading space - should return an error", func(t *testing.T) {
@@ -86,7 +86,7 @@ func TestNewClassicClient(t *testing.T) {
 	t.Run("URL starts with http", func(t *testing.T) {
 		client, err := NewClassicClient("http://my-environment.live.dynatrace.com", "")
 		assert.NoError(t, err)
-		assert.Equal(t, client.environmentUrl, "http://my-environment.live.dynatrace.com")
+		assert.Equal(t, client.environmentURL, "http://my-environment.live.dynatrace.com")
 	})
 
 	t.Run("URL is without scheme - should throw an error", func(t *testing.T) {
@@ -97,13 +97,13 @@ func TestNewClassicClient(t *testing.T) {
 	t.Run("URL is IPv4", func(t *testing.T) {
 		client, err := NewClassicClient("https://127.0.0.1", "")
 		assert.NoError(t, err)
-		assert.Equal(t, client.environmentUrl, "https://127.0.0.1")
+		assert.Equal(t, client.environmentURL, "https://127.0.0.1")
 	})
 
 	t.Run("URL is IPv6", func(t *testing.T) {
 		client, err := NewClassicClient("https://[0000:0000:0000:0000:0000:0000:0000:0001]", "")
 		assert.NoError(t, err)
-		assert.Equal(t, client.environmentUrl, "https://[0000:0000:0000:0000:0000:0000:0000:0001]")
+		assert.Equal(t, client.environmentURL, "https://[0000:0000:0000:0000:0000:0000:0000:0001]")
 	})
 
 	t.Run("URL is without valid local path - should return an error", func(t *testing.T) {
@@ -159,8 +159,8 @@ func TestNewPlatformClient(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.NotEmpty(t, c.serverVersion)
-		assert.NotEmpty(t, c.environmentUrl)
-		assert.NotEmpty(t, c.environmentUrl)
+		assert.NotEmpty(t, c.environmentURL)
+		assert.NotEmpty(t, c.environmentURL)
 		assert.NotEmpty(t, c.client)
 		assert.NotEmpty(t, c.clientClassic)
 		assert.NotEmpty(t, c.retrySettings)
@@ -170,7 +170,7 @@ func TestNewPlatformClient(t *testing.T) {
 		fmt.Println(c)
 		fmt.Println("")
 
-		assert.Equal(t, dtURL, c.environmentUrl)
+		assert.Equal(t, dtURL, c.environmentURL)
 		assert.Equal(t, "/classic_endpoint", c.environmentURLClassic)
 		assert.NotEqual(t, c.client, c.clientClassic, "'classicClassic' should be same as 'client'")
 		assert.Equal(t, settingsSchemaAPIPathPlatform, c.settingsSchemaAPIPath)
@@ -197,7 +197,7 @@ func TestNewPlatformClient(t *testing.T) {
 	t.Run("URL suffix is trimmed", func(t *testing.T) {
 		client, err := NewPlatformClient(server.URL, "", OauthCredentials{TokenURL: server.URL + "/oauth/token"})
 		assert.NoError(t, err)
-		assert.Equal(t, server.URL, client.environmentUrl)
+		assert.Equal(t, server.URL, client.environmentURL)
 	})
 
 	t.Run("URL with leading space - should return an error", func(t *testing.T) {
@@ -208,7 +208,7 @@ func TestNewPlatformClient(t *testing.T) {
 	t.Run("URL starts with http", func(t *testing.T) {
 		client, err := NewPlatformClient(server.URL, "", OauthCredentials{TokenURL: server.URL + "/oauth/token"})
 		assert.NoError(t, err)
-		assert.Equal(t, server.URL, client.environmentUrl)
+		assert.Equal(t, server.URL, client.environmentURL)
 	})
 
 	t.Run("URL is without scheme - should throw an error", func(t *testing.T) {
@@ -544,7 +544,7 @@ func TestListKnownSettings(t *testing.T) {
 			defer server.Close()
 
 			client := DynatraceClient{
-				environmentUrl: server.URL,
+				environmentURL: server.URL,
 				client:         server.Client(),
 				retrySettings:  testRetrySettings,
 			}
@@ -655,7 +655,7 @@ func TestGetSettingById(t *testing.T) {
 			}
 
 			d := DynatraceClient{
-				environmentUrl:        envURL,
+				environmentURL:        envURL,
 				client:                server.Client(),
 				retrySettings:         tt.fields.retrySettings,
 				settingsObjectAPIPath: "/api/v2/settings/objects",
@@ -750,7 +750,7 @@ func TestDeleteSettings(t *testing.T) {
 			}
 
 			d := DynatraceClient{
-				environmentUrl:        envURL,
+				environmentURL:        envURL,
 				client:                server.Client(),
 				retrySettings:         tt.fields.retrySettings,
 				settingsObjectAPIPath: settingsObjectAPIPathClassic,
@@ -783,7 +783,7 @@ func TestUpsertSettingsRetries(t *testing.T) {
 	defer server.Close()
 
 	client := DynatraceClient{
-		environmentUrl: server.URL,
+		environmentURL: server.URL,
 		client:         server.Client(),
 		retrySettings:  testRetrySettings,
 	}
@@ -1056,7 +1056,7 @@ func TestListEntities(t *testing.T) {
 			defer server.Close()
 
 			client := DynatraceClient{
-				environmentUrl: server.URL,
+				environmentURL: server.URL,
 				client:         server.Client(),
 				retrySettings:  testRetrySettings,
 			}

@@ -155,7 +155,7 @@ func TestUpsertSettings(t *testing.T) {
 			}))
 
 			c := DynatraceClient{
-				environmentUrl:        server.URL,
+				environmentURL:        server.URL,
 				client:                server.Client(),
 				serverVersion:         test.serverVersion,
 				retrySettings:         testRetrySettings,

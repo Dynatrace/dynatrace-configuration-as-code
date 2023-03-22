@@ -66,7 +66,7 @@ type ConfigClient interface {
 	// It calls the underlying GET and PUT endpoints for the API. E.g. for alerting profiles this would be:
 	//	 GET <environment-url>/api/config/v1/alertingProfiles ... to check if the config is already available
 	//	 PUT <environment-url>/api/config/v1/alertingProfiles/<id> ... with the given (or found by unique name) entity ID
-	UpsertConfigByNonUniqueNameAndId(a api.API, entityId string, name string, payload []byte) (entity DynatraceEntity, err error)
+	UpsertConfigByNonUniqueNameAndId(a api.API, entityID string, name string, payload []byte) (entity DynatraceEntity, err error)
 
 	// DeleteConfigById removes a given config for a given API using its id.
 	// It calls the DELETE endpoint for the API. E.g. for alerting profiles this would be:
@@ -189,9 +189,9 @@ type DynatraceClient struct {
 	// serverVersion is the Dynatrace server version the
 	// client will be interacting with
 	serverVersion version.Version
-	// environmentUrl is the base URL of the Dynatrace server the
+	// environmentURL is the base URL of the Dynatrace server the
 	// client will be interacting with
-	environmentUrl string
+	environmentURL string
 	// environmentURLClassic is the base URL of the classic generation
 	// Dynatrace tenant
 	environmentURLClassic string
@@ -344,7 +344,7 @@ func NewPlatformClient(dtURL string, token string, oauthCredentials OauthCredent
 
 	d := &DynatraceClient{
 		serverVersion:         version.Version{},
-		environmentUrl:        dtURL,
+		environmentURL:        dtURL,
 		environmentURLClassic: classicURL,
 		client:                oauthClient,
 		clientClassic:         tokenClient,
@@ -372,7 +372,7 @@ func NewClassicClient(dtURL string, token string, opts ...func(dynatraceClient *
 
 	d := &DynatraceClient{
 		serverVersion:         version.Version{},
-		environmentUrl:        dtURL,
+		environmentURL:        dtURL,
 		environmentURLClassic: dtURL,
 		client:                tokenClient,
 		clientClassic:         tokenClient,
@@ -443,7 +443,7 @@ func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, e
 		return DynatraceEntity{}, fmt.Errorf("failed to build settings object for upsert: %w", err)
 	}
 
-	requestUrl := d.environmentUrl + d.settingsObjectAPIPath
+	requestUrl := d.environmentURL + d.settingsObjectAPIPath
 
 	resp, err := rest.SendWithRetryWithInitialTry(d.client, rest.Post, obj.Id, requestUrl, payload, d.retrySettings.Normal)
 	if err != nil {
@@ -527,7 +527,7 @@ type SchemaList []struct {
 }
 
 func (d *DynatraceClient) ListSchemas() (SchemaList, error) {
-	u, err := url.Parse(d.environmentUrl + d.settingsSchemaAPIPath)
+	u, err := url.Parse(d.environmentURL + d.settingsSchemaAPIPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse url: %w", err)
 	}
@@ -556,9 +556,9 @@ func (d *DynatraceClient) ListSchemas() (SchemaList, error) {
 }
 
 func (d *DynatraceClient) GetSettingById(objectId string) (*DownloadSettingsObject, error) {
-	u, err := url.Parse(d.environmentUrl + d.settingsObjectAPIPath + "/" + objectId)
+	u, err := url.Parse(d.environmentURL + d.settingsObjectAPIPath + "/" + objectId)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse URL '%s': %w", d.environmentUrl+d.settingsObjectAPIPath, err)
+		return nil, fmt.Errorf("failed to parse URL '%s': %w", d.environmentURL+d.settingsObjectAPIPath, err)
 	}
 
 	resp, err := rest.Get(d.client, u.String())
@@ -730,7 +730,7 @@ func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLa
 	receivedCount := 0
 	totalReceivedCount := 0
 
-	u, err := buildUrl(d.environmentUrl, urlPath, params)
+	u, err := buildUrl(d.environmentURL, urlPath, params)
 	if err != nil {
 		return resp, RespError{
 			Err:        err,
@@ -801,9 +801,9 @@ func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLa
 }
 
 func (d *DynatraceClient) DeleteSettings(objectID string) error {
-	u, err := url.Parse(d.environmentUrl + d.settingsObjectAPIPath)
+	u, err := url.Parse(d.environmentURL + d.settingsObjectAPIPath)
 	if err != nil {
-		return fmt.Errorf("failed to parse URL '%s': %w", d.environmentUrl+d.settingsObjectAPIPath, err)
+		return fmt.Errorf("failed to parse URL '%s': %w", d.environmentURL+d.settingsObjectAPIPath, err)
 	}
 
 	return rest.DeleteConfig(d.client, u.String(), objectID)
