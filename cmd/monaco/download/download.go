@@ -16,6 +16,7 @@ package download
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"net/http"
 	"net/url"
 	"path"
@@ -60,8 +61,8 @@ type DynatraceClientProvider func(*http.Client, string, ...func(*client.Dynatrac
 
 type downloadOptionsShared struct {
 	environmentUrl          string
-	token                   string
-	tokenEnvVarName         string
+	environmentType         manifest.EnvironmentType
+	auth                    manifest.Auth
 	outputFolder            string
 	projectName             string
 	forceOverwriteManifest  bool
@@ -72,9 +73,10 @@ func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptions
 	proj := download.CreateProjectData(downloadedConfigs, opts.projectName)
 
 	downloadWriterContext := download.WriterContext{
-		ProjectToWrite:         proj,
-		TokenEnvVarName:        opts.tokenEnvVarName,
 		EnvironmentUrl:         opts.environmentUrl,
+		ProjectToWrite:         proj,
+		Auth:                   opts.auth,
+		EnvironmentType:        opts.environmentType,
 		OutputFolder:           opts.outputFolder,
 		ForceOverwriteManifest: opts.forceOverwriteManifest,
 	}

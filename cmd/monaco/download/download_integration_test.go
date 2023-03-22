@@ -1016,9 +1016,13 @@ func setupTestingDownloadOptions(t *testing.T, server *httptest.Server, projectN
 
 	return downloadConfigsOptions{
 		downloadOptionsShared: downloadOptionsShared{
-			environmentUrl:          server.URL,
-			token:                   "token",
-			tokenEnvVarName:         "TOKEN_ENV_VAR",
+			environmentUrl: server.URL,
+			auth: manifest.Auth{
+				Token: manifest.AuthSecret{
+					Name:  "TOKEN_ENV_VAR",
+					Value: "token",
+				},
+			},
 			outputFolder:            "out",
 			projectName:             projectName,
 			concurrentDownloadLimit: 50,

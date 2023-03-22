@@ -83,8 +83,8 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 	options := downloadConfigsOptions{
 		downloadOptionsShared: downloadOptionsShared{
 			environmentUrl:          env.URL.Value,
-			token:                   env.Auth.Token.Value,
-			tokenEnvVarName:         env.Auth.Token.Name,
+			environmentType:         env.Type,
+			auth:                    env.Auth,
 			outputFolder:            cmdOptions.outputFolder,
 			projectName:             cmdOptions.projectName,
 			forceOverwriteManifest:  cmdOptions.forceOverwrite,
@@ -115,9 +115,13 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOp
 
 	options := downloadConfigsOptions{
 		downloadOptionsShared: downloadOptionsShared{
-			environmentUrl:          cmdOptions.environmentUrl,
-			token:                   token,
-			tokenEnvVarName:         cmdOptions.envVarName,
+			environmentUrl: cmdOptions.environmentUrl,
+			auth: manifest.Auth{
+				Token: manifest.AuthSecret{
+					Name:  cmdOptions.envVarName,
+					Value: token,
+				},
+			},
 			outputFolder:            cmdOptions.outputFolder,
 			projectName:             cmdOptions.projectName,
 			forceOverwriteManifest:  cmdOptions.forceOverwrite,

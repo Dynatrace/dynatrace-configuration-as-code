@@ -21,6 +21,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
@@ -163,8 +164,10 @@ func TestWriteToDisk(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			proj := CreateProjectData(tt.args.downloadedConfigs, tt.args.projectName) //using CreateProject data to simplify test struct setup
 			writerContext := WriterContext{
-				ProjectToWrite:  proj,
-				TokenEnvVarName: tt.args.tokenEnvVarName,
+				ProjectToWrite: proj,
+				Auth: manifest.Auth{Token: manifest.AuthSecret{
+					Name: tt.args.tokenEnvVarName,
+				}},
 				EnvironmentUrl:  tt.args.environmentUrl,
 				OutputFolder:    tt.args.outputFolder,
 				timestampString: tt.args.timestampString,
@@ -219,8 +222,10 @@ func TestWriteToDisk_OverwritesManifestIfForced(t *testing.T) {
 	timestampString := "TESTING_TIME"
 	proj := CreateProjectData(downloadedConfigs, projectName) //using CreateProject data to simplify test struct setup
 	writerContext := WriterContext{
-		ProjectToWrite:  proj,
-		TokenEnvVarName: tokenEnvVarName,
+		ProjectToWrite: proj,
+		Auth: manifest.Auth{Token: manifest.AuthSecret{
+			Name: tokenEnvVarName,
+		}},
 		EnvironmentUrl:  environmentUrl,
 		OutputFolder:    outputFolder,
 		timestampString: timestampString,
