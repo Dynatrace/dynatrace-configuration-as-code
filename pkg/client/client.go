@@ -300,6 +300,8 @@ func (t *TokenAuthTransport) setHeader(key, value string) {
 	t.header.Set(key, value)
 }
 
+var defaultOAuthTokenURL = endpoints.Dynatrace.TokenURL
+
 // NewTokenAuthClient creates a new HTTP client that supports token based authorization
 func NewTokenAuthClient(token string) *http.Client {
 	if !isNewDynatraceTokenFormat(token) {
@@ -310,17 +312,12 @@ func NewTokenAuthClient(token string) *http.Client {
 }
 
 // NewOAuthClient creates a new HTTP client that supports OAuth2 client credentials based authorization
-func NewOAuthClient(oauthConfig OauthCredentials) *http.Client {
+func NewOAuthClient(ctx context.Context, oauthConfig OauthCredentials) *http.Client {
 
-	config := getClientCredentialsConfig(oauthConfig)
-	return config.Client(context.TODO())
-}
-
-func getClientCredentialsConfig(oauthConfig OauthCredentials) clientcredentials.Config {
 	tokenUrl := oauthConfig.TokenURL
 	if tokenUrl == "" {
 		log.Debug("using default tokenURL %s", tokenUrl)
-		tokenUrl = endpoints.Dynatrace.TokenURL
+		tokenUrl = defaultOAuthTokenURL
 	}
 
 	config := clientcredentials.Config{
@@ -329,7 +326,8 @@ func getClientCredentialsConfig(oauthConfig OauthCredentials) clientcredentials.
 		TokenURL:     tokenUrl,
 		Scopes:       oauthConfig.Scopes,
 	}
-	return config
+
+	return config.Client(ctx)
 }
 
 const (
@@ -347,7 +345,7 @@ func NewPlatformClient(dtURL string, token string, oauthCredentials OauthCredent
 	}
 
 	tokenClient := NewTokenAuthClient(token)
-	oauthClient := NewOAuthClient(oauthCredentials)
+	oauthClient := NewOAuthClient(context.TODO(), oauthCredentials)
 
 	classicURL, err := GetDynatraceClassicURL(oauthClient, dtURL)
 	if err != nil {

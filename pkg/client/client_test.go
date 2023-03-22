@@ -19,16 +19,17 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/oauth2/endpoints"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 )
@@ -1102,36 +1103,79 @@ func TestCreateDynatraceClientWithAutoServerVersion(t *testing.T) {
 	})
 }
 
-func TestDefaultTokenUrl(t *testing.T) {
-	tests := []struct {
-		name        string
-		oauthConfig OauthCredentials
-		want        string
-	}{
-		{
-			"uses token url from input",
-			OauthCredentials{
-				ClientID:     "ID",
-				ClientSecret: "SEC",
-				TokenURL:     "URL",
-				Scopes:       nil,
-			},
-			"URL",
-		},
-		{
-			"uses default URL if none defined",
-			OauthCredentials{
-				ClientID:     "ID",
-				ClientSecret: "SEC",
-				TokenURL:     "",
-				Scopes:       nil,
-			},
-			endpoints.Dynatrace.TokenURL,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, getClientCredentialsConfig(tt.oauthConfig).TokenURL)
-		})
-	}
+func TestDefaultTokenURL(t *testing.T) {
+
+	defaultTokenPath := "/fake/sso/oauth2/token"
+	defaultTokenURLCalled := false
+	server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		println(req)
+		rw.Header().Add("Content-Type", "application/json")
+		if req.URL.Path == defaultTokenPath {
+			defaultTokenURLCalled = true
+			rw.Write([]byte(`{ "access_token":"ABC", "token_type":"Bearer", "expires_in":3600, "refresh_token":"ABCD", "scope":"testing" }`))
+		} else {
+			rw.Write([]byte(`{ "some":"reply" }`))
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	serverURL, err := url.Parse(server.URL)
+	assert.NoError(t, err)
+
+	defaultOAuthTokenURL = serverURL.JoinPath(defaultTokenPath).String()
+
+	ctx := context.TODO()
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, server.Client()) // ensure the oAuth client trusts the test server by passing its underlying client
+
+	c := NewOAuthClient(ctx, OauthCredentials{
+		ClientID:     "id",
+		ClientSecret: "secret",
+		TokenURL:     "", // no defined token URL should lead to default being used
+	})
+
+	_, err = c.Do(&http.Request{Method: http.MethodGet, URL: serverURL.JoinPath("/some/api/call")})
+	assert.NoError(t, err)
+	assert.True(t, defaultTokenURLCalled, "expected oAuth client to make an API call to the default URL")
+}
+
+func TestNonDefaultTokenURL(t *testing.T) {
+
+	defaultTokenPath := "/fake/sso/oauth2/token"
+	defaultTokenURLCalled := false
+
+	specialTokenPath := "/magical/special/token"
+	specialTokenURLCalled := false
+	server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		println(req)
+		rw.Header().Add("Content-Type", "application/json")
+		if req.URL.Path == defaultTokenPath {
+			defaultTokenURLCalled = true
+			rw.Write([]byte(`{ "access_token":"ABC", "token_type":"Bearer", "expires_in":3600, "refresh_token":"ABCD", "scope":"testing" }`))
+		} else if req.URL.Path == specialTokenPath {
+			specialTokenURLCalled = true
+			rw.Write([]byte(`{ "access_token":"ABC", "token_type":"Bearer", "expires_in":3600, "refresh_token":"ABCD", "scope":"testing" }`))
+		} else {
+			rw.Write([]byte(`{ "some":"reply" }`))
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	serverURL, err := url.Parse(server.URL)
+	assert.NoError(t, err)
+
+	defaultOAuthTokenURL = serverURL.JoinPath(defaultTokenPath).String()
+
+	ctx := context.TODO()
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, server.Client()) // ensure the oAuth client trusts the test server by passing its underlying client
+
+	c := NewOAuthClient(ctx, OauthCredentials{
+		ClientID:     "id",
+		ClientSecret: "secret",
+		TokenURL:     serverURL.JoinPath(specialTokenPath).String(),
+	})
+
+	_, err = c.Do(&http.Request{Method: http.MethodGet, URL: serverURL.JoinPath("/some/api/call")})
+	assert.NoError(t, err)
+	assert.True(t, specialTokenURLCalled, "expected oAuth client to make an API call to the defined token URL")
+	assert.True(t, defaultTokenURLCalled == false, "expected oAuth client to make NO API call to the default URL")
 }
