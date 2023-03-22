@@ -129,16 +129,12 @@ func doDownloadEntities(fs afero.Fs, dtClient client.Client, opts downloadEntiti
 
 	log.Info("Downloading from environment '%v' into project '%v'", opts.environmentUrl, opts.projectName)
 
-	downloadedConfigs, err := downloadEntities(dtClient, opts)
-
-	if err != nil {
-		return err
-	}
+	downloadedConfigs := downloadEntities(dtClient, opts)
 
 	return writeConfigs(downloadedConfigs, opts.downloadOptionsShared, fs)
 }
 
-func downloadEntities(dtClient client.Client, opts downloadEntitiesOptions) (project.ConfigsPerType, error) {
+func downloadEntities(dtClient client.Client, opts downloadEntitiesOptions) project.ConfigsPerType {
 	dtClient = client.LimitClientParallelRequests(dtClient, opts.downloadOptionsShared.concurrentDownloadLimit)
 
 	var entitiesObjects project.ConfigsPerType
@@ -155,8 +151,8 @@ func downloadEntities(dtClient client.Client, opts downloadEntitiesOptions) (pro
 		log.Info("Downloaded %d entities types.", numEntities)
 	} else {
 		log.Info("No entities were found. No files will be created.")
-		return nil, nil
+		return nil
 	}
 
-	return entitiesObjects, nil
+	return entitiesObjects
 }
