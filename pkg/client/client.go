@@ -462,7 +462,7 @@ func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, e
 		return DynatraceEntity{}, fmt.Errorf("failed to parse response: %w", err)
 	}
 
-	log.Debug("\tUpserted object %s (%s) with externalId %s", obj.Id, obj.SchemaId, externalId)
+	log.Debug("\tUpsert object %s (%s) with externalId %s", obj.Id, obj.SchemaId, externalId)
 	return entity, nil
 }
 
@@ -709,7 +709,7 @@ func (d *DynatraceClient) ListEntities(entitiesType EntitiesType) ([]string, err
 	}
 
 	runExtraction := true
-	ignoreProperties := []string{}
+	var ignoreProperties []string
 
 	for runExtraction {
 		params := genListEntitiesParams(entityType, entitiesType, ignoreProperties)
@@ -890,13 +890,13 @@ func logLongRunningExtractionProgress(lastLogTime *time.Time, startTime time.Tim
 		nbItemsMessage := ""
 		ETAMessage := ""
 		runningMinutes := time.Since(startTime).Minutes()
-		nbCallsPerMinute := (float64(nbCalls) / runningMinutes)
+		nbCallsPerMinute := float64(nbCalls) / runningMinutes
 		if resp.PageSize > 0 && resp.TotalCount > 0 {
-			nbProcessed := (nbCalls * resp.PageSize)
+			nbProcessed := nbCalls * resp.PageSize
 			nbLeft := resp.TotalCount - nbProcessed
 			ETAMinutes := float64(nbLeft) / (nbCallsPerMinute * float64(resp.PageSize))
 			nbItemsMessage = fmt.Sprintf(", processed %d of %d at %d items/call and", nbProcessed, resp.TotalCount, resp.PageSize)
-			ETAMessage = fmt.Sprintf("ETA: %.1f minutes", (ETAMinutes))
+			ETAMessage = fmt.Sprintf("ETA: %.1f minutes", ETAMinutes)
 		}
 
 		log.Debug("Running extration of: %s for %.1f minutes%s %.1f call/minute. %s", logLabel, runningMinutes, nbItemsMessage, nbCallsPerMinute, ETAMessage)
