@@ -21,8 +21,9 @@ jobs:
     permissions:
       actions: read
       contents: read
-      issues: write
+      issues: read
       checks: write
+      pull-requests: write
     if: github.event.workflow_run.conclusion != 'skipped'
 
     steps:
