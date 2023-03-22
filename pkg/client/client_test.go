@@ -23,7 +23,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -44,18 +44,18 @@ func TestNewClientInvalidURL(t *testing.T) {
 
 func TestUrlSuffixGetsTrimmed(t *testing.T) {
 	client, err := newDynatraceClient(nil, "https://my-environment.live.dynatrace.com/")
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, client.environmentUrl, "https://my-environment.live.dynatrace.com")
 }
 
 func TestUrlWithLeadingSpaceReturnsErr(t *testing.T) {
 	_, err := newDynatraceClient(nil, " https://my-environment.live.dynatrace.com/")
-	assert.Check(t, err != nil)
+	assert.Error(t, err)
 }
 
 func TestNewDynatraceClientWithHTTP(t *testing.T) {
 	client, err := newDynatraceClient(nil, "http://my-environment.live.dynatrace.com")
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, client.environmentUrl, "http://my-environment.live.dynatrace.com")
 }
 
@@ -66,13 +66,13 @@ func TestNewDynatraceClientWithoutScheme(t *testing.T) {
 
 func TestNewDynatraceClientWithIPv4(t *testing.T) {
 	client, err := newDynatraceClient(nil, "https://127.0.0.1")
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, client.environmentUrl, "https://127.0.0.1")
 }
 
 func TestNewDynatraceClientWithIPv6(t *testing.T) {
 	client, err := newDynatraceClient(nil, "https://[0000:0000:0000:0000:0000:0000:0000:0001]")
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, client.environmentUrl, "https://[0000:0000:0000:0000:0000:0000:0000:0001]")
 }
 
@@ -100,7 +100,7 @@ func TestNewClient(t *testing.T) {
 	assert.Equal(t, rest.DefaultRetrySettings, c.retrySettings)
 	assert.Equal(t, httpClient, c.client)
 	assert.Equal(t, "https://my-environment.live.dynatrace.com", c.environmentUrl)
-	assert.NilError(t, err, "not valid")
+	assert.NoError(t, err, "not valid")
 }
 
 func TestReadByIdReturnsAnErrorUponEncounteringAnError(t *testing.T) {
@@ -122,7 +122,7 @@ func TestReadByIdEscapesTheId(t *testing.T) {
 	client, _ := newDynatraceClient(testServer.Client(), testServer.URL)
 
 	_, err := client.ReadConfigById(mockApiNotSingle, unescapedId)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 }
 
 func TestReadByIdReturnsTheResponseGivenNoError(t *testing.T) {
@@ -136,8 +136,8 @@ func TestReadByIdReturnsTheResponseGivenNoError(t *testing.T) {
 	client, _ := newDynatraceClient(testServer.Client(), testServer.URL)
 
 	resp, err := client.ReadConfigById(mockApi, "test")
-	assert.NilError(t, err, "there should not be an error")
-	assert.DeepEqual(t, body, resp)
+	assert.NoError(t, err, "there should not be an error")
+	assert.Equal(t, body, resp)
 }
 
 func TestListKnownSettings(t *testing.T) {
@@ -386,8 +386,8 @@ func TestListKnownSettings(t *testing.T) {
 					params := tt.wantQueryParamsPerApiCall[apiCalls]
 					for _, param := range params {
 						addedQueryParameter := req.URL.Query()[param.key]
-						assert.Assert(t, addedQueryParameter != nil)
-						assert.Assert(t, len(addedQueryParameter) > 0)
+						assert.NotNil(t, addedQueryParameter)
+						assert.NotEmpty(t, addedQueryParameter)
 						assert.Equal(t, addedQueryParameter[0], param.value)
 					}
 				} else {
@@ -402,22 +402,22 @@ func TestListKnownSettings(t *testing.T) {
 				}
 
 				apiCalls++
-				assert.Check(t, apiCalls <= tt.wantNumberOfApiCalls, "expected at most %d API calls to happen, but encountered call %d", tt.wantNumberOfApiCalls, apiCalls)
+				assert.LessOrEqualf(t, apiCalls, tt.wantNumberOfApiCalls, "expected at most %d API calls to happen, but encountered call %d", tt.wantNumberOfApiCalls, apiCalls)
 			}))
 			defer server.Close()
 
 			client, err := newDynatraceClient(server.Client(), server.URL, WithRetrySettings(testRetrySettings))
-			assert.NilError(t, err)
+			assert.NoError(t, err)
 
 			res, err1 := client.ListSettings(tt.givenSchemaId, tt.givenListSettingsOpts)
 
 			if tt.wantError {
-				assert.Assert(t, err1 != nil)
+				assert.Error(t, err1)
 			} else {
-				assert.NilError(t, err1)
+				assert.NoError(t, err1)
 			}
 
-			assert.DeepEqual(t, res, tt.want)
+			assert.Equal(t, tt.want, res)
 
 			assert.Equal(t, apiCalls, tt.wantNumberOfApiCalls, "expected exactly %d API calls to happen but %d calls where made", tt.wantNumberOfApiCalls, apiCalls)
 		})
@@ -518,11 +518,11 @@ func TestGetSettingById(t *testing.T) {
 
 			settingsObj, err := d.GetSettingById(tt.args.objectID)
 			if tt.wantErr {
-				assert.Assert(t, err != nil)
+				assert.Error(t, err)
 			} else {
-				assert.NilError(t, err)
+				assert.NoError(t, err)
 			}
-			assert.DeepEqual(t, tt.wantResult, settingsObj)
+			assert.Equal(t, tt.wantResult, settingsObj)
 
 		})
 	}
@@ -634,7 +634,7 @@ func TestUpsertSettingsRetries(t *testing.T) {
 	defer server.Close()
 
 	client, err := newDynatraceClient(server.Client(), server.URL, WithRetrySettings(testRetrySettings))
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	_, err = client.UpsertSettings(SettingsObject{
 		Id:       "42",
@@ -642,7 +642,7 @@ func TestUpsertSettingsRetries(t *testing.T) {
 		Content:  []byte("{}"),
 	})
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, numApiCalls, 3)
 }
 
@@ -850,7 +850,7 @@ func TestListEntities(t *testing.T) {
 							"location":null
 						}]
 					}
-				} 
+				}
 				}`, testType)},
 				{200, fmt.Sprintf(`{ "entities": [ {"entityId": "%s-C329D7411A28B791", "type": "%s"} ] }`, testType, testType)},
 			},
@@ -883,8 +883,8 @@ func TestListEntities(t *testing.T) {
 					params := tt.wantQueryParamsPerApiCall[apiCalls]
 					for _, param := range params {
 						addedQueryParameter := req.URL.Query()[param.key]
-						assert.Assert(t, addedQueryParameter != nil)
-						assert.Assert(t, len(addedQueryParameter) > 0)
+						assert.NotNil(t, addedQueryParameter)
+						assert.Greater(t, len(addedQueryParameter), 0)
 						assert.Equal(t, addedQueryParameter[0], param.value)
 					}
 				} else {
@@ -899,22 +899,22 @@ func TestListEntities(t *testing.T) {
 				}
 
 				apiCalls++
-				assert.Check(t, apiCalls <= tt.wantNumberOfApiCalls, "expected at most %d API calls to happen, but encountered call %d", tt.wantNumberOfApiCalls, apiCalls)
+				assert.LessOrEqualf(t, apiCalls, tt.wantNumberOfApiCalls, "expected at most %d API calls to happen, but encountered call %d", tt.wantNumberOfApiCalls, apiCalls)
 			}))
 			defer server.Close()
 
 			client, err := newDynatraceClient(server.Client(), server.URL, WithRetrySettings(testRetrySettings))
-			assert.NilError(t, err)
+			assert.NoError(t, err)
 
 			res, err1 := client.ListEntities(tt.givenEntitiesType)
 
 			if tt.wantError {
-				assert.Assert(t, err1 != nil)
+				assert.Error(t, err1)
 			} else {
-				assert.NilError(t, err1)
+				assert.NoError(t, err1)
 			}
 
-			assert.DeepEqual(t, res, tt.want)
+			assert.Equal(t, tt.want, res)
 
 			assert.Equal(t, apiCalls, tt.wantNumberOfApiCalls, "expected exactly %d API calls to happen but %d calls where made", tt.wantNumberOfApiCalls, apiCalls)
 		})
@@ -929,7 +929,7 @@ func TestCreateDynatraceClientWithAutoServerVersion(t *testing.T) {
 
 		dcl, err := newDynatraceClient(server.Client(), server.URL, WithAutoServerVersion())
 		server.Close()
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 		assert.Equal(t, version.Version{Major: 1, Minor: 262}, dcl.serverVersion)
 	})
 
@@ -940,7 +940,7 @@ func TestCreateDynatraceClientWithAutoServerVersion(t *testing.T) {
 
 		dcl, err := newDynatraceClient(server.Client(), server.URL, WithAutoServerVersion())
 		server.Close()
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 		assert.Equal(t, version.UnknownVersion, dcl.serverVersion)
 	})
 }

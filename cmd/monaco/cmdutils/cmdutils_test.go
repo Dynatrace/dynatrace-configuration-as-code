@@ -176,7 +176,5 @@ func TestVerifyClusterGen(t *testing.T) {
 			},
 		})
 		assert.False(t, ok)
-
 	})
-
 }
