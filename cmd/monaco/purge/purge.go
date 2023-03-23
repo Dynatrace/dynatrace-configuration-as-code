@@ -19,11 +19,11 @@ package purge
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/delete"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"github.com/spf13/afero"
@@ -77,7 +77,7 @@ func purgeConfigs(environments []manifest.EnvironmentDefinition, apis api.APIs) 
 }
 
 func purgeConfigsForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs) []error {
-	dynatraceClient, err := createClient(env)
+	dynatraceClient, err := cmdutils.CreateDTClient(env, false)
 
 	if err != nil {
 		return []error{
@@ -88,8 +88,4 @@ func purgeConfigsForEnvironment(env manifest.EnvironmentDefinition, apis api.API
 	log.Info("Deleting configs for environment `%s`", env.Name)
 
 	return delete.DeleteAllConfigs(dynatraceClient, apis)
-}
-
-func createClient(environment manifest.EnvironmentDefinition) (client.Client, error) {
-	return client.NewDynatraceClient(client.NewTokenAuthClient(environment.Auth.Token.Value), environment.URL.Value, client.WithAutoServerVersion())
 }

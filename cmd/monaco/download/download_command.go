@@ -295,7 +295,7 @@ func printUploadToSameEnvironmentWarning(env manifest.EnvironmentDefinition) {
 
 	serverVersion, err = client.GetDynatraceVersion(httpClient, env.URL.Value)
 	if err != nil {
-		log.Error("Unable to determine server version %q: %w", env.URL.Value, err)
+		log.Warn("Unable to determine server version %q: %w", env.URL.Value, err)
 		return
 	}
 	if serverVersion.SmallerThan(version.Version{Major: 1, Minor: 262}) {

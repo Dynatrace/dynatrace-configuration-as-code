@@ -19,83 +19,217 @@
 package client
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
+	"golang.org/x/oauth2"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
-var mockApi = api.API{ID: "mock-api", SingleConfiguration: true}
-var mockApiNotSingle = api.API{ID: "mock-api", SingleConfiguration: false}
+var mockAPI = api.API{ID: "mock-api", SingleConfiguration: true}
+var mockAPINotSingle = api.API{ID: "mock-api", SingleConfiguration: false}
 
-func TestNewClientNoUrl(t *testing.T) {
-	_, err := NewDynatraceClient(nil, "")
-	assert.ErrorContains(t, err, "empty url")
+func TestNewClassicClient(t *testing.T) {
+	t.Run("Create new classic client", func(t *testing.T) {
+		dtURL := "https://some.url"
+
+		ver := version.Version{Major: 1, Minor: 2, Patch: 3}
+
+		c, err := NewClassicClient(dtURL, "",
+			WithServerVersion(ver),
+			WithRetrySettings(rest.DefaultRetrySettings))
+
+		assert.NoError(t, err)
+
+		assert.NotEmpty(t, c.serverVersion)
+		assert.NotEmpty(t, c.environmentURL)
+		assert.NotEmpty(t, c.environmentURL)
+		assert.NotEmpty(t, c.client)
+		assert.NotEmpty(t, c.clientClassic)
+		assert.NotEmpty(t, c.retrySettings)
+		assert.Equal(t, settingsSchemaAPIPathClassic, c.settingsSchemaAPIPath)
+		assert.Equal(t, settingsObjectAPIPathClassic, c.settingsObjectAPIPath)
+
+		assert.Equal(t, dtURL, c.environmentURL)
+		assert.Equal(t, c.environmentURL, c.environmentURLClassic, "'environmentURLClassic' should be same as 'environmentURL'")
+		assert.Equal(t, c.client, c.clientClassic, "'classicClassic' should be same as 'client'")
+		assert.Equal(t, ver, c.serverVersion, "'serverVersion' should be modified with 'WithServerVersion'")
+		assert.Equal(t, rest.DefaultRetrySettings, c.retrySettings, "'retrySettings' should be modified with 'WithRetrySettings' modifier")
+	})
+	t.Run("URL is empty - should throw an error", func(t *testing.T) {
+		_, err := NewClassicClient("", "")
+		assert.ErrorContains(t, err, "empty url")
+	})
+
+	t.Run("invalid URL - should throw an error", func(t *testing.T) {
+		_, err := NewClassicClient("INVALID_URL", "")
+		assert.ErrorContains(t, err, "not valid")
+	})
+
+	t.Run("URL suffix is trimmed", func(t *testing.T) {
+		client, err := NewClassicClient("https://my-environment.live.dynatrace.com/", "")
+		assert.NoError(t, err)
+		assert.Equal(t, client.environmentURL, "https://my-environment.live.dynatrace.com")
+	})
+
+	t.Run("URL with leading space - should return an error", func(t *testing.T) {
+		_, err := NewClassicClient(" https://my-environment.live.dynatrace.com/", "")
+		assert.Error(t, err)
+	})
+
+	t.Run("URL starts with http", func(t *testing.T) {
+		client, err := NewClassicClient("http://my-environment.live.dynatrace.com", "")
+		assert.NoError(t, err)
+		assert.Equal(t, client.environmentURL, "http://my-environment.live.dynatrace.com")
+	})
+
+	t.Run("URL is without scheme - should throw an error", func(t *testing.T) {
+		_, err := NewClassicClient("my-environment.live.dynatrace.com", "")
+		assert.ErrorContains(t, err, "not valid")
+	})
+
+	t.Run("URL is IPv4", func(t *testing.T) {
+		client, err := NewClassicClient("https://127.0.0.1", "")
+		assert.NoError(t, err)
+		assert.Equal(t, client.environmentURL, "https://127.0.0.1")
+	})
+
+	t.Run("URL is IPv6", func(t *testing.T) {
+		client, err := NewClassicClient("https://[0000:0000:0000:0000:0000:0000:0000:0001]", "")
+		assert.NoError(t, err)
+		assert.Equal(t, client.environmentURL, "https://[0000:0000:0000:0000:0000:0000:0000:0001]")
+	})
+
+	t.Run("URL is without valid local path - should return an error", func(t *testing.T) {
+		_, err := NewClassicClient("/my-environment/live/dynatrace.com/", "")
+		assert.ErrorContains(t, err, "no host specified")
+	})
+
+	t.Run("without valid protocol - should return an error", func(t *testing.T) {
+		var err error
+
+		_, err = NewClassicClient("https//my-environment.live.dynatrace.com/", "")
+		assert.ErrorContains(t, err, "not valid")
+
+		_, err = NewClassicClient("http//my-environment.live.dynatrace.com/", "")
+		assert.ErrorContains(t, err, "not valid")
+	})
 }
 
-func TestNewClientInvalidURL(t *testing.T) {
-	_, err := NewDynatraceClient(nil, "INVALID_URL")
-	assert.ErrorContains(t, err, "not valid")
-}
+func TestNewPlatformClient(t *testing.T) {
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		fmt.Printf("req.URL= %+v \n", req)
+		switch req.URL.Path {
+		case "/oauth/token":
+			token := &oauth2.Token{
+				AccessToken: "test-access-token",
+				TokenType:   "Bearer",
+				Expiry:      time.Now().Add(time.Hour),
+			}
 
-func TestUrlSuffixGetsTrimmed(t *testing.T) {
-	client, err := NewDynatraceClient(nil, "https://my-environment.live.dynatrace.com/")
-	assert.NilError(t, err)
-	assert.Equal(t, client.environmentUrl, "https://my-environment.live.dynatrace.com")
-}
+			rw.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(rw).Encode(token)
+		case classicEnvironmentDomainPath:
+			rw.WriteHeader(200)
+			_, _ = rw.Write([]byte(`{"endpoint" : "/classic_endpoint"}`))
+		default:
+			rw.WriteHeader(404)
 
-func TestNewDynatraceClientWithHTTP(t *testing.T) {
-	client, err := NewDynatraceClient(nil, "http://my-environment.live.dynatrace.com")
-	assert.NilError(t, err)
-	assert.Equal(t, client.environmentUrl, "http://my-environment.live.dynatrace.com")
-}
+		}
+	}))
 
-func TestNewDynatraceClientWithoutScheme(t *testing.T) {
-	_, err := NewDynatraceClient(nil, "my-environment.live.dynatrace.com")
-	assert.ErrorContains(t, err, "not valid")
-}
+	server.Start()
+	defer server.Close()
 
-func TestNewDynatraceClientWithIPv4(t *testing.T) {
-	client, err := NewDynatraceClient(nil, "https://127.0.0.1")
-	assert.NilError(t, err)
-	assert.Equal(t, client.environmentUrl, "https://127.0.0.1")
-}
+	t.Run("Create new platform client", func(t *testing.T) {
+		dtURL := server.URL
 
-func TestNewDynatraceClientWithIPv6(t *testing.T) {
-	client, err := NewDynatraceClient(nil, "https://[0000:0000:0000:0000:0000:0000:0000:0001]")
-	assert.NilError(t, err)
-	assert.Equal(t, client.environmentUrl, "https://[0000:0000:0000:0000:0000:0000:0000:0001]")
-}
+		ver := version.Version{Major: 1, Minor: 2, Patch: 3}
 
-func TestNewClientNoValidUrlLocalPath(t *testing.T) {
-	_, err := NewDynatraceClient(nil, "/my-environment/live/dynatrace.com/")
-	assert.ErrorContains(t, err, "no host specified")
-}
+		c, err := NewPlatformClient(dtURL, "", OauthCredentials{TokenURL: server.URL + "/oauth/token"},
+			WithServerVersion(ver),
+			WithRetrySettings(rest.DefaultRetrySettings))
 
-func TestNewClientNoValidUrlTypo(t *testing.T) {
-	_, err := NewDynatraceClient(nil, "https//my-environment.live.dynatrace.com/")
-	assert.ErrorContains(t, err, "not valid")
-}
+		assert.NoError(t, err)
 
-func TestNewClientNoValidUrlNoHttps(t *testing.T) {
-	_, err := NewDynatraceClient(nil, "http//my-environment.live.dynatrace.com/")
-	assert.ErrorContains(t, err, "not valid")
-}
+		assert.NotEmpty(t, c.serverVersion)
+		assert.NotEmpty(t, c.environmentURL)
+		assert.NotEmpty(t, c.environmentURL)
+		assert.NotEmpty(t, c.client)
+		assert.NotEmpty(t, c.clientClassic)
+		assert.NotEmpty(t, c.retrySettings)
+		assert.NotEmpty(t, c.settingsSchemaAPIPath)
+		assert.NotEmpty(t, c.settingsObjectAPIPath)
 
-func TestNewClient(t *testing.T) {
-	httpClient := &http.Client{}
-	c, err := NewDynatraceClient(httpClient, "https://my-environment.live.dynatrace.com/",
-		WithServerVersion(version.Version{Major: 1, Minor: 2, Patch: 3}),
-		WithRetrySettings(rest.DefaultRetrySettings))
-	assert.Equal(t, version.Version{Major: 1, Minor: 2, Patch: 3}, c.serverVersion)
-	assert.Equal(t, rest.DefaultRetrySettings, c.retrySettings)
-	assert.Equal(t, httpClient, c.client)
-	assert.Equal(t, "https://my-environment.live.dynatrace.com", c.environmentUrl)
-	assert.NilError(t, err, "not valid")
+		fmt.Println(c)
+		fmt.Println("")
+
+		assert.Equal(t, dtURL, c.environmentURL)
+		assert.Equal(t, "/classic_endpoint", c.environmentURLClassic)
+		assert.NotEqual(t, c.client, c.clientClassic, "'classicClassic' should be same as 'client'")
+		assert.Equal(t, settingsSchemaAPIPathPlatform, c.settingsSchemaAPIPath)
+		assert.Equal(t, settingsObjectAPIPathPlatform, c.settingsObjectAPIPath)
+		assert.Equal(t, ver, c.serverVersion, "'serverVersion' should be modified with 'WithServerVersion'")
+		assert.Equal(t, rest.DefaultRetrySettings, c.retrySettings, "'retrySettings' should be modified with 'WithRetrySettings' modifier")
+	})
+
+	t.Run("URL is empty - should throw an error", func(t *testing.T) {
+		_, err := NewPlatformClient(server.URL, "", OauthCredentials{TokenURL: server.URL + "/wrong/address"})
+		assert.ErrorContains(t, err, "failed to query classic environment url")
+	})
+
+	t.Run("URL is empty - should throw an error", func(t *testing.T) {
+		_, err := NewPlatformClient("", "", OauthCredentials{})
+		assert.ErrorContains(t, err, "empty url")
+	})
+
+	t.Run("invalid URL - should throw an error", func(t *testing.T) {
+		_, err := NewPlatformClient("INVALID_URL", "", OauthCredentials{})
+		assert.ErrorContains(t, err, "not valid")
+	})
+
+	t.Run("URL suffix is trimmed", func(t *testing.T) {
+		client, err := NewPlatformClient(server.URL, "", OauthCredentials{TokenURL: server.URL + "/oauth/token"})
+		assert.NoError(t, err)
+		assert.Equal(t, server.URL, client.environmentURL)
+	})
+
+	t.Run("URL with leading space - should return an error", func(t *testing.T) {
+		_, err := NewPlatformClient(" https://my-environment.live.dynatrace.com/", "", OauthCredentials{})
+		assert.Error(t, err)
+	})
+
+	t.Run("URL starts with http", func(t *testing.T) {
+		client, err := NewPlatformClient(server.URL, "", OauthCredentials{TokenURL: server.URL + "/oauth/token"})
+		assert.NoError(t, err)
+		assert.Equal(t, server.URL, client.environmentURL)
+	})
+
+	t.Run("URL is without scheme - should throw an error", func(t *testing.T) {
+		_, err := NewPlatformClient("my-environment.live.dynatrace.com", "", OauthCredentials{})
+		assert.ErrorContains(t, err, "not valid")
+	})
+
+	t.Run("URL is without valid local path - should return an error", func(t *testing.T) {
+		_, err := NewPlatformClient("/my-environment/live/dynatrace.com/", "", OauthCredentials{})
+		assert.ErrorContains(t, err, "no host specified")
+	})
+
+	t.Run("without valid protocol - should return an error", func(t *testing.T) {
+		var err error
+
+		_, err = NewPlatformClient("https//my-environment.live.dynatrace.com/", "", OauthCredentials{})
+		assert.ErrorContains(t, err, "not valid")
+
+		_, err = NewPlatformClient("http//my-environment.live.dynatrace.com/", "", OauthCredentials{})
+		assert.ErrorContains(t, err, "not valid")
+	})
 }
 
 func TestReadByIdReturnsAnErrorUponEncounteringAnError(t *testing.T) {
@@ -103,53 +237,61 @@ func TestReadByIdReturnsAnErrorUponEncounteringAnError(t *testing.T) {
 		http.Error(res, "", http.StatusForbidden)
 	}))
 	defer func() { testServer.Close() }()
-	client, _ := NewDynatraceClient(testServer.Client(), testServer.URL)
+	client := DynatraceClient{
+		environmentURLClassic: testServer.URL,
+		clientClassic:         testServer.Client(),
+	}
 
-	_, err := client.ReadConfigById(mockApi, "test")
+	_, err := client.ReadConfigById(mockAPI, "test")
 	assert.ErrorContains(t, err, "Response was")
 }
 
 func TestReadByIdEscapesTheId(t *testing.T) {
-	unescapedId := "ruxit.perfmon.dotnetV4:%TimeInGC:time_in_gc_alert_high_generic"
+	unescapedID := "ruxit.perfmon.dotnetV4:%TimeInGC:time_in_gc_alert_high_generic"
 
 	testServer := httptest.NewTLSServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {}))
 	defer func() { testServer.Close() }()
-	client, _ := NewDynatraceClient(testServer.Client(), testServer.URL)
-
-	_, err := client.ReadConfigById(mockApiNotSingle, unescapedId)
-	assert.NilError(t, err)
+	client := DynatraceClient{
+		environmentURLClassic: testServer.URL,
+		clientClassic:         testServer.Client(),
+	}
+	_, err := client.ReadConfigById(mockAPINotSingle, unescapedID)
+	assert.NoError(t, err)
 }
 
 func TestReadByIdReturnsTheResponseGivenNoError(t *testing.T) {
 	body := []byte{1, 3, 3, 7}
 
 	testServer := httptest.NewTLSServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		res.Write(body)
+		_, _ = res.Write(body)
 	}))
 	defer func() { testServer.Close() }()
 
-	client, _ := NewDynatraceClient(testServer.Client(), testServer.URL)
+	client := DynatraceClient{
+		environmentURLClassic: testServer.URL,
+		clientClassic:         testServer.Client(),
+	}
 
-	resp, err := client.ReadConfigById(mockApi, "test")
-	assert.NilError(t, err, "there should not be an error")
-	assert.DeepEqual(t, body, resp)
+	resp, err := client.ReadConfigById(mockAPI, "test")
+	assert.NoError(t, err, "there should not be an error")
+	assert.Equal(t, body, resp)
 }
 
 func TestListKnownSettings(t *testing.T) {
 
 	tests := []struct {
 		name                      string
-		givenSchemaId             string
+		givenSchemaID             string
 		givenListSettingsOpts     ListSettingsOptions
 		givenServerResponses      []testServerResponse
 		want                      []DownloadSettingsObject
-		wantQueryParamsPerApiCall [][]testQueryParams
-		wantNumberOfApiCalls      int
+		wantQueryParamsPerAPICall [][]testQueryParams
+		wantNumberOfAPICalls      int
 		wantError                 bool
 	}{
 		{
 			name:          "Lists Settings objects as expected",
-			givenSchemaId: "builtin:something",
+			givenSchemaID: "builtin:something",
 			givenServerResponses: []testServerResponse{
 				{200, `{ "items": [ {"objectId": "f5823eca-4838-49d0-81d9-0514dd2c4640", "externalId": "RG9jdG9yIFdobwo="} ] }`},
 			},
@@ -159,19 +301,19 @@ func TestListKnownSettings(t *testing.T) {
 					ObjectId:   "f5823eca-4838-49d0-81d9-0514dd2c4640",
 				},
 			},
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"schemaIds", "builtin:something"},
 					{"pageSize", "500"},
 					{"fields", defaultListSettingsFields},
 				},
 			},
-			wantNumberOfApiCalls: 1,
+			wantNumberOfAPICalls: 1,
 			wantError:            false,
 		},
 		{
 			name:                  "Lists Settings objects without value field as expected",
-			givenSchemaId:         "builtin:something",
+			givenSchemaID:         "builtin:something",
 			givenListSettingsOpts: ListSettingsOptions{DiscardValue: true},
 			givenServerResponses: []testServerResponse{
 				{200, `{ "items": [ {"objectId": "f5823eca-4838-49d0-81d9-0514dd2c4640", "externalId": "RG9jdG9yIFdobwo="} ] }`},
@@ -182,19 +324,19 @@ func TestListKnownSettings(t *testing.T) {
 					ObjectId:   "f5823eca-4838-49d0-81d9-0514dd2c4640",
 				},
 			},
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"schemaIds", "builtin:something"},
 					{"pageSize", "500"},
 					{"fields", reducedListSettingsFields},
 				},
 			},
-			wantNumberOfApiCalls: 1,
+			wantNumberOfAPICalls: 1,
 			wantError:            false,
 		},
 		{
 			name:          "Lists Settings objects with filter as expected",
-			givenSchemaId: "builtin:something",
+			givenSchemaID: "builtin:something",
 			givenListSettingsOpts: ListSettingsOptions{Filter: func(o DownloadSettingsObject) bool {
 				return o.ExternalId == "RG9jdG9yIFdobwo="
 			}},
@@ -208,19 +350,19 @@ func TestListKnownSettings(t *testing.T) {
 					ObjectId:   "f5823eca-4838-49d0-81d9-0514dd2c4640",
 				},
 			},
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"schemaIds", "builtin:something"},
 					{"pageSize", "500"},
 					{"fields", defaultListSettingsFields},
 				},
 			},
-			wantNumberOfApiCalls: 1,
+			wantNumberOfAPICalls: 1,
 			wantError:            false,
 		},
 		{
 			name:          "Handles Pagination when listing settings objects",
-			givenSchemaId: "builtin:something",
+			givenSchemaID: "builtin:something",
 			givenServerResponses: []testServerResponse{
 				{200, `{ "items": [ {"objectId": "f5823eca-4838-49d0-81d9-0514dd2c4640", "externalId": "RG9jdG9yIFdobwo="} ], "nextPageKey": "page42" }`},
 				{200, `{ "items": [ {"objectId": "b1d4c623-25e0-4b54-9eb5-6734f1a72041", "externalId": "VGhlIE1hc3Rlcgo="} ] }`},
@@ -236,7 +378,7 @@ func TestListKnownSettings(t *testing.T) {
 				},
 			},
 
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"schemaIds", "builtin:something"},
 					{"pageSize", "500"},
@@ -246,63 +388,63 @@ func TestListKnownSettings(t *testing.T) {
 					{"nextPageKey", "page42"},
 				},
 			},
-			wantNumberOfApiCalls: 2,
+			wantNumberOfAPICalls: 2,
 			wantError:            false,
 		},
 		{
 			name:          "Returns empty if list if no items exist",
-			givenSchemaId: "builtin:something",
+			givenSchemaID: "builtin:something",
 			givenServerResponses: []testServerResponse{
 				{200, `{ "items": [ ] }`},
 			},
 			want: []DownloadSettingsObject{},
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"schemaIds", "builtin:something"},
 					{"pageSize", "500"},
 					{"fields", defaultListSettingsFields},
 				},
 			},
-			wantNumberOfApiCalls: 1,
+			wantNumberOfAPICalls: 1,
 			wantError:            false,
 		},
 		{
 			name:          "Returns error if HTTP error is encountered - 400",
-			givenSchemaId: "builtin:something",
+			givenSchemaID: "builtin:something",
 			givenServerResponses: []testServerResponse{
 				{400, `epic fail`},
 			},
 			want: nil,
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"schemaIds", "builtin:something"},
 					{"pageSize", "500"},
 					{"fields", defaultListSettingsFields},
 				},
 			},
-			wantNumberOfApiCalls: 1,
+			wantNumberOfAPICalls: 1,
 			wantError:            true,
 		},
 		{
 			name:          "Returns error if HTTP error is encountered - 403",
-			givenSchemaId: "builtin:something",
+			givenSchemaID: "builtin:something",
 			givenServerResponses: []testServerResponse{
 				{403, `epic fail`},
 			},
 			want: nil,
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"schemaIds", "builtin:something"},
 					{"pageSize", "500"},
 					{"fields", defaultListSettingsFields},
 				},
 			},
-			wantNumberOfApiCalls: 1,
+			wantNumberOfAPICalls: 1,
 			wantError:            true,
 		},
 		{
 			name:          "Retries on HTTP error on paginated request and returns eventual success",
-			givenSchemaId: "builtin:something",
+			givenSchemaID: "builtin:something",
 			givenServerResponses: []testServerResponse{
 				{200, `{ "items": [ {"objectId": "f5823eca-4838-49d0-81d9-0514dd2c4640", "externalId": "RG9jdG9yIFdobwo="} ], "nextPageKey": "page42" }`},
 				{400, `get next page fail`},
@@ -319,7 +461,7 @@ func TestListKnownSettings(t *testing.T) {
 					ObjectId:   "b1d4c623-25e0-4b54-9eb5-6734f1a72041",
 				},
 			},
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"schemaIds", "builtin:something"},
 					{"pageSize", "500"},
@@ -335,12 +477,12 @@ func TestListKnownSettings(t *testing.T) {
 					{"nextPageKey", "page42"},
 				},
 			},
-			wantNumberOfApiCalls: 4,
+			wantNumberOfAPICalls: 4,
 			wantError:            false,
 		},
 		{
 			name:          "Returns error if HTTP error is encountered getting further paginated responses",
-			givenSchemaId: "builtin:something",
+			givenSchemaID: "builtin:something",
 			givenServerResponses: []testServerResponse{
 				{200, `{ "items": [ {"objectId": "f5823eca-4838-49d0-81d9-0514dd2c4640", "externalId": "RG9jdG9yIFdobwo="} ], "nextPageKey": "page42" }`},
 				{400, `get next page fail`},
@@ -349,7 +491,7 @@ func TestListKnownSettings(t *testing.T) {
 				{400, `retry fail 3`},
 			},
 			want: nil,
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"schemaIds", "builtin:something"},
 					{"pageSize", "500"},
@@ -368,7 +510,7 @@ func TestListKnownSettings(t *testing.T) {
 					{"nextPageKey", "page42"},
 				},
 			},
-			wantNumberOfApiCalls: 5,
+			wantNumberOfAPICalls: 5,
 			wantError:            true,
 		},
 	}
@@ -377,12 +519,12 @@ func TestListKnownSettings(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			apiCalls := 0
 			server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-				if len(tt.wantQueryParamsPerApiCall) > 0 {
-					params := tt.wantQueryParamsPerApiCall[apiCalls]
+				if len(tt.wantQueryParamsPerAPICall) > 0 {
+					params := tt.wantQueryParamsPerAPICall[apiCalls]
 					for _, param := range params {
 						addedQueryParameter := req.URL.Query()[param.key]
-						assert.Assert(t, addedQueryParameter != nil)
-						assert.Assert(t, len(addedQueryParameter) > 0)
+						assert.NotNil(t, addedQueryParameter)
+						assert.NotEmpty(t, addedQueryParameter)
 						assert.Equal(t, addedQueryParameter[0], param.value)
 					}
 				} else {
@@ -397,31 +539,34 @@ func TestListKnownSettings(t *testing.T) {
 				}
 
 				apiCalls++
-				assert.Check(t, apiCalls <= tt.wantNumberOfApiCalls, "expected at most %d API calls to happen, but encountered call %d", tt.wantNumberOfApiCalls, apiCalls)
+				assert.LessOrEqualf(t, apiCalls, tt.wantNumberOfAPICalls, "expected at most %d API calls to happen, but encountered call %d", tt.wantNumberOfAPICalls, apiCalls)
 			}))
 			defer server.Close()
 
-			client, err := NewDynatraceClient(server.Client(), server.URL, WithRetrySettings(testRetrySettings))
-			assert.NilError(t, err)
-
-			res, err1 := client.ListSettings(tt.givenSchemaId, tt.givenListSettingsOpts)
-
-			if tt.wantError {
-				assert.Assert(t, err1 != nil)
-			} else {
-				assert.NilError(t, err1)
+			client := DynatraceClient{
+				environmentURL: server.URL,
+				client:         server.Client(),
+				retrySettings:  testRetrySettings,
 			}
 
-			assert.DeepEqual(t, res, tt.want)
+			res, err1 := client.ListSettings(tt.givenSchemaID, tt.givenListSettingsOpts)
 
-			assert.Equal(t, apiCalls, tt.wantNumberOfApiCalls, "expected exactly %d API calls to happen but %d calls where made", tt.wantNumberOfApiCalls, apiCalls)
+			if tt.wantError {
+				assert.Error(t, err1)
+			} else {
+				assert.NoError(t, err1)
+			}
+
+			assert.Equal(t, tt.want, res)
+
+			assert.Equal(t, apiCalls, tt.wantNumberOfAPICalls, "expected exactly %d API calls to happen but %d calls where made", tt.wantNumberOfAPICalls, apiCalls)
 		})
 	}
 }
 
 func TestGetSettingById(t *testing.T) {
 	type fields struct {
-		environmentUrl string
+		environmentURL string
 		retrySettings  rest.RetrySettings
 	}
 	type args struct {
@@ -436,16 +581,6 @@ func TestGetSettingById(t *testing.T) {
 		wantResult          *DownloadSettingsObject
 		wantErr             bool
 	}{
-		{
-			name: "Get Setting by ID - malformed environment URL",
-			fields: fields{
-				environmentUrl: " https://leading-space.com",
-			},
-			args:        args{},
-			wantURLPath: "/api/v2/settings/objects/12345",
-			wantResult:  nil,
-			wantErr:     true,
-		},
 		{
 			name:   "Get Setting by ID - server response != 2xx",
 			fields: fields{},
@@ -513,25 +648,26 @@ func TestGetSettingById(t *testing.T) {
 			defer server.Close()
 
 			var envURL string
-			if tt.fields.environmentUrl != "" {
-				envURL = tt.fields.environmentUrl
+			if tt.fields.environmentURL != "" {
+				envURL = tt.fields.environmentURL
 			} else {
 				envURL = server.URL
 			}
 
-			d := &DynatraceClient{
-				environmentUrl: envURL,
-				client:         server.Client(),
-				retrySettings:  tt.fields.retrySettings,
+			d := DynatraceClient{
+				environmentURL:        envURL,
+				client:                server.Client(),
+				retrySettings:         tt.fields.retrySettings,
+				settingsObjectAPIPath: "/api/v2/settings/objects",
 			}
 
 			settingsObj, err := d.GetSettingById(tt.args.objectID)
 			if tt.wantErr {
-				assert.Assert(t, err != nil)
+				assert.Error(t, err)
 			} else {
-				assert.NilError(t, err)
+				assert.NoError(t, err)
 			}
-			assert.DeepEqual(t, tt.wantResult, settingsObj)
+			assert.Equal(t, tt.wantResult, settingsObj)
 
 		})
 	}
@@ -540,8 +676,7 @@ func TestGetSettingById(t *testing.T) {
 
 func TestDeleteSettings(t *testing.T) {
 	type fields struct {
-		environmentUrl string
-		client         *http.Client
+		environmentURL string
 		retrySettings  rest.RetrySettings
 	}
 	type args struct {
@@ -555,15 +690,6 @@ func TestDeleteSettings(t *testing.T) {
 		wantURLPath         string
 		wantErr             bool
 	}{
-		{
-			name: "Delete Settings - malformed environment URL",
-			fields: fields{
-				environmentUrl: " https://leading-space.com",
-			},
-			args:        args{},
-			wantURLPath: "/api/v2/settings/objects/12345",
-			wantErr:     true,
-		},
 		{
 			name:   "Delete Settings - server response != 2xx",
 			fields: fields{},
@@ -617,17 +743,19 @@ func TestDeleteSettings(t *testing.T) {
 			defer server.Close()
 
 			var envURL string
-			if tt.fields.environmentUrl != "" {
-				envURL = tt.fields.environmentUrl
+			if tt.fields.environmentURL != "" {
+				envURL = tt.fields.environmentURL
 			} else {
 				envURL = server.URL
 			}
 
-			d := &DynatraceClient{
-				environmentUrl: envURL,
-				client:         server.Client(),
-				retrySettings:  tt.fields.retrySettings,
+			d := DynatraceClient{
+				environmentURL:        envURL,
+				client:                server.Client(),
+				retrySettings:         tt.fields.retrySettings,
+				settingsObjectAPIPath: settingsObjectAPIPathClassic,
 			}
+
 			if err := d.DeleteSettings(tt.args.objectID); (err != nil) != tt.wantErr {
 				t.Errorf("DeleteSettings() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -636,35 +764,38 @@ func TestDeleteSettings(t *testing.T) {
 }
 
 func TestUpsertSettingsRetries(t *testing.T) {
-	numApiCalls := 0
+	numAPICalls := 0
 	server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.Method == http.MethodGet {
 			rw.WriteHeader(200)
-			rw.Write([]byte("{}"))
+			_, _ = rw.Write([]byte("{}"))
 			return
 		}
 
-		numApiCalls++
-		if numApiCalls < 3 {
+		numAPICalls++
+		if numAPICalls < 3 {
 			rw.WriteHeader(409)
 			return
 		}
 		rw.WriteHeader(200)
-		rw.Write([]byte(`[{"objectId": "abcdefg"}]`))
+		_, _ = rw.Write([]byte(`[{"objectId": "abcdefg"}]`))
 	}))
 	defer server.Close()
 
-	client, err := NewDynatraceClient(server.Client(), server.URL, WithRetrySettings(testRetrySettings))
-	assert.NilError(t, err)
+	client := DynatraceClient{
+		environmentURL: server.URL,
+		client:         server.Client(),
+		retrySettings:  testRetrySettings,
+	}
 
-	_, err = client.UpsertSettings(SettingsObject{
+	_, err := client.UpsertSettings(SettingsObject{
 		Id:       "42",
 		SchemaId: "some:schema",
 		Content:  []byte("{}"),
 	})
 
-	assert.NilError(t, err)
-	assert.Equal(t, numApiCalls, 3)
+	assert.NoError(t, err)
+	assert.Equal(t, numAPICalls, 3)
 }
 
 func TestListEntities(t *testing.T) {
@@ -676,8 +807,8 @@ func TestListEntities(t *testing.T) {
 		givenEntitiesType         EntitiesType
 		givenServerResponses      []testServerResponse
 		want                      []string
-		wantQueryParamsPerApiCall [][]testQueryParams
-		wantNumberOfApiCalls      int
+		wantQueryParamsPerAPICall [][]testQueryParams
+		wantNumberOfAPICalls      int
 		wantError                 bool
 	}{
 		{
@@ -689,14 +820,14 @@ func TestListEntities(t *testing.T) {
 			want: []string{
 				fmt.Sprintf(`{"entityId": "%s-1A28B791C329D741", "type": "%s"}`, testType, testType),
 			},
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
 					{"pageSize", defaultPageSizeEntities},
 					{"fields", defaultListEntitiesFields},
 				},
 			},
-			wantNumberOfApiCalls: 1,
+			wantNumberOfAPICalls: 1,
 			wantError:            false,
 		},
 		{
@@ -711,7 +842,7 @@ func TestListEntities(t *testing.T) {
 				fmt.Sprintf(`{"entityId": "%s-C329D7411A28B791", "type": "%s"}`, testType, testType),
 			},
 
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
 					{"pageSize", defaultPageSizeEntities},
@@ -721,7 +852,7 @@ func TestListEntities(t *testing.T) {
 					{"nextPageKey", "page42"},
 				},
 			},
-			wantNumberOfApiCalls: 2,
+			wantNumberOfAPICalls: 2,
 			wantError:            false,
 		},
 		{
@@ -731,14 +862,14 @@ func TestListEntities(t *testing.T) {
 				{200, `{ "entities": [ ] }`},
 			},
 			want: []string{},
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
 					{"pageSize", defaultPageSizeEntities},
 					{"fields", defaultListEntitiesFields},
 				},
 			},
-			wantNumberOfApiCalls: 1,
+			wantNumberOfAPICalls: 1,
 			wantError:            false,
 		},
 		{
@@ -748,14 +879,14 @@ func TestListEntities(t *testing.T) {
 				{400, `epic fail`},
 			},
 			want: nil,
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
 					{"pageSize", defaultPageSizeEntities},
 					{"fields", defaultListEntitiesFields},
 				},
 			},
-			wantNumberOfApiCalls: 1,
+			wantNumberOfAPICalls: 1,
 			wantError:            true,
 		},
 		{
@@ -771,7 +902,7 @@ func TestListEntities(t *testing.T) {
 				fmt.Sprintf(`{"entityId": "%s-1A28B791C329D741", "type": "%s"}`, testType, testType),
 				fmt.Sprintf(`{"entityId": "%s-C329D7411A28B791", "type": "%s"}`, testType, testType),
 			},
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
 					{"pageSize", defaultPageSizeEntities},
@@ -787,7 +918,7 @@ func TestListEntities(t *testing.T) {
 					{"nextPageKey", "page42"},
 				},
 			},
-			wantNumberOfApiCalls: 4,
+			wantNumberOfAPICalls: 4,
 			wantError:            false,
 		},
 		{
@@ -801,7 +932,7 @@ func TestListEntities(t *testing.T) {
 				{400, `retry fail 3`},
 			},
 			want: nil,
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
 					{"pageSize", defaultPageSizeEntities},
@@ -820,7 +951,7 @@ func TestListEntities(t *testing.T) {
 					{"nextPageKey", "page42"},
 				},
 			},
-			wantNumberOfApiCalls: 5,
+			wantNumberOfAPICalls: 5,
 			wantError:            true,
 		},
 		{
@@ -836,7 +967,7 @@ func TestListEntities(t *testing.T) {
 				fmt.Sprintf(`{"entityId": "%s-1A28B791C329D741", "type": "%s"}`, testType, testType),
 				fmt.Sprintf(`{"entityId": "%s-C329D7411A28B791", "type": "%s"}`, testType, testType),
 			},
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
 					{"pageSize", defaultPageSizeEntities},
@@ -852,7 +983,7 @@ func TestListEntities(t *testing.T) {
 					{"nextPageKey", "page42"},
 				},
 			},
-			wantNumberOfApiCalls: 4,
+			wantNumberOfAPICalls: 4,
 			wantError:            false,
 		},
 		{
@@ -871,7 +1002,7 @@ func TestListEntities(t *testing.T) {
 							"location":null
 						}]
 					}
-				} 
+				}
 				}`, testType)},
 				{200, fmt.Sprintf(`{ "entities": [ {"entityId": "%s-C329D7411A28B791", "type": "%s"} ] }`, testType, testType)},
 			},
@@ -879,7 +1010,7 @@ func TestListEntities(t *testing.T) {
 				fmt.Sprintf(`{"entityId": "%s-1A28B791C329D741", "type": "%s"}`, testType, testType),
 				fmt.Sprintf(`{"entityId": "%s-C329D7411A28B791", "type": "%s"}`, testType, testType),
 			},
-			wantQueryParamsPerApiCall: [][]testQueryParams{
+			wantQueryParamsPerAPICall: [][]testQueryParams{
 				{
 					{"entitySelector", fmt.Sprintf(`type("%s")`, testType)},
 					{"pageSize", defaultPageSizeEntities},
@@ -892,7 +1023,7 @@ func TestListEntities(t *testing.T) {
 					{"nextPageKey", "page42"},
 				},
 			},
-			wantNumberOfApiCalls: 3,
+			wantNumberOfAPICalls: 3,
 			wantError:            false,
 		},
 	}
@@ -900,12 +1031,12 @@ func TestListEntities(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			apiCalls := 0
 			server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-				if len(tt.wantQueryParamsPerApiCall) > 0 {
-					params := tt.wantQueryParamsPerApiCall[apiCalls]
+				if len(tt.wantQueryParamsPerAPICall) > 0 {
+					params := tt.wantQueryParamsPerAPICall[apiCalls]
 					for _, param := range params {
 						addedQueryParameter := req.URL.Query()[param.key]
-						assert.Assert(t, addedQueryParameter != nil)
-						assert.Assert(t, len(addedQueryParameter) > 0)
+						assert.NotNil(t, addedQueryParameter)
+						assert.Greater(t, len(addedQueryParameter), 0)
 						assert.Equal(t, addedQueryParameter[0], param.value)
 					}
 				} else {
@@ -920,48 +1051,52 @@ func TestListEntities(t *testing.T) {
 				}
 
 				apiCalls++
-				assert.Check(t, apiCalls <= tt.wantNumberOfApiCalls, "expected at most %d API calls to happen, but encountered call %d", tt.wantNumberOfApiCalls, apiCalls)
+				assert.LessOrEqualf(t, apiCalls, tt.wantNumberOfAPICalls, "expected at most %d API calls to happen, but encountered call %d", tt.wantNumberOfAPICalls, apiCalls)
 			}))
 			defer server.Close()
 
-			client, err := NewDynatraceClient(server.Client(), server.URL, WithRetrySettings(testRetrySettings))
-			assert.NilError(t, err)
+			client := DynatraceClient{
+				environmentURL: server.URL,
+				client:         server.Client(),
+				retrySettings:  testRetrySettings,
+			}
 
 			res, err1 := client.ListEntities(tt.givenEntitiesType)
 
 			if tt.wantError {
-				assert.Assert(t, err1 != nil)
+				assert.Error(t, err1)
 			} else {
-				assert.NilError(t, err1)
+				assert.NoError(t, err1)
 			}
 
-			assert.DeepEqual(t, res, tt.want)
+			assert.Equal(t, tt.want, res)
 
-			assert.Equal(t, apiCalls, tt.wantNumberOfApiCalls, "expected exactly %d API calls to happen but %d calls where made", tt.wantNumberOfApiCalls, apiCalls)
+			assert.Equal(t, apiCalls, tt.wantNumberOfAPICalls, "expected exactly %d API calls to happen but %d calls where made", tt.wantNumberOfAPICalls, apiCalls)
 		})
 	}
 }
 
 func TestCreateDynatraceClientWithAutoServerVersion(t *testing.T) {
 	t.Run("Server version is correctly set to determined value", func(t *testing.T) {
-		server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			rw.Write([]byte(`{"version" : "1.262.0.20230214-193525"}`))
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			_, _ = rw.Write([]byte(`{"version" : "1.262.0.20230214-193525"}`))
 		}))
 
-		dcl, err := NewDynatraceClient(server.Client(), server.URL, WithAutoServerVersion())
+		dcl, err := NewClassicClient(server.URL, "", WithAutoServerVersion())
+
 		server.Close()
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 		assert.Equal(t, version.Version{Major: 1, Minor: 262}, dcl.serverVersion)
 	})
 
 	t.Run("Server version is correctly set to unknown", func(t *testing.T) {
-		server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			rw.Write([]byte(`{}`))
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			_, _ = rw.Write([]byte(`{}`))
 		}))
 
-		dcl, err := NewDynatraceClient(server.Client(), server.URL, WithAutoServerVersion())
+		dcl, err := NewClassicClient(server.URL, "", WithAutoServerVersion())
 		server.Close()
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 		assert.Equal(t, version.UnknownVersion, dcl.serverVersion)
 	})
 }

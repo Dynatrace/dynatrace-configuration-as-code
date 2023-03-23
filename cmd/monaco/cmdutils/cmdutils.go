@@ -18,6 +18,7 @@ package cmdutils
 
 import (
 	"errors"
+	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
@@ -31,6 +32,27 @@ import (
 func SilenceUsageCommand() func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
 		cmd.SilenceUsage = true
+	}
+}
+
+// CreateDTClient is driven by data given through a manifest.EnvironmentDefinition to create an appropriate client.Client.
+//
+// In case when flag dryRun is true this factory returns the client.DummyClient.
+func CreateDTClient(env manifest.EnvironmentDefinition, dryRun bool) (client.Client, error) {
+	switch {
+	case dryRun:
+		return client.NewDummyClient(), nil
+	case env.Type == manifest.Classic:
+		return client.NewClassicClient(env.URL.Value, env.Auth.Token.Value)
+	case env.Type == manifest.Platform:
+		oauthCredentials := client.OauthCredentials{
+			ClientID:     env.Auth.OAuth.ClientID.Value,
+			ClientSecret: env.Auth.OAuth.ClientSecret.Value,
+			TokenURL:     env.Auth.OAuth.TokenEndpoint.Value,
+		}
+		return client.NewPlatformClient(env.URL.Value, env.Auth.Token.Value, oauthCredentials)
+	default:
+		return nil, fmt.Errorf("unable to create authorizing HTTP Client for environment %s - no oauth credentials given", env.URL.Value)
 	}
 }
 

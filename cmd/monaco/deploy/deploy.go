@@ -26,7 +26,6 @@ import (
 	"strings"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	configError "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
@@ -90,7 +89,8 @@ func doDeploy(configs project.ConfigsPerEnvironment, environments manifest.Envir
 			}
 		}
 
-		dtClient, err := createDynatraceClient(env, dryRun)
+		dtClient, err := cmdutils.CreateDTClient(env, dryRun)
+
 		if err != nil {
 			if continueOnErr {
 				deployErrs = append(deployErrs, err)
@@ -404,12 +404,4 @@ func toProjectMap(projects []project.Project) map[string]project.Project {
 
 func containsName(names []string, name string) bool {
 	return slices.Contains(names, name)
-}
-
-func createDynatraceClient(environment manifest.EnvironmentDefinition, dryRun bool) (client.Client, error) {
-	if dryRun {
-		return client.NewDummyClient(), nil
-	}
-
-	return client.NewDynatraceClient(client.NewTokenAuthClient(environment.Auth.Token.Value), environment.URL.Value, client.WithAutoServerVersion())
 }

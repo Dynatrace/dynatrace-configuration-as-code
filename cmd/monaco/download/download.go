@@ -58,10 +58,6 @@ type downloadCommandOptionsShared struct {
 
 type DynatraceClientProvider func(*http.Client, string, ...func(*client.DynatraceClient)) (client.Client, error)
 
-func defaultDynatraceClientProvider(httpClient *http.Client, environmentURL string, opts ...func(*client.DynatraceClient)) (client.Client, error) {
-	return client.NewDynatraceClient(httpClient, environmentURL, opts...)
-}
-
 type downloadOptionsShared struct {
 	environmentUrl          string
 	token                   string
@@ -69,12 +65,7 @@ type downloadOptionsShared struct {
 	outputFolder            string
 	projectName             string
 	forceOverwriteManifest  bool
-	clientProvider          DynatraceClientProvider
 	concurrentDownloadLimit int
-}
-
-func (c downloadOptionsShared) getDynatraceClient() (client.Client, error) {
-	return c.clientProvider(client.NewTokenAuthClient(c.token), c.environmentUrl, client.WithAutoServerVersion())
 }
 
 func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptionsShared, fs afero.Fs) error {

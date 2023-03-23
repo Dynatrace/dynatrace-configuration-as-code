@@ -16,23 +16,20 @@ package download
 
 import (
 	"fmt"
-	"os"
-	"strings"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/cmdutils"
-
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
-
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/settings"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/spf13/afero"
+	"os"
+	"strings"
 )
 
 type downloadCommandOptions struct {
@@ -91,7 +88,6 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 			outputFolder:            cmdOptions.outputFolder,
 			projectName:             cmdOptions.projectName,
 			forceOverwriteManifest:  cmdOptions.forceOverwrite,
-			clientProvider:          defaultDynatraceClientProvider,
 			concurrentDownloadLimit: concurrentDownloadLimit,
 		},
 		specificAPIs:    cmdOptions.specificAPIs,
@@ -99,7 +95,13 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 		onlyAPIs:        cmdOptions.onlyAPIs,
 		onlySettings:    cmdOptions.onlySettings,
 	}
-	return doDownloadConfigs(fs, api.NewAPIs(), options)
+
+	dtClient, err := cmdutils.CreateDTClient(env, false)
+	if err != nil {
+		return err
+	}
+
+	return doDownloadConfigs(fs, dtClient, api.NewAPIs(), options)
 }
 
 func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOptions) error {
@@ -119,7 +121,6 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOp
 			outputFolder:            cmdOptions.outputFolder,
 			projectName:             cmdOptions.projectName,
 			forceOverwriteManifest:  cmdOptions.forceOverwrite,
-			clientProvider:          defaultDynatraceClientProvider,
 			concurrentDownloadLimit: concurrentDownloadLimit,
 		},
 		specificAPIs:    cmdOptions.specificAPIs,
@@ -127,7 +128,13 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOp
 		onlyAPIs:        cmdOptions.onlyAPIs,
 		onlySettings:    cmdOptions.onlySettings,
 	}
-	return doDownloadConfigs(fs, api.NewAPIs(), options)
+
+	dtClient, err := client.NewClassicClient(cmdOptions.environmentUrl, token)
+	if err != nil {
+		return err
+	}
+
+	return doDownloadConfigs(fs, dtClient, api.NewAPIs(), options)
 }
 
 type downloadConfigsOptions struct {
@@ -138,15 +145,10 @@ type downloadConfigsOptions struct {
 	onlySettings    bool
 }
 
-func doDownloadConfigs(fs afero.Fs, apis api.APIs, opts downloadConfigsOptions) error {
+func doDownloadConfigs(fs afero.Fs, c client.Client, apis api.APIs, opts downloadConfigsOptions) error {
 	err := preDownloadValidations(fs, opts.downloadOptionsShared)
 	if err != nil {
 		return err
-	}
-
-	c, err := opts.getDynatraceClient()
-	if err != nil {
-		return fmt.Errorf("failed to create Dynatrace client: %w", err)
 	}
 
 	c = client.LimitClientParallelRequests(c, opts.concurrentDownloadLimit)
