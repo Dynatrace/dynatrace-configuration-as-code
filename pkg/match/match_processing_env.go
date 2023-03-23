@@ -24,7 +24,7 @@ import (
 type MatchProcessingEnv struct {
 	RawMatchList           RawMatchList
 	ConfigType             config.Type
-	CurrentremainingMatch  *[]int
+	CurrentRemainingMatch  *[]int
 	RemainingMatch         []int
 	remainingMatchSeeded   []int
 	remainingMatchUnSeeded []int

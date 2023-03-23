@@ -17,6 +17,7 @@
 package match
 
 import (
+	"reflect"
 	"sort"
 	"testing"
 
@@ -166,11 +167,9 @@ func TestSort(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sort.Sort(tt.inputList)
-			assert.Equal(t, len((*tt.inputPtr)), len(tt.want))
-			for i, _ := range *tt.inputPtr {
-				assert.Equal(t, (*tt.inputPtr)[i].LeftId, tt.want[i].LeftId)
-				assert.Equal(t, (*tt.inputPtr)[i].RightId, tt.want[i].RightId)
-				assert.Equal(t, (*tt.inputPtr)[i].weight, tt.want[i].weight)
+
+			if !reflect.DeepEqual(*tt.inputPtr, tt.want) {
+				t.Errorf("Sort() inputPtr = %v, want %v", *tt.inputPtr, tt.want)
 			}
 
 		})
@@ -302,12 +301,11 @@ func TestKeepSingleToSingle(t *testing.T) {
 	tests := []struct {
 		name  string
 		input IndexCompareResultList
-		want  IndexCompareResultList
+		want  []CompareResult
 	}{
 		{
 			name: "keepSingleToSingleMatchItemsLeftRight",
 			input: IndexCompareResultList{
-				ruleType: IndexRuleType{},
 				CompareResults: []CompareResult{
 					CompareResult{1, 3, 1},
 					CompareResult{2, 1, 1},
@@ -318,13 +316,10 @@ func TestKeepSingleToSingle(t *testing.T) {
 					CompareResult{10, 12, 1},
 				},
 			},
-			want: IndexCompareResultList{
-				ruleType: IndexRuleType{},
-				CompareResults: []CompareResult{
-					CompareResult{3, 4, 1},
-					CompareResult{5, 6, 1},
-					CompareResult{10, 12, 1},
-				},
+			want: []CompareResult{
+				CompareResult{3, 4, 1},
+				CompareResult{5, 6, 1},
+				CompareResult{10, 12, 1},
 			},
 		},
 	}
@@ -332,11 +327,9 @@ func TestKeepSingleToSingle(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := keepSingleToSingleMatchItemsLeftRight(&tt.input)
-			assert.Equal(t, len(result), len(tt.want.CompareResults))
-			for i, _ := range result {
-				assert.Equal(t, result[i].LeftId, tt.want.CompareResults[i].LeftId)
-				assert.Equal(t, result[i].RightId, tt.want.CompareResults[i].RightId)
-				assert.Equal(t, result[i].weight, tt.want.CompareResults[i].weight)
+
+			if !reflect.DeepEqual(result, tt.want) {
+				t.Errorf("keepSingleToSingleMatchItemsLeftRight() result = %v, want %v", result, tt.want)
 			}
 
 		})

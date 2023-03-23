@@ -67,6 +67,15 @@ func genremainingMatchList(rawMatchList RawMatchList) []int {
 	return remainingMatchList
 }
 
+func (e *MatchProcessing) GetEntitiesType() string {
+
+	if (e.Target.ConfigType == config.Type{}) {
+		return e.Source.ConfigType.EntitiesType
+	}
+	return e.Target.ConfigType.EntitiesType
+
+}
+
 func (e *MatchProcessing) adjustremainingMatch(singleToSingleMatch []CompareResult, resultList []CompareResult) {
 
 	sort.Sort(ByLeft(singleToSingleMatch))
@@ -79,24 +88,24 @@ func (e *MatchProcessing) adjustremainingMatch(singleToSingleMatch []CompareResu
 func (e *MatchProcessing) PrepareRemainingMatch(keepSeeded bool, keepUnseeded bool, resultListPtr *IndexCompareResultList) {
 
 	if keepSeeded && keepUnseeded {
-		e.Source.CurrentremainingMatch = &(e.Source.RemainingMatch)
-		e.Target.CurrentremainingMatch = &(e.Target.RemainingMatch)
+		e.Source.CurrentRemainingMatch = &(e.Source.RemainingMatch)
+		e.Target.CurrentRemainingMatch = &(e.Target.RemainingMatch)
 	} else if keepSeeded {
 		sort.Sort(ByLeft(resultListPtr.CompareResults))
 		e.Source.genSeededMatch(resultListPtr.CompareResults, getLeftId)
-		e.Source.CurrentremainingMatch = &(e.Source.remainingMatchSeeded)
+		e.Source.CurrentRemainingMatch = &(e.Source.remainingMatchSeeded)
 
 		sort.Sort(ByRight(resultListPtr.CompareResults))
 		e.Target.genSeededMatch(resultListPtr.CompareResults, getRightId)
-		e.Target.CurrentremainingMatch = &(e.Target.remainingMatchSeeded)
+		e.Target.CurrentRemainingMatch = &(e.Target.remainingMatchSeeded)
 	} else if keepUnseeded {
 		sort.Sort(ByLeft(resultListPtr.CompareResults))
 		e.Source.genUnSeededMatch(resultListPtr.CompareResults, getLeftId, &(e.Source.RemainingMatch))
-		e.Source.CurrentremainingMatch = &(e.Source.remainingMatchUnSeeded)
+		e.Source.CurrentRemainingMatch = &(e.Source.remainingMatchUnSeeded)
 
 		sort.Sort(ByRight(resultListPtr.CompareResults))
 		e.Target.genUnSeededMatch(resultListPtr.CompareResults, getRightId, &(e.Target.RemainingMatch))
-		e.Target.CurrentremainingMatch = &(e.Target.remainingMatchUnSeeded)
+		e.Target.CurrentRemainingMatch = &(e.Target.remainingMatchUnSeeded)
 	}
 
 }

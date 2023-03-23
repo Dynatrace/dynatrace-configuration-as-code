@@ -78,6 +78,64 @@ type MatchEntryParserError struct {
 	Reason string
 }
 
+func getParameterEnv(context *matchLoaderContext, matchInfoDef EnvInfoDefinition, envType string) (MatchParametersEnv, []error) {
+	matchParametersEnv := MatchParametersEnv{}
+	var err error
+	var errors []error
+
+	matchParametersEnv.Manifest, err = cmdutils.GetManifest(context.fs, matchInfoDef.ManifestPath)
+	if err != nil {
+		errors = append(errors, err)
+	}
+
+	matchParametersEnv.WorkingDir, _, err = cmdutils.GetFilePaths(matchInfoDef.ManifestPath)
+	if err != nil {
+		errors = append(errors, err)
+	}
+
+	matchParametersEnv.EnvType = envType
+	matchParametersEnv.Project = matchInfoDef.Project
+	matchParametersEnv.Environment = matchInfoDef.Environment
+
+	return matchParametersEnv, errors
+
+}
+
+func getMapKeys(theMap map[string]bool) []string {
+	keys := make([]string, len(theMap))
+
+	i := 0
+	for k := range theMap {
+		keys[i] = k
+		i++
+	}
+
+	return keys
+}
+
+func parseMatchFile(context *matchLoaderContext) (MatchFileDefinition, error) {
+
+	data, err := afero.ReadFile(context.fs, context.matchFilePath)
+
+	if err != nil {
+		return MatchFileDefinition{}, err
+	}
+
+	if len(data) == 0 {
+		return MatchFileDefinition{}, fmt.Errorf("file `%s` is empty", context.matchFilePath)
+	}
+
+	var result MatchFileDefinition
+
+	err = yaml.UnmarshalStrict(data, &result)
+
+	if err != nil {
+		return MatchFileDefinition{}, err
+	}
+
+	return result, nil
+}
+
 func LoadMatchingParameters(fs afero.Fs, matchFileName string) (matchParameters MatchParameters, err error) {
 	matchWorkingDir, matchFilePath, err := cmdutils.GetFilePaths(matchFileName)
 	if err != nil {
@@ -146,62 +204,4 @@ func LoadMatchingParameters(fs afero.Fs, matchFileName string) (matchParameters 
 	}
 
 	return
-}
-
-func getParameterEnv(context *matchLoaderContext, matchInfoDef EnvInfoDefinition, envType string) (MatchParametersEnv, []error) {
-	matchParametersEnv := MatchParametersEnv{}
-	var err error
-	var errors []error
-
-	matchParametersEnv.Manifest, err = cmdutils.GetManifest(context.fs, matchInfoDef.ManifestPath)
-	if err != nil {
-		errors = append(errors, err)
-	}
-
-	matchParametersEnv.WorkingDir, _, err = cmdutils.GetFilePaths(matchInfoDef.ManifestPath)
-	if err != nil {
-		errors = append(errors, err)
-	}
-
-	matchParametersEnv.EnvType = envType
-	matchParametersEnv.Project = matchInfoDef.Project
-	matchParametersEnv.Environment = matchInfoDef.Environment
-
-	return matchParametersEnv, errors
-
-}
-
-func getMapKeys(theMap map[string]bool) []string {
-	keys := make([]string, len(theMap))
-
-	i := 0
-	for k := range theMap {
-		keys[i] = k
-		i++
-	}
-
-	return keys
-}
-
-func parseMatchFile(context *matchLoaderContext) (MatchFileDefinition, error) {
-
-	data, err := afero.ReadFile(context.fs, context.matchFilePath)
-
-	if err != nil {
-		return MatchFileDefinition{}, err
-	}
-
-	if len(data) == 0 {
-		return MatchFileDefinition{}, fmt.Errorf("file `%s` is empty", context.matchFilePath)
-	}
-
-	var result MatchFileDefinition
-
-	err = yaml.UnmarshalStrict(data, &result)
-
-	if err != nil {
-		return MatchFileDefinition{}, err
-	}
-
-	return result, nil
 }

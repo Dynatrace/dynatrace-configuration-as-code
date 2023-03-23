@@ -18,9 +18,8 @@ package entities
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
-
-	"gotest.tools/assert"
 )
 
 func getRawEntityListFromJson(jsonData string) RawEntityList {
@@ -102,10 +101,8 @@ func TestSortRawEntityList(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.entityList.Sort()
 
-			assert.Equal(t, tt.entityList.Len(), tt.want.Len())
-			for i, _ := range *tt.entityList.GetValues() {
-				assert.Equal(t, ((*tt.entityList.GetValues())[i].(map[string]interface{}))["entityId"].(string),
-					((*tt.want.GetValues())[i].(map[string]interface{}))["entityId"].(string))
+			if !reflect.DeepEqual(tt.entityList, tt.want) {
+				t.Errorf("SortRawEntityList() entityList = %v, want %v", tt.entityList, tt.want)
 			}
 
 		})

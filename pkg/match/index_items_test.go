@@ -102,6 +102,7 @@ var entityJsonSortedValueString = `[{
 	"properties": {},
 	"toRelationships": {}
 }]`
+
 var entityJsonSortedValueList = `[{
 	"entityId": "AZURE_VM-06C38A40104F9FB2",
 	"type": "AZURE_VM",
@@ -337,7 +338,7 @@ func TestGenSortedItemsIndex(t *testing.T) {
 			matchProcessing: MatchProcessingEnv{
 				RawMatchList:           getRawMatchListFromJson(entityListJsonSorted),
 				ConfigType:             config.Type{},
-				CurrentremainingMatch:  &[]int{0, 1, 2},
+				CurrentRemainingMatch:  &[]int{0, 1, 2},
 				RemainingMatch:         []int{},
 				remainingMatchSeeded:   []int{},
 				remainingMatchUnSeeded: []int{},

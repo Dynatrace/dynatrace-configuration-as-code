@@ -106,7 +106,7 @@ func genSortedItemsIndex(indexRule IndexRule, items *MatchProcessingEnv) []Index
 
 	index := IndexMap{}
 
-	for _, itemIdx := range *(items.CurrentremainingMatch) {
+	for _, itemIdx := range *(items.CurrentRemainingMatch) {
 
 		value := getValueFromPath((*items.RawMatchList.GetValues())[itemIdx], indexRule.Path)
 		if value != nil {

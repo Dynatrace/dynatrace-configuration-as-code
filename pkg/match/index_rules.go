@@ -86,39 +86,6 @@ func (i *IndexRuleMapGenerator) genSortedActiveList() []IndexRuleType {
 	return activeList
 }
 
-func (i *IndexRuleMapGenerator) RunIndexRuleAll(itemsType string, matchProcessingPtr *MatchProcessing) (*IndexCompareResultList, *map[int]int) {
-	matchedEntities := map[int]int{}
-	oldResultsPtr := &IndexCompareResultList{}
-
-	ruleTypes := i.genSortedActiveList()
-
-	log.Info("Type: %s -> nb source %d and nb target %d", itemsType,
-		matchProcessingPtr.Source.RawMatchList.Len(), matchProcessingPtr.Target.RawMatchList.Len())
-
-	for _, indexRuleType := range ruleTypes {
-		resultListPtr := newIndexCompareResultList(indexRuleType)
-		matchProcessingPtr.PrepareRemainingMatch(true, indexRuleType.IsSeed, oldResultsPtr)
-
-		for _, indexRule := range indexRuleType.IndexRules {
-			indexRule.runIndexRule(matchProcessingPtr, resultListPtr)
-		}
-
-		resultListPtr.MergeOldWeightType(oldResultsPtr)
-		singleToSingleMatchEntities := resultListPtr.ProcessMatches()
-		oldResultsPtr = resultListPtr
-
-		matchProcessingPtr.adjustremainingMatch(singleToSingleMatchEntities, resultListPtr.CompareResults)
-
-		matchedEntities = keepMatches(matchedEntities, singleToSingleMatchEntities)
-	}
-
-	log.Info("Type: %s -> nb source %d and nb target %d -> Matched: %d",
-		itemsType, len(*matchProcessingPtr.Source.RawMatchList.GetValues()),
-		len(*matchProcessingPtr.Target.RawMatchList.GetValues()), len(matchedEntities))
-
-	return oldResultsPtr, &matchedEntities
-}
-
 func (i *IndexRule) runIndexRule(entityProcessingPtr *MatchProcessing, resultListPtr *IndexCompareResultList) {
 
 	sortedIndexSource := genSortedItemsIndex(*i, &(*entityProcessingPtr).Source)
@@ -140,4 +107,39 @@ func keepMatches(matchedEntities map[int]int, singleToSingleMatch []CompareResul
 	}
 
 	return matchedEntities
+}
+
+func (i *IndexRuleMapGenerator) RunIndexRuleAll(matchProcessingPtr *MatchProcessing) (*IndexCompareResultList, *map[int]int) {
+	matchedEntities := map[int]int{}
+	remainingResultsPtr := &IndexCompareResultList{}
+
+	ruleTypes := i.genSortedActiveList()
+
+	log.Info("Type: %s -> nb source %d and nb target %d", matchProcessingPtr.GetEntitiesType(),
+		matchProcessingPtr.Source.RawMatchList.Len(), matchProcessingPtr.Target.RawMatchList.Len())
+
+	for _, indexRuleType := range ruleTypes {
+		resultListPtr := newIndexCompareResultList()
+		matchProcessingPtr.PrepareRemainingMatch(true, indexRuleType.IsSeed, remainingResultsPtr)
+
+		for _, indexRule := range indexRuleType.IndexRules {
+			indexRule.runIndexRule(matchProcessingPtr, resultListPtr)
+			log.Info("A: \n%v \n%v", indexRule, *resultListPtr)
+		}
+
+		resultListPtr.MergeRemainingWeightType(remainingResultsPtr)
+		singleToSingleMatchEntities := resultListPtr.ProcessMatches()
+		remainingResultsPtr = resultListPtr
+
+		matchProcessingPtr.adjustremainingMatch(singleToSingleMatchEntities, resultListPtr.CompareResults)
+
+		matchedEntities = keepMatches(matchedEntities, singleToSingleMatchEntities)
+		log.Info("B: %v", matchedEntities)
+	}
+
+	log.Info("Type: %s -> nb source %d and nb target %d -> Matched: %d",
+		matchProcessingPtr.GetEntitiesType(), len(*matchProcessingPtr.Source.RawMatchList.GetValues()),
+		len(*matchProcessingPtr.Target.RawMatchList.GetValues()), len(matchedEntities))
+
+	return remainingResultsPtr, &matchedEntities
 }

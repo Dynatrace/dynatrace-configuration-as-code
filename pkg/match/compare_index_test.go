@@ -17,9 +17,8 @@
 package match
 
 import (
+	"reflect"
 	"testing"
-
-	"gotest.tools/assert"
 )
 
 func TestCompareIndex(t *testing.T) {
@@ -48,7 +47,6 @@ func TestCompareIndex(t *testing.T) {
 				SelfMatchDisabled: false,
 			},
 			want: IndexCompareResultList{
-				ruleType: IndexRuleType{},
 				CompareResults: []CompareResult{
 					CompareResult{1, 1, 1},
 					CompareResult{1, 2, 1},
@@ -79,7 +77,6 @@ func TestCompareIndex(t *testing.T) {
 				SelfMatchDisabled: false,
 			},
 			want: IndexCompareResultList{
-				ruleType: IndexRuleType{},
 				CompareResults: []CompareResult{
 					CompareResult{1, 1, 1},
 					CompareResult{1, 2, 1},
@@ -110,7 +107,6 @@ func TestCompareIndex(t *testing.T) {
 				SelfMatchDisabled: false,
 			},
 			want: IndexCompareResultList{
-				ruleType: IndexRuleType{},
 				CompareResults: []CompareResult{
 					CompareResult{1, 1, 1},
 					CompareResult{1, 2, 1},
@@ -142,7 +138,6 @@ func TestCompareIndex(t *testing.T) {
 				SelfMatchDisabled: false,
 			},
 			want: IndexCompareResultList{
-				ruleType: IndexRuleType{},
 				CompareResults: []CompareResult{
 					CompareResult{1, 1, 1},
 					CompareResult{1, 2, 1},
@@ -174,7 +169,6 @@ func TestCompareIndex(t *testing.T) {
 				SelfMatchDisabled: false,
 			},
 			want: IndexCompareResultList{
-				ruleType: IndexRuleType{},
 				CompareResults: []CompareResult{
 					CompareResult{1, 1, 1},
 					CompareResult{1, 2, 1},
@@ -193,14 +187,9 @@ func TestCompareIndex(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			compareIndexes(&tt.input, tt.indexEntrySource, tt.indexEntryTarget, tt.indexRule)
-			assert.Equal(t, len(tt.input.CompareResults), len(tt.want.CompareResults))
-			for i, _ := range tt.input.CompareResults {
-				assert.Equal(t, tt.input.CompareResults[i].LeftId,
-					tt.want.CompareResults[i].LeftId)
-				assert.Equal(t, tt.input.CompareResults[i].RightId,
-					tt.want.CompareResults[i].RightId)
-				assert.Equal(t, tt.input.CompareResults[i].weight,
-					tt.want.CompareResults[i].weight)
+
+			if !reflect.DeepEqual(tt.input.CompareResults, tt.want.CompareResults) {
+				t.Errorf("compareIndexes() gotRemainingResultList = %v, want %v", tt.input.CompareResults, tt.want.CompareResults)
 			}
 
 		})

@@ -17,57 +17,21 @@
 package match
 
 import (
+	"reflect"
 	"testing"
 
 	"gotest.tools/assert"
 )
 
-func compareIndexCompareResultList(t *testing.T, i *IndexCompareResultList, j *IndexCompareResultList) {
-	assert.Equal(t, i.ruleType.IsSeed, j.ruleType.IsSeed)
-	assert.Equal(t, i.ruleType.WeightValue, j.ruleType.WeightValue)
-	assert.Equal(t, len(i.ruleType.IndexRules), len(j.ruleType.IndexRules))
-	for k, _ := range i.ruleType.IndexRules {
-		assert.Equal(t, i.ruleType.IndexRules[k].Name, j.ruleType.IndexRules[k].Name)
-		assert.Equal(t, i.ruleType.IndexRules[k].Path, j.ruleType.IndexRules[k].Path)
-		assert.Equal(t, i.ruleType.IndexRules[k].WeightValue, j.ruleType.IndexRules[k].WeightValue)
-		assert.Equal(t, i.ruleType.IndexRules[k].SelfMatchDisabled, j.ruleType.IndexRules[k].SelfMatchDisabled)
-	}
-
-	compareCompareResult(t, i.CompareResults, j.CompareResults)
-
-}
-
-func compareCompareResult(t *testing.T, i []CompareResult, j []CompareResult) {
-
-	assert.Equal(t, len(i), len(j))
-	for k, _ := range i {
-		assert.Equal(t, i[k].LeftId, j[k].LeftId)
-		assert.Equal(t, i[k].RightId, j[k].RightId)
-		assert.Equal(t, i[k].weight, j[k].weight)
-	}
-
-}
-
 func TestNewIndexCompareResultList(t *testing.T) {
 
 	tests := []struct {
-		name     string
-		ruleType IndexRuleType
-		want     IndexCompareResultList
+		name string
+		want IndexCompareResultList
 	}{
 		{
 			name: "newIndexCompareResultList",
-			ruleType: IndexRuleType{
-				IsSeed:      true,
-				WeightValue: 100,
-				IndexRules:  []IndexRule{},
-			},
 			want: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{},
 			},
 		},
@@ -75,11 +39,15 @@ func TestNewIndexCompareResultList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := newIndexCompareResultList(tt.ruleType)
-			compareIndexCompareResultList(t, result, &tt.want)
+			result := newIndexCompareResultList()
+
+			if !reflect.DeepEqual(*result, tt.want) {
+				t.Errorf("newIndexCompareResultList() result = %v, want %v", result, tt.want)
+			}
 		})
 	}
 }
+
 func TestNewReversedIndexCompareResultList(t *testing.T) {
 
 	tests := []struct {
@@ -90,22 +58,12 @@ func TestNewReversedIndexCompareResultList(t *testing.T) {
 		{
 			name: "newReversedIndexCompareResultList",
 			original: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{3, 4, 1},
 					CompareResult{5, 6, 1},
 					CompareResult{10, 12, 1}},
 			},
 			want: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{4, 3, 1},
 					CompareResult{6, 5, 1},
@@ -117,7 +75,10 @@ func TestNewReversedIndexCompareResultList(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := newReversedIndexCompareResultList(&tt.original)
-			compareIndexCompareResultList(t, result, &tt.want)
+
+			if !reflect.DeepEqual(*result, tt.want) {
+				t.Errorf("newReversedIndexCompareResultList() result = %v, want %v", result, tt.want)
+			}
 		})
 	}
 }
@@ -133,11 +94,6 @@ func TestAddResult(t *testing.T) {
 		{
 			name: "addResult",
 			original: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{3, 4, 1},
 					CompareResult{5, 6, 1},
@@ -146,11 +102,6 @@ func TestAddResult(t *testing.T) {
 			},
 			toAdd: CompareResult{7, 3, 1},
 			want: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{3, 4, 1},
 					CompareResult{5, 6, 1},
@@ -164,7 +115,10 @@ func TestAddResult(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.original.addResult(tt.toAdd.LeftId, tt.toAdd.RightId, tt.toAdd.weight)
-			compareIndexCompareResultList(t, &tt.original, &tt.want)
+
+			if !reflect.DeepEqual(tt.original, tt.want) {
+				t.Errorf("addResult() original = %v, want %v", tt.original, tt.want)
+			}
 		})
 	}
 }
@@ -179,11 +133,6 @@ func TestSortTopMatches(t *testing.T) {
 		{
 			name: "KeepTopMatchesOnly",
 			original: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{3, 4, 1},
 					CompareResult{3, 8, 3},
@@ -197,11 +146,6 @@ func TestSortTopMatches(t *testing.T) {
 				},
 			},
 			want: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{3, 8, 3},
 					CompareResult{3, 4, 1},
@@ -220,7 +164,10 @@ func TestSortTopMatches(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.original.sortTopMatches()
-			compareIndexCompareResultList(t, &tt.original, &tt.want)
+
+			if !reflect.DeepEqual(tt.original, tt.want) {
+				t.Errorf("sortTopMatches() original = %v, want %v", tt.original, tt.want)
+			}
 		})
 	}
 }
@@ -235,11 +182,6 @@ func TestKeepTopMatchesOnly(t *testing.T) {
 		{
 			name: "KeepTopMatchesOnly",
 			original: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{3, 4, 1},
 					CompareResult{3, 8, 3},
@@ -253,11 +195,6 @@ func TestKeepTopMatchesOnly(t *testing.T) {
 				},
 			},
 			want: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{3, 8, 3},
 					CompareResult{5, 6, 3},
@@ -273,7 +210,10 @@ func TestKeepTopMatchesOnly(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.original.keepTopMatchesOnly()
-			compareIndexCompareResultList(t, &tt.original, &tt.want)
+
+			if !reflect.DeepEqual(tt.original, tt.want) {
+				t.Errorf("keepTopMatchesOnly() original = %v, want %v", tt.original, tt.want)
+			}
 		})
 	}
 }
@@ -289,11 +229,6 @@ func TestReduceBothForwardAndBackward(t *testing.T) {
 		{
 			name: "reduceBothForwardAndBackward",
 			original: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{3, 4, 1},
 					CompareResult{3, 8, 3},
@@ -307,11 +242,6 @@ func TestReduceBothForwardAndBackward(t *testing.T) {
 				},
 			},
 			wantChanged: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{5, 6, 3},
 					CompareResult{3, 8, 3},
@@ -321,11 +251,6 @@ func TestReduceBothForwardAndBackward(t *testing.T) {
 				},
 			},
 			wantReturned: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{6, 5, 3},
 					CompareResult{8, 3, 3},
@@ -340,8 +265,12 @@ func TestReduceBothForwardAndBackward(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := tt.original.reduceBothForwardAndBackward()
-			compareIndexCompareResultList(t, &tt.original, &tt.wantChanged)
-			compareIndexCompareResultList(t, got, &tt.wantReturned)
+			if !reflect.DeepEqual(tt.original, tt.wantChanged) {
+				t.Errorf("reduceBothForwardAndBackward() original = %v, wantChanged %v", tt.original, tt.wantChanged)
+			}
+			if !reflect.DeepEqual(*got, tt.wantReturned) {
+				t.Errorf("reduceBothForwardAndBackward() got = %v, wantReturned %v", got, tt.wantReturned)
+			}
 		})
 	}
 }
@@ -356,11 +285,6 @@ func TestSortCompareResults(t *testing.T) {
 		{
 			name: "sort",
 			original: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{1, 2, 3},
 					CompareResult{3, 2, 2},
@@ -370,11 +294,6 @@ func TestSortCompareResults(t *testing.T) {
 				},
 			},
 			want: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{1, 2, 3},
 					CompareResult{1, 3, 3},
@@ -389,7 +308,10 @@ func TestSortCompareResults(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.original.sort()
-			compareIndexCompareResultList(t, &tt.original, &tt.want)
+
+			if !reflect.DeepEqual(tt.original, tt.want) {
+				t.Errorf("sort() original = %v, want %v", tt.original, tt.want)
+			}
 		})
 	}
 }
@@ -404,11 +326,6 @@ func TestGetSingleMatchItems(t *testing.T) {
 		{
 			name: "getSingleMatchItems - ordered",
 			original: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{3, 8, 3},
 					CompareResult{5, 6, 3},
@@ -425,11 +342,6 @@ func TestGetSingleMatchItems(t *testing.T) {
 		{
 			name: "getSingleMatchItems - unordered",
 			original: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{5, 6, 3},
 					CompareResult{3, 8, 3},
@@ -448,7 +360,10 @@ func TestGetSingleMatchItems(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := tt.original.getSingleMatchItems()
-			compareCompareResult(t, got, tt.want)
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getSingleMatchItems() got = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }
@@ -463,11 +378,6 @@ func TestSumMatchWeightValues(t *testing.T) {
 		{
 			name: "sumMatchWeightValues - ordered",
 			original: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{1, 2, 2},
 					CompareResult{1, 2, 1},
@@ -481,11 +391,6 @@ func TestSumMatchWeightValues(t *testing.T) {
 				},
 			},
 			want: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{1, 2, 3},
 					CompareResult{1, 3, 3},
@@ -498,11 +403,6 @@ func TestSumMatchWeightValues(t *testing.T) {
 		{
 			name: "sumMatchWeightValues - unordered",
 			original: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{2, 1, 1},
 					CompareResult{1, 2, 1},
@@ -516,11 +416,6 @@ func TestSumMatchWeightValues(t *testing.T) {
 				},
 			},
 			want: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{1, 2, 3},
 					CompareResult{1, 3, 3},
@@ -535,7 +430,10 @@ func TestSumMatchWeightValues(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.original.sumMatchWeightValues()
-			compareIndexCompareResultList(t, &tt.original, &tt.want)
+
+			if !reflect.DeepEqual(tt.original, tt.want) {
+				t.Errorf("sumMatchWeightValues() original = %v, want %v", tt.original, tt.want)
+			}
 		})
 	}
 }
@@ -550,11 +448,6 @@ func TestGetMaxWeight(t *testing.T) {
 		{
 			name: "getMaxWeight",
 			original: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{1, 2, 3},
 					CompareResult{1, 3, 3},
@@ -586,11 +479,6 @@ func TestElevateWeight(t *testing.T) {
 		{
 			name: "elevateWeight",
 			original: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{1, 2, 3},
 					CompareResult{1, 3, 3},
@@ -601,11 +489,6 @@ func TestElevateWeight(t *testing.T) {
 			},
 			elevateValue: 10,
 			want: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{1, 2, 13},
 					CompareResult{1, 3, 13},
@@ -620,7 +503,10 @@ func TestElevateWeight(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.original.elevateWeight(tt.elevateValue)
-			compareIndexCompareResultList(t, &tt.original, &tt.want)
+
+			if !reflect.DeepEqual(tt.original, tt.want) {
+				t.Errorf("elevateWeight() original = %v, want %v", tt.original, tt.want)
+			}
 		})
 	}
 }
@@ -636,11 +522,6 @@ func TestTrimSingleToSingleMatches(t *testing.T) {
 		{
 			name: "trimSingleToSingleMatches",
 			original: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{3, 8, 3},
 					CompareResult{5, 6, 3},
@@ -654,11 +535,6 @@ func TestTrimSingleToSingleMatches(t *testing.T) {
 				CompareResult{5, 6, 3},
 			},
 			want: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{10, 12, 8},
 					CompareResult{10, 16, 8},
@@ -671,7 +547,10 @@ func TestTrimSingleToSingleMatches(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.original.trimSingleToSingleMatches(tt.singleToSingleMatches)
-			compareIndexCompareResultList(t, &tt.original, &tt.want)
+
+			if !reflect.DeepEqual(tt.original, tt.want) {
+				t.Errorf("trimSingleToSingleMatches() original = %v, want %v", tt.original, tt.want)
+			}
 		})
 	}
 }
@@ -686,11 +565,6 @@ func TestProcessMatches(t *testing.T) {
 		{
 			name: "ProcessMatches - unsorted",
 			original: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{3, 4, 1},
 					CompareResult{3, 8, 2},
@@ -716,12 +590,15 @@ func TestProcessMatches(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := tt.original.ProcessMatches()
-			compareCompareResult(t, got, tt.want)
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ProcessMatches() got = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }
 
-func TestMergeOldWeightType(t *testing.T) {
+func TestMergeRemainingWeightType(t *testing.T) {
 
 	tests := []struct {
 		name     string
@@ -730,13 +607,8 @@ func TestMergeOldWeightType(t *testing.T) {
 		want     IndexCompareResultList
 	}{
 		{
-			name: "MergeOldWeightType - unsorted",
+			name: "MergeRemainingWeightType - unsorted",
 			original: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 90,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{13, 18, 2},
 					CompareResult{15, 16, 1},
@@ -746,11 +618,6 @@ func TestMergeOldWeightType(t *testing.T) {
 				},
 			},
 			toMerge: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{3, 8, 3},
 					CompareResult{5, 6, 3},
@@ -760,11 +627,6 @@ func TestMergeOldWeightType(t *testing.T) {
 				},
 			},
 			want: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 90,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{3, 8, 5},
 					CompareResult{5, 6, 5},
@@ -780,13 +642,8 @@ func TestMergeOldWeightType(t *testing.T) {
 			},
 		},
 		{
-			name: "MergeOldWeightType - sorted",
+			name: "MergeRemainingWeightType - sorted",
 			original: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 90,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{13, 18, 2},
 					CompareResult{20, 26, 1},
@@ -796,11 +653,6 @@ func TestMergeOldWeightType(t *testing.T) {
 				},
 			},
 			toMerge: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 100,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{3, 8, 3},
 					CompareResult{10, 16, 8},
@@ -810,11 +662,6 @@ func TestMergeOldWeightType(t *testing.T) {
 				},
 			},
 			want: IndexCompareResultList{
-				ruleType: IndexRuleType{
-					IsSeed:      true,
-					WeightValue: 90,
-					IndexRules:  []IndexRule{},
-				},
 				CompareResults: []CompareResult{
 					CompareResult{3, 8, 5},
 					CompareResult{5, 6, 5},
@@ -833,8 +680,11 @@ func TestMergeOldWeightType(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.original.MergeOldWeightType(&tt.toMerge)
-			compareIndexCompareResultList(t, &tt.original, &tt.want)
+			tt.original.MergeRemainingWeightType(&tt.toMerge)
+
+			if !reflect.DeepEqual(tt.original, tt.want) {
+				t.Errorf("MergeRemainingWeightType() original = %v, want %v", tt.original, tt.want)
+			}
 		})
 	}
 }

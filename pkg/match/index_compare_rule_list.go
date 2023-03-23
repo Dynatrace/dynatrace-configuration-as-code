@@ -21,20 +21,17 @@ import (
 )
 
 type IndexCompareResultList struct {
-	ruleType       IndexRuleType
 	CompareResults []CompareResult
 }
 
-func newIndexCompareResultList(ruleType IndexRuleType) *IndexCompareResultList {
+func newIndexCompareResultList() *IndexCompareResultList {
 	i := new(IndexCompareResultList)
-	i.ruleType = ruleType
 	i.CompareResults = []CompareResult{}
 	return i
 }
 
 func newReversedIndexCompareResultList(sourceList *IndexCompareResultList) *IndexCompareResultList {
 	i := new(IndexCompareResultList)
-	i.ruleType = sourceList.ruleType
 	size := len(sourceList.CompareResults)
 	i.CompareResults = make([]CompareResult, size)
 	resI := 0
@@ -250,10 +247,10 @@ func (i *IndexCompareResultList) ProcessMatches() []CompareResult {
 
 }
 
-func (i *IndexCompareResultList) MergeOldWeightType(oldResults *IndexCompareResultList) {
+func (i *IndexCompareResultList) MergeRemainingWeightType(remainingResults *IndexCompareResultList) {
 	lowerMaxWeight := i.getMaxWeight()
-	oldResults.elevateWeight(lowerMaxWeight)
+	remainingResults.elevateWeight(lowerMaxWeight)
 
-	i.CompareResults = append(i.CompareResults, oldResults.CompareResults...)
+	i.CompareResults = append(i.CompareResults, remainingResults.CompareResults...)
 	i.sort()
 }
