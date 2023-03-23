@@ -35,9 +35,9 @@ func SilenceUsageCommand() func(cmd *cobra.Command, args []string) {
 	}
 }
 
-// CreateDTClient are driven with the data given through a manifest.EnvironmentDefinition to create appropriate client.Client.
+// CreateDTClient is driven by data given through a manifest.EnvironmentDefinition to create an appropriate client.Client.
 //
-// In case when flag dryRun is true this factory returns client.DummyClient
+// In case when flag dryRun is true this factory returns the client.DummyClient.
 func CreateDTClient(env manifest.EnvironmentDefinition, dryRun bool) (client.Client, error) {
 	switch {
 	case dryRun:
