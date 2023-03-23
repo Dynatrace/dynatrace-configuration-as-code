@@ -35,25 +35,25 @@ func SilenceUsageCommand() func(cmd *cobra.Command, args []string) {
 	}
 }
 
-// CreateDTClient creates a new client based to be used or an environment
-// If dryRun is true, it will return a dummy client that doesn't do anything
+// CreateDTClient are driven with the data given through a manifest.EnvironmentDefinition to create appropriate client.Client.
+//
+// In case when flag dryRun is true this factory returns client.DummyClient
 func CreateDTClient(env manifest.EnvironmentDefinition, dryRun bool) (client.Client, error) {
-	if dryRun {
+	switch {
+	case dryRun:
 		return client.NewDummyClient(), nil
-	}
-	if env.Type == manifest.Classic {
+	case env.Type == manifest.Classic:
 		return client.NewClassicClient(env.URL.Value, env.Auth.Token.Value)
-	}
-
-	if env.Type == manifest.Platform {
+	case env.Type == manifest.Platform:
 		oauthCredentials := client.OauthCredentials{
 			ClientID:     env.Auth.OAuth.ClientID.Value,
 			ClientSecret: env.Auth.OAuth.ClientSecret.Value,
 			TokenURL:     env.Auth.OAuth.TokenEndpoint.Value,
 		}
 		return client.NewPlatformClient(env.URL.Value, env.Auth.Token.Value, oauthCredentials)
+	default:
+		return nil, fmt.Errorf("unable to create authorizing HTTP Client for environment %s - no oauth credentials given", env.URL.Value)
 	}
-	return nil, fmt.Errorf("unable to create authorizing HTTP Client for environment %s - no oauth credentials given", env.URL.Value)
 }
 
 // VerifyEnvironmentGeneration takes a manifestEnvironments map and tries to verify that each environment can be reached
