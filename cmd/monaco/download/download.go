@@ -17,14 +17,11 @@ package download
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
-	"net/http"
 	"net/url"
 	"path"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2/topologysort"
@@ -56,8 +53,6 @@ type downloadCommandOptionsShared struct {
 	outputFolder   string
 	forceOverwrite bool
 }
-
-type DynatraceClientProvider func(*http.Client, string, ...func(*client.DynatraceClient)) (client.Client, error)
 
 type downloadOptionsShared struct {
 	environmentUrl          string
