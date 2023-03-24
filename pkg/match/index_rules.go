@@ -124,17 +124,15 @@ func (i *IndexRuleMapGenerator) RunIndexRuleAll(matchProcessingPtr *MatchProcess
 
 		for _, indexRule := range indexRuleType.IndexRules {
 			indexRule.runIndexRule(matchProcessingPtr, resultListPtr)
-			log.Info("A: \n%v \n%v", indexRule, *resultListPtr)
 		}
 
 		resultListPtr.MergeRemainingWeightType(remainingResultsPtr)
 		singleToSingleMatchEntities := resultListPtr.ProcessMatches()
 		remainingResultsPtr = resultListPtr
 
-		matchProcessingPtr.adjustremainingMatch(singleToSingleMatchEntities, resultListPtr.CompareResults)
+		matchProcessingPtr.adjustremainingMatch(&singleToSingleMatchEntities, &resultListPtr.CompareResults)
 
 		matchedEntities = keepMatches(matchedEntities, singleToSingleMatchEntities)
-		log.Info("B: %v", matchedEntities)
 	}
 
 	log.Info("Type: %s -> nb source %d and nb target %d -> Matched: %d",

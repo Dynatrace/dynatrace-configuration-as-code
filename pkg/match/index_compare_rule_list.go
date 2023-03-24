@@ -37,7 +37,7 @@ func newReversedIndexCompareResultList(sourceList *IndexCompareResultList) *Inde
 	resI := 0
 
 	for _, result := range sourceList.CompareResults {
-		i.CompareResults[resI] = CompareResult{result.RightId, result.LeftId, result.weight}
+		i.CompareResults[resI] = CompareResult{result.RightId, result.LeftId, result.Weight}
 		resI++
 	}
 
@@ -71,7 +71,7 @@ func (i *IndexCompareResultList) keepTopMatchesOnly() {
 	for _, result := range i.CompareResults {
 
 		if result.LeftId == prevTop.LeftId {
-			if result.weight == prevTop.weight {
+			if result.Weight == prevTop.Weight {
 
 			} else {
 				continue
@@ -154,7 +154,7 @@ func (i *IndexCompareResultList) sumMatchWeightValues() {
 		b := i.CompareResults[bI]
 
 		if a.areIdsEqual(b) {
-			prevTotal.weight += b.weight
+			prevTotal.Weight += b.Weight
 		} else {
 			summedMatchResults = append(summedMatchResults, prevTotal)
 			prevTotal = b
@@ -173,8 +173,8 @@ func (i *IndexCompareResultList) sumMatchWeightValues() {
 func (i *IndexCompareResultList) getMaxWeight() int {
 	var max_weight int = 0
 	for _, result := range i.CompareResults {
-		if result.weight > max_weight {
-			max_weight = result.weight
+		if result.Weight > max_weight {
+			max_weight = result.Weight
 		}
 	}
 
@@ -183,7 +183,7 @@ func (i *IndexCompareResultList) getMaxWeight() int {
 
 func (i *IndexCompareResultList) elevateWeight(lowerMaxWeight int) {
 	for idx, _ := range i.CompareResults {
-		i.CompareResults[idx].weight += lowerMaxWeight
+		i.CompareResults[idx].Weight += lowerMaxWeight
 	}
 }
 

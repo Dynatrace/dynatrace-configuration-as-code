@@ -15,7 +15,12 @@
 package entities
 
 import (
+	"encoding/json"
 	"sort"
+
+	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/match"
+	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 )
 
 type RawEntityList struct {
@@ -48,4 +53,40 @@ func (r *RawEntityList) GetValues() *[]interface{} {
 
 	return r.Values
 
+}
+
+func unmarshalEntities(entityPerType []config.Config) (*RawEntityList, error) {
+	rawEntityList := &RawEntityList{
+		Values: new([]interface{}),
+	}
+	var err error = nil
+
+	if len(entityPerType) > 0 {
+		err = json.Unmarshal([]byte(entityPerType[0].Template.Content()), rawEntityList.Values)
+	}
+
+	return rawEntityList, err
+}
+
+func genEntityProcessing(entityPerTypeSource project.ConfigsPerType, entityPerTypeTarget project.ConfigsPerType, entitiesType string) (*match.MatchProcessing, error) {
+
+	rawEntitiesSource, err := unmarshalEntities(entityPerTypeSource[entitiesType])
+	if err != nil {
+		return nil, err
+	}
+	sourceType := config.Type{}
+	if len(entityPerTypeSource[entitiesType]) > 0 {
+		sourceType = entityPerTypeSource[entitiesType][0].Type
+	}
+
+	rawEntitiesTarget, err := unmarshalEntities(entityPerTypeTarget[entitiesType])
+	if err != nil {
+		return nil, err
+	}
+	targetType := config.Type{}
+	if len(entityPerTypeTarget[entitiesType]) > 0 {
+		targetType = entityPerTypeTarget[entitiesType][0].Type
+	}
+
+	return match.NewMatchProcessing(rawEntitiesSource, sourceType, rawEntitiesTarget, targetType), nil
 }

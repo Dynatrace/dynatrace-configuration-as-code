@@ -79,6 +79,78 @@ environmentGroups:
         name: %s
 `
 
+func genTestMatchParameters() MatchParameters {
+	return MatchParameters{
+		Name:       name,
+		Type:       matchType,
+		WorkingDir: workingDirPath,
+		OutputDir:  outputPath,
+		SelfMatch:  false,
+		Source: MatchParametersEnv{
+			EnvType:     SOURCE_ENV,
+			WorkingDir:  sourceManifestDir,
+			Project:     projectEnvName,
+			Environment: projectEnvName,
+			Manifest: manifest.Manifest{
+				Projects: manifest.ProjectDefinitionByProjectID{
+					projectEnvName: manifest.ProjectDefinition{
+						Name: projectEnvName,
+						Path: projectEnvName,
+					},
+				},
+				Environments: manifest.Environments{
+					projectEnvName: manifest.EnvironmentDefinition{
+						Name: projectEnvName,
+						Type: 0,
+						URL: manifest.URLDefinition{
+							Type:  0,
+							Value: tenantUrl,
+						},
+						Group: groupName,
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{
+								Name:  tokenName,
+								Value: tokenValue,
+							},
+						},
+					},
+				},
+			},
+		},
+		Target: MatchParametersEnv{
+			EnvType:     TARGET_ENV,
+			WorkingDir:  targetManifestDir,
+			Project:     projectEnvName,
+			Environment: projectEnvName,
+			Manifest: manifest.Manifest{
+				Projects: manifest.ProjectDefinitionByProjectID{
+					projectEnvName: manifest.ProjectDefinition{
+						Name: projectEnvName,
+						Path: projectEnvName,
+					},
+				},
+				Environments: manifest.Environments{
+					projectEnvName: manifest.EnvironmentDefinition{
+						Name: projectEnvName,
+						Type: 0,
+						URL: manifest.URLDefinition{
+							Type:  0,
+							Value: tenantUrl,
+						},
+						Group: groupName,
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{
+								Name:  tokenName,
+								Value: tokenValue,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func TestLoadMatchingParametersFails(t *testing.T) {
 
 	matchFileContent := fmt.Sprintf(rawMatchYAMLContent,
@@ -170,75 +242,7 @@ func TestLoadMatchingParameters(t *testing.T) {
 
 	assert.NilError(t, err)
 
-	want := MatchParameters{
-		Name:       name,
-		Type:       matchType,
-		WorkingDir: workingDirPath,
-		OutputDir:  outputPath,
-		SelfMatch:  false,
-		Source: MatchParametersEnv{
-			EnvType:     SOURCE_ENV,
-			WorkingDir:  sourceManifestDir,
-			Project:     projectEnvName,
-			Environment: projectEnvName,
-			Manifest: manifest.Manifest{
-				Projects: manifest.ProjectDefinitionByProjectID{
-					projectEnvName: manifest.ProjectDefinition{
-						Name: projectEnvName,
-						Path: projectEnvName,
-					},
-				},
-				Environments: manifest.Environments{
-					projectEnvName: manifest.EnvironmentDefinition{
-						Name: projectEnvName,
-						Type: 0,
-						URL: manifest.URLDefinition{
-							Type:  0,
-							Value: tenantUrl,
-						},
-						Group: groupName,
-						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
-								Name:  tokenName,
-								Value: tokenValue,
-							},
-						},
-					},
-				},
-			},
-		},
-		Target: MatchParametersEnv{
-			EnvType:     TARGET_ENV,
-			WorkingDir:  targetManifestDir,
-			Project:     projectEnvName,
-			Environment: projectEnvName,
-			Manifest: manifest.Manifest{
-				Projects: manifest.ProjectDefinitionByProjectID{
-					projectEnvName: manifest.ProjectDefinition{
-						Name: projectEnvName,
-						Path: projectEnvName,
-					},
-				},
-				Environments: manifest.Environments{
-					projectEnvName: manifest.EnvironmentDefinition{
-						Name: projectEnvName,
-						Type: 0,
-						URL: manifest.URLDefinition{
-							Type:  0,
-							Value: tenantUrl,
-						},
-						Group: groupName,
-						Auth: manifest.Auth{
-							Token: manifest.AuthSecret{
-								Name:  tokenName,
-								Value: tokenValue,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+	want := genTestMatchParameters()
 
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("LoadMatchingParameters() got = %v, want %v", got, want)

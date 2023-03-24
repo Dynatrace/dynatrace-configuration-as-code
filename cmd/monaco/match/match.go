@@ -44,7 +44,7 @@ func Match(fs afero.Fs, matchFileName string) error {
 		return err
 	}
 
-	stats, nbEntitiesSource, nbEntitiesTarget, err := matchEntities.CompareEntities(fs, matchParameters, configsSource, configsTarget)
+	stats, nbEntitiesSource, nbEntitiesTarget, err := matchEntities.MatchEntities(fs, matchParameters, configsSource, configsTarget)
 	if err != nil {
 		return err
 	}

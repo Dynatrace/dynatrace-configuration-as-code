@@ -114,7 +114,7 @@ func TestAddResult(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.original.addResult(tt.toAdd.LeftId, tt.toAdd.RightId, tt.toAdd.weight)
+			tt.original.addResult(tt.toAdd.LeftId, tt.toAdd.RightId, tt.toAdd.Weight)
 
 			if !reflect.DeepEqual(tt.original, tt.want) {
 				t.Errorf("addResult() original = %v, want %v", tt.original, tt.want)

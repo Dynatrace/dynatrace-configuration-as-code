@@ -21,7 +21,7 @@ import (
 type CompareResult struct {
 	LeftId  int
 	RightId int
-	weight  int
+	Weight  int
 }
 
 func (a CompareResult) areIdsEqual(b CompareResult) bool {
@@ -87,7 +87,7 @@ func (a ByTopMatch) Len() int      { return len(a) }
 func (a ByTopMatch) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a ByTopMatch) Less(i, j int) bool {
 	if a[i].LeftId == a[j].LeftId {
-		return a[j].weight < a[i].weight
+		return a[j].Weight < a[i].Weight
 	}
 	return a[i].LeftId < a[j].LeftId
 }

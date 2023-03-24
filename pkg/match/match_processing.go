@@ -76,11 +76,11 @@ func (e *MatchProcessing) GetEntitiesType() string {
 
 }
 
-func (e *MatchProcessing) adjustremainingMatch(singleToSingleMatch []CompareResult, resultList []CompareResult) {
+func (e *MatchProcessing) adjustremainingMatch(singleToSingleMatch *[]CompareResult, resultList *[]CompareResult) {
 
-	sort.Sort(ByLeft(singleToSingleMatch))
+	sort.Sort(ByLeft(*singleToSingleMatch))
 	e.Source.reduceRemainingMatchList(singleToSingleMatch, getLeftId)
-	sort.Sort(ByRight(singleToSingleMatch))
+	sort.Sort(ByRight(*singleToSingleMatch))
 	e.Target.reduceRemainingMatchList(singleToSingleMatch, getRightId)
 
 }
@@ -92,20 +92,16 @@ func (e *MatchProcessing) PrepareRemainingMatch(keepSeeded bool, keepUnseeded bo
 		e.Target.CurrentRemainingMatch = &(e.Target.RemainingMatch)
 	} else if keepSeeded {
 		sort.Sort(ByLeft(resultListPtr.CompareResults))
-		e.Source.genSeededMatch(resultListPtr.CompareResults, getLeftId)
-		e.Source.CurrentRemainingMatch = &(e.Source.remainingMatchSeeded)
+		e.Source.genSeededMatch(&resultListPtr.CompareResults, getLeftId)
 
 		sort.Sort(ByRight(resultListPtr.CompareResults))
-		e.Target.genSeededMatch(resultListPtr.CompareResults, getRightId)
-		e.Target.CurrentRemainingMatch = &(e.Target.remainingMatchSeeded)
+		e.Target.genSeededMatch(&resultListPtr.CompareResults, getRightId)
 	} else if keepUnseeded {
 		sort.Sort(ByLeft(resultListPtr.CompareResults))
-		e.Source.genUnSeededMatch(resultListPtr.CompareResults, getLeftId, &(e.Source.RemainingMatch))
-		e.Source.CurrentRemainingMatch = &(e.Source.remainingMatchUnSeeded)
+		e.Source.genUnSeededMatch(&resultListPtr.CompareResults, getLeftId)
 
 		sort.Sort(ByRight(resultListPtr.CompareResults))
-		e.Target.genUnSeededMatch(resultListPtr.CompareResults, getRightId, &(e.Target.RemainingMatch))
-		e.Target.CurrentRemainingMatch = &(e.Target.remainingMatchUnSeeded)
+		e.Target.genUnSeededMatch(&resultListPtr.CompareResults, getRightId)
 	}
 
 }

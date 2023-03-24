@@ -22,79 +22,65 @@ import (
 )
 
 type MatchProcessingEnv struct {
-	RawMatchList           RawMatchList
-	ConfigType             config.Type
-	CurrentRemainingMatch  *[]int
-	RemainingMatch         []int
-	remainingMatchSeeded   []int
-	remainingMatchUnSeeded []int
+	RawMatchList          RawMatchList
+	ConfigType            config.Type
+	CurrentRemainingMatch *[]int
+	RemainingMatch        []int
 }
 
-func (e *MatchProcessingEnv) genSeededMatch(resultList []CompareResult, getId func(CompareResult) int) {
-	e.remainingMatchSeeded = []int{}
+func (e *MatchProcessingEnv) genSeededMatch(resultList *[]CompareResult, getId func(CompareResult) int) {
+	remainingMatchSeeded := make([]int, 0, len(*resultList))
 
-	if len(resultList) == 0 {
+	if len(*resultList) == 0 {
+		e.CurrentRemainingMatch = &remainingMatchSeeded
 		return
 	}
 
-	e.remainingMatchSeeded = make([]int, 1, len(resultList))
-	e.remainingMatchSeeded[0] = getId(resultList[0])
+	remainingMatchSeeded = append(remainingMatchSeeded, getId((*resultList)[0]))
 
-	for _, result := range resultList[1:] {
+	for _, result := range (*resultList)[1:] {
 		id := getId(result)
-		if id == e.remainingMatchSeeded[len(e.remainingMatchSeeded)-1] {
+		if id == remainingMatchSeeded[len(remainingMatchSeeded)-1] {
 			// pass
 		} else {
-			e.remainingMatchSeeded = append(e.remainingMatchSeeded, id)
+			remainingMatchSeeded = append(remainingMatchSeeded, id)
 		}
 	}
 
+	e.CurrentRemainingMatch = &remainingMatchSeeded
 }
 
-func (e *MatchProcessingEnv) genUnSeededMatch(resultList []CompareResult, getId func(CompareResult) int, remainingItems *[]int) {
-	e.remainingMatchUnSeeded = []int{}
+func (e *MatchProcessingEnv) genUnSeededMatch(resultList *[]CompareResult, getId func(CompareResult) int) {
+	remainingMatchUnSeeded := make([]int, 0, len(e.RemainingMatch))
 
-	if len(*remainingItems) == 0 {
+	if len(e.RemainingMatch) == 0 {
+		e.CurrentRemainingMatch = &remainingMatchUnSeeded
 		return
 	}
-
-	e.remainingMatchUnSeeded = make([]int, 0, len(*remainingItems))
 
 	resultIdx := 0
 	id := 0
 
-	for _, remainingItem := range *remainingItems {
-		for ; resultIdx < len(resultList); resultIdx++ {
-			id = getId(resultList[resultIdx])
+	for _, remainingItem := range e.RemainingMatch {
+		for ; resultIdx < len(*resultList); resultIdx++ {
+			id = getId((*resultList)[resultIdx])
 			if id >= remainingItem {
 				break
 			}
 		}
-		if remainingItem != id || resultIdx >= len(resultList) {
-			e.remainingMatchUnSeeded = append(e.remainingMatchUnSeeded, remainingItem)
+		if remainingItem != id || resultIdx >= len(*resultList) {
+			remainingMatchUnSeeded = append(remainingMatchUnSeeded, remainingItem)
 		}
 	}
 
+	e.CurrentRemainingMatch = &remainingMatchUnSeeded
 }
 
-func (e *MatchProcessingEnv) reduceRemainingMatchList(singleToSingleMatch []CompareResult, getId func(CompareResult) int) {
-	idList := make([]int, len(singleToSingleMatch))
+func (e *MatchProcessingEnv) trimremainingItems(idsToDrop *[]int) {
 
-	i := 0
-	for _, result := range singleToSingleMatch {
+	sort.Slice((*idsToDrop), func(i, j int) bool { return (*idsToDrop)[i] < (*idsToDrop)[j] })
 
-		idList[i] = getId(result)
-		i++
-	}
-
-	e.trimremainingItems(idList)
-}
-
-func (e *MatchProcessingEnv) trimremainingItems(idsToDrop []int) {
-
-	sort.Slice(idsToDrop, func(i, j int) bool { return idsToDrop[i] < idsToDrop[j] })
-
-	nbRemaining := len((*e).RemainingMatch) - len(idsToDrop)
+	nbRemaining := len((*e).RemainingMatch) - len(*idsToDrop)
 	newremainingItems := make([]int, nbRemaining)
 
 	dropI := 0
@@ -103,13 +89,13 @@ func (e *MatchProcessingEnv) trimremainingItems(idsToDrop []int) {
 
 	for oldI < len((*e).RemainingMatch) {
 
-		if dropI < len(idsToDrop) {
-			if idsToDrop[dropI] < (*e).RemainingMatch[oldI] {
-				log.Error("Dropping a non-remaining ID?? dropI: %d idsToDrop[dropI]: %d", dropI, idsToDrop[dropI])
+		if dropI < len(*idsToDrop) {
+			if (*idsToDrop)[dropI] < (*e).RemainingMatch[oldI] {
+				log.Error("Dropping a non-remaining ID?? dropI: %d idsToDrop[dropI]: %d", dropI, (*idsToDrop)[dropI])
 				dropI++
 				continue
 
-			} else if idsToDrop[dropI] == (*e).RemainingMatch[oldI] {
+			} else if (*idsToDrop)[dropI] == (*e).RemainingMatch[oldI] {
 				dropI++
 				oldI++
 				continue
@@ -126,9 +112,23 @@ func (e *MatchProcessingEnv) trimremainingItems(idsToDrop []int) {
 	if newI != nbRemaining {
 
 		log.Error("Did not trim properly?? nbRemaining: %d newI: %d", nbRemaining, newI)
-		log.Error("Did not trim properly?? len(e.remainingItems): %d len(idsToDrop): %d", len((*e).RemainingMatch), len(idsToDrop))
+		log.Error("Did not trim properly?? len(e.remainingItems): %d len(idsToDrop): %d", len((*e).RemainingMatch), len(*idsToDrop))
 
 	}
 
 	(*e).RemainingMatch = newremainingItems
+	(*e).CurrentRemainingMatch = &(*e).RemainingMatch
+}
+
+func (e *MatchProcessingEnv) reduceRemainingMatchList(singleToSingleMatch *[]CompareResult, getId func(CompareResult) int) {
+	idList := make([]int, len(*singleToSingleMatch))
+
+	i := 0
+	for _, result := range *singleToSingleMatch {
+
+		idList[i] = getId(result)
+		i++
+	}
+
+	e.trimremainingItems(&idList)
 }

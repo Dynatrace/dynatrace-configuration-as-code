@@ -283,20 +283,16 @@ func TestRunIndexRule(t *testing.T) {
 			},
 			entityProcessing: MatchProcessing{
 				Source: MatchProcessingEnv{
-					RawMatchList:           getRawMatchListFromJson(entityListJsonSorted),
-					ConfigType:             config.Type{},
-					CurrentRemainingMatch:  &[]int{0, 1, 2},
-					RemainingMatch:         []int{},
-					remainingMatchSeeded:   []int{},
-					remainingMatchUnSeeded: []int{},
+					RawMatchList:          getRawMatchListFromJson(entityListJsonSorted),
+					ConfigType:            config.Type{},
+					CurrentRemainingMatch: &[]int{0, 1, 2},
+					RemainingMatch:        []int{},
 				},
 				Target: MatchProcessingEnv{
-					RawMatchList:           getRawMatchListFromJson(entityListJsonSorted),
-					ConfigType:             config.Type{},
-					CurrentRemainingMatch:  &[]int{0, 1, 2},
-					RemainingMatch:         []int{},
-					remainingMatchSeeded:   []int{},
-					remainingMatchUnSeeded: []int{},
+					RawMatchList:          getRawMatchListFromJson(entityListJsonSorted),
+					ConfigType:            config.Type{},
+					CurrentRemainingMatch: &[]int{0, 1, 2},
+					RemainingMatch:        []int{},
 				},
 				matchedMap: map[int]int{},
 			},
@@ -433,7 +429,7 @@ var entityListJsonSortedMultiMatch = `[{
 	"properties": {},
 	"toRelationships": {}
 }, {
-	"entityId": "AZURE_VM-2BBAEC9A7D21833E",
+	"entityId": "AZURE_VM-2BBAEC9A7D21833A",
 	"type": "AZURE_VM",
 	"displayName": "UNKNOWN AZURE_VM-2BBAEC9A7D21833E",
 	"firstSeenTms": 1662997868374,
@@ -441,7 +437,7 @@ var entityListJsonSortedMultiMatch = `[{
 	"properties": {},
 	"toRelationships": {}
 }, {
-	"entityId": "AZURE_VM-2BBAEC9A7D21833E",
+	"entityId": "AZURE_VM-2BBAEC9A7D21833B",
 	"type": "AZURE_VM",
 	"displayName": "UNKNOWN AZURE_VM-2BBAEC9A7D21833E",
 	"firstSeenTms": 1642997868374,
@@ -506,8 +502,8 @@ func TestRunIndexRuleAll(t *testing.T) {
 			),
 			wantRemainingResultList: IndexCompareResultList{
 				CompareResults: []CompareResult{
-					CompareResult{2, 2, 2},
-					CompareResult{2, 3, 2},
+					CompareResult{2, 2, 1},
+					CompareResult{2, 3, 1},
 				},
 			},
 			wantMatchedEntities: map[int]int{
