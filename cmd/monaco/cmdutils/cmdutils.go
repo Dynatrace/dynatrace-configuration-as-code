@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
@@ -60,15 +61,17 @@ func CreateDTClient(env manifest.EnvironmentDefinition, dryRun bool) (client.Cli
 // VerifyEnvironmentGeneration takes a manifestEnvironments map and tries to verify that each environment can be reached
 // using the configured credentials
 func VerifyEnvironmentGeneration(envs manifest.Environments) bool {
-	for _, env := range envs {
-		switch env.Type {
-		case manifest.Classic:
-			return isClassicEnvironment(env)
-		case manifest.Platform:
-			return isPlatformEnvironment(env)
-		default:
-			log.Error("Could not authorize against the environment with name %q (%s). Unknown environment type.", env.Name, env.URL.Value)
-			return false
+	if featureflags.VerifyEnvironmentType().Enabled() {
+		for _, env := range envs {
+			switch env.Type {
+			case manifest.Classic:
+				return isClassicEnvironment(env)
+			case manifest.Platform:
+				return isPlatformEnvironment(env)
+			default:
+				log.Error("Could not authorize against the environment with name %q (%s). Unknown environment type.", env.Name, env.URL.Value)
+				return false
+			}
 		}
 	}
 	return true
