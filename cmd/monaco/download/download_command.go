@@ -38,9 +38,7 @@ func GetDownloadCommand(fs afero.Fs, command Command) (downloadCmd *cobra.Comman
 		Short: "Download configuration from Dynatrace",
 		Long: `Download configuration from Dynatrace
 
-Either downloading based on an existing manifest, or by defining environment URL and API token via the 'direct' sub-command.
-
-To download entities, use download entities`,
+Either downloading based on an existing manifest, or by defining environment URL and API token via the 'direct' sub-command.`,
 		Example: `- monaco download manifest manifest.yaml some_environment_from_manifest
 - monaco download direct https://environment.live.dynatrace.com API_TOKEN_ENV_VAR_NAME`,
 		RunE: func(cmd *cobra.Command, args []string) error {
