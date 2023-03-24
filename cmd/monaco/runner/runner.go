@@ -79,7 +79,10 @@ Examples:
 	rootCmd.AddCommand(deploy.GetDeployCommand(fs))
 	rootCmd.AddCommand(delete.GetDeleteCommand(fs))
 	rootCmd.AddCommand(version.GetVersionCommand())
-	rootCmd.AddCommand(match.GetMatchCommand(fs))
+
+	if featureflags.FeatureFlagEnabled("MONACO_FEAT_ENTITIES") {
+		rootCmd.AddCommand(match.GetMatchCommand(fs, &match.DefaultCommand{}))
+	}
 
 	if featureflags.FeatureFlagEnabled("MONACO_ENABLE_DANGEROUS_COMMANDS") {
 		log.Warn("MONACO_ENABLE_DANGEROUS_COMMANDS environment var detected!")

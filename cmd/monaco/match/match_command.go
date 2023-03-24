@@ -25,7 +25,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func GetMatchCommand(fs afero.Fs) (matchCmd *cobra.Command) {
+func GetMatchCommand(fs afero.Fs, command Command) (matchCmd *cobra.Command) {
 
 	matchCmd = &cobra.Command{
 		Use:     "match <match.yaml>",
@@ -33,7 +33,7 @@ func GetMatchCommand(fs afero.Fs) (matchCmd *cobra.Command) {
 		Example: "monaco match match.yaml",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) >= 2 {
-				return fmt.Errorf(`only the match.yaml file can be provided and optional`)
+				return fmt.Errorf(`only the match.yaml file can be provided and it is optional`)
 			}
 			return nil
 		},
@@ -45,7 +45,7 @@ func GetMatchCommand(fs afero.Fs) (matchCmd *cobra.Command) {
 				matchFile = args[0]
 			}
 
-			return Match(fs, matchFile)
+			return command.Match(fs, matchFile)
 		},
 		ValidArgsFunction: completion.MatchCompletion,
 	}

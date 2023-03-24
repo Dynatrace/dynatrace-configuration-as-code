@@ -30,7 +30,24 @@ import (
 	"golang.org/x/text/message"
 )
 
-func Match(fs afero.Fs, matchFileName string) error {
+//go:generate mockgen -source=match.go -destination=match_mock.go -package=match -write_package_comment=false Command
+
+// Command is used to test the CLi commands properly without executing the actual monaco match.
+//
+// The actual implementations are in the [DefaultCommand] struct.
+type Command interface {
+	Match(fs afero.Fs, matchFileName string) error
+}
+
+// DefaultCommand is used to implement the [Command] interface.
+type DefaultCommand struct{}
+
+// make sure DefaultCommand implements the Command interface
+var (
+	_ Command = (*DefaultCommand)(nil)
+)
+
+func (d DefaultCommand) Match(fs afero.Fs, matchFileName string) error {
 
 	startTime := time.Now()
 
