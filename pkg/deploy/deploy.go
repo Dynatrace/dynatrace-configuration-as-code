@@ -190,11 +190,18 @@ func deploySetting(settingsClient client.SettingsClient, entityMap *entityMap, c
 		return parameter.ResolvedEntity{}, []error{newConfigDeployErr(c, err.Error())}
 	}
 
+	name := fmt.Sprintf("[UNKNOWN NAME]%s", entity.Id)
+	if configName, err := extractConfigName(c, properties); err == nil {
+		name = configName
+	} else {
+		log.Warn("failed to extract name for Settings 2.0 object %q - ID will be used", entity.Id)
+	}
+
 	properties[config.IdParameter] = entity.Id
-	properties[config.NameParameter] = entity.Name
+	properties[config.NameParameter] = name
 
 	return parameter.ResolvedEntity{
-		EntityName: entity.Name,
+		EntityName: name,
 		Coordinate: c.Coordinate,
 		Properties: properties,
 		Skip:       false,
