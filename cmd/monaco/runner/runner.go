@@ -79,7 +79,7 @@ Examples:
 	rootCmd.AddCommand(delete.GetDeleteCommand(fs))
 	rootCmd.AddCommand(version.GetVersionCommand())
 
-	if featureflags.FeatureFlagEnabled("MONACO_ENABLE_DANGEROUS_COMMANDS") {
+	if featureflags.DangerousCommands().Enabled() {
 		log.Warn("MONACO_ENABLE_DANGEROUS_COMMANDS environment var detected!")
 		log.Warn("Use additional commands with care, they might have heavy impact on configurations or environments")
 

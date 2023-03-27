@@ -50,7 +50,7 @@ To download entities, use download entities`,
 
 	getDownloadConfigsCommand(fs, command, downloadCmd)
 
-	if featureflags.FeatureFlagEnabled("MONACO_FEAT_ENTITIES") {
+	if featureflags.Entities().Enabled() {
 		getDownloadEntitiesCommand(fs, command, downloadCmd)
 	}
 
