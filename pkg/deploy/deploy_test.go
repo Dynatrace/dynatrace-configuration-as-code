@@ -21,6 +21,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/golang/mock/gomock"
+	"strings"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
@@ -195,14 +196,101 @@ func TestDeploySetting(t *testing.T) {
 		},
 	}
 
-	client := client.NewMockClient(gomock.NewController(t))
-	client.EXPECT().UpsertSettings(gomock.Any()).Times(1)
+	c := client.NewMockClient(gomock.NewController(t))
+	c.EXPECT().UpsertSettings(gomock.Any()).Times(1).Return(client.DynatraceEntity{
+		Id:   "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0",
+		Name: "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0",
+	}, nil)
 
 	conf := &config.Config{
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parameters),
 	}
-	_, errors := deploySetting(client, newEntityMap(testApiMap), conf)
+	_, errors := deploySetting(c, newEntityMap(testApiMap), conf)
+	assert.Assert(t, len(errors) == 0, "there should be no errors (no errors: %d, %s)", len(errors), errors)
+}
+
+func TestDeployedSettingGetsNameFromConfig(t *testing.T) {
+	cfgName := "THE CONFIG NAME"
+
+	parameters := []topologysort.ParameterWithName{
+		{
+			Name: "franz",
+			Parameter: &parameter.DummyParameter{
+				Value: "foo",
+			},
+		},
+		{
+			Name: "hansi",
+			Parameter: &parameter.DummyParameter{
+				Value: "bar",
+			},
+		},
+		{
+			Name: config.ScopeParameter,
+			Parameter: &parameter.DummyParameter{
+				Value: "something",
+			},
+		},
+		{
+			Name: config.NameParameter,
+			Parameter: &parameter.DummyParameter{
+				Value: cfgName,
+			},
+		},
+	}
+
+	c := client.NewMockClient(gomock.NewController(t))
+	c.EXPECT().UpsertSettings(gomock.Any()).Times(1).Return(client.DynatraceEntity{
+		Id:   "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0",
+		Name: "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0",
+	}, nil)
+
+	conf := &config.Config{
+		Template:   generateDummyTemplate(t),
+		Parameters: toParameterMap(parameters),
+	}
+	res, errors := deploySetting(c, newEntityMap(testApiMap), conf)
+	assert.Equal(t, res.EntityName, cfgName, "expected resolved name to match configuration name")
+	assert.Assert(t, len(errors) == 0, "there should be no errors (no errors: %d, %s)", len(errors), errors)
+}
+
+func TestSettingsNameExtractionDoesNotFailIfCfgNameBecomesOptional(t *testing.T) {
+	parametersWithoutName := []topologysort.ParameterWithName{
+		{
+			Name: "franz",
+			Parameter: &parameter.DummyParameter{
+				Value: "foo",
+			},
+		},
+		{
+			Name: "hansi",
+			Parameter: &parameter.DummyParameter{
+				Value: "bar",
+			},
+		},
+		{
+			Name: config.ScopeParameter,
+			Parameter: &parameter.DummyParameter{
+				Value: "something",
+			},
+		},
+	}
+
+	objectId := "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0"
+
+	c := client.NewMockClient(gomock.NewController(t))
+	c.EXPECT().UpsertSettings(gomock.Any()).Times(1).Return(client.DynatraceEntity{
+		Id:   objectId,
+		Name: objectId,
+	}, nil)
+
+	conf := &config.Config{
+		Template:   generateDummyTemplate(t),
+		Parameters: toParameterMap(parametersWithoutName),
+	}
+	res, errors := deploySetting(c, newEntityMap(testApiMap), conf)
+	assert.Assert(t, strings.Contains(res.EntityName, objectId), "expected resolved name to contain objectID if name is not configured")
 	assert.Assert(t, len(errors) == 0, "there should be no errors (no errors: %d, %s)", len(errors), errors)
 }
 
