@@ -24,7 +24,7 @@ import (
 	"net/url"
 )
 
-const classicEnvironmentDomainPath = "/platform/core/v1/environment-api-info" // NOTE: once available, change this to /platform/metadata/v1/classic-environment-domain
+const classicEnvironmentDomainPath = "/platform/metadata/v1/classic-environment-domain"
 
 type classicEnvURL struct {
 	Endpoint string `json:"endpoint"`
