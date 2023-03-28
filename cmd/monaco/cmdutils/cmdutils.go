@@ -50,7 +50,7 @@ func CreateDTClient(env manifest.EnvironmentDefinition, dryRun bool) (client.Cli
 		oauthCredentials := client.OauthCredentials{
 			ClientID:     env.Auth.OAuth.ClientID.Value,
 			ClientSecret: env.Auth.OAuth.ClientSecret.Value,
-			TokenURL:     env.Auth.OAuth.TokenEndpoint.Value,
+			TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
 		}
 		return client.NewPlatformClient(env.URL.Value, env.Auth.Token.Value, oauthCredentials)
 	default:
