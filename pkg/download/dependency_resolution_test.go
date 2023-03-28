@@ -46,6 +46,7 @@ func TestDependencyResolution(t *testing.T) {
 			project.ConfigsPerType{
 				"api": []config.Config{
 					{
+						Type:     config.ClassicApiType{Api: "api-id"},
 						Template: template.NewDownloadTemplate("id", "name", "content"),
 					},
 				},
@@ -53,6 +54,7 @@ func TestDependencyResolution(t *testing.T) {
 			project.ConfigsPerType{
 				"api": []config.Config{
 					{
+						Type:     config.ClassicApiType{Api: "api-id"},
 						Template: template.NewDownloadTemplate("id", "name", "content"),
 					},
 				},
@@ -63,9 +65,11 @@ func TestDependencyResolution(t *testing.T) {
 			project.ConfigsPerType{
 				"api": []config.Config{
 					{
+						Type:     config.ClassicApiType{Api: "api-id"},
 						Template: template.NewDownloadTemplate("id", "name", "content"),
 					},
 					{
+						Type:     config.ClassicApiType{Api: "api-id"},
 						Template: template.NewDownloadTemplate("id2", "name2", "content2"),
 					},
 				},
@@ -73,9 +77,11 @@ func TestDependencyResolution(t *testing.T) {
 			project.ConfigsPerType{
 				"api": []config.Config{
 					{
+						Type:     config.ClassicApiType{Api: "api-id"},
 						Template: template.NewDownloadTemplate("id", "name", "content"),
 					},
 					{
+						Type:     config.ClassicApiType{Api: "api-id"},
 						Template: template.NewDownloadTemplate("id2", "name2", "content2"),
 					},
 				},
@@ -86,10 +92,12 @@ func TestDependencyResolution(t *testing.T) {
 			project.ConfigsPerType{
 				"api": []config.Config{
 					{
+						Type:       config.ClassicApiType{Api: "api"},
 						Template:   template.NewDownloadTemplate("c1-id", "name", "content"),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c1-id"},
 					},
 					{
+						Type:       config.ClassicApiType{Api: "api"},
 						Template:   template.NewDownloadTemplate("c2-id", "name2", "something something c1-id something something"),
 						Parameters: config.Parameters{},
 					},
@@ -98,10 +106,12 @@ func TestDependencyResolution(t *testing.T) {
 			project.ConfigsPerType{
 				"api": []config.Config{
 					{
+						Type:       config.ClassicApiType{Api: "api"},
 						Template:   template.NewDownloadTemplate("c1-id", "name", "content"),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c1-id"},
 					},
 					{
+						Type:     config.ClassicApiType{Api: "api"},
 						Template: template.NewDownloadTemplate("c2-id", "name2", makeTemplateString("something something %s something something", "api", "c1-id")),
 						Parameters: config.Parameters{
 							createParameterName("api", "c1-id"): refParam.New("project", "api", "c1-id", "id"),
@@ -115,11 +125,13 @@ func TestDependencyResolution(t *testing.T) {
 			project.ConfigsPerType{
 				"api": []config.Config{
 					{
+						Type:       config.ClassicApiType{Api: "api"},
 						Template:   template.NewDownloadTemplate("c1-id", "name", "template of config 1 references config 2: c2-id"),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c1-id"},
 						Parameters: config.Parameters{},
 					},
 					{
+						Type:       config.ClassicApiType{Api: "api"},
 						Template:   template.NewDownloadTemplate("c2-id", "name2", "template of config 2 references config 1: c1-id"),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c2-id"},
 						Parameters: config.Parameters{},
@@ -129,6 +141,7 @@ func TestDependencyResolution(t *testing.T) {
 			project.ConfigsPerType{
 				"api": []config.Config{
 					{
+						Type:       config.ClassicApiType{Api: "api"},
 						Template:   template.NewDownloadTemplate("c1-id", "name", makeTemplateString("template of config 1 references config 2: %s", "api", "c2-id")),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c1-id"},
 						Parameters: config.Parameters{
@@ -136,6 +149,7 @@ func TestDependencyResolution(t *testing.T) {
 						},
 					},
 					{
+						Type:       config.ClassicApiType{Api: "api"},
 						Template:   template.NewDownloadTemplate("c2-id", "name2", makeTemplateString("template of config 2 references config 1: %s", "api", "c1-id")),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c2-id"},
 						Parameters: config.Parameters{
@@ -150,16 +164,19 @@ func TestDependencyResolution(t *testing.T) {
 			project.ConfigsPerType{
 				"api": []config.Config{
 					{
+						Type:       config.ClassicApiType{Api: "api"},
 						Template:   template.NewDownloadTemplate("c1-id", "name", "template of config 1 references config 2: c2-id"),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c1-id"},
 						Parameters: config.Parameters{},
 					},
 					{
+						Type:       config.ClassicApiType{Api: "api"},
 						Template:   template.NewDownloadTemplate("c2-id", "name2", "template of config 2 references config 3: c3-id"),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c2-id"},
 						Parameters: config.Parameters{},
 					},
 					{
+						Type:       config.ClassicApiType{Api: "api"},
 						Template:   template.NewDownloadTemplate("c3-id", "name3", "template of config 3 references nothing"),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c3-id"},
 						Parameters: config.Parameters{},
@@ -169,6 +186,7 @@ func TestDependencyResolution(t *testing.T) {
 			project.ConfigsPerType{
 				"api": []config.Config{
 					{
+						Type:       config.ClassicApiType{Api: "api"},
 						Template:   template.NewDownloadTemplate("c1-id", "name", makeTemplateString("template of config 1 references config 2: %s", "api", "c2-id")),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c1-id"},
 						Parameters: config.Parameters{
@@ -176,6 +194,7 @@ func TestDependencyResolution(t *testing.T) {
 						},
 					},
 					{
+						Type:       config.ClassicApiType{Api: "api"},
 						Template:   template.NewDownloadTemplate("c2-id", "name2", makeTemplateString("template of config 2 references config 3: %s", "api", "c3-id")),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c2-id"},
 						Parameters: config.Parameters{
@@ -183,6 +202,7 @@ func TestDependencyResolution(t *testing.T) {
 						},
 					},
 					{
+						Type:       config.ClassicApiType{Api: "api"},
 						Template:   template.NewDownloadTemplate("c3-id", "name3", "template of config 3 references nothing"),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c3-id"},
 						Parameters: config.Parameters{},
@@ -195,6 +215,7 @@ func TestDependencyResolution(t *testing.T) {
 			project.ConfigsPerType{
 				"api": []config.Config{
 					{
+						Type:       config.ClassicApiType{Api: "api"},
 						Template:   template.NewDownloadTemplate("c1-id", "name", "template of config 1 references config 2: c2-id"),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c1-id"},
 						Parameters: config.Parameters{},
@@ -202,6 +223,7 @@ func TestDependencyResolution(t *testing.T) {
 				},
 				"api-2": []config.Config{
 					{
+						Type:       config.ClassicApiType{Api: "api-2"},
 						Template:   template.NewDownloadTemplate("c2-id", "name2", "template of config 2 references config 3: c3-id"),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api-2", ConfigId: "c2-id"},
 						Parameters: config.Parameters{},
@@ -209,6 +231,7 @@ func TestDependencyResolution(t *testing.T) {
 				},
 				"api-3": []config.Config{
 					{
+						Type:       config.ClassicApiType{Api: "api-3"},
 						Template:   template.NewDownloadTemplate("c3-id", "name3", "template of config 3 references nothing"),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api-3", ConfigId: "c3-id"},
 						Parameters: config.Parameters{},
@@ -218,6 +241,7 @@ func TestDependencyResolution(t *testing.T) {
 			project.ConfigsPerType{
 				"api": []config.Config{
 					{
+						Type:       config.ClassicApiType{Api: "api"},
 						Template:   template.NewDownloadTemplate("c1-id", "name", makeTemplateString("template of config 1 references config 2: %s", "api-2", "c2-id")),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c1-id"},
 						Parameters: config.Parameters{
@@ -227,6 +251,7 @@ func TestDependencyResolution(t *testing.T) {
 				},
 				"api-2": []config.Config{
 					{
+						Type:       config.ClassicApiType{Api: "api-2"},
 						Template:   template.NewDownloadTemplate("c2-id", "name2", makeTemplateString("template of config 2 references config 3: %s", "api-3", "c3-id")),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api-2", ConfigId: "c2-id"},
 						Parameters: config.Parameters{
@@ -236,6 +261,7 @@ func TestDependencyResolution(t *testing.T) {
 				},
 				"api-3": []config.Config{
 					{
+						Type:       config.ClassicApiType{Api: "api-3"},
 						Template:   template.NewDownloadTemplate("c3-id", "name3", "template of config 3 references nothing"),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api-3", ConfigId: "c3-id"},
 						Parameters: config.Parameters{},
@@ -250,7 +276,7 @@ func TestDependencyResolution(t *testing.T) {
 					{
 						Template:   template.NewDownloadTemplate("id1", "name1", ""),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id1"},
-						Type:       config.Type{SchemaId: "api"},
+						Type:       config.SettingsType{SchemaId: "api"},
 						Parameters: config.Parameters{
 							config.ScopeParameter: &valueParam.ValueParameter{Value: "id2"},
 						},
@@ -258,7 +284,7 @@ func TestDependencyResolution(t *testing.T) {
 					{
 						Template:   template.NewDownloadTemplate("id2", "name2", ""),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id2"},
-						Type:       config.Type{SchemaId: "api"},
+						Type:       config.SettingsType{SchemaId: "api"},
 						Parameters: config.Parameters{
 							config.ScopeParameter: &valueParam.ValueParameter{Value: "tenant"},
 						},
@@ -270,7 +296,7 @@ func TestDependencyResolution(t *testing.T) {
 					{
 						Template:   template.NewDownloadTemplate("id1", "name1", ""),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id1"},
-						Type:       config.Type{SchemaId: "api"},
+						Type:       config.SettingsType{SchemaId: "api"},
 						Parameters: config.Parameters{
 							config.ScopeParameter: refParam.New("project", "api", "id2", "id"),
 						},
@@ -278,7 +304,7 @@ func TestDependencyResolution(t *testing.T) {
 					{
 						Template:   template.NewDownloadTemplate("id2", "name2", ""),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id2"},
-						Type:       config.Type{SchemaId: "api"},
+						Type:       config.SettingsType{SchemaId: "api"},
 						Parameters: config.Parameters{
 							config.ScopeParameter: &valueParam.ValueParameter{Value: "tenant"},
 						},
@@ -293,7 +319,7 @@ func TestDependencyResolution(t *testing.T) {
 					{
 						Template:   template.NewDownloadTemplate("id1", "name1", ""),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id1"},
-						Type:       config.Type{SchemaId: "api"},
+						Type:       config.SettingsType{SchemaId: "api"},
 						Parameters: config.Parameters{
 							config.ScopeParameter: &valueParam.ValueParameter{Value: "tenant"},
 						},
@@ -301,7 +327,7 @@ func TestDependencyResolution(t *testing.T) {
 					{
 						Template:   template.NewDownloadTemplate("id2", "name2", ""),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id2"},
-						Type:       config.Type{SchemaId: "api"},
+						Type:       config.SettingsType{SchemaId: "api"},
 						Parameters: config.Parameters{
 							config.ScopeParameter: &valueParam.ValueParameter{Value: "HOST-1234"},
 						},
@@ -313,7 +339,7 @@ func TestDependencyResolution(t *testing.T) {
 					{
 						Template:   template.NewDownloadTemplate("id1", "name1", ""),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id1"},
-						Type:       config.Type{SchemaId: "api"},
+						Type:       config.SettingsType{SchemaId: "api"},
 						Parameters: config.Parameters{
 							config.ScopeParameter: &valueParam.ValueParameter{Value: "tenant"},
 						},
@@ -321,7 +347,7 @@ func TestDependencyResolution(t *testing.T) {
 					{
 						Template:   template.NewDownloadTemplate("id2", "name2", ""),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id2"},
-						Type:       config.Type{SchemaId: "api"},
+						Type:       config.SettingsType{SchemaId: "api"},
 						Parameters: config.Parameters{
 							config.ScopeParameter: &valueParam.ValueParameter{Value: "HOST-1234"},
 						},
@@ -336,7 +362,7 @@ func TestDependencyResolution(t *testing.T) {
 					{
 						Template:   template.NewDownloadTemplate("id1", "name1", ""),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id1"},
-						Type:       config.Type{SchemaId: "api"},
+						Type:       config.SettingsType{SchemaId: "api"},
 						Parameters: config.Parameters{
 							config.ScopeParameter: &valueParam.ValueParameter{Value: "id2"},
 						},
@@ -344,7 +370,7 @@ func TestDependencyResolution(t *testing.T) {
 					{
 						Template:   template.NewDownloadTemplate("id2", "name2", ""),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id2"},
-						Type:       config.Type{SchemaId: "api"},
+						Type:       config.SettingsType{SchemaId: "api"},
 						Parameters: config.Parameters{
 							config.ScopeParameter: &valueParam.ValueParameter{Value: "id3"},
 						},
@@ -354,7 +380,7 @@ func TestDependencyResolution(t *testing.T) {
 					{
 						Template:   template.NewDownloadTemplate("id3", "name3", ""),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api-2", ConfigId: "id3"},
-						Type:       config.Type{SchemaId: "api-2"},
+						Type:       config.SettingsType{SchemaId: "api-2"},
 						Parameters: config.Parameters{
 							config.ScopeParameter: &valueParam.ValueParameter{Value: "environment"},
 						},
@@ -366,7 +392,7 @@ func TestDependencyResolution(t *testing.T) {
 					{
 						Template:   template.NewDownloadTemplate("id1", "name1", ""),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id1"},
-						Type:       config.Type{SchemaId: "api"},
+						Type:       config.SettingsType{SchemaId: "api"},
 						Parameters: config.Parameters{
 							config.ScopeParameter: refParam.New("project", "api", "id2", "id"),
 						},
@@ -374,7 +400,7 @@ func TestDependencyResolution(t *testing.T) {
 					{
 						Template:   template.NewDownloadTemplate("id2", "name2", ""),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id2"},
-						Type:       config.Type{SchemaId: "api"},
+						Type:       config.SettingsType{SchemaId: "api"},
 						Parameters: config.Parameters{
 							config.ScopeParameter: refParam.New("project", "api-2", "id3", "id"),
 						},
@@ -384,7 +410,7 @@ func TestDependencyResolution(t *testing.T) {
 					{
 						Template:   template.NewDownloadTemplate("id3", "name3", ""),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api-2", ConfigId: "id3"},
-						Type:       config.Type{SchemaId: "api-2"},
+						Type:       config.SettingsType{SchemaId: "api-2"},
 						Parameters: config.Parameters{
 							config.ScopeParameter: &valueParam.ValueParameter{Value: "environment"},
 						},

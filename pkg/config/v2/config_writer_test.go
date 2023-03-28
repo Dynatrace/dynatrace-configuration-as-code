@@ -733,7 +733,7 @@ func TestWriteConfigs(t *testing.T) {
 						Type:     "alerting-profile",
 						ConfigId: "configId",
 					},
-					Type: Type{
+					Type: ClassicApiType{
 						Api: "alerting-profile",
 					},
 					Parameters: map[string]parameter.Parameter{
@@ -778,7 +778,7 @@ func TestWriteConfigs(t *testing.T) {
 						Type:     "builtin:alerting-profile",
 						ConfigId: "configId",
 					},
-					Type: Type{
+					Type: SettingsType{
 						SchemaId: "builtin:alerting-profile",
 					},
 					Parameters: map[string]parameter.Parameter{
@@ -824,7 +824,7 @@ func TestWriteConfigs(t *testing.T) {
 						Type:     "schemaid",
 						ConfigId: "configId",
 					},
-					Type: Type{
+					Type: SettingsType{
 						SchemaId:      "schemaid",
 						SchemaVersion: "1.2.3",
 					},
@@ -871,7 +871,7 @@ func TestWriteConfigs(t *testing.T) {
 						Type:     "schemaid",
 						ConfigId: "configId",
 					},
-					Type: Type{
+					Type: SettingsType{
 						SchemaId:      "schemaid",
 						SchemaVersion: "1.2.3",
 					},

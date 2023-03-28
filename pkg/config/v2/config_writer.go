@@ -261,50 +261,52 @@ func toTopLevelConfigDefinition(context *serializerContext, configs []Config) (t
 }
 
 func extractConfigType(context *serializerContext, config Config) (typeDefinition, error) {
-	if config.Type.IsSettings() {
-		return getConfigTypeSettings(config, context)
-	} else if config.Type.IsEntities() {
-		return getConfigTypeEntities(config)
-	} else {
-		return getConfigTypeApi(config)
-	}
 
+	switch t := config.Type.(type) {
+	case SettingsType:
+		serializedScope, err := getScope(context, config)
+		if err != nil {
+			return typeDefinition{}, err
+		}
+
+		return typeDefinition{
+			Settings: settingsDefinition{
+				Schema:        t.SchemaId,
+				SchemaVersion: t.SchemaVersion,
+				Scope:         serializedScope,
+			},
+		}, nil
+
+	case ClassicApiType:
+		return typeDefinition{
+			Api: config.Coordinate.Type,
+		}, nil
+
+	case EntityType:
+		return typeDefinition{
+			Entities: entitiesDefinition{
+				EntitiesType: t.EntitiesType,
+			},
+		}, nil
+
+	default:
+		return typeDefinition{}, fmt.Errorf("unknown config-type (ID: %q)", config.Type.ID())
+	}
 }
 
-func getConfigTypeSettings(config Config, context *serializerContext) (typeDefinition, error) {
+func getScope(context *serializerContext, config Config) (configParameter, error) {
 	scopeParam, found := config.Parameters[ScopeParameter]
 	if !found {
-		return typeDefinition{}, fmt.Errorf("scope parameter not found. This is likely a bug")
+		return nil, fmt.Errorf("scope parameter not found. This is likely a bug")
 	}
 
 	serializedScope, err := toParameterDefinition(&detailedSerializerContext{
 		serializerContext: context,
 	}, ScopeParameter, scopeParam)
 	if err != nil {
-		return typeDefinition{}, fmt.Errorf("failed to serialize scope-parameter: %w", err)
+		return nil, fmt.Errorf("failed to serialize scope-parameter: %w", err)
 	}
-
-	return typeDefinition{
-		Settings: settingsDefinition{
-			Schema:        config.Type.SchemaId,
-			SchemaVersion: config.Type.SchemaVersion,
-			Scope:         serializedScope,
-		},
-	}, nil
-}
-
-func getConfigTypeEntities(config Config) (typeDefinition, error) {
-	return typeDefinition{
-		Entities: entitiesDefinition{
-			EntitiesType: config.Type.EntitiesType,
-		},
-	}, nil
-}
-
-func getConfigTypeApi(config Config) (typeDefinition, error) {
-	return typeDefinition{
-		Api: config.Coordinate.Type,
-	}, nil
+	return serializedScope, nil
 }
 
 func groupByGroups(configs []extendedConfigDefinition) map[string][]extendedConfigDefinition {

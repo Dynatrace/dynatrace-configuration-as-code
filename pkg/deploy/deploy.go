@@ -62,13 +62,21 @@ func DeployConfigs(client client.Client, apis api.APIs, sortedConfigs []config.C
 		var entity parameter.ResolvedEntity
 		var deploymentErrors []error
 
-		switch {
-		case c.Type.IsEntities():
-			log.Debug("Entities are not deployable, skipping entity type: %s", c.Type.EntitiesType)
-		case c.Type.IsSettings():
+		switch t := c.Type.(type) {
+
+		case config.EntityType:
+			log.Debug("Entity are not deployable, skipping entity type: %s", t.EntitiesType)
+			continue
+
+		case config.SettingsType:
 			entity, deploymentErrors = deploySetting(client, entityMap, &c)
-		default:
+
+		case config.ClassicApiType:
 			entity, deploymentErrors = deployConfig(client, apis, entityMap, &c)
+
+		default:
+			errors = append(errors, fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID()))
+			continue
 		}
 
 		if deploymentErrors != nil {
@@ -97,11 +105,16 @@ func getWordsForLogging(isDryRun bool) (action, verb string) {
 
 func deployConfig(configClient client.ConfigClient, apis api.APIs, entityMap *entityMap, conf *config.Config) (parameter.ResolvedEntity, []error) {
 
-	if !apis.Contains(conf.Coordinate.Type) {
-		return parameter.ResolvedEntity{}, []error{fmt.Errorf("unknown api `%s`. this is most likely a bug", conf.Type.Api)}
+	t, ok := conf.Type.(config.ClassicApiType)
+	if !ok {
+		return parameter.ResolvedEntity{}, []error{fmt.Errorf("config was not of expected type %q, but %q", config.ClassicApiTypeId, conf.Type.ID())}
 	}
 
-	apiToDeploy := apis[conf.Coordinate.Type]
+	apiToDeploy, found := apis[t.Api]
+	if !found {
+		return parameter.ResolvedEntity{}, []error{fmt.Errorf("unknown api `%s`. this is most likely a bug", t.Api)}
+	}
+
 	properties, errors := resolveProperties(conf, entityMap.get())
 	if len(errors) > 0 {
 		return parameter.ResolvedEntity{}, errors
@@ -163,6 +176,11 @@ func upsertNonUniqueNameConfig(client client.ConfigClient, apiToDeploy api.API, 
 }
 
 func deploySetting(settingsClient client.SettingsClient, entityMap *entityMap, c *config.Config) (parameter.ResolvedEntity, []error) {
+	t, ok := c.Type.(config.SettingsType)
+	if !ok {
+		return parameter.ResolvedEntity{}, []error{fmt.Errorf("config was not of expected type %q, but %q", config.SettingsTypeId, c.Type.ID())}
+	}
+
 	properties, errors := resolveProperties(c, entityMap.get())
 	if len(errors) > 0 {
 		return parameter.ResolvedEntity{}, errors
@@ -180,8 +198,8 @@ func deploySetting(settingsClient client.SettingsClient, entityMap *entityMap, c
 
 	entity, err := settingsClient.UpsertSettings(client.SettingsObject{
 		Id:             c.Coordinate.ConfigId,
-		SchemaId:       c.Type.SchemaId,
-		SchemaVersion:  c.Type.SchemaVersion,
+		SchemaId:       t.SchemaId,
+		SchemaVersion:  t.SchemaVersion,
 		Scope:          scope,
 		Content:        []byte(renderedConfig),
 		OriginObjectId: c.OriginObjectId,

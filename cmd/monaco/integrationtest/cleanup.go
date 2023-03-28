@@ -19,6 +19,7 @@
 package integrationtest
 
 import (
+	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"strings"
 	"testing"
 
@@ -82,9 +83,9 @@ func cleanupSettings(t *testing.T, fs afero.Fs, manifestPath string, loadedManif
 		}
 		for _, configs := range cfgsForEnv {
 			for _, cfg := range configs {
-				if cfg.Type.IsSettings() {
-					extID := idutils.GenerateExternalID(cfg.Type.SchemaId, cfg.Coordinate.ConfigId)
-					deleteSettingsObjects(t, cfg.Type.SchemaId, extID, c)
+				if typ, ok := cfg.Type.(*config.SettingsType); ok {
+					extID := idutils.GenerateExternalID(typ.SchemaId, cfg.Coordinate.ConfigId)
+					deleteSettingsObjects(t, typ.SchemaId, extID, c)
 				}
 			}
 		}

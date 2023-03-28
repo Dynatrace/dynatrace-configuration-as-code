@@ -124,7 +124,7 @@ configs:
 						Type:     "some-api",
 						ConfigId: "profile",
 					},
-					Type: Type{
+					Type: ClassicApiType{
 						Api: "some-api",
 					},
 					Parameters: Parameters{
@@ -159,7 +159,7 @@ configs:
 						Type:     "some-api",
 						ConfigId: "profile",
 					},
-					Type: Type{
+					Type: ClassicApiType{
 						Api: "some-api",
 					},
 					Parameters: Parameters{
@@ -195,7 +195,7 @@ configs:
 						Type:     "some-api",
 						ConfigId: "profile",
 					},
-					Type: Type{
+					Type: ClassicApiType{
 						Api: "some-api",
 					},
 					Parameters: Parameters{
@@ -230,7 +230,7 @@ configs:
 						Type:     "some-api",
 						ConfigId: "profile",
 					},
-					Type: Type{
+					Type: ClassicApiType{
 						Api: "some-api",
 					},
 					Parameters: Parameters{
@@ -331,7 +331,7 @@ configs:
 						Type:     "builtin:profile.test",
 						ConfigId: "profile-id",
 					},
-					Type: Type{
+					Type: SettingsType{
 						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 					},
@@ -372,7 +372,7 @@ configs:
 						Type:     "builtin:profile.test",
 						ConfigId: "profile-id",
 					},
-					Type: Type{
+					Type: SettingsType{
 						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 					},
@@ -415,7 +415,7 @@ configs:
 						Type:     "builtin:profile.test",
 						ConfigId: "profile-id",
 					},
-					Type: Type{
+					Type: SettingsType{
 						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 					},
@@ -454,7 +454,7 @@ configs:
 						Type:     "builtin:profile.test",
 						ConfigId: "profile-id",
 					},
-					Type: Type{
+					Type: SettingsType{
 						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 					},
@@ -493,7 +493,7 @@ configs:
 						Type:     "builtin:profile.test",
 						ConfigId: "profile-id",
 					},
-					Type: Type{
+					Type: SettingsType{
 						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 					},
@@ -585,7 +585,7 @@ configs:
 						Type:     "builtin:profile.test",
 						ConfigId: "profile-id",
 					},
-					Type: Type{
+					Type: SettingsType{
 						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 					},

@@ -125,7 +125,7 @@ func TestDownloadAll(t *testing.T) {
 						Type:     "sid1",
 						ConfigId: uuid,
 					},
-					Type: config.Type{
+					Type: config.SettingsType{
 						SchemaId:      "sid1",
 						SchemaVersion: "sv1",
 					},
@@ -229,7 +229,7 @@ func TestDownload(t *testing.T) {
 						Type:     "sid1",
 						ConfigId: uuid,
 					},
-					Type: config.Type{
+					Type: config.SettingsType{
 						SchemaId:      "sid1",
 						SchemaVersion: "sv1",
 					},

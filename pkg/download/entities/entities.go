@@ -174,7 +174,7 @@ func (d *Downloader) convertObject(str []string, entitiesType string, projectNam
 			Type:     entitiesType,
 			ConfigId: configId,
 		},
-		Type: config.Type{
+		Type: config.EntityType{
 			EntitiesType: entitiesType,
 		},
 		Parameters: map[string]parameter.Parameter{

@@ -184,6 +184,7 @@ func (d *Downloader) createConfigForDownloadedJson(mappedJson map[string]interfa
 	}
 
 	return config.Config{
+		Type:       config.ClassicApiType{Api: theApi.ID},
 		Template:   templ,
 		Coordinate: coord,
 		Skip:       false,
