@@ -470,7 +470,7 @@ func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, e
 		return DynatraceEntity{}, fmt.Errorf("failed to parse response: %w", err)
 	}
 
-	log.Debug("\tUpsert object %s (%s) with externalId %s", obj.Id, obj.SchemaId, externalId)
+	log.Debug("\tCreated/Updated object %s (%s) with externalId %s", obj.Id, obj.SchemaId, externalId)
 	return entity, nil
 }
 

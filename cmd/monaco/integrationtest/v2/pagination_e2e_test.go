@@ -69,7 +69,7 @@ func testPagination(t *testing.T, specificEnvironment string) {
 		cmd.SetArgs([]string{"deploy", "--verbose", manifestPath, "--environment", specificEnvironment})
 		err := cmd.Execute()
 		assert.NilError(t, err)
-		assert.Equal(t, strings.Count(logOutput.String(), "Upserted"), totalSettings)
+		assert.Equal(t, strings.Count(logOutput.String(), "Created/Updated"), totalSettings)
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{}, specificEnvironment, true)
 
@@ -80,7 +80,7 @@ func testPagination(t *testing.T, specificEnvironment string) {
 		cmd.SetArgs([]string{"deploy", "--verbose", manifestPath, "--environment", specificEnvironment})
 		err = cmd.Execute()
 		assert.NilError(t, err)
-		assert.Equal(t, strings.Count(logOutput.String(), "Upserted"), totalSettings)
+		assert.Equal(t, strings.Count(logOutput.String(), "Created/Updated"), totalSettings)
 
 		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{}, specificEnvironment, true)
 	})
