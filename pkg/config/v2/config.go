@@ -50,33 +50,41 @@ var ReservedParameterNames = []string{IdParameter, NameParameter, ScopeParameter
 // Parameters defines a map of name to parameter
 type Parameters map[string]parameter.Parameter
 
-// Type describes the type a config can have.
-//
-// Currently, we support
-//   - Dynatrace Classic Apis (Api)
-//   - Dynatrace Classic Settings (SchemaId + SchemaVersion)
-//   - Dynatrace Classic Entities (EntitiesType)
-type Type struct {
-	// SchemaId is set if the config is a settings config.
-	//
-	// SchemaVersion is the version of this setting.
+type TypeId string
+
+const (
+	SettingsTypeId   TypeId = "settings"
+	ClassicApiTypeId TypeId = "classic"
+	EntityTypeId     TypeId = "entity"
+)
+
+type Type interface {
+	// ID returns the type-id.
+	ID() TypeId
+}
+
+type SettingsType struct {
 	SchemaId, SchemaVersion string
+}
 
-	// Api holds the API-id. See package [github.com/dynatrace/dynatrace-configuration-as-code/pkg/api]
+func (SettingsType) ID() TypeId {
+	return SettingsTypeId
+}
+
+type ClassicApiType struct {
 	Api string
+}
 
-	// EntitiesType holds the type of the entity
+func (ClassicApiType) ID() TypeId {
+	return ClassicApiTypeId
+}
+
+type EntityType struct {
 	EntitiesType string
 }
 
-// IsSettings returns true if SchemaId is not empty, indicating that the config is a settings-config
-func (t Type) IsSettings() bool {
-	return t.SchemaId != ""
-}
-
-// IsEntities returns true whether the config is an entity.
-func (t Type) IsEntities() bool {
-	return t.EntitiesType != ""
+func (EntityType) ID() TypeId {
+	return EntityTypeId
 }
 
 // Config struct defining a configuration which can be deployed.

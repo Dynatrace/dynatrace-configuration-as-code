@@ -54,6 +54,7 @@ func TestWriteToDisk(t *testing.T) {
 				downloadedConfigs: v2.ConfigsPerType{
 					"test-api": []config.Config{
 						{
+							Type:        config.ClassicApiType{Api: "test-api"},
 							Template:    template.CreateTemplateFromString("template.json", "{}"),
 							Coordinate:  coordinate.Coordinate{},
 							Group:       "",
@@ -82,6 +83,7 @@ func TestWriteToDisk(t *testing.T) {
 				downloadedConfigs: v2.ConfigsPerType{
 					"test-api": []config.Config{
 						{
+							Type:        config.ClassicApiType{Api: "test-api"},
 							Template:    template.CreateTemplateFromString("template.json", "{}"),
 							Coordinate:  coordinate.Coordinate{},
 							Group:       "",
@@ -110,6 +112,7 @@ func TestWriteToDisk(t *testing.T) {
 				downloadedConfigs: v2.ConfigsPerType{
 					"test-api": []config.Config{
 						{
+							Type:        config.ClassicApiType{Api: "test-api"},
 							Template:    template.CreateTemplateFromString("template.json", "{}"),
 							Coordinate:  coordinate.Coordinate{},
 							Group:       "",
@@ -138,6 +141,7 @@ func TestWriteToDisk(t *testing.T) {
 				downloadedConfigs: v2.ConfigsPerType{
 					"test-api": []config.Config{
 						{
+							Type:        config.ClassicApiType{Api: "test-api"},
 							Template:    template.CreateTemplateFromString("template.json", "{}"),
 							Coordinate:  coordinate.Coordinate{},
 							Group:       "",
@@ -204,6 +208,7 @@ func TestWriteToDisk_OverwritesManifestIfForced(t *testing.T) {
 	downloadedConfigs := v2.ConfigsPerType{
 		"test-api": []config.Config{
 			{
+				Type:        config.ClassicApiType{Api: "test-api"},
 				Template:    template.CreateTemplateFromString("template.json", "{}"),
 				Coordinate:  coordinate.Coordinate{},
 				Group:       "",

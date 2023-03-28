@@ -66,6 +66,7 @@ func TestDeployConfig(t *testing.T) {
 
 	client := &client.DummyClient{}
 	conf := config.Config{
+		Type:     config.ClassicApiType{Api: "dashboard"},
 		Template: generateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
 			Project:  "project1",
@@ -120,6 +121,7 @@ func TestDeploySettingShouldFailCyclicParameterDependencies(t *testing.T) {
 	client := &client.DummyClient{}
 
 	conf := &config.Config{
+		Type:       config.ClassicApiType{},
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parameters),
 	}
@@ -131,6 +133,7 @@ func TestDeploySettingShouldFailRenderTemplate(t *testing.T) {
 	client := &client.DummyClient{}
 
 	conf := &config.Config{
+		Type:     config.ClassicApiType{},
 		Template: generateFaultyTemplate(t),
 	}
 
@@ -167,6 +170,7 @@ func TestDeploySettingShouldFailUpsert(t *testing.T) {
 	c.EXPECT().UpsertSettings(gomock.Any()).Return(client.DynatraceEntity{}, fmt.Errorf("upsert failed"))
 
 	conf := &config.Config{
+		Type:       config.SettingsType{},
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parameters),
 	}
@@ -203,6 +207,7 @@ func TestDeploySetting(t *testing.T) {
 	}, nil)
 
 	conf := &config.Config{
+		Type:       config.SettingsType{},
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parameters),
 	}
@@ -247,6 +252,7 @@ func TestDeployedSettingGetsNameFromConfig(t *testing.T) {
 	}, nil)
 
 	conf := &config.Config{
+		Type:       config.SettingsType{},
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parameters),
 	}
@@ -286,6 +292,7 @@ func TestSettingsNameExtractionDoesNotFailIfCfgNameBecomesOptional(t *testing.T)
 	}, nil)
 
 	conf := &config.Config{
+		Type:       config.SettingsType{},
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parametersWithoutName),
 	}
@@ -307,6 +314,7 @@ func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
 
 	client := &client.DummyClient{}
 	conf := config.Config{
+		Type:     config.ClassicApiType{Api: "dashboard"},
 		Template: generateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
 			Project:  "project1",
@@ -359,6 +367,7 @@ func TestDeployConfigShouldFailCyclicParameterDependencies(t *testing.T) {
 
 	client := &client.DummyClient{}
 	conf := config.Config{
+		Type:     config.ClassicApiType{Api: "dashboard"},
 		Template: generateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
 			Project:  "project1",
@@ -379,6 +388,7 @@ func TestDeployConfigShouldFailOnMissingNameParameter(t *testing.T) {
 
 	client := &client.DummyClient{}
 	conf := config.Config{
+		Type:     config.ClassicApiType{Api: "dashboard"},
 		Template: generateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
 			Project:  "project1",
@@ -415,6 +425,7 @@ func TestDeployConfigShouldFailOnReferenceOnUnknownConfig(t *testing.T) {
 
 	client := &client.DummyClient{}
 	conf := config.Config{
+		Type:     config.ClassicApiType{Api: "dashboard"},
 		Template: generateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
 			Project:  "project1",
@@ -453,6 +464,7 @@ func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
 
 	client := &client.DummyClient{}
 	conf := config.Config{
+		Type:     config.ClassicApiType{Api: "dashboard"},
 		Template: generateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
 			Project:  "project1",
@@ -498,7 +510,7 @@ func TestDeployConfigsTargetingSettings(t *testing.T) {
 				Type:     "schema",
 				ConfigId: "some setting",
 			},
-			Type: config.Type{
+			Type: config.SettingsType{
 				SchemaId:      "schema",
 				SchemaVersion: "schemaversion",
 			},
@@ -539,7 +551,7 @@ func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
 			Parameters: toParameterMap(parameters),
 			Coordinate: coordinate.Coordinate{Type: theApiName},
 			Template:   generateDummyTemplate(t),
-			Type: config.Type{
+			Type: config.ClassicApiType{
 				Api: theApiName,
 			},
 		},
@@ -572,7 +584,7 @@ func TestDeployConfigsTargetingClassicConfigNonUniqueWithExistingCfgsOfSameName(
 			Parameters: toParameterMap(parameters),
 			Coordinate: coordinate.Coordinate{Type: theApiName},
 			Template:   generateDummyTemplate(t),
-			Type: config.Type{
+			Type: config.ClassicApiType{
 				Api: theApiName,
 			},
 		},
@@ -602,7 +614,7 @@ func TestDeployConfigsNoApi(t *testing.T) {
 			Parameters: toParameterMap(parameters),
 			Coordinate: coordinate.Coordinate{Type: theApiName},
 			Template:   generateDummyTemplate(t),
-			Type: config.Type{
+			Type: config.ClassicApiType{
 				Api: theApiName,
 			},
 		},
@@ -610,7 +622,7 @@ func TestDeployConfigsNoApi(t *testing.T) {
 			Parameters: toParameterMap(parameters),
 			Coordinate: coordinate.Coordinate{Type: theApiName},
 			Template:   generateDummyTemplate(t),
-			Type: config.Type{
+			Type: config.ClassicApiType{
 				Api: theApiName,
 			},
 		},
@@ -638,7 +650,7 @@ func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
 			Parameters: toParameterMap([]topologysort.ParameterWithName{}), // missing name parameter leads to deployment failure
 			Coordinate: coordinate.Coordinate{Type: theApiName},
 			Template:   generateDummyTemplate(t),
-			Type: config.Type{
+			Type: config.ClassicApiType{
 				Api: theApiName,
 			},
 		},
@@ -646,7 +658,7 @@ func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
 			Parameters: toParameterMap([]topologysort.ParameterWithName{}), // missing name parameter leads to deployment failure
 			Coordinate: coordinate.Coordinate{Type: theApiName},
 			Template:   generateDummyTemplate(t),
-			Type: config.Type{
+			Type: config.ClassicApiType{
 				Api: theApiName,
 			},
 		},

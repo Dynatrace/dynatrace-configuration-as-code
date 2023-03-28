@@ -264,6 +264,7 @@ func convertConfig(context *configConvertContext, environment manifest.Environme
 	}
 
 	return configV2.Config{
+		Type:              configV2.ClassicApiType{Api: apiId},
 		Template:          templ,
 		Coordinate:        coord,
 		Group:             environment.Group,

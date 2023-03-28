@@ -50,7 +50,7 @@ func TestDownloadAll(t *testing.T) {
 		want       v2.ConfigsPerType
 	}{
 		{
-			name: "DownloadEntities - List Entities Types fails",
+			name: "DownloadEntities - List Entity Types fails",
 			mockValues: mockValues{
 				EntitiesTypeList: func() ([]client.EntitiesType, error) {
 					return nil, client.RespError{Err: fmt.Errorf("oh no"), StatusCode: 0}
@@ -64,7 +64,7 @@ func TestDownloadAll(t *testing.T) {
 			want: nil,
 		},
 		{
-			name: "DownloadEntities - List Entities fails",
+			name: "DownloadEntities - List Entity fails",
 			mockValues: mockValues{
 				EntitiesTypeList: func() ([]client.EntitiesType, error) {
 					return []client.EntitiesType{{EntitiesTypeId: testType}, {EntitiesTypeId: testType2}}, nil
@@ -97,7 +97,7 @@ func TestDownloadAll(t *testing.T) {
 						Type:     testType,
 						ConfigId: uuid,
 					},
-					Type: config.Type{
+					Type: config.EntityType{
 						EntitiesType: testType,
 					},
 					Parameters: map[string]parameter.Parameter{
@@ -199,7 +199,7 @@ func TestDownload(t *testing.T) {
 						Type:     testType,
 						ConfigId: uuid,
 					},
-					Type: config.Type{
+					Type: config.EntityType{
 						EntitiesType: testType,
 					},
 					Parameters: map[string]parameter.Parameter{
