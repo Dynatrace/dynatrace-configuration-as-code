@@ -19,6 +19,7 @@
 package integrationtest
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
@@ -32,9 +33,8 @@ import (
 )
 
 func CreateDynatraceClient(t *testing.T, environment manifest.EnvironmentDefinition) client.Client {
-	envURL := environment.URL.Value
 
-	c, err := client.NewClassicClient(envURL, environment.Auth.Token.Value, client.WithAutoServerVersion())
+	c, err := cmdutils.CreateDTClient(environment, false)
 	assert.NilError(t, err, "failed to create test client")
 
 	return c
