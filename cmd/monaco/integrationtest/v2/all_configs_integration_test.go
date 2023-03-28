@@ -29,18 +29,28 @@ import (
 )
 
 // tests all configs for a single environment
-func TestIntegrationAllConfigs(t *testing.T) {
+func TestIntegrationAllConfigsClassic(t *testing.T) {
+	specificEnvironment := "classic_env"
 
+	runAllConfigsTest(t, specificEnvironment)
+}
+
+func TestIntegrationAllConfigsPlatform(t *testing.T) {
+	specificEnvironment := "platform_env"
+
+	runAllConfigsTest(t, specificEnvironment)
+}
+
+func runAllConfigsTest(t *testing.T, specificEnvironment string) {
 	configFolder := "test-resources/integration-all-configs/"
 	manifest := configFolder + "manifest.yaml"
-	specificEnvironment := ""
 
 	RunIntegrationWithCleanup(t, configFolder, manifest, specificEnvironment, "AllConfigs", func(fs afero.Fs) {
 
 		// This causes a POST for all configs:
 
 		cmd := runner.BuildCli(fs)
-		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
+		cmd.SetArgs([]string{"deploy", "--verbose", manifest, "--environment", specificEnvironment})
 		err := cmd.Execute()
 
 		assert.NilError(t, err)
@@ -48,7 +58,7 @@ func TestIntegrationAllConfigs(t *testing.T) {
 		// This causes a PUT for all configs:
 
 		cmd = runner.BuildCli(fs)
-		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
+		cmd.SetArgs([]string{"deploy", "--verbose", manifest, "--environment", specificEnvironment})
 		err = cmd.Execute()
 		assert.NilError(t, err)
 
