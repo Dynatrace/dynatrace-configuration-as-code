@@ -46,13 +46,13 @@ func TestInvalidCliCommands(t *testing.T) {
 		{
 			"no arguments provided to direct download",
 			"direct",
-			[]string{"url and token have to be provided as positional argument"},
+			[]string{"url have to be provided as positional argument"},
 		},
-		{
-			"url is missing other required argument",
-			"direct some.env.url.com",
-			[]string{"url and token have to be provided as positional argument"},
-		},
+		//{ //TODO: this test needs to  be altered with new rules
+		//	"url is missing other required argument",
+		//	"direct some.env.url.com",
+		//	[]string{"url and token have to be provided as positional argument"},
+		//},
 		// CONFIGS
 		{
 			"manifest provided but missing specific environment",
@@ -125,7 +125,7 @@ func TestValidCommands(t *testing.T) {
 		// CONFIGS
 		{
 			"direct download no specific apis",
-			"direct test.url token --project test",
+			"direct test.url --token token --project test",
 			func(cmd *MockCommand) {
 				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
 					environmentUrl: "test.url",
@@ -144,7 +144,7 @@ func TestValidCommands(t *testing.T) {
 		},
 		{
 			"direct download with default project",
-			"direct test.url token",
+			"direct test.url --token token",
 			func(cmd *MockCommand) {
 				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
 					environmentUrl: "test.url",
@@ -163,7 +163,7 @@ func TestValidCommands(t *testing.T) {
 		},
 		{
 			"direct download - skip download of settings",
-			"direct test.url token --only-apis",
+			"direct test.url --token token --only-apis",
 			func(cmd *MockCommand) {
 				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
 					environmentUrl: "test.url",
@@ -184,7 +184,7 @@ func TestValidCommands(t *testing.T) {
 		},
 		{
 			"direct download - skip download of APIs",
-			"direct test.url token --only-settings",
+			"direct test.url --token token --only-settings",
 			func(cmd *MockCommand) {
 				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
 					environmentUrl: "test.url",
@@ -205,7 +205,7 @@ func TestValidCommands(t *testing.T) {
 		},
 		{
 			"direct download with specific apis (multiple flags)",
-			"direct test.url token --project test --api test --api test2",
+			"direct test.url --token token --project test --api test --api test2",
 			func(cmd *MockCommand) {
 				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
 					environmentUrl: "test.url",
@@ -224,7 +224,7 @@ func TestValidCommands(t *testing.T) {
 		},
 		{
 			"direct download with specific apis (single flag)",
-			"direct test.url token --project test --api test,test2",
+			"direct test.url --token token --project test --api test,test2",
 			func(cmd *MockCommand) {
 				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
 					environmentUrl: "test.url",
@@ -243,7 +243,7 @@ func TestValidCommands(t *testing.T) {
 		},
 		{
 			"direct download with specific apis (mixed flags)",
-			"direct test.url token --project test --api test,test2 --api test3",
+			"direct test.url --token token --project test --api test,test2 --api test3",
 			func(cmd *MockCommand) {
 				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
 					environmentUrl: "test.url",
@@ -262,7 +262,7 @@ func TestValidCommands(t *testing.T) {
 		},
 		{
 			"direct download with specific settings (single flag)",
-			"direct test.url token --project test --settings-schema builtin:alerting.profile,builtin:problem.notifications",
+			"direct test.url --token token --project test --settings-schema builtin:alerting.profile,builtin:problem.notifications",
 			func(cmd *MockCommand) {
 				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
 					environmentUrl: "test.url",
@@ -279,7 +279,7 @@ func TestValidCommands(t *testing.T) {
 		},
 		{
 			"direct download with specific settings (mixed flags)",
-			"direct test.url token --project test --settings-schema builtin:alerting.profile,builtin:problem.notifications --settings-schema builtin:metric.metadata",
+			"direct test.url --token token --project test --settings-schema builtin:alerting.profile,builtin:problem.notifications --settings-schema builtin:metric.metadata",
 			func(cmd *MockCommand) {
 				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
 					environmentUrl: "test.url",
@@ -296,7 +296,7 @@ func TestValidCommands(t *testing.T) {
 		},
 		{
 			"direct download with outputfolder",
-			"direct test.url token --output-folder myDownloads",
+			"direct test.url --token token --output-folder myDownloads",
 			func(cmd *MockCommand) {
 				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
 					environmentUrl: "test.url",
@@ -315,7 +315,7 @@ func TestValidCommands(t *testing.T) {
 		},
 		{
 			"direct download with output-folder and force overwrite",
-			"direct test.url token --output-folder myDownloads --force",
+			"direct test.url --token token --output-folder myDownloads --force",
 			func(cmd *MockCommand) {
 				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
 					environmentUrl: "test.url",

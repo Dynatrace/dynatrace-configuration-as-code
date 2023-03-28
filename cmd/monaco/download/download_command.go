@@ -16,6 +16,7 @@ package download
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
@@ -42,11 +43,11 @@ Either downloading based on an existing manifest, or by defining environment URL
 		Example: `- monaco download manifest manifest.yaml some_environment_from_manifest
 - monaco download direct https://environment.live.dynatrace.com API_TOKEN_ENV_VAR_NAME`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return fmt.Errorf("'direct' or 'manifest' sub-command is required")
+			return fmt.Errorf("\"direct\" or \"manifest\" sub-command is required") //TODO: this is become obsolete
 		},
 	}
 
-	getDownloadConfigsCommand(fs, command, downloadCmd)
+	addDownloadConfigsCommand(fs, command, downloadCmd)
 
 	if featureflags.Entities().Enabled() {
 		getDownloadEntitiesCommand(fs, command, downloadCmd)
@@ -55,13 +56,14 @@ Either downloading based on an existing manifest, or by defining environment URL
 	return downloadCmd
 }
 
-func getDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.Command) {
+func addDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.Command) {
 	var project, outputFolder string
 	var forceOverwrite bool
 	var specificApis []string
 	var specificSettings []string
 	var onlyAPIs bool
 	var onlySettings bool
+	var token string
 
 	manifestDownloadCmd := &cobra.Command{
 		Use:     "manifest [manifest file] [environment to download]",
@@ -98,20 +100,20 @@ func getDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.
 		},
 	}
 
-	directDownloadCmd := &cobra.Command{
-		Use:     "direct [URL] [TOKEN_NAME]",
+	directDownloadCmd := &cobra.Command{ //TODO: jskelin this needs to be changed
+		Use:     "direct [URL] --token TOKEN_NAME]",
 		Aliases: []string{"d"},
 		Short:   "Download configuration from a Dynatrace environment specified on the command line",
 		Example: `monaco download direct https://environment.live.dynatrace.com API_TOKEN_ENV_VAR_NAME`,
 		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) != 2 || args[0] == "" || args[1] == "" {
-				return fmt.Errorf(`url and token have to be provided as positional argument`)
+			if len(args) != 1 || args[0] == "" {
+				return fmt.Errorf(`url have to be provided as positional argument`)
 			}
 			return nil
 		},
 		ValidArgsFunction: completion.DownloadDirectCompletion,
 		PreRun: func(cmd *cobra.Command, args []string) {
-			serverVersion, err := client.GetDynatraceVersion(client.NewTokenAuthClient(os.Getenv(args[1])), args[0])
+			serverVersion, err := client.GetDynatraceVersion(client.NewTokenAuthClient(os.Getenv(token)), args[0])
 			if err != nil {
 				log.Error("Unable to determine server version %q: %w", args[0], err)
 				return
@@ -120,12 +122,19 @@ func getDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.
 				logUploadToSameEnvironmentWarning()
 			}
 		},
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			switch {
+			case token == "":
+				return errors.New("authorization not provided")
+			default:
+				return nil
+			}
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			url := args[0]
-			tokenEnvVar := args[1]
 			options := directDownloadOptions{
 				environmentUrl: url,
-				envVarName:     tokenEnvVar,
+				envVarName:     token,
 				downloadCommandOptions: downloadCommandOptions{
 					downloadCommandOptionsShared: downloadCommandOptionsShared{
 						projectName:    project,
@@ -138,13 +147,15 @@ func getDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.
 					onlySettings:    onlySettings,
 				},
 			}
-			return command.DownloadConfigs(fs, options)
 
+			return command.DownloadConfigs(fs, options)
 		},
 	}
 
 	setupSharedConfigsFlags(manifestDownloadCmd, &project, &outputFolder, &forceOverwrite, &specificApis, &specificSettings, &onlyAPIs, &onlySettings)
 	setupSharedConfigsFlags(directDownloadCmd, &project, &outputFolder, &forceOverwrite, &specificApis, &specificSettings, &onlyAPIs, &onlySettings)
+
+	directDownloadCmd.Flags().StringVar(&token, "token", "", "Token secret to connect to DT server")
 
 	downloadCmd.AddCommand(manifestDownloadCmd)
 	downloadCmd.AddCommand(directDownloadCmd)
