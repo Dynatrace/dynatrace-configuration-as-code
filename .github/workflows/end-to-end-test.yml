@@ -61,6 +61,10 @@ jobs:
           URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
           TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
           TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
+          PLATFORM_URL_ENVIRONMENT_1: ${{ secrets.PLATFORM_URL_ENVIRONMENT_1 }}
+          PLATFORM_URL_ENVIRONMENT_2: ${{ secrets.PLATFORM_URL_ENVIRONMENT_2 }}
+          OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
+          OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
 
       - name: 🧓 Integration test (legacy)
         if: github.repository == env.BASE_REPO || github.event.label.name == env.E2E_TEST_LABEL
@@ -70,6 +74,10 @@ jobs:
           URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
           TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
           TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
+          PLATFORM_URL_ENVIRONMENT_1: ${{ secrets.PLATFORM_URL_ENVIRONMENT_1 }}
+          PLATFORM_URL_ENVIRONMENT_2: ${{ secrets.PLATFORM_URL_ENVIRONMENT_2 }}
+          OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
+          OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
 
       - name: 📥/📤 Download/Restore test
         if: github.repository == env.BASE_REPO || github.event.label.name == env.E2E_TEST_LABEL
@@ -79,6 +87,10 @@ jobs:
           URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
           TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
           TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
+          PLATFORM_URL_ENVIRONMENT_1: ${{ secrets.PLATFORM_URL_ENVIRONMENT_1 }}
+          PLATFORM_URL_ENVIRONMENT_2: ${{ secrets.PLATFORM_URL_ENVIRONMENT_2 }}
+          OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
+          OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
 
       - name: 🌙 Nightly Tests
         if: github.repository == env.BASE_REPO && github.event_name == 'schedule'
@@ -88,6 +100,10 @@ jobs:
           URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
           TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
           TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
+          PLATFORM_URL_ENVIRONMENT_1: ${{ secrets.PLATFORM_URL_ENVIRONMENT_1 }}
+          PLATFORM_URL_ENVIRONMENT_2: ${{ secrets.PLATFORM_URL_ENVIRONMENT_2 }}
+          OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
+          OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
 
       - name: 🧹 Cleanup
         if: github.repository == env.BASE_REPO && github.event_name == 'schedule'
@@ -97,3 +113,7 @@ jobs:
           URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
           TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
           TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
+          PLATFORM_URL_ENVIRONMENT_1: ${{ secrets.PLATFORM_URL_ENVIRONMENT_1 }}
+          PLATFORM_URL_ENVIRONMENT_2: ${{ secrets.PLATFORM_URL_ENVIRONMENT_2 }}
+          OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
+          OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
