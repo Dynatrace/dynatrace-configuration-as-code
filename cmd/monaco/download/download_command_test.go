@@ -19,8 +19,7 @@ package download
 import (
 	"github.com/golang/mock/gomock"
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
-
+	"github.com/stretchr/testify/assert"
 	"io"
 	"strings"
 	"testing"
@@ -101,7 +100,7 @@ func TestInvalidCliCommands(t *testing.T) {
 			err := cmd.Execute()
 
 			// for all test cases there should be at least an error
-			assert.Assert(t, err != nil, "there should be an error")
+			assert.Error(t, err)
 
 			// for most cases we can test the message in more detail
 			for _, expected := range test.errorContainsExpected {
@@ -109,7 +108,7 @@ func TestInvalidCliCommands(t *testing.T) {
 			}
 
 			// for testing not to forget adding expectations
-			assert.Assert(t, len(test.errorContainsExpected) > 0, "no error conditions specified")
+			assert.NotEmpty(t, test.errorContainsExpected, "no error conditions specified")
 		})
 	}
 }
@@ -715,7 +714,7 @@ func TestValidCommands(t *testing.T) {
 			cmd.SetOut(io.Discard) // skip output to ensure that the error message contains the error, not the help message
 			err := cmd.Execute()
 
-			assert.NilError(t, err, "no error expected")
+			assert.NoError(t, err, "no error expected")
 		})
 	}
 }
@@ -753,7 +752,7 @@ func TestDisabledCommands(t *testing.T) {
 			err := cmd.Execute()
 
 			// for all test cases there should be at least an error
-			assert.Assert(t, err != nil, "there should be an error")
+			assert.Error(t, err)
 
 			// for most cases we can test the message in more detail
 			for _, expected := range test.errorContainsExpected {
@@ -761,7 +760,7 @@ func TestDisabledCommands(t *testing.T) {
 			}
 
 			// for testing not to forget adding expectations
-			assert.Assert(t, len(test.errorContainsExpected) > 0, "no error conditions specified")
+			assert.NotEmpty(t, test.errorContainsExpected, "no error conditions specified")
 		})
 	}
 }
