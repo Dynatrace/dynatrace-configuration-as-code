@@ -22,6 +22,7 @@ import (
 	"unicode"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/throttle"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/match/rules"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 )
 
@@ -33,12 +34,20 @@ const pathEntitiesTypes = "/api/v2/entityTypes"
 const defaultListEntitiesFields = "+lastSeenTms,+firstSeenTms"
 
 var extraEntitiesFields = map[string][]string{
-	"properties":      {"detectedName", "oneAgentCustomHostName", "ipAddress"},
 	"toRelationships": {"isSiteOf", "isClusterOfHost"},
 }
 
 func getEntitiesTypeFields(entitiesType EntitiesType, ignoreProperties []string) string {
 	typeFields := defaultListEntitiesFields
+	entityRulesFieldsL2 := rules.GenExtraFieldsL2(rules.INDEX_CONFIG_LIST_ENTITIES)
+
+	typeFields = addFields(entityRulesFieldsL2, ignoreProperties, entitiesType, typeFields)
+	typeFields = addFields(extraEntitiesFields, ignoreProperties, entitiesType, typeFields)
+
+	return typeFields
+}
+
+func addFields(extraEntitiesFields map[string][]string, ignoreProperties []string, entitiesType EntitiesType, typeFields string) string {
 
 	for topField, subFieldList := range extraEntitiesFields {
 

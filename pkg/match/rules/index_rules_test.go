@@ -12,15 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package entities
+//go:build unit
 
-import "github.com/dynatrace/dynatrace-configuration-as-code/pkg/match"
+package rules
 
-var INDEX_CONFIG_LIST_ENTITIES = []match.IndexRuleType{
+import (
+	"reflect"
+	"testing"
+)
+
+var TEST_CONFIG_LIST = []IndexRuleType{
 	{
 		IsSeed:      true,
 		WeightValue: 100,
-		IndexRules: []match.IndexRule{
+		IndexRules: []IndexRule{
 			{
 				Name:              "Detected Name",
 				Path:              []string{"properties", "detectedName"},
@@ -38,7 +43,7 @@ var INDEX_CONFIG_LIST_ENTITIES = []match.IndexRuleType{
 	{
 		IsSeed:      true,
 		WeightValue: 90,
-		IndexRules: []match.IndexRule{
+		IndexRules: []IndexRule{
 			{
 				Name:              "Entity Id",
 				Path:              []string{"entityId"},
@@ -59,7 +64,7 @@ var INDEX_CONFIG_LIST_ENTITIES = []match.IndexRuleType{
 	{
 		IsSeed:      true,
 		WeightValue: 50,
-		IndexRules: []match.IndexRule{
+		IndexRules: []IndexRule{
 			{
 				Name:              "Ip Addresses List",
 				Path:              []string{"properties", "ipAddress"},
@@ -68,4 +73,36 @@ var INDEX_CONFIG_LIST_ENTITIES = []match.IndexRuleType{
 			},
 		},
 	},
+}
+
+func TestGenExtraFieldsL2(t *testing.T) {
+
+	tests := []struct {
+		name      string
+		ruleTypes []IndexRuleType
+		want      map[string][]string
+	}{
+		{
+			name:      "GenExtraFieldsL2",
+			ruleTypes: TEST_CONFIG_LIST,
+			want: map[string][]string{
+				"properties": []string{
+					"detectedName",
+					"oneAgentCustomHostName",
+					"ipAddress",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := GenExtraFieldsL2(tt.ruleTypes)
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GenExtraFieldsL2() got = %v, want %v", got, tt.want)
+			}
+
+		})
+	}
 }

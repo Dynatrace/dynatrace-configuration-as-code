@@ -21,13 +21,14 @@ import (
 	"testing"
 
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/match/rules"
 )
 
-var testRules = []IndexRuleType{
+var testRules = []rules.IndexRuleType{
 	{
 		IsSeed:      true,
 		WeightValue: 80,
-		IndexRules: []IndexRule{
+		IndexRules: []rules.IndexRule{
 			{
 				Name:              "Test self-match alone",
 				Path:              []string{"test"},
@@ -39,7 +40,7 @@ var testRules = []IndexRuleType{
 	{
 		IsSeed:      true,
 		WeightValue: 90,
-		IndexRules: []IndexRule{
+		IndexRules: []rules.IndexRule{
 			{
 				Name:              "Entity Id",
 				Path:              []string{"entityId"},
@@ -57,7 +58,7 @@ var testRules = []IndexRuleType{
 	{
 		IsSeed:      true,
 		WeightValue: 100,
-		IndexRules: []IndexRule{
+		IndexRules: []rules.IndexRule{
 			{
 				Name:              "Detected Name",
 				Path:              []string{"properties", "detectedName"},
@@ -78,7 +79,7 @@ func TestNewIndexRuleMapGenerator(t *testing.T) {
 	tests := []struct {
 		name      string
 		selfMatch bool
-		ruleList  []IndexRuleType
+		ruleList  []rules.IndexRuleType
 		want      IndexRuleMapGenerator
 	}{
 		{
@@ -106,8 +107,8 @@ func TestGenActiveList(t *testing.T) {
 	tests := []struct {
 		name      string
 		selfMatch bool
-		ruleList  []IndexRuleType
-		want      []IndexRuleType
+		ruleList  []rules.IndexRuleType
+		want      []rules.IndexRuleType
 	}{
 		{
 			name:      "genActiveList - not self match",
@@ -119,11 +120,11 @@ func TestGenActiveList(t *testing.T) {
 			name:      "genActiveList - self match",
 			selfMatch: true,
 			ruleList:  testRules,
-			want: []IndexRuleType{
+			want: []rules.IndexRuleType{
 				{
 					IsSeed:      true,
 					WeightValue: 90,
-					IndexRules: []IndexRule{
+					IndexRules: []rules.IndexRule{
 						{
 							Name:              "Display Name",
 							Path:              []string{"displayName"},
@@ -135,7 +136,7 @@ func TestGenActiveList(t *testing.T) {
 				{
 					IsSeed:      true,
 					WeightValue: 100,
-					IndexRules: []IndexRule{
+					IndexRules: []rules.IndexRule{
 						{
 							Name:              "Detected Name",
 							Path:              []string{"properties", "detectedName"},
@@ -166,18 +167,18 @@ func TestGenSortedActiveList(t *testing.T) {
 	tests := []struct {
 		name      string
 		selfMatch bool
-		ruleList  []IndexRuleType
-		want      []IndexRuleType
+		ruleList  []rules.IndexRuleType
+		want      []rules.IndexRuleType
 	}{
 		{
 			name:      "genSortedActiveList - not self match",
 			selfMatch: false,
 			ruleList:  testRules,
-			want: []IndexRuleType{
+			want: []rules.IndexRuleType{
 				{
 					IsSeed:      true,
 					WeightValue: 100,
-					IndexRules: []IndexRule{
+					IndexRules: []rules.IndexRule{
 						{
 							Name:              "Detected Name",
 							Path:              []string{"properties", "detectedName"},
@@ -189,7 +190,7 @@ func TestGenSortedActiveList(t *testing.T) {
 				{
 					IsSeed:      true,
 					WeightValue: 90,
-					IndexRules: []IndexRule{
+					IndexRules: []rules.IndexRule{
 						{
 							Name:              "Entity Id",
 							Path:              []string{"entityId"},
@@ -207,7 +208,7 @@ func TestGenSortedActiveList(t *testing.T) {
 				{
 					IsSeed:      true,
 					WeightValue: 80,
-					IndexRules: []IndexRule{
+					IndexRules: []rules.IndexRule{
 						{
 							Name:              "Test self-match alone",
 							Path:              []string{"test"},
@@ -222,11 +223,11 @@ func TestGenSortedActiveList(t *testing.T) {
 			name:      "genSortedActiveList - self match",
 			selfMatch: true,
 			ruleList:  testRules,
-			want: []IndexRuleType{
+			want: []rules.IndexRuleType{
 				{
 					IsSeed:      true,
 					WeightValue: 100,
-					IndexRules: []IndexRule{
+					IndexRules: []rules.IndexRule{
 						{
 							Name:              "Detected Name",
 							Path:              []string{"properties", "detectedName"},
@@ -238,7 +239,7 @@ func TestGenSortedActiveList(t *testing.T) {
 				{
 					IsSeed:      true,
 					WeightValue: 90,
-					IndexRules: []IndexRule{
+					IndexRules: []rules.IndexRule{
 						{
 							Name:              "Display Name",
 							Path:              []string{"displayName"},
@@ -268,14 +269,14 @@ func TestRunIndexRule(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		rule             IndexRule
+		rule             rules.IndexRule
 		entityProcessing MatchProcessing
 		resultList       IndexCompareResultList
 		want             IndexCompareResultList
 	}{
 		{
 			name: "runIndexRule",
-			rule: IndexRule{
+			rule: rules.IndexRule{
 				Name:              "Detected Name",
 				Path:              []string{"displayName"},
 				WeightValue:       1,
@@ -311,7 +312,7 @@ func TestRunIndexRule(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.rule.runIndexRule(&tt.entityProcessing, &tt.resultList)
+			runIndexRule(tt.rule, &tt.entityProcessing, &tt.resultList)
 
 			if !reflect.DeepEqual(tt.resultList, tt.want) {
 				t.Errorf("runIndexRule() got = %v, want %v", tt.resultList, tt.want)

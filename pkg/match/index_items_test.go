@@ -24,6 +24,7 @@ import (
 	"gotest.tools/assert"
 
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/match/rules"
 )
 
 type RawMatchListImpl struct {
@@ -323,13 +324,13 @@ func TestGenSortedItemsIndex(t *testing.T) {
 
 	tests := []struct {
 		name            string
-		indexRule       IndexRule
+		indexRule       rules.IndexRule
 		matchProcessing MatchProcessingEnv
 		want            []IndexEntry
 	}{
 		{
 			name: "genSortedItemsIndex",
-			indexRule: IndexRule{
+			indexRule: rules.IndexRule{
 				Name:              "test",
 				Path:              []string{"displayName"},
 				WeightValue:       1,

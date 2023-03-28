@@ -16,11 +16,12 @@ package entities
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/match"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/match/rules"
 )
 
 func runRules(entityProcessingPtr *match.MatchProcessing, matchParameters match.MatchParameters) (MatchOutputType, error) {
 
-	ruleMapGenerator := match.NewIndexRuleMapGenerator(matchParameters.SelfMatch, INDEX_CONFIG_LIST_ENTITIES)
+	ruleMapGenerator := match.NewIndexRuleMapGenerator(matchParameters.SelfMatch, rules.INDEX_CONFIG_LIST_ENTITIES)
 
 	remainingResultsPtr, matchedEntities := ruleMapGenerator.RunIndexRuleAll(entityProcessingPtr)
 

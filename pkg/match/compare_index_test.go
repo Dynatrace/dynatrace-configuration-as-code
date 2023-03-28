@@ -19,6 +19,8 @@ package match
 import (
 	"reflect"
 	"testing"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/match/rules"
 )
 
 func TestCompareIndex(t *testing.T) {
@@ -28,7 +30,7 @@ func TestCompareIndex(t *testing.T) {
 		input            IndexCompareResultList
 		indexEntrySource []IndexEntry
 		indexEntryTarget []IndexEntry
-		indexRule        IndexRule
+		indexRule        rules.IndexRule
 		want             IndexCompareResultList
 	}{
 		{
@@ -40,7 +42,7 @@ func TestCompareIndex(t *testing.T) {
 			indexEntryTarget: []IndexEntry{
 				IndexEntry{"Test", []int{1, 2, 3}},
 			},
-			indexRule: IndexRule{
+			indexRule: rules.IndexRule{
 				Name:              "Detected Name",
 				Path:              []string{"properties", "detectedName"},
 				WeightValue:       1,
@@ -70,7 +72,7 @@ func TestCompareIndex(t *testing.T) {
 			indexEntryTarget: []IndexEntry{
 				IndexEntry{"Test", []int{1, 2, 3}},
 			},
-			indexRule: IndexRule{
+			indexRule: rules.IndexRule{
 				Name:              "Detected Name",
 				Path:              []string{"properties", "detectedName"},
 				WeightValue:       1,
@@ -100,7 +102,7 @@ func TestCompareIndex(t *testing.T) {
 				IndexEntry{"Test", []int{1, 2, 3}},
 				IndexEntry{"Orphan", []int{1, 2, 3}},
 			},
-			indexRule: IndexRule{
+			indexRule: rules.IndexRule{
 				Name:              "Detected Name",
 				Path:              []string{"properties", "detectedName"},
 				WeightValue:       1,
@@ -131,7 +133,7 @@ func TestCompareIndex(t *testing.T) {
 				IndexEntry{"Test", []int{1, 2, 3}},
 				IndexEntry{"Orphan2", []int{1, 2, 3}},
 			},
-			indexRule: IndexRule{
+			indexRule: rules.IndexRule{
 				Name:              "Detected Name",
 				Path:              []string{"properties", "detectedName"},
 				WeightValue:       1,
@@ -162,7 +164,7 @@ func TestCompareIndex(t *testing.T) {
 				IndexEntry{"Test", []int{1, 2, 3}},
 				IndexEntry{"1000+ matches", []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32}},
 			},
-			indexRule: IndexRule{
+			indexRule: rules.IndexRule{
 				Name:              "Detected Name",
 				Path:              []string{"properties", "detectedName"},
 				WeightValue:       1,

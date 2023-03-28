@@ -18,24 +18,12 @@ import (
 	"sort"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/match/rules"
 )
-
-type IndexRuleType struct {
-	IsSeed      bool
-	WeightValue int
-	IndexRules  []IndexRule
-}
-
-type IndexRule struct {
-	Name              string
-	Path              []string
-	WeightValue       int
-	SelfMatchDisabled bool
-}
 
 // ByWeightTypeValue implements sort.Interface for []IndexRule based on
 // the WeightTypeValue field.
-type ByWeightTypeValue []IndexRuleType
+type ByWeightTypeValue []rules.IndexRuleType
 
 func (a ByWeightTypeValue) Len() int           { return len(a) }
 func (a ByWeightTypeValue) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
@@ -43,25 +31,25 @@ func (a ByWeightTypeValue) Less(i, j int) bool { return a[j].WeightValue < a[i].
 
 type IndexRuleMapGenerator struct {
 	SelfMatch    bool
-	baseRuleList []IndexRuleType
+	baseRuleList []rules.IndexRuleType
 }
 
-func NewIndexRuleMapGenerator(selfMatch bool, ruleList []IndexRuleType) *IndexRuleMapGenerator {
+func NewIndexRuleMapGenerator(selfMatch bool, ruleList []rules.IndexRuleType) *IndexRuleMapGenerator {
 	i := new(IndexRuleMapGenerator)
 	i.SelfMatch = selfMatch
 	i.baseRuleList = ruleList
 	return i
 }
 
-func (i *IndexRuleMapGenerator) genActiveList() []IndexRuleType {
+func (i *IndexRuleMapGenerator) genActiveList() []rules.IndexRuleType {
 
-	activeList := make([]IndexRuleType, 0, len(i.baseRuleList))
+	activeList := make([]rules.IndexRuleType, 0, len(i.baseRuleList))
 
 	for _, confType := range i.baseRuleList {
-		ruleType := IndexRuleType{
+		ruleType := rules.IndexRuleType{
 			IsSeed:      confType.IsSeed,
 			WeightValue: confType.WeightValue,
-			IndexRules:  make([]IndexRule, 0, len(confType.IndexRules)),
+			IndexRules:  make([]rules.IndexRule, 0, len(confType.IndexRules)),
 		}
 		for _, conf := range confType.IndexRules {
 			if conf.SelfMatchDisabled && i.SelfMatch {
@@ -77,7 +65,7 @@ func (i *IndexRuleMapGenerator) genActiveList() []IndexRuleType {
 	return activeList
 }
 
-func (i *IndexRuleMapGenerator) genSortedActiveList() []IndexRuleType {
+func (i *IndexRuleMapGenerator) genSortedActiveList() []rules.IndexRuleType {
 
 	activeList := i.genActiveList()
 
@@ -86,12 +74,12 @@ func (i *IndexRuleMapGenerator) genSortedActiveList() []IndexRuleType {
 	return activeList
 }
 
-func (i *IndexRule) runIndexRule(entityProcessingPtr *MatchProcessing, resultListPtr *IndexCompareResultList) {
+func runIndexRule(indexRule rules.IndexRule, entityProcessingPtr *MatchProcessing, resultListPtr *IndexCompareResultList) {
 
-	sortedIndexSource := genSortedItemsIndex(*i, &(*entityProcessingPtr).Source)
-	sortedIndexTarget := genSortedItemsIndex(*i, &(*entityProcessingPtr).Target)
+	sortedIndexSource := genSortedItemsIndex(indexRule, &(*entityProcessingPtr).Source)
+	sortedIndexTarget := genSortedItemsIndex(indexRule, &(*entityProcessingPtr).Target)
 
-	compareIndexes(resultListPtr, sortedIndexSource, sortedIndexTarget, *i)
+	compareIndexes(resultListPtr, sortedIndexSource, sortedIndexTarget, indexRule)
 
 }
 
@@ -123,7 +111,7 @@ func (i *IndexRuleMapGenerator) RunIndexRuleAll(matchProcessingPtr *MatchProcess
 		matchProcessingPtr.PrepareRemainingMatch(true, indexRuleType.IsSeed, remainingResultsPtr)
 
 		for _, indexRule := range indexRuleType.IndexRules {
-			indexRule.runIndexRule(matchProcessingPtr, resultListPtr)
+			runIndexRule(indexRule, matchProcessingPtr, resultListPtr)
 		}
 
 		resultListPtr.MergeRemainingWeightType(remainingResultsPtr)

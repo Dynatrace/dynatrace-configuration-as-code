@@ -18,9 +18,10 @@ import (
 	"strings"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/match/rules"
 )
 
-func compareIndexes(resultListPtr *IndexCompareResultList, indexSource []IndexEntry, indexTarget []IndexEntry, indexRule IndexRule) {
+func compareIndexes(resultListPtr *IndexCompareResultList, indexSource []IndexEntry, indexTarget []IndexEntry, indexRule rules.IndexRule) {
 
 	srcI := 0
 	tgtI := 0

@@ -14,7 +14,11 @@
 
 package match
 
-import "sort"
+import (
+	"sort"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/match/rules"
+)
 
 type IndexMap map[string][]int
 
@@ -102,7 +106,7 @@ func flattenSortIndex(index *IndexMap) []IndexEntry {
 	return flatIndex
 }
 
-func genSortedItemsIndex(indexRule IndexRule, items *MatchProcessingEnv) []IndexEntry {
+func genSortedItemsIndex(indexRule rules.IndexRule, items *MatchProcessingEnv) []IndexEntry {
 
 	index := IndexMap{}
 
