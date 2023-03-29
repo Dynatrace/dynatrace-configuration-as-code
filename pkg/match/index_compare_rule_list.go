@@ -71,9 +71,7 @@ func (i *IndexCompareResultList) keepTopMatchesOnly() {
 	for _, result := range i.CompareResults {
 
 		if result.LeftId == prevTop.LeftId {
-			if result.Weight == prevTop.Weight {
-
-			} else {
+			if result.Weight != prevTop.Weight {
 				continue
 			}
 		} else {
@@ -175,14 +173,14 @@ func (i *IndexCompareResultList) sumMatchWeightValues() {
 }
 
 func (i *IndexCompareResultList) getMaxWeight() int {
-	var max_weight int = 0
+	var maxWeight int = 0
 	for _, result := range i.CompareResults {
-		if result.Weight > max_weight {
-			max_weight = result.Weight
+		if result.Weight > maxWeight {
+			maxWeight = result.Weight
 		}
 	}
 
-	return max_weight
+	return maxWeight
 }
 
 func (i *IndexCompareResultList) elevateWeight(lowerMaxWeight int) {

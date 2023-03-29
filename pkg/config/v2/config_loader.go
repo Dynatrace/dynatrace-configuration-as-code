@@ -16,9 +16,9 @@ package v2
 
 import (
 	"fmt"
-        "github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
-        "github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
-        "github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
 	"path/filepath"
 	"strconv"
 	"strings"

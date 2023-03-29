@@ -49,9 +49,7 @@ func genMultiMatchedMap(remainingResultsPtr *match.IndexCompareResultList, entit
 
 	for i := 1; i < len(remainingResultsPtr.CompareResults); i++ {
 		result := remainingResultsPtr.CompareResults[i]
-		if result.LeftId == currentId {
-
-		} else {
+		if result.LeftId != currentId {
 			matchCount := i - firstIdx
 			addMatchingMultiMatched(matchCount)
 

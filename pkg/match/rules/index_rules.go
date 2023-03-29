@@ -40,23 +40,21 @@ func GenExtraFieldsL2(ruleList []IndexRuleType) map[string][]string {
 
 		for _, conf := range confType.IndexRules {
 
-			if len(conf.Path) == depthL2 {
-				key := conf.Path[0]
-				value := conf.Path[1]
+			if len(conf.Path) != depthL2 {
+				continue
+			}
 
-				_, found := extraFields[key]
+			key := conf.Path[0]
+			value := conf.Path[1]
 
-				if found {
-					// pass
-				} else {
-					extraFields[key] = []string{}
-				}
+			_, found := extraFields[key]
 
-				if slices.Contains(extraFields[key], value) {
-					// pass
-				} else {
-					extraFields[key] = append(extraFields[key], value)
-				}
+			if !found {
+				extraFields[key] = []string{}
+			}
+
+			if !slices.Contains(extraFields[key], value) {
+				extraFields[key] = append(extraFields[key], value)
 			}
 		}
 	}

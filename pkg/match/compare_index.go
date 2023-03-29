@@ -31,27 +31,30 @@ func compareIndexes(resultListPtr *IndexCompareResultList, indexSource []IndexEn
 
 		if diff < 0 {
 			srcI++
+			continue
+		}
 
-		} else if diff == 0 {
-			totalMatches := len(indexSource[srcI].matchedIds) * len(indexTarget[tgtI].matchedIds)
-			if totalMatches > 1000 {
-				log.Debug("too many matches for: %s, Nb of matches: %d", indexSource[srcI].indexValue, totalMatches)
-			} else {
-				for _, itemIdSource := range indexSource[srcI].matchedIds {
-					for _, itemIdTarget := range indexTarget[tgtI].matchedIds {
-						(*resultListPtr).addResult(itemIdSource, itemIdTarget, indexRule.WeightValue)
-					}
-				}
+		if diff > 0 {
+			tgtI++
+			continue
+		}
 
-			}
-
+		totalMatches := len(indexSource[srcI].matchedIds) * len(indexTarget[tgtI].matchedIds)
+		if totalMatches > 1000 {
+			log.Debug("too many matches for: %s, Nb of matches: %d", indexSource[srcI].indexValue, totalMatches)
 			srcI++
 			tgtI++
-
-		} else {
-			tgtI++
-
+			continue
 		}
+
+		for _, itemIdSource := range indexSource[srcI].matchedIds {
+			for _, itemIdTarget := range indexTarget[tgtI].matchedIds {
+				(*resultListPtr).addResult(itemIdSource, itemIdTarget, indexRule.WeightValue)
+			}
+		}
+
+		srcI++
+		tgtI++
 	}
 
 }
