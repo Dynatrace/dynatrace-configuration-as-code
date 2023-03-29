@@ -93,7 +93,7 @@ func (d DefaultCommand) DownloadEntitiesBasedOnManifest(fs afero.Fs, cmdOptions 
 func (d DefaultCommand) DownloadEntities(fs afero.Fs, cmdOptions entitiesDirectDownloadOptions) error {
 	token := os.Getenv(cmdOptions.envVarName)
 	concurrentDownloadLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
-	errors := validateParameters(cmdOptions.envVarName, cmdOptions.environmentUrl, cmdOptions.projectName, token)
+	errors := validateParameters(cmdOptions.environmentUrl, cmdOptions.projectName)
 
 	if len(errors) > 0 {
 		return PrintAndFormatErrors(errors, "not all necessary information is present to start downloading configurations")

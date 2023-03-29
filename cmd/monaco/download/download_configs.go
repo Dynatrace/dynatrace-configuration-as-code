@@ -46,8 +46,71 @@ type manifestDownloadOptions struct {
 	downloadCmdOptions
 }
 
+type auth struct {
+	token, clientID, clientSecret, tokenEndpoint string
+}
+
+func (a auth) mapToAuth() (*manifest.Auth, []error) {
+	errors := make([]error, 0)
+	var err error
+	var token, clientID, clientSecret, tokenEndpoint string
+
+	if token, err = readEnvVariable(a.token); err != nil {
+		errors = append(errors, err)
+	}
+	retVal := manifest.Auth{
+		Token: manifest.AuthSecret{
+			Name:  a.token,
+			Value: token,
+		},
+	}
+
+	if a.clientID != "" && a.clientSecret != "" {
+		if clientID, err = readEnvVariable(a.clientID); err != nil {
+			errors = append(errors, err)
+		}
+		if clientSecret, err = readEnvVariable(a.clientSecret); err != nil {
+			errors = append(errors, err)
+		}
+
+		retVal.OAuth = manifest.OAuth{
+			ClientID: manifest.AuthSecret{
+				Name:  a.clientID,
+				Value: clientID,
+			},
+			ClientSecret: manifest.AuthSecret{
+				Name:  a.clientSecret,
+				Value: clientSecret,
+			},
+		}
+
+		if a.tokenEndpoint != "" {
+			if tokenEndpoint, err = readEnvVariable(a.tokenEndpoint); err != nil {
+				errors = append(errors, err)
+			}
+			retVal.OAuth.TokenEndpoint = &manifest.URLDefinition{
+				Type:  manifest.EnvironmentURLType,
+				Name:  a.tokenEndpoint,
+				Value: tokenEndpoint,
+			}
+		}
+	}
+	return &retVal, errors
+}
+
+func readEnvVariable(envVar string) (string, error) {
+	var context string
+	if envVar == "" {
+		return "", fmt.Errorf("token not specified")
+	} else if context = os.Getenv(envVar); context == "" {
+		return "", fmt.Errorf("the content of token '%v' is not set", envVar)
+	}
+	return context, nil
+}
+
 type directDownloadCmdOptions struct {
-	environmentUrl, envVarName string
+	environmentUrl string
+	auth
 	downloadCmdOptions
 }
 
@@ -105,9 +168,9 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 }
 
 func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadCmdOptions) error {
-	token := os.Getenv(cmdOptions.envVarName)
 	concurrentDownloadLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
-	errors := validateParameters(cmdOptions.envVarName, cmdOptions.environmentUrl, cmdOptions.projectName, token)
+	a, errors := cmdOptions.auth.mapToAuth()
+	errors = append(errors, validateParameters(cmdOptions.environmentUrl, cmdOptions.projectName)...)
 
 	if len(errors) > 0 {
 		return PrintAndFormatErrors(errors, "not all necessary information is present to start downloading configurations")
@@ -115,13 +178,8 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadCm
 
 	options := downloadConfigsOptions{
 		downloadOptionsShared: downloadOptionsShared{
-			environmentUrl: cmdOptions.environmentUrl,
-			auth: manifest.Auth{
-				Token: manifest.AuthSecret{
-					Name:  cmdOptions.envVarName,
-					Value: token,
-				},
-			},
+			environmentUrl:          cmdOptions.environmentUrl,
+			auth:                    *a,
 			outputFolder:            cmdOptions.outputFolder,
 			projectName:             cmdOptions.projectName,
 			forceOverwriteManifest:  cmdOptions.forceOverwrite,
@@ -133,7 +191,7 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadCm
 		onlySettings:    cmdOptions.onlySettings,
 	}
 
-	dtClient, err := client.NewClassicClient(cmdOptions.environmentUrl, token)
+	dtClient, err := client.NewClassicClient(cmdOptions.environmentUrl, options.auth.Token.Value)
 	if err != nil {
 		return err
 	}

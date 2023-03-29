@@ -139,7 +139,12 @@ func addDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.
 			url := args[0]
 			options := directDownloadCmdOptions{
 				environmentUrl: url,
-				envVarName:     token,
+				auth: auth{
+					token:         token,
+					clientID:      oAuthClientID,
+					clientSecret:  oAuthClientSecret,
+					tokenEndpoint: oAuthTokenEndpoint,
+				},
 				downloadCmdOptions: downloadCmdOptions{
 					sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 						projectName:    project,

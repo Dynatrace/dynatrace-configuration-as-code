@@ -111,14 +111,8 @@ func sumConfigs(configs project.ConfigsPerType) int {
 }
 
 // validateParameters checks that all necessary variables have been set.
-func validateParameters(envVarName, environmentUrl, projectName, token string) []error {
+func validateParameters(environmentUrl, projectName string) []error {
 	errors := make([]error, 0)
-
-	if envVarName == "" {
-		errors = append(errors, fmt.Errorf("token not specified"))
-	} else if token == "" {
-		errors = append(errors, fmt.Errorf("the content of token '%v' is not set", envVarName))
-	}
 
 	if environmentUrl == "" {
 		errors = append(errors, fmt.Errorf("url not specified"))
