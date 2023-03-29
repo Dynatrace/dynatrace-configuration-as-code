@@ -29,7 +29,7 @@ import (
 )
 
 type entitiesDownloadCommandOptions struct {
-	downloadCommandOptionsShared
+	sharedDownloadCmdOptions
 	specificEntitiesTypes []string
 }
 

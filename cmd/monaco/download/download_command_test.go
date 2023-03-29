@@ -58,11 +58,11 @@ func TestGetDownloadCommand_directDownload(t *testing.T) {
 		assert.ErrorContains(t, err, "url have to be provided as positional argument")
 	})
 	t.Run("no specific apis rovided", func(t *testing.T) {
-		expected := directDownloadOptions{
+		expected := directDownloadCmdOptions{
 			environmentUrl: "http://some.url",
 			envVarName:     "token",
-			downloadCommandOptions: downloadCommandOptions{
-				downloadCommandOptionsShared: downloadCommandOptionsShared{
+			downloadCmdOptions: downloadCmdOptions{
+				sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 					projectName:    "test",
 					outputFolder:   "",
 					forceOverwrite: false,
@@ -79,11 +79,11 @@ func TestGetDownloadCommand_directDownload(t *testing.T) {
 		assert.NoError(t, err)
 	})
 	t.Run("default project provided", func(t *testing.T) {
-		expected := directDownloadOptions{
+		expected := directDownloadCmdOptions{
 			environmentUrl: "http://some.url",
 			envVarName:     "token",
-			downloadCommandOptions: downloadCommandOptions{
-				downloadCommandOptionsShared: downloadCommandOptionsShared{
+			downloadCmdOptions: downloadCmdOptions{
+				sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 					projectName:    "project",
 					outputFolder:   "",
 					forceOverwrite: false,
@@ -99,11 +99,11 @@ func TestGetDownloadCommand_directDownload(t *testing.T) {
 		assert.NoError(t, err)
 	})
 	t.Run("skip download of settings", func(t *testing.T) {
-		expected := directDownloadOptions{
+		expected := directDownloadCmdOptions{
 			environmentUrl: "test.url",
 			envVarName:     "token",
-			downloadCommandOptions: downloadCommandOptions{
-				downloadCommandOptionsShared: downloadCommandOptionsShared{
+			downloadCmdOptions: downloadCmdOptions{
+				sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 					projectName:    "project",
 					outputFolder:   "",
 					forceOverwrite: false,
@@ -121,11 +121,11 @@ func TestGetDownloadCommand_directDownload(t *testing.T) {
 		assert.NoError(t, err)
 	})
 	t.Run("skip download of APIs", func(t *testing.T) {
-		expected := directDownloadOptions{
+		expected := directDownloadCmdOptions{
 			environmentUrl: "test.url",
 			envVarName:     "token",
-			downloadCommandOptions: downloadCommandOptions{
-				downloadCommandOptionsShared: downloadCommandOptionsShared{
+			downloadCmdOptions: downloadCmdOptions{
+				sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 					projectName:    "project",
 					outputFolder:   "",
 					forceOverwrite: false,
@@ -144,11 +144,11 @@ func TestGetDownloadCommand_directDownload(t *testing.T) {
 		assert.NoError(t, err)
 	})
 	t.Run("with specific apis (multiple flags)", func(t *testing.T) {
-		expected := directDownloadOptions{
+		expected := directDownloadCmdOptions{
 			environmentUrl: "test.url",
 			envVarName:     "token",
-			downloadCommandOptions: downloadCommandOptions{
-				downloadCommandOptionsShared: downloadCommandOptionsShared{
+			downloadCmdOptions: downloadCmdOptions{
+				sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 					projectName:    "test",
 					outputFolder:   "",
 					forceOverwrite: false,
@@ -165,11 +165,11 @@ func TestGetDownloadCommand_directDownload(t *testing.T) {
 		assert.NoError(t, err)
 	})
 	t.Run("with specific apis (single flag)", func(t *testing.T) {
-		expected := directDownloadOptions{
+		expected := directDownloadCmdOptions{
 			environmentUrl: "test.url",
 			envVarName:     "token",
-			downloadCommandOptions: downloadCommandOptions{
-				downloadCommandOptionsShared: downloadCommandOptionsShared{
+			downloadCmdOptions: downloadCmdOptions{
+				sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 					projectName:    "test",
 					outputFolder:   "",
 					forceOverwrite: false,
@@ -186,11 +186,11 @@ func TestGetDownloadCommand_directDownload(t *testing.T) {
 		assert.NoError(t, err)
 	})
 	t.Run("specific apis (mixed flags)", func(t *testing.T) {
-		expected := directDownloadOptions{
+		expected := directDownloadCmdOptions{
 			environmentUrl: "test.url",
 			envVarName:     "token",
-			downloadCommandOptions: downloadCommandOptions{
-				downloadCommandOptionsShared: downloadCommandOptionsShared{
+			downloadCmdOptions: downloadCmdOptions{
+				sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 					projectName:    "test",
 					outputFolder:   "",
 					forceOverwrite: false,
@@ -207,11 +207,11 @@ func TestGetDownloadCommand_directDownload(t *testing.T) {
 		assert.NoError(t, err)
 	})
 	t.Run("specific settings (single flag)", func(t *testing.T) {
-		expected := directDownloadOptions{
+		expected := directDownloadCmdOptions{
 			environmentUrl: "test.url",
 			envVarName:     "token",
-			downloadCommandOptions: downloadCommandOptions{
-				downloadCommandOptionsShared: downloadCommandOptionsShared{
+			downloadCmdOptions: downloadCmdOptions{
+				sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 					projectName: "test",
 				},
 				specificAPIs:    []string{},
@@ -225,11 +225,11 @@ func TestGetDownloadCommand_directDownload(t *testing.T) {
 		assert.NoError(t, err)
 	})
 	t.Run("specific settings (mixed flags)", func(t *testing.T) {
-		expected := directDownloadOptions{
+		expected := directDownloadCmdOptions{
 			environmentUrl: "test.url",
 			envVarName:     "token",
-			downloadCommandOptions: downloadCommandOptions{
-				downloadCommandOptionsShared: downloadCommandOptionsShared{
+			downloadCmdOptions: downloadCmdOptions{
+				sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 					projectName: "test",
 				},
 				specificAPIs:    []string{},
@@ -243,11 +243,11 @@ func TestGetDownloadCommand_directDownload(t *testing.T) {
 		assert.NoError(t, err)
 	})
 	t.Run("with outputfolder", func(t *testing.T) {
-		expected := directDownloadOptions{
+		expected := directDownloadCmdOptions{
 			environmentUrl: "test.url",
 			envVarName:     "token",
-			downloadCommandOptions: downloadCommandOptions{
-				downloadCommandOptionsShared: downloadCommandOptionsShared{
+			downloadCmdOptions: downloadCmdOptions{
+				sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 					projectName:    "project",
 					outputFolder:   "myDownloads",
 					forceOverwrite: false,
@@ -264,11 +264,11 @@ func TestGetDownloadCommand_directDownload(t *testing.T) {
 		assert.NoError(t, err)
 	})
 	t.Run("output-folder and force overwrite", func(t *testing.T) {
-		expected := directDownloadOptions{
+		expected := directDownloadCmdOptions{
 			environmentUrl: "test.url",
 			envVarName:     "token",
-			downloadCommandOptions: downloadCommandOptions{
-				downloadCommandOptionsShared: downloadCommandOptionsShared{
+			downloadCmdOptions: downloadCmdOptions{
+				sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 					projectName:    "project",
 					outputFolder:   "myDownloads",
 					forceOverwrite: true,
@@ -395,8 +395,8 @@ func TestValidCommands(t *testing.T) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), manifestDownloadOptions{
 					manifestFile:            "test.yaml",
 					specificEnvironmentName: "test_env",
-					downloadCommandOptions: downloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
+					downloadCmdOptions: downloadCmdOptions{
+						sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 							projectName:    "project",
 							outputFolder:   "",
 							forceOverwrite: false,
@@ -414,8 +414,8 @@ func TestValidCommands(t *testing.T) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), manifestDownloadOptions{
 					manifestFile:            "test.yaml",
 					specificEnvironmentName: "test_env",
-					downloadCommandOptions: downloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
+					downloadCmdOptions: downloadCmdOptions{
+						sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 							projectName:    "project",
 							outputFolder:   "",
 							forceOverwrite: false,
@@ -435,8 +435,8 @@ func TestValidCommands(t *testing.T) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), manifestDownloadOptions{
 					manifestFile:            "test.yaml",
 					specificEnvironmentName: "test_env",
-					downloadCommandOptions: downloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
+					downloadCmdOptions: downloadCmdOptions{
+						sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 							projectName:    "project",
 							outputFolder:   "",
 							forceOverwrite: false,
@@ -456,8 +456,8 @@ func TestValidCommands(t *testing.T) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), manifestDownloadOptions{
 					manifestFile:            "test.yaml",
 					specificEnvironmentName: "test_env",
-					downloadCommandOptions: downloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
+					downloadCmdOptions: downloadCmdOptions{
+						sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 							projectName:    "project",
 							outputFolder:   "",
 							forceOverwrite: false,
@@ -475,8 +475,8 @@ func TestValidCommands(t *testing.T) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), manifestDownloadOptions{
 					manifestFile:            "test.yaml",
 					specificEnvironmentName: "test_env",
-					downloadCommandOptions: downloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
+					downloadCmdOptions: downloadCmdOptions{
+						sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 							projectName:    "project",
 							outputFolder:   "",
 							forceOverwrite: false,
@@ -494,8 +494,8 @@ func TestValidCommands(t *testing.T) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), manifestDownloadOptions{
 					manifestFile:            "test.yaml",
 					specificEnvironmentName: "test_env",
-					downloadCommandOptions: downloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
+					downloadCmdOptions: downloadCmdOptions{
+						sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 							projectName:    "project",
 							outputFolder:   "",
 							forceOverwrite: false,
@@ -513,8 +513,8 @@ func TestValidCommands(t *testing.T) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), manifestDownloadOptions{
 					manifestFile:            "test.yaml",
 					specificEnvironmentName: "test_env",
-					downloadCommandOptions: downloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
+					downloadCmdOptions: downloadCmdOptions{
+						sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 							projectName: "project",
 						},
 						specificAPIs:    []string{},
@@ -530,8 +530,8 @@ func TestValidCommands(t *testing.T) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), manifestDownloadOptions{
 					manifestFile:            "test.yaml",
 					specificEnvironmentName: "test_env",
-					downloadCommandOptions: downloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
+					downloadCmdOptions: downloadCmdOptions{
+						sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 							projectName: "project",
 						},
 						specificAPIs:    []string{},
@@ -547,8 +547,8 @@ func TestValidCommands(t *testing.T) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), manifestDownloadOptions{
 					manifestFile:            "test.yaml",
 					specificEnvironmentName: "test_env",
-					downloadCommandOptions: downloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
+					downloadCmdOptions: downloadCmdOptions{
+						sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 							projectName:    "testproject",
 							outputFolder:   "",
 							forceOverwrite: false,
@@ -566,8 +566,8 @@ func TestValidCommands(t *testing.T) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), manifestDownloadOptions{
 					manifestFile:            "test.yaml",
 					specificEnvironmentName: "test_env",
-					downloadCommandOptions: downloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
+					downloadCmdOptions: downloadCmdOptions{
+						sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 							projectName:    "project",
 							outputFolder:   "myDownloads",
 							forceOverwrite: false,
@@ -585,8 +585,8 @@ func TestValidCommands(t *testing.T) {
 				cmd.EXPECT().DownloadConfigsBasedOnManifest(gomock.Any(), manifestDownloadOptions{
 					manifestFile:            "test.yaml",
 					specificEnvironmentName: "test_env",
-					downloadCommandOptions: downloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
+					downloadCmdOptions: downloadCmdOptions{
+						sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 							projectName:    "project",
 							outputFolder:   "myDownloads",
 							forceOverwrite: true,
@@ -606,7 +606,7 @@ func TestValidCommands(t *testing.T) {
 					environmentUrl: "test.url",
 					envVarName:     "token",
 					entitiesDownloadCommandOptions: entitiesDownloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
+						sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 							projectName:    "test",
 							outputFolder:   "",
 							forceOverwrite: false,
@@ -624,7 +624,7 @@ func TestValidCommands(t *testing.T) {
 					environmentUrl: "test.url",
 					envVarName:     "token",
 					entitiesDownloadCommandOptions: entitiesDownloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
+						sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 							projectName:    "project",
 							outputFolder:   "",
 							forceOverwrite: false,
@@ -642,7 +642,7 @@ func TestValidCommands(t *testing.T) {
 					environmentUrl: "test.url",
 					envVarName:     "token",
 					entitiesDownloadCommandOptions: entitiesDownloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
+						sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 							projectName:    "project",
 							outputFolder:   "myDownloads",
 							forceOverwrite: false,
@@ -660,7 +660,7 @@ func TestValidCommands(t *testing.T) {
 					environmentUrl: "test.url",
 					envVarName:     "token",
 					entitiesDownloadCommandOptions: entitiesDownloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
+						sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 							projectName:    "project",
 							outputFolder:   "myDownloads",
 							forceOverwrite: true,
@@ -678,7 +678,7 @@ func TestValidCommands(t *testing.T) {
 					manifestFile:            "test.yaml",
 					specificEnvironmentName: "test_env",
 					entitiesDownloadCommandOptions: entitiesDownloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
+						sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 							projectName:    "project",
 							outputFolder:   "",
 							forceOverwrite: false,
@@ -696,7 +696,7 @@ func TestValidCommands(t *testing.T) {
 					manifestFile:            "test.yaml",
 					specificEnvironmentName: "test_env",
 					entitiesDownloadCommandOptions: entitiesDownloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
+						sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 							projectName:    "testproject",
 							outputFolder:   "",
 							forceOverwrite: false,
@@ -714,7 +714,7 @@ func TestValidCommands(t *testing.T) {
 					manifestFile:            "test.yaml",
 					specificEnvironmentName: "test_env",
 					entitiesDownloadCommandOptions: entitiesDownloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
+						sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 							projectName:    "project",
 							outputFolder:   "myDownloads",
 							forceOverwrite: false,
@@ -732,7 +732,7 @@ func TestValidCommands(t *testing.T) {
 					manifestFile:            "test.yaml",
 					specificEnvironmentName: "test_env",
 					entitiesDownloadCommandOptions: entitiesDownloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
+						sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 							projectName:    "project",
 							outputFolder:   "myDownloads",
 							forceOverwrite: true,
@@ -750,7 +750,7 @@ func TestValidCommands(t *testing.T) {
 					manifestFile:            "test.yaml",
 					specificEnvironmentName: "test_env",
 					entitiesDownloadCommandOptions: entitiesDownloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
+						sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 							projectName:    "project",
 							outputFolder:   "",
 							forceOverwrite: false,

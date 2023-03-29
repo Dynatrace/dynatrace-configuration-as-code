@@ -32,8 +32,8 @@ import (
 	"strings"
 )
 
-type downloadCommandOptions struct {
-	downloadCommandOptionsShared
+type downloadCmdOptions struct {
+	sharedDownloadCmdOptions
 	specificAPIs    []string
 	specificSchemas []string
 	onlyAPIs        bool
@@ -43,12 +43,12 @@ type downloadCommandOptions struct {
 type manifestDownloadOptions struct {
 	manifestFile            string
 	specificEnvironmentName string
-	downloadCommandOptions
+	downloadCmdOptions
 }
 
-type directDownloadOptions struct {
+type directDownloadCmdOptions struct {
 	environmentUrl, envVarName string
-	downloadCommandOptions
+	downloadCmdOptions
 }
 
 func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions manifestDownloadOptions) error {
@@ -104,7 +104,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 	return doDownloadConfigs(fs, dtClient, api.NewAPIs(), options)
 }
 
-func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOptions) error {
+func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadCmdOptions) error {
 	token := os.Getenv(cmdOptions.envVarName)
 	concurrentDownloadLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
 	errors := validateParameters(cmdOptions.envVarName, cmdOptions.environmentUrl, cmdOptions.projectName, token)

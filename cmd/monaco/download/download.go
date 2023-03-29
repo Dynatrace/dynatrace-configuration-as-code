@@ -35,7 +35,7 @@ import (
 // The actual implementations are in the [DefaultCommand] struct.
 type Command interface {
 	DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions manifestDownloadOptions) error
-	DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOptions) error
+	DownloadConfigs(fs afero.Fs, cmdOptions directDownloadCmdOptions) error
 	DownloadEntitiesBasedOnManifest(fs afero.Fs, cmdOptions entitiesManifestDownloadOptions) error
 	DownloadEntities(fs afero.Fs, cmdOptions entitiesDirectDownloadOptions) error
 }
@@ -48,7 +48,7 @@ var (
 	_ Command = (*DefaultCommand)(nil)
 )
 
-type downloadCommandOptionsShared struct {
+type sharedDownloadCmdOptions struct {
 	projectName    string
 	outputFolder   string
 	forceOverwrite bool

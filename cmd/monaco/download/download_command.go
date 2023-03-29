@@ -84,8 +84,8 @@ func addDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.
 			options := manifestDownloadOptions{
 				manifestFile:            m,
 				specificEnvironmentName: specificEnvironment,
-				downloadCommandOptions: downloadCommandOptions{
-					downloadCommandOptionsShared: downloadCommandOptionsShared{
+				downloadCmdOptions: downloadCmdOptions{
+					sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 						projectName:    project,
 						outputFolder:   outputFolder,
 						forceOverwrite: forceOverwrite,
@@ -137,11 +137,11 @@ func addDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			url := args[0]
-			options := directDownloadOptions{
+			options := directDownloadCmdOptions{
 				environmentUrl: url,
 				envVarName:     token,
-				downloadCommandOptions: downloadCommandOptions{
-					downloadCommandOptionsShared: downloadCommandOptionsShared{
+				downloadCmdOptions: downloadCmdOptions{
+					sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 						projectName:    project,
 						outputFolder:   outputFolder,
 						forceOverwrite: forceOverwrite,
@@ -206,7 +206,7 @@ Either downloading based on an existing manifest, or by defining environment URL
 				manifestFile:            m,
 				specificEnvironmentName: specificEnvironment,
 				entitiesDownloadCommandOptions: entitiesDownloadCommandOptions{
-					downloadCommandOptionsShared: downloadCommandOptionsShared{
+					sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 						projectName:    project,
 						outputFolder:   outputFolder,
 						forceOverwrite: forceOverwrite,
@@ -237,7 +237,7 @@ Either downloading based on an existing manifest, or by defining environment URL
 				environmentUrl: url,
 				envVarName:     tokenEnvVar,
 				entitiesDownloadCommandOptions: entitiesDownloadCommandOptions{
-					downloadCommandOptionsShared: downloadCommandOptionsShared{
+					sharedDownloadCmdOptions: sharedDownloadCmdOptions{
 						projectName:    project,
 						outputFolder:   outputFolder,
 						forceOverwrite: forceOverwrite,
