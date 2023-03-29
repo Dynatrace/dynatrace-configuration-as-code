@@ -325,15 +325,15 @@ func TestRunIndexRule(t *testing.T) {
 func TestKeepMatches(t *testing.T) {
 
 	tests := []struct {
-		name                string
-		matchedEntities     map[int]int
-		singleToSingleMatch []CompareResult
-		want                map[int]int
+		name            string
+		matchedEntities map[int]int
+		uniqueMatch     []CompareResult
+		want            map[int]int
 	}{
 		{
 			name:            "keepMatches",
 			matchedEntities: map[int]int{},
-			singleToSingleMatch: []CompareResult{
+			uniqueMatch: []CompareResult{
 				CompareResult{0, 0, 1},
 				CompareResult{1, 1, 1},
 				CompareResult{2, 2, 1},
@@ -351,7 +351,7 @@ func TestKeepMatches(t *testing.T) {
 				41: 41,
 				42: 42,
 			},
-			singleToSingleMatch: []CompareResult{
+			uniqueMatch: []CompareResult{
 				CompareResult{0, 0, 1},
 				CompareResult{1, 1, 1},
 				CompareResult{2, 2, 1},
@@ -369,7 +369,7 @@ func TestKeepMatches(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := keepMatches(tt.matchedEntities, tt.singleToSingleMatch)
+			got := keepMatches(tt.matchedEntities, tt.uniqueMatch)
 
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("keepMatches() got = %v, want %v", got, tt.want)

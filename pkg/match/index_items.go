@@ -33,7 +33,7 @@ func (a ByIndexValue) Len() int           { return len(a) }
 func (a ByIndexValue) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByIndexValue) Less(i, j int) bool { return a[i].indexValue < a[j].indexValue }
 
-func addSingleValueToIndex(index *IndexMap, value string, itemId int) {
+func addUniqueValueToIndex(index *IndexMap, value string, itemId int) {
 
 	if value == "" {
 		return
@@ -48,14 +48,14 @@ func addValueToIndex(index *IndexMap, value interface{}, itemId int) {
 	stringValue, isString := value.(string)
 
 	if isString {
-		addSingleValueToIndex(
+		addUniqueValueToIndex(
 			index, stringValue, itemId)
 	} else {
 		sliceValue := value.([]interface{})
 
-		for _, singleValue := range sliceValue {
-			addSingleValueToIndex(
-				index, singleValue.(string), itemId)
+		for _, uniqueValue := range sliceValue {
+			addUniqueValueToIndex(
+				index, uniqueValue.(string), itemId)
 		}
 	}
 }

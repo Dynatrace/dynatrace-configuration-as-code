@@ -296,7 +296,7 @@ func TestCompareCompareResults(t *testing.T) {
 	}
 }
 
-func TestKeepSingleToSingle(t *testing.T) {
+func TestExtractUniqueTopMatch(t *testing.T) {
 
 	tests := []struct {
 		name  string
@@ -304,7 +304,7 @@ func TestKeepSingleToSingle(t *testing.T) {
 		want  []CompareResult
 	}{
 		{
-			name: "keepSingleToSingleMatchItemsLeftRight",
+			name: "extractUniqueTopMatch",
 			input: IndexCompareResultList{
 				CompareResults: []CompareResult{
 					CompareResult{1, 3, 1},
@@ -326,10 +326,10 @@ func TestKeepSingleToSingle(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := keepSingleToSingleMatchItemsLeftRight(&tt.input)
+			result := extractUniqueTopMatch(&tt.input)
 
 			if !reflect.DeepEqual(result, tt.want) {
-				t.Errorf("keepSingleToSingleMatchItemsLeftRight() result = %v, want %v", result, tt.want)
+				t.Errorf("extractUniqueTopMatch() result = %v, want %v", result, tt.want)
 			}
 
 		})

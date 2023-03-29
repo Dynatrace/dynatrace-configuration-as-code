@@ -106,7 +106,7 @@ func (i *IndexCompareResultList) sort() {
 
 }
 
-func (i *IndexCompareResultList) getSingleMatchItems() []CompareResult {
+func (i *IndexCompareResultList) getUniqueMatchItems() []CompareResult {
 
 	if len(i.CompareResults) == 0 {
 		return []CompareResult{}
@@ -114,14 +114,14 @@ func (i *IndexCompareResultList) getSingleMatchItems() []CompareResult {
 
 	i.sort()
 
-	singleMatchItems := []CompareResult{}
+	uniqueMatchItems := []CompareResult{}
 
 	prevResult := i.CompareResults[0]
 	prevTotalSeen := 1
 
-	keepSingleMatch := func() {
+	extractUniqueMatch := func() {
 		if prevTotalSeen == 1 {
-			singleMatchItems = append(singleMatchItems, prevResult)
+			uniqueMatchItems = append(uniqueMatchItems, prevResult)
 		}
 	}
 
@@ -129,17 +129,21 @@ func (i *IndexCompareResultList) getSingleMatchItems() []CompareResult {
 		if compareResult.LeftId == prevResult.LeftId {
 			prevTotalSeen += 1
 		} else {
-			keepSingleMatch()
+			extractUniqueMatch()
 			prevResult = compareResult
 			prevTotalSeen = 1
 		}
 	}
-	keepSingleMatch()
+	extractUniqueMatch()
 
-	return singleMatchItems
+	return uniqueMatchItems
 }
 
 func (i *IndexCompareResultList) sumMatchWeightValues() {
+
+	if len(i.CompareResults) <= 1 {
+		return
+	}
 
 	i.sort()
 
@@ -187,13 +191,13 @@ func (i *IndexCompareResultList) elevateWeight(lowerMaxWeight int) {
 	}
 }
 
-func (i *IndexCompareResultList) trimSingleToSingleMatches(singleToSingleMatchItems []CompareResult) {
+func (i *IndexCompareResultList) trimUniqueMatches(uniqueMatchItems []CompareResult) {
 
-	newLen := len(i.CompareResults) - len(singleToSingleMatchItems)
+	newLen := len(i.CompareResults) - len(uniqueMatchItems)
 	trimmedList := make([]CompareResult, newLen)
 
 	i.sort()
-	sort.Sort(ByLeftRight(singleToSingleMatchItems))
+	sort.Sort(ByLeftRight(uniqueMatchItems))
 
 	curI := 0
 	sglI := 0
@@ -202,10 +206,10 @@ func (i *IndexCompareResultList) trimSingleToSingleMatches(singleToSingleMatchIt
 
 	for curI < len(i.CompareResults) {
 
-		if sglI >= len(singleToSingleMatchItems) {
+		if sglI >= len(uniqueMatchItems) {
 			diff = -1
 		} else {
-			diff = compareCompareResults(i.CompareResults[curI], singleToSingleMatchItems[sglI])
+			diff = compareCompareResults(i.CompareResults[curI], uniqueMatchItems[sglI])
 		}
 
 		if diff < 0 {
@@ -225,7 +229,7 @@ func (i *IndexCompareResultList) trimSingleToSingleMatches(singleToSingleMatchIt
 
 	if trmI != newLen {
 		log.Error("Did not trim properly?? newLen: %d trmI: %d", newLen, trmI)
-		log.Error("Did not trim properly?? len(i.CompareResults): %d len(singleToSingleMatchItems): %d", len(i.CompareResults), len(singleToSingleMatchItems))
+		log.Error("Did not trim properly?? len(i.CompareResults): %d len(uniqueMatchItems): %d", len(i.CompareResults), len(uniqueMatchItems))
 	}
 
 	i.CompareResults = trimmedList
@@ -239,15 +243,16 @@ func (i *IndexCompareResultList) ProcessMatches() []CompareResult {
 	}
 
 	i.sumMatchWeightValues()
-	singleToSingleMatchItems := keepSingleToSingleMatchItemsLeftRight(i)
+	uniqueTopMatches := extractUniqueTopMatch(i)
 
-	i.trimSingleToSingleMatches(singleToSingleMatchItems)
+	i.trimUniqueMatches(uniqueTopMatches)
 
-	return singleToSingleMatchItems
+	return uniqueTopMatches
 
 }
 
 func (i *IndexCompareResultList) MergeRemainingWeightType(remainingResults *IndexCompareResultList) {
+	i.sumMatchWeightValues()
 	lowerMaxWeight := i.getMaxWeight()
 	remainingResults.elevateWeight(lowerMaxWeight)
 

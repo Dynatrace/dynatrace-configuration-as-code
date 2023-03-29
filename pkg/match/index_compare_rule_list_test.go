@@ -316,7 +316,7 @@ func TestSortCompareResults(t *testing.T) {
 	}
 }
 
-func TestGetSingleMatchItems(t *testing.T) {
+func TestGetUniqueMatchItems(t *testing.T) {
 
 	tests := []struct {
 		name     string
@@ -324,7 +324,7 @@ func TestGetSingleMatchItems(t *testing.T) {
 		want     []CompareResult
 	}{
 		{
-			name: "getSingleMatchItems - ordered",
+			name: "getUniqueMatchItems - ordered",
 			original: IndexCompareResultList{
 				CompareResults: []CompareResult{
 					CompareResult{3, 8, 3},
@@ -340,7 +340,7 @@ func TestGetSingleMatchItems(t *testing.T) {
 			},
 		},
 		{
-			name: "getSingleMatchItems - unordered",
+			name: "getUniqueMatchItems - unordered",
 			original: IndexCompareResultList{
 				CompareResults: []CompareResult{
 					CompareResult{5, 6, 3},
@@ -359,10 +359,10 @@ func TestGetSingleMatchItems(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.original.getSingleMatchItems()
+			got := tt.original.getUniqueMatchItems()
 
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getSingleMatchItems() got = %v, want %v", got, tt.want)
+				t.Errorf("getUniqueMatchItems() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -511,16 +511,16 @@ func TestElevateWeight(t *testing.T) {
 	}
 }
 
-func TestTrimSingleToSingleMatches(t *testing.T) {
+func TestTrimUniqueMatches(t *testing.T) {
 
 	tests := []struct {
-		name                  string
-		original              IndexCompareResultList
-		singleToSingleMatches []CompareResult
-		want                  IndexCompareResultList
+		name          string
+		original      IndexCompareResultList
+		uniqueMatches []CompareResult
+		want          IndexCompareResultList
 	}{
 		{
-			name: "trimSingleToSingleMatches",
+			name: "trimUniqueMatches",
 			original: IndexCompareResultList{
 				CompareResults: []CompareResult{
 					CompareResult{3, 8, 3},
@@ -530,7 +530,7 @@ func TestTrimSingleToSingleMatches(t *testing.T) {
 					CompareResult{10, 17, 8},
 				},
 			},
-			singleToSingleMatches: []CompareResult{
+			uniqueMatches: []CompareResult{
 				CompareResult{3, 8, 3},
 				CompareResult{5, 6, 3},
 			},
@@ -546,10 +546,10 @@ func TestTrimSingleToSingleMatches(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.original.trimSingleToSingleMatches(tt.singleToSingleMatches)
+			tt.original.trimUniqueMatches(tt.uniqueMatches)
 
 			if !reflect.DeepEqual(tt.original, tt.want) {
-				t.Errorf("trimSingleToSingleMatches() original = %v, want %v", tt.original, tt.want)
+				t.Errorf("trimUniqueMatches() original = %v, want %v", tt.original, tt.want)
 			}
 		})
 	}

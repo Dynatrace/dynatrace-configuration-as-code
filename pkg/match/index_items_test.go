@@ -114,7 +114,7 @@ var entityJsonSortedValueList = `[{
 	"toRelationships": {}
 }]`
 
-func TestAddSingleValueToIndex(t *testing.T) {
+func TestAddUniqueValueToIndex(t *testing.T) {
 
 	tests := []struct {
 		name     string
@@ -125,7 +125,7 @@ func TestAddSingleValueToIndex(t *testing.T) {
 		wantLen  int
 	}{
 		{
-			name:     "addSingleValueToIndex",
+			name:     "addUniqueValueToIndex",
 			indexMap: IndexMap{},
 			value:    "test",
 			itemId:   0,
@@ -138,7 +138,7 @@ func TestAddSingleValueToIndex(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			addSingleValueToIndex(&tt.indexMap, tt.value, tt.itemId)
+			addUniqueValueToIndex(&tt.indexMap, tt.value, tt.itemId)
 
 			assert.Equal(t, len(tt.indexMap), len(tt.want))
 			assert.Equal(t, len(tt.indexMap[tt.value]), len(tt.want[tt.value]))
@@ -158,7 +158,7 @@ func TestAddValueToIndex(t *testing.T) {
 		want         IndexMap
 	}{
 		{
-			name:         "addSingleValueToIndex - string",
+			name:         "addUniqueValueToIndex - string",
 			indexMap:     IndexMap{},
 			rawMatchList: getRawMatchListFromJson(entityJsonSortedValueString),
 			itemId:       0,
@@ -167,7 +167,7 @@ func TestAddValueToIndex(t *testing.T) {
 			},
 		},
 		{
-			name:         "addSingleValueToIndex - string slice",
+			name:         "addUniqueValueToIndex - string slice",
 			indexMap:     IndexMap{},
 			rawMatchList: getRawMatchListFromJson(entityJsonSortedValueList),
 			itemId:       0,

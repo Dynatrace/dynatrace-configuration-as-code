@@ -206,11 +206,11 @@ func TestTrimremainingItems(t *testing.T) {
 func TestReduceRemainingMatchList(t *testing.T) {
 
 	tests := []struct {
-		name                string
-		matchProcessingEnv  MatchProcessingEnv
-		singleToSingleMatch []CompareResult
-		getId               func(CompareResult) int
-		want                MatchProcessingEnv
+		name               string
+		matchProcessingEnv MatchProcessingEnv
+		uniqueMatch        []CompareResult
+		getId              func(CompareResult) int
+		want               MatchProcessingEnv
 	}{
 		{
 			name: "reduceRemainingMatchList - Left (Source)",
@@ -220,7 +220,7 @@ func TestReduceRemainingMatchList(t *testing.T) {
 				CurrentRemainingMatch: &[]int{0, 1, 2, 3, 4, 5, 6},
 				RemainingMatch:        []int{0, 1, 2, 3, 4, 5, 6},
 			},
-			singleToSingleMatch: []CompareResult{
+			uniqueMatch: []CompareResult{
 				CompareResult{0, 2, 1},
 				CompareResult{1, 3, 1},
 			},
@@ -240,7 +240,7 @@ func TestReduceRemainingMatchList(t *testing.T) {
 				CurrentRemainingMatch: &[]int{0, 1, 2, 3, 4, 5, 6},
 				RemainingMatch:        []int{0, 1, 2, 3, 4, 5, 6},
 			},
-			singleToSingleMatch: []CompareResult{
+			uniqueMatch: []CompareResult{
 				CompareResult{0, 2, 1},
 				CompareResult{1, 3, 1},
 			},
@@ -256,7 +256,7 @@ func TestReduceRemainingMatchList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.matchProcessingEnv.reduceRemainingMatchList(&tt.singleToSingleMatch, tt.getId)
+			tt.matchProcessingEnv.reduceRemainingMatchList(&tt.uniqueMatch, tt.getId)
 
 			if !reflect.DeepEqual(tt.matchProcessingEnv, tt.want) {
 				t.Errorf("reduceRemainingMatchList() matchProcessingEnv = %v, want %v", tt.matchProcessingEnv, tt.want)

@@ -76,12 +76,12 @@ func (e *MatchProcessing) GetEntitiesType() string {
 
 }
 
-func (e *MatchProcessing) adjustremainingMatch(singleToSingleMatch *[]CompareResult, resultList *[]CompareResult) {
+func (e *MatchProcessing) adjustremainingMatch(uniqueMatch *[]CompareResult, resultList *[]CompareResult) {
 
-	sort.Sort(ByLeft(*singleToSingleMatch))
-	e.Source.reduceRemainingMatchList(singleToSingleMatch, getLeftId)
-	sort.Sort(ByRight(*singleToSingleMatch))
-	e.Target.reduceRemainingMatchList(singleToSingleMatch, getRightId)
+	sort.Sort(ByLeft(*uniqueMatch))
+	e.Source.reduceRemainingMatchList(uniqueMatch, getLeftId)
+	sort.Sort(ByRight(*uniqueMatch))
+	e.Target.reduceRemainingMatchList(uniqueMatch, getRightId)
 
 }
 

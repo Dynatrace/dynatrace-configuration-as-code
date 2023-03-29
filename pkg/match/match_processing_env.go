@@ -120,11 +120,11 @@ func (e *MatchProcessingEnv) trimremainingItems(idsToDrop *[]int) {
 	(*e).CurrentRemainingMatch = &(*e).RemainingMatch
 }
 
-func (e *MatchProcessingEnv) reduceRemainingMatchList(singleToSingleMatch *[]CompareResult, getId func(CompareResult) int) {
-	idList := make([]int, len(*singleToSingleMatch))
+func (e *MatchProcessingEnv) reduceRemainingMatchList(uniqueMatch *[]CompareResult, getId func(CompareResult) int) {
+	idList := make([]int, len(*uniqueMatch))
 
 	i := 0
-	for _, result := range *singleToSingleMatch {
+	for _, result := range *uniqueMatch {
 
 		idList[i] = getId(result)
 		i++

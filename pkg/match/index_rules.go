@@ -83,8 +83,8 @@ func runIndexRule(indexRule rules.IndexRule, entityProcessingPtr *MatchProcessin
 
 }
 
-func keepMatches(matchedEntities map[int]int, singleToSingleMatch []CompareResult) map[int]int {
-	for _, result := range singleToSingleMatch {
+func keepMatches(matchedEntities map[int]int, uniqueMatch []CompareResult) map[int]int {
+	for _, result := range uniqueMatch {
 		_, found := matchedEntities[result.LeftId]
 
 		if found {
@@ -115,12 +115,12 @@ func (i *IndexRuleMapGenerator) RunIndexRuleAll(matchProcessingPtr *MatchProcess
 		}
 
 		resultListPtr.MergeRemainingWeightType(remainingResultsPtr)
-		singleToSingleMatchEntities := resultListPtr.ProcessMatches()
+		uniqueMatchEntities := resultListPtr.ProcessMatches()
 		remainingResultsPtr = resultListPtr
 
-		matchProcessingPtr.adjustremainingMatch(&singleToSingleMatchEntities, &resultListPtr.CompareResults)
+		matchProcessingPtr.adjustremainingMatch(&uniqueMatchEntities, &resultListPtr.CompareResults)
 
-		matchedEntities = keepMatches(matchedEntities, singleToSingleMatchEntities)
+		matchedEntities = keepMatches(matchedEntities, uniqueMatchEntities)
 	}
 
 	log.Info("Type: %s -> nb source %d and nb target %d -> Matched: %d",

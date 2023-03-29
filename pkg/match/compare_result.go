@@ -124,16 +124,16 @@ func compareCompareResults(a CompareResult, b CompareResult) int {
 	}
 }
 
-func keepSingleToSingleMatchItemsLeftRight(results *IndexCompareResultList) []CompareResult {
+func extractUniqueTopMatch(results *IndexCompareResultList) []CompareResult {
 
-	singleMatchItems := []CompareResult{}
+	uniqueTopMatches := []CompareResult{}
 
 	reversedResults := results.reduceBothForwardAndBackward()
 
-	leftRight := results.getSingleMatchItems()
+	leftRight := results.getUniqueMatchItems()
 	sort.Sort(ByLeftRight(leftRight))
 
-	rightLeft := reversedResults.getSingleMatchItems()
+	rightLeft := reversedResults.getUniqueMatchItems()
 	sort.Sort(ByRightLeft(rightLeft))
 
 	leftI := 0
@@ -147,7 +147,7 @@ func keepSingleToSingleMatchItemsLeftRight(results *IndexCompareResultList) []Co
 			leftI++
 
 		} else if diff == 0 {
-			singleMatchItems = append(singleMatchItems, leftRight[leftI])
+			uniqueTopMatches = append(uniqueTopMatches, leftRight[leftI])
 
 			leftI++
 			rightI++
@@ -158,7 +158,7 @@ func keepSingleToSingleMatchItemsLeftRight(results *IndexCompareResultList) []Co
 		}
 	}
 
-	return singleMatchItems
+	return uniqueTopMatches
 }
 
 func getLeftId(compareResult CompareResult) int {
