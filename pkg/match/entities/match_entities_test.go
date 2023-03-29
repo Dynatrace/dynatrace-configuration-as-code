@@ -47,7 +47,7 @@ func TestMatchEntities(t *testing.T) {
 				"AZURE_VM": []config.Config{
 					config.Config{
 						Template: template.NewDownloadTemplate("AZURE_VM", "AZURE_VM", entityListJsonSorted),
-						Type: config.Type{
+						Type: config.EntityType{
 							EntitiesType: "AZURE_VM",
 							From:         "1",
 							To:           "2",
@@ -59,7 +59,7 @@ func TestMatchEntities(t *testing.T) {
 				"AZURE_VM": []config.Config{
 					config.Config{
 						Template: template.NewDownloadTemplate("AZURE_VM", "AZURE_VM", entityListJson),
-						Type: config.Type{
+						Type: config.EntityType{
 							EntitiesType: "AZURE_VM",
 							From:         "2",
 							To:           "3",

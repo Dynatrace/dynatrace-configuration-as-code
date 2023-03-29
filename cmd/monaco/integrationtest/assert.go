@@ -116,11 +116,12 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 
 			apis := api.NewAPIs()
 			if _, found := projectsToValidate[coord.Project]; found {
-				if theConfig.Type.IsSettings() {
-					assertSetting(t, c, env, available, theConfig)
-				} else if apis.Contains(theConfig.Type.Api) {
-					assertConfig(t, c, apis[theConfig.Type.Api], env, available, theConfig, configName)
-				} else {
+				switch typ := theConfig.Type.(type) {
+				case config.SettingsType:
+					assertSetting(t, c, typ, env, available, theConfig)
+				case config.ClassicApiType:
+					assertConfig(t, c, apis[typ.Api], env, available, theConfig, configName)
+				default:
 					t.Errorf("Can not assert config of unknown type %q", theConfig.Coordinate.Type)
 				}
 			}
@@ -156,9 +157,9 @@ func assertConfig(t *testing.T, client client.ConfigClient, theApi api.API, envi
 	}
 }
 
-func assertSetting(t *testing.T, c client.SettingsClient, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config) {
-	expectedExtId := idutils.GenerateExternalID(config.Type.SchemaId, config.Coordinate.ConfigId)
-	objects, err := c.ListSettings(config.Type.SchemaId, client.ListSettingsOptions{DiscardValue: true, Filter: func(o client.DownloadSettingsObject) bool { return o.ExternalId == expectedExtId }})
+func assertSetting(t *testing.T, c client.SettingsClient, typ config.SettingsType, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config) {
+	expectedExtId := idutils.GenerateExternalID(typ.SchemaId, config.Coordinate.ConfigId)
+	objects, err := c.ListSettings(typ.SchemaId, client.ListSettingsOptions{DiscardValue: true, Filter: func(o client.DownloadSettingsObject) bool { return o.ExternalId == expectedExtId }})
 	assert.NilError(t, err)
 
 	if len(objects) > 1 {
@@ -169,14 +170,14 @@ func assertSetting(t *testing.T, c client.SettingsClient, environment manifest.E
 	exists := len(objects) == 1
 
 	if config.Skip {
-		assert.Check(t, !exists, "Skipped Settings Object should NOT be available but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, config.Coordinate, config.Type.SchemaId)
+		assert.Check(t, !exists, "Skipped Settings Object should NOT be available but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, config.Coordinate, typ.SchemaId)
 		return
 	}
 
 	if shouldBeAvailable {
-		assert.Check(t, exists, "Settings Object should be available, but wasn't. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, config.Coordinate, config.Type.SchemaId)
+		assert.Check(t, exists, "Settings Object should be available, but wasn't. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, config.Coordinate, typ.SchemaId)
 	} else {
-		assert.Check(t, !exists, "Settings Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, config.Coordinate, config.Type.SchemaId)
+		assert.Check(t, !exists, "Settings Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, config.Coordinate, typ.SchemaId)
 	}
 }
 

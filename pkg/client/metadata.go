@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"net/http"
+	"net/url"
 )
 
 const classicEnvironmentDomainPath = "/platform/core/v1/environment-api-info" // NOTE: once available, change this to /platform/metadata/v1/classic-environment-domain
@@ -32,7 +33,10 @@ type classicEnvURL struct {
 // GetDynatraceClassicURL tries to fetch the URL of the classic environment using the API of a platform enabled
 // environment
 func GetDynatraceClassicURL(client *http.Client, environmentURL string) (string, error) {
-	endpointURL := environmentURL + classicEnvironmentDomainPath
+	endpointURL, err := url.JoinPath(environmentURL, classicEnvironmentDomainPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to build URL for API %q on environment URL %q", classicEnvironmentDomainPath, environmentURL)
+	}
 
 	resp, err := rest.Get(client, endpointURL)
 	if err != nil {

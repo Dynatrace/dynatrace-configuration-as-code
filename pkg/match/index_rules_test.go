@@ -285,13 +285,13 @@ func TestRunIndexRule(t *testing.T) {
 			entityProcessing: MatchProcessing{
 				Source: MatchProcessingEnv{
 					RawMatchList:          getRawMatchListFromJson(entityListJsonSorted),
-					ConfigType:            config.Type{},
+					ConfigType:            config.EntityType{},
 					CurrentRemainingMatch: &[]int{0, 1, 2},
 					RemainingMatch:        []int{},
 				},
 				Target: MatchProcessingEnv{
 					RawMatchList:          getRawMatchListFromJson(entityListJsonSorted),
-					ConfigType:            config.Type{},
+					ConfigType:            config.EntityType{},
 					CurrentRemainingMatch: &[]int{0, 1, 2},
 					RemainingMatch:        []int{},
 				},
@@ -461,9 +461,9 @@ func TestRunIndexRuleAll(t *testing.T) {
 			indexRuleMapGenerator: testGenerator,
 			matchProcessing: NewMatchProcessing(
 				getRawMatchListFromJson(entityListJsonSorted),
-				config.Type{},
+				config.EntityType{},
 				getRawMatchListFromJson(entityListJsonSorted),
-				config.Type{},
+				config.EntityType{},
 			),
 			wantRemainingResultList: IndexCompareResultList{
 				CompareResults: []CompareResult{},
@@ -479,9 +479,9 @@ func TestRunIndexRuleAll(t *testing.T) {
 			indexRuleMapGenerator: testGenerator,
 			matchProcessing: NewMatchProcessing(
 				getRawMatchListFromJson(entityListJsonSorted),
-				config.Type{},
+				config.EntityType{},
 				getRawMatchListFromJson(entityListJsonSortedTopMatch),
-				config.Type{},
+				config.EntityType{},
 			),
 			wantRemainingResultList: IndexCompareResultList{
 				CompareResults: []CompareResult{},
@@ -497,9 +497,9 @@ func TestRunIndexRuleAll(t *testing.T) {
 			indexRuleMapGenerator: testGenerator,
 			matchProcessing: NewMatchProcessing(
 				getRawMatchListFromJson(entityListJsonSorted),
-				config.Type{},
+				config.EntityType{},
 				getRawMatchListFromJson(entityListJsonSortedMultiMatch),
-				config.Type{},
+				config.EntityType{},
 			),
 			wantRemainingResultList: IndexCompareResultList{
 				CompareResults: []CompareResult{

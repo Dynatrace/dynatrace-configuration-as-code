@@ -194,13 +194,13 @@ func TestRunRules(t *testing.T) {
 			name: "runRules",
 			matchProcessing: *match.NewMatchProcessing(
 				getRawMatchListFromJson(entityListJsonSortedMultiMatch),
-				config.Type{
+				config.EntityType{
 					EntitiesType: "AZURE_VM",
 					From:         "1",
 					To:           "2",
 				},
 				getRawMatchListFromJson(entityListJson),
-				config.Type{
+				config.EntityType{
 					EntitiesType: "AZURE_VM",
 					From:         "2",
 					To:           "3",

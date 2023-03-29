@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	monacoVersion "github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/oauth2/endpoints"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -33,67 +32,97 @@ import (
 )
 
 func Test_extractUrlType(t *testing.T) {
-	t.Setenv("TEST_TOKEN", "resolved url value")
 
 	tests := []struct {
-		name        string
-		inputConfig environment
-		want        URLDefinition
-		wantErr     bool
+		name             string
+		inputConfig      environment
+		givenEnvVarValue string
+		want             URLDefinition
+		wantErr          bool
 	}{
 		{
-			"extracts_value_url",
-			environment{
+			name: "extracts_value_url",
+			inputConfig: environment{
 				Name: "TEST ENV",
 				URL:  url{Value: "TEST URL", Type: urlTypeValue},
 				Auth: auth{Token: authSecret{Type: "environment", Name: "VAR"}},
 			},
-			URLDefinition{
+			want: URLDefinition{
 				Type:  ValueURLType,
 				Value: "TEST URL",
 			},
-			false,
+			wantErr: false,
 		},
 		{
-			"extracts_value_if_type_empty",
-			environment{
+			name: "extracts_value_if_type_empty",
+			inputConfig: environment{
 				Name: "TEST ENV",
 				URL:  url{Value: "TEST URL", Type: ""},
 				Auth: auth{Token: authSecret{Type: "environment", Name: "VAR"}},
 			},
-			URLDefinition{
+			want: URLDefinition{
 				Type:  ValueURLType,
 				Value: "TEST URL",
 			},
-			false,
+			wantErr: false,
 		},
 		{
-			"extracts_environment_url",
-			environment{
+			name: "trims trailing slash from value url",
+			inputConfig: environment{
+				Name: "TEST ENV",
+				URL:  url{Value: "https://www.test.url/", Type: urlTypeValue},
+				Auth: auth{Token: authSecret{Type: "environment", Name: "VAR"}},
+			},
+			want: URLDefinition{
+				Type:  ValueURLType,
+				Value: "https://www.test.url",
+			},
+			wantErr: false,
+		},
+		{
+			name: "extracts_environment_url",
+			inputConfig: environment{
 				Name: "TEST ENV",
 				URL:  url{Value: "TEST_TOKEN", Type: urlTypeEnvironment},
 				Auth: auth{Token: authSecret{Type: "environment", Name: "VAR"}},
 			},
-			URLDefinition{
+			givenEnvVarValue: "resolved url value",
+			want: URLDefinition{
 				Type:  EnvironmentURLType,
 				Name:  "TEST_TOKEN",
 				Value: "resolved url value",
 			},
-			false,
+			wantErr: false,
 		},
 		{
-			"fails_on_unknown_type",
-			environment{
+			name: "trims trailing slash from environment url",
+			inputConfig: environment{
+				Name: "TEST ENV",
+				URL:  url{Value: "TEST_TOKEN", Type: urlTypeEnvironment},
+				Auth: auth{Token: authSecret{Type: "environment", Name: "VAR"}},
+			},
+			givenEnvVarValue: "https://www.test.url/",
+			want: URLDefinition{
+				Type:  EnvironmentURLType,
+				Name:  "TEST_TOKEN",
+				Value: "https://www.test.url",
+			},
+			wantErr: false,
+		},
+		{
+			name: "fails_on_unknown_type",
+			inputConfig: environment{
 				Name: "TEST ENV",
 				URL:  url{Value: "TEST URL", Type: "this-is-not-a-type"},
 				Auth: auth{Token: authSecret{Type: "environment", Name: "VAR"}},
 			},
-			URLDefinition{},
-			true,
+			want:    URLDefinition{},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("TEST_TOKEN", tt.givenEnvVarValue)
 			if got, gotErr := parseURLDefinition(tt.inputConfig.URL); got != tt.want || (!tt.wantErr && gotErr != nil) {
 				t.Errorf("extractUrlType() = %v, %v, want %v, %v", got, gotErr, tt.want, tt.wantErr)
 			}
@@ -1394,10 +1423,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 									Name:  "client-secret",
 									Value: "resolved-client-secret",
 								},
-								TokenEndpoint: URLDefinition{
-									Type:  Absent,
-									Value: endpoints.Dynatrace.TokenURL,
-								},
+								TokenEndpoint: nil,
 							},
 						},
 					},
@@ -1442,7 +1468,8 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 									Name:  "client-secret",
 									Value: "resolved-client-secret",
 								},
-								TokenEndpoint: URLDefinition{
+								TokenEndpoint: &URLDefinition{
+									Type:  ValueURLType,
 									Value: "https://custom.sso.token.endpoint",
 								},
 							},
@@ -1489,7 +1516,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 									Name:  "client-secret",
 									Value: "resolved-client-secret",
 								},
-								TokenEndpoint: URLDefinition{
+								TokenEndpoint: &URLDefinition{
 									Type:  EnvironmentURLType,
 									Name:  "ENV_OAUTH_ENDPOINT",
 									Value: "resolved-oauth-endpoint",

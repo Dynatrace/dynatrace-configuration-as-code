@@ -123,12 +123,12 @@ func genOutputPayload(entityProcessingPtr *match.MatchProcessing, remainingResul
 		Type: entityProcessingPtr.GetEntitiesType(),
 		MatchKey: MatchKey{
 			Source: ExtractionInfo{
-				From: entityProcessingPtr.Source.ConfigType.From,
-				To:   entityProcessingPtr.Source.ConfigType.To,
+				From: (*entityProcessingPtr).Source.ConfigType.From,
+				To:   (*entityProcessingPtr).Source.ConfigType.To,
 			},
 			Target: ExtractionInfo{
-				From: entityProcessingPtr.Target.ConfigType.From,
-				To:   entityProcessingPtr.Target.ConfigType.To,
+				From: (*entityProcessingPtr).Target.ConfigType.From,
+				To:   (*entityProcessingPtr).Target.ConfigType.To,
 			},
 		},
 		Matches:      make(map[string]string, len(*matchedEntities)),

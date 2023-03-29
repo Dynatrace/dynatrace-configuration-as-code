@@ -17,12 +17,14 @@
 package cmdutils
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 	"path/filepath"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
@@ -39,18 +41,41 @@ func SilenceUsageCommand() func(cmd *cobra.Command, args []string) {
 	}
 }
 
+// CreateDTClient is driven by data given through a manifest.EnvironmentDefinition to create an appropriate client.Client.
+//
+// In case when flag dryRun is true this factory returns the client.DummyClient.
+func CreateDTClient(env manifest.EnvironmentDefinition, dryRun bool) (client.Client, error) {
+	switch {
+	case dryRun:
+		return client.NewDummyClient(), nil
+	case env.Type == manifest.Classic:
+		return client.NewClassicClient(env.URL.Value, env.Auth.Token.Value)
+	case env.Type == manifest.Platform:
+		oauthCredentials := client.OauthCredentials{
+			ClientID:     env.Auth.OAuth.ClientID.Value,
+			ClientSecret: env.Auth.OAuth.ClientSecret.Value,
+			TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
+		}
+		return client.NewPlatformClient(env.URL.Value, env.Auth.Token.Value, oauthCredentials)
+	default:
+		return nil, fmt.Errorf("unable to create authorizing HTTP Client for environment %s - no oauth credentials given", env.URL.Value)
+	}
+}
+
 // VerifyEnvironmentGeneration takes a manifestEnvironments map and tries to verify that each environment can be reached
 // using the configured credentials
 func VerifyEnvironmentGeneration(envs manifest.Environments) bool {
-	for _, env := range envs {
-		switch env.Type {
-		case manifest.Classic:
-			return isClassicEnvironment(env)
-		case manifest.Platform:
-			return isPlatformEnvironment(env)
-		default:
-			log.Error("Could not authorize against the environment with name %q (%s). Unknown environment type.", env.Name, env.URL.Value)
-			return false
+	if featureflags.VerifyEnvironmentType().Enabled() {
+		for _, env := range envs {
+			switch env.Type {
+			case manifest.Classic:
+				return isClassicEnvironment(env)
+			case manifest.Platform:
+				return isPlatformEnvironment(env)
+			default:
+				log.Error("Could not authorize against the environment with name %q (%s). Unknown environment type.", env.Name, env.URL.Value)
+				return false
+			}
 		}
 	}
 	return true
@@ -78,9 +103,9 @@ func isPlatformEnvironment(env manifest.EnvironmentDefinition) bool {
 	oauthCredentials := client.OauthCredentials{
 		ClientID:     env.Auth.OAuth.ClientID.Value,
 		ClientSecret: env.Auth.OAuth.ClientSecret.Value,
-		TokenURL:     env.Auth.OAuth.TokenEndpoint.Value,
+		TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
 	}
-	if _, err := client.GetDynatraceClassicURL(client.NewOAuthClient(oauthCredentials), env.URL.Value); err != nil {
+	if _, err := client.GetDynatraceClassicURL(client.NewOAuthClient(context.TODO(), oauthCredentials), env.URL.Value); err != nil {
 		var respErr client.RespError
 		if errors.As(err, &respErr) {
 			log.Error("Could not authorize against the environment with name %q (%s) using oAuth authorization.", env.Name, env.URL.Value)

@@ -29,21 +29,21 @@ func TestNewMatchProcessing(t *testing.T) {
 	tests := []struct {
 		name               string
 		rawMatchListSource RawMatchList
-		sourceType         config.Type
+		sourceType         config.EntityType
 		rawMatchListTarget RawMatchList
-		targetType         config.Type
+		targetType         config.EntityType
 		want               MatchProcessing
 	}{
 		{
 			name:               "NewMatchProcessing",
 			rawMatchListSource: getRawMatchListFromJson(entityListJsonSorted),
-			sourceType: config.Type{
+			sourceType: config.EntityType{
 				EntitiesType: "HOST",
 				From:         "1",
 				To:           "2",
 			},
 			rawMatchListTarget: getRawMatchListFromJson(entityJsonSortedValueString),
-			targetType: config.Type{
+			targetType: config.EntityType{
 				EntitiesType: "HOST",
 				From:         "2",
 				To:           "3",
@@ -51,7 +51,7 @@ func TestNewMatchProcessing(t *testing.T) {
 			want: MatchProcessing{
 				Source: MatchProcessingEnv{
 					RawMatchList: getRawMatchListFromJson(entityListJsonSorted),
-					ConfigType: config.Type{
+					ConfigType: config.EntityType{
 						EntitiesType: "HOST",
 						From:         "1",
 						To:           "2",
@@ -60,7 +60,7 @@ func TestNewMatchProcessing(t *testing.T) {
 				},
 				Target: MatchProcessingEnv{
 					RawMatchList: getRawMatchListFromJson(entityJsonSortedValueString),
-					ConfigType: config.Type{
+					ConfigType: config.EntityType{
 						EntitiesType: "HOST",
 						From:         "2",
 						To:           "3",
@@ -84,7 +84,7 @@ func TestNewMatchProcessing(t *testing.T) {
 	}
 }
 
-func TestGenremainingMatchList(t *testing.T) {
+func TestGenRemainingMatchList(t *testing.T) {
 
 	tests := []struct {
 		name         string
@@ -92,7 +92,7 @@ func TestGenremainingMatchList(t *testing.T) {
 		want         []int
 	}{
 		{
-			name:         "genremainingMatchList",
+			name:         "genRemainingMatchList",
 			rawMatchList: getRawMatchListFromJson(entityListJsonSorted),
 			want:         []int{0, 1, 2},
 		},
@@ -100,10 +100,10 @@ func TestGenremainingMatchList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := genremainingMatchList(tt.rawMatchList)
+			got := genRemainingMatchList(tt.rawMatchList)
 
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("genremainingMatchList() got = %v, want %v", got, tt.want)
+				t.Errorf("genRemainingMatchList() got = %v, want %v", got, tt.want)
 			}
 
 		})
@@ -122,7 +122,7 @@ func TestGetEntitiesType(t *testing.T) {
 			matchProcessing: MatchProcessing{
 				Source: MatchProcessingEnv{
 					RawMatchList: getRawMatchListFromJson(entityListJsonSorted),
-					ConfigType: config.Type{
+					ConfigType: config.EntityType{
 						EntitiesType: "HOST",
 						From:         "1",
 						To:           "2",
@@ -131,7 +131,7 @@ func TestGetEntitiesType(t *testing.T) {
 				},
 				Target: MatchProcessingEnv{
 					RawMatchList: getRawMatchListFromJson(entityJsonSortedValueString),
-					ConfigType: config.Type{
+					ConfigType: config.EntityType{
 						EntitiesType: "HOST",
 						From:         "2",
 						To:           "3",
@@ -148,7 +148,7 @@ func TestGetEntitiesType(t *testing.T) {
 				Source: MatchProcessingEnv{},
 				Target: MatchProcessingEnv{
 					RawMatchList: getRawMatchListFromJson(entityJsonSortedValueString),
-					ConfigType: config.Type{
+					ConfigType: config.EntityType{
 						EntitiesType: "HOST",
 						From:         "2",
 						To:           "3",
@@ -164,7 +164,7 @@ func TestGetEntitiesType(t *testing.T) {
 			matchProcessing: MatchProcessing{
 				Source: MatchProcessingEnv{
 					RawMatchList: getRawMatchListFromJson(entityListJsonSorted),
-					ConfigType: config.Type{
+					ConfigType: config.EntityType{
 						EntitiesType: "HOST",
 						From:         "1",
 						To:           "2",

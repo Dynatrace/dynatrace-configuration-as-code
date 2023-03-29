@@ -117,7 +117,7 @@ func Test_typeDefinition_isSound(t1 *testing.T) {
 			expect{false, "property missing: [type.scope]"},
 		},
 		{
-			"Entities - sound",
+			"Entity - sound",
 			fields{
 				typeDefinition{
 					Entities: entitiesDefinition{
@@ -129,7 +129,7 @@ func Test_typeDefinition_isSound(t1 *testing.T) {
 			expect{true, ""},
 		},
 		{
-			"Entities - EntitiesType missing",
+			"Entity - EntitiesType missing",
 			fields{
 				typeDefinition{
 					Entities: entitiesDefinition{},
@@ -139,7 +139,7 @@ func Test_typeDefinition_isSound(t1 *testing.T) {
 			expect{false, "type configuration is missing"},
 		},
 		{
-			"Entities - wrong type",
+			"Entity - wrong type",
 			fields{
 				typeDefinition{
 					Api: "some.classical.api",

@@ -134,7 +134,7 @@ func TestVerifyClusterGen(t *testing.T) {
 				},
 				Auth: manifest.Auth{
 					OAuth: manifest.OAuth{
-						TokenEndpoint: manifest.URLDefinition{
+						TokenEndpoint: &manifest.URLDefinition{
 							Value: server.URL + "/sso",
 						},
 					},
@@ -146,14 +146,26 @@ func TestVerifyClusterGen(t *testing.T) {
 
 	t.Run("version EP not available ", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if strings.HasSuffix(req.URL.Path, "sso") {
+				token := &oauth2.Token{
+					AccessToken: "test-access-token",
+					TokenType:   "Bearer",
+					Expiry:      time.Now().Add(time.Hour),
+				}
+
+				rw.Header().Set("Content-Type", "application/json")
+				_ = json.NewEncoder(rw).Encode(token)
+				return
+			}
+
 			rw.WriteHeader(404)
 			_, _ = rw.Write([]byte(`{"version" : "0.59.1.20231603"}`))
 		}))
 		defer server.Close()
 
 		ok := VerifyEnvironmentGeneration(manifest.Environments{
-			"env": manifest.EnvironmentDefinition{
-				Name: "env",
+			"env1": manifest.EnvironmentDefinition{
+				Name: "env1",
 				Type: manifest.Classic,
 				URL: manifest.URLDefinition{
 					Type:  manifest.ValueURLType,
@@ -165,18 +177,23 @@ func TestVerifyClusterGen(t *testing.T) {
 		assert.False(t, ok)
 
 		ok = VerifyEnvironmentGeneration(manifest.Environments{
-			"env": manifest.EnvironmentDefinition{
-				Name: "env",
+			"env2": manifest.EnvironmentDefinition{
+				Name: "env2",
 				Type: manifest.Platform,
 				URL: manifest.URLDefinition{
 					Type:  manifest.ValueURLType,
 					Name:  "URL",
 					Value: server.URL + "/WRONG_URL",
 				},
+				Auth: manifest.Auth{
+					OAuth: manifest.OAuth{
+						TokenEndpoint: &manifest.URLDefinition{
+							Value: server.URL + "/sso",
+						},
+					},
+				},
 			},
 		})
 		assert.False(t, ok)
-
 	})
-
 }

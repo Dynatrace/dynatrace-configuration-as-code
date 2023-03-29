@@ -20,16 +20,16 @@ import (
 	"strings"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/cmdutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
-
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/settings"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/spf13/afero"
 )
@@ -71,12 +71,11 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 	options := downloadConfigsOptions{
 		downloadOptionsShared: downloadOptionsShared{
 			environmentUrl:          env.URL.Value,
-			token:                   env.Auth.Token.Value,
-			tokenEnvVarName:         env.Auth.Token.Name,
+			environmentType:         env.Type,
+			auth:                    env.Auth,
 			outputFolder:            cmdOptions.outputFolder,
 			projectName:             cmdOptions.projectName,
 			forceOverwriteManifest:  cmdOptions.forceOverwrite,
-			clientProvider:          client.NewDynatraceClient,
 			concurrentDownloadLimit: concurrentDownloadLimit,
 		},
 		specificAPIs:    cmdOptions.specificAPIs,
@@ -84,7 +83,13 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 		onlyAPIs:        cmdOptions.onlyAPIs,
 		onlySettings:    cmdOptions.onlySettings,
 	}
-	return doDownloadConfigs(fs, api.NewAPIs(), options)
+
+	dtClient, err := cmdutils.CreateDTClient(env, false)
+	if err != nil {
+		return err
+	}
+
+	return doDownloadConfigs(fs, dtClient, api.NewAPIs(), options)
 }
 
 func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOptions) error {
@@ -98,13 +103,16 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOp
 
 	options := downloadConfigsOptions{
 		downloadOptionsShared: downloadOptionsShared{
-			environmentUrl:          cmdOptions.environmentUrl,
-			token:                   token,
-			tokenEnvVarName:         cmdOptions.envVarName,
+			environmentUrl: cmdOptions.environmentUrl,
+			auth: manifest.Auth{
+				Token: manifest.AuthSecret{
+					Name:  cmdOptions.envVarName,
+					Value: token,
+				},
+			},
 			outputFolder:            cmdOptions.outputFolder,
 			projectName:             cmdOptions.projectName,
 			forceOverwriteManifest:  cmdOptions.forceOverwrite,
-			clientProvider:          client.NewDynatraceClient,
 			concurrentDownloadLimit: concurrentDownloadLimit,
 		},
 		specificAPIs:    cmdOptions.specificAPIs,
@@ -112,7 +120,13 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOp
 		onlyAPIs:        cmdOptions.onlyAPIs,
 		onlySettings:    cmdOptions.onlySettings,
 	}
-	return doDownloadConfigs(fs, api.NewAPIs(), options)
+
+	dtClient, err := client.NewClassicClient(cmdOptions.environmentUrl, token)
+	if err != nil {
+		return err
+	}
+
+	return doDownloadConfigs(fs, dtClient, api.NewAPIs(), options)
 }
 
 type downloadConfigsOptions struct {
@@ -123,19 +137,28 @@ type downloadConfigsOptions struct {
 	onlySettings    bool
 }
 
-func doDownloadConfigs(fs afero.Fs, apis api.APIs, opts downloadConfigsOptions) error {
+func doDownloadConfigs(fs afero.Fs, c client.Client, apis api.APIs, opts downloadConfigsOptions) error {
 	err := preDownloadValidations(fs, opts.downloadOptionsShared)
 	if err != nil {
 		return err
 	}
 
+	c = client.LimitClientParallelRequests(c, opts.concurrentDownloadLimit)
+
 	if ok, unknownApis := validateSpecificAPIs(apis, opts.specificAPIs); !ok {
-		errutils.PrintError(fmt.Errorf("APIs '%v' are not known. Please consult our documentation for known API-names", strings.Join(unknownApis, ",")))
-		return fmt.Errorf("failed to load apis")
+		err := fmt.Errorf("requested APIs '%v' are not known", strings.Join(unknownApis, ","))
+		log.Error("%v. Please consult our documentation for known API names.", err)
+		return err
+	}
+
+	if ok, unknownSchemas := validateSpecificSchemas(c, opts.specificSchemas); !ok {
+		err := fmt.Errorf("requested settings-schema(s) '%v' are not known", strings.Join(unknownSchemas, ","))
+		log.Error("%v. Please consult the documentation for available schemas and verify they are available in your environment.", err)
+		return err
 	}
 
 	log.Info("Downloading from environment '%v' into project '%v'", opts.environmentUrl, opts.projectName)
-	downloadedConfigs, err := downloadConfigs(apis, opts)
+	downloadedConfigs, err := downloadConfigs(c, apis, opts)
 	if err != nil {
 		return err
 	}
@@ -155,50 +178,84 @@ func validateSpecificAPIs(a api.APIs, apiNames []string) (valid bool, unknownAPI
 	return len(unknownAPIs) == 0, unknownAPIs
 }
 
-func downloadConfigs(apis api.APIs, opts downloadConfigsOptions) (project.ConfigsPerType, error) {
-	c, err := opts.getDynatraceClient()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Dynatrace client: %w", err)
+func validateSpecificSchemas(c client.SettingsClient, schemas []string) (valid bool, unknownSchemas []string) {
+	if len(schemas) == 0 {
+		return true, nil
 	}
 
-	c = client.LimitClientParallelRequests(c, opts.concurrentDownloadLimit)
+	schemaList, err := c.ListSchemas()
+	if err != nil {
+		log.Error("failed to query available Settings Schemas: %v", err)
+		return false, schemas
+	}
+	knownSchemas := make(map[string]struct{}, len(schemaList))
+	for _, s := range schemaList {
+		knownSchemas[s.SchemaId] = struct{}{}
+	}
 
-	apisToDownload := getApisToDownload(apis, opts.specificAPIs)
+	for _, s := range schemas {
+		if _, exists := knownSchemas[s]; !exists {
+			unknownSchemas = append(unknownSchemas, s)
+		}
+	}
+	return len(unknownSchemas) == 0, unknownSchemas
+}
+
+func downloadConfigs(c client.Client, apis api.APIs, opts downloadConfigsOptions) (project.ConfigsPerType, error) {
+	configObjects := make(project.ConfigsPerType)
+
+	if shouldDownloadClassicConfigs(opts) {
+		classicCfgs, err := downloadClassicConfigs(c, apis, opts.specificAPIs, opts.projectName)
+		if err != nil {
+			return nil, err
+		}
+		maps.Copy(configObjects, classicCfgs)
+	}
+
+	if shouldDownloadSettings(opts) {
+		settingsObjects := downloadSettings(c, opts.specificSchemas, opts.projectName)
+		maps.Copy(configObjects, settingsObjects)
+	}
+
+	return configObjects, nil
+}
+
+// shouldDownloadClassicConfigs returns true unless onlySettings or specificSchemas but no specificAPIs are defined
+func shouldDownloadClassicConfigs(opts downloadConfigsOptions) bool {
+	return !opts.onlySettings && (len(opts.specificSchemas) == 0 || len(opts.specificAPIs) > 0)
+}
+
+// shouldDownloadSettings returns true unless onlyAPIs or specificAPIs but no specificSchemas are defined
+func shouldDownloadSettings(opts downloadConfigsOptions) bool {
+	return !opts.onlyAPIs && (len(opts.specificAPIs) == 0 || len(opts.specificSchemas) > 0)
+}
+
+func downloadClassicConfigs(c client.Client, apis api.APIs, specificAPIs []string, projectName string) (project.ConfigsPerType, error) {
+	apisToDownload := getApisToDownload(apis, specificAPIs)
 	if len(apisToDownload) == 0 {
 		return nil, fmt.Errorf("no APIs to download")
 	}
 
-	configObjects := make(project.ConfigsPerType)
-
-	// download specific APIs only
-	if len(opts.specificAPIs) > 0 {
+	if len(specificAPIs) > 0 {
 		log.Debug("APIs to download: \n - %v", strings.Join(maps.Keys(apisToDownload), "\n - "))
-		c := classic.DownloadAllConfigs(apisToDownload, c, opts.projectName)
-		maps.Copy(configObjects, c)
+		cfgs := classic.DownloadAllConfigs(apisToDownload, c, projectName)
+		return cfgs, nil
 	}
 
-	// download specific settings only
-	if len(opts.specificSchemas) > 0 {
-		log.Debug("Settings to download: \n - %v", strings.Join(opts.specificSchemas, "\n - "))
-		s := settings.Download(c, opts.specificSchemas, opts.projectName)
-		maps.Copy(configObjects, s)
+	log.Debug("APIs to download: \n - %v", strings.Join(maps.Keys(apisToDownload), "\n - "))
+	cfgs := classic.DownloadAllConfigs(apisToDownload, c, projectName)
+	return cfgs, nil
+}
+
+func downloadSettings(c client.Client, specificSchemas []string, projectName string) project.ConfigsPerType {
+	if len(specificSchemas) > 0 {
+		log.Debug("Settings to download: \n - %v", strings.Join(specificSchemas, "\n - "))
+		s := settings.Download(c, specificSchemas, projectName)
+		return s
 	}
 
-	// return specific download objects
-	if len(opts.specificSchemas) > 0 || len(opts.specificAPIs) > 0 {
-		return configObjects, nil
-	}
-
-	// if nothing was specified specifically, lets download all configs and settings
-	if !opts.onlySettings {
-		log.Debug("APIs to download: \n - %v", strings.Join(maps.Keys(apisToDownload), "\n - "))
-		configObjects = classic.DownloadAllConfigs(apisToDownload, c, opts.projectName)
-	}
-	if !opts.onlyAPIs {
-		settingsObjects := settings.DownloadAll(c, opts.projectName)
-		maps.Copy(configObjects, settingsObjects)
-	}
-	return configObjects, nil
+	s := settings.DownloadAll(c, projectName)
+	return s
 }
 
 // Get all v2 apis and filter for the selected ones

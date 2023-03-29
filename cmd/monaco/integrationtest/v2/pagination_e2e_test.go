@@ -30,11 +30,18 @@ import (
 	"testing"
 )
 
-func TestPagination(t *testing.T) {
+func TestPaginationClassic(t *testing.T) {
+	testPagination(t, "classic_env")
+}
+
+func TestPaginationPlatform(t *testing.T) {
+	testPagination(t, "platform_env")
+}
+
+func testPagination(t *testing.T, specificEnvironment string) {
 
 	configFolder := "test-resources/pagination-test-configs/"
 	manifestPath := configFolder + "manifest.yaml"
-	specificEnvironment := ""
 
 	fs := testutils.CreateTestFileSystem()
 
@@ -59,22 +66,22 @@ func TestPagination(t *testing.T) {
 		// Create/POST all 550 Settings
 		logOutput := strings.Builder{}
 		cmd := runner.BuildCliWithCapturedLog(fs, &logOutput)
-		cmd.SetArgs([]string{"deploy", "--verbose", manifestPath})
+		cmd.SetArgs([]string{"deploy", "--verbose", manifestPath, "--environment", specificEnvironment})
 		err := cmd.Execute()
 		assert.NilError(t, err)
-		assert.Equal(t, strings.Count(logOutput.String(), "Upserted"), totalSettings)
+		assert.Equal(t, strings.Count(logOutput.String(), "Created/Updated"), totalSettings)
 
-		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{}, "", true)
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{}, specificEnvironment, true)
 
 		logOutput.Reset()
 
 		// Update/PUT all 550 Settings - means that all previously created ones were found, and more than one 500 element page retrieved
 		cmd = runner.BuildCli(fs)
-		cmd.SetArgs([]string{"deploy", "--verbose", manifestPath})
+		cmd.SetArgs([]string{"deploy", "--verbose", manifestPath, "--environment", specificEnvironment})
 		err = cmd.Execute()
 		assert.NilError(t, err)
-		assert.Equal(t, strings.Count(logOutput.String(), "Upserted"), totalSettings)
+		assert.Equal(t, strings.Count(logOutput.String(), "Created/Updated"), totalSettings)
 
-		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{}, "", true)
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{}, specificEnvironment, true)
 	})
 }

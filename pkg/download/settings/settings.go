@@ -172,7 +172,7 @@ func (d *Downloader) convertAllObjects(objects []client.DownloadSettingsObject, 
 				Type:     o.SchemaId,
 				ConfigId: configId,
 			},
-			Type: config.Type{
+			Type: config.SettingsType{
 				SchemaId:      o.SchemaId,
 				SchemaVersion: o.SchemaVersion,
 			},

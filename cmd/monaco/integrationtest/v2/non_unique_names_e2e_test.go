@@ -65,7 +65,7 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 	})
 
 	httpClient := client.NewTokenAuthClient(token)
-	c, err := client.NewDynatraceClient(client.NewTokenAuthClient(token), url)
+	c, err := client.NewClassicClient(url, token)
 	assert.NilError(t, err)
 
 	a := api.NewAPIs()["alerting-profile"]

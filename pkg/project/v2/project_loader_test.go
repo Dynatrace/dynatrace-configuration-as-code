@@ -360,31 +360,36 @@ configs:
 
 	db, found := c["dashboard"]
 	assert.Assert(t, found, "Expected configs loaded for dashboard api")
-	assert.Equal(t, db[0].Type, config.Type{
+	dbType, ok := db[0].Type.(config.ClassicApiType)
+	assert.Assert(t, ok)
+	assert.Equal(t, dbType, config.ClassicApiType{
 		Api: "dashboard",
 	})
 
 	a, found := c["alerting-profile"]
 	assert.Assert(t, found, "Expected configs loaded for dashboard api")
-	assert.Equal(t, a[0].Type, config.Type{
+	aType, ok := a[0].Type.(config.ClassicApiType)
+	assert.Assert(t, ok)
+	assert.Equal(t, aType, config.ClassicApiType{
 		Api: "alerting-profile",
 	})
 
 	s1, found := c["builtin:super.special.schema"]
 	assert.Assert(t, found, "Expected configs loaded for setting schema 'builtin:super.special.schema'")
-	assert.Equal(t, s1[0].Type, config.Type{
+	sType, ok := s1[0].Type.(config.SettingsType)
+	assert.Assert(t, ok)
+	assert.Equal(t, sType, config.SettingsType{
 		SchemaId:      "builtin:super.special.schema",
 		SchemaVersion: "1.42.14",
-		Api:           "",
 	})
 	assert.DeepEqual(t, s1[0].Parameters[config.ScopeParameter], &value.ValueParameter{Value: "tenant"})
 
 	s2, found := c["builtin:other.cool.schema"]
 	assert.Assert(t, found, "Expected configs loaded for setting schema 'builtin:other.cool.schema'")
-	assert.Equal(t, s2[0].Type, config.Type{
+	s2Type, ok := s2[0].Type.(config.SettingsType)
+	assert.Equal(t, s2Type, config.SettingsType{
 		SchemaId:      "builtin:other.cool.schema",
 		SchemaVersion: "",
-		Api:           "",
 	})
 	assert.DeepEqual(t, s2[0].Parameters[config.ScopeParameter], &value.ValueParameter{Value: "HOST-1234567"})
 

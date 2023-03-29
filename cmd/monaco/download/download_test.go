@@ -17,7 +17,6 @@
 package download
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
@@ -177,70 +176,6 @@ func Test_checkForCircularDependencies(t *testing.T) {
 				assert.ErrorContains(t, err, "there are circular dependencies")
 			} else {
 				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
-func TestGetApisToDownload(t *testing.T) {
-	type given struct {
-		apis         api.APIs
-		specificAPIs []string
-	}
-	type expected struct {
-		apis []string
-	}
-	tests := []struct {
-		name     string
-		given    given
-		expected expected
-	}{
-		{
-			name: "filter all specific defined api",
-			given: given{
-				apis: api.APIs{
-					"api_1": api.API{ID: "api_1"},
-					"api_2": api.API{ID: "api_2"},
-				},
-				specificAPIs: []string{"api_1"},
-			},
-			expected: expected{
-				apis: []string{"api_1"},
-			},
-		}, {
-			name: "if deprecated api is defined, do not filter it",
-			given: given{
-				apis: api.APIs{
-					"api_1":          api.API{ID: "api_1"},
-					"api_2":          api.API{ID: "api_2"},
-					"deprecated_api": api.API{ID: "deprecated_api", DeprecatedBy: "new_api"},
-				},
-				specificAPIs: []string{"api_1", "deprecated_api"},
-			},
-			expected: expected{
-				apis: []string{"api_1", "deprecated_api"},
-			},
-		},
-		{
-			name: "if specific api is not requested, filter deprecated apis",
-			given: given{
-				apis: api.APIs{
-					"api_1":          api.API{ID: "api_1"},
-					"api_2":          api.API{ID: "api_2"},
-					"deprecated_api": api.API{ID: "deprecated_api", DeprecatedBy: "new_api"},
-				},
-				specificAPIs: []string{},
-			},
-			expected: expected{
-				apis: []string{"api_1", "api_2"},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			actual := getApisToDownload(tt.given.apis, tt.given.specificAPIs)
-			for _, e := range tt.expected.apis {
-				assert.Contains(t, actual, e)
 			}
 		})
 	}

@@ -30,13 +30,13 @@ import (
 )
 
 type WriterContext struct {
-	ProjectToWrite         project.Project
-	TokenEnvVarName        string
 	EnvironmentUrl         string
+	ProjectToWrite         project.Project
+	Auth                   manifest.Auth
+	EnvironmentType        manifest.EnvironmentType
 	OutputFolder           string
 	ForceOverwriteManifest bool
-
-	timestampString string
+	timestampString        string
 }
 
 func (c WriterContext) GetOutputFolderFilePath() string {
@@ -58,7 +58,7 @@ func writeToDisk(fs afero.Fs, writerContext WriterContext) error {
 	log.Debug("Preparing downloaded data for persisting")
 
 	manifestName := getManifestFilePath(fs, writerContext)
-	m := createManifest(writerContext.ProjectToWrite, writerContext.TokenEnvVarName, writerContext.EnvironmentUrl)
+	m := createManifest(writerContext)
 
 	outputFolder := writerContext.GetOutputFolderFilePath()
 
@@ -96,30 +96,26 @@ func getManifestFilePath(fs afero.Fs, writerContext WriterContext) string {
 	return fmt.Sprintf("manifest_%s.yaml", writerContext.timestampString)
 }
 
-func createManifest(proj project.Project, tokenEnvVarName string, environmentUrl string) manifest.Manifest {
+func createManifest(wc WriterContext) manifest.Manifest {
 	projectDefinition := manifest.ProjectDefinitionByProjectID{
-		proj.Id: {
-			Name: proj.Id,
-			Path: proj.Id,
+		wc.ProjectToWrite.Id: {
+			Name: wc.ProjectToWrite.Id,
+			Path: wc.ProjectToWrite.Id,
 		},
 	}
 
 	return manifest.Manifest{
 		Projects: projectDefinition,
 		Environments: map[string]manifest.EnvironmentDefinition{
-			proj.Id: {
-				Type: manifest.Classic,
-				Name: proj.Id,
+			wc.ProjectToWrite.Id: {
+				Type: wc.EnvironmentType,
+				Name: wc.ProjectToWrite.Id,
 				URL: manifest.URLDefinition{
 					Type:  manifest.ValueURLType,
-					Value: environmentUrl,
+					Value: wc.EnvironmentUrl,
 				},
 				Group: "default",
-				Auth: manifest.Auth{
-					Token: manifest.AuthSecret{
-						Name: tokenEnvVarName,
-					},
-				},
+				Auth:  wc.Auth,
 			},
 		},
 	}

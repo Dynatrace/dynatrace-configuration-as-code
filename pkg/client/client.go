@@ -21,24 +21,22 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/throttle"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/oauth2/endpoints"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
+	version2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/clientcredentials"
 	"net/http"
 	"net/url"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
-
-	"golang.org/x/oauth2"
-
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/throttle"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
-	version2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
-	"golang.org/x/oauth2/clientcredentials"
-
-	. "github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 )
 
 // ConfigClient is responsible for the classic Dynatrace configs. For settings objects, the [SettingsClient] is responsible.
@@ -48,19 +46,19 @@ type ConfigClient interface {
 	// It calls the underlying GET endpoint of the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles
 	// The result is expressed using a list of Value (id and name tuples).
-	ListConfigs(a API) (values []Value, err error)
+	ListConfigs(a api.API) (values []Value, err error)
 
 	// ReadConfigById reads a Dynatrace config identified by id from the given API.
 	// It calls the underlying GET endpoint for the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles/<id> ... to get the alerting profile
-	ReadConfigById(a API, id string) (json []byte, err error)
+	ReadConfigById(a api.API, id string) (json []byte, err error)
 
 	// UpsertConfigByName creates a given Dynatrace config if it doesn't exist and updates it otherwise using its name.
 	// It calls the underlying GET, POST, and PUT endpoints for the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles ... to check if the config is already available
 	//    POST <environment-url>/api/config/v1/alertingProfiles ... afterwards, if the config is not yet available
 	//    PUT <environment-url>/api/config/v1/alertingProfiles/<id> ... instead of POST, if the config is already available
-	UpsertConfigByName(a API, name string, payload []byte) (entity DynatraceEntity, err error)
+	UpsertConfigByName(a api.API, name string, payload []byte) (entity DynatraceEntity, err error)
 
 	// UpsertConfigByNonUniqueNameAndId creates a given Dynatrace config if it doesn't exist and updates it based on specific rules if it does not
 	// - if only one config with the name exist, behave like any other type and just update this entity
@@ -69,17 +67,17 @@ type ConfigClient interface {
 	// It calls the underlying GET and PUT endpoints for the API. E.g. for alerting profiles this would be:
 	//	 GET <environment-url>/api/config/v1/alertingProfiles ... to check if the config is already available
 	//	 PUT <environment-url>/api/config/v1/alertingProfiles/<id> ... with the given (or found by unique name) entity ID
-	UpsertConfigByNonUniqueNameAndId(a API, entityId string, name string, payload []byte) (entity DynatraceEntity, err error)
+	UpsertConfigByNonUniqueNameAndId(a api.API, entityID string, name string, payload []byte) (entity DynatraceEntity, err error)
 
 	// DeleteConfigById removes a given config for a given API using its id.
 	// It calls the DELETE endpoint for the API. E.g. for alerting profiles this would be:
 	//    DELETE <environment-url>/api/config/v1/alertingProfiles/<id> ... to delete the config
-	DeleteConfigById(a API, id string) error
+	DeleteConfigById(a api.API, id string) error
 
 	// ConfigExistsByName checks if a config with the given name exists for the given API.
 	// It calls the underlying GET endpoint for the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles
-	ConfigExistsByName(a API, name string) (exists bool, id string, err error)
+	ConfigExistsByName(a api.API, name string) (exists bool, id string, err error)
 }
 
 // DownloadSettingsObject is the response type for the ListSettings operation
@@ -170,7 +168,7 @@ type EntitiesClient interface {
 	ListEntities(EntitiesType) (EntitiesList, error)
 }
 
-//go:generate mockgen -source=client.go -destination=client_mock.go -package=client -imports .=github.com/dynatrace/dynatrace-configuration-as-code/pkg/api DynatraceClient
+//go:generate mockgen -source=client.go -destination=client_mock.go -package=client DynatraceClient
 
 // Client provides the functionality for performing basic CRUD operations on any Dynatrace API
 // supported by monaco.
@@ -192,12 +190,27 @@ type DynatraceClient struct {
 	// serverVersion is the Dynatrace server version the
 	// client will be interacting with
 	serverVersion version.Version
-	// environmentUrl is the base URL of the Dynatrace server the
+	// environmentURL is the base URL of the Dynatrace server the
 	// client will be interacting with
-	environmentUrl string
-	// client is the HTTP client that will be used by the dynatrace client
+	environmentURL string
+	// environmentURLClassic is the base URL of the classic generation
+	// Dynatrace tenant
+	environmentURLClassic string
+	// client is the underlying HTTP client that will be used to communicate
+	// with platform gen environments
 	client *http.Client
+
+	// client is the underlying HTTP client that will be used to communicate
+	// with second gen environments
+	clientClassic *http.Client
 	// retrySettings specify the retry behavior of the dynatrace client in case something goes wrong
+
+	// settingsSchemaAPIPath is the API path to use for accessing settings schemas
+	settingsSchemaAPIPath string
+
+	//  settingsObjectAPIPath is the API path to use for accessing settings objects
+	settingsObjectAPIPath string
+
 	retrySettings rest.RetrySettings
 }
 
@@ -232,7 +245,7 @@ func WithServerVersion(serverVersion version.Version) func(client *DynatraceClie
 }
 
 // WithAutoServerVersion can be used to let the client automatically determine the Dynatrace server version
-// during creation using NewDynatraceClient. If the server version is already known WithServerVersion should be used
+// during creation using newDynatraceClient. If the server version is already known WithServerVersion should be used
 func WithAutoServerVersion() func(client *DynatraceClient) {
 	return func(d *DynatraceClient) {
 		var serverVersion version.Version
@@ -242,10 +255,10 @@ func WithAutoServerVersion() func(client *DynatraceClient) {
 			// so this call would need to be "redirected" to the second gen URL, which do not currently resolve
 			d.serverVersion = version.UnknownVersion
 		} else {
-			serverVersion, err = GetDynatraceVersion(d.client, d.environmentUrl)
+			serverVersion, err = GetDynatraceVersion(d.clientClassic, d.environmentURLClassic)
 		}
 		if err != nil {
-			log.Error("Unable to determine Dynatrace server version: %v", err)
+			log.Warn("Unable to determine Dynatrace server version: %v", err)
 			d.serverVersion = version.UnknownVersion
 		} else {
 			d.serverVersion = serverVersion
@@ -287,6 +300,8 @@ func (t *TokenAuthTransport) setHeader(key, value string) {
 	t.header.Set(key, value)
 }
 
+var defaultOAuthTokenURL = endpoints.Dynatrace.TokenURL
+
 // NewTokenAuthClient creates a new HTTP client that supports token based authorization
 func NewTokenAuthClient(token string) *http.Client {
 	if !isNewDynatraceTokenFormat(token) {
@@ -297,51 +312,108 @@ func NewTokenAuthClient(token string) *http.Client {
 }
 
 // NewOAuthClient creates a new HTTP client that supports OAuth2 client credentials based authorization
-func NewOAuthClient(oauthConfig OauthCredentials) *http.Client {
+func NewOAuthClient(ctx context.Context, oauthConfig OauthCredentials) *http.Client {
+
+	tokenUrl := oauthConfig.TokenURL
+	if tokenUrl == "" {
+		log.Debug("using default tokenURL %s", tokenUrl)
+		tokenUrl = defaultOAuthTokenURL
+	}
+
 	config := clientcredentials.Config{
 		ClientID:     oauthConfig.ClientID,
 		ClientSecret: oauthConfig.ClientSecret,
-		TokenURL:     oauthConfig.TokenURL,
+		TokenURL:     tokenUrl,
 		Scopes:       oauthConfig.Scopes,
 	}
-	return config.Client(context.TODO())
+
+	return config.Client(ctx)
 }
 
-// NewDynatraceClient creates a new DynatraceClient.
-// It takes a http.Client to do its HTTP communication, a URL to the targeting Dynatrace
-// environment and an optional list of options to further configure the behavior of the client
-// It is also allowed to pass nil as httpClient
-func NewDynatraceClient(httpClient *http.Client, environmentURL string, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
-	environmentURL = strings.TrimSuffix(environmentURL, "/")
-	parsedUrl, err := url.ParseRequestURI(environmentURL)
+const (
+	settingsSchemaAPIPathClassic  = "/api/v2/settings/schemas"
+	settingsSchemaAPIPathPlatform = "/platform/classic/environment-api/v2/settings/schemas"
+	settingsObjectAPIPathClassic  = "/api/v2/settings/objects"
+	settingsObjectAPIPathPlatform = "/platform/classic/environment-api/v2/settings/objects"
+)
+
+// NewPlatformClient creates a new dynatrace client to be used for platform enabled environments
+func NewPlatformClient(dtURL string, token string, oauthCredentials OauthCredentials, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
+	dtURL = strings.TrimSuffix(dtURL, "/")
+	if err := validateURL(dtURL); err != nil {
+		return nil, err
+	}
+
+	tokenClient := NewTokenAuthClient(token)
+	oauthClient := NewOAuthClient(context.TODO(), oauthCredentials)
+
+	classicURL, err := GetDynatraceClassicURL(oauthClient, dtURL)
 	if err != nil {
-		return nil, fmt.Errorf("environment url %q was not valid: %w", environmentURL, err)
+		log.Error("Unable to determine Dynatrace classic environment URL: %v", err)
+		return nil, err
+	}
+
+	d := &DynatraceClient{
+		serverVersion:         version.Version{},
+		environmentURL:        dtURL,
+		environmentURLClassic: classicURL,
+		client:                oauthClient,
+		clientClassic:         tokenClient,
+		retrySettings:         rest.DefaultRetrySettings,
+		settingsSchemaAPIPath: settingsSchemaAPIPathPlatform,
+		settingsObjectAPIPath: settingsObjectAPIPathPlatform,
+	}
+
+	for _, o := range opts {
+		if o != nil {
+			o(d)
+		}
+	}
+	return d, nil
+}
+
+// NewClassicClient creates a new dynatrace client to be used for classic environments
+func NewClassicClient(dtURL string, token string, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
+	dtURL = strings.TrimSuffix(dtURL, "/")
+	if err := validateURL(dtURL); err != nil {
+		return nil, err
+	}
+
+	tokenClient := NewTokenAuthClient(token)
+
+	d := &DynatraceClient{
+		serverVersion:         version.Version{},
+		environmentURL:        dtURL,
+		environmentURLClassic: dtURL,
+		client:                tokenClient,
+		clientClassic:         tokenClient,
+		retrySettings:         rest.DefaultRetrySettings,
+		settingsSchemaAPIPath: settingsSchemaAPIPathClassic,
+		settingsObjectAPIPath: settingsObjectAPIPathClassic,
+	}
+
+	for _, o := range opts {
+		if o != nil {
+			o(d)
+		}
+	}
+	return d, nil
+}
+
+func validateURL(dtURL string) error {
+	parsedUrl, err := url.ParseRequestURI(dtURL)
+	if err != nil {
+		return fmt.Errorf("environment url %q was not valid: %w", dtURL, err)
 	}
 
 	if parsedUrl.Host == "" {
-		return nil, fmt.Errorf("no host specified in the url %q", environmentURL)
+		return fmt.Errorf("no host specified in the url %q", dtURL)
 	}
 
 	if parsedUrl.Scheme != "https" {
 		log.Warn("You are using an insecure connection (%s). Consider switching to HTTPS.", parsedUrl.Scheme)
 	}
-
-	if httpClient == nil {
-		httpClient = &http.Client{}
-	}
-
-	dtClient := &DynatraceClient{
-		environmentUrl: environmentURL,
-		client:         httpClient,
-		retrySettings:  rest.DefaultRetrySettings,
-		serverVersion:  version.Version{},
-	}
-
-	for _, o := range opts {
-		o(dtClient)
-	}
-
-	return dtClient, nil
+	return nil
 }
 
 func isNewDynatraceTokenFormat(token string) bool {
@@ -382,7 +454,7 @@ func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, e
 		return DynatraceEntity{}, fmt.Errorf("failed to build settings object for upsert: %w", err)
 	}
 
-	requestUrl := d.environmentUrl + pathSettingsObjects
+	requestUrl := d.environmentURL + d.settingsObjectAPIPath
 
 	resp, err := rest.SendWithRetryWithInitialTry(d.client, rest.Post, obj.Id, requestUrl, payload, d.retrySettings.Normal)
 	if err != nil {
@@ -398,28 +470,28 @@ func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, e
 		return DynatraceEntity{}, fmt.Errorf("failed to parse response: %w", err)
 	}
 
-	log.Debug("\tUpserted object %s (%s) with externalId %s", obj.Id, obj.SchemaId, externalId)
+	log.Debug("\tCreated/Updated object %s (%s) with externalId %s", obj.Id, obj.SchemaId, externalId)
 	return entity, nil
 }
 
-func (d *DynatraceClient) ListConfigs(api API) (values []Value, err error) {
+func (d *DynatraceClient) ListConfigs(api api.API) (values []Value, err error) {
 
-	fullUrl := api.CreateURL(d.environmentUrl)
-	values, err = getExistingValuesFromEndpoint(d.client, api, fullUrl, d.retrySettings)
+	fullUrl := api.CreateURL(d.environmentURLClassic)
+	values, err = getExistingValuesFromEndpoint(d.clientClassic, api, fullUrl, d.retrySettings)
 	return values, err
 }
 
-func (d *DynatraceClient) ReadConfigById(api API, id string) (json []byte, err error) {
+func (d *DynatraceClient) ReadConfigById(api api.API, id string) (json []byte, err error) {
 	var dtUrl string
 	isSingleConfigurationApi := api.SingleConfiguration
 
 	if isSingleConfigurationApi {
-		dtUrl = api.CreateURL(d.environmentUrl)
+		dtUrl = api.CreateURL(d.environmentURLClassic)
 	} else {
-		dtUrl = api.CreateURL(d.environmentUrl) + "/" + url.PathEscape(id)
+		dtUrl = api.CreateURL(d.environmentURLClassic) + "/" + url.PathEscape(id)
 	}
 
-	response, err := rest.Get(d.client, dtUrl)
+	response, err := rest.Get(d.clientClassic, dtUrl)
 
 	if err != nil {
 		return nil, err
@@ -432,28 +504,28 @@ func (d *DynatraceClient) ReadConfigById(api API, id string) (json []byte, err e
 	return response.Body, nil
 }
 
-func (d *DynatraceClient) DeleteConfigById(api API, id string) error {
+func (d *DynatraceClient) DeleteConfigById(api api.API, id string) error {
 
-	return rest.DeleteConfig(d.client, api.CreateURL(d.environmentUrl), id)
+	return rest.DeleteConfig(d.clientClassic, api.CreateURL(d.environmentURLClassic), id)
 }
 
-func (d *DynatraceClient) ConfigExistsByName(api API, name string) (exists bool, id string, err error) {
-	apiURL := api.CreateURL(d.environmentUrl)
-	existingObjectId, err := getObjectIdIfAlreadyExists(d.client, api, apiURL, name, d.retrySettings)
+func (d *DynatraceClient) ConfigExistsByName(api api.API, name string) (exists bool, id string, err error) {
+	apiURL := api.CreateURL(d.environmentURLClassic)
+	existingObjectId, err := getObjectIdIfAlreadyExists(d.clientClassic, api, apiURL, name, d.retrySettings)
 	return existingObjectId != "", existingObjectId, err
 }
 
-func (d *DynatraceClient) UpsertConfigByName(api API, name string, payload []byte) (entity DynatraceEntity, err error) {
+func (d *DynatraceClient) UpsertConfigByName(api api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
 
 	if api.ID == "extension" {
-		fullUrl := api.CreateURL(d.environmentUrl)
-		return uploadExtension(d.client, fullUrl, name, payload)
+		fullUrl := api.CreateURL(d.environmentURLClassic)
+		return uploadExtension(d.clientClassic, fullUrl, name, payload)
 	}
-	return upsertDynatraceObject(d.client, d.environmentUrl, name, api, payload, d.retrySettings)
+	return upsertDynatraceObject(d.clientClassic, d.environmentURLClassic, name, api, payload, d.retrySettings)
 }
 
-func (d *DynatraceClient) UpsertConfigByNonUniqueNameAndId(api API, entityId string, name string, payload []byte) (entity DynatraceEntity, err error) {
-	return upsertDynatraceEntityByNonUniqueNameAndId(d.client, d.environmentUrl, entityId, name, api, payload, d.retrySettings)
+func (d *DynatraceClient) UpsertConfigByNonUniqueNameAndId(api api.API, entityId string, name string, payload []byte) (entity DynatraceEntity, err error) {
+	return upsertDynatraceEntityByNonUniqueNameAndId(d.clientClassic, d.environmentURLClassic, entityId, name, api, payload, d.retrySettings)
 }
 
 // SchemaListResponse is the response type returned by the ListSchemas operation
@@ -466,7 +538,7 @@ type SchemaList []struct {
 }
 
 func (d *DynatraceClient) ListSchemas() (SchemaList, error) {
-	u, err := url.Parse(d.environmentUrl + pathSchemas)
+	u, err := url.Parse(d.environmentURL + d.settingsSchemaAPIPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse url: %w", err)
 	}
@@ -495,9 +567,9 @@ func (d *DynatraceClient) ListSchemas() (SchemaList, error) {
 }
 
 func (d *DynatraceClient) GetSettingById(objectId string) (*DownloadSettingsObject, error) {
-	u, err := url.Parse(d.environmentUrl + pathSettingsObjects + "/" + objectId)
+	u, err := url.Parse(d.environmentURL + d.settingsObjectAPIPath + "/" + objectId)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse URL '%s': %w", d.environmentUrl+pathSettingsObjects, err)
+		return nil, fmt.Errorf("failed to parse URL '%s': %w", d.environmentURL+d.settingsObjectAPIPath, err)
 	}
 
 	resp, err := rest.Get(d.client, u.String())
@@ -559,7 +631,7 @@ func (d *DynatraceClient) ListSettings(schemaId string, opts ListSettingsOptions
 		return len(parsed.Items), len(result), nil
 	}
 
-	_, err := d.listPaginated(pathSettingsObjects, params, schemaId, addToResult)
+	_, err := d.listPaginated(d.settingsObjectAPIPath, params, schemaId, addToResult)
 
 	if err != nil {
 		return nil, err
@@ -655,7 +727,7 @@ func (d *DynatraceClient) ListEntities(entitiesType EntitiesType) (EntitiesList,
 	}
 
 	runExtraction := true
-	ignoreProperties := []string{}
+	var ignoreProperties []string
 
 	for runExtraction {
 		params := genListEntitiesParams(entityType, entitiesType, ignoreProperties)
@@ -679,7 +751,7 @@ func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLa
 	receivedCount := 0
 	totalReceivedCount := 0
 
-	u, err := buildUrl(d.environmentUrl, urlPath, params)
+	u, err := buildUrl(d.environmentURL, urlPath, params)
 	if err != nil {
 		return resp, RespError{
 			Err:        err,
@@ -750,9 +822,9 @@ func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLa
 }
 
 func (d *DynatraceClient) DeleteSettings(objectID string) error {
-	u, err := url.Parse(d.environmentUrl + pathSettingsObjects)
+	u, err := url.Parse(d.environmentURL + d.settingsObjectAPIPath)
 	if err != nil {
-		return fmt.Errorf("failed to parse URL '%s': %w", d.environmentUrl+pathSettingsObjects, err)
+		return fmt.Errorf("failed to parse URL '%s': %w", d.environmentURL+d.settingsObjectAPIPath, err)
 	}
 
 	return rest.DeleteConfig(d.client, u.String(), objectID)
@@ -836,13 +908,13 @@ func logLongRunningExtractionProgress(lastLogTime *time.Time, startTime time.Tim
 		nbItemsMessage := ""
 		ETAMessage := ""
 		runningMinutes := time.Since(startTime).Minutes()
-		nbCallsPerMinute := (float64(nbCalls) / runningMinutes)
+		nbCallsPerMinute := float64(nbCalls) / runningMinutes
 		if resp.PageSize > 0 && resp.TotalCount > 0 {
-			nbProcessed := (nbCalls * resp.PageSize)
+			nbProcessed := nbCalls * resp.PageSize
 			nbLeft := resp.TotalCount - nbProcessed
 			ETAMinutes := float64(nbLeft) / (nbCallsPerMinute * float64(resp.PageSize))
 			nbItemsMessage = fmt.Sprintf(", processed %d of %d at %d items/call and", nbProcessed, resp.TotalCount, resp.PageSize)
-			ETAMessage = fmt.Sprintf("ETA: %.1f minutes", (ETAMinutes))
+			ETAMessage = fmt.Sprintf("ETA: %.1f minutes", ETAMinutes)
 		}
 
 		log.Debug("Running extration of: %s for %.1f minutes%s %.1f call/minute. %s", logLabel, runningMinutes, nbItemsMessage, nbCallsPerMinute, ETAMessage)

@@ -33,7 +33,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
-	"net/http"
 	"net/http/httptest"
 	"path/filepath"
 	"reflect"
@@ -100,8 +99,10 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 
+	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
+
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, dtClient, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -123,6 +124,8 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 	assert.Equal(t, found, true)
 	assert.Equal(t, len(configs), 1)
 
+	var _ config.Type = config.ClassicApiType{}
+
 	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
 		fakeApi.ID: []config.Config{
 			{
@@ -134,7 +137,7 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 				Group:       "default",
 				Environment: projectName,
 				Template:    contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}"}`},
-				Type:        config.Type{Api: "fake-id"},
+				Type:        config.ClassicApiType{Api: fakeApi.ID},
 			},
 		},
 	}, compareOptions...)
@@ -163,8 +166,9 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 
+	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, dtClient, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -196,7 +200,7 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 				Group:       "default",
 				Environment: projectName,
 				Template:    contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}"}`},
-				Type:        config.Type{Api: "fake-id"},
+				Type:        config.ClassicApiType{Api: "fake-id"},
 			},
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi.ID, ConfigId: "id-2"},
@@ -208,7 +212,7 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 				Group:       "default",
 				Environment: projectName,
 				Template:    contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}", "reference-to-id1": "{{.fakeid__id1__id}}"}`},
-				Type:        config.Type{Api: "fake-id"},
+				Type:        config.ClassicApiType{Api: "fake-id"},
 			},
 		},
 	}, compareOptions...)
@@ -247,8 +251,10 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 	server := client.NewIntegrationTestServer(t, testBasePath, responses)
 	fs := afero.NewMemMapFs()
 
+	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
+
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, dtClient, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -279,7 +285,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 				Group:       "default",
 				Environment: projectName,
 				Template:    contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}"}`},
-				Type:        config.Type{Api: "fake-id-1"},
+				Type:        config.ClassicApiType{Api: "fake-id-1"},
 			},
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi1.ID, ConfigId: "id-2"},
@@ -291,7 +297,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 				Group:       "default",
 				Environment: projectName,
 				Template:    contentOnlyTemplate{`{"custom-response": false, "name": "{{.name}}", "reference-to-id1": "{{.fakeid1__id1__id}}"}`},
-				Type:        config.Type{Api: "fake-id-1"},
+				Type:        config.ClassicApiType{Api: "fake-id-1"},
 			},
 		},
 		fakeApi2.ID: []config.Config{
@@ -305,7 +311,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 				Group:       "default",
 				Environment: projectName,
 				Template:    contentOnlyTemplate{`{"custom-response": "No!", "name": "{{.name}}", "subobject": {"something": "{{.fakeid1__id1__id}}"}}`},
-				Type:        config.Type{Api: "fake-id-2"},
+				Type:        config.ClassicApiType{Api: "fake-id-2"},
 			},
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: fakeApi2.ID, ConfigId: "id-4"},
@@ -317,7 +323,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 				Group:       "default",
 				Environment: projectName,
 				Template:    contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}", "reference-to-id3": "{{.fakeid2__id3__id}}"}`},
-				Type:        config.Type{Api: "fake-id-2"},
+				Type:        config.ClassicApiType{Api: "fake-id-2"},
 			},
 		},
 		fakeApi3.ID: []config.Config{
@@ -332,7 +338,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 				Group:       "default",
 				Environment: projectName,
 				Template:    contentOnlyTemplate{`{"name": "{{.name}}", "custom-response": true, "reference-to-id6-of-another-api": ["{{.fakeid2__id4__id}}" ,{"o":  "{{.fakeid1__id2__id}}"}]}`},
-				Type:        config.Type{Api: "fake-id-3"},
+				Type:        config.ClassicApiType{Api: "fake-id-3"},
 			},
 		},
 	}, compareOptions...)
@@ -359,8 +365,10 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 
+	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
+
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, dtClient, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -393,7 +401,7 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 				Group:       "default",
 				Environment: projectName,
 				Template:    contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}"}`},
-				Type:        config.Type{Api: "fake-id"},
+				Type:        config.ClassicApiType{Api: "fake-id"},
 			},
 		},
 	}, compareOptions...)
@@ -406,9 +414,7 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 
 	// APIs
 	syntheticLocationApi := api.API{ID: "synthetic-location", URLPath: "/synthetic-location", PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
-	apiMap := api.APIs{
-		syntheticLocationApi.ID: syntheticLocationApi,
-	}
+	apiMap := api.APIs{syntheticLocationApi.ID: syntheticLocationApi}
 
 	// Responses
 	responses := map[string]string{
@@ -423,8 +429,10 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 
+	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
+
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, dtClient, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -457,7 +465,7 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 				Group:       "default",
 				Environment: projectName,
 				Template:    contentOnlyTemplate{`{"type": "PRIVATE", "name": "{{.name}}"}`},
-				Type:        config.Type{Api: "synthetic-location"},
+				Type:        config.ClassicApiType{Api: "synthetic-location"},
 			},
 		},
 	}, compareOptions...)
@@ -487,8 +495,9 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 
+	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, dtClient, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -521,7 +530,7 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 				Group:       "default",
 				Environment: projectName,
 				Template:    contentOnlyTemplate{`{"dashboardMetadata": {"name": "{{.name}}", "owner": "Q"}, "tiles": []}`},
-				Type:        config.Type{Api: "dashboard"},
+				Type:        config.ClassicApiType{Api: "dashboard"},
 			},
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.ID, ConfigId: "id-2"},
@@ -532,7 +541,7 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 				Group:       "default",
 				Environment: projectName,
 				Template:    contentOnlyTemplate{`{"dashboardMetadata": {"name": "{{.name}}", "owner": "Admiral Jean-Luc Picard"}, "tiles": []}`},
-				Type:        config.Type{Api: "dashboard"},
+				Type:        config.ClassicApiType{Api: "dashboard"},
 			},
 		},
 	}, compareOptions...)
@@ -561,8 +570,10 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 
+	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
+
 	// WHEN we download everything
-	err := doDownloadConfigs(fs, apiMap, setupTestingDownloadOptions(t, server, projectName))
+	err := doDownloadConfigs(fs, dtClient, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
 	assert.NilError(t, err)
 
@@ -595,7 +606,7 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 				Group:       "default",
 				Environment: projectName,
 				Template:    contentOnlyTemplate{`{}`},
-				Type:        config.Type{Api: "anomaly-detection-metrics"},
+				Type:        config.ClassicApiType{Api: "anomaly-detection-metrics"},
 			},
 			{
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.ID, ConfigId: "my.name"},
@@ -606,7 +617,7 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 				Group:       "default",
 				Environment: projectName,
 				Template:    contentOnlyTemplate{`{}`},
-				Type:        config.Type{Api: "anomaly-detection-metrics"},
+				Type:        config.ClassicApiType{Api: "anomaly-detection-metrics"},
 			},
 		},
 	}, compareOptions...)
@@ -631,7 +642,7 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 					Group:       "default",
 					Environment: "valid",
 					Template:    contentOnlyTemplate{`{"updateWindows":{"windows":[{"id":"3","name":"Daily maintenance window"}]}}`},
-					Type:        config.Type{Api: "hosts-auto-update"},
+					Type:        config.ClassicApiType{Api: "hosts-auto-update"},
 				},
 			},
 		},
@@ -648,7 +659,7 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 					Group:       "default",
 					Environment: "updateWindows-empty",
 					Template:    contentOnlyTemplate{`{}`},
-					Type:        config.Type{Api: "hosts-auto-update"},
+					Type:        config.ClassicApiType{Api: "hosts-auto-update"},
 				},
 			},
 		},
@@ -670,7 +681,7 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 					Group:       "default",
 					Environment: "windows-missing",
 					Template:    contentOnlyTemplate{`{"updateWindows":{}}`},
-					Type:        config.Type{Api: "hosts-auto-update"},
+					Type:        config.ClassicApiType{Api: "hosts-auto-update"},
 				},
 			},
 		},
@@ -696,8 +707,9 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 
 			fs := afero.NewMemMapFs()
 
+			dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
 			// WHEN we download everything
-			err := doDownloadConfigs(fs, apiMap, setupTestingDownloadOptions(t, server, testcase.projectName))
+			err := doDownloadConfigs(fs, dtClient, apiMap, setupTestingDownloadOptions(t, server, testcase.projectName))
 
 			assert.NilError(t, err)
 
@@ -763,7 +775,10 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 	options := setupTestingDownloadOptions(t, server, projectName)
 	options.forceOverwriteManifest = true
 	options.outputFolder = testBasePath
-	err := doDownloadConfigs(fs, apis, options)
+
+	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
+
+	err := doDownloadConfigs(fs, dtClient, apis, options)
 
 	assert.NilError(t, err)
 
@@ -814,7 +829,7 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 				Group:       "default",
 				Environment: projectName,
 				Template:    contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}"}`},
-				Type:        config.Type{Api: "fake-id"},
+				Type:        config.ClassicApiType{Api: "fake-id"},
 			},
 		},
 	}, compareOptions...)
@@ -848,7 +863,10 @@ func TestDownloadIntegrationDownloadsAPIsAndSettings(t *testing.T) {
 	opts := setupTestingDownloadOptions(t, server, projectName)
 	opts.onlySettings = false
 	opts.onlyAPIs = false
-	err := doDownloadConfigs(fs, apis, opts)
+
+	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
+
+	err := doDownloadConfigs(fs, dtClient, apis, opts)
 
 	assert.NilError(t, err)
 
@@ -906,8 +924,9 @@ func TestDownloadIntegrationDownloadsOnlyAPIsIfConfigured(t *testing.T) {
 	opts := setupTestingDownloadOptions(t, server, projectName)
 	opts.onlySettings = false
 	opts.onlyAPIs = true
+	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
 
-	err := doDownloadConfigs(fs, apis, opts)
+	err := doDownloadConfigs(fs, dtClient, apis, opts)
 
 	assert.NilError(t, err)
 
@@ -962,8 +981,9 @@ func TestDownloadIntegrationDownloadsOnlySettingsIfConfigured(t *testing.T) {
 	opts := setupTestingDownloadOptions(t, server, projectName)
 	opts.onlySettings = true
 	opts.onlyAPIs = false
+	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
 
-	err := doDownloadConfigs(fs, apis, opts)
+	err := doDownloadConfigs(fs, dtClient, apis, opts)
 
 	assert.NilError(t, err)
 
@@ -998,15 +1018,16 @@ func setupTestingDownloadOptions(t *testing.T, server *httptest.Server, projectN
 
 	return downloadConfigsOptions{
 		downloadOptionsShared: downloadOptionsShared{
-			environmentUrl:          server.URL,
-			token:                   "token",
-			tokenEnvVarName:         "TOKEN_ENV_VAR",
+			environmentUrl: server.URL,
+			auth: manifest.Auth{
+				Token: manifest.AuthSecret{
+					Name:  "TOKEN_ENV_VAR",
+					Value: "token",
+				},
+			},
 			outputFolder:            "out",
 			projectName:             projectName,
 			concurrentDownloadLimit: 50,
-			clientProvider: func(httpClient *http.Client, environmentUrl string, opts ...func(client *client.DynatraceClient)) (*client.DynatraceClient, error) {
-				return client.NewDynatraceClientForTesting(environmentUrl, server.Client())
-			},
 		},
 		onlyAPIs: true,
 	}

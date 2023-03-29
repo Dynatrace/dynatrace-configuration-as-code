@@ -55,6 +55,18 @@ func TestRestoreConfigs_FromDownloadWithManifestFile(t *testing.T) {
 	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, execution_downloadConfigs)
 }
 
+// TestRestoreConfigs_FromDownloadWithPlatformManifestFile works like TestRestoreConfigs_FromDownloadWithManifestFile but
+// has a platform environment defined in the used manifest, rather than a Classic env.
+func TestRestoreConfigs_FromDownloadWithPlatformManifestFile(t *testing.T) {
+	initialConfigsFolder := "test-resources/integration-download-configs/"
+	manifestFile := initialConfigsFolder + "platform_manifest.yaml"
+	downloadFolder := "test-resources/download"
+	subsetOfConfigsToDownload := "alerting-profile,management-zone"
+	suffixTest := "_download_manifest"
+
+	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, execution_downloadConfigs)
+}
+
 // TestRestoreConfigs_FromDownloadWithCLIParameters deploys, download and re-deploys from download the download-configs test-resources
 // As this downloads all alerting-profile and management-zone configs, other tests and their cleanup are likely to interfere
 // Thus download_restore tests should be run independently to other integration tests

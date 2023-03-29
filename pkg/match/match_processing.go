@@ -46,19 +46,19 @@ func NewMatchProcessing(rawMatchListSource RawMatchList, SourceType config.Type,
 
 	e.Source = MatchProcessingEnv{
 		RawMatchList:   rawMatchListSource,
-		ConfigType:     SourceType,
-		RemainingMatch: genremainingMatchList(rawMatchListSource),
+		ConfigType:     SourceType.(config.EntityType),
+		RemainingMatch: genRemainingMatchList(rawMatchListSource),
 	}
 	e.Target = MatchProcessingEnv{
 		RawMatchList:   rawMatchListTarget,
-		ConfigType:     TargetType,
-		RemainingMatch: genremainingMatchList(rawMatchListTarget),
+		ConfigType:     TargetType.(config.EntityType),
+		RemainingMatch: genRemainingMatchList(rawMatchListTarget),
 	}
 
 	return e
 }
 
-func genremainingMatchList(rawMatchList RawMatchList) []int {
+func genRemainingMatchList(rawMatchList RawMatchList) []int {
 	remainingMatchList := make([]int, rawMatchList.Len())
 	for i := range *rawMatchList.GetValues() {
 		remainingMatchList[i] = i
@@ -69,7 +69,7 @@ func genremainingMatchList(rawMatchList RawMatchList) []int {
 
 func (e *MatchProcessing) GetEntitiesType() string {
 
-	if (e.Target.ConfigType == config.Type{}) {
+	if (e.Target.ConfigType == config.EntityType{}) {
 		return e.Source.ConfigType.EntitiesType
 	}
 	return e.Target.ConfigType.EntitiesType

@@ -97,7 +97,7 @@ func (c *typeDefinition) isSound(knownApis map[string]struct{}) (bool, error) {
 	case typesSound == 1:
 		return true, nil
 	case types == 0:
-		return false, errors.New("type configuration is missing")
+		return false, errors.New("type configuration is missing or unknown")
 	case types == 1:
 		return false, err
 	default:

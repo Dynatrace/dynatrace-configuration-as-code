@@ -16,12 +16,13 @@ package v2
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/errors"
@@ -406,6 +407,11 @@ func getConfigFromDefinition(
 		parameters[ScopeParameter] = scopeParam
 	}
 
+	t, err := getType(configType)
+	if err != nil {
+		return Config{}, []error{fmt.Errorf("failed to parse type of config %q: %w", configId, err)}
+	}
+
 	return Config{
 		Template: template,
 		Coordinate: coordinate.Coordinate{
@@ -413,20 +419,36 @@ func getConfigFromDefinition(
 			Type:     context.Type,
 			ConfigId: configId,
 		},
-		Type: Type{
-			SchemaId:      configType.Settings.Schema,
-			SchemaVersion: configType.Settings.SchemaVersion,
-			Api:           configType.Api,
-			EntitiesType:  configType.Entities.EntitiesType,
-			From:          configType.Entities.From,
-			To:            configType.Entities.To,
-		},
+		Type:           t,
 		Group:          environment.Group,
 		Environment:    environment.Name,
 		Parameters:     parameters,
 		Skip:           skipConfig,
 		OriginObjectId: definition.OriginObjectId,
 	}, nil
+}
+
+func getType(typeDef typeDefinition) (Type, error) {
+	switch {
+	case typeDef.isSettings():
+		return SettingsType{
+			SchemaId:      typeDef.Settings.Schema,
+			SchemaVersion: typeDef.Settings.SchemaVersion,
+		}, nil
+
+	case typeDef.isClassic():
+		return ClassicApiType{
+			Api: typeDef.Api,
+		}, nil
+
+	case typeDef.isEntities():
+		return EntityType{
+			EntitiesType: typeDef.Entities.EntitiesType,
+		}, nil
+
+	default:
+		return nil, fmt.Errorf("invalid typeDefinition - is neither Setting, Classic nor Entity")
+	}
 }
 
 func parseSkip(

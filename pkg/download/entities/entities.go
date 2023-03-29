@@ -174,7 +174,7 @@ func (d *Downloader) convertObject(entitiesList client.EntitiesList, entitiesTyp
 			Type:     entitiesType,
 			ConfigId: configId,
 		},
-		Type: config.Type{
+		Type: config.EntityType{
 			EntitiesType: entitiesType,
 			From:         entitiesList.From,
 			To:           entitiesList.To,

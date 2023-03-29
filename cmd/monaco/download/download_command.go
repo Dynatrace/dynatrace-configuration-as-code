@@ -15,6 +15,7 @@
 package download
 
 import (
+	"context"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
@@ -49,7 +50,7 @@ To download entities, use download entities`,
 
 	getDownloadConfigsCommand(fs, command, downloadCmd)
 
-	if featureflags.FeatureFlagEnabled("MONACO_FEAT_ENTITIES") {
+	if featureflags.Entities().Enabled() {
 		getDownloadEntitiesCommand(fs, command, downloadCmd)
 	}
 
@@ -285,17 +286,18 @@ func printUploadToSameEnvironmentWarning(env manifest.EnvironmentDefinition) {
 	if env.Type == manifest.Classic {
 		httpClient = client.NewTokenAuthClient(env.Auth.Token.Value)
 	} else {
+
 		credentials := client.OauthCredentials{
 			ClientID:     env.Auth.OAuth.ClientID.Value,
 			ClientSecret: env.Auth.OAuth.ClientSecret.Value,
-			TokenURL:     env.Auth.OAuth.TokenEndpoint.Value,
+			TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
 		}
-		httpClient = client.NewOAuthClient(credentials)
+		httpClient = client.NewOAuthClient(context.TODO(), credentials)
 	}
 
 	serverVersion, err = client.GetDynatraceVersion(httpClient, env.URL.Value)
 	if err != nil {
-		log.Error("Unable to determine server version %q: %w", env.URL.Value, err)
+		log.Warn("Unable to determine server version %q: %w", env.URL.Value, err)
 		return
 	}
 	if serverVersion.SmallerThan(version.Version{Major: 1, Minor: 262}) {

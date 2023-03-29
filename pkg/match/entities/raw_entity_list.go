@@ -74,18 +74,18 @@ func genEntityProcessing(entityPerTypeSource project.ConfigsPerType, entityPerTy
 	if err != nil {
 		return nil, err
 	}
-	sourceType := config.Type{}
+	sourceType := config.EntityType{}
 	if len(entityPerTypeSource[entitiesType]) > 0 {
-		sourceType = entityPerTypeSource[entitiesType][0].Type
+		sourceType = entityPerTypeSource[entitiesType][0].Type.(config.EntityType)
 	}
 
 	rawEntitiesTarget, err := unmarshalEntities(entityPerTypeTarget[entitiesType])
 	if err != nil {
 		return nil, err
 	}
-	targetType := config.Type{}
+	targetType := config.EntityType{}
 	if len(entityPerTypeTarget[entitiesType]) > 0 {
-		targetType = entityPerTypeTarget[entitiesType][0].Type
+		targetType = entityPerTypeTarget[entitiesType][0].Type.(config.EntityType)
 	}
 
 	return match.NewMatchProcessing(rawEntitiesSource, sourceType, rawEntitiesTarget, targetType), nil

@@ -16,14 +16,12 @@ package download
 
 import (
 	"fmt"
-	"net/http"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"net/url"
 	"path"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2/topologysort"
@@ -56,30 +54,24 @@ type downloadCommandOptionsShared struct {
 	forceOverwrite bool
 }
 
-type DynatraceClientProvider func(*http.Client, string, ...func(*client.DynatraceClient)) (*client.DynatraceClient, error)
-
 type downloadOptionsShared struct {
 	environmentUrl          string
-	token                   string
-	tokenEnvVarName         string
+	environmentType         manifest.EnvironmentType
+	auth                    manifest.Auth
 	outputFolder            string
 	projectName             string
 	forceOverwriteManifest  bool
-	clientProvider          DynatraceClientProvider
 	concurrentDownloadLimit int
-}
-
-func (c downloadOptionsShared) getDynatraceClient() (client.Client, error) {
-	return c.clientProvider(client.NewTokenAuthClient(c.token), c.environmentUrl, client.WithAutoServerVersion())
 }
 
 func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptionsShared, fs afero.Fs) error {
 	proj := download.CreateProjectData(downloadedConfigs, opts.projectName)
 
 	downloadWriterContext := download.WriterContext{
-		ProjectToWrite:         proj,
-		TokenEnvVarName:        opts.tokenEnvVarName,
 		EnvironmentUrl:         opts.environmentUrl,
+		ProjectToWrite:         proj,
+		Auth:                   opts.auth,
+		EnvironmentType:        opts.environmentType,
 		OutputFolder:           opts.outputFolder,
 		ForceOverwriteManifest: opts.forceOverwriteManifest,
 	}

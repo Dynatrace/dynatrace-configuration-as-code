@@ -36,7 +36,7 @@ func TestGenSeededMatch(t *testing.T) {
 			name: "genSeededMatch - Left (Source)",
 			matchProcessingEnv: MatchProcessingEnv{
 				RawMatchList:          getRawMatchListFromJson(entityListJsonSorted),
-				ConfigType:            config.Type{},
+				ConfigType:            config.EntityType{},
 				CurrentRemainingMatch: &[]int{0, 1, 2},
 				RemainingMatch:        []int{0, 1, 2, 3, 4, 5, 6},
 			},
@@ -47,7 +47,7 @@ func TestGenSeededMatch(t *testing.T) {
 			getId: getLeftId,
 			want: MatchProcessingEnv{
 				RawMatchList:          getRawMatchListFromJson(entityListJsonSorted),
-				ConfigType:            config.Type{},
+				ConfigType:            config.EntityType{},
 				CurrentRemainingMatch: &[]int{0, 1},
 				RemainingMatch:        []int{0, 1, 2, 3, 4, 5, 6},
 			},
@@ -56,7 +56,7 @@ func TestGenSeededMatch(t *testing.T) {
 			name: "genSeededMatch - Right (Target)",
 			matchProcessingEnv: MatchProcessingEnv{
 				RawMatchList:          getRawMatchListFromJson(entityListJsonSorted),
-				ConfigType:            config.Type{},
+				ConfigType:            config.EntityType{},
 				CurrentRemainingMatch: &[]int{0, 1, 2, 3, 4, 5, 6},
 				RemainingMatch:        []int{0, 1, 2, 3, 4, 5, 6},
 			},
@@ -67,7 +67,7 @@ func TestGenSeededMatch(t *testing.T) {
 			getId: getRightId,
 			want: MatchProcessingEnv{
 				RawMatchList:          getRawMatchListFromJson(entityListJsonSorted),
-				ConfigType:            config.Type{},
+				ConfigType:            config.EntityType{},
 				CurrentRemainingMatch: &[]int{2, 3},
 				RemainingMatch:        []int{0, 1, 2, 3, 4, 5, 6},
 			},
@@ -99,7 +99,7 @@ func TestGenUnSeededMatch(t *testing.T) {
 			name: "genUnSeededMatch - Left (Source)",
 			matchProcessingEnv: MatchProcessingEnv{
 				RawMatchList:          getRawMatchListFromJson(entityListJsonSorted),
-				ConfigType:            config.Type{},
+				ConfigType:            config.EntityType{},
 				CurrentRemainingMatch: &[]int{0, 1, 2},
 				RemainingMatch:        []int{0, 1, 2, 3, 4, 5, 6},
 			},
@@ -110,7 +110,7 @@ func TestGenUnSeededMatch(t *testing.T) {
 			getId: getLeftId,
 			want: MatchProcessingEnv{
 				RawMatchList:          getRawMatchListFromJson(entityListJsonSorted),
-				ConfigType:            config.Type{},
+				ConfigType:            config.EntityType{},
 				CurrentRemainingMatch: &[]int{2, 3, 4, 5, 6},
 				RemainingMatch:        []int{0, 1, 2, 3, 4, 5, 6},
 			},
@@ -119,7 +119,7 @@ func TestGenUnSeededMatch(t *testing.T) {
 			name: "genUnSeededMatch - Right (Target)",
 			matchProcessingEnv: MatchProcessingEnv{
 				RawMatchList:          getRawMatchListFromJson(entityListJsonSorted),
-				ConfigType:            config.Type{},
+				ConfigType:            config.EntityType{},
 				CurrentRemainingMatch: &[]int{0, 1, 2, 3, 4, 5, 6},
 				RemainingMatch:        []int{0, 1, 2, 3, 4, 5, 6},
 			},
@@ -130,7 +130,7 @@ func TestGenUnSeededMatch(t *testing.T) {
 			getId: getRightId,
 			want: MatchProcessingEnv{
 				RawMatchList:          getRawMatchListFromJson(entityListJsonSorted),
-				ConfigType:            config.Type{},
+				ConfigType:            config.EntityType{},
 				CurrentRemainingMatch: &[]int{0, 1, 4, 5, 6},
 				RemainingMatch:        []int{0, 1, 2, 3, 4, 5, 6},
 			},
@@ -161,14 +161,14 @@ func TestTrimremainingItems(t *testing.T) {
 			name: "trimremainingItems - Left (Source)",
 			matchProcessingEnv: MatchProcessingEnv{
 				RawMatchList:          getRawMatchListFromJson(entityListJsonSorted),
-				ConfigType:            config.Type{},
+				ConfigType:            config.EntityType{},
 				CurrentRemainingMatch: &[]int{0, 1, 2, 3, 4, 5, 6},
 				RemainingMatch:        []int{0, 1, 2, 3, 4, 5, 6},
 			},
 			idsToDrop: []int{0, 1},
 			want: MatchProcessingEnv{
 				RawMatchList:          getRawMatchListFromJson(entityListJsonSorted),
-				ConfigType:            config.Type{},
+				ConfigType:            config.EntityType{},
 				CurrentRemainingMatch: &[]int{2, 3, 4, 5, 6},
 				RemainingMatch:        []int{2, 3, 4, 5, 6},
 			},
@@ -177,14 +177,14 @@ func TestTrimremainingItems(t *testing.T) {
 			name: "trimremainingItems - Right (Target)",
 			matchProcessingEnv: MatchProcessingEnv{
 				RawMatchList:          getRawMatchListFromJson(entityListJsonSorted),
-				ConfigType:            config.Type{},
+				ConfigType:            config.EntityType{},
 				CurrentRemainingMatch: &[]int{0, 1, 2, 3, 4, 5, 6},
 				RemainingMatch:        []int{0, 1, 2, 3, 4, 5, 6},
 			},
 			idsToDrop: []int{2, 3},
 			want: MatchProcessingEnv{
 				RawMatchList:          getRawMatchListFromJson(entityListJsonSorted),
-				ConfigType:            config.Type{},
+				ConfigType:            config.EntityType{},
 				CurrentRemainingMatch: &[]int{0, 1, 4, 5, 6},
 				RemainingMatch:        []int{0, 1, 4, 5, 6},
 			},
@@ -216,7 +216,7 @@ func TestReduceRemainingMatchList(t *testing.T) {
 			name: "reduceRemainingMatchList - Left (Source)",
 			matchProcessingEnv: MatchProcessingEnv{
 				RawMatchList:          getRawMatchListFromJson(entityListJsonSorted),
-				ConfigType:            config.Type{},
+				ConfigType:            config.EntityType{},
 				CurrentRemainingMatch: &[]int{0, 1, 2, 3, 4, 5, 6},
 				RemainingMatch:        []int{0, 1, 2, 3, 4, 5, 6},
 			},
@@ -227,7 +227,7 @@ func TestReduceRemainingMatchList(t *testing.T) {
 			getId: getLeftId,
 			want: MatchProcessingEnv{
 				RawMatchList:          getRawMatchListFromJson(entityListJsonSorted),
-				ConfigType:            config.Type{},
+				ConfigType:            config.EntityType{},
 				CurrentRemainingMatch: &[]int{2, 3, 4, 5, 6},
 				RemainingMatch:        []int{2, 3, 4, 5, 6},
 			},
@@ -236,7 +236,7 @@ func TestReduceRemainingMatchList(t *testing.T) {
 			name: "reduceRemainingMatchList - Right (Target)",
 			matchProcessingEnv: MatchProcessingEnv{
 				RawMatchList:          getRawMatchListFromJson(entityListJsonSorted),
-				ConfigType:            config.Type{},
+				ConfigType:            config.EntityType{},
 				CurrentRemainingMatch: &[]int{0, 1, 2, 3, 4, 5, 6},
 				RemainingMatch:        []int{0, 1, 2, 3, 4, 5, 6},
 			},
@@ -247,7 +247,7 @@ func TestReduceRemainingMatchList(t *testing.T) {
 			getId: getRightId,
 			want: MatchProcessingEnv{
 				RawMatchList:          getRawMatchListFromJson(entityListJsonSorted),
-				ConfigType:            config.Type{},
+				ConfigType:            config.EntityType{},
 				CurrentRemainingMatch: &[]int{0, 1, 4, 5, 6},
 				RemainingMatch:        []int{0, 1, 4, 5, 6},
 			},

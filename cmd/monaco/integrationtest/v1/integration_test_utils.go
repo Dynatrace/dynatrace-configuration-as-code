@@ -100,8 +100,11 @@ func assertConfigAvailable(t *testing.T, client client.ConfigClient, env manifes
 	name, err := nameParam.ResolveValue(parameter.ResolveContext{})
 	assert.NilError(t, err, "Config %s should have a trivial name to resolve", config.Coordinate)
 
-	a, found := api.NewAPIs()[config.Type.Api]
-	assert.Assert(t, found, "Config %s should have a known api, but does not. Api %s does not exist", config.Coordinate, config.Type.Api)
+	typ, ok := config.Type.(v2.ClassicApiType)
+	assert.Assert(t, ok, "Config %s should be a ClassicApiType, but is a %q", config.Coordinate, config.Type.ID())
+
+	a, found := api.NewAPIs()[typ.Api]
+	assert.Assert(t, found, "Config %s should have a known api, but does not. Api %s does not exist", config.Coordinate, typ.Api)
 
 	if config.Skip {
 		exists, _, err := client.ConfigExistsByName(a, fmt.Sprint(name))

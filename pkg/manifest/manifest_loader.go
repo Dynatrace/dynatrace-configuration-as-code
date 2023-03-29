@@ -21,7 +21,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
 	version2 "github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/oauth2/endpoints"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
@@ -216,20 +215,23 @@ func parseOAuth(a oAuth) (OAuth, error) {
 		return OAuth{}, fmt.Errorf("failed to parse ClientSecret: %w", err)
 	}
 
-	var urlDef URLDefinition
-	if a.TokenEndpoint == nil {
-		urlDef = URLDefinition{
-			Value: endpoints.Dynatrace.TokenURL,
-			Type:  Absent,
+	if a.TokenEndpoint != nil {
+		urlDef, err := parseURLDefinition(*a.TokenEndpoint)
+		if err != nil {
+			return OAuth{}, fmt.Errorf(`failed to parse "tokenEndpoint": %w`, err)
 		}
-	} else if urlDef, err = parseURLDefinition(*a.TokenEndpoint); err != nil {
-		return OAuth{}, fmt.Errorf("failed to parse \"tokenEndpoint\": %w", err)
+
+		return OAuth{
+			ClientID:      clientID,
+			ClientSecret:  clientSecret,
+			TokenEndpoint: &urlDef,
+		}, nil
 	}
 
 	return OAuth{
 		ClientID:      clientID,
 		ClientSecret:  clientSecret,
-		TokenEndpoint: urlDef,
+		TokenEndpoint: nil,
 	}, nil
 }
 
@@ -426,9 +428,11 @@ func parseURLDefinition(u url) (URLDefinition, error) {
 	}
 
 	if u.Type == "" || u.Type == urlTypeValue {
+		val := strings.TrimSuffix(u.Value, "/")
+
 		return URLDefinition{
 			Type:  ValueURLType,
-			Value: u.Value,
+			Value: val,
 		}, nil
 	}
 
@@ -441,6 +445,8 @@ func parseURLDefinition(u url) (URLDefinition, error) {
 		if val == "" {
 			return URLDefinition{}, fmt.Errorf("environment variable %q is defined but has no value", u.Value)
 		}
+
+		val = strings.TrimSuffix(val, "/")
 
 		return URLDefinition{
 			Type:  EnvironmentURLType,

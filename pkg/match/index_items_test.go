@@ -338,7 +338,7 @@ func TestGenSortedItemsIndex(t *testing.T) {
 			},
 			matchProcessing: MatchProcessingEnv{
 				RawMatchList:          getRawMatchListFromJson(entityListJsonSorted),
-				ConfigType:            config.Type{},
+				ConfigType:            config.EntityType{},
 				CurrentRemainingMatch: &[]int{0, 1, 2},
 				RemainingMatch:        []int{},
 			},

@@ -23,9 +23,9 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/entities"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/spf13/afero"
 )
@@ -67,17 +67,20 @@ func (d DefaultCommand) DownloadEntitiesBasedOnManifest(fs afero.Fs, cmdOptions 
 	options := downloadEntitiesOptions{
 		downloadOptionsShared: downloadOptionsShared{
 			environmentUrl:          env.URL.Value,
-			token:                   env.Auth.Token.Value,
-			tokenEnvVarName:         env.Auth.Token.Name,
+			auth:                    env.Auth,
 			outputFolder:            cmdOptions.outputFolder,
 			projectName:             cmdOptions.projectName,
 			forceOverwriteManifest:  cmdOptions.forceOverwrite,
-			clientProvider:          client.NewDynatraceClient,
 			concurrentDownloadLimit: concurrentDownloadLimit,
 		},
 		specificEntitiesTypes: cmdOptions.specificEntitiesTypes,
 	}
-	return doDownloadEntities(fs, options)
+
+	dtClient, err := cmdutils.CreateDTClient(env, false)
+	if err != nil {
+		return err
+	}
+	return doDownloadEntities(fs, dtClient, options)
 }
 
 func (d DefaultCommand) DownloadEntities(fs afero.Fs, cmdOptions entitiesDirectDownloadOptions) error {
@@ -91,21 +94,30 @@ func (d DefaultCommand) DownloadEntities(fs afero.Fs, cmdOptions entitiesDirectD
 
 	options := downloadEntitiesOptions{
 		downloadOptionsShared: downloadOptionsShared{
-			environmentUrl:          cmdOptions.environmentUrl,
-			token:                   token,
-			tokenEnvVarName:         cmdOptions.envVarName,
+			environmentUrl: cmdOptions.environmentUrl,
+			auth: manifest.Auth{
+				Token: manifest.AuthSecret{
+					Name:  cmdOptions.envVarName,
+					Value: token,
+				},
+			},
 			outputFolder:            cmdOptions.outputFolder,
 			projectName:             cmdOptions.projectName,
 			forceOverwriteManifest:  cmdOptions.forceOverwrite,
-			clientProvider:          client.NewDynatraceClient,
 			concurrentDownloadLimit: concurrentDownloadLimit,
 		},
 		specificEntitiesTypes: cmdOptions.specificEntitiesTypes,
 	}
-	return doDownloadEntities(fs, options)
+
+	dtClient, err := client.NewClassicClient(cmdOptions.environmentUrl, token)
+	if err != nil {
+		return err
+	}
+
+	return doDownloadEntities(fs, dtClient, options)
 }
 
-func doDownloadEntities(fs afero.Fs, opts downloadEntitiesOptions) error {
+func doDownloadEntities(fs afero.Fs, dtClient client.Client, opts downloadEntitiesOptions) error {
 	err := preDownloadValidations(fs, opts.downloadOptionsShared)
 	if err != nil {
 		return err
@@ -113,40 +125,30 @@ func doDownloadEntities(fs afero.Fs, opts downloadEntitiesOptions) error {
 
 	log.Info("Downloading from environment '%v' into project '%v'", opts.environmentUrl, opts.projectName)
 
-	downloadedConfigs, err := downloadEntities(opts)
-
-	if err != nil {
-		return err
-	}
+	downloadedConfigs := downloadEntities(dtClient, opts)
 
 	return writeConfigs(downloadedConfigs, opts.downloadOptionsShared, fs)
 }
 
-func downloadEntities(opts downloadEntitiesOptions) (project.ConfigsPerType, error) {
-
-	c, err := opts.downloadOptionsShared.getDynatraceClient()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Dynatrace client: %w", err)
-	}
-
-	c = client.LimitClientParallelRequests(c, opts.downloadOptionsShared.concurrentDownloadLimit)
+func downloadEntities(dtClient client.Client, opts downloadEntitiesOptions) project.ConfigsPerType {
+	dtClient = client.LimitClientParallelRequests(dtClient, opts.downloadOptionsShared.concurrentDownloadLimit)
 
 	var entitiesObjects project.ConfigsPerType
 
 	// download specific entity types only
 	if len(opts.specificEntitiesTypes) > 0 {
 		log.Debug("Entity Types to download: \n - %v", strings.Join(opts.specificEntitiesTypes, "\n - "))
-		entitiesObjects = entities.Download(c, opts.specificEntitiesTypes, opts.projectName)
+		entitiesObjects = entities.Download(dtClient, opts.specificEntitiesTypes, opts.projectName)
 	} else {
-		entitiesObjects = entities.DownloadAll(c, opts.downloadOptionsShared.projectName)
+		entitiesObjects = entities.DownloadAll(dtClient, opts.downloadOptionsShared.projectName)
 	}
 
 	if numEntities := sumConfigs(entitiesObjects); numEntities > 0 {
 		log.Info("Downloaded %d entities types.", numEntities)
 	} else {
 		log.Info("No entities were found. No files will be created.")
-		return nil, nil
+		return nil
 	}
 
-	return entitiesObjects, nil
+	return entitiesObjects
 }

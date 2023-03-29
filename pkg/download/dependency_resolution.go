@@ -94,7 +94,7 @@ func newResolutionContext(configs project.ConfigsPerType) dependencyResolutionCo
 }
 
 func resolveScope(configToBeUpdated *config.Config, ids map[string]config.Config) {
-	if !configToBeUpdated.Type.IsSettings() {
+	if configToBeUpdated.Type.ID() != config.SettingsTypeId {
 		return
 	}
 

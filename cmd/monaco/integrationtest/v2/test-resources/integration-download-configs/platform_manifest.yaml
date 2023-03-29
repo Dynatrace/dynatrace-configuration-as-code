@@ -1,20 +1,10 @@
-manifestVersion: 1.0
-
+manifestVersion: "1.0"
 projects:
-- name: scope-parameters
-- name: mrum
-
+- name: project
 environmentGroups:
 - name: default
   environments:
-    - name: classic_env
-      url:
-        type: environment
-        value: URL_ENVIRONMENT_1
-      auth:
-        token:
-          name: TOKEN_ENVIRONMENT_1
-    - name: platform_env
+    - name: environment1
       url:
         type: environment
         value: PLATFORM_URL_ENVIRONMENT_2

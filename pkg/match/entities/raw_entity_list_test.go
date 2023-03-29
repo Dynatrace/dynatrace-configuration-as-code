@@ -171,7 +171,7 @@ func TestGenEntityProcessing(t *testing.T) {
 				"AZURE_VM": []config.Config{
 					config.Config{
 						Template: template.NewDownloadTemplate("AZURE_VM", "AZURE_VM", entityListJsonSorted),
-						Type: config.Type{
+						Type: config.EntityType{
 							EntitiesType: "AZURE_VM",
 							From:         "1",
 							To:           "2",
@@ -183,7 +183,7 @@ func TestGenEntityProcessing(t *testing.T) {
 				"AZURE_VM": []config.Config{
 					config.Config{
 						Template: template.NewDownloadTemplate("AZURE_VM", "AZURE_VM", entityListJson),
-						Type: config.Type{
+						Type: config.EntityType{
 							EntitiesType: "AZURE_VM",
 							From:         "2",
 							To:           "3",
@@ -194,13 +194,13 @@ func TestGenEntityProcessing(t *testing.T) {
 			entitiesType: "AZURE_VM",
 			want: *match.NewMatchProcessing(
 				getRawMatchListFromJson(entityListJsonSorted),
-				config.Type{
+				config.EntityType{
 					EntitiesType: "AZURE_VM",
 					From:         "1",
 					To:           "2",
 				},
 				getRawMatchListFromJson(entityListJson),
-				config.Type{
+				config.EntityType{
 					EntitiesType: "AZURE_VM",
 					From:         "2",
 					To:           "3",
