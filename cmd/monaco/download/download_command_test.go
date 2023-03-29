@@ -25,6 +25,283 @@ import (
 	"testing"
 )
 
+func TestGetDownloadCommand_directDownload(t *testing.T) {
+	t.Run("Authorization via token", func(t *testing.T) {
+		m := newMonaco(t)
+		m.EXPECT().DownloadConfigs(gomock.Any(), gomock.Any()).Return(nil)
+
+		err := m.download("direct http://some.url --token TOKEN")
+		assert.NoError(t, err)
+	})
+	t.Run("Token is missing", func(t *testing.T) {
+		err := newMonaco(t).download("direct http://some.url")
+
+		assert.EqualError(t, err, "token credentials not provided")
+	})
+	t.Run("Authorization via OAuth", func(t *testing.T) {
+		m := newMonaco(t)
+		m.EXPECT().DownloadConfigs(gomock.Any(), gomock.Any()).Return(nil)
+
+		err := m.download("direct http://some.url --token TOKEN --oauth-client-id CLIENT_ID --oauth-client-secret CLIENT_SECRET --oauth-token-endpoint TOKEN_ENDOINT")
+		assert.NoError(t, err)
+	})
+	t.Run("Clint ID for OAuth authorization is missing", func(t *testing.T) {
+		err := newMonaco(t).download("direct http://some.url --token TOKEN --oauth-client-secret CLIENT_SECRET --oauth-token-endpoint TOKEN_ENDOINT")
+		assert.ErrorContains(t, err, "OAuth clientID credentials not provided")
+	})
+	t.Run("Clint secret for OAuth authorization is missing", func(t *testing.T) {
+		err := newMonaco(t).download("direct http://some.url --token TOKEN --oauth-client-id CLIENT_ID --oauth-token-endpoint TOKEN_ENDOINT")
+		assert.ErrorContains(t, err, "OAuth client secret credentials not provided")
+	})
+	t.Run("no argument provided", func(t *testing.T) {
+		err := newMonaco(t).download("direct --token TOKEN --oauth-client-id CLIENT_ID --oauth-token-endpoint TOKEN_ENDOINT")
+		assert.ErrorContains(t, err, "url have to be provided as positional argument")
+	})
+	t.Run("no specific apis rovided", func(t *testing.T) {
+		expected := directDownloadOptions{
+			environmentUrl: "http://some.url",
+			envVarName:     "token",
+			downloadCommandOptions: downloadCommandOptions{
+				downloadCommandOptionsShared: downloadCommandOptionsShared{
+					projectName:    "test",
+					outputFolder:   "",
+					forceOverwrite: false,
+				},
+				specificAPIs:    []string{},
+				specificSchemas: []string{},
+			},
+		}
+
+		m := newMonaco(t)
+		m.EXPECT().DownloadConfigs(gomock.Any(), expected).Return(nil)
+
+		err := m.download("direct http://some.url --token token --project test")
+		assert.NoError(t, err)
+	})
+	t.Run("default project provided", func(t *testing.T) {
+		expected := directDownloadOptions{
+			environmentUrl: "http://some.url",
+			envVarName:     "token",
+			downloadCommandOptions: downloadCommandOptions{
+				downloadCommandOptionsShared: downloadCommandOptionsShared{
+					projectName:    "project",
+					outputFolder:   "",
+					forceOverwrite: false,
+				},
+				specificAPIs:    []string{},
+				specificSchemas: []string{},
+			},
+		}
+		m := newMonaco(t)
+		m.EXPECT().DownloadConfigs(gomock.Any(), expected).Return(nil)
+
+		err := m.download("direct http://some.url --token token")
+		assert.NoError(t, err)
+	})
+	t.Run("skip download of settings", func(t *testing.T) {
+		expected := directDownloadOptions{
+			environmentUrl: "test.url",
+			envVarName:     "token",
+			downloadCommandOptions: downloadCommandOptions{
+				downloadCommandOptionsShared: downloadCommandOptionsShared{
+					projectName:    "project",
+					outputFolder:   "",
+					forceOverwrite: false,
+				},
+				specificAPIs:    []string{},
+				specificSchemas: []string{},
+				onlyAPIs:        true,
+				onlySettings:    false,
+			},
+		}
+		m := newMonaco(t)
+		m.EXPECT().DownloadConfigs(gomock.Any(), expected).Return(nil)
+
+		err := m.download("direct test.url --token token --only-apis")
+		assert.NoError(t, err)
+	})
+	t.Run("skip download of APIs", func(t *testing.T) {
+		expected := directDownloadOptions{
+			environmentUrl: "test.url",
+			envVarName:     "token",
+			downloadCommandOptions: downloadCommandOptions{
+				downloadCommandOptionsShared: downloadCommandOptionsShared{
+					projectName:    "project",
+					outputFolder:   "",
+					forceOverwrite: false,
+				},
+				specificAPIs:    []string{},
+				specificSchemas: []string{},
+				onlyAPIs:        false,
+				onlySettings:    true,
+			},
+		}
+
+		m := newMonaco(t)
+		m.EXPECT().DownloadConfigs(gomock.Any(), expected).Return(nil)
+
+		err := m.download("direct test.url --token token --only-settings")
+		assert.NoError(t, err)
+	})
+	t.Run("with specific apis (multiple flags)", func(t *testing.T) {
+		expected := directDownloadOptions{
+			environmentUrl: "test.url",
+			envVarName:     "token",
+			downloadCommandOptions: downloadCommandOptions{
+				downloadCommandOptionsShared: downloadCommandOptionsShared{
+					projectName:    "test",
+					outputFolder:   "",
+					forceOverwrite: false,
+				},
+				specificAPIs:    []string{"test", "test2"},
+				specificSchemas: []string{},
+			},
+		}
+
+		m := newMonaco(t)
+		m.EXPECT().DownloadConfigs(gomock.Any(), expected).Return(nil)
+
+		err := m.download("direct test.url --token token --project test --api test --api test2")
+		assert.NoError(t, err)
+	})
+	t.Run("with specific apis (single flag)", func(t *testing.T) {
+		expected := directDownloadOptions{
+			environmentUrl: "test.url",
+			envVarName:     "token",
+			downloadCommandOptions: downloadCommandOptions{
+				downloadCommandOptionsShared: downloadCommandOptionsShared{
+					projectName:    "test",
+					outputFolder:   "",
+					forceOverwrite: false,
+				},
+				specificAPIs:    []string{"test", "test2"},
+				specificSchemas: []string{},
+			},
+		}
+
+		m := newMonaco(t)
+		m.EXPECT().DownloadConfigs(gomock.Any(), expected).Return(nil)
+
+		err := m.download("direct test.url --token token --project test --api test,test2")
+		assert.NoError(t, err)
+	})
+	t.Run("specific apis (mixed flags)", func(t *testing.T) {
+		expected := directDownloadOptions{
+			environmentUrl: "test.url",
+			envVarName:     "token",
+			downloadCommandOptions: downloadCommandOptions{
+				downloadCommandOptionsShared: downloadCommandOptionsShared{
+					projectName:    "test",
+					outputFolder:   "",
+					forceOverwrite: false,
+				},
+				specificAPIs:    []string{"test", "test2", "test3"},
+				specificSchemas: []string{},
+			},
+		}
+
+		m := newMonaco(t)
+		m.EXPECT().DownloadConfigs(gomock.Any(), expected).Return(nil)
+
+		err := m.download("direct test.url --token token --project test --api test,test2 --api test3")
+		assert.NoError(t, err)
+	})
+	t.Run("specific settings (single flag)", func(t *testing.T) {
+		expected := directDownloadOptions{
+			environmentUrl: "test.url",
+			envVarName:     "token",
+			downloadCommandOptions: downloadCommandOptions{
+				downloadCommandOptionsShared: downloadCommandOptionsShared{
+					projectName: "test",
+				},
+				specificAPIs:    []string{},
+				specificSchemas: []string{"builtin:alerting.profile", "builtin:problem.notifications"},
+			},
+		}
+		m := newMonaco(t)
+		m.EXPECT().DownloadConfigs(gomock.Any(), expected).Return(nil)
+
+		err := m.download("direct test.url --token token --project test --settings-schema builtin:alerting.profile,builtin:problem.notifications")
+		assert.NoError(t, err)
+	})
+	t.Run("specific settings (mixed flags)", func(t *testing.T) {
+		expected := directDownloadOptions{
+			environmentUrl: "test.url",
+			envVarName:     "token",
+			downloadCommandOptions: downloadCommandOptions{
+				downloadCommandOptionsShared: downloadCommandOptionsShared{
+					projectName: "test",
+				},
+				specificAPIs:    []string{},
+				specificSchemas: []string{"builtin:alerting.profile", "builtin:problem.notifications", "builtin:metric.metadata"},
+			},
+		}
+		m := newMonaco(t)
+		m.EXPECT().DownloadConfigs(gomock.Any(), expected).Return(nil)
+
+		err := m.download("direct test.url --token token --project test --settings-schema builtin:alerting.profile,builtin:problem.notifications --settings-schema builtin:metric.metadata")
+		assert.NoError(t, err)
+	})
+	t.Run("with outputfolder", func(t *testing.T) {
+		expected := directDownloadOptions{
+			environmentUrl: "test.url",
+			envVarName:     "token",
+			downloadCommandOptions: downloadCommandOptions{
+				downloadCommandOptionsShared: downloadCommandOptionsShared{
+					projectName:    "project",
+					outputFolder:   "myDownloads",
+					forceOverwrite: false,
+				},
+				specificAPIs:    []string{},
+				specificSchemas: []string{},
+			},
+		}
+
+		m := newMonaco(t)
+		m.EXPECT().DownloadConfigs(gomock.Any(), expected).Return(nil)
+
+		err := m.download("direct test.url --token token --output-folder myDownloads")
+		assert.NoError(t, err)
+	})
+	t.Run("output-folder and force overwrite", func(t *testing.T) {
+		expected := directDownloadOptions{
+			environmentUrl: "test.url",
+			envVarName:     "token",
+			downloadCommandOptions: downloadCommandOptions{
+				downloadCommandOptionsShared: downloadCommandOptionsShared{
+					projectName:    "project",
+					outputFolder:   "myDownloads",
+					forceOverwrite: true,
+				},
+				specificAPIs:    []string{},
+				specificSchemas: []string{},
+			},
+		}
+
+		m := newMonaco(t)
+		m.EXPECT().DownloadConfigs(gomock.Any(), expected).Return(nil)
+
+		err := m.download("direct test.url --token token --output-folder myDownloads --force")
+		assert.NoError(t, err)
+	})
+}
+
+type monaco struct {
+	*MockCommand
+}
+
+func newMonaco(t *testing.T) *monaco {
+	return &monaco{NewMockCommand(gomock.NewController(t))}
+}
+
+func (monaco monaco) download(bashCmd string) error {
+	cmd := GetDownloadCommand(afero.NewOsFs(), monaco.MockCommand)
+	cmd.SetArgs(strings.Split(bashCmd, " "))
+	cmd.SetOut(io.Discard) // skip output to ensure that the error message contains the error, not the help message
+
+	return cmd.Execute()
+}
+
 // TestInvalidCliCommands is a very basic test testing that invalid commands error.
 // It is not the goal to test the exact message that cobra generates, except if we supply the message.
 // Otherwise, we would run into issues upon upgrading.
@@ -42,17 +319,6 @@ func TestInvalidCliCommands(t *testing.T) {
 			"",
 			[]string{"sub-command is required"},
 		},
-		{
-			"no arguments provided to direct download",
-			"direct",
-			[]string{"url have to be provided as positional argument"},
-		},
-		//{ //TODO: this test needs to  be altered with new rules
-		//	"url is missing other required argument",
-		//	"direct some.env.url.com",
-		//	[]string{"url and token have to be provided as positional argument"},
-		//},
-		// CONFIGS
 		{
 			"manifest provided but missing specific environment",
 			"manifest manifest.yaml",
@@ -122,215 +388,6 @@ func TestValidCommands(t *testing.T) {
 		setup func(command *MockCommand)
 	}{
 		// CONFIGS
-		{
-			"direct download no specific apis",
-			"direct test.url --token token --project test",
-			func(cmd *MockCommand) {
-				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
-					environmentUrl: "test.url",
-					envVarName:     "token",
-					downloadCommandOptions: downloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
-							projectName:    "test",
-							outputFolder:   "",
-							forceOverwrite: false,
-						},
-						specificAPIs:    []string{},
-						specificSchemas: []string{},
-					},
-				})
-			},
-		},
-		{
-			"direct download with default project",
-			"direct test.url --token token",
-			func(cmd *MockCommand) {
-				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
-					environmentUrl: "test.url",
-					envVarName:     "token",
-					downloadCommandOptions: downloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
-							projectName:    "project",
-							outputFolder:   "",
-							forceOverwrite: false,
-						},
-						specificAPIs:    []string{},
-						specificSchemas: []string{},
-					},
-				})
-			},
-		},
-		{
-			"direct download - skip download of settings",
-			"direct test.url --token token --only-apis",
-			func(cmd *MockCommand) {
-				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
-					environmentUrl: "test.url",
-					envVarName:     "token",
-					downloadCommandOptions: downloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
-							projectName:    "project",
-							outputFolder:   "",
-							forceOverwrite: false,
-						},
-						specificAPIs:    []string{},
-						specificSchemas: []string{},
-						onlyAPIs:        true,
-						onlySettings:    false,
-					},
-				})
-			},
-		},
-		{
-			"direct download - skip download of APIs",
-			"direct test.url --token token --only-settings",
-			func(cmd *MockCommand) {
-				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
-					environmentUrl: "test.url",
-					envVarName:     "token",
-					downloadCommandOptions: downloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
-							projectName:    "project",
-							outputFolder:   "",
-							forceOverwrite: false,
-						},
-						specificAPIs:    []string{},
-						specificSchemas: []string{},
-						onlyAPIs:        false,
-						onlySettings:    true,
-					},
-				})
-			},
-		},
-		{
-			"direct download with specific apis (multiple flags)",
-			"direct test.url --token token --project test --api test --api test2",
-			func(cmd *MockCommand) {
-				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
-					environmentUrl: "test.url",
-					envVarName:     "token",
-					downloadCommandOptions: downloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
-							projectName:    "test",
-							outputFolder:   "",
-							forceOverwrite: false,
-						},
-						specificAPIs:    []string{"test", "test2"},
-						specificSchemas: []string{},
-					},
-				})
-			},
-		},
-		{
-			"direct download with specific apis (single flag)",
-			"direct test.url --token token --project test --api test,test2",
-			func(cmd *MockCommand) {
-				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
-					environmentUrl: "test.url",
-					envVarName:     "token",
-					downloadCommandOptions: downloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
-							projectName:    "test",
-							outputFolder:   "",
-							forceOverwrite: false,
-						},
-						specificAPIs:    []string{"test", "test2"},
-						specificSchemas: []string{},
-					},
-				})
-			},
-		},
-		{
-			"direct download with specific apis (mixed flags)",
-			"direct test.url --token token --project test --api test,test2 --api test3",
-			func(cmd *MockCommand) {
-				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
-					environmentUrl: "test.url",
-					envVarName:     "token",
-					downloadCommandOptions: downloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
-							projectName:    "test",
-							outputFolder:   "",
-							forceOverwrite: false,
-						},
-						specificAPIs:    []string{"test", "test2", "test3"},
-						specificSchemas: []string{},
-					},
-				})
-			},
-		},
-		{
-			"direct download with specific settings (single flag)",
-			"direct test.url --token token --project test --settings-schema builtin:alerting.profile,builtin:problem.notifications",
-			func(cmd *MockCommand) {
-				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
-					environmentUrl: "test.url",
-					envVarName:     "token",
-					downloadCommandOptions: downloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
-							projectName: "test",
-						},
-						specificAPIs:    []string{},
-						specificSchemas: []string{"builtin:alerting.profile", "builtin:problem.notifications"},
-					},
-				})
-			},
-		},
-		{
-			"direct download with specific settings (mixed flags)",
-			"direct test.url --token token --project test --settings-schema builtin:alerting.profile,builtin:problem.notifications --settings-schema builtin:metric.metadata",
-			func(cmd *MockCommand) {
-				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
-					environmentUrl: "test.url",
-					envVarName:     "token",
-					downloadCommandOptions: downloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
-							projectName: "test",
-						},
-						specificAPIs:    []string{},
-						specificSchemas: []string{"builtin:alerting.profile", "builtin:problem.notifications", "builtin:metric.metadata"},
-					},
-				})
-			},
-		},
-		{
-			"direct download with outputfolder",
-			"direct test.url --token token --output-folder myDownloads",
-			func(cmd *MockCommand) {
-				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
-					environmentUrl: "test.url",
-					envVarName:     "token",
-					downloadCommandOptions: downloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
-							projectName:    "project",
-							outputFolder:   "myDownloads",
-							forceOverwrite: false,
-						},
-						specificAPIs:    []string{},
-						specificSchemas: []string{},
-					},
-				})
-			},
-		},
-		{
-			"direct download with output-folder and force overwrite",
-			"direct test.url --token token --output-folder myDownloads --force",
-			func(cmd *MockCommand) {
-				cmd.EXPECT().DownloadConfigs(gomock.Any(), directDownloadOptions{
-					environmentUrl: "test.url",
-					envVarName:     "token",
-					downloadCommandOptions: downloadCommandOptions{
-						downloadCommandOptionsShared: downloadCommandOptionsShared{
-							projectName:    "project",
-							outputFolder:   "myDownloads",
-							forceOverwrite: true,
-						},
-						specificAPIs:    []string{},
-						specificSchemas: []string{},
-					},
-				})
-			},
-		},
 		{
 			"manifest download no specific apis",
 			"manifest test.yaml test_env",

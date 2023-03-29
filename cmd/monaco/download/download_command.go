@@ -64,6 +64,7 @@ func addDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.
 	var onlyAPIs bool
 	var onlySettings bool
 	var token string
+	var oAuthClientID, oAuthClientSecret, oAuthTokenEndpoint string
 
 	manifestDownloadCmd := &cobra.Command{
 		Use:     "manifest [manifest file] [environment to download]",
@@ -125,7 +126,11 @@ func addDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			switch {
 			case token == "":
-				return errors.New("authorization not provided")
+				return errors.New("token credentials not provided")
+			case (oAuthClientID == "" && oAuthClientSecret != ""):
+				return errors.New("OAuth clientID credentials not provided")
+			case (oAuthClientID != "" && oAuthClientSecret == ""):
+				return errors.New("OAuth client secret credentials not provided")
 			default:
 				return nil
 			}
@@ -156,6 +161,9 @@ func addDownloadConfigsCommand(fs afero.Fs, command Command, downloadCmd *cobra.
 	setupSharedConfigsFlags(directDownloadCmd, &project, &outputFolder, &forceOverwrite, &specificApis, &specificSettings, &onlyAPIs, &onlySettings)
 
 	directDownloadCmd.Flags().StringVar(&token, "token", "", "Token secret to connect to DT server")
+	directDownloadCmd.Flags().StringVar(&oAuthClientID, "oauth-client-id", "", "OAuth client ID is used to connect to DT server via OAuth (mandatory for OAuth access type)")
+	directDownloadCmd.Flags().StringVar(&oAuthClientSecret, "oauth-client-secret", "", "OAuth client secret is used to connect to DT server via OAuth (mandatory for OAuth access type)")
+	directDownloadCmd.Flags().StringVar(&oAuthTokenEndpoint, "oauth-token-endpoint", "", "OAuth token endpoint is location of SSO OAuth service to connect to DT server via OAuth. If not provided, default DT SSO service will be used.")
 
 	downloadCmd.AddCommand(manifestDownloadCmd)
 	downloadCmd.AddCommand(directDownloadCmd)
