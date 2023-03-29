@@ -61,7 +61,7 @@ func (d DefaultCommand) Match(fs afero.Fs, matchFileName string) error {
 		return err
 	}
 
-	stats, nbEntitiesSource, nbEntitiesTarget, err := matchEntities.MatchEntities(fs, matchParameters, configsSource, configsTarget)
+	stats, entitiesSourceCount, entitiesTargetCount, err := matchEntities.MatchEntities(fs, matchParameters, configsSource, configsTarget)
 	if err != nil {
 		return err
 	}
@@ -72,7 +72,7 @@ func (d DefaultCommand) Match(fs afero.Fs, matchFileName string) error {
 
 	p := message.NewPrinter(language.English)
 	log.Info("Finished matching %d entity types, %s source entities and %s target entities in %v",
-		len(configsSource), p.Sprintf("%d", nbEntitiesSource), p.Sprintf("%d", nbEntitiesTarget), time.Since(startTime))
+		len(configsSource), p.Sprintf("%d", entitiesSourceCount), p.Sprintf("%d", entitiesTargetCount), time.Since(startTime))
 
 	return nil
 }
@@ -110,17 +110,17 @@ func loadProject(fs afero.Fs, env match.MatchParametersEnv) (project.ConfigsPerT
 		return nil, errutils.PrintAndFormatErrors(errs, "could not load projects from manifest")
 	}
 
-	nbProjects := len(projects)
-	if nbProjects != 1 {
+	projectCount := len(projects)
+	if projectCount != 1 {
 		return nil, fmt.Errorf("loaded %d projects for project: %s and environment: %s, expected 1 project to compare for %s environment",
-			nbProjects, env.Project, env.Environment, env.EnvType)
+			projectCount, env.Project, env.Environment, env.EnvType)
 	}
 
 	project := projects[0]
-	nbEnvsInProject := len(maps.Keys(project.Configs))
-	if nbEnvsInProject != 1 {
+	envsInProjectCount := len(maps.Keys(project.Configs))
+	if envsInProjectCount != 1 {
 		return nil, fmt.Errorf("loaded %d environments for project: %s and environment: %s, expected 1 environment to compare for %s environment: List: %v",
-			nbEnvsInProject, env.Project, env.Environment, env.EnvType, maps.Keys(project.Configs))
+			envsInProjectCount, env.Project, env.Environment, env.EnvType, maps.Keys(project.Configs))
 	}
 
 	envConfigs := project.Configs[env.Environment]

@@ -21,6 +21,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
+	"runtime"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/throttle"
@@ -31,12 +38,6 @@ import (
 	version2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
-	"net/http"
-	"net/url"
-	"runtime"
-	"strconv"
-	"strings"
-	"time"
 )
 
 // ConfigClient is responsible for the classic Dynatrace configs. For settings objects, the [SettingsClient] is responsible.
@@ -767,7 +768,7 @@ func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLa
 		}
 	}
 
-	nbCalls := 1
+	callCount := 1
 	lastLogTime := time.Now()
 	expectedTotalCount := resp.TotalCount
 	nextPageKey := resp.NextPageKey
@@ -776,7 +777,7 @@ func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLa
 	for {
 
 		if nextPageKey != "" {
-			logLongRunningExtractionProgress(&lastLogTime, startTime, nbCalls, resp, logLabel)
+			logLongRunningExtractionProgress(&lastLogTime, startTime, callCount, resp, logLabel)
 
 			u = rest.AddNextPageQueryParams(u, nextPageKey)
 
@@ -807,7 +808,7 @@ func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLa
 				validateWrongCountExtracted(resp, totalReceivedCount, expectedTotalCount, urlPath, logLabel, nextPageKey, params)
 
 				nextPageKey = resp.NextPageKey
-				nbCalls++
+				callCount++
 				emptyResponseRetryCount = 0
 			}
 
@@ -902,21 +903,21 @@ func validateWrongCountExtracted(resp rest.Response, totalReceivedCount int, exp
 	}
 }
 
-func logLongRunningExtractionProgress(lastLogTime *time.Time, startTime time.Time, nbCalls int, resp rest.Response, logLabel string) {
+func logLongRunningExtractionProgress(lastLogTime *time.Time, startTime time.Time, callCount int, resp rest.Response, logLabel string) {
 	if time.Since(*lastLogTime).Minutes() >= 1 {
 		*lastLogTime = time.Now()
-		nbItemsMessage := ""
+		itemsMessageCount := ""
 		ETAMessage := ""
 		runningMinutes := time.Since(startTime).Minutes()
-		nbCallsPerMinute := float64(nbCalls) / runningMinutes
+		callPerMinuteCount := float64(callCount) / runningMinutes
 		if resp.PageSize > 0 && resp.TotalCount > 0 {
-			nbProcessed := nbCalls * resp.PageSize
-			nbLeft := resp.TotalCount - nbProcessed
-			ETAMinutes := float64(nbLeft) / (nbCallsPerMinute * float64(resp.PageSize))
-			nbItemsMessage = fmt.Sprintf(", processed %d of %d at %d items/call and", nbProcessed, resp.TotalCount, resp.PageSize)
+			processedCount := callCount * resp.PageSize
+			leftCount := resp.TotalCount - processedCount
+			ETAMinutes := float64(leftCount) / (callPerMinuteCount * float64(resp.PageSize))
+			itemsMessageCount = fmt.Sprintf(", processed %d of %d at %d items/call and", processedCount, resp.TotalCount, resp.PageSize)
 			ETAMessage = fmt.Sprintf("ETA: %.1f minutes", ETAMinutes)
 		}
 
-		log.Debug("Running extration of: %s for %.1f minutes%s %.1f call/minute. %s", logLabel, runningMinutes, nbItemsMessage, nbCallsPerMinute, ETAMessage)
+		log.Debug("Running extration of: %s for %.1f minutes%s %.1f call/minute. %s", logLabel, runningMinutes, itemsMessageCount, callPerMinuteCount, ETAMessage)
 	}
 }

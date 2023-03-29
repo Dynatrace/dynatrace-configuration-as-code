@@ -24,8 +24,8 @@ import (
 )
 
 func MatchEntities(fs afero.Fs, matchParameters match.MatchParameters, entityPerTypeSource project.ConfigsPerType, entityPerTypeTarget project.ConfigsPerType) ([]string, int, int, error) {
-	nbEntitiesSource := 0
-	nbEntitiesTarget := 0
+	entitiesSourceCount := 0
+	entitiesTargetCount := 0
 	stats := []string{fmt.Sprintf("%65s %10s %12s %10s %10s %10s", "Type", "Matched", "MultiMatched", "UnMatched", "Total", "Source")}
 
 	for entitiesType := range entityPerTypeTarget {
@@ -36,10 +36,10 @@ func MatchEntities(fs afero.Fs, matchParameters match.MatchParameters, entityPer
 		if err != nil {
 			return []string{}, 0, 0, err
 		}
-		nbEntitiesSourceType := len(entityProcessingPtr.Source.RemainingMatch)
-		nbEntitiesSource += nbEntitiesSourceType
-		nbEntitiesTargetType := len(entityProcessingPtr.Target.RemainingMatch)
-		nbEntitiesTarget += nbEntitiesTargetType
+		entitiesSourceCountType := len(entityProcessingPtr.Source.RemainingMatch)
+		entitiesSourceCount += entitiesSourceCountType
+		entitiesTargetCountType := len(entityProcessingPtr.Target.RemainingMatch)
+		entitiesTargetCount += entitiesTargetCountType
 
 		var output MatchOutputType
 		output, err = runRules(entityProcessingPtr, matchParameters)
@@ -52,8 +52,8 @@ func MatchEntities(fs afero.Fs, matchParameters match.MatchParameters, entityPer
 			return []string{}, 0, 0, fmt.Errorf("failed to persist matches of type: %s, see error: %s", entitiesType, err)
 		}
 
-		stats = append(stats, fmt.Sprintf("%65s %10d %12d %10d %10d %10d", entitiesType, len(output.Matches), len(output.MultiMatched), len(output.UnMatched), nbEntitiesTargetType, nbEntitiesSourceType))
+		stats = append(stats, fmt.Sprintf("%65s %10d %12d %10d %10d %10d", entitiesType, len(output.Matches), len(output.MultiMatched), len(output.UnMatched), entitiesTargetCountType, entitiesSourceCountType))
 	}
 
-	return stats, nbEntitiesSource, nbEntitiesTarget, nil
+	return stats, entitiesSourceCount, entitiesTargetCount, nil
 }

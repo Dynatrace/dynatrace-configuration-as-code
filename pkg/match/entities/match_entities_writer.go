@@ -36,9 +36,9 @@ func genMultiMatchedMap(remainingResultsPtr *match.IndexCompareResultList, entit
 	firstIdx := 0
 	currentId := remainingResultsPtr.CompareResults[0].LeftId
 
-	addMatchingMultiMatched := func(nbMatches int) {
-		multiMatchedMatches := make([]string, nbMatches)
-		for j := 0; j < nbMatches; j++ {
+	addMatchingMultiMatched := func(matchCount int) {
+		multiMatchedMatches := make([]string, matchCount)
+		for j := 0; j < matchCount; j++ {
 			compareResult := remainingResultsPtr.CompareResults[(j + firstIdx)]
 			targetId := compareResult.RightId
 
@@ -52,32 +52,32 @@ func genMultiMatchedMap(remainingResultsPtr *match.IndexCompareResultList, entit
 		if result.LeftId == currentId {
 
 		} else {
-			nbMatches := i - firstIdx
-			addMatchingMultiMatched(nbMatches)
+			matchCount := i - firstIdx
+			addMatchingMultiMatched(matchCount)
 
 			currentId = result.LeftId
 			firstIdx = i
 		}
 	}
-	nbMatches := len(remainingResultsPtr.CompareResults) - firstIdx
-	addMatchingMultiMatched(nbMatches)
+	matchCount := len(remainingResultsPtr.CompareResults) - firstIdx
+	addMatchingMultiMatched(matchCount)
 
 	return multiMatched
 
 }
 
 func printMultiMatchedSample(remainingResultsPtr *match.IndexCompareResultList, entityProcessingPtr *match.MatchProcessing) {
-	nbMultiMatched := len(remainingResultsPtr.CompareResults)
+	multiMatchedCount := len(remainingResultsPtr.CompareResults)
 
-	if nbMultiMatched <= 0 {
+	if multiMatchedCount <= 0 {
 		return
 	}
 
 	var maxPrint int
-	if nbMultiMatched > 10 {
+	if multiMatchedCount > 10 {
 		maxPrint = 10
 	} else {
-		maxPrint = nbMultiMatched
+		maxPrint = multiMatchedCount
 	}
 
 	for i := 0; i < maxPrint; i++ {

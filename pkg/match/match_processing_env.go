@@ -80,8 +80,8 @@ func (e *MatchProcessingEnv) trimremainingItems(idsToDrop *[]int) {
 
 	sort.Slice((*idsToDrop), func(i, j int) bool { return (*idsToDrop)[i] < (*idsToDrop)[j] })
 
-	nbRemaining := len((*e).RemainingMatch) - len(*idsToDrop)
-	newremainingItems := make([]int, nbRemaining)
+	remainingCount := len((*e).RemainingMatch) - len(*idsToDrop)
+	newremainingItems := make([]int, remainingCount)
 
 	dropI := 0
 	oldI := 0
@@ -109,9 +109,9 @@ func (e *MatchProcessingEnv) trimremainingItems(idsToDrop *[]int) {
 
 	}
 
-	if newI != nbRemaining {
+	if newI != remainingCount {
 
-		log.Error("Did not trim properly?? nbRemaining: %d newI: %d", nbRemaining, newI)
+		log.Error("Did not trim properly?? remainingCount: %d newI: %d", remainingCount, newI)
 		log.Error("Did not trim properly?? len(e.remainingItems): %d len(idsToDrop): %d", len((*e).RemainingMatch), len(*idsToDrop))
 
 	}

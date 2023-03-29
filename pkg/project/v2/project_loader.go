@@ -124,17 +124,17 @@ func filterRequiredEnvironments(environmentsMap map[string]manifest.EnvironmentD
 	}
 
 	filteredEnvironments := make([]manifest.EnvironmentDefinition, len(specificEnvironments))
-	nbEnvironementsFound := 0
+	environementsFoundCount := 0
 
 	for _, environmentDefinition := range environments {
 		if slices.Contains(specificEnvironments, environmentDefinition.Name) {
-			filteredEnvironments[nbEnvironementsFound] = environmentDefinition
-			nbEnvironementsFound++
+			filteredEnvironments[environementsFoundCount] = environmentDefinition
+			environementsFoundCount++
 		}
 	}
 
-	if nbEnvironementsFound != len(specificEnvironments) {
-		return nil, fmt.Errorf("only %d projects found in the manifest, requested projects: %v", nbEnvironementsFound, specificEnvironments)
+	if environementsFoundCount != len(specificEnvironments) {
+		return nil, fmt.Errorf("only %d projects found in the manifest, requested projects: %v", environementsFoundCount, specificEnvironments)
 	}
 
 	return filteredEnvironments, nil
@@ -147,17 +147,17 @@ func filterRequiredProjects(projects manifest.ProjectDefinitionByProjectID, spec
 	}
 
 	filteredProjects := manifest.ProjectDefinitionByProjectID{}
-	nbProjectFound := 0
+	projectFoundCount := 0
 
 	for id, projectDefinition := range projects {
 		if slices.Contains(specificProjects, projectDefinition.Name) {
 			filteredProjects[id] = projectDefinition
-			nbProjectFound++
+			projectFoundCount++
 		}
 	}
 
-	if nbProjectFound != len(specificProjects) {
-		return nil, fmt.Errorf("only %d projects found in the manifest, requested projects: %v", nbProjectFound, specificProjects)
+	if projectFoundCount != len(specificProjects) {
+		return nil, fmt.Errorf("only %d projects found in the manifest, requested projects: %v", projectFoundCount, specificProjects)
 	}
 
 	return filteredProjects, nil
