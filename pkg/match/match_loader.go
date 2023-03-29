@@ -80,17 +80,20 @@ type MatchEntryParserError struct {
 
 func getParameterEnv(context *matchLoaderContext, matchInfoDef EnvInfoDefinition, envType string) (MatchParametersEnv, []error) {
 	matchParametersEnv := MatchParametersEnv{}
-	var err error
 	var errors []error
 
-	matchParametersEnv.Manifest, err = cmdutils.GetManifest(context.fs, matchInfoDef.ManifestPath)
+	man, err := cmdutils.GetManifest(context.fs, matchInfoDef.ManifestPath)
 	if err != nil {
 		errors = append(errors, err)
+	} else {
+		matchParametersEnv.Manifest = man
 	}
 
-	matchParametersEnv.WorkingDir, _, err = cmdutils.GetFilePaths(matchInfoDef.ManifestPath)
+	workingDir, _, err := cmdutils.GetFilePaths(matchInfoDef.ManifestPath)
 	if err != nil {
 		errors = append(errors, err)
+	} else {
+		matchParametersEnv.WorkingDir = workingDir
 	}
 
 	matchParametersEnv.EnvType = envType
@@ -167,10 +170,11 @@ func LoadMatchingParameters(fs afero.Fs, matchFileName string) (matchParameters 
 		errors = append(errors, fmt.Errorf("matches type should be: %s, but was: %s", strings.Join(getMapKeys(validMatchTypes), " or "), matchFileDef.Type))
 	}
 
-	_, matchParameters.OutputDir, err = cmdutils.GetFilePaths(matchFileDef.OutputPath)
+	_, ouputDir, err := cmdutils.GetFilePaths(matchFileDef.OutputPath)
 	if err != nil {
 		errors = append(errors, err)
 	} else {
+		matchParameters.OutputDir = ouputDir
 		log.Info("Output Directory: %s", matchParameters.OutputDir)
 	}
 
