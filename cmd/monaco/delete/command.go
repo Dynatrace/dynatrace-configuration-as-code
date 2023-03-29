@@ -56,7 +56,7 @@ func GetDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 	}
 
 	deleteCmd.Flags().StringVarP(&manifestName, "manifest", "m", "manifest.yaml", "The manifest defining the environments to delete from. (default: 'manifest.yaml' in the current folder)")
-	deleteCmd.Flags().StringVarP(&deleteFile, "file", "", "delete.yaml", "The delete file defining which configurations to remove. (default: 'delete.yaml' in the current folder)")
+	deleteCmd.Flags().StringVar(&deleteFile, "file", "delete.yaml", "The delete file defining which configurations to remove. (default: 'delete.yaml' in the current folder)")
 
 	deleteCmd.Flags().StringSliceVarP(&groups, "group", "g", []string{},
 		"Specify one (or multiple) environmentGroup(s) that should be used for deletion. "+
