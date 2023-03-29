@@ -17,7 +17,6 @@
 package entities
 
 import (
-	"gotest.tools/assert"
 	"path/filepath"
 	"reflect"
 	"testing"
