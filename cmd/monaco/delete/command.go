@@ -30,17 +30,15 @@ func GetDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 
 	var environments, groups []string
 	var manifestName string
+	var deleteFile string
 
 	deleteCmd = &cobra.Command{
-		Use:     "delete <manifest.yaml> <delete.yaml>",
+		Use:     "delete --manifest <manifest.yaml> --file <delete.yaml>",
 		Short:   "Delete configurations defined in delete.yaml from the environments defined in the manifest",
-		Example: "monaco delete manifest.yaml delete.yaml -e dev-environment",
-		Args:    cobra.ExactArgs(2),
+		Example: "monaco delete --manifest manifest.yaml --file delete.yaml -e dev-environment",
+		Args:    cobra.NoArgs,
 		PreRun:  cmdutils.SilenceUsageCommand(),
 		RunE: func(cmd *cobra.Command, args []string) error {
-
-			manifestName = args[0]
-			deleteFile := args[1]
 
 			if !files.IsYamlFileExtension(manifestName) {
 				err := fmt.Errorf("wrong format for manifest file! Expected a .yaml file, but got %s", manifestName)
@@ -56,6 +54,9 @@ func GetDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 		},
 		ValidArgsFunction: completion.DeleteCompletion,
 	}
+
+	deleteCmd.Flags().StringVarP(&manifestName, "manifest", "m", "manifest.yaml", "The manifest defining the environments to delete from. (default: 'manifest.yaml' in the current folder)")
+	deleteCmd.Flags().StringVarP(&deleteFile, "file", "", "delete.yaml", "The delete file defining which configurations to remove. (default: 'delete.yaml' in the current folder)")
 
 	deleteCmd.Flags().StringSliceVarP(&groups, "group", "g", []string{},
 		"Specify one (or multiple) environmentGroup(s) that should be used for deletion. "+
