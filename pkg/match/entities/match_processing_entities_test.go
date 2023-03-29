@@ -238,9 +238,7 @@ func TestRunRules(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := runRules(&tt.matchProcessing, tt.matchParameters)
-
-			assert.NilError(t, err)
+			got := runRules(&tt.matchProcessing, tt.matchParameters)
 
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("runRules() got = %v, want %v", got, tt.want)

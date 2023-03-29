@@ -19,7 +19,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/match/rules"
 )
 
-func runRules(entityProcessingPtr *match.MatchProcessing, matchParameters match.MatchParameters) (MatchOutputType, error) {
+func runRules(entityProcessingPtr *match.MatchProcessing, matchParameters match.MatchParameters) MatchOutputType {
 
 	ruleMapGenerator := match.NewIndexRuleMapGenerator(matchParameters.SelfMatch, rules.INDEX_CONFIG_LIST_ENTITIES)
 
@@ -27,6 +27,6 @@ func runRules(entityProcessingPtr *match.MatchProcessing, matchParameters match.
 
 	outputPayload := genOutputPayload(entityProcessingPtr, remainingResultsPtr, matchedEntities)
 
-	return outputPayload, nil
+	return outputPayload
 
 }

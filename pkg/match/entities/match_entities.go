@@ -41,15 +41,11 @@ func MatchEntities(fs afero.Fs, matchParameters match.MatchParameters, entityPer
 		entitiesTargetCountType := len(entityProcessingPtr.Target.RemainingMatch)
 		entitiesTargetCount += entitiesTargetCountType
 
-		var output MatchOutputType
-		output, err = runRules(entityProcessingPtr, matchParameters)
-		if err != nil {
-			return []string{}, 0, 0, err
-		}
+		output := runRules(entityProcessingPtr, matchParameters)
 
 		err = writeMatches(fs, matchParameters, entitiesType, output)
 		if err != nil {
-			return []string{}, 0, 0, fmt.Errorf("failed to persist matches of type: %s, see error: %s", entitiesType, err)
+			return []string{}, 0, 0, fmt.Errorf("failed to persist matches of type: %s, see error: %w", entitiesType, err)
 		}
 
 		stats = append(stats, fmt.Sprintf("%65s %10d %12d %10d %10d %10d", entitiesType, len(output.Matches), len(output.MultiMatched), len(output.UnMatched), entitiesTargetCountType, entitiesSourceCountType))

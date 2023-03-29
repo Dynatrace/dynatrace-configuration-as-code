@@ -76,7 +76,7 @@ func (e *MatchProcessing) GetEntitiesType() string {
 
 }
 
-func (e *MatchProcessing) adjustremainingMatch(uniqueMatch *[]CompareResult, resultList *[]CompareResult) {
+func (e *MatchProcessing) adjustremainingMatch(uniqueMatch *[]CompareResult) {
 
 	sort.Sort(ByLeft(*uniqueMatch))
 	e.Source.reduceRemainingMatchList(uniqueMatch, getLeftId)

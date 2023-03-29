@@ -118,7 +118,7 @@ func (i *IndexRuleMapGenerator) RunIndexRuleAll(matchProcessingPtr *MatchProcess
 		uniqueMatchEntities := resultListPtr.ProcessMatches()
 		remainingResultsPtr = resultListPtr
 
-		matchProcessingPtr.adjustremainingMatch(&uniqueMatchEntities, &resultListPtr.CompareResults)
+		matchProcessingPtr.adjustremainingMatch(&uniqueMatchEntities)
 
 		matchedEntities = keepMatches(matchedEntities, uniqueMatchEntities)
 	}
