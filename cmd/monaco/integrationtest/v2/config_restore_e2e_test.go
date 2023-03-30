@@ -32,7 +32,7 @@ import (
 	"gotest.tools/assert"
 )
 
-type downloadFunction func(*testing.T, afero.Fs, string, string, string, string) error
+type downloadFunction func(*testing.T, afero.Fs, string, string, string, string, bool) error
 
 //TestRestoreConfigs validates if the configurations can be restore from the downloaded version after being deleted
 //It has 5 stages:
@@ -52,7 +52,7 @@ func TestRestoreConfigs_FromDownloadWithManifestFile(t *testing.T) {
 	subsetOfConfigsToDownload := "alerting-profile,management-zone"
 	suffixTest := "_download_manifest"
 
-	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, execution_downloadConfigs)
+	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, false, execution_downloadConfigs)
 }
 
 // TestRestoreConfigs_FromDownloadWithPlatformManifestFile works like TestRestoreConfigs_FromDownloadWithManifestFile but
@@ -64,7 +64,7 @@ func TestRestoreConfigs_FromDownloadWithPlatformManifestFile(t *testing.T) {
 	subsetOfConfigsToDownload := "alerting-profile,management-zone"
 	suffixTest := "_download_manifest"
 
-	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, execution_downloadConfigs)
+	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, false, execution_downloadConfigs)
 }
 
 // TestRestoreConfigs_FromDownloadWithCLIParameters deploys, download and re-deploys from download the download-configs test-resources
@@ -77,7 +77,17 @@ func TestRestoreConfigs_FromDownloadWithCLIParameters(t *testing.T) {
 	subsetOfConfigsToDownload := "alerting-profile,management-zone"
 	suffixTest := "_download_cli-only"
 
-	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, execution_downloadConfigsWithCLIParameters)
+	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, false, execution_downloadConfigsWithCLIParameters)
+}
+
+func TestRestoreConfigs_FromDownloadWithPlatformWithCLIParameters(t *testing.T) {
+	initialConfigsFolder := "test-resources/integration-download-configs/"
+	manifestFile := ""
+	downloadFolder := "test-resources/download"
+	subsetOfConfigsToDownload := "alerting-profile,management-zone"
+	suffixTest := "_download_cli-only"
+
+	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, true, execution_downloadConfigsWithCLIParameters)
 }
 
 func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
@@ -180,7 +190,7 @@ func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 				err := cmd.Execute()
 
 				t.Log("Downloading configs")
-				err = tt.downloadFunc(t, tt.fs, downloadFolder, tt.manifest, tt.apisToDownload, tt.settingsToDownload)
+				err = tt.downloadFunc(t, tt.fs, downloadFolder, tt.manifest, tt.apisToDownload, tt.settingsToDownload, false)
 				assert.Equal(t, tt.wantErr, err != nil)
 				for _, f := range tt.expectedFolders {
 					folderExists, _ := afero.DirExists(tt.fs, f)
@@ -206,10 +216,10 @@ func TestRestoreConfigsFull(t *testing.T) {
 	subsetOfConfigsToDownload := "all" //value only for testing
 	suffixTest := "_download_all"
 
-	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, execution_downloadConfigs)
+	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, false, execution_downloadConfigs)
 }
 
-func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolder string, suffixTest string, manifestFile string, apisToDownload string, downloadFunc downloadFunction) {
+func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolder string, suffixTest string, manifestFile string, apisToDownload string, oauthEnabled bool, downloadFunc downloadFunction) {
 	initialConfigsFolder, _ = filepath.Abs(initialConfigsFolder)
 	downloadFolder, _ = filepath.Abs(downloadFolder)
 	manifestFile, _ = filepath.Abs(manifestFile)
@@ -219,7 +229,7 @@ func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolde
 
 	assert.NilError(t, err, "Error during download preparation stage")
 
-	err = downloadFunc(t, fs, downloadFolder, manifestFile, apisToDownload, "")
+	err = downloadFunc(t, fs, downloadFolder, manifestFile, apisToDownload, "", oauthEnabled)
 	assert.NilError(t, err, "Error during download execution stage")
 
 	cleanupDeployedConfiguration(t, fs, manifestFile, suffix) // remove previously deployed configs
@@ -254,7 +264,7 @@ func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, con
 }
 
 func execution_downloadConfigsWithCLIParameters(t *testing.T, fs afero.Fs, downloadFolder string, _ string,
-	apisToDownload string, settingsToDownload string) error {
+	apisToDownload string, settingsToDownload string, oauth bool) error {
 	log.Info("BEGIN DOWNLOAD PROCESS")
 
 	downloadFolder, err := filepath.Abs(downloadFolder)
@@ -290,6 +300,10 @@ func execution_downloadConfigsWithCLIParameters(t *testing.T, fs afero.Fs, downl
 		}
 	}
 
+	if oauth {
+		parameters = append(parameters, "--oauth-client-id", "OAUTH_CLIENT_ID", "--oauth-client-secret", "OAUTH_CLIENT_SECRET")
+	}
+
 	cmd := runner.BuildCli(fs)
 	cmd.SetArgs(parameters)
 	err = cmd.Execute()
@@ -298,7 +312,7 @@ func execution_downloadConfigsWithCLIParameters(t *testing.T, fs afero.Fs, downl
 }
 
 func execution_downloadConfigs(t *testing.T, fs afero.Fs, downloadFolder string, manifestFile string,
-	apisToDownload string, settingsToDownload string) error {
+	apisToDownload string, settingsToDownload string, _ bool) error {
 	log.Info("BEGIN DOWNLOAD PROCESS")
 
 	downloadFolder, err := filepath.Abs(downloadFolder)

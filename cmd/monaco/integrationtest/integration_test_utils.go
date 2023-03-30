@@ -34,7 +34,7 @@ import (
 
 func CreateDynatraceClient(t *testing.T, environment manifest.EnvironmentDefinition) client.Client {
 
-	c, err := cmdutils.CreateDTClient(environment, false)
+	c, err := cmdutils.CreateDTClient(environment.URL.Value, environment.Auth, false)
 	assert.NilError(t, err, "failed to create test client")
 
 	return c
