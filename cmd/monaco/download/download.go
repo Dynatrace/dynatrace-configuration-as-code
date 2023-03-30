@@ -56,7 +56,6 @@ type sharedDownloadCmdOptions struct {
 
 type downloadOptionsShared struct {
 	environmentUrl          string
-	environmentType         manifest.EnvironmentType
 	auth                    manifest.Auth
 	outputFolder            string
 	projectName             string
@@ -71,7 +70,6 @@ func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptions
 		EnvironmentUrl:         opts.environmentUrl,
 		ProjectToWrite:         proj,
 		Auth:                   opts.auth,
-		EnvironmentType:        opts.environmentType,
 		OutputFolder:           opts.outputFolder,
 		ForceOverwriteManifest: opts.forceOverwriteManifest,
 	}

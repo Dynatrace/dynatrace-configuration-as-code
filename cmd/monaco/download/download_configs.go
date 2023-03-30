@@ -47,65 +47,43 @@ type manifestDownloadOptions struct {
 }
 
 type auth struct {
-	token, clientID, clientSecret, tokenEndpoint string
+	token, clientID, clientSecret string
 }
 
 func (a auth) mapToAuth() (*manifest.Auth, []error) {
 	errors := make([]error, 0)
-	var err error
-	var token, clientID, clientSecret, tokenEndpoint string
+	retVal := manifest.Auth{}
 
-	if token, err = readEnvVariable(a.token); err != nil {
+	if v, err := readEnvVariable(a.token); err != nil {
 		errors = append(errors, err)
-	}
-	retVal := manifest.Auth{
-		Token: manifest.AuthSecret{
-			Name:  a.token,
-			Value: token,
-		},
+	} else {
+		retVal.Token = v
 	}
 
 	if a.clientID != "" && a.clientSecret != "" {
-		if clientID, err = readEnvVariable(a.clientID); err != nil {
+		retVal.OAuth = &manifest.OAuth{}
+		if v, err := readEnvVariable(a.clientID); err != nil {
 			errors = append(errors, err)
+		} else {
+			retVal.OAuth.ClientID = v
 		}
-		if clientSecret, err = readEnvVariable(a.clientSecret); err != nil {
+		if v, err := readEnvVariable(a.clientSecret); err != nil {
 			errors = append(errors, err)
-		}
-
-		retVal.OAuth = manifest.OAuth{
-			ClientID: manifest.AuthSecret{
-				Name:  a.clientID,
-				Value: clientID,
-			},
-			ClientSecret: manifest.AuthSecret{
-				Name:  a.clientSecret,
-				Value: clientSecret,
-			},
-		}
-
-		if a.tokenEndpoint != "" {
-			if tokenEndpoint, err = readEnvVariable(a.tokenEndpoint); err != nil {
-				errors = append(errors, err)
-			}
-			retVal.OAuth.TokenEndpoint = &manifest.URLDefinition{
-				Type:  manifest.EnvironmentURLType,
-				Name:  a.tokenEndpoint,
-				Value: tokenEndpoint,
-			}
+		} else {
+			retVal.OAuth.ClientSecret = v
 		}
 	}
 	return &retVal, errors
 }
 
-func readEnvVariable(envVar string) (string, error) {
+func readEnvVariable(envVar string) (manifest.AuthSecret, error) {
 	var context string
 	if envVar == "" {
-		return "", fmt.Errorf("token not specified")
+		return manifest.AuthSecret{}, fmt.Errorf("unknown environment variable name")
 	} else if context = os.Getenv(envVar); context == "" {
-		return "", fmt.Errorf("the content of token '%v' is not set", envVar)
+		return manifest.AuthSecret{}, fmt.Errorf("the content of the environment variable %q is not set", envVar)
 	}
-	return context, nil
+	return manifest.AuthSecret{Name: envVar, Value: context}, nil
 }
 
 type directDownloadCmdOptions struct {
@@ -146,7 +124,6 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 	options := downloadConfigsOptions{
 		downloadOptionsShared: downloadOptionsShared{
 			environmentUrl:          env.URL.Value,
-			environmentType:         env.Type,
 			auth:                    env.Auth,
 			outputFolder:            cmdOptions.outputFolder,
 			projectName:             cmdOptions.projectName,

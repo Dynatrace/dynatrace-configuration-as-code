@@ -44,9 +44,9 @@ func CreateDTClient(env manifest.EnvironmentDefinition, dryRun bool) (client.Cli
 	switch {
 	case dryRun:
 		return client.NewDummyClient(), nil
-	case env.Type == manifest.Classic:
+	case env.Auth.OAuth == nil:
 		return client.NewClassicClient(env.URL.Value, env.Auth.Token.Value)
-	case env.Type == manifest.Platform:
+	case env.Auth.OAuth != nil:
 		oauthCredentials := client.OauthCredentials{
 			ClientID:     env.Auth.OAuth.ClientID.Value,
 			ClientSecret: env.Auth.OAuth.ClientSecret.Value,
@@ -63,10 +63,10 @@ func CreateDTClient(env manifest.EnvironmentDefinition, dryRun bool) (client.Cli
 func VerifyEnvironmentGeneration(envs manifest.Environments) bool {
 	if featureflags.VerifyEnvironmentType().Enabled() {
 		for _, env := range envs {
-			switch env.Type {
-			case manifest.Classic:
+			switch {
+			case env.Auth.OAuth == nil:
 				return isClassicEnvironment(env)
-			case manifest.Platform:
+			case env.Auth.OAuth != nil:
 				return isPlatformEnvironment(env)
 			default:
 				log.Error("Could not authorize against the environment with name %q (%s). Unknown environment type.", env.Name, env.URL.Value)

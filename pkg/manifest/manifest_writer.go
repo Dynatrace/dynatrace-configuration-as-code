@@ -133,38 +133,9 @@ func toWriteableEnvironmentGroups(environments map[string]EnvironmentDefinition)
 }
 
 func getAuth(env EnvironmentDefinition) auth {
-	if env.Type == Classic {
-		return auth{Token: getTokenSecret(env)}
-	}
-
-	var te *url
-	if env.Auth.OAuth.TokenEndpoint != nil {
-		switch env.Auth.OAuth.TokenEndpoint.Type {
-		case ValueURLType:
-			te = &url{
-				Value: env.Auth.OAuth.TokenEndpoint.Value,
-			}
-		case EnvironmentURLType:
-			te = &url{
-				Type:  urlTypeEnvironment,
-				Value: env.Auth.OAuth.TokenEndpoint.Name,
-			}
-		}
-	}
-
 	return auth{
-		Token: getTokenSecret(env),
-		OAuth: &oAuth{
-			ClientID: authSecret{
-				Type: typeEnvironment,
-				Name: env.Auth.OAuth.ClientID.Name,
-			},
-			ClientSecret: authSecret{
-				Type: typeEnvironment,
-				Name: env.Auth.OAuth.ClientSecret.Name,
-			},
-			TokenEndpoint: te,
-		},
+		Token: getTokenSecret(env.Auth, env.Name),
+		OAuth: getOAuthCredentials(env.Auth.OAuth),
 	}
 }
 
@@ -182,15 +153,49 @@ func toWriteableURL(environment EnvironmentDefinition) url {
 }
 
 // getTokenSecret returns the tokenConfig with some legacy magic string append that still might be used (?)
-func getTokenSecret(environment EnvironmentDefinition) authSecret {
-	token := environment.Name + "_TOKEN"
-
-	if environment.Auth.Token.Name != "" {
-		token = environment.Auth.Token.Name
+func getTokenSecret(a Auth, envName string) authSecret {
+	var envVarName string
+	if a.Token.Name != "" {
+		envVarName = a.Token.Name
+	} else {
+		envVarName = envName + "_TOKEN"
 	}
 
 	return authSecret{
 		Type: typeEnvironment,
-		Name: token,
+		Name: envVarName,
+	}
+}
+
+func getOAuthCredentials(a *OAuth) *oAuth {
+	if a == nil {
+		return nil
+	}
+
+	var te *url
+	if a.TokenEndpoint != nil {
+		switch a.TokenEndpoint.Type {
+		case ValueURLType:
+			te = &url{
+				Value: a.TokenEndpoint.Value,
+			}
+		case EnvironmentURLType:
+			te = &url{
+				Type:  urlTypeEnvironment,
+				Value: a.TokenEndpoint.Name,
+			}
+		}
+	}
+
+	return &oAuth{
+		ClientID: authSecret{
+			Type: typeEnvironment,
+			Name: a.ClientID.Name,
+		},
+		ClientSecret: authSecret{
+			Type: typeEnvironment,
+			Name: a.ClientSecret.Name,
+		},
+		TokenEndpoint: te,
 	}
 }

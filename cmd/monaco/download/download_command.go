@@ -258,10 +258,9 @@ func printUploadToSameEnvironmentWarning(env manifest.EnvironmentDefinition) {
 	var err error
 
 	var httpClient *http.Client
-	if env.Type == manifest.Classic {
+	if env.Auth.OAuth == nil {
 		httpClient = client.NewTokenAuthClient(env.Auth.Token.Value)
 	} else {
-
 		credentials := client.OauthCredentials{
 			ClientID:     env.Auth.OAuth.ClientID.Value,
 			ClientSecret: env.Auth.OAuth.ClientSecret.Value,

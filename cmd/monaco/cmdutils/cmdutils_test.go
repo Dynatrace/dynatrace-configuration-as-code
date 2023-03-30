@@ -55,25 +55,6 @@ func TestVerifyClusterGen(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		{
-			name: "environment type invalid - fails",
-			args: args{
-				envs: manifest.Environments{
-					"env1": manifest.EnvironmentDefinition{
-						Name: "env1",
-						Type: -6,
-						URL: manifest.URLDefinition{
-							Type:  manifest.ValueURLType,
-							Name:  "URL",
-							Value: "",
-						},
-						Group: "",
-						Auth:  manifest.Auth{},
-					},
-				},
-			},
-			wantErr: true,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -93,7 +74,6 @@ func TestVerifyClusterGen(t *testing.T) {
 		ok := VerifyEnvironmentGeneration(manifest.Environments{
 			"env": manifest.EnvironmentDefinition{
 				Name: "env",
-				Type: manifest.Classic,
 				URL: manifest.URLDefinition{
 					Type:  manifest.ValueURLType,
 					Name:  "URL",
@@ -126,14 +106,13 @@ func TestVerifyClusterGen(t *testing.T) {
 		ok := VerifyEnvironmentGeneration(manifest.Environments{
 			"env": manifest.EnvironmentDefinition{
 				Name: "env",
-				Type: manifest.Platform,
 				URL: manifest.URLDefinition{
 					Type:  manifest.ValueURLType,
 					Name:  "URL",
 					Value: server.URL,
 				},
 				Auth: manifest.Auth{
-					OAuth: manifest.OAuth{
+					OAuth: &manifest.OAuth{
 						TokenEndpoint: &manifest.URLDefinition{
 							Value: server.URL + "/sso",
 						},
@@ -166,7 +145,6 @@ func TestVerifyClusterGen(t *testing.T) {
 		ok := VerifyEnvironmentGeneration(manifest.Environments{
 			"env1": manifest.EnvironmentDefinition{
 				Name: "env1",
-				Type: manifest.Classic,
 				URL: manifest.URLDefinition{
 					Type:  manifest.ValueURLType,
 					Name:  "URL",
@@ -179,14 +157,13 @@ func TestVerifyClusterGen(t *testing.T) {
 		ok = VerifyEnvironmentGeneration(manifest.Environments{
 			"env2": manifest.EnvironmentDefinition{
 				Name: "env2",
-				Type: manifest.Platform,
 				URL: manifest.URLDefinition{
 					Type:  manifest.ValueURLType,
 					Name:  "URL",
 					Value: server.URL + "/WRONG_URL",
 				},
 				Auth: manifest.Auth{
-					OAuth: manifest.OAuth{
+					OAuth: &manifest.OAuth{
 						TokenEndpoint: &manifest.URLDefinition{
 							Value: server.URL + "/sso",
 						},

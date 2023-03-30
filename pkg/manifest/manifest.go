@@ -19,18 +19,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
 )
 
-// EnvironmentType is used to identify the type of the environment.
-// Possible values are  [Classic] and [Platform]
-type EnvironmentType int
-
-const (
-	// Classic identifies a Dynatrace Classic environment
-	Classic EnvironmentType = iota
-
-	// Platform identifies a Dynatrace Platform environment
-	Platform
-)
-
 type ProjectDefinition struct {
 	Name  string
 	Group string
@@ -54,24 +42,22 @@ type OAuth struct {
 func (o OAuth) GetTokenEndpointValue() string {
 	if o.TokenEndpoint == nil {
 		return ""
+	} else {
+		return o.TokenEndpoint.Value
 	}
-
-	return o.TokenEndpoint.Value
 }
 
 type Auth struct {
 	Token AuthSecret
-	OAuth OAuth
+	OAuth *OAuth
 }
 
 // EnvironmentDefinition holds all information about a Dynatrace environment
 type EnvironmentDefinition struct {
 	Name  string
-	Type  EnvironmentType
-	URL   URLDefinition
 	Group string
-
-	Auth Auth
+	URL   URLDefinition
+	Auth  Auth
 }
 
 // URLType describes from where the url is loaded.

@@ -33,7 +33,6 @@ type WriterContext struct {
 	EnvironmentUrl         string
 	ProjectToWrite         project.Project
 	Auth                   manifest.Auth
-	EnvironmentType        manifest.EnvironmentType
 	OutputFolder           string
 	ForceOverwriteManifest bool
 	timestampString        string
@@ -108,7 +107,6 @@ func createManifest(wc WriterContext) manifest.Manifest {
 		Projects: projectDefinition,
 		Environments: map[string]manifest.EnvironmentDefinition{
 			wc.ProjectToWrite.Id: {
-				Type: wc.EnvironmentType,
 				Name: wc.ProjectToWrite.Id,
 				URL: manifest.URLDefinition{
 					Type:  manifest.ValueURLType,
