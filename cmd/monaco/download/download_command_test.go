@@ -33,7 +33,7 @@ func TestGetDownloadCommand_directDownload(t *testing.T) {
 
 	t.Run("Authorization via token", func(t *testing.T) {
 		expected := directDownloadCmdOptions{
-			environmentUrl: "http://some.url",
+			environmentURL: "http://some.url",
 			auth:           auth{token: "TOKEN"},
 			downloadCmdOptions: downloadCmdOptions{
 				sharedDownloadCmdOptions: sharedDownloadCmdOptions{
@@ -55,7 +55,7 @@ func TestGetDownloadCommand_directDownload(t *testing.T) {
 
 	t.Run("Authorization via OAuth", func(t *testing.T) {
 		expected := directDownloadCmdOptions{
-			environmentUrl: "http://some.url",
+			environmentURL: "http://some.url",
 			auth: auth{
 				token:        "TOKEN",
 				clientID:     "CLIENT_ID",
@@ -90,7 +90,7 @@ func TestGetDownloadCommand_directDownload(t *testing.T) {
 
 	t.Run("no specific apis provided", func(t *testing.T) {
 		expected := directDownloadCmdOptions{
-			environmentUrl: "http://some.url",
+			environmentURL: "http://some.url",
 			auth:           auth{token: "token"},
 			downloadCmdOptions: downloadCmdOptions{
 				sharedDownloadCmdOptions: sharedDownloadCmdOptions{
@@ -111,7 +111,7 @@ func TestGetDownloadCommand_directDownload(t *testing.T) {
 	})
 	t.Run("default project provided", func(t *testing.T) {
 		expected := directDownloadCmdOptions{
-			environmentUrl: "http://some.url",
+			environmentURL: "http://some.url",
 			auth:           auth{token: "token"},
 			downloadCmdOptions: downloadCmdOptions{
 				sharedDownloadCmdOptions: sharedDownloadCmdOptions{
@@ -131,7 +131,7 @@ func TestGetDownloadCommand_directDownload(t *testing.T) {
 	})
 	t.Run("skip download of settings", func(t *testing.T) {
 		expected := directDownloadCmdOptions{
-			environmentUrl: "test.url",
+			environmentURL: "test.url",
 			auth:           auth{token: "token"},
 			downloadCmdOptions: downloadCmdOptions{
 				sharedDownloadCmdOptions: sharedDownloadCmdOptions{
@@ -153,7 +153,7 @@ func TestGetDownloadCommand_directDownload(t *testing.T) {
 	})
 	t.Run("skip download of APIs", func(t *testing.T) {
 		expected := directDownloadCmdOptions{
-			environmentUrl: "test.url",
+			environmentURL: "test.url",
 			auth:           auth{token: "token"},
 			downloadCmdOptions: downloadCmdOptions{
 				sharedDownloadCmdOptions: sharedDownloadCmdOptions{
@@ -176,7 +176,7 @@ func TestGetDownloadCommand_directDownload(t *testing.T) {
 	})
 	t.Run("with specific apis (multiple flags)", func(t *testing.T) {
 		expected := directDownloadCmdOptions{
-			environmentUrl: "test.url",
+			environmentURL: "test.url",
 			auth:           auth{token: "token"},
 			downloadCmdOptions: downloadCmdOptions{
 				sharedDownloadCmdOptions: sharedDownloadCmdOptions{
@@ -197,7 +197,7 @@ func TestGetDownloadCommand_directDownload(t *testing.T) {
 	})
 	t.Run("with specific apis (single flag)", func(t *testing.T) {
 		expected := directDownloadCmdOptions{
-			environmentUrl: "test.url",
+			environmentURL: "test.url",
 			auth:           auth{token: "token"},
 			downloadCmdOptions: downloadCmdOptions{
 				sharedDownloadCmdOptions: sharedDownloadCmdOptions{
@@ -218,7 +218,7 @@ func TestGetDownloadCommand_directDownload(t *testing.T) {
 	})
 	t.Run("specific apis (mixed flags)", func(t *testing.T) {
 		expected := directDownloadCmdOptions{
-			environmentUrl: "test.url",
+			environmentURL: "test.url",
 			auth:           auth{token: "token"},
 			downloadCmdOptions: downloadCmdOptions{
 				sharedDownloadCmdOptions: sharedDownloadCmdOptions{
@@ -239,7 +239,7 @@ func TestGetDownloadCommand_directDownload(t *testing.T) {
 	})
 	t.Run("specific settings (single flag)", func(t *testing.T) {
 		expected := directDownloadCmdOptions{
-			environmentUrl: "test.url",
+			environmentURL: "test.url",
 			auth:           auth{token: "token"},
 			downloadCmdOptions: downloadCmdOptions{
 				sharedDownloadCmdOptions: sharedDownloadCmdOptions{
@@ -257,7 +257,7 @@ func TestGetDownloadCommand_directDownload(t *testing.T) {
 	})
 	t.Run("specific settings (mixed flags)", func(t *testing.T) {
 		expected := directDownloadCmdOptions{
-			environmentUrl: "test.url",
+			environmentURL: "test.url",
 			auth:           auth{token: "token"},
 			downloadCmdOptions: downloadCmdOptions{
 				sharedDownloadCmdOptions: sharedDownloadCmdOptions{
@@ -275,7 +275,7 @@ func TestGetDownloadCommand_directDownload(t *testing.T) {
 	})
 	t.Run("with outputfolder", func(t *testing.T) {
 		expected := directDownloadCmdOptions{
-			environmentUrl: "test.url",
+			environmentURL: "test.url",
 			auth:           auth{token: "token"},
 			downloadCmdOptions: downloadCmdOptions{
 				sharedDownloadCmdOptions: sharedDownloadCmdOptions{
@@ -296,7 +296,7 @@ func TestGetDownloadCommand_directDownload(t *testing.T) {
 	})
 	t.Run("output-folder and force overwrite", func(t *testing.T) {
 		expected := directDownloadCmdOptions{
-			environmentUrl: "test.url",
+			environmentURL: "test.url",
 			auth:           auth{token: "token"},
 			downloadCmdOptions: downloadCmdOptions{
 				sharedDownloadCmdOptions: sharedDownloadCmdOptions{

@@ -87,7 +87,7 @@ func readEnvVariable(envVar string) (manifest.AuthSecret, error) {
 }
 
 type directDownloadCmdOptions struct {
-	environmentUrl string
+	environmentURL string
 	auth
 	downloadCmdOptions
 }
@@ -99,7 +99,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 		ManifestPath: cmdOptions.manifestFile,
 	})
 	if len(errs) > 0 {
-		err := PrintAndFormatErrors(errs, "failed to load manifest '%v'", cmdOptions.manifestFile)
+		err := printAndFormatErrors(errs, "failed to load manifest '%v'", cmdOptions.manifestFile)
 		return err
 	}
 
@@ -123,7 +123,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 
 	options := downloadConfigsOptions{
 		downloadOptionsShared: downloadOptionsShared{
-			environmentUrl:          env.URL.Value,
+			environmentURL:          env.URL.Value,
 			auth:                    env.Auth,
 			outputFolder:            cmdOptions.outputFolder,
 			projectName:             cmdOptions.projectName,
@@ -147,15 +147,15 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadCmdOptions) error {
 	concurrentDownloadLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
 	a, errors := cmdOptions.auth.mapToAuth()
-	errors = append(errors, validateParameters(cmdOptions.environmentUrl, cmdOptions.projectName)...)
+	errors = append(errors, validateParameters(cmdOptions.environmentURL, cmdOptions.projectName)...)
 
 	if len(errors) > 0 {
-		return PrintAndFormatErrors(errors, "not all necessary information is present to start downloading configurations")
+		return printAndFormatErrors(errors, "not all necessary information is present to start downloading configurations")
 	}
 
 	options := downloadConfigsOptions{
 		downloadOptionsShared: downloadOptionsShared{
-			environmentUrl:          cmdOptions.environmentUrl,
+			environmentURL:          cmdOptions.environmentURL,
 			auth:                    *a,
 			outputFolder:            cmdOptions.outputFolder,
 			projectName:             cmdOptions.projectName,
@@ -168,7 +168,7 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadCm
 		onlySettings:    cmdOptions.onlySettings,
 	}
 
-	dtClient, err := client.NewClassicClient(cmdOptions.environmentUrl, options.auth.Token.Value)
+	dtClient, err := client.NewClassicClient(cmdOptions.environmentURL, options.auth.Token.Value)
 	if err != nil {
 		return err
 	}
@@ -204,7 +204,7 @@ func doDownloadConfigs(fs afero.Fs, c client.Client, apis api.APIs, opts downloa
 		return err
 	}
 
-	log.Info("Downloading from environment '%v' into project '%v'", opts.environmentUrl, opts.projectName)
+	log.Info("Downloading from environment '%v' into project '%v'", opts.environmentURL, opts.projectName)
 	downloadedConfigs, err := downloadConfigs(c, apis, opts)
 	if err != nil {
 		return err
@@ -309,9 +309,8 @@ func downloadSettings(c client.Client, specificSchemas []string, projectName str
 func getApisToDownload(apis api.APIs, specificAPIs []string) api.APIs {
 	if len(specificAPIs) > 0 {
 		return apis.Filter(api.RetainByName(specificAPIs), skipDownloadFilter)
-	} else {
-		return apis.Filter(skipDownloadFilter, removeDeprecatedEndpoints)
 	}
+	return apis.Filter(skipDownloadFilter, removeDeprecatedEndpoints)
 }
 
 func skipDownloadFilter(api api.API) bool {

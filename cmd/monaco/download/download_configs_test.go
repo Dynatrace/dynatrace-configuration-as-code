@@ -194,7 +194,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 			c := client.NewMockClient(gomock.NewController(t))
 
 			tt.givenOpts.downloadOptionsShared = downloadOptionsShared{
-				environmentUrl: "testurl.com",
+				environmentURL: "testurl.com",
 				auth: manifest.Auth{
 					Token: manifest.AuthSecret{
 						Name:  "TEST_TOKEN_VAR",
@@ -480,7 +480,7 @@ func TestDownloadConfigsExitsEarlyForUnknownAPI(t *testing.T) {
 		onlyAPIs:        false,
 		onlySettings:    false,
 		downloadOptionsShared: downloadOptionsShared{
-			environmentUrl: "testurl.com",
+			environmentURL: "testurl.com",
 			auth: manifest.Auth{
 				Token: manifest.AuthSecret{
 					Name:  "TEST_TOKEN_VAR",
@@ -508,7 +508,7 @@ func TestDownloadConfigsExitsEarlyForUnknownSettingsSchema(t *testing.T) {
 		onlyAPIs:        false,
 		onlySettings:    false,
 		downloadOptionsShared: downloadOptionsShared{
-			environmentUrl: "testurl.com",
+			environmentURL: "testurl.com",
 			auth: manifest.Auth{
 				Token: manifest.AuthSecret{
 					Name:  "TEST_TOKEN_VAR",

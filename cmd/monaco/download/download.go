@@ -55,7 +55,7 @@ type sharedDownloadCmdOptions struct {
 }
 
 type downloadOptionsShared struct {
-	environmentUrl          string
+	environmentURL          string
 	auth                    manifest.Auth
 	outputFolder            string
 	projectName             string
@@ -67,7 +67,7 @@ func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptions
 	proj := download.CreateProjectData(downloadedConfigs, opts.projectName)
 
 	downloadWriterContext := download.WriterContext{
-		EnvironmentUrl:         opts.environmentUrl,
+		EnvironmentUrl:         opts.environmentURL,
 		ProjectToWrite:         proj,
 		Auth:                   opts.auth,
 		OutputFolder:           opts.outputFolder,
@@ -109,14 +109,14 @@ func sumConfigs(configs project.ConfigsPerType) int {
 }
 
 // validateParameters checks that all necessary variables have been set.
-func validateParameters(environmentUrl, projectName string) []error {
+func validateParameters(environmentURL, projectName string) []error {
 	errors := make([]error, 0)
 
-	if environmentUrl == "" {
+	if environmentURL == "" {
 		errors = append(errors, fmt.Errorf("url not specified"))
 	}
 
-	if _, err := url.Parse(environmentUrl); err != nil {
+	if _, err := url.Parse(environmentURL); err != nil {
 		errors = append(errors, fmt.Errorf("url is invalid: %w", err))
 	}
 
@@ -131,7 +131,7 @@ func preDownloadValidations(fs afero.Fs, opts downloadOptionsShared) error {
 
 	errs := validateOutputFolder(fs, opts.outputFolder, opts.projectName)
 	if len(errs) > 0 {
-		return PrintAndFormatErrors(errs, "output folder is invalid")
+		return printAndFormatErrors(errs, "output folder is invalid")
 	}
 
 	return nil
@@ -149,7 +149,7 @@ func validateOutputFolder(fs afero.Fs, outputFolder, project string) []error {
 
 }
 
-func PrintAndFormatErrors(errors []error, message string, a ...any) error {
+func printAndFormatErrors(errors []error, message string, a ...any) error {
 	errutils.PrintErrors(errors)
 	return fmt.Errorf(message, a...)
 }

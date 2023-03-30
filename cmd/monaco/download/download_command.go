@@ -40,7 +40,7 @@ func GetDownloadCommand(fs afero.Fs, command Command) (downloadCmd *cobra.Comman
 	var onlySettings bool
 	var token string
 	var oAuthClientID, oAuthClientSecret string
-	var manifest string
+	var manifestFile string
 	var url string
 
 	downloadCmd = &cobra.Command{
@@ -67,7 +67,7 @@ Either downloading based on an existing manifest, or define an URL pointing to a
 				}
 
 				options := directDownloadCmdOptions{
-					environmentUrl: url,
+					environmentURL: url,
 					auth: auth{
 						token:        token,
 						clientID:     oAuthClientID,
@@ -93,7 +93,7 @@ Either downloading based on an existing manifest, or define an URL pointing to a
 					return errors.New("missing --environment/-e flag")
 				}
 				options := manifestDownloadOptions{
-					manifestFile:            manifest,
+					manifestFile:            manifestFile,
 					specificEnvironmentName: specificEnvironment,
 					downloadCmdOptions: downloadCmdOptions{
 						sharedDownloadCmdOptions: sharedDownloadCmdOptions{
@@ -117,7 +117,7 @@ Either downloading based on an existing manifest, or define an URL pointing to a
 	downloadCmd.Flags().StringVar(&token, "token", "", "Token secret to connect to DT server")
 	downloadCmd.Flags().StringVar(&oAuthClientID, "oauth-client-id", "", "OAuth client ID is used to connect to DT server via OAuth (mandatory for OAuth access type)")
 	downloadCmd.Flags().StringVar(&oAuthClientSecret, "oauth-client-secret", "", "OAuth client secret is used to connect to DT server via OAuth (mandatory for OAuth access type)")
-	downloadCmd.Flags().StringVarP(&manifest, "manifest", "m", "manifest.yaml", "Path to the manifest.yaml file to be read")
+	downloadCmd.Flags().StringVarP(&manifestFile, "manifest", "m", "manifest.yaml", "Path to the manifest.yaml file to be read")
 	downloadCmd.Flags().StringVarP(&specificEnvironment, "environment", "e", "", "Specify a concrete environment that shall be downloaded (only usable with --manifest)")
 	downloadCmd.Flags().StringVarP(&url, "url", "u", "", "URL to the dynatrace environment from which to download configuration from")
 	if featureflags.Entities().Enabled() {
