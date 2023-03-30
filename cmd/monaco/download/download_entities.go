@@ -83,7 +83,7 @@ func (d DefaultCommand) DownloadEntitiesBasedOnManifest(fs afero.Fs, cmdOptions 
 		specificEntitiesTypes: cmdOptions.specificEntitiesTypes,
 	}
 
-	dtClient, err := cmdutils.CreateDTClient(env, false)
+	dtClient, err := cmdutils.CreateDTClient(env.URL.Value, env.Auth, false)
 	if err != nil {
 		return err
 	}

@@ -89,7 +89,7 @@ func doDeploy(configs project.ConfigsPerEnvironment, environments manifest.Envir
 			}
 		}
 
-		dtClient, err := cmdutils.CreateDTClient(env, dryRun)
+		dtClient, err := cmdutils.CreateDTClient(env.URL.Value, env.Auth, dryRun)
 
 		if err != nil {
 			if continueOnErr {

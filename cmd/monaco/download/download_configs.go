@@ -136,7 +136,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 		onlySettings:    cmdOptions.onlySettings,
 	}
 
-	dtClient, err := cmdutils.CreateDTClient(env, false)
+	dtClient, err := cmdutils.CreateDTClient(env.URL.Value, env.Auth, false)
 	if err != nil {
 		return err
 	}
