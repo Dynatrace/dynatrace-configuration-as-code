@@ -265,8 +265,9 @@ func execution_downloadConfigsWithCLIParameters(t *testing.T, fs afero.Fs, downl
 	if apisToDownload == "all" {
 		parameters = []string{
 			"download",
-			"direct",
+			"--url",
 			os.Getenv("URL_ENVIRONMENT_1"),
+			"--token",
 			"TOKEN_ENVIRONMENT_1",
 			"--verbose",
 			"--output-folder", downloadFolder,
@@ -274,8 +275,9 @@ func execution_downloadConfigsWithCLIParameters(t *testing.T, fs afero.Fs, downl
 	} else {
 		parameters = []string{
 			"download",
-			"direct",
+			"--url",
 			os.Getenv("URL_ENVIRONMENT_1"),
+			"--token",
 			"TOKEN_ENVIRONMENT_1",
 			"--verbose",
 			"--output-folder", downloadFolder,
