@@ -168,7 +168,7 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadCm
 		onlySettings:    cmdOptions.onlySettings,
 	}
 
-	dtClient, err := client.NewClassicClient(cmdOptions.environmentURL, options.auth.Token.Value)
+	dtClient, err := cmdutils.CreateDTClient(options.environmentURL, options.auth, false)
 	if err != nil {
 		return err
 	}
