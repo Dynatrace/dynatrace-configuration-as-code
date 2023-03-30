@@ -49,22 +49,19 @@ func GetDownloadCommand(fs afero.Fs, command Command) (downloadCmd *cobra.Comman
 		Long: `Download configuration from Dynatrace
 
 Either downloading based on an existing manifest, or define an URL pointing to an environment to download configuration from.`,
+
 		Example: `- monaco download --manifest manifest.yaml --token API_TOKEN_ENV_VAR_NAME
 - monaco download --url https://environment.live.dynatrace.com --token API_TOKEN_ENV_VAR_NAME`,
 
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if url == "" && (oAuthClientID != "" || oAuthClientSecret != "") {
+				return errors.New("if any flags from the group [oauth-client-id oauth-client-secret] is set [url] flag must also be set")
+			}
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if url != "" {
-				if token == "" {
-					return errors.New("--token flag missing")
-				}
-
-				if oAuthClientID != "" && oAuthClientSecret == "" {
-					return errors.New("--oauth-client-secret flag missing")
-				}
-
-				if oAuthClientSecret != "" && oAuthClientID == "" {
-					return errors.New("--oauth-client-id flag missing")
-				}
+				manifestFile = ""
 
 				options := directDownloadCmdOptions{
 					environmentURL: url,
@@ -119,7 +116,10 @@ Either downloading based on an existing manifest, or define an URL pointing to a
 	downloadCmd.Flags().StringVar(&oAuthClientSecret, "oauth-client-secret", "", "OAuth client secret is used to connect to DT server via OAuth (mandatory for OAuth access type)")
 	downloadCmd.Flags().StringVarP(&manifestFile, "manifest", "m", "manifest.yaml", "Path to the manifest.yaml file to be read")
 	downloadCmd.Flags().StringVarP(&specificEnvironment, "environment", "e", "", "Specify a concrete environment that shall be downloaded (only usable with --manifest)")
-	downloadCmd.Flags().StringVarP(&url, "url", "u", "", "URL to the dynatrace environment from which to download configuration from")
+	downloadCmd.Flags().StringVar(&url, "url", "", "URL to the dynatrace environment from which to download configuration from")
+	downloadCmd.MarkFlagsMutuallyExclusive("url", "manifest")
+	downloadCmd.MarkFlagsRequiredTogether("url", "token")
+	downloadCmd.MarkFlagsRequiredTogether("oauth-client-id", "oauth-client-secret")
 	if featureflags.Entities().Enabled() {
 		getDownloadEntitiesCommand(fs, command, downloadCmd)
 	}

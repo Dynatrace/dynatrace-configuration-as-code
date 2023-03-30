@@ -28,7 +28,7 @@ import (
 func TestGetDownloadCommand_directDownload(t *testing.T) {
 	t.Run("Token is missing", func(t *testing.T) {
 		err := newMonaco(t).download("--url http://some.url")
-		assert.EqualError(t, err, "--token flag missing")
+		assert.ErrorContains(t, err, "missing [token]")
 	})
 
 	t.Run("Authorization via token", func(t *testing.T) {
@@ -81,11 +81,11 @@ func TestGetDownloadCommand_directDownload(t *testing.T) {
 
 	t.Run("Clint ID for OAuth authorization is missing", func(t *testing.T) {
 		err := newMonaco(t).download("--url http://some.url --token TOKEN --oauth-client-secret CLIENT_SECRET")
-		assert.ErrorContains(t, err, "--oauth-client-id flag missing")
+		assert.ErrorContains(t, err, "missing [oauth-client-id]")
 	})
 	t.Run("Clint secret for OAuth authorization is missing", func(t *testing.T) {
 		err := newMonaco(t).download("--url http://some.url --token TOKEN --oauth-client-id CLIENT_ID")
-		assert.ErrorContains(t, err, "--oauth-client-secret flag missing")
+		assert.ErrorContains(t, err, "missing [oauth-client-secret]")
 	})
 
 	t.Run("no specific apis provided", func(t *testing.T) {
