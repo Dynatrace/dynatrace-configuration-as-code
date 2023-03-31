@@ -82,7 +82,7 @@ func TestRestoreConfigs_FromDownloadWithCLIParameters(t *testing.T) {
 
 func TestRestoreConfigs_FromDownloadWithPlatformWithCLIParameters(t *testing.T) {
 	initialConfigsFolder := "test-resources/integration-download-configs/"
-	manifestFile := ""
+	manifestFile := initialConfigsFolder + "manifest.yaml"
 	downloadFolder := "test-resources/download"
 	subsetOfConfigsToDownload := "alerting-profile,management-zone"
 	suffixTest := "_download_cli-only"
