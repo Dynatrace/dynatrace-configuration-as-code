@@ -54,6 +54,7 @@ func (d DefaultCommand) DownloadEntitiesBasedOnManifest(fs afero.Fs, cmdOptions 
 	m, errs := manifest.LoadManifest(&manifest.LoaderContext{
 		Fs:           fs,
 		ManifestPath: cmdOptions.manifestFile,
+		Environments: []string{cmdOptions.specificEnvironmentName},
 	})
 	if len(errs) > 0 {
 		err := printAndFormatErrors(errs, "failed to load manifest '%q'", cmdOptions.manifestFile)
