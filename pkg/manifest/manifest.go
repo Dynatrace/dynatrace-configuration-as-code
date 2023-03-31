@@ -42,9 +42,8 @@ type OAuth struct {
 func (o OAuth) GetTokenEndpointValue() string {
 	if o.TokenEndpoint == nil {
 		return ""
-	} else {
-		return o.TokenEndpoint.Value
 	}
+	return o.TokenEndpoint.Value
 }
 
 type Auth struct {

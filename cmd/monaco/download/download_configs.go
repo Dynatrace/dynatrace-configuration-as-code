@@ -77,13 +77,13 @@ func (a auth) mapToAuth() (*manifest.Auth, []error) {
 }
 
 func readEnvVariable(envVar string) (manifest.AuthSecret, error) {
-	var context string
+	var content string
 	if envVar == "" {
 		return manifest.AuthSecret{}, fmt.Errorf("unknown environment variable name")
-	} else if context = os.Getenv(envVar); context == "" {
+	} else if content = os.Getenv(envVar); content == "" {
 		return manifest.AuthSecret{}, fmt.Errorf("the content of the environment variable %q is not set", envVar)
 	}
-	return manifest.AuthSecret{Name: envVar, Value: context}, nil
+	return manifest.AuthSecret{Name: envVar, Value: content}, nil
 }
 
 type directDownloadCmdOptions struct {
