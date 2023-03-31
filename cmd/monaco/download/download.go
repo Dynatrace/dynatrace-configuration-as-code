@@ -55,12 +55,11 @@ type sharedDownloadCmdOptions struct {
 }
 
 type downloadOptionsShared struct {
-	environmentURL          string
-	auth                    manifest.Auth
-	outputFolder            string
-	projectName             string
-	forceOverwriteManifest  bool
-	concurrentDownloadLimit int
+	environmentURL         string
+	auth                   manifest.Auth
+	outputFolder           string
+	projectName            string
+	forceOverwriteManifest bool
 }
 
 func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptionsShared, fs afero.Fs) error {

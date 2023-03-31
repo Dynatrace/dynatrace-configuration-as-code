@@ -17,6 +17,7 @@ package download
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/cmdutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
@@ -112,16 +113,13 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions d
 		cmdOptions.projectName = fmt.Sprintf("%s_%s", cmdOptions.projectName, cmdOptions.specificEnvironmentName)
 	}
 
-	concurrentDownloadLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
-
 	options := downloadConfigsOptions{
 		downloadOptionsShared: downloadOptionsShared{
-			environmentURL:          env.URL.Value,
-			auth:                    env.Auth,
-			outputFolder:            cmdOptions.outputFolder,
-			projectName:             cmdOptions.projectName,
-			forceOverwriteManifest:  cmdOptions.forceOverwrite,
-			concurrentDownloadLimit: concurrentDownloadLimit,
+			environmentURL:         env.URL.Value,
+			auth:                   env.Auth,
+			outputFolder:           cmdOptions.outputFolder,
+			projectName:            cmdOptions.projectName,
+			forceOverwriteManifest: cmdOptions.forceOverwrite,
 		},
 		specificAPIs:    cmdOptions.specificAPIs,
 		specificSchemas: cmdOptions.specificSchemas,
@@ -129,7 +127,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions d
 		onlySettings:    cmdOptions.onlySettings,
 	}
 
-	dtClient, err := cmdutils.CreateDTClient(options.environmentURL, options.auth, false)
+	dtClient, err := cmdutils.CreateDTClient(options.environmentURL, options.auth, false, client.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
 	if err != nil {
 		return err
 	}
@@ -138,7 +136,6 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions d
 }
 
 func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions downloadCmdOptions) error {
-	concurrentDownloadLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
 	a, errors := cmdOptions.auth.mapToAuth()
 	errors = append(errors, validateParameters(cmdOptions.environmentURL, cmdOptions.projectName)...)
 
@@ -148,12 +145,11 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions downloadCmdOptio
 
 	options := downloadConfigsOptions{
 		downloadOptionsShared: downloadOptionsShared{
-			environmentURL:          cmdOptions.environmentURL,
-			auth:                    *a,
-			outputFolder:            cmdOptions.outputFolder,
-			projectName:             cmdOptions.projectName,
-			forceOverwriteManifest:  cmdOptions.forceOverwrite,
-			concurrentDownloadLimit: concurrentDownloadLimit,
+			environmentURL:         cmdOptions.environmentURL,
+			auth:                   *a,
+			outputFolder:           cmdOptions.outputFolder,
+			projectName:            cmdOptions.projectName,
+			forceOverwriteManifest: cmdOptions.forceOverwrite,
 		},
 		specificAPIs:    cmdOptions.specificAPIs,
 		specificSchemas: cmdOptions.specificSchemas,
@@ -161,7 +157,7 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions downloadCmdOptio
 		onlySettings:    cmdOptions.onlySettings,
 	}
 
-	dtClient, err := cmdutils.CreateDTClient(options.environmentURL, options.auth, false)
+	dtClient, err := cmdutils.CreateDTClient(options.environmentURL, options.auth, false, client.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
 	if err != nil {
 		return err
 	}
@@ -182,8 +178,6 @@ func doDownloadConfigs(fs afero.Fs, c client.Client, apis api.APIs, opts downloa
 	if err != nil {
 		return err
 	}
-
-	c = client.LimitClientParallelRequests(c, opts.concurrentDownloadLimit)
 
 	if ok, unknownApis := validateSpecificAPIs(apis, opts.specificAPIs); !ok {
 		err := fmt.Errorf("requested APIs '%v' are not known", strings.Join(unknownApis, ","))

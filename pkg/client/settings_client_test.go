@@ -18,6 +18,7 @@ package client
 
 import (
 	"encoding/json"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"gotest.tools/assert"
@@ -160,6 +161,7 @@ func TestUpsertSettings(t *testing.T) {
 				serverVersion:         test.serverVersion,
 				retrySettings:         testRetrySettings,
 				settingsObjectAPIPath: settingsObjectAPIPathClassic,
+				limiter:               concurrency.NewLimiter(5),
 			}
 
 			resp, err := c.UpsertSettings(SettingsObject{

@@ -22,6 +22,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
@@ -242,6 +243,7 @@ func TestReadByIdReturnsAnErrorUponEncounteringAnError(t *testing.T) {
 	client := DynatraceClient{
 		environmentURLClassic: testServer.URL,
 		clientClassic:         testServer.Client(),
+		limiter:               concurrency.NewLimiter(5),
 	}
 
 	_, err := client.ReadConfigById(mockAPI, "test")
@@ -256,6 +258,7 @@ func TestReadByIdEscapesTheId(t *testing.T) {
 	client := DynatraceClient{
 		environmentURLClassic: testServer.URL,
 		clientClassic:         testServer.Client(),
+		limiter:               concurrency.NewLimiter(5),
 	}
 	_, err := client.ReadConfigById(mockAPINotSingle, unescapedID)
 	assert.NoError(t, err)
@@ -272,6 +275,7 @@ func TestReadByIdReturnsTheResponseGivenNoError(t *testing.T) {
 	client := DynatraceClient{
 		environmentURLClassic: testServer.URL,
 		clientClassic:         testServer.Client(),
+		limiter:               concurrency.NewLimiter(5),
 	}
 
 	resp, err := client.ReadConfigById(mockAPI, "test")
@@ -549,6 +553,7 @@ func TestListKnownSettings(t *testing.T) {
 				environmentURL: server.URL,
 				client:         server.Client(),
 				retrySettings:  testRetrySettings,
+				limiter:        concurrency.NewLimiter(5),
 			}
 
 			res, err1 := client.ListSettings(tt.givenSchemaID, tt.givenListSettingsOpts)
@@ -661,6 +666,7 @@ func TestGetSettingById(t *testing.T) {
 				client:                server.Client(),
 				retrySettings:         tt.fields.retrySettings,
 				settingsObjectAPIPath: "/api/v2/settings/objects",
+				limiter:               concurrency.NewLimiter(5),
 			}
 
 			settingsObj, err := d.GetSettingById(tt.args.objectID)
@@ -756,6 +762,7 @@ func TestDeleteSettings(t *testing.T) {
 				client:                server.Client(),
 				retrySettings:         tt.fields.retrySettings,
 				settingsObjectAPIPath: settingsObjectAPIPathClassic,
+				limiter:               concurrency.NewLimiter(5),
 			}
 
 			if err := d.DeleteSettings(tt.args.objectID); (err != nil) != tt.wantErr {
@@ -788,6 +795,7 @@ func TestUpsertSettingsRetries(t *testing.T) {
 		environmentURL: server.URL,
 		client:         server.Client(),
 		retrySettings:  testRetrySettings,
+		limiter:        concurrency.NewLimiter(5),
 	}
 
 	_, err := client.UpsertSettings(SettingsObject{
@@ -1061,6 +1069,7 @@ func TestListEntities(t *testing.T) {
 				environmentURL: server.URL,
 				client:         server.Client(),
 				retrySettings:  testRetrySettings,
+				limiter:        concurrency.NewLimiter(5),
 			}
 
 			res, err1 := client.ListEntities(tt.givenEntitiesType)
@@ -1112,9 +1121,9 @@ func TestDefaultTokenURL(t *testing.T) {
 		rw.Header().Add("Content-Type", "application/json")
 		if req.URL.Path == defaultTokenPath {
 			defaultTokenURLCalled = true
-			rw.Write([]byte(`{ "access_token":"ABC", "token_type":"Bearer", "expires_in":3600, "refresh_token":"ABCD", "scope":"testing" }`))
+			_, _ = rw.Write([]byte(`{ "access_token":"ABC", "token_type":"Bearer", "expires_in":3600, "refresh_token":"ABCD", "scope":"testing" }`))
 		} else {
-			rw.Write([]byte(`{ "some":"reply" }`))
+			_, _ = rw.Write([]byte(`{ "some":"reply" }`))
 		}
 	}))
 	t.Cleanup(server.Close)
@@ -1150,12 +1159,12 @@ func TestNonDefaultTokenURL(t *testing.T) {
 		rw.Header().Add("Content-Type", "application/json")
 		if req.URL.Path == defaultTokenPath {
 			defaultTokenURLCalled = true
-			rw.Write([]byte(`{ "access_token":"ABC", "token_type":"Bearer", "expires_in":3600, "refresh_token":"ABCD", "scope":"testing" }`))
+			_, _ = rw.Write([]byte(`{ "access_token":"ABC", "token_type":"Bearer", "expires_in":3600, "refresh_token":"ABCD", "scope":"testing" }`))
 		} else if req.URL.Path == specialTokenPath {
 			specialTokenURLCalled = true
-			rw.Write([]byte(`{ "access_token":"ABC", "token_type":"Bearer", "expires_in":3600, "refresh_token":"ABCD", "scope":"testing" }`))
+			_, _ = rw.Write([]byte(`{ "access_token":"ABC", "token_type":"Bearer", "expires_in":3600, "refresh_token":"ABCD", "scope":"testing" }`))
 		} else {
-			rw.Write([]byte(`{ "some":"reply" }`))
+			_, _ = rw.Write([]byte(`{ "some":"reply" }`))
 		}
 	}))
 	t.Cleanup(server.Close)

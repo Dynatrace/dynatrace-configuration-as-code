@@ -201,10 +201,9 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 						Value: "test.token",
 					},
 				},
-				outputFolder:            "folder",
-				projectName:             "project",
-				forceOverwriteManifest:  false,
-				concurrentDownloadLimit: 1,
+				outputFolder:           "folder",
+				projectName:            "project",
+				forceOverwriteManifest: false,
 			}
 
 			tt.expectedBehaviour(c)
@@ -487,10 +486,9 @@ func TestDownloadConfigsExitsEarlyForUnknownAPI(t *testing.T) {
 					Value: "test.token",
 				},
 			},
-			outputFolder:            "folder",
-			projectName:             "project",
-			forceOverwriteManifest:  false,
-			concurrentDownloadLimit: 1,
+			outputFolder:           "folder",
+			projectName:            "project",
+			forceOverwriteManifest: false,
 		},
 	}
 
@@ -515,10 +513,9 @@ func TestDownloadConfigsExitsEarlyForUnknownSettingsSchema(t *testing.T) {
 					Value: "test.token",
 				},
 			},
-			outputFolder:            "folder",
-			projectName:             "project",
-			forceOverwriteManifest:  false,
-			concurrentDownloadLimit: 1,
+			outputFolder:           "folder",
+			projectName:            "project",
+			forceOverwriteManifest: false,
 		},
 	}
 

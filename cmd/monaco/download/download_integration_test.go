@@ -18,6 +18,7 @@ package download
 
 import (
 	"encoding/json"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
@@ -1015,6 +1016,7 @@ func TestDownloadIntegrationDownloadsOnlySettingsIfConfigured(t *testing.T) {
 
 func setupTestingDownloadOptions(t *testing.T, server *httptest.Server, projectName string) downloadConfigsOptions {
 	t.Setenv("TOKEN_ENV_VAR", "mock env var")
+	t.Setenv(environment.ConcurrentRequestsEnvKey, "50")
 
 	return downloadConfigsOptions{
 		downloadOptionsShared: downloadOptionsShared{
@@ -1025,9 +1027,8 @@ func setupTestingDownloadOptions(t *testing.T, server *httptest.Server, projectN
 					Value: "token",
 				},
 			},
-			outputFolder:            "out",
-			projectName:             projectName,
-			concurrentDownloadLimit: 50,
+			outputFolder: "out",
+			projectName:  projectName,
 		},
 		onlyAPIs: true,
 	}

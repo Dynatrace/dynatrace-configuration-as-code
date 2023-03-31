@@ -17,6 +17,7 @@ package download
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/cmdutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
@@ -70,21 +71,18 @@ func (d DefaultCommand) DownloadEntitiesBasedOnManifest(fs afero.Fs, cmdOptions 
 		cmdOptions.projectName = fmt.Sprintf("%s_%s", cmdOptions.projectName, cmdOptions.specificEnvironmentName)
 	}
 
-	concurrentDownloadLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
-
 	options := downloadEntitiesOptions{
 		downloadOptionsShared: downloadOptionsShared{
-			environmentURL:          env.URL.Value,
-			auth:                    env.Auth,
-			outputFolder:            cmdOptions.outputFolder,
-			projectName:             cmdOptions.projectName,
-			forceOverwriteManifest:  cmdOptions.forceOverwrite,
-			concurrentDownloadLimit: concurrentDownloadLimit,
+			environmentURL:         env.URL.Value,
+			auth:                   env.Auth,
+			outputFolder:           cmdOptions.outputFolder,
+			projectName:            cmdOptions.projectName,
+			forceOverwriteManifest: cmdOptions.forceOverwrite,
 		},
 		specificEntitiesTypes: cmdOptions.specificEntitiesTypes,
 	}
 
-	dtClient, err := cmdutils.CreateDTClient(env.URL.Value, env.Auth, false)
+	dtClient, err := cmdutils.CreateDTClient(env.URL.Value, env.Auth, false, client.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
 	if err != nil {
 		return err
 	}
@@ -93,7 +91,6 @@ func (d DefaultCommand) DownloadEntitiesBasedOnManifest(fs afero.Fs, cmdOptions 
 
 func (d DefaultCommand) DownloadEntities(fs afero.Fs, cmdOptions entitiesDirectDownloadOptions) error {
 	token := os.Getenv(cmdOptions.envVarName)
-	concurrentDownloadLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
 	errors := validateParameters(cmdOptions.environmentURL, cmdOptions.projectName)
 
 	if len(errors) > 0 {
@@ -109,15 +106,14 @@ func (d DefaultCommand) DownloadEntities(fs afero.Fs, cmdOptions entitiesDirectD
 					Value: token,
 				},
 			},
-			outputFolder:            cmdOptions.outputFolder,
-			projectName:             cmdOptions.projectName,
-			forceOverwriteManifest:  cmdOptions.forceOverwrite,
-			concurrentDownloadLimit: concurrentDownloadLimit,
+			outputFolder:           cmdOptions.outputFolder,
+			projectName:            cmdOptions.projectName,
+			forceOverwriteManifest: cmdOptions.forceOverwrite,
 		},
 		specificEntitiesTypes: cmdOptions.specificEntitiesTypes,
 	}
 
-	dtClient, err := client.NewClassicClient(cmdOptions.environmentURL, token)
+	dtClient, err := client.NewClassicClient(cmdOptions.environmentURL, token, client.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
 	if err != nil {
 		return err
 	}
@@ -139,7 +135,6 @@ func doDownloadEntities(fs afero.Fs, dtClient client.Client, opts downloadEntiti
 }
 
 func downloadEntities(dtClient client.Client, opts downloadEntitiesOptions) project.ConfigsPerType {
-	dtClient = client.LimitClientParallelRequests(dtClient, opts.downloadOptionsShared.concurrentDownloadLimit)
 
 	var entitiesObjects project.ConfigsPerType
 

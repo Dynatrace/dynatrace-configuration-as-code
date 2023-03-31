@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/throttle"
@@ -211,7 +212,11 @@ type DynatraceClient struct {
 	//  settingsObjectAPIPath is the API path to use for accessing settings objects
 	settingsObjectAPIPath string
 
+	// retrySettings are the settings to be used for retrying failed http requests
 	retrySettings rest.RetrySettings
+
+	// limiter is used to limit parallel http requests
+	limiter *concurrency.Limiter
 }
 
 // OauthCredentials holds information for authenticating to Dynatrace
@@ -229,6 +234,14 @@ var (
 	_ ConfigClient   = (*DynatraceClient)(nil)
 	_ Client         = (*DynatraceClient)(nil)
 )
+
+// WithClientRequestLimiter specifies that a specifies the limiter to be used for
+// limiting parallel client requests
+func WithClientRequestLimiter(limiter *concurrency.Limiter) func(client *DynatraceClient) {
+	return func(d *DynatraceClient) {
+		d.limiter = limiter
+	}
+}
 
 // WithRetrySettings sets the retry settings to be used by the DynatraceClient
 func WithRetrySettings(retrySettings rest.RetrySettings) func(*DynatraceClient) {
@@ -362,6 +375,7 @@ func NewPlatformClient(dtURL string, token string, oauthCredentials OauthCredent
 		retrySettings:         rest.DefaultRetrySettings,
 		settingsSchemaAPIPath: settingsSchemaAPIPathPlatform,
 		settingsObjectAPIPath: settingsObjectAPIPathPlatform,
+		limiter:               concurrency.NewLimiter(5),
 	}
 
 	for _, o := range opts {
@@ -390,6 +404,7 @@ func NewClassicClient(dtURL string, token string, opts ...func(dynatraceClient *
 		retrySettings:         rest.DefaultRetrySettings,
 		settingsSchemaAPIPath: settingsSchemaAPIPathClassic,
 		settingsObjectAPIPath: settingsObjectAPIPathClassic,
+		limiter:               concurrency.NewLimiter(5),
 	}
 
 	for _, o := range opts {
@@ -420,7 +435,14 @@ func isNewDynatraceTokenFormat(token string) bool {
 	return strings.HasPrefix(token, "dt0c01.") && strings.Count(token, ".") == 2
 }
 
-func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, error) {
+func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (result DynatraceEntity, err error) {
+	d.limiter.ExecuteBlocking(func() {
+		result, err = d.upsertSettings(obj)
+	})
+	return
+}
+
+func (d *DynatraceClient) upsertSettings(obj SettingsObject) (DynatraceEntity, error) {
 
 	// special handling for updating settings 2.0 objects on tenants with version pre 1.262.0
 	// Tenants with versions < 1.262 are not able to handle updates of existing
@@ -472,9 +494,15 @@ func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, e
 
 	log.Debug("\tCreated/Updated object %s (%s) with externalId %s", obj.Id, obj.SchemaId, externalId)
 	return entity, nil
-}
 
+}
 func (d *DynatraceClient) ListConfigs(api api.API) (values []Value, err error) {
+	d.limiter.ExecuteBlocking(func() {
+		values, err = d.listConfigs(api)
+	})
+	return
+}
+func (d *DynatraceClient) listConfigs(api api.API) (values []Value, err error) {
 
 	fullUrl := api.CreateURL(d.environmentURLClassic)
 	values, err = getExistingValuesFromEndpoint(d.clientClassic, api, fullUrl, d.retrySettings)
@@ -482,6 +510,13 @@ func (d *DynatraceClient) ListConfigs(api api.API) (values []Value, err error) {
 }
 
 func (d *DynatraceClient) ReadConfigById(api api.API, id string) (json []byte, err error) {
+	d.limiter.ExecuteBlocking(func() {
+		json, err = d.readConfigById(api, id)
+	})
+	return
+}
+
+func (d *DynatraceClient) readConfigById(api api.API, id string) (json []byte, err error) {
 	var dtUrl string
 	isSingleConfigurationApi := api.SingleConfiguration
 
@@ -504,18 +539,39 @@ func (d *DynatraceClient) ReadConfigById(api api.API, id string) (json []byte, e
 	return response.Body, nil
 }
 
-func (d *DynatraceClient) DeleteConfigById(api api.API, id string) error {
+func (d *DynatraceClient) DeleteConfigById(api api.API, id string) (err error) {
+	d.limiter.ExecuteBlocking(func() {
+		err = d.deleteConfigById(api, id)
+	})
+	return
+}
+
+func (d *DynatraceClient) deleteConfigById(api api.API, id string) error {
 
 	return rest.DeleteConfig(d.clientClassic, api.CreateURL(d.environmentURLClassic), id)
 }
 
 func (d *DynatraceClient) ConfigExistsByName(api api.API, name string) (exists bool, id string, err error) {
+	d.limiter.ExecuteBlocking(func() {
+		exists, id, err = d.configExistsByName(api, name)
+	})
+	return
+}
+
+func (d *DynatraceClient) configExistsByName(api api.API, name string) (exists bool, id string, err error) {
 	apiURL := api.CreateURL(d.environmentURLClassic)
 	existingObjectId, err := getObjectIdIfAlreadyExists(d.clientClassic, api, apiURL, name, d.retrySettings)
 	return existingObjectId != "", existingObjectId, err
 }
 
 func (d *DynatraceClient) UpsertConfigByName(api api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
+	d.limiter.ExecuteBlocking(func() {
+		entity, err = d.upsertConfigByName(api, name, payload)
+	})
+	return
+}
+
+func (d *DynatraceClient) upsertConfigByName(api api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
 
 	if api.ID == "extension" {
 		fullUrl := api.CreateURL(d.environmentURLClassic)
@@ -525,6 +581,13 @@ func (d *DynatraceClient) UpsertConfigByName(api api.API, name string, payload [
 }
 
 func (d *DynatraceClient) UpsertConfigByNonUniqueNameAndId(api api.API, entityId string, name string, payload []byte) (entity DynatraceEntity, err error) {
+	d.limiter.ExecuteBlocking(func() {
+		entity, err = d.upsertConfigByNonUniqueNameAndId(api, entityId, name, payload)
+	})
+	return
+}
+
+func (d *DynatraceClient) upsertConfigByNonUniqueNameAndId(api api.API, entityId string, name string, payload []byte) (entity DynatraceEntity, err error) {
 	return upsertDynatraceEntityByNonUniqueNameAndId(d.clientClassic, d.environmentURLClassic, entityId, name, api, payload, d.retrySettings)
 }
 
@@ -537,7 +600,14 @@ type SchemaList []struct {
 	SchemaId string `json:"schemaId"`
 }
 
-func (d *DynatraceClient) ListSchemas() (SchemaList, error) {
+func (d *DynatraceClient) ListSchemas() (schemas SchemaList, err error) {
+	d.limiter.ExecuteBlocking(func() {
+		schemas, err = d.listSchemas()
+	})
+	return
+}
+
+func (d *DynatraceClient) listSchemas() (SchemaList, error) {
 	u, err := url.Parse(d.environmentURL + d.settingsSchemaAPIPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse url: %w", err)
@@ -566,7 +636,14 @@ func (d *DynatraceClient) ListSchemas() (SchemaList, error) {
 	return result.Items, nil
 }
 
-func (d *DynatraceClient) GetSettingById(objectId string) (*DownloadSettingsObject, error) {
+func (d *DynatraceClient) GetSettingById(objectId string) (res *DownloadSettingsObject, err error) {
+	d.limiter.ExecuteBlocking(func() {
+		res, err = d.getSettingById(objectId)
+	})
+	return
+}
+
+func (d *DynatraceClient) getSettingById(objectId string) (*DownloadSettingsObject, error) {
 	u, err := url.Parse(d.environmentURL + d.settingsObjectAPIPath + "/" + objectId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse URL '%s': %w", d.environmentURL+d.settingsObjectAPIPath, err)
@@ -594,7 +671,13 @@ func (d *DynatraceClient) GetSettingById(objectId string) (*DownloadSettingsObje
 	return &result, nil
 }
 
-func (d *DynatraceClient) ListSettings(schemaId string, opts ListSettingsOptions) ([]DownloadSettingsObject, error) {
+func (d *DynatraceClient) ListSettings(schemaId string, opts ListSettingsOptions) (res []DownloadSettingsObject, err error) {
+	d.limiter.ExecuteBlocking(func() {
+		res, err = d.listSettings(schemaId, opts)
+	})
+	return
+}
+func (d *DynatraceClient) listSettings(schemaId string, opts ListSettingsOptions) ([]DownloadSettingsObject, error) {
 	log.Debug("Downloading all settings for schema %s", schemaId)
 
 	listSettingsFields := defaultListSettingsFields
@@ -654,7 +737,14 @@ func (e EntitiesType) String() string {
 	return e.EntitiesTypeId
 }
 
-func (d *DynatraceClient) ListEntitiesTypes() ([]EntitiesType, error) {
+func (d *DynatraceClient) ListEntitiesTypes() (res []EntitiesType, err error) {
+	d.limiter.ExecuteBlocking(func() {
+		res, err = d.listEntitiesTypes()
+	})
+	return
+}
+
+func (d *DynatraceClient) listEntitiesTypes() ([]EntitiesType, error) {
 
 	params := url.Values{
 		"pageSize": []string{defaultPageSize},
@@ -691,7 +781,14 @@ func genTimeframeUnixMilliString(duration time.Duration) string {
 	return strconv.FormatInt(time.Now().Add(duration).UnixMilli(), 10)
 }
 
-func (d *DynatraceClient) ListEntities(entitiesType EntitiesType) ([]string, error) {
+func (d *DynatraceClient) ListEntities(entitiesType EntitiesType) (res []string, err error) {
+	d.limiter.ExecuteBlocking(func() {
+		res, err = d.listEntities(entitiesType)
+	})
+	return
+}
+
+func (d *DynatraceClient) listEntities(entitiesType EntitiesType) ([]string, error) {
 
 	entityType := entitiesType.EntitiesTypeId
 	log.Debug("Downloading all entities for entities Type %s", entityType)
@@ -811,7 +908,14 @@ func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLa
 
 }
 
-func (d *DynatraceClient) DeleteSettings(objectID string) error {
+func (d *DynatraceClient) DeleteSettings(objectID string) (err error) {
+	d.limiter.ExecuteBlocking(func() {
+		err = d.deleteSettings(objectID)
+	})
+	return
+}
+
+func (d *DynatraceClient) deleteSettings(objectID string) error {
 	u, err := url.Parse(d.environmentURL + d.settingsObjectAPIPath)
 	if err != nil {
 		return fmt.Errorf("failed to parse URL '%s': %w", d.environmentURL+d.settingsObjectAPIPath, err)
