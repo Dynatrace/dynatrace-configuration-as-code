@@ -311,8 +311,15 @@ func execution_downloadConfigsWithCLIParameters(t *testing.T, fs afero.Fs, downl
 	return nil
 }
 
-func execution_downloadConfigs(t *testing.T, fs afero.Fs, downloadFolder string, manifestFile string,
-	apisToDownload string, settingsToDownload string, _ bool) error {
+func execution_downloadConfigs(
+	t *testing.T,
+	fs afero.Fs,
+	downloadFolder string,
+	manifestFile string,
+	apisToDownload string,
+	settingsToDownload string,
+	_ bool,
+) error {
 	log.Info("BEGIN DOWNLOAD PROCESS")
 
 	downloadFolder, err := filepath.Abs(downloadFolder)
@@ -324,8 +331,9 @@ func execution_downloadConfigs(t *testing.T, fs afero.Fs, downloadFolder string,
 	if apisToDownload == "all" {
 		parameters = []string{
 			"download",
-			"manifest",
+			"--manifest",
 			manifestFile,
+			"--environment",
 			"environment1",
 			"--verbose",
 			"--output-folder", downloadFolder,
@@ -333,8 +341,9 @@ func execution_downloadConfigs(t *testing.T, fs afero.Fs, downloadFolder string,
 	} else {
 		parameters = []string{
 			"download",
-			"manifest",
+			"--manifest",
 			manifestFile,
+			"--environment",
 			"environment1",
 			"--verbose",
 			"--output-folder", downloadFolder,
