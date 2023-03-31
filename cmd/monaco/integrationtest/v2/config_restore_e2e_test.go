@@ -82,7 +82,7 @@ func TestRestoreConfigs_FromDownloadWithCLIParameters(t *testing.T) {
 
 func TestRestoreConfigs_FromDownloadWithPlatformWithCLIParameters(t *testing.T) {
 	initialConfigsFolder := "test-resources/integration-download-configs/"
-	manifestFile := initialConfigsFolder + "manifest.yaml"
+	manifestFile := initialConfigsFolder + "platform_manifest.yaml"
 	downloadFolder := "test-resources/download"
 	subsetOfConfigsToDownload := "alerting-profile,management-zone"
 	suffixTest := "_download_cli-only"
@@ -263,35 +263,23 @@ func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, con
 	return suffix, nil
 }
 
-func execution_downloadConfigsWithCLIParameters(t *testing.T, fs afero.Fs, downloadFolder string, _ string,
-	apisToDownload string, settingsToDownload string, oauth bool) error {
+func execution_downloadConfigsWithCLIParameters(
+	t *testing.T,
+	fs afero.Fs,
+	downloadFolder string,
+	_ string,
+	apisToDownload string,
+	settingsToDownload string,
+	oauth bool,
+) error {
 	log.Info("BEGIN DOWNLOAD PROCESS")
 
 	downloadFolder, err := filepath.Abs(downloadFolder)
 	if err != nil {
 		return err
 	}
-	var parameters []string
-	if apisToDownload == "all" {
-		parameters = []string{
-			"download",
-			"--url",
-			os.Getenv("URL_ENVIRONMENT_1"),
-			"--token",
-			"TOKEN_ENVIRONMENT_1",
-			"--verbose",
-			"--output-folder", downloadFolder,
-		}
-	} else {
-		parameters = []string{
-			"download",
-			"--url",
-			os.Getenv("URL_ENVIRONMENT_1"),
-			"--token",
-			"TOKEN_ENVIRONMENT_1",
-			"--verbose",
-			"--output-folder", downloadFolder,
-		}
+	parameters := []string{"download", "--verbose", "--output-folder", downloadFolder}
+	if apisToDownload != "all" {
 		if apisToDownload != "" {
 			parameters = append(parameters, "--api", apisToDownload)
 		}
@@ -301,7 +289,9 @@ func execution_downloadConfigsWithCLIParameters(t *testing.T, fs afero.Fs, downl
 	}
 
 	if oauth {
-		parameters = append(parameters, "--oauth-client-id", "OAUTH_CLIENT_ID", "--oauth-client-secret", "OAUTH_CLIENT_SECRET")
+		parameters = append(parameters, "--url", os.Getenv("PLATFORM_URL_ENVIRONMENT_1"), "--token", "TOKEN_ENVIRONMENT_1", "--oauth-client-id", "OAUTH_CLIENT_ID", "--oauth-client-secret", "OAUTH_CLIENT_SECRET")
+	} else {
+		parameters = append(parameters, "--url", os.Getenv("URL_ENVIRONMENT_1"), "--token", "TOKEN_ENVIRONMENT_1")
 	}
 
 	cmd := runner.BuildCli(fs)
