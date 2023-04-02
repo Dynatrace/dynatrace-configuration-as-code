@@ -31,10 +31,7 @@ import (
 )
 
 func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
-	var project, outputFolder string
-	var forceOverwrite bool
-
-	var f flags
+	var f downloadCmdOptions
 
 	cmd = &cobra.Command{
 		Short: "Download configuration from Dynatrace",
@@ -53,65 +50,28 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 			return preRunChecks(f)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if f.url != "" {
-				options := directDownloadCmdOptions{
-					environmentURL: f.url,
-					auth: auth{
-						token:        f.token,
-						clientID:     f.oAuthClientID,
-						clientSecret: f.oAuthClientSecret,
-					},
-					downloadCmdOptions: downloadCmdOptions{
-						sharedDownloadCmdOptions: sharedDownloadCmdOptions{
-							projectName:    project,
-							outputFolder:   outputFolder,
-							forceOverwrite: forceOverwrite,
-						},
-						specificAPIs:    f.specificApis,
-						specificSchemas: f.specificSettings,
-						onlyAPIs:        f.onlyAPIs,
-						onlySettings:    f.onlySettings,
-					},
-				}
-
-				return command.DownloadConfigs(fs, options)
-
-			} else {
-				options := manifestDownloadOptions{
-					manifestFile:            f.manifestFile,
-					specificEnvironmentName: f.environment,
-					downloadCmdOptions: downloadCmdOptions{
-						sharedDownloadCmdOptions: sharedDownloadCmdOptions{
-							projectName:    project,
-							outputFolder:   outputFolder,
-							forceOverwrite: forceOverwrite,
-						},
-						specificAPIs:    f.specificApis,
-						specificSchemas: f.specificSettings,
-						onlyAPIs:        f.onlyAPIs,
-						onlySettings:    f.onlySettings,
-					},
-				}
-
-				return command.DownloadConfigsBasedOnManifest(fs, options)
+			if f.environmentURL != "" {
+				f.manifestFile = ""
+				return command.DownloadConfigs(fs, f)
 			}
+			return command.DownloadConfigsBasedOnManifest(fs, f)
 		},
 	}
 
-	setupSharedFlags(cmd, &project, &outputFolder, &forceOverwrite)
+	setupSharedFlags(cmd, &f.projectName, &f.outputFolder, &f.forceOverwrite)
 
 	// download via manifest
 	cmd.Flags().StringVarP(&f.manifestFile, "manifest", "m", "manifest.yaml", "Name (and the path) to the manifest file. If not provided \"manifest.yaml\" value will be used.")
-	cmd.Flags().StringVarP(&f.environment, "environment", "e", "", "Specify a concrete environment defined in the manifest file that shall be downloaded")
+	cmd.Flags().StringVarP(&f.specificEnvironmentName, "environment", "e", "", "Specify a concrete environment defined in the manifest file that shall be downloaded")
 	// download without manifest
-	cmd.Flags().StringVar(&f.url, "url", "", "URL to the dynatrace environment from which to download configuration from. To be able to connect, token and, in case of connecting to platform, a pari of OAuth client ID na client secret needs to bi provide via adequate flags (\"--token\", \"--oauth-client-id\", \"--oauth-client-secret\"). Not able to combine with \"--manifest\".")
+	cmd.Flags().StringVar(&f.environmentURL, "url", "", "URL to the dynatrace environment from which to download configuration from. To be able to connect, token and, in case of connecting to platform, a pari of OAuth client ID na client secret needs to bi provide via adequate flags (\"--token\", \"--oauth-client-id\", \"--oauth-client-secret\"). Not able to combine with \"--manifest\".")
 	cmd.Flags().StringVar(&f.token, "token", "", "Token secret to connect to DT server. Use only with \"--url\"")
-	cmd.Flags().StringVar(&f.oAuthClientID, "oauth-client-id", "", "OAuth client ID is used to connect to DT server via OAuth. Use only with \"--url\"")
-	cmd.Flags().StringVar(&f.oAuthClientSecret, "oauth-client-secret", "", "OAuth client secret is used to connect to DT server via OAuth. Use only with \"--url\"")
+	cmd.Flags().StringVar(&f.clientID, "oauth-client-id", "", "OAuth client ID is used to connect to DT server via OAuth. Use only with \"--url\"")
+	cmd.Flags().StringVar(&f.clientSecret, "oauth-client-secret", "", "OAuth client secret is used to connect to DT server via OAuth. Use only with \"--url\"")
 
 	// download options
-	cmd.Flags().StringSliceVarP(&f.specificApis, "api", "a", nil, "One or more APIs to download (flag can be repeated or value defined as comma-separated list)")
-	cmd.Flags().StringSliceVarP(&f.specificSettings, "settings-schema", "s", nil, "One or more settings 2.0 schemas to download (flag can be repeated or value defined as comma-separated list)")
+	cmd.Flags().StringSliceVarP(&f.specificAPIs, "api", "a", nil, "One or more APIs to download (flag can be repeated or value defined as comma-separated list)")
+	cmd.Flags().StringSliceVarP(&f.specificSchemas, "settings-schema", "s", nil, "One or more settings 2.0 schemas to download (flag can be repeated or value defined as comma-separated list)")
 
 	cmd.Flags().BoolVar(&f.onlyAPIs, "only-apis", false, "Only download config APIs, skip downloading settings 2.0 objects")
 	cmd.Flags().BoolVar(&f.onlySettings, "only-settings", false, "Only download settings 2.0 objects, skip downloading config APIs")
@@ -131,33 +91,26 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	return cmd
 }
 
-type flags struct {
-	url, token, oAuthClientID, oAuthClientSecret string
-	manifestFile, environment                    string
-	specificApis, specificSettings               []string
-	onlyAPIs, onlySettings                       bool
-}
-
-func preRunChecks(f flags) error {
+func preRunChecks(f downloadCmdOptions) error {
 	switch {
-	case f.url != "" && f.manifestFile != "manifest.yaml":
+	case f.environmentURL != "" && f.manifestFile != "manifest.yaml":
 		return errors.New("\"url\" and \"token\" are mutually exclusive")
-	case f.url != "" && f.environment != "":
+	case f.environmentURL != "" && f.specificEnvironmentName != "":
 		return errors.New("")
-	case f.url != "":
+	case f.environmentURL != "":
 		switch {
 		case f.token == "":
 			return errors.New("if \"url\" is set, \"token\" also must be set")
-		case (f.oAuthClientID == "") != (f.oAuthClientSecret == ""):
+		case (f.clientID == "") != (f.clientSecret == ""):
 			return errors.New("\"oauth-client-id\" and \"oauth-client-secret\" always come in pair")
 		default:
 			return nil
 		}
 	case f.manifestFile != "":
 		switch {
-		case f.token != "" || f.oAuthClientID != "" || f.oAuthClientSecret != "":
+		case f.token != "" || f.clientID != "" || f.clientSecret != "":
 			return errors.New("\"token\", \"oauth-client-id\" and \"oauth-client-secret\" can only be used with \"url\", while \"manifest\" must NOT be set ")
-		case f.environment == "":
+		case f.specificEnvironmentName == "":
 			return errors.New("to download with manifest, \"environment\" needs to be specified")
 		}
 	}

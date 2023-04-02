@@ -34,16 +34,14 @@ import (
 
 type downloadCmdOptions struct {
 	sharedDownloadCmdOptions
-	specificAPIs    []string
-	specificSchemas []string
-	onlyAPIs        bool
-	onlySettings    bool
-}
-
-type manifestDownloadOptions struct {
+	environmentURL string
+	auth
 	manifestFile            string
 	specificEnvironmentName string
-	downloadCmdOptions
+	specificAPIs            []string
+	specificSchemas         []string
+	onlyAPIs                bool
+	onlySettings            bool
 }
 
 type auth struct {
@@ -86,13 +84,7 @@ func readEnvVariable(envVar string) (manifest.AuthSecret, error) {
 	return manifest.AuthSecret{Name: envVar, Value: content}, nil
 }
 
-type directDownloadCmdOptions struct {
-	environmentURL string
-	auth
-	downloadCmdOptions
-}
-
-func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions manifestDownloadOptions) error {
+func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions downloadCmdOptions) error {
 
 	m, errs := manifest.LoadManifest(&manifest.LoaderContext{
 		Fs:           fs,
@@ -136,7 +128,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 		onlySettings:    cmdOptions.onlySettings,
 	}
 
-	dtClient, err := cmdutils.CreateDTClient(env.URL.Value, env.Auth, false)
+	dtClient, err := cmdutils.CreateDTClient(options.environmentURL, options.auth, false)
 	if err != nil {
 		return err
 	}
@@ -144,7 +136,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions m
 	return doDownloadConfigs(fs, dtClient, api.NewAPIs(), options)
 }
 
-func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions directDownloadCmdOptions) error {
+func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions downloadCmdOptions) error {
 	concurrentDownloadLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
 	a, errors := cmdOptions.auth.mapToAuth()
 	errors = append(errors, validateParameters(cmdOptions.environmentURL, cmdOptions.projectName)...)
