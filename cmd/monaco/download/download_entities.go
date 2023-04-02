@@ -40,7 +40,7 @@ type entitiesManifestDownloadOptions struct {
 }
 
 type entitiesDirectDownloadOptions struct {
-	environmentUrl, envVarName string
+	environmentURL, envVarName string
 	entitiesDownloadCommandOptions
 }
 
@@ -93,7 +93,7 @@ func (d DefaultCommand) DownloadEntitiesBasedOnManifest(fs afero.Fs, cmdOptions 
 func (d DefaultCommand) DownloadEntities(fs afero.Fs, cmdOptions entitiesDirectDownloadOptions) error {
 	token := os.Getenv(cmdOptions.envVarName)
 	concurrentDownloadLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
-	errors := validateParameters(cmdOptions.environmentUrl, cmdOptions.projectName)
+	errors := validateParameters(cmdOptions.environmentURL, cmdOptions.projectName)
 
 	if len(errors) > 0 {
 		return printAndFormatErrors(errors, "not all necessary information is present to start downloading configurations")
@@ -101,7 +101,7 @@ func (d DefaultCommand) DownloadEntities(fs afero.Fs, cmdOptions entitiesDirectD
 
 	options := downloadEntitiesOptions{
 		downloadOptionsShared: downloadOptionsShared{
-			environmentURL: cmdOptions.environmentUrl,
+			environmentURL: cmdOptions.environmentURL,
 			auth: manifest.Auth{
 				Token: manifest.AuthSecret{
 					Name:  cmdOptions.envVarName,
@@ -116,7 +116,7 @@ func (d DefaultCommand) DownloadEntities(fs afero.Fs, cmdOptions entitiesDirectD
 		specificEntitiesTypes: cmdOptions.specificEntitiesTypes,
 	}
 
-	dtClient, err := client.NewClassicClient(cmdOptions.environmentUrl, token)
+	dtClient, err := client.NewClassicClient(cmdOptions.environmentURL, token)
 	if err != nil {
 		return err
 	}
