@@ -30,7 +30,62 @@ import (
 	"time"
 )
 
-func TestVerifyClusterGen(t *testing.T) {
+func TestVerifyEnvironmentGeneration_TurnedOffByFF(t *testing.T) {
+	t.Setenv("MONACO_FEAT_VERIFY_ENV_TYPE", "0")
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		rw.WriteHeader(404)
+	}))
+	defer server.Close()
+
+	ok := VerifyEnvironmentGeneration(manifest.Environments{
+		"env": manifest.EnvironmentDefinition{
+			Name: "env",
+			URL: manifest.URLDefinition{
+				Type:  manifest.ValueURLType,
+				Name:  "URL",
+				Value: server.URL,
+			},
+		},
+	})
+	assert.True(t, ok)
+}
+func TestVerifyEnvironmentGeneration_OneOfManyFails(t *testing.T) {
+
+	envCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		if envCount > 0 {
+			rw.WriteHeader(404)
+			return
+		}
+		rw.WriteHeader(200)
+		_, _ = rw.Write([]byte(`{"version" : "1.262.0.20230303"}`))
+		envCount++
+	}))
+	defer server.Close()
+
+	ok := VerifyEnvironmentGeneration(manifest.Environments{
+		"env": manifest.EnvironmentDefinition{
+			Name: "env",
+			URL: manifest.URLDefinition{
+				Type:  manifest.ValueURLType,
+				Name:  "URL",
+				Value: server.URL,
+			},
+		},
+		"env2": manifest.EnvironmentDefinition{
+			Name: "env",
+			URL: manifest.URLDefinition{
+				Type:  manifest.ValueURLType,
+				Name:  "URL",
+				Value: server.URL,
+			},
+		},
+	})
+	assert.False(t, ok)
+
+}
+
+func TestVerifyEnvironmentGen(t *testing.T) {
 	type args struct {
 		envs manifest.Environments
 	}
