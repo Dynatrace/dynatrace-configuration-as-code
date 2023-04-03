@@ -26,6 +26,42 @@ import (
 	"time"
 )
 
+func TestLimiterPanics(t *testing.T) {
+	t.Run("limiter panics - ExecuteBlocking()", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Errorf("Expected panic but no panic occured")
+			}
+		}()
+
+		limiter := Limiter{}
+		limiter.ExecuteBlocking(func() {})
+	})
+
+	t.Run("limiter panics - Execute()", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Errorf("Expected panic but no panic occured")
+			}
+		}()
+
+		limiter := Limiter{}
+		limiter.Execute(func() {})
+	})
+
+	t.Run("limiter panics - Close()", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Errorf("Expected panic but no panic occured")
+			}
+		}()
+
+		limiter := Limiter{}
+		limiter.Close()
+	})
+
+}
+
 func TestNewLimiter(t *testing.T) {
 	limiter := NewLimiter(47)
 

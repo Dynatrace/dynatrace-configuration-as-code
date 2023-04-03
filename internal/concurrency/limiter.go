@@ -54,6 +54,9 @@ func NewLimiter(maxConcurrent int) *Limiter {
 // If the maximum number of goroutines is reached, it is waited until a previously started goroutine (using this limiter) is done.
 // If the limiter is closed and more functions are started, Execute will panic.
 func (l *Limiter) Execute(callback func()) {
+	if l.waitChan == nil {
+		panic("waitChan channel is nil")
+	}
 	go func() {
 		l.waitChan <- struct{}{}
 
@@ -69,6 +72,9 @@ func (l *Limiter) Execute(callback func()) {
 // If the maximum number of parallel running functions is reached, the function does not execute the callback and does not return
 // until a slot is free.
 func (l *Limiter) ExecuteBlocking(callback func()) {
+	if l.waitChan == nil {
+		panic("waitChan channel is nil")
+	}
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
@@ -83,5 +89,8 @@ func (l *Limiter) ExecuteBlocking(callback func()) {
 // Close cleans up the limiter. All running goroutines will be finished, but no new ones can be started.
 // Closing the limiter multiple times will cause a panic
 func (l *Limiter) Close() {
+	if l.waitChan == nil {
+		panic("waitChan channel is nil")
+	}
 	close(l.waitChan)
 }
