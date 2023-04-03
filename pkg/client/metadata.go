@@ -19,12 +19,14 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"net/http"
 	"net/url"
 )
 
 const classicEnvironmentDomainPath = "/platform/metadata/v1/classic-environment-domain"
+const deprecatedClassicEnvDomainPath = "/platform/core/v1/environment-api-info"
 
 type classicEnvURL struct {
 	Endpoint string `json:"endpoint"`
@@ -39,8 +41,17 @@ func GetDynatraceClassicURL(client *http.Client, environmentURL string) (string,
 	}
 
 	resp, err := rest.Get(client, endpointURL)
-	if err != nil {
-		return "", fmt.Errorf("failed to query classic environment url %w", err)
+	if !resp.IsSuccess() || err != nil {
+		log.Debug("failed to query classic environment url from %q, falling back to deprecated endpoint %q: %v (HTTP %v)", classicEnvironmentDomainPath, deprecatedClassicEnvDomainPath, err, resp.StatusCode)
+
+		deprecatedEndpointURL, err := url.JoinPath(environmentURL, deprecatedClassicEnvDomainPath)
+		if err != nil {
+			return "", fmt.Errorf("failed to build URL for API %q on environment URL %q", deprecatedClassicEnvDomainPath, environmentURL)
+		}
+		resp, err = rest.Get(client, deprecatedEndpointURL)
+		if err != nil {
+			return "", fmt.Errorf("failed to query classic environment url after fallback to %q: %w", deprecatedClassicEnvDomainPath, err)
+		}
 	}
 
 	if !resp.IsSuccess() {
