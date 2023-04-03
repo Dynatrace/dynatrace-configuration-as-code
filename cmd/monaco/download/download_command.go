@@ -94,15 +94,15 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 func preRunChecks(f downloadCmdOptions) error {
 	switch {
 	case f.environmentURL != "" && f.manifestFile != "manifest.yaml":
-		return errors.New("\"url\" and \"token\" are mutually exclusive")
+		return errors.New("\"url\" and \"manifest\" are mutually exclusive")
 	case f.environmentURL != "" && f.specificEnvironmentName != "":
-		return errors.New("")
+		return errors.New("\"environment\" is specific to manifest-based download and incompatible with direct download from \"url\"")
 	case f.environmentURL != "":
 		switch {
 		case f.token == "":
 			return errors.New("if \"url\" is set, \"token\" also must be set")
 		case (f.clientID == "") != (f.clientSecret == ""):
-			return errors.New("\"oauth-client-id\" and \"oauth-client-secret\" always come in pair")
+			return errors.New("\"oauth-client-id\" and \"oauth-client-secret\" must always be set together")
 		default:
 			return nil
 		}

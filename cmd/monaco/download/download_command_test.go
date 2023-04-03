@@ -28,7 +28,7 @@ import (
 func TestGetDownloadCommand(t *testing.T) {
 	t.Run("url and token are mutually exclusive", func(t *testing.T) {
 		err := newMonaco(t).download("--url http://some.url --manifest my-manifest.yaml")
-		assert.EqualError(t, err, "\"url\" and \"token\" are mutually exclusive")
+		assert.EqualError(t, err, "\"url\" and \"manifest\" are mutually exclusive")
 	})
 
 	t.Run("Download via manifest - manifest set explicitly", func(t *testing.T) {
@@ -106,12 +106,12 @@ func TestGetDownloadCommand(t *testing.T) {
 
 	t.Run("Download w/o manifest.yaml - clint ID for OAuth authorization is missing", func(t *testing.T) {
 		err := newMonaco(t).download("--url http://some.url --token TOKEN --oauth-client-secret CLIENT_SECRET")
-		assert.EqualError(t, err, "\"oauth-client-id\" and \"oauth-client-secret\" always come in pair")
+		assert.EqualError(t, err, "\"oauth-client-id\" and \"oauth-client-secret\" must always be set together")
 	})
 
 	t.Run("Download w/o manifest.yaml - clint secret for OAuth authorization is missing", func(t *testing.T) {
 		err := newMonaco(t).download("--url http://some.url --token TOKEN --oauth-client-id CLIENT_ID")
-		assert.EqualError(t, err, "\"oauth-client-id\" and \"oauth-client-secret\" always come in pair")
+		assert.EqualError(t, err, "\"oauth-client-id\" and \"oauth-client-secret\" must always be set together")
 	})
 
 	t.Run("All non conflicting flags", func(t *testing.T) {
