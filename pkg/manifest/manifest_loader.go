@@ -177,7 +177,7 @@ func parseAuth(a auth) (Auth, error) {
 
 	return Auth{
 		Token: token,
-		OAuth: o,
+		OAuth: &o,
 	}, nil
 
 }
@@ -392,7 +392,7 @@ func shouldSkipEnv(context *LoaderContext, group group, env environment) bool {
 func parseEnvironment(context *LoaderContext, config environment, group string) (EnvironmentDefinition, []error) {
 	var errs []error
 
-	auth, err := parseAuth(config.Auth)
+	a, err := parseAuth(config.Auth)
 	if err != nil {
 		errs = append(errs, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("failed to parse auth section: %s", err)))
 	}
@@ -406,16 +406,10 @@ func parseEnvironment(context *LoaderContext, config environment, group string) 
 		return EnvironmentDefinition{}, errs
 	}
 
-	envType := Platform
-	if auth.OAuth == (OAuth{}) {
-		envType = Classic
-	}
-
 	return EnvironmentDefinition{
 		Name:  config.Name,
-		Type:  envType,
 		URL:   urlDef,
-		Auth:  auth,
+		Auth:  a,
 		Group: group,
 	}, nil
 }

@@ -19,6 +19,7 @@
 package download
 
 import (
+	"errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
@@ -193,7 +194,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 			c := client.NewMockClient(gomock.NewController(t))
 
 			tt.givenOpts.downloadOptionsShared = downloadOptionsShared{
-				environmentUrl: "testurl.com",
+				environmentURL: "testurl.com",
 				auth: manifest.Auth{
 					Token: manifest.AuthSecret{
 						Name:  "TEST_TOKEN_VAR",
@@ -479,7 +480,7 @@ func TestDownloadConfigsExitsEarlyForUnknownAPI(t *testing.T) {
 		onlyAPIs:        false,
 		onlySettings:    false,
 		downloadOptionsShared: downloadOptionsShared{
-			environmentUrl: "testurl.com",
+			environmentURL: "testurl.com",
 			auth: manifest.Auth{
 				Token: manifest.AuthSecret{
 					Name:  "TEST_TOKEN_VAR",
@@ -507,7 +508,7 @@ func TestDownloadConfigsExitsEarlyForUnknownSettingsSchema(t *testing.T) {
 		onlyAPIs:        false,
 		onlySettings:    false,
 		downloadOptionsShared: downloadOptionsShared{
-			environmentUrl: "testurl.com",
+			environmentURL: "testurl.com",
 			auth: manifest.Auth{
 				Token: manifest.AuthSecret{
 					Name:  "TEST_TOKEN_VAR",
@@ -527,4 +528,60 @@ func TestDownloadConfigsExitsEarlyForUnknownSettingsSchema(t *testing.T) {
 	err := doDownloadConfigs(afero.NewMemMapFs(), c, givenDefaultAPIs, givenOpts)
 	assert.ErrorContains(t, err, "not known", "expected download to fail for unkown Settings Schema")
 	c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Times(0) // no downloads should even be attempted for unknown schema
+}
+
+func TestMapToAuth(t *testing.T) {
+	t.Run("Best case scenario only with token", func(t *testing.T) {
+		t.Setenv("TOKEN", "token_value")
+
+		expected := &manifest.Auth{Token: manifest.AuthSecret{Name: "TOKEN", Value: "token_value"}}
+
+		actual, errs := auth{token: "TOKEN"}.mapToAuth()
+
+		assert.Empty(t, errs)
+		assert.Equal(t, expected, actual)
+	})
+	t.Run("Best case scenario with OAuth", func(t *testing.T) {
+		t.Setenv("TOKEN", "token_value")
+		t.Setenv("CLIENT_ID", "client_id_value")
+		t.Setenv("CLIENT_SECRET", "client_secret_value")
+
+		expected := &manifest.Auth{
+			Token: manifest.AuthSecret{Name: "TOKEN", Value: "token_value"},
+			OAuth: &manifest.OAuth{
+				ClientID:      manifest.AuthSecret{Name: "CLIENT_ID", Value: "client_id_value"},
+				ClientSecret:  manifest.AuthSecret{Name: "CLIENT_SECRET", Value: "client_secret_value"},
+				TokenEndpoint: nil,
+			},
+		}
+
+		actual, errs := auth{
+			token:        "TOKEN",
+			clientID:     "CLIENT_ID",
+			clientSecret: "CLIENT_SECRET",
+		}.mapToAuth()
+
+		assert.Empty(t, errs)
+		assert.Equal(t, expected, actual)
+	})
+	t.Run("Token is missing", func(t *testing.T) {
+		_, errs := auth{
+			token: "TOKEN",
+		}.mapToAuth()
+
+		assert.Len(t, errs, 1)
+		assert.Contains(t, errs, errors.New("the content of the environment variable \"TOKEN\" is not set"))
+	})
+	t.Run("Token is missing", func(t *testing.T) {
+		_, errs := auth{
+			token:        "TOKEN",
+			clientID:     "CLIENT_ID",
+			clientSecret: "CLIENT_SECRET",
+		}.mapToAuth()
+
+		assert.Len(t, errs, 3)
+		assert.Contains(t, errs, errors.New("the content of the environment variable \"TOKEN\" is not set"))
+		assert.Contains(t, errs, errors.New("the content of the environment variable \"CLIENT_ID\" is not set"))
+		assert.Contains(t, errs, errors.New("the content of the environment variable \"CLIENT_SECRET\" is not set"))
+	})
 }

@@ -34,8 +34,8 @@ import (
 //
 // The actual implementations are in the [DefaultCommand] struct.
 type Command interface {
-	DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions manifestDownloadOptions) error
-	DownloadConfigs(fs afero.Fs, cmdOptions directDownloadOptions) error
+	DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions downloadCmdOptions) error
+	DownloadConfigs(fs afero.Fs, cmdOptions downloadCmdOptions) error
 	DownloadEntitiesBasedOnManifest(fs afero.Fs, cmdOptions entitiesManifestDownloadOptions) error
 	DownloadEntities(fs afero.Fs, cmdOptions entitiesDirectDownloadOptions) error
 }
@@ -48,15 +48,14 @@ var (
 	_ Command = (*DefaultCommand)(nil)
 )
 
-type downloadCommandOptionsShared struct {
+type sharedDownloadCmdOptions struct {
 	projectName    string
 	outputFolder   string
 	forceOverwrite bool
 }
 
 type downloadOptionsShared struct {
-	environmentUrl          string
-	environmentType         manifest.EnvironmentType
+	environmentURL          string
 	auth                    manifest.Auth
 	outputFolder            string
 	projectName             string
@@ -68,10 +67,9 @@ func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptions
 	proj := download.CreateProjectData(downloadedConfigs, opts.projectName)
 
 	downloadWriterContext := download.WriterContext{
-		EnvironmentUrl:         opts.environmentUrl,
+		EnvironmentUrl:         opts.environmentURL,
 		ProjectToWrite:         proj,
 		Auth:                   opts.auth,
-		EnvironmentType:        opts.environmentType,
 		OutputFolder:           opts.outputFolder,
 		ForceOverwriteManifest: opts.forceOverwriteManifest,
 	}
@@ -111,20 +109,14 @@ func sumConfigs(configs project.ConfigsPerType) int {
 }
 
 // validateParameters checks that all necessary variables have been set.
-func validateParameters(envVarName, environmentUrl, projectName, token string) []error {
+func validateParameters(environmentURL, projectName string) []error {
 	errors := make([]error, 0)
 
-	if envVarName == "" {
-		errors = append(errors, fmt.Errorf("token not specified"))
-	} else if token == "" {
-		errors = append(errors, fmt.Errorf("the content of token '%v' is not set", envVarName))
-	}
-
-	if environmentUrl == "" {
+	if environmentURL == "" {
 		errors = append(errors, fmt.Errorf("url not specified"))
 	}
 
-	if _, err := url.Parse(environmentUrl); err != nil {
+	if _, err := url.Parse(environmentURL); err != nil {
 		errors = append(errors, fmt.Errorf("url is invalid: %w", err))
 	}
 
@@ -139,7 +131,7 @@ func preDownloadValidations(fs afero.Fs, opts downloadOptionsShared) error {
 
 	errs := validateOutputFolder(fs, opts.outputFolder, opts.projectName)
 	if len(errs) > 0 {
-		return PrintAndFormatErrors(errs, "output folder is invalid")
+		return printAndFormatErrors(errs, "output folder is invalid")
 	}
 
 	return nil
@@ -157,7 +149,7 @@ func validateOutputFolder(fs afero.Fs, outputFolder, project string) []error {
 
 }
 
-func PrintAndFormatErrors(errors []error, message string, a ...any) error {
+func printAndFormatErrors(errors []error, message string, a ...any) error {
 	errutils.PrintErrors(errors)
 	return fmt.Errorf(message, a...)
 }

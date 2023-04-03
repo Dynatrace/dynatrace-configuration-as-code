@@ -509,11 +509,6 @@ func TestVerifyManifestYAML(t *testing.T) {
 			expected: expected{errorMessage: "no `environmentGroups` defined"},
 		},
 		{
-			name:     "fails on missing version",
-			given:    given{manifest: manifest{}},
-			expected: expected{errorMessage: "`manifestVersion` missing"},
-		},
-		{
 			name: "fails on no longer supported manifest version",
 			given: given{
 				manifest: manifest{
@@ -769,7 +764,6 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 				Environments: map[string]EnvironmentDefinition{
 					"c": {
 						Name: "c",
-						Type: Classic,
 						URL: URLDefinition{
 							Type:  ValueURLType,
 							Value: "d",
@@ -804,7 +798,6 @@ environmentGroups:
 				Environments: map[string]EnvironmentDefinition{
 					"envA": {
 						Name: "envA",
-						Type: Classic,
 						URL: URLDefinition{
 							Type:  ValueURLType,
 							Value: "https://example.com",
@@ -819,7 +812,6 @@ environmentGroups:
 					},
 					"envB": {
 						Name: "envB",
-						Type: Classic,
 						URL: URLDefinition{
 							Type:  ValueURLType,
 							Value: "https://example.com",
@@ -856,7 +848,6 @@ environmentGroups:
 				Environments: map[string]EnvironmentDefinition{
 					"envA": {
 						Name: "envA",
-						Type: Classic,
 						URL: URLDefinition{
 							Type:  ValueURLType,
 							Value: "https://example.com",
@@ -871,7 +862,6 @@ environmentGroups:
 					},
 					"envB": {
 						Name: "envB",
-						Type: Classic,
 						URL: URLDefinition{
 							Type:  ValueURLType,
 							Value: "https://example.com",
@@ -907,7 +897,6 @@ environmentGroups:
 				Environments: map[string]EnvironmentDefinition{
 					"envA": {
 						Name: "envA",
-						Type: Classic,
 						URL: URLDefinition{
 							Type:  ValueURLType,
 							Value: "https://example.com",
@@ -943,7 +932,6 @@ environmentGroups:
 				Environments: map[string]EnvironmentDefinition{
 					"envA": {
 						Name: "envA",
-						Type: Classic,
 						URL: URLDefinition{
 							Type:  ValueURLType,
 							Value: "https://example.com",
@@ -981,7 +969,6 @@ environmentGroups:
 				Environments: map[string]EnvironmentDefinition{
 					"envA": {
 						Name: "envA",
-						Type: Classic,
 						URL: URLDefinition{
 							Type:  ValueURLType,
 							Value: "https://example.com",
@@ -996,7 +983,6 @@ environmentGroups:
 					},
 					"envB": {
 						Name: "envB",
-						Type: Classic,
 						URL: URLDefinition{
 							Type:  ValueURLType,
 							Value: "https://example.com",
@@ -1033,7 +1019,6 @@ environmentGroups:
 				Environments: map[string]EnvironmentDefinition{
 					"envA": {
 						Name: "envA",
-						Type: Classic,
 						URL: URLDefinition{
 							Type:  ValueURLType,
 							Value: "https://example.com",
@@ -1048,7 +1033,6 @@ environmentGroups:
 					},
 					"envB": {
 						Name: "envB",
-						Type: Classic,
 						URL: URLDefinition{
 							Type:  ValueURLType,
 							Value: "https://example.com",
@@ -1085,7 +1069,6 @@ environmentGroups:
 				Environments: map[string]EnvironmentDefinition{
 					"envA": {
 						Name: "envA",
-						Type: Classic,
 						URL: URLDefinition{
 							Type:  ValueURLType,
 							Value: "https://example.com",
@@ -1100,7 +1083,6 @@ environmentGroups:
 					},
 					"envB": {
 						Name: "envB",
-						Type: Classic,
 						URL: URLDefinition{
 							Type:  ValueURLType,
 							Value: "https://example.com",
@@ -1138,7 +1120,6 @@ environmentGroups:
 				Environments: map[string]EnvironmentDefinition{
 					"envA": {
 						Name: "envA",
-						Type: Classic,
 						URL: URLDefinition{
 							Type:  ValueURLType,
 							Value: "https://example.com",
@@ -1153,7 +1134,6 @@ environmentGroups:
 					},
 					"envB": {
 						Name: "envB",
-						Type: Classic,
 						URL: URLDefinition{
 							Type:  ValueURLType,
 							Value: "https://example.com",
@@ -1369,7 +1349,6 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 				Environments: map[string]EnvironmentDefinition{
 					"c": {
 						Name: "c",
-						Type: Classic,
 						URL: URLDefinition{
 							Type:  ValueURLType,
 							Value: "d",
@@ -1403,7 +1382,6 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 				Environments: map[string]EnvironmentDefinition{
 					"c": {
 						Name: "c",
-						Type: Platform,
 						URL: URLDefinition{
 							Type:  ValueURLType,
 							Value: "d",
@@ -1414,7 +1392,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 								Name:  "e",
 								Value: "mock token",
 							},
-							OAuth: OAuth{
+							OAuth: &OAuth{
 								ClientID: AuthSecret{
 									Name:  "client-id",
 									Value: "resolved-client-id",
@@ -1448,7 +1426,6 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 				Environments: map[string]EnvironmentDefinition{
 					"c": {
 						Name: "c",
-						Type: Platform,
 						URL: URLDefinition{
 							Type:  ValueURLType,
 							Value: "d",
@@ -1459,7 +1436,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 								Name:  "e",
 								Value: "mock token",
 							},
-							OAuth: OAuth{
+							OAuth: &OAuth{
 								ClientID: AuthSecret{
 									Name:  "client-id",
 									Value: "resolved-client-id",
@@ -1496,7 +1473,6 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 				Environments: map[string]EnvironmentDefinition{
 					"c": {
 						Name: "c",
-						Type: Platform,
 						URL: URLDefinition{
 							Type:  ValueURLType,
 							Value: "d",
@@ -1507,7 +1483,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 								Name:  "e",
 								Value: "mock token",
 							},
-							OAuth: OAuth{
+							OAuth: &OAuth{
 								ClientID: AuthSecret{
 									Name:  "client-id",
 									Value: "resolved-client-id",
@@ -1589,7 +1565,6 @@ environmentGroups: [{name: b, environments: [{name: c, url: {type: environment, 
 				Environments: map[string]EnvironmentDefinition{
 					"c": {
 						Name: "c",
-						Type: Classic,
 						URL: URLDefinition{
 							Type:  EnvironmentURLType,
 							Value: "mock token",

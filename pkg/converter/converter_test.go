@@ -57,7 +57,6 @@ func TestConvertParameters(t *testing.T) {
 
 	environment := manifest.EnvironmentDefinition{
 		Name:  environmentName,
-		Type:  manifest.Classic,
 		URL:   createSimpleUrlDefinition(),
 		Group: "",
 		Auth: manifest.Auth{

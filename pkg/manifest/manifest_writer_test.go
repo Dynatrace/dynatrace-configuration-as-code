@@ -151,7 +151,6 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 			input: map[string]EnvironmentDefinition{
 				"env1": {
 					Name: "env1",
-					Type: Classic,
 					URL: URLDefinition{
 						Value: "www.an.Url",
 					},
@@ -164,14 +163,13 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 				},
 				"env2": {
 					Name: "env2",
-					Type: Platform,
 					URL: URLDefinition{
 						Value: "www.an.Url",
 					},
 					Group: "group1",
 					Auth: Auth{
 						Token: AuthSecret{},
-						OAuth: OAuth{
+						OAuth: &OAuth{
 							ClientID: AuthSecret{
 								Name:  "client-id-key",
 								Value: "client-id-val",
@@ -190,14 +188,13 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 				},
 				"env2a": {
 					Name: "env2",
-					Type: Platform,
 					URL: URLDefinition{
 						Value: "www.an.Url",
 					},
 					Group: "group1",
 					Auth: Auth{
 						Token: AuthSecret{},
-						OAuth: OAuth{
+						OAuth: &OAuth{
 							ClientID: AuthSecret{
 								Name:  "client-id-key",
 								Value: "client-id-val",
@@ -211,14 +208,13 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 				},
 				"env2b": {
 					Name: "env2",
-					Type: Platform,
 					URL: URLDefinition{
 						Value: "www.an.Url",
 					},
 					Group: "group1",
 					Auth: Auth{
 						Token: AuthSecret{},
-						OAuth: OAuth{
+						OAuth: &OAuth{
 							ClientID: AuthSecret{
 								Name:  "client-id-key",
 								Value: "client-id-val",
@@ -236,7 +232,6 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 				},
 				"env3": {
 					Name: "env3",
-					Type: Classic,
 					URL: URLDefinition{
 						Value: "www.an.Url",
 					},
@@ -347,7 +342,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 			},
 		},
 		{
-			"returns empty groups for empty env defintion",
+			"returns empty groups for empty env definition",
 			map[string]EnvironmentDefinition{},
 			[]group{},
 		},
@@ -482,7 +477,7 @@ func Test_toWritableToken(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getTokenSecret(tt.input); !reflect.DeepEqual(got, tt.want) {
+			if got := getTokenSecret(tt.input.Auth, tt.input.Name); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getTokenSecret() = %v, want %v", got, tt.want)
 			}
 		})

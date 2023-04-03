@@ -1018,7 +1018,7 @@ func setupTestingDownloadOptions(t *testing.T, server *httptest.Server, projectN
 
 	return downloadConfigsOptions{
 		downloadOptionsShared: downloadOptionsShared{
-			environmentUrl: server.URL,
+			environmentURL: server.URL,
 			auth: manifest.Auth{
 				Token: manifest.AuthSecret{
 					Name:  "TOKEN_ENV_VAR",
