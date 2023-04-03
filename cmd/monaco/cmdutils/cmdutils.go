@@ -61,17 +61,12 @@ func CreateDTClient(url string, a manifest.Auth, dryRun bool) (client.Client, er
 // VerifyEnvironmentGeneration takes a manifestEnvironments map and tries to verify that each environment can be reached
 // using the configured credentials
 func VerifyEnvironmentGeneration(envs manifest.Environments) bool {
-	if featureflags.VerifyEnvironmentType().Enabled() {
-		for _, env := range envs {
-			switch {
-			case env.Auth.OAuth == nil:
-				return isClassicEnvironment(env)
-			case env.Auth.OAuth != nil:
-				return isPlatformEnvironment(env)
-			default:
-				log.Error("Could not authorize against the environment with name %q (%s). Unknown environment type.", env.Name, env.URL.Value)
-				return false
-			}
+	if !featureflags.VerifyEnvironmentType().Enabled() {
+		return true
+	}
+	for _, env := range envs {
+		if (env.Auth.OAuth == nil && !isClassicEnvironment(env)) || (env.Auth.OAuth != nil && !isPlatformEnvironment(env)) {
+			return false
 		}
 	}
 	return true
