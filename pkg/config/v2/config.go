@@ -56,6 +56,7 @@ const (
 	SettingsTypeId   TypeId = "settings"
 	ClassicApiTypeId TypeId = "classic"
 	EntityTypeId     TypeId = "entity"
+	AutomationTypeId TypeId = "automation"
 )
 
 type Type interface {
@@ -85,6 +86,26 @@ type EntityType struct {
 
 func (EntityType) ID() TypeId {
 	return EntityTypeId
+}
+
+// AutomationResource defines which resource is an AutomationType
+type AutomationResource string
+
+const (
+	Workflow         AutomationResource = "workflow"
+	BusinessCalendar AutomationResource = "business-calendar"
+	SchedulingRules  AutomationResource = "scheduling-rule"
+)
+
+// AutomationType represents any Dynatrace Platform automation-resource
+type AutomationType struct {
+	// Resource identifies which Automation resource is used in this config.
+	// Currently, this can be Workflow, BusinessCalendar, or SchedulingRules.
+	Resource AutomationResource
+}
+
+func (AutomationType) ID() TypeId {
+	return AutomationTypeId
 }
 
 // Config struct defining a configuration which can be deployed.
