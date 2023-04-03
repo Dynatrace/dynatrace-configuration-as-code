@@ -50,6 +50,8 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 			return preRunChecks(f)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cmd.SilenceUsage = true
+
 			if f.environmentURL != "" {
 				f.manifestFile = ""
 				return command.DownloadConfigs(fs, f)
