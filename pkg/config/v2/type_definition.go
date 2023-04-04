@@ -67,10 +67,10 @@ func (c *typeDefinition) UnmarshalYAML(unmarshal func(interface{}) error) error 
 }
 
 func (c *typeDefinition) isSound(knownApis map[string]struct{}) (bool, error) {
-	isClassicSound, classicErrs := c.isClassicSound(knownApis)
-	isSettingsSound, settingsErrs := c.Settings.isSettingsSound()
-	isEntitiesSound, entitiesErrs := c.Entities.isEntitiesSound()
-	isAutomationSound, automationErr := c.Automation.isSound()
+	classicErrs := c.isClassicSound(knownApis)
+	settingsErrs := c.Settings.isSettingsSound()
+	entitiesErrs := c.Entities.isEntitiesSound()
+	automationErr := c.Automation.isSound()
 
 	types := 0
 	var err error
@@ -93,8 +93,8 @@ func (c *typeDefinition) isSound(knownApis map[string]struct{}) (bool, error) {
 	}
 
 	typesSound := 0
-	for _, isSound := range []bool{isClassicSound, isSettingsSound, isEntitiesSound, isAutomationSound} {
-		if isSound {
+	for _, e := range []error{classicErrs, settingsErrs, entitiesErrs, automationErr} {
+		if e == nil {
 			typesSound += 1
 		}
 	}
@@ -117,7 +117,7 @@ func (c *typeDefinition) isSound(knownApis map[string]struct{}) (bool, error) {
 func (c *typeDefinition) isSettings() bool {
 	return c.Settings != settingsDefinition{}
 }
-func (t *settingsDefinition) isSettingsSound() (bool, error) {
+func (t *settingsDefinition) isSettingsSound() error {
 	var s []string
 	if t.Schema == "" {
 		s = append(s, "type.schema")
@@ -126,51 +126,51 @@ func (t *settingsDefinition) isSettingsSound() (bool, error) {
 		s = append(s, "type.scope")
 	}
 	if s == nil {
-		return true, nil
+		return nil
 	}
-	return false, fmt.Errorf("next property missing: %v", s)
+	return fmt.Errorf("next property missing: %v", s)
 }
 func (c *typeDefinition) isEntities() bool {
 	return c.Entities != entitiesDefinition{}
 }
-func (f *entitiesDefinition) isEntitiesSound() (bool, error) {
+func (f *entitiesDefinition) isEntitiesSound() error {
 	var e []string
 	if f.EntitiesType == "" {
 		e = append(e, "type.entitiesType")
 	}
 	if e == nil {
-		return true, nil
+		return nil
 	}
-	return false, fmt.Errorf("next property missing: %v", e)
+	return fmt.Errorf("next property missing: %v", e)
 }
 
 func (c *typeDefinition) isClassic() bool {
 	return c.Api != ""
 }
-func (c *typeDefinition) isClassicSound(knownApis map[string]struct{}) (bool, error) {
+func (c *typeDefinition) isClassicSound(knownApis map[string]struct{}) error {
 	if !c.isClassic() {
-		return false, errors.New("missing 'type.api' property")
+		return errors.New("missing 'type.api' property")
 	} else if _, found := knownApis[c.Api]; !found {
-		return false, errors.New("unknown API: " + c.Api)
+		return errors.New("unknown API: " + c.Api)
 	}
-	return true, nil
+	return nil
 }
 
 func (c *typeDefinition) isAutomation() bool {
 	return c.Automation != automationDefinition{}
 }
 
-func (c *automationDefinition) isSound() (bool, error) {
+func (c *automationDefinition) isSound() error {
 
 	switch c.Resource {
 	case "":
-		return false, errors.New("missing 'type.automation.resource' property")
+		return errors.New("missing 'type.automation.resource' property")
 
 	case Workflow, BusinessCalendar, SchedulingRule:
-		return true, nil
+		return nil
 
 	default:
-		return false, fmt.Errorf("unknown automation resource %q", c.Resource)
+		return fmt.Errorf("unknown automation resource %q", c.Resource)
 	}
 }
 
