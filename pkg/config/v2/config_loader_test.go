@@ -601,6 +601,121 @@ configs:
 			nil,
 		},
 		{
+			"load a workflow",
+			"test-file.yaml",
+			"test-file.yaml",
+			`
+configs:
+- id: workflow-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+  type:
+    automation:
+      resource: workflow`,
+			[]Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "workflow",
+						ConfigId: "workflow-id",
+					},
+					Type: AutomationType{
+						Resource: Workflow,
+					},
+					Parameters: Parameters{
+						NameParameter: &value.ValueParameter{Value: "Star Trek > Star Wars"},
+					},
+					Skip:        false,
+					Environment: "env name",
+					Group:       "default",
+				},
+			},
+			nil,
+		},
+		{
+			"load a business-calendar",
+			"test-file.yaml",
+			"test-file.yaml",
+			`
+configs:
+- id: bc-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+  type:
+    automation:
+      resource: business-calendar`,
+			[]Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "business-calendar",
+						ConfigId: "bc-id",
+					},
+					Type: AutomationType{
+						Resource: BusinessCalendar,
+					},
+					Parameters: Parameters{
+						NameParameter: &value.ValueParameter{Value: "Star Trek > Star Wars"},
+					},
+					Skip:        false,
+					Environment: "env name",
+					Group:       "default",
+				},
+			},
+			nil,
+		},
+		{
+			"load a scheduling rule",
+			"test-file.yaml",
+			"test-file.yaml",
+			`
+configs:
+- id: sr-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+  type:
+    automation:
+      resource: scheduling-rule`,
+			[]Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "scheduling-rule",
+						ConfigId: "sr-id",
+					},
+					Type: AutomationType{
+						Resource: SchedulingRules,
+					},
+					Parameters: Parameters{
+						NameParameter: &value.ValueParameter{Value: "Star Trek > Star Wars"},
+					},
+					Skip:        false,
+					Environment: "env name",
+					Group:       "default",
+				},
+			},
+			nil,
+		},
+		{
+			"load an unknown automation resource",
+			"test-file.yaml",
+			"test-file.yaml",
+			`
+configs:
+- id: automation-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+  type:
+    automation:
+      resource: does-not-exist`,
+			nil,
+			[]string{`unknown automation resource "does-not-exist"`},
+		},
+		{
 			"fails to load with a parameter that is 'id'",
 			"test-file.yaml",
 			"test-file.yaml",
