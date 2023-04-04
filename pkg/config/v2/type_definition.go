@@ -70,6 +70,7 @@ func (c *typeDefinition) isSound(knownApis map[string]struct{}) (bool, error) {
 	isClassicSound, classicErrs := c.isClassicSound(knownApis)
 	isSettingsSound, settingsErrs := c.Settings.isSettingsSound()
 	isEntitiesSound, entitiesErrs := c.Entities.isEntitiesSound()
+	isAutomationSound, automationErr := c.Automation.isSound()
 
 	types := 0
 	var err error
@@ -86,9 +87,13 @@ func (c *typeDefinition) isSound(knownApis map[string]struct{}) (bool, error) {
 		types += 1
 		err = entitiesErrs
 	}
+	if c.isAutomation() {
+		types++
+		err = automationErr
+	}
 
 	typesSound := 0
-	for _, isSound := range []bool{isClassicSound, isSettingsSound, isEntitiesSound} {
+	for _, isSound := range []bool{isClassicSound, isSettingsSound, isEntitiesSound, isAutomationSound} {
 		if isSound {
 			typesSound += 1
 		}
@@ -151,6 +156,24 @@ func (c *typeDefinition) isClassicSound(knownApis map[string]struct{}) (bool, er
 	return true, nil
 }
 
+func (c *typeDefinition) isAutomation() bool {
+	return c.Automation != automationDefinition{}
+}
+
+func (c *automationDefinition) isSound() (bool, error) {
+
+	switch c.Resource {
+	case "":
+		return false, errors.New("missing 'type.automation.resource' property")
+
+	case Workflow, BusinessCalendar, SchedulingRules:
+		return true, nil
+
+	default:
+		return false, fmt.Errorf("unknown automation resource %q", c.Resource)
+	}
+}
+
 func (c *typeDefinition) GetApiType() string {
 	switch {
 	case c.isSettings():
@@ -159,6 +182,8 @@ func (c *typeDefinition) GetApiType() string {
 		return c.Api
 	case c.isEntities():
 		return c.Entities.EntitiesType
+	case c.isAutomation():
+		return string(c.Automation.Resource)
 	default:
 		return ""
 	}

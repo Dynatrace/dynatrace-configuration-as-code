@@ -15,6 +15,7 @@
 package v2
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
@@ -444,9 +445,13 @@ func getType(typeDef typeDefinition) (Type, error) {
 		return EntityType{
 			EntitiesType: typeDef.Entities.EntitiesType,
 		}, nil
+	case typeDef.isAutomation():
+		return AutomationType{
+			Resource: typeDef.Automation.Resource,
+		}, nil
 
 	default:
-		return nil, fmt.Errorf("invalid typeDefinition - is neither Setting, Classic nor Entity")
+		return nil, errors.New("unknown type")
 	}
 }
 
