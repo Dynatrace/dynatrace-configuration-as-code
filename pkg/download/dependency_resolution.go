@@ -131,6 +131,9 @@ func collectConfigsById(configs project.ConfigsPerType) map[string]config.Config
 	for _, configs := range configs {
 		for _, conf := range configs {
 			configsById[conf.Template.Id()] = conf
+			if conf.OriginObjectId != "" {
+				configsById[conf.OriginObjectId] = conf
+			}
 		}
 	}
 	return configsById
