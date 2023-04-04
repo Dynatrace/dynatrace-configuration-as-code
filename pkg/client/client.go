@@ -316,7 +316,7 @@ func NewOAuthClient(ctx context.Context, oauthConfig OauthCredentials) *http.Cli
 
 	tokenUrl := oauthConfig.TokenURL
 	if tokenUrl == "" {
-		log.Debug("using default tokenURL %s", tokenUrl)
+		log.Debug("using default token URL %s", defaultOAuthTokenURL)
 		tokenUrl = defaultOAuthTokenURL
 	}
 
