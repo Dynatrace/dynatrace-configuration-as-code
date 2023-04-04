@@ -86,14 +86,16 @@ func LoadConfigs(fs afero.Fs, context *LoaderContext) (result []Config, errors [
 	return result, nil
 }
 
-type ConfigLoaderContext struct {
+// configFileLoaderContext is a context for each config-file
+type configFileLoaderContext struct {
 	*LoaderContext
 	Folder string
 	Path   string
 }
 
-type SingleConfigLoadContext struct {
-	*ConfigLoaderContext
+// singleConfigEntryLoadContext is a context for each config-entry within a config-file
+type singleConfigEntryLoadContext struct {
+	*configFileLoaderContext
 	Type string
 }
 
@@ -103,7 +105,7 @@ type DefinitionParserError struct {
 	Reason   string
 }
 
-func newDefinitionParserError(configId string, context *SingleConfigLoadContext, reason string) DefinitionParserError {
+func newDefinitionParserError(configId string, context *singleConfigEntryLoadContext, reason string) DefinitionParserError {
 	return DefinitionParserError{
 		Location: coordinate.Coordinate{
 			Project:  context.ProjectId,
@@ -120,7 +122,7 @@ type DetailedDefinitionParserError struct {
 	EnvironmentDetails configErrors.EnvironmentDetails
 }
 
-func newDetailedDefinitionParserError(configId string, context *SingleConfigLoadContext, environment manifest.EnvironmentDefinition,
+func newDetailedDefinitionParserError(configId string, context *singleConfigEntryLoadContext, environment manifest.EnvironmentDefinition,
 	reason string) DetailedDefinitionParserError {
 
 	return DetailedDefinitionParserError{
@@ -146,7 +148,7 @@ type ParameterDefinitionParserError struct {
 	ParameterName string
 }
 
-func newParameterDefinitionParserError(name string, configId string, context *SingleConfigLoadContext,
+func newParameterDefinitionParserError(name string, configId string, context *singleConfigEntryLoadContext,
 	environment manifest.EnvironmentDefinition, reason string) ParameterDefinitionParserError {
 
 	return ParameterDefinitionParserError{
@@ -201,13 +203,14 @@ func parseConfigs(fs afero.Fs, context *LoaderContext, filePath string) (configs
 		}
 	}
 
-	configLoaderContext := &ConfigLoaderContext{
+	configLoaderContext := &configFileLoaderContext{
 		LoaderContext: context,
 		Folder:        folder,
 		Path:          filePath,
 	}
 
 	for _, config := range definition.Configs {
+
 		result, definitionErrors := parseDefinition(fs, configLoaderContext, config.Id, config)
 
 		if definitionErrors != nil {
@@ -228,7 +231,7 @@ func parseConfigs(fs afero.Fs, context *LoaderContext, filePath string) (configs
 // parseDefinition parses a single config entry
 func parseDefinition(
 	fs afero.Fs,
-	context *ConfigLoaderContext,
+	context *configFileLoaderContext,
 	configId string,
 	definition topLevelConfigDefinition,
 ) ([]Config, []error) {
@@ -236,9 +239,9 @@ func parseDefinition(
 	results := make([]Config, 0)
 	var errors []error
 
-	singleConfigContext := &SingleConfigLoadContext{
-		ConfigLoaderContext: context,
-		Type:                definition.Type.GetApiType(),
+	singleConfigContext := &singleConfigEntryLoadContext{
+		configFileLoaderContext: context,
+		Type:                    definition.Type.GetApiType(),
 	}
 
 	if e := definition.Type.isSound(context.KnownApis); e != nil {
@@ -289,7 +292,7 @@ func toGroupOverrideMap(groups []groupOverride) map[string]groupOverride {
 
 func parseDefinitionForEnvironment(
 	fs afero.Fs,
-	context *SingleConfigLoadContext,
+	context *singleConfigEntryLoadContext,
 	configId string,
 	environment manifest.EnvironmentDefinition,
 	definition topLevelConfigDefinition,
@@ -338,7 +341,7 @@ func applyOverrides(base *configDefinition, override configDefinition) {
 
 func getConfigFromDefinition(
 	fs afero.Fs,
-	context *SingleConfigLoadContext,
+	context *singleConfigEntryLoadContext,
 	configId string,
 	environment manifest.EnvironmentDefinition,
 	definition configDefinition,
@@ -456,7 +459,7 @@ func getType(typeDef typeDefinition) (Type, error) {
 }
 
 func parseSkip(
-	context *SingleConfigLoadContext,
+	context *singleConfigEntryLoadContext,
 	environmentDefinition manifest.EnvironmentDefinition,
 	configId string,
 	param interface{},
@@ -507,7 +510,7 @@ func isSupportedParamTypeForSkip(p parameter.Parameter) bool {
 // References holds coordinate-string -> coordinate
 type References map[string]coordinate.Coordinate
 
-func parseParametersAndReferences(context *SingleConfigLoadContext, environment manifest.EnvironmentDefinition,
+func parseParametersAndReferences(context *singleConfigEntryLoadContext, environment manifest.EnvironmentDefinition,
 	configId string, parameterMap map[string]configParameter) (Parameters, []error) {
 
 	parameters := make(map[string]parameter.Parameter)
@@ -542,7 +545,7 @@ func parseParametersAndReferences(context *SingleConfigLoadContext, environment 
 	return parameters, nil
 }
 
-func validateParameterName(context *SingleConfigLoadContext, environment manifest.EnvironmentDefinition, configId string, name string) error {
+func validateParameterName(context *singleConfigEntryLoadContext, environment manifest.EnvironmentDefinition, configId string, name string) error {
 
 	for _, parameterName := range ReservedParameterNames {
 		if name == parameterName {
@@ -554,7 +557,7 @@ func validateParameterName(context *SingleConfigLoadContext, environment manifes
 	return nil
 }
 
-func parseParameter(context *SingleConfigLoadContext, environment manifest.EnvironmentDefinition,
+func parseParameter(context *singleConfigEntryLoadContext, environment manifest.EnvironmentDefinition,
 	configId string, name string, param interface{}) (parameter.Parameter, error) {
 
 	if val, ok := param.([]interface{}); ok {
@@ -589,7 +592,7 @@ func parseParameter(context *SingleConfigLoadContext, environment manifest.Envir
 }
 
 // TODO come up with better way to handle this, as this is a hack
-func arrayToReferenceParameter(context *SingleConfigLoadContext, environment manifest.EnvironmentDefinition,
+func arrayToReferenceParameter(context *singleConfigEntryLoadContext, environment manifest.EnvironmentDefinition,
 	configId string, parameterName string, arr []interface{}) (parameter.Parameter, error) {
 	if len(arr) == 0 || len(arr) > 4 {
 		return nil, newParameterDefinitionParserError(parameterName, configId, context, environment,
