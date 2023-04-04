@@ -174,6 +174,198 @@ func TestDependencyResolution(t *testing.T) {
 			},
 		},
 		{
+			"referencing a Management Zone Setting via numeric ID works",
+			project.ConfigsPerType{
+				"builtin:management-zones": []config.Config{
+					{
+						Type:           config.SettingsType{SchemaId: "builtin:management-zones"},
+						Template:       template.NewDownloadTemplate("4fw231-13fw124-f23r24", "mz-with-new-uuid", "content"),
+						Coordinate:     coordinate.Coordinate{Project: "project", Type: "builtin:management-zones", ConfigId: "4fw231-13fw124-f23r24"},
+						OriginObjectId: "vu9U3hXa3q0AAAABABhidWlsdGluOm1hbmFnZW1lbnQtem9uZXMABnRlbmFudAAGdGVuYW50ACRjNDZlNDZiMy02ZDk2LTMyYTctOGI1Yi1mNjExNzcyZDAxNjW-71TeFdrerQ",
+						Parameters: map[string]parameter.Parameter{
+							config.ScopeParameter: valueParam.New("environment"),
+						},
+					},
+					{
+						Type:           config.SettingsType{SchemaId: "builtin:management-zones"},
+						Template:       template.NewDownloadTemplate("342342-26re248-w46w48", "mz-with-legacy-uuid", "content"),
+						Coordinate:     coordinate.Coordinate{Project: "project", Type: "builtin:management-zones", ConfigId: "342342-26re248-w46w48"},
+						OriginObjectId: "vu9U3hXa3q0AAAABABhidWlsdGluOm1hbmFnZW1lbnQtem9uZXMABnRlbmFudAAGdGVuYW50ACRkMGRlZDRhNy1mY2ZlLTQ2MDUtYTEyMy03YWE4ZDBmYTVhMja-71TeFdrerQ",
+						Parameters: map[string]parameter.Parameter{
+							config.ScopeParameter: valueParam.New("environment"),
+						},
+					},
+				},
+				"builtin:other-setting": []config.Config{
+					{
+						Type:           config.SettingsType{SchemaId: "builtin:other-setting"},
+						Template:       template.NewDownloadTemplate("5242as-13fw124-f23r24", "references-new-uuid-mz", "something something -4292415658385853785 something something"),
+						Coordinate:     coordinate.Coordinate{Project: "project", Type: "builtin:other-setting", ConfigId: "5242as-13fw124-f23r24"},
+						OriginObjectId: "object2-objectID",
+						Parameters: map[string]parameter.Parameter{
+							config.ScopeParameter: valueParam.New("environment"),
+						},
+					},
+					{
+						Type:           config.SettingsType{SchemaId: "builtin:other-setting"},
+						Template:       template.NewDownloadTemplate("869242as-13fw124-f23r24", "references-legacy-uuid-mz", "something something 3277109782074005416 something something"),
+						Coordinate:     coordinate.Coordinate{Project: "project", Type: "builtin:other-setting", ConfigId: "869242as-13fw124-f23r24"},
+						OriginObjectId: "object1-objectID",
+						Parameters: map[string]parameter.Parameter{
+							config.ScopeParameter: valueParam.New("environment"),
+						},
+					},
+				},
+			},
+			project.ConfigsPerType{
+				"builtin:management-zones": []config.Config{
+					{
+						Type:           config.SettingsType{SchemaId: "builtin:management-zones"},
+						Template:       template.NewDownloadTemplate("4fw231-13fw124-f23r24", "mz-with-new-uuid", "content"),
+						Coordinate:     coordinate.Coordinate{Project: "project", Type: "builtin:management-zones", ConfigId: "4fw231-13fw124-f23r24"},
+						OriginObjectId: "vu9U3hXa3q0AAAABABhidWlsdGluOm1hbmFnZW1lbnQtem9uZXMABnRlbmFudAAGdGVuYW50ACRjNDZlNDZiMy02ZDk2LTMyYTctOGI1Yi1mNjExNzcyZDAxNjW-71TeFdrerQ",
+						Parameters: map[string]parameter.Parameter{
+							config.ScopeParameter: valueParam.New("environment"),
+						},
+					},
+					{
+						Type:           config.SettingsType{SchemaId: "builtin:management-zones"},
+						Template:       template.NewDownloadTemplate("342342-26re248-w46w48", "mz-with-legacy-uuid", "content"),
+						Coordinate:     coordinate.Coordinate{Project: "project", Type: "builtin:management-zones", ConfigId: "342342-26re248-w46w48"},
+						OriginObjectId: "vu9U3hXa3q0AAAABABhidWlsdGluOm1hbmFnZW1lbnQtem9uZXMABnRlbmFudAAGdGVuYW50ACRkMGRlZDRhNy1mY2ZlLTQ2MDUtYTEyMy03YWE4ZDBmYTVhMja-71TeFdrerQ",
+						Parameters: map[string]parameter.Parameter{
+							config.ScopeParameter: valueParam.New("environment"),
+						},
+					},
+				},
+				"builtin:other-setting": []config.Config{
+					{
+						Type:           config.SettingsType{SchemaId: "builtin:other-setting"},
+						Template:       template.NewDownloadTemplate("5242as-13fw124-f23r24", "references-new-uuid-mz", makeTemplateString("something something %s something something", "builtin:management-zones", "4fw231-13fw124-f23r24")),
+						Coordinate:     coordinate.Coordinate{Project: "project", Type: "builtin:other-setting", ConfigId: "5242as-13fw124-f23r24"},
+						OriginObjectId: "object2-objectID",
+						Parameters: map[string]parameter.Parameter{
+							config.ScopeParameter: valueParam.New("environment"),
+							createParameterName("builtin:management-zones", "4fw231-13fw124-f23r24"): refParam.New("project", "builtin:management-zones", "4fw231-13fw124-f23r24", "id"),
+						},
+					},
+					{
+						Type:           config.SettingsType{SchemaId: "builtin:other-setting"},
+						Template:       template.NewDownloadTemplate("869242as-13fw124-f23r24", "references-legacy-uuid-mz", makeTemplateString("something something %s something something", "builtin:management-zones", "342342-26re248-w46w48")),
+						Coordinate:     coordinate.Coordinate{Project: "project", Type: "builtin:other-setting", ConfigId: "869242as-13fw124-f23r24"},
+						OriginObjectId: "object1-objectID",
+						Parameters: map[string]parameter.Parameter{
+							config.ScopeParameter: valueParam.New("environment"),
+							createParameterName("builtin:management-zones", "342342-26re248-w46w48"): refParam.New("project", "builtin:management-zones", "342342-26re248-w46w48", "id"),
+						},
+					},
+				},
+			},
+		},
+		{
+			"resolution does not break if getting a management zone numeric ID fails",
+			project.ConfigsPerType{
+				"builtin:management-zones": []config.Config{
+					{
+						Type:           config.SettingsType{SchemaId: "builtin:management-zones"},
+						Template:       template.NewDownloadTemplate("4fw231-13fw124-f23r24", "mz-with-new-uuid", "content"),
+						Coordinate:     coordinate.Coordinate{Project: "project", Type: "builtin:management-zones", ConfigId: "4fw231-13fw124-f23r24"},
+						OriginObjectId: "OBJECT ID THAT CAN NOT BE PARSED INTO A NUMERIC ID",
+						Parameters: map[string]parameter.Parameter{
+							config.ScopeParameter: valueParam.New("environment"),
+						},
+					},
+				},
+				"builtin:other-setting": []config.Config{
+					{
+						Type:           config.SettingsType{SchemaId: "builtin:other-setting"},
+						Template:       template.NewDownloadTemplate("5242as-13fw124-f23r24", "references-new-uuid-mz", "something something -4292415658385853785 something something"),
+						Coordinate:     coordinate.Coordinate{Project: "project", Type: "builtin:other-setting", ConfigId: "5242as-13fw124-f23r24"},
+						OriginObjectId: "object2-objectID",
+						Parameters: map[string]parameter.Parameter{
+							config.ScopeParameter: valueParam.New("environment"),
+						},
+					},
+				},
+			},
+			project.ConfigsPerType{
+				"builtin:management-zones": []config.Config{
+					{
+						Type:           config.SettingsType{SchemaId: "builtin:management-zones"},
+						Template:       template.NewDownloadTemplate("4fw231-13fw124-f23r24", "mz-with-new-uuid", "content"),
+						Coordinate:     coordinate.Coordinate{Project: "project", Type: "builtin:management-zones", ConfigId: "4fw231-13fw124-f23r24"},
+						OriginObjectId: "OBJECT ID THAT CAN NOT BE PARSED INTO A NUMERIC ID",
+						Parameters: map[string]parameter.Parameter{
+							config.ScopeParameter: valueParam.New("environment"),
+						},
+					},
+				},
+				"builtin:other-setting": []config.Config{
+					{
+						Type:           config.SettingsType{SchemaId: "builtin:other-setting"},
+						Template:       template.NewDownloadTemplate("5242as-13fw124-f23r24", "references-new-uuid-mz", "something something -4292415658385853785 something something"),
+						Coordinate:     coordinate.Coordinate{Project: "project", Type: "builtin:other-setting", ConfigId: "5242as-13fw124-f23r24"},
+						OriginObjectId: "object2-objectID",
+						Parameters: map[string]parameter.Parameter{
+							config.ScopeParameter: valueParam.New("environment"),
+						},
+					},
+				},
+			},
+		},
+		{
+			"management zone references could be resolved by object ID as well",
+			project.ConfigsPerType{
+				"builtin:management-zones": []config.Config{
+					{
+						Type:           config.SettingsType{SchemaId: "builtin:management-zones"},
+						Template:       template.NewDownloadTemplate("4fw231-13fw124-f23r24", "mz-with-new-uuid", "content"),
+						Coordinate:     coordinate.Coordinate{Project: "project", Type: "builtin:management-zones", ConfigId: "4fw231-13fw124-f23r24"},
+						OriginObjectId: "mz-object-id",
+						Parameters: map[string]parameter.Parameter{
+							config.ScopeParameter: valueParam.New("environment"),
+						},
+					},
+				},
+				"builtin:other-setting": []config.Config{
+					{
+						Type:           config.SettingsType{SchemaId: "builtin:other-setting"},
+						Template:       template.NewDownloadTemplate("5242as-13fw124-f23r24", "references-new-uuid-mz", "something something mz-object-id something something"),
+						Coordinate:     coordinate.Coordinate{Project: "project", Type: "builtin:other-setting", ConfigId: "5242as-13fw124-f23r24"},
+						OriginObjectId: "object2-objectID",
+						Parameters: map[string]parameter.Parameter{
+							config.ScopeParameter: valueParam.New("environment"),
+						},
+					},
+				},
+			},
+			project.ConfigsPerType{
+				"builtin:management-zones": []config.Config{
+					{
+						Type:           config.SettingsType{SchemaId: "builtin:management-zones"},
+						Template:       template.NewDownloadTemplate("4fw231-13fw124-f23r24", "mz-with-new-uuid", "content"),
+						Coordinate:     coordinate.Coordinate{Project: "project", Type: "builtin:management-zones", ConfigId: "4fw231-13fw124-f23r24"},
+						OriginObjectId: "mz-object-id",
+						Parameters: map[string]parameter.Parameter{
+							config.ScopeParameter: valueParam.New("environment"),
+						},
+					},
+				},
+				"builtin:other-setting": []config.Config{
+					{
+						Type:           config.SettingsType{SchemaId: "builtin:other-setting"},
+						Template:       template.NewDownloadTemplate("5242as-13fw124-f23r24", "references-new-uuid-mz", makeTemplateString("something something %s something something", "builtin:management-zones", "4fw231-13fw124-f23r24")),
+						Coordinate:     coordinate.Coordinate{Project: "project", Type: "builtin:other-setting", ConfigId: "5242as-13fw124-f23r24"},
+						OriginObjectId: "object2-objectID",
+						Parameters: map[string]parameter.Parameter{
+							config.ScopeParameter: valueParam.New("environment"),
+							createParameterName("builtin:management-zones", "4fw231-13fw124-f23r24"): refParam.New("project", "builtin:management-zones", "4fw231-13fw124-f23r24", "id"),
+						},
+					},
+				},
+			},
+		},
+		{
 			"cyclic reference works",
 			project.ConfigsPerType{
 				"api": []config.Config{
