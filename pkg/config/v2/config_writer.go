@@ -288,6 +288,12 @@ func extractConfigType(context *serializerContext, config Config) (typeDefinitio
 				EntitiesType: t.EntitiesType,
 			},
 		}, nil
+	case AutomationType:
+		return typeDefinition{
+			Automation: automationDefinition{
+				Resource: t.Resource,
+			},
+		}, nil
 
 	default:
 		return typeDefinition{}, fmt.Errorf("unknown config-type (ID: %q)", config.Type.ID())

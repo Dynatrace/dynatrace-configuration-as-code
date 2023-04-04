@@ -22,9 +22,10 @@ import (
 )
 
 type typeDefinition struct {
-	Api      string             `yaml:"api,omitempty"`
-	Settings settingsDefinition `yaml:"settings,omitempty"`
-	Entities entitiesDefinition `yaml:"entities,omitempty"`
+	Api        string               `yaml:"api,omitempty"`
+	Settings   settingsDefinition   `yaml:"settings,omitempty"`
+	Entities   entitiesDefinition   `yaml:"entities,omitempty"`
+	Automation automationDefinition `yaml:"automation,omitempty"`
 }
 
 type settingsDefinition struct {
@@ -35,6 +36,10 @@ type settingsDefinition struct {
 
 type entitiesDefinition struct {
 	EntitiesType string `yaml:"entitiesType,omitempty"`
+}
+
+type automationDefinition struct {
+	Resource AutomationResource `yaml:"resource"`
 }
 
 // UnmarshalYAML Custom unmarshaler that knows how to handle typeDefinition.

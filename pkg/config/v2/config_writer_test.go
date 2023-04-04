@@ -862,6 +862,117 @@ func TestWriteConfigs(t *testing.T) {
 			},
 		},
 		{
+			name: "Automation resources",
+			configs: []Config{
+				{
+					Template: template.CreateTemplateFromString("project/workflow/a.json", ""),
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "workflow",
+						ConfigId: "configId1",
+					},
+					Type: AutomationType{
+						Resource: Workflow,
+					},
+					Parameters: map[string]parameter.Parameter{
+						NameParameter: &value.ValueParameter{Value: "name"},
+					},
+					Skip: true,
+				},
+				{
+					Template: template.CreateTemplateFromString("project/business-calendar/a.json", ""),
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "business-calendar",
+						ConfigId: "configId2",
+					},
+					Type: AutomationType{
+						Resource: BusinessCalendar,
+					},
+					Parameters: map[string]parameter.Parameter{
+						NameParameter: &value.ValueParameter{Value: "name"},
+					},
+					Skip: true,
+				},
+				{
+					Template: template.CreateTemplateFromString("project/scheduling-rule/a.json", ""),
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "scheduling-rule",
+						ConfigId: "configId3",
+					},
+					Type: AutomationType{
+						Resource: SchedulingRules,
+					},
+					Parameters: map[string]parameter.Parameter{
+						NameParameter: &value.ValueParameter{Value: "name"},
+					},
+					Skip: true,
+				},
+			},
+			expectedConfigs: map[string]topLevelDefinition{
+				"workflow": {
+					Configs: []topLevelConfigDefinition{
+						{
+							Id: "configId1",
+							Config: configDefinition{
+								Name:       "name",
+								Parameters: nil,
+								Template:   "a.json",
+								Skip:       true,
+							},
+							Type: typeDefinition{
+								Automation: automationDefinition{
+									Resource: "workflow",
+								},
+							},
+						},
+					},
+				},
+				"business-calendar": {
+					Configs: []topLevelConfigDefinition{
+						{
+							Id: "configId2",
+							Config: configDefinition{
+								Name:       "name",
+								Parameters: nil,
+								Template:   "a.json",
+								Skip:       true,
+							},
+							Type: typeDefinition{
+								Automation: automationDefinition{
+									Resource: "business-calendar",
+								},
+							},
+						},
+					},
+				},
+				"scheduling-rule": {
+					Configs: []topLevelConfigDefinition{
+						{
+							Id: "configId3",
+							Config: configDefinition{
+								Name:       "name",
+								Parameters: nil,
+								Template:   "a.json",
+								Skip:       true,
+							},
+							Type: typeDefinition{
+								Automation: automationDefinition{
+									Resource: "scheduling-rule",
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedTemplatePaths: []string{
+				"project/workflow/a.json",
+				"project/business-calendar/a.json",
+				"project/scheduling-rule/a.json",
+			},
+		},
+		{
 			name: "Reference scope",
 			configs: []Config{
 				{
