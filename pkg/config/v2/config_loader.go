@@ -241,7 +241,7 @@ func parseDefinition(
 		Type:                definition.Type.GetApiType(),
 	}
 
-	if b, e := definition.Type.isSound(context.KnownApis); !b {
+	if e := definition.Type.isSound(context.KnownApis); e != nil {
 		return nil, append(errors, newDefinitionParserError(configId, singleConfigContext, e.Error()))
 	}
 

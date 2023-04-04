@@ -66,7 +66,7 @@ func (c *typeDefinition) UnmarshalYAML(unmarshal func(interface{}) error) error 
 	return fmt.Errorf("'type' section is not filed with proper values")
 }
 
-func (c *typeDefinition) isSound(knownApis map[string]struct{}) (bool, error) {
+func (c *typeDefinition) isSound(knownApis map[string]struct{}) error {
 	classicErrs := c.isClassicSound(knownApis)
 	settingsErrs := c.Settings.isSettingsSound()
 	entitiesErrs := c.Entities.isEntitiesSound()
@@ -101,15 +101,15 @@ func (c *typeDefinition) isSound(knownApis map[string]struct{}) (bool, error) {
 
 	switch {
 	case types >= 2:
-		return false, errors.New("wrong configuration of type property")
+		return errors.New("wrong configuration of type property")
 	case typesSound == 1:
-		return true, nil
+		return nil
 	case types == 0:
-		return false, errors.New("type configuration is missing or unknown")
+		return errors.New("type configuration is missing or unknown")
 	case types == 1:
-		return false, err
+		return err
 	default:
-		return false, errors.New("wrong configuration of type property")
+		return errors.New("wrong configuration of type property")
 	}
 }
 

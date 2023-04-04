@@ -160,8 +160,8 @@ func Test_typeDefinition_isSound(t1 *testing.T) {
 			configType := tt.fields.configType
 			knownApis := tt.fields.knownApis
 
-			actual, actualErr := configType.isSound(knownApis)
-			assert.Equal(t1, actual, tt.want.result, tt.name)
+			actualErr := configType.isSound(knownApis)
+			assert.Equal(t1, actualErr == nil, tt.want.result, tt.name)
 			if tt.want.err != "" {
 				assert.ErrorContains(t1, actualErr, tt.want.err, tt.name)
 			}
