@@ -1,11 +1,7 @@
 # Dynatrace Configuration as Code
 
-> ⚠️ **monaco 2.0 is currently available as a [pre-release preview](https://github.com/Dynatrace/dynatrace-configuration-as-code/releases/tag/v2.0.0-rc.4)**
-> - this does not yet reflect the full content or quality of the final release
-> - no official support is provided for the pre-release version
-> - please let us know your feedback [here](https://github.com/Dynatrace/dynatrace-configuration-as-code/discussions/813)
-
-Evolved from the Monitoring as Code CLI we provide Observability and Security as Code to fully automate configuration of the Dynatrace platform at any scale- from automating standard configuration of all your Dynatrace environments to meeting specific demands for individual ones.
+Dynatrace Configuration as Code, an evolution from our Monitoring as Code CLI, provides Observability as Code and Security as Code to fully automate configuration of the Dynatrace platform at any scale, 
+from automating the standard configuration of all your Dynatrace environments to meeting specific demands for individual environments.
 
 **The documentation for the Dynatrace Configuration as Code tool Monaco is available [here](https://www.dynatrace.com/support/help/shortlink/configuration-as-code)**
 
