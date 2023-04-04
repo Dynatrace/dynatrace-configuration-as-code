@@ -687,7 +687,7 @@ configs:
 						ConfigId: "sr-id",
 					},
 					Type: AutomationType{
-						Resource: SchedulingRules,
+						Resource: SchedulingRule,
 					},
 					Parameters: Parameters{
 						NameParameter: &value.ValueParameter{Value: "Star Trek > Star Wars"},

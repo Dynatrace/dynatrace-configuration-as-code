@@ -902,7 +902,7 @@ func TestWriteConfigs(t *testing.T) {
 						ConfigId: "configId3",
 					},
 					Type: AutomationType{
-						Resource: SchedulingRules,
+						Resource: SchedulingRule,
 					},
 					Parameters: map[string]parameter.Parameter{
 						NameParameter: &value.ValueParameter{Value: "name"},
