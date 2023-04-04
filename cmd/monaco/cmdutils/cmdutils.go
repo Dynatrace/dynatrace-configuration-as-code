@@ -40,19 +40,19 @@ func SilenceUsageCommand() func(cmd *cobra.Command, args []string) {
 // CreateDTClient is driven by data given through a manifest.EnvironmentDefinition to create an appropriate client.Client.
 //
 // In case when flag dryRun is true this factory returns the client.DummyClient.
-func CreateDTClient(url string, a manifest.Auth, dryRun bool) (client.Client, error) {
+func CreateDTClient(url string, a manifest.Auth, dryRun bool, opts ...func(dynatraceClient *client.DynatraceClient)) (client.Client, error) {
 	switch {
 	case dryRun:
 		return client.NewDummyClient(), nil
 	case a.OAuth == nil:
-		return client.NewClassicClient(url, a.Token.Value)
+		return client.NewClassicClient(url, a.Token.Value, opts...)
 	case a.OAuth != nil:
 		oauthCredentials := client.OauthCredentials{
 			ClientID:     a.OAuth.ClientID.Value,
 			ClientSecret: a.OAuth.ClientSecret.Value,
 			TokenURL:     a.OAuth.GetTokenEndpointValue(),
 		}
-		return client.NewPlatformClient(url, a.Token.Value, oauthCredentials)
+		return client.NewPlatformClient(url, a.Token.Value, oauthCredentials, opts...)
 	default:
 		return nil, fmt.Errorf("unable to create authorizing HTTP Client for environment %s - no oauth credentials given", url)
 	}
