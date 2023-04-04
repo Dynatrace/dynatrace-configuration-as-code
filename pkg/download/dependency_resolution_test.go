@@ -20,6 +20,7 @@ import (
 	"fmt"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 	refParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/reference"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
@@ -115,6 +116,58 @@ func TestDependencyResolution(t *testing.T) {
 						Template: template.NewDownloadTemplate("c2-id", "name2", makeTemplateString("something something %s something something", "api", "c1-id")),
 						Parameters: config.Parameters{
 							createParameterName("api", "c1-id"): refParam.New("project", "api", "c1-id", "id"),
+						},
+					},
+				},
+			},
+		},
+		{
+			"referencing a Setting via objectID works",
+			project.ConfigsPerType{
+				"builtin:some-setting": []config.Config{
+					{
+						Type:           config.SettingsType{SchemaId: "builtin:some-setting"},
+						Template:       template.NewDownloadTemplate("4fw231-13fw124-f23r24", "name", "content"),
+						Coordinate:     coordinate.Coordinate{Project: "project", Type: "builtin:some-setting", ConfigId: "4fw231-13fw124-f23r24"},
+						OriginObjectId: "object1-objectID",
+						Parameters: map[string]parameter.Parameter{
+							config.ScopeParameter: valueParam.New("environment"),
+						},
+					},
+				},
+				"builtin:other-setting": []config.Config{
+					{
+						Type:           config.SettingsType{SchemaId: "builtin:other-setting"},
+						Template:       template.NewDownloadTemplate("869242as-13fw124-f23r24", "name2", "something something object1-objectID something something"),
+						Coordinate:     coordinate.Coordinate{Project: "project", Type: "builtin:other-setting", ConfigId: "869242as-13fw124-f23r24"},
+						OriginObjectId: "object2-objectID",
+						Parameters: map[string]parameter.Parameter{
+							config.ScopeParameter: valueParam.New("environment"),
+						},
+					},
+				},
+			},
+			project.ConfigsPerType{
+				"builtin:some-setting": []config.Config{
+					{
+						Type:           config.SettingsType{SchemaId: "builtin:some-setting"},
+						Template:       template.NewDownloadTemplate("4fw231-13fw124-f23r24", "name", "content"),
+						Coordinate:     coordinate.Coordinate{Project: "project", Type: "builtin:some-setting", ConfigId: "4fw231-13fw124-f23r24"},
+						OriginObjectId: "object1-objectID",
+						Parameters: map[string]parameter.Parameter{
+							config.ScopeParameter: valueParam.New("environment"),
+						},
+					},
+				},
+				"builtin:other-setting": []config.Config{
+					{
+						Type:           config.SettingsType{SchemaId: "builtin:other-setting"},
+						Template:       template.NewDownloadTemplate("869242as-13fw124-f23r24", "name2", makeTemplateString("something something %s something something", "builtin:some-setting", "4fw231-13fw124-f23r24")),
+						Coordinate:     coordinate.Coordinate{Project: "project", Type: "builtin:other-setting", ConfigId: "869242as-13fw124-f23r24"},
+						OriginObjectId: "object2-objectID",
+						Parameters: config.Parameters{
+							config.ScopeParameter: valueParam.New("environment"),
+							createParameterName("builtin:some-setting", "4fw231-13fw124-f23r24"): refParam.New("project", "builtin:some-setting", "4fw231-13fw124-f23r24", "id"),
 						},
 					},
 				},
