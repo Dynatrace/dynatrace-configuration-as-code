@@ -166,7 +166,7 @@ func (c *automationDefinition) isSound() (bool, error) {
 	case "":
 		return false, errors.New("missing 'type.automation.resource' property")
 
-	case Workflow, BusinessCalendar, SchedulingRules:
+	case Workflow, BusinessCalendar, SchedulingRule:
 		return true, nil
 
 	default:

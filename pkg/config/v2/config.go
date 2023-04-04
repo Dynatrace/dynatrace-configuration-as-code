@@ -94,13 +94,13 @@ type AutomationResource string
 const (
 	Workflow         AutomationResource = "workflow"
 	BusinessCalendar AutomationResource = "business-calendar"
-	SchedulingRules  AutomationResource = "scheduling-rule"
+	SchedulingRule   AutomationResource = "scheduling-rule"
 )
 
 // AutomationType represents any Dynatrace Platform automation-resource
 type AutomationType struct {
 	// Resource identifies which Automation resource is used in this config.
-	// Currently, this can be Workflow, BusinessCalendar, or SchedulingRules.
+	// Currently, this can be Workflow, BusinessCalendar, or SchedulingRule.
 	Resource AutomationResource
 }
 
