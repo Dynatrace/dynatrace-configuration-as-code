@@ -19,6 +19,7 @@ package download
 import (
 	"fmt"
 	"github.com/cloudflare/ahocorasick"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
@@ -132,7 +133,18 @@ func collectConfigsById(configs project.ConfigsPerType) map[string]config.Config
 		for _, conf := range configs {
 			configsById[conf.Coordinate.ConfigId] = conf
 			if conf.OriginObjectId != "" {
+				// resolve Settings references by Object ID as well
 				configsById[conf.OriginObjectId] = conf
+			}
+			if conf.OriginObjectId != "" && conf.Coordinate.Type == "builtin:management-zones" {
+				// resolve Management Zone Settings by Numeric ID as well
+				numID, err := idutils.GetNumericIDForObjectID(conf.OriginObjectId)
+				if err != nil {
+					log.Warn("Failed to decode numeric ID of config %q, auto-resolved references may be incomplete: %v", conf.Coordinate, err)
+				} else {
+					strId := fmt.Sprintf("%d", numID)
+					configsById[strId] = conf
+				}
 			}
 		}
 	}
