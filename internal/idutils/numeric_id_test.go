@@ -19,6 +19,7 @@
 package idutils
 
 import (
+	"encoding/base64"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -29,27 +30,42 @@ func TestGetNumericIDForObjectID(t *testing.T) {
 		name          string
 		givenObjectID string
 		wantNumericID int
+		wantErr       bool
 	}{
 		{
-			"with new UUID #1",
-			"vu9U3hXa3q0AAAABABhidWlsdGluOm1hbmFnZW1lbnQtem9uZXMABnRlbmFudAAGdGVuYW50ACRjNDZlNDZiMy02ZDk2LTMyYTctOGI1Yi1mNjExNzcyZDAxNjW-71TeFdrerQ",
-			-4292415658385853785,
+			name:          "with new UUID #1",
+			givenObjectID: "vu9U3hXa3q0AAAABABhidWlsdGluOm1hbmFnZW1lbnQtem9uZXMABnRlbmFudAAGdGVuYW50ACRjNDZlNDZiMy02ZDk2LTMyYTctOGI1Yi1mNjExNzcyZDAxNjW-71TeFdrerQ",
+			wantNumericID: -4292415658385853785,
 		},
 		{
-			"with new UUID #2",
-			"vu9U3hXa3q0AAAABABhidWlsdGluOm1hbmFnZW1lbnQtem9uZXMABnRlbmFudAAGdGVuYW50ACQ5ZTJhMDVlZC05OTQyLTNmOTgtODNmZS02ZTI1MWJjYzNiNTW-71TeFdrerQ",
-			-7049815748658446440,
+			name:          "with new UUID #2",
+			givenObjectID: "vu9U3hXa3q0AAAABABhidWlsdGluOm1hbmFnZW1lbnQtem9uZXMABnRlbmFudAAGdGVuYW50ACQ5ZTJhMDVlZC05OTQyLTNmOTgtODNmZS02ZTI1MWJjYzNiNTW-71TeFdrerQ",
+			wantNumericID: -7049815748658446440,
 		},
 		{
-			"with legacy UUID",
-			"vu9U3hXa3q0AAAABABhidWlsdGluOm1hbmFnZW1lbnQtem9uZXMABnRlbmFudAAGdGVuYW50ACRkMGRlZDRhNy1mY2ZlLTQ2MDUtYTEyMy03YWE4ZDBmYTVhMja-71TeFdrerQ",
-			3277109782074005416,
+			name:          "with legacy UUID",
+			givenObjectID: "vu9U3hXa3q0AAAABABhidWlsdGluOm1hbmFnZW1lbnQtem9uZXMABnRlbmFudAAGdGVuYW50ACRkMGRlZDRhNy1mY2ZlLTQ2MDUtYTEyMy03YWE4ZDBmYTVhMja-71TeFdrerQ",
+			wantNumericID: 3277109782074005416,
+		},
+		{
+			name:          "returns error for non base64 encoded input",
+			givenObjectID: "I'm not a base64 string at all",
+			wantErr:       true,
+		},
+		{
+			name:          "returns error if object ID does not contain a UUID",
+			givenObjectID: base64.RawURLEncoding.EncodeToString([]byte("objectIDstuff:schema:somemoreInfo:not-a-uuid-id")),
+			wantErr:       true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.givenObjectID, func(t *testing.T) {
 			got, err := GetNumericIDForObjectID(tt.givenObjectID)
-			assert.NoError(t, err)
+			if tt.wantErr {
+				assert.NotNil(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 			assert.Equalf(t, tt.wantNumericID, got, "GetNumericIDForObjectID(%v):\n\twant: %064b\n\t got: %064b", tt.givenObjectID, tt.wantNumericID, got)
 		})
 	}
@@ -97,7 +113,9 @@ func TestGetLegacyNumericId(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			u, err := uuid.Parse(tt.given)
 			assert.NoError(t, err)
-			assert.Equalf(t, tt.want, getLegacyNumericId(u), "getLegacyNumericId(%v)", tt.given)
+			got, err := getLegacyNumericID(u)
+			assert.NoError(t, err)
+			assert.Equalf(t, tt.want, got, "getLegacyNumericID(%v)", tt.given)
 		})
 	}
 }
