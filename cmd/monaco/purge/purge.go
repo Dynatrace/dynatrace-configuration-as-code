@@ -19,7 +19,7 @@ package purge
 import (
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/cmdutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
@@ -77,7 +77,7 @@ func purgeConfigs(environments []manifest.EnvironmentDefinition, apis api.APIs) 
 }
 
 func purgeForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs) []error {
-	dynatraceClient, err := cmdutils.CreateDTClient(env.URL.Value, env.Auth, false)
+	dynatraceClient, err := dynatrace.CreateClient(env.URL.Value, env.Auth, false)
 
 	if err != nil {
 		return []error{
