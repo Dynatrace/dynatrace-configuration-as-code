@@ -73,9 +73,10 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	// download options
 	cmd.Flags().StringSliceVarP(&f.specificAPIs, "api", "a", nil, "One or more APIs to download (flag can be repeated or value defined as comma-separated list)")
 	cmd.Flags().StringSliceVarP(&f.specificSchemas, "settings-schema", "s", nil, "One or more settings 2.0 schemas to download (flag can be repeated or value defined as comma-separated list)")
-
 	cmd.Flags().BoolVar(&f.onlyAPIs, "only-apis", false, "Only download config APIs, skip downloading settings 2.0 objects")
 	cmd.Flags().BoolVar(&f.onlySettings, "only-settings", false, "Only download settings 2.0 objects, skip downloading config APIs")
+
+	// combinations
 	cmd.MarkFlagsMutuallyExclusive("settings-schema", "only-apis", "only-settings")
 	cmd.MarkFlagsMutuallyExclusive("api", "only-apis", "only-settings")
 	cmd.MarkFlagsMutuallyExclusive("only-apis", "only-settings")
@@ -84,7 +85,16 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 		getDownloadEntitiesCommand(fs, command, cmd)
 	}
 
-	err := cmd.RegisterFlagCompletionFunc("api", completion.AllAvailableApis)
+	err := errors.Join(
+		cmd.RegisterFlagCompletionFunc("token", completion.EnvVarName),
+		cmd.RegisterFlagCompletionFunc("oauth-client-id", completion.EnvVarName),
+		cmd.RegisterFlagCompletionFunc("oauth-client-secret", completion.EnvVarName),
+
+		cmd.RegisterFlagCompletionFunc("manifest", completion.YamlFile),
+
+		cmd.RegisterFlagCompletionFunc("api", completion.AllAvailableApis),
+	)
+
 	if err != nil {
 		log.Fatal("failed to setup CLI %v", err)
 	}

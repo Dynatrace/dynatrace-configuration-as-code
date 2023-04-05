@@ -32,7 +32,7 @@ import (
 
 func DeleteCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
 	if len(args) == 0 {
-		return ManifestFile()
+		return files.YamlExtensions, cobra.ShellCompDirectiveFilterFileExt
 	} else if len(args) == 1 {
 		return DeleteFile()
 	} else {
@@ -42,7 +42,7 @@ func DeleteCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobr
 
 func DeployCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
 	if len(args) == 0 {
-		return ManifestFile()
+		return files.YamlExtensions, cobra.ShellCompDirectiveFilterFileExt
 	} else {
 		return make([]string, 0), cobra.ShellCompDirectiveFilterDirs
 	}
@@ -50,7 +50,7 @@ func DeployCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobr
 
 func DownloadManifestCompletion(c *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	if len(args) == 0 {
-		return ManifestFile()
+		return files.YamlExtensions, cobra.ShellCompDirectiveFilterFileExt
 	} else if len(args) == 1 {
 		return EnvironmentByArg0(c, args, toComplete)
 	} else {
@@ -68,7 +68,7 @@ func DownloadDirectCompletion(_ *cobra.Command, args []string, _ string) ([]stri
 
 func PurgeCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
 	if len(args) == 0 {
-		return ManifestFile()
+		return files.YamlExtensions, cobra.ShellCompDirectiveFilterFileExt
 	} else {
 		return make([]string, 0), cobra.ShellCompDirectiveDefault
 	}
@@ -130,7 +130,8 @@ func ProjectsFromManifest(_ *cobra.Command, args []string, _ string) ([]string, 
 	return maps.Keys(mani.Projects), cobra.ShellCompDirectiveDefault
 }
 
-func ManifestFile() ([]string, cobra.ShellCompDirective) {
+// YamlFile autocompletes any *yaml file, as well as directories
+func YamlFile(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
 	return files.YamlExtensions, cobra.ShellCompDirectiveFilterFileExt
 }
 
@@ -165,4 +166,18 @@ func deepFileSearch(root, ext string) []string {
 
 	return allMatchingFiles
 
+}
+
+// EnvVarName autocompletes environment variable names
+func EnvVarName(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	toComplete = strings.ToUpper(toComplete)
+
+	var results []string
+	for _, k := range listEnvVarNames() {
+		if strings.HasPrefix(strings.ToUpper(k), toComplete) {
+			results = append(results, k)
+		}
+	}
+
+	return results, cobra.ShellCompDirectiveNoFileComp | cobra.ShellCompDirectiveDefault
 }
