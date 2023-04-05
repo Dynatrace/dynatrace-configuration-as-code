@@ -61,50 +61,44 @@ func Test_parseConfigs(t *testing.T) {
 		wantErrorsContain []string
 	}{
 		{
-			"reports error if file does not exist",
-			"file1.yaml",
-			"file2.yaml",
-			"",
-			nil,
-			[]string{"does not exist"},
+			name:              "reports error if file does not exist",
+			filePathArgument:  "file1.yaml",
+			filePathOnDisk:    "file2.yaml",
+			wantErrorsContain: []string{"does not exist"},
 		},
 		{
-			"reports error with v1 warning when parsing v1 config",
-			"test-file.yaml",
-			"test-file.yaml",
-			"config:\n  - profile: \"profile.json\"\n\nprofile:\n  - name: \"Star Trek Service\"",
-			nil,
-			[]string{"is not valid v2 configuration"},
+			name:              "reports error with v1 warning when parsing v1 config",
+			filePathArgument:  "test-file.yaml",
+			filePathOnDisk:    "test-file.yaml",
+			fileContentOnDisk: "config:\n  - profile: \"profile.json\"\n\nprofile:\n  - name: \"Star Trek Service\"",
+			wantErrorsContain: []string{"is not valid v2 configuration"},
 		},
 		{
-			"reports error with v1 warning on broken v2 toplevel",
-			"test-file.yaml",
-			"test-file.yaml",
-			"this_should_say_config:\n- id: profile\n  config:\n    name: Star Trek Service\n    skip: false\n",
-			nil,
-			[]string{"failed to load config 'test-file.yaml"},
+			name:              "reports error with v1 warning on broken v2 toplevel",
+			filePathArgument:  "test-file.yaml",
+			filePathOnDisk:    "test-file.yaml",
+			fileContentOnDisk: "this_should_say_config:\n- id: profile\n  config:\n    name: Star Trek Service\n    skip: false\n",
+			wantErrorsContain: []string{"failed to load config 'test-file.yaml"},
 		},
 		{
-			"reports detailed error for invalid v2 config",
-			"test-file.yaml",
-			"test-file.yaml",
-			"configs:\n- id: profile\n  config:\n    name: Star Trek Service\n    skip: false\n  type:\n    api: some-api",
-			nil,
-			[]string{"missing property `template`"},
+			name:              "reports detailed error for invalid v2 config",
+			filePathArgument:  "test-file.yaml",
+			filePathOnDisk:    "test-file.yaml",
+			fileContentOnDisk: "configs:\n- id: profile\n  config:\n    name: Star Trek Service\n    skip: false\n  type:\n    api: some-api",
+			wantErrorsContain: []string{"missing property `template`"},
 		},
 		{
-			"reports detailed error for invalid v2 config",
-			"test-file.yaml",
-			"test-file.yaml",
-			"configs:\n- id: profile\n  config:\n    name: Star Trek Service\n    skip: false\n  type:\n    api: another-api",
-			nil,
-			[]string{"unknown API: another-api"},
+			name:              "reports detailed error for invalid v2 config",
+			filePathArgument:  "test-file.yaml",
+			filePathOnDisk:    "test-file.yaml",
+			fileContentOnDisk: "configs:\n- id: profile\n  config:\n    name: Star Trek Service\n    skip: false\n  type:\n    api: another-api",
+			wantErrorsContain: []string{"unknown API: another-api"},
 		},
 		{
-			"Skip parameter is referenced to true",
-			"test-file.yaml",
-			"test-file.yaml",
-			`
+			name:             "Skip parameter is referenced to true",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
 configs:
 - id: profile
   config:
@@ -116,7 +110,7 @@ configs:
       default: "false"
   type:
     api: some-api`,
-			[]Config{
+			wantConfigs: []Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
@@ -134,13 +128,12 @@ configs:
 					Group:       "default",
 				},
 			},
-			nil,
 		},
 		{
-			"Skip parameter is referenced to false",
-			"test-file.yaml",
-			"test-file.yaml",
-			`
+			name:             "Skip parameter is referenced to false",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
 configs:
 - id: profile
   config:
@@ -151,7 +144,7 @@ configs:
       name: ENV_VAR_SKIP_FALSE
   type:
     api: some-api`,
-			[]Config{
+			wantConfigs: []Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
@@ -169,13 +162,12 @@ configs:
 					Group:       "default",
 				},
 			},
-			nil,
 		},
 		{
-			"Skip parameter is defined (with default value) but omit",
-			"test-file.yaml",
-			"test-file.yaml",
-			`
+			name:             "Skip parameter is defined (with default value) but omit",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
 configs:
 - id: profile
   config:
@@ -187,7 +179,7 @@ configs:
       default: true
   type:
     api: some-api`,
-			[]Config{
+			wantConfigs: []Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
@@ -205,13 +197,12 @@ configs:
 					Group:       "default",
 				},
 			},
-			nil,
 		},
 		{
-			"Skip parameter is defined as a value",
-			"test-file.yaml",
-			"test-file.yaml",
-			`
+			name:             "Skip parameter is defined as a value",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
 configs:
 - id: profile
   config:
@@ -222,7 +213,7 @@ configs:
       value: true
   type:
     api: some-api`,
-			[]Config{
+			wantConfigs: []Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
@@ -240,13 +231,12 @@ configs:
 					Group:       "default",
 				},
 			},
-			nil,
 		},
 		{
-			"Skip parameter is defined (w/o default value) but omit - should throw an error",
-			"test-file.yaml",
-			"test-file.yaml",
-			`
+			name:             "Skip parameter is defined (w/o default value) but omit - should throw an error",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
 configs:
 - id: profile
   config:
@@ -257,14 +247,13 @@ configs:
       name: ENV_VAR_SKIP_NOT_EXISTS
   type:
     api: some-api`,
-			nil,
-			[]string{"skip: cannot parse parameter definition in `test-file.yaml`: failed to resolve value: skip: cannot parse parameter: environment variable `ENV_VAR_SKIP_NOT_EXISTS` not set"},
+			wantErrorsContain: []string{"skip: cannot parse parameter definition in `test-file.yaml`: failed to resolve value: skip: cannot parse parameter: environment variable `ENV_VAR_SKIP_NOT_EXISTS` not set"},
 		},
 		{
-			"Skip parameter is defined with a wrong value - should throw an error",
-			"test-file.yaml",
-			"test-file.yaml",
-			`
+			name:             "Skip parameter is defined with a wrong value - should throw an error",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
 configs:
 - id: profile
   config:
@@ -276,14 +265,13 @@ configs:
       default: "wrong value"
   type:
     api: some-api`,
-			nil,
-			[]string{"resolved value can only be 'true' or 'false'"},
+			wantErrorsContain: []string{"resolved value can only be 'true' or 'false'"},
 		},
 		{
-			"Skip parameter is defined with a wrong value - should throw an error",
-			"test-file.yaml",
-			"test-file.yaml",
-			`
+			name:             "Skip parameter is defined with a wrong value - should throw an error",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
 configs:
 - id: profile
   config:
@@ -296,22 +284,19 @@ configs:
         configType: something
   type:
     api: some-api`,
-			nil,
-			[]string{"must be of type 'value' or 'environment'"},
+			wantErrorsContain: []string{"must be of type 'value' or 'environment'"},
 		},
 		{
-			"reports error for empty v2 config",
-			"test-file.yaml",
-			"test-file.yaml",
-			"",
-			nil,
-			[]string{"no configurations found in file"},
+			name:              "reports error for empty v2 config",
+			filePathArgument:  "test-file.yaml",
+			filePathOnDisk:    "test-file.yaml",
+			wantErrorsContain: []string{"no configurations found in file"},
 		},
 		{
-			"loads settings 2.0 config with all properties",
-			"test-file.yaml",
-			"test-file.yaml",
-			`
+			name:             "loads settings 2.0 config with all properties",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
 configs:
 - id: profile-id
   config:
@@ -323,7 +308,7 @@ configs:
       schema: 'builtin:profile.test'
       schemaVersion: '1.0'
       scope: 'tenant'`,
-			[]Config{
+			wantConfigs: []Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
@@ -344,13 +329,12 @@ configs:
 					OriginObjectId: "origin-object-id",
 				},
 			},
-			nil,
 		},
 		{
-			"loads settings 2.0 config with full value parameter as scope",
-			"test-file.yaml",
-			"test-file.yaml",
-			`
+			name:             "loads settings 2.0 config with full value parameter as scope",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
 configs:
 - id: profile-id
   config:
@@ -364,7 +348,7 @@ configs:
       scope:
         type: value
         value: environment`,
-			[]Config{
+			wantConfigs: []Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
@@ -385,13 +369,12 @@ configs:
 					OriginObjectId: "origin-object-id",
 				},
 			},
-			nil,
 		},
 		{
-			"loads settings 2.0 config with a full reference as scope",
-			"test-file.yaml",
-			"test-file.yaml",
-			`
+			name:             "loads settings 2.0 config with a full reference as scope",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
 configs:
 - id: profile-id
   config:
@@ -407,7 +390,7 @@ configs:
         configId: configId
         property: id
         configType: something`,
-			[]Config{
+			wantConfigs: []Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
@@ -428,13 +411,12 @@ configs:
 					OriginObjectId: "origin-object-id",
 				},
 			},
-			nil,
 		},
 		{
-			"loads settings 2.0 config with a shorthand reference as scope",
-			"test-file.yaml",
-			"test-file.yaml",
-			`
+			name:             "loads settings 2.0 config with a shorthand reference as scope",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
 configs:
 - id: profile-id
   config:
@@ -446,7 +428,7 @@ configs:
       schema: 'builtin:profile.test'
       schemaVersion: '1.0'
       scope: ["something", "configId", "id"]`,
-			[]Config{
+			wantConfigs: []Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
@@ -467,13 +449,12 @@ configs:
 					OriginObjectId: "origin-object-id",
 				},
 			},
-			nil,
 		},
 		{
-			"loads settings 2.0 config with a full shorthand reference as scope",
-			"test-file.yaml",
-			"test-file.yaml",
-			`
+			name:             "loads settings 2.0 config with a full shorthand reference as scope",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
 configs:
 - id: profile-id
   config:
@@ -485,7 +466,7 @@ configs:
       schema: 'builtin:profile.test'
       schemaVersion: '1.0'
       scope: ["proj2", "something", "configId", "id"]`,
-			[]Config{
+			wantConfigs: []Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
@@ -506,21 +487,19 @@ configs:
 					OriginObjectId: "origin-object-id",
 				},
 			},
-			nil,
 		},
 		{
-			"loading a config without type content",
-			"test-file.yaml",
-			"test-file.yaml",
-			"configs:\n- id: profile-id\n  config:\n    name: 'Star Trek > Star Wars'\n    template: 'profile.json'\n",
-			nil,
-			[]string{"type configuration is missing"},
+			name:              "loading a config without type content",
+			filePathArgument:  "test-file.yaml",
+			filePathOnDisk:    "test-file.yaml",
+			fileContentOnDisk: "configs:\n- id: profile-id\n  config:\n    name: 'Star Trek > Star Wars'\n    template: 'profile.json'\n",
+			wantErrorsContain: []string{"type configuration is missing"},
 		},
 		{
-			"fails to load with a compound as scope",
-			"test-file.yaml",
-			"test-file.yaml",
-			`
+			name:             "fails to load with a compound as scope",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
 configs:
 - id: profile-id
   config:
@@ -535,14 +514,13 @@ configs:
         type: compound
         format: "format"
         references: []`,
-			nil,
-			[]string{compound.CompoundParameterType},
+			wantErrorsContain: []string{compound.CompoundParameterType},
 		},
 		{
-			"fails to load with a list as scope",
-			"test-file.yaml",
-			"test-file.yaml",
-			`
+			name:             "fails to load with a list as scope",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
 configs:
 - id: profile-id
   config:
@@ -556,14 +534,13 @@ configs:
       scope:
         type: list
         values: ["GEOLOCATTION-1234567", "GEOLOCATION-7654321"]`,
-			nil,
-			[]string{list.ListParameterType},
+			wantErrorsContain: []string{list.ListParameterType},
 		},
 		{
-			"loads with an environment parameter as scope",
-			"test-file.yaml",
-			"test-file.yaml",
-			`
+			name:             "loads with an environment parameter as scope",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
 configs:
 - id: profile-id
   config:
@@ -577,7 +554,7 @@ configs:
       scope:
         type: environment
         name: TEST`,
-			[]Config{
+			wantConfigs: []Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
@@ -598,13 +575,12 @@ configs:
 					OriginObjectId: "origin-object-id",
 				},
 			},
-			nil,
 		},
 		{
-			"load a workflow",
-			"test-file.yaml",
-			"test-file.yaml",
-			`
+			name:             "load a workflow",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
 configs:
 - id: workflow-id
   config:
@@ -613,7 +589,7 @@ configs:
   type:
     automation:
       resource: workflow`,
-			[]Config{
+			wantConfigs: []Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
@@ -631,13 +607,12 @@ configs:
 					Group:       "default",
 				},
 			},
-			nil,
 		},
 		{
-			"load a business-calendar",
-			"test-file.yaml",
-			"test-file.yaml",
-			`
+			name:             "load a business-calendar",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
 configs:
 - id: bc-id
   config:
@@ -646,7 +621,7 @@ configs:
   type:
     automation:
       resource: business-calendar`,
-			[]Config{
+			wantConfigs: []Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
@@ -664,13 +639,12 @@ configs:
 					Group:       "default",
 				},
 			},
-			nil,
 		},
 		{
-			"load a scheduling rule",
-			"test-file.yaml",
-			"test-file.yaml",
-			`
+			name:             "load a scheduling rule",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
 configs:
 - id: sr-id
   config:
@@ -679,7 +653,7 @@ configs:
   type:
     automation:
       resource: scheduling-rule`,
-			[]Config{
+			wantConfigs: []Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
@@ -697,13 +671,12 @@ configs:
 					Group:       "default",
 				},
 			},
-			nil,
 		},
 		{
-			"load an unknown automation resource",
-			"test-file.yaml",
-			"test-file.yaml",
-			`
+			name:             "load an unknown automation resource",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
 configs:
 - id: automation-id
   config:
@@ -712,14 +685,13 @@ configs:
   type:
     automation:
       resource: does-not-exist`,
-			nil,
-			[]string{`unknown automation resource "does-not-exist"`},
+			wantErrorsContain: []string{`unknown automation resource "does-not-exist"`},
 		},
 		{
-			"fails to load with a parameter that is 'id'",
-			"test-file.yaml",
-			"test-file.yaml",
-			`
+			name:             "fails to load with a parameter that is 'id'",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
 configs:
 - id: profile-id
   config:
@@ -734,14 +706,13 @@ configs:
       schema: 'builtin:profile.test'
       schemaVersion: '1.0'
       scope: validScope`,
-			nil,
-			[]string{IdParameter},
+			wantErrorsContain: []string{IdParameter},
 		},
 		{
-			"fails to load with a parameter that is 'scope'",
-			"test-file.yaml",
-			"test-file.yaml",
-			`
+			name:             "fails to load with a parameter that is 'scope'",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
 configs:
 - id: profile-id
   config:
@@ -755,14 +726,13 @@ configs:
       schema: 'builtin:profile.test'
       schemaVersion: '1.0'
       scope: validScope`,
-			nil,
-			[]string{ScopeParameter},
+			wantErrorsContain: []string{ScopeParameter},
 		},
 		{
-			"fails to load with a parameter that is 'name'",
-			"test-file.yaml",
-			"test-file.yaml",
-			`
+			name:             "fails to load with a parameter that is 'name'",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
 configs:
 - id: profile-id
   config:
@@ -772,8 +742,7 @@ configs:
     parameters:
       name: "some other name"
   type: some-api`,
-			nil,
-			[]string{NameParameter},
+			wantErrorsContain: []string{NameParameter},
 		},
 	}
 	for _, tt := range tests {
