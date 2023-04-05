@@ -17,7 +17,7 @@ package deploy
 import (
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/cmdutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
@@ -89,7 +89,7 @@ func doDeploy(configs project.ConfigsPerEnvironment, environments manifest.Envir
 			}
 		}
 
-		dtClient, err := cmdutils.CreateDTClient(env.URL.Value, env.Auth, dryRun)
+		dtClient, err := dynatrace.CreateClient(env.URL.Value, env.Auth, dryRun)
 
 		if err != nil {
 			if continueOnErr {
@@ -138,7 +138,7 @@ func loadManifest(fs afero.Fs, manifestPath string, groups []string, environment
 
 func verifyEnvironmentGen(environments manifest.Environments, dryRun bool) bool {
 	if !dryRun {
-		return cmdutils.VerifyEnvironmentGeneration(environments)
+		return dynatrace.VerifyEnvironmentGeneration(environments)
 
 	}
 	return true

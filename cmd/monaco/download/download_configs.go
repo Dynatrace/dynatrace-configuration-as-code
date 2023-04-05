@@ -16,7 +16,7 @@ package download
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/cmdutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
@@ -102,7 +102,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions d
 		return fmt.Errorf("environment %q was not available in manifest %q", cmdOptions.specificEnvironmentName, cmdOptions.manifestFile)
 	}
 
-	ok := cmdutils.VerifyEnvironmentGeneration(manifest.Environments{env.Name: env})
+	ok := dynatrace.VerifyEnvironmentGeneration(manifest.Environments{env.Name: env})
 	if !ok {
 		return fmt.Errorf("unable to verify Dynatrace environment generation")
 	}
@@ -127,7 +127,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions d
 		onlySettings:    cmdOptions.onlySettings,
 	}
 
-	dtClient, err := cmdutils.CreateDTClient(options.environmentURL, options.auth, false, client.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
+	dtClient, err := dynatrace.CreateClient(options.environmentURL, options.auth, false, client.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
 	if err != nil {
 		return err
 	}
@@ -157,7 +157,7 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions downloadCmdOptio
 		onlySettings:    cmdOptions.onlySettings,
 	}
 
-	dtClient, err := cmdutils.CreateDTClient(options.environmentURL, options.auth, false, client.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
+	dtClient, err := dynatrace.CreateClient(options.environmentURL, options.auth, false, client.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
 	if err != nil {
 		return err
 	}

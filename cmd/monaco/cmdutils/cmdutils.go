@@ -17,15 +17,7 @@
 package cmdutils
 
 import (
-	"context"
-	"errors"
-	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"github.com/spf13/cobra"
-	"net/http"
 )
 
 // SilenceUsageCommand gives back a command that is just configured to skip printing of usage info.
@@ -35,80 +27,4 @@ func SilenceUsageCommand() func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
 		cmd.SilenceUsage = true
 	}
-}
-
-// CreateDTClient is driven by data given through a manifest.EnvironmentDefinition to create an appropriate client.Client.
-//
-// In case when flag dryRun is true this factory returns the client.DummyClient.
-func CreateDTClient(url string, a manifest.Auth, dryRun bool, opts ...func(dynatraceClient *client.DynatraceClient)) (client.Client, error) {
-	switch {
-	case dryRun:
-		return client.NewDummyClient(), nil
-	case a.OAuth == nil:
-		return client.NewClassicClient(url, a.Token.Value, opts...)
-	case a.OAuth != nil:
-		oauthCredentials := client.OauthCredentials{
-			ClientID:     a.OAuth.ClientID.Value,
-			ClientSecret: a.OAuth.ClientSecret.Value,
-			TokenURL:     a.OAuth.GetTokenEndpointValue(),
-		}
-		return client.NewPlatformClient(url, a.Token.Value, oauthCredentials, opts...)
-	default:
-		return nil, fmt.Errorf("unable to create authorizing HTTP Client for environment %s - no oauth credentials given", url)
-	}
-}
-
-// VerifyEnvironmentGeneration takes a manifestEnvironments map and tries to verify that each environment can be reached
-// using the configured credentials
-func VerifyEnvironmentGeneration(envs manifest.Environments) bool {
-	if !featureflags.VerifyEnvironmentType().Enabled() {
-		return true
-	}
-	for _, env := range envs {
-		if (env.Auth.OAuth == nil && !isClassicEnvironment(env)) || (env.Auth.OAuth != nil && !isPlatformEnvironment(env)) {
-			return false
-		}
-	}
-	return true
-}
-
-func isClassicEnvironment(env manifest.EnvironmentDefinition) bool {
-	if _, err := client.GetDynatraceVersion(client.NewTokenAuthClient(env.Auth.Token.Value), env.URL.Value); err != nil {
-		var respErr client.RespError
-		if errors.As(err, &respErr) {
-			log.Error("Could not authorize against the environment with name %q (%s) using token authorization.", env.Name, env.URL.Value)
-			if respErr.StatusCode != http.StatusForbidden && respErr.StatusCode != http.StatusUnauthorized {
-				log.Error("Please verify that this environment is a Dynatrace Classic environment.")
-			} else {
-				log.Error(err.Error())
-			}
-		} else {
-			log.Error("Could not connect to environment %q (%s): %v", env.Name, env.URL.Value, err)
-		}
-		return false
-	}
-	return true
-}
-
-func isPlatformEnvironment(env manifest.EnvironmentDefinition) bool {
-	oauthCredentials := client.OauthCredentials{
-		ClientID:     env.Auth.OAuth.ClientID.Value,
-		ClientSecret: env.Auth.OAuth.ClientSecret.Value,
-		TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
-	}
-	if _, err := client.GetDynatraceClassicURL(client.NewOAuthClient(context.TODO(), oauthCredentials), env.URL.Value); err != nil {
-		var respErr client.RespError
-		if errors.As(err, &respErr) {
-			log.Error("Could not authorize against the environment with name %q (%s) using oAuth authorization.", env.Name, env.URL.Value)
-			if respErr.StatusCode != http.StatusForbidden && respErr.StatusCode != http.StatusUnauthorized {
-				log.Error("Please verify that this environment is a Dynatrace Platform environment.")
-			} else {
-				log.Error(err.Error())
-			}
-		} else {
-			log.Error("Could not connect to environment %q (%s): %v", env.Name, env.URL.Value, err)
-		}
-		return false
-	}
-	return true
 }
