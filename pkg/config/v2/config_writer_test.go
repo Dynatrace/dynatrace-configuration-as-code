@@ -724,6 +724,7 @@ func TestWriteConfigs(t *testing.T) {
 		expectedConfigs       map[string]topLevelDefinition
 		expectedTemplatePaths []string
 		envVars               map[string]string
+		expectedErrs          []string
 	}{
 		{
 			name: "Simple classic API write",
@@ -976,6 +977,28 @@ func TestWriteConfigs(t *testing.T) {
 			},
 		},
 		{
+			name:    "Automation resources with disabled FF",
+			envVars: map[string]string{featureflags.AutomationResources().EnvName(): "false"},
+			configs: []Config{
+				{
+					Template: template.CreateTemplateFromString("project/workflow/a.json", ""),
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "workflow",
+						ConfigId: "configId1",
+					},
+					Type: AutomationType{
+						Resource: Workflow,
+					},
+					Parameters: map[string]parameter.Parameter{
+						NameParameter: &value.ValueParameter{Value: "name"},
+					},
+					Skip: true,
+				},
+			},
+			expectedErrs: []string{"automation resource feature is not enabled"},
+		},
+		{
 			name: "Reference scope",
 			configs: []Config{
 				{
@@ -1045,7 +1068,11 @@ func TestWriteConfigs(t *testing.T) {
 				ParametersSerde: DefaultParameterParsers,
 			}, tc.configs)
 			errutils.PrintErrors(errs)
-			assert.Equal(t, len(errs), 0, "Writing configs should not produce an error")
+			assert.Equal(t, len(errs), len(tc.expectedErrs), "Produced errors do not match expected errors")
+
+			for i := range tc.expectedErrs {
+				assert.ErrorContains(t, errs[i], tc.expectedErrs[i])
+			}
 
 			// check all api-folders config file
 			for apiType, definition := range tc.expectedConfigs {
