@@ -75,8 +75,7 @@ func DeployConfigs(client client.Client, apis api.APIs, sortedConfigs []config.C
 			entity, deploymentErrors = deployConfig(client, apis, entityMap, &c)
 
 		default:
-			errors = append(errors, fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID()))
-			continue
+			deploymentErrors = []error{fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())}
 		}
 
 		if deploymentErrors != nil {
@@ -87,8 +86,9 @@ func DeployConfigs(client client.Client, apis api.APIs, sortedConfigs []config.C
 			if !opts.ContinueOnErr && !opts.DryRun {
 				return errors
 			}
+		} else {
+			entityMap.put(entity.Coordinate, entity)
 		}
-		entityMap.put(entity.Coordinate, entity)
 	}
 
 	return errors
