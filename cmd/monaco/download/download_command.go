@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/completion"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
@@ -26,8 +27,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"net/http"
-
-	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner/completion"
 )
 
 func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
