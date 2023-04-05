@@ -21,6 +21,7 @@ package integrationtest
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	"testing"
 	"time"
 
@@ -28,7 +29,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
@@ -129,7 +129,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 	}
 }
 
-func assertConfig(t *testing.T, client client.ConfigClient, theApi api.API, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config, name string) {
+func assertConfig(t *testing.T, client dtclient.ConfigClient, theApi api.API, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config, name string) {
 
 	configType := config.Coordinate.Type
 
@@ -157,9 +157,9 @@ func assertConfig(t *testing.T, client client.ConfigClient, theApi api.API, envi
 	}
 }
 
-func assertSetting(t *testing.T, c client.SettingsClient, typ config.SettingsType, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config) {
+func assertSetting(t *testing.T, c dtclient.SettingsClient, typ config.SettingsType, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config) {
 	expectedExtId := idutils.GenerateExternalID(typ.SchemaId, config.Coordinate.ConfigId)
-	objects, err := c.ListSettings(typ.SchemaId, client.ListSettingsOptions{DiscardValue: true, Filter: func(o client.DownloadSettingsObject) bool { return o.ExternalId == expectedExtId }})
+	objects, err := c.ListSettings(typ.SchemaId, dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(o dtclient.DownloadSettingsObject) bool { return o.ExternalId == expectedExtId }})
 	assert.NilError(t, err)
 
 	if len(objects) > 1 {

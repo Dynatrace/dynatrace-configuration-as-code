@@ -25,6 +25,7 @@ import (
 	uuid2 "github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"github.com/google/uuid"
@@ -64,7 +65,7 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 	})
 
 	httpClient := client.NewTokenAuthClient(token)
-	c, err := client.NewClassicClient(url, token)
+	c, err := dtclient.NewClassicClient(url, token)
 	assert.NilError(t, err)
 
 	a := api.NewAPIs()["alerting-profile"]
@@ -109,8 +110,8 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 	assert.Assert(t, len(getConfigsOfName(t, c, a, name)) == 3, "Expected three configs of name %q but found %d", name, len(existing))
 }
 
-func getConfigsOfName(t *testing.T, c client.Client, a api.API, name string) []client.Value {
-	var existingEntities []client.Value
+func getConfigsOfName(t *testing.T, c dtclient.Client, a api.API, name string) []dtclient.Value {
+	var existingEntities []dtclient.Value
 	entities, err := c.ListConfigs(a)
 	assert.NilError(t, err)
 	for _, e := range entities {
@@ -132,7 +133,7 @@ func createObjectViaDirectPut(t *testing.T, c *http.Client, url string, a api.AP
 	assert.NilError(t, err)
 	assert.Assert(t, res.StatusCode >= 200 && res.StatusCode < 300)
 
-	var dtEntity client.DynatraceEntity
+	var dtEntity dtclient.DynatraceEntity
 	err = json.Unmarshal(res.Body, &dtEntity)
 	assert.NilError(t, err)
 

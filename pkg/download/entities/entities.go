@@ -18,6 +18,7 @@ package entities
 
 import (
 	"errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	"strings"
 	"sync"
 
@@ -35,11 +36,11 @@ import (
 
 // Downloader is responsible for downloading Settings 2.0 objects
 type Downloader struct {
-	client client.EntitiesClient
+	client dtclient.EntitiesClient
 }
 
 // NewEntitiesDownloader creates a new downloader for Settings 2.0 objects
-func NewEntitiesDownloader(c client.EntitiesClient) *Downloader {
+func NewEntitiesDownloader(c dtclient.EntitiesClient) *Downloader {
 	return &Downloader{
 		client: c,
 	}
@@ -47,12 +48,12 @@ func NewEntitiesDownloader(c client.EntitiesClient) *Downloader {
 
 // Download downloads all entities objects for the given entities Types
 
-func Download(c client.EntitiesClient, specificEntitiesTypes []string, projectName string) v2.ConfigsPerType {
+func Download(c dtclient.EntitiesClient, specificEntitiesTypes []string, projectName string) v2.ConfigsPerType {
 	return NewEntitiesDownloader(c).Download(specificEntitiesTypes, projectName)
 }
 
 // DownloadAll downloads all entities objects for a given project
-func DownloadAll(c client.EntitiesClient, projectName string) v2.ConfigsPerType {
+func DownloadAll(c dtclient.EntitiesClient, projectName string) v2.ConfigsPerType {
 	return NewEntitiesDownloader(c).DownloadAll(projectName)
 }
 
@@ -82,8 +83,8 @@ func (d *Downloader) Download(specificEntitiesTypes []string, projectName string
 	return d.download(filteredEntitiesTypes, projectName)
 }
 
-func filterSpecificEntitiesTypes(specificEntitiesTypes []string, entitiesTypes []client.EntitiesType) []client.EntitiesType {
-	filteredEntitiesTypes := make([]client.EntitiesType, 0, len(specificEntitiesTypes))
+func filterSpecificEntitiesTypes(specificEntitiesTypes []string, entitiesTypes []dtclient.EntitiesType) []dtclient.EntitiesType {
+	filteredEntitiesTypes := make([]dtclient.EntitiesType, 0, len(specificEntitiesTypes))
 
 	for _, entitiesType := range entitiesTypes {
 		for _, specificEntitiesType := range specificEntitiesTypes {
@@ -118,7 +119,7 @@ func (d *Downloader) DownloadAll(projectName string) v2.ConfigsPerType {
 	return d.download(entitiesTypes, projectName)
 }
 
-func (d *Downloader) download(entitiesTypes []client.EntitiesType, projectName string) v2.ConfigsPerType {
+func (d *Downloader) download(entitiesTypes []dtclient.EntitiesType, projectName string) v2.ConfigsPerType {
 	results := make(v2.ConfigsPerType, len(entitiesTypes))
 	downloadMutex := sync.Mutex{}
 	wg := sync.WaitGroup{}
@@ -126,7 +127,7 @@ func (d *Downloader) download(entitiesTypes []client.EntitiesType, projectName s
 
 	for _, entitiesTypeValue := range entitiesTypes {
 
-		go func(entityType client.EntitiesType) {
+		go func(entityType dtclient.EntitiesType) {
 			defer wg.Done()
 
 			objects, err := d.client.ListEntities(entityType)
@@ -145,9 +146,9 @@ func (d *Downloader) download(entitiesTypes []client.EntitiesType, projectName s
 				return
 			}
 			log.Debug("Downloaded %d entities for entities Type %s", len(objects), entityType.EntitiesTypeId)
-			configs := d.convertObject(objects, entityType.EntitiesTypeId, projectName)
+			cfgs := d.convertObject(objects, entityType.EntitiesTypeId, projectName)
 			downloadMutex.Lock()
-			results[entityType.EntitiesTypeId] = configs
+			results[entityType.EntitiesTypeId] = cfgs
 			downloadMutex.Unlock()
 
 		}(entitiesTypeValue)

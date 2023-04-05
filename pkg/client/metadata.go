@@ -25,8 +25,8 @@ import (
 	"net/url"
 )
 
-const classicEnvironmentDomainPath = "/platform/metadata/v1/classic-environment-domain"
-const deprecatedClassicEnvDomainPath = "/platform/core/v1/environment-api-info"
+const ClassicEnvironmentDomainPath = "/platform/metadata/v1/classic-environment-domain"
+const DeprecatedClassicEnvDomainPath = "/platform/core/v1/environment-api-info"
 
 type classicEnvURL struct {
 	// Domain is the URL of the classic environment
@@ -46,22 +46,22 @@ func (u classicEnvURL) GetURL() string {
 // GetDynatraceClassicURL tries to fetch the URL of the classic environment using the API of a platform enabled
 // environment
 func GetDynatraceClassicURL(client *http.Client, environmentURL string) (string, error) {
-	endpointURL, err := url.JoinPath(environmentURL, classicEnvironmentDomainPath)
+	endpointURL, err := url.JoinPath(environmentURL, ClassicEnvironmentDomainPath)
 	if err != nil {
-		return "", fmt.Errorf("failed to build URL for API %q on environment URL %q", classicEnvironmentDomainPath, environmentURL)
+		return "", fmt.Errorf("failed to build URL for API %q on environment URL %q", ClassicEnvironmentDomainPath, environmentURL)
 	}
 
 	resp, err := rest.Get(client, endpointURL)
 	if !resp.IsSuccess() || err != nil {
-		log.Debug("failed to query classic environment url from %q, falling back to deprecated endpoint %q: %v (HTTP %v)", classicEnvironmentDomainPath, deprecatedClassicEnvDomainPath, err, resp.StatusCode)
+		log.Debug("failed to query classic environment url from %q, falling back to deprecated endpoint %q: %v (HTTP %v)", ClassicEnvironmentDomainPath, DeprecatedClassicEnvDomainPath, err, resp.StatusCode)
 
-		deprecatedEndpointURL, err := url.JoinPath(environmentURL, deprecatedClassicEnvDomainPath)
+		deprecatedEndpointURL, err := url.JoinPath(environmentURL, DeprecatedClassicEnvDomainPath)
 		if err != nil {
-			return "", fmt.Errorf("failed to build URL for API %q on environment URL %q", deprecatedClassicEnvDomainPath, environmentURL)
+			return "", fmt.Errorf("failed to build URL for API %q on environment URL %q", DeprecatedClassicEnvDomainPath, environmentURL)
 		}
 		resp, err = rest.Get(client, deprecatedEndpointURL)
 		if err != nil {
-			return "", fmt.Errorf("failed to query classic environment url after fallback to %q: %w", deprecatedClassicEnvDomainPath, err)
+			return "", fmt.Errorf("failed to query classic environment url after fallback to %q: %w", DeprecatedClassicEnvDomainPath, err)
 		}
 	}
 

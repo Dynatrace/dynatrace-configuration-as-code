@@ -19,7 +19,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 )
@@ -37,7 +37,7 @@ type DeployConfigsOptions struct {
 // DeployConfigs deploys the given configs with the given apis via the given client
 // NOTE: the given configs need to be sorted, otherwise deployment will
 // probably fail, as references cannot be resolved
-func DeployConfigs(client client.Client, apis api.APIs, sortedConfigs []config.Config, opts DeployConfigsOptions) []error {
+func DeployConfigs(client dtclient.Client, apis api.APIs, sortedConfigs []config.Config, opts DeployConfigsOptions) []error {
 	entityMap := newEntityMap(apis)
 	var errors []error
 
@@ -103,7 +103,7 @@ func getWordsForLogging(isDryRun bool) (action, verb string) {
 	return "Deploying", "deploy"
 }
 
-func deployConfig(configClient client.ConfigClient, apis api.APIs, entityMap *entityMap, conf *config.Config) (parameter.ResolvedEntity, []error) {
+func deployConfig(configClient dtclient.ConfigClient, apis api.APIs, entityMap *entityMap, conf *config.Config) (parameter.ResolvedEntity, []error) {
 
 	t, ok := conf.Type.(config.ClassicApiType)
 	if !ok {
@@ -139,7 +139,7 @@ func deployConfig(configClient client.ConfigClient, apis api.APIs, entityMap *en
 		log.Warn("API for \"%s\" is deprecated! Please consider migrating to \"%s\"!", apiToDeploy.ID, apiToDeploy.DeprecatedBy)
 	}
 
-	var entity client.DynatraceEntity
+	var entity dtclient.DynatraceEntity
 	if apiToDeploy.NonUniqueName {
 		entity, err = upsertNonUniqueNameConfig(configClient, apiToDeploy, conf, configName, renderedConfig)
 	} else {
@@ -161,7 +161,7 @@ func deployConfig(configClient client.ConfigClient, apis api.APIs, entityMap *en
 	}, nil
 }
 
-func upsertNonUniqueNameConfig(client client.ConfigClient, apiToDeploy api.API, conf *config.Config, configName string, renderedConfig string) (client.DynatraceEntity, error) {
+func upsertNonUniqueNameConfig(client dtclient.ConfigClient, apiToDeploy api.API, conf *config.Config, configName string, renderedConfig string) (dtclient.DynatraceEntity, error) {
 	configId := conf.Coordinate.ConfigId
 	projectId := conf.Coordinate.Project
 
@@ -175,7 +175,7 @@ func upsertNonUniqueNameConfig(client client.ConfigClient, apiToDeploy api.API, 
 	return client.UpsertConfigByNonUniqueNameAndId(apiToDeploy, entityUuid, configName, []byte(renderedConfig))
 }
 
-func deploySetting(settingsClient client.SettingsClient, entityMap *entityMap, c *config.Config) (parameter.ResolvedEntity, []error) {
+func deploySetting(settingsClient dtclient.SettingsClient, entityMap *entityMap, c *config.Config) (parameter.ResolvedEntity, []error) {
 	t, ok := c.Type.(config.SettingsType)
 	if !ok {
 		return parameter.ResolvedEntity{}, []error{fmt.Errorf("config was not of expected type %q, but %q", config.SettingsTypeId, c.Type.ID())}
@@ -196,7 +196,7 @@ func deploySetting(settingsClient client.SettingsClient, entityMap *entityMap, c
 		return parameter.ResolvedEntity{}, []error{err}
 	}
 
-	entity, err := settingsClient.UpsertSettings(client.SettingsObject{
+	entity, err := settingsClient.UpsertSettings(dtclient.SettingsObject{
 		Id:             c.Coordinate.ConfigId,
 		SchemaId:       t.SchemaId,
 		SchemaVersion:  t.SchemaVersion,

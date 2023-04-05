@@ -21,7 +21,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
@@ -96,11 +96,11 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 	}
 
 	// Server
-	server := client.NewIntegrationTestServer(t, testBasePath, responses)
+	server := dtclient.NewIntegrationTestServer(t, testBasePath, responses)
 
 	fs := afero.NewMemMapFs()
 
-	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
+	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
 	// WHEN we download everything
 	err := doDownloadConfigs(fs, dtClient, apiMap, setupTestingDownloadOptions(t, server, projectName))
@@ -163,11 +163,11 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 	}
 
 	// Server
-	server := client.NewIntegrationTestServer(t, testBasePath, responses)
+	server := dtclient.NewIntegrationTestServer(t, testBasePath, responses)
 
 	fs := afero.NewMemMapFs()
 
-	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
+	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 	// WHEN we download everything
 	err := doDownloadConfigs(fs, dtClient, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
@@ -249,10 +249,10 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 	}
 
 	// Server
-	server := client.NewIntegrationTestServer(t, testBasePath, responses)
+	server := dtclient.NewIntegrationTestServer(t, testBasePath, responses)
 	fs := afero.NewMemMapFs()
 
-	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
+	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
 	// WHEN we download everything
 	err := doDownloadConfigs(fs, dtClient, apiMap, setupTestingDownloadOptions(t, server, projectName))
@@ -362,11 +362,11 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 	}
 
 	// Server
-	server := client.NewIntegrationTestServer(t, testBasePath, responses)
+	server := dtclient.NewIntegrationTestServer(t, testBasePath, responses)
 
 	fs := afero.NewMemMapFs()
 
-	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
+	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
 	// WHEN we download everything
 	err := doDownloadConfigs(fs, dtClient, apiMap, setupTestingDownloadOptions(t, server, projectName))
@@ -426,11 +426,11 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 	}
 
 	// Server
-	server := client.NewIntegrationTestServer(t, testBasePath, responses)
+	server := dtclient.NewIntegrationTestServer(t, testBasePath, responses)
 
 	fs := afero.NewMemMapFs()
 
-	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
+	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
 	// WHEN we download everything
 	err := doDownloadConfigs(fs, dtClient, apiMap, setupTestingDownloadOptions(t, server, projectName))
@@ -492,11 +492,11 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 	}
 
 	// Server
-	server := client.NewIntegrationTestServer(t, testBasePath, responses)
+	server := dtclient.NewIntegrationTestServer(t, testBasePath, responses)
 
 	fs := afero.NewMemMapFs()
 
-	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
+	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 	// WHEN we download everything
 	err := doDownloadConfigs(fs, dtClient, apiMap, setupTestingDownloadOptions(t, server, projectName))
 
@@ -567,11 +567,11 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 	}
 
 	// Server
-	server := client.NewIntegrationTestServer(t, testBasePath, responses)
+	server := dtclient.NewIntegrationTestServer(t, testBasePath, responses)
 
 	fs := afero.NewMemMapFs()
 
-	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
+	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
 	// WHEN we download everything
 	err := doDownloadConfigs(fs, dtClient, apiMap, setupTestingDownloadOptions(t, server, projectName))
@@ -704,11 +704,11 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 			}
 
 			// Server
-			server := client.NewIntegrationTestServer(t, testBasePath, responses)
+			server := dtclient.NewIntegrationTestServer(t, testBasePath, responses)
 
 			fs := afero.NewMemMapFs()
 
-			dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
+			dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 			// WHEN we download everything
 			err := doDownloadConfigs(fs, dtClient, apiMap, setupTestingDownloadOptions(t, server, testcase.projectName))
 
@@ -763,7 +763,7 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 	}
 
 	// Server
-	server := client.NewIntegrationTestServer(t, testBasePath, responses)
+	server := dtclient.NewIntegrationTestServer(t, testBasePath, responses)
 
 	// GIVEN existing files
 	fs := afero.NewMemMapFs()
@@ -777,7 +777,7 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 	options.forceOverwriteManifest = true
 	options.outputFolder = testBasePath
 
-	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
+	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
 	err := doDownloadConfigs(fs, dtClient, apis, options)
 
@@ -857,7 +857,7 @@ func TestDownloadIntegrationDownloadsAPIsAndSettings(t *testing.T) {
 	}
 
 	// Server
-	server := client.NewIntegrationTestServer(t, testBasePath, responses)
+	server := dtclient.NewIntegrationTestServer(t, testBasePath, responses)
 
 	fs := afero.NewMemMapFs()
 
@@ -865,7 +865,7 @@ func TestDownloadIntegrationDownloadsAPIsAndSettings(t *testing.T) {
 	opts.onlySettings = false
 	opts.onlyAPIs = false
 
-	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
+	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
 	err := doDownloadConfigs(fs, dtClient, apis, opts)
 
@@ -918,14 +918,14 @@ func TestDownloadIntegrationDownloadsOnlyAPIsIfConfigured(t *testing.T) {
 	}
 
 	// Server
-	server := client.NewIntegrationTestServer(t, testBasePath, responses)
+	server := dtclient.NewIntegrationTestServer(t, testBasePath, responses)
 
 	fs := afero.NewMemMapFs()
 
 	opts := setupTestingDownloadOptions(t, server, projectName)
 	opts.onlySettings = false
 	opts.onlyAPIs = true
-	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
+	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
 	err := doDownloadConfigs(fs, dtClient, apis, opts)
 
@@ -975,14 +975,14 @@ func TestDownloadIntegrationDownloadsOnlySettingsIfConfigured(t *testing.T) {
 	}
 
 	// Server
-	server := client.NewIntegrationTestServer(t, testBasePath, responses)
+	server := dtclient.NewIntegrationTestServer(t, testBasePath, responses)
 
 	fs := afero.NewMemMapFs()
 
 	opts := setupTestingDownloadOptions(t, server, projectName)
 	opts.onlySettings = true
 	opts.onlyAPIs = false
-	dtClient, _ := client.NewDynatraceClientForTesting(server.URL, server.Client())
+	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
 	err := doDownloadConfigs(fs, dtClient, apis, opts)
 

@@ -57,7 +57,7 @@ func TestGetDynatraceClassicEnvironment(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-				if req.URL.Path == classicEnvironmentDomainPath {
+				if req.URL.Path == ClassicEnvironmentDomainPath {
 					rw.WriteHeader(tt.serverResponseStatus)
 					_, _ = rw.Write([]byte(tt.serverResponse))
 				} else {
@@ -76,7 +76,7 @@ func TestGetDynatraceClassicEnvironment(t *testing.T) {
 
 func TestGetDynatraceClassicEnvironmentWorksWithTrailingSlash(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		if req.URL.Path == classicEnvironmentDomainPath {
+		if req.URL.Path == ClassicEnvironmentDomainPath {
 			rw.WriteHeader(http.StatusOK)
 			_, _ = rw.Write([]byte(`{"domain" : "http://classic.env.com"}`))
 		} else {
@@ -92,10 +92,10 @@ func TestGetDynatraceClassicEnvironmentWorksWithTrailingSlash(t *testing.T) {
 
 func TestGetDynatraceClassicEnvironmentFallsBackToDeprecatedPath(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		if req.URL.Path == classicEnvironmentDomainPath {
+		if req.URL.Path == ClassicEnvironmentDomainPath {
 			rw.WriteHeader(http.StatusNotFound)
 			_, _ = rw.Write([]byte("<html>Some useless response</html>"))
-		} else if req.URL.Path == deprecatedClassicEnvDomainPath {
+		} else if req.URL.Path == DeprecatedClassicEnvDomainPath {
 			rw.WriteHeader(http.StatusOK)
 			_, _ = rw.Write([]byte(`{"endpoint" : "http://fallback.classic.env.com"}`))
 		} else {

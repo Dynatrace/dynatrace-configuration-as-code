@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
@@ -39,7 +40,7 @@ func TestDownloadAll(t *testing.T) {
 	uuid := idutils.GenerateUuidFromName(testType)
 
 	type mockValues struct {
-		EntitiesTypeList      func() ([]client.EntitiesType, error)
+		EntitiesTypeList      func() ([]dtclient.EntitiesType, error)
 		EntitiesTypeListCalls int
 		EntitiesList          func() ([]string, error)
 		EntitiesListCalls     int
@@ -52,7 +53,7 @@ func TestDownloadAll(t *testing.T) {
 		{
 			name: "DownloadEntities - List Entity Types fails",
 			mockValues: mockValues{
-				EntitiesTypeList: func() ([]client.EntitiesType, error) {
+				EntitiesTypeList: func() ([]dtclient.EntitiesType, error) {
 					return nil, client.RespError{Err: fmt.Errorf("oh no"), StatusCode: 0}
 				},
 				EntitiesTypeListCalls: 1,
@@ -66,8 +67,8 @@ func TestDownloadAll(t *testing.T) {
 		{
 			name: "DownloadEntities - List Entity fails",
 			mockValues: mockValues{
-				EntitiesTypeList: func() ([]client.EntitiesType, error) {
-					return []client.EntitiesType{{EntitiesTypeId: testType}, {EntitiesTypeId: testType2}}, nil
+				EntitiesTypeList: func() ([]dtclient.EntitiesType, error) {
+					return []dtclient.EntitiesType{{EntitiesTypeId: testType}, {EntitiesTypeId: testType2}}, nil
 				},
 				EntitiesTypeListCalls: 1,
 				EntitiesList: func() ([]string, error) {
@@ -80,8 +81,8 @@ func TestDownloadAll(t *testing.T) {
 		{
 			name: "DownloadEntities",
 			mockValues: mockValues{
-				EntitiesTypeList: func() ([]client.EntitiesType, error) {
-					return []client.EntitiesType{{EntitiesTypeId: testType}}, nil
+				EntitiesTypeList: func() ([]dtclient.EntitiesType, error) {
+					return []dtclient.EntitiesType{{EntitiesTypeId: testType}}, nil
 				},
 				EntitiesTypeListCalls: 1,
 				EntitiesList: func() ([]string, error) {
@@ -111,7 +112,7 @@ func TestDownloadAll(t *testing.T) {
 	for _, tt := range tests {
 
 		t.Run(tt.name, func(t *testing.T) {
-			c := client.NewMockClient(gomock.NewController(t))
+			c := dtclient.NewMockClient(gomock.NewController(t))
 			entityTypeList, err := tt.mockValues.EntitiesTypeList()
 			c.EXPECT().ListEntitiesTypes().Times(tt.mockValues.EntitiesTypeListCalls).Return(entityTypeList, err)
 			entities, err := tt.mockValues.EntitiesList()
@@ -127,7 +128,7 @@ func TestDownload(t *testing.T) {
 	uuid := idutils.GenerateUuidFromName(testType)
 
 	type mockValues struct {
-		EntitiesTypeList      func() ([]client.EntitiesType, error)
+		EntitiesTypeList      func() ([]dtclient.EntitiesType, error)
 		EntitiesTypeListCalls int
 		EntitiesList          func() ([]string, error)
 		EntitiesListCalls     int
@@ -141,7 +142,7 @@ func TestDownload(t *testing.T) {
 		{
 			name: "DownloadEntities - empty list of entities types",
 			mockValues: mockValues{
-				EntitiesTypeList:      func() ([]client.EntitiesType, error) { return []client.EntitiesType{}, nil },
+				EntitiesTypeList:      func() ([]dtclient.EntitiesType, error) { return []dtclient.EntitiesType{}, nil },
 				EntitiesTypeListCalls: 0,
 				EntitiesList:          func() ([]string, error) { return []string{}, nil },
 				EntitiesListCalls:     0,
@@ -152,8 +153,8 @@ func TestDownload(t *testing.T) {
 			name:          "DownloadEntities - entities list empty",
 			EntitiesTypes: []string{testType},
 			mockValues: mockValues{
-				EntitiesTypeList: func() ([]client.EntitiesType, error) {
-					return []client.EntitiesType{{EntitiesTypeId: testType}}, nil
+				EntitiesTypeList: func() ([]dtclient.EntitiesType, error) {
+					return []dtclient.EntitiesType{{EntitiesTypeId: testType}}, nil
 				},
 				EntitiesTypeListCalls: 1,
 				EntitiesList: func() ([]string, error) {
@@ -167,8 +168,8 @@ func TestDownload(t *testing.T) {
 			name:          "DownloadEntities - Not all entities found",
 			EntitiesTypes: []string{testType, "SOMETHING_ELSE"},
 			mockValues: mockValues{
-				EntitiesTypeList: func() ([]client.EntitiesType, error) {
-					return []client.EntitiesType{{EntitiesTypeId: testType}}, nil
+				EntitiesTypeList: func() ([]dtclient.EntitiesType, error) {
+					return []dtclient.EntitiesType{{EntitiesTypeId: testType}}, nil
 				},
 				EntitiesTypeListCalls: 1,
 				EntitiesList: func() ([]string, error) {
@@ -182,8 +183,8 @@ func TestDownload(t *testing.T) {
 			name:          "DownloadEntities - entities found",
 			EntitiesTypes: []string{testType},
 			mockValues: mockValues{
-				EntitiesTypeList: func() ([]client.EntitiesType, error) {
-					return []client.EntitiesType{{EntitiesTypeId: testType}}, nil
+				EntitiesTypeList: func() ([]dtclient.EntitiesType, error) {
+					return []dtclient.EntitiesType{{EntitiesTypeId: testType}}, nil
 				},
 				EntitiesTypeListCalls: 1,
 				EntitiesList: func() ([]string, error) {
@@ -212,7 +213,7 @@ func TestDownload(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := client.NewMockClient(gomock.NewController(t))
+			c := dtclient.NewMockClient(gomock.NewController(t))
 			entityTypeList, err := tt.mockValues.EntitiesTypeList()
 			c.EXPECT().ListEntitiesTypes().Times(tt.mockValues.EntitiesTypeListCalls).Return(entityTypeList, err)
 			entities, err := tt.mockValues.EntitiesList()

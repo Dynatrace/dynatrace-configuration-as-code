@@ -22,13 +22,13 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"github.com/spf13/afero"
 	"regexp"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"gotest.tools/assert"
 )
 
@@ -62,7 +62,7 @@ func TestDoCleanup(t *testing.T) {
 
 }
 
-func cleanupTestConfigs(t *testing.T, apis api.APIs, client client.ConfigClient, testSuffixRegex *regexp.Regexp) int {
+func cleanupTestConfigs(t *testing.T, apis api.APIs, client dtclient.ConfigClient, testSuffixRegex *regexp.Regexp) int {
 	deletedConfigs := 0
 	for _, api := range apis {
 		if api.ID == "calculated-metrics-log" {
@@ -88,7 +88,7 @@ func cleanupTestConfigs(t *testing.T, apis api.APIs, client client.ConfigClient,
 	return deletedConfigs
 }
 
-func cleanupTestSettings(t *testing.T, c client.SettingsClient) int {
+func cleanupTestSettings(t *testing.T, c dtclient.SettingsClient) int {
 	deletedSettings := 0
 
 	schemas, err := c.ListSchemas()
@@ -96,7 +96,7 @@ func cleanupTestSettings(t *testing.T, c client.SettingsClient) int {
 
 	for _, s := range schemas {
 		schemaId := s.SchemaId
-		objects, err := c.ListSettings(schemaId, client.ListSettingsOptions{DiscardValue: true, Filter: func(o client.DownloadSettingsObject) bool { return o.ExternalId != "" }})
+		objects, err := c.ListSettings(schemaId, dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(o dtclient.DownloadSettingsObject) bool { return o.ExternalId != "" }})
 		if err != nil {
 			t.Errorf("could not fetch settings 2.0 objects with schema %s: %v", schemaId, err)
 		}

@@ -27,7 +27,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
@@ -92,7 +92,7 @@ func findProjectByName(t *testing.T, projects []project.Project, projName string
 	return *project
 }
 
-func assertConfigAvailable(t *testing.T, client client.ConfigClient, env manifest.EnvironmentDefinition, shouldBeAvailable bool, config v2.Config) {
+func assertConfigAvailable(t *testing.T, client dtclient.ConfigClient, env manifest.EnvironmentDefinition, shouldBeAvailable bool, config v2.Config) {
 
 	nameParam, found := config.Parameters["name"]
 	assert.Assert(t, found, "Config %s should have a name parameter", config.Coordinate)

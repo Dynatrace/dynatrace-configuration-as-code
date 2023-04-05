@@ -19,15 +19,15 @@ package classic
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestDownloadAllConfigs_FailedToFindConfigsToDownload(t *testing.T) {
-	c := client.NewMockClient(gomock.NewController(t))
-	c.EXPECT().ListConfigs(gomock.Any()).Return([]client.Value{}, fmt.Errorf("NO"))
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().ListConfigs(gomock.Any()).Return([]dtclient.Value{}, fmt.Errorf("NO"))
 	downloader := NewDownloader(c)
 	testAPI := api.API{ID: "API_ID", URLPath: "API_PATH", NonUniqueName: true}
 	apiMap := api.APIs{"API_ID": testAPI}
@@ -36,8 +36,8 @@ func TestDownloadAllConfigs_FailedToFindConfigsToDownload(t *testing.T) {
 }
 
 func TestDownloadAll_NoConfigsToDownloadFound(t *testing.T) {
-	c := client.NewMockClient(gomock.NewController(t))
-	c.EXPECT().ListConfigs(gomock.Any()).Return([]client.Value{}, nil)
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().ListConfigs(gomock.Any()).Return([]dtclient.Value{}, nil)
 	downloader := NewDownloader(c)
 	testAPI := api.API{ID: "API_ID", URLPath: "API_PATH", NonUniqueName: true}
 
@@ -48,12 +48,12 @@ func TestDownloadAll_NoConfigsToDownloadFound(t *testing.T) {
 }
 
 func TestDownloadAll_ConfigsDownloaded(t *testing.T) {
-	c := client.NewMockClient(gomock.NewController(t))
-	c.EXPECT().ListConfigs(gomock.Any()).DoAndReturn(func(a api.API) ([]client.Value, error) {
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().ListConfigs(gomock.Any()).DoAndReturn(func(a api.API) ([]dtclient.Value, error) {
 		if a.ID == "API_ID_1" {
-			return []client.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil
+			return []dtclient.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil
 		} else if a.ID == "API_ID_2" {
-			return []client.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil
+			return []dtclient.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil
 		}
 		return nil, nil
 	}).Times(2)
@@ -70,12 +70,12 @@ func TestDownloadAll_ConfigsDownloaded(t *testing.T) {
 }
 
 func TestDownloadAll_ConfigsDownloaded_WithEmptyFilter(t *testing.T) {
-	c := client.NewMockClient(gomock.NewController(t))
-	c.EXPECT().ListConfigs(gomock.Any()).DoAndReturn(func(a api.API) ([]client.Value, error) {
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().ListConfigs(gomock.Any()).DoAndReturn(func(a api.API) ([]dtclient.Value, error) {
 		if a.ID == "API_ID_1" {
-			return []client.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil
+			return []dtclient.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil
 		} else if a.ID == "API_ID_2" {
-			return []client.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil
+			return []dtclient.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil
 		}
 		return nil, nil
 	}).Times(2)
@@ -92,7 +92,7 @@ func TestDownloadAll_ConfigsDownloaded_WithEmptyFilter(t *testing.T) {
 }
 
 func TestDownloadAll_SingleConfigurationAPI(t *testing.T) {
-	client := client.NewMockClient(gomock.NewController(t))
+	client := dtclient.NewMockClient(gomock.NewController(t))
 	client.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 	downloader := NewDownloader(client)
 	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", SingleConfiguration: true, NonUniqueName: true}
@@ -103,12 +103,12 @@ func TestDownloadAll_SingleConfigurationAPI(t *testing.T) {
 }
 
 func TestDownloadAll_ErrorFetchingConfig(t *testing.T) {
-	c := client.NewMockClient(gomock.NewController(t))
-	c.EXPECT().ListConfigs(gomock.Any()).DoAndReturn(func(a api.API) ([]client.Value, error) {
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().ListConfigs(gomock.Any()).DoAndReturn(func(a api.API) ([]dtclient.Value, error) {
 		if a.ID == "API_ID_1" {
-			return []client.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil
+			return []dtclient.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil
 		} else if a.ID == "API_ID_2" {
-			return []client.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil
+			return []dtclient.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil
 		}
 		return nil, nil
 	}).Times(2)
@@ -132,12 +132,12 @@ func TestDownloadAll_ErrorFetchingConfig(t *testing.T) {
 
 func TestDownloadAll_SkipConfigThatShouldNotBePersisted(t *testing.T) {
 
-	c := client.NewMockClient(gomock.NewController(t))
-	c.EXPECT().ListConfigs(gomock.Any()).DoAndReturn(func(a api.API) ([]client.Value, error) {
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().ListConfigs(gomock.Any()).DoAndReturn(func(a api.API) ([]dtclient.Value, error) {
 		if a.ID == "API_ID_1" {
-			return []client.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil
+			return []dtclient.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil
 		} else if a.ID == "API_ID_2" {
-			return []client.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil
+			return []dtclient.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil
 		}
 		return nil, nil
 	}).Times(2)
@@ -161,18 +161,18 @@ func TestDownloadAll_SkipConfigThatShouldNotBePersisted(t *testing.T) {
 
 func TestDownloadAll_SkipConfigBeforeDownload(t *testing.T) {
 
-	c := client.NewMockClient(gomock.NewController(t))
-	c.EXPECT().ListConfigs(gomock.Any()).DoAndReturn(func(a api.API) ([]client.Value, error) {
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().ListConfigs(gomock.Any()).DoAndReturn(func(a api.API) ([]dtclient.Value, error) {
 		if a.ID == "API_ID_1" {
-			return []client.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil
+			return []dtclient.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil
 		} else if a.ID == "API_ID_2" {
-			return []client.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil
+			return []dtclient.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil
 		}
 		return nil, nil
 	}).Times(2)
 
 	apiFilters := map[string]apiFilter{"API_ID_1": {
-		shouldBeSkippedPreDownload: func(_ client.Value) bool {
+		shouldBeSkippedPreDownload: func(_ dtclient.Value) bool {
 			return true
 		},
 	}}
@@ -189,7 +189,7 @@ func TestDownloadAll_SkipConfigBeforeDownload(t *testing.T) {
 }
 
 func TestDownloadAll_EmptyAPIMap_NothingIsDownloaded(t *testing.T) {
-	client := client.NewMockClient(gomock.NewController(t))
+	client := dtclient.NewMockClient(gomock.NewController(t))
 	downloader := NewDownloader(client)
 
 	configurations := downloader.DownloadAll(api.APIs{}, "project")
@@ -197,12 +197,12 @@ func TestDownloadAll_EmptyAPIMap_NothingIsDownloaded(t *testing.T) {
 }
 
 func TestDownloadAll_APIWithoutAnyConfigAvailableAreNotDownloaded(t *testing.T) {
-	c := client.NewMockClient(gomock.NewController(t))
-	c.EXPECT().ListConfigs(gomock.Any()).DoAndReturn(func(a api.API) ([]client.Value, error) {
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().ListConfigs(gomock.Any()).DoAndReturn(func(a api.API) ([]dtclient.Value, error) {
 		if a.ID == "API_ID_1" {
-			return []client.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil
+			return []dtclient.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil
 		} else if a.ID == "API_ID_2" {
-			return []client.Value{}, nil
+			return []dtclient.Value{}, nil
 		}
 		return nil, nil
 	}).Times(2)
@@ -218,12 +218,12 @@ func TestDownloadAll_APIWithoutAnyConfigAvailableAreNotDownloaded(t *testing.T) 
 }
 
 func TestDownloadAll_MalformedResponseFromAnAPI(t *testing.T) {
-	c := client.NewMockClient(gomock.NewController(t))
-	c.EXPECT().ListConfigs(gomock.Any()).DoAndReturn(func(a api.API) ([]client.Value, error) {
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().ListConfigs(gomock.Any()).DoAndReturn(func(a api.API) ([]dtclient.Value, error) {
 		if a.ID == "API_ID_1" {
-			return []client.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil
+			return []dtclient.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil
 		} else if a.ID == "API_ID_2" {
-			return []client.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil
+			return []dtclient.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil
 		}
 		return nil, nil
 	}).Times(2)

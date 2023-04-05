@@ -23,6 +23,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"net/http"
 )
@@ -30,19 +32,19 @@ import (
 // CreateClient is driven by data given through a manifest.EnvironmentDefinition to create an appropriate client.Client.
 //
 // In case when flag dryRun is true this factory returns the client.DummyClient.
-func CreateClient(url string, a manifest.Auth, dryRun bool, opts ...func(dynatraceClient *client.DynatraceClient)) (client.Client, error) {
+func CreateClient(url string, a manifest.Auth, dryRun bool, opts ...func(dynatraceClient *dtclient.DynatraceClient)) (dtclient.Client, error) {
 	switch {
 	case dryRun:
-		return client.NewDummyClient(), nil
+		return dtclient.NewDummyClient(), nil
 	case a.OAuth == nil:
-		return client.NewClassicClient(url, a.Token.Value, opts...)
+		return dtclient.NewClassicClient(url, a.Token.Value, opts...)
 	case a.OAuth != nil:
 		oauthCredentials := client.OauthCredentials{
 			ClientID:     a.OAuth.ClientID.Value,
 			ClientSecret: a.OAuth.ClientSecret.Value,
 			TokenURL:     a.OAuth.GetTokenEndpointValue(),
 		}
-		return client.NewPlatformClient(url, a.Token.Value, oauthCredentials, opts...)
+		return dtclient.NewPlatformClient(url, a.Token.Value, oauthCredentials, opts...)
 	default:
 		return nil, fmt.Errorf("unable to create authorizing HTTP Client for environment %s - no oauth credentials given", url)
 	}

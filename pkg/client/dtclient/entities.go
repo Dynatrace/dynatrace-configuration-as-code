@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package client
+package dtclient
 
 type ValuesResponse struct {
 	Values []Value `json:"values"`
