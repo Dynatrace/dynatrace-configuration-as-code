@@ -93,3 +93,11 @@ func VerifyEnvironmentType() FeatureFlag {
 		defaultEnabled: true,
 	}
 }
+
+// AutomationResources returns the feature flag that tells whether the automation-resource handling is enabled or not.
+func AutomationResources() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_AUTOMATION_RESOURCES",
+		defaultEnabled: false,
+	}
+}

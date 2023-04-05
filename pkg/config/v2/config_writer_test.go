@@ -18,6 +18,7 @@ package v2
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
@@ -722,6 +723,7 @@ func TestWriteConfigs(t *testing.T) {
 		configs               []Config
 		expectedConfigs       map[string]topLevelDefinition
 		expectedTemplatePaths []string
+		envVars               map[string]string
 	}{
 		{
 			name: "Simple classic API write",
@@ -862,7 +864,8 @@ func TestWriteConfigs(t *testing.T) {
 			},
 		},
 		{
-			name: "Automation resources",
+			name:    "Automation resources",
+			envVars: map[string]string{featureflags.AutomationResources().EnvName(): "true"},
 			configs: []Config{
 				{
 					Template: template.CreateTemplateFromString("project/workflow/a.json", ""),
@@ -1029,6 +1032,10 @@ func TestWriteConfigs(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			for k, v := range tc.envVars {
+				t.Setenv(k, v)
+			}
+
 			fs := testutils.TempFs(t)
 
 			errs := WriteConfigs(&WriterContext{
