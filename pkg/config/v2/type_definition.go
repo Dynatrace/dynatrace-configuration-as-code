@@ -17,6 +17,7 @@ package v2
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 
 	"github.com/mitchellh/mapstructure"
 )
@@ -161,6 +162,10 @@ func (c *typeDefinition) isAutomation() bool {
 }
 
 func (c *automationDefinition) isSound() error {
+
+	if !featureflags.AutomationResources().Enabled() {
+		return errors.New("automation resource feature is not enabled")
+	}
 
 	switch c.Resource {
 	case "":

@@ -17,6 +17,7 @@
 package v2
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/compound"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/environment"
@@ -59,6 +60,7 @@ func Test_parseConfigs(t *testing.T) {
 		fileContentOnDisk string
 		wantConfigs       []Config
 		wantErrorsContain []string
+		envVars           map[string]string
 	}{
 		{
 			name:              "reports error if file does not exist",
@@ -580,6 +582,7 @@ configs:
 			name:             "load a workflow",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
+			envVars:          map[string]string{featureflags.AutomationResources().EnvName(): "true"},
 			fileContentOnDisk: `
 configs:
 - id: workflow-id
@@ -612,6 +615,7 @@ configs:
 			name:             "load a business-calendar",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
+			envVars:          map[string]string{featureflags.AutomationResources().EnvName(): "true"},
 			fileContentOnDisk: `
 configs:
 - id: bc-id
@@ -644,6 +648,7 @@ configs:
 			name:             "load a scheduling rule",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
+			envVars:          map[string]string{featureflags.AutomationResources().EnvName(): "true"},
 			fileContentOnDisk: `
 configs:
 - id: sr-id
@@ -676,6 +681,7 @@ configs:
 			name:             "load an unknown automation resource",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
+			envVars:          map[string]string{featureflags.AutomationResources().EnvName(): "true"},
 			fileContentOnDisk: `
 configs:
 - id: automation-id
@@ -686,6 +692,22 @@ configs:
     automation:
       resource: does-not-exist`,
 			wantErrorsContain: []string{`unknown automation resource "does-not-exist"`},
+		},
+		{
+			name:             "disabled ff with automation config",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			envVars:          map[string]string{featureflags.AutomationResources().EnvName(): "false"},
+			fileContentOnDisk: `
+configs:
+- id: automation-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+  type:
+    automation:
+      resource: does-not-exist`,
+			wantErrorsContain: []string{`automation resource feature is not enabled`},
 		},
 		{
 			name:             "fails to load with a parameter that is 'id'",
@@ -747,6 +769,11 @@ configs:
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
+			for k, v := range tt.envVars {
+				t.Setenv(k, v)
+			}
+
 			testFs := afero.NewMemMapFs()
 			_ = afero.WriteFile(testFs, tt.filePathOnDisk, []byte(tt.fileContentOnDisk), 0644)
 			_ = afero.WriteFile(testFs, "profile.json", []byte("{}"), 0644)
