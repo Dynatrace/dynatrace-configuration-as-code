@@ -174,7 +174,7 @@ void signWinBinaries(Map args = [source: null, version: null, destDir: null, pro
 
 void createShaSum(Map args = [source: null, dest: null]) {
     stage('Compute SHA sum') {
-        sh "sha256sum ${args.source} | sed 's, .*/, ,' > ${args.dest}"
+        sh "sha256sum ${args.source} | sed 's, .*/,  ,' > ${args.dest}"
     }
 }
 
