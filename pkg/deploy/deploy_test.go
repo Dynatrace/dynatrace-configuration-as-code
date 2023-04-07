@@ -37,56 +37,59 @@ import (
 var dashboardApi = api.API{ID: "dashboard", URLPath: "dashboard", DeprecatedBy: "dashboard-v2"}
 var testApiMap = api.APIs{"dashboard": dashboardApi}
 
-func TestDeployConfig(t *testing.T) {
-	name := "test"
-	owner := "hansi"
-	ownerParameterName := "owner"
-	timeout := 5
-	timeoutParameterName := "timeout"
-	parameters := []topologysort.ParameterWithName{
-		{
-			Name: config.NameParameter,
-			Parameter: &parameter.DummyParameter{
-				Value: name,
-			},
-		},
-		{
-			Name: ownerParameterName,
-			Parameter: &parameter.DummyParameter{
-				Value: owner,
-			},
-		},
-		{
-			Name: timeoutParameterName,
-			Parameter: &parameter.DummyParameter{
-				Value: timeout,
-			},
-		},
-	}
+func TestDeploy(t *testing.T) {
+	t.Run("", func(t *testing.T) {
 
-	client := &dtclient.DummyClient{}
-	conf := config.Config{
-		Type:     config.ClassicApiType{Api: "dashboard"},
-		Template: generateDummyTemplate(t),
-		Coordinate: coordinate.Coordinate{
-			Project:  "project1",
-			Type:     "dashboard",
-			ConfigId: "dashboard-1",
-		},
-		Environment: "development",
-		Parameters:  toParameterMap(parameters),
-		Skip:        false,
-	}
+		name := "test"
+		owner := "hansi"
+		ownerParameterName := "owner"
+		timeout := 5
+		timeoutParameterName := "timeout"
+		parameters := []topologysort.ParameterWithName{
+			{
+				Name: config.NameParameter,
+				Parameter: &parameter.DummyParameter{
+					Value: name,
+				},
+			},
+			{
+				Name: ownerParameterName,
+				Parameter: &parameter.DummyParameter{
+					Value: owner,
+				},
+			},
+			{
+				Name: timeoutParameterName,
+				Parameter: &parameter.DummyParameter{
+					Value: timeout,
+				},
+			},
+		}
 
-	resolvedEntity, errors := deployConfig(client, testApiMap, newEntityMap(testApiMap), &conf)
+		client := &dtclient.DummyClient{}
+		conf := config.Config{
+			Type:     config.ClassicApiType{Api: "dashboard"},
+			Template: generateDummyTemplate(t),
+			Coordinate: coordinate.Coordinate{
+				Project:  "project1",
+				Type:     "dashboard",
+				ConfigId: "dashboard-1",
+			},
+			Environment: "development",
+			Parameters:  toParameterMap(parameters),
+			Skip:        false,
+		}
 
-	assert.Assert(t, len(errors) == 0, "there should be no errors (no errors: %d, %s)", len(errors), errors)
-	assert.Equal(t, name, resolvedEntity.EntityName, "%s == %s")
-	assert.Equal(t, conf.Coordinate, resolvedEntity.Coordinate)
-	assert.Equal(t, name, resolvedEntity.Properties[config.NameParameter])
-	assert.Equal(t, owner, resolvedEntity.Properties[ownerParameterName])
-	assert.Equal(t, timeout, resolvedEntity.Properties[timeoutParameterName])
-	assert.Equal(t, false, resolvedEntity.Skip)
+		resolvedEntity, errors := deploy(client, testApiMap, newEntityMap(testApiMap), &conf)
+
+		assert.Assert(t, len(errors) == 0, "there should be no errors (no errors: %d, %s)", len(errors), errors)
+		assert.Equal(t, name, resolvedEntity.EntityName, "%s == %s")
+		assert.Equal(t, conf.Coordinate, resolvedEntity.Coordinate)
+		assert.Equal(t, name, resolvedEntity.Properties[config.NameParameter])
+		assert.Equal(t, owner, resolvedEntity.Properties[ownerParameterName])
+		assert.Equal(t, timeout, resolvedEntity.Properties[timeoutParameterName])
+		assert.Equal(t, false, resolvedEntity.Skip)
+	})
 }
 
 func TestDeploySettingShouldFailCyclicParameterDependencies(t *testing.T) {
@@ -125,7 +128,7 @@ func TestDeploySettingShouldFailCyclicParameterDependencies(t *testing.T) {
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parameters),
 	}
-	_, errors := deploySetting(client, newEntityMap(testApiMap), conf)
+	_, errors := deploySetting(client, nil, "", conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
@@ -137,7 +140,7 @@ func TestDeploySettingShouldFailRenderTemplate(t *testing.T) {
 		Template: generateFaultyTemplate(t),
 	}
 
-	_, errors := deploySetting(client, newEntityMap(testApiMap), conf)
+	_, errors := deploySetting(client, nil, "", conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
@@ -166,7 +169,7 @@ func TestDeploySettingShouldFailUpsert(t *testing.T) {
 		},
 	}
 
-	c := dtclient.NewMockSettingsClient(gomock.NewController(t))
+	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().UpsertSettings(gomock.Any()).Return(dtclient.DynatraceEntity{}, fmt.Errorf("upsert failed"))
 
 	conf := &config.Config{
@@ -174,7 +177,7 @@ func TestDeploySettingShouldFailUpsert(t *testing.T) {
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parameters),
 	}
-	_, errors := deploySetting(c, newEntityMap(testApiMap), conf)
+	_, errors := deploy(c, nil, newEntityMap(testApiMap), conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
@@ -211,7 +214,7 @@ func TestDeploySetting(t *testing.T) {
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parameters),
 	}
-	_, errors := deploySetting(c, newEntityMap(testApiMap), conf)
+	_, errors := deploy(c, nil, newEntityMap(testApiMap), conf)
 	assert.Assert(t, len(errors) == 0, "there should be no errors (no errors: %d, %s)", len(errors), errors)
 }
 
@@ -256,7 +259,7 @@ func TestDeployedSettingGetsNameFromConfig(t *testing.T) {
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parameters),
 	}
-	res, errors := deploySetting(c, newEntityMap(testApiMap), conf)
+	res, errors := deploy(c, nil, newEntityMap(testApiMap), conf)
 	assert.Equal(t, res.EntityName, cfgName, "expected resolved name to match configuration name")
 	assert.Assert(t, len(errors) == 0, "there should be no errors (no errors: %d, %s)", len(errors), errors)
 }
@@ -296,7 +299,7 @@ func TestSettingsNameExtractionDoesNotFailIfCfgNameBecomesOptional(t *testing.T)
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parametersWithoutName),
 	}
-	res, errors := deploySetting(c, newEntityMap(testApiMap), conf)
+	res, errors := deploy(c, nil, newEntityMap(testApiMap), conf)
 	assert.Assert(t, strings.Contains(res.EntityName, objectId), "expected resolved name to contain objectID if name is not configured")
 	assert.Assert(t, len(errors) == 0, "there should be no errors (no errors: %d, %s)", len(errors), errors)
 }
@@ -327,7 +330,7 @@ func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
 	}
 	entityMap := newEntityMap(testApiMap)
 	entityMap.put(coordinate.Coordinate{Type: "dashboard"}, parameter.ResolvedEntity{EntityName: name})
-	_, errors := deployConfig(client, testApiMap, entityMap, &conf)
+	_, errors := deployConfig(client, testApiMap, entityMap, nil, "", &conf)
 
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
@@ -379,7 +382,7 @@ func TestDeployConfigShouldFailCyclicParameterDependencies(t *testing.T) {
 		Skip:        false,
 	}
 
-	_, errors := deployConfig(client, testApiMap, newEntityMap(testApiMap), &conf)
+	_, errors := deployConfig(client, testApiMap, newEntityMap(testApiMap), nil, "", &conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
@@ -400,7 +403,7 @@ func TestDeployConfigShouldFailOnMissingNameParameter(t *testing.T) {
 		Skip:        false,
 	}
 
-	_, errors := deployConfig(client, testApiMap, newEntityMap(testApiMap), &conf)
+	_, errors := deployConfig(client, testApiMap, newEntityMap(testApiMap), nil, "", &conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
@@ -437,7 +440,7 @@ func TestDeployConfigShouldFailOnReferenceOnUnknownConfig(t *testing.T) {
 		Skip:        false,
 	}
 
-	_, errors := deployConfig(client, testApiMap, newEntityMap(testApiMap), &conf)
+	_, errors := deployConfig(client, testApiMap, newEntityMap(testApiMap), nil, "", &conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
@@ -476,7 +479,7 @@ func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
 		Skip:        false,
 	}
 
-	_, errors := deployConfig(client, testApiMap, newEntityMap(testApiMap), &conf)
+	_, errors := deployConfig(client, testApiMap, newEntityMap(testApiMap), nil, "", &conf)
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
 }
 
