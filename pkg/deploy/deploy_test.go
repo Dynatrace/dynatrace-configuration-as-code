@@ -18,20 +18,18 @@ package deploy
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
-	"github.com/golang/mock/gomock"
-	"strings"
-	"testing"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2/topologysort"
+	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 var dashboardApi = api.API{ID: "dashboard", URLPath: "dashboard", DeprecatedBy: "dashboard-v2"}
@@ -82,7 +80,7 @@ func TestDeploy(t *testing.T) {
 
 		resolvedEntity, errors := deploy(client, testApiMap, newEntityMap(testApiMap), &conf)
 
-		assert.Assert(t, len(errors) == 0, "there should be no errors (no errors: %d, %s)", len(errors), errors)
+		assert.Emptyf(t, errors, "errors: %v", errors)
 		assert.Equal(t, name, resolvedEntity.EntityName, "%s == %s")
 		assert.Equal(t, conf.Coordinate, resolvedEntity.Coordinate)
 		assert.Equal(t, name, resolvedEntity.Properties[config.NameParameter])
@@ -129,7 +127,7 @@ func TestDeploySettingShouldFailCyclicParameterDependencies(t *testing.T) {
 		Parameters: toParameterMap(parameters),
 	}
 	_, errors := deploySetting(client, nil, "", conf)
-	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
+	assert.NotEmpty(t, errors)
 }
 
 func TestDeploySettingShouldFailRenderTemplate(t *testing.T) {
@@ -141,7 +139,7 @@ func TestDeploySettingShouldFailRenderTemplate(t *testing.T) {
 	}
 
 	_, errors := deploySetting(client, nil, "", conf)
-	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
+	assert.NotEmpty(t, errors)
 }
 
 func TestDeploySettingShouldFailUpsert(t *testing.T) {
@@ -178,7 +176,7 @@ func TestDeploySettingShouldFailUpsert(t *testing.T) {
 		Parameters: toParameterMap(parameters),
 	}
 	_, errors := deploy(c, nil, newEntityMap(testApiMap), conf)
-	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
+	assert.NotEmpty(t, errors)
 }
 
 func TestDeploySetting(t *testing.T) {
@@ -215,7 +213,7 @@ func TestDeploySetting(t *testing.T) {
 		Parameters: toParameterMap(parameters),
 	}
 	_, errors := deploy(c, nil, newEntityMap(testApiMap), conf)
-	assert.Assert(t, len(errors) == 0, "there should be no errors (no errors: %d, %s)", len(errors), errors)
+	assert.Emptyf(t, errors, "errors: %v)", errors)
 }
 
 func TestDeployedSettingGetsNameFromConfig(t *testing.T) {
@@ -261,7 +259,7 @@ func TestDeployedSettingGetsNameFromConfig(t *testing.T) {
 	}
 	res, errors := deploy(c, nil, newEntityMap(testApiMap), conf)
 	assert.Equal(t, res.EntityName, cfgName, "expected resolved name to match configuration name")
-	assert.Assert(t, len(errors) == 0, "there should be no errors (no errors: %d, %s)", len(errors), errors)
+	assert.Emptyf(t, errors, "errors: %v", errors)
 }
 
 func TestSettingsNameExtractionDoesNotFailIfCfgNameBecomesOptional(t *testing.T) {
@@ -300,8 +298,8 @@ func TestSettingsNameExtractionDoesNotFailIfCfgNameBecomesOptional(t *testing.T)
 		Parameters: toParameterMap(parametersWithoutName),
 	}
 	res, errors := deploy(c, nil, newEntityMap(testApiMap), conf)
-	assert.Assert(t, strings.Contains(res.EntityName, objectId), "expected resolved name to contain objectID if name is not configured")
-	assert.Assert(t, len(errors) == 0, "there should be no errors (no errors: %d, %s)", len(errors), errors)
+	assert.Contains(t, res.EntityName, objectId, "expected resolved name to contain objectID if name is not configured")
+	assert.Empty(t, errors, " errors: %v)", errors)
 }
 
 func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
@@ -332,7 +330,7 @@ func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
 	entityMap.put(coordinate.Coordinate{Type: "dashboard"}, parameter.ResolvedEntity{EntityName: name})
 	_, errors := deployConfig(client, testApiMap, entityMap, nil, "", &conf)
 
-	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
+	assert.NotEmpty(t, errors)
 }
 
 func TestDeployConfigShouldFailCyclicParameterDependencies(t *testing.T) {
@@ -383,7 +381,7 @@ func TestDeployConfigShouldFailCyclicParameterDependencies(t *testing.T) {
 	}
 
 	_, errors := deployConfig(client, testApiMap, newEntityMap(testApiMap), nil, "", &conf)
-	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
+	assert.NotEmpty(t, errors)
 }
 
 func TestDeployConfigShouldFailOnMissingNameParameter(t *testing.T) {
@@ -404,7 +402,7 @@ func TestDeployConfigShouldFailOnMissingNameParameter(t *testing.T) {
 	}
 
 	_, errors := deployConfig(client, testApiMap, newEntityMap(testApiMap), nil, "", &conf)
-	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
+	assert.NotEmpty(t, errors)
 }
 
 func TestDeployConfigShouldFailOnReferenceOnUnknownConfig(t *testing.T) {
@@ -441,7 +439,7 @@ func TestDeployConfigShouldFailOnReferenceOnUnknownConfig(t *testing.T) {
 	}
 
 	_, errors := deployConfig(client, testApiMap, newEntityMap(testApiMap), nil, "", &conf)
-	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
+	assert.NotEmpty(t, errors)
 }
 
 func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
@@ -480,7 +478,7 @@ func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
 	}
 
 	_, errors := deployConfig(client, testApiMap, newEntityMap(testApiMap), nil, "", &conf)
-	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
+	assert.NotEmpty(t, errors)
 }
 
 func TestDeployConfigsWithNoConfigs(t *testing.T) {
@@ -489,7 +487,7 @@ func TestDeployConfigsWithNoConfigs(t *testing.T) {
 	var sortedConfigs []config.Config
 
 	errors := DeployConfigs(client, apis, sortedConfigs, DeployConfigsOptions{})
-	assert.Assert(t, len(errors) == 0, "there should be no errors (errors: %s)", errors)
+	assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
 }
 
 func TestDeployConfigsWithOneConfigToSkip(t *testing.T) {
@@ -499,7 +497,7 @@ func TestDeployConfigsWithOneConfigToSkip(t *testing.T) {
 		{Skip: true},
 	}
 	errors := DeployConfigs(client, apis, sortedConfigs, DeployConfigsOptions{})
-	assert.Assert(t, len(errors) == 0, "there should be no errors (errors: %s)", errors)
+	assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
 }
 
 func TestDeployConfigsTargetingSettings(t *testing.T) {
@@ -522,13 +520,12 @@ func TestDeployConfigsTargetingSettings(t *testing.T) {
 			},
 		},
 	}
-	//configs.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Times(1).Return([]rest.DownloadSettingsObject{{ExternalId: "externalId"}}, nil)
 	c.EXPECT().UpsertSettings(gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
 		Id:   "42",
 		Name: "Super Special Settings Object",
 	}, nil)
 	errors := DeployConfigs(c, apis, sortedConfigs, DeployConfigsOptions{})
-	assert.Assert(t, len(errors) == 0, "there should be no errors (errors: %s)", errors)
+	assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
 }
 
 func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
@@ -561,7 +558,7 @@ func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
 	}
 
 	errors := DeployConfigs(client, apis, sortedConfigs, DeployConfigsOptions{})
-	assert.Assert(t, len(errors) == 0, "there should be no errors (errors: %s)", errors)
+	assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
 }
 
 func TestDeployConfigsTargetingClassicConfigNonUniqueWithExistingCfgsOfSameName(t *testing.T) {
@@ -594,7 +591,7 @@ func TestDeployConfigsTargetingClassicConfigNonUniqueWithExistingCfgsOfSameName(
 	}
 
 	errors := DeployConfigs(client, apis, sortedConfigs, DeployConfigsOptions{})
-	assert.Assert(t, len(errors) == 0, "there should be no errors (errors: %s)", errors)
+	assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
 }
 
 func TestDeployConfigsNoApi(t *testing.T) {
@@ -690,15 +687,15 @@ func toParameterMap(params []topologysort.ParameterWithName) map[string]paramete
 }
 
 func generateDummyTemplate(t *testing.T) template.Template {
-	uuid, err := uuid.NewUUID()
-	assert.NilError(t, err)
-	templ := template.CreateTemplateFromString("deploy_test-"+uuid.String(), "{}")
+	newUUID, err := uuid.NewUUID()
+	assert.NoError(t, err)
+	templ := template.CreateTemplateFromString("deploy_test-"+newUUID.String(), "{}")
 	return templ
 }
 
 func generateFaultyTemplate(t *testing.T) template.Template {
-	uuid, err := uuid.NewUUID()
-	assert.NilError(t, err)
-	templ := template.CreateTemplateFromString("deploy_test-"+uuid.String(), "{")
+	newUUID, err := uuid.NewUUID()
+	assert.NoError(t, err)
+	templ := template.CreateTemplateFromString("deploy_test-"+newUUID.String(), "{")
 	return templ
 }
