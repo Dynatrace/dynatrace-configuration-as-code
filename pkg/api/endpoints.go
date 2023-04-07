@@ -152,7 +152,6 @@ var configEndpoints = []API{
 		ID:                           "request-attributes",
 		URLPath:                      "/api/config/v1/service/requestAttributes",
 		PropertyNameOfGetAllResponse: StandardApiPropertyNameOfGetAllResponse,
-		DeprecatedBy:                 "builtin:request-attributes",
 	},
 	{
 		ID:                           "calculated-metrics-service",
