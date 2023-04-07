@@ -67,7 +67,7 @@ func TestEntityMap_PutResolved(t *testing.T) {
 		}
 
 		entityMap := newEntityMap(api.APIs{"dashboard": api.API{ID: "dashboard", URLPath: "dashboard", DeprecatedBy: "dashboard-v2"}})
-		entityMap.put(c1, r1)
+		entityMap.put(r1)
 		assert.Equal(t, entityMap.contains("type", "entityName"), true)
 		assert.DeepEqual(t, entityMap.get(), parameter.ResolvedEntities{
 			c1: r1,
@@ -88,7 +88,7 @@ func TestEntityMap_PutResolved(t *testing.T) {
 		}
 
 		entityMap := newEntityMap(api.APIs{"dashboard": api.API{ID: "dashboard", URLPath: "dashboard", DeprecatedBy: "dashboard-v2"}})
-		entityMap.put(c1, r1)
+		entityMap.put(r1)
 		assert.Equal(t, entityMap.contains("type", "entityName"), false)
 		assert.DeepEqual(t, entityMap.get(), parameter.ResolvedEntities{
 			c1: r1,
@@ -105,7 +105,7 @@ func TestEntityMap_PutResolved(t *testing.T) {
 		r1 := parameter.ResolvedEntity{Coordinate: c1}
 
 		entityMap := newEntityMap(api.APIs{"dashboard": api.API{ID: "dashboard", URLPath: "dashboard", DeprecatedBy: "dashboard-v2"}})
-		entityMap.put(c1, r1)
+		entityMap.put(r1)
 		assert.Equal(t, entityMap.contains("type", ""), false)
 		assert.DeepEqual(t, entityMap.get(), parameter.ResolvedEntities{
 			c1: r1,

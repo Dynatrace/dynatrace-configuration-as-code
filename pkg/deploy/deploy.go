@@ -55,7 +55,7 @@ func DeployConfigs(client dtclient.Client, apis api.APIs, sortedConfigs []config
 				return errors
 			}
 		} else if entity != nil {
-			entityMap.put(entity.Coordinate, *entity)
+			entityMap.put(*entity)
 		}
 	}
 

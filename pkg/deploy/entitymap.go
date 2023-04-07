@@ -16,7 +16,6 @@ package deploy
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 )
 
@@ -37,9 +36,9 @@ func newEntityMap(apis api.APIs) *entityMap {
 	}
 }
 
-func (r *entityMap) put(coordinate coordinate.Coordinate, resolvedEntity parameter.ResolvedEntity) {
+func (r *entityMap) put(resolvedEntity parameter.ResolvedEntity) {
 	// memorize resolved entity
-	r.resolvedEntities[coordinate] = resolvedEntity
+	r.resolvedEntities[resolvedEntity.Coordinate] = resolvedEntity
 
 	// if entity was marked to be skipped we do not memorize the name of the entity
 	// i.e., we do not care if the same name has already been used
@@ -48,10 +47,10 @@ func (r *entityMap) put(coordinate coordinate.Coordinate, resolvedEntity paramet
 	}
 
 	// memorize the name of the resolved entity
-	if _, found := r.knownEntityNames[coordinate.Type]; !found {
-		r.knownEntityNames[coordinate.Type] = make(map[string]struct{})
+	if _, found := r.knownEntityNames[resolvedEntity.Coordinate.Type]; !found {
+		r.knownEntityNames[resolvedEntity.Coordinate.Type] = make(map[string]struct{})
 	}
-	r.knownEntityNames[coordinate.Type][resolvedEntity.EntityName] = struct{}{}
+	r.knownEntityNames[resolvedEntity.Coordinate.Type][resolvedEntity.EntityName] = struct{}{}
 }
 
 func (r *entityMap) get() parameter.ResolvedEntities {
