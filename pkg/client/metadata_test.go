@@ -48,7 +48,7 @@ func TestGetDynatraceClassicEnvironment(t *testing.T) {
 		{
 			name:                 "server response with valid data",
 			serverResponseStatus: http.StatusOK,
-			serverResponse:       `{"endpoint" : "http://classic.env.com"}`,
+			serverResponse:       `{"domain" : "http://classic.env.com"}`,
 			want:                 "http://classic.env.com",
 			wantErr:              false,
 		},
@@ -78,7 +78,7 @@ func TestGetDynatraceClassicEnvironmentWorksWithTrailingSlash(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.Path == classicEnvironmentDomainPath {
 			rw.WriteHeader(http.StatusOK)
-			_, _ = rw.Write([]byte(`{"endpoint" : "http://classic.env.com"}`))
+			_, _ = rw.Write([]byte(`{"domain" : "http://classic.env.com"}`))
 		} else {
 			rw.WriteHeader(http.StatusNotFound)
 		}
