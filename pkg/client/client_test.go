@@ -140,7 +140,7 @@ func TestNewPlatformClient(t *testing.T) {
 			_ = json.NewEncoder(rw).Encode(token)
 		case classicEnvironmentDomainPath:
 			rw.WriteHeader(200)
-			_, _ = rw.Write([]byte(`{"endpoint" : "/classic_endpoint"}`))
+			_, _ = rw.Write([]byte(`{"domain" : "/classic_endpoint"}`))
 		default:
 			rw.WriteHeader(404)
 

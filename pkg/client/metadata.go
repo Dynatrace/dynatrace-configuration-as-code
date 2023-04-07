@@ -29,7 +29,18 @@ const classicEnvironmentDomainPath = "/platform/metadata/v1/classic-environment-
 const deprecatedClassicEnvDomainPath = "/platform/core/v1/environment-api-info"
 
 type classicEnvURL struct {
+	// Domain is the URL of the classic environment
+	Domain string `json:"domain"`
+	// Endpoint is the URL of the classic environment
+	// Note: newer environments return the classic environment URL in the Domain field
 	Endpoint string `json:"endpoint"`
+}
+
+func (u classicEnvURL) GetURL() string {
+	if u.Domain == "" {
+		return u.Endpoint
+	}
+	return u.Domain
 }
 
 // GetDynatraceClassicURL tries to fetch the URL of the classic environment using the API of a platform enabled
@@ -63,7 +74,7 @@ func GetDynatraceClassicURL(client *http.Client, environmentURL string) (string,
 
 	var jsonResp classicEnvURL
 	if err := json.Unmarshal(resp.Body, &jsonResp); err != nil {
-		return "", fmt.Errorf("failed to parse Dynatrace version JSON: %w", err)
+		return "", fmt.Errorf("failed to parse classic environment response payload: %w", err)
 	}
-	return jsonResp.Endpoint, nil
+	return jsonResp.GetURL(), nil
 }
