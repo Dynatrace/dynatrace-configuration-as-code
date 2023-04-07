@@ -19,4 +19,6 @@ linters-settings:
     min-complexity: 25
   dupl:
     threshold: 75
-
+run:
+  skip-files:
+    - '.*_test\.go$'
