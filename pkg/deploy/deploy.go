@@ -159,14 +159,14 @@ func deployConfig(configClient dtclient.ConfigClient, apis api.APIs, entityMap *
 }
 
 func upsertNonUniqueNameConfig(client dtclient.ConfigClient, apiToDeploy api.API, conf *config.Config, configName string, renderedConfig string) (dtclient.DynatraceEntity, error) {
-	configId := conf.Coordinate.ConfigId
+	configID := conf.Coordinate.ConfigId
 	projectId := conf.Coordinate.Project
 
-	entityUuid := configId
+	entityUuid := configID
 
-	isUuidOrMeId := idutils.IsUuid(entityUuid) || idutils.IsMeId(entityUuid)
-	if !isUuidOrMeId {
-		entityUuid = idutils.GenerateUuidFromConfigId(projectId, configId)
+	isUUIDOrMeID := idutils.IsUuid(entityUuid) || idutils.IsMeId(entityUuid)
+	if !isUUIDOrMeID {
+		entityUuid = idutils.GenerateUuidFromConfigId(projectId, configID)
 	}
 
 	return client.UpsertConfigByNonUniqueNameAndId(apiToDeploy, entityUuid, configName, []byte(renderedConfig))
