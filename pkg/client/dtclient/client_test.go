@@ -1,8 +1,8 @@
 //go:build unit
 
-/**
+/*
  * @license
- * Copyright 2020 Dynatrace LLC
+ * Copyright 2023 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,21 +16,20 @@
  * limitations under the License.
  */
 
-package client
+package dtclient
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 	"time"
 )
@@ -138,7 +137,7 @@ func TestNewPlatformClient(t *testing.T) {
 
 			rw.Header().Set("Content-Type", "application/json")
 			_ = json.NewEncoder(rw).Encode(token)
-		case classicEnvironmentDomainPath:
+		case client.ClassicEnvironmentDomainPath:
 			rw.WriteHeader(200)
 			_, _ = rw.Write([]byte(`{"domain" : "/classic_endpoint"}`))
 		default:
@@ -155,7 +154,7 @@ func TestNewPlatformClient(t *testing.T) {
 
 		ver := version.Version{Major: 1, Minor: 2, Patch: 3}
 
-		c, err := NewPlatformClient(dtURL, "", OauthCredentials{TokenURL: server.URL + "/oauth/token"},
+		c, err := NewPlatformClient(dtURL, "", client.OauthCredentials{TokenURL: server.URL + "/oauth/token"},
 			WithServerVersion(ver),
 			WithRetrySettings(rest.DefaultRetrySettings))
 
@@ -183,54 +182,54 @@ func TestNewPlatformClient(t *testing.T) {
 	})
 
 	t.Run("URL is empty - should throw an error", func(t *testing.T) {
-		_, err := NewPlatformClient(server.URL, "", OauthCredentials{TokenURL: server.URL + "/wrong/address"})
+		_, err := NewPlatformClient(server.URL, "", client.OauthCredentials{TokenURL: server.URL + "/wrong/address"})
 		assert.ErrorContains(t, err, "failed to query classic environment url")
 	})
 
 	t.Run("URL is empty - should throw an error", func(t *testing.T) {
-		_, err := NewPlatformClient("", "", OauthCredentials{})
+		_, err := NewPlatformClient("", "", client.OauthCredentials{})
 		assert.ErrorContains(t, err, "empty url")
 	})
 
 	t.Run("invalid URL - should throw an error", func(t *testing.T) {
-		_, err := NewPlatformClient("INVALID_URL", "", OauthCredentials{})
+		_, err := NewPlatformClient("INVALID_URL", "", client.OauthCredentials{})
 		assert.ErrorContains(t, err, "not valid")
 	})
 
 	t.Run("URL suffix is trimmed", func(t *testing.T) {
-		client, err := NewPlatformClient(server.URL, "", OauthCredentials{TokenURL: server.URL + "/oauth/token"})
+		client, err := NewPlatformClient(server.URL, "", client.OauthCredentials{TokenURL: server.URL + "/oauth/token"})
 		assert.NoError(t, err)
 		assert.Equal(t, server.URL, client.environmentURL)
 	})
 
 	t.Run("URL with leading space - should return an error", func(t *testing.T) {
-		_, err := NewPlatformClient(" https://my-environment.live.dynatrace.com/", "", OauthCredentials{})
+		_, err := NewPlatformClient(" https://my-environment.live.dynatrace.com/", "", client.OauthCredentials{})
 		assert.Error(t, err)
 	})
 
 	t.Run("URL starts with http", func(t *testing.T) {
-		client, err := NewPlatformClient(server.URL, "", OauthCredentials{TokenURL: server.URL + "/oauth/token"})
+		client, err := NewPlatformClient(server.URL, "", client.OauthCredentials{TokenURL: server.URL + "/oauth/token"})
 		assert.NoError(t, err)
 		assert.Equal(t, server.URL, client.environmentURL)
 	})
 
 	t.Run("URL is without scheme - should throw an error", func(t *testing.T) {
-		_, err := NewPlatformClient("my-environment.live.dynatrace.com", "", OauthCredentials{})
+		_, err := NewPlatformClient("my-environment.live.dynatrace.com", "", client.OauthCredentials{})
 		assert.ErrorContains(t, err, "not valid")
 	})
 
 	t.Run("URL is without valid local path - should return an error", func(t *testing.T) {
-		_, err := NewPlatformClient("/my-environment/live/dynatrace.com/", "", OauthCredentials{})
+		_, err := NewPlatformClient("/my-environment/live/dynatrace.com/", "", client.OauthCredentials{})
 		assert.ErrorContains(t, err, "no host specified")
 	})
 
 	t.Run("without valid protocol - should return an error", func(t *testing.T) {
 		var err error
 
-		_, err = NewPlatformClient("https//my-environment.live.dynatrace.com/", "", OauthCredentials{})
+		_, err = NewPlatformClient("https//my-environment.live.dynatrace.com/", "", client.OauthCredentials{})
 		assert.ErrorContains(t, err, "not valid")
 
-		_, err = NewPlatformClient("http//my-environment.live.dynatrace.com/", "", OauthCredentials{})
+		_, err = NewPlatformClient("http//my-environment.live.dynatrace.com/", "", client.OauthCredentials{})
 		assert.ErrorContains(t, err, "not valid")
 	})
 }
@@ -1110,81 +1109,4 @@ func TestCreateDynatraceClientWithAutoServerVersion(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, version.UnknownVersion, dcl.serverVersion)
 	})
-}
-
-func TestDefaultTokenURL(t *testing.T) {
-
-	defaultTokenPath := "/fake/sso/oauth2/token"
-	defaultTokenURLCalled := false
-	server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		println(req)
-		rw.Header().Add("Content-Type", "application/json")
-		if req.URL.Path == defaultTokenPath {
-			defaultTokenURLCalled = true
-			_, _ = rw.Write([]byte(`{ "access_token":"ABC", "token_type":"Bearer", "expires_in":3600, "refresh_token":"ABCD", "scope":"testing" }`))
-		} else {
-			_, _ = rw.Write([]byte(`{ "some":"reply" }`))
-		}
-	}))
-	t.Cleanup(server.Close)
-
-	serverURL, err := url.Parse(server.URL)
-	assert.NoError(t, err)
-
-	defaultOAuthTokenURL = serverURL.JoinPath(defaultTokenPath).String()
-
-	ctx := context.TODO()
-	ctx = context.WithValue(ctx, oauth2.HTTPClient, server.Client()) // ensure the oAuth client trusts the test server by passing its underlying client
-
-	c := NewOAuthClient(ctx, OauthCredentials{
-		ClientID:     "id",
-		ClientSecret: "secret",
-		TokenURL:     "", // no defined token URL should lead to default being used
-	})
-
-	_, err = c.Do(&http.Request{Method: http.MethodGet, URL: serverURL.JoinPath("/some/api/call")})
-	assert.NoError(t, err)
-	assert.True(t, defaultTokenURLCalled, "expected oAuth client to make an API call to the default URL")
-}
-
-func TestNonDefaultTokenURL(t *testing.T) {
-
-	defaultTokenPath := "/fake/sso/oauth2/token"
-	defaultTokenURLCalled := false
-
-	specialTokenPath := "/magical/special/token"
-	specialTokenURLCalled := false
-	server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		println(req)
-		rw.Header().Add("Content-Type", "application/json")
-		if req.URL.Path == defaultTokenPath {
-			defaultTokenURLCalled = true
-			_, _ = rw.Write([]byte(`{ "access_token":"ABC", "token_type":"Bearer", "expires_in":3600, "refresh_token":"ABCD", "scope":"testing" }`))
-		} else if req.URL.Path == specialTokenPath {
-			specialTokenURLCalled = true
-			_, _ = rw.Write([]byte(`{ "access_token":"ABC", "token_type":"Bearer", "expires_in":3600, "refresh_token":"ABCD", "scope":"testing" }`))
-		} else {
-			_, _ = rw.Write([]byte(`{ "some":"reply" }`))
-		}
-	}))
-	t.Cleanup(server.Close)
-
-	serverURL, err := url.Parse(server.URL)
-	assert.NoError(t, err)
-
-	defaultOAuthTokenURL = serverURL.JoinPath(defaultTokenPath).String()
-
-	ctx := context.TODO()
-	ctx = context.WithValue(ctx, oauth2.HTTPClient, server.Client()) // ensure the oAuth client trusts the test server by passing its underlying client
-
-	c := NewOAuthClient(ctx, OauthCredentials{
-		ClientID:     "id",
-		ClientSecret: "secret",
-		TokenURL:     serverURL.JoinPath(specialTokenPath).String(),
-	})
-
-	_, err = c.Do(&http.Request{Method: http.MethodGet, URL: serverURL.JoinPath("/some/api/call")})
-	assert.NoError(t, err)
-	assert.True(t, specialTokenURLCalled, "expected oAuth client to make an API call to the defined token URL")
-	assert.True(t, defaultTokenURLCalled == false, "expected oAuth client to make NO API call to the default URL")
 }

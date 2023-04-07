@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package client
+package dtclient
 
 import (
 	"context"
@@ -27,14 +27,11 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/throttle"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/oauth2/endpoints"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
-	version2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/clientcredentials"
 	"net/http"
 	"net/url"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -169,7 +166,7 @@ type EntitiesClient interface {
 	ListEntities(EntitiesType) ([]string, error)
 }
 
-//go:generate mockgen -source=client.go -destination=client_mock.go -package=client DynatraceClient
+//go:generate mockgen -source=client.go -destination=client_mock.go -package=dtclient DynatraceClient
 
 // Client provides the functionality for performing basic CRUD operations on any Dynatrace API
 // supported by monaco.
@@ -219,15 +216,6 @@ type DynatraceClient struct {
 	limiter *concurrency.Limiter
 }
 
-// OauthCredentials holds information for authenticating to Dynatrace
-// using Oauth2.0 client credential flow
-type OauthCredentials struct {
-	ClientID     string
-	ClientSecret string
-	TokenURL     string
-	Scopes       []string
-}
-
 var (
 	_ EntitiesClient = (*DynatraceClient)(nil)
 	_ SettingsClient = (*DynatraceClient)(nil)
@@ -257,6 +245,15 @@ func WithServerVersion(serverVersion version.Version) func(client *DynatraceClie
 	}
 }
 
+// WithClient sets the underlying http client to a specific one.
+// Useful for testing
+func WithClient(client *http.Client) func(d *DynatraceClient) {
+	return func(d *DynatraceClient) {
+		d.client = client
+		d.clientClassic = client
+	}
+}
+
 // WithAutoServerVersion can be used to let the client automatically determine the Dynatrace server version
 // during creation using newDynatraceClient. If the server version is already known WithServerVersion should be used
 func WithAutoServerVersion() func(client *DynatraceClient) {
@@ -268,7 +265,7 @@ func WithAutoServerVersion() func(client *DynatraceClient) {
 			// so this call would need to be "redirected" to the second gen URL, which do not currently resolve
 			d.serverVersion = version.UnknownVersion
 		} else {
-			serverVersion, err = GetDynatraceVersion(d.clientClassic, d.environmentURLClassic)
+			serverVersion, err = client.GetDynatraceVersion(d.clientClassic, d.environmentURLClassic)
 		}
 		if err != nil {
 			log.Warn("Unable to determine Dynatrace server version: %v", err)
@@ -279,70 +276,6 @@ func WithAutoServerVersion() func(client *DynatraceClient) {
 	}
 }
 
-// TokenAuthTransport should be used to enable a client
-// to use dynatrace token authorization
-type TokenAuthTransport struct {
-	http.RoundTripper
-	header http.Header
-}
-
-// NewTokenAuthTransport creates a new http transport to be used for
-// token authorization
-func NewTokenAuthTransport(baseTransport http.RoundTripper, token string) *TokenAuthTransport {
-	if baseTransport == nil {
-		baseTransport = http.DefaultTransport
-	}
-	t := &TokenAuthTransport{
-		RoundTripper: baseTransport,
-		header:       http.Header{},
-	}
-	t.setHeader("Authorization", "Api-Token "+token)
-	t.setHeader("User-Agent", "Dynatrace Monitoring as Code/"+version2.MonitoringAsCode+" "+(runtime.GOOS+" "+runtime.GOARCH))
-	return t
-}
-
-func (t *TokenAuthTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	// Add the custom headers to the request
-	for k, v := range t.header {
-		req.Header[k] = v
-	}
-	return t.RoundTripper.RoundTrip(req)
-}
-
-func (t *TokenAuthTransport) setHeader(key, value string) {
-	t.header.Set(key, value)
-}
-
-var defaultOAuthTokenURL = endpoints.Dynatrace.TokenURL
-
-// NewTokenAuthClient creates a new HTTP client that supports token based authorization
-func NewTokenAuthClient(token string) *http.Client {
-	if !isNewDynatraceTokenFormat(token) {
-		log.Warn("You used an old token format. Please consider switching to the new 1.205+ token format.")
-		log.Warn("More information: https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication")
-	}
-	return &http.Client{Transport: NewTokenAuthTransport(nil, token)}
-}
-
-// NewOAuthClient creates a new HTTP client that supports OAuth2 client credentials based authorization
-func NewOAuthClient(ctx context.Context, oauthConfig OauthCredentials) *http.Client {
-
-	tokenUrl := oauthConfig.TokenURL
-	if tokenUrl == "" {
-		log.Debug("using default token URL %s", defaultOAuthTokenURL)
-		tokenUrl = defaultOAuthTokenURL
-	}
-
-	config := clientcredentials.Config{
-		ClientID:     oauthConfig.ClientID,
-		ClientSecret: oauthConfig.ClientSecret,
-		TokenURL:     tokenUrl,
-		Scopes:       oauthConfig.Scopes,
-	}
-
-	return config.Client(ctx)
-}
-
 const (
 	settingsSchemaAPIPathClassic  = "/api/v2/settings/schemas"
 	settingsSchemaAPIPathPlatform = "/platform/classic/environment-api/v2/settings/schemas"
@@ -351,16 +284,16 @@ const (
 )
 
 // NewPlatformClient creates a new dynatrace client to be used for platform enabled environments
-func NewPlatformClient(dtURL string, token string, oauthCredentials OauthCredentials, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
+func NewPlatformClient(dtURL string, token string, oauthCredentials client.OauthCredentials, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
 	dtURL = strings.TrimSuffix(dtURL, "/")
 	if err := validateURL(dtURL); err != nil {
 		return nil, err
 	}
 
-	tokenClient := NewTokenAuthClient(token)
-	oauthClient := NewOAuthClient(context.TODO(), oauthCredentials)
+	tokenClient := client.NewTokenAuthClient(token)
+	oauthClient := client.NewOAuthClient(context.TODO(), oauthCredentials)
 
-	classicURL, err := GetDynatraceClassicURL(oauthClient, dtURL)
+	classicURL, err := client.GetDynatraceClassicURL(oauthClient, dtURL)
 	if err != nil {
 		log.Error("Unable to determine Dynatrace classic environment URL: %v", err)
 		return nil, err
@@ -393,7 +326,7 @@ func NewClassicClient(dtURL string, token string, opts ...func(dynatraceClient *
 		return nil, err
 	}
 
-	tokenClient := NewTokenAuthClient(token)
+	tokenClient := client.NewTokenAuthClient(token)
 
 	d := &DynatraceClient{
 		serverVersion:         version.Version{},
@@ -429,10 +362,6 @@ func validateURL(dtURL string) error {
 		log.Warn("You are using an insecure connection (%s). Consider switching to HTTPS.", parsedUrl.Scheme)
 	}
 	return nil
-}
-
-func isNewDynatraceTokenFormat(token string) bool {
-	return strings.HasPrefix(token, "dt0c01.") && strings.Count(token, ".") == 2
 }
 
 func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (result DynatraceEntity, err error) {
@@ -840,7 +769,7 @@ func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLa
 
 	u, err := buildUrl(d.environmentURL, urlPath, params)
 	if err != nil {
-		return resp, RespError{
+		return resp, client.RespError{
 			Err:        err,
 			StatusCode: 0,
 		}
@@ -848,7 +777,7 @@ func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLa
 
 	resp, receivedCount, totalReceivedCount, _, err = d.runAndProcessResponse(false, u, addToResult, receivedCount, totalReceivedCount, urlPath)
 	if err != nil {
-		return resp, RespError{
+		return resp, client.RespError{
 			Err:        err,
 			StatusCode: resp.StatusCode,
 		}
@@ -870,7 +799,7 @@ func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLa
 			var isLastAvailablePage bool
 			resp, receivedCount, totalReceivedCount, isLastAvailablePage, err = d.runAndProcessResponse(true, u, addToResult, receivedCount, totalReceivedCount, urlPath)
 			if err != nil {
-				return resp, RespError{
+				return resp, client.RespError{
 					Err:        err,
 					StatusCode: resp.StatusCode,
 				}
@@ -882,7 +811,7 @@ func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLa
 			retry := false
 			retry, emptyResponseRetryCount, err = isRetryOnEmptyResponse(receivedCount, emptyResponseRetryCount, resp)
 			if err != nil {
-				return resp, RespError{
+				return resp, client.RespError{
 					Err:        err,
 					StatusCode: resp.StatusCode,
 				}

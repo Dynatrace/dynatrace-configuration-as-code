@@ -20,7 +20,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
@@ -82,7 +82,7 @@ func (d DefaultCommand) DownloadEntitiesBasedOnManifest(fs afero.Fs, cmdOptions 
 		specificEntitiesTypes: cmdOptions.specificEntitiesTypes,
 	}
 
-	dtClient, err := dynatrace.CreateClient(env.URL.Value, env.Auth, false, client.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
+	dtClient, err := dynatrace.CreateClient(env.URL.Value, env.Auth, false, dtclient.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,7 @@ func (d DefaultCommand) DownloadEntities(fs afero.Fs, cmdOptions entitiesDirectD
 		specificEntitiesTypes: cmdOptions.specificEntitiesTypes,
 	}
 
-	dtClient, err := client.NewClassicClient(cmdOptions.environmentURL, token, client.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
+	dtClient, err := dtclient.NewClassicClient(cmdOptions.environmentURL, token, dtclient.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
 	if err != nil {
 		return err
 	}
@@ -121,7 +121,7 @@ func (d DefaultCommand) DownloadEntities(fs afero.Fs, cmdOptions entitiesDirectD
 	return doDownloadEntities(fs, dtClient, options)
 }
 
-func doDownloadEntities(fs afero.Fs, dtClient client.Client, opts downloadEntitiesOptions) error {
+func doDownloadEntities(fs afero.Fs, dtClient dtclient.Client, opts downloadEntitiesOptions) error {
 	err := preDownloadValidations(fs, opts.downloadOptionsShared)
 	if err != nil {
 		return err
@@ -134,7 +134,7 @@ func doDownloadEntities(fs afero.Fs, dtClient client.Client, opts downloadEntiti
 	return writeConfigs(downloadedConfigs, opts.downloadOptionsShared, fs)
 }
 
-func downloadEntities(dtClient client.Client, opts downloadEntitiesOptions) project.ConfigsPerType {
+func downloadEntities(dtClient dtclient.Client, opts downloadEntitiesOptions) project.ConfigsPerType {
 
 	var entitiesObjects project.ConfigsPerType
 

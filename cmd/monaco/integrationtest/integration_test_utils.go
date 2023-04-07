@@ -22,7 +22,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
@@ -32,7 +32,7 @@ import (
 	"testing"
 )
 
-func CreateDynatraceClient(t *testing.T, environment manifest.EnvironmentDefinition) client.Client {
+func CreateDynatraceClient(t *testing.T, environment manifest.EnvironmentDefinition) dtclient.Client {
 
 	c, err := dynatrace.CreateClient(environment.URL.Value, environment.Auth, false)
 	assert.NilError(t, err, "failed to create test client")

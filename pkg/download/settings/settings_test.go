@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
@@ -38,9 +39,9 @@ func TestDownloadAll(t *testing.T) {
 	uuid := idutils.GenerateUuidFromName("oid1")
 
 	type mockValues struct {
-		Schemas           func() (client.SchemaList, error)
+		Schemas           func() (dtclient.SchemaList, error)
 		ListSchemasCalls  int
-		Settings          func() ([]client.DownloadSettingsObject, error)
+		Settings          func() ([]dtclient.DownloadSettingsObject, error)
 		ListSettingsCalls int
 	}
 	tests := []struct {
@@ -53,10 +54,10 @@ func TestDownloadAll(t *testing.T) {
 			name: "DownloadSettings - List Schemas fails",
 			mockValues: mockValues{
 				ListSchemasCalls: 1,
-				Schemas: func() (client.SchemaList, error) {
+				Schemas: func() (dtclient.SchemaList, error) {
 					return nil, fmt.Errorf("oh no")
 				},
-				Settings: func() ([]client.DownloadSettingsObject, error) {
+				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return nil, nil
 				},
 				ListSettingsCalls: 0,
@@ -67,10 +68,10 @@ func TestDownloadAll(t *testing.T) {
 			name: "DownloadSettings - List Settings fails",
 			mockValues: mockValues{
 				ListSchemasCalls: 1,
-				Schemas: func() (client.SchemaList, error) {
-					return client.SchemaList{{SchemaId: "id1"}, {SchemaId: "id2"}}, nil
+				Schemas: func() (dtclient.SchemaList, error) {
+					return dtclient.SchemaList{{SchemaId: "id1"}, {SchemaId: "id2"}}, nil
 				},
-				Settings: func() ([]client.DownloadSettingsObject, error) {
+				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return nil, client.RespError{Err: fmt.Errorf("oh no"), StatusCode: 0}
 				},
 				ListSettingsCalls: 2,
@@ -81,11 +82,11 @@ func TestDownloadAll(t *testing.T) {
 			name: "DownloadSettings - invalid (empty) value payload",
 			mockValues: mockValues{
 				ListSchemasCalls: 1,
-				Schemas: func() (client.SchemaList, error) {
-					return client.SchemaList{{SchemaId: "id1"}}, nil
+				Schemas: func() (dtclient.SchemaList, error) {
+					return dtclient.SchemaList{{SchemaId: "id1"}}, nil
 				},
-				Settings: func() ([]client.DownloadSettingsObject, error) {
-					return []client.DownloadSettingsObject{{
+				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
+					return []dtclient.DownloadSettingsObject{{
 						ExternalId:    "ex1",
 						SchemaVersion: "sv1",
 						SchemaId:      "sid1",
@@ -102,11 +103,11 @@ func TestDownloadAll(t *testing.T) {
 			name: "DownloadSettings - valid value payload",
 			mockValues: mockValues{
 				ListSchemasCalls: 1,
-				Schemas: func() (client.SchemaList, error) {
-					return client.SchemaList{{SchemaId: "id1"}}, nil
+				Schemas: func() (dtclient.SchemaList, error) {
+					return dtclient.SchemaList{{SchemaId: "id1"}}, nil
 				},
-				Settings: func() ([]client.DownloadSettingsObject, error) {
-					return []client.DownloadSettingsObject{{
+				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
+					return []dtclient.DownloadSettingsObject{{
 						ExternalId:    "ex1",
 						SchemaVersion: "sv1",
 						SchemaId:      "sid1",
@@ -146,11 +147,11 @@ func TestDownloadAll(t *testing.T) {
 			},
 			mockValues: mockValues{
 				ListSchemasCalls: 1,
-				Schemas: func() (client.SchemaList, error) {
-					return client.SchemaList{{SchemaId: "id1"}}, nil
+				Schemas: func() (dtclient.SchemaList, error) {
+					return dtclient.SchemaList{{SchemaId: "id1"}}, nil
 				},
-				Settings: func() ([]client.DownloadSettingsObject, error) {
-					return []client.DownloadSettingsObject{{
+				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
+					return []dtclient.DownloadSettingsObject{{
 						ExternalId:    "ex1",
 						SchemaVersion: "sv1",
 						SchemaId:      "sid1",
@@ -166,7 +167,7 @@ func TestDownloadAll(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := client.NewMockClient(gomock.NewController(t))
+			c := dtclient.NewMockClient(gomock.NewController(t))
 			schemas, err := tt.mockValues.Schemas()
 			c.EXPECT().ListSchemas().Times(tt.mockValues.ListSchemasCalls).Return(schemas, err)
 			settings, err := tt.mockValues.Settings()
@@ -181,8 +182,8 @@ func TestDownload(t *testing.T) {
 	uuid := idutils.GenerateUuidFromName("oid1")
 
 	type mockValues struct {
-		Schemas           func() (client.SchemaList, error)
-		Settings          func() ([]client.DownloadSettingsObject, error)
+		Schemas           func() (dtclient.SchemaList, error)
+		Settings          func() ([]dtclient.DownloadSettingsObject, error)
 		ListSettingsCalls int
 	}
 	tests := []struct {
@@ -194,9 +195,9 @@ func TestDownload(t *testing.T) {
 		{
 			name: "DownloadSettings - empty list of schemas",
 			mockValues: mockValues{
-				Schemas: func() (client.SchemaList, error) { return client.SchemaList{}, nil },
-				Settings: func() ([]client.DownloadSettingsObject, error) {
-					return []client.DownloadSettingsObject{}, nil
+				Schemas: func() (dtclient.SchemaList, error) { return dtclient.SchemaList{}, nil },
+				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
+					return []dtclient.DownloadSettingsObject{}, nil
 				},
 				ListSettingsCalls: 0,
 			},
@@ -206,11 +207,11 @@ func TestDownload(t *testing.T) {
 			name:    "DownloadSettings - Settings found",
 			Schemas: []string{"builtin:alerting-profile"},
 			mockValues: mockValues{
-				Schemas: func() (client.SchemaList, error) {
-					return client.SchemaList{{SchemaId: "id1"}}, nil
+				Schemas: func() (dtclient.SchemaList, error) {
+					return dtclient.SchemaList{{SchemaId: "id1"}}, nil
 				},
-				Settings: func() ([]client.DownloadSettingsObject, error) {
-					return []client.DownloadSettingsObject{{
+				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
+					return []dtclient.DownloadSettingsObject{{
 						ExternalId:    "ex1",
 						SchemaVersion: "sv1",
 						SchemaId:      "sid1",
@@ -245,7 +246,7 @@ func TestDownload(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := client.NewMockClient(gomock.NewController(t))
+			c := dtclient.NewMockClient(gomock.NewController(t))
 			settings, err := tt.mockValues.Settings()
 			c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err)
 			res := NewSettingsDownloader(c).Download(tt.Schemas, "projectName")

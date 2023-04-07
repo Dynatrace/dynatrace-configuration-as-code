@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -30,10 +31,10 @@ import (
 
 func TestDeleteSettings(t *testing.T) {
 	t.Run("TestDeleteSettings", func(t *testing.T) {
-		c := client.NewMockClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).DoAndReturn(func(schemaID string, listOpts client.ListSettingsOptions) ([]client.DownloadSettingsObject, error) {
-			assert.True(t, listOpts.Filter(client.DownloadSettingsObject{ExternalId: "monaco:YnVpbHRpbjphbGVydGluZy5wcm9maWxlJGlkMQ=="}))
-			return []client.DownloadSettingsObject{
+		c := dtclient.NewMockClient(gomock.NewController(t))
+		c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).DoAndReturn(func(schemaID string, listOpts dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error) {
+			assert.True(t, listOpts.Filter(dtclient.DownloadSettingsObject{ExternalId: "monaco:YnVpbHRpbjphbGVydGluZy5wcm9maWxlJGlkMQ=="}))
+			return []dtclient.DownloadSettingsObject{
 				{
 					ExternalId:    "externalID",
 					SchemaVersion: "v1",
@@ -59,8 +60,8 @@ func TestDeleteSettings(t *testing.T) {
 	})
 
 	t.Run("TestDeleteSettings - List settings with external ID fails", func(t *testing.T) {
-		c := client.NewMockClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Return([]client.DownloadSettingsObject{}, client.RespError{Err: fmt.Errorf("WHOPS"), StatusCode: 0})
+		c := dtclient.NewMockClient(gomock.NewController(t))
+		c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, client.RespError{Err: fmt.Errorf("WHOPS"), StatusCode: 0})
 		entriesToDelete := map[string][]DeletePointer{
 			"builtin:alerting.profile": {
 				{
@@ -74,8 +75,8 @@ func TestDeleteSettings(t *testing.T) {
 	})
 
 	t.Run("TestDeleteSettings - List settings returns no objects", func(t *testing.T) {
-		c := client.NewMockClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Return([]client.DownloadSettingsObject{}, nil)
+		c := dtclient.NewMockClient(gomock.NewController(t))
+		c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, nil)
 		entriesToDelete := map[string][]DeletePointer{
 			"builtin:alerting.profile": {
 				{
@@ -89,8 +90,8 @@ func TestDeleteSettings(t *testing.T) {
 	})
 
 	t.Run("TestDeleteSettings - Delete settings based on object ID fails", func(t *testing.T) {
-		c := client.NewMockClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Return([]client.DownloadSettingsObject{
+		c := dtclient.NewMockClient(gomock.NewController(t))
+		c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{
 			{
 				ExternalId:    "externalID",
 				SchemaVersion: "v1",
@@ -123,7 +124,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 
 	type args struct {
 		entries []DeletePointer
-		values  []client.Value
+		values  []dtclient.Value
 	}
 
 	tests := []struct {
@@ -138,7 +139,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 			name: "Full overlap",
 			args: args{
 				entries: []DeletePointer{{ConfigId: "d1"}, {ConfigId: "d2"}, {ConfigId: "d3"}},
-				values:  []client.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "id2"}, {Name: "d3", Id: "id3"}},
+				values:  []dtclient.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "id2"}, {Name: "d3", Id: "id3"}},
 			},
 			expect: expect{
 				ids:     []string{"id1", "id2", "id3"},
@@ -149,14 +150,14 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 			name: "Empty entries, nothing deleted",
 			args: args{
 				entries: []DeletePointer{},
-				values:  []client.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "id2"}, {Name: "d3", Id: "id3"}},
+				values:  []dtclient.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "id2"}, {Name: "d3", Id: "id3"}},
 			},
 		},
 		{
 			name: "More deletes",
 			args: args{
 				entries: []DeletePointer{{ConfigId: "d1"}, {ConfigId: "d2"}, {ConfigId: "d3"}},
-				values:  []client.Value{{Name: "d1", Id: "id1"}},
+				values:  []dtclient.Value{{Name: "d1", Id: "id1"}},
 			},
 			expect: expect{
 				ids:     []string{"id1"},
@@ -167,7 +168,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 			name: "More values",
 			args: args{
 				entries: []DeletePointer{{ConfigId: "d1"}},
-				values:  []client.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "id2"}, {Name: "d3", Id: "id3"}},
+				values:  []dtclient.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "id2"}, {Name: "d3", Id: "id3"}},
 			},
 			expect: expect{
 				ids:     []string{"id1"},
@@ -178,7 +179,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 			name: "Id-fallback",
 			args: args{
 				entries: []DeletePointer{{ConfigId: "d1"}, {ConfigId: "d2-id"}},
-				values:  []client.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "d2-id"}, {Name: "d3", Id: "id3"}},
+				values:  []dtclient.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "d2-id"}, {Name: "d3", Id: "id3"}},
 			},
 			expect: expect{
 				ids:     []string{"id1", "d2-id"},
@@ -189,7 +190,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 			name: "Duplicate names",
 			args: args{
 				entries: []DeletePointer{{ConfigId: "d1"}, {ConfigId: "d2"}},
-				values:  []client.Value{{Name: "d1"}, {Name: "d1"}, {Name: "d2"}, {Name: "d2"}},
+				values:  []dtclient.Value{{Name: "d1"}, {Name: "d1"}, {Name: "d2"}, {Name: "d2"}},
 			},
 			expect: expect{
 				ids:     []string{},
@@ -200,7 +201,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 			name: "Combined",
 			args: args{
 				entries: []DeletePointer{{ConfigId: "d1"}, {ConfigId: "d2"}, {ConfigId: "d3"}, {ConfigId: "d4-id"}},
-				values:  []client.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "id2"}, {Name: "d2", Id: "id-something"}, {Name: "d3", Id: "id3"}, {Id: "d4-id"}},
+				values:  []dtclient.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "id2"}, {Name: "d2", Id: "id-something"}, {Name: "d3", Id: "id3"}, {Id: "d4-id"}},
 			},
 			expect: expect{
 				ids:     []string{"id1", "id3", "d4-id"},
@@ -215,7 +216,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 			apiMap := api.APIs{a.ID: a}
 			entriesToDelete := map[string][]DeletePointer{a.ID: tc.args.entries}
 
-			client := client.NewMockClient(gomock.NewController(t))
+			client := dtclient.NewMockClient(gomock.NewController(t))
 			client.EXPECT().ListConfigs(a).Return(tc.args.values, nil)
 
 			for _, id := range tc.expect.ids {
@@ -235,7 +236,7 @@ func TestSplitConfigsForDeletionClientReturnsError(t *testing.T) {
 	apiMap := api.APIs{a.ID: a}
 	entriesToDelete := map[string][]DeletePointer{a.ID: {{}}}
 
-	client := client.NewMockClient(gomock.NewController(t))
+	client := dtclient.NewMockClient(gomock.NewController(t))
 	client.EXPECT().ListConfigs(a).Return(nil, errors.New("error"))
 
 	errs := DeleteConfigs(client, apiMap, entriesToDelete)

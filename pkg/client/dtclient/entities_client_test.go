@@ -1,8 +1,8 @@
 //go:build unit
 
-/**
+/*
  * @license
- * Copyright 2020 Dynatrace LLC
+ * Copyright 2023 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package client
+package dtclient
 
 import (
 	"encoding/json"
@@ -26,25 +26,25 @@ import (
 
 func Test_fields(t *testing.T) {
 	APMSecurityGatewayJSON := `{
-		"type": "APM_SECURITY_GATEWAY", 
-		"displayName": "ActiveGate", 
-		"dimensionKey": "dt.entity.apm_security_gateway", 
-		"entityLimitExceeded": false, 
+		"type": "APM_SECURITY_GATEWAY",
+		"displayName": "ActiveGate",
+		"dimensionKey": "dt.entity.apm_security_gateway",
+		"entityLimitExceeded": false,
 		"properties": [
-			{"id": "awsNameTag", "type": "String", "displayName": "awsNameTag"}, 
-			{"id": "boshName", "type": "String", "displayName": "boshName"}, 
-			{"id": "conditionalName", "type": "String", "displayName": "conditionalName"}, 
-			{"id": "customizedName", "type": "String", "displayName": "customizedName"}, 
-			{"id": "detectedName", "type": "String", "displayName": "detectedName"}, 
-			{"id": "gcpZone", "type": "String", "displayName": "gcpZone"}, 
-			{"id": "isContainerDeployment", "type": "Boolean", "displayName": "isContainerDeployment"}, 
+			{"id": "awsNameTag", "type": "String", "displayName": "awsNameTag"},
+			{"id": "boshName", "type": "String", "displayName": "boshName"},
+			{"id": "conditionalName", "type": "String", "displayName": "conditionalName"},
+			{"id": "customizedName", "type": "String", "displayName": "customizedName"},
+			{"id": "detectedName", "type": "String", "displayName": "detectedName"},
+			{"id": "gcpZone", "type": "String", "displayName": "gcpZone"},
+			{"id": "isContainerDeployment", "type": "Boolean", "displayName": "isContainerDeployment"},
 			{"id": "oneAgentCustomHostName", "type": "String", "displayName": "oneAgentCustomHostName"}
-		], 
-		"tags": "List", 
-		"managementZones": "List", 
+		],
+		"tags": "List",
+		"managementZones": "List",
 		"fromRelationships": [
 			{"id": "isLocatedIn", "toTypes": ["SYNTHETIC_LOCATION"]}
-		], 
+		],
 		"toRelationships": []
 	}`
 

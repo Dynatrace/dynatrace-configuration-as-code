@@ -18,7 +18,7 @@ package deploy
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/golang/mock/gomock"
 	"strings"
@@ -64,7 +64,7 @@ func TestDeployConfig(t *testing.T) {
 		},
 	}
 
-	client := &client.DummyClient{}
+	client := &dtclient.DummyClient{}
 	conf := config.Config{
 		Type:     config.ClassicApiType{Api: "dashboard"},
 		Template: generateDummyTemplate(t),
@@ -118,7 +118,7 @@ func TestDeploySettingShouldFailCyclicParameterDependencies(t *testing.T) {
 		},
 	}
 
-	client := &client.DummyClient{}
+	client := &dtclient.DummyClient{}
 
 	conf := &config.Config{
 		Type:       config.ClassicApiType{},
@@ -130,7 +130,7 @@ func TestDeploySettingShouldFailCyclicParameterDependencies(t *testing.T) {
 }
 
 func TestDeploySettingShouldFailRenderTemplate(t *testing.T) {
-	client := &client.DummyClient{}
+	client := &dtclient.DummyClient{}
 
 	conf := &config.Config{
 		Type:     config.ClassicApiType{},
@@ -166,8 +166,8 @@ func TestDeploySettingShouldFailUpsert(t *testing.T) {
 		},
 	}
 
-	c := client.NewMockSettingsClient(gomock.NewController(t))
-	c.EXPECT().UpsertSettings(gomock.Any()).Return(client.DynatraceEntity{}, fmt.Errorf("upsert failed"))
+	c := dtclient.NewMockSettingsClient(gomock.NewController(t))
+	c.EXPECT().UpsertSettings(gomock.Any()).Return(dtclient.DynatraceEntity{}, fmt.Errorf("upsert failed"))
 
 	conf := &config.Config{
 		Type:       config.SettingsType{},
@@ -200,8 +200,8 @@ func TestDeploySetting(t *testing.T) {
 		},
 	}
 
-	c := client.NewMockClient(gomock.NewController(t))
-	c.EXPECT().UpsertSettings(gomock.Any()).Times(1).Return(client.DynatraceEntity{
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().UpsertSettings(gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
 		Id:   "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0",
 		Name: "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0",
 	}, nil)
@@ -245,8 +245,8 @@ func TestDeployedSettingGetsNameFromConfig(t *testing.T) {
 		},
 	}
 
-	c := client.NewMockClient(gomock.NewController(t))
-	c.EXPECT().UpsertSettings(gomock.Any()).Times(1).Return(client.DynatraceEntity{
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().UpsertSettings(gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
 		Id:   "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0",
 		Name: "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0",
 	}, nil)
@@ -285,8 +285,8 @@ func TestSettingsNameExtractionDoesNotFailIfCfgNameBecomesOptional(t *testing.T)
 
 	objectId := "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0"
 
-	c := client.NewMockClient(gomock.NewController(t))
-	c.EXPECT().UpsertSettings(gomock.Any()).Times(1).Return(client.DynatraceEntity{
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().UpsertSettings(gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
 		Id:   objectId,
 		Name: objectId,
 	}, nil)
@@ -312,7 +312,7 @@ func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
 		},
 	}
 
-	client := &client.DummyClient{}
+	client := &dtclient.DummyClient{}
 	conf := config.Config{
 		Type:     config.ClassicApiType{Api: "dashboard"},
 		Template: generateDummyTemplate(t),
@@ -365,7 +365,7 @@ func TestDeployConfigShouldFailCyclicParameterDependencies(t *testing.T) {
 		},
 	}
 
-	client := &client.DummyClient{}
+	client := &dtclient.DummyClient{}
 	conf := config.Config{
 		Type:     config.ClassicApiType{Api: "dashboard"},
 		Template: generateDummyTemplate(t),
@@ -386,7 +386,7 @@ func TestDeployConfigShouldFailCyclicParameterDependencies(t *testing.T) {
 func TestDeployConfigShouldFailOnMissingNameParameter(t *testing.T) {
 	parameters := []topologysort.ParameterWithName{}
 
-	client := &client.DummyClient{}
+	client := &dtclient.DummyClient{}
 	conf := config.Config{
 		Type:     config.ClassicApiType{Api: "dashboard"},
 		Template: generateDummyTemplate(t),
@@ -423,7 +423,7 @@ func TestDeployConfigShouldFailOnReferenceOnUnknownConfig(t *testing.T) {
 		},
 	}
 
-	client := &client.DummyClient{}
+	client := &dtclient.DummyClient{}
 	conf := config.Config{
 		Type:     config.ClassicApiType{Api: "dashboard"},
 		Template: generateDummyTemplate(t),
@@ -462,7 +462,7 @@ func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
 		},
 	}
 
-	client := &client.DummyClient{}
+	client := &dtclient.DummyClient{}
 	conf := config.Config{
 		Type:     config.ClassicApiType{Api: "dashboard"},
 		Template: generateDummyTemplate(t),
@@ -481,7 +481,7 @@ func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
 }
 
 func TestDeployConfigsWithNoConfigs(t *testing.T) {
-	client := &client.DummyClient{}
+	client := &dtclient.DummyClient{}
 	var apis api.APIs
 	var sortedConfigs []config.Config
 
@@ -490,7 +490,7 @@ func TestDeployConfigsWithNoConfigs(t *testing.T) {
 }
 
 func TestDeployConfigsWithOneConfigToSkip(t *testing.T) {
-	client := &client.DummyClient{}
+	client := &dtclient.DummyClient{}
 	var apis api.APIs
 	sortedConfigs := []config.Config{
 		{Skip: true},
@@ -500,7 +500,7 @@ func TestDeployConfigsWithOneConfigToSkip(t *testing.T) {
 }
 
 func TestDeployConfigsTargetingSettings(t *testing.T) {
-	c := client.NewMockClient(gomock.NewController(t))
+	c := dtclient.NewMockClient(gomock.NewController(t))
 	var apis api.APIs
 	sortedConfigs := []config.Config{
 		{
@@ -519,8 +519,8 @@ func TestDeployConfigsTargetingSettings(t *testing.T) {
 			},
 		},
 	}
-	//client.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Times(1).Return([]rest.DownloadSettingsObject{{ExternalId: "externalId"}}, nil)
-	c.EXPECT().UpsertSettings(gomock.Any()).Times(1).Return(client.DynatraceEntity{
+	//configs.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Times(1).Return([]rest.DownloadSettingsObject{{ExternalId: "externalId"}}, nil)
+	c.EXPECT().UpsertSettings(gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
 		Id:   "42",
 		Name: "Super Special Settings Object",
 	}, nil)
@@ -534,7 +534,7 @@ func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
 
 	theApi := api.API{ID: theApiName, URLPath: "path"}
 
-	client := client.NewMockClient(gomock.NewController(t))
+	client := dtclient.NewMockClient(gomock.NewController(t))
 	client.EXPECT().UpsertConfigByName(gomock.Any(), theConfigName, gomock.Any()).Times(1)
 
 	apis := api.APIs{theApiName: theApi}
@@ -567,7 +567,7 @@ func TestDeployConfigsTargetingClassicConfigNonUniqueWithExistingCfgsOfSameName(
 
 	theApi := api.API{ID: theApiName, URLPath: "path", NonUniqueName: true}
 
-	client := client.NewMockClient(gomock.NewController(t))
+	client := dtclient.NewMockClient(gomock.NewController(t))
 	client.EXPECT().UpsertConfigByNonUniqueNameAndId(gomock.Any(), gomock.Any(), theConfigName, gomock.Any())
 
 	apis := api.APIs{theApiName: theApi}
@@ -598,7 +598,7 @@ func TestDeployConfigsNoApi(t *testing.T) {
 	theConfigName := "theConfigName"
 	theApiName := "theApiName"
 
-	client := client.NewMockClient(gomock.NewController(t))
+	client := dtclient.NewMockClient(gomock.NewController(t))
 
 	apis := api.APIs{}
 	parameters := []topologysort.ParameterWithName{
@@ -665,12 +665,12 @@ func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
 	}
 
 	t.Run("deployment error - stop on error", func(t *testing.T) {
-		errors := DeployConfigs(&client.DummyClient{}, apis, sortedConfigs, DeployConfigsOptions{})
+		errors := DeployConfigs(&dtclient.DummyClient{}, apis, sortedConfigs, DeployConfigsOptions{})
 		assert.Equal(t, 1, len(errors), fmt.Sprintf("Expected 1 error, but just got %d", len(errors)))
 	})
 
 	t.Run("deployment error - stop on error", func(t *testing.T) {
-		errors := DeployConfigs(&client.DummyClient{}, apis, sortedConfigs, DeployConfigsOptions{ContinueOnErr: true})
+		errors := DeployConfigs(&dtclient.DummyClient{}, apis, sortedConfigs, DeployConfigsOptions{ContinueOnErr: true})
 		assert.Equal(t, 2, len(errors), fmt.Sprintf("Expected 1 error, but just got %d", len(errors)))
 	})
 
