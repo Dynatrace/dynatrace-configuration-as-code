@@ -44,18 +44,11 @@ func DeployConfigs(client dtclient.Client, apis api.APIs, sortedConfigs []config
 	for i := range sortedConfigs {
 		c := &sortedConfigs[i] // avoid implicit memory aliasing (gosec G601)
 
-		if c.Skip {
-			log.Info("\tSkipping deployment of config %s", c.Coordinate)
-		}
-
-		logAction, logVerb := getWordsForLogging(opts.DryRun)
-		log.Info("\t%s config %s", logAction, c.Coordinate)
-
 		entity, deploymentErrors := deploy(client, apis, entityMap, c)
 
 		if deploymentErrors != nil {
 			for _, err := range deploymentErrors {
-				errors = append(errors, fmt.Errorf("failed to %s config %s: %w", logVerb, c.Coordinate, err))
+				errors = append(errors, fmt.Errorf("failed to deploy config %s: %w", c.Coordinate, err))
 			}
 
 			if !opts.ContinueOnErr && !opts.DryRun {
@@ -71,6 +64,7 @@ func DeployConfigs(client dtclient.Client, apis api.APIs, sortedConfigs []config
 
 func deploy(client dtclient.Client, apis api.APIs, em *entityMap, c *config.Config) (*parameter.ResolvedEntity, []error) {
 	if c.Skip {
+		log.Info("\tSkipping deployment of config %s", c.Coordinate)
 		return &parameter.ResolvedEntity{EntityName: c.Coordinate.ConfigId, Coordinate: c.Coordinate, Properties: parameter.Properties{}, Skip: true}, nil
 	}
 
@@ -91,23 +85,16 @@ func deploy(client dtclient.Client, apis api.APIs, em *entityMap, c *config.Conf
 		return nil, nil
 
 	case config.SettingsType:
+		log.Info("\tDeploying config %s", c.Coordinate)
 		return deploySetting(client, properties, renderedConfig, c)
 
 	case config.ClassicApiType:
+		log.Info("\tDeploying config %s", c.Coordinate)
 		return deployConfig(client, apis, em, properties, renderedConfig, c)
 
 	default:
 		return nil, []error{fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())}
 	}
-}
-
-// getWordsForLogging returns fitting action and verb words to clearly tell a user if configuration is
-// deployed or validated when logging based on the dry-run boolean
-func getWordsForLogging(isDryRun bool) (action, verb string) {
-	if isDryRun {
-		return "Validating", "validate"
-	}
-	return "Deploying", "deploy"
 }
 
 func deployConfig(configClient dtclient.ConfigClient, apis api.APIs, entityMap *entityMap, properties parameter.Properties, renderedConfig string, conf *config.Config) (*parameter.ResolvedEntity, []error) {
