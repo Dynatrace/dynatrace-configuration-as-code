@@ -78,7 +78,12 @@ func TestDeploy(t *testing.T) {
 			Skip:        false,
 		}
 
-		resolvedEntity, errors := deploy(client, testApiMap, newEntityMap(testApiMap), &conf)
+		d := deployer{
+			dtClient: client,
+			apis:     testApiMap,
+		}
+
+		resolvedEntity, errors := d.deploy(&conf, newEntityMap(testApiMap))
 
 		assert.Emptyf(t, errors, "errors: %v", errors)
 		assert.Equal(t, name, resolvedEntity.EntityName, "%s == %s")
@@ -175,7 +180,9 @@ func TestDeploySettingShouldFailUpsert(t *testing.T) {
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parameters),
 	}
-	_, errors := deploy(c, nil, newEntityMap(testApiMap), conf)
+	d := deployer{dtClient: c}
+
+	_, errors := d.deploy(conf, newEntityMap(testApiMap))
 	assert.NotEmpty(t, errors)
 }
 
@@ -318,7 +325,8 @@ func TestDeploySetting(t *testing.T) {
 				Name: tt.given.returnedEntityID,
 			}, nil)
 
-			got, errors := deploy(c, nil, newEntityMap(testApiMap), &tt.given.config)
+			d := deployer{dtClient: c}
+			got, errors := d.deploy(&tt.given.config, newEntityMap(testApiMap))
 			if !tt.wantErr {
 				assert.Equal(t, got, &tt.want)
 				assert.Emptyf(t, errors, "errors: %v)", errors)
@@ -370,7 +378,9 @@ func TestDeployedSettingGetsNameFromConfig(t *testing.T) {
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parameters),
 	}
-	res, errors := deploy(c, nil, newEntityMap(testApiMap), conf)
+	d := deployer{dtClient: c}
+
+	res, errors := d.deploy(conf, newEntityMap(testApiMap))
 	assert.Equal(t, res.EntityName, cfgName, "expected resolved name to match configuration name")
 	assert.Emptyf(t, errors, "errors: %v", errors)
 }
@@ -410,7 +420,9 @@ func TestSettingsNameExtractionDoesNotFailIfCfgNameBecomesOptional(t *testing.T)
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parametersWithoutName),
 	}
-	res, errors := deploy(c, nil, newEntityMap(testApiMap), conf)
+	d := deployer{dtClient: c}
+
+	res, errors := d.deploy(conf, newEntityMap(testApiMap))
 	assert.Contains(t, res.EntityName, objectId, "expected resolved name to contain objectID if name is not configured")
 	assert.Empty(t, errors, " errors: %v)", errors)
 }
@@ -595,27 +607,32 @@ func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
 }
 
 func TestDeployConfigsWithNoConfigs(t *testing.T) {
-	client := &dtclient.DummyClient{}
-	var apis api.APIs
+	d := deployer{}
+	//client := &dtclient.DummyClient{}
+	//var apis api.APIs
 	var sortedConfigs []config.Config
 
-	errors := DeployConfigs(client, apis, sortedConfigs, DeployConfigsOptions{})
+	errors := d.DeployAll(sortedConfigs)
 	assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
 }
 
 func TestDeployConfigsWithOneConfigToSkip(t *testing.T) {
-	client := &dtclient.DummyClient{}
-	var apis api.APIs
+	d := deployer{}
+	//client := &dtclient.DummyClient{}
+	//var apis api.APIs
 	sortedConfigs := []config.Config{
 		{Skip: true},
 	}
-	errors := DeployConfigs(client, apis, sortedConfigs, DeployConfigsOptions{})
+	errors := d.DeployAll(sortedConfigs)
 	assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
 }
 
 func TestDeployConfigsTargetingSettings(t *testing.T) {
 	c := dtclient.NewMockClient(gomock.NewController(t))
-	var apis api.APIs
+	d := deployer{
+		dtClient: c,
+	}
+
 	sortedConfigs := []config.Config{
 		{
 			Template: generateDummyTemplate(t),
@@ -637,7 +654,7 @@ func TestDeployConfigsTargetingSettings(t *testing.T) {
 		Id:   "42",
 		Name: "Super Special Settings Object",
 	}, nil)
-	errors := DeployConfigs(c, apis, sortedConfigs, DeployConfigsOptions{})
+	errors := d.DeployAll(sortedConfigs)
 	assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
 }
 
@@ -670,7 +687,12 @@ func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
 		},
 	}
 
-	errors := DeployConfigs(client, apis, sortedConfigs, DeployConfigsOptions{})
+	d := deployer{
+		dtClient: client,
+		apis:     apis,
+	}
+
+	errors := d.DeployAll(sortedConfigs)
 	assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
 }
 
@@ -703,7 +725,12 @@ func TestDeployConfigsTargetingClassicConfigNonUniqueWithExistingCfgsOfSameName(
 		},
 	}
 
-	errors := DeployConfigs(client, apis, sortedConfigs, DeployConfigsOptions{})
+	d := deployer{
+		dtClient: client,
+		apis:     apis,
+	}
+
+	errors := d.DeployAll(sortedConfigs)
 	assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
 }
 
@@ -742,12 +769,23 @@ func TestDeployConfigsNoApi(t *testing.T) {
 	}
 
 	t.Run("missing api - continue on error", func(t *testing.T) {
-		errors := DeployConfigs(client, apis, sortedConfigs, DeployConfigsOptions{ContinueOnErr: true})
+		d := deployer{
+			dtClient:      client,
+			apis:          apis,
+			continueOnErr: true,
+		}
+
+		errors := d.DeployAll(sortedConfigs)
 		assert.Equal(t, 2, len(errors), fmt.Sprintf("Expected 2 errors, but just got %d", len(errors)))
 	})
 
 	t.Run("missing api - stop on error", func(t *testing.T) {
-		errors := DeployConfigs(client, apis, sortedConfigs, DeployConfigsOptions{})
+		d := deployer{
+			dtClient: client,
+			apis:     apis,
+		}
+
+		errors := d.DeployAll(sortedConfigs)
 		assert.Equal(t, 1, len(errors), fmt.Sprintf("Expected 1 error, but just got %d", len(errors)))
 	})
 	// test continue on error
@@ -778,12 +816,21 @@ func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
 	}
 
 	t.Run("deployment error - stop on error", func(t *testing.T) {
-		errors := DeployConfigs(&dtclient.DummyClient{}, apis, sortedConfigs, DeployConfigsOptions{})
+		d := deployer{
+			dtClient: &dtclient.DummyClient{},
+			apis:     apis,
+		}
+		errors := d.DeployAll(sortedConfigs)
 		assert.Equal(t, 1, len(errors), fmt.Sprintf("Expected 1 error, but just got %d", len(errors)))
 	})
 
 	t.Run("deployment error - stop on error", func(t *testing.T) {
-		errors := DeployConfigs(&dtclient.DummyClient{}, apis, sortedConfigs, DeployConfigsOptions{ContinueOnErr: true})
+		d := deployer{
+			dtClient:      &dtclient.DummyClient{},
+			apis:          apis,
+			continueOnErr: true,
+		}
+		errors := d.DeployAll(sortedConfigs)
 		assert.Equal(t, 2, len(errors), fmt.Sprintf("Expected 1 error, but just got %d", len(errors)))
 	})
 

@@ -25,41 +25,23 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 )
 
-// DeployConfigsOptions defines additional options used by DeployConfigs
-type DeployConfigsOptions struct {
-	// ContinueOnErr states that the deployment continues even when there happens to be an
-	// error while deploying a certain configuration
-	ContinueOnErr bool
-	// DryRun states that the deployment shall just run in dry-run mode, meaning
-	// that actual deployment of the configuration to a tenant will be skipped
-	DryRun bool
-}
-
+// DeployAll deploys the given set of configs
+// NOTE: the given configs need to be sorted, otherwise deployment will probably fail, as references cannot be resolved
 func (ctx *deployer) DeployAll(sortedConfigs []config.Config) []error {
-	return DeployConfigs(ctx.dtClient, ctx.apis, sortedConfigs, DeployConfigsOptions{
-		ContinueOnErr: ctx.continueOnErr,
-		DryRun:        ctx.dryRun,
-	})
-}
-
-// DeployConfigs deploys the given configs with the given apis via the given client
-// NOTE: the given configs need to be sorted, otherwise deployment will
-// probably fail, as references cannot be resolved
-func DeployConfigs(client dtclient.Client, apis api.APIs, sortedConfigs []config.Config, opts DeployConfigsOptions) []error {
-	entityMap := newEntityMap(apis)
+	entityMap := newEntityMap(ctx.apis)
 	var errors []error
 
 	for i := range sortedConfigs {
 		c := &sortedConfigs[i] // avoid implicit memory aliasing (gosec G601)
 
-		entity, deploymentErrors := deploy(client, apis, entityMap, c)
+		entity, deploymentErrors := ctx.deploy(c, entityMap)
 
 		if deploymentErrors != nil {
 			for _, err := range deploymentErrors {
 				errors = append(errors, fmt.Errorf("failed to deploy config %s: %w", c.Coordinate, err))
 			}
 
-			if !opts.ContinueOnErr && !opts.DryRun {
+			if !ctx.continueOnErr && !ctx.dryRun {
 				return errors
 			}
 		} else if entity != nil {
@@ -70,7 +52,7 @@ func DeployConfigs(client dtclient.Client, apis api.APIs, sortedConfigs []config
 	return errors
 }
 
-func deploy(client dtclient.Client, apis api.APIs, em *entityMap, c *config.Config) (*parameter.ResolvedEntity, []error) {
+func (ctx *deployer) deploy(c *config.Config, em *entityMap) (*parameter.ResolvedEntity, []error) {
 	if c.Skip {
 		log.Info("\tSkipping deployment of config %s", c.Coordinate)
 		return &parameter.ResolvedEntity{EntityName: c.Coordinate.ConfigId, Coordinate: c.Coordinate, Properties: parameter.Properties{}, Skip: true}, nil
@@ -94,11 +76,11 @@ func deploy(client dtclient.Client, apis api.APIs, em *entityMap, c *config.Conf
 
 	case config.SettingsType:
 		log.Info("\tDeploying config %s", c.Coordinate)
-		return deploySetting(client, properties, renderedConfig, c)
+		return deploySetting(ctx.dtClient, properties, renderedConfig, c)
 
 	case config.ClassicApiType:
 		log.Info("\tDeploying config %s", c.Coordinate)
-		return deployConfig(client, apis, em, properties, renderedConfig, c)
+		return deployConfig(ctx.dtClient, ctx.apis, em, properties, renderedConfig, c)
 
 	default:
 		return nil, []error{fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())}
