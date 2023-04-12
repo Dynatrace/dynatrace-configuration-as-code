@@ -35,6 +35,13 @@ type DeployConfigsOptions struct {
 	DryRun bool
 }
 
+func (ctx *deployer) DeployAll(sortedConfigs []config.Config) []error {
+	return DeployConfigs(ctx.dtClient, ctx.apis, sortedConfigs, DeployConfigsOptions{
+		ContinueOnErr: ctx.continueOnErr,
+		DryRun:        ctx.dryRun,
+	})
+}
+
 // DeployConfigs deploys the given configs with the given apis via the given client
 // NOTE: the given configs need to be sorted, otherwise deployment will
 // probably fail, as references cannot be resolved

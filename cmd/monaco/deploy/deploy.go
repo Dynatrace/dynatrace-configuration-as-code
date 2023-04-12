@@ -100,10 +100,9 @@ func doDeploy(configs project.ConfigsPerEnvironment, environments manifest.Envir
 			}
 		}
 
-		errs := deploy.DeployConfigs(dtClient, api.NewAPIs(), configs, deploy.DeployConfigsOptions{
-			ContinueOnErr: continueOnErr,
-			DryRun:        dryRun,
-		})
+		deployer := deploy.NewDeployer(dtClient, deploy.WithContinueOnErr(continueOnErr), deploy.WithDryRun(dryRun))
+
+		errs := deployer.DeployAll(configs)
 		deployErrs = append(deployErrs, errs...)
 	}
 
