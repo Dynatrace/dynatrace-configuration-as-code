@@ -56,10 +56,10 @@ var resources = map[ResourceType]Resource{
 
 // Client can be used to interact with the Automation API
 type Client struct {
-	url      string
-	limiter  *concurrency.Limiter
-	client   *http.Client
-	resource Resource
+	url       string
+	limiter   *concurrency.Limiter
+	client    *http.Client
+	resources map[ResourceType]Resource
 }
 
 // ClientOption are (optional) additional parameter passed to the creation of
@@ -67,12 +67,12 @@ type Client struct {
 type ClientOption func(*Client)
 
 // NewClient creates a new client to interact with the Automation API
-func NewClient(url string, client *http.Client, resourceType ResourceType, opts ...ClientOption) *Client {
+func NewClient(url string, client *http.Client, opts ...ClientOption) *Client {
 	c := &Client{
-		url:      url,
-		limiter:  concurrency.NewLimiter(5),
-		client:   client,
-		resource: resources[resourceType],
+		url:       url,
+		limiter:   concurrency.NewLimiter(5),
+		client:    client,
+		resources: resources,
 	}
 
 	for _, o := range opts {
@@ -82,22 +82,22 @@ func NewClient(url string, client *http.Client, resourceType ResourceType, opts 
 }
 
 // Upsert creates or updates a given automation object
-func (a Client) Upsert(id string, data []byte) (result *Response, err error) {
+func (a Client) Upsert(resourceType ResourceType, id string, data []byte) (result *Response, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("id must be non empty")
 	}
 	a.limiter.ExecuteBlocking(func() {
-		result, err = a.upsert(id, append([]byte(nil), data...))
+		result, err = a.upsert(resourceType, id, append([]byte(nil), data...))
 	})
 	return
 }
 
-func (a Client) upsert(id string, data []byte) (*Response, error) {
+func (a Client) upsert(resourceType ResourceType, id string, data []byte) (*Response, error) {
 	if err := rmIDField(&data); err != nil {
 		return nil, fmt.Errorf("unable to remove id field from payload in order to update object with ID %s: %w", id, err)
 	}
 	// try update via HTTP PUT
-	resp, err := rest.Put(a.client, a.url+a.resource.Path+"/"+id, data)
+	resp, err := rest.Put(a.client, a.url+a.resources[resourceType].Path+"/"+id, data)
 	if err != nil {
 		return nil, fmt.Errorf("unable to update object with ID %s: %w", id, err)
 	}
@@ -121,17 +121,17 @@ func (a Client) upsert(id string, data []byte) (*Response, error) {
 	}
 
 	// at this point we need to create a new object using HTTP POST
-	return a.create(id, data)
+	return a.create(id, data, resourceType)
 }
 
-func (a Client) create(id string, data []byte) (*Response, error) {
+func (a Client) create(id string, data []byte, resourceType ResourceType) (*Response, error) {
 	// make sure actual "id" field is set in payload
 	if err := setIDField(id, &data); err != nil {
 		return nil, fmt.Errorf("unable to set the id field in order to crate object with id %s: %w", id, err)
 	}
 
 	// try to create a new object using HTTP POST
-	resp, err := rest.Post(a.client, a.url+a.resource.Path, data)
+	resp, err := rest.Post(a.client, a.url+a.resources[resourceType].Path, data)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +145,7 @@ func (a Client) create(id string, data []byte) (*Response, error) {
 		}
 	}
 
-	// de-srialize response
+	// de-serialize response
 	var e Response
 	err = json.Unmarshal(resp.Body, &e)
 	if err != nil {
