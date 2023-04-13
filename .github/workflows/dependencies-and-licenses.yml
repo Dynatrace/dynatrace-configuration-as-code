@@ -1,7 +1,8 @@
 name: Dependencies and Licenses
 on:
   release:
-    types: [ created ]
+    types:
+      - published
 defaults:
   run:
     shell: bash
