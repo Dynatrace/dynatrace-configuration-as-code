@@ -203,7 +203,6 @@ func (a Client) create(id string, data []byte, resourceType ResourceType) (*Resp
 	if err != nil {
 		return nil, err
 	}
-	e.Data = resp.Body
 
 	// check if id from response is indeed the same as desired
 	if e.Id != id {
