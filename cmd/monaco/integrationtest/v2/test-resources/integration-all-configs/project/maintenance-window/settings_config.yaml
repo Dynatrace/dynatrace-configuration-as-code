@@ -1,0 +1,20 @@
+configs:
+- id: maintenance-window-setting
+  type:
+    settings:
+      schema: builtin:alerting.maintenance-window
+      scope: environment
+  config:
+    name: My Settings Maintenance Window
+    parameters:
+      description: My Settings Maintenance Window
+      start: 2022-11-06T09:40:00
+      end: 2022-11-07T10:40:00
+      suppression: DETECT_PROBLEMS_DONT_ALERT
+      type: PLANNED
+      mzID:
+        configId: management-zone-setting
+        configType: builtin:management-zones
+        property: id
+        type: reference
+    template: settings_template.json

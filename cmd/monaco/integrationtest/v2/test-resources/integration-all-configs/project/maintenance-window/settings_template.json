@@ -1,0 +1,26 @@
+{
+    "enabled": true,
+    "generalProperties": {
+        "name": "{{.name}}",
+        "description": "{{.description}}",
+        "maintenanceType": "{{.type}}",
+        "suppression": "{{.suppression}}",
+        "disableSyntheticMonitorExecution": false
+    },
+    "schedule": {
+        "scheduleType": "ONCE",
+        "onceRecurrence": {
+            "startTime": "{{.start}}",
+            "endTime": "{{.end}}",
+            "timeZone": "Europe/Brussels"
+        }
+    },
+    "filters": [
+        {
+            "entityTags": [],
+            "managementZones": [
+                "{{.mzID}}"
+            ]
+        }
+    ]
+}

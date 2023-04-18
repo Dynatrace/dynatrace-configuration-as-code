@@ -9,7 +9,9 @@
     },
     "dashboardFilter": {
       "timeframe": "",
-      "managementZone": null
+      "managementZone": {
+          "id": "{{.mzID}}"
+      }
     }
   },
   "tiles": [
