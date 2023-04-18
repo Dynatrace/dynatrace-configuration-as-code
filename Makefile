@@ -60,10 +60,11 @@ build-release: clean $(RELEASES)
 argument = $(word $1, $(subst -,$(empty) $(empty), $(subst .exe,$(empty) $(empty) , $2)))
 # OUTPUT - name (and path) of output binaries
 $(RELEASES):
+	@# Do not build Windows binaries with Go native DNS resolver
+	$(eval GO_TAGS := $(shell if [ "$(call argument, 2, $@)" != "windows" ]; then echo "-tags netgo"; fi))
 	$(eval OUTPUT ?= ./build/$@)
 	@echo Building binaries for $@...
-	@GOOS=$(call argument, 2, $@) GOARCH=$(call argument, 3, $@) CGO_ENABLED=0 go build -a -tags netgo -ldflags '-X github.com/dynatrace/dynatrace-configuration-as-code/pkg/version.MonitoringAsCode=$(VERSION) -w -extldflags "-static"' -o $(OUTPUT) ./cmd/monaco
-
+	@GOOS=$(call argument, 2, $@) GOARCH=$(call argument, 3, $@) CGO_ENABLED=0 go build -a $(GO_TAGS) -ldflags '-X github.com/dynatrace/dynatrace-configuration-as-code/pkg/version.MonitoringAsCode=$(VERSION) -w -extldflags "-static"' -o $(OUTPUT) ./cmd/monaco
 
 install:
 	@echo "Installing $(BINARY_NAME)..."
