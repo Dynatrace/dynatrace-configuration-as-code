@@ -82,7 +82,7 @@ func deleteConfigs(environments []manifest.EnvironmentDefinition, apis api.APIs,
 }
 
 func deleteConfigForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs, entriesToDelete map[string][]delete.DeletePointer) []error {
-	dynatraceClient, err := dynatrace.CreateClient(env.URL.Value, env.Auth, false)
+	dynatraceClient, err := dynatrace.CreateDTClient(env.URL.Value, env.Auth, false)
 
 	if err != nil {
 		return []error{

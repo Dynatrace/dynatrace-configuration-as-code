@@ -77,7 +77,7 @@ func purgeConfigs(environments []manifest.EnvironmentDefinition, apis api.APIs) 
 }
 
 func purgeForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs) []error {
-	dynatraceClient, err := dynatrace.CreateClient(env.URL.Value, env.Auth, false)
+	dynatraceClient, err := dynatrace.CreateDTClient(env.URL.Value, env.Auth, false)
 
 	if err != nil {
 		return []error{

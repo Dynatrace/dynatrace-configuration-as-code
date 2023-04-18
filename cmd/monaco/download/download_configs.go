@@ -127,7 +127,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions d
 		onlySettings:    cmdOptions.onlySettings,
 	}
 
-	dtClient, err := dynatrace.CreateClient(options.environmentURL, options.auth, false, dtclient.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
+	dtClient, err := dynatrace.CreateDTClient(options.environmentURL, options.auth, false, dtclient.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
 	if err != nil {
 		return err
 	}
@@ -157,7 +157,7 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions downloadCmdOptio
 		onlySettings:    cmdOptions.onlySettings,
 	}
 
-	dtClient, err := dynatrace.CreateClient(options.environmentURL, options.auth, false, dtclient.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
+	dtClient, err := dynatrace.CreateDTClient(options.environmentURL, options.auth, false, dtclient.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
 	if err != nil {
 		return err
 	}
