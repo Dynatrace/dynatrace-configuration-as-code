@@ -16,6 +16,7 @@ package deploy
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
@@ -189,7 +190,11 @@ func deploySetting(settingsClient dtclient.SettingsClient, properties parameter.
 		log.Warn("failed to extract name for Settings 2.0 object %q - ID will be used", entity.Id)
 	}
 
-	properties[config.IdParameter] = entity.Id
+	properties[config.IdParameter], err = getEntityID(c, entity)
+	if err != nil {
+		return &parameter.ResolvedEntity{}, []error{newConfigDeployErr(c, err.Error())}
+	}
+
 	properties[config.NameParameter] = name
 
 	return &parameter.ResolvedEntity{
@@ -199,6 +204,18 @@ func deploySetting(settingsClient dtclient.SettingsClient, properties parameter.
 		Skip:       false,
 	}, nil
 
+}
+
+func getEntityID(c *config.Config, e dtclient.DynatraceEntity) (string, error) {
+	if c.Coordinate.Type == "builtin:management-zones" && featureflags.ManagementZoneSettingsNumericIDs().Enabled() {
+		numID, err := idutils.GetNumericIDForObjectID(e.Id)
+		if err != nil {
+			return "", fmt.Errorf("failed to extract numeric ID for Management Zone Setting with object ID %q: %w", e.Id, err)
+		}
+		return fmt.Sprintf("%d", numID), nil
+	}
+
+	return e.Id, nil
 }
 
 func extractScope(properties parameter.Properties) (string, error) {

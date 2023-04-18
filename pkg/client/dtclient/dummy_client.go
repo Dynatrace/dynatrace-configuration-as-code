@@ -17,6 +17,7 @@
 package dtclient
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -246,8 +247,17 @@ func (c *DummyClient) ConfigExistsByName(a api.API, name string) (exists bool, i
 }
 
 func (c *DummyClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, error) {
+
+	id := obj.Id
+
+	// to ensure decoding of Management Zone Numeric IDs works for dry-runs the dummy client needs to produce a fake but validly formated objectID
+	if obj.SchemaId == "builtin:management-zones" {
+		uuid := uuid.New().String()
+		id = base64.RawURLEncoding.EncodeToString([]byte(uuid))
+	}
+
 	return DynatraceEntity{
-		Id:   obj.Id,
+		Id:   id,
 		Name: obj.Id,
 	}, nil
 }
@@ -263,7 +273,7 @@ func (c *DummyClient) ListSettings(_ string, _ ListSettingsOptions) ([]DownloadS
 	return make([]DownloadSettingsObject, 0), nil
 }
 
-func (l *DummyClient) DeleteSettings(_ string) error {
+func (c *DummyClient) DeleteSettings(_ string) error {
 	return nil
 }
 

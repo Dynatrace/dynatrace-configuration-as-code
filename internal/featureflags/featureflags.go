@@ -101,3 +101,12 @@ func AutomationResources() FeatureFlag {
 		defaultEnabled: false,
 	}
 }
+
+// ManagementZoneSettingsNumericIDs returns the feature flag that tells whether configs of settings type builtin:management-zones
+// are addressed directly via their object ID or their resolved numeric ID when they are referenced.
+func ManagementZoneSettingsNumericIDs() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_USE_MZ_NUMERIC_ID",
+		defaultEnabled: true,
+	}
+}
