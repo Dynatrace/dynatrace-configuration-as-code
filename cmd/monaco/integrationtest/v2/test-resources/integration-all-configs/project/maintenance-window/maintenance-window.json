@@ -3,7 +3,17 @@
   "description": "{{ .description }}",
   "type": "{{ .type }}",
   "suppression": "{{ .suppression }}",
-  "scope": null,
+  "scope": {
+      "entities": [],
+      "matches": [
+          {
+              "type": null,
+              "mzId": "{{.mzID}}",
+              "tags": [],
+              "tagCombination": "AND"
+          }
+      ]
+  },
   "schedule": {
     "recurrenceType": "ONCE",
     "start": "{{ .start }}",
