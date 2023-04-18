@@ -164,7 +164,7 @@ func (c *typeDefinition) isAutomation() bool {
 func (c *automationDefinition) isSound() error {
 
 	if !featureflags.AutomationResources().Enabled() {
-		return errors.New("automation resource feature is not enabled")
+		return fmt.Errorf("automation resource feature is not enabled. To enable set envirovment variable %q", featureflags.AutomationResources().EnvName())
 	}
 
 	switch c.Resource {
