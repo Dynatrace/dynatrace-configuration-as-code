@@ -22,8 +22,10 @@ import (
 )
 
 type deployer struct {
-	dtClient dtclient.Client
-	apis     api.APIs
+	dtClient   dtclient.Client
+	automation *automation
+
+	apis api.APIs
 	// continueOnErr states that the deployment continues even when there happens to be an
 	// error while deploying a certain configuration
 	continueOnErr bool
@@ -34,10 +36,11 @@ type deployer struct {
 
 type DeployerOptions func(d *deployer)
 
-func NewDeployer(dtClient dtclient.Client, opts ...DeployerOptions) *deployer {
+func NewDeployer(dtClient dtclient.Client, automation *automation, opts ...DeployerOptions) *deployer {
 	d := new(deployer)
 
 	d.dtClient = dtClient
+	d.automation = automation
 	d.apis = api.NewAPIs()
 
 	for _, o := range opts {

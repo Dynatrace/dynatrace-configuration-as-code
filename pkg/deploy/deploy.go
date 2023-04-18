@@ -82,6 +82,9 @@ func (ctx *deployer) deploy(c *config.Config, em *entityMap) (*parameter.Resolve
 		log.Info("\tDeploying config %s", c.Coordinate)
 		return deployConfig(ctx.dtClient, ctx.apis, em, properties, renderedConfig, c)
 
+	case config.AutomationType:
+		log.Info("\tDeploying config %s", c.Coordinate)
+		return ctx.automation.deployAutomation(properties, renderedConfig, c)
 	default:
 		return nil, []error{fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())}
 	}
