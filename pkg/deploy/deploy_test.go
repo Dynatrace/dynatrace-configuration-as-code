@@ -180,40 +180,153 @@ func TestDeploySettingShouldFailUpsert(t *testing.T) {
 }
 
 func TestDeploySetting(t *testing.T) {
-	parameters := []topologysort.ParameterWithName{
+	type given struct {
+		config           config.Config
+		returnedEntityID string
+	}
+
+	tests := []struct {
+		name    string
+		given   given
+		want    parameter.ResolvedEntity
+		wantErr bool
+	}{
 		{
-			Name: "franz",
-			Parameter: &parameter.DummyParameter{
-				Value: "foo",
+			name: "happy path",
+			given: given{
+				config: config.Config{
+					Type: config.SettingsType{SchemaId: "builtin:some-schema"},
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "bultin:some-schema",
+						ConfigId: "some-settings-config",
+					},
+					Template: generateDummyTemplate(t),
+					Parameters: toParameterMap([]topologysort.ParameterWithName{
+						{
+							Name: "name",
+							Parameter: &parameter.DummyParameter{
+								Value: "My Setting",
+							},
+						},
+						{
+							Name: config.ScopeParameter,
+							Parameter: &parameter.DummyParameter{
+								Value: "environment",
+							},
+						},
+					}),
+				},
+				returnedEntityID: "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0",
 			},
+			want: parameter.ResolvedEntity{
+				EntityName: "My Setting",
+				Coordinate: coordinate.Coordinate{
+					Project:  "project",
+					Type:     "bultin:some-schema",
+					ConfigId: "some-settings-config",
+				},
+				Properties: parameter.Properties{
+					"id":    "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0",
+					"name":  "My Setting",
+					"scope": "environment",
+				},
+			},
+			wantErr: false,
 		},
 		{
-			Name: "hansi",
-			Parameter: &parameter.DummyParameter{
-				Value: "bar",
+			name: "management zone settings get numeric ID",
+			given: given{
+				config: config.Config{
+					Type: config.SettingsType{SchemaId: "builtin:management-zones"},
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "builtin:management-zones",
+						ConfigId: "some-settings-config",
+					},
+					Template: generateDummyTemplate(t),
+					Parameters: toParameterMap([]topologysort.ParameterWithName{
+						{
+							Name: "name",
+							Parameter: &parameter.DummyParameter{
+								Value: "My Setting",
+							},
+						},
+						{
+							Name: config.ScopeParameter,
+							Parameter: &parameter.DummyParameter{
+								Value: "environment",
+							},
+						},
+					}),
+				},
+				returnedEntityID: "vu9U3hXa3q0AAAABABhidWlsdGluOm1hbmFnZW1lbnQtem9uZXMABnRlbmFudAAGdGVuYW50ACRjNDZlNDZiMy02ZDk2LTMyYTctOGI1Yi1mNjExNzcyZDAxNjW-71TeFdrerQ",
 			},
+			want: parameter.ResolvedEntity{
+				EntityName: "My Setting",
+				Coordinate: coordinate.Coordinate{
+					Project:  "project",
+					Type:     "builtin:management-zones",
+					ConfigId: "some-settings-config",
+				},
+				Properties: parameter.Properties{
+					"id":    "-4292415658385853785",
+					"name":  "My Setting",
+					"scope": "environment",
+				},
+			},
+			wantErr: false,
 		},
 		{
-			Name: config.ScopeParameter,
-			Parameter: &parameter.DummyParameter{
-				Value: "something",
+			name: "returns error if MZ object ID can't be decoded",
+			given: given{
+				config: config.Config{
+					Type: config.SettingsType{SchemaId: "builtin:management-zones"},
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "builtin:management-zones",
+						ConfigId: "some-settings-config",
+					},
+					Template: generateDummyTemplate(t),
+					Parameters: toParameterMap([]topologysort.ParameterWithName{
+						{
+							Name: "name",
+							Parameter: &parameter.DummyParameter{
+								Value: "My Setting",
+							},
+						},
+						{
+							Name: config.ScopeParameter,
+							Parameter: &parameter.DummyParameter{
+								Value: "environment",
+							},
+						},
+					}),
+				},
+				returnedEntityID: "INVALID OBJECT ID",
 			},
+			want:    parameter.ResolvedEntity{},
+			wantErr: true,
 		},
 	}
 
-	c := dtclient.NewMockClient(gomock.NewController(t))
-	c.EXPECT().UpsertSettings(gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
-		Id:   "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0",
-		Name: "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0",
-	}, nil)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := dtclient.NewMockClient(gomock.NewController(t))
+			c.EXPECT().UpsertSettings(gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
+				Id:   tt.given.returnedEntityID,
+				Name: tt.given.returnedEntityID,
+			}, nil)
 
-	conf := &config.Config{
-		Type:       config.SettingsType{},
-		Template:   generateDummyTemplate(t),
-		Parameters: toParameterMap(parameters),
+			got, errors := deploy(c, nil, newEntityMap(testApiMap), &tt.given.config)
+			if !tt.wantErr {
+				assert.Equal(t, got, &tt.want)
+				assert.Emptyf(t, errors, "errors: %v)", errors)
+			} else {
+				assert.NotEmptyf(t, errors, "errors: %v)", errors)
+			}
+		})
 	}
-	_, errors := deploy(c, nil, newEntityMap(testApiMap), conf)
-	assert.Emptyf(t, errors, "errors: %v)", errors)
 }
 
 func TestDeployedSettingGetsNameFromConfig(t *testing.T) {
