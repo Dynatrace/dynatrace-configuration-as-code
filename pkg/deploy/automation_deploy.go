@@ -24,8 +24,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 )
 
-func (ctx *automation) deployAutomation(properties parameter.Properties, renderedConfig string, c *config.Config) (*parameter.ResolvedEntity, []error) {
-	_, ok := c.Type.(config.AutomationType)
+func (aut *Automation) deployAutomation(properties parameter.Properties, renderedConfig string, c *config.Config) (*parameter.ResolvedEntity, []error) {
+	t, ok := c.Type.(config.AutomationType)
 	if !ok {
 		return &parameter.ResolvedEntity{}, []error{fmt.Errorf("config was not of expected type %q, but %q", config.AutomationType{}.ID(), c.Type.ID())}
 	}
@@ -39,7 +39,24 @@ func (ctx *automation) deployAutomation(properties parameter.Properties, rendere
 		id = idutils.GenerateUuidFromName(c.Coordinate.String())
 	}
 
-	_, _ = ctx.client.Upsert(client.Workflows, id, []byte(renderedConfig))
+	var r *client.Response
+	var e error
+	switch t.Resource {
+	case config.Workflow:
+		r, e = aut.client.Upsert(client.Workflows, id, []byte(renderedConfig))
+	case config.BusinessCalendar:
+		r, e = aut.client.Upsert(client.BusinessCalendars, id, []byte(renderedConfig))
+	case config.SchedulingRule:
+		r, e = aut.client.Upsert(client.SchedulingRules, id, []byte(renderedConfig))
+	default:
+		r, e = nil, fmt.Errorf("unkonwn rsource type %q", t.Resource)
+	}
+
+	if e != nil {
+		errs = append(errs, e)
+	} else if r.Id != id {
+		errs = append(errs, fmt.Errorf("ID of created object (%q) is different from given ID (%q)", r.Id, id))
+	}
 
 	resolved := parameter.ResolvedEntity{
 		EntityName: c.Coordinate.ConfigId,

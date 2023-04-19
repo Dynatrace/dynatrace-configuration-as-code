@@ -31,15 +31,15 @@ import (
 func TestDeployAutomation(t *testing.T) {
 
 	t.Run("happy day scenario", func(t *testing.T) {
-		aut := automation{}
+		aut := Automation{}
 
 		c := NewMockautomationClient(gomock.NewController(t))
-		c.EXPECT().Upsert(client.Workflows, "some_ID", []byte(`{"type": "json file"}`))
+		c.EXPECT().Upsert(client.Workflows, "some_ID", []byte(`{"type": "json file"}`)).Return(&client.Response{Id: "some_ID"}, nil)
 		aut.client = c
 
 		givenMO := &config.Config{
 			OriginObjectId: "some_ID",
-			Type:           config.AutomationType{},
+			Type:           config.AutomationType{Resource: config.Workflow},
 		}
 		givenPayload := `{"type": "json file"}`
 
@@ -49,7 +49,7 @@ func TestDeployAutomation(t *testing.T) {
 	})
 
 	t.Run("invalid monaco config object type", func(t *testing.T) {
-		aut := automation{client: NewMockautomationClient(gomock.NewController(t))}
+		aut := Automation{client: NewMockautomationClient(gomock.NewController(t))}
 
 		givenMO := &config.Config{
 			Type: config.SettingsType{},
@@ -59,7 +59,7 @@ func TestDeployAutomation(t *testing.T) {
 	})
 
 	t.Run("Upsert automation monaco object without origin ID", func(t *testing.T) {
-		aut := automation{}
+		aut := Automation{}
 
 		givenMO := &config.Config{
 			Coordinate: coordinate.Coordinate{
@@ -68,13 +68,13 @@ func TestDeployAutomation(t *testing.T) {
 				ConfigId: "id",
 			},
 			OriginObjectId: "",
-			Type:           config.AutomationType{},
+			Type:           config.AutomationType{Resource: config.Workflow},
 		}
 		givenPayload := `{"type": "json file"}`
 
 		expectedID := idutils.GenerateUuidFromName(givenMO.Coordinate.String())
 		c := NewMockautomationClient(gomock.NewController(t))
-		c.EXPECT().Upsert(client.Workflows, expectedID, []byte(`{"type": "json file"}`))
+		c.EXPECT().Upsert(client.Workflows, expectedID, []byte(`{"type": "json file"}`)).Return(&client.Response{Id: expectedID}, nil)
 		aut.client = c
 
 		_, errs := aut.deployAutomation(parameter.Properties{}, givenPayload, givenMO)

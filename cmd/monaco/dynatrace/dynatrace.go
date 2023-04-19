@@ -23,8 +23,9 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
-
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/deploy"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"net/http"
 )
@@ -103,4 +104,23 @@ func isPlatformEnvironment(env manifest.EnvironmentDefinition) bool {
 		return false
 	}
 	return true
+}
+
+func CreateAutomation(url string, a manifest.Auth) (*deploy.Automation, error) {
+	switch {
+	//case dryRun:
+	// TODO: do we need dry run?
+	//case a.OAuth == nil:
+	// TODO: just to print warning or return an error?
+	case a.OAuth != nil:
+		oauthCredentials := client.OauthCredentials{
+			ClientID:     a.OAuth.ClientID.Value,
+			ClientSecret: a.OAuth.ClientSecret.Value,
+			TokenURL:     a.OAuth.GetTokenEndpointValue(),
+		}
+		c := automation.NewClient(url, client.NewOAuthClient(context.TODO(), oauthCredentials))
+		return deploy.New(c)
+	default:
+		return nil, fmt.Errorf("unable to create authorizing HTTP Client for environment %s - no oauth credentials given", url)
+	}
 }

@@ -21,15 +21,15 @@ import (
 	client "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation" //TODO: rename to something better
 )
 
-type automation struct {
+type Automation struct {
 	client automationClient
 }
 
-func New(cli *client.Client) (*automation, error) {
+func New(cli *client.Client) (*Automation, error) {
 	if cli == nil {
 		return nil, errors.New("client isn't valid")
 	}
-	return &automation{client: cli}, nil
+	return &Automation{client: cli}, nil
 }
 
 //go:generate mockgen -source=automation.go -destination=automation_mock.go -package=deploy automationClient

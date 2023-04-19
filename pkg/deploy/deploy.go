@@ -58,9 +58,9 @@ func (ctx *deployer) deploy(c *config.Config, em *entityMap) (*parameter.Resolve
 		return &parameter.ResolvedEntity{EntityName: c.Coordinate.ConfigId, Coordinate: c.Coordinate, Properties: parameter.Properties{}, Skip: true}, nil
 	}
 
-	properties, errors := resolveProperties(c, em.get())
-	if len(errors) > 0 {
-		return &parameter.ResolvedEntity{}, errors
+	properties, errs := resolveProperties(c, em.get())
+	if len(errs) > 0 {
+		return &parameter.ResolvedEntity{}, errs
 	}
 
 	renderedConfig, err := c.Render(properties)
@@ -83,6 +83,9 @@ func (ctx *deployer) deploy(c *config.Config, em *entityMap) (*parameter.Resolve
 		return deployConfig(ctx.dtClient, ctx.apis, em, properties, renderedConfig, c)
 
 	case config.AutomationType:
+		if ctx.automation == nil { //TODO: is this ok?
+			return nil, []error{fmt.Errorf("automation configuration is only avilable on platform")}
+		}
 		log.Info("\tDeploying config %s", c.Coordinate)
 		return ctx.automation.deployAutomation(properties, renderedConfig, c)
 	default:

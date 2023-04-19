@@ -23,7 +23,7 @@ import (
 
 type deployer struct {
 	dtClient   dtclient.Client
-	automation *automation
+	automation *Automation
 
 	apis api.APIs
 	// continueOnErr states that the deployment continues even when there happens to be an
@@ -36,7 +36,7 @@ type deployer struct {
 
 type DeployerOptions func(d *deployer)
 
-func NewDeployer(dtClient dtclient.Client, automation *automation, opts ...DeployerOptions) *deployer {
+func NewDeployer(dtClient dtclient.Client, automation *Automation, opts ...DeployerOptions) *deployer {
 	d := new(deployer)
 
 	d.dtClient = dtClient
