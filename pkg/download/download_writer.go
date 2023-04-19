@@ -53,11 +53,32 @@ func WriteToDisk(fs afero.Fs, writerContext WriterContext) error {
 }
 
 func writeToDisk(fs afero.Fs, writerContext WriterContext) error {
-
 	log.Debug("Preparing downloaded data for persisting")
 
-	manifestName := getManifestFilePath(fs, writerContext)
-	m := createManifest(writerContext)
+	manifestFileName := getManifestFileName(fs, writerContext)
+	projectFolderName := getProjectFolderName(fs, writerContext)
+
+	projectDefinition := manifest.ProjectDefinitionByProjectID{
+		writerContext.ProjectToWrite.Id: {
+			Name: writerContext.ProjectToWrite.Id,
+			Path: projectFolderName,
+		},
+	}
+
+	manifest := manifest.Manifest{
+		Projects: projectDefinition,
+		Environments: map[string]manifest.EnvironmentDefinition{
+			writerContext.ProjectToWrite.Id: {
+				Name: writerContext.ProjectToWrite.Id,
+				URL: manifest.URLDefinition{
+					Type:  manifest.ValueURLType,
+					Value: writerContext.EnvironmentUrl,
+				},
+				Group: "default",
+				Auth:  writerContext.Auth,
+			},
+		},
+	}
 
 	outputFolder := writerContext.GetOutputFolderFilePath()
 
@@ -65,9 +86,9 @@ func writeToDisk(fs afero.Fs, writerContext WriterContext) error {
 	errs := writer.WriteToDisk(&writer.WriterContext{
 		Fs:              fs,
 		OutputDir:       outputFolder,
-		ManifestName:    manifestName,
+		ManifestName:    manifestFileName,
 		ParametersSerde: config.DefaultParameterParsers,
-	}, m, []project.Project{writerContext.ProjectToWrite})
+	}, manifest, []project.Project{writerContext.ProjectToWrite})
 
 	if len(errs) > 0 {
 		errutils.PrintErrors(errs)
@@ -78,43 +99,38 @@ func writeToDisk(fs afero.Fs, writerContext WriterContext) error {
 	return nil
 }
 
-func getManifestFilePath(fs afero.Fs, writerContext WriterContext) string {
-	manifestName := "manifest.yaml"
+func getManifestFileName(fs afero.Fs, writerContext WriterContext) string {
+	manifestFileName := "manifest.yaml"
 	outputFolder := writerContext.GetOutputFolderFilePath()
-	defaultManifestPath := filepath.Join(outputFolder, manifestName)
+	defaultManifestPath := filepath.Join(outputFolder, manifestFileName)
 	if exists, _ := afero.Exists(fs, defaultManifestPath); !exists {
-		return manifestName
+		return manifestFileName
 	}
 
 	if writerContext.ForceOverwriteManifest {
 		log.Info("Overwriting existing manifest.yaml in download target folder.")
-		return manifestName
+		return manifestFileName
 	}
 
-	log.Warn("A manifest.yaml already exists in '%s', creating '%s' instead.", outputFolder, manifestName)
-	return fmt.Sprintf("manifest_%s.yaml", writerContext.timestampString)
+	manifestFileName = fmt.Sprintf("manifest_%s.yaml", writerContext.timestampString)
+	log.Warn("A manifest.yaml file already exists in %q, creating %q instead.", outputFolder, manifestFileName)
+	return manifestFileName
 }
 
-func createManifest(wc WriterContext) manifest.Manifest {
-	projectDefinition := manifest.ProjectDefinitionByProjectID{
-		wc.ProjectToWrite.Id: {
-			Name: wc.ProjectToWrite.Id,
-			Path: wc.ProjectToWrite.Id,
-		},
+func getProjectFolderName(fs afero.Fs, writerContext WriterContext) string {
+	projectFolderName := writerContext.ProjectToWrite.Id
+	outputFolder := writerContext.GetOutputFolderFilePath()
+	defaultProjectFolderPath := filepath.Join(outputFolder, writerContext.ProjectToWrite.Id)
+	if exists, _ := afero.Exists(fs, defaultProjectFolderPath); !exists {
+		return writerContext.ProjectToWrite.Id
 	}
 
-	return manifest.Manifest{
-		Projects: projectDefinition,
-		Environments: map[string]manifest.EnvironmentDefinition{
-			wc.ProjectToWrite.Id: {
-				Name: wc.ProjectToWrite.Id,
-				URL: manifest.URLDefinition{
-					Type:  manifest.ValueURLType,
-					Value: wc.EnvironmentUrl,
-				},
-				Group: "default",
-				Auth:  wc.Auth,
-			},
-		},
+	if writerContext.ForceOverwriteManifest {
+		log.Info("Overwriting existing pojrect folder named %q in %q.", projectFolderName, outputFolder)
+		return projectFolderName
 	}
+
+	projectFolderName = fmt.Sprintf("%s_%s", writerContext.ProjectToWrite.Id, writerContext.timestampString)
+	log.Warn("A project folder named %q already exists in %q, creating %q instead.", writerContext.ProjectToWrite.Id, outputFolder, projectFolderName)
+	return projectFolderName
 }
