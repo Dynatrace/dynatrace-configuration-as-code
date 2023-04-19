@@ -243,7 +243,7 @@ func TestWriteToDisk_OverwritesManifestIfForced(t *testing.T) {
 	assert.NilError(t, err)
 
 	//WHEN writing to disk with overwrite forced
-	writerContext.ForceOverwriteManifest = true
+	writerContext.ForceOverwrite = true
 	err = writeToDisk(fs, writerContext)
 	assert.NilError(t, err)
 

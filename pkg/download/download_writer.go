@@ -30,12 +30,12 @@ import (
 )
 
 type WriterContext struct {
-	EnvironmentUrl         string
-	ProjectToWrite         project.Project
-	Auth                   manifest.Auth
-	OutputFolder           string
-	ForceOverwriteManifest bool
-	timestampString        string
+	EnvironmentUrl  string
+	ProjectToWrite  project.Project
+	Auth            manifest.Auth
+	OutputFolder    string
+	ForceOverwrite  bool
+	timestampString string
 }
 
 func (c WriterContext) GetOutputFolderFilePath() string {
@@ -107,7 +107,7 @@ func getManifestFileName(fs afero.Fs, writerContext WriterContext) string {
 		return manifestFileName
 	}
 
-	if writerContext.ForceOverwriteManifest {
+	if writerContext.ForceOverwrite {
 		log.Info("Overwriting existing manifest.yaml in download target folder.")
 		return manifestFileName
 	}
@@ -125,7 +125,7 @@ func getProjectFolderName(fs afero.Fs, writerContext WriterContext) string {
 		return writerContext.ProjectToWrite.Id
 	}
 
-	if writerContext.ForceOverwriteManifest {
+	if writerContext.ForceOverwrite {
 		log.Info("Overwriting existing pojrect folder named %q in %q.", projectFolderName, outputFolder)
 		return projectFolderName
 	}
