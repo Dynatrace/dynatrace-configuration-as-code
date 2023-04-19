@@ -32,3 +32,7 @@ func (resp Response) IsSuccess() bool {
 func (resp Response) IsServerError() bool {
 	return resp.StatusCode >= 500 && resp.StatusCode <= 599
 }
+
+func (resp Response) Is4xxError() bool {
+	return resp.StatusCode >= 400 && resp.StatusCode <= 499
+}

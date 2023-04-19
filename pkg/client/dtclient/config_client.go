@@ -276,7 +276,7 @@ func callWithRetryOnKnowTimingIssue(client *http.Client, restCall rest.SendingRe
 		setting = retrySettings.Long
 	}
 
-	// It can take even longer until applications are ready to be used in synthetic tests
+	// It can take even longer until applications are ready to be used in synthetic tests and calculated metrics
 	if isApplicationNotReadyYet(resp, theApi) {
 		setting = retrySettings.VeryLong
 	}
@@ -308,11 +308,15 @@ func isManagementZoneNotReadyYet(resp rest.Response) bool {
 }
 
 func isApplicationNotReadyYet(resp rest.Response, theApi api.API) bool {
-	return isSyntheticMonitorServerError(resp, theApi) ||
+	return isCalculatedMetricsError(resp, theApi) ||
+		isSyntheticMonitorServerError(resp, theApi) ||
 		isApplicationAPIError(resp, theApi) ||
 		strings.Contains(string(resp.Body), "Unknown application(s)")
 }
 
+func isCalculatedMetricsError(resp rest.Response, theApi api.API) bool {
+	return strings.HasPrefix(theApi.ID, "calculated-metrics") && (resp.Is4xxError() || resp.IsServerError())
+}
 func isSyntheticMonitorServerError(resp rest.Response, theApi api.API) bool {
 	return theApi.ID == "synthetic-monitor" && resp.IsServerError()
 }
