@@ -29,7 +29,7 @@ func (resp Response) IsSuccess() bool {
 	return resp.StatusCode >= 200 && resp.StatusCode <= 299
 }
 
-func (resp Response) IsServerError() bool {
+func (resp Response) Is5xxError() bool {
 	return resp.StatusCode >= 500 && resp.StatusCode <= 599
 }
 

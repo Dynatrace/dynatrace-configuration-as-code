@@ -315,15 +315,15 @@ func isApplicationNotReadyYet(resp rest.Response, theApi api.API) bool {
 }
 
 func isCalculatedMetricsError(resp rest.Response, theApi api.API) bool {
-	return strings.HasPrefix(theApi.ID, "calculated-metrics") && (resp.Is4xxError() || resp.IsServerError())
+	return strings.HasPrefix(theApi.ID, "calculated-metrics") && (resp.Is4xxError() || resp.Is5xxError())
 }
 func isSyntheticMonitorServerError(resp rest.Response, theApi api.API) bool {
-	return theApi.ID == "synthetic-monitor" && resp.IsServerError()
+	return theApi.ID == "synthetic-monitor" && resp.Is5xxError()
 }
 
 func isApplicationAPIError(resp rest.Response, theApi api.API) bool {
 	return isAnyApplicationApi(theApi) &&
-		(resp.IsServerError() || resp.StatusCode == http.StatusConflict || resp.StatusCode == http.StatusNotFound)
+		(resp.Is5xxError() || resp.StatusCode == http.StatusConflict || resp.StatusCode == http.StatusNotFound)
 }
 
 func isCredentialNotReadyYet(resp rest.Response) bool {
