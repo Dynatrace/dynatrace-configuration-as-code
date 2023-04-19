@@ -66,11 +66,11 @@ func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptions
 	proj := download.CreateProjectData(downloadedConfigs, opts.projectName)
 
 	downloadWriterContext := download.WriterContext{
-		EnvironmentUrl:         opts.environmentURL,
-		ProjectToWrite:         proj,
-		Auth:                   opts.auth,
-		OutputFolder:           opts.outputFolder,
-		ForceOverwriteManifest: opts.forceOverwriteManifest,
+		EnvironmentUrl: opts.environmentURL,
+		ProjectToWrite: proj,
+		Auth:           opts.auth,
+		OutputFolder:   opts.outputFolder,
+		ForceOverwrite: opts.forceOverwriteManifest,
 	}
 	err := download.WriteToDisk(fs, downloadWriterContext)
 	if err != nil {
