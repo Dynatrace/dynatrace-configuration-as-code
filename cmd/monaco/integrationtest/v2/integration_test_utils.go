@@ -44,7 +44,9 @@ import (
 func RunIntegrationWithCleanup(t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, testFunc func(fs afero.Fs)) {
 
 	fs := testutils.CreateTestFileSystem()
-	runIntegrationWithCleanup(t, fs, configFolder, manifestPath, specificEnvironment, suffixTest, nil, testFunc)
+	// enable automation resources feature
+	envVars := map[string]string{"MONACO_FEAT_AUTOMATION_RESOURCES": "1"}
+	runIntegrationWithCleanup(t, fs, configFolder, manifestPath, specificEnvironment, suffixTest, envVars, testFunc)
 }
 
 func RunIntegrationWithCleanupOnGivenFs(t *testing.T, testFs afero.Fs, configFolder, manifestPath, specificEnvironment, suffixTest string, testFunc func(fs afero.Fs)) {
