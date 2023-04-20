@@ -1,0 +1,23 @@
+{
+    "version": 1,
+    "title": "Every working day :)",
+    "ruleType": "rrule",
+    "rrule": {
+        "freq": "WEEKLY",
+        "interval": 1,
+        "datestart": "2020-10-01",
+        "automation_server_byworkday": "WORKING"
+    },
+    "groupingRule": null,
+    "fixedOffsetRule": null,
+    "relativeOffsetRule": null,
+    "businessCalendar": "85b95caa-5469-484b-baeb-161104f7459d",
+    "labels": {},
+    "description": "",
+    "modificationInfo": {
+        "createdBy": null,
+        "createdTime": "2023-02-28T08:47:01.695145Z",
+        "lastModifiedBy": null,
+        "lastModifiedTime": "2023-02-28T08:47:01.695163Z"
+    }
+}

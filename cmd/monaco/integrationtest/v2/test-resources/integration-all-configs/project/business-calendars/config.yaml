@@ -1,0 +1,12 @@
+configs:
+- id: businessCal
+  config:
+    name: businessCal
+    template: businessCal.json
+    skip:
+      type: environment
+      name: SKIP_AUTOMATION_CONFIGS
+      default: true
+  type:
+    automation:
+      resource: business-calendar

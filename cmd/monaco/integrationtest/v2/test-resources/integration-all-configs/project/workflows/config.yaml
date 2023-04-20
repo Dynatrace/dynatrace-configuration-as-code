@@ -1,0 +1,12 @@
+configs:
+- id: workflow
+  config:
+    name: workflow
+    template: workflow.json
+    skip:
+      type: environment
+      name: SKIP_AUTOMATION_CONFIGS
+      default: true
+  type:
+    automation:
+      resource: workflow

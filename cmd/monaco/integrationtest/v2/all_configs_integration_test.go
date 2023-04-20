@@ -37,7 +37,7 @@ func TestIntegrationAllConfigsClassic(t *testing.T) {
 
 func TestIntegrationAllConfigsPlatform(t *testing.T) {
 	specificEnvironment := "platform_env"
-
+	t.Setenv("SKIP_AUTOMATION_CONFIGS", "false")
 	runAllConfigsTest(t, specificEnvironment)
 }
 

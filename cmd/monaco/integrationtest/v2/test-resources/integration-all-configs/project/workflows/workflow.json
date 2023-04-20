@@ -1,0 +1,36 @@
+{
+    "title": "Untitled workflow",
+    "tasks": {
+        "executeDqlQuery1": {
+            "name": "execute_dql_query_1",
+            "input": {
+                "query": ""
+            },
+            "action": "dynatrace.automations:execute-dql-query",
+            "position": {
+                "x": 0,
+                "y": 1
+            },
+            "description": "Executes DQL query",
+            "predecessors": []
+        }
+    },
+    "taskDefaults": {},
+    "usages": [],
+    "lastExecution": null,
+    "description": "",
+    "labels": {},
+    "version": 1,
+    "actor": "",
+    "owner": "2f321c04-566e-4779-b576-3c033b8cd9e9",
+    "isPrivate": true,
+    "triggerType": "Manual",
+    "schemaVersion": 3,
+    "trigger": {},
+    "modificationInfo": {
+        "createdBy": "2f321c04-566e-4779-b576-3c033b8cd9e9",
+        "createdTime": "2023-04-20T09:44:59.526032Z",
+        "lastModifiedBy": "2f321c04-566e-4779-b576-3c033b8cd9e9",
+        "lastModifiedTime": "2023-04-20T09:44:59.526053Z"
+    }
+}
