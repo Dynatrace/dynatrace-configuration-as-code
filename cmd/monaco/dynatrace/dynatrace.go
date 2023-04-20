@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/dummy_clients"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
@@ -106,17 +107,15 @@ func isPlatformEnvironment(env manifest.EnvironmentDefinition) bool {
 	return true
 }
 
-func CreateAutomation(url string, a manifest.Auth) (*deploy.Automation, error) {
+func CreateAutomation(url string, oauth *manifest.OAuth, dryRun bool) (*deploy.Automation, error) {
 	switch {
-	//case dryRun:
-	// TODO: do we need dry run?
-	//case a.OAuth == nil:
-	// TODO: just to print warning or return an error?
-	case a.OAuth != nil:
+	case dryRun:
+		return deploy.New(dummy_clients.NewAutomationClient())
+	case oauth != nil:
 		oauthCredentials := client.OauthCredentials{
-			ClientID:     a.OAuth.ClientID.Value,
-			ClientSecret: a.OAuth.ClientSecret.Value,
-			TokenURL:     a.OAuth.GetTokenEndpointValue(),
+			ClientID:     oauth.ClientID.Value,
+			ClientSecret: oauth.ClientSecret.Value,
+			TokenURL:     oauth.GetTokenEndpointValue(),
 		}
 		c := automation.NewClient(url, client.NewOAuthClient(context.TODO(), oauthCredentials))
 		return deploy.New(c)

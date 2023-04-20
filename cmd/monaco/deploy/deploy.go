@@ -100,7 +100,7 @@ func doDeploy(configs project.ConfigsPerEnvironment, environments manifest.Envir
 		}
 		var aut *deploy.Automation
 		if !dryRun {
-			aut, err = dynatrace.CreateAutomation(env.URL.Value, env.Auth)
+			aut, err = dynatrace.CreateAutomation(env.URL.Value, env.Auth.OAuth, dryRun)
 			if err != nil {
 				if continueOnErr {
 					deployErrs = append(deployErrs, err)

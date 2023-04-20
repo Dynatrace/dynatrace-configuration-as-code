@@ -14,25 +14,17 @@
  * limitations under the License.
  */
 
-package deploy
+package dummy_clients
 
-import (
-	"errors"
-	client "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
-)
+import client "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 
-type Automation struct {
-	client automationClient
+type AutomationDummyClient struct {
 }
 
-func New(cli automationClient) (*Automation, error) {
-	if cli == nil {
-		return nil, errors.New("client isn't valid")
-	}
-	return &Automation{client: cli}, nil
+func NewAutomationClient() *AutomationDummyClient {
+	return &AutomationDummyClient{}
 }
 
-//go:generate mockgen -source=automation.go -destination=automation_mock.go -package=deploy automationClient
-type automationClient interface {
-	Upsert(resourceType client.ResourceType, id string, data []byte) (result *client.Response, err error)
+func (c *AutomationDummyClient) Upsert(resourceType client.ResourceType, id string, data []byte) (result *client.Response, err error) {
+	return nil, nil
 }
