@@ -14,39 +14,9 @@
  * limitations under the License.
  */
 
-package maps
+package dt_maps
 
 import "fmt"
-
-// Copy copies everything from source into dest. Existing values are overwritten.
-// dest may be nil if, and only if, source is empty or nil
-func Copy[T comparable, V any, M ~map[T]V](dest, source M) {
-	for k, v := range source {
-		dest[k] = v
-	}
-}
-
-// Keys returns all keys of the map
-func Keys[K comparable, V any, M ~map[K]V](m M) []K {
-	keys := make([]K, 0, len(m))
-
-	for k := range m {
-		keys = append(keys, k)
-	}
-
-	return keys
-}
-
-// Values returns all values of the map
-func Values[K comparable, V any, M ~map[K]V](m M) []V {
-	values := make([]V, 0, len(m))
-
-	for _, v := range m {
-		values = append(values, v)
-	}
-
-	return values
-}
 
 // ToStringMap turns the Keys of a map[interface{}]interface{} into string keys
 // will be transformed using fmt.Sprintf

@@ -16,7 +16,7 @@ package list
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/dt_maps"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"strings"
@@ -137,7 +137,7 @@ func parseSubParameter(paramValue interface{}, context parameter.ParameterParser
 	if !ok {
 		return value.ValueParameter{}, fmt.Errorf("malformed list entry `%v`", paramValue)
 	}
-	subValue := maps.ToStringMap(mapVal)
+	subValue := dt_maps.ToStringMap(mapVal)
 	subContext := parameter.ParameterParserContext{
 		Coordinate:    context.Coordinate,
 		Group:         context.Group,

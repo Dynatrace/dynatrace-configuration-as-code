@@ -17,13 +17,9 @@ package v2
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/dt_maps"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
-	"path/filepath"
-	"strconv"
-	"strings"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
@@ -34,6 +30,9 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
+	"path/filepath"
+	"strconv"
+	"strings"
 )
 
 var allowedScopeParameterTypes = []string{
@@ -584,7 +583,7 @@ func parseParameter(context *singleConfigEntryLoadContext, environment manifest.
 				ConfigId: configId,
 			},
 			ParameterName: name,
-			Value:         maps.ToStringMap(val),
+			Value:         dt_maps.ToStringMap(val),
 		})
 	}
 

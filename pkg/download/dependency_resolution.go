@@ -21,16 +21,15 @@ import (
 	"github.com/cloudflare/ahocorasick"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
+	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/reference"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
+	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
+	"golang.org/x/exp/maps"
 	"regexp"
 	"strings"
 	"sync"
-
-	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/reference"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 )
 
 // ResolveDependencies resolves all id-dependencies between downloaded configs.
