@@ -59,6 +59,10 @@ type EnvironmentDefinition struct {
 	Auth  Auth
 }
 
+func (e EnvironmentDefinition) String() string {
+	return e.Name
+}
+
 // URLType describes from where the url is loaded.
 // Possible values are [EnvironmentURLType] and [ValueURLType].
 // [ValueURLType] is the default value.

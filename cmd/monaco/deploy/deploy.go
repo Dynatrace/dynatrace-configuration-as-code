@@ -21,17 +21,16 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/deploy"
-	"path/filepath"
-	"strings"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	configError "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/deploy"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2/topologysort"
 	"github.com/spf13/afero"
+	"path/filepath"
+	"strings"
 )
 
 func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string, specificEnvironments []string, specificProjects []string, continueOnErr bool, dryRun bool) error {
@@ -64,6 +63,10 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 		return fmt.Errorf("error during configuration sort: %w", err)
 	}
 
+	if err := checkEnvironments(sortedConfigs, loadedManifest.Environments); err != nil {
+		return err
+	}
+
 	logProjectsInfo(filteredProjects)
 	logEnvironmentsInfo(loadedManifest.Environments)
 
@@ -74,20 +77,40 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 	return nil
 }
 
+func checkEnvironments(configs project.ConfigsPerEnvironment, envs manifest.Environments) error {
+	for envName, cfgs := range configs {
+		env, found := envs[envName]
+		if !found {
+			return fmt.Errorf("cannot find environment `%s`", envName)
+		}
+		return checkConfigsForEnvironment(&env, cfgs)
+	}
+	return nil
+}
+
+func checkConfigsForEnvironment(env *manifest.EnvironmentDefinition, cfgs []config.Config) error {
+	for i := range cfgs {
+		if onlyAvailableOnPlatform(&cfgs[i]) && !platformEnvironment(env) {
+			return fmt.Errorf("enviroment %q is not specified as platform, but at leaset one of configurations (e.g. %q) is platform exclusive", env, cfgs[i].Coordinate)
+		}
+	}
+	return nil
+}
+
+func platformEnvironment(e *manifest.EnvironmentDefinition) bool {
+	return e.Auth.OAuth != nil
+}
+
+func onlyAvailableOnPlatform(c *config.Config) bool {
+	_, aut := c.Type.(config.AutomationType)
+	return aut
+}
+
 func doDeploy(configs project.ConfigsPerEnvironment, environments manifest.Environments, continueOnErr bool, dryRun bool) error {
 	var deployErrs []error
 	for envName, configs := range configs {
 		logDeploymentInfo(dryRun, envName)
-		env, found := environments[envName]
-
-		if !found {
-			if continueOnErr {
-				deployErrs = append(deployErrs, fmt.Errorf("cannot find environment `%s`", envName))
-				continue
-			} else {
-				return fmt.Errorf("cannot find environment `%s`", envName)
-			}
-		}
+		env := environments[envName]
 
 		dtClient, err := dynatrace.CreateDTClient(env.URL.Value, env.Auth, dryRun)
 		if err != nil {
@@ -98,16 +121,13 @@ func doDeploy(configs project.ConfigsPerEnvironment, environments manifest.Envir
 				return err
 			}
 		}
-		var aut *deploy.Automation
-		if !dryRun {
-			aut, err = dynatrace.CreateAutomation(env.URL.Value, env.Auth.OAuth, dryRun)
-			if err != nil {
-				if continueOnErr {
-					deployErrs = append(deployErrs, err)
-					continue
-				} else {
-					return err
-				}
+		aut, err := dynatrace.CreateAutomation(env.URL.Value, env.Auth.OAuth, dryRun)
+		if err != nil {
+			if continueOnErr {
+				deployErrs = append(deployErrs, err)
+				continue
+			} else {
+				return err
 			}
 		}
 

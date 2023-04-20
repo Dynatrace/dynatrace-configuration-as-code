@@ -32,7 +32,7 @@ func New(cli automationClient) (*Automation, error) {
 	return &Automation{client: cli}, nil
 }
 
-//go:generate mockgen -source=automation.go -destination=automation_mock.go -package=deploy automationClient
+//go:generate mockgen -source=automation.go -destination=internal/mocks/automation_client_mock.go -package=mocks automationClient
 type automationClient interface {
 	Upsert(resourceType client.ResourceType, id string, data []byte) (result *client.Response, err error)
 }
