@@ -27,7 +27,60 @@ import (
 	"testing"
 )
 
-func TestUpsertWorkflow(t *testing.T) {
+func TestAutomationClientList(t *testing.T) {
+
+	jsonData := []byte(`{"count" : 2, "results" : [ { "id" : "91cc8988-2223-404a-a3f5-5f1a839ecd45", "data" : "some-data1"}, { "id" : "91cc8988-2223-404a-a3f5-5f1a839ecd46", "data" : "some-data2"} ]}`)
+	t.Run("List - OK", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodGet {
+				rw.Write(jsonData)
+				rw.WriteHeader(http.StatusOK)
+				return
+			}
+			assert.Fail(t, "unexpected HTTP method call")
+		}))
+		defer server.Close()
+
+		workflowClient := automation.NewClient(server.URL, server.Client())
+		wf, err := workflowClient.List(automation.Workflows)
+		assert.NotNil(t, wf)
+		assert.NoError(t, err)
+	})
+	t.Run("List - HTTP GET fails", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodGet {
+				rw.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			assert.Fail(t, "unexpected HTTP method call")
+		}))
+		defer server.Close()
+
+		workflowClient := automation.NewClient(server.URL, server.Client())
+		wf, err := workflowClient.List(automation.Workflows)
+		assert.Nil(t, wf)
+		assert.Error(t, err)
+	})
+
+	t.Run("List - HTTP GET returns garbage data", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodGet {
+				rw.Write([]byte("lskdlskejsdlfrkdlvdkedjgokdfjgldffk"))
+				rw.WriteHeader(http.StatusOK)
+				return
+			}
+			assert.Fail(t, "unexpected HTTP method call")
+		}))
+		defer server.Close()
+
+		workflowClient := automation.NewClient(server.URL, server.Client())
+		wf, err := workflowClient.List(automation.Workflows)
+		assert.Nil(t, wf)
+		assert.Error(t, err)
+	})
+}
+
+func TestAutomationClientUpsert(t *testing.T) {
 	jsonData := []byte(`{"id" : "91cc8988-2223-404a-a3f5-5f1a839ecd45", "data" : "some-data"}`)
 
 	t.Run("Upsert - with invalid JSON payload", func(t *testing.T) {

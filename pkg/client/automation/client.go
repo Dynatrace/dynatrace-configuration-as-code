@@ -33,6 +33,25 @@ type Response struct {
 	Data []byte `json:"-"`
 }
 
+// UnarshalJSON de-serializes JSON payload into [Response] type
+func (r *Response) UnmarshalJSON(data []byte) error {
+	var rawMap map[string]json.RawMessage
+	if err := json.Unmarshal(data, &rawMap); err != nil {
+		return err
+	}
+	if err := json.Unmarshal(rawMap["id"], &r.Id); err != nil {
+		return err
+	}
+	r.Data = data
+	return nil
+}
+
+// ListResponse Response is a "general" List of Response values holding the ID and the response payload each
+type ListResponse struct {
+	Count   int        `json:"count"`
+	Results []Response `json:"results"`
+}
+
 // Resource specifies information about a specific resource
 type Resource struct {
 	// Path is the API path to be used for this resource
@@ -79,6 +98,39 @@ func NewClient(url string, client *http.Client, opts ...ClientOption) *Client {
 		o(c)
 	}
 	return c
+}
+
+// List returns all automation objects
+func (a Client) List(resourceType ResourceType) (result *ListResponse, err error) {
+	a.limiter.ExecuteBlocking(func() {
+		result, err = a.list(resourceType)
+	})
+	return
+}
+
+func (a Client) list(resourceType ResourceType) (*ListResponse, error) {
+	// try to get the list of resources
+	resp, err := rest.Get(a.client, a.url+a.resources[resourceType].Path)
+	if err != nil {
+		return nil, fmt.Errorf("unable to list automation resources: %w", err)
+	}
+
+	// handle http error
+	if !resp.IsSuccess() {
+		return nil, ResponseErr{
+			StatusCode: resp.StatusCode,
+			Message:    "Failed to list automation objects",
+			Data:       resp.Body,
+		}
+	}
+
+	// unmarshal and return result
+	var result ListResponse
+	err = json.Unmarshal(resp.Body, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, err
 }
 
 // Upsert creates or updates a given automation object
@@ -151,7 +203,6 @@ func (a Client) create(id string, data []byte, resourceType ResourceType) (*Resp
 	if err != nil {
 		return nil, err
 	}
-	e.Data = resp.Body
 
 	// check if id from response is indeed the same as desired
 	if e.Id != id {
