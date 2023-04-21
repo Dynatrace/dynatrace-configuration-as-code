@@ -83,9 +83,6 @@ func (ctx *deployer) deploy(c *config.Config, em *entityMap) (*parameter.Resolve
 		return deployConfig(ctx.dtClient, ctx.apis, em, properties, renderedConfig, c)
 
 	case config.AutomationType:
-		if ctx.automation == nil { //TODO: is this ok?
-			return nil, []error{fmt.Errorf("automation configuration is only avilable on platform")}
-		}
 		log.Info("\tDeploying config %s", c.Coordinate)
 		return ctx.automation.deployAutomation(properties, renderedConfig, c)
 	default:
@@ -143,16 +140,16 @@ func deployConfig(configClient dtclient.ConfigClient, apis api.APIs, entityMap *
 
 func upsertNonUniqueNameConfig(client dtclient.ConfigClient, apiToDeploy api.API, conf *config.Config, configName string, renderedConfig string) (dtclient.DynatraceEntity, error) {
 	configID := conf.Coordinate.ConfigId
-	projectId := conf.Coordinate.Project
+	projectID := conf.Coordinate.Project
 
-	entityUuid := configID
+	entityUUID := configID
 
-	isUUIDOrMeID := idutils.IsUuid(entityUuid) || idutils.IsMeId(entityUuid)
+	isUUIDOrMeID := idutils.IsUuid(entityUUID) || idutils.IsMeId(entityUUID)
 	if !isUUIDOrMeID {
-		entityUuid = idutils.GenerateUuidFromConfigId(projectId, configID)
+		entityUUID = idutils.GenerateUuidFromConfigId(projectID, configID)
 	}
 
-	return client.UpsertConfigByNonUniqueNameAndId(apiToDeploy, entityUuid, configName, []byte(renderedConfig))
+	return client.UpsertConfigByNonUniqueNameAndId(apiToDeploy, entityUUID, configName, []byte(renderedConfig))
 }
 
 func deploySetting(settingsClient dtclient.SettingsClient, properties parameter.Properties, renderedConfig string, c *config.Config) (*parameter.ResolvedEntity, []error) {
