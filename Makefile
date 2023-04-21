@@ -12,7 +12,7 @@ setup:
 	@go install gotest.tools/gotestsum@latest
 	@go install github.com/golang/mock/mockgen@latest
 
-lint: setup
+lint: mocks
 ifeq ($(OS),Windows_NT)
 	@.\tools\check-format.cmd
 else
