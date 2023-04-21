@@ -78,7 +78,7 @@ func TestDeploy(t *testing.T) {
 			Skip:        false,
 		}
 
-		d := deployer{
+		d := Deployer{
 			dtClient: client,
 			apis:     testApiMap,
 		}
@@ -121,7 +121,7 @@ func TestDeploy(t *testing.T) {
 			Id:   "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0",
 			Name: "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0",
 		}, nil)
-		d := deployer{dtClient: c}
+		d := Deployer{dtClient: c}
 
 		conf := &config.Config{
 			Type:       config.SettingsType{},
@@ -166,7 +166,7 @@ func TestDeploy(t *testing.T) {
 			Template:   generateDummyTemplate(t),
 			Parameters: toParameterMap(parameters),
 		}
-		d := deployer{dtClient: c}
+		d := Deployer{dtClient: c}
 
 		_, errors := d.deploy(conf, newEntityMap(testApiMap))
 		assert.NotEmpty(t, errors)
@@ -207,7 +207,7 @@ func TestDeploy(t *testing.T) {
 			Id:   "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0",
 			Name: "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0",
 		}, nil)
-		d := deployer{dtClient: c}
+		d := Deployer{dtClient: c}
 
 		conf := &config.Config{
 			Type:       config.SettingsType{},
@@ -249,7 +249,7 @@ func TestDeploy(t *testing.T) {
 			Id:   objectId,
 			Name: objectId,
 		}, nil)
-		d := deployer{dtClient: c}
+		d := Deployer{dtClient: c}
 
 		conf := &config.Config{
 			Type:       config.SettingsType{},
@@ -322,7 +322,7 @@ func TestDeploySetting(t *testing.T) {
 			Id:   "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0",
 			Name: "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0",
 		}, nil)
-		d := deployer{dtClient: c}
+		d := Deployer{dtClient: c}
 
 		given := &config.Config{
 			Type: config.SettingsType{SchemaId: "builtin:some-schema"},
@@ -366,10 +366,6 @@ func TestDeploySetting(t *testing.T) {
 		assert.Equal(t, got, expected)
 		assert.Emptyf(t, errors, "errors: %v)", errors)
 	})
-	type given struct {
-		config           config.Config
-		returnedEntityID string
-	}
 
 	t.Run("management zone settings get numeric ID", func(t *testing.T) {
 		c := dtclient.NewMockClient(gomock.NewController(t))
@@ -415,7 +411,7 @@ func TestDeploySetting(t *testing.T) {
 			},
 		}
 
-		d := deployer{dtClient: c}
+		d := Deployer{dtClient: c}
 		got, errors := d.deploy(given, newEntityMap(testApiMap))
 		assert.Equal(t, expected, got)
 		assert.Emptyf(t, errors, "errors: %v)", errors)
@@ -453,7 +449,7 @@ func TestDeploySetting(t *testing.T) {
 			}),
 		}
 
-		d := deployer{dtClient: c}
+		d := Deployer{dtClient: c}
 		_, errors := d.deploy(given, newEntityMap(testApiMap))
 		assert.NotEmptyf(t, errors, "errors: %v)", errors)
 
@@ -643,7 +639,7 @@ func TestDeployConfig(t *testing.T) {
 
 func TestDeployAll(t *testing.T) {
 	t.Run("empty set of monaco config objects", func(t *testing.T) {
-		d := deployer{}
+		d := Deployer{}
 
 		errs := d.DeployAll([]config.Config{})
 		assert.Emptyf(t, errs, "there should be no errors (errors: %v)", errs)
@@ -653,7 +649,7 @@ func TestDeployAll(t *testing.T) {
 	})
 
 	t.Run("monaco config objet to skip", func(t *testing.T) { // TODO: move to TestDeploy
-		d := deployer{}
+		d := Deployer{}
 		sortedConfigs := []config.Config{{Skip: true}}
 		errors := d.DeployAll(sortedConfigs)
 		assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
@@ -665,7 +661,7 @@ func TestDeployAll(t *testing.T) {
 			Id:   "42",
 			Name: "Super Special Settings Object",
 		}, nil)
-		d := deployer{dtClient: c}
+		d := Deployer{dtClient: c}
 
 		sortedConfigs := []config.Config{
 			{
@@ -718,7 +714,7 @@ func TestDeployAll(t *testing.T) {
 			},
 		}
 
-		d := deployer{dtClient: client, apis: apis}
+		d := Deployer{dtClient: client, apis: apis}
 
 		errors := d.DeployAll(sortedConfigs)
 		assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
@@ -753,7 +749,7 @@ func TestDeployAll(t *testing.T) {
 			},
 		}
 
-		d := deployer{
+		d := Deployer{
 			dtClient: client,
 			apis:     apis,
 		}
@@ -799,7 +795,7 @@ func TestDeployConfigsNoApi(t *testing.T) { // TODO: this is test for config.Cla
 	}
 
 	t.Run("missing api - continue on error", func(t *testing.T) {
-		d := deployer{
+		d := Deployer{
 			dtClient:      client,
 			apis:          apis,
 			continueOnErr: true,
@@ -810,7 +806,7 @@ func TestDeployConfigsNoApi(t *testing.T) { // TODO: this is test for config.Cla
 	})
 
 	t.Run("missing api - stop on error", func(t *testing.T) {
-		d := deployer{
+		d := Deployer{
 			dtClient: client,
 			apis:     apis,
 		}
@@ -846,7 +842,7 @@ func TestDeployConfigsWithDeploymentErrors(t *testing.T) { // TODO: this is test
 	}
 
 	t.Run("deployment error - stop on error", func(t *testing.T) {
-		d := deployer{
+		d := Deployer{
 			dtClient: &dtclient.DummyClient{},
 			apis:     apis,
 		}
@@ -855,7 +851,7 @@ func TestDeployConfigsWithDeploymentErrors(t *testing.T) { // TODO: this is test
 	})
 
 	t.Run("deployment error - stop on error", func(t *testing.T) {
-		d := deployer{
+		d := Deployer{
 			dtClient:      &dtclient.DummyClient{},
 			apis:          apis,
 			continueOnErr: true,

@@ -27,7 +27,7 @@ import (
 
 // DeployAll deploys the given set of configs
 // NOTE: the given configs need to be sorted, otherwise deployment will probably fail, as references cannot be resolved
-func (ctx *deployer) DeployAll(sortedConfigs []config.Config) []error {
+func (ctx *Deployer) DeployAll(sortedConfigs []config.Config) []error {
 	entityMap := newEntityMap(ctx.apis)
 	var errors []error
 
@@ -52,7 +52,7 @@ func (ctx *deployer) DeployAll(sortedConfigs []config.Config) []error {
 	return errors
 }
 
-func (ctx *deployer) deploy(c *config.Config, em *entityMap) (*parameter.ResolvedEntity, []error) {
+func (ctx *Deployer) deploy(c *config.Config, em *entityMap) (*parameter.ResolvedEntity, []error) {
 	if c.Skip {
 		log.Info("\tSkipping deployment of config %s", c.Coordinate)
 		return &parameter.ResolvedEntity{EntityName: c.Coordinate.ConfigId, Coordinate: c.Coordinate, Properties: parameter.Properties{}, Skip: true}, nil

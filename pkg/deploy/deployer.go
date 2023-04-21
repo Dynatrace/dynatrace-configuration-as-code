@@ -21,8 +21,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 )
 
-type deployer struct {
-	dtClient   dtclient.Client
+type Deployer struct {
+	dtClient dtclient.Client
+
+	// automation is nil in case of dealing with a classical DT instance
 	automation *Automation
 
 	apis api.APIs
@@ -34,10 +36,10 @@ type deployer struct {
 	dryRun bool
 }
 
-type DeployerOptions func(d *deployer)
+type DeployerOptions func(d *Deployer)
 
-func NewDeployer(dtClient dtclient.Client, automation *Automation, opts ...DeployerOptions) *deployer {
-	d := new(deployer)
+func NewDeployer(dtClient dtclient.Client, automation *Automation, opts ...DeployerOptions) *Deployer {
+	d := new(Deployer)
 
 	d.dtClient = dtClient
 	d.automation = automation
@@ -51,7 +53,7 @@ func NewDeployer(dtClient dtclient.Client, automation *Automation, opts ...Deplo
 }
 
 func WithContinueOnErr(b ...bool) DeployerOptions {
-	return func(d *deployer) {
+	return func(d *Deployer) {
 		if len(b) > 0 {
 			d.continueOnErr = b[0]
 		}
@@ -60,7 +62,7 @@ func WithContinueOnErr(b ...bool) DeployerOptions {
 }
 
 func WithDryRun(b ...bool) DeployerOptions {
-	return func(d *deployer) {
+	return func(d *Deployer) {
 		if len(b) > 0 {
 			d.dryRun = b[0]
 		}
@@ -69,7 +71,7 @@ func WithDryRun(b ...bool) DeployerOptions {
 }
 
 func WithAPIs(apis api.APIs) DeployerOptions {
-	return func(d *deployer) {
+	return func(d *Deployer) {
 		d.apis = apis
 	}
 }

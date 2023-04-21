@@ -70,11 +70,42 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 	logProjectsInfo(filteredProjects)
 	logEnvironmentsInfo(loadedManifest.Environments)
 
-	if err = doDeploy(sortedConfigs, loadedManifest.Environments, continueOnErr, dryRun); err != nil {
-		return err
+	var deployErrs []error
+	for envName, cfgs := range sortedConfigs {
+		if len(deployErrs) != 0 || continueOnErr {
+			env := loadedManifest.Environments[envName]
+			errs := deployOnEnvironment(&env, cfgs, continueOnErr, dryRun)
+			if len(errs) != 0 {
+				deployErrs = append(deployErrs, errs...)
+			}
+		}
 	}
 
+	if deployErrs != nil {
+		printErrorReport(deployErrs)
+		return fmt.Errorf("errors during %s", getOperationNounForLogging(dryRun))
+	}
+	log.Info("%s finished without errors", getOperationNounForLogging(dryRun))
 	return nil
+}
+
+func deployOnEnvironment(env *manifest.EnvironmentDefinition, cfgs []config.Config, continueOnErr bool, dryRun bool) []error {
+	logDeploymentInfo(dryRun, env.Name)
+	var retErrs []error
+
+	deployer, errs := createDeployer(env, continueOnErr, dryRun)
+	if len(errs) != 0 {
+		retErrs = append(retErrs, errs...)
+	}
+
+	if len(retErrs) == 0 || continueOnErr {
+		errs := deployer.DeployAll(cfgs)
+		if len(errs) != 0 {
+			retErrs = append(retErrs, errs...)
+		}
+	}
+
+	return retErrs
 }
 
 func checkEnvironments(configs project.ConfigsPerEnvironment, envs manifest.Environments) error {
@@ -88,6 +119,7 @@ func checkEnvironments(configs project.ConfigsPerEnvironment, envs manifest.Envi
 	return nil
 }
 
+// checkConfigsForEnvironment checks is there a config that is not suitable for given platform
 func checkConfigsForEnvironment(env *manifest.EnvironmentDefinition, cfgs []config.Config) error {
 	for i := range cfgs {
 		if onlyAvailableOnPlatform(&cfgs[i]) && !platformEnvironment(env) {
@@ -106,43 +138,22 @@ func onlyAvailableOnPlatform(c *config.Config) bool {
 	return aut
 }
 
-func doDeploy(configs project.ConfigsPerEnvironment, environments manifest.Environments, continueOnErr bool, dryRun bool) error {
-	var deployErrs []error
-	for envName, configs := range configs {
-		logDeploymentInfo(dryRun, envName)
-		env := environments[envName]
+func createDeployer(env *manifest.EnvironmentDefinition, continueOnErr bool, dryRun bool) (*deploy.Deployer, []error) {
+	var errs []error
 
-		dtClient, err := dynatrace.CreateDTClient(env.URL.Value, env.Auth, dryRun)
-		if err != nil {
-			if continueOnErr {
-				deployErrs = append(deployErrs, err)
-				continue
-			} else {
-				return err
-			}
-		}
-		aut, err := dynatrace.CreateAutomation(env.URL.Value, env.Auth.OAuth, dryRun)
-		if err != nil {
-			if continueOnErr {
-				deployErrs = append(deployErrs, err)
-				continue
-			} else {
-				return err
-			}
-		}
-
-		deployer := deploy.NewDeployer(dtClient, aut, deploy.WithContinueOnErr(continueOnErr), deploy.WithDryRun(dryRun))
-
-		errs := deployer.DeployAll(configs)
-		deployErrs = append(deployErrs, errs...)
+	dtClient, err := dynatrace.CreateDTClient(env.URL.Value, env.Auth, dryRun)
+	if err != nil {
+		errs = append(errs, err)
 	}
 
-	if deployErrs != nil {
-		printErrorReport(deployErrs)
-		return fmt.Errorf("errors during %s", getOperationNounForLogging(dryRun))
+	aut, err := dynatrace.CreateAutomation(env.URL.Value, env.Auth.OAuth, dryRun)
+	if err != nil {
+		errs = append(errs, err)
 	}
-	log.Info("%s finished without errors", getOperationNounForLogging(dryRun))
-	return nil
+
+	deployer := deploy.NewDeployer(dtClient, aut, deploy.WithContinueOnErr(continueOnErr), deploy.WithDryRun(dryRun))
+
+	return deployer, errs
 }
 
 func absPath(manifestPath string) (string, error) {
