@@ -172,7 +172,7 @@ func TestDownloadAll(t *testing.T) {
 			c.EXPECT().ListSchemas().Times(tt.mockValues.ListSchemasCalls).Return(schemas, err)
 			settings, err := tt.mockValues.Settings()
 			c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err)
-			res := NewSettingsDownloader(c, WithFilters(tt.filters)).DownloadAll("projectName")
+			res, _ := NewDownloader(c, WithFilters(tt.filters)).Download("projectName")
 			assert.Equal(t, tt.want, res)
 		})
 	}
@@ -184,11 +184,12 @@ func TestDownload(t *testing.T) {
 	type mockValues struct {
 		Schemas           func() (dtclient.SchemaList, error)
 		Settings          func() ([]dtclient.DownloadSettingsObject, error)
+		ListSchemasCalls  int
 		ListSettingsCalls int
 	}
 	tests := []struct {
 		name       string
-		Schemas    []string
+		Schemas    []config.SettingsType
 		mockValues mockValues
 		want       v2.ConfigsPerType
 	}{
@@ -199,16 +200,17 @@ func TestDownload(t *testing.T) {
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return []dtclient.DownloadSettingsObject{}, nil
 				},
+				ListSchemasCalls:  1,
 				ListSettingsCalls: 0,
 			},
 			want: v2.ConfigsPerType{},
 		},
 		{
 			name:    "DownloadSettings - Settings found",
-			Schemas: []string{"builtin:alerting-profile"},
+			Schemas: []config.SettingsType{{SchemaId: "builtin:alerting-profile"}},
 			mockValues: mockValues{
 				Schemas: func() (dtclient.SchemaList, error) {
-					return dtclient.SchemaList{{SchemaId: "id1"}}, nil
+					return dtclient.SchemaList{{SchemaId: "builtin:alerting-profile"}}, nil
 				},
 				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
 					return []dtclient.DownloadSettingsObject{{
@@ -220,6 +222,7 @@ func TestDownload(t *testing.T) {
 						Value:         json.RawMessage(`{}`),
 					}}, nil
 				},
+				ListSchemasCalls:  1,
 				ListSettingsCalls: 1,
 			},
 			want: v2.ConfigsPerType{"builtin:alerting-profile": {
@@ -247,10 +250,108 @@ func TestDownload(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := dtclient.NewMockClient(gomock.NewController(t))
-			settings, err := tt.mockValues.Settings()
-			c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err)
-			res := NewSettingsDownloader(c).Download(tt.Schemas, "projectName")
+			schemas, err1 := tt.mockValues.Schemas()
+			settings, err2 := tt.mockValues.Settings()
+			c.EXPECT().ListSchemas().Times(tt.mockValues.ListSchemasCalls).Return(schemas, err1)
+			c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Times(tt.mockValues.ListSettingsCalls).Return(settings, err2)
+			res, _ := NewDownloader(c).Download("projectName", tt.Schemas...)
 			assert.Equal(t, tt.want, res)
+		})
+	}
+}
+
+func Test_validateSpecificSettings(t *testing.T) {
+	type given struct {
+		settingsOnEnvironment     dtclient.SchemaList
+		specificSettingsRequested []string
+	}
+	tests := []struct {
+		name               string
+		given              given
+		wantValid          bool
+		wantUnknownSchemas []string
+	}{
+		{
+			"valid if setting is found",
+			given{
+				settingsOnEnvironment:     dtclient.SchemaList{{"builtin:magic.setting"}},
+				specificSettingsRequested: []string{"builtin:magic.setting"},
+			},
+			true,
+			nil,
+		},
+		{
+			"not valid if setting not found",
+			given{
+				settingsOnEnvironment:     dtclient.SchemaList{{"builtin:magic.setting"}},
+				specificSettingsRequested: []string{"builtin:unknown"},
+			},
+			false,
+			[]string{"builtin:unknown"},
+		},
+		{
+			"not valid if one setting not found",
+			given{
+				settingsOnEnvironment:     dtclient.SchemaList{{"builtin:magic.setting"}},
+				specificSettingsRequested: []string{"builtin:magic.setting", "builtin:unknown"},
+			},
+			false,
+			[]string{"builtin:unknown"},
+		},
+		{
+			"valid if no specific schemas requested (empty)",
+			given{
+				settingsOnEnvironment:     dtclient.SchemaList{{"builtin:magic.setting"}},
+				specificSettingsRequested: []string{},
+			},
+			true,
+			nil,
+		},
+		{
+			"valid if no specific schemas requested (nil)",
+			given{
+				settingsOnEnvironment:     dtclient.SchemaList{{"builtin:magic.setting"}},
+				specificSettingsRequested: nil,
+			},
+			true,
+			nil,
+		},
+		{
+			"valid if no specific schemas requested (empty) and none exist",
+			given{
+				settingsOnEnvironment:     dtclient.SchemaList{},
+				specificSettingsRequested: []string{},
+			},
+			true,
+			nil,
+		},
+		{
+			"valid if no specific schemas requested (nil) and none exist",
+			given{
+				settingsOnEnvironment:     dtclient.SchemaList{},
+				specificSettingsRequested: nil,
+			},
+			true,
+			nil,
+		},
+		{
+			"not valid if specific schemas requested but none exist",
+			given{
+				settingsOnEnvironment:     dtclient.SchemaList{},
+				specificSettingsRequested: []string{"builtin:magic.setting"},
+			},
+			false,
+			[]string{"builtin:magic.setting"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := dtclient.NewMockClient(gomock.NewController(t))
+			c.EXPECT().ListSchemas().AnyTimes().Return(tt.given.settingsOnEnvironment, nil)
+
+			gotValid, gotUnknownSchemas := validateSpecificSchemas(c, tt.given.specificSettingsRequested)
+			assert.Equalf(t, tt.wantValid, gotValid, "validateSpecificSchemas(%v) for available settings %v", tt.given.specificSettingsRequested, tt.given.specificSettingsRequested)
+			assert.Equalf(t, tt.wantUnknownSchemas, gotUnknownSchemas, "validateSpecificSchemas(%v) for available settings %v", tt.given.specificSettingsRequested, tt.given.specificSettingsRequested)
 		})
 	}
 }

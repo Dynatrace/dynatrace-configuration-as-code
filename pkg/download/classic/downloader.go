@@ -18,8 +18,11 @@ package classic
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
+	"strings"
 	"sync"
 	"time"
 
@@ -32,12 +35,9 @@ import (
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 )
 
-func DownloadAllConfigs(apisToDownload api.APIs, client dtclient.Client, projectName string) project.ConfigsPerType {
-	return NewDownloader(client).DownloadAll(apisToDownload, projectName)
-}
-
 // Downloader is responsible for downloading classic Dynatrace APIs
 type Downloader struct {
+	apisToDownload api.APIs
 	// apiFilters contains logic to filter specific apis based on
 	// custom logic implemented in the apiFilter
 	apiFilters map[string]apiFilter
@@ -54,11 +54,18 @@ func WithAPIFilters(apiFilters map[string]apiFilter) func(*Downloader) {
 	}
 }
 
+func WithAPIs(apis api.APIs) func(*Downloader) {
+	return func(d *Downloader) {
+		d.apisToDownload = apis
+	}
+}
+
 // NewDownloader creates a new Downloader
 func NewDownloader(client dtclient.Client, opts ...func(*Downloader)) *Downloader {
 	c := &Downloader{
-		apiFilters: apiFilters,
-		client:     client,
+		apisToDownload: api.NewAPIs(),
+		apiFilters:     apiFilters,
+		client:         client,
 	}
 	for _, o := range opts {
 		o(c)
@@ -66,10 +73,72 @@ func NewDownloader(client dtclient.Client, opts ...func(*Downloader)) *Downloade
 	return c
 }
 
-// DownloadAllConfigs downloads all specified APIs from a given environment.
-//
-// See package documentation for implementation details.
-func (d *Downloader) DownloadAll(apisToDownload api.APIs, projectName string) project.ConfigsPerType {
+func (d *Downloader) Download(projectName string, specificAPIs ...config.ClassicApiType) (project.ConfigsPerType, error) {
+	if len(specificAPIs) == 0 {
+		return d.downloadAll(projectName)
+	}
+	var apis []string
+	for _, s := range specificAPIs {
+		apis = append(apis, s.Api)
+	}
+	return d.downloadSpecific(projectName, apis)
+}
+
+func (d *Downloader) downloadAll(projectName string) (project.ConfigsPerType, error) {
+	configs := d.downloadAPIs(d.apisToDownload, projectName)
+	return configs, nil
+}
+
+func (d *Downloader) downloadSpecific(projectName string, specificAPIs []string) (project.ConfigsPerType, error) {
+	if ok, unknownApis := validateSpecificAPIs(d.apisToDownload, specificAPIs); !ok {
+		err := fmt.Errorf("requested APIs '%v' are not known", strings.Join(unknownApis, ","))
+		log.Error("%v. Please consult our documentation for known API names.", err)
+		return nil, err
+	}
+
+	apisToDownload := getApisToDownload(d.apisToDownload, specificAPIs)
+	if len(apisToDownload) == 0 {
+		return nil, fmt.Errorf("no APIs to download")
+	}
+
+	configs := d.downloadAPIs(apisToDownload, projectName)
+	return configs, nil
+}
+
+func validateSpecificAPIs(a api.APIs, apiNames []string) (valid bool, unknownAPIs []string) {
+	for _, v := range apiNames {
+		if !a.Contains(v) {
+			unknownAPIs = append(unknownAPIs, v)
+		}
+	}
+	return len(unknownAPIs) == 0, unknownAPIs
+}
+
+func getApisToDownload(apis api.APIs, specificAPIs []string) api.APIs {
+	if len(specificAPIs) > 0 {
+		return apis.Filter(api.RetainByName(specificAPIs), skipDownloadFilter)
+	}
+	return apis.Filter(skipDownloadFilter, removeDeprecatedEndpoints)
+}
+
+func skipDownloadFilter(api api.API) bool {
+	if api.SkipDownload {
+		log.Info("API can not be downloaded and needs manual creation: '%v'.", api.ID)
+		return true
+	}
+	return false
+}
+
+func removeDeprecatedEndpoints(api api.API) bool {
+	if api.DeprecatedBy != "" {
+		log.Warn("API %q is deprecated by %q and will not be downloaded", api.ID, api.DeprecatedBy)
+		return true
+	}
+	return false
+}
+
+func (d *Downloader) downloadAPIs(apisToDownload api.APIs, projectName string) project.ConfigsPerType {
+	log.Debug("APIs to download: \n - %v", strings.Join(maps.Keys(apisToDownload), "\n - "))
 	results := make(project.ConfigsPerType, len(apisToDownload))
 	mutex := sync.Mutex{}
 	wg := sync.WaitGroup{}

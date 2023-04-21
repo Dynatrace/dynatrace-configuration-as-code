@@ -19,7 +19,9 @@ package settings
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
+	"strings"
 	"sync"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
@@ -52,8 +54,8 @@ func WithFilters(filters Filters) func(*Downloader) {
 	}
 }
 
-// NewSettingsDownloader creates a new downloader for Settings 2.0 objects
-func NewSettingsDownloader(client dtclient.SettingsClient, opts ...func(*Downloader)) *Downloader {
+// NewDownloader creates a new downloader for Settings 2.0 objects
+func NewDownloader(client dtclient.SettingsClient, opts ...func(*Downloader)) *Downloader {
 	d := &Downloader{
 		client:  client,
 		filters: defaultSettingsFilters,
@@ -64,33 +66,25 @@ func NewSettingsDownloader(client dtclient.SettingsClient, opts ...func(*Downloa
 	return d
 }
 
-// Download downloads all settings 2.0 objects for the given schema IDs
-
-func Download(client dtclient.SettingsClient, schemaIDs []string, projectName string) v2.ConfigsPerType {
-	return NewSettingsDownloader(client).Download(schemaIDs, projectName)
+func (d *Downloader) Download(projectName string, schemaIDs ...config.SettingsType) (v2.ConfigsPerType, error) {
+	if len(schemaIDs) == 0 {
+		return d.downloadAll(projectName)
+	}
+	var schemas []string
+	for _, s := range schemaIDs {
+		schemas = append(schemas, s.SchemaId)
+	}
+	return d.downloadSpecific(projectName, schemas)
 }
 
-// DownloadAll downloads all settings 2.0 objects for a given project
-func DownloadAll(client dtclient.SettingsClient, projectName string) v2.ConfigsPerType {
-	return NewSettingsDownloader(client).DownloadAll(projectName)
-}
-
-// Download downloads all settings 2.0 objects for the given schema IDs and a given project
-// The returned value is a map of settings 2.0 objects with the schema ID as keys
-func (d *Downloader) Download(schemaIDs []string, projectName string) v2.ConfigsPerType {
-	return d.download(schemaIDs, projectName)
-}
-
-// DownloadAll downloads all settings 2.0 objects for a given project.
-// The returned value is a map of settings 2.0 objects with the schema ID as keys
-func (d *Downloader) DownloadAll(projectName string) v2.ConfigsPerType {
+func (d *Downloader) downloadAll(projectName string) (v2.ConfigsPerType, error) {
 	log.Debug("Fetching all schemas to download")
 
 	// get ALL schemas
 	schemas, err := d.client.ListSchemas()
 	if err != nil {
 		log.Error("Failed to fetch all known schemas. Skipping settings download. Reason: %s", err)
-		return nil
+		return nil, err
 	}
 	// convert to list of IDs
 	var ids []string
@@ -98,7 +92,19 @@ func (d *Downloader) DownloadAll(projectName string) v2.ConfigsPerType {
 		ids = append(ids, i.SchemaId)
 	}
 
-	return d.download(ids, projectName)
+	result := d.download(ids, projectName)
+	return result, nil
+}
+
+func (d *Downloader) downloadSpecific(projectName string, schemaIDs []string) (v2.ConfigsPerType, error) {
+	if ok, unknownSchemas := validateSpecificSchemas(d.client, schemaIDs); !ok {
+		err := fmt.Errorf("requested settings-schema(s) '%v' are not known", strings.Join(unknownSchemas, ","))
+		log.Error("%v. Please consult the documentation for available schemas and verify they are available in your environment.", err)
+		return nil, err
+	}
+	log.Debug("Settings to download: \n - %v", strings.Join(schemaIDs, "\n - "))
+	result := d.download(schemaIDs, projectName)
+	return result, nil
 }
 
 func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPerType {
@@ -187,4 +193,27 @@ func (d *Downloader) convertAllObjects(objects []dtclient.DownloadSettingsObject
 		result = append(result, c)
 	}
 	return result
+}
+
+func validateSpecificSchemas(c dtclient.SettingsClient, schemas []string) (valid bool, unknownSchemas []string) {
+	if len(schemas) == 0 {
+		return true, nil
+	}
+
+	schemaList, err := c.ListSchemas()
+	if err != nil {
+		log.Error("failed to query available Settings Schemas: %v", err)
+		return false, schemas
+	}
+	knownSchemas := make(map[string]struct{}, len(schemaList))
+	for _, s := range schemaList {
+		knownSchemas[s.SchemaId] = struct{}{}
+	}
+
+	for _, s := range schemas {
+		if _, exists := knownSchemas[s]; !exists {
+			unknownSchemas = append(unknownSchemas, s)
+		}
+	}
+	return len(unknownSchemas) == 0, unknownSchemas
 }

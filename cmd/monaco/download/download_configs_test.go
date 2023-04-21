@@ -22,76 +22,14 @@ import (
 	"errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/classic"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"github.com/golang/mock/gomock"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
-
-func TestGetApisToDownload(t *testing.T) {
-	type given struct {
-		apis         api.APIs
-		specificAPIs []string
-	}
-	type expected struct {
-		apis []string
-	}
-	tests := []struct {
-		name     string
-		given    given
-		expected expected
-	}{
-		{
-			name: "filter all specific defined api",
-			given: given{
-				apis: api.APIs{
-					"api_1": api.API{ID: "api_1"},
-					"api_2": api.API{ID: "api_2"},
-				},
-				specificAPIs: []string{"api_1"},
-			},
-			expected: expected{
-				apis: []string{"api_1"},
-			},
-		}, {
-			name: "if deprecated api is defined, do not filter it",
-			given: given{
-				apis: api.APIs{
-					"api_1":          api.API{ID: "api_1"},
-					"api_2":          api.API{ID: "api_2"},
-					"deprecated_api": api.API{ID: "deprecated_api", DeprecatedBy: "new_api"},
-				},
-				specificAPIs: []string{"api_1", "deprecated_api"},
-			},
-			expected: expected{
-				apis: []string{"api_1", "deprecated_api"},
-			},
-		},
-		{
-			name: "if specific api is not requested, filter deprecated apis",
-			given: given{
-				apis: api.APIs{
-					"api_1":          api.API{ID: "api_1"},
-					"api_2":          api.API{ID: "api_2"},
-					"deprecated_api": api.API{ID: "deprecated_api", DeprecatedBy: "new_api"},
-				},
-				specificAPIs: []string{},
-			},
-			expected: expected{
-				apis: []string{"api_1", "api_2"},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			actual := getApisToDownload(tt.given.apis, tt.given.specificAPIs)
-			for _, e := range tt.expected.apis {
-				assert.Contains(t, actual, e)
-			}
-		})
-	}
-}
 
 func TestDownloadConfigsBehaviour(t *testing.T) {
 	tests := []struct {
@@ -125,6 +63,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 			expectedBehaviour: func(c *dtclient.MockClient) {
 				c.EXPECT().ListConfigs(gomock.Any()).Times(0)
 				c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Times(0)
+				c.EXPECT().ListSchemas().AnyTimes().Return(dtclient.SchemaList{{SchemaId: "builtin:magic.secret"}}, nil)
 				c.EXPECT().ListSettings("builtin:magic.secret", gomock.Any()).AnyTimes().Return([]dtclient.DownloadSettingsObject{}, nil)
 			},
 		},
@@ -154,6 +93,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 			expectedBehaviour: func(c *dtclient.MockClient) {
 				c.EXPECT().ListConfigs(api.NewAPIs()["alerting-profile"]).Return([]dtclient.Value{{Id: "42", Name: "profile"}}, nil)
 				c.EXPECT().ReadConfigById(gomock.Any(), "42").AnyTimes().Return([]byte("{}"), nil)
+				c.EXPECT().ListSchemas().AnyTimes().Return(dtclient.SchemaList{{SchemaId: "builtin:magic.secret"}}, nil)
 				c.EXPECT().ListSettings("builtin:magic.secret", gomock.Any()).AnyTimes().Return([]dtclient.DownloadSettingsObject{}, nil)
 
 			},
@@ -208,7 +148,9 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 
 			tt.expectedBehaviour(c)
 
-			_, err := downloadConfigs(c, api.NewAPIs(), tt.givenOpts)
+			downloaders := downloaders{settings.NewDownloader(c), classic.NewDownloader(c)}
+
+			_, err := downloadConfigs(downloaders, tt.givenOpts)
 			assert.NoError(t, err)
 		})
 	}
@@ -374,102 +316,6 @@ func Test_shouldDownloadSettings(t *testing.T) {
 	}
 }
 
-func Test_validateSpecificSettings(t *testing.T) {
-	type given struct {
-		settingsOnEnvironment     dtclient.SchemaList
-		specificSettingsRequested []string
-	}
-	tests := []struct {
-		name               string
-		given              given
-		wantValid          bool
-		wantUnknownSchemas []string
-	}{
-		{
-			"valid if setting is found",
-			given{
-				settingsOnEnvironment:     dtclient.SchemaList{{"builtin:magic.setting"}},
-				specificSettingsRequested: []string{"builtin:magic.setting"},
-			},
-			true,
-			nil,
-		},
-		{
-			"not valid if setting not found",
-			given{
-				settingsOnEnvironment:     dtclient.SchemaList{{"builtin:magic.setting"}},
-				specificSettingsRequested: []string{"builtin:unknown"},
-			},
-			false,
-			[]string{"builtin:unknown"},
-		},
-		{
-			"not valid if one setting not found",
-			given{
-				settingsOnEnvironment:     dtclient.SchemaList{{"builtin:magic.setting"}},
-				specificSettingsRequested: []string{"builtin:magic.setting", "builtin:unknown"},
-			},
-			false,
-			[]string{"builtin:unknown"},
-		},
-		{
-			"valid if no specific schemas requested (empty)",
-			given{
-				settingsOnEnvironment:     dtclient.SchemaList{{"builtin:magic.setting"}},
-				specificSettingsRequested: []string{},
-			},
-			true,
-			nil,
-		},
-		{
-			"valid if no specific schemas requested (nil)",
-			given{
-				settingsOnEnvironment:     dtclient.SchemaList{{"builtin:magic.setting"}},
-				specificSettingsRequested: nil,
-			},
-			true,
-			nil,
-		},
-		{
-			"valid if no specific schemas requested (empty) and none exist",
-			given{
-				settingsOnEnvironment:     dtclient.SchemaList{},
-				specificSettingsRequested: []string{},
-			},
-			true,
-			nil,
-		},
-		{
-			"valid if no specific schemas requested (nil) and none exist",
-			given{
-				settingsOnEnvironment:     dtclient.SchemaList{},
-				specificSettingsRequested: nil,
-			},
-			true,
-			nil,
-		},
-		{
-			"not valid if specific schemas requested but none exist",
-			given{
-				settingsOnEnvironment:     dtclient.SchemaList{},
-				specificSettingsRequested: []string{"builtin:magic.setting"},
-			},
-			false,
-			[]string{"builtin:magic.setting"},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			c := dtclient.NewMockClient(gomock.NewController(t))
-			c.EXPECT().ListSchemas().AnyTimes().Return(tt.given.settingsOnEnvironment, nil)
-
-			gotValid, gotUnknownSchemas := validateSpecificSchemas(c, tt.given.specificSettingsRequested)
-			assert.Equalf(t, tt.wantValid, gotValid, "validateSpecificSchemas(%v) for available settings %v", tt.given.specificSettingsRequested, tt.given.specificSettingsRequested)
-			assert.Equalf(t, tt.wantUnknownSchemas, gotUnknownSchemas, "validateSpecificSchemas(%v) for available settings %v", tt.given.specificSettingsRequested, tt.given.specificSettingsRequested)
-		})
-	}
-}
-
 func TestDownloadConfigsExitsEarlyForUnknownAPI(t *testing.T) {
 	c := dtclient.NewMockClient(gomock.NewController(t))
 
@@ -492,8 +338,9 @@ func TestDownloadConfigsExitsEarlyForUnknownAPI(t *testing.T) {
 		},
 	}
 
-	givenDefaultAPIs := api.NewAPIs()
-	err := doDownloadConfigs(afero.NewMemMapFs(), c, givenDefaultAPIs, givenOpts)
+	downloaders := downloaders{settings.NewDownloader(c), classic.NewDownloader(c)}
+
+	err := doDownloadConfigs(afero.NewMemMapFs(), downloaders, givenOpts)
 	assert.ErrorContains(t, err, "not known", "expected download to fail for unkown API")
 }
 
@@ -521,8 +368,8 @@ func TestDownloadConfigsExitsEarlyForUnknownSettingsSchema(t *testing.T) {
 
 	c.EXPECT().ListSchemas().Return(dtclient.SchemaList{{"builtin:some.schema"}}, nil)
 
-	givenDefaultAPIs := api.NewAPIs()
-	err := doDownloadConfigs(afero.NewMemMapFs(), c, givenDefaultAPIs, givenOpts)
+	downloaders := downloaders{settings.NewDownloader(c), classic.NewDownloader(c)}
+	err := doDownloadConfigs(afero.NewMemMapFs(), downloaders, givenOpts)
 	assert.ErrorContains(t, err, "not known", "expected download to fail for unkown Settings Schema")
 	c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Times(0) // no downloads should even be attempted for unknown schema
 }

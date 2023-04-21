@@ -32,7 +32,7 @@ func TestDownloadAllConfigs_FailedToFindConfigsToDownload(t *testing.T) {
 	testAPI := api.API{ID: "API_ID", URLPath: "API_PATH", NonUniqueName: true}
 	apiMap := api.APIs{"API_ID": testAPI}
 
-	assert.Len(t, downloader.DownloadAll(apiMap, "project"), 0)
+	assert.Len(t, downloader.downloadAPIs(apiMap, "project"), 0)
 }
 
 func TestDownloadAll_NoConfigsToDownloadFound(t *testing.T) {
@@ -43,7 +43,7 @@ func TestDownloadAll_NoConfigsToDownloadFound(t *testing.T) {
 
 	apiMap := api.APIs{"API_ID": testAPI}
 
-	configurations := downloader.DownloadAll(apiMap, "project")
+	configurations := downloader.downloadAPIs(apiMap, "project")
 	assert.Len(t, configurations, 0)
 }
 
@@ -65,7 +65,7 @@ func TestDownloadAll_ConfigsDownloaded(t *testing.T) {
 
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	configurations := downloader.DownloadAll(apiMap, "project")
+	configurations := downloader.downloadAPIs(apiMap, "project")
 	assert.Len(t, configurations, 2)
 }
 
@@ -87,7 +87,7 @@ func TestDownloadAll_ConfigsDownloaded_WithEmptyFilter(t *testing.T) {
 
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	configurations := downloader.DownloadAll(apiMap, "project")
+	configurations := downloader.downloadAPIs(apiMap, "project")
 	assert.Len(t, configurations, 2)
 }
 
@@ -98,7 +98,7 @@ func TestDownloadAll_SingleConfigurationAPI(t *testing.T) {
 	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", SingleConfiguration: true, NonUniqueName: true}
 	apiMap := api.APIs{"API_ID_1": testAPI1}
 
-	configurations := downloader.DownloadAll(apiMap, "project")
+	configurations := downloader.downloadAPIs(apiMap, "project")
 	assert.Len(t, configurations, 1)
 }
 
@@ -126,7 +126,7 @@ func TestDownloadAll_ErrorFetchingConfig(t *testing.T) {
 	}).Times(2)
 
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
-	configurations := downloader.DownloadAll(apiMap, "project")
+	configurations := downloader.downloadAPIs(apiMap, "project")
 	assert.Len(t, configurations, 1)
 }
 
@@ -155,7 +155,7 @@ func TestDownloadAll_SkipConfigThatShouldNotBePersisted(t *testing.T) {
 
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	configurations := downloader.DownloadAll(apiMap, "project")
+	configurations := downloader.downloadAPIs(apiMap, "project")
 	assert.Len(t, configurations, 1)
 }
 
@@ -184,7 +184,7 @@ func TestDownloadAll_SkipConfigBeforeDownload(t *testing.T) {
 
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	configurations := downloader.DownloadAll(apiMap, "project")
+	configurations := downloader.downloadAPIs(apiMap, "project")
 	assert.Len(t, configurations, 1)
 }
 
@@ -192,7 +192,7 @@ func TestDownloadAll_EmptyAPIMap_NothingIsDownloaded(t *testing.T) {
 	client := dtclient.NewMockClient(gomock.NewController(t))
 	downloader := NewDownloader(client)
 
-	configurations := downloader.DownloadAll(api.APIs{}, "project")
+	configurations := downloader.downloadAPIs(api.APIs{}, "project")
 	assert.Len(t, configurations, 0)
 }
 
@@ -213,7 +213,7 @@ func TestDownloadAll_APIWithoutAnyConfigAvailableAreNotDownloaded(t *testing.T) 
 
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	configurations := downloader.DownloadAll(apiMap, "project")
+	configurations := downloader.downloadAPIs(apiMap, "project")
 	assert.Len(t, configurations, 1)
 }
 
@@ -235,6 +235,70 @@ func TestDownloadAll_MalformedResponseFromAnAPI(t *testing.T) {
 
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	configurations := downloader.DownloadAll(apiMap, "project")
+	configurations := downloader.downloadAPIs(apiMap, "project")
 	assert.Len(t, configurations, 1)
+}
+
+func TestGetApisToDownload(t *testing.T) {
+	type given struct {
+		apis         api.APIs
+		specificAPIs []string
+	}
+	type expected struct {
+		apis []string
+	}
+	tests := []struct {
+		name     string
+		given    given
+		expected expected
+	}{
+		{
+			name: "filter all specific defined api",
+			given: given{
+				apis: api.APIs{
+					"api_1": api.API{ID: "api_1"},
+					"api_2": api.API{ID: "api_2"},
+				},
+				specificAPIs: []string{"api_1"},
+			},
+			expected: expected{
+				apis: []string{"api_1"},
+			},
+		}, {
+			name: "if deprecated api is defined, do not filter it",
+			given: given{
+				apis: api.APIs{
+					"api_1":          api.API{ID: "api_1"},
+					"api_2":          api.API{ID: "api_2"},
+					"deprecated_api": api.API{ID: "deprecated_api", DeprecatedBy: "new_api"},
+				},
+				specificAPIs: []string{"api_1", "deprecated_api"},
+			},
+			expected: expected{
+				apis: []string{"api_1", "deprecated_api"},
+			},
+		},
+		{
+			name: "if specific api is not requested, filter deprecated apis",
+			given: given{
+				apis: api.APIs{
+					"api_1":          api.API{ID: "api_1"},
+					"api_2":          api.API{ID: "api_2"},
+					"deprecated_api": api.API{ID: "deprecated_api", DeprecatedBy: "new_api"},
+				},
+				specificAPIs: []string{},
+			},
+			expected: expected{
+				apis: []string{"api_1", "api_2"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := getApisToDownload(tt.given.apis, tt.given.specificAPIs)
+			for _, e := range tt.expected.apis {
+				assert.Contains(t, actual, e)
+			}
+		})
+	}
 }
