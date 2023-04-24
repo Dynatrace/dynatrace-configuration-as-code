@@ -27,7 +27,7 @@ jobs:
         run: go list -m -json all | go-licence-detector -includeIndirect -depsTemplate=.dependencies/templates/dependencies.csv.tmpl -depsOut=dependencies-and-licenses.txt
       - name: Upload dependencies and licenses artifact
         run: |
-          curl --request POST "${{ github.event.release.upload_url }}?name=dependencies-and-licenses.txt" \
+          curl --request POST "${{ github.event.release.assets_url }}?name=dependencies-and-licenses.txt" \
                --header "Accept: application/vnd.github+json" \
                --header "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
                --header "X-GitHub-Api-Version: 2022-11-28" \
