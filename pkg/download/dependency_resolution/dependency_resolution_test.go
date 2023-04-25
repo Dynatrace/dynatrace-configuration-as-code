@@ -1,20 +1,22 @@
 //go:build unit
 
-// @license
-// Copyright 2022 Dynatrace LLC
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * @license
+ * Copyright 2023 Dynatrace LLC
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-package download
+package dependency_resolution
 
 import (
 	"fmt"
@@ -24,6 +26,7 @@ import (
 	refParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/reference"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/dependency_resolution/resolver"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/google/go-cmp/cmp"
 	"gotest.tools/assert"
@@ -115,7 +118,7 @@ func TestDependencyResolution(t *testing.T) {
 						Type:     config.ClassicApiType{Api: "api"},
 						Template: template.NewDownloadTemplate("c2-id", "name2", makeTemplateString("something something %s something something", "api", "c1-id")),
 						Parameters: config.Parameters{
-							createParameterName("api", "c1-id"): refParam.New("project", "api", "c1-id", "id"),
+							resolver.CreateParameterName("api", "c1-id"): refParam.New("project", "api", "c1-id", "id"),
 						},
 					},
 				},
@@ -167,7 +170,7 @@ func TestDependencyResolution(t *testing.T) {
 						OriginObjectId: "object2-objectID",
 						Parameters: config.Parameters{
 							config.ScopeParameter: valueParam.New("environment"),
-							createParameterName("builtin:some-setting", "4fw231-13fw124-f23r24"): refParam.New("project", "builtin:some-setting", "4fw231-13fw124-f23r24", "id"),
+							resolver.CreateParameterName("builtin:some-setting", "4fw231-13fw124-f23r24"): refParam.New("project", "builtin:some-setting", "4fw231-13fw124-f23r24", "id"),
 						},
 					},
 				},
@@ -246,7 +249,7 @@ func TestDependencyResolution(t *testing.T) {
 						OriginObjectId: "object2-objectID",
 						Parameters: map[string]parameter.Parameter{
 							config.ScopeParameter: valueParam.New("environment"),
-							createParameterName("builtin:management-zones", "4fw231-13fw124-f23r24"): refParam.New("project", "builtin:management-zones", "4fw231-13fw124-f23r24", "id"),
+							resolver.CreateParameterName("builtin:management-zones", "4fw231-13fw124-f23r24"): refParam.New("project", "builtin:management-zones", "4fw231-13fw124-f23r24", "id"),
 						},
 					},
 					{
@@ -256,7 +259,7 @@ func TestDependencyResolution(t *testing.T) {
 						OriginObjectId: "object1-objectID",
 						Parameters: map[string]parameter.Parameter{
 							config.ScopeParameter: valueParam.New("environment"),
-							createParameterName("builtin:management-zones", "342342-26re248-w46w48"): refParam.New("project", "builtin:management-zones", "342342-26re248-w46w48", "id"),
+							resolver.CreateParameterName("builtin:management-zones", "342342-26re248-w46w48"): refParam.New("project", "builtin:management-zones", "342342-26re248-w46w48", "id"),
 						},
 					},
 				},
@@ -359,7 +362,7 @@ func TestDependencyResolution(t *testing.T) {
 						OriginObjectId: "object2-objectID",
 						Parameters: map[string]parameter.Parameter{
 							config.ScopeParameter: valueParam.New("environment"),
-							createParameterName("builtin:management-zones", "4fw231-13fw124-f23r24"): refParam.New("project", "builtin:management-zones", "4fw231-13fw124-f23r24", "id"),
+							resolver.CreateParameterName("builtin:management-zones", "4fw231-13fw124-f23r24"): refParam.New("project", "builtin:management-zones", "4fw231-13fw124-f23r24", "id"),
 						},
 					},
 				},
@@ -390,7 +393,7 @@ func TestDependencyResolution(t *testing.T) {
 						Template:   template.NewDownloadTemplate("c1-id", "name", makeTemplateString("template of config 1 references config 2: %s", "api", "c2-id")),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c1-id"},
 						Parameters: config.Parameters{
-							createParameterName("api", "c2-id"): refParam.New("project", "api", "c2-id", "id"),
+							resolver.CreateParameterName("api", "c2-id"): refParam.New("project", "api", "c2-id", "id"),
 						},
 					},
 					{
@@ -398,7 +401,7 @@ func TestDependencyResolution(t *testing.T) {
 						Template:   template.NewDownloadTemplate("c2-id", "name2", makeTemplateString("template of config 2 references config 1: %s", "api", "c1-id")),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c2-id"},
 						Parameters: config.Parameters{
-							createParameterName("api", "c1-id"): refParam.New("project", "api", "c1-id", "id"),
+							resolver.CreateParameterName("api", "c1-id"): refParam.New("project", "api", "c1-id", "id"),
 						},
 					},
 				},
@@ -435,7 +438,7 @@ func TestDependencyResolution(t *testing.T) {
 						Template:   template.NewDownloadTemplate("c1-id", "name", makeTemplateString("template of config 1 references config 2: %s", "api", "c2-id")),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c1-id"},
 						Parameters: config.Parameters{
-							createParameterName("api", "c2-id"): refParam.New("project", "api", "c2-id", "id"),
+							resolver.CreateParameterName("api", "c2-id"): refParam.New("project", "api", "c2-id", "id"),
 						},
 					},
 					{
@@ -443,7 +446,7 @@ func TestDependencyResolution(t *testing.T) {
 						Template:   template.NewDownloadTemplate("c2-id", "name2", makeTemplateString("template of config 2 references config 3: %s", "api", "c3-id")),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c2-id"},
 						Parameters: config.Parameters{
-							createParameterName("api", "c3-id"): refParam.New("project", "api", "c3-id", "id"),
+							resolver.CreateParameterName("api", "c3-id"): refParam.New("project", "api", "c3-id", "id"),
 						},
 					},
 					{
@@ -490,7 +493,7 @@ func TestDependencyResolution(t *testing.T) {
 						Template:   template.NewDownloadTemplate("c1-id", "name", makeTemplateString("template of config 1 references config 2: %s", "api-2", "c2-id")),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "c1-id"},
 						Parameters: config.Parameters{
-							createParameterName("api-2", "c2-id"): refParam.New("project", "api-2", "c2-id", "id"),
+							resolver.CreateParameterName("api-2", "c2-id"): refParam.New("project", "api-2", "c2-id", "id"),
 						},
 					},
 				},
@@ -500,7 +503,7 @@ func TestDependencyResolution(t *testing.T) {
 						Template:   template.NewDownloadTemplate("c2-id", "name2", makeTemplateString("template of config 2 references config 3: %s", "api-3", "c3-id")),
 						Coordinate: coordinate.Coordinate{Project: "project", Type: "api-2", ConfigId: "c2-id"},
 						Parameters: config.Parameters{
-							createParameterName("api-3", "c3-id"): refParam.New("project", "api-3", "c3-id", "id"),
+							resolver.CreateParameterName("api-3", "c3-id"): refParam.New("project", "api-3", "c3-id", "id"),
 						},
 					},
 				},
@@ -674,5 +677,5 @@ func TestDependencyResolution(t *testing.T) {
 }
 
 func makeTemplateString(template, api, configId string) string {
-	return fmt.Sprintf(template, "{{."+createParameterName(api, configId)+"}}")
+	return fmt.Sprintf(template, "{{."+resolver.CreateParameterName(api, configId)+"}}")
 }

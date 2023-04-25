@@ -22,8 +22,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/classic"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/dependency_resolution"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
@@ -192,7 +192,7 @@ func doDownloadConfigs(fs afero.Fs, downloaders downloaders, opts downloadConfig
 	}
 
 	log.Info("Resolving dependencies between configurations")
-	downloadedConfigs = download.ResolveDependencies(downloadedConfigs)
+	downloadedConfigs = dependency_resolution.ResolveDependencies(downloadedConfigs)
 
 	return writeConfigs(downloadedConfigs, opts.downloadOptionsShared, fs)
 }
