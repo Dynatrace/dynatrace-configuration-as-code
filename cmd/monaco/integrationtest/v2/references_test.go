@@ -19,6 +19,7 @@
 package v2
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
@@ -51,7 +52,7 @@ func TestClassicReferences(t *testing.T) {
 		err := cmd.Execute()
 		assert.Nil(t, err, "create: did not expect error")
 
-		// update
+		// update just to be sure
 		cmd = runner.BuildCli(fs)
 		cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", env, "--project", proj})
 		err = cmd.Execute()
@@ -98,6 +99,69 @@ func TestClassicReferences(t *testing.T) {
 	})
 }
 
+func TestSettingsReferences(t *testing.T) {
+	configFolder := "test-resources/references/"
+	manifestFile := configFolder + "manifest.yaml"
+	env := "classic_env"
+	proj := "settings"
+
+	fs := testutils.CreateTestFileSystem()
+
+	RunIntegrationWithCleanupOnGivenFs(t, fs, configFolder, manifestFile, env, t.Name(), func(fs afero.Fs, ctx TestContext) {
+
+		// upsert
+		cmd := runner.BuildCli(fs)
+		cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", env, "--project", proj})
+		err := cmd.Execute()
+		assert.Nil(t, err, "create: did not expect error")
+
+		// update just to be sure
+		cmd = runner.BuildCli(fs)
+		cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", env, "--project", proj})
+		err = cmd.Execute()
+		assert.Nil(t, err, "update: did not expect error")
+
+		// download
+		cmd = runner.BuildCli(fs)
+		cmd.SetArgs([]string{"download",
+			"-v",
+			"--manifest", manifestFile,
+			"--environment", env,
+			"--project", "proj",
+			"--output-folder", "download",
+			"-s", "builtin:problem.notifications,builtin:management-zones,builtin:alerting.profile",
+		})
+		err = cmd.Execute()
+		assert.Nil(t, err, "download: did not expect error")
+
+		// assert
+		mani, errs := manifest.LoadManifest(&manifest.LoaderContext{
+			Fs:           fs,
+			ManifestPath: "download/manifest.yaml",
+		})
+		assert.Empty(t, errs, "load manifest: did not expect do get error(s)")
+
+		projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
+			KnownApis:       api.NewAPIs().GetApiNameLookup(),
+			WorkingDir:      "download",
+			Manifest:        mani,
+			ParametersSerde: config.DefaultParameterParsers,
+		})
+		assert.Empty(t, errs, "load project: did not expect do get error(s)")
+
+		projectAndEnvName := "proj_classic_env" // for manifest downloads proj + env name
+
+		confsPerType := findConfigs(t, projects, projectAndEnvName)
+
+		managementZone := findSetting(t, confsPerType, "builtin:management-zones", "zone", "name")
+		profile := findSetting(t, confsPerType, "builtin:alerting.profile", "profile", "name")
+		notification := findSetting(t, confsPerType, "builtin:problem.notifications", "notification", "displayName")
+
+		assertRefParamFromTo(t, profile, managementZone)
+		assertRefParamFromTo(t, notification, profile)
+	})
+}
+
 func assertRefParamFromTo(t *testing.T, from config.Config, to config.Config) {
 	name := paramName(to)
 	param, found := from.Parameters[name]
@@ -138,6 +202,29 @@ func findConfig(t *testing.T, confsPerType project.ConfigsPerType, api, name str
 	}
 
 	assert.Failf(t, "failed to find config '%s/%s'", api, name)
+	return config.Config{}
+}
+
+func findSetting(t *testing.T, confsPerType project.ConfigsPerType, api, name, property string) config.Config {
+	confs, found := confsPerType[api]
+	assert.Truef(t, found, "api %q not found, known configs: %q", api, maps.Keys(confsPerType))
+
+	for _, c := range confs {
+
+		content := c.Template.Content()
+		// convert content to json
+		var jsonContent map[string]interface{}
+		err := json.Unmarshal([]byte(content), &jsonContent)
+		assert.Nil(t, err, "failed to unmarshal content to json")
+
+		// get the setting name
+		n := jsonContent[property].(string)
+		if n == name {
+			return c
+		}
+	}
+
+	assert.Failf(t, "failed to find config '%s/%s' in property %q", api, name, property)
 	return config.Config{}
 }
 

@@ -1,0 +1,33 @@
+configs:
+  - id: profile
+    type:
+      settings:
+        schema: builtin:alerting.profile
+        scope: environment
+    config:
+      name: profile
+      template: profile.json
+      parameters:
+        managementZoneId: [ builtin:management-zones, zone, id ]
+  - id: zone
+    type:
+      settings:
+        schema: builtin:management-zones
+        scope: environment
+    config:
+      name: zone
+      parameters:
+        environment: environment1
+        meId: HOST_GROUP-1234567890123456
+      template: zone.json
+  - id: slack
+    type:
+      settings:
+        schema: builtin:problem.notifications
+        scope: environment
+    config:
+      name: notification
+      parameters:
+        alertingProfileId: [ builtin:alerting.profile, profile, id ]
+        environment: Env1
+      template: slack.json
