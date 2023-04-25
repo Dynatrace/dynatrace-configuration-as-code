@@ -1,0 +1,16 @@
+{
+    "enabled": true,
+    "type": "EMAIL",
+    "displayName": "{{.name}}",
+    "emailNotification": {
+        "recipients": [
+            "rec@example.com"
+        ],
+        "ccRecipients": [],
+        "bccRecipients": [],
+        "subject": "[.NET SDK Showroom Alert] {State} Problem {ProblemID}: {ImpactedEntity}",
+        "notifyClosedProblems": true,
+        "body": "{ProblemDetailsHTML}"
+    },
+    "alertingProfile": "{{.alertingProfileId}}"
+}

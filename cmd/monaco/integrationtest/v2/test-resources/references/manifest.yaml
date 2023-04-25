@@ -2,6 +2,7 @@ manifestVersion: 1.0
 
 projects:
 - name: classic-apis
+- name: settings
 
 environmentGroups:
 - name: default
