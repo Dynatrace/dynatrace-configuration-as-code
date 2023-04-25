@@ -17,14 +17,10 @@ package download
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/dynatrace"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/concurrency"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/dependency_resolution"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/spf13/afero"
@@ -170,15 +166,6 @@ type downloadConfigsOptions struct {
 	onlySettings    bool
 }
 
-func makeDownloaders(options downloadConfigsOptions) (downloaders, error) {
-	dtClient, err := dynatrace.CreateClient(options.environmentURL, options.auth, false, dtclient.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
-	if err != nil {
-		return nil, err
-	}
-
-	return downloaders{settings.NewDownloader(dtClient), classic.NewDownloader(dtClient)}, nil
-}
-
 func doDownloadConfigs(fs afero.Fs, downloaders downloaders, opts downloadConfigsOptions) error {
 	err := preDownloadValidations(fs, opts.downloadOptionsShared)
 	if err != nil {
@@ -218,6 +205,14 @@ func downloadConfigs(downloaders downloaders, opts downloadConfigsOptions) (proj
 		copyConfigs(configs, settingCfgs)
 	}
 
+	if shouldDownloadAutomationResources() {
+		automationCfgs, err := downloaders.Automation().Download(opts.projectName)
+		if err != nil {
+			return nil, err
+		}
+		copyConfigs(configs, automationCfgs)
+	}
+
 	return configs, nil
 }
 
@@ -251,4 +246,8 @@ func shouldDownloadClassicConfigs(opts downloadConfigsOptions) bool {
 // shouldDownloadSettings returns true unless onlyAPIs or specificAPIs but no specificSchemas are defined
 func shouldDownloadSettings(opts downloadConfigsOptions) bool {
 	return !opts.onlyAPIs && (len(opts.specificAPIs) == 0 || len(opts.specificSchemas) > 0)
+}
+
+func shouldDownloadAutomationResources() bool {
+	return featureflags.AutomationResources().Enabled()
 }
