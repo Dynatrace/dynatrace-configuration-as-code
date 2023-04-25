@@ -117,6 +117,6 @@ func ManagementZoneSettingsNumericIDs() FeatureFlag {
 func FastDependencyResolver() FeatureFlag {
 	return FeatureFlag{
 		envName:        "MONACO_FEAT_FAST_DEPENDENCY_RESOLVER",
-		defaultEnabled: true,
+		defaultEnabled: false,
 	}
 }
