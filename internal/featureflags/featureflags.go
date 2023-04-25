@@ -110,3 +110,13 @@ func ManagementZoneSettingsNumericIDs() FeatureFlag {
 		defaultEnabled: true,
 	}
 }
+
+// FastDependencyResolver returns the feature flag controlling whether the fast (but memory intensive) Aho-Corasick
+// algorithm based dependency resolver is used when downloading. If set to false, the old naive and CPU intensive resolver
+// is used.
+func FastDependencyResolver() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_FAST_DEPENDENCY_RESOLVER",
+		defaultEnabled: true,
+	}
+}
