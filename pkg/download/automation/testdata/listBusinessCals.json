@@ -1,0 +1,53 @@
+{
+    "count": 2,
+    "results": [
+        {
+            "id": "12345678-1234-1234-1234-123456789098",
+            "title": "automation_server_default_calendar",
+            "version": 2,
+            "weekstart": 1,
+            "weekdays": [
+                1,
+                2,
+                3,
+                4,
+                5
+            ],
+            "holidays": [],
+            "validFrom": "2023-01-01",
+            "validTo": "2032-12-31",
+            "labels": {},
+            "description": "",
+            "modificationInfo": {
+                "createdBy": null,
+                "createdTime": "2023-02-28T08:47:01.507847Z",
+                "lastModifiedBy": "87654321-1234-1234-1234-123456789098",
+                "lastModifiedTime": "2023-04-11T14:58:59.717740Z"
+            }
+        },
+        {
+            "id": "12345678-1234-1234-1234-123456789092",
+            "title": "automation_server_default_calendar",
+            "version": 5,
+            "weekstart": 1,
+            "weekdays": [
+                1,
+                2,
+                3,
+                4,
+                5
+            ],
+            "holidays": [],
+            "validFrom": "2023-01-02",
+            "validTo": "2032-12-31",
+            "labels": {},
+            "description": "",
+            "modificationInfo": {
+                "createdBy": "87654321-1234-1234-1234-123456789098",
+                "createdTime": "2023-04-11T14:59:41.700468Z",
+                "lastModifiedBy": "87654321-1234-1234-1234-123456789098",
+                "lastModifiedTime": "2023-04-13T13:57:58.118881Z"
+            }
+        }
+    ]
+}
