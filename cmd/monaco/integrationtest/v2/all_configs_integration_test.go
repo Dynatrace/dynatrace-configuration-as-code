@@ -45,7 +45,7 @@ func runAllConfigsTest(t *testing.T, specificEnvironment string) {
 	configFolder := "test-resources/integration-all-configs/"
 	manifest := configFolder + "manifest.yaml"
 
-	RunIntegrationWithCleanup(t, configFolder, manifest, specificEnvironment, "AllConfigs", func(fs afero.Fs) {
+	RunIntegrationWithCleanup(t, configFolder, manifest, specificEnvironment, "AllConfigs", func(fs afero.Fs, _ TestContext) {
 
 		// This causes a POST for all configs:
 

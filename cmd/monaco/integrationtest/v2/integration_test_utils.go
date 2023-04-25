@@ -28,6 +28,12 @@ import (
 	"testing"
 )
 
+type TestContext struct {
+	suffix string
+}
+
+type TestFunc func(fs afero.Fs, ctx TestContext)
+
 // RunIntegrationWithCleanup runs an integration test and cleans up the created configs afterwards
 // This is done by using InMemoryFileReader, which rewrites the names of the read configs internally. It ready all the
 // configs once and holds them in memory. Any subsequent modification of a config (applying them to an environment)
@@ -41,23 +47,23 @@ import (
 //
 // <original name>_<current timestamp><defined suffix>
 // e.g. my-config_1605258980000_Suffix
-func RunIntegrationWithCleanup(t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, testFunc func(fs afero.Fs)) {
+func RunIntegrationWithCleanup(t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, testFunc TestFunc) {
 
 	fs := testutils.CreateTestFileSystem()
 	runIntegrationWithCleanup(t, fs, configFolder, manifestPath, specificEnvironment, suffixTest, nil, testFunc)
 }
 
-func RunIntegrationWithCleanupOnGivenFs(t *testing.T, testFs afero.Fs, configFolder, manifestPath, specificEnvironment, suffixTest string, testFunc func(fs afero.Fs)) {
+func RunIntegrationWithCleanupOnGivenFs(t *testing.T, testFs afero.Fs, configFolder, manifestPath, specificEnvironment, suffixTest string, testFunc TestFunc) {
 	runIntegrationWithCleanup(t, testFs, configFolder, manifestPath, specificEnvironment, suffixTest, nil, testFunc)
 }
 
-func RunIntegrationWithCleanupGivenEnvs(t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, envVars map[string]string, testFunc func(fs afero.Fs)) {
+func RunIntegrationWithCleanupGivenEnvs(t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, envVars map[string]string, testFunc TestFunc) {
 	fs := testutils.CreateTestFileSystem()
 
 	runIntegrationWithCleanup(t, fs, configFolder, manifestPath, specificEnvironment, suffixTest, envVars, testFunc)
 }
 
-func runIntegrationWithCleanup(t *testing.T, testFs afero.Fs, configFolder, manifestPath, specificEnvironment, suffixTest string, envVars map[string]string, testFunc func(fs afero.Fs)) {
+func runIntegrationWithCleanup(t *testing.T, testFs afero.Fs, configFolder, manifestPath, specificEnvironment, suffixTest string, envVars map[string]string, testFunc TestFunc) {
 	var envs []string
 	if len(specificEnvironment) > 0 {
 		envs = append(envs, specificEnvironment)
@@ -84,7 +90,9 @@ func runIntegrationWithCleanup(t *testing.T, testFs afero.Fs, configFolder, mani
 
 	setTestEnvVar(t, "UNIQUE_TEST_SUFFIX", suffix, suffix)
 
-	testFunc(testFs)
+	testFunc(testFs, TestContext{
+		suffix: suffix,
+	})
 }
 
 func appendUniqueSuffixToIntegrationTestConfigs(t *testing.T, fs afero.Fs, configFolder string, generalSuffix string) string {

@@ -34,7 +34,7 @@ const multiTypeManifest = multiTypeProjectFolder + "manifest.yaml"
 
 func TestMultiTypeConfigsDeployment(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, multiTypeProjectFolder, multiTypeManifest, "", "MultiType", func(fs afero.Fs) {
+	RunIntegrationWithCleanup(t, multiTypeProjectFolder, multiTypeManifest, "", "MultiType", func(fs afero.Fs, _ TestContext) {
 
 		cmd := runner.BuildCli(fs)
 		cmd.SetArgs([]string{"deploy", "--verbose", multiTypeManifest})

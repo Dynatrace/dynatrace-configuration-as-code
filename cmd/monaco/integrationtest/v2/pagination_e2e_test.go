@@ -61,7 +61,7 @@ func testPagination(t *testing.T, specificEnvironment string) {
 	err = afero.WriteFile(fs, configYamlPath, []byte(configContent), 644)
 	assert.NilError(t, err)
 
-	RunIntegrationWithCleanupOnGivenFs(t, fs, configFolder, manifestPath, specificEnvironment, "Pagination", func(fs afero.Fs) {
+	RunIntegrationWithCleanupOnGivenFs(t, fs, configFolder, manifestPath, specificEnvironment, "Pagination", func(fs afero.Fs, _ TestContext) {
 
 		// Create/POST all 550 Settings
 		logOutput := strings.Builder{}

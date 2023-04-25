@@ -34,7 +34,7 @@ func TestSpecialCharactersAreCorrectlyEscapedWhereNeeded(t *testing.T) {
 	specialCharConfigFolder := "test-resources/special-character-in-config/"
 	specialCharManifest := filepath.Join(specialCharConfigFolder, "manifest.yaml")
 
-	RunIntegrationWithCleanup(t, specialCharConfigFolder, specialCharManifest, "", "SpecialCharacterInConfig", func(fs afero.Fs) {
+	RunIntegrationWithCleanup(t, specialCharConfigFolder, specialCharManifest, "", "SpecialCharacterInConfig", func(fs afero.Fs, _ TestContext) {
 
 		cmd := runner.BuildCli(fs)
 		cmd.SetArgs([]string{

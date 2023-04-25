@@ -35,7 +35,7 @@ func TestIntegrationScopeParameters(t *testing.T) {
 		"SCOPE_TEST_ENV_VAR": "environment",
 	}
 
-	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "ScopeParameters", envVars, func(fs afero.Fs) {
+	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "ScopeParameters", envVars, func(fs afero.Fs, _ TestContext) {
 
 		// This causes Creation of all Settings
 		cmd := runner.BuildCli(fs)

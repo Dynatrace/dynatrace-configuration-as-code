@@ -36,7 +36,7 @@ func TestIntegrationSettings(t *testing.T) {
 	manifest := configFolder + "manifest.yaml"
 	specificEnvironment := ""
 
-	RunIntegrationWithCleanup(t, configFolder, manifest, specificEnvironment, "SettingsTwo", func(fs afero.Fs) {
+	RunIntegrationWithCleanup(t, configFolder, manifest, specificEnvironment, "SettingsTwo", func(fs afero.Fs, _ TestContext) {
 
 		// This causes Creation of all Settings
 		cmd := runner.BuildCli(fs)
