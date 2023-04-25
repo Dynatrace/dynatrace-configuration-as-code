@@ -79,7 +79,7 @@ func TestV1ConfigurationCanBeConvertedAndDeployedAfterConversion(t *testing.T) {
 	manifest := path.Join(convertedConfigV2Folder, "manifest.yaml")
 	assertExpectedPathExists(t, fs, manifest)
 
-	RunIntegrationWithCleanupOnGivenFs(t, fs, convertedConfigV2Folder, manifest, "", "AllConfigs", func(fs afero.Fs) {
+	RunIntegrationWithCleanupOnGivenFs(t, fs, convertedConfigV2Folder, manifest, "", "AllConfigs", func(fs afero.Fs, _ TestContext) {
 
 		// This causes a POST for all configs:
 		cmd := runner.BuildCli(fs)

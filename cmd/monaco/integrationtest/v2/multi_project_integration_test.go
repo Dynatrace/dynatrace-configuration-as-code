@@ -36,7 +36,7 @@ var multiProjectSpecificEnvironment = ""
 // Tests all environments with all projects
 func TestIntegrationMultiProject(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, multiProjectFolder, multiProjectManifest, multiProjectSpecificEnvironment, "MultiProject", func(fs afero.Fs) {
+	RunIntegrationWithCleanup(t, multiProjectFolder, multiProjectManifest, multiProjectSpecificEnvironment, "MultiProject", func(fs afero.Fs, _ TestContext) {
 
 		// This causes a POST for all configs:
 		cmd := runner.BuildCli(fs)
@@ -62,7 +62,7 @@ func TestIntegrationValidationMultiProject(t *testing.T) {
 // tests a single project with dependencies
 func TestIntegrationMultiProjectSingleProject(t *testing.T) {
 
-	RunIntegrationWithCleanup(t, multiProjectFolder, multiProjectManifest, multiProjectSpecificEnvironment, "MultiProjectOnProject", func(fs afero.Fs) {
+	RunIntegrationWithCleanup(t, multiProjectFolder, multiProjectManifest, multiProjectSpecificEnvironment, "MultiProjectOnProject", func(fs afero.Fs, _ TestContext) {
 
 		cmd := runner.BuildCli(fs)
 		cmd.SetArgs([]string{"deploy",
