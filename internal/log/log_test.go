@@ -194,3 +194,42 @@ func touch(t *testing.T, fs afero.Fs, path string, perm os.FileMode) {
 
 	chmod(t, fs, path, perm)
 }
+
+func Test_extendedLogger_DebugEnabled(t *testing.T) {
+
+	tests := []struct {
+		given logLevel
+		want  bool
+	}{
+		{
+			given: LevelInfo,
+			want:  false,
+		},
+		{
+			given: LevelWarn,
+			want:  false,
+		},
+		{
+			given: LevelError,
+			want:  false,
+		},
+		{
+			given: LevelFatal,
+			want:  false,
+		},
+		{
+			given: LevelDebug,
+			want:  true,
+		},
+		{
+			given: LevelDebug + 1, // imaginary added level (e.g. 'TRACE')
+			want:  true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("logLevel(%v)->DebugEnabled==%v", tt.given.prefix(), tt.want), func(t *testing.T) {
+			Default().SetLevel(tt.given)
+			assert.Equalf(t, tt.want, DebugEnabled(), "DebugEnabled()")
+		})
+	}
+}
