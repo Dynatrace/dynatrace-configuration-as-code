@@ -70,8 +70,14 @@ func getResolver(configs project.ConfigsPerType) dependencyResolver {
 
 	if featureflags.FastDependencyResolver().Enabled() {
 		log.Debug("Using fast but memory intensive dependency resolution. Can be deactivated using '%s=false' env var.", featureflags.FastDependencyResolver().EnvName())
-		return resolver.AhocorasickResolver(configsById)
+		r, err := resolver.AhoCorasickResolver(configsById)
+		if err != nil {
+			log.Error("Failed to initialize fast dependency resolution, falling back to slow resolution: %v", err)
+			return resolver.BasicResolver(configsById)
+		}
+		return r
 	}
+
 	log.Debug("Using slow (CPU intensive) but memory saving dependency resolution.")
 	return resolver.BasicResolver(configsById)
 }

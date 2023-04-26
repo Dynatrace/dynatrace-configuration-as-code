@@ -18,7 +18,7 @@ package resolver
 
 import (
 	"fmt"
-	"github.com/cloudflare/ahocorasick"
+	goaho "github.com/anknown/ahocorasick"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
@@ -28,17 +28,12 @@ import (
 )
 
 // dependencyResolutionContext holds the important information for dependency resolution.
-// The core information is in the [idMatcher] that returns the index of the found strings in the initial dictionary.
-// Since not the ids, but the indexes are returned, we also need the original dictionary.
-// - [ids] to look up the actual content of the key,
-// - and with this key we can look up the actual config using the [configsById] field.
+// The core information is in the [matcher] that returns the index of the found strings in the initial dictionary.
+// As this will just return the string IDs of configurations, the context also holds the [configsById] map, which is
+// used to access the actual config data if a match was found.
 type dependencyResolutionContext struct {
-	// the original dictionary that initialized the [idMatcher].
-	// it is used to get the actual key after the matcher returns the index(es)
-	ids []string
-
-	// idMatcher is the matcher that returns all found strings within a searched string as the index of the dictionary
-	idMatcher *ahocorasick.Matcher
+	// matcher is the matcher that returns all found strings within a searched string
+	matcher *goaho.Machine
 
 	// configsById holds all configs by their id. It is used to get the config for a given key
 	configsById map[string]config.Config
@@ -48,18 +43,33 @@ type ahocorasickResolver struct {
 	ctx dependencyResolutionContext
 }
 
-func AhocorasickResolver(configsById map[string]config.Config) ahocorasickResolver {
-	ids := maps.Keys(configsById)
+func AhoCorasickResolver(configsById map[string]config.Config) (ahocorasickResolver, error) {
+
+	ids := toRuneSlices(maps.Keys(configsById))
+	m := &goaho.Machine{}
+	err := m.Build(ids)
+	if err != nil {
+		return ahocorasickResolver{}, fmt.Errorf("failed to initialize AhoCorasick matcher: %w", err)
+	}
 
 	ctx := dependencyResolutionContext{
-		ids:         ids,
-		idMatcher:   ahocorasick.NewStringMatcher(ids),
+		matcher:     m,
 		configsById: configsById,
 	}
 
 	return ahocorasickResolver{
 		ctx: ctx,
+	}, nil
+}
+
+// toRuneSlices converts a given slice of string config ids to a slice of rune slices
+// this is the format the aho-corasick implementation expects to receive search keys in
+func toRuneSlices(ids []string) [][]rune {
+	dict := make([][]rune, len(ids), len(ids))
+	for i, s := range ids {
+		dict[i] = []rune(s)
 	}
+	return dict
 }
 
 func (r ahocorasickResolver) ResolveDependencyReferences(configToBeUpdated *config.Config) {
@@ -79,11 +89,12 @@ func findAndReplaceIDs(apiName string, configToBeUpdated config.Config, c depend
 	content := configToBeUpdated.Template.Content()
 	coordinates := make([]coordinate.Coordinate, 0)
 
-	indexes := c.idMatcher.MatchThreadSafe([]byte(configToBeUpdated.Template.Content()))
-	for _, v := range indexes {
+	matches := c.matcher.MultiPatternSearch([]rune(content), false)
+	for _, m := range matches {
+
+		key := string(m.Word)
 
 		// get the actual key and config for a given match
-		key := c.ids[v]
 		conf, f := c.configsById[key]
 		if !f {
 			panic(fmt.Sprintf("No config found for given key %q", key))

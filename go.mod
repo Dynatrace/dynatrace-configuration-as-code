@@ -1,7 +1,7 @@
 module github.com/dynatrace/dynatrace-configuration-as-code
 
 require (
-	github.com/cloudflare/ahocorasick v0.0.0-20210425175752-730270c3e184
+	github.com/anknown/ahocorasick v0.0.0-20190904063843-d75dbd5169c0
 	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.5.9
 	github.com/google/uuid v1.3.0
@@ -17,6 +17,7 @@ require (
 )
 
 require (
+	github.com/anknown/darts v0.0.0-20151216065714-83ff685239e6 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
