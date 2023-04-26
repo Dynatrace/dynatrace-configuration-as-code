@@ -236,6 +236,79 @@ func TestSettingsWithConfigMngtZone(t *testing.T) {
 	})
 }
 
+func TestClassicReferencesWithSettingsManagementZone(t *testing.T) {
+	configFolder := "test-resources/references/"
+	manifestFile := configFolder + "manifest.yaml"
+	env := "classic_env"
+	proj := "config-with-mngt-zone"
+
+	fs := testutils.CreateTestFileSystem()
+
+	RunIntegrationWithCleanupOnGivenFs(t, fs, configFolder, manifestFile, env, "ref-with-mngt-zone", func(fs afero.Fs, ctx TestContext) {
+
+		// upsert
+		cmd := runner.BuildCli(fs)
+		cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", env, "--project", proj})
+		err := cmd.Execute()
+		assert.Nil(t, err, "create: did not expect error")
+
+		// update just to be sure
+		cmd = runner.BuildCli(fs)
+		cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", env, "--project", proj})
+		err = cmd.Execute()
+		assert.Nil(t, err, "update: did not expect error")
+
+		// download
+		cmd = runner.BuildCli(fs)
+		cmd.SetArgs([]string{"download",
+			"-v",
+			"--manifest", manifestFile,
+			"--environment", env,
+			"--project", "proj",
+			"--output-folder", "download",
+			"-a", "notification,alerting-profile",
+			"-s", "builtin:management-zones",
+		})
+		err = cmd.Execute()
+		assert.Nil(t, err, "download: did not expect error")
+
+		// assert
+		mani, errs := manifest.LoadManifest(&manifest.LoaderContext{
+			Fs:           fs,
+			ManifestPath: "download/manifest.yaml",
+		})
+		assert.Empty(t, errs, "load manifest: did not expect do get error(s)")
+
+		projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
+			KnownApis:       api.NewAPIs().GetApiNameLookup(),
+			WorkingDir:      "download",
+			Manifest:        mani,
+			ParametersSerde: config.DefaultParameterParsers,
+		})
+		assert.Empty(t, errs, "load project: did not expect do get error(s)")
+
+		projectAndEnvName := "proj_classic_env" // for manifest downloads proj + env name
+
+		confsPerType := findConfigs(t, projects, projectAndEnvName)
+
+		for a, confs := range confsPerType {
+			for _, c := range confs {
+
+				nameParam := c.Parameters[config.NameParameter].(*valueParam.ValueParameter).Value
+				log.Info("%v/%v", a, nameParam)
+			}
+
+		}
+
+		managementZone := findSetting(t, confsPerType, "builtin:management-zones", "zone_"+ctx.suffix, "name")
+		profile := findConfig(t, confsPerType, "alerting-profile", "profile_"+ctx.suffix)
+		notification := findConfig(t, confsPerType, "notification", "notification_"+ctx.suffix)
+
+		assertRefParamFromTo(t, profile, managementZone)
+		assertRefParamFromTo(t, notification, profile)
+	})
+}
+
 func assertRefParamFromTo(t *testing.T, from config.Config, to config.Config) {
 	name := paramName(to.Coordinate.Type, to.Coordinate.ConfigId)
 	param, found := from.Parameters[name]
