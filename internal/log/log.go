@@ -199,6 +199,10 @@ func Debug(msg string, a ...interface{}) {
 	defaultLogger.Debug(msg, a...)
 }
 
+func DebugEnabled() bool {
+	return defaultLogger.level >= LevelDebug
+}
+
 func doLog(logger *extendedLogger, level logLevel, msg string, a ...interface{}) {
 	msg = fmt.Sprintf(level.prefix()+msg, a...)
 	if logger.level >= level && logger.consoleLogger != nil {
