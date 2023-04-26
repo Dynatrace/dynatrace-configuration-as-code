@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
@@ -37,276 +36,139 @@ import (
 	"testing"
 )
 
-func TestClassicReferences(t *testing.T) {
-	configFolder := "test-resources/references/"
-	manifestFile := configFolder + "manifest.yaml"
-	env := "classic_env"
-	proj := "classic-apis"
+func TestReferences(t *testing.T) {
 
-	fs := testutils.CreateTestFileSystem()
+	envs := []string{"classic_env", "platform_env"}
 
-	RunIntegrationWithCleanupOnGivenFs(t, fs, configFolder, manifestFile, env, t.Name(), func(fs afero.Fs, ctx TestContext) {
+	tests := []struct {
+		project      string
+		downloadOpts []string
+		validate     func(t *testing.T, ctx TestContext, confsPerType project.ConfigsPerType)
+	}{
+		{
+			project: "classic-apis",
+			downloadOpts: []string{
+				"-a", "alerting-profile,notification,management-zone",
+			},
+			validate: func(t *testing.T, ctx TestContext, confsPerType project.ConfigsPerType) {
+				managementZone := findConfig(t, confsPerType, "management-zone", "zone_"+ctx.suffix)
+				profile := findConfig(t, confsPerType, "alerting-profile", "profile_"+ctx.suffix)
+				notification := findConfig(t, confsPerType, "notification", "notification_"+ctx.suffix)
 
-		// upsert
-		cmd := runner.BuildCli(fs)
-		cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", env, "--project", proj})
-		err := cmd.Execute()
-		assert.Nil(t, err, "create: did not expect error")
+				assertRefParamFromTo(t, profile, managementZone)
+				assertRefParamFromTo(t, notification, profile)
+			},
+		},
+		{
+			project: "settings",
+			downloadOpts: []string{
+				"-s", "builtin:problem.notifications,builtin:management-zones,builtin:alerting.profile",
+			},
+			validate: func(t *testing.T, ctx TestContext, confsPerType project.ConfigsPerType) {
+				managementZone := findSetting(t, confsPerType, "builtin:management-zones", "zone_"+ctx.suffix, "name")
+				profile := findSetting(t, confsPerType, "builtin:alerting.profile", "profile_"+ctx.suffix, "name")
+				notification := findSetting(t, confsPerType, "builtin:problem.notifications", "notification_"+ctx.suffix, "displayName")
 
-		// update just to be sure
-		cmd = runner.BuildCli(fs)
-		cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", env, "--project", proj})
-		err = cmd.Execute()
-		assert.Nil(t, err, "update: did not expect error")
+				assertRefParamFromTo(t, profile, managementZone)
+				assertRefParamFromTo(t, notification, profile)
+			},
+		},
+		{
+			project: "settings-with-classic-mngt-zone",
+			downloadOpts: []string{
+				"-a", "management-zone",
+				"-s", "builtin:problem.notifications,builtin:alerting.profile",
+			},
+			validate: func(t *testing.T, ctx TestContext, confsPerType project.ConfigsPerType) {
+				managementZone := findConfig(t, confsPerType, "management-zone", "zone_"+ctx.suffix)
+				profile := findSetting(t, confsPerType, "builtin:alerting.profile", "profile_"+ctx.suffix, "name")
+				notification := findSetting(t, confsPerType, "builtin:problem.notifications", "notification_"+ctx.suffix, "displayName")
 
-		// download
-		cmd = runner.BuildCli(fs)
-		cmd.SetArgs([]string{"download",
-			"-v",
-			"--manifest", manifestFile,
-			"--environment", env,
-			"--project", "proj",
-			"--output-folder", "download",
-			"-a", "alerting-profile,notification,management-zone",
-		})
-		err = cmd.Execute()
-		assert.Nil(t, err, "download: did not expect error")
+				assertRefParamFromTo(t, profile, managementZone)
+				assertRefParamFromTo(t, notification, profile)
+			},
+		},
+		{
+			project: "config-with-mngt-zone",
+			downloadOpts: []string{
+				"-a", "notification,alerting-profile",
+				"-s", "builtin:management-zones",
+			},
+			validate: func(t *testing.T, ctx TestContext, confsPerType project.ConfigsPerType) {
+				managementZone := findSetting(t, confsPerType, "builtin:management-zones", "zone_"+ctx.suffix, "name")
+				profile := findConfig(t, confsPerType, "alerting-profile", "profile_"+ctx.suffix)
+				notification := findConfig(t, confsPerType, "notification", "notification_"+ctx.suffix)
 
-		// assert
-		mani, errs := manifest.LoadManifest(&manifest.LoaderContext{
-			Fs:           fs,
-			ManifestPath: "download/manifest.yaml",
-		})
-		assert.Empty(t, errs, "load manifest: did not expect do get error(s)")
+				assertRefParamFromTo(t, profile, managementZone)
+				assertRefParamFromTo(t, notification, profile)
+			},
+		},
+	}
 
-		projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
-			KnownApis:       api.NewAPIs().GetApiNameLookup(),
-			WorkingDir:      "download",
-			Manifest:        mani,
-			ParametersSerde: config.DefaultParameterParsers,
-		})
-		assert.Empty(t, errs, "load project: did not expect do get error(s)")
+	for _, env := range envs {
+		for _, tt := range tests {
+			testName := env + "_" + tt.project
 
-		projectAndEnvName := "proj_classic_env" // for manifest downloads proj + env name
+			t.Run(testName, func(t *testing.T) {
+				configFolder := "test-resources/references/"
+				manifestFile := configFolder + "manifest.yaml"
+				proj := tt.project
 
-		confsPerType := findConfigs(t, projects, projectAndEnvName)
+				fs := testutils.CreateTestFileSystem()
 
-		managementZone := findConfig(t, confsPerType, "management-zone", "zone_"+ctx.suffix)
-		profile := findConfig(t, confsPerType, "alerting-profile", "profile_"+ctx.suffix)
-		notification := findConfig(t, confsPerType, "notification", "notification_"+ctx.suffix)
+				RunIntegrationWithCleanupOnGivenFs(t, fs, configFolder, manifestFile, env, testName, func(fs afero.Fs, ctx TestContext) {
 
-		assertRefParamFromTo(t, profile, managementZone)
-		assertRefParamFromTo(t, notification, profile)
-	})
-}
+					// upsert
+					cmd := runner.BuildCli(fs)
+					cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", env, "--project", proj})
+					err := cmd.Execute()
+					assert.Nil(t, err, "create: did not expect error")
 
-func TestSettingsReferences(t *testing.T) {
-	configFolder := "test-resources/references/"
-	manifestFile := configFolder + "manifest.yaml"
-	env := "classic_env"
-	proj := "settings"
+					// update just to be sure
+					cmd = runner.BuildCli(fs)
+					cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", env, "--project", proj})
+					err = cmd.Execute()
+					assert.Nil(t, err, "update: did not expect error")
 
-	fs := testutils.CreateTestFileSystem()
+					// download
+					cmd = runner.BuildCli(fs)
+					cmd.SetArgs(append(
+						[]string{
+							"download",
+							"-v",
+							"--manifest", manifestFile,
+							"--environment", env,
+							"--project", "proj",
+							"--output-folder", "download",
+						},
+						tt.downloadOpts...))
+					err = cmd.Execute()
+					assert.Nil(t, err, "download: did not expect error")
 
-	RunIntegrationWithCleanupOnGivenFs(t, fs, configFolder, manifestFile, env, t.Name(), func(fs afero.Fs, ctx TestContext) {
+					// assert
+					mani, errs := manifest.LoadManifest(&manifest.LoaderContext{
+						Fs:           fs,
+						ManifestPath: "download/manifest.yaml",
+					})
+					assert.Empty(t, errs, "load manifest: did not expect do get error(s)")
 
-		// upsert
-		cmd := runner.BuildCli(fs)
-		cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", env, "--project", proj})
-		err := cmd.Execute()
-		assert.Nil(t, err, "create: did not expect error")
+					projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
+						KnownApis:       api.NewAPIs().GetApiNameLookup(),
+						WorkingDir:      "download",
+						Manifest:        mani,
+						ParametersSerde: config.DefaultParameterParsers,
+					})
+					assert.Empty(t, errs, "load project: did not expect do get error(s)")
 
-		// update just to be sure
-		cmd = runner.BuildCli(fs)
-		cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", env, "--project", proj})
-		err = cmd.Execute()
-		assert.Nil(t, err, "update: did not expect error")
+					projectAndEnvName := "proj_" + env // for manifest downloads proj + env name
 
-		// download
-		cmd = runner.BuildCli(fs)
-		cmd.SetArgs([]string{"download",
-			"-v",
-			"--manifest", manifestFile,
-			"--environment", env,
-			"--project", "proj",
-			"--output-folder", "download",
-			"-s", "builtin:problem.notifications,builtin:management-zones,builtin:alerting.profile",
-		})
-		err = cmd.Execute()
-		assert.Nil(t, err, "download: did not expect error")
+					confsPerType := findConfigs(t, projects, projectAndEnvName)
 
-		// assert
-		mani, errs := manifest.LoadManifest(&manifest.LoaderContext{
-			Fs:           fs,
-			ManifestPath: "download/manifest.yaml",
-		})
-		assert.Empty(t, errs, "load manifest: did not expect do get error(s)")
-
-		projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
-			KnownApis:       api.NewAPIs().GetApiNameLookup(),
-			WorkingDir:      "download",
-			Manifest:        mani,
-			ParametersSerde: config.DefaultParameterParsers,
-		})
-		assert.Empty(t, errs, "load project: did not expect do get error(s)")
-
-		projectAndEnvName := "proj_classic_env" // for manifest downloads proj + env name
-
-		confsPerType := findConfigs(t, projects, projectAndEnvName)
-
-		managementZone := findSetting(t, confsPerType, "builtin:management-zones", "zone_"+ctx.suffix, "name")
-		profile := findSetting(t, confsPerType, "builtin:alerting.profile", "profile_"+ctx.suffix, "name")
-		notification := findSetting(t, confsPerType, "builtin:problem.notifications", "notification_"+ctx.suffix, "displayName")
-
-		assertRefParamFromTo(t, profile, managementZone)
-		assertRefParamFromTo(t, notification, profile)
-	})
-}
-
-func TestSettingsWithConfigMngtZone(t *testing.T) {
-	configFolder := "test-resources/references/"
-	manifestFile := configFolder + "manifest.yaml"
-	env := "classic_env"
-	proj := "settings-with-classic-mngt-zone"
-
-	fs := testutils.CreateTestFileSystem()
-
-	RunIntegrationWithCleanupOnGivenFs(t, fs, configFolder, manifestFile, env, "ref-with-mngt-zone", func(fs afero.Fs, ctx TestContext) {
-
-		// upsert
-		cmd := runner.BuildCli(fs)
-		cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", env, "--project", proj})
-		err := cmd.Execute()
-		assert.Nil(t, err, "create: did not expect error")
-
-		// update just to be sure
-		cmd = runner.BuildCli(fs)
-		cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", env, "--project", proj})
-		err = cmd.Execute()
-		assert.Nil(t, err, "update: did not expect error")
-
-		// download
-		cmd = runner.BuildCli(fs)
-		cmd.SetArgs([]string{"download",
-			"-v",
-			"--manifest", manifestFile,
-			"--environment", env,
-			"--project", "proj",
-			"--output-folder", "download",
-			"-a", "management-zone",
-			"-s", "builtin:problem.notifications,builtin:alerting.profile",
-		})
-		err = cmd.Execute()
-		assert.Nil(t, err, "download: did not expect error")
-
-		// assert
-		mani, errs := manifest.LoadManifest(&manifest.LoaderContext{
-			Fs:           fs,
-			ManifestPath: "download/manifest.yaml",
-		})
-		assert.Empty(t, errs, "load manifest: did not expect do get error(s)")
-
-		projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
-			KnownApis:       api.NewAPIs().GetApiNameLookup(),
-			WorkingDir:      "download",
-			Manifest:        mani,
-			ParametersSerde: config.DefaultParameterParsers,
-		})
-		assert.Empty(t, errs, "load project: did not expect do get error(s)")
-
-		projectAndEnvName := "proj_classic_env" // for manifest downloads proj + env name
-
-		confsPerType := findConfigs(t, projects, projectAndEnvName)
-
-		for a, confs := range confsPerType {
-			for _, c := range confs {
-
-				nameParam := c.Parameters[config.NameParameter].(*valueParam.ValueParameter).Value
-				log.Info("%v/%v", a, nameParam)
-			}
-
+					tt.validate(t, ctx, confsPerType)
+				})
+			})
 		}
-
-		managementZone := findConfig(t, confsPerType, "management-zone", "zone_"+ctx.suffix)
-		profile := findSetting(t, confsPerType, "builtin:alerting.profile", "profile_"+ctx.suffix, "name")
-		notification := findSetting(t, confsPerType, "builtin:problem.notifications", "notification_"+ctx.suffix, "displayName")
-
-		assertRefParamFromTo(t, profile, managementZone)
-		assertRefParamFromTo(t, notification, profile)
-	})
-}
-
-func TestClassicReferencesWithSettingsManagementZone(t *testing.T) {
-	configFolder := "test-resources/references/"
-	manifestFile := configFolder + "manifest.yaml"
-	env := "classic_env"
-	proj := "config-with-mngt-zone"
-
-	fs := testutils.CreateTestFileSystem()
-
-	RunIntegrationWithCleanupOnGivenFs(t, fs, configFolder, manifestFile, env, "ref-with-mngt-zone", func(fs afero.Fs, ctx TestContext) {
-
-		// upsert
-		cmd := runner.BuildCli(fs)
-		cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", env, "--project", proj})
-		err := cmd.Execute()
-		assert.Nil(t, err, "create: did not expect error")
-
-		// update just to be sure
-		cmd = runner.BuildCli(fs)
-		cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", env, "--project", proj})
-		err = cmd.Execute()
-		assert.Nil(t, err, "update: did not expect error")
-
-		// download
-		cmd = runner.BuildCli(fs)
-		cmd.SetArgs([]string{"download",
-			"-v",
-			"--manifest", manifestFile,
-			"--environment", env,
-			"--project", "proj",
-			"--output-folder", "download",
-			"-a", "notification,alerting-profile",
-			"-s", "builtin:management-zones",
-		})
-		err = cmd.Execute()
-		assert.Nil(t, err, "download: did not expect error")
-
-		// assert
-		mani, errs := manifest.LoadManifest(&manifest.LoaderContext{
-			Fs:           fs,
-			ManifestPath: "download/manifest.yaml",
-		})
-		assert.Empty(t, errs, "load manifest: did not expect do get error(s)")
-
-		projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
-			KnownApis:       api.NewAPIs().GetApiNameLookup(),
-			WorkingDir:      "download",
-			Manifest:        mani,
-			ParametersSerde: config.DefaultParameterParsers,
-		})
-		assert.Empty(t, errs, "load project: did not expect do get error(s)")
-
-		projectAndEnvName := "proj_classic_env" // for manifest downloads proj + env name
-
-		confsPerType := findConfigs(t, projects, projectAndEnvName)
-
-		for a, confs := range confsPerType {
-			for _, c := range confs {
-
-				nameParam := c.Parameters[config.NameParameter].(*valueParam.ValueParameter).Value
-				log.Info("%v/%v", a, nameParam)
-			}
-
-		}
-
-		managementZone := findSetting(t, confsPerType, "builtin:management-zones", "zone_"+ctx.suffix, "name")
-		profile := findConfig(t, confsPerType, "alerting-profile", "profile_"+ctx.suffix)
-		notification := findConfig(t, confsPerType, "notification", "notification_"+ctx.suffix)
-
-		assertRefParamFromTo(t, profile, managementZone)
-		assertRefParamFromTo(t, notification, profile)
-	})
+	}
 }
 
 func assertRefParamFromTo(t *testing.T, from config.Config, to config.Config) {
