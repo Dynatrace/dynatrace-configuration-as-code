@@ -191,14 +191,30 @@ func sortConfigs(projects []project.Project, environmentNames []string) (project
 }
 
 func logProjectsInfo(projects []project.Project) {
-	log.Info("Projects to be deployed:")
+	log.Info("Projects to be deployed (%d):", len(projects))
 	for _, p := range projects {
 		log.Info("  - %s", p)
 	}
+
+	if log.DebugEnabled() {
+		logConfigInfo(projects)
+	}
+}
+
+func logConfigInfo(projects []project.Project) {
+	cfgCount := 0
+	for _, p := range projects {
+		for _, cfgsPerTypePerEnv := range p.Configs {
+			for _, cfgsPerType := range cfgsPerTypePerEnv {
+				cfgCount += len(cfgsPerType)
+			}
+		}
+	}
+	log.Debug("Deploying %d configurations.", cfgCount)
 }
 
 func logEnvironmentsInfo(environments manifest.Environments) {
-	log.Info("Environments to deploy to:")
+	log.Info("Environments to deploy to (%d):", len(environments))
 	for _, name := range environments.Names() {
 		log.Info("  - %s", name)
 	}
