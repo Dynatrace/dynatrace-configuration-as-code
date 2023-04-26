@@ -29,10 +29,10 @@ import (
 	"net/http"
 )
 
-// CreateClient is driven by data given through a manifest.EnvironmentDefinition to create an appropriate client.Client.
+// CreateDTClient is driven by data given through a manifest.EnvironmentDefinition to create an appropriate client.Client.
 //
 // In case when flag dryRun is true this factory returns the client.DummyClient.
-func CreateClient(url string, a manifest.Auth, dryRun bool, opts ...func(dynatraceClient *dtclient.DynatraceClient)) (dtclient.Client, error) {
+func CreateDTClient(url string, a manifest.Auth, dryRun bool, opts ...func(dynatraceClient *dtclient.DynatraceClient)) (dtclient.Client, error) {
 	switch {
 	case dryRun:
 		return dtclient.NewDummyClient(), nil

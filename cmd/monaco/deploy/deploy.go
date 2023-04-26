@@ -89,8 +89,7 @@ func doDeploy(configs project.ConfigsPerEnvironment, environments manifest.Envir
 			}
 		}
 
-		dtClient, err := dynatrace.CreateClient(env.URL.Value, env.Auth, dryRun)
-
+		clientSet, err := deploy.CreateClientSet(env.URL.Value, env.Auth, dryRun)
 		if err != nil {
 			if continueOnErr {
 				deployErrs = append(deployErrs, err)
@@ -100,7 +99,7 @@ func doDeploy(configs project.ConfigsPerEnvironment, environments manifest.Envir
 			}
 		}
 
-		errs := deploy.DeployConfigs(dtClient, api.NewAPIs(), configs, deploy.DeployConfigsOptions{
+		errs := deploy.DeployConfigs(clientSet, api.NewAPIs(), configs, deploy.DeployConfigsOptions{
 			ContinueOnErr: continueOnErr,
 			DryRun:        dryRun,
 		})

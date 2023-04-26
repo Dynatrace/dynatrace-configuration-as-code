@@ -16,11 +16,8 @@ package deploy
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 )
@@ -38,16 +35,16 @@ type DeployConfigsOptions struct {
 // DeployConfigs deploys the given configs with the given apis via the given client
 // NOTE: the given configs need to be sorted, otherwise deployment will
 // probably fail, as references cannot be resolved
-func DeployConfigs(client dtclient.Client, apis api.APIs, sortedConfigs []config.Config, opts DeployConfigsOptions) []error {
+func DeployConfigs(clientSet *clientSet, apis api.APIs, sortedConfigs []config.Config, opts DeployConfigsOptions) []error {
 	entityMap := newEntityMap(apis)
 	var errors []error
 
 	for i := range sortedConfigs {
 		c := &sortedConfigs[i] // avoid implicit memory aliasing (gosec G601)
 
-		entity, deploymentErrors := deploy(client, apis, entityMap, c)
+		entity, deploymentErrors := deploy(clientSet, apis, entityMap, c)
 
-		if deploymentErrors != nil {
+		if len(deploymentErrors) > 0 {
 			for _, err := range deploymentErrors {
 				errors = append(errors, fmt.Errorf("failed to deploy config %s: %w", c.Coordinate, err))
 			}
@@ -63,7 +60,7 @@ func DeployConfigs(client dtclient.Client, apis api.APIs, sortedConfigs []config
 	return errors
 }
 
-func deploy(client dtclient.Client, apis api.APIs, em *entityMap, c *config.Config) (*parameter.ResolvedEntity, []error) {
+func deploy(clientSet *clientSet, apis api.APIs, em *entityMap, c *config.Config) (*parameter.ResolvedEntity, []error) {
 	if c.Skip {
 		log.Info("\tSkipping deployment of config %s", c.Coordinate)
 		return &parameter.ResolvedEntity{EntityName: c.Coordinate.ConfigId, Coordinate: c.Coordinate, Properties: parameter.Properties{}, Skip: true}, nil
@@ -79,143 +76,33 @@ func deploy(client dtclient.Client, apis api.APIs, em *entityMap, c *config.Conf
 		return &parameter.ResolvedEntity{}, []error{err}
 	}
 
+	var res *parameter.ResolvedEntity
+	var deployErr error
 	switch t := c.Type.(type) {
-
 	case config.EntityType:
 		log.Debug("Entity are not deployable, skipping entity type: %s", t.EntitiesType)
 		return nil, nil
 
 	case config.SettingsType:
 		log.Info("\tDeploying config %s", c.Coordinate)
-		return deploySetting(client, properties, renderedConfig, c)
+		res, deployErr = deploySetting(clientSet.settings(), properties, renderedConfig, c)
 
 	case config.ClassicApiType:
 		log.Info("\tDeploying config %s", c.Coordinate)
-		return deployConfig(client, apis, em, properties, renderedConfig, c)
+		res, deployErr = deployClassicConfig(clientSet.classic(), apis, em, properties, renderedConfig, c)
+
+	case config.AutomationType:
+		log.Info("\tDeploying config %s", c.Coordinate)
+		res, deployErr = deployAutomation(clientSet.automation(), properties, renderedConfig, c)
 
 	default:
 		return nil, []error{fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())}
 	}
-}
-
-func deployConfig(configClient dtclient.ConfigClient, apis api.APIs, entityMap *entityMap, properties parameter.Properties, renderedConfig string, conf *config.Config) (*parameter.ResolvedEntity, []error) {
-	t, ok := conf.Type.(config.ClassicApiType)
-	if !ok {
-		return &parameter.ResolvedEntity{}, []error{fmt.Errorf("config was not of expected type %q, but %q", config.ClassicApiTypeId, conf.Type.ID())}
+	if deployErr != nil {
+		return nil, []error{deployErr}
 	}
+	return res, nil
 
-	apiToDeploy, found := apis[t.Api]
-	if !found {
-		return &parameter.ResolvedEntity{}, []error{fmt.Errorf("unknown api `%s`. this is most likely a bug", t.Api)}
-	}
-
-	var errors []error
-	configName, err := extractConfigName(conf, properties)
-	if err != nil {
-		errors = append(errors, err)
-	} else if entityMap.contains(apiToDeploy.ID, configName) && !apiToDeploy.NonUniqueName {
-		errors = append(errors, newConfigDeployErr(conf, fmt.Sprintf("duplicated config name `%s`", configName)))
-	}
-	if len(errors) > 0 {
-		return &parameter.ResolvedEntity{}, errors
-	}
-
-	if apiToDeploy.DeprecatedBy != "" {
-		log.Warn("API for \"%s\" is deprecated! Please consider migrating to \"%s\"!", apiToDeploy.ID, apiToDeploy.DeprecatedBy)
-	}
-
-	var entity dtclient.DynatraceEntity
-	if apiToDeploy.NonUniqueName {
-		entity, err = upsertNonUniqueNameConfig(configClient, apiToDeploy, conf, configName, renderedConfig)
-	} else {
-		entity, err = configClient.UpsertConfigByName(apiToDeploy, configName, []byte(renderedConfig))
-	}
-
-	if err != nil {
-		return &parameter.ResolvedEntity{}, []error{newConfigDeployErr(conf, err.Error())}
-	}
-
-	properties[config.IdParameter] = entity.Id
-	properties[config.NameParameter] = entity.Name
-
-	return &parameter.ResolvedEntity{
-		EntityName: entity.Name,
-		Coordinate: conf.Coordinate,
-		Properties: properties,
-		Skip:       false,
-	}, nil
-}
-
-func upsertNonUniqueNameConfig(client dtclient.ConfigClient, apiToDeploy api.API, conf *config.Config, configName string, renderedConfig string) (dtclient.DynatraceEntity, error) {
-	configID := conf.Coordinate.ConfigId
-	projectId := conf.Coordinate.Project
-
-	entityUuid := configID
-
-	isUUIDOrMeID := idutils.IsUuid(entityUuid) || idutils.IsMeId(entityUuid)
-	if !isUUIDOrMeID {
-		entityUuid = idutils.GenerateUuidFromConfigId(projectId, configID)
-	}
-
-	return client.UpsertConfigByNonUniqueNameAndId(apiToDeploy, entityUuid, configName, []byte(renderedConfig))
-}
-
-func deploySetting(settingsClient dtclient.SettingsClient, properties parameter.Properties, renderedConfig string, c *config.Config) (*parameter.ResolvedEntity, []error) {
-	t, ok := c.Type.(config.SettingsType)
-	if !ok {
-		return &parameter.ResolvedEntity{}, []error{fmt.Errorf("config was not of expected type %q, but %q", config.SettingsTypeId, c.Type.ID())}
-	}
-
-	scope, err := extractScope(properties)
-	if err != nil {
-		return &parameter.ResolvedEntity{}, []error{err}
-	}
-
-	entity, err := settingsClient.UpsertSettings(dtclient.SettingsObject{
-		Id:             c.Coordinate.ConfigId,
-		SchemaId:       t.SchemaId,
-		SchemaVersion:  t.SchemaVersion,
-		Scope:          scope,
-		Content:        []byte(renderedConfig),
-		OriginObjectId: c.OriginObjectId,
-	})
-	if err != nil {
-		return &parameter.ResolvedEntity{}, []error{newConfigDeployErr(c, err.Error())}
-	}
-
-	name := fmt.Sprintf("[UNKNOWN NAME]%s", entity.Id)
-	if configName, err := extractConfigName(c, properties); err == nil {
-		name = configName
-	} else {
-		log.Warn("failed to extract name for Settings 2.0 object %q - ID will be used", entity.Id)
-	}
-
-	properties[config.IdParameter], err = getEntityID(c, entity)
-	if err != nil {
-		return &parameter.ResolvedEntity{}, []error{newConfigDeployErr(c, err.Error())}
-	}
-
-	properties[config.NameParameter] = name
-
-	return &parameter.ResolvedEntity{
-		EntityName: name,
-		Coordinate: c.Coordinate,
-		Properties: properties,
-		Skip:       false,
-	}, nil
-
-}
-
-func getEntityID(c *config.Config, e dtclient.DynatraceEntity) (string, error) {
-	if c.Coordinate.Type == "builtin:management-zones" && featureflags.ManagementZoneSettingsNumericIDs().Enabled() {
-		numID, err := idutils.GetNumericIDForObjectID(e.Id)
-		if err != nil {
-			return "", fmt.Errorf("failed to extract numeric ID for Management Zone Setting with object ID %q: %w", e.Id, err)
-		}
-		return fmt.Sprintf("%d", numID), nil
-	}
-
-	return e.Id, nil
 }
 
 func extractScope(properties parameter.Properties) (string, error) {
