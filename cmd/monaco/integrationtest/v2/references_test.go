@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
@@ -153,9 +154,82 @@ func TestSettingsReferences(t *testing.T) {
 
 		confsPerType := findConfigs(t, projects, projectAndEnvName)
 
-		managementZone := findSetting(t, confsPerType, "builtin:management-zones", "zone", "name")
-		profile := findSetting(t, confsPerType, "builtin:alerting.profile", "profile", "name")
-		notification := findSetting(t, confsPerType, "builtin:problem.notifications", "notification", "displayName")
+		managementZone := findSetting(t, confsPerType, "builtin:management-zones", "zone_"+ctx.suffix, "name")
+		profile := findSetting(t, confsPerType, "builtin:alerting.profile", "profile_"+ctx.suffix, "name")
+		notification := findSetting(t, confsPerType, "builtin:problem.notifications", "notification_"+ctx.suffix, "displayName")
+
+		assertRefParamFromTo(t, profile, managementZone)
+		assertRefParamFromTo(t, notification, profile)
+	})
+}
+
+func TestSettingsWithConfigMngtZone(t *testing.T) {
+	configFolder := "test-resources/references/"
+	manifestFile := configFolder + "manifest.yaml"
+	env := "classic_env"
+	proj := "settings-with-classic-mngt-zone"
+
+	fs := testutils.CreateTestFileSystem()
+
+	RunIntegrationWithCleanupOnGivenFs(t, fs, configFolder, manifestFile, env, "ref-with-mngt-zone", func(fs afero.Fs, ctx TestContext) {
+
+		// upsert
+		cmd := runner.BuildCli(fs)
+		cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", env, "--project", proj})
+		err := cmd.Execute()
+		assert.Nil(t, err, "create: did not expect error")
+
+		// update just to be sure
+		cmd = runner.BuildCli(fs)
+		cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", env, "--project", proj})
+		err = cmd.Execute()
+		assert.Nil(t, err, "update: did not expect error")
+
+		// download
+		cmd = runner.BuildCli(fs)
+		cmd.SetArgs([]string{"download",
+			"-v",
+			"--manifest", manifestFile,
+			"--environment", env,
+			"--project", "proj",
+			"--output-folder", "download",
+			"-a", "management-zone",
+			"-s", "builtin:problem.notifications,builtin:alerting.profile",
+		})
+		err = cmd.Execute()
+		assert.Nil(t, err, "download: did not expect error")
+
+		// assert
+		mani, errs := manifest.LoadManifest(&manifest.LoaderContext{
+			Fs:           fs,
+			ManifestPath: "download/manifest.yaml",
+		})
+		assert.Empty(t, errs, "load manifest: did not expect do get error(s)")
+
+		projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
+			KnownApis:       api.NewAPIs().GetApiNameLookup(),
+			WorkingDir:      "download",
+			Manifest:        mani,
+			ParametersSerde: config.DefaultParameterParsers,
+		})
+		assert.Empty(t, errs, "load project: did not expect do get error(s)")
+
+		projectAndEnvName := "proj_classic_env" // for manifest downloads proj + env name
+
+		confsPerType := findConfigs(t, projects, projectAndEnvName)
+
+		for a, confs := range confsPerType {
+			for _, c := range confs {
+
+				nameParam := c.Parameters[config.NameParameter].(*valueParam.ValueParameter).Value
+				log.Info("%v/%v", a, nameParam)
+			}
+
+		}
+
+		managementZone := findConfig(t, confsPerType, "management-zone", "zone_"+ctx.suffix)
+		profile := findSetting(t, confsPerType, "builtin:alerting.profile", "profile_"+ctx.suffix, "name")
+		notification := findSetting(t, confsPerType, "builtin:problem.notifications", "notification_"+ctx.suffix, "displayName")
 
 		assertRefParamFromTo(t, profile, managementZone)
 		assertRefParamFromTo(t, notification, profile)
@@ -163,7 +237,7 @@ func TestSettingsReferences(t *testing.T) {
 }
 
 func assertRefParamFromTo(t *testing.T, from config.Config, to config.Config) {
-	name := paramName(to)
+	name := paramName(to.Coordinate.Type, to.Coordinate.ConfigId)
 	param, found := from.Parameters[name]
 	assert.Truef(t, found, "expected to find parameter %q", name)
 
@@ -230,7 +304,7 @@ func findSetting(t *testing.T, confsPerType project.ConfigsPerType, api, name, p
 
 var templatePattern = regexp.MustCompile(`[^a-zA-Z0-9_]+`)
 
-func paramName(conf config.Config) string {
-	n := fmt.Sprintf("%v__%v__id", conf.Coordinate.Type, conf.Coordinate.ConfigId)
+func paramName(typ, id string) string {
+	n := fmt.Sprintf("%v__%v__id", typ, id)
 	return templatePattern.ReplaceAllString(n, "")
 }

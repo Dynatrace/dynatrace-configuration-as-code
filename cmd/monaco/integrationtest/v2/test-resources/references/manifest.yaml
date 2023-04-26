@@ -3,6 +3,7 @@ manifestVersion: 1.0
 projects:
 - name: classic-apis
 - name: settings
+- name: settings-with-classic-mngt-zone
 
 environmentGroups:
 - name: default
