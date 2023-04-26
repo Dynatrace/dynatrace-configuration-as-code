@@ -39,14 +39,18 @@ func makeDownloaders(options downloadConfigsOptions) (downloaders, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	autClient := automation.NewClient(options.environmentURL, client.NewOAuthClient(context.TODO(), client.OauthCredentials{
-		ClientID:     options.auth.OAuth.ClientID.Value,
-		ClientSecret: options.auth.OAuth.ClientSecret.Value,
-		TokenURL:     options.auth.OAuth.GetTokenEndpointValue(),
-	}), automation.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
-
-	return downloaders{settings.NewDownloader(dtClient), classic.NewDownloader(dtClient), dlautomation.NewDownloader(autClient)}, nil
+	var automationDownloader download.Downloader[v2.AutomationType] = dlautomation.NoopAutomationDownloader{}
+	if options.auth.OAuth != nil {
+		autClient := automation.NewClient(options.environmentURL, client.NewOAuthClient(context.TODO(), client.OauthCredentials{
+			ClientID:     options.auth.OAuth.ClientID.Value,
+			ClientSecret: options.auth.OAuth.ClientSecret.Value,
+			TokenURL:     options.auth.OAuth.GetTokenEndpointValue(),
+		}), automation.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
+		automationDownloader = dlautomation.NewDownloader(autClient)
+	}
+	var settingsDownloader download.Downloader[v2.SettingsType] = settings.NewDownloader(dtClient)
+	var classicDownloader download.Downloader[v2.ClassicApiType] = classic.NewDownloader(dtClient)
+	return downloaders{settingsDownloader, classicDownloader, automationDownloader}, nil
 }
 
 func (d downloaders) Classic() download.Downloader[v2.ClassicApiType] {

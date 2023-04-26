@@ -97,3 +97,10 @@ func (d *Downloader) Download(projectName string, automationTypes ...config.Auto
 	}
 	return configsPerType, nil
 }
+
+type NoopAutomationDownloader struct {
+}
+
+func (d NoopAutomationDownloader) Download(_ string, _ ...config.AutomationType) (v2.ConfigsPerType, error) {
+	return nil, nil
+}
