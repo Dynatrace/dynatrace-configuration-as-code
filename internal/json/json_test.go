@@ -19,6 +19,7 @@
 package json
 
 import (
+	"reflect"
 	"testing"
 
 	"gotest.tools/assert"
@@ -136,4 +137,40 @@ func TestJsonUnmarshallingNoOpeningParenthesisExpectedError(t *testing.T) {
 	assert.Equal(t, 6, jsonErr.CharacterNumberInLine)
 	assert.Equal(t, "\"key\": \"value\",", jsonErr.LineContent)
 	assert.Check(t, jsonErr.Cause != nil)
+}
+
+func TestMarshalIndent(t *testing.T) {
+	tests := []struct {
+		name       string
+		jsonInput  []byte
+		wantOutput []byte
+		wantErr    bool
+	}{
+		{
+			name:       "Valid JSON input",
+			jsonInput:  []byte(`{"name": "Alice", "age": 30}`),
+			wantOutput: []byte("{\n  \"name\": \"Alice\",\n  \"age\": 30\n}"),
+			wantErr:    false,
+		},
+		{
+			name:       "Invalid JSON input",
+			jsonInput:  []byte(`{s`),
+			wantOutput: []byte(`{s`),
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotOutput, gotErr := MarshalIndent(tt.jsonInput)
+
+			if !reflect.DeepEqual(gotOutput, tt.wantOutput) {
+				t.Errorf("MarshalIndent(%v) = %v, want %v", tt.jsonInput, gotOutput, tt.wantOutput)
+			}
+
+			if (gotErr != nil) != tt.wantErr {
+				t.Errorf("MarshalIndent(%v) error = %v, want error = %v", tt.jsonInput, gotErr, tt.wantErr)
+			}
+		})
+	}
 }

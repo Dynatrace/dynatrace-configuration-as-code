@@ -44,7 +44,7 @@ func makeDownloaders(options downloadConfigsOptions) (downloaders, error) {
 		ClientID:     options.auth.OAuth.ClientID.Value,
 		ClientSecret: options.auth.OAuth.ClientSecret.Value,
 		TokenURL:     options.auth.OAuth.GetTokenEndpointValue(),
-	}))
+	}), automation.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
 
 	return downloaders{settings.NewDownloader(dtClient), classic.NewDownloader(dtClient), dlautomation.NewDownloader(autClient)}, nil
 }

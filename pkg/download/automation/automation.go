@@ -17,10 +17,10 @@
 package automation
 
 import (
-	"encoding/json"
+	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
+	automationClient "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
@@ -29,19 +29,19 @@ import (
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 )
 
-var automationTypesToResources = map[config.AutomationType]automation.ResourceType{
-	config.AutomationType{Resource: config.Workflow}:         automation.Workflows,
-	config.AutomationType{Resource: config.BusinessCalendar}: automation.BusinessCalendars,
-	config.AutomationType{Resource: config.SchedulingRule}:   automation.SchedulingRules,
+var automationTypesToResources = map[config.AutomationType]automationClient.ResourceType{
+	config.AutomationType{Resource: config.Workflow}:         automationClient.Workflows,
+	config.AutomationType{Resource: config.BusinessCalendar}: automationClient.BusinessCalendars,
+	config.AutomationType{Resource: config.SchedulingRule}:   automationClient.SchedulingRules,
 }
 
 // Downloader can be used to download automation resources/configs
 type Downloader struct {
-	client *automation.Client
+	client *automationClient.Client
 }
 
 // NewDownloader creates a new [Downloader] for automation resources/configs
-func NewDownloader(client *automation.Client) *Downloader {
+func NewDownloader(client *automationClient.Client) *Downloader {
 	return &Downloader{
 		client: client,
 	}
@@ -50,13 +50,10 @@ func NewDownloader(client *automation.Client) *Downloader {
 // Download downloads all automation resources for a given project
 // If automationTypes is given it will just download those types of automation resources
 func (d *Downloader) Download(projectName string, automationTypes ...config.AutomationType) (v2.ConfigsPerType, error) {
-
-	// if no specific automation types are given, take all
 	if len(automationTypes) == 0 {
 		automationTypes = maps.Keys(automationTypesToResources)
 	}
 
-	// download automation resources
 	configsPerType := make(v2.ConfigsPerType)
 	for _, at := range automationTypes {
 		resource, ok := automationTypesToResources[at]
@@ -64,32 +61,23 @@ func (d *Downloader) Download(projectName string, automationTypes ...config.Auto
 			log.Warn("No resource mapping for automation type %s found", at.Resource)
 			continue
 		}
-		// download all configs of resource
 		response, err := d.client.List(resource)
 		if err != nil {
-			return nil, err
+			log.Error("Failed to fetch all objects for automation resource %s: %v", err)
+			continue
 		}
 
-		// nothing to do if there were no configs
-		// continue with next resource
+		log.Info("Downloaded %d objects for automation resource %s", len(response.Results), string(at.Resource))
 		if len(response.Results) == 0 {
 			continue
 		}
-		log.Info("Downloaded %d objects for automation resource %s", len(response.Results), string(at.Resource))
 
-		// convert and collect all objects into a slice of configs.Config values to return
 		var configs []config.Config
 		for _, obj := range response.Results {
 			configId := obj.Id
-			var content string
-			if indentedData, err := json.MarshalIndent(json.RawMessage(obj.Data), "", "  "); err == nil {
-				content = string(indentedData)
-			} else {
-				log.Warn("Failed to indent settings template. Reason: %s", err)
-				content = string(obj.Data)
-			}
+			content, _ := jsonutils.MarshalIndent(obj.Data)
 			c := config.Config{
-				Template: template.NewDownloadTemplate(configId, configId, content),
+				Template: template.NewDownloadTemplate(configId, configId, string(content)),
 				Coordinate: coordinate.Coordinate{
 					Project:  projectName,
 					Type:     string(at.Resource),

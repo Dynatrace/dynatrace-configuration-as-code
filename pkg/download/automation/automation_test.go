@@ -74,11 +74,10 @@ func TestDownloader_Download_FailsToDownloadSpecificResource(t *testing.T) {
 	httpClient := automation.NewClient(server.URL, server.Client())
 	downloader := NewDownloader(httpClient)
 	result, err := downloader.Download("projectName")
-	assert.Len(t, result, 0)
-	assert.Len(t, result[string(config.Workflow)], 0)
-	assert.Len(t, result[string(config.SchedulingRule)], 0)
-	assert.Len(t, result[string(config.BusinessCalendar)], 0)
-	assert.Error(t, err)
+	assert.Len(t, result, 2)
+	assert.Len(t, result[string(config.Workflow)], 3)
+	assert.Len(t, result[string(config.SchedulingRule)], 6)
+	assert.NoError(t, err)
 }
 
 func TestDownloader_Download_Specific_ResouceTypes(t *testing.T) {

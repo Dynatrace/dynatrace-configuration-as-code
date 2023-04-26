@@ -170,3 +170,14 @@ func newEmptyErr(location Location, err error) error {
 		Cause:                 err,
 	}
 }
+
+// MarshalIndent takes json encoded content as a []byte and tries to indent it with two spaces
+// If it is not able to marshal the content it returns the []byte as is and prints a warning and returns the error
+func MarshalIndent(jsonContent []byte) ([]byte, error) {
+	indentedData, err := json.MarshalIndent(json.RawMessage(jsonContent), "", "  ")
+	if err != nil {
+		log.Warn("Failed to indent json content. Reason: %s", err)
+		return jsonContent, err
+	}
+	return indentedData, nil
+}
