@@ -20,6 +20,7 @@ package dependency_resolution
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
@@ -50,16 +51,18 @@ func TestDependencyResolution(t *testing.T) {
 			project.ConfigsPerType{
 				"api": []config.Config{
 					{
-						Type:     config.ClassicApiType{Api: "api-id"},
-						Template: template.NewDownloadTemplate("id", "name", "content"),
+						Type:       config.ClassicApiType{Api: "api"},
+						Template:   template.NewDownloadTemplate("id", "name", "content"),
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id"},
 					},
 				},
 			},
 			project.ConfigsPerType{
 				"api": []config.Config{
 					{
-						Type:     config.ClassicApiType{Api: "api-id"},
-						Template: template.NewDownloadTemplate("id", "name", "content"),
+						Type:       config.ClassicApiType{Api: "api"},
+						Template:   template.NewDownloadTemplate("id", "name", "content"),
+						Coordinate: coordinate.Coordinate{Project: "project", Type: "api", ConfigId: "id"},
 					},
 				},
 			},
@@ -676,7 +679,13 @@ func TestDependencyResolution(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		t.Run(test.name+"_BasicResolver", func(t *testing.T) {
+			result := ResolveDependencies(test.setup)
+
+			assert.DeepEqual(t, result, test.expected, cmp.AllowUnexported(template.DownloadTemplate{}))
+		})
+		t.Run(test.name+"_FastResolver", func(t *testing.T) {
+			t.Setenv(featureflags.FastDependencyResolver().EnvName(), "true")
 			result := ResolveDependencies(test.setup)
 
 			assert.DeepEqual(t, result, test.expected, cmp.AllowUnexported(template.DownloadTemplate{}))
