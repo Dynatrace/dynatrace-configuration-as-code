@@ -1,0 +1,161 @@
+{
+    "count": 6,
+    "results": [
+        {
+            "id": "12345678-1234-1234-1234-123456789091",
+            "version": 1,
+            "title": "Every working day",
+            "ruleType": "rrule",
+            "rrule": {
+                "freq": "WEEKLY",
+                "interval": 1,
+                "datestart": "2020-10-01",
+                "automation_server_byworkday": "WORKING"
+            },
+            "groupingRule": null,
+            "fixedOffsetRule": null,
+            "relativeOffsetRule": null,
+            "businessCalendar": "12345678-1234-1234-1234-123456789098",
+            "labels": {},
+            "description": "",
+            "modificationInfo": {
+                "createdBy": null,
+                "createdTime": "2023-02-28T08:47:01.695145Z",
+                "lastModifiedBy": null,
+                "lastModifiedTime": "2023-02-28T08:47:01.695163Z"
+            }
+        },
+        {
+            "id": "12345678-1234-1234-1234-123456789092",
+            "version": 1,
+            "title": "Every working day :)",
+            "ruleType": "rrule",
+            "rrule": {
+                "freq": "WEEKLY",
+                "interval": 1,
+                "datestart": "2020-10-01",
+                "automation_server_byworkday": "WORKING"
+            },
+            "groupingRule": null,
+            "fixedOffsetRule": null,
+            "relativeOffsetRule": null,
+            "businessCalendar": "12345678-1234-1234-1234-123456789098",
+            "labels": {},
+            "description": "",
+            "modificationInfo": {
+                "createdBy": "2f321c04-566e-4779-b576-3c033b8cd9e9",
+                "createdTime": "2023-04-11T15:04:50.083584Z",
+                "lastModifiedBy": "2f321c04-566e-4779-b576-3c033b8cd9e9",
+                "lastModifiedTime": "2023-04-13T13:58:03.790773Z"
+            }
+        },
+        {
+            "id": "12345678-1234-1234-1234-123456789093",
+            "version": 1,
+            "title": "First working day of the month",
+            "ruleType": "rrule",
+            "rrule": {
+                "freq": "MONTHLY",
+                "bysetpos": [
+                    1
+                ],
+                "interval": 1,
+                "datestart": "2020-10-01",
+                "automation_server_byworkday": "WORKING"
+            },
+            "groupingRule": null,
+            "fixedOffsetRule": null,
+            "relativeOffsetRule": null,
+            "businessCalendar": "12345678-1234-1234-1234-123456789098",
+            "labels": {},
+            "description": "",
+            "modificationInfo": {
+                "createdBy": null,
+                "createdTime": "2023-02-28T08:47:01.608497Z",
+                "lastModifiedBy": null,
+                "lastModifiedTime": "2023-02-28T08:47:01.608515Z"
+            }
+        },
+        {
+            "id": "12345678-1234-1234-1234-123456789094",
+            "version": 1,
+            "title": "First working day of the week",
+            "ruleType": "rrule",
+            "rrule": {
+                "freq": "WEEKLY",
+                "bysetpos": [
+                    1
+                ],
+                "interval": 1,
+                "datestart": "2020-10-01",
+                "automation_server_byworkday": "WORKING"
+            },
+            "groupingRule": null,
+            "fixedOffsetRule": null,
+            "relativeOffsetRule": null,
+            "businessCalendar": "12345678-1234-1234-1234-123456789098",
+            "labels": {},
+            "description": "",
+            "modificationInfo": {
+                "createdBy": null,
+                "createdTime": "2023-02-28T08:47:01.668699Z",
+                "lastModifiedBy": null,
+                "lastModifiedTime": "2023-02-28T08:47:01.668716Z"
+            }
+        },
+        {
+            "id": "12345678-1234-1234-1234-123456789095",
+            "version": 1,
+            "title": "Last working day of the month",
+            "ruleType": "rrule",
+            "rrule": {
+                "freq": "MONTHLY",
+                "bysetpos": [
+                    -1
+                ],
+                "interval": 1,
+                "datestart": "2020-10-01",
+                "automation_server_byworkday": "WORKING"
+            },
+            "groupingRule": null,
+            "fixedOffsetRule": null,
+            "relativeOffsetRule": null,
+            "businessCalendar": "12345678-1234-1234-1234-123456789098",
+            "labels": {},
+            "description": "",
+            "modificationInfo": {
+                "createdBy": null,
+                "createdTime": "2023-02-28T08:47:01.560815Z",
+                "lastModifiedBy": null,
+                "lastModifiedTime": "2023-02-28T08:47:01.560832Z"
+            }
+        },
+        {
+            "id": "12345678-1234-1234-1234-123456789096",
+            "version": 1,
+            "title": "Last working day of the week",
+            "ruleType": "rrule",
+            "rrule": {
+                "freq": "WEEKLY",
+                "bysetpos": [
+                    -1
+                ],
+                "interval": 1,
+                "datestart": "2020-10-01",
+                "automation_server_byworkday": "WORKING"
+            },
+            "groupingRule": null,
+            "fixedOffsetRule": null,
+            "relativeOffsetRule": null,
+            "businessCalendar": "12345678-1234-1234-1234-123456789098",
+            "labels": {},
+            "description": "",
+            "modificationInfo": {
+                "createdBy": null,
+                "createdTime": "2023-02-28T08:47:01.631330Z",
+                "lastModifiedBy": null,
+                "lastModifiedTime": "2023-02-28T08:47:01.631349Z"
+            }
+        }
+    ]
+}

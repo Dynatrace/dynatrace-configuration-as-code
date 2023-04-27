@@ -28,6 +28,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 
+	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/internal/json"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
@@ -128,10 +129,11 @@ func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPe
 				log.Error("Failed to fetch all settings for schema %s: %v", s, errMsg)
 				return
 			}
+			log.Info("Downloaded %d settings for schema %s", len(objects), s)
 			if len(objects) == 0 {
 				return
 			}
-			log.Info("Downloaded %d settings for schema %s", len(objects), s)
+
 			cfgs := d.convertAllObjects(objects, projectName)
 			downloadMutex.Lock()
 			results[s] = cfgs
@@ -161,19 +163,11 @@ func (d *Downloader) convertAllObjects(objects []dtclient.DownloadSettingsObject
 			continue
 		}
 
-		// indent value payload
-		var content string
-		if bytes, err := json.MarshalIndent(o.Value, "", "  "); err == nil {
-			content = string(bytes)
-		} else {
-			log.Warn("Failed to indent settings template. Reason: %s", err)
-			content = string(o.Value)
-		}
-
+		indentedJson, _ := jsonutils.MarshalIndent(o.Value)
 		// construct config object with generated config ID
 		configId := idutils.GenerateUuidFromName(o.ObjectId)
 		c := config.Config{
-			Template: template.NewDownloadTemplate(configId, configId, content),
+			Template: template.NewDownloadTemplate(configId, configId, string(indentedJson)),
 			Coordinate: coordinate.Coordinate{
 				Project:  projectName,
 				Type:     o.SchemaId,

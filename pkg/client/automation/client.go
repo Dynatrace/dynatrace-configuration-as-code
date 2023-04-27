@@ -100,6 +100,14 @@ func NewClient(url string, client *http.Client, opts ...ClientOption) *Client {
 	return c
 }
 
+// WithClientRequestLimiter specifies that a specifies the limiter to be used for
+// limiting parallel client requests
+func WithClientRequestLimiter(limiter *concurrency.Limiter) func(client *Client) {
+	return func(d *Client) {
+		d.limiter = limiter
+	}
+}
+
 // List returns all automation objects
 func (a Client) List(resourceType ResourceType) (result *ListResponse, err error) {
 	a.limiter.ExecuteBlocking(func() {
