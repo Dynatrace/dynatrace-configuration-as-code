@@ -17,6 +17,8 @@
 package automation
 
 import (
+	"encoding/json"
+	"fmt"
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	automationClient "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
@@ -74,10 +76,12 @@ func (d *Downloader) Download(projectName string, automationTypes ...config.Auto
 
 		var configs []config.Config
 		for _, obj := range response.Results {
+
 			configId := obj.Id
-			content, _ := jsonutils.MarshalIndent(obj.Data)
+			t, configName := createTemplateFromRawJSON(obj, string(at.Resource))
+
 			c := config.Config{
-				Template: template.NewDownloadTemplate(configId, configId, string(content)),
+				Template: t,
 				Coordinate: coordinate.Coordinate{
 					Project:  projectName,
 					Type:     string(at.Resource),
@@ -87,7 +91,7 @@ func (d *Downloader) Download(projectName string, automationTypes ...config.Auto
 					Resource: at.Resource,
 				},
 				Parameters: map[string]parameter.Parameter{
-					config.NameParameter: &value.ValueParameter{Value: configId},
+					config.NameParameter: &value.ValueParameter{Value: configName},
 				},
 				OriginObjectId: obj.Id,
 			}
@@ -99,6 +103,41 @@ func (d *Downloader) Download(projectName string, automationTypes ...config.Auto
 }
 
 type NoopAutomationDownloader struct {
+}
+
+func createTemplateFromRawJSON(obj automationClient.Response, configType string) (t template.Template, extractedName string) {
+	configId := obj.Id
+
+	var data map[string]interface{}
+	err := json.Unmarshal(obj.Data, &data)
+	if err != nil {
+		log.Warn("Failed to sanitize downloaded JSON for config %v (%s) - template may need manual cleanup: %v", configId, configType, err)
+		return template.NewDownloadTemplate(configId, configId, string(obj.Data)), configId
+	}
+
+	// remove properties not necessary for upload
+	delete(data, "id")
+	delete(data, "modificationInfo")
+	delete(data, "lastExecution")
+
+	// extract 'title' as name
+	configName := configId
+	if title, ok := data["title"]; ok {
+		configName = fmt.Sprintf("%v", title)
+		data["title"] = "{{.name}}"
+	}
+
+	var content []byte
+	if modifiedJson, err := json.Marshal(data); err == nil {
+		content = modifiedJson
+	} else {
+		log.Warn("Failed to sanitize downloaded JSON for config %v (%s) - template may need manual cleanup: %v", configId, configType, err)
+		content = obj.Data
+	}
+	content, _ = jsonutils.MarshalIndent(content)
+
+	t = template.NewDownloadTemplate(configId, configName, string(content))
+	return t, configName
 }
 
 func (d NoopAutomationDownloader) Download(_ string, _ ...config.AutomationType) (v2.ConfigsPerType, error) {

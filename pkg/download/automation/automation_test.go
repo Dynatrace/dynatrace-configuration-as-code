@@ -19,6 +19,7 @@ package automation
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -106,4 +107,63 @@ func TestDownloader_Download_Specific_ResouceTypes(t *testing.T) {
 	assert.Len(t, result[string(config.SchedulingRule)], 0)
 	assert.Len(t, result[string(config.BusinessCalendar)], 2)
 	assert.NoError(t, err)
+}
+
+func Test_createTemplateFromRawJSON(t *testing.T) {
+	type want struct {
+		t    template.Template
+		name string
+	}
+	tests := []struct {
+		name  string
+		given automation.Response
+		want  want
+	}{
+		{
+			"sanitizes template as expected",
+			automation.Response{
+				Id:   "42",
+				Data: []byte(`{ "id": "42", "title": "My Workflow", "lastExecution": { "some": "details" }, "important": "data" }`),
+			},
+			want{
+				t: template.NewDownloadTemplate("42", "My Workflow", `{
+  "important": "data",
+  "title": "{{.name}}"
+}`),
+				name: "My Workflow",
+			},
+		},
+		{
+			"defaults name to ID if title is not found",
+			automation.Response{
+				Id:   "42",
+				Data: []byte(`{ "id": "42", "workflow_name": "My Workflow", "important": "data" }`),
+			},
+			want{
+				t: template.NewDownloadTemplate("42", "42", `{
+  "important": "data",
+  "workflow_name": "My Workflow"
+}`),
+				name: "42",
+			},
+		},
+		{
+			"works if reply is not valid JSON",
+			automation.Response{
+				Id:   "42",
+				Data: []byte(`{ "id": "42`),
+			},
+			want{
+				t:    template.NewDownloadTemplate("42", "42", `{ "id": "42`),
+				name: "42",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotT, gotExtractedName := createTemplateFromRawJSON(tt.given, "DOES NOT MATTER FOR TEST")
+			assert.Equalf(t, tt.want.t, gotT, "createTemplateFromRawJSON(%v)", tt.given)
+			assert.Equalf(t, tt.want.name, gotExtractedName, "createTemplateFromRawJSON(%v)", tt.given)
+		})
+	}
 }
