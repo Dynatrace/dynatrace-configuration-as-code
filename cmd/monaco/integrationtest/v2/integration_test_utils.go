@@ -48,49 +48,79 @@ type TestFunc func(fs afero.Fs, ctx TestContext)
 // <original name>_<current timestamp><defined suffix>
 // e.g. my-config_1605258980000_Suffix
 func RunIntegrationWithCleanup(t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, testFunc TestFunc) {
+	opts := TestOptions{
+		fs:                  testutils.CreateTestFileSystem(),
+		configFolder:        configFolder,
+		manifestPath:        manifestPath,
+		specificEnvironment: specificEnvironment,
+		suffix:              suffixTest,
+		envVars:             nil,
+	}
 
-	fs := testutils.CreateTestFileSystem()
-	runIntegrationWithCleanup(t, fs, configFolder, manifestPath, specificEnvironment, suffixTest, nil, testFunc)
+	runIntegrationWithCleanup(t, opts, testFunc)
 }
 
 func RunIntegrationWithCleanupOnGivenFs(t *testing.T, testFs afero.Fs, configFolder, manifestPath, specificEnvironment, suffixTest string, testFunc TestFunc) {
-	runIntegrationWithCleanup(t, testFs, configFolder, manifestPath, specificEnvironment, suffixTest, nil, testFunc)
+	opts := TestOptions{
+		fs:                  testFs,
+		configFolder:        configFolder,
+		manifestPath:        manifestPath,
+		specificEnvironment: specificEnvironment,
+		suffix:              suffixTest,
+		envVars:             nil,
+	}
+
+	runIntegrationWithCleanup(t, opts, testFunc)
 }
 
 func RunIntegrationWithCleanupGivenEnvs(t *testing.T, configFolder, manifestPath, specificEnvironment, suffixTest string, envVars map[string]string, testFunc TestFunc) {
-	fs := testutils.CreateTestFileSystem()
+	opts := TestOptions{
+		fs:                  testutils.CreateTestFileSystem(),
+		configFolder:        configFolder,
+		manifestPath:        manifestPath,
+		specificEnvironment: specificEnvironment,
+		suffix:              suffixTest,
+		envVars:             envVars,
+	}
 
-	runIntegrationWithCleanup(t, fs, configFolder, manifestPath, specificEnvironment, suffixTest, envVars, testFunc)
+	runIntegrationWithCleanup(t, opts, testFunc)
+
 }
 
-func runIntegrationWithCleanup(t *testing.T, testFs afero.Fs, configFolder, manifestPath, specificEnvironment, suffixTest string, envVars map[string]string, testFunc TestFunc) {
+type TestOptions struct {
+	fs                                                      afero.Fs
+	configFolder, manifestPath, specificEnvironment, suffix string
+	envVars                                                 map[string]string
+}
+
+func runIntegrationWithCleanup(t *testing.T, opts TestOptions, testFunc TestFunc) {
 	var envs []string
-	if len(specificEnvironment) > 0 {
-		envs = append(envs, specificEnvironment)
+	if len(opts.specificEnvironment) > 0 {
+		envs = append(envs, opts.specificEnvironment)
 	}
 
 	loadedManifest, errs := manifest.LoadManifest(&manifest.LoaderContext{
-		Fs:           testFs,
-		ManifestPath: manifestPath,
+		Fs:           opts.fs,
+		ManifestPath: opts.manifestPath,
 		Environments: envs,
 	})
 	testutils.FailTestOnAnyError(t, errs, "loading of manifest failed")
 
-	configFolder, _ = filepath.Abs(configFolder)
+	configFolder, _ := filepath.Abs(opts.configFolder)
 
-	suffix := appendUniqueSuffixToIntegrationTestConfigs(t, testFs, configFolder, suffixTest)
+	suffix := appendUniqueSuffixToIntegrationTestConfigs(t, opts.fs, configFolder, opts.suffix)
 
 	t.Cleanup(func() {
-		integrationtest.CleanupIntegrationTest(t, testFs, manifestPath, loadedManifest, suffix)
+		integrationtest.CleanupIntegrationTest(t, opts.fs, opts.manifestPath, loadedManifest, suffix)
 	})
 
-	for k, v := range envVars {
+	for k, v := range opts.envVars {
 		setTestEnvVar(t, k, v, suffix)
 	}
 
 	setTestEnvVar(t, "UNIQUE_TEST_SUFFIX", suffix, suffix)
 
-	testFunc(testFs, TestContext{
+	testFunc(opts.fs, TestContext{
 		suffix: suffix,
 	})
 }
