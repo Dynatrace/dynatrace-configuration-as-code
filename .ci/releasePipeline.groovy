@@ -1,6 +1,12 @@
+def fullRegex = ~/^\d+\.\d+\.\d+$/         // 1.2.3
+def rcRegex = ~/^\d+\.\d+\.\d+-rc.*$/      // 1.2.3-rc(.*)
+def devRegex = ~/^\d+\.\d+\.\d+-dev.*$/    // 1.2.3-dev(.*)
+
 final String PROJECT = 'monaco'
 def version
 def releaseId
+
+def isFullRelease, isRcRelease, isDevRelease
 
 pipeline {
     agent {
@@ -26,11 +32,23 @@ pipeline {
                         script {
                             getSignClient()
 
+                            // version is without the v* prefix
                             version = getVersionFromGitTagName()
                             releaseId = createGitHubRelease(version: version)
 
+                            isFullRelease = fullRegex.matcher(version).matches()
+                            isRcRelease = rcRegex.matcher(version).matches()
+                            isDevRelease = devRegex.matcher(version).matches()
+
                             echo "version= ${version}"
+                            echo "isFullRelease=${isFullRelease}"
+                            echo "isRcRelease=${isRcRelease}"
+                            echo "isDevRelease=${isDevRelease}"
                             echo "GitHub releaseId= ${releaseId}"
+
+                            if (!isFullRelease && !isRcRelease && !isDevRelease) {
+                                error('Given version tag is not a valid tag. Use v1.2.3, v1.2.3-rc*, or v1.2.3-dev*')
+                            }
                         }
                     }
                 }
@@ -112,7 +130,22 @@ pipeline {
                                                 pushToGithub(rleaseName: release + ".sha256", source: "${release}/${release}.sha256", releaseId: releaseId)
                                                 break
                                             case "container":
-                                                createContainerAndPushToStorage(version: version, registrySecretsPath: 'keptn-jenkins/monaco/registry-deploy')
+                                                // docker hub, only full releases and rc-releases
+                                                if (!isDevRelease) {
+                                                    createContainerAndPushToStorage(version: version, registrySecretsPath: 'keptn-jenkins/monaco/dockerhub-deploy', registry: 'Docker')
+
+                                                    // push latest to full releases and rc-releases
+                                                    createContainerAndPushToStorage(version: 'latest', registrySecretsPath: 'keptn-jenkins/monaco/dockerhub-deploy', registry: 'Docker')
+                                                } else {
+                                                    echo "Skipping release of ${version} to docker"
+                                                }
+
+                                                // internal registry, all tags are published
+                                                createContainerAndPushToStorage(version: version, registrySecretsPath: 'keptn-jenkins/monaco/registry-deploy', registry: 'Internal')
+                                                if (!isDevRelease) { // only set latest to full-releases and rc-releases
+                                                    createContainerAndPushToStorage(version: 'latest', registrySecretsPath: 'keptn-jenkins/monaco/registry-deploy', registry: 'Internal')
+                                                }
+
                                                 break
                                         }
                                     }
@@ -235,8 +268,8 @@ void signWithSignService(Map args = [source: null, version: null, destDir: '.', 
 
 }
 
-void createContainerAndPushToStorage(Map args = [version: null, registrySecretsPath: null]) {
-    stage('📦 Release Container Image') {
+void createContainerAndPushToStorage(Map args = [version: null, registrySecretsPath: null, registry: null]) {
+    stage("Publish container: registry=${args.registry}, version=${args.version}") {
         withEnv(["version=${args.version}"]) {
             withVault(vaultSecrets: [[path        : "${args.registrySecretsPath}",
                                       secretValues: [[envVar: 'registry', vaultKey: 'registry_path', isRequired: true],
