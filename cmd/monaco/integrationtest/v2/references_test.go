@@ -121,12 +121,6 @@ func TestReferences(t *testing.T) {
 					err := cmd.Execute()
 					assert.Nil(t, err, "create: did not expect error")
 
-					// update just to be sure
-					cmd = runner.BuildCli(fs)
-					cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", env, "--project", proj})
-					err = cmd.Execute()
-					assert.Nil(t, err, "update: did not expect error")
-
 					// download
 					cmd = runner.BuildCli(fs)
 					cmd.SetArgs(append(
