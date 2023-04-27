@@ -86,7 +86,7 @@ func TestReferences(t *testing.T) {
 			},
 		},
 		{
-			project: "config-with-mngt-zone",
+			project: "classic-with-settings-mngt-zone",
 			downloadOpts: []string{
 				"-a", "notification,alerting-profile",
 				"-s", "builtin:management-zones",

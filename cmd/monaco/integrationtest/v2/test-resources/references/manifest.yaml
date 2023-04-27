@@ -4,7 +4,7 @@ projects:
 - name: classic-apis
 - name: settings
 - name: settings-with-classic-mngt-zone
-- name: config-with-mngt-zone
+- name: classic-with-settings-mngt-zone
 
 environmentGroups:
 - name: default
