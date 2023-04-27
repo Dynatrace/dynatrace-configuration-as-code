@@ -20,19 +20,16 @@ package v2
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
-	refParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/reference"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"regexp"
 	"testing"
 )
 
@@ -172,11 +169,7 @@ func TestReferences(t *testing.T) {
 }
 
 func assertRefParamFromTo(t *testing.T, from config.Config, to config.Config) {
-	name := paramName(to.Coordinate.Type, to.Coordinate.ConfigId)
-	param, found := from.Parameters[name]
-	assert.Truef(t, found, "expected to find parameter %q", name)
-
-	assert.Equal(t, param, refParam.NewWithCoordinate(to.Coordinate, "id"))
+	assert.Contains(t, from.References(), to.Coordinate)
 }
 
 func findConfigs(t *testing.T, projects []project.Project, id string) project.ConfigsPerType {
@@ -235,11 +228,4 @@ func findSetting(t *testing.T, confsPerType project.ConfigsPerType, api, name, p
 
 	assert.Failf(t, "failed to find config '%s/%s' in property %q", api, name, property)
 	return config.Config{}
-}
-
-var templatePattern = regexp.MustCompile(`[^a-zA-Z0-9_]+`)
-
-func paramName(typ, id string) string {
-	n := fmt.Sprintf("%v__%v__id", typ, id)
-	return templatePattern.ReplaceAllString(n, "")
 }
