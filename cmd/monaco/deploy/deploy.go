@@ -27,7 +27,6 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
-	configError "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2/topologysort"
@@ -216,114 +215,6 @@ func getOperationNounForLogging(dryRun bool) string {
 		return "Validation"
 	}
 	return "Deployment"
-}
-
-func printErrorReport(deploymentErrors []error) {
-	var configErrors []configError.ConfigError
-	var generalErrors []error
-
-	for _, err := range deploymentErrors {
-		switch e := err.(type) {
-		case configError.ConfigError:
-			configErrors = append(configErrors, e)
-		default:
-			generalErrors = append(generalErrors, e)
-		}
-	}
-
-	if len(generalErrors) > 0 {
-		log.Error("=== General Errors ===")
-		for _, err := range generalErrors {
-			log.Error(errutils.ErrorString(err))
-		}
-	}
-
-	groupedConfigErrors := groupConfigErrors(configErrors)
-
-	for project, apiErrors := range groupedConfigErrors {
-		for api, configErrors := range apiErrors {
-			for config, errs := range configErrors {
-				var generalConfigErrors []configError.ConfigError
-				var detailedConfigErrors []configError.DetailedConfigError
-
-				for _, err := range errs {
-					switch e := err.(type) {
-					case configError.DetailedConfigError:
-						detailedConfigErrors = append(detailedConfigErrors, e)
-					default:
-						generalConfigErrors = append(generalConfigErrors, e)
-					}
-				}
-
-				groupErrors := groupEnvironmentConfigErrors(detailedConfigErrors)
-
-				for _, err := range generalConfigErrors {
-					log.Error("%s:%s:%s %s", project, api, config, errutils.ErrorString(err))
-				}
-
-				for group, environmentErrors := range groupErrors {
-					for env, errs := range environmentErrors {
-						for _, err := range errs {
-							log.Error("%s(%s) %s:%s:%s %T %s", env, group, project, api, config, err, errutils.ErrorString(err))
-						}
-					}
-				}
-			}
-		}
-	}
-}
-
-type ProjectErrors map[string]ApiErrors
-type ApiErrors map[string]ConfigErrors
-type ConfigErrors map[string][]configError.ConfigError
-
-func groupConfigErrors(errors []configError.ConfigError) ProjectErrors {
-	projectErrors := make(ProjectErrors)
-
-	for _, err := range errors {
-		coord := err.Coordinates()
-
-		typeErrors := projectErrors[coord.Project]
-
-		if typeErrors == nil {
-			typeErrors = make(ApiErrors)
-			typeErrors[coord.Type] = make(ConfigErrors)
-			projectErrors[coord.Project] = typeErrors
-		}
-
-		configErrors := typeErrors[coord.Type]
-
-		if configErrors == nil {
-			configErrors = make(ConfigErrors)
-			typeErrors[coord.Type] = configErrors
-		}
-
-		configErrors[coord.ConfigId] = append(configErrors[coord.ConfigId], err)
-	}
-
-	return projectErrors
-}
-
-type GroupErrors map[string]EnvironmentErrors
-type EnvironmentErrors map[string][]configError.DetailedConfigError
-
-func groupEnvironmentConfigErrors(errors []configError.DetailedConfigError) GroupErrors {
-	groupErrors := make(GroupErrors)
-
-	for _, err := range errors {
-		locationDetails := err.LocationDetails()
-
-		envErrors := groupErrors[locationDetails.Group]
-
-		if envErrors == nil {
-			envErrors = make(EnvironmentErrors)
-			groupErrors[locationDetails.Group] = envErrors
-		}
-
-		envErrors[locationDetails.Environment] = append(envErrors[locationDetails.Environment], err)
-	}
-
-	return groupErrors
 }
 
 func filterProjectsByName(projects []project.Project, names []string) ([]string, error) {
