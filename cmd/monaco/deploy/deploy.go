@@ -173,50 +173,6 @@ func sortConfigs(projects []project.Project, environmentNames []string) (project
 	return sortedConfigs, nil
 }
 
-func logProjectsInfo(projects []project.Project) {
-	log.Info("Projects to be deployed (%d):", len(projects))
-	for _, p := range projects {
-		log.Info("  - %s", p)
-	}
-
-	if log.DebugEnabled() {
-		logConfigInfo(projects)
-	}
-}
-
-func logConfigInfo(projects []project.Project) {
-	cfgCount := 0
-	for _, p := range projects {
-		for _, cfgsPerTypePerEnv := range p.Configs {
-			for _, cfgsPerType := range cfgsPerTypePerEnv {
-				cfgCount += len(cfgsPerType)
-			}
-		}
-	}
-	log.Debug("Deploying %d configurations.", cfgCount)
-}
-
-func logEnvironmentsInfo(environments manifest.Environments) {
-	log.Info("Environments to deploy to (%d):", len(environments))
-	for _, name := range environments.Names() {
-		log.Info("  - %s", name)
-	}
-}
-func logDeploymentInfo(dryRun bool, envName string) {
-	if dryRun {
-		log.Info("Validating configurations for environment `%s`...", envName)
-	} else {
-		log.Info("Deploying configurations to environment `%s`...", envName)
-	}
-}
-
-func getOperationNounForLogging(dryRun bool) string {
-	if dryRun {
-		return "Validation"
-	}
-	return "Deployment"
-}
-
 func filterProjectsByName(projects []project.Project, names []string) ([]string, error) {
 	var result []string
 
