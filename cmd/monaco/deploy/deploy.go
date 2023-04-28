@@ -64,54 +64,39 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 		return fmt.Errorf("error during configuration sort: %w", err)
 	}
 
-	logProjectsInfo(filteredProjects)
-	logEnvironmentsInfo(loadedManifest.Environments)
-
-	if err = doDeploy(sortedConfigs, loadedManifest.Environments, continueOnErr, dryRun); err != nil {
+	if err := checkEnvironments(sortedConfigs, loadedManifest.Environments); err != nil {
 		return err
 	}
 
-	return nil
-}
+	logProjectsInfo(filteredProjects)
+	logEnvironmentsInfo(loadedManifest.Environments)
 
-func doDeploy(configs project.ConfigsPerEnvironment, environments manifest.Environments, continueOnErr bool, dryRun bool) error {
 	var deployErrs []error
-	for envName, configs := range configs {
-		logDeploymentInfo(dryRun, envName)
-		env, found := environments[envName]
-
-		if !found {
-			if continueOnErr {
-				deployErrs = append(deployErrs, fmt.Errorf("cannot find environment `%s`", envName))
-				continue
-			} else {
-				return fmt.Errorf("cannot find environment `%s`", envName)
-			}
-		}
-
-		clientSet, err := deploy.CreateClientSet(env.URL.Value, env.Auth, dryRun)
-		if err != nil {
-			if continueOnErr {
-				deployErrs = append(deployErrs, err)
-				continue
-			} else {
-				return err
-			}
-		}
-
-		errs := deploy.DeployConfigs(clientSet, api.NewAPIs(), configs, deploy.DeployConfigsOptions{
-			ContinueOnErr: continueOnErr,
-			DryRun:        dryRun,
-		})
+	for envName, cfgs := range sortedConfigs {
+		env := loadedManifest.Environments[envName]
+		errs := deployOnEnvironment(&env, cfgs, continueOnErr, dryRun)
 		deployErrs = append(deployErrs, errs...)
+		if len(errs) > 0 && !continueOnErr {
+			break
+		}
 	}
 
-	if deployErrs != nil {
+	if len(deployErrs) > 0 {
 		printErrorReport(deployErrs)
 		return fmt.Errorf("errors during %s", getOperationNounForLogging(dryRun))
 	}
 	log.Info("%s finished without errors", getOperationNounForLogging(dryRun))
 	return nil
+}
+
+func deployOnEnvironment(env *manifest.EnvironmentDefinition, cfgs []config.Config, continueOnErr bool, dryRun bool) []error {
+	logDeploymentInfo(dryRun, env.Name)
+	clientSet, _ := deploy.CreateClientSet(env.URL.Value, env.Auth, dryRun)
+	errs := deploy.DeployConfigs(clientSet, api.NewAPIs(), cfgs, deploy.DeployConfigsOptions{
+		ContinueOnErr: continueOnErr,
+		DryRun:        dryRun,
+	})
+	return errs
 }
 
 func absPath(manifestPath string) (string, error) {
@@ -347,10 +332,10 @@ func filterProjectsByName(projects []project.Project, names []string) ([]string,
 	foundProjects := map[string]struct{}{}
 
 	for _, p := range projects {
-		if containsName(names, p.Id) {
+		if slices.Contains(names, p.Id) {
 			foundProjects[p.Id] = struct{}{}
 			result = append(result, p.Id)
-		} else if containsName(names, p.GroupId) {
+		} else if slices.Contains(names, p.GroupId) {
 			foundProjects[p.GroupId] = struct{}{}
 			result = append(result, p.Id)
 		}
@@ -417,6 +402,32 @@ func toProjectMap(projects []project.Project) map[string]project.Project {
 	return result
 }
 
-func containsName(names []string, name string) bool {
-	return slices.Contains(names, name)
+func checkEnvironments(configs project.ConfigsPerEnvironment, envs manifest.Environments) error {
+	for envName, cfgs := range configs {
+		if _, found := envs[envName]; !found {
+			return fmt.Errorf("cannot find environment `%s`", envName)
+		}
+		if err := checkConfigsForEnvironment(envs[envName], cfgs); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func checkConfigsForEnvironment(env manifest.EnvironmentDefinition, cfgs []config.Config) error {
+	for i := range cfgs {
+		if !cfgs[i].Skip && onlyAvailableOnPlatform(&cfgs[i]) && !platformEnvironment(env) {
+			return fmt.Errorf("enviroment %q is not specified as platform, but at least one of configurations (e.g. %q) is platform exclusive", env.Name, cfgs[i].Coordinate)
+		}
+	}
+	return nil
+}
+
+func platformEnvironment(e manifest.EnvironmentDefinition) bool {
+	return e.Auth.OAuth != nil
+}
+
+func onlyAvailableOnPlatform(c *config.Config) bool {
+	_, aut := c.Type.(config.AutomationType)
+	return aut
 }
