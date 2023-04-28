@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"github.com/cloudflare/ahocorasick"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/reference"
+	"golang.org/x/exp/maps"
 	"strings"
 )
 

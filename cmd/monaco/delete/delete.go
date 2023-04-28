@@ -20,8 +20,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/delete"
+	"golang.org/x/exp/maps"
 	"path/filepath"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
