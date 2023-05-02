@@ -68,16 +68,14 @@ func GetWithRetry(client *http.Client, url string, settings RetrySetting) (resp 
 		}
 	}
 
-	var retryErr error
 	if err != nil {
-		retryErr = fmt.Errorf("GET request %s failed after %d retries: %w", url, settings.MaxRetries, err)
-	} else {
-		retryErr = fmt.Errorf("GET request %s failed after %d retries: (HTTP %d)!\n    Response was: %s", url, settings.MaxRetries, resp.StatusCode, resp.Body)
+		return resp, fmt.Errorf("GET request %s failed after %d retries: %w", url, settings.MaxRetries, err)
 	}
-	return resp, retryErr
+	return resp, fmt.Errorf("GET request %s failed after %d retries: (HTTP %d)!\n    Response was: %s", url, settings.MaxRetries, resp.StatusCode, resp.Body)
+
 }
 
-// SendWithRetry will retry a SendRequestWithBody(PUT or POST) for a given number of times, waiting a give duration between calls
+// SendWithRetry will retry to call sendWithBody for a given number of times, waiting a give duration between calls
 func SendWithRetry(client *http.Client, sendWithBody SendRequestWithBody, objectName string, path string, body []byte, setting RetrySetting) (resp Response, err error) {
 
 	for i := 0; i < setting.MaxRetries; i++ {
@@ -89,16 +87,14 @@ func SendWithRetry(client *http.Client, sendWithBody SendRequestWithBody, object
 		}
 	}
 
-	var retryErr error
 	if err != nil {
-		retryErr = fmt.Errorf("failed to upsert config %q after %d retries: %w", objectName, setting.MaxRetries, err)
-	} else {
-		retryErr = fmt.Errorf("failed to upsert config %q after %d retries: (HTTP %d)!\n    Response was: %s", objectName, setting.MaxRetries, resp.StatusCode, resp.Body)
+		return Response{}, fmt.Errorf("failed to upsert config %q after %d retries: %w", objectName, setting.MaxRetries, err)
 	}
-	return Response{}, retryErr
+	return Response{}, fmt.Errorf("failed to upsert config %q after %d retries: (HTTP %d)!\n    Response was: %s", objectName, setting.MaxRetries, resp.StatusCode, resp.Body)
+
 }
 
-// SendWithRetryWithInitialTry will try to send a request and later retry a SendRequestWithBody(PUT or POST) for a given number of times, waiting a give duration between calls
+// SendWithRetryWithInitialTry will try to call sendWithBody and if it didn't succeed call [SendWithRetry]
 func SendWithRetryWithInitialTry(client *http.Client, sendWithBody SendRequestWithBody, objectName string, path string, body []byte, setting RetrySetting) (resp Response, err error) {
 	resp, err = sendWithBody(client, path, body)
 	if err == nil && resp.IsSuccess() {
