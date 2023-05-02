@@ -1,0 +1,10 @@
+configs:
+- id: business-cal-1
+  config:
+    name: business-cal-1
+    template: business-cal-1.json
+    skip: false
+    originObjectId: 3f67aa44-51e7-49cf-9bcc-3fd357811710
+  type:
+    automation:
+      resource: business-calendar

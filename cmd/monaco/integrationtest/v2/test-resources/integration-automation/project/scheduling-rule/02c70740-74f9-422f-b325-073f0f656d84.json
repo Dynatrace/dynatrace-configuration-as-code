@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "title": "Last working day of the month",
+  "ruleType": "rrule",
+  "rrule": {
+    "freq": "MONTHLY",
+    "bysetpos": [
+      -1
+    ],
+    "interval": 1,
+    "datestart": "2020-10-01",
+    "automation_server_byworkday": "WORKING"
+  },
+  "groupingRule": null,
+  "fixedOffsetRule": null,
+  "relativeOffsetRule": null,
+  "businessCalendar": "{{.businessCal}}",
+  "labels": {},
+  "description": "",
+  "modificationInfo": {
+    "createdBy": null,
+    "createdTime": "2023-03-28T07:57:39.103536Z",
+    "lastModifiedBy": null,
+    "lastModifiedTime": "2023-03-28T07:57:39.103554Z"
+  }
+}

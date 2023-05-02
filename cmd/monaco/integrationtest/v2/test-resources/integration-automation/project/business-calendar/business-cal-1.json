@@ -1,0 +1,23 @@
+{
+  "title": "{{.name}}",
+  "version": 1,
+  "weekstart": 1,
+  "weekdays": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "holidays": [],
+  "validFrom": "2023-01-01",
+  "validTo": "2032-12-31",
+  "labels": {},
+  "description": "",
+  "modificationInfo": {
+    "createdBy": null,
+    "createdTime": "2023-03-28T07:57:39.065558Z",
+    "lastModifiedBy": null,
+    "lastModifiedTime": "2023-03-28T07:57:39.065580Z"
+  }
+}

@@ -33,8 +33,6 @@ import (
 
 // Deletes all configs that end with a test suffix and any Settings created by the given manifest
 func CleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestPath string, loadedManifest manifest.Manifest, suffix string) {
-
-	t.Setenv("MONACO_FEAT_AUTOMATION_RESOURCES", "1") // i don't know why we need to set it here (again)
 	log.Info("### Cleaning up after integration test ###")
 
 	apis := api.NewAPIs()
