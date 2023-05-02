@@ -77,13 +77,13 @@ func GetWithRetry(client *http.Client, url string, settings RetrySetting) (resp 
 	return resp, retryErr
 }
 
-// SendWithRetry will retry a SendingRequest(PUT or POST) for a given number of times, waiting a give duration between calls
-func SendWithRetry(client *http.Client, restCall SendingRequest, objectName string, path string, body []byte, setting RetrySetting) (resp Response, err error) {
+// SendWithRetry will retry a SendRequestWithBody(PUT or POST) for a given number of times, waiting a give duration between calls
+func SendWithRetry(client *http.Client, sendWithBody SendRequestWithBody, objectName string, path string, body []byte, setting RetrySetting) (resp Response, err error) {
 
 	for i := 0; i < setting.MaxRetries; i++ {
 		log.Warn("Failed to upsert config %q. Waiting for %s before retrying...", objectName, setting.WaitTime)
 		time.Sleep(setting.WaitTime)
-		resp, err = restCall(client, path, body)
+		resp, err = sendWithBody(client, path, body)
 		if err == nil && resp.IsSuccess() {
 			return resp, err
 		}
@@ -98,12 +98,12 @@ func SendWithRetry(client *http.Client, restCall SendingRequest, objectName stri
 	return Response{}, retryErr
 }
 
-// SendWithRetryWithInitialTry will try to send a request and later retry a SendingRequest(PUT or POST) for a given number of times, waiting a give duration between calls
-func SendWithRetryWithInitialTry(client *http.Client, restCall SendingRequest, objectName string, path string, body []byte, setting RetrySetting) (resp Response, err error) {
-	resp, err = restCall(client, path, body)
+// SendWithRetryWithInitialTry will try to send a request and later retry a SendRequestWithBody(PUT or POST) for a given number of times, waiting a give duration between calls
+func SendWithRetryWithInitialTry(client *http.Client, sendWithBody SendRequestWithBody, objectName string, path string, body []byte, setting RetrySetting) (resp Response, err error) {
+	resp, err = sendWithBody(client, path, body)
 	if err == nil && resp.IsSuccess() {
 		return resp, err
 	}
 
-	return SendWithRetry(client, restCall, objectName, path, body, setting)
+	return SendWithRetry(client, sendWithBody, objectName, path, body, setting)
 }

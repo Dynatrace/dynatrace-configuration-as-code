@@ -97,8 +97,8 @@ func Put(client *http.Client, url string, data []byte) (Response, error) {
 	return executeRequest(client, req)
 }
 
-// function type of Put and Post requests
-type SendingRequest func(client *http.Client, url string, data []byte) (Response, error)
+// SendRequestWithBody is a function doing a PUT or POST HTTP request
+type SendRequestWithBody func(client *http.Client, url string, data []byte) (Response, error)
 
 func request(method string, url string) (*http.Request, error) {
 	return requestWithBody(method, url, nil)

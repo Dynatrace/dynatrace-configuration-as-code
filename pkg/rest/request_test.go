@@ -85,7 +85,7 @@ func Test_deleteConfig(t *testing.T) {
 
 func Test_sendWithsendWithRetryReturnsFirstSuccessfulResponse(t *testing.T) {
 	i := 0
-	mockCall := SendingRequest(func(client *http.Client, url string, data []byte) (Response, error) {
+	mockCall := SendRequestWithBody(func(client *http.Client, url string, data []byte) (Response, error) {
 		if i < 3 {
 			i++
 			return Response{}, fmt.Errorf("Something wrong")
@@ -105,7 +105,7 @@ func Test_sendWithsendWithRetryReturnsFirstSuccessfulResponse(t *testing.T) {
 func Test_sendWithRetryFailsAfterDefinedTries(t *testing.T) {
 	maxRetries := 2
 	i := 0
-	mockCall := SendingRequest(func(client *http.Client, url string, data []byte) (Response, error) {
+	mockCall := SendRequestWithBody(func(client *http.Client, url string, data []byte) (Response, error) {
 		if i < maxRetries+1 {
 			i++
 			return Response{}, fmt.Errorf("Something wrong")
@@ -124,7 +124,7 @@ func Test_sendWithRetryFailsAfterDefinedTries(t *testing.T) {
 func Test_sendWithRetryReturnContainsOriginalApiError(t *testing.T) {
 	maxRetries := 2
 	i := 0
-	mockCall := SendingRequest(func(client *http.Client, url string, data []byte) (Response, error) {
+	mockCall := SendRequestWithBody(func(client *http.Client, url string, data []byte) (Response, error) {
 		if i < maxRetries+1 {
 			i++
 			return Response{}, fmt.Errorf("Something wrong")
@@ -143,7 +143,7 @@ func Test_sendWithRetryReturnContainsOriginalApiError(t *testing.T) {
 func Test_sendWithRetryReturnContainsHttpErrorIfNotSuccess(t *testing.T) {
 	maxRetries := 2
 	i := 0
-	mockCall := SendingRequest(func(client *http.Client, url string, data []byte) (Response, error) {
+	mockCall := SendRequestWithBody(func(client *http.Client, url string, data []byte) (Response, error) {
 		if i < maxRetries+1 {
 			i++
 			return Response{
