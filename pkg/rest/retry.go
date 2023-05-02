@@ -79,7 +79,7 @@ func GetWithRetry(client *http.Client, url string, settings RetrySetting) (resp 
 func SendWithRetry(client *http.Client, sendWithBody SendRequestWithBody, objectName string, path string, body []byte, setting RetrySetting) (resp Response, err error) {
 
 	for i := 0; i < setting.MaxRetries; i++ {
-		log.Warn("Failed to upsert config %q. Waiting for %s before retrying...", objectName, setting.WaitTime)
+		log.Warn("Failed to create or update config %q. Waiting for %s before retrying...", objectName, setting.WaitTime)
 		time.Sleep(setting.WaitTime)
 		resp, err = sendWithBody(client, path, body)
 		if err == nil && resp.IsSuccess() {
@@ -88,9 +88,9 @@ func SendWithRetry(client *http.Client, sendWithBody SendRequestWithBody, object
 	}
 
 	if err != nil {
-		return Response{}, fmt.Errorf("failed to upsert config %q after %d retries: %w", objectName, setting.MaxRetries, err)
+		return Response{}, fmt.Errorf("failed to create or update config %q after %d retries: %w", objectName, setting.MaxRetries, err)
 	}
-	return Response{}, fmt.Errorf("failed to upsert config %q after %d retries: (HTTP %d)!\n    Response was: %s", objectName, setting.MaxRetries, resp.StatusCode, resp.Body)
+	return Response{}, fmt.Errorf("failed to create or update config %q after %d retries: (HTTP %d)!\n    Response was: %s", objectName, setting.MaxRetries, resp.StatusCode, resp.Body)
 
 }
 

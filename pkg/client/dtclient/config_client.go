@@ -86,7 +86,7 @@ func upsertDynatraceEntityByNonUniqueNameAndId(
 
 	existingEntities, err := getExistingValuesFromEndpoint(client, theApi, fullUrl, retrySettings)
 	if err != nil {
-		return DynatraceEntity{}, fmt.Errorf("failed to query existing entities for upsert: %w", err)
+		return DynatraceEntity{}, fmt.Errorf("failed to query existing entities: %w", err)
 	}
 
 	var entitiesWithSameName []Value
