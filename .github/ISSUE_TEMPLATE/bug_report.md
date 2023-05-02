@@ -1,6 +1,6 @@
 ---
-name: Bug report
-about: Create a report to help us improve
+name: Report a bug you already know details about
+about: Report a detailed bug - if in doubt please contact Support first
 title: ''
 labels: bug
 assignees: ''
