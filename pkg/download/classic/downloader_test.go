@@ -207,12 +207,12 @@ func TestDownload_SkipConfigBeforeDownload(t *testing.T) {
 	assert.Len(t, configurations, 1)
 }
 
-func TestDownload_EmptyAPIMap_NothingIsDownloaded(t *testing.T) {
+func TestDownload_EmptyAPIMap_ResultsInError(t *testing.T) {
 	client := dtclient.NewMockClient(gomock.NewController(t))
 	downloader := NewDownloader(client, WithAPIs(api.APIs{}))
 
 	configurations, err := downloader.Download("project")
-	assert.NoError(t, err)
+	assert.ErrorContains(t, err, "no APIs to download")
 	assert.Len(t, configurations, 0)
 }
 
@@ -424,7 +424,7 @@ func TestGetApisToDownload(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := getApisToDownload(tt.given.apis, tt.given.specificAPIs)
+			actual := filterAPIs(tt.given.apis, tt.given.specificAPIs)
 			for _, e := range tt.expected.apis {
 				assert.Contains(t, actual, e)
 			}
