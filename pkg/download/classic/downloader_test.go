@@ -20,12 +20,13 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
+	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func TestDownloadAllConfigs_FailedToFindConfigsToDownload(t *testing.T) {
+func TestDownloadConfigs_FailedToFindConfigsToDownload(t *testing.T) {
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(gomock.Any()).Return([]dtclient.Value{}, fmt.Errorf("NO"))
 
@@ -39,7 +40,7 @@ func TestDownloadAllConfigs_FailedToFindConfigsToDownload(t *testing.T) {
 	assert.Len(t, configurations, 0)
 }
 
-func TestDownloadAll_NoConfigsToDownloadFound(t *testing.T) {
+func TestDownload_NoConfigsToDownloadFound(t *testing.T) {
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(gomock.Any()).Return([]dtclient.Value{}, nil)
 
@@ -54,7 +55,7 @@ func TestDownloadAll_NoConfigsToDownloadFound(t *testing.T) {
 	assert.Len(t, configurations, 0)
 }
 
-func TestDownloadAll_ConfigsDownloaded(t *testing.T) {
+func TestDownload_ConfigsDownloaded(t *testing.T) {
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(gomock.Any()).DoAndReturn(func(a api.API) ([]dtclient.Value, error) {
 		if a.ID == "API_ID_1" {
@@ -79,7 +80,7 @@ func TestDownloadAll_ConfigsDownloaded(t *testing.T) {
 	assert.Len(t, configurations, 2)
 }
 
-func TestDownloadAll_SingleConfigurationAPI(t *testing.T) {
+func TestDownload_SingleConfigurationAPI(t *testing.T) {
 	client := dtclient.NewMockClient(gomock.NewController(t))
 	client.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 
@@ -93,7 +94,7 @@ func TestDownloadAll_SingleConfigurationAPI(t *testing.T) {
 	assert.Len(t, configurations, 1)
 }
 
-func TestDownloadAll_ErrorFetchingConfig(t *testing.T) {
+func TestDownload_ErrorFetchingConfig(t *testing.T) {
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(gomock.Any()).DoAndReturn(func(a api.API) ([]dtclient.Value, error) {
 		if a.ID == "API_ID_1" {
@@ -121,7 +122,7 @@ func TestDownloadAll_ErrorFetchingConfig(t *testing.T) {
 	assert.Len(t, configurations, 1)
 }
 
-func TestDownloadAll_ConfigsDownloaded_WithEmptyFilter(t *testing.T) {
+func TestDownload_ConfigsDownloaded_WithEmptyFilter(t *testing.T) {
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(gomock.Any()).DoAndReturn(func(a api.API) ([]dtclient.Value, error) {
 		if a.ID == "API_ID_1" {
@@ -146,7 +147,7 @@ func TestDownloadAll_ConfigsDownloaded_WithEmptyFilter(t *testing.T) {
 	assert.Len(t, configurations, 2)
 }
 
-func TestDownloadAll_SkipConfigThatShouldNotBePersisted(t *testing.T) {
+func TestDownload_SkipConfigThatShouldNotBePersisted(t *testing.T) {
 
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(gomock.Any()).DoAndReturn(func(a api.API) ([]dtclient.Value, error) {
@@ -176,7 +177,7 @@ func TestDownloadAll_SkipConfigThatShouldNotBePersisted(t *testing.T) {
 	assert.Len(t, configurations, 1)
 }
 
-func TestDownloadAll_SkipConfigBeforeDownload(t *testing.T) {
+func TestDownload_SkipConfigBeforeDownload(t *testing.T) {
 
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(gomock.Any()).DoAndReturn(func(a api.API) ([]dtclient.Value, error) {
@@ -206,7 +207,7 @@ func TestDownloadAll_SkipConfigBeforeDownload(t *testing.T) {
 	assert.Len(t, configurations, 1)
 }
 
-func TestDownloadAll_EmptyAPIMap_NothingIsDownloaded(t *testing.T) {
+func TestDownload_EmptyAPIMap_NothingIsDownloaded(t *testing.T) {
 	client := dtclient.NewMockClient(gomock.NewController(t))
 	downloader := NewDownloader(client, WithAPIs(api.APIs{}))
 
@@ -215,7 +216,7 @@ func TestDownloadAll_EmptyAPIMap_NothingIsDownloaded(t *testing.T) {
 	assert.Len(t, configurations, 0)
 }
 
-func TestDownloadAll_APIWithoutAnyConfigAvailableAreNotDownloaded(t *testing.T) {
+func TestDownload_APIWithoutAnyConfigAvailableAreNotDownloaded(t *testing.T) {
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(gomock.Any()).DoAndReturn(func(a api.API) ([]dtclient.Value, error) {
 		if a.ID == "API_ID_1" {
@@ -239,7 +240,7 @@ func TestDownloadAll_APIWithoutAnyConfigAvailableAreNotDownloaded(t *testing.T) 
 	assert.Len(t, configurations, 1)
 }
 
-func TestDownloadAll_MalformedResponseFromAnAPI(t *testing.T) {
+func TestDownload_MalformedResponseFromAnAPI(t *testing.T) {
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(gomock.Any()).DoAndReturn(func(a api.API) ([]dtclient.Value, error) {
 		if a.ID == "API_ID_1" {
@@ -261,6 +262,110 @@ func TestDownloadAll_MalformedResponseFromAnAPI(t *testing.T) {
 	configurations, err := downloader.Download("project")
 	assert.NoError(t, err)
 	assert.Len(t, configurations, 1)
+}
+
+func TestDownload_DeprecatedConfigsAreSkipped(t *testing.T) {
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().ListConfigs(gomock.Any()).DoAndReturn(func(a api.API) ([]dtclient.Value, error) {
+		if a.ID == "API_ID_1" {
+			return []dtclient.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil
+		} else if a.ID == "API_ID_2" {
+			return []dtclient.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil
+		}
+		return nil, nil
+	}).Times(1)
+	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
+
+	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", DeprecatedBy: "API_ID_2"}
+	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2"}
+
+	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
+
+	downloader := NewDownloader(c, WithAPIs(apiMap))
+
+	configurations, err := downloader.Download("project")
+	assert.NoError(t, err)
+	assert.Len(t, configurations, 1)
+	_, exists := configurations["API_ID_2"]
+	assert.True(t, exists)
+}
+
+func TestDownloadSpecific_DeprecatedConfigsAreNotSkippedIfRequested(t *testing.T) {
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().ListConfigs(gomock.Any()).DoAndReturn(func(a api.API) ([]dtclient.Value, error) {
+		if a.ID == "API_ID_1" {
+			return []dtclient.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil
+		} else if a.ID == "API_ID_2" {
+			return []dtclient.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil
+		}
+		return nil, nil
+	}).Times(1)
+	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
+
+	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", DeprecatedBy: "API_ID_2"}
+	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2"}
+
+	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
+
+	downloader := NewDownloader(c, WithAPIs(apiMap))
+
+	configurations, err := downloader.Download("project", config.ClassicApiType{Api: "API_ID_1"})
+	assert.NoError(t, err)
+	assert.Len(t, configurations, 1)
+	_, exists := configurations["API_ID_1"]
+	assert.True(t, exists)
+}
+
+func TestDownload_SkipDownloadConfigsAreSkipped(t *testing.T) {
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().ListConfigs(gomock.Any()).DoAndReturn(func(a api.API) ([]dtclient.Value, error) {
+		if a.ID == "API_ID_1" {
+			return []dtclient.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil
+		} else if a.ID == "API_ID_2" {
+			return []dtclient.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil
+		}
+		return nil, nil
+	}).Times(1)
+	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
+
+	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", SkipDownload: true}
+	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2"}
+
+	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
+
+	downloader := NewDownloader(c, WithAPIs(apiMap))
+
+	configurations, err := downloader.Download("project")
+	assert.NoError(t, err)
+	assert.Len(t, configurations, 1)
+	_, exists := configurations["API_ID_2"]
+	assert.True(t, exists)
+}
+
+func TestDownloadSpecific_SkipDownloadConfigsAreSkippedEvenIfRequested(t *testing.T) {
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().ListConfigs(gomock.Any()).DoAndReturn(func(a api.API) ([]dtclient.Value, error) {
+		if a.ID == "API_ID_1" {
+			return []dtclient.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil
+		} else if a.ID == "API_ID_2" {
+			return []dtclient.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil
+		}
+		return nil, nil
+	}).Times(1)
+	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
+
+	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", SkipDownload: true}
+	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2"}
+
+	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
+
+	downloader := NewDownloader(c, WithAPIs(apiMap))
+
+	configurations, err := downloader.Download("project", config.ClassicApiType{Api: "API_ID_1"}, config.ClassicApiType{Api: "API_ID_2"})
+	assert.NoError(t, err)
+	assert.Len(t, configurations, 1)
+	_, exists := configurations["API_ID_2"]
+	assert.True(t, exists)
 }
 
 func TestGetApisToDownload(t *testing.T) {
