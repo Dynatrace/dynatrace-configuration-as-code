@@ -38,6 +38,7 @@ import (
 // Downloader is responsible for downloading classic Dynatrace APIs
 type Downloader struct {
 	apisToDownload api.APIs
+
 	// apiFilters contains logic to filter specific apis based on
 	// custom logic implemented in the apiFilter
 	apiFilters map[string]apiFilter
