@@ -39,19 +39,19 @@ import (
 type Downloader struct {
 	apisToDownload api.APIs
 
-	// apiFilters contains logic to filter specific apis based on
-	// custom logic implemented in the apiFilter
-	apiFilters map[string]apiFilter
+	// apiContentFilters contains rules to filter specific apis based on
+	// custom logic implemented in the contentFilter
+	apiContentFilters map[string]contentFilter
 
 	// client is the actual rest client used to call
 	// the dynatrace APIs
 	client dtclient.Client
 }
 
-// WithAPIFilters sets the api filters for the Downloader
-func WithAPIFilters(apiFilters map[string]apiFilter) func(*Downloader) {
+// WithAPIContentFilters sets the api content filters for the Downloader - these will be used in addition to base API filtering
+func WithAPIContentFilters(apiFilters map[string]contentFilter) func(*Downloader) {
 	return func(d *Downloader) {
-		d.apiFilters = apiFilters
+		d.apiContentFilters = apiFilters
 	}
 }
 
@@ -64,9 +64,9 @@ func WithAPIs(apis api.APIs) func(*Downloader) {
 // NewDownloader creates a new Downloader
 func NewDownloader(client dtclient.Client, opts ...func(*Downloader)) *Downloader {
 	c := &Downloader{
-		apisToDownload: api.NewAPIs(),
-		apiFilters:     apiFilters,
-		client:         client,
+		apisToDownload:    api.NewAPIs(),
+		apiContentFilters: apiContentFilters,
+		client:            client,
 	}
 	for _, o := range opts {
 		o(c)
@@ -274,13 +274,13 @@ func (d *Downloader) findConfigsToDownload(currentApi api.API) ([]dtclient.Value
 }
 
 func (d *Downloader) skipPersist(a api.API, json map[string]interface{}) bool {
-	if cases := d.apiFilters[a.ID]; cases.shouldConfigBePersisted != nil {
+	if cases := d.apiContentFilters[a.ID]; cases.shouldConfigBePersisted != nil {
 		return cases.shouldConfigBePersisted(json)
 	}
 	return true
 }
 func (d *Downloader) skipDownload(a api.API, value dtclient.Value) bool {
-	if cases := d.apiFilters[a.ID]; cases.shouldBeSkippedPreDownload != nil {
+	if cases := d.apiContentFilters[a.ID]; cases.shouldBeSkippedPreDownload != nil {
 		return cases.shouldBeSkippedPreDownload(value)
 	}
 
