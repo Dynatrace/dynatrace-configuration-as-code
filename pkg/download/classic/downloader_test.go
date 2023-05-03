@@ -368,6 +368,20 @@ func TestDownloadSpecific_SkipDownloadConfigsAreSkippedEvenIfRequested(t *testin
 	assert.True(t, exists)
 }
 
+func TestDownloadSpecific_ReturnsErrorIfUnknownAPIsAreRequested(t *testing.T) {
+
+	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", DeprecatedBy: "API_ID_2"}
+	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2"}
+
+	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
+
+	downloader := NewDownloader(nil, WithAPIs(apiMap))
+
+	_, err := downloader.Download("project", config.ClassicApiType{Api: "API_ID_42"})
+	assert.ErrorContains(t, err, "API_ID_42")
+	assert.ErrorContains(t, err, "not known")
+}
+
 func TestGetApisToDownload(t *testing.T) {
 	type given struct {
 		apis         api.APIs
