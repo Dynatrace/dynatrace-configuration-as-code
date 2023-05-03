@@ -34,7 +34,6 @@ pipeline {
 
                             // version is without the v* prefix
                             version = getVersionFromGitTagName()
-                            releaseId = createGitHubRelease(version: version)
 
                             isFullRelease = fullRegex.matcher(version).matches()
                             isRcRelease = rcRegex.matcher(version).matches()
@@ -44,10 +43,16 @@ pipeline {
                             echo "isFullRelease=${isFullRelease}"
                             echo "isRcRelease=${isRcRelease}"
                             echo "isDevRelease=${isDevRelease}"
-                            echo "GitHub releaseId= ${releaseId}"
 
                             if (!isFullRelease && !isRcRelease && !isDevRelease) {
                                 error('Given version tag is not a valid tag. Use v1.2.3, v1.2.3-rc*, or v1.2.3-dev*')
+                            }
+
+                            if (!isDevRelease) {
+                                releaseId = createGitHubRelease(version: version)
+                                echo "GitHub releaseId=${releaseId}"
+                            } else {
+                                echo "Skipping creation of GitHub release for version ${version}"
                             }
                         }
                     }
@@ -110,7 +115,11 @@ pipeline {
                                                 buildBinary(command: release, version: version, dest: release)
                                                 signWinBinaries(source: release, version: version, destDir: '.', projectName: PROJECT)
                                                 pushToDynatraceStorage(source: release, dest: "${PROJECT}/${version}/${release}")
-                                                pushToGithub(rleaseName: release, source: release, releaseId: releaseId)
+                                                if (!isDevRelease) {
+                                                    pushToGithub(rleaseName: release, source: release, releaseId: releaseId)
+                                                } else {
+                                                    echo "Skipping upload of binaries to GitHub"
+                                                }
                                                 break
                                             case "linux":
                                             case "darwin":
@@ -126,8 +135,12 @@ pipeline {
                                                 def pathInStorage = "${PROJECT}/${version}/$release"
                                                 pushToDynatraceStorage(source: "${release}/${release}", dest: pathInStorage)
                                                 pushToDynatraceStorage(source: "${release}/${release}.sha256", dest: pathInStorage + ".sha256")
-                                                pushToGithub(rleaseName: release, source: "${release}/${release}", releaseId: releaseId)
-                                                pushToGithub(rleaseName: release + ".sha256", source: "${release}/${release}.sha256", releaseId: releaseId)
+                                                if (!isDevRelease) {
+                                                    pushToGithub(rleaseName: release, source: "${release}/${release}", releaseId: releaseId)
+                                                    pushToGithub(rleaseName: release + ".sha256", source: "${release}/${release}.sha256", releaseId: releaseId)
+                                                } else {
+                                                    echo "Skipping upload of binaries to GitHub"
+                                                }
                                                 break
                                             case "container":
                                                 // docker hub, only full releases and rc-releases
@@ -137,7 +150,7 @@ pipeline {
                                                     // push latest to full releases and rc-releases
                                                     createContainerAndPushToStorage(version: 'latest', registrySecretsPath: 'keptn-jenkins/monaco/dockerhub-deploy', registry: 'Docker')
                                                 } else {
-                                                    echo "Skipping release of ${version} to docker"
+                                                    echo "Skipping release of ${version} to Docker Hub"
                                                 }
 
                                                 // internal registry, all tags are published
