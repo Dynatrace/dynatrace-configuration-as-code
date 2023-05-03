@@ -75,31 +75,20 @@ func NewDownloader(client dtclient.Client, opts ...func(*Downloader)) *Downloade
 }
 
 func (d *Downloader) Download(projectName string, specificAPIs ...config.ClassicApiType) (project.ConfigsPerType, error) {
-	if len(specificAPIs) == 0 {
-		return d.downloadAll(projectName)
+	specificAPINames := make([]string, len(specificAPIs), len(specificAPIs))
+	for i, s := range specificAPIs {
+		specificAPINames[i] = s.Api
 	}
-	var apis []string
-	for _, s := range specificAPIs {
-		apis = append(apis, s.Api)
-	}
-	return d.downloadSpecific(projectName, apis)
-}
 
-func (d *Downloader) downloadAll(projectName string) (project.ConfigsPerType, error) {
-	configs := d.downloadAPIs(d.apisToDownload, projectName)
-	return configs, nil
-}
-
-func (d *Downloader) downloadSpecific(projectName string, specificAPIs []string) (project.ConfigsPerType, error) {
-	if ok, unknownApis := validateSpecificAPIs(d.apisToDownload, specificAPIs); !ok {
+	if ok, unknownApis := validateSpecificAPIs(d.apisToDownload, specificAPINames); !ok {
 		err := fmt.Errorf("requested APIs '%v' are not known", strings.Join(unknownApis, ","))
 		log.Error("%v. Please consult our documentation for known API names.", err)
 		return nil, err
 	}
 
-	apisToDownload := getApisToDownload(d.apisToDownload, specificAPIs)
+	apisToDownload := filterAPIs(d.apisToDownload, specificAPINames)
 	if len(apisToDownload) == 0 {
-		return nil, fmt.Errorf("no APIs to download")
+		return nil, fmt.Errorf("no APIs to download after applying filters")
 	}
 
 	configs := d.downloadAPIs(apisToDownload, projectName)
@@ -115,7 +104,7 @@ func validateSpecificAPIs(a api.APIs, apiNames []string) (valid bool, unknownAPI
 	return len(unknownAPIs) == 0, unknownAPIs
 }
 
-func getApisToDownload(apis api.APIs, specificAPIs []string) api.APIs {
+func filterAPIs(apis api.APIs, specificAPIs []string) api.APIs {
 	if len(specificAPIs) > 0 {
 		return apis.Filter(api.RetainByName(specificAPIs), skipDownloadFilter)
 	}
