@@ -18,9 +18,9 @@ package completion
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
 	"github.com/spf13/pflag"
+	"golang.org/x/exp/maps"
 	"os"
 	"strings"
 

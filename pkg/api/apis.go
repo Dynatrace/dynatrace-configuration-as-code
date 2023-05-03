@@ -16,9 +16,7 @@
 
 package api
 
-import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
-)
+import "golang.org/x/exp/maps"
 
 // APIs is a collection of API
 type APIs map[string]API

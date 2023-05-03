@@ -82,7 +82,7 @@ func (d DefaultCommand) DownloadEntitiesBasedOnManifest(fs afero.Fs, cmdOptions 
 		specificEntitiesTypes: cmdOptions.specificEntitiesTypes,
 	}
 
-	dtClient, err := dynatrace.CreateClient(env.URL.Value, env.Auth, false, dtclient.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
+	dtClient, err := dynatrace.CreateDTClient(env.URL.Value, env.Auth, false, dtclient.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
 	if err != nil {
 		return err
 	}

@@ -33,7 +33,6 @@ import (
 
 // Deletes all configs that end with a test suffix and any Settings created by the given manifest
 func CleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestPath string, loadedManifest manifest.Manifest, suffix string) {
-
 	log.Info("### Cleaning up after integration test ###")
 
 	apis := api.NewAPIs()

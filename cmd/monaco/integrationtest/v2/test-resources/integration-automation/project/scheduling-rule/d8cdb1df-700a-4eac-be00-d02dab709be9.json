@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "title": "First working day of the week",
+  "ruleType": "rrule",
+  "rrule": {
+    "freq": "WEEKLY",
+    "bysetpos": [
+      1
+    ],
+    "interval": 1,
+    "datestart": "2020-10-01",
+    "automation_server_byworkday": "WORKING"
+  },
+  "groupingRule": null,
+  "fixedOffsetRule": null,
+  "relativeOffsetRule": null,
+  "businessCalendar": "{{.businessCal}}",
+  "labels": {},
+  "description": "",
+  "modificationInfo": {
+    "createdBy": null,
+    "createdTime": "2023-03-28T07:57:39.189115Z",
+    "lastModifiedBy": null,
+    "lastModifiedTime": "2023-03-28T07:57:39.189133Z"
+  }
+}

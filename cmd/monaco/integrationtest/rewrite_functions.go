@@ -79,21 +79,22 @@ func isNameKey(key string) bool {
 func ReplaceId(line string, idChange func(string) string) string {
 	if strings.Contains(line, "id:") || strings.Contains(line, "configId:") {
 		trimmed := strings.TrimSpace(line)
-
 		if strings.HasPrefix(trimmed, "-") {
 			trimmed = trimmed[1:]
 			trimmed = strings.TrimSpace(trimmed)
 		}
-
-		withoutPrefix := strings.TrimLeft(trimmed, "id:")
-		id := strings.TrimSpace(withoutPrefix)
-
+		var id string
+		if strings.HasPrefix(trimmed, "id:") {
+			withoutPrefix := strings.TrimLeft(trimmed, "id:")
+			id = strings.TrimSpace(withoutPrefix)
+		} else if strings.HasPrefix(trimmed, "configId:") {
+			withoutPrefix := strings.TrimLeft(trimmed, "configId:")
+			id = strings.TrimSpace(withoutPrefix)
+		}
 		if id == "" { //line only contained the name, can't do anything here and probably a non-shorthand v2 reference
 			return line
 		}
-
 		id = strings.Trim(id, `"'`)
-
 		replaced := strings.ReplaceAll(line, id, idChange(id))
 		return replaced
 	}

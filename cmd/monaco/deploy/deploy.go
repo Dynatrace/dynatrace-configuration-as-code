@@ -27,7 +27,6 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
-	configError "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2/topologysort"
@@ -64,55 +63,39 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 		return fmt.Errorf("error during configuration sort: %w", err)
 	}
 
-	logProjectsInfo(filteredProjects)
-	logEnvironmentsInfo(loadedManifest.Environments)
-
-	if err = doDeploy(sortedConfigs, loadedManifest.Environments, continueOnErr, dryRun); err != nil {
+	if err := checkEnvironments(sortedConfigs, loadedManifest.Environments); err != nil {
 		return err
 	}
 
-	return nil
-}
+	logProjectsInfo(filteredProjects)
+	logEnvironmentsInfo(loadedManifest.Environments)
 
-func doDeploy(configs project.ConfigsPerEnvironment, environments manifest.Environments, continueOnErr bool, dryRun bool) error {
 	var deployErrs []error
-	for envName, configs := range configs {
-		logDeploymentInfo(dryRun, envName)
-		env, found := environments[envName]
-
-		if !found {
-			if continueOnErr {
-				deployErrs = append(deployErrs, fmt.Errorf("cannot find environment `%s`", envName))
-				continue
-			} else {
-				return fmt.Errorf("cannot find environment `%s`", envName)
-			}
-		}
-
-		dtClient, err := dynatrace.CreateClient(env.URL.Value, env.Auth, dryRun)
-
-		if err != nil {
-			if continueOnErr {
-				deployErrs = append(deployErrs, err)
-				continue
-			} else {
-				return err
-			}
-		}
-
-		errs := deploy.DeployConfigs(dtClient, api.NewAPIs(), configs, deploy.DeployConfigsOptions{
-			ContinueOnErr: continueOnErr,
-			DryRun:        dryRun,
-		})
+	for envName, cfgs := range sortedConfigs {
+		env := loadedManifest.Environments[envName]
+		errs := deployOnEnvironment(&env, cfgs, continueOnErr, dryRun)
 		deployErrs = append(deployErrs, errs...)
+		if len(errs) > 0 && !continueOnErr {
+			break
+		}
 	}
 
-	if deployErrs != nil {
+	if len(deployErrs) > 0 {
 		printErrorReport(deployErrs)
 		return fmt.Errorf("errors during %s", getOperationNounForLogging(dryRun))
 	}
 	log.Info("%s finished without errors", getOperationNounForLogging(dryRun))
 	return nil
+}
+
+func deployOnEnvironment(env *manifest.EnvironmentDefinition, cfgs []config.Config, continueOnErr bool, dryRun bool) []error {
+	logDeploymentInfo(dryRun, env.Name)
+	clientSet, _ := deploy.CreateClientSet(env.URL.Value, env.Auth, dryRun)
+	errs := deploy.DeployConfigs(clientSet, api.NewAPIs(), cfgs, deploy.DeployConfigsOptions{
+		ContinueOnErr: continueOnErr,
+		DryRun:        dryRun,
+	})
+	return errs
 }
 
 func absPath(manifestPath string) (string, error) {
@@ -190,168 +173,16 @@ func sortConfigs(projects []project.Project, environmentNames []string) (project
 	return sortedConfigs, nil
 }
 
-func logProjectsInfo(projects []project.Project) {
-	log.Info("Projects to be deployed (%d):", len(projects))
-	for _, p := range projects {
-		log.Info("  - %s", p)
-	}
-
-	if log.DebugEnabled() {
-		logConfigInfo(projects)
-	}
-}
-
-func logConfigInfo(projects []project.Project) {
-	cfgCount := 0
-	for _, p := range projects {
-		for _, cfgsPerTypePerEnv := range p.Configs {
-			for _, cfgsPerType := range cfgsPerTypePerEnv {
-				cfgCount += len(cfgsPerType)
-			}
-		}
-	}
-	log.Debug("Deploying %d configurations.", cfgCount)
-}
-
-func logEnvironmentsInfo(environments manifest.Environments) {
-	log.Info("Environments to deploy to (%d):", len(environments))
-	for _, name := range environments.Names() {
-		log.Info("  - %s", name)
-	}
-}
-func logDeploymentInfo(dryRun bool, envName string) {
-	if dryRun {
-		log.Info("Validating configurations for environment `%s`...", envName)
-	} else {
-		log.Info("Deploying configurations to environment `%s`...", envName)
-	}
-}
-
-func getOperationNounForLogging(dryRun bool) string {
-	if dryRun {
-		return "Validation"
-	}
-	return "Deployment"
-}
-
-func printErrorReport(deploymentErrors []error) {
-	var configErrors []configError.ConfigError
-	var generalErrors []error
-
-	for _, err := range deploymentErrors {
-		switch e := err.(type) {
-		case configError.ConfigError:
-			configErrors = append(configErrors, e)
-		default:
-			generalErrors = append(generalErrors, e)
-		}
-	}
-
-	if len(generalErrors) > 0 {
-		log.Error("=== General Errors ===")
-		for _, err := range generalErrors {
-			log.Error(errutils.ErrorString(err))
-		}
-	}
-
-	groupedConfigErrors := groupConfigErrors(configErrors)
-
-	for project, apiErrors := range groupedConfigErrors {
-		for api, configErrors := range apiErrors {
-			for config, errs := range configErrors {
-				var generalConfigErrors []configError.ConfigError
-				var detailedConfigErrors []configError.DetailedConfigError
-
-				for _, err := range errs {
-					switch e := err.(type) {
-					case configError.DetailedConfigError:
-						detailedConfigErrors = append(detailedConfigErrors, e)
-					default:
-						generalConfigErrors = append(generalConfigErrors, e)
-					}
-				}
-
-				groupErrors := groupEnvironmentConfigErrors(detailedConfigErrors)
-
-				for _, err := range generalConfigErrors {
-					log.Error("%s:%s:%s %s", project, api, config, errutils.ErrorString(err))
-				}
-
-				for group, environmentErrors := range groupErrors {
-					for env, errs := range environmentErrors {
-						for _, err := range errs {
-							log.Error("%s(%s) %s:%s:%s %T %s", env, group, project, api, config, err, errutils.ErrorString(err))
-						}
-					}
-				}
-			}
-		}
-	}
-}
-
-type ProjectErrors map[string]ApiErrors
-type ApiErrors map[string]ConfigErrors
-type ConfigErrors map[string][]configError.ConfigError
-
-func groupConfigErrors(errors []configError.ConfigError) ProjectErrors {
-	projectErrors := make(ProjectErrors)
-
-	for _, err := range errors {
-		coord := err.Coordinates()
-
-		typeErrors := projectErrors[coord.Project]
-
-		if typeErrors == nil {
-			typeErrors = make(ApiErrors)
-			typeErrors[coord.Type] = make(ConfigErrors)
-			projectErrors[coord.Project] = typeErrors
-		}
-
-		configErrors := typeErrors[coord.Type]
-
-		if configErrors == nil {
-			configErrors = make(ConfigErrors)
-			typeErrors[coord.Type] = configErrors
-		}
-
-		configErrors[coord.ConfigId] = append(configErrors[coord.ConfigId], err)
-	}
-
-	return projectErrors
-}
-
-type GroupErrors map[string]EnvironmentErrors
-type EnvironmentErrors map[string][]configError.DetailedConfigError
-
-func groupEnvironmentConfigErrors(errors []configError.DetailedConfigError) GroupErrors {
-	groupErrors := make(GroupErrors)
-
-	for _, err := range errors {
-		locationDetails := err.LocationDetails()
-
-		envErrors := groupErrors[locationDetails.Group]
-
-		if envErrors == nil {
-			envErrors = make(EnvironmentErrors)
-			groupErrors[locationDetails.Group] = envErrors
-		}
-
-		envErrors[locationDetails.Environment] = append(envErrors[locationDetails.Environment], err)
-	}
-
-	return groupErrors
-}
-
 func filterProjectsByName(projects []project.Project, names []string) ([]string, error) {
 	var result []string
 
 	foundProjects := map[string]struct{}{}
 
 	for _, p := range projects {
-		if containsName(names, p.Id) {
+		if slices.Contains(names, p.Id) {
 			foundProjects[p.Id] = struct{}{}
 			result = append(result, p.Id)
-		} else if containsName(names, p.GroupId) {
+		} else if slices.Contains(names, p.GroupId) {
 			foundProjects[p.GroupId] = struct{}{}
 			result = append(result, p.Id)
 		}
@@ -418,6 +249,32 @@ func toProjectMap(projects []project.Project) map[string]project.Project {
 	return result
 }
 
-func containsName(names []string, name string) bool {
-	return slices.Contains(names, name)
+func checkEnvironments(configs project.ConfigsPerEnvironment, envs manifest.Environments) error {
+	for envName, cfgs := range configs {
+		if _, found := envs[envName]; !found {
+			return fmt.Errorf("cannot find environment `%s`", envName)
+		}
+		if err := checkConfigsForEnvironment(envs[envName], cfgs); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func checkConfigsForEnvironment(env manifest.EnvironmentDefinition, cfgs []config.Config) error {
+	for i := range cfgs {
+		if !cfgs[i].Skip && onlyAvailableOnPlatform(&cfgs[i]) && !platformEnvironment(env) {
+			return fmt.Errorf("enviroment %q is not specified as platform, but at least one of configurations (e.g. %q) is platform exclusive", env.Name, cfgs[i].Coordinate)
+		}
+	}
+	return nil
+}
+
+func platformEnvironment(e manifest.EnvironmentDefinition) bool {
+	return e.Auth.OAuth != nil
+}
+
+func onlyAvailableOnPlatform(c *config.Config) bool {
+	_, aut := c.Type.(config.AutomationType)
+	return aut
 }

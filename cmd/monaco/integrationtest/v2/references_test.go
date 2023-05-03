@@ -21,7 +21,6 @@ package v2
 import (
 	"encoding/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
@@ -30,6 +29,7 @@ import (
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/exp/maps"
 	"testing"
 )
 

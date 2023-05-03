@@ -1,0 +1,10 @@
+configs:
+- id: workflow-1
+  config:
+    name: workflow-1
+    template: c18791d7-a7c9-4cd6-8857-a6cb8f2c4424.json
+    skip: false
+    originObjectId: c18791d7-a7c9-4cd6-8857-a6cb8f2c4424
+  type:
+    automation:
+      resource: workflow

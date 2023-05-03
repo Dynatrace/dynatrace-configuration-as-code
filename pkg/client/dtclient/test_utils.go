@@ -20,9 +20,9 @@ package dtclient
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
+	"golang.org/x/exp/maps"
 	"net/http"
 	"net/http/httptest"
 	"os"

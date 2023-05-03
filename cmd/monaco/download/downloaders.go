@@ -34,7 +34,7 @@ import (
 type downloaders []interface{}
 
 func makeDownloaders(options downloadConfigsOptions) (downloaders, error) {
-	dtClient, err := dynatrace.CreateClient(options.environmentURL, options.auth, false,
+	dtClient, err := dynatrace.CreateDTClient(options.environmentURL, options.auth, false,
 		dtclient.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
 	if err != nil {
 		return nil, err
