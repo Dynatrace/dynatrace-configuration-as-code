@@ -140,7 +140,7 @@ func TestDownload_ConfigsDownloaded_WithEmptyFilter(t *testing.T) {
 
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	downloader := NewDownloader(c, WithAPIs(apiMap), WithAPIFilters(map[string]apiFilter{}))
+	downloader := NewDownloader(c, WithAPIs(apiMap), WithAPIContentFilters(map[string]contentFilter{}))
 
 	configurations, err := downloader.Download("project")
 	assert.NoError(t, err)
@@ -160,7 +160,7 @@ func TestDownload_SkipConfigThatShouldNotBePersisted(t *testing.T) {
 	}).Times(2)
 	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil).Times(2)
 
-	apiFilters := map[string]apiFilter{"API_ID_1": {
+	apiFilters := map[string]contentFilter{"API_ID_1": {
 		shouldConfigBePersisted: func(_ map[string]interface{}) bool {
 			return false
 		},
@@ -170,7 +170,7 @@ func TestDownload_SkipConfigThatShouldNotBePersisted(t *testing.T) {
 	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueName: false}
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	downloader := NewDownloader(c, WithAPIs(apiMap), WithAPIFilters(apiFilters))
+	downloader := NewDownloader(c, WithAPIs(apiMap), WithAPIContentFilters(apiFilters))
 
 	configurations, err := downloader.Download("project")
 	assert.NoError(t, err)
@@ -190,7 +190,7 @@ func TestDownload_SkipConfigBeforeDownload(t *testing.T) {
 	}).Times(2)
 	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 
-	apiFilters := map[string]apiFilter{"API_ID_1": {
+	apiFilters := map[string]contentFilter{"API_ID_1": {
 		shouldBeSkippedPreDownload: func(_ dtclient.Value) bool {
 			return true
 		},
@@ -200,7 +200,7 @@ func TestDownload_SkipConfigBeforeDownload(t *testing.T) {
 	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueName: false}
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	downloader := NewDownloader(c, WithAPIs(apiMap), WithAPIFilters(apiFilters))
+	downloader := NewDownloader(c, WithAPIs(apiMap), WithAPIContentFilters(apiFilters))
 
 	configurations, err := downloader.Download("project")
 	assert.NoError(t, err)

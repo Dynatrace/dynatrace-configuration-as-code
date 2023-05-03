@@ -21,7 +21,8 @@ import (
 	"strings"
 )
 
-type apiFilter struct {
+// contentFilter defines whether a given API value should be skipped - either already PreDownload or based on it's full json content
+type contentFilter struct {
 	// shouldBeSkippedPreDownload is an optional callback indicating that a config should not be downloaded after the list of the configs
 	shouldBeSkippedPreDownload func(value dtclient.Value) bool
 
@@ -29,7 +30,8 @@ type apiFilter struct {
 	shouldConfigBePersisted func(json map[string]interface{}) bool
 }
 
-var apiFilters = map[string]apiFilter{
+// apiContentFilters defines default contentFilter rules per API identifier
+var apiContentFilters = map[string]contentFilter{
 	"dashboard": {
 		shouldBeSkippedPreDownload: func(value dtclient.Value) bool {
 			return value.Owner != nil && *value.Owner == "Dynatrace"
