@@ -37,7 +37,7 @@ import (
 )
 
 func TestNonUniqueNameUpserts(t *testing.T) {
-	testSuffix := integrationtest.GenerateTestSuffix("NonUniqueName")
+	testSuffix := integrationtest.GenerateTestSuffix(t, "NonUniqueName")
 
 	url := os.Getenv("URL_ENVIRONMENT_1")
 	token := os.Getenv("TOKEN_ENVIRONMENT_1")

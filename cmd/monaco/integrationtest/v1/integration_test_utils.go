@@ -225,7 +225,7 @@ func runLegacyIntegration(t *testing.T, configFolder, envFile, suffixTest string
 }
 
 func appendUniqueSuffixToIntegrationTestConfigs(t *testing.T, fs afero.Fs, configFolder string, generalSuffix string) string {
-	suffix := integrationtest.GenerateTestSuffix(fmt.Sprintf("%s_%s", generalSuffix, "v1"))
+	suffix := integrationtest.GenerateTestSuffix(t, fmt.Sprintf("%s_%s", generalSuffix, "v1"))
 	transformers := []func(line string) string{
 		func(name string) string {
 			return integrationtest.ReplaceName(name, integrationtest.AddSuffix(suffix))

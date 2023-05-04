@@ -78,7 +78,7 @@ func TestDelete(t *testing.T) {
 
 			//create config yaml
 			cfgTemplate := "configs:\n- id: %s\n  type:\n    settings:\n      schema: builtin:tags.auto-tagging\n      scope: environment\n  config:\n    name: %s\n    template: auto-tag-setting.json\n"
-			cfgId := fmt.Sprintf("deleteSample_%s", integrationtest.GenerateTestSuffix(tt.name))
+			cfgId := fmt.Sprintf("deleteSample_%s", integrationtest.GenerateTestSuffix(t, tt.name))
 			configContent := fmt.Sprintf(cfgTemplate, cfgId, cfgId)
 
 			configYamlPath, err := filepath.Abs(filepath.Join(configFolder, "project", "config.yaml"))
