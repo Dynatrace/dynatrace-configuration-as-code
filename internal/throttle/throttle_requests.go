@@ -42,7 +42,8 @@ func ThrottleCallAfterError(backoffMultiplier int, message string, a ...any) {
 // generated sleep durations are used in case the API did not reply with a limit and reset time
 // and called with the current retry iteration count to implement increasing possible wait times per iteration
 func GenerateSleepDuration(backoffMultiplier int, timelineProvider timeutils.TimelineProvider) (sleepDuration time.Duration, humanReadableResetTimestamp string) {
-	newRand := rand.New(rand.NewSource(time.Now().UnixNano())) //nolint:gosec //nosemgrep:go.lang.security.audit.crypto.math_random.math-random-used
+	//nosemgrep:go.lang.security.audit.crypto.math_random.math-random-used
+	newRand := rand.New(rand.NewSource(time.Now().UnixNano())) //nolint:gosec
 
 	if backoffMultiplier < 1 {
 		backoffMultiplier = 1

@@ -30,7 +30,8 @@ import (
 )
 
 func GenerateTestSuffix(generalSuffix string) string {
-	newRand := rand.New(rand.NewSource(time.Now().UnixNano())) //nolint:gosec //nosemgrep:go.lang.security.audit.crypto.math_random.math-random-used
+	//nosemgrep:go.lang.security.audit.crypto.math_random.math-random-used
+	newRand := rand.New(rand.NewSource(time.Now().UnixNano())) //nolint:gosec
 	randomNumber := newRand.Intn(10000)
 
 	timestamp := time.Now().Format("20060102150405")
