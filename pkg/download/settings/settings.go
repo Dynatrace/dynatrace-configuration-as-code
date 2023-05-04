@@ -163,7 +163,7 @@ func (d *Downloader) convertAllObjects(objects []dtclient.DownloadSettingsObject
 			continue
 		}
 
-		indentedJson, _ := jsonutils.MarshalIndent(o.Value)
+		indentedJson := jsonutils.MarshalIndent(o.Value)
 		// construct config object with generated config ID
 		configId := idutils.GenerateUuidFromName(o.ObjectId)
 		c := config.Config{

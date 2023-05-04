@@ -134,7 +134,7 @@ func createTemplateFromRawJSON(obj automationClient.Response, configType string)
 		log.Warn("Failed to sanitize downloaded JSON for config %v (%s) - template may need manual cleanup: %v", configId, configType, err)
 		content = obj.Data
 	}
-	content, _ = jsonutils.MarshalIndent(content)
+	content = jsonutils.MarshalIndent(content)
 
 	t = template.NewDownloadTemplate(configId, configName, string(content))
 	return t, configName
