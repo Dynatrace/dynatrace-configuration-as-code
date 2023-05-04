@@ -18,10 +18,10 @@ package throttle
 
 import (
 	"fmt"
-	"math/rand"
 	"time"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/rand"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/timeutils"
 )
 
@@ -42,14 +42,16 @@ func ThrottleCallAfterError(backoffMultiplier int, message string, a ...any) {
 // generated sleep durations are used in case the API did not reply with a limit and reset time
 // and called with the current retry iteration count to implement increasing possible wait times per iteration
 func GenerateSleepDuration(backoffMultiplier int, timelineProvider timeutils.TimelineProvider) (sleepDuration time.Duration, humanReadableResetTimestamp string) {
-	//nosemgrep:go.lang.security.audit.crypto.math_random.math-random-used
-	newRand := rand.New(rand.NewSource(time.Now().UnixNano())) //nolint:gosec
 
 	if backoffMultiplier < 1 {
 		backoffMultiplier = 1
 	}
 
-	addedWaitMillis := newRand.Int63n(MinWaitDuration.Nanoseconds()) //nolint:gosec
+	addedWaitMillis, err := rand.Int(MinWaitDuration.Nanoseconds())
+	if err != nil {
+		log.Warn("Failed to generate random gitter. Falling back to use fixed value. Error: %s", err)
+		addedWaitMillis = 0
+	}
 
 	sleepDuration = MinWaitDuration + time.Duration(addedWaitMillis*int64(backoffMultiplier))
 

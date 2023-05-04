@@ -21,18 +21,20 @@ package integrationtest
 import (
 	"bufio"
 	"fmt"
-	"math/rand"
 	"path/filepath"
 	"strings"
+	"testing"
 	"time"
 
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/rand"
 	"github.com/spf13/afero"
 )
 
-func GenerateTestSuffix(generalSuffix string) string {
-	//nosemgrep:go.lang.security.audit.crypto.math_random.math-random-used
-	newRand := rand.New(rand.NewSource(time.Now().UnixNano())) //nolint:gosec
-	randomNumber := newRand.Intn(10000)
+func GenerateTestSuffix(t *testing.T, generalSuffix string) string {
+	randomNumber, err := rand.Int(int64(10000))
+	if err != nil {
+		t.Fatalf("Failed to generate random number for the test suffix: %s", err)
+	}
 
 	timestamp := time.Now().Format("20060102150405")
 	suffix := fmt.Sprintf("%s_%d_%s", timestamp, randomNumber, generalSuffix)

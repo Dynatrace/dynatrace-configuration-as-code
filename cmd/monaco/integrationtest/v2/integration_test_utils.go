@@ -126,7 +126,7 @@ func runIntegrationWithCleanup(t *testing.T, opts TestOptions, testFunc TestFunc
 }
 
 func appendUniqueSuffixToIntegrationTestConfigs(t *testing.T, fs afero.Fs, configFolder string, generalSuffix string) string {
-	suffix := integrationtest.GenerateTestSuffix(generalSuffix)
+	suffix := integrationtest.GenerateTestSuffix(t, generalSuffix)
 	transformers := []func(line string) string{
 		func(name string) string {
 			return integrationtest.ReplaceName(name, integrationtest.AddSuffix(suffix))
