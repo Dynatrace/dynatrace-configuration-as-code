@@ -86,7 +86,7 @@ func upsertDynatraceEntityByNonUniqueNameAndId(
 
 	existingEntities, err := getExistingValuesFromEndpoint(client, theApi, fullUrl, retrySettings)
 	if err != nil {
-		return DynatraceEntity{}, fmt.Errorf("failed to query existing entities for upsert: %w", err)
+		return DynatraceEntity{}, fmt.Errorf("failed to query existing entities: %w", err)
 	}
 
 	var entitiesWithSameName []Value
@@ -249,7 +249,7 @@ func stripCreateOnlyPropertiesFromAppMobile(payload []byte) []byte {
 // callWithRetryOnKnowTimingIssue handles several know cases in which Dynatrace has a slight delay before newly created objects
 // can be used in further configuration. This is a cheap way to allow monaco to work around this, by waiting, then
 // retrying in case of know errors on upload.
-func callWithRetryOnKnowTimingIssue(client *http.Client, restCall rest.SendingRequest, objectName string, path string, body []byte, theApi api.API, retrySettings rest.RetrySettings) (rest.Response, error) {
+func callWithRetryOnKnowTimingIssue(client *http.Client, restCall rest.SendRequestWithBody, objectName string, path string, body []byte, theApi api.API, retrySettings rest.RetrySettings) (rest.Response, error) {
 
 	resp, err := restCall(client, path, body)
 

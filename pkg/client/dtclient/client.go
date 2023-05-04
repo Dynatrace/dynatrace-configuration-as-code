@@ -402,18 +402,18 @@ func (d *DynatraceClient) upsertSettings(obj SettingsObject) (DynatraceEntity, e
 	}
 	payload, err := buildPostRequestPayload(obj, externalId)
 	if err != nil {
-		return DynatraceEntity{}, fmt.Errorf("failed to build settings object for upsert: %w", err)
+		return DynatraceEntity{}, fmt.Errorf("failed to build settings object: %w", err)
 	}
 
 	requestUrl := d.environmentURL + d.settingsObjectAPIPath
 
 	resp, err := rest.SendWithRetryWithInitialTry(d.client, rest.Post, obj.Id, requestUrl, payload, d.retrySettings.Normal)
 	if err != nil {
-		return DynatraceEntity{}, fmt.Errorf("failed to upsert dynatrace obj: %w", err)
+		return DynatraceEntity{}, fmt.Errorf("failed to create or update dynatrace obj: %w", err)
 	}
 
 	if !success(resp) {
-		return DynatraceEntity{}, fmt.Errorf("failed to upsert settings object with externalId %s (HTTP %d)!\n\tResponse was: %s", externalId, resp.StatusCode, string(resp.Body))
+		return DynatraceEntity{}, fmt.Errorf("failed to create or update settings object with externalId %s (HTTP %d)!\n\tResponse was: %s", externalId, resp.StatusCode, string(resp.Body))
 	}
 
 	entity, err := parsePostResponse(resp)

@@ -68,42 +68,38 @@ func GetWithRetry(client *http.Client, url string, settings RetrySetting) (resp 
 		}
 	}
 
-	var retryErr error
 	if err != nil {
-		retryErr = fmt.Errorf("GET request %s failed after %d retries: %w", url, settings.MaxRetries, err)
-	} else {
-		retryErr = fmt.Errorf("GET request %s failed after %d retries: (HTTP %d)!\n    Response was: %s", url, settings.MaxRetries, resp.StatusCode, resp.Body)
+		return resp, fmt.Errorf("GET request %s failed after %d retries: %w", url, settings.MaxRetries, err)
 	}
-	return resp, retryErr
+	return resp, fmt.Errorf("GET request %s failed after %d retries: (HTTP %d)!\n    Response was: %s", url, settings.MaxRetries, resp.StatusCode, resp.Body)
+
 }
 
-// SendWithRetry will retry a SendingRequest(PUT or POST) for a given number of times, waiting a give duration between calls
-func SendWithRetry(client *http.Client, restCall SendingRequest, objectName string, path string, body []byte, setting RetrySetting) (resp Response, err error) {
+// SendWithRetry will retry to call sendWithBody for a given number of times, waiting a give duration between calls
+func SendWithRetry(client *http.Client, sendWithBody SendRequestWithBody, objectName string, path string, body []byte, setting RetrySetting) (resp Response, err error) {
 
 	for i := 0; i < setting.MaxRetries; i++ {
-		log.Warn("Failed to upsert config %q. Waiting for %s before retrying...", objectName, setting.WaitTime)
+		log.Warn("Failed to create or update config %q. Waiting for %s before retrying...", objectName, setting.WaitTime)
 		time.Sleep(setting.WaitTime)
-		resp, err = restCall(client, path, body)
+		resp, err = sendWithBody(client, path, body)
 		if err == nil && resp.IsSuccess() {
 			return resp, err
 		}
 	}
 
-	var retryErr error
 	if err != nil {
-		retryErr = fmt.Errorf("failed to upsert config %q after %d retries: %w", objectName, setting.MaxRetries, err)
-	} else {
-		retryErr = fmt.Errorf("failed to upsert config %q after %d retries: (HTTP %d)!\n    Response was: %s", objectName, setting.MaxRetries, resp.StatusCode, resp.Body)
+		return Response{}, fmt.Errorf("failed to create or update config %q after %d retries: %w", objectName, setting.MaxRetries, err)
 	}
-	return Response{}, retryErr
+	return Response{}, fmt.Errorf("failed to create or update config %q after %d retries: (HTTP %d)!\n    Response was: %s", objectName, setting.MaxRetries, resp.StatusCode, resp.Body)
+
 }
 
-// SendWithRetryWithInitialTry will try to send a request and later retry a SendingRequest(PUT or POST) for a given number of times, waiting a give duration between calls
-func SendWithRetryWithInitialTry(client *http.Client, restCall SendingRequest, objectName string, path string, body []byte, setting RetrySetting) (resp Response, err error) {
-	resp, err = restCall(client, path, body)
+// SendWithRetryWithInitialTry will try to call sendWithBody and if it didn't succeed call [SendWithRetry]
+func SendWithRetryWithInitialTry(client *http.Client, sendWithBody SendRequestWithBody, objectName string, path string, body []byte, setting RetrySetting) (resp Response, err error) {
+	resp, err = sendWithBody(client, path, body)
 	if err == nil && resp.IsSuccess() {
 		return resp, err
 	}
 
-	return SendWithRetry(client, restCall, objectName, path, body, setting)
+	return SendWithRetry(client, sendWithBody, objectName, path, body, setting)
 }
