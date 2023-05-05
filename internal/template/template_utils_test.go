@@ -286,3 +286,65 @@ func Test_isListDefinition(t *testing.T) {
 		})
 	}
 }
+
+func TestEscapeJinjaTemplates(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected string
+	}{
+		{
+			input:    "Hello, {{planet}}!",
+			expected: `Hello, \{\{planet\}\}!`,
+		},
+		{
+			input:    `Hello , {{ calendar("abcde") }}`,
+			expected: `Hello , \{\{ calendar("abcde") \}\}`,
+		},
+		{
+			input:    "no jinja",
+			expected: "no jinja",
+		},
+		{
+			input:    "",
+			expected: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		actual := EscapeJinjaTemplates(tc.input)
+		if actual != tc.expected {
+			t.Errorf("EscapeJinjaTemplates(%q) = %q; expected %q", tc.input, actual, tc.expected)
+		}
+	}
+}
+
+func TestUnEscapeJinjaTemplates(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected string
+	}{
+		{
+			input:    `Hello, \{\{planet\}\}!`,
+			expected: "Hello, {{planet}}!",
+		},
+		{
+			input:    `Hello , \{\{ calendar("abcde") \}\}`,
+			expected: `Hello , {{ calendar("abcde") }}`,
+		},
+		{
+			input:    "no jinja",
+			expected: "no jinja",
+		},
+		{
+			input:    "",
+			expected: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		actual := UnescapeJinjaTemplates(tc.input)
+		if actual != tc.expected {
+			t.Errorf("EscapeJinjaTemplates(%q) = %q; expected %q", tc.input, actual, tc.expected)
+		}
+	}
+}
