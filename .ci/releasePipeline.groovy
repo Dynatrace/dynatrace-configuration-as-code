@@ -285,14 +285,15 @@ void createContainerAndPushToStorage(Map args = [version: null, registrySecretsP
     stage("Publish container: registry=${args.registry}, version=${args.version}") {
         withEnv(["version=${args.version}"]) {
             withVault(vaultSecrets: [[path        : "${args.registrySecretsPath}",
-                                      secretValues: [[envVar: 'registry', vaultKey: 'registry_path', isRequired: true],
+                                      secretValues: [[envVar: 'registry', vaultKey: 'registry', isRequired: true],
+                                                     [envVar: 'repo', vaultKey: 'repo', isRequired: true],
                                                      [envVar: 'username', vaultKey: 'username', isRequired: true],
                                                      [envVar: 'password', vaultKey: 'password', isRequired: true]]]]) {
                 script {
                     try {
                         sh 'docker login --username $username --password $password $registry'
-                        sh 'DOCKER_BUILDKIT=1 make docker-container OUTPUT=./build/docker/monaco CONTAINER_NAME=$registry/dynatrace-configuration-as-code VERSION=$version'
-                        sh 'docker push $registry/dynatrace-configuration-as-code:$version'
+                        sh 'DOCKER_BUILDKIT=1 make docker-container OUTPUT=./build/docker/monaco CONTAINER_NAME=$registry/$repo/dynatrace-configuration-as-code VERSION=$version'
+                        sh 'docker push $registry/$repo/dynatrace-configuration-as-code:$version'
                     } finally {
                         sh 'docker logout $registry'
                     }
