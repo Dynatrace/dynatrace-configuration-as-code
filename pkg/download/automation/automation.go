@@ -77,7 +77,7 @@ func (d *Downloader) Download(projectName string, automationTypes ...config.Auto
 		var configs []config.Config
 		for _, obj := range response.Results {
 
-			configId := obj.Id
+			configId := obj.ID
 			t, configName := createTemplateFromRawJSON(obj, string(at.Resource))
 
 			c := config.Config{
@@ -93,7 +93,7 @@ func (d *Downloader) Download(projectName string, automationTypes ...config.Auto
 				Parameters: map[string]parameter.Parameter{
 					config.NameParameter: &value.ValueParameter{Value: configName},
 				},
-				OriginObjectId: obj.Id,
+				OriginObjectId: obj.ID,
 			}
 			configs = append(configs, c)
 		}
@@ -106,7 +106,7 @@ type NoopAutomationDownloader struct {
 }
 
 func createTemplateFromRawJSON(obj automationClient.Response, configType string) (t template.Template, extractedName string) {
-	configId := obj.Id
+	configId := obj.ID
 
 	var data map[string]interface{}
 	err := json.Unmarshal(obj.Data, &data)
