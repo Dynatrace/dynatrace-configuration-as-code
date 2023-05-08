@@ -25,15 +25,9 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 )
 
-//go:generate mockgen -source=automation.go -destination=automation_mock.go -package=deploy automationClient
+//go:generate mockgen -source=automation.go -destination=automation_mock_client.go -package=deploy automationClient
 type automationClient interface {
 	Upsert(resourceType automation.ResourceType, id string, data []byte) (result *automation.Response, err error)
-}
-type dummyAutomationClient struct {
-}
-
-func (c *dummyAutomationClient) Upsert(_ automation.ResourceType, id string, _ []byte) (*automation.Response, error) {
-	return &automation.Response{Id: id}, nil
 }
 
 func deployAutomation(client automationClient, properties parameter.Properties, renderedConfig string, c *config.Config) (*parameter.ResolvedEntity, error) {

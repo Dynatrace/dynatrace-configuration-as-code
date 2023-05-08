@@ -16,6 +16,7 @@ bin/
 
 # Mock files
 **/*_mock.go
+**/*_mock_*.go
 cmd/monaco/test-resources/download/
 
 # Dependencies
