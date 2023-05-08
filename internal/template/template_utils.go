@@ -117,17 +117,14 @@ func escapeNewlines(rawString string) string {
 	return strings.ReplaceAll(rawString, "\n", `\n`)
 }
 
-// EscapeJinjaTemplates replaces each occurrence of "{{" with "\{\{" and
-// each occurrence of "}}" with "\}\}"
-
+// EscapeJinjaTemplates replaces each occurrence of "{{" with "\{\{" and each occurrence of "}}" with "\}\}"
 func EscapeJinjaTemplates(str string) string {
-	str = strings.ReplaceAll(str, "{{", "\\{\\{")
+	str = strings.ReplaceAll(str, `{{`, `\{\{`)
 	str = strings.ReplaceAll(str, "}}", "\\}\\}")
 	return str
 }
 
-// EscapeJinjaTemplates replaces each occurrence of "\{\{" with \{{" and
-// each occurrence of "\}\}" with "}}"
+// UnescapeJinjaTemplates replaces each occurrence of "\{\{" with \{{" and each occurrence of "\}\}" with "}}"
 func UnescapeJinjaTemplates(str string) string {
 	str = strings.ReplaceAll(str, "\\{\\{", "{{")
 	str = strings.ReplaceAll(str, "\\}\\}", "}}")

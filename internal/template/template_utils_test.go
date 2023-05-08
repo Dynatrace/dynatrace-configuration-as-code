@@ -20,7 +20,7 @@ package template
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/regex"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -44,7 +44,7 @@ func Test_EscapeSpecialCharacters_EscapesNewline(t *testing.T) {
 	}
 
 	result, err := EscapeSpecialCharacters(p)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	expected := map[string]interface{}{
 		`string without newline`: `just some string`,
@@ -63,7 +63,7 @@ func Test_EscapeSpecialCharacters_EscapesNewline(t *testing.T) {
 		},
 	}
 
-	assert.DeepEqual(t, expected, result)
+	assert.Equal(t, expected, result)
 }
 
 func Test_EscapeSpecialCharacters_WithEmptyMap(t *testing.T) {
@@ -72,8 +72,8 @@ func Test_EscapeSpecialCharacters_WithEmptyMap(t *testing.T) {
 
 	res, err := EscapeSpecialCharacters(empty)
 
-	assert.NilError(t, err)
-	assert.DeepEqual(t, res, empty)
+	assert.NoError(t, err)
+	assert.Equal(t, res, empty)
 }
 
 func Test_escapeCharactersForJson(t *testing.T) {
@@ -204,7 +204,7 @@ func TestEscapeNewlineCharacters(t *testing.T) {
 	}
 
 	result, err := EscapeSpecialCharacters(p)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	expected := map[string]interface{}{
 		`string without newline`: `just some string`,
@@ -223,7 +223,7 @@ func TestEscapeNewlineCharacters(t *testing.T) {
 		},
 	}
 
-	assert.DeepEqual(t, expected, result)
+	assert.Equal(t, expected, result)
 }
 
 func TestEscapeNewlineCharactersWithEmptyMap(t *testing.T) {
@@ -232,8 +232,8 @@ func TestEscapeNewlineCharactersWithEmptyMap(t *testing.T) {
 
 	res, err := EscapeSpecialCharacters(empty)
 
-	assert.NilError(t, err)
-	assert.DeepEqual(t, res, empty)
+	assert.NoError(t, err)
+	assert.Equal(t, res, empty)
 }
 
 func Test_isListDefinition(t *testing.T) {
@@ -288,63 +288,29 @@ func Test_isListDefinition(t *testing.T) {
 }
 
 func TestEscapeJinjaTemplates(t *testing.T) {
-	testCases := []struct {
-		input    string
-		expected string
-	}{
-		{
-			input:    "Hello, {{planet}}!",
-			expected: `Hello, \{\{planet\}\}!`,
-		},
-		{
-			input:    `Hello , {{ calendar("abcde") }}`,
-			expected: `Hello , \{\{ calendar("abcde") \}\}`,
-		},
-		{
-			input:    "no jinja",
-			expected: "no jinja",
-		},
-		{
-			input:    "",
-			expected: "",
-		},
-	}
+	assert := assert.New(t)
 
-	for _, tc := range testCases {
-		actual := EscapeJinjaTemplates(tc.input)
-		if actual != tc.expected {
-			t.Errorf("EscapeJinjaTemplates(%q) = %q; expected %q", tc.input, actual, tc.expected)
-		}
-	}
+	assert.Equal(`Hello, \{\{planet\}\}!`, EscapeJinjaTemplates(`Hello, {{planet}}!`))
+	assert.Equal(`Hello , \{\{ calendar("abcde") \}\}`, EscapeJinjaTemplates(`Hello , {{ calendar("abcde") }}`))
+	assert.Equal(`no jinja`, EscapeJinjaTemplates(`no jinja`))
+	assert.Equal(`\{\{`, EscapeJinjaTemplates(`{{`))
+	assert.Equal(`{`, EscapeJinjaTemplates(`{`))
+	assert.Equal(`\{`, EscapeJinjaTemplates(`\{`))
+	assert.Equal(`\}\}`, EscapeJinjaTemplates(`}}`))
+	assert.Equal(`}`, EscapeJinjaTemplates(`}`))
+	assert.Equal(`\}`, EscapeJinjaTemplates(`\}`))
 }
 
-func TestUnEscapeJinjaTemplates(t *testing.T) {
-	testCases := []struct {
-		input    string
-		expected string
-	}{
-		{
-			input:    `Hello, \{\{planet\}\}!`,
-			expected: "Hello, {{planet}}!",
-		},
-		{
-			input:    `Hello , \{\{ calendar("abcde") \}\}`,
-			expected: `Hello , {{ calendar("abcde") }}`,
-		},
-		{
-			input:    "no jinja",
-			expected: "no jinja",
-		},
-		{
-			input:    "",
-			expected: "",
-		},
-	}
+func TestUnescapeJinjaTemplates(t *testing.T) {
+	assert := assert.New(t)
 
-	for _, tc := range testCases {
-		actual := UnescapeJinjaTemplates(tc.input)
-		if actual != tc.expected {
-			t.Errorf("EscapeJinjaTemplates(%q) = %q; expected %q", tc.input, actual, tc.expected)
-		}
-	}
+	assert.Equal(`Hello, {{planet}}!`, UnescapeJinjaTemplates(`Hello, \{\{planet\}\}!`))
+	assert.Equal(`Hello , {{ calendar("abcde") }}`, UnescapeJinjaTemplates(`Hello , \{\{ calendar("abcde") \}\}`))
+	assert.Equal(`no jinja`, UnescapeJinjaTemplates(`no jinja`))
+	assert.Equal(`{{`, UnescapeJinjaTemplates(`\{\{`))
+	assert.Equal(`{`, UnescapeJinjaTemplates(`{`))
+	assert.Equal(`\{`, UnescapeJinjaTemplates(`\{`))
+	assert.Equal(`}}`, UnescapeJinjaTemplates(`\}\}`))
+	assert.Equal(`}`, UnescapeJinjaTemplates(`}`))
+	assert.Equal(`\}`, UnescapeJinjaTemplates(`\}`))
 }
