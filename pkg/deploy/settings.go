@@ -38,7 +38,7 @@ func deploySetting(settingsClient dtclient.SettingsClient, properties parameter.
 	}
 
 	entity, err := settingsClient.UpsertSettings(dtclient.SettingsObject{
-		Id:             c.Coordinate.ConfigId,
+		Coordinate:     c.Coordinate,
 		SchemaId:       t.SchemaId,
 		SchemaVersion:  t.SchemaVersion,
 		Scope:          scope,

@@ -19,7 +19,9 @@
 package idutils
 
 import (
-	"gotest.tools/assert"
+	"encoding/base64"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
+	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
 )
@@ -27,51 +29,106 @@ import (
 func TestGenerateExternalIdIsStable(t *testing.T) {
 	schemaId, id := "a", "b"
 
-	output1 := GenerateExternalID(schemaId, id)
-	output2 := GenerateExternalID(schemaId, id)
-
+	output1, err := GenerateExternalID(coordinate.Coordinate{
+		Type:     schemaId,
+		ConfigId: id,
+	})
+	assert.NoError(t, err)
+	output2, err := GenerateExternalID(coordinate.Coordinate{
+		Type:     schemaId,
+		ConfigId: id,
+	})
+	assert.NoError(t, err)
 	assert.Equal(t, output1, output2)
 }
 
 func TestGenerateExternalIdGeneratesDifferentValuesForDifferentInput(t *testing.T) {
-	output1 := GenerateExternalID("a", "a")
-	output2 := GenerateExternalID("a", "b")
-	output3 := GenerateExternalID("b", "b")
+	output1, err := GenerateExternalID(coordinate.Coordinate{Type: "a", ConfigId: "a"})
+	assert.NoError(t, err)
+	output2, err := GenerateExternalID(coordinate.Coordinate{Type: "a", ConfigId: "b"})
+	assert.NoError(t, err)
+	output3, err := GenerateExternalID(coordinate.Coordinate{Type: "b", ConfigId: "b"})
+	assert.NoError(t, err)
 
-	assert.Assert(t, output1 != output2)
-	assert.Assert(t, output2 != output3)
-	assert.Assert(t, output1 != output3)
+	assert.NotEqual(t, output1, output2)
+	assert.NotEqual(t, output2, output3)
+	assert.NotEqual(t, output1, output3)
 }
 
 func TestGenerateExternalIdWithOver500CharsCutsIt(t *testing.T) {
-	output1 := GenerateExternalID(strings.Repeat("a", 501), "")
-	output2 := GenerateExternalID("", strings.Repeat("a", 501))
-	output3 := GenerateExternalID(strings.Repeat("a", 250), strings.Repeat("a", 251))
+	output1, err := GenerateExternalID(coordinate.Coordinate{Type: strings.Repeat("a", 501)})
+	assert.Zero(t, output1)
+	assert.Error(t, err)
+	output2, err := GenerateExternalID(coordinate.Coordinate{ConfigId: strings.Repeat("a", 501)})
+	assert.Zero(t, output2)
+	assert.Error(t, err)
+	output3, err := GenerateExternalID(coordinate.Coordinate{Type: strings.Repeat("a", 250), ConfigId: strings.Repeat("a", 251)})
+	assert.LessOrEqual(t, len(output3), 500)
+	assert.NoError(t, err)
 
-	assert.Assert(t, len(output1) <= 500)
-	assert.Assert(t, len(output2) <= 500)
-	assert.Assert(t, len(output3) <= 500)
 }
 
-func TestGenerateExternalIdWithOther500CharsIsStable(t *testing.T) {
-	output1 := GenerateExternalID(strings.Repeat("a", 250), strings.Repeat("a", 251))
-	output2 := GenerateExternalID(strings.Repeat("a", 250), strings.Repeat("a", 251))
-	output3 := GenerateExternalID(strings.Repeat("a", 250), strings.Repeat("a", 300))
+func TestGenerateExternalIdWithOver500CharactersProducesUniqueIDs(t *testing.T) {
+	uniqueID1, err := GenerateExternalID(coordinate.Coordinate{Type: strings.Repeat("a", 250), ConfigId: strings.Repeat("a", 251)})
+	assert.NoError(t, err)
+	uniqueID2, err := GenerateExternalID(coordinate.Coordinate{Type: strings.Repeat("a", 250), ConfigId: strings.Repeat("a", 251)})
+	assert.NoError(t, err)
+	uniqueID3, err := GenerateExternalID(coordinate.Coordinate{Type: strings.Repeat("a", 250), ConfigId: strings.Repeat("a", 300)})
+	assert.NoError(t, err)
 
-	assert.Equal(t, output1, output2)
-	assert.Assert(t, output1 != output3)
+	assert.Equal(t, uniqueID1, uniqueID2)
+	assert.NotEqual(t, uniqueID1, uniqueID3)
 }
 
 func TestGenerateExternalIdStartsWithKnownPrefix(t *testing.T) {
 	schemaId, id := "a", "b"
 
-	extId := GenerateExternalID(schemaId, id)
-
-	assert.Assert(t, strings.HasPrefix(extId, "monaco:"))
+	extId, err := GenerateExternalID(coordinate.Coordinate{Type: schemaId, ConfigId: id})
+	assert.NoError(t, err)
+	assert.True(t, strings.HasPrefix(extId, "monaco:"))
 }
 
 func TestGenerateExternalIdWithOther500CharsStartsWithKnownPrefix(t *testing.T) {
-	extId := GenerateExternalID(strings.Repeat("a", 250), strings.Repeat("a", 251))
+	extId, err := GenerateExternalID(coordinate.Coordinate{Type: strings.Repeat("a", 250), ConfigId: strings.Repeat("a", 251)})
+	assert.NoError(t, err)
+	assert.True(t, strings.HasPrefix(extId, "monaco:"))
+}
 
-	assert.Assert(t, strings.HasPrefix(extId, "monaco:"))
+func TestGenerateExternalIdConsidersProjectName(t *testing.T) {
+	expectIDWithoutProjectName := "monaco:c2NoZW1hLWlkJGNvbmZpZy1pZA=="
+	expectIDWithProjectName := "monaco:cHJvamVjdC1uYW1lJHNjaGVtYS1pZCRjb25maWctaWQ="
+	id1, err := GenerateExternalID(coordinate.Coordinate{
+		Project:  "",
+		Type:     "schema-id",
+		ConfigId: "config-id",
+	})
+	assert.Equal(t, expectIDWithoutProjectName, id1)
+	assert.NoError(t, err)
+	id2, err := GenerateExternalID(coordinate.Coordinate{
+		Project:  "project-name",
+		Type:     "schema-id",
+		ConfigId: "config-id",
+	})
+	assert.Equal(t, expectIDWithProjectName, id2)
+	assert.NoError(t, err)
+}
+
+func TestGenerateExternalIdReturnsErrIfSchemaIDorConfigIDisMissing(t *testing.T) {
+
+	id, err := GenerateExternalID(coordinate.Coordinate{ConfigId: "config-id"})
+	assert.Zero(t, id)
+	assert.Error(t, err)
+
+	id, err = GenerateExternalID(coordinate.Coordinate{Type: "schema-id"})
+	assert.Zero(t, id)
+	assert.Error(t, err)
+
+}
+
+func TestGenerateExternalIdRawIdParts(t *testing.T) {
+	id, _ := GenerateExternalID(coordinate.Coordinate{Project: "project-name", Type: "schema-id", ConfigId: "config-id"})
+	decoded, _ := base64.StdEncoding.DecodeString(strings.TrimPrefix(id, "monaco:"))
+	rawId := make([]byte, len(decoded))
+	copy(rawId, decoded)
+	assert.Equal(t, "project-name$schema-id$config-id", string(decoded))
 }

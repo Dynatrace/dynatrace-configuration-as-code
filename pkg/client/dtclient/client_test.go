@@ -22,9 +22,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/concurrency"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
@@ -243,6 +245,7 @@ func TestReadByIdReturnsAnErrorUponEncounteringAnError(t *testing.T) {
 		environmentURLClassic: testServer.URL,
 		clientClassic:         testServer.Client(),
 		limiter:               concurrency.NewLimiter(5),
+		generateExternalID:    idutils.GenerateExternalID,
 	}
 
 	_, err := client.ReadConfigById(mockAPI, "test")
@@ -258,6 +261,7 @@ func TestReadByIdEscapesTheId(t *testing.T) {
 		environmentURLClassic: testServer.URL,
 		clientClassic:         testServer.Client(),
 		limiter:               concurrency.NewLimiter(5),
+		generateExternalID:    idutils.GenerateExternalID,
 	}
 	_, err := client.ReadConfigById(mockAPINotSingle, unescapedID)
 	assert.NoError(t, err)
@@ -275,6 +279,7 @@ func TestReadByIdReturnsTheResponseGivenNoError(t *testing.T) {
 		environmentURLClassic: testServer.URL,
 		clientClassic:         testServer.Client(),
 		limiter:               concurrency.NewLimiter(5),
+		generateExternalID:    idutils.GenerateExternalID,
 	}
 
 	resp, err := client.ReadConfigById(mockAPI, "test")
@@ -549,10 +554,11 @@ func TestListKnownSettings(t *testing.T) {
 			defer server.Close()
 
 			client := DynatraceClient{
-				environmentURL: server.URL,
-				client:         server.Client(),
-				retrySettings:  testRetrySettings,
-				limiter:        concurrency.NewLimiter(5),
+				environmentURL:     server.URL,
+				client:             server.Client(),
+				retrySettings:      testRetrySettings,
+				limiter:            concurrency.NewLimiter(5),
+				generateExternalID: idutils.GenerateExternalID,
 			}
 
 			res, err1 := client.ListSettings(tt.givenSchemaID, tt.givenListSettingsOpts)
@@ -666,6 +672,7 @@ func TestGetSettingById(t *testing.T) {
 				retrySettings:         tt.fields.retrySettings,
 				settingsObjectAPIPath: "/api/v2/settings/objects",
 				limiter:               concurrency.NewLimiter(5),
+				generateExternalID:    idutils.GenerateExternalID,
 			}
 
 			settingsObj, err := d.GetSettingById(tt.args.objectID)
@@ -762,6 +769,7 @@ func TestDeleteSettings(t *testing.T) {
 				retrySettings:         tt.fields.retrySettings,
 				settingsObjectAPIPath: settingsObjectAPIPathClassic,
 				limiter:               concurrency.NewLimiter(5),
+				generateExternalID:    idutils.GenerateExternalID,
 			}
 
 			if err := d.DeleteSettings(tt.args.objectID); (err != nil) != tt.wantErr {
@@ -791,16 +799,17 @@ func TestUpsertSettingsRetries(t *testing.T) {
 	defer server.Close()
 
 	client := DynatraceClient{
-		environmentURL: server.URL,
-		client:         server.Client(),
-		retrySettings:  testRetrySettings,
-		limiter:        concurrency.NewLimiter(5),
+		environmentURL:     server.URL,
+		client:             server.Client(),
+		retrySettings:      testRetrySettings,
+		limiter:            concurrency.NewLimiter(5),
+		generateExternalID: idutils.GenerateExternalID,
 	}
 
 	_, err := client.UpsertSettings(SettingsObject{
-		Id:       "42",
-		SchemaId: "some:schema",
-		Content:  []byte("{}"),
+		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
+		SchemaId:   "some:schema",
+		Content:    []byte("{}"),
 	})
 
 	assert.NoError(t, err)
@@ -1065,10 +1074,11 @@ func TestListEntities(t *testing.T) {
 			defer server.Close()
 
 			client := DynatraceClient{
-				environmentURL: server.URL,
-				client:         server.Client(),
-				retrySettings:  testRetrySettings,
-				limiter:        concurrency.NewLimiter(5),
+				environmentURL:     server.URL,
+				client:             server.Client(),
+				retrySettings:      testRetrySettings,
+				limiter:            concurrency.NewLimiter(5),
+				generateExternalID: idutils.GenerateExternalID,
 			}
 
 			res, err1 := client.ListEntities(tt.givenEntitiesType)

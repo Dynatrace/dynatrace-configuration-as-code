@@ -21,13 +21,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 )
 
 // SettingsObject contains all the information necessary to create/update a settings object
 type SettingsObject struct {
-	// Id is the monaco related Configuration ID
-	Id,
+	// Coordinate holds all the information for Monaco to identify a settings object
+	Coordinate coordinate.Coordinate
 	// SchemaId is the Dynatrace settings schema ID
 	SchemaId,
 	// SchemaVersion is the version of the schema
@@ -55,7 +56,7 @@ type settingsRequest struct {
 // To do this, we have to wrap the template in another object and send this object to the server.
 // Currently, we only encode one object into an array of objects, but we can optimize it to contain multiple elements to update.
 // Note payload limitations: https://www.dynatrace.com/support/help/dynatrace-api/basics/access-limit#payload-limit
-func buildPostRequestPayload(obj SettingsObject, externalId string) ([]byte, error) {
+func buildPostRequestPayload(obj SettingsObject, externalID string) ([]byte, error) {
 	var value any
 	if err := json.Unmarshal(obj.Content, &value); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal rendered config: %w", err)
@@ -63,7 +64,7 @@ func buildPostRequestPayload(obj SettingsObject, externalId string) ([]byte, err
 
 	data := settingsRequest{
 		SchemaId:      obj.SchemaId,
-		ExternalId:    externalId,
+		ExternalId:    externalID,
 		Scope:         obj.Scope,
 		Value:         value,
 		SchemaVersion: obj.SchemaVersion,

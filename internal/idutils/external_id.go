@@ -19,25 +19,34 @@ package idutils
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 )
 
-// GenerateExternalID generates the externalID for settings 2.0 objects based on the schema, and ID.
-// The result of the function is pure.
-// Max length for the external ID is 500
-func GenerateExternalID(schema, id string) string {
+// GenerateExternalID generates a string that serves as an external ID for a Settings 2.0 object.
+// It requires a [[coordinate.Coordinate]] as input and produces a string in the format "monaco:<BASE64_ENCODED_STR>"
+// If Type or ConfigId of the passed [[coordinate.Coordinate]] is empty, an error is returned
+func GenerateExternalID(c coordinate.Coordinate) (string, error) {
 	const prefix = "monaco:"
-	const format = "%s$%s"
 	const externalIDMaxLength = 500
 
-	formattedID := fmt.Sprintf(format, schema, id)
-	encodedID := base64.StdEncoding.EncodeToString([]byte(formattedID))
+	if c.Type == "" || c.ConfigId == "" {
+		return "", fmt.Errorf("schema id and config id needs to be set to generate an external id for a settings 2.0 object")
+	}
 
+	var formattedID string
+	if c.Project == "" {
+		formattedID = fmt.Sprintf("%s$%s", c.Type, c.ConfigId)
+	} else {
+		formattedID = fmt.Sprintf("%s$%s$%s", c.Project, c.Type, c.ConfigId)
+	}
+
+	encodedID := base64.StdEncoding.EncodeToString([]byte(formattedID))
 	encodedIDMaxLength := externalIDMaxLength - len(prefix)
 	if len(encodedID) > encodedIDMaxLength {
 		encodedID = encodedID[encodedIDMaxLength:]
 	}
 
-	externalID := fmt.Sprintf("monaco:%s", encodedID)
-
-	return externalID
+	return fmt.Sprintf("%s%s", prefix, encodedID), nil
 }
+
+type ExternalIDGenerator func(coordinate.Coordinate) (string, error)

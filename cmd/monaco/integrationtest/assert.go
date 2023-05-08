@@ -158,7 +158,12 @@ func assertConfig(t *testing.T, client dtclient.ConfigClient, theApi api.API, en
 }
 
 func assertSetting(t *testing.T, c dtclient.SettingsClient, typ config.SettingsType, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config) {
-	expectedExtId := idutils.GenerateExternalID(typ.SchemaId, config.Coordinate.ConfigId)
+	expectedExtId, err := idutils.GenerateExternalID(config.Coordinate)
+	if err != nil {
+		t.Errorf("Unable to generate external id: %v", err)
+		return
+	}
+
 	objects, err := c.ListSettings(typ.SchemaId, dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(o dtclient.DownloadSettingsObject) bool { return o.ExternalId == expectedExtId }})
 	assert.NilError(t, err)
 

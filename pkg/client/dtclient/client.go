@@ -28,6 +28,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"golang.org/x/oauth2"
 	"net/http"
@@ -214,6 +215,9 @@ type DynatraceClient struct {
 
 	// limiter is used to limit parallel http requests
 	limiter *concurrency.Limiter
+
+	// generateExternalID is used to generate an external id for settings 2.0 objects
+	generateExternalID idutils.ExternalIDGenerator
 }
 
 var (
@@ -222,6 +226,12 @@ var (
 	_ ConfigClient   = (*DynatraceClient)(nil)
 	_ Client         = (*DynatraceClient)(nil)
 )
+
+func WithExternalIDGenerator(g idutils.ExternalIDGenerator) func(client *DynatraceClient) {
+	return func(d *DynatraceClient) {
+		d.generateExternalID = g
+	}
+}
 
 // WithClientRequestLimiter specifies that a specifies the limiter to be used for
 // limiting parallel client requests
@@ -309,6 +319,7 @@ func NewPlatformClient(dtURL string, token string, oauthCredentials client.Oauth
 		settingsSchemaAPIPath: settingsSchemaAPIPathPlatform,
 		settingsObjectAPIPath: settingsObjectAPIPathPlatform,
 		limiter:               concurrency.NewLimiter(5),
+		generateExternalID:    idutils.GenerateExternalID,
 	}
 
 	for _, o := range opts {
@@ -338,6 +349,7 @@ func NewClassicClient(dtURL string, token string, opts ...func(dynatraceClient *
 		settingsSchemaAPIPath: settingsSchemaAPIPathClassic,
 		settingsObjectAPIPath: settingsObjectAPIPathClassic,
 		limiter:               concurrency.NewLimiter(5),
+		generateExternalID:    idutils.GenerateExternalID,
 	}
 
 	for _, o := range opts {
@@ -392,28 +404,55 @@ func (d *DynatraceClient) upsertSettings(obj SettingsObject) (DynatraceEntity, e
 		}
 	}
 
-	externalId := idutils.GenerateExternalID(obj.SchemaId, obj.Id)
+	// generate legacy external ID without project name.
+	// and check if settings object with that external ID exists
+	// This exists for avoiding breaking changes when we enhanced external id generation with full coordinates (incl. project name)
+	// This can be removed in a later release of monaco
+	legacyExternalID, err := d.generateExternalID(coordinate.Coordinate{Type: obj.Coordinate.Type, ConfigId: obj.Coordinate.ConfigId})
+	if err != nil {
+		return DynatraceEntity{}, fmt.Errorf("unable to generate external id: %w", err)
+	}
+	settingsWithExternalID, err := d.listSettings(obj.SchemaId, ListSettingsOptions{
+		Filter: func(object DownloadSettingsObject) bool {
+			return object.ExternalId == legacyExternalID
+		},
+	})
+
+	if err != nil {
+		return DynatraceEntity{}, fmt.Errorf("unable to search Settings 2.0 object of schema %q with externalId %q", obj.SchemaId, legacyExternalID)
+	}
+
+	externalID, err := d.generateExternalID(obj.Coordinate)
+	if err != nil {
+		return DynatraceEntity{}, fmt.Errorf("unable to generate external id: %w", err)
+	}
+
+	if len(settingsWithExternalID) > 0 {
+		obj.OriginObjectId = settingsWithExternalID[0].ObjectId
+	}
+
 	// special handling of this Settings object.
 	// It is delete-protected BUT has a key property which is internally
 	// used to find the object to be updated
 	if obj.SchemaId == "builtin:oneagent.features" {
-		externalId = ""
+		externalID = ""
 		obj.OriginObjectId = ""
 	}
-	payload, err := buildPostRequestPayload(obj, externalId)
+
+	payload, err := buildPostRequestPayload(obj, externalID)
 	if err != nil {
 		return DynatraceEntity{}, fmt.Errorf("failed to build settings object: %w", err)
 	}
 
 	requestUrl := d.environmentURL + d.settingsObjectAPIPath
 
-	resp, err := rest.SendWithRetryWithInitialTry(d.client, rest.Post, obj.Id, requestUrl, payload, d.retrySettings.Normal)
+	resp, err := rest.SendWithRetryWithInitialTry(d.client, rest.Post, obj.Coordinate.ConfigId, requestUrl, payload, d.retrySettings.Normal)
 	if err != nil {
 		return DynatraceEntity{}, fmt.Errorf("failed to create or update dynatrace obj: %w", err)
 	}
 
 	if !success(resp) {
-		return DynatraceEntity{}, fmt.Errorf("failed to create or update settings object with externalId %s (HTTP %d)!\n\tResponse was: %s", externalId, resp.StatusCode, string(resp.Body))
+		return DynatraceEntity{}, fmt.Errorf("failed to create or update settings object with externalId %s (HTTP %d)!\n\tResponse was: %s", externalID, resp.StatusCode, string(resp.Body))
 	}
 
 	entity, err := parsePostResponse(resp)
@@ -421,7 +460,7 @@ func (d *DynatraceClient) upsertSettings(obj SettingsObject) (DynatraceEntity, e
 		return DynatraceEntity{}, fmt.Errorf("failed to parse response: %w", err)
 	}
 
-	log.Debug("\tCreated/Updated object %s (%s) with externalId %s", obj.Id, obj.SchemaId, externalId)
+	log.Debug("\tCreated/Updated object %s (%s) with externalId %s", obj.Coordinate.ConfigId, obj.SchemaId, externalID)
 	return entity, nil
 
 }
