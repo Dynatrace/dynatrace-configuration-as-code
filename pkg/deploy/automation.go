@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
@@ -48,7 +49,8 @@ func deployAutomation(client automationClient, properties parameter.Properties, 
 	var resp *automation.Response
 	switch t.Resource {
 	case config.Workflow:
-		resp, err = client.Upsert(automation.Workflows, id, []byte(renderedConfig))
+		payload := template.UnescapeJinjaTemplates([]byte(renderedConfig))
+		resp, err = client.Upsert(automation.Workflows, id, payload)
 	case config.BusinessCalendar:
 		resp, err = client.Upsert(automation.BusinessCalendars, id, []byte(renderedConfig))
 	case config.SchedulingRule:
@@ -67,13 +69,13 @@ func deployAutomation(client automationClient, properties parameter.Properties, 
 		log.Warn("failed to extract name for automation object %q - ID will be used", resp.ID)
 	}
 
-	properties[config.IdParameter] = resp.ID
 	resolved := parameter.ResolvedEntity{
 		EntityName: name,
 		Coordinate: c.Coordinate,
 		Properties: properties,
 		Skip:       false,
 	}
+	resolved.Properties[config.IdParameter] = resp.ID
 	return &resolved, err
 
 }
