@@ -81,7 +81,7 @@ func TestDownloader_Download_FailsToDownloadSpecificResource(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestDownloader_Download_Specific_ResouceTypes(t *testing.T) {
+func TestDownloader_Download_Specific_ResourceTypes(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		switch req.URL.Path {
 		case "/platform/automation/v1/workflows":
