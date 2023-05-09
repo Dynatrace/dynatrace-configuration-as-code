@@ -27,7 +27,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
-	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
+	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"golang.org/x/exp/maps"
 )
 
@@ -51,12 +51,12 @@ func NewDownloader(client *automationClient.Client) *Downloader {
 
 // Download downloads all automation resources for a given project
 // If automationTypes is given it will just download those types of automation resources
-func (d *Downloader) Download(projectName string, automationTypes ...config.AutomationType) (v2.ConfigsPerType, error) {
+func (d *Downloader) Download(projectName string, automationTypes ...config.AutomationType) (project.ConfigsPerType, error) {
 	if len(automationTypes) == 0 {
 		automationTypes = maps.Keys(automationTypesToResources)
 	}
 
-	configsPerType := make(v2.ConfigsPerType)
+	configsPerType := make(project.ConfigsPerType)
 	for _, at := range automationTypes {
 		resource, ok := automationTypesToResources[at]
 		if !ok {
@@ -140,6 +140,6 @@ func createTemplateFromRawJSON(obj automationClient.Response, configType string)
 	return t, configName
 }
 
-func (d NoopAutomationDownloader) Download(_ string, _ ...config.AutomationType) (v2.ConfigsPerType, error) {
+func (d NoopAutomationDownloader) Download(_ string, _ ...config.AutomationType) (project.ConfigsPerType, error) {
 	return nil, nil
 }
