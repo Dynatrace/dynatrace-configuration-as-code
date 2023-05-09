@@ -17,6 +17,7 @@
 package template
 
 import (
+	"bytes"
 	"encoding/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/regex"
@@ -118,15 +119,15 @@ func escapeNewlines(rawString string) string {
 }
 
 // EscapeJinjaTemplates replaces each occurrence of "{{" with "\{\{" and each occurrence of "}}" with "\}\}"
-func EscapeJinjaTemplates(str string) string {
-	str = strings.ReplaceAll(str, `{{`, `\{\{`)
-	str = strings.ReplaceAll(str, "}}", "\\}\\}")
-	return str
+func EscapeJinjaTemplates(src []byte) []byte {
+	src = bytes.ReplaceAll(src, []byte(`{{`), []byte(`\{\{`))
+	src = bytes.ReplaceAll(src, []byte("}}"), []byte("\\}\\}"))
+	return src
 }
 
 // UnescapeJinjaTemplates replaces each occurrence of "\{\{" with \{{" and each occurrence of "\}\}" with "}}"
-func UnescapeJinjaTemplates(str string) string {
-	str = strings.ReplaceAll(str, "\\{\\{", "{{")
-	str = strings.ReplaceAll(str, "\\}\\}", "}}")
+func UnescapeJinjaTemplates(str []byte) []byte {
+	str = bytes.ReplaceAll(str, []byte("\\{\\{"), []byte("{{"))
+	str = bytes.ReplaceAll(str, []byte("\\}\\}"), []byte("}}"))
 	return str
 }

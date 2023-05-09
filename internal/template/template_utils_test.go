@@ -290,27 +290,30 @@ func Test_isListDefinition(t *testing.T) {
 func TestEscapeJinjaTemplates(t *testing.T) {
 	assert := assert.New(t)
 
-	assert.Equal(`Hello, \{\{planet\}\}!`, EscapeJinjaTemplates(`Hello, {{planet}}!`))
-	assert.Equal(`Hello , \{\{ calendar("abcde") \}\}`, EscapeJinjaTemplates(`Hello , {{ calendar("abcde") }}`))
-	assert.Equal(`no jinja`, EscapeJinjaTemplates(`no jinja`))
-	assert.Equal(`\{\{`, EscapeJinjaTemplates(`{{`))
-	assert.Equal(`{`, EscapeJinjaTemplates(`{`))
-	assert.Equal(`\{`, EscapeJinjaTemplates(`\{`))
-	assert.Equal(`\}\}`, EscapeJinjaTemplates(`}}`))
-	assert.Equal(`}`, EscapeJinjaTemplates(`}`))
-	assert.Equal(`\}`, EscapeJinjaTemplates(`\}`))
+	assert.Equal([]byte(`Hello, \{\{planet\}\}!`), EscapeJinjaTemplates([]byte(`Hello, {{planet}}!`)))
+	assert.Equal([]byte(`Hello , \{\{ calendar("abcde") \}\}`), EscapeJinjaTemplates([]byte(`Hello , {{ calendar("abcde") }}`)))
+	assert.Equal([]byte(`no jinja`), EscapeJinjaTemplates([]byte(`no jinja`)))
+	assert.Equal([]byte(`\{\{`), EscapeJinjaTemplates([]byte(`{{`)))
+	assert.Equal([]byte(`{`), EscapeJinjaTemplates([]byte(`{`)))
+	assert.Equal([]byte(`\{`), EscapeJinjaTemplates([]byte(`\{`)))
+	assert.Equal([]byte(`\}\}`), EscapeJinjaTemplates([]byte(`}}`)))
+	assert.Equal([]byte(`}`), EscapeJinjaTemplates([]byte(`}`)))
+	assert.Equal([]byte(`\}`), EscapeJinjaTemplates([]byte(`\}`)))
+	assert.Equal([]byte(nil), EscapeJinjaTemplates(nil))
 }
 
 func TestUnescapeJinjaTemplates(t *testing.T) {
 	assert := assert.New(t)
 
-	assert.Equal(`Hello, {{planet}}!`, UnescapeJinjaTemplates(`Hello, \{\{planet\}\}!`))
-	assert.Equal(`Hello , {{ calendar("abcde") }}`, UnescapeJinjaTemplates(`Hello , \{\{ calendar("abcde") \}\}`))
-	assert.Equal(`no jinja`, UnescapeJinjaTemplates(`no jinja`))
-	assert.Equal(`{{`, UnescapeJinjaTemplates(`\{\{`))
-	assert.Equal(`{`, UnescapeJinjaTemplates(`{`))
-	assert.Equal(`\{`, UnescapeJinjaTemplates(`\{`))
-	assert.Equal(`}}`, UnescapeJinjaTemplates(`\}\}`))
-	assert.Equal(`}`, UnescapeJinjaTemplates(`}`))
-	assert.Equal(`\}`, UnescapeJinjaTemplates(`\}`))
+	assert.Equal([]byte(`Hello, {{planet}}!`), UnescapeJinjaTemplates([]byte(`Hello, \{\{planet\}\}!`)))
+	assert.Equal([]byte(`Hello , {{ calendar("abcde") }}`), UnescapeJinjaTemplates([]byte(`Hello , \{\{ calendar("abcde") \}\}`)))
+	assert.Equal([]byte(`no jinja`), UnescapeJinjaTemplates([]byte(`no jinja`)))
+	assert.Equal([]byte(`{{`), UnescapeJinjaTemplates([]byte(`\{\{`)))
+	assert.Equal([]byte(`{`), UnescapeJinjaTemplates([]byte(`{`)))
+	assert.Equal([]byte(`\{`), UnescapeJinjaTemplates([]byte(`\{`)))
+	assert.Equal([]byte(`}}`), UnescapeJinjaTemplates([]byte(`\}\}`)))
+	assert.Equal([]byte(`}`), UnescapeJinjaTemplates([]byte(`}`)))
+	assert.Equal([]byte(`\}`), UnescapeJinjaTemplates([]byte(`\}`)))
+	assert.Equal([]byte(nil), UnescapeJinjaTemplates(nil))
+
 }
