@@ -17,9 +17,7 @@
 package client
 
 import (
-	version2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"net/http"
-	"runtime"
 )
 
 // TokenAuthTransport should be used to enable a client
@@ -40,7 +38,6 @@ func NewTokenAuthTransport(baseTransport http.RoundTripper, token string) *Token
 		header:       http.Header{},
 	}
 	t.setHeader("Authorization", "Api-Token "+token)
-	t.setHeader("User-Agent", "Dynatrace Monitoring as Code/"+version2.MonitoringAsCode+" "+(runtime.GOOS+" "+runtime.GOARCH))
 	return t
 }
 

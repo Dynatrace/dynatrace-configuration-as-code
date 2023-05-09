@@ -19,8 +19,10 @@ package rest
 import (
 	"bytes"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"io"
 	"net/http"
+	"runtime"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/timeutils"
@@ -115,6 +117,9 @@ func requestWithBody(method string, url string, body io.Reader) (*http.Request, 
 }
 
 func executeRequest(client *http.Client, request *http.Request) (Response, error) {
+
+	request.Header.Set("User-Agent", "Dynatrace Monitoring as Code/"+version.MonitoringAsCode+" "+(runtime.GOOS+" "+runtime.GOARCH))
+
 	var requestId string
 	if log.IsRequestLoggingActive() {
 		requestId = uuid.NewString()
