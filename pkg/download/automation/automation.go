@@ -21,6 +21,7 @@ import (
 	"fmt"
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	templateUtils "github.com/dynatrace/dynatrace-configuration-as-code/internal/template"
 	automationClient "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
@@ -78,7 +79,7 @@ func (d *Downloader) Download(projectName string, automationTypes ...config.Auto
 		for _, obj := range response.Results {
 
 			configId := obj.ID
-			t, configName := createTemplateFromRawJSON(obj, string(at.Resource))
+			t, configName := createTemplateFromRawJSON(obj, at.Resource)
 
 			c := config.Config{
 				Template: t,
@@ -87,9 +88,7 @@ func (d *Downloader) Download(projectName string, automationTypes ...config.Auto
 					Type:     string(at.Resource),
 					ConfigId: configId,
 				},
-				Type: config.AutomationType{
-					Resource: at.Resource,
-				},
+				Type: config.AutomationType{Resource: at.Resource},
 				Parameters: map[string]parameter.Parameter{
 					config.NameParameter: &value.ValueParameter{Value: configName},
 				},
@@ -105,7 +104,7 @@ func (d *Downloader) Download(projectName string, automationTypes ...config.Auto
 type NoopAutomationDownloader struct {
 }
 
-func createTemplateFromRawJSON(obj automationClient.Response, configType string) (t template.Template, extractedName string) {
+func createTemplateFromRawJSON(obj automationClient.Response, configType config.AutomationResource) (t template.Template, extractedName string) {
 	configId := obj.ID
 
 	var data map[string]interface{}
@@ -135,6 +134,9 @@ func createTemplateFromRawJSON(obj automationClient.Response, configType string)
 		content = obj.Data
 	}
 	content = jsonutils.MarshalIndent(content)
+	if configType == "workflow" {
+		content = templateUtils.EscapeJinjaTemplates(content)
+	}
 
 	t = template.NewDownloadTemplate(configId, configName, string(content))
 	return t, configName
