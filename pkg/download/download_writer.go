@@ -126,7 +126,7 @@ func getProjectFolderName(fs afero.Fs, writerContext WriterContext) string {
 	}
 
 	if writerContext.ForceOverwrite {
-		log.Info("Overwriting existing pojrect folder named %q in %q.", projectFolderName, outputFolder)
+		log.Info("Overwriting existing project folder named %q in %q.", projectFolderName, outputFolder)
 		return projectFolderName
 	}
 

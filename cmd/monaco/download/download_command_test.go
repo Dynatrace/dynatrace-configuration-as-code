@@ -28,7 +28,7 @@ import (
 func TestGetDownloadCommand(t *testing.T) {
 	t.Run("url and token are mutually exclusive", func(t *testing.T) {
 		err := newMonaco(t).download("--url http://some.url --manifest my-manifest.yaml")
-		assert.EqualError(t, err, "\"url\" and \"manifest\" are mutually exclusive")
+		assert.EqualError(t, err, "'url' and 'manifest' are mutually exclusive")
 	})
 
 	t.Run("Download via manifest - manifest set explicitly", func(t *testing.T) {
@@ -63,7 +63,7 @@ func TestGetDownloadCommand(t *testing.T) {
 
 	t.Run("Download via manifest.yaml - environment missing", func(t *testing.T) {
 		err := newMonaco(t).download("")
-		assert.EqualError(t, err, "to download with manifest, \"environment\" needs to be specified")
+		assert.EqualError(t, err, "to download with manifest, 'environment' needs to be specified")
 	})
 
 	t.Run("Download w/o manifest.yaml - authorization via token", func(t *testing.T) {
@@ -101,17 +101,17 @@ func TestGetDownloadCommand(t *testing.T) {
 
 	t.Run("Download w/o manifest.yaml - token missing", func(t *testing.T) {
 		err := newMonaco(t).download("--url http://some.url")
-		assert.EqualError(t, err, "if \"url\" is set, \"token\" also must be set")
+		assert.EqualError(t, err, "if 'url' is set, 'token' also must be set")
 	})
 
 	t.Run("Download w/o manifest.yaml - clint ID for OAuth authorization is missing", func(t *testing.T) {
 		err := newMonaco(t).download("--url http://some.url --token TOKEN --oauth-client-secret CLIENT_SECRET")
-		assert.EqualError(t, err, "\"oauth-client-id\" and \"oauth-client-secret\" must always be set together")
+		assert.EqualError(t, err, "'oauth-client-id' and 'oauth-client-secret' must always be set together")
 	})
 
 	t.Run("Download w/o manifest.yaml - clint secret for OAuth authorization is missing", func(t *testing.T) {
 		err := newMonaco(t).download("--url http://some.url --token TOKEN --oauth-client-id CLIENT_ID")
-		assert.EqualError(t, err, "\"oauth-client-id\" and \"oauth-client-secret\" must always be set together")
+		assert.EqualError(t, err, "'oauth-client-id' and 'oauth-client-secret' must always be set together")
 	})
 
 	t.Run("All non conflicting flags", func(t *testing.T) {
@@ -133,7 +133,7 @@ func TestGetDownloadCommand(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("If not provided, default project name is \"project\"", func(t *testing.T) {
+	t.Run("If not provided, default project name is 'project'", func(t *testing.T) {
 		m := newMonaco(t)
 
 		expected := downloadCmdOptions{

@@ -62,17 +62,20 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	setupSharedFlags(cmd, &f.projectName, &f.outputFolder, &f.forceOverwrite)
 
 	// download via manifest
-	cmd.Flags().StringVarP(&f.manifestFile, "manifest", "m", "manifest.yaml", "Name (and the path) to the manifest file. If not provided \"manifest.yaml\" value will be used.")
-	cmd.Flags().StringVarP(&f.specificEnvironmentName, "environment", "e", "", "Specify a concrete environment defined in the manifest file that shall be downloaded")
+	cmd.Flags().StringVarP(&f.manifestFile, "manifest", "m", "manifest.yaml", "Name (and the path) to the manifest file. Defaults to 'manifest.yaml'.")
+	cmd.Flags().StringVarP(&f.specificEnvironmentName, "environment", "e", "", "Specify an environment defined in the manifest to download the configurations.")
 	// download without manifest
-	cmd.Flags().StringVar(&f.environmentURL, "url", "", "URL to the dynatrace environment from which to download configuration from. To be able to connect, token and, in case of connecting to platform, a pari of OAuth client ID na client secret needs to bi provide via adequate flags (\"--token\", \"--oauth-client-id\", \"--oauth-client-secret\"). Not able to combine with \"--manifest\".")
-	cmd.Flags().StringVar(&f.token, "token", "", "Token secret to connect to DT server. Use only with \"--url\"")
-	cmd.Flags().StringVar(&f.clientID, "oauth-client-id", "", "OAuth client ID is used to connect to DT server via OAuth. Use only with \"--url\"")
-	cmd.Flags().StringVar(&f.clientSecret, "oauth-client-secret", "", "OAuth client secret is used to connect to DT server via OAuth. Use only with \"--url\"")
+	cmd.Flags().StringVar(&f.environmentURL, "url", "", "URL to the Dynatrace environment from which to download the configuration. "+
+		"To be able to connect to any Dynatrace environment, an API-Token needs to be provided using '--token'. "+
+		"In case of connecting to a Dynatrace Platform, an OAuth Client ID, as well as an OAuth Client Secret, needs to be provided as well using the flags '--oauth-client-id' and '--oauth-client-secret'. "+
+		"This flag is not combinable with the flag '--manifest.'")
+	cmd.Flags().StringVar(&f.token, "token", "", "API-Token environment variable. Required when using the flag '--url'")
+	cmd.Flags().StringVar(&f.clientID, "oauth-client-id", "", "OAuth client ID environment variable. Required when using the flag '--url' and connecting to a Dynatrace Platform.")
+	cmd.Flags().StringVar(&f.clientSecret, "oauth-client-secret", "", "OAuth client secret environment variable. Required when using the flag '--url' and connecting to a Dynatrace Platform.")
 
 	// download options
-	cmd.Flags().StringSliceVarP(&f.specificAPIs, "api", "a", nil, "One or more APIs to download (flag can be repeated or value defined as comma-separated list)")
-	cmd.Flags().StringSliceVarP(&f.specificSchemas, "settings-schema", "s", nil, "One or more settings 2.0 schemas to download (flag can be repeated or value defined as comma-separated list)")
+	cmd.Flags().StringSliceVarP(&f.specificAPIs, "api", "a", nil, "One or more APIs to download (flag can be repeated or value defined as comma separated list)")
+	cmd.Flags().StringSliceVarP(&f.specificSchemas, "settings-schema", "s", nil, "One or more settings 2.0 schemas to download (flag can be repeated or value defined as comma separated list)")
 	cmd.Flags().BoolVar(&f.onlyAPIs, "only-apis", false, "Only download config APIs, skip downloading settings 2.0 objects")
 	cmd.Flags().BoolVar(&f.onlySettings, "only-settings", false, "Only download settings 2.0 objects, skip downloading config APIs")
 
@@ -105,24 +108,24 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 func preRunChecks(f downloadCmdOptions) error {
 	switch {
 	case f.environmentURL != "" && f.manifestFile != "manifest.yaml":
-		return errors.New("\"url\" and \"manifest\" are mutually exclusive")
+		return errors.New("'url' and 'manifest' are mutually exclusive")
 	case f.environmentURL != "" && f.specificEnvironmentName != "":
-		return errors.New("\"environment\" is specific to manifest-based download and incompatible with direct download from \"url\"")
+		return errors.New("'environment' is specific to manifest-based download and incompatible with direct download from 'url'")
 	case f.environmentURL != "":
 		switch {
 		case f.token == "":
-			return errors.New("if \"url\" is set, \"token\" also must be set")
+			return errors.New("if 'url' is set, 'token' also must be set")
 		case (f.clientID == "") != (f.clientSecret == ""):
-			return errors.New("\"oauth-client-id\" and \"oauth-client-secret\" must always be set together")
+			return errors.New("'oauth-client-id' and 'oauth-client-secret' must always be set together")
 		default:
 			return nil
 		}
 	case f.manifestFile != "":
 		switch {
 		case f.token != "" || f.clientID != "" || f.clientSecret != "":
-			return errors.New("\"token\", \"oauth-client-id\" and \"oauth-client-secret\" can only be used with \"url\", while \"manifest\" must NOT be set ")
+			return errors.New("'token', 'oauth-client-id' and 'oauth-client-secret' can only be used with 'url', while 'manifest' must NOT be set ")
 		case f.specificEnvironmentName == "":
-			return errors.New("to download with manifest, \"environment\" needs to be specified")
+			return errors.New("to download with manifest, 'environment' needs to be specified")
 		}
 	}
 
@@ -228,7 +231,7 @@ func setupSharedFlags(cmd *cobra.Command, project, outputFolder *string, forceOv
 	// flags always available
 	cmd.Flags().StringVarP(project, "project", "p", "project", "Project to create within the output-folder")
 	cmd.Flags().StringVarP(outputFolder, "output-folder", "o", "", "Folder to write downloaded configs to")
-	cmd.Flags().BoolVarP(forceOverwrite, "force", "f", false, "Force overwrite any existing manifest.yaml, rather than creating an additional manifest_{timestamp}.yaml. Manifest download: additionally never append source environment name to project folder name")
+	cmd.Flags().BoolVarP(forceOverwrite, "force", "f", false, "Force overwrite any existing manifest.yaml, rather than creating an additional manifest_{timestamp}.yaml. Manifest download: Never append the source environment name to the project folder name.")
 
 	err := cmd.MarkFlagDirname("output-folder")
 	if err != nil {
@@ -266,7 +269,7 @@ func printUploadToSameEnvironmentWarning(env manifest.EnvironmentDefinition) {
 }
 
 func logUploadToSameEnvironmentWarning() {
-	log.Warn("Uploading Settings 2.0 objects to the same environment is not possible due to your cluster version " +
-		"being below 1.262.0, which Monaco does not support for reliably updating downloaded settings without having " +
-		"duplicate configurations. Consider upgrading to 1.262+")
+	log.Warn("Uploading Settings 2.0 objects to the same environment is not possible due to your cluster version being below '1.262.0'. " +
+		"Monaco only reliably supports higher Dynatrace versions for updating downloaded settings without duplicating configurations. " +
+		"Consider upgrading to '1.262+'")
 }

@@ -53,7 +53,7 @@ func GetPurgeCommand(fs afero.Fs) (purgeCmd *cobra.Command) {
 		ValidArgsFunction: completion.PurgeCompletion,
 	}
 
-	purgeCmd.Flags().StringSliceVarP(&environment, "environment", "e", make([]string, 0), "Deletes configuration only for specified envs. If not set, delete will be executed on all environments defined in manifest.")
+	purgeCmd.Flags().StringSliceVarP(&environment, "environment", "e", make([]string, 0), "Deletes configuration only for specified environments. All environments are included if this property is not set. ")
 	purgeCmd.Flags().StringSliceVarP(&specificApis, "api", "a", make([]string, 0), "One or more specific APIs to delete from (flag can be repeated or value defined as comma-separated list)")
 
 	if err := purgeCmd.RegisterFlagCompletionFunc("environment", completion.EnvironmentByArg0); err != nil {

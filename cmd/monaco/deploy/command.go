@@ -57,7 +57,7 @@ func GetDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 			"This flag is mutually exclusive with '--group'.")
 	deployCmd.Flags().StringSliceVarP(&groups, "group", "g", []string{},
 		"Specify one (or multiple) environmentGroup(s) to deploy to. "+
-			"To set multiple groups either repeat this flag, or seprate them using a comma (,). "+
+			"To set multiple groups either repeat this flag, or separate them using a comma (,). "+
 			"If this flag is specified, all environments within this group will be used for deployment. "+
 			"This flag is mutually exclusive with '--environment'")
 	deployCmd.Flags().StringSliceVarP(&project, "project", "p", make([]string, 0), "Project configuration to deploy (also deploys any dependent configurations)")

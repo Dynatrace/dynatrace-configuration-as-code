@@ -940,6 +940,6 @@ func logLongRunningExtractionProgress(lastLogTime *time.Time, startTime time.Tim
 			ETAMessage = fmt.Sprintf("ETA: %.1f minutes", ETAMinutes)
 		}
 
-		log.Debug("Running extration of: %s for %.1f minutes%s %.1f call/minute. %s", logLabel, runningMinutes, nbItemsMessage, nbCallsPerMinute, ETAMessage)
+		log.Debug("Running extraction of: %s for %.1f minutes%s %.1f call/minute. %s", logLabel, runningMinutes, nbItemsMessage, nbCallsPerMinute, ETAMessage)
 	}
 }

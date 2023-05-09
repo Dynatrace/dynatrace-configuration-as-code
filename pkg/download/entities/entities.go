@@ -61,7 +61,7 @@ func DownloadAll(c dtclient.EntitiesClient, projectName string) v2.ConfigsPerTyp
 // The returned value is a map of entities objects with the entities Type as keys
 func (d *Downloader) Download(specificEntitiesTypes []string, projectName string) v2.ConfigsPerType {
 	if len(specificEntitiesTypes) == 0 {
-		log.Error("No Specific entity type profided for the specific-types option ")
+		log.Error("No Specific entity type provided for the specific-types option ")
 		return nil
 	}
 
