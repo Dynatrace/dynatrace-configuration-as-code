@@ -19,52 +19,80 @@
 package delete
 
 import (
+	"github.com/stretchr/testify/assert"
 	"path/filepath"
 	"testing"
 
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
 )
 
 func TestParseDeleteEntry(t *testing.T) {
 	api := "auto-tag"
 	name := "test entity"
 
-	entry, err := parseDeleteEntry(0, api+deleteDelimiter+name)
+	ctx := loaderContext{
+		knownApis: toSetMap([]string{
+			"management-zone",
+			"auto-tag",
+		}),
+	}
 
-	assert.NilError(t, err)
+	entry, err := parseDeleteEntry(&ctx, 0, api+deleteDelimiter+name)
+
+	assert.NoError(t, err)
 	assert.Equal(t, api, entry.Type)
-	assert.Equal(t, name, entry.ConfigId)
+	assert.Equal(t, name, entry.Identifier)
 }
 
 func TestParseSettingsDeleteEntry(t *testing.T) {
 	cfgType := "builtin:tagging.auto"
 	name := "test entity"
 
-	entry, err := parseDeleteEntry(0, cfgType+deleteDelimiter+name)
+	ctx := loaderContext{
+		knownApis: toSetMap([]string{
+			"management-zone",
+			"auto-tag",
+		}),
+	}
 
-	assert.NilError(t, err)
+	entry, err := parseDeleteEntry(&ctx, 0, cfgType+deleteDelimiter+name)
+
+	assert.NoError(t, err)
 	assert.Equal(t, cfgType, entry.Type)
-	assert.Equal(t, name, entry.ConfigId)
+	assert.Equal(t, name, entry.Identifier)
 }
 
 func TestParseDeleteEntryWithMultipleSlashesShouldWork(t *testing.T) {
 	api := "auto-tag"
 	name := "test entity/entry"
 
-	entry, err := parseDeleteEntry(0, api+deleteDelimiter+name)
+	ctx := loaderContext{
+		knownApis: toSetMap([]string{
+			"management-zone",
+			"auto-tag",
+		}),
+	}
 
-	assert.NilError(t, err)
+	entry, err := parseDeleteEntry(&ctx, 0, api+deleteDelimiter+name)
+
+	assert.NoError(t, err)
 	assert.Equal(t, api, entry.Type)
-	assert.Equal(t, name, entry.ConfigId)
+	assert.Equal(t, name, entry.Identifier)
 }
 
 func TestParseDeleteEntryInvalidEntryWithoutDelimiterShouldFail(t *testing.T) {
 	value := "auto-tag"
 
-	_, err := parseDeleteEntry(0, value)
+	ctx := loaderContext{
+		knownApis: toSetMap([]string{
+			"management-zone",
+			"auto-tag",
+		}),
+	}
 
-	assert.Assert(t, err != nil, "value `%s` should return error", value)
+	_, err := parseDeleteEntry(&ctx, 0, value)
+
+	assert.NotNil(t, err, "value `%s` should return error", value)
 }
 
 func TestParseDeleteFileDefinitions(t *testing.T) {
@@ -76,8 +104,15 @@ func TestParseDeleteFileDefinitions(t *testing.T) {
 	name2 := "test entity/entry"
 	entity2 := api2 + deleteDelimiter + name2
 
-	result, errors := parseDeleteFileDefinition(deleteFileDefinition{
-		DeleteEntries: []string{
+	ctx := loaderContext{
+		knownApis: toSetMap([]string{
+			"management-zone",
+			"auto-tag",
+		}),
+	}
+
+	result, errors := parseDeleteFileDefinition(&ctx, deleteFileDefinition{
+		DeleteEntries: []interface{}{
 			entity,
 			entity2,
 		},
@@ -90,16 +125,16 @@ func TestParseDeleteFileDefinitions(t *testing.T) {
 
 	assert.Equal(t, 1, len(apiEntities))
 	assert.Equal(t, DeletePointer{
-		Type:     api,
-		ConfigId: name,
+		Type:       api,
+		Identifier: name,
 	}, apiEntities[0])
 
 	api2Entities := result[api2]
 
 	assert.Equal(t, 1, len(api2Entities))
 	assert.Equal(t, DeletePointer{
-		Type:     api2,
-		ConfigId: name2,
+		Type:       api2,
+		Identifier: name2,
 	}, api2Entities[0])
 }
 
@@ -112,8 +147,15 @@ func TestParseDeleteFileDefinitionsWithInvalidDefinition(t *testing.T) {
 	name2 := "test entity/entry"
 	entity2 := api2 + deleteDelimiter + name2
 
-	result, errors := parseDeleteFileDefinition(deleteFileDefinition{
-		DeleteEntries: []string{
+	ctx := loaderContext{
+		knownApis: toSetMap([]string{
+			"management-zone",
+			"auto-tag",
+		}),
+	}
+
+	result, errors := parseDeleteFileDefinition(&ctx, deleteFileDefinition{
+		DeleteEntries: []interface{}{
 			entity,
 			entity2,
 			"invalid-definition",
@@ -125,48 +167,132 @@ func TestParseDeleteFileDefinitionsWithInvalidDefinition(t *testing.T) {
 }
 
 func TestLoadEntriesToDelete(t *testing.T) {
-	fileContent := `delete:
+
+	tests := []struct {
+		name             string
+		givenFileContent string
+		want             map[string][]DeletePointer
+	}{
+		{
+			"Loads simple file",
+			`delete:
 - management-zone/test entity/entities
 - auto-tag/random tag
-`
-
-	workingDir := filepath.FromSlash("/home/test/monaco")
-	deleteFileName := "delete.yaml"
-	deleteFilePath := filepath.Join(workingDir, deleteFileName)
-
-	fs := afero.NewMemMapFs()
-	err := fs.MkdirAll(workingDir, 0777)
-
-	assert.NilError(t, err)
-
-	err = afero.WriteFile(fs, deleteFilePath, []byte(fileContent), 0666)
-	assert.NilError(t, err)
-
-	knownApis := []string{
-		"management-zone",
-		"auto-tag",
+`,
+			map[string][]DeletePointer{
+				"auto-tag": {
+					{
+						Type:       "auto-tag",
+						Identifier: "random tag",
+					},
+				},
+				"management-zone": {
+					{
+						Type:       "management-zone",
+						Identifier: "test entity/entities",
+					},
+				},
+			},
+		},
+		{
+			"Loads Settings",
+			`delete:
+- management-zone/test entity/entities
+- builtin:auto.tagging/random tag
+`,
+			map[string][]DeletePointer{
+				"builtin:auto.tagging": {
+					{
+						Type:       "builtin:auto.tagging",
+						Identifier: "random tag",
+					},
+				},
+				"management-zone": {
+					{
+						Type:       "management-zone",
+						Identifier: "test entity/entities",
+					},
+				},
+			},
+		},
+		{
+			"Loads Full Format",
+			`delete:
+- project: "myProject"
+  type: management-zone
+  name: test entity/entities
+- project: some-project
+  type: builtin:auto.tagging
+  id: my-tag
+`,
+			map[string][]DeletePointer{
+				"builtin:auto.tagging": {
+					{
+						Project:    "some-project",
+						Type:       "builtin:auto.tagging",
+						Identifier: "my-tag",
+					},
+				},
+				"management-zone": {
+					{
+						Type:       "management-zone",
+						Identifier: "test entity/entities",
+					},
+				},
+			},
+		},
+		{
+			"Loads Mixed Format",
+			`delete:
+- "management-zone/test entity/entities"
+- project: some-project
+  type: builtin:auto.tagging
+  id: my-tag
+`,
+			map[string][]DeletePointer{
+				"builtin:auto.tagging": {
+					{
+						Project:    "some-project",
+						Type:       "builtin:auto.tagging",
+						Identifier: "my-tag",
+					},
+				},
+				"management-zone": {
+					{
+						Type:       "management-zone",
+						Identifier: "test entity/entities",
+					},
+				},
+			},
+		},
 	}
 
-	result, errors := LoadEntriesToDelete(fs, knownApis, deleteFilePath)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			workingDir := filepath.FromSlash("/home/test/monaco")
+			deleteFileName := "delete.yaml"
+			deleteFilePath := filepath.Join(workingDir, deleteFileName)
 
-	assert.Equal(t, 0, len(errors))
-	assert.Equal(t, 2, len(result))
+			fs := afero.NewMemMapFs()
+			err := fs.MkdirAll(workingDir, 0777)
 
-	apiEntities := result["management-zone"]
+			assert.NoError(t, err)
 
-	assert.Equal(t, 1, len(apiEntities))
-	assert.Equal(t, DeletePointer{
-		Type:     "management-zone",
-		ConfigId: "test entity/entities",
-	}, apiEntities[0])
+			err = afero.WriteFile(fs, deleteFilePath, []byte(tt.givenFileContent), 0666)
+			assert.NoError(t, err)
 
-	api2Entities := result["auto-tag"]
+			knownApis := []string{
+				"management-zone",
+				"auto-tag",
+			}
 
-	assert.Equal(t, 1, len(api2Entities))
-	assert.Equal(t, DeletePointer{
-		Type:     "auto-tag",
-		ConfigId: "random tag",
-	}, api2Entities[0])
+			result, errors := LoadEntriesToDelete(fs, knownApis, deleteFilePath)
+
+			assert.Equal(t, 0, len(errors))
+			assert.Equal(t, 2, len(result))
+			assert.Equal(t, tt.want, result)
+		})
+	}
 }
 
 func TestLoadEntriesToDeleteWithInvalidEntry(t *testing.T) {
@@ -182,10 +308,10 @@ func TestLoadEntriesToDeleteWithInvalidEntry(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	err := fs.MkdirAll(workingDir, 0777)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	err = afero.WriteFile(fs, deleteFilePath, []byte(fileContent), 0666)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	knownApis := []string{
 		"management-zone",
@@ -204,7 +330,7 @@ func TestLoadEntriesToDeleteNonExistingFile(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	err := fs.MkdirAll(workingDir, 0777)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	knownApis := []string{
 		"management-zone",
@@ -229,10 +355,10 @@ func TestLoadEntriesToDeleteWithMalformedFile(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	err := fs.MkdirAll(workingDir, 0777)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	err = afero.WriteFile(fs, deleteFilePath, []byte(fileContent), 0666)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	knownApis := []string{
 		"management-zone",
@@ -253,10 +379,10 @@ func TestLoadEntriesToDeleteWithEmptyFile(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	err := fs.MkdirAll(workingDir, 0777)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	err = afero.WriteFile(fs, deleteFilePath, []byte{}, 0666)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	knownApis := []string{
 		"management-zone",
