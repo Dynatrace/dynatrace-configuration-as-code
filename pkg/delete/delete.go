@@ -22,13 +22,23 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 )
 
 type DeletePointer struct {
-	Type     string
-	ConfigId string
+	Project    string
+	Type       string
+	Identifier string
+}
+
+func (d DeletePointer) asCoordinate() coordinate.Coordinate {
+	return coordinate.Coordinate{
+		Project:  d.Project,
+		Type:     d.Type,
+		ConfigId: d.Identifier,
+	}
 }
 
 func DeleteConfigs(client dtclient.Client, apis api.APIs, entriesToDelete map[string][]DeletePointer) []error {
@@ -83,7 +93,12 @@ func deleteSettingsObject(c dtclient.Client, entries []DeletePointer) []error {
 	errors := make([]error, 0)
 
 	for _, e := range entries {
-		externalID, err := idutils.GenerateExternalID(coordinate.Coordinate{Type: e.Type, ConfigId: e.ConfigId})
+
+		if e.Project == "" {
+			log.Warn("Generating legacy externalID for deletion of %q - this will fail to identify newer Settings object. Consider defining a 'project' for this delete entry.", e)
+		}
+		externalID, err := idutils.GenerateExternalID(e.asCoordinate())
+
 		if err != nil {
 			errors = append(errors, fmt.Errorf("unable to generate external id: %w", err))
 			continue
@@ -96,12 +111,12 @@ func deleteSettingsObject(c dtclient.Client, entries []DeletePointer) []error {
 		}
 
 		if len(objects) == 0 {
-			log.Debug("No settings object found to delete: %s/%s", e.Type, e.ConfigId)
+			log.Debug("No settings object found to delete: %s/%s", e.Type, e.Identifier)
 			continue
 		}
 
 		for _, obj := range objects {
-			log.Debug("Deleting settings object %s/%s with objectId %s", e.Type, e.ConfigId, obj.ObjectId)
+			log.Debug("Deleting settings object %s/%s with objectId %s", e.Type, e.Identifier, obj.ObjectId)
 			err := c.DeleteSettings(obj.ObjectId)
 			if err != nil {
 				errors = append(errors, fmt.Errorf("could not delete settings 2.0 object with object ID %s", obj.ObjectId))
@@ -125,12 +140,12 @@ func filterValuesToDelete(entries []DeletePointer, existingValues []dtclient.Val
 		valuesById[v.Id] = v
 
 		for _, entry := range entries {
-			if toDeleteByName[entry.ConfigId] == nil {
-				toDeleteByName[entry.ConfigId] = []dtclient.Value{}
+			if toDeleteByName[entry.Identifier] == nil {
+				toDeleteByName[entry.Identifier] = []dtclient.Value{}
 			}
 
-			if v.Name == entry.ConfigId {
-				toDeleteByName[entry.ConfigId] = append(toDeleteByName[entry.ConfigId], v)
+			if v.Name == entry.Identifier {
+				toDeleteByName[entry.Identifier] = append(toDeleteByName[entry.Identifier], v)
 			}
 		}
 	}

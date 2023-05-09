@@ -18,6 +18,8 @@ package delete
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/mitchellh/mapstructure"
 	"path/filepath"
 	"strings"
 
@@ -34,7 +36,14 @@ type loaderContext struct {
 }
 
 type deleteFileDefinition struct {
-	DeleteEntries []string `yaml:"delete"`
+	DeleteEntries []interface{} `yaml:"delete"`
+}
+
+type deleteEntry struct {
+	Project    string `mapstructure:"project"`
+	Type       string `mapstructure:"type"`
+	ConfigId   string `mapstructure:"id"`
+	ConfigName string `mapstructure:"name"`
 }
 
 type DeleteEntryParserError struct {
@@ -63,13 +72,13 @@ func LoadEntriesToDelete(fs afero.Fs, knownApis []string, deleteFile string) (ma
 		knownApis:  toSetMap(knownApis),
 	}
 
-	definition, err := parseDeleteFile(context)
+	definition, err := readDeleteFile(context)
 
 	if err != nil {
 		return nil, []error{err}
 	}
 
-	return parseDeleteFileDefinition(definition)
+	return parseDeleteFileDefinition(context, definition)
 }
 
 func toSetMap(strs []string) map[string]struct{} {
@@ -82,7 +91,7 @@ func toSetMap(strs []string) map[string]struct{} {
 	return result
 }
 
-func parseDeleteFile(context *loaderContext) (deleteFileDefinition, error) {
+func readDeleteFile(context *loaderContext) (deleteFileDefinition, error) {
 	targetFile, err := filepath.Abs(context.deleteFile)
 	if err != nil {
 		return deleteFileDefinition{}, fmt.Errorf("could not parse absoulte path to file `%s`: %w", context.deleteFile, err)
@@ -109,12 +118,12 @@ func parseDeleteFile(context *loaderContext) (deleteFileDefinition, error) {
 	return result, nil
 }
 
-func parseDeleteFileDefinition(definition deleteFileDefinition) (map[string][]DeletePointer, []error) {
+func parseDeleteFileDefinition(ctx *loaderContext, definition deleteFileDefinition) (map[string][]DeletePointer, []error) {
 	var result = make(map[string][]DeletePointer)
 	var errors []error
 
 	for i, e := range definition.DeleteEntries {
-		entry, err := parseDeleteEntry(i, e)
+		entry, err := parseDeleteEntry(ctx, i, e)
 
 		if err != nil {
 			errors = append(errors, err)
@@ -131,9 +140,73 @@ func parseDeleteFileDefinition(definition deleteFileDefinition) (map[string][]De
 	return result, nil
 }
 
-func parseDeleteEntry(index int, entry string) (DeletePointer, error) {
+func parseDeleteEntry(ctx *loaderContext, index int, entry interface{}) (DeletePointer, error) {
+
+	ptr, err := parseFullEntry(ctx, entry)
+
+	if str, ok := entry.(string); ok && err != nil {
+		ptr, err = parseSimpleEntry(str)
+	}
+
+	if err != nil {
+		return DeletePointer{},
+			newDeleteEntryParserError(fmt.Sprintf("%v", entry), index, err.Error())
+	}
+
+	return ptr, nil
+}
+
+func parseFullEntry(ctx *loaderContext, entry interface{}) (DeletePointer, error) {
+
+	var parsed deleteEntry
+	err := mapstructure.Decode(entry, &parsed)
+	if err != nil {
+		return DeletePointer{}, err
+	}
+
+	if _, known := ctx.knownApis[parsed.Type]; known {
+		return parseAPIEntry(parsed)
+	}
+
+	// Workflow Deletion: Add check here
+
+	// assuming it's a Setting
+	return parseSettingsEntry(parsed)
+}
+
+func parseAPIEntry(parsed deleteEntry) (DeletePointer, error) {
+	if parsed.ConfigName == "" {
+		return DeletePointer{}, fmt.Errorf("delete entry of API type requiress config 'name' to be defined")
+	}
+	if parsed.ConfigId != "" {
+		log.Warn("delete entry %q of API type defines config 'id' - only 'name' will be used.")
+	}
+	return DeletePointer{
+		Type:       parsed.Type,
+		Identifier: parsed.ConfigName,
+	}, nil
+}
+
+func parseSettingsEntry(parsed deleteEntry) (DeletePointer, error) {
+	if parsed.ConfigId == "" {
+		return DeletePointer{}, fmt.Errorf("delete entry of Settings type requires config 'id' to be defined")
+	}
+	if parsed.Project == "" {
+		return DeletePointer{}, fmt.Errorf("delete entry of Settings type requires 'project' to be defined")
+	}
+	if parsed.ConfigName != "" {
+		log.Warn("delete entry of Settings type defines config 'name' - only 'id' will be used.")
+	}
+	return DeletePointer{
+		Project:    parsed.Project,
+		Type:       parsed.Type,
+		Identifier: parsed.ConfigId,
+	}, nil
+}
+
+func parseSimpleEntry(entry string) (DeletePointer, error) {
 	if !strings.Contains(entry, deleteDelimiter) {
-		return DeletePointer{}, newDeleteEntryParserError(entry, index, fmt.Sprintf("invalid format. doesn't contain `%s`", deleteDelimiter))
+		return DeletePointer{}, fmt.Errorf("invalid format. doesn't contain `%s`", deleteDelimiter)
 	}
 
 	parts := strings.SplitN(entry, deleteDelimiter, 2)
@@ -144,7 +217,7 @@ func parseDeleteEntry(index int, entry string) (DeletePointer, error) {
 	deleteIdentifier := parts[1]
 
 	return DeletePointer{
-		Type:     apiId,
-		ConfigId: deleteIdentifier,
+		Type:       apiId,
+		Identifier: deleteIdentifier,
 	}, nil
 }

@@ -31,40 +31,66 @@ import (
 
 func TestDelete(t *testing.T) {
 
+	deleteContentTemplate := `delete:
+- project: "project"
+  type: "builtin:tags.auto-tagging"
+  id: "%s"`
+	configTemplate := "configs:\n- id: %s\n  type:\n    settings:\n      schema: builtin:tags.auto-tagging\n      scope: environment\n  config:\n    name: %s\n    template: auto-tag-setting.json\n"
+
 	tests := []struct {
-		name       string
-		manifest   string
-		deleteFile string
-		cmdFlags   []string
+		name                  string
+		manifest              string
+		configTemplate        string
+		deleteFile            string
+		deleteContentTemplate string
+		cmdFlags              []string
 	}{
 		{
 			"Default values",
 			"manifest.yaml",
+			configTemplate,
 			"delete.yaml",
+			deleteContentTemplate,
+			[]string{},
+		},
+		{
+			"Default values - legacy delete",
+			"manifest.yaml",
+			"configs:\n- id: %s\n  type:\n    api: auto-tag\n  config:\n    name: %s\n    template: auto-tag.json\n",
+			"delete.yaml",
+			"delete:\n  - \"auto-tag/%s\"",
 			[]string{},
 		},
 		{
 			"Specific manifest",
 			"my_special_manifest.yaml",
+			configTemplate,
 			"delete.yaml",
+			deleteContentTemplate,
 			[]string{"--manifest", "my_special_manifest.yaml"},
 		},
 		{
 			"Specific manifest (shorthand)",
 			"my_special_manifest.yaml",
+			configTemplate,
 			"delete.yaml",
+			deleteContentTemplate,
 			[]string{"-m", "my_special_manifest.yaml"},
 		},
 		{
 			"Specific delete file",
 			"manifest.yaml",
+			configTemplate,
 			"super-special-removal-file.yaml",
+			deleteContentTemplate,
 			[]string{"--file", "super-special-removal-file.yaml"},
 		},
 		{
 			"Specific manifest and delete file",
 			"my_special_manifest.yaml",
+			configTemplate,
 			"super-special-removal-file.yaml",
+			deleteContentTemplate,
 			[]string{"--manifest", "my_special_manifest.yaml", "--file", "super-special-removal-file.yaml"},
 		},
 	}
@@ -77,9 +103,8 @@ func TestDelete(t *testing.T) {
 			fs := testutils.CreateTestFileSystem()
 
 			//create config yaml
-			cfgTemplate := "configs:\n- id: %s\n  type:\n    settings:\n      schema: builtin:tags.auto-tagging\n      scope: environment\n  config:\n    name: %s\n    template: auto-tag-setting.json\n"
 			cfgId := fmt.Sprintf("deleteSample_%s", integrationtest.GenerateTestSuffix(t, tt.name))
-			configContent := fmt.Sprintf(cfgTemplate, cfgId, cfgId)
+			configContent := fmt.Sprintf(tt.configTemplate, cfgId, cfgId)
 
 			configYamlPath, err := filepath.Abs(filepath.Join(configFolder, "project", "config.yaml"))
 			assert.NilError(t, err)
@@ -87,7 +112,7 @@ func TestDelete(t *testing.T) {
 			assert.NilError(t, err)
 
 			//create delete yaml
-			deleteContent := fmt.Sprintf("delete:\n  - \"builtin:tags.auto-tagging/%s\"", cfgId)
+			deleteContent := fmt.Sprintf(tt.deleteContentTemplate, cfgId)
 			deleteYamlPath, err := filepath.Abs(tt.deleteFile)
 			assert.NilError(t, err)
 			err = afero.WriteFile(fs, deleteYamlPath, []byte(deleteContent), 644)
