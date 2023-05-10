@@ -45,16 +45,17 @@ func deployAutomation(client automationClient, properties parameter.Properties, 
 		id = idutils.GenerateUuidFromName(c.Coordinate.String())
 	}
 
+	payload := template.UnescapeJinjaTemplates([]byte(renderedConfig))
+
 	var err error
 	var resp *automation.Response
 	switch t.Resource {
 	case config.Workflow:
-		payload := template.UnescapeJinjaTemplates([]byte(renderedConfig))
 		resp, err = client.Upsert(automation.Workflows, id, payload)
 	case config.BusinessCalendar:
-		resp, err = client.Upsert(automation.BusinessCalendars, id, []byte(renderedConfig))
+		resp, err = client.Upsert(automation.BusinessCalendars, id, payload)
 	case config.SchedulingRule:
-		resp, err = client.Upsert(automation.SchedulingRules, id, []byte(renderedConfig))
+		resp, err = client.Upsert(automation.SchedulingRules, id, payload)
 	default:
 		err = fmt.Errorf("unkonwn rsource type %q", t.Resource)
 	}

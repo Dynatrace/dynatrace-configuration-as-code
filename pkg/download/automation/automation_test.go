@@ -55,6 +55,7 @@ func TestDownloader_Download(t *testing.T) {
 		assert.Len(t, actual[string(config.Workflow)], 4)
 		assert.Len(t, actual[string(config.SchedulingRule)], 6)
 		assert.Len(t, actual[string(config.BusinessCalendar)], 2)
+
 		assert.NoError(t, err)
 	})
 
@@ -62,8 +63,42 @@ func TestDownloader_Download(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			switch req.URL.Path {
 			case "/platform/automation/v1/workflows":
-				wfData, _ := os.ReadFile("./testdata/listWorkflows.json")
-				rw.Write(wfData)
+				rw.Write([]byte(`
+{
+    "count": 1,
+    "results":[{
+        "id": "12345678-1234-1234-1234-123456789999",
+        "title": "jinja workflow",
+        "tasks": {
+            "runJavascript1": {
+                "name": "run_javascript_1",
+                "input": {
+                    "script": "// optional import of sdk modules\nimport { metadataClient } from '@dynatrace-sdk/client-metadata';\nimport { executionsClient } from '@dynatrace-sdk/client-automation';\n\nexport default async function ({ execution_id }) {\n  // your code goes here\n  const me = await metadataClient.getUserInfo();\n  console.log('Automated script execution on behalf of', me.userName);\n\n  console.log({{ event() }})\n  // get the current execution\n  const ex = await executionsClient.getExecution({ id: execution_id });\n\n  return { ...me, triggeredBy: ex.trigger };\n}"
+                },
+                "action": "dynatrace.automations:run-javascript",
+                "position": {
+                    "x": 0,
+                    "y": 1
+                },
+                "description": "Build a custom task running js Code",
+                "predecessors": []
+            }
+        },
+        "taskDefaults": {},
+        "usages": [],
+        "lastExecution": null,
+        "description": "",
+        "labels": {},
+        "version": 1,
+        "actor": "ed6a9c8f-06f0-4508-9b8e-c47bbe67c83d",
+        "owner": "ed6a9c8f-06f0-4508-9b8e-c47bbe67c83d",
+        "isPrivate": true,
+        "triggerType": "Manual",
+        "schemaVersion": 3,
+        "trigger": {}
+    }]
+}
+`))
 			default:
 				t.Fatal("NO")
 			}
@@ -75,10 +110,11 @@ func TestDownloader_Download(t *testing.T) {
 
 		actual, err := downloader.Download("projectName", config.AutomationType{Resource: config.Workflow})
 
-		assert.Len(t, actual, 1)
-		for _, c := range actual[string(config.Workflow)] {
-			assert.NotContains(t, c.Template.Content(), `{{`)
-			assert.NotContains(t, c.Template.Content(), `}}`)
+		for _, r := range actual {
+			for _, c := range r {
+				assert.Contains(t, c.Template.Content(), `\{\{`)
+				assert.Contains(t, c.Template.Content(), `\}\}`)
+			}
 		}
 		assert.NoError(t, err)
 	})

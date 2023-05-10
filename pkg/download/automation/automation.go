@@ -79,6 +79,7 @@ func (d *Downloader) Download(projectName string, automationTypes ...config.Auto
 		for _, obj := range response.Results {
 
 			configId := obj.ID
+			obj.Data = templateUtils.EscapeJinjaTemplates(obj.Data)
 			t, configName := createTemplateFromRawJSON(obj, at.Resource)
 
 			c := config.Config{
@@ -133,10 +134,8 @@ func createTemplateFromRawJSON(obj automationClient.Response, configType config.
 		log.Warn("Failed to sanitize downloaded JSON for config %v (%s) - template may need manual cleanup: %v", configId, configType, err)
 		content = obj.Data
 	}
+
 	content = jsonutils.MarshalIndent(content)
-	if configType == config.Workflow {
-		content = templateUtils.EscapeJinjaTemplates(content)
-	}
 
 	t = template.NewDownloadTemplate(configId, configName, string(content))
 	return t, configName

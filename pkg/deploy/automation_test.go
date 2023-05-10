@@ -76,18 +76,46 @@ func TestDeployAutomation(t *testing.T) {
 	})
 
 	t.Run("unescape jinja for workflows", func(t *testing.T) {
-		conf := &config.Config{
-			OriginObjectId: "objectID",
-			Type:           config.AutomationType{Resource: config.Workflow},
+		client := NewMockautomationClient(gomock.NewController(t))
+
+		{
+			conf := &config.Config{
+				OriginObjectId: "objectID",
+				Type:           config.AutomationType{Resource: config.Workflow},
+			}
+
+			client.EXPECT().Upsert(automation.Workflows, conf.OriginObjectId, []byte(`{{ .unescaped.jinja }}`)).Times(1).Return(&automation.Response{ID: conf.OriginObjectId}, nil)
+
+			actual, err := deployAutomation(client, parameter.Properties{}, `\{\{ .unescaped.jinja \}\}`, conf)
+			assert.NotNil(t, actual)
+			assert.Empty(t, err)
 		}
 
-		client := NewMockautomationClient(gomock.NewController(t))
-		client.EXPECT().Upsert(automation.Workflows, conf.OriginObjectId, []byte(`{{ .unescaped.jinja }}`)).Times(1).Return(&automation.Response{ID: conf.OriginObjectId}, nil)
+		{
+			conf := &config.Config{
+				OriginObjectId: "objectID",
+				Type:           config.AutomationType{Resource: config.BusinessCalendar},
+			}
 
-		actual, err := deployAutomation(client, parameter.Properties{}, `\{\{ .unescaped.jinja \}\}`, conf)
+			client.EXPECT().Upsert(automation.BusinessCalendars, conf.OriginObjectId, []byte(`{{ .unescaped.jinja }}`)).Times(1).Return(&automation.Response{ID: conf.OriginObjectId}, nil)
 
-		assert.NotNil(t, actual)
-		assert.Empty(t, err)
+			actual, err := deployAutomation(client, parameter.Properties{}, `\{\{ .unescaped.jinja \}\}`, conf)
+			assert.NotNil(t, actual)
+			assert.Empty(t, err)
+		}
+
+		{
+			conf := &config.Config{
+				OriginObjectId: "objectID",
+				Type:           config.AutomationType{Resource: config.SchedulingRule},
+			}
+
+			client.EXPECT().Upsert(automation.SchedulingRules, conf.OriginObjectId, []byte(`{{ .unescaped.jinja }}`)).Times(1).Return(&automation.Response{ID: conf.OriginObjectId}, nil)
+
+			actual, err := deployAutomation(client, parameter.Properties{}, `\{\{ .unescaped.jinja \}\}`, conf)
+			assert.NotNil(t, actual)
+			assert.Empty(t, err)
+		}
 	})
 
 	t.Run("TestDeployAutomation - Workflow Upsert fails", func(t *testing.T) {
@@ -120,7 +148,7 @@ func TestDeployAutomation(t *testing.T) {
 
 	t.Run("TestDeployAutomation - Scheduling Rule Upsert fails", func(t *testing.T) {
 		client := NewMockautomationClient(gomock.NewController(t))
-		client.EXPECT().Upsert(automation.SchedulingRules, gomock.Any(), []byte("")).Times(1).Return(nil, errors.New("UPSERT_FAIL"))
+		client.EXPECT().Upsert(automation.SchedulingRules, gomock.Any(), nil).Times(1).Return(nil, errors.New("UPSERT_FAIL"))
 
 		conf := &config.Config{
 			Type: config.AutomationType{Resource: config.SchedulingRule},
