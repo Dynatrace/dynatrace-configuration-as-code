@@ -91,8 +91,8 @@ func (EntityType) ID() TypeId {
 // AutomationResource defines which resource is an AutomationType
 type AutomationResource string
 
-func (a *AutomationResource) String() string {
-	return string(*a)
+func (a AutomationResource) String() string {
+	return string(a)
 }
 
 const (
