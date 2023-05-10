@@ -66,7 +66,7 @@ func (d *Downloader) Download(projectName string, automationTypes ...config.Auto
 		}
 		response, err := d.client.List(resource)
 		if err != nil {
-			log.Error("Failed to fetch all objects for automation resource %s: %v", err)
+			log.Error("Failed to fetch all objects for automation resource %s: %v", at.Resource, err)
 			continue
 		}
 
@@ -134,7 +134,7 @@ func createTemplateFromRawJSON(obj automationClient.Response, configType config.
 		content = obj.Data
 	}
 	content = jsonutils.MarshalIndent(content)
-	if configType == "workflow" {
+	if configType == config.Workflow {
 		content = templateUtils.EscapeJinjaTemplates(content)
 	}
 

@@ -1,5 +1,5 @@
 {
-    "count": 3,
+    "count": 4,
     "results": [
         {
             "id": "12345678-1234-1234-1234-123456789091",
@@ -108,6 +108,37 @@
                 "lastModifiedBy": "12345678-1234-1234-1234-123456789098",
                 "lastModifiedTime": "2023-04-24T11:16:03.020997Z"
             }
+        },
+        {
+            "id": "12345678-1234-1234-1234-123456789093",
+            "title": "jinja workflow",
+            "tasks": {
+                "runJavascript1": {
+                    "name": "run_javascript_1",
+                    "input": {
+                        "script": "// optional import of sdk modules\nimport { metadataClient } from '@dynatrace-sdk/client-metadata';\nimport { executionsClient } from '@dynatrace-sdk/client-automation';\n\nexport default async function ({ execution_id }) {\n  // your code goes here\n  const me = await metadataClient.getUserInfo();\n  console.log('Automated script execution on behalf of', me.userName);\n\n  console.log({{ event() }})\n  // get the current execution\n  const ex = await executionsClient.getExecution({ id: execution_id });\n\n  return { ...me, triggeredBy: ex.trigger };\n}"
+                    },
+                    "action": "dynatrace.automations:run-javascript",
+                    "position": {
+                        "x": 0,
+                        "y": 1
+                    },
+                    "description": "Build a custom task running js Code",
+                    "predecessors": []
+                }
+            },
+            "taskDefaults": {},
+            "usages": [],
+            "lastExecution": null,
+            "description": "",
+            "labels": {},
+            "version": 1,
+            "actor": "ed6a9c8f-06f0-4508-9b8e-c47bbe67c83d",
+            "owner": "ed6a9c8f-06f0-4508-9b8e-c47bbe67c83d",
+            "isPrivate": true,
+            "triggerType": "Manual",
+            "schemaVersion": 3,
+            "trigger": {}
         }
     ]
 }
