@@ -91,10 +91,6 @@ func (EntityType) ID() TypeId {
 // AutomationResource defines which resource is an AutomationType
 type AutomationResource string
 
-func (a AutomationResource) String() string {
-	return string(a)
-}
-
 const (
 	Workflow         AutomationResource = "workflow"
 	BusinessCalendar AutomationResource = "business-calendar"
