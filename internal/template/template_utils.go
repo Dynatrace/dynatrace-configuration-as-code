@@ -125,7 +125,7 @@ func EscapeJinjaTemplates(src []byte) []byte {
 	return src
 }
 
-// UnescapeJinjaTemplates replaces each occurrence of "\{\{" with \{{" and each occurrence of "\}\}" with "}}"
+// UnescapeJinjaTemplates replaces each occurrence of "\{\{" with {{" and each occurrence of "\}\}" with "}}"
 func UnescapeJinjaTemplates(str []byte) []byte {
 	str = bytes.ReplaceAll(str, []byte(`\{\{`), []byte(`{{`))
 	str = bytes.ReplaceAll(str, []byte(`\}\}`), []byte(`}}`))
