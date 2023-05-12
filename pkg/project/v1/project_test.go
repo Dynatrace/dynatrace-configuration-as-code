@@ -26,7 +26,7 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func testCreateProjectBuilder(projectsRoot string) projectBuilder {
@@ -79,12 +79,12 @@ func TestGetPathSuccess(t *testing.T) {
 
 	err, configType := builder.getConfigTypeFromLocation(json)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, "management-zone", configType.ID)
 
 	err, configType = builder.getConfigTypeFromLocation(json)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, "management-zone", configType.ID)
 }
 
@@ -103,7 +103,7 @@ func TestRemoveYamlFromPath(t *testing.T) {
 	expected := files.ReplacePathSeparators("project/dashboards")
 	err, result := builder.removeYamlFileFromPath(yaml)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, expected, result)
 }
 
@@ -121,7 +121,7 @@ func TestGetApiInformationFromLocation(t *testing.T) {
 	json := files.ReplacePathSeparators("test/management-zone/testytest.json")
 	err, apiInfo := builder.getExtendedInformationFromLocation(json)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, testManagementZoneApi, apiInfo)
 }
 
@@ -135,9 +135,9 @@ func TestGetConfigTypeInformationFromLocation(t *testing.T) {
 	err1, api1 := builder.getExtendedInformationFromLocation(json1)
 	err2, api2 := builder.getExtendedInformationFromLocation(json2)
 
-	assert.NilError(t, err)
-	assert.NilError(t, err1)
-	assert.NilError(t, err2)
+	assert.NoError(t, err)
+	assert.NoError(t, err1)
+	assert.NoError(t, err2)
 	assert.Equal(t, "alerting-profile", api.ID)
 	assert.Equal(t, "alerting-profile", api1.ID)
 	assert.Equal(t, "alerting-profile", api2.ID)
@@ -168,7 +168,7 @@ func TestProcessConfigSection(t *testing.T) {
 
 	folderPath := files.ReplacePathSeparators("test/management-zone")
 	err := builder.processConfigSection(m, folderPath)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 }
 
 func TestProcessConfigSectionWithProjectRootParameter(t *testing.T) {
@@ -193,7 +193,7 @@ func TestProcessConfigSectionWithProjectRootParameter(t *testing.T) {
 
 	folderPath := files.ReplacePathSeparators("test/management-zone")
 	err := builder.processConfigSection(m, folderPath)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 }
 
 func TestStandardizeLocationWithAbsolutePath(t *testing.T) {
@@ -257,9 +257,246 @@ func TestProcessYaml(t *testing.T) {
 
 	err = builder.processYaml(yamlFile, template.UnmarshalYaml)
 
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 1, len(builder.configs))
 
 	config := builder.configs[0]
-	assert.Check(t, config != nil)
+	assert.NotNil(t, config)
+}
+
+func Test_projectBuilder_resolveDuplicateIDs(t *testing.T) {
+	tests := []struct {
+		name         string
+		givenConfigs []*Config
+		wantConfigs  []*Config
+	}{
+		{
+			"Works for empty configs",
+			[]*Config{},
+			[]*Config{},
+		},
+		{
+			"Works for no duplicates",
+			[]*Config{
+				{
+					id: "config-a",
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id: "config-b",
+					properties: map[string]map[string]string{
+						"config-b": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id: "config-c",
+					properties: map[string]map[string]string{
+						"config-c": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id: "config-d",
+					properties: map[string]map[string]string{
+						"config-d": {
+							"some-prop": "val",
+						},
+					},
+				},
+			},
+			[]*Config{
+				{
+					id: "config-a",
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id: "config-b",
+					properties: map[string]map[string]string{
+						"config-b": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id: "config-c",
+					properties: map[string]map[string]string{
+						"config-c": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id: "config-d",
+					properties: map[string]map[string]string{
+						"config-d": {
+							"some-prop": "val",
+						},
+					},
+				},
+			},
+		},
+		{
+			"Renames duplicates",
+			[]*Config{
+				{
+					id: "config-a",
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id: "config-a",
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id: "config-b",
+					properties: map[string]map[string]string{
+						"config-b": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id: "config-b",
+					properties: map[string]map[string]string{
+						"config-b": {
+							"some-prop": "val",
+						},
+					},
+				},
+			},
+			[]*Config{
+				{
+					id: "config-a-1",
+					properties: map[string]map[string]string{
+						"config-a-1": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id: "config-a",
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id: "config-b-1",
+					properties: map[string]map[string]string{
+						"config-b-1": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id: "config-b",
+					properties: map[string]map[string]string{
+						"config-b": {
+							"some-prop": "val",
+						},
+					},
+				},
+			},
+		},
+		{
+			"Renames several duplicates",
+			[]*Config{
+				{
+					id: "config-a",
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id: "config-a",
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id: "config-a",
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id: "config-b",
+					properties: map[string]map[string]string{
+						"config-b": {
+							"some-prop": "val",
+						},
+					},
+				},
+			},
+			[]*Config{
+				{
+					id: "config-a-1",
+					properties: map[string]map[string]string{
+						"config-a-1": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id: "config-a-2",
+					properties: map[string]map[string]string{
+						"config-a-2": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id: "config-a",
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id: "config-b",
+					properties: map[string]map[string]string{
+						"config-b": {
+							"some-prop": "val",
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &projectBuilder{
+				configs: tt.givenConfigs,
+			}
+			p.resolveDuplicateIDs()
+
+			assert.Equal(t, tt.wantConfigs, tt.givenConfigs)
+		})
+	}
 }
