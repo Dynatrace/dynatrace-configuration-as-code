@@ -235,14 +235,22 @@ func (p *projectBuilder) sortConfigsAccordingToDependencies() error {
 	return err
 }
 
+// resolveDuplicateIDs rewrites a configuration's ID if it was also used in another configuration
+// while v1 allowed this, uniqueness of a "coordinate" (project, type, id) is enforced in v2
+// used in conversion this method rewrites IDs in a project, if an overlapping config ID is found
+
 func (p *projectBuilder) resolveDuplicateIDs() {
-	// rewrite id in case the id of a config was already used in a different config
+	duplicateCount := map[string]int{}
+
 	for i, c1 := range p.configs {
+
 		for j := i + 1; j < len(p.configs); j++ {
 			if c1.id == p.configs[j].id {
-				newID := fmt.Sprintf("%s-%d", c1.id, i)
+				duplicateCount[c1.id] += 1
+				newID := fmt.Sprintf("%s-%d", c1.id, duplicateCount[c1.id])
 				log.Warn("Detected duplicate config id %q. Renamed it to %q", c1.id, newID)
 				c1.properties[newID] = c1.properties[c1.id]
+				delete(c1.properties, c1.id)
 				c1.id = newID
 
 				break
