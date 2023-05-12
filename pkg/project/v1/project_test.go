@@ -488,6 +488,49 @@ func Test_projectBuilder_resolveDuplicateIDs(t *testing.T) {
 				},
 			},
 		},
+		{
+			"Does not rename overlaps with different API types",
+			[]*Config{
+				{
+					id:  "config-a",
+					api: testDashboardApi,
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id:  "config-a",
+					api: testManagementZoneApi,
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+					},
+				},
+			},
+			[]*Config{
+				{
+					id:  "config-a",
+					api: testDashboardApi,
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id:  "config-a",
+					api: testManagementZoneApi,
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
