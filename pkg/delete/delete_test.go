@@ -55,7 +55,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 				},
 			},
 		}
-		errs := DeleteConfigs(c, api.NewAPIs(), entriesToDelete)
+		errs := Configs(c, api.NewAPIs(), entriesToDelete)
 		assert.Empty(t, errs, "errors should be empty")
 	})
 
@@ -70,7 +70,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 				},
 			},
 		}
-		errs := DeleteConfigs(c, api.NewAPIs(), entriesToDelete)
+		errs := Configs(c, api.NewAPIs(), entriesToDelete)
 		assert.Len(t, errs, 1, "errors should have len 1")
 	})
 
@@ -85,7 +85,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 				},
 			},
 		}
-		errs := DeleteConfigs(c, api.NewAPIs(), entriesToDelete)
+		errs := Configs(c, api.NewAPIs(), entriesToDelete)
 		assert.Len(t, errs, 0)
 	})
 
@@ -110,7 +110,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 				},
 			},
 		}
-		errs := DeleteConfigs(c, api.NewAPIs(), entriesToDelete)
+		errs := Configs(c, api.NewAPIs(), entriesToDelete)
 		assert.Len(t, errs, 1, "errors should have len 1")
 	})
 
@@ -145,7 +145,7 @@ func TestDeleteSettings(t *testing.T) {
 				},
 			},
 		}
-		errs := DeleteConfigs(c, api.NewAPIs(), entriesToDelete)
+		errs := Configs(c, api.NewAPIs(), entriesToDelete)
 		assert.Empty(t, errs, "errors should be empty")
 	})
 
@@ -161,7 +161,7 @@ func TestDeleteSettings(t *testing.T) {
 				},
 			},
 		}
-		errs := DeleteConfigs(c, api.NewAPIs(), entriesToDelete)
+		errs := Configs(c, api.NewAPIs(), entriesToDelete)
 		assert.Len(t, errs, 1, "errors should have len 1")
 	})
 
@@ -177,7 +177,7 @@ func TestDeleteSettings(t *testing.T) {
 				},
 			},
 		}
-		errs := DeleteConfigs(c, api.NewAPIs(), entriesToDelete)
+		errs := Configs(c, api.NewAPIs(), entriesToDelete)
 		assert.Len(t, errs, 0)
 	})
 
@@ -203,7 +203,7 @@ func TestDeleteSettings(t *testing.T) {
 				},
 			},
 		}
-		errs := DeleteConfigs(c, api.NewAPIs(), entriesToDelete)
+		errs := Configs(c, api.NewAPIs(), entriesToDelete)
 		assert.Len(t, errs, 1, "errors should have len 1")
 	})
 
@@ -316,7 +316,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 				client.EXPECT().DeleteConfigById(a, id)
 			}
 
-			errs := DeleteConfigs(client, apiMap, entriesToDelete)
+			errs := Configs(client, apiMap, entriesToDelete)
 
 			assert.Equal(t, len(errs), tc.expect.numErrs)
 		})
@@ -332,7 +332,7 @@ func TestSplitConfigsForDeletionClientReturnsError(t *testing.T) {
 	client := dtclient.NewMockClient(gomock.NewController(t))
 	client.EXPECT().ListConfigs(a).Return(nil, errors.New("error"))
 
-	errs := DeleteConfigs(client, apiMap, entriesToDelete)
+	errs := Configs(client, apiMap, entriesToDelete)
 
 	assert.NotEmpty(t, errs, "an error should be returned")
 }
