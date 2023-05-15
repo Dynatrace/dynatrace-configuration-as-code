@@ -21,13 +21,25 @@ package delete
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
+	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 )
+
+var automationTypes = map[string]config.AutomationResource{
+	string(config.Workflow):         config.Workflow,
+	string(config.BusinessCalendar): config.BusinessCalendar,
+	string(config.SchedulingRule):   config.SchedulingRule,
+}
 
 func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 	t.Run("TestDeleteSettings_LegacyExternalID", func(t *testing.T) {
@@ -55,7 +67,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(c, api.NewAPIs(), entriesToDelete)
+		errs := Configs(ClientSet{DTClient: c}, api.NewAPIs(), automationTypes, entriesToDelete)
 		assert.Empty(t, errs, "errors should be empty")
 	})
 
@@ -70,7 +82,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(c, api.NewAPIs(), entriesToDelete)
+		errs := Configs(ClientSet{DTClient: c}, api.NewAPIs(), automationTypes, entriesToDelete)
 		assert.Len(t, errs, 1, "errors should have len 1")
 	})
 
@@ -85,7 +97,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(c, api.NewAPIs(), entriesToDelete)
+		errs := Configs(ClientSet{DTClient: c}, api.NewAPIs(), automationTypes, entriesToDelete)
 		assert.Len(t, errs, 0)
 	})
 
@@ -110,7 +122,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(c, api.NewAPIs(), entriesToDelete)
+		errs := Configs(ClientSet{DTClient: c}, api.NewAPIs(), automationTypes, entriesToDelete)
 		assert.Len(t, errs, 1, "errors should have len 1")
 	})
 
@@ -144,7 +156,7 @@ func TestDeleteSettings(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(c, api.NewAPIs(), entriesToDelete)
+		errs := Configs(ClientSet{DTClient: c}, api.NewAPIs(), automationTypes, entriesToDelete)
 		assert.Empty(t, errs, "errors should be empty")
 	})
 
@@ -160,7 +172,7 @@ func TestDeleteSettings(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(c, api.NewAPIs(), entriesToDelete)
+		errs := Configs(ClientSet{DTClient: c}, api.NewAPIs(), automationTypes, entriesToDelete)
 		assert.Len(t, errs, 1, "errors should have len 1")
 	})
 
@@ -176,7 +188,7 @@ func TestDeleteSettings(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(c, api.NewAPIs(), entriesToDelete)
+		errs := Configs(ClientSet{DTClient: c}, api.NewAPIs(), automationTypes, entriesToDelete)
 		assert.Len(t, errs, 0)
 	})
 
@@ -202,8 +214,155 @@ func TestDeleteSettings(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(c, api.NewAPIs(), entriesToDelete)
+		errs := Configs(ClientSet{DTClient: c}, api.NewAPIs(), automationTypes, entriesToDelete)
 		assert.Len(t, errs, 1, "errors should have len 1")
+	})
+
+}
+
+func TestDeleteAutomations(t *testing.T) {
+	t.Run("TestDeleteAutomations", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodDelete && strings.Contains(req.RequestURI, "workflows") {
+				assert.True(t, strings.HasSuffix(req.URL.String(), "/e8fd06bf-08ab-3a2f-9d3f-1fd66ea870a2"))
+				rw.WriteHeader(http.StatusOK)
+				return
+			}
+			assert.Fail(t, "unexpected HTTP call")
+		}))
+		defer server.Close()
+
+		c := automation.NewClient(server.URL, server.Client())
+
+		t.Setenv(featureflags.AutomationResources().EnvName(), "true")
+
+		entriesToDelete := map[string][]DeletePointer{
+			"workflow": {
+				{
+					Type:       "workflow",
+					Project:    "project",
+					Identifier: "id1",
+				},
+			},
+		}
+		errs := Configs(ClientSet{AutomationClient: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		assert.Empty(t, errs, "errors should be empty")
+	})
+
+	t.Run("TestDeleteAutomations - Several Types", func(t *testing.T) {
+
+		var workflowDeleted, calendarDeleted, scheduleDeleted bool
+
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodDelete && strings.Contains(req.RequestURI, "workflows") {
+				assert.True(t, strings.HasSuffix(req.URL.String(), "/e8fd06bf-08ab-3a2f-9d3f-1fd66ea870a2"))
+				rw.WriteHeader(http.StatusOK)
+				workflowDeleted = true
+				return
+			}
+			if req.Method == http.MethodDelete && strings.Contains(req.RequestURI, "business-calendars") {
+				assert.True(t, strings.HasSuffix(req.URL.String(), "/0d17aa4d-9502-3fea-aa90-4e9529b3f199"))
+				rw.WriteHeader(http.StatusOK)
+				calendarDeleted = true
+				return
+			}
+			if req.Method == http.MethodDelete && strings.Contains(req.RequestURI, "scheduling-rules") {
+				assert.True(t, strings.HasSuffix(req.URL.String(), "/e8f508f5-ff81-32a5-be6d-5d6c6295dabb"))
+				rw.WriteHeader(http.StatusOK)
+				scheduleDeleted = true
+				return
+			}
+			assert.Fail(t, "unexpected HTTP call")
+		}))
+		defer server.Close()
+
+		c := automation.NewClient(server.URL, server.Client())
+
+		t.Setenv(featureflags.AutomationResources().EnvName(), "true")
+
+		entriesToDelete := map[string][]DeletePointer{
+			"workflow": {
+				{
+					Type:       "workflow",
+					Project:    "project",
+					Identifier: "id1",
+				},
+			},
+			"business-calendar": {
+				{
+					Type:       "business-calendar",
+					Project:    "project",
+					Identifier: "id2",
+				},
+			},
+			"scheduling-rule": {
+				{
+					Type:       "scheduling-rule",
+					Project:    "project",
+					Identifier: "id3",
+				},
+			},
+		}
+		errs := Configs(ClientSet{AutomationClient: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		assert.Empty(t, errs, "errors should be empty")
+		assert.True(t, workflowDeleted, "expected workflow to be deleted but it was not")
+		assert.True(t, calendarDeleted, "expected business-calendar to be deleted but it was not")
+		assert.True(t, scheduleDeleted, "expected scheduling-rule to be deleted but it was not")
+	})
+
+	t.Run("TestDeleteAutomations - No Error if object does not exist", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodDelete && strings.Contains(req.RequestURI, "workflows") {
+				rw.WriteHeader(http.StatusNotFound)
+				return
+			}
+			assert.Fail(t, "unexpected HTTP call")
+		}))
+		defer server.Close()
+
+		c := automation.NewClient(server.URL, server.Client())
+
+		t.Setenv(featureflags.AutomationResources().EnvName(), "true")
+
+		entriesToDelete := map[string][]DeletePointer{
+			"workflow": {
+				{
+					Type:       "workflow",
+					Project:    "project",
+					Identifier: "id1",
+				},
+			},
+		}
+		errs := Configs(ClientSet{AutomationClient: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		assert.Empty(t, errs, "errors should be empty")
+	})
+
+	t.Run("TestDeleteAutomations - Returns Error on HTTP error", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodDelete && strings.Contains(req.RequestURI, "workflows") {
+				rw.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			assert.Fail(t, "unexpected HTTP call")
+		}))
+		defer server.Close()
+
+		c := automation.NewClient(server.URL, server.Client())
+
+		t.Setenv(featureflags.AutomationResources().EnvName(), "true")
+
+		entriesToDelete := map[string][]DeletePointer{
+			"workflow": {
+				{
+					Type:       "workflow",
+					Project:    "project",
+					Identifier: "id1",
+				},
+			},
+		}
+		errs := Configs(ClientSet{AutomationClient: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		assert.Len(t, errs, 1, "there should be one delete error")
+		assert.ErrorContains(t, errs[0], "unable to delete")
 	})
 
 }
@@ -308,14 +467,14 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 			apiMap := api.APIs{a.ID: a}
 			entriesToDelete := map[string][]DeletePointer{a.ID: tc.args.entries}
 
-			client := dtclient.NewMockClient(gomock.NewController(t))
-			client.EXPECT().ListConfigs(a).Return(tc.args.values, nil)
+			c := dtclient.NewMockClient(gomock.NewController(t))
+			c.EXPECT().ListConfigs(a).Return(tc.args.values, nil)
 
 			for _, id := range tc.expect.ids {
-				client.EXPECT().DeleteConfigById(a, id)
+				c.EXPECT().DeleteConfigById(a, id)
 			}
 
-			errs := Configs(client, apiMap, entriesToDelete)
+			errs := Configs(ClientSet{DTClient: c}, apiMap, automationTypes, entriesToDelete)
 
 			assert.Equal(t, len(errs), tc.expect.numErrs)
 		})
@@ -328,10 +487,10 @@ func TestSplitConfigsForDeletionClientReturnsError(t *testing.T) {
 	apiMap := api.APIs{a.ID: a}
 	entriesToDelete := map[string][]DeletePointer{a.ID: {{}}}
 
-	client := dtclient.NewMockClient(gomock.NewController(t))
-	client.EXPECT().ListConfigs(a).Return(nil, errors.New("error"))
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().ListConfigs(a).Return(nil, errors.New("error"))
 
-	errs := Configs(client, apiMap, entriesToDelete)
+	errs := Configs(ClientSet{DTClient: c}, apiMap, automationTypes, entriesToDelete)
 
 	assert.NotEmpty(t, errs, "an error should be returned")
 }
