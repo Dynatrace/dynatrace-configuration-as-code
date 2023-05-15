@@ -168,10 +168,7 @@ func parseFullEntry(ctx *loaderContext, entry interface{}) (DeletePointer, error
 		return parseAPIEntry(parsed)
 	}
 
-	// Workflow Deletion: Add check here
-
-	// assuming it's a Setting
-	return parseSettingsEntry(parsed)
+	return parseCoordinateEntry(parsed)
 }
 
 func parseAPIEntry(parsed deleteEntry) (DeletePointer, error) {
@@ -187,15 +184,15 @@ func parseAPIEntry(parsed deleteEntry) (DeletePointer, error) {
 	}, nil
 }
 
-func parseSettingsEntry(parsed deleteEntry) (DeletePointer, error) {
+func parseCoordinateEntry(parsed deleteEntry) (DeletePointer, error) {
 	if parsed.ConfigId == "" {
-		return DeletePointer{}, fmt.Errorf("delete entry of Settings type requires config 'id' to be defined")
+		return DeletePointer{}, fmt.Errorf("delete entry requires config 'id' to be defined")
 	}
 	if parsed.Project == "" {
-		return DeletePointer{}, fmt.Errorf("delete entry of Settings type requires 'project' to be defined")
+		return DeletePointer{}, fmt.Errorf("delete entry requires 'project' to be defined")
 	}
 	if parsed.ConfigName != "" {
-		log.Warn("delete entry of Settings type defines config 'name' - only 'id' will be used.")
+		log.Warn("delete entry defines config 'name' - only 'id' will be used.")
 	}
 	return DeletePointer{
 		Project:    parsed.Project,
