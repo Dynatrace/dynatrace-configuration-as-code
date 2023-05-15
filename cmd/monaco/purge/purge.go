@@ -87,8 +87,8 @@ func purgeForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs) []er
 
 	log.Info("Deleting configs for environment `%s`", env.Name)
 
-	errs := delete.DeleteAllConfigs(dynatraceClient, apis)
-	errs = append(errs, delete.DeleteAllSettingsObjects(dynatraceClient)...)
+	errs := delete.AllConfigs(dynatraceClient, apis)
+	errs = append(errs, delete.AllSettingsObjects(dynatraceClient)...)
 
 	return errs
 }

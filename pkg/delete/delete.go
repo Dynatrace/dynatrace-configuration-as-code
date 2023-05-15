@@ -46,7 +46,8 @@ func (d DeletePointer) asCoordinate() coordinate.Coordinate {
 	}
 }
 
-func DeleteConfigs(client dtclient.Client, apis api.APIs, entriesToDelete map[string][]DeletePointer) []error {
+// Configs removes all given entriesToDelete from the Dynatrace environment the given client connects to
+func Configs(client dtclient.Client, apis api.APIs, entriesToDelete map[string][]DeletePointer) []error {
 	errs := make([]error, 0)
 
 	for targetApi, entries := range entriesToDelete {
@@ -182,7 +183,8 @@ func filterValuesToDelete(entries []DeletePointer, existingValues []dtclient.Val
 	return result, errs
 }
 
-func DeleteAllConfigs(client dtclient.ConfigClient, apis api.APIs) (errors []error) {
+// AllConfigs deletes ALL classic Config API objects it can find from the Dynatrace environment the given client connects to
+func AllConfigs(client dtclient.ConfigClient, apis api.APIs) (errors []error) {
 
 	for _, api := range apis {
 		log.Info("Collecting configs of type %s...", api.ID)
@@ -208,8 +210,8 @@ func DeleteAllConfigs(client dtclient.ConfigClient, apis api.APIs) (errors []err
 	return errors
 }
 
-// DeleteAllSettingsObjects deletes all settings objects that can be queried.
-func DeleteAllSettingsObjects(c dtclient.SettingsClient) []error {
+// AllSettingsObjects deletes all settings objects it can find from the Dynatrace environment the given client connects to
+func AllSettingsObjects(c dtclient.SettingsClient) []error {
 	var errs []error
 
 	schemas, err := c.ListSchemas()

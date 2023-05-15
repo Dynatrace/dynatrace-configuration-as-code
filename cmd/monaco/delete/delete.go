@@ -92,5 +92,5 @@ func deleteConfigForEnvironment(env manifest.EnvironmentDefinition, apis api.API
 
 	log.Info("Deleting configs for environment `%s`", env.Name)
 
-	return delete.DeleteConfigs(dynatraceClient, apis, entriesToDelete)
+	return delete.Configs(dynatraceClient, apis, entriesToDelete)
 }
