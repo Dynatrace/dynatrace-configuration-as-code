@@ -186,20 +186,20 @@ func filterValuesToDelete(entries []DeletePointer, existingValues []dtclient.Val
 // AllConfigs deletes ALL classic Config API objects it can find from the Dynatrace environment the given client connects to
 func AllConfigs(client dtclient.ConfigClient, apis api.APIs) (errors []error) {
 
-	for _, api := range apis {
-		log.Info("Collecting configs of type %s...", api.ID)
-		values, err := client.ListConfigs(api)
+	for _, a := range apis {
+		log.Info("Collecting configs of type %s...", a.ID)
+		values, err := client.ListConfigs(a)
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
 
-		log.Info("Deleting %d configs of type %s...", len(values), api.ID)
+		log.Info("Deleting %d configs of type %s...", len(values), a.ID)
 
 		for _, v := range values {
-			log.Debug("Deleting config %s/%s", api.ID, v.Id)
+			log.Debug("Deleting config %s/%s", a.ID, v.Id)
 			// TODO(improvement): this could be improved by filtering for default configs the same way as Download does
-			err := client.DeleteConfigById(api, v.Id)
+			err := client.DeleteConfigById(a, v.Id)
 
 			if err != nil {
 				errors = append(errors, err)
