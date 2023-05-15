@@ -220,3 +220,64 @@ func TestAutomationClientUpsert(t *testing.T) {
 	})
 
 }
+
+func TestAutomationClientDelete(t *testing.T) {
+	t.Run("Delete - OK", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodDelete {
+				assert.True(t, strings.HasSuffix(req.URL.String(), "some-monaco-generated-ID"))
+				rw.WriteHeader(http.StatusOK)
+				return
+			}
+			assert.Fail(t, "unexpected HTTP method call")
+		}))
+		defer server.Close()
+
+		c := automation.NewClient(server.URL, server.Client())
+		err := c.Delete(automation.Workflows, "some-monaco-generated-ID")
+		assert.NoError(t, err)
+	})
+
+	t.Run("Delete - Without ID - Fails", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Fail(t, "unexpected HTTP method call")
+		}))
+		defer server.Close()
+
+		c := automation.NewClient(server.URL, server.Client())
+		err := c.Delete(automation.Workflows, "")
+		assert.ErrorContains(t, err, "id must be non empty")
+	})
+
+	t.Run("Delete - Object Not Found no counted as Error", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodDelete {
+				assert.True(t, strings.HasSuffix(req.URL.String(), "some-monaco-generated-ID"))
+				rw.WriteHeader(http.StatusNotFound)
+				return
+			}
+			assert.Fail(t, "unexpected HTTP method call")
+		}))
+		defer server.Close()
+
+		c := automation.NewClient(server.URL, server.Client())
+		err := c.Delete(automation.Workflows, "some-monaco-generated-ID")
+		assert.NoError(t, err)
+	})
+
+	t.Run("Delete - Server Error - Fails", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodDelete {
+				assert.True(t, strings.HasSuffix(req.URL.String(), "some-monaco-generated-ID"))
+				rw.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			assert.Fail(t, "unexpected HTTP method call")
+		}))
+		defer server.Close()
+
+		c := automation.NewClient(server.URL, server.Client())
+		err := c.Delete(automation.Workflows, "some-monaco-generated-ID")
+		assert.ErrorContains(t, err, "unable to delete")
+	})
+}

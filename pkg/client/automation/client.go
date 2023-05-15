@@ -220,6 +220,26 @@ func (a Client) create(id string, data []byte, resourceType ResourceType) (*Resp
 	return &e, nil
 }
 
+// Delete removes a given automation object by ID
+func (a Client) Delete(resourceType ResourceType, id string) (err error) {
+	if id == "" {
+		return fmt.Errorf("id must be non empty")
+	}
+	a.limiter.ExecuteBlocking(func() {
+		err = a.delete(resourceType, id)
+	})
+	return
+}
+
+func (a Client) delete(resourceType ResourceType, id string) error {
+	err := rest.DeleteConfig(a.client, a.url+a.resources[resourceType].Path, id)
+	if err != nil {
+		return fmt.Errorf("unable to delete object with ID %s: %w", id, err)
+	}
+
+	return nil
+}
+
 func setIDField(id string, data *[]byte) error {
 	var m map[string]interface{}
 	err := json.Unmarshal(*data, &m)
