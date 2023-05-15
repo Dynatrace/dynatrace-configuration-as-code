@@ -82,8 +82,13 @@ func cleanupSettings(t *testing.T, fs afero.Fs, manifestPath string, loadedManif
 		}
 		for _, configs := range cfgsForEnv {
 			for _, cfg := range configs {
-				if typ, ok := cfg.Type.(*config.SettingsType); ok {
-					extID := idutils.GenerateExternalID(typ.SchemaId, cfg.Coordinate.ConfigId)
+				if typ, ok := cfg.Type.(config.SettingsType); ok {
+					extID, err := idutils.GenerateExternalID(cfg.Coordinate)
+					if err != nil {
+						t.Log(err)
+						continue
+					}
+
 					deleteSettingsObjects(t, typ.SchemaId, extID, c)
 				}
 			}

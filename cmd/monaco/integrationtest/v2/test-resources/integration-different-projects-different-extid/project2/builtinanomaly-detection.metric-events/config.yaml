@@ -1,0 +1,11 @@
+configs:
+- id: a5c32c04-6d12-3c32-84aa-21a8113d36cd
+  config:
+    name: anomaly-detection-metrics-project2
+    template: a5c32c04-6d12-3c32-84aa-21a8113d36cd.json
+    skip: false
+  type:
+    settings:
+      schema: builtin:anomaly-detection.metric-events
+      schemaVersion: 1.0.12
+      scope: environment

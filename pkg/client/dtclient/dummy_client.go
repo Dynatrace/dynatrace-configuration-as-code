@@ -248,7 +248,7 @@ func (c *DummyClient) ConfigExistsByName(a api.API, name string) (exists bool, i
 
 func (c *DummyClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, error) {
 
-	id := obj.Id
+	id := obj.Coordinate.ConfigId
 
 	// to ensure decoding of Management Zone Numeric IDs works for dry-runs the dummy client needs to produce a fake but validly formated objectID
 	if obj.SchemaId == "builtin:management-zones" {
@@ -258,7 +258,7 @@ func (c *DummyClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, error
 
 	return DynatraceEntity{
 		Id:   id,
-		Name: obj.Id,
+		Name: obj.Coordinate.ConfigId,
 	}, nil
 }
 

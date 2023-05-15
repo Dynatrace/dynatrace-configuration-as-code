@@ -19,6 +19,7 @@ package delete
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
@@ -82,7 +83,11 @@ func deleteSettingsObject(c dtclient.Client, entries []DeletePointer) []error {
 	errors := make([]error, 0)
 
 	for _, e := range entries {
-		externalID := idutils.GenerateExternalID(e.Type, e.ConfigId)
+		externalID, err := idutils.GenerateExternalID(coordinate.Coordinate{Type: e.Type, ConfigId: e.ConfigId})
+		if err != nil {
+			errors = append(errors, fmt.Errorf("unable to generate external id: %w", err))
+			continue
+		}
 		// get settings objects with matching external ID
 		objects, err := c.ListSettings(e.Type, dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(o dtclient.DownloadSettingsObject) bool { return o.ExternalId == externalID }})
 		if err != nil {
