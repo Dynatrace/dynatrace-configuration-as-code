@@ -240,22 +240,24 @@ func (p *projectBuilder) sortConfigsAccordingToDependencies() error {
 // used in conversion this method rewrites IDs in a project, if an overlapping config ID
 // of the same API type is found
 func (p *projectBuilder) resolveDuplicateIDs() {
-	duplicateCount := map[string]int{}
+	type miniCoordinate struct {
+		api, id string
+	}
 
-	for i, c1 := range p.configs {
+	count := map[miniCoordinate]int{}
 
-		for j := i + 1; j < len(p.configs); j++ {
-			if c1.id == p.configs[j].id && c1.api == p.configs[j].api {
-				duplicateCount[c1.id] += 1
-				newID := fmt.Sprintf("%s-%d", c1.id, duplicateCount[c1.id])
-				log.Warn("Detected duplicate config id %q. Renamed it to %q", c1.id, newID)
-				c1.properties[newID] = c1.properties[c1.id]
-				delete(c1.properties, c1.id)
-				c1.id = newID
+	for _, c := range p.configs {
+		coord := miniCoordinate{api: c.api.ID, id: c.id}
 
-				break
-			}
+		if cnt, f := count[coord]; f {
+			newID := fmt.Sprintf("%s-%d", c.id, cnt)
+			log.Warn(`Detected duplicate config id "%s/%s". Renamed it to "%s/%s"`, c.api.ID, c.id, c.api.ID, newID)
+			c.properties[newID] = c.properties[c.id]
+			delete(c.properties, c.id)
+			c.id = newID
 		}
+
+		count[coord]++
 	}
 }
 
