@@ -384,14 +384,6 @@ func Test_projectBuilder_resolveDuplicateIDs(t *testing.T) {
 			},
 			[]*Config{
 				{
-					id: "config-a-1",
-					properties: map[string]map[string]string{
-						"config-a-1": {
-							"some-prop": "val",
-						},
-					},
-				},
-				{
 					id: "config-a",
 					properties: map[string]map[string]string{
 						"config-a": {
@@ -400,9 +392,9 @@ func Test_projectBuilder_resolveDuplicateIDs(t *testing.T) {
 					},
 				},
 				{
-					id: "config-b-1",
+					id: "config-a-1",
 					properties: map[string]map[string]string{
-						"config-b-1": {
+						"config-a-1": {
 							"some-prop": "val",
 						},
 					},
@@ -411,6 +403,14 @@ func Test_projectBuilder_resolveDuplicateIDs(t *testing.T) {
 					id: "config-b",
 					properties: map[string]map[string]string{
 						"config-b": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id: "config-b-1",
+					properties: map[string]map[string]string{
+						"config-b-1": {
 							"some-prop": "val",
 						},
 					},
@@ -455,6 +455,14 @@ func Test_projectBuilder_resolveDuplicateIDs(t *testing.T) {
 			},
 			[]*Config{
 				{
+					id: "config-a",
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
 					id: "config-a-1",
 					properties: map[string]map[string]string{
 						"config-a-1": {
@@ -466,14 +474,6 @@ func Test_projectBuilder_resolveDuplicateIDs(t *testing.T) {
 					id: "config-a-2",
 					properties: map[string]map[string]string{
 						"config-a-2": {
-							"some-prop": "val",
-						},
-					},
-				},
-				{
-					id: "config-a",
-					properties: map[string]map[string]string{
-						"config-a": {
 							"some-prop": "val",
 						},
 					},
@@ -525,6 +525,120 @@ func Test_projectBuilder_resolveDuplicateIDs(t *testing.T) {
 					api: testManagementZoneApi,
 					properties: map[string]map[string]string{
 						"config-a": {
+							"some-prop": "val",
+						},
+					},
+				},
+			},
+		}, {
+			"Does keep a separate counter per API",
+			[]*Config{
+				{
+					id:  "config-a",
+					api: testDashboardApi,
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id:  "config-a",
+					api: testDashboardApi,
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id:  "config-a",
+					api: testDashboardApi,
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id:  "config-a",
+					api: testManagementZoneApi,
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id:  "config-a",
+					api: testManagementZoneApi,
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id:  "config-a",
+					api: testManagementZoneApi,
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+					},
+				},
+			},
+			[]*Config{
+				{
+					id:  "config-a",
+					api: testDashboardApi,
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id:  "config-a-1",
+					api: testDashboardApi,
+					properties: map[string]map[string]string{
+						"config-a-1": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id:  "config-a-2",
+					api: testDashboardApi,
+					properties: map[string]map[string]string{
+						"config-a-2": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id:  "config-a",
+					api: testManagementZoneApi,
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id:  "config-a-1",
+					api: testManagementZoneApi,
+					properties: map[string]map[string]string{
+						"config-a-1": {
+							"some-prop": "val",
+						},
+					},
+				},
+				{
+					id:  "config-a-2",
+					api: testManagementZoneApi,
+					properties: map[string]map[string]string{
+						"config-a-2": {
 							"some-prop": "val",
 						},
 					},
