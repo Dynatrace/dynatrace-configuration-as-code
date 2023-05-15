@@ -27,9 +27,14 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 )
 
+// DeletePointer contains all data needed to identify an object to be deleted from a Dynatrace environment.
+// DeletePointer is similar but not fully equivalent to config.Coordinate as it may contain an Identifier that is either
+// a Name or a ConfigID - only in case of a ConfigID is it actually equivalent to a Coordinate
 type DeletePointer struct {
-	Project    string
-	Type       string
+	Project string
+	Type    string
+
+	//Identifier will either be the Name of a classic Config API object, or a configID for newer types like Settings
 	Identifier string
 }
 
@@ -95,7 +100,7 @@ func deleteSettingsObject(c dtclient.Client, entries []DeletePointer) []error {
 	for _, e := range entries {
 
 		if e.Project == "" {
-			log.Warn("Generating legacy externalID for deletion of %q - this will fail to identify newer Settings object. Consider defining a 'project' for this delete entry.", e)
+			log.Warn("Generating legacy externalID for deletion of %q - this will fail to identify a newer Settings object. Consider defining a 'project' for this delete entry.", e)
 		}
 		externalID, err := idutils.GenerateExternalID(e.asCoordinate())
 
