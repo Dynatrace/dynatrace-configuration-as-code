@@ -18,7 +18,10 @@ package delete
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
+	automationClient "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
+	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
@@ -46,22 +49,35 @@ func (d DeletePointer) asCoordinate() coordinate.Coordinate {
 	}
 }
 
+type ClientSet struct {
+	DTClient         dtclient.Client
+	AutomationClient *automationClient.Client
+}
+
 // Configs removes all given entriesToDelete from the Dynatrace environment the given client connects to
-func Configs(client dtclient.Client, apis api.APIs, entriesToDelete map[string][]DeletePointer) []error {
+func Configs(clients ClientSet, apis api.APIs, automationResources map[string]config.AutomationResource, entriesToDelete map[string][]DeletePointer) []error {
 	errs := make([]error, 0)
 
-	for targetApi, entries := range entriesToDelete {
-		theApi, found := apis[targetApi]
-
-		// handle settings 2.0 objects
-		if !found {
-			deleteErrs := deleteSettingsObject(client, entries)
+	for entryType, entries := range entriesToDelete {
+		if targetApi, isApi := apis[entryType]; isApi {
+			deleteErrs := deleteClassicConfig(clients.DTClient, targetApi, entries, entryType)
 			errs = append(errs, deleteErrs...)
+		} else if targetAutomation, isAutomation := automationResources[entryType]; isAutomation {
 
-		} else {
-			deleteErrs := deleteClassicConfig(client, theApi, entries, targetApi)
+			if !featureflags.AutomationResources().Enabled() {
+				continue
+			}
+
+			if clients.AutomationClient == nil {
+				log.Warn("Skipped deletion of %d Automation configurations of type %q as API client was unavailable", len(entries), entryType)
+				continue
+			}
+
+			deleteErrs := deleteAutomations(*clients.AutomationClient, targetAutomation, entries)
 			errs = append(errs, deleteErrs...)
-
+		} else { // assume it's a Settings Schema
+			deleteErrs := deleteSettingsObject(clients.DTClient, entries)
+			errs = append(errs, deleteErrs...)
 		}
 	}
 
@@ -127,6 +143,33 @@ func deleteSettingsObject(c dtclient.Client, entries []DeletePointer) []error {
 			if err != nil {
 				errors = append(errors, fmt.Errorf("could not delete settings 2.0 object with object ID %s", obj.ObjectId))
 			}
+		}
+	}
+
+	return errors
+}
+
+func deleteAutomations(c automationClient.Client, automationResource config.AutomationResource, entries []DeletePointer) []error {
+	errors := make([]error, 0)
+
+	for _, e := range entries {
+
+		id := idutils.GenerateUuidFromName(e.asCoordinate().String())
+
+		var err error
+		switch automationResource {
+		case config.Workflow:
+			err = c.Delete(automationClient.Workflows, id)
+		case config.BusinessCalendar:
+			err = c.Delete(automationClient.BusinessCalendars, id)
+		case config.SchedulingRule:
+			err = c.Delete(automationClient.SchedulingRules, id)
+		default:
+			err = fmt.Errorf("unknown rsource type %q", automationResource)
+		}
+
+		if err != nil {
+			errors = append(errors, fmt.Errorf("could not delete Automation object with ID %q: %w", id, err))
 		}
 	}
 
