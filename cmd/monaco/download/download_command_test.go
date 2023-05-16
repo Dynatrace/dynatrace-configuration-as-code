@@ -187,7 +187,13 @@ func TestGetDownloadCommand(t *testing.T) {
 		err = m.download("--environment myEnvironment --api test,test2 --only-settings")
 		assert.Error(t, err)
 
+		err = m.download("--environment myEnvironment --api test,test2 --only-automation")
+		assert.Error(t, err)
+
 		err = m.download("--environment myEnvironment --only-apis --only-settings")
+		assert.Error(t, err)
+
+		err = m.download("--environment myEnvironment --only-apis --only-automation")
 		assert.Error(t, err)
 	})
 
@@ -230,8 +236,15 @@ func TestGetDownloadCommand(t *testing.T) {
 		err = m.download("--environment myEnvironment --settings-schema schema:1,schema:2 --only-settings")
 		assert.Error(t, err)
 
-		err = m.download("--environment myEnvironment --only-apis --only-settings")
+		err = m.download("--environment myEnvironment --settings-schema schema:1,schema:2 --only-automation")
 		assert.Error(t, err)
+
+		err = m.download("--environment myEnvironment --only-apis --only-settings --only-automation")
+		assert.Error(t, err)
+
+		err = m.download("--environment myEnvironment --only-settings --only-automation")
+		assert.Error(t, err)
+
 	})
 }
 
