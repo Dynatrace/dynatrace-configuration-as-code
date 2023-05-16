@@ -61,10 +61,10 @@ func (c *typeDefinition) UnmarshalYAML(unmarshal func(interface{}) error) error 
 		if err := mapstructure.Decode(v, &td); err == nil {
 			*c = td
 			return nil
+		} else {
+			return fmt.Errorf("failed to parse 'type' section: %w", err)
 		}
 	}
-
-	return fmt.Errorf("'type' section is not filed with proper values")
 }
 
 func (c *typeDefinition) isSound(knownApis map[string]struct{}) error {
