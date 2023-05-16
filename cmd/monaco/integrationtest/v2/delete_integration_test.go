@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
@@ -62,6 +63,17 @@ func TestDelete(t *testing.T) {
 			[]string{},
 		},
 		{
+			"Default values - Automation",
+			"manifest.yaml",
+			"configs:\n- id: %s\n  type:\n    automation:\n      resource: workflow\n  config:\n    name: %s\n    template: workflow.json\n",
+			"delete.yaml",
+			`delete:
+- project: "project"
+  type: "workflow"
+  id: "%s"`,
+			[]string{},
+		},
+		{
 			"Specific manifest",
 			"my_special_manifest.yaml",
 			configTemplate,
@@ -97,6 +109,8 @@ func TestDelete(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t1 *testing.T) {
+			t.Setenv(featureflags.AutomationResources().EnvName(), "true")
+
 			configFolder := "test-resources/delete-test-configs/"
 			deployManifestPath := configFolder + "deploy-manifest.yaml"
 
@@ -107,38 +121,38 @@ func TestDelete(t *testing.T) {
 			configContent := fmt.Sprintf(tt.configTemplate, cfgId, cfgId)
 
 			configYamlPath, err := filepath.Abs(filepath.Join(configFolder, "project", "config.yaml"))
-			assert.NilError(t, err)
+			assert.NilError(t1, err)
 			err = afero.WriteFile(fs, configYamlPath, []byte(configContent), 644)
-			assert.NilError(t, err)
+			assert.NilError(t1, err)
 
 			//create delete yaml
 			deleteContent := fmt.Sprintf(tt.deleteContentTemplate, cfgId)
 			deleteYamlPath, err := filepath.Abs(tt.deleteFile)
-			assert.NilError(t, err)
+			assert.NilError(t1, err)
 			err = afero.WriteFile(fs, deleteYamlPath, []byte(deleteContent), 644)
-			assert.NilError(t, err)
+			assert.NilError(t1, err)
 
 			//create manifest file
 			manifestContent, err := afero.ReadFile(fs, deployManifestPath)
-			assert.NilError(t, err)
+			assert.NilError(t1, err)
 			manifestPath, err := filepath.Abs(tt.manifest)
 			err = afero.WriteFile(fs, manifestPath, manifestContent, 644)
-			assert.NilError(t, err)
+			assert.NilError(t1, err)
 
 			// DEPLOY Config
 			cmd := runner.BuildCli(fs)
 			cmd.SetArgs([]string{"deploy", "--verbose", deployManifestPath})
 			err = cmd.Execute()
-			assert.NilError(t, err)
-			integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
+			assert.NilError(t1, err)
+			integrationtest.AssertAllConfigsAvailability(t1, fs, deployManifestPath, []string{}, "", true)
 
 			// DELETE Config
 			cmd = runner.BuildCli(fs)
 			baseCmd := []string{"delete", "--verbose"}
 			cmd.SetArgs(append(baseCmd, tt.cmdFlags...))
 			err = cmd.Execute()
-			assert.NilError(t, err)
-			integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", false)
+			assert.NilError(t1, err)
+			integrationtest.AssertAllConfigsAvailability(t1, fs, deployManifestPath, []string{}, "", false)
 
 		})
 	}

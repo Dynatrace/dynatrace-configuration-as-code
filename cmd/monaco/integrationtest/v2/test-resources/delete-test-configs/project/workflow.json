@@ -1,0 +1,33 @@
+{
+  "title": "{{.name}}",
+  "tasks": {
+    "executeDqlQuery1": {
+      "name": "execute_dql_query_1",
+      "action": "dynatrace.automations:execute-dql-query",
+      "position": {
+        "x": 0,
+        "y": 1
+      },
+      "description": "Executes DQL query",
+      "predecessors": []
+    }
+  },
+  "taskDefaults": {},
+  "usages": [],
+  "lastExecution": null,
+  "description": "",
+  "labels": {},
+  "version": 2,
+  "actor": "be82e8ff-b418-4f8b-a07c-e8f09988af81",
+  "owner": "be82e8ff-b418-4f8b-a07c-e8f09988af81",
+  "isPrivate": false,
+  "triggerType": "Manual",
+  "schemaVersion": 3,
+  "trigger": {},
+  "modificationInfo": {
+    "createdBy": "be82e8ff-b418-4f8b-a07c-e8f09988af81",
+    "createdTime": "2023-05-02T06:45:24.251843Z",
+    "lastModifiedBy": "be82e8ff-b418-4f8b-a07c-e8f09988af81",
+    "lastModifiedTime": "2023-05-02T06:45:30.472300Z"
+  }
+}

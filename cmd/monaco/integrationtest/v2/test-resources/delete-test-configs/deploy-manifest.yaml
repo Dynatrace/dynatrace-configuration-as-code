@@ -7,7 +7,12 @@ environmentGroups:
   - name: environment
     url:
       type: environment
-      value: URL_ENVIRONMENT_1
+      value: PLATFORM_URL_ENVIRONMENT_1
     auth:
       token:
         name: TOKEN_ENVIRONMENT_1
+      oAuth:
+        clientId:
+          name: OAUTH_CLIENT_ID
+        clientSecret:
+          name: OAUTH_CLIENT_SECRET
