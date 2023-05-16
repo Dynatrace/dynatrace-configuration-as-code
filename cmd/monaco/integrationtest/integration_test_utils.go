@@ -19,9 +19,14 @@
 package integrationtest
 
 import (
+	"context"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/dynatrace"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/concurrency"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
@@ -38,6 +43,19 @@ func CreateDynatraceClient(t *testing.T, environment manifest.EnvironmentDefinit
 	assert.NilError(t, err, "failed to create test client")
 
 	return c
+}
+
+func CreateAutomationClient(t *testing.T, env manifest.EnvironmentDefinition) *automation.Client {
+	if env.Auth.OAuth != nil {
+		return automation.NewClient(env.URL.Value, client.NewOAuthClient(context.TODO(), client.OauthCredentials{
+			ClientID:     env.Auth.OAuth.ClientID.Value,
+			ClientSecret: env.Auth.OAuth.ClientSecret.Value,
+			TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
+		}), automation.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
+	} else {
+		t.Log("No OAuth defined for environment - Automation client can't be created.")
+	}
+	return nil
 }
 
 func LoadManifest(t *testing.T, fs afero.Fs, manifestFile string, specificEnvironment string) manifest.Manifest {
