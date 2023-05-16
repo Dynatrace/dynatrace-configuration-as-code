@@ -28,31 +28,85 @@ import (
 )
 
 func TestDownloader_Download(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		switch req.URL.Path {
-		case "/platform/automation/v1/workflows":
-			wfData, _ := os.ReadFile("./testdata/listWorkflows.json")
-			rw.Write(wfData)
-		case "/platform/automation/v1/business-calendars":
-			wfData, _ := os.ReadFile("./testdata/listBusinessCals.json")
-			rw.Write(wfData)
-		case "/platform/automation/v1/scheduling-rules":
-			wfData, _ := os.ReadFile("./testdata/listSchedulingRules.json")
-			rw.Write(wfData)
-		default:
-			t.Fatal("NO")
-		}
+	t.Run("download all resource", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			switch req.URL.Path {
+			case "/platform/automation/v1/workflows":
+				wfData, _ := os.ReadFile("./testdata/listWorkflows.json")
+				rw.Write(wfData)
+			case "/platform/automation/v1/business-calendars":
+				wfData, _ := os.ReadFile("./testdata/listBusinessCals.json")
+				rw.Write(wfData)
+			case "/platform/automation/v1/scheduling-rules":
+				wfData, _ := os.ReadFile("./testdata/listSchedulingRules.json")
+				rw.Write(wfData)
+			default:
+				t.Fatalf("Unexpected API call to %s", req.URL.Path)
+			}
+		}))
+		defer server.Close()
+		httpClient := automation.NewClient(server.URL, server.Client())
+		downloader := NewDownloader(httpClient)
+		result, err := downloader.Download("projectName")
+		assert.Len(t, result, 3)
+		assert.Len(t, result[string(config.Workflow)], 3)
+		assert.Len(t, result[string(config.SchedulingRule)], 6)
+		assert.Len(t, result[string(config.BusinessCalendar)], 2)
+		assert.NoError(t, err)
+	})
 
-	}))
-	defer server.Close()
-	httpClient := automation.NewClient(server.URL, server.Client())
-	downloader := NewDownloader(httpClient)
-	result, err := downloader.Download("projectName")
-	assert.Len(t, result, 3)
-	assert.Len(t, result[string(config.Workflow)], 3)
-	assert.Len(t, result[string(config.SchedulingRule)], 6)
-	assert.Len(t, result[string(config.BusinessCalendar)], 2)
-	assert.NoError(t, err)
+	t.Run("download specific resource", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			switch req.URL.Path {
+			case "/platform/automation/v1/workflows":
+				wfData, _ := os.ReadFile("./testdata/listWorkflows.json")
+				rw.Write(wfData)
+			case "/platform/automation/v1/business-calendars":
+				wfData, _ := os.ReadFile("./testdata/listBusinessCals.json")
+				rw.Write(wfData)
+			case "/platform/automation/v1/scheduling-rules":
+				assert.Fail(t, "unexpect call to server with path "+req.URL.Path)
+			default:
+				assert.Fail(t, "unexpect call to server with path "+req.URL.Path)
+			}
+
+		}))
+		defer server.Close()
+		httpClient := automation.NewClient(server.URL, server.Client())
+		downloader := NewDownloader(httpClient)
+		result, err := downloader.Download("projectName",
+			config.AutomationType{Resource: config.Workflow}, config.AutomationType{Resource: config.BusinessCalendar})
+		assert.Len(t, result, 2)
+		assert.Len(t, result[string(config.Workflow)], 3)
+		assert.Len(t, result[string(config.SchedulingRule)], 0)
+		assert.Len(t, result[string(config.BusinessCalendar)], 2)
+		assert.NoError(t, err)
+	})
+
+	t.Run("download workflow resource with jinja template", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			switch req.URL.Path {
+			case "/platform/automation/v1/workflows":
+				wfData, _ := os.ReadFile("./testdata/listWorkflowsWithJinja.json")
+				rw.Write(wfData)
+			default:
+				assert.Fail(t, "unexpect call to server with path "+req.URL.Path)
+			}
+		}))
+		defer server.Close()
+
+		httpClient := automation.NewClient(server.URL, server.Client())
+
+		downloader := NewDownloader(httpClient)
+		result, err := downloader.Download("projectName", config.AutomationType{Resource: config.Workflow})
+
+		assert.Len(t, result, 1)
+		assert.Len(t, result[string(config.Workflow)], 1)
+		assert.Contains(t, result[string(config.Workflow)][0].Template.Content(), "{{`{{`}}")
+		assert.Contains(t, result[string(config.Workflow)][0].Template.Content(), "{{`}}`}}")
+		assert.NoError(t, err)
+	})
+
 }
 
 func TestDownloader_Download_FailsToDownloadSpecificResource(t *testing.T) {
@@ -78,34 +132,6 @@ func TestDownloader_Download_FailsToDownloadSpecificResource(t *testing.T) {
 	assert.Len(t, result, 2)
 	assert.Len(t, result[string(config.Workflow)], 3)
 	assert.Len(t, result[string(config.SchedulingRule)], 6)
-	assert.NoError(t, err)
-}
-
-func TestDownloader_Download_Specific_ResouceTypes(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		switch req.URL.Path {
-		case "/platform/automation/v1/workflows":
-			wfData, _ := os.ReadFile("./testdata/listWorkflows.json")
-			rw.Write(wfData)
-		case "/platform/automation/v1/business-calendars":
-			wfData, _ := os.ReadFile("./testdata/listBusinessCals.json")
-			rw.Write(wfData)
-		case "/platform/automation/v1/scheduling-rules":
-			assert.Fail(t, "unexpect call to server with path "+req.URL.Path)
-		default:
-			assert.Fail(t, "unexpect call to server with path "+req.URL.Path)
-		}
-
-	}))
-	defer server.Close()
-	httpClient := automation.NewClient(server.URL, server.Client())
-	downloader := NewDownloader(httpClient)
-	result, err := downloader.Download("projectName",
-		config.AutomationType{Resource: config.Workflow}, config.AutomationType{Resource: config.BusinessCalendar})
-	assert.Len(t, result, 2)
-	assert.Len(t, result[string(config.Workflow)], 3)
-	assert.Len(t, result[string(config.SchedulingRule)], 0)
-	assert.Len(t, result[string(config.BusinessCalendar)], 2)
 	assert.NoError(t, err)
 }
 

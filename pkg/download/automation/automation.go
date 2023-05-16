@@ -17,6 +17,7 @@
 package automation
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/internal/json"
@@ -27,6 +28,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/automation/internal"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"golang.org/x/exp/maps"
 )
@@ -78,6 +80,13 @@ func (d *Downloader) Download(projectName string, automationTypes ...config.Auto
 		for _, obj := range response.Results {
 
 			configId := obj.Id
+
+			if escaped, err := escapeJinjaTemplates(obj.Data); err != nil {
+				log.Warn("Failed to escape automation templating expressions for config %v (%s) - template needs manual adaptation: %v", configId, at.Resource, err)
+			} else {
+				obj.Data = escaped
+			}
+
 			t, configName := createTemplateFromRawJSON(obj, string(at.Resource))
 
 			c := config.Config{
@@ -100,6 +109,12 @@ func (d *Downloader) Download(projectName string, automationTypes ...config.Auto
 		configsPerType[string(at.Resource)] = configs
 	}
 	return configsPerType, nil
+}
+
+func escapeJinjaTemplates(src []byte) ([]byte, error) {
+	var prettyJSON bytes.Buffer
+	err := json.Indent(&prettyJSON, src, "", "\t")
+	return internal.EscapeJinjaTemplates(prettyJSON.Bytes()), err
 }
 
 type NoopAutomationDownloader struct {

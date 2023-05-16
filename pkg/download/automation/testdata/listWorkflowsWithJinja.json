@@ -1,0 +1,65 @@
+{
+    "count": 1,
+    "results": [
+        {
+            "id": "c5a71c83-9dbd-458d-b42d-d48b098c60ed",
+            "title": "e2e test workflow",
+            "tasks": {
+                "dql": {
+                    "name": "dql",
+                    "input": {
+                        "query": ""
+                    },
+                    "action": "dynatrace.automations:execute-dql-query",
+                    "position": {
+                        "x": -1,
+                        "y": 1
+                    },
+                    "description": "Executes DQL query",
+                    "predecessors": []
+                },
+                "http": {
+                    "name": "http",
+                    "action": "dynatrace.automations:http-function",
+                    "position": {
+                        "x": 1,
+                        "y": 1
+                    },
+                    "description": "Issue an HTTP request to any API",
+                    "predecessors": []
+                },
+                "jinja": {
+                    "name": "jinja",
+                    "input": {
+                        "script": "// optional import of sdk modules\nimport { metadataClient } from '@dynatrace-sdk/client-metadata';\nimport { executionsClient } from '@dynatrace-sdk/client-automation';\n\nexport default async function ({ execution_id }) {\n  // your code goes here\n  const me = await metadataClient.getUserInfo();\n  console.log('Automated script execution on behalf of', me.userName);\n\n  console.log({{ event() }})\n  // get the current execution\n  const ex = await executionsClient.getExecution({ id: execution_id });\n\n  return { ...me, triggeredBy: ex.trigger };\n}"
+                    },
+                    "action": "dynatrace.automations:run-javascript",
+                    "position": {
+                        "x": 0,
+                        "y": 1
+                    },
+                    "description": "Build a custom task running js Code",
+                    "predecessors": []
+                }
+            },
+            "taskDefaults": {},
+            "usages": [],
+            "lastExecution": null,
+            "description": "",
+            "labels": {},
+            "version": 5,
+            "actor": "ed6a9c8f-06f0-4508-9b8e-c47bbe67c83d",
+            "owner": "ed6a9c8f-06f0-4508-9b8e-c47bbe67c83d",
+            "isPrivate": false,
+            "triggerType": "Manual",
+            "schemaVersion": 3,
+            "trigger": {},
+            "modificationInfo": {
+                "createdBy": "ed6a9c8f-06f0-4508-9b8e-c47bbe67c83d",
+                "createdTime": "2023-05-09T09:46:39.828379Z",
+                "lastModifiedBy": "ed6a9c8f-06f0-4508-9b8e-c47bbe67c83d",
+                "lastModifiedTime": "2023-05-12T07:26:29.148385Z"
+            }
+        }
+    ]
+}
