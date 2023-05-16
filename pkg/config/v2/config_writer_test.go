@@ -17,6 +17,7 @@
 package v2
 
 import (
+	"errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
@@ -1096,6 +1097,53 @@ func TestWriteConfigs(t *testing.T) {
 			}
 
 		})
+	}
+}
+
+func TestOrderedConfigs(t *testing.T) {
+	configs := []Config{
+		{
+			Template:   template.CreateTemplateFromString("project/alerting-profile/a.json", ""),
+			Coordinate: coordinate.Coordinate{Project: "project", Type: "alerting-profile", ConfigId: "b"},
+			Type:       ClassicApiType{Api: "alerting-profile"},
+			Parameters: map[string]parameter.Parameter{NameParameter: &value.ValueParameter{Value: "name"}},
+		},
+		{
+			Template:   template.CreateTemplateFromString("project/alerting-profile/a.json", ""),
+			Coordinate: coordinate.Coordinate{Project: "project", Type: "alerting-profile", ConfigId: "a"},
+			Type:       ClassicApiType{Api: "alerting-profile"},
+			Parameters: map[string]parameter.Parameter{NameParameter: &value.ValueParameter{Value: "name"}},
+		},
+		{
+			Template:   template.CreateTemplateFromString("project/alerting-profile/a.json", ""),
+			Coordinate: coordinate.Coordinate{Project: "project", Type: "alerting-profile", ConfigId: "c"},
+			Type:       ClassicApiType{Api: "alerting-profile"},
+			Parameters: map[string]parameter.Parameter{NameParameter: &value.ValueParameter{Value: "name"}},
+		},
+	}
+
+	fs := testutils.TempFs(t)
+
+	errs := WriteConfigs(&WriterContext{
+		Fs:              fs,
+		OutputFolder:    "test",
+		ProjectFolder:   "project",
+		ParametersSerde: DefaultParameterParsers,
+	}, configs)
+	assert.NilError(t, errors.Join(errs...))
+
+	content, err := afero.ReadFile(fs, "test/project/alerting-profile/config.yaml")
+	assert.NilError(t, err, "reading config file should not produce an error")
+
+	var s topLevelDefinition
+	err = yaml.Unmarshal(content, &s)
+	assert.NilError(t, err, "unmarshalling config file should not produce an error")
+
+	// check if configs are ordered by id
+	for i := 0; i < len(s.Configs)-1; i++ {
+		a := s.Configs[i].Id
+		b := s.Configs[i+1].Id
+		assert.Assert(t, a < b, "not in order: %q should be < than %q", a, b)
 	}
 
 }

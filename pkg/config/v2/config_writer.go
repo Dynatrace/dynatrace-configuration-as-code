@@ -23,6 +23,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
 	"github.com/spf13/afero"
+	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v2"
 	"path/filepath"
 	"reflect"
@@ -171,7 +172,13 @@ func toTopLevelDefinitions(context *WriterContext, configs []Config) (map[apiCoo
 	return result, configTemplates, nil
 }
 
+func byConfigId(a, b topLevelConfigDefinition) bool {
+	return a.Id < b.Id
+}
+
 func writeTopLevelDefinitionToDisk(context *WriterContext, apiCoord apiCoordinate, definition topLevelDefinition) error {
+	// sort configs so that they are stable within a config file
+	slices.SortFunc(definition.Configs, byConfigId)
 	definitionYaml, err := yaml.Marshal(definition)
 
 	if err != nil {
