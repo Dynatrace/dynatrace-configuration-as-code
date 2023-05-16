@@ -21,6 +21,7 @@ package integrationtest
 import (
 	"errors"
 	"fmt"
+	automationClient "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	"testing"
 	"time"
@@ -77,6 +78,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 		env := loadedManifest.Environments[envName]
 
 		c := CreateDynatraceClient(t, env)
+		autC := CreateAutomationClient(t, env)
 
 		entities := make(map[coordinate.Coordinate]parameter.ResolvedEntity)
 		var parameters []topologysort.ParameterWithName
@@ -121,6 +123,12 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 					assertSetting(t, c, typ, env, available, theConfig)
 				case config.ClassicApiType:
 					assertConfig(t, c, apis[typ.Api], env, available, theConfig, configName)
+				case config.AutomationType:
+					if autC == nil {
+						t.Errorf("can not assert existience of Automtation config %q (%s) because no AutomationClient exists - was the test env not configured as Platform?", theConfig.Coordinate, typ.Resource)
+						return
+					}
+					assertAutomation(t, *autC, env, available, typ.Resource, theConfig)
 				default:
 					t.Errorf("Can not assert config of unknown type %q", theConfig.Coordinate.Type)
 				}
@@ -183,6 +191,50 @@ func assertSetting(t *testing.T, c dtclient.SettingsClient, typ config.SettingsT
 		assert.Check(t, exists, "Settings Object should be available, but wasn't. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, config.Coordinate, typ.SchemaId)
 	} else {
 		assert.Check(t, !exists, "Settings Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, config.Coordinate, typ.SchemaId)
+	}
+}
+
+func assertAutomation(t *testing.T, c automationClient.Client, env manifest.EnvironmentDefinition, shouldBeAvailable bool, resource config.AutomationResource, cfg config.Config) {
+	var resourceType automationClient.ResourceType
+	switch resource {
+	case config.Workflow:
+		resourceType = automationClient.Workflows
+	case config.BusinessCalendar:
+		resourceType = automationClient.BusinessCalendars
+	case config.SchedulingRule:
+		resourceType = automationClient.SchedulingRules
+	default:
+		t.Errorf("unkown automation resource type %q - can not assert existence", resource)
+		return
+	}
+
+	var expectedId string
+	if cfg.OriginObjectId != "" {
+		expectedId = cfg.OriginObjectId
+	} else {
+		expectedId = idutils.GenerateUuidFromName(cfg.Coordinate.String())
+	}
+
+	resp, err := c.List(resourceType)
+	assert.NilError(t, err)
+
+	var exists bool
+	for _, r := range resp.Results {
+		if r.Id == expectedId {
+			exists = true
+			break
+		}
+	}
+
+	if cfg.Skip {
+		assert.Check(t, !exists, "Skipped Automation Object should NOT be available but was. environment.Environment: '%s', failed for '%s' (%s)", env.Name, cfg.Coordinate, resource)
+		return
+	}
+
+	if shouldBeAvailable {
+		assert.Check(t, exists, "Automation Object should be available, but wasn't. environment.Environment: '%s', failed for '%s' (%s)", env.Name, cfg.Coordinate, resource)
+	} else {
+		assert.Check(t, !exists, "Automation Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", env.Name, cfg.Coordinate, resource)
 	}
 }
 
