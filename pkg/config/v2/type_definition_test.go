@@ -219,7 +219,7 @@ settings:
 			name:  "wrong data type",
 			given: given{"0x12d4"},
 			expected: expected{
-				errorMessage: "'type' section is not filed with proper values",
+				errorMessage: "failed to parse 'type' section: '' expected a map, got 'int'",
 			},
 		},
 	}
