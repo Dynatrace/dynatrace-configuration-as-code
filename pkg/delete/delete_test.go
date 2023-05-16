@@ -117,12 +117,11 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 }
 
 func TestDeleteSettings(t *testing.T) {
-	//TODO: Update ExternalID values
-	t.SkipNow()
 	t.Run("TestDeleteSettings", func(t *testing.T) {
 		c := dtclient.NewMockClient(gomock.NewController(t))
 		c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).DoAndReturn(func(schemaID string, listOpts dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error) {
-			assert.True(t, listOpts.Filter(dtclient.DownloadSettingsObject{ExternalId: "monaco:YnVpbHRpbjphbGVydGluZy5wcm9maWxlJGlkMQ=="}))
+			expectedExtID := "monaco:cHJvamVjdCRidWlsdGluOmFsZXJ0aW5nLnByb2ZpbGUkaWQx"
+			assert.True(t, listOpts.Filter(dtclient.DownloadSettingsObject{ExternalId: expectedExtID}), "Expected request filtering for externalID %q", expectedExtID)
 			return []dtclient.DownloadSettingsObject{
 				{
 					ExternalId:    "externalID",
