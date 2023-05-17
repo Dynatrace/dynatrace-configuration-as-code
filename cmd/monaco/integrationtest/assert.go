@@ -21,7 +21,7 @@ package integrationtest
 import (
 	"errors"
 	"fmt"
-	automationClient "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	"testing"
 	"time"
@@ -194,15 +194,15 @@ func assertSetting(t *testing.T, c dtclient.SettingsClient, typ config.SettingsT
 	}
 }
 
-func assertAutomation(t *testing.T, c automationClient.Client, env manifest.EnvironmentDefinition, shouldBeAvailable bool, resource config.AutomationResource, cfg config.Config) {
-	var resourceType automationClient.ResourceType
+func assertAutomation(t *testing.T, c automation.Client, env manifest.EnvironmentDefinition, shouldBeAvailable bool, resource config.AutomationResource, cfg config.Config) {
+	var resourceType automation.ResourceType
 	switch resource {
 	case config.Workflow:
-		resourceType = automationClient.Workflows
+		resourceType = automation.Workflows
 	case config.BusinessCalendar:
-		resourceType = automationClient.BusinessCalendars
+		resourceType = automation.BusinessCalendars
 	case config.SchedulingRule:
-		resourceType = automationClient.SchedulingRules
+		resourceType = automation.SchedulingRules
 	default:
 		t.Errorf("unkown automation resource type %q - can not assert existence", resource)
 		return

@@ -21,7 +21,7 @@ import (
 	"fmt"
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	automationClient "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
+	client "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
@@ -31,19 +31,19 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-var automationTypesToResources = map[config.AutomationType]automationClient.ResourceType{
-	config.AutomationType{Resource: config.Workflow}:         automationClient.Workflows,
-	config.AutomationType{Resource: config.BusinessCalendar}: automationClient.BusinessCalendars,
-	config.AutomationType{Resource: config.SchedulingRule}:   automationClient.SchedulingRules,
+var automationTypesToResources = map[config.AutomationType]client.ResourceType{
+	config.AutomationType{Resource: config.Workflow}:         client.Workflows,
+	config.AutomationType{Resource: config.BusinessCalendar}: client.BusinessCalendars,
+	config.AutomationType{Resource: config.SchedulingRule}:   client.SchedulingRules,
 }
 
 // Downloader can be used to download automation resources/configs
 type Downloader struct {
-	client *automationClient.Client
+	client *client.Client
 }
 
 // NewDownloader creates a new [Downloader] for automation resources/configs
-func NewDownloader(client *automationClient.Client) *Downloader {
+func NewDownloader(client *client.Client) *Downloader {
 	return &Downloader{
 		client: client,
 	}
@@ -105,7 +105,7 @@ func (d *Downloader) Download(projectName string, automationTypes ...config.Auto
 type NoopAutomationDownloader struct {
 }
 
-func createTemplateFromRawJSON(obj automationClient.Response, configType string) (t template.Template, extractedName string) {
+func createTemplateFromRawJSON(obj client.Response, configType string) (t template.Template, extractedName string) {
 	configId := obj.Id
 
 	var data map[string]interface{}
