@@ -166,7 +166,7 @@ func (d *Downloader) convertObject(str []string, entitiesType string, projectNam
 
 	templ := template.NewDownloadTemplate(entitiesType, entitiesType, content)
 
-	configId := idutils.GenerateUuidFromName(entitiesType)
+	configId := idutils.GenerateUuidFromString(entitiesType)
 
 	return []config.Config{{
 		Template: templ,

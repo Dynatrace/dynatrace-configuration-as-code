@@ -26,12 +26,12 @@ import (
 // UUID v3 (MD5 hash based) for "dynatrace.com" in the "URL" namespace
 var dynatraceNamespaceUuid = uuidLib.MustParse("a2673303-5d44-3a6e-999e-9a9d83487e64")
 
-// GenerateUuidFromName generates a fixed UUID from a given configuration name.
+// GenerateUuidFromString generates a fixed UUID from a given string - usually a configuration name.
 // This is used when dealing with select Dynatrace APIs that do not/or no longer support unique name properties.
 // As a convention between monaco and such APIs, both monaco and Dynatrace will generate the same name-based UUID
 // using UUID v3 (MD5 hash based) with a "dynatrace.com" URL namespace UUID.
-func GenerateUuidFromName(name string) string {
-	return uuidLib.NewMD5(dynatraceNamespaceUuid, []byte(name)).String()
+func GenerateUuidFromString(data string) string {
+	return uuidLib.NewMD5(dynatraceNamespaceUuid, []byte(data)).String()
 }
 
 // IsUuid tests whether a potential configId is already a UUID
@@ -47,12 +47,12 @@ func IsUuid(configId string) bool {
 func GenerateUuidFromConfigId(projectUniqueId string, configId string) string {
 	projectUniqueConfigId := filepath.Join(projectUniqueId, configId)
 
-	return GenerateUuidFromName(projectUniqueConfigId)
+	return GenerateUuidFromString(projectUniqueConfigId)
 }
 
 // GenerateUUIDFromCoordinate generates a UUID out of a configs coordinate.
-// This uses GenerateUuidFromName to generate a stable (same coordinate == same UUID) UUID v3 (MD5 hash based)
+// This uses GenerateUuidFromString to generate a stable (same coordinate == same UUID) UUID v3 (MD5 hash based)
 // with a "dynatrace.com" URL namespace UUID.
 func GenerateUUIDFromCoordinate(c coordinate.Coordinate) string {
-	return GenerateUuidFromName(c.String())
+	return GenerateUuidFromString(c.String())
 }

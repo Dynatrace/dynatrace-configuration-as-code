@@ -63,11 +63,11 @@ func TestGenerateUuidFromName(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run("GenerateUuidFromName("+tt.givenName+")", func(t *testing.T) {
-			gotUuid := GenerateUuidFromName(tt.givenName)
+		t.Run("GenerateUuidFromString("+tt.givenName+")", func(t *testing.T) {
+			gotUuid := GenerateUuidFromString(tt.givenName)
 
 			if gotUuid != tt.expectUuid {
-				t.Errorf("GenerateUuidFromName() gotUuid = %v, want %v", gotUuid, tt.expectUuid)
+				t.Errorf("GenerateUuidFromString() gotUuid = %v, want %v", gotUuid, tt.expectUuid)
 			}
 		})
 	}
