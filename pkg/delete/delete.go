@@ -19,7 +19,7 @@ package delete
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
-	automationClient "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
@@ -51,7 +51,7 @@ func (d DeletePointer) asCoordinate() coordinate.Coordinate {
 
 type ClientSet struct {
 	DTClient         dtclient.Client
-	AutomationClient *automationClient.Client
+	AutomationClient *automation.Client
 }
 
 // Configs removes all given entriesToDelete from the Dynatrace environment the given client connects to
@@ -149,7 +149,7 @@ func deleteSettingsObject(c dtclient.Client, entries []DeletePointer) []error {
 	return errors
 }
 
-func deleteAutomations(c automationClient.Client, automationResource config.AutomationResource, entries []DeletePointer) []error {
+func deleteAutomations(c automation.Client, automationResource config.AutomationResource, entries []DeletePointer) []error {
 	errors := make([]error, 0)
 
 	for _, e := range entries {
@@ -159,11 +159,11 @@ func deleteAutomations(c automationClient.Client, automationResource config.Auto
 		var err error
 		switch automationResource {
 		case config.Workflow:
-			err = c.Delete(automationClient.Workflows, id)
+			err = c.Delete(automation.Workflows, id)
 		case config.BusinessCalendar:
-			err = c.Delete(automationClient.BusinessCalendars, id)
+			err = c.Delete(automation.BusinessCalendars, id)
 		case config.SchedulingRule:
-			err = c.Delete(automationClient.SchedulingRules, id)
+			err = c.Delete(automation.SchedulingRules, id)
 		default:
 			err = fmt.Errorf("unknown rsource type %q", automationResource)
 		}
