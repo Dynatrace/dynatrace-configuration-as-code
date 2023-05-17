@@ -37,7 +37,7 @@ import (
 func TestDownloadAll(t *testing.T) {
 	testType := "SOMETHING"
 	testType2 := "SOMETHINGELSE"
-	uuid := idutils.GenerateUuidFromString(testType)
+	uuid := idutils.GenerateUUIDFromString(testType)
 
 	type mockValues struct {
 		EntitiesTypeList      func() ([]dtclient.EntitiesType, error)
@@ -125,7 +125,7 @@ func TestDownloadAll(t *testing.T) {
 
 func TestDownload(t *testing.T) {
 	testType := "SOMETHING"
-	uuid := idutils.GenerateUuidFromString(testType)
+	uuid := idutils.GenerateUUIDFromString(testType)
 
 	type mockValues struct {
 		EntitiesTypeList      func() ([]dtclient.EntitiesType, error)

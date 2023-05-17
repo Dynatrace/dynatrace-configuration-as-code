@@ -77,9 +77,9 @@ func upsertNonUniqueNameConfig(client dtclient.ConfigClient, apiToDeploy api.API
 
 	entityUuid := configID
 
-	isUUIDOrMeID := idutils.IsUuid(entityUuid) || idutils.IsMeId(entityUuid)
+	isUUIDOrMeID := idutils.IsUUID(entityUuid) || idutils.IsMeId(entityUuid)
 	if !isUUIDOrMeID {
-		entityUuid = idutils.GenerateUuidFromConfigId(projectId, configID)
+		entityUuid = idutils.GenerateUUIDFromConfigId(projectId, configID)
 	}
 
 	return client.UpsertConfigByNonUniqueNameAndId(apiToDeploy, entityUuid, configName, []byte(renderedConfig))

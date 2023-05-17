@@ -36,7 +36,7 @@ import (
 )
 
 func TestDownloadAll(t *testing.T) {
-	uuid := idutils.GenerateUuidFromString("oid1")
+	uuid := idutils.GenerateUUIDFromString("oid1")
 
 	type mockValues struct {
 		Schemas           func() (dtclient.SchemaList, error)
@@ -179,7 +179,7 @@ func TestDownloadAll(t *testing.T) {
 }
 
 func TestDownload(t *testing.T) {
-	uuid := idutils.GenerateUuidFromString("oid1")
+	uuid := idutils.GenerateUUIDFromString("oid1")
 
 	type mockValues struct {
 		Schemas           func() (dtclient.SchemaList, error)

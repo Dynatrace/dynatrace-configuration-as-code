@@ -643,7 +643,7 @@ func TestDeployConfigsTargetingClassicConfigNonUnique(t *testing.T) {
 	theCfgId := "monaco_cfg_id"
 	theProject := "project"
 
-	generatedUuid := idutils.GenerateUuidFromConfigId(theProject, theCfgId)
+	generatedUuid := idutils.GenerateUUIDFromConfigId(theProject, theCfgId)
 
 	tests := []struct {
 		name                   string
