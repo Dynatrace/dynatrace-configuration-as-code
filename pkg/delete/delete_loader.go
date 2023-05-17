@@ -176,7 +176,7 @@ func parseAPIEntry(parsed deleteEntry) (DeletePointer, error) {
 		return DeletePointer{}, fmt.Errorf("delete entry of API type requiress config 'name' to be defined")
 	}
 	if parsed.ConfigId != "" {
-		log.Warn("delete entry %q of API type defines config 'id' - only 'name' will be used.")
+		log.Warn("Delete entry %q of API type defines config 'id' - only 'name' will be used.")
 	}
 	return DeletePointer{
 		Type:       parsed.Type,
@@ -192,7 +192,7 @@ func parseCoordinateEntry(parsed deleteEntry) (DeletePointer, error) {
 		return DeletePointer{}, fmt.Errorf("delete entry requires 'project' to be defined")
 	}
 	if parsed.ConfigName != "" {
-		log.Warn("delete entry defines config 'name' - only 'id' will be used.")
+		log.Warn("Delete entry defines config 'name' - only 'id' will be used.")
 	}
 	return DeletePointer{
 		Project:    parsed.Project,
