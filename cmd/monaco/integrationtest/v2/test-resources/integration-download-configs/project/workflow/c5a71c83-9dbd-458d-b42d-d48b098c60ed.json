@@ -1,0 +1,52 @@
+{
+  "actor": "ed6a9c8f-06f0-4508-9b8e-c47bbe67c83d",
+  "description": "",
+  "isPrivate": false,
+  "labels": {},
+  "owner": "ed6a9c8f-06f0-4508-9b8e-c47bbe67c83d",
+  "schemaVersion": 3,
+  "taskDefaults": {},
+  "tasks": {
+    "dql": {
+      "action": "dynatrace.automations:execute-dql-query",
+      "description": "Executes DQL query",
+      "input": {
+        "query": ""
+      },
+      "name": "dql",
+      "position": {
+        "x": -1,
+        "y": 1
+      },
+      "predecessors": []
+    },
+    "http": {
+      "action": "dynatrace.automations:http-function",
+      "description": "Issue an HTTP request to any API",
+      "name": "http",
+      "position": {
+        "x": 1,
+        "y": 1
+      },
+      "predecessors": []
+    },
+    "jinja": {
+      "action": "dynatrace.automations:run-javascript",
+      "description": "Build a custom task running js Code",
+      "input": {
+        "script": "// optional import of sdk modules\nimport { metadataClient } from '@dynatrace-sdk/client-metadata';\nimport { executionsClient } from '@dynatrace-sdk/client-automation';\n\nexport default async function ({ execution_id }) {\n  // your code goes here\n  const me = await metadataClient.getUserInfo();\n  console.log('Automated script execution on behalf of', me.userName);\n\n  console.log({{`{{`}} event() {{`}}`}})\n  // get the current execution\n  const ex = await executionsClient.getExecution({ id: execution_id });\n\n  return { ...me, triggeredBy: ex.trigger };\n}"
+      },
+      "name": "jinja",
+      "position": {
+        "x": 0,
+        "y": 1
+      },
+      "predecessors": []
+    }
+  },
+  "title": "{{.name}}",
+  "trigger": {},
+  "triggerType": "Manual",
+  "usages": [],
+  "version": 5
+}

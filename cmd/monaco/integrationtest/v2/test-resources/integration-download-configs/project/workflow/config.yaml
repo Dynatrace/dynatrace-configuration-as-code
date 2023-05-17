@@ -1,13 +1,4 @@
 configs:
-- id: workflow-1
-  config:
-    name: workflow-1
-    template: c18791d7-a7c9-4cd6-8857-a6cb8f2c4424.json
-    skip: false
-    originObjectId: c18791d7-a7c9-4cd6-8857-a6cb8f2c4424
-  type:
-    automation:
-      resource: workflow
 - id: c5a71c83-9dbd-458d-b42d-d48b098c60ed
   config:
     name: e2e test workflow
@@ -17,4 +8,3 @@ configs:
   type:
     automation:
       resource: workflow
-
