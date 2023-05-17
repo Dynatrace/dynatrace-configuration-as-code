@@ -24,35 +24,35 @@ import (
 )
 
 // UUID v3 (MD5 hash based) for "dynatrace.com" in the "URL" namespace
-var dynatraceNamespaceUuid = uuidLib.MustParse("a2673303-5d44-3a6e-999e-9a9d83487e64")
+var dynatraceNamespaceUUID = uuidLib.MustParse("a2673303-5d44-3a6e-999e-9a9d83487e64")
 
-// GenerateUuidFromString generates a fixed UUID from a given string - usually a configuration name.
+// GenerateUUIDFromString generates a fixed UUID from a given string - usually a configuration name.
 // This is used when dealing with select Dynatrace APIs that do not/or no longer support unique name properties.
 // As a convention between monaco and such APIs, both monaco and Dynatrace will generate the same name-based UUID
 // using UUID v3 (MD5 hash based) with a "dynatrace.com" URL namespace UUID.
-func GenerateUuidFromString(data string) string {
-	return uuidLib.NewMD5(dynatraceNamespaceUuid, []byte(data)).String()
+func GenerateUUIDFromString(data string) string {
+	return uuidLib.NewMD5(dynatraceNamespaceUUID, []byte(data)).String()
 }
 
-// IsUuid tests whether a potential configId is already a UUID
-func IsUuid(configId string) bool {
+// IsUUID tests whether a potential configId is already a UUID
+func IsUUID(configId string) bool {
 	if _, err := uuidLib.Parse(configId); err != nil {
 		return false
 	}
 	return true
 }
 
-// GenerateUuidFromConfigId takes the unique project identifier within an environment, a config id and
+// GenerateUUIDFromConfigId takes the unique project identifier within an environment, a config id and
 // generates a valid UUID based on provided information
-func GenerateUuidFromConfigId(projectUniqueId string, configId string) string {
+func GenerateUUIDFromConfigId(projectUniqueId string, configId string) string {
 	projectUniqueConfigId := filepath.Join(projectUniqueId, configId)
 
-	return GenerateUuidFromString(projectUniqueConfigId)
+	return GenerateUUIDFromString(projectUniqueConfigId)
 }
 
 // GenerateUUIDFromCoordinate generates a UUID out of a configs coordinate.
-// This uses GenerateUuidFromString to generate a stable (same coordinate == same UUID) UUID v3 (MD5 hash based)
+// This uses GenerateUUIDFromString to generate a stable (same coordinate == same UUID) UUID v3 (MD5 hash based)
 // with a "dynatrace.com" URL namespace UUID.
 func GenerateUUIDFromCoordinate(c coordinate.Coordinate) string {
-	return GenerateUuidFromString(c.String())
+	return GenerateUUIDFromString(c.String())
 }

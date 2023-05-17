@@ -24,14 +24,14 @@ import (
 	"testing"
 )
 
-func TestDynatraceNamespaceUuidDoesNotPanic(t *testing.T) {
-	assert.NotNil(t, dynatraceNamespaceUuid)
+func TestDynatraceNamespaceUUIDDoesNotPanic(t *testing.T) {
+	assert.NotNil(t, dynatraceNamespaceUUID)
 }
 
-func TestGenerateUuidFromName(t *testing.T) {
+func TestGenerateUUIDFromName(t *testing.T) {
 	tests := []struct {
 		givenName  string
-		expectUuid string
+		expectUUID string
 	}{
 		{
 			"an application detection rule",
@@ -63,34 +63,34 @@ func TestGenerateUuidFromName(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run("GenerateUuidFromString("+tt.givenName+")", func(t *testing.T) {
-			gotUuid := GenerateUuidFromString(tt.givenName)
+		t.Run("GenerateUUIDFromString("+tt.givenName+")", func(t *testing.T) {
+			gotUUID := GenerateUUIDFromString(tt.givenName)
 
-			if gotUuid != tt.expectUuid {
-				t.Errorf("GenerateUuidFromString() gotUuid = %v, want %v", gotUuid, tt.expectUuid)
+			if gotUUID != tt.expectUUID {
+				t.Errorf("GenerateUUIDFromString() gotUUID = %v, want %v", gotUUID, tt.expectUUID)
 			}
 		})
 	}
 }
 
-func TestIsUuid(t *testing.T) {
-	validUuid := "41598cc6-677f-39a0-a8e8-dece5e4e27fc"
-	inValidUuid := "41598cc6-677f-39a0-a8e8-dece5e4e27fg"
+func TestIsUUID(t *testing.T) {
+	validUUID := "41598cc6-677f-39a0-a8e8-dece5e4e27fc"
+	inValidUUID := "41598cc6-677f-39a0-a8e8-dece5e4e27fg"
 
-	isUuid := IsUuid(validUuid)
-	assert.Equal(t, true, isUuid)
+	isUUID := IsUUID(validUUID)
+	assert.Equal(t, true, isUUID)
 
-	isUuid = IsUuid(inValidUuid)
-	assert.Equal(t, false, isUuid)
+	isUUID = IsUUID(inValidUUID)
+	assert.Equal(t, false, isUUID)
 }
 
-func TestGenerateUuidFromConfigId(t *testing.T) {
+func TestGenerateUUIDFromConfigId(t *testing.T) {
 	projectUniqueId := "environment-id/project-id"
 	configId := "my-config-id"
-	expectedUuidResult := "49ac3d5e-ca4a-35be-b94e-26913319bac4"
+	expectedUUIDResult := "49ac3d5e-ca4a-35be-b94e-26913319bac4"
 
-	uuidToBeTested := GenerateUuidFromConfigId(projectUniqueId, configId)
-	assert.Equal(t, expectedUuidResult, uuidToBeTested)
+	UUIDToBeTested := GenerateUUIDFromConfigId(projectUniqueId, configId)
+	assert.Equal(t, expectedUUIDResult, UUIDToBeTested)
 }
 
 func TestGenerateUUIDFromCoordinate(t *testing.T) {
@@ -99,8 +99,8 @@ func TestGenerateUUIDFromCoordinate(t *testing.T) {
 		Type:     "workflow",
 		ConfigId: "id1",
 	}
-	expectedUuidResult := "e8fd06bf-08ab-3a2f-9d3f-1fd66ea870a2"
+	expectedUUIDResult := "e8fd06bf-08ab-3a2f-9d3f-1fd66ea870a2"
 
-	uuidToBeTested := GenerateUUIDFromCoordinate(coord)
-	assert.Equal(t, expectedUuidResult, uuidToBeTested)
+	UUIDToBeTested := GenerateUUIDFromCoordinate(coord)
+	assert.Equal(t, expectedUUIDResult, UUIDToBeTested)
 }

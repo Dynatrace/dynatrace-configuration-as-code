@@ -84,7 +84,7 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 	assert.Assert(t, len(getConfigsOfName(t, c, a, name)) == 1, "Expected single configs of name %q but found %d", name, len(existing))
 
 	// 1. if only one config of non-unique-name exist it MUST be updated
-	expectedUUID := uuid2.GenerateUuidFromConfigId("test_project", name)
+	expectedUUID := uuid2.GenerateUUIDFromConfigId("test_project", name)
 	e, err := c.UpsertConfigByNonUniqueNameAndId(a, expectedUUID, name, payload)
 	assert.NilError(t, err)
 	assert.Equal(t, e.Id, randomUUID, "expected existing single config %d to be updated, but reply UUID was", randomUUID, e.Id)
