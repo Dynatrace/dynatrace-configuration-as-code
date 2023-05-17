@@ -47,7 +47,7 @@ func deployAutomation(client automationClient, properties parameter.Properties, 
 	if c.OriginObjectId != "" {
 		id = c.OriginObjectId
 	} else {
-		id = idutils.GenerateUuidFromName(c.Coordinate.String())
+		id = idutils.GenerateUUIDFromCoordinate(c.Coordinate)
 	}
 
 	var err error

@@ -212,7 +212,7 @@ func assertAutomation(t *testing.T, c automation.Client, env manifest.Environmen
 	if cfg.OriginObjectId != "" {
 		expectedId = cfg.OriginObjectId
 	} else {
-		expectedId = idutils.GenerateUuidFromName(cfg.Coordinate.String())
+		expectedId = idutils.GenerateUUIDFromCoordinate(cfg.Coordinate)
 	}
 
 	resp, err := c.List(resourceType)
