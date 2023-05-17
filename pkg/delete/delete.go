@@ -69,7 +69,7 @@ func Configs(clients ClientSet, apis api.APIs, automationResources map[string]co
 			}
 
 			if clients.AutomationClient == nil {
-				log.Warn("Skipped deletion of %d Automation configurations of type %q as API client was unavailable", len(entries), entryType)
+				log.Warn("Skipped deletion of %d Automation configurations of type %q as API client was unavailable.", len(entries), entryType)
 				continue
 			}
 
@@ -98,11 +98,11 @@ func deleteClassicConfig(client dtclient.Client, theApi api.API, entries []Delet
 	log.Info("Deleting configs of type %s...", theApi.ID)
 
 	if len(values) == 0 {
-		log.Debug("No values found to delete (%s)", targetApi)
+		log.Debug("No values found to delete (%s).", targetApi)
 	}
 
 	for _, v := range values {
-		log.Debug("Deleting %v (%v)", v, targetApi)
+		log.Debug("Deleting %v (%v).", v, targetApi)
 		if err := client.DeleteConfigById(theApi, v.Id); err != nil {
 			errors = append(errors, err)
 		}
@@ -138,7 +138,7 @@ func deleteSettingsObject(c dtclient.Client, entries []DeletePointer) []error {
 		}
 
 		for _, obj := range objects {
-			log.Debug("Deleting settings object %s/%s with objectId %s", e.Type, e.Identifier, obj.ObjectId)
+			log.Debug("Deleting settings object %s/%s with objectId %s.", e.Type, e.Identifier, obj.ObjectId)
 			err := c.DeleteSettings(obj.ObjectId)
 			if err != nil {
 				errors = append(errors, fmt.Errorf("could not delete settings 2.0 object with object ID %s", obj.ObjectId))
@@ -240,7 +240,7 @@ func AllConfigs(client dtclient.ConfigClient, apis api.APIs) (errors []error) {
 		log.Info("Deleting %d configs of type %s...", len(values), a.ID)
 
 		for _, v := range values {
-			log.Debug("Deleting config %s/%s", a.ID, v.Id)
+			log.Debug("Deleting config %s/%s...", a.ID, v.Id)
 			// TODO(improvement): this could be improved by filtering for default configs the same way as Download does
 			err := client.DeleteConfigById(a, v.Id)
 
@@ -267,7 +267,7 @@ func AllSettingsObjects(c dtclient.SettingsClient) []error {
 		schemaIds[i] = schemas[i].SchemaId
 	}
 
-	log.Debug("Deleting settings of schemas %v", schemaIds)
+	log.Debug("Deleting settings of schemas %v...", schemaIds)
 
 	for _, s := range schemaIds {
 		log.Info("Collecting configs of type %s...", s)
@@ -279,7 +279,7 @@ func AllSettingsObjects(c dtclient.SettingsClient) []error {
 
 		log.Info("Deleting %d configs of type %s...", len(settings), s)
 		for _, setting := range settings {
-			log.Debug("Deleting settings object with objectId=%s", setting.ObjectId)
+			log.Debug("Deleting settings object with objectId %q...", setting.ObjectId)
 			err := c.DeleteSettings(setting.ObjectId)
 			if err != nil {
 				errs = append(errs, err)

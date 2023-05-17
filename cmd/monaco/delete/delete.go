@@ -106,7 +106,7 @@ func deleteConfigForEnvironment(env manifest.EnvironmentDefinition, apis api.API
 		log.Warn("No OAuth defined for environment - Dynatrace Platform configurations like Automations can not be deleted.")
 	}
 
-	log.Info("Deleting configs for environment `%s`", env.Name)
+	log.Info("Deleting configs for environment `%s`...", env.Name)
 
 	return delete.Configs(
 		delete.ClientSet{
