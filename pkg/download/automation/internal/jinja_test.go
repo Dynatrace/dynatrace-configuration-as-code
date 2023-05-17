@@ -22,17 +22,55 @@ import (
 )
 
 func TestEscapeJinjaTemplates(t *testing.T) {
-	assert := assert.New(t)
+	tc := []struct {
+		expected, in string
+	}{
+		{
+			in:       `Hello, {{planet}}!`,
+			expected: "Hello, {{`{{`}}planet{{`}}`}}!",
+		},
+		{
+			in:       `Hello , {{ calendar("abcde") }}`,
+			expected: "Hello , {{`{{`}} calendar(\"abcde\") {{`}}`}}",
+		},
+		{
+			in:       `no jinja`,
+			expected: "no jinja",
+		},
+		{
+			in:       `{{`,
+			expected: "{{`{{`}}",
+		},
+		{
+			in:       `{`,
+			expected: "{",
+		},
+		{
+			in:       `\{`,
+			expected: "\\{",
+		},
+		{
+			in:       `}}`,
+			expected: "{{`}}`}}",
+		},
+		{
+			in:       `}`,
+			expected: "}"},
+		{
+			in:       `\}`,
+			expected: "\\}",
+		},
+		{
+			in:       `{{ }}`,
+			expected: "{{`{{`}} {{`}}`}}",
+		},
+	}
 
-	assert.Equal([]byte("Hello, {{`{{`}}planet{{`}}`}}!"), EscapeJinjaTemplates([]byte(`Hello, {{planet}}!`)))
-	assert.Equal([]byte("Hello , {{`{{`}} calendar(\"abcde\") {{`}}`}}"), EscapeJinjaTemplates([]byte(`Hello , {{ calendar("abcde") }}`)))
-	assert.Equal([]byte("no jinja"), EscapeJinjaTemplates([]byte(`no jinja`)))
-	assert.Equal([]byte("{{`{{`}}"), EscapeJinjaTemplates([]byte(`{{`)))
-	assert.Equal([]byte("{"), EscapeJinjaTemplates([]byte(`{`)))
-	assert.Equal([]byte("\\{"), EscapeJinjaTemplates([]byte(`\{`)))
-	assert.Equal([]byte("{{`}}`}}"), EscapeJinjaTemplates([]byte(`}}`)))
-	assert.Equal([]byte("}"), EscapeJinjaTemplates([]byte(`}`)))
-	assert.Equal([]byte("\\}"), EscapeJinjaTemplates([]byte(`\}`)))
-	assert.Equal([]byte(nil), EscapeJinjaTemplates(nil))
-	assert.Equal([]byte("{{`{{`}} {{`}}`}}"), EscapeJinjaTemplates([]byte(`{{ }}`)))
+	for _, tt := range tc {
+		t.Run(tt.in, func(t *testing.T) {
+			out := EscapeJinjaTemplates([]byte(tt.in))
+
+			assert.Equal(t, tt.expected, string(out))
+		})
+	}
 }
