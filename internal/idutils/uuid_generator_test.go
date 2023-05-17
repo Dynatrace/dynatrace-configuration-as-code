@@ -19,6 +19,7 @@
 package idutils
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -89,5 +90,17 @@ func TestGenerateUuidFromConfigId(t *testing.T) {
 	expectedUuidResult := "49ac3d5e-ca4a-35be-b94e-26913319bac4"
 
 	uuidToBeTested := GenerateUuidFromConfigId(projectUniqueId, configId)
+	assert.Equal(t, expectedUuidResult, uuidToBeTested)
+}
+
+func TestGenerateUUIDFromCoordinate(t *testing.T) {
+	coord := coordinate.Coordinate{
+		Project:  "project",
+		Type:     "workflow",
+		ConfigId: "id1",
+	}
+	expectedUuidResult := "e8fd06bf-08ab-3a2f-9d3f-1fd66ea870a2"
+
+	uuidToBeTested := GenerateUUIDFromCoordinate(coord)
 	assert.Equal(t, expectedUuidResult, uuidToBeTested)
 }

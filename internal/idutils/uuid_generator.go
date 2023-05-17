@@ -17,6 +17,7 @@
 package idutils
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"path/filepath"
 
 	uuidLib "github.com/google/uuid"
@@ -47,4 +48,11 @@ func GenerateUuidFromConfigId(projectUniqueId string, configId string) string {
 	projectUniqueConfigId := filepath.Join(projectUniqueId, configId)
 
 	return GenerateUuidFromName(projectUniqueConfigId)
+}
+
+// GenerateUUIDFromCoordinate generates a UUID out of a configs coordinate.
+// This uses GenerateUuidFromName to generate a stable (same coordinate == same UUID) UUID v3 (MD5 hash based)
+// with a "dynatrace.com" URL namespace UUID.
+func GenerateUUIDFromCoordinate(c coordinate.Coordinate) string {
+	return GenerateUuidFromName(c.String())
 }

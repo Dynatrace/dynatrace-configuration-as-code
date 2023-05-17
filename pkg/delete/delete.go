@@ -154,7 +154,7 @@ func deleteAutomations(c automation.Client, automationResource config.Automation
 
 	for _, e := range entries {
 
-		id := idutils.GenerateUuidFromName(e.asCoordinate().String())
+		id := idutils.GenerateUUIDFromCoordinate(e.asCoordinate())
 
 		var err error
 		switch automationResource {
