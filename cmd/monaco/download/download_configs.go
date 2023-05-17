@@ -37,6 +37,7 @@ type downloadCmdOptions struct {
 	specificSchemas         []string
 	onlyAPIs                bool
 	onlySettings            bool
+	onlyAutomation          bool
 }
 
 type auth struct {
@@ -119,6 +120,7 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions d
 		specificSchemas: cmdOptions.specificSchemas,
 		onlyAPIs:        cmdOptions.onlyAPIs,
 		onlySettings:    cmdOptions.onlySettings,
+		onlyAutomation:  cmdOptions.onlyAutomation,
 	}
 
 	downloaders, err := makeDownloaders(options)
@@ -148,6 +150,7 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions downloadCmdOptio
 		specificSchemas: cmdOptions.specificSchemas,
 		onlyAPIs:        cmdOptions.onlyAPIs,
 		onlySettings:    cmdOptions.onlySettings,
+		onlyAutomation:  cmdOptions.onlyAutomation,
 	}
 
 	downloaders, err := makeDownloaders(options)
@@ -164,6 +167,7 @@ type downloadConfigsOptions struct {
 	specificSchemas []string
 	onlyAPIs        bool
 	onlySettings    bool
+	onlyAutomation  bool
 }
 
 func doDownloadConfigs(fs afero.Fs, downloaders downloaders, opts downloadConfigsOptions) error {
@@ -205,7 +209,7 @@ func downloadConfigs(downloaders downloaders, opts downloadConfigsOptions) (proj
 		copyConfigs(configs, settingCfgs)
 	}
 
-	if shouldDownloadAutomationResources() {
+	if shouldDownloadAutomationResources(opts) {
 		automationCfgs, err := downloaders.Automation().Download(opts.projectName)
 		if err != nil {
 			return nil, err
@@ -240,14 +244,16 @@ func copyConfigs(dest, src project.ConfigsPerType) {
 
 // shouldDownloadClassicConfigs returns true unless onlySettings or specificSchemas but no specificAPIs are defined
 func shouldDownloadClassicConfigs(opts downloadConfigsOptions) bool {
-	return !opts.onlySettings && (len(opts.specificSchemas) == 0 || len(opts.specificAPIs) > 0)
+	return !opts.onlyAutomation && !opts.onlySettings && (len(opts.specificSchemas) == 0 || len(opts.specificAPIs) > 0)
 }
 
 // shouldDownloadSettings returns true unless onlyAPIs or specificAPIs but no specificSchemas are defined
 func shouldDownloadSettings(opts downloadConfigsOptions) bool {
-	return !opts.onlyAPIs && (len(opts.specificAPIs) == 0 || len(opts.specificSchemas) > 0)
+	return !opts.onlyAutomation && !opts.onlyAPIs && (len(opts.specificAPIs) == 0 || len(opts.specificSchemas) > 0)
 }
 
-func shouldDownloadAutomationResources() bool {
-	return featureflags.AutomationResources().Enabled()
+func shouldDownloadAutomationResources(opts downloadConfigsOptions) bool {
+	return !opts.onlySettings && len(opts.specificAPIs) == 0 &&
+		!opts.onlyAPIs && len(opts.specificSchemas) == 0 &&
+		featureflags.AutomationResources().Enabled()
 }
