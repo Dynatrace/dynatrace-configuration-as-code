@@ -78,12 +78,19 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	cmd.Flags().StringSliceVarP(&f.specificSchemas, "settings-schema", "s", nil, "One or more settings 2.0 schemas to download (flag can be repeated or value defined as comma separated list)")
 	cmd.Flags().BoolVar(&f.onlyAPIs, "only-apis", false, "Download only classic config objects")
 	cmd.Flags().BoolVar(&f.onlySettings, "only-settings", false, "Download only settings API objects")
-	cmd.Flags().BoolVar(&f.onlyAutomation, "only-automation", false, "Download only automation API objects")
+	if featureflags.AutomationResources().Enabled() {
+		cmd.Flags().BoolVar(&f.onlyAutomation, "only-automation", false, "Download only automation API objects")
 
-	// combinations
-	cmd.MarkFlagsMutuallyExclusive("settings-schema", "only-apis", "only-settings", "only-automation")
-	cmd.MarkFlagsMutuallyExclusive("api", "only-apis", "only-settings", "only-automation")
-	cmd.MarkFlagsMutuallyExclusive("only-apis", "only-settings", "only-automation")
+		// combinations
+		cmd.MarkFlagsMutuallyExclusive("settings-schema", "only-apis", "only-settings", "only-automation")
+		cmd.MarkFlagsMutuallyExclusive("api", "only-apis", "only-settings", "only-automation")
+		cmd.MarkFlagsMutuallyExclusive("only-apis", "only-settings", "only-automation")
+	} else {
+		// combinations
+		cmd.MarkFlagsMutuallyExclusive("settings-schema", "only-apis", "only-settings")
+		cmd.MarkFlagsMutuallyExclusive("api", "only-apis", "only-settings")
+		cmd.MarkFlagsMutuallyExclusive("only-apis", "only-settings")
+	}
 
 	if featureflags.Entities().Enabled() {
 		getDownloadEntitiesCommand(fs, command, cmd)
