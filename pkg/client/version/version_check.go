@@ -1,6 +1,6 @@
-/**
+/*
  * @license
- * Copyright 2020 Dynatrace LLC
+ * Copyright 2023 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package client
+package version
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"net/http"
 	"net/url"
@@ -44,7 +45,7 @@ func GetDynatraceVersion(client *http.Client, environmentURL string) (version.Ve
 		return version.Version{}, fmt.Errorf("failed to query version of Dynatrace environment: %w", err)
 	}
 	if !resp.IsSuccess() {
-		return version.Version{}, RespError{
+		return version.Version{}, errors.RespError{
 			Err:        fmt.Errorf("failed to query version of Dynatrace environment: (HTTP %d) Response was: %s", resp.StatusCode, string(resp.Body)),
 			StatusCode: resp.StatusCode,
 		}
@@ -57,7 +58,7 @@ func GetDynatraceVersion(client *http.Client, environmentURL string) (version.Ve
 
 	v, err := parseDynatraceClassicVersion(jsonResp.Version)
 	if err != nil {
-		return version.Version{}, RespError{
+		return version.Version{}, errors.RespError{
 			Err:        err,
 			StatusCode: resp.StatusCode,
 		}

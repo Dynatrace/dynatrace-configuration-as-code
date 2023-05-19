@@ -23,9 +23,9 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
+	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/errors"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -73,7 +73,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 
 	t.Run("TestDeleteSettings_LegacyExternalID - List settings with external ID fails", func(t *testing.T) {
 		c := dtclient.NewMockClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, client.RespError{Err: fmt.Errorf("WHOPS"), StatusCode: 0})
+		c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, clientErrors.RespError{Err: fmt.Errorf("WHOPS"), StatusCode: 0})
 		entriesToDelete := map[string][]DeletePointer{
 			"builtin:alerting.profile": {
 				{
@@ -162,7 +162,7 @@ func TestDeleteSettings(t *testing.T) {
 
 	t.Run("TestDeleteSettings - List settings with external ID fails", func(t *testing.T) {
 		c := dtclient.NewMockClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, client.RespError{Err: fmt.Errorf("WHOPS"), StatusCode: 0})
+		c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, clientErrors.RespError{Err: fmt.Errorf("WHOPS"), StatusCode: 0})
 		entriesToDelete := map[string][]DeletePointer{
 			"builtin:alerting.profile": {
 				{

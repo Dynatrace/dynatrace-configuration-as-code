@@ -22,8 +22,11 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/auth"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
+	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/metadata"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/version"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"net/http"
@@ -39,7 +42,7 @@ func CreateDTClient(url string, a manifest.Auth, dryRun bool, opts ...func(dynat
 	case a.OAuth == nil:
 		return dtclient.NewClassicClient(url, a.Token.Value, opts...)
 	case a.OAuth != nil:
-		oauthCredentials := client.OauthCredentials{
+		oauthCredentials := auth.OauthCredentials{
 			ClientID:     a.OAuth.ClientID.Value,
 			ClientSecret: a.OAuth.ClientSecret.Value,
 			TokenURL:     a.OAuth.GetTokenEndpointValue(),
@@ -65,8 +68,8 @@ func VerifyEnvironmentGeneration(envs manifest.Environments) bool {
 }
 
 func isClassicEnvironment(env manifest.EnvironmentDefinition) bool {
-	if _, err := client.GetDynatraceVersion(client.NewTokenAuthClient(env.Auth.Token.Value), env.URL.Value); err != nil {
-		var respErr client.RespError
+	if _, err := version.GetDynatraceVersion(auth.NewTokenAuthClient(env.Auth.Token.Value), env.URL.Value); err != nil {
+		var respErr clientErrors.RespError
 		if errors.As(err, &respErr) {
 			log.Error("Could not authorize against the environment with name %q (%s) using token authorization.", env.Name, env.URL.Value)
 			if respErr.StatusCode != http.StatusForbidden && respErr.StatusCode != http.StatusUnauthorized {
@@ -83,13 +86,13 @@ func isClassicEnvironment(env manifest.EnvironmentDefinition) bool {
 }
 
 func isPlatformEnvironment(env manifest.EnvironmentDefinition) bool {
-	oauthCredentials := client.OauthCredentials{
+	oauthCredentials := auth.OauthCredentials{
 		ClientID:     env.Auth.OAuth.ClientID.Value,
 		ClientSecret: env.Auth.OAuth.ClientSecret.Value,
 		TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
 	}
-	if _, err := client.GetDynatraceClassicURL(client.NewOAuthClient(context.TODO(), oauthCredentials), env.URL.Value); err != nil {
-		var respErr client.RespError
+	if _, err := metadata.GetDynatraceClassicURL(auth.NewOAuthClient(context.TODO(), oauthCredentials), env.URL.Value); err != nil {
+		var respErr clientErrors.RespError
 		if errors.As(err, &respErr) {
 			log.Error("Could not authorize against the environment with name %q (%s) using oAuth authorization.", env.Name, env.URL.Value)
 			if respErr.StatusCode != http.StatusForbidden && respErr.StatusCode != http.StatusUnauthorized {
