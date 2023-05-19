@@ -29,6 +29,7 @@ import (
 type automationClient interface {
 	Upsert(resourceType automation.ResourceType, id string, data []byte) (result *automation.Response, err error)
 }
+
 type dummyAutomationClient struct {
 }
 

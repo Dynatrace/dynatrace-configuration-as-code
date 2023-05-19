@@ -49,7 +49,7 @@ func AssertConfigAvailability(t *testing.T, fs afero.Fs, manifestFile string, co
 	envDefinition, found := mani.Environments[env]
 	assert.Assert(t, found, "environment %s not found", env)
 
-	c := integrationtest.CreateDynatraceClient(t, envDefinition)
+	clients := integrationtest.CreateDynatraceClients(t, envDefinition)
 
 	projects := integrationtest.LoadProjects(t, fs, manifestFile, mani)
 	project := findProjectByName(t, projects, projName)
@@ -67,7 +67,7 @@ func AssertConfigAvailability(t *testing.T, fs afero.Fs, manifestFile string, co
 
 	assert.Assert(t, conf != nil, "config %s not found", coord)
 
-	assertConfigAvailable(t, c, envDefinition, available, *conf)
+	assertConfigAvailable(t, clients.Classic(), envDefinition, available, *conf)
 }
 
 func getConfigsForEnv(t *testing.T, project project.Project, env manifest.EnvironmentDefinition) project.ConfigsPerType {

@@ -77,8 +77,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 
 		env := loadedManifest.Environments[envName]
 
-		c := CreateDynatraceClient(t, env)
-		autC := CreateAutomationClient(t, env)
+		clients := CreateDynatraceClients(t, env)
 
 		entities := make(map[coordinate.Coordinate]parameter.ResolvedEntity)
 		var parameters []topologysort.ParameterWithName
@@ -120,15 +119,15 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 			if _, found := projectsToValidate[coord.Project]; found {
 				switch typ := theConfig.Type.(type) {
 				case config.SettingsType:
-					assertSetting(t, c, typ, env, available, theConfig)
+					assertSetting(t, clients.Settings(), typ, env, available, theConfig)
 				case config.ClassicApiType:
-					assertConfig(t, c, apis[typ.Api], env, available, theConfig, configName)
+					assertConfig(t, clients.Classic(), apis[typ.Api], env, available, theConfig, configName)
 				case config.AutomationType:
-					if autC == nil {
+					if clients.Automation() == nil {
 						t.Errorf("can not assert existience of Automtation config %q (%s) because no AutomationClient exists - was the test env not configured as Platform?", theConfig.Coordinate, typ.Resource)
 						return
 					}
-					assertAutomation(t, *autC, env, available, typ.Resource, theConfig)
+					assertAutomation(t, *clients.Automation(), env, available, typ.Resource, theConfig)
 				default:
 					t.Errorf("Can not assert config of unknown type %q", theConfig.Coordinate.Type)
 				}

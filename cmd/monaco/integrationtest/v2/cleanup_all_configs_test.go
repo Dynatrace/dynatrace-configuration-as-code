@@ -51,12 +51,12 @@ func TestDoCleanup(t *testing.T) {
 	for _, environment := range loadedManifest.Environments {
 		envUrl := environment.URL.Value
 
-		client := integrationtest.CreateDynatraceClient(t, environment)
+		clients := integrationtest.CreateDynatraceClients(t, environment)
 
-		deletedConfigs := cleanupTestConfigs(t, apis, client, testSuffixRegex)
+		deletedConfigs := cleanupTestConfigs(t, apis, clients.Classic(), testSuffixRegex)
 		t.Logf("Deleted %d leftover test configurations from %s (%s)", deletedConfigs, environment.Name, envUrl)
 
-		deletedSettings := cleanupTestSettings(t, client)
+		deletedSettings := cleanupTestSettings(t, clients.Settings())
 		t.Logf("Deleted %d leftover test Settings from %s (%s)", deletedSettings, environment.Name, envUrl)
 	}
 

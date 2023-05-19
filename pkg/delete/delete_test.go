@@ -67,7 +67,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(ClientSet{DTClient: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		errs := Configs(ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
 		assert.Empty(t, errs, "errors should be empty")
 	})
 
@@ -82,7 +82,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(ClientSet{DTClient: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		errs := Configs(ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
 		assert.Len(t, errs, 1, "errors should have len 1")
 	})
 
@@ -97,7 +97,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(ClientSet{DTClient: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		errs := Configs(ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
 		assert.Len(t, errs, 0)
 	})
 
@@ -122,7 +122,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(ClientSet{DTClient: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		errs := Configs(ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
 		assert.Len(t, errs, 1, "errors should have len 1")
 	})
 
@@ -156,7 +156,7 @@ func TestDeleteSettings(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(ClientSet{DTClient: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		errs := Configs(ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
 		assert.Empty(t, errs, "errors should be empty")
 	})
 
@@ -172,7 +172,7 @@ func TestDeleteSettings(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(ClientSet{DTClient: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		errs := Configs(ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
 		assert.Len(t, errs, 1, "errors should have len 1")
 	})
 
@@ -188,7 +188,7 @@ func TestDeleteSettings(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(ClientSet{DTClient: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		errs := Configs(ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
 		assert.Len(t, errs, 0)
 	})
 
@@ -214,7 +214,7 @@ func TestDeleteSettings(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(ClientSet{DTClient: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		errs := Configs(ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
 		assert.Len(t, errs, 1, "errors should have len 1")
 	})
 
@@ -245,7 +245,7 @@ func TestDeleteAutomations(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(ClientSet{AutomationClient: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		errs := Configs(ClientSet{Automation: c}, api.NewAPIs(), automationTypes, entriesToDelete)
 		assert.Empty(t, errs, "errors should be empty")
 	})
 
@@ -303,7 +303,7 @@ func TestDeleteAutomations(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(ClientSet{AutomationClient: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		errs := Configs(ClientSet{Automation: c}, api.NewAPIs(), automationTypes, entriesToDelete)
 		assert.Empty(t, errs, "errors should be empty")
 		assert.True(t, workflowDeleted, "expected workflow to be deleted but it was not")
 		assert.True(t, calendarDeleted, "expected business-calendar to be deleted but it was not")
@@ -333,7 +333,7 @@ func TestDeleteAutomations(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(ClientSet{AutomationClient: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		errs := Configs(ClientSet{Automation: c}, api.NewAPIs(), automationTypes, entriesToDelete)
 		assert.Empty(t, errs, "errors should be empty")
 	})
 
@@ -360,7 +360,7 @@ func TestDeleteAutomations(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(ClientSet{AutomationClient: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		errs := Configs(ClientSet{Automation: c}, api.NewAPIs(), automationTypes, entriesToDelete)
 		assert.Len(t, errs, 1, "there should be one delete error")
 		assert.ErrorContains(t, errs[0], "unable to delete")
 	})
@@ -474,7 +474,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 				c.EXPECT().DeleteConfigById(a, id)
 			}
 
-			errs := Configs(ClientSet{DTClient: c}, apiMap, automationTypes, entriesToDelete)
+			errs := Configs(ClientSet{Classic: c}, apiMap, automationTypes, entriesToDelete)
 
 			assert.Equal(t, len(errs), tc.expect.numErrs)
 		})
@@ -490,7 +490,7 @@ func TestSplitConfigsForDeletionClientReturnsError(t *testing.T) {
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(a).Return(nil, errors.New("error"))
 
-	errs := Configs(ClientSet{DTClient: c}, apiMap, automationTypes, entriesToDelete)
+	errs := Configs(ClientSet{Classic: c}, apiMap, automationTypes, entriesToDelete)
 
 	assert.NotEmpty(t, errs, "an error should be returned")
 }

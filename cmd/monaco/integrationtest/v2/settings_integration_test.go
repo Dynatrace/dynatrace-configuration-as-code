@@ -1,5 +1,4 @@
 //go:build integration
-// +build integration
 
 /**
  * @license
@@ -20,13 +19,14 @@
 package v2
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/auth"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2/topologysort"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -95,7 +95,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 	})
 
 	// first deploy with external id generate that does not consider the project name
-	c, _ := dynatrace.CreateDTClient(environment.URL.Value, environment.Auth, false, dtclient.WithExternalIDGenerator(func(input coordinate.Coordinate) (string, error) {
+	c := createSettingsClient(t, environment, dtclient.WithExternalIDGenerator(func(input coordinate.Coordinate) (string, error) {
 		input.Project = ""
 		id, _ := idutils.GenerateExternalID(input)
 		return id, nil
@@ -118,7 +118,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 	extID, _ := idutils.GenerateExternalID(sortedConfigs["platform_env"][0].Coordinate)
 
 	// Check if settings 2.0 object with "new" external ID exists
-	c, _ = dynatrace.CreateDTClient(environment.URL.Value, environment.Auth, false)
+	c = createSettingsClient(t, environment)
 	settings, _ := c.ListSettings("builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
 		return object.ExternalId == extID
 	}})
@@ -133,4 +133,24 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 	}})
 	assert.Len(t, settings, 0)
 
+}
+
+func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts ...func(dynatraceClient *dtclient.DynatraceClient)) dtclient.SettingsClient {
+	oauthCredentials := auth.OauthCredentials{
+		ClientID:     env.Auth.OAuth.ClientID.Value,
+		ClientSecret: env.Auth.OAuth.ClientSecret.Value,
+		TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
+	}
+	c, err := dtclient.NewPlatformClient(
+		env.URL.Value,
+		env.Auth.Token.Value,
+		oauthCredentials,
+	)
+	assert.NoError(t, err)
+
+	for _, o := range opts {
+		o(c)
+	}
+
+	return c
 }
