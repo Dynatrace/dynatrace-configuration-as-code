@@ -15,16 +15,11 @@
 package delete
 
 import (
-	"context"
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/dynatrace"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/concurrency"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/auth"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/delete"
 	"golang.org/x/exp/maps"
@@ -88,30 +83,24 @@ func deleteConfigs(environments []manifest.EnvironmentDefinition, apis api.APIs,
 }
 
 func deleteConfigForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs, entriesToDelete map[string][]delete.DeletePointer) []error {
-	dynatraceClient, err := dynatrace.CreateDTClient(env.URL.Value, env.Auth, false)
+	if env.Auth.OAuth == nil {
+		log.Warn("No OAuth defined for environment - Dynatrace Platform configurations like Automations can not be deleted.")
+	}
+
+	clientSet, err := client.CreateClientSet(env.URL.Value, env.Auth)
 	if err != nil {
 		return []error{
 			fmt.Errorf("It was not possible to create a client for env `%s` due to the following error: %w", env.Name, err),
 		}
 	}
 
-	var autClient *automation.Client
-	if env.Auth.OAuth != nil {
-		autClient = automation.NewClient(env.URL.Value, auth.NewOAuthClient(context.TODO(), auth.OauthCredentials{
-			ClientID:     env.Auth.OAuth.ClientID.Value,
-			ClientSecret: env.Auth.OAuth.ClientSecret.Value,
-			TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
-		}), automation.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
-	} else {
-		log.Warn("No OAuth defined for environment - Dynatrace Platform configurations like Automations can not be deleted.")
-	}
-
 	log.Info("Deleting configs for environment `%s`...", env.Name)
 
 	return delete.Configs(
 		delete.ClientSet{
-			DTClient:         dynatraceClient,
-			AutomationClient: autClient,
+			Classic:    clientSet.Classic(),
+			Settings:   clientSet.Settings(),
+			Automation: clientSet.Automation(),
 		},
 		apis,
 		map[string]config.AutomationResource{

@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 )
@@ -32,10 +33,22 @@ type DeployConfigsOptions struct {
 	DryRun bool
 }
 
+type ClientSet struct {
+	Classic    dtclient.Client
+	Settings   dtclient.Client
+	Automation automationClient
+}
+
+var DummyClientSet = ClientSet{
+	Classic:    &dtclient.DummyClient{},
+	Settings:   &dtclient.DummyClient{},
+	Automation: &dummyAutomationClient{},
+}
+
 // DeployConfigs deploys the given configs with the given apis via the given client
 // NOTE: the given configs need to be sorted, otherwise deployment will
 // probably fail, as references cannot be resolved
-func DeployConfigs(clientSet *clientSet, apis api.APIs, sortedConfigs []config.Config, opts DeployConfigsOptions) []error {
+func DeployConfigs(clientSet ClientSet, apis api.APIs, sortedConfigs []config.Config, opts DeployConfigsOptions) []error {
 	entityMap := newEntityMap(apis)
 	var errors []error
 
@@ -60,7 +73,7 @@ func DeployConfigs(clientSet *clientSet, apis api.APIs, sortedConfigs []config.C
 	return errors
 }
 
-func deploy(clientSet *clientSet, apis api.APIs, em *entityMap, c *config.Config) (*parameter.ResolvedEntity, []error) {
+func deploy(clientSet ClientSet, apis api.APIs, em *entityMap, c *config.Config) (*parameter.ResolvedEntity, []error) {
 	if c.Skip {
 		log.Info("\tSkipping deployment of config %s", c.Coordinate)
 		return &parameter.ResolvedEntity{EntityName: c.Coordinate.ConfigId, Coordinate: c.Coordinate, Properties: parameter.Properties{}, Skip: true}, nil
@@ -85,15 +98,15 @@ func deploy(clientSet *clientSet, apis api.APIs, em *entityMap, c *config.Config
 
 	case config.SettingsType:
 		log.Info("\tDeploying config %s", c.Coordinate)
-		res, deployErr = deploySetting(clientSet.settings(), properties, renderedConfig, c)
+		res, deployErr = deploySetting(clientSet.Settings, properties, renderedConfig, c)
 
 	case config.ClassicApiType:
 		log.Info("\tDeploying config %s", c.Coordinate)
-		res, deployErr = deployClassicConfig(clientSet.classic(), apis, em, properties, renderedConfig, c)
+		res, deployErr = deployClassicConfig(clientSet.Classic, apis, em, properties, renderedConfig, c)
 
 	case config.AutomationType:
 		log.Info("\tDeploying config %s", c.Coordinate)
-		res, deployErr = deployAutomation(clientSet.automation(), properties, renderedConfig, c)
+		res, deployErr = deployAutomation(clientSet.Automation, properties, renderedConfig, c)
 
 	default:
 		return nil, []error{fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())}

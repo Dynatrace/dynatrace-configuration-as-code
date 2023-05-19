@@ -19,10 +19,10 @@ package purge
 import (
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/delete"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"github.com/spf13/afero"
@@ -77,7 +77,7 @@ func purgeConfigs(environments []manifest.EnvironmentDefinition, apis api.APIs) 
 }
 
 func purgeForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs) []error {
-	dynatraceClient, err := dynatrace.CreateDTClient(env.URL.Value, env.Auth, false)
+	clients, err := client.CreateClientSet(env.URL.Value, env.Auth)
 
 	if err != nil {
 		return []error{
@@ -87,8 +87,8 @@ func purgeForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs) []er
 
 	log.Info("Deleting configs for environment `%s`", env.Name)
 
-	errs := delete.AllConfigs(dynatraceClient, apis)
-	errs = append(errs, delete.AllSettingsObjects(dynatraceClient)...)
+	errs := delete.AllConfigs(clients.Classic(), apis)
+	errs = append(errs, delete.AllSettingsObjects(clients.Settings())...)
 
 	return errs
 }

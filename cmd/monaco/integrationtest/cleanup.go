@@ -40,10 +40,10 @@ func CleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestPath string, load
 
 	for _, environment := range loadedManifest.Environments {
 
-		c := CreateDynatraceClient(t, environment)
+		clients := CreateDynatraceClients(t, environment)
 
-		cleanupSettings(t, fs, manifestPath, loadedManifest, environment.Name, c)
-		cleanupConfigs(t, apis, c, suffix)
+		cleanupSettings(t, fs, manifestPath, loadedManifest, environment.Name, clients.Settings())
+		cleanupConfigs(t, apis, clients.Classic(), suffix)
 	}
 }
 

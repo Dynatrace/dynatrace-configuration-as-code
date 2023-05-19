@@ -50,8 +50,13 @@ func (d DeletePointer) asCoordinate() coordinate.Coordinate {
 }
 
 type ClientSet struct {
-	DTClient         dtclient.Client
-	AutomationClient *automation.Client
+	Classic    dtclient.Client
+	Settings   dtclient.Client
+	Automation automationClient
+}
+
+type automationClient interface {
+	Delete(resourceType automation.ResourceType, id string) (err error)
 }
 
 // Configs removes all given entriesToDelete from the Dynatrace environment the given client connects to
@@ -60,7 +65,7 @@ func Configs(clients ClientSet, apis api.APIs, automationResources map[string]co
 
 	for entryType, entries := range entriesToDelete {
 		if targetApi, isApi := apis[entryType]; isApi {
-			deleteErrs := deleteClassicConfig(clients.DTClient, targetApi, entries, entryType)
+			deleteErrs := deleteClassicConfig(clients.Classic, targetApi, entries, entryType)
 			errs = append(errs, deleteErrs...)
 		} else if targetAutomation, isAutomation := automationResources[entryType]; isAutomation {
 
@@ -68,15 +73,15 @@ func Configs(clients ClientSet, apis api.APIs, automationResources map[string]co
 				continue
 			}
 
-			if clients.AutomationClient == nil {
+			if clients.Automation == nil {
 				log.Warn("Skipped deletion of %d Automation configurations of type %q as API client was unavailable.", len(entries), entryType)
 				continue
 			}
 
-			deleteErrs := deleteAutomations(*clients.AutomationClient, targetAutomation, entries)
+			deleteErrs := deleteAutomations(clients.Automation, targetAutomation, entries)
 			errs = append(errs, deleteErrs...)
 		} else { // assume it's a Settings Schema
-			deleteErrs := deleteSettingsObject(clients.DTClient, entries)
+			deleteErrs := deleteSettingsObject(clients.Settings, entries)
 			errs = append(errs, deleteErrs...)
 		}
 	}
@@ -149,7 +154,7 @@ func deleteSettingsObject(c dtclient.Client, entries []DeletePointer) []error {
 	return errors
 }
 
-func deleteAutomations(c automation.Client, automationResource config.AutomationResource, entries []DeletePointer) []error {
+func deleteAutomations(c automationClient, automationResource config.AutomationResource, entries []DeletePointer) []error {
 	errors := make([]error, 0)
 
 	for _, e := range entries {

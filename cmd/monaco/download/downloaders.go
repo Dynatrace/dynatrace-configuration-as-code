@@ -17,13 +17,7 @@
 package download
 
 import (
-	"context"
-	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/dynatrace"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/concurrency"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
-	clientAuth "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/auth"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download"
 	dlautomation "github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/automation"
@@ -34,22 +28,17 @@ import (
 type downloaders []interface{}
 
 func makeDownloaders(options downloadConfigsOptions) (downloaders, error) {
-	dtClient, err := dynatrace.CreateDTClient(options.environmentURL, options.auth, false,
-		dtclient.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
+	clients, err := client.CreateClientSet(options.environmentURL, options.auth)
 	if err != nil {
 		return nil, err
 	}
+
 	var automationDownloader download.Downloader[v2.AutomationType] = dlautomation.NoopAutomationDownloader{}
-	if options.auth.OAuth != nil {
-		autClient := automation.NewClient(options.environmentURL, clientAuth.NewOAuthClient(context.TODO(), clientAuth.OauthCredentials{
-			ClientID:     options.auth.OAuth.ClientID.Value,
-			ClientSecret: options.auth.OAuth.ClientSecret.Value,
-			TokenURL:     options.auth.OAuth.GetTokenEndpointValue(),
-		}), automation.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
-		automationDownloader = dlautomation.NewDownloader(autClient)
+	if clients.Automation() != nil {
+		automationDownloader = dlautomation.NewDownloader(clients.Automation())
 	}
-	var settingsDownloader download.Downloader[v2.SettingsType] = settings.NewDownloader(dtClient)
-	var classicDownloader download.Downloader[v2.ClassicApiType] = classic.NewDownloader(dtClient)
+	var settingsDownloader download.Downloader[v2.SettingsType] = settings.NewDownloader(clients.Settings())
+	var classicDownloader download.Downloader[v2.ClassicApiType] = classic.NewDownloader(clients.Classic())
 	return downloaders{settingsDownloader, classicDownloader, automationDownloader}, nil
 }
 

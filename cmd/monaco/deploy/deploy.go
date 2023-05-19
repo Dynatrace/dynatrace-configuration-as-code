@@ -21,6 +21,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/deploy"
 	"path/filepath"
 	"strings"
@@ -90,7 +91,21 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 
 func deployOnEnvironment(env *manifest.EnvironmentDefinition, cfgs []config.Config, continueOnErr bool, dryRun bool) []error {
 	logDeploymentInfo(dryRun, env.Name)
-	clientSet, _ := deploy.CreateClientSet(env.URL.Value, env.Auth, dryRun)
+	var clientSet deploy.ClientSet
+	if dryRun {
+		clientSet = deploy.DummyClientSet
+	} else {
+		c, err := client.CreateClientSet(env.URL.Value, env.Auth)
+		if err != nil {
+			return []error{fmt.Errorf("failed to create clients for envrionment %q: %w", env.Name, err)}
+		}
+		clientSet = deploy.ClientSet{
+			Classic:    c.Classic(),
+			Settings:   c.Settings(),
+			Automation: c.Automation(),
+		}
+	}
+
 	errs := deploy.DeployConfigs(clientSet, api.NewAPIs(), cfgs, deploy.DeployConfigsOptions{
 		ContinueOnErr: continueOnErr,
 		DryRun:        dryRun,
