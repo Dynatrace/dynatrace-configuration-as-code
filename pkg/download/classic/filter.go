@@ -40,7 +40,7 @@ var apiContentFilters = map[string]contentFilter{
 			if json["dashboardMetadata"] != nil {
 				metadata := json["dashboardMetadata"].(map[string]interface{})
 
-				if metadata["preset"] != nil && metadata["preset"] == true {
+				if metadata["preset"] != nil && metadata["preset"] == true && metadata["owner"] == "Dynatrace" {
 					return false
 				}
 			}
