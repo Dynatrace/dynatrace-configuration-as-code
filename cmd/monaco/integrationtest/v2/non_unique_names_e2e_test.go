@@ -24,7 +24,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
 	uuid2 "github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/auth"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
@@ -64,7 +64,7 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 		)
 	})
 
-	httpClient := client.NewTokenAuthClient(token)
+	httpClient := auth.NewTokenAuthClient(token)
 	c, err := dtclient.NewClassicClient(url, token)
 	assert.NilError(t, err)
 

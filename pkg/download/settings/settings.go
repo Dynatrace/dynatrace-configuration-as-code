@@ -21,14 +21,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
+	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/errors"
 	"strings"
 	"sync"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
-
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/internal/json"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
@@ -120,7 +119,7 @@ func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPe
 			objects, err := d.client.ListSettings(s, dtclient.ListSettingsOptions{})
 			if err != nil {
 				var errMsg string
-				var respErr client.RespError
+				var respErr clientErrors.RespError
 				if errors.As(err, &respErr) {
 					errMsg = respErr.ConcurrentError()
 				} else {

@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package client
+package metadata
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"net/http"
 	"net/url"
@@ -66,7 +67,7 @@ func GetDynatraceClassicURL(client *http.Client, environmentURL string) (string,
 	}
 
 	if !resp.IsSuccess() {
-		return "", RespError{
+		return "", errors.RespError{
 			Err:        fmt.Errorf("failed to query classic environment URL: (HTTP %v) %v", resp.StatusCode, string(resp.Body)),
 			StatusCode: resp.StatusCode,
 		}

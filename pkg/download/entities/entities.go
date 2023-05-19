@@ -25,7 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/errors"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
@@ -133,7 +133,7 @@ func (d *Downloader) download(entitiesTypes []dtclient.EntitiesType, projectName
 			objects, err := d.client.ListEntities(entityType)
 			if err != nil {
 				var errMsg string
-				var respErr client.RespError
+				var respErr clientErrors.RespError
 				if errors.As(err, &respErr) {
 					errMsg = respErr.ConcurrentError()
 				} else {

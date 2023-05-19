@@ -25,7 +25,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/auth"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"github.com/stretchr/testify/assert"
@@ -139,7 +140,7 @@ func TestNewPlatformClient(t *testing.T) {
 
 			rw.Header().Set("Content-Type", "application/json")
 			_ = json.NewEncoder(rw).Encode(token)
-		case client.ClassicEnvironmentDomainPath:
+		case metadata.ClassicEnvironmentDomainPath:
 			rw.WriteHeader(200)
 			_, _ = rw.Write([]byte(`{"domain" : "/classic_endpoint"}`))
 		default:
@@ -156,7 +157,7 @@ func TestNewPlatformClient(t *testing.T) {
 
 		ver := version.Version{Major: 1, Minor: 2, Patch: 3}
 
-		c, err := NewPlatformClient(dtURL, "", client.OauthCredentials{TokenURL: server.URL + "/oauth/token"},
+		c, err := NewPlatformClient(dtURL, "", auth.OauthCredentials{TokenURL: server.URL + "/oauth/token"},
 			WithServerVersion(ver),
 			WithRetrySettings(rest.DefaultRetrySettings))
 
@@ -184,54 +185,54 @@ func TestNewPlatformClient(t *testing.T) {
 	})
 
 	t.Run("URL is empty - should throw an error", func(t *testing.T) {
-		_, err := NewPlatformClient(server.URL, "", client.OauthCredentials{TokenURL: server.URL + "/wrong/address"})
+		_, err := NewPlatformClient(server.URL, "", auth.OauthCredentials{TokenURL: server.URL + "/wrong/address"})
 		assert.ErrorContains(t, err, "failed to query classic environment url")
 	})
 
 	t.Run("URL is empty - should throw an error", func(t *testing.T) {
-		_, err := NewPlatformClient("", "", client.OauthCredentials{})
+		_, err := NewPlatformClient("", "", auth.OauthCredentials{})
 		assert.ErrorContains(t, err, "empty url")
 	})
 
 	t.Run("invalid URL - should throw an error", func(t *testing.T) {
-		_, err := NewPlatformClient("INVALID_URL", "", client.OauthCredentials{})
+		_, err := NewPlatformClient("INVALID_URL", "", auth.OauthCredentials{})
 		assert.ErrorContains(t, err, "not valid")
 	})
 
 	t.Run("URL suffix is trimmed", func(t *testing.T) {
-		client, err := NewPlatformClient(server.URL, "", client.OauthCredentials{TokenURL: server.URL + "/oauth/token"})
+		client, err := NewPlatformClient(server.URL, "", auth.OauthCredentials{TokenURL: server.URL + "/oauth/token"})
 		assert.NoError(t, err)
 		assert.Equal(t, server.URL, client.environmentURL)
 	})
 
 	t.Run("URL with leading space - should return an error", func(t *testing.T) {
-		_, err := NewPlatformClient(" https://my-environment.live.dynatrace.com/", "", client.OauthCredentials{})
+		_, err := NewPlatformClient(" https://my-environment.live.dynatrace.com/", "", auth.OauthCredentials{})
 		assert.Error(t, err)
 	})
 
 	t.Run("URL starts with http", func(t *testing.T) {
-		client, err := NewPlatformClient(server.URL, "", client.OauthCredentials{TokenURL: server.URL + "/oauth/token"})
+		client, err := NewPlatformClient(server.URL, "", auth.OauthCredentials{TokenURL: server.URL + "/oauth/token"})
 		assert.NoError(t, err)
 		assert.Equal(t, server.URL, client.environmentURL)
 	})
 
 	t.Run("URL is without scheme - should throw an error", func(t *testing.T) {
-		_, err := NewPlatformClient("my-environment.live.dynatrace.com", "", client.OauthCredentials{})
+		_, err := NewPlatformClient("my-environment.live.dynatrace.com", "", auth.OauthCredentials{})
 		assert.ErrorContains(t, err, "not valid")
 	})
 
 	t.Run("URL is without valid local path - should return an error", func(t *testing.T) {
-		_, err := NewPlatformClient("/my-environment/live/dynatrace.com/", "", client.OauthCredentials{})
+		_, err := NewPlatformClient("/my-environment/live/dynatrace.com/", "", auth.OauthCredentials{})
 		assert.ErrorContains(t, err, "no host specified")
 	})
 
 	t.Run("without valid protocol - should return an error", func(t *testing.T) {
 		var err error
 
-		_, err = NewPlatformClient("https//my-environment.live.dynatrace.com/", "", client.OauthCredentials{})
+		_, err = NewPlatformClient("https//my-environment.live.dynatrace.com/", "", auth.OauthCredentials{})
 		assert.ErrorContains(t, err, "not valid")
 
-		_, err = NewPlatformClient("http//my-environment.live.dynatrace.com/", "", client.OauthCredentials{})
+		_, err = NewPlatformClient("http//my-environment.live.dynatrace.com/", "", auth.OauthCredentials{})
 		assert.ErrorContains(t, err, "not valid")
 	})
 }

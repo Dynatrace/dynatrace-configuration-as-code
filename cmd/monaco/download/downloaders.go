@@ -21,7 +21,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	clientAuth "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/auth"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
@@ -41,7 +41,7 @@ func makeDownloaders(options downloadConfigsOptions) (downloaders, error) {
 	}
 	var automationDownloader download.Downloader[v2.AutomationType] = dlautomation.NoopAutomationDownloader{}
 	if options.auth.OAuth != nil {
-		autClient := automation.NewClient(options.environmentURL, client.NewOAuthClient(context.TODO(), client.OauthCredentials{
+		autClient := automation.NewClient(options.environmentURL, clientAuth.NewOAuthClient(context.TODO(), clientAuth.OauthCredentials{
 			ClientID:     options.auth.OAuth.ClientID.Value,
 			ClientSecret: options.auth.OAuth.ClientSecret.Value,
 			TokenURL:     options.auth.OAuth.GetTokenEndpointValue(),

@@ -23,7 +23,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/auth"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/delete"
@@ -97,7 +97,7 @@ func deleteConfigForEnvironment(env manifest.EnvironmentDefinition, apis api.API
 
 	var autClient *automation.Client
 	if env.Auth.OAuth != nil {
-		autClient = automation.NewClient(env.URL.Value, client.NewOAuthClient(context.TODO(), client.OauthCredentials{
+		autClient = automation.NewClient(env.URL.Value, auth.NewOAuthClient(context.TODO(), auth.OauthCredentials{
 			ClientID:     env.Auth.OAuth.ClientID.Value,
 			ClientSecret: env.Auth.OAuth.ClientSecret.Value,
 			TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),

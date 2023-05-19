@@ -19,7 +19,7 @@ package deploy
 import (
 	"context"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	clientAuth "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/auth"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
@@ -64,13 +64,13 @@ func CreateClientSet(url string, auth manifest.Auth, dryRun bool) (*clientSet, e
 		dtClient, err = dtclient.NewClassicClient(url, auth.Token.Value)
 		autClient = &dummyAutomationClient{}
 	default:
-		oauthCredentials := client.OauthCredentials{
+		oauthCredentials := clientAuth.OauthCredentials{
 			ClientID:     auth.OAuth.ClientID.Value,
 			ClientSecret: auth.OAuth.ClientSecret.Value,
 			TokenURL:     auth.OAuth.GetTokenEndpointValue(),
 		}
 		dtClient, err = dtclient.NewPlatformClient(url, auth.Token.Value, oauthCredentials)
-		autClient = automation.NewClient(url, client.NewOAuthClient(context.TODO(), oauthCredentials))
+		autClient = automation.NewClient(url, clientAuth.NewOAuthClient(context.TODO(), oauthCredentials))
 	}
 	if err != nil {
 		return nil, fmt.Errorf("unable to create API clients: %w", err)

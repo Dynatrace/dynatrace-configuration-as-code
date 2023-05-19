@@ -22,7 +22,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	clientAuth "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/auth"
+	versionClient "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -255,17 +256,17 @@ func printUploadToSameEnvironmentWarning(env manifest.EnvironmentDefinition) {
 
 	var httpClient *http.Client
 	if env.Auth.OAuth == nil {
-		httpClient = client.NewTokenAuthClient(env.Auth.Token.Value)
+		httpClient = clientAuth.NewTokenAuthClient(env.Auth.Token.Value)
 	} else {
-		credentials := client.OauthCredentials{
+		credentials := clientAuth.OauthCredentials{
 			ClientID:     env.Auth.OAuth.ClientID.Value,
 			ClientSecret: env.Auth.OAuth.ClientSecret.Value,
 			TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
 		}
-		httpClient = client.NewOAuthClient(context.TODO(), credentials)
+		httpClient = clientAuth.NewOAuthClient(context.TODO(), credentials)
 	}
 
-	serverVersion, err = client.GetDynatraceVersion(httpClient, env.URL.Value)
+	serverVersion, err = versionClient.GetDynatraceVersion(httpClient, env.URL.Value)
 	if err != nil {
 		log.Warn("Unable to determine server version %q: %w", env.URL.Value, err)
 		return

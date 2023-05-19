@@ -25,7 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/auth"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
@@ -47,7 +47,7 @@ func CreateDynatraceClient(t *testing.T, environment manifest.EnvironmentDefinit
 
 func CreateAutomationClient(t *testing.T, env manifest.EnvironmentDefinition) *automation.Client {
 	if env.Auth.OAuth != nil {
-		return automation.NewClient(env.URL.Value, client.NewOAuthClient(context.TODO(), client.OauthCredentials{
+		return automation.NewClient(env.URL.Value, auth.NewOAuthClient(context.TODO(), auth.OauthCredentials{
 			ClientID:     env.Auth.OAuth.ClientID.Value,
 			ClientSecret: env.Auth.OAuth.ClientSecret.Value,
 			TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),

@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package client
+package metadata
 
 import (
-	assert "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"

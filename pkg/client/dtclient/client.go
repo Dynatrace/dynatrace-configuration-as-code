@@ -27,7 +27,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/throttle"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/auth"
+	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/metadata"
+	dtVersion "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"golang.org/x/oauth2"
@@ -275,7 +278,7 @@ func WithAutoServerVersion() func(client *DynatraceClient) {
 			// so this call would need to be "redirected" to the second gen URL, which do not currently resolve
 			d.serverVersion = version.UnknownVersion
 		} else {
-			serverVersion, err = client.GetDynatraceVersion(d.clientClassic, d.environmentURLClassic)
+			serverVersion, err = dtVersion.GetDynatraceVersion(d.clientClassic, d.environmentURLClassic)
 		}
 		if err != nil {
 			log.Warn("Unable to determine Dynatrace server version: %v", err)
@@ -294,16 +297,16 @@ const (
 )
 
 // NewPlatformClient creates a new dynatrace client to be used for platform enabled environments
-func NewPlatformClient(dtURL string, token string, oauthCredentials client.OauthCredentials, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
+func NewPlatformClient(dtURL string, token string, oauthCredentials auth.OauthCredentials, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
 	dtURL = strings.TrimSuffix(dtURL, "/")
 	if err := validateURL(dtURL); err != nil {
 		return nil, err
 	}
 
-	tokenClient := client.NewTokenAuthClient(token)
-	oauthClient := client.NewOAuthClient(context.TODO(), oauthCredentials)
+	tokenClient := auth.NewTokenAuthClient(token)
+	oauthClient := auth.NewOAuthClient(context.TODO(), oauthCredentials)
 
-	classicURL, err := client.GetDynatraceClassicURL(oauthClient, dtURL)
+	classicURL, err := metadata.GetDynatraceClassicURL(oauthClient, dtURL)
 	if err != nil {
 		log.Error("Unable to determine Dynatrace classic environment URL: %v", err)
 		return nil, err
@@ -337,7 +340,7 @@ func NewClassicClient(dtURL string, token string, opts ...func(dynatraceClient *
 		return nil, err
 	}
 
-	tokenClient := client.NewTokenAuthClient(token)
+	tokenClient := auth.NewTokenAuthClient(token)
 
 	d := &DynatraceClient{
 		serverVersion:         version.Version{},
@@ -808,7 +811,7 @@ func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLa
 
 	u, err := buildUrl(d.environmentURL, urlPath, params)
 	if err != nil {
-		return resp, client.RespError{
+		return resp, clientErrors.RespError{
 			Err:        err,
 			StatusCode: 0,
 		}
@@ -816,7 +819,7 @@ func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLa
 
 	resp, receivedCount, totalReceivedCount, _, err = d.runAndProcessResponse(false, u, addToResult, receivedCount, totalReceivedCount, urlPath)
 	if err != nil {
-		return resp, client.RespError{
+		return resp, clientErrors.RespError{
 			Err:        err,
 			StatusCode: resp.StatusCode,
 		}
@@ -838,7 +841,7 @@ func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLa
 			var isLastAvailablePage bool
 			resp, receivedCount, totalReceivedCount, isLastAvailablePage, err = d.runAndProcessResponse(true, u, addToResult, receivedCount, totalReceivedCount, urlPath)
 			if err != nil {
-				return resp, client.RespError{
+				return resp, clientErrors.RespError{
 					Err:        err,
 					StatusCode: resp.StatusCode,
 				}
@@ -850,7 +853,7 @@ func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLa
 			retry := false
 			retry, emptyResponseRetryCount, err = isRetryOnEmptyResponse(receivedCount, emptyResponseRetryCount, resp)
 			if err != nil {
-				return resp, client.RespError{
+				return resp, clientErrors.RespError{
 					Err:        err,
 					StatusCode: resp.StatusCode,
 				}
