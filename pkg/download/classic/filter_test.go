@@ -36,10 +36,20 @@ func Test_AllDefinedApiFiltersHaveApis(t *testing.T) {
 }
 
 func Test_ShouldBePersisted(t *testing.T) {
-	t.Run("dashboard -  should not be persisted if its a preset", func(t *testing.T) {
+	t.Run("dashboard -  should not be persisted if its a preset owned by Dynatrace", func(t *testing.T) {
 		assert.False(t, apiContentFilters["dashboard"].shouldConfigBePersisted(map[string]interface{}{
 			"dashboardMetadata": map[string]interface{}{
 				"preset": true,
+				"owner":  "Dynatrace",
+			},
+		}))
+	})
+
+	t.Run("dashboard -  should  be persisted if its a preset owned by User", func(t *testing.T) {
+		assert.True(t, apiContentFilters["dashboard"].shouldConfigBePersisted(map[string]interface{}{
+			"dashboardMetadata": map[string]interface{}{
+				"preset": true,
+				"owner":  "Not Dynatrace",
 			},
 		}))
 	})

@@ -19,6 +19,11 @@
             "id": "id-4",
             "name": "Dashboard which is a preset",
             "owner": "Not Dynatrace"
+        },
+        {
+            "id": "id-5",
+            "name": "Dashboard which is a preset by Dynatrace",
+            "owner": "Dynatrace"
         }
     ]
 }

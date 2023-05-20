@@ -535,6 +535,8 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 	assert.Equal(t, found, true)
 	assert.Equal(t, len(configs), 1)
 
+	assert.Equal(t, len(configs["dashboard"]), 3)
+
 	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
 		dashboardApi.ID: []config.Config{
 			{
@@ -557,6 +559,17 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 				Group:       "default",
 				Environment: projectName,
 				Template:    contentOnlyTemplate{`{"dashboardMetadata": {"name": "{{.name}}", "owner": "Admiral Jean-Luc Picard"}, "tiles": []}`},
+				Type:        config.ClassicApiType{Api: "dashboard"},
+			},
+			{
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.ID, ConfigId: "id-4"},
+				Skip:       false,
+				Parameters: map[string]parameter.Parameter{
+					"name": &value.ValueParameter{Value: "Dashboard which is a preset"},
+				},
+				Group:       "default",
+				Environment: projectName,
+				Template:    contentOnlyTemplate{`{"dashboardMetadata": {"name": "{{.name}}","owner": "Not Dynatrace","preset": true},"tiles": []}`},
 				Type:        config.ClassicApiType{Api: "dashboard"},
 			},
 		},
