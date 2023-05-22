@@ -251,13 +251,26 @@ func (p *projectBuilder) resolveDuplicateIDs() {
 
 		if cnt, f := count[coord]; f {
 			newID := fmt.Sprintf("%s-%d", c.id, cnt)
-			log.Warn(`Detected duplicate config id "%s/%s". Renamed it to "%s/%s"`, c.api.ID, c.id, c.api.ID, newID)
-			c.properties[newID] = c.properties[c.id]
-			delete(c.properties, c.id)
+			log.Warn(`Detected duplicate config ID "%s/%s" in project %q: config ID renamed to "%s/%s".
+    If references to this config ID existed, they point to the first config found with this ID - manual validation is needed.`,
+				c.api.ID, c.id, c.project, c.api.ID, newID)
+
+			updateDuplicateProperties(c.id, newID, c)
 			c.id = newID
 		}
 
 		count[coord]++
+	}
+}
+
+func updateDuplicateProperties(oldID, newID string, c *Config) {
+	for propID, props := range c.properties {
+		if propID == oldID || strings.HasPrefix(propID, oldID+".") {
+			//'rename' property ID for main config or overrides of [id].[stage] format
+			newPropID := strings.Replace(propID, oldID, newID, 1)
+			c.properties[newPropID] = props
+			delete(c.properties, propID)
+		}
 	}
 }
 
