@@ -19,9 +19,11 @@
 package integrationtest
 
 import (
+	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
@@ -67,4 +69,17 @@ func LoadProjects(t *testing.T, fs afero.Fs, manifestPath string, loadedManifest
 	})
 	testutils.FailTestOnAnyError(t, errs, "loading of projects failed")
 	return projects
+}
+
+func automationClientResourceTypeFromConfigType(resource config.AutomationResource) (automation.ResourceType, error) {
+	switch resource {
+	case config.Workflow:
+		return automation.Workflows, nil
+	case config.BusinessCalendar:
+		return automation.BusinessCalendars, nil
+	case config.SchedulingRule:
+		return automation.SchedulingRules, nil
+	default:
+		return -1, fmt.Errorf("unknown automation resource type %q", resource)
+	}
 }

@@ -194,18 +194,8 @@ func assertSetting(t *testing.T, c dtclient.SettingsClient, typ config.SettingsT
 }
 
 func assertAutomation(t *testing.T, c automation.Client, env manifest.EnvironmentDefinition, shouldBeAvailable bool, resource config.AutomationResource, cfg config.Config) {
-	var resourceType automation.ResourceType
-	switch resource {
-	case config.Workflow:
-		resourceType = automation.Workflows
-	case config.BusinessCalendar:
-		resourceType = automation.BusinessCalendars
-	case config.SchedulingRule:
-		resourceType = automation.SchedulingRules
-	default:
-		t.Errorf("unkown automation resource type %q - can not assert existence", resource)
-		return
-	}
+	resourceType, err := automationClientResourceTypeFromConfigType(resource)
+	assert.NilError(t, err, "failed to get resource type for: %s", cfg.Coordinate)
 
 	var expectedId string
 	if cfg.OriginObjectId != "" {
