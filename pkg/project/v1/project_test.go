@@ -530,7 +530,8 @@ func Test_projectBuilder_resolveDuplicateIDs(t *testing.T) {
 					},
 				},
 			},
-		}, {
+		},
+		{
 			"Does keep a separate counter per API",
 			[]*Config{
 				{
@@ -645,6 +646,152 @@ func Test_projectBuilder_resolveDuplicateIDs(t *testing.T) {
 				},
 			},
 		},
+		{
+			"Renames override properties of duplicates",
+			[]*Config{
+				{
+					id: "config-a",
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+						"config-a.prod": {
+							"some-prop": "Special PROD val",
+						},
+					},
+				},
+				{
+					id: "config-a",
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+						"config-a.prod": {
+							"some-prop": "Different PROD val",
+						},
+					},
+				},
+				{
+					id: "config-b",
+					properties: map[string]map[string]string{
+						"config-b": {
+							"some-prop": "val",
+						},
+						"config-b.staging": {
+							"some-prop": "Special STAGING val",
+						},
+					},
+				},
+				{
+					id: "config-b",
+					properties: map[string]map[string]string{
+						"config-b": {
+							"some-prop": "val",
+						},
+						"config-b.staging": {
+							"some-prop": "Different STAGING val",
+						},
+					},
+				},
+			},
+			[]*Config{
+				{
+					id: "config-a",
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+						"config-a.prod": {
+							"some-prop": "Special PROD val",
+						},
+					},
+				},
+				{
+					id: "config-a-1",
+					properties: map[string]map[string]string{
+						"config-a-1": {
+							"some-prop": "val",
+						},
+						"config-a-1.prod": {
+							"some-prop": "Different PROD val",
+						},
+					},
+				},
+				{
+					id: "config-b",
+					properties: map[string]map[string]string{
+						"config-b": {
+							"some-prop": "val",
+						},
+						"config-b.staging": {
+							"some-prop": "Special STAGING val",
+						},
+					},
+				},
+				{
+					id: "config-b-1",
+					properties: map[string]map[string]string{
+						"config-b-1": {
+							"some-prop": "val",
+						},
+						"config-b-1.staging": {
+							"some-prop": "Different STAGING val",
+						},
+					},
+				},
+			},
+		},
+		{
+			"Does not rename properties of duplicates that just partially match ID",
+			[]*Config{
+				{
+					id: "config-a",
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+						"config-a-something-else": {
+							"some-prop": "Just another config",
+						},
+					},
+				},
+				{
+					id: "config-a",
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+						"config-a-something-else": {
+							"some-prop": "Just another config",
+						},
+					},
+				},
+			},
+			[]*Config{
+				{
+					id: "config-a",
+					properties: map[string]map[string]string{
+						"config-a": {
+							"some-prop": "val",
+						},
+						"config-a-something-else": {
+							"some-prop": "Just another config",
+						},
+					},
+				},
+				{
+					id: "config-a-1",
+					properties: map[string]map[string]string{
+						"config-a-1": {
+							"some-prop": "val",
+						},
+						"config-a-something-else": {
+							"some-prop": "Just another config",
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -653,7 +800,7 @@ func Test_projectBuilder_resolveDuplicateIDs(t *testing.T) {
 			}
 			p.resolveDuplicateIDs()
 
-			assert.Equal(t, tt.wantConfigs, tt.givenConfigs)
+			assert.EqualValues(t, tt.wantConfigs, tt.givenConfigs)
 		})
 	}
 }
