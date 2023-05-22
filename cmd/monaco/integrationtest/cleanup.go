@@ -19,6 +19,8 @@
 package integrationtest
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"strings"
@@ -31,7 +33,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-// Deletes all configs that end with a test suffix and any Settings created by the given manifest
+// CleanupIntegrationTest deletes all configs that end with a test suffix and any Settings created by the given manifest
 func CleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestPath string, loadedManifest manifest.Manifest, suffix string) {
 	log.Info("### Cleaning up after integration test ###")
 
@@ -42,12 +44,13 @@ func CleanupIntegrationTest(t *testing.T, fs afero.Fs, manifestPath string, load
 
 		clients := CreateDynatraceClients(t, environment)
 
-		cleanupSettings(t, fs, manifestPath, loadedManifest, environment.Name, clients.Settings())
-		cleanupConfigs(t, apis, clients.Classic(), suffix)
+		cleanupByGeneratedID(t, fs, manifestPath, loadedManifest, environment.Name, clients)
+		cleanupByNameSuffix(t, apis, clients.Classic(), suffix)
 	}
 }
 
-func cleanupConfigs(t *testing.T, apis api.APIs, c dtclient.ConfigClient, suffix string) {
+// cleanupByNameSuffix removes Classic Config API test configurations if their name ends with the defined suffix
+func cleanupByNameSuffix(t *testing.T, apis api.APIs, c dtclient.ConfigClient, suffix string) {
 	for _, api := range apis {
 		if api.ID == "calculated-metrics-log" {
 			t.Logf("Skipping cleanup of legacy log monitoring API")
@@ -73,7 +76,8 @@ func cleanupConfigs(t *testing.T, apis api.APIs, c dtclient.ConfigClient, suffix
 	}
 }
 
-func cleanupSettings(t *testing.T, fs afero.Fs, manifestPath string, loadedManifest manifest.Manifest, environment string, c dtclient.SettingsClient) {
+// cleanupByGeneratedID removes test configurations of a given manifest's projects by their generated identifiers
+func cleanupByGeneratedID(t *testing.T, fs afero.Fs, manifestPath string, loadedManifest manifest.Manifest, environment string, clients *client.ClientSet) {
 	projects := LoadProjects(t, fs, manifestPath, loadedManifest)
 	for _, p := range projects {
 		cfgsForEnv, ok := p.Configs[environment]
@@ -82,14 +86,17 @@ func cleanupSettings(t *testing.T, fs afero.Fs, manifestPath string, loadedManif
 		}
 		for _, configs := range cfgsForEnv {
 			for _, cfg := range configs {
-				if typ, ok := cfg.Type.(config.SettingsType); ok {
+				switch typ := cfg.Type.(type) {
+				case config.SettingsType:
 					extID, err := idutils.GenerateExternalID(cfg.Coordinate)
 					if err != nil {
 						t.Log(err)
 						continue
 					}
-
-					deleteSettingsObjects(t, typ.SchemaId, extID, c)
+					deleteSettingsObjects(t, typ.SchemaId, extID, clients.Settings())
+				case config.AutomationType:
+					id := idutils.GenerateUUIDFromCoordinate(cfg.Coordinate)
+					deleteAutomation(t, typ.Resource, id, clients.Automation())
 				}
 			}
 		}
@@ -115,5 +122,17 @@ func deleteSettingsObjects(t *testing.T, schema, externalID string, c dtclient.S
 		} else {
 			log.Info("Cleaned up test Setting %s (%s)", externalID, schema)
 		}
+	}
+}
+
+func deleteAutomation(t *testing.T, resource config.AutomationResource, id string, c *automation.Client) {
+	resourceType, err := automationClientResourceTypeFromConfigType(resource)
+	if err != nil {
+		t.Logf("Unable to delete Automation config %s (%s): %v", id, resource, err)
+		return
+	}
+	err = c.Delete(resourceType, id)
+	if err != nil {
+		t.Logf("Failed to cleanup test config: could not delete Automation (%s) object with ID %s: %v", resource, id, err)
 	}
 }
