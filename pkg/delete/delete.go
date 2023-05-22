@@ -18,6 +18,7 @@ package delete
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
@@ -161,18 +162,12 @@ func deleteAutomations(c automationClient, automationResource config.AutomationR
 
 		id := idutils.GenerateUUIDFromCoordinate(e.asCoordinate())
 
-		var err error
-		switch automationResource {
-		case config.Workflow:
-			err = c.Delete(automation.Workflows, id)
-		case config.BusinessCalendar:
-			err = c.Delete(automation.BusinessCalendars, id)
-		case config.SchedulingRule:
-			err = c.Delete(automation.SchedulingRules, id)
-		default:
-			err = fmt.Errorf("unknown rsource type %q", automationResource)
+		resourceType, err := automationutils.ClientResourceTypeFromConfigType(automationResource)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("could not delete Automation object with ID %q: %w", id, err))
 		}
 
+		err = c.Delete(resourceType, id)
 		if err != nil {
 			errors = append(errors, fmt.Errorf("could not delete Automation object with ID %q: %w", id, err))
 		}
