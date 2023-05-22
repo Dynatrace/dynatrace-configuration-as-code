@@ -19,6 +19,7 @@
 package integrationtest
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
@@ -126,7 +127,7 @@ func deleteSettingsObjects(t *testing.T, schema, externalID string, c dtclient.S
 }
 
 func deleteAutomation(t *testing.T, resource config.AutomationResource, id string, c *automation.Client) {
-	resourceType, err := automationClientResourceTypeFromConfigType(resource)
+	resourceType, err := automationutils.ClientResourceTypeFromConfigType(resource)
 	if err != nil {
 		t.Logf("Unable to delete Automation config %s (%s): %v", id, resource, err)
 		return

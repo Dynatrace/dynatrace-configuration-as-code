@@ -21,6 +21,7 @@ package integrationtest
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	"testing"
@@ -194,7 +195,7 @@ func assertSetting(t *testing.T, c dtclient.SettingsClient, typ config.SettingsT
 }
 
 func assertAutomation(t *testing.T, c automation.Client, env manifest.EnvironmentDefinition, shouldBeAvailable bool, resource config.AutomationResource, cfg config.Config) {
-	resourceType, err := automationClientResourceTypeFromConfigType(resource)
+	resourceType, err := automationutils.ClientResourceTypeFromConfigType(resource)
 	assert.NilError(t, err, "failed to get resource type for: %s", cfg.Coordinate)
 
 	var expectedId string

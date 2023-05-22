@@ -18,6 +18,7 @@ package deploy
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
@@ -51,18 +52,13 @@ func deployAutomation(client automationClient, properties parameter.Properties, 
 		id = idutils.GenerateUUIDFromCoordinate(c.Coordinate)
 	}
 
-	var err error
-	var resp *automation.Response
-	switch t.Resource {
-	case config.Workflow:
-		resp, err = client.Upsert(automation.Workflows, id, []byte(renderedConfig))
-	case config.BusinessCalendar:
-		resp, err = client.Upsert(automation.BusinessCalendars, id, []byte(renderedConfig))
-	case config.SchedulingRule:
-		resp, err = client.Upsert(automation.SchedulingRules, id, []byte(renderedConfig))
-	default:
-		err = fmt.Errorf("unkonwn rsource type %q", t.Resource)
+	resourceType, err := automationutils.ClientResourceTypeFromConfigType(t.Resource)
+	if err != nil {
+		return nil, fmt.Errorf("failed to upsert automation object of type %s with id %s: %w", t.Resource, id, err)
 	}
+
+	var resp *automation.Response
+	resp, err = client.Upsert(resourceType, id, []byte(renderedConfig))
 	if resp == nil || err != nil {
 		return nil, fmt.Errorf("failed to upsert automation object of type %s with id %s: %w", t.Resource, id, err)
 	}
