@@ -1,0 +1,8 @@
+configs:
+- id: alerting-profile
+  config:
+    name: alert-download-demo
+    template: profile.json
+    skip: false
+  type:
+    api: alerting-profile
