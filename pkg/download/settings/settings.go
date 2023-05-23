@@ -151,7 +151,7 @@ func (d *Downloader) convertAllObjects(objects []dtclient.DownloadSettingsObject
 	for _, o := range objects {
 
 		if o.ModificationInfo != nil && !o.ModificationInfo.Modifiable {
-			log.Warn("Downloaded settings object %q (%s) will be discarded. Reason: Unmodifiable default setting.", o.ObjectId, o.SchemaId)
+			log.Debug("Discarded settings object %q (%s). Reason: Unmodifiable default setting.", o.ObjectId, o.SchemaId)
 			continue
 		}
 
@@ -163,7 +163,7 @@ func (d *Downloader) convertAllObjects(objects []dtclient.DownloadSettingsObject
 		}
 		// skip discarded settings objects
 		if shouldDiscard, reason := d.filters.Get(o.SchemaId).ShouldDiscard(contentUnmarshalled); shouldDiscard {
-			log.Warn("Downloaded setting object %q (%s) will be discarded. Reason: %s", o.ObjectId, o.SchemaId, reason)
+			log.Debug("Discarded setting object %q (%s). Reason: %s", o.ObjectId, o.SchemaId, reason)
 			continue
 		}
 
