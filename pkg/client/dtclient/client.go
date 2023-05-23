@@ -84,12 +84,21 @@ type ConfigClient interface {
 
 // DownloadSettingsObject is the response type for the ListSettings operation
 type DownloadSettingsObject struct {
-	ExternalId    string          `json:"externalId"`
-	SchemaVersion string          `json:"schemaVersion"`
-	SchemaId      string          `json:"schemaId"`
-	ObjectId      string          `json:"objectId"`
-	Scope         string          `json:"scope"`
-	Value         json.RawMessage `json:"value"`
+	ExternalId       string                    `json:"externalId"`
+	SchemaVersion    string                    `json:"schemaVersion"`
+	SchemaId         string                    `json:"schemaId"`
+	ObjectId         string                    `json:"objectId"`
+	Scope            string                    `json:"scope"`
+	Value            json.RawMessage           `json:"value"`
+	ModificationInfo *SettingsModificationInfo `json:"modificationInfo"`
+}
+
+type SettingsModificationInfo struct {
+	Deletable          bool          `json:"deletable"`
+	Modifiable         bool          `json:"modifiable"`
+	Movable            bool          `json:"movable"`
+	ModifiablePaths    []interface{} `json:"modifiablePaths"`
+	NonModifiablePaths []interface{} `json:"nonModifiablePaths"`
 }
 
 // ErrSettingNotFound is returned when no settings 2.0 object could be found
@@ -126,11 +135,11 @@ type SettingsClient interface {
 }
 
 // defaultListSettingsFields  are the fields we are interested in when getting setting objects
-const defaultListSettingsFields = "objectId,value,externalId,schemaVersion,schemaId,scope"
+const defaultListSettingsFields = "objectId,value,externalId,schemaVersion,schemaId,scope,modificationInfo"
 
 // reducedListSettingsFields are the fields we are interested in when getting settings objects but don't care about the
 // actual value payload
-const reducedListSettingsFields = "objectId,externalId,schemaVersion,schemaId,scope"
+const reducedListSettingsFields = "objectId,externalId,schemaVersion,schemaId,scope,modificationInfo"
 const defaultPageSize = "500"
 const defaultPageSizeEntities = "4000"
 

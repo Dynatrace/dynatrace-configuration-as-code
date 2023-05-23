@@ -1,0 +1,46 @@
+{
+    "items": [
+        {
+            "externalId": "monaco:ext-id",
+            "schemaVersion": "1",
+            "schemaId": "settings-schema",
+            "objectId": "so_1",
+            "scope": "test",
+            "value": {
+                "name": "SettingsTest-1"
+            }
+        },
+        {
+            "schemaVersion": "1",
+            "schemaId": "settings-schema",
+            "objectId": "so_2",
+            "scope": "test",
+            "value": {
+                "name": "SettingsTest-2"
+            },
+            "modificationInfo": {
+                "deletable": false,
+                "modifiable": false,
+                "movable": true,
+                "modifiablePaths": [],
+                "nonModifiablePaths": []
+            }
+        },
+        {
+            "schemaVersion": "1",
+            "schemaId": "settings-schema",
+            "objectId": "so_3",
+            "scope": "test",
+            "value": {
+                "name": "SettingsTest-3"
+            },
+            "modificationInfo": {
+                "deletable": true,
+                "modifiable": true,
+                "movable": true,
+                "modifiablePaths": [],
+                "nonModifiablePaths": []
+            }
+        }
+    ]
+}

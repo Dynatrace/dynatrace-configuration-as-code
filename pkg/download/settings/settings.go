@@ -150,6 +150,11 @@ func (d *Downloader) convertAllObjects(objects []dtclient.DownloadSettingsObject
 	result := make([]config.Config, 0, len(objects))
 	for _, o := range objects {
 
+		if o.ModificationInfo != nil && !o.ModificationInfo.Modifiable {
+			log.Warn("Downloaded settings object %q (%s) will be discarded. Reason: Unmodifiable default setting.", o.ObjectId, o.SchemaId)
+			continue
+		}
+
 		// try to unmarshall settings value
 		var contentUnmarshalled map[string]interface{}
 		if err := json.Unmarshal(o.Value, &contentUnmarshalled); err != nil {
@@ -158,7 +163,7 @@ func (d *Downloader) convertAllObjects(objects []dtclient.DownloadSettingsObject
 		}
 		// skip discarded settings objects
 		if shouldDiscard, reason := d.filters.Get(o.SchemaId).ShouldDiscard(contentUnmarshalled); shouldDiscard {
-			log.Warn("Downloaded setting of schema %q will be discarded. Reason: %s", o.SchemaId, reason)
+			log.Warn("Downloaded setting object %q (%s) will be discarded. Reason: %s", o.ObjectId, o.SchemaId, reason)
 			continue
 		}
 

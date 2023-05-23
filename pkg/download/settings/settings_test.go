@@ -164,6 +164,59 @@ func TestDownloadAll(t *testing.T) {
 			},
 			want: v2.ConfigsPerType{"id1": {}},
 		},
+		{
+			name: "DownloadSettings - discard unmodifable settings",
+			mockValues: mockValues{
+				ListSchemasCalls: 1,
+				Schemas: func() (dtclient.SchemaList, error) {
+					return dtclient.SchemaList{{SchemaId: "id1"}}, nil
+				},
+				Settings: func() ([]dtclient.DownloadSettingsObject, error) {
+					return []dtclient.DownloadSettingsObject{
+						{
+							ExternalId:    "ex1",
+							SchemaVersion: "sv1",
+							SchemaId:      "sid1",
+							ObjectId:      "oid1",
+							Scope:         "tenant",
+							Value:         json.RawMessage("{}"),
+						},
+						{
+							ExternalId:    "ex2",
+							SchemaVersion: "sv1",
+							SchemaId:      "sid1",
+							ObjectId:      "oid2",
+							Scope:         "tenant",
+							Value:         json.RawMessage("{}"),
+							ModificationInfo: &dtclient.SettingsModificationInfo{
+								Modifiable: false,
+							},
+						},
+					}, nil
+				},
+				ListSettingsCalls: 1,
+			},
+			want: v2.ConfigsPerType{"id1": {
+				{
+					Template: template.NewDownloadTemplate(uuid, uuid, "{}"),
+					Coordinate: coordinate.Coordinate{
+						Project:  "projectName",
+						Type:     "sid1",
+						ConfigId: uuid,
+					},
+					Type: config.SettingsType{
+						SchemaId:      "sid1",
+						SchemaVersion: "sv1",
+					},
+					Parameters: map[string]parameter.Parameter{
+						config.NameParameter:  &value.ValueParameter{Value: uuid},
+						config.ScopeParameter: &value.ValueParameter{Value: "tenant"},
+					},
+					Skip:           false,
+					OriginObjectId: "oid1",
+				},
+			}},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
