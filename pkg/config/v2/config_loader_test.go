@@ -766,6 +766,48 @@ configs:
   type: some-api`,
 			wantErrorsContain: []string{NameParameter},
 		},
+		{
+			name:             "loads config with object id override",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    name: 'Star Trek > Star Wars'
+    template: 'profile.json'
+    originObjectId: origin-object-id
+  type:
+    settings:
+      schema: 'builtin:profile.test'
+      schemaVersion: '1.0'
+      scope: 'tenant'
+  environmentOverrides:
+    - environment: "env name"
+      override:
+        originObjectId: better-origin-object-id`,
+			wantConfigs: []Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "builtin:profile.test",
+						ConfigId: "profile-id",
+					},
+					Type: SettingsType{
+						SchemaId:      "builtin:profile.test",
+						SchemaVersion: "1.0",
+					},
+					Parameters: Parameters{
+						"name":         &value.ValueParameter{Value: "Star Trek > Star Wars"},
+						ScopeParameter: &value.ValueParameter{Value: "tenant"},
+					},
+					Skip:           false,
+					Environment:    "env name",
+					Group:          "default",
+					OriginObjectId: "better-origin-object-id",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
