@@ -333,6 +333,10 @@ func applyOverrides(base *configDefinition, override configDefinition) {
 		base.Skip = override.Skip
 	}
 
+	if override.OriginObjectId != "" {
+		base.OriginObjectId = override.OriginObjectId
+	}
+
 	for name, param := range override.Parameters {
 		base.Parameters[name] = param
 	}
