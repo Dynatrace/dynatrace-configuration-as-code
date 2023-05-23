@@ -17,10 +17,9 @@ package template
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/spf13/afero"
 	"path/filepath"
 	"strings"
-
-	"github.com/spf13/afero"
 )
 
 // Template is the main interface of a configuration payload that may contain template references (using Go Templates)
