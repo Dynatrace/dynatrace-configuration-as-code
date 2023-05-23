@@ -92,6 +92,42 @@ func TestLoadTemplate_ReturnsErrorIfFileDoesNotExist(t *testing.T) {
 	assert.ErrorContains(t, gotErr, testFilepath)
 }
 
+func TestLoadTemplate_WorksWithAnyPathSeparator(t *testing.T) {
+
+	testFs := afero.NewReadOnlyFs(afero.NewOsFs())
+	tests := []struct {
+		name          string
+		givenFilepath string
+	}{
+		{
+			"windows path",
+			`test-resources\template.json`,
+		},
+		{
+			"relative windows path",
+			`..\template\test-resources\template.json`,
+		},
+		{
+			"unix path",
+			`test-resources/template.json`,
+		},
+		{
+			"relative unix path",
+			`../template/test-resources/template.json`,
+		},
+		{
+			"mixed path",
+			`..\template\test-resources/template.json`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, gotErr := LoadTemplate(testFs, tt.givenFilepath)
+			assert.NilError(t, gotErr)
+		})
+	}
+}
+
 func Test_fileBasedTemplate_Id_Returns_Path(t *testing.T) {
 	template := fileBasedTemplate{
 		path:    "PATH",
