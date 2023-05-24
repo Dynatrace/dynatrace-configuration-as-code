@@ -17,8 +17,10 @@
 package v2
 
 import (
+	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/compound"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/list"
@@ -26,9 +28,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -122,6 +123,7 @@ configs:
 					Type: ClassicApiType{
 						Api: "some-api",
 					},
+					Template: template.CreateTemplateFromString("profile.json", "{}"),
 					Parameters: Parameters{
 						"name": &value.ValueParameter{Value: "Star Trek Service"},
 					},
@@ -156,6 +158,7 @@ configs:
 					Type: ClassicApiType{
 						Api: "some-api",
 					},
+					Template: template.CreateTemplateFromString("profile.json", "{}"),
 					Parameters: Parameters{
 						"name": &value.ValueParameter{Value: "Star Trek Service"},
 					},
@@ -191,6 +194,7 @@ configs:
 					Type: ClassicApiType{
 						Api: "some-api",
 					},
+					Template: template.CreateTemplateFromString("profile.json", "{}"),
 					Parameters: Parameters{
 						"name": &value.ValueParameter{Value: "Star Trek Service"},
 					},
@@ -225,6 +229,7 @@ configs:
 					Type: ClassicApiType{
 						Api: "some-api",
 					},
+					Template: template.CreateTemplateFromString("profile.json", "{}"),
 					Parameters: Parameters{
 						"name": &value.ValueParameter{Value: "Star Trek Service"},
 					},
@@ -321,6 +326,7 @@ configs:
 						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 					},
+					Template: template.CreateTemplateFromString("profile.json", "{}"),
 					Parameters: Parameters{
 						"name":         &value.ValueParameter{Value: "Star Trek > Star Wars"},
 						ScopeParameter: &value.ValueParameter{Value: "tenant"},
@@ -361,6 +367,7 @@ configs:
 						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 					},
+					Template: template.CreateTemplateFromString("profile.json", "{}"),
 					Parameters: Parameters{
 						"name":         &value.ValueParameter{Value: "Star Trek > Star Wars"},
 						ScopeParameter: &value.ValueParameter{Value: "environment"},
@@ -403,6 +410,7 @@ configs:
 						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 					},
+					Template: template.CreateTemplateFromString("profile.json", "{}"),
 					Parameters: Parameters{
 						NameParameter:  &value.ValueParameter{Value: "Star Trek > Star Wars"},
 						ScopeParameter: ref.New("project", "something", "configId", "id"),
@@ -441,6 +449,7 @@ configs:
 						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 					},
+					Template: template.CreateTemplateFromString("profile.json", "{}"),
 					Parameters: Parameters{
 						NameParameter:  &value.ValueParameter{Value: "Star Trek > Star Wars"},
 						ScopeParameter: ref.New("project", "something", "configId", "id"),
@@ -479,6 +488,7 @@ configs:
 						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 					},
+					Template: template.CreateTemplateFromString("profile.json", "{}"),
 					Parameters: Parameters{
 						NameParameter:  &value.ValueParameter{Value: "Star Trek > Star Wars"},
 						ScopeParameter: ref.New("proj2", "something", "configId", "id"),
@@ -567,6 +577,7 @@ configs:
 						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 					},
+					Template: template.CreateTemplateFromString("profile.json", "{}"),
 					Parameters: Parameters{
 						NameParameter:  &value.ValueParameter{Value: "Star Trek > Star Wars"},
 						ScopeParameter: &environment.EnvironmentVariableParameter{Name: "TEST"},
@@ -602,6 +613,7 @@ configs:
 					Type: AutomationType{
 						Resource: Workflow,
 					},
+					Template: template.CreateTemplateFromString("profile.json", "{}"),
 					Parameters: Parameters{
 						NameParameter: &value.ValueParameter{Value: "Star Trek > Star Wars"},
 					},
@@ -635,6 +647,7 @@ configs:
 					Type: AutomationType{
 						Resource: BusinessCalendar,
 					},
+					Template: template.CreateTemplateFromString("profile.json", "{}"),
 					Parameters: Parameters{
 						NameParameter: &value.ValueParameter{Value: "Star Trek > Star Wars"},
 					},
@@ -668,6 +681,7 @@ configs:
 					Type: AutomationType{
 						Resource: SchedulingRule,
 					},
+					Template: template.CreateTemplateFromString("profile.json", "{}"),
 					Parameters: Parameters{
 						NameParameter: &value.ValueParameter{Value: "Star Trek > Star Wars"},
 					},
@@ -797,6 +811,7 @@ configs:
 						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 					},
+					Template: template.CreateTemplateFromString("profile.json", "{}"),
 					Parameters: Parameters{
 						"name":         &value.ValueParameter{Value: "Star Trek > Star Wars"},
 						ScopeParameter: &value.ValueParameter{Value: "tenant"},
@@ -829,8 +844,127 @@ configs:
 				}
 				return
 			}
-			assert.Assert(t, len(gotErrors) == 0, "expected no errors but got: %v", gotErrors)
-			assert.DeepEqual(t, gotConfigs, tt.wantConfigs, cmpopts.IgnoreInterfaces(struct{ template.Template }{}))
+			assert.Empty(t, gotErrors, "expected no errors but got: %v", gotErrors)
+			assert.Equal(t, gotConfigs, tt.wantConfigs)
 		})
 	}
+}
+
+func Test_validateParameter(t *testing.T) {
+	knownAPIs := map[string]struct{}{"some-api": {}, "other-api": {}}
+
+	type given struct {
+		configType string
+		param      parameter.Parameter
+	}
+	tests := []struct {
+		name    string
+		given   given
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			"valid reference between Config API types",
+			given{
+				"some-api",
+				ref.New("project", "other-api", "config", "id"),
+			},
+			assert.NoError,
+		},
+		{
+			"invalid reference from Config API to Setting ID",
+			given{
+				"some-api",
+				ref.New("project", "builtin:some-setting", "config", "id"),
+			},
+			assert.Error,
+		},
+		{
+			"valid reference from Config API to non-ID parameter of Setting",
+			given{
+				"some-api",
+				ref.New("project", "builtin:some-setting", "config", "not-the-id-prop"),
+			},
+			assert.NoError,
+		},
+		{
+			"valid reference between Settings",
+			given{
+				"builtin:some-setting",
+				ref.New("project", "builtin:other-setting", "config", "not-the-id-prop"),
+			},
+			assert.NoError,
+		},
+		{
+			"valid reference between Config API types in Compound Param",
+			given{
+				"some-api",
+				makeCompoundParam(t, []parameter.ParameterReference{
+					{
+						Config:   coordinate.Coordinate{Project: "project", Type: "other-api", ConfigId: "config"},
+						Property: "id",
+					},
+					{
+						Config:   coordinate.Coordinate{Project: "project", Type: "some-api", ConfigId: "config"},
+						Property: "some-value",
+					},
+				}),
+			},
+			assert.NoError,
+		},
+		{
+			"invalid reference from Config API to Setting ID in Compound Param",
+			given{
+				"some-api",
+				makeCompoundParam(t, []parameter.ParameterReference{
+					{
+						Config:   coordinate.Coordinate{Project: "project", Type: "builtin:some-setting", ConfigId: "config"},
+						Property: "id",
+					},
+					{
+						Config:   coordinate.Coordinate{Project: "project", Type: "some-api", ConfigId: "config"},
+						Property: "some-value",
+					},
+				}),
+			},
+			assert.Error,
+		},
+		{
+			"valid reference from Config API to non-ID parameter of Setting in Compound Param",
+			given{
+				"some-api",
+				makeCompoundParam(t, []parameter.ParameterReference{
+					{
+						Config:   coordinate.Coordinate{Project: "project", Type: "other-api", ConfigId: "config"},
+						Property: "id",
+					},
+					{
+						Config:   coordinate.Coordinate{Project: "project", Type: "builtin:some-setting", ConfigId: "config"},
+						Property: "some-value",
+					},
+				}),
+			},
+			assert.NoError,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := singleConfigEntryLoadContext{
+				configFileLoaderContext: &configFileLoaderContext{
+					LoaderContext: &LoaderContext{
+						KnownApis:       knownAPIs,
+						ParametersSerDe: DefaultParameterParsers,
+					},
+				},
+				Type: tt.given.configType,
+			}
+
+			tt.wantErr(t, validateParameter(&ctx, "paramName", tt.given.param), fmt.Sprintf("validateParameter - given %s", tt.given))
+		})
+	}
+}
+
+func makeCompoundParam(t *testing.T, refs []parameter.ParameterReference) *compound.CompoundParameter {
+	compoundParam, err := compound.New("param", "{}", refs)
+	assert.NoError(t, err)
+	return compoundParam
 }

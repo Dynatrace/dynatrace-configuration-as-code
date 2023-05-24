@@ -30,10 +30,11 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/exp/maps"
+	"strings"
 	"testing"
 )
 
-func TestReferences(t *testing.T) {
+func TestReferencesAreResolvedOnDownload(t *testing.T) {
 
 	envs := []string{"classic_env", "platform_env"}
 
@@ -48,9 +49,9 @@ func TestReferences(t *testing.T) {
 				"-a", "alerting-profile,notification,management-zone",
 			},
 			validate: func(t *testing.T, ctx TestContext, confsPerType project.ConfigsPerType) {
-				managementZone := findConfig(t, confsPerType, "management-zone", "zone_"+ctx.suffix)
-				profile := findConfig(t, confsPerType, "alerting-profile", "profile_"+ctx.suffix)
-				notification := findConfig(t, confsPerType, "notification", "notification_"+ctx.suffix)
+				managementZone := findConfig(t, confsPerType, "management-zone", "zone-ca_"+ctx.suffix)
+				profile := findConfig(t, confsPerType, "alerting-profile", "profile-ca_"+ctx.suffix)
+				notification := findConfig(t, confsPerType, "notification", "notification-ca_"+ctx.suffix)
 
 				assertRefParamFromTo(t, profile, managementZone)
 				assertRefParamFromTo(t, notification, profile)
@@ -77,9 +78,9 @@ func TestReferences(t *testing.T) {
 				"-s", "builtin:problem.notifications,builtin:alerting.profile",
 			},
 			validate: func(t *testing.T, ctx TestContext, confsPerType project.ConfigsPerType) {
-				managementZone := findConfig(t, confsPerType, "management-zone", "zone_"+ctx.suffix)
-				profile := findSetting(t, confsPerType, "builtin:alerting.profile", "profile_"+ctx.suffix, "name")
-				notification := findSetting(t, confsPerType, "builtin:problem.notifications", "notification_"+ctx.suffix, "displayName")
+				managementZone := findConfig(t, confsPerType, "management-zone", "zone-swc_"+ctx.suffix)
+				profile := findSetting(t, confsPerType, "builtin:alerting.profile", "profile-swc_"+ctx.suffix, "name")
+				notification := findSetting(t, confsPerType, "builtin:problem.notifications", "notification-swc_"+ctx.suffix, "displayName")
 
 				assertRefParamFromTo(t, profile, managementZone)
 				assertRefParamFromTo(t, notification, profile)
@@ -92,9 +93,9 @@ func TestReferences(t *testing.T) {
 				"-s", "builtin:management-zones",
 			},
 			validate: func(t *testing.T, ctx TestContext, confsPerType project.ConfigsPerType) {
-				managementZone := findSetting(t, confsPerType, "builtin:management-zones", "zone_"+ctx.suffix, "name")
-				profile := findConfig(t, confsPerType, "alerting-profile", "profile_"+ctx.suffix)
-				notification := findConfig(t, confsPerType, "notification", "notification_"+ctx.suffix)
+				managementZone := findSetting(t, confsPerType, "builtin:management-zones", "zone-cws_"+ctx.suffix, "name")
+				profile := findConfig(t, confsPerType, "alerting-profile", "profile-cws_"+ctx.suffix)
+				notification := findConfig(t, confsPerType, "notification", "notification-cws_"+ctx.suffix)
 
 				assertRefParamFromTo(t, profile, managementZone)
 				assertRefParamFromTo(t, notification, profile)
@@ -160,6 +161,35 @@ func TestReferences(t *testing.T) {
 			})
 		}
 	}
+}
+
+func TestReferencesAreValid(t *testing.T) {
+	configFolder := "test-resources/references/"
+	manifestFile := configFolder + "manifest.yaml"
+
+	fs := testutils.CreateTestFileSystem()
+	cmd := runner.BuildCli(fs)
+	cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", "platform_env", "--dry-run"})
+	err := cmd.Execute()
+	assert.NoError(t, err, "expected configurations to be valid")
+
+}
+
+func TestReferencesFromClassicConfigsToSettingsResultInError(t *testing.T) {
+	configFolder := "test-resources/references/"
+	manifestFile := configFolder + "invalid-configs-manifest.yaml"
+
+	fs := testutils.CreateTestFileSystem()
+	logOutput := strings.Builder{}
+
+	cmd := runner.BuildCliWithCapturedLog(fs, &logOutput)
+	cmd.SetArgs([]string{"deploy", "-v", manifestFile, "--environment", "platform_env", "--dry-run"})
+	err := cmd.Execute()
+	assert.Error(t, err, "expected invalid configurations to result in user error")
+
+	runLog := strings.ToLower(logOutput.String())
+	assert.Contains(t, runLog, "can only reference ids of other config api types")
+	assert.Contains(t, runLog, "parameter \"alertingprofileid\" references \"builtin:alerting.profile\" type")
 }
 
 func assertRefParamFromTo(t *testing.T, from config.Config, to config.Config) {

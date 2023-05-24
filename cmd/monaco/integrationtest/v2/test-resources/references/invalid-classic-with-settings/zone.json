@@ -1,0 +1,42 @@
+{
+    "name": "{{.name}}",
+    "rules": [
+        {
+            "enabled": true,
+            "type": "DIMENSION",
+            "dimensionRule": {
+                "appliesTo": "METRIC",
+                "conditions": [
+                    {
+                        "conditionType": "DIMENSION",
+                        "key": "application",
+                        "ruleMatcher": "EQUALS",
+                        "value": "AuthService"
+                    }
+                ]
+            }
+        },
+        {
+            "enabled": true,
+            "type": "ME",
+            "attributeRule": {
+                "entityType": "SERVICE",
+                "conditions": [
+                    {
+                        "key": "SERVICE_TOPOLOGY",
+                        "operator": "EQUALS",
+                        "enumValue": "FULLY_MONITORED"
+                    },
+                    {
+                        "key": "SERVICE_NAME",
+                        "operator": "CONTAINS",
+                        "stringValue": "authentication",
+                        "caseSensitive": false
+                    }
+                ],
+                "serviceToHostPropagation": true,
+                "serviceToPGPropagation": true
+            }
+        }
+    ]
+}
