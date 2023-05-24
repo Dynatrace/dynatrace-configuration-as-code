@@ -71,7 +71,7 @@ install:
 	@CGO_ENABLED=0 go install -a -tags netgo -ldflags '-w -extldflags "-static"' ./cmd/monaco
 
 run:
-	@CGO_ENABLED=0 go run -a -tags netgo -ldflags '-w -extldflags "-static"' ./cmd/monaco
+	go run ./cmd/monaco
 
 clean:
 	@echo "Removing $(BINARY_NAME), bin/ and /build ..."
