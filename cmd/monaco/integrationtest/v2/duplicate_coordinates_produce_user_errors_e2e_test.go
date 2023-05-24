@@ -22,11 +22,10 @@ package v2
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
+	"github.com/stretchr/testify/assert"
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"gotest.tools/assert"
 )
 
 func TestAllDuplicateErrorsAreReported(t *testing.T) {
@@ -42,6 +41,6 @@ func TestAllDuplicateErrorsAreReported(t *testing.T) {
 	assert.ErrorContains(t, err, "error while loading projects")
 
 	runLog := strings.ToLower(logOutput.String())
-	strings.Contains(runLog, "duplicate")
-	strings.Contains(runLog, "project:alerting-profile:profile")
+	assert.Contains(t, runLog, "duplicate")
+	assert.Contains(t, runLog, "project:alerting-profile:profile")
 }
