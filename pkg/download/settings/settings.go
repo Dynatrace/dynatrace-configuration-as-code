@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/errors"
 	"strings"
@@ -150,7 +151,7 @@ func (d *Downloader) convertAllObjects(objects []dtclient.DownloadSettingsObject
 	result := make([]config.Config, 0, len(objects))
 	for _, o := range objects {
 
-		if o.ModificationInfo != nil && !o.ModificationInfo.Modifiable {
+		if shouldFilterUnmodifiableSettings() && o.ModificationInfo != nil && !o.ModificationInfo.Modifiable {
 			log.Debug("Discarded settings object %q (%s). Reason: Unmodifiable default setting.", o.ObjectId, o.SchemaId)
 			continue
 		}
@@ -162,7 +163,7 @@ func (d *Downloader) convertAllObjects(objects []dtclient.DownloadSettingsObject
 			return result
 		}
 		// skip discarded settings objects
-		if shouldDiscard, reason := d.filters.Get(o.SchemaId).ShouldDiscard(contentUnmarshalled); shouldDiscard {
+		if shouldDiscard, reason := d.filters.Get(o.SchemaId).ShouldDiscard(contentUnmarshalled); shouldFilterSettings() && shouldDiscard {
 			log.Debug("Discarded setting object %q (%s). Reason: %s", o.ObjectId, o.SchemaId, reason)
 			continue
 		}
@@ -191,6 +192,14 @@ func (d *Downloader) convertAllObjects(objects []dtclient.DownloadSettingsObject
 		result = append(result, c)
 	}
 	return result
+}
+
+func shouldFilterSettings() bool {
+	return featureflags.DownloadFilter().Enabled() && featureflags.DownloadFilterSettings().Enabled()
+}
+
+func shouldFilterUnmodifiableSettings() bool {
+	return shouldFilterSettings() && featureflags.DownloadFilterSettingsUnmodifiable().Enabled()
 }
 
 func validateSpecificSchemas(c dtclient.SettingsClient, schemas []string) (valid bool, unknownSchemas []string) {

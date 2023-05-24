@@ -120,3 +120,30 @@ func FastDependencyResolver() FeatureFlag {
 		defaultEnabled: false,
 	}
 }
+
+// DownloadFilter returns the feature flag controlling whether download filters out configurations that we believe can't
+// be managed by config-as-code. Some users may still want to download everything on an environment, and turning off the
+// filters allows them to do so.
+func DownloadFilter() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_DOWNLOAD_FILTER",
+		defaultEnabled: true,
+	}
+}
+
+// DownloadFilterSettings returns the feature flag controlling whether general filters are applied to Settings download.
+func DownloadFilterSettings() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_DOWNLOAD_FILTER_SETTINGS",
+		defaultEnabled: true,
+	}
+}
+
+// DownloadFilterSettingsUnmodifiable returns the feature flag controlling whether Settings marked as unmodifiable by
+// their dtclient.SettingsModificationInfo are filtered out on download.
+func DownloadFilterSettingsUnmodifiable() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_DOWNLOAD_FILTER_SETTINGS_UNMODIFIABLE",
+		defaultEnabled: true,
+	}
+}

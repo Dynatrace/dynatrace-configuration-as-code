@@ -21,6 +21,7 @@ package settings
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/errors"
@@ -32,6 +33,7 @@ import (
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"strconv"
 	"testing"
 )
 
@@ -405,6 +407,112 @@ func Test_validateSpecificSettings(t *testing.T) {
 			gotValid, gotUnknownSchemas := validateSpecificSchemas(c, tt.given.specificSettingsRequested)
 			assert.Equalf(t, tt.wantValid, gotValid, "validateSpecificSchemas(%v) for available settings %v", tt.given.specificSettingsRequested, tt.given.specificSettingsRequested)
 			assert.Equalf(t, tt.wantUnknownSchemas, gotUnknownSchemas, "validateSpecificSchemas(%v) for available settings %v", tt.given.specificSettingsRequested, tt.given.specificSettingsRequested)
+		})
+	}
+}
+
+func Test_shouldFilterUnmodifiableSettings(t *testing.T) {
+	type flags struct {
+		downloadFilterFF                     bool
+		downloadFilterSettingsFF             bool
+		downloadFilterSettingsUnmodifiableFF bool
+	}
+	tests := []struct {
+		name  string
+		given flags
+		want  bool
+	}{
+		{
+			name: "applies filter if all feature flags are active",
+			given: flags{
+				downloadFilterFF:                     true,
+				downloadFilterSettingsFF:             true,
+				downloadFilterSettingsUnmodifiableFF: true,
+			},
+			want: true,
+		},
+		{
+			name: "does not apply filters if base flag is OFF",
+			given: flags{
+				downloadFilterFF:                     false,
+				downloadFilterSettingsFF:             true,
+				downloadFilterSettingsUnmodifiableFF: true,
+			},
+			want: false,
+		},
+		{
+			name: "does not apply filters if settings flag is OFF",
+			given: flags{
+				downloadFilterFF:                     true,
+				downloadFilterSettingsFF:             false,
+				downloadFilterSettingsUnmodifiableFF: true,
+			},
+			want: false,
+		},
+		{
+			name: "does not apply filters if unmodifiable settings flag is OFF",
+			given: flags{
+				downloadFilterFF:                     true,
+				downloadFilterSettingsFF:             true,
+				downloadFilterSettingsUnmodifiableFF: false,
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// GIVEN Feature Flags
+			t.Setenv(featureflags.DownloadFilter().EnvName(), strconv.FormatBool(tt.given.downloadFilterFF))
+			t.Setenv(featureflags.DownloadFilterSettings().EnvName(), strconv.FormatBool(tt.given.downloadFilterSettingsFF))
+			t.Setenv(featureflags.DownloadFilterSettingsUnmodifiable().EnvName(), strconv.FormatBool(tt.given.downloadFilterSettingsUnmodifiableFF))
+
+			assert.Equalf(t, tt.want, shouldFilterUnmodifiableSettings(), "shouldFilterUnmodifableSettings()")
+		})
+	}
+}
+
+func Test_shouldFilterSettings(t *testing.T) {
+	type flags struct {
+		downloadFilterFF         bool
+		downloadFilterSettingsFF bool
+	}
+	tests := []struct {
+		name  string
+		given flags
+		want  bool
+	}{
+		{
+			name: "applies filter if all feature flags are active",
+			given: flags{
+				downloadFilterFF:         true,
+				downloadFilterSettingsFF: true,
+			},
+			want: true,
+		},
+		{
+			name: "does not apply filters if base flag is OFF",
+			given: flags{
+				downloadFilterFF:         false,
+				downloadFilterSettingsFF: true,
+			},
+			want: false,
+		},
+		{
+			name: "does not apply filters if settings flag is OFF",
+			given: flags{
+				downloadFilterFF:         true,
+				downloadFilterSettingsFF: false,
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// GIVEN Feature Flags
+			t.Setenv(featureflags.DownloadFilter().EnvName(), strconv.FormatBool(tt.given.downloadFilterFF))
+			t.Setenv(featureflags.DownloadFilterSettings().EnvName(), strconv.FormatBool(tt.given.downloadFilterSettingsFF))
+
+			assert.Equalf(t, tt.want, shouldFilterSettings(), "shouldFilterSettings()")
 		})
 	}
 }
