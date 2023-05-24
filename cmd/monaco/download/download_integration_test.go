@@ -501,8 +501,9 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 	responses := map[string]string{
 		"/dashboard":      "dashboard/__LIST.json",
 		"/dashboard/id-1": "dashboard/id-1.json",
-		"/dashboard/id-2": "dashboard/id-2.json", //"/dashboard/id-3": "dashboard/id-3.json", // MUST NEVER BE ACCESSED, pre-download filter remove the need to download it
+		"/dashboard/id-2": "dashboard/id-2.json",
 		"/dashboard/id-4": "dashboard/id-4.json",
+		// dashbards 3 & 5 MUST NOT BE ACCESSED - filtered out due to being owned by Dynatrace
 	}
 
 	// Server
@@ -571,6 +572,124 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 				Group:       "default",
 				Environment: projectName,
 				Template:    contentOnlyTemplate{`{"dashboardMetadata": {"name": "{{.name}}","owner": "Not Dynatrace","preset": true},"tiles": []}`},
+				Type:        config.ClassicApiType{Api: "dashboard"},
+			},
+		},
+	}, compareOptions...)
+}
+
+func TestDownloadIntegrationAllDashboardsAreDownloadedIfFilterFFTurnedOff(t *testing.T) {
+	// GIVEN apis, server responses, file system
+	const projectName = "integration-test-dashboard"
+	const testBasePath = "test-resources/" + projectName
+
+	// APIs
+	dashboardApi := api.API{ID: "dashboard", URLPath: "/dashboard", PropertyNameOfGetAllResponse: "dashboards", SingleConfiguration: false, NonUniqueName: false, DeprecatedBy: "", SkipDownload: false}
+	apiMap := api.APIs{
+		dashboardApi.ID: dashboardApi,
+	}
+
+	// Responses
+	responses := map[string]string{
+		"/dashboard":      "dashboard/__LIST.json",
+		"/dashboard/id-1": "dashboard/id-1.json",
+		"/dashboard/id-2": "dashboard/id-2.json",
+		"/dashboard/id-3": "dashboard/id-3.json",
+		"/dashboard/id-4": "dashboard/id-4.json",
+		"/dashboard/id-5": "dashboard/id-5.json",
+	}
+
+	// Server
+	server := dtclient.NewIntegrationTestServer(t, testBasePath, responses)
+
+	fs := afero.NewMemMapFs()
+
+	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+
+	downloaders := downloaders{settings.NewDownloader(dtClient), classic.NewDownloader(dtClient, classic.WithAPIs(apiMap))}
+
+	t.Setenv(featureflags.DownloadFilterClassicConfigs().EnvName(), "false")
+
+	// WHEN we download everything
+	err := doDownloadConfigs(fs, downloaders, setupTestingDownloadOptions(t, server, projectName))
+
+	assert.NilError(t, err)
+
+	// THEN we can load the project again and verify its content
+	projects, errs := loadDownloadedProjects(fs, apiMap)
+	if len(errs) != 0 {
+		for _, err := range errs {
+			t.Errorf("%v", err)
+		}
+		return
+	}
+
+	assert.Equal(t, len(projects), 1)
+	p := projects[0]
+	assert.Equal(t, p.Id, projectName)
+	assert.Equal(t, len(p.Configs), 1)
+
+	configs, found := p.Configs[projectName]
+	assert.Equal(t, found, true)
+	assert.Equal(t, len(configs), 1)
+
+	assert.Equal(t, len(configs["dashboard"]), 5)
+
+	assert.DeepEqual(t, configs, projectLoader.ConfigsPerType{
+		dashboardApi.ID: []config.Config{
+			{
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.ID, ConfigId: "id-1"},
+				Skip:       false,
+				Parameters: map[string]parameter.Parameter{
+					"name": &value.ValueParameter{Value: "Non-unique dashboard-name"},
+				},
+				Group:       "default",
+				Environment: projectName,
+				Template:    contentOnlyTemplate{`{"dashboardMetadata": {"name": "{{.name}}", "owner": "Q"}, "tiles": []}`},
+				Type:        config.ClassicApiType{Api: "dashboard"},
+			},
+			{
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.ID, ConfigId: "id-2"},
+				Skip:       false,
+				Parameters: map[string]parameter.Parameter{
+					"name": &value.ValueParameter{Value: "Non-unique dashboard-name"},
+				},
+				Group:       "default",
+				Environment: projectName,
+				Template:    contentOnlyTemplate{`{"dashboardMetadata": {"name": "{{.name}}", "owner": "Admiral Jean-Luc Picard"}, "tiles": []}`},
+				Type:        config.ClassicApiType{Api: "dashboard"},
+			},
+			{
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.ID, ConfigId: "id-3"},
+				Skip:       false,
+				Parameters: map[string]parameter.Parameter{
+					"name": &value.ValueParameter{Value: "Dashboard owned by Dynatrace"},
+				},
+				Group:       "default",
+				Environment: projectName,
+				Template:    contentOnlyTemplate{`{"dashboardMetadata": {"name": "{{.name}}","owner": "Dynatrace"},"tiles": []}`},
+				Type:        config.ClassicApiType{Api: "dashboard"},
+			},
+			{
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.ID, ConfigId: "id-4"},
+				Skip:       false,
+				Parameters: map[string]parameter.Parameter{
+					"name": &value.ValueParameter{Value: "Dashboard which is a preset"},
+				},
+				Group:       "default",
+				Environment: projectName,
+				Template:    contentOnlyTemplate{`{"dashboardMetadata": {"name": "{{.name}}","owner": "Not Dynatrace","preset": true},"tiles": []}`},
+				Type:        config.ClassicApiType{Api: "dashboard"},
+			},
+			{
+				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.ID, ConfigId: "id-5"},
+				Skip:       false,
+				Parameters: map[string]parameter.Parameter{
+					"name": &value.ValueParameter{Value: "Dashboard which is a preset by Dynatrace"},
+				},
+				Group:       "default",
+				Environment: projectName,
+				Template:    contentOnlyTemplate{`{"dashboardMetadata": {"name": "{{.name}}","owner": "Dynatrace","preset": true},"tiles": []}`},
 				Type:        config.ClassicApiType{Api: "dashboard"},
 			},
 		},

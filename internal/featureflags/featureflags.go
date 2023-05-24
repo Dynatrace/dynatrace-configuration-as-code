@@ -147,3 +147,11 @@ func DownloadFilterSettingsUnmodifiable() FeatureFlag {
 		defaultEnabled: true,
 	}
 }
+
+// DownloadFilterClassicConfigs returns the feature flag controlling whether download filters are applied to Classic Config API download.
+func DownloadFilterClassicConfigs() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_DOWNLOAD_FILTER_CLASSIC_CONFIGS",
+		defaultEnabled: true,
+	}
+}
