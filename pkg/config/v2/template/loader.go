@@ -104,7 +104,6 @@ var (
 // tries to load the file at the given path and turns it into a template.
 // the name of the template will be the sanitized path.
 func LoadTemplate(fs afero.Fs, path string) (Template, error) {
-	log.Debug("Pre-Loading template for %s", path)
 	sanitizedPath := filepath.Clean(strings.ReplaceAll(path, `\`, `/`))
 
 	log.Debug("Loading template for %s", sanitizedPath)
