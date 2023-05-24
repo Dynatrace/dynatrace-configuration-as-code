@@ -145,19 +145,14 @@ pipeline {
                                             case "container":
                                                 // docker hub, only full releases and rc-releases
                                                 if (!isDevRelease) {
-                                                    createContainerAndPushToStorage(version: version, registrySecretsPath: 'keptn-jenkins/monaco/dockerhub-deploy', registry: 'Docker')
-
-                                                    // push latest to full releases and rc-releases
-                                                    createContainerAndPushToStorage(version: 'latest', registrySecretsPath: 'keptn-jenkins/monaco/dockerhub-deploy', registry: 'Docker')
+                                                    createContainerAndPushToStorage(version: version, tagLatest: true, registrySecretsPath: 'keptn-jenkins/monaco/dockerhub-deploy', registry: 'Docker')
                                                 } else {
                                                     echo "Skipping release of ${version} to Docker Hub"
                                                 }
 
-                                                // internal registry, all tags are published
-                                                createContainerAndPushToStorage(version: version, registrySecretsPath: 'keptn-jenkins/monaco/registry-deploy', registry: 'Internal')
-                                                if (!isDevRelease) { // only set latest to full-releases and rc-releases
-                                                    createContainerAndPushToStorage(version: 'latest', registrySecretsPath: 'keptn-jenkins/monaco/registry-deploy', registry: 'Internal')
-                                                }
+                                                // internal registry, all release are published
+                                                tagLatest = !isDevRelease // only tag full-releases and rc-releases as 'latest'
+                                                createContainerAndPushToStorage(version: version, tagLatest: tagLatest, registrySecretsPath: 'keptn-jenkins/monaco/registry-deploy', registry: 'Internal')
 
                                                 break
                                         }
@@ -281,7 +276,7 @@ void signWithSignService(Map args = [source: null, version: null, destDir: '.', 
 
 }
 
-void createContainerAndPushToStorage(Map args = [version: null, registrySecretsPath: null, registry: null]) {
+void createContainerAndPushToStorage(Map args = [version: null, tagLatest: false, registrySecretsPath: null, registry: null]) {
     stage("Publish container: registry=${args.registry}, version=${args.version}") {
         withEnv(["version=${args.version}"]) {
             withVault(vaultSecrets: [[path        : "${args.registrySecretsPath}",
@@ -294,6 +289,10 @@ void createContainerAndPushToStorage(Map args = [version: null, registrySecretsP
                         sh 'docker login --username $username --password $password $registry'
                         sh 'DOCKER_BUILDKIT=1 make docker-container OUTPUT=./build/docker/monaco CONTAINER_NAME=$registry/$repo/dynatrace-configuration-as-code VERSION=$version'
                         sh 'docker push $registry/$repo/dynatrace-configuration-as-code:$version'
+                        if (args.tagLatest) {
+                            sh 'docker tag $registry/$repo/dynatrace-configuration-as-code:$version $registry/$repo/dynatrace-configuration-as-code:latest'
+                            sh 'docker push $registry/$repo/dynatrace-configuration-as-code:latest'
+                        }
                     } finally {
                         sh 'docker logout $registry'
                     }
