@@ -5,7 +5,7 @@ configs:
         schema: builtin:alerting.profile
         scope: environment
     config:
-      name: profile
+      name: profile-swc
       template: profile.json
       parameters:
         managementZoneId: [ management-zone, zone, id ]
@@ -14,7 +14,7 @@ configs:
     type:
       api: management-zone
     config:
-      name: zone
+      name: zone-swc
       parameters:
         environment: environment1
         meId: HOST_GROUP-1234567890123456
@@ -27,7 +27,7 @@ configs:
         schema: builtin:problem.notifications
         scope: environment
     config:
-      name: notification
+      name: notification-swc
       parameters:
         alertingProfileId: [ builtin:alerting.profile, profile, id ]
         environment: Env1

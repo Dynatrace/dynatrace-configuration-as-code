@@ -1,7 +1,7 @@
 configs:
   - id: profile
     config:
-      name: profile
+      name: profile-ca
       template: profile.json
       skip: false
       parameters:
@@ -13,7 +13,7 @@ configs:
     type:
       api: management-zone
     config:
-      name: zone
+      name: zone-ca
       parameters:
         environment: environment1
         meId: HOST_GROUP-1234567890123456
@@ -24,7 +24,7 @@ configs:
     type:
       api: notification
     config:
-      name: notification
+      name: notification-ca
       parameters:
         alertingProfileId: [alerting-profile, profile, id]
         environment: Env1

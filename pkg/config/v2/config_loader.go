@@ -17,6 +17,7 @@ package v2
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/maps"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
@@ -213,7 +214,7 @@ func parseConfigs(fs afero.Fs, context *LoaderContext, filePath string) (configs
 
 		result, definitionErrors := parseDefinition(fs, configLoaderContext, config.Id, config)
 
-		if definitionErrors != nil {
+		if len(definitionErrors) > 0 {
 			errors = append(errors, definitionErrors...)
 			continue
 		}
@@ -533,9 +534,14 @@ func parseParametersAndReferences(context *singleConfigEntryLoadContext, environ
 		}
 
 		result, err := parseParameter(context, environment, configId, name, param)
-
 		if err != nil {
 			errors = append(errors, err)
+			continue
+		}
+
+		err = validateParameter(context, name, result)
+		if err != nil {
+			errors = append(errors, newDetailedDefinitionParserError(configId, context, environment, err.Error()))
 			continue
 		}
 
@@ -626,6 +632,19 @@ func arrayToReferenceParameter(context *singleConfigEntryLoadContext, environmen
 	}
 
 	return refParam.New(project, configType, config, property), nil
+}
+
+func validateParameter(ctx *singleConfigEntryLoadContext, paramName string, param parameter.Parameter) error {
+	if _, isAPI := ctx.KnownApis[ctx.Type]; isAPI {
+		for _, ref := range param.GetReferences() {
+			if _, referencesAPI := ctx.KnownApis[ref.Config.Type]; !referencesAPI &&
+				ref.Property == IdParameter &&
+				!(ref.Config.Type == "builtin:management-zones" && featureflags.ManagementZoneSettingsNumericIDs().Enabled()) { // leniently handle Management Zone numeric IDs which are the same for Settings
+				return fmt.Errorf("config api type (%s) configuration can only reference IDs of other config api types - parameter %q references %q type", ctx.Type, paramName, ref.Config.Type)
+			}
+		}
+	}
+	return nil
 }
 
 func toString(v interface{}) string {
