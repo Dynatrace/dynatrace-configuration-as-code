@@ -19,6 +19,7 @@ package download
 import (
 	"encoding/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
@@ -1104,6 +1105,65 @@ func TestDownloadIntegrationDoesNotDownloadUnmodifiableSettings(t *testing.T) {
 	assert.Equal(t, len(configs["settings-schema"]), 2, "Expected 2 settings objects")
 
 	expectedConfigs := map[string]struct{}{"so_1": {}, "so_3": {}}
+	for _, cfg := range configs["settings-schema"] {
+		_, found := expectedConfigs[cfg.OriginObjectId]
+		assert.Assert(t, found, "did not expect config %s to be downloaded", cfg.OriginObjectId)
+	}
+}
+
+func TestDownloadIntegrationDownloadsUnmodifiableSettingsIfFFTurnedOff(t *testing.T) {
+	// GIVEN Responses
+	const projectName = "integration-test-unmodifiable-settings"
+	const testBasePath = "test-resources/" + projectName
+
+	responses := map[string]string{
+		"/api/v2/settings/schemas": "settings/__SCHEMAS.json",
+		"/api/v2/settings/objects": "settings/objects.json",
+	}
+
+	// GIVEN Server
+	server := dtclient.NewIntegrationTestServer(t, testBasePath, responses)
+
+	fs := afero.NewMemMapFs()
+
+	opts := setupTestingDownloadOptions(t, server, projectName)
+	opts.onlySettings = true
+	opts.onlyAPIs = false
+
+	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
+
+	downloaders := downloaders{settings.NewDownloader(dtClient)}
+
+	// GIVEN filter feature flag is turned OFF
+	t.Setenv(featureflags.DownloadFilterSettingsUnmodifiable().EnvName(), "false")
+
+	err := doDownloadConfigs(fs, downloaders, opts)
+
+	assert.NilError(t, err)
+
+	// THEN we can load the project again and verify its content
+	projects, errs := loadDownloadedProjects(fs, api.APIs{})
+	if len(errs) != 0 {
+		for _, err := range errs {
+			t.Errorf("%v", err)
+		}
+		return
+	}
+
+	assert.Equal(t, len(projects), 1)
+	p := projects[0]
+	assert.Equal(t, p.Id, projectName)
+	assert.Equal(t, len(p.Configs), 1)
+
+	configs, found := p.Configs[projectName]
+	assert.Equal(t, found, true)
+	assert.Equal(t, len(configs), 1, "Expected one Settings schema to be downloaded")
+
+	_, settingsDownloaded := configs["settings-schema"]
+	assert.Assert(t, settingsDownloaded)
+	assert.Equal(t, len(configs["settings-schema"]), 3, "Expected 3 settings objects")
+
+	expectedConfigs := map[string]struct{}{"so_1": {}, "so_2": {}, "so_3": {}}
 	for _, cfg := range configs["settings-schema"] {
 		_, found := expectedConfigs[cfg.OriginObjectId]
 		assert.Assert(t, found, "did not expect config %s to be downloaded", cfg.OriginObjectId)
