@@ -1052,6 +1052,53 @@ func TestWriteConfigs(t *testing.T) {
 				"project/schemaid/a.json",
 			},
 		},
+		{
+			name: "OS path separators are replaced with slashes",
+			configs: []Config{
+				{
+					Template: template.CreateTemplateFromString(filepath.Join("general", "schemaid", "a.json"), ""),
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "schemaid",
+						ConfigId: "configId",
+					},
+					Type: SettingsType{
+						SchemaId:      "schemaid",
+						SchemaVersion: "1.2.3",
+					},
+					Parameters: map[string]parameter.Parameter{
+						ScopeParameter: value.New("scope"),
+						NameParameter:  &value.ValueParameter{Value: "name"},
+					},
+					Skip: false,
+				},
+			},
+			expectedConfigs: map[string]topLevelDefinition{
+				"schemaid": {
+					Configs: []topLevelConfigDefinition{
+						{
+							Id: "configId",
+							Config: configDefinition{
+								Name:       "name",
+								Parameters: nil,
+								Template:   "../../general/schemaid/a.json",
+								Skip:       false,
+							},
+							Type: typeDefinition{
+								Settings: settingsDefinition{
+									Schema:        "schemaid",
+									SchemaVersion: "1.2.3",
+									Scope:         "scope",
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedTemplatePaths: []string{
+				"general/schemaid/a.json",
+			},
+		},
 	}
 
 	for _, tc := range tests {
