@@ -19,6 +19,7 @@ package classic
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	"golang.org/x/exp/maps"
@@ -190,7 +191,7 @@ func (d *Downloader) downloadConfigsOfAPI(api api.API, values []dtclient.Value, 
 				return
 			}
 
-			if !d.skipPersist(api, downloadedJson) {
+			if !d.shouldPersist(api, downloadedJson) {
 				log.Debug("\tSkipping persisting config %v (%v) in API %v", value.Id, value.Name, api.ID)
 				return
 			}
@@ -273,18 +274,30 @@ func (d *Downloader) findConfigsToDownload(currentApi api.API) ([]dtclient.Value
 	return d.client.ListConfigs(currentApi)
 }
 
-func (d *Downloader) skipPersist(a api.API, json map[string]interface{}) bool {
+func (d *Downloader) shouldPersist(a api.API, json map[string]interface{}) bool {
+	if !shouldApplyFilter() {
+		return true
+	}
+
 	if cases := d.apiContentFilters[a.ID]; cases.shouldConfigBePersisted != nil {
 		return cases.shouldConfigBePersisted(json)
 	}
 	return true
 }
 func (d *Downloader) skipDownload(a api.API, value dtclient.Value) bool {
+	if !shouldApplyFilter() {
+		return false
+	}
+
 	if cases := d.apiContentFilters[a.ID]; cases.shouldBeSkippedPreDownload != nil {
 		return cases.shouldBeSkippedPreDownload(value)
 	}
 
 	return false
+}
+
+func shouldApplyFilter() bool {
+	return featureflags.DownloadFilter().Enabled() && featureflags.DownloadFilterClassicConfigs().Enabled()
 }
 
 func (d *Downloader) filterConfigsToSkip(a api.API, value []dtclient.Value) []dtclient.Value {

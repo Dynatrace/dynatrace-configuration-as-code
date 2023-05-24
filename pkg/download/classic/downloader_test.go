@@ -18,11 +18,13 @@ package classic
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"strconv"
 	"testing"
 )
 
@@ -178,6 +180,93 @@ func TestDownload_SkipConfigThatShouldNotBePersisted(t *testing.T) {
 }
 
 func TestDownload_SkipConfigBeforeDownload(t *testing.T) {
+
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().ListConfigs(gomock.Any()).DoAndReturn(func(a api.API) ([]dtclient.Value, error) {
+		if a.ID == "API_ID_1" {
+			return []dtclient.Value{{Id: "API_ID_1", Name: "API_NAME_1"}}, nil
+		} else if a.ID == "API_ID_2" {
+			return []dtclient.Value{{Id: "API_ID_2", Name: "API_NAME_2"}}, nil
+		}
+		return nil, nil
+	}).AnyTimes()
+	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil).AnyTimes()
+
+	apiFilters := map[string]contentFilter{
+		"API_ID_1": {
+			shouldBeSkippedPreDownload: func(_ dtclient.Value) bool {
+				return true
+			},
+		},
+		"API_ID_2": {
+			shouldConfigBePersisted: func(_ map[string]interface{}) bool {
+				return false
+			},
+		},
+	}
+
+	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", NonUniqueName: true}
+	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueName: false}
+	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
+
+	downloader := NewDownloader(c, WithAPIs(apiMap), WithAPIContentFilters(apiFilters))
+
+	type flags struct {
+		downloadFilterFF        bool
+		downloadFilterConfigsFF bool
+	}
+	tests := []struct {
+		name                  string
+		given                 flags
+		wantDownloadedConfigs int
+	}{
+		{
+			"downloads nothing if filters active",
+			flags{
+				downloadFilterFF:        true,
+				downloadFilterConfigsFF: true,
+			},
+			0,
+		},
+		{
+			"downloads all if base filter off",
+			flags{
+				downloadFilterFF:        false,
+				downloadFilterConfigsFF: true,
+			},
+			2,
+		},
+		{
+			"downloads all if configs filter off",
+			flags{
+				downloadFilterFF:        true,
+				downloadFilterConfigsFF: false,
+			},
+			2,
+		},
+		{
+			"downloads all if both filters off",
+			flags{
+				downloadFilterFF:        false,
+				downloadFilterConfigsFF: false,
+			},
+			2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv(featureflags.DownloadFilter().EnvName(), strconv.FormatBool(tt.given.downloadFilterFF))
+			t.Setenv(featureflags.DownloadFilterClassicConfigs().EnvName(), strconv.FormatBool(tt.given.downloadFilterConfigsFF))
+
+			configurations, err := downloader.Download("project")
+			assert.NoError(t, err)
+			assert.Len(t, configurations, tt.wantDownloadedConfigs)
+		})
+	}
+}
+
+func TestDownload_FilteringCanBeTurnedOffViaFeatureFlags(t *testing.T) {
 
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(gomock.Any()).DoAndReturn(func(a api.API) ([]dtclient.Value, error) {
