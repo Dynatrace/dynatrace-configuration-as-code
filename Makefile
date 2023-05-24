@@ -83,7 +83,7 @@ else
 	@rm -rf build/
 endif
 
-test: setup mocks lint
+test: mocks
 	@echo "Testing $(BINARY_NAME)..."
 	@gotestsum ${testopts} -- -tags=unit -v -race ./...
 
