@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-package log
+package trafficlogs
 
 import (
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"testing"
 )

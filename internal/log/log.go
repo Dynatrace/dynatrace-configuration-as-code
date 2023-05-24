@@ -18,235 +18,89 @@ package log
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/loggers"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/loggers/console"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/loggers/zap"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/timeutils"
 	"github.com/spf13/afero"
-	"log"
+	"io"
 	"os"
 	"path/filepath"
-	"time"
 )
 
-const logsDir = ".logs"
-
-const (
-	prefixFatal = "FATAL "
-	prefixError = "ERROR "
-	prefixWarn  = "WARN  "
-	prefixInfo  = "INFO  "
-	prefixDebug = "DEBUG "
+var (
+	_ loggers.Logger = (*zap.Logger)(nil)
+	_ loggers.Logger = (*console.Logger)(nil)
 )
 
-type logLevel int
-
-const (
-	LevelFatal logLevel = iota
-	LevelError
-	LevelWarn
-	LevelInfo
-	LevelDebug
-)
-
-func (l logLevel) prefix() string {
-	switch l {
-	case LevelFatal:
-		return prefixFatal
-	case LevelError:
-		return prefixError
-	case LevelWarn:
-		return prefixWarn
-	case LevelInfo:
-		return prefixInfo
-	case LevelDebug:
-		return prefixDebug
-	}
-	return ""
-}
-
-type extendedLogger struct {
-	consoleLogger    *log.Logger
-	fileLogger       *log.Logger
-	additionalLogger *log.Logger
-	level            logLevel
-}
-
-// New creates a new extendedLogger, which contains two
-// underlying loggers, a console logger and a file logger.
-// The file logger will always print all logs, while the
-// console logger will only print logs according to the
-// level of this logger, e.g. at LevelInfo.
-func New(consoleLogger, fileLogger *log.Logger, level logLevel) *extendedLogger {
-	return &extendedLogger{
-		consoleLogger: consoleLogger,
-		fileLogger:    fileLogger,
-		level:         level,
-	}
-}
-
-// Fatal logs the message with the prefix FATAL.
-func (l *extendedLogger) Fatal(msg string, a ...interface{}) {
-	doLog(l, LevelFatal, msg, a...)
-}
-
-// Error logs the message with the prefix ERROR.
-func (l *extendedLogger) Error(msg string, a ...interface{}) {
-	doLog(l, LevelError, msg, a...)
-}
-
-// Warn logs the message with the prefix WARN.
-func (l *extendedLogger) Warn(msg string, a ...interface{}) {
-	doLog(l, LevelWarn, msg, a...)
-}
-
-// Info logs the message with the prefix INFO.
-func (l *extendedLogger) Info(msg string, a ...interface{}) {
-	doLog(l, LevelInfo, msg, a...)
-}
-
-// Debug logs the message with the prefix DEBUG.
-func (l *extendedLogger) Debug(msg string, a ...interface{}) {
-	doLog(l, LevelDebug, msg, a...)
-}
-
-// SetLevel sets the log level for this logger. This
-// influences only the console logger, the file logger
-// will always have the highest level regardless.
-func (l *extendedLogger) SetLevel(level logLevel) {
-	l.level = level
-}
-
-var defaultLogger = &extendedLogger{
-	consoleLogger: log.Default(),
-	level:         LevelInfo,
-}
-
-// Default returns the default logger which is used, when
-// functions like Info() and Debug() are called. The
-// console logger will be the same default logger from
-// the standard library, the level will be INFO and
-// there's no file logger set up. The function
-// SetupLogging() can be used to create a file logger.
-func Default() *extendedLogger {
-	return defaultLogger
-}
-
-// logFile stores the file-handle for the log file and is used to close the log file.
-// It's marked as an 'unused' false positive because the calling code is currently only used in tests.
-var logFile afero.File // nolint:unused
-
-// SetupLogging is used to enable file logging, including
-// Request and Response logs. If logging functions are
-// called without setup, logging will only be done to
-// stdout. Otherwise, the file logger will be set to a log
-// file whose name will be the current timestamp, in the
-// format of <YYYYMMDD-hhmmss>.log
-func SetupLogging(fs afero.Fs, optionalAddedLogger *log.Logger) {
-	defaultLogger.additionalLogger = optionalAddedLogger
-
-	if err := setupFileLogging(fs); err != nil {
-		Warn("failed to setup monaco-logging: %s", err)
-	}
-
-	if err := setupRequestLog(fs); err != nil {
-		Warn("failed to setup request-logging: %s", err)
-	}
-
-	if err := setupResponseLog(fs); err != nil {
-		Warn("failed to setup response-logging: %s", err)
-	}
-}
-
-// closeLoggingFiles closes all logging files.
-// Currently only used in tests, because Windows requires the files to be closed before deleting tmp dirs.
-// Since it's only used in tests, golangci-lint can't pick it up and we need to mark it as false-positive.
-func closeLoggingFiles() []error { // nolint:unused
-	var errs []error
-
-	if logFile != nil {
-		err := logFile.Close()
-		if err != nil {
-			errs = append(errs, err)
-		}
-	}
-
-	if requestLogFile != nil {
-		err := requestLogFile.Close()
-		if err != nil {
-			errs = append(errs, err)
-		}
-	}
-
-	if responseLogFile != nil {
-		err := responseLogFile.Close()
-		if err != nil {
-			errs = append(errs, err)
-		}
-	}
-
-	return errs
-}
-
-func setupFileLogging(fs afero.Fs) error {
-	timestamp := time.Now().Format("20060102-150405")
-
-	if err := fs.MkdirAll(logsDir, 0777); err != nil {
-		return fmt.Errorf("failed to create directory %s: %w", logsDir, err)
-	}
-
-	logFilePath := filepath.Join(logsDir, timestamp+".log")
-	file, err := fs.OpenFile(logFilePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-	logFile = file
-	if err != nil {
-		return fmt.Errorf("unable to open file '%s' for logging: %w", logFilePath, err)
-	}
-
-	Debug("Writing logs to log file %s", logFilePath)
-
-	defaultLogger.fileLogger = log.New(file, "", log.LstdFlags)
-	return nil
-}
-
-// Fatal logs the message with the prefix FATAL to the
-// default logger (see Default)).
 func Fatal(msg string, a ...interface{}) {
-	defaultLogger.Fatal(msg, a...)
+	std.Fatal(msg, a...)
 }
 
-// Error logs the message with the prefix ERROR to the
-// default logger (see Default)).
 func Error(msg string, a ...interface{}) {
-	defaultLogger.Error(msg, a...)
+	std.Error(msg, a...)
 }
 
-// Warn logs the message with the prefix WARN to the
-// default logger (see Default()).
 func Warn(msg string, a ...interface{}) {
-	defaultLogger.Warn(msg, a...)
+	std.Warn(msg, a...)
 }
 
-// Info logs the message with the prefix INFO to the
-// default logger (see Default()).
 func Info(msg string, a ...interface{}) {
-	defaultLogger.Info(msg, a...)
+	std.Info(msg, a...)
 }
 
-// Debug logs the message with the prefix DEBUG to the
-// default logger (see Default()).
 func Debug(msg string, a ...interface{}) {
-	defaultLogger.Debug(msg, a...)
+	std.Debug(msg, a...)
 }
 
-func DebugEnabled() bool {
-	return defaultLogger.level >= LevelDebug
+var (
+	std loggers.Logger = console.Instance
+)
+
+func PrepareLogging(fs afero.Fs, verbose *bool, loggerSpy io.Writer) {
+	loglevel := loggers.LevelInfo
+	if *verbose {
+		loglevel = loggers.LevelDebug
+	}
+
+	logFile, err := prepareLogFile(fs)
+	logFormat := loggers.ParseLogFormat(os.Getenv(loggers.EnvVarLogFormat))
+	logTime := loggers.ParseLogTimeMode(os.Getenv(loggers.EnvVarLogTime))
+
+	setDefaultLogger(loggers.LogOptions{
+		File:               logFile,
+		FileLoggingJSON:    logFormat == loggers.LogFormatJSON,
+		ConsoleLoggingJSON: logFormat == loggers.LogFormatJSON,
+		LogLevel:           loglevel,
+		LogSpy:             loggerSpy,
+		LogTimeMode:        logTime,
+	})
+
+	if err != nil {
+		Warn(err.Error())
+	}
 }
 
-func doLog(logger *extendedLogger, level logLevel, msg string, a ...interface{}) {
-	msg = fmt.Sprintf(level.prefix()+msg, a...)
-	if logger.level >= level && logger.consoleLogger != nil {
-		logger.consoleLogger.Println(msg)
+func prepareLogFile(fs afero.Fs) (afero.File, error) {
+	logDir := ".logs"
+	timestamp := timeutils.TimeAnchor().Format("20060102-150405")
+	if err := fs.MkdirAll(logDir, 0777); err != nil {
+		return nil, fmt.Errorf("unable to prepare log directory %s: %w", logDir, err)
+
 	}
-	if logger.fileLogger != nil {
-		logger.fileLogger.Println(msg)
+	logFilePath := filepath.Join(logDir, timestamp+".log")
+	logFile, err := fs.OpenFile(logFilePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		return nil, fmt.Errorf("unable to prepare log file in %s directory: %w", logDir, err)
 	}
-	if logger.additionalLogger != nil {
-		logger.additionalLogger.Println(msg)
+	return logFile, nil
+
+}
+
+func setDefaultLogger(opts loggers.LogOptions) {
+	logger, err := zap.New(opts)
+	if err != nil {
+		panic(err)
 	}
+	std = logger
 }

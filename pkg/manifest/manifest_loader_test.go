@@ -20,7 +20,6 @@ package manifest
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	monacoVersion "github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"github.com/spf13/afero"
@@ -731,8 +730,6 @@ func TestLoadManifest(t *testing.T) {
 	t.Setenv("client-id", "resolved-client-id")
 	t.Setenv("client-secret", "resolved-client-secret")
 	t.Setenv("ENV_OAUTH_ENDPOINT", "resolved-oauth-endpoint")
-
-	log.Default().SetLevel(log.LevelDebug)
 
 	tests := []struct {
 		name            string

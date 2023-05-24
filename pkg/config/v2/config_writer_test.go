@@ -20,7 +20,6 @@ import (
 	"errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	envParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/environment"
@@ -716,8 +715,6 @@ func assertPropertyCheckResult(t *testing.T, expected propertyCheckResult, actua
 }
 
 func TestWriteConfigs(t *testing.T) {
-
-	log.Default().SetLevel(log.LevelDebug)
 
 	var tests = []struct {
 		name                  string

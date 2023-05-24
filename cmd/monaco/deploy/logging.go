@@ -27,10 +27,7 @@ func logProjectsInfo(projects []project.Project) {
 	for _, p := range projects {
 		log.Info("  - %s", p)
 	}
-
-	if log.DebugEnabled() {
-		logConfigInfo(projects)
-	}
+	logConfigInfo(projects)
 }
 
 func logConfigInfo(projects []project.Project) {

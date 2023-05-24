@@ -22,115 +22,45 @@ import (
 	"fmt"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	builtinLog "log"
 	"os"
-	"strings"
 	"testing"
 )
 
-func TestSetupLogging_noError(t *testing.T) {
-	defer func() {
-		errs := closeLoggingFiles()
-		assert.Empty(t, errs)
-	}()
-	fs := createTempTestingDir(t)
-
-	capturedLogs := &strings.Builder{}
-	logger := builtinLog.New(capturedLogs, "[TestSetupLogging]", builtinLog.LstdFlags)
-
-	SetupLogging(fs, logger)
-
-	logs := capturedLogs.String()
-
-	assert.NotContains(t, logs, "failed to setup")
+// CustomMemMapFs embeds afero.MemMapFs and overrides the MkdirAll method
+type CustomMemMapFs struct {
+	afero.MemMapFs
 }
 
-func TestSetupLogging_logsDirExists(t *testing.T) {
-	defer func() {
-		errs := closeLoggingFiles()
-		assert.Empty(t, errs)
-	}()
-	fs := createTempTestingDir(t)
-	mkdir(t, fs, logsDir, 0777)
-
-	capturedLogs := &strings.Builder{}
-	logger := builtinLog.New(capturedLogs, "[TestSetupLogging]", builtinLog.LstdFlags)
-
-	SetupLogging(fs, logger)
-
-	logs := capturedLogs.String()
-
-	assert.NotContains(t, logs, "failed to setup")
-}
-
-func createTempTestingDir(t *testing.T) afero.Fs {
-	return afero.NewBasePathFs(afero.NewOsFs(), t.TempDir())
-}
-
-func mkdir(t *testing.T, fs afero.Fs, path string, perm os.FileMode) {
-	if err := fs.Mkdir(path, 0777); err != nil {
-		t.Error(err)
+// MkdirAll overrides the default implementation of MkdirAll
+func (fs *CustomMemMapFs) MkdirAll(path string, perm os.FileMode) error {
+	if fs.DirExists(path) {
+		return fmt.Errorf("directory already exists: %s", path)
 	}
 
-	chmod(t, fs, path, perm)
+	return fs.MemMapFs.MkdirAll(path, perm)
 }
 
-func chmod(t *testing.T, fs afero.Fs, path string, perm os.FileMode) {
-	if err := fs.Chmod(path, perm); err != nil {
-		t.Error(err)
-	}
-}
-
-func touch(t *testing.T, fs afero.Fs, path string, perm os.FileMode) {
-	file, err := fs.Create(path)
+// DirExists checks if a directory exists in the file system
+func (fs *CustomMemMapFs) DirExists(path string) bool {
+	fi, err := fs.Stat(path)
 	if err != nil {
-		t.Error(err)
-		return
+		return false
 	}
 
-	if err := file.Close(); err != nil {
-		t.Error(err)
-		return
-	}
-
-	chmod(t, fs, path, perm)
+	return fi.IsDir()
 }
 
-func Test_extendedLogger_DebugEnabled(t *testing.T) {
+func TestPrepareLogFile_ReturnsErrIfParentDirectoryAlreadyExists(t *testing.T) {
+	fs := &CustomMemMapFs{}
+	fs.MkdirAll(".logs", 0777)
+	file, err := prepareLogFile(fs)
+	assert.Nil(t, file)
+	assert.Error(t, err)
+}
 
-	tests := []struct {
-		given logLevel
-		want  bool
-	}{
-		{
-			given: LevelInfo,
-			want:  false,
-		},
-		{
-			given: LevelWarn,
-			want:  false,
-		},
-		{
-			given: LevelError,
-			want:  false,
-		},
-		{
-			given: LevelFatal,
-			want:  false,
-		},
-		{
-			given: LevelDebug,
-			want:  true,
-		},
-		{
-			given: LevelDebug + 1, // imaginary added level (e.g. 'TRACE')
-			want:  true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(fmt.Sprintf("logLevel(%v)->DebugEnabled==%v", tt.given.prefix(), tt.want), func(t *testing.T) {
-			Default().SetLevel(tt.given)
-			assert.Equalf(t, tt.want, DebugEnabled(), "DebugEnabled()")
-		})
-	}
+func TestPrepareLogFile_ReturnsErrIfParentDirIsReadOnly(t *testing.T) {
+	fs := afero.NewReadOnlyFs(afero.NewMemMapFs())
+	file, err := prepareLogFile(fs)
+	assert.Nil(t, file)
+	assert.Error(t, err)
 }
