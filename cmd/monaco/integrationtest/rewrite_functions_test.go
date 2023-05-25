@@ -19,6 +19,7 @@
 package integrationtest
 
 import (
+	"bytes"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"strings"
@@ -147,6 +148,7 @@ func TestRewriteConfigNames(t *testing.T) {
 			assert.NoError(t, err)
 			want, err := afero.ReadFile(reader, "rewrite-test-resources/want/"+tt.expectedFile)
 			assert.NoError(t, err)
+			want = bytes.ReplaceAll(want, []byte{'\r'}, []byte{})
 
 			assert.Equal(t, string(want), string(got))
 		})
