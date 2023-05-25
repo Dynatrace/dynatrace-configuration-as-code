@@ -109,14 +109,14 @@ func WithClientRequestLimiter(limiter *concurrency.Limiter) func(client *Client)
 }
 
 // List returns all automation objects
-func (a Client) List(resourceType ResourceType) (result *ListResponse, err error) {
+func (a Client) List(resourceType ResourceType) (result *[]Response, err error) {
 	a.limiter.ExecuteBlocking(func() {
 		result, err = a.list(resourceType)
 	})
 	return
 }
 
-func (a Client) list(resourceType ResourceType) (*ListResponse, error) {
+func (a Client) list(resourceType ResourceType) (*[]Response, error) {
 	// try to get the list of resources
 	resp, err := rest.Get(a.client, a.url+a.resources[resourceType].Path)
 	if err != nil {
@@ -138,7 +138,7 @@ func (a Client) list(resourceType ResourceType) (*ListResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &result, err
+	return &result.Results, err
 }
 
 // Upsert creates or updates a given automation object
