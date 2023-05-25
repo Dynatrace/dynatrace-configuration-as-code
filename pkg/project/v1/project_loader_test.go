@@ -22,6 +22,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -93,18 +94,18 @@ func TestGetAllProjectsFoldersRecursivelyPassesOnHiddenFolders(t *testing.T) {
 }
 
 func TestGetAllProjectsFoldersRecursivelyPassesOnProjectsWithinHiddenFolders(t *testing.T) {
-	path := files.ReplacePathSeparators("test-resources/hidden-directories/project2")
+	path := filepath.FromSlash("test-resources/hidden-directories/project2")
 	fs := testutils.CreateTestFileSystem()
 	projects, err := getAllProjectFoldersRecursively(fs, api.NewV1APIs(), path)
 
 	assert.NoError(t, err)
 
 	// NOT test-resources/hidden-directories/project2/.logs
-	assert.Equal(t, []string{"test-resources/hidden-directories/project2/subproject"}, projects)
+	assert.Equal(t, []string{filepath.FromSlash("test-resources/hidden-directories/project2/subproject")}, projects)
 }
 
 func TestGetAllProjectsFoldersRecursivelyPassesOnProjects(t *testing.T) {
-	path := files.ReplacePathSeparators("test-resources/hidden-directories")
+	path := filepath.FromSlash("test-resources/hidden-directories")
 	fs := testutils.CreateTestFileSystem()
 	projects, err := getAllProjectFoldersRecursively(fs, api.NewV1APIs(), path)
 
@@ -113,8 +114,8 @@ func TestGetAllProjectsFoldersRecursivelyPassesOnProjects(t *testing.T) {
 	// NOT test-resources/hidden-directories/.logs
 	// NOT test-resources/hidden-directories/project2/.logs
 	assert2.DeepEqual(t, projects, []string{
-		"test-resources/hidden-directories/project1",
-		"test-resources/hidden-directories/project2/subproject",
+		filepath.FromSlash("test-resources/hidden-directories/project1"),
+		filepath.FromSlash("test-resources/hidden-directories/project2/subproject"),
 	}, cmpopts.SortSlices(func(a, b string) bool { return strings.Compare(a, b) < 0 }))
 }
 
