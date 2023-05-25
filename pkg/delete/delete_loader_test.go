@@ -269,16 +269,13 @@ func TestLoadEntriesToDelete(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			workingDir := filepath.FromSlash("/home/test/monaco")
-			deleteFileName := "delete.yaml"
-			deleteFilePath := filepath.Join(workingDir, deleteFileName)
 
-			fs := afero.NewMemMapFs()
-			err := fs.MkdirAll(workingDir, 0777)
-
+			deleteFile, err := filepath.Abs("delete.yaml")
 			assert.NoError(t, err)
 
-			err = afero.WriteFile(fs, deleteFilePath, []byte(tt.givenFileContent), 0666)
+			fs := afero.NewMemMapFs()
+
+			err = afero.WriteFile(fs, deleteFile, []byte(tt.givenFileContent), 0666)
 			assert.NoError(t, err)
 
 			knownApis := []string{
@@ -286,9 +283,9 @@ func TestLoadEntriesToDelete(t *testing.T) {
 				"auto-tag",
 			}
 
-			result, errors := LoadEntriesToDelete(fs, knownApis, deleteFilePath)
+			result, errors := LoadEntriesToDelete(fs, knownApis, deleteFile)
 
-			assert.Equal(t, 0, len(errors))
+			assert.Empty(t, errors)
 			assert.Equal(t, 2, len(result))
 			assert.Equal(t, tt.want, result)
 		})
