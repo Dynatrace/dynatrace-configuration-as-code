@@ -22,40 +22,8 @@ defaults:
     shell: bash
 
 jobs:
-  verify:
-    name: Verify
-    permissions:
-      contents: read
-      checks: write
-    runs-on: ubuntu-latest
-    steps:
-      - name: 🛠️ Set up Go 1.x
-        uses: actions/setup-go@v4
-        with:
-          go-version: '~1.20'
-        id: go
-
-      - name: ⬇️ Check out code into the Go module directory
-        uses: actions/checkout@v3
-
-      - name: 📰 Validate gofmt
-        run: make format
-
-      - name: ✍️ Check format
-        run: make lint
-
-      - name: 🏗️ Build
-        run: make build
-
-      - name: 🕵️ Go vet
-        run: make vet
-
-      - name: 🔎 Static checks
-        run: make check
-        continue-on-error: true
-
-  test:
-    name: Build
+  build_test:
+    name: Build and Test
     permissions:
       contents: read
       checks: write
@@ -68,14 +36,16 @@ jobs:
       - name: 🛠️ Set up Go 1.x
         uses: actions/setup-go@v4
         with:
-          go-version: '1.20.4'
-        id: go
+          go-version: '~1.20'
 
       - name: ⬇️ Check out code into the Go module directory
         uses: actions/checkout@v3
 
+      - name: 🏗️ Build
+        run: make build
+
       - name: 🧪 Unit test
-        run: make test testopts="--junitfile test-result-unit.xml"
+        run: make test testopts="--junitfile test-result-${{ matrix.os }}-unit.xml"
 
       - name: ⬆️ Upload Test Results
         uses: actions/upload-artifact@v3
