@@ -90,6 +90,17 @@ func TestRestoreConfigs_FromDownloadWithPlatformWithCLIParameters(t *testing.T) 
 	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, true, execution_downloadConfigsWithCLIParameters)
 }
 
+func TestRestoreConfigs_FromDownloadWithPlatformManifestFile_withAutomation(t *testing.T) {
+	t.Setenv("MONACO_FEAT_AUTOMATION_RESOURCES", "true")
+	initialConfigsFolder := "test-resources/integration-download-configs-with-automation/"
+	manifestFile := initialConfigsFolder + "platform_manifest.yaml"
+	downloadFolder := "test-resources/download"
+	subsetOfConfigsToDownload := "alerting-profile,management-zone"
+	suffixTest := "_download_automations"
+
+	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, false, execution_downloadConfigs)
+}
+
 func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
 	configsFolder, _ := filepath.Abs("test-resources/download-with-flags")
 	configsFolderManifest := filepath.Join(configsFolder, "manifest.yaml")
@@ -382,15 +393,4 @@ func cleanupDeployedConfiguration(t *testing.T, fs afero.Fs, manifestFilepath st
 	testutils.FailTestOnAnyError(t, errs, "loading of manifest failed")
 
 	integrationtest.CleanupIntegrationTest(t, fs, manifestFilepath, loadedManifest, testSuffix)
-}
-
-func TestRestoreConfigs_FromDownloadWithPlatformManifestFile_withAutomation(t *testing.T) {
-	t.Setenv("MONACO_FEAT_AUTOMATION_RESOURCES", "true")
-	initialConfigsFolder := "test-resources/integration-download-configs-with-automation/"
-	manifestFile := initialConfigsFolder + "platform_manifest.yaml"
-	downloadFolder := "test-resources/download"
-	subsetOfConfigsToDownload := "alerting-profile,management-zone"
-	suffixTest := "_download_manifest"
-
-	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, false, execution_downloadConfigs)
 }
