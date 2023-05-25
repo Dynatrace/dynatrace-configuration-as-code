@@ -155,3 +155,10 @@ func DownloadFilterClassicConfigs() FeatureFlag {
 		defaultEnabled: true,
 	}
 }
+
+func ConsistentUUIDGeneration() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_CONSISTENT_UUID_GENERATION",
+		defaultEnabled: true,
+	}
+}
