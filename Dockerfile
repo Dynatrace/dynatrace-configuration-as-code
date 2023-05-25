@@ -1,4 +1,4 @@
-FROM amd64/alpine:3.17
+FROM amd64/alpine:3.18
 
 ARG NAME=monaco
 ARG SOURCE=/build/${NAME}-linux-amd64
