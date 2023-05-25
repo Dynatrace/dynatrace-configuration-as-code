@@ -17,6 +17,7 @@
 package idutils
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"path/filepath"
 
@@ -46,6 +47,9 @@ func IsUUID(configId string) bool {
 // generates a valid UUID based on provided information
 func GenerateUUIDFromConfigId(projectUniqueId string, configId string) string {
 	projectUniqueConfigId := filepath.Join(projectUniqueId, configId)
+	if featureflags.ConsistentUUIDGeneration().Enabled() {
+		projectUniqueConfigId = filepath.ToSlash(projectUniqueConfigId)
+	}
 
 	return GenerateUUIDFromString(projectUniqueConfigId)
 }
