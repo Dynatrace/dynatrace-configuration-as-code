@@ -128,6 +128,10 @@ func Default() *extendedLogger {
 	return defaultLogger
 }
 
+// logFile stores the file-handle for the log file and is used to close the log file.
+// It's marked as an 'unused' false positive because the calling code is currently only used in tests.
+var logFile afero.File // nolint:unused
+
 // SetupLogging is used to enable file logging, including
 // Request and Response logs. If logging functions are
 // called without setup, logging will only be done to
@@ -150,6 +154,36 @@ func SetupLogging(fs afero.Fs, optionalAddedLogger *log.Logger) {
 	}
 }
 
+// closeLoggingFiles closes all logging files.
+// Currently only used in tests, because Windows requires the files to be closed before deleting tmp dirs.
+// Since it's only used in tests, golangci-lint can't pick it up and we need to mark it as false-positive.
+func closeLoggingFiles() []error { // nolint:unused
+	var errs []error
+
+	if logFile != nil {
+		err := logFile.Close()
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if requestLogFile != nil {
+		err := requestLogFile.Close()
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if responseLogFile != nil {
+		err := responseLogFile.Close()
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return errs
+}
+
 func setupFileLogging(fs afero.Fs) error {
 	timestamp := time.Now().Format("20060102-150405")
 
@@ -158,14 +192,15 @@ func setupFileLogging(fs afero.Fs) error {
 	}
 
 	logFilePath := filepath.Join(logsDir, timestamp+".log")
-	logFile, err := fs.OpenFile(logFilePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	file, err := fs.OpenFile(logFilePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	logFile = file
 	if err != nil {
 		return fmt.Errorf("unable to open file '%s' for logging: %w", logFilePath, err)
 	}
 
 	Debug("Writing logs to log file %s", logFilePath)
 
-	defaultLogger.fileLogger = log.New(logFile, "", log.LstdFlags)
+	defaultLogger.fileLogger = log.New(file, "", log.LstdFlags)
 	return nil
 }
 

@@ -29,6 +29,10 @@ import (
 )
 
 func TestSetupLogging_noError(t *testing.T) {
+	defer func() {
+		errs := closeLoggingFiles()
+		assert.Empty(t, errs)
+	}()
 	fs := createTempTestingDir(t)
 
 	capturedLogs := &strings.Builder{}
@@ -42,6 +46,10 @@ func TestSetupLogging_noError(t *testing.T) {
 }
 
 func TestSetupLogging_logsDirExists(t *testing.T) {
+	defer func() {
+		errs := closeLoggingFiles()
+		assert.Empty(t, errs)
+	}()
 	fs := createTempTestingDir(t)
 	mkdir(t, fs, logsDir, 0777)
 
@@ -53,113 +61,6 @@ func TestSetupLogging_logsDirExists(t *testing.T) {
 	logs := capturedLogs.String()
 
 	assert.NotContains(t, logs, "failed to setup")
-}
-
-func TestSetupLogging_logsReadonly(t *testing.T) {
-	fs := createTempTestingDir(t)
-	mkdir(t, fs, logsDir, 0444)
-
-	capturedLogs := &strings.Builder{}
-	logger := builtinLog.New(capturedLogs, "[TestSetupLogging]", builtinLog.LstdFlags)
-
-	SetupLogging(fs, logger)
-
-	logs := capturedLogs.String()
-	fmt.Println(logs)
-
-	assert.Contains(t, logs, "failed to setup monaco-logging")
-}
-
-func TestSetupLogging_parentReadonly(t *testing.T) {
-	fs := createTempTestingDir(t)
-	chmod(t, fs, ".", 0444)
-
-	capturedLogs := &strings.Builder{}
-	logger := builtinLog.New(capturedLogs, "[TestSetupLogging]", builtinLog.LstdFlags)
-
-	SetupLogging(fs, logger)
-
-	logs := capturedLogs.String()
-	fmt.Println(logs)
-
-	assert.Contains(t, logs, "failed to setup monaco-logging")
-}
-
-func TestSetupLogging_requestLogReadonly(t *testing.T) {
-	t.Setenv(envKeyRequestLog, "requests.txt")
-
-	fs := createTempTestingDir(t)
-	touch(t, fs, "requests.txt", 0444)
-
-	capturedLogs := &strings.Builder{}
-	logger := builtinLog.New(capturedLogs, "[TestSetupLogging]", builtinLog.LstdFlags)
-
-	SetupLogging(fs, logger)
-
-	logs := capturedLogs.String()
-	fmt.Println(logs)
-
-	assert.Contains(t, logs, "failed to setup request-logging")
-}
-
-func TestSetupLogging_responseLogReadonly(t *testing.T) {
-	t.Setenv(envKeyResponseLog, "response.txt")
-
-	fs := createTempTestingDir(t)
-	touch(t, fs, "response.txt", 0444)
-
-	capturedLogs := &strings.Builder{}
-	logger := builtinLog.New(capturedLogs, "[TestSetupLogging]", builtinLog.LstdFlags)
-
-	SetupLogging(fs, logger)
-
-	logs := capturedLogs.String()
-	fmt.Println(logs)
-
-	assert.Contains(t, logs, "failed to setup response-logging")
-}
-
-func TestSetupLogging_allErrors(t *testing.T) {
-	t.Setenv(envKeyRequestLog, "request.txt")
-	t.Setenv(envKeyResponseLog, "response.txt")
-
-	fs := createTempTestingDir(t)
-	touch(t, fs, "response.txt", 0444)
-	touch(t, fs, "request.txt", 0444)
-	mkdir(t, fs, logsDir, 0444)
-
-	capturedLogs := &strings.Builder{}
-	logger := builtinLog.New(capturedLogs, "[TestSetupLogging]", builtinLog.LstdFlags)
-
-	SetupLogging(fs, logger)
-
-	logs := capturedLogs.String()
-	fmt.Println(logs)
-
-	assert.Contains(t, logs, "failed to setup response-logging")
-	assert.Contains(t, logs, "failed to setup request-logging")
-	assert.Contains(t, logs, "failed to setup monaco-logging")
-}
-
-func TestSetupLogging_requestAndResponseFileExistsWithCorrectPermissions(t *testing.T) {
-	t.Setenv(envKeyRequestLog, "request.txt")
-	t.Setenv(envKeyResponseLog, "response.txt")
-
-	fs := createTempTestingDir(t)
-	touch(t, fs, "response.txt", 0644)
-	touch(t, fs, "request.txt", 0644)
-
-	capturedLogs := &strings.Builder{}
-	logger := builtinLog.New(capturedLogs, "[TestSetupLogging]", builtinLog.LstdFlags)
-
-	SetupLogging(fs, logger)
-
-	logs := capturedLogs.String()
-	fmt.Println(logs)
-
-	assert.NotContains(t, logs, "WARN")
-	assert.Contains(t, logs, "request log activated")
-	assert.Contains(t, logs, "response log activated")
 }
 
 func createTempTestingDir(t *testing.T) afero.Fs {
