@@ -55,7 +55,7 @@ jobs:
           path: test-result-*.xml
 
       - name: 🚀 Binary starts
-        run: make run
+        run: go run ./cmd/monaco
 
   upload_event:
     name: "Upload Event File"

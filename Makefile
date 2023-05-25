@@ -46,10 +46,10 @@ check:
 	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1
 	@golangci-lint run ./...
 
-compile: clean mocks
+compile: mocks
 	go build -tags "unit integration nightly cleanup integration_v1 download_restore" ./...
 
-build: clean mocks
+build: mocks
 	@echo "Building $(BINARY_NAME)..."
 	@CGO_ENABLED=0 go build -a -tags netgo -ldflags '-w -extldflags "-static"' -o ./bin/${BINARY_NAME} ./cmd/monaco
 
@@ -70,15 +70,15 @@ install:
 	@echo "Installing $(BINARY_NAME)..."
 	@CGO_ENABLED=0 go install -a -tags netgo -ldflags '-w -extldflags "-static"' ./cmd/monaco
 
-run:
-	go run ./cmd/monaco
-
 clean:
 	@echo "Removing $(BINARY_NAME), bin/ and /build ..."
 ifeq ($(OS),Windows_NT)
+	@echo "Windows"
 	@if exist bin rd /S /Q bin
+	@echo "Windows 2"
 	@if exist bin rd /S /Q build
 else
+	@echo "Linux"
 	@rm -rf bin/
 	@rm -rf build/
 endif
