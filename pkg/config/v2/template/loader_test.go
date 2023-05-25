@@ -21,6 +21,7 @@ package template
 import (
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
+	"path/filepath"
 	"reflect"
 	"testing"
 )
@@ -69,7 +70,7 @@ func TestCreateTemplateFromString(t *testing.T) {
 }
 
 func TestLoadTemplate(t *testing.T) {
-	testFilepath := "proj/api/template.json"
+	testFilepath := filepath.FromSlash("proj/api/template.json")
 
 	testFs := afero.NewMemMapFs()
 	_ = testFs.MkdirAll("proj/api/", 0755)
@@ -84,7 +85,7 @@ func TestLoadTemplate(t *testing.T) {
 }
 
 func TestLoadTemplate_ReturnsErrorIfFileDoesNotExist(t *testing.T) {
-	testFilepath := "proj/api/template.json"
+	testFilepath := filepath.FromSlash("proj/api/template.json")
 
 	testFs := afero.NewMemMapFs()
 

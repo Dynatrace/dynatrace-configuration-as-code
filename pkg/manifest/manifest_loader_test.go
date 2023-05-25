@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v2"
 	"math"
+	"path/filepath"
 	"reflect"
 	"testing"
 )
@@ -227,12 +228,12 @@ func Test_parseProjectDefinition_GroupingType(t *testing.T) {
 		{
 			Name:  "PROJ_NAME.a",
 			Group: "PROJ_NAME",
-			Path:  "PROJ_PATH/a",
+			Path:  filepath.FromSlash("PROJ_PATH/a"),
 		},
 		{
 			Name:  "PROJ_NAME.b",
 			Group: "PROJ_NAME",
-			Path:  "PROJ_PATH/b",
+			Path:  filepath.FromSlash("PROJ_PATH/b"),
 		},
 	}
 	got, gotErrs := parseProjectDefinition(&context, project)
@@ -437,28 +438,28 @@ func Test_toProjectDefinitions(t *testing.T) {
 			[]project{
 				{
 					Name: "project_id_1",
-					Path: "project/path/",
+					Path: filepath.FromSlash("project/path/"),
 				},
 				{
 					Name: "project_id_2",
 					Type: groupProjectType,
-					Path: "another/project/path/",
+					Path: filepath.FromSlash("another/project/path/"),
 				},
 			},
 			map[string]ProjectDefinition{
 				"project_id_1": {
 					Name: "project_id_1",
-					Path: "project/path/",
+					Path: filepath.FromSlash("project/path/"),
 				},
 				"project_id_2.one": {
 					Name:  "project_id_2.one",
 					Group: "project_id_2",
-					Path:  "another/project/path/one",
+					Path:  filepath.FromSlash("another/project/path/one"),
 				},
 				"project_id_2.two": {
 					Name:  "project_id_2.two",
 					Group: "project_id_2",
-					Path:  "another/project/path/two",
+					Path:  filepath.FromSlash("another/project/path/two"),
 				},
 			},
 			false,
