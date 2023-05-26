@@ -118,7 +118,7 @@ func (a Client) List(resourceType ResourceType) (result *[]Response, err error) 
 
 func (a Client) list(resourceType ResourceType) (*[]Response, error) {
 	// try to get the list of resources
-	resp, err := rest.Get(a.client, a.url+a.resources[resourceType].Path)
+	resp, err := get(a, resourceType)
 	if err != nil {
 		return nil, fmt.Errorf("unable to list automation resources: %w", err)
 	}
@@ -266,4 +266,10 @@ func rmIDField(data *[]byte) error {
 		return err
 	}
 	return nil
+}
+
+func get(a Client, resourceType ResourceType) (rest.Response, error) {
+	// try to get the list of resources
+	resp, err := rest.Get(a.client, a.url+a.resources[resourceType].Path)
+	return resp, err
 }
