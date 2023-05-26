@@ -131,25 +131,17 @@ func Test_extractUrlType(t *testing.T) {
 }
 
 func Test_parseProjectDefinition_SimpleType(t *testing.T) {
-	type args struct {
-		context *projectLoaderContext
-		project project
-	}
 	tests := []struct {
-		name     string
-		args     args
-		want     []ProjectDefinition
-		wantErrs []error
+		name  string
+		given project
+		want  []ProjectDefinition
 	}{
 		{
 			"parses_simple_project",
-			args{
-				context: nil,
-				project: project{
-					Name: "PROJ_NAME",
-					Type: simpleProjectType,
-					Path: "PROJ_PATH",
-				},
+			project{
+				Name: "PROJ_NAME",
+				Type: simpleProjectType,
+				Path: "PROJ_PATH",
 			},
 			[]ProjectDefinition{
 				{
@@ -157,51 +149,55 @@ func Test_parseProjectDefinition_SimpleType(t *testing.T) {
 					Path: "PROJ_PATH",
 				},
 			},
-			nil,
 		},
 		{
 			"parses_simple_project_when_type_omitted",
-			args{
-				context: nil,
-				project: project{
-					Name: "PROJ_NAME",
-					Path: "PROJ_PATH",
-				},
+			project{
+				Name: "PROJ_NAME",
+				Path: "PROJ_PATH",
 			},
+
 			[]ProjectDefinition{
 				{
 					Name: "PROJ_NAME",
 					Path: "PROJ_PATH",
 				},
 			},
-			nil,
 		},
 		{
 			"sets_project_name_as_path_if_no_path_set",
-			args{
-				context: nil,
-				project: project{
-					Name: "PROJ_NAME",
-				},
+			project{
+				Name: "PROJ_NAME",
 			},
+
 			[]ProjectDefinition{
 				{
 					Name: "PROJ_NAME",
 					Path: "PROJ_NAME",
 				},
 			},
-			nil,
+		},
+		{
+			"sets_project_name_as_path_if_no_path_set",
+			project{
+				Name: "PROJ_NAME",
+			},
+
+			[]ProjectDefinition{
+				{
+					Name: "PROJ_NAME",
+					Path: "PROJ_NAME",
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotErrs := parseProjectDefinition(tt.args.context, tt.args.project)
+			got, gotErrs := parseProjectDefinition(nil, tt.given)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("parseProjectDefinition() got = %v, want %v", got, tt.want)
 			}
-			if !reflect.DeepEqual(gotErrs, tt.wantErrs) {
-				t.Errorf("parseProjectDefinition() gotErrs = %v, wantErrs %v", gotErrs, tt.wantErrs)
-			}
+			assert.Empty(t, gotErrs, "expected project %q to be valid", tt.given)
 		})
 	}
 }
