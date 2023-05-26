@@ -262,15 +262,26 @@ func Test_parseProjectDefinition_FailsOnInvalidProjectDefinitions(t *testing.T) 
 		manifestPath: ".",
 	}
 
+	context.fs.Mkdir("./some/folder", 0777)
+	context.fs.Mkdir("./some/group", 0777)
+	context.fs.Mkdir("./some/group/project", 0777)
+
 	tests := []struct {
 		name    string
 		project project
 	}{
 		{
-			"invalid simple project",
+			"empty simple project",
 			project{
 				Name: "",
 				Path: "",
+			},
+		},
+		{
+			"simple project without a name",
+			project{
+				Name: "",
+				Path: "./some/folder",
 			},
 		},
 		{
@@ -279,6 +290,14 @@ func Test_parseProjectDefinition_FailsOnInvalidProjectDefinitions(t *testing.T) 
 				Name: "a grouping",
 				Type: groupProjectType,
 				Path: "path/that/wont/be/found",
+			},
+		},
+		{
+			"grouping project without a name",
+			project{
+				Name: "",
+				Type: groupProjectType,
+				Path: "./some/group",
 			},
 		},
 		{

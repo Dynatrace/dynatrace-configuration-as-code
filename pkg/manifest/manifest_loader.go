@@ -507,6 +507,10 @@ func parseProjectDefinition(context *projectLoaderContext, project project) ([]P
 		projectType = project.Type
 	}
 
+	if project.Name == "" {
+		return nil, []error{newManifestProjectLoaderError(context.manifestPath, project.Name, "project name is required")}
+	}
+
 	switch projectType {
 	case simpleProjectType:
 		return parseSimpleProjectDefinition(context, project)
