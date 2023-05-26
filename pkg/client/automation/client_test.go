@@ -198,7 +198,7 @@ func TestAutomationClientUpsert(t *testing.T) {
 	t.Run("Upsert - Update - OK", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if req.Method == http.MethodPut {
-				// check for absence of Id field
+				// check for absence of ID field
 				var data map[string]interface{}
 				bytes, _ := io.ReadAll(req.Body)
 				_ = json.Unmarshal(bytes, &data)

@@ -27,8 +27,8 @@ import (
 
 // Response is a "general" Response type holding the ID and the response payload
 type Response struct {
-	// Id is the identifier that will be used when creating a new automation object
-	Id string `json:"id"`
+	// ID is the identifier that will be used when creating a new automation object
+	ID string `json:"id"`
 	// Data is the whole body of an automation object
 	Data []byte `json:"-"`
 }
@@ -39,7 +39,7 @@ func (r *Response) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &rawMap); err != nil {
 		return err
 	}
-	if err := json.Unmarshal(rawMap["id"], &r.Id); err != nil {
+	if err := json.Unmarshal(rawMap["id"], &r.ID); err != nil {
 		return err
 	}
 	r.Data = data
@@ -166,7 +166,7 @@ func (a Client) upsert(resourceType ResourceType, id string, data []byte) (*Resp
 	if resp.IsSuccess() {
 		log.Debug("Updated object with ID %s", id)
 		return &Response{
-			Id:   id,
+			ID:   id,
 			Data: resp.Body,
 		}, nil
 	}
@@ -213,7 +213,7 @@ func (a Client) create(id string, data []byte, resourceType ResourceType) (*Resp
 	}
 
 	// check if id from response is indeed the same as desired
-	if e.Id != id {
+	if e.ID != id {
 		return nil, fmt.Errorf("returned object ID does not match with the ID used when creating the object")
 	}
 	log.Debug("Created object with ID %s", id)

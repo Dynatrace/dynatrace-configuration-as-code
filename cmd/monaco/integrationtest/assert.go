@@ -210,7 +210,7 @@ func assertAutomation(t *testing.T, c automation.Client, env manifest.Environmen
 
 	var exists bool
 	for _, r := range *resp {
-		if r.Id == expectedId {
+		if r.ID == expectedId {
 			exists = true
 			break
 		}

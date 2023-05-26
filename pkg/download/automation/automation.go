@@ -79,7 +79,7 @@ func (d *Downloader) Download(projectName string, automationTypes ...config.Auto
 		var configs []config.Config
 		for _, obj := range *response {
 
-			configId := obj.Id
+			configId := obj.ID
 
 			if escaped, err := escapeJinjaTemplates(obj.Data); err != nil {
 				log.Warn("Failed to escape automation templating expressions for config %v (%s) - template needs manual adaptation: %v", configId, at.Resource, err)
@@ -102,7 +102,7 @@ func (d *Downloader) Download(projectName string, automationTypes ...config.Auto
 				Parameters: map[string]parameter.Parameter{
 					config.NameParameter: &value.ValueParameter{Value: configName},
 				},
-				OriginObjectId: obj.Id,
+				OriginObjectId: obj.ID,
 			}
 			configs = append(configs, c)
 		}
@@ -121,7 +121,7 @@ type NoopAutomationDownloader struct {
 }
 
 func createTemplateFromRawJSON(obj client.Response, configType string) (t template.Template, extractedName string) {
-	configId := obj.Id
+	configId := obj.ID
 
 	var data map[string]interface{}
 	err := json.Unmarshal(obj.Data, &data)
