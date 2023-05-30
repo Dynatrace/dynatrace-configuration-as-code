@@ -23,6 +23,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"net/http"
+	"net/url"
+	"strconv"
 )
 
 // Response is a "general" Response type holding the ID and the response payload
@@ -117,28 +119,36 @@ func (a Client) List(resourceType ResourceType) (result *[]Response, err error) 
 }
 
 func (a Client) list(resourceType ResourceType) (*[]Response, error) {
-	// try to get the list of resources
-	resp, err := get(a, resourceType)
-	if err != nil {
-		return nil, fmt.Errorf("unable to list automation resources: %w", err)
-	}
-
-	// handle http error
-	if !resp.IsSuccess() {
-		return nil, ResponseErr{
-			StatusCode: resp.StatusCode,
-			Message:    "Failed to list automation objects",
-			Data:       resp.Body,
-		}
-	}
-
-	// unmarshal and return result
+	var retVal []Response
 	var result ListResponse
-	err = json.Unmarshal(resp.Body, &result)
-	if err != nil {
-		return nil, err
+	result.Count = 1
+
+	for len(retVal) < result.Count {
+		// try to get the list of resources
+		resp, err := get(a, resourceType, len(retVal))
+		if err != nil {
+			return nil, fmt.Errorf("unable to list automation resources: %w", err)
+		}
+
+		// handle http error
+		if !resp.IsSuccess() {
+			return nil, ResponseErr{
+				StatusCode: resp.StatusCode,
+				Message:    "Failed to list automation objects",
+				Data:       resp.Body,
+			}
+		}
+
+		// unmarshal and return result
+
+		err = json.Unmarshal(resp.Body, &result)
+		if err != nil {
+			return nil, err
+		}
+		retVal = append(retVal, result.Results...)
 	}
-	return &result.Results, err
+
+	return &retVal, nil
 }
 
 // Upsert creates or updates a given automation object
@@ -268,8 +278,17 @@ func rmIDField(data *[]byte) error {
 	return nil
 }
 
-func get(a Client, resourceType ResourceType) (rest.Response, error) {
+func get(a Client, resourceType ResourceType, offset int) (rest.Response, error) {
+
+	params := url.Values{}
+	params.Add("offset", strconv.Itoa(offset))
+
+	u, _ := url.ParseRequestURI(a.url)
+	u.Path = a.resources[resourceType].Path
+	u.RawQuery = params.Encode()
+
+	urlStr := fmt.Sprintf("%v", u)
+
 	// try to get the list of resources
-	resp, err := rest.Get(a.client, a.url+a.resources[resourceType].Path)
-	return resp, err
+	return rest.Get(a.client, urlStr)
 }
