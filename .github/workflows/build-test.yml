@@ -41,8 +41,8 @@ jobs:
       - name: ⬇️ Check out code into the Go module directory
         uses: actions/checkout@v3
 
-      - name: 🏗️ Build
-        run: make build
+      - name: 🏗️ Compile
+        run: make compile
 
       - name: 🧪 Unit test
         run: make test testopts="--junitfile test-result-${{ matrix.os }}-unit.xml"
