@@ -65,7 +65,7 @@ func testPagination(t *testing.T, specificEnvironment string) {
 
 		// Create/POST all 550 Settings
 		logOutput := strings.Builder{}
-		cmd := runner.BuildCliWithCapturedLog(fs, &logOutput)
+		cmd := runner.BuildCliWithLogSpy(fs, &logOutput)
 		cmd.SetArgs([]string{"deploy", "--verbose", manifestPath, "--environment", specificEnvironment})
 		err := cmd.Execute()
 		assert.NilError(t, err)

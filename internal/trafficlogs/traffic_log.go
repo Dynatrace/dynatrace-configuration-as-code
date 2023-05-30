@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package log
+package trafficlogs
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/spf13/afero"
 	"net/http"
 	"net/http/httputil"
@@ -33,10 +34,42 @@ var (
 	responseLogFile afero.File
 )
 
+func PrepareRequestResponseLogging(fs afero.Fs) {
+	if err := setupRequestLog(fs); err != nil {
+		log.Warn("failed to setup request-logging: %s", err)
+	}
+	if err := setupResponseLog(fs); err != nil {
+		log.Warn("failed to setup response-logging: %s", err)
+	}
+}
+
+// closeLoggingFiles closes all logging files.
+// Currently only used in tests, because Windows requires the files to be closed before deleting tmp dirs.
+// Since it's only used in tests, golangci-lint can't pick it up and we need to mark it as false-positive.
+func closeLoggingFiles() []error { // nolint:unused
+	var errs []error
+
+	if requestLogFile != nil {
+		err := requestLogFile.Close()
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if responseLogFile != nil {
+		err := responseLogFile.Close()
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return errs
+}
+
 func setupRequestLog(fs afero.Fs) error {
 	logFilePath, found := os.LookupEnv(envKeyRequestLog)
 	if !found {
-		Debug("request log not activated")
+		log.Debug("request log not activated")
 		return nil
 	}
 
@@ -46,7 +79,7 @@ func setupRequestLog(fs afero.Fs) error {
 	}
 
 	requestLogFile = file
-	Debug("request log activated at %s", logFilePath)
+	log.Debug("request log activated at %s", logFilePath)
 
 	return nil
 }
@@ -54,7 +87,7 @@ func setupRequestLog(fs afero.Fs) error {
 func setupResponseLog(fs afero.Fs) error {
 	logFilePath, found := os.LookupEnv(envKeyResponseLog)
 	if !found {
-		Debug("response log not activated")
+		log.Debug("response log not activated")
 		return nil
 	}
 
@@ -64,7 +97,7 @@ func setupResponseLog(fs afero.Fs) error {
 	}
 
 	responseLogFile = file
-	Debug("response log activated at %s", logFilePath)
+	log.Debug("response log activated at %s", logFilePath)
 
 	return nil
 }

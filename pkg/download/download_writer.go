@@ -20,13 +20,13 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/timeutils"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/writer"
 	"github.com/spf13/afero"
 	"path/filepath"
-	"time"
 )
 
 type WriterContext struct {
@@ -47,7 +47,7 @@ func (c WriterContext) GetOutputFolderFilePath() string {
 
 // WriteToDisk writes all projects to the disk
 func WriteToDisk(fs afero.Fs, writerContext WriterContext) error {
-	writerContext.timestampString = time.Now().Format("2006-01-02-150405")
+	writerContext.timestampString = timeutils.TimeAnchor().Format("2006-01-02-150405")
 
 	return writeToDisk(fs, writerContext)
 }

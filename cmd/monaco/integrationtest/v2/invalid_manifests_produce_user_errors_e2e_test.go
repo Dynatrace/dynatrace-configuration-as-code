@@ -61,12 +61,13 @@ func TestInvalidManifest_ReportsError(t *testing.T) {
 			"no `projects` defined",
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			manifest := filepath.Join("test-resources/invalid-manifests/", tt.manifestFileName)
 
 			logOutput := strings.Builder{}
-			cmd := runner.BuildCliWithCapturedLog(testutils.CreateTestFileSystem(), &logOutput)
+			cmd := runner.BuildCliWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
 			cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
 			err := cmd.Execute()
 
@@ -75,7 +76,6 @@ func TestInvalidManifest_ReportsError(t *testing.T) {
 			runLog := strings.ToLower(logOutput.String())
 			lowerCaseExpectedErrorLog := strings.ToLower(tt.expectedErrorLog)
 			assert.Assert(t, strings.Contains(runLog, lowerCaseExpectedErrorLog), "Expected command output to contain: %s", tt.expectedErrorLog)
-
 		})
 	}
 }
@@ -84,7 +84,7 @@ func TestNonExistentProjectInManifestReturnsError(t *testing.T) {
 	manifest := filepath.Join("test-resources/invalid-manifests/", "manifest_non_existent_project.yaml")
 
 	logOutput := strings.Builder{}
-	cmd := runner.BuildCliWithCapturedLog(testutils.CreateTestFileSystem(), &logOutput)
+	cmd := runner.BuildCliWithLogSpy(testutils.CreateTestFileSystem(), &logOutput)
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
 	err := cmd.Execute()
 

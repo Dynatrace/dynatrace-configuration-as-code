@@ -19,6 +19,7 @@ package rest
 import (
 	"bytes"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"io"
 	"net/http"
@@ -121,9 +122,9 @@ func executeRequest(client *http.Client, request *http.Request) (Response, error
 	request.Header.Set("User-Agent", "Dynatrace Monitoring as Code/"+version.MonitoringAsCode+" "+(runtime.GOOS+" "+runtime.GOARCH))
 
 	var requestId string
-	if log.IsRequestLoggingActive() {
+	if trafficlogs.IsRequestLoggingActive() {
 		requestId = uuid.NewString()
-		err := log.LogRequest(requestId, request)
+		err := trafficlogs.LogRequest(requestId, request)
 
 		if err != nil {
 			log.Warn("error while writing request log for id `%s`: %v", requestId, err)
@@ -143,8 +144,8 @@ func executeRequest(client *http.Client, request *http.Request) (Response, error
 		}()
 		body, err := io.ReadAll(resp.Body)
 
-		if log.IsResponseLoggingActive() {
-			err := log.LogResponse(requestId, resp, string(body))
+		if trafficlogs.IsResponseLoggingActive() {
+			err := trafficlogs.LogResponse(requestId, resp, string(body))
 
 			if err != nil {
 				if requestId != "" {

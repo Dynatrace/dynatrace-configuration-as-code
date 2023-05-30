@@ -23,15 +23,11 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/trafficlogs"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-
 	"io"
-	builtinLog "log"
 )
-
-var optionalAddedLogger *builtinLog.Logger
 
 func Run() int {
 	rootCmd := BuildCli(afero.NewOsFs())
@@ -42,14 +38,11 @@ func Run() int {
 	return 0
 }
 
-func BuildCliWithCapturedLog(fs afero.Fs, logOutput io.Writer) *cobra.Command {
-	optionalAddedLogger = builtinLog.New(logOutput, "", builtinLog.LstdFlags)
-
-	cmd := BuildCli(fs)
-	return cmd
+func BuildCli(fs afero.Fs) *cobra.Command {
+	return BuildCliWithLogSpy(fs, nil)
 }
 
-func BuildCli(fs afero.Fs) *cobra.Command {
+func BuildCliWithLogSpy(fs afero.Fs, logSpy io.Writer) *cobra.Command {
 	var verbose bool
 
 	var rootCmd = &cobra.Command{
@@ -63,7 +56,10 @@ Examples:
   Deploy a specific environment within an manifest
     monaco deploy service.yaml -e dev`,
 
-		PersistentPreRun: configureDebugLogging(fs, &verbose),
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			log.PrepareLogging(fs, &verbose, logSpy)
+			trafficlogs.PrepareRequestResponseLogging(fs)
+		},
 		Run: func(cmd *cobra.Command, args []string) {
 			_ = cmd.Help()
 		},
@@ -87,13 +83,4 @@ Examples:
 	}
 
 	return rootCmd
-}
-
-func configureDebugLogging(fs afero.Fs, verbose *bool) func(cmd *cobra.Command, args []string) {
-	return func(cmd *cobra.Command, args []string) {
-		if *verbose {
-			log.Default().SetLevel(log.LevelDebug)
-		}
-		log.SetupLogging(fs, optionalAddedLogger)
-	}
 }
