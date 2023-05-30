@@ -279,16 +279,31 @@ void signWithSignService(Map args = [source: null, version: null, destDir: '.', 
 void createContainerAndPushToStorage(Map args = [version: null, tagLatest: false, registrySecretsPath: null, registry: null]) {
     stage("Publish container: registry=${args.registry}, version=${args.version}") {
         withEnv(["version=${args.version}"]) {
-            withVault(vaultSecrets: [[path        : "${args.registrySecretsPath}",
-                                      secretValues: [[envVar: 'registry', vaultKey: 'registry', isRequired: true],
-                                                     [envVar: 'repo', vaultKey: 'repo', isRequired: true],
-                                                     [envVar: 'username', vaultKey: 'username', isRequired: true],
-                                                     [envVar: 'password', vaultKey: 'password', isRequired: true]]]]) {
+            withVault(vaultSecrets: [
+                [
+                    path        : "${args.registrySecretsPath}",
+                    secretValues: [
+                        [envVar: 'registry', vaultKey: 'registry', isRequired: true],
+                        [envVar: 'repo', vaultKey: 'repo', isRequired: true],
+                        [envVar: 'username', vaultKey: 'username', isRequired: true],
+                        [envVar: 'password', vaultKey: 'password', isRequired: true]
+                    ]
+                ],
+                [
+                    path        : "keptn-jenkins/monaco/cosign",
+                    secretValues: [
+                        [envVar: 'cosign_key', vaultKey: 'cosign.key', isRequired: true],
+                        [envVar: 'cosign_password', vaultKey: 'cosign_password', isRequired: true]
+                    ]
+                ]
+            ]) {
                 script {
                     try {
                         sh 'docker login --username $username --password $password $registry'
                         sh 'DOCKER_BUILDKIT=1 make docker-container OUTPUT=./build/docker/monaco CONTAINER_NAME=$registry/$repo/dynatrace-configuration-as-code VERSION=$version'
-                        sh 'docker push $registry/$repo/dynatrace-configuration-as-code:$version'
+
+                        pushAndSign(imageName: '$registry/$repo/dynatrace-configuration-as-code:$version')
+
                         if (args.tagLatest) {
                             sh 'docker tag $registry/$repo/dynatrace-configuration-as-code:$version $registry/$repo/dynatrace-configuration-as-code:latest'
                             sh 'docker push $registry/$repo/dynatrace-configuration-as-code:latest'
@@ -300,6 +315,12 @@ void createContainerAndPushToStorage(Map args = [version: null, tagLatest: false
             }
         }
     }
+}
+
+void pushAndSign(Map args = [imageName: null]) {
+    sh "docker push ${args.imageName}"
+    def fullImageNameWithDigests = sh(returnStdout: true, script:  "docker inspect ${args.imageName}  --format='{{ (index .RepoDigests 0) }}'")
+    sh "make sign-image COSIGN_PASSWORD=\$cosign_password FULL_IMAGE_NAME=${fullImageNameWithDigests}"
 }
 
 int createGitHubRelease(Map args = [version: null]) {
