@@ -17,6 +17,7 @@
 package console
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/loggers"
 	"log"
 )
 
@@ -47,4 +48,8 @@ func (l Logger) Warn(msg string, args ...interface{}) {
 
 func (l Logger) Fatal(msg string, args ...interface{}) {
 	l.consoleLogger.Fatalf("FATAL "+msg+"\n", args...)
+}
+
+func (l Logger) Level() loggers.LogLevel {
+	return loggers.LevelDebug
 }

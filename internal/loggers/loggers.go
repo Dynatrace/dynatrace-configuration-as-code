@@ -29,6 +29,7 @@ type Logger interface {
 	Debug(msg string, args ...interface{})
 	Warn(msg string, args ...interface{})
 	Fatal(msg string, args ...interface{})
+	Level() LogLevel
 }
 
 const EnvVarLogFormat = "MONACO_LOG_FORMAT"

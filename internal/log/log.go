@@ -53,6 +53,10 @@ func Debug(msg string, a ...interface{}) {
 	std.Debug(msg, a...)
 }
 
+func Level() loggers.LogLevel {
+	return std.Level()
+}
+
 var (
 	std loggers.Logger = console.Instance
 )
