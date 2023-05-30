@@ -2,7 +2,7 @@ BINARY_NAME ?= monaco
 VERSION ?= 2.x
 RELEASES = $(BINARY_NAME)-windows-amd64.exe $(BINARY_NAME)-windows-386.exe $(BINARY_NAME)-linux-arm64 $(BINARY_NAME)-linux-amd64 $(BINARY_NAME)-linux-386 $(BINARY_NAME)-darwin-amd64 $(BINARY_NAME)-darwin-arm64
 
-.PHONY: lint format mocks build install clean test integration-test integration-test-v1 test-package default add-license-headers compile build-release $(RELEASES)
+.PHONY: lint format mocks build install clean test integration-test integration-test-v1 test-package default add-license-headers compile build-release $(RELEASES) docker-container sign-image
 
 default: build
 
@@ -11,6 +11,7 @@ setup:
 	@go install github.com/google/addlicense@latest
 	@go install gotest.tools/gotestsum@latest
 	@go install github.com/golang/mock/mockgen@latest
+	@go install github.com/sigstore/cosign/v2/cmd/cosign@latest
 
 lint: setup
 ifeq ($(OS),Windows_NT)
@@ -125,3 +126,6 @@ CONTAINER_NAME ?= $(BINARY_NAME)
 docker-container: $(BINARY_NAME)-linux-amd64
 	@echo Building docker container...
 	DOCKER_BUILDKIT=1 docker build --build-arg NAME=$(BINARY_NAME) --build-arg SOURCE=$(OUTPUT) --tag $(CONTAINER_NAME):$(VERSION) .
+
+sign-image: setup
+	COSIGN_PASSWORD=$(COSIGN_PASSWORD) cosign sign --key env://cosign_key $(FULL_IMAGE_NAME) -y
