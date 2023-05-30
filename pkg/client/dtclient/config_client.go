@@ -266,7 +266,9 @@ func callWithRetryOnKnowTimingIssue(client *http.Client, restCall rest.SendReque
 		// It can take longer until Credentials are ready to be used in Synthetic Monitors
 		isCredentialNotReadyYet(resp) ||
 		// It can take some time for configurations to propagate to all cluster nodes - indicated by an incorrect constraint violation error
-		isGeneralDependencyNotReadyYet(resp) {
+		isGeneralDependencyNotReadyYet(resp) ||
+		// Synthetic and related APIs sometimes run into issues of finding objects quickly after creation
+		isGeneralSyntheticAPIError(resp, theApi) {
 
 		setting = retrySettings.Normal
 	}
@@ -319,6 +321,10 @@ func isCalculatedMetricsError(resp rest.Response, theApi api.API) bool {
 }
 func isSyntheticMonitorServerError(resp rest.Response, theApi api.API) bool {
 	return theApi.ID == "synthetic-monitor" && resp.Is5xxError()
+}
+
+func isGeneralSyntheticAPIError(resp rest.Response, theApi api.API) bool {
+	return (strings.HasPrefix(theApi.ID, "synthetic-") || theApi.ID == "credential-vault") && (resp.StatusCode == http.StatusNotFound || resp.Is5xxError())
 }
 
 func isApplicationAPIError(resp rest.Response, theApi api.API) bool {
