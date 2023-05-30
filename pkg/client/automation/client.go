@@ -148,6 +148,9 @@ func (a Client) list(resourceType ResourceType) (*[]Response, error) {
 		retVal = append(retVal, result.Results...)
 	}
 
+	if len(retVal) != result.Count {
+		return nil, fmt.Errorf("unable to get all records for automation")
+	}
 	return &retVal, nil
 }
 

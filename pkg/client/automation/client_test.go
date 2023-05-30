@@ -18,7 +18,6 @@ package automation_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	"github.com/stretchr/testify/assert"
 	"io"
@@ -85,7 +84,6 @@ func TestAutomationClientList(t *testing.T) {
 		noCalls := 0
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if req.Method == http.MethodGet {
-				fmt.Println(req)
 				rw.Write(data)
 				rw.WriteHeader(http.StatusOK)
 				noCalls++
