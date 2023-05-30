@@ -81,12 +81,12 @@ func TestAutomationClientList(t *testing.T) {
 	})
 
 	t.Run("List - test pagination", func(t *testing.T) {
-		jsonData1 := []byte(`{"count" : 2, "results" : [ {"id" : "91cc8988-2223-404a-a3f5-5f1a839ecd45", "data" : "some-data1"} ]}`)
+		data := []byte(`{"count" : 4, "results" : [ {"id" : "91cc8988-2223-404a-a3f5-5f1a839ecd45", "data" : "some-data1"} ]}`)
 		noCalls := 0
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if req.Method == http.MethodGet {
 				fmt.Println(req)
-				rw.Write(jsonData1)
+				rw.Write(data)
 				rw.WriteHeader(http.StatusOK)
 				noCalls++
 				return
@@ -97,7 +97,7 @@ func TestAutomationClientList(t *testing.T) {
 
 		workflowClient := automation.NewClient(server.URL, server.Client())
 		wf, err := workflowClient.List(automation.Workflows)
-		assert.Equal(t, noCalls, 2)
+		assert.Equal(t, noCalls, 4, "There should be 4 cals")
 		assert.NotNil(t, wf)
 		assert.NoError(t, err)
 	})
