@@ -18,6 +18,7 @@ package deploy
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/loggers"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 )
@@ -27,7 +28,9 @@ func logProjectsInfo(projects []project.Project) {
 	for _, p := range projects {
 		log.Info("  - %s", p)
 	}
-	logConfigInfo(projects)
+	if log.Level() == loggers.LevelDebug {
+		logConfigInfo(projects)
+	}
 }
 
 func logConfigInfo(projects []project.Project) {

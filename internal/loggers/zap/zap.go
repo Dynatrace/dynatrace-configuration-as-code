@@ -27,7 +27,8 @@ import (
 
 // Logger wraps a zap logger to perform logging
 type Logger struct {
-	logger *zap.Logger
+	logLevel loggers.LogLevel
+	logger   *zap.Logger
 }
 
 // Info logs an info-level message
@@ -51,6 +52,10 @@ func (l *Logger) Warn(msg string, args ...interface{}) {
 
 func (l *Logger) Fatal(msg string, args ...interface{}) {
 	l.logger.Fatal(fmt.Sprintf(msg, args...))
+}
+
+func (l *Logger) Level() loggers.LogLevel {
+	return l.logLevel
 }
 
 func customTimeEncoder(mode loggers.LogTimeMode) func(time.Time, zapcore.PrimitiveArrayEncoder) {
@@ -100,7 +105,7 @@ func New(logOptions loggers.LogOptions) (*Logger, error) {
 		cores = append(cores, zapcore.NewCore(consoleEncoder, zapcore.AddSync(logOptions.LogSpy), atomicLevel))
 	}
 	logger := zap.New(zapcore.NewTee(cores...))
-	return &Logger{logger: logger}, nil
+	return &Logger{logger: logger, logLevel: logOptions.LogLevel}, nil
 }
 
 var levelMap = map[loggers.LogLevel]zapcore.Level{

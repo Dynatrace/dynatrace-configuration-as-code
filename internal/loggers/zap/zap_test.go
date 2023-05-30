@@ -60,3 +60,15 @@ func TestNewLoggerWithFile(t *testing.T) {
 	content, _ := os.ReadFile(file.Name())
 	assert.True(t, strings.HasSuffix(string(content), "info\thello\n"))
 }
+
+func TestLoggerReturnsCustomLogLevell(t *testing.T) {
+	logger, err := New(loggers.LogOptions{LogLevel: loggers.LevelDebug})
+	assert.NoError(t, err)
+	assert.Equal(t, loggers.LevelDebug, logger.Level())
+}
+
+func TestLoggerReturnsDefaultLogLevel(t *testing.T) {
+	logger, err := New(loggers.LogOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, loggers.LevelInfo, logger.Level())
+}
