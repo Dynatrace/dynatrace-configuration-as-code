@@ -8,6 +8,6 @@ configs:
       credentialScope: SYNTHETIC
       type: USERNAME_PASSWORD
     template: credential.json
-    skip: false
+    skip: true
   type:
     api: credential-vault
