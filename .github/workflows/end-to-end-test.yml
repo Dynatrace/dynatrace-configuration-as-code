@@ -50,11 +50,11 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: 🏁 Build release binaries
-        if: github.event.action != 'labeled' || (github.event.action == 'labeled' && github.event.label.name == env.E2E_TEST_LABEL)
+        if: github.repository == env.BASE_REPO && (github.event.action != 'labeled' || github.event.label.name == env.E2E_TEST_LABEL)
         run: make build-release
 
       - name: 🌎 Integration test
-        if: github.repository == env.BASE_REPO || github.event.label.name == env.E2E_TEST_LABEL
+        if: github.repository == env.BASE_REPO && (github.event.action != 'labeled' || github.event.label.name == env.E2E_TEST_LABEL)
         run: make integration-test
         env:
           URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
@@ -67,7 +67,7 @@ jobs:
           OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
 
       - name: 🧓 Integration test (legacy)
-        if: github.repository == env.BASE_REPO || github.event.label.name == env.E2E_TEST_LABEL
+        if: github.repository == env.BASE_REPO && (github.event.action != 'labeled' || github.event.label.name == env.E2E_TEST_LABEL)
         run: make integration-test-v1
         env:
           URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
@@ -80,7 +80,7 @@ jobs:
           OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
 
       - name: 📥/📤 Download/Restore test
-        if: github.repository == env.BASE_REPO || github.event.label.name == env.E2E_TEST_LABEL
+        if: github.repository == env.BASE_REPO && (github.event.action != 'labeled' || github.event.label.name == env.E2E_TEST_LABEL)
         run: make download-restore-test
         env:
           URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
