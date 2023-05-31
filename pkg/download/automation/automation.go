@@ -67,17 +67,17 @@ func (d *Downloader) Download(projectName string, automationTypes ...config.Auto
 		}
 		response, err := d.client.List(resource)
 		if err != nil {
-			log.Error("Failed to fetch all objects for automation resource %s: %v", err)
+			log.Error("Failed to fetch all objects for automation resource %s: %v", at.Resource, err)
 			continue
 		}
 
-		log.Info("Downloaded %d objects for automation resource %s", len(*response), string(at.Resource))
-		if len(*response) == 0 {
+		log.Info("Downloaded %d objects for automation resource %s", len(response), string(at.Resource))
+		if len(response) == 0 {
 			continue
 		}
 
 		var configs []config.Config
-		for _, obj := range *response {
+		for _, obj := range response {
 
 			configId := obj.ID
 

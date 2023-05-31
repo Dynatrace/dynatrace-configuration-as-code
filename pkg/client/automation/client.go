@@ -111,14 +111,14 @@ func WithClientRequestLimiter(limiter *concurrency.Limiter) func(client *Client)
 }
 
 // List returns all automation objects
-func (a Client) List(resourceType ResourceType) (result *[]Response, err error) {
+func (a Client) List(resourceType ResourceType) (result []Response, err error) {
 	a.limiter.ExecuteBlocking(func() {
 		result, err = a.list(resourceType)
 	})
 	return
 }
 
-func (a Client) list(resourceType ResourceType) (*[]Response, error) {
+func (a Client) list(resourceType ResourceType) ([]Response, error) {
 	var retVal []Response
 	var result ListResponse
 	result.Count = 1
@@ -149,9 +149,9 @@ func (a Client) list(resourceType ResourceType) (*[]Response, error) {
 	}
 
 	if len(retVal) != result.Count {
-		return nil, fmt.Errorf("unable to get all records for automation")
+		log.Warn("The number of expected (%d) and the number collected (%d) records from automation resource are different", result.Count, len(retVal))
 	}
-	return &retVal, nil
+	return retVal, nil
 }
 
 // Upsert creates or updates a given automation object
@@ -283,15 +283,17 @@ func rmIDField(data *[]byte) error {
 
 func get(a Client, resourceType ResourceType, offset int) (rest.Response, error) {
 
-	params := url.Values{}
-	params.Add("offset", strconv.Itoa(offset))
+	u, e := url.Parse(a.url)
+	if e != nil {
+		return rest.Response{}, e
+	}
 
-	u, _ := url.ParseRequestURI(a.url)
-	u.Path = a.resources[resourceType].Path
-	u.RawQuery = params.Encode()
+	u.Path += a.resources[resourceType].Path
 
-	urlStr := fmt.Sprintf("%v", u)
+	p := u.Query()
+	p.Add("offset", strconv.Itoa(offset))
+	u.RawQuery = p.Encode()
 
 	// try to get the list of resources
-	return rest.Get(a.client, urlStr)
+	return rest.Get(a.client, u.String())
 }
