@@ -21,10 +21,9 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation/internal"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"net/http"
-	"net/url"
-	"strconv"
 )
 
 // Response is a "general" Response type holding the ID and the response payload
@@ -35,7 +34,7 @@ type Response struct {
 	Data []byte `json:"-"`
 }
 
-// UnarshalJSON de-serializes JSON payload into [Response] type
+// UnmarshalJSON de-serializes JSON payload into [Response] type
 func (r *Response) UnmarshalJSON(data []byte) error {
 	var rawMap map[string]json.RawMessage
 	if err := json.Unmarshal(data, &rawMap); err != nil {
@@ -124,8 +123,14 @@ func (a Client) list(resourceType ResourceType) ([]Response, error) {
 	result.Count = 1
 
 	for len(retVal) < result.Count {
+
+		u, err := internal.NextPageURL(a.url, a.resources[resourceType].Path, len(retVal))
+		if err != nil {
+			return nil, fmt.Errorf("unable to list automation resources: %w", err)
+		}
+
 		// try to get the list of resources
-		resp, err := get(a, resourceType, len(retVal))
+		resp, err := rest.Get(a.client, u)
 		if err != nil {
 			return nil, fmt.Errorf("unable to list automation resources: %w", err)
 		}
@@ -279,21 +284,4 @@ func rmIDField(data *[]byte) error {
 		return err
 	}
 	return nil
-}
-
-func get(a Client, resourceType ResourceType, offset int) (rest.Response, error) {
-
-	u, e := url.Parse(a.url)
-	if e != nil {
-		return rest.Response{}, e
-	}
-
-	u.Path += a.resources[resourceType].Path
-
-	p := u.Query()
-	p.Add("offset", strconv.Itoa(offset))
-	u.RawQuery = p.Encode()
-
-	// try to get the list of resources
-	return rest.Get(a.client, u.String())
 }
