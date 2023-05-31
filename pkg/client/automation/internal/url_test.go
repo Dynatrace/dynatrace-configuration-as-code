@@ -35,9 +35,42 @@ func Test_loadMore(t *testing.T) {
 		given    given
 		expected string
 	}{
-		{name: "simple case", given: given{baseURL: "https//:base.url", path: "", offset: 0}, expected: "https//:base.url?offset=0"},
-		{name: "url have query params", given: given{baseURL: "https//:base.url?param=exits", path: "", offset: 0}, expected: "https//:base.url?offset=0&param=exits"},
-		{name: "add path", given: given{baseURL: "https//:base.url/a/b/", path: "new/path", offset: 0}, expected: "https//:base.url/a/b/new/path?offset=0"},
+		{
+			name:     "simple case",
+			given:    given{baseURL: "https://base.url", path: "", offset: 0},
+			expected: "https://base.url?offset=0",
+		},
+		{
+			name:     "url have query params",
+			given:    given{baseURL: "https://base.url?param=exits", path: "", offset: 0},
+			expected: "https://base.url?offset=0&param=exits",
+		},
+		{
+			name:     "add path",
+			given:    given{baseURL: "https://base.url/a/b/", path: "new/path", offset: 0},
+			expected: "https://base.url/a/b/new/path?offset=0",
+		},
+		{
+			name:     "add path - baseURL without end-slash",
+			given:    given{baseURL: "https://base.url/a", path: "new/path", offset: 0},
+			expected: "https://base.url/a/new/path?offset=0",
+		},
+		{
+			name:     "add path - path with starting-slash",
+			given:    given{baseURL: "https://base.url/a/", path: "/new/path", offset: 0},
+			expected: "https://base.url/a/new/path?offset=0",
+		},
+		{
+			name:     "modified offset",
+			given:    given{baseURL: "https://base.url", path: "", offset: 42},
+			expected: "https://base.url?offset=42",
+		},
+
+		{
+			name:     "full case",
+			given:    given{baseURL: "https://base.url?param=exits", path: "new/path", offset: 42},
+			expected: "https://base.url/new/path?offset=42&param=exits",
+		},
 	}
 
 	for _, tc := range tests {

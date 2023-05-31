@@ -27,7 +27,10 @@ func NextPageURL(baseURL, path string, offset int) (string, error) {
 		return "", e
 	}
 
-	u.Path += path
+	u.Path, e = url.JoinPath(u.Path, path)
+	if e != nil {
+		return "", e
+	}
 
 	q := u.Query()
 	q.Add("offset", strconv.Itoa(offset))
