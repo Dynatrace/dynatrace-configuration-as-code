@@ -65,9 +65,9 @@ func WithAPIs(apis api.APIs) func(*Downloader) {
 }
 
 // NewDownloader creates a new Downloader
-func NewDownloader(client dtclient.Client, opts ...func(*Downloader)) *Downloader {
+func NewDownloader(client dtclient.Client, apis api.APIs, opts ...func(*Downloader)) *Downloader {
 	c := &Downloader{
-		apisToDownload:    api.NewAPIs(),
+		apisToDownload:    apis,
 		apiContentFilters: apiContentFilters,
 		client:            client,
 	}

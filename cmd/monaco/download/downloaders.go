@@ -18,6 +18,8 @@ package download
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/dynatrace"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download"
 	dlautomation "github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/automation"
@@ -38,8 +40,28 @@ func makeDownloaders(options downloadConfigsOptions) (downloaders, error) {
 		automationDownloader = dlautomation.NewDownloader(clients.Automation())
 	}
 	var settingsDownloader download.Downloader[v2.SettingsType] = settings.NewDownloader(clients.Settings())
-	var classicDownloader download.Downloader[v2.ClassicApiType] = classic.NewDownloader(clients.Classic())
+	var classicDownloader download.Downloader[v2.ClassicApiType] = classicDownloader(clients, options)
 	return downloaders{settingsDownloader, classicDownloader, automationDownloader}, nil
+}
+
+func classicDownloader(clients *client.ClientSet, opts downloadConfigsOptions) *classic.Downloader {
+	apis := prepareAPIs(opts)
+	return classic.NewDownloader(clients.Classic(), apis)
+}
+
+func prepareAPIs(opts downloadConfigsOptions) api.APIs {
+	switch {
+	case opts.onlyAutomation:
+		return nil
+	case opts.onlySettings:
+		return nil
+	case len(opts.specificAPIs) > 0:
+		return api.NewAPIs()
+	case len(opts.specificSchemas) == 0:
+		return api.NewAPIs()
+	default:
+		return nil
+	}
 }
 
 func (d downloaders) Classic() download.Downloader[v2.ClassicApiType] {

@@ -151,7 +151,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 
 			tt.expectedBehaviour(c)
 
-			downloaders := downloaders{settings.NewDownloader(c), classic.NewDownloader(c)}
+			downloaders := downloaders{settings.NewDownloader(c), classic.NewDownloader(c, api.NewAPIs())}
 
 			_, err := downloadConfigs(downloaders, tt.givenOpts)
 			assert.NoError(t, err)
@@ -341,7 +341,7 @@ func TestDownloadConfigsExitsEarlyForUnknownAPI(t *testing.T) {
 		},
 	}
 
-	downloaders := downloaders{settings.NewDownloader(c), classic.NewDownloader(c)}
+	downloaders := downloaders{settings.NewDownloader(c), classic.NewDownloader(c, api.NewAPIs())}
 
 	err := doDownloadConfigs(afero.NewMemMapFs(), downloaders, givenOpts)
 	assert.ErrorContains(t, err, "not known", "expected download to fail for unkown API")
@@ -371,7 +371,7 @@ func TestDownloadConfigsExitsEarlyForUnknownSettingsSchema(t *testing.T) {
 
 	c.EXPECT().ListSchemas().Return(dtclient.SchemaList{{"builtin:some.schema"}}, nil)
 
-	downloaders := downloaders{settings.NewDownloader(c), classic.NewDownloader(c)}
+	downloaders := downloaders{settings.NewDownloader(c), classic.NewDownloader(c, api.NewAPIs())}
 	err := doDownloadConfigs(afero.NewMemMapFs(), downloaders, givenOpts)
 	assert.ErrorContains(t, err, "not known", "expected download to fail for unkown Settings Schema")
 	c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(0) // no downloads should even be attempted for unknown schema
