@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation/internal"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation/internal/pagination"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"net/http"
 )
@@ -47,8 +47,7 @@ func (r *Response) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// ListResponse Response is a "general" List of Response values holding the ID and the response payload each
-type ListResponse struct {
+type listResponse struct {
 	Count   int        `json:"count"`
 	Results []Response `json:"results"`
 }
@@ -119,12 +118,12 @@ func (a Client) List(resourceType ResourceType) (result []Response, err error) {
 
 func (a Client) list(resourceType ResourceType) ([]Response, error) {
 	var retVal []Response
-	var result ListResponse
+	var result listResponse
 	result.Count = 1
 
 	for len(retVal) < result.Count {
 
-		u, err := internal.NextPageURL(a.url, a.resources[resourceType].Path, len(retVal))
+		u, err := pagination.NextPageURL(a.url, a.resources[resourceType].Path, len(retVal))
 		if err != nil {
 			return nil, fmt.Errorf("unable to list automation resources: %w", err)
 		}
@@ -154,7 +153,8 @@ func (a Client) list(resourceType ResourceType) ([]Response, error) {
 	}
 
 	if len(retVal) != result.Count {
-		log.Warn("The number of expected (%d) and the number collected (%d) records from automation resource are different", result.Count, len(retVal))
+		log.Warn("Total count of items returned for Automation API %q does not match count of actually received items. Expected: %d Got: %d.", resources[resourceType].Path, result.Count, len(retVal))
+
 	}
 	return retVal, nil
 }

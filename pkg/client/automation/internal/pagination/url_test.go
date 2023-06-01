@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package internal_test
+package pagination_test
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation/internal"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation/internal/pagination"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -65,7 +65,6 @@ func Test_loadMore(t *testing.T) {
 			given:    given{baseURL: "https://base.url", path: "", offset: 42},
 			expected: "https://base.url?offset=42",
 		},
-
 		{
 			name:     "full case",
 			given:    given{baseURL: "https://base.url?param=exits", path: "new/path", offset: 42},
@@ -75,7 +74,7 @@ func Test_loadMore(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			actual, err := internal.NextPageURL(tc.given.baseURL, tc.given.path, tc.given.offset)
+			actual, err := pagination.NextPageURL(tc.given.baseURL, tc.given.path, tc.given.offset)
 
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expected, actual)
