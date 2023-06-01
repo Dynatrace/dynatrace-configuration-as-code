@@ -58,12 +58,6 @@ func WithAPIContentFilters(apiFilters map[string]contentFilter) func(*Downloader
 	}
 }
 
-func WithAPIs(apis api.APIs) func(*Downloader) {
-	return func(d *Downloader) {
-		d.apisToDownload = apis
-	}
-}
-
 // NewDownloader creates a new Downloader
 func NewDownloader(client dtclient.Client, apis api.APIs, opts ...func(*Downloader)) *Downloader {
 	c := &Downloader{
