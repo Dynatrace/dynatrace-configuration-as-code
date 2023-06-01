@@ -35,7 +35,7 @@ type dummyAutomationClient struct {
 }
 
 func (c *dummyAutomationClient) Upsert(_ automation.ResourceType, id string, _ []byte) (*automation.Response, error) {
-	return &automation.Response{Id: id}, nil
+	return &automation.Response{ID: id}, nil
 }
 
 func deployAutomation(client automationClient, properties parameter.Properties, renderedConfig string, c *config.Config) (*parameter.ResolvedEntity, error) {
@@ -63,14 +63,14 @@ func deployAutomation(client automationClient, properties parameter.Properties, 
 		return nil, fmt.Errorf("failed to upsert automation object of type %s with id %s: %w", t.Resource, id, err)
 	}
 
-	name := fmt.Sprintf("[UNKNOWN NAME]%s", resp.Id)
+	name := fmt.Sprintf("[UNKNOWN NAME]%s", resp.ID)
 	if configName, err := extractConfigName(c, properties); err == nil {
 		name = configName
 	} else {
-		log.Warn("failed to extract name for automation object %q - ID will be used", resp.Id)
+		log.Warn("failed to extract name for automation object %q - ID will be used", resp.ID)
 	}
 
-	properties[config.IdParameter] = resp.Id
+	properties[config.IdParameter] = resp.ID
 	resolved := parameter.ResolvedEntity{
 		EntityName: name,
 		Coordinate: c.Coordinate,

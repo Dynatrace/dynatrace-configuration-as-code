@@ -107,7 +107,7 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 func TestDeployAutomation(t *testing.T) {
 	client := NewMockautomationClient(gomock.NewController(t))
 	client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&automation.Response{
-		Id: "config-id",
+		ID: "config-id",
 	}, nil)
 	conf := &config.Config{
 		Coordinate: coordinate.Coordinate{

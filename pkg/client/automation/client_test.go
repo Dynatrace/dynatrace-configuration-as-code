@@ -78,6 +78,27 @@ func TestAutomationClientList(t *testing.T) {
 		assert.Nil(t, wf)
 		assert.Error(t, err)
 	})
+
+	t.Run("List - test pagination", func(t *testing.T) {
+		data := []byte(`{"count" : 4, "results" : [ {"id" : "91cc8988-2223-404a-a3f5-5f1a839ecd45", "data" : "some-data1"} ]}`)
+		noCalls := 0
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodGet {
+				rw.Write(data)
+				rw.WriteHeader(http.StatusOK)
+				noCalls++
+				return
+			}
+			assert.Fail(t, "unexpected HTTP method call")
+		}))
+		defer server.Close()
+
+		workflowClient := automation.NewClient(server.URL, server.Client())
+		wf, err := workflowClient.List(automation.Workflows)
+		assert.Equal(t, noCalls, 4, "There should be 4 cals")
+		assert.NotNil(t, wf)
+		assert.NoError(t, err)
+	})
 }
 
 func TestAutomationClientUpsert(t *testing.T) {
@@ -198,7 +219,7 @@ func TestAutomationClientUpsert(t *testing.T) {
 	t.Run("Upsert - Update - OK", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if req.Method == http.MethodPut {
-				// check for absence of Id field
+				// check for absence of ID field
 				var data map[string]interface{}
 				bytes, _ := io.ReadAll(req.Body)
 				_ = json.Unmarshal(bytes, &data)

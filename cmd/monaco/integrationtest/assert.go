@@ -209,8 +209,8 @@ func assertAutomation(t *testing.T, c automation.Client, env manifest.Environmen
 	assert.NilError(t, err)
 
 	var exists bool
-	for _, r := range resp.Results {
-		if r.Id == expectedId {
+	for _, r := range resp {
+		if r.ID == expectedId {
 			exists = true
 			break
 		}

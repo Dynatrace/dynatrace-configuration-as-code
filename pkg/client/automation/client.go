@@ -21,33 +21,33 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation/internal/pagination"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"net/http"
 )
 
 // Response is a "general" Response type holding the ID and the response payload
 type Response struct {
-	// Id is the identifier that will be used when creating a new automation object
-	Id string `json:"id"`
+	// ID is the identifier that will be used when creating a new automation object
+	ID string `json:"id"`
 	// Data is the whole body of an automation object
 	Data []byte `json:"-"`
 }
 
-// UnarshalJSON de-serializes JSON payload into [Response] type
+// UnmarshalJSON de-serializes JSON payload into [Response] type
 func (r *Response) UnmarshalJSON(data []byte) error {
 	var rawMap map[string]json.RawMessage
 	if err := json.Unmarshal(data, &rawMap); err != nil {
 		return err
 	}
-	if err := json.Unmarshal(rawMap["id"], &r.Id); err != nil {
+	if err := json.Unmarshal(rawMap["id"], &r.ID); err != nil {
 		return err
 	}
 	r.Data = data
 	return nil
 }
 
-// ListResponse Response is a "general" List of Response values holding the ID and the response payload each
-type ListResponse struct {
+type listResponse struct {
 	Count   int        `json:"count"`
 	Results []Response `json:"results"`
 }
@@ -109,36 +109,54 @@ func WithClientRequestLimiter(limiter *concurrency.Limiter) func(client *Client)
 }
 
 // List returns all automation objects
-func (a Client) List(resourceType ResourceType) (result *ListResponse, err error) {
+func (a Client) List(resourceType ResourceType) (result []Response, err error) {
 	a.limiter.ExecuteBlocking(func() {
 		result, err = a.list(resourceType)
 	})
 	return
 }
 
-func (a Client) list(resourceType ResourceType) (*ListResponse, error) {
-	// try to get the list of resources
-	resp, err := rest.Get(a.client, a.url+a.resources[resourceType].Path)
-	if err != nil {
-		return nil, fmt.Errorf("unable to list automation resources: %w", err)
-	}
+func (a Client) list(resourceType ResourceType) ([]Response, error) {
+	var retVal []Response
+	var result listResponse
+	result.Count = 1
 
-	// handle http error
-	if !resp.IsSuccess() {
-		return nil, ResponseErr{
-			StatusCode: resp.StatusCode,
-			Message:    "Failed to list automation objects",
-			Data:       resp.Body,
+	for len(retVal) < result.Count {
+
+		u, err := pagination.NextPageURL(a.url, a.resources[resourceType].Path, len(retVal))
+		if err != nil {
+			return nil, fmt.Errorf("unable to list automation resources: %w", err)
 		}
+
+		// try to get the list of resources
+		resp, err := rest.Get(a.client, u)
+		if err != nil {
+			return nil, fmt.Errorf("unable to list automation resources: %w", err)
+		}
+
+		// handle http error
+		if !resp.IsSuccess() {
+			return nil, ResponseErr{
+				StatusCode: resp.StatusCode,
+				Message:    "Failed to list automation objects",
+				Data:       resp.Body,
+			}
+		}
+
+		// unmarshal and return result
+
+		err = json.Unmarshal(resp.Body, &result)
+		if err != nil {
+			return nil, err
+		}
+		retVal = append(retVal, result.Results...)
 	}
 
-	// unmarshal and return result
-	var result ListResponse
-	err = json.Unmarshal(resp.Body, &result)
-	if err != nil {
-		return nil, err
+	if len(retVal) != result.Count {
+		log.Warn("Total count of items returned for Automation API %q does not match count of actually received items. Expected: %d Got: %d.", resources[resourceType].Path, result.Count, len(retVal))
+
 	}
-	return &result, err
+	return retVal, nil
 }
 
 // Upsert creates or updates a given automation object
@@ -166,7 +184,7 @@ func (a Client) upsert(resourceType ResourceType, id string, data []byte) (*Resp
 	if resp.IsSuccess() {
 		log.Debug("Updated object with ID %s", id)
 		return &Response{
-			Id:   id,
+			ID:   id,
 			Data: resp.Body,
 		}, nil
 	}
@@ -213,7 +231,7 @@ func (a Client) create(id string, data []byte, resourceType ResourceType) (*Resp
 	}
 
 	// check if id from response is indeed the same as desired
-	if e.Id != id {
+	if e.ID != id {
 		return nil, fmt.Errorf("returned object ID does not match with the ID used when creating the object")
 	}
 	log.Debug("Created object with ID %s", id)

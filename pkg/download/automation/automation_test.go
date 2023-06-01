@@ -148,7 +148,7 @@ func Test_createTemplateFromRawJSON(t *testing.T) {
 		{
 			"sanitizes template as expected",
 			automation.Response{
-				Id:   "42",
+				ID:   "42",
 				Data: []byte(`{ "id": "42", "title": "My Workflow", "lastExecution": { "some": "details" }, "important": "data" }`),
 			},
 			want{
@@ -162,7 +162,7 @@ func Test_createTemplateFromRawJSON(t *testing.T) {
 		{
 			"defaults name to ID if title is not found",
 			automation.Response{
-				Id:   "42",
+				ID:   "42",
 				Data: []byte(`{ "id": "42", "workflow_name": "My Workflow", "important": "data" }`),
 			},
 			want{
@@ -176,7 +176,7 @@ func Test_createTemplateFromRawJSON(t *testing.T) {
 		{
 			"works if reply is not valid JSON",
 			automation.Response{
-				Id:   "42",
+				ID:   "42",
 				Data: []byte(`{ "id": "42`),
 			},
 			want{
