@@ -20,7 +20,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
-	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
+	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download"
 	dlautomation "github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/classic"
@@ -35,12 +35,12 @@ func makeDownloaders(options downloadConfigsOptions) (downloaders, error) {
 		return nil, err
 	}
 
-	var automationDownloader download.Downloader[v2.AutomationType] = dlautomation.NoopAutomationDownloader{}
+	var automationDownloader download.Downloader[config.AutomationType] = dlautomation.NoopAutomationDownloader{}
 	if clients.Automation() != nil {
 		automationDownloader = dlautomation.NewDownloader(clients.Automation())
 	}
-	var settingsDownloader download.Downloader[v2.SettingsType] = settings.NewDownloader(clients.Settings())
-	var classicDownloader download.Downloader[v2.ClassicApiType] = classicDownloader(clients, options)
+	var settingsDownloader download.Downloader[config.SettingsType] = settings.NewDownloader(clients.Settings())
+	var classicDownloader download.Downloader[config.ClassicApiType] = classicDownloader(clients, options)
 	return downloaders{settingsDownloader, classicDownloader, automationDownloader}, nil
 }
 
@@ -64,19 +64,19 @@ func prepareAPIs(opts downloadConfigsOptions) api.APIs {
 	}
 }
 
-func (d downloaders) Classic() download.Downloader[v2.ClassicApiType] {
-	return getDownloader[v2.ClassicApiType](d)
+func (d downloaders) Classic() download.Downloader[config.ClassicApiType] {
+	return getDownloader[config.ClassicApiType](d)
 }
 
-func (d downloaders) Settings() download.Downloader[v2.SettingsType] {
-	return getDownloader[v2.SettingsType](d)
+func (d downloaders) Settings() download.Downloader[config.SettingsType] {
+	return getDownloader[config.SettingsType](d)
 }
 
-func (d downloaders) Automation() download.Downloader[v2.AutomationType] {
-	return getDownloader[v2.AutomationType](d)
+func (d downloaders) Automation() download.Downloader[config.AutomationType] {
+	return getDownloader[config.AutomationType](d)
 }
 
-func getDownloader[T v2.Type](d downloaders) download.Downloader[T] {
+func getDownloader[T config.Type](d downloaders) download.Downloader[T] {
 	for _, downloader := range d {
 		if dl, ok := downloader.(download.Downloader[T]); ok {
 			return dl
