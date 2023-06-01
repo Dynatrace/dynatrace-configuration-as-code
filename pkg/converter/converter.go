@@ -20,23 +20,23 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/regex"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	listParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/list"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/converter/v1environment"
-	projectV1 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v1"
-	"regexp"
-	"strings"
-
 	configV2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/compound"
 	envParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/environment"
+	listParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/list"
 	refParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/reference"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
+	v2template "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/converter/v1environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
+	projectV1 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v1"
 	projectV2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/spf13/afero"
+	"regexp"
+	"strings"
 )
 
 const (
@@ -293,7 +293,7 @@ func (e TemplateConversionError) Error() string {
 
 var _ error = (*TemplateConversionError)(nil)
 
-func convertTemplate(context *configConvertContext, currentPath string, writeToPath string) (modifiedTemplate template.Template, envParams map[string]parameter.Parameter, listParameterIds map[string]struct{}, errs []error) {
+func convertTemplate(context *configConvertContext, currentPath string, writeToPath string) (modifiedTemplate v2template.Template, envParams map[string]parameter.Parameter, listParameterIds map[string]struct{}, errs []error) {
 	data, err := afero.ReadFile(context.Fs, currentPath)
 	if err != nil {
 		return nil, nil, nil, []error{err}
@@ -306,7 +306,7 @@ func convertTemplate(context *configConvertContext, currentPath string, writeToP
 		return nil, nil, nil, errs
 	}
 
-	return template.CreateTemplateFromString(writeToPath, temporaryTemplate), environmentParameters, listParameterIds, nil
+	return v2template.CreateTemplateFromString(writeToPath, temporaryTemplate), environmentParameters, listParameterIds, nil
 }
 
 func convertReservedParameters(temporaryTemplate string) string {
@@ -404,8 +404,43 @@ func convertParameters(context *configConvertContext, environment manifest.Envir
 			}
 			parameters[newName] = &listParam.ListParameter{Values: valueSlice}
 		} else if regex.IsEnvVariable(value) {
-			envVarName := regex.TrimToEnvVariableName(value)
-			parameters[newName] = envParam.New(envVarName)
+			var refs []parameter.ParameterReference
+			envParams := extractEnvParameters(value)
+
+			// if we found just a single parameter without other characters
+			// we just convert that to an environment parameter
+			if len(envParams) == 1 && value == fmt.Sprintf("{{ .Env.%s }}", envParams[0].Name) {
+				parameters[newName] = envParam.New(envParams[0].Name)
+				continue
+			}
+
+			// else we convert all found environment variables to compound parameter referencing these variables and
+			// preserving the format string
+			valueWithPlaceHolders := value
+			for _, p := range envParams {
+				p := p // avoid implicit memory aliasing
+
+				parameterName := fmt.Sprintf("__ENV_%s__", p.Name)
+				parameters[parameterName] = &p
+				valueWithPlaceHolders = strings.ReplaceAll(strings.ReplaceAll(valueWithPlaceHolders, p.Name, parameterName), ".Env", "")
+				// create references
+				refs = append(refs, parameter.ParameterReference{
+					Config: coordinate.Coordinate{
+						Project:  config.GetProject(),
+						Type:     config.GetType(),
+						ConfigId: config.GetId(),
+					},
+					Property: parameterName,
+				})
+			}
+
+			// create compound parameter
+			if c, err := compound.New(newName, valueWithPlaceHolders, refs); err != nil {
+				errors = append(errors, err)
+				continue
+			} else {
+				parameters[newName] = c
+			}
 		} else {
 			parameters[newName] = &valueParam.ValueParameter{Value: value}
 		}
@@ -577,4 +612,14 @@ func newUrlDefinitionFromV1(env *v1environment.EnvironmentV1) manifest.URLDefini
 		Type:  manifest.ValueURLType,
 		Value: strings.TrimSuffix(env.GetEnvironmentUrl(), "/"),
 	}
+}
+
+func extractEnvParameters(envReference string) []envParam.EnvironmentVariableParameter {
+	matches := regex.EnvVariableRegexPattern.FindAllStringSubmatch(envReference, -1)
+	parameters := make([]envParam.EnvironmentVariableParameter, 0)
+	for _, envVarName := range matches {
+		parameters = append(parameters, *envParam.New(envVarName[1]))
+	}
+
+	return parameters
 }

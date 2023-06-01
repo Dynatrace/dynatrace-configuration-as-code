@@ -21,6 +21,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/template"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
+	compoundParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/compound"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/converter/v1environment"
 	"reflect"
 	"testing"
@@ -53,7 +54,9 @@ func TestConvertParameters(t *testing.T) {
 	referenceToCurrentProjParameterValue := "management-zone/zone.id"
 	listParameterValue := `"GEOLOCATION-41","GEOLOCATION-42","GEOLOCATION-43"`
 	envParameterName := "url"
-	envParameterValue := " {{ .Env.SOME_ENV_VAR }} "
+	envParameterValue := "{{ .Env.SOME_ENV_VAR }}"
+	compoundEnvParameterName := "nickname"
+	compoundEnvParameterValue := "something {{ .Env.TITLE }} - something {{ .Env.NICKNAME }} {{ .Env.SURNAME }} - something"
 
 	environment := manifest.EnvironmentDefinition{
 		Name:  environmentName,
@@ -87,6 +90,7 @@ func TestConvertParameters(t *testing.T) {
 			referenceToCurProjName:     referenceToCurrentProjParameterValue,
 			listParameterName:          listParameterValue,
 			envParameterName:           envParameterValue,
+			compoundEnvParameterName:   compoundEnvParameterValue,
 		},
 	}
 
@@ -102,7 +106,7 @@ func TestConvertParameters(t *testing.T) {
 	parameters, skip, errors := convertParameters(convertContext, environment, testConfig)
 
 	assert.Nil(t, errors)
-	assert.Equal(t, 7, len(parameters))
+	assert.Equal(t, 11, len(parameters))
 	assert.Nil(t, skip, "should be empty")
 
 	nameParameter, found := parameters["name"]
@@ -126,6 +130,38 @@ func TestConvertParameters(t *testing.T) {
 	envParameter, found := parameters[envParameterName]
 	assert.Equal(t, true, found)
 	assert.Equal(t, "SOME_ENV_VAR", envParameter.(*envParam.EnvironmentVariableParameter).Name)
+	//assert.Len(t, envParameter.(*compoundParam.CompoundParameter).GetReferences(), 1)
+	//assert.Equal(t, "__ENV_SOME_ENV_VAR__", envParameter.(*compoundParam.CompoundParameter).GetReferences()[0].Property)
+
+	compound := parameters["nickname"]
+
+	expectedCompoundParam, _ := compoundParam.New("nickname", "something {{ .__ENV_TITLE__ }} - something {{ .__ENV_NICKNAME__ }} {{ .__ENV_SURNAME__ }} - something", []parameter.ParameterReference{
+		{
+			Config: coordinate.Coordinate{
+				Project:  "test-project",
+				Type:     "alerting-profile",
+				ConfigId: "alerting-profile-1",
+			},
+			Property: "__ENV_TITLE__",
+		},
+		{
+			Config: coordinate.Coordinate{
+				Project:  "test-project",
+				Type:     "alerting-profile",
+				ConfigId: "alerting-profile-1",
+			},
+			Property: "__ENV_NICKNAME__",
+		},
+		{
+			Config: coordinate.Coordinate{
+				Project:  "test-project",
+				Type:     "alerting-profile",
+				ConfigId: "alerting-profile-1",
+			},
+			Property: "__ENV_SURNAME__",
+		},
+	})
+	assert.Equal(t, expectedCompoundParam, compound)
 }
 
 func TestParseSkipDeploymentParameter(t *testing.T) {
@@ -1261,5 +1297,61 @@ func createValueEnvironmentDefinition() manifest.EnvironmentDefinition {
 		Auth: manifest.Auth{
 			Token: manifest.AuthSecret{Name: "NAME"},
 		},
+	}
+}
+
+func Test_convertToParameters(t *testing.T) {
+	type args struct {
+		envReference string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []envParam.EnvironmentVariableParameter
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			name: "convert to parameters - empty input - returns no params",
+			args: args{
+				envReference: "",
+			},
+			want:    []envParam.EnvironmentVariableParameter{},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "convert to parameters - single env var - returns param",
+			args: args{
+				envReference: "{{ .Env.VAR1 }}",
+			},
+			want: []envParam.EnvironmentVariableParameter{
+				*envParam.New("VAR1"),
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "convert to parameters - multiple env vars - returns params",
+			args: args{
+				envReference: "{{ .Env.VAR1 }} - {{ .Env.VAR2 }}",
+			},
+			want: []envParam.EnvironmentVariableParameter{
+				*envParam.New("VAR1"),
+				*envParam.New("VAR2"),
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "convert to parameters - invalid input - returns error",
+			args: args{
+				envReference: "{{",
+			},
+			want:    []envParam.EnvironmentVariableParameter{},
+			wantErr: assert.Error,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := extractEnvParameters(tt.args.envReference)
+			assert.Equalf(t, tt.want, got, "extractEnvParameters(%v)", tt.args.envReference)
+		})
 	}
 }
