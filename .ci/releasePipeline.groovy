@@ -116,7 +116,7 @@ pipeline {
                                                 signWinBinaries(source: release, version: version, destDir: '.', projectName: PROJECT)
                                                 pushToDynatraceStorage(source: release, dest: "${PROJECT}/${version}/${release}")
                                                 if (!isDevRelease) {
-                                                    pushToGithub(rleaseName: release, source: release, releaseId: releaseId)
+                                                    pushFileToGithub(rleaseName: release, source: release, releaseId: releaseId)
                                                 } else {
                                                     echo "Skipping upload of binaries to GitHub"
                                                 }
@@ -136,8 +136,8 @@ pipeline {
                                                 pushToDynatraceStorage(source: "${release}/${release}", dest: pathInStorage)
                                                 pushToDynatraceStorage(source: "${release}/${release}.sha256", dest: pathInStorage + ".sha256")
                                                 if (!isDevRelease) {
-                                                    pushToGithub(rleaseName: release, source: "${release}/${release}", releaseId: releaseId)
-                                                    pushToGithub(rleaseName: release + ".sha256", source: "${release}/${release}.sha256", releaseId: releaseId)
+                                                    pushFileToGithub(rleaseName: release, source: "${release}/${release}", releaseId: releaseId)
+                                                    pushFileToGithub(rleaseName: release + ".sha256", source: "${release}/${release}.sha256", releaseId: releaseId)
                                                 } else {
                                                     echo "Skipping upload of binaries to GitHub"
                                                 }
@@ -153,6 +153,16 @@ pipeline {
                                                 // internal registry, all release are published
                                                 tagLatest = !isDevRelease // only tag full-releases and rc-releases as 'latest'
                                                 createContainerAndPushToStorage(version: version, tagLatest: tagLatest, registrySecretsPath: 'keptn-jenkins/monaco/registry-deploy', registry: 'Internal')
+
+                                                if (!isDevRelease) {
+                                                    withVault(vaultSecrets:
+                                                        [[
+                                                             path        : "keptn-jenkins/monaco/cosign",
+                                                             secretValues: [[envVar: 'cosign_pub', vaultKey: 'cosign.pub', isRequired: true],]
+                                                         ]]) {
+                                                        pushToGithub(releaseId: releaseId, rleaseName: "cosign.pub", source: "$cosign_pub")
+                                                    }
+                                                }
 
                                                 break
                                         }
@@ -319,7 +329,7 @@ void createContainerAndPushToStorage(Map args = [version: null, tagLatest: false
 
 void pushAndSign(Map args = [imageName: null]) {
     sh "docker push ${args.imageName}"
-    def fullImageNameWithDigests = sh(returnStdout: true, script:  "docker inspect ${args.imageName}  --format='{{ (index .RepoDigests 0) }}'")
+    def fullImageNameWithDigests = sh(returnStdout: true, script: "docker inspect ${args.imageName}  --format='{{ (index .RepoDigests 0) }}'")
     sh "make sign-image COSIGN_PASSWORD=\$cosign_password FULL_IMAGE_NAME=${fullImageNameWithDigests}"
 }
 
@@ -355,21 +365,28 @@ int createGitHubRelease(Map args = [version: null]) {
 
 void pushToGithub(Map args = [rleaseName: null, source: null, releaseId: null]) {
     stage('Deliver to GitHub') {
-        withEnv(["rleaseName=${args.rleaseName}", "source=${args.source}", "releaseId=${args.releaseId}",
-        ]) {
-            withVault(vaultSecrets: [[path        : 'keptn-jenkins/monaco/github-credentials',
-                                      secretValues: [[envVar: 'token', vaultKey: 'access_token', isRequired: true]]]]
-            ) {
-                sh '''
+        script {
+            withEnv(["rleaseName=${args.rleaseName}", "source=${args.source}", "releaseId=${args.releaseId}",
+            ]) {
+                withVault(vaultSecrets: [[path        : 'keptn-jenkins/monaco/github-credentials',
+                                          secretValues: [[envVar: 'token', vaultKey: 'access_token', isRequired: true]]]]
+                ) {
+                    sh '''
                     curl --request POST https://uploads.github.com/repos/Dynatrace/dynatrace-configuration-as-code/releases/$releaseId/assets?name=$rleaseName
                          --header "Accept: application/vnd.github+json"
                          --header "Authorization: Bearer $token"
                          --header "X-GitHub-Api-Version: 2022-11-28"
                          --header "Content-Type: application/octet-stream"
                          --fail-with-body
-                         --data-binary @$source
+                         --data-binary "$source"
                     '''.replaceAll("\n", " ").replaceAll(/ +/, " ")
+                }
             }
         }
     }
+}
+
+
+void pushFileToGithub(Map args = [rleaseName: null, source: null, releaseId: null]) {
+    pushToGithub(releaseId: args.releaseId, source: "@" + args.source, rleaseName: args.rleaseName)
 }
