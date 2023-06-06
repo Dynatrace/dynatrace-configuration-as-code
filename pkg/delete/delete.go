@@ -145,6 +145,11 @@ func deleteSettingsObject(c dtclient.Client, entries []DeletePointer) []error {
 		}
 
 		for _, obj := range objects {
+			if obj.ModificationInfo != nil && !obj.ModificationInfo.Deletable {
+				log.Warn("Requested settings object %s/%s (%s) is not deletable.", e.Type, e.Identifier, obj.ObjectId)
+				continue
+			}
+
 			log.Debug("Deleting settings object %s/%s with objectId %s.", e.Type, e.Identifier, obj.ObjectId)
 			err := c.DeleteSettings(obj.ObjectId)
 			if err != nil {
@@ -280,6 +285,10 @@ func AllSettingsObjects(c dtclient.SettingsClient) []error {
 
 		log.Info("Deleting %d configs of type %s...", len(settings), s)
 		for _, setting := range settings {
+			if setting.ModificationInfo != nil && !setting.ModificationInfo.Deletable {
+				continue
+			}
+
 			log.Debug("Deleting settings object with objectId %q...", setting.ObjectId)
 			err := c.DeleteSettings(setting.ObjectId)
 			if err != nil {

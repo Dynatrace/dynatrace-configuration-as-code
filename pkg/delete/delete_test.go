@@ -218,6 +218,40 @@ func TestDeleteSettings(t *testing.T) {
 		assert.Len(t, errs, 1, "errors should have len 1")
 	})
 
+	t.Run("TestDeleteSettings - Skips non-deletable Objects", func(t *testing.T) {
+		c := dtclient.NewMockClient(gomock.NewController(t))
+		c.EXPECT().ListSettings(gomock.Any(), gomock.Any()).DoAndReturn(func(schemaID string, listOpts dtclient.ListSettingsOptions) ([]dtclient.DownloadSettingsObject, error) {
+			expectedExtID := "monaco:cHJvamVjdCRidWlsdGluOmFsZXJ0aW5nLnByb2ZpbGUkaWQx"
+			assert.True(t, listOpts.Filter(dtclient.DownloadSettingsObject{ExternalId: expectedExtID}), "Expected request filtering for externalID %q", expectedExtID)
+			return []dtclient.DownloadSettingsObject{
+				{
+					ExternalId:    "externalID",
+					SchemaVersion: "v1",
+					SchemaId:      "builtin:alerting.profile",
+					ObjectId:      "12345",
+					Scope:         "tenant",
+					Value:         nil,
+					ModificationInfo: &dtclient.SettingsModificationInfo{
+						Deletable:  false, // can not be deleted and should be skipped early
+						Modifiable: true,
+					},
+				},
+			}, nil
+
+		})
+		c.EXPECT().DeleteSettings(gomock.Eq("12345")).Times(0) // deletion should not be attempted for non-deletable objects
+		entriesToDelete := map[string][]DeletePointer{
+			"builtin:alerting.profile": {
+				{
+					Type:       "builtin:alerting.profile",
+					Project:    "project",
+					Identifier: "id1",
+				},
+			},
+		}
+		errs := Configs(ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		assert.Empty(t, errs, "errors should be empty")
+	})
 }
 
 func TestDeleteAutomations(t *testing.T) {
