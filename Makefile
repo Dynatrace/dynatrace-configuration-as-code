@@ -40,7 +40,7 @@ mocks: setup
 
 vet: mocks
 	@echo "Vetting files"
-	@go vet ./...
+	@go vet -tags '!unit' ./...
 
 check:
 	@echo "Static code analysis"
