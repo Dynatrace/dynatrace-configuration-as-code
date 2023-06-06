@@ -29,6 +29,7 @@ type Logger interface {
 	Debug(msg string, args ...interface{})
 	Warn(msg string, args ...interface{})
 	Fatal(msg string, args ...interface{})
+	WithFields(fields ...Field) Logger
 	Level() LogLevel
 }
 

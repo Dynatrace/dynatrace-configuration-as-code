@@ -25,33 +25,45 @@ import (
 	"time"
 )
 
-// Logger wraps a zap logger to perform logging
+// Logger wraps a zap baseLogger to perform logging
 type Logger struct {
-	logLevel loggers.LogLevel
-	logger   *zap.Logger
+	logLevel   loggers.LogLevel
+	baseLogger *zap.Logger
+}
+
+func (l *Logger) WithFields(fields ...loggers.Field) loggers.Logger {
+	zFields := make([]zapcore.Field, 0, len(fields))
+	for _, f := range fields {
+		zFields = append(zFields, zap.Reflect(f.Key, f.Value))
+	}
+
+	return &Logger{
+		baseLogger: l.baseLogger.With(zFields...),
+		logLevel:   l.logLevel,
+	}
 }
 
 // Info logs an info-level message
 func (l *Logger) Info(msg string, args ...interface{}) {
-	l.logger.Info(fmt.Sprintf(msg, args...))
+	l.baseLogger.Info(fmt.Sprintf(msg, args...))
 }
 
 // Error logs an error-level message
 func (l *Logger) Error(msg string, args ...interface{}) {
-	l.logger.Error(fmt.Sprintf(msg, args...))
+	l.baseLogger.Error(fmt.Sprintf(msg, args...))
 }
 
 // Debug logs a debug-level message
 func (l *Logger) Debug(msg string, args ...interface{}) {
-	l.logger.Debug(fmt.Sprintf(msg, args...))
+	l.baseLogger.Debug(fmt.Sprintf(msg, args...))
 }
 
 func (l *Logger) Warn(msg string, args ...interface{}) {
-	l.logger.Warn(fmt.Sprintf(msg, args...))
+	l.baseLogger.Warn(fmt.Sprintf(msg, args...))
 }
 
 func (l *Logger) Fatal(msg string, args ...interface{}) {
-	l.logger.Fatal(fmt.Sprintf(msg, args...))
+	l.baseLogger.Fatal(fmt.Sprintf(msg, args...))
 }
 
 func (l *Logger) Level() loggers.LogLevel {
@@ -72,40 +84,37 @@ func customTimeEncoder(mode loggers.LogTimeMode) func(time.Time, zapcore.Primiti
 func New(logOptions loggers.LogOptions) (*Logger, error) {
 	encoderConfig := zap.NewProductionEncoderConfig()
 	encoderConfig.EncodeTime = customTimeEncoder(logOptions.LogTimeMode)
-
-	var consoleEncoder zapcore.Encoder
-	if logOptions.ConsoleLoggingJSON {
-		consoleEncoder = zapcore.NewJSONEncoder(encoderConfig)
-	} else {
-		consoleEncoder = zapcore.NewConsoleEncoder(encoderConfig)
-	}
-
 	consoleSyncer := zapcore.Lock(os.Stderr)
-
 	atomicLevel := zap.NewAtomicLevel()
 	atomicLevel.SetLevel(levelMap[logOptions.LogLevel])
 
 	var cores []zapcore.Core
-
-	cores = append(cores, zapcore.NewCore(consoleEncoder, consoleSyncer, atomicLevel))
+	if logOptions.ConsoleLoggingJSON {
+		cores = append(cores, zapcore.NewCore(zapcore.NewJSONEncoder(encoderConfig), consoleSyncer, atomicLevel))
+	} else {
+		cores = append(cores, &noFieldsCore{zapcore.NewCore(zapcore.NewConsoleEncoder(encoderConfig), consoleSyncer, atomicLevel)})
+	}
 
 	if logOptions.File != nil {
-		var fileEncoder zapcore.Encoder
-		if logOptions.FileLoggingJSON {
-			fileEncoder = zapcore.NewJSONEncoder(encoderConfig)
-		} else {
-			fileEncoder = zapcore.NewConsoleEncoder(encoderConfig)
-		}
-
 		fileSyncer := zapcore.AddSync(logOptions.File)
-		cores = append(cores, zapcore.NewCore(fileEncoder, fileSyncer, atomicLevel))
+		if logOptions.FileLoggingJSON {
+			cores = append(cores, zapcore.NewCore(zapcore.NewJSONEncoder(encoderConfig), fileSyncer, atomicLevel))
+		} else {
+			cores = append(cores, &noFieldsCore{zapcore.NewCore(zapcore.NewConsoleEncoder(encoderConfig), fileSyncer, atomicLevel)})
+		}
 	}
 
 	if logOptions.LogSpy != nil {
-		cores = append(cores, zapcore.NewCore(consoleEncoder, zapcore.AddSync(logOptions.LogSpy), atomicLevel))
+		if logOptions.ConsoleLoggingJSON {
+			cores = append(cores, zapcore.NewCore(zapcore.NewJSONEncoder(encoderConfig), zapcore.AddSync(logOptions.LogSpy), atomicLevel))
+		} else {
+			cores = append(cores, &noFieldsCore{zapcore.NewCore(zapcore.NewConsoleEncoder(encoderConfig), zapcore.AddSync(logOptions.LogSpy), atomicLevel)})
+		}
+
 	}
+
 	logger := zap.New(zapcore.NewTee(cores...))
-	return &Logger{logger: logger, logLevel: logOptions.LogLevel}, nil
+	return &Logger{baseLogger: logger, logLevel: logOptions.LogLevel}, nil
 }
 
 var levelMap = map[loggers.LogLevel]zapcore.Level{
@@ -114,4 +123,13 @@ var levelMap = map[loggers.LogLevel]zapcore.Level{
 	loggers.LevelWarn:  zapcore.WarnLevel,
 	loggers.LevelError: zapcore.ErrorLevel,
 	loggers.LevelFatal: zapcore.FatalLevel,
+}
+
+// noFieldsCore just discards fields passed to the logger
+type noFieldsCore struct {
+	zapcore.Core
+}
+
+func (c *noFieldsCore) With([]zapcore.Field) zapcore.Core {
+	return c
 }
