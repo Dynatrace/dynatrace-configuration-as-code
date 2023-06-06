@@ -313,8 +313,8 @@ void createContainerAndPushToStorage(Map args = [version: null, tagLatest: false
                         sh 'DOCKER_BUILDKIT=1 make docker-container OUTPUT=./build/docker/monaco CONTAINER_NAME=$registry/$repo/dynatrace-configuration-as-code VERSION=$version'
 
                         sh 'docker push $registry/$repo/dynatrace-configuration-as-code:$version'
-                        def fullImageNameWithDigests = sh(returnStdout: true, script: 'docker inspect $registry/$repo/dynatrace-configuration-as-code:$version  --format="{{ (index .RepoDigests 0) }}"')
-                        sh "make sign-image COSIGN_PASSWORD=\$cosign_password FULL_IMAGE_NAME=${fullImageNameWithDigests}"
+
+                        sh 'make sign-image COSIGN_PASSWORD=$cosign_password FULL_IMAGE_NAME=$registry/$repo/dynatrace-configuration-as-code:$version'
 
                         if (args.tagLatest) {
                             sh 'docker tag $registry/$repo/dynatrace-configuration-as-code:$version $registry/$repo/dynatrace-configuration-as-code:latest'
