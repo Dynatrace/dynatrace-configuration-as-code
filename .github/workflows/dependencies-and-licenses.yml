@@ -35,7 +35,7 @@ jobs:
                --fail \
                --data-binary @dependencies-and-licenses.txt
       - name: Generate SBOM in CycloneDX format
-        uses: CycloneDX/gh-gomod-generate-sbom@v1
+        uses: CycloneDX/gh-gomod-generate-sbom@v2
         with:
             version: v1
             args: app -licenses -main cmd/monaco/ -output sbom.xml
