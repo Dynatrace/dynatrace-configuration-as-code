@@ -89,6 +89,7 @@ func purgeForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs) []er
 
 	errs := delete.AllConfigs(clients.Classic(), apis)
 	errs = append(errs, delete.AllSettingsObjects(clients.Settings())...)
+	errs = append(errs, delete.AllAutomations(clients.Automation())...)
 
 	return errs
 }
