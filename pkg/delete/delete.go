@@ -58,6 +58,7 @@ type ClientSet struct {
 
 type automationClient interface {
 	Delete(resourceType automation.ResourceType, id string) (err error)
+	List(resourceType automation.ResourceType) (result []automation.Response, err error)
 }
 
 // Configs removes all given entriesToDelete from the Dynatrace environment the given client connects to
@@ -281,6 +282,42 @@ func AllSettingsObjects(c dtclient.SettingsClient) []error {
 		for _, setting := range settings {
 			log.Debug("Deleting settings object with objectId %q...", setting.ObjectId)
 			err := c.DeleteSettings(setting.ObjectId)
+			if err != nil {
+				errs = append(errs, err)
+			}
+		}
+	}
+
+	return errs
+}
+
+// AllAutomations deletes all Automation objects it can find from the Dynatrace environment the given client connects to
+func AllAutomations(c automationClient) []error {
+	var errs []error
+
+	if !featureflags.AutomationResources().Enabled() {
+		return errs
+	}
+
+	resources := []config.AutomationResource{config.Workflow, config.BusinessCalendar, config.SchedulingRule}
+	for _, resource := range resources {
+		t, err := automationutils.ClientResourceTypeFromConfigType(resource)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		log.Info("Collecting Automations of type %s...", resource)
+		objects, err := c.List(t)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		log.Info("Deleting %d Automations of type %s...", len(objects), resource)
+		for _, o := range objects {
+			log.Debug("Deleting Automation object with id %q...", o.ID)
+			err = c.Delete(t, o.ID)
 			if err != nil {
 				errs = append(errs, err)
 			}
