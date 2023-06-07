@@ -19,7 +19,11 @@
 package log
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/loggers"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"os"
@@ -63,4 +67,24 @@ func TestPrepareLogFile_ReturnsErrIfParentDirIsReadOnly(t *testing.T) {
 	file, err := prepareLogFile(fs)
 	assert.Nil(t, file)
 	assert.Error(t, err)
+}
+
+func TestWithFields(t *testing.T) {
+	logSpy := bytes.Buffer{}
+	setDefaultLogger(loggers.LogOptions{ConsoleLoggingJSON: true, LogSpy: &logSpy})
+	WithFields(
+		loggers.Field{"Title", "Captain"},
+		loggers.Field{"Name", "Iglo"},
+		loggers.CoordinateF(coordinate.Coordinate{"p1", "t1", "c1"}),
+		loggers.EnvironmentF("env1")).Info("Logging with %s", "fields")
+
+	var data map[string]interface{}
+	json.Unmarshal(logSpy.Bytes(), &data)
+	assert.Equal(t, "Logging with fields", data["msg"])
+	assert.Equal(t, "Captain", data["Title"])
+	assert.Equal(t, "Iglo", data["Name"])
+	assert.Equal(t, "p1", data["coordinate"].(map[string]interface{})["Project"])
+	assert.Equal(t, "t1", data["coordinate"].(map[string]interface{})["Type"])
+	assert.Equal(t, "c1", data["coordinate"].(map[string]interface{})["ConfigId"])
+	assert.Equal(t, "env1", data["environment"])
 }

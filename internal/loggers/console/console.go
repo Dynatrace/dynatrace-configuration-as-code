@@ -30,6 +30,10 @@ type Logger struct {
 	consoleLogger *log.Logger
 }
 
+func (l Logger) WithFields(fields ...loggers.Field) loggers.Logger {
+	return l
+}
+
 func (l Logger) Info(msg string, args ...interface{}) {
 	l.consoleLogger.Printf("INFO "+msg+"\n", args...)
 }

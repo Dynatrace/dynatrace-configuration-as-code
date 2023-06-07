@@ -57,6 +57,10 @@ func Level() loggers.LogLevel {
 	return std.Level()
 }
 
+func WithFields(fields ...loggers.Field) loggers.Logger {
+	return std.WithFields(fields...)
+}
+
 var (
 	std loggers.Logger = console.Instance
 )
