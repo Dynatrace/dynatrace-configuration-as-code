@@ -24,7 +24,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/throttle"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/auth"
@@ -694,7 +693,12 @@ func (d *DynatraceClient) listSettings(schemaId string, opts ListSettingsOptions
 		return len(parsed.Items), len(result), nil
 	}
 
-	_, err := d.listPaginated(d.settingsObjectAPIPath, params, schemaId, addToResult)
+	u, err := buildUrl(d.environmentURL, d.settingsObjectAPIPath, params)
+	if err != nil {
+		return nil, clientErrors.RespError{Err: err}
+	}
+
+	_, err = rest.ListPaginated(d.client, d.retrySettings, u, schemaId, addToResult)
 
 	if err != nil {
 		return nil, err
@@ -744,8 +748,12 @@ func (d *DynatraceClient) listEntitiesTypes() ([]EntitiesType, error) {
 		return len(parsed.Types), len(result), nil
 	}
 
-	_, err := d.listPaginated(pathEntitiesTypes, params, "EntityTypeList", addToResult)
+	u, err := buildUrl(d.environmentURL, pathEntitiesTypes, params)
+	if err != nil {
+		return nil, clientErrors.RespError{Err: err}
+	}
 
+	_, err = rest.ListPaginated(d.client, d.retrySettings, u, "EntityTypeList", addToResult)
 	if err != nil {
 		return nil, err
 	}
@@ -798,7 +806,13 @@ func (d *DynatraceClient) listEntities(entitiesType EntitiesType) ([]string, err
 
 	for runExtraction {
 		params := genListEntitiesParams(entityType, entitiesType, ignoreProperties)
-		resp, err := d.listPaginated(pathEntitiesObjects, params, entityType, addToResult)
+
+		u, err := buildUrl(d.environmentURL, pathEntitiesObjects, params)
+		if err != nil {
+			return nil, clientErrors.RespError{Err: err}
+		}
+
+		resp, err := rest.ListPaginated(d.client, d.retrySettings, u, entityType, addToResult)
 
 		runExtraction, ignoreProperties, err = handleListEntitiesError(entityType, resp, runExtraction, ignoreProperties, err)
 
@@ -808,84 +822,6 @@ func (d *DynatraceClient) listEntities(entitiesType EntitiesType) ([]string, err
 	}
 
 	return result, nil
-}
-
-func (d *DynatraceClient) listPaginated(urlPath string, params url.Values, logLabel string,
-	addToResult func(body []byte) (int, int, error)) (rest.Response, error) {
-
-	var resp rest.Response
-	startTime := time.Now()
-	receivedCount := 0
-	totalReceivedCount := 0
-
-	u, err := buildUrl(d.environmentURL, urlPath, params)
-	if err != nil {
-		return resp, clientErrors.RespError{
-			Err:        err,
-			StatusCode: 0,
-		}
-	}
-
-	resp, receivedCount, totalReceivedCount, _, err = d.runAndProcessResponse(false, u, addToResult, receivedCount, totalReceivedCount, urlPath)
-	if err != nil {
-		return resp, clientErrors.RespError{
-			Err:        err,
-			StatusCode: resp.StatusCode,
-		}
-	}
-
-	nbCalls := 1
-	lastLogTime := time.Now()
-	expectedTotalCount := resp.TotalCount
-	nextPageKey := resp.NextPageKey
-	emptyResponseRetryCount := 0
-
-	for {
-
-		if nextPageKey != "" {
-			logLongRunningExtractionProgress(&lastLogTime, startTime, nbCalls, resp, logLabel)
-
-			u = rest.AddNextPageQueryParams(u, nextPageKey)
-
-			var isLastAvailablePage bool
-			resp, receivedCount, totalReceivedCount, isLastAvailablePage, err = d.runAndProcessResponse(true, u, addToResult, receivedCount, totalReceivedCount, urlPath)
-			if err != nil {
-				return resp, clientErrors.RespError{
-					Err:        err,
-					StatusCode: resp.StatusCode,
-				}
-			}
-			if isLastAvailablePage {
-				break
-			}
-
-			retry := false
-			retry, emptyResponseRetryCount, err = isRetryOnEmptyResponse(receivedCount, emptyResponseRetryCount, resp)
-			if err != nil {
-				return resp, clientErrors.RespError{
-					Err:        err,
-					StatusCode: resp.StatusCode,
-				}
-			}
-
-			if retry {
-				continue
-			} else {
-				validateWrongCountExtracted(resp, totalReceivedCount, expectedTotalCount, urlPath, logLabel, nextPageKey, params)
-
-				nextPageKey = resp.NextPageKey
-				nbCalls++
-				emptyResponseRetryCount = 0
-			}
-
-		} else {
-
-			break
-		}
-	}
-
-	return resp, nil
-
 }
 
 func (d *DynatraceClient) DeleteSettings(objectID string) (err error) {
@@ -905,38 +841,6 @@ func (d *DynatraceClient) deleteSettings(objectID string) error {
 
 }
 
-const emptyResponseRetryMax = 10
-
-func isRetryOnEmptyResponse(receivedCount int, emptyResponseRetryCount int, resp rest.Response) (bool, int, error) {
-	if receivedCount == 0 {
-		if emptyResponseRetryCount < emptyResponseRetryMax {
-			emptyResponseRetryCount++
-			throttle.ThrottleCallAfterError(emptyResponseRetryCount, "Received empty array response, retrying with same nextPageKey (HTTP: %d) ", resp.StatusCode)
-			return true, emptyResponseRetryCount, nil
-		} else {
-			return false, emptyResponseRetryCount, fmt.Errorf("received too many empty responses (=%d)", emptyResponseRetryCount)
-		}
-	}
-
-	return false, emptyResponseRetryCount, nil
-}
-
-func (d *DynatraceClient) runAndProcessResponse(isNextCall bool, u *url.URL,
-	addToResult func(body []byte) (int, int, error),
-	receivedCount int, totalReceivedCount int, urlPath string) (rest.Response, int, int, bool, error) {
-	isLastAvailablePage := false
-
-	resp, err := rest.GetWithRetry(d.client, u.String(), d.retrySettings.Normal)
-	isLastAvailablePage, err = validateRespErrors(isNextCall, err, resp, urlPath)
-	if err != nil || isLastAvailablePage {
-		return resp, receivedCount, totalReceivedCount, isLastAvailablePage, err
-	}
-
-	receivedCount, totalReceivedCount, err = addToResult(resp.Body)
-
-	return resp, receivedCount, totalReceivedCount, isLastAvailablePage, err
-}
-
 func buildUrl(environmentUrl, urlPath string, params url.Values) (*url.URL, error) {
 	u, err := url.Parse(environmentUrl + urlPath)
 	if err != nil {
@@ -946,51 +850,4 @@ func buildUrl(environmentUrl, urlPath string, params url.Values) (*url.URL, erro
 	u.RawQuery = params.Encode()
 
 	return u, nil
-}
-
-func validateRespErrors(isNextCall bool, err error, resp rest.Response, urlPath string) (bool, error) {
-	if err != nil {
-		return false, err
-	}
-	isLastAvailablePage := false
-	if success(resp) {
-		return false, nil
-
-	} else if isNextCall {
-		if resp.StatusCode == http.StatusBadRequest {
-			isLastAvailablePage = true
-			log.Warn("Failed to get additional data from paginated API %s - pages may have been removed during request.\n    Response was: %s", urlPath, string(resp.Body))
-			return isLastAvailablePage, nil
-		} else {
-			return isLastAvailablePage, fmt.Errorf("failed to get further data from paginated API %s (HTTP %d)!\n    Response was: %s", urlPath, resp.StatusCode, string(resp.Body))
-		}
-	} else {
-		return isLastAvailablePage, fmt.Errorf("failed to get data from paginated API %s (HTTP %d)!\n    Response was: %s", urlPath, resp.StatusCode, string(resp.Body))
-	}
-
-}
-
-func validateWrongCountExtracted(resp rest.Response, totalReceivedCount int, expectedTotalCount int, urlPath string, logLabel string, nextPageKey string, params url.Values) {
-	if resp.NextPageKey == "" && totalReceivedCount != expectedTotalCount {
-		log.Warn("Total count of items from api: %v for: %s does not match with count of actually downloaded items. Expected: %d Got: %d, last next page key received: %s \n   params: %v", urlPath, logLabel, expectedTotalCount, totalReceivedCount, nextPageKey, params)
-	}
-}
-
-func logLongRunningExtractionProgress(lastLogTime *time.Time, startTime time.Time, nbCalls int, resp rest.Response, logLabel string) {
-	if time.Since(*lastLogTime).Minutes() >= 1 {
-		*lastLogTime = time.Now()
-		nbItemsMessage := ""
-		ETAMessage := ""
-		runningMinutes := time.Since(startTime).Minutes()
-		nbCallsPerMinute := float64(nbCalls) / runningMinutes
-		if resp.PageSize > 0 && resp.TotalCount > 0 {
-			nbProcessed := nbCalls * resp.PageSize
-			nbLeft := resp.TotalCount - nbProcessed
-			ETAMinutes := float64(nbLeft) / (nbCallsPerMinute * float64(resp.PageSize))
-			nbItemsMessage = fmt.Sprintf(", processed %d of %d at %d items/call and", nbProcessed, resp.TotalCount, resp.PageSize)
-			ETAMessage = fmt.Sprintf("ETA: %.1f minutes", ETAMinutes)
-		}
-
-		log.Debug("Running extraction of: %s for %.1f minutes%s %.1f call/minute. %s", logLabel, runningMinutes, nbItemsMessage, nbCallsPerMinute, ETAMessage)
-	}
 }
