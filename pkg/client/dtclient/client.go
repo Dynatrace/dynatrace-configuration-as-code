@@ -316,7 +316,6 @@ func NewPlatformClient(dtURL string, token string, oauthCredentials auth.OauthCr
 
 	classicURL, err := metadata.GetDynatraceClassicURL(oauthClient, dtURL)
 	if err != nil {
-		log.Error("Unable to determine Dynatrace classic environment URL: %v", err)
 		return nil, err
 	}
 

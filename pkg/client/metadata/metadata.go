@@ -75,7 +75,10 @@ func GetDynatraceClassicURL(client *http.Client, environmentURL string) (string,
 
 	var jsonResp classicEnvURL
 	if err := json.Unmarshal(resp.Body, &jsonResp); err != nil {
-		return "", fmt.Errorf("failed to parse classic environment response payload: %w", err)
+		// for specific Dynatrace base URLs (e.g. https://env-id.live.dynatrace.com) we get back an HTTP 200 OK,
+		// however the payload is not the expected JSON but HTML content.
+		// At this point, best we can do is give the user a hint that the URL is not completely correct
+		return "", fmt.Errorf("failed to parse classic environment response payload from %q. Please check your dynatrace environment URL to match the following pattern: https://<env-id>.apps.dynatrace.com", endpointURL)
 	}
 	return jsonResp.GetURL(), nil
 }
