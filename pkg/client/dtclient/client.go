@@ -670,12 +670,12 @@ func (d *DynatraceClient) listSettings(schemaId string, opts ListSettingsOptions
 
 	result := make([]DownloadSettingsObject, 0)
 
-	addToResult := func(body []byte) (int, int, error) {
+	addToResult := func(body []byte) (int, error) {
 		var parsed struct {
 			Items []DownloadSettingsObject `json:"items"`
 		}
 		if err := json.Unmarshal(body, &parsed); err != nil {
-			return 0, len(result), fmt.Errorf("failed to unmarshal response: %w", err)
+			return 0, fmt.Errorf("failed to unmarshal response: %w", err)
 		}
 
 		// eventually apply filter
@@ -688,8 +688,7 @@ func (d *DynatraceClient) listSettings(schemaId string, opts ListSettingsOptions
 				}
 			}
 		}
-
-		return len(parsed.Items), len(result), nil
+		return len(parsed.Items), nil
 	}
 
 	u, err := buildUrl(d.environmentURL, d.settingsObjectAPIPath, params)
@@ -735,16 +734,16 @@ func (d *DynatraceClient) listEntitiesTypes() ([]EntitiesType, error) {
 
 	result := make([]EntitiesType, 0)
 
-	addToResult := func(body []byte) (int, int, error) {
+	addToResult := func(body []byte) (int, error) {
 		var parsed EntitiesTypeListResponse
 
 		if err1 := json.Unmarshal(body, &parsed); err1 != nil {
-			return 0, len(result), fmt.Errorf("failed to unmarshal response: %w", err1)
+			return 0, fmt.Errorf("failed to unmarshal response: %w", err1)
 		}
 
 		result = append(result, parsed.Types...)
 
-		return len(parsed.Types), len(result), nil
+		return len(parsed.Types), nil
 	}
 
 	u, err := buildUrl(d.environmentURL, pathEntitiesTypes, params)
@@ -782,11 +781,11 @@ func (d *DynatraceClient) listEntities(entitiesType EntitiesType) ([]string, err
 
 	result := make([]string, 0)
 
-	addToResult := func(body []byte) (int, int, error) {
+	addToResult := func(body []byte) (int, error) {
 		var parsedRaw EntityListResponseRaw
 
 		if err1 := json.Unmarshal(body, &parsedRaw); err1 != nil {
-			return 0, len(result), fmt.Errorf("failed to unmarshal response: %w", err1)
+			return 0, fmt.Errorf("failed to unmarshal response: %w", err1)
 		}
 
 		entitiesContentList := make([]string, len(parsedRaw.Entities))
@@ -797,7 +796,7 @@ func (d *DynatraceClient) listEntities(entitiesType EntitiesType) ([]string, err
 
 		result = append(result, entitiesContentList...)
 
-		return len(parsedRaw.Entities), len(result), nil
+		return len(parsedRaw.Entities), nil
 	}
 
 	runExtraction := true
