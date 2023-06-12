@@ -19,6 +19,7 @@
 package deploy
 
 import (
+	"context"
 	"errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
@@ -38,7 +39,7 @@ func TestDeployAutomation_WrongType(t *testing.T) {
 		Template: generateFaultyTemplate(t),
 	}
 
-	_, errors := deployAutomation(client, nil, "", conf)
+	_, errors := deployAutomation(context.TODO(), client, nil, "", conf)
 	assert.NotEmpty(t, errors)
 }
 
@@ -51,7 +52,7 @@ func TestDeployAutomation_UnknownResourceType(t *testing.T) {
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap([]topologysort.ParameterWithName{}),
 	}
-	_, errors := deployAutomation(client, nil, "", conf)
+	_, errors := deployAutomation(context.TODO(), client, nil, "", conf)
 	assert.NotEmpty(t, errors)
 }
 
@@ -59,7 +60,7 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 
 	t.Run("TestDeployAutomation - Workflow Upsert fails", func(t *testing.T) {
 		client := NewMockautomationClient(gomock.NewController(t))
-		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, errors.New("UPSERT_FAIL"))
+		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, errors.New("UPSERT_FAIL"))
 
 		conf := &config.Config{
 			Type: config.AutomationType{
@@ -68,13 +69,13 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 			Template:   generateDummyTemplate(t),
 			Parameters: toParameterMap([]topologysort.ParameterWithName{}),
 		}
-		res, err := deployAutomation(client, nil, "", conf)
+		res, err := deployAutomation(context.TODO(), client, nil, "", conf)
 		assert.Nil(t, res)
 		assert.Error(t, err)
 	})
 	t.Run("TestDeployAutomation - BusinessCalendar Upsert fails", func(t *testing.T) {
 		client := NewMockautomationClient(gomock.NewController(t))
-		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, errors.New("UPSERT_FAIL"))
+		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, errors.New("UPSERT_FAIL"))
 
 		conf := &config.Config{
 			Type: config.AutomationType{
@@ -83,13 +84,13 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 			Template:   generateDummyTemplate(t),
 			Parameters: toParameterMap([]topologysort.ParameterWithName{}),
 		}
-		res, err := deployAutomation(client, nil, "", conf)
+		res, err := deployAutomation(context.TODO(), client, nil, "", conf)
 		assert.Nil(t, res)
 		assert.Error(t, err)
 	})
 	t.Run("TestDeployAutomation - Scheduling Rule Upsert fails", func(t *testing.T) {
 		client := NewMockautomationClient(gomock.NewController(t))
-		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, errors.New("UPSERT_FAIL"))
+		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, errors.New("UPSERT_FAIL"))
 
 		conf := &config.Config{
 			Type: config.AutomationType{
@@ -98,7 +99,7 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 			Template:   generateDummyTemplate(t),
 			Parameters: toParameterMap([]topologysort.ParameterWithName{}),
 		}
-		res, err := deployAutomation(client, nil, "", conf)
+		res, err := deployAutomation(context.TODO(), client, nil, "", conf)
 		assert.Nil(t, res)
 		assert.Error(t, err)
 	})
@@ -106,7 +107,7 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 
 func TestDeployAutomation(t *testing.T) {
 	client := NewMockautomationClient(gomock.NewController(t))
-	client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&automation.Response{
+	client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&automation.Response{
 		ID: "config-id",
 	}, nil)
 	conf := &config.Config{
@@ -119,7 +120,7 @@ func TestDeployAutomation(t *testing.T) {
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap([]topologysort.ParameterWithName{}),
 	}
-	resolvedEntity, errors := deployAutomation(client, parameter.Properties{}, "{}", conf)
+	resolvedEntity, errors := deployAutomation(context.TODO(), client, parameter.Properties{}, "{}", conf)
 	assert.NotNil(t, resolvedEntity)
 	assert.Equal(t, "[UNKNOWN NAME]config-id", resolvedEntity.EntityName)
 	assert.Equal(t, "config-id", resolvedEntity.Properties[config.IdParameter])

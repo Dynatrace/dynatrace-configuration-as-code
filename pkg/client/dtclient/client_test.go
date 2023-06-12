@@ -19,6 +19,7 @@
 package dtclient
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/concurrency"
@@ -807,7 +808,7 @@ func TestUpsertSettingsRetries(t *testing.T) {
 		generateExternalID: idutils.GenerateExternalID,
 	}
 
-	_, err := client.UpsertSettings(SettingsObject{
+	_, err := client.UpsertSettings(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),

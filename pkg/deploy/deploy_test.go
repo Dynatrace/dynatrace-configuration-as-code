@@ -17,6 +17,7 @@
 package deploy
 
 import (
+	"context"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
@@ -78,7 +79,7 @@ func TestDeploy(t *testing.T) {
 			Skip:        false,
 		}
 
-		resolvedEntity, errors := deploy(clientSet, testApiMap, newEntityMap(testApiMap), &conf)
+		resolvedEntity, errors := deploy(context.TODO(), clientSet, testApiMap, newEntityMap(testApiMap), &conf)
 
 		assert.Emptyf(t, errors, "errors: %v", errors)
 		assert.Equal(t, name, resolvedEntity.EntityName, "%s == %s")
@@ -116,7 +117,7 @@ func TestDeploySettingShouldFailUpsert(t *testing.T) {
 	}
 
 	c := dtclient.NewMockClient(gomock.NewController(t))
-	c.EXPECT().UpsertSettings(gomock.Any()).Return(dtclient.DynatraceEntity{}, fmt.Errorf("upsert failed"))
+	c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any()).Return(dtclient.DynatraceEntity{}, fmt.Errorf("upsert failed"))
 
 	conf := &config.Config{
 		Type:       config.SettingsType{},
@@ -124,7 +125,7 @@ func TestDeploySettingShouldFailUpsert(t *testing.T) {
 		Parameters: toParameterMap(parameters),
 	}
 
-	_, errors := deploy(ClientSet{Settings: c}, nil, newEntityMap(testApiMap), conf)
+	_, errors := deploy(context.TODO(), ClientSet{Settings: c}, nil, newEntityMap(testApiMap), conf)
 	assert.NotEmpty(t, errors)
 }
 
@@ -262,12 +263,12 @@ func TestDeploySetting(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := dtclient.NewMockClient(gomock.NewController(t))
-			c.EXPECT().UpsertSettings(gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
+			c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
 				Id:   tt.given.returnedEntityID,
 				Name: tt.given.returnedEntityID,
 			}, nil)
 
-			got, errors := deploy(ClientSet{Settings: c}, nil, newEntityMap(testApiMap), &tt.given.config)
+			got, errors := deploy(context.TODO(), ClientSet{Settings: c}, nil, newEntityMap(testApiMap), &tt.given.config)
 			if !tt.wantErr {
 				assert.Equal(t, got, &tt.want)
 				assert.Emptyf(t, errors, "errors: %v)", errors)
@@ -309,7 +310,7 @@ func TestDeployedSettingGetsNameFromConfig(t *testing.T) {
 	}
 
 	c := dtclient.NewMockClient(gomock.NewController(t))
-	c.EXPECT().UpsertSettings(gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
+	c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
 		Id:   "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0",
 		Name: "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0",
 	}, nil)
@@ -319,7 +320,7 @@ func TestDeployedSettingGetsNameFromConfig(t *testing.T) {
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parameters),
 	}
-	res, errors := deploy(ClientSet{Settings: c}, nil, newEntityMap(testApiMap), conf)
+	res, errors := deploy(context.TODO(), ClientSet{Settings: c}, nil, newEntityMap(testApiMap), conf)
 	assert.Equal(t, res.EntityName, cfgName, "expected resolved name to match configuration name")
 	assert.Emptyf(t, errors, "errors: %v", errors)
 }
@@ -349,7 +350,7 @@ func TestSettingsNameExtractionDoesNotFailIfCfgNameBecomesOptional(t *testing.T)
 	objectId := "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0"
 
 	c := dtclient.NewMockClient(gomock.NewController(t))
-	c.EXPECT().UpsertSettings(gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
+	c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
 		Id:   objectId,
 		Name: objectId,
 	}, nil)
@@ -359,7 +360,7 @@ func TestSettingsNameExtractionDoesNotFailIfCfgNameBecomesOptional(t *testing.T)
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parametersWithoutName),
 	}
-	res, errors := deploy(ClientSet{Settings: c}, nil, newEntityMap(testApiMap), conf)
+	res, errors := deploy(context.TODO(), ClientSet{Settings: c}, nil, newEntityMap(testApiMap), conf)
 	assert.Contains(t, res.EntityName, objectId, "expected resolved name to contain objectID if name is not configured")
 	assert.Empty(t, errors, " errors: %v)", errors)
 }
@@ -401,7 +402,7 @@ func TestDeployConfigsTargetingSettings(t *testing.T) {
 			},
 		},
 	}
-	c.EXPECT().UpsertSettings(gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
+	c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
 		Id:   "42",
 		Name: "Super Special Settings Object",
 	}, nil)

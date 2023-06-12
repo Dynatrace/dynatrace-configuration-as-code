@@ -17,11 +17,13 @@
 package automation
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation/internal/pagination"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"net/http"
 )
@@ -109,14 +111,14 @@ func WithClientRequestLimiter(limiter *concurrency.Limiter) func(client *Client)
 }
 
 // List returns all automation objects
-func (a Client) List(resourceType ResourceType) (result []Response, err error) {
+func (a Client) List(ctx context.Context, resourceType ResourceType) (result []Response, err error) {
 	a.limiter.ExecuteBlocking(func() {
-		result, err = a.list(resourceType)
+		result, err = a.list(ctx, resourceType)
 	})
 	return
 }
 
-func (a Client) list(resourceType ResourceType) ([]Response, error) {
+func (a Client) list(ctx context.Context, resourceType ResourceType) ([]Response, error) {
 	var retVal []Response
 	var result listResponse
 	result.Count = 1
@@ -136,11 +138,12 @@ func (a Client) list(resourceType ResourceType) ([]Response, error) {
 
 		// handle http error
 		if !resp.IsSuccess() {
-			return nil, ResponseErr{
+			err := errors.RespError{
 				StatusCode: resp.StatusCode,
-				Message:    "Failed to list automation objects",
-				Data:       resp.Body,
+				Err:        fmt.Errorf("Failed to list automation objects"),
+				Details:    resp.Body,
 			}
+			return nil, err
 		}
 
 		// unmarshal and return result
@@ -160,17 +163,17 @@ func (a Client) list(resourceType ResourceType) ([]Response, error) {
 }
 
 // Upsert creates or updates a given automation object
-func (a Client) Upsert(resourceType ResourceType, id string, data []byte) (result *Response, err error) {
+func (a Client) Upsert(ctx context.Context, resourceType ResourceType, id string, data []byte) (result *Response, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("id must be non empty")
 	}
 	a.limiter.ExecuteBlocking(func() {
-		result, err = a.upsert(resourceType, id, append([]byte(nil), data...))
+		result, err = a.upsert(ctx, resourceType, id, append([]byte(nil), data...))
 	})
 	return
 }
 
-func (a Client) upsert(resourceType ResourceType, id string, data []byte) (*Response, error) {
+func (a Client) upsert(ctx context.Context, resourceType ResourceType, id string, data []byte) (*Response, error) {
 	if err := rmIDField(&data); err != nil {
 		return nil, fmt.Errorf("unable to remove id field from payload in order to update object with ID %s: %w", id, err)
 	}
@@ -191,11 +194,12 @@ func (a Client) upsert(resourceType ResourceType, id string, data []byte) (*Resp
 
 	// check if we get an error except 404
 	if !resp.IsSuccess() && resp.StatusCode != http.StatusNotFound {
-		return nil, ResponseErr{
+		err := errors.RespError{
 			StatusCode: resp.StatusCode,
-			Message:    "Failed to upsert automation object",
-			Data:       resp.Body,
+			Err:        fmt.Errorf("failed to upsert automation object"),
+			Details:    resp.Body,
 		}
+		return nil, err
 	}
 
 	// at this point we need to create a new object using HTTP POST
@@ -216,10 +220,10 @@ func (a Client) create(id string, data []byte, resourceType ResourceType) (*Resp
 
 	// handle response err
 	if !resp.IsSuccess() {
-		return nil, ResponseErr{
+		return nil, errors.RespError{
 			StatusCode: resp.StatusCode,
-			Message:    "Failed to upsert automation object",
-			Data:       resp.Body,
+			Err:        fmt.Errorf("Failed to upsert automation object"),
+			Details:    resp.Body,
 		}
 	}
 

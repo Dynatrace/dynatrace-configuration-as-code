@@ -19,6 +19,7 @@
 package dtclient
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
@@ -206,7 +207,7 @@ func TestUpsertSettings(t *testing.T) {
 				generateExternalID:    idutils.GenerateExternalID,
 			}
 
-			resp, err := c.UpsertSettings(SettingsObject{
+			resp, err := c.UpsertSettings(context.TODO(), SettingsObject{
 				OriginObjectId: "anObjectID",
 				Coordinate:     coordinate.Coordinate{Project: "my-project", ConfigId: "user-provided-id", Type: "builtin:alerting.profile"},
 				SchemaId:       "builtin:alerting.profile",

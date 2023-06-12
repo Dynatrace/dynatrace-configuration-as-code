@@ -18,6 +18,7 @@ package automation
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/internal/json"
@@ -65,7 +66,7 @@ func (d *Downloader) Download(projectName string, automationTypes ...config.Auto
 			log.Warn("No resource mapping for automation type %s found", at.Resource)
 			continue
 		}
-		response, err := d.client.List(resource)
+		response, err := d.client.List(context.TODO(), resource)
 		if err != nil {
 			log.Error("Failed to fetch all objects for automation resource %s: %v", at.Resource, err)
 			continue

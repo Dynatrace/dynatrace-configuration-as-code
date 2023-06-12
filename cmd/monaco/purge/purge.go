@@ -17,6 +17,7 @@
 package purge
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
@@ -89,7 +90,7 @@ func purgeForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs) []er
 
 	errs := delete.AllConfigs(clients.Classic(), apis)
 	errs = append(errs, delete.AllSettingsObjects(clients.Settings())...)
-	errs = append(errs, delete.AllAutomations(clients.Automation())...)
+	errs = append(errs, delete.AllAutomations(context.TODO(), clients.Automation())...)
 
 	return errs
 }

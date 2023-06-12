@@ -19,6 +19,7 @@
 package v2
 
 import (
+	"context"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
@@ -100,7 +101,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 		id, _ := idutils.GenerateExternalID(input)
 		return id, nil
 	}))
-	_, err := c.UpsertSettings(dtclient.SettingsObject{
+	_, err := c.UpsertSettings(context.TODO(), dtclient.SettingsObject{
 		Coordinate:     configToDeploy.Coordinate,
 		SchemaId:       configToDeploy.Type.(v2.SettingsType).SchemaId,
 		SchemaVersion:  configToDeploy.Type.(v2.SettingsType).SchemaVersion,

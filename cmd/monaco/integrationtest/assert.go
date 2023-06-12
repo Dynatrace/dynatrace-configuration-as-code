@@ -19,6 +19,7 @@
 package integrationtest
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/automationutils"
@@ -205,7 +206,7 @@ func assertAutomation(t *testing.T, c automation.Client, env manifest.Environmen
 		expectedId = idutils.GenerateUUIDFromCoordinate(cfg.Coordinate)
 	}
 
-	resp, err := c.List(resourceType)
+	resp, err := c.List(context.TODO(), resourceType)
 	assert.NilError(t, err)
 
 	var exists bool

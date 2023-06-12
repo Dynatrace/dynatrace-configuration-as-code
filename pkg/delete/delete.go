@@ -17,6 +17,7 @@
 package delete
 
 import (
+	"context"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
@@ -58,7 +59,7 @@ type ClientSet struct {
 
 type automationClient interface {
 	Delete(resourceType automation.ResourceType, id string) (err error)
-	List(resourceType automation.ResourceType) (result []automation.Response, err error)
+	List(ctx context.Context, resourceType automation.ResourceType) (result []automation.Response, err error)
 }
 
 // Configs removes all given entriesToDelete from the Dynatrace environment the given client connects to
@@ -301,7 +302,7 @@ func AllSettingsObjects(c dtclient.SettingsClient) []error {
 }
 
 // AllAutomations deletes all Automation objects it can find from the Dynatrace environment the given client connects to
-func AllAutomations(c automationClient) []error {
+func AllAutomations(ctx context.Context, c automationClient) []error {
 	var errs []error
 
 	if !featureflags.AutomationResources().Enabled() {
@@ -317,7 +318,7 @@ func AllAutomations(c automationClient) []error {
 		}
 
 		log.Info("Collecting Automations of type %s...", resource)
-		objects, err := c.List(t)
+		objects, err := c.List(ctx, t)
 		if err != nil {
 			errs = append(errs, err)
 			continue

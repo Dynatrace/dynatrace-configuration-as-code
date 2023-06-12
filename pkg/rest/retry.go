@@ -17,7 +17,9 @@
 package rest
 
 import (
+	"context"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/errors"
 	"net/http"
 	"time"
 
@@ -76,10 +78,10 @@ func GetWithRetry(client *http.Client, url string, settings RetrySetting) (resp 
 }
 
 // SendWithRetry will retry to call sendWithBody for a given number of times, waiting a give duration between calls
-func SendWithRetry(client *http.Client, sendWithBody SendRequestWithBody, objectName string, path string, body []byte, setting RetrySetting) (resp Response, err error) {
+func SendWithRetry(ctx context.Context, client *http.Client, sendWithBody SendRequestWithBody, objectName string, path string, body []byte, setting RetrySetting) (resp Response, err error) {
 
 	for i := 0; i < setting.MaxRetries; i++ {
-		log.Warn("Failed to create or update config %q. Waiting for %s before retrying...", objectName, setting.WaitTime)
+		log.FromCtx(ctx).Warn("Failed to send HTTP request. Waiting for %s before retrying...", setting.WaitTime)
 		time.Sleep(setting.WaitTime)
 		resp, err = sendWithBody(client, path, body)
 		if err == nil && resp.IsSuccess() {
@@ -88,18 +90,17 @@ func SendWithRetry(client *http.Client, sendWithBody SendRequestWithBody, object
 	}
 
 	if err != nil {
-		return Response{}, fmt.Errorf("failed to create or update config %q after %d retries: %w", objectName, setting.MaxRetries, err)
+		return Response{}, errors.RespError{StatusCode: resp.StatusCode, Err: fmt.Errorf("failed to create or update config after %d retries: %w", setting.MaxRetries, err)}
 	}
-	return Response{}, fmt.Errorf("failed to create or update config %q after %d retries: (HTTP %d)!\n    Response was: %s", objectName, setting.MaxRetries, resp.StatusCode, resp.Body)
-
+	return Response{}, errors.RespError{StatusCode: resp.StatusCode, Err: fmt.Errorf("failed to create or update config after %d retries (HTTP %d)", setting.MaxRetries, resp.StatusCode), Details: resp.Body}
 }
 
 // SendWithRetryWithInitialTry will try to call sendWithBody and if it didn't succeed call [SendWithRetry]
-func SendWithRetryWithInitialTry(client *http.Client, sendWithBody SendRequestWithBody, objectName string, path string, body []byte, setting RetrySetting) (resp Response, err error) {
+func SendWithRetryWithInitialTry(ctx context.Context, client *http.Client, sendWithBody SendRequestWithBody, objectName string, path string, body []byte, setting RetrySetting) (resp Response, err error) {
 	resp, err = sendWithBody(client, path, body)
 	if err == nil && resp.IsSuccess() {
 		return resp, err
 	}
 
-	return SendWithRetry(client, sendWithBody, objectName, path, body, setting)
+	return SendWithRetry(ctx, client, sendWithBody, objectName, path, body, setting)
 }

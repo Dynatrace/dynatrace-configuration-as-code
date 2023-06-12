@@ -24,11 +24,15 @@ import (
 
 type RespError struct {
 	Err        error
+	Details    []byte
 	StatusCode int
 }
 
 func (e RespError) Error() string {
-	return e.Err.Error()
+	if e.Err != nil {
+		return e.Err.Error() + "\nDetails: " + string(e.Details)
+	}
+	return ""
 }
 
 func (e RespError) Unwrap() error {
