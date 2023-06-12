@@ -17,6 +17,7 @@
 package dtclient
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -246,7 +247,7 @@ func (c *DummyClient) ConfigExistsByName(a api.API, name string) (exists bool, i
 	return false, "", nil
 }
 
-func (c *DummyClient) UpsertSettings(obj SettingsObject) (DynatraceEntity, error) {
+func (c *DummyClient) UpsertSettings(ctx context.Context, obj SettingsObject) (DynatraceEntity, error) {
 
 	id := obj.Coordinate.ConfigId
 

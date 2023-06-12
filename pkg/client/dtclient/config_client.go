@@ -17,6 +17,7 @@
 package dtclient
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
@@ -284,7 +285,7 @@ func callWithRetryOnKnowTimingIssue(client *http.Client, restCall rest.SendReque
 	}
 
 	if setting.MaxRetries > 0 {
-		return rest.SendWithRetry(client, restCall, objectName, path, body, setting)
+		return rest.SendWithRetry(context.TODO(), client, restCall, objectName, path, body, setting)
 	}
 	return resp, nil
 }

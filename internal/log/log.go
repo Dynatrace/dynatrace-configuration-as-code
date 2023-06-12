@@ -17,16 +17,24 @@
 package log
 
 import (
+	"context"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/loggers"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/loggers/console"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/loggers/zap"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/timeutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/spf13/afero"
 	"io"
 	"os"
 	"path/filepath"
 )
+
+// CtxKeyCoord context key used for contextual coordinate information
+type CtxKeyCoord struct{}
+
+// CtxKeyEnv context key used for cotextual environment information
+type CtxKeyEnv struct{}
 
 var (
 	_ loggers.Logger = (*zap.Logger)(nil)
@@ -59,6 +67,27 @@ func Level() loggers.LogLevel {
 
 func WithFields(fields ...loggers.Field) loggers.Logger {
 	return std.WithFields(fields...)
+}
+
+// FromCtx creates a logger instance with a given context
+func FromCtx(ctx context.Context) loggers.Logger {
+	loggr := std
+	fields := make([]loggers.Field, 2)
+	if c, ok := ctx.Value(CtxKeyCoord{}).(coordinate.Coordinate); ok {
+		fields[0] = loggers.F("coordinate", c)
+	}
+	if e, ok := ctx.Value(CtxKeyEnv{}).(string); ok {
+		fields[1] = loggers.F("environment", e)
+	}
+	return loggr.WithFields(fields...)
+}
+
+func HTTPErrToFields(errCode int, errMsg, errDetails string) []loggers.Field {
+	fields := make([]loggers.Field, 3)
+	fields[0] = loggers.F("code", errCode)
+	fields[1] = loggers.F("message", errMsg)
+	fields[2] = loggers.F("details", errDetails)
+	return fields
 }
 
 var (

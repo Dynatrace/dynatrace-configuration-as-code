@@ -15,10 +15,14 @@
 package deploy
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/loggers"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
+	errors2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/errors"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 )
@@ -50,38 +54,41 @@ var DummyClientSet = ClientSet{
 // probably fail, as references cannot be resolved
 func DeployConfigs(clientSet ClientSet, apis api.APIs, sortedConfigs []config.Config, opts DeployConfigsOptions) []error {
 	entityMap := newEntityMap(apis)
-	var errors []error
+	var errs []error
 
 	for i := range sortedConfigs {
 		c := &sortedConfigs[i] // avoid implicit memory aliasing (gosec G601)
 
-		entity, deploymentErrors := deploy(clientSet, apis, entityMap, c)
+		ctx := context.WithValue(context.TODO(), log.CtxKeyCoord{}, c.Coordinate)
+		ctx = context.WithValue(ctx, log.CtxKeyEnv{}, c.Environment)
+
+		entity, deploymentErrors := deploy(ctx, clientSet, apis, entityMap, c)
 
 		if len(deploymentErrors) > 0 {
 			for _, err := range deploymentErrors {
-				errors = append(errors, fmt.Errorf("failed to deploy config %s: %w", c.Coordinate, err))
+				errs = append(errs, fmt.Errorf("failed to deploy config %s: %w", c.Coordinate, err))
 			}
 
 			if !opts.ContinueOnErr && !opts.DryRun {
-				return errors
+				return errs
 			}
 		} else if entity != nil {
 			entityMap.put(*entity)
 		}
 	}
 
-	return errors
+	return errs
 }
 
-func deploy(clientSet ClientSet, apis api.APIs, em *entityMap, c *config.Config) (*parameter.ResolvedEntity, []error) {
+func deploy(ctx context.Context, clientSet ClientSet, apis api.APIs, em *entityMap, c *config.Config) (*parameter.ResolvedEntity, []error) {
 	if c.Skip {
 		log.Info("\tSkipping deployment of config %s", c.Coordinate)
 		return &parameter.ResolvedEntity{EntityName: c.Coordinate.ConfigId, Coordinate: c.Coordinate, Properties: parameter.Properties{}, Skip: true}, nil
 	}
 
-	properties, errors := resolveProperties(c, em.get())
-	if len(errors) > 0 {
-		return &parameter.ResolvedEntity{}, errors
+	properties, errs := resolveProperties(c, em.get())
+	if len(errs) > 0 {
+		return &parameter.ResolvedEntity{}, errs
 	}
 
 	renderedConfig, err := c.Render(properties)
@@ -97,21 +104,29 @@ func deploy(clientSet ClientSet, apis api.APIs, em *entityMap, c *config.Config)
 		return nil, nil
 
 	case config.SettingsType:
-		log.Info("\tDeploying config %s", c.Coordinate)
-		res, deployErr = deploySetting(clientSet.Settings, properties, renderedConfig, c)
+		log.FromCtx(ctx).Info("Deploying config %s", c.Coordinate)
+		res, deployErr = deploySetting(ctx, clientSet.Settings, properties, renderedConfig, c)
 
 	case config.ClassicApiType:
-		log.Info("\tDeploying config %s", c.Coordinate)
+		log.FromCtx(ctx).Info("Deploying config %s", c.Coordinate)
+		// TODO: pass context
 		res, deployErr = deployClassicConfig(clientSet.Classic, apis, em, properties, renderedConfig, c)
 
 	case config.AutomationType:
-		log.Info("\tDeploying config %s", c.Coordinate)
-		res, deployErr = deployAutomation(clientSet.Automation, properties, renderedConfig, c)
+		log.FromCtx(ctx).Info("Deploying config %s", c.Coordinate)
+		res, deployErr = deployAutomation(ctx, clientSet.Automation, properties, renderedConfig, c)
 
 	default:
 		return nil, []error{fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())}
 	}
+
 	if deployErr != nil {
+		var responseErr errors2.RespError
+		if errors.As(deployErr, &responseErr) {
+			log.FromCtx(ctx).WithFields(loggers.F("code", responseErr.StatusCode), loggers.F("details", string(responseErr.Details))).Error("Deployment failed: %s", responseErr.Err.Error())
+		} else {
+			log.FromCtx(ctx).Error(deployErr.Error())
+		}
 		return nil, []error{deployErr}
 	}
 	return res, nil

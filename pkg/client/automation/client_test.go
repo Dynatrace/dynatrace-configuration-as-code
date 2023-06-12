@@ -17,7 +17,9 @@
 package automation_test
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	"github.com/stretchr/testify/assert"
 	"io"
@@ -42,7 +44,7 @@ func TestAutomationClientList(t *testing.T) {
 		defer server.Close()
 
 		workflowClient := automation.NewClient(server.URL, server.Client())
-		wf, err := workflowClient.List(automation.Workflows)
+		wf, err := workflowClient.List(context.TODO(), automation.Workflows)
 		assert.NotNil(t, wf)
 		assert.NoError(t, err)
 	})
@@ -57,7 +59,7 @@ func TestAutomationClientList(t *testing.T) {
 		defer server.Close()
 
 		workflowClient := automation.NewClient(server.URL, server.Client())
-		wf, err := workflowClient.List(automation.Workflows)
+		wf, err := workflowClient.List(context.TODO(), automation.Workflows)
 		assert.Nil(t, wf)
 		assert.Error(t, err)
 	})
@@ -74,7 +76,7 @@ func TestAutomationClientList(t *testing.T) {
 		defer server.Close()
 
 		workflowClient := automation.NewClient(server.URL, server.Client())
-		wf, err := workflowClient.List(automation.Workflows)
+		wf, err := workflowClient.List(context.TODO(), automation.Workflows)
 		assert.Nil(t, wf)
 		assert.Error(t, err)
 	})
@@ -94,7 +96,7 @@ func TestAutomationClientList(t *testing.T) {
 		defer server.Close()
 
 		workflowClient := automation.NewClient(server.URL, server.Client())
-		wf, err := workflowClient.List(automation.Workflows)
+		wf, err := workflowClient.List(context.TODO(), automation.Workflows)
 		assert.Equal(t, noCalls, 4, "There should be 4 cals")
 		assert.NotNil(t, wf)
 		assert.NoError(t, err)
@@ -110,7 +112,7 @@ func TestAutomationClientUpsert(t *testing.T) {
 		}))
 		defer server.Close()
 		workflowClient := automation.NewClient(server.URL, server.Client())
-		wf, err := workflowClient.Upsert(automation.Workflows, "id", []byte{})
+		wf, err := workflowClient.Upsert(context.TODO(), automation.Workflows, "id", []byte{})
 		assert.Nil(t, wf)
 		assert.Error(t, err)
 	})
@@ -122,7 +124,7 @@ func TestAutomationClientUpsert(t *testing.T) {
 		defer server.Close()
 
 		workflowClient := automation.NewClient(server.URL, server.Client())
-		wf, err := workflowClient.Upsert(automation.Workflows, "", jsonData)
+		wf, err := workflowClient.Upsert(context.TODO(), automation.Workflows, "", jsonData)
 		assert.Nil(t, wf)
 		assert.Error(t, err)
 	})
@@ -148,7 +150,7 @@ func TestAutomationClientUpsert(t *testing.T) {
 		defer server.Close()
 
 		workflowClient := automation.NewClient(server.URL, server.Client())
-		wf, err := workflowClient.Upsert(automation.Workflows, "some-monaco-generated-ID", jsonData)
+		wf, err := workflowClient.Upsert(context.TODO(), automation.Workflows, "some-monaco-generated-ID", jsonData)
 		assert.NotNil(t, wf)
 		assert.NoError(t, err)
 	})
@@ -174,7 +176,7 @@ func TestAutomationClientUpsert(t *testing.T) {
 		defer server.Close()
 
 		workflowClient := automation.NewClient(server.URL, server.Client())
-		wf, err := workflowClient.Upsert(automation.Workflows, "some-monaco-generated-ID", jsonData)
+		wf, err := workflowClient.Upsert(context.TODO(), automation.Workflows, "some-monaco-generated-ID", jsonData)
 		assert.Nil(t, wf)
 		assert.Error(t, err)
 	})
@@ -195,7 +197,7 @@ func TestAutomationClientUpsert(t *testing.T) {
 		defer server.Close()
 
 		workflowClient := automation.NewClient(server.URL, server.Client())
-		wf, err := workflowClient.Upsert(automation.Workflows, "some-monaco-generated-ID", jsonData)
+		wf, err := workflowClient.Upsert(context.TODO(), automation.Workflows, "some-monaco-generated-ID", jsonData)
 		assert.Nil(t, wf)
 		assert.Error(t, err)
 	})
@@ -211,7 +213,7 @@ func TestAutomationClientUpsert(t *testing.T) {
 		defer server.Close()
 
 		workflowClient := automation.NewClient(server.URL, server.Client())
-		wf, err := workflowClient.Upsert(automation.Workflows, "some-monaco-generated-ID", jsonData)
+		wf, err := workflowClient.Upsert(context.TODO(), automation.Workflows, "some-monaco-generated-ID", jsonData)
 		assert.Nil(t, wf)
 		assert.Error(t, err)
 	})
@@ -235,7 +237,7 @@ func TestAutomationClientUpsert(t *testing.T) {
 		defer server.Close()
 
 		workflowClient := automation.NewClient(server.URL, server.Client())
-		wf, err := workflowClient.Upsert(automation.Workflows, "some-monaco-generated-ID", jsonData)
+		wf, err := workflowClient.Upsert(context.TODO(), automation.Workflows, "some-monaco-generated-ID", jsonData)
 		assert.NotNil(t, wf)
 		assert.NoError(t, err)
 	})
@@ -301,4 +303,14 @@ func TestAutomationClientDelete(t *testing.T) {
 		err := c.Delete(automation.Workflows, "some-monaco-generated-ID")
 		assert.ErrorContains(t, err, "unable to delete")
 	})
+}
+
+func TestContext(t *testing.T) {
+	ctx := context.TODO()
+	takeCtx(context.WithValue(ctx, "environment", "my-env"))
+	fmt.Println(ctx.Value("name"))
+}
+
+func takeCtx(ctx context.Context) {
+	fmt.Println(ctx.Value("environment"))
 }

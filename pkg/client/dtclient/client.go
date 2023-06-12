@@ -118,7 +118,7 @@ type SettingsClient interface {
 	// UpsertSettings either creates the supplied object, or updates an existing one.
 	// First, we try to find the external-id of the object. If we can't find it, we create the object, if we find it, we
 	// update the object.
-	UpsertSettings(SettingsObject) (DynatraceEntity, error)
+	UpsertSettings(context.Context, SettingsObject) (DynatraceEntity, error)
 
 	// ListSchemas returns all schemas that the Dynatrace environment reports
 	ListSchemas() (SchemaList, error)
@@ -386,14 +386,14 @@ func validateURL(dtURL string) error {
 	return nil
 }
 
-func (d *DynatraceClient) UpsertSettings(obj SettingsObject) (result DynatraceEntity, err error) {
+func (d *DynatraceClient) UpsertSettings(ctx context.Context, obj SettingsObject) (result DynatraceEntity, err error) {
 	d.limiter.ExecuteBlocking(func() {
-		result, err = d.upsertSettings(obj)
+		result, err = d.upsertSettings(ctx, obj)
 	})
 	return
 }
 
-func (d *DynatraceClient) upsertSettings(obj SettingsObject) (DynatraceEntity, error) {
+func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject) (DynatraceEntity, error) {
 
 	// special handling for updating settings 2.0 objects on tenants with version pre 1.262.0
 	// Tenants with versions < 1.262 are not able to handle updates of existing
@@ -456,7 +456,7 @@ func (d *DynatraceClient) upsertSettings(obj SettingsObject) (DynatraceEntity, e
 
 	requestUrl := d.environmentURL + d.settingsObjectAPIPath
 
-	resp, err := rest.SendWithRetryWithInitialTry(d.client, rest.Post, obj.Coordinate.ConfigId, requestUrl, payload, d.retrySettings.Normal)
+	resp, err := rest.SendWithRetryWithInitialTry(ctx, d.client, rest.Post, obj.Coordinate.ConfigId, requestUrl, payload, d.retrySettings.Normal)
 	if err != nil {
 		return DynatraceEntity{}, fmt.Errorf("failed to create or update dynatrace obj: %w", err)
 	}

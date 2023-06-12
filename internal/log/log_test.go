@@ -20,6 +20,7 @@ package log
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/loggers"
@@ -87,4 +88,23 @@ func TestWithFields(t *testing.T) {
 	assert.Equal(t, "t1", data["coordinate"].(map[string]interface{})["Type"])
 	assert.Equal(t, "c1", data["coordinate"].(map[string]interface{})["ConfigId"])
 	assert.Equal(t, "env1", data["environment"])
+}
+
+func TestFromCtx(t *testing.T) {
+	logSpy := bytes.Buffer{}
+	setDefaultLogger(loggers.LogOptions{ConsoleLoggingJSON: true, LogSpy: &logSpy})
+	c := coordinate.Coordinate{"p1", "t1", "c1"}
+	e := "e1"
+
+	logger := FromCtx(context.WithValue(context.WithValue(context.TODO(), CtxKeyCoord{}, c), CtxKeyEnv{}, e))
+	logger.Info("Hi with context")
+
+	var data map[string]interface{}
+	json.Unmarshal(logSpy.Bytes(), &data)
+	assert.Equal(t, "Hi with context", data["msg"])
+	assert.Equal(t, "p1", data["coordinate"].(map[string]interface{})["Project"])
+	assert.Equal(t, "t1", data["coordinate"].(map[string]interface{})["Type"])
+	assert.Equal(t, "c1", data["coordinate"].(map[string]interface{})["ConfigId"])
+	assert.Equal(t, "e1", data["environment"])
+
 }

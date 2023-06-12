@@ -19,6 +19,7 @@
 package deploy
 
 import (
+	"context"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
@@ -64,7 +65,7 @@ func TestDeploySettingShouldFailCyclicParameterDependencies(t *testing.T) {
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parameters),
 	}
-	_, errors := deploySetting(client, nil, "", conf)
+	_, errors := deploySetting(context.TODO(), client, nil, "", conf)
 	assert.NotEmpty(t, errors)
 }
 
@@ -76,6 +77,6 @@ func TestDeploySettingShouldFailRenderTemplate(t *testing.T) {
 		Template: generateFaultyTemplate(t),
 	}
 
-	_, errors := deploySetting(client, nil, "", conf)
+	_, errors := deploySetting(context.TODO(), client, nil, "", conf)
 	assert.NotEmpty(t, errors)
 }

@@ -17,6 +17,7 @@
 package deploy
 
 import (
+	"context"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
@@ -28,17 +29,16 @@ import (
 
 //go:generate mockgen -source=automation.go -destination=automation_mock.go -package=deploy automationClient
 type automationClient interface {
-	Upsert(resourceType automation.ResourceType, id string, data []byte) (result *automation.Response, err error)
+	Upsert(ctx context.Context, resourceType automation.ResourceType, id string, data []byte) (result *automation.Response, err error)
 }
-
 type dummyAutomationClient struct {
 }
 
-func (c *dummyAutomationClient) Upsert(_ automation.ResourceType, id string, _ []byte) (*automation.Response, error) {
+func (c *dummyAutomationClient) Upsert(_ context.Context, _ automation.ResourceType, id string, _ []byte) (*automation.Response, error) {
 	return &automation.Response{ID: id}, nil
 }
 
-func deployAutomation(client automationClient, properties parameter.Properties, renderedConfig string, c *config.Config) (*parameter.ResolvedEntity, error) {
+func deployAutomation(ctx context.Context, client automationClient, properties parameter.Properties, renderedConfig string, c *config.Config) (*parameter.ResolvedEntity, error) {
 	t, ok := c.Type.(config.AutomationType)
 	if !ok {
 		return &parameter.ResolvedEntity{}, fmt.Errorf("config was not of expected type %q, but %q", config.AutomationType{}.ID(), c.Type.ID())
@@ -58,7 +58,7 @@ func deployAutomation(client automationClient, properties parameter.Properties, 
 	}
 
 	var resp *automation.Response
-	resp, err = client.Upsert(resourceType, id, []byte(renderedConfig))
+	resp, err = client.Upsert(ctx, resourceType, id, []byte(renderedConfig))
 	if resp == nil || err != nil {
 		return nil, fmt.Errorf("failed to upsert automation object of type %s with id %s: %w", t.Resource, id, err)
 	}
