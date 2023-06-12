@@ -461,7 +461,7 @@ func (d *DynatraceClient) upsertSettings(obj SettingsObject) (DynatraceEntity, e
 		return DynatraceEntity{}, fmt.Errorf("failed to create or update dynatrace obj: %w", err)
 	}
 
-	if !success(resp) {
+	if !resp.IsSuccess() {
 		return DynatraceEntity{}, fmt.Errorf("failed to create or update settings object with externalId %s (HTTP %d)!\n\tResponse was: %s", externalID, resp.StatusCode, string(resp.Body))
 	}
 
@@ -510,7 +510,7 @@ func (d *DynatraceClient) readConfigById(api api.API, id string) (json []byte, e
 		return nil, err
 	}
 
-	if !success(response) {
+	if !response.IsSuccess() {
 		return nil, fmt.Errorf("failed to get existing config for api %v (HTTP %v)!\n    Response was: %v", api.ID, response.StatusCode, string(response.Body))
 	}
 
@@ -597,7 +597,7 @@ func (d *DynatraceClient) listSchemas() (SchemaList, error) {
 		return nil, fmt.Errorf("failed to GET schemas: %w", err)
 	}
 
-	if !success(resp) {
+	if !resp.IsSuccess() {
 		return nil, fmt.Errorf("request failed with HTTP (%d).\n\tResponse content: %s", resp.StatusCode, string(resp.Body))
 	}
 
@@ -632,7 +632,7 @@ func (d *DynatraceClient) getSettingById(objectId string) (*DownloadSettingsObje
 		return nil, fmt.Errorf("failed to GET settings object with object id %q: %w", objectId, err)
 	}
 
-	if !success(resp) {
+	if !resp.IsSuccess() {
 		// special case of settings API: If you give it any object ID for a setting object that does not exist, it will give back 400 BadRequest instead
 		// of 404 Not found. So we interpret both status codes, 400 and 404, as "not found"
 		if resp.StatusCode == http.StatusBadRequest || resp.StatusCode == http.StatusNotFound {
