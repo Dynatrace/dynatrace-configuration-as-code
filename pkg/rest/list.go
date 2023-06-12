@@ -28,8 +28,17 @@ import (
 
 const emptyResponseRetryMax = 10
 
+// AddEntriesToResult is a function which should parse an API response body and append the returned entries to a result slice.
+// Handling the parsing, any possible filtering and owning and filling the result list is left to the caller of ListPaginated,
+// as it might differ notably between client implementations.
+// The function MUST return the number of entries it has parsed from the received API payload body. This is used to validate
+// that the final parsed number matches the reported total count of the API.
+// This receivedEntries count is not necessarily equal to the number of entries added to the result slice,
+// as filtering might exclude some entries that where received from the API.
+type AddEntriesToResult func(body []byte) (receivedEntries int, err error)
+
 func ListPaginated(client *http.Client, retrySettings RetrySettings, url *url.URL, logLabel string,
-	addToResult func(body []byte) (int, int, error)) (Response, error) {
+	addToResult AddEntriesToResult) (Response, error) {
 
 	var resp Response
 	startTime := time.Now()
@@ -137,8 +146,7 @@ func isRetryOnEmptyResponse(receivedCount int, emptyResponseRetryCount int, resp
 }
 
 func runAndProcessResponse(client *http.Client, retrySettings RetrySettings, isNextCall bool, u *url.URL,
-	addToResult func(body []byte) (int, int, error),
-	receivedCount int, totalReceivedCount int) (Response, int, int, bool, error) {
+	addToResult AddEntriesToResult, receivedCount int, totalReceivedCount int) (Response, int, int, bool, error) {
 	isLastAvailablePage := false
 
 	resp, err := GetWithRetry(client, u.String(), retrySettings.Normal)
@@ -147,7 +155,8 @@ func runAndProcessResponse(client *http.Client, retrySettings RetrySettings, isN
 		return resp, receivedCount, totalReceivedCount, isLastAvailablePage, err
 	}
 
-	receivedCount, totalReceivedCount, err = addToResult(resp.Body)
+	receivedCount, err = addToResult(resp.Body)
+	totalReceivedCount += receivedCount
 
 	return resp, receivedCount, totalReceivedCount, isLastAvailablePage, err
 }
