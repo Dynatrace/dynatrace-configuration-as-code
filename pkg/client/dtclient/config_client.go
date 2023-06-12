@@ -144,7 +144,7 @@ func createDynatraceObject(client *http.Client, urlString string, objectName str
 		return DynatraceEntity{}, err
 	}
 
-	if !success(resp) {
+	if !resp.IsSuccess() {
 		return DynatraceEntity{}, fmt.Errorf("Failed to create DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
 	}
 
@@ -220,7 +220,7 @@ func updateDynatraceObject(client *http.Client, fullUrl string, objectName strin
 		return DynatraceEntity{}, err
 	}
 
-	if !success(resp) {
+	if !resp.IsSuccess() {
 		return DynatraceEntity{}, fmt.Errorf("Failed to update DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
 	}
 
@@ -253,7 +253,7 @@ func callWithRetryOnKnowTimingIssue(client *http.Client, restCall rest.SendReque
 
 	resp, err := restCall(client, path, body)
 
-	if err == nil && success(resp) {
+	if err == nil && resp.IsSuccess() {
 		return resp, nil
 	}
 
@@ -430,7 +430,7 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.API, urlStrin
 		return nil, err
 	}
 
-	if !success(resp) {
+	if !resp.IsSuccess() {
 		return nil, fmt.Errorf("Failed to get existing configs for API %s (HTTP %d)!\n    Response was: %s", theApi.ID, resp.StatusCode, string(resp.Body))
 	}
 
@@ -451,7 +451,7 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.API, urlStrin
 				return nil, err
 			}
 
-			if !success(resp) && resp.StatusCode != http.StatusBadRequest {
+			if !resp.IsSuccess() && resp.StatusCode != http.StatusBadRequest {
 				return nil, fmt.Errorf("Failed to get further configs from paginated API %s (HTTP %d)!\n    Response was: %s", theApi.ID, resp.StatusCode, string(resp.Body))
 			} else if resp.StatusCode == http.StatusBadRequest {
 				log.Warn("Failed to get additional data from paginated API %s - pages may have been removed during request.\n    Response was: %s", theApi.ID, string(resp.Body))
@@ -620,8 +620,4 @@ func translateSyntheticEntityResponse(resp SyntheticEntity, objectName string) D
 		Name: objectName,
 		Id:   resp.EntityId,
 	}
-}
-
-func success(resp rest.Response) bool {
-	return resp.StatusCode >= 200 && resp.StatusCode <= 299
 }

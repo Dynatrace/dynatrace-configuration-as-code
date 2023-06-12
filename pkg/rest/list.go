@@ -166,7 +166,7 @@ func validateRespErrors(isNextCall bool, err error, resp Response, urlPath strin
 		return false, err
 	}
 	isLastAvailablePage := false
-	if success(resp) {
+	if resp.IsSuccess() {
 		return false, nil
 
 	} else if isNextCall {
@@ -181,8 +181,4 @@ func validateRespErrors(isNextCall bool, err error, resp Response, urlPath strin
 		return isLastAvailablePage, fmt.Errorf("failed to get data from paginated API %s (HTTP %d)!\n    Response was: %s", urlPath, resp.StatusCode, string(resp.Body))
 	}
 
-}
-
-func success(resp Response) bool {
-	return resp.StatusCode >= 200 && resp.StatusCode <= 299
 }
