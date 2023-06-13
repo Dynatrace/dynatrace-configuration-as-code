@@ -1,0 +1,8 @@
+configs:
+- id: req-attribute-sample
+  type:
+    api: request-attributes
+  config:
+    name: Demo Request Attribute
+    template: request-attributes.json
+
