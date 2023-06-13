@@ -186,7 +186,8 @@ func doDownloadConfigs(fs afero.Fs, downloaders downloaders, opts downloadConfig
 	log.Info("Resolving dependencies between configurations")
 	downloadedConfigs = dependency_resolution.ResolveDependencies(downloadedConfigs)
 
-	log.Info("Extracting identifiers into YAML parameters")
+	log.Info("Extracting additional identifiers into YAML parameters")
+	// must happen after dep-resolution, as it removes IDs from the JSONs in which the dep-resolution searches as well
 	downloadedConfigs = id_extraction.ExtractIDsIntoYAML(downloadedConfigs)
 
 	return writeConfigs(downloadedConfigs, opts.downloadOptionsShared, fs)

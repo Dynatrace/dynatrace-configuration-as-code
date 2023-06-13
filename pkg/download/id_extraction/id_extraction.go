@@ -29,20 +29,23 @@ import (
 // underscores, a dash separator '-' and a 16 char alphanumeric ID
 var meIDRegexPattern = regexp.MustCompile(`[a-zA-Z_]+-[A-Za-z0-9]{16}`)
 
+var uuidRegexPattern = regexp.MustCompile(`[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
+
 // ExtractIDsIntoYAML searches for Dynatrace ID patterns in each given config and extracts them from the config's
 // JSON template, into a YAML parameter. It modifies the given configsPerType map.
 func ExtractIDsIntoYAML(configsPerType project.ConfigsPerType) project.ConfigsPerType {
 	for _, cfgs := range configsPerType {
 		for _, c := range cfgs {
-			meIDs := meIDRegexPattern.FindAllString(c.Template.Content(), -1)
-			meIDs = deduplicateMeIDs(meIDs)
+			ids := meIDRegexPattern.FindAllString(c.Template.Content(), -1)
+			ids = append(ids, uuidRegexPattern.FindAllString(c.Template.Content(), -1)...)
+			ids = deduplicateIDs(ids)
 
-			for _, meID := range meIDs {
-				idKey := strings.ReplaceAll(meID, "-", "_") // golang template keys must not contain hyphens
+			for _, id := range ids {
+				idKey := strings.ReplaceAll(id, "-", "_") // golang template keys must not contain hyphens
 				paramID := fmt.Sprintf("__EXTRACTED_ID_%s__", idKey)
-				c.Parameters[paramID] = value.New(meID)
+				c.Parameters[paramID] = value.New(id)
 
-				newContent := strings.ReplaceAll(c.Template.Content(), meID, fmt.Sprintf("{{ .%s }}", paramID))
+				newContent := strings.ReplaceAll(c.Template.Content(), id, fmt.Sprintf("{{ .%s }}", paramID))
 				c.Template.UpdateContent(newContent)
 			}
 		}
@@ -50,10 +53,10 @@ func ExtractIDsIntoYAML(configsPerType project.ConfigsPerType) project.ConfigsPe
 	return configsPerType
 }
 
-func deduplicateMeIDs(meIDs []string) (uniqueMeIDs []string) {
+func deduplicateIDs(ids []string) (uniqueMeIDs []string) {
 	unique := map[string]struct{}{}
-	for _, meID := range meIDs {
-		unique[meID] = struct{}{}
+	for _, id := range ids {
+		unique[id] = struct{}{}
 	}
 	return maps.Keys(unique)
 }
