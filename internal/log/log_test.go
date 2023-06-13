@@ -96,7 +96,7 @@ func TestFromCtx(t *testing.T) {
 	c := coordinate.Coordinate{"p1", "t1", "c1"}
 	e := "e1"
 
-	logger := FromCtx(context.WithValue(context.WithValue(context.TODO(), CtxKeyCoord{}, c), CtxKeyEnv{}, e))
+	logger := FromCtx(context.WithValue(context.WithValue(context.TODO(), CtxKeyCoord{}, c), CtxKeyEnv{}, CtxValEnv{Name: e}))
 	logger.Info("Hi with context")
 
 	var data map[string]interface{}
@@ -105,6 +105,6 @@ func TestFromCtx(t *testing.T) {
 	assert.Equal(t, "p1", data["coordinate"].(map[string]interface{})["Project"])
 	assert.Equal(t, "t1", data["coordinate"].(map[string]interface{})["Type"])
 	assert.Equal(t, "c1", data["coordinate"].(map[string]interface{})["ConfigId"])
-	assert.Equal(t, "e1", data["environment"])
+	assert.Equal(t, "e1", data["environment"].(map[string]interface{})["Name"])
 
 }

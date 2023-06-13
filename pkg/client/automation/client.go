@@ -139,9 +139,9 @@ func (a Client) list(ctx context.Context, resourceType ResourceType) ([]Response
 		// handle http error
 		if !resp.IsSuccess() {
 			err := errors.RespError{
+				Type:       "ResponseError",
 				StatusCode: resp.StatusCode,
-				Err:        fmt.Errorf("Failed to list automation objects"),
-				Details:    resp.Body,
+				Message:    string(resp.Body),
 			}
 			return nil, err
 		}
@@ -195,9 +195,9 @@ func (a Client) upsert(ctx context.Context, resourceType ResourceType, id string
 	// check if we get an error except 404
 	if !resp.IsSuccess() && resp.StatusCode != http.StatusNotFound {
 		err := errors.RespError{
+			Type:       "ResponseError",
 			StatusCode: resp.StatusCode,
-			Err:        fmt.Errorf("failed to upsert automation object"),
-			Details:    resp.Body,
+			Message:    string(resp.Body),
 		}
 		return nil, err
 	}
@@ -221,9 +221,9 @@ func (a Client) create(id string, data []byte, resourceType ResourceType) (*Resp
 	// handle response err
 	if !resp.IsSuccess() {
 		return nil, errors.RespError{
+			Type:       "ResponseError",
 			StatusCode: resp.StatusCode,
-			Err:        fmt.Errorf("Failed to upsert automation object"),
-			Details:    resp.Body,
+			Message:    string(resp.Body),
 		}
 	}
 

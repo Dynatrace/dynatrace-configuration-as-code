@@ -90,9 +90,9 @@ func SendWithRetry(ctx context.Context, client *http.Client, sendWithBody SendRe
 	}
 
 	if err != nil {
-		return Response{}, errors.RespError{StatusCode: resp.StatusCode, Err: fmt.Errorf("failed to create or update config after %d retries: %w", setting.MaxRetries, err)}
+		return Response{}, errors.RespError{Type: "ResponseError", StatusCode: resp.StatusCode, Message: err.Error()}
 	}
-	return Response{}, errors.RespError{StatusCode: resp.StatusCode, Err: fmt.Errorf("failed to create or update config after %d retries (HTTP %d)", setting.MaxRetries, resp.StatusCode), Details: resp.Body}
+	return Response{}, errors.RespError{Type: "ResponseError", StatusCode: resp.StatusCode, Message: string(resp.Body)}
 }
 
 // SendWithRetryWithInitialTry will try to call sendWithBody and if it didn't succeed call [SendWithRetry]

@@ -23,16 +23,14 @@ import (
 )
 
 type RespError struct {
-	Err        error
-	Details    []byte
+	Type       string
+	Err        error `json:"-"`
+	Message    string
 	StatusCode int
 }
 
 func (e RespError) Error() string {
-	if e.Err != nil {
-		return e.Err.Error() + "\nDetails: " + string(e.Details)
-	}
-	return ""
+	return e.Message
 }
 
 func (e RespError) Unwrap() error {
