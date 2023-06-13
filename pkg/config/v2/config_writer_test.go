@@ -32,7 +32,7 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestExtractCommonBase(t *testing.T) {
@@ -107,25 +107,25 @@ func TestExtractCommonBase(t *testing.T) {
 
 	base, rest := extractCommonBase(configs)
 
-	assert.Assert(t, base != nil, "there should be a common base")
+	assert.NotNil(t, base, "there should be a common base")
 
-	assert.Assert(t, base.Name == configName, "name should be `%s`, but was `%s`", configName, base.Name)
-	assert.Assert(t, base.Template == template, "template should be `%s`, but was `%s`", template, base.Template)
-	assert.Assert(t, base.Skip == nil, "skip should be nil: %v", base.Skip)
-	assert.Assert(t, len(base.Parameters) == 3, "there should be 3 parameter overrides, but there were `%d`",
+	assert.Equal(t, base.Name, configName, "name should be `%s`, but was `%s`", configName, base.Name)
+	assert.Equal(t, base.Template, template, "template should be `%s`, but was `%s`", template, base.Template)
+	assert.Nil(t, base.Skip, "skip should be nil: %v", base.Skip)
+	assert.Len(t, base.Parameters, 3, "there should be 3 parameter overrides, but there were `%d`",
 		len(base.Parameters))
 
 	for _, n := range []string{param1Name, param2Name, param3Name} {
 		param := base.Parameters[n]
-		assert.Assert(t, param != nil, "`%s` should be present in base", n)
+		assert.NotNil(t, param, "`%s` should be present in base", n)
 	}
 
-	assert.Assert(t, len(rest) == 3, "there should be `3` overrides, but there were `%d`", len(rest))
+	assert.Len(t, rest, 3, "there should be `3` overrides, but there were `%d`", len(rest))
 
 	for _, r := range rest {
 		for _, n := range []string{param1Name, param2Name, param3Name} {
 			param := r.Parameters[n]
-			assert.Assert(t, param == nil, "`%s` should not be present in override for `%s`", n, r.environment)
+			assert.Nil(t, param, "`%s` should not be present in override for `%s`", n, r.environment)
 		}
 	}
 }
@@ -193,31 +193,31 @@ func TestExtractCommonBaseForEnvVarSkipsWithEqualValues(t *testing.T) {
 
 	base, rest := extractCommonBase(configs)
 
-	assert.Assert(t, base != nil, "there should be a common base")
+	assert.NotNil(t, base, nil, "there should be a common base")
 
-	assert.Assert(t, base.Name == configName, "name should be `%s`, but was `%s`", configName, base.Name)
-	assert.Assert(t, base.Template == template, "template should be `%s`, but was `%s`", template, base.Template)
-	assert.Assert(t, base.Skip != nil, "skip should not be nil")
-	assert.Assert(t, len(base.Parameters) == 3, "there should be 3 base-parameters, but there were `%d`", len(base.Parameters))
+	assert.Equal(t, base.Name, configName, "name should be `%s`, but was `%s`", configName, base.Name)
+	assert.Equal(t, base.Template, template, "template should be `%s`, but was `%s`", template, base.Template)
+	assert.NotNil(t, base.Skip, "skip should not be nil")
+	assert.Len(t, base.Parameters, 3, "there should be 3 base-parameters, but there were `%d`", len(base.Parameters))
 
 	for _, n := range []string{param1Name, param2Name, param3Name} {
 		param := base.Parameters[n]
-		assert.Assert(t, param != nil, "`%s` should be present in base", n)
+		assert.NotNil(t, param, "`%s` should be present in base", n)
 	}
 
-	assert.Assert(t, base.Skip != nil, "skip should be in the base")
+	assert.NotNil(t, base.Skip, "skip should be in the base")
 
-	assert.DeepEqual(t, base.Skip, map[any]any{
+	assert.Equal(t, base.Skip, map[any]any{
 		"type": "environment",
 		"name": "A",
 	})
 
-	assert.Assert(t, len(rest) == 2, "there should be `2` overrides, but there were `%d`", len(rest))
+	assert.Len(t, rest, 2, "there should be `2` overrides, but there were `%d`", len(rest))
 
 	for _, r := range rest {
 		for _, n := range []string{param1Name, param2Name, param3Name} {
 			param := r.Parameters[n]
-			assert.Assert(t, param == nil, "`%s` should not be present in override for `%s`", n, r.environment)
+			assert.Nil(t, param, "`%s` should not be present in override for `%s`", n, r.environment)
 		}
 	}
 }
@@ -283,29 +283,29 @@ func TestExtractCommonBaseForEnvVarSkipsWithDifferentValues(t *testing.T) {
 
 	base, rest := extractCommonBase(configs)
 
-	assert.Assert(t, base != nil, "there should be a common base")
+	assert.NotNil(t, base, "there should be a common base")
 
-	assert.Assert(t, base.Name == configName, "name should be `%s`, but was `%s`", configName, base.Name)
-	assert.Assert(t, base.Template == template, "template should be `%s`, but was `%s`", template, base.Template)
-	assert.Assert(t, base.Skip == nil, "base skip should be nil")
-	assert.Assert(t, len(base.Parameters) == 3, "there should be 3 base-parameters, but there were `%d`", len(base.Parameters))
+	assert.Equal(t, base.Name, configName, "name should be `%s`, but was `%s`", configName, base.Name)
+	assert.Equal(t, base.Template, template, "template should be `%s`, but was `%s`", template, base.Template)
+	assert.Nil(t, base.Skip, "base skip should be nil")
+	assert.Len(t, base.Parameters, 3, "there should be 3 base-parameters, but there were `%d`", len(base.Parameters))
 
 	for _, n := range []string{param1Name, param2Name, param3Name} {
 		param := base.Parameters[n]
-		assert.Assert(t, param != nil, "`%s` should be present in base", n)
+		assert.NotNil(t, param, "`%s` should be present in base", n)
 	}
 
-	assert.Assert(t, len(rest) == 2, "there should be `2` overrides, but there were `%d`", len(rest))
+	assert.Len(t, rest, 2, "there should be `2` overrides, but there were `%d`", len(rest))
 
 	for _, r := range rest {
 		for _, n := range []string{param1Name, param2Name, param3Name} {
 			param := r.Parameters[n]
-			assert.Assert(t, param == nil, "`%s` should not be present in override for `%s`", n, r.environment)
+			assert.Nil(t, param, "`%s` should not be present in override for `%s`", n, r.environment)
 		}
 	}
 
-	assert.DeepEqual(t, rest[0].Skip, skipA)
-	assert.DeepEqual(t, rest[1].Skip, skipB)
+	assert.Equal(t, rest[0].Skip, skipA)
+	assert.Equal(t, rest[1].Skip, skipB)
 }
 
 func TestExtractCommonBaseT(t *testing.T) {
@@ -380,25 +380,25 @@ func TestExtractCommonBaseT(t *testing.T) {
 
 	base, rest := extractCommonBase(configs)
 
-	assert.Assert(t, base != nil, "there should be a common base")
+	assert.NotNil(t, base, "there should be a common base")
 
-	assert.Assert(t, base.Name == configName, "name should be `%s`, but was `%s`", configName, base.Name)
-	assert.Assert(t, base.Template == template, "template should be `%s`, but was `%s`", template, base.Template)
-	assert.Assert(t, base.Skip == nil, "skip should be nil: %v", base.Skip)
-	assert.Assert(t, len(base.Parameters) == 3, "there should be 3 parameter overrides, but there were `%d`",
+	assert.Equal(t, base.Name, configName, "name should be `%s`, but was `%s`", configName, base.Name)
+	assert.Equal(t, base.Template, template, "template should be `%s`, but was `%s`", template, base.Template)
+	assert.Nil(t, base.Skip, "skip should be nil: %v", base.Skip)
+	assert.Len(t, base.Parameters, 3, "there should be 3 parameter overrides, but there were `%d`",
 		len(base.Parameters))
 
 	for _, n := range []string{param1Name, param2Name, param3Name} {
 		param := base.Parameters[n]
-		assert.Assert(t, param != nil, "`%s` should be present in base", n)
+		assert.NotNil(t, param, "`%s` should be present in base", n)
 	}
 
-	assert.Assert(t, len(rest) == 3, "there should be `3` overrides, but there were `%d`", len(rest))
+	assert.Len(t, rest, 3, "there should be `3` overrides, but there were `%d`", len(rest))
 
 	for _, r := range rest {
 		for _, n := range []string{param1Name, param2Name, param3Name} {
 			param := r.Parameters[n]
-			assert.Assert(t, param == nil, "`%s` should not be present in override for `%s`", n, r.environment)
+			assert.Nil(t, param, "`%s` should not be present in override for `%s`", n, r.environment)
 		}
 	}
 }
@@ -452,20 +452,20 @@ func TestExtractCommonBaseWithJustSkipDifferent(t *testing.T) {
 
 	base, rest := extractCommonBase(configs)
 
-	assert.Assert(t, base != nil, "there should be a common base")
+	assert.NotNil(t, base, "there should be a common base")
 
-	assert.Assert(t, base.Name == configName, "name should be `%s`, but was `%s`", configName, base.Name)
-	assert.Assert(t, base.Template == template, "template should be `%s`, but was `%s`", template, base.Template)
-	assert.Assert(t, base.Skip == nil, "skip should be nil: %v", base.Skip)
-	assert.Assert(t, len(base.Parameters) == 1, "there should be 1 parameter overrides, but there were `%d`",
+	assert.Equal(t, base.Name, configName, "name should be `%s`, but was `%s`", configName, base.Name)
+	assert.Equal(t, base.Template, template, "template should be `%s`, but was `%s`", template, base.Template)
+	assert.Nil(t, base.Skip, "skip should be nil: %v", base.Skip)
+	assert.Len(t, base.Parameters, 1, "there should be 1 parameter overrides, but there were `%d`",
 		len(base.Parameters))
 
-	assert.Assert(t, base.Parameters[param1Name] != nil, "`%s` should be present in base", param1Name)
+	assert.NotNil(t, base.Parameters[param1Name], "`%s` should be present in base", param1Name)
 
-	assert.Assert(t, len(rest) == 3, "there should be `3` overrides, but there were `%d`", len(rest))
+	assert.Len(t, rest, 3, "there should be `3` overrides, but there were `%d`", len(rest))
 
 	for _, r := range rest {
-		assert.Assert(t, r.Parameters[param1Name] == nil, "`%s` should not be present in override for `%s`",
+		assert.Nil(t, r.Parameters[param1Name], "`%s` should not be present in override for `%s`",
 			param1Name, r.environment)
 	}
 }
@@ -494,13 +494,13 @@ func TestToParameterDefinition(t *testing.T) {
 		Value: paramValue,
 	})
 
-	assert.NilError(t, err, "to parameter definiton should return no error, but was `%s`", err)
-	assert.Assert(t, result != nil, "result should not be nil")
+	assert.NoError(t, err, "to parameter definiton should return no error, but was `%s`", err)
+	assert.NotNil(t, result, "result should not be nil")
 
 	resultMap, ok := result.(map[string]interface{})
 
-	assert.Assert(t, ok, "result should be a map")
-	assert.Assert(t, resultMap["Value"] == "hello", "result should have key `Value` with value `%s`, but was `%s`",
+	assert.True(t, ok, "result should be a map")
+	assert.Equal(t, resultMap["Value"], "hello", "result should have key `Value` with value `%s`, but was `%s`",
 		paramValue, resultMap["Value"])
 }
 
@@ -518,10 +518,10 @@ func TestToParameterDefinitionShouldDoSpecialParameterDefinitionIfActivatedAndSu
 		Value: paramValue,
 	})
 
-	assert.NilError(t, err, "to parameter definiton should return no error: %s", err)
-	assert.Assert(t, result != nil, "result should not be nil")
+	assert.NoError(t, err, "to parameter definiton should return no error: %s", err)
+	assert.NotNil(t, result, "result should not be nil")
 
-	assert.Assert(t, result == paramValue, "result should be value `%s`, but was `%v`", paramValue, result)
+	assert.Equal(t, result, paramValue, "result should be value `%s`, but was `%v`", paramValue, result)
 }
 
 func TestToParameterDefinitionShouldWithShortSyntaxActiveShouldDoNormalWhenParameterIsMap(t *testing.T) {
@@ -544,14 +544,16 @@ func TestToParameterDefinitionShouldWithShortSyntaxActiveShouldDoNormalWhenParam
 		Value: paramValue,
 	})
 
-	assert.NilError(t, err, "to parameter definiton should return no error: %s", err)
-	assert.Assert(t, result != nil, "result should not be nil")
+	assert.NoError(t, err, "to parameter definiton should return no error: %s", err)
+	assert.NotNil(t, result, "result should not be nil")
 
 	resultMap, ok := result.(map[string]interface{})
 
-	assert.Assert(t, ok, "result should be map")
-	assert.Assert(t, resultMap["type"] == value.ValueParameterType, "result map should be of type `%s`, but was `%s`",
+	assert.True(t, ok, "result should be map")
+	assert.Equal(t, resultMap["type"], value.ValueParameterType, "result map should be of type `%s`, but was `%s`",
 		value.ValueParameterType, resultMap["type"])
+	assert.NotNil(t, resultMap["value"], "result map should contain a 'value' entry")
+	assert.Equal(t, resultMap["value"], paramValue)
 }
 
 func TestForSamePropertiesWithNothingSet(t *testing.T) {
@@ -701,17 +703,17 @@ func TestForSamePropertiesWithSkipNotSetExceptForOne(t *testing.T) {
 }
 
 func assertPropertyCheckResult(t *testing.T, expected propertyCheckResult, actual propertyCheckResult) {
-	assert.DeepEqual(t, expected.foundName, actual.foundName)
-	assert.DeepEqual(t, expected.foundTemplate, actual.foundTemplate)
-	assert.DeepEqual(t, expected.foundSkip, actual.foundSkip)
+	assert.Equal(t, expected.foundName, actual.foundName)
+	assert.Equal(t, expected.foundTemplate, actual.foundTemplate)
+	assert.Equal(t, expected.foundSkip, actual.foundSkip)
 
-	assert.DeepEqual(t, expected.shareName, actual.shareName)
-	assert.DeepEqual(t, expected.shareTemplate, actual.shareTemplate)
-	assert.DeepEqual(t, expected.shareSkip, actual.shareSkip)
+	assert.Equal(t, expected.shareName, actual.shareName)
+	assert.Equal(t, expected.shareTemplate, actual.shareTemplate)
+	assert.Equal(t, expected.shareSkip, actual.shareSkip)
 
-	assert.DeepEqual(t, expected.name, actual.name)
-	assert.DeepEqual(t, expected.template, actual.template)
-	assert.DeepEqual(t, expected.skip, actual.skip)
+	assert.Equal(t, expected.name, actual.name)
+	assert.Equal(t, expected.template, actual.template)
+	assert.Equal(t, expected.skip, actual.skip)
 }
 
 func TestWriteConfigs(t *testing.T) {
@@ -1123,20 +1125,20 @@ func TestWriteConfigs(t *testing.T) {
 			for apiType, definition := range tc.expectedConfigs {
 
 				content, err := afero.ReadFile(fs, "test/project/"+apiType+"/config.yaml")
-				assert.NilError(t, err, "reading config file should not produce an error")
+				assert.NoError(t, err, "reading config file should not produce an error")
 
 				var s topLevelDefinition
 				err = yaml.Unmarshal(content, &s)
-				assert.NilError(t, err, "unmarshalling config file should not produce an error")
+				assert.NoError(t, err, "unmarshalling config file should not produce an error")
 
-				assert.DeepEqual(t, s, definition)
+				assert.Equal(t, s, definition)
 			}
 
 			// check that templates have been created
 			for _, path := range tc.expectedTemplatePaths {
 				expectedPath := filepath.Join("test", path)
 				found, err := afero.Exists(fs, expectedPath)
-				assert.NilError(t, err)
+				assert.NoError(t, err)
 				assert.Equal(t, found, true, "could not find %q", expectedPath)
 			}
 
@@ -1174,20 +1176,20 @@ func TestOrderedConfigs(t *testing.T) {
 		ProjectFolder:   "project",
 		ParametersSerde: DefaultParameterParsers,
 	}, configs)
-	assert.NilError(t, errors.Join(errs...))
+	assert.NoError(t, errors.Join(errs...))
 
 	content, err := afero.ReadFile(fs, "test/project/alerting-profile/config.yaml")
-	assert.NilError(t, err, "reading config file should not produce an error")
+	assert.NoError(t, err, "reading config file should not produce an error")
 
 	var s topLevelDefinition
 	err = yaml.Unmarshal(content, &s)
-	assert.NilError(t, err, "unmarshalling config file should not produce an error")
+	assert.NoError(t, err, "unmarshalling config file should not produce an error")
 
 	// check if configs are ordered by id
 	for i := 0; i < len(s.Configs)-1; i++ {
 		a := s.Configs[i].Id
 		b := s.Configs[i+1].Id
-		assert.Assert(t, a < b, "not in order: %q should be < than %q", a, b)
+		assert.Less(t, a, b, "not in order: %q should be < than %q", a, b)
 	}
 
 }
