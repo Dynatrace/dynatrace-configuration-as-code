@@ -1,0 +1,51 @@
+{
+  "aggregation": "FIRST",
+  "confidential": false,
+  "dataSources": [
+    {
+      "enabled": true,
+      "methods": [
+        {
+          "capture": "THIS",
+          "deepObjectAccess": "spellId",
+          "method": {
+            "argumentTypes": [],
+            "className": "com.dynatrace.magic.wizards.Gandalf",
+            "methodName": "doMagic",
+            "modifiers": [],
+            "returnType": "boolean",
+            "visibility": "PUBLIC"
+          }
+        },
+        {
+          "capture": "THIS",
+          "deepObjectAccess": "spellId",
+          "method": {
+            "argumentTypes": [],
+            "className": "com.dynatrace.magic.wizards.Gandalf",
+            "methodName": "prepareSpell",
+            "modifiers": [],
+            "returnType": "boolean",
+            "visibility": "PUBLIC"
+          }
+        }
+      ],
+      "source": "METHOD_PARAM",
+      "technology": "JAVA"
+    },
+    {
+      "enabled": true,
+      "parameterName": "Cast Spell - spellId",
+      "source": "CUSTOM_ATTRIBUTE",
+      "valueProcessing": {
+        "splitAt": "",
+        "trim": false
+      }
+    }
+  ],
+  "dataType": "INTEGER",
+  "enabled": false,
+  "name": "{{.name}}",
+  "normalization": "ORIGINAL",
+  "skipPersonalDataMasking": false
+}
