@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
-	"golang.org/x/exp/maps"
 	"regexp"
 	"strings"
 )
@@ -31,6 +30,8 @@ var meIDRegexPattern = regexp.MustCompile(`[a-zA-Z_]+-[A-Za-z0-9]{16}`)
 
 var uuidRegexPattern = regexp.MustCompile(`[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
 
+const baseParamID = "extractedIDs"
+
 // ExtractIDsIntoYAML searches for Dynatrace ID patterns in each given config and extracts them from the config's
 // JSON template, into a YAML parameter. It modifies the given configsPerType map.
 func ExtractIDsIntoYAML(configsPerType project.ConfigsPerType) project.ConfigsPerType {
@@ -38,14 +39,26 @@ func ExtractIDsIntoYAML(configsPerType project.ConfigsPerType) project.ConfigsPe
 		for _, c := range cfgs {
 			ids := meIDRegexPattern.FindAllString(c.Template.Content(), -1)
 			ids = append(ids, uuidRegexPattern.FindAllString(c.Template.Content(), -1)...)
-			ids = deduplicateIDs(ids)
+
+			idMap := map[string]string{}
 
 			for _, id := range ids {
-				paramID := createParameterKey(id)
-				c.Parameters[paramID] = value.New(id)
+				idKey := createParameterKey(id)
 
-				newContent := strings.ReplaceAll(c.Template.Content(), id, fmt.Sprintf("{{ .%s }}", paramID))
+				if _, exists := idMap[idKey]; exists {
+					continue // no need to re-add an ID that was found several times in the template
+				}
+
+				idMap[idKey] = id
+
+				paramID := fmt.Sprintf("{{ .%s.%s }}", baseParamID, idKey)
+
+				newContent := strings.ReplaceAll(c.Template.Content(), id, paramID)
 				c.Template.UpdateContent(newContent)
+			}
+
+			if len(idMap) > 0 {
+				c.Parameters[baseParamID] = value.New(idMap)
 			}
 		}
 	}
@@ -54,13 +67,5 @@ func ExtractIDsIntoYAML(configsPerType project.ConfigsPerType) project.ConfigsPe
 
 func createParameterKey(id string) string {
 	idKey := strings.ReplaceAll(id, "-", "_") // golang template keys must not contain hyphens
-	return fmt.Sprintf("extractedID_%s", idKey)
-}
-
-func deduplicateIDs(ids []string) (uniqueMeIDs []string) {
-	unique := map[string]struct{}{}
-	for _, id := range ids {
-		unique[id] = struct{}{}
-	}
-	return maps.Keys(unique)
+	return fmt.Sprintf("id_%s", idKey)
 }
