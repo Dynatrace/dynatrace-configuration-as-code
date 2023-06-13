@@ -33,8 +33,13 @@ import (
 // CtxKeyCoord context key used for contextual coordinate information
 type CtxKeyCoord struct{}
 
-// CtxKeyEnv context key used for cotextual environment information
+// CtxKeyEnv context key used for contextual environment information
 type CtxKeyEnv struct{}
+
+// CtxValEnv context value used for contextual environment information
+type CtxValEnv struct {
+	Name string
+}
 
 var (
 	_ loggers.Logger = (*zap.Logger)(nil)
@@ -76,7 +81,7 @@ func FromCtx(ctx context.Context) loggers.Logger {
 	if c, ok := ctx.Value(CtxKeyCoord{}).(coordinate.Coordinate); ok {
 		fields[0] = loggers.F("coordinate", c)
 	}
-	if e, ok := ctx.Value(CtxKeyEnv{}).(string); ok {
+	if e, ok := ctx.Value(CtxKeyEnv{}).(CtxValEnv); ok {
 		fields[1] = loggers.F("environment", e)
 	}
 	return loggr.WithFields(fields...)

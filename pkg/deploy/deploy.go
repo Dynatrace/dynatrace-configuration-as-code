@@ -60,7 +60,7 @@ func DeployConfigs(clientSet ClientSet, apis api.APIs, sortedConfigs []config.Co
 		c := &sortedConfigs[i] // avoid implicit memory aliasing (gosec G601)
 
 		ctx := context.WithValue(context.TODO(), log.CtxKeyCoord{}, c.Coordinate)
-		ctx = context.WithValue(ctx, log.CtxKeyEnv{}, c.Environment)
+		ctx = context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: c.Environment})
 
 		entity, deploymentErrors := deploy(ctx, clientSet, apis, entityMap, c)
 
@@ -123,7 +123,7 @@ func deploy(ctx context.Context, clientSet ClientSet, apis api.APIs, em *entityM
 	if deployErr != nil {
 		var responseErr errors2.RespError
 		if errors.As(deployErr, &responseErr) {
-			log.FromCtx(ctx).WithFields(loggers.F("code", responseErr.StatusCode), loggers.F("details", string(responseErr.Details))).Error("Deployment failed: %s", responseErr.Err.Error())
+			log.FromCtx(ctx).WithFields(loggers.F("error", responseErr)).Error("Failure during deployment: %s", responseErr.Message)
 		} else {
 			log.FromCtx(ctx).Error(deployErr.Error())
 		}
