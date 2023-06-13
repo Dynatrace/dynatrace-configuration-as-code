@@ -21,6 +21,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/dependency_resolution"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/id_extraction"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 	"github.com/spf13/afero"
@@ -184,6 +185,9 @@ func doDownloadConfigs(fs afero.Fs, downloaders downloaders, opts downloadConfig
 
 	log.Info("Resolving dependencies between configurations")
 	downloadedConfigs = dependency_resolution.ResolveDependencies(downloadedConfigs)
+
+	log.Info("Extracting identifiers into YAML parameters")
+	downloadedConfigs = id_extraction.ExtractIDsIntoYAML(downloadedConfigs)
 
 	return writeConfigs(downloadedConfigs, opts.downloadOptionsShared, fs)
 }
