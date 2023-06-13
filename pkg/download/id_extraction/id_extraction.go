@@ -41,8 +41,7 @@ func ExtractIDsIntoYAML(configsPerType project.ConfigsPerType) project.ConfigsPe
 			ids = deduplicateIDs(ids)
 
 			for _, id := range ids {
-				idKey := strings.ReplaceAll(id, "-", "_") // golang template keys must not contain hyphens
-				paramID := fmt.Sprintf("__EXTRACTED_ID_%s__", idKey)
+				paramID := createParameterKey(id)
 				c.Parameters[paramID] = value.New(id)
 
 				newContent := strings.ReplaceAll(c.Template.Content(), id, fmt.Sprintf("{{ .%s }}", paramID))
@@ -51,6 +50,11 @@ func ExtractIDsIntoYAML(configsPerType project.ConfigsPerType) project.ConfigsPe
 		}
 	}
 	return configsPerType
+}
+
+func createParameterKey(id string) string {
+	idKey := strings.ReplaceAll(id, "-", "_") // golang template keys must not contain hyphens
+	return fmt.Sprintf("extractedID_%s", idKey)
 }
 
 func deduplicateIDs(ids []string) (uniqueMeIDs []string) {
