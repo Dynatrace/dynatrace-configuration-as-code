@@ -708,8 +708,10 @@ func toValueShorthandDefinition(context *detailedSerializerContext, parameterNam
 		}
 
 		switch valueParam.Value.(type) {
-		// map/array values need special handling to not collide with other parameters
-		case map[string]interface{}, []interface{}:
+		// strings can be shorthanded
+		case string:
+			return valueParam.Value, nil
+		default:
 			result, err := context.ParametersSerde[param.GetType()].Serializer(newParameterSerializerContext(context, parameterName, param))
 
 			if err != nil {
@@ -719,8 +721,6 @@ func toValueShorthandDefinition(context *detailedSerializerContext, parameterNam
 			result["type"] = valueParam.GetType()
 
 			return result, nil
-		default:
-			return valueParam.Value, nil
 		}
 	}
 
