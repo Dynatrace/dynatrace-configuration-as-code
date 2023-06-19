@@ -183,6 +183,11 @@ func doDownloadConfigs(fs afero.Fs, downloaders downloaders, opts downloadConfig
 		return err
 	}
 
+	if len(downloadedConfigs) == 0 {
+		log.Info("No configurations downloaded. No project will be created.")
+		return nil
+	}
+
 	log.Info("Resolving dependencies between configurations")
 	downloadedConfigs = dependency_resolution.ResolveDependencies(downloadedConfigs)
 
