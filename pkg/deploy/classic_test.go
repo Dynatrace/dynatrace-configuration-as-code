@@ -19,6 +19,7 @@
 package deploy
 
 import (
+	"context"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
@@ -54,7 +55,7 @@ func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
 	}
 	entityMap := newEntityMap(testApiMap)
 	entityMap.put(parameter.ResolvedEntity{EntityName: name, Coordinate: coordinate.Coordinate{Type: "dashboard"}})
-	_, errors := deployClassicConfig(client, testApiMap, entityMap, nil, "", &conf)
+	_, errors := deployClassicConfig(context.TODO(), client, testApiMap, entityMap, nil, "", &conf)
 
 	assert.NotEmpty(t, errors)
 }
@@ -106,7 +107,7 @@ func TestDeployConfigShouldFailCyclicParameterDependencies(t *testing.T) {
 		Skip:        false,
 	}
 
-	_, errors := deployClassicConfig(client, testApiMap, newEntityMap(testApiMap), nil, "", &conf)
+	_, errors := deployClassicConfig(context.TODO(), client, testApiMap, newEntityMap(testApiMap), nil, "", &conf)
 	assert.NotEmpty(t, errors)
 }
 
@@ -127,7 +128,7 @@ func TestDeployConfigShouldFailOnMissingNameParameter(t *testing.T) {
 		Skip:        false,
 	}
 
-	_, errors := deployClassicConfig(client, testApiMap, newEntityMap(testApiMap), nil, "", &conf)
+	_, errors := deployClassicConfig(context.TODO(), client, testApiMap, newEntityMap(testApiMap), nil, "", &conf)
 	assert.NotEmpty(t, errors)
 }
 
@@ -164,7 +165,7 @@ func TestDeployConfigShouldFailOnReferenceOnUnknownConfig(t *testing.T) {
 		Skip:        false,
 	}
 
-	_, errors := deployClassicConfig(client, testApiMap, newEntityMap(testApiMap), nil, "", &conf)
+	_, errors := deployClassicConfig(context.TODO(), client, testApiMap, newEntityMap(testApiMap), nil, "", &conf)
 	assert.NotEmpty(t, errors)
 }
 
@@ -203,6 +204,6 @@ func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
 		Skip:        false,
 	}
 
-	_, errors := deployClassicConfig(client, testApiMap, newEntityMap(testApiMap), nil, "", &conf)
+	_, errors := deployClassicConfig(context.TODO(), client, testApiMap, newEntityMap(testApiMap), nil, "", &conf)
 	assert.NotEmpty(t, errors)
 }

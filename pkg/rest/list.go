@@ -17,6 +17,7 @@
 package rest
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
@@ -37,7 +38,7 @@ const emptyResponseRetryMax = 10
 // as filtering might exclude some entries that where received from the API.
 type AddEntriesToResult func(body []byte) (receivedEntries int, err error)
 
-func ListPaginated(client *http.Client, retrySettings RetrySettings, url *url.URL, logLabel string,
+func ListPaginated(ctx context.Context, client *http.Client, retrySettings RetrySettings, url *url.URL, logLabel string,
 	addToResult AddEntriesToResult) (Response, error) {
 
 	var resp Response
@@ -45,7 +46,7 @@ func ListPaginated(client *http.Client, retrySettings RetrySettings, url *url.UR
 	receivedCount := 0
 	totalReceivedCount := 0
 
-	resp, receivedCount, totalReceivedCount, _, err := runAndProcessResponse(client, retrySettings, false, url, addToResult, receivedCount, totalReceivedCount)
+	resp, receivedCount, totalReceivedCount, _, err := runAndProcessResponse(ctx, client, retrySettings, false, url, addToResult, receivedCount, totalReceivedCount)
 	if err != nil {
 		return buildResponseError(err, resp)
 	}
@@ -64,7 +65,7 @@ func ListPaginated(client *http.Client, retrySettings RetrySettings, url *url.UR
 			url = AddNextPageQueryParams(url, nextPageKey)
 
 			var isLastAvailablePage bool
-			resp, receivedCount, totalReceivedCount, isLastAvailablePage, err = runAndProcessResponse(client, retrySettings, true, url, addToResult, receivedCount, totalReceivedCount)
+			resp, receivedCount, totalReceivedCount, isLastAvailablePage, err = runAndProcessResponse(ctx, client, retrySettings, true, url, addToResult, receivedCount, totalReceivedCount)
 			if err != nil {
 				return buildResponseError(err, resp)
 			}
@@ -136,11 +137,11 @@ func isRetryOnEmptyResponse(receivedCount int, emptyResponseRetryCount int, resp
 	return false, emptyResponseRetryCount, nil
 }
 
-func runAndProcessResponse(client *http.Client, retrySettings RetrySettings, isNextCall bool, u *url.URL,
+func runAndProcessResponse(ctx context.Context, client *http.Client, retrySettings RetrySettings, isNextCall bool, u *url.URL,
 	addToResult AddEntriesToResult, receivedCount int, totalReceivedCount int) (Response, int, int, bool, error) {
 	isLastAvailablePage := false
 
-	resp, err := GetWithRetry(client, u.String(), retrySettings.Normal)
+	resp, err := GetWithRetry(ctx, client, u.String(), retrySettings.Normal)
 	isLastAvailablePage, err = validateRespErrors(isNextCall, err, resp, u.Path)
 	if err != nil || isLastAvailablePage {
 		return resp, receivedCount, totalReceivedCount, isLastAvailablePage, err

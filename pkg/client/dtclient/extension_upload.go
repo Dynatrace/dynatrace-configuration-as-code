@@ -19,6 +19,7 @@ package dtclient
 import (
 	"archive/zip"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
@@ -38,9 +39,9 @@ const (
 	extensionNeedsUpdate
 )
 
-func uploadExtension(client *http.Client, apiPath string, extensionName string, payload []byte) (DynatraceEntity, error) {
+func uploadExtension(ctx context.Context, client *http.Client, apiPath string, extensionName string, payload []byte) (DynatraceEntity, error) {
 
-	status, err := validateIfExtensionShouldBeUploaded(client, apiPath, extensionName, payload)
+	status, err := validateIfExtensionShouldBeUploaded(ctx, client, apiPath, extensionName, payload)
 	if err != nil {
 		return DynatraceEntity{}, err
 	}
@@ -69,7 +70,7 @@ func uploadExtension(client *http.Client, apiPath string, extensionName string, 
 			Name: extensionName,
 		}, rest.NewRespErr(fmt.Sprintf("upload of %s failed with status %d! Response: %s", extensionName, resp.StatusCode, string(resp.Body)), resp)
 	} else {
-		log.Debug("Extension upload successful for %s", extensionName)
+		log.WithCtxFields(ctx).Debug("Extension upload successful for %s", extensionName)
 
 		// As other configs depend on metrics created by extensions, and metric creation seems to happen with delay...
 		time.Sleep(1 * time.Second)
@@ -85,7 +86,7 @@ type Properties struct {
 	Version *string `json:"version"`
 }
 
-func validateIfExtensionShouldBeUploaded(client *http.Client, apiPath string, extensionName string, payload []byte) (status extensionStatus, err error) {
+func validateIfExtensionShouldBeUploaded(ctx context.Context, client *http.Client, apiPath string, extensionName string, payload []byte) (status extensionStatus, err error) {
 	response, err := rest.Get(client, apiPath+"/"+extensionName)
 	if err != nil {
 		return extensionValidationError, err
@@ -119,7 +120,7 @@ func validateIfExtensionShouldBeUploaded(client *http.Client, apiPath string, ex
 	}
 
 	if curVersion == newVersion {
-		log.Info("Extension (%s) already deployed in version (%s), skipping.", extensionName, newVersion)
+		log.WithCtxFields(ctx).Info("Extension (%s) already deployed in version (%s), skipping.", extensionName, newVersion)
 		return extensionUpToDate, nil
 	}
 

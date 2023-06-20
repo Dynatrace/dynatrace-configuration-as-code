@@ -54,7 +54,7 @@ func deploySetting(ctx context.Context, settingsClient dtclient.SettingsClient, 
 	if configName, err := extractConfigName(c, properties); err == nil {
 		name = configName
 	} else {
-		log.Warn("failed to extract name for Settings 2.0 object %q - ID will be used", entity.Id)
+		log.WithCtxFields(ctx).Warn("failed to extract name for Settings 2.0 object %q - ID will be used", entity.Id)
 	}
 
 	properties[config.IdParameter], err = getEntityID(c, entity)
@@ -71,6 +71,19 @@ func deploySetting(ctx context.Context, settingsClient dtclient.SettingsClient, 
 		Skip:       false,
 	}, nil
 
+}
+
+func extractScope(properties parameter.Properties) (string, error) {
+	scope, ok := properties[config.ScopeParameter]
+	if !ok {
+		return "", fmt.Errorf("property '%s' not found, this is most likely a bug", config.ScopeParameter)
+	}
+
+	if scope == "" {
+		return "", fmt.Errorf("resolved scope is empty")
+	}
+
+	return fmt.Sprint(scope), nil
 }
 
 func getEntityID(c *config.Config, e dtclient.DynatraceEntity) (string, error) {

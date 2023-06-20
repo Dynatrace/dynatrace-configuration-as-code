@@ -114,9 +114,9 @@ func TestDownloadAll(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c := dtclient.NewMockClient(gomock.NewController(t))
 			entityTypeList, err := tt.mockValues.EntitiesTypeList()
-			c.EXPECT().ListEntitiesTypes().Times(tt.mockValues.EntitiesTypeListCalls).Return(entityTypeList, err)
+			c.EXPECT().ListEntitiesTypes(gomock.Any()).Times(tt.mockValues.EntitiesTypeListCalls).Return(entityTypeList, err)
 			entities, err := tt.mockValues.EntitiesList()
-			c.EXPECT().ListEntities(gomock.Any()).Times(tt.mockValues.EntitiesListCalls).Return(entities, err)
+			c.EXPECT().ListEntities(gomock.Any(), gomock.Any()).Times(tt.mockValues.EntitiesListCalls).Return(entities, err)
 			res := NewEntitiesDownloader(c).DownloadAll("projectName")
 			assert.Equal(t, tt.want, res)
 		})
@@ -215,9 +215,9 @@ func TestDownload(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c := dtclient.NewMockClient(gomock.NewController(t))
 			entityTypeList, err := tt.mockValues.EntitiesTypeList()
-			c.EXPECT().ListEntitiesTypes().Times(tt.mockValues.EntitiesTypeListCalls).Return(entityTypeList, err)
+			c.EXPECT().ListEntitiesTypes(gomock.Any()).Times(tt.mockValues.EntitiesTypeListCalls).Return(entityTypeList, err)
 			entities, err := tt.mockValues.EntitiesList()
-			c.EXPECT().ListEntities(gomock.Any()).Times(tt.mockValues.EntitiesListCalls).Return(entities, err)
+			c.EXPECT().ListEntities(gomock.Any(), gomock.Any()).Times(tt.mockValues.EntitiesListCalls).Return(entities, err)
 			res := NewEntitiesDownloader(c).Download(tt.EntitiesTypes, "projectName")
 			assert.Equal(t, tt.want, res)
 		})

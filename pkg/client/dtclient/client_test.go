@@ -563,7 +563,7 @@ func TestListKnownSettings(t *testing.T) {
 				generateExternalID: idutils.GenerateExternalID,
 			}
 
-			res, err1 := client.ListSettings(tt.givenSchemaID, tt.givenListSettingsOpts)
+			res, err1 := client.ListSettings(context.TODO(), tt.givenSchemaID, tt.givenListSettingsOpts)
 
 			if tt.wantError {
 				assert.Error(t, err1)
@@ -1083,7 +1083,7 @@ func TestListEntities(t *testing.T) {
 				generateExternalID: idutils.GenerateExternalID,
 			}
 
-			res, err1 := client.ListEntities(tt.givenEntitiesType)
+			res, err1 := client.ListEntities(context.TODO(), tt.givenEntitiesType)
 
 			if tt.wantError {
 				assert.Error(t, err1)

@@ -87,6 +87,9 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 		for _, theConfig := range configs {
 			coord := theConfig.Coordinate
 
+			ctx := context.WithValue(context.TODO(), log.CtxKeyCoord{}, coord)
+			ctx = context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: theConfig.Environment, Group: theConfig.Group})
+
 			if theConfig.Skip {
 				entities[coord] = parameter.ResolvedEntity{
 					EntityName: coord.ConfigId,
@@ -121,9 +124,9 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 			if _, found := projectsToValidate[coord.Project]; found {
 				switch typ := theConfig.Type.(type) {
 				case config.SettingsType:
-					assertSetting(t, clients.Settings(), typ, env, available, theConfig)
+					assertSetting(t, ctx, clients.Settings(), typ, env, available, theConfig)
 				case config.ClassicApiType:
-					assertConfig(t, clients.Classic(), apis[typ.Api], env, available, theConfig, configName)
+					assertConfig(t, ctx, clients.Classic(), apis[typ.Api], env, available, theConfig, configName)
 				case config.AutomationType:
 					if clients.Automation() == nil {
 						t.Errorf("can not assert existience of Automtation config %q (%s) because no AutomationClient exists - was the test env not configured as Platform?", theConfig.Coordinate, typ.Resource)
@@ -138,14 +141,14 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 	}
 }
 
-func assertConfig(t *testing.T, client dtclient.ConfigClient, theApi api.API, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config, name string) {
+func assertConfig(t *testing.T, ctx context.Context, client dtclient.ConfigClient, theApi api.API, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config, name string) {
 
 	configType := config.Coordinate.Type
 
 	var exists bool
 
 	if config.Skip {
-		exists, _, _ = client.ConfigExistsByName(theApi, name)
+		exists, _, _ = client.ConfigExistsByName(ctx, theApi, name)
 		assert.Check(t, !exists, "Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, name, configType)
 		return
 	}
@@ -154,7 +157,7 @@ func assertConfig(t *testing.T, client dtclient.ConfigClient, theApi api.API, en
 
 	// To deal with delays of configs becoming available try for max 120 polling cycles (4min - at 2sec cycles) for expected state to be reached
 	err := wait(description, 120, func() bool {
-		exists, _, _ = client.ConfigExistsByName(theApi, name)
+		exists, _, _ = client.ConfigExistsByName(ctx, theApi, name)
 		return (shouldBeAvailable && exists) || (!shouldBeAvailable && !exists)
 	})
 	assert.NilError(t, err)
@@ -166,14 +169,14 @@ func assertConfig(t *testing.T, client dtclient.ConfigClient, theApi api.API, en
 	}
 }
 
-func assertSetting(t *testing.T, c dtclient.SettingsClient, typ config.SettingsType, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config) {
+func assertSetting(t *testing.T, ctx context.Context, c dtclient.SettingsClient, typ config.SettingsType, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config) {
 	expectedExtId, err := idutils.GenerateExternalID(config.Coordinate)
 	if err != nil {
 		t.Errorf("Unable to generate external id: %v", err)
 		return
 	}
 
-	objects, err := c.ListSettings(typ.SchemaId, dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(o dtclient.DownloadSettingsObject) bool { return o.ExternalId == expectedExtId }})
+	objects, err := c.ListSettings(ctx, typ.SchemaId, dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(o dtclient.DownloadSettingsObject) bool { return o.ExternalId == expectedExtId }})
 	assert.NilError(t, err)
 
 	if len(objects) > 1 {

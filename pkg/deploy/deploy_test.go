@@ -417,7 +417,7 @@ func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
 	theApi := api.API{ID: theApiName, URLPath: "path"}
 
 	client := dtclient.NewMockClient(gomock.NewController(t))
-	client.EXPECT().UpsertConfigByName(gomock.Any(), theConfigName, gomock.Any()).Times(1)
+	client.EXPECT().UpsertConfigByName(gomock.Any(), gomock.Any(), theConfigName, gomock.Any()).Times(1)
 
 	apis := api.APIs{theApiName: theApi}
 	parameters := []topologysort.ParameterWithName{
@@ -450,7 +450,7 @@ func TestDeployConfigsTargetingClassicConfigNonUniqueWithExistingCfgsOfSameName(
 	theApi := api.API{ID: theApiName, URLPath: "path", NonUniqueName: true}
 
 	client := dtclient.NewMockClient(gomock.NewController(t))
-	client.EXPECT().UpsertConfigByNonUniqueNameAndId(gomock.Any(), gomock.Any(), theConfigName, gomock.Any())
+	client.EXPECT().UpsertConfigByNonUniqueNameAndId(gomock.Any(), gomock.Any(), gomock.Any(), theConfigName, gomock.Any())
 
 	apis := api.APIs{theApiName: theApi}
 	parameters := []topologysort.ParameterWithName{

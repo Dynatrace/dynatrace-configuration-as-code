@@ -19,6 +19,7 @@
 package dtclient
 
 import (
+	"context"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
@@ -44,7 +45,7 @@ func TestTranslateGenericValuesOnStandardResponse(t *testing.T) {
 	response := make([]interface{}, 1)
 	response[0] = entry
 
-	values, err := translateGenericValues(response, "extensions")
+	values, err := translateGenericValues(context.TODO(), response, "extensions")
 
 	assert.NilError(t, err)
 	assert.Check(t, len(values) == 1)
@@ -61,7 +62,7 @@ func TestTranslateGenericValuesOnIdMissing(t *testing.T) {
 	response := make([]interface{}, 1)
 	response[0] = entry
 
-	_, err := translateGenericValues(response, "extensions")
+	_, err := translateGenericValues(context.TODO(), response, "extensions")
 
 	assert.ErrorContains(t, err, "config of type extensions was invalid: No id")
 }
@@ -74,7 +75,7 @@ func TestTranslateGenericValuesOnNameMissing(t *testing.T) {
 	response := make([]interface{}, 1)
 	response[0] = entry
 
-	values, err := translateGenericValues(response, "extensions")
+	values, err := translateGenericValues(context.TODO(), response, "extensions")
 
 	assert.NilError(t, err)
 	assert.Check(t, len(values) == 1)
@@ -92,7 +93,7 @@ func TestTranslateGenericValuesForReportsEndpoint(t *testing.T) {
 	response := make([]interface{}, 1)
 	response[0] = entry
 
-	values, err := translateGenericValues(response, "reports")
+	values, err := translateGenericValues(context.TODO(), response, "reports")
 
 	assert.NilError(t, err)
 	assert.Check(t, len(values) == 1)
@@ -347,7 +348,7 @@ func Test_getObjectIdIfAlreadyExists(t *testing.T) {
 			}))
 			defer server.Close()
 
-			got, err := getObjectIdIfAlreadyExists(server.Client(), testApi, server.URL, tt.givenObjectName, testRetrySettings)
+			got, err := getObjectIdIfAlreadyExists(context.TODO(), server.Client(), testApi, server.URL, tt.givenObjectName, testRetrySettings)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getObjectIdIfAlreadyExists() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -537,7 +538,7 @@ func Test_GetObjectIdIfAlreadyExists_WorksCorrectlyForAddedQueryParameters(t *te
 					MaxRetries: 3,
 				},
 			}
-			_, err := getObjectIdIfAlreadyExists(server.Client(), testApi, server.URL, "", s)
+			_, err := getObjectIdIfAlreadyExists(context.TODO(), server.Client(), testApi, server.URL, "", s)
 
 			if tt.expectError {
 				assert.Assert(t, err != nil)
@@ -628,7 +629,7 @@ func Test_createDynatraceObject(t *testing.T) {
 			defer server.Close()
 			testApi := api.API{ID: tt.apiKey}
 
-			got, err := createDynatraceObject(server.Client(), server.URL, tt.objectName, testApi, []byte("{}"), testRetrySettings)
+			got, err := createDynatraceObject(context.TODO(), server.Client(), server.URL, tt.objectName, testApi, []byte("{}"), testRetrySettings)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("createDynatraceObject() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -681,7 +682,7 @@ func TestDeployConfigsTargetingClassicConfigNonUnique(t *testing.T) {
 
 			testApi := api.API{ID: "some-api", NonUniqueName: true, PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
 
-			got, err := upsertDynatraceEntityByNonUniqueNameAndId(server.Client(), server.URL, generatedUuid, theConfigName, testApi, []byte("{}"), testRetrySettings)
+			got, err := upsertDynatraceEntityByNonUniqueNameAndId(context.TODO(), server.Client(), server.URL, generatedUuid, theConfigName, testApi, []byte("{}"), testRetrySettings)
 			assert.NilError(t, err)
 			assert.Equal(t, got.Id, tt.expectedIdToBeUpserted)
 		})

@@ -19,6 +19,7 @@
 package v2
 
 import (
+	"context"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
@@ -70,7 +71,7 @@ func cleanupTestConfigs(t *testing.T, apis api.APIs, client dtclient.ConfigClien
 			continue
 		}
 
-		values, err := client.ListConfigs(api)
+		values, err := client.ListConfigs(context.TODO(), api)
 		assert.NilError(t, err)
 
 		for _, value := range values {
@@ -96,7 +97,7 @@ func cleanupTestSettings(t *testing.T, c dtclient.SettingsClient) int {
 
 	for _, s := range schemas {
 		schemaId := s.SchemaId
-		objects, err := c.ListSettings(schemaId, dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(o dtclient.DownloadSettingsObject) bool { return o.ExternalId != "" }})
+		objects, err := c.ListSettings(context.TODO(), schemaId, dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(o dtclient.DownloadSettingsObject) bool { return o.ExternalId != "" }})
 		if err != nil {
 			t.Errorf("could not fetch settings 2.0 objects with schema %s: %v", schemaId, err)
 		}

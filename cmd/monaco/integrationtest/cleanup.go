@@ -19,6 +19,7 @@
 package integrationtest
 
 import (
+	"context"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
@@ -58,7 +59,7 @@ func cleanupByNameSuffix(t *testing.T, apis api.APIs, c dtclient.ConfigClient, s
 			continue
 		}
 
-		values, err := c.ListConfigs(api)
+		values, err := c.ListConfigs(context.TODO(), api)
 		if err != nil {
 			t.Logf("Failed to cleanup any test configs of type %q: %v", api.ID, err)
 		}
@@ -105,7 +106,7 @@ func cleanupByGeneratedID(t *testing.T, fs afero.Fs, manifestPath string, loaded
 }
 
 func deleteSettingsObjects(t *testing.T, schema, externalID string, c dtclient.SettingsClient) {
-	objects, err := c.ListSettings(schema, dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(o dtclient.DownloadSettingsObject) bool { return o.ExternalId == externalID }})
+	objects, err := c.ListSettings(context.TODO(), schema, dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(o dtclient.DownloadSettingsObject) bool { return o.ExternalId == externalID }})
 	if err != nil {
 		t.Logf("Failed to cleanup test config: could not fetch settings 2.0 objects with schema ID %s: %v", schema, err)
 		return

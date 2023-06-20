@@ -17,6 +17,7 @@
 package classic
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
@@ -271,7 +272,7 @@ func (d *Downloader) findConfigsToDownload(currentApi api.API) ([]dtclient.Value
 		return []dtclient.Value{singletonConfigToDownload}, nil
 	}
 	log.Debug("\tFetching all '%v' configs", currentApi.ID)
-	return d.client.ListConfigs(currentApi)
+	return d.client.ListConfigs(context.TODO(), currentApi) //TODO: real context
 }
 
 func (d *Downloader) shouldPersist(a api.API, json map[string]interface{}) bool {

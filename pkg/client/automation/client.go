@@ -151,7 +151,7 @@ func (a Client) list(ctx context.Context, resourceType ResourceType) ([]Response
 	}
 
 	if len(retVal) != result.Count {
-		log.Warn("Total count of items returned for Automation API %q does not match count of actually received items. Expected: %d Got: %d.", resources[resourceType].Path, result.Count, len(retVal))
+		log.WithCtxFields(ctx).Warn("Total count of items returned for Automation API %q does not match count of actually received items. Expected: %d Got: %d.", resources[resourceType].Path, result.Count, len(retVal))
 
 	}
 	return retVal, nil
@@ -180,7 +180,7 @@ func (a Client) upsert(ctx context.Context, resourceType ResourceType, id string
 
 	// It worked? great, return
 	if resp.IsSuccess() {
-		log.Debug("Updated object with ID %s", id)
+		log.WithCtxFields(ctx).Debug("Updated object with ID %s", id)
 		return &Response{
 			ID:   id,
 			Data: resp.Body,
@@ -193,10 +193,10 @@ func (a Client) upsert(ctx context.Context, resourceType ResourceType, id string
 	}
 
 	// at this point we need to create a new object using HTTP POST
-	return a.create(id, data, resourceType)
+	return a.create(ctx, id, data, resourceType)
 }
 
-func (a Client) create(id string, data []byte, resourceType ResourceType) (*Response, error) {
+func (a Client) create(ctx context.Context, id string, data []byte, resourceType ResourceType) (*Response, error) {
 	// make sure actual "id" field is set in payload
 	if err := setIDField(id, &data); err != nil {
 		return nil, fmt.Errorf("unable to set the id field in order to crate object with id %s: %w", id, err)
@@ -225,7 +225,7 @@ func (a Client) create(id string, data []byte, resourceType ResourceType) (*Resp
 	if e.ID != id {
 		return nil, fmt.Errorf("returned object ID does not match with the ID used when creating the object")
 	}
-	log.Debug("Created object with ID %s", id)
+	log.WithCtxFields(ctx).Debug("Created object with ID %s", id)
 	return &e, nil
 }
 
