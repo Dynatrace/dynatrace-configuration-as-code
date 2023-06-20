@@ -73,8 +73,13 @@ func GetWithRetry(client *http.Client, url string, settings RetrySetting) (resp 
 	if err != nil {
 		return resp, fmt.Errorf("GET request %s failed after %d retries: %w", url, settings.MaxRetries, err)
 	}
-	return resp, fmt.Errorf("GET request %s failed after %d retries: (HTTP %d)!\n    Response was: %s", url, settings.MaxRetries, resp.StatusCode, resp.Body)
 
+	return resp, errors.RespError{
+		Type:       errors.RespErrType,
+		StatusCode: resp.StatusCode,
+		Message:    fmt.Sprintf("GET request %s failed after %d retries: (HTTP %d)!\n    Response was: %s", url, settings.MaxRetries, resp.StatusCode, resp.Body),
+		Body:       string(resp.Body),
+	}
 }
 
 // SendWithRetry will retry to call sendWithBody for a given number of times, waiting a give duration between calls
@@ -90,9 +95,9 @@ func SendWithRetry(ctx context.Context, client *http.Client, sendWithBody SendRe
 	}
 
 	if err != nil {
-		return Response{}, errors.RespError{Type: "ResponseError", StatusCode: resp.StatusCode, Message: err.Error()}
+		return Response{}, errors.RespError{Type: errors.RespErrType, StatusCode: resp.StatusCode, Message: err.Error()}
 	}
-	return Response{}, errors.RespError{Type: "ResponseError", StatusCode: resp.StatusCode, Message: string(resp.Body)}
+	return Response{}, errors.RespError{Type: errors.RespErrType, StatusCode: resp.StatusCode, Body: string(resp.Body)}
 }
 
 // SendWithRetryWithInitialTry will try to call sendWithBody and if it didn't succeed call [SendWithRetry]

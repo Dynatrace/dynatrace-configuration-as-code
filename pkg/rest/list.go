@@ -48,7 +48,10 @@ func ListPaginated(client *http.Client, retrySettings RetrySettings, url *url.UR
 	resp, receivedCount, totalReceivedCount, _, err := runAndProcessResponse(client, retrySettings, false, url, addToResult, receivedCount, totalReceivedCount)
 	if err != nil {
 		return resp, clientErrors.RespError{
+			Type:       clientErrors.RespErrType,
 			Err:        err,
+			Message:    err.Error(),
+			Body:       string(resp.Body),
 			StatusCode: resp.StatusCode,
 		}
 	}
@@ -70,7 +73,10 @@ func ListPaginated(client *http.Client, retrySettings RetrySettings, url *url.UR
 			resp, receivedCount, totalReceivedCount, isLastAvailablePage, err = runAndProcessResponse(client, retrySettings, true, url, addToResult, receivedCount, totalReceivedCount)
 			if err != nil {
 				return resp, clientErrors.RespError{
+					Type:       clientErrors.RespErrType,
 					Err:        err,
+					Message:    err.Error(),
+					Body:       string(resp.Body),
 					StatusCode: resp.StatusCode,
 				}
 			}
@@ -82,7 +88,10 @@ func ListPaginated(client *http.Client, retrySettings RetrySettings, url *url.UR
 			retry, emptyResponseRetryCount, err = isRetryOnEmptyResponse(receivedCount, emptyResponseRetryCount, resp)
 			if err != nil {
 				return resp, clientErrors.RespError{
+					Type:       clientErrors.RespErrType,
 					Err:        err,
+					Message:    err.Error(),
+					Body:       string(resp.Body),
 					StatusCode: resp.StatusCode,
 				}
 			}

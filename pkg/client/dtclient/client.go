@@ -458,16 +458,16 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 
 	resp, err := rest.SendWithRetryWithInitialTry(ctx, d.client, rest.Post, obj.Coordinate.ConfigId, requestUrl, payload, d.retrySettings.Normal)
 	if err != nil {
-		return DynatraceEntity{}, fmt.Errorf("failed to create or update dynatrace obj: %w", err)
+		return DynatraceEntity{}, clientErrors.NewRespErr("failed to create or update Settings object", resp).WithErr(err)
 	}
 
 	if !resp.IsSuccess() {
-		return DynatraceEntity{}, fmt.Errorf("failed to create or update settings object with externalId %s (HTTP %d)!\n\tResponse was: %s", externalID, resp.StatusCode, string(resp.Body))
+		return DynatraceEntity{}, clientErrors.NewRespErr(fmt.Sprintf("failed to create or update Settings object with externalId %s (HTTP %d)!\n\tResponse was: %s", externalID, resp.StatusCode, string(resp.Body)), resp)
 	}
 
 	entity, err := parsePostResponse(resp)
 	if err != nil {
-		return DynatraceEntity{}, fmt.Errorf("failed to parse response: %w", err)
+		return DynatraceEntity{}, clientErrors.NewRespErr("failed to parse response", resp).WithErr(err)
 	}
 
 	log.Debug("\tCreated/Updated object %s (%s) with externalId %s", obj.Coordinate.ConfigId, obj.SchemaId, externalID)
@@ -598,13 +598,13 @@ func (d *DynatraceClient) listSchemas() (SchemaList, error) {
 	}
 
 	if !resp.IsSuccess() {
-		return nil, fmt.Errorf("request failed with HTTP (%d).\n\tResponse content: %s", resp.StatusCode, string(resp.Body))
+		return nil, clientErrors.NewRespErr(fmt.Sprintf("request failed with HTTP (%d).\n\tResponse content: %s", resp.StatusCode, string(resp.Body)), resp)
 	}
 
 	var result SchemaListResponse
 	err = json.Unmarshal(resp.Body, &result)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+		return nil, clientErrors.NewRespErr("failed to unmarshal response", resp).WithErr(err)
 	}
 
 	if result.TotalCount != len(result.Items) {
@@ -636,14 +636,14 @@ func (d *DynatraceClient) getSettingById(objectId string) (*DownloadSettingsObje
 		// special case of settings API: If you give it any object ID for a setting object that does not exist, it will give back 400 BadRequest instead
 		// of 404 Not found. So we interpret both status codes, 400 and 404, as "not found"
 		if resp.StatusCode == http.StatusBadRequest || resp.StatusCode == http.StatusNotFound {
-			return nil, ErrSettingNotFound
+			return nil, clientErrors.NewRespErr(ErrSettingNotFound.Error(), resp).WithErr(ErrSettingNotFound)
 		}
-		return nil, fmt.Errorf("request failed with HTTP (%d).\n\tResponse content: %s", resp.StatusCode, string(resp.Body))
+		return nil, clientErrors.NewRespErr(fmt.Sprintf("request failed with HTTP (%d).\n\tResponse content: %s", resp.StatusCode, string(resp.Body)), resp)
 	}
 
 	var result DownloadSettingsObject
 	if err = json.Unmarshal(resp.Body, &result); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+		return nil, clientErrors.NewRespErr("failed to unmarshal response", resp).WithErr(err)
 	}
 
 	return &result, nil
