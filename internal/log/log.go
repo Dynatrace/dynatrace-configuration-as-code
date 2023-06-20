@@ -78,12 +78,12 @@ func WithFields(fields ...loggers.Field) loggers.Logger {
 // FromCtx creates a logger instance with a given context
 func FromCtx(ctx context.Context) loggers.Logger {
 	loggr := std
-	fields := make([]loggers.Field, 2)
+	fields := make([]loggers.Field, 0, 2)
 	if c, ok := ctx.Value(CtxKeyCoord{}).(coordinate.Coordinate); ok {
-		fields[0] = loggers.CoordinateF(c)
+		fields = append(fields, loggers.CoordinateF(c))
 	}
 	if e, ok := ctx.Value(CtxKeyEnv{}).(CtxValEnv); ok {
-		fields[1] = loggers.EnvironmentF(e.Name, e.Group)
+		fields = append(fields, loggers.EnvironmentF(e.Name, e.Group))
 	}
 	return loggr.WithFields(fields...)
 }
