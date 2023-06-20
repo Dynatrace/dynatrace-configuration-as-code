@@ -77,7 +77,7 @@ func TestWithFields(t *testing.T) {
 		loggers.Field{"Title", "Captain"},
 		loggers.Field{"Name", "Iglo"},
 		loggers.CoordinateF(coordinate.Coordinate{"p1", "t1", "c1"}),
-		loggers.EnvironmentF("env1")).Info("Logging with %s", "fields")
+		loggers.EnvironmentF("env1", "group")).Info("Logging with %s", "fields")
 
 	var data map[string]interface{}
 	json.Unmarshal(logSpy.Bytes(), &data)
@@ -88,7 +88,8 @@ func TestWithFields(t *testing.T) {
 	assert.Equal(t, "t1", data["coordinate"].(map[string]interface{})["Type"])
 	assert.Equal(t, "c1", data["coordinate"].(map[string]interface{})["ConfigID"])
 	assert.Equal(t, "p1:t1:c1", data["coordinate"].(map[string]interface{})["Reference"])
-	assert.Equal(t, "env1", data["environment"])
+	assert.Equal(t, "env1", data["environment"].(map[string]interface{})["Name"])
+	assert.Equal(t, "group", data["environment"].(map[string]interface{})["Group"])
 }
 
 func TestFromCtx(t *testing.T) {
@@ -96,8 +97,9 @@ func TestFromCtx(t *testing.T) {
 	setDefaultLogger(loggers.LogOptions{ConsoleLoggingJSON: true, LogSpy: &logSpy})
 	c := coordinate.Coordinate{"p1", "t1", "c1"}
 	e := "e1"
+	g := "g"
 
-	logger := FromCtx(context.WithValue(context.WithValue(context.TODO(), CtxKeyCoord{}, c), CtxKeyEnv{}, CtxValEnv{Name: e}))
+	logger := FromCtx(context.WithValue(context.WithValue(context.TODO(), CtxKeyCoord{}, c), CtxKeyEnv{}, CtxValEnv{Name: e, Group: g}))
 	logger.Info("Hi with context")
 
 	var data map[string]interface{}
@@ -107,6 +109,7 @@ func TestFromCtx(t *testing.T) {
 	assert.Equal(t, "t1", data["coordinate"].(map[string]interface{})["Type"])
 	assert.Equal(t, "c1", data["coordinate"].(map[string]interface{})["ConfigID"])
 	assert.Equal(t, "p1:t1:c1", data["coordinate"].(map[string]interface{})["Reference"])
-	assert.Equal(t, "e1", data["environment"])
+	assert.Equal(t, "e1", data["environment"].(map[string]interface{})["Name"])
+	assert.Equal(t, "g", data["environment"].(map[string]interface{})["Group"])
 
 }

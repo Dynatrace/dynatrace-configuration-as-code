@@ -60,7 +60,7 @@ func DeployConfigs(clientSet ClientSet, apis api.APIs, sortedConfigs []config.Co
 		c := &sortedConfigs[i] // avoid implicit memory aliasing (gosec G601)
 
 		ctx := context.WithValue(context.TODO(), log.CtxKeyCoord{}, c.Coordinate)
-		ctx = context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: c.Environment})
+		ctx = context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: c.Environment, Group: c.Group})
 
 		entity, deploymentErrors := deploy(ctx, clientSet, apis, entityMap, c)
 

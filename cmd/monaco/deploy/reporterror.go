@@ -78,7 +78,7 @@ func printErrorReport(deploymentErrors []error) { // nolint:gocognit
 				for group, environmentErrors := range groupErrors {
 					for env, errs := range environmentErrors {
 						for _, err := range errs {
-							log.WithFields(loggers.EnvironmentF(err.LocationDetails().Environment), loggers.CoordinateF(err.Coordinates()), loggers.ErrorF(err)).Error("%s(%s) %s:%s:%s %T %s", env, group, project, api, config, err, errutils.ErrorString(err))
+							log.WithFields(loggers.EnvironmentF(err.LocationDetails().Environment, err.LocationDetails().Group), loggers.CoordinateF(err.Coordinates()), loggers.ErrorF(err)).Error("%s(%s) %s:%s:%s %T %s", env, group, project, api, config, err, errutils.ErrorString(err))
 						}
 					}
 				}

@@ -38,7 +38,8 @@ type CtxKeyEnv struct{}
 
 // CtxValEnv context value used for contextual environment information
 type CtxValEnv struct {
-	Name string
+	Name  string
+	Group string
 }
 
 var (
@@ -82,7 +83,7 @@ func FromCtx(ctx context.Context) loggers.Logger {
 		fields[0] = loggers.CoordinateF(c)
 	}
 	if e, ok := ctx.Value(CtxKeyEnv{}).(CtxValEnv); ok {
-		fields[1] = loggers.EnvironmentF(e.Name)
+		fields[1] = loggers.EnvironmentF(e.Name, e.Group)
 	}
 	return loggr.WithFields(fields...)
 }

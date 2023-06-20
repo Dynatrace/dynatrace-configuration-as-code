@@ -48,8 +48,15 @@ func CoordinateF(coordinate coordinate.Coordinate) Field {
 }
 
 // EnvironmentF builds a Field containing environment information for structured logging
-func EnvironmentF(environment string) Field {
-	return Field{"environment", environment}
+func EnvironmentF(environment, group string) Field {
+	return Field{"environment",
+		struct {
+			Group string
+			Name  string
+		}{
+			group,
+			environment,
+		}}
 }
 
 // ErrorF builds a Field containing error information for structured logging
