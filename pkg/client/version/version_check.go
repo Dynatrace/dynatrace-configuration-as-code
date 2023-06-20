@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"net/http"
 	"net/url"
@@ -45,7 +44,7 @@ func GetDynatraceVersion(client *http.Client, environmentURL string) (version.Ve
 		return version.Version{}, fmt.Errorf("failed to query version of Dynatrace environment: %w", err)
 	}
 	if !resp.IsSuccess() {
-		return version.Version{}, errors.NewRespErr(
+		return version.Version{}, rest.NewRespErr(
 			fmt.Sprintf("failed to query version of Dynatrace environment: (HTTP %d) Response was: %s", resp.StatusCode, string(resp.Body)),
 			resp,
 		)

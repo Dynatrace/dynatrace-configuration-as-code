@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"net/http"
 	"net/url"
@@ -67,7 +66,7 @@ func GetDynatraceClassicURL(client *http.Client, environmentURL string) (string,
 	}
 
 	if !resp.IsSuccess() {
-		return "", errors.NewRespErr(
+		return "", rest.NewRespErr(
 			fmt.Sprintf("failed to query classic environment URL: (HTTP %v) %v", resp.StatusCode, string(resp.Body)),
 			resp)
 	}

@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
-	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/errors"
+	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"strings"
 	"sync"
 

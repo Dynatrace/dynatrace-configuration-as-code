@@ -14,13 +14,10 @@
  * limitations under the License.
  */
 
-// TODO move down to rest pkg
-package errors
+package rest
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
 )
 
@@ -34,7 +31,7 @@ type RespError struct {
 	StatusCode int
 }
 
-func NewRespErr(msg string, resp rest.Response) RespError {
+func NewRespErr(msg string, resp Response) RespError {
 	return RespError{
 		Type:       RespErrType,
 		Message:    msg,

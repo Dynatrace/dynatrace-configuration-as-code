@@ -22,13 +22,13 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/errors"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -54,7 +54,7 @@ func TestDownloadAll(t *testing.T) {
 			name: "DownloadEntities - List Entity Types fails",
 			mockValues: mockValues{
 				EntitiesTypeList: func() ([]dtclient.EntitiesType, error) {
-					return nil, errors.RespError{Err: fmt.Errorf("oh no"), StatusCode: 0}
+					return nil, rest.RespError{Err: fmt.Errorf("oh no"), StatusCode: 0}
 				},
 				EntitiesTypeListCalls: 1,
 				EntitiesList: func() ([]string, error) {
@@ -72,7 +72,7 @@ func TestDownloadAll(t *testing.T) {
 				},
 				EntitiesTypeListCalls: 1,
 				EntitiesList: func() ([]string, error) {
-					return nil, errors.RespError{Err: fmt.Errorf("oh no"), StatusCode: 0}
+					return nil, rest.RespError{Err: fmt.Errorf("oh no"), StatusCode: 0}
 				},
 				EntitiesListCalls: 2,
 			},
