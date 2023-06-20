@@ -23,7 +23,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation/internal/pagination"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"net/http"
 )
@@ -138,8 +137,8 @@ func (a Client) list(ctx context.Context, resourceType ResourceType) ([]Response
 
 		// handle http error
 		if !resp.IsSuccess() {
-			err := errors.RespError{
-				Type:       errors.RespErrType,
+			err := rest.RespError{
+				Type:       rest.RespErrType,
 				StatusCode: resp.StatusCode,
 				Body:       string(resp.Body),
 			}
@@ -194,7 +193,7 @@ func (a Client) upsert(ctx context.Context, resourceType ResourceType, id string
 
 	// check if we get an error except 404
 	if !resp.IsSuccess() && resp.StatusCode != http.StatusNotFound {
-		return nil, errors.NewRespErr(fmt.Sprintf("failed to update object with ID %s (HTTP %d): %s", id, resp.StatusCode, string(resp.Body)), resp)
+		return nil, rest.NewRespErr(fmt.Sprintf("failed to update object with ID %s (HTTP %d): %s", id, resp.StatusCode, string(resp.Body)), resp)
 	}
 
 	// at this point we need to create a new object using HTTP POST
@@ -215,7 +214,7 @@ func (a Client) create(id string, data []byte, resourceType ResourceType) (*Resp
 
 	// handle response err
 	if !resp.IsSuccess() {
-		return nil, errors.NewRespErr(fmt.Sprintf("failed to create object with ID %s (HTTP %d): %s", id, resp.StatusCode, string(resp.Body)), resp)
+		return nil, rest.NewRespErr(fmt.Sprintf("failed to create object with ID %s (HTTP %d): %s", id, resp.StatusCode, string(resp.Body)), resp)
 
 	}
 
@@ -223,7 +222,7 @@ func (a Client) create(id string, data []byte, resourceType ResourceType) (*Resp
 	var e Response
 	err = json.Unmarshal(resp.Body, &e)
 	if err != nil {
-		return nil, errors.NewRespErr("failed to unmarshal response", resp).WithErr(err)
+		return nil, rest.NewRespErr("failed to unmarshal response", resp).WithErr(err)
 	}
 
 	// check if id from response is indeed the same as desired

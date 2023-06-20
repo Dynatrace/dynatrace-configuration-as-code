@@ -22,11 +22,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/auth"
-	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/version"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
+	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"net/http"
 )
 

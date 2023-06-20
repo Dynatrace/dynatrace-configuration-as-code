@@ -19,13 +19,13 @@ package entities
 import (
 	"errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
+	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"strings"
 	"sync"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 
-	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/errors"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"

@@ -22,9 +22,9 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/loggers"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
-	errors2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/errors"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
+	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 )
 
 // DeployConfigsOptions defines additional options used by DeployConfigs
@@ -121,7 +121,7 @@ func deploy(ctx context.Context, clientSet ClientSet, apis api.APIs, em *entityM
 	}
 
 	if deployErr != nil {
-		var responseErr errors2.RespError
+		var responseErr clientErrors.RespError
 		if errors.As(deployErr, &responseErr) {
 			log.FromCtx(ctx).WithFields(loggers.F("error", responseErr)).Error("Failed to deploy config %s: %s", c.Coordinate, responseErr.Message)
 		} else {

@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/throttle"
-	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/errors"
 	"net/http"
 	"net/url"
 	"time"
@@ -47,8 +46,8 @@ func ListPaginated(client *http.Client, retrySettings RetrySettings, url *url.UR
 
 	resp, receivedCount, totalReceivedCount, _, err := runAndProcessResponse(client, retrySettings, false, url, addToResult, receivedCount, totalReceivedCount)
 	if err != nil {
-		return resp, clientErrors.RespError{
-			Type:       clientErrors.RespErrType,
+		return resp, RespError{
+			Type:       RespErrType,
 			Err:        err,
 			Message:    err.Error(),
 			Body:       string(resp.Body),
@@ -72,8 +71,8 @@ func ListPaginated(client *http.Client, retrySettings RetrySettings, url *url.UR
 			var isLastAvailablePage bool
 			resp, receivedCount, totalReceivedCount, isLastAvailablePage, err = runAndProcessResponse(client, retrySettings, true, url, addToResult, receivedCount, totalReceivedCount)
 			if err != nil {
-				return resp, clientErrors.RespError{
-					Type:       clientErrors.RespErrType,
+				return resp, RespError{
+					Type:       RespErrType,
 					Err:        err,
 					Message:    err.Error(),
 					Body:       string(resp.Body),
@@ -87,8 +86,8 @@ func ListPaginated(client *http.Client, retrySettings RetrySettings, url *url.UR
 			retry := false
 			retry, emptyResponseRetryCount, err = isRetryOnEmptyResponse(receivedCount, emptyResponseRetryCount, resp)
 			if err != nil {
-				return resp, clientErrors.RespError{
-					Type:       clientErrors.RespErrType,
+				return resp, RespError{
+					Type:       RespErrType,
 					Err:        err,
 					Message:    err.Error(),
 					Body:       string(resp.Body),
