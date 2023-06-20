@@ -41,7 +41,7 @@ func (c *dummyAutomationClient) Upsert(_ context.Context, _ automation.ResourceT
 func deployAutomation(ctx context.Context, client automationClient, properties parameter.Properties, renderedConfig string, c *config.Config) (*parameter.ResolvedEntity, error) {
 	t, ok := c.Type.(config.AutomationType)
 	if !ok {
-		return &parameter.ResolvedEntity{}, fmt.Errorf("config was not of expected type %q, but %q", config.AutomationType{}.ID(), c.Type.ID())
+		return &parameter.ResolvedEntity{}, newConfigDeployErr(c, fmt.Sprintf("config was not of expected type %q, but %q", config.AutomationType{}.ID(), c.Type.ID()))
 	}
 
 	var id string
@@ -54,13 +54,13 @@ func deployAutomation(ctx context.Context, client automationClient, properties p
 
 	resourceType, err := automationutils.ClientResourceTypeFromConfigType(t.Resource)
 	if err != nil {
-		return nil, fmt.Errorf("failed to upsert automation object of type %s with id %s: %w", t.Resource, id, err)
+		return nil, newConfigDeployErr(c, fmt.Sprintf("failed to upsert automation object of type %s with id %s", t.Resource, id)).withError(err)
 	}
 
 	var resp *automation.Response
 	resp, err = client.Upsert(ctx, resourceType, id, []byte(renderedConfig))
 	if resp == nil || err != nil {
-		return nil, fmt.Errorf("failed to upsert automation object of type %s with id %s: %w", t.Resource, id, err)
+		return nil, newConfigDeployErr(c, fmt.Sprintf("failed to upsert automation object of type %s with id %s", t.Resource, id)).withError(err)
 	}
 
 	name := fmt.Sprintf("[UNKNOWN NAME]%s", resp.ID)
@@ -77,6 +77,6 @@ func deployAutomation(ctx context.Context, client automationClient, properties p
 		Properties: properties,
 		Skip:       false,
 	}
-	return &resolved, err
+	return &resolved, nil
 
 }

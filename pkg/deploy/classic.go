@@ -57,7 +57,7 @@ func deployClassicConfig(configClient dtclient.ConfigClient, apis api.APIs, enti
 	}
 
 	if err != nil {
-		return &parameter.ResolvedEntity{}, newConfigDeployErr(conf, err.Error())
+		return &parameter.ResolvedEntity{}, newConfigDeployErr(conf, err.Error()).withError(err)
 	}
 
 	properties[config.IdParameter] = entity.Id

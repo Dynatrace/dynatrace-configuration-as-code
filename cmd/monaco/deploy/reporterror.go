@@ -20,6 +20,7 @@ import (
 	"errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/loggers"
 	configError "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/errors"
 )
 
@@ -46,12 +47,13 @@ func printErrorReport(deploymentErrors []error) { // nolint:gocognit
 	if len(generalErrors) > 0 {
 		log.Error("=== General Errors ===")
 		for _, err := range generalErrors {
-			log.Error(errutils.ErrorString(err))
+			log.WithFields(loggers.ErrorF(err)).Error(errutils.ErrorString(err))
 		}
 	}
 
 	groupedConfigErrors := groupConfigErrors(configErrors)
 
+	log.Error("=== Deployment Error Details ===")
 	for project, apiErrors := range groupedConfigErrors {
 		for api, configErrors := range apiErrors {
 			for config, errs := range configErrors {
@@ -70,13 +72,13 @@ func printErrorReport(deploymentErrors []error) { // nolint:gocognit
 				groupErrors := groupEnvironmentConfigErrors(detailedConfigErrors)
 
 				for _, err := range generalConfigErrors {
-					log.Error("%s:%s:%s %s", project, api, config, errutils.ErrorString(err))
+					log.WithFields(loggers.CoordinateF(err.Coordinates()), loggers.ErrorF(err)).Error("%s:%s:%s %s", project, api, config, errutils.ErrorString(err))
 				}
 
 				for group, environmentErrors := range groupErrors {
 					for env, errs := range environmentErrors {
 						for _, err := range errs {
-							log.Error("%s(%s) %s:%s:%s %T %s", env, group, project, api, config, err, errutils.ErrorString(err))
+							log.WithFields(loggers.EnvironmentF(err.LocationDetails().Environment), loggers.CoordinateF(err.Coordinates()), loggers.ErrorF(err)).Error("%s(%s) %s:%s:%s %T %s", env, group, project, api, config, err, errutils.ErrorString(err))
 						}
 					}
 				}
