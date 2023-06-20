@@ -117,15 +117,15 @@ func deploy(ctx context.Context, clientSet ClientSet, apis api.APIs, em *entityM
 		res, deployErr = deployAutomation(ctx, clientSet.Automation, properties, renderedConfig, c)
 
 	default:
-		return nil, []error{fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())}
+		deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())
 	}
 
 	if deployErr != nil {
 		var responseErr errors2.RespError
 		if errors.As(deployErr, &responseErr) {
-			log.FromCtx(ctx).WithFields(loggers.F("error", responseErr)).Error("Failure during deployment: %s", responseErr.Message)
+			log.FromCtx(ctx).WithFields(loggers.F("error", responseErr)).Error("Failed to deploy config %s: %s", c.Coordinate, responseErr.Message)
 		} else {
-			log.FromCtx(ctx).Error(deployErr.Error())
+			log.FromCtx(ctx).Error("Failed to deploy config %s: %s", c.Coordinate, deployErr.Error())
 		}
 		return nil, []error{deployErr}
 	}
