@@ -139,9 +139,9 @@ func (a Client) list(ctx context.Context, resourceType ResourceType) ([]Response
 		// handle http error
 		if !resp.IsSuccess() {
 			err := errors.RespError{
-				Type:       "ResponseError",
+				Type:       errors.RespErrType,
 				StatusCode: resp.StatusCode,
-				Message:    string(resp.Body),
+				Body:       string(resp.Body),
 			}
 			return nil, err
 		}
@@ -194,12 +194,7 @@ func (a Client) upsert(ctx context.Context, resourceType ResourceType, id string
 
 	// check if we get an error except 404
 	if !resp.IsSuccess() && resp.StatusCode != http.StatusNotFound {
-		err := errors.RespError{
-			Type:       "ResponseError",
-			StatusCode: resp.StatusCode,
-			Message:    string(resp.Body),
-		}
-		return nil, err
+		return nil, errors.NewRespErr(fmt.Sprintf("failed to update object with ID %s (HTTP %d): %s", id, resp.StatusCode, string(resp.Body)), resp)
 	}
 
 	// at this point we need to create a new object using HTTP POST
@@ -220,18 +215,15 @@ func (a Client) create(id string, data []byte, resourceType ResourceType) (*Resp
 
 	// handle response err
 	if !resp.IsSuccess() {
-		return nil, errors.RespError{
-			Type:       "ResponseError",
-			StatusCode: resp.StatusCode,
-			Message:    string(resp.Body),
-		}
+		return nil, errors.NewRespErr(fmt.Sprintf("failed to create object with ID %s (HTTP %d): %s", id, resp.StatusCode, string(resp.Body)), resp)
+
 	}
 
 	// de-serialize response
 	var e Response
 	err = json.Unmarshal(resp.Body, &e)
 	if err != nil {
-		return nil, err
+		return nil, errors.NewRespErr("failed to unmarshal response", resp).WithErr(err)
 	}
 
 	// check if id from response is indeed the same as desired

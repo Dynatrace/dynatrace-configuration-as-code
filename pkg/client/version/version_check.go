@@ -45,10 +45,10 @@ func GetDynatraceVersion(client *http.Client, environmentURL string) (version.Ve
 		return version.Version{}, fmt.Errorf("failed to query version of Dynatrace environment: %w", err)
 	}
 	if !resp.IsSuccess() {
-		return version.Version{}, errors.RespError{
-			Err:        fmt.Errorf("failed to query version of Dynatrace environment: (HTTP %d) Response was: %s", resp.StatusCode, string(resp.Body)),
-			StatusCode: resp.StatusCode,
-		}
+		return version.Version{}, errors.NewRespErr(
+			fmt.Sprintf("failed to query version of Dynatrace environment: (HTTP %d) Response was: %s", resp.StatusCode, string(resp.Body)),
+			resp,
+		)
 	}
 
 	var jsonResp ApiVersionObject
@@ -58,10 +58,7 @@ func GetDynatraceVersion(client *http.Client, environmentURL string) (version.Ve
 
 	v, err := parseDynatraceClassicVersion(jsonResp.Version)
 	if err != nil {
-		return version.Version{}, errors.RespError{
-			Err:        err,
-			StatusCode: resp.StatusCode,
-		}
+		return version.Version{}, fmt.Errorf("failed to parse Dynatrace version JSON: %w", err)
 	}
 	return v, nil
 }

@@ -14,22 +14,44 @@
  * limitations under the License.
  */
 
+// TODO move down to rest pkg
 package errors
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
 )
+
+const RespErrType = "ResponseError"
 
 type RespError struct {
 	Type       string
 	Err        error `json:"-"`
 	Message    string
+	Body       string
 	StatusCode int
 }
 
+func NewRespErr(msg string, resp rest.Response) RespError {
+	return RespError{
+		Type:       RespErrType,
+		Message:    msg,
+		StatusCode: resp.StatusCode,
+		Body:       string(resp.Body),
+	}
+}
+
+func (e RespError) WithErr(err error) RespError {
+	e.Err = err
+	return e
+}
+
 func (e RespError) Error() string {
+	if e.Err != nil {
+		return fmt.Sprintf("%s: %v", e.Message, e.Err)
+	}
 	return e.Message
 }
 

@@ -67,10 +67,9 @@ func GetDynatraceClassicURL(client *http.Client, environmentURL string) (string,
 	}
 
 	if !resp.IsSuccess() {
-		return "", errors.RespError{
-			Err:        fmt.Errorf("failed to query classic environment URL: (HTTP %v) %v", resp.StatusCode, string(resp.Body)),
-			StatusCode: resp.StatusCode,
-		}
+		return "", errors.NewRespErr(
+			fmt.Sprintf("failed to query classic environment URL: (HTTP %v) %v", resp.StatusCode, string(resp.Body)),
+			resp)
 	}
 
 	var jsonResp classicEnvURL
