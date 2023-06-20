@@ -1,9 +1,9 @@
 {
-  "actor": "ed6a9c8f-06f0-4508-9b8e-c47bbe67c83d",
+  "actor": "{{.actor}}",
   "description": "",
   "isPrivate": false,
   "labels": {},
-  "owner": "ed6a9c8f-06f0-4508-9b8e-c47bbe67c83d",
+  "owner": "{{.owner}}",
   "schemaVersion": 3,
   "taskDefaults": {},
   "tasks": {
