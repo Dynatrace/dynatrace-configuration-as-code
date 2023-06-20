@@ -17,6 +17,7 @@
 package settings
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -117,7 +118,7 @@ func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPe
 		go func(s string) {
 			defer wg.Done()
 			log.Debug("Downloading all settings for schema %s", s)
-			objects, err := d.client.ListSettings(s, dtclient.ListSettingsOptions{})
+			objects, err := d.client.ListSettings(context.TODO(), s, dtclient.ListSettingsOptions{}) //TODO: real context
 			if err != nil {
 				var errMsg string
 				var respErr clientErrors.RespError

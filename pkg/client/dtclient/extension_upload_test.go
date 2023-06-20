@@ -19,6 +19,7 @@
 package dtclient
 
 import (
+	"context"
 	"gotest.tools/assert"
 	"net/http"
 	"net/http/httptest"
@@ -30,11 +31,11 @@ func TestCorrectlyIdentifiesLowerLocalVersion(t *testing.T) {
 	remotePayload := `{ "version": "2" }`
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		rw.Write([]byte(remotePayload))
+		_, _ = rw.Write([]byte(remotePayload))
 	}))
 	defer server.Close()
 
-	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", []byte(localPayload))
+	status, err := validateIfExtensionShouldBeUploaded(context.TODO(), server.Client(), server.URL, "name", []byte(localPayload))
 	assert.Assert(t, err != nil)
 	assert.Equal(t, status, extensionConfigOutdated)
 }
@@ -44,11 +45,11 @@ func TestCorrectlyIdentifiesEqualVersion(t *testing.T) {
 	remotePayload := `{ "version": "1" }`
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		rw.Write([]byte(remotePayload))
+		_, _ = rw.Write([]byte(remotePayload))
 	}))
 	defer server.Close()
 
-	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", []byte(localPayload))
+	status, err := validateIfExtensionShouldBeUploaded(context.TODO(), server.Client(), server.URL, "name", []byte(localPayload))
 	assert.NilError(t, err)
 	assert.Equal(t, status, extensionUpToDate)
 }
@@ -58,11 +59,11 @@ func TestCorrectlyIdentifiesNecessaryUpdate(t *testing.T) {
 	remotePayload := `{ "version": "1" }`
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		rw.Write([]byte(remotePayload))
+		_, _ = rw.Write([]byte(remotePayload))
 	}))
 	defer server.Close()
 
-	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", []byte(localPayload))
+	status, err := validateIfExtensionShouldBeUploaded(context.TODO(), server.Client(), server.URL, "name", []byte(localPayload))
 	assert.NilError(t, err)
 	assert.Equal(t, status, extensionNeedsUpdate)
 }
@@ -73,7 +74,7 @@ func TestCorrectlyIdentifiesMissingExtension(t *testing.T) {
 	}))
 	defer server.Close()
 
-	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", nil)
+	status, err := validateIfExtensionShouldBeUploaded(context.TODO(), server.Client(), server.URL, "name", nil)
 	assert.NilError(t, err)
 	assert.Equal(t, status, extensionNeedsUpdate)
 }
@@ -83,11 +84,11 @@ func TestThrowsErrorOnRemoteParsingProblems(t *testing.T) {
 	remotePayload := `{ "version "1" `
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		rw.Write([]byte(remotePayload))
+		_, _ = rw.Write([]byte(remotePayload))
 	}))
 	defer server.Close()
 
-	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", []byte(localPayload))
+	status, err := validateIfExtensionShouldBeUploaded(context.TODO(), server.Client(), server.URL, "name", []byte(localPayload))
 	assert.Assert(t, err != nil)
 	assert.Equal(t, status, extensionValidationError)
 }
@@ -97,11 +98,11 @@ func TestThrowsErrorOnLocalParsingProblems(t *testing.T) {
 	remotePayload := `{ "version": "1" }`
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		rw.Write([]byte(remotePayload))
+		_, _ = rw.Write([]byte(remotePayload))
 	}))
 	defer server.Close()
 
-	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", []byte(localPayload))
+	status, err := validateIfExtensionShouldBeUploaded(context.TODO(), server.Client(), server.URL, "name", []byte(localPayload))
 	assert.Assert(t, err != nil)
 	assert.Equal(t, status, extensionValidationError)
 }
@@ -111,11 +112,11 @@ func TestThrowsErrorOnRemoteMissingVersions(t *testing.T) {
 	remotePayload := `{ }`
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		rw.Write([]byte(remotePayload))
+		_, _ = rw.Write([]byte(remotePayload))
 	}))
 	defer server.Close()
 
-	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", []byte(localPayload))
+	status, err := validateIfExtensionShouldBeUploaded(context.TODO(), server.Client(), server.URL, "name", []byte(localPayload))
 	assert.Assert(t, err != nil)
 	assert.Equal(t, status, extensionValidationError)
 }
@@ -125,11 +126,11 @@ func TestThrowsErrorOnLocalMissingVersions(t *testing.T) {
 	remotePayload := `{ "version": "1" }`
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		rw.Write([]byte(remotePayload))
+		_, _ = rw.Write([]byte(remotePayload))
 	}))
 	defer server.Close()
 
-	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", []byte(localPayload))
+	status, err := validateIfExtensionShouldBeUploaded(context.TODO(), server.Client(), server.URL, "name", []byte(localPayload))
 	assert.Assert(t, err != nil)
 	assert.Equal(t, status, extensionValidationError)
 }
@@ -138,11 +139,11 @@ func TestThrowsErrorOnRemoteNilReturn(t *testing.T) {
 	localPayload := `{ "something": "else" }`
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		rw.Write(nil)
+		_, _ = rw.Write(nil)
 	}))
 	defer server.Close()
 
-	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", []byte(localPayload))
+	status, err := validateIfExtensionShouldBeUploaded(context.TODO(), server.Client(), server.URL, "name", []byte(localPayload))
 	assert.Assert(t, err != nil)
 	assert.Equal(t, status, extensionValidationError)
 }
@@ -151,11 +152,11 @@ func TestThrowsErrorOnLocalNilPayload(t *testing.T) {
 	remotePayload := `{ "something": "else" }`
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		rw.Write([]byte(remotePayload))
+		_, _ = rw.Write([]byte(remotePayload))
 	}))
 	defer server.Close()
 
-	status, err := validateIfExtensionShouldBeUploaded(server.Client(), server.URL, "name", nil)
+	status, err := validateIfExtensionShouldBeUploaded(context.TODO(), server.Client(), server.URL, "name", nil)
 	assert.Assert(t, err != nil)
 	assert.Equal(t, status, extensionValidationError)
 }

@@ -18,6 +18,7 @@ package dtclient
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
@@ -56,7 +57,7 @@ type settingsRequest struct {
 // To do this, we have to wrap the template in another object and send this object to the server.
 // Currently, we only encode one object into an array of objects, but we can optimize it to contain multiple elements to update.
 // Note payload limitations: https://www.dynatrace.com/support/help/dynatrace-api/basics/access-limit#payload-limit
-func buildPostRequestPayload(obj SettingsObject, externalID string) ([]byte, error) {
+func buildPostRequestPayload(ctx context.Context, obj SettingsObject, externalID string) ([]byte, error) {
 	var value any
 	if err := json.Unmarshal(obj.Content, &value); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal rendered config: %w", err)
@@ -81,7 +82,7 @@ func buildPostRequestPayload(obj SettingsObject, externalID string) ([]byte, err
 	// compress json to require less space
 	dest := bytes.Buffer{}
 	if err := json.Compact(&dest, fullObj); err != nil {
-		log.Debug("Failed to compact json: %w. Using uncompressed json.\n\tJson: %v", err, string(fullObj))
+		log.WithCtxFields(ctx).Debug("Failed to compact json: %w. Using uncompressed json.\n\tJson: %v", err, string(fullObj))
 		return fullObj, nil
 	}
 

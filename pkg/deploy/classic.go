@@ -17,6 +17,7 @@
 package deploy
 
 import (
+	"context"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
@@ -26,7 +27,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 )
 
-func deployClassicConfig(configClient dtclient.ConfigClient, apis api.APIs, entityMap *entityMap, properties parameter.Properties, renderedConfig string, conf *config.Config) (*parameter.ResolvedEntity, error) {
+func deployClassicConfig(ctx context.Context, configClient dtclient.ConfigClient, apis api.APIs, entityMap *entityMap, properties parameter.Properties, renderedConfig string, conf *config.Config) (*parameter.ResolvedEntity, error) {
 	t, ok := conf.Type.(config.ClassicApiType)
 	if !ok {
 		return &parameter.ResolvedEntity{}, fmt.Errorf("config was not of expected type %q, but %q", config.ClassicApiTypeId, conf.Type.ID())
@@ -46,14 +47,14 @@ func deployClassicConfig(configClient dtclient.ConfigClient, apis api.APIs, enti
 	}
 
 	if apiToDeploy.DeprecatedBy != "" {
-		log.Warn("API for \"%s\" is deprecated! Please consider migrating to \"%s\"!", apiToDeploy.ID, apiToDeploy.DeprecatedBy)
+		log.WithCtxFields(ctx).Warn("API for \"%s\" is deprecated! Please consider migrating to \"%s\"!", apiToDeploy.ID, apiToDeploy.DeprecatedBy)
 	}
 
 	var entity dtclient.DynatraceEntity
 	if apiToDeploy.NonUniqueName {
-		entity, err = upsertNonUniqueNameConfig(configClient, apiToDeploy, conf, configName, renderedConfig)
+		entity, err = upsertNonUniqueNameConfig(ctx, configClient, apiToDeploy, conf, configName, renderedConfig)
 	} else {
-		entity, err = configClient.UpsertConfigByName(apiToDeploy, configName, []byte(renderedConfig))
+		entity, err = configClient.UpsertConfigByName(ctx, apiToDeploy, configName, []byte(renderedConfig))
 	}
 
 	if err != nil {
@@ -71,7 +72,7 @@ func deployClassicConfig(configClient dtclient.ConfigClient, apis api.APIs, enti
 	}, nil
 }
 
-func upsertNonUniqueNameConfig(client dtclient.ConfigClient, apiToDeploy api.API, conf *config.Config, configName string, renderedConfig string) (dtclient.DynatraceEntity, error) {
+func upsertNonUniqueNameConfig(ctx context.Context, client dtclient.ConfigClient, apiToDeploy api.API, conf *config.Config, configName string, renderedConfig string) (dtclient.DynatraceEntity, error) {
 	configID := conf.Coordinate.ConfigId
 	projectId := conf.Coordinate.Project
 
@@ -82,5 +83,5 @@ func upsertNonUniqueNameConfig(client dtclient.ConfigClient, apiToDeploy api.API
 		entityUuid = idutils.GenerateUUIDFromConfigId(projectId, configID)
 	}
 
-	return client.UpsertConfigByNonUniqueNameAndId(apiToDeploy, entityUuid, configName, []byte(renderedConfig))
+	return client.UpsertConfigByNonUniqueNameAndId(ctx, apiToDeploy, entityUuid, configName, []byte(renderedConfig))
 }

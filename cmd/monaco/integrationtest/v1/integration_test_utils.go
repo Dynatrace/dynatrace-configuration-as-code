@@ -20,6 +20,7 @@
 package v1
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
@@ -67,7 +68,10 @@ func AssertConfigAvailability(t *testing.T, fs afero.Fs, manifestFile string, co
 
 	assert.Assert(t, conf != nil, "config %s not found", coord)
 
-	assertConfigAvailable(t, clients.Classic(), envDefinition, available, *conf)
+	ctx := context.WithValue(context.TODO(), log.CtxKeyCoord{}, coord)
+	ctx = context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: conf.Environment, Group: conf.Group})
+
+	assertConfigAvailable(t, ctx, clients.Classic(), envDefinition, available, *conf)
 }
 
 func getConfigsForEnv(t *testing.T, project project.Project, env manifest.EnvironmentDefinition) project.ConfigsPerType {
@@ -92,7 +96,7 @@ func findProjectByName(t *testing.T, projects []project.Project, projName string
 	return *project
 }
 
-func assertConfigAvailable(t *testing.T, client dtclient.ConfigClient, env manifest.EnvironmentDefinition, shouldBeAvailable bool, config v2.Config) {
+func assertConfigAvailable(t *testing.T, ctx context.Context, client dtclient.ConfigClient, env manifest.EnvironmentDefinition, shouldBeAvailable bool, config v2.Config) {
 
 	nameParam, found := config.Parameters["name"]
 	assert.Assert(t, found, "Config %s should have a name parameter", config.Coordinate)
@@ -107,7 +111,7 @@ func assertConfigAvailable(t *testing.T, client dtclient.ConfigClient, env manif
 	assert.Assert(t, found, "Config %s should have a known api, but does not. Api %s does not exist", config.Coordinate, typ.Api)
 
 	if config.Skip {
-		exists, _, err := client.ConfigExistsByName(a, fmt.Sprint(name))
+		exists, _, err := client.ConfigExistsByName(ctx, a, fmt.Sprint(name))
 		assert.NilError(t, err)
 		assert.Check(t, !exists, "Config '%s' should NOT be available on env '%s', but was. environment.", env.Name, config.Coordinate)
 
@@ -119,7 +123,7 @@ func assertConfigAvailable(t *testing.T, client dtclient.ConfigClient, env manif
 	exists := false
 	// To deal with delays of configs becoming available try for max 120 polling cycles (4min - at 2sec cycles) for expected state to be reached
 	err = wait(description, 120, func() bool {
-		exists, _, err = client.ConfigExistsByName(a, fmt.Sprint(name))
+		exists, _, err = client.ConfigExistsByName(ctx, a, fmt.Sprint(name))
 		return (shouldBeAvailable && exists) || (!shouldBeAvailable && !exists)
 	})
 	assert.NilError(t, err)

@@ -46,7 +46,7 @@ type ConfigClient interface {
 	// It calls the underlying GET endpoint of the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles
 	// The result is expressed using a list of Value (id and name tuples).
-	ListConfigs(a api.API) (values []Value, err error)
+	ListConfigs(ctx context.Context, a api.API) (values []Value, err error)
 
 	// ReadConfigById reads a Dynatrace config identified by id from the given API.
 	// It calls the underlying GET endpoint for the API. E.g. for alerting profiles this would be:
@@ -58,7 +58,7 @@ type ConfigClient interface {
 	//    GET <environment-url>/api/config/v1/alertingProfiles ... to check if the config is already available
 	//    POST <environment-url>/api/config/v1/alertingProfiles ... afterwards, if the config is not yet available
 	//    PUT <environment-url>/api/config/v1/alertingProfiles/<id> ... instead of POST, if the config is already available
-	UpsertConfigByName(a api.API, name string, payload []byte) (entity DynatraceEntity, err error)
+	UpsertConfigByName(ctx context.Context, a api.API, name string, payload []byte) (entity DynatraceEntity, err error)
 
 	// UpsertConfigByNonUniqueNameAndId creates a given Dynatrace config if it doesn't exist and updates it based on specific rules if it does not
 	// - if only one config with the name exist, behave like any other type and just update this entity
@@ -67,7 +67,7 @@ type ConfigClient interface {
 	// It calls the underlying GET and PUT endpoints for the API. E.g. for alerting profiles this would be:
 	//	 GET <environment-url>/api/config/v1/alertingProfiles ... to check if the config is already available
 	//	 PUT <environment-url>/api/config/v1/alertingProfiles/<id> ... with the given (or found by unique name) entity ID
-	UpsertConfigByNonUniqueNameAndId(a api.API, entityID string, name string, payload []byte) (entity DynatraceEntity, err error)
+	UpsertConfigByNonUniqueNameAndId(ctx context.Context, a api.API, entityID string, name string, payload []byte) (entity DynatraceEntity, err error)
 
 	// DeleteConfigById removes a given config for a given API using its id.
 	// It calls the DELETE endpoint for the API. E.g. for alerting profiles this would be:
@@ -77,7 +77,7 @@ type ConfigClient interface {
 	// ConfigExistsByName checks if a config with the given name exists for the given API.
 	// It calls the underlying GET endpoint for the API. E.g. for alerting profiles this would be:
 	//    GET <environment-url>/api/config/v1/alertingProfiles
-	ConfigExistsByName(a api.API, name string) (exists bool, id string, err error)
+	ConfigExistsByName(ctx context.Context, a api.API, name string) (exists bool, id string, err error)
 }
 
 // DownloadSettingsObject is the response type for the ListSettings operation
@@ -123,7 +123,7 @@ type SettingsClient interface {
 	ListSchemas() (SchemaList, error)
 
 	// ListSettings returns all settings objects for a given schema.
-	ListSettings(string, ListSettingsOptions) ([]DownloadSettingsObject, error)
+	ListSettings(context.Context, string, ListSettingsOptions) ([]DownloadSettingsObject, error)
 
 	// GetSettingById returns the setting with the given object ID
 	GetSettingById(string) (*DownloadSettingsObject, error)
@@ -171,10 +171,10 @@ type ListSettingsFilter func(DownloadSettingsObject) bool
 type EntitiesClient interface {
 
 	// ListEntitiesTypes returns all entities types
-	ListEntitiesTypes() ([]EntitiesType, error)
+	ListEntitiesTypes(context.Context) ([]EntitiesType, error)
 
 	// ListEntities returns all entities objects for a given type.
-	ListEntities(EntitiesType) ([]string, error)
+	ListEntities(context.Context, EntitiesType) ([]string, error)
 }
 
 //go:generate mockgen -source=client.go -destination=client_mock.go -package=dtclient DynatraceClient
@@ -405,7 +405,7 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 			return DynatraceEntity{}, fmt.Errorf("unable to fetch settings object with object id %q: %w", obj.OriginObjectId, err)
 		}
 		if fetchedSettingObj != nil {
-			log.Warn("Unable to update Settings 2.0 object of schema %q and object id %q on Dynatrace environment with a version < 1.262.0", obj.SchemaId, obj.OriginObjectId)
+			log.WithCtxFields(ctx).Warn("Unable to update Settings 2.0 object of schema %q and object id %q on Dynatrace environment with a version < 1.262.0", obj.SchemaId, obj.OriginObjectId)
 			return DynatraceEntity{
 				Id:   fetchedSettingObj.ObjectId,
 				Name: fetchedSettingObj.ObjectId,
@@ -421,7 +421,7 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 	if err != nil {
 		return DynatraceEntity{}, fmt.Errorf("unable to generate external id: %w", err)
 	}
-	settingsWithExternalID, err := d.listSettings(obj.SchemaId, ListSettingsOptions{
+	settingsWithExternalID, err := d.listSettings(ctx, obj.SchemaId, ListSettingsOptions{
 		Filter: func(object DownloadSettingsObject) bool {
 			return object.ExternalId == legacyExternalID
 		},
@@ -448,7 +448,7 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 		obj.OriginObjectId = ""
 	}
 
-	payload, err := buildPostRequestPayload(obj, externalID)
+	payload, err := buildPostRequestPayload(ctx, obj, externalID)
 	if err != nil {
 		return DynatraceEntity{}, fmt.Errorf("failed to build settings object: %w", err)
 	}
@@ -469,20 +469,20 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 		return DynatraceEntity{}, rest.NewRespErr("failed to parse response", resp).WithErr(err)
 	}
 
-	log.Debug("\tCreated/Updated object %s (%s) with externalId %s", obj.Coordinate.ConfigId, obj.SchemaId, externalID)
+	log.WithCtxFields(ctx).Debug("\tCreated/Updated object %s (%s) with externalId %s", obj.Coordinate.ConfigId, obj.SchemaId, externalID)
 	return entity, nil
 
 }
-func (d *DynatraceClient) ListConfigs(api api.API) (values []Value, err error) {
+func (d *DynatraceClient) ListConfigs(ctx context.Context, api api.API) (values []Value, err error) {
 	d.limiter.ExecuteBlocking(func() {
-		values, err = d.listConfigs(api)
+		values, err = d.listConfigs(ctx, api)
 	})
 	return
 }
-func (d *DynatraceClient) listConfigs(api api.API) (values []Value, err error) {
+func (d *DynatraceClient) listConfigs(ctx context.Context, api api.API) (values []Value, err error) {
 
 	fullUrl := api.CreateURL(d.environmentURLClassic)
-	values, err = getExistingValuesFromEndpoint(d.clientClassic, api, fullUrl, d.retrySettings)
+	values, err = getExistingValuesFromEndpoint(ctx, d.clientClassic, api, fullUrl, d.retrySettings)
 	return values, err
 }
 
@@ -528,44 +528,44 @@ func (d *DynatraceClient) deleteConfigById(api api.API, id string) error {
 	return rest.DeleteConfig(d.clientClassic, api.CreateURL(d.environmentURLClassic), id)
 }
 
-func (d *DynatraceClient) ConfigExistsByName(api api.API, name string) (exists bool, id string, err error) {
+func (d *DynatraceClient) ConfigExistsByName(ctx context.Context, api api.API, name string) (exists bool, id string, err error) {
 	d.limiter.ExecuteBlocking(func() {
-		exists, id, err = d.configExistsByName(api, name)
+		exists, id, err = d.configExistsByName(ctx, api, name)
 	})
 	return
 }
 
-func (d *DynatraceClient) configExistsByName(api api.API, name string) (exists bool, id string, err error) {
+func (d *DynatraceClient) configExistsByName(ctx context.Context, api api.API, name string) (exists bool, id string, err error) {
 	apiURL := api.CreateURL(d.environmentURLClassic)
-	existingObjectId, err := getObjectIdIfAlreadyExists(d.clientClassic, api, apiURL, name, d.retrySettings)
+	existingObjectId, err := getObjectIdIfAlreadyExists(ctx, d.clientClassic, api, apiURL, name, d.retrySettings)
 	return existingObjectId != "", existingObjectId, err
 }
 
-func (d *DynatraceClient) UpsertConfigByName(api api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
+func (d *DynatraceClient) UpsertConfigByName(ctx context.Context, api api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
 	d.limiter.ExecuteBlocking(func() {
-		entity, err = d.upsertConfigByName(api, name, payload)
+		entity, err = d.upsertConfigByName(ctx, api, name, payload)
 	})
 	return
 }
 
-func (d *DynatraceClient) upsertConfigByName(api api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
+func (d *DynatraceClient) upsertConfigByName(ctx context.Context, api api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
 
 	if api.ID == "extension" {
 		fullUrl := api.CreateURL(d.environmentURLClassic)
-		return uploadExtension(d.clientClassic, fullUrl, name, payload)
+		return uploadExtension(ctx, d.clientClassic, fullUrl, name, payload)
 	}
-	return upsertDynatraceObject(d.clientClassic, d.environmentURLClassic, name, api, payload, d.retrySettings)
+	return upsertDynatraceObject(ctx, d.clientClassic, d.environmentURLClassic, name, api, payload, d.retrySettings)
 }
 
-func (d *DynatraceClient) UpsertConfigByNonUniqueNameAndId(api api.API, entityId string, name string, payload []byte) (entity DynatraceEntity, err error) {
+func (d *DynatraceClient) UpsertConfigByNonUniqueNameAndId(ctx context.Context, api api.API, entityId string, name string, payload []byte) (entity DynatraceEntity, err error) {
 	d.limiter.ExecuteBlocking(func() {
-		entity, err = d.upsertConfigByNonUniqueNameAndId(api, entityId, name, payload)
+		entity, err = d.upsertConfigByNonUniqueNameAndId(ctx, api, entityId, name, payload)
 	})
 	return
 }
 
-func (d *DynatraceClient) upsertConfigByNonUniqueNameAndId(api api.API, entityId string, name string, payload []byte) (entity DynatraceEntity, err error) {
-	return upsertDynatraceEntityByNonUniqueNameAndId(d.clientClassic, d.environmentURLClassic, entityId, name, api, payload, d.retrySettings)
+func (d *DynatraceClient) upsertConfigByNonUniqueNameAndId(ctx context.Context, api api.API, entityId string, name string, payload []byte) (entity DynatraceEntity, err error) {
+	return upsertDynatraceEntityByNonUniqueNameAndId(ctx, d.clientClassic, d.environmentURLClassic, entityId, name, api, payload, d.retrySettings)
 }
 
 // SchemaListResponse is the response type returned by the ListSchemas operation
@@ -648,13 +648,13 @@ func (d *DynatraceClient) getSettingById(objectId string) (*DownloadSettingsObje
 	return &result, nil
 }
 
-func (d *DynatraceClient) ListSettings(schemaId string, opts ListSettingsOptions) (res []DownloadSettingsObject, err error) {
+func (d *DynatraceClient) ListSettings(ctx context.Context, schemaId string, opts ListSettingsOptions) (res []DownloadSettingsObject, err error) {
 	d.limiter.ExecuteBlocking(func() {
-		res, err = d.listSettings(schemaId, opts)
+		res, err = d.listSettings(ctx, schemaId, opts)
 	})
 	return
 }
-func (d *DynatraceClient) listSettings(schemaId string, opts ListSettingsOptions) ([]DownloadSettingsObject, error) {
+func (d *DynatraceClient) listSettings(ctx context.Context, schemaId string, opts ListSettingsOptions) ([]DownloadSettingsObject, error) {
 	log.Debug("Downloading all settings for schema %s", schemaId)
 
 	listSettingsFields := defaultListSettingsFields
@@ -695,7 +695,7 @@ func (d *DynatraceClient) listSettings(schemaId string, opts ListSettingsOptions
 		return nil, fmt.Errorf("failed to list settings: %w", err)
 	}
 
-	_, err = rest.ListPaginated(d.client, d.retrySettings, u, schemaId, addToResult)
+	_, err = rest.ListPaginated(ctx, d.client, d.retrySettings, u, schemaId, addToResult)
 
 	if err != nil {
 		return nil, err
@@ -718,14 +718,14 @@ func (e EntitiesType) String() string {
 	return e.EntitiesTypeId
 }
 
-func (d *DynatraceClient) ListEntitiesTypes() (res []EntitiesType, err error) {
+func (d *DynatraceClient) ListEntitiesTypes(ctx context.Context) (res []EntitiesType, err error) {
 	d.limiter.ExecuteBlocking(func() {
-		res, err = d.listEntitiesTypes()
+		res, err = d.listEntitiesTypes(ctx)
 	})
 	return
 }
 
-func (d *DynatraceClient) listEntitiesTypes() ([]EntitiesType, error) {
+func (d *DynatraceClient) listEntitiesTypes(ctx context.Context) ([]EntitiesType, error) {
 
 	params := url.Values{
 		"pageSize": []string{defaultPageSize},
@@ -750,7 +750,7 @@ func (d *DynatraceClient) listEntitiesTypes() ([]EntitiesType, error) {
 		return nil, fmt.Errorf("failed to list entity types: %w", err)
 	}
 
-	_, err = rest.ListPaginated(d.client, d.retrySettings, u, "EntityTypeList", addToResult)
+	_, err = rest.ListPaginated(ctx, d.client, d.retrySettings, u, "EntityTypeList", addToResult)
 	if err != nil {
 		return nil, err
 	}
@@ -766,14 +766,14 @@ func genTimeframeUnixMilliString(duration time.Duration) string {
 	return strconv.FormatInt(time.Now().Add(duration).UnixMilli(), 10)
 }
 
-func (d *DynatraceClient) ListEntities(entitiesType EntitiesType) (res []string, err error) {
+func (d *DynatraceClient) ListEntities(ctx context.Context, entitiesType EntitiesType) (res []string, err error) {
 	d.limiter.ExecuteBlocking(func() {
-		res, err = d.listEntities(entitiesType)
+		res, err = d.listEntities(ctx, entitiesType)
 	})
 	return
 }
 
-func (d *DynatraceClient) listEntities(entitiesType EntitiesType) ([]string, error) {
+func (d *DynatraceClient) listEntities(ctx context.Context, entitiesType EntitiesType) ([]string, error) {
 
 	entityType := entitiesType.EntitiesTypeId
 	log.Debug("Downloading all entities for entities Type %s", entityType)
@@ -809,7 +809,7 @@ func (d *DynatraceClient) listEntities(entitiesType EntitiesType) ([]string, err
 			return nil, fmt.Errorf("failed to list entities: %w", err)
 		}
 
-		resp, err := rest.ListPaginated(d.client, d.retrySettings, u, entityType, addToResult)
+		resp, err := rest.ListPaginated(ctx, d.client, d.retrySettings, u, entityType, addToResult)
 
 		runExtraction, ignoreProperties, err = handleListEntitiesError(entityType, resp, runExtraction, ignoreProperties, err)
 

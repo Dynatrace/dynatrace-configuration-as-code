@@ -95,7 +95,7 @@ func Configs(clients ClientSet, apis api.APIs, automationResources map[string]co
 func deleteClassicConfig(client dtclient.Client, theApi api.API, entries []DeletePointer, targetApi string) []error {
 	errors := make([]error, 0)
 
-	values, err := client.ListConfigs(theApi)
+	values, err := client.ListConfigs(context.TODO(), theApi) //TODO: real context
 	if err != nil {
 		errors = append(errors, fmt.Errorf("failed to fetch existing configs of api `%v`. Skipping deletion all configs of this api. Reason: %w", theApi.ID, err))
 	}
@@ -134,7 +134,7 @@ func deleteSettingsObject(c dtclient.Client, entries []DeletePointer) []error {
 			continue
 		}
 		// get settings objects with matching external ID
-		objects, err := c.ListSettings(e.Type, dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(o dtclient.DownloadSettingsObject) bool { return o.ExternalId == externalID }})
+		objects, err := c.ListSettings(context.TODO(), e.Type, dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(o dtclient.DownloadSettingsObject) bool { return o.ExternalId == externalID }}) //TODO: real context
 		if err != nil {
 			errors = append(errors, fmt.Errorf("could not fetch settings 2.0 objects with schema ID %s: %w", e.Type, err))
 			continue
@@ -238,7 +238,7 @@ func AllConfigs(client dtclient.ConfigClient, apis api.APIs) (errors []error) {
 
 	for _, a := range apis {
 		log.Info("Collecting configs of type %s...", a.ID)
-		values, err := client.ListConfigs(a)
+		values, err := client.ListConfigs(context.TODO(), a) //TODO: real context
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -278,7 +278,7 @@ func AllSettingsObjects(c dtclient.SettingsClient) []error {
 
 	for _, s := range schemaIds {
 		log.Info("Collecting configs of type %s...", s)
-		settings, err := c.ListSettings(s, dtclient.ListSettingsOptions{DiscardValue: true})
+		settings, err := c.ListSettings(context.TODO(), s, dtclient.ListSettingsOptions{DiscardValue: true}) //TODO: real context
 		if err != nil {
 			errs = append(errs, err)
 			continue

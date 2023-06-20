@@ -17,6 +17,7 @@
 package entities
 
 import (
+	"context"
 	"errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
@@ -68,7 +69,7 @@ func (d *Downloader) Download(specificEntitiesTypes []string, projectName string
 	log.Debug("Fetching specific entities types to download")
 
 	// get ALL entities types
-	entitiesTypes, err := d.client.ListEntitiesTypes()
+	entitiesTypes, err := d.client.ListEntitiesTypes(context.TODO()) //TODO: real context
 	if err != nil {
 		log.Error("Failed to fetch all known entities types. Skipping entities download. Reason: %s", err)
 		return nil
@@ -110,7 +111,7 @@ func (d *Downloader) DownloadAll(projectName string) v2.ConfigsPerType {
 	log.Debug("Fetching all entities types to download")
 
 	// get ALL entities types
-	entitiesTypes, err := d.client.ListEntitiesTypes()
+	entitiesTypes, err := d.client.ListEntitiesTypes(context.TODO()) //TODO: real context
 	if err != nil {
 		log.Error("Failed to fetch all known entities types. Skipping entities download. Reason: %s", err)
 		return nil
@@ -130,7 +131,7 @@ func (d *Downloader) download(entitiesTypes []dtclient.EntitiesType, projectName
 		go func(entityType dtclient.EntitiesType) {
 			defer wg.Done()
 
-			objects, err := d.client.ListEntities(entityType)
+			objects, err := d.client.ListEntities(context.TODO(), entityType) //TODO: real context
 			if err != nil {
 				var errMsg string
 				var respErr clientErrors.RespError

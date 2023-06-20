@@ -54,7 +54,7 @@ func NewDummyClient() *DummyClient {
 	return &DummyClient{Entries: map[api.API][]DataEntry{}}
 }
 
-func (c *DummyClient) ListConfigs(a api.API) (values []Value, err error) {
+func (c *DummyClient) ListConfigs(_ context.Context, a api.API) (values []Value, err error) {
 	entries, found := c.Entries[a]
 
 	if !found {
@@ -75,22 +75,6 @@ func (c *DummyClient) ListConfigs(a api.API) (values []Value, err error) {
 	return result, nil
 }
 
-func (c *DummyClient) ReadByName(a api.API, name string) ([]byte, error) {
-	entries, found := c.Entries[a]
-
-	if !found {
-		return nil, nil
-	}
-
-	for _, entry := range entries {
-		if entry.Name == name {
-			return entry.Payload, nil
-		}
-	}
-
-	return nil, fmt.Errorf("nothing found for name %s in api %s", name, a.ID)
-}
-
 func (c *DummyClient) ReadConfigById(a api.API, id string) ([]byte, error) {
 	entries, found := c.Entries[a]
 
@@ -107,7 +91,7 @@ func (c *DummyClient) ReadConfigById(a api.API, id string) ([]byte, error) {
 	return nil, fmt.Errorf("nothing found for id %s in api %s", id, a.ID)
 }
 
-func (c *DummyClient) UpsertConfigByName(a api.API, name string, data []byte) (entity DynatraceEntity, err error) {
+func (c *DummyClient) UpsertConfigByName(_ context.Context, a api.API, name string, data []byte) (entity DynatraceEntity, err error) {
 	entries, found := c.Entries[a]
 
 	if c.Entries == nil {
@@ -148,7 +132,7 @@ func (c *DummyClient) UpsertConfigByName(a api.API, name string, data []byte) (e
 	}, nil
 }
 
-func (c *DummyClient) UpsertConfigByNonUniqueNameAndId(a api.API, entityId string, name string, data []byte) (entity DynatraceEntity, err error) {
+func (c *DummyClient) UpsertConfigByNonUniqueNameAndId(_ context.Context, a api.API, entityId string, name string, data []byte) (entity DynatraceEntity, err error) {
 	entries, found := c.Entries[a]
 
 	if c.Entries == nil {
@@ -231,7 +215,7 @@ func (c *DummyClient) DeleteConfigById(a api.API, id string) error {
 	return nil
 }
 
-func (c *DummyClient) ConfigExistsByName(a api.API, name string) (exists bool, id string, err error) {
+func (c *DummyClient) ConfigExistsByName(_ context.Context, a api.API, name string) (exists bool, id string, err error) {
 	entries, found := c.Entries[a]
 
 	if !found {
@@ -247,7 +231,7 @@ func (c *DummyClient) ConfigExistsByName(a api.API, name string) (exists bool, i
 	return false, "", nil
 }
 
-func (c *DummyClient) UpsertSettings(ctx context.Context, obj SettingsObject) (DynatraceEntity, error) {
+func (c *DummyClient) UpsertSettings(_ context.Context, obj SettingsObject) (DynatraceEntity, error) {
 
 	id := obj.Coordinate.ConfigId
 
@@ -270,7 +254,7 @@ func (c *DummyClient) ListSchemas() (SchemaList, error) {
 func (c *DummyClient) GetSettingById(_ string) (*DownloadSettingsObject, error) {
 	return &DownloadSettingsObject{}, nil
 }
-func (c *DummyClient) ListSettings(_ string, _ ListSettingsOptions) ([]DownloadSettingsObject, error) {
+func (c *DummyClient) ListSettings(_ context.Context, _ string, _ ListSettingsOptions) ([]DownloadSettingsObject, error) {
 	return make([]DownloadSettingsObject, 0), nil
 }
 
@@ -278,10 +262,10 @@ func (c *DummyClient) DeleteSettings(_ string) error {
 	return nil
 }
 
-func (c *DummyClient) ListEntitiesTypes() ([]EntitiesType, error) {
+func (c *DummyClient) ListEntitiesTypes(_ context.Context) ([]EntitiesType, error) {
 	return make([]EntitiesType, 0), nil
 }
 
-func (c *DummyClient) ListEntities(_ EntitiesType) ([]string, error) {
+func (c *DummyClient) ListEntities(_ context.Context, _ EntitiesType) ([]string, error) {
 	return make([]string, 0), nil
 }

@@ -19,6 +19,7 @@
 package v2
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
@@ -85,7 +86,7 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 
 	// 1. if only one config of non-unique-name exist it MUST be updated
 	expectedUUID := uuid2.GenerateUUIDFromConfigId("test_project", name)
-	e, err := c.UpsertConfigByNonUniqueNameAndId(a, expectedUUID, name, payload)
+	e, err := c.UpsertConfigByNonUniqueNameAndId(context.TODO(), a, expectedUUID, name, payload)
 	assert.NilError(t, err)
 	assert.Equal(t, e.Id, randomUUID, "expected existing single config %d to be updated, but reply UUID was", randomUUID, e.Id)
 	assert.Assert(t, len(getConfigsOfName(t, c, a, name)) == 1, "Expected single configs of name %q but found %d", name, len(existing))
@@ -97,14 +98,14 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 
 	// 2. if several configs of non-unique-name exist an additional config with monaco controlled UUID is created
 	assert.NilError(t, err)
-	e, err = c.UpsertConfigByNonUniqueNameAndId(a, expectedUUID, name, payload)
+	e, err = c.UpsertConfigByNonUniqueNameAndId(context.TODO(), a, expectedUUID, name, payload)
 	assert.NilError(t, err)
 	assert.Equal(t, e.Id, expectedUUID)
 	assert.Assert(t, len(getConfigsOfName(t, c, a, name)) == 3, "Expected three configs of name %q but found %d", name, len(existing))
 
 	// 3. if several configs of non-unique-name exist and one with known monaco-controlled UUID is found that MUST be updated
 	assert.NilError(t, err)
-	e, err = c.UpsertConfigByNonUniqueNameAndId(a, expectedUUID, name, payload)
+	e, err = c.UpsertConfigByNonUniqueNameAndId(context.TODO(), a, expectedUUID, name, payload)
 	assert.NilError(t, err)
 	assert.Equal(t, e.Id, expectedUUID)
 	assert.Assert(t, len(getConfigsOfName(t, c, a, name)) == 3, "Expected three configs of name %q but found %d", name, len(existing))
@@ -112,7 +113,7 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 
 func getConfigsOfName(t *testing.T, c dtclient.Client, a api.API, name string) []dtclient.Value {
 	var existingEntities []dtclient.Value
-	entities, err := c.ListConfigs(a)
+	entities, err := c.ListConfigs(context.TODO(), a)
 	assert.NilError(t, err)
 	for _, e := range entities {
 		if e.Name == name {

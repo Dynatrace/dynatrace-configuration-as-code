@@ -120,7 +120,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 
 	// Check if settings 2.0 object with "new" external ID exists
 	c = createSettingsClient(t, environment)
-	settings, _ := c.ListSettings("builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
+	settings, _ := c.ListSettings(context.TODO(), "builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
 		return object.ExternalId == extID
 	}})
 	assert.Len(t, settings, 1)
@@ -129,7 +129,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 	coord := sortedConfigs["platform_env"][0].Coordinate
 	coord.Project = ""
 	legacyExtID, _ := idutils.GenerateExternalID(coord)
-	settings, _ = c.ListSettings("builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
+	settings, _ = c.ListSettings(context.TODO(), "builtin:anomaly-detection.metric-events", dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(object dtclient.DownloadSettingsObject) bool {
 		return object.ExternalId == legacyExtID
 	}})
 	assert.Len(t, settings, 0)

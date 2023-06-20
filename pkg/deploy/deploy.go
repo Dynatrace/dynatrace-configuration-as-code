@@ -82,7 +82,7 @@ func DeployConfigs(clientSet ClientSet, apis api.APIs, sortedConfigs []config.Co
 
 func deploy(ctx context.Context, clientSet ClientSet, apis api.APIs, em *entityMap, c *config.Config) (*parameter.ResolvedEntity, []error) {
 	if c.Skip {
-		log.Info("\tSkipping deployment of config %s", c.Coordinate)
+		log.WithCtxFields(ctx).Info("Skipping deployment of config %s", c.Coordinate)
 		return &parameter.ResolvedEntity{EntityName: c.Coordinate.ConfigId, Coordinate: c.Coordinate, Properties: parameter.Properties{}, Skip: true}, nil
 	}
 
@@ -100,7 +100,7 @@ func deploy(ctx context.Context, clientSet ClientSet, apis api.APIs, em *entityM
 	var deployErr error
 	switch t := c.Type.(type) {
 	case config.EntityType:
-		log.Debug("Entity are not deployable, skipping entity type: %s", t.EntitiesType)
+		log.WithCtxFields(ctx).Debug("Entities are not deployable, skipping entity type: %s", t.EntitiesType)
 		return nil, nil
 
 	case config.SettingsType:
@@ -109,8 +109,7 @@ func deploy(ctx context.Context, clientSet ClientSet, apis api.APIs, em *entityM
 
 	case config.ClassicApiType:
 		log.WithCtxFields(ctx).Info("Deploying config %s", c.Coordinate)
-		// TODO: pass context
-		res, deployErr = deployClassicConfig(clientSet.Classic, apis, em, properties, renderedConfig, c)
+		res, deployErr = deployClassicConfig(ctx, clientSet.Classic, apis, em, properties, renderedConfig, c)
 
 	case config.AutomationType:
 		log.WithCtxFields(ctx).Info("Deploying config %s", c.Coordinate)
@@ -131,17 +130,4 @@ func deploy(ctx context.Context, clientSet ClientSet, apis api.APIs, em *entityM
 	}
 	return res, nil
 
-}
-
-func extractScope(properties parameter.Properties) (string, error) {
-	scope, ok := properties[config.ScopeParameter]
-	if !ok {
-		return "", fmt.Errorf("property '%s' not found, this is most likely a bug", config.ScopeParameter)
-	}
-
-	if scope == "" {
-		return "", fmt.Errorf("resolved scope is empty")
-	}
-
-	return fmt.Sprint(scope), nil
 }

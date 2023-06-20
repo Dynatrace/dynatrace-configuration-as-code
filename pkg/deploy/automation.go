@@ -67,7 +67,7 @@ func deployAutomation(ctx context.Context, client automationClient, properties p
 	if configName, err := extractConfigName(c, properties); err == nil {
 		name = configName
 	} else {
-		log.Warn("failed to extract name for automation object %q - ID will be used", resp.ID)
+		log.WithCtxFields(ctx).Warn("failed to extract name for automation object %q - ID will be used", resp.ID)
 	}
 
 	properties[config.IdParameter] = resp.ID
