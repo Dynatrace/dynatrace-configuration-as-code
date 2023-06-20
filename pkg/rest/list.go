@@ -17,6 +17,7 @@
 package rest
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/throttle"
@@ -46,13 +47,7 @@ func ListPaginated(client *http.Client, retrySettings RetrySettings, url *url.UR
 
 	resp, receivedCount, totalReceivedCount, _, err := runAndProcessResponse(client, retrySettings, false, url, addToResult, receivedCount, totalReceivedCount)
 	if err != nil {
-		return resp, RespError{
-			Type:       RespErrType,
-			Err:        err,
-			Message:    err.Error(),
-			Body:       string(resp.Body),
-			StatusCode: resp.StatusCode,
-		}
+		return buildResponseError(err, resp)
 	}
 
 	nbCalls := 1
@@ -71,13 +66,7 @@ func ListPaginated(client *http.Client, retrySettings RetrySettings, url *url.UR
 			var isLastAvailablePage bool
 			resp, receivedCount, totalReceivedCount, isLastAvailablePage, err = runAndProcessResponse(client, retrySettings, true, url, addToResult, receivedCount, totalReceivedCount)
 			if err != nil {
-				return resp, RespError{
-					Type:       RespErrType,
-					Err:        err,
-					Message:    err.Error(),
-					Body:       string(resp.Body),
-					StatusCode: resp.StatusCode,
-				}
+				return buildResponseError(err, resp)
 			}
 			if isLastAvailablePage {
 				break
@@ -86,13 +75,7 @@ func ListPaginated(client *http.Client, retrySettings RetrySettings, url *url.UR
 			retry := false
 			retry, emptyResponseRetryCount, err = isRetryOnEmptyResponse(receivedCount, emptyResponseRetryCount, resp)
 			if err != nil {
-				return resp, RespError{
-					Type:       RespErrType,
-					Err:        err,
-					Message:    err.Error(),
-					Body:       string(resp.Body),
-					StatusCode: resp.StatusCode,
-				}
+				return buildResponseError(err, resp)
 			}
 
 			if retry {
@@ -189,4 +172,12 @@ func validateRespErrors(isNextCall bool, err error, resp Response, urlPath strin
 		return isLastAvailablePage, fmt.Errorf("failed to get data from paginated API %s (HTTP %d)!\n    Response was: %s", urlPath, resp.StatusCode, string(resp.Body))
 	}
 
+}
+
+func buildResponseError(err error, resp Response) (Response, error) {
+	var respErr RespError
+	if errors.As(err, &respErr) {
+		return resp, fmt.Errorf("failed to process paginated API response: %w", respErr)
+	}
+	return resp, NewRespErr("failed to process paginated API response", resp).WithErr(err)
 }
