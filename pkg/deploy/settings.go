@@ -30,7 +30,7 @@ import (
 func deploySetting(ctx context.Context, settingsClient dtclient.SettingsClient, properties parameter.Properties, renderedConfig string, c *config.Config) (*parameter.ResolvedEntity, error) {
 	t, ok := c.Type.(config.SettingsType)
 	if !ok {
-		return &parameter.ResolvedEntity{}, fmt.Errorf("config was not of expected type %q, but %q", config.SettingsTypeId, c.Type.ID())
+		return &parameter.ResolvedEntity{}, newConfigDeployErr(c, fmt.Sprintf("config was not of expected type %q, but %q", config.SettingsTypeId, c.Type.ID()))
 	}
 
 	scope, err := extractScope(properties)
@@ -47,7 +47,7 @@ func deploySetting(ctx context.Context, settingsClient dtclient.SettingsClient, 
 		OriginObjectId: c.OriginObjectId,
 	})
 	if err != nil {
-		return &parameter.ResolvedEntity{}, err
+		return &parameter.ResolvedEntity{}, newConfigDeployErr(c, err.Error()).withError(err)
 	}
 
 	name := fmt.Sprintf("[UNKNOWN NAME]%s", entity.Id)
@@ -59,7 +59,7 @@ func deploySetting(ctx context.Context, settingsClient dtclient.SettingsClient, 
 
 	properties[config.IdParameter], err = getEntityID(c, entity)
 	if err != nil {
-		return &parameter.ResolvedEntity{}, err
+		return &parameter.ResolvedEntity{}, newConfigDeployErr(c, err.Error()).withError(err)
 	}
 
 	properties[config.NameParameter] = name

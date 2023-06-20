@@ -66,6 +66,7 @@ type configDeployErr struct {
 	Config             coordinate.Coordinate
 	EnvironmentDetails configErrors.EnvironmentDetails
 	Reason             string
+	Err                error
 }
 
 func newConfigDeployErr(conf *config.Config, reason string) configDeployErr {
@@ -79,6 +80,11 @@ func newConfigDeployErr(conf *config.Config, reason string) configDeployErr {
 	}
 }
 
+func (e configDeployErr) withError(err error) configDeployErr {
+	e.Err = err
+	return e
+}
+
 func (e configDeployErr) Coordinates() coordinate.Coordinate {
 	return e.Config
 }
@@ -87,6 +93,13 @@ func (e configDeployErr) LocationDetails() configErrors.EnvironmentDetails {
 	return e.EnvironmentDetails
 }
 
+func (e configDeployErr) Unwrap() error {
+	return e.Err
+}
+
 func (e configDeployErr) Error() string {
+	if e.Err != nil {
+		return e.Err.Error()
+	}
 	return e.Reason
 }
