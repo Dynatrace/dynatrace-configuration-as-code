@@ -457,7 +457,7 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 
 	resp, err := rest.SendWithRetryWithInitialTry(ctx, d.client, rest.Post, obj.Coordinate.ConfigId, requestUrl, payload, d.retrySettings.Normal)
 	if err != nil {
-		return DynatraceEntity{}, rest.NewRespErr("failed to create or update Settings object", resp).WithErr(err)
+		return DynatraceEntity{}, fmt.Errorf("failed to create or update Settings object with externalId %s: %w", externalID, err)
 	}
 
 	if !resp.IsSuccess() {
