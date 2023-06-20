@@ -19,6 +19,7 @@ package dtclient
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
@@ -144,24 +145,28 @@ func createDynatraceObject(ctx context.Context, client *http.Client, urlString s
 
 	resp, err := callWithRetryOnKnowTimingIssue(ctx, client, rest.Post, objectName, parsedUrl.String(), body, theApi, retrySettings)
 	if err != nil {
+		var respErr rest.RespError
+		if errors.As(err, &respErr) {
+			return DynatraceEntity{}, respErr.WithRequestInfo(http.MethodPost, parsedUrl.String())
+		}
 		return DynatraceEntity{}, err
 	}
 
 	if !resp.IsSuccess() {
-		return DynatraceEntity{}, rest.NewRespErr(fmt.Sprintf("Failed to create DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body)), resp)
+		return DynatraceEntity{}, rest.NewRespErr(fmt.Sprintf("Failed to create DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodPost, parsedUrl.String())
 	}
 
-	return unmarshalResponse(ctx, resp, urlString, configType, objectName)
+	return unmarshalCreateResponse(ctx, resp, urlString, configType, objectName)
 }
 
-func unmarshalResponse(ctx context.Context, resp rest.Response, fullUrl string, configType string, objectName string) (DynatraceEntity, error) {
+func unmarshalCreateResponse(ctx context.Context, resp rest.Response, fullUrl string, configType string, objectName string) (DynatraceEntity, error) {
 	var dtEntity DynatraceEntity
 
 	if configType == "synthetic-monitor" || configType == "synthetic-location" {
 		var entity SyntheticEntity
 		err := json.Unmarshal(resp.Body, &entity)
 		if errutils.CheckError(err, "Failed to unmarshal Synthetic API response") {
-			return DynatraceEntity{}, rest.NewRespErr("Failed to unmarshal Synthetic API response", resp).WithErr(err)
+			return DynatraceEntity{}, rest.NewRespErr("Failed to unmarshal Synthetic API response", resp).WithRequestInfo(http.MethodPost, fullUrl).WithErr(err)
 		}
 		dtEntity = translateSyntheticEntityResponse(entity, objectName)
 
@@ -172,7 +177,7 @@ func unmarshalResponse(ctx context.Context, resp rest.Response, fullUrl string, 
 		// ID of the config.
 
 		if len(locationSlice) == 0 {
-			return DynatraceEntity{}, rest.NewRespErr(fmt.Sprintf("location response header was empty for API %s (name: %s)", configType, objectName), resp)
+			return DynatraceEntity{}, rest.NewRespErr(fmt.Sprintf("location response header was empty for API %s (name: %s)", configType, objectName), resp).WithRequestInfo(http.MethodPost, fullUrl)
 		}
 
 		location := locationSlice[0]
@@ -190,10 +195,10 @@ func unmarshalResponse(ctx context.Context, resp rest.Response, fullUrl string, 
 	} else {
 		err := json.Unmarshal(resp.Body, &dtEntity)
 		if errutils.CheckError(err, "Failed to unmarshal API response") {
-			return DynatraceEntity{}, rest.NewRespErr("Failed to unmarshal API response", resp).WithErr(err)
+			return DynatraceEntity{}, rest.NewRespErr("Failed to unmarshal API response", resp).WithRequestInfo(http.MethodPost, fullUrl).WithErr(err)
 		}
 		if dtEntity.Id == "" && dtEntity.Name == "" {
-			return DynatraceEntity{}, rest.NewRespErr(fmt.Sprintf("cannot parse API response '%s' into Dynatrace Entity with Id and Name", resp.Body), resp)
+			return DynatraceEntity{}, rest.NewRespErr(fmt.Sprintf("cannot parse API response '%s' into Dynatrace Entity with Id and Name", resp.Body), resp).WithRequestInfo(http.MethodPost, fullUrl)
 		}
 	}
 	log.WithCtxFields(ctx).Debug("\tCreated new object for %s (%s)", dtEntity.Name, dtEntity.Id)
@@ -219,11 +224,15 @@ func updateDynatraceObject(ctx context.Context, client *http.Client, fullUrl str
 	resp, err := callWithRetryOnKnowTimingIssue(ctx, client, rest.Put, objectName, path, body, theApi, retrySettings)
 
 	if err != nil {
+		var respErr rest.RespError
+		if errors.As(err, &respErr) {
+			return DynatraceEntity{}, respErr.WithRequestInfo(http.MethodPut, path)
+		}
 		return DynatraceEntity{}, err
 	}
 
 	if !resp.IsSuccess() {
-		return DynatraceEntity{}, rest.NewRespErr(fmt.Sprintf("Failed to update Config object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body)), resp)
+		return DynatraceEntity{}, rest.NewRespErr(fmt.Sprintf("Failed to update Config object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodPut, path)
 	}
 
 	if theApi.NonUniqueName {
@@ -433,7 +442,7 @@ func getExistingValuesFromEndpoint(ctx context.Context, client *http.Client, the
 	}
 
 	if !resp.IsSuccess() {
-		return nil, rest.NewRespErr(fmt.Sprintf("Failed to get existing configs for API %s (HTTP %d)!\n    Response was: %s", theApi.ID, resp.StatusCode, string(resp.Body)), resp)
+		return nil, rest.NewRespErr(fmt.Sprintf("Failed to get existing configs for API %s (HTTP %d)!\n    Response was: %s", theApi.ID, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodGet, parsedUrl.String())
 	}
 
 	var existingValues []Value
@@ -454,7 +463,7 @@ func getExistingValuesFromEndpoint(ctx context.Context, client *http.Client, the
 			}
 
 			if !resp.IsSuccess() && resp.StatusCode != http.StatusBadRequest {
-				return nil, rest.NewRespErr(fmt.Sprintf("Failed to get further configs from paginated API %s (HTTP %d)!\n    Response was: %s", theApi.ID, resp.StatusCode, string(resp.Body)), resp)
+				return nil, rest.NewRespErr(fmt.Sprintf("Failed to get further configs from paginated API %s (HTTP %d)!\n    Response was: %s", theApi.ID, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodGet, parsedUrl.String())
 			} else if resp.StatusCode == http.StatusBadRequest {
 				log.WithCtxFields(ctx).Warn("Failed to get additional data from paginated API %s - pages may have been removed during request.\n    Response was: %s", theApi.ID, string(resp.Body))
 				break

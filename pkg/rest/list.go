@@ -48,7 +48,7 @@ func ListPaginated(ctx context.Context, client *http.Client, retrySettings Retry
 
 	resp, receivedCount, totalReceivedCount, _, err := runAndProcessResponse(ctx, client, retrySettings, false, url, addToResult, receivedCount, totalReceivedCount)
 	if err != nil {
-		return buildResponseError(err, resp)
+		return buildResponseError(err, resp, url)
 	}
 
 	nbCalls := 1
@@ -67,7 +67,7 @@ func ListPaginated(ctx context.Context, client *http.Client, retrySettings Retry
 			var isLastAvailablePage bool
 			resp, receivedCount, totalReceivedCount, isLastAvailablePage, err = runAndProcessResponse(ctx, client, retrySettings, true, url, addToResult, receivedCount, totalReceivedCount)
 			if err != nil {
-				return buildResponseError(err, resp)
+				return buildResponseError(err, resp, url)
 			}
 			if isLastAvailablePage {
 				break
@@ -76,7 +76,7 @@ func ListPaginated(ctx context.Context, client *http.Client, retrySettings Retry
 			retry := false
 			retry, emptyResponseRetryCount, err = isRetryOnEmptyResponse(receivedCount, emptyResponseRetryCount, resp)
 			if err != nil {
-				return buildResponseError(err, resp)
+				return buildResponseError(err, resp, url)
 			}
 
 			if retry {
@@ -175,10 +175,10 @@ func validateRespErrors(isNextCall bool, err error, resp Response, urlPath strin
 
 }
 
-func buildResponseError(err error, resp Response) (Response, error) {
+func buildResponseError(err error, resp Response, url *url.URL) (Response, error) {
 	var respErr RespError
 	if errors.As(err, &respErr) {
 		return resp, fmt.Errorf("failed to process paginated API response: %w", respErr)
 	}
-	return resp, NewRespErr("failed to process paginated API response", resp).WithErr(err)
+	return resp, NewRespErr("failed to process paginated API response", resp).WithRequestInfo(http.MethodGet, url.String()).WithErr(err)
 }
