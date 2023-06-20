@@ -79,20 +79,12 @@ func FromCtx(ctx context.Context) loggers.Logger {
 	loggr := std
 	fields := make([]loggers.Field, 2)
 	if c, ok := ctx.Value(CtxKeyCoord{}).(coordinate.Coordinate); ok {
-		fields[0] = loggers.F("coordinate", c)
+		fields[0] = loggers.CoordinateF(c)
 	}
 	if e, ok := ctx.Value(CtxKeyEnv{}).(CtxValEnv); ok {
-		fields[1] = loggers.F("environment", e)
+		fields[1] = loggers.EnvironmentF(e.Name)
 	}
 	return loggr.WithFields(fields...)
-}
-
-func HTTPErrToFields(errCode int, errMsg, errDetails string) []loggers.Field {
-	fields := make([]loggers.Field, 3)
-	fields[0] = loggers.F("code", errCode)
-	fields[1] = loggers.F("message", errMsg)
-	fields[2] = loggers.F("details", errDetails)
-	return fields
 }
 
 var (

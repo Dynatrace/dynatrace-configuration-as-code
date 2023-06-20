@@ -86,7 +86,8 @@ func TestWithFields(t *testing.T) {
 	assert.Equal(t, "Iglo", data["Name"])
 	assert.Equal(t, "p1", data["coordinate"].(map[string]interface{})["Project"])
 	assert.Equal(t, "t1", data["coordinate"].(map[string]interface{})["Type"])
-	assert.Equal(t, "c1", data["coordinate"].(map[string]interface{})["ConfigId"])
+	assert.Equal(t, "c1", data["coordinate"].(map[string]interface{})["ConfigID"])
+	assert.Equal(t, "p1:t1:c1", data["coordinate"].(map[string]interface{})["Reference"])
 	assert.Equal(t, "env1", data["environment"])
 }
 
@@ -104,7 +105,8 @@ func TestFromCtx(t *testing.T) {
 	assert.Equal(t, "Hi with context", data["msg"])
 	assert.Equal(t, "p1", data["coordinate"].(map[string]interface{})["Project"])
 	assert.Equal(t, "t1", data["coordinate"].(map[string]interface{})["Type"])
-	assert.Equal(t, "c1", data["coordinate"].(map[string]interface{})["ConfigId"])
-	assert.Equal(t, "e1", data["environment"].(map[string]interface{})["Name"])
+	assert.Equal(t, "c1", data["coordinate"].(map[string]interface{})["ConfigID"])
+	assert.Equal(t, "p1:t1:c1", data["coordinate"].(map[string]interface{})["Reference"])
+	assert.Equal(t, "e1", data["environment"])
 
 }

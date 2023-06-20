@@ -33,10 +33,26 @@ func F(key string, value interface{}) Field {
 
 // CoordinateF builds a Field containing information taken from the provided coordinate
 func CoordinateF(coordinate coordinate.Coordinate) Field {
-	return Field{"coordinate", coordinate}
+	return Field{"coordinate",
+		struct {
+			Reference string
+			Project   string
+			Type      string
+			ConfigID  string
+		}{
+			coordinate.String(),
+			coordinate.Project,
+			coordinate.Type,
+			coordinate.ConfigId,
+		}}
 }
 
 // EnvironmentF builds a Field containing environment information for structured logging
 func EnvironmentF(environment string) Field {
 	return Field{"environment", environment}
+}
+
+// ErrorF builds a Field containing error information for structured logging
+func ErrorF(err error) Field {
+	return Field{"error", err}
 }
