@@ -15,10 +15,12 @@
 package delete
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/delete"
@@ -61,7 +63,7 @@ func Delete(fs afero.Fs, deploymentManifestPath string, deleteFile string, envir
 	deleteErrors := deleteConfigs(maps.Values(manifest.Environments), apis, entriesToDelete)
 
 	for _, e := range deleteErrors {
-		log.Error("Deletion error: %s", e)
+		log.WithFields(field.Error(e)).Error("Deletion error: %s", e)
 	}
 	if len(deleteErrors) > 0 {
 		return fmt.Errorf("encountered %v errors during delete", len(deleteErrors))
@@ -83,8 +85,11 @@ func deleteConfigs(environments []manifest.EnvironmentDefinition, apis api.APIs,
 }
 
 func deleteConfigForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs, entriesToDelete map[string][]delete.DeletePointer) []error {
+
+	ctx := context.WithValue(context.TODO(), log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
+
 	if env.Auth.OAuth == nil {
-		log.Warn("No OAuth defined for environment - Dynatrace Platform configurations like Automations can not be deleted.")
+		log.WithCtxFields(ctx).Warn("No OAuth defined for environment - Dynatrace Platform configurations like Automations can not be deleted.")
 	}
 
 	clientSet, err := client.CreateClientSet(env.URL.Value, env.Auth)
@@ -94,9 +99,10 @@ func deleteConfigForEnvironment(env manifest.EnvironmentDefinition, apis api.API
 		}
 	}
 
-	log.Info("Deleting configs for environment `%s`...", env.Name)
+	log.WithCtxFields(ctx).Info("Deleting configs for environment `%s`...", env.Name)
 
 	return delete.Configs(
+		ctx,
 		delete.ClientSet{
 			Classic:    clientSet.Classic(),
 			Settings:   clientSet.Settings(),

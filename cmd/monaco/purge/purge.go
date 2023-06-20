@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/delete"
@@ -56,7 +57,7 @@ func purge(fs afero.Fs, deploymentManifestPath string, environmentNames []string
 	deleteErrors := purgeConfigs(maps.Values(mani.Environments), apis)
 
 	for _, e := range deleteErrors {
-		log.Error("Deletion error: %s", e)
+		log.WithFields(field.Error(e)).Error("Deletion error: %s", e)
 	}
 	if len(deleteErrors) > 0 {
 		return fmt.Errorf("encountered %v errors during delete", len(deleteErrors))
@@ -86,11 +87,13 @@ func purgeForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs) []er
 		}
 	}
 
-	log.Info("Deleting configs for environment `%s`", env.Name)
+	ctx := context.WithValue(context.TODO(), log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
 
-	errs := delete.AllConfigs(clients.Classic(), apis)
-	errs = append(errs, delete.AllSettingsObjects(clients.Settings())...)
-	errs = append(errs, delete.AllAutomations(context.TODO(), clients.Automation())...)
+	log.WithCtxFields(ctx).Info("Deleting configs for environment `%s`", env.Name)
+
+	errs := delete.AllConfigs(ctx, clients.Classic(), apis)
+	errs = append(errs, delete.AllSettingsObjects(ctx, clients.Settings())...)
+	errs = append(errs, delete.AllAutomations(ctx, clients.Automation())...)
 
 	return errs
 }
