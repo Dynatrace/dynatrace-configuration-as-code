@@ -428,7 +428,7 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 	})
 
 	if err != nil {
-		return DynatraceEntity{}, fmt.Errorf("unable to search Settings 2.0 object of schema %q with externalId %q", obj.SchemaId, legacyExternalID)
+		return DynatraceEntity{}, fmt.Errorf("unable to find Settings 2.0 object of schema %q with externalId %q: %w", obj.SchemaId, legacyExternalID, err)
 	}
 
 	externalID, err := d.generateExternalID(obj.Coordinate)
@@ -510,7 +510,7 @@ func (d *DynatraceClient) readConfigById(api api.API, id string) (json []byte, e
 	}
 
 	if !response.IsSuccess() {
-		return nil, fmt.Errorf("failed to get existing config for api %v (HTTP %v)!\n    Response was: %v", api.ID, response.StatusCode, string(response.Body))
+		return nil, rest.NewRespErr(fmt.Sprintf("failed to get existing config for api %v (HTTP %v)!\n    Response was: %v", api.ID, response.StatusCode, string(response.Body)), response)
 	}
 
 	return response.Body, nil

@@ -146,7 +146,7 @@ func createDynatraceObject(client *http.Client, urlString string, objectName str
 	}
 
 	if !resp.IsSuccess() {
-		return DynatraceEntity{}, fmt.Errorf("Failed to create DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
+		return DynatraceEntity{}, rest.NewRespErr(fmt.Sprintf("Failed to create DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body)), resp)
 	}
 
 	return unmarshalResponse(resp, urlString, configType, objectName)
@@ -158,8 +158,8 @@ func unmarshalResponse(resp rest.Response, fullUrl string, configType string, ob
 	if configType == "synthetic-monitor" || configType == "synthetic-location" {
 		var entity SyntheticEntity
 		err := json.Unmarshal(resp.Body, &entity)
-		if errutils.CheckError(err, "Cannot unmarshal Synthetic API response") {
-			return DynatraceEntity{}, err
+		if errutils.CheckError(err, "Failed to unmarshal Synthetic API response") {
+			return DynatraceEntity{}, rest.NewRespErr("Failed to unmarshal Synthetic API response", resp).WithErr(err)
 		}
 		dtEntity = translateSyntheticEntityResponse(entity, objectName)
 
@@ -170,8 +170,7 @@ func unmarshalResponse(resp rest.Response, fullUrl string, configType string, ob
 		// ID of the config.
 
 		if len(locationSlice) == 0 {
-			return DynatraceEntity{},
-				fmt.Errorf("location response header was empty for API %s (name: %s)", configType, objectName)
+			return DynatraceEntity{}, rest.NewRespErr(fmt.Sprintf("location response header was empty for API %s (name: %s)", configType, objectName), resp)
 		}
 
 		location := locationSlice[0]
@@ -188,11 +187,11 @@ func unmarshalResponse(resp rest.Response, fullUrl string, configType string, ob
 
 	} else {
 		err := json.Unmarshal(resp.Body, &dtEntity)
-		if errutils.CheckError(err, "Cannot unmarshal API response") {
-			return DynatraceEntity{}, err
+		if errutils.CheckError(err, "Failed to unmarshal API response") {
+			return DynatraceEntity{}, rest.NewRespErr("Failed to unmarshal API response", resp).WithErr(err)
 		}
 		if dtEntity.Id == "" && dtEntity.Name == "" {
-			return DynatraceEntity{}, fmt.Errorf("cannot parse API response '%s' into Dynatrace Entity with Id and Name", resp.Body)
+			return DynatraceEntity{}, rest.NewRespErr(fmt.Sprintf("cannot parse API response '%s' into Dynatrace Entity with Id and Name", resp.Body), resp)
 		}
 	}
 	log.Debug("\tCreated new object for %s (%s)", dtEntity.Name, dtEntity.Id)
@@ -222,7 +221,7 @@ func updateDynatraceObject(client *http.Client, fullUrl string, objectName strin
 	}
 
 	if !resp.IsSuccess() {
-		return DynatraceEntity{}, fmt.Errorf("Failed to update DT object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body))
+		return DynatraceEntity{}, rest.NewRespErr(fmt.Sprintf("Failed to update Config object %s (HTTP %d)!\n    Response was: %s", objectName, resp.StatusCode, string(resp.Body)), resp)
 	}
 
 	if theApi.NonUniqueName {
@@ -432,7 +431,7 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.API, urlStrin
 	}
 
 	if !resp.IsSuccess() {
-		return nil, fmt.Errorf("Failed to get existing configs for API %s (HTTP %d)!\n    Response was: %s", theApi.ID, resp.StatusCode, string(resp.Body))
+		return nil, rest.NewRespErr(fmt.Sprintf("Failed to get existing configs for API %s (HTTP %d)!\n    Response was: %s", theApi.ID, resp.StatusCode, string(resp.Body)), resp)
 	}
 
 	var existingValues []Value
@@ -453,7 +452,7 @@ func getExistingValuesFromEndpoint(client *http.Client, theApi api.API, urlStrin
 			}
 
 			if !resp.IsSuccess() && resp.StatusCode != http.StatusBadRequest {
-				return nil, fmt.Errorf("Failed to get further configs from paginated API %s (HTTP %d)!\n    Response was: %s", theApi.ID, resp.StatusCode, string(resp.Body))
+				return nil, rest.NewRespErr(fmt.Sprintf("Failed to get further configs from paginated API %s (HTTP %d)!\n    Response was: %s", theApi.ID, resp.StatusCode, string(resp.Body)), resp)
 			} else if resp.StatusCode == http.StatusBadRequest {
 				log.Warn("Failed to get additional data from paginated API %s - pages may have been removed during request.\n    Response was: %s", theApi.ID, string(resp.Body))
 				break

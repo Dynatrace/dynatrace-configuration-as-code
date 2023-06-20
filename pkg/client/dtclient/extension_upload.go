@@ -67,7 +67,7 @@ func uploadExtension(client *http.Client, apiPath string, extensionName string, 
 	if resp.StatusCode != http.StatusCreated {
 		return DynatraceEntity{
 			Name: extensionName,
-		}, fmt.Errorf("upload of %s failed with status %d! Response: %s", extensionName, resp.StatusCode, string(resp.Body))
+		}, rest.NewRespErr(fmt.Sprintf("upload of %s failed with status %d! Response: %s", extensionName, resp.StatusCode, string(resp.Body)), resp)
 	} else {
 		log.Debug("Extension upload successful for %s", extensionName)
 
