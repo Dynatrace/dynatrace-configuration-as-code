@@ -23,6 +23,7 @@ import (
 	"fmt"
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	client "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
@@ -63,16 +64,16 @@ func (d *Downloader) Download(projectName string, automationTypes ...config.Auto
 	for _, at := range automationTypes {
 		resource, ok := automationTypesToResources[at]
 		if !ok {
-			log.Warn("No resource mapping for automation type %s found", at.Resource)
+			log.WithFields(field.Type(string(at.Resource))).Warn("No resource mapping for automation type %s found", at.Resource)
 			continue
 		}
 		response, err := d.client.List(context.TODO(), resource)
 		if err != nil {
-			log.Error("Failed to fetch all objects for automation resource %s: %v", at.Resource, err)
+			log.WithFields(field.Type(string(at.Resource)), field.Error(err)).Error("Failed to fetch all objects for automation resource %s: %v", at.Resource, err)
 			continue
 		}
 
-		log.Info("Downloaded %d objects for automation resource %s", len(response), string(at.Resource))
+		log.WithFields(field.Type(string(at.Resource)), field.F("configsDownloaded", len(response))).Info("Downloaded %d objects for automation resource %s", len(response), string(at.Resource))
 		if len(response) == 0 {
 			continue
 		}
@@ -83,12 +84,12 @@ func (d *Downloader) Download(projectName string, automationTypes ...config.Auto
 			configId := obj.ID
 
 			if escaped, err := escapeJinjaTemplates(obj.Data); err != nil {
-				log.Warn("Failed to escape automation templating expressions for config %v (%s) - template needs manual adaptation: %v", configId, at.Resource, err)
+				log.WithFields(field.Coordinate(coordinate.Coordinate{Project: projectName, Type: string(at.Resource), ConfigId: configId}), field.Error(err)).Warn("Failed to escape automation templating expressions for config %v (%s) - template needs manual adaptation: %v", configId, at.Resource, err)
 			} else {
 				obj.Data = escaped
 			}
 
-			t, configName := createTemplateFromRawJSON(obj, string(at.Resource))
+			t, configName := createTemplateFromRawJSON(obj, string(at.Resource), projectName)
 
 			c := config.Config{
 				Template: t,
@@ -121,13 +122,13 @@ func escapeJinjaTemplates(src []byte) ([]byte, error) {
 type NoopAutomationDownloader struct {
 }
 
-func createTemplateFromRawJSON(obj client.Response, configType string) (t template.Template, extractedName string) {
+func createTemplateFromRawJSON(obj client.Response, configType, projectName string) (t template.Template, extractedName string) {
 	configId := obj.ID
 
 	var data map[string]interface{}
 	err := json.Unmarshal(obj.Data, &data)
 	if err != nil {
-		log.Warn("Failed to sanitize downloaded JSON for config %v (%s) - template may need manual cleanup: %v", configId, configType, err)
+		log.WithFields(field.Coordinate(coordinate.Coordinate{Project: projectName, Type: configType, ConfigId: configId}), field.Error(err)).Warn("Failed to sanitize downloaded JSON for config %v (%s) - template may need manual cleanup: %v", configId, configType, err)
 		return template.NewDownloadTemplate(configId, configId, string(obj.Data)), configId
 	}
 
@@ -147,7 +148,7 @@ func createTemplateFromRawJSON(obj client.Response, configType string) (t templa
 	if modifiedJson, err := json.Marshal(data); err == nil {
 		content = modifiedJson
 	} else {
-		log.Warn("Failed to sanitize downloaded JSON for config %v (%s) - template may need manual cleanup: %v", configId, configType, err)
+		log.WithFields(field.Coordinate(coordinate.Coordinate{Project: projectName, Type: configType, ConfigId: configId}), field.Error(err)).Warn("Failed to sanitize downloaded JSON for config %v (%s) - template may need manual cleanup: %v", configId, configType, err)
 		content = obj.Data
 	}
 	content = jsonutils.MarshalIndent(content)

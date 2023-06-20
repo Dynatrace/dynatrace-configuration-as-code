@@ -47,6 +47,12 @@ func Coordinate(coordinate coordinate.Coordinate) Field {
 		}}
 }
 
+// Type builds a Field containing information about a config type. This is used in cases where no full coordinate exists,
+// but only a config type is known - for example in download or deletion
+func Type(t string) Field {
+	return Field{"type", t}
+}
+
 // Environment builds a Field containing environment information for structured logging
 func Environment(environment, group string) Field {
 	return Field{"environment",

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/timeutils"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
@@ -95,7 +96,7 @@ func writeToDisk(fs afero.Fs, writerContext WriterContext) error {
 		return fmt.Errorf("failed to persist downloaded configurations")
 	}
 
-	log.Info("Downloaded configurations written to '%s'", outputFolder)
+	log.WithFields(field.F("outputFolder", outputFolder)).Info("Downloaded configurations written to '%s'", outputFolder)
 	return nil
 }
 
@@ -108,12 +109,12 @@ func getManifestFileName(fs afero.Fs, writerContext WriterContext) string {
 	}
 
 	if writerContext.ForceOverwrite {
-		log.Info("Overwriting existing manifest.yaml in download target folder.")
+		log.WithFields(field.F("outputFolder", outputFolder), field.F("manifestFile", "manifest.yaml")).Info("Overwriting existing manifest.yaml in download target folder.")
 		return manifestFileName
 	}
 
 	manifestFileName = fmt.Sprintf("manifest_%s.yaml", writerContext.timestampString)
-	log.Warn("A manifest.yaml file already exists in %q, creating %q instead.", outputFolder, manifestFileName)
+	log.WithFields(field.F("outputFolder", outputFolder), field.F("manifestFile", manifestFileName)).Warn("A manifest.yaml file already exists in %q, creating %q instead.", outputFolder, manifestFileName)
 	return manifestFileName
 }
 
@@ -126,11 +127,11 @@ func getProjectFolderName(fs afero.Fs, writerContext WriterContext) string {
 	}
 
 	if writerContext.ForceOverwrite {
-		log.Info("Overwriting existing project folder named %q in %q.", projectFolderName, outputFolder)
+		log.WithFields(field.F("outputFolder", outputFolder), field.F("projectFolder", projectFolderName)).Info("Overwriting existing project folder named %q in %q.", projectFolderName, outputFolder)
 		return projectFolderName
 	}
 
 	projectFolderName = fmt.Sprintf("%s_%s", writerContext.ProjectToWrite.Id, writerContext.timestampString)
-	log.Warn("A project folder named %q already exists in %q, creating %q instead.", writerContext.ProjectToWrite.Id, outputFolder, projectFolderName)
+	log.WithFields(field.F("outputFolder", outputFolder), field.F("projectFolder", projectFolderName)).Warn("A project folder named %q already exists in %q, creating %q instead.", writerContext.ProjectToWrite.Id, outputFolder, projectFolderName)
 	return projectFolderName
 }
