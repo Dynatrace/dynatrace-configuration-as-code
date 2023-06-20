@@ -29,6 +29,12 @@ type RespError struct {
 	Message    string
 	Body       string
 	StatusCode int
+	Request    *RequestInfo
+}
+
+type RequestInfo struct {
+	Method string
+	URL    string
 }
 
 func NewRespErr(msg string, resp Response) RespError {
@@ -42,6 +48,14 @@ func NewRespErr(msg string, resp Response) RespError {
 
 func (e RespError) WithErr(err error) RespError {
 	e.Err = err
+	return e
+}
+
+func (e RespError) WithRequestInfo(reqMethod, reqURL string) RespError {
+	e.Request = &RequestInfo{
+		Method: reqMethod,
+		URL:    reqURL,
+	}
 	return e
 }
 

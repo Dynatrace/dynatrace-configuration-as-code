@@ -173,7 +173,8 @@ func (a Client) upsert(ctx context.Context, resourceType ResourceType, id string
 		return nil, fmt.Errorf("unable to remove id field from payload in order to update object with ID %s: %w", id, err)
 	}
 	// try update via HTTP PUT
-	resp, err := rest.Put(a.client, a.url+a.resources[resourceType].Path+"/"+id, data)
+	url := a.url + a.resources[resourceType].Path + "/" + id
+	resp, err := rest.Put(a.client, url, data)
 	if err != nil {
 		return nil, fmt.Errorf("unable to update object with ID %s: %w", id, err)
 	}
@@ -189,7 +190,7 @@ func (a Client) upsert(ctx context.Context, resourceType ResourceType, id string
 
 	// check if we get an error except 404
 	if !resp.IsSuccess() && resp.StatusCode != http.StatusNotFound {
-		return nil, rest.NewRespErr(fmt.Sprintf("failed to update object with ID %s (HTTP %d): %s", id, resp.StatusCode, string(resp.Body)), resp)
+		return nil, rest.NewRespErr(fmt.Sprintf("failed to update object with ID %s (HTTP %d): %s", id, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodPut, url)
 	}
 
 	// at this point we need to create a new object using HTTP POST
@@ -203,14 +204,15 @@ func (a Client) create(ctx context.Context, id string, data []byte, resourceType
 	}
 
 	// try to create a new object using HTTP POST
-	resp, err := rest.Post(a.client, a.url+a.resources[resourceType].Path, data)
+	url := a.url + a.resources[resourceType].Path
+	resp, err := rest.Post(a.client, url, data)
 	if err != nil {
 		return nil, err
 	}
 
 	// handle response err
 	if !resp.IsSuccess() {
-		return nil, rest.NewRespErr(fmt.Sprintf("failed to create object with ID %s (HTTP %d): %s", id, resp.StatusCode, string(resp.Body)), resp)
+		return nil, rest.NewRespErr(fmt.Sprintf("failed to create object with ID %s (HTTP %d): %s", id, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodPost, url)
 
 	}
 
@@ -218,7 +220,7 @@ func (a Client) create(ctx context.Context, id string, data []byte, resourceType
 	var e Response
 	err = json.Unmarshal(resp.Body, &e)
 	if err != nil {
-		return nil, rest.NewRespErr("failed to unmarshal response", resp).WithErr(err)
+		return nil, rest.NewRespErr("failed to unmarshal response", resp).WithRequestInfo(http.MethodPost, url).WithErr(err)
 	}
 
 	// check if id from response is indeed the same as desired

@@ -62,7 +62,7 @@ func DeleteConfig(client *http.Client, url string, id string) error {
 	}
 
 	if !resp.IsSuccess() {
-		return NewRespErr(fmt.Sprintf("failed call to DELETE %s (HTTP %d)!\n Response was:\n %s", fullPath, resp.StatusCode, string(resp.Body)), resp)
+		return NewRespErr(fmt.Sprintf("failed call to DELETE %s (HTTP %d)!\n Response was:\n %s", fullPath, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodDelete, url)
 	}
 
 	return nil
