@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"strings"
@@ -85,7 +86,7 @@ func (d *Downloader) downloadAll(projectName string) (v2.ConfigsPerType, error) 
 	// get ALL schemas
 	schemas, err := d.client.ListSchemas()
 	if err != nil {
-		log.Error("Failed to fetch all known schemas. Skipping settings download. Reason: %s", err)
+		log.WithFields(field.Error(err)).Error("Failed to fetch all known schemas. Skipping settings download. Reason: %s", err)
 		return nil, err
 	}
 	// convert to list of IDs
@@ -101,7 +102,7 @@ func (d *Downloader) downloadAll(projectName string) (v2.ConfigsPerType, error) 
 func (d *Downloader) downloadSpecific(projectName string, schemaIDs []string) (v2.ConfigsPerType, error) {
 	if ok, unknownSchemas := validateSpecificSchemas(d.client, schemaIDs); !ok {
 		err := fmt.Errorf("requested settings-schema(s) '%v' are not known", strings.Join(unknownSchemas, ","))
-		log.Error("%v. Please consult the documentation for available schemas and verify they are available in your environment.", err)
+		log.WithFields(field.F("unknownSchemas", unknownSchemas), field.Error(err)).Error("%v. Please consult the documentation for available schemas and verify they are available in your environment.", err)
 		return nil, err
 	}
 	log.Debug("Settings to download: \n - %v", strings.Join(schemaIDs, "\n - "))
@@ -117,8 +118,8 @@ func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPe
 	for _, schema := range schemas {
 		go func(s string) {
 			defer wg.Done()
-			log.Debug("Downloading all settings for schema %s", s)
-			objects, err := d.client.ListSettings(context.TODO(), s, dtclient.ListSettingsOptions{}) //TODO: real context
+			log.WithFields(field.F("type", s)).Debug("Downloading all settings for schema %s", s)
+			objects, err := d.client.ListSettings(context.TODO(), s, dtclient.ListSettingsOptions{})
 			if err != nil {
 				var errMsg string
 				var respErr clientErrors.RespError
@@ -127,10 +128,10 @@ func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPe
 				} else {
 					errMsg = err.Error()
 				}
-				log.Error("Failed to fetch all settings for schema %s: %v", s, errMsg)
+				log.WithFields(field.F("type", s), field.Error(err)).Error("Failed to fetch all settings for schema %s: %v", s, errMsg)
 				return
 			}
-			log.Info("Downloaded %d settings for schema %s", len(objects), s)
+			log.WithFields(field.F("type", s), field.F("configsDownloaded", len(objects))).Info("Downloaded %d settings for schema %s", len(objects), s)
 			if len(objects) == 0 {
 				return
 			}
@@ -140,7 +141,7 @@ func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPe
 			results[s] = cfgs
 			downloadMutex.Unlock()
 
-			log.Debug("Finished downloading all (%d) settings for schema %s", len(objects), s)
+			log.WithFields(field.F("type", s), field.F("configsDownloaded", len(objects))).Debug("Finished downloading all (%d) settings for schema %s", len(objects), s)
 		}(schema)
 	}
 	wg.Wait()
@@ -153,19 +154,19 @@ func (d *Downloader) convertAllObjects(objects []dtclient.DownloadSettingsObject
 	for _, o := range objects {
 
 		if shouldFilterUnmodifiableSettings() && o.ModificationInfo != nil && !o.ModificationInfo.Modifiable {
-			log.Debug("Discarded settings object %q (%s). Reason: Unmodifiable default setting.", o.ObjectId, o.SchemaId)
+			log.WithFields(field.F("type", o.SchemaId), field.F("object", o)).Debug("Discarded settings object %q (%s). Reason: Unmodifiable default setting.", o.ObjectId, o.SchemaId)
 			continue
 		}
 
 		// try to unmarshall settings value
 		var contentUnmarshalled map[string]interface{}
 		if err := json.Unmarshal(o.Value, &contentUnmarshalled); err != nil {
-			log.Error("Unable to unmarshal JSON value of settings 2.0 object: %v", err)
+			log.WithFields(field.F("type", o.SchemaId), field.F("object", o)).Error("Unable to unmarshal JSON value of settings 2.0 object: %v", err)
 			return result
 		}
 		// skip discarded settings objects
 		if shouldDiscard, reason := d.filters.Get(o.SchemaId).ShouldDiscard(contentUnmarshalled); shouldFilterSettings() && shouldDiscard {
-			log.Debug("Discarded setting object %q (%s). Reason: %s", o.ObjectId, o.SchemaId, reason)
+			log.WithFields(field.F("type", o.SchemaId), field.F("object", o)).Debug("Discarded setting object %q (%s). Reason: %s", o.ObjectId, o.SchemaId, reason)
 			continue
 		}
 
@@ -210,7 +211,7 @@ func validateSpecificSchemas(c dtclient.SettingsClient, schemas []string) (valid
 
 	schemaList, err := c.ListSchemas()
 	if err != nil {
-		log.Error("failed to query available Settings Schemas: %v", err)
+		log.WithFields(field.Error(err)).Error("failed to query available Settings Schemas: %v", err)
 		return false, schemas
 	}
 	knownSchemas := make(map[string]struct{}, len(schemaList))

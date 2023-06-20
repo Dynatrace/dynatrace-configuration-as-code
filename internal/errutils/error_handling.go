@@ -19,6 +19,7 @@ package errutils
 import (
 	"errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	"os"
 )
 
@@ -45,9 +46,9 @@ func PrintError(err error) {
 	var prettyPrintError PrettyPrintableError
 
 	if errors.As(err, &prettyPrintError) {
-		log.Error(prettyPrintError.PrettyError())
+		log.WithFields(field.Error(err)).Error(prettyPrintError.PrettyError())
 	} else if err != nil {
-		log.Error(err.Error())
+		log.WithFields(field.Error(err)).Error(err.Error())
 	}
 }
 
@@ -66,7 +67,7 @@ func FailOnError(err error, msg string) {
 
 func CheckError(err error, msg string) bool {
 	if err != nil {
-		log.Error(msg + ": " + err.Error())
+		log.WithFields(field.Error(err)).Error(msg + ": " + err.Error())
 		return true
 	}
 	return false
@@ -87,9 +88,9 @@ func PrintWarning(err error) {
 	var prettyPrintError PrettyPrintableError
 
 	if errors.As(err, &prettyPrintError) {
-		log.Warn(prettyPrintError.PrettyError())
+		log.WithFields(field.Error(err)).Warn(prettyPrintError.PrettyError())
 	} else if err != nil {
-		log.Warn(err.Error())
+		log.WithFields(field.Error(err)).Warn(err.Error())
 	}
 }
 

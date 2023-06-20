@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	"golang.org/x/exp/maps"
 	"strings"
@@ -84,7 +85,7 @@ func (d *Downloader) Download(projectName string, specificAPIs ...config.Classic
 
 	if ok, unknownApis := validateSpecificAPIs(d.apisToDownload, specificAPINames); !ok {
 		err := fmt.Errorf("requested APIs '%v' are not known", strings.Join(unknownApis, ","))
-		log.Error("%v. Please consult our documentation for known API names.", err)
+		log.WithFields(field.F("unkownAPIs", unknownApis), field.Error(err)).Error("%v. Please consult our documentation for known API names.", err)
 		return nil, err
 	}
 
@@ -115,7 +116,7 @@ func filterAPIs(apis api.APIs, specificAPIs []string) api.APIs {
 
 func skipDownloadFilter(api api.API) bool {
 	if api.SkipDownload {
-		log.Info("API can not be downloaded and needs manual creation: '%v'.", api.ID)
+		log.WithFields(field.Type(api.ID)).Info("API can not be downloaded and needs manual creation: '%v'.", api.ID)
 		return true
 	}
 	return false
@@ -123,7 +124,7 @@ func skipDownloadFilter(api api.API) bool {
 
 func removeDeprecatedEndpoints(api api.API) bool {
 	if api.DeprecatedBy != "" {
-		log.Warn("API %q is deprecated by %q and will not be downloaded", api.ID, api.DeprecatedBy)
+		log.WithFields(field.Type(api.ID)).Warn("API %q is deprecated by %q and will not be downloaded", api.ID, api.DeprecatedBy)
 		return true
 	}
 	return false
@@ -144,21 +145,21 @@ func (d *Downloader) downloadAPIs(apisToDownload api.APIs, projectName string) p
 			defer wg.Done()
 			configsToDownload, err := d.findConfigsToDownload(currentApi)
 			if err != nil {
-				log.Error("\tFailed to fetch configs of type '%v', skipping download of this type. Reason: %v", currentApi.ID, err)
+				log.WithFields(field.Type(currentApi.ID), field.Error(err)).Error("\tFailed to fetch configs of type '%v', skipping download of this type. Reason: %v", currentApi.ID, err)
 				return
 			}
 			// filter all configs we do not want to download. All remaining will be downloaded
 			configsToDownload = d.filterConfigsToSkip(currentApi, configsToDownload)
 
 			if len(configsToDownload) == 0 {
-				log.Debug("\tNo configs of type '%v' to download", currentApi.ID)
+				log.WithFields(field.Type(currentApi.ID)).Debug("\tNo configs of type '%v' to download", currentApi.ID)
 				return
 			}
 
-			log.Debug("\tFound %d configs of type '%v' to download", len(configsToDownload), currentApi.ID)
+			log.WithFields(field.Type(currentApi.ID), field.F("configsToDownload", len(configsToDownload))).Debug("\tFound %d configs of type '%v' to download", len(configsToDownload), currentApi.ID)
 			cfgs := d.downloadConfigsOfAPI(currentApi, configsToDownload, projectName)
 
-			log.Debug("\tFinished downloading all configs of type '%v'", currentApi.ID)
+			log.WithFields(field.Type(currentApi.ID), field.F("configsDownloaded", len(cfgs))).Debug("\tFinished downloading all configs of type '%v'", currentApi.ID)
 			if len(cfgs) > 0 {
 				mutex.Lock()
 				results[currentApi.ID] = cfgs
@@ -188,18 +189,18 @@ func (d *Downloader) downloadConfigsOfAPI(api api.API, values []dtclient.Value, 
 			defer wg.Done()
 			downloadedJson, err := d.downloadAndUnmarshalConfig(api, value)
 			if err != nil {
-				log.Error("Error fetching config '%v' in api '%v': %v", value.Id, api.ID, err)
+				log.WithFields(field.Type(api.ID), field.F("value", value), field.Error(err)).Error("Error fetching config '%v' in api '%v': %v", value.Id, api.ID, err)
 				return
 			}
 
 			if !d.shouldPersist(api, downloadedJson) {
-				log.Debug("\tSkipping persisting config %v (%v) in API %v", value.Id, value.Name, api.ID)
+				log.WithFields(field.Type(api.ID), field.F("value", value)).Debug("\tSkipping persisting config %v (%v) in API %v", value.Id, value.Name, api.ID)
 				return
 			}
 
 			c, err := d.createConfigForDownloadedJson(downloadedJson, api, value, projectName)
 			if err != nil {
-				log.Error("Error creating config for %v in api %v: %v", value.Id, api.ID, err)
+				log.WithFields(field.Type(api.ID), field.F("value", value), field.Error(err)).Error("Error creating config for %v in api %v: %v", value.Id, api.ID, err)
 				return
 			}
 
@@ -265,14 +266,14 @@ func (d *Downloader) createTemplate(mappedJson map[string]interface{}, value dtc
 
 func (d *Downloader) findConfigsToDownload(currentApi api.API) ([]dtclient.Value, error) {
 	if currentApi.SingleConfiguration {
-		log.Debug("\tFetching singleton-configuration '%v'", currentApi.ID)
+		log.WithFields(field.Type(currentApi.ID)).Debug("\tFetching singleton-configuration '%v'", currentApi.ID)
 
 		// singleton-config. We use the api-id as mock-id
 		singletonConfigToDownload := dtclient.Value{Id: currentApi.ID, Name: currentApi.ID}
 		return []dtclient.Value{singletonConfigToDownload}, nil
 	}
-	log.Debug("\tFetching all '%v' configs", currentApi.ID)
-	return d.client.ListConfigs(context.TODO(), currentApi) //TODO: real context
+	log.WithFields(field.Type(currentApi.ID)).Debug("\tFetching all '%v' configs", currentApi.ID)
+	return d.client.ListConfigs(context.TODO(), currentApi)
 }
 
 func (d *Downloader) shouldPersist(a api.API, json map[string]interface{}) bool {
@@ -308,7 +309,7 @@ func (d *Downloader) filterConfigsToSkip(a api.API, value []dtclient.Value) []dt
 		if !d.skipDownload(a, value) {
 			valuesToDownload = append(valuesToDownload, value)
 		} else {
-			log.Debug("Skipping download of config  '%v' of API '%v'", value.Id, a.ID)
+			log.WithFields(field.Type(a.ID), field.F("value", value)).Debug("Skipping download of config  '%v' of API '%v'", value.Id, a.ID)
 		}
 	}
 
