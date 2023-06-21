@@ -20,8 +20,8 @@ package rest
 
 import (
 	"errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/throttle"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/timeutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/throttle"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/golang/mock/gomock"
 	"gotest.tools/assert"
 	"net/http"

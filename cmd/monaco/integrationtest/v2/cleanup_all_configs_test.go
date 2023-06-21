@@ -20,16 +20,16 @@ package v2
 
 import (
 	"context"
-	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/spf13/afero"
 	"regexp"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"gotest.tools/assert"
 )
 

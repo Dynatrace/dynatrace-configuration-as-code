@@ -16,7 +16,7 @@ package manifest
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 	"path/filepath"
 	"strings"
 

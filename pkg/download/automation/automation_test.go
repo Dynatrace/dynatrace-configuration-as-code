@@ -17,9 +17,9 @@
 package automation
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
-	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
+	config "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/template"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"

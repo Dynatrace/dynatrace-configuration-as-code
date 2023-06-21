@@ -16,11 +16,11 @@ package environment
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/strings"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/template"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"os"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/parameter"
 )
 
 // EnvironmentVariableParameterType specifies the type of the parameter used in config files

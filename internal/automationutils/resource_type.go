@@ -18,8 +18,8 @@ package automationutils
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
-	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
+	config "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2"
 )
 
 func ClientResourceTypeFromConfigType(resource config.AutomationResource) (automation.ResourceType, error) {

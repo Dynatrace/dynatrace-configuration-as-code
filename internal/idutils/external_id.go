@@ -19,7 +19,7 @@ package idutils
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/coordinate"
 )
 
 // GenerateExternalID generates a string that serves as an external ID for a Settings 2.0 object.

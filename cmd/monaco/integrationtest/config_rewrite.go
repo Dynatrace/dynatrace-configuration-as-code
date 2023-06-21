@@ -26,7 +26,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/rand"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/rand"
 	"github.com/spf13/afero"
 )
 

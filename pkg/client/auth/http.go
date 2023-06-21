@@ -18,8 +18,8 @@ package auth
 
 import (
 	"context"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/oauth2/endpoints"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/oauth2/endpoints"
 	"golang.org/x/oauth2/clientcredentials"
 	"net/http"
 	"strings"

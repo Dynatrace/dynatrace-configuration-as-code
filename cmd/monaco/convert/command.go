@@ -18,10 +18,10 @@ package convert
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/cmdutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/completion"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"os"

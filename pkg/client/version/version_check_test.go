@@ -19,7 +19,7 @@
 package version
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
 	"net/http"

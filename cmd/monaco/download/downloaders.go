@@ -17,15 +17,15 @@
 package download
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/dynatrace"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
-	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download"
-	dlautomation "github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/automation"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/classic"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/settings"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
+	config "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download"
+	dlautomation "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/automation"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/classic"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/settings"
 )
 
 type downloaders []interface{}

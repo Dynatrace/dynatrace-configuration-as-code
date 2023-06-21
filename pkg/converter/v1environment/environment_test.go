@@ -19,7 +19,7 @@
 package v1environment
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/template"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"

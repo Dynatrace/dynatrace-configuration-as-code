@@ -19,8 +19,8 @@
 package v1
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/template"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 )
 
 func NewConfigWithTemplate(id string, project string, fileName string, template template.Template, properties map[string]map[string]string, api api.API) *Config {

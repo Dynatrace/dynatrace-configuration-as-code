@@ -21,12 +21,12 @@ package v2
 
 import (
 	"context"
-	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/dynatrace"
-	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2/topologysort"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/topologysort"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"testing"

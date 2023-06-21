@@ -17,7 +17,7 @@
 package deploy
 
 import (
-	p "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
+	p "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"path/filepath"

@@ -19,12 +19,12 @@ package client
 import (
 	"context"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/concurrency"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
-	clientAuth "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/auth"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
+	clientAuth "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 	"runtime"
 )
 

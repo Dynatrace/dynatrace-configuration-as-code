@@ -17,7 +17,7 @@ package v2
 import (
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 
 	"github.com/mitchellh/mapstructure"
 )

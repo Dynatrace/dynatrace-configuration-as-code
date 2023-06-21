@@ -19,14 +19,14 @@
 package v1
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/stretchr/testify/assert"
 	assert2 "gotest.tools/assert"
 )

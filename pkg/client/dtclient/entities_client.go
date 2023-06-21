@@ -23,8 +23,8 @@ import (
 	"regexp"
 	"unicode"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/throttle"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/throttle"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 )
 
 const pathEntitiesObjects = "/api/v2/entities"

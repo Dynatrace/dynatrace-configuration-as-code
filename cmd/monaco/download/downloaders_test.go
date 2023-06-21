@@ -19,10 +19,10 @@
 package download
 
 import (
-	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/automation"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/classic"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/settings"
+	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/automation"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/classic"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/settings"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

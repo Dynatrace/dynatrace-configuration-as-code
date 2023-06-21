@@ -20,18 +20,18 @@ package integrationtest
 
 import (
 	"context"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/automationutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
-	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
+	config "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2"
 	"strings"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/spf13/afero"
 )
 

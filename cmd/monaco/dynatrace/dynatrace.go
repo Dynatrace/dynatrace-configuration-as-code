@@ -19,15 +19,15 @@ package dynatrace
 import (
 	"context"
 	"errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/auth"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/metadata"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/version"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
-	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 )
 
 // VerifyEnvironmentGeneration takes a manifestEnvironments map and tries to verify that each environment can be reached

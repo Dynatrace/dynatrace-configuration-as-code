@@ -17,7 +17,7 @@
 package featureflags
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"os"
 	"strconv"
 	"strings"

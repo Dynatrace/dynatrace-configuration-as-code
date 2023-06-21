@@ -19,8 +19,8 @@
 package v1
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"gotest.tools/assert"
 	"os"
 	"strings"

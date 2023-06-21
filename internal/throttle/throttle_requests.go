@@ -18,12 +18,12 @@ package throttle
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"time"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/rand"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/timeutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/rand"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 )
 
 const MinWaitDuration = 1 * time.Second

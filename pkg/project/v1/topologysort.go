@@ -18,7 +18,7 @@ package v1
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 )
 
 func sortConfigurations(configs []*Config) (sorted []*Config, err error) {
