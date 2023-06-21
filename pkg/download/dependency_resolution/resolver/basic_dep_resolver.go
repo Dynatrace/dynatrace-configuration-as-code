@@ -18,9 +18,9 @@ package resolver
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	config "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/coordinate"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/parameter/reference"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"golang.org/x/exp/maps"
 	"strings"
 )

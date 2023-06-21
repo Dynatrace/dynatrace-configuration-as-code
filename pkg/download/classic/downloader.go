@@ -29,11 +29,11 @@ import (
 	"time"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	config "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/coordinate"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/parameter"
-	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/parameter/value"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/template"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 

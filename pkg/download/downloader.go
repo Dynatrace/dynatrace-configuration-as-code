@@ -17,12 +17,12 @@
 package download
 
 import (
-	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	projectv2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
 // Downloader represents a component that is responsible for downloading configuration for a given project from Dynatrace
-type Downloader[T v2.Type] interface {
+type Downloader[T config.Type] interface {
 
 	// Download downloads configurations from a Dynatrace environment.
 	// If only projectName is given, it will download all configuration.

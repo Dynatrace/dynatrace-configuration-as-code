@@ -21,7 +21,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	configError "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/errors"
+	configError "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
 )
 
 type ProjectErrors map[string]ApiErrors
