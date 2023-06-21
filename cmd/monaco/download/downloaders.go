@@ -18,8 +18,9 @@ package download
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/dynatrace"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download"
 	dlautomation "github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/automation"
@@ -40,13 +41,13 @@ func makeDownloaders(options downloadConfigsOptions) (downloaders, error) {
 		automationDownloader = dlautomation.NewDownloader(clients.Automation())
 	}
 	var settingsDownloader download.Downloader[config.SettingsType] = settings.NewDownloader(clients.Settings())
-	var classicDownloader download.Downloader[config.ClassicApiType] = classicDownloader(clients, options)
+	var classicDownloader download.Downloader[config.ClassicApiType] = classicDownloader(clients.Classic(), options)
 	return downloaders{settingsDownloader, classicDownloader, automationDownloader}, nil
 }
 
-func classicDownloader(clients *client.ClientSet, opts downloadConfigsOptions) *classic.Downloader {
+func classicDownloader(client dtclient.Client, opts downloadConfigsOptions) *classic.Downloader {
 	apis := prepareAPIs(opts)
-	return classic.NewDownloader(clients.Classic(), apis)
+	return classic.NewDownloader(client, apis)
 }
 
 func prepareAPIs(opts downloadConfigsOptions) api.APIs {
@@ -55,17 +56,56 @@ func prepareAPIs(opts downloadConfigsOptions) api.APIs {
 		return nil
 	case opts.onlySettings:
 		return nil
+	case opts.onlyAPIs:
+		return api.NewAPIs().Filter(skipDownloadFilter, removeDeprecated(withWarn()))
 	case len(opts.specificAPIs) > 0:
-		return api.NewAPIs()
+		return api.NewAPIs().Filter(api.RetainByName(opts.specificAPIs), skipDownloadFilter, warnDeprecated())
 	case len(opts.specificSchemas) == 0:
-		return api.NewAPIs()
+		return api.NewAPIs().Filter(skipDownloadFilter, removeDeprecated())
 	default:
 		return nil
 	}
 }
 
+func skipDownloadFilter(api api.API) bool {
+	if api.SkipDownload {
+		log.Info("API can not be downloaded and needs manual creation: '%v'.", api.ID)
+		return true
+	}
+	return false
+}
+
+func removeDeprecated(log ...func(api api.API)) api.Filter {
+	return func(api api.API) bool {
+		if api.DeprecatedBy != "" {
+			if len(log) > 0 {
+				log[0](api)
+			}
+			return true
+		}
+		return false
+	}
+}
+
+func withWarn() func(api api.API) {
+	return func(api api.API) {
+		if api.DeprecatedBy != "" {
+			log.Warn("classic endpoint %q is deprecated by %q and will not be downloaded", api.ID, api.DeprecatedBy)
+		}
+	}
+}
+
 func (d downloaders) Classic() download.Downloader[config.ClassicApiType] {
 	return getDownloader[config.ClassicApiType](d)
+}
+
+func warnDeprecated() api.Filter {
+	return func(api api.API) bool {
+		if api.DeprecatedBy != "" {
+			log.Warn("classic endpoint %q is deprecated by %q", api.ID, api.DeprecatedBy)
+		}
+		return false
+	}
 }
 
 func (d downloaders) Settings() download.Downloader[config.SettingsType] {

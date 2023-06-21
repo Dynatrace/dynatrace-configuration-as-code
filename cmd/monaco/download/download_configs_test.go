@@ -151,7 +151,7 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 
 			tt.expectedBehaviour(c)
 
-			downloaders := downloaders{settings.NewDownloader(c), classic.NewDownloader(c, api.NewAPIs())}
+			downloaders := downloaders{settings.NewDownloader(c), classicDownloader(c, tt.givenOpts)}
 
 			_, err := downloadConfigs(downloaders, tt.givenOpts)
 			assert.NoError(t, err)
@@ -317,34 +317,6 @@ func Test_shouldDownloadSettings(t *testing.T) {
 			assert.Equalf(t, tt.want, shouldDownloadSettings(tt.given), "shouldDownloadSettings(%v)", tt.given)
 		})
 	}
-}
-
-func TestDownloadConfigsExitsEarlyForUnknownAPI(t *testing.T) {
-	c := dtclient.NewMockClient(gomock.NewController(t))
-
-	givenOpts := downloadConfigsOptions{
-		specificAPIs:    []string{"UNKOWN API"},
-		specificSchemas: nil,
-		onlyAPIs:        false,
-		onlySettings:    false,
-		downloadOptionsShared: downloadOptionsShared{
-			environmentURL: "testurl.com",
-			auth: manifest.Auth{
-				Token: manifest.AuthSecret{
-					Name:  "TEST_TOKEN_VAR",
-					Value: "test.token",
-				},
-			},
-			outputFolder:           "folder",
-			projectName:            "project",
-			forceOverwriteManifest: false,
-		},
-	}
-
-	downloaders := downloaders{settings.NewDownloader(c), classic.NewDownloader(c, api.NewAPIs())}
-
-	err := doDownloadConfigs(afero.NewMemMapFs(), downloaders, givenOpts)
-	assert.ErrorContains(t, err, "not known", "expected download to fail for unkown API")
 }
 
 func TestDownloadConfigsExitsEarlyForUnknownSettingsSchema(t *testing.T) {

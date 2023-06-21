@@ -20,6 +20,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/dependency_resolution"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/id_extraction"
@@ -125,6 +126,10 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions d
 		onlyAutomation:  cmdOptions.onlyAutomation,
 	}
 
+	if !options.valid() {
+		return errors.New("input data are not valid")
+	}
+
 	downloaders, err := makeDownloaders(options)
 	if err != nil {
 		return err
@@ -155,6 +160,10 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions downloadCmdOptio
 		onlyAutomation:  cmdOptions.onlyAutomation,
 	}
 
+	if !options.valid() {
+		return errors.New("input data are not valid")
+	}
+
 	downloaders, err := makeDownloaders(options)
 	if err != nil {
 		return err
@@ -170,6 +179,19 @@ type downloadConfigsOptions struct {
 	onlyAPIs        bool
 	onlySettings    bool
 	onlyAutomation  bool
+}
+
+func (opts downloadConfigsOptions) valid() bool {
+	retVal := true
+	knownEndpoints := api.NewAPIs()
+	for _, e := range opts.specificAPIs {
+		if !knownEndpoints.Contains(e) {
+			log.Warn("unknown (or unsupported) classic endpoint with name %q provided via \"--api\" flag. More about supported classic endpoints can be found in documentation", e)
+			retVal = false
+		}
+	}
+
+	return retVal
 }
 
 func doDownloadConfigs(fs afero.Fs, downloaders downloaders, opts downloadConfigsOptions) error {
@@ -210,6 +232,7 @@ func downloadConfigs(downloaders downloaders, opts downloadConfigsOptions) (proj
 		if err != nil {
 			return nil, err
 		}
+		log.Info("downloaded %q configurations form classic enpoints", len(classicCfgs))
 		copyConfigs(configs, classicCfgs)
 	}
 

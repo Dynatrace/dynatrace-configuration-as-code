@@ -19,7 +19,6 @@ package classic
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
@@ -71,57 +70,9 @@ func NewDownloader(client dtclient.Client, apis api.APIs, opts ...func(*Download
 	return c
 }
 
-func (d *Downloader) Download(projectName string, specificAPIs ...config.ClassicApiType) (project.ConfigsPerType, error) {
-	specificAPINames := make([]string, len(specificAPIs), len(specificAPIs))
-	for i, s := range specificAPIs {
-		specificAPINames[i] = s.Api
-	}
-
-	if ok, unknownApis := validateSpecificAPIs(d.apisToDownload, specificAPINames); !ok {
-		err := fmt.Errorf("requested APIs '%v' are not known", strings.Join(unknownApis, ","))
-		log.WithFields(field.F("unkownAPIs", unknownApis), field.Error(err)).Error("%v. Please consult our documentation for known API names.", err)
-		return nil, err
-	}
-
-	apisToDownload := filterAPIs(d.apisToDownload, specificAPINames)
-	if len(apisToDownload) == 0 {
-		return nil, fmt.Errorf("no APIs to download after applying filters")
-	}
-
-	configs := d.downloadAPIs(apisToDownload, projectName)
+func (d *Downloader) Download(projectName string, ignore ...config.ClassicApiType) (project.ConfigsPerType, error) {
+	configs := d.downloadAPIs(d.apisToDownload, projectName)
 	return configs, nil
-}
-
-func validateSpecificAPIs(a api.APIs, apiNames []string) (valid bool, unknownAPIs []string) {
-	for _, v := range apiNames {
-		if !a.Contains(v) {
-			unknownAPIs = append(unknownAPIs, v)
-		}
-	}
-	return len(unknownAPIs) == 0, unknownAPIs
-}
-
-func filterAPIs(apis api.APIs, specificAPIs []string) api.APIs {
-	if len(specificAPIs) > 0 {
-		return apis.Filter(api.RetainByName(specificAPIs), skipDownloadFilter)
-	}
-	return apis.Filter(skipDownloadFilter, removeDeprecatedEndpoints)
-}
-
-func skipDownloadFilter(api api.API) bool {
-	if api.SkipDownload {
-		log.WithFields(field.Type(api.ID)).Info("API can not be downloaded and needs manual creation: '%v'.", api.ID)
-		return true
-	}
-	return false
-}
-
-func removeDeprecatedEndpoints(api api.API) bool {
-	if api.DeprecatedBy != "" {
-		log.WithFields(field.Type(api.ID)).Warn("API %q is deprecated by %q and will not be downloaded", api.ID, api.DeprecatedBy)
-		return true
-	}
-	return false
 }
 
 func (d *Downloader) downloadAPIs(apisToDownload api.APIs, projectName string) project.ConfigsPerType {
