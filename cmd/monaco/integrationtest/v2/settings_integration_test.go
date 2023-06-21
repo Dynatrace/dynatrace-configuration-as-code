@@ -25,8 +25,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
-	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/topologysort"
 	"github.com/stretchr/testify/assert"
@@ -103,8 +103,8 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 	}))
 	_, err := c.UpsertSettings(context.TODO(), dtclient.SettingsObject{
 		Coordinate:     configToDeploy.Coordinate,
-		SchemaId:       configToDeploy.Type.(v2.SettingsType).SchemaId,
-		SchemaVersion:  configToDeploy.Type.(v2.SettingsType).SchemaVersion,
+		SchemaId:       configToDeploy.Type.(config.SettingsType).SchemaId,
+		SchemaVersion:  configToDeploy.Type.(config.SettingsType).SchemaVersion,
 		Scope:          "environment",
 		Content:        []byte(configToDeploy.Template.Content()),
 		OriginObjectId: configToDeploy.OriginObjectId,

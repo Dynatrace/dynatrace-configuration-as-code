@@ -20,16 +20,16 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/regex"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/slices"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	configV2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/coordinate"
-	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/parameter"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/parameter/compound"
-	envParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/parameter/environment"
-	listParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/parameter/list"
-	refParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/parameter/reference"
-	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/parameter/value"
-	v2template "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/template"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/compound"
+	envParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/environment"
+	listParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/list"
+	refParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
+	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
+	v2template "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/converter/v1environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	projectV1 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v1"
@@ -185,7 +185,7 @@ func convertConfigs(context *configConvertContext, environments map[string]manif
 	for _, conf := range configs {
 		for _, env := range environments {
 			if _, found := result[env.Name]; !found {
-				result[env.Name] = make(map[string][]configV2.Config)
+				result[env.Name] = make(map[string][]config.Config)
 			}
 
 			convertedConf, err := convertConfig(context, env, conf)
@@ -207,36 +207,36 @@ func convertConfigs(context *configConvertContext, environments map[string]manif
 	return result, nil
 }
 
-func convertConfig(context *configConvertContext, environment manifest.EnvironmentDefinition, config *projectV1.Config) (configV2.Config, []error) {
+func convertConfig(context *configConvertContext, environment manifest.EnvironmentDefinition, c *projectV1.Config) (config.Config, []error) {
 	var errors []error
 
-	apiId := config.GetApi().ID
-	convertedTemplatePath := config.GetFilePath()
-	apiConversion := api.GetV2ID(config.GetApi())
+	apiId := c.GetApi().ID
+	convertedTemplatePath := c.GetFilePath()
+	apiConversion := api.GetV2ID(c.GetApi())
 	if apiId != apiConversion {
-		log.Info("Converting config %q from deprecated API %q to %q", config.GetId(), apiId, apiConversion)
+		log.Info("Converting config %q from deprecated API %q to %q", c.GetId(), apiId, apiConversion)
 		convertedTemplatePath = strings.Replace(convertedTemplatePath, apiId, apiConversion, 1)
 		convertedTemplatePath = strings.Replace(convertedTemplatePath, ".json", "-"+apiId+".json", 1) // ensure modified template paths don't overlap with existing ones
 		apiId = apiConversion
-	} else if deprecatedBy := config.GetApi().DeprecatedBy; deprecatedBy != "" && context.V1Apis.Contains(deprecatedBy) && context.V1Apis[deprecatedBy].NonUniqueName {
-		log.Info("Converting config %q from deprecated API %q to config with non-unique-name handling (see https://dt-url.net/non-unique-name-config)", config.GetId(), apiId)
+	} else if deprecatedBy := c.GetApi().DeprecatedBy; deprecatedBy != "" && context.V1Apis.Contains(deprecatedBy) && context.V1Apis[deprecatedBy].NonUniqueName {
+		log.Info("Converting config %q from deprecated API %q to config with non-unique-name handling (see https://dt-url.net/non-unique-name-config)", c.GetId(), apiId)
 	}
 
 	coord := coordinate.Coordinate{
 		Project:  context.ProjectId,
 		Type:     apiId,
-		ConfigId: config.GetId(),
+		ConfigId: c.GetId(),
 	}
 
-	templ, envParams, listParamIds, errs := convertTemplate(context, config.GetFilePath(), convertedTemplatePath)
+	templ, envParams, listParamIds, errs := convertTemplate(context, c.GetFilePath(), convertedTemplatePath)
 
 	if len(errs) > 0 {
-		errors = append(errors, newConvertConfigError(coord, fmt.Sprintf("unable to load template `%s`: %s", config.GetFilePath(), errs)))
+		errors = append(errors, newConvertConfigError(coord, fmt.Sprintf("unable to load template `%s`: %s", c.GetFilePath(), errs)))
 	}
 
 	context.KnownListParameterIds = listParamIds
 
-	parameters, skipParameter, parameterErrors := convertParameters(context, environment, config)
+	parameters, skipParameter, parameterErrors := convertParameters(context, environment, c)
 
 	if parameterErrors != nil {
 		errors = append(errors, parameterErrors...)
@@ -253,18 +253,18 @@ func convertConfig(context *configConvertContext, environment manifest.Environme
 	}
 
 	// if the name is missing in the v1 config, create one and log it.
-	if _, found := parameters[configV2.NameParameter]; !found {
-		name := config.GetId() + " - monaco-conversion created name"
-		parameters[configV2.NameParameter] = valueParam.New(name)
-		log.Info(`Missing name in config "%s/%s/%s". Using name %q.`, config.GetProject(), config.GetType(), config.GetId(), name)
+	if _, found := parameters[config.NameParameter]; !found {
+		name := c.GetId() + " - monaco-conversion created name"
+		parameters[config.NameParameter] = valueParam.New(name)
+		log.Info(`Missing name in config "%s/%s/%s". Using name %q.`, c.GetProject(), c.GetType(), c.GetId(), name)
 	}
 
 	if errors != nil {
-		return configV2.Config{}, errors
+		return config.Config{}, errors
 	}
 
-	return configV2.Config{
-		Type:              configV2.ClassicApiType{Api: apiId},
+	return config.Config{
+		Type:              config.ClassicApiType{Api: apiId},
 		Template:          templ,
 		Coordinate:        coord,
 		Group:             environment.Group,
@@ -311,7 +311,7 @@ func convertTemplate(context *configConvertContext, currentPath string, writeToP
 
 func convertReservedParameters(temporaryTemplate string) string {
 
-	for _, name := range configV2.ReservedParameterNames {
+	for _, name := range config.ReservedParameterNames {
 		r := regexp.MustCompile(fmt.Sprintf(`{{ *\.%s *}}`, name))
 		newName := convertReservedParameterNames(name)
 
@@ -458,11 +458,11 @@ func convertParameters(context *configConvertContext, environment manifest.Envir
 // If the passed paramName does not match a reserved parameter, it will be returned as is
 func convertReservedParameterNames(paramName string) string {
 
-	if paramName == configV2.NameParameter {
+	if paramName == config.NameParameter {
 		return paramName // 'name' stays the same between v1 and v2
 	}
 
-	if slices.Contains(configV2.ReservedParameterNames, paramName) {
+	if slices.Contains(config.ReservedParameterNames, paramName) {
 		return paramName + "1"
 	}
 

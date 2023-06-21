@@ -28,7 +28,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"

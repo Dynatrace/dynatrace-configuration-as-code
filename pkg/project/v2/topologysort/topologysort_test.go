@@ -21,9 +21,9 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"testing"
 
-	config "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/coordinate"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"gotest.tools/assert"
 )

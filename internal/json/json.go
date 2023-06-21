@@ -25,7 +25,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
 // JsonValidationError is an error which contains more information about

@@ -21,7 +21,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/dependency_resolution"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/id_extraction"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
@@ -260,10 +260,10 @@ func downloadConfigs(downloaders downloaders, opts downloadConfigsOptions) (proj
 	return configs, nil
 }
 
-func makeSettingTypes(specificSchemas []string) []v2.SettingsType {
-	var settingTypes []v2.SettingsType
+func makeSettingTypes(specificSchemas []string) []config.SettingsType {
+	var settingTypes []config.SettingsType
 	for _, schema := range specificSchemas {
-		settingTypes = append(settingTypes, v2.SettingsType{SchemaId: schema})
+		settingTypes = append(settingTypes, config.SettingsType{SchemaId: schema})
 	}
 	return settingTypes
 }

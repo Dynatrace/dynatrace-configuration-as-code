@@ -24,7 +24,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"gotest.tools/assert"
 	"net/http"
 	"net/http/httptest"

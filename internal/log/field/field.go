@@ -18,7 +18,7 @@ package field
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 )
 
 // Field is an additional custom field that can be used for structural logging output

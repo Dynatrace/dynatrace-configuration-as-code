@@ -21,10 +21,10 @@ import (
 	"os"
 	"strings"
 
-	config "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/coordinate"
-	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/spf13/afero"
 )

@@ -26,7 +26,7 @@ import (
 	"strings"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	config "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/topologysort"

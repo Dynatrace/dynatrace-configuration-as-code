@@ -25,7 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/dependency_resolution/resolver"
 	"sync"
 
-	config "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 

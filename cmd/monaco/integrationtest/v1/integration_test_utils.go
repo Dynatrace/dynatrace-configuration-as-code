@@ -29,9 +29,9 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
-	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/coordinate"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/spf13/afero"
@@ -57,7 +57,7 @@ func AssertConfigAvailability(t *testing.T, fs afero.Fs, manifestFile string, co
 
 	configsPerApi := getConfigsForEnv(t, project, envDefinition)
 
-	var conf *v2.Config = nil
+	var conf *config.Config = nil
 	for _, configs := range configsPerApi {
 		for _, c := range configs {
 			if c.Coordinate == coord {
@@ -96,29 +96,29 @@ func findProjectByName(t *testing.T, projects []project.Project, projName string
 	return *project
 }
 
-func assertConfigAvailable(t *testing.T, ctx context.Context, client dtclient.ConfigClient, env manifest.EnvironmentDefinition, shouldBeAvailable bool, config v2.Config) {
+func assertConfigAvailable(t *testing.T, ctx context.Context, client dtclient.ConfigClient, env manifest.EnvironmentDefinition, shouldBeAvailable bool, c config.Config) {
 
-	nameParam, found := config.Parameters["name"]
-	assert.Assert(t, found, "Config %s should have a name parameter", config.Coordinate)
+	nameParam, found := c.Parameters["name"]
+	assert.Assert(t, found, "Config %s should have a name parameter", c.Coordinate)
 
 	name, err := nameParam.ResolveValue(parameter.ResolveContext{})
-	assert.NilError(t, err, "Config %s should have a trivial name to resolve", config.Coordinate)
+	assert.NilError(t, err, "Config %s should have a trivial name to resolve", c.Coordinate)
 
-	typ, ok := config.Type.(v2.ClassicApiType)
-	assert.Assert(t, ok, "Config %s should be a ClassicApiType, but is a %q", config.Coordinate, config.Type.ID())
+	typ, ok := c.Type.(config.ClassicApiType)
+	assert.Assert(t, ok, "Config %s should be a ClassicApiType, but is a %q", c.Coordinate, c.Type.ID())
 
 	a, found := api.NewAPIs()[typ.Api]
-	assert.Assert(t, found, "Config %s should have a known api, but does not. Api %s does not exist", config.Coordinate, typ.Api)
+	assert.Assert(t, found, "Config %s should have a known api, but does not. Api %s does not exist", c.Coordinate, typ.Api)
 
-	if config.Skip {
+	if c.Skip {
 		exists, _, err := client.ConfigExistsByName(ctx, a, fmt.Sprint(name))
 		assert.NilError(t, err)
-		assert.Check(t, !exists, "Config '%s' should NOT be available on env '%s', but was. environment.", env.Name, config.Coordinate)
+		assert.Check(t, !exists, "Config '%s' should NOT be available on env '%s', but was. environment.", env.Name, c.Coordinate)
 
 		return
 	}
 
-	description := fmt.Sprintf("%s on environment %s", config.Coordinate, env.Name)
+	description := fmt.Sprintf("%s on environment %s", c.Coordinate, env.Name)
 
 	exists := false
 	// To deal with delays of configs becoming available try for max 120 polling cycles (4min - at 2sec cycles) for expected state to be reached
@@ -129,9 +129,9 @@ func assertConfigAvailable(t *testing.T, ctx context.Context, client dtclient.Co
 	assert.NilError(t, err)
 
 	if shouldBeAvailable {
-		assert.Check(t, exists, "Object %s on environment %s should be available, but wasn't. environment.", config.Coordinate, env.Name)
+		assert.Check(t, exists, "Object %s on environment %s should be available, but wasn't. environment.", c.Coordinate, env.Name)
 	} else {
-		assert.Check(t, !exists, "Object %s on environment %s should NOT be available, but was. environment.", config.Coordinate, env.Name)
+		assert.Check(t, !exists, "Object %s on environment %s should NOT be available, but was. environment.", c.Coordinate, env.Name)
 	}
 }
 

@@ -19,7 +19,7 @@
 package download
 
 import (
-	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/settings"
@@ -63,18 +63,18 @@ func TestGetDownloader(t *testing.T) {
 		&automation.Downloader{},
 	}
 
-	classicDownloader := getDownloader[v2.ClassicApiType](downloaders)
+	classicDownloader := getDownloader[config.ClassicApiType](downloaders)
 	assert.IsType(t, &classic.Downloader{}, classicDownloader)
-	settingsDownloader := getDownloader[v2.SettingsType](downloaders)
+	settingsDownloader := getDownloader[config.SettingsType](downloaders)
 	assert.IsType(t, &settings.Downloader{}, settingsDownloader)
-	automationDownloader := getDownloader[v2.AutomationType](downloaders)
+	automationDownloader := getDownloader[config.AutomationType](downloaders)
 	assert.IsType(t, &automation.Downloader{}, automationDownloader)
 }
 
 func TestGetDownloaderPanic(t *testing.T) {
 	downloaders := downloaders{}
 	assert.Panics(t, func() {
-		getDownloader[v2.ClassicApiType](downloaders)
+		getDownloader[config.ClassicApiType](downloaders)
 	})
 }
 

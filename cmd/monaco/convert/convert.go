@@ -24,7 +24,7 @@ import (
 	"path/filepath"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	configv2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/converter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	projectv1 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v1"
@@ -59,7 +59,7 @@ func convert(fs afero.Fs, workingDir string, environmentsFile string, outputFold
 		SourceManifestPath: manifestPath,
 		OutputDir:          outputFolder,
 		ManifestName:       manifestName,
-		ParametersSerde:    configv2.DefaultParameterParsers,
+		ParametersSerde:    config.DefaultParameterParsers,
 	}, man, projs)
 
 	if len(errs) > 0 {

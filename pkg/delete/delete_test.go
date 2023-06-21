@@ -26,7 +26,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
-	config "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"

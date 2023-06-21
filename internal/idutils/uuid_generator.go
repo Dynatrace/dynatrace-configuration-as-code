@@ -18,7 +18,7 @@ package idutils
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"path/filepath"
 
 	uuidLib "github.com/google/uuid"
