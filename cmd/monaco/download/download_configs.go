@@ -48,11 +48,11 @@ type auth struct {
 }
 
 func (a auth) mapToAuth() (*manifest.Auth, []error) {
-	errors := make([]error, 0)
+	errs := make([]error, 0)
 	retVal := manifest.Auth{}
 
 	if v, err := readEnvVariable(a.token); err != nil {
-		errors = append(errors, err)
+		errs = append(errs, err)
 	} else {
 		retVal.Token = v
 	}
@@ -60,17 +60,17 @@ func (a auth) mapToAuth() (*manifest.Auth, []error) {
 	if a.clientID != "" && a.clientSecret != "" {
 		retVal.OAuth = &manifest.OAuth{}
 		if v, err := readEnvVariable(a.clientID); err != nil {
-			errors = append(errors, err)
+			errs = append(errs, err)
 		} else {
 			retVal.OAuth.ClientID = v
 		}
 		if v, err := readEnvVariable(a.clientSecret); err != nil {
-			errors = append(errors, err)
+			errs = append(errs, err)
 		} else {
 			retVal.OAuth.ClientSecret = v
 		}
 	}
-	return &retVal, errors
+	return &retVal, errs
 }
 
 func readEnvVariable(envVar string) (manifest.AuthSecret, error) {
@@ -134,11 +134,11 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions d
 }
 
 func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions downloadCmdOptions) error {
-	a, errors := cmdOptions.auth.mapToAuth()
-	errors = append(errors, validateParameters(cmdOptions.environmentURL, cmdOptions.projectName)...)
+	a, errs := cmdOptions.auth.mapToAuth()
+	errs = append(errs, validateParameters(cmdOptions.environmentURL, cmdOptions.projectName)...)
 
-	if len(errors) > 0 {
-		return printAndFormatErrors(errors, "not all necessary information is present to start downloading configurations")
+	if len(errs) > 0 {
+		return printAndFormatErrors(errs, "not all necessary information is present to start downloading configurations")
 	}
 
 	options := downloadConfigsOptions{
