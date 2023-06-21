@@ -20,8 +20,11 @@ package download
 
 import (
 	"errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
@@ -428,4 +431,17 @@ func TestMapToAuth(t *testing.T) {
 		assert.Contains(t, errs, errors.New("the content of the environment variable \"CLIENT_ID\" is not set"))
 		assert.Contains(t, errs, errors.New("the content of the environment variable \"CLIENT_SECRET\" is not set"))
 	})
+}
+
+func TestDownloadConfigs_OnlyAutomationWithoutAutomationCredentials(t *testing.T) {
+	t.Setenv(featureflags.AutomationResources().EnvName(), "1")
+
+	opts := downloadConfigsOptions{
+		onlyAutomation: true,
+	}
+
+	downloaders := downloaders{automation.NoopAutomationDownloader{}}
+
+	err := doDownloadConfigs(testutils.CreateTestFileSystem(), downloaders, opts)
+	assert.ErrorContains(t, err, "no OAuth credentials configured")
 }

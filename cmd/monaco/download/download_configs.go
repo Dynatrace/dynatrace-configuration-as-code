@@ -15,11 +15,13 @@
 package download
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/dependency_resolution"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/id_extraction"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
@@ -202,6 +204,8 @@ func downloadConfigs(downloaders downloaders, opts downloadConfigsOptions) (proj
 	configs := make(project.ConfigsPerType)
 
 	if shouldDownloadClassicConfigs(opts) {
+		log.Info("Downloading configuration APIs")
+
 		classicAPIs := makeClassicAPIs(opts.specificAPIs)
 		classicCfgs, err := downloaders.Classic().Download(opts.projectName, classicAPIs...)
 		if err != nil {
@@ -211,6 +215,8 @@ func downloadConfigs(downloaders downloaders, opts downloadConfigsOptions) (proj
 	}
 
 	if shouldDownloadSettings(opts) {
+		log.Info("Downloading settings objects")
+
 		settingTypes := makeSettingTypes(opts.specificSchemas)
 		settingCfgs, err := downloaders.Settings().Download(opts.projectName, settingTypes...)
 		if err != nil {
@@ -220,11 +226,17 @@ func downloadConfigs(downloaders downloaders, opts downloadConfigsOptions) (proj
 	}
 
 	if shouldDownloadAutomationResources(opts) {
-		automationCfgs, err := downloaders.Automation().Download(opts.projectName)
-		if err != nil {
-			return nil, err
+		if _, ok := downloaders.Automation().(automation.NoopAutomationDownloader); !ok {
+			log.Info("Downloading automation resources")
+
+			automationCfgs, err := downloaders.Automation().Download(opts.projectName)
+			if err != nil {
+				return nil, err
+			}
+			copyConfigs(configs, automationCfgs)
+		} else if opts.onlyAutomation {
+			return nil, errors.New("can't download automation resources: no OAuth credentials configured")
 		}
-		copyConfigs(configs, automationCfgs)
 	}
 
 	return configs, nil
