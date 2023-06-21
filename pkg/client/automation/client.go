@@ -137,11 +137,7 @@ func (a Client) list(ctx context.Context, resourceType ResourceType) ([]Response
 
 		// handle http error
 		if !resp.IsSuccess() {
-			err := rest.RespError{
-				Type:       rest.RespErrType,
-				StatusCode: resp.StatusCode,
-				Body:       string(resp.Body),
-			}
+			err := rest.NewRespErr("unable to list automation resources", resp)
 			return nil, err
 		}
 

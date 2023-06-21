@@ -692,7 +692,7 @@ func (d *DynatraceClient) listSettings(schemaId string, opts ListSettingsOptions
 
 	u, err := buildUrl(d.environmentURL, d.settingsObjectAPIPath, params)
 	if err != nil {
-		return nil, rest.RespError{Err: err}
+		return nil, fmt.Errorf("failed to list settings: %w", err)
 	}
 
 	_, err = rest.ListPaginated(d.client, d.retrySettings, u, schemaId, addToResult)
@@ -747,7 +747,7 @@ func (d *DynatraceClient) listEntitiesTypes() ([]EntitiesType, error) {
 
 	u, err := buildUrl(d.environmentURL, pathEntitiesTypes, params)
 	if err != nil {
-		return nil, rest.RespError{Err: err}
+		return nil, fmt.Errorf("failed to list entity types: %w", err)
 	}
 
 	_, err = rest.ListPaginated(d.client, d.retrySettings, u, "EntityTypeList", addToResult)
@@ -806,7 +806,7 @@ func (d *DynatraceClient) listEntities(entitiesType EntitiesType) ([]string, err
 
 		u, err := buildUrl(d.environmentURL, pathEntitiesObjects, params)
 		if err != nil {
-			return nil, rest.RespError{Err: err}
+			return nil, fmt.Errorf("failed to list entities: %w", err)
 		}
 
 		resp, err := rest.ListPaginated(d.client, d.retrySettings, u, entityType, addToResult)
