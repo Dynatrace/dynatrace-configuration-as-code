@@ -303,6 +303,7 @@ void createContainerAndPushToStorage(Map args = [version: null, tagLatest: false
                     path        : "keptn-jenkins/monaco/cosign",
                     secretValues: [
                         [envVar: 'cosign_key', vaultKey: 'cosign.key', isRequired: true],
+                        [envVar: 'cosign_pub', vaultKey: 'cosign.pub', isRequired: true],
                         [envVar: 'cosign_password', vaultKey: 'cosign_password', isRequired: true]
                     ]
                 ]
@@ -314,7 +315,7 @@ void createContainerAndPushToStorage(Map args = [version: null, tagLatest: false
 
                         sh 'docker push $registry/$repo/dynatrace-configuration-as-code:$version'
 
-                        sh 'make sign-image COSIGN_PASSWORD=$cosign_password FULL_IMAGE_NAME=$registry/$repo/dynatrace-configuration-as-code:$version'
+                        sh 'make sign-verify-image COSIGN_PASSWORD=$cosign_password FULL_IMAGE_NAME=$registry/$repo/dynatrace-configuration-as-code:$version'
 
                         if (args.tagLatest) {
                             sh 'docker tag $registry/$repo/dynatrace-configuration-as-code:$version $registry/$repo/dynatrace-configuration-as-code:latest'
