@@ -19,8 +19,8 @@ package version
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"golang.org/x/net/context"
 	"net/http"
 	"net/url"

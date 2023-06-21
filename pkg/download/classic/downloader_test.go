@@ -19,9 +19,9 @@ package classic
 import (
 	"context"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"strconv"

@@ -19,14 +19,16 @@ package rest
 import (
 	"bytes"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/timeutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/trafficlogs"
-	"github.com/google/uuid"
-	"golang.org/x/net/context"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"io"
 	"net/http"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
+
+	"github.com/google/uuid"
+	"golang.org/x/net/context"
 )
 
 func Get(ctx context.Context, client *http.Client, url string) (Response, error) {

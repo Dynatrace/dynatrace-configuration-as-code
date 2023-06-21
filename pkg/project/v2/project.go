@@ -17,7 +17,7 @@ package v2
 import (
 	"fmt"
 
-	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
+	config "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2"
 )
 
 // ConfigsPerType is a map of configType (api or schema id) to configs

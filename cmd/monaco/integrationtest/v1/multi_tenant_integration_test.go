@@ -20,13 +20,13 @@
 package v1
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"path/filepath"
 	"testing"
 
 	"gotest.tools/assert"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/spf13/afero"
 )
 

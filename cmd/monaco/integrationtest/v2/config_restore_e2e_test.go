@@ -19,11 +19,11 @@
 package v2
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/integrationtest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"os"
 	"path/filepath"
 	"testing"

@@ -22,7 +22,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 )
 
 type RetrySetting struct {

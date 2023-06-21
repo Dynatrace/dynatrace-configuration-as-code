@@ -18,8 +18,8 @@ package template
 
 import (
 	"bytes"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"os"
 	"strings"
 	"text/template" // nosemgrep: go.lang.security.audit.xss.import-text-template.import-text-template

@@ -18,12 +18,12 @@ package log
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/loggers"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/loggers/console"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/loggers/zap"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/timeutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers/console"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers/zap"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/coordinate"
 	"github.com/spf13/afero"
 	"golang.org/x/net/context"
 	"io"

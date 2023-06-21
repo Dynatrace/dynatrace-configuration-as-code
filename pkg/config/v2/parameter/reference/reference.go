@@ -16,11 +16,11 @@ package reference
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/strings"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/parameter"
 )
 
 // ReferenceParameterType specifies the type of the parameter used in config files

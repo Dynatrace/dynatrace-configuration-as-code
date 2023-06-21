@@ -20,7 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"net/http"

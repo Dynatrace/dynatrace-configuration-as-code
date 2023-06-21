@@ -18,7 +18,7 @@ package v1environment
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"strings"
 )
 

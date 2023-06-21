@@ -17,7 +17,7 @@
 package classic
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"strings"
 )
 

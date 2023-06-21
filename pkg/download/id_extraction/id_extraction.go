@@ -18,8 +18,8 @@ package id_extraction
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/parameter/value"
+	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"regexp"
 	"strings"
 )

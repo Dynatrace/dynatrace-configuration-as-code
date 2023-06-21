@@ -21,9 +21,9 @@ package dtclient
 import (
 	"context"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"gotest.tools/assert"
 	"net/http"
 	"net/http/httptest"

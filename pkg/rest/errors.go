@@ -18,7 +18,7 @@ package rest
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 )
 
 type RespError struct {

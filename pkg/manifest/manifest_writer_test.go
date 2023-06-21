@@ -17,7 +17,7 @@
 package manifest
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/oauth2/endpoints"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/oauth2/endpoints"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"gotest.tools/assert"
 	"reflect"

@@ -17,14 +17,14 @@
 package topologysort
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/sort"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/sort"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"testing"
 
-	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
+	config "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/parameter"
+	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"gotest.tools/assert"
 )
 

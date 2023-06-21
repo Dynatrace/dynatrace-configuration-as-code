@@ -19,7 +19,7 @@
 package throttle
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/timeutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/golang/mock/gomock"
 	"gotest.tools/assert"
 	"strings"

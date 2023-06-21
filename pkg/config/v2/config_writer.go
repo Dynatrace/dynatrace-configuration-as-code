@@ -16,12 +16,12 @@ package v2
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
-	configError "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/coordinate"
+	configError "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/parameter/value"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/template"
 	"github.com/spf13/afero"
 	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v2"

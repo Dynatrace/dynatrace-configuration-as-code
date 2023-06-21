@@ -18,15 +18,15 @@ package v1
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/template"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/spf13/afero"
 )
 

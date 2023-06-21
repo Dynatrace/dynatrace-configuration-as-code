@@ -19,8 +19,8 @@ package v1environment
 import (
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/template"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"github.com/spf13/afero"
 )
 

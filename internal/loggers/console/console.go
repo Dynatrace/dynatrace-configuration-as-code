@@ -17,8 +17,8 @@
 package console
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/loggers"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers"
 	"log"
 )
 

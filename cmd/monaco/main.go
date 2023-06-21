@@ -17,7 +17,7 @@ package main
 import (
 	"os"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 )
 
 func main() {

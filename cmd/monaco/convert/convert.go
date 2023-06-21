@@ -16,20 +16,20 @@ package convert
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/converter/v1environment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/converter/v1environment"
 	"path"
 	"path/filepath"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	configv2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/converter"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
-	projectv1 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v1"
-	projectv2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/writer"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+	configv2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/converter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	projectv1 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v1"
+	projectv2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/writer"
 	"github.com/spf13/afero"
 )
 

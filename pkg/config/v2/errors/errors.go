@@ -14,7 +14,7 @@
 
 package errors
 
-import "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
+import "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/coordinate"
 
 type ConfigError interface {
 	error

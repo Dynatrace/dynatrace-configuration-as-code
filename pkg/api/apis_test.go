@@ -19,7 +19,7 @@
 package api
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/converter/v1environment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/converter/v1environment"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

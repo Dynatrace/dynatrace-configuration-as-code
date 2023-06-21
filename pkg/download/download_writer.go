@@ -18,14 +18,14 @@ package download
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/timeutils"
-	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/writer"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
+	config "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/writer"
 	"github.com/spf13/afero"
 	"path/filepath"
 )

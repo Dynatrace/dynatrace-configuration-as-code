@@ -16,16 +16,16 @@ package v2
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/slices"
 	"os"
 	"strings"
 
-	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
-	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
+	config "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/coordinate"
+	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/spf13/afero"
 )
 

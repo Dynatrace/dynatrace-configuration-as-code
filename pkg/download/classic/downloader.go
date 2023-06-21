@@ -19,22 +19,22 @@ package classic
 import (
 	"context"
 	"encoding/json"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"golang.org/x/exp/maps"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
-	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+	config "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/parameter"
+	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/parameter/value"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/template"
+	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
 type (

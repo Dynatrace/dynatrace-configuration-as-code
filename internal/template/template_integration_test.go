@@ -19,7 +19,7 @@
 package template
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/json"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 	"testing"

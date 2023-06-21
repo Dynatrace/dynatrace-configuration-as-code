@@ -18,10 +18,10 @@ package deploy
 
 import (
 	"errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
-	configError "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	configError "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/errors"
 )
 
 type ProjectErrors map[string]ApiErrors

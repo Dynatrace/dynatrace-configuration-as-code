@@ -20,7 +20,7 @@ package dynatrace
 
 import (
 	"encoding/json"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
 	"net/http"

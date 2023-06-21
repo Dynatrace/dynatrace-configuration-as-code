@@ -17,10 +17,10 @@
 package deploy
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/loggers"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
-	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
 func logProjectsInfo(projects []project.Project) {

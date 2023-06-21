@@ -19,10 +19,10 @@
 package v2
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/json"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/template"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 	"testing"

@@ -17,7 +17,7 @@
 package pagination_test
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation/internal/pagination"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation/internal/pagination"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

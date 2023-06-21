@@ -17,11 +17,11 @@
 package compound
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/strings"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
 	"testing"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2/parameter/value"
 	"gotest.tools/assert"
 )
 

@@ -17,8 +17,8 @@
 package download
 
 import (
-	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
-	projectv2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
+	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/v2"
+	projectv2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
 // Downloader represents a component that is responsible for downloading configuration for a given project from Dynatrace

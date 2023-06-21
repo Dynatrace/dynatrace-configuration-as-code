@@ -18,7 +18,7 @@ package delete
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/mitchellh/mapstructure"
 	"path/filepath"
 	"strings"
