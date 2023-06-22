@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/loggers"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
@@ -104,16 +104,16 @@ func deploy(ctx context.Context, clientSet ClientSet, apis api.APIs, em *entityM
 		return nil, nil
 
 	case config.SettingsType:
-		log.FromCtx(ctx).Info("Deploying config %s", c.Coordinate)
+		log.WithCtxFields(ctx).Info("Deploying config %s", c.Coordinate)
 		res, deployErr = deploySetting(ctx, clientSet.Settings, properties, renderedConfig, c)
 
 	case config.ClassicApiType:
-		log.FromCtx(ctx).Info("Deploying config %s", c.Coordinate)
+		log.WithCtxFields(ctx).Info("Deploying config %s", c.Coordinate)
 		// TODO: pass context
 		res, deployErr = deployClassicConfig(clientSet.Classic, apis, em, properties, renderedConfig, c)
 
 	case config.AutomationType:
-		log.FromCtx(ctx).Info("Deploying config %s", c.Coordinate)
+		log.WithCtxFields(ctx).Info("Deploying config %s", c.Coordinate)
 		res, deployErr = deployAutomation(ctx, clientSet.Automation, properties, renderedConfig, c)
 
 	default:
@@ -123,9 +123,9 @@ func deploy(ctx context.Context, clientSet ClientSet, apis api.APIs, em *entityM
 	if deployErr != nil {
 		var responseErr clientErrors.RespError
 		if errors.As(deployErr, &responseErr) {
-			log.FromCtx(ctx).WithFields(loggers.ErrorF(responseErr)).Error("Failed to deploy config %s: %s", c.Coordinate, responseErr.Message)
+			log.WithCtxFields(ctx).WithFields(field.Error(responseErr)).Error("Failed to deploy config %s: %s", c.Coordinate, responseErr.Message)
 		} else {
-			log.FromCtx(ctx).WithFields(loggers.ErrorF(deployErr)).Error("Failed to deploy config %s: %s", c.Coordinate, deployErr.Error())
+			log.WithCtxFields(ctx).WithFields(field.Error(deployErr)).Error("Failed to deploy config %s: %s", c.Coordinate, deployErr.Error())
 		}
 		return nil, []error{deployErr}
 	}

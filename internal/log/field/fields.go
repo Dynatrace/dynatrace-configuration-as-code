@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package loggers
+package field
 
 import "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 
@@ -31,8 +31,8 @@ func F(key string, value interface{}) Field {
 	return Field{Key: key, Value: value}
 }
 
-// CoordinateF builds a Field containing information taken from the provided coordinate
-func CoordinateF(coordinate coordinate.Coordinate) Field {
+// Coordinate builds a Field containing information taken from the provided coordinate
+func Coordinate(coordinate coordinate.Coordinate) Field {
 	return Field{"coordinate",
 		struct {
 			Reference string
@@ -47,8 +47,8 @@ func CoordinateF(coordinate coordinate.Coordinate) Field {
 		}}
 }
 
-// EnvironmentF builds a Field containing environment information for structured logging
-func EnvironmentF(environment, group string) Field {
+// Environment builds a Field containing environment information for structured logging
+func Environment(environment, group string) Field {
 	return Field{"environment",
 		struct {
 			Group string
@@ -59,7 +59,7 @@ func EnvironmentF(environment, group string) Field {
 		}}
 }
 
-// ErrorF builds a Field containing error information for structured logging
-func ErrorF(err error) Field {
+// Error builds a Field containing error information for structured logging
+func Error(err error) Field {
 	return Field{"error", err}
 }

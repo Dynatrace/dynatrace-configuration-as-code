@@ -85,7 +85,7 @@ func GetWithRetry(client *http.Client, url string, settings RetrySetting) (resp 
 func SendWithRetry(ctx context.Context, client *http.Client, sendWithBody SendRequestWithBody, objectName string, path string, body []byte, setting RetrySetting) (resp Response, err error) {
 
 	for i := 0; i < setting.MaxRetries; i++ {
-		log.FromCtx(ctx).Warn("Failed to send HTTP request. Waiting for %s before retrying...", setting.WaitTime)
+		log.WithCtxFields(ctx).Warn("Failed to send HTTP request. Waiting for %s before retrying...", setting.WaitTime)
 		time.Sleep(setting.WaitTime)
 		resp, err = sendWithBody(client, path, body)
 		if err == nil && resp.IsSuccess() {
