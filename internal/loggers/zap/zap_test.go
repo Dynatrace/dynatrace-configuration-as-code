@@ -21,6 +21,7 @@ package zap
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/loggers"
 	"github.com/stretchr/testify/require"
 	"os"
@@ -81,7 +82,7 @@ func TestWithFieldsSubsequently(t *testing.T) {
 	logger, _ := New(loggers.LogOptions{ConsoleLoggingJSON: true, LogSpy: &logSpy})
 
 	// log with field - contains field
-	logger.WithFields(loggers.F("City", "Monaco")).Info("Hi")
+	logger.WithFields(field.F("City", "Monaco")).Info("Hi")
 	var data map[string]interface{}
 	json.Unmarshal(logSpy.Bytes(), &data)
 	assert.Equal(t, "Monaco", data["City"])
@@ -102,28 +103,28 @@ func TestAllMethodsHaveFields(t *testing.T) {
 	t.Run("Info log - has fields", func(t *testing.T) {
 		defer logSpy.Reset()
 		var data map[string]interface{}
-		logger.WithFields(loggers.F("City", "Berlin")).Info("Hi")
+		logger.WithFields(field.F("City", "Berlin")).Info("Hi")
 		json.Unmarshal(logSpy.Bytes(), &data)
 		assert.Equal(t, "Berlin", data["City"])
 	})
 	t.Run("Debug log - has fields", func(t *testing.T) {
 		defer logSpy.Reset()
 		var data map[string]interface{}
-		logger.WithFields(loggers.F("City", "London")).Debug("Hi")
+		logger.WithFields(field.F("City", "London")).Debug("Hi")
 		json.Unmarshal(logSpy.Bytes(), &data)
 		assert.Equal(t, "London", data["City"])
 	})
 	t.Run("Warn log - has fields", func(t *testing.T) {
 		defer logSpy.Reset()
 		var data map[string]interface{}
-		logger.WithFields(loggers.F("City", "Vienna")).Warn("Hi")
+		logger.WithFields(field.F("City", "Vienna")).Warn("Hi")
 		json.Unmarshal(logSpy.Bytes(), &data)
 		assert.Equal(t, "Vienna", data["City"])
 	})
 	t.Run("Error log - has fields", func(t *testing.T) {
 		defer logSpy.Reset()
 		var data map[string]interface{}
-		logger.WithFields(loggers.F("City", "Amsterdam")).Error("Hi")
+		logger.WithFields(field.F("City", "Amsterdam")).Error("Hi")
 		json.Unmarshal(logSpy.Bytes(), &data)
 		assert.Equal(t, "Amsterdam", data["City"])
 	})
@@ -132,7 +133,7 @@ func TestAllMethodsHaveFields(t *testing.T) {
 func TestLogger_WhenUsingUnstructuredLogFormat_DoesNotPrintFieldsToConsole(t *testing.T) {
 	logSpy := bytes.Buffer{}
 	logger, _ := New(loggers.LogOptions{ConsoleLoggingJSON: false, LogSpy: &logSpy})
-	logger.WithFields(loggers.F("my-key", "")).Info("hello")
+	logger.WithFields(field.F("my-key", "")).Info("hello")
 	assert.NotContains(t, logSpy.String(), "my-key")
 }
 
@@ -141,7 +142,7 @@ func TestLogger_WhenUsingUnstructuredLogFormat_DoesNotPrintFieldsToFile(t *testi
 	defer file.Close()
 	logger, _ := New(loggers.LogOptions{File: file})
 
-	logger.WithFields(loggers.F("my-key", "")).Info("hello")
+	logger.WithFields(field.F("my-key", "")).Info("hello")
 	content, _ := os.ReadFile(file.Name())
 	assert.NotContains(t, content, "my-key")
 }

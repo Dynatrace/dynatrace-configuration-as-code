@@ -17,6 +17,7 @@
 package console
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/loggers"
 	"log"
 )
@@ -30,7 +31,7 @@ type Logger struct {
 	consoleLogger *log.Logger
 }
 
-func (l Logger) WithFields(fields ...loggers.Field) loggers.Logger {
+func (l Logger) WithFields(fields ...field.Field) loggers.Logger {
 	return l
 }
 

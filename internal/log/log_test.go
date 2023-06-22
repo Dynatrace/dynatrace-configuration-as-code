@@ -23,6 +23,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/loggers"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/spf13/afero"
@@ -57,7 +58,8 @@ func (fs *CustomMemMapFs) DirExists(path string) bool {
 
 func TestPrepareLogFile_ReturnsErrIfParentDirectoryAlreadyExists(t *testing.T) {
 	fs := &CustomMemMapFs{}
-	fs.MkdirAll(".logs", 0777)
+	err := fs.MkdirAll(".logs", 0777)
+	assert.NoError(t, err)
 	file, err := prepareLogFile(fs)
 	assert.Nil(t, file)
 	assert.Error(t, err)
@@ -74,13 +76,14 @@ func TestWithFields(t *testing.T) {
 	logSpy := bytes.Buffer{}
 	setDefaultLogger(loggers.LogOptions{ConsoleLoggingJSON: true, LogSpy: &logSpy})
 	WithFields(
-		loggers.Field{"Title", "Captain"},
-		loggers.Field{"Name", "Iglo"},
-		loggers.CoordinateF(coordinate.Coordinate{"p1", "t1", "c1"}),
-		loggers.EnvironmentF("env1", "group")).Info("Logging with %s", "fields")
+		field.Field{"Title", "Captain"},
+		field.Field{"Name", "Iglo"},
+		field.Coordinate(coordinate.Coordinate{"p1", "t1", "c1"}),
+		field.Environment("env1", "group")).Info("Logging with %s", "fields")
 
 	var data map[string]interface{}
-	json.Unmarshal(logSpy.Bytes(), &data)
+	err := json.Unmarshal(logSpy.Bytes(), &data)
+	assert.NoError(t, err)
 	assert.Equal(t, "Logging with fields", data["msg"])
 	assert.Equal(t, "Captain", data["Title"])
 	assert.Equal(t, "Iglo", data["Name"])
@@ -99,11 +102,12 @@ func TestFromCtx(t *testing.T) {
 	e := "e1"
 	g := "g"
 
-	logger := FromCtx(context.WithValue(context.WithValue(context.TODO(), CtxKeyCoord{}, c), CtxKeyEnv{}, CtxValEnv{Name: e, Group: g}))
+	logger := WithCtxFields(context.WithValue(context.WithValue(context.TODO(), CtxKeyCoord{}, c), CtxKeyEnv{}, CtxValEnv{Name: e, Group: g}))
 	logger.Info("Hi with context")
 
 	var data map[string]interface{}
-	json.Unmarshal(logSpy.Bytes(), &data)
+	err := json.Unmarshal(logSpy.Bytes(), &data)
+	assert.NoError(t, err)
 	assert.Equal(t, "Hi with context", data["msg"])
 	assert.Equal(t, "p1", data["coordinate"].(map[string]interface{})["Project"])
 	assert.Equal(t, "t1", data["coordinate"].(map[string]interface{})["Type"])

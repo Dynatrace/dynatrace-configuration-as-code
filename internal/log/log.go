@@ -17,14 +17,15 @@
 package log
 
 import (
-	"context"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/loggers"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/loggers/console"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/loggers/zap"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/timeutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/spf13/afero"
+	"golang.org/x/net/context"
 	"io"
 	"os"
 	"path/filepath"
@@ -71,21 +72,24 @@ func Level() loggers.LogLevel {
 	return std.Level()
 }
 
-func WithFields(fields ...loggers.Field) loggers.Logger {
+// WithFields adds additional [field.Field] for structured logs
+// It accepts vararg fields and should not be called more than once per log call
+func WithFields(fields ...field.Field) loggers.Logger {
 	return std.WithFields(fields...)
 }
 
-// FromCtx creates a logger instance with a given context
-func FromCtx(ctx context.Context) loggers.Logger {
+// WithCtxFields creates a logger instance with preset structured logging [field.Field] based on the Context
+// Coordinate (via [CtxKeyCoord]) and environment (via [CtxKeyEnv] [CtxValEnv]) information is added to logs from the Context
+func WithCtxFields(ctx context.Context) loggers.Logger {
 	loggr := std
-	fields := make([]loggers.Field, 0, 2)
+	f := make([]field.Field, 0, 2)
 	if c, ok := ctx.Value(CtxKeyCoord{}).(coordinate.Coordinate); ok {
-		fields = append(fields, loggers.CoordinateF(c))
+		f = append(f, field.Coordinate(c))
 	}
 	if e, ok := ctx.Value(CtxKeyEnv{}).(CtxValEnv); ok {
-		fields = append(fields, loggers.EnvironmentF(e.Name, e.Group))
+		f = append(f, field.Environment(e.Name, e.Group))
 	}
-	return loggr.WithFields(fields...)
+	return loggr.WithFields(f...)
 }
 
 var (

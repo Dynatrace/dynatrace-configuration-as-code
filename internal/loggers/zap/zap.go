@@ -18,6 +18,7 @@ package zap
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/loggers"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -31,7 +32,7 @@ type Logger struct {
 	baseLogger *zap.Logger
 }
 
-func (l *Logger) WithFields(fields ...loggers.Field) loggers.Logger {
+func (l *Logger) WithFields(fields ...field.Field) loggers.Logger {
 	zFields := make([]zapcore.Field, 0, len(fields))
 	for _, f := range fields {
 		zFields = append(zFields, zap.Reflect(f.Key, f.Value))

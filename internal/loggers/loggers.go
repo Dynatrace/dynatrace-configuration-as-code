@@ -17,6 +17,7 @@
 package loggers
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	"github.com/spf13/afero"
 	"io"
 	"strings"
@@ -29,7 +30,7 @@ type Logger interface {
 	Debug(msg string, args ...interface{})
 	Warn(msg string, args ...interface{})
 	Fatal(msg string, args ...interface{})
-	WithFields(fields ...Field) Logger
+	WithFields(fields ...field.Field) Logger
 	Level() LogLevel
 }
 
