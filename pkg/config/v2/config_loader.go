@@ -576,7 +576,6 @@ func toString(v interface{}) string {
 
 func newLoadError(path string, err error) configErrors.ConfigLoaderError {
 	return configErrors.ConfigLoaderError{
-		Type: configErrors.ConfigLoaderErrorType,
 		Path: path,
 		Err:  err,
 	}
@@ -584,7 +583,6 @@ func newLoadError(path string, err error) configErrors.ConfigLoaderError {
 
 func newDefinitionParserError(configId string, context *singleConfigEntryLoadContext, reason string) configErrors.DefinitionParserError {
 	return configErrors.DefinitionParserError{
-		Type: configErrors.ConfigLoaderErrorType,
 		Location: coordinate.Coordinate{
 			Project:  context.ProjectId,
 			Type:     context.Type,

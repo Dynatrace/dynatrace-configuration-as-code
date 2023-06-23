@@ -105,7 +105,6 @@ type ParameterParserContext struct {
 }
 
 type ParameterParserError struct {
-	Type string
 	// Location of the config the error happened in
 	Location           coordinate.Coordinate
 	EnvironmentDetails errors.EnvironmentDetails
@@ -130,7 +129,6 @@ func (p ParameterParserError) Error() string {
 
 func NewParameterParserError(context ParameterParserContext, reason string) error {
 	return ParameterParserError{
-		Type:               errors.ConfigLoaderErrorType,
 		Location:           context.Coordinate,
 		EnvironmentDetails: errors.EnvironmentDetails{Group: context.Group, Environment: context.Environment},
 		ParameterName:      context.ParameterName,
@@ -139,7 +137,6 @@ func NewParameterParserError(context ParameterParserContext, reason string) erro
 }
 
 type ParameterWriterError struct {
-	Type string
 	// config the error happened in
 	Location           coordinate.Coordinate
 	EnvironmentDetails errors.EnvironmentDetails
@@ -164,7 +161,6 @@ func (p ParameterWriterError) Error() string {
 
 func NewParameterWriterError(context ParameterWriterContext, reason string) error {
 	return &ParameterWriterError{
-		Type:               errors.ConfigLoaderErrorType,
 		Location:           context.Coordinate,
 		EnvironmentDetails: errors.EnvironmentDetails{Group: context.Group, Environment: context.Environment},
 		ParameterName:      context.ParameterName,

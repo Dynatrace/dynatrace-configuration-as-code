@@ -25,10 +25,7 @@ var (
 	_ ConfigError = (*DetailedConfigWriterError)(nil)
 )
 
-const ConfigWriterErrorType = "ConfigWriterError"
-
 type ConfigWriterError struct {
-	Type string
 	Path string
 	Err  error
 }
@@ -42,7 +39,6 @@ func (e ConfigWriterError) Error() string {
 }
 
 type DetailedConfigWriterError struct {
-	Type     string
 	Path     string
 	Location coordinate.Coordinate
 	Err      error

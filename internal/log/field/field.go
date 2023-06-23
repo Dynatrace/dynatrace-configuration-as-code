@@ -16,7 +16,10 @@
 
 package field
 
-import "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
+import (
+	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
+)
 
 // Field is an additional custom field that can be used for structural logging output
 type Field struct {
@@ -67,5 +70,12 @@ func Environment(environment, group string) Field {
 
 // Error builds a Field containing error information for structured logging
 func Error(err error) Field {
-	return Field{"error", err}
+	return Field{"error",
+		struct {
+			Type    string
+			Details error
+		}{
+			fmt.Sprintf("%T", err),
+			err,
+		}}
 }

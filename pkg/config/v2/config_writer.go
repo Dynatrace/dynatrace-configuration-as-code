@@ -750,7 +750,6 @@ func newParameterSerializerContext(context *detailedSerializerContext, name stri
 
 func newConfigWriterError(context *WriterContext, err error) configError.DetailedConfigWriterError {
 	return configError.DetailedConfigWriterError{
-		Type: configError.ConfigWriterErrorType,
 		Path: filepath.Join(context.OutputFolder, context.ProjectFolder),
 		Err:  err,
 	}
@@ -758,7 +757,6 @@ func newConfigWriterError(context *WriterContext, err error) configError.Detaile
 
 func newDetailedConfigWriterError(context *serializerContext, err error) configError.DetailedConfigWriterError {
 	return configError.DetailedConfigWriterError{
-		Type:     configError.ConfigWriterErrorType,
 		Path:     context.configFolder,
 		Location: context.config,
 		Err:      err,
@@ -767,7 +765,6 @@ func newDetailedConfigWriterError(context *serializerContext, err error) configE
 
 func fmtDetailedConfigWriterError(context *serializerContext, format string, args ...interface{}) configError.DetailedConfigWriterError {
 	return configError.DetailedConfigWriterError{
-		Type:     configError.ConfigWriterErrorType,
 		Path:     context.configFolder,
 		Location: context.config,
 		Err:      fmt.Errorf(format, args...),

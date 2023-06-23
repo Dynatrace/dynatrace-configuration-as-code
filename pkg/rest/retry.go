@@ -74,7 +74,6 @@ func GetWithRetry(ctx context.Context, client *http.Client, url string, settings
 	}
 
 	return resp, RespError{
-		Type:       RespErrType,
 		StatusCode: resp.StatusCode,
 		Message:    fmt.Sprintf("GET request %s failed after %d retries: (HTTP %d)!\n    Response was: %s", url, settings.MaxRetries, resp.StatusCode, resp.Body),
 		Body:       string(resp.Body),

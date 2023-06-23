@@ -33,10 +33,7 @@ type WriterContext struct {
 	ManifestPath string
 }
 
-const ManifestWriterErrType = "ManifestWriterError"
-
 type manifestWriterError struct {
-	Type         string
 	ManifestPath string
 	Err          error
 }
@@ -51,7 +48,6 @@ func (e manifestWriterError) Error() string {
 
 func newManifestWriterError(path string, err error) manifestWriterError {
 	return manifestWriterError{
-		Type:         ManifestWriterErrType,
 		ManifestPath: path,
 		Err:          err,
 	}
