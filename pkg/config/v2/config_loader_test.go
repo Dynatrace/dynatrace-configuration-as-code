@@ -81,7 +81,7 @@ func Test_parseConfigs(t *testing.T) {
 			filePathArgument:  "test-file.yaml",
 			filePathOnDisk:    "test-file.yaml",
 			fileContentOnDisk: "this_should_say_config:\n- id: profile\n  config:\n    name: Star Trek Service\n    skip: false\n",
-			wantErrorsContain: []string{"failed to load config 'test-file.yaml"},
+			wantErrorsContain: []string{"failed to load config from file \"test-file.yaml"},
 		},
 		{
 			name:              "reports detailed error for invalid v2 config",

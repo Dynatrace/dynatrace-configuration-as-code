@@ -51,6 +51,19 @@ type LoaderContext struct {
 	ParametersSerDe map[string]parameter.ParameterSerDe
 }
 
+// configFileLoaderContext is a context for each config-file
+type configFileLoaderContext struct {
+	*LoaderContext
+	Folder string
+	Path   string
+}
+
+// singleConfigEntryLoadContext is a context for each config-entry within a config-file
+type singleConfigEntryLoadContext struct {
+	*configFileLoaderContext
+	Type string
+}
+
 // LoadConfigs will search a given path for configuration yamls and parses them.
 // It will try to parse all configurations it finds and returns a list of parsed
 // configs. If any error was encountered, the list of configs will be nil and
@@ -59,7 +72,7 @@ func LoadConfigs(fs afero.Fs, context *LoaderContext) (result []Config, errors [
 	filesInFolder, err := afero.ReadDir(fs, context.Path)
 
 	if err != nil {
-		return nil, []error{err}
+		return nil, []error{newLoadError(context.Path, err)}
 	}
 
 	for _, file := range filesInFolder {
@@ -87,99 +100,10 @@ func LoadConfigs(fs afero.Fs, context *LoaderContext) (result []Config, errors [
 	return result, nil
 }
 
-// configFileLoaderContext is a context for each config-file
-type configFileLoaderContext struct {
-	*LoaderContext
-	Folder string
-	Path   string
-}
-
-// singleConfigEntryLoadContext is a context for each config-entry within a config-file
-type singleConfigEntryLoadContext struct {
-	*configFileLoaderContext
-	Type string
-}
-
-type DefinitionParserError struct {
-	Location coordinate.Coordinate
-	Path     string
-	Reason   string
-}
-
-func newDefinitionParserError(configId string, context *singleConfigEntryLoadContext, reason string) DefinitionParserError {
-	return DefinitionParserError{
-		Location: coordinate.Coordinate{
-			Project:  context.ProjectId,
-			Type:     context.Type,
-			ConfigId: configId,
-		},
-		Path:   context.Path,
-		Reason: reason,
-	}
-}
-
-type DetailedDefinitionParserError struct {
-	DefinitionParserError
-	EnvironmentDetails configErrors.EnvironmentDetails
-}
-
-func newDetailedDefinitionParserError(configId string, context *singleConfigEntryLoadContext, environment manifest.EnvironmentDefinition,
-	reason string) DetailedDefinitionParserError {
-
-	return DetailedDefinitionParserError{
-		DefinitionParserError: newDefinitionParserError(configId, context, reason),
-		EnvironmentDetails:    configErrors.EnvironmentDetails{Group: environment.Group, Environment: environment.Name},
-	}
-}
-
-func (e DetailedDefinitionParserError) LocationDetails() configErrors.EnvironmentDetails {
-	return e.EnvironmentDetails
-}
-
-func (e DetailedDefinitionParserError) Environment() string {
-	return e.EnvironmentDetails.Environment
-}
-
-func (e DefinitionParserError) Coordinates() coordinate.Coordinate {
-	return e.Location
-}
-
-type ParameterDefinitionParserError struct {
-	DetailedDefinitionParserError
-	ParameterName string
-}
-
-func newParameterDefinitionParserError(name string, configId string, context *singleConfigEntryLoadContext,
-	environment manifest.EnvironmentDefinition, reason string) ParameterDefinitionParserError {
-
-	return ParameterDefinitionParserError{
-		DetailedDefinitionParserError: newDetailedDefinitionParserError(configId, context, environment, reason),
-		ParameterName:                 name,
-	}
-}
-
-var (
-	_ configErrors.ConfigError         = (*DefinitionParserError)(nil)
-	_ configErrors.DetailedConfigError = (*DetailedDefinitionParserError)(nil)
-	_ configErrors.DetailedConfigError = (*ParameterDefinitionParserError)(nil)
-)
-
-func (e ParameterDefinitionParserError) Error() string {
-	return fmt.Sprintf("%s: cannot parse parameter definition in `%s`: %s",
-		e.ParameterName, e.Path, e.Reason)
-}
-
-func (e DefinitionParserError) Error() string {
-	return fmt.Sprintf("cannot parse definition in `%s`: %s",
-		e.Path, e.Reason)
-}
-
 func parseConfigs(fs afero.Fs, context *LoaderContext, filePath string) (configs []Config, errors []error) {
 	data, err := afero.ReadFile(fs, filePath)
-	folder := filepath.Dir(filePath)
-
 	if err != nil {
-		return nil, []error{err}
+		return nil, []error{newLoadError(context.Path, err)}
 	}
 
 	definition := topLevelDefinition{}
@@ -189,24 +113,23 @@ func parseConfigs(fs afero.Fs, context *LoaderContext, filePath string) (configs
 	if err != nil {
 		if strings.Contains(err.Error(), fmt.Sprintf("field config not found in type %s", getTopLevelDefinitionYamlTypeName())) {
 			return nil, []error{
-				fmt.Errorf("config '%s' is not valid v2 configuration - you may be loading v1 configs, please 'convert' to v2:\n%w", filePath, err),
+				newLoadError(
+					context.Path,
+					fmt.Errorf("config '%s' is not valid v2 configuration - you may be loading v1 configs, please 'convert' to v2:\n%w", filePath, err),
+				),
 			}
 		}
 
-		return nil, []error{
-			fmt.Errorf("failed to load config '%s':\n%w", filePath, err),
-		}
+		return nil, []error{newLoadError(filePath, err)}
 	}
 
 	if len(definition.Configs) == 0 {
-		return nil, []error{
-			fmt.Errorf("no configurations found in file '%s'", filePath),
-		}
+		return nil, []error{newLoadError(filePath, fmt.Errorf("no configurations found in file '%s'", filePath))}
 	}
 
 	configLoaderContext := &configFileLoaderContext{
 		LoaderContext: context,
-		Folder:        folder,
+		Folder:        filepath.Dir(filePath),
 		Path:          filePath,
 	}
 
@@ -649,4 +572,43 @@ func validateParameter(ctx *singleConfigEntryLoadContext, paramName string, para
 
 func toString(v interface{}) string {
 	return fmt.Sprintf("%v", v)
+}
+
+func newLoadError(path string, err error) configErrors.ConfigLoaderError {
+	return configErrors.ConfigLoaderError{
+		Type: configErrors.ConfigLoaderErrorType,
+		Path: path,
+		Err:  err,
+	}
+}
+
+func newDefinitionParserError(configId string, context *singleConfigEntryLoadContext, reason string) configErrors.DefinitionParserError {
+	return configErrors.DefinitionParserError{
+		Type: configErrors.ConfigLoaderErrorType,
+		Location: coordinate.Coordinate{
+			Project:  context.ProjectId,
+			Type:     context.Type,
+			ConfigId: configId,
+		},
+		Path:   context.Path,
+		Reason: reason,
+	}
+}
+
+func newDetailedDefinitionParserError(configId string, context *singleConfigEntryLoadContext, environment manifest.EnvironmentDefinition,
+	reason string) configErrors.DetailedDefinitionParserError {
+
+	return configErrors.DetailedDefinitionParserError{
+		DefinitionParserError: newDefinitionParserError(configId, context, reason),
+		EnvironmentDetails:    configErrors.EnvironmentDetails{Group: environment.Group, Environment: environment.Name},
+	}
+}
+
+func newParameterDefinitionParserError(name string, configId string, context *singleConfigEntryLoadContext,
+	environment manifest.EnvironmentDefinition, reason string) configErrors.ParameterDefinitionParserError {
+
+	return configErrors.ParameterDefinitionParserError{
+		DetailedDefinitionParserError: newDetailedDefinitionParserError(configId, context, environment, reason),
+		ParameterName:                 name,
+	}
 }
