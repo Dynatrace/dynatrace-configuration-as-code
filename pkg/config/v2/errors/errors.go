@@ -34,6 +34,7 @@ type DetailedConfigError interface {
 type InvalidJsonError struct {
 	Config             coordinate.Coordinate
 	EnvironmentDetails EnvironmentDetails
+	TemplateFilePath   string
 	WrappedError       error
 }
 
