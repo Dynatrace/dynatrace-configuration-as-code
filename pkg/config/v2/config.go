@@ -136,26 +136,40 @@ type Config struct {
 }
 
 func (c *Config) Render(properties map[string]interface{}) (string, error) {
+	templatePath := c.Template.Name()
+	if t, ok := c.Template.(template.FileBasedTemplate); ok {
+		templatePath = t.FilePath()
+	}
+
 	renderedConfig, err := template.Render(c.Template, properties)
 	if err != nil {
-		return "", err
+		return "", configErrors.InvalidJsonError{
+			Config: c.Coordinate,
+			EnvironmentDetails: configErrors.EnvironmentDetails{
+				Group:       c.Group,
+				Environment: c.Environment,
+			},
+			WrappedError:     err,
+			TemplateFilePath: templatePath,
+		}
 	}
 
 	err = json.ValidateJson(renderedConfig, json.Location{
 		Coordinate:       c.Coordinate,
 		Group:            c.Group,
 		Environment:      c.Environment,
-		TemplateFilePath: c.Template.Name(),
+		TemplateFilePath: templatePath,
 	})
 
 	if err != nil {
-		return "", &configErrors.InvalidJsonError{
+		return "", configErrors.InvalidJsonError{
 			Config: c.Coordinate,
 			EnvironmentDetails: configErrors.EnvironmentDetails{
 				Group:       c.Group,
 				Environment: c.Environment,
 			},
-			WrappedError: err,
+			WrappedError:     err,
+			TemplateFilePath: templatePath,
 		}
 	}
 
