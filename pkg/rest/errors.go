@@ -21,10 +21,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/environment"
 )
 
-const RespErrType = "ResponseError"
-
 type RespError struct {
-	Type       string
 	Err        error `json:"-"`
 	Message    string
 	Body       string
@@ -39,7 +36,6 @@ type RequestInfo struct {
 
 func NewRespErr(msg string, resp Response) RespError {
 	return RespError{
-		Type:       RespErrType,
 		Message:    msg,
 		StatusCode: resp.StatusCode,
 		Body:       string(resp.Body),

@@ -58,10 +58,7 @@ type projectLoaderContext struct {
 	manifestPath string
 }
 
-const ManifestLoaderErrType = "ManifestLoaderError"
-
 type manifestLoaderError struct {
-	Type         string
 	ManifestPath string
 	Reason       string
 }
@@ -72,7 +69,6 @@ func (e manifestLoaderError) Error() string {
 
 func newManifestLoaderError(path string, reason string) manifestLoaderError {
 	return manifestLoaderError{
-		Type:         ManifestLoaderErrType,
 		ManifestPath: path,
 		Reason:       reason,
 	}

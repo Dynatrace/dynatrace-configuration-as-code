@@ -27,10 +27,7 @@ var (
 	_ DetailedConfigError = (*ParameterDefinitionParserError)(nil)
 )
 
-const ConfigLoaderErrorType = "ConfigLoaderError"
-
 type ConfigLoaderError struct {
-	Type string
 	Path string
 	Err  error
 }
@@ -44,7 +41,6 @@ func (e ConfigLoaderError) Error() string {
 }
 
 type DefinitionParserError struct {
-	Type     string
 	Location coordinate.Coordinate
 	Path     string
 	Reason   string
