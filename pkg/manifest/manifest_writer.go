@@ -15,6 +15,7 @@
 package manifest
 
 import (
+	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"path/filepath"
 	"strings"
@@ -32,6 +33,30 @@ type WriterContext struct {
 	ManifestPath string
 }
 
+const ManifestWriterErrType = "ManifestWriterError"
+
+type manifestWriterError struct {
+	Type         string
+	ManifestPath string
+	Err          error
+}
+
+func (e manifestWriterError) Unwrap() error {
+	return e.Err
+}
+
+func (e manifestWriterError) Error() string {
+	return fmt.Sprintf("%s: %s", e.ManifestPath, e.Err)
+}
+
+func newManifestWriterError(path string, err error) manifestWriterError {
+	return manifestWriterError{
+		Type:         ManifestWriterErrType,
+		ManifestPath: path,
+		Err:          err,
+	}
+}
+
 func WriteManifest(context *WriterContext, manifestToWrite Manifest) error {
 	sanitizedPath := filepath.Clean(context.ManifestPath)
 	folder := filepath.Dir(sanitizedPath)
@@ -40,7 +65,7 @@ func WriteManifest(context *WriterContext, manifestToWrite Manifest) error {
 		err := context.Fs.MkdirAll(folder, 0777)
 
 		if err != nil {
-			return err
+			return newManifestWriterError(context.ManifestPath, err)
 		}
 	}
 
@@ -60,10 +85,14 @@ func persistManifestToDisk(context *WriterContext, m manifest) error {
 	manifestAsYaml, err := yaml.Marshal(m)
 
 	if err != nil {
-		return err
+		return newManifestWriterError(context.ManifestPath, err)
 	}
 
-	return afero.WriteFile(context.Fs, filepath.Clean(context.ManifestPath), manifestAsYaml, 0664)
+	err = afero.WriteFile(context.Fs, filepath.Clean(context.ManifestPath), manifestAsYaml, 0664)
+	if err != nil {
+		return newManifestWriterError(context.ManifestPath, err)
+	}
+	return nil
 }
 
 func toWriteableProjects(projects map[string]ProjectDefinition) (result []project) {
