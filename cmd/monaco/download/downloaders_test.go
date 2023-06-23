@@ -79,6 +79,33 @@ func TestGetDownloaderPanic(t *testing.T) {
 }
 
 func Test_prepareAPIs(t *testing.T) {
+	t.Run(`handling "--only*" flags`, func(t *testing.T) {
+		tests := []struct {
+			name  string
+			given downloadConfigsOptions
+		}{
+			{
+				name:  "onlySettings",
+				given: downloadConfigsOptions{onlySettings: true},
+			},
+			{
+				name:  "onlyAutomation",
+				given: downloadConfigsOptions{onlyAutomation: true},
+			},
+			{
+				name:  "specificSchemas is pressent",
+				given: downloadConfigsOptions{specificSchemas: []string{"anything"}},
+			},
+		}
+
+		for _, tc := range tests {
+			t.Run(tc.name, func(t *testing.T) {
+				actual := prepareAPIs(tc.given)
+				assert.Nil(t, actual)
+			})
+		}
+	})
+
 	t.Run("no endpoint marked as 'skip' is present", func(t *testing.T) {
 		tests := []struct {
 			name  string
@@ -115,7 +142,7 @@ func Test_prepareAPIs(t *testing.T) {
 		}
 	})
 
-	t.Run("filtration of deprecated", func(t *testing.T) {
+	t.Run("handling of deprecated endpoints", func(t *testing.T) {
 		tests := []struct {
 			name       string
 			given      downloadConfigsOptions
@@ -137,7 +164,7 @@ func Test_prepareAPIs(t *testing.T) {
 				deprecated: false,
 			},
 			{
-				name:       "specificAPIs is marked with 'deprecatedBy'",
+				name:       "specificAPI marked with 'deprecatedBy' is not filtered out",
 				given:      downloadConfigsOptions{specificAPIs: []string{"auto-tag"}},
 				deprecated: true,
 			},

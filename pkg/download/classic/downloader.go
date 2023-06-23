@@ -37,30 +37,27 @@ import (
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 )
 
-// Downloader is responsible for downloading classic Dynatrace APIs
-type Downloader struct {
-	apisToDownload api.APIs
+type (
+	// Downloader is responsible for downloading classic Dynatrace APIs. To create it sound, use NewDownloader construction function.
+	Downloader struct {
+		apisToDownload api.APIs
 
-	// apiContentFilters contains rules to filter specific apis based on
-	// custom logic implemented in the contentFilter
-	apiContentFilters map[string]contentFilter
+		// apiContentFilters contains rules to filter specific apis based on
+		// custom logic implemented in the contentFilter
+		apiContentFilters map[string]contentFilter
 
-	// client is the actual rest client used to call
-	// the dynatrace APIs
-	client dtclient.Client
-}
-
-// WithAPIContentFilters sets the api content filters for the Downloader - these will be used in addition to base API filtering
-func WithAPIContentFilters(apiFilters map[string]contentFilter) func(*Downloader) {
-	return func(d *Downloader) {
-		d.apiContentFilters = apiFilters
+		// client is the actual rest client used to call
+		// the dynatrace APIs
+		client dtclient.Client
 	}
-}
 
-// NewDownloader creates a new Downloader
-func NewDownloader(client dtclient.Client, apis api.APIs, opts ...func(*Downloader)) *Downloader {
+	ConstOption func(downloader *Downloader)
+)
+
+// NewDownloader creates a new sound Downloader.
+func NewDownloader(client dtclient.Client, opts ...ConstOption) *Downloader {
 	c := &Downloader{
-		apisToDownload:    apis,
+		apisToDownload:    api.NewAPIs(),
 		apiContentFilters: apiContentFilters,
 		client:            client,
 	}
@@ -70,7 +67,20 @@ func NewDownloader(client dtclient.Client, apis api.APIs, opts ...func(*Download
 	return c
 }
 
-func (d *Downloader) Download(projectName string, ignore ...config.ClassicApiType) (project.ConfigsPerType, error) {
+// WithAPIs sets the endpoints from which Downloader is going to download. During settings, it checks does the given endpoints are known.
+func WithAPIs(apis api.APIs) ConstOption {
+	return func(d *Downloader) {
+		d.apisToDownload = apis
+	}
+}
+
+func WithAPIContentFilters(apiFilters map[string]contentFilter) ConstOption {
+	return func(d *Downloader) {
+		d.apiContentFilters = apiFilters
+	}
+}
+
+func (d *Downloader) Download(projectName string, _ ...config.ClassicApiType) (project.ConfigsPerType, error) {
 	configs := d.downloadAPIs(d.apisToDownload, projectName)
 	return configs, nil
 }

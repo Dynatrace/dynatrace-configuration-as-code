@@ -35,7 +35,7 @@ func TestDownloadConfigs_FailedToFindConfigsToDownload(t *testing.T) {
 	testAPI := api.API{ID: "API_ID", URLPath: "API_PATH", NonUniqueName: true}
 	apiMap := api.APIs{"API_ID": testAPI}
 
-	downloader := NewDownloader(c, apiMap)
+	downloader := NewDownloader(c, WithAPIs(apiMap))
 
 	configurations, err := downloader.Download("project")
 	assert.NoError(t, err)
@@ -50,7 +50,7 @@ func TestDownload_NoConfigsToDownloadFound(t *testing.T) {
 
 	apiMap := api.APIs{"API_ID": testAPI}
 
-	downloader := NewDownloader(c, apiMap)
+	downloader := NewDownloader(c, WithAPIs(apiMap))
 
 	configurations, err := downloader.Download("project")
 	assert.NoError(t, err)
@@ -75,7 +75,7 @@ func TestDownload_ConfigsDownloaded(t *testing.T) {
 
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	downloader := NewDownloader(c, apiMap)
+	downloader := NewDownloader(c, WithAPIs(apiMap))
 
 	configurations, err := downloader.Download("project")
 	assert.NoError(t, err)
@@ -89,7 +89,7 @@ func TestDownload_SingleConfigurationAPI(t *testing.T) {
 	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", SingleConfiguration: true, NonUniqueName: true}
 	apiMap := api.APIs{"API_ID_1": testAPI1}
 
-	downloader := NewDownloader(client, apiMap)
+	downloader := NewDownloader(client, WithAPIs(apiMap))
 
 	configurations, err := downloader.Download("project")
 	assert.NoError(t, err)
@@ -118,7 +118,7 @@ func TestDownload_ErrorFetchingConfig(t *testing.T) {
 
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	downloader := NewDownloader(c, apiMap)
+	downloader := NewDownloader(c, WithAPIs(apiMap))
 	configurations, err := downloader.Download("project")
 	assert.NoError(t, err)
 	assert.Len(t, configurations, 1)
@@ -142,7 +142,7 @@ func TestDownload_ConfigsDownloaded_WithEmptyFilter(t *testing.T) {
 
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	downloader := NewDownloader(c, apiMap, WithAPIContentFilters(map[string]contentFilter{}))
+	downloader := NewDownloader(c, WithAPIs(apiMap), WithAPIContentFilters(map[string]contentFilter{}))
 
 	configurations, err := downloader.Download("project")
 	assert.NoError(t, err)
@@ -172,7 +172,7 @@ func TestDownload_SkipConfigThatShouldNotBePersisted(t *testing.T) {
 	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueName: false}
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	downloader := NewDownloader(c, apiMap, WithAPIContentFilters(apiFilters))
+	downloader := NewDownloader(c, WithAPIs(apiMap), WithAPIContentFilters(apiFilters))
 
 	configurations, err := downloader.Download("project")
 	assert.NoError(t, err)
@@ -209,7 +209,7 @@ func TestDownload_SkipConfigBeforeDownload(t *testing.T) {
 	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueName: false}
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	downloader := NewDownloader(c, apiMap, WithAPIContentFilters(apiFilters))
+	downloader := NewDownloader(c, WithAPIs(apiMap), WithAPIContentFilters(apiFilters))
 
 	type flags struct {
 		downloadFilterFF        bool
@@ -289,7 +289,7 @@ func TestDownload_FilteringCanBeTurnedOffViaFeatureFlags(t *testing.T) {
 	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueName: false}
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	downloader := NewDownloader(c, apiMap, WithAPIContentFilters(apiFilters))
+	downloader := NewDownloader(c, WithAPIs(apiMap), WithAPIContentFilters(apiFilters))
 
 	configurations, err := downloader.Download("project")
 	assert.NoError(t, err)
@@ -313,7 +313,7 @@ func TestDownload_APIWithoutAnyConfigAvailableAreNotDownloaded(t *testing.T) {
 
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	downloader := NewDownloader(c, apiMap)
+	downloader := NewDownloader(c, WithAPIs(apiMap))
 
 	configurations, err := downloader.Download("project")
 	assert.NoError(t, err)
@@ -337,7 +337,7 @@ func TestDownload_MalformedResponseFromAnAPI(t *testing.T) {
 	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueName: false}
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	downloader := NewDownloader(c, apiMap)
+	downloader := NewDownloader(c, WithAPIs(apiMap))
 
 	configurations, err := downloader.Download("project")
 	assert.NoError(t, err)

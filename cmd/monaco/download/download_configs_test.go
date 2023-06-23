@@ -159,86 +159,6 @@ func TestDownloadConfigsBehaviour(t *testing.T) {
 	}
 }
 
-func Test_shouldDownloadAPIs(t *testing.T) {
-	tests := []struct {
-		name  string
-		given downloadConfigsOptions
-		want  bool
-	}{
-		{
-			name: "true if not 'onlySettings'",
-			given: downloadConfigsOptions{
-				downloadOptionsShared: downloadOptionsShared{},
-				specificAPIs:          nil,
-				specificSchemas:       nil,
-				onlyAPIs:              false,
-				onlySettings:          false,
-			},
-			want: true,
-		},
-		{
-			name: "true if 'onlyAPIs'",
-			given: downloadConfigsOptions{
-				downloadOptionsShared: downloadOptionsShared{},
-				specificAPIs:          nil,
-				specificSchemas:       nil,
-				onlyAPIs:              true,
-				onlySettings:          false,
-			},
-			want: true,
-		},
-		{
-			name: "true if 'specificAPIs' defined",
-			given: downloadConfigsOptions{
-				downloadOptionsShared: downloadOptionsShared{},
-				specificAPIs:          []string{"some-api", "other-api"},
-				specificSchemas:       nil,
-				onlyAPIs:              false,
-				onlySettings:          false,
-			},
-			want: true,
-		},
-		{
-			name: "false if just 'specificSchemas' defined",
-			given: downloadConfigsOptions{
-				downloadOptionsShared: downloadOptionsShared{},
-				specificAPIs:          nil,
-				specificSchemas:       []string{"some-schema", "other-schema"},
-				onlyAPIs:              false,
-				onlySettings:          false,
-			},
-			want: false,
-		},
-		{
-			name: "true if 'specificAPIs' and 'specificSchemas' defined",
-			given: downloadConfigsOptions{
-				downloadOptionsShared: downloadOptionsShared{},
-				specificAPIs:          []string{"some-api", "other-api"},
-				specificSchemas:       []string{"some-schema", "other-schema"},
-				onlyAPIs:              false,
-				onlySettings:          false,
-			},
-			want: true,
-		},
-		{
-			name: "false if 'specificSchemas' and onlySettings defined",
-			given: downloadConfigsOptions{
-				downloadOptionsShared: downloadOptionsShared{},
-				specificAPIs:          nil,
-				specificSchemas:       []string{"some-schema", "other-schema"},
-				onlyAPIs:              false,
-				onlySettings:          true,
-			},
-			want: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, shouldDownloadClassicConfigs(tt.given), "shouldDownloadApis(%v)", tt.given)
-		})
-	}
-}
-
 func Test_shouldDownloadSettings(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -323,9 +243,7 @@ func TestDownloadConfigsExitsEarlyForUnknownSettingsSchema(t *testing.T) {
 	c := dtclient.NewMockClient(gomock.NewController(t))
 
 	givenOpts := downloadConfigsOptions{
-		specificAPIs:    nil,
 		specificSchemas: []string{"UNKOWN SCHEMA"},
-		onlyAPIs:        false,
 		onlySettings:    false,
 		downloadOptionsShared: downloadOptionsShared{
 			environmentURL: "testurl.com",
@@ -343,7 +261,7 @@ func TestDownloadConfigsExitsEarlyForUnknownSettingsSchema(t *testing.T) {
 
 	c.EXPECT().ListSchemas().Return(dtclient.SchemaList{{"builtin:some.schema"}}, nil)
 
-	downloaders := downloaders{settings.NewDownloader(c), classic.NewDownloader(c, api.NewAPIs())}
+	downloaders := downloaders{settings.NewDownloader(c), classic.NewDownloader(c)}
 	err := doDownloadConfigs(afero.NewMemMapFs(), downloaders, givenOpts)
 	assert.ErrorContains(t, err, "not known", "expected download to fail for unkown Settings Schema")
 	c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(0) // no downloads should even be attempted for unknown schema
@@ -416,4 +334,22 @@ func TestDownloadConfigs_OnlyAutomationWithoutAutomationCredentials(t *testing.T
 
 	err := doDownloadConfigs(testutils.CreateTestFileSystem(), downloaders, opts)
 	assert.ErrorContains(t, err, "no OAuth credentials configured")
+}
+
+func Test_downloadConfigsOptions_valid(t *testing.T) {
+	t.Run("no error for konwn api", func(t *testing.T) {
+		given := downloadConfigsOptions{specificAPIs: []string{"alerting-profile"}}
+
+		errs := given.valid()
+
+		assert.Len(t, errs, 0)
+	})
+	t.Run("report error for unknown", func(t *testing.T) {
+		given := downloadConfigsOptions{specificAPIs: []string{"unknown api"}}
+
+		errs := given.valid()
+
+		assert.Len(t, errs, 1)
+		assert.ErrorContains(t, errs[0], "unknown api")
+	})
 }

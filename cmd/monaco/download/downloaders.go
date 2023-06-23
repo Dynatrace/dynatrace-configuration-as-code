@@ -46,8 +46,8 @@ func makeDownloaders(options downloadConfigsOptions) (downloaders, error) {
 }
 
 func classicDownloader(client dtclient.Client, opts downloadConfigsOptions) *classic.Downloader {
-	apis := prepareAPIs(opts)
-	return classic.NewDownloader(client, apis)
+	endpoints := prepareAPIs(opts)
+	return classic.NewDownloader(client, classic.WithAPIs(endpoints))
 }
 
 func prepareAPIs(opts downloadConfigsOptions) api.APIs {
@@ -57,17 +57,17 @@ func prepareAPIs(opts downloadConfigsOptions) api.APIs {
 	case opts.onlySettings:
 		return nil
 	case opts.onlyAPIs:
-		return api.NewAPIs().Filter(skipDownloadFilter, removeDeprecated(withWarn()))
+		return api.NewAPIs().Filter(removeSkipDownload, removeDeprecated(withWarn()))
 	case len(opts.specificAPIs) > 0:
-		return api.NewAPIs().Filter(api.RetainByName(opts.specificAPIs), skipDownloadFilter, warnDeprecated())
+		return api.NewAPIs().Filter(api.RetainByName(opts.specificAPIs), removeSkipDownload, warnDeprecated())
 	case len(opts.specificSchemas) == 0:
-		return api.NewAPIs().Filter(skipDownloadFilter, removeDeprecated())
+		return api.NewAPIs().Filter(removeSkipDownload, removeDeprecated())
 	default:
 		return nil
 	}
 }
 
-func skipDownloadFilter(api api.API) bool {
+func removeSkipDownload(api api.API) bool {
 	if api.SkipDownload {
 		log.Info("API can not be downloaded and needs manual creation: '%v'.", api.ID)
 		return true
@@ -90,7 +90,7 @@ func removeDeprecated(log ...func(api api.API)) api.Filter {
 func withWarn() func(api api.API) {
 	return func(api api.API) {
 		if api.DeprecatedBy != "" {
-			log.Warn("classic endpoint %q is deprecated by %q and will not be downloaded", api.ID, api.DeprecatedBy)
+			log.Warn("classic config endpoint %q is deprecated by %q and will not be downloaded", api.ID, api.DeprecatedBy)
 		}
 	}
 }
@@ -102,7 +102,7 @@ func (d downloaders) Classic() download.Downloader[config.ClassicApiType] {
 func warnDeprecated() api.Filter {
 	return func(api api.API) bool {
 		if api.DeprecatedBy != "" {
-			log.Warn("classic endpoint %q is deprecated by %q", api.ID, api.DeprecatedBy)
+			log.Warn("classic config endpoint %q is deprecated by %q", api.ID, api.DeprecatedBy)
 		}
 		return false
 	}
