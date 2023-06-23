@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
 	version2 "github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
@@ -57,13 +58,24 @@ type projectLoaderContext struct {
 	manifestPath string
 }
 
+const ManifestLoaderErrType = "ManifestLoaderError"
+
 type manifestLoaderError struct {
+	Type         string
 	ManifestPath string
 	Reason       string
 }
 
 func (e manifestLoaderError) Error() string {
 	return fmt.Sprintf("%s: %s", e.ManifestPath, e.Reason)
+}
+
+func newManifestLoaderError(path string, reason string) manifestLoaderError {
+	return manifestLoaderError{
+		Type:         ManifestLoaderErrType,
+		ManifestPath: path,
+		Reason:       reason,
+	}
 }
 
 type environmentLoaderError struct {
@@ -74,7 +86,7 @@ type environmentLoaderError struct {
 
 func newManifestEnvironmentLoaderError(manifest string, group string, env string, reason string) environmentLoaderError {
 	return environmentLoaderError{
-		manifestLoaderError: manifestLoaderError{manifest, reason},
+		manifestLoaderError: newManifestLoaderError(manifest, reason),
 		Group:               group,
 		Environment:         env,
 	}
@@ -91,7 +103,7 @@ type projectLoaderError struct {
 
 func newManifestProjectLoaderError(manifest string, project string, reason string) projectLoaderError {
 	return projectLoaderError{
-		manifestLoaderError: manifestLoaderError{manifest, reason},
+		manifestLoaderError: newManifestLoaderError(manifest, reason),
 		Project:             project,
 	}
 }
@@ -101,7 +113,7 @@ func (e projectLoaderError) Error() string {
 }
 
 func LoadManifest(context *LoaderContext) (Manifest, []error) {
-	log.Debug("Loading manifest %q. Restrictions: groups=%q, environments=%q", context.ManifestPath, context.Groups, context.Environments)
+	log.WithFields(field.F("manifestPath", context.ManifestPath)).Debug("Loading manifest %q. Restrictions: groups=%q, environments=%q", context.ManifestPath, context.Groups, context.Environments)
 
 	manifestYAML, err := readManifestYAML(context)
 	if err != nil {
@@ -110,7 +122,7 @@ func LoadManifest(context *LoaderContext) (Manifest, []error) {
 	if errs := verifyManifestYAML(manifestYAML); errs != nil {
 		var retErrs []error
 		for _, e := range errs {
-			retErrs = append(retErrs, manifestLoaderError{context.ManifestPath, fmt.Sprintf("invalid manifest definition: %s", e)})
+			retErrs = append(retErrs, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("invalid manifest definition: %s", e)))
 		}
 		return Manifest{}, retErrs
 	}
@@ -137,7 +149,7 @@ func LoadManifest(context *LoaderContext) (Manifest, []error) {
 	if projectErrors != nil {
 		errs = append(errs, projectErrors...)
 	} else if len(projectDefinitions) == 0 {
-		errs = append(errs, manifestLoaderError{context.ManifestPath, "no projects defined in manifest"})
+		errs = append(errs, newManifestLoaderError(context.ManifestPath, "no projects defined in manifest"))
 	}
 
 	environmentDefinitions, manifestErrors := toEnvironments(context, manifestYAML.EnvironmentGroups)
@@ -145,7 +157,7 @@ func LoadManifest(context *LoaderContext) (Manifest, []error) {
 	if manifestErrors != nil {
 		errs = append(errs, manifestErrors...)
 	} else if len(environmentDefinitions) == 0 {
-		errs = append(errs, manifestLoaderError{context.ManifestPath, "no environments defined in manifest"})
+		errs = append(errs, newManifestLoaderError(context.ManifestPath, "no environments defined in manifest"))
 	}
 
 	if errs != nil {
@@ -239,25 +251,25 @@ func readManifestYAML(context *LoaderContext) (manifest, error) {
 	manifestPath := filepath.Clean(context.ManifestPath)
 
 	if !files.IsYamlFileExtension(manifestPath) {
-		return manifest{}, manifestLoaderError{context.ManifestPath, "manifest file is not a yaml"}
+		return manifest{}, newManifestLoaderError(context.ManifestPath, "manifest file is not a yaml")
 	}
 
 	if exists, err := files.DoesFileExist(context.Fs, manifestPath); err != nil {
 		return manifest{}, err
 	} else if !exists {
-		return manifest{}, manifestLoaderError{context.ManifestPath, "specified manifest file is either no file or does not exist"}
+		return manifest{}, newManifestLoaderError(context.ManifestPath, "specified manifest file is either no file or does not exist")
 	}
 
 	rawData, err := afero.ReadFile(context.Fs, manifestPath)
 	if err != nil {
-		return manifest{}, manifestLoaderError{context.ManifestPath, fmt.Sprintf("error while reading the manifest: %s", err)}
+		return manifest{}, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("error while reading the manifest: %s", err))
 	}
 
 	var m manifest
 
 	err = yaml.UnmarshalStrict(rawData, &m)
 	if err != nil {
-		return manifest{}, manifestLoaderError{context.ManifestPath, fmt.Sprintf("error during parsing the manifest: %s", err)}
+		return manifest{}, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("error during parsing the manifest: %s", err))
 	}
 	return m, nil
 }
@@ -313,11 +325,11 @@ func toEnvironments(context *LoaderContext, groups []group) (map[string]Environm
 
 	for i, group := range groups {
 		if group.Name == "" {
-			errors = append(errors, manifestLoaderError{context.ManifestPath, fmt.Sprintf("missing group name on index `%d`", i)})
+			errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("missing group name on index `%d`", i)))
 		}
 
 		if groupNames[group.Name] {
-			errors = append(errors, manifestLoaderError{context.ManifestPath, fmt.Sprintf("duplicated group name %q", group.Name)})
+			errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("duplicated group name %q", group.Name)))
 		}
 
 		groupNames[group.Name] = true
@@ -325,19 +337,19 @@ func toEnvironments(context *LoaderContext, groups []group) (map[string]Environm
 		for j, env := range group.Environments {
 
 			if env.Name == "" {
-				errors = append(errors, manifestLoaderError{context.ManifestPath, fmt.Sprintf("missing environment name in group %q on index `%d`", group.Name, j)})
+				errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("missing environment name in group %q on index `%d`", group.Name, j)))
 				continue
 			}
 
 			if envNames[env.Name] {
-				errors = append(errors, manifestLoaderError{context.ManifestPath, fmt.Sprintf("duplicated environment name %q", env.Name)})
+				errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("duplicated environment name %q", env.Name)))
 				continue
 			}
 			envNames[env.Name] = true
 
 			// skip loading if environments is not empty, the environments does not contain the env name, or the group should not be included
 			if shouldSkipEnv(context, group, env) {
-				log.Debug("skipping loading of environment %q", env.Name)
+				log.WithFields(field.F("manifestPath", context.ManifestPath)).Debug("skipping loading of environment %q", env.Name)
 				continue
 			}
 
@@ -355,13 +367,13 @@ func toEnvironments(context *LoaderContext, groups []group) (map[string]Environm
 	// validate that all required groups & environments are included
 	for _, g := range context.Groups {
 		if !groupNames[g] {
-			errors = append(errors, manifestLoaderError{context.ManifestPath, fmt.Sprintf("requested group %q not found", g)})
+			errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("requested group %q not found", g)))
 		}
 	}
 
 	for _, e := range context.Environments {
 		if !envNames[e] {
-			errors = append(errors, manifestLoaderError{context.ManifestPath, fmt.Sprintf("requested environment %q not found", e)})
+			errors = append(errors, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("requested environment %q not found", e)))
 		}
 	}
 
@@ -472,7 +484,7 @@ func toProjectDefinitions(context *projectLoaderContext, definitions []project) 
 
 		for _, project := range parsed {
 			if p, found := result[project.Name]; found {
-				errors = append(errors, manifestLoaderError{context.manifestPath, fmt.Sprintf("duplicated project name `%s` used by %s and %s", project.Name, p, project)})
+				errors = append(errors, newManifestLoaderError(context.manifestPath, fmt.Sprintf("duplicated project name `%s` used by %s and %s", project.Name, p, project)))
 				continue
 			}
 
@@ -491,7 +503,7 @@ func checkForDuplicateDefinitions(context *projectLoaderContext, definitions []p
 	definedIds := map[string]struct{}{}
 	for _, project := range definitions {
 		if _, found := definedIds[project.Name]; found {
-			errors = append(errors, manifestLoaderError{context.manifestPath, fmt.Sprintf("duplicated project name `%s`", project.Name)})
+			errors = append(errors, newManifestLoaderError(context.manifestPath, fmt.Sprintf("duplicated project name `%s`", project.Name)))
 		}
 		definedIds[project.Name] = struct{}{}
 	}
