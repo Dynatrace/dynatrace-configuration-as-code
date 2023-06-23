@@ -15,10 +15,10 @@
 package v2
 
 import (
-	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
+	configError "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/template"
@@ -99,14 +99,14 @@ func writeTemplates(context *WriterContext, templates []configTemplate) (errors 
 		err := context.Fs.MkdirAll(templateDir, 0777)
 
 		if err != nil {
-			errors = append(errors, err)
+			errors = append(errors, newConfigWriterError(context, err))
 			continue
 		}
 
 		err = afero.WriteFile(context.Fs, fullTemplatePath, []byte(t.content), 0664)
 
 		if err != nil {
-			errors = append(errors, err)
+			errors = append(errors, newConfigWriterError(context, err))
 		}
 	}
 
@@ -182,7 +182,7 @@ func writeTopLevelDefinitionToDisk(context *WriterContext, apiCoord apiCoordinat
 	definitionYaml, err := yaml.Marshal(definition)
 
 	if err != nil {
-		return err
+		return newConfigWriterError(context, err)
 	}
 
 	sanitizedApi := sanitize(apiCoord.api)
@@ -191,13 +191,13 @@ func writeTopLevelDefinitionToDisk(context *WriterContext, apiCoord apiCoordinat
 	err = context.Fs.MkdirAll(filepath.Dir(targetConfigFile), 0777)
 
 	if err != nil {
-		return err
+		return newConfigWriterError(context, err)
 	}
 
 	err = afero.WriteFile(context.Fs, targetConfigFile, definitionYaml, 0664)
 
 	if err != nil {
-		return err
+		return newConfigWriterError(context, err)
 	}
 
 	return nil
@@ -256,7 +256,7 @@ func toTopLevelConfigDefinition(context *serializerContext, configs []Config) (t
 	// Since they all should have the same configType (they have all the same coordinate), we can take any one.
 	ct, err := extractConfigType(context, configs[0])
 	if err != nil {
-		return topLevelConfigDefinition{}, nil, []error{fmt.Errorf("failed to extract config type: %w", err)}
+		return topLevelConfigDefinition{}, nil, []error{fmtDetailedConfigWriterError(context, "failed to extract config type: %w", err)}
 	}
 
 	return topLevelConfigDefinition{
@@ -298,7 +298,7 @@ func extractConfigType(context *serializerContext, config Config) (typeDefinitio
 		}, nil
 	case AutomationType:
 		if !featureflags.AutomationResources().Enabled() {
-			return typeDefinition{}, fmt.Errorf("automation resource feature is not enabled")
+			return typeDefinition{}, fmtDetailedConfigWriterError(context, "automation resource feature is not enabled")
 		}
 
 		return typeDefinition{
@@ -308,21 +308,21 @@ func extractConfigType(context *serializerContext, config Config) (typeDefinitio
 		}, nil
 
 	default:
-		return typeDefinition{}, fmt.Errorf("unknown config-type (ID: %q)", config.Type.ID())
+		return typeDefinition{}, fmtDetailedConfigWriterError(context, "unknown config-type (ID: %q)", config.Type.ID())
 	}
 }
 
 func getScope(context *serializerContext, config Config) (configParameter, error) {
 	scopeParam, found := config.Parameters[ScopeParameter]
 	if !found {
-		return nil, fmt.Errorf("scope parameter not found. This is likely a bug")
+		return nil, fmtDetailedConfigWriterError(context, "scope parameter not found. This is likely a bug")
 	}
 
 	serializedScope, err := toParameterDefinition(&detailedSerializerContext{
 		serializerContext: context,
 	}, ScopeParameter, scopeParam)
 	if err != nil {
-		return nil, fmt.Errorf("failed to serialize scope-parameter: %w", err)
+		return nil, fmtDetailedConfigWriterError(context, "failed to serialize scope-parameter: %w", err)
 	}
 	return serializedScope, nil
 }
@@ -600,7 +600,7 @@ func parseSkipParameter(d *detailedSerializerContext, config Config) (configPara
 
 	skipDefinition, err := toParameterDefinition(d, SkipParameter, config.SkipForConversion)
 	if err != nil {
-		return nil, fmt.Errorf("failed to serialize skip parameter: %w", err)
+		return nil, fmtDetailedConfigWriterError(d.serializerContext, "failed to serialize skip parameter: %w", err)
 	}
 	return skipDefinition, nil
 }
@@ -611,7 +611,7 @@ func extractTemplate(context *detailedSerializerContext, config Config) (string,
 		path, err := filepath.Rel(context.configFolder, filepath.Clean(templ.FilePath()))
 
 		if err != nil {
-			return "", configTemplate{}, err
+			return "", configTemplate{}, newDetailedConfigWriterError(context.serializerContext, err)
 		}
 
 		return path, configTemplate{
@@ -628,7 +628,7 @@ func extractTemplate(context *detailedSerializerContext, config Config) (string,
 	}
 
 	// this should never happen
-	return "", configTemplate{}, errors.New("unknown template type")
+	return "", configTemplate{}, fmtDetailedConfigWriterError(context.serializerContext, "unknown template type")
 }
 
 func convertParameters(context *detailedSerializerContext, parameters Parameters) (map[string]configParameter, []error) {
@@ -662,7 +662,7 @@ func parseNameParameter(context *detailedSerializerContext, config Config) (conf
 	nameParam, found := config.Parameters[NameParameter]
 
 	if !found {
-		return nil, fmt.Errorf("%s: `name` parameter missing",
+		return nil, fmtDetailedConfigWriterError(context.serializerContext, "%s: `name` parameter missing",
 			config.Coordinate)
 	}
 
@@ -679,7 +679,7 @@ func toParameterDefinition(context *detailedSerializerContext, parameterName str
 	serde, found := context.ParametersSerde[param.GetType()]
 
 	if !found {
-		return nil, fmt.Errorf("%s:%s: no serde found for type `%s`",
+		return nil, fmtDetailedConfigWriterError(context.serializerContext, "%s:%s: no serde found for type `%s`",
 			context.config, parameterName, param.GetType())
 	}
 
@@ -704,7 +704,7 @@ func toValueShorthandDefinition(context *detailedSerializerContext, parameterNam
 		valueParam, ok := param.(*value.ValueParameter)
 
 		if !ok {
-			return nil, fmt.Errorf("%s:%s: parameter of type `%s` is no value param", context.config, parameterName, param.GetType())
+			return nil, fmtDetailedConfigWriterError(context.serializerContext, "%s:%s: parameter of type `%s` is no value param", context.config, parameterName, param.GetType())
 		}
 
 		switch valueParam.Value.(type) {
@@ -724,7 +724,7 @@ func toValueShorthandDefinition(context *detailedSerializerContext, parameterNam
 		}
 	}
 
-	return nil, fmt.Errorf("%s:%s: unknown special type `%s`", context.config, parameterName, param.GetType())
+	return nil, fmtDetailedConfigWriterError(context.serializerContext, "%s:%s: unknown special type `%s`", context.config, parameterName, param.GetType())
 }
 
 func groupConfigs(configs []Config) map[coordinate.Coordinate][]Config {
@@ -745,5 +745,31 @@ func newParameterSerializerContext(context *detailedSerializerContext, name stri
 		Environment:   context.environmentDetails.environment,
 		ParameterName: name,
 		Parameter:     param,
+	}
+}
+
+func newConfigWriterError(context *WriterContext, err error) configError.DetailedConfigWriterError {
+	return configError.DetailedConfigWriterError{
+		Type: configError.ConfigWriterErrorType,
+		Path: filepath.Join(context.OutputFolder, context.ProjectFolder),
+		Err:  err,
+	}
+}
+
+func newDetailedConfigWriterError(context *serializerContext, err error) configError.DetailedConfigWriterError {
+	return configError.DetailedConfigWriterError{
+		Type:     configError.ConfigWriterErrorType,
+		Path:     context.configFolder,
+		Location: context.config,
+		Err:      err,
+	}
+}
+
+func fmtDetailedConfigWriterError(context *serializerContext, format string, args ...interface{}) configError.DetailedConfigWriterError {
+	return configError.DetailedConfigWriterError{
+		Type:     configError.ConfigWriterErrorType,
+		Path:     context.configFolder,
+		Location: context.config,
+		Err:      fmt.Errorf(format, args...),
 	}
 }

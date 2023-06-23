@@ -139,6 +139,7 @@ func NewParameterParserError(context ParameterParserContext, reason string) erro
 }
 
 type ParameterWriterError struct {
+	Type string
 	// config the error happened in
 	Location           coordinate.Coordinate
 	EnvironmentDetails errors.EnvironmentDetails
@@ -163,6 +164,7 @@ func (p ParameterWriterError) Error() string {
 
 func NewParameterWriterError(context ParameterWriterContext, reason string) error {
 	return &ParameterWriterError{
+		Type:               errors.ConfigLoaderErrorType,
 		Location:           context.Coordinate,
 		EnvironmentDetails: errors.EnvironmentDetails{Group: context.Group, Environment: context.Environment},
 		ParameterName:      context.ParameterName,
