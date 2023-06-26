@@ -21,6 +21,7 @@ import (
 	"errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/auth"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/version"
@@ -82,4 +83,17 @@ func isPlatformEnvironment(env manifest.EnvironmentDefinition) bool {
 		return false
 	}
 	return true
+}
+
+func CreateClientSet(url string, auth manifest.Auth) (*client.ClientSet, error) {
+	if auth.OAuth == nil {
+		return client.CreateClassicClientSet(url, auth.Token.Value)
+	}
+	return client.CreatePlatformClientSet(url, client.PlatformAuth{
+		OauthClientID:     auth.OAuth.ClientID.Value,
+		OauthClientSecret: auth.OAuth.ClientSecret.Value,
+		Token:             auth.Token.Value,
+		OauthTokenURL:     auth.OAuth.GetTokenEndpointValue(),
+	})
+
 }

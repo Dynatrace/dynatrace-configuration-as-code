@@ -24,7 +24,6 @@ import (
 	clientAuth "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/auth"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 )
 
 // ClientSet composes a "full" set of sub-clients to access Dynatrace APIs
@@ -53,41 +52,51 @@ func (s ClientSet) Entities() *dtclient.DynatraceClient {
 	return s.dtClient
 }
 
-func CreateClientSet(url string, auth manifest.Auth) (*ClientSet, error) {
-	var dtClient *dtclient.DynatraceClient
-	var autClient *automation.Client
-	var err error
-
+func CreateClassicClientSet(url string, token string) (*ClientSet, error) {
 	concurrentRequestLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
 
-	switch {
-	case auth.OAuth == nil:
-		dtClient, err = dtclient.NewClassicClient(
-			url,
-			auth.Token.Value,
-			dtclient.WithAutoServerVersion(),
-			dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentRequestLimit)),
-		)
-		autClient = nil
-	default:
-		oauthCredentials := clientAuth.OauthCredentials{
-			ClientID:     auth.OAuth.ClientID.Value,
-			ClientSecret: auth.OAuth.ClientSecret.Value,
-			TokenURL:     auth.OAuth.GetTokenEndpointValue(),
-		}
-		dtClient, err = dtclient.NewPlatformClient(
-			url,
-			auth.Token.Value,
-			oauthCredentials,
-			dtclient.WithAutoServerVersion(),
-			dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentRequestLimit)),
-		)
-		autClient = automation.NewClient(
-			url,
-			clientAuth.NewOAuthClient(context.TODO(), oauthCredentials),
-			automation.WithClientRequestLimiter(concurrency.NewLimiter(concurrentRequestLimit)),
-		)
+	dtClient, err := dtclient.NewClassicClient(
+		url,
+		token,
+		dtclient.WithAutoServerVersion(),
+		dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentRequestLimit)),
+	)
+	if err != nil {
+		return nil, err
 	}
+
+	return &ClientSet{
+		dtClient:  dtClient,
+		autClient: nil,
+	}, nil
+}
+
+type PlatformAuth struct {
+	OauthClientID, OauthClientSecret, OauthTokenURL string
+	Token                                           string
+}
+
+func CreatePlatformClientSet(url string, auth PlatformAuth) (*ClientSet, error) {
+	concurrentRequestLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
+
+	oauthCredentials := clientAuth.OauthCredentials{
+		ClientID:     auth.OauthClientID,
+		ClientSecret: auth.OauthClientSecret,
+		TokenURL:     auth.OauthTokenURL,
+	}
+	dtClient, err := dtclient.NewPlatformClient(
+		url,
+		auth.Token,
+		oauthCredentials,
+		dtclient.WithAutoServerVersion(),
+		dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentRequestLimit)),
+	)
+	autClient := automation.NewClient(
+		url,
+		clientAuth.NewOAuthClient(context.TODO(), oauthCredentials),
+		automation.WithClientRequestLimiter(concurrency.NewLimiter(concurrentRequestLimit)),
+	)
+
 	if err != nil {
 		return nil, fmt.Errorf("unable to create API clients: %w", err)
 	}
@@ -96,5 +105,4 @@ func CreateClientSet(url string, auth manifest.Auth) (*ClientSet, error) {
 		dtClient:  dtClient,
 		autClient: autClient,
 	}, nil
-
 }

@@ -20,11 +20,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/delete"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"github.com/spf13/afero"
@@ -79,7 +79,7 @@ func purgeConfigs(environments []manifest.EnvironmentDefinition, apis api.APIs) 
 }
 
 func purgeForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs) []error {
-	clients, err := client.CreateClientSet(env.URL.Value, env.Auth)
+	clients, err := dynatrace.CreateClientSet(env.URL.Value, env.Auth)
 
 	if err != nil {
 		return []error{

@@ -18,10 +18,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/delete"
 	"golang.org/x/exp/maps"
@@ -92,7 +92,7 @@ func deleteConfigForEnvironment(env manifest.EnvironmentDefinition, apis api.API
 		log.WithCtxFields(ctx).Warn("No OAuth defined for environment - Dynatrace Platform configurations like Automations can not be deleted.")
 	}
 
-	clientSet, err := client.CreateClientSet(env.URL.Value, env.Auth)
+	clientSet, err := dynatrace.CreateClientSet(env.URL.Value, env.Auth)
 	if err != nil {
 		return []error{
 			fmt.Errorf("It was not possible to create a client for env `%s` due to the following error: %w", env.Name, err),
