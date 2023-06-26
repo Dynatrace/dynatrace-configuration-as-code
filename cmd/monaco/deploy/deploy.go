@@ -21,7 +21,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/slices"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/deploy"
 	"path/filepath"
 	"strings"
@@ -95,14 +94,16 @@ func deployOnEnvironment(env *manifest.EnvironmentDefinition, cfgs []config.Conf
 	if dryRun {
 		clientSet = deploy.DummyClientSet
 	} else {
-		c, err := client.CreateClientSet(env.URL.Value, env.Auth)
+
+		cl, err := dynatrace.CreateClientSet(env.URL.Value, env.Auth)
 		if err != nil {
 			return []error{fmt.Errorf("failed to create clients for envrionment %q: %w", env.Name, err)}
 		}
+
 		clientSet = deploy.ClientSet{
-			Classic:    c.Classic(),
-			Settings:   c.Settings(),
-			Automation: c.Automation(),
+			Classic:    cl.Classic(),
+			Settings:   cl.Settings(),
+			Automation: cl.Automation(),
 		}
 	}
 

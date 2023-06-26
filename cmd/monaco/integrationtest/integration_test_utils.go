@@ -19,6 +19,7 @@
 package integrationtest
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
@@ -32,8 +33,7 @@ import (
 )
 
 func CreateDynatraceClients(t *testing.T, environment manifest.EnvironmentDefinition) *client.ClientSet {
-
-	clients, err := client.CreateClientSet(environment.URL.Value, environment.Auth)
+	clients, err := dynatrace.CreateClientSet(environment.URL.Value, environment.Auth)
 	assert.NilError(t, err, "failed to create test client")
 
 	return clients

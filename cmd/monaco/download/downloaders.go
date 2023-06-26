@@ -17,7 +17,7 @@
 package download
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
+	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/dynatrace"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download"
 	dlautomation "github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/automation"
@@ -28,7 +28,7 @@ import (
 type downloaders []interface{}
 
 func makeDownloaders(options downloadConfigsOptions) (downloaders, error) {
-	clients, err := client.CreateClientSet(options.environmentURL, options.auth)
+	clients, err := dynatrace.CreateClientSet(options.environmentURL, options.auth)
 	if err != nil {
 		return nil, err
 	}
