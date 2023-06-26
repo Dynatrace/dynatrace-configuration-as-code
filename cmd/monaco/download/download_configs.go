@@ -21,7 +21,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/dependency_resolution"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/id_extraction"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
@@ -226,7 +225,7 @@ func downloadConfigs(downloaders downloaders, opts downloadConfigsOptions) (proj
 	}
 
 	if shouldDownloadAutomationResources(opts) {
-		if _, ok := downloaders.Automation().(automation.NoopAutomationDownloader); !ok {
+		if opts.auth.OAuth != nil {
 			log.Info("Downloading automation resources")
 
 			automationCfgs, err := downloaders.Automation().Download(opts.projectName)
