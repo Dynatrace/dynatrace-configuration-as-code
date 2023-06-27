@@ -21,13 +21,13 @@ import (
 	"errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/auth"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
-	"net/http"
 )
 
 // VerifyEnvironmentGeneration takes a manifestEnvironments map and tries to verify that each environment can be reached
@@ -48,15 +48,11 @@ func isClassicEnvironment(env manifest.EnvironmentDefinition) bool {
 	if _, err := version.GetDynatraceVersion(auth.NewTokenAuthClient(env.Auth.Token.Value), env.URL.Value); err != nil {
 		var respErr clientErrors.RespError
 		if errors.As(err, &respErr) {
-			log.Error("Could not authorize against the environment with name %q (%s) using token authorization.", env.Name, env.URL.Value)
-			if respErr.StatusCode != http.StatusForbidden && respErr.StatusCode != http.StatusUnauthorized {
-				log.Error("Please verify that this environment is a Dynatrace Classic environment.")
-			} else {
-				log.Error(err.Error())
-			}
+			log.WithFields(field.Error(err)).Error("Could not authorize against the environment with name %q (%s) using token authorization: %v", env.Name, env.URL.Value, err)
 		} else {
-			log.Error("Could not connect to environment %q (%s): %v", env.Name, env.URL.Value, err)
+			log.WithFields(field.Error(err)).Error("Could not connect to environment %q (%s): %v", env.Name, env.URL.Value, err)
 		}
+		log.Error("Please verify that this environment is a Dynatrace Classic environment.")
 		return false
 	}
 	return true
@@ -71,15 +67,11 @@ func isPlatformEnvironment(env manifest.EnvironmentDefinition) bool {
 	if _, err := metadata.GetDynatraceClassicURL(auth.NewOAuthClient(context.TODO(), oauthCredentials), env.URL.Value); err != nil {
 		var respErr clientErrors.RespError
 		if errors.As(err, &respErr) {
-			log.Error("Could not authorize against the environment with name %q (%s) using oAuth authorization.", env.Name, env.URL.Value)
-			if respErr.StatusCode != http.StatusForbidden && respErr.StatusCode != http.StatusUnauthorized {
-				log.Error("Please verify that this environment is a Dynatrace Platform environment.")
-			} else {
-				log.Error(err.Error())
-			}
+			log.WithFields(field.Error(err)).Error("Could not authorize against the environment with name %q (%s) using oAuth authorization: %v", env.Name, env.URL.Value, err)
 		} else {
-			log.Error("Could not connect to environment %q (%s): %v", env.Name, env.URL.Value, err)
+			log.WithFields(field.Error(err)).Error("Could not connect to environment %q (%s): %v", env.Name, env.URL.Value, err)
 		}
+		log.Error("Please verify that this environment is a Dynatrace Platform environment.")
 		return false
 	}
 	return true
