@@ -57,7 +57,7 @@ func Test_deleteConfig(t *testing.T) {
 			}))
 			defer server.Close()
 
-			if _, err := DeleteConfig(server.Client(), server.URL, "checked ID does not matter"); (err != nil) != tt.wantErr {
+			if _, err := DeleteConfig(server.Client(), server.URL); (err != nil) != tt.wantErr {
 				t.Errorf("DeleteConfig() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

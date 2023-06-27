@@ -526,7 +526,13 @@ func (d *DynatraceClient) DeleteConfigById(api api.API, id string) (err error) {
 func (d *DynatraceClient) deleteConfigById(api api.API, id string) error {
 
 	u := api.CreateURL(d.environmentURLClassic)
-	resp, err := rest.DeleteConfig(d.clientClassic, u, id)
+	parsedURL, err := url.Parse(u)
+	if err != nil {
+		return err
+	}
+	parsedURL = parsedURL.JoinPath(id)
+
+	resp, err := rest.DeleteConfig(d.clientClassic, parsedURL.String())
 	if err != nil {
 		return err
 	}
@@ -847,7 +853,8 @@ func (d *DynatraceClient) deleteSettings(objectID string) error {
 		return fmt.Errorf("failed to parse URL '%s': %w", d.environmentURL+d.settingsObjectAPIPath, err)
 	}
 
-	resp, err := rest.DeleteConfig(d.client, u.String(), objectID)
+	u = u.JoinPath(objectID)
+	resp, err := rest.DeleteConfig(d.client, u.String())
 	if err != nil {
 		return err
 	}

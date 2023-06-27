@@ -40,11 +40,8 @@ func Get(client *http.Client, url string) (Response, error) {
 	return executeRequest(client, req)
 }
 
-// the name delete() would collide with the built-in function
-func DeleteConfig(client *http.Client, url string, id string) (Response, error) {
-	fullPath := url + "/" + id
-	req, err := request(http.MethodDelete, fullPath)
-
+func DeleteConfig(client *http.Client, url string) (Response, error) {
+	req, err := request(http.MethodDelete, url)
 	if err != nil {
 		return Response{}, err
 	}

@@ -306,7 +306,7 @@ func TestAutomationClientDelete(t *testing.T) {
 	t.Run("Delete - OK", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if req.Method == http.MethodDelete {
-				assert.True(t, strings.HasSuffix(req.URL.String(), "some-monaco-generated-ID"))
+				assert.True(t, strings.HasSuffix(req.URL.Path, "some-monaco-generated-ID"))
 				rw.WriteHeader(http.StatusOK)
 				return
 			}
@@ -329,7 +329,7 @@ func TestAutomationClientDelete(t *testing.T) {
 			}
 
 			if req.Method == http.MethodDelete {
-				assert.True(t, strings.HasSuffix(req.URL.String(), "some-monaco-generated-ID"))
+				assert.True(t, strings.HasSuffix(req.URL.Path, "some-monaco-generated-ID"))
 				rw.WriteHeader(http.StatusOK)
 				return
 			}
@@ -356,7 +356,7 @@ func TestAutomationClientDelete(t *testing.T) {
 	t.Run("Delete - Object Not Found no counted as Error", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if req.Method == http.MethodDelete {
-				assert.True(t, strings.HasSuffix(req.URL.String(), "some-monaco-generated-ID"))
+				assert.True(t, strings.HasSuffix(req.URL.Path, "some-monaco-generated-ID"))
 				rw.WriteHeader(http.StatusNotFound)
 				return
 			}
@@ -372,7 +372,7 @@ func TestAutomationClientDelete(t *testing.T) {
 	t.Run("Delete - Server Error - Fails", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if req.Method == http.MethodDelete {
-				assert.True(t, strings.HasSuffix(req.URL.String(), "some-monaco-generated-ID"))
+				assert.True(t, strings.HasSuffix(req.URL.Path, "some-monaco-generated-ID"))
 				rw.WriteHeader(http.StatusInternalServerError)
 				return
 			}

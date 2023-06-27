@@ -259,7 +259,7 @@ func TestDeleteAutomations(t *testing.T) {
 	t.Run("TestDeleteAutomations", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if req.Method == http.MethodDelete && strings.Contains(req.RequestURI, "workflows") {
-				assert.True(t, strings.HasSuffix(req.URL.String(), "/e8fd06bf-08ab-3a2f-9d3f-1fd66ea870a2"))
+				assert.True(t, strings.HasSuffix(req.URL.Path, "/e8fd06bf-08ab-3a2f-9d3f-1fd66ea870a2"))
 				rw.WriteHeader(http.StatusOK)
 				return
 			}
@@ -290,19 +290,19 @@ func TestDeleteAutomations(t *testing.T) {
 
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if req.Method == http.MethodDelete && strings.Contains(req.RequestURI, "workflows") {
-				assert.True(t, strings.HasSuffix(req.URL.String(), "/e8fd06bf-08ab-3a2f-9d3f-1fd66ea870a2"))
+				assert.True(t, strings.HasSuffix(req.URL.Path, "/e8fd06bf-08ab-3a2f-9d3f-1fd66ea870a2"))
 				rw.WriteHeader(http.StatusOK)
 				workflowDeleted = true
 				return
 			}
 			if req.Method == http.MethodDelete && strings.Contains(req.RequestURI, "business-calendars") {
-				assert.True(t, strings.HasSuffix(req.URL.String(), "/0d17aa4d-9502-3fea-aa90-4e9529b3f199"))
+				assert.True(t, strings.HasSuffix(req.URL.Path, "/0d17aa4d-9502-3fea-aa90-4e9529b3f199"))
 				rw.WriteHeader(http.StatusOK)
 				calendarDeleted = true
 				return
 			}
 			if req.Method == http.MethodDelete && strings.Contains(req.RequestURI, "scheduling-rules") {
-				assert.True(t, strings.HasSuffix(req.URL.String(), "/e8f508f5-ff81-32a5-be6d-5d6c6295dabb"))
+				assert.True(t, strings.HasSuffix(req.URL.Path, "/e8f508f5-ff81-32a5-be6d-5d6c6295dabb"))
 				rw.WriteHeader(http.StatusOK)
 				scheduleDeleted = true
 				return
