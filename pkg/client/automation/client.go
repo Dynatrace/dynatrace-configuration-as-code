@@ -131,9 +131,7 @@ func (a Client) list(ctx context.Context, resourceType ResourceType) ([]Response
 			return nil, fmt.Errorf("unable to list automation resources: %w", err)
 		}
 
-		q := u.Query()
-		q.Add("adminAccess", strconv.FormatBool(workflowsAdminAccess))
-		u.RawQuery = q.Encode()
+		setAdminAccessQueryParam(u, workflowsAdminAccess)
 
 		// try to get the list of resources
 		resp, err := rest.Get(a.client, u.String())
@@ -190,9 +188,7 @@ func (a Client) upsert(ctx context.Context, resourceType ResourceType, id string
 	url = url.JoinPath(a.resources[resourceType].Path, id)
 
 	workflowsAdminAccess := resourceType == Workflows
-	q := url.Query()
-	q.Add("adminAccess", strconv.FormatBool(workflowsAdminAccess))
-	url.RawQuery = q.Encode()
+	setAdminAccessQueryParam(url, workflowsAdminAccess)
 
 	resp, err := rest.Put(a.client, url.String(), data)
 	if err != nil {
@@ -200,9 +196,7 @@ func (a Client) upsert(ctx context.Context, resourceType ResourceType, id string
 	}
 
 	if workflowsAdminAccess && resp.StatusCode == http.StatusForbidden {
-		q := url.Query()
-		q.Set("adminAccess", "false")
-		url.RawQuery = q.Encode()
+		setAdminAccessQueryParam(url, false)
 
 		resp, err = rest.Put(a.client, url.String(), data)
 		if err != nil {
@@ -274,7 +268,6 @@ func (a Client) Delete(resourceType ResourceType, id string) (err error) {
 }
 
 func (a Client) delete(resourceType ResourceType, id string) error {
-
 	url, e := url.Parse(a.url)
 	if e != nil {
 		return e
@@ -282,9 +275,7 @@ func (a Client) delete(resourceType ResourceType, id string) error {
 	url = url.JoinPath(a.resources[resourceType].Path)
 
 	workflowsAdminAccess := resourceType == Workflows
-	q := url.Query()
-	q.Add("adminAccess", strconv.FormatBool(workflowsAdminAccess))
-	url.RawQuery = q.Encode()
+	setAdminAccessQueryParam(url, workflowsAdminAccess)
 
 	resp, err := rest.DeleteConfig(a.client, url.String(), id)
 	if err != nil {
@@ -292,9 +283,7 @@ func (a Client) delete(resourceType ResourceType, id string) error {
 	}
 
 	if workflowsAdminAccess && resp.StatusCode == http.StatusForbidden {
-		q := url.Query()
-		q.Set("adminAccess", "false")
-		url.RawQuery = q.Encode()
+		setAdminAccessQueryParam(url, false)
 		resp, err = rest.DeleteConfig(a.client, url.String(), id)
 		if err != nil {
 			return fmt.Errorf("unable to delete object with ID %s: %w", id, err)
@@ -338,4 +327,10 @@ func rmIDField(data *[]byte) error {
 		return err
 	}
 	return nil
+}
+
+func setAdminAccessQueryParam(url *url.URL, enabled bool) {
+	q := url.Query()
+	q.Set("adminAccess", strconv.FormatBool(enabled))
+	url.RawQuery = q.Encode()
 }
