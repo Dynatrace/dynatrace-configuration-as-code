@@ -525,7 +525,20 @@ func (d *DynatraceClient) DeleteConfigById(api api.API, id string) (err error) {
 
 func (d *DynatraceClient) deleteConfigById(api api.API, id string) error {
 
-	return rest.DeleteConfig(d.clientClassic, api.CreateURL(d.environmentURLClassic), id)
+	url := api.CreateURL(d.environmentURLClassic)
+	resp, err := rest.DeleteConfig(d.clientClassic, url, id)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode == http.StatusNotFound {
+		log.Debug("No config with id '%s' found to delete (HTTP 404 response)", id)
+		return nil
+	}
+
+	if !resp.IsSuccess() {
+		return rest.NewRespErr(fmt.Sprintf("failed call to DELETE %s (HTTP %d)!\n Response was:\n %s", api.CreateURL(d.environmentURLClassic)+"/"+id, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodDelete, url)
+	}
+	return nil
 }
 
 func (d *DynatraceClient) ConfigExistsByName(ctx context.Context, api api.API, name string) (exists bool, id string, err error) {
@@ -834,8 +847,19 @@ func (d *DynatraceClient) deleteSettings(objectID string) error {
 		return fmt.Errorf("failed to parse URL '%s': %w", d.environmentURL+d.settingsObjectAPIPath, err)
 	}
 
-	return rest.DeleteConfig(d.client, u.String(), objectID)
+	resp, err := rest.DeleteConfig(d.client, u.String(), objectID)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode == http.StatusNotFound {
+		log.Debug("No config with id '%s' found to delete (HTTP 404 response)", objectID)
+		return nil
+	}
 
+	if !resp.IsSuccess() {
+		return rest.NewRespErr(fmt.Sprintf("failed call to DELETE %s (HTTP %d)!\n Response was:\n %s", u.String()+"/"+objectID, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodDelete, u.String())
+	}
+	return nil
 }
 
 func buildUrl(environmentUrl, urlPath string, params url.Values) (*url.URL, error) {

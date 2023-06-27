@@ -274,11 +274,41 @@ func (a Client) Delete(resourceType ResourceType, id string) (err error) {
 }
 
 func (a Client) delete(resourceType ResourceType, id string) error {
-	err := rest.DeleteConfig(a.client, a.url+a.resources[resourceType].Path, id)
+
+	url, e := url.Parse(a.url)
+	if e != nil {
+		return e
+	}
+	url = url.JoinPath(a.resources[resourceType].Path)
+
+	workflowsAdminAccess := resourceType == Workflows
+	q := url.Query()
+	q.Add("adminAccess", strconv.FormatBool(workflowsAdminAccess))
+	url.RawQuery = q.Encode()
+
+	resp, err := rest.DeleteConfig(a.client, url.String(), id)
 	if err != nil {
 		return fmt.Errorf("unable to delete object with ID %s: %w", id, err)
 	}
 
+	if workflowsAdminAccess && resp.StatusCode == http.StatusForbidden {
+		q := url.Query()
+		q.Set("adminAccess", "false")
+		url.RawQuery = q.Encode()
+		resp, err = rest.DeleteConfig(a.client, url.String(), id)
+		if err != nil {
+			return fmt.Errorf("unable to delete object with ID %s: %w", id, err)
+		}
+	}
+
+	if resp.StatusCode == http.StatusNotFound {
+		log.Debug("No config with id '%s' found to delete (HTTP 404 response)", id)
+		return nil
+	}
+
+	if !resp.IsSuccess() {
+		return rest.NewRespErr("unable to delete automation resources", resp)
+	}
 	return nil
 }
 

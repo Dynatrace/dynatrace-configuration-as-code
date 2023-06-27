@@ -319,6 +319,29 @@ func TestAutomationClientDelete(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("Delete - workflow admin access fails - subsequent OK", func(t *testing.T) {
+		noCalls := 0
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodDelete && noCalls == 0 {
+				rw.WriteHeader(http.StatusForbidden)
+				noCalls++
+				return
+			}
+
+			if req.Method == http.MethodDelete {
+				assert.True(t, strings.HasSuffix(req.URL.String(), "some-monaco-generated-ID"))
+				rw.WriteHeader(http.StatusOK)
+				return
+			}
+			assert.Fail(t, "unexpected HTTP method call")
+		}))
+		defer server.Close()
+
+		c := automation.NewClient(server.URL, server.Client())
+		err := c.Delete(automation.Workflows, "some-monaco-generated-ID")
+		assert.NoError(t, err)
+	})
+
 	t.Run("Delete - Without ID - Fails", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			assert.Fail(t, "unexpected HTTP method call")

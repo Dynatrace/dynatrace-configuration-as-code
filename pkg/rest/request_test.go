@@ -48,26 +48,6 @@ func Test_deleteConfig(t *testing.T) {
 			http.StatusNotFound,
 			false,
 		},
-		{
-			"returns error on bad request",
-			http.StatusBadRequest,
-			true,
-		},
-		{
-			"returns error on unauthorized",
-			http.StatusUnauthorized,
-			true,
-		},
-		{
-			"returns error on server error",
-			http.StatusInternalServerError,
-			true,
-		},
-		{
-			"returns error on server unavailable",
-			http.StatusServiceUnavailable,
-			true,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -77,7 +57,7 @@ func Test_deleteConfig(t *testing.T) {
 			}))
 			defer server.Close()
 
-			if err := DeleteConfig(server.Client(), server.URL, "checked ID does not matter"); (err != nil) != tt.wantErr {
+			if _, err := DeleteConfig(server.Client(), server.URL, "checked ID does not matter"); (err != nil) != tt.wantErr {
 				t.Errorf("DeleteConfig() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
