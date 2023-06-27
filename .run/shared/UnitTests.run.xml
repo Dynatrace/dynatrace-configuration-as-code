@@ -4,7 +4,7 @@
     <working_directory value="$PROJECT_DIR$" />
     <go_parameters value="--tags=unit" />
     <kind value="DIRECTORY" />
-    <package value="github.com/dynatrace/dynatrace-configuration-as-code" />
+    <package value="github.com/dynatrace/dynatrace-configuration-as-code/v2" />
     <directory value="$PROJECT_DIR$" />
     <filePath value="$PROJECT_DIR$" />
     <framework value="gotest" />
