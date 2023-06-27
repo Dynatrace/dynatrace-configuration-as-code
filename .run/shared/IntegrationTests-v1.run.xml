@@ -13,7 +13,7 @@
     </envs>
     <root_directory value="$PROJECT_DIR$" />
     <kind value="DIRECTORY" />
-    <package value="github.com/dynatrace/dynatrace-configuration-as-code" />
+    <package value="github.com/dynatrace/dynatrace-configuration-as-code/v2" />
     <directory value="$PROJECT_DIR$/cmd" />
     <filePath value="$PROJECT_DIR$" />
     <framework value="gotest" />

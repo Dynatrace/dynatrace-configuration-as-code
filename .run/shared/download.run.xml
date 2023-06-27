@@ -8,7 +8,7 @@
       <env name="TOKEN" value="FILL ME" />
     </envs>
     <kind value="PACKAGE" />
-    <package value="github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco" />
+    <package value="github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco" />
     <directory value="$PROJECT_DIR$" />
     <filePath value="$PROJECT_DIR$/cmd/monaco/main.go" />
     <method v="2" />
