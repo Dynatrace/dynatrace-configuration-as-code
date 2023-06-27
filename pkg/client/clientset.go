@@ -24,6 +24,8 @@ import (
 	clientAuth "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/auth"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
+	"runtime"
 )
 
 // ClientSet composes a "full" set of sub-clients to access Dynatrace APIs
@@ -95,6 +97,7 @@ func CreatePlatformClientSet(url string, auth PlatformAuth) (*ClientSet, error) 
 		url,
 		clientAuth.NewOAuthClient(context.TODO(), oauthCredentials),
 		automation.WithClientRequestLimiter(concurrency.NewLimiter(concurrentRequestLimit)),
+		automation.WithCustomUserAgentString("Dynatrace Monitoring as Code/"+version.MonitoringAsCode+" "+(runtime.GOOS+" "+runtime.GOARCH)),
 	)
 
 	if err != nil {
