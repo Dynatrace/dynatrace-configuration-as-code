@@ -18,21 +18,21 @@ package rest
 
 import (
 	"bytes"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/timeutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
+	"golang.org/x/net/context"
 	"io"
 	"net/http"
 	"runtime"
 
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/internal/timeutils"
-
 	"github.com/google/uuid"
 )
 
-func Get(client *http.Client, url string) (Response, error) {
-	req, err := request(http.MethodGet, url)
+func Get(ctx context.Context, client *http.Client, url string) (Response, error) {
+	req, err := request(ctx, http.MethodGet, url)
 
 	if err != nil {
 		return Response{}, err
@@ -41,8 +41,8 @@ func Get(client *http.Client, url string) (Response, error) {
 	return executeRequest(client, req)
 }
 
-func Delete(client *http.Client, url string) (Response, error) {
-	req, err := request(http.MethodDelete, url)
+func Delete(ctx context.Context, client *http.Client, url string) (Response, error) {
+	req, err := request(ctx, http.MethodDelete, url)
 	if err != nil {
 		return Response{}, err
 	}
@@ -51,8 +51,8 @@ func Delete(client *http.Client, url string) (Response, error) {
 
 }
 
-func Post(client *http.Client, url string, data []byte) (Response, error) {
-	req, err := requestWithBody(http.MethodPost, url, bytes.NewBuffer(data))
+func Post(ctx context.Context, client *http.Client, url string, data []byte) (Response, error) {
+	req, err := requestWithBody(ctx, http.MethodPost, url, bytes.NewBuffer(data))
 
 	if err != nil {
 		return Response{}, err
@@ -61,8 +61,8 @@ func Post(client *http.Client, url string, data []byte) (Response, error) {
 	return executeRequest(client, req)
 }
 
-func PostMultiPartFile(client *http.Client, url string, data *bytes.Buffer, contentType string) (Response, error) {
-	req, err := requestWithBody(http.MethodPost, url, data)
+func PostMultiPartFile(ctx context.Context, client *http.Client, url string, data *bytes.Buffer, contentType string) (Response, error) {
+	req, err := requestWithBody(ctx, http.MethodPost, url, data)
 
 	if err != nil {
 		return Response{}, err
@@ -73,8 +73,8 @@ func PostMultiPartFile(client *http.Client, url string, data *bytes.Buffer, cont
 	return executeRequest(client, req)
 }
 
-func Put(client *http.Client, url string, data []byte) (Response, error) {
-	req, err := requestWithBody(http.MethodPut, url, bytes.NewBuffer(data))
+func Put(ctx context.Context, client *http.Client, url string, data []byte) (Response, error) {
+	req, err := requestWithBody(ctx, http.MethodPut, url, bytes.NewBuffer(data))
 
 	if err != nil {
 		return Response{}, err
@@ -84,14 +84,14 @@ func Put(client *http.Client, url string, data []byte) (Response, error) {
 }
 
 // SendRequestWithBody is a function doing a PUT or POST HTTP request
-type SendRequestWithBody func(client *http.Client, url string, data []byte) (Response, error)
+type SendRequestWithBody func(ctx context.Context, client *http.Client, url string, data []byte) (Response, error)
 
-func request(method string, url string) (*http.Request, error) {
-	return requestWithBody(method, url, nil)
+func request(ctx context.Context, method string, url string) (*http.Request, error) {
+	return requestWithBody(ctx, method, url, nil)
 }
 
-func requestWithBody(method string, url string, body io.Reader) (*http.Request, error) {
-	req, err := http.NewRequest(method, url, body)
+func requestWithBody(ctx context.Context, method string, url string, body io.Reader) (*http.Request, error) {
+	req, err := http.NewRequestWithContext(ctx, method, url, body)
 
 	if err != nil {
 		return nil, err

@@ -267,7 +267,7 @@ func printUploadToSameEnvironmentWarning(env manifest.EnvironmentDefinition) {
 		httpClient = clientAuth.NewOAuthClient(context.TODO(), credentials)
 	}
 
-	serverVersion, err = versionClient.GetDynatraceVersion(httpClient, env.URL.Value)
+	serverVersion, err = versionClient.GetDynatraceVersion(context.TODO(), httpClient, env.URL.Value)
 	if err != nil {
 		log.WithFields(field.Environment(env.Name, env.Group), field.Error(err)).Warn("Unable to determine server version %q: %v", env.URL.Value, err)
 		return

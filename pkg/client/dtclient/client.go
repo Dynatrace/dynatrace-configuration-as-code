@@ -286,7 +286,7 @@ func WithAutoServerVersion() func(client *DynatraceClient) {
 			// so this call would need to be "redirected" to the second gen URL, which do not currently resolve
 			d.serverVersion = version.UnknownVersion
 		} else {
-			serverVersion, err = dtVersion.GetDynatraceVersion(d.clientClassic, d.environmentURLClassic)
+			serverVersion, err = dtVersion.GetDynatraceVersion(context.TODO(), d.clientClassic, d.environmentURLClassic)
 		}
 		if err != nil {
 			log.WithFields(field.Error(err)).Warn("Unable to determine Dynatrace server version: %v", err)
@@ -314,7 +314,7 @@ func NewPlatformClient(dtURL string, token string, oauthCredentials auth.OauthCr
 	tokenClient := auth.NewTokenAuthClient(token)
 	oauthClient := auth.NewOAuthClient(context.TODO(), oauthCredentials)
 
-	classicURL, err := metadata.GetDynatraceClassicURL(oauthClient, dtURL)
+	classicURL, err := metadata.GetDynatraceClassicURL(context.TODO(), oauthClient, dtURL)
 	if err != nil {
 		return nil, err
 	}
@@ -489,12 +489,12 @@ func (d *DynatraceClient) listConfigs(ctx context.Context, api api.API) (values 
 
 func (d *DynatraceClient) ReadConfigById(api api.API, id string) (json []byte, err error) {
 	d.limiter.ExecuteBlocking(func() {
-		json, err = d.readConfigById(api, id)
+		json, err = d.readConfigById(context.TODO(), api, id)
 	})
 	return
 }
 
-func (d *DynatraceClient) readConfigById(api api.API, id string) (json []byte, err error) {
+func (d *DynatraceClient) readConfigById(ctx context.Context, api api.API, id string) (json []byte, err error) {
 	var dtUrl string
 	isSingleConfigurationApi := api.SingleConfiguration
 
@@ -504,7 +504,7 @@ func (d *DynatraceClient) readConfigById(api api.API, id string) (json []byte, e
 		dtUrl = api.CreateURL(d.environmentURLClassic) + "/" + url.PathEscape(id)
 	}
 
-	response, err := rest.Get(d.clientClassic, dtUrl)
+	response, err := rest.Get(ctx, d.clientClassic, dtUrl)
 
 	if err != nil {
 		return nil, err
@@ -519,12 +519,12 @@ func (d *DynatraceClient) readConfigById(api api.API, id string) (json []byte, e
 
 func (d *DynatraceClient) DeleteConfigById(api api.API, id string) (err error) {
 	d.limiter.ExecuteBlocking(func() {
-		err = d.deleteConfigById(api, id)
+		err = d.deleteConfigById(context.TODO(), api, id)
 	})
 	return
 }
 
-func (d *DynatraceClient) deleteConfigById(api api.API, id string) error {
+func (d *DynatraceClient) deleteConfigById(ctx context.Context, api api.API, id string) error {
 
 	u := api.CreateURL(d.environmentURLClassic)
 	parsedURL, err := url.Parse(u)
@@ -533,7 +533,7 @@ func (d *DynatraceClient) deleteConfigById(api api.API, id string) error {
 	}
 	parsedURL = parsedURL.JoinPath(id)
 
-	resp, err := rest.Delete(d.clientClassic, parsedURL.String())
+	resp, err := rest.Delete(ctx, d.clientClassic, parsedURL.String())
 	if err != nil {
 		return err
 	}
@@ -599,19 +599,19 @@ type SchemaList []struct {
 
 func (d *DynatraceClient) ListSchemas() (schemas SchemaList, err error) {
 	d.limiter.ExecuteBlocking(func() {
-		schemas, err = d.listSchemas()
+		schemas, err = d.listSchemas(context.TODO())
 	})
 	return
 }
 
-func (d *DynatraceClient) listSchemas() (SchemaList, error) {
+func (d *DynatraceClient) listSchemas(ctx context.Context) (SchemaList, error) {
 	u, err := url.Parse(d.environmentURL + d.settingsSchemaAPIPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse url: %w", err)
 	}
 
 	// getting all schemas does not have pagination
-	resp, err := rest.Get(d.client, u.String())
+	resp, err := rest.Get(ctx, d.client, u.String())
 	if err != nil {
 		return nil, fmt.Errorf("failed to GET schemas: %w", err)
 	}
@@ -635,18 +635,18 @@ func (d *DynatraceClient) listSchemas() (SchemaList, error) {
 
 func (d *DynatraceClient) GetSettingById(objectId string) (res *DownloadSettingsObject, err error) {
 	d.limiter.ExecuteBlocking(func() {
-		res, err = d.getSettingById(objectId)
+		res, err = d.getSettingById(context.TODO(), objectId)
 	})
 	return
 }
 
-func (d *DynatraceClient) getSettingById(objectId string) (*DownloadSettingsObject, error) {
+func (d *DynatraceClient) getSettingById(ctx context.Context, objectId string) (*DownloadSettingsObject, error) {
 	u, err := url.Parse(d.environmentURL + d.settingsObjectAPIPath + "/" + objectId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse URL '%s': %w", d.environmentURL+d.settingsObjectAPIPath, err)
 	}
 
-	resp, err := rest.Get(d.client, u.String())
+	resp, err := rest.Get(ctx, d.client, u.String())
 	if err != nil {
 		return nil, fmt.Errorf("failed to GET settings object with object id %q: %w", objectId, err)
 	}
@@ -843,19 +843,19 @@ func (d *DynatraceClient) listEntities(ctx context.Context, entitiesType Entitie
 
 func (d *DynatraceClient) DeleteSettings(objectID string) (err error) {
 	d.limiter.ExecuteBlocking(func() {
-		err = d.deleteSettings(objectID)
+		err = d.deleteSettings(context.TODO(), objectID)
 	})
 	return
 }
 
-func (d *DynatraceClient) deleteSettings(objectID string) error {
+func (d *DynatraceClient) deleteSettings(ctx context.Context, objectID string) error {
 	u, err := url.Parse(d.environmentURL + d.settingsObjectAPIPath)
 	if err != nil {
 		return fmt.Errorf("failed to parse URL '%s': %w", d.environmentURL+d.settingsObjectAPIPath, err)
 	}
 
 	u = u.JoinPath(objectID)
-	resp, err := rest.Delete(d.client, u.String())
+	resp, err := rest.Delete(ctx, d.client, u.String())
 	if err != nil {
 		return err
 	}

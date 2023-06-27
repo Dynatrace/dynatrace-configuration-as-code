@@ -262,7 +262,7 @@ func stripCreateOnlyPropertiesFromAppMobile(payload []byte) []byte {
 // retrying in case of know errors on upload.
 func callWithRetryOnKnowTimingIssue(ctx context.Context, client *http.Client, restCall rest.SendRequestWithBody, objectName string, path string, body []byte, theApi api.API, retrySettings rest.RetrySettings) (rest.Response, error) {
 
-	resp, err := restCall(client, path, body)
+	resp, err := restCall(ctx, client, path, body)
 
 	if err == nil && resp.IsSuccess() {
 		return resp, nil
@@ -435,7 +435,7 @@ func getExistingValuesFromEndpoint(ctx context.Context, client *http.Client, the
 
 	parsedUrl = addQueryParamsForNonStandardApis(theApi, parsedUrl)
 
-	resp, err := rest.Get(client, parsedUrl.String())
+	resp, err := rest.Get(ctx, client, parsedUrl.String())
 
 	if err != nil {
 		return nil, err
