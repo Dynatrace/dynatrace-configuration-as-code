@@ -160,7 +160,7 @@ func TestAutomationClientUpsert(t *testing.T) {
 	t.Run("Upsert - Create - OK", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if req.Method == http.MethodPut {
-				assert.True(t, strings.HasSuffix(req.URL.String(), "some-monaco-generated-ID"))
+				assert.True(t, strings.HasSuffix(req.URL.Path, "some-monaco-generated-ID"))
 				rw.WriteHeader(http.StatusNotFound)
 				return
 			}
@@ -186,7 +186,7 @@ func TestAutomationClientUpsert(t *testing.T) {
 	t.Run("Upsert - API returns different ID", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if req.Method == http.MethodPut {
-				assert.True(t, strings.HasSuffix(req.URL.String(), "some-monaco-generated-ID"))
+				assert.True(t, strings.HasSuffix(req.URL.Path, "some-monaco-generated-ID"))
 				rw.WriteHeader(http.StatusNotFound)
 				return
 			}
@@ -248,6 +248,36 @@ func TestAutomationClientUpsert(t *testing.T) {
 
 	t.Run("Upsert - Update - OK", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodPut {
+				// check for absence of ID field
+				var data map[string]interface{}
+				bytes, _ := io.ReadAll(req.Body)
+				_ = json.Unmarshal(bytes, &data)
+				_, ok := data["id"]
+				assert.False(t, ok)
+
+				rw.Write(jsonData)
+				rw.WriteHeader(http.StatusOK)
+				return
+			}
+			assert.Fail(t, "unexpected HTTP method call")
+		}))
+		defer server.Close()
+
+		workflowClient := automation.NewClient(server.URL, server.Client())
+		wf, err := workflowClient.Upsert(context.TODO(), automation.Workflows, "some-monaco-generated-ID", jsonData)
+		assert.NotNil(t, wf)
+		assert.NoError(t, err)
+	})
+
+	t.Run("Upsert - Update - First call with admin access fails - subsequent OK", func(t *testing.T) {
+		noCalls := 0
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodPut && noCalls == 0 {
+				rw.WriteHeader(http.StatusForbidden)
+				noCalls++
+				return
+			}
 			if req.Method == http.MethodPut {
 				// check for absence of ID field
 				var data map[string]interface{}

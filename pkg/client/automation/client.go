@@ -25,6 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation/internal/pagination"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"net/http"
+	"net/url"
 	"strconv"
 )
 
@@ -181,11 +182,32 @@ func (a Client) upsert(ctx context.Context, resourceType ResourceType, id string
 	if err := rmIDField(&data); err != nil {
 		return nil, fmt.Errorf("unable to remove id field from payload in order to update object with ID %s: %w", id, err)
 	}
-	// try update via HTTP PUT
-	url := a.url + a.resources[resourceType].Path + "/" + id
-	resp, err := rest.Put(a.client, url, data)
+
+	url, e := url.Parse(a.url)
+	if e != nil {
+		return nil, e
+	}
+	url = url.JoinPath(a.resources[resourceType].Path, id)
+
+	workflowsAdminAccess := resourceType == Workflows
+	q := url.Query()
+	q.Add("adminAccess", strconv.FormatBool(workflowsAdminAccess))
+	url.RawQuery = q.Encode()
+
+	resp, err := rest.Put(a.client, url.String(), data)
 	if err != nil {
 		return nil, fmt.Errorf("unable to update object with ID %s: %w", id, err)
+	}
+
+	if workflowsAdminAccess && resp.StatusCode == http.StatusForbidden {
+		q := url.Query()
+		q.Set("adminAccess", "false")
+		url.RawQuery = q.Encode()
+
+		resp, err = rest.Put(a.client, url.String(), data)
+		if err != nil {
+			return nil, fmt.Errorf("unable to update object with ID %s: %w", id, err)
+		}
 	}
 
 	// It worked? great, return
@@ -199,7 +221,7 @@ func (a Client) upsert(ctx context.Context, resourceType ResourceType, id string
 
 	// check if we get an error except 404
 	if !resp.IsSuccess() && resp.StatusCode != http.StatusNotFound {
-		return nil, rest.NewRespErr(fmt.Sprintf("failed to update object with ID %s (HTTP %d): %s", id, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodPut, url)
+		return nil, rest.NewRespErr(fmt.Sprintf("failed to update object with ID %s (HTTP %d): %s", id, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodPut, url.String())
 	}
 
 	// at this point we need to create a new object using HTTP POST
