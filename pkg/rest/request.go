@@ -31,6 +31,9 @@ import (
 	"github.com/google/uuid"
 )
 
+// CtxUserAgentString context key used for passing a custom user-agent string to send with HTTP requests
+type CtxKeyUserAgent struct{}
+
 func Get(ctx context.Context, client *http.Client, url string) (Response, error) {
 	req, err := request(ctx, http.MethodGet, url)
 
@@ -102,7 +105,11 @@ func requestWithBody(ctx context.Context, method string, url string, body io.Rea
 
 func executeRequest(client *http.Client, request *http.Request) (Response, error) {
 
-	request.Header.Set("User-Agent", "Dynatrace Monitoring as Code/"+version.MonitoringAsCode+" "+(runtime.GOOS+" "+runtime.GOARCH))
+	if customUserAgentString, ok := request.Context().Value(CtxKeyUserAgent{}).(string); ok && customUserAgentString != "" {
+		request.Header.Set("User-Agent", customUserAgentString)
+	} else {
+		request.Header.Set("User-Agent", "Dynatrace Monitoring as Code/"+version.MonitoringAsCode+" "+(runtime.GOOS+" "+runtime.GOARCH))
+	}
 
 	var requestId string
 	if trafficlogs.IsRequestLoggingActive() {
