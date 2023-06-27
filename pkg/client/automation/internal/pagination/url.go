@@ -21,20 +21,20 @@ import (
 	"strconv"
 )
 
-func NextPageURL(baseURL, path string, offset int) (string, error) {
+func NextPageURL(baseURL, path string, offset int) (*url.URL, error) {
 	u, e := url.Parse(baseURL)
 	if e != nil {
-		return "", e
+		return nil, e
 	}
 
 	u.Path, e = url.JoinPath(u.Path, path)
 	if e != nil {
-		return "", e
+		return nil, e
 	}
 
 	q := u.Query()
 	q.Add("offset", strconv.Itoa(offset))
 	u.RawQuery = q.Encode()
 
-	return u.String(), nil
+	return u, nil
 }

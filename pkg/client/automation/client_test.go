@@ -101,6 +101,34 @@ func TestAutomationClientList(t *testing.T) {
 		assert.NotNil(t, wf)
 		assert.NoError(t, err)
 	})
+
+	t.Run("List - admin access fails - subsequent calls without admin access pass", func(t *testing.T) {
+		data := []byte(`{"count" : 4, "results" : [ {"id" : "91cc8988-2223-404a-a3f5-5f1a839ecd45", "data" : "some-data1"} ]}`)
+		noCalls := 0
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodGet && noCalls == 0 {
+				assert.Equal(t, req.URL.Query().Get("adminAccess"), "true")
+				rw.WriteHeader(http.StatusForbidden)
+				noCalls++
+				return
+			}
+			if req.Method == http.MethodGet {
+				assert.Equal(t, req.URL.Query().Get("adminAccess"), "false")
+				rw.Write(data)
+				rw.WriteHeader(http.StatusOK)
+				noCalls++
+				return
+			}
+			assert.Fail(t, "unexpected HTTP method call")
+		}))
+		defer server.Close()
+
+		workflowClient := automation.NewClient(server.URL, server.Client())
+		wf, err := workflowClient.List(context.TODO(), automation.Workflows)
+		assert.Equal(t, noCalls, 5, "There should be 5 cals")
+		assert.NotNil(t, wf)
+		assert.NoError(t, err)
+	})
 }
 
 func TestAutomationClientUpsert(t *testing.T) {

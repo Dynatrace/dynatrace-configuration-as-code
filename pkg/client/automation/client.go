@@ -25,6 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation/internal/pagination"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"net/http"
+	"strconv"
 )
 
 // Response is a "general" Response type holding the ID and the response payload
@@ -122,19 +123,28 @@ func (a Client) list(ctx context.Context, resourceType ResourceType) ([]Response
 	var result listResponse
 	result.Count = 1
 
+	workflowsAdminAccess := resourceType == Workflows
 	for len(retVal) < result.Count {
-
 		u, err := pagination.NextPageURL(a.url, a.resources[resourceType].Path, len(retVal))
 		if err != nil {
 			return nil, fmt.Errorf("unable to list automation resources: %w", err)
 		}
 
+		q := u.Query()
+		q.Add("adminAccess", strconv.FormatBool(workflowsAdminAccess))
+		u.RawQuery = q.Encode()
+
 		// try to get the list of resources
-		resp, err := rest.Get(a.client, u)
+		resp, err := rest.Get(a.client, u.String())
 		if err != nil {
 			return nil, fmt.Errorf("unable to list automation resources: %w", err)
 		}
 
+		// adminAccess not allowed? try without
+		if workflowsAdminAccess && resp.StatusCode == http.StatusForbidden {
+			workflowsAdminAccess = false
+			continue
+		}
 		// handle http error
 		if !resp.IsSuccess() {
 			err := rest.NewRespErr("unable to list automation resources", resp)
@@ -142,7 +152,6 @@ func (a Client) list(ctx context.Context, resourceType ResourceType) ([]Response
 		}
 
 		// unmarshal and return result
-
 		err = json.Unmarshal(resp.Body, &result)
 		if err != nil {
 			return nil, err
