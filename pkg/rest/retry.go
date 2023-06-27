@@ -54,7 +54,7 @@ var DefaultRetrySettings = RetrySettings{
 // GetWithRetry will retry a GET request for a given number of times, waiting a give duration between calls
 // this method can be used for API calls we know to have occasional timing issues on GET - e.g. paginated queries that are impacted by replication lag, returning unequal amounts of objects/pages per node
 func GetWithRetry(ctx context.Context, client *http.Client, url string, settings RetrySetting) (resp Response, err error) {
-	resp, err = Get(client, url)
+	resp, err = Get(ctx, client, url)
 
 	if err == nil && resp.IsSuccess() {
 		return resp, nil
@@ -63,7 +63,7 @@ func GetWithRetry(ctx context.Context, client *http.Client, url string, settings
 	for i := 0; i < settings.MaxRetries; i++ {
 		log.WithCtxFields(ctx).Warn("Retrying failed GET request %s with error (HTTP %d)", url, resp.StatusCode)
 		time.Sleep(settings.WaitTime)
-		resp, err = Get(client, url)
+		resp, err = Get(ctx, client, url)
 		if err == nil && resp.IsSuccess() {
 			return resp, err
 		}
@@ -86,7 +86,7 @@ func SendWithRetry(ctx context.Context, client *http.Client, sendWithBody SendRe
 	for i := 0; i < setting.MaxRetries; i++ {
 		log.WithCtxFields(ctx).Warn("Failed to send HTTP request. Waiting for %s before retrying...", setting.WaitTime)
 		time.Sleep(setting.WaitTime)
-		resp, err = sendWithBody(client, path, body)
+		resp, err = sendWithBody(ctx, client, path, body)
 		if err == nil && resp.IsSuccess() {
 			return resp, err
 		}
@@ -100,7 +100,7 @@ func SendWithRetry(ctx context.Context, client *http.Client, sendWithBody SendRe
 
 // SendWithRetryWithInitialTry will try to call sendWithBody and if it didn't succeed call [SendWithRetry]
 func SendWithRetryWithInitialTry(ctx context.Context, client *http.Client, sendWithBody SendRequestWithBody, objectName string, path string, body []byte, setting RetrySetting) (resp Response, err error) {
-	resp, err = sendWithBody(client, path, body)
+	resp, err = sendWithBody(ctx, client, path, body)
 	if err == nil && resp.IsSuccess() {
 		return resp, err
 	}

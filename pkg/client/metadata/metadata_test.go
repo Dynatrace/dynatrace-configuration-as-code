@@ -18,6 +18,7 @@ package metadata
 
 import (
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/net/context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -66,7 +67,7 @@ func TestGetDynatraceClassicEnvironment(t *testing.T) {
 			}))
 			defer server.Close()
 
-			got, err := GetDynatraceClassicURL(&http.Client{}, server.URL)
+			got, err := GetDynatraceClassicURL(context.TODO(), &http.Client{}, server.URL)
 			assert.Equal(t, tt.want, got)
 			assert.Equal(t, tt.wantErr, err != nil)
 
@@ -85,7 +86,7 @@ func TestGetDynatraceClassicEnvironmentWorksWithTrailingSlash(t *testing.T) {
 	}))
 	defer server.Close()
 
-	got, err := GetDynatraceClassicURL(&http.Client{}, server.URL+"/")
+	got, err := GetDynatraceClassicURL(context.TODO(), &http.Client{}, server.URL+"/")
 	assert.Equal(t, "http://classic.env.com", got)
 	assert.NoError(t, err)
 }
@@ -104,7 +105,7 @@ func TestGetDynatraceClassicEnvironmentFallsBackToDeprecatedPath(t *testing.T) {
 	}))
 	defer server.Close()
 
-	got, err := GetDynatraceClassicURL(&http.Client{}, server.URL+"/")
+	got, err := GetDynatraceClassicURL(context.TODO(), &http.Client{}, server.URL+"/")
 	assert.Equal(t, "http://fallback.classic.env.com", got)
 	assert.NoError(t, err)
 }

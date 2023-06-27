@@ -21,6 +21,7 @@ package version
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/net/context"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -101,7 +102,7 @@ func TestGetDynatraceVersion(t *testing.T) {
 			}))
 			defer server.Close()
 
-			got, err := GetDynatraceVersion(server.Client(), server.URL)
+			got, err := GetDynatraceVersion(context.TODO(), server.Client(), server.URL)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetDynatraceVersion() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -124,7 +125,7 @@ func TestGetDynatraceVersionWorksWithTrailingSlash(t *testing.T) {
 	}))
 	defer server.Close()
 
-	got, err := GetDynatraceVersion(&http.Client{}, server.URL+"/")
+	got, err := GetDynatraceVersion(context.TODO(), &http.Client{}, server.URL+"/")
 	assert.Equal(t, version.Version{1, 236, 5}, got)
 	assert.NoError(t, err)
 }

@@ -134,7 +134,7 @@ func (a Client) list(ctx context.Context, resourceType ResourceType) ([]Response
 		setAdminAccessQueryParam(u, workflowsAdminAccess)
 
 		// try to get the list of resources
-		resp, err := rest.Get(a.client, u.String())
+		resp, err := rest.Get(ctx, a.client, u.String())
 		if err != nil {
 			return nil, fmt.Errorf("unable to list automation resources: %w", err)
 		}
@@ -190,7 +190,7 @@ func (a Client) upsert(ctx context.Context, resourceType ResourceType, id string
 	workflowsAdminAccess := resourceType == Workflows
 	setAdminAccessQueryParam(u, workflowsAdminAccess)
 
-	resp, err := rest.Put(a.client, u.String(), data)
+	resp, err := rest.Put(ctx, a.client, u.String(), data)
 	if err != nil {
 		return nil, fmt.Errorf("unable to update object with ID %s: %w", id, err)
 	}
@@ -198,7 +198,7 @@ func (a Client) upsert(ctx context.Context, resourceType ResourceType, id string
 	if workflowsAdminAccess && resp.StatusCode == http.StatusForbidden {
 		setAdminAccessQueryParam(u, false)
 
-		resp, err = rest.Put(a.client, u.String(), data)
+		resp, err = rest.Put(ctx, a.client, u.String(), data)
 		if err != nil {
 			return nil, fmt.Errorf("unable to update object with ID %s: %w", id, err)
 		}
@@ -230,7 +230,7 @@ func (a Client) create(ctx context.Context, id string, data []byte, resourceType
 
 	// try to create a new object using HTTP POST
 	u := a.url + a.resources[resourceType].Path
-	resp, err := rest.Post(a.client, u, data)
+	resp, err := rest.Post(ctx, a.client, u, data)
 	if err != nil {
 		return nil, err
 	}
@@ -262,12 +262,12 @@ func (a Client) Delete(resourceType ResourceType, id string) (err error) {
 		return fmt.Errorf("id must be non empty")
 	}
 	a.limiter.ExecuteBlocking(func() {
-		err = a.delete(resourceType, id)
+		err = a.delete(context.TODO(), resourceType, id)
 	})
 	return
 }
 
-func (a Client) delete(resourceType ResourceType, id string) error {
+func (a Client) delete(ctx context.Context, resourceType ResourceType, id string) error {
 	u, e := url.Parse(a.url)
 	if e != nil {
 		return e
@@ -277,14 +277,14 @@ func (a Client) delete(resourceType ResourceType, id string) error {
 	workflowsAdminAccess := resourceType == Workflows
 	setAdminAccessQueryParam(u, workflowsAdminAccess)
 
-	resp, err := rest.Delete(a.client, u.String())
+	resp, err := rest.Delete(ctx, a.client, u.String())
 	if err != nil {
 		return fmt.Errorf("unable to delete object with ID %s: %w", id, err)
 	}
 
 	if workflowsAdminAccess && resp.StatusCode == http.StatusForbidden {
 		setAdminAccessQueryParam(u, false)
-		resp, err = rest.Delete(a.client, u.String())
+		resp, err = rest.Delete(ctx, a.client, u.String())
 		if err != nil {
 			return fmt.Errorf("unable to delete object with ID %s: %w", id, err)
 		}
