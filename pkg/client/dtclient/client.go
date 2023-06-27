@@ -525,8 +525,8 @@ func (d *DynatraceClient) DeleteConfigById(api api.API, id string) (err error) {
 
 func (d *DynatraceClient) deleteConfigById(api api.API, id string) error {
 
-	url := api.CreateURL(d.environmentURLClassic)
-	resp, err := rest.DeleteConfig(d.clientClassic, url, id)
+	u := api.CreateURL(d.environmentURLClassic)
+	resp, err := rest.DeleteConfig(d.clientClassic, u, id)
 	if err != nil {
 		return err
 	}
@@ -536,7 +536,7 @@ func (d *DynatraceClient) deleteConfigById(api api.API, id string) error {
 	}
 
 	if !resp.IsSuccess() {
-		return rest.NewRespErr(fmt.Sprintf("failed call to DELETE %s (HTTP %d)!\n Response was:\n %s", api.CreateURL(d.environmentURLClassic)+"/"+id, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodDelete, url)
+		return rest.NewRespErr(fmt.Sprintf("failed call to DELETE %s (HTTP %d)!\n Response was:\n %s", api.CreateURL(d.environmentURLClassic)+"/"+id, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodDelete, u)
 	}
 	return nil
 }

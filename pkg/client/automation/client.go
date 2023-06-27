@@ -181,24 +181,24 @@ func (a Client) upsert(ctx context.Context, resourceType ResourceType, id string
 		return nil, fmt.Errorf("unable to remove id field from payload in order to update object with ID %s: %w", id, err)
 	}
 
-	url, e := url.Parse(a.url)
+	u, e := url.Parse(a.url)
 	if e != nil {
 		return nil, e
 	}
-	url = url.JoinPath(a.resources[resourceType].Path, id)
+	u = u.JoinPath(a.resources[resourceType].Path, id)
 
 	workflowsAdminAccess := resourceType == Workflows
-	setAdminAccessQueryParam(url, workflowsAdminAccess)
+	setAdminAccessQueryParam(u, workflowsAdminAccess)
 
-	resp, err := rest.Put(a.client, url.String(), data)
+	resp, err := rest.Put(a.client, u.String(), data)
 	if err != nil {
 		return nil, fmt.Errorf("unable to update object with ID %s: %w", id, err)
 	}
 
 	if workflowsAdminAccess && resp.StatusCode == http.StatusForbidden {
-		setAdminAccessQueryParam(url, false)
+		setAdminAccessQueryParam(u, false)
 
-		resp, err = rest.Put(a.client, url.String(), data)
+		resp, err = rest.Put(a.client, u.String(), data)
 		if err != nil {
 			return nil, fmt.Errorf("unable to update object with ID %s: %w", id, err)
 		}
@@ -215,7 +215,7 @@ func (a Client) upsert(ctx context.Context, resourceType ResourceType, id string
 
 	// check if we get an error except 404
 	if !resp.IsSuccess() && resp.StatusCode != http.StatusNotFound {
-		return nil, rest.NewRespErr(fmt.Sprintf("failed to update object with ID %s (HTTP %d): %s", id, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodPut, url.String())
+		return nil, rest.NewRespErr(fmt.Sprintf("failed to update object with ID %s (HTTP %d): %s", id, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodPut, u.String())
 	}
 
 	// at this point we need to create a new object using HTTP POST
@@ -229,15 +229,15 @@ func (a Client) create(ctx context.Context, id string, data []byte, resourceType
 	}
 
 	// try to create a new object using HTTP POST
-	url := a.url + a.resources[resourceType].Path
-	resp, err := rest.Post(a.client, url, data)
+	u := a.url + a.resources[resourceType].Path
+	resp, err := rest.Post(a.client, u, data)
 	if err != nil {
 		return nil, err
 	}
 
 	// handle response err
 	if !resp.IsSuccess() {
-		return nil, rest.NewRespErr(fmt.Sprintf("failed to create object with ID %s (HTTP %d): %s", id, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodPost, url)
+		return nil, rest.NewRespErr(fmt.Sprintf("failed to create object with ID %s (HTTP %d): %s", id, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodPost, u)
 
 	}
 
@@ -245,7 +245,7 @@ func (a Client) create(ctx context.Context, id string, data []byte, resourceType
 	var e Response
 	err = json.Unmarshal(resp.Body, &e)
 	if err != nil {
-		return nil, rest.NewRespErr("failed to unmarshal response", resp).WithRequestInfo(http.MethodPost, url).WithErr(err)
+		return nil, rest.NewRespErr("failed to unmarshal response", resp).WithRequestInfo(http.MethodPost, u).WithErr(err)
 	}
 
 	// check if id from response is indeed the same as desired
@@ -268,23 +268,23 @@ func (a Client) Delete(resourceType ResourceType, id string) (err error) {
 }
 
 func (a Client) delete(resourceType ResourceType, id string) error {
-	url, e := url.Parse(a.url)
+	u, e := url.Parse(a.url)
 	if e != nil {
 		return e
 	}
-	url = url.JoinPath(a.resources[resourceType].Path)
+	u = u.JoinPath(a.resources[resourceType].Path)
 
 	workflowsAdminAccess := resourceType == Workflows
-	setAdminAccessQueryParam(url, workflowsAdminAccess)
+	setAdminAccessQueryParam(u, workflowsAdminAccess)
 
-	resp, err := rest.DeleteConfig(a.client, url.String(), id)
+	resp, err := rest.DeleteConfig(a.client, u.String(), id)
 	if err != nil {
 		return fmt.Errorf("unable to delete object with ID %s: %w", id, err)
 	}
 
 	if workflowsAdminAccess && resp.StatusCode == http.StatusForbidden {
-		setAdminAccessQueryParam(url, false)
-		resp, err = rest.DeleteConfig(a.client, url.String(), id)
+		setAdminAccessQueryParam(u, false)
+		resp, err = rest.DeleteConfig(a.client, u.String(), id)
 		if err != nil {
 			return fmt.Errorf("unable to delete object with ID %s: %w", id, err)
 		}
