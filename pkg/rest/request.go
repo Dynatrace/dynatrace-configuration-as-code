@@ -18,7 +18,6 @@ package rest
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"io"
@@ -41,31 +40,14 @@ func Get(client *http.Client, url string) (Response, error) {
 	return executeRequest(client, req)
 }
 
-// the name delete() would collide with the built-in function
-func DeleteConfig(client *http.Client, url string, id string) error {
-	fullPath := url + "/" + id
-	req, err := request(http.MethodDelete, fullPath)
-
+func Delete(client *http.Client, url string) (Response, error) {
+	req, err := request(http.MethodDelete, url)
 	if err != nil {
-		return err
+		return Response{}, err
 	}
 
-	resp, err := executeRequest(client, req)
+	return executeRequest(client, req)
 
-	if err != nil {
-		return err
-	}
-
-	if resp.StatusCode == 404 {
-		log.Debug("No config with id '%s' found to delete (HTTP 404 response)", id)
-		return nil
-	}
-
-	if !resp.IsSuccess() {
-		return NewRespErr(fmt.Sprintf("failed call to DELETE %s (HTTP %d)!\n Response was:\n %s", fullPath, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodDelete, url)
-	}
-
-	return nil
 }
 
 func Post(client *http.Client, url string, data []byte) (Response, error) {

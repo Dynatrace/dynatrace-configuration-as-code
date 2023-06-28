@@ -48,7 +48,5 @@ func TestIntegrationAutomation(t *testing.T) {
 		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
 		err = cmd.Execute()
 		assert.NoError(t, err)
-
-		//NOTE: CLEANUP WILL BE DONE WHEN AUTOMATION OBJECTS CAN BE DELETED USING MONACO
 	})
 }

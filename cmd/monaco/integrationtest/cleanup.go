@@ -90,6 +90,11 @@ func cleanupByGeneratedID(t *testing.T, fs afero.Fs, manifestPath string, loaded
 			for _, cfg := range configs {
 				switch typ := cfg.Type.(type) {
 				case config.SettingsType:
+					if cfg.OriginObjectId != "" {
+						deleteSettingsObjects(t, typ.SchemaId, cfg.OriginObjectId, clients.Settings())
+						continue
+					}
+
 					extID, err := idutils.GenerateExternalID(cfg.Coordinate)
 					if err != nil {
 						t.Log(err)
@@ -97,6 +102,11 @@ func cleanupByGeneratedID(t *testing.T, fs afero.Fs, manifestPath string, loaded
 					}
 					deleteSettingsObjects(t, typ.SchemaId, extID, clients.Settings())
 				case config.AutomationType:
+					if cfg.OriginObjectId != "" {
+						deleteAutomation(t, typ.Resource, cfg.OriginObjectId, clients.Automation())
+						continue
+					}
+
 					id := idutils.GenerateUUIDFromCoordinate(cfg.Coordinate)
 					deleteAutomation(t, typ.Resource, id, clients.Automation())
 				}
@@ -136,5 +146,7 @@ func deleteAutomation(t *testing.T, resource config.AutomationResource, id strin
 	err = c.Delete(resourceType, id)
 	if err != nil {
 		t.Logf("Failed to cleanup test config: could not delete Automation (%s) object with ID %s: %v", resource, id, err)
+	} else {
+		log.Info("Cleaned up test Automation %s (%s)", id, resource)
 	}
 }

@@ -101,6 +101,34 @@ func TestAutomationClientList(t *testing.T) {
 		assert.NotNil(t, wf)
 		assert.NoError(t, err)
 	})
+
+	t.Run("List - admin access fails - subsequent calls without admin access pass", func(t *testing.T) {
+		data := []byte(`{"count" : 4, "results" : [ {"id" : "91cc8988-2223-404a-a3f5-5f1a839ecd45", "data" : "some-data1"} ]}`)
+		noCalls := 0
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodGet && noCalls == 0 {
+				assert.Equal(t, req.URL.Query().Get("adminAccess"), "true")
+				rw.WriteHeader(http.StatusForbidden)
+				noCalls++
+				return
+			}
+			if req.Method == http.MethodGet {
+				assert.Equal(t, req.URL.Query().Get("adminAccess"), "false")
+				rw.Write(data)
+				rw.WriteHeader(http.StatusOK)
+				noCalls++
+				return
+			}
+			assert.Fail(t, "unexpected HTTP method call")
+		}))
+		defer server.Close()
+
+		workflowClient := automation.NewClient(server.URL, server.Client())
+		wf, err := workflowClient.List(context.TODO(), automation.Workflows)
+		assert.Equal(t, noCalls, 5, "There should be 5 cals")
+		assert.NotNil(t, wf)
+		assert.NoError(t, err)
+	})
 }
 
 func TestAutomationClientUpsert(t *testing.T) {
@@ -132,7 +160,7 @@ func TestAutomationClientUpsert(t *testing.T) {
 	t.Run("Upsert - Create - OK", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if req.Method == http.MethodPut {
-				assert.True(t, strings.HasSuffix(req.URL.String(), "some-monaco-generated-ID"))
+				assert.True(t, strings.HasSuffix(req.URL.Path, "some-monaco-generated-ID"))
 				rw.WriteHeader(http.StatusNotFound)
 				return
 			}
@@ -158,7 +186,7 @@ func TestAutomationClientUpsert(t *testing.T) {
 	t.Run("Upsert - API returns different ID", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if req.Method == http.MethodPut {
-				assert.True(t, strings.HasSuffix(req.URL.String(), "some-monaco-generated-ID"))
+				assert.True(t, strings.HasSuffix(req.URL.Path, "some-monaco-generated-ID"))
 				rw.WriteHeader(http.StatusNotFound)
 				return
 			}
@@ -242,13 +270,66 @@ func TestAutomationClientUpsert(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("Upsert - Update - First call with admin access fails - subsequent OK", func(t *testing.T) {
+		noCalls := 0
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodPut && noCalls == 0 {
+				rw.WriteHeader(http.StatusForbidden)
+				noCalls++
+				return
+			}
+			if req.Method == http.MethodPut {
+				// check for absence of ID field
+				var data map[string]interface{}
+				bytes, _ := io.ReadAll(req.Body)
+				_ = json.Unmarshal(bytes, &data)
+				_, ok := data["id"]
+				assert.False(t, ok)
+
+				rw.Write(jsonData)
+				rw.WriteHeader(http.StatusOK)
+				return
+			}
+			assert.Fail(t, "unexpected HTTP method call")
+		}))
+		defer server.Close()
+
+		workflowClient := automation.NewClient(server.URL, server.Client())
+		wf, err := workflowClient.Upsert(context.TODO(), automation.Workflows, "some-monaco-generated-ID", jsonData)
+		assert.NotNil(t, wf)
+		assert.NoError(t, err)
+	})
+
 }
 
 func TestAutomationClientDelete(t *testing.T) {
 	t.Run("Delete - OK", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if req.Method == http.MethodDelete {
-				assert.True(t, strings.HasSuffix(req.URL.String(), "some-monaco-generated-ID"))
+				assert.True(t, strings.HasSuffix(req.URL.Path, "some-monaco-generated-ID"))
+				rw.WriteHeader(http.StatusOK)
+				return
+			}
+			assert.Fail(t, "unexpected HTTP method call")
+		}))
+		defer server.Close()
+
+		c := automation.NewClient(server.URL, server.Client())
+		err := c.Delete(automation.Workflows, "some-monaco-generated-ID")
+		assert.NoError(t, err)
+	})
+
+	t.Run("Delete - workflow admin access fails - subsequent OK", func(t *testing.T) {
+		noCalls := 0
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodDelete && noCalls == 0 {
+				rw.WriteHeader(http.StatusForbidden)
+				noCalls++
+				return
+			}
+
+			if req.Method == http.MethodDelete {
+				assert.True(t, strings.HasSuffix(req.URL.Path, "some-monaco-generated-ID"))
 				rw.WriteHeader(http.StatusOK)
 				return
 			}
@@ -275,7 +356,7 @@ func TestAutomationClientDelete(t *testing.T) {
 	t.Run("Delete - Object Not Found no counted as Error", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if req.Method == http.MethodDelete {
-				assert.True(t, strings.HasSuffix(req.URL.String(), "some-monaco-generated-ID"))
+				assert.True(t, strings.HasSuffix(req.URL.Path, "some-monaco-generated-ID"))
 				rw.WriteHeader(http.StatusNotFound)
 				return
 			}
@@ -291,7 +372,7 @@ func TestAutomationClientDelete(t *testing.T) {
 	t.Run("Delete - Server Error - Fails", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if req.Method == http.MethodDelete {
-				assert.True(t, strings.HasSuffix(req.URL.String(), "some-monaco-generated-ID"))
+				assert.True(t, strings.HasSuffix(req.URL.Path, "some-monaco-generated-ID"))
 				rw.WriteHeader(http.StatusInternalServerError)
 				return
 			}

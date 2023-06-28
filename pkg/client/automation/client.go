@@ -25,6 +25,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation/internal/pagination"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"net/http"
+	"net/url"
+	"strconv"
 )
 
 // Response is a "general" Response type holding the ID and the response payload
@@ -122,19 +124,26 @@ func (a Client) list(ctx context.Context, resourceType ResourceType) ([]Response
 	var result listResponse
 	result.Count = 1
 
+	workflowsAdminAccess := resourceType == Workflows
 	for len(retVal) < result.Count {
-
 		u, err := pagination.NextPageURL(a.url, a.resources[resourceType].Path, len(retVal))
 		if err != nil {
 			return nil, fmt.Errorf("unable to list automation resources: %w", err)
 		}
 
+		setAdminAccessQueryParam(u, workflowsAdminAccess)
+
 		// try to get the list of resources
-		resp, err := rest.Get(a.client, u)
+		resp, err := rest.Get(a.client, u.String())
 		if err != nil {
 			return nil, fmt.Errorf("unable to list automation resources: %w", err)
 		}
 
+		// adminAccess not allowed? try without
+		if workflowsAdminAccess && resp.StatusCode == http.StatusForbidden {
+			workflowsAdminAccess = false
+			continue
+		}
 		// handle http error
 		if !resp.IsSuccess() {
 			err := rest.NewRespErr("unable to list automation resources", resp)
@@ -142,7 +151,6 @@ func (a Client) list(ctx context.Context, resourceType ResourceType) ([]Response
 		}
 
 		// unmarshal and return result
-
 		err = json.Unmarshal(resp.Body, &result)
 		if err != nil {
 			return nil, err
@@ -172,11 +180,28 @@ func (a Client) upsert(ctx context.Context, resourceType ResourceType, id string
 	if err := rmIDField(&data); err != nil {
 		return nil, fmt.Errorf("unable to remove id field from payload in order to update object with ID %s: %w", id, err)
 	}
-	// try update via HTTP PUT
-	url := a.url + a.resources[resourceType].Path + "/" + id
-	resp, err := rest.Put(a.client, url, data)
+
+	u, e := url.Parse(a.url)
+	if e != nil {
+		return nil, e
+	}
+	u = u.JoinPath(a.resources[resourceType].Path, id)
+
+	workflowsAdminAccess := resourceType == Workflows
+	setAdminAccessQueryParam(u, workflowsAdminAccess)
+
+	resp, err := rest.Put(a.client, u.String(), data)
 	if err != nil {
 		return nil, fmt.Errorf("unable to update object with ID %s: %w", id, err)
+	}
+
+	if workflowsAdminAccess && resp.StatusCode == http.StatusForbidden {
+		setAdminAccessQueryParam(u, false)
+
+		resp, err = rest.Put(a.client, u.String(), data)
+		if err != nil {
+			return nil, fmt.Errorf("unable to update object with ID %s: %w", id, err)
+		}
 	}
 
 	// It worked? great, return
@@ -190,7 +215,7 @@ func (a Client) upsert(ctx context.Context, resourceType ResourceType, id string
 
 	// check if we get an error except 404
 	if !resp.IsSuccess() && resp.StatusCode != http.StatusNotFound {
-		return nil, rest.NewRespErr(fmt.Sprintf("failed to update object with ID %s (HTTP %d): %s", id, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodPut, url)
+		return nil, rest.NewRespErr(fmt.Sprintf("failed to update object with ID %s (HTTP %d): %s", id, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodPut, u.String())
 	}
 
 	// at this point we need to create a new object using HTTP POST
@@ -204,15 +229,15 @@ func (a Client) create(ctx context.Context, id string, data []byte, resourceType
 	}
 
 	// try to create a new object using HTTP POST
-	url := a.url + a.resources[resourceType].Path
-	resp, err := rest.Post(a.client, url, data)
+	u := a.url + a.resources[resourceType].Path
+	resp, err := rest.Post(a.client, u, data)
 	if err != nil {
 		return nil, err
 	}
 
 	// handle response err
 	if !resp.IsSuccess() {
-		return nil, rest.NewRespErr(fmt.Sprintf("failed to create object with ID %s (HTTP %d): %s", id, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodPost, url)
+		return nil, rest.NewRespErr(fmt.Sprintf("failed to create object with ID %s (HTTP %d): %s", id, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodPost, u)
 
 	}
 
@@ -220,7 +245,7 @@ func (a Client) create(ctx context.Context, id string, data []byte, resourceType
 	var e Response
 	err = json.Unmarshal(resp.Body, &e)
 	if err != nil {
-		return nil, rest.NewRespErr("failed to unmarshal response", resp).WithRequestInfo(http.MethodPost, url).WithErr(err)
+		return nil, rest.NewRespErr("failed to unmarshal response", resp).WithRequestInfo(http.MethodPost, u).WithErr(err)
 	}
 
 	// check if id from response is indeed the same as desired
@@ -243,11 +268,36 @@ func (a Client) Delete(resourceType ResourceType, id string) (err error) {
 }
 
 func (a Client) delete(resourceType ResourceType, id string) error {
-	err := rest.DeleteConfig(a.client, a.url+a.resources[resourceType].Path, id)
+	u, e := url.Parse(a.url)
+	if e != nil {
+		return e
+	}
+	u = u.JoinPath(a.resources[resourceType].Path, id)
+
+	workflowsAdminAccess := resourceType == Workflows
+	setAdminAccessQueryParam(u, workflowsAdminAccess)
+
+	resp, err := rest.Delete(a.client, u.String())
 	if err != nil {
 		return fmt.Errorf("unable to delete object with ID %s: %w", id, err)
 	}
 
+	if workflowsAdminAccess && resp.StatusCode == http.StatusForbidden {
+		setAdminAccessQueryParam(u, false)
+		resp, err = rest.Delete(a.client, u.String())
+		if err != nil {
+			return fmt.Errorf("unable to delete object with ID %s: %w", id, err)
+		}
+	}
+
+	if resp.StatusCode == http.StatusNotFound {
+		log.Debug("No config with id '%s' found to delete (HTTP 404 response)", id)
+		return nil
+	}
+
+	if !resp.IsSuccess() {
+		return rest.NewRespErr(fmt.Sprintf("unable to delete object with ID %s (HTTP %d): %s", id, resp.StatusCode, resp.Body), resp)
+	}
 	return nil
 }
 
@@ -277,4 +327,10 @@ func rmIDField(data *[]byte) error {
 		return err
 	}
 	return nil
+}
+
+func setAdminAccessQueryParam(url *url.URL, enabled bool) {
+	q := url.Query()
+	q.Set("adminAccess", strconv.FormatBool(enabled))
+	url.RawQuery = q.Encode()
 }

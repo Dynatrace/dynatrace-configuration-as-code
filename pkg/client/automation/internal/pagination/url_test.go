@@ -77,7 +77,7 @@ func Test_loadMore(t *testing.T) {
 			actual, err := pagination.NextPageURL(tc.given.baseURL, tc.given.path, tc.given.offset)
 
 			assert.NoError(t, err)
-			assert.Equal(t, tc.expected, actual)
+			assert.Equal(t, tc.expected, actual.String())
 		})
 	}
 }
