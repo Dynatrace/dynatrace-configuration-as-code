@@ -79,13 +79,13 @@ func isPlatformEnvironment(env manifest.EnvironmentDefinition) bool {
 
 func CreateClientSet(url string, auth manifest.Auth) (*client.ClientSet, error) {
 	if auth.OAuth == nil {
-		return client.CreateClassicClientSet(url, auth.Token.Value)
+		return client.CreateClassicClientSet(url, auth.Token.Value, client.ClientOptions{})
 	}
 	return client.CreatePlatformClientSet(url, client.PlatformAuth{
 		OauthClientID:     auth.OAuth.ClientID.Value,
 		OauthClientSecret: auth.OAuth.ClientSecret.Value,
 		Token:             auth.Token.Value,
 		OauthTokenURL:     auth.OAuth.GetTokenEndpointValue(),
-	})
+	}, client.ClientOptions{})
 
 }

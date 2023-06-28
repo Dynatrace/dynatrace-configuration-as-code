@@ -18,21 +18,16 @@ package rest
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/timeutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/trafficlogs"
-	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
+	"github.com/google/uuid"
 	"golang.org/x/net/context"
 	"io"
 	"net/http"
-	"runtime"
-
-	"github.com/google/uuid"
 )
-
-// CtxUserAgentString context key used for passing a custom user-agent string to send with HTTP requests
-type CtxKeyUserAgent struct{}
 
 func Get(ctx context.Context, client *http.Client, url string) (Response, error) {
 	req, err := request(ctx, http.MethodGet, url)
@@ -105,19 +100,16 @@ func requestWithBody(ctx context.Context, method string, url string, body io.Rea
 
 func executeRequest(client *http.Client, request *http.Request) (Response, error) {
 
-	if customUserAgentString, ok := request.Context().Value(CtxKeyUserAgent{}).(string); ok && customUserAgentString != "" {
-		request.Header.Set("User-Agent", customUserAgentString)
-	} else {
-		request.Header.Set("User-Agent", "Dynatrace Monitoring as Code/"+version.MonitoringAsCode+" "+(runtime.GOOS+" "+runtime.GOARCH))
-	}
+	request.Header.Set("User-Agent", "Dynatrace-config-as-code-http-client")
 
-	var requestId string
-	if trafficlogs.IsRequestLoggingActive() {
-		requestId = uuid.NewString()
-		err := trafficlogs.LogRequest(requestId, request)
-
-		if err != nil {
-			log.WithFields(field.Error(err)).Warn("error while writing request log for id `%s`: %v", requestId, err)
+	// extract request body for logging before executing the request drains it
+	var reqBody string
+	if trafficlogs.IsRequestLoggingActive() && request.Body != nil {
+		b, err := io.ReadAll(request.Body)
+		if err == nil {
+			reqBody = string(b)
+		} else {
+			reqBody = "failed to extract body"
 		}
 	}
 
@@ -126,31 +118,23 @@ func executeRequest(client *http.Client, request *http.Request) (Response, error
 	response, err := rateLimitStrategy.executeRequest(timeutils.NewTimelineProvider(), func() (Response, error) {
 		resp, err := client.Do(request)
 		if err != nil {
-			log.Error("HTTP Request failed with Error: " + err.Error())
-			return Response{}, err
+			return Response{}, fmt.Errorf("HTTP request failed: %w", err)
 		}
 		defer func() {
 			err = resp.Body.Close()
 		}()
-		body, err := io.ReadAll(resp.Body)
-
-		if trafficlogs.IsResponseLoggingActive() {
-			err := trafficlogs.LogResponse(requestId, resp, string(body))
-
-			if err != nil {
-				if requestId != "" {
-					log.WithFields(field.Error(err)).Warn("error while writing response log for id `%s`: %v", requestId, err)
-				} else {
-					log.WithFields(field.Error(err)).Warn("error while writing response log: %v", requestId, err)
-				}
-			}
+		respBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return Response{}, fmt.Errorf("failed to parse response respBody: %w", err)
 		}
 
-		nextPageKey, totalCount, pageSize := getPaginationValues(body)
+		writeTrafficLog(request, reqBody, resp, string(respBody))
+
+		nextPageKey, totalCount, pageSize := getPaginationValues(respBody)
 
 		returnResponse := Response{
 			StatusCode:  resp.StatusCode,
-			Body:        body,
+			Body:        respBody,
 			Headers:     resp.Header,
 			NextPageKey: nextPageKey,
 			TotalCount:  totalCount,
@@ -164,4 +148,27 @@ func executeRequest(client *http.Client, request *http.Request) (Response, error
 		return Response{}, err
 	}
 	return response, nil
+}
+
+func writeTrafficLog(req *http.Request, reqBody string, resp *http.Response, respBody string) {
+	var requestId string
+	if trafficlogs.IsRequestLoggingActive() {
+		requestId = uuid.NewString()
+		err := trafficlogs.LogRequest(requestId, req, reqBody)
+
+		if err != nil {
+			log.WithFields(field.Error(err)).Warn("error while writing request log for id `%s`: %v", requestId, err)
+		}
+	}
+	if trafficlogs.IsResponseLoggingActive() {
+		err := trafficlogs.LogResponse(requestId, resp, respBody)
+
+		if err != nil {
+			if requestId != "" {
+				log.WithFields(field.Error(err)).Warn("error while writing response log for id `%s`: %v", requestId, err)
+			} else {
+				log.WithFields(field.Error(err)).Warn("error while writing response log: %v", requestId, err)
+			}
+		}
+	}
 }

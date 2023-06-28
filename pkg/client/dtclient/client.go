@@ -29,6 +29,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/auth"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/metadata"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/useragent"
 	dtVersion "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
@@ -229,9 +230,6 @@ type DynatraceClient struct {
 
 	// generateExternalID is used to generate an external id for settings 2.0 objects
 	generateExternalID idutils.ExternalIDGenerator
-
-	// customUserAgent to be sent with HTTP requests made by the client
-	customUserAgent *string
 }
 
 var (
@@ -304,7 +302,8 @@ func WithAutoServerVersion() func(client *DynatraceClient) {
 // If none is set, the default Monaco CLI specific user-agent is sent.
 func WithCustomUserAgentString(userAgent string) func(client *DynatraceClient) {
 	return func(d *DynatraceClient) {
-		d.customUserAgent = &userAgent
+		d.client = &http.Client{Transport: useragent.NewCustomUserAgentTransport(d.client.Transport, userAgent)}
+		d.clientClassic = &http.Client{Transport: useragent.NewCustomUserAgentTransport(d.clientClassic.Transport, userAgent)}
 	}
 }
 
@@ -399,7 +398,7 @@ func validateURL(dtURL string) error {
 
 func (d *DynatraceClient) UpsertSettings(ctx context.Context, obj SettingsObject) (result DynatraceEntity, err error) {
 	d.limiter.ExecuteBlocking(func() {
-		result, err = d.upsertSettings(d.contextWithUserAgent(ctx), obj)
+		result, err = d.upsertSettings(ctx, obj)
 	})
 	return
 }
@@ -487,7 +486,7 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 }
 func (d *DynatraceClient) ListConfigs(ctx context.Context, api api.API) (values []Value, err error) {
 	d.limiter.ExecuteBlocking(func() {
-		values, err = d.listConfigs(d.contextWithUserAgent(ctx), api)
+		values, err = d.listConfigs(ctx, api)
 	})
 	return
 }
@@ -500,7 +499,7 @@ func (d *DynatraceClient) listConfigs(ctx context.Context, api api.API) (values 
 
 func (d *DynatraceClient) ReadConfigById(api api.API, id string) (json []byte, err error) {
 	d.limiter.ExecuteBlocking(func() {
-		json, err = d.readConfigById(d.contextWithUserAgent(context.TODO()), api, id)
+		json, err = d.readConfigById(context.TODO(), api, id)
 	})
 	return
 }
@@ -530,7 +529,7 @@ func (d *DynatraceClient) readConfigById(ctx context.Context, api api.API, id st
 
 func (d *DynatraceClient) DeleteConfigById(api api.API, id string) (err error) {
 	d.limiter.ExecuteBlocking(func() {
-		err = d.deleteConfigById(d.contextWithUserAgent(context.TODO()), api, id)
+		err = d.deleteConfigById(context.TODO(), api, id)
 	})
 	return
 }
@@ -561,7 +560,7 @@ func (d *DynatraceClient) deleteConfigById(ctx context.Context, api api.API, id 
 
 func (d *DynatraceClient) ConfigExistsByName(ctx context.Context, api api.API, name string) (exists bool, id string, err error) {
 	d.limiter.ExecuteBlocking(func() {
-		exists, id, err = d.configExistsByName(d.contextWithUserAgent(ctx), api, name)
+		exists, id, err = d.configExistsByName(ctx, api, name)
 	})
 	return
 }
@@ -574,7 +573,7 @@ func (d *DynatraceClient) configExistsByName(ctx context.Context, api api.API, n
 
 func (d *DynatraceClient) UpsertConfigByName(ctx context.Context, api api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
 	d.limiter.ExecuteBlocking(func() {
-		entity, err = d.upsertConfigByName(d.contextWithUserAgent(ctx), api, name, payload)
+		entity, err = d.upsertConfigByName(ctx, api, name, payload)
 	})
 	return
 }
@@ -590,7 +589,7 @@ func (d *DynatraceClient) upsertConfigByName(ctx context.Context, api api.API, n
 
 func (d *DynatraceClient) UpsertConfigByNonUniqueNameAndId(ctx context.Context, api api.API, entityId string, name string, payload []byte) (entity DynatraceEntity, err error) {
 	d.limiter.ExecuteBlocking(func() {
-		entity, err = d.upsertConfigByNonUniqueNameAndId(d.contextWithUserAgent(ctx), api, entityId, name, payload)
+		entity, err = d.upsertConfigByNonUniqueNameAndId(ctx, api, entityId, name, payload)
 	})
 	return
 }
@@ -610,7 +609,7 @@ type SchemaList []struct {
 
 func (d *DynatraceClient) ListSchemas() (schemas SchemaList, err error) {
 	d.limiter.ExecuteBlocking(func() {
-		schemas, err = d.listSchemas(d.contextWithUserAgent(context.TODO()))
+		schemas, err = d.listSchemas(context.TODO())
 	})
 	return
 }
@@ -646,7 +645,7 @@ func (d *DynatraceClient) listSchemas(ctx context.Context) (SchemaList, error) {
 
 func (d *DynatraceClient) GetSettingById(objectId string) (res *DownloadSettingsObject, err error) {
 	d.limiter.ExecuteBlocking(func() {
-		res, err = d.getSettingById(d.contextWithUserAgent(context.TODO()), objectId)
+		res, err = d.getSettingById(context.TODO(), objectId)
 	})
 	return
 }
@@ -681,7 +680,7 @@ func (d *DynatraceClient) getSettingById(ctx context.Context, objectId string) (
 
 func (d *DynatraceClient) ListSettings(ctx context.Context, schemaId string, opts ListSettingsOptions) (res []DownloadSettingsObject, err error) {
 	d.limiter.ExecuteBlocking(func() {
-		res, err = d.listSettings(d.contextWithUserAgent(ctx), schemaId, opts)
+		res, err = d.listSettings(ctx, schemaId, opts)
 	})
 	return
 }
@@ -751,7 +750,7 @@ func (e EntitiesType) String() string {
 
 func (d *DynatraceClient) ListEntitiesTypes(ctx context.Context) (res []EntitiesType, err error) {
 	d.limiter.ExecuteBlocking(func() {
-		res, err = d.listEntitiesTypes(d.contextWithUserAgent(ctx))
+		res, err = d.listEntitiesTypes(ctx)
 	})
 	return
 }
@@ -799,7 +798,7 @@ func genTimeframeUnixMilliString(duration time.Duration) string {
 
 func (d *DynatraceClient) ListEntities(ctx context.Context, entitiesType EntitiesType) (res []string, err error) {
 	d.limiter.ExecuteBlocking(func() {
-		res, err = d.listEntities(d.contextWithUserAgent(ctx), entitiesType)
+		res, err = d.listEntities(ctx, entitiesType)
 	})
 	return
 }
@@ -854,7 +853,7 @@ func (d *DynatraceClient) listEntities(ctx context.Context, entitiesType Entitie
 
 func (d *DynatraceClient) DeleteSettings(objectID string) (err error) {
 	d.limiter.ExecuteBlocking(func() {
-		err = d.deleteSettings(d.contextWithUserAgent(context.TODO()), objectID)
+		err = d.deleteSettings(context.TODO(), objectID)
 	})
 	return
 }
@@ -879,13 +878,6 @@ func (d *DynatraceClient) deleteSettings(ctx context.Context, objectID string) e
 		return rest.NewRespErr(fmt.Sprintf("failed call to DELETE %s (HTTP %d)!\n Response was:\n %s", u.String()+"/"+objectID, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodDelete, u.String())
 	}
 	return nil
-}
-
-func (d *DynatraceClient) contextWithUserAgent(ctx context.Context) context.Context {
-	if d.customUserAgent != nil {
-		return context.WithValue(ctx, rest.CtxKeyUserAgent{}, d.customUserAgent)
-	}
-	return ctx
 }
 
 func buildUrl(environmentUrl, urlPath string, params url.Values) (*url.URL, error) {

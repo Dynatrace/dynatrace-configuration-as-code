@@ -23,6 +23,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/automation/internal/pagination"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/useragent"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"net/http"
 	"net/url"
@@ -78,11 +79,10 @@ var resources = map[ResourceType]Resource{
 
 // Client can be used to interact with the Automation API
 type Client struct {
-	url             string
-	limiter         *concurrency.Limiter
-	client          *http.Client
-	resources       map[ResourceType]Resource
-	customUserAgent *string
+	url       string
+	limiter   *concurrency.Limiter
+	client    *http.Client
+	resources map[ResourceType]Resource
 }
 
 // ClientOption are (optional) additional parameter passed to the creation of
@@ -116,14 +116,14 @@ func WithClientRequestLimiter(limiter *concurrency.Limiter) func(client *Client)
 // If none is set, the default Monaco CLI specific user-agent is sent.
 func WithCustomUserAgentString(userAgent string) func(client *Client) {
 	return func(d *Client) {
-		d.customUserAgent = &userAgent
+		d.client = &http.Client{Transport: useragent.NewCustomUserAgentTransport(d.client.Transport, userAgent)}
 	}
 }
 
 // List returns all automation objects
 func (a Client) List(ctx context.Context, resourceType ResourceType) (result []Response, err error) {
 	a.limiter.ExecuteBlocking(func() {
-		result, err = a.list(a.contextWithUserAgent(ctx), resourceType)
+		result, err = a.list(ctx, resourceType)
 	})
 	return
 }
@@ -180,7 +180,7 @@ func (a Client) Upsert(ctx context.Context, resourceType ResourceType, id string
 		return nil, fmt.Errorf("id must be non empty")
 	}
 	a.limiter.ExecuteBlocking(func() {
-		result, err = a.upsert(a.contextWithUserAgent(ctx), resourceType, id, append([]byte(nil), data...))
+		result, err = a.upsert(ctx, resourceType, id, append([]byte(nil), data...))
 	})
 	return
 }
@@ -271,7 +271,7 @@ func (a Client) Delete(resourceType ResourceType, id string) (err error) {
 		return fmt.Errorf("id must be non empty")
 	}
 	a.limiter.ExecuteBlocking(func() {
-		err = a.delete(a.contextWithUserAgent(context.Background()), resourceType, id)
+		err = a.delete(context.Background(), resourceType, id)
 	})
 	return
 }
@@ -308,13 +308,6 @@ func (a Client) delete(ctx context.Context, resourceType ResourceType, id string
 		return rest.NewRespErr(fmt.Sprintf("unable to delete object with ID %s (HTTP %d): %s", id, resp.StatusCode, resp.Body), resp)
 	}
 	return nil
-}
-
-func (a Client) contextWithUserAgent(ctx context.Context) context.Context {
-	if a.customUserAgent != nil {
-		return context.WithValue(ctx, rest.CtxKeyUserAgent{}, a.customUserAgent)
-	}
-	return ctx
 }
 
 func setIDField(id string, data *[]byte) error {
