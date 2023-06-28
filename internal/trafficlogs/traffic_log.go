@@ -24,7 +24,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"os"
-	"strings"
 )
 
 const envKeyRequestLog = "MONACO_REQUEST_LOG"
@@ -111,14 +110,12 @@ func IsResponseLoggingActive() bool {
 	return responseLogFile != nil
 }
 
-func LogRequest(id string, request *http.Request) error {
+func LogRequest(id string, request *http.Request, body string) error {
 	if !IsRequestLoggingActive() {
 		return nil
 	}
 
-	var dumpBody = shouldDumpBody(request.Header)
-
-	dump, err := httputil.DumpRequestOut(request, dumpBody)
+	dump, err := httputil.DumpRequestOut(request, false)
 
 	if err != nil {
 		return err
@@ -128,8 +125,9 @@ func LogRequest(id string, request *http.Request) error {
 
 	_, err = requestLogFile.WriteString(fmt.Sprintf(`Request-ID: %s
 %s
+%s
 =========================
-`, id, stringDump))
+`, id, stringDump, body))
 
 	if err != nil {
 		return err
@@ -170,26 +168,4 @@ func LogResponse(id string, response *http.Response, body string) error {
 	}
 
 	return responseLogFile.Sync()
-}
-
-var dumpCasePrefixes = []string{
-	"text/",
-	"application/xml",
-	"application/json",
-}
-
-func shouldDumpBody(headers http.Header) bool {
-	contentType := headers.Get("Content-Type")
-
-	return shouldDumpBodyForContentType(contentType)
-}
-
-func shouldDumpBodyForContentType(contentType string) bool {
-	for _, prefix := range dumpCasePrefixes {
-		if strings.HasPrefix(contentType, prefix) {
-			return true
-		}
-	}
-
-	return false
 }

@@ -54,7 +54,18 @@ func (s ClientSet) Entities() *dtclient.DynatraceClient {
 	return s.dtClient
 }
 
-func CreateClassicClientSet(url string, token string) (*ClientSet, error) {
+type ClientOptions struct {
+	CustomUserAgent string
+}
+
+func (o ClientOptions) getUserAgentString() string {
+	if o.CustomUserAgent == "" {
+		return "Dynatrace Monitoring as Code/" + version.MonitoringAsCode + " " + (runtime.GOOS + " " + runtime.GOARCH)
+	}
+	return o.CustomUserAgent
+}
+
+func CreateClassicClientSet(url string, token string, opts ClientOptions) (*ClientSet, error) {
 	concurrentRequestLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
 
 	dtClient, err := dtclient.NewClassicClient(
@@ -62,6 +73,7 @@ func CreateClassicClientSet(url string, token string) (*ClientSet, error) {
 		token,
 		dtclient.WithAutoServerVersion(),
 		dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentRequestLimit)),
+		dtclient.WithCustomUserAgentString(opts.getUserAgentString()),
 	)
 	if err != nil {
 		return nil, err
@@ -78,7 +90,7 @@ type PlatformAuth struct {
 	Token                                           string
 }
 
-func CreatePlatformClientSet(url string, auth PlatformAuth) (*ClientSet, error) {
+func CreatePlatformClientSet(url string, auth PlatformAuth, opts ClientOptions) (*ClientSet, error) {
 	concurrentRequestLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
 
 	oauthCredentials := clientAuth.OauthCredentials{
@@ -92,12 +104,13 @@ func CreatePlatformClientSet(url string, auth PlatformAuth) (*ClientSet, error) 
 		oauthCredentials,
 		dtclient.WithAutoServerVersion(),
 		dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentRequestLimit)),
+		dtclient.WithCustomUserAgentString(opts.getUserAgentString()),
 	)
 	autClient := automation.NewClient(
 		url,
 		clientAuth.NewOAuthClient(context.TODO(), oauthCredentials),
 		automation.WithClientRequestLimiter(concurrency.NewLimiter(concurrentRequestLimit)),
-		automation.WithCustomUserAgentString("Dynatrace Monitoring as Code/"+version.MonitoringAsCode+" "+(runtime.GOOS+" "+runtime.GOARCH)),
+		automation.WithCustomUserAgentString(opts.getUserAgentString()),
 	)
 
 	if err != nil {
