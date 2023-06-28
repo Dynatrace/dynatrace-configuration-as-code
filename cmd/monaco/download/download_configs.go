@@ -231,7 +231,7 @@ func downloadConfigs(downloaders downloaders, opts downloadConfigsOptions) (proj
 		if err != nil {
 			return nil, err
 		}
-		log.Info("downloaded %q configurations from classic Config API endpoints", len(classicCfgs))
+		log.Info("downloaded %s configurations from classic Config API endpoints", len(classicCfgs))
 		copyConfigs(configs, classicCfgs)
 	}
 
