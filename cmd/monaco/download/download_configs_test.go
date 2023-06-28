@@ -261,7 +261,7 @@ func TestDownloadConfigsExitsEarlyForUnknownSettingsSchema(t *testing.T) {
 
 	c.EXPECT().ListSchemas().Return(dtclient.SchemaList{{"builtin:some.schema"}}, nil)
 
-	downloaders := downloaders{settings.NewDownloader(c), classic.NewDownloader(c)}
+	downloaders := downloaders{settings.NewDownloader(c), classic.NewDownloader(c, classic.WithAPIs(nil))}
 	err := doDownloadConfigs(afero.NewMemMapFs(), downloaders, givenOpts)
 	assert.ErrorContains(t, err, "not known", "expected download to fail for unkown Settings Schema")
 	c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(0) // no downloads should even be attempted for unknown schema
@@ -330,7 +330,7 @@ func TestDownloadConfigs_OnlyAutomationWithoutAutomationCredentials(t *testing.T
 		onlyAutomation: true,
 	}
 
-	downloaders := downloaders{automation.NoopAutomationDownloader{}}
+	downloaders := downloaders{automation.NoopAutomationDownloader{}, classic.NewDownloader(nil, classic.WithAPIs(nil))}
 
 	err := doDownloadConfigs(testutils.CreateTestFileSystem(), downloaders, opts)
 	assert.ErrorContains(t, err, "no OAuth credentials configured")
