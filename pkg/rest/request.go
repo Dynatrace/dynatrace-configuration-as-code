@@ -40,7 +40,7 @@ func Get(client *http.Client, url string) (Response, error) {
 	return executeRequest(client, req)
 }
 
-func DeleteConfig(client *http.Client, url string) (Response, error) {
+func Delete(client *http.Client, url string) (Response, error) {
 	req, err := request(http.MethodDelete, url)
 	if err != nil {
 		return Response{}, err

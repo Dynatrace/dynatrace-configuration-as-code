@@ -532,7 +532,7 @@ func (d *DynatraceClient) deleteConfigById(api api.API, id string) error {
 	}
 	parsedURL = parsedURL.JoinPath(id)
 
-	resp, err := rest.DeleteConfig(d.clientClassic, parsedURL.String())
+	resp, err := rest.Delete(d.clientClassic, parsedURL.String())
 	if err != nil {
 		return err
 	}
@@ -854,7 +854,7 @@ func (d *DynatraceClient) deleteSettings(objectID string) error {
 	}
 
 	u = u.JoinPath(objectID)
-	resp, err := rest.DeleteConfig(d.client, u.String())
+	resp, err := rest.Delete(d.client, u.String())
 	if err != nil {
 		return err
 	}

@@ -57,8 +57,8 @@ func Test_deleteConfig(t *testing.T) {
 			}))
 			defer server.Close()
 
-			if _, err := DeleteConfig(server.Client(), server.URL); (err != nil) != tt.wantErr {
-				t.Errorf("DeleteConfig() error = %v, wantErr %v", err, tt.wantErr)
+			if _, err := Delete(server.Client(), server.URL); (err != nil) != tt.wantErr {
+				t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

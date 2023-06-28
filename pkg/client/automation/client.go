@@ -277,14 +277,14 @@ func (a Client) delete(resourceType ResourceType, id string) error {
 	workflowsAdminAccess := resourceType == Workflows
 	setAdminAccessQueryParam(u, workflowsAdminAccess)
 
-	resp, err := rest.DeleteConfig(a.client, u.String())
+	resp, err := rest.Delete(a.client, u.String())
 	if err != nil {
 		return fmt.Errorf("unable to delete object with ID %s: %w", id, err)
 	}
 
 	if workflowsAdminAccess && resp.StatusCode == http.StatusForbidden {
 		setAdminAccessQueryParam(u, false)
-		resp, err = rest.DeleteConfig(a.client, u.String())
+		resp, err = rest.Delete(a.client, u.String())
 		if err != nil {
 			return fmt.Errorf("unable to delete object with ID %s: %w", id, err)
 		}
