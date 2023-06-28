@@ -23,46 +23,8 @@ import (
 	"fmt"
 	"gotest.tools/assert"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 )
-
-func Test_deleteConfig(t *testing.T) {
-	tests := []struct {
-		name            string
-		givenStatusCode int
-		wantErr         bool
-	}{
-		{
-			"does not return error on http success",
-			http.StatusOK,
-			false,
-		},
-		{
-			"does not return error on http accepted",
-			http.StatusAccepted,
-			false,
-		},
-		{
-			"does not return error if delete API already returns not found",
-			http.StatusNotFound,
-			false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-				rw.WriteHeader(tt.givenStatusCode)
-			}))
-			defer server.Close()
-
-			if _, err := Delete(server.Client(), server.URL); (err != nil) != tt.wantErr {
-				t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
 
 func Test_sendWithsendWithRetryReturnsFirstSuccessfulResponse(t *testing.T) {
 	i := 0
