@@ -296,7 +296,7 @@ func (a Client) delete(resourceType ResourceType, id string) error {
 	}
 
 	if !resp.IsSuccess() {
-		return rest.NewRespErr("unable to delete automation resources", resp)
+		return rest.NewRespErr(fmt.Sprintf("unable to delete object with ID %s (HTTP %d): %s", id, resp.StatusCode, resp.Body), resp)
 	}
 	return nil
 }
