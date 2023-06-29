@@ -24,6 +24,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/auth"
@@ -288,7 +289,7 @@ func WithAutoServerVersion() func(client *DynatraceClient) {
 			serverVersion, err = dtVersion.GetDynatraceVersion(d.clientClassic, d.environmentURLClassic)
 		}
 		if err != nil {
-			log.Warn("Unable to determine Dynatrace server version: %v", err)
+			log.WithFields(field.Error(err)).Warn("Unable to determine Dynatrace server version: %v", err)
 			d.serverVersion = version.UnknownVersion
 		} else {
 			d.serverVersion = serverVersion

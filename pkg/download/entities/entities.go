@@ -19,6 +19,7 @@ package entities
 import (
 	"context"
 	"errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
 	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/pkg/rest"
 	"strings"
@@ -71,7 +72,7 @@ func (d *Downloader) Download(specificEntitiesTypes []string, projectName string
 	// get ALL entities types
 	entitiesTypes, err := d.client.ListEntitiesTypes(context.TODO())
 	if err != nil {
-		log.Error("Failed to fetch all known entities types. Skipping entities download. Reason: %s", err)
+		log.WithFields(field.Error(err)).Error("Failed to fetch all known entities types. Skipping entities download. Reason: %s", err)
 		return nil
 	}
 
@@ -113,7 +114,7 @@ func (d *Downloader) DownloadAll(projectName string) v2.ConfigsPerType {
 	// get ALL entities types
 	entitiesTypes, err := d.client.ListEntitiesTypes(context.TODO())
 	if err != nil {
-		log.Error("Failed to fetch all known entities types. Skipping entities download. Reason: %s", err)
+		log.WithFields(field.Error(err)).Error("Failed to fetch all known entities types. Skipping entities download. Reason: %s", err)
 		return nil
 	}
 
@@ -140,7 +141,7 @@ func (d *Downloader) download(entitiesTypes []dtclient.EntitiesType, projectName
 				} else {
 					errMsg = err.Error()
 				}
-				log.Error("Failed to fetch all entities for entities Type %s: %v", entityType.EntitiesTypeId, errMsg)
+				log.WithFields(field.Error(err)).Error("Failed to fetch all entities for entities Type %s: %v", entityType.EntitiesTypeId, errMsg)
 				return
 			}
 			if len(objects) == 0 {

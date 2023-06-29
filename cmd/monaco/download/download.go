@@ -16,6 +16,7 @@ package download
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/manifest"
 	"net/url"
 	"path"
@@ -79,7 +80,7 @@ func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptions
 
 	log.Info("Searching for circular dependencies")
 	if depErr := reportForCircularDependencies(proj); depErr != nil {
-		log.Warn("Download finished with problems: %s", depErr)
+		log.WithFields(field.Error(depErr)).Warn("Download finished with problems: %s", depErr)
 	} else {
 		log.Info("No circular dependencies found")
 	}

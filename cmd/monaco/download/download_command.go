@@ -21,6 +21,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/completion"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/version"
 	clientAuth "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/auth"
 	versionClient "github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/version"
@@ -268,7 +269,7 @@ func printUploadToSameEnvironmentWarning(env manifest.EnvironmentDefinition) {
 
 	serverVersion, err = versionClient.GetDynatraceVersion(httpClient, env.URL.Value)
 	if err != nil {
-		log.Warn("Unable to determine server version %q: %w", env.URL.Value, err)
+		log.WithFields(field.Environment(env.Name, env.Group), field.Error(err)).Warn("Unable to determine server version %q: %v", env.URL.Value, err)
 		return
 	}
 	if serverVersion.SmallerThan(version.Version{Major: 1, Minor: 262}) {

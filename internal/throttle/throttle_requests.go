@@ -18,6 +18,7 @@ package throttle
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	"time"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
@@ -49,7 +50,7 @@ func GenerateSleepDuration(backoffMultiplier int, timelineProvider timeutils.Tim
 
 	addedWaitMillis, err := rand.Int(MinWaitDuration.Nanoseconds())
 	if err != nil {
-		log.Warn("Failed to generate random gitter. Falling back to use fixed value. Error: %s", err)
+		log.WithFields(field.Error(err)).Warn("Failed to generate random gitter. Falling back to use fixed value. Error: %s", err)
 		addedWaitMillis = 0
 	}
 

@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/converter/v1environment"
 	"path"
 	"path/filepath"
@@ -46,8 +47,9 @@ func convert(fs afero.Fs, workingDir string, environmentsFile string, outputFold
 	}
 
 	if len(projs) == 0 {
-		log.Error("Please ensure that you run the command with a directory that holds monaco projects to be converted.")
-		return fmt.Errorf("no projects to convert found in %q", workingDir)
+		err := fmt.Errorf("no projects to convert found in %q", workingDir)
+		log.WithFields(field.Error(err)).Error("Please ensure that you run the command with a directory that holds monaco projects to be converted: %w", err)
+		return err
 	}
 
 	manifestPath := filepath.Join(outputFolder, manifestName)
@@ -61,10 +63,11 @@ func convert(fs afero.Fs, workingDir string, environmentsFile string, outputFold
 	}, man, projs)
 
 	if len(errs) > 0 {
-		log.Error("Encountered %d errors while converting %s:", len(errs), workingDir)
+		err := fmt.Errorf("encountered %d errors while converting %s", len(errs), workingDir)
+		log.WithFields(field.Error(err)).Error("%s:", err)
 		errutils.PrintErrors(errs)
 
-		return fmt.Errorf("encountered errors while converting configs. check logs")
+		return err
 	}
 
 	err := copyDeleteFileIfPresent(fs, workingDir, outputFolder)

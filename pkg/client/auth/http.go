@@ -39,8 +39,7 @@ type OauthCredentials struct {
 // NewTokenAuthClient creates a new HTTP client that supports token based authorization
 func NewTokenAuthClient(token string) *http.Client {
 	if !isNewDynatraceTokenFormat(token) {
-		log.Warn("You used an old token format. Please consider switching to the new 1.205+ token format.")
-		log.Warn("More information: https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication")
+		log.Warn("You used an old token format. Please consider switching to the new 1.205+ token format.\nMore information: https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication")
 	}
 	return &http.Client{Transport: NewTokenAuthTransport(nil, token)}
 }

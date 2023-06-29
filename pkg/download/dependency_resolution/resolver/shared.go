@@ -32,13 +32,13 @@ func resolveScope(configToBeUpdated *config.Config, ids map[string]config.Config
 
 	scopeParam, found := configToBeUpdated.Parameters[config.ScopeParameter]
 	if !found {
-		log.Error(fmt.Sprintf("Setting found without a scope parameter. Skipping resolution for this config. Coordinate: %s.", configToBeUpdated.Coordinate))
+		log.Error("Setting found without a scope parameter. Skipping resolution for this config. Coordinate: %s.", configToBeUpdated.Coordinate)
 		return
 	}
 
 	value, ok := scopeParam.(*valueParam.ValueParameter)
 	if scopeParam.GetType() != valueParam.ValueParameterType || !ok {
-		log.Error(fmt.Sprintf("Expected scope parameter to be a value. Skipping resolution for this config. Coordinate: %s.", configToBeUpdated.Coordinate))
+		log.Error("Expected scope parameter to be a value. Skipping resolution for this config. Coordinate: %s.", configToBeUpdated.Coordinate)
 		return
 	}
 

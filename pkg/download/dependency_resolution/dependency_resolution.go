@@ -21,6 +21,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/dependency_resolution/resolver"
 	"sync"
 
@@ -72,7 +73,7 @@ func getResolver(configs project.ConfigsPerType) dependencyResolver {
 		log.Debug("Using fast but memory intensive dependency resolution. Can be deactivated using '%s=false' env var.", featureflags.FastDependencyResolver().EnvName())
 		r, err := resolver.AhoCorasickResolver(configsById)
 		if err != nil {
-			log.Error("Failed to initialize fast dependency resolution, falling back to slow resolution: %v", err)
+			log.WithFields(field.Error(err)).Error("Failed to initialize fast dependency resolution, falling back to slow resolution: %v", err)
 			return resolver.BasicResolver(configsById)
 		}
 		return r
@@ -96,7 +97,7 @@ func collectConfigsById(configs project.ConfigsPerType) map[string]config.Config
 				// resolve Management Zone Settings by Numeric ID as well
 				numID, err := idutils.GetNumericIDForObjectID(conf.OriginObjectId)
 				if err != nil {
-					log.Warn("Failed to decode numeric ID of config %q, auto-resolved references may be incomplete: %v", conf.Coordinate, err)
+					log.WithFields(field.Error(err)).Warn("Failed to decode numeric ID of config %q, auto-resolved references may be incomplete: %v", conf.Coordinate, err)
 				} else {
 					strId := fmt.Sprintf("%d", numID)
 					configsById[strId] = conf
