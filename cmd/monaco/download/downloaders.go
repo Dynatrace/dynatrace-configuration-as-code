@@ -30,6 +30,18 @@ import (
 
 type downloaders []interface{}
 
+func (d downloaders) Classic() download.Downloader[config.ClassicApiType] {
+	return getDownloader[config.ClassicApiType](d)
+}
+
+func (d downloaders) Settings() download.Downloader[config.SettingsType] {
+	return getDownloader[config.SettingsType](d)
+}
+
+func (d downloaders) Automation() download.Downloader[config.AutomationType] {
+	return getDownloader[config.AutomationType](d)
+}
+
 func makeDownloaders(options downloadConfigsOptions) (downloaders, error) {
 	clients, err := dynatrace.CreateClientSet(options.environmentURL, options.auth)
 	if err != nil {
@@ -95,10 +107,6 @@ func withWarn() func(api api.API) {
 	}
 }
 
-func (d downloaders) Classic() download.Downloader[config.ClassicApiType] {
-	return getDownloader[config.ClassicApiType](d)
-}
-
 func warnDeprecated() api.Filter {
 	return func(api api.API) bool {
 		if api.DeprecatedBy != "" {
@@ -106,14 +114,6 @@ func warnDeprecated() api.Filter {
 		}
 		return false
 	}
-}
-
-func (d downloaders) Settings() download.Downloader[config.SettingsType] {
-	return getDownloader[config.SettingsType](d)
-}
-
-func (d downloaders) Automation() download.Downloader[config.AutomationType] {
-	return getDownloader[config.AutomationType](d)
 }
 
 func getDownloader[T config.Type](d downloaders) download.Downloader[T] {

@@ -81,7 +81,9 @@ func WithAPIContentFilters(apiFilters map[string]contentFilter) ConstOption {
 }
 
 func (d *Downloader) Download(projectName string, _ ...config.ClassicApiType) (project.ConfigsPerType, error) {
+	log.Info("Downloading configuration APIs from %d endpoints", len(d.apisToDownload))
 	configs := d.downloadAPIs(d.apisToDownload, projectName)
+	log.Info("downloaded %d configurations from classic Config API endpoints", len(configs))
 	return configs, nil
 }
 

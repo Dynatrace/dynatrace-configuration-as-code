@@ -225,13 +225,10 @@ func downloadConfigs(downloaders downloaders, opts downloadConfigsOptions) (proj
 	configs := make(project.ConfigsPerType)
 
 	{
-		log.Info("Downloading configuration APIs")
-
 		classicCfgs, err := downloaders.Classic().Download(opts.projectName)
 		if err != nil {
 			return nil, err
 		}
-		log.Info("downloaded %s configurations from classic Config API endpoints", len(classicCfgs))
 		copyConfigs(configs, classicCfgs)
 	}
 
