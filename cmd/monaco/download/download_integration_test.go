@@ -1115,65 +1115,6 @@ func TestDownloadIntegrationDownloadsOnlyAPIsIfConfigured(t *testing.T) {
 	assert.Assert(t, !settingsDownloaded, "Expected no Settings to the downloaded, when onlyAPIs is set")
 }
 
-func TestDownloadIntegrationDownloadsOnlySettingsIfConfigured(t *testing.T) {
-	// GIVEN apis, server responses, file system
-	const projectName = "integration-test-full"
-	const testBasePath = "test-resources/" + projectName
-
-	// APIs
-	fakeApi := api.API{ID: "fake-api", URLPath: "/fake-api", PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
-	apis := api.APIs{
-		fakeApi.ID: fakeApi,
-	}
-
-	// Responses
-	responses := map[string]string{
-		"/api/v2/settings/schemas": "settings/__SCHEMAS.json",
-		"/api/v2/settings/objects": "settings/objects.json",
-	}
-
-	// Server
-	server := dtclient.NewIntegrationTestServer(t, testBasePath, responses)
-
-	fs := afero.NewMemMapFs()
-
-	opts := setupTestingDownloadOptions(t, server, projectName)
-	opts.onlySettings = true
-	opts.onlyAPIs = false
-	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
-
-	downloaders := downloaders{settings.NewDownloader(dtClient), classic.NewDownloader(dtClient, classic.WithAPIs(apis))}
-
-	err := doDownloadConfigs(fs, downloaders, opts)
-
-	assert.NilError(t, err)
-
-	// THEN we can load the project again and verify its content
-	projects, errs := loadDownloadedProjects(fs, apis)
-	if len(errs) != 0 {
-		for _, err := range errs {
-			t.Errorf("%v", err)
-		}
-		return
-	}
-
-	assert.Equal(t, len(projects), 1)
-	p := projects[0]
-	assert.Equal(t, p.Id, projectName)
-	assert.Equal(t, len(p.Configs), 1)
-
-	configs, found := p.Configs[projectName]
-	assert.Equal(t, found, true)
-	assert.Equal(t, len(configs), 1, "Expected one one Settings schema to be downloaded")
-
-	_, fakeApiDownloaded := configs[fakeApi.ID]
-	assert.Assert(t, !fakeApiDownloaded, "Expected no Config APIs to the downloaded, when onlySettings is set")
-
-	_, settingsDownloaded := configs["settings-schema"]
-	assert.Assert(t, settingsDownloaded)
-	assert.Equal(t, len(configs["settings-schema"]), 3, "Expected 3 settings objects")
-}
-
 func TestDownloadIntegrationDoesNotDownloadUnmodifiableSettings(t *testing.T) {
 	// GIVEN Responses
 	const projectName = "integration-test-unmodifiable-settings"
@@ -1195,7 +1136,7 @@ func TestDownloadIntegrationDoesNotDownloadUnmodifiableSettings(t *testing.T) {
 
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
-	downloaders := downloaders{settings.NewDownloader(dtClient)}
+	downloaders := downloaders{settings.NewDownloader(dtClient), classic.NewDownloader(dtClient, classic.WithAPIs(nil))}
 
 	err := doDownloadConfigs(fs, downloaders, opts)
 
@@ -1251,7 +1192,7 @@ func TestDownloadIntegrationDownloadsUnmodifiableSettingsIfFFTurnedOff(t *testin
 
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
-	downloaders := downloaders{settings.NewDownloader(dtClient)}
+	downloaders := downloaders{settings.NewDownloader(dtClient), classic.NewDownloader(dtClient, classic.WithAPIs(nil))}
 
 	// GIVEN filter feature flag is turned OFF
 	t.Setenv(featureflags.DownloadFilterSettingsUnmodifiable().EnvName(), "false")

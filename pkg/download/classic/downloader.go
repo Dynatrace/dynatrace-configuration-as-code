@@ -19,7 +19,6 @@ package classic
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
@@ -38,34 +37,25 @@ import (
 	project "github.com/dynatrace/dynatrace-configuration-as-code/pkg/project/v2"
 )
 
-// Downloader is responsible for downloading classic Dynatrace APIs
-type Downloader struct {
-	apisToDownload api.APIs
+type (
+	// Downloader is responsible for downloading classic Dynatrace APIs. To create it sound, use NewDownloader construction function.
+	Downloader struct {
+		apisToDownload api.APIs
 
-	// apiContentFilters contains rules to filter specific apis based on
-	// custom logic implemented in the contentFilter
-	apiContentFilters map[string]contentFilter
+		// apiContentFilters contains rules to filter specific apis based on
+		// custom logic implemented in the contentFilter
+		apiContentFilters map[string]contentFilter
 
-	// client is the actual rest client used to call
-	// the dynatrace APIs
-	client dtclient.Client
-}
-
-// WithAPIContentFilters sets the api content filters for the Downloader - these will be used in addition to base API filtering
-func WithAPIContentFilters(apiFilters map[string]contentFilter) func(*Downloader) {
-	return func(d *Downloader) {
-		d.apiContentFilters = apiFilters
+		// client is the actual rest client used to call
+		// the dynatrace APIs
+		client dtclient.Client
 	}
-}
 
-func WithAPIs(apis api.APIs) func(*Downloader) {
-	return func(d *Downloader) {
-		d.apisToDownload = apis
-	}
-}
+	ConstOption func(downloader *Downloader)
+)
 
-// NewDownloader creates a new Downloader
-func NewDownloader(client dtclient.Client, opts ...func(*Downloader)) *Downloader {
+// NewDownloader creates a new sound Downloader.
+func NewDownloader(client dtclient.Client, opts ...ConstOption) *Downloader {
 	c := &Downloader{
 		apisToDownload:    api.NewAPIs(),
 		apiContentFilters: apiContentFilters,
@@ -77,57 +67,24 @@ func NewDownloader(client dtclient.Client, opts ...func(*Downloader)) *Downloade
 	return c
 }
 
-func (d *Downloader) Download(projectName string, specificAPIs ...config.ClassicApiType) (project.ConfigsPerType, error) {
-	specificAPINames := make([]string, len(specificAPIs), len(specificAPIs))
-	for i, s := range specificAPIs {
-		specificAPINames[i] = s.Api
+// WithAPIs sets the endpoints from which Downloader is going to download. During settings, it checks does the given endpoints are known.
+func WithAPIs(apis api.APIs) ConstOption {
+	return func(d *Downloader) {
+		d.apisToDownload = apis
 	}
+}
 
-	if ok, unknownApis := validateSpecificAPIs(d.apisToDownload, specificAPINames); !ok {
-		err := fmt.Errorf("requested APIs '%v' are not known", strings.Join(unknownApis, ","))
-		log.WithFields(field.F("unkownAPIs", unknownApis), field.Error(err)).Error("%v. Please consult our documentation for known API names.", err)
-		return nil, err
+func WithAPIContentFilters(apiFilters map[string]contentFilter) ConstOption {
+	return func(d *Downloader) {
+		d.apiContentFilters = apiFilters
 	}
+}
 
-	apisToDownload := filterAPIs(d.apisToDownload, specificAPINames)
-	if len(apisToDownload) == 0 {
-		return nil, fmt.Errorf("no APIs to download after applying filters")
-	}
-
-	configs := d.downloadAPIs(apisToDownload, projectName)
+func (d *Downloader) Download(projectName string, _ ...config.ClassicApiType) (project.ConfigsPerType, error) {
+	log.Info("Downloading configuration APIs from %d endpoints", len(d.apisToDownload))
+	configs := d.downloadAPIs(d.apisToDownload, projectName)
+	log.Info("downloaded %d configurations from classic Config API endpoints", len(configs))
 	return configs, nil
-}
-
-func validateSpecificAPIs(a api.APIs, apiNames []string) (valid bool, unknownAPIs []string) {
-	for _, v := range apiNames {
-		if !a.Contains(v) {
-			unknownAPIs = append(unknownAPIs, v)
-		}
-	}
-	return len(unknownAPIs) == 0, unknownAPIs
-}
-
-func filterAPIs(apis api.APIs, specificAPIs []string) api.APIs {
-	if len(specificAPIs) > 0 {
-		return apis.Filter(api.RetainByName(specificAPIs), skipDownloadFilter)
-	}
-	return apis.Filter(skipDownloadFilter, removeDeprecatedEndpoints)
-}
-
-func skipDownloadFilter(api api.API) bool {
-	if api.SkipDownload {
-		log.WithFields(field.Type(api.ID)).Info("API can not be downloaded and needs manual creation: '%v'.", api.ID)
-		return true
-	}
-	return false
-}
-
-func removeDeprecatedEndpoints(api api.API) bool {
-	if api.DeprecatedBy != "" {
-		log.WithFields(field.Type(api.ID)).Warn("API %q is deprecated by %q and will not be downloaded", api.ID, api.DeprecatedBy)
-		return true
-	}
-	return false
 }
 
 func (d *Downloader) downloadAPIs(apisToDownload api.APIs, projectName string) project.ConfigsPerType {

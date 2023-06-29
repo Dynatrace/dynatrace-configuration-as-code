@@ -77,3 +77,121 @@ func TestGetDownloaderPanic(t *testing.T) {
 		getDownloader[v2.ClassicApiType](downloaders)
 	})
 }
+
+func Test_prepareAPIs(t *testing.T) {
+	t.Run(`handling "--only*" flags`, func(t *testing.T) {
+		tests := []struct {
+			name  string
+			given downloadConfigsOptions
+		}{
+			{
+				name:  "onlySettings",
+				given: downloadConfigsOptions{onlySettings: true},
+			},
+			{
+				name:  "onlyAutomation",
+				given: downloadConfigsOptions{onlyAutomation: true},
+			},
+			{
+				name:  "specificSchemas is pressent",
+				given: downloadConfigsOptions{specificSchemas: []string{"anything"}},
+			},
+		}
+
+		for _, tc := range tests {
+			t.Run(tc.name, func(t *testing.T) {
+				actual := prepareAPIs(tc.given)
+				assert.Nil(t, actual)
+			})
+		}
+	})
+
+	t.Run("no endpoint marked as 'skip' is present", func(t *testing.T) {
+		tests := []struct {
+			name  string
+			given downloadConfigsOptions
+		}{
+			{
+				name:  "onlyAutomation",
+				given: downloadConfigsOptions{onlyAutomation: true},
+			},
+			{
+				name:  "onlySettings",
+				given: downloadConfigsOptions{onlySettings: true},
+			},
+			{
+				name:  "onlyAPIs",
+				given: downloadConfigsOptions{onlyAPIs: true},
+			},
+			{
+				name:  "specificAPIs is marked as 'skip'",
+				given: downloadConfigsOptions{specificAPIs: []string{"extension"}},
+			},
+			{
+				name: "without special cases",
+			},
+		}
+
+		for _, tc := range tests {
+			t.Run(tc.name, func(t *testing.T) {
+				apis := prepareAPIs(tc.given)
+				for _, e := range apis {
+					assert.False(t, e.SkipDownload)
+				}
+			})
+		}
+	})
+
+	t.Run("handling of deprecated endpoints", func(t *testing.T) {
+		tests := []struct {
+			name       string
+			given      downloadConfigsOptions
+			deprecated bool
+		}{
+			{
+				name:       "onlyAutomation",
+				given:      downloadConfigsOptions{onlyAutomation: true},
+				deprecated: false,
+			},
+			{
+				name:       "onlySettings",
+				given:      downloadConfigsOptions{onlySettings: true},
+				deprecated: false,
+			},
+			{
+				name:       "onlyAPIs",
+				given:      downloadConfigsOptions{onlyAPIs: true},
+				deprecated: false,
+			},
+			{
+				name:       "specificAPI marked with 'deprecatedBy' is not filtered out",
+				given:      downloadConfigsOptions{specificAPIs: []string{"auto-tag"}},
+				deprecated: true,
+			},
+			{
+				name:       "without special cases",
+				deprecated: false,
+			},
+		}
+
+		for _, tc := range tests {
+			t.Run(tc.name, func(t *testing.T) {
+				apis := prepareAPIs(tc.given)
+				exists := false
+
+				for _, e := range apis {
+					if !tc.deprecated {
+						assert.Equal(t, "", e.DeprecatedBy)
+					}
+
+					if e.DeprecatedBy != "" {
+						exists = true
+					}
+				}
+				if tc.deprecated {
+					assert.True(t, exists)
+				}
+			})
+		}
+	})
+}

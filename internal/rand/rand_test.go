@@ -34,7 +34,7 @@ func FuzzInt(f *testing.F) {
 
 	f.Fuzz(func(t *testing.T, n int64) {
 		if n <= 0 {
-			t.Skip()
+			return // This is not for testing
 		}
 
 		i, err := Int(n)

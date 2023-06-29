@@ -20,6 +20,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/dependency_resolution"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/id_extraction"
@@ -125,6 +126,11 @@ func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions d
 		onlyAutomation:  cmdOptions.onlyAutomation,
 	}
 
+	if errs := options.valid(); len(errs) != 0 {
+		err := printAndFormatErrors(errs, "command options are not valid")
+		return err
+	}
+
 	downloaders, err := makeDownloaders(options)
 	if err != nil {
 		return err
@@ -155,11 +161,15 @@ func (d DefaultCommand) DownloadConfigs(fs afero.Fs, cmdOptions downloadCmdOptio
 		onlyAutomation:  cmdOptions.onlyAutomation,
 	}
 
+	if errs := options.valid(); len(errs) != 0 {
+		err := printAndFormatErrors(errs, "command options are not valid")
+		return err
+	}
+
 	downloaders, err := makeDownloaders(options)
 	if err != nil {
 		return err
 	}
-
 	return doDownloadConfigs(fs, downloaders, options)
 }
 
@@ -170,6 +180,18 @@ type downloadConfigsOptions struct {
 	onlyAPIs        bool
 	onlySettings    bool
 	onlyAutomation  bool
+}
+
+func (opts downloadConfigsOptions) valid() []error {
+	var retVal []error
+	knownEndpoints := api.NewAPIs()
+	for _, e := range opts.specificAPIs {
+		if !knownEndpoints.Contains(e) {
+			retVal = append(retVal, fmt.Errorf("unknown (or unsupported) classic endpoint with name %q provided via \"--api\" flag. A list of supported classic endpoints is in the documentation", e))
+		}
+	}
+
+	return retVal
 }
 
 func doDownloadConfigs(fs afero.Fs, downloaders downloaders, opts downloadConfigsOptions) error {
@@ -202,11 +224,8 @@ func doDownloadConfigs(fs afero.Fs, downloaders downloaders, opts downloadConfig
 func downloadConfigs(downloaders downloaders, opts downloadConfigsOptions) (project.ConfigsPerType, error) {
 	configs := make(project.ConfigsPerType)
 
-	if shouldDownloadClassicConfigs(opts) {
-		log.Info("Downloading configuration APIs")
-
-		classicAPIs := makeClassicAPIs(opts.specificAPIs)
-		classicCfgs, err := downloaders.Classic().Download(opts.projectName, classicAPIs...)
+	{
+		classicCfgs, err := downloaders.Classic().Download(opts.projectName)
 		if err != nil {
 			return nil, err
 		}
@@ -241,14 +260,6 @@ func downloadConfigs(downloaders downloaders, opts downloadConfigsOptions) (proj
 	return configs, nil
 }
 
-func makeClassicAPIs(specificAPIs []string) []v2.ClassicApiType {
-	var classicAPIs []v2.ClassicApiType
-	for _, api := range specificAPIs {
-		classicAPIs = append(classicAPIs, v2.ClassicApiType{Api: api})
-	}
-	return classicAPIs
-}
-
 func makeSettingTypes(specificSchemas []string) []v2.SettingsType {
 	var settingTypes []v2.SettingsType
 	for _, schema := range specificSchemas {
@@ -261,11 +272,6 @@ func copyConfigs(dest, src project.ConfigsPerType) {
 	for k, v := range src {
 		dest[k] = v
 	}
-}
-
-// shouldDownloadClassicConfigs returns true unless onlySettings or specificSchemas but no specificAPIs are defined
-func shouldDownloadClassicConfigs(opts downloadConfigsOptions) bool {
-	return !opts.onlyAutomation && !opts.onlySettings && (len(opts.specificSchemas) == 0 || len(opts.specificAPIs) > 0)
 }
 
 // shouldDownloadSettings returns true unless onlyAPIs or specificAPIs but no specificSchemas are defined

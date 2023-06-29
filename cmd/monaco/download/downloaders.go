@@ -18,7 +18,10 @@ package download
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/cmd/monaco/dynatrace"
-	v2 "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/client/dtclient"
+	config "github.com/dynatrace/dynatrace-configuration-as-code/pkg/config/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download"
 	dlautomation "github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/download/classic"
@@ -27,34 +30,93 @@ import (
 
 type downloaders []interface{}
 
+func (d downloaders) Classic() download.Downloader[config.ClassicApiType] {
+	return getDownloader[config.ClassicApiType](d)
+}
+
+func (d downloaders) Settings() download.Downloader[config.SettingsType] {
+	return getDownloader[config.SettingsType](d)
+}
+
+func (d downloaders) Automation() download.Downloader[config.AutomationType] {
+	return getDownloader[config.AutomationType](d)
+}
+
 func makeDownloaders(options downloadConfigsOptions) (downloaders, error) {
 	clients, err := dynatrace.CreateClientSet(options.environmentURL, options.auth)
 	if err != nil {
 		return nil, err
 	}
 
-	var automationDownloader download.Downloader[v2.AutomationType] = dlautomation.NoopAutomationDownloader{}
+	var automationDownloader download.Downloader[config.AutomationType] = dlautomation.NoopAutomationDownloader{}
 	if clients.Automation() != nil {
 		automationDownloader = dlautomation.NewDownloader(clients.Automation())
 	}
-	var settingsDownloader download.Downloader[v2.SettingsType] = settings.NewDownloader(clients.Settings())
-	var classicDownloader download.Downloader[v2.ClassicApiType] = classic.NewDownloader(clients.Classic())
+	var settingsDownloader download.Downloader[config.SettingsType] = settings.NewDownloader(clients.Settings())
+	var classicDownloader download.Downloader[config.ClassicApiType] = classicDownloader(clients.Classic(), options)
 	return downloaders{settingsDownloader, classicDownloader, automationDownloader}, nil
 }
 
-func (d downloaders) Classic() download.Downloader[v2.ClassicApiType] {
-	return getDownloader[v2.ClassicApiType](d)
+func classicDownloader(client dtclient.Client, opts downloadConfigsOptions) *classic.Downloader {
+	endpoints := prepareAPIs(opts)
+	return classic.NewDownloader(client, classic.WithAPIs(endpoints))
 }
 
-func (d downloaders) Settings() download.Downloader[v2.SettingsType] {
-	return getDownloader[v2.SettingsType](d)
+func prepareAPIs(opts downloadConfigsOptions) api.APIs {
+	switch {
+	case opts.onlyAutomation:
+		return nil
+	case opts.onlySettings:
+		return nil
+	case opts.onlyAPIs:
+		return api.NewAPIs().Filter(removeSkipDownload, removeDeprecated(withWarn()))
+	case len(opts.specificAPIs) > 0:
+		return api.NewAPIs().Filter(api.RetainByName(opts.specificAPIs), removeSkipDownload, warnDeprecated())
+	case len(opts.specificSchemas) == 0:
+		return api.NewAPIs().Filter(removeSkipDownload, removeDeprecated())
+	default:
+		return nil
+	}
 }
 
-func (d downloaders) Automation() download.Downloader[v2.AutomationType] {
-	return getDownloader[v2.AutomationType](d)
+func removeSkipDownload(api api.API) bool {
+	if api.SkipDownload {
+		log.Info("API can not be downloaded and needs manual creation: '%v'.", api.ID)
+		return true
+	}
+	return false
 }
 
-func getDownloader[T v2.Type](d downloaders) download.Downloader[T] {
+func removeDeprecated(log ...func(api api.API)) api.Filter {
+	return func(api api.API) bool {
+		if api.DeprecatedBy != "" {
+			if len(log) > 0 {
+				log[0](api)
+			}
+			return true
+		}
+		return false
+	}
+}
+
+func withWarn() func(api api.API) {
+	return func(api api.API) {
+		if api.DeprecatedBy != "" {
+			log.Warn("classic config endpoint %q is deprecated by %q and will not be downloaded", api.ID, api.DeprecatedBy)
+		}
+	}
+}
+
+func warnDeprecated() api.Filter {
+	return func(api api.API) bool {
+		if api.DeprecatedBy != "" {
+			log.Warn("classic config endpoint %q is deprecated by %q", api.ID, api.DeprecatedBy)
+		}
+		return false
+	}
+}
+
+func getDownloader[T config.Type](d downloaders) download.Downloader[T] {
 	for _, downloader := range d {
 		if dl, ok := downloader.(download.Downloader[T]); ok {
 			return dl
