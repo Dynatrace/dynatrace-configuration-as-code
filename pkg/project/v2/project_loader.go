@@ -37,12 +37,12 @@ type ProjectLoaderContext struct {
 }
 
 type DuplicateConfigIdentifierError struct {
-	Config             coordinate.Coordinate
-	EnvironmentDetails configErrors.EnvironmentDetails
+	Location           coordinate.Coordinate           `json:"location"`
+	EnvironmentDetails configErrors.EnvironmentDetails `json:"environmentDetails"`
 }
 
 func (e DuplicateConfigIdentifierError) Coordinates() coordinate.Coordinate {
-	return e.Config
+	return e.Location
 }
 
 func (e DuplicateConfigIdentifierError) LocationDetails() configErrors.EnvironmentDetails {
@@ -50,12 +50,12 @@ func (e DuplicateConfigIdentifierError) LocationDetails() configErrors.Environme
 }
 
 func (e DuplicateConfigIdentifierError) Error() string {
-	return fmt.Sprintf("Config IDs need to be unique to project/type, found duplicate `%s`", e.Config)
+	return fmt.Sprintf("Config IDs need to be unique to project/type, found duplicate `%s`", e.Location)
 }
 
 func newDuplicateConfigIdentifierError(c config.Config) DuplicateConfigIdentifierError {
 	return DuplicateConfigIdentifierError{
-		Config: c.Coordinate,
+		Location: c.Coordinate,
 		EnvironmentDetails: configErrors.EnvironmentDetails{
 			Group:       c.Group,
 			Environment: c.Environment,

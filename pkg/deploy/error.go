@@ -28,29 +28,29 @@ var (
 )
 
 type paramsRefErr struct {
-	Config             coordinate.Coordinate
-	EnvironmentDetails configErrors.EnvironmentDetails
-	Parameter          string
-	Reference          parameter.ParameterReference
-	Reason             string
+	Location           coordinate.Coordinate           `json:"location"`
+	EnvironmentDetails configErrors.EnvironmentDetails `json:"environmentDetails"`
+	ParameterName      string                          `json:"parameterName"`
+	Reference          parameter.ParameterReference    `json:"parameterReference"`
+	Reason             string                          `json:"reason"`
 }
 
 func newParamsRefErr(coord coordinate.Coordinate, group string, env string,
 	param string, ref parameter.ParameterReference, reason string) paramsRefErr {
 	return paramsRefErr{
-		Config: coord,
+		Location: coord,
 		EnvironmentDetails: configErrors.EnvironmentDetails{
 			Group:       group,
 			Environment: env,
 		},
-		Parameter: param,
-		Reference: ref,
-		Reason:    reason,
+		ParameterName: param,
+		Reference:     ref,
+		Reason:        reason,
 	}
 }
 
 func (e paramsRefErr) Coordinates() coordinate.Coordinate {
-	return e.Config
+	return e.Location
 }
 
 func (e paramsRefErr) LocationDetails() configErrors.EnvironmentDetails {
@@ -59,19 +59,19 @@ func (e paramsRefErr) LocationDetails() configErrors.EnvironmentDetails {
 
 func (e paramsRefErr) Error() string {
 	return fmt.Sprintf("parameter `%s` cannot reference `%s`: %s",
-		e.Parameter, e.Reference, e.Reason)
+		e.ParameterName, e.Reference, e.Reason)
 }
 
 type configDeployErr struct {
-	Config             coordinate.Coordinate
-	EnvironmentDetails configErrors.EnvironmentDetails
-	Reason             string
-	Err                error
+	Location           coordinate.Coordinate           `json:"location"`
+	EnvironmentDetails configErrors.EnvironmentDetails `json:"environmentDetails"`
+	Reason             string                          `json:"reason"`
+	Err                error                           `json:"error"`
 }
 
 func newConfigDeployErr(conf *config.Config, reason string) configDeployErr {
 	return configDeployErr{
-		Config: conf.Coordinate,
+		Location: conf.Coordinate,
 		EnvironmentDetails: configErrors.EnvironmentDetails{
 			Group:       conf.Group,
 			Environment: conf.Environment,
@@ -86,7 +86,7 @@ func (e configDeployErr) withError(err error) configDeployErr {
 }
 
 func (e configDeployErr) Coordinates() coordinate.Coordinate {
-	return e.Config
+	return e.Location
 }
 
 func (e configDeployErr) LocationDetails() configErrors.EnvironmentDetails {

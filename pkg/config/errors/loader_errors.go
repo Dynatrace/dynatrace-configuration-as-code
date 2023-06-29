@@ -28,8 +28,8 @@ var (
 )
 
 type ConfigLoaderError struct {
-	Path string
-	Err  error
+	Path string `json:"path"`
+	Err  error  `json:"error"`
 }
 
 func (e ConfigLoaderError) Unwrap() error {
@@ -41,14 +41,14 @@ func (e ConfigLoaderError) Error() string {
 }
 
 type DefinitionParserError struct {
-	Location coordinate.Coordinate
-	Path     string
-	Reason   string
+	Location coordinate.Coordinate `json:"location"`
+	Path     string                `json:"path"`
+	Reason   string                `json:"reason"`
 }
 
 type DetailedDefinitionParserError struct {
 	DefinitionParserError
-	EnvironmentDetails EnvironmentDetails
+	EnvironmentDetails EnvironmentDetails `json:"environmentDetails"`
 }
 
 func (e DetailedDefinitionParserError) LocationDetails() EnvironmentDetails {
@@ -65,7 +65,7 @@ func (e DefinitionParserError) Coordinates() coordinate.Coordinate {
 
 type ParameterDefinitionParserError struct {
 	DetailedDefinitionParserError
-	ParameterName string
+	ParameterName string `json:"parameterName"`
 }
 
 func (e ParameterDefinitionParserError) Error() string {

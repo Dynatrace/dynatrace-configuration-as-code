@@ -58,53 +58,59 @@ type projectLoaderContext struct {
 	manifestPath string
 }
 
-type manifestLoaderError struct {
-	ManifestPath string
-	Reason       string
+type ManifestLoaderError struct {
+	ManifestPath string `json:"manifestPath"`
+	Reason       string `json:"reason"`
 }
 
-func (e manifestLoaderError) Error() string {
+func (e ManifestLoaderError) Error() string {
 	return fmt.Sprintf("%s: %s", e.ManifestPath, e.Reason)
 }
 
-func newManifestLoaderError(path string, reason string) manifestLoaderError {
-	return manifestLoaderError{
+func newManifestLoaderError(path string, reason string) ManifestLoaderError {
+	return ManifestLoaderError{
 		ManifestPath: path,
 		Reason:       reason,
 	}
 }
 
-type environmentLoaderError struct {
-	manifestLoaderError
-	Group       string
-	Environment string
+type EnvironmentDetails struct {
+	Group       string `json:"group"`
+	Environment string `json:"environment"`
 }
 
-func newManifestEnvironmentLoaderError(manifest string, group string, env string, reason string) environmentLoaderError {
-	return environmentLoaderError{
-		manifestLoaderError: newManifestLoaderError(manifest, reason),
-		Group:               group,
-		Environment:         env,
+type EnvironmentLoaderError struct {
+	ManifestLoaderError
+	EnvironmentDetails EnvironmentDetails `json:"environmentDetails"`
+}
+
+func newManifestEnvironmentLoaderError(manifest string, group string, env string, reason string) EnvironmentLoaderError {
+	return EnvironmentLoaderError{
+		ManifestLoaderError: newManifestLoaderError(manifest, reason),
+		EnvironmentDetails: EnvironmentDetails{
+			Group:       group,
+			Environment: env,
+		},
 	}
 }
 
-func (e environmentLoaderError) Error() string {
-	return fmt.Sprintf("%s:%s:%s: %s", e.ManifestPath, e.Group, e.Environment, e.Reason)
+func (e EnvironmentLoaderError) Error() string {
+	return fmt.Sprintf("%s:%s:%s: %s", e.ManifestPath, e.EnvironmentDetails.Group, e.EnvironmentDetails.Environment, e.Reason)
 }
 
-type projectLoaderError struct {
-	manifestLoaderError
-	Project string
+type ProjectLoaderError struct {
+	ManifestLoaderError
+	Project string `json:"project"`
 }
 
-func newManifestProjectLoaderError(manifest string, project string, reason string) projectLoaderError {
-	return projectLoaderError{
-		manifestLoaderError: newManifestLoaderError(manifest, reason),
+func newManifestProjectLoaderError(manifest string, project string, reason string) ProjectLoaderError {
+	return ProjectLoaderError{
+		ManifestLoaderError: newManifestLoaderError(manifest, reason),
 		Project:             project,
 	}
 }
 
-func (e projectLoaderError) Error() string {
+func (e ProjectLoaderError) Error() string {
 	return fmt.Sprintf("%s:%s: %s", e.ManifestPath, e.Project, e.Reason)
 }
 

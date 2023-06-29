@@ -22,8 +22,8 @@ import "fmt"
 // The error marks the ID of the node left with unresolved incoming edges after sorting,
 // as well as the IDs of the nodes still pointing to it.
 type TopologySortError struct {
-	OnId                        int
-	UnresolvedIncomingEdgesFrom []int
+	OnId                        int   `json:"onID"`
+	UnresolvedIncomingEdgesFrom []int `json:"unresolvedIncomingEdgesFrom"`
 }
 
 func (e TopologySortError) Error() string {

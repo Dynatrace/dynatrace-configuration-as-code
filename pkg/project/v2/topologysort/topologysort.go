@@ -33,14 +33,14 @@ import (
 type ProjectsPerEnvironment map[string][]project.Project
 
 type CircularDependencyParameterSortError struct {
-	Config             coordinate.Coordinate
-	EnvironmentDetails errors.EnvironmentDetails
-	Parameter          string
-	DependsOn          []parameter.ParameterReference
+	Location           coordinate.Coordinate          `json:"location"`
+	EnvironmentDetails errors.EnvironmentDetails      `json:"environmentDetails"`
+	ParameterName      string                         `json:"parameterName"`
+	DependsOn          []parameter.ParameterReference `json:"dependsOn"`
 }
 
 func (e CircularDependencyParameterSortError) Coordinates() coordinate.Coordinate {
-	return e.Config
+	return e.Location
 }
 
 func (e CircularDependencyParameterSortError) LocationDetails() errors.EnvironmentDetails {
@@ -53,7 +53,7 @@ var (
 
 func (e CircularDependencyParameterSortError) Error() string {
 	return fmt.Sprintf("%s: circular dependency detected. check parameter dependencies: %s",
-		e.Parameter, joinParameterReferencesToString(e.DependsOn))
+		e.ParameterName, joinParameterReferencesToString(e.DependsOn))
 }
 
 func joinParameterReferencesToString(refs []parameter.ParameterReference) string {
@@ -75,26 +75,26 @@ func joinParameterReferencesToString(refs []parameter.ParameterReference) string
 }
 
 type CircualDependencyProjectSortError struct {
-	Environment string
-	Project     string
+	Environment string `json:"environment"`
+	Project     string `json:"project"`
 	// slice of project ids
-	DependsOn []string
+	DependsOnProjects []string `json:"dependsOnProjects"`
 }
 
 func (e CircualDependencyProjectSortError) Error() string {
 	return fmt.Sprintf("%s:%s: circular dependency detected.\n check project dependencies: %s",
-		e.Environment, e.Project, strings.Join(e.DependsOn, ", "))
+		e.Environment, e.Project, strings.Join(e.DependsOnProjects, ", "))
 }
 
 type CircularDependencyConfigSortError struct {
-	Config      coordinate.Coordinate
-	Environment string
-	DependsOn   []coordinate.Coordinate
+	Location    coordinate.Coordinate   `json:"location"`
+	Environment string                  `json:"environment"`
+	DependsOn   []coordinate.Coordinate `json:"dependsOn"`
 }
 
 func (e CircularDependencyConfigSortError) Error() string {
 	return fmt.Sprintf("%s:%s: is part of circular dependency.\n depends on: %s",
-		e.Environment, e.Config, joinCoordinatesToString(e.DependsOn))
+		e.Environment, e.Location, joinCoordinatesToString(e.DependsOn))
 }
 
 func joinCoordinatesToString(coordinates []coordinate.Coordinate) string {
@@ -159,13 +159,13 @@ func SortParameters(group string, environment string, conf coordinate.Coordinate
 			param := parametersWithName[sortErr.OnId]
 
 			errs[i] = &CircularDependencyParameterSortError{
-				Config: conf,
+				Location: conf,
 				EnvironmentDetails: errors.EnvironmentDetails{
 					Group:       group,
 					Environment: environment,
 				},
-				Parameter: param.Name,
-				DependsOn: param.Parameter.GetReferences(),
+				ParameterName: param.Name,
+				DependsOn:     param.Parameter.GetReferences(),
 			}
 		}
 		return nil, errs
@@ -341,7 +341,7 @@ func parseConfigSortErrors(sortErrs []sort.TopologySortError, configs []config.C
 				depErrs[dependingConfig.Coordinate] = err
 			} else {
 				depErrs[dependingConfig.Coordinate] = CircularDependencyConfigSortError{
-					Config:      dependingConfig.Coordinate,
+					Location:    dependingConfig.Coordinate,
 					Environment: dependingConfig.Environment,
 					DependsOn:   []coordinate.Coordinate{conf.Coordinate},
 				}
@@ -374,9 +374,9 @@ func sortProjects(projects []project.Project, environments []string) (ProjectsPe
 				p := projects[sortErr.OnId]
 
 				errs = append(errs, &CircualDependencyProjectSortError{
-					Environment: env,
-					Project:     p.Id,
-					DependsOn:   p.Dependencies[env],
+					Environment:       env,
+					Project:           p.Id,
+					DependsOnProjects: p.Dependencies[env],
 				})
 			}
 		}

@@ -59,8 +59,8 @@ type configConvertContext struct {
 }
 
 type ConvertConfigError struct {
-	Location coordinate.Coordinate
-	Reason   string
+	Location coordinate.Coordinate `json:"location"`
+	Reason   string                `json:"reason"`
 }
 
 func newConvertConfigError(coord coordinate.Coordinate, reason string) ConvertConfigError {
@@ -79,9 +79,9 @@ func (e ConvertConfigError) Error() string {
 }
 
 type ReferenceParseError struct {
-	Location      coordinate.Coordinate
-	ParameterName string
-	Reason        string
+	Location      coordinate.Coordinate `json:"location"`
+	ParameterName string                `json:"parameterName"`
+	Reason        string                `json:"reason"`
 }
 
 func newReferenceParserError(projectId string, config *projectV1.Config, parameterName string, reason string) ReferenceParseError {
@@ -276,8 +276,8 @@ func convertConfig(context *configConvertContext, environment manifest.Environme
 }
 
 type TemplateConversionError struct {
-	TemplatePath string
-	Reason       string
+	TemplatePath string `json:"templatePath"`
+	Reason       string `json:"reason"`
 }
 
 func newTemplateConversionError(templatePath string, reason string) TemplateConversionError {

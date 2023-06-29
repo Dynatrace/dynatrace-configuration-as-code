@@ -64,7 +64,7 @@ func TestJsonUnmarshallingWithMisplacedContentExpectedError(t *testing.T) {
 	assert.Equal(t, 3, jsonErr.LineNumber)
 	assert.Equal(t, 2, jsonErr.CharacterNumberInLine)
 	assert.Equal(t, "\tsneakySyntaxError", jsonErr.LineContent)
-	assert.Check(t, jsonErr.Cause != nil)
+	assert.Check(t, jsonErr.Err != nil)
 }
 
 const syntaxErrorNoClosingBracket = `{
@@ -87,7 +87,7 @@ func TestJsonUnmarshallingWithNoClosingBracketExpectedError(t *testing.T) {
 	assert.Equal(t, 6, jsonErr.LineNumber)
 	assert.Equal(t, 2, jsonErr.CharacterNumberInLine)
 	assert.Equal(t, "\t]", jsonErr.LineContent)
-	assert.Check(t, jsonErr.Cause != nil)
+	assert.Check(t, jsonErr.Err != nil)
 }
 
 const syntaxErrorNoComma = `{
@@ -113,7 +113,7 @@ func TestJsonUnmarshallingNoCommaExpectedError(t *testing.T) {
 	assert.Equal(t, 7, jsonErr.LineNumber)
 	assert.Equal(t, 4, jsonErr.CharacterNumberInLine)
 	assert.Equal(t, "\t\t\t\"boolean\": true", jsonErr.LineContent)
-	assert.Check(t, jsonErr.Cause != nil)
+	assert.Check(t, jsonErr.Err != nil)
 }
 
 const syntaxErrorInFirstLine = `"key": "value",
@@ -136,7 +136,7 @@ func TestJsonUnmarshallingNoOpeningParenthesisExpectedError(t *testing.T) {
 	assert.Equal(t, 1, jsonErr.LineNumber)
 	assert.Equal(t, 6, jsonErr.CharacterNumberInLine)
 	assert.Equal(t, "\"key\": \"value\",", jsonErr.LineContent)
-	assert.Check(t, jsonErr.Cause != nil)
+	assert.Check(t, jsonErr.Err != nil)
 }
 
 func TestMarshalIndent(t *testing.T) {

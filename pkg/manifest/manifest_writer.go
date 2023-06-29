@@ -34,8 +34,8 @@ type WriterContext struct {
 }
 
 type manifestWriterError struct {
-	ManifestPath string
-	Err          error
+	ManifestPath string `json:"manifestPath"`
+	Err          error  `json:"error"`
 }
 
 func (e manifestWriterError) Unwrap() error {

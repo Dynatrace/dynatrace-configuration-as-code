@@ -22,8 +22,8 @@ type ConfigError interface {
 }
 
 type EnvironmentDetails struct {
-	Group       string
-	Environment string
+	Group       string `json:"group"`
+	Environment string `json:"environment"`
 }
 
 type DetailedConfigError interface {
@@ -32,14 +32,14 @@ type DetailedConfigError interface {
 }
 
 type InvalidJsonError struct {
-	Config             coordinate.Coordinate
-	EnvironmentDetails EnvironmentDetails
-	TemplateFilePath   string
-	WrappedError       error
+	Location           coordinate.Coordinate `json:"location"`
+	EnvironmentDetails EnvironmentDetails    `json:"environmentDetails"`
+	TemplateFilePath   string                `json:"templateFilePath"`
+	Err                error                 `json:"error"`
 }
 
 func (e InvalidJsonError) Unwrap() error {
-	return e.WrappedError
+	return e.Err
 }
 
 var (
@@ -48,7 +48,7 @@ var (
 )
 
 func (e InvalidJsonError) Coordinates() coordinate.Coordinate {
-	return e.Config
+	return e.Location
 }
 
 func (e InvalidJsonError) LocationDetails() EnvironmentDetails {
@@ -56,5 +56,5 @@ func (e InvalidJsonError) LocationDetails() EnvironmentDetails {
 }
 
 func (e InvalidJsonError) Error() string {
-	return e.WrappedError.Error()
+	return e.Err.Error()
 }
