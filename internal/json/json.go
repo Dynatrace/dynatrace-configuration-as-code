@@ -37,21 +37,21 @@ type JsonValidationError struct {
 
 	// FileName is the file name (full qualified) where the error happened
 	// This field is always filled.
-	Location Location
+	Location Location `json:"jsonErrorLocation"`
 	// LineNumber contains the line number (starting by one) where the error happened
 	// If we don't have the information, this is -1.
-	LineNumber int
+	LineNumber int `json:"lineNumber"`
 	// CharacterNumberInLine contains the character number (starting by one) where
 	// the error happened. If we don't have the information, this is -1.
-	CharacterNumberInLine int
+	CharacterNumberInLine int `json:"characterNumberInLine"`
 	// LineContent contains the full line content of where the error happened
 	// If we don't have the information, this is an empty string.
-	LineContent string
+	LineContent string `json:"lineContent"`
 	// PreviousLineContent contains the full line content of the line before LineContent
 	// If we don't have the information, this is an empty string.
-	PreviousLineContent string
-	// Cause is the original error which happened during the json unmarshalling.
-	Cause error
+	PreviousLineContent string `json:"previousLineContent"`
+	// Err is the original error which happened during the json unmarshalling.
+	Err error `json:"error"`
 }
 
 var (
@@ -60,7 +60,7 @@ var (
 
 func (e JsonValidationError) Error() string {
 	return fmt.Sprintf("rendered template `%s` is not a valid json: Error: %s",
-		e.Location.TemplateFilePath, e.Cause.Error())
+		e.Location.TemplateFilePath, e.Err.Error())
 }
 
 var (
@@ -95,17 +95,17 @@ func (e JsonValidationError) PrettyError() string {
 			whiteSpace, previousLineContent,
 			e.LineNumber, lineContent,
 			whiteSpace, whiteSpaceOffset,
-			whiteSpace, e.Cause.Error())
+			whiteSpace, e.Err.Error())
 	}
 
 	return e.Error()
 }
 
 type Location struct {
-	Coordinate       coordinate.Coordinate
-	Group            string
-	Environment      string
-	TemplateFilePath string
+	Coordinate       coordinate.Coordinate `json:"coordinate"`
+	Group            string                `json:"group"`
+	Environment      string                `json:"environment"`
+	TemplateFilePath string                `json:"templateFilePath"`
 }
 
 func ValidateJson(data string, location Location) error {
@@ -147,7 +147,7 @@ func mapError(input string, location Location, offset int, err error) error {
 				CharacterNumberInLine: offset - characterCountToEndOfPrevLine,
 				LineContent:           line,
 				PreviousLineContent:   previousLineContent,
-				Cause:                 err,
+				Err:                   err,
 			}
 		}
 		characterCountToEndOfPrevLine += len(line) + 1 // +1 for newline
@@ -166,7 +166,7 @@ func newEmptyErr(location Location, err error) error {
 		CharacterNumberInLine: -1,
 		LineContent:           "",
 		PreviousLineContent:   "",
-		Cause:                 err,
+		Err:                   err,
 	}
 }
 

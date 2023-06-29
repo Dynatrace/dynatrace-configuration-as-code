@@ -106,12 +106,12 @@ type ParameterParserContext struct {
 
 type ParameterParserError struct {
 	// Location of the config the error happened in
-	Location           coordinate.Coordinate
-	EnvironmentDetails errors.EnvironmentDetails
+	Location           coordinate.Coordinate     `json:"location"`
+	EnvironmentDetails errors.EnvironmentDetails `json:"environmentDetails"`
 	// ParameterName holds the name of the parameter triggering the error
-	ParameterName string
+	ParameterName string `json:"parameterName"`
 	// Reason is a text describing what went wrong
-	Reason string
+	Reason string `json:"reason"`
 }
 
 func (p ParameterParserError) Coordinates() coordinate.Coordinate {
@@ -138,12 +138,12 @@ func NewParameterParserError(context ParameterParserContext, reason string) erro
 
 type ParameterWriterError struct {
 	// config the error happened in
-	Location           coordinate.Coordinate
-	EnvironmentDetails errors.EnvironmentDetails
+	Location           coordinate.Coordinate     `json:"location"`
+	EnvironmentDetails errors.EnvironmentDetails `json:"environmentDetails"`
 	// name of the parameter triggering the error
-	ParameterName string
+	ParameterName string `json:"parameterName"`
 	// text describing what went wrong
-	Reason string
+	Reason string `json:"reason"`
 }
 
 func (p ParameterWriterError) Coordinates() coordinate.Coordinate {
@@ -171,10 +171,10 @@ func NewParameterWriterError(context ParameterWriterContext, reason string) erro
 // ParameterResolveValueError is used to indicate that an error occurred during the resolving
 // phase of a parameter.
 type ParameterResolveValueError struct {
-	Location           coordinate.Coordinate
-	EnvironmentDetails errors.EnvironmentDetails
-	ParameterName      string
-	Reason             string
+	Location           coordinate.Coordinate     `json:"location"`
+	EnvironmentDetails errors.EnvironmentDetails `json:"environmentDetails"`
+	ParameterName      string                    `json:"parameterName"`
+	Reason             string                    `json:"reason"`
 }
 
 func (p ParameterResolveValueError) Coordinates() coordinate.Coordinate {

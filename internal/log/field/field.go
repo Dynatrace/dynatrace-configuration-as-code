@@ -38,10 +38,10 @@ func F(key string, value interface{}) Field {
 func Coordinate(coordinate coordinate.Coordinate) Field {
 	return Field{"coordinate",
 		struct {
-			Reference string
-			Project   string
-			Type      string
-			ConfigID  string
+			Reference string `json:"reference"`
+			Project   string `json:"project"`
+			Type      string `json:"type"`
+			ConfigID  string `json:"configID"`
 		}{
 			coordinate.String(),
 			coordinate.Project,
@@ -60,8 +60,8 @@ func Type(t string) Field {
 func Environment(environment, group string) Field {
 	return Field{"environment",
 		struct {
-			Group string
-			Name  string
+			Group string `json:"group"`
+			Name  string `json:"name"`
 		}{
 			group,
 			environment,
@@ -72,8 +72,8 @@ func Environment(environment, group string) Field {
 func Error(err error) Field {
 	return Field{"error",
 		struct {
-			Type    string
-			Details error
+			Type    string `json:"type"`
+			Details error  `json:"details"`
 		}{
 			fmt.Sprintf("%T", err),
 			err,

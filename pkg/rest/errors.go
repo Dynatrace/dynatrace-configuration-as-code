@@ -22,21 +22,21 @@ import (
 )
 
 type RespError struct {
-	Err        error `json:"-"`
-	Message    string
-	Body       string
-	StatusCode int
-	Request    *RequestInfo
+	Reason     string       `json:"reason"`
+	StatusCode int          `json:"statusCode"`
+	Body       string       `json:"body"`
+	Err        error        `json:"error"`
+	Request    *RequestInfo `json:"request"`
 }
 
 type RequestInfo struct {
-	Method string
-	URL    string
+	Method string `json:"method"`
+	URL    string `json:"url"`
 }
 
-func NewRespErr(msg string, resp Response) RespError {
+func NewRespErr(reason string, resp Response) RespError {
 	return RespError{
-		Message:    msg,
+		Reason:     reason,
 		StatusCode: resp.StatusCode,
 		Body:       string(resp.Body),
 	}
@@ -57,9 +57,9 @@ func (e RespError) WithRequestInfo(reqMethod, reqURL string) RespError {
 
 func (e RespError) Error() string {
 	if e.Err != nil {
-		return fmt.Sprintf("%s: %v", e.Message, e.Err)
+		return fmt.Sprintf("%s: %v", e.Reason, e.Err)
 	}
-	return e.Message
+	return e.Reason
 }
 
 func (e RespError) Unwrap() error {

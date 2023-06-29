@@ -146,12 +146,12 @@ func (c *Config) Render(properties map[string]interface{}) (string, error) {
 	renderedConfig, err := template.Render(c.Template, properties)
 	if err != nil {
 		return "", configErrors.InvalidJsonError{
-			Config: c.Coordinate,
+			Location: c.Coordinate,
 			EnvironmentDetails: configErrors.EnvironmentDetails{
 				Group:       c.Group,
 				Environment: c.Environment,
 			},
-			WrappedError:     err,
+			Err:              err,
 			TemplateFilePath: templatePath,
 		}
 	}
@@ -165,12 +165,12 @@ func (c *Config) Render(properties map[string]interface{}) (string, error) {
 
 	if err != nil {
 		return "", configErrors.InvalidJsonError{
-			Config: c.Coordinate,
+			Location: c.Coordinate,
 			EnvironmentDetails: configErrors.EnvironmentDetails{
 				Group:       c.Group,
 				Environment: c.Environment,
 			},
-			WrappedError:     err,
+			Err:              err,
 			TemplateFilePath: templatePath,
 		}
 	}

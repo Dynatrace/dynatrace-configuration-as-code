@@ -47,9 +47,9 @@ type deleteEntry struct {
 }
 
 type DeleteEntryParserError struct {
-	Value  string
-	Index  int
-	Reason string
+	Value  string `json:"value"`
+	Index  int    `json:"index"`
+	Reason string `json:"reason"`
 }
 
 func newDeleteEntryParserError(value string, index int, reason string) DeleteEntryParserError {

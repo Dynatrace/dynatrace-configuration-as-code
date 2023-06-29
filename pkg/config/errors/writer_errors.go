@@ -26,8 +26,8 @@ var (
 )
 
 type ConfigWriterError struct {
-	Path string
-	Err  error
+	Path string `json:"path"`
+	Err  error  `json:"error"`
 }
 
 func (e ConfigWriterError) Unwrap() error {
@@ -39,9 +39,9 @@ func (e ConfigWriterError) Error() string {
 }
 
 type DetailedConfigWriterError struct {
-	Path     string
-	Location coordinate.Coordinate
-	Err      error
+	Location coordinate.Coordinate `json:"location"`
+	Path     string                `json:"path"`
+	Err      error                 `json:"error"`
 }
 
 func (e DetailedConfigWriterError) Unwrap() error {

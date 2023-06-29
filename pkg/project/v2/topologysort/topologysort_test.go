@@ -312,13 +312,13 @@ func TestSortConfigsShouldReportAllLinksOfCyclicDependency(t *testing.T) {
 	for _, err := range errs {
 		depErr, ok := err.(CircularDependencyConfigSortError)
 		assert.Assert(t, ok, "expected errors of type CircularDependencyConfigSortError")
-		if depErr.Config.Match(config1Coordinates) {
+		if depErr.Location.Match(config1Coordinates) {
 			assert.Assert(t, depErr.DependsOn[0] == config2Coordinates)
 		}
-		if depErr.Config.Match(config2Coordinates) {
+		if depErr.Location.Match(config2Coordinates) {
 			assert.Assert(t, depErr.DependsOn[0] == config3Coordinates)
 		}
-		if depErr.Config.Match(config3Coordinates) {
+		if depErr.Location.Match(config3Coordinates) {
 			assert.Assert(t, depErr.DependsOn[0] == config1Coordinates)
 		}
 	}
@@ -638,15 +638,15 @@ func Test_parseConfigSortErrors(t *testing.T) {
 			},
 			[]error{
 				CircularDependencyConfigSortError{
-					Config:    testConfigs[0].Coordinate,
+					Location:  testConfigs[0].Coordinate,
 					DependsOn: []coordinate.Coordinate{testConfigs[2].Coordinate},
 				},
 				CircularDependencyConfigSortError{
-					Config:    testConfigs[1].Coordinate,
+					Location:  testConfigs[1].Coordinate,
 					DependsOn: []coordinate.Coordinate{testConfigs[0].Coordinate},
 				},
 				CircularDependencyConfigSortError{
-					Config:    testConfigs[2].Coordinate,
+					Location:  testConfigs[2].Coordinate,
 					DependsOn: []coordinate.Coordinate{testConfigs[0].Coordinate},
 				},
 			},
@@ -658,7 +658,7 @@ func Test_parseConfigSortErrors(t *testing.T) {
 			assert.DeepEqual(t, got, tt.want, cmpopts.SortSlices(func(a, b error) bool {
 				depErrA := a.(CircularDependencyConfigSortError)
 				depErrB := b.(CircularDependencyConfigSortError)
-				return depErrA.Config.String() < depErrB.Config.String()
+				return depErrA.Location.String() < depErrB.Location.String()
 			}))
 		})
 	}
