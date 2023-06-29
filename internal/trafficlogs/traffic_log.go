@@ -19,6 +19,7 @@ package trafficlogs
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	"github.com/spf13/afero"
 	"net/http"
 	"net/http/httputil"
@@ -36,10 +37,10 @@ var (
 
 func PrepareRequestResponseLogging(fs afero.Fs) {
 	if err := setupRequestLog(fs); err != nil {
-		log.Warn("failed to setup request-logging: %s", err)
+		log.WithFields(field.Error(err)).Warn("failed to setup request-logging: %s", err)
 	}
 	if err := setupResponseLog(fs); err != nil {
-		log.Warn("failed to setup response-logging: %s", err)
+		log.WithFields(field.Error(err)).Warn("failed to setup response-logging: %s", err)
 	}
 }
 

@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	"strconv"
 	"strings"
 
@@ -95,8 +96,6 @@ func (e JsonValidationError) PrettyError() string {
 			e.LineNumber, lineContent,
 			whiteSpace, whiteSpaceOffset,
 			whiteSpace, e.Cause.Error())
-	} else {
-		log.Error("\t%v", e)
 	}
 
 	return e.Error()
@@ -176,7 +175,7 @@ func newEmptyErr(location Location, err error) error {
 func MarshalIndent(jsonContent []byte) []byte {
 	indentedData, err := json.MarshalIndent(json.RawMessage(jsonContent), "", "  ")
 	if err != nil {
-		log.Warn("Failed to indent json content. Reason: %s", err)
+		log.WithFields(field.Error(err)).Warn("Failed to indent json content. Reason: %s", err)
 		return jsonContent
 	}
 	return indentedData

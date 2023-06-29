@@ -144,7 +144,6 @@ func (p *projectBuilder) processConfigSection(properties map[string]map[string]s
 
 	templates, ok := properties["config"]
 	if !ok {
-		log.Error("Property 'config' was not available")
 		return fmt.Errorf("property 'config' was not available")
 	}
 

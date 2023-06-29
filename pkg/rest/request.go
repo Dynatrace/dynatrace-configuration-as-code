@@ -18,6 +18,7 @@ package rest
 
 import (
 	"bytes"
+	"github.com/dynatrace/dynatrace-configuration-as-code/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/pkg/version"
 	"io"
@@ -109,7 +110,7 @@ func executeRequest(client *http.Client, request *http.Request) (Response, error
 		err := trafficlogs.LogRequest(requestId, request)
 
 		if err != nil {
-			log.Warn("error while writing request log for id `%s`: %v", requestId, err)
+			log.WithFields(field.Error(err)).Warn("error while writing request log for id `%s`: %v", requestId, err)
 		}
 	}
 
@@ -131,9 +132,9 @@ func executeRequest(client *http.Client, request *http.Request) (Response, error
 
 			if err != nil {
 				if requestId != "" {
-					log.Warn("error while writing response log for id `%s`: %v", requestId, err)
+					log.WithFields(field.Error(err)).Warn("error while writing response log for id `%s`: %v", requestId, err)
 				} else {
-					log.Warn("error while writing response log: %v", requestId, err)
+					log.WithFields(field.Error(err)).Warn("error while writing response log: %v", requestId, err)
 				}
 			}
 		}
