@@ -85,14 +85,15 @@ func customTimeEncoder(mode loggers.LogTimeMode) func(time.Time, zapcore.Primiti
 func New(logOptions loggers.LogOptions) (*Logger, error) {
 	encoderConfig := zap.NewProductionEncoderConfig()
 	encoderConfig.EncodeTime = customTimeEncoder(logOptions.LogTimeMode)
-	consoleSyncer := zapcore.Lock(os.Stderr)
 	atomicLevel := zap.NewAtomicLevel()
 	atomicLevel.SetLevel(levelMap[logOptions.LogLevel])
 
 	var cores []zapcore.Core
 	if logOptions.ConsoleLoggingJSON {
+		consoleSyncer := zapcore.Lock(os.Stdout)
 		cores = append(cores, zapcore.NewCore(zapcore.NewJSONEncoder(encoderConfig), consoleSyncer, atomicLevel))
 	} else {
+		consoleSyncer := zapcore.Lock(os.Stderr)
 		cores = append(cores, &noFieldsCore{zapcore.NewCore(zapcore.NewConsoleEncoder(encoderConfig), consoleSyncer, atomicLevel)})
 	}
 
