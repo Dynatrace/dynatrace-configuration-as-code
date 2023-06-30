@@ -80,9 +80,11 @@ func prepareAPIs(opts downloadConfigsOptions) api.APIs {
 }
 
 func removeSkipDownload(api api.API) bool {
-	if api.SkipDownload {
-		log.Info("API can not be downloaded and needs manual creation: '%v'.", api.ID)
-		return true
+	if classic.ShouldApplyFilter() {
+		if api.SkipDownload {
+			log.Info("API can not be downloaded and needs manual creation: '%v'.", api.ID)
+			return true
+		}
 	}
 	return false
 }

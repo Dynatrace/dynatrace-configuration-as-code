@@ -234,7 +234,7 @@ func (d *Downloader) findConfigsToDownload(currentApi api.API) ([]dtclient.Value
 }
 
 func (d *Downloader) shouldPersist(a api.API, json map[string]interface{}) bool {
-	if !shouldApplyFilter() {
+	if !ShouldApplyFilter() {
 		return true
 	}
 
@@ -244,7 +244,7 @@ func (d *Downloader) shouldPersist(a api.API, json map[string]interface{}) bool 
 	return true
 }
 func (d *Downloader) skipDownload(a api.API, value dtclient.Value) bool {
-	if !shouldApplyFilter() {
+	if !ShouldApplyFilter() {
 		return false
 	}
 
@@ -255,7 +255,7 @@ func (d *Downloader) skipDownload(a api.API, value dtclient.Value) bool {
 	return false
 }
 
-func shouldApplyFilter() bool {
+func ShouldApplyFilter() bool {
 	return featureflags.DownloadFilter().Enabled() && featureflags.DownloadFilterClassicConfigs().Enabled()
 }
 

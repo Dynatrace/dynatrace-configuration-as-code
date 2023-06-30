@@ -142,6 +142,74 @@ func Test_prepareAPIs(t *testing.T) {
 		}
 	})
 
+	t.Run("do not skip anything when `MONACO_FEAT_DOWNLOAD_FILTER` are disabled", func(t *testing.T) {
+		t.Setenv("MONACO_FEAT_DOWNLOAD_FILTER", "false")
+		tests := []struct {
+			name  string
+			given downloadConfigsOptions
+		}{
+			{
+				name:  "onlyAPIs",
+				given: downloadConfigsOptions{onlyAPIs: true},
+			},
+			{
+				name:  "specificAPIs is marked as 'skip'",
+				given: downloadConfigsOptions{specificAPIs: []string{"extension"}},
+			},
+			{
+				name: "without special cases",
+			},
+		}
+
+		for _, tc := range tests {
+			t.Run(tc.name, func(t *testing.T) {
+				apis := prepareAPIs(tc.given)
+
+				a := false
+				for _, e := range apis {
+					if e.SkipDownload {
+						a = true
+					}
+				}
+				assert.True(t, a)
+			})
+		}
+	})
+
+	t.Run("do not skip anything when `MONACO_FEAT_DOWNLOAD_FILTER_CLASSIC_CONFIGS` are disabled", func(t *testing.T) {
+		t.Setenv("MONACO_FEAT_DOWNLOAD_FILTER_CLASSIC_CONFIGS", "false")
+		tests := []struct {
+			name  string
+			given downloadConfigsOptions
+		}{
+			{
+				name:  "onlyAPIs",
+				given: downloadConfigsOptions{onlyAPIs: true},
+			},
+			{
+				name:  "specificAPIs is marked as 'skip'",
+				given: downloadConfigsOptions{specificAPIs: []string{"extension"}},
+			},
+			{
+				name: "without special cases",
+			},
+		}
+
+		for _, tc := range tests {
+			t.Run(tc.name, func(t *testing.T) {
+				apis := prepareAPIs(tc.given)
+
+				a := false
+				for _, e := range apis {
+					if e.SkipDownload {
+						a = true
+					}
+				}
+				assert.True(t, a)
+			})
+		}
+	})
+
 	t.Run("handling of deprecated endpoints", func(t *testing.T) {
 		tests := []struct {
 			name       string
