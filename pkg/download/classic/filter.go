@@ -21,22 +21,22 @@ import (
 	"strings"
 )
 
-// contentFilter defines whether a given API value should be skipped - either already PreDownload or based on it's full json content
-type contentFilter struct {
-	// shouldBeSkippedPreDownload is an optional callback indicating that a config should not be downloaded after the list of the configs
-	shouldBeSkippedPreDownload func(value dtclient.Value) bool
+// ContentFilter defines whether a given API value should be skipped - either already PreDownload or based on it's full json content
+type ContentFilter struct {
+	// ShouldBeSkippedPreDownload is an optional callback indicating that a config should not be downloaded after the list of the configs
+	ShouldBeSkippedPreDownload func(value dtclient.Value) bool
 
-	// shouldConfigBePersisted is an optional callback to check whether a config should be persisted after being downloaded
-	shouldConfigBePersisted func(json map[string]interface{}) bool
+	// ShouldConfigBePersisted is an optional callback to check whether a config should be persisted after being downloaded
+	ShouldConfigBePersisted func(json map[string]interface{}) bool
 }
 
-// apiContentFilters defines default contentFilter rules per API identifier
-var apiContentFilters = map[string]contentFilter{
+// apiContentFilters defines default ContentFilter rules per API identifier
+var apiContentFilters = map[string]ContentFilter{
 	"dashboard": {
-		shouldBeSkippedPreDownload: func(value dtclient.Value) bool {
+		ShouldBeSkippedPreDownload: func(value dtclient.Value) bool {
 			return value.Owner != nil && *value.Owner == "Dynatrace"
 		},
-		shouldConfigBePersisted: func(json map[string]interface{}) bool {
+		ShouldConfigBePersisted: func(json map[string]interface{}) bool {
 			if json["dashboardMetadata"] != nil {
 				metadata := json["dashboardMetadata"].(map[string]interface{})
 
@@ -49,13 +49,13 @@ var apiContentFilters = map[string]contentFilter{
 		},
 	},
 	"synthetic-location": {
-		shouldConfigBePersisted: func(json map[string]interface{}) bool {
+		ShouldConfigBePersisted: func(json map[string]interface{}) bool {
 			return json["type"] == "PRIVATE"
 		},
 	},
 	"hosts-auto-update": {
 		// check that the property 'updateWindows' is not empty, otherwise discard.
-		shouldConfigBePersisted: func(json map[string]interface{}) bool {
+		ShouldConfigBePersisted: func(json map[string]interface{}) bool {
 			autoUpdates, ok := json["updateWindows"]
 			if !ok {
 				return true
@@ -70,7 +70,7 @@ var apiContentFilters = map[string]contentFilter{
 		},
 	},
 	"anomaly-detection-metrics": {
-		shouldBeSkippedPreDownload: func(value dtclient.Value) bool {
+		ShouldBeSkippedPreDownload: func(value dtclient.Value) bool {
 			return strings.HasPrefix(value.Id, "dynatrace.") || strings.HasPrefix(value.Id, "ruxit.")
 		},
 	},
