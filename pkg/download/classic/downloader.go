@@ -19,7 +19,6 @@ package classic
 import (
 	"context"
 	"encoding/json"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
@@ -42,22 +41,25 @@ type (
 	Downloader struct {
 		apisToDownload api.APIs
 
+		filter bool
+
 		// apiContentFilters contains rules to filter specific apis based on
-		// custom logic implemented in the contentFilter
-		apiContentFilters map[string]contentFilter
+		// custom logic implemented in the ContentFilter
+		apiContentFilters map[string]ContentFilter
 
 		// client is the actual rest client used to call
 		// the dynatrace APIs
 		client dtclient.Client
 	}
 
-	ConstOption func(downloader *Downloader)
+	Option func(downloader *Downloader)
 )
 
 // NewDownloader creates a new sound Downloader.
-func NewDownloader(client dtclient.Client, opts ...ConstOption) *Downloader {
+func NewDownloader(client dtclient.Client, opts ...Option) *Downloader {
 	c := &Downloader{
 		apisToDownload:    api.NewAPIs(),
+		filter:            true,
 		apiContentFilters: apiContentFilters,
 		client:            client,
 	}
@@ -68,15 +70,21 @@ func NewDownloader(client dtclient.Client, opts ...ConstOption) *Downloader {
 }
 
 // WithAPIs sets the endpoints from which Downloader is going to download. During settings, it checks does the given endpoints are known.
-func WithAPIs(apis api.APIs) ConstOption {
+func WithAPIs(apis api.APIs) Option {
 	return func(d *Downloader) {
 		d.apisToDownload = apis
 	}
 }
 
-func WithAPIContentFilters(apiFilters map[string]contentFilter) ConstOption {
+func WithAPIContentFilters(apiFilters map[string]ContentFilter) Option {
 	return func(d *Downloader) {
 		d.apiContentFilters = apiFilters
+	}
+}
+
+func WithFiltering(b bool) Option {
+	return func(d *Downloader) {
+		d.filter = b
 	}
 }
 
@@ -234,29 +242,20 @@ func (d *Downloader) findConfigsToDownload(currentApi api.API) ([]dtclient.Value
 }
 
 func (d *Downloader) shouldPersist(a api.API, json map[string]interface{}) bool {
-	if !ShouldApplyFilter() {
-		return true
-	}
-
-	if cases := d.apiContentFilters[a.ID]; cases.shouldConfigBePersisted != nil {
-		return cases.shouldConfigBePersisted(json)
+	if d.filter {
+		if cases := d.apiContentFilters[a.ID]; cases.ShouldConfigBePersisted != nil {
+			return cases.ShouldConfigBePersisted(json)
+		}
 	}
 	return true
 }
 func (d *Downloader) skipDownload(a api.API, value dtclient.Value) bool {
-	if !ShouldApplyFilter() {
-		return false
+	if d.filter {
+		if cases := d.apiContentFilters[a.ID]; cases.ShouldBeSkippedPreDownload != nil {
+			return cases.ShouldBeSkippedPreDownload(value)
+		}
 	}
-
-	if cases := d.apiContentFilters[a.ID]; cases.shouldBeSkippedPreDownload != nil {
-		return cases.shouldBeSkippedPreDownload(value)
-	}
-
 	return false
-}
-
-func ShouldApplyFilter() bool {
-	return featureflags.DownloadFilter().Enabled() && featureflags.DownloadFilterClassicConfigs().Enabled()
 }
 
 func (d *Downloader) filterConfigsToSkip(a api.API, value []dtclient.Value) []dtclient.Value {
