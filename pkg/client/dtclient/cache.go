@@ -23,7 +23,7 @@ type cache[T any] struct {
 	mutex       sync.RWMutex
 }
 
-func (s *cache[T]) hasCache(id string) bool {
+func (s *cache[T]) isCached(id string) bool {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
@@ -46,7 +46,7 @@ func (s *cache[T]) filter(id string, filter func(T) bool) []T {
 	defer s.mutex.RUnlock()
 
 	if filter == nil {
-		filter = func(object T) bool { return true }
+		return s.cachedItems[id]
 	}
 	result := make([]T, 0)
 	for _, i := range s.cachedItems[id] {

@@ -437,10 +437,11 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 	}
 
 	settingsWithExternalID, err := d.listSettings(ctx, obj.SchemaId, ListSettingsOptions{
-		Filter: func(object DownloadSettingsObject) bool {
-			return object.ExternalId == legacyExternalID
-		},
+		Filter: func(object DownloadSettingsObject) bool { return object.ExternalId == legacyExternalID },
 	})
+	if err != nil {
+		return DynatraceEntity{}, fmt.Errorf("unable to find Settings 2.0 object of schema %q with externalId %q: %w", obj.SchemaId, legacyExternalID, err)
+	}
 
 	if len(settingsWithExternalID) > 0 {
 		obj.OriginObjectId = settingsWithExternalID[0].ObjectId
@@ -690,7 +691,7 @@ func (d *DynatraceClient) ListSettings(ctx context.Context, schemaId string, opt
 func (d *DynatraceClient) listSettings(ctx context.Context, schemaId string, opts ListSettingsOptions) ([]DownloadSettingsObject, error) {
 	log.Debug("Downloading all settings for schema %s", schemaId)
 
-	if d.settingsCache.hasCache(schemaId) {
+	if d.settingsCache.isCached(schemaId) {
 		return d.settingsCache.filter(schemaId, opts.Filter), nil
 	}
 

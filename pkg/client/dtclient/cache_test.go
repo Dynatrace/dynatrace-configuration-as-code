@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCache_HasCache(t *testing.T) {
+func TestCache_IsCached(t *testing.T) {
 	cache := &cache[DownloadSettingsObject]{
 		cachedItems: map[string][]DownloadSettingsObject{
 			"schemaID1": {},
@@ -30,9 +30,9 @@ func TestCache_HasCache(t *testing.T) {
 		},
 	}
 
-	hasCache1 := cache.hasCache("schemaID1")
-	hasCache2 := cache.hasCache("schemaID2")
-	hasCache3 := cache.hasCache("schemaID3")
+	hasCache1 := cache.isCached("schemaID1")
+	hasCache2 := cache.isCached("schemaID2")
+	hasCache3 := cache.isCached("schemaID3")
 
 	assert.True(t, hasCache1, "Expected schemaID1 cache to exist")
 	assert.True(t, hasCache2, "Expected schemaID2 cache to exist")
@@ -83,6 +83,13 @@ func TestCache_Filter_NilFilter(t *testing.T) {
 	filtered := cache.filter("schemaID", nil)
 
 	assert.Len(t, filtered, 3, "Expected 3 settings with default filter")
+}
+
+func TestCache_Filter_EmptyCache(t *testing.T) {
+	cache := &cache[DownloadSettingsObject]{}
+
+	filtered := cache.filter("schemaID", nil)
+	assert.Len(t, filtered, 0, "Expected 0 settings with default filter")
 }
 
 func TestCache_Invalidate(t *testing.T) {
