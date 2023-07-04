@@ -41,20 +41,26 @@ func (s *cache[T]) set(id string, settings []T) {
 	s.cachedItems[id] = settings
 }
 
-func (s *cache[T]) filter(id string, filter func(T) bool) []T {
+func (s *cache[T]) get(id string, filter func(T) bool) ([]T, bool) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
-	if filter == nil {
-		return s.cachedItems[id]
+	if _, ok := s.cachedItems[id]; !ok {
+		return nil, false
 	}
+
+	if filter == nil {
+		return s.cachedItems[id], true
+	}
+
 	result := make([]T, 0)
 	for _, i := range s.cachedItems[id] {
 		if filter(i) {
 			result = append(result, i)
 		}
 	}
-	return result
+	return result, true
+
 }
 
 func (s *cache[T]) invalidate(id string) {

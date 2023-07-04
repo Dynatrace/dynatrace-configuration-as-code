@@ -48,7 +48,7 @@ func TestCache_Set(t *testing.T) {
 	assert.Equal(t, settings, cache.cachedItems["schemaID"], "Expected settings to be set")
 }
 
-func TestCache_Filter(t *testing.T) {
+func TestCache_Get(t *testing.T) {
 	cache := &cache[DownloadSettingsObject]{
 		cachedItems: map[string][]DownloadSettingsObject{
 			"schemaID": {
@@ -62,14 +62,14 @@ func TestCache_Filter(t *testing.T) {
 		return object.ExternalId != "2"
 	}
 
-	filtered := cache.filter("schemaID", filter)
-
+	filtered, ok := cache.get("schemaID", filter)
+	assert.True(t, ok)
 	assert.Len(t, filtered, 2, "Expected 2 filtered settings")
 	assert.Equal(t, "1", filtered[0].ExternalId, "Expected first object to have ExternalId = 1")
 	assert.Equal(t, "3", filtered[1].ExternalId, "Expected second object to have ExternalId = 3")
 }
 
-func TestCache_Filter_NilFilter(t *testing.T) {
+func TestCache_Get_NilFilter(t *testing.T) {
 	cache := &cache[DownloadSettingsObject]{
 		cachedItems: map[string][]DownloadSettingsObject{
 			"schemaID": {
@@ -80,15 +80,16 @@ func TestCache_Filter_NilFilter(t *testing.T) {
 		},
 	}
 
-	filtered := cache.filter("schemaID", nil)
-
+	filtered, ok := cache.get("schemaID", nil)
+	assert.True(t, ok)
 	assert.Len(t, filtered, 3, "Expected 3 settings with default filter")
 }
 
 func TestCache_Filter_EmptyCache(t *testing.T) {
 	cache := &cache[DownloadSettingsObject]{}
 
-	filtered := cache.filter("schemaID", nil)
+	filtered, ok := cache.get("schemaID", nil)
+	assert.False(t, ok)
 	assert.Len(t, filtered, 0, "Expected 0 settings with default filter")
 }
 

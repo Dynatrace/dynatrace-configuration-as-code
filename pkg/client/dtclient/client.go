@@ -691,8 +691,8 @@ func (d *DynatraceClient) ListSettings(ctx context.Context, schemaId string, opt
 func (d *DynatraceClient) listSettings(ctx context.Context, schemaId string, opts ListSettingsOptions) ([]DownloadSettingsObject, error) {
 	log.Debug("Downloading all settings for schema %s", schemaId)
 
-	if d.settingsCache.isCached(schemaId) {
-		return d.settingsCache.filter(schemaId, opts.Filter), nil
+	if settings, cached := d.settingsCache.get(schemaId, opts.Filter); cached {
+		return settings, nil
 	}
 
 	listSettingsFields := defaultListSettingsFields
@@ -725,13 +725,14 @@ func (d *DynatraceClient) listSettings(ctx context.Context, schemaId string, opt
 	}
 
 	_, err = rest.ListPaginated(ctx, d.client, d.retrySettings, u, schemaId, addToResult)
-
 	if err != nil {
 		return nil, err
 	}
 
 	d.settingsCache.set(schemaId, result)
-	return d.settingsCache.filter(schemaId, opts.Filter), nil
+	settings, _ := d.settingsCache.get(schemaId, opts.Filter)
+
+	return settings, nil
 }
 
 type EntitiesTypeListResponse struct {
