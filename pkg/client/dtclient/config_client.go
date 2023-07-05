@@ -34,8 +34,8 @@ import (
 
 func (d *DynatraceClient) upsertDynatraceObject(
 	ctx context.Context,
-	objectName string,
 	theApi api.API,
+	objectName string,
 	payload []byte,
 ) (DynatraceEntity, error) {
 	isSingleConfigurationApi := theApi.SingleConfiguration

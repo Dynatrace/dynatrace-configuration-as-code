@@ -585,12 +585,10 @@ func (d *DynatraceClient) UpsertConfigByName(ctx context.Context, api api.API, n
 }
 
 func (d *DynatraceClient) upsertConfigByName(ctx context.Context, api api.API, name string, payload []byte) (entity DynatraceEntity, err error) {
-
 	if api.ID == "extension" {
-		fullUrl := api.CreateURL(d.environmentURLClassic)
-		return d.uploadExtension(ctx, fullUrl, name, payload)
+		return d.uploadExtension(ctx, api, name, payload)
 	}
-	return d.upsertDynatraceObject(ctx, name, api, payload)
+	return d.upsertDynatraceObject(ctx, api, name, payload)
 }
 
 func (d *DynatraceClient) UpsertConfigByNonUniqueNameAndId(ctx context.Context, api api.API, entityId string, name string, payload []byte) (entity DynatraceEntity, err error) {
