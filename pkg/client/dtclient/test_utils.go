@@ -139,8 +139,9 @@ func NewIntegrationTestServer(t *testing.T, basePath string, mappings map[string
 	return testServer
 }
 
-func NewDynatraceClientForTesting(environmentUrl string, client *http.Client) (*DynatraceClient, error) {
-	c, err := NewClassicClient(environmentUrl, "", WithClient(client))
+func NewDynatraceClientForTesting(environmentUrl string, client *http.Client, opts ...func(d *DynatraceClient)) (*DynatraceClient, error) {
+	opts = append(opts, WithClient(client))
+	c, err := NewClassicClient(environmentUrl, "", opts...)
 	if err != nil {
 		return nil, err
 	}

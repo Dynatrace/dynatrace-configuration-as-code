@@ -32,24 +32,21 @@ import (
 	"strings"
 )
 
-func upsertDynatraceObject(
+func (d *DynatraceClient) upsertDynatraceObject(
 	ctx context.Context,
-	client *http.Client,
-	environmentUrl string,
 	objectName string,
 	theApi api.API,
 	payload []byte,
-	retrySettings rest.RetrySettings,
 ) (DynatraceEntity, error) {
 	isSingleConfigurationApi := theApi.SingleConfiguration
 	existingObjectId := ""
 
-	fullUrl := theApi.CreateURL(environmentUrl)
+	fullUrl := theApi.CreateURL(d.environmentURLClassic)
 
 	// Single configuration APIs don't have an id which allows skipping this step
 	if !isSingleConfigurationApi {
 		var err error
-		existingObjectId, err = getObjectIdIfAlreadyExists(ctx, client, theApi, fullUrl, objectName, retrySettings)
+		existingObjectId, err = d.getObjectIdIfAlreadyExists(ctx, theApi, fullUrl, objectName)
 		if err != nil {
 			return DynatraceEntity{}, err
 		}
@@ -69,26 +66,23 @@ func upsertDynatraceObject(
 	// Single configuration APIs don't have a POST, but a PUT endpoint
 	// and therefore always require an update
 	if isUpdate || isSingleConfigurationApi {
-		return updateDynatraceObject(ctx, client, fullUrl, objectName, existingObjectId, theApi, body, retrySettings)
+		return d.updateDynatraceObject(ctx, fullUrl, objectName, existingObjectId, theApi, body)
 	} else {
-		return createDynatraceObject(ctx, client, fullUrl, objectName, theApi, body, retrySettings)
+		return d.createDynatraceObject(ctx, fullUrl, objectName, theApi, body)
 	}
 }
 
-func upsertDynatraceEntityByNonUniqueNameAndId(
+func (d *DynatraceClient) upsertDynatraceEntityByNonUniqueNameAndId(
 	ctx context.Context,
-	client *http.Client,
-	environmentUrl string,
 	entityId string,
 	objectName string,
 	theApi api.API,
 	payload []byte,
-	retrySettings rest.RetrySettings,
 ) (DynatraceEntity, error) {
-	fullUrl := theApi.CreateURL(environmentUrl)
+	fullUrl := theApi.CreateURL(d.environmentURLClassic)
 	body := payload
 
-	existingEntities, err := getExistingValuesFromEndpoint(ctx, client, theApi, fullUrl, retrySettings)
+	existingEntities, err := d.getExistingValuesFromEndpoint(ctx, theApi, fullUrl)
 	if err != nil {
 		return DynatraceEntity{}, fmt.Errorf("failed to query existing entities: %w", err)
 	}
@@ -106,13 +100,13 @@ func upsertDynatraceEntityByNonUniqueNameAndId(
 	}
 
 	if entityExists || len(entitiesWithSameName) == 0 { // create with fixed ID or update (if this moves to client logging can clearly state things)
-		entity, err := updateDynatraceObject(ctx, client, fullUrl, objectName, entityId, theApi, body, retrySettings)
+		entity, err := d.updateDynatraceObject(ctx, fullUrl, objectName, entityId, theApi, body)
 		return entity, err
 	}
 
 	if len(entitiesWithSameName) == 1 { // name is currently unique, update know entity
 		existingUuid := entitiesWithSameName[0].Id
-		entity, err := updateDynatraceObject(ctx, client, fullUrl, objectName, existingUuid, theApi, body, retrySettings)
+		entity, err := d.updateDynatraceObject(ctx, fullUrl, objectName, existingUuid, theApi, body)
 		return entity, err
 	}
 
@@ -125,10 +119,10 @@ func upsertDynatraceEntityByNonUniqueNameAndId(
 	}
 	log.WithCtxFields(ctx).Warn(msg.String(), len(entitiesWithSameName), theApi.ID, objectName, entityId, theApi.ID)
 
-	return updateDynatraceObject(ctx, client, fullUrl, objectName, entityId, theApi, body, retrySettings)
+	return d.updateDynatraceObject(ctx, fullUrl, objectName, entityId, theApi, body)
 }
 
-func createDynatraceObject(ctx context.Context, client *http.Client, urlString string, objectName string, theApi api.API, payload []byte, retrySettings rest.RetrySettings) (DynatraceEntity, error) {
+func (d *DynatraceClient) createDynatraceObject(ctx context.Context, urlString string, objectName string, theApi api.API, payload []byte) (DynatraceEntity, error) {
 	parsedUrl, err := url.Parse(urlString)
 	if err != nil {
 		return DynatraceEntity{}, fmt.Errorf("invalid URL for creating Dynatrace config: %w", err)
@@ -143,7 +137,7 @@ func createDynatraceObject(ctx context.Context, client *http.Client, urlString s
 		parsedUrl.RawQuery = queryParams.Encode()
 	}
 
-	resp, err := callWithRetryOnKnowTimingIssue(ctx, client, rest.Post, objectName, parsedUrl.String(), body, theApi, retrySettings)
+	resp, err := d.callWithRetryOnKnowTimingIssue(ctx, rest.Post, objectName, parsedUrl.String(), body, theApi)
 	if err != nil {
 		var respErr rest.RespError
 		if errors.As(err, &respErr) {
@@ -206,7 +200,7 @@ func unmarshalCreateResponse(ctx context.Context, resp rest.Response, fullUrl st
 	return dtEntity, nil
 }
 
-func updateDynatraceObject(ctx context.Context, client *http.Client, fullUrl string, objectName string, existingObjectId string, theApi api.API, payload []byte, retrySettings rest.RetrySettings) (DynatraceEntity, error) {
+func (d *DynatraceClient) updateDynatraceObject(ctx context.Context, fullUrl string, objectName string, existingObjectId string, theApi api.API, payload []byte) (DynatraceEntity, error) {
 	path := joinUrl(fullUrl, existingObjectId)
 	body := payload
 
@@ -221,7 +215,7 @@ func updateDynatraceObject(ctx context.Context, client *http.Client, fullUrl str
 		body = stripCreateOnlyPropertiesFromAppMobile(body)
 	}
 
-	resp, err := callWithRetryOnKnowTimingIssue(ctx, client, rest.Put, objectName, path, body, theApi, retrySettings)
+	resp, err := d.callWithRetryOnKnowTimingIssue(ctx, rest.Put, objectName, path, body, theApi)
 
 	if err != nil {
 		var respErr rest.RespError
@@ -260,9 +254,9 @@ func stripCreateOnlyPropertiesFromAppMobile(payload []byte) []byte {
 // callWithRetryOnKnowTimingIssue handles several know cases in which Dynatrace has a slight delay before newly created objects
 // can be used in further configuration. This is a cheap way to allow monaco to work around this, by waiting, then
 // retrying in case of know errors on upload.
-func callWithRetryOnKnowTimingIssue(ctx context.Context, client *http.Client, restCall rest.SendRequestWithBody, objectName string, path string, body []byte, theApi api.API, retrySettings rest.RetrySettings) (rest.Response, error) {
+func (d *DynatraceClient) callWithRetryOnKnowTimingIssue(ctx context.Context, restCall rest.SendRequestWithBody, objectName string, path string, body []byte, theApi api.API) (rest.Response, error) {
 
-	resp, err := restCall(ctx, client, path, body)
+	resp, err := restCall(ctx, d.clientClassic, path, body)
 
 	if err == nil && resp.IsSuccess() {
 		return resp, nil
@@ -281,21 +275,21 @@ func callWithRetryOnKnowTimingIssue(ctx context.Context, client *http.Client, re
 		// Synthetic and related APIs sometimes run into issues of finding objects quickly after creation
 		isGeneralSyntheticAPIError(resp, theApi) {
 
-		setting = retrySettings.Normal
+		setting = d.retrySettings.Normal
 	}
 
 	// It can take even longer until request attributes are ready to be used
 	if isRequestAttributeNotYetReady(resp) {
-		setting = retrySettings.Long
+		setting = d.retrySettings.Long
 	}
 
 	// It can take even longer until applications are ready to be used in synthetic tests and calculated metrics
 	if isApplicationNotReadyYet(resp, theApi) {
-		setting = retrySettings.VeryLong
+		setting = d.retrySettings.VeryLong
 	}
 
 	if setting.MaxRetries > 0 {
-		return rest.SendWithRetry(ctx, client, restCall, objectName, path, body, setting)
+		return rest.SendWithRetry(ctx, d.clientClassic, restCall, objectName, path, body, setting)
 	}
 	return resp, nil
 }
@@ -367,8 +361,8 @@ func isLocationHeaderAvailable(resp rest.Response) (headerAvailable bool, header
 	return false, make([]string, 0)
 }
 
-func getObjectIdIfAlreadyExists(ctx context.Context, client *http.Client, api api.API, url string, objectName string, retrySettings rest.RetrySettings) (string, error) {
-	values, err := getExistingValuesFromEndpoint(ctx, client, api, url, retrySettings)
+func (d *DynatraceClient) getObjectIdIfAlreadyExists(ctx context.Context, api api.API, url string, objectName string) (string, error) {
+	values, err := d.getExistingValuesFromEndpoint(ctx, api, url)
 
 	if err != nil {
 		return "", err
@@ -426,7 +420,7 @@ func isMobileApp(api api.API) bool {
 	return api.ID == "application-mobile"
 }
 
-func getExistingValuesFromEndpoint(ctx context.Context, client *http.Client, theApi api.API, urlString string, retrySettings rest.RetrySettings) (values []Value, err error) {
+func (d *DynatraceClient) getExistingValuesFromEndpoint(ctx context.Context, theApi api.API, urlString string) (values []Value, err error) {
 
 	parsedUrl, err := url.Parse(urlString)
 	if err != nil {
@@ -435,7 +429,7 @@ func getExistingValuesFromEndpoint(ctx context.Context, client *http.Client, the
 
 	parsedUrl = addQueryParamsForNonStandardApis(theApi, parsedUrl)
 
-	resp, err := rest.Get(ctx, client, parsedUrl.String())
+	resp, err := rest.Get(ctx, d.clientClassic, parsedUrl.String())
 
 	if err != nil {
 		return nil, err
@@ -456,7 +450,7 @@ func getExistingValuesFromEndpoint(ctx context.Context, client *http.Client, the
 		if resp.NextPageKey != "" {
 			parsedUrl = rest.AddNextPageQueryParams(parsedUrl, resp.NextPageKey)
 
-			resp, err = rest.GetWithRetry(ctx, client, parsedUrl.String(), retrySettings.Normal)
+			resp, err = rest.GetWithRetry(ctx, d.clientClassic, parsedUrl.String(), d.retrySettings.Normal)
 
 			if err != nil {
 				return nil, err

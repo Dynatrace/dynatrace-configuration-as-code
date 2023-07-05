@@ -499,7 +499,7 @@ func (d *DynatraceClient) ListConfigs(ctx context.Context, api api.API) (values 
 func (d *DynatraceClient) listConfigs(ctx context.Context, api api.API) (values []Value, err error) {
 
 	fullUrl := api.CreateURL(d.environmentURLClassic)
-	values, err = getExistingValuesFromEndpoint(ctx, d.clientClassic, api, fullUrl, d.retrySettings)
+	values, err = d.getExistingValuesFromEndpoint(ctx, api, fullUrl)
 	return values, err
 }
 
@@ -573,7 +573,7 @@ func (d *DynatraceClient) ConfigExistsByName(ctx context.Context, api api.API, n
 
 func (d *DynatraceClient) configExistsByName(ctx context.Context, api api.API, name string) (exists bool, id string, err error) {
 	apiURL := api.CreateURL(d.environmentURLClassic)
-	existingObjectId, err := getObjectIdIfAlreadyExists(ctx, d.clientClassic, api, apiURL, name, d.retrySettings)
+	existingObjectId, err := d.getObjectIdIfAlreadyExists(ctx, api, apiURL, name)
 	return existingObjectId != "", existingObjectId, err
 }
 
@@ -588,9 +588,9 @@ func (d *DynatraceClient) upsertConfigByName(ctx context.Context, api api.API, n
 
 	if api.ID == "extension" {
 		fullUrl := api.CreateURL(d.environmentURLClassic)
-		return uploadExtension(ctx, d.clientClassic, fullUrl, name, payload)
+		return d.uploadExtension(ctx, fullUrl, name, payload)
 	}
-	return upsertDynatraceObject(ctx, d.clientClassic, d.environmentURLClassic, name, api, payload, d.retrySettings)
+	return d.upsertDynatraceObject(ctx, name, api, payload)
 }
 
 func (d *DynatraceClient) UpsertConfigByNonUniqueNameAndId(ctx context.Context, api api.API, entityId string, name string, payload []byte) (entity DynatraceEntity, err error) {
@@ -601,7 +601,7 @@ func (d *DynatraceClient) UpsertConfigByNonUniqueNameAndId(ctx context.Context, 
 }
 
 func (d *DynatraceClient) upsertConfigByNonUniqueNameAndId(ctx context.Context, api api.API, entityId string, name string, payload []byte) (entity DynatraceEntity, err error) {
-	return upsertDynatraceEntityByNonUniqueNameAndId(ctx, d.clientClassic, d.environmentURLClassic, entityId, name, api, payload, d.retrySettings)
+	return d.upsertDynatraceEntityByNonUniqueNameAndId(ctx, entityId, name, api, payload)
 }
 
 // SchemaListResponse is the response type returned by the ListSchemas operation

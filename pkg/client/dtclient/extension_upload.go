@@ -39,9 +39,9 @@ const (
 	extensionNeedsUpdate
 )
 
-func uploadExtension(ctx context.Context, client *http.Client, apiPath string, extensionName string, payload []byte) (DynatraceEntity, error) {
+func (d *DynatraceClient) uploadExtension(ctx context.Context, apiPath string, extensionName string, payload []byte) (DynatraceEntity, error) {
 
-	status, err := validateIfExtensionShouldBeUploaded(ctx, client, apiPath, extensionName, payload)
+	status, err := d.validateIfExtensionShouldBeUploaded(ctx, apiPath, extensionName, payload)
 	if err != nil {
 		return DynatraceEntity{}, err
 	}
@@ -59,7 +59,7 @@ func uploadExtension(ctx context.Context, client *http.Client, apiPath string, e
 		}, err
 	}
 
-	resp, err := rest.PostMultiPartFile(ctx, client, apiPath, buffer, contentType)
+	resp, err := rest.PostMultiPartFile(ctx, d.clientClassic, apiPath, buffer, contentType)
 
 	if err != nil {
 		return DynatraceEntity{}, err
@@ -86,8 +86,8 @@ type Properties struct {
 	Version *string `json:"version"`
 }
 
-func validateIfExtensionShouldBeUploaded(ctx context.Context, client *http.Client, apiPath string, extensionName string, payload []byte) (status extensionStatus, err error) {
-	response, err := rest.Get(ctx, client, apiPath+"/"+extensionName)
+func (d *DynatraceClient) validateIfExtensionShouldBeUploaded(ctx context.Context, apiPath string, extensionName string, payload []byte) (status extensionStatus, err error) {
+	response, err := rest.Get(ctx, d.clientClassic, apiPath+"/"+extensionName)
 	if err != nil {
 		return extensionValidationError, err
 	}

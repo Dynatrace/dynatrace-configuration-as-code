@@ -348,7 +348,8 @@ func Test_getObjectIdIfAlreadyExists(t *testing.T) {
 			}))
 			defer server.Close()
 
-			got, err := getObjectIdIfAlreadyExists(context.TODO(), server.Client(), testApi, server.URL, tt.givenObjectName, testRetrySettings)
+			dtclient, _ := NewDynatraceClientForTesting(server.URL, server.Client(), nil)
+			got, err := dtclient.getObjectIdIfAlreadyExists(context.TODO(), testApi, server.URL, tt.givenObjectName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getObjectIdIfAlreadyExists() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -538,7 +539,8 @@ func Test_GetObjectIdIfAlreadyExists_WorksCorrectlyForAddedQueryParameters(t *te
 					MaxRetries: 3,
 				},
 			}
-			_, err := getObjectIdIfAlreadyExists(context.TODO(), server.Client(), testApi, server.URL, "", s)
+			dtclient, _ := NewDynatraceClientForTesting(server.URL, server.Client(), WithRetrySettings(s))
+			_, err := dtclient.getObjectIdIfAlreadyExists(context.TODO(), testApi, server.URL, "")
 
 			if tt.expectError {
 				assert.Assert(t, err != nil)
@@ -629,7 +631,8 @@ func Test_createDynatraceObject(t *testing.T) {
 			defer server.Close()
 			testApi := api.API{ID: tt.apiKey}
 
-			got, err := createDynatraceObject(context.TODO(), server.Client(), server.URL, tt.objectName, testApi, []byte("{}"), testRetrySettings)
+			dtclient, _ := NewDynatraceClientForTesting(server.URL, server.Client(), WithRetrySettings(testRetrySettings))
+			got, err := dtclient.createDynatraceObject(context.TODO(), server.URL, tt.objectName, testApi, []byte("{}"))
 			if (err != nil) != tt.wantErr {
 				t.Errorf("createDynatraceObject() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -682,7 +685,8 @@ func TestDeployConfigsTargetingClassicConfigNonUnique(t *testing.T) {
 
 			testApi := api.API{ID: "some-api", NonUniqueName: true, PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse}
 
-			got, err := upsertDynatraceEntityByNonUniqueNameAndId(context.TODO(), server.Client(), server.URL, generatedUuid, theConfigName, testApi, []byte("{}"), testRetrySettings)
+			dtclient, _ := NewDynatraceClientForTesting(server.URL, server.Client(), WithRetrySettings(testRetrySettings))
+			got, err := dtclient.upsertDynatraceEntityByNonUniqueNameAndId(context.TODO(), generatedUuid, theConfigName, testApi, []byte("{}"))
 			assert.NilError(t, err)
 			assert.Equal(t, got.Id, tt.expectedIdToBeUpserted)
 		})
