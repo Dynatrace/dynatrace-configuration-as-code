@@ -18,6 +18,7 @@ package download
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
@@ -59,7 +60,7 @@ func makeDownloaders(options downloadConfigsOptions) (downloaders, error) {
 
 func classicDownloader(client dtclient.Client, opts downloadConfigsOptions) *classic.Downloader {
 	endpoints := prepareAPIs(opts)
-	return classic.NewDownloader(client, classic.WithAPIs(endpoints))
+	return classic.NewDownloader(client, classic.WithAPIs(endpoints), classic.WithFiltering(shouldApplyFilter()))
 }
 
 func prepareAPIs(opts downloadConfigsOptions) api.APIs {
@@ -80,13 +81,17 @@ func prepareAPIs(opts downloadConfigsOptions) api.APIs {
 }
 
 func removeSkipDownload(api api.API) bool {
-	if classic.ShouldApplyFilter() {
+	if shouldApplyFilter() {
 		if api.SkipDownload {
 			log.Info("API can not be downloaded and needs manual creation: '%v'.", api.ID)
 			return true
 		}
 	}
 	return false
+}
+
+func shouldApplyFilter() bool {
+	return featureflags.DownloadFilter().Enabled() && featureflags.DownloadFilterClassicConfigs().Enabled()
 }
 
 func removeDeprecated(log ...func(api api.API)) api.Filter {

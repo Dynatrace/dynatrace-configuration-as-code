@@ -444,7 +444,7 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
-	downloaders := downloaders{settings.NewDownloader(dtClient), classic.NewDownloader(dtClient, classic.WithAPIs(apiMap))}
+	downloaders := downloaders{settings.NewDownloader(dtClient), classic.NewDownloader(dtClient, classic.WithAPIs(apiMap), classic.WithFiltering(shouldApplyFilter()))}
 
 	// WHEN we download everything
 	err := doDownloadConfigs(fs, downloaders, setupTestingDownloadOptions(t, server, projectName))
@@ -513,7 +513,7 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
-	downloaders := downloaders{settings.NewDownloader(dtClient), classic.NewDownloader(dtClient, classic.WithAPIs(apiMap))}
+	downloaders := downloaders{settings.NewDownloader(dtClient), classic.NewDownloader(dtClient, classic.WithAPIs(apiMap), classic.WithFiltering(shouldApplyFilter()))}
 	// WHEN we download everything
 	err := doDownloadConfigs(fs, downloaders, setupTestingDownloadOptions(t, server, projectName))
 
@@ -605,10 +605,9 @@ func TestDownloadIntegrationAllDashboardsAreDownloadedIfFilterFFTurnedOff(t *tes
 	fs := afero.NewMemMapFs()
 
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
-
-	downloaders := downloaders{settings.NewDownloader(dtClient), classic.NewDownloader(dtClient, classic.WithAPIs(apiMap))}
-
 	t.Setenv(featureflags.DownloadFilterClassicConfigs().EnvName(), "false")
+
+	downloaders := downloaders{settings.NewDownloader(dtClient), classic.NewDownloader(dtClient, classic.WithAPIs(apiMap), classic.WithFiltering(shouldApplyFilter()))}
 
 	// WHEN we download everything
 	err := doDownloadConfigs(fs, downloaders, setupTestingDownloadOptions(t, server, projectName))
@@ -721,7 +720,7 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 
 	dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
-	downloaders := downloaders{settings.NewDownloader(dtClient), classic.NewDownloader(dtClient, classic.WithAPIs(apiMap))}
+	downloaders := downloaders{settings.NewDownloader(dtClient), classic.NewDownloader(dtClient, classic.WithAPIs(apiMap), classic.WithFiltering(shouldApplyFilter()))}
 
 	// WHEN we download everything
 	err := doDownloadConfigs(fs, downloaders, setupTestingDownloadOptions(t, server, projectName))
@@ -860,7 +859,7 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 
 			dtClient, _ := dtclient.NewDynatraceClientForTesting(server.URL, server.Client())
 
-			downloaders := downloaders{settings.NewDownloader(dtClient), classic.NewDownloader(dtClient, classic.WithAPIs(apiMap))}
+			downloaders := downloaders{settings.NewDownloader(dtClient), classic.NewDownloader(dtClient, classic.WithAPIs(apiMap), classic.WithFiltering(shouldApplyFilter()))}
 
 			// WHEN we download everything
 			err := doDownloadConfigs(fs, downloaders, setupTestingDownloadOptions(t, server, testcase.projectName))

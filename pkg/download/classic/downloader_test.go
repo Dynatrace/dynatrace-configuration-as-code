@@ -14,17 +14,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package classic
+package classic_test
 
 import (
 	"context"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/classic"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"strconv"
 	"testing"
 )
 
@@ -35,7 +34,7 @@ func TestDownloadConfigs_FailedToFindConfigsToDownload(t *testing.T) {
 	testAPI := api.API{ID: "API_ID", URLPath: "API_PATH", NonUniqueName: true}
 	apiMap := api.APIs{"API_ID": testAPI}
 
-	downloader := NewDownloader(c, WithAPIs(apiMap))
+	downloader := classic.NewDownloader(c, classic.WithAPIs(apiMap))
 
 	configurations, err := downloader.Download("project")
 	assert.NoError(t, err)
@@ -50,7 +49,7 @@ func TestDownload_NoConfigsToDownloadFound(t *testing.T) {
 
 	apiMap := api.APIs{"API_ID": testAPI}
 
-	downloader := NewDownloader(c, WithAPIs(apiMap))
+	downloader := classic.NewDownloader(c, classic.WithAPIs(apiMap))
 
 	configurations, err := downloader.Download("project")
 	assert.NoError(t, err)
@@ -75,7 +74,7 @@ func TestDownload_ConfigsDownloaded(t *testing.T) {
 
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	downloader := NewDownloader(c, WithAPIs(apiMap))
+	downloader := classic.NewDownloader(c, classic.WithAPIs(apiMap))
 
 	configurations, err := downloader.Download("project")
 	assert.NoError(t, err)
@@ -89,7 +88,7 @@ func TestDownload_SingleConfigurationAPI(t *testing.T) {
 	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", SingleConfiguration: true, NonUniqueName: true}
 	apiMap := api.APIs{"API_ID_1": testAPI1}
 
-	downloader := NewDownloader(client, WithAPIs(apiMap))
+	downloader := classic.NewDownloader(client, classic.WithAPIs(apiMap))
 
 	configurations, err := downloader.Download("project")
 	assert.NoError(t, err)
@@ -118,7 +117,7 @@ func TestDownload_ErrorFetchingConfig(t *testing.T) {
 
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	downloader := NewDownloader(c, WithAPIs(apiMap))
+	downloader := classic.NewDownloader(c, classic.WithAPIs(apiMap))
 	configurations, err := downloader.Download("project")
 	assert.NoError(t, err)
 	assert.Len(t, configurations, 1)
@@ -142,7 +141,7 @@ func TestDownload_ConfigsDownloaded_WithEmptyFilter(t *testing.T) {
 
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	downloader := NewDownloader(c, WithAPIs(apiMap), WithAPIContentFilters(map[string]contentFilter{}))
+	downloader := classic.NewDownloader(c, classic.WithAPIs(apiMap), classic.WithAPIContentFilters(map[string]classic.ContentFilter{}))
 
 	configurations, err := downloader.Download("project")
 	assert.NoError(t, err)
@@ -162,8 +161,8 @@ func TestDownload_SkipConfigThatShouldNotBePersisted(t *testing.T) {
 	}).Times(2)
 	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil).Times(2)
 
-	apiFilters := map[string]contentFilter{"API_ID_1": {
-		shouldConfigBePersisted: func(_ map[string]interface{}) bool {
+	apiFilters := map[string]classic.ContentFilter{"API_ID_1": {
+		ShouldConfigBePersisted: func(_ map[string]interface{}) bool {
 			return false
 		},
 	}}
@@ -172,7 +171,7 @@ func TestDownload_SkipConfigThatShouldNotBePersisted(t *testing.T) {
 	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueName: false}
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	downloader := NewDownloader(c, WithAPIs(apiMap), WithAPIContentFilters(apiFilters))
+	downloader := classic.NewDownloader(c, classic.WithAPIs(apiMap), classic.WithAPIContentFilters(apiFilters))
 
 	configurations, err := downloader.Download("project")
 	assert.NoError(t, err)
@@ -192,73 +191,44 @@ func TestDownload_SkipConfigBeforeDownload(t *testing.T) {
 	}).AnyTimes()
 	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil).AnyTimes()
 
-	apiFilters := map[string]contentFilter{
+	apiFilters := map[string]classic.ContentFilter{
 		"API_ID_1": {
-			shouldBeSkippedPreDownload: func(_ dtclient.Value) bool {
+			ShouldBeSkippedPreDownload: func(_ dtclient.Value) bool {
 				return true
 			},
 		},
 		"API_ID_2": {
-			shouldConfigBePersisted: func(_ map[string]interface{}) bool {
+			ShouldConfigBePersisted: func(_ map[string]interface{}) bool {
 				return false
 			},
 		},
 	}
 
-	testAPI1 := api.API{ID: "API_ID_1", URLPath: "API_PATH_1", NonUniqueName: true}
-	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueName: false}
-	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
-
-	downloader := NewDownloader(c, WithAPIs(apiMap), WithAPIContentFilters(apiFilters))
-
-	type flags struct {
-		downloadFilterFF        bool
-		downloadFilterConfigsFF bool
+	apiMap := api.APIs{
+		"API_ID_1": api.API{ID: "API_ID_1", URLPath: "API_PATH_1", NonUniqueName: true},
+		"API_ID_2": api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueName: false},
 	}
+
 	tests := []struct {
 		name                  string
-		given                 flags
+		withFiltering         bool
 		wantDownloadedConfigs int
 	}{
 		{
-			"downloads nothing if filters active",
-			flags{
-				downloadFilterFF:        true,
-				downloadFilterConfigsFF: true,
-			},
+			"downloads nothing if filters active - default configuration",
+			true,
 			0,
 		},
 		{
-			"downloads all if base filter off",
-			flags{
-				downloadFilterFF:        false,
-				downloadFilterConfigsFF: true,
-			},
-			2,
-		},
-		{
-			"downloads all if configs filter off",
-			flags{
-				downloadFilterFF:        true,
-				downloadFilterConfigsFF: false,
-			},
-			2,
-		},
-		{
-			"downloads all if both filters off",
-			flags{
-				downloadFilterFF:        false,
-				downloadFilterConfigsFF: false,
-			},
+			"downloads all if filtering is off",
+			false,
 			2,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv(featureflags.DownloadFilter().EnvName(), strconv.FormatBool(tt.given.downloadFilterFF))
-			t.Setenv(featureflags.DownloadFilterClassicConfigs().EnvName(), strconv.FormatBool(tt.given.downloadFilterConfigsFF))
-
+			downloader := classic.NewDownloader(c, classic.WithAPIs(apiMap), classic.WithAPIContentFilters(apiFilters), classic.WithFiltering(tt.withFiltering))
 			configurations, err := downloader.Download("project")
 			assert.NoError(t, err)
 			assert.Len(t, configurations, tt.wantDownloadedConfigs)
@@ -279,8 +249,8 @@ func TestDownload_FilteringCanBeTurnedOffViaFeatureFlags(t *testing.T) {
 	}).Times(2)
 	c.EXPECT().ReadConfigById(gomock.Any(), gomock.Any()).Return([]byte("{}"), nil)
 
-	apiFilters := map[string]contentFilter{"API_ID_1": {
-		shouldBeSkippedPreDownload: func(_ dtclient.Value) bool {
+	apiFilters := map[string]classic.ContentFilter{"API_ID_1": {
+		ShouldBeSkippedPreDownload: func(_ dtclient.Value) bool {
 			return true
 		},
 	}}
@@ -289,7 +259,7 @@ func TestDownload_FilteringCanBeTurnedOffViaFeatureFlags(t *testing.T) {
 	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueName: false}
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	downloader := NewDownloader(c, WithAPIs(apiMap), WithAPIContentFilters(apiFilters))
+	downloader := classic.NewDownloader(c, classic.WithAPIs(apiMap), classic.WithAPIContentFilters(apiFilters))
 
 	configurations, err := downloader.Download("project")
 	assert.NoError(t, err)
@@ -313,7 +283,7 @@ func TestDownload_APIWithoutAnyConfigAvailableAreNotDownloaded(t *testing.T) {
 
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	downloader := NewDownloader(c, WithAPIs(apiMap))
+	downloader := classic.NewDownloader(c, classic.WithAPIs(apiMap))
 
 	configurations, err := downloader.Download("project")
 	assert.NoError(t, err)
@@ -337,7 +307,7 @@ func TestDownload_MalformedResponseFromAnAPI(t *testing.T) {
 	testAPI2 := api.API{ID: "API_ID_2", URLPath: "API_PATH_2", NonUniqueName: false}
 	apiMap := api.APIs{"API_ID_1": testAPI1, "API_ID_2": testAPI2}
 
-	downloader := NewDownloader(c, WithAPIs(apiMap))
+	downloader := classic.NewDownloader(c, classic.WithAPIs(apiMap))
 
 	configurations, err := downloader.Download("project")
 	assert.NoError(t, err)
