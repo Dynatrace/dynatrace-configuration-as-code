@@ -21,7 +21,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/filter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -230,6 +232,9 @@ type DynatraceClient struct {
 
 	// generateExternalID is used to generate an external id for settings 2.0 objects
 	generateExternalID idutils.ExternalIDGenerator
+
+	// settingsCache caches settings objects
+	settingsCache cache.Cache[[]DownloadSettingsObject]
 }
 
 var (
@@ -432,23 +437,21 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 	if err != nil {
 		return DynatraceEntity{}, fmt.Errorf("unable to generate external id: %w", err)
 	}
-	settingsWithExternalID, err := d.listSettings(ctx, obj.SchemaId, ListSettingsOptions{
-		Filter: func(object DownloadSettingsObject) bool {
-			return object.ExternalId == legacyExternalID
-		},
-	})
 
+	settingsWithExternalID, err := d.listSettings(ctx, obj.SchemaId, ListSettingsOptions{
+		Filter: func(object DownloadSettingsObject) bool { return object.ExternalId == legacyExternalID },
+	})
 	if err != nil {
 		return DynatraceEntity{}, fmt.Errorf("unable to find Settings 2.0 object of schema %q with externalId %q: %w", obj.SchemaId, legacyExternalID, err)
+	}
+
+	if len(settingsWithExternalID) > 0 {
+		obj.OriginObjectId = settingsWithExternalID[0].ObjectId
 	}
 
 	externalID, err := d.generateExternalID(obj.Coordinate)
 	if err != nil {
 		return DynatraceEntity{}, fmt.Errorf("unable to generate external id: %w", err)
-	}
-
-	if len(settingsWithExternalID) > 0 {
-		obj.OriginObjectId = settingsWithExternalID[0].ObjectId
 	}
 
 	// special handling of this Settings object.
@@ -468,10 +471,12 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 
 	resp, err := rest.SendWithRetryWithInitialTry(ctx, d.client, rest.Post, obj.Coordinate.ConfigId, requestUrl, payload, d.retrySettings.Normal)
 	if err != nil {
+		d.settingsCache.Delete(obj.SchemaId)
 		return DynatraceEntity{}, fmt.Errorf("failed to create or update Settings object with externalId %s: %w", externalID, err)
 	}
 
 	if !resp.IsSuccess() {
+		d.settingsCache.Delete(obj.SchemaId)
 		return DynatraceEntity{}, rest.NewRespErr(fmt.Sprintf("failed to create or update Settings object with externalId %s (HTTP %d)!\n\tResponse was: %s", externalID, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodPost, requestUrl)
 	}
 
@@ -484,6 +489,7 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 	return entity, nil
 
 }
+
 func (d *DynatraceClient) ListConfigs(ctx context.Context, api api.API) (values []Value, err error) {
 	d.limiter.ExecuteBlocking(func() {
 		values, err = d.listConfigs(ctx, api)
@@ -684,8 +690,13 @@ func (d *DynatraceClient) ListSettings(ctx context.Context, schemaId string, opt
 	})
 	return
 }
+
 func (d *DynatraceClient) listSettings(ctx context.Context, schemaId string, opts ListSettingsOptions) ([]DownloadSettingsObject, error) {
 	log.Debug("Downloading all settings for schema %s", schemaId)
+
+	if settings, cached := d.settingsCache.Get(schemaId); cached {
+		return filter.FilterSlice(settings, opts.Filter), nil
+	}
 
 	listSettingsFields := defaultListSettingsFields
 	if opts.DiscardValue {
@@ -707,16 +718,7 @@ func (d *DynatraceClient) listSettings(ctx context.Context, schemaId string, opt
 			return 0, fmt.Errorf("failed to unmarshal response: %w", err)
 		}
 
-		// eventually apply filter
-		if opts.Filter == nil {
-			result = append(result, parsed.Items...)
-		} else {
-			for _, i := range parsed.Items {
-				if opts.Filter(i) {
-					result = append(result, i)
-				}
-			}
-		}
+		result = append(result, parsed.Items...)
 		return len(parsed.Items), nil
 	}
 
@@ -726,12 +728,14 @@ func (d *DynatraceClient) listSettings(ctx context.Context, schemaId string, opt
 	}
 
 	_, err = rest.ListPaginated(ctx, d.client, d.retrySettings, u, schemaId, addToResult)
-
 	if err != nil {
 		return nil, err
 	}
 
-	return result, nil
+	d.settingsCache.Set(schemaId, result)
+	settings, _ := d.settingsCache.Get(schemaId)
+
+	return filter.FilterSlice(settings, opts.Filter), nil
 }
 
 type EntitiesTypeListResponse struct {

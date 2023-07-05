@@ -818,6 +818,98 @@ func TestUpsertSettingsRetries(t *testing.T) {
 	assert.Equal(t, numAPICalls, 3)
 }
 
+func TestUpsertSettingsFromCache(t *testing.T) {
+	numAPIGetCalls := 0
+	numAPIPostCalls := 0
+	server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		if req.Method == http.MethodGet {
+			numAPIGetCalls++
+			rw.WriteHeader(200)
+			rw.Write([]byte("{}"))
+			return
+		}
+
+		numAPIPostCalls++
+		rw.WriteHeader(200)
+		rw.Write([]byte(`[{"objectId": "abcdefg"}]`))
+	}))
+	defer server.Close()
+
+	client := DynatraceClient{
+		environmentURL:     server.URL,
+		client:             server.Client(),
+		retrySettings:      testRetrySettings,
+		limiter:            concurrency.NewLimiter(5),
+		generateExternalID: idutils.GenerateExternalID,
+	}
+
+	_, err := client.UpsertSettings(context.TODO(), SettingsObject{
+		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
+		SchemaId:   "some:schema",
+		Content:    []byte("{}"),
+	})
+
+	assert.NoError(t, err)
+	assert.Equal(t, numAPIGetCalls, 1)
+	assert.Equal(t, numAPIPostCalls, 1)
+
+	_, err = client.UpsertSettings(context.TODO(), SettingsObject{
+		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
+		SchemaId:   "some:schema",
+		Content:    []byte("{}"),
+	})
+
+	assert.NoError(t, err)
+	assert.Equal(t, numAPIGetCalls, 1) // still one
+	assert.Equal(t, numAPIPostCalls, 2)
+}
+
+func TestUpsertSettingsFromCache_CacheInvalidated(t *testing.T) {
+	numGetAPICalls := 0
+	server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		if req.Method == http.MethodGet {
+			numGetAPICalls++
+			rw.WriteHeader(200)
+			_, _ = rw.Write([]byte("{}"))
+			return
+		}
+
+		rw.WriteHeader(409)
+		rw.Write([]byte(`{}`))
+	}))
+	defer server.Close()
+
+	client := DynatraceClient{
+		environmentURL:     server.URL,
+		client:             server.Client(),
+		retrySettings:      testRetrySettings,
+		limiter:            concurrency.NewLimiter(5),
+		generateExternalID: idutils.GenerateExternalID,
+	}
+
+	client.UpsertSettings(context.TODO(), SettingsObject{
+		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
+		SchemaId:   "some:schema",
+		Content:    []byte("{}"),
+	})
+	assert.Equal(t, 1, numGetAPICalls)
+
+	client.UpsertSettings(context.TODO(), SettingsObject{
+		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
+		SchemaId:   "some:schema",
+		Content:    []byte("{}"),
+	})
+	assert.Equal(t, 2, numGetAPICalls)
+
+	client.UpsertSettings(context.TODO(), SettingsObject{
+		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
+		SchemaId:   "some:schema",
+		Content:    []byte("{}"),
+	})
+	assert.Equal(t, 3, numGetAPICalls)
+
+}
+
 func TestListEntities(t *testing.T) {
 
 	testType := "SOMETHING"
