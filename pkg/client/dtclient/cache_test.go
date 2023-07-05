@@ -22,35 +22,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCache_IsCached(t *testing.T) {
-	cache := &cache[DownloadSettingsObject]{
-		cachedItems: map[string][]DownloadSettingsObject{
-			"schemaID1": {},
-			"schemaID2": {{}, {}},
-		},
-	}
-
-	hasCache1 := cache.isCached("schemaID1")
-	hasCache2 := cache.isCached("schemaID2")
-	hasCache3 := cache.isCached("schemaID3")
-
-	assert.True(t, hasCache1, "Expected schemaID1 cache to exist")
-	assert.True(t, hasCache2, "Expected schemaID2 cache to exist")
-	assert.False(t, hasCache3, "Expected schemaID3 cache to not exist")
-}
-
 func TestCache_Set(t *testing.T) {
 	cache := &cache[DownloadSettingsObject]{}
 	settings := []DownloadSettingsObject{{ExternalId: "1"}, {ExternalId: "2"}}
 
 	cache.set("schemaID", settings)
 
-	assert.Equal(t, settings, cache.cachedItems["schemaID"], "Expected settings to be set")
+	assert.Equal(t, settings, cache.entries["schemaID"], "Expected settings to be set")
 }
 
 func TestCache_Get(t *testing.T) {
 	cache := &cache[DownloadSettingsObject]{
-		cachedItems: map[string][]DownloadSettingsObject{
+		entries: map[string][]DownloadSettingsObject{
 			"schemaID": {
 				{ExternalId: "1"},
 				{ExternalId: "2"},
@@ -71,7 +54,7 @@ func TestCache_Get(t *testing.T) {
 
 func TestCache_Get_NilFilter(t *testing.T) {
 	cache := &cache[DownloadSettingsObject]{
-		cachedItems: map[string][]DownloadSettingsObject{
+		entries: map[string][]DownloadSettingsObject{
 			"schemaID": {
 				{ExternalId: "1"},
 				{ExternalId: "2"},
@@ -95,13 +78,13 @@ func TestCache_Filter_EmptyCache(t *testing.T) {
 
 func TestCache_Invalidate(t *testing.T) {
 	cache := &cache[DownloadSettingsObject]{
-		cachedItems: map[string][]DownloadSettingsObject{
+		entries: map[string][]DownloadSettingsObject{
 			"schemaID": {},
 		},
 	}
 
-	cache.invalidate("schemaID")
+	cache.delete("schemaID")
 
-	_, exists := cache.cachedItems["schemaID"]
+	_, exists := cache.entries["schemaID"]
 	assert.False(t, exists, "Expected schemaID cache to be invalidated")
 }

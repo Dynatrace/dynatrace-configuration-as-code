@@ -19,53 +19,44 @@ package dtclient
 import "sync"
 
 type cache[T any] struct {
-	cachedItems map[string][]T
-	mutex       sync.RWMutex
+	entries map[string][]T
+	mutex   sync.RWMutex
 }
 
-func (s *cache[T]) isCached(id string) bool {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
-	_, ok := s.cachedItems[id]
-	return ok
-}
-
-func (s *cache[T]) set(id string, settings []T) {
+func (s *cache[T]) set(key string, entries []T) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	if s.cachedItems == nil {
-		s.cachedItems = make(map[string][]T)
+	if s.entries == nil {
+		s.entries = make(map[string][]T)
 	}
-	s.cachedItems[id] = settings
+	s.entries[key] = entries
 }
 
 func (s *cache[T]) get(id string, filter func(T) bool) ([]T, bool) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
-	if _, ok := s.cachedItems[id]; !ok {
+	if _, ok := s.entries[id]; !ok {
 		return nil, false
 	}
 
 	if filter == nil {
-		return s.cachedItems[id], true
+		return s.entries[id], true
 	}
 
 	result := make([]T, 0)
-	for _, i := range s.cachedItems[id] {
+	for _, i := range s.entries[id] {
 		if filter(i) {
 			result = append(result, i)
 		}
 	}
 	return result, true
-
 }
 
-func (s *cache[T]) invalidate(id string) {
+func (s *cache[T]) delete(id string) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	delete(s.cachedItems, id)
+	delete(s.entries, id)
 }

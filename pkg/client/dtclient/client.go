@@ -469,12 +469,12 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 
 	resp, err := rest.SendWithRetryWithInitialTry(ctx, d.client, rest.Post, obj.Coordinate.ConfigId, requestUrl, payload, d.retrySettings.Normal)
 	if err != nil {
-		d.settingsCache.invalidate(obj.SchemaId)
+		d.settingsCache.delete(obj.SchemaId)
 		return DynatraceEntity{}, fmt.Errorf("failed to create or update Settings object with externalId %s: %w", externalID, err)
 	}
 
 	if !resp.IsSuccess() {
-		d.settingsCache.invalidate(obj.SchemaId)
+		d.settingsCache.delete(obj.SchemaId)
 		return DynatraceEntity{}, rest.NewRespErr(fmt.Sprintf("failed to create or update Settings object with externalId %s (HTTP %d)!\n\tResponse was: %s", externalID, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodPost, requestUrl)
 	}
 
