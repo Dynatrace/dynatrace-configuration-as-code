@@ -119,7 +119,7 @@ func (d *Downloader) download(schemas []string, projectName string) v2.ConfigsPe
 		go func(s string) {
 			defer wg.Done()
 
-			lg := log.WithFields(field.F("type", s))
+			lg := log.WithFields(field.Type(s))
 
 			lg.Debug("Downloading all settings for schema %s", s)
 			objects, err := d.client.ListSettings(context.TODO(), s, dtclient.ListSettingsOptions{})
@@ -161,19 +161,19 @@ func (d *Downloader) convertAllObjects(objects []dtclient.DownloadSettingsObject
 	for _, o := range objects {
 
 		if shouldFilterUnmodifiableSettings() && o.ModificationInfo != nil && !o.ModificationInfo.Modifiable && len(o.ModificationInfo.ModifiablePaths) == 0 {
-			log.WithFields(field.F("type", o.SchemaId), field.F("object", o)).Debug("Discarded settings object %q (%s). Reason: Unmodifiable default setting.", o.ObjectId, o.SchemaId)
+			log.WithFields(field.Type(o.SchemaId), field.F("object", o)).Debug("Discarded settings object %q (%s). Reason: Unmodifiable default setting.", o.ObjectId, o.SchemaId)
 			continue
 		}
 
 		// try to unmarshall settings value
 		var contentUnmarshalled map[string]interface{}
 		if err := json.Unmarshal(o.Value, &contentUnmarshalled); err != nil {
-			log.WithFields(field.F("type", o.SchemaId), field.F("object", o)).Error("Unable to unmarshal JSON value of settings 2.0 object: %v", err)
+			log.WithFields(field.Type(o.SchemaId), field.F("object", o)).Error("Unable to unmarshal JSON value of settings 2.0 object: %v", err)
 			return result
 		}
 		// skip discarded settings objects
 		if shouldDiscard, reason := d.filters.Get(o.SchemaId).ShouldDiscard(contentUnmarshalled); shouldFilterSettings() && shouldDiscard {
-			log.WithFields(field.F("type", o.SchemaId), field.F("object", o)).Debug("Discarded setting object %q (%s). Reason: %s", o.ObjectId, o.SchemaId, reason)
+			log.WithFields(field.Type(o.SchemaId), field.F("object", o)).Debug("Discarded setting object %q (%s). Reason: %s", o.ObjectId, o.SchemaId, reason)
 			continue
 		}
 

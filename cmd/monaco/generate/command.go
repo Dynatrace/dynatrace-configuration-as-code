@@ -19,6 +19,8 @@ package generate
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/generate/deletefile"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/generate/dependencygraph"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/generate/schemas"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -37,6 +39,10 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 
 	cmd.AddCommand(dependencygraph.Command(fs))
 	cmd.AddCommand(deletefile.Command(fs))
+
+	if featureflags.GenerateJSONSchemas().Enabled() {
+		cmd.AddCommand(schemas.Command(fs))
+	}
 
 	return cmd
 }

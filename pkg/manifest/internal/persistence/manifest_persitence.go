@@ -25,9 +25,9 @@ const SimpleProjectType = "simple"
 const GroupProjectType = "grouping"
 
 type Project struct {
-	Name string `yaml:"name"`
-	Type string `yaml:"type,omitempty"`
-	Path string `yaml:"path,omitempty"`
+	Name string `yaml:"name" json:"name" jsonschema:"description=..."`
+	Type string `yaml:"type,omitempty" json:"type" jsonschema:"description=..."`
+	Path string `yaml:"path,omitempty" json:"path" jsonschema:"description=..."`
 }
 
 type Type string
@@ -42,8 +42,8 @@ const (
 // - TypeValue...read directly
 // Additionally TypedValues can be defined directly as a string, as a shorthand for type: TypeValue
 type TypedValue struct {
-	Type  Type   `yaml:"type,omitempty" mapstructure:"type"`
-	Value string `yaml:"value" mapstructure:"value"`
+	Type  Type   `yaml:"type,omitempty" mapstructure:"type" json:"type" jsonschema:"description=..."`
+	Value string `yaml:"value" mapstructure:"value" json:"name" jsonschema:"description=..."`
 }
 
 // UnmarshalYAML Custom unmarshaler for TypedValue able to parse simple shorthands (accountUUID: 1234) and full values.
@@ -77,39 +77,39 @@ type AuthSecret struct {
 }
 
 type OAuth struct {
-	ClientID      AuthSecret  `yaml:"clientId"`
-	ClientSecret  AuthSecret  `yaml:"clientSecret"`
-	TokenEndpoint *TypedValue `yaml:"tokenEndpoint,omitempty"`
+	ClientID      AuthSecret  `yaml:"clientId" json:"clientId" jsonschema:"description=..."`
+	ClientSecret  AuthSecret  `yaml:"clientSecret" json:"clientSecret" jsonschema:"description=..."`
+	TokenEndpoint *TypedValue `yaml:"tokenEndpoint,omitempty" json:"tokenEndpoint" jsonschema:"description=..."`
 }
 
 type Auth struct {
-	Token AuthSecret `yaml:"token"`
-	OAuth *OAuth     `yaml:"oAuth,omitempty"`
+	Token AuthSecret `yaml:"token" json:"token" jsonschema:"description=..."`
+	OAuth *OAuth     `yaml:"oAuth,omitempty" json:"oAuth" jsonschema:"description=..."`
 }
 
 type Environment struct {
-	Name string     `yaml:"name"`
-	URL  TypedValue `yaml:"url"`
+	Name string     `yaml:"name"  json:"name" jsonschema:"description=..."`
+	URL  TypedValue `yaml:"url" json:"url" jsonschema:"description=..."`
 
 	// Auth contains all authentication related information
-	Auth Auth `yaml:"auth,omitempty"`
+	Auth Auth `yaml:"auth,omitempty" json:"auth" jsonschema:"description=..."`
 }
 
 type Group struct {
-	Name         string        `yaml:"name"`
-	Environments []Environment `yaml:"environments"`
+	Name         string        `yaml:"name" json:"name" jsonschema:"description=..."`
+	Environments []Environment `yaml:"environments" json:"environments" jsonschema:"description=..."`
 }
 
 type Manifest struct {
-	ManifestVersion   string    `yaml:"manifestVersion"`
-	Projects          []Project `yaml:"projects"`
-	EnvironmentGroups []Group   `yaml:"environmentGroups"`
-	Accounts          []Account `yaml:"accounts,omitempty"`
+	ManifestVersion   string    `yaml:"manifestVersion" json:"name" jsonschema:"description=..."`
+	Projects          []Project `yaml:"projects" json:"projects" jsonschema:"description=..."`
+	EnvironmentGroups []Group   `yaml:"environmentGroups" json:"environmentGroups" jsonschema:"description=..."`
+	Accounts          []Account `yaml:"accounts,omitempty" json:"accounts" jsonschema:"description=..."`
 }
 
 type Account struct {
-	Name        string      `yaml:"name"`
-	AccountUUID TypedValue  `yaml:"accountUUID"`
-	ApiUrl      *TypedValue `yaml:"apiUrl,omitempty"`
-	OAuth       OAuth       `yaml:"oAuth"`
+	Name        string      `yaml:"name" json:"name" jsonschema:"description=..."`
+	AccountUUID TypedValue  `yaml:"accountUUID" json:"accountUUID" jsonschema:"description=..."`
+	ApiUrl      *TypedValue `yaml:"apiUrl,omitempty" json:"apiUrl" jsonschema:"description=..."`
+	OAuth       OAuth       `yaml:"oAuth" json:"oAuth" jsonschema:"description=..."`
 }

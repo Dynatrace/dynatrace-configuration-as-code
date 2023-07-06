@@ -73,3 +73,11 @@ func AccountManagement() FeatureFlag {
 		defaultEnabled: false,
 	}
 }
+
+// GenerateJSONSchemas toggles whether the 'generate schema' command is available
+func GenerateJSONSchemas() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_JSON_SCHEMAS",
+		defaultEnabled: false,
+	}
+}

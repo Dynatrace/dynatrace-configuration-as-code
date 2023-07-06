@@ -38,21 +38,21 @@ type Context struct {
 	ManifestPath string
 }
 
-type manifestWriterError struct {
+type ManifestWriterError struct {
 	ManifestPath string `json:"manifestPath"`
 	Err          error  `json:"error"`
 }
 
-func (e manifestWriterError) Unwrap() error {
+func (e ManifestWriterError) Unwrap() error {
 	return e.Err
 }
 
-func (e manifestWriterError) Error() string {
+func (e ManifestWriterError) Error() string {
 	return fmt.Sprintf("%s: %s", e.ManifestPath, e.Err)
 }
 
-func newManifestWriterError(path string, err error) manifestWriterError {
-	return manifestWriterError{
+func newManifestWriterError(path string, err error) ManifestWriterError {
+	return ManifestWriterError{
 		ManifestPath: path,
 		Err:          err,
 	}
