@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"mime/multipart"
 	"net/http"
@@ -39,9 +40,9 @@ const (
 	extensionNeedsUpdate
 )
 
-func uploadExtension(ctx context.Context, client *http.Client, apiPath string, extensionName string, payload []byte) (DynatraceEntity, error) {
-
-	status, err := validateIfExtensionShouldBeUploaded(ctx, client, apiPath, extensionName, payload)
+func (d *DynatraceClient) uploadExtension(ctx context.Context, api api.API, extensionName string, payload []byte) (DynatraceEntity, error) {
+	fullURL := api.CreateURL(d.environmentURLClassic)
+	status, err := d.validateIfExtensionShouldBeUploaded(ctx, fullURL, extensionName, payload)
 	if err != nil {
 		return DynatraceEntity{}, err
 	}
@@ -59,7 +60,7 @@ func uploadExtension(ctx context.Context, client *http.Client, apiPath string, e
 		}, err
 	}
 
-	resp, err := rest.PostMultiPartFile(ctx, client, apiPath, buffer, contentType)
+	resp, err := rest.PostMultiPartFile(ctx, d.clientClassic, fullURL, buffer, contentType)
 
 	if err != nil {
 		return DynatraceEntity{}, err
@@ -86,8 +87,8 @@ type Properties struct {
 	Version *string `json:"version"`
 }
 
-func validateIfExtensionShouldBeUploaded(ctx context.Context, client *http.Client, apiPath string, extensionName string, payload []byte) (status extensionStatus, err error) {
-	response, err := rest.Get(ctx, client, apiPath+"/"+extensionName)
+func (d *DynatraceClient) validateIfExtensionShouldBeUploaded(ctx context.Context, apiPath string, extensionName string, payload []byte) (status extensionStatus, err error) {
+	response, err := rest.Get(ctx, d.clientClassic, apiPath+"/"+extensionName)
 	if err != nil {
 		return extensionValidationError, err
 	}
