@@ -120,6 +120,37 @@ func WithCustomUserAgentString(userAgent string) func(client *Client) {
 	}
 }
 
+// Get returns a single automation object matching the given resource type and id or an error
+// if a resource with the given ID and resourceType wasn't found
+func (a Client) Get(ctx context.Context, resourceType ResourceType, id string) (result *Response, err error) {
+	a.limiter.ExecuteBlocking(func() {
+		result, err = a.get(ctx, id, resourceType)
+	})
+	return
+}
+
+func (a Client) get(ctx context.Context, id string, resourceType ResourceType) (*Response, error) {
+	requestURL := a.url + a.resources[resourceType].Path + "/" + id
+	u, err := url.Parse(requestURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse URL '%s': %w", requestURL, err)
+	}
+
+	resp, err := rest.Get(ctx, a.client, u.String())
+	if err != nil {
+		return nil, fmt.Errorf("failed to GET automation resource of type %v with id %s: %w", resourceType, id, err)
+	}
+
+	if !resp.IsSuccess() {
+		return nil, rest.NewRespErr(fmt.Sprintf("failed to get automation resource with ID %s (HTTP %d): %s", id, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodGet, u.String())
+	}
+
+	return &Response{
+		ID:   id,
+		Data: resp.Body,
+	}, nil
+}
+
 // List returns all automation objects
 func (a Client) List(ctx context.Context, resourceType ResourceType) (result []Response, err error) {
 	a.limiter.ExecuteBlocking(func() {

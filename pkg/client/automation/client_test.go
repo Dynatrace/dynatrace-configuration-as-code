@@ -29,6 +29,65 @@ import (
 	"testing"
 )
 
+func TestAutomationClientGet(t *testing.T) {
+	jsonData := []byte(`{ "id" : "91cc8988-2223-404a-a3f5-5f1a839ecd45", "data" : "some-data1" }`)
+	t.Run("GET - OK", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodGet {
+				rw.Write(jsonData)
+				rw.WriteHeader(http.StatusOK)
+				return
+			}
+			assert.Fail(t, "unexpected HTTP method call")
+		}))
+		defer server.Close()
+
+		workflowClient := automation.NewClient(server.URL, server.Client())
+		wf, err := workflowClient.Get(context.TODO(), automation.Workflows, "91cc8988-2223-404a-a3f5-5f1a839ecd45")
+		assert.NotNil(t, wf)
+		assert.Equal(t, jsonData, wf.Data)
+		assert.NoError(t, err)
+	})
+
+	t.Run("GET - URL parse error", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodGet {
+				rw.Write(jsonData)
+				rw.WriteHeader(http.StatusOK)
+				return
+			}
+			assert.Fail(t, "unexpected HTTP method call")
+		}))
+		defer server.Close()
+
+		workflowClient := automation.NewClient(server.URL, server.Client())
+		wf, err := workflowClient.Get(context.TODO(), automation.Workflows, "\n")
+		assert.Nil(t, wf)
+		assert.Error(t, err)
+	})
+
+	t.Run("GET - Request error", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodGet {
+				rw.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			assert.Fail(t, "unexpected HTTP method call")
+		}))
+		defer server.Close()
+
+		workflowClient := automation.NewClient(server.URL, server.Client())
+		wf, err := workflowClient.Get(context.TODO(), automation.Workflows, "91cc8988-2223-404a-a3f5-5f1a839ecd45")
+		assert.Nil(t, wf)
+		assert.Error(t, err)
+
+		server.Close()
+		wf, err = workflowClient.Get(context.TODO(), automation.Workflows, "91cc8988-2223-404a-a3f5-5f1a839ecd45")
+		assert.Nil(t, wf)
+		assert.Error(t, err)
+	})
+}
+
 func TestAutomationClientList(t *testing.T) {
 
 	jsonData := []byte(`{"count" : 2, "results" : [ { "id" : "91cc8988-2223-404a-a3f5-5f1a839ecd45", "data" : "some-data1"}, { "id" : "91cc8988-2223-404a-a3f5-5f1a839ecd46", "data" : "some-data2"} ]}`)
