@@ -28,8 +28,8 @@ var (
 )
 
 type ConfigLoaderError struct {
-	Path string `json:"path"`
-	Err  error  `json:"error"`
+	Path string `json:"path" jsonschema:"description=Filepath of the config.yaml that could not be loaded"`
+	Err  error  `json:"error" jsonschema:"description=The error that occurred,type=object"`
 }
 
 func (e ConfigLoaderError) Unwrap() error {
@@ -41,9 +41,9 @@ func (e ConfigLoaderError) Error() string {
 }
 
 type DefinitionParserError struct {
-	Location coordinate.Coordinate `json:"location"`
-	Path     string                `json:"path"`
-	Reason   string                `json:"reason"`
+	Location coordinate.Coordinate `json:"location" jsonschema:"description=Coordinate of the configuration that could not be parsed"`
+	Path     string                `json:"path" jsonschema:"description=Filepath of the config.yaml that could not be parsed"`
+	Reason   string                `json:"reason" jsonschema:"description=The error that occurred,type=object"`
 }
 
 type DetailedDefinitionParserError struct {
