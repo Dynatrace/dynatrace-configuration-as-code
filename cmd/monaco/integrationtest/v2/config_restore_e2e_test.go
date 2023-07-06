@@ -19,6 +19,7 @@
 package v2
 
 import (
+	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -26,6 +27,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -71,6 +73,10 @@ func TestRestoreConfigs_FromDownloadWithPlatformManifestFile(t *testing.T) {
 // As this downloads all alerting-profile and management-zone configs, other tests and their cleanup are likely to interfere
 // Thus download_restore tests should be run independently to other integration tests
 func TestRestoreConfigs_FromDownloadWithCLIParameters(t *testing.T) {
+	if isHardeningEnvironment() {
+		t.Skip("Skipping test as we can't set tokenEndpoint as a CLI parameter")
+	}
+
 	initialConfigsFolder := "test-resources/integration-download-configs/"
 	manifestFile := initialConfigsFolder + "manifest.yaml"
 	downloadFolder := "test-resources/download"
@@ -81,6 +87,10 @@ func TestRestoreConfigs_FromDownloadWithCLIParameters(t *testing.T) {
 }
 
 func TestRestoreConfigs_FromDownloadWithPlatformWithCLIParameters(t *testing.T) {
+	if isHardeningEnvironment() {
+		t.Skip("Skipping test as we can't set tokenEndpoint as a CLI parameter")
+	}
+
 	initialConfigsFolder := "test-resources/integration-download-configs/"
 	manifestFile := initialConfigsFolder + "platform_manifest.yaml"
 	downloadFolder := "test-resources/download"
@@ -102,6 +112,11 @@ func TestRestoreConfigs_FromDownloadWithPlatformManifestFile_withAutomation(t *t
 }
 
 func TestDownloadWithSpecificAPIsAndSettings(t *testing.T) {
+
+	if isHardeningEnvironment() {
+		t.Skip("Skipping test as we can't set tokenEndpoint as a CLI parameter")
+	}
+
 	configsFolder, _ := filepath.Abs("test-resources/download-with-flags")
 	configsFolderManifest := filepath.Join(configsFolder, "manifest.yaml")
 
@@ -257,6 +272,17 @@ func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolde
 func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, configFolder string, manifestFile string) (suffix string, err error) {
 	log.Info("BEGIN PREPARATION PROCESS")
 	suffix = appendUniqueSuffixToIntegrationTestConfigs(t, fs, configFolder, suffixTest)
+
+	// update all env values to include the _suffix suffix so that we can set env-values in configs
+	for _, e := range os.Environ() {
+		splits := strings.SplitN(e, "=", 2)
+		key := splits[0]
+		val := splits[1]
+
+		newKey := fmt.Sprintf("%s_%s", key, suffix)
+
+		t.Setenv(newKey, val)
+	}
 
 	t.Cleanup(func() { // register extra cleanup in case test fails after deployment
 		cleanupDeployedConfiguration(t, fs, manifestFile, suffix)
