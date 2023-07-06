@@ -24,6 +24,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/spf13/afero"
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -148,4 +149,10 @@ func appendUniqueSuffixToIntegrationTestConfigs(t *testing.T, fs afero.Fs, confi
 func setTestEnvVar(t *testing.T, key, value, testSuffix string) {
 	t.Setenv(key, value)                                   // expose directly
 	t.Setenv(fmt.Sprintf("%s_%s", key, testSuffix), value) // expose with suffix (env parameter "name" is subject to rewrite)
+}
+
+func isHardeningEnvironment() bool {
+	env := os.Getenv("TEST_ENVIRONMENT")
+
+	return env == "hardening"
 }

@@ -34,6 +34,7 @@ import (
 	"gotest.tools/assert"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -130,9 +131,10 @@ func getRandomUUID(t *testing.T) string {
 }
 
 func createObjectViaDirectPut(t *testing.T, c *http.Client, url string, a api.API, id string, payload []byte) {
+	url = strings.TrimSuffix(url, "/")
 	res, err := rest.Put(context.TODO(), c, a.CreateURL(url)+"/"+id, payload)
 	assert.NilError(t, err)
-	assert.Assert(t, res.StatusCode >= 200 && res.StatusCode < 300)
+	assert.Assert(t, res.StatusCode >= 200 && res.StatusCode < 300, "Expected status code to be within [200, 299], but was %d. Response-body: %v", res.StatusCode, string(res.Body))
 
 	var dtEntity dtclient.DynatraceEntity
 	err = json.Unmarshal(res.Body, &dtEntity)
