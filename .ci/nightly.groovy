@@ -56,26 +56,29 @@ pipeline {
 }
 
 def executeWithSecrets(Map args = [cmd: null]) {
-    withVault(vaultSecrets:
-        [[
-             path        : "keptn-jenkins/monaco/integration-tests/hardening",
-             secretValues: [
-                 [envVar: 'OAUTH_CLIENT_ID', vaultKey: 'OAUTH_CLIENT_ID', isRequired: true],
-                 [envVar: 'OAUTH_CLIENT_SECRET', vaultKey: 'OAUTH_CLIENT_SECRET', isRequired: true],
-                 [envVar: 'OAUTH_TOKEN_ENDPOINT', vaultKey: 'OAUTH_TOKEN_ENDPOINT', isRequired: true],
+    withEnv([
+        "WORKFLOW_ACTOR=bc33e56f-e8dc-4004-829b-2b02a9d77154"
+    ]) {
+        withVault(vaultSecrets:
+            [[
+                 path        : "keptn-jenkins/monaco/integration-tests/hardening",
+                 secretValues: [
+                     [envVar: 'OAUTH_CLIENT_ID', vaultKey: 'OAUTH_CLIENT_ID', isRequired: true],
+                     [envVar: 'OAUTH_CLIENT_SECRET', vaultKey: 'OAUTH_CLIENT_SECRET', isRequired: true],
+                     [envVar: 'OAUTH_TOKEN_ENDPOINT', vaultKey: 'OAUTH_TOKEN_ENDPOINT', isRequired: true],
 
-                 [envVar: 'URL_ENVIRONMENT_1', vaultKey: 'URL_ENVIRONMENT_1', isRequired: true],
-                 [envVar: 'TOKEN_ENVIRONMENT_1', vaultKey: 'TOKEN_ENVIRONMENT_1', isRequired: true],
-                 [envVar: 'PLATFORM_URL_ENVIRONMENT_1', vaultKey: 'PLATFORM_URL_ENVIRONMENT_1', isRequired: true],
+                     [envVar: 'URL_ENVIRONMENT_1', vaultKey: 'URL_ENVIRONMENT_1', isRequired: true],
+                     [envVar: 'TOKEN_ENVIRONMENT_1', vaultKey: 'TOKEN_ENVIRONMENT_1', isRequired: true],
+                     [envVar: 'PLATFORM_URL_ENVIRONMENT_1', vaultKey: 'PLATFORM_URL_ENVIRONMENT_1', isRequired: true],
 
-                 [envVar: 'URL_ENVIRONMENT_2', vaultKey: 'URL_ENVIRONMENT_2', isRequired: true],
-                 [envVar: 'TOKEN_ENVIRONMENT_2', vaultKey: 'TOKEN_ENVIRONMENT_2', isRequired: true],
-                 [envVar: 'PLATFORM_URL_ENVIRONMENT_2', vaultKey: 'PLATFORM_URL_ENVIRONMENT_2', isRequired: true],
-             ]
-         ]]) {
-        catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
-            sh(script: args.cmd)
+                     [envVar: 'URL_ENVIRONMENT_2', vaultKey: 'URL_ENVIRONMENT_2', isRequired: true],
+                     [envVar: 'TOKEN_ENVIRONMENT_2', vaultKey: 'TOKEN_ENVIRONMENT_2', isRequired: true],
+                     [envVar: 'PLATFORM_URL_ENVIRONMENT_2', vaultKey: 'PLATFORM_URL_ENVIRONMENT_2', isRequired: true],
+                 ]
+             ]]) {
+            catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                sh(script: args.cmd)
+            }
         }
     }
-
 }
