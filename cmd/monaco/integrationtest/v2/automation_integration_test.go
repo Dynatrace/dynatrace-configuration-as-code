@@ -21,6 +21,7 @@ package v2
 
 import (
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
@@ -34,8 +35,11 @@ func TestIntegrationAutomation(t *testing.T) {
 	manifest := configFolder + "manifest.yaml"
 	specificEnvironment := ""
 	t.Setenv("MONACO_FEAT_AUTOMATION_RESOURCES", "1")
+	envs := map[string]string{
+		"WORKFLOW_ACTOR": os.Getenv("WORKFLOW_ACTOR"),
+	}
 
-	RunIntegrationWithCleanup(t, configFolder, manifest, specificEnvironment, "Automation", func(fs afero.Fs, _ TestContext) {
+	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "Automation", envs, func(fs afero.Fs, _ TestContext) {
 
 		// This causes Creation of all automation objects
 		cmd := runner.BuildCli(fs)
