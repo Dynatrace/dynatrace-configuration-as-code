@@ -21,7 +21,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/topologysort"
 	"gotest.tools/assert"
 	"testing"
 )
@@ -32,7 +31,7 @@ func TestResolveParameterValues(t *testing.T) {
 	ownerParameterName := "owner"
 	timeout := 5
 	timeoutParameterName := "timeout"
-	parameters := []topologysort.ParameterWithName{
+	parameters := []parameter.NamedParameter{
 		{
 			Name: config.NameParameter,
 			Parameter: &parameter.DummyParameter{
@@ -81,7 +80,7 @@ func TestResolveParameterValuesShouldFailWhenReferencingNonExistingConfig(t *tes
 		Type:     "management-zone",
 		ConfigId: "zone1",
 	}
-	parameters := []topologysort.ParameterWithName{
+	parameters := []parameter.NamedParameter{
 		{
 			Name: config.NameParameter,
 			Parameter: &parameter.DummyParameter{
@@ -121,7 +120,7 @@ func TestResolveParameterValuesShouldFailWhenReferencingSkippedConfig(t *testing
 		ConfigId: "zone1",
 	}
 
-	parameters := []topologysort.ParameterWithName{
+	parameters := []parameter.NamedParameter{
 		{
 			Name: config.NameParameter,
 			Parameter: &parameter.DummyParameter{
@@ -162,7 +161,7 @@ func TestResolveParameterValuesShouldFailWhenReferencingSkippedConfig(t *testing
 }
 
 func TestResolveParameterValuesShouldFailWhenParameterResolveReturnsError(t *testing.T) {
-	parameters := []topologysort.ParameterWithName{
+	parameters := []parameter.NamedParameter{
 		{
 			Name: config.NameParameter,
 			Parameter: &parameter.DummyParameter{

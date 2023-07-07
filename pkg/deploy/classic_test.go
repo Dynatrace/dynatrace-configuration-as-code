@@ -24,14 +24,13 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/topologysort"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
 	name := "test"
-	parameters := []topologysort.ParameterWithName{
+	parameters := []parameter.NamedParameter{
 		{
 			Name: config.NameParameter,
 			Parameter: &parameter.DummyParameter{
@@ -68,7 +67,7 @@ func TestDeployConfigShouldFailCyclicParameterDependencies(t *testing.T) {
 		ConfigId: "dashboard-1",
 	}
 
-	parameters := []topologysort.ParameterWithName{
+	parameters := []parameter.NamedParameter{
 		{
 			Name: config.NameParameter,
 			Parameter: &parameter.DummyParameter{
@@ -112,7 +111,7 @@ func TestDeployConfigShouldFailCyclicParameterDependencies(t *testing.T) {
 }
 
 func TestDeployConfigShouldFailOnMissingNameParameter(t *testing.T) {
-	parameters := []topologysort.ParameterWithName{}
+	parameters := []parameter.NamedParameter{}
 
 	client := &dtclient.DummyClient{}
 	conf := config.Config{
@@ -133,7 +132,7 @@ func TestDeployConfigShouldFailOnMissingNameParameter(t *testing.T) {
 }
 
 func TestDeployConfigShouldFailOnReferenceOnUnknownConfig(t *testing.T) {
-	parameters := []topologysort.ParameterWithName{
+	parameters := []parameter.NamedParameter{
 		{
 			Name: config.NameParameter,
 			Parameter: &parameter.DummyParameter{
@@ -176,7 +175,7 @@ func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
 		ConfigId: "dashboard",
 	}
 
-	parameters := []topologysort.ParameterWithName{
+	parameters := []parameter.NamedParameter{
 		{
 			Name: config.NameParameter,
 			Parameter: &parameter.DummyParameter{

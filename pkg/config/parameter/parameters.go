@@ -83,6 +83,11 @@ type Parameter interface {
 	ResolveValue(context ResolveContext) (interface{}, error)
 }
 
+type NamedParameter struct {
+	Name      string
+	Parameter Parameter
+}
+
 // ParameterReference is used to identify a certain parameter in a config
 type ParameterReference struct {
 	Config   coordinate.Coordinate

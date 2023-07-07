@@ -26,7 +26,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/topologysort"
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -44,7 +43,7 @@ func TestDeploy(t *testing.T) {
 		ownerParameterName := "owner"
 		timeout := 5
 		timeoutParameterName := "timeout"
-		parameters := []topologysort.ParameterWithName{
+		parameters := []parameter.NamedParameter{
 			{
 				Name: config.NameParameter,
 				Parameter: &parameter.DummyParameter{
@@ -95,7 +94,7 @@ func TestDeploySettingShouldFailUpsert(t *testing.T) {
 	name := "test"
 	owner := "hansi"
 	ownerParameterName := "owner"
-	parameters := []topologysort.ParameterWithName{
+	parameters := []parameter.NamedParameter{
 		{
 			Name: config.NameParameter,
 			Parameter: &parameter.DummyParameter{
@@ -152,7 +151,7 @@ func TestDeploySetting(t *testing.T) {
 						ConfigId: "some-settings-config",
 					},
 					Template: generateDummyTemplate(t),
-					Parameters: toParameterMap([]topologysort.ParameterWithName{
+					Parameters: toParameterMap([]parameter.NamedParameter{
 						{
 							Name: "name",
 							Parameter: &parameter.DummyParameter{
@@ -195,7 +194,7 @@ func TestDeploySetting(t *testing.T) {
 						ConfigId: "some-settings-config",
 					},
 					Template: generateDummyTemplate(t),
-					Parameters: toParameterMap([]topologysort.ParameterWithName{
+					Parameters: toParameterMap([]parameter.NamedParameter{
 						{
 							Name: "name",
 							Parameter: &parameter.DummyParameter{
@@ -238,7 +237,7 @@ func TestDeploySetting(t *testing.T) {
 						ConfigId: "some-settings-config",
 					},
 					Template: generateDummyTemplate(t),
-					Parameters: toParameterMap([]topologysort.ParameterWithName{
+					Parameters: toParameterMap([]parameter.NamedParameter{
 						{
 							Name: "name",
 							Parameter: &parameter.DummyParameter{
@@ -282,7 +281,7 @@ func TestDeploySetting(t *testing.T) {
 func TestDeployedSettingGetsNameFromConfig(t *testing.T) {
 	cfgName := "THE CONFIG NAME"
 
-	parameters := []topologysort.ParameterWithName{
+	parameters := []parameter.NamedParameter{
 		{
 			Name: "franz",
 			Parameter: &parameter.DummyParameter{
@@ -326,7 +325,7 @@ func TestDeployedSettingGetsNameFromConfig(t *testing.T) {
 }
 
 func TestSettingsNameExtractionDoesNotFailIfCfgNameBecomesOptional(t *testing.T) {
-	parametersWithoutName := []topologysort.ParameterWithName{
+	parametersWithoutName := []parameter.NamedParameter{
 		{
 			Name: "franz",
 			Parameter: &parameter.DummyParameter{
@@ -420,7 +419,7 @@ func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
 	client.EXPECT().UpsertConfigByName(gomock.Any(), gomock.Any(), theConfigName, gomock.Any()).Times(1)
 
 	apis := api.APIs{theApiName: theApi}
-	parameters := []topologysort.ParameterWithName{
+	parameters := []parameter.NamedParameter{
 		{
 			Name: config.NameParameter,
 			Parameter: &parameter.DummyParameter{
@@ -453,7 +452,7 @@ func TestDeployConfigsTargetingClassicConfigNonUniqueWithExistingCfgsOfSameName(
 	client.EXPECT().UpsertConfigByNonUniqueNameAndId(gomock.Any(), gomock.Any(), gomock.Any(), theConfigName, gomock.Any())
 
 	apis := api.APIs{theApiName: theApi}
-	parameters := []topologysort.ParameterWithName{
+	parameters := []parameter.NamedParameter{
 		{
 			Name: config.NameParameter,
 			Parameter: &parameter.DummyParameter{
@@ -483,7 +482,7 @@ func TestDeployConfigsNoApi(t *testing.T) {
 	client := dtclient.NewMockClient(gomock.NewController(t))
 
 	apis := api.APIs{}
-	parameters := []topologysort.ParameterWithName{
+	parameters := []parameter.NamedParameter{
 		{
 			Name: config.NameParameter,
 			Parameter: &parameter.DummyParameter{
@@ -529,7 +528,7 @@ func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
 	apis := api.APIs{theApiName: theApi}
 	sortedConfigs := []config.Config{
 		{
-			Parameters: toParameterMap([]topologysort.ParameterWithName{}), // missing name parameter leads to deployment failure
+			Parameters: toParameterMap([]parameter.NamedParameter{}), // missing name parameter leads to deployment failure
 			Coordinate: coordinate.Coordinate{Type: theApiName},
 			Template:   generateDummyTemplate(t),
 			Type: config.ClassicApiType{
@@ -537,7 +536,7 @@ func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
 			},
 		},
 		{
-			Parameters: toParameterMap([]topologysort.ParameterWithName{}), // missing name parameter leads to deployment failure
+			Parameters: toParameterMap([]parameter.NamedParameter{}), // missing name parameter leads to deployment failure
 			Coordinate: coordinate.Coordinate{Type: theApiName},
 			Template:   generateDummyTemplate(t),
 			Type: config.ClassicApiType{
@@ -558,7 +557,7 @@ func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
 
 }
 
-func toParameterMap(params []topologysort.ParameterWithName) map[string]parameter.Parameter {
+func toParameterMap(params []parameter.NamedParameter) map[string]parameter.Parameter {
 	result := make(map[string]parameter.Parameter)
 
 	for _, p := range params {
