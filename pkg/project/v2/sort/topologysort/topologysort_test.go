@@ -1,23 +1,26 @@
-// @license
-// Copyright 2021 Dynatrace LLC
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 //go:build unit
+
+/*
+ * @license
+ * Copyright 2023 Dynatrace LLC
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package topologysort
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/sort"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/topologysort"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort/errors"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"testing"
 
@@ -37,7 +40,7 @@ func TestIsReferencing(t *testing.T) {
 
 	referencingProperty := "managementZoneName"
 
-	param := ParameterWithName{
+	param := parameter.NamedParameter{
 		Name: "name",
 		Parameter: &parameter.DummyParameter{
 			References: []parameter.ParameterReference{
@@ -46,12 +49,12 @@ func TestIsReferencing(t *testing.T) {
 		},
 	}
 
-	referencedParameter := ParameterWithName{
+	referencedParameter := parameter.NamedParameter{
 		Name:      referencingProperty,
 		Parameter: &parameter.DummyParameter{},
 	}
 
-	result := param.IsReferencing(referencingConfig, referencedParameter)
+	result := parameterReference(param, referencingConfig, referencedParameter)
 
 	assert.Assert(t, result, "should reference parameter")
 }
@@ -65,7 +68,7 @@ func TestIsReferencingShouldReturnFalseForNotReferencing(t *testing.T) {
 
 	referencingProperty := "managementZoneName"
 
-	param := ParameterWithName{
+	param := parameter.NamedParameter{
 		Name: "name",
 		Parameter: &parameter.DummyParameter{
 			References: []parameter.ParameterReference{
@@ -77,12 +80,12 @@ func TestIsReferencingShouldReturnFalseForNotReferencing(t *testing.T) {
 		},
 	}
 
-	referencedParameter := ParameterWithName{
+	referencedParameter := parameter.NamedParameter{
 		Name:      "name",
 		Parameter: &parameter.DummyParameter{},
 	}
 
-	result := param.IsReferencing(referencingConfig, referencedParameter)
+	result := parameterReference(param, referencingConfig, referencedParameter)
 
 	assert.Assert(t, !result, "should not reference parameter")
 }
@@ -94,86 +97,19 @@ func TestIsReferencingShouldReturnFalseForParameterWithoutReferences(t *testing.
 		ConfigId: "dashboard-1",
 	}
 
-	param := ParameterWithName{
+	param := parameter.NamedParameter{
 		Name:      "name",
 		Parameter: &parameter.DummyParameter{},
 	}
 
-	referencedParameter := ParameterWithName{
+	referencedParameter := parameter.NamedParameter{
 		Name:      "name",
 		Parameter: &parameter.DummyParameter{},
 	}
 
-	result := param.IsReferencing(referencingConfig, referencedParameter)
+	result := parameterReference(param, referencingConfig, referencedParameter)
 
 	assert.Assert(t, !result, "should not reference parameter")
-}
-
-func TestSortParameters(t *testing.T) {
-	configCoordinates := coordinate.Coordinate{
-		Project:  "project-1",
-		Type:     "dashboard",
-		ConfigId: "dashboard-1",
-	}
-
-	ownerParameterName := "owner"
-	timeoutParameterName := "timeout"
-
-	parameters := config.Parameters{
-		config.NameParameter: &parameter.DummyParameter{
-			References: []parameter.ParameterReference{
-				{
-					Config:   configCoordinates,
-					Property: ownerParameterName,
-				},
-			},
-		},
-		ownerParameterName:   &parameter.DummyParameter{},
-		timeoutParameterName: &parameter.DummyParameter{},
-	}
-
-	sortedParams, errs := SortParameters("", "dev", configCoordinates, parameters)
-
-	assert.Equal(t, len(errs), 0, "expected zero errors when sorting")
-	assert.Assert(t, len(sortedParams) == len(parameters), "the same number of parameters should be sorted")
-
-	indexName := indexOfParam(t, sortedParams, config.NameParameter)
-	indexOwner := indexOfParam(t, sortedParams, ownerParameterName)
-
-	assert.Assert(t, indexName > indexOwner, "parameter name (index %d) must be after parameter owner (%d)", indexName, indexOwner)
-}
-
-func TestSortParametersShouldFailOnCircularDependency(t *testing.T) {
-	configCoordinates := coordinate.Coordinate{
-		Project:  "project-1",
-		Type:     "dashboard",
-		ConfigId: "dashboard-1",
-	}
-
-	ownerParameterName := "owner"
-
-	parameters := config.Parameters{
-		config.NameParameter: &parameter.DummyParameter{
-			References: []parameter.ParameterReference{
-				{
-					Config:   configCoordinates,
-					Property: ownerParameterName,
-				},
-			},
-		},
-		ownerParameterName: &parameter.DummyParameter{
-			References: []parameter.ParameterReference{
-				{
-					Config:   configCoordinates,
-					Property: config.NameParameter,
-				},
-			},
-		},
-	}
-
-	_, errs := SortParameters("", "dev", configCoordinates, parameters)
-
-	assert.Assert(t, len(errs) > 0, "should fail")
 }
 
 func TestSortConfigs(t *testing.T) {
@@ -310,7 +246,7 @@ func TestSortConfigsShouldReportAllLinksOfCyclicDependency(t *testing.T) {
 	assert.Assert(t, len(errs) > 0, "should report cyclic dependency errors")
 	assert.Assert(t, len(errs) == 3, "should report an error for each config")
 	for _, err := range errs {
-		depErr, ok := err.(CircularDependencyConfigSortError)
+		depErr, ok := err.(errors.CircularDependencyConfigSortError)
 		assert.Assert(t, ok, "expected errors of type CircularDependencyConfigSortError")
 		if depErr.Location.Match(config1Coordinates) {
 			assert.Assert(t, depErr.DependsOn[0] == config2Coordinates)
@@ -409,6 +345,7 @@ func TestSortProjects(t *testing.T) {
 		"referenced project (index %d) should be before project (index %d)", indexReferenced, indexProject)
 }
 
+// TODO move up!
 func TestSortProjectsShouldFailOnCyclicDependency(t *testing.T) {
 	projectId := "project-1"
 	referencedProjectId := "project-3"
@@ -443,110 +380,6 @@ func TestSortProjectsShouldFailOnCyclicDependency(t *testing.T) {
 	assert.Assert(t, len(errors) > 0, "there should be errors (no errors %d)", len(errors))
 }
 
-func TestGetSortedConfigsForEnvironments(t *testing.T) {
-	projectId := "project1"
-	referencedProjectId := "project2"
-	environmentName := "dev"
-
-	dashboardApiId := "dashboard"
-	dashboardConfigCoordinate := coordinate.Coordinate{
-		Project:  projectId,
-		Type:     dashboardApiId,
-		ConfigId: "sample dashboard",
-	}
-
-	autoTagApiId := "auto-tag"
-	autoTagConfigId := "tag"
-	autoTagCoordinates := coordinate.Coordinate{
-		Project:  referencedProjectId,
-		Type:     autoTagApiId,
-		ConfigId: autoTagConfigId,
-	}
-
-	referencedPropertyName := "tagId"
-
-	projects := []project.Project{
-		{
-			Id: projectId,
-			Configs: project.ConfigsPerTypePerEnvironments{
-				environmentName: {
-					dashboardApiId: []config.Config{
-						{
-							Coordinate:  dashboardConfigCoordinate,
-							Environment: environmentName,
-							Parameters: map[string]parameter.Parameter{
-								"autoTagId": &parameter.DummyParameter{
-									References: []parameter.ParameterReference{
-										{
-											Config:   autoTagCoordinates,
-											Property: referencedPropertyName,
-										},
-									},
-								},
-							},
-						},
-						{
-							Coordinate: coordinate.Coordinate{
-								Project:  projectId,
-								Type:     dashboardApiId,
-								ConfigId: "Random Dashboard",
-							},
-							Environment: environmentName,
-							Parameters: map[string]parameter.Parameter{
-								"name": &parameter.DummyParameter{
-									Value: "sample",
-								},
-							},
-						},
-					},
-				},
-			},
-			Dependencies: project.DependenciesPerEnvironment{
-				environmentName: []string{
-					referencedProjectId,
-				},
-			},
-		},
-		{
-			Id: referencedProjectId,
-			Configs: project.ConfigsPerTypePerEnvironments{
-				environmentName: {
-					autoTagApiId: []config.Config{
-						{
-							Coordinate:  autoTagCoordinates,
-							Environment: environmentName,
-							Parameters: map[string]parameter.Parameter{
-								referencedPropertyName: &parameter.DummyParameter{
-									Value: "10",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	environments := []string{
-		environmentName,
-	}
-
-	sortedPerEnvironment, errors := GetSortedConfigsForEnvironments(projects, environments)
-
-	assert.Assert(t, len(errors) == 0, "should not return error")
-	assert.Assert(t, len(sortedPerEnvironment) == 1)
-
-	sorted := sortedPerEnvironment[environmentName]
-
-	assert.Assert(t, len(sorted) == 3)
-
-	dashboardIndex := indexOfConfig(t, sorted, dashboardConfigCoordinate)
-	autoTagIndex := indexOfConfig(t, sorted, autoTagCoordinates)
-
-	assert.Assert(t, autoTagIndex < dashboardIndex,
-		"auto-tag (index %d) should be deployed before dashboard (index %d)", autoTagIndex, dashboardIndex)
-}
-
 func indexOfProject(t *testing.T, projects []project.Project, projectId string) int {
 	for i, p := range projects {
 		if p.Id == projectId {
@@ -566,17 +399,6 @@ func indexOfConfig(t *testing.T, configs []config.Config, coordinate coordinate.
 	}
 
 	t.Fatalf("no config `%s` found", coordinate)
-	return -1
-}
-
-func indexOfParam(t *testing.T, params []ParameterWithName, name string) int {
-	for i, p := range params {
-		if p.Name == name {
-			return i
-		}
-	}
-
-	t.Fatalf("no parameter with name `%s` found", name)
 	return -1
 }
 
@@ -605,7 +427,7 @@ func Test_parseConfigSortErrors(t *testing.T) {
 	}
 
 	type args struct {
-		sortErrs []sort.TopologySortError
+		sortErrs []topologysort.TopologySortError
 		configs  []config.Config
 	}
 	tests := []struct {
@@ -616,7 +438,7 @@ func Test_parseConfigSortErrors(t *testing.T) {
 		{
 			"returns empty list for empty input",
 			args{
-				[]sort.TopologySortError{},
+				[]topologysort.TopologySortError{},
 				testConfigs,
 			},
 			[]error{},
@@ -624,7 +446,7 @@ func Test_parseConfigSortErrors(t *testing.T) {
 		{
 			"parses simple errors into list",
 			args{
-				[]sort.TopologySortError{
+				[]topologysort.TopologySortError{
 					{
 						OnId:                        0,
 						UnresolvedIncomingEdgesFrom: []int{1, 2},
@@ -637,15 +459,15 @@ func Test_parseConfigSortErrors(t *testing.T) {
 				testConfigs,
 			},
 			[]error{
-				CircularDependencyConfigSortError{
+				errors.CircularDependencyConfigSortError{
 					Location:  testConfigs[0].Coordinate,
 					DependsOn: []coordinate.Coordinate{testConfigs[2].Coordinate},
 				},
-				CircularDependencyConfigSortError{
+				errors.CircularDependencyConfigSortError{
 					Location:  testConfigs[1].Coordinate,
 					DependsOn: []coordinate.Coordinate{testConfigs[0].Coordinate},
 				},
-				CircularDependencyConfigSortError{
+				errors.CircularDependencyConfigSortError{
 					Location:  testConfigs[2].Coordinate,
 					DependsOn: []coordinate.Coordinate{testConfigs[0].Coordinate},
 				},
@@ -656,8 +478,8 @@ func Test_parseConfigSortErrors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := parseConfigSortErrors(tt.args.sortErrs, tt.args.configs)
 			assert.DeepEqual(t, got, tt.want, cmpopts.SortSlices(func(a, b error) bool {
-				depErrA := a.(CircularDependencyConfigSortError)
-				depErrB := b.(CircularDependencyConfigSortError)
+				depErrA := a.(errors.CircularDependencyConfigSortError)
+				depErrB := b.(errors.CircularDependencyConfigSortError)
 				return depErrA.Location.String() < depErrB.Location.String()
 			}))
 		})

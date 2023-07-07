@@ -29,7 +29,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/topologysort"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
 	"github.com/spf13/afero"
 )
 
@@ -181,7 +181,7 @@ func filterProjects(projects []project.Project, specificProjects []string, speci
 }
 
 func sortConfigs(projects []project.Project, environmentNames []string) (project.ConfigsPerEnvironment, error) {
-	sortedConfigs, errs := topologysort.GetSortedConfigsForEnvironments(projects, environmentNames)
+	sortedConfigs, errs := sort.GetSortedConfigsForEnvironments(projects, environmentNames)
 	if errs != nil {
 		errutils.PrintErrors(errs)
 		return nil, errors.New("error during sort")

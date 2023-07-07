@@ -24,7 +24,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/topologysort"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -334,7 +334,7 @@ func TestExtractedTemplatesRenderCorrectly(t *testing.T) {
 
 	for _, cfgs := range got {
 		for _, c := range cfgs {
-			sortedParams, errs := topologysort.SortParameters("", "", c.Coordinate, c.Parameters)
+			sortedParams, errs := sort.SortParameters("", "", c.Coordinate, c.Parameters)
 			assert.Empty(t, errs)
 			props, errs := deploy.ResolveParameterValues(&c, nil, sortedParams)
 			assert.Empty(t, errs)

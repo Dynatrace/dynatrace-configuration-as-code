@@ -29,7 +29,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/topologysort"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -89,7 +89,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 	var manifestPath = "test-resources/integration-settings-old-new-external-id/manifest.yaml"
 	loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "")
 	projects := integrationtest.LoadProjects(t, fs, manifestPath, loadedManifest)
-	sortedConfigs, _ := topologysort.GetSortedConfigsForEnvironments(projects, []string{"platform_env"})
+	sortedConfigs, _ := sort.GetSortedConfigsForEnvironments(projects, []string{"platform_env"})
 	environment := loadedManifest.Environments["platform_env"]
 	configToDeploy := sortedConfigs["platform_env"][0]
 

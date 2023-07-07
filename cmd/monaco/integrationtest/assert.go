@@ -37,7 +37,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/topologysort"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
 )
@@ -54,7 +54,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 		envNames = append(envNames, env.Name)
 	}
 
-	sortedConfigs, errs := topologysort.GetSortedConfigsForEnvironments(projects, envNames)
+	sortedConfigs, errs := sort.GetSortedConfigsForEnvironments(projects, envNames)
 	testutils.FailTestOnAnyError(t, errs, "sorting configurations failed")
 
 	checkString := "exist"
@@ -82,7 +82,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 		clients := CreateDynatraceClients(t, env)
 
 		entities := make(map[coordinate.Coordinate]parameter.ResolvedEntity)
-		var parameters []topologysort.ParameterWithName
+		var parameters []parameter.NamedParameter
 
 		for _, theConfig := range configs {
 			coord := theConfig.Coordinate
@@ -100,7 +100,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 				continue
 			}
 
-			configParameters, errs := topologysort.SortParameters(theConfig.Group, theConfig.Environment, theConfig.Coordinate, theConfig.Parameters)
+			configParameters, errs := sort.SortParameters(theConfig.Group, theConfig.Environment, theConfig.Coordinate, theConfig.Parameters)
 			testutils.FailTestOnAnyError(t, errs, "sorting of parameter values failed")
 
 			parameters = append(parameters, configParameters...)

@@ -25,7 +25,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/topologysort"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -50,7 +49,7 @@ func TestDeployAutomation_UnknownResourceType(t *testing.T) {
 			Resource: config.AutomationResource("unkown"),
 		},
 		Template:   generateDummyTemplate(t),
-		Parameters: toParameterMap([]topologysort.ParameterWithName{}),
+		Parameters: toParameterMap([]parameter.NamedParameter{}),
 	}
 	_, errors := deployAutomation(context.TODO(), client, nil, "", conf)
 	assert.NotEmpty(t, errors)
@@ -67,7 +66,7 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 				Resource: config.Workflow,
 			},
 			Template:   generateDummyTemplate(t),
-			Parameters: toParameterMap([]topologysort.ParameterWithName{}),
+			Parameters: toParameterMap([]parameter.NamedParameter{}),
 		}
 		res, err := deployAutomation(context.TODO(), client, nil, "", conf)
 		assert.Nil(t, res)
@@ -82,7 +81,7 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 				Resource: config.BusinessCalendar,
 			},
 			Template:   generateDummyTemplate(t),
-			Parameters: toParameterMap([]topologysort.ParameterWithName{}),
+			Parameters: toParameterMap([]parameter.NamedParameter{}),
 		}
 		res, err := deployAutomation(context.TODO(), client, nil, "", conf)
 		assert.Nil(t, res)
@@ -97,7 +96,7 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 				Resource: config.SchedulingRule,
 			},
 			Template:   generateDummyTemplate(t),
-			Parameters: toParameterMap([]topologysort.ParameterWithName{}),
+			Parameters: toParameterMap([]parameter.NamedParameter{}),
 		}
 		res, err := deployAutomation(context.TODO(), client, nil, "", conf)
 		assert.Nil(t, res)
@@ -118,7 +117,7 @@ func TestDeployAutomation(t *testing.T) {
 			Resource: config.Workflow,
 		},
 		Template:   generateDummyTemplate(t),
-		Parameters: toParameterMap([]topologysort.ParameterWithName{}),
+		Parameters: toParameterMap([]parameter.NamedParameter{}),
 	}
 	resolvedEntity, errors := deployAutomation(context.TODO(), client, parameter.Properties{}, "{}", conf)
 	assert.NotNil(t, resolvedEntity)
