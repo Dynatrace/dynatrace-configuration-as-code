@@ -156,9 +156,19 @@ func DownloadFilterClassicConfigs() FeatureFlag {
 	}
 }
 
+// ConsistentUUIDGeneration returns the feature flag controlling whether generated UUIDs use consistent separator characters regardless of OS
+// This is default true and just exists to get old, technically buggy behavior on Windows again if needed.
 func ConsistentUUIDGeneration() FeatureFlag {
 	return FeatureFlag{
 		envName:        "MONACO_FEAT_CONSISTENT_UUID_GENERATION",
 		defaultEnabled: true,
+	}
+}
+
+// UseGraphs toggles whether sort.GetSortedConfigsForEnvironments use sgraph datastructures and algorithms for sorting projects.
+func UseGraphs() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_GRAPHS",
+		defaultEnabled: false,
 	}
 }

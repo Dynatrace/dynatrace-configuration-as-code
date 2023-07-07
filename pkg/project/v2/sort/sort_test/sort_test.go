@@ -16,14 +16,16 @@
  * limitations under the License.
  */
 
-package sort
+package sort_test
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"gotest.tools/assert"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -50,15 +52,15 @@ func TestSortParameters(t *testing.T) {
 		timeoutParameterName: &parameter.DummyParameter{},
 	}
 
-	sortedParams, errs := SortParameters("", "dev", configCoordinates, parameters)
+	sortedParams, errs := sort.SortParameters("", "dev", configCoordinates, parameters)
 
-	assert.Equal(t, len(errs), 0, "expected zero errors when sorting")
-	assert.Assert(t, len(sortedParams) == len(parameters), "the same number of parameters should be sorted")
+	assert.Len(t, errs, 0, "expected zero errors when sorting")
+	assert.Equal(t, len(sortedParams), len(parameters), "the same number of parameters should be sorted")
 
 	indexName := indexOfParam(t, sortedParams, config.NameParameter)
 	indexOwner := indexOfParam(t, sortedParams, ownerParameterName)
 
-	assert.Assert(t, indexName > indexOwner, "parameter name (index %d) must be after parameter owner (%d)", indexName, indexOwner)
+	assert.Greaterf(t, indexName, indexOwner, "parameter name (index %d) must be after parameter owner (%d)", indexName, indexOwner)
 }
 
 func TestSortParametersShouldFailOnCircularDependency(t *testing.T) {
@@ -89,9 +91,9 @@ func TestSortParametersShouldFailOnCircularDependency(t *testing.T) {
 		},
 	}
 
-	_, errs := SortParameters("", "dev", configCoordinates, parameters)
+	_, errs := sort.SortParameters("", "dev", configCoordinates, parameters)
 
-	assert.Assert(t, len(errs) > 0, "should fail")
+	assert.True(t, len(errs) > 0, "should fail")
 }
 
 func indexOfParam(t *testing.T, params []parameter.NamedParameter, name string) int {
@@ -193,19 +195,32 @@ func TestGetSortedConfigsForEnvironments(t *testing.T) {
 		environmentName,
 	}
 
-	sortedPerEnvironment, errors := GetSortedConfigsForEnvironments(projects, environments)
+	t.Run("Topology Sort", func(t *testing.T) {
+		t.Setenv(featureflags.UseGraphs().EnvName(), "false")
+		assertSortingWorks(t, projects, environments, environmentName, dashboardConfigCoordinate, autoTagCoordinates)
+	})
 
-	assert.Assert(t, len(errors) == 0, "should not return error")
-	assert.Assert(t, len(sortedPerEnvironment) == 1)
+	t.Run("Graph-based sort", func(t *testing.T) {
+		t.Setenv(featureflags.UseGraphs().EnvName(), "true")
+		assertSortingWorks(t, projects, environments, environmentName, dashboardConfigCoordinate, autoTagCoordinates)
+	})
+
+}
+
+func assertSortingWorks(t *testing.T, projects []project.Project, environments []string, environmentName string, dashboardConfigCoordinate coordinate.Coordinate, autoTagCoordinates coordinate.Coordinate) {
+	sortedPerEnvironment, errors := sort.GetSortedConfigsForEnvironments(projects, environments)
+
+	assert.Len(t, errors, 0, "should not return error")
+	assert.Len(t, sortedPerEnvironment, 1)
 
 	sorted := sortedPerEnvironment[environmentName]
 
-	assert.Assert(t, len(sorted) == 3)
+	assert.Len(t, sorted, 3)
 
 	dashboardIndex := indexOfConfig(t, sorted, dashboardConfigCoordinate)
 	autoTagIndex := indexOfConfig(t, sorted, autoTagCoordinates)
 
-	assert.Assert(t, autoTagIndex < dashboardIndex,
+	assert.Less(t, autoTagIndex, dashboardIndex,
 		"auto-tag (index %d) should be deployed before dashboard (index %d)", autoTagIndex, dashboardIndex)
 }
 
