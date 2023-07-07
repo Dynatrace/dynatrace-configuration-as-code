@@ -24,7 +24,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/topologysort"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -33,7 +32,7 @@ func TestDeploySettingShouldFailCyclicParameterDependencies(t *testing.T) {
 	ownerParameterName := "owner"
 	configCoordinates := coordinate.Coordinate{}
 
-	parameters := []topologysort.ParameterWithName{
+	parameters := []parameter.NamedParameter{
 		{
 			Name: config.NameParameter,
 			Parameter: &parameter.DummyParameter{

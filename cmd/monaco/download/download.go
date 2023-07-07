@@ -25,7 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/topologysort"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
 	"github.com/spf13/afero"
 )
 
@@ -90,7 +90,7 @@ func writeConfigs(downloadedConfigs project.ConfigsPerType, opts downloadOptions
 }
 
 func reportForCircularDependencies(p project.Project) error {
-	_, errs := topologysort.GetSortedConfigsForEnvironments([]project.Project{p}, []string{p.Id})
+	_, errs := sort.GetSortedConfigsForEnvironments([]project.Project{p}, []string{p.Id})
 	if len(errs) != 0 {
 		errutils.PrintWarnings(errs)
 		return fmt.Errorf("there are circular dependencies between %d configurations that need to be resolved manually", len(errs))

@@ -26,7 +26,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/topologysort"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -52,7 +52,7 @@ func TestSettingsInDifferentProjectsGetDifferentExternalIDs(t *testing.T) {
 		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "")
 		environment := loadedManifest.Environments["platform_env"]
 		projects := integrationtest.LoadProjects(t, fs, manifestPath, loadedManifest)
-		sortedConfigs, _ := topologysort.GetSortedConfigsForEnvironments(projects, []string{"platform_env"})
+		sortedConfigs, _ := sort.GetSortedConfigsForEnvironments(projects, []string{"platform_env"})
 
 		extIDProject1, _ := idutils.GenerateExternalID(sortedConfigs["platform_env"][0].Coordinate)
 		extIDProject2, _ := idutils.GenerateExternalID(sortedConfigs["platform_env"][1].Coordinate)

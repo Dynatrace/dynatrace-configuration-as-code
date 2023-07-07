@@ -19,14 +19,14 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/topologysort"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
 )
 
 // TODO: unexport this function
 func ResolveParameterValues(
 	conf *config.Config,
 	entities map[coordinate.Coordinate]parameter.ResolvedEntity,
-	parameters []topologysort.ParameterWithName,
+	parameters []parameter.NamedParameter,
 ) (parameter.Properties, []error) {
 
 	var errors []error
@@ -77,7 +77,7 @@ func ResolveParameterValues(
 func resolveProperties(c *config.Config, entities map[coordinate.Coordinate]parameter.ResolvedEntity) (parameter.Properties, []error) {
 	var errors []error
 
-	parameters, sortErrs := topologysort.SortParameters(c.Group, c.Environment, c.Coordinate, c.Parameters)
+	parameters, sortErrs := sort.SortParameters(c.Group, c.Environment, c.Coordinate, c.Parameters)
 	errors = append(errors, sortErrs...)
 
 	properties, errs := ResolveParameterValues(c, entities, parameters)

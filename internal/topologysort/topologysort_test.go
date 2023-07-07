@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package sort
+package topologysort
 
 import (
 	"reflect"
