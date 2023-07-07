@@ -14,6 +14,7 @@ require (
 	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df
 	golang.org/x/net v0.12.0
 	golang.org/x/oauth2 v0.10.0
+	gonum.org/v1/gonum v0.13.0
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools v2.2.0+incompatible
 )
