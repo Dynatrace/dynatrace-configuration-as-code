@@ -19,7 +19,9 @@
 package version
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
 	"net/http"
@@ -102,7 +104,7 @@ func TestGetDynatraceVersion(t *testing.T) {
 			}))
 			defer server.Close()
 
-			got, err := GetDynatraceVersion(context.TODO(), server.Client(), server.URL)
+			got, err := GetDynatraceVersion(context.TODO(), rest.NewRestClient(server.Client(), trafficlogs.NewFileBased(), rest.CreateRateLimitStrategy()), server.URL)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetDynatraceVersion() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -125,7 +127,7 @@ func TestGetDynatraceVersionWorksWithTrailingSlash(t *testing.T) {
 	}))
 	defer server.Close()
 
-	got, err := GetDynatraceVersion(context.TODO(), &http.Client{}, server.URL+"/")
+	got, err := GetDynatraceVersion(context.TODO(), rest.NewRestClient(&http.Client{}, trafficlogs.NewFileBased(), rest.CreateRateLimitStrategy()), server.URL+"/")
 	assert.Equal(t, version.Version{1, 236, 5}, got)
 	assert.NoError(t, err)
 }

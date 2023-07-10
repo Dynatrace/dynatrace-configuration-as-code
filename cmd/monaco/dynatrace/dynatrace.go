@@ -19,6 +19,7 @@ package dynatrace
 import (
 	"context"
 	"errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -27,7 +28,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 )
 
 // VerifyEnvironmentGeneration takes a manifestEnvironments map and tries to verify that each environment can be reached
@@ -45,8 +46,8 @@ func VerifyEnvironmentGeneration(envs manifest.Environments) bool {
 }
 
 func isClassicEnvironment(env manifest.EnvironmentDefinition) bool {
-	if _, err := version.GetDynatraceVersion(context.TODO(), auth.NewTokenAuthClient(env.Auth.Token.Value), env.URL.Value); err != nil {
-		var respErr clientErrors.RespError
+	if _, err := version.GetDynatraceVersion(context.TODO(), rest.NewRestClient(auth.NewTokenAuthClient(env.Auth.Token.Value), nil, rest.CreateRateLimitStrategy()), env.URL.Value); err != nil {
+		var respErr rest.RespError
 		if errors.As(err, &respErr) {
 			log.WithFields(field.Error(err)).Error("Could not authorize against the environment with name %q (%s) using token authorization: %v", env.Name, env.URL.Value, err)
 		} else {
@@ -64,8 +65,8 @@ func isPlatformEnvironment(env manifest.EnvironmentDefinition) bool {
 		ClientSecret: env.Auth.OAuth.ClientSecret.Value,
 		TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
 	}
-	if _, err := metadata.GetDynatraceClassicURL(context.TODO(), auth.NewOAuthClient(context.TODO(), oauthCredentials), env.URL.Value); err != nil {
-		var respErr clientErrors.RespError
+	if _, err := metadata.GetDynatraceClassicURL(context.TODO(), rest.NewRestClient(auth.NewOAuthClient(context.TODO(), oauthCredentials), nil, rest.CreateRateLimitStrategy()), env.URL.Value); err != nil {
+		var respErr rest.RespError
 		if errors.As(err, &respErr) {
 			log.WithFields(field.Error(err)).Error("Could not authorize against the environment with name %q (%s) using oAuth authorization: %v", env.Name, env.URL.Value, err)
 		} else {
@@ -79,13 +80,17 @@ func isPlatformEnvironment(env manifest.EnvironmentDefinition) bool {
 
 func CreateClientSet(url string, auth manifest.Auth) (*client.ClientSet, error) {
 	if auth.OAuth == nil {
-		return client.CreateClassicClientSet(url, auth.Token.Value, client.ClientOptions{})
+		return client.CreateClassicClientSet(url, auth.Token.Value, client.ClientOptions{
+			SupportArchive: support.SupportArchive,
+		})
 	}
 	return client.CreatePlatformClientSet(url, client.PlatformAuth{
 		OauthClientID:     auth.OAuth.ClientID.Value,
 		OauthClientSecret: auth.OAuth.ClientSecret.Value,
 		Token:             auth.Token.Value,
 		OauthTokenURL:     auth.OAuth.GetTokenEndpointValue(),
-	}, client.ClientOptions{})
+	}, client.ClientOptions{
+		SupportArchive: support.SupportArchive,
+	})
 
 }

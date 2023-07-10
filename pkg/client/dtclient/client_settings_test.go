@@ -18,6 +18,7 @@ package dtclient
 
 import (
 	"context"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -65,7 +66,7 @@ func Test_schemaDetails(t *testing.T) {
 	defer server.Close()
 
 	d := &DynatraceClient{
-		client:                server.Client(),
+		platformClient:        rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()),
 		environmentURL:        server.URL,
 		settingsSchemaAPIPath: settingsSchemaAPIPathClassic,
 	}

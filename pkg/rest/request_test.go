@@ -22,13 +22,12 @@ import (
 	"context"
 	"fmt"
 	"gotest.tools/assert"
-	"net/http"
 	"testing"
 )
 
 func Test_sendWithsendWithRetryReturnsFirstSuccessfulResponse(t *testing.T) {
 	i := 0
-	mockCall := SendRequestWithBody(func(ctx context.Context, client *http.Client, url string, data []byte) (Response, error) {
+	mockCall := SendRequestWithBody(func(ctx context.Context, url string, data []byte) (Response, error) {
 		if i < 3 {
 			i++
 			return Response{}, fmt.Errorf("Something wrong")
@@ -39,7 +38,7 @@ func Test_sendWithsendWithRetryReturnsFirstSuccessfulResponse(t *testing.T) {
 		}, nil
 	})
 
-	gotResp, err := SendWithRetry(context.TODO(), nil, mockCall, "dont matter", "some/path", []byte("body"), RetrySetting{MaxRetries: 5})
+	gotResp, err := SendWithRetry(context.TODO(), mockCall, "dont matter", "some/path", []byte("body"), RetrySetting{MaxRetries: 5})
 	assert.NilError(t, err)
 	assert.Equal(t, gotResp.StatusCode, 200)
 	assert.Equal(t, string(gotResp.Body), "Success")
@@ -48,7 +47,7 @@ func Test_sendWithsendWithRetryReturnsFirstSuccessfulResponse(t *testing.T) {
 func Test_sendWithRetryFailsAfterDefinedTries(t *testing.T) {
 	maxRetries := 2
 	i := 0
-	mockCall := SendRequestWithBody(func(ctx context.Context, client *http.Client, url string, data []byte) (Response, error) {
+	mockCall := SendRequestWithBody(func(ctx context.Context, url string, data []byte) (Response, error) {
 		if i < maxRetries+1 {
 			i++
 			return Response{}, fmt.Errorf("Something wrong")
@@ -59,7 +58,7 @@ func Test_sendWithRetryFailsAfterDefinedTries(t *testing.T) {
 		}, nil
 	})
 
-	_, err := SendWithRetry(context.TODO(), nil, mockCall, "dont matter", "some/path", []byte("body"), RetrySetting{MaxRetries: maxRetries})
+	_, err := SendWithRetry(context.TODO(), mockCall, "dont matter", "some/path", []byte("body"), RetrySetting{MaxRetries: maxRetries})
 	assert.Check(t, err != nil)
 	assert.Equal(t, i, 2)
 }
@@ -67,7 +66,7 @@ func Test_sendWithRetryFailsAfterDefinedTries(t *testing.T) {
 func Test_sendWithRetryReturnContainsOriginalApiError(t *testing.T) {
 	maxRetries := 2
 	i := 0
-	mockCall := SendRequestWithBody(func(ctx context.Context, client *http.Client, url string, data []byte) (Response, error) {
+	mockCall := SendRequestWithBody(func(ctx context.Context, url string, data []byte) (Response, error) {
 		if i < maxRetries+1 {
 			i++
 			return Response{}, fmt.Errorf("Something wrong")
@@ -78,7 +77,7 @@ func Test_sendWithRetryReturnContainsOriginalApiError(t *testing.T) {
 		}, nil
 	})
 
-	_, err := SendWithRetry(context.TODO(), nil, mockCall, "dont matter", "some/path", []byte("body"), RetrySetting{MaxRetries: maxRetries})
+	_, err := SendWithRetry(context.TODO(), mockCall, "dont matter", "some/path", []byte("body"), RetrySetting{MaxRetries: maxRetries})
 	assert.Check(t, err != nil)
 	assert.ErrorContains(t, err, "Something wrong")
 }
@@ -86,7 +85,7 @@ func Test_sendWithRetryReturnContainsOriginalApiError(t *testing.T) {
 func Test_sendWithRetryReturnContainsHttpErrorIfNotSuccess(t *testing.T) {
 	maxRetries := 2
 	i := 0
-	mockCall := SendRequestWithBody(func(ctx context.Context, client *http.Client, url string, data []byte) (Response, error) {
+	mockCall := SendRequestWithBody(func(ctx context.Context, url string, data []byte) (Response, error) {
 		if i < maxRetries+1 {
 			i++
 			return Response{
@@ -100,7 +99,7 @@ func Test_sendWithRetryReturnContainsHttpErrorIfNotSuccess(t *testing.T) {
 		}, nil
 	})
 
-	_, err := SendWithRetry(context.TODO(), nil, mockCall, "dont matter", "some/path", []byte("body"), RetrySetting{MaxRetries: maxRetries})
+	_, err := SendWithRetry(context.TODO(), mockCall, "dont matter", "some/path", []byte("body"), RetrySetting{MaxRetries: maxRetries})
 	assert.Check(t, err != nil)
 	assert.ErrorContains(t, err, "400")
 	assert.ErrorContains(t, err, "{ err: 'failed to create thing'}")

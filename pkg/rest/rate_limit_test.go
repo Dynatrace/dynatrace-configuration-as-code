@@ -119,7 +119,7 @@ func TestSimpleRateLimitStrategySleepsFor42Seconds(t *testing.T) {
 	timelineProvider.EXPECT().Now().Times(1).Return(time.Unix(0, 0)) // time travel to the 70s
 	timelineProvider.EXPECT().Sleep(42 * time.Second).Times(1)
 
-	response, err := rateLimitStrategy.executeRequest(timelineProvider, callback)
+	response, err := rateLimitStrategy.ExecuteRequest(timelineProvider, callback)
 
 	assert.NilError(t, err)
 	assert.Equal(t, response.StatusCode, 200)
@@ -148,7 +148,7 @@ func TestSimpleRateLimitStrategySleepsGeneratedTimeout_IfHeaderIsMissingLimit(t 
 		assert.Assert(t, duration >= throttle.MinWaitDuration)
 	})
 
-	response, err := rateLimitStrategy.executeRequest(timelineProvider, callback)
+	response, err := rateLimitStrategy.ExecuteRequest(timelineProvider, callback)
 
 	assert.NilError(t, err)
 	assert.Equal(t, response.StatusCode, 200)
@@ -178,7 +178,7 @@ func TestSimpleRateLimitStrategy2Iterations(t *testing.T) {
 	timelineProvider.EXPECT().Now().Times(2).Return(time.Unix(0, 0)) // time travel to the 70s
 	timelineProvider.EXPECT().Sleep(42 * time.Second).Times(2)
 
-	response, err := rateLimitStrategy.executeRequest(timelineProvider, callback)
+	response, err := rateLimitStrategy.ExecuteRequest(timelineProvider, callback)
 
 	assert.NilError(t, err)
 	assert.Equal(t, response.StatusCode, 200)
@@ -192,6 +192,6 @@ func TestHandleEmptyResponse(t *testing.T) {
 		return Response{}, errors.New("foo Error")
 	}
 
-	_, err := rateLimitStrategy.executeRequest(timelineProvider, callback)
+	_, err := rateLimitStrategy.ExecuteRequest(timelineProvider, callback)
 	assert.ErrorContains(t, err, "foo Error")
 }

@@ -140,8 +140,13 @@ func NewIntegrationTestServer(t *testing.T, basePath string, mappings map[string
 }
 
 func NewDynatraceClientForTesting(environmentUrl string, client *http.Client, opts ...func(d *DynatraceClient)) (*DynatraceClient, error) {
-	opts = append(opts, WithClient(client))
-	c, err := NewClassicClient(environmentUrl, "", opts...)
+
+	restClient := rest.NewRestClient(client, nil, rest.CreateRateLimitStrategy())
+	c, err := NewPlatformClient(
+		environmentUrl,
+		environmentUrl,
+		restClient, restClient,
+		opts...)
 	if err != nil {
 		return nil, err
 	}

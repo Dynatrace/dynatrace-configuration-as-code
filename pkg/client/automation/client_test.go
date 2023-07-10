@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"net/http"
@@ -42,7 +43,7 @@ func TestAutomationClientGet(t *testing.T) {
 		}))
 		defer server.Close()
 
-		workflowClient := automation.NewClient(server.URL, server.Client())
+		workflowClient := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 		wf, err := workflowClient.Get(context.TODO(), automation.Workflows, "91cc8988-2223-404a-a3f5-5f1a839ecd45")
 		assert.NotNil(t, wf)
 		assert.Equal(t, jsonData, wf.Data)
@@ -60,7 +61,7 @@ func TestAutomationClientGet(t *testing.T) {
 		}))
 		defer server.Close()
 
-		workflowClient := automation.NewClient(server.URL, server.Client())
+		workflowClient := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 		wf, err := workflowClient.Get(context.TODO(), automation.Workflows, "\n")
 		assert.Nil(t, wf)
 		assert.Error(t, err)
@@ -76,7 +77,7 @@ func TestAutomationClientGet(t *testing.T) {
 		}))
 		defer server.Close()
 
-		workflowClient := automation.NewClient(server.URL, server.Client())
+		workflowClient := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 		wf, err := workflowClient.Get(context.TODO(), automation.Workflows, "91cc8988-2223-404a-a3f5-5f1a839ecd45")
 		assert.Nil(t, wf)
 		assert.Error(t, err)
@@ -102,7 +103,7 @@ func TestAutomationClientList(t *testing.T) {
 		}))
 		defer server.Close()
 
-		workflowClient := automation.NewClient(server.URL, server.Client())
+		workflowClient := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 		wf, err := workflowClient.List(context.TODO(), automation.Workflows)
 		assert.NotNil(t, wf)
 		assert.NoError(t, err)
@@ -117,7 +118,7 @@ func TestAutomationClientList(t *testing.T) {
 		}))
 		defer server.Close()
 
-		workflowClient := automation.NewClient(server.URL, server.Client())
+		workflowClient := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 		wf, err := workflowClient.List(context.TODO(), automation.Workflows)
 		assert.Nil(t, wf)
 		assert.Error(t, err)
@@ -134,7 +135,7 @@ func TestAutomationClientList(t *testing.T) {
 		}))
 		defer server.Close()
 
-		workflowClient := automation.NewClient(server.URL, server.Client())
+		workflowClient := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 		wf, err := workflowClient.List(context.TODO(), automation.Workflows)
 		assert.Nil(t, wf)
 		assert.Error(t, err)
@@ -154,7 +155,7 @@ func TestAutomationClientList(t *testing.T) {
 		}))
 		defer server.Close()
 
-		workflowClient := automation.NewClient(server.URL, server.Client())
+		workflowClient := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 		wf, err := workflowClient.List(context.TODO(), automation.Workflows)
 		assert.Equal(t, noCalls, 4, "There should be 4 cals")
 		assert.NotNil(t, wf)
@@ -182,7 +183,7 @@ func TestAutomationClientList(t *testing.T) {
 		}))
 		defer server.Close()
 
-		workflowClient := automation.NewClient(server.URL, server.Client())
+		workflowClient := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 		wf, err := workflowClient.List(context.TODO(), automation.Workflows)
 		assert.Equal(t, noCalls, 5, "There should be 5 cals")
 		assert.NotNil(t, wf)
@@ -198,7 +199,7 @@ func TestAutomationClientUpsert(t *testing.T) {
 			assert.Fail(t, "server was called but shouldn't")
 		}))
 		defer server.Close()
-		workflowClient := automation.NewClient(server.URL, server.Client())
+		workflowClient := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 		wf, err := workflowClient.Upsert(context.TODO(), automation.Workflows, "id", []byte{})
 		assert.Nil(t, wf)
 		assert.Error(t, err)
@@ -210,7 +211,7 @@ func TestAutomationClientUpsert(t *testing.T) {
 		}))
 		defer server.Close()
 
-		workflowClient := automation.NewClient(server.URL, server.Client())
+		workflowClient := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 		wf, err := workflowClient.Upsert(context.TODO(), automation.Workflows, "", jsonData)
 		assert.Nil(t, wf)
 		assert.Error(t, err)
@@ -236,7 +237,7 @@ func TestAutomationClientUpsert(t *testing.T) {
 		}))
 		defer server.Close()
 
-		workflowClient := automation.NewClient(server.URL, server.Client())
+		workflowClient := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 		wf, err := workflowClient.Upsert(context.TODO(), automation.Workflows, "some-monaco-generated-ID", jsonData)
 		assert.NotNil(t, wf)
 		assert.NoError(t, err)
@@ -262,7 +263,7 @@ func TestAutomationClientUpsert(t *testing.T) {
 		}))
 		defer server.Close()
 
-		workflowClient := automation.NewClient(server.URL, server.Client())
+		workflowClient := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 		wf, err := workflowClient.Upsert(context.TODO(), automation.Workflows, "some-monaco-generated-ID", jsonData)
 		assert.Nil(t, wf)
 		assert.Error(t, err)
@@ -283,7 +284,7 @@ func TestAutomationClientUpsert(t *testing.T) {
 		}))
 		defer server.Close()
 
-		workflowClient := automation.NewClient(server.URL, server.Client())
+		workflowClient := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 		wf, err := workflowClient.Upsert(context.TODO(), automation.Workflows, "some-monaco-generated-ID", jsonData)
 		assert.Nil(t, wf)
 		assert.Error(t, err)
@@ -299,7 +300,7 @@ func TestAutomationClientUpsert(t *testing.T) {
 		}))
 		defer server.Close()
 
-		workflowClient := automation.NewClient(server.URL, server.Client())
+		workflowClient := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 		wf, err := workflowClient.Upsert(context.TODO(), automation.Workflows, "some-monaco-generated-ID", jsonData)
 		assert.Nil(t, wf)
 		assert.Error(t, err)
@@ -323,7 +324,7 @@ func TestAutomationClientUpsert(t *testing.T) {
 		}))
 		defer server.Close()
 
-		workflowClient := automation.NewClient(server.URL, server.Client())
+		workflowClient := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 		wf, err := workflowClient.Upsert(context.TODO(), automation.Workflows, "some-monaco-generated-ID", jsonData)
 		assert.NotNil(t, wf)
 		assert.NoError(t, err)
@@ -353,7 +354,7 @@ func TestAutomationClientUpsert(t *testing.T) {
 		}))
 		defer server.Close()
 
-		workflowClient := automation.NewClient(server.URL, server.Client())
+		workflowClient := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 		wf, err := workflowClient.Upsert(context.TODO(), automation.Workflows, "some-monaco-generated-ID", jsonData)
 		assert.NotNil(t, wf)
 		assert.NoError(t, err)
@@ -373,7 +374,7 @@ func TestAutomationClientDelete(t *testing.T) {
 		}))
 		defer server.Close()
 
-		c := automation.NewClient(server.URL, server.Client())
+		c := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 		err := c.Delete(automation.Workflows, "some-monaco-generated-ID")
 		assert.NoError(t, err)
 	})
@@ -396,7 +397,7 @@ func TestAutomationClientDelete(t *testing.T) {
 		}))
 		defer server.Close()
 
-		c := automation.NewClient(server.URL, server.Client())
+		c := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 		err := c.Delete(automation.Workflows, "some-monaco-generated-ID")
 		assert.NoError(t, err)
 	})
@@ -407,7 +408,7 @@ func TestAutomationClientDelete(t *testing.T) {
 		}))
 		defer server.Close()
 
-		c := automation.NewClient(server.URL, server.Client())
+		c := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 		err := c.Delete(automation.Workflows, "")
 		assert.ErrorContains(t, err, "id must be non empty")
 	})
@@ -423,7 +424,7 @@ func TestAutomationClientDelete(t *testing.T) {
 		}))
 		defer server.Close()
 
-		c := automation.NewClient(server.URL, server.Client())
+		c := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 		err := c.Delete(automation.Workflows, "some-monaco-generated-ID")
 		assert.NoError(t, err)
 	})
@@ -439,7 +440,7 @@ func TestAutomationClientDelete(t *testing.T) {
 		}))
 		defer server.Close()
 
-		c := automation.NewClient(server.URL, server.Client())
+		c := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 		err := c.Delete(automation.Workflows, "some-monaco-generated-ID")
 		assert.ErrorContains(t, err, "unable to delete")
 	})

@@ -27,7 +27,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
-	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"net/http"
@@ -74,7 +74,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 
 	t.Run("TestDeleteSettings_LegacyExternalID - List settings with external ID fails", func(t *testing.T) {
 		c := dtclient.NewMockClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, clientErrors.RespError{Err: fmt.Errorf("WHOPS"), StatusCode: 0})
+		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, rest.RespError{Err: fmt.Errorf("WHOPS"), StatusCode: 0})
 		entriesToDelete := map[string][]DeletePointer{
 			"builtin:alerting.profile": {
 				{
@@ -163,7 +163,7 @@ func TestDeleteSettings(t *testing.T) {
 
 	t.Run("TestDeleteSettings - List settings with external ID fails", func(t *testing.T) {
 		c := dtclient.NewMockClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, clientErrors.RespError{Err: fmt.Errorf("WHOPS"), StatusCode: 0})
+		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, rest.RespError{Err: fmt.Errorf("WHOPS"), StatusCode: 0})
 		entriesToDelete := map[string][]DeletePointer{
 			"builtin:alerting.profile": {
 				{
@@ -267,7 +267,7 @@ func TestDeleteAutomations(t *testing.T) {
 		}))
 		defer server.Close()
 
-		c := automation.NewClient(server.URL, server.Client())
+		c := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 
 		t.Setenv(featureflags.AutomationResources().EnvName(), "true")
 
@@ -311,7 +311,7 @@ func TestDeleteAutomations(t *testing.T) {
 		}))
 		defer server.Close()
 
-		c := automation.NewClient(server.URL, server.Client())
+		c := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 
 		t.Setenv(featureflags.AutomationResources().EnvName(), "true")
 
@@ -355,7 +355,7 @@ func TestDeleteAutomations(t *testing.T) {
 		}))
 		defer server.Close()
 
-		c := automation.NewClient(server.URL, server.Client())
+		c := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 
 		t.Setenv(featureflags.AutomationResources().EnvName(), "true")
 
@@ -382,7 +382,7 @@ func TestDeleteAutomations(t *testing.T) {
 		}))
 		defer server.Close()
 
-		c := automation.NewClient(server.URL, server.Client())
+		c := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 
 		t.Setenv(featureflags.AutomationResources().EnvName(), "true")
 

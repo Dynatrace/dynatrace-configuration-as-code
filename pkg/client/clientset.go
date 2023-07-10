@@ -21,9 +21,12 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	clientAuth "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 	"runtime"
 )
@@ -56,6 +59,7 @@ func (s ClientSet) Entities() *dtclient.DynatraceClient {
 
 type ClientOptions struct {
 	CustomUserAgent string
+	SupportArchive  bool
 }
 
 func (o ClientOptions) getUserAgentString() string {
@@ -68,9 +72,16 @@ func (o ClientOptions) getUserAgentString() string {
 func CreateClassicClientSet(url string, token string, opts ClientOptions) (*ClientSet, error) {
 	concurrentRequestLimit := environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey)
 
+	tokenClient := clientAuth.NewTokenAuthClient(token)
+	var trafficLogger *trafficlogs.FileBasedLogger
+	if opts.SupportArchive {
+		trafficLogger = trafficlogs.NewFileBased()
+	}
+
+	restClient := rest.NewRestClient(tokenClient, trafficLogger, rest.CreateRateLimitStrategy())
 	dtClient, err := dtclient.NewClassicClient(
 		url,
-		token,
+		restClient,
 		dtclient.WithAutoServerVersion(),
 		dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentRequestLimit)),
 		dtclient.WithCustomUserAgentString(opts.getUserAgentString()),
@@ -98,17 +109,33 @@ func CreatePlatformClientSet(url string, auth PlatformAuth, opts ClientOptions) 
 		ClientSecret: auth.OauthClientSecret,
 		TokenURL:     auth.OauthTokenURL,
 	}
+
+	tokenClient := clientAuth.NewTokenAuthClient(auth.Token)
+	oauthClient := clientAuth.NewOAuthClient(context.TODO(), oauthCredentials)
+	classicURL, err := metadata.GetDynatraceClassicURL(context.TODO(), rest.NewRestClient(oauthClient, nil, rest.CreateRateLimitStrategy()), url) //this will send the default user-agent
+	if err != nil {
+		return nil, err
+	}
+
+	var trafficLogger *trafficlogs.FileBasedLogger
+	if opts.SupportArchive {
+		trafficLogger = trafficlogs.NewFileBased()
+	}
+	client := rest.NewRestClient(oauthClient, trafficLogger, rest.CreateRateLimitStrategy())
+	clientClassic := rest.NewRestClient(tokenClient, trafficLogger, rest.CreateRateLimitStrategy())
+
 	dtClient, err := dtclient.NewPlatformClient(
 		url,
-		auth.Token,
-		oauthCredentials,
+		classicURL,
+		client,
+		clientClassic,
 		dtclient.WithAutoServerVersion(),
 		dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentRequestLimit)),
 		dtclient.WithCustomUserAgentString(opts.getUserAgentString()),
 	)
 	autClient := automation.NewClient(
 		url,
-		clientAuth.NewOAuthClient(context.TODO(), oauthCredentials),
+		rest.NewRestClient(clientAuth.NewOAuthClient(context.TODO(), oauthCredentials), trafficLogger, rest.CreateRateLimitStrategy()),
 		automation.WithClientRequestLimiter(concurrency.NewLimiter(concurrentRequestLimit)),
 		automation.WithCustomUserAgentString(opts.getUserAgentString()),
 	)

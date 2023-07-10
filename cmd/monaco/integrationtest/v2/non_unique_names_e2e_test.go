@@ -32,7 +32,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
-	"net/http"
 	"os"
 	"strings"
 	"testing"
@@ -66,8 +65,8 @@ func TestNonUniqueNameUpserts(t *testing.T) {
 		)
 	})
 
-	httpClient := auth.NewTokenAuthClient(token)
-	c, err := dtclient.NewClassicClient(url, token)
+	httpClient := rest.NewRestClient(auth.NewTokenAuthClient(token), nil, rest.CreateRateLimitStrategy())
+	c, err := dtclient.NewClassicClient(url, httpClient)
 	assert.NilError(t, err)
 
 	a := api.NewAPIs()["alerting-profile"]
@@ -130,9 +129,9 @@ func getRandomUUID(t *testing.T) string {
 	return id.String()
 }
 
-func createObjectViaDirectPut(t *testing.T, c *http.Client, url string, a api.API, id string, payload []byte) {
+func createObjectViaDirectPut(t *testing.T, c *rest.Client, url string, a api.API, id string, payload []byte) {
 	url = strings.TrimSuffix(url, "/")
-	res, err := rest.Put(context.TODO(), c, a.CreateURL(url)+"/"+id, payload)
+	res, err := c.Put(context.TODO(), a.CreateURL(url)+"/"+id, payload)
 	assert.NilError(t, err)
 	assert.Assert(t, res.StatusCode >= 200 && res.StatusCode < 300, "Expected status code to be within [200, 299], but was %d. Response-body: %v", res.StatusCode, string(res.Body))
 

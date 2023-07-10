@@ -94,7 +94,7 @@ func (d *DynatraceClient) listSchemas(ctx context.Context) (SchemaList, error) {
 	}
 
 	// getting all schemas does not have pagination
-	resp, err := rest.Get(ctx, d.client, u.String())
+	resp, err := d.platformClient.Get(ctx, u.String())
 	if err != nil {
 		return nil, fmt.Errorf("failed to GET schemas: %w", err)
 	}
@@ -130,7 +130,7 @@ func (d *DynatraceClient) fetchSchemasConstraints(ctx context.Context, schemaID 
 		return nil, fmt.Errorf("failed to parse url: %w", err)
 	}
 
-	r, err := rest.Get(ctx, d.client, u)
+	r, err := d.platformClient.Get(ctx, u)
 	if err != nil {
 		return nil, fmt.Errorf("failed to GET schema details for %q: %w", schemaID, err)
 	}
@@ -218,7 +218,7 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 
 	requestUrl := d.environmentURL + d.settingsObjectAPIPath
 
-	resp, err := rest.SendWithRetryWithInitialTry(ctx, d.client, rest.Post, obj.Coordinate.ConfigId, requestUrl, payload, d.retrySettings.Normal)
+	resp, err := rest.SendWithRetryWithInitialTry(ctx, d.platformClient.Post, obj.Coordinate.ConfigId, requestUrl, payload, d.retrySettings.Normal)
 	if err != nil {
 		d.settingsCache.Delete(obj.SchemaId)
 		return DynatraceEntity{}, fmt.Errorf("failed to create or update Settings object with externalId %s: %w", externalID, err)

@@ -25,6 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"gotest.tools/assert"
 	"net/http"
 	"net/http/httptest"
@@ -199,7 +200,7 @@ func TestUpsertSettings(t *testing.T) {
 
 			c := DynatraceClient{
 				environmentURL:        server.URL,
-				client:                server.Client(),
+				platformClient:        rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()),
 				serverVersion:         test.serverVersion,
 				retrySettings:         testRetrySettings,
 				settingsObjectAPIPath: settingsObjectAPIPathClassic,
