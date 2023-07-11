@@ -35,8 +35,10 @@ func TestIntegrationAutomation(t *testing.T) {
 	manifest := configFolder + "manifest.yaml"
 	specificEnvironment := ""
 	t.Setenv("MONACO_FEAT_AUTOMATION_RESOURCES", "1")
-	envs := map[string]string{
-		"WORKFLOW_ACTOR": os.Getenv("WORKFLOW_ACTOR"),
+
+	envs := map[string]string{}
+	if isHardeningEnvironment() {
+		envs["WORKFLOW_ACTOR"] = os.Getenv("WORKFLOW_ACTOR")
 	}
 
 	RunIntegrationWithCleanupGivenEnvs(t, configFolder, manifest, specificEnvironment, "Automation", envs, func(fs afero.Fs, _ TestContext) {
