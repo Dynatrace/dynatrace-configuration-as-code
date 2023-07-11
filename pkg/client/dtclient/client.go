@@ -126,6 +126,8 @@ type SettingsClient interface {
 	// ListSchemas returns all schemas that the Dynatrace environment reports
 	ListSchemas() (SchemaList, error)
 
+	Schema(schemaID string) (Schema, error)
+
 	// ListSettings returns all settings objects for a given schema.
 	ListSettings(context.Context, string, ListSettingsOptions) ([]DownloadSettingsObject, error)
 
@@ -600,51 +602,6 @@ func (d *DynatraceClient) UpsertConfigByNonUniqueNameAndId(ctx context.Context, 
 
 func (d *DynatraceClient) upsertConfigByNonUniqueNameAndId(ctx context.Context, api api.API, entityId string, name string, payload []byte) (entity DynatraceEntity, err error) {
 	return d.upsertDynatraceEntityByNonUniqueNameAndId(ctx, entityId, name, api, payload)
-}
-
-// SchemaListResponse is the response type returned by the ListSchemas operation
-type SchemaListResponse struct {
-	Items      SchemaList `json:"items"`
-	TotalCount int        `json:"totalCount"`
-}
-type SchemaList []struct {
-	SchemaId string `json:"schemaId"`
-}
-
-func (d *DynatraceClient) ListSchemas() (schemas SchemaList, err error) {
-	d.limiter.ExecuteBlocking(func() {
-		schemas, err = d.listSchemas(context.TODO())
-	})
-	return
-}
-
-func (d *DynatraceClient) listSchemas(ctx context.Context) (SchemaList, error) {
-	u, err := url.Parse(d.environmentURL + d.settingsSchemaAPIPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse url: %w", err)
-	}
-
-	// getting all schemas does not have pagination
-	resp, err := rest.Get(ctx, d.client, u.String())
-	if err != nil {
-		return nil, fmt.Errorf("failed to GET schemas: %w", err)
-	}
-
-	if !resp.IsSuccess() {
-		return nil, rest.NewRespErr(fmt.Sprintf("request failed with HTTP (%d).\n\tResponse content: %s", resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodGet, u.String())
-	}
-
-	var result SchemaListResponse
-	err = json.Unmarshal(resp.Body, &result)
-	if err != nil {
-		return nil, rest.NewRespErr("failed to unmarshal response", resp).WithRequestInfo(http.MethodGet, u.String()).WithErr(err)
-	}
-
-	if result.TotalCount != len(result.Items) {
-		log.Warn("Total count of settings 2.0 schemas (=%d) does not match with count of actually downloaded settings 2.0 schemas (=%d)", result.TotalCount, len(result.Items))
-	}
-
-	return result.Items, nil
 }
 
 func (d *DynatraceClient) GetSettingById(objectId string) (res *DownloadSettingsObject, err error) {
