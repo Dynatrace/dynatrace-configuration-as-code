@@ -19,7 +19,6 @@ configs:
     name: e2e test workflow
     template: c5a71c83-9dbd-458d-b42d-d48b098c60ed.json
     skip: false
-    originObjectId: c5a71c83-9dbd-458d-b42d-d48b098c60ed
     parameters:
       actor:
         type: environment
@@ -29,4 +28,3 @@ configs:
   type:
     automation:
       resource: workflow
-
