@@ -33,7 +33,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/useragent"
 	dtVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/version"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"golang.org/x/oauth2"
 	"net/http"
@@ -401,95 +400,6 @@ func validateURL(dtURL string) error {
 		log.Warn("You are using an insecure connection (%s). Consider switching to HTTPS.", parsedUrl.Scheme)
 	}
 	return nil
-}
-
-func (d *DynatraceClient) UpsertSettings(ctx context.Context, obj SettingsObject) (result DynatraceEntity, err error) {
-	d.limiter.ExecuteBlocking(func() {
-		result, err = d.upsertSettings(ctx, obj)
-	})
-	return
-}
-
-func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject) (DynatraceEntity, error) {
-
-	// special handling for updating settings 2.0 objects on tenants with version pre 1.262.0
-	// Tenants with versions < 1.262 are not able to handle updates of existing
-	// settings 2.0 objects that are non-deletable.
-	// So we check if the object with originObjectID already exists, if yes and the tenant is older than 1.262
-	// then we cannot perform the upsert operation
-	if !d.serverVersion.Invalid() && d.serverVersion.SmallerThan(version.Version{Major: 1, Minor: 262, Patch: 0}) {
-		fetchedSettingObj, err := d.GetSettingById(obj.OriginObjectId)
-		if err != nil && !errors.Is(err, ErrSettingNotFound) {
-			return DynatraceEntity{}, fmt.Errorf("unable to fetch settings object with object id %q: %w", obj.OriginObjectId, err)
-		}
-		if fetchedSettingObj != nil {
-			log.WithCtxFields(ctx).Warn("Unable to update Settings 2.0 object of schema %q and object id %q on Dynatrace environment with a version < 1.262.0", obj.SchemaId, obj.OriginObjectId)
-			return DynatraceEntity{
-				Id:   fetchedSettingObj.ObjectId,
-				Name: fetchedSettingObj.ObjectId,
-			}, nil
-		}
-	}
-
-	// generate legacy external ID without project name.
-	// and check if settings object with that external ID exists
-	// This exists for avoiding breaking changes when we enhanced external id generation with full coordinates (incl. project name)
-	// This can be removed in a later release of monaco
-	legacyExternalID, err := d.generateExternalID(coordinate.Coordinate{Type: obj.Coordinate.Type, ConfigId: obj.Coordinate.ConfigId})
-	if err != nil {
-		return DynatraceEntity{}, fmt.Errorf("unable to generate external id: %w", err)
-	}
-
-	settingsWithExternalID, err := d.listSettings(ctx, obj.SchemaId, ListSettingsOptions{
-		Filter: func(object DownloadSettingsObject) bool { return object.ExternalId == legacyExternalID },
-	})
-	if err != nil {
-		return DynatraceEntity{}, fmt.Errorf("unable to find Settings 2.0 object of schema %q with externalId %q: %w", obj.SchemaId, legacyExternalID, err)
-	}
-
-	if len(settingsWithExternalID) > 0 {
-		obj.OriginObjectId = settingsWithExternalID[0].ObjectId
-	}
-
-	externalID, err := d.generateExternalID(obj.Coordinate)
-	if err != nil {
-		return DynatraceEntity{}, fmt.Errorf("unable to generate external id: %w", err)
-	}
-
-	// special handling of this Settings object.
-	// It is delete-protected BUT has a key property which is internally
-	// used to find the object to be updated
-	if obj.SchemaId == "builtin:oneagent.features" {
-		externalID = ""
-		obj.OriginObjectId = ""
-	}
-
-	payload, err := buildPostRequestPayload(ctx, obj, externalID)
-	if err != nil {
-		return DynatraceEntity{}, fmt.Errorf("failed to build settings object: %w", err)
-	}
-
-	requestUrl := d.environmentURL + d.settingsObjectAPIPath
-
-	resp, err := rest.SendWithRetryWithInitialTry(ctx, d.client, rest.Post, obj.Coordinate.ConfigId, requestUrl, payload, d.retrySettings.Normal)
-	if err != nil {
-		d.settingsCache.Delete(obj.SchemaId)
-		return DynatraceEntity{}, fmt.Errorf("failed to create or update Settings object with externalId %s: %w", externalID, err)
-	}
-
-	if !resp.IsSuccess() {
-		d.settingsCache.Delete(obj.SchemaId)
-		return DynatraceEntity{}, rest.NewRespErr(fmt.Sprintf("failed to create or update Settings object with externalId %s (HTTP %d)!\n\tResponse was: %s", externalID, resp.StatusCode, string(resp.Body)), resp).WithRequestInfo(http.MethodPost, requestUrl)
-	}
-
-	entity, err := parsePostResponse(resp)
-	if err != nil {
-		return DynatraceEntity{}, rest.NewRespErr("failed to parse response", resp).WithRequestInfo(http.MethodPost, requestUrl).WithErr(err)
-	}
-
-	log.WithCtxFields(ctx).Debug("\tCreated/Updated object %s (%s) with externalId %s", obj.Coordinate.ConfigId, obj.SchemaId, externalID)
-	return entity, nil
-
 }
 
 func (d *DynatraceClient) ListConfigs(ctx context.Context, api api.API) (values []Value, err error) {
