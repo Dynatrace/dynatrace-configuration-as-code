@@ -17,6 +17,7 @@ package runner
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/convert"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/delete"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dependencygraph"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/deploy"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/download"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/purge"
@@ -74,6 +75,10 @@ Examples:
 	rootCmd.AddCommand(deploy.GetDeployCommand(fs))
 	rootCmd.AddCommand(delete.GetDeleteCommand(fs))
 	rootCmd.AddCommand(version.GetVersionCommand())
+
+	if featureflags.UseGraphs().Enabled() {
+		rootCmd.AddCommand(dependencygraph.Command(fs))
+	}
 
 	if featureflags.DangerousCommands().Enabled() {
 		log.Warn("MONACO_ENABLE_DANGEROUS_COMMANDS environment var detected!")
