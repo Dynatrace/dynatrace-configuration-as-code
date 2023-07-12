@@ -57,12 +57,6 @@ type (
 		TotalCount int        `json:"totalCount"`
 	}
 
-	// Schema represents the definition of a specific settings schema
-	Schema struct {
-		ID               string
-		UniqueProperties [][]string
-	}
-
 	postResponse struct {
 		ObjectId string `json:"objectId"`
 	}
@@ -76,7 +70,7 @@ type (
 		ObjectId      string `json:"objectId,omitempty"`
 	}
 
-	// SchemaDetail is the response type returned by the schemaDetails operation
+	// schemaDetailsResponse is the response type returned by the fetchSchemasConstraints operation
 	schemaDetailsResponse struct {
 		SchemaId          string `json:"schemaId"`
 		SchemaConstraints []struct {
@@ -122,38 +116,38 @@ func (d *DynatraceClient) listSchemas(ctx context.Context) (SchemaList, error) {
 	return result.Items, nil
 }
 
-func (d *DynatraceClient) Schema(schemaID string) (schema Schema, err error) {
+func (d *DynatraceClient) FetchSchemasConstraints(schemaID string) (constraints [][]string, err error) {
 	d.limiter.ExecuteBlocking(func() {
-		schema, err = d.schemaDetails(context.TODO(), schemaID)
+		constraints, err = d.fetchSchemasConstraints(context.TODO(), schemaID)
 	})
 	return
 }
 
-func (d *DynatraceClient) schemaDetails(ctx context.Context, schemaID string) (Schema, error) {
-	s := Schema{ID: schemaID}
+func (d *DynatraceClient) fetchSchemasConstraints(ctx context.Context, schemaID string) ([][]string, error) {
+	var ret [][]string
 	u, err := url.JoinPath(d.environmentURL, d.settingsSchemaAPIPath, schemaID)
 	if err != nil {
-		return s, fmt.Errorf("failed to parse url: %w", err)
+		return nil, fmt.Errorf("failed to parse url: %w", err)
 	}
 
 	r, err := rest.Get(ctx, d.client, u)
 	if err != nil {
-		return s, fmt.Errorf("failed to GET schema details for %q: %w", schemaID, err)
+		return nil, fmt.Errorf("failed to GET schema details for %q: %w", schemaID, err)
 	}
 
 	var sd schemaDetailsResponse
 	err = json.Unmarshal(r.Body, &sd)
 	if err != nil {
-		return s, rest.NewRespErr("failed to unmarshal response", r).WithRequestInfo(http.MethodGet, u).WithErr(err)
+		return nil, rest.NewRespErr("failed to unmarshal response", r).WithRequestInfo(http.MethodGet, u).WithErr(err)
 	}
 
 	for _, sc := range sd.SchemaConstraints {
 		if sc.Type == "UNIQUE" {
-			s.UniqueProperties = append(s.UniqueProperties, sc.UniqueProperties)
+			ret = append(ret, sc.UniqueProperties)
 		}
 	}
 
-	return s, nil
+	return ret, nil
 }
 
 func (d *DynatraceClient) UpsertSettings(ctx context.Context, obj SettingsObject) (result DynatraceEntity, err error) {
@@ -171,7 +165,7 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 	// So we check if the object with originObjectID already exists, if yes and the tenant is older than 1.262
 	// then we cannot perform the upsert operation
 	if !d.serverVersion.Invalid() && d.serverVersion.SmallerThan(version.Version{Major: 1, Minor: 262, Patch: 0}) {
-		fetchedSettingObj, err := d.GetSettingById(obj.OriginObjectId)
+		fetchedSettingObj, err := d.getSettingById(ctx, obj.OriginObjectId)
 		if err != nil && !errors.Is(err, ErrSettingNotFound) {
 			return DynatraceEntity{}, fmt.Errorf("unable to fetch settings object with object id %q: %w", obj.OriginObjectId, err)
 		}

@@ -71,9 +71,9 @@ func Test_schemaDetails(t *testing.T) {
 	}
 
 	t.Run("unmarshall data", func(t *testing.T) {
-		expected := Schema{ID: "builtin:span-attribute", UniqueProperties: [][]string{{"key0", "key1"}, {"key2", "key3"}}}
+		expected := [][]string{{"key0", "key1"}, {"key2", "key3"}}
 
-		actual, err := d.schemaDetails(context.TODO(), "builtin:span-attribute")
+		actual, err := d.fetchSchemasConstraints(context.TODO(), "builtin:span-attribute")
 
 		assert.NoError(t, err)
 		assert.Equal(t, expected, actual)
