@@ -169,6 +169,6 @@ func ConsistentUUIDGeneration() FeatureFlag {
 func UseGraphs() FeatureFlag {
 	return FeatureFlag{
 		envName:        "MONACO_FEAT_GRAPHS",
-		defaultEnabled: false,
+		defaultEnabled: true,
 	}
 }
