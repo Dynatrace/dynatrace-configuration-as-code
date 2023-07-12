@@ -10,7 +10,6 @@ configs:
         type: reference
     template: 02c70740-74f9-422f-b325-073f0f656d84.json
     skip: false
-    originObjectId: 02c70740-74f9-422f-b325-073f0f656d84
   type:
     automation:
       resource: scheduling-rule
@@ -25,7 +24,6 @@ configs:
         type: reference
     template: c8895f31-efcd-4f14-8ff8-768d850aafe1.json
     skip: false
-    originObjectId: c8895f31-efcd-4f14-8ff8-768d850aafe1
   type:
     automation:
       resource: scheduling-rule
@@ -40,7 +38,6 @@ configs:
         type: reference
     template: 0c18677b-f24c-4fa2-95a3-1ffee75d763b.json
     skip: false
-    originObjectId: 0c18677b-f24c-4fa2-95a3-1ffee75d763b
   type:
     automation:
       resource: scheduling-rule
@@ -55,7 +52,6 @@ configs:
         type: reference
     template: 02cac1f9-7a7e-4939-b8e1-77e8f3a820ef.json
     skip: false
-    originObjectId: 02cac1f9-7a7e-4939-b8e1-77e8f3a820ef
   type:
     automation:
       resource: scheduling-rule
@@ -70,7 +66,6 @@ configs:
         type: reference
     template: d8cdb1df-700a-4eac-be00-d02dab709be9.json
     skip: false
-    originObjectId: d8cdb1df-700a-4eac-be00-d02dab709be9
   type:
     automation:
       resource: scheduling-rule
