@@ -52,7 +52,7 @@ func TestSortParameters(t *testing.T) {
 		timeoutParameterName: &parameter.DummyParameter{},
 	}
 
-	sortedParams, errs := sort.SortParameters("", "dev", configCoordinates, parameters)
+	sortedParams, errs := sort.Parameters("", "dev", configCoordinates, parameters)
 
 	assert.Len(t, errs, 0, "expected zero errors when sorting")
 	assert.Equal(t, len(sortedParams), len(parameters), "the same number of parameters should be sorted")
@@ -91,7 +91,7 @@ func TestSortParametersShouldFailOnCircularDependency(t *testing.T) {
 		},
 	}
 
-	_, errs := sort.SortParameters("", "dev", configCoordinates, parameters)
+	_, errs := sort.Parameters("", "dev", configCoordinates, parameters)
 
 	assert.True(t, len(errs) > 0, "should fail")
 }
@@ -208,7 +208,7 @@ func TestGetSortedConfigsForEnvironments(t *testing.T) {
 }
 
 func assertSortingWorks(t *testing.T, projects []project.Project, environments []string, environmentName string, dashboardConfigCoordinate coordinate.Coordinate, autoTagCoordinates coordinate.Coordinate) {
-	sortedPerEnvironment, errors := sort.GetSortedConfigsForEnvironments(projects, environments)
+	sortedPerEnvironment, errors := sort.ConfigsPerEnvironment(projects, environments)
 
 	assert.Len(t, errors, 0, "should not return error")
 	assert.Len(t, sortedPerEnvironment, 1)

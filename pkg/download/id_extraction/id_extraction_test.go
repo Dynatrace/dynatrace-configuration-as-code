@@ -334,7 +334,7 @@ func TestExtractedTemplatesRenderCorrectly(t *testing.T) {
 
 	for _, cfgs := range got {
 		for _, c := range cfgs {
-			sortedParams, errs := sort.SortParameters("", "", c.Coordinate, c.Parameters)
+			sortedParams, errs := sort.Parameters("", "", c.Coordinate, c.Parameters)
 			assert.Empty(t, errs)
 			props, errs := deploy.ResolveParameterValues(&c, nil, sortedParams)
 			assert.Empty(t, errs)

@@ -181,7 +181,7 @@ func filterProjects(projects []project.Project, specificProjects []string, speci
 }
 
 func sortConfigs(projects []project.Project, environmentNames []string) (project.ConfigsPerEnvironment, error) {
-	sortedConfigs, errs := sort.GetSortedConfigsForEnvironments(projects, environmentNames)
+	sortedConfigs, errs := sort.ConfigsPerEnvironment(projects, environmentNames)
 	if errs != nil {
 		errutils.PrintErrors(errs)
 		return nil, errors.New("error during sort")
