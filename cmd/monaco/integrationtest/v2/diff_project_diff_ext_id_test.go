@@ -52,7 +52,7 @@ func TestSettingsInDifferentProjectsGetDifferentExternalIDs(t *testing.T) {
 		loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "")
 		environment := loadedManifest.Environments["platform_env"]
 		projects := integrationtest.LoadProjects(t, fs, manifestPath, loadedManifest)
-		sortedConfigs, _ := sort.GetSortedConfigsForEnvironments(projects, []string{"platform_env"})
+		sortedConfigs, _ := sort.ConfigsPerEnvironment(projects, []string{"platform_env"})
 
 		extIDProject1, _ := idutils.GenerateExternalID(sortedConfigs["platform_env"][0].Coordinate)
 		extIDProject2, _ := idutils.GenerateExternalID(sortedConfigs["platform_env"][1].Coordinate)
