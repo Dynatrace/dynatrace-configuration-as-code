@@ -87,7 +87,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 	var manifestPath = "test-resources/integration-settings-old-new-external-id/manifest.yaml"
 	loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "")
 	projects := integrationtest.LoadProjects(t, fs, manifestPath, loadedManifest)
-	sortedConfigs, _ := sort.GetSortedConfigsForEnvironments(projects, []string{"platform_env"})
+	sortedConfigs, _ := sort.ConfigsPerEnvironment(projects, []string{"platform_env"})
 	environment := loadedManifest.Environments["platform_env"]
 	configToDeploy := sortedConfigs["platform_env"][0]
 

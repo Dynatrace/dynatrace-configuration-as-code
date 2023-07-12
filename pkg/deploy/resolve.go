@@ -77,7 +77,7 @@ func ResolveParameterValues(
 func resolveProperties(c *config.Config, entities map[coordinate.Coordinate]parameter.ResolvedEntity) (parameter.Properties, []error) {
 	var errors []error
 
-	parameters, sortErrs := sort.SortParameters(c.Group, c.Environment, c.Coordinate, c.Parameters)
+	parameters, sortErrs := sort.Parameters(c.Group, c.Environment, c.Coordinate, c.Parameters)
 	errors = append(errors, sortErrs...)
 
 	properties, errs := ResolveParameterValues(c, entities, parameters)
