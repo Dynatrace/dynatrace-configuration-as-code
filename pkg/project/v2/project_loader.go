@@ -75,6 +75,8 @@ func LoadProjects(fs afero.Fs, context ProjectLoaderContext) ([]Project, []error
 		workingDirFs = afero.NewBasePathFs(fs, context.WorkingDir)
 	}
 
+	log.Info("Loading %d projects...", len(context.Manifest.Projects))
+
 	var errors []error
 
 	for _, projectDefinition := range context.Manifest.Projects {

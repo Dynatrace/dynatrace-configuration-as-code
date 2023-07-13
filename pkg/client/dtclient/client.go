@@ -557,11 +557,13 @@ func (d *DynatraceClient) ListSettings(ctx context.Context, schemaId string, opt
 }
 
 func (d *DynatraceClient) listSettings(ctx context.Context, schemaId string, opts ListSettingsOptions) ([]DownloadSettingsObject, error) {
-	log.Debug("Downloading all settings for schema %s", schemaId)
 
 	if settings, cached := d.settingsCache.Get(schemaId); cached {
+		log.Debug("Using cached settings for schema %s", schemaId)
 		return filter.FilterSlice(settings, opts.Filter), nil
 	}
+
+	log.Debug("Downloading all settings for schema %s", schemaId)
 
 	listSettingsFields := defaultListSettingsFields
 	if opts.DiscardValue {
