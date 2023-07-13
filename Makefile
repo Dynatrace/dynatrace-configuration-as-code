@@ -127,6 +127,6 @@ docker-container: $(BINARY_NAME)-linux-amd64
 	@echo Building docker container...
 	DOCKER_BUILDKIT=1 docker build --build-arg NAME=$(BINARY_NAME) --build-arg SOURCE=$(OUTPUT) --tag $(CONTAINER_NAME):$(VERSION) .
 
-sign-verify-image:
+sign-verify-image: setup
 	COSIGN_PASSWORD=$(COSIGN_PASSWORD) cosign sign --key env://cosign_key $(FULL_IMAGE_NAME) -y
 	cosign verify --key env://cosign_pub $(FULL_IMAGE_NAME)
