@@ -123,7 +123,13 @@ func executeRequest(client *http.Client, request *http.Request) (Response, error
 			return Response{}, fmt.Errorf("HTTP request failed: %w", err)
 		}
 		defer func() {
-			err = resp.Body.Close()
+			closeErr := resp.Body.Close()
+			if err == nil {
+				err = fmt.Errorf("failed to close HTTP response body: %w", closeErr)
+			} else {
+				// don't overwrite an actual error for a body close issue
+				log.Warn("Failed to close HTTP response body after previous error. Closing error: %w", err)
+			}
 		}()
 		respBody, err := io.ReadAll(resp.Body)
 		if err != nil {
