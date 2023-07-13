@@ -21,16 +21,17 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/slices"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy"
-	"path/filepath"
-	"strings"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
+
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	"github.com/spf13/afero"
+	"path/filepath"
+	"strings"
 )
 
 func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string, specificEnvironments []string, specificProjects []string, continueOnErr bool, dryRun bool) error {
@@ -58,25 +59,24 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 		return fmt.Errorf("error while loading relevant projects to deploy: %w", err)
 	}
 
-	sortedConfigs, err := sortConfigs(filteredProjects, loadedManifest.Environments.Names())
-	if err != nil {
-		return fmt.Errorf("error during configuration sort: %w", err)
-	}
-
-	if err := checkEnvironments(sortedConfigs, loadedManifest.Environments); err != nil {
-		return err
-	}
+	graphs := graph.New(filteredProjects, loadedManifest.Environments.Names())
 
 	logProjectsInfo(filteredProjects)
 	logEnvironmentsInfo(loadedManifest.Environments)
 
 	var deployErrs []error
-	for envName, cfgs := range sortedConfigs {
-		env := loadedManifest.Environments[envName]
-		errs := deployOnEnvironment(&env, cfgs, continueOnErr, dryRun)
-		deployErrs = append(deployErrs, errs...)
-		if len(errs) > 0 && !continueOnErr {
-			break
+	for name, env := range loadedManifest.Environments {
+		sortedComponents, err := graphs.GetIndependentlySortedConfigs(name)
+		if err != nil {
+			deployErrs = append(deployErrs, err)
+			if !continueOnErr {
+				break
+			}
+			continue
+		}
+		errs := deployOnEnvironment(&env, sortedComponents, continueOnErr, dryRun)
+		if len(errs) > 0 {
+			deployErrs = append(deployErrs, errs...)
 		}
 	}
 
@@ -88,7 +88,7 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 	return nil
 }
 
-func deployOnEnvironment(env *manifest.EnvironmentDefinition, cfgs []config.Config, continueOnErr bool, dryRun bool) []error {
+func deployOnEnvironment(env *manifest.EnvironmentDefinition, sortedComponents [][]config.Config, continueOnErr bool, dryRun bool) []error {
 	logDeploymentInfo(dryRun, env.Name)
 	var clientSet deploy.ClientSet
 	if dryRun {
@@ -107,10 +107,26 @@ func deployOnEnvironment(env *manifest.EnvironmentDefinition, cfgs []config.Conf
 		}
 	}
 
-	errs := deploy.DeployConfigs(clientSet, api.NewAPIs(), cfgs, deploy.DeployConfigsOptions{
-		ContinueOnErr: continueOnErr,
-		DryRun:        dryRun,
-	})
+	var errs []error
+
+	for _, sortedConfigs := range sortedComponents {
+		if err := checkConfigsForEnvironment(*env, sortedConfigs); err != nil {
+			if !continueOnErr {
+				return []error{err}
+			}
+			errs = append(errs, err)
+		}
+
+		deployErrs := deploy.DeployConfigs(clientSet, api.NewAPIs(), sortedConfigs, deploy.DeployConfigsOptions{
+			DryRun: dryRun,
+		})
+		if !continueOnErr && len(deployErrs) > 0 {
+			return deployErrs
+		}
+
+		errs = append(errs, deployErrs...)
+	}
+
 	return errs
 }
 
