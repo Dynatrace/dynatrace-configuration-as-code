@@ -291,7 +291,7 @@ func (d *DynatraceClient) callWithRetryOnKnowTimingIssue(ctx context.Context, re
 	if setting.MaxRetries > 0 {
 		return rest.SendWithRetry(ctx, d.clientClassic, restCall, objectName, path, body, setting)
 	}
-	return resp, nil
+	return resp, err
 }
 
 func isGeneralDependencyNotReadyYet(resp rest.Response) bool {
