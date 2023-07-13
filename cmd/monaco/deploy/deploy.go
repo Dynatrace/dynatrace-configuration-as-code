@@ -24,14 +24,14 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
-
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	"github.com/spf13/afero"
 	"path/filepath"
 	"strings"
+	"sync"
 )
 
 func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string, specificEnvironments []string, specificProjects []string, continueOnErr bool, dryRun bool) error {
@@ -107,25 +107,51 @@ func deployOnEnvironment(env *manifest.EnvironmentDefinition, sortedComponents [
 		}
 	}
 
+	wg := sync.WaitGroup{}
+	errChan := make(chan []error)
+
+	wg.Add(len(sortedComponents))
+
+	log.Info("Deploying %d independent configuration sets concurrently...", len(sortedComponents))
+
+	for i := range sortedComponents {
+
+		// deploy connected component in go routine
+		go func(index int) {
+			var errs []error
+			sortedConfigs := sortedComponents[index]
+			if err := checkConfigsForEnvironment(*env, sortedConfigs); err != nil {
+				if !continueOnErr {
+					errChan <- []error{err}
+				}
+				errs = append(errs, err)
+			}
+
+			deployErrs := deploy.DeployConfigs(clientSet, api.NewAPIs(), sortedConfigs, deploy.DeployConfigsOptions{
+				DryRun: dryRun,
+			})
+			errs = append(errs, deployErrs...)
+
+			errChan <- errs
+		}(i)
+
+	}
+
 	var errs []error
 
-	for _, sortedConfigs := range sortedComponents {
-		if err := checkConfigsForEnvironment(*env, sortedConfigs); err != nil {
-			if !continueOnErr {
-				return []error{err}
+	// receive errors and finish wait group for each deployment go routine
+	go func() {
+		for result := range errChan {
+			if len(result) > 0 {
+				errs = append(errs, result...)
 			}
-			errs = append(errs, err)
+			wg.Done()
 		}
+	}()
 
-		deployErrs := deploy.DeployConfigs(clientSet, api.NewAPIs(), sortedConfigs, deploy.DeployConfigsOptions{
-			DryRun: dryRun,
-		})
-		if !continueOnErr && len(deployErrs) > 0 {
-			return deployErrs
-		}
+	wg.Wait()
 
-		errs = append(errs, deployErrs...)
-	}
+	log.Info("Concurrent deployments finished")
 
 	return errs
 }
