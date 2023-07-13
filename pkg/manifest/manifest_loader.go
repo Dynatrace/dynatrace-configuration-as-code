@@ -115,7 +115,7 @@ func (e ProjectLoaderError) Error() string {
 }
 
 func LoadManifest(context *LoaderContext) (Manifest, []error) {
-	log.WithFields(field.F("manifestPath", context.ManifestPath)).Debug("Loading manifest %q. Restrictions: groups=%q, environments=%q", context.ManifestPath, context.Groups, context.Environments)
+	log.WithFields(field.F("manifestPath", context.ManifestPath)).Info("Loading manifest %q. Restrictions: groups=%q, environments=%q", context.ManifestPath, context.Groups, context.Environments)
 
 	manifestYAML, err := readManifestYAML(context)
 	if err != nil {
