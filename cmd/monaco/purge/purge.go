@@ -23,7 +23,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
@@ -54,46 +53,39 @@ func purge(fs afero.Fs, deploymentManifestPath string, environmentNames []string
 		return errors.New("error while loading manifest")
 	}
 
-	deleteErrors := purgeConfigs(maps.Values(mani.Environments), apis)
+	return purgeConfigs(maps.Values(mani.Environments), apis)
+}
 
-	for _, e := range deleteErrors {
-		log.WithFields(field.Error(e)).Error("Deletion error: %s", e)
+func purgeConfigs(environments []manifest.EnvironmentDefinition, apis api.APIs) error {
+
+	for _, env := range environments {
+		err := purgeForEnvironment(env, apis)
+		if err != nil {
+			return err
+		}
 	}
-	if len(deleteErrors) > 0 {
-		return fmt.Errorf("encountered %v errors during delete", len(deleteErrors))
-	}
+
 	return nil
 }
 
-func purgeConfigs(environments []manifest.EnvironmentDefinition, apis api.APIs) (errors []error) {
-
-	for _, env := range environments {
-		deleteErrors := purgeForEnvironment(env, apis)
-
-		if deleteErrors != nil {
-			errors = append(errors, deleteErrors...)
-		}
-	}
-
-	return errors
-}
-
-func purgeForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs) []error {
+func purgeForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs) error {
 	clients, err := dynatrace.CreateClientSet(env.URL.Value, env.Auth)
 
 	if err != nil {
-		return []error{
-			fmt.Errorf("failed to create a client for env `%s` due to the following error: %w", env.Name, err),
-		}
+		return fmt.Errorf("failed to create a client for env `%s` due to the following error: %w", env.Name, err)
 	}
 
 	ctx := context.WithValue(context.TODO(), log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
 
 	log.WithCtxFields(ctx).Info("Deleting configs for environment `%s`", env.Name)
 
-	errs := delete.AllConfigs(ctx, clients.Classic(), apis)
-	errs = append(errs, delete.AllSettingsObjects(ctx, clients.Settings())...)
-	errs = append(errs, delete.AllAutomations(ctx, clients.Automation())...)
+	deleteErrors := delete.AllConfigs(ctx, clients.Classic(), apis)
+	deleteErrors = append(deleteErrors, delete.AllSettingsObjects(ctx, clients.Settings())...)
+	deleteErrors = append(deleteErrors, delete.AllAutomations(ctx, clients.Automation())...)
 
-	return errs
+	if len(deleteErrors) > 0 {
+		log.Error("Encountered %d errors while puring configurations from environment %s, further manual cleanup may be needed. Errors:", len(deleteErrors), env.Name)
+		errutils.PrintErrors(deleteErrors)
+	}
+	return nil
 }
