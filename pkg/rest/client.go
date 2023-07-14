@@ -161,7 +161,15 @@ func (c Client) executeRequest(request *http.Request) (Response, error) {
 			return Response{}, fmt.Errorf("HTTP request failed: %w", err)
 		}
 		defer func() {
-			err = resp.Body.Close()
+			if closeErr := resp.Body.Close(); closeErr != nil {
+				if err != nil {
+					// don't overwrite an actual error for a body close issue
+					log.Warn("Failed to close HTTP response body after previous error. Closing error: %w", err)
+					return
+				}
+
+				err = fmt.Errorf("failed to close HTTP response body: %w", closeErr)
+			}
 		}()
 		respBody, err := io.ReadAll(resp.Body)
 		if err != nil {
