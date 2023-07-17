@@ -1,0 +1,11 @@
+configs:
+- id: d955d9b7-9630-3be5-aca5-3715779a7282
+  config:
+    name: d955d9b7-9630-3be5-aca5-3715779a7282
+    template: d955d9b7-9630-3be5-aca5-3715779a7282.json
+    skip: false
+  type:
+    settings:
+      schema: builtin:monitoring.slo
+      schemaVersion: 6.0.12
+      scope: environment
