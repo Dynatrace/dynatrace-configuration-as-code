@@ -8,10 +8,10 @@ default: build
 
 setup:
 	@echo "Installing build tools..."
-	@go install github.com/google/addlicense@latest
-	@go install gotest.tools/gotestsum@latest
-	@go install github.com/golang/mock/mockgen@latest
-	@go install github.com/sigstore/cosign/v2/cmd/cosign@latest
+	@go install github.com/google/addlicense@v1.1.0
+	@go install gotest.tools/gotestsum@v1.10.1
+	@go install github.com/golang/mock/mockgen@v1.6.0
+	@go install github.com/sigstore/cosign/v2/cmd/cosign@v2.1.1
 
 lint: setup
 ifeq ($(OS),Windows_NT)
