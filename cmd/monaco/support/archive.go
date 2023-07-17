@@ -22,6 +22,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/zip"
 	"github.com/spf13/afero"
+	"os"
 	"path"
 )
 
@@ -34,5 +35,12 @@ func Archive(fs afero.Fs) error {
 		path.Join(log.LogDirectory, timeAnchorStr+"-"+"req.log"),
 		path.Join(log.LogDirectory, timeAnchorStr+"-"+"resp.log"),
 		path.Join(log.LogDirectory, timeAnchorStr) + ".log"}
+
+	workingDir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	log.Info("Saving support archive to " + path.Join(workingDir, zipFileName))
 	return zip.Create(fs, zipFileName, files, false)
 }
