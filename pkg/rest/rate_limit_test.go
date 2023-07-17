@@ -22,7 +22,7 @@ import (
 	"errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/throttle"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 	"gotest.tools/assert"
 	"net/http"
 	"strconv"

@@ -17,9 +17,9 @@
 package download
 
 import (
-	"github.com/golang/mock/gomock"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"io"
 	"strings"
 	"testing"

@@ -20,7 +20,7 @@ package throttle
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 	"gotest.tools/assert"
 	"strings"
 	"testing"
