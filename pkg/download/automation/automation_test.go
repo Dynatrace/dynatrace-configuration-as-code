@@ -20,6 +20,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -45,7 +46,7 @@ func TestDownloader_Download(t *testing.T) {
 			}
 		}))
 		defer server.Close()
-		httpClient := automation.NewClient(server.URL, server.Client())
+		httpClient := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 		downloader := NewDownloader(httpClient)
 		result, err := downloader.Download("projectName")
 		assert.Len(t, result, 3)
@@ -72,7 +73,7 @@ func TestDownloader_Download(t *testing.T) {
 
 		}))
 		defer server.Close()
-		httpClient := automation.NewClient(server.URL, server.Client())
+		httpClient := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 		downloader := NewDownloader(httpClient)
 		result, err := downloader.Download("projectName",
 			config.AutomationType{Resource: config.Workflow}, config.AutomationType{Resource: config.BusinessCalendar})
@@ -95,7 +96,7 @@ func TestDownloader_Download(t *testing.T) {
 		}))
 		defer server.Close()
 
-		httpClient := automation.NewClient(server.URL, server.Client())
+		httpClient := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 
 		downloader := NewDownloader(httpClient)
 		result, err := downloader.Download("projectName", config.AutomationType{Resource: config.Workflow})
@@ -126,7 +127,7 @@ func TestDownloader_Download_FailsToDownloadSpecificResource(t *testing.T) {
 
 	}))
 	defer server.Close()
-	httpClient := automation.NewClient(server.URL, server.Client())
+	httpClient := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 	downloader := NewDownloader(httpClient)
 	result, err := downloader.Download("projectName")
 	assert.Len(t, result, 2)

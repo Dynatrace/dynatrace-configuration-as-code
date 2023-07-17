@@ -29,8 +29,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/useragent"
 	dtVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
@@ -210,14 +208,12 @@ type DynatraceClient struct {
 	// environmentURLClassic is the base URL of the classic generation
 	// Dynatrace tenant
 	environmentURLClassic string
-	// client is the underlying HTTP client that will be used to communicate
-	// with platform gen environments
-	client *http.Client
 
-	// client is the underlying HTTP client that will be used to communicate
-	// with second gen environments
-	clientClassic *http.Client
-	// retrySettings specify the retry behavior of the dynatrace client in case something goes wrong
+	// platformClient is a rest client used to target platform enabled environments
+	platformClient *rest.Client
+
+	// classicClient is a rest client used to target classic environments (e.g.,for downloading classic configs)
+	classicClient *rest.Client
 
 	// settingsSchemaAPIPath is the API path to use for accessing settings schemas
 	settingsSchemaAPIPath string
@@ -273,27 +269,19 @@ func WithServerVersion(serverVersion version.Version) func(client *DynatraceClie
 	}
 }
 
-// WithClient sets the underlying http client to a specific one.
-// Useful for testing
-func WithClient(client *http.Client) func(d *DynatraceClient) {
-	return func(d *DynatraceClient) {
-		d.client = client
-		d.clientClassic = client
-	}
-}
-
 // WithAutoServerVersion can be used to let the client automatically determine the Dynatrace server version
 // during creation using newDynatraceClient. If the server version is already known WithServerVersion should be used
 func WithAutoServerVersion() func(client *DynatraceClient) {
 	return func(d *DynatraceClient) {
 		var serverVersion version.Version
 		var err error
-		if _, ok := d.client.Transport.(*oauth2.Transport); ok {
+
+		if _, ok := d.platformClient.Client().Transport.(*oauth2.Transport); ok {
 			// for platform enabled tenants there is no dedicated version endpoint
 			// so this call would need to be "redirected" to the second gen URL, which do not currently resolve
 			d.serverVersion = version.UnknownVersion
 		} else {
-			serverVersion, err = dtVersion.GetDynatraceVersion(context.TODO(), d.clientClassic, d.environmentURLClassic) //this will send the default user-agent
+			serverVersion, err = dtVersion.GetDynatraceVersion(context.TODO(), d.classicClient, d.environmentURLClassic) //this will send the default user-agent
 		}
 		if err != nil {
 			log.WithFields(field.Error(err)).Warn("Unable to determine Dynatrace server version: %v", err)
@@ -308,8 +296,12 @@ func WithAutoServerVersion() func(client *DynatraceClient) {
 // If none is set, the default Monaco CLI specific user-agent is sent.
 func WithCustomUserAgentString(userAgent string) func(client *DynatraceClient) {
 	return func(d *DynatraceClient) {
-		d.client = &http.Client{Transport: useragent.NewCustomUserAgentTransport(d.client.Transport, userAgent)}
-		d.clientClassic = &http.Client{Transport: useragent.NewCustomUserAgentTransport(d.clientClassic.Transport, userAgent)}
+		if d.platformClient != nil && d.platformClient.Client() != nil {
+			d.platformClient.Client().Transport = useragent.NewCustomUserAgentTransport(d.platformClient.Client().Transport, userAgent)
+		}
+		if d.classicClient != nil && d.classicClient.Client() != nil {
+			d.classicClient.Client().Transport = useragent.NewCustomUserAgentTransport(d.classicClient.Client().Transport, userAgent)
+		}
 	}
 }
 
@@ -321,17 +313,14 @@ const (
 )
 
 // NewPlatformClient creates a new dynatrace client to be used for platform enabled environments
-func NewPlatformClient(dtURL string, token string, oauthCredentials auth.OauthCredentials, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
+func NewPlatformClient(dtURL string, classicURL string, client *rest.Client, classicClient *rest.Client, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
 	dtURL = strings.TrimSuffix(dtURL, "/")
 	if err := validateURL(dtURL); err != nil {
 		return nil, err
 	}
 
-	tokenClient := auth.NewTokenAuthClient(token)
-	oauthClient := auth.NewOAuthClient(context.TODO(), oauthCredentials)
-
-	classicURL, err := metadata.GetDynatraceClassicURL(context.TODO(), oauthClient, dtURL) //this will send the default user-agent
-	if err != nil {
+	classicURL = strings.TrimSuffix(classicURL, "/")
+	if err := validateURL(classicURL); err != nil {
 		return nil, err
 	}
 
@@ -339,8 +328,8 @@ func NewPlatformClient(dtURL string, token string, oauthCredentials auth.OauthCr
 		serverVersion:         version.Version{},
 		environmentURL:        dtURL,
 		environmentURLClassic: classicURL,
-		client:                oauthClient,
-		clientClassic:         tokenClient,
+		platformClient:        client,
+		classicClient:         classicClient,
 		retrySettings:         rest.DefaultRetrySettings,
 		settingsSchemaAPIPath: settingsSchemaAPIPathPlatform,
 		settingsObjectAPIPath: settingsObjectAPIPathPlatform,
@@ -357,20 +346,17 @@ func NewPlatformClient(dtURL string, token string, oauthCredentials auth.OauthCr
 }
 
 // NewClassicClient creates a new dynatrace client to be used for classic environments
-func NewClassicClient(dtURL string, token string, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
+func NewClassicClient(dtURL string, client *rest.Client, opts ...func(dynatraceClient *DynatraceClient)) (*DynatraceClient, error) {
 	dtURL = strings.TrimSuffix(dtURL, "/")
 	if err := validateURL(dtURL); err != nil {
 		return nil, err
 	}
-
-	tokenClient := auth.NewTokenAuthClient(token)
-
 	d := &DynatraceClient{
 		serverVersion:         version.Version{},
 		environmentURL:        dtURL,
 		environmentURLClassic: dtURL,
-		client:                tokenClient,
-		clientClassic:         tokenClient,
+		platformClient:        client,
+		classicClient:         client,
 		retrySettings:         rest.DefaultRetrySettings,
 		settingsSchemaAPIPath: settingsSchemaAPIPathClassic,
 		settingsObjectAPIPath: settingsObjectAPIPathClassic,
@@ -432,7 +418,7 @@ func (d *DynatraceClient) readConfigById(ctx context.Context, api api.API, id st
 		dtUrl = api.CreateURL(d.environmentURLClassic) + "/" + url.PathEscape(id)
 	}
 
-	response, err := rest.Get(ctx, d.clientClassic, dtUrl)
+	response, err := d.classicClient.Get(ctx, dtUrl)
 
 	if err != nil {
 		return nil, err
@@ -461,7 +447,7 @@ func (d *DynatraceClient) deleteConfigById(ctx context.Context, api api.API, id 
 	}
 	parsedURL = parsedURL.JoinPath(id)
 
-	resp, err := rest.Delete(ctx, d.clientClassic, parsedURL.String())
+	resp, err := d.classicClient.Delete(ctx, parsedURL.String())
 	if err != nil {
 		return err
 	}
@@ -527,7 +513,7 @@ func (d *DynatraceClient) getSettingById(ctx context.Context, objectId string) (
 		return nil, fmt.Errorf("failed to parse URL '%s': %w", d.environmentURL+d.settingsObjectAPIPath, err)
 	}
 
-	resp, err := rest.Get(ctx, d.client, u.String())
+	resp, err := d.platformClient.Get(ctx, u.String())
 	if err != nil {
 		return nil, fmt.Errorf("failed to GET settings object with object id %q: %w", objectId, err)
 	}
@@ -594,7 +580,7 @@ func (d *DynatraceClient) listSettings(ctx context.Context, schemaId string, opt
 		return nil, fmt.Errorf("failed to list settings: %w", err)
 	}
 
-	_, err = rest.ListPaginated(ctx, d.client, d.retrySettings, u, schemaId, addToResult)
+	_, err = rest.ListPaginated(ctx, d.platformClient, d.retrySettings, u, schemaId, addToResult)
 	if err != nil {
 		return nil, err
 	}
@@ -651,7 +637,7 @@ func (d *DynatraceClient) listEntitiesTypes(ctx context.Context) ([]EntitiesType
 		return nil, fmt.Errorf("failed to list entity types: %w", err)
 	}
 
-	_, err = rest.ListPaginated(ctx, d.client, d.retrySettings, u, "EntityTypeList", addToResult)
+	_, err = rest.ListPaginated(ctx, d.platformClient, d.retrySettings, u, "EntityTypeList", addToResult)
 	if err != nil {
 		return nil, err
 	}
@@ -710,7 +696,7 @@ func (d *DynatraceClient) listEntities(ctx context.Context, entitiesType Entitie
 			return nil, fmt.Errorf("failed to list entities: %w", err)
 		}
 
-		resp, err := rest.ListPaginated(ctx, d.client, d.retrySettings, u, entityType, addToResult)
+		resp, err := rest.ListPaginated(ctx, d.platformClient, d.retrySettings, u, entityType, addToResult)
 
 		runExtraction, ignoreProperties, err = handleListEntitiesError(entityType, resp, runExtraction, ignoreProperties, err)
 
@@ -736,7 +722,7 @@ func (d *DynatraceClient) deleteSettings(ctx context.Context, objectID string) e
 	}
 
 	u = u.JoinPath(objectID)
-	resp, err := rest.Delete(ctx, d.client, u.String())
+	resp, err := d.platformClient.Delete(ctx, u.String())
 	if err != nil {
 		return err
 	}

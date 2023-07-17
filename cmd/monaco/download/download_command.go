@@ -26,6 +26,7 @@ import (
 	clientAuth "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
 	versionClient "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"net/http"
@@ -267,7 +268,7 @@ func printUploadToSameEnvironmentWarning(env manifest.EnvironmentDefinition) {
 		httpClient = clientAuth.NewOAuthClient(context.TODO(), credentials)
 	}
 
-	serverVersion, err = versionClient.GetDynatraceVersion(context.TODO(), httpClient, env.URL.Value)
+	serverVersion, err = versionClient.GetDynatraceVersion(context.TODO(), rest.NewRestClient(httpClient, nil, rest.CreateRateLimitStrategy()), env.URL.Value)
 	if err != nil {
 		log.WithFields(field.Environment(env.Name, env.Group), field.Error(err)).Warn("Unable to determine server version %q: %v", env.URL.Value, err)
 		return

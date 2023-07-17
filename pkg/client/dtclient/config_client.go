@@ -137,7 +137,7 @@ func (d *DynatraceClient) createDynatraceObject(ctx context.Context, urlString s
 		parsedUrl.RawQuery = queryParams.Encode()
 	}
 
-	resp, err := d.callWithRetryOnKnowTimingIssue(ctx, rest.Post, objectName, parsedUrl.String(), body, theApi)
+	resp, err := d.callWithRetryOnKnowTimingIssue(ctx, d.classicClient.Post, objectName, parsedUrl.String(), body, theApi)
 	if err != nil {
 		var respErr rest.RespError
 		if errors.As(err, &respErr) {
@@ -215,7 +215,7 @@ func (d *DynatraceClient) updateDynatraceObject(ctx context.Context, fullUrl str
 		body = stripCreateOnlyPropertiesFromAppMobile(body)
 	}
 
-	resp, err := d.callWithRetryOnKnowTimingIssue(ctx, rest.Put, objectName, path, body, theApi)
+	resp, err := d.callWithRetryOnKnowTimingIssue(ctx, d.classicClient.Put, objectName, path, body, theApi)
 
 	if err != nil {
 		var respErr rest.RespError
@@ -256,7 +256,7 @@ func stripCreateOnlyPropertiesFromAppMobile(payload []byte) []byte {
 // retrying in case of know errors on upload.
 func (d *DynatraceClient) callWithRetryOnKnowTimingIssue(ctx context.Context, restCall rest.SendRequestWithBody, objectName string, path string, body []byte, theApi api.API) (rest.Response, error) {
 
-	resp, err := restCall(ctx, d.clientClassic, path, body)
+	resp, err := restCall(ctx, path, body)
 
 	if err == nil && resp.IsSuccess() {
 		return resp, nil
@@ -289,7 +289,7 @@ func (d *DynatraceClient) callWithRetryOnKnowTimingIssue(ctx context.Context, re
 	}
 
 	if setting.MaxRetries > 0 {
-		return rest.SendWithRetry(ctx, d.clientClassic, restCall, objectName, path, body, setting)
+		return rest.SendWithRetry(ctx, restCall, objectName, path, body, setting)
 	}
 	return resp, err
 }
@@ -429,7 +429,7 @@ func (d *DynatraceClient) getExistingValuesFromEndpoint(ctx context.Context, the
 
 	parsedUrl = addQueryParamsForNonStandardApis(theApi, parsedUrl)
 
-	resp, err := rest.Get(ctx, d.clientClassic, parsedUrl.String())
+	resp, err := d.classicClient.Get(ctx, parsedUrl.String())
 
 	if err != nil {
 		return nil, err
@@ -450,7 +450,7 @@ func (d *DynatraceClient) getExistingValuesFromEndpoint(ctx context.Context, the
 		if resp.NextPageKey != "" {
 			parsedUrl = rest.AddNextPageQueryParams(parsedUrl, resp.NextPageKey)
 
-			resp, err = rest.GetWithRetry(ctx, d.clientClassic, parsedUrl.String(), d.retrySettings.Normal)
+			resp, err = d.classicClient.GetWithRetry(ctx, parsedUrl.String(), d.retrySettings.Normal)
 
 			if err != nil {
 				return nil, err

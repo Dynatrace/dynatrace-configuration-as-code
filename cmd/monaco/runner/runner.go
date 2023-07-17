@@ -20,10 +20,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/deploy"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/download"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/purge"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"io"
@@ -58,15 +58,21 @@ Examples:
 
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			log.PrepareLogging(fs, &verbose, logSpy)
-			trafficlogs.PrepareRequestResponseLogging(fs)
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			_ = cmd.Help()
+		},
+		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+			if support.SupportArchive {
+				return support.Archive(fs)
+			}
+			return nil
 		},
 	}
 
 	// global flags
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable debug logging")
+	rootCmd.PersistentFlags().BoolVar(&support.SupportArchive, "support-archive", false, "Create support archive")
 
 	// commands
 	rootCmd.AddCommand(download.GetDownloadCommand(fs, &download.DefaultCommand{}))

@@ -22,9 +22,6 @@ import (
 	"strings"
 )
 
-// getPaginationValues returns the "nextPageKey", "totalCount", "pageSize" if found in the response body.
-// This is the case for standard api/v2 pagination.
-// If the response was not in the format of a paginated response, or no key was in the response, empty values are returned.
 func getPaginationValues(body []byte) (nextPageKey string, totalCount int, pageSize int) {
 	var jsonResponse map[string]interface{}
 	if err := json.Unmarshal(body, &jsonResponse); err != nil {

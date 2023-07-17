@@ -25,10 +25,12 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/topologysort"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/stretchr/testify/assert"
 	"testing"
 
@@ -142,10 +144,19 @@ func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts
 		ClientSecret: env.Auth.OAuth.ClientSecret.Value,
 		TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
 	}
+
+	tokenClient := auth.NewTokenAuthClient(env.Auth.Token.Value)
+	oauthClient := auth.NewOAuthClient(context.TODO(), oauthCredentials)
+
+	client := rest.NewRestClient(oauthClient, nil, rest.CreateRateLimitStrategy())
+	clientClassic := rest.NewRestClient(tokenClient, nil, rest.CreateRateLimitStrategy())
+
+	rest.NewRestClient(oauthClient, nil, rest.CreateRateLimitStrategy())
+	classicURL, err := metadata.GetDynatraceClassicURL(context.TODO(), rest.NewRestClient(oauthClient, nil, rest.CreateRateLimitStrategy()), env.URL.Value)
+	assert.NoError(t, err)
+
 	c, err := dtclient.NewPlatformClient(
-		env.URL.Value,
-		env.Auth.Token.Value,
-		oauthCredentials,
+		env.URL.Value, classicURL, client, clientClassic,
 	)
 	assert.NoError(t, err)
 

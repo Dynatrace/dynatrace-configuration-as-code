@@ -20,10 +20,12 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	clientAuth "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/entities"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/spf13/afero"
 	"os"
 	"strings"
@@ -113,7 +115,16 @@ func (d DefaultCommand) DownloadEntities(fs afero.Fs, cmdOptions entitiesDirectD
 		specificEntitiesTypes: cmdOptions.specificEntitiesTypes,
 	}
 
-	dtClient, err := dtclient.NewClassicClient(cmdOptions.environmentURL, token, dtclient.WithClientRequestLimiter(concurrency.NewLimiter(environment.GetEnvValueIntLog(environment.ConcurrentRequestsEnvKey))))
+	dtClient, err := dtclient.NewClassicClient(
+		cmdOptions.environmentURL,
+		rest.NewRestClient(
+			clientAuth.NewTokenAuthClient(token),
+			nil,
+			rest.CreateRateLimitStrategy()),
+		dtclient.WithClientRequestLimiter(
+			concurrency.NewLimiter(
+				environment.GetEnvValueIntLog(
+					environment.ConcurrentRequestsEnvKey))))
 	if err != nil {
 		return err
 	}

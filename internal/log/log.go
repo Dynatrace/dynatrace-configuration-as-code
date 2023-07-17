@@ -31,6 +31,11 @@ import (
 	"path/filepath"
 )
 
+const (
+	LogDirectory               = ".logs"
+	TrafficLogFilePrefixFormat = "20060102-150405"
+)
+
 // CtxKeyCoord context key used for contextual coordinate information
 type CtxKeyCoord struct{}
 
@@ -121,16 +126,15 @@ func PrepareLogging(fs afero.Fs, verbose *bool, loggerSpy io.Writer) {
 }
 
 func prepareLogFile(fs afero.Fs) (afero.File, error) {
-	logDir := ".logs"
-	timestamp := timeutils.TimeAnchor().Format("20060102-150405")
-	if err := fs.MkdirAll(logDir, 0777); err != nil {
-		return nil, fmt.Errorf("unable to prepare log directory %s: %w", logDir, err)
+	timestamp := timeutils.TimeAnchor().Format(TrafficLogFilePrefixFormat)
+	if err := fs.MkdirAll(LogDirectory, 0777); err != nil {
+		return nil, fmt.Errorf("unable to prepare log directory %s: %w", LogDirectory, err)
 
 	}
-	logFilePath := filepath.Join(logDir, timestamp+".log")
+	logFilePath := filepath.Join(LogDirectory, timestamp+".log")
 	logFile, err := fs.OpenFile(logFilePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
-		return nil, fmt.Errorf("unable to prepare log file in %s directory: %w", logDir, err)
+		return nil, fmt.Errorf("unable to prepare log file in %s directory: %w", LogDirectory, err)
 	}
 	return logFile, nil
 

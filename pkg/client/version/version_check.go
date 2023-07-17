@@ -34,13 +34,13 @@ type ApiVersionObject struct {
 const versionPathClassic = "/api/v1/config/clusterversion"
 
 // GetDynatraceVersion returns the version of an environment
-func GetDynatraceVersion(ctx context.Context, client *http.Client, environmentURL string) (version.Version, error) {
+func GetDynatraceVersion(ctx context.Context, client *rest.Client, environmentURL string) (version.Version, error) {
 	versionURL, err := url.JoinPath(environmentURL, versionPathClassic)
 	if err != nil {
 		return version.Version{}, fmt.Errorf("failed to build URL for API %q on environment URL %q", versionPathClassic, environmentURL)
 	}
 
-	resp, err := rest.Get(ctx, client, versionURL)
+	resp, err := client.Get(ctx, versionURL)
 	if err != nil {
 		return version.Version{}, fmt.Errorf("failed to query version of Dynatrace environment: %w", err)
 	}

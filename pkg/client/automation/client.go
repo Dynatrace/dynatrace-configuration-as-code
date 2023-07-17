@@ -81,7 +81,7 @@ var resources = map[ResourceType]Resource{
 type Client struct {
 	url       string
 	limiter   *concurrency.Limiter
-	client    *http.Client
+	client    *rest.Client
 	resources map[ResourceType]Resource
 }
 
@@ -90,7 +90,7 @@ type Client struct {
 type ClientOption func(*Client)
 
 // NewClient creates a new client to interact with the Automation API
-func NewClient(url string, client *http.Client, opts ...ClientOption) *Client {
+func NewClient(url string, client *rest.Client, opts ...ClientOption) *Client {
 	c := &Client{
 		url:       url,
 		limiter:   concurrency.NewLimiter(5),
@@ -116,7 +116,9 @@ func WithClientRequestLimiter(limiter *concurrency.Limiter) func(client *Client)
 // If none is set, the default Monaco CLI specific user-agent is sent.
 func WithCustomUserAgentString(userAgent string) func(client *Client) {
 	return func(d *Client) {
-		d.client = &http.Client{Transport: useragent.NewCustomUserAgentTransport(d.client.Transport, userAgent)}
+		if d.client != nil && d.client.Client() != nil {
+			d.client.Client().Transport = useragent.NewCustomUserAgentTransport(d.client.Client().Transport, userAgent)
+		}
 	}
 }
 
@@ -136,7 +138,7 @@ func (a Client) get(ctx context.Context, id string, resourceType ResourceType) (
 		return nil, fmt.Errorf("failed to parse URL '%s': %w", requestURL, err)
 	}
 
-	resp, err := rest.Get(ctx, a.client, u.String())
+	resp, err := a.client.Get(ctx, u.String())
 	if err != nil {
 		return nil, fmt.Errorf("failed to GET automation resource of type %v with id %s: %w", resourceType, id, err)
 	}
@@ -174,7 +176,7 @@ func (a Client) list(ctx context.Context, resourceType ResourceType) ([]Response
 		setAdminAccessQueryParam(u, workflowsAdminAccess)
 
 		// try to get the list of resources
-		resp, err := rest.Get(ctx, a.client, u.String())
+		resp, err := a.client.Get(ctx, u.String())
 		if err != nil {
 			return nil, fmt.Errorf("unable to list automation resources: %w", err)
 		}
@@ -230,7 +232,7 @@ func (a Client) upsert(ctx context.Context, resourceType ResourceType, id string
 	workflowsAdminAccess := resourceType == Workflows
 	setAdminAccessQueryParam(u, workflowsAdminAccess)
 
-	resp, err := rest.Put(ctx, a.client, u.String(), data)
+	resp, err := a.client.Put(ctx, u.String(), data)
 	if err != nil {
 		return nil, fmt.Errorf("unable to update object with ID %s: %w", id, err)
 	}
@@ -238,7 +240,7 @@ func (a Client) upsert(ctx context.Context, resourceType ResourceType, id string
 	if workflowsAdminAccess && resp.StatusCode == http.StatusForbidden {
 		setAdminAccessQueryParam(u, false)
 
-		resp, err = rest.Put(ctx, a.client, u.String(), data)
+		resp, err = a.client.Put(ctx, u.String(), data)
 		if err != nil {
 			return nil, fmt.Errorf("unable to update object with ID %s: %w", id, err)
 		}
@@ -270,7 +272,7 @@ func (a Client) create(ctx context.Context, id string, data []byte, resourceType
 
 	// try to create a new object using HTTP POST
 	u := a.url + a.resources[resourceType].Path
-	resp, err := rest.Post(ctx, a.client, u, data)
+	resp, err := a.client.Post(ctx, u, data)
 	if err != nil {
 		return nil, err
 	}
@@ -317,14 +319,14 @@ func (a Client) delete(ctx context.Context, resourceType ResourceType, id string
 	workflowsAdminAccess := resourceType == Workflows
 	setAdminAccessQueryParam(u, workflowsAdminAccess)
 
-	resp, err := rest.Delete(ctx, a.client, u.String())
+	resp, err := a.client.Delete(ctx, u.String())
 	if err != nil {
 		return fmt.Errorf("unable to delete object with ID %s: %w", id, err)
 	}
 
 	if workflowsAdminAccess && resp.StatusCode == http.StatusForbidden {
 		setAdminAccessQueryParam(u, false)
-		resp, err = rest.Delete(ctx, a.client, u.String())
+		resp, err = a.client.Delete(ctx, u.String())
 		if err != nil {
 			return fmt.Errorf("unable to delete object with ID %s: %w", id, err)
 		}

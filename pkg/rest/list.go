@@ -38,7 +38,7 @@ const emptyResponseRetryMax = 10
 // as filtering might exclude some entries that where received from the API.
 type AddEntriesToResult func(body []byte) (receivedEntries int, err error)
 
-func ListPaginated(ctx context.Context, client *http.Client, retrySettings RetrySettings, url *url.URL, logLabel string,
+func ListPaginated(ctx context.Context, client *Client, retrySettings RetrySettings, url *url.URL, logLabel string,
 	addToResult AddEntriesToResult) (Response, error) {
 
 	var resp Response
@@ -137,11 +137,11 @@ func isRetryOnEmptyResponse(receivedCount int, emptyResponseRetryCount int, resp
 	return false, emptyResponseRetryCount, nil
 }
 
-func runAndProcessResponse(ctx context.Context, client *http.Client, retrySettings RetrySettings, isNextCall bool, u *url.URL,
+func runAndProcessResponse(ctx context.Context, client *Client, retrySettings RetrySettings, isNextCall bool, u *url.URL,
 	addToResult AddEntriesToResult, receivedCount int, totalReceivedCount int) (Response, int, int, bool, error) {
 	isLastAvailablePage := false
 
-	resp, err := GetWithRetry(ctx, client, u.String(), retrySettings.Normal)
+	resp, err := client.GetWithRetry(ctx, u.String(), retrySettings.Normal)
 	isLastAvailablePage, err = validateRespErrors(isNextCall, err, resp, u.Path)
 	if err != nil || isLastAvailablePage {
 		return resp, receivedCount, totalReceivedCount, isLastAvailablePage, err

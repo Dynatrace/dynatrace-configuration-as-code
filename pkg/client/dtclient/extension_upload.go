@@ -60,7 +60,7 @@ func (d *DynatraceClient) uploadExtension(ctx context.Context, api api.API, exte
 		}, err
 	}
 
-	resp, err := rest.PostMultiPartFile(ctx, d.clientClassic, fullURL, buffer, contentType)
+	resp, err := d.classicClient.PostMultiPartFile(ctx, fullURL, buffer, contentType)
 
 	if err != nil {
 		return DynatraceEntity{}, err
@@ -88,7 +88,7 @@ type Properties struct {
 }
 
 func (d *DynatraceClient) validateIfExtensionShouldBeUploaded(ctx context.Context, apiPath string, extensionName string, payload []byte) (status extensionStatus, err error) {
-	response, err := rest.Get(ctx, d.clientClassic, apiPath+"/"+extensionName)
+	response, err := d.classicClient.Get(ctx, apiPath+"/"+extensionName)
 	if err != nil {
 		return extensionValidationError, err
 	}

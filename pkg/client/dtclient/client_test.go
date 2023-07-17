@@ -20,220 +20,163 @@ package dtclient
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/oauth2"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 )
 
 var mockAPI = api.API{ID: "mock-api", SingleConfiguration: true}
 var mockAPINotSingle = api.API{ID: "mock-api", SingleConfiguration: false}
 
 func TestNewClassicClient(t *testing.T) {
-	t.Run("Create new classic client", func(t *testing.T) {
-		dtURL := "https://some.url"
-
-		ver := version.Version{Major: 1, Minor: 2, Patch: 3}
-
-		c, err := NewClassicClient(dtURL, "",
-			WithServerVersion(ver),
-			WithRetrySettings(rest.DefaultRetrySettings))
-
+	t.Run("Client has correct urls and settings api path", func(t *testing.T) {
+		client, err := NewClassicClient("https://some-url.com", nil, nil)
 		assert.NoError(t, err)
+		assert.Equal(t, "https://some-url.com", client.environmentURL)
+		assert.Equal(t, "https://some-url.com", client.environmentURLClassic)
+		assert.Equal(t, settingsSchemaAPIPathClassic, client.settingsSchemaAPIPath)
+		assert.Equal(t, settingsObjectAPIPathClassic, client.settingsObjectAPIPath)
 
-		assert.NotEmpty(t, c.serverVersion)
-		assert.NotEmpty(t, c.environmentURL)
-		assert.NotEmpty(t, c.environmentURL)
-		assert.NotEmpty(t, c.client)
-		assert.NotEmpty(t, c.clientClassic)
-		assert.NotEmpty(t, c.retrySettings)
-		assert.Equal(t, settingsSchemaAPIPathClassic, c.settingsSchemaAPIPath)
-		assert.Equal(t, settingsObjectAPIPathClassic, c.settingsObjectAPIPath)
-
-		assert.Equal(t, dtURL, c.environmentURL)
-		assert.Equal(t, c.environmentURL, c.environmentURLClassic, "'environmentURLClassic' should be same as 'environmentURL'")
-		assert.Equal(t, c.client, c.clientClassic, "'classicClassic' should be same as 'client'")
-		assert.Equal(t, ver, c.serverVersion, "'serverVersion' should be modified with 'WithServerVersion'")
-		assert.Equal(t, rest.DefaultRetrySettings, c.retrySettings, "'retrySettings' should be modified with 'WithRetrySettings' modifier")
 	})
+
 	t.Run("URL is empty - should throw an error", func(t *testing.T) {
-		_, err := NewClassicClient("", "")
+		_, err := NewClassicClient("", nil)
 		assert.ErrorContains(t, err, "empty url")
+
 	})
 
 	t.Run("invalid URL - should throw an error", func(t *testing.T) {
-		_, err := NewClassicClient("INVALID_URL", "")
+		_, err := NewClassicClient("INVALID_URL", nil)
 		assert.ErrorContains(t, err, "not valid")
+
 	})
 
 	t.Run("URL suffix is trimmed", func(t *testing.T) {
-		client, err := NewClassicClient("https://my-environment.live.dynatrace.com/", "")
+		client, err := NewClassicClient("http://some-url.com/", nil)
 		assert.NoError(t, err)
-		assert.Equal(t, client.environmentURL, "https://my-environment.live.dynatrace.com")
+		assert.Equal(t, "http://some-url.com", client.environmentURL)
+		assert.Equal(t, "http://some-url.com", client.environmentURLClassic)
 	})
 
 	t.Run("URL with leading space - should return an error", func(t *testing.T) {
-		_, err := NewClassicClient(" https://my-environment.live.dynatrace.com/", "")
+		_, err := NewClassicClient(" https://my-environment.live.dynatrace.com/", nil)
 		assert.Error(t, err)
+
 	})
 
 	t.Run("URL starts with http", func(t *testing.T) {
-		client, err := NewClassicClient("http://my-environment.live.dynatrace.com", "")
+		client, err := NewClassicClient("http://some-url.com", nil)
 		assert.NoError(t, err)
-		assert.Equal(t, client.environmentURL, "http://my-environment.live.dynatrace.com")
+		assert.Equal(t, "http://some-url.com", client.environmentURL)
+		assert.Equal(t, "http://some-url.com", client.environmentURLClassic)
+
 	})
 
 	t.Run("URL is without scheme - should throw an error", func(t *testing.T) {
-		_, err := NewClassicClient("my-environment.live.dynatrace.com", "")
+		_, err := NewClassicClient("some-url.com", nil)
 		assert.ErrorContains(t, err, "not valid")
-	})
 
-	t.Run("URL is IPv4", func(t *testing.T) {
-		client, err := NewClassicClient("https://127.0.0.1", "")
-		assert.NoError(t, err)
-		assert.Equal(t, client.environmentURL, "https://127.0.0.1")
-	})
-
-	t.Run("URL is IPv6", func(t *testing.T) {
-		client, err := NewClassicClient("https://[0000:0000:0000:0000:0000:0000:0000:0001]", "")
-		assert.NoError(t, err)
-		assert.Equal(t, client.environmentURL, "https://[0000:0000:0000:0000:0000:0000:0000:0001]")
 	})
 
 	t.Run("URL is without valid local path - should return an error", func(t *testing.T) {
-		_, err := NewClassicClient("/my-environment/live/dynatrace.com/", "")
+		_, err := NewClassicClient("/my-environment/live/dynatrace.com/", nil)
 		assert.ErrorContains(t, err, "no host specified")
+
 	})
 
 	t.Run("without valid protocol - should return an error", func(t *testing.T) {
 		var err error
 
-		_, err = NewClassicClient("https//my-environment.live.dynatrace.com/", "")
-		assert.ErrorContains(t, err, "not valid")
-
-		_, err = NewClassicClient("http//my-environment.live.dynatrace.com/", "")
+		_, err = NewClassicClient("https//my-environment.live.dynatrace.com/", nil)
 		assert.ErrorContains(t, err, "not valid")
 	})
 }
 
 func TestNewPlatformClient(t *testing.T) {
-	server := httptest.NewUnstartedServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		fmt.Printf("req.URL= %+v \n", req)
-		switch req.URL.Path {
-		case "/oauth/token":
-			token := &oauth2.Token{
-				AccessToken: "test-access-token",
-				TokenType:   "Bearer",
-				Expiry:      time.Now().Add(time.Hour),
-			}
 
-			rw.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(rw).Encode(token)
-		case metadata.ClassicEnvironmentDomainPath:
-			rw.WriteHeader(200)
-			_, _ = rw.Write([]byte(`{"domain" : "/classic_endpoint"}`))
-		default:
-			rw.WriteHeader(404)
-
-		}
-	}))
-
-	server.Start()
-	defer server.Close()
-
-	t.Run("Create new platform client", func(t *testing.T) {
-		dtURL := server.URL
-
-		ver := version.Version{Major: 1, Minor: 2, Patch: 3}
-
-		c, err := NewPlatformClient(dtURL, "", auth.OauthCredentials{TokenURL: server.URL + "/oauth/token"},
-			WithServerVersion(ver),
-			WithRetrySettings(rest.DefaultRetrySettings))
-
+	t.Run("Client has correct urls and settings api path", func(t *testing.T) {
+		client, err := NewPlatformClient("https://some-url.com", "https://some-url2.com", nil, nil)
 		assert.NoError(t, err)
+		assert.Equal(t, "https://some-url.com", client.environmentURL)
+		assert.Equal(t, "https://some-url2.com", client.environmentURLClassic)
+		assert.Equal(t, settingsSchemaAPIPathPlatform, client.settingsSchemaAPIPath)
+		assert.Equal(t, settingsObjectAPIPathPlatform, client.settingsObjectAPIPath)
 
-		assert.NotEmpty(t, c.serverVersion)
-		assert.NotEmpty(t, c.environmentURL)
-		assert.NotEmpty(t, c.environmentURL)
-		assert.NotEmpty(t, c.client)
-		assert.NotEmpty(t, c.clientClassic)
-		assert.NotEmpty(t, c.retrySettings)
-		assert.NotEmpty(t, c.settingsSchemaAPIPath)
-		assert.NotEmpty(t, c.settingsObjectAPIPath)
-
-		fmt.Println(c)
-		fmt.Println("")
-
-		assert.Equal(t, dtURL, c.environmentURL)
-		assert.Equal(t, "/classic_endpoint", c.environmentURLClassic)
-		assert.NotEqual(t, c.client, c.clientClassic, "'classicClassic' should be same as 'client'")
-		assert.Equal(t, settingsSchemaAPIPathPlatform, c.settingsSchemaAPIPath)
-		assert.Equal(t, settingsObjectAPIPathPlatform, c.settingsObjectAPIPath)
-		assert.Equal(t, ver, c.serverVersion, "'serverVersion' should be modified with 'WithServerVersion'")
-		assert.Equal(t, rest.DefaultRetrySettings, c.retrySettings, "'retrySettings' should be modified with 'WithRetrySettings' modifier")
 	})
 
 	t.Run("URL is empty - should throw an error", func(t *testing.T) {
-		_, err := NewPlatformClient(server.URL, "", auth.OauthCredentials{TokenURL: server.URL + "/wrong/address"})
-		assert.ErrorContains(t, err, "failed to query classic environment url")
-	})
+		_, err := NewPlatformClient("", "", nil, nil)
+		assert.ErrorContains(t, err, "empty url")
 
-	t.Run("URL is empty - should throw an error", func(t *testing.T) {
-		_, err := NewPlatformClient("", "", auth.OauthCredentials{})
+		_, err = NewPlatformClient("http://some-url.com", "", nil, nil)
 		assert.ErrorContains(t, err, "empty url")
 	})
 
 	t.Run("invalid URL - should throw an error", func(t *testing.T) {
-		_, err := NewPlatformClient("INVALID_URL", "", auth.OauthCredentials{})
+		_, err := NewPlatformClient("INVALID_URL", "", nil, nil)
+		assert.ErrorContains(t, err, "not valid")
+
+		_, err = NewPlatformClient("http://some-url.com", "INVALID_URL", nil, nil)
 		assert.ErrorContains(t, err, "not valid")
 	})
 
 	t.Run("URL suffix is trimmed", func(t *testing.T) {
-		client, err := NewPlatformClient(server.URL, "", auth.OauthCredentials{TokenURL: server.URL + "/oauth/token"})
+		client, err := NewPlatformClient("http://some-url.com/", "http://some-url2.com/", nil, nil)
 		assert.NoError(t, err)
-		assert.Equal(t, server.URL, client.environmentURL)
+		assert.Equal(t, "http://some-url.com", client.environmentURL)
+		assert.Equal(t, "http://some-url2.com", client.environmentURLClassic)
 	})
 
 	t.Run("URL with leading space - should return an error", func(t *testing.T) {
-		_, err := NewPlatformClient(" https://my-environment.live.dynatrace.com/", "", auth.OauthCredentials{})
+		_, err := NewPlatformClient(" https://my-environment.live.dynatrace.com/", "", nil, nil)
+		assert.Error(t, err)
+
+		_, err = NewPlatformClient("https://my-environment.live.dynatrace.com/", " https://my-environment.live.dynatrace.com/\"", nil, nil)
 		assert.Error(t, err)
 	})
 
 	t.Run("URL starts with http", func(t *testing.T) {
-		client, err := NewPlatformClient(server.URL, "", auth.OauthCredentials{TokenURL: server.URL + "/oauth/token"})
+		client, err := NewPlatformClient("http://some-url.com", "https://some-url.com", nil, nil)
 		assert.NoError(t, err)
-		assert.Equal(t, server.URL, client.environmentURL)
+		assert.Equal(t, "http://some-url.com", client.environmentURL)
+
+		client, err = NewPlatformClient("https://my-environment.live.dynatrace.com/", "http://some-url.com", nil, nil)
+		assert.NoError(t, err)
+		assert.Equal(t, "http://some-url.com", client.environmentURLClassic)
 	})
 
 	t.Run("URL is without scheme - should throw an error", func(t *testing.T) {
-		_, err := NewPlatformClient("my-environment.live.dynatrace.com", "", auth.OauthCredentials{})
+		_, err := NewPlatformClient("some-url.com", "", nil, nil)
+		assert.ErrorContains(t, err, "not valid")
+
+		_, err = NewPlatformClient("https://some-url.com", "some-url.com", nil, nil)
 		assert.ErrorContains(t, err, "not valid")
 	})
 
 	t.Run("URL is without valid local path - should return an error", func(t *testing.T) {
-		_, err := NewPlatformClient("/my-environment/live/dynatrace.com/", "", auth.OauthCredentials{})
+		_, err := NewPlatformClient("/my-environment/live/dynatrace.com/", "https://some-url.com", nil, nil)
+		assert.ErrorContains(t, err, "no host specified")
+
+		_, err = NewPlatformClient("https://some-url.com", "/my-environment/live/dynatrace.com/", nil, nil)
 		assert.ErrorContains(t, err, "no host specified")
 	})
 
 	t.Run("without valid protocol - should return an error", func(t *testing.T) {
 		var err error
 
-		_, err = NewPlatformClient("https//my-environment.live.dynatrace.com/", "", auth.OauthCredentials{})
+		_, err = NewPlatformClient("https//my-environment.live.dynatrace.com/", "", nil, nil)
 		assert.ErrorContains(t, err, "not valid")
 
-		_, err = NewPlatformClient("http//my-environment.live.dynatrace.com/", "", auth.OauthCredentials{})
+		_, err = NewPlatformClient("http//my-environment.live.dynatrace.com/", "", nil, nil)
 		assert.ErrorContains(t, err, "not valid")
 	})
 }
@@ -245,7 +188,7 @@ func TestReadByIdReturnsAnErrorUponEncounteringAnError(t *testing.T) {
 	defer func() { testServer.Close() }()
 	client := DynatraceClient{
 		environmentURLClassic: testServer.URL,
-		clientClassic:         testServer.Client(),
+		classicClient:         rest.NewRestClient(testServer.Client(), trafficlogs.NewFileBased(), rest.CreateRateLimitStrategy()),
 		limiter:               concurrency.NewLimiter(5),
 		generateExternalID:    idutils.GenerateExternalID,
 	}
@@ -261,7 +204,7 @@ func TestReadByIdEscapesTheId(t *testing.T) {
 	defer func() { testServer.Close() }()
 	client := DynatraceClient{
 		environmentURLClassic: testServer.URL,
-		clientClassic:         testServer.Client(),
+		classicClient:         rest.NewRestClient(testServer.Client(), nil, rest.CreateRateLimitStrategy()),
 		limiter:               concurrency.NewLimiter(5),
 		generateExternalID:    idutils.GenerateExternalID,
 	}
@@ -279,7 +222,7 @@ func TestReadByIdReturnsTheResponseGivenNoError(t *testing.T) {
 
 	client := DynatraceClient{
 		environmentURLClassic: testServer.URL,
-		clientClassic:         testServer.Client(),
+		classicClient:         rest.NewRestClient(testServer.Client(), nil, rest.CreateRateLimitStrategy()),
 		limiter:               concurrency.NewLimiter(5),
 		generateExternalID:    idutils.GenerateExternalID,
 	}
@@ -557,7 +500,7 @@ func TestListKnownSettings(t *testing.T) {
 
 			client := DynatraceClient{
 				environmentURL:     server.URL,
-				client:             server.Client(),
+				platformClient:     rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()),
 				retrySettings:      testRetrySettings,
 				limiter:            concurrency.NewLimiter(5),
 				generateExternalID: idutils.GenerateExternalID,
@@ -670,7 +613,7 @@ func TestGetSettingById(t *testing.T) {
 
 			d := DynatraceClient{
 				environmentURL:        envURL,
-				client:                server.Client(),
+				platformClient:        rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()),
 				retrySettings:         tt.fields.retrySettings,
 				settingsObjectAPIPath: "/api/v2/settings/objects",
 				limiter:               concurrency.NewLimiter(5),
@@ -767,7 +710,7 @@ func TestDeleteSettings(t *testing.T) {
 
 			d := DynatraceClient{
 				environmentURL:        envURL,
-				client:                server.Client(),
+				platformClient:        rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()),
 				retrySettings:         tt.fields.retrySettings,
 				settingsObjectAPIPath: settingsObjectAPIPathClassic,
 				limiter:               concurrency.NewLimiter(5),
@@ -802,7 +745,7 @@ func TestUpsertSettingsRetries(t *testing.T) {
 
 	client := DynatraceClient{
 		environmentURL:     server.URL,
-		client:             server.Client(),
+		platformClient:     rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()),
 		retrySettings:      testRetrySettings,
 		limiter:            concurrency.NewLimiter(5),
 		generateExternalID: idutils.GenerateExternalID,
@@ -837,7 +780,7 @@ func TestUpsertSettingsFromCache(t *testing.T) {
 
 	client := DynatraceClient{
 		environmentURL:     server.URL,
-		client:             server.Client(),
+		platformClient:     rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()),
 		retrySettings:      testRetrySettings,
 		limiter:            concurrency.NewLimiter(5),
 		generateExternalID: idutils.GenerateExternalID,
@@ -881,7 +824,7 @@ func TestUpsertSettingsFromCache_CacheInvalidated(t *testing.T) {
 
 	client := DynatraceClient{
 		environmentURL:     server.URL,
-		client:             server.Client(),
+		platformClient:     rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()),
 		retrySettings:      testRetrySettings,
 		limiter:            concurrency.NewLimiter(5),
 		generateExternalID: idutils.GenerateExternalID,
@@ -1169,7 +1112,7 @@ func TestListEntities(t *testing.T) {
 
 			client := DynatraceClient{
 				environmentURL:     server.URL,
-				client:             server.Client(),
+				platformClient:     rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()),
 				retrySettings:      testRetrySettings,
 				limiter:            concurrency.NewLimiter(5),
 				generateExternalID: idutils.GenerateExternalID,
@@ -1196,7 +1139,7 @@ func TestCreateDynatraceClientWithAutoServerVersion(t *testing.T) {
 			_, _ = rw.Write([]byte(`{"version" : "1.262.0.20230214-193525"}`))
 		}))
 
-		dcl, err := NewClassicClient(server.URL, "", WithAutoServerVersion())
+		dcl, err := NewClassicClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()), WithAutoServerVersion())
 
 		server.Close()
 		assert.NoError(t, err)
@@ -1208,7 +1151,7 @@ func TestCreateDynatraceClientWithAutoServerVersion(t *testing.T) {
 			_, _ = rw.Write([]byte(`{}`))
 		}))
 
-		dcl, err := NewClassicClient(server.URL, "", WithAutoServerVersion())
+		dcl, err := NewClassicClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()), WithAutoServerVersion())
 		server.Close()
 		assert.NoError(t, err)
 		assert.Equal(t, version.UnknownVersion, dcl.serverVersion)

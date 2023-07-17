@@ -27,17 +27,17 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 )
 
-// rateLimitStrategy ensures that the concrete implementation of the rate limiting strategy can be hidden
+// RateLimitStrategy ensures that the concrete implementation of the rate limiting strategy can be hidden
 // behind this interface
-type rateLimitStrategy interface {
-	executeRequest(timelineProvider timeutils.TimelineProvider, callback func() (Response, error)) (Response, error)
+type RateLimitStrategy interface {
+	ExecuteRequest(timelineProvider timeutils.TimelineProvider, callback func() (Response, error)) (Response, error)
 }
 
-// createRateLimitStrategy creates a rateLimitStrategy. In the future this can be extended to instantiate
+// CreateRateLimitStrategy creates a RateLimitStrategy. In the future this can be extended to instantiate
 // different rate limiting strategies based on e.g. environment variables. The current implementation
 // always returns the strategy simpleSleepRateLimitStrategy, which suspends the current goroutine until
 // the time in the rate limiting header 'X-RateLimit-Reset' is up.
-func createRateLimitStrategy() rateLimitStrategy {
+func CreateRateLimitStrategy() RateLimitStrategy {
 	return &simpleSleepRateLimitStrategy{}
 }
 
@@ -47,7 +47,7 @@ func createRateLimitStrategy() rateLimitStrategy {
 // polling iterations before giving up.
 type simpleSleepRateLimitStrategy struct{}
 
-func (s *simpleSleepRateLimitStrategy) executeRequest(timelineProvider timeutils.TimelineProvider, callback func() (Response, error)) (Response, error) {
+func (s *simpleSleepRateLimitStrategy) ExecuteRequest(timelineProvider timeutils.TimelineProvider, callback func() (Response, error)) (Response, error) {
 
 	response, err := callback()
 	if err != nil {

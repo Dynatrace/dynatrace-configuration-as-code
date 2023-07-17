@@ -1002,11 +1002,11 @@ func TestDownloadIntegrationDownloadsAPIsAndSettings(t *testing.T) {
 
 	// Responses
 	responses := map[string]string{
-		"/fake-api":                "fake-api/__LIST.json",
-		"/fake-api/id-1":           "fake-api/id-1.json",
-		"/fake-api/id-2":           "fake-api/id-2.json",
-		"/api/v2/settings/schemas": "settings/__SCHEMAS.json",
-		"/api/v2/settings/objects": "settings/objects.json",
+		"/fake-api":      "fake-api/__LIST.json",
+		"/fake-api/id-1": "fake-api/id-1.json",
+		"/fake-api/id-2": "fake-api/id-2.json",
+		"/platform/classic/environment-api/v2/settings/schemas": "settings/__SCHEMAS.json",
+		"/platform/classic/environment-api/v2/settings/objects": "settings/objects.json",
 	}
 
 	// Server
@@ -1120,8 +1120,8 @@ func TestDownloadIntegrationDoesNotDownloadUnmodifiableSettings(t *testing.T) {
 	const testBasePath = "test-resources/" + projectName
 
 	responses := map[string]string{
-		"/api/v2/settings/schemas": "settings/__SCHEMAS.json",
-		"/api/v2/settings/objects": "settings/objects.json",
+		"/platform/classic/environment-api/v2/settings/schemas": "settings/__SCHEMAS.json",
+		"/platform/classic/environment-api/v2/settings/objects": "settings/objects.json",
 	}
 
 	// GIVEN Server
@@ -1176,8 +1176,8 @@ func TestDownloadIntegrationDownloadsUnmodifiableSettingsIfFFTurnedOff(t *testin
 	const testBasePath = "test-resources/" + projectName
 
 	responses := map[string]string{
-		"/api/v2/settings/schemas": "settings/__SCHEMAS.json",
-		"/api/v2/settings/objects": "settings/objects.json",
+		"/platform/classic/environment-api/v2/settings/schemas": "settings/__SCHEMAS.json",
+		"/platform/classic/environment-api/v2/settings/objects": "settings/objects.json",
 	}
 
 	// GIVEN Server
