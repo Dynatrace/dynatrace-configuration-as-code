@@ -165,10 +165,18 @@ func ConsistentUUIDGeneration() FeatureFlag {
 	}
 }
 
-// UseGraphs toggles whether sort.GetSortedConfigsForEnvironments use sgraph datastructures and algorithms for sorting projects.
-func UseGraphs() FeatureFlag {
+// DependencyGraphBasedSort toggles whether sort.GetSortedConfigsForEnvironments use sgraph datastructures and algorithms for sorting projects.
+func DependencyGraphBasedSort() FeatureFlag {
 	return FeatureFlag{
-		envName:        "MONACO_FEAT_GRAPHS",
+		envName:        "MONACO_FEAT_GRAPH_SORT",
 		defaultEnabled: true,
+	}
+}
+
+// ExportDependencyGraph toggles wheter the command to export dependency graphs to DOT files is available.
+func ExportDependencyGraph() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_CMD_EXPORT_DEPENDENCY_GRAPH",
+		defaultEnabled: false,
 	}
 }
