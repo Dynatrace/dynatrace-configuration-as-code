@@ -12,8 +12,8 @@ jobs:
       contents: read
       checks: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 #v3.5.3
         with:
           fetch-depth: 0
       - name: Commitsar check
-        uses: docker://aevea/commitsar:0.20.1
+        uses: aevea/commitsar@916c7b483225a30d3a17f407fa25f5b25888ea69 #v0.20.2

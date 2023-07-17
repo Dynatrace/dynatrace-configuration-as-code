@@ -43,7 +43,7 @@ jobs:
           done
 
       - name: Publish Unit Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2
+        uses: EnricoMi/publish-unit-test-result-action@f0b5d2433f350eff587831d4ad22cb15aab75866 #v2.8.0
         with:
           commit: ${{ github.event.workflow_run.head_sha }}
           event_file: ${{ env.ARTIFACT_PATH }}/event_file/event.json
