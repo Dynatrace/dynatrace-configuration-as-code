@@ -196,12 +196,12 @@ func TestGetSortedConfigsForEnvironments(t *testing.T) {
 	}
 
 	t.Run("Topology Sort", func(t *testing.T) {
-		t.Setenv(featureflags.UseGraphs().EnvName(), "false")
+		t.Setenv(featureflags.DependencyGraphBasedSort().EnvName(), "false")
 		assertSortingWorks(t, projects, environments, environmentName, dashboardConfigCoordinate, autoTagCoordinates)
 	})
 
 	t.Run("Graph-based sort", func(t *testing.T) {
-		t.Setenv(featureflags.UseGraphs().EnvName(), "true")
+		t.Setenv(featureflags.DependencyGraphBasedSort().EnvName(), "true")
 		assertSortingWorks(t, projects, environments, environmentName, dashboardConfigCoordinate, autoTagCoordinates)
 	})
 

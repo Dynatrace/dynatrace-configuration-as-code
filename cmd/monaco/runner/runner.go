@@ -82,7 +82,7 @@ Examples:
 	rootCmd.AddCommand(delete.GetDeleteCommand(fs))
 	rootCmd.AddCommand(version.GetVersionCommand())
 
-	if featureflags.UseGraphs().Enabled() {
+	if featureflags.ExportDependencyGraph().Enabled() {
 		rootCmd.AddCommand(dependencygraph.Command(fs))
 	}
 
