@@ -155,7 +155,7 @@ func (d *DynatraceClient) fetchSchemasConstraints(ctx context.Context, schemaID 
 			ret.UniqueProperties = append(ret.UniqueProperties, sc.UniqueProperties)
 		}
 	}
-
+	d.schemaConstraintsCache.Set(schemaID, ret)
 	return ret, nil
 }
 
