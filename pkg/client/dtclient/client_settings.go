@@ -129,6 +129,10 @@ func (d *DynatraceClient) FetchSchemasConstraints(schemaID string) (constraints 
 }
 
 func (d *DynatraceClient) fetchSchemasConstraints(ctx context.Context, schemaID string) (SchemaConstraints, error) {
+	if ret, cached := d.schemaConstraintsCache.Get(schemaID); cached {
+		return ret, nil
+	}
+
 	ret := SchemaConstraints{SchemaId: schemaID}
 	u, err := url.JoinPath(d.environmentURL, d.settingsSchemaAPIPath, schemaID)
 	if err != nil {

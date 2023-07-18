@@ -232,6 +232,9 @@ type DynatraceClient struct {
 
 	// settingsCache caches settings objects
 	settingsCache cache.Cache[[]DownloadSettingsObject]
+
+	// schemaConstraintsCache caches schema constraints
+	schemaConstraintsCache cache.Cache[SchemaConstraints]
 }
 
 var (
