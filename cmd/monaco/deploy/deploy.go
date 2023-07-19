@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -68,10 +67,13 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 	logEnvironmentsInfo(loadedManifest.Environments)
 
 	if featureflags.DependencyGraphBasedDeploy().Enabled() {
-		environmentDeployErrs := deploy.DeployConfigGraph(filteredProjects, loadedManifest.Environments, deploy.DeployConfigsOptions{
-			ContinueOnErr:  continueOnErr,
-			DryRun:         dryRun,
-			SupportArchive: support.SupportArchive,
+		clientSets, err := createDeployClientSets(loadedManifest.Environments, dryRun)
+		if err != nil {
+			return fmt.Errorf("failed to create API clients: %w", err)
+		}
+		environmentDeployErrs := deploy.DeployConfigGraph(filteredProjects, clientSets, deploy.DeployConfigsOptions{
+			ContinueOnErr: continueOnErr,
+			DryRun:        dryRun,
 		})
 		if len(environmentDeployErrs) > 0 {
 			var deployErrs []error
@@ -92,7 +94,7 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 
 		for envName, cfgs := range sortedConfigs {
 			env := loadedManifest.Environments[envName]
-			errs := deployOnEnvironment(&env, cfgs, continueOnErr, dryRun)
+			errs := deployOnEnvironment(env, cfgs, continueOnErr, dryRun)
 			deployErrs = append(deployErrs, errs...)
 			if len(errs) > 0 && !continueOnErr {
 				break
@@ -109,23 +111,12 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 	return nil
 }
 
-func deployOnEnvironment(env *manifest.EnvironmentDefinition, cfgs []config.Config, continueOnErr bool, dryRun bool) []error {
+func deployOnEnvironment(env manifest.EnvironmentDefinition, cfgs []config.Config, continueOnErr bool, dryRun bool) []error {
 	logDeploymentInfo(dryRun, env.Name)
-	var clientSet deploy.ClientSet
-	if dryRun {
-		clientSet = deploy.DummyClientSet
-	} else {
 
-		cl, err := dynatrace.CreateClientSet(env.URL.Value, env.Auth)
-		if err != nil {
-			return []error{fmt.Errorf("failed to create clients for envrionment %q: %w", env.Name, err)}
-		}
-
-		clientSet = deploy.ClientSet{
-			Classic:    cl.Classic(),
-			Settings:   cl.Settings(),
-			Automation: cl.Automation(),
-		}
+	clientSet, err := createDeployClientSet(env, dryRun)
+	if err != nil {
+		return []error{fmt.Errorf("failed to create clients for envrionment %q: %w", env.Name, err)}
 	}
 
 	errs := deploy.DeployConfigs(clientSet, api.NewAPIs(), cfgs, deploy.DeployConfigsOptions{
@@ -133,6 +124,40 @@ func deployOnEnvironment(env *manifest.EnvironmentDefinition, cfgs []config.Conf
 		DryRun:        dryRun,
 	})
 	return errs
+}
+
+func createDeployClientSets(environments manifest.Environments, dryRun bool) (deploy.EnvironmentClients, error) {
+	clients := make(deploy.EnvironmentClients, len(environments))
+	for _, env := range environments {
+		clientSet, err := createDeployClientSet(env, dryRun)
+		if err != nil {
+			return deploy.EnvironmentClients{}, err
+		}
+
+		clients[deploy.EnvironmentInfo{
+			Name:  env.Name,
+			Group: env.Group,
+		}] = clientSet
+	}
+
+	return clients, nil
+}
+
+func createDeployClientSet(env manifest.EnvironmentDefinition, dryRun bool) (deploy.ClientSet, error) {
+	if dryRun {
+		return deploy.DummyClientSet, nil
+	}
+
+	cl, err := dynatrace.CreateClientSet(env.URL.Value, env.Auth)
+	if err != nil {
+		return deploy.ClientSet{}, err
+	}
+
+	return deploy.ClientSet{
+		Classic:    cl.Classic(),
+		Settings:   cl.Settings(),
+		Automation: cl.Automation(),
+	}, nil
 }
 
 func absPath(manifestPath string) (string, error) {
