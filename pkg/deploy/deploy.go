@@ -80,7 +80,7 @@ func DeployConfigs(clientSet ClientSet, apis api.APIs, sortedConfigs []config.Co
 			if !opts.ContinueOnErr && !opts.DryRun {
 				return errs
 			}
-		} else if entity != nil {
+		} else {
 			entityMap.put(*entity)
 		}
 	}
@@ -207,11 +207,9 @@ func deployComponent(ctx context.Context, component graph.SortedComponent, clien
 
 			markChildrenAsNotToDeploy(ctx, g, &node, nil, dontDeploy, deploymentFailed)
 
-		} else if entity != nil {
+		} else {
 			entityMap.put(*entity)
 			log.Info("Deployed %v successfully (graph-node-id %d)", node.Config.Coordinate, id)
-		} else {
-			log.Warn("Deployment success, but no entity was returned for config %v - WTF?!", node.Config.Coordinate) //TODO why can this happen
 		}
 	}
 	return errs
@@ -272,10 +270,7 @@ func deploy(ctx context.Context, clientSet ClientSet, apis api.APIs, em *entityM
 
 	var res *parameter.ResolvedEntity
 	var deployErr error
-	switch t := c.Type.(type) {
-	case config.EntityType:
-		log.WithCtxFields(ctx).Debug("Entities are not deployable, skipping entity type: %s", t.EntitiesType)
-		return nil, nil
+	switch c.Type.(type) {
 
 	case config.SettingsType:
 		log.WithCtxFields(ctx).Info("Deploying config %s", c.Coordinate)
