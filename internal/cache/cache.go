@@ -18,7 +18,28 @@ package cache
 
 import "sync"
 
-type Cache[T any] struct {
+type Cache[T any] interface {
+	Get(key string) (T, bool)
+	Set(key string, entries T)
+	Delete(key string)
+}
+
+type NoopCache[T interface{}] struct{}
+
+func (n NoopCache[T]) Get(_ string) (T, bool) {
+	var res T
+	return res, false
+}
+
+func (n NoopCache[T]) Set(_ string, _ T) {
+	// no-op
+}
+
+func (n NoopCache[T]) Delete(_ string) {
+	// no-op
+}
+
+type DefaultCache[T any] struct {
 	entries map[string]T
 	mutex   sync.RWMutex
 }
@@ -26,7 +47,7 @@ type Cache[T any] struct {
 // Get retrieves the value associated with the given key from the cache.
 // It acquires a read lock to allow concurrent access from multiple goroutines.
 // It returns the value and a boolean indicating if the value exists in the cache.
-func (s *Cache[T]) Get(key string) (T, bool) {
+func (s *DefaultCache[T]) Get(key string) (T, bool) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
@@ -36,7 +57,7 @@ func (s *Cache[T]) Get(key string) (T, bool) {
 
 // Set adds or updates an entry in the cache with the specified key and value.
 // It acquires an exclusive write lock to ensure exclusive access during the update.
-func (s *Cache[T]) Set(key string, entries T) {
+func (s *DefaultCache[T]) Set(key string, entries T) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -48,7 +69,7 @@ func (s *Cache[T]) Set(key string, entries T) {
 
 // Delete removes an entry from the cache with the specified key.
 // It acquires an exclusive write lock to ensure exclusive access during the deletion.
-func (s *Cache[T]) Delete(key string) {
+func (s *DefaultCache[T]) Delete(key string) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 

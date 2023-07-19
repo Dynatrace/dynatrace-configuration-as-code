@@ -22,7 +22,7 @@ import (
 )
 
 func TestCache_Get(t *testing.T) {
-	cache := Cache[int]{entries: map[string]int{"key": 100}}
+	cache := DefaultCache[int]{entries: map[string]int{"key": 100}}
 	value, found := cache.Get("key")
 	assert.True(t, found)
 	assert.Equal(t, 100, value)
@@ -33,7 +33,7 @@ func TestCache_Get(t *testing.T) {
 }
 
 func TestCache_Set(t *testing.T) {
-	cache := Cache[int]{}
+	cache := DefaultCache[int]{}
 	cache.Set("key", 100)
 	value, found := cache.Get("key")
 	assert.True(t, found)
@@ -41,7 +41,7 @@ func TestCache_Set(t *testing.T) {
 }
 
 func TestCache_Delete(t *testing.T) {
-	cache := Cache[int]{entries: map[string]int{"key": 100}}
+	cache := DefaultCache[int]{entries: map[string]int{"key": 100}}
 	cache.Delete("key")
 	value, found := cache.Get("key")
 	assert.False(t, found)

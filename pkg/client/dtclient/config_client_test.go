@@ -338,7 +338,6 @@ func Test_getObjectIdIfAlreadyExists(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 				if tt.givenApiResponseIsError {
 					rw.WriteHeader(400)
@@ -357,6 +356,45 @@ func Test_getObjectIdIfAlreadyExists(t *testing.T) {
 			if got != tt.wantFoundId {
 				t.Errorf("getObjectIdIfAlreadyExists() got = %v, want %v", got, tt.wantFoundId)
 			}
+		})
+	}
+}
+
+func TestUpsertConfigByName(t *testing.T) {
+	tests := []struct {
+		name             string
+		testApi          api.API
+		givenApiResponse string
+		expectedAPIHits  int
+	}{
+		{
+			name:             "cache is used for fetching existing values",
+			testApi:          api.API{ID: "test", URLPath: "/test/api", PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse},
+			givenApiResponse: `{ "values": [ { "id": "42", "name": "MY CONFIG" }, {"id": "43", "name": "MY CONFIG 2" } ] }`,
+			expectedAPIHits:  3, // one for getting existing values, one for updating MY CONFIG and one for updating MY CONFIG 2
+		},
+		{
+			name:             "cache is not used for fetching existing values when dealing with non unique name configs",
+			testApi:          api.API{ID: "test", URLPath: "/test/api", NonUniqueName: true, PropertyNameOfGetAllResponse: api.StandardApiPropertyNameOfGetAllResponse},
+			givenApiResponse: `{ "values": [ { "id": "42", "name": "MY CONFIG" }, {"id": "43", "name": "MY CONFIG 2" } ] }`,
+			expectedAPIHits:  4, // one for getting existing values, one for updating MY CONFIG another one for getting existing values and one for updating MY CONFIG 2
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			apiHits := 0
+			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				apiHits++
+				rw.Write([]byte(tt.givenApiResponse))
+				rw.WriteHeader(http.StatusOK)
+				fmt.Println(req.URL)
+			}))
+			defer server.Close()
+
+			dtClient, _ := NewDynatraceClientForTesting(server.URL, server.Client())
+			dtClient.UpsertConfigByName(context.TODO(), tt.testApi, "MY CONFIG", nil)
+			dtClient.UpsertConfigByName(context.TODO(), tt.testApi, "MY CONFIG 2", nil)
+			assert.Equal(t, apiHits, tt.expectedAPIHits)
 		})
 	}
 }

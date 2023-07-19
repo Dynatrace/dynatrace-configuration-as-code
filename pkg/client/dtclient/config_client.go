@@ -32,43 +32,39 @@ import (
 	"strings"
 )
 
-func (d *DynatraceClient) upsertDynatraceObject(
-	ctx context.Context,
-	theApi api.API,
-	objectName string,
-	payload []byte,
-) (DynatraceEntity, error) {
-	isSingleConfigurationApi := theApi.SingleConfiguration
-	existingObjectId := ""
+func (d *DynatraceClient) upsertDynatraceObject(ctx context.Context, theApi api.API, objectName string, payload []byte) (DynatraceEntity, error) {
+	doUpsert := func() (DynatraceEntity, error) {
+		var existingObjectID string
 
-	fullUrl := theApi.CreateURL(d.environmentURLClassic)
+		// Single configuration APIs don't have an id which allows skipping this step
+		if !theApi.SingleConfiguration {
+			var err error
+			existingObjectID, err = d.getObjectIdIfAlreadyExists(ctx, theApi, theApi.CreateURL(d.environmentURLClassic), objectName)
+			if err != nil {
+				return DynatraceEntity{}, err
+			}
+		}
 
-	// Single configuration APIs don't have an id which allows skipping this step
-	if !isSingleConfigurationApi {
-		var err error
-		existingObjectId, err = d.getObjectIdIfAlreadyExists(ctx, theApi, fullUrl, objectName)
-		if err != nil {
-			return DynatraceEntity{}, err
+		// The calculated-metrics-log API doesn't have a POST endpoint, to create a new log metric we need to use PUT which
+		// requires a metric key for which we can just take the objectName
+		if theApi.ID == "calculated-metrics-log" && existingObjectID == "" {
+			existingObjectID = objectName
+		}
+
+		// Single configuration APIs don't have a POST, but a PUT endpoint
+		// and therefore always require an update
+		if existingObjectID != "" || theApi.SingleConfiguration {
+			return d.updateDynatraceObject(ctx, theApi.CreateURL(d.environmentURLClassic), objectName, existingObjectID, theApi, payload)
+		} else {
+			return d.createDynatraceObject(ctx, theApi.CreateURL(d.environmentURLClassic), objectName, theApi, payload)
 		}
 	}
 
-	body := payload
-	configType := theApi.ID
-
-	// The calculated-metrics-log API doesn't have a POST endpoint, to create a new log metric we need to use PUT which
-	// requires a metric key for which we can just take the objectName
-	if configType == "calculated-metrics-log" && existingObjectId == "" {
-		existingObjectId = objectName
-	}
-
-	isUpdate := existingObjectId != ""
-
-	// Single configuration APIs don't have a POST, but a PUT endpoint
-	// and therefore always require an update
-	if isUpdate || isSingleConfigurationApi {
-		return d.updateDynatraceObject(ctx, fullUrl, objectName, existingObjectId, theApi, body)
+	if obj, err := doUpsert(); err == nil {
+		return obj, nil
 	} else {
-		return d.createDynatraceObject(ctx, fullUrl, objectName, theApi, body)
+		d.classicConfigsCache.Delete(theApi.ID)
+		return doUpsert()
 	}
 }
 
@@ -421,7 +417,11 @@ func isMobileApp(api api.API) bool {
 }
 
 func (d *DynatraceClient) getExistingValuesFromEndpoint(ctx context.Context, theApi api.API, urlString string) (values []Value, err error) {
-
+	if !theApi.NonUniqueName {
+		if values, cached := d.classicConfigsCache.Get(theApi.ID); cached {
+			return values, nil
+		}
+	}
 	parsedUrl, err := url.Parse(urlString)
 	if err != nil {
 		return nil, fmt.Errorf("invalid URL for getting existing Dynatrace configs: %w", err)
@@ -467,7 +467,7 @@ func (d *DynatraceClient) getExistingValuesFromEndpoint(ctx context.Context, the
 			break
 		}
 	}
-
+	d.classicConfigsCache.Set(theApi.ID, existingValues)
 	return existingValues, nil
 }
 

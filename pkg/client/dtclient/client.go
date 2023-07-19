@@ -235,6 +235,9 @@ type DynatraceClient struct {
 
 	// schemaConstraintsCache caches schema constraints
 	schemaConstraintsCache cache.Cache[SchemaConstraints]
+
+	// classicConfigsCache caches classic settings values
+	classicConfigsCache cache.Cache[[]Value]
 }
 
 var (
@@ -295,6 +298,19 @@ func WithAutoServerVersion() func(client *DynatraceClient) {
 	}
 }
 
+// WithCachingDisabled allows disabling the client's builtin caching mechanism for
+// classic configs, schema constraints and settings objects. Disabling the caching
+// is recommended in situations where configs are fetched immediately after their creation (e.g. in test scenarios)
+func WithCachingDisabled(disabled bool) func(client *DynatraceClient) {
+	return func(d *DynatraceClient) {
+		if disabled {
+			d.classicConfigsCache = &cache.NoopCache[[]Value]{}
+			d.schemaConstraintsCache = &cache.NoopCache[SchemaConstraints]{}
+			d.settingsCache = &cache.NoopCache[[]DownloadSettingsObject]{}
+		}
+	}
+}
+
 // WithCustomUserAgentString allows to configure a custom user-agent string that the Client will send with each HTTP request
 // If none is set, the default Monaco CLI specific user-agent is sent.
 func WithCustomUserAgentString(userAgent string) func(client *DynatraceClient) {
@@ -328,16 +344,19 @@ func NewPlatformClient(dtURL string, classicURL string, client *rest.Client, cla
 	}
 
 	d := &DynatraceClient{
-		serverVersion:         version.Version{},
-		environmentURL:        dtURL,
-		environmentURLClassic: classicURL,
-		platformClient:        client,
-		classicClient:         classicClient,
-		retrySettings:         rest.DefaultRetrySettings,
-		settingsSchemaAPIPath: settingsSchemaAPIPathPlatform,
-		settingsObjectAPIPath: settingsObjectAPIPathPlatform,
-		limiter:               concurrency.NewLimiter(5),
-		generateExternalID:    idutils.GenerateExternalID,
+		serverVersion:          version.Version{},
+		environmentURL:         dtURL,
+		environmentURLClassic:  classicURL,
+		platformClient:         client,
+		classicClient:          classicClient,
+		retrySettings:          rest.DefaultRetrySettings,
+		settingsSchemaAPIPath:  settingsSchemaAPIPathPlatform,
+		settingsObjectAPIPath:  settingsObjectAPIPathPlatform,
+		limiter:                concurrency.NewLimiter(5),
+		generateExternalID:     idutils.GenerateExternalID,
+		settingsCache:          &cache.DefaultCache[[]DownloadSettingsObject]{},
+		classicConfigsCache:    &cache.DefaultCache[[]Value]{},
+		schemaConstraintsCache: &cache.DefaultCache[SchemaConstraints]{},
 	}
 
 	for _, o := range opts {
@@ -355,16 +374,19 @@ func NewClassicClient(dtURL string, client *rest.Client, opts ...func(dynatraceC
 		return nil, err
 	}
 	d := &DynatraceClient{
-		serverVersion:         version.Version{},
-		environmentURL:        dtURL,
-		environmentURLClassic: dtURL,
-		platformClient:        client,
-		classicClient:         client,
-		retrySettings:         rest.DefaultRetrySettings,
-		settingsSchemaAPIPath: settingsSchemaAPIPathClassic,
-		settingsObjectAPIPath: settingsObjectAPIPathClassic,
-		limiter:               concurrency.NewLimiter(5),
-		generateExternalID:    idutils.GenerateExternalID,
+		serverVersion:          version.Version{},
+		environmentURL:         dtURL,
+		environmentURLClassic:  dtURL,
+		platformClient:         client,
+		classicClient:          client,
+		retrySettings:          rest.DefaultRetrySettings,
+		settingsSchemaAPIPath:  settingsSchemaAPIPathClassic,
+		settingsObjectAPIPath:  settingsObjectAPIPathClassic,
+		limiter:                concurrency.NewLimiter(5),
+		generateExternalID:     idutils.GenerateExternalID,
+		settingsCache:          &cache.DefaultCache[[]DownloadSettingsObject]{},
+		classicConfigsCache:    &cache.DefaultCache[[]Value]{},
+		schemaConstraintsCache: &cache.DefaultCache[SchemaConstraints]{},
 	}
 
 	for _, o := range opts {
@@ -589,9 +611,8 @@ func (d *DynatraceClient) listSettings(ctx context.Context, schemaId string, opt
 	}
 
 	d.settingsCache.Set(schemaId, result)
-	settings, _ := d.settingsCache.Get(schemaId)
 
-	return filter.FilterSlice(settings, opts.Filter), nil
+	return filter.FilterSlice(result, opts.Filter), nil
 }
 
 type EntitiesTypeListResponse struct {

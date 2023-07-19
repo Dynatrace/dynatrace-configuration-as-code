@@ -21,6 +21,7 @@ package dtclient
 import (
 	"context"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
@@ -498,13 +499,11 @@ func TestListKnownSettings(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := DynatraceClient{
-				environmentURL:     server.URL,
-				platformClient:     rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()),
-				retrySettings:      testRetrySettings,
-				limiter:            concurrency.NewLimiter(5),
-				generateExternalID: idutils.GenerateExternalID,
-			}
+			restClient := rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy())
+			client, _ := NewClassicClient(server.URL, restClient,
+				WithRetrySettings(testRetrySettings),
+				WithClientRequestLimiter(concurrency.NewLimiter(5)),
+				WithExternalIDGenerator(idutils.GenerateExternalID))
 
 			res, err1 := client.ListSettings(context.TODO(), tt.givenSchemaID, tt.givenListSettingsOpts)
 
@@ -743,13 +742,11 @@ func TestUpsertSettingsRetries(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := DynatraceClient{
-		environmentURL:     server.URL,
-		platformClient:     rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()),
-		retrySettings:      testRetrySettings,
-		limiter:            concurrency.NewLimiter(5),
-		generateExternalID: idutils.GenerateExternalID,
-	}
+	restClient := rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy())
+	client, _ := NewPlatformClient(server.URL, server.URL, restClient, restClient,
+		WithRetrySettings(testRetrySettings),
+		WithClientRequestLimiter(concurrency.NewLimiter(5)),
+		WithExternalIDGenerator(idutils.GenerateExternalID))
 
 	_, err := client.UpsertSettings(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
@@ -778,13 +775,11 @@ func TestUpsertSettingsFromCache(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := DynatraceClient{
-		environmentURL:     server.URL,
-		platformClient:     rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()),
-		retrySettings:      testRetrySettings,
-		limiter:            concurrency.NewLimiter(5),
-		generateExternalID: idutils.GenerateExternalID,
-	}
+	restClient := rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy())
+	client, _ := NewPlatformClient(server.URL, server.URL, restClient, restClient,
+		WithRetrySettings(testRetrySettings),
+		WithClientRequestLimiter(concurrency.NewLimiter(5)),
+		WithExternalIDGenerator(idutils.GenerateExternalID))
 
 	_, err := client.UpsertSettings(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
@@ -823,11 +818,14 @@ func TestUpsertSettingsFromCache_CacheInvalidated(t *testing.T) {
 	defer server.Close()
 
 	client := DynatraceClient{
-		environmentURL:     server.URL,
-		platformClient:     rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()),
-		retrySettings:      testRetrySettings,
-		limiter:            concurrency.NewLimiter(5),
-		generateExternalID: idutils.GenerateExternalID,
+		environmentURL:         server.URL,
+		platformClient:         rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()),
+		retrySettings:          testRetrySettings,
+		limiter:                concurrency.NewLimiter(5),
+		generateExternalID:     idutils.GenerateExternalID,
+		settingsCache:          &cache.DefaultCache[[]DownloadSettingsObject]{},
+		classicConfigsCache:    &cache.DefaultCache[[]Value]{},
+		schemaConstraintsCache: &cache.DefaultCache[SchemaConstraints]{},
 	}
 
 	client.UpsertSettings(context.TODO(), SettingsObject{

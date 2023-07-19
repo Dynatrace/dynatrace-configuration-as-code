@@ -198,15 +198,12 @@ func TestUpsertSettings(t *testing.T) {
 				}
 			}))
 
-			c := DynatraceClient{
-				environmentURL:        server.URL,
-				platformClient:        rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()),
-				serverVersion:         test.serverVersion,
-				retrySettings:         testRetrySettings,
-				settingsObjectAPIPath: settingsObjectAPIPathClassic,
-				limiter:               concurrency.NewLimiter(5),
-				generateExternalID:    idutils.GenerateExternalID,
-			}
+			restClient := rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy())
+			c, _ := NewClassicClient(server.URL, restClient,
+				WithServerVersion(test.serverVersion),
+				WithRetrySettings(testRetrySettings),
+				WithClientRequestLimiter(concurrency.NewLimiter(5)),
+				WithExternalIDGenerator(idutils.GenerateExternalID))
 
 			resp, err := c.UpsertSettings(context.TODO(), SettingsObject{
 				OriginObjectId: "anObjectID",

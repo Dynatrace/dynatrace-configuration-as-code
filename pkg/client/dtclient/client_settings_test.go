@@ -28,7 +28,7 @@ import (
 func Test_schemaDetails(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		switch req.URL.Path {
-		case "/api/v2/settings/schemas/builtin:span-attribute":
+		case settingsSchemaAPIPathPlatform + "/builtin:span-attribute":
 			r := []byte(`
 {
     "schemaId": "builtin:span-attribute",
@@ -65,11 +65,9 @@ func Test_schemaDetails(t *testing.T) {
 	}))
 	defer server.Close()
 
-	d := &DynatraceClient{
-		platformClient:        rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()),
-		environmentURL:        server.URL,
-		settingsSchemaAPIPath: settingsSchemaAPIPathClassic,
-	}
+	restCLient := rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy())
+
+	d, _ := NewPlatformClient(server.URL, server.URL, restCLient, restCLient)
 
 	t.Run("unmarshall data", func(t *testing.T) {
 		expected := SchemaConstraints{SchemaId: "builtin:span-attribute", UniqueProperties: [][]string{{"key0", "key1"}, {"key2", "key3"}}}
@@ -92,11 +90,8 @@ func Test_FetchSchemaConstraintsUsesCache(t *testing.T) {
 	}))
 	defer server.Close()
 
-	d := &DynatraceClient{
-		platformClient:        rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()),
-		environmentURL:        server.URL,
-		settingsSchemaAPIPath: settingsSchemaAPIPathClassic,
-	}
+	restClient := rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy())
+	d, _ := NewPlatformClient(server.URL, server.URL, restClient, restClient)
 
 	_, err := d.fetchSchemasConstraints(context.TODO(), "builtin:span-attribute")
 	assert.NoError(t, err)

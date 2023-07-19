@@ -23,10 +23,9 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/spf13/afero"
+	"gotest.tools/assert"
 	"path/filepath"
 	"testing"
-
-	"gotest.tools/assert"
 )
 
 func TestSpecialCharactersAreCorrectlyEscapedWhereNeeded(t *testing.T) {
