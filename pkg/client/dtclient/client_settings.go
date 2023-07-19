@@ -47,6 +47,11 @@ type (
 		OriginObjectId string
 	}
 
+	SchemaConstraints struct {
+		SchemaId         string
+		UniqueProperties [][]string
+	}
+
 	SchemaList []struct {
 		SchemaId string `json:"schemaId"`
 	}
@@ -116,37 +121,41 @@ func (d *DynatraceClient) listSchemas(ctx context.Context) (SchemaList, error) {
 	return result.Items, nil
 }
 
-func (d *DynatraceClient) FetchSchemasConstraints(schemaID string) (constraints [][]string, err error) {
+func (d *DynatraceClient) FetchSchemasConstraints(schemaID string) (constraints SchemaConstraints, err error) {
 	d.limiter.ExecuteBlocking(func() {
 		constraints, err = d.fetchSchemasConstraints(context.TODO(), schemaID)
 	})
 	return
 }
 
-func (d *DynatraceClient) fetchSchemasConstraints(ctx context.Context, schemaID string) ([][]string, error) {
-	var ret [][]string
+func (d *DynatraceClient) fetchSchemasConstraints(ctx context.Context, schemaID string) (SchemaConstraints, error) {
+	if ret, cached := d.schemaConstraintsCache.Get(schemaID); cached {
+		return ret, nil
+	}
+
+	ret := SchemaConstraints{SchemaId: schemaID}
 	u, err := url.JoinPath(d.environmentURL, d.settingsSchemaAPIPath, schemaID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse url: %w", err)
+		return SchemaConstraints{}, fmt.Errorf("failed to parse url: %w", err)
 	}
 
 	r, err := d.platformClient.Get(ctx, u)
 	if err != nil {
-		return nil, fmt.Errorf("failed to GET schema details for %q: %w", schemaID, err)
+		return SchemaConstraints{}, fmt.Errorf("failed to GET schema details for %q: %w", schemaID, err)
 	}
 
 	var sd schemaDetailsResponse
 	err = json.Unmarshal(r.Body, &sd)
 	if err != nil {
-		return nil, rest.NewRespErr("failed to unmarshal response", r).WithRequestInfo(http.MethodGet, u).WithErr(err)
+		return SchemaConstraints{}, rest.NewRespErr("failed to unmarshal response", r).WithRequestInfo(http.MethodGet, u).WithErr(err)
 	}
 
 	for _, sc := range sd.SchemaConstraints {
 		if sc.Type == "UNIQUE" {
-			ret = append(ret, sc.UniqueProperties)
+			ret.UniqueProperties = append(ret.UniqueProperties, sc.UniqueProperties)
 		}
 	}
-
+	d.schemaConstraintsCache.Set(schemaID, ret)
 	return ret, nil
 }
 

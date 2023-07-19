@@ -123,7 +123,7 @@ type SettingsClient interface {
 	// ListSchemas returns all schemas that the Dynatrace environment reports
 	ListSchemas() (SchemaList, error)
 
-	FetchSchemasConstraints(schemaID string) ([][]string, error)
+	FetchSchemasConstraints(schemaID string) (SchemaConstraints, error)
 
 	// ListSettings returns all settings objects for a given schema.
 	ListSettings(context.Context, string, ListSettingsOptions) ([]DownloadSettingsObject, error)
@@ -232,6 +232,9 @@ type DynatraceClient struct {
 
 	// settingsCache caches settings objects
 	settingsCache cache.Cache[[]DownloadSettingsObject]
+
+	// schemaConstraintsCache caches schema constraints
+	schemaConstraintsCache cache.Cache[SchemaConstraints]
 }
 
 var (

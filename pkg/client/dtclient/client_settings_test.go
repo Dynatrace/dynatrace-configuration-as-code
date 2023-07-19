@@ -72,11 +72,40 @@ func Test_schemaDetails(t *testing.T) {
 	}
 
 	t.Run("unmarshall data", func(t *testing.T) {
-		expected := [][]string{{"key0", "key1"}, {"key2", "key3"}}
+		expected := SchemaConstraints{SchemaId: "builtin:span-attribute", UniqueProperties: [][]string{{"key0", "key1"}, {"key2", "key3"}}}
 
 		actual, err := d.fetchSchemasConstraints(context.TODO(), "builtin:span-attribute")
 
 		assert.NoError(t, err)
 		assert.Equal(t, expected, actual)
 	})
+}
+
+func Test_FetchSchemaConstraintsUsesCache(t *testing.T) {
+	apiHits := 0
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		apiHits++
+		r := []byte(`{"schemaId": "builtin:span-attribute","schemaConstraints": []}`)
+		rw.WriteHeader(http.StatusOK)
+		rw.Write(r)
+
+	}))
+	defer server.Close()
+
+	d := &DynatraceClient{
+		platformClient:        rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()),
+		environmentURL:        server.URL,
+		settingsSchemaAPIPath: settingsSchemaAPIPathClassic,
+	}
+
+	_, err := d.fetchSchemasConstraints(context.TODO(), "builtin:span-attribute")
+	assert.NoError(t, err)
+	assert.Equal(t, 1, apiHits)
+	_, err = d.fetchSchemasConstraints(context.TODO(), "builtin:alerting.profile")
+	assert.NoError(t, err)
+	assert.Equal(t, 2, apiHits)
+	_, err = d.fetchSchemasConstraints(context.TODO(), "builtin:span-attribute")
+	assert.NoError(t, err)
+	assert.Equal(t, 2, apiHits)
+
 }
