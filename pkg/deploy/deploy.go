@@ -26,7 +26,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"strings"
@@ -40,9 +39,6 @@ type DeployConfigsOptions struct {
 	// DryRun states that the deployment shall just run in dry-run mode, meaning
 	// that actual deployment of the configuration to a tenant will be skipped
 	DryRun bool
-	// SupportArchive defines whether the client.ClientSet created to deploy configurations
-	// will write additional debug files
-	SupportArchive bool
 }
 
 type ClientSet struct {
@@ -98,15 +94,29 @@ func (e EnvironmentDeploymentErrors) Error() string {
 	return b.String()
 }
 
-func DeployConfigGraph(projects []project.Project, envs manifest.Environments, opts DeployConfigsOptions) EnvironmentDeploymentErrors {
+type EnvironmentInfo struct {
+	Name  string
+	Group string
+}
+type EnvironmentClients map[EnvironmentInfo]ClientSet
+
+func (e EnvironmentClients) Names() []string {
+	n := make([]string, 0, len(e))
+	for k := range e {
+		n = append(n, k.Name)
+	}
+	return n
+}
+
+func DeployConfigGraph(projects []project.Project, environmentClients EnvironmentClients, opts DeployConfigsOptions) EnvironmentDeploymentErrors {
 
 	apis := api.NewAPIs()
-	g := graph.New(projects, envs.Names())
+	g := graph.New(projects, environmentClients.Names())
 
 	errs := make(EnvironmentDeploymentErrors)
 
-	for _, env := range envs {
-		envErrs := deployComponentsToEnvironment(g, env, apis, opts)
+	for env, clients := range environmentClients {
+		envErrs := deployComponentsToEnvironment(g, env, clients, apis, opts)
 		if len(envErrs) > 0 {
 			errs[env.Name] = envErrs
 
@@ -123,15 +133,11 @@ func DeployConfigGraph(projects []project.Project, envs manifest.Environments, o
 	return nil
 }
 
-func deployComponentsToEnvironment(g graph.ConfigGraphPerEnvironment, env manifest.EnvironmentDefinition, apis api.APIs, opts DeployConfigsOptions) []error {
+func deployComponentsToEnvironment(g graph.ConfigGraphPerEnvironment, env EnvironmentInfo, clientSet ClientSet, apis api.APIs, opts DeployConfigsOptions) []error {
 
 	ctx := context.WithValue(context.TODO(), log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
 
 	log.WithCtxFields(ctx).Info("Deploying configurations to environment %q...", env.Name)
-	clientSet, err := createClientSet(env, opts)
-	if err != nil {
-		return []error{fmt.Errorf("failed to create clients for envrionment %q: %w", env.Name, err)}
-	}
 
 	sortedConfigs, err := g.GetIndependentlySortedConfigs(env.Name)
 	if err != nil {
