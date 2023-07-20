@@ -1,7 +1,7 @@
 {
     "enabled": true,
     "name": "Name1",
-    "metricName": "metric-name1",
+    "metricName": "metricName",
     "metricExpression": "(100)*(builtin:service.errors.server.successCount:splitBy())/(builtin:service.requestCount.server:splitBy())",
     "evaluationType": "AGGREGATE",
     "filter": "type(\"SERVICE\")",
