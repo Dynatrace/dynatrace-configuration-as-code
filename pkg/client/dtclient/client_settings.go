@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/filter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -166,8 +167,48 @@ func (d *DynatraceClient) UpsertSettings(ctx context.Context, obj SettingsObject
 	return
 }
 
-func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject) (DynatraceEntity, error) {
+func getValueForConstraint(key string, content []byte) string {
+	c := make(map[string]string)
+	json.Unmarshal(content, &c) // TODO: handle error - how to avoid an error when unmarshaling bool??
+	value := c[key]
+	return value
+}
 
+func jskelin_todo(constarints SchemaConstraints, forDeploy SettingsObject, objects []DownloadSettingsObject) (objectID string, err error) {
+	candidates := make(map[int][]DownloadSettingsObject)
+	for i := range constarints.UniqueProperties {
+		candidates[i] = objects
+
+		for j := range constarints.UniqueProperties[i] {
+			can1 := []DownloadSettingsObject{}
+
+			cKey := constarints.UniqueProperties[i][j]
+			cValue := getValueForConstraint(cKey, forDeploy.Content)
+
+			for z := range candidates[i] {
+				if getValueForConstraint(cKey, objects[z].Value) == cValue {
+					can1 = append(can1, candidates[i][z])
+				}
+			}
+			candidates[i] = can1
+		}
+	}
+
+	var candidate string
+	for i := range candidates {
+		if len(candidates[i]) > 0 {
+			if candidate == "" {
+				candidate = candidates[i][0].ObjectId
+			}
+			if candidate != candidates[i][0].ObjectId { // Huston we have a problem; only one candidate can exist
+				return "", fmt.Errorf("more than one candidate to update for %q schema", forDeploy.Coordinate)
+			}
+		}
+	}
+	return candidate, nil
+}
+
+func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject) (DynatraceEntity, error) {
 	// special handling for updating settings 2.0 objects on tenants with version pre 1.262.0
 	// Tenants with versions < 1.262 are not able to handle updates of existing
 	// settings 2.0 objects that are non-deletable.
@@ -185,6 +226,29 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 				Name: fetchedSettingObj.ObjectId,
 			}, nil
 		}
+	}
+
+	{
+		constarints, err := d.fetchSchemasConstraints(ctx, obj.SchemaId)
+		if err != nil {
+			return DynatraceEntity{}, fmt.Errorf("unable to get details for %q schema: %w", obj.SchemaId, err)
+		}
+
+		var objects []DownloadSettingsObject
+		if len(constarints.UniqueProperties) > 0 {
+			objects, err = d.listSettings(ctx, obj.SchemaId, ListSettingsOptions{})
+			if err != nil {
+				return DynatraceEntity{}, fmt.Errorf("unable to get existing settings objects for %q schema: %w", obj.SchemaId, err)
+			}
+
+		}
+
+		objectID, err := jskelin_todo(constarints, obj, objects)
+		if err != nil {
+			return DynatraceEntity{}, err
+		}
+
+		obj.OriginObjectId = objectID
 	}
 
 	// generate legacy external ID without project name.
@@ -307,4 +371,60 @@ func parsePostResponse(resp rest.Response) (DynatraceEntity, error) {
 		Id:   parsed[0].ObjectId,
 		Name: parsed[0].ObjectId,
 	}, nil
+}
+
+func (d *DynatraceClient) ListSettings(ctx context.Context, schemaId string, opts ListSettingsOptions) (res []DownloadSettingsObject, err error) {
+	d.limiter.ExecuteBlocking(func() {
+		res, err = d.listSettings(ctx, schemaId, opts)
+	})
+	return
+}
+
+func (d *DynatraceClient) listSettings(ctx context.Context, schemaId string, opts ListSettingsOptions) ([]DownloadSettingsObject, error) {
+
+	if settings, cached := d.settingsCache.Get(schemaId); cached {
+		log.Debug("Using cached settings for schema %s", schemaId)
+		return filter.FilterSlice(settings, opts.Filter), nil
+	}
+
+	log.Debug("Downloading all settings for schema %s", schemaId)
+
+	listSettingsFields := defaultListSettingsFields
+	if opts.DiscardValue {
+		listSettingsFields = reducedListSettingsFields
+	}
+	params := url.Values{
+		"schemaIds": []string{schemaId},
+		"pageSize":  []string{defaultPageSize},
+		"fields":    []string{listSettingsFields},
+	}
+
+	result := make([]DownloadSettingsObject, 0)
+
+	addToResult := func(body []byte) (int, error) {
+		var parsed struct {
+			Items []DownloadSettingsObject `json:"items"`
+		}
+		if err := json.Unmarshal(body, &parsed); err != nil {
+			return 0, fmt.Errorf("failed to unmarshal response: %w", err)
+		}
+
+		result = append(result, parsed.Items...)
+		return len(parsed.Items), nil
+	}
+
+	u, err := buildUrl(d.environmentURL, d.settingsObjectAPIPath, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list settings: %w", err)
+	}
+
+	_, err = rest.ListPaginated(ctx, d.platformClient, d.retrySettings, u, schemaId, addToResult)
+	if err != nil {
+		return nil, err
+	}
+
+	d.settingsCache.Set(schemaId, result)
+	settings, _ := d.settingsCache.Get(schemaId)
+
+	return filter.FilterSlice(settings, opts.Filter), nil
 }
