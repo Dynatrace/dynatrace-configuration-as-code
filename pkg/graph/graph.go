@@ -36,20 +36,22 @@ type coordinateToNodeIDMap map[coordinate.Coordinate]int64
 // referencesLookup is a double lookup map to check dependencies between configs using their coordinates.
 type referencesLookup map[coordinate.Coordinate]map[coordinate.Coordinate]struct{}
 
-// configNode implements the gonum graph.Node interface and contains a pointer to its respective config.Config in addition to the unique ID required.
-type configNode struct {
-	id     int64
-	config *config.Config
+type ConfigGraph graph.Directed
+
+// ConfigNode implements the gonum graph.Node interface and contains a pointer to its respective config.Config in addition to the unique ID required.
+type ConfigNode struct {
+	NodeID int64
+	Config *config.Config
 }
 
 // ID returns the node's integer ID by which it is referenced in the graph.
-func (n configNode) ID() int64 {
-	return n.id
+func (n ConfigNode) ID() int64 {
+	return n.NodeID
 }
 
-// DOTID returns the node's identifier when printed to a DOT file. For readability of files this is the coordinate.Coordinate of the config, instead of the node's ID integer.
-func (n configNode) DOTID() string {
-	return n.config.Coordinate.String()
+// DOTID returns the node's identifier when printed to a DOT file. For readability of files this is the coordinate.Coordinate of the Config, instead of the node's ID integer.
+func (n ConfigNode) DOTID() string {
+	return n.Config.Coordinate.String()
 }
 
 // ConfigGraphPerEnvironment is a map of directed dependency graphs per environment name.
@@ -80,16 +82,21 @@ func (graphs ConfigGraphPerEnvironment) SortConfigs(environment string) ([]confi
 	}
 	sortedCfgs := make([]config.Config, len(sortedNodes))
 	for i, n := range sortedNodes {
-		sortedCfgs[i] = *n.(configNode).config
+		sortedCfgs[i] = *n.(ConfigNode).Config
 	}
 
 	return sortedCfgs, nil
 }
 
+type SortedComponent struct {
+	Graph       graph.Directed
+	SortedNodes []graph.Node
+}
+
 // GetIndependentlySortedConfigs returns sorted slices of config.Config that depend on each other. Dependent configurations
 // are returned in an individual slice, sorted in the correct order to apply them sequentially. Unique sorted slices can
 // can be deployed independently.
-func (graphs ConfigGraphPerEnvironment) GetIndependentlySortedConfigs(environment string) ([][]config.Config, error) {
+func (graphs ConfigGraphPerEnvironment) GetIndependentlySortedConfigs(environment string) ([]SortedComponent, error) {
 	g, ok := graphs[environment]
 	if !ok {
 		return nil, fmt.Errorf("no dependency graph exists for envrionment %s", environment)
@@ -97,7 +104,7 @@ func (graphs ConfigGraphPerEnvironment) GetIndependentlySortedConfigs(environmen
 
 	components := findConnectedComponents(g)
 	errs := make(SortingErrors, 0, len(components))
-	cfgs := make([][]config.Config, len(components))
+	sortedComponents := make([]SortedComponent, len(components))
 	for i, subGraph := range components {
 		nodes, err := topo.Sort(subGraph)
 		if err != nil {
@@ -109,15 +116,17 @@ func (graphs ConfigGraphPerEnvironment) GetIndependentlySortedConfigs(environmen
 			}
 			continue
 		}
-		for _, n := range nodes {
-			cfgs[i] = append(cfgs[i], *n.(configNode).config)
+
+		sortedComponents[i] = SortedComponent{
+			Graph:       components[i],
+			SortedNodes: nodes,
 		}
 	}
 	if len(errs) > 0 {
-		return [][]config.Config{}, errs
+		return []SortedComponent{}, errs
 	}
 
-	return cfgs, nil
+	return sortedComponents, nil
 }
 
 func findConnectedComponents(d *simple.DirectedGraph) []*simple.DirectedGraph {
@@ -193,12 +202,12 @@ func buildDependencyGraph(projects []project.Project, environment string) *simpl
 		}
 	}
 
-	log.Debug("adding %d config nodes to graph...", len(configs))
+	log.Debug("adding %d Config nodes to graph...", len(configs))
 	for i, c := range configs {
 		c := c
-		n := configNode{
-			id:     int64(i),
-			config: &c,
+		n := ConfigNode{
+			NodeID: int64(i),
+			Config: &c,
 		}
 		g.AddNode(n)
 
@@ -211,7 +220,7 @@ func buildDependencyGraph(projects []project.Project, environment string) *simpl
 		}
 	}
 
-	log.Debug("adding edges between dependent config nodes...")
+	log.Debug("adding edges between dependent Config nodes...")
 	for c, refs := range configReferences {
 		for other, _ := range refs {
 			if c == other {

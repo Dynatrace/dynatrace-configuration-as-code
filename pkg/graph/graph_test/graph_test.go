@@ -122,14 +122,16 @@ func TestConfigGraphPerEnvironment_GetConnectedConfigs(t *testing.T) {
 	components, errs := graphs.GetIndependentlySortedConfigs(environmentName)
 	assert.NoError(t, errs)
 	assert.Len(t, components, 2)
-	for _, cfgs := range components {
+
+	for _, comp := range components {
+		cfgs := comp.SortedNodes
 		if len(cfgs) > 1 {
 			assert.Len(t, cfgs, 2)
-			assert.Equal(t, autoTagCoordinates, cfgs[0].Coordinate, "expected auto-tag to be sorted first")
-			assert.Equal(t, dashboardConfigCoordinate, cfgs[1].Coordinate, "expected dashboard sorted after auto-tag it depends on")
+			assert.Equal(t, autoTagCoordinates, cfgs[0].(graph.ConfigNode).Config.Coordinate, "expected auto-tag to be sorted first")
+			assert.Equal(t, dashboardConfigCoordinate, cfgs[1].(graph.ConfigNode).Config.Coordinate, "expected dashboard sorted after auto-tag it depends on")
 		} else {
 			assert.Len(t, cfgs, 1)
-			assert.Equal(t, individualConfigCoordinate, cfgs[0].Coordinate)
+			assert.Equal(t, individualConfigCoordinate, cfgs[0].(graph.ConfigNode).Config.Coordinate)
 		}
 	}
 }
