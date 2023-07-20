@@ -762,6 +762,11 @@ func TestUpsertSettingsFromCache(t *testing.T) {
 	numAPIGetCalls := 0
 	numAPIPostCalls := 0
 	server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/some:schema" {
+			rw.WriteHeader(http.StatusOK)
+			rw.Write([]byte("{}"))
+			return
+		}
 		if req.Method == http.MethodGet {
 			numAPIGetCalls++
 			rw.WriteHeader(200)
@@ -788,8 +793,8 @@ func TestUpsertSettingsFromCache(t *testing.T) {
 	})
 
 	assert.NoError(t, err)
-	assert.Equal(t, numAPIGetCalls, 1)
-	assert.Equal(t, numAPIPostCalls, 1)
+	assert.Equal(t, 1, numAPIGetCalls)
+	assert.Equal(t, 1, numAPIPostCalls)
 
 	_, err = client.UpsertSettings(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
@@ -798,13 +803,18 @@ func TestUpsertSettingsFromCache(t *testing.T) {
 	})
 
 	assert.NoError(t, err)
-	assert.Equal(t, numAPIGetCalls, 1) // still one
-	assert.Equal(t, numAPIPostCalls, 2)
+	assert.Equal(t, 1, numAPIGetCalls) // still one
+	assert.Equal(t, 2, numAPIPostCalls)
 }
 
 func TestUpsertSettingsFromCache_CacheInvalidated(t *testing.T) {
 	numGetAPICalls := 0
 	server := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/some:schema" {
+			rw.WriteHeader(http.StatusOK)
+			rw.Write([]byte("{}"))
+			return
+		}
 		if req.Method == http.MethodGet {
 			numGetAPICalls++
 			rw.WriteHeader(200)

@@ -151,7 +151,11 @@ func TestUpsertSettings(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 
 			server := httptest.NewTLSServer(http.HandlerFunc(func(writer http.ResponseWriter, r *http.Request) {
-
+				if r.URL.Path == "/builtin:alerting.profile" {
+					writer.WriteHeader(http.StatusOK)
+					writer.Write([]byte("{}"))
+					return
+				}
 				// GET settings requests
 				if r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/api/v2/settings/objects") {
 					// GET single settings obj request

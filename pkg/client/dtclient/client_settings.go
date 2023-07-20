@@ -167,47 +167,6 @@ func (d *DynatraceClient) UpsertSettings(ctx context.Context, obj SettingsObject
 	return
 }
 
-func getValueForConstraint(key string, content []byte) string {
-	c := make(map[string]string)
-	json.Unmarshal(content, &c) // TODO: handle error - how to avoid an error when unmarshaling bool??
-	value := c[key]
-	return value
-}
-
-func jskelin_todo(constarints SchemaConstraints, forDeploy SettingsObject, objects []DownloadSettingsObject) (objectID string, err error) {
-	candidates := make(map[int][]DownloadSettingsObject)
-	for i := range constarints.UniqueProperties {
-		candidates[i] = objects
-
-		for j := range constarints.UniqueProperties[i] {
-			can1 := []DownloadSettingsObject{}
-
-			cKey := constarints.UniqueProperties[i][j]
-			cValue := getValueForConstraint(cKey, forDeploy.Content)
-
-			for z := range candidates[i] {
-				if getValueForConstraint(cKey, objects[z].Value) == cValue {
-					can1 = append(can1, candidates[i][z])
-				}
-			}
-			candidates[i] = can1
-		}
-	}
-
-	var candidate string
-	for i := range candidates {
-		if len(candidates[i]) > 0 {
-			if candidate == "" {
-				candidate = candidates[i][0].ObjectId
-			}
-			if candidate != candidates[i][0].ObjectId { // Huston we have a problem; only one candidate can exist
-				return "", fmt.Errorf("more than one candidate to update for %q schema", forDeploy.Coordinate)
-			}
-		}
-	}
-	return candidate, nil
-}
-
 func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject) (DynatraceEntity, error) {
 	// special handling for updating settings 2.0 objects on tenants with version pre 1.262.0
 	// Tenants with versions < 1.262 are not able to handle updates of existing
@@ -243,12 +202,13 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 
 		}
 
-		objectID, err := jskelin_todo(constarints, obj, objects)
+		objectID, err := findObjectWithSameConstraints(constarints, obj, objects)
 		if err != nil {
 			return DynatraceEntity{}, err
 		}
-
-		obj.OriginObjectId = objectID
+		if objectID != "" {
+			obj.OriginObjectId = objectID
+		}
 	}
 
 	// generate legacy external ID without project name.
@@ -309,6 +269,47 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 
 	log.WithCtxFields(ctx).Debug("\tCreated/Updated object %s (%s) with externalId %s", obj.Coordinate.ConfigId, obj.SchemaId, externalID)
 	return entity, nil
+}
+
+func getValueForConstraint(key string, content []byte) string {
+	c := make(map[string]string)
+	json.Unmarshal(content, &c) // TODO: handle error - how to avoid an error when unmarshaling bool??
+	value := c[key]
+	return value
+}
+
+func findObjectWithSameConstraints(constarints SchemaConstraints, forDeploy SettingsObject, objects []DownloadSettingsObject) (objectID string, err error) {
+	candidates := make(map[int][]DownloadSettingsObject)
+	for i := range constarints.UniqueProperties {
+		candidates[i] = objects
+
+		for j := range constarints.UniqueProperties[i] {
+			can1 := []DownloadSettingsObject{}
+
+			cKey := constarints.UniqueProperties[i][j]
+			cValue := getValueForConstraint(cKey, forDeploy.Content)
+
+			for z := range candidates[i] {
+				if getValueForConstraint(cKey, objects[z].Value) == cValue {
+					can1 = append(can1, candidates[i][z])
+				}
+			}
+			candidates[i] = can1
+		}
+	}
+
+	var candidate string
+	for i := range candidates {
+		if len(candidates[i]) > 0 {
+			if candidate == "" {
+				candidate = candidates[i][0].ObjectId
+			}
+			if candidate != candidates[i][0].ObjectId { // Huston we have a problem; only one candidate can exist
+				return "", fmt.Errorf("more than one candidate to update for %q schema", forDeploy.Coordinate)
+			}
+		}
+	}
+	return candidate, nil
 }
 
 // buildPostRequestPayload builds the json that is required as body in the settings api.
