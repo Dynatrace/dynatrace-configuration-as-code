@@ -21,9 +21,10 @@ package v1
 
 import (
 	"github.com/spf13/afero"
-	"testing"
+	"github.com/stretchr/testify/assert"
 
-	"gotest.tools/assert"
+	"strings"
+	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 )
@@ -44,7 +45,7 @@ func TestValidationSkipDeployment(t *testing.T) {
 			"--project", "projectA",
 		})
 		err := cmd.Execute()
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 	})
 
 }
@@ -54,7 +55,8 @@ func TestValidationSkipDeploymentWithBrokenDependency(t *testing.T) {
 
 	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, "SkipDeployment", func(fs afero.Fs, manifest string) {
 
-		cmd := runner.BuildCli(fs)
+		logOutput := strings.Builder{}
+		cmd := runner.BuildCliWithLogSpy(fs, &logOutput)
 		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
@@ -63,7 +65,10 @@ func TestValidationSkipDeploymentWithBrokenDependency(t *testing.T) {
 			"--project", "projectB",
 		})
 		err := cmd.Execute()
-		assert.Error(t, err, "errors during Validation")
+		assert.NoError(t, err, "children of skipped configs should not result in an error")
+
+		runLog := logOutput.String()
+		assert.Contains(t, runLog, "Skipping deployment of projectB:management-zone:mg-zone-b, as it depends on projectB:auto-tag:application-tagging-b which was skipped")
 	})
 }
 
@@ -81,7 +86,7 @@ func TestValidationSkipDeploymentWithOverridingDependency(t *testing.T) {
 		})
 		err := cmd.Execute()
 
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 	})
 }
 
@@ -99,7 +104,7 @@ func TestValidationSkipDeploymentWithOverridingFlagValue(t *testing.T) {
 		})
 		err := cmd.Execute()
 
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 	})
 }
 
@@ -107,7 +112,8 @@ func TestValidationSkipDeploymentInterProjectWithMissingDependency(t *testing.T)
 	t.Setenv("TEST_TOKEN", "mock test token")
 
 	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, t.Name(), func(fs afero.Fs, manifest string) {
-		cmd := runner.BuildCli(fs)
+		logOutput := strings.Builder{}
+		cmd := runner.BuildCliWithLogSpy(fs, &logOutput)
 		cmd.SetArgs([]string{
 			"deploy",
 			"--verbose",
@@ -117,6 +123,9 @@ func TestValidationSkipDeploymentInterProjectWithMissingDependency(t *testing.T)
 		})
 		err := cmd.Execute()
 
-		assert.Error(t, err, "errors during Validation")
+		assert.NoError(t, err)
+
+		runLog := logOutput.String()
+		assert.Contains(t, runLog, "Skipping deployment of projectA:management-zone:mg-zone, as it depends on projectA:auto-tag:application-tagging which was skipped")
 	})
 }

@@ -40,6 +40,9 @@ type DeployConfigsOptions struct {
 	// DryRun states that the deployment shall just run in dry-run mode, meaning
 	// that actual deployment of the configuration to a tenant will be skipped
 	DryRun bool
+	// SupportArchive defines whether the client.ClientSet created to deploy configurations
+	// will write additional debug files
+	SupportArchive bool
 }
 
 type ClientSet struct {

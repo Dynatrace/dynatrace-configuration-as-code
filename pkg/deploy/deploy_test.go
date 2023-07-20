@@ -26,6 +26,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
+	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -556,6 +558,124 @@ func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
 	})
 
 }
+
+func TestMagicalDeploymentThing(t *testing.T) {
+	projectId := "project1"
+	referencedProjectId := "project2"
+	environmentName := "dev"
+
+	dashboardApiId := "dashboard"
+	dashboardConfigCoordinate := coordinate.Coordinate{
+		Project:  projectId,
+		Type:     dashboardApiId,
+		ConfigId: "sample dashboard",
+	}
+
+	autoTagApiId := "auto-tag"
+	autoTagConfigId := "tag"
+	autoTagCoordinates := coordinate.Coordinate{
+		Project:  referencedProjectId,
+		Type:     autoTagApiId,
+		ConfigId: autoTagConfigId,
+	}
+
+	referencedPropertyName := "tagId"
+
+	individualConfigCoordinate := coordinate.Coordinate{
+		Project:  projectId,
+		Type:     dashboardApiId,
+		ConfigId: "Random Dashboard",
+	}
+
+	projects := []project.Project{
+		{
+			Id: projectId,
+			Configs: project.ConfigsPerTypePerEnvironments{
+				environmentName: {
+					dashboardApiId: []config.Config{
+						{
+							Coordinate:  dashboardConfigCoordinate,
+							Environment: environmentName,
+							Parameters: map[string]parameter.Parameter{
+								"autoTagId": &parameter.DummyParameter{
+									References: []parameter.ParameterReference{
+										{
+											Config:   autoTagCoordinates,
+											Property: referencedPropertyName,
+										},
+									},
+								},
+							},
+						},
+						{
+							Coordinate:  individualConfigCoordinate,
+							Environment: environmentName,
+							Parameters: map[string]parameter.Parameter{
+								"name": &parameter.DummyParameter{
+									Value: "sample",
+								},
+								"dashboard": &parameter.DummyParameter{
+									References: []parameter.ParameterReference{
+										{
+											Config:   dashboardConfigCoordinate,
+											Property: "autoTagId",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Dependencies: project.DependenciesPerEnvironment{
+				environmentName: []string{
+					referencedProjectId,
+				},
+			},
+		},
+		{
+			Id: referencedProjectId,
+			Configs: project.ConfigsPerTypePerEnvironments{
+				environmentName: {
+					autoTagApiId: []config.Config{
+						{
+							Coordinate:  autoTagCoordinates,
+							Environment: environmentName,
+							Parameters: map[string]parameter.Parameter{
+								referencedPropertyName: &parameter.DummyParameter{
+									Value: "10",
+								},
+							},
+							Skip: true,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	environments := []string{
+		environmentName,
+	}
+
+	graphs := graph.New(projects, environments)
+	components, err := graphs.GetIndependentlySortedConfigs(environmentName)
+	assert.NoError(t, err)
+	assert.Len(t, components, 1)
+
+	dummyClient := dtclient.DummyClient{}
+	clientSet := ClientSet{
+		Classic:  &dummyClient,
+		Settings: &dummyClient,
+	}
+
+	errs := deployComponents(context.TODO(), components, clientSet, api.NewAPIs(), DeployConfigsOptions{})
+	assert.Len(t, errs, 0)
+	assert.Len(t, dummyClient.Entries, 0)
+
+}
+
+//TODO TEST DeployConfigGraph
 
 func toParameterMap(params []parameter.NamedParameter) map[string]parameter.Parameter {
 	result := make(map[string]parameter.Parameter)

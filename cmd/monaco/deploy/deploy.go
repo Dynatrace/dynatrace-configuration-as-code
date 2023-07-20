@@ -18,7 +18,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/slices"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy"
@@ -58,32 +60,51 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 		return fmt.Errorf("error while loading relevant projects to deploy: %w", err)
 	}
 
-	sortedConfigs, err := sortConfigs(filteredProjects, loadedManifest.Environments.Names())
-	if err != nil {
-		return fmt.Errorf("error during configuration sort: %w", err)
-	}
-
-	if err := checkEnvironments(sortedConfigs, loadedManifest.Environments); err != nil {
+	if err := checkEnvironments(filteredProjects, loadedManifest.Environments); err != nil {
 		return err
 	}
 
 	logProjectsInfo(filteredProjects)
 	logEnvironmentsInfo(loadedManifest.Environments)
 
-	var deployErrs []error
-	for envName, cfgs := range sortedConfigs {
-		env := loadedManifest.Environments[envName]
-		errs := deployOnEnvironment(&env, cfgs, continueOnErr, dryRun)
-		deployErrs = append(deployErrs, errs...)
-		if len(errs) > 0 && !continueOnErr {
-			break
+	if featureflags.DependencyGraphBasedDeploy().Enabled() {
+		environmentDeployErrs := deploy.DeployConfigGraph(filteredProjects, loadedManifest.Environments, deploy.DeployConfigsOptions{
+			ContinueOnErr:  continueOnErr,
+			DryRun:         dryRun,
+			SupportArchive: support.SupportArchive,
+		})
+		if len(environmentDeployErrs) > 0 {
+			var deployErrs []error
+			for _, errs := range environmentDeployErrs {
+				// TODO error handling can change to remove the repetitive grouping to env errors - for now we just build a list to be grouped again by printErrorReport
+				deployErrs = append(deployErrs, errs...)
+			}
+
+			printErrorReport(deployErrs)
+			return fmt.Errorf("errors during %s", getOperationNounForLogging(dryRun))
+		}
+	} else {
+		var deployErrs []error
+		sortedConfigs, err := sortConfigs(filteredProjects, loadedManifest.Environments.Names())
+		if err != nil {
+			return fmt.Errorf("error during configuration sort: %w", err)
+		}
+
+		for envName, cfgs := range sortedConfigs {
+			env := loadedManifest.Environments[envName]
+			errs := deployOnEnvironment(&env, cfgs, continueOnErr, dryRun)
+			deployErrs = append(deployErrs, errs...)
+			if len(errs) > 0 && !continueOnErr {
+				break
+			}
+		}
+
+		if len(deployErrs) > 0 {
+			printErrorReport(deployErrs)
+			return fmt.Errorf("errors during %s", getOperationNounForLogging(dryRun))
 		}
 	}
 
-	if len(deployErrs) > 0 {
-		printErrorReport(deployErrs)
-		return fmt.Errorf("errors during %s", getOperationNounForLogging(dryRun))
-	}
 	log.Info("%s finished without errors", getOperationNounForLogging(dryRun))
 	return nil
 }
@@ -265,13 +286,17 @@ func toProjectMap(projects []project.Project) map[string]project.Project {
 	return result
 }
 
-func checkEnvironments(configs project.ConfigsPerEnvironment, envs manifest.Environments) error {
-	for envName, cfgs := range configs {
-		if _, found := envs[envName]; !found {
-			return fmt.Errorf("cannot find environment `%s`", envName)
-		}
-		if err := checkConfigsForEnvironment(envs[envName], cfgs); err != nil {
-			return err
+func checkEnvironments(projects []project.Project, envs manifest.Environments) error {
+	for _, p := range projects {
+		for envName, cfgPerType := range p.Configs {
+			if _, found := envs[envName]; !found {
+				return fmt.Errorf("cannot find environment `%s`", envName)
+			}
+			for _, cfgs := range cfgPerType {
+				if err := checkConfigsForEnvironment(envs[envName], cfgs); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil

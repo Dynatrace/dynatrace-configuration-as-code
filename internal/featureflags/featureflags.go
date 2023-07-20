@@ -173,6 +173,14 @@ func DependencyGraphBasedSort() FeatureFlag {
 	}
 }
 
+// DependencyGraphBasedDeploy toggles whether we use graphs for deployment.
+func DependencyGraphBasedDeploy() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_GRAPH_DEPLOY",
+		defaultEnabled: false,
+	}
+}
+
 // ExportDependencyGraph toggles wheter the command to export dependency graphs to DOT files is available.
 func ExportDependencyGraph() FeatureFlag {
 	return FeatureFlag{
