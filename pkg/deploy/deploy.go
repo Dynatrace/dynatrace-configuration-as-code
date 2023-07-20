@@ -20,11 +20,16 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
+	"strings"
 )
 
 // DeployConfigsOptions defines additional options used by DeployConfigs
@@ -78,6 +83,172 @@ func DeployConfigs(clientSet ClientSet, apis api.APIs, sortedConfigs []config.Co
 	}
 
 	return errs
+}
+
+type EnvironmentDeploymentErrors map[string][]error
+
+func (e EnvironmentDeploymentErrors) Error() string {
+	b := strings.Builder{}
+	for env, errs := range e {
+		b.WriteString(fmt.Sprintf("%s deployment errors: %v", env, errs))
+	}
+	return b.String()
+}
+
+func DeployConfigGraph(projects []project.Project, envs manifest.Environments, opts DeployConfigsOptions) EnvironmentDeploymentErrors {
+
+	apis := api.NewAPIs()
+	g := graph.New(projects, envs.Names())
+
+	errs := make(EnvironmentDeploymentErrors)
+
+	for _, env := range envs {
+		envErrs := deployComponentsToEnvironment(g, env, apis, opts)
+		if len(envErrs) > 0 {
+			errs[env.Name] = envErrs
+
+			if !opts.ContinueOnErr && !opts.DryRun {
+				return errs
+			}
+		}
+	}
+
+	if len(errs) != 0 {
+		return errs
+	}
+
+	return nil
+}
+
+func deployComponentsToEnvironment(g graph.ConfigGraphPerEnvironment, env manifest.EnvironmentDefinition, apis api.APIs, opts DeployConfigsOptions) []error {
+
+	ctx := context.WithValue(context.TODO(), log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
+
+	log.WithCtxFields(ctx).Info("Deploying configurations to environment %q...", env.Name)
+	clientSet, err := createClientSet(env, opts)
+	if err != nil {
+		return []error{fmt.Errorf("failed to create clients for envrionment %q: %w", env.Name, err)}
+	}
+
+	sortedConfigs, err := g.GetIndependentlySortedConfigs(env.Name)
+	if err != nil {
+		return []error{fmt.Errorf("failed to get independently sorted configs for environment %q: %w", env.Name, err)}
+	}
+
+	deployErrs := deployComponents(ctx, sortedConfigs, clientSet, apis, opts)
+
+	if len(deployErrs) > 0 {
+		return deployErrs
+	}
+
+	return nil
+}
+
+var skipError = errors.New("skip error")
+
+func deployComponents(ctx context.Context, components []graph.SortedComponent, clientSet ClientSet, apis api.APIs, opts DeployConfigsOptions) []error {
+
+	var errs []error
+
+	log.WithCtxFields(ctx).Info("Deploying %d independent configuration sets...", len(components))
+
+	for i := range components {
+		componentDeployErrs := deployComponent(ctx, components[i], clientSet, apis, opts)
+
+		if len(componentDeployErrs) > 0 && !opts.ContinueOnErr && !opts.DryRun {
+			return componentDeployErrs
+		}
+
+		errs = append(errs, componentDeployErrs...)
+	}
+
+	return errs
+}
+
+func deployComponent(ctx context.Context, component graph.SortedComponent, clientSet ClientSet, apis api.APIs, opts DeployConfigsOptions) []error {
+	var errs []error
+
+	entityMap := newEntityMap(apis) //entityMap is only used to when resolving parameter references, and configs that reference each other are in the same component; no global entity map is needed
+
+	g := component.Graph
+	sortedNodes := component.SortedNodes
+
+	if log.Level() == loggers.LevelDebug {
+		log.WithCtxFields(ctx).Debug("Deploying configurations in current component: %v", sortedNodes)
+	}
+
+	dontDeploy := map[int64]struct{}{} //look-up map marking Nodes (by ID) that should not be deployed, because something they depend on was skipped or failed
+
+	for _, gNode := range sortedNodes {
+
+		node := gNode.(graph.ConfigNode)
+		id := node.ID()
+
+		if _, dont := dontDeploy[id]; dont {
+			continue
+		}
+
+		ctx := context.WithValue(ctx, log.CtxKeyCoord{}, node.Config.Coordinate)
+		entity, err := deployFunc(ctx, node.Config, clientSet, apis, entityMap)
+
+		if err != nil {
+			deploymentFailed := false
+
+			if !errors.Is(err, skipError) {
+				deploymentFailed = true
+				errs = append(errs, err)
+				if !opts.ContinueOnErr && !opts.DryRun {
+					return errs
+				}
+			}
+
+			markChildrenAsNotToDeploy(ctx, g, &node, nil, dontDeploy, deploymentFailed)
+
+		} else if entity != nil {
+			entityMap.put(*entity)
+			log.Info("Deployed %v successfully (graph-node-id %d)", node.Config.Coordinate, id)
+		} else {
+			log.Warn("Deployment success, but no entity was returned for config %v - WTF?!", node.Config.Coordinate) //TODO why can this happen
+		}
+	}
+	return errs
+}
+
+// deployFunc kinda just is a smarter deploy... TODO refactor!
+func deployFunc(ctx context.Context, c *config.Config, clientSet ClientSet, apis api.APIs, entityMap *entityMap) (*parameter.ResolvedEntity, error) {
+	if c.Skip {
+		log.WithCtxFields(ctx).Info("Skipping deployment of config %s", c.Coordinate)
+		return nil, skipError //fake resolved entity that "old" deploy creates is never needed, as we don't even try to deploy dependencies of skipped configs (so no reference will ever be attempted to resolve)
+	}
+
+	entity, deploymentErrors := deploy(ctx, clientSet, apis, entityMap, c)
+
+	if len(deploymentErrors) > 0 {
+		return nil, fmt.Errorf("failed to deploy config %s: %w", c.Coordinate, errors.Join(deploymentErrors...))
+	}
+
+	return entity, nil
+}
+
+func markChildrenAsNotToDeploy(ctx context.Context, g graph.ConfigGraph, node, root *graph.ConfigNode, dontDeploy map[int64]struct{}, deploymentFailed bool) {
+
+	reason := "was skipped"
+	if deploymentFailed {
+		reason = "failed to deploy"
+	}
+
+	children := g.From(node.ID())
+	for children.Next() {
+		child := children.Node().(graph.ConfigNode)
+		if root != nil {
+			log.WithCtxFields(ctx).WithFields(field.F("child", child.Config.Coordinate), field.F("root", root.Config.Coordinate), field.F("deploymentFailed", deploymentFailed)).Warn("Skipping deployment of %v, as it depends on %v which was not deployed after root dependency configuration %v %s", child.Config.Coordinate, node.Config.Coordinate, root.Config.Coordinate, reason)
+		} else {
+			log.WithCtxFields(ctx).WithFields(field.F("child", child.Config.Coordinate), field.F("deploymentFailed", deploymentFailed)).Warn("Skipping deployment of %v, as it depends on %v which %s", child.Config.Coordinate, node.Config.Coordinate, reason)
+		}
+
+		dontDeploy[children.Node().ID()] = struct{}{}
+		markChildrenAsNotToDeploy(ctx, g, &child, node, dontDeploy, deploymentFailed)
+	}
 }
 
 func deploy(ctx context.Context, clientSet ClientSet, apis api.APIs, em *entityMap, c *config.Config) (*parameter.ResolvedEntity, []error) {
