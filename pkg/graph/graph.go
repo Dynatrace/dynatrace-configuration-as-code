@@ -36,6 +36,7 @@ type coordinateToNodeIDMap map[coordinate.Coordinate]int64
 // referencesLookup is a double lookup map to check dependencies between configs using their coordinates.
 type referencesLookup map[coordinate.Coordinate]map[coordinate.Coordinate]struct{}
 
+// ConfigGraph is a directed graph containing ConfigNode s
 type ConfigGraph graph.Directed
 
 // ConfigNode implements the gonum graph.Node interface and contains a pointer to its respective config.Config in addition to the unique ID required.
@@ -52,6 +53,10 @@ func (n ConfigNode) ID() int64 {
 // DOTID returns the node's identifier when printed to a DOT file. For readability of files this is the coordinate.Coordinate of the Config, instead of the node's ID integer.
 func (n ConfigNode) DOTID() string {
 	return n.Config.Coordinate.String()
+}
+
+func (n ConfigNode) String() string {
+	return fmt.Sprintf("ConfigNode{ id=%d, configCoordinate=%v }", n.NodeID, n.Config.Coordinate)
 }
 
 // ConfigGraphPerEnvironment is a map of directed dependency graphs per environment name.
@@ -88,14 +93,17 @@ func (graphs ConfigGraphPerEnvironment) SortConfigs(environment string) ([]confi
 	return sortedCfgs, nil
 }
 
+// SortedComponent represents a weakly connected component found in a graph.
 type SortedComponent struct {
-	Graph       graph.Directed
+	// Graph is a directed graph representation of the weakly connected component/sub-graph found in another graph.
+	Graph graph.Directed
+	// SortedNodes are a topologically sorted slice of graph.Node s, which can be deployed in order.
+	// This exists for convenience, so callers of GetIndependentlySortedConfigs can work with the component without implementing graph algorithms.
 	SortedNodes []graph.Node
 }
 
-// GetIndependentlySortedConfigs returns sorted slices of config.Config that depend on each other. Dependent configurations
-// are returned in an individual slice, sorted in the correct order to apply them sequentially. Unique sorted slices can
-// can be deployed independently.
+// GetIndependentlySortedConfigs returns sorted slices of SortedComponent.
+// Dependent configurations are returned as a sub-graph as well as a slice, sorted in the correct order to deploy them sequentially.
 func (graphs ConfigGraphPerEnvironment) GetIndependentlySortedConfigs(environment string) ([]SortedComponent, error) {
 	g, ok := graphs[environment]
 	if !ok {
