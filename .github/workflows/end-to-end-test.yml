@@ -58,6 +58,8 @@ jobs:
         run: make integration-test
         env:
           MONACO_FEAT_GRAPH_DEPLOY: "true" # TODO remove when graph based deployments are activated by default
+          MONACO_FEAT_GRAPH_DEPLOY_PARALLEL: "true" # TODO remove when graph based deployments are activated by default
+
           URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
           URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
           TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
@@ -73,6 +75,7 @@ jobs:
         run: make integration-test-v1
         env:
           MONACO_FEAT_GRAPH_DEPLOY: "true" # TODO remove when graph based deployments are activated by default
+          MONACO_FEAT_GRAPH_DEPLOY_PARALLEL: "true" # TODO remove when graph based deployments are activated by default
           URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
           URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
           TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
@@ -88,6 +91,7 @@ jobs:
         run: make download-restore-test
         env:
           MONACO_FEAT_GRAPH_DEPLOY: "true" # TODO remove when graph based deployments are activated by default
+          MONACO_FEAT_GRAPH_DEPLOY_PARALLEL: "true" # TODO remove when graph based deployments are activated by default
           URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
           URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
           TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
@@ -103,6 +107,7 @@ jobs:
         run: make nightly-test
         env:
           MONACO_FEAT_GRAPH_DEPLOY: "true" # TODO remove when graph based deployments are activated by default
+          MONACO_FEAT_GRAPH_DEPLOY_PARALLEL: "true" # TODO remove when graph based deployments are activated by default
           URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
           URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
           TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
@@ -117,7 +122,8 @@ jobs:
         if: github.repository == env.BASE_REPO && github.event_name == 'schedule'
         run: make clean-environments
         env:
-          MONACO_FEAT_GRAPH_DEPLOY: true # TODO remove when graph based deployments are activated by default
+          MONACO_FEAT_GRAPH_DEPLOY: "true" # TODO remove when graph based deployments are activated by default
+          MONACO_FEAT_GRAPH_DEPLOY_PARALLEL: "true" # TODO remove when graph based deployments are activated by default
           URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
           URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
           TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
