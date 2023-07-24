@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
@@ -256,6 +257,13 @@ func (d *DynatraceClient) callWithRetryOnKnowTimingIssue(ctx context.Context, re
 
 	if err == nil && resp.IsSuccess() {
 		return resp, nil
+	}
+
+	if err != nil {
+		log.WithCtxFields(ctx).WithFields(field.Error(err)).Warn("Failed to send HTTP request: %v", err)
+	} else {
+
+		log.WithCtxFields(ctx).WithFields(field.F("statusCode", resp.StatusCode)).Warn("Failed to send HTTP request: (HTTP %d)!\n    Response was: %s", resp.StatusCode, string(resp.Body))
 	}
 
 	var setting rest.RetrySetting

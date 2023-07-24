@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers"
@@ -144,7 +145,12 @@ func deployComponentsToEnvironment(g graph.ConfigGraphPerEnvironment, env Enviro
 		return []error{fmt.Errorf("failed to get independently sorted configs for environment %q: %w", env.Name, err)}
 	}
 
-	deployErrs := deployComponents(ctx, sortedConfigs, clientSet, apis, opts)
+	var deployErrs []error
+	if featureflags.DependencyGraphBasedDeployParallel().Enabled() && !opts.DryRun { //note: parallel deployment currently does not work with dummy clients
+		deployErrs = deployComponentsParallel(ctx, sortedConfigs, clientSet, apis, opts)
+	} else {
+		deployErrs = deployComponents(ctx, sortedConfigs, clientSet, apis, opts)
+	}
 
 	if len(deployErrs) > 0 {
 		return deployErrs
@@ -170,6 +176,35 @@ func deployComponents(ctx context.Context, components []graph.SortedComponent, c
 
 		errs = append(errs, componentDeployErrs...)
 	}
+
+	return errs
+}
+
+func deployComponentsParallel(ctx context.Context, components []graph.SortedComponent, clientSet ClientSet, apis api.APIs, opts DeployConfigsOptions) []error {
+	var errs []error
+	log.WithCtxFields(ctx).Info("Deploying %d independent configuration sets...", len(components))
+
+	errChan := make(chan []error, len(components))
+
+	// Iterate over components and launch a goroutine for each component deployment.
+	for i := range components {
+		go func(component graph.SortedComponent) {
+			componentDeployErrs := deployComponent(ctx, component, clientSet, apis, opts)
+			errChan <- componentDeployErrs
+		}(components[i])
+	}
+
+	// Collect errors from goroutines and append to the 'errs' slice.
+	for range components {
+		componentDeployErrs := <-errChan
+		if len(componentDeployErrs) > 0 && !opts.ContinueOnErr && !opts.DryRun {
+			return componentDeployErrs
+		}
+		errs = append(errs, componentDeployErrs...)
+	}
+
+	// Close the error channel.
+	close(errChan)
 
 	return errs
 }

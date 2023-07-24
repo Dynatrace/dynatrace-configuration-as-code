@@ -180,3 +180,11 @@ func DependencyGraphBasedDeploy() FeatureFlag {
 		defaultEnabled: false,
 	}
 }
+
+// DependencyGraphBasedDeployParallel toggles whether we use parallel graph based deployment
+func DependencyGraphBasedDeployParallel() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_GRAPH_DEPLOY_PARALLEL",
+		defaultEnabled: false,
+	}
+}
