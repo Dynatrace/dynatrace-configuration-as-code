@@ -180,11 +180,3 @@ func DependencyGraphBasedDeploy() FeatureFlag {
 		defaultEnabled: false,
 	}
 }
-
-// ExportDependencyGraph toggles wheter the command to export dependency graphs to DOT files is available.
-func ExportDependencyGraph() FeatureFlag {
-	return FeatureFlag{
-		envName:        "MONACO_FEAT_CMD_EXPORT_DEPENDENCY_GRAPH",
-		defaultEnabled: false,
-	}
-}

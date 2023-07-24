@@ -1,0 +1,19 @@
+configs:
+- id: maintenancewindow
+  type:
+    api: maintenance-window
+  config:
+    name: My First Maintenance Window
+    parameters:
+      description: My First Maintenance Window
+      start: 2022-11-06 10:40
+      end: 2022-11-07 09:40
+      suppression: DETECT_PROBLEMS_DONT_ALERT
+      type: PLANNED
+      mzID:
+        configId: zone
+        configType: management-zone
+        property: id
+        type: reference
+    template: maintenance-window.json
+    skip: false

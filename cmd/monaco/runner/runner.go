@@ -81,10 +81,7 @@ Examples:
 	rootCmd.AddCommand(deploy.GetDeployCommand(fs))
 	rootCmd.AddCommand(delete.GetDeleteCommand(fs))
 	rootCmd.AddCommand(version.GetVersionCommand())
-
-	if featureflags.ExportDependencyGraph().Enabled() {
-		rootCmd.AddCommand(dependencygraph.Command(fs))
-	}
+	rootCmd.AddCommand(dependencygraph.Command(fs))
 
 	if featureflags.DangerousCommands().Enabled() {
 		log.Warn("MONACO_ENABLE_DANGEROUS_COMMANDS environment var detected!")
