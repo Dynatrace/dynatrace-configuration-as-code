@@ -15,9 +15,11 @@
 package dependencygraph
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
@@ -37,7 +39,7 @@ func writeGraphFiles(fs afero.Fs, manifestPath string, environmentNames []string
 	})
 	if len(errs) > 0 {
 		errutils.PrintErrors(errs)
-		return fmt.Errorf("failed to load manifest %q", manifestPath)
+		return fmt.Errorf("failed to load manifest %q: %w", manifestPath, errors.Join(errs...))
 	}
 
 	projects, errs := project.LoadProjects(fs, project.ProjectLoaderContext{
@@ -74,6 +76,18 @@ func writeGraphFiles(fs afero.Fs, manifestPath string, environmentNames []string
 			return fmt.Errorf("failed to encode dependency graph to DOT for environment %q: %w", e, err)
 		}
 		file := filepath.Join(folderPath, fmt.Sprintf("dependency_graph_%s.dot", e))
+
+		exists, err := afero.Exists(fs, file)
+		if err != nil {
+			return fmt.Errorf("failed to validate if output file %q already exists: %w", file, err)
+		}
+		if exists {
+			time := timeutils.TimeAnchor().Format("20060102-150405")
+			newFile := filepath.Join(folderPath, fmt.Sprintf("dependency_graph_%s_%s.dot", e, time))
+			log.Debug("Output file %q already exists, creating %q instead", file, newFile)
+			file = newFile
+		}
+
 		err = afero.WriteFile(fs, file, b, 0666)
 		if err != nil {
 			return fmt.Errorf("failed to create dependency graph file %q: %w", file, err)
