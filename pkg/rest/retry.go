@@ -37,16 +37,16 @@ type RetrySettings struct {
 
 var DefaultRetrySettings = RetrySettings{
 	Normal: RetrySetting{
-		WaitTime:   5 * time.Second,
-		MaxRetries: 3,
+		WaitTime:   time.Second,
+		MaxRetries: 15,
 	},
 	Long: RetrySetting{
-		WaitTime:   5 * time.Second,
-		MaxRetries: 6,
+		WaitTime:   time.Second,
+		MaxRetries: 30,
 	},
 	VeryLong: RetrySetting{
-		WaitTime:   15 * time.Second,
-		MaxRetries: 5,
+		WaitTime:   time.Second,
+		MaxRetries: 60,
 	},
 }
 
