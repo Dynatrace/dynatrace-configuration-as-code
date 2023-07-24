@@ -29,6 +29,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"net/http"
 	"net/url"
+	"reflect"
 )
 
 type (
@@ -187,28 +188,10 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 		}
 	}
 
-	{
-		constarints, err := d.fetchSchemasConstraints(ctx, obj.SchemaId)
-		if err != nil {
-			return DynatraceEntity{}, fmt.Errorf("unable to get details for %q schema: %w", obj.SchemaId, err)
-		}
-
-		var objects []DownloadSettingsObject
-		if len(constarints.UniqueProperties) > 0 {
-			objects, err = d.listSettings(ctx, obj.SchemaId, ListSettingsOptions{})
-			if err != nil {
-				return DynatraceEntity{}, fmt.Errorf("unable to get existing settings objects for %q schema: %w", obj.SchemaId, err)
-			}
-
-		}
-
-		objectID, err := findObjectWithSameConstraints(constarints, obj, objects)
-		if err != nil {
-			return DynatraceEntity{}, err
-		}
-		if objectID != "" {
-			obj.OriginObjectId = objectID
-		}
+	if objectID, err := d.findObjectWithMatchingConstraints(ctx, obj); err != nil {
+		return DynatraceEntity{}, err
+	} else if objectID != nil {
+		obj.OriginObjectId = objectID.ObjectId
 	}
 
 	// generate legacy external ID without project name.
@@ -278,7 +261,29 @@ func getValueForConstraint(key string, content []byte) string {
 	return value
 }
 
-func findObjectWithSameConstraints(constarints SchemaConstraints, forDeploy SettingsObject, objects []DownloadSettingsObject) (objectID string, err error) {
+func (d *DynatraceClient) findObjectWithMatchingConstraints(ctx context.Context, source SettingsObject) (*DownloadSettingsObject, error) {
+	constarints, err := d.fetchSchemasConstraints(ctx, source.SchemaId)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get details for %q schema: %w", source.SchemaId, err)
+	}
+
+	if len(constarints.UniqueProperties) == 0 {
+		return nil, nil
+	}
+
+	objects, err := d.listSettings(ctx, source.SchemaId, ListSettingsOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("unable to get existing settings objects for %q schema: %w", source.SchemaId, err)
+	}
+
+	target, err := findObjectWithSameConstraints(constarints, source, objects)
+	if err != nil {
+		return nil, err
+	}
+	return target, nil
+}
+
+func findObjectWithSameConstraints(constarints SchemaConstraints, forDeploy SettingsObject, objects []DownloadSettingsObject) (*DownloadSettingsObject, error) {
 	candidates := make(map[int][]DownloadSettingsObject)
 	for i := range constarints.UniqueProperties {
 		candidates[i] = objects
@@ -298,18 +303,18 @@ func findObjectWithSameConstraints(constarints SchemaConstraints, forDeploy Sett
 		}
 	}
 
-	var candidate string
+	var candidate DownloadSettingsObject
 	for i := range candidates {
 		if len(candidates[i]) > 0 {
-			if candidate == "" {
-				candidate = candidates[i][0].ObjectId
+			if reflect.DeepEqual(candidate, DownloadSettingsObject{}) {
+				candidate = candidates[i][0]
 			}
-			if candidate != candidates[i][0].ObjectId { // Huston we have a problem; only one candidate can exist
-				return "", fmt.Errorf("more than one candidate to update for %q schema", forDeploy.Coordinate)
+			if reflect.DeepEqual(candidate, &candidates[i][0]) { // Huston we have a problem; only one candidate can exist
+				return nil, fmt.Errorf("more than one candidate to update for %q schema", forDeploy.Coordinate)
 			}
 		}
 	}
-	return candidate, nil
+	return &candidate, nil
 }
 
 // buildPostRequestPayload builds the json that is required as body in the settings api.
