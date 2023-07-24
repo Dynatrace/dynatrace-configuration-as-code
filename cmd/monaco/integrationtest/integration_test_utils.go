@@ -19,7 +19,7 @@
 package integrationtest
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/support"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
@@ -32,10 +32,30 @@ import (
 	"testing"
 )
 
+// CreateDynatraceClients creates a client set used in e2e tests.
+// Note, that the caching mechanism in the client is disabled to eliminate the risk of getting
+// wrong information from the cache in cases where we want to get
+// resources immediately after they've been created (e.g. to assert that they exist)
 func CreateDynatraceClients(t *testing.T, environment manifest.EnvironmentDefinition) *client.ClientSet {
-	clients, err := dynatrace.CreateClientSet(environment.URL.Value, environment.Auth)
+	var clients *client.ClientSet
+	var err error
+	if environment.Auth.OAuth == nil {
+		clients, err = client.CreateClassicClientSet(environment.URL.Value, environment.Auth.Token.Value, client.ClientOptions{
+			SupportArchive:  support.SupportArchive,
+			CachingDisabled: true, // disabled to avoid wrong cache reads
+		})
+	} else {
+		clients, err = client.CreatePlatformClientSet(environment.URL.Value, client.PlatformAuth{
+			OauthClientID:     environment.Auth.OAuth.ClientID.Value,
+			OauthClientSecret: environment.Auth.OAuth.ClientSecret.Value,
+			Token:             environment.Auth.Token.Value,
+			OauthTokenURL:     environment.Auth.OAuth.GetTokenEndpointValue(),
+		}, client.ClientOptions{
+			SupportArchive:  support.SupportArchive,
+			CachingDisabled: true, // disabled to avoid wrong cache reads
+		})
+	}
 	assert.NilError(t, err, "failed to create test client")
-
 	return clients
 }
 

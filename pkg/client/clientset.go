@@ -60,6 +60,7 @@ func (s ClientSet) Entities() *dtclient.DynatraceClient {
 type ClientOptions struct {
 	CustomUserAgent string
 	SupportArchive  bool
+	CachingDisabled bool
 }
 
 func (o ClientOptions) getUserAgentString() string {
@@ -82,6 +83,7 @@ func CreateClassicClientSet(url string, token string, opts ClientOptions) (*Clie
 	dtClient, err := dtclient.NewClassicClient(
 		url,
 		restClient,
+		dtclient.WithCachingDisabled(opts.CachingDisabled),
 		dtclient.WithAutoServerVersion(),
 		dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentRequestLimit)),
 		dtclient.WithCustomUserAgentString(opts.getUserAgentString()),
@@ -129,6 +131,7 @@ func CreatePlatformClientSet(url string, auth PlatformAuth, opts ClientOptions) 
 		classicURL,
 		client,
 		clientClassic,
+		dtclient.WithCachingDisabled(opts.CachingDisabled),
 		dtclient.WithAutoServerVersion(),
 		dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentRequestLimit)),
 		dtclient.WithCustomUserAgentString(opts.getUserAgentString()),
