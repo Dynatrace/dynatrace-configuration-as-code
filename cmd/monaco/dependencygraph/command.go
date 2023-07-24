@@ -22,6 +22,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -44,7 +45,11 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 				return err
 			}
 
-			return writeGraphFiles(fs, manifestName, environments, groups, outputFolder)
+			err := writeGraphFiles(fs, manifestName, environments, groups, outputFolder)
+			if err != nil {
+				log.WithFields(field.Error(err), field.F("manifestFile", manifestName), field.F("outputFolder", outputFolder)).Error("Failed to create dependency graph files: %v", err)
+			}
+			return err
 		},
 		ValidArgsFunction: completion.DeleteCompletion,
 	}
