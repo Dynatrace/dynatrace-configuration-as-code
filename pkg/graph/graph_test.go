@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package graph_test_test
+package graph_test
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
