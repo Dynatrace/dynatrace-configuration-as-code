@@ -18,6 +18,7 @@ package dtclient
 
 import (
 	"context"
+	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/stretchr/testify/assert"
 	"net/http"
@@ -102,5 +103,201 @@ func Test_FetchSchemaConstraintsUsesCache(t *testing.T) {
 	_, err = d.fetchSchemasConstraints(context.TODO(), "builtin:span-attribute")
 	assert.NoError(t, err)
 	assert.Equal(t, 2, apiHits)
+}
 
+func Test_findObjectWithSameConstraints(t *testing.T) {
+	type (
+		given struct {
+			schema  SchemaConstraints
+			source  SettingsObject
+			objects []DownloadSettingsObject
+		}
+	)
+
+	t.Run("normal cases", func(t *testing.T) {
+		tests := []struct {
+			name     string
+			given    given
+			expected *DownloadSettingsObject
+		}{
+			{
+				name: "single constraint - match",
+				given: given{
+					schema: SchemaConstraints{
+						UniqueProperties: [][]string{
+							{"A"},
+						},
+					},
+					source: SettingsObject{
+						SchemaId: "schemaID", Content: []byte(`{"A":"x"}`),
+					},
+					objects: []DownloadSettingsObject{
+						{Value: []byte(`{"A":"x"}`)},
+						{Value: []byte(`{"A":"x1"}`)},
+					},
+				},
+				expected: &DownloadSettingsObject{Value: []byte(`{"A":"x"}`)},
+			},
+			{
+				name: "single constraint - no match",
+				given: given{
+					schema: SchemaConstraints{
+						UniqueProperties: [][]string{
+							{"A"},
+						},
+					},
+					source: SettingsObject{
+						SchemaId: "schemaID", Content: []byte(`{"A":"x"}`),
+					},
+					objects: []DownloadSettingsObject{
+						{Value: []byte(`{"A":"x1"}`)},
+						{Value: []byte(`{"A":"x2"}`)},
+					},
+				},
+				expected: nil,
+			},
+			{
+				name: "signe composite constraint - match",
+				given: given{
+					schema: SchemaConstraints{
+						UniqueProperties: [][]string{
+							{"A", "B"},
+						},
+					},
+					source: SettingsObject{
+						SchemaId: "schemaID", Content: []byte(`{"A":"x", "B":"y"}`),
+					},
+					objects: []DownloadSettingsObject{
+						{Value: []byte(`{"A":"x", "B":"y"}`)},
+						{Value: []byte(`{"A":"x", "B":"y1"}`)},
+					},
+				},
+				expected: &DownloadSettingsObject{Value: []byte(`{"A":"x", "B":"y"}`)},
+			},
+			{
+				name: "signe composite constraint - no match",
+				given: given{
+					schema: SchemaConstraints{
+						UniqueProperties: [][]string{
+							{"A", "B"},
+						},
+					},
+					source: SettingsObject{
+						SchemaId: "schemaID", Content: []byte(`{"A":"x", "B":"y"}`),
+					},
+					objects: []DownloadSettingsObject{
+						{Value: []byte(`{"A":"x", "B":"y1"}`)},
+						{Value: []byte(`{"A":"x", "B":"y2"}`)},
+					},
+				},
+				expected: nil,
+			},
+			{
+				name: "multiple simple constraints - one perfect match",
+				given: given{
+					schema: SchemaConstraints{
+						UniqueProperties: [][]string{
+							{"A"},
+							{"B"},
+						},
+					},
+					source: SettingsObject{
+						SchemaId: "schemaID", Content: []byte(`{"A":"x", "B":"y"}`),
+					},
+					objects: []DownloadSettingsObject{
+						{Value: []byte(`{"A":"x", "B":"y"}`)},
+						{Value: []byte(`{"A":"x2", "B":"y"}`)},
+					},
+				},
+				expected: &DownloadSettingsObject{Value: []byte(`{"A":"x", "B":"y"}`)},
+			},
+			{
+				name: "multiple simple constraints - one semi match",
+				given: given{
+					schema: SchemaConstraints{
+						UniqueProperties: [][]string{
+							{"A"},
+							{"B"},
+						},
+					},
+					source: SettingsObject{
+						SchemaId: "schemaID", Content: []byte(`{"A":"x", "B":"y"}`),
+					},
+					objects: []DownloadSettingsObject{
+						{Value: []byte(`{"A":"x", "B":"y1"}`)},
+						{Value: []byte(`{"A":"x2", "B":"y2"}`)},
+					},
+				},
+				expected: &DownloadSettingsObject{Value: []byte(`{"A":"x", "B":"y1"}`)},
+			},
+			{
+				name: "multiple simple constraints - no match",
+				given: given{
+					schema: SchemaConstraints{
+						UniqueProperties: [][]string{
+							{"A"},
+							{"B"},
+						},
+					},
+					source: SettingsObject{
+						SchemaId: "schemaID", Content: []byte(`{"A":"x", "B":"y"}`),
+					},
+					objects: []DownloadSettingsObject{
+						{Value: []byte(`{"A":"x1", "B":"y1"}`)},
+						{Value: []byte(`{"A":"x2", "B":"y2"}`)},
+					},
+				},
+				expected: nil,
+			},
+		}
+		for _, tc := range tests {
+			t.Run(tc.name, func(t *testing.T) {
+				actual, err := findObjectWithSameConstraints(tc.given.schema, tc.given.source, tc.given.objects)
+
+				fmt.Println(actual)
+				assert.NoError(t, err)
+				if tc.expected != nil {
+					assert.NotNil(t, actual)
+					assert.Equal(t, tc.expected, actual)
+				} else {
+					assert.Nil(t, actual)
+				}
+			})
+		}
+	})
+
+	t.Run("error cases", func(t *testing.T) {
+		tests := []struct {
+			name  string
+			given given
+		}{
+			{
+				name: "multiple simple constraints - multiple match",
+				given: given{
+					schema: SchemaConstraints{
+						UniqueProperties: [][]string{
+							{"A"},
+							{"B"},
+						},
+					},
+					source: SettingsObject{
+						SchemaId: "schemaID", Content: []byte(`{"A":"x", "B":"y"}`),
+					},
+					objects: []DownloadSettingsObject{
+						{Value: []byte(`{"A":"x", "B":"y1"}`)},
+						{Value: []byte(`{"A":"x2", "B":"y"}`)},
+					},
+				},
+			},
+		}
+		for _, tc := range tests {
+			t.Run(tc.name, func(t *testing.T) {
+				actual, err := findObjectWithSameConstraints(tc.given.schema, tc.given.source, tc.given.objects)
+
+				assert.Nil(t, actual)
+				assert.Error(t, err)
+			})
+		}
+
+	})
 }

@@ -283,23 +283,20 @@ func (d *DynatraceClient) findObjectWithMatchingConstraints(ctx context.Context,
 	return target, nil
 }
 
-func findObjectWithSameConstraints(constarints SchemaConstraints, forDeploy SettingsObject, objects []DownloadSettingsObject) (*DownloadSettingsObject, error) {
+func findObjectWithSameConstraints(schema SchemaConstraints, source SettingsObject, objects []DownloadSettingsObject) (*DownloadSettingsObject, error) {
 	candidates := make(map[int][]DownloadSettingsObject)
-	for i := range constarints.UniqueProperties {
-		candidates[i] = objects
-
-		for j := range constarints.UniqueProperties[i] {
-			can1 := []DownloadSettingsObject{}
-
-			cKey := constarints.UniqueProperties[i][j]
-			cValue := getValueForConstraint(cKey, forDeploy.Content)
-
-			for z := range candidates[i] {
-				if getValueForConstraint(cKey, objects[z].Value) == cValue {
-					can1 = append(can1, candidates[i][z])
+	for i, constraints := range schema.UniqueProperties {
+		for j, o := range objects {
+			b := true
+			for _, c := range constraints {
+				if getValueForConstraint(c, o.Value) != getValueForConstraint(c, source.Content) {
+					b = false
+					break
 				}
 			}
-			candidates[i] = can1
+			if b {
+				candidates[i] = append(candidates[i], objects[j])
+			}
 		}
 	}
 
@@ -309,10 +306,13 @@ func findObjectWithSameConstraints(constarints SchemaConstraints, forDeploy Sett
 			if reflect.DeepEqual(candidate, DownloadSettingsObject{}) {
 				candidate = candidates[i][0]
 			}
-			if reflect.DeepEqual(candidate, &candidates[i][0]) { // Huston we have a problem; only one candidate can exist
-				return nil, fmt.Errorf("more than one candidate to update for %q schema", forDeploy.Coordinate)
+			if !reflect.DeepEqual(candidate, candidates[i][0]) { // Huston we have a problem; only one candidate can exist
+				return nil, fmt.Errorf("can't update or create new configuration %q couse interfearing with the already existing objects with ID %q and %q", source.Coordinate, candidate.ObjectId, candidates[i][0].ObjectId)
 			}
 		}
+	}
+	if reflect.DeepEqual(candidate, DownloadSettingsObject{}) {
+		return nil, nil
 	}
 	return &candidate, nil
 }
