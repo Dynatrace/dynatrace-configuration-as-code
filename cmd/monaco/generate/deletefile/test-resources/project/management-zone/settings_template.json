@@ -1,0 +1,165 @@
+{
+    "name": "{{ .name }}",
+    "rules": [
+        {
+            "enabled": true,
+            "type": "ME",
+            "attributeRule": {
+                "entityType": "HOST",
+                "conditions": [
+                    {
+                        "key": "HOST_GROUP_ID",
+                        "operator": "EQUALS",
+                        "entityId": "{{ .meId }}"
+                    }
+                ],
+                "hostToPGPropagation": true
+            }
+        },
+        {
+            "enabled": true,
+            "type": "ME",
+            "attributeRule": {
+                "entityType": "KUBERNETES_CLUSTER",
+                "conditions": [
+                    {
+                        "key": "KUBERNETES_CLUSTER_NAME",
+                        "operator": "EQUALS",
+                        "stringValue": "Management Zone - {{ .environment }}",
+                        "caseSensitive": true
+                    }
+                ]
+            }
+        },
+        {
+            "enabled": true,
+            "type": "ME",
+            "attributeRule": {
+                "entityType": "AWS_CLASSIC_LOAD_BALANCER",
+                "conditions": [
+                    {
+                        "key": "AWS_CLASSIC_LOAD_BALANCER_TAGS",
+                        "operator": "TAG_KEY_EQUALS",
+                        "tag": "[AWS]kubernetes.io/cluster/{{ .name }}"
+                    }
+                ]
+            }
+        },
+        {
+            "enabled": true,
+            "type": "ME",
+            "attributeRule": {
+                "entityType": "AWS_AUTO_SCALING_GROUP",
+                "conditions": [
+                    {
+                        "key": "AWS_AUTO_SCALING_GROUP_TAGS",
+                        "operator": "EQUALS",
+                        "tag": "[AWS]environment:{{ .environment }}"
+                    },
+                    {
+                        "key": "AWS_AUTO_SCALING_GROUP_TAGS",
+                        "operator": "EQUALS",
+                        "tag": "[AWS]project:expamle"
+                    }
+                ]
+            }
+        },
+        {
+            "enabled": true,
+            "type": "ME",
+            "attributeRule": {
+                "entityType": "SERVICE",
+                "conditions": [
+                    {
+                        "key": "HOST_GROUP_ID",
+                        "operator": "EQUALS",
+                        "entityId": "{{ .meId }}"
+                    }
+                ],
+                "serviceToHostPropagation": true,
+                "serviceToPGPropagation": true
+            }
+        },
+        {
+            "enabled": true,
+            "type": "ME",
+            "attributeRule": {
+                "entityType": "AWS_RELATIONAL_DATABASE_SERVICE",
+                "conditions": [
+                    {
+                        "key": "AWS_RELATIONAL_DATABASE_SERVICE_TAGS",
+                        "operator": "EQUALS",
+                        "tag": "[AWS]project:expamle"
+                    }
+                ]
+            }
+        },
+        {
+            "enabled": true,
+            "type": "ME",
+            "attributeRule": {
+                "entityType": "SERVICE",
+                "conditions": [
+                    {
+                        "key": "SERVICE_TYPE",
+                        "operator": "EQUALS",
+                        "enumValue": "DATABASE_SERVICE"
+                    },
+                    {
+                        "key": "SERVICE_DATABASE_NAME",
+                        "operator": "CONTAINS",
+                        "stringValue": "expamle",
+                        "caseSensitive": false
+                    }
+                ],
+                "serviceToHostPropagation": false,
+                "serviceToPGPropagation": false
+            }
+        },
+        {
+            "enabled": true,
+            "type": "ME",
+            "attributeRule": {
+                "entityType": "HTTP_MONITOR",
+                "conditions": [
+                    {
+                        "key": "HTTP_MONITOR_NAME",
+                        "operator": "CONTAINS",
+                        "stringValue": "Management Zone",
+                        "caseSensitive": true
+                    }
+                ]
+            }
+        },
+        {
+            "enabled": true,
+            "type": "ME",
+            "attributeRule": {
+                "entityType": "BROWSER_MONITOR",
+                "conditions": [
+                    {
+                        "key": "BROWSER_MONITOR_NAME",
+                        "operator": "CONTAINS",
+                        "stringValue": "Management Zone",
+                        "caseSensitive": true
+                    }
+                ]
+            }
+        },
+        {
+            "enabled": true,
+            "type": "ME",
+            "attributeRule": {
+                "entityType": "CLOUD_APPLICATION",
+                "conditions": [
+                    {
+                        "key": "KUBERNETES_CLUSTER_NAME",
+                        "operator": "EQUALS",
+                        "stringValue": "Management Zone - {{ .environment }}",
+                        "caseSensitive": true
+                    }
+                ]
+            }
+        }
+    ]
+}

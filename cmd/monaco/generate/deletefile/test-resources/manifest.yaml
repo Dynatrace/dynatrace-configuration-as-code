@@ -1,0 +1,19 @@
+manifestVersion: 1.0
+projects:
+- name: project
+- name: other-project
+environmentGroups:
+- name: default
+  environments:
+  - name: env1
+    url:
+      value: http://www.url.com
+    auth:
+      token:
+        name: TOKEN
+  - name: env2
+    url:
+      value: http://www.url.com
+    auth:
+      token:
+        name: TOKEN

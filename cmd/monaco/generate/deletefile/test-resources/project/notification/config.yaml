@@ -1,0 +1,34 @@
+configs:
+- id: slack
+  type:
+    api: notification
+  config:
+    name: 'Star Trek to #team-star-trek'
+    parameters:
+      alertingProfileId:
+        configType: alerting-profile
+        configId: profile
+        property: id
+        type: reference
+      environment: Env1
+    template: subfolder/slack.json
+    skip: false
+- id: email
+  type:
+    api: notification
+  config:
+    name: Captain's Log
+    parameters:
+      alertingProfileId:
+        configType: alerting-profile
+        configId: profile
+        property: id
+        type: reference
+      environment: Env1
+      receivers:
+        type: list
+        values:
+          - "jean-luc.picard@dynatrace.com"
+          - "jim.kirk@dynatrace.com"
+    template: subfolder/email.json
+    skip: false
