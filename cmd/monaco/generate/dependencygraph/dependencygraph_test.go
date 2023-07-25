@@ -20,7 +20,7 @@ package dependencygraph_test
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dependencygraph"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/generate/dependencygraph"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/spf13/afero"
