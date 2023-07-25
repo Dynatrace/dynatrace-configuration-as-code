@@ -19,6 +19,7 @@ package delete
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/persistence"
 	"github.com/mitchellh/mapstructure"
 	"path/filepath"
 	"strings"
@@ -33,17 +34,6 @@ type loaderContext struct {
 	fs         afero.Fs
 	deleteFile string
 	knownApis  map[string]struct{}
-}
-
-type deleteFileDefinition struct {
-	DeleteEntries []interface{} `yaml:"delete"`
-}
-
-type deleteEntry struct {
-	Project    string `mapstructure:"project"`
-	Type       string `mapstructure:"type"`
-	ConfigId   string `mapstructure:"id"`
-	ConfigName string `mapstructure:"name"`
 }
 
 type DeleteEntryParserError struct {
@@ -91,34 +81,34 @@ func toSetMap(strs []string) map[string]struct{} {
 	return result
 }
 
-func readDeleteFile(context *loaderContext) (deleteFileDefinition, error) {
+func readDeleteFile(context *loaderContext) (persistence.FileDefinition, error) {
 	targetFile, err := filepath.Abs(context.deleteFile)
 	if err != nil {
-		return deleteFileDefinition{}, fmt.Errorf("could not parse absoulte path to file `%s`: %w", context.deleteFile, err)
+		return persistence.FileDefinition{}, fmt.Errorf("could not parse absoulte path to file `%s`: %w", context.deleteFile, err)
 	}
 
 	data, err := afero.ReadFile(context.fs, targetFile)
 
 	if err != nil {
-		return deleteFileDefinition{}, err
+		return persistence.FileDefinition{}, err
 	}
 
 	if len(data) == 0 {
-		return deleteFileDefinition{}, fmt.Errorf("file `%s` is empty", targetFile)
+		return persistence.FileDefinition{}, fmt.Errorf("file `%s` is empty", targetFile)
 	}
 
-	var result deleteFileDefinition
+	var result persistence.FileDefinition
 
 	err = yaml.UnmarshalStrict(data, &result)
 
 	if err != nil {
-		return deleteFileDefinition{}, err
+		return persistence.FileDefinition{}, err
 	}
 
 	return result, nil
 }
 
-func parseDeleteFileDefinition(ctx *loaderContext, definition deleteFileDefinition) (map[string][]DeletePointer, []error) {
+func parseDeleteFileDefinition(ctx *loaderContext, definition persistence.FileDefinition) (map[string][]DeletePointer, []error) {
 	var result = make(map[string][]DeletePointer)
 	var errors []error
 
@@ -158,7 +148,7 @@ func parseDeleteEntry(ctx *loaderContext, index int, entry interface{}) (DeleteP
 
 func parseFullEntry(ctx *loaderContext, entry interface{}) (DeletePointer, error) {
 
-	var parsed deleteEntry
+	var parsed persistence.DeleteEntry
 	err := mapstructure.Decode(entry, &parsed)
 	if err != nil {
 		return DeletePointer{}, err
@@ -171,7 +161,7 @@ func parseFullEntry(ctx *loaderContext, entry interface{}) (DeletePointer, error
 	return parseCoordinateEntry(parsed)
 }
 
-func parseAPIEntry(parsed deleteEntry) (DeletePointer, error) {
+func parseAPIEntry(parsed persistence.DeleteEntry) (DeletePointer, error) {
 	if parsed.ConfigName == "" {
 		return DeletePointer{}, fmt.Errorf("delete entry of API type requiress config 'name' to be defined")
 	}
@@ -184,7 +174,7 @@ func parseAPIEntry(parsed deleteEntry) (DeletePointer, error) {
 	}, nil
 }
 
-func parseCoordinateEntry(parsed deleteEntry) (DeletePointer, error) {
+func parseCoordinateEntry(parsed persistence.DeleteEntry) (DeletePointer, error) {
 	if parsed.ConfigId == "" {
 		return DeletePointer{}, fmt.Errorf("delete entry requires config 'id' to be defined")
 	}
