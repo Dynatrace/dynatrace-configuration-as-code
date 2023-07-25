@@ -1,0 +1,15 @@
+configs:
+  - id: profile
+    config:
+      name: Lord of the Rings Service
+      template: profile.json
+      skip: false
+    type:
+      api: alerting-profile
+  - id: profile2
+    config:
+      name: A Song of Ice and Fire Service
+      template: profile.json
+      skip: false
+    type:
+      api: alerting-profile

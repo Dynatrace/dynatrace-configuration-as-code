@@ -1,0 +1,11 @@
+configs:
+- id: zone
+  type:
+    api: management-zone
+  config:
+    name: mzone-1
+    parameters:
+      environment: environment1
+      meId: HOST_GROUP-1234567890123456
+    template: zone.json
+    skip: false

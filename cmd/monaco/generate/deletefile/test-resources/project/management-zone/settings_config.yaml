@@ -1,0 +1,12 @@
+configs:
+- id: management-zone-setting
+  type:
+    settings:
+      schema: builtin:management-zones
+      scope: environment
+  config:
+    name: mzone-name-setting
+    parameters:
+      environment: environment1
+      meId: HOST_GROUP-1234567890123456
+    template: settings_template.json
