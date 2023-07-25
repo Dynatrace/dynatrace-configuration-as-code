@@ -53,13 +53,13 @@ func GetNumericIDForObjectID(objectID string) (int, error) {
 	return getNumericID(u), nil
 }
 
-// getNumericID implements the Dynatrace logic for transforming a "new" (variant RFC, version 4 (random)) UUID to a numeric ID
+// getNumericID implements the Dynatrace logic for transforming a "new" (non-random) UUID to a numeric ID
 // by converting the UUID's most significant (big-endian) bytes into an integer
 func getNumericID(u uuid.UUID) int {
 	return int(binary.BigEndian.Uint64(u[0:8]))
 }
 
-// getLegacyNumericID implements the Dynatrace logic for transforming a "legacy" UUID to a numeric ID
+// getLegacyNumericID implements the Dynatrace logic for transforming a "legacy" (variant RFC, version 4 (random)) UUID to a numeric ID
 // by taking specific bytes of the UUID and decoding them as a signed variable-length integer
 func getLegacyNumericID(u uuid.UUID) (int, error) {
 
