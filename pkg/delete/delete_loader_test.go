@@ -19,6 +19,7 @@
 package delete
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/persistence"
 	"github.com/stretchr/testify/assert"
 	"path/filepath"
 	"testing"
@@ -111,7 +112,7 @@ func TestParseDeleteFileDefinitions(t *testing.T) {
 		}),
 	}
 
-	result, errors := parseDeleteFileDefinition(&ctx, deleteFileDefinition{
+	result, errors := parseDeleteFileDefinition(&ctx, persistence.FileDefinition{
 		DeleteEntries: []interface{}{
 			entity,
 			entity2,
@@ -154,7 +155,7 @@ func TestParseDeleteFileDefinitionsWithInvalidDefinition(t *testing.T) {
 		}),
 	}
 
-	result, errors := parseDeleteFileDefinition(&ctx, deleteFileDefinition{
+	result, errors := parseDeleteFileDefinition(&ctx, persistence.FileDefinition{
 		DeleteEntries: []interface{}{
 			entity,
 			entity2,
