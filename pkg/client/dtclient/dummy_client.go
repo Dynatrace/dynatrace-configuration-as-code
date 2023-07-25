@@ -23,6 +23,8 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -40,22 +42,37 @@ type DataEntry struct {
 }
 
 type DummyClient struct {
-	Entries          map[api.API][]DataEntry
+	Entries          sync.Map
 	Fs               afero.Fs
 	RequestOutputDir string
+	NumObjects       int64
+	CreatedObjects   int64
+	DeletedObjects   int64
 }
 
 var (
 	_ Client = (*DummyClient)(nil)
 )
 
-// NewDummyClient creates a new DummyClient
-func NewDummyClient() *DummyClient {
-	return &DummyClient{Entries: map[api.API][]DataEntry{}}
+func (c *DummyClient) GetEntries(a api.API) ([]DataEntry, bool) {
+	v, found := c.Entries.Load(a)
+	if !found {
+		return []DataEntry{}, false
+	}
+
+	return v.([]DataEntry), found
+}
+
+func (c *DummyClient) storeEntry(a api.API, e *DataEntry) {
+	entries, _ := c.GetEntries(a)
+	entries = append(entries, *e)
+	c.Entries.Store(a, entries)
+	atomic.AddInt64(&c.NumObjects, 1)
+	atomic.AddInt64(&c.CreatedObjects, 1)
 }
 
 func (c *DummyClient) ListConfigs(_ context.Context, a api.API) (values []Value, err error) {
-	entries, found := c.Entries[a]
+	entries, found := c.GetEntries(a)
 
 	if !found {
 		return nil, nil
@@ -76,7 +93,7 @@ func (c *DummyClient) ListConfigs(_ context.Context, a api.API) (values []Value,
 }
 
 func (c *DummyClient) ReadConfigById(a api.API, id string) ([]byte, error) {
-	entries, found := c.Entries[a]
+	entries, found := c.GetEntries(a)
 
 	if !found {
 		return nil, nil
@@ -92,15 +109,11 @@ func (c *DummyClient) ReadConfigById(a api.API, id string) ([]byte, error) {
 }
 
 func (c *DummyClient) UpsertConfigByName(_ context.Context, a api.API, name string, data []byte) (entity DynatraceEntity, err error) {
-	entries, found := c.Entries[a]
-
-	if c.Entries == nil {
-		c.Entries = make(map[api.API][]DataEntry)
-	}
+	entries, found := c.GetEntries(a)
 
 	if !found {
-		c.Entries[a] = make([]DataEntry, 0)
-		entries = c.Entries[a]
+		entries = make([]DataEntry, 0)
+		c.Entries.Store(a, entries)
 	}
 
 	var dataEntry *DataEntry
@@ -119,8 +132,7 @@ func (c *DummyClient) UpsertConfigByName(_ context.Context, a api.API, name stri
 			Owner: "owner",
 		}
 
-		c.Entries[a] = append(c.Entries[a], *dataEntry)
-		dataEntry = &c.Entries[a][len(c.Entries[a])-1]
+		c.storeEntry(a, dataEntry)
 	}
 
 	dataEntry.Payload = data
@@ -133,15 +145,11 @@ func (c *DummyClient) UpsertConfigByName(_ context.Context, a api.API, name stri
 }
 
 func (c *DummyClient) UpsertConfigByNonUniqueNameAndId(_ context.Context, a api.API, entityId string, name string, data []byte) (entity DynatraceEntity, err error) {
-	entries, found := c.Entries[a]
-
-	if c.Entries == nil {
-		c.Entries = make(map[api.API][]DataEntry)
-	}
+	entries, found := c.GetEntries(a)
 
 	if !found {
-		c.Entries[a] = make([]DataEntry, 0)
-		entries = c.Entries[a]
+		entries = make([]DataEntry, 0)
+		c.Entries.Store(a, entries)
 	}
 
 	var dataEntry *DataEntry
@@ -160,8 +168,7 @@ func (c *DummyClient) UpsertConfigByNonUniqueNameAndId(_ context.Context, a api.
 			Owner: "owner",
 		}
 
-		c.Entries[a] = append(c.Entries[a], *dataEntry)
-		dataEntry = &c.Entries[a][len(c.Entries[a])-1]
+		c.storeEntry(a, dataEntry)
 	}
 
 	dataEntry.Payload = data
@@ -193,7 +200,7 @@ func (c *DummyClient) writeRequest(a api.API, name string, payload []byte) {
 }
 
 func (c *DummyClient) DeleteConfigById(a api.API, id string) error {
-	entries, found := c.Entries[a]
+	entries, found := c.GetEntries(a)
 
 	if !found {
 		return nil
@@ -209,14 +216,17 @@ func (c *DummyClient) DeleteConfigById(a api.API, id string) error {
 	}
 
 	if foundIndex >= 0 {
-		c.Entries[a] = append(entries[:foundIndex], entries[foundIndex+1:]...)
+		newEntries := append(entries[:foundIndex], entries[foundIndex+1:]...)
+		c.Entries.Store(a, newEntries)
+		atomic.AddInt64(&c.NumObjects, -1)
+		atomic.AddInt64(&c.DeletedObjects, 1)
 	}
 
 	return nil
 }
 
 func (c *DummyClient) ConfigExistsByName(_ context.Context, a api.API, name string) (exists bool, id string, err error) {
-	entries, found := c.Entries[a]
+	entries, found := c.GetEntries(a)
 
 	if !found {
 		return false, "", errors.New("not found")

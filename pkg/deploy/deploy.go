@@ -146,7 +146,7 @@ func deployComponentsToEnvironment(g graph.ConfigGraphPerEnvironment, env Enviro
 	}
 
 	var deployErrs []error
-	if featureflags.DependencyGraphBasedDeployParallel().Enabled() && !opts.DryRun { //note: parallel deployment currently does not work with dummy clients
+	if featureflags.DependencyGraphBasedDeployParallel().Enabled() {
 		deployErrs = deployComponentsParallel(ctx, sortedConfigs, clientSet, apis, opts)
 	} else {
 		deployErrs = deployComponents(ctx, sortedConfigs, clientSet, apis, opts)
@@ -183,7 +183,7 @@ func deployComponents(ctx context.Context, components []graph.SortedComponent, c
 
 func deployComponentsParallel(ctx context.Context, components []graph.SortedComponent, clientSet ClientSet, apis api.APIs, opts DeployConfigsOptions) []error {
 	var errs []error
-	log.WithCtxFields(ctx).Info("Deploying %d independent configuration sets...", len(components))
+	log.WithCtxFields(ctx).Info("Deploying %d independent configuration sets in parallel...", len(components))
 
 	errChan := make(chan []error, len(components))
 

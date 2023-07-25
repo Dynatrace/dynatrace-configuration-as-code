@@ -98,7 +98,8 @@ func TestDeployConfigGraph_SingleConfig(t *testing.T) {
 
 	assert.Emptyf(t, errors, "errors: %v", errors)
 
-	createdEntities := dummyClient.Entries[api.NewAPIs()["dashboard"]]
+	createdEntities, found := dummyClient.GetEntries(api.NewAPIs()["dashboard"])
+	assert.True(t, found, "expected entries for dashboard API to exist in dummy client after deployment")
 	assert.Len(t, createdEntities, 1)
 
 	entity := createdEntities[0]
@@ -227,7 +228,9 @@ func TestDeployConfigGraph_DoesNotDeploySkippedConfig(t *testing.T) {
 
 	errors := deploy.DeployConfigGraph(p, c, deploy.DeployConfigsOptions{})
 	assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
-	assert.Len(t, dummyClient.Entries[api.NewAPIs()["dashboard"]], 0)
+	createdEntities, found := dummyClient.GetEntries(api.NewAPIs()["dashboard"])
+	assert.False(t, found, "expected NO entries for dashboard API to exist")
+	assert.Len(t, createdEntities, 0)
 }
 
 func TestDeployConfigGraph_DeploysSetting(t *testing.T) {
@@ -533,7 +536,7 @@ func TestDeployConfigGraph_DoesNotDeployConfigsDependingOnSkippedConfigs(t *test
 
 	errs := deploy.DeployConfigGraph(projects, clients, deploy.DeployConfigsOptions{})
 	assert.Len(t, errs, 0)
-	assert.Len(t, dummyClient.Entries, 0)
+	assert.Zero(t, dummyClient.CreatedObjects)
 }
 
 func TestDeployConfigGraph_DeploysIndependentConfigurations(t *testing.T) {
@@ -651,8 +654,9 @@ func TestDeployConfigGraph_DeploysIndependentConfigurations(t *testing.T) {
 
 	errs := deploy.DeployConfigGraph(projects, clients, deploy.DeployConfigsOptions{})
 	assert.Len(t, errs, 0)
-	assert.Len(t, dummyClient.Entries, 1)
-	dashboards := dummyClient.Entries[api.NewAPIs()["dashboard"]]
+
+	dashboards, found := dummyClient.GetEntries(api.NewAPIs()["dashboard"])
+	assert.True(t, found, "expected entries for dashboard API to exist in dummy client after deployment")
 	assert.Len(t, dashboards, 1)
 
 	assert.Equal(t, dashboards[0].Name, individualConfigName)
@@ -772,8 +776,9 @@ func TestDeployConfigGraph_DeploysIndependentConfigurations_IfContinuingAfterFai
 
 	errs := deploy.DeployConfigGraph(projects, clients, deploy.DeployConfigsOptions{ContinueOnErr: true})
 	assert.Len(t, errs, 1)
-	assert.Len(t, dummyClient.Entries, 1)
-	dashboards := dummyClient.Entries[api.NewAPIs()["dashboard"]]
+
+	dashboards, found := dummyClient.GetEntries(api.NewAPIs()["dashboard"])
+	assert.True(t, found, "expected entries for dashboard API to exist in dummy client after deployment")
 	assert.Len(t, dashboards, 1)
 
 	assert.Equal(t, dashboards[0].Name, individualConfigName)
