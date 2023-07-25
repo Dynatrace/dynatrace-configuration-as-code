@@ -29,7 +29,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"net/http"
 	"net/url"
-	"reflect"
 )
 
 type (
@@ -254,11 +253,13 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 	return entity, nil
 }
 
-func getValueForConstraint(key string, content []byte) string {
-	c := make(map[string]string)
-	json.Unmarshal(content, &c) // TODO: handle error - how to avoid an error when unmarshaling bool??
+func getValueForConstraint(key string, content []byte) (any, error) {
+	c := make(map[string]any)
+	if err := json.Unmarshal(content, &c); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal data for key %q: %w", key, err)
+	}
 	value := c[key]
-	return value
+	return value, nil
 }
 
 func (d *DynatraceClient) findObjectWithMatchingConstraints(ctx context.Context, source SettingsObject) (*DownloadSettingsObject, error) {
@@ -284,37 +285,37 @@ func (d *DynatraceClient) findObjectWithMatchingConstraints(ctx context.Context,
 }
 
 func findObjectWithSameConstraints(schema SchemaConstraints, source SettingsObject, objects []DownloadSettingsObject) (*DownloadSettingsObject, error) {
-	candidates := make(map[int][]DownloadSettingsObject)
-	for i, constraints := range schema.UniqueProperties {
+	var candidate *DownloadSettingsObject
+	var err error
+	for _, constraints := range schema.UniqueProperties {
 		for j, o := range objects {
 			b := true
 			for _, c := range constraints {
-				if getValueForConstraint(c, o.Value) != getValueForConstraint(c, source.Content) {
+				cv, err := getValueForConstraint(c, o.Value)
+				if err != nil {
+					return nil, err
+				}
+				ov, err := getValueForConstraint(c, source.Content)
+				if err != nil {
+					return nil, err
+				}
+				if cv != ov {
 					b = false
 					break
 				}
 			}
 			if b {
-				candidates[i] = append(candidates[i], objects[j])
+				if candidate == nil {
+					candidate = &objects[j]
+				}
+				if candidate != &objects[j] {
+					return nil, fmt.Errorf("can't update or create new configuration %q couse the already existing objects with ID %q and %q interfearing", source.Coordinate, candidate.ObjectId, objects[j].ObjectId)
+				}
 			}
 		}
 	}
 
-	var candidate DownloadSettingsObject
-	for i := range candidates {
-		if len(candidates[i]) > 0 {
-			if reflect.DeepEqual(candidate, DownloadSettingsObject{}) {
-				candidate = candidates[i][0]
-			}
-			if !reflect.DeepEqual(candidate, candidates[i][0]) { // Huston we have a problem; only one candidate can exist
-				return nil, fmt.Errorf("can't update or create new configuration %q couse interfearing with the already existing objects with ID %q and %q", source.Coordinate, candidate.ObjectId, candidates[i][0].ObjectId)
-			}
-		}
-	}
-	if reflect.DeepEqual(candidate, DownloadSettingsObject{}) {
-		return nil, nil
-	}
-	return &candidate, nil
+	return candidate, err
 }
 
 // buildPostRequestPayload builds the json that is required as body in the settings api.

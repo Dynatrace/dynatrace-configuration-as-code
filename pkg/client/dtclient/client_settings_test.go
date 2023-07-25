@@ -121,6 +121,42 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 			expected *DownloadSettingsObject
 		}{
 			{
+				name: "single constraint with boolean values- match",
+				given: given{
+					schema: SchemaConstraints{
+						UniqueProperties: [][]string{
+							{"A"},
+						},
+					},
+					source: SettingsObject{
+						SchemaId: "schemaID", Content: []byte(`{"A":true}`),
+					},
+					objects: []DownloadSettingsObject{
+						{Value: []byte(`{"A":true}`)},
+						{Value: []byte(`{"A":false}`)},
+					},
+				},
+				expected: &DownloadSettingsObject{Value: []byte(`{"A":true}`)},
+			},
+			{
+				name: "single constraint with int values - no match",
+				given: given{
+					schema: SchemaConstraints{
+						UniqueProperties: [][]string{
+							{"A"},
+						},
+					},
+					source: SettingsObject{
+						SchemaId: "schemaID", Content: []byte(`{"A":2}`),
+					},
+					objects: []DownloadSettingsObject{
+						{Value: []byte(`{"A":3}`)},
+						{Value: []byte(`{"A":"x2"}`)},
+					},
+				},
+				expected: nil,
+			},
+			{
 				name: "single constraint - match",
 				given: given{
 					schema: SchemaConstraints{
@@ -198,18 +234,18 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 					schema: SchemaConstraints{
 						UniqueProperties: [][]string{
 							{"A"},
-							{"B"},
+							{"A", "B"},
 						},
 					},
 					source: SettingsObject{
 						SchemaId: "schemaID", Content: []byte(`{"A":"x", "B":"y"}`),
 					},
 					objects: []DownloadSettingsObject{
-						{Value: []byte(`{"A":"x", "B":"y"}`)},
-						{Value: []byte(`{"A":"x2", "B":"y"}`)},
+						{ObjectId: "obj_1", Value: []byte(`{"A":"x", "B":"y"}`)},
+						{ObjectId: "obj_2", Value: []byte(`{"A":"x2", "B":"y"}`)},
 					},
 				},
-				expected: &DownloadSettingsObject{Value: []byte(`{"A":"x", "B":"y"}`)},
+				expected: &DownloadSettingsObject{ObjectId: "obj_1", Value: []byte(`{"A":"x", "B":"y"}`)},
 			},
 			{
 				name: "multiple simple constraints - one semi match",
