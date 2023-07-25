@@ -8,7 +8,7 @@ default: build
 
 setup:
 	@echo "Installing build tools..."
-	@go install github.com/google/addlicense@v1.1.0
+	@go install github.com/google/addlicense@v1.1.1
 	@go install gotest.tools/gotestsum@v1.10.1
 	@go install go.uber.org/mock/mockgen@v0.2.0
 	@go install github.com/sigstore/cosign/v2/cmd/cosign@v2.1.1
