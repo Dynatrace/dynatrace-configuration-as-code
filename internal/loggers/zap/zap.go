@@ -94,7 +94,7 @@ func New(logOptions loggers.LogOptions) (*Logger, error) {
 		cores = append(cores, zapcore.NewCore(zapcore.NewJSONEncoder(encoderConfig), consoleSyncer, atomicLevel))
 	} else {
 		consoleSyncer := zapcore.Lock(os.Stderr)
-		cores = append(cores, &noFieldsCore{zapcore.NewCore(zapcore.NewConsoleEncoder(encoderConfig), consoleSyncer, atomicLevel)})
+		cores = append(cores, &filteredFieldsCore{zapcore.NewCore(zapcore.NewConsoleEncoder(encoderConfig), consoleSyncer, atomicLevel)})
 	}
 
 	if logOptions.File != nil {
@@ -102,7 +102,7 @@ func New(logOptions loggers.LogOptions) (*Logger, error) {
 		if logOptions.FileLoggingJSON {
 			cores = append(cores, zapcore.NewCore(zapcore.NewJSONEncoder(encoderConfig), fileSyncer, atomicLevel))
 		} else {
-			cores = append(cores, &noFieldsCore{zapcore.NewCore(zapcore.NewConsoleEncoder(encoderConfig), fileSyncer, atomicLevel)})
+			cores = append(cores, &filteredFieldsCore{zapcore.NewCore(zapcore.NewConsoleEncoder(encoderConfig), fileSyncer, atomicLevel)})
 		}
 	}
 
@@ -110,7 +110,7 @@ func New(logOptions loggers.LogOptions) (*Logger, error) {
 		if logOptions.ConsoleLoggingJSON {
 			cores = append(cores, zapcore.NewCore(zapcore.NewJSONEncoder(encoderConfig), zapcore.AddSync(logOptions.LogSpy), atomicLevel))
 		} else {
-			cores = append(cores, &noFieldsCore{zapcore.NewCore(zapcore.NewConsoleEncoder(encoderConfig), zapcore.AddSync(logOptions.LogSpy), atomicLevel)})
+			cores = append(cores, &filteredFieldsCore{zapcore.NewCore(zapcore.NewConsoleEncoder(encoderConfig), zapcore.AddSync(logOptions.LogSpy), atomicLevel)})
 		}
 
 	}
@@ -127,11 +127,23 @@ var levelMap = map[loggers.LogLevel]zapcore.Level{
 	loggers.LevelFatal: zapcore.FatalLevel,
 }
 
-// noFieldsCore just discards fields passed to the logger
-type noFieldsCore struct {
+// filteredFieldsCore only uses specific fields to be logged
+type filteredFieldsCore struct {
 	zapcore.Core
 }
 
-func (c *noFieldsCore) With([]zapcore.Field) zapcore.Core {
-	return c
+func (c *filteredFieldsCore) With(fields []zapcore.Field) zapcore.Core {
+	filteredFields := make([]zapcore.Field, 0, len(fields))
+	// only log componentId and coordinate if set
+	for _, f := range fields {
+		if f.Key == "componentId" {
+			filteredFields = append(filteredFields, f)
+		}
+		if f.Key == "coordinate" {
+			// only use out short ref string
+			f.Interface = f.Interface.(field.LogCoordinate).Reference
+			filteredFields = append(filteredFields, f)
+		}
+	}
+	return c.Core.With(filteredFields)
 }

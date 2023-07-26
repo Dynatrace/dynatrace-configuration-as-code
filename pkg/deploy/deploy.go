@@ -168,7 +168,6 @@ func deployComponents(ctx context.Context, components []graph.SortedComponent, c
 	log.WithCtxFields(ctx).Info("Deploying %d independent configuration sets...", len(components))
 
 	for i := range components {
-		ctx = context.WithValue(ctx, log.CtxGraphComponentId{}, log.CtxValGraphComponentId(i))
 		componentDeployErrs := deployComponent(ctx, components[i], clientSet, apis, opts)
 
 		if len(componentDeployErrs) > 0 && !opts.ContinueOnErr && !opts.DryRun {
