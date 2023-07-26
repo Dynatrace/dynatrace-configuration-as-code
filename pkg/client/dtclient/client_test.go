@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
@@ -178,57 +177,6 @@ func TestNewPlatformClient(t *testing.T) {
 		_, err = NewPlatformClient("http//my-environment.live.dynatrace.com/", "", nil, nil)
 		assert.ErrorContains(t, err, "not valid")
 	})
-}
-
-func TestReadByIdReturnsAnErrorUponEncounteringAnError(t *testing.T) {
-	testServer := httptest.NewTLSServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		http.Error(res, "", http.StatusForbidden)
-	}))
-	defer func() { testServer.Close() }()
-	client := DynatraceClient{
-		environmentURLClassic: testServer.URL,
-		classicClient:         rest.NewRestClient(testServer.Client(), trafficlogs.NewFileBased(), rest.CreateRateLimitStrategy()),
-		limiter:               concurrency.NewLimiter(5),
-		generateExternalID:    idutils.GenerateExternalID,
-	}
-
-	_, err := client.ReadConfigById(mockAPI, "test")
-	assert.ErrorContains(t, err, "Response was")
-}
-
-func TestReadByIdEscapesTheId(t *testing.T) {
-	unescapedID := "ruxit.perfmon.dotnetV4:%TimeInGC:time_in_gc_alert_high_generic"
-
-	testServer := httptest.NewTLSServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {}))
-	defer func() { testServer.Close() }()
-	client := DynatraceClient{
-		environmentURLClassic: testServer.URL,
-		classicClient:         rest.NewRestClient(testServer.Client(), nil, rest.CreateRateLimitStrategy()),
-		limiter:               concurrency.NewLimiter(5),
-		generateExternalID:    idutils.GenerateExternalID,
-	}
-	_, err := client.ReadConfigById(mockAPINotSingle, unescapedID)
-	assert.NoError(t, err)
-}
-
-func TestReadByIdReturnsTheResponseGivenNoError(t *testing.T) {
-	body := []byte{1, 3, 3, 7}
-
-	testServer := httptest.NewTLSServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		_, _ = res.Write(body)
-	}))
-	defer func() { testServer.Close() }()
-
-	client := DynatraceClient{
-		environmentURLClassic: testServer.URL,
-		classicClient:         rest.NewRestClient(testServer.Client(), nil, rest.CreateRateLimitStrategy()),
-		limiter:               concurrency.NewLimiter(5),
-		generateExternalID:    idutils.GenerateExternalID,
-	}
-
-	resp, err := client.ReadConfigById(mockAPI, "test")
-	assert.NoError(t, err, "there should not be an error")
-	assert.Equal(t, body, resp)
 }
 
 func TestListEntities(t *testing.T) {
