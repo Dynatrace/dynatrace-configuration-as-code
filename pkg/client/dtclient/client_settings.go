@@ -253,13 +253,19 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 	return entity, nil
 }
 
-func getValueForConstraint(key string, content []byte) (any, error) {
-	c := make(map[string]any)
-	if err := json.Unmarshal(content, &c); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal data for key %q: %w", key, err)
+func isSameValueOfConstraint(key string, c1 []byte, c2 []byte) (bool, error) {
+	u := make(map[string]any)
+	if err := json.Unmarshal(c1, &u); err != nil {
+		return false, fmt.Errorf("failed to unmarshal data for key %q: %w", key, err)
 	}
-	value := c[key]
-	return value, nil
+	v1 := u[key]
+
+	if err := json.Unmarshal(c2, &u); err != nil {
+		return false, fmt.Errorf("failed to unmarshal data for key %q: %w", key, err)
+	}
+	v2 := u[key]
+
+	return v1 == v2, nil
 }
 
 func (d *DynatraceClient) findObjectWithMatchingConstraints(ctx context.Context, source SettingsObject) (*DownloadSettingsObject, error) {
@@ -287,35 +293,34 @@ func (d *DynatraceClient) findObjectWithMatchingConstraints(ctx context.Context,
 func findObjectWithSameConstraints(schema SchemaConstraints, source SettingsObject, objects []DownloadSettingsObject) (*DownloadSettingsObject, error) {
 	var candidate *DownloadSettingsObject
 	var err error
-	for _, constraints := range schema.UniqueProperties {
+	for _, rule := range schema.UniqueProperties {
 		for j, o := range objects {
-			b := true
-			for _, c := range constraints {
-				cv, err := getValueForConstraint(c, o.Value)
-				if err != nil {
-					return nil, err
-				}
-				ov, err := getValueForConstraint(c, source.Content)
-				if err != nil {
-					return nil, err
-				}
-				if cv != ov {
-					b = false
-					break
-				}
-			}
+			var b bool
+			b, err = areObjectsEqualForTheRule(rule, source, o)
 			if b {
 				if candidate == nil {
 					candidate = &objects[j]
 				}
 				if candidate != &objects[j] {
-					return nil, fmt.Errorf("can't update or create new configuration %q couse the already existing objects with ID %q and %q interfearing", source.Coordinate, candidate.ObjectId, objects[j].ObjectId)
+					err = errors.Join(err, fmt.Errorf("can't update or create new configuration %q couse the already existing objects with ID %q and %q interfearing", source.Coordinate, candidate.ObjectId, objects[j].ObjectId))
 				}
 			}
 		}
 	}
 
 	return candidate, err
+}
+
+func areObjectsEqualForTheRule(rule []string, source SettingsObject, object DownloadSettingsObject) (bool, error) {
+	var b bool
+	var err error
+	for _, c := range rule {
+		b, err = isSameValueOfConstraint(c, object.Value, source.Content)
+		if !b {
+			return b, err
+		}
+	}
+	return b, err
 }
 
 // buildPostRequestPayload builds the json that is required as body in the settings api.

@@ -328,9 +328,7 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 		}
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
-				actual, err := findObjectWithSameConstraints(tc.given.schema, tc.given.source, tc.given.objects)
-
-				assert.Nil(t, actual)
+				_, err := findObjectWithSameConstraints(tc.given.schema, tc.given.source, tc.given.objects)
 				assert.Error(t, err)
 			})
 		}
