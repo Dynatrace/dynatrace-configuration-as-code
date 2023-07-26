@@ -63,9 +63,9 @@ func (c *DummyClient) GetEntries(a api.API) ([]DataEntry, bool) {
 	return v.([]DataEntry), found
 }
 
-func (c *DummyClient) storeEntry(a api.API, e *DataEntry) {
+func (c *DummyClient) storeEntry(a api.API, e DataEntry) {
 	entries, _ := c.GetEntries(a)
-	entries = append(entries, *e)
+	entries = append(entries, e)
 	c.Entries.Store(a, entries)
 	atomic.AddInt64(&c.NumObjects, 1)
 	atomic.AddInt64(&c.CreatedObjects, 1)
@@ -116,17 +116,19 @@ func (c *DummyClient) UpsertConfigByName(_ context.Context, a api.API, name stri
 		c.Entries.Store(a, entries)
 	}
 
-	var dataEntry *DataEntry
+	var dataEntry DataEntry
+	var entryFound bool
 
 	for i, entry := range entries {
 		if entry.Name == name {
-			dataEntry = &entries[i]
+			dataEntry = entries[i]
+			entryFound = true
 			break
 		}
 	}
 
-	if dataEntry == nil {
-		dataEntry = &DataEntry{
+	if !entryFound {
+		dataEntry = DataEntry{
 			Name:  name,
 			Id:    uuid.NewString(),
 			Owner: "owner",
@@ -152,17 +154,19 @@ func (c *DummyClient) UpsertConfigByNonUniqueNameAndId(_ context.Context, a api.
 		c.Entries.Store(a, entries)
 	}
 
-	var dataEntry *DataEntry
+	var dataEntry DataEntry
+	var entryFound bool
 
 	for i, entry := range entries {
 		if entry.Id == entityId {
-			dataEntry = &entries[i]
+			dataEntry = entries[i]
+			entryFound = true
 			break
 		}
 	}
 
-	if dataEntry == nil {
-		dataEntry = &DataEntry{
+	if !entryFound {
+		dataEntry = DataEntry{
 			Name:  name,
 			Id:    entityId,
 			Owner: "owner",
