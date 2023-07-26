@@ -1,3 +1,5 @@
+//go:build unit
+
 /*
  * @license
  * Copyright 2023 Dynatrace LLC
@@ -735,6 +737,288 @@ func TestUpsertSettingsFromCache_CacheInvalidated(t *testing.T) {
 	})
 	assert.Equal(t, 3, numGetAPICalls)
 
+}
+
+func TestUpsertSettingsConsidersUniqueKeyConstraints(t *testing.T) {
+
+	type given struct {
+		schemaDetailsResponse schemaDetailsResponse
+		listSettingsResponse  []DownloadSettingsObject
+		settingsObject        SettingsObject
+	}
+	type want struct {
+		error               bool
+		postSettingsRequest settingsRequest
+	}
+	tests := []struct {
+		name  string
+		given given
+		want  want
+	}{
+		{
+			"Creates new object if none exists",
+			given{
+				schemaDetailsResponse: schemaDetailsResponse{
+					SchemaId: "builtin:alerting.profile",
+					SchemaConstraints: []schemaConstraint{
+						{
+							Type:             "UNIQUE",
+							UniqueProperties: []string{"key_2"},
+						},
+					},
+				},
+				listSettingsResponse: []DownloadSettingsObject{},
+				settingsObject: SettingsObject{
+					Coordinate: coordinate.Coordinate{"p", "builtin:alerting.profile", "id"},
+					SchemaId:   "builtin:alerting.profile",
+					Content:    []byte(`{ "key_1": "a", "key_2": 42 }`),
+				},
+			},
+			want{
+				error: false,
+				postSettingsRequest: settingsRequest{
+					SchemaId:   "builtin:alerting.profile",
+					ExternalId: "monaco:cCRidWlsdGluOmFsZXJ0aW5nLnByb2ZpbGUkaWQ=",
+					Value: map[string]interface{}{
+						"key_1": "a",
+						"key_2": float64(42),
+					},
+				},
+			},
+		},
+		{
+			"Creates new object if no matching unique key is found",
+			given{
+				schemaDetailsResponse: schemaDetailsResponse{
+					SchemaId: "builtin:alerting.profile",
+					SchemaConstraints: []schemaConstraint{
+						{
+							Type:             "UNIQUE",
+							UniqueProperties: []string{"key_1"},
+						},
+					},
+				},
+				listSettingsResponse: []DownloadSettingsObject{
+					{
+						ExternalId: "externalID--1",
+						SchemaId:   "builtin:alerting.profile",
+						ObjectId:   "objectID--1",
+						Value:      []byte(`{ "key_1": "NOT A MATCH", "key_2": "dont-care" }`),
+					},
+					{
+						ExternalId: "externalID--2",
+						SchemaId:   "builtin:alerting.profile",
+						ObjectId:   "objectID--2",
+						Value:      []byte(`{ "key_1": "NOT A MATCH EITHER", "key_2": "dont-care" }`),
+					},
+				},
+				settingsObject: SettingsObject{
+					Coordinate: coordinate.Coordinate{"p", "builtin:alerting.profile", "id"},
+					SchemaId:   "builtin:alerting.profile",
+					Content:    []byte(`{ "key_1": "MATCH", "key_2": "dont-care" }`),
+				},
+			},
+			want{
+				error: false,
+				postSettingsRequest: settingsRequest{
+					SchemaId:   "builtin:alerting.profile",
+					ExternalId: "monaco:cCRidWlsdGluOmFsZXJ0aW5nLnByb2ZpbGUkaWQ=",
+					Value: map[string]interface{}{
+						"key_1": "MATCH",
+						"key_2": "dont-care",
+					},
+				},
+			},
+		},
+		{
+			"Updates object if matching unique key is found",
+			given{
+				schemaDetailsResponse: schemaDetailsResponse{
+					SchemaId: "builtin:alerting.profile",
+					SchemaConstraints: []schemaConstraint{
+						{
+							Type:             "UNIQUE",
+							UniqueProperties: []string{"key_1"},
+						},
+					},
+				},
+				listSettingsResponse: []DownloadSettingsObject{
+					{
+						ExternalId: "externalID--1",
+						SchemaId:   "builtin:alerting.profile",
+						ObjectId:   "objectID--1",
+						Value:      []byte(`{ "key_1": "NOT A MATCH", "key_2": "dont-care" }`),
+					},
+					{
+						ExternalId: "externalID--2",
+						SchemaId:   "builtin:alerting.profile",
+						ObjectId:   "objectID--2",
+						Value:      []byte(`{ "key_1": "MATCH", "key_2": "dont-care" }`),
+					},
+				},
+				settingsObject: SettingsObject{
+					Coordinate: coordinate.Coordinate{"p", "builtin:alerting.profile", "id"},
+					SchemaId:   "builtin:alerting.profile",
+					Content:    []byte(`{ "key_1": "MATCH", "key_2": "dont-care" }`),
+				},
+			},
+			want{
+				error: false,
+				postSettingsRequest: settingsRequest{
+					SchemaId:   "builtin:alerting.profile",
+					ObjectId:   "objectID--2", // object ID of matching object
+					ExternalId: "monaco:cCRidWlsdGluOmFsZXJ0aW5nLnByb2ZpbGUkaWQ=",
+					Value: map[string]interface{}{
+						"key_1": "MATCH",
+						"key_2": "dont-care",
+					},
+				},
+			},
+		},
+		{
+			"Updates object if matching unique key is found - complex key object",
+			given{
+				schemaDetailsResponse: schemaDetailsResponse{
+					SchemaId: "builtin:alerting.profile",
+					SchemaConstraints: []schemaConstraint{
+						{
+							Type:             "UNIQUE",
+							UniqueProperties: []string{"key_1"},
+						},
+					},
+				},
+				listSettingsResponse: []DownloadSettingsObject{
+					{
+						ExternalId: "externalID--1",
+						SchemaId:   "builtin:alerting.profile",
+						ObjectId:   "objectID--1",
+						Value:      []byte(`{ "key_1": { "a": [false,true,false], "b": 21.0, "c": { "cK": "cV" } }, "key_2": "dont-care" }`),
+					},
+					{
+						ExternalId: "externalID--2",
+						SchemaId:   "builtin:alerting.profile",
+						ObjectId:   "objectID--2",
+						Value:      []byte(`{ "key_1": { "a": [false,true,false], "b": 42.0, "c": { "cK": "cV" } }, "key_2": "dont-care" }`),
+					},
+				},
+				settingsObject: SettingsObject{
+					Coordinate: coordinate.Coordinate{"p", "builtin:alerting.profile", "id"},
+					SchemaId:   "builtin:alerting.profile",
+					Content:    []byte(`{ "key_1": { "a": [false,true,false], "b": 42.0, "c": { "cK": "cV" } }, "key_2": "new value" }`),
+				},
+			},
+			want{
+				error: false,
+				postSettingsRequest: settingsRequest{
+					SchemaId:   "builtin:alerting.profile",
+					ObjectId:   "objectID--2", // object ID of matching object
+					ExternalId: "monaco:cCRidWlsdGluOmFsZXJ0aW5nLnByb2ZpbGUkaWQ=",
+					Value: map[string]interface{}{
+						"key_1": map[string]interface{}{
+							"a": []interface{}{false, true, false},
+							"b": 42.0,
+							"c": map[string]interface{}{
+								"cK": "cV",
+							},
+						},
+						"key_2": "new value",
+					},
+				},
+			},
+		},
+		{
+			"Returns error if several matching objects are found",
+			given{
+				schemaDetailsResponse: schemaDetailsResponse{
+					SchemaId: "builtin:alerting.profile",
+					SchemaConstraints: []schemaConstraint{
+						{
+							Type:             "UNIQUE",
+							UniqueProperties: []string{"key_1"},
+						},
+					},
+				},
+				listSettingsResponse: []DownloadSettingsObject{
+					{
+						ExternalId: "externalID--1",
+						SchemaId:   "builtin:alerting.profile",
+						ObjectId:   "objectID--1",
+						Value:      []byte(`{ "key_1": "MATCH", "key_2": "dont-care" }`),
+					},
+					{
+						ExternalId: "externalID--2",
+						SchemaId:   "builtin:alerting.profile",
+						ObjectId:   "objectID--2",
+						Value:      []byte(`{ "key_1": "MATCH", "key_2": "dont-care" }`),
+					},
+				},
+				settingsObject: SettingsObject{
+					Coordinate: coordinate.Coordinate{"p", "builtin:alerting.profile", "id"},
+					SchemaId:   "builtin:alerting.profile",
+					Content:    []byte(`{ "key_1": "MATCH", "key_2": "dont-care" }`),
+				},
+			},
+			want{
+				error:               true,
+				postSettingsRequest: settingsRequest{},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			server := httptest.NewTLSServer(http.HandlerFunc(func(writer http.ResponseWriter, r *http.Request) {
+
+				// GET schema details
+				if r.URL.Path == settingsSchemaAPIPathClassic+"/builtin:alerting.profile" {
+					writer.WriteHeader(http.StatusOK)
+					b, err := json.Marshal(tt.given.schemaDetailsResponse)
+					assert.NoError(t, err)
+					_, _ = writer.Write(b)
+					return
+				}
+
+				// GET settings objects
+				if r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, settingsObjectAPIPathClassic) {
+					// response to client
+					writer.WriteHeader(http.StatusOK)
+					l := struct {
+						Items []DownloadSettingsObject `json:"items"`
+					}{
+						tt.given.listSettingsResponse,
+					}
+					b, err := json.Marshal(l)
+					assert.NoError(t, err)
+					_, _ = writer.Write(b)
+					return
+				}
+
+				// ASSERT expected object creation POST request
+				assert.Equal(t, http.MethodPost, r.Method)
+				var obj []settingsRequest
+				err := json.NewDecoder(r.Body).Decode(&obj)
+				assert.NoError(t, err)
+				assert.Len(t, obj, 1)
+				assert.Equal(t, tt.want.postSettingsRequest, obj[0])
+
+				writer.WriteHeader(200)
+				writer.Write([]byte(`[ { "objectId": "abcsd423==" } ]`))
+			}))
+
+			restClient := rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy())
+			c, _ := NewClassicClient(server.URL, restClient,
+				WithRetrySettings(testRetrySettings),
+				WithClientRequestLimiter(concurrency.NewLimiter(5)),
+				WithExternalIDGenerator(idutils.GenerateExternalID))
+
+			_, err := c.UpsertSettings(context.TODO(), tt.given.settingsObject)
+			if tt.want.error {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
 
 func TestListKnownSettings(t *testing.T) {

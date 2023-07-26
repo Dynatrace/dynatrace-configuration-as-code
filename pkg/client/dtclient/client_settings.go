@@ -77,13 +77,15 @@ type (
 		ObjectId      string `json:"objectId,omitempty"`
 	}
 
+	schemaConstraint struct {
+		Type             string   `json:"type"`
+		UniqueProperties []string `json:"uniqueProperties"`
+	}
+
 	// schemaDetailsResponse is the response type returned by the fetchSchemasConstraints operation
 	schemaDetailsResponse struct {
-		SchemaId          string `json:"schemaId"`
-		SchemaConstraints []struct {
-			Type             string   `json:"type"`
-			UniqueProperties []string `json:"uniqueProperties"`
-		} `json:"schemaConstraints"`
+		SchemaId          string             `json:"schemaId"`
+		SchemaConstraints []schemaConstraint `json:"schemaConstraints"`
 	}
 )
 
@@ -188,10 +190,11 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 		}
 	}
 
-	if objectID, err := d.findObjectWithMatchingConstraints(ctx, obj); err != nil {
+	if match, err := d.findObjectWithMatchingConstraints(ctx, obj); err != nil {
 		return DynatraceEntity{}, err
-	} else if objectID != nil {
-		obj.OriginObjectId = objectID.ObjectId
+	} else if match != nil {
+		log.WithCtxFields(ctx).Debug("Updating existing object %q with matching unique keys", match.ObjectId)
+		obj.OriginObjectId = match.ObjectId
 	}
 
 	// generate legacy external ID without project name.
@@ -270,12 +273,12 @@ func isSameValueOfConstraint(key string, c1 []byte, c2 []byte) (bool, error) {
 }
 
 func (d *DynatraceClient) findObjectWithMatchingConstraints(ctx context.Context, source SettingsObject) (*DownloadSettingsObject, error) {
-	constarints, err := d.fetchSchemasConstraints(ctx, source.SchemaId)
+	constraints, err := d.fetchSchemasConstraints(ctx, source.SchemaId)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get details for %q schema: %w", source.SchemaId, err)
 	}
 
-	if len(constarints.UniqueProperties) == 0 {
+	if len(constraints.UniqueProperties) == 0 {
 		return nil, nil
 	}
 
@@ -284,7 +287,7 @@ func (d *DynatraceClient) findObjectWithMatchingConstraints(ctx context.Context,
 		return nil, fmt.Errorf("unable to get existing settings objects for %q schema: %w", source.SchemaId, err)
 	}
 
-	target, err := findObjectWithSameConstraints(constarints, source, objects)
+	target, err := findObjectWithSameConstraints(constraints, source, objects)
 	if err != nil {
 		return nil, err
 	}
