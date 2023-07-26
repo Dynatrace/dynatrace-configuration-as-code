@@ -259,7 +259,7 @@ func readManifestYAML(context *LoaderContext) (manifest, error) {
 	if exists, err := files.DoesFileExist(context.Fs, manifestPath); err != nil {
 		return manifest{}, err
 	} else if !exists {
-		return manifest{}, newManifestLoaderError(context.ManifestPath, "specified manifest file is either no file or does not exist")
+		return manifest{}, newManifestLoaderError(context.ManifestPath, "manifest file does not exist")
 	}
 
 	rawData, err := afero.ReadFile(context.Fs, manifestPath)
