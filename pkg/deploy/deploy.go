@@ -189,11 +189,11 @@ func deployComponentsParallel(ctx context.Context, components []graph.SortedComp
 
 	// Iterate over components and launch a goroutine for each component deployment.
 	for i := range components {
-		go func(component graph.SortedComponent, subGraphID int) {
-			ctx = context.WithValue(ctx, log.CtxGraphComponentId{}, log.CtxValGraphComponentId(subGraphID))
+		c := context.WithValue(ctx, log.CtxGraphComponentId{}, log.CtxValGraphComponentId(i))
+		go func(ctx context.Context, component graph.SortedComponent) {
 			componentDeployErrs := deployComponent(ctx, component, clientSet, apis, opts)
 			errChan <- componentDeployErrs
-		}(components[i], i)
+		}(c, components[i])
 	}
 
 	// Collect errors from goroutines and append to the 'errs' slice.
