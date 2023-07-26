@@ -251,7 +251,7 @@ func deployComponent(ctx context.Context, component graph.SortedComponent, clien
 
 		} else {
 			entityMap.put(*entity)
-			log.Info("Deployed %v successfully (graph-node-id %d)", node.Config.Coordinate, id)
+			log.Info("Deployed %v successfully", node.Config.Coordinate)
 		}
 	}
 	return errs
