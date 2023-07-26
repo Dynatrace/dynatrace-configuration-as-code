@@ -36,6 +36,10 @@ func (m MultiError) Error() string {
 }
 
 func New(errs ...error) error {
+	if len(errs) == 1 {
+		// callers might not always check this beforehand, but building a MultiError for a single error is useless
+		return errs[0]
+	}
 	return MultiError{
 		Errors: errs,
 	}
