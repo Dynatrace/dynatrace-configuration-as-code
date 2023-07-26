@@ -193,6 +193,78 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 				expected: nil,
 			},
 			{
+				name: "single complex object constraint - match",
+				given: given{
+					schema: SchemaConstraints{
+						UniqueProperties: [][]string{
+							{"A"},
+						},
+					},
+					source: SettingsObject{
+						SchemaId: "schemaID", Content: []byte(`{"A": {"key":"x", "val":"y"}}`),
+					},
+					objects: []DownloadSettingsObject{
+						{Value: []byte(`{"A": {"key":"x", "val":"y"}}`)},
+						{Value: []byte(`{"A": {"key":"x1", "val":"y"}}`)},
+					},
+				},
+				expected: &DownloadSettingsObject{Value: []byte(`{"A": {"key":"x", "val":"y"}}`)},
+			},
+			{
+				name: "single complex object constraint - no match",
+				given: given{
+					schema: SchemaConstraints{
+						UniqueProperties: [][]string{
+							{"A"},
+						},
+					},
+					source: SettingsObject{
+						SchemaId: "schemaID", Content: []byte(`{"A": {"key":"x", "val":"y"}}`),
+					},
+					objects: []DownloadSettingsObject{
+						{Value: []byte(`{"A": {"key":"x1", "val":"y"}}`)},
+						{Value: []byte(`{"A": {"key":"x", "val":"y1"}}`)},
+					},
+				},
+				expected: nil,
+			},
+			{
+				name: "single list value constraint - match",
+				given: given{
+					schema: SchemaConstraints{
+						UniqueProperties: [][]string{
+							{"A"},
+						},
+					},
+					source: SettingsObject{
+						SchemaId: "schemaID", Content: []byte(`{"A": [1,2,3]}`),
+					},
+					objects: []DownloadSettingsObject{
+						{Value: []byte(`{"A": [1,2,3]}`)},
+						{Value: []byte(`{"A": [3,2,1]}`)},
+					},
+				},
+				expected: &DownloadSettingsObject{Value: []byte(`{"A": [1,2,3]}`)},
+			},
+			{
+				name: "single list value constraint - no match",
+				given: given{
+					schema: SchemaConstraints{
+						UniqueProperties: [][]string{
+							{"A"},
+						},
+					},
+					source: SettingsObject{
+						SchemaId: "schemaID", Content: []byte(`{"A": [1,2,3]}`),
+					},
+					objects: []DownloadSettingsObject{
+						{Value: []byte(`{"A": []}`)},
+						{Value: []byte(`{"A": [3,2,1]}`)},
+					},
+				},
+				expected: nil,
+			},
+			{
 				name: "signe composite constraint - match",
 				given: given{
 					schema: SchemaConstraints{

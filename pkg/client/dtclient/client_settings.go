@@ -29,6 +29,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"net/http"
 	"net/url"
+	"reflect"
 )
 
 type (
@@ -265,7 +266,7 @@ func isSameValueOfConstraint(key string, c1 []byte, c2 []byte) (bool, error) {
 	}
 	v2 := u[key]
 
-	return v1 == v2, nil
+	return reflect.DeepEqual(v1, v2), nil
 }
 
 func (d *DynatraceClient) findObjectWithMatchingConstraints(ctx context.Context, source SettingsObject) (*DownloadSettingsObject, error) {
