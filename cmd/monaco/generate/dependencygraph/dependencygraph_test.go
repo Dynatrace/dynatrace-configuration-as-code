@@ -37,18 +37,18 @@ func TestInvalidCommandFlags(t *testing.T) {
 		errMsgContains string
 	}{
 		{
-			name:           "Fails loading non-existing default manifest",
+			name:           "Manifest argument is required",
 			args:           []string{},
-			errMsgContains: "manifest.yaml",
+			errMsgContains: "accepts 1 arg(s), received 0",
 		},
 		{
 			name:           "Fails on unknown flag",
-			args:           []string{"--project", "p"},
+			args:           []string{"manifest.yaml", "--project", "p"},
 			errMsgContains: "unknown",
 		},
 		{
 			name:           "Environment and group are mutually exclusive",
-			args:           []string{"--environment", "e", "--group", "g"},
+			args:           []string{"manifest.yaml", "--environment", "e", "--group", "g"},
 			errMsgContains: "flags in the group [environment group] are set none of the others can be",
 		},
 	}
@@ -78,7 +78,6 @@ func TestGeneratesDOTFiles(t *testing.T) {
 	cmd := dependencygraph.Command(fs)
 
 	cmd.SetArgs([]string{
-		"--manifest",
 		"./test-resources/manifest.yaml",
 		"-o",
 		outputFolder,
@@ -114,7 +113,6 @@ func TestDoesNotOverwriteExistingFiles(t *testing.T) {
 	// WHEN writing dependency graph
 	cmd := dependencygraph.Command(fs)
 	cmd.SetArgs([]string{
-		"--manifest",
 		"./test-resources/manifest.yaml",
 		"-o",
 		outputFolder,

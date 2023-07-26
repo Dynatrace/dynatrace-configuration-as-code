@@ -40,7 +40,11 @@ func DeleteCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobr
 	}
 }
 
-func DeployCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
+func DeployCompletion(c *cobra.Command, args []string, s string) ([]string, cobra.ShellCompDirective) {
+	return SingleArgumentManifestFileCompletion(c, args, s)
+}
+
+func SingleArgumentManifestFileCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
 	if len(args) == 0 {
 		return files.YamlExtensions, cobra.ShellCompDirectiveFilterFileExt
 	} else {

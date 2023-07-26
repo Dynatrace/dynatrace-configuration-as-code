@@ -30,15 +30,18 @@ import (
 func Command(fs afero.Fs) (cmd *cobra.Command) {
 
 	var environments, groups []string
-	var manifestName, outputFolder string
+	var outputFolder string
 
 	cmd = &cobra.Command{
-		Use:     "graph --manifest <manifest.yaml>",
-		Short:   "Generate dependency graphs as DOT/graphviz file per environment for the configurations defined in the manifest",
-		Example: "monaco generate graph --manifest manifest.yaml -e dev-environment -o mygraphs_folder",
-		Args:    cobra.NoArgs,
-		PreRun:  cmdutils.SilenceUsageCommand(),
+		Use:               "graph <manifest.yaml>",
+		Short:             "Generate dependency graphs as DOT/graphviz file per environment for all configurations defined in the manifest's projects",
+		Example:           "monaco generate graph manifest.yaml -e dev-environment -o mygraphs_folder",
+		Args:              cobra.ExactArgs(1),
+		PreRun:            cmdutils.SilenceUsageCommand(),
+		ValidArgsFunction: completion.SingleArgumentManifestFileCompletion,
 		RunE: func(cmd *cobra.Command, args []string) error {
+
+			manifestName := args[0]
 
 			if !files.IsYamlFileExtension(manifestName) {
 				err := fmt.Errorf("wrong format for manifest file! Expected a .yaml file, but got %s", manifestName)
@@ -51,25 +54,20 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 			}
 			return err
 		},
-		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			return files.YamlExtensions, cobra.ShellCompDirectiveFilterFileExt
-		},
 	}
-
-	cmd.Flags().StringVarP(&manifestName, "manifest", "m", "manifest.yaml", "The manifest defining the environments and configurations to create dependency graphs for. (default: 'manifest.yaml' in the current folder)")
 
 	cmd.Flags().StringSliceVarP(&groups, "group", "g", []string{},
 		"Specify one (or multiple) environmentGroup(s) that should be used for creating dependency graphs. "+
 			"To set multiple groups either repeat this flag, or separate them using a comma (,). "+
 			"This flag is mutually exclusive with '--environment'. "+
 			"If this flag is specified, a dependency graph will be generated for each environment within the specified groups. "+
-			"If neither --groups nor --environment is present, all environments will be used.")
+			"If neither --groups nor --environment is present, all environments are used.")
 	cmd.Flags().StringSliceVarP(&environments, "environment", "e", []string{},
 		"Specify one (or multiple) environments(s) that should be used for creating dependency graphs. "+
 			"To set multiple environments either repeat this flag, or separate them using a comma (,). "+
 			"This flag is mutually exclusive with '--group'. "+
 			"If this flag is specified, a dependency graph will be generated for each specified environment. "+
-			"If neither --groups nor --environment is present, all environments will be used.")
+			"If neither --groups nor --environment is present, all environments are used.")
 
 	cmd.Flags().StringVarP(&outputFolder, "output-folder", "o", "", "The folder generated dependency graph DOT files should be written to. If not set, files will be created in the current directory.")
 
