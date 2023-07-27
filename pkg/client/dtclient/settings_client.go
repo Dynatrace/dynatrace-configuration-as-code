@@ -27,9 +27,9 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
+	"github.com/google/go-cmp/cmp"
 	"net/http"
 	"net/url"
-	"reflect"
 )
 
 type (
@@ -269,7 +269,7 @@ func isSameValueOfConstraint(key string, c1 []byte, c2 []byte) (bool, error) {
 	}
 	v2 := u[key]
 
-	return reflect.DeepEqual(v1, v2), nil
+	return cmp.Equal(v1, v2), nil
 }
 
 func (d *DynatraceClient) findObjectWithMatchingConstraints(ctx context.Context, source SettingsObject) (*DownloadSettingsObject, error) {
