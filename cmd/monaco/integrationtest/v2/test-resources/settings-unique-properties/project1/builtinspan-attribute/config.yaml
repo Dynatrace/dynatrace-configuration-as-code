@@ -1,0 +1,11 @@
+configs:
+- id: 1f4b1f5c-11d2-38c8-9324-7d139c6e6452
+  config:
+    name: 1f4b1f5c-11d2-38c8-9324-7d139c6e6452
+    template: 1f4b1f5c-11d2-38c8-9324-7d139c6e6452.json
+    skip: false
+  type:
+    settings:
+      schema: builtin:span-attribute
+      schemaVersion: 0.0.32
+      scope: environment

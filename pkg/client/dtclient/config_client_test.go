@@ -21,10 +21,12 @@ package dtclient
 import (
 	"context"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -47,8 +49,8 @@ func TestTranslateGenericValuesOnStandardResponse(t *testing.T) {
 
 	values, err := translateGenericValues(context.TODO(), response, "extensions")
 
-	assert.NilError(t, err)
-	assert.Check(t, len(values) == 1)
+	assert.NoError(t, err)
+	assert.Len(t, values, 1)
 
 	assert.Equal(t, values[0].Id, "foo")
 	assert.Equal(t, values[0].Name, "bar")
@@ -77,8 +79,8 @@ func TestTranslateGenericValuesOnNameMissing(t *testing.T) {
 
 	values, err := translateGenericValues(context.TODO(), response, "extensions")
 
-	assert.NilError(t, err)
-	assert.Check(t, len(values) == 1)
+	assert.NoError(t, err)
+	assert.Len(t, values, 1)
 
 	assert.Equal(t, values[0].Id, "foo")
 	assert.Equal(t, values[0].Name, "foo")
@@ -95,8 +97,8 @@ func TestTranslateGenericValuesForReportsEndpoint(t *testing.T) {
 
 	values, err := translateGenericValues(context.TODO(), response, "reports")
 
-	assert.NilError(t, err)
-	assert.Check(t, len(values) == 1)
+	assert.NoError(t, err)
+	assert.Len(t, values, 1)
 
 	assert.Equal(t, values[0].Id, "foo")
 	assert.Equal(t, values[0].Name, "dashboardId")
@@ -551,8 +553,8 @@ func Test_GetObjectIdIfAlreadyExists_WorksCorrectlyForAddedQueryParameters(t *te
 					params := tt.expectedQueryParamsPerApiCall[apiCalls]
 					for _, param := range params {
 						addedQueryParameter := req.URL.Query()[param.key]
-						assert.Assert(t, addedQueryParameter != nil)
-						assert.Assert(t, len(addedQueryParameter) > 0)
+						assert.NotNil(t, addedQueryParameter)
+						assert.Greater(t, len(addedQueryParameter), 0)
 						assert.Equal(t, addedQueryParameter[0], param.value)
 					}
 				} else {
@@ -567,7 +569,7 @@ func Test_GetObjectIdIfAlreadyExists_WorksCorrectlyForAddedQueryParameters(t *te
 				}
 
 				apiCalls++
-				assert.Check(t, apiCalls <= tt.expectedApiCalls, "expected at most %d API calls to happen, but encountered call %d", tt.expectedApiCalls, apiCalls)
+				assert.LessOrEqual(t, apiCalls, tt.expectedApiCalls, "expected at most %d API calls to happen, but encountered call %d", tt.expectedApiCalls, apiCalls)
 			}))
 			defer server.Close()
 			testApi := api.API{ID: tt.apiKey}
@@ -581,9 +583,9 @@ func Test_GetObjectIdIfAlreadyExists_WorksCorrectlyForAddedQueryParameters(t *te
 			_, err := dtclient.getObjectIdIfAlreadyExists(context.TODO(), testApi, server.URL, "")
 
 			if tt.expectError {
-				assert.Assert(t, err != nil)
+				assert.NotNil(t, err)
 			} else {
-				assert.NilError(t, err)
+				assert.NoError(t, err)
 			}
 
 			assert.Equal(t, apiCalls, tt.expectedApiCalls, "expected exactly %d API calls to happen but %d calls where made", tt.expectedApiCalls, apiCalls)
@@ -651,8 +653,8 @@ func Test_createDynatraceObject(t *testing.T) {
 
 					for _, param := range tt.expectedQueryParams {
 						addedQueryParameter := req.URL.Query()[param.key]
-						assert.Assert(t, addedQueryParameter != nil)
-						assert.Assert(t, len(addedQueryParameter) > 0)
+						assert.NotNil(t, addedQueryParameter)
+						assert.Greater(t, len(addedQueryParameter), 0)
 						assert.Equal(t, addedQueryParameter[0], param.value)
 					}
 				} else {
@@ -675,7 +677,7 @@ func Test_createDynatraceObject(t *testing.T) {
 				t.Errorf("createDynatraceObject() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			assert.DeepEqual(t, got, tt.want)
+			assert.Equal(t, got, tt.want)
 		})
 	}
 }
@@ -725,8 +727,59 @@ func TestDeployConfigsTargetingClassicConfigNonUnique(t *testing.T) {
 
 			dtclient, _ := NewDynatraceClientForTesting(server.URL, server.Client(), WithRetrySettings(testRetrySettings))
 			got, err := dtclient.upsertDynatraceEntityByNonUniqueNameAndId(context.TODO(), generatedUuid, theConfigName, testApi, []byte("{}"))
-			assert.NilError(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, got.Id, tt.expectedIdToBeUpserted)
 		})
 	}
+}
+
+func TestReadByIdReturnsAnErrorUponEncounteringAnError(t *testing.T) {
+	testServer := httptest.NewTLSServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		http.Error(res, "", http.StatusForbidden)
+	}))
+	defer func() { testServer.Close() }()
+	client := DynatraceClient{
+		environmentURLClassic: testServer.URL,
+		classicClient:         rest.NewRestClient(testServer.Client(), trafficlogs.NewFileBased(), rest.CreateRateLimitStrategy()),
+		limiter:               concurrency.NewLimiter(5),
+		generateExternalID:    idutils.GenerateExternalID,
+	}
+
+	_, err := client.ReadConfigById(mockAPI, "test")
+	assert.ErrorContains(t, err, "Response was")
+}
+
+func TestReadByIdEscapesTheId(t *testing.T) {
+	unescapedID := "ruxit.perfmon.dotnetV4:%TimeInGC:time_in_gc_alert_high_generic"
+
+	testServer := httptest.NewTLSServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {}))
+	defer func() { testServer.Close() }()
+	client := DynatraceClient{
+		environmentURLClassic: testServer.URL,
+		classicClient:         rest.NewRestClient(testServer.Client(), nil, rest.CreateRateLimitStrategy()),
+		limiter:               concurrency.NewLimiter(5),
+		generateExternalID:    idutils.GenerateExternalID,
+	}
+	_, err := client.ReadConfigById(mockAPINotSingle, unescapedID)
+	assert.NoError(t, err)
+}
+
+func TestReadByIdReturnsTheResponseGivenNoError(t *testing.T) {
+	body := []byte{1, 3, 3, 7}
+
+	testServer := httptest.NewTLSServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		_, _ = res.Write(body)
+	}))
+	defer func() { testServer.Close() }()
+
+	client := DynatraceClient{
+		environmentURLClassic: testServer.URL,
+		classicClient:         rest.NewRestClient(testServer.Client(), nil, rest.CreateRateLimitStrategy()),
+		limiter:               concurrency.NewLimiter(5),
+		generateExternalID:    idutils.GenerateExternalID,
+	}
+
+	resp, err := client.ReadConfigById(mockAPI, "test")
+	assert.NoError(t, err, "there should not be an error")
+	assert.Equal(t, body, resp)
 }

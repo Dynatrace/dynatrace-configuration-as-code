@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/cache"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/filter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -558,61 +557,6 @@ func (d *DynatraceClient) getSettingById(ctx context.Context, objectId string) (
 	}
 
 	return &result, nil
-}
-
-func (d *DynatraceClient) ListSettings(ctx context.Context, schemaId string, opts ListSettingsOptions) (res []DownloadSettingsObject, err error) {
-	d.limiter.ExecuteBlocking(func() {
-		res, err = d.listSettings(ctx, schemaId, opts)
-	})
-	return
-}
-
-func (d *DynatraceClient) listSettings(ctx context.Context, schemaId string, opts ListSettingsOptions) ([]DownloadSettingsObject, error) {
-
-	if settings, cached := d.settingsCache.Get(schemaId); cached {
-		log.Debug("Using cached settings for schema %s", schemaId)
-		return filter.FilterSlice(settings, opts.Filter), nil
-	}
-
-	log.Debug("Downloading all settings for schema %s", schemaId)
-
-	listSettingsFields := defaultListSettingsFields
-	if opts.DiscardValue {
-		listSettingsFields = reducedListSettingsFields
-	}
-	params := url.Values{
-		"schemaIds": []string{schemaId},
-		"pageSize":  []string{defaultPageSize},
-		"fields":    []string{listSettingsFields},
-	}
-
-	result := make([]DownloadSettingsObject, 0)
-
-	addToResult := func(body []byte) (int, error) {
-		var parsed struct {
-			Items []DownloadSettingsObject `json:"items"`
-		}
-		if err := json.Unmarshal(body, &parsed); err != nil {
-			return 0, fmt.Errorf("failed to unmarshal response: %w", err)
-		}
-
-		result = append(result, parsed.Items...)
-		return len(parsed.Items), nil
-	}
-
-	u, err := buildUrl(d.environmentURL, d.settingsObjectAPIPath, params)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list settings: %w", err)
-	}
-
-	_, err = rest.ListPaginated(ctx, d.platformClient, d.retrySettings, u, schemaId, addToResult)
-	if err != nil {
-		return nil, err
-	}
-
-	d.settingsCache.Set(schemaId, result)
-
-	return filter.FilterSlice(result, opts.Filter), nil
 }
 
 type EntitiesTypeListResponse struct {

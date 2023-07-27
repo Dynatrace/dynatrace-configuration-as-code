@@ -138,6 +138,25 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 
 }
 
+func TestDeploySettingsWithUniqueProperties(t *testing.T) {
+	fs := testutils.CreateTestFileSystem()
+	var manifestPath = "test-resources/settings-unique-properties/manifest.yaml"
+	loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
+
+	t.Cleanup(func() {
+		integrationtest.CleanupIntegrationTest(t, fs, manifestPath, loadedManifest, "")
+	})
+
+	cmd := runner.BuildCli(fs)
+	cmd.SetArgs([]string{"deploy", "-e", "platform_env", "-p", "project1", manifestPath})
+	err := cmd.Execute()
+	assert.NoError(t, err)
+
+	cmd.SetArgs([]string{"deploy", "-e", "platform_env", "-p", "project2", manifestPath})
+	err = cmd.Execute()
+	assert.NoError(t, err)
+}
+
 func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts ...func(dynatraceClient *dtclient.DynatraceClient)) dtclient.SettingsClient {
 	oauthCredentials := auth.OauthCredentials{
 		ClientID:     env.Auth.OAuth.ClientID.Value,

@@ -22,12 +22,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/filter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
+	"github.com/google/go-cmp/cmp"
+	"golang.org/x/exp/maps"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 type (
@@ -75,13 +79,15 @@ type (
 		ObjectId      string `json:"objectId,omitempty"`
 	}
 
+	schemaConstraint struct {
+		Type             string   `json:"type"`
+		UniqueProperties []string `json:"uniqueProperties"`
+	}
+
 	// schemaDetailsResponse is the response type returned by the fetchSchemasConstraints operation
 	schemaDetailsResponse struct {
-		SchemaId          string `json:"schemaId"`
-		SchemaConstraints []struct {
-			Type             string   `json:"type"`
-			UniqueProperties []string `json:"uniqueProperties"`
-		} `json:"schemaConstraints"`
+		SchemaId          string             `json:"schemaId"`
+		SchemaConstraints []schemaConstraint `json:"schemaConstraints"`
 	}
 )
 
@@ -167,7 +173,6 @@ func (d *DynatraceClient) UpsertSettings(ctx context.Context, obj SettingsObject
 }
 
 func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject) (DynatraceEntity, error) {
-
 	// special handling for updating settings 2.0 objects on tenants with version pre 1.262.0
 	// Tenants with versions < 1.262 are not able to handle updates of existing
 	// settings 2.0 objects that are non-deletable.
@@ -185,6 +190,13 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 				Name: fetchedSettingObj.ObjectId,
 			}, nil
 		}
+	}
+
+	if match, err := d.findObjectWithMatchingConstraints(ctx, obj); err != nil {
+		return DynatraceEntity{}, err
+	} else if match != nil {
+		log.WithCtxFields(ctx).Debug("Updating existing object %q with matching unique keys", match.ObjectId)
+		obj.OriginObjectId = match.ObjectId
 	}
 
 	// generate legacy external ID without project name.
@@ -247,6 +259,88 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 	return entity, nil
 }
 
+func (d *DynatraceClient) findObjectWithMatchingConstraints(ctx context.Context, source SettingsObject) (*DownloadSettingsObject, error) {
+	constraints, err := d.fetchSchemasConstraints(ctx, source.SchemaId)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get details for schema %q: %w", source.SchemaId, err)
+	}
+
+	if len(constraints.UniqueProperties) == 0 {
+		return nil, nil
+	}
+
+	objects, err := d.listSettings(ctx, source.SchemaId, ListSettingsOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("unable to get existing settings objects for %q schema: %w", source.SchemaId, err)
+	}
+
+	target, err := findObjectWithSameConstraints(constraints, source, objects)
+	if err != nil {
+		return nil, err
+	}
+	return target, nil
+}
+
+func findObjectWithSameConstraints(schema SchemaConstraints, source SettingsObject, objects []DownloadSettingsObject) (*DownloadSettingsObject, error) {
+	candidates := make(map[int]struct{})
+
+	for _, uniqueKeys := range schema.UniqueProperties {
+		for j, o := range objects {
+			match, err := doObjectsMatchBasedOnUniqueKeys(uniqueKeys, source, o)
+			if err != nil {
+				return nil, err
+			}
+			if match {
+				candidates[j] = struct{}{} // candidate found, store index (same object might match for several constraints, set ensures we only count it once)
+			}
+		}
+	}
+
+	if len(candidates) == 1 { // unique match found
+		index := maps.Keys(candidates)[0]
+		return &objects[index], nil
+	}
+
+	if len(candidates) > 1 {
+		var objectIds []string
+		for i := range candidates {
+			objectIds = append(objectIds, objects[i].ObjectId)
+		}
+
+		return nil, fmt.Errorf("can't update configuration %q - unable to find exact match, several existing objects with matching unique keys found: %v", source.Coordinate, strings.Join(objectIds, ", "))
+	}
+
+	return nil, nil // no matches found
+}
+
+func doObjectsMatchBasedOnUniqueKeys(uniqueKeys []string, source SettingsObject, other DownloadSettingsObject) (bool, error) {
+	for _, key := range uniqueKeys {
+		same, err := isSameValueForKey(key, source.Content, other.Value)
+		if err != nil {
+			return false, err
+		}
+		if !same {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+func isSameValueForKey(key string, c1 []byte, c2 []byte) (bool, error) {
+	u := make(map[string]any)
+	if err := json.Unmarshal(c1, &u); err != nil {
+		return false, fmt.Errorf("failed to unmarshal data for key %q: %w", key, err)
+	}
+	v1 := u[key]
+
+	if err := json.Unmarshal(c2, &u); err != nil {
+		return false, fmt.Errorf("failed to unmarshal data for key %q: %w", key, err)
+	}
+	v2 := u[key]
+
+	return cmp.Equal(v1, v2), nil
+}
+
 // buildPostRequestPayload builds the json that is required as body in the settings api.
 // POST Request body: https://www.dynatrace.com/support/help/dynatrace-api/environment-api/settings/objects/post-object#request-body-json-model
 //
@@ -307,4 +401,59 @@ func parsePostResponse(resp rest.Response) (DynatraceEntity, error) {
 		Id:   parsed[0].ObjectId,
 		Name: parsed[0].ObjectId,
 	}, nil
+}
+
+func (d *DynatraceClient) ListSettings(ctx context.Context, schemaId string, opts ListSettingsOptions) (res []DownloadSettingsObject, err error) {
+	d.limiter.ExecuteBlocking(func() {
+		res, err = d.listSettings(ctx, schemaId, opts)
+	})
+	return
+}
+
+func (d *DynatraceClient) listSettings(ctx context.Context, schemaId string, opts ListSettingsOptions) ([]DownloadSettingsObject, error) {
+
+	if settings, cached := d.settingsCache.Get(schemaId); cached {
+		log.Debug("Using cached settings for schema %s", schemaId)
+		return filter.FilterSlice(settings, opts.Filter), nil
+	}
+
+	log.Debug("Downloading all settings for schema %s", schemaId)
+
+	listSettingsFields := defaultListSettingsFields
+	if opts.DiscardValue {
+		listSettingsFields = reducedListSettingsFields
+	}
+	params := url.Values{
+		"schemaIds": []string{schemaId},
+		"pageSize":  []string{defaultPageSize},
+		"fields":    []string{listSettingsFields},
+	}
+
+	result := make([]DownloadSettingsObject, 0)
+
+	addToResult := func(body []byte) (int, error) {
+		var parsed struct {
+			Items []DownloadSettingsObject `json:"items"`
+		}
+		if err := json.Unmarshal(body, &parsed); err != nil {
+			return 0, fmt.Errorf("failed to unmarshal response: %w", err)
+		}
+
+		result = append(result, parsed.Items...)
+		return len(parsed.Items), nil
+	}
+
+	u, err := buildUrl(d.environmentURL, d.settingsObjectAPIPath, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list settings: %w", err)
+	}
+
+	_, err = rest.ListPaginated(ctx, d.platformClient, d.retrySettings, u, schemaId, addToResult)
+	if err != nil {
+		return nil, err
+	}
+
+	d.settingsCache.Set(schemaId, result)
+
+	return filter.FilterSlice(result, opts.Filter), nil
 }

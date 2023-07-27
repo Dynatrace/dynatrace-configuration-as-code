@@ -1,0 +1,15 @@
+{
+  "enabled": true,
+  "name": "Just a Name",
+  "metricName": "justaname",
+  "metricExpression": "(100)*(builtin:service.errors.server.successCount:splitBy())/(builtin:service.requestCount.server:splitBy())",
+  "evaluationType": "AGGREGATE",
+  "filter": "type(\"SERVICE\")",
+  "evaluationWindow": "-1w",
+  "targetSuccess": 99.98,
+  "targetWarning": 99.99,
+  "errorBudgetBurnRate": {
+    "burnRateVisualizationEnabled": true,
+    "fastBurnThreshold": 10.0
+  }
+}
