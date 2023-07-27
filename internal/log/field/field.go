@@ -34,15 +34,18 @@ func F(key string, value interface{}) Field {
 	return Field{Key: key, Value: value}
 }
 
+// LogCoordinate is the type to be used to log coordinates as context fields
+type LogCoordinate struct {
+	Reference string `json:"reference"`
+	Project   string `json:"project"`
+	Type      string `json:"type"`
+	ConfigID  string `json:"configID"`
+}
+
 // Coordinate builds a Field containing information taken from the provided coordinate
 func Coordinate(coordinate coordinate.Coordinate) Field {
 	return Field{"coordinate",
-		struct {
-			Reference string `json:"reference"`
-			Project   string `json:"project"`
-			Type      string `json:"type"`
-			ConfigID  string `json:"configID"`
-		}{
+		LogCoordinate{
 			coordinate.String(),
 			coordinate.Project,
 			coordinate.Type,
