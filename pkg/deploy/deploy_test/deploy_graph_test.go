@@ -536,7 +536,7 @@ func TestDeployConfigGraph_DoesNotDeployConfigsDependingOnSkippedConfigs(t *test
 
 	errs := deploy.DeployConfigGraph(projects, clients, deploy.DeployConfigsOptions{})
 	assert.Len(t, errs, 0)
-	assert.Zero(t, dummyClient.CreatedObjects)
+	assert.Zero(t, dummyClient.CreatedObjects())
 }
 
 func TestDeployConfigGraph_DeploysIndependentConfigurations(t *testing.T) {

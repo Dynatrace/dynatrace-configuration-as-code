@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -42,12 +41,10 @@ type DataEntry struct {
 }
 
 type DummyClient struct {
-	Entries          sync.Map
+	entries          map[string][]DataEntry
+	entriesLock      sync.RWMutex
 	Fs               afero.Fs
 	RequestOutputDir string
-	NumObjects       int64
-	CreatedObjects   int64
-	DeletedObjects   int64
 }
 
 var (
@@ -55,20 +52,41 @@ var (
 )
 
 func (c *DummyClient) GetEntries(a api.API) ([]DataEntry, bool) {
-	v, found := c.Entries.Load(a)
+	c.entriesLock.RLock()
+	defer c.entriesLock.RUnlock()
+
+	v, found := c.entries[a.ID]
 	if !found {
 		return []DataEntry{}, false
 	}
-
-	return v.([]DataEntry), found
+	return v, true
 }
 
 func (c *DummyClient) storeEntry(a api.API, e DataEntry) {
-	entries, _ := c.GetEntries(a)
+	c.entriesLock.Lock()
+	defer c.entriesLock.Unlock()
+
+	if c.entries == nil {
+		c.entries = make(map[string][]DataEntry)
+	}
+
+	entries, exists := c.entries[a.ID]
+	if !exists {
+		entries = make([]DataEntry, 0)
+	}
 	entries = append(entries, e)
-	c.Entries.Store(a, entries)
-	atomic.AddInt64(&c.NumObjects, 1)
-	atomic.AddInt64(&c.CreatedObjects, 1)
+	c.entries[a.ID] = entries
+}
+
+func (c *DummyClient) CreatedObjects() int {
+	c.entriesLock.RLock()
+	defer c.entriesLock.RUnlock()
+
+	objects := 0
+	for _, entries := range c.entries {
+		objects += len(entries)
+	}
+	return objects
 }
 
 func (c *DummyClient) ListConfigs(_ context.Context, a api.API) (values []Value, err error) {
@@ -109,12 +127,7 @@ func (c *DummyClient) ReadConfigById(a api.API, id string) ([]byte, error) {
 }
 
 func (c *DummyClient) UpsertConfigByName(_ context.Context, a api.API, name string, data []byte) (entity DynatraceEntity, err error) {
-	entries, found := c.GetEntries(a)
-
-	if !found {
-		entries = make([]DataEntry, 0)
-		c.Entries.Store(a, entries)
-	}
+	entries, _ := c.GetEntries(a)
 
 	var dataEntry DataEntry
 	var entryFound bool
@@ -147,12 +160,7 @@ func (c *DummyClient) UpsertConfigByName(_ context.Context, a api.API, name stri
 }
 
 func (c *DummyClient) UpsertConfigByNonUniqueNameAndId(_ context.Context, a api.API, entityId string, name string, data []byte) (entity DynatraceEntity, err error) {
-	entries, found := c.GetEntries(a)
-
-	if !found {
-		entries = make([]DataEntry, 0)
-		c.Entries.Store(a, entries)
-	}
+	entries, _ := c.GetEntries(a)
 
 	var dataEntry DataEntry
 	var entryFound bool
@@ -204,7 +212,11 @@ func (c *DummyClient) writeRequest(a api.API, name string, payload []byte) {
 }
 
 func (c *DummyClient) DeleteConfigById(a api.API, id string) error {
-	entries, found := c.GetEntries(a)
+
+	c.entriesLock.Lock()
+	defer c.entriesLock.Unlock()
+
+	entries, found := c.entries[a.ID]
 
 	if !found {
 		return nil
@@ -221,9 +233,7 @@ func (c *DummyClient) DeleteConfigById(a api.API, id string) error {
 
 	if foundIndex >= 0 {
 		newEntries := append(entries[:foundIndex], entries[foundIndex+1:]...)
-		c.Entries.Store(a, newEntries)
-		atomic.AddInt64(&c.NumObjects, -1)
-		atomic.AddInt64(&c.DeletedObjects, 1)
+		c.entries[a.ID] = newEntries
 	}
 
 	return nil
@@ -265,7 +275,7 @@ func (c *DummyClient) ListSchemas() (SchemaList, error) {
 	return make(SchemaList, 0), nil
 }
 
-func (d *DummyClient) FetchSchemasConstraints(_ string) (constraints SchemaConstraints, err error) {
+func (c *DummyClient) FetchSchemasConstraints(_ string) (constraints SchemaConstraints, err error) {
 	return SchemaConstraints{}, nil
 }
 
