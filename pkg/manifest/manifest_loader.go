@@ -51,11 +51,19 @@ type LoaderContext struct {
 	//
 	// If Groups contains items that do not match any environment in the specified manifest file, the loading errors.
 	Groups []string
+
+	// Opts are LoaderOptions holding optional configuration for LoadManifest
+	Opts LoaderOptions
 }
 
 type projectLoaderContext struct {
 	fs           afero.Fs
 	manifestPath string
+}
+
+// LoaderOptions are optional configuration for LoadManifest
+type LoaderOptions struct {
+	DontResolveEnvVars bool
 }
 
 type ManifestLoaderError struct {
@@ -172,8 +180,8 @@ func LoadManifest(context *LoaderContext) (Manifest, []error) {
 	}, nil
 }
 
-func parseAuth(a auth) (Auth, error) {
-	token, err := parseAuthSecret(a.Token)
+func parseAuth(context *LoaderContext, a auth) (Auth, error) {
+	token, err := parseAuthSecret(context, a.Token)
 	if err != nil {
 		return Auth{}, fmt.Errorf("error parsing token: %w", err)
 	}
@@ -184,7 +192,7 @@ func parseAuth(a auth) (Auth, error) {
 		}, nil
 	}
 
-	o, err := parseOAuth(*a.OAuth)
+	o, err := parseOAuth(context, *a.OAuth)
 	if err != nil {
 		return Auth{}, fmt.Errorf("failed to parse OAuth credentials: %w", err)
 	}
@@ -196,7 +204,7 @@ func parseAuth(a auth) (Auth, error) {
 
 }
 
-func parseAuthSecret(s authSecret) (AuthSecret, error) {
+func parseAuthSecret(context *LoaderContext, s authSecret) (AuthSecret, error) {
 
 	if !(s.Type == typeEnvironment || s.Type == "") {
 		return AuthSecret{}, errors.New("type must be 'environment'")
@@ -204,6 +212,14 @@ func parseAuthSecret(s authSecret) (AuthSecret, error) {
 
 	if s.Name == "" {
 		return AuthSecret{}, errors.New("no name given or empty")
+	}
+
+	if context.Opts.DontResolveEnvVars {
+		log.Debug("Skipped resolving environment variable %s based on loader options", s.Name)
+		return AuthSecret{
+			Name:  s.Name,
+			Value: fmt.Sprintf("SKIPPED RESOLUTION OF ENV_VAR: %s", s.Name),
+		}, nil
 	}
 
 	v, f := os.LookupEnv(s.Name)
@@ -218,19 +234,19 @@ func parseAuthSecret(s authSecret) (AuthSecret, error) {
 	return AuthSecret{Name: s.Name, Value: v}, nil
 }
 
-func parseOAuth(a oAuth) (OAuth, error) {
-	clientID, err := parseAuthSecret(a.ClientID)
+func parseOAuth(context *LoaderContext, a oAuth) (OAuth, error) {
+	clientID, err := parseAuthSecret(context, a.ClientID)
 	if err != nil {
 		return OAuth{}, fmt.Errorf("failed to parse ClientID: %w", err)
 	}
 
-	clientSecret, err := parseAuthSecret(a.ClientSecret)
+	clientSecret, err := parseAuthSecret(context, a.ClientSecret)
 	if err != nil {
 		return OAuth{}, fmt.Errorf("failed to parse ClientSecret: %w", err)
 	}
 
 	if a.TokenEndpoint != nil {
-		urlDef, err := parseURLDefinition(*a.TokenEndpoint)
+		urlDef, err := parseURLDefinition(context, *a.TokenEndpoint)
 		if err != nil {
 			return OAuth{}, fmt.Errorf(`failed to parse "tokenEndpoint": %w`, err)
 		}
@@ -406,12 +422,12 @@ func shouldSkipEnv(context *LoaderContext, group group, env environment) bool {
 func parseEnvironment(context *LoaderContext, config environment, group string) (EnvironmentDefinition, []error) {
 	var errs []error
 
-	a, err := parseAuth(config.Auth)
+	a, err := parseAuth(context, config.Auth)
 	if err != nil {
 		errs = append(errs, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, fmt.Sprintf("failed to parse auth section: %s", err)))
 	}
 
-	urlDef, err := parseURLDefinition(config.URL)
+	urlDef, err := parseURLDefinition(context, config.URL)
 	if err != nil {
 		errs = append(errs, newManifestEnvironmentLoaderError(context.ManifestPath, group, config.Name, err.Error()))
 	}
@@ -428,7 +444,7 @@ func parseEnvironment(context *LoaderContext, config environment, group string) 
 	}, nil
 }
 
-func parseURLDefinition(u url) (URLDefinition, error) {
+func parseURLDefinition(context *LoaderContext, u url) (URLDefinition, error) {
 
 	// Depending on the type, the url.value either contains the env var name or the direct value of the url
 	if u.Value == "" {
@@ -445,6 +461,16 @@ func parseURLDefinition(u url) (URLDefinition, error) {
 	}
 
 	if u.Type == urlTypeEnvironment {
+
+		if context.Opts.DontResolveEnvVars {
+			log.Debug("Skipped resolving environment variable %s based on loader options", u.Value)
+			return URLDefinition{
+				Type:  EnvironmentURLType,
+				Value: fmt.Sprintf("SKIPPED RESOLUTION OF ENV_VAR: %s", u.Value),
+				Name:  u.Value,
+			}, nil
+		}
+
 		val, found := os.LookupEnv(u.Value)
 		if !found {
 			return URLDefinition{}, fmt.Errorf("environment variable %q could not be found", u.Value)
