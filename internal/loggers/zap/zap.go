@@ -98,7 +98,7 @@ func New(logOptions loggers.LogOptions) (*Logger, error) {
 	}
 
 	if logOptions.File != nil {
-		fileSyncer := zapcore.AddSync(logOptions.File)
+		fileSyncer := zapcore.Lock(zapcore.AddSync(logOptions.File))
 		if logOptions.FileLoggingJSON {
 			cores = append(cores, zapcore.NewCore(zapcore.NewJSONEncoder(encoderConfig), fileSyncer, atomicLevel))
 		} else {
@@ -107,10 +107,11 @@ func New(logOptions loggers.LogOptions) (*Logger, error) {
 	}
 
 	if logOptions.LogSpy != nil {
+		spySyncer := zapcore.Lock(zapcore.AddSync(logOptions.LogSpy))
 		if logOptions.ConsoleLoggingJSON {
-			cores = append(cores, zapcore.NewCore(zapcore.NewJSONEncoder(encoderConfig), zapcore.AddSync(logOptions.LogSpy), atomicLevel))
+			cores = append(cores, zapcore.NewCore(zapcore.NewJSONEncoder(encoderConfig), spySyncer, atomicLevel))
 		} else {
-			cores = append(cores, &noFieldsCore{zapcore.NewCore(zapcore.NewConsoleEncoder(encoderConfig), zapcore.AddSync(logOptions.LogSpy), atomicLevel)})
+			cores = append(cores, &noFieldsCore{zapcore.NewCore(zapcore.NewConsoleEncoder(encoderConfig), spySyncer, atomicLevel)})
 		}
 
 	}
