@@ -28,8 +28,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/google/go-cmp/cmp"
+	"golang.org/x/exp/maps"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 type (
@@ -295,36 +297,48 @@ func (d *DynatraceClient) findObjectWithMatchingConstraints(ctx context.Context,
 }
 
 func findObjectWithSameConstraints(schema SchemaConstraints, source SettingsObject, objects []DownloadSettingsObject) (*DownloadSettingsObject, error) {
-	var candidate *DownloadSettingsObject
-	var err error
+	candidates := make(map[int]struct{})
+
 	for _, rule := range schema.UniqueProperties {
 		for j, o := range objects {
-			var b bool
-			b, err = areObjectsEqualForTheRule(rule, source, o)
-			if b {
-				if candidate == nil {
-					candidate = &objects[j]
-				}
-				if candidate != &objects[j] {
-					err = errors.Join(err, fmt.Errorf("can't update or create new configuration %q couse the already existing objects with ID %q and %q interfearing", source.Coordinate, candidate.ObjectId, objects[j].ObjectId))
-				}
+			equal, err := areObjectsEqualForTheRule(rule, source, o)
+			if err != nil {
+				return nil, err
+			}
+			if equal {
+				candidates[j] = struct{}{} // candidate found, store index (same object might match for several constraints, set ensures we only count it once)
 			}
 		}
 	}
 
-	return candidate, err
+	if len(candidates) == 1 { // unique match found
+		index := maps.Keys(candidates)[0]
+		return &objects[index], nil
+	}
+
+	if len(candidates) > 1 {
+		var objectIds []string
+		for i := range candidates {
+			objectIds = append(objectIds, objects[i].ObjectId)
+		}
+
+		return nil, fmt.Errorf("can't update configuration %q - unable to find exact match, several existing objects with matching unique keys found: %v", source.Coordinate, strings.Join(objectIds, ", "))
+	}
+
+	return nil, nil // no matches found
 }
 
 func areObjectsEqualForTheRule(rule []string, source SettingsObject, object DownloadSettingsObject) (bool, error) {
-	var b bool
-	var err error
 	for _, c := range rule {
-		b, err = isSameValueOfConstraint(c, object.Value, source.Content)
-		if !b {
-			return b, err
+		same, err := isSameValueOfConstraint(c, object.Value, source.Content)
+		if err != nil {
+			return false, err
+		}
+		if !same {
+			return false, nil
 		}
 	}
-	return b, err
+	return true, nil
 }
 
 // buildPostRequestPayload builds the json that is required as body in the settings api.
