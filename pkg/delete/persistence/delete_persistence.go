@@ -34,8 +34,8 @@ type FullFileDefinition struct {
 // DeleteEntry is a full representation of a delete entry loaded from a YAML delete file
 // ConfigId and ConfigName should be mutually exclusive (validated if using LoadEntriesToDelete)
 type DeleteEntry struct {
-	Project    string `yaml:"project" mapstructure:"project"`
+	Project    string `yaml:"project,omitempty" mapstructure:"project"`
 	Type       string `yaml:"type" mapstructure:"type"`
-	ConfigId   string `yaml:"id" mapstructure:"id"`
-	ConfigName string `yaml:"name" mapstructure:"name"`
+	ConfigId   string `yaml:"id,omitempty" mapstructure:"id"`
+	ConfigName string `yaml:"name,omitempty" mapstructure:"name"`
 }
