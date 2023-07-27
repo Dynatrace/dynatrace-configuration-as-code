@@ -123,7 +123,7 @@ func Test_extractUrlType(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv("TEST_TOKEN", tt.givenEnvVarValue)
-			if got, gotErr := parseURLDefinition(tt.inputConfig.URL); got != tt.want || (!tt.wantErr && gotErr != nil) {
+			if got, gotErr := parseURLDefinition(&LoaderContext{}, tt.inputConfig.URL); got != tt.want || (!tt.wantErr && gotErr != nil) {
 				t.Errorf("extractUrlType() = %v, %v, want %v, %v", got, gotErr, tt.want, tt.wantErr)
 			}
 		})
@@ -1692,4 +1692,38 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 
 		})
 	}
+}
+
+func TestEnvVarResolutionCanBeDeactivated(t *testing.T) {
+	e := environment{
+		Name: "TEST ENV",
+		URL:  url{Value: "TEST_TOKEN", Type: urlTypeEnvironment},
+		Auth: auth{
+			Token: authSecret{Type: "environment", Name: "VAR"},
+			OAuth: &oAuth{
+				ClientID:     authSecret{Type: "environment", Name: "VAR_1"},
+				ClientSecret: authSecret{Type: "environment", Name: "VAR_2"},
+			},
+		},
+	}
+
+	t.Run("URLs resolution produces error", func(t *testing.T) {
+		_, gotErr := parseURLDefinition(&LoaderContext{}, e.URL)
+		assert.Error(t, gotErr)
+	})
+
+	t.Run("URLs are not resolved if 'DontResolveEnvVars' option is set", func(t *testing.T) {
+		_, gotErr := parseURLDefinition(&LoaderContext{Opts: LoaderOptions{DontResolveEnvVars: true}}, e.URL)
+		assert.NoError(t, gotErr)
+	})
+
+	t.Run("Auth token resolution produces error", func(t *testing.T) {
+		_, gotErr := parseAuth(&LoaderContext{}, e.Auth)
+		assert.Error(t, gotErr)
+	})
+
+	t.Run("Auth tokens are not resolved if 'DontResolveEnvVars' option is set", func(t *testing.T) {
+		_, gotErr := parseAuth(&LoaderContext{Opts: LoaderOptions{DontResolveEnvVars: true}}, e.Auth)
+		assert.NoError(t, gotErr)
+	})
 }
