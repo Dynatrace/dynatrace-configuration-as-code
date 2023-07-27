@@ -259,21 +259,6 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 	return entity, nil
 }
 
-func isSameValueOfConstraint(key string, c1 []byte, c2 []byte) (bool, error) {
-	u := make(map[string]any)
-	if err := json.Unmarshal(c1, &u); err != nil {
-		return false, fmt.Errorf("failed to unmarshal data for key %q: %w", key, err)
-	}
-	v1 := u[key]
-
-	if err := json.Unmarshal(c2, &u); err != nil {
-		return false, fmt.Errorf("failed to unmarshal data for key %q: %w", key, err)
-	}
-	v2 := u[key]
-
-	return cmp.Equal(v1, v2), nil
-}
-
 func (d *DynatraceClient) findObjectWithMatchingConstraints(ctx context.Context, source SettingsObject) (*DownloadSettingsObject, error) {
 	constraints, err := d.fetchSchemasConstraints(ctx, source.SchemaId)
 	if err != nil {
@@ -299,13 +284,13 @@ func (d *DynatraceClient) findObjectWithMatchingConstraints(ctx context.Context,
 func findObjectWithSameConstraints(schema SchemaConstraints, source SettingsObject, objects []DownloadSettingsObject) (*DownloadSettingsObject, error) {
 	candidates := make(map[int]struct{})
 
-	for _, rule := range schema.UniqueProperties {
+	for _, uniqueKeys := range schema.UniqueProperties {
 		for j, o := range objects {
-			equal, err := areObjectsEqualForTheRule(rule, source, o)
+			match, err := doObjectsMatchBasedOnUniqueKeys(uniqueKeys, source, o)
 			if err != nil {
 				return nil, err
 			}
-			if equal {
+			if match {
 				candidates[j] = struct{}{} // candidate found, store index (same object might match for several constraints, set ensures we only count it once)
 			}
 		}
@@ -328,9 +313,9 @@ func findObjectWithSameConstraints(schema SchemaConstraints, source SettingsObje
 	return nil, nil // no matches found
 }
 
-func areObjectsEqualForTheRule(rule []string, source SettingsObject, object DownloadSettingsObject) (bool, error) {
-	for _, c := range rule {
-		same, err := isSameValueOfConstraint(c, object.Value, source.Content)
+func doObjectsMatchBasedOnUniqueKeys(uniqueKeys []string, source SettingsObject, other DownloadSettingsObject) (bool, error) {
+	for _, key := range uniqueKeys {
+		same, err := isSameValueForKey(key, source.Content, other.Value)
 		if err != nil {
 			return false, err
 		}
@@ -339,6 +324,21 @@ func areObjectsEqualForTheRule(rule []string, source SettingsObject, object Down
 		}
 	}
 	return true, nil
+}
+
+func isSameValueForKey(key string, c1 []byte, c2 []byte) (bool, error) {
+	u := make(map[string]any)
+	if err := json.Unmarshal(c1, &u); err != nil {
+		return false, fmt.Errorf("failed to unmarshal data for key %q: %w", key, err)
+	}
+	v1 := u[key]
+
+	if err := json.Unmarshal(c2, &u); err != nil {
+		return false, fmt.Errorf("failed to unmarshal data for key %q: %w", key, err)
+	}
+	v2 := u[key]
+
+	return cmp.Equal(v1, v2), nil
 }
 
 // buildPostRequestPayload builds the json that is required as body in the settings api.
