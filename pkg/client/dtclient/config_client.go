@@ -227,9 +227,9 @@ func (d *DynatraceClient) updateDynatraceObject(ctx context.Context, fullUrl str
 	}
 
 	if theApi.NonUniqueName {
-		log.WithCtxFields(ctx).Debug("\tCreated/Updated object by ID for %s (%s)", objectName, existingObjectId)
+		log.WithCtxFields(ctx).Debug("Created/Updated object by ID for %s (%s)", objectName, existingObjectId)
 	} else {
-		log.WithCtxFields(ctx).Debug("\tUpdated existing object for %s (%s)", objectName, existingObjectId)
+		log.WithCtxFields(ctx).Debug("Updated existing object for %s (%s)", objectName, existingObjectId)
 	}
 
 	return DynatraceEntity{

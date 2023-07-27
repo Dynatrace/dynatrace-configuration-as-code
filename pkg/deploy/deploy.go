@@ -252,7 +252,7 @@ func deployComponent(ctx context.Context, component graph.SortedComponent, clien
 
 		} else {
 			entityMap.put(*entity)
-			log.Info("Deployed %v successfully (graph-node-id %d)", node.Config.Coordinate, id)
+			log.WithCtxFields(ctx).Info("Deployment successful")
 		}
 	}
 	return errs
@@ -311,20 +311,17 @@ func deploy(ctx context.Context, clientSet ClientSet, apis api.APIs, em *entityM
 		return &parameter.ResolvedEntity{}, []error{err}
 	}
 
+	log.WithCtxFields(ctx).Info("Deploying config")
 	var res *parameter.ResolvedEntity
 	var deployErr error
 	switch c.Type.(type) {
-
 	case config.SettingsType:
-		log.WithCtxFields(ctx).Info("Deploying config %s", c.Coordinate)
 		res, deployErr = deploySetting(ctx, clientSet.Settings, properties, renderedConfig, c)
 
 	case config.ClassicApiType:
-		log.WithCtxFields(ctx).Info("Deploying config %s", c.Coordinate)
 		res, deployErr = deployClassicConfig(ctx, clientSet.Classic, apis, em, properties, renderedConfig, c)
 
 	case config.AutomationType:
-		log.WithCtxFields(ctx).Info("Deploying config %s", c.Coordinate)
 		res, deployErr = deployAutomation(ctx, clientSet.Automation, properties, renderedConfig, c)
 
 	default:
