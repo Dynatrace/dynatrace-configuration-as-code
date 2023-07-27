@@ -62,7 +62,7 @@ func TestNewLoggerWithFile(t *testing.T) {
 	logger.Info("hello")
 
 	content, _ := os.ReadFile(file.Name())
-	assert.True(t, strings.HasSuffix(string(content), "info\thello\n"))
+	assert.True(t, strings.HasSuffix(string(content), "info \thello\n"))
 }
 
 func TestLoggerReturnsCustomLogLevell(t *testing.T) {

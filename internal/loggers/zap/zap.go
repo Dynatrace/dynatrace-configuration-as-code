@@ -94,7 +94,7 @@ func New(logOptions loggers.LogOptions) (*Logger, error) {
 		cores = append(cores, zapcore.NewCore(zapcore.NewJSONEncoder(encoderConfig), consoleSyncer, atomicLevel))
 	} else {
 		consoleSyncer := zapcore.Lock(os.Stderr)
-		cores = append(cores, &noFieldsCore{zapcore.NewCore(zapcore.NewConsoleEncoder(encoderConfig), consoleSyncer, atomicLevel)})
+		cores = append(cores, zapcore.NewCore(newFixedFieldsConsoleEncoder(), consoleSyncer, atomicLevel))
 	}
 
 	if logOptions.File != nil {
@@ -102,7 +102,7 @@ func New(logOptions loggers.LogOptions) (*Logger, error) {
 		if logOptions.FileLoggingJSON {
 			cores = append(cores, zapcore.NewCore(zapcore.NewJSONEncoder(encoderConfig), fileSyncer, atomicLevel))
 		} else {
-			cores = append(cores, &noFieldsCore{zapcore.NewCore(zapcore.NewConsoleEncoder(encoderConfig), fileSyncer, atomicLevel)})
+			cores = append(cores, zapcore.NewCore(newFixedFieldsConsoleEncoder(), fileSyncer, atomicLevel))
 		}
 	}
 
@@ -111,7 +111,7 @@ func New(logOptions loggers.LogOptions) (*Logger, error) {
 		if logOptions.ConsoleLoggingJSON {
 			cores = append(cores, zapcore.NewCore(zapcore.NewJSONEncoder(encoderConfig), spySyncer, atomicLevel))
 		} else {
-			cores = append(cores, &noFieldsCore{zapcore.NewCore(zapcore.NewConsoleEncoder(encoderConfig), spySyncer, atomicLevel)})
+			cores = append(cores, zapcore.NewCore(newFixedFieldsConsoleEncoder(), spySyncer, atomicLevel))
 		}
 
 	}
@@ -126,13 +126,4 @@ var levelMap = map[loggers.LogLevel]zapcore.Level{
 	loggers.LevelWarn:  zapcore.WarnLevel,
 	loggers.LevelError: zapcore.ErrorLevel,
 	loggers.LevelFatal: zapcore.FatalLevel,
-}
-
-// noFieldsCore just discards fields passed to the logger
-type noFieldsCore struct {
-	zapcore.Core
-}
-
-func (c *noFieldsCore) With([]zapcore.Field) zapcore.Core {
-	return c
 }
