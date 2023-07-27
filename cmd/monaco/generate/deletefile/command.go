@@ -34,7 +34,7 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 	cmd = &cobra.Command{
 		Use:               "deletefile <manifest.yaml>",
 		Short:             "Generate a delete file for all configurations defined in the given manifest's projects",
-		Example:           "monaco generate deletefile manifest.yaml -o deletefiles -f my-projects-delete-file.yaml",
+		Example:           "monaco generate deletefile manifest.yaml -o deletefiles --file my-projects-delete-file.yaml",
 		Args:              cobra.ExactArgs(1),
 		PreRun:            cmdutils.SilenceUsageCommand(),
 		ValidArgsFunction: completion.SingleArgumentManifestFileCompletion,
@@ -52,7 +52,7 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 	}
 
 	cmd.Flags().StringVarP(&outputFolder, "output-folder", "o", "", "The folder the generated delete file should be written to. If not set, files will be created in the current directory.")
-	cmd.Flags().StringVarP(&fileName, "file", "", "delete.yaml", "The name of the generated delete file. If a file of this name already exists, a timestamp will be appended. (default: 'delete.yaml')")
+	cmd.Flags().StringVarP(&fileName, "file", "", "delete.yaml", "The name of the generated delete file. If a file of this name already exists, a timestamp will be appended.")
 
 	cmd.Flags().StringSliceVarP(&projects, "project", "p", nil, "Projects to generate delete file entries for. If not defined, all projects in the manifest will be used.")
 
