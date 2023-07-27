@@ -275,7 +275,7 @@ func isSameValueOfConstraint(key string, c1 []byte, c2 []byte) (bool, error) {
 func (d *DynatraceClient) findObjectWithMatchingConstraints(ctx context.Context, source SettingsObject) (*DownloadSettingsObject, error) {
 	constraints, err := d.fetchSchemasConstraints(ctx, source.SchemaId)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get details for %q schema: %w", source.SchemaId, err)
+		return nil, fmt.Errorf("unable to get details for schema %q: %w", source.SchemaId, err)
 	}
 
 	if len(constraints.UniqueProperties) == 0 {
