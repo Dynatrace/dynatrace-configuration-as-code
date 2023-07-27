@@ -440,7 +440,6 @@ func (d *DynatraceClient) listSettings(ctx context.Context, schemaId string, opt
 	}
 
 	d.settingsCache.Set(schemaId, result)
-	settings, _ := d.settingsCache.Get(schemaId)
 
-	return filter.FilterSlice(settings, opts.Filter), nil
+	return filter.FilterSlice(result, opts.Filter), nil
 }
