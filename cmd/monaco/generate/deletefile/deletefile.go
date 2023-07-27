@@ -38,6 +38,9 @@ func createDeleteFile(fs afero.Fs, manifestPath string, projectNames []string, f
 	m, errs := manifest.LoadManifest(&manifest.LoaderContext{
 		Fs:           fs,
 		ManifestPath: manifestPath,
+		Opts: manifest.LoaderOptions{
+			DontResolveEnvVars: true,
+		},
 	})
 	if len(errs) > 0 {
 		errutils.PrintErrors(errs)
