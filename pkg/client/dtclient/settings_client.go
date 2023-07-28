@@ -255,7 +255,7 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 		return DynatraceEntity{}, rest.NewRespErr("failed to parse response", resp).WithRequestInfo(http.MethodPost, requestUrl).WithErr(err)
 	}
 
-	log.WithCtxFields(ctx).Debug("\tCreated/Updated object %s (%s) with externalId %s", obj.Coordinate.ConfigId, obj.SchemaId, externalID)
+	log.WithCtxFields(ctx).Debug("Created/Updated object %s (%s) with externalId %s", obj.Coordinate.ConfigId, obj.SchemaId, externalID)
 	return entity, nil
 }
 
@@ -413,11 +413,11 @@ func (d *DynatraceClient) ListSettings(ctx context.Context, schemaId string, opt
 func (d *DynatraceClient) listSettings(ctx context.Context, schemaId string, opts ListSettingsOptions) ([]DownloadSettingsObject, error) {
 
 	if settings, cached := d.settingsCache.Get(schemaId); cached {
-		log.Debug("Using cached settings for schema %s", schemaId)
+		log.WithCtxFields(ctx).Debug("Using cached settings for schema %s", schemaId)
 		return filter.FilterSlice(settings, opts.Filter), nil
 	}
 
-	log.Debug("Downloading all settings for schema %s", schemaId)
+	log.WithCtxFields(ctx).Debug("Downloading all settings for schema %s", schemaId)
 
 	listSettingsFields := defaultListSettingsFields
 	if opts.DiscardValue {

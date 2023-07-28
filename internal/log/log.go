@@ -102,7 +102,7 @@ func WithCtxFields(ctx context.Context) loggers.Logger {
 	}
 
 	if c, ok := ctx.Value(CtxGraphComponentId{}).(CtxValGraphComponentId); ok {
-		f = append(f, field.F("componentId", c))
+		f = append(f, field.F("gid", c))
 	}
 	return loggr.WithFields(f...)
 }
