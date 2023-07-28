@@ -195,8 +195,14 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 	if match, err := d.findObjectWithMatchingConstraints(ctx, obj); err != nil {
 		return DynatraceEntity{}, err
 	} else if match != nil {
-		log.WithCtxFields(ctx).Debug("Updating existing object %q with matching unique keys", match.ObjectId)
-		obj.OriginObjectId = match.ObjectId
+
+		var props []string
+		for k, v := range match.matches {
+			props = append(props, fmt.Sprintf("(%v = %v)", k, v))
+		}
+
+		log.WithCtxFields(ctx).Info("Updating existing object %q with matching unique properties: %v", match.object.ObjectId, strings.Join(props, ", "))
+		obj.OriginObjectId = match.object.ObjectId
 	}
 
 	// generate legacy external ID without project name.
@@ -259,7 +265,12 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 	return entity, nil
 }
 
-func (d *DynatraceClient) findObjectWithMatchingConstraints(ctx context.Context, source SettingsObject) (*DownloadSettingsObject, error) {
+type match struct {
+	object  DownloadSettingsObject
+	matches constraintMatch
+}
+
+func (d *DynatraceClient) findObjectWithMatchingConstraints(ctx context.Context, source SettingsObject) (*match, error) {
 	constraints, err := d.fetchSchemasConstraints(ctx, source.SchemaId)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get details for schema %q: %w", source.SchemaId, err)
@@ -281,24 +292,27 @@ func (d *DynatraceClient) findObjectWithMatchingConstraints(ctx context.Context,
 	return target, nil
 }
 
-func findObjectWithSameConstraints(schema SchemaConstraints, source SettingsObject, objects []DownloadSettingsObject) (*DownloadSettingsObject, error) {
-	candidates := make(map[int]struct{})
+func findObjectWithSameConstraints(schema SchemaConstraints, source SettingsObject, objects []DownloadSettingsObject) (*match, error) {
+	candidates := make(map[int]constraintMatch)
 
 	for _, uniqueKeys := range schema.UniqueProperties {
 		for j, o := range objects {
-			match, err := doObjectsMatchBasedOnUniqueKeys(uniqueKeys, source, o)
+			match, constraintMatches, err := doObjectsMatchBasedOnUniqueKeys(uniqueKeys, source, o)
 			if err != nil {
 				return nil, err
 			}
 			if match {
-				candidates[j] = struct{}{} // candidate found, store index (same object might match for several constraints, set ensures we only count it once)
+				candidates[j] = constraintMatches // candidate found, store index (same object might match for several constraints, set ensures we only count it once)
 			}
 		}
 	}
 
 	if len(candidates) == 1 { // unique match found
 		index := maps.Keys(candidates)[0]
-		return &objects[index], nil
+		return &match{
+			object:  objects[index],
+			matches: candidates[index],
+		}, nil
 	}
 
 	if len(candidates) > 1 {
@@ -313,32 +327,39 @@ func findObjectWithSameConstraints(schema SchemaConstraints, source SettingsObje
 	return nil, nil // no matches found
 }
 
-func doObjectsMatchBasedOnUniqueKeys(uniqueKeys []string, source SettingsObject, other DownloadSettingsObject) (bool, error) {
+type constraintMatch map[string]any
+
+func doObjectsMatchBasedOnUniqueKeys(uniqueKeys []string, source SettingsObject, other DownloadSettingsObject) (bool, constraintMatch, error) {
+	matches := make(constraintMatch)
 	for _, key := range uniqueKeys {
-		same, err := isSameValueForKey(key, source.Content, other.Value)
+		same, val, err := isSameValueForKey(key, source.Content, other.Value)
 		if err != nil {
-			return false, err
+			return false, nil, err
 		}
 		if !same {
-			return false, nil
+			return false, nil, nil
 		}
+		matches[key] = val
 	}
-	return true, nil
+	return true, matches, nil
 }
 
-func isSameValueForKey(key string, c1 []byte, c2 []byte) (bool, error) {
+func isSameValueForKey(key string, c1 []byte, c2 []byte) (same bool, matchingVal any, err error) {
 	u := make(map[string]any)
 	if err := json.Unmarshal(c1, &u); err != nil {
-		return false, fmt.Errorf("failed to unmarshal data for key %q: %w", key, err)
+		return false, nil, fmt.Errorf("failed to unmarshal data for key %q: %w", key, err)
 	}
 	v1 := u[key]
 
 	if err := json.Unmarshal(c2, &u); err != nil {
-		return false, fmt.Errorf("failed to unmarshal data for key %q: %w", key, err)
+		return false, nil, fmt.Errorf("failed to unmarshal data for key %q: %w", key, err)
 	}
 	v2 := u[key]
 
-	return cmp.Equal(v1, v2), nil
+	if cmp.Equal(v1, v2) {
+		return true, v1, nil
+	}
+	return false, nil, nil
 }
 
 // buildPostRequestPayload builds the json that is required as body in the settings api.
