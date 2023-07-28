@@ -96,7 +96,7 @@ func (graphs ConfigGraphPerEnvironment) SortConfigs(environment string) ([]confi
 // SortedComponent represents a weakly connected component found in a graph.
 type SortedComponent struct {
 	// Graph is a directed graph representation of the weakly connected component/sub-graph found in another graph.
-	Graph graph.Directed
+	Graph *simple.DirectedGraph
 	// SortedNodes are a topologically sorted slice of graph.Node s, which can be deployed in order.
 	// This exists for convenience, so callers of GetIndependentlySortedConfigs can work with the component without implementing graph algorithms.
 	SortedNodes []graph.Node
@@ -252,4 +252,17 @@ func buildDependencyGraph(projects []project.Project, environment string) *simpl
 
 func logDependency(depending, dependedOn coordinate.Coordinate) {
 	log.Debug("Configuration: %s has dependency on %s", depending, dependedOn)
+}
+
+func Roots(g graph.Directed) []graph.Node {
+	var roots []graph.Node
+	nodes := g.Nodes()
+
+	for nodes.Next() {
+		if g.To(nodes.Node().ID()).Len() == 0 {
+			roots = append(roots, nodes.Node())
+		}
+	}
+
+	return roots
 }
