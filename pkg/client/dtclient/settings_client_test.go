@@ -126,7 +126,7 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 		tests := []struct {
 			name     string
 			given    given
-			expected *DownloadSettingsObject
+			expected *match
 		}{
 			{
 				name: "single constraint with boolean values- match",
@@ -144,7 +144,12 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 						{Value: []byte(`{"A":false}`)},
 					},
 				},
-				expected: &DownloadSettingsObject{Value: []byte(`{"A":true}`)},
+				expected: &match{
+					object: DownloadSettingsObject{Value: []byte(`{"A":true}`)},
+					matches: constraintMatch{
+						"A": true,
+					},
+				},
 			},
 			{
 				name: "single constraint with int values - no match",
@@ -180,7 +185,12 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 						{Value: []byte(`{"A":"x1"}`)},
 					},
 				},
-				expected: &DownloadSettingsObject{Value: []byte(`{"A":"x"}`)},
+				expected: &match{
+					object: DownloadSettingsObject{Value: []byte(`{"A":"x"}`)},
+					matches: constraintMatch{
+						"A": "x",
+					},
+				},
 			},
 			{
 				name: "single constraint - no match",
@@ -216,7 +226,15 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 						{Value: []byte(`{"A": {"key":"x1", "val":"y"}}`)},
 					},
 				},
-				expected: &DownloadSettingsObject{Value: []byte(`{"A": {"key":"x", "val":"y"}}`)},
+				expected: &match{
+					object: DownloadSettingsObject{Value: []byte(`{"A": {"key":"x", "val":"y"}}`)},
+					matches: constraintMatch{
+						"A": map[string]any{
+							"key": "x",
+							"val": "y",
+						},
+					},
+				},
 			},
 			{
 				name: "single complex object constraint - no match",
@@ -252,7 +270,12 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 						{Value: []byte(`{"A": [3,2,1]}`)},
 					},
 				},
-				expected: &DownloadSettingsObject{Value: []byte(`{"A": [1,2,3]}`)},
+				expected: &match{
+					object: DownloadSettingsObject{Value: []byte(`{"A": [1,2,3]}`)},
+					matches: constraintMatch{
+						"A": []interface{}{float64(1), float64(2), float64(3)},
+					},
+				},
 			},
 			{
 				name: "single list value constraint - no match",
@@ -288,7 +311,13 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 						{Value: []byte(`{"A":"x", "B":"y1"}`)},
 					},
 				},
-				expected: &DownloadSettingsObject{Value: []byte(`{"A":"x", "B":"y"}`)},
+				expected: &match{
+					object: DownloadSettingsObject{Value: []byte(`{"A":"x", "B":"y"}`)},
+					matches: constraintMatch{
+						"A": "x",
+						"B": "y",
+					},
+				},
 			},
 			{
 				name: "signe composite constraint - no match",
@@ -325,7 +354,13 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 						{ObjectId: "obj_2", Value: []byte(`{"A":"x2", "B":"y"}`)},
 					},
 				},
-				expected: &DownloadSettingsObject{ObjectId: "obj_1", Value: []byte(`{"A":"x", "B":"y"}`)},
+				expected: &match{
+					object: DownloadSettingsObject{ObjectId: "obj_1", Value: []byte(`{"A":"x", "B":"y"}`)},
+					matches: constraintMatch{
+						"A": "x",
+						"B": "y",
+					},
+				},
 			},
 			{
 				name: "multiple simple constraints - one semi match",
@@ -344,7 +379,12 @@ func Test_findObjectWithSameConstraints(t *testing.T) {
 						{Value: []byte(`{"A":"x2", "B":"y2"}`)},
 					},
 				},
-				expected: &DownloadSettingsObject{Value: []byte(`{"A":"x", "B":"y1"}`)},
+				expected: &match{
+					object: DownloadSettingsObject{Value: []byte(`{"A":"x", "B":"y1"}`)},
+					matches: constraintMatch{
+						"A": "x",
+					},
+				},
 			},
 			{
 				name: "multiple simple constraints - no match",
