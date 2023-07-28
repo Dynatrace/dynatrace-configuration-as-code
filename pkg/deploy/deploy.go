@@ -21,7 +21,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -29,7 +28,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
+	graph2 "gonum.org/v1/gonum/graph"
+	"gonum.org/v1/gonum/graph/simple"
 	"strings"
+	"sync"
 )
 
 // DeployConfigsOptions defines additional options used by DeployConfigs
@@ -208,51 +210,117 @@ func deployComponentsParallel(ctx context.Context, components []graph.SortedComp
 	return errs
 }
 
-func deployComponent(ctx context.Context, component graph.SortedComponent, clientSet ClientSet, apis api.APIs, opts DeployConfigsOptions) []error {
+type deployGraph interface {
+	graph2.NodeRemover
+	graph2.Directed
+	graph2.Builder
+}
+
+type componentDeployer struct {
+	lock             sync.Mutex
+	graph            deployGraph
+	clients          ClientSet
+	resolvedEntities entityMap
+	apis             api.APIs
+}
+
+func (c *componentDeployer) deployComponent(ctx context.Context) []error {
 	var errs []error
 
-	entityMap := newEntityMap(apis) //entityMap is only used to when resolving parameter references, and configs that reference each other are in the same component; no global entity map is needed
+	errChan := make(chan error)
+	for c.graph.Nodes().Len() != 0 {
+		roots := graph.Roots(c.graph)
 
-	g := component.Graph
-	sortedNodes := component.SortedNodes
-
-	if log.Level() == loggers.LevelDebug {
-		log.WithCtxFields(ctx).Debug("Deploying configurations in current component: %v", sortedNodes)
-	}
-
-	dontDeploy := map[int64]struct{}{} //look-up map marking Nodes (by ID) that should not be deployed, because something they depend on was skipped or failed
-
-	for _, gNode := range sortedNodes {
-
-		node := gNode.(graph.ConfigNode)
-		id := node.ID()
-
-		if _, dont := dontDeploy[id]; dont {
-			continue
+		for _, root := range roots {
+			go func(node graph2.Node) {
+				errChan <- c.deployNode(ctx, node)
+			}(root)
 		}
 
-		ctx := context.WithValue(ctx, log.CtxKeyCoord{}, node.Config.Coordinate)
-		entity, err := deployFunc(ctx, node.Config, clientSet, apis, entityMap)
-
-		if err != nil {
-			deploymentFailed := false
-
-			if !errors.Is(err, skipError) {
-				deploymentFailed = true
+		for range roots {
+			err := <-errChan
+			if err != nil {
 				errs = append(errs, err)
-				if !opts.ContinueOnErr && !opts.DryRun {
-					return errs
-				}
 			}
+		}
 
-			markChildrenAsNotToDeploy(ctx, g, &node, nil, dontDeploy, deploymentFailed)
-
-		} else {
-			entityMap.put(*entity)
-			log.WithCtxFields(ctx).Info("Deployment successful")
+		// since all subroutines are done, we need not to lock here
+		for _, root := range roots {
+			c.graph.RemoveNode(root.ID())
 		}
 	}
+
+	close(errChan)
+
 	return errs
+}
+
+func (c *componentDeployer) deployNode(ctx context.Context, n graph2.Node) error {
+	cnf := n.(graph.ConfigNode).Config
+
+	ctx = context.WithValue(ctx, log.CtxKeyCoord{}, cnf.Coordinate)
+	entity, err := deployFunc(ctx, cnf, c.clients, c.apis, &c.resolvedEntities)
+
+	// lock changes we will make to shared variables. Writing them is trivial compared to any http request
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if err != nil {
+		failed := !errors.Is(err, skipError)
+		c.removeChildren(ctx, n, n, failed)
+
+		if failed {
+			return err
+		}
+		return nil
+	}
+
+	c.resolvedEntities.put(*entity)
+	log.WithCtxFields(ctx).Info("Deployment successful")
+	return nil
+}
+
+func (c *componentDeployer) removeChildren(ctx context.Context, parent, root graph2.Node, failed bool) {
+
+	parentCnf := parent.(graph.ConfigNode).Config
+	rootCnf := parent.(graph.ConfigNode).Config
+
+	children := c.graph.From(parent.ID())
+	for children.Next() {
+		child := children.Node()
+
+		reason := "was skipped"
+		if failed {
+			reason = "failed to deploy"
+		}
+		childCnf := child.(graph.ConfigNode).Config
+
+		// after the first iteration
+		if parent != root {
+			log.WithCtxFields(ctx).WithFields(field.F("parent", parentCnf.Coordinate), field.F("deploymentFailed", failed), field.F("root", rootCnf.Coordinate)).
+				Warn("Skipping deployment of %v, as it depends on %v which was not deployed after root dependency configuration %v %s", childCnf.Coordinate, parentCnf.Coordinate, rootCnf.Coordinate, reason)
+		} else {
+			log.WithCtxFields(ctx).WithFields(field.F("parent", parentCnf.Coordinate), field.F("deploymentFailed", failed)).
+				Warn("Skipping deployment of %v, as it depends on %v which %s", childCnf.Coordinate, parentCnf.Coordinate, reason)
+		}
+
+		c.removeChildren(ctx, child, root, failed)
+
+		c.graph.RemoveNode(child.ID())
+	}
+}
+func deployComponent(ctx context.Context, component graph.SortedComponent, clientSet ClientSet, apis api.APIs, _ DeployConfigsOptions) []error {
+	g := simple.NewDirectedGraph()
+	graph2.Copy(g, component.Graph)
+
+	deployer := componentDeployer{
+		lock:             sync.Mutex{},
+		graph:            g,
+		clients:          clientSet,
+		resolvedEntities: *newEntityMap(apis),
+		apis:             apis,
+	}
+	return deployer.deployComponent(ctx)
 }
 
 // deployFunc kinda just is a smarter deploy... TODO refactor!
@@ -269,27 +337,6 @@ func deployFunc(ctx context.Context, c *config.Config, clientSet ClientSet, apis
 	}
 
 	return entity, nil
-}
-
-func markChildrenAsNotToDeploy(ctx context.Context, g graph.ConfigGraph, node, root *graph.ConfigNode, dontDeploy map[int64]struct{}, deploymentFailed bool) {
-
-	reason := "was skipped"
-	if deploymentFailed {
-		reason = "failed to deploy"
-	}
-
-	children := g.From(node.ID())
-	for children.Next() {
-		child := children.Node().(graph.ConfigNode)
-		if root != nil {
-			log.WithCtxFields(ctx).WithFields(field.F("child", child.Config.Coordinate), field.F("root", root.Config.Coordinate), field.F("deploymentFailed", deploymentFailed)).Warn("Skipping deployment of %v, as it depends on %v which was not deployed after root dependency configuration %v %s", child.Config.Coordinate, node.Config.Coordinate, root.Config.Coordinate, reason)
-		} else {
-			log.WithCtxFields(ctx).WithFields(field.F("child", child.Config.Coordinate), field.F("deploymentFailed", deploymentFailed)).Warn("Skipping deployment of %v, as it depends on %v which %s", child.Config.Coordinate, node.Config.Coordinate, reason)
-		}
-
-		dontDeploy[children.Node().ID()] = struct{}{}
-		markChildrenAsNotToDeploy(ctx, g, &child, node, dontDeploy, deploymentFailed)
-	}
 }
 
 func deploy(ctx context.Context, clientSet ClientSet, apis api.APIs, em *entityMap, c *config.Config) (*parameter.ResolvedEntity, []error) {
