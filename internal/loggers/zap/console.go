@@ -58,22 +58,22 @@ func (e fixedFieldsConsoleEncoder) Clone() zapcore.Encoder {
 
 func (e fixedFieldsConsoleEncoder) EncodeEntry(entry zapcore.Entry, _ []zapcore.Field) (*buffer.Buffer, error) {
 	line := Get()
-	line.AppendString(fmt.Sprintf("%s ", entry.Time.Format(time.RFC3339)))
+	line.AppendString(fmt.Sprintf("%s", entry.Time.Format(time.RFC3339)))
 	line.AppendString("\t")
-	line.AppendString(fmt.Sprintf("%s ", entry.Level))
+	line.AppendString(fmt.Sprintf("%s", entry.Level))
 	line.AppendString("\t")
 
 	additionalTab := false
 	if f, ok := e.Fields()["coordinate"]; ok {
 		additionalTab = true
 		if logCoordinate, ook := f.(field.LogCoordinate); ook {
-			line.AppendString(fmt.Sprintf("[%s=%v] ", "coord", logCoordinate.Reference))
+			line.AppendString(fmt.Sprintf("[%s=%v]", "coord", logCoordinate.Reference))
 		}
 	}
 
 	if f, ok := e.Fields()["gid"]; ok {
 		additionalTab = true
-		line.AppendString(fmt.Sprintf("[%s=%v] ", "gid", f))
+		line.AppendString(fmt.Sprintf("[%s=%v]", "gid", f))
 	}
 
 	if additionalTab {

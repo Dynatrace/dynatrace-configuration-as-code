@@ -62,7 +62,7 @@ func TestEncodeEntry_IgnoresFieldsGivenViaArgs(t *testing.T) {
 	buffer, err := encoder.EncodeEntry(entry, fields)
 	assert.NoError(t, err, "Error encoding entry")
 
-	expectedOutput := "2023-07-27T12:34:56Z \tinfo \tTest log message\n"
+	expectedOutput := "2023-07-27T12:34:56Z\tinfo\tTest log message\n"
 	assert.Equal(t, expectedOutput, buffer.String(), "Unexpected encoded output")
 }
 
@@ -84,6 +84,6 @@ func TestEncodeEntry_UsesFieldsFromObjectEncoder(t *testing.T) {
 	buffer, err := encoder.EncodeEntry(entry, nil)
 	assert.NoError(t, err, "Error encoding entry")
 
-	expectedOutput := "2023-07-27T12:34:56Z \tinfo \t[coord=a:b:c] [gid=4] \tTest log message\n"
+	expectedOutput := "2023-07-27T12:34:56Z\tinfo\t[coord=a:b:c][gid=4]\tTest log message\n"
 	assert.Equal(t, expectedOutput, buffer.String(), "Unexpected encoded output")
 }
