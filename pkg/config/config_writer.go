@@ -18,7 +18,6 @@ package config
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	configError "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
@@ -299,10 +298,6 @@ func extractConfigType(context *serializerContext, config Config) (typeDefinitio
 			},
 		}, nil
 	case AutomationType:
-		if !featureflags.AutomationResources().Enabled() {
-			return typeDefinition{}, fmtDetailedConfigWriterError(context, "automation resource feature is not enabled")
-		}
-
 		return typeDefinition{
 			Automation: automationDefinition{
 				Resource: t.Resource,

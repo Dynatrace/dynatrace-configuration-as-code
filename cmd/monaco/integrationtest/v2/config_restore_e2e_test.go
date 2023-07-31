@@ -101,7 +101,6 @@ func TestRestoreConfigs_FromDownloadWithPlatformWithCLIParameters(t *testing.T) 
 }
 
 func TestRestoreConfigs_FromDownloadWithPlatformManifestFile_withAutomation(t *testing.T) {
-	t.Setenv("MONACO_FEAT_AUTOMATION_RESOURCES", "true")
 	initialConfigsFolder := "test-resources/integration-download-configs-with-automation/"
 	manifestFile := initialConfigsFolder + "platform_manifest.yaml"
 	downloadFolder := "test-resources/download"

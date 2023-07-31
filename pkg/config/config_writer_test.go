@@ -21,7 +21,6 @@ package config
 import (
 	"errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	envParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/environment"
@@ -725,7 +724,6 @@ func TestWriteConfigs(t *testing.T) {
 		configs               []Config
 		expectedConfigs       map[string]topLevelDefinition
 		expectedTemplatePaths []string
-		envVars               map[string]string
 		expectedErrs          []string
 	}{
 		{
@@ -867,8 +865,7 @@ func TestWriteConfigs(t *testing.T) {
 			},
 		},
 		{
-			name:    "Automation resources",
-			envVars: map[string]string{featureflags.AutomationResources().EnvName(): "true"},
+			name: "Automation resources",
 			configs: []Config{
 				{
 					Template: template.CreateTemplateFromString("project/workflow/a.json", ""),
@@ -979,28 +976,6 @@ func TestWriteConfigs(t *testing.T) {
 			},
 		},
 		{
-			name:    "Automation resources with disabled FF",
-			envVars: map[string]string{featureflags.AutomationResources().EnvName(): "false"},
-			configs: []Config{
-				{
-					Template: template.CreateTemplateFromString("project/workflow/a.json", ""),
-					Coordinate: coordinate.Coordinate{
-						Project:  "project",
-						Type:     "workflow",
-						ConfigId: "configId1",
-					},
-					Type: AutomationType{
-						Resource: Workflow,
-					},
-					Parameters: map[string]parameter.Parameter{
-						NameParameter: &value.ValueParameter{Value: "name"},
-					},
-					Skip: true,
-				},
-			},
-			expectedErrs: []string{"automation resource feature is not enabled"},
-		},
-		{
 			name: "Reference scope",
 			configs: []Config{
 				{
@@ -1104,9 +1079,6 @@ func TestWriteConfigs(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			for k, v := range tc.envVars {
-				t.Setenv(k, v)
-			}
 
 			fs := testutils.TempFs(t)
 

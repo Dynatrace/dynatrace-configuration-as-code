@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -281,6 +280,5 @@ func shouldDownloadSettings(opts downloadConfigsOptions) bool {
 
 func shouldDownloadAutomationResources(opts downloadConfigsOptions) bool {
 	return !opts.onlySettings && len(opts.specificAPIs) == 0 &&
-		!opts.onlyAPIs && len(opts.specificSchemas) == 0 &&
-		featureflags.AutomationResources().Enabled()
+		!opts.onlyAPIs && len(opts.specificSchemas) == 0
 }
