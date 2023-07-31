@@ -199,9 +199,6 @@ func deployComponentsParallel(ctx context.Context, components []graph.SortedComp
 	// Collect errors from goroutines and append to the 'errs' slice.
 	for range components {
 		componentDeployErrs := <-errChan
-		if len(componentDeployErrs) > 0 && !opts.ContinueOnErr && !opts.DryRun {
-			return componentDeployErrs
-		}
 		errs = append(errs, componentDeployErrs...)
 	}
 
