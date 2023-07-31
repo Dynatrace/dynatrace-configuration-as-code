@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
@@ -72,11 +71,6 @@ func Configs(ctx context.Context, clients ClientSet, apis api.APIs, automationRe
 			deleteErrs := deleteClassicConfig(ctx, clients.Classic, targetApi, entries, entryType)
 			errs = append(errs, deleteErrs...)
 		} else if targetAutomation, isAutomation := automationResources[entryType]; isAutomation {
-
-			if !featureflags.AutomationResources().Enabled() {
-				continue
-			}
-
 			if clients.Automation == nil {
 				log.WithCtxFields(ctx).WithFields(field.Type(entryType)).Warn("Skipped deletion of %d Automation configurations of type %q as API client was unavailable.", len(entries), entryType)
 				continue
@@ -307,10 +301,6 @@ func AllSettingsObjects(ctx context.Context, c dtclient.SettingsClient) []error 
 // AllAutomations deletes all Automation objects it can find from the Dynatrace environment the given client connects to
 func AllAutomations(ctx context.Context, c automationClient) []error {
 	var errs []error
-
-	if !featureflags.AutomationResources().Enabled() {
-		return errs
-	}
 
 	resources := []config.AutomationResource{config.Workflow, config.BusinessCalendar, config.SchedulingRule}
 	for _, resource := range resources {

@@ -87,12 +87,10 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	cmd.MarkFlagsMutuallyExclusive("api", "only-apis", "only-settings")
 	cmd.MarkFlagsMutuallyExclusive("only-apis", "only-settings")
 
-	if featureflags.AutomationResources().Enabled() {
-		cmd.Flags().BoolVar(&f.onlyAutomation, "only-automation", false, "Only download automation objects, skip another")
-		cmd.MarkFlagsMutuallyExclusive("only-apis", "only-settings", "only-automation")
-		cmd.MarkFlagsMutuallyExclusive("api", "only-automation")
-		cmd.MarkFlagsMutuallyExclusive("settings-schema", "only-automation")
-	}
+	cmd.Flags().BoolVar(&f.onlyAutomation, "only-automation", false, "Only download automation objects, skip another")
+	cmd.MarkFlagsMutuallyExclusive("only-apis", "only-settings", "only-automation")
+	cmd.MarkFlagsMutuallyExclusive("api", "only-automation")
+	cmd.MarkFlagsMutuallyExclusive("settings-schema", "only-automation")
 
 	if featureflags.Entities().Enabled() {
 		getDownloadEntitiesCommand(fs, command, cmd)

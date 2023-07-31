@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
@@ -109,8 +108,6 @@ func TestDelete(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t1 *testing.T) {
-			t.Setenv(featureflags.AutomationResources().EnvName(), "true")
-
 			configFolder := "test-resources/delete-test-configs/"
 			deployManifestPath := configFolder + "deploy-manifest.yaml"
 

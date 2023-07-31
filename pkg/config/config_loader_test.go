@@ -595,7 +595,6 @@ configs:
 			name:             "load a workflow",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
-			envVars:          map[string]string{featureflags.AutomationResources().EnvName(): "true"},
 			fileContentOnDisk: `
 configs:
 - id: workflow-id
@@ -629,7 +628,6 @@ configs:
 			name:             "load a business-calendar",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
-			envVars:          map[string]string{featureflags.AutomationResources().EnvName(): "true"},
 			fileContentOnDisk: `
 configs:
 - id: bc-id
@@ -663,7 +661,6 @@ configs:
 			name:             "load a scheduling rule",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
-			envVars:          map[string]string{featureflags.AutomationResources().EnvName(): "true"},
 			fileContentOnDisk: `
 configs:
 - id: sr-id
@@ -697,7 +694,6 @@ configs:
 			name:             "load an unknown automation resource",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
-			envVars:          map[string]string{featureflags.AutomationResources().EnvName(): "true"},
 			fileContentOnDisk: `
 configs:
 - id: automation-id
@@ -708,22 +704,6 @@ configs:
     automation:
       resource: does-not-exist`,
 			wantErrorsContain: []string{`unknown automation resource "does-not-exist"`},
-		},
-		{
-			name:             "disabled ff with automation config",
-			filePathArgument: "test-file.yaml",
-			filePathOnDisk:   "test-file.yaml",
-			envVars:          map[string]string{featureflags.AutomationResources().EnvName(): "false"},
-			fileContentOnDisk: `
-configs:
-- id: automation-id
-  config:
-    name: 'Star Trek > Star Wars'
-    template: 'profile.json'
-  type:
-    automation:
-      resource: does-not-exist`,
-			wantErrorsContain: []string{`automation resource feature is not enabled`},
 		},
 		{
 			name:             "fails to load with a parameter that is 'id'",

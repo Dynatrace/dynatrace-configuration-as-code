@@ -22,7 +22,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
@@ -269,8 +268,6 @@ func TestDeleteAutomations(t *testing.T) {
 
 		c := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 
-		t.Setenv(featureflags.AutomationResources().EnvName(), "true")
-
 		entriesToDelete := map[string][]DeletePointer{
 			"workflow": {
 				{
@@ -312,8 +309,6 @@ func TestDeleteAutomations(t *testing.T) {
 		defer server.Close()
 
 		c := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
-
-		t.Setenv(featureflags.AutomationResources().EnvName(), "true")
 
 		entriesToDelete := map[string][]DeletePointer{
 			"workflow": {
@@ -357,8 +352,6 @@ func TestDeleteAutomations(t *testing.T) {
 
 		c := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 
-		t.Setenv(featureflags.AutomationResources().EnvName(), "true")
-
 		entriesToDelete := map[string][]DeletePointer{
 			"workflow": {
 				{
@@ -383,8 +376,6 @@ func TestDeleteAutomations(t *testing.T) {
 		defer server.Close()
 
 		c := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
-
-		t.Setenv(featureflags.AutomationResources().EnvName(), "true")
 
 		entriesToDelete := map[string][]DeletePointer{
 			"workflow": {

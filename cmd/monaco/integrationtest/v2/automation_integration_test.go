@@ -34,7 +34,6 @@ func TestIntegrationAutomation(t *testing.T) {
 	configFolder := "test-resources/integration-automation/"
 	manifest := configFolder + "manifest.yaml"
 	specificEnvironment := ""
-	t.Setenv("MONACO_FEAT_AUTOMATION_RESOURCES", "1")
 
 	envs := map[string]string{}
 	if isHardeningEnvironment() {

@@ -173,10 +173,6 @@ func (c *typeDefinition) isAutomation() bool {
 
 func (c *automationDefinition) isSound() error {
 
-	if !featureflags.AutomationResources().Enabled() {
-		return errors.New("automation resource feature is not enabled")
-	}
-
 	switch c.Resource {
 	case "":
 		return errors.New("missing 'type.automation.resource' property")

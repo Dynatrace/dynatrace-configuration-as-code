@@ -20,7 +20,6 @@ package download
 
 import (
 	"errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
@@ -324,8 +323,6 @@ func TestMapToAuth(t *testing.T) {
 }
 
 func TestDownloadConfigs_OnlyAutomationWithoutAutomationCredentials(t *testing.T) {
-	t.Setenv(featureflags.AutomationResources().EnvName(), "1")
-
 	opts := downloadConfigsOptions{
 		onlyAutomation: true,
 	}

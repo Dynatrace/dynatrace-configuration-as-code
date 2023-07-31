@@ -94,14 +94,6 @@ func VerifyEnvironmentType() FeatureFlag {
 	}
 }
 
-// AutomationResources returns the feature flag that tells whether the automation-resource handling is enabled or not.
-func AutomationResources() FeatureFlag {
-	return FeatureFlag{
-		envName:        "MONACO_FEAT_AUTOMATION_RESOURCES",
-		defaultEnabled: true,
-	}
-}
-
 // ManagementZoneSettingsNumericIDs returns the feature flag that tells whether configs of settings type builtin:management-zones
 // are addressed directly via their object ID or their resolved numeric ID when they are referenced.
 func ManagementZoneSettingsNumericIDs() FeatureFlag {
