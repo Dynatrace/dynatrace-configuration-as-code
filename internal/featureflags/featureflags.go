@@ -98,7 +98,7 @@ func VerifyEnvironmentType() FeatureFlag {
 func AutomationResources() FeatureFlag {
 	return FeatureFlag{
 		envName:        "MONACO_FEAT_AUTOMATION_RESOURCES",
-		defaultEnabled: false,
+		defaultEnabled: true,
 	}
 }
 
