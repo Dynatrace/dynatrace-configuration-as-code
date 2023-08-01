@@ -38,7 +38,6 @@ configs:
       schema: builtin:monitored-technologies.go
       scope: environment
   config:
-    name: "Go monitoring"
     parameters:
       enabled: true
     template: environment-go-monitoring.json
