@@ -133,7 +133,6 @@ func TestDownloadAll(t *testing.T) {
 						SchemaVersion: "sv1",
 					},
 					Parameters: map[string]parameter.Parameter{
-						config.NameParameter:  &value.ValueParameter{Value: uuid},
 						config.ScopeParameter: &value.ValueParameter{Value: "tenant"},
 					},
 					Skip:           false,
@@ -211,7 +210,6 @@ func TestDownloadAll(t *testing.T) {
 						SchemaVersion: "sv1",
 					},
 					Parameters: map[string]parameter.Parameter{
-						config.NameParameter:  &value.ValueParameter{Value: uuid},
 						config.ScopeParameter: &value.ValueParameter{Value: "tenant"},
 					},
 					Skip:           false,
@@ -293,7 +291,6 @@ func TestDownload(t *testing.T) {
 						SchemaVersion: "sv1",
 					},
 					Parameters: map[string]parameter.Parameter{
-						config.NameParameter:  &value.ValueParameter{Value: uuid},
 						config.ScopeParameter: &value.ValueParameter{Value: "tenant"},
 					},
 					Skip:           false,
