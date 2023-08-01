@@ -17,9 +17,11 @@ package deploy
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"sync"
 )
 
 type entityMap struct {
+	lock             sync.RWMutex
 	resolvedEntities parameter.ResolvedEntities
 	knownEntityNames map[string]map[string]struct{}
 }
@@ -37,6 +39,9 @@ func newEntityMap(apis api.APIs) *entityMap {
 }
 
 func (r *entityMap) put(resolvedEntity parameter.ResolvedEntity) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
 	// memorize resolved entity
 	r.resolvedEntities[resolvedEntity.Coordinate] = resolvedEntity
 
@@ -54,9 +59,22 @@ func (r *entityMap) put(resolvedEntity parameter.ResolvedEntity) {
 }
 
 func (r *entityMap) get() parameter.ResolvedEntities {
-	return r.resolvedEntities
+
+	r.lock.RLock()
+	defer r.lock.RUnlock()
+
+	entityCopy := make(parameter.ResolvedEntities, len(r.resolvedEntities))
+	for k, v := range r.resolvedEntities {
+		entityCopy[k] = v
+	}
+
+	return entityCopy
 }
 func (r *entityMap) contains(entityType string, entityName string) bool {
+
+	r.lock.RLock()
+	defer r.lock.RUnlock()
+
 	_, found := r.knownEntityNames[entityType][entityName]
 	return found
 }
