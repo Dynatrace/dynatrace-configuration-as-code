@@ -173,6 +173,19 @@ func TestGetReferences(t *testing.T) {
 	assert.Equal(t, property, ref.Property)
 }
 
+type testResolver struct {
+	props map[coordinate.Coordinate]map[string]any
+}
+
+func (t testResolver) Property(config coordinate.Coordinate, property string) (any, bool) {
+	if e, f := t.props[config]; f {
+		if v, f := e[property]; f {
+			return v, true
+		}
+	}
+	return nil, false
+}
+
 func TestResolveValue(t *testing.T) {
 	project := "projectB"
 	configType := "alerting-profile"
@@ -189,10 +202,9 @@ func TestResolveValue(t *testing.T) {
 			Type:     "dashboard",
 			ConfigId: "super-important",
 		},
-		ResolvedEntities: map[coordinate.Coordinate]parameter.ResolvedEntity{
-			referenceCoordinate: {
-				Coordinate: referenceCoordinate,
-				Properties: map[string]interface{}{
+		PropertyResolver: testResolver{
+			map[coordinate.Coordinate]map[string]any{
+				referenceCoordinate: {
 					property: propertyValue,
 				},
 			},
@@ -232,7 +244,7 @@ func TestResolveValuePropertyNotYetResolved(t *testing.T) {
 
 	fixture := New(project, configType, config, property)
 
-	_, err := fixture.ResolveValue(parameter.ResolveContext{})
+	_, err := fixture.ResolveValue(parameter.ResolveContext{PropertyResolver: testResolver{}})
 
 	assert.Assert(t, err != nil, "should return an error")
 }

@@ -25,7 +25,7 @@ import (
 // TODO: unexport this function
 func ResolveParameterValues(
 	conf *config.Config,
-	entities map[coordinate.Coordinate]parameter.ResolvedEntity,
+	entities *entityMap,
 	parameters []parameter.NamedParameter,
 ) (parameter.Properties, []error) {
 
@@ -45,7 +45,7 @@ func ResolveParameterValues(
 		}
 
 		val, err := param.ResolveValue(parameter.ResolveContext{
-			ResolvedEntities:        entities,
+			PropertyResolver:        entities,
 			ConfigCoordinate:        conf.Coordinate,
 			Group:                   conf.Group,
 			Environment:             conf.Environment,
@@ -74,7 +74,7 @@ func ResolveParameterValues(
 	return properties, nil
 }
 
-func resolveProperties(c *config.Config, entities map[coordinate.Coordinate]parameter.ResolvedEntity) (parameter.Properties, []error) {
+func resolveProperties(c *config.Config, entities *entityMap) (parameter.Properties, []error) {
 	var errors []error
 
 	parameters, sortErrs := sort.Parameters(c.Group, c.Environment, c.Coordinate, c.Parameters)
@@ -92,7 +92,7 @@ func resolveProperties(c *config.Config, entities map[coordinate.Coordinate]para
 
 func validateParameterReferences(configCoordinates coordinate.Coordinate,
 	group string, environment string,
-	entities map[coordinate.Coordinate]parameter.ResolvedEntity,
+	entities *entityMap,
 	paramName string,
 	param parameter.Parameter,
 ) (errors []error) {
@@ -110,7 +110,7 @@ func validateParameterReferences(configCoordinates coordinate.Coordinate,
 			continue
 		}
 
-		entity, found := entities[ref.Config]
+		entity, found := entities.entity(ref.Config)
 
 		if !found {
 			errors = append(errors, newParamsRefErr(configCoordinates, group, environment, paramName, ref, "referenced config not found"))

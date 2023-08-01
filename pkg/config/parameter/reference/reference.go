@@ -95,11 +95,8 @@ func (p *ReferenceParameter) ResolveValue(context parameter.ResolveContext) (int
 		return nil, newUnresolvedReferenceError(context, p.ParameterReference, "property has not been resolved yet or does not exist")
 	}
 
-	if entity, found := context.ResolvedEntities[p.Config]; found {
-		if val, found := entity.Properties[p.Property]; found {
-			return val, nil
-		}
-		return nil, newUnresolvedReferenceError(context, p.ParameterReference, "property has not been resolved yet or does not exist")
+	if val, found := context.PropertyResolver.Property(p.Config, p.Property); found {
+		return val, nil
 	}
 
 	return nil, newUnresolvedReferenceError(context, p.ParameterReference, "config has not been resolved yet or does not exist")

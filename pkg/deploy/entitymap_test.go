@@ -19,7 +19,6 @@ package deploy
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"gotest.tools/assert"
 	"reflect"
 	"testing"
@@ -38,7 +37,7 @@ func TestNewEntityMap(t *testing.T) {
 			name: "Test crate entity map",
 			args: args{api.APIs{"dashboard": api.API{ID: "dashboard", URLPath: "dashboard", DeprecatedBy: "dashboard-v2"}}},
 			want: &entityMap{
-				resolvedEntities: parameter.ResolvedEntities{},
+				resolvedEntities: ResolvedEntities{},
 				knownEntityNames: map[string]map[string]struct{}{"dashboard": {}},
 			},
 		},
@@ -61,7 +60,7 @@ func TestEntityMap_PutResolved(t *testing.T) {
 			ConfigId: "configID",
 		}
 
-		r1 := parameter.ResolvedEntity{
+		r1 := ResolvedEntity{
 			EntityName: "entityName",
 			Coordinate: c1,
 		}
@@ -69,7 +68,7 @@ func TestEntityMap_PutResolved(t *testing.T) {
 		entityMap := newEntityMap(api.APIs{"dashboard": api.API{ID: "dashboard", URLPath: "dashboard", DeprecatedBy: "dashboard-v2"}})
 		entityMap.put(r1)
 		assert.Equal(t, entityMap.contains("type", "entityName"), true)
-		assert.DeepEqual(t, entityMap.get(), parameter.ResolvedEntities{
+		assert.DeepEqual(t, entityMap.resolvedEntities, ResolvedEntities{
 			c1: r1,
 		})
 	})
@@ -81,7 +80,7 @@ func TestEntityMap_PutResolved(t *testing.T) {
 			ConfigId: "configID",
 		}
 
-		r1 := parameter.ResolvedEntity{
+		r1 := ResolvedEntity{
 			EntityName: "entityName",
 			Coordinate: c1,
 			Skip:       true,
@@ -90,7 +89,7 @@ func TestEntityMap_PutResolved(t *testing.T) {
 		entityMap := newEntityMap(api.APIs{"dashboard": api.API{ID: "dashboard", URLPath: "dashboard", DeprecatedBy: "dashboard-v2"}})
 		entityMap.put(r1)
 		assert.Equal(t, entityMap.contains("type", "entityName"), false)
-		assert.DeepEqual(t, entityMap.get(), parameter.ResolvedEntities{
+		assert.DeepEqual(t, entityMap.resolvedEntities, ResolvedEntities{
 			c1: r1,
 		})
 	})
@@ -102,12 +101,12 @@ func TestEntityMap_PutResolved(t *testing.T) {
 			ConfigId: "configID",
 		}
 
-		r1 := parameter.ResolvedEntity{Coordinate: c1}
+		r1 := ResolvedEntity{Coordinate: c1}
 
 		entityMap := newEntityMap(api.APIs{"dashboard": api.API{ID: "dashboard", URLPath: "dashboard", DeprecatedBy: "dashboard-v2"}})
 		entityMap.put(r1)
 		assert.Equal(t, entityMap.contains("type", ""), false)
-		assert.DeepEqual(t, entityMap.get(), parameter.ResolvedEntities{
+		assert.DeepEqual(t, entityMap.resolvedEntities, ResolvedEntities{
 			c1: r1,
 		})
 	})

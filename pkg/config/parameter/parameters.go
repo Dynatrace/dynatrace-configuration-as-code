@@ -24,33 +24,14 @@ import (
 // Properties defines a map representing resolved parameters
 type Properties map[string]interface{}
 
-// ResolvedEntities defines a map representing resolved configs. this includes the
-// api `ID` of a config.
-type ResolvedEntities map[coordinate.Coordinate]ResolvedEntity
-
-// TODO move to better package
-// ResolvedEntity struct representing an already deployed entity
-type ResolvedEntity struct {
-	// EntityName is the name returned by the Dynatrace api. In theory should be the
-	// same as the `name` property defined in the configuration, but
-	// can differ.
-	EntityName string
-
-	// coordinate of the config this entity represents
-	Coordinate coordinate.Coordinate
-
-	// Properties defines a map of all already resolved parameters
-	Properties Properties
-
-	// Skip flag indicating that this entity was skipped
-	// if a entity is skipped, there will be no properties
-	Skip bool
+// PropertyResolver is used in parameter resolution to fetch the values of already deployed configs
+type PropertyResolver interface {
+	Property(config coordinate.Coordinate, property string) (any, bool)
 }
 
 // ResolveContext used to give some more information on the resolving phase
 type ResolveContext struct {
-	// map of already resolved (and deployed) configs
-	ResolvedEntities ResolvedEntities
+	PropertyResolver PropertyResolver
 
 	// coordinates of the current config
 	ConfigCoordinate coordinate.Coordinate
