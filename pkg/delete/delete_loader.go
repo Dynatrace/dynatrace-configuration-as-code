@@ -38,9 +38,13 @@ type loaderContext struct {
 	knownApis  map[string]struct{}
 }
 
+// DeleteEntryParserError is an error that occurred while parsing a delete file
 type DeleteEntryParserError struct {
-	Value  string `json:"value"`
-	Index  int    `json:"index"`
+	// Value of the DeleteEntry that failed to be parsed
+	Value string `json:"value"`
+	// Index of the entry that failed to be parsed
+	Index int `json:"index"`
+	// Reason describing what went wrong
 	Reason string `json:"reason"`
 }
 

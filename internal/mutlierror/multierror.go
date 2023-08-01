@@ -25,6 +25,7 @@ import (
 // MultiError is an error containing several errors
 // Unlike errors.Join() it produces an error with exported fields and can be included in structured logging
 type MultiError struct {
+	// Errors is a list of errors grouped into this MultiError
 	Errors []error `json:"errors"`
 }
 

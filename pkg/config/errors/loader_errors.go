@@ -27,9 +27,12 @@ var (
 	_ DetailedConfigError = (*ParameterDefinitionParserError)(nil)
 )
 
+// ConfigLoaderError contains details about an error that occurred while loading a config.Config
 type ConfigLoaderError struct {
-	Path string `json:"path" jsonschema:"description=Filepath of the config.yaml that could not be loaded"`
-	Err  error  `json:"error" jsonschema:"description=The error that occurred,type=object"`
+	// Path of the config.yaml that could not be loaded
+	Path string `json:"path"`
+	// Err is the underlying error that occurred while loading
+	Err error `json:"error" jsonschema:"type=object"`
 }
 
 func (e ConfigLoaderError) Unwrap() error {
@@ -40,14 +43,20 @@ func (e ConfigLoaderError) Error() string {
 	return fmt.Sprintf("failed to load config from file %q: %s", e.Path, e.Err)
 }
 
+// DefinitionParserError contains details about errors when parsing a YAML definition of a config
 type DefinitionParserError struct {
-	Location coordinate.Coordinate `json:"location" jsonschema:"description=Coordinate of the configuration that could not be parsed"`
-	Path     string                `json:"path" jsonschema:"description=Filepath of the config.yaml that could not be parsed"`
-	Reason   string                `json:"reason" jsonschema:"description=The error that occurred,type=object"`
+	// Location (coordinate) of the configuration that could not be parsed
+	Location coordinate.Coordinate `json:"location"`
+	// Path of the config.yaml that could not be parsed
+	Path string `json:"path"`
+	// Reason describing why parsing failed
+	Reason string `json:"reason"`
 }
 
+// DetailedDefinitionParserError is a DefinitionParserError, enriched with information for which environment loading failed
 type DetailedDefinitionParserError struct {
 	DefinitionParserError
+	// EnvironmentDetails of the environment the parsing of a configuration failed for
 	EnvironmentDetails EnvironmentDetails `json:"environmentDetails"`
 }
 
@@ -63,8 +72,10 @@ func (e DefinitionParserError) Coordinates() coordinate.Coordinate {
 	return e.Location
 }
 
+// ParameterDefinitionParserError is a DetailedDefinitionParserError for a specific parameter that failed to laod
 type ParameterDefinitionParserError struct {
 	DetailedDefinitionParserError
+	// ParameterName of the YAML parameter that failed to be parsed
 	ParameterName string `json:"parameterName"`
 }
 

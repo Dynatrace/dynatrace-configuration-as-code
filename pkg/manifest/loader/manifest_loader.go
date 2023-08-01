@@ -74,8 +74,10 @@ type Options struct {
 }
 
 type ManifestLoaderError struct {
+	// ManifestPath is the path of the manifest file that failed to load
 	ManifestPath string `json:"manifestPath"`
-	Reason       string `json:"reason"`
+	// Reason describing what went wrong
+	Reason string `json:"reason"`
 }
 
 func (e ManifestLoaderError) Error() string {
@@ -96,6 +98,7 @@ type EnvironmentDetails struct {
 
 type EnvironmentLoaderError struct {
 	ManifestLoaderError
+	// EnvironmentDetails of the environment that failed to be loaded
 	EnvironmentDetails EnvironmentDetails `json:"environmentDetails"`
 }
 
@@ -115,6 +118,7 @@ func (e EnvironmentLoaderError) Error() string {
 
 type ProjectLoaderError struct {
 	ManifestLoaderError
+	// Project name that failed to be loaded
 	Project string `json:"project"`
 }
 

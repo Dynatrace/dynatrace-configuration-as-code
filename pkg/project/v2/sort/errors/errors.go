@@ -23,9 +23,11 @@ import (
 )
 
 type CircualDependencyProjectSortError struct {
+	// Environment is the name of the environment the project sorting failed for
 	Environment string `json:"environment"`
-	Project     string `json:"project"`
-	// slice of project ids
+	// Project is the name of the project that is part of a cycle
+	Project string `json:"project"`
+	// DependsOnProjects is a list of project IDs the Project depends on
 	DependsOnProjects []string `json:"dependsOnProjects"`
 }
 
@@ -35,9 +37,12 @@ func (e CircualDependencyProjectSortError) Error() string {
 }
 
 type CircularDependencyConfigSortError struct {
-	Location    coordinate.Coordinate   `json:"location"`
-	Environment string                  `json:"environment"`
-	DependsOn   []coordinate.Coordinate `json:"dependsOn"`
+	// Location (coordinate) of the config.Config which part of a cycle
+	Location coordinate.Coordinate `json:"location"`
+	// Environment is the name of the environment the project sorting failed for
+	Environment string `json:"environment"`
+	// DependsOn is a list of coordinates the configuration (Location) depends on
+	DependsOn []coordinate.Coordinate `json:"dependsOn"`
 }
 
 func (e CircularDependencyConfigSortError) Error() string {

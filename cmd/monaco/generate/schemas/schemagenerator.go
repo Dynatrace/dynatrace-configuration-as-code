@@ -86,7 +86,7 @@ func generateSchemaFiles(fs afero.Fs, outputfolder string) error {
 
 	err = account.GenerateJSONSchema(fs, outputfolder)
 	if err != nil {
-		return fmt.Errorf("failed to generate schema for Config YAML: %w", err)
+		return fmt.Errorf("failed to generate schema for Account YAML: %w", err)
 	}
 
 	errorsPath := filepath.Join(outputfolder, "errors")

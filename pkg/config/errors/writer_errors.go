@@ -25,9 +25,12 @@ var (
 	_ ConfigError = (*DetailedConfigWriterError)(nil)
 )
 
+// ConfigWriterError is an error that occurred while trying to write a config.Config to a file
 type ConfigWriterError struct {
+	// Path of the file that failed to be written
 	Path string `json:"path"`
-	Err  error  `json:"error"`
+	// Err is the underlying error that occurred
+	Err error `json:"error" jsonschema:"type=object"`
 }
 
 func (e ConfigWriterError) Unwrap() error {
@@ -38,10 +41,14 @@ func (e ConfigWriterError) Error() string {
 	return fmt.Sprintf("failed to write config to file %q: %s", e.Path, e.Err)
 }
 
+// DetailedConfigWriterError is an error that occurred while trying to write a config.Config to a file
 type DetailedConfigWriterError struct {
+	// Location (coordinate) of the config.Config that failed to be written to file
 	Location coordinate.Coordinate `json:"location"`
-	Path     string                `json:"path"`
-	Err      error                 `json:"error"`
+	// Path of the file that failed to be written
+	Path string `json:"path"`
+	// Err is the underlying error that occurred
+	Err error `json:"error" jsonschema:"type=object"`
 }
 
 func (e DetailedConfigWriterError) Unwrap() error {
