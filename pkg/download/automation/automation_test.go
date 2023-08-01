@@ -141,13 +141,14 @@ func Test_createTemplateFromRawJSON(t *testing.T) {
 		t    template.Template
 		name string
 	}
+
 	tests := []struct {
 		name  string
 		given automation.Response
 		want  want
 	}{
 		{
-			"sanitizes template as expected",
+			"sanitizes template as expected - extracts title as name",
 			automation.Response{
 				ID:   "42",
 				Data: []byte(`{ "id": "42", "title": "My Workflow", "lastExecution": { "some": "details" }, "important": "data" }`),
@@ -161,7 +162,7 @@ func Test_createTemplateFromRawJSON(t *testing.T) {
 			},
 		},
 		{
-			"defaults name to ID if title is not found",
+			"defaults template name to ID if title is not found - but returns no name",
 			automation.Response{
 				ID:   "42",
 				Data: []byte(`{ "id": "42", "workflow_name": "My Workflow", "important": "data" }`),
@@ -171,7 +172,6 @@ func Test_createTemplateFromRawJSON(t *testing.T) {
   "important": "data",
   "workflow_name": "My Workflow"
 }`),
-				name: "42",
 			},
 		},
 		{
@@ -181,8 +181,7 @@ func Test_createTemplateFromRawJSON(t *testing.T) {
 				Data: []byte(`{ "id": "42`),
 			},
 			want{
-				t:    template.NewDownloadTemplate("42", "42", `{ "id": "42`),
-				name: "42",
+				t: template.NewDownloadTemplate("42", "42", `{ "id": "42`),
 			},
 		},
 	}
@@ -190,7 +189,12 @@ func Test_createTemplateFromRawJSON(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			gotT, gotExtractedName := createTemplateFromRawJSON(tt.given, "DOES NOT MATTER FOR TEST", "SOME PROJECT")
 			assert.Equalf(t, tt.want.t, gotT, "createTemplateFromRawJSON(%v)", tt.given)
-			assert.Equalf(t, tt.want.name, gotExtractedName, "createTemplateFromRawJSON(%v)", tt.given)
+			if tt.want.name != "" {
+				assert.Equalf(t, tt.want.name, *gotExtractedName, "createTemplateFromRawJSON(%v)", tt.given)
+			} else {
+				assert.Nil(t, gotExtractedName, "expected no name to be extracted")
+			}
+
 		})
 	}
 }
