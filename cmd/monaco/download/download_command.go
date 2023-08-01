@@ -77,10 +77,10 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	cmd.Flags().StringVar(&f.clientSecret, "oauth-client-secret", "", "OAuth client secret environment variable. Required when using the flag '--url' and connecting to a Dynatrace Platform.")
 
 	// download options
-	cmd.Flags().StringSliceVarP(&f.specificAPIs, "api", "a", nil, "One or more APIs to download (flag can be repeated or value defined as comma separated list)")
-	cmd.Flags().StringSliceVarP(&f.specificSchemas, "settings-schema", "s", nil, "One or more settings 2.0 schemas to download (flag can be repeated or value defined as comma separated list)")
-	cmd.Flags().BoolVar(&f.onlyAPIs, "only-apis", false, "Only download config APIs, skip downloading settings 2.0 objects")
-	cmd.Flags().BoolVar(&f.onlySettings, "only-settings", false, "Only download settings 2.0 objects, skip downloading config APIs")
+	cmd.Flags().StringSliceVarP(&f.specificAPIs, "api", "a", nil, "Download one or more classic configuration APIs, including deprecated ones. (Repeat flag or use comma-separated values)")
+	cmd.Flags().StringSliceVarP(&f.specificSchemas, "settings-schema", "s", nil, "Download settings 2.0 objects of one or more settings 2.0 schemas. (Repeat flag or use comma-separated values)")
+	cmd.Flags().BoolVar(&f.onlyAPIs, "only-apis", false, "Download only classic configuration APIs. Deprecated configuration APIs will not be included.")
+	cmd.Flags().BoolVar(&f.onlySettings, "only-settings", false, "Download only settings 2.0 objects")
 
 	// combinations
 	cmd.MarkFlagsMutuallyExclusive("settings-schema", "only-apis", "only-settings")
