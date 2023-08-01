@@ -185,7 +185,6 @@ func (d *Downloader) convertAllObjects(objects []dtclient.DownloadSettingsObject
 				SchemaVersion: o.SchemaVersion,
 			},
 			Parameters: map[string]parameter.Parameter{
-				config.NameParameter:  &value.ValueParameter{Value: configId},
 				config.ScopeParameter: &value.ValueParameter{Value: o.Scope},
 			},
 			Skip:           false,
