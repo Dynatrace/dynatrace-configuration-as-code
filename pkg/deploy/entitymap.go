@@ -16,13 +16,37 @@ package deploy
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"sync"
 )
 
+// ResolvedEntities defines a map representing resolved configs. this includes the
+// api `ID` of a config.
+type ResolvedEntities map[coordinate.Coordinate]ResolvedEntity
+
+// TODO move to better package
+// ResolvedEntity struct representing an already deployed entity
+type ResolvedEntity struct {
+	// EntityName is the name returned by the Dynatrace api. In theory should be the
+	// same as the `name` property defined in the configuration, but
+	// can differ.
+	EntityName string
+
+	// coordinate of the config this entity represents
+	Coordinate coordinate.Coordinate
+
+	// Properties defines a map of all already resolved parameters
+	Properties parameter.Properties
+
+	// Skip flag indicating that this entity was skipped
+	// if a entity is skipped, there will be no properties
+	Skip bool
+}
+
 type entityMap struct {
 	lock             sync.RWMutex
-	resolvedEntities parameter.ResolvedEntities
+	resolvedEntities ResolvedEntities
 	knownEntityNames map[string]map[string]struct{}
 }
 
@@ -31,17 +55,16 @@ func newEntityMap(apis api.APIs) *entityMap {
 	for _, a := range apis {
 		knownEntityNames[a.ID] = make(map[string]struct{})
 	}
-	resolvedEntities := make(parameter.ResolvedEntities)
+	resolvedEntities := make(ResolvedEntities)
 	return &entityMap{
 		resolvedEntities: resolvedEntities,
 		knownEntityNames: knownEntityNames,
 	}
 }
 
-func (r *entityMap) put(resolvedEntity parameter.ResolvedEntity) {
+func (r *entityMap) put(resolvedEntity ResolvedEntity) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
-
 	// memorize resolved entity
 	r.resolvedEntities[resolvedEntity.Coordinate] = resolvedEntity
 
@@ -50,7 +73,6 @@ func (r *entityMap) put(resolvedEntity parameter.ResolvedEntity) {
 	if resolvedEntity.Skip || resolvedEntity.EntityName == "" {
 		return
 	}
-
 	// memorize the name of the resolved entity
 	if _, found := r.knownEntityNames[resolvedEntity.Coordinate.Type]; !found {
 		r.knownEntityNames[resolvedEntity.Coordinate.Type] = make(map[string]struct{})
@@ -58,18 +80,6 @@ func (r *entityMap) put(resolvedEntity parameter.ResolvedEntity) {
 	r.knownEntityNames[resolvedEntity.Coordinate.Type][resolvedEntity.EntityName] = struct{}{}
 }
 
-func (r *entityMap) get() parameter.ResolvedEntities {
-
-	r.lock.RLock()
-	defer r.lock.RUnlock()
-
-	entityCopy := make(parameter.ResolvedEntities, len(r.resolvedEntities))
-	for k, v := range r.resolvedEntities {
-		entityCopy[k] = v
-	}
-
-	return entityCopy
-}
 func (r *entityMap) contains(entityType string, entityName string) bool {
 
 	r.lock.RLock()
@@ -77,4 +87,25 @@ func (r *entityMap) contains(entityType string, entityName string) bool {
 
 	_, found := r.knownEntityNames[entityType][entityName]
 	return found
+}
+
+func (r *entityMap) Property(config coordinate.Coordinate, property string) (any, bool) {
+	r.lock.RLock()
+	defer r.lock.RUnlock()
+
+	if e, f := r.resolvedEntities[config]; f {
+		if p, f := e.Properties[property]; f {
+			return p, true
+		}
+	}
+
+	return nil, false
+}
+
+func (r *entityMap) entity(config coordinate.Coordinate) (ResolvedEntity, bool) {
+	r.lock.RLock()
+	defer r.lock.RUnlock()
+
+	v, f := r.resolvedEntities[config]
+	return v, f
 }

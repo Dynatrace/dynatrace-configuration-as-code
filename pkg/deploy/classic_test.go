@@ -53,7 +53,7 @@ func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
 		Skip:        false,
 	}
 	entityMap := newEntityMap(testApiMap)
-	entityMap.put(parameter.ResolvedEntity{EntityName: name, Coordinate: coordinate.Coordinate{Type: "dashboard"}})
+	entityMap.put(ResolvedEntity{EntityName: name, Coordinate: coordinate.Coordinate{Type: "dashboard"}})
 	_, errors := deployClassicConfig(context.TODO(), client, testApiMap, entityMap, nil, "", &conf)
 
 	assert.NotEmpty(t, errors)

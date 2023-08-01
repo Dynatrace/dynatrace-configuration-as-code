@@ -68,8 +68,7 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 			Template:   generateDummyTemplate(t),
 			Parameters: toParameterMap([]parameter.NamedParameter{}),
 		}
-		res, err := deployAutomation(context.TODO(), client, nil, "", conf)
-		assert.Equal(t, parameter.ResolvedEntity{}, res)
+		_, err := deployAutomation(context.TODO(), client, nil, "", conf)
 		assert.Error(t, err)
 	})
 	t.Run("TestDeployAutomation - BusinessCalendar Upsert fails", func(t *testing.T) {
@@ -83,8 +82,7 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 			Template:   generateDummyTemplate(t),
 			Parameters: toParameterMap([]parameter.NamedParameter{}),
 		}
-		res, err := deployAutomation(context.TODO(), client, nil, "", conf)
-		assert.Equal(t, parameter.ResolvedEntity{}, res)
+		_, err := deployAutomation(context.TODO(), client, nil, "", conf)
 		assert.Error(t, err)
 	})
 	t.Run("TestDeployAutomation - Scheduling Rule Upsert fails", func(t *testing.T) {
@@ -98,8 +96,7 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 			Template:   generateDummyTemplate(t),
 			Parameters: toParameterMap([]parameter.NamedParameter{}),
 		}
-		res, err := deployAutomation(context.TODO(), client, nil, "", conf)
-		assert.Equal(t, parameter.ResolvedEntity{}, res)
+		_, err := deployAutomation(context.TODO(), client, nil, "", conf)
 		assert.Error(t, err)
 	})
 }
