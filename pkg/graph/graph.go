@@ -254,6 +254,7 @@ func logDependency(depending, dependedOn coordinate.Coordinate) {
 	log.Debug("Configuration: %s has dependency on %s", depending, dependedOn)
 }
 
+// Roots returns all nodes that do not have incoming edges
 func Roots(g graph.Directed) []graph.Node {
 	var roots []graph.Node
 	nodes := g.Nodes()
