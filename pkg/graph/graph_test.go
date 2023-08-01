@@ -25,6 +25,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/stretchr/testify/assert"
+	graph2 "gonum.org/v1/gonum/graph"
+	"gonum.org/v1/gonum/graph/simple"
 	"testing"
 )
 
@@ -435,4 +437,99 @@ func TestGraphCycleErrors(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestRoots(t *testing.T) {
+	const (
+		n1 simple.Node = iota
+		n2
+		n3
+		n4
+		n5
+	)
+
+	tests := []struct {
+		name     string
+		setup    func() graph2.Directed
+		expected []graph2.Node
+	}{
+		{
+			name: "Empty {}",
+			setup: func() graph2.Directed {
+				return simple.NewDirectedGraph()
+			},
+			expected: []graph2.Node{},
+		},
+		{
+			name: "One node {1}",
+			setup: func() graph2.Directed {
+				g := simple.NewDirectedGraph()
+				g.AddNode(n1)
+				return g
+			},
+			expected: []graph2.Node{n1},
+		},
+		{
+			name: "Two independent nodes {1, 2}",
+			setup: func() graph2.Directed {
+				g := simple.NewDirectedGraph()
+				g.AddNode(n1)
+				g.AddNode(n2)
+				return g
+			},
+			expected: []graph2.Node{n1, n2},
+		},
+		{
+			name: "Two dependent nodes {1->2}",
+			setup: func() graph2.Directed {
+				g := simple.NewDirectedGraph()
+				g.SetEdge(g.NewEdge(n1, n2))
+				return g
+			},
+			expected: []graph2.Node{n1},
+		},
+		{
+			name: "Two cyclic nodes {1->2->1}",
+			setup: func() graph2.Directed {
+				g := simple.NewDirectedGraph()
+				g.SetEdge(g.NewEdge(n1, n2))
+				g.SetEdge(g.NewEdge(n2, n1))
+				return g
+			},
+			expected: []graph2.Node{},
+		},
+		{
+			name: "Five nodes, two independent components {1->2, 3->4->5}",
+			setup: func() graph2.Directed {
+				g := simple.NewDirectedGraph()
+				g.SetEdge(g.NewEdge(n1, n2))
+				g.SetEdge(g.NewEdge(n3, n4))
+				g.SetEdge(g.NewEdge(n4, n5))
+
+				return g
+			},
+			expected: []graph2.Node{n1, n3},
+		},
+		{
+			name: "3 roots, 2 shared children {1->2, 3->2, 3->4, 5->4}",
+			setup: func() graph2.Directed {
+				g := simple.NewDirectedGraph()
+				g.SetEdge(g.NewEdge(n1, n2))
+				g.SetEdge(g.NewEdge(n3, n2))
+				g.SetEdge(g.NewEdge(n3, n4))
+				g.SetEdge(g.NewEdge(n5, n4))
+
+				return g
+			},
+			expected: []graph2.Node{n1, n3, n5},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			g := test.setup()
+			r := graph.Roots(g)
+
+			assert.ElementsMatch(t, r, test.expected)
+		})
+	}
 }
