@@ -9,7 +9,7 @@ configs:
       parameters:
         metricName:
           type: compound
-          format: "{{.baseMetric}}_{{.testSuffix}}"
+          format: "{{.baseMetric}}{{.testSuffix}}"
           references:
             - baseMetric
             - testSuffix
@@ -39,7 +39,7 @@ configs:
       parameters:
         metricName:
           type: compound
-          format: "{{.baseMetric}}_{{.testSuffix}}"
+          format: "{{.baseMetric}}{{.testSuffix}}"
           references:
             - baseMetric
             - testSuffix
@@ -69,7 +69,7 @@ configs:
       parameters:
         metricName:
           type: compound
-          format: "{{.baseMetric}}_{{.testSuffix}}"
+          format: "{{.baseMetric}}{{.testSuffix}}"
           references:
             - baseMetric
             - testSuffix
@@ -99,7 +99,7 @@ configs:
       parameters:
         metricName:
           type: compound
-          format: "{{.baseMetric}}_{{.testSuffix}}"
+          format: "{{.baseMetric}}{{.testSuffix}}"
           references:
             - baseMetric
             - testSuffix
@@ -129,7 +129,7 @@ configs:
       parameters:
         metricName:
           type: compound
-          format: "{{.baseMetric}}_{{.testSuffix}}"
+          format: "{{.baseMetric}}{{.testSuffix}}"
           references:
             - baseMetric
             - testSuffix
@@ -159,7 +159,7 @@ configs:
       parameters:
         metricName:
           type: compound
-          format: "{{.baseMetric}}_{{.testSuffix}}"
+          format: "{{.baseMetric}}{{.testSuffix}}"
           references:
             - baseMetric
             - testSuffix
@@ -189,7 +189,7 @@ configs:
       parameters:
         metricName:
           type: compound
-          format: "{{.baseMetric}}_{{.testSuffix}}"
+          format: "{{.baseMetric}}{{.testSuffix}}"
           references:
             - baseMetric
             - testSuffix
@@ -219,7 +219,7 @@ configs:
       parameters:
         metricName:
           type: compound
-          format: "{{.baseMetric}}_{{.testSuffix}}"
+          format: "{{.baseMetric}}{{.testSuffix}}"
           references:
             - baseMetric
             - testSuffix
@@ -249,7 +249,7 @@ configs:
       parameters:
         metricName:
           type: compound
-          format: "{{.baseMetric}}_{{.testSuffix}}"
+          format: "{{.baseMetric}}{{.testSuffix}}"
           references:
             - baseMetric
             - testSuffix
@@ -279,7 +279,7 @@ configs:
       parameters:
         metricName:
           type: compound
-          format: "{{.baseMetric}}_{{.testSuffix}}"
+          format: "{{.baseMetric}}{{.testSuffix}}"
           references:
             - baseMetric
             - testSuffix
@@ -309,7 +309,7 @@ configs:
       parameters:
         metricName:
           type: compound
-          format: "{{.baseMetric}}_{{.testSuffix}}"
+          format: "{{.baseMetric}}{{.testSuffix}}"
           references:
             - baseMetric
             - testSuffix
@@ -339,7 +339,7 @@ configs:
       parameters:
         metricName:
           type: compound
-          format: "{{.baseMetric}}_{{.testSuffix}}"
+          format: "{{.baseMetric}}{{.testSuffix}}"
           references:
             - baseMetric
             - testSuffix
