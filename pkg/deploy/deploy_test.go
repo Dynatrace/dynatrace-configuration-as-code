@@ -137,7 +137,7 @@ func TestDeploySetting(t *testing.T) {
 	tests := []struct {
 		name    string
 		given   given
-		want    parameter.ResolvedEntity
+		want    ResolvedEntity
 		wantErr bool
 	}{
 		{
@@ -168,7 +168,7 @@ func TestDeploySetting(t *testing.T) {
 				},
 				returnedEntityID: "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0",
 			},
-			want: parameter.ResolvedEntity{
+			want: ResolvedEntity{
 				EntityName: "My Setting",
 				Coordinate: coordinate.Coordinate{
 					Project:  "project",
@@ -211,7 +211,7 @@ func TestDeploySetting(t *testing.T) {
 				},
 				returnedEntityID: "vu9U3hXa3q0AAAABABhidWlsdGluOm1hbmFnZW1lbnQtem9uZXMABnRlbmFudAAGdGVuYW50ACRjNDZlNDZiMy02ZDk2LTMyYTctOGI1Yi1mNjExNzcyZDAxNjW-71TeFdrerQ",
 			},
-			want: parameter.ResolvedEntity{
+			want: ResolvedEntity{
 				EntityName: "My Setting",
 				Coordinate: coordinate.Coordinate{
 					Project:  "project",
@@ -254,7 +254,7 @@ func TestDeploySetting(t *testing.T) {
 				},
 				returnedEntityID: "INVALID OBJECT ID",
 			},
-			want:    parameter.ResolvedEntity{},
+			want:    ResolvedEntity{},
 			wantErr: true,
 		},
 	}

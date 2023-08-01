@@ -18,6 +18,7 @@ package deploy
 
 import (
 	"errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
@@ -64,7 +65,7 @@ func TestResolveParameterValues(t *testing.T) {
 		Skip:        false,
 	}
 
-	entities := map[coordinate.Coordinate]parameter.ResolvedEntity{}
+	entities := newEntityMap(api.NewAPIs())
 
 	values, errors := ResolveParameterValues(&conf, entities, parameters)
 
@@ -106,7 +107,7 @@ func TestResolveParameterValuesShouldFailWhenReferencingNonExistingConfig(t *tes
 		Skip:        false,
 	}
 
-	entities := map[coordinate.Coordinate]parameter.ResolvedEntity{}
+	entities := newEntityMap(api.NewAPIs())
 
 	_, errors := ResolveParameterValues(&conf, entities, parameters)
 
@@ -146,12 +147,14 @@ func TestResolveParameterValuesShouldFailWhenReferencingSkippedConfig(t *testing
 		Skip:        false,
 	}
 
-	entities := map[coordinate.Coordinate]parameter.ResolvedEntity{
-		referenceCoordinate: {
-			EntityName: "zone1",
-			Coordinate: referenceCoordinate,
-			Properties: parameter.Properties{},
-			Skip:       true,
+	entities := &entityMap{
+		resolvedEntities: map[coordinate.Coordinate]ResolvedEntity{
+			referenceCoordinate: {
+				EntityName: "zone1",
+				Coordinate: referenceCoordinate,
+				Properties: parameter.Properties{},
+				Skip:       true,
+			},
 		},
 	}
 
@@ -182,7 +185,7 @@ func TestResolveParameterValuesShouldFailWhenParameterResolveReturnsError(t *tes
 		Skip:        false,
 	}
 
-	entities := map[coordinate.Coordinate]parameter.ResolvedEntity{}
+	entities := newEntityMap(api.NewAPIs())
 
 	_, errors := ResolveParameterValues(&conf, entities, parameters)
 
@@ -216,14 +219,16 @@ func TestValidateParameterReferences(t *testing.T) {
 		},
 	}
 
-	entities := map[coordinate.Coordinate]parameter.ResolvedEntity{
-		referencedConfigCoordinates: {
-			EntityName: "zone1",
-			Coordinate: referencedConfigCoordinates,
-			Properties: parameter.Properties{
-				"name": "test",
+	entities := &entityMap{
+		resolvedEntities: map[coordinate.Coordinate]ResolvedEntity{
+			referencedConfigCoordinates: {
+				EntityName: "zone1",
+				Coordinate: referencedConfigCoordinates,
+				Properties: parameter.Properties{
+					"name": "test",
+				},
+				Skip: false,
 			},
-			Skip: false,
 		},
 	}
 
@@ -251,7 +256,7 @@ func TestValidateParameterReferencesShouldFailWhenReferencingSelf(t *testing.T) 
 		},
 	}
 
-	entities := map[coordinate.Coordinate]parameter.ResolvedEntity{}
+	entities := newEntityMap(api.NewAPIs())
 
 	errors := validateParameterReferences(configCoordinates, "", "", entities, paramName, param)
 
@@ -281,12 +286,14 @@ func TestValidateParameterReferencesShouldFailWhenReferencingSkippedConfig(t *te
 		},
 	}
 
-	entities := map[coordinate.Coordinate]parameter.ResolvedEntity{
-		referencedConfigCoordinates: {
-			EntityName: "zone1",
-			Coordinate: referencedConfigCoordinates,
-			Properties: parameter.Properties{},
-			Skip:       true,
+	entities := &entityMap{
+		resolvedEntities: map[coordinate.Coordinate]ResolvedEntity{
+			referencedConfigCoordinates: {
+				EntityName: "zone1",
+				Coordinate: referencedConfigCoordinates,
+				Properties: parameter.Properties{},
+				Skip:       true,
+			},
 		},
 	}
 
@@ -318,7 +325,7 @@ func TestValidateParameterReferencesShouldFailWhenReferencingUnknownConfig(t *te
 		},
 	}
 
-	entities := map[coordinate.Coordinate]parameter.ResolvedEntity{}
+	entities := newEntityMap(api.NewAPIs())
 
 	errors := validateParameterReferences(configCoordinates, "", "", entities, "managementZoneName", param)
 

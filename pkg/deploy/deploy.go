@@ -318,7 +318,7 @@ func deployComponent(ctx context.Context, component graph.SortedComponent, clien
 }
 
 // deployFunc kinda just is a smarter deploy... TODO refactor!
-func deployFunc(ctx context.Context, c *config.Config, clientSet ClientSet, apis api.APIs, entityMap *entityMap) (*parameter.ResolvedEntity, error) {
+func deployFunc(ctx context.Context, c *config.Config, clientSet ClientSet, apis api.APIs, entityMap *entityMap) (*ResolvedEntity, error) {
 	if c.Skip {
 		log.WithCtxFields(ctx).Info("Skipping deployment of config %s", c.Coordinate)
 		return nil, skipError //fake resolved entity that "old" deploy creates is never needed, as we don't even try to deploy dependencies of skipped configs (so no reference will ever be attempted to resolve)
@@ -333,24 +333,24 @@ func deployFunc(ctx context.Context, c *config.Config, clientSet ClientSet, apis
 	return entity, nil
 }
 
-func deploy(ctx context.Context, clientSet ClientSet, apis api.APIs, em *entityMap, c *config.Config) (*parameter.ResolvedEntity, []error) {
+func deploy(ctx context.Context, clientSet ClientSet, apis api.APIs, em *entityMap, c *config.Config) (*ResolvedEntity, []error) {
 	if c.Skip {
 		log.WithCtxFields(ctx).Info("Skipping deployment of config %s", c.Coordinate)
-		return &parameter.ResolvedEntity{EntityName: c.Coordinate.ConfigId, Coordinate: c.Coordinate, Properties: parameter.Properties{}, Skip: true}, nil
+		return &ResolvedEntity{EntityName: c.Coordinate.ConfigId, Coordinate: c.Coordinate, Properties: parameter.Properties{}, Skip: true}, nil
 	}
 
-	properties, errs := resolveProperties(c, em.get())
+	properties, errs := resolveProperties(c, em)
 	if len(errs) > 0 {
-		return &parameter.ResolvedEntity{}, errs
+		return &ResolvedEntity{}, errs
 	}
 
 	renderedConfig, err := c.Render(properties)
 	if err != nil {
-		return &parameter.ResolvedEntity{}, []error{err}
+		return &ResolvedEntity{}, []error{err}
 	}
 
 	log.WithCtxFields(ctx).Info("Deploying config")
-	var res *parameter.ResolvedEntity
+	var res *ResolvedEntity
 	var deployErr error
 	switch c.Type.(type) {
 	case config.SettingsType:

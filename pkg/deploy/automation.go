@@ -38,10 +38,10 @@ func (c *dummyAutomationClient) Upsert(_ context.Context, _ automation.ResourceT
 	return &automation.Response{ID: id}, nil
 }
 
-func deployAutomation(ctx context.Context, client automationClient, properties parameter.Properties, renderedConfig string, c *config.Config) (*parameter.ResolvedEntity, error) {
+func deployAutomation(ctx context.Context, client automationClient, properties parameter.Properties, renderedConfig string, c *config.Config) (*ResolvedEntity, error) {
 	t, ok := c.Type.(config.AutomationType)
 	if !ok {
-		return &parameter.ResolvedEntity{}, newConfigDeployErr(c, fmt.Sprintf("config was not of expected type %q, but %q", config.AutomationType{}.ID(), c.Type.ID()))
+		return &ResolvedEntity{}, newConfigDeployErr(c, fmt.Sprintf("config was not of expected type %q, but %q", config.AutomationType{}.ID(), c.Type.ID()))
 	}
 
 	var id string
@@ -71,7 +71,7 @@ func deployAutomation(ctx context.Context, client automationClient, properties p
 	}
 
 	properties[config.IdParameter] = resp.ID
-	resolved := parameter.ResolvedEntity{
+	resolved := ResolvedEntity{
 		EntityName: name,
 		Coordinate: c.Coordinate,
 		Properties: properties,
