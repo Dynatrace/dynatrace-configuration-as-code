@@ -89,7 +89,12 @@ func (d *Downloader) Download(projectName string, automationTypes ...config.Auto
 				obj.Data = escaped
 			}
 
-			t, configName := createTemplateFromRawJSON(obj, string(at.Resource), projectName)
+			t, extractedName := createTemplateFromRawJSON(obj, string(at.Resource), projectName)
+
+			params := map[string]parameter.Parameter{}
+			if extractedName != nil {
+				params[config.NameParameter] = &value.ValueParameter{Value: extractedName}
+			}
 
 			c := config.Config{
 				Template: t,
@@ -101,9 +106,7 @@ func (d *Downloader) Download(projectName string, automationTypes ...config.Auto
 				Type: config.AutomationType{
 					Resource: at.Resource,
 				},
-				Parameters: map[string]parameter.Parameter{
-					config.NameParameter: &value.ValueParameter{Value: configName},
-				},
+				Parameters:     params,
 				OriginObjectId: obj.ID,
 			}
 			configs = append(configs, c)
@@ -122,14 +125,14 @@ func escapeJinjaTemplates(src []byte) ([]byte, error) {
 type NoopAutomationDownloader struct {
 }
 
-func createTemplateFromRawJSON(obj client.Response, configType, projectName string) (t template.Template, extractedName string) {
+func createTemplateFromRawJSON(obj client.Response, configType, projectName string) (t template.Template, extractedName *string) {
 	configId := obj.ID
 
 	var data map[string]interface{}
 	err := json.Unmarshal(obj.Data, &data)
 	if err != nil {
 		log.WithFields(field.Coordinate(coordinate.Coordinate{Project: projectName, Type: configType, ConfigId: configId}), field.Error(err)).Warn("Failed to sanitize downloaded JSON for config %v (%s) - template may need manual cleanup: %v", configId, configType, err)
-		return template.NewDownloadTemplate(configId, configId, string(obj.Data)), configId
+		return template.NewDownloadTemplate(configId, configId, string(obj.Data)), nil
 	}
 
 	// remove properties not necessary for upload
@@ -141,6 +144,8 @@ func createTemplateFromRawJSON(obj client.Response, configType, projectName stri
 	configName := configId
 	if title, ok := data["title"]; ok {
 		configName = fmt.Sprintf("%v", title)
+		extractedName = &configName
+
 		data["title"] = "{{.name}}"
 	}
 
@@ -154,7 +159,7 @@ func createTemplateFromRawJSON(obj client.Response, configType, projectName stri
 	content = jsonutils.MarshalIndent(content)
 
 	t = template.NewDownloadTemplate(configId, configName, string(content))
-	return t, configName
+	return t, extractedName
 }
 
 func (d NoopAutomationDownloader) Download(_ string, _ ...config.AutomationType) (v2.ConfigsPerType, error) {
