@@ -61,8 +61,10 @@ type configConvertContext struct {
 }
 
 type ConvertConfigError struct {
+	// Location (coordinate) of the config.Config that failed to be converted
 	Location coordinate.Coordinate `json:"location"`
-	Reason   string                `json:"reason"`
+	// Reason describing what went wrong
+	Reason string `json:"reason"`
 }
 
 func newConvertConfigError(coord coordinate.Coordinate, reason string) ConvertConfigError {
@@ -81,9 +83,12 @@ func (e ConvertConfigError) Error() string {
 }
 
 type ReferenceParseError struct {
-	Location      coordinate.Coordinate `json:"location"`
-	ParameterName string                `json:"parameterName"`
-	Reason        string                `json:"reason"`
+	// Location (coordinate) of the config.Config in which a reference failed to be parsed
+	Location coordinate.Coordinate `json:"location"`
+	// ParameterName is the name of the reference parameter that failed to be parsed
+	ParameterName string `json:"parameterName"`
+	// Reason describing what went wrong
+	Reason string `json:"reason"`
 }
 
 func newReferenceParserError(projectId string, config *projectV1.Config, parameterName string, reason string) ReferenceParseError {
@@ -279,8 +284,10 @@ func convertConfig(context *configConvertContext, environment manifest.Environme
 }
 
 type TemplateConversionError struct {
+	// TemplatePath is the path to the template JSON file that failed to be converted
 	TemplatePath string `json:"templatePath"`
-	Reason       string `json:"reason"`
+	// Reason describing what went wrong
+	Reason string `json:"reason"`
 }
 
 func newTemplateConversionError(templatePath string, reason string) TemplateConversionError {

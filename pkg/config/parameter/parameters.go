@@ -91,8 +91,9 @@ type ParameterParserContext struct {
 }
 
 type ParameterParserError struct {
-	// Location of the config the error happened in
-	Location           coordinate.Coordinate     `json:"location"`
+	// Location (coordinate) of the config the error happened in
+	Location coordinate.Coordinate `json:"location"`
+	// EnvironmentDetails of the environment the parsing of the parameter failed for
 	EnvironmentDetails errors.EnvironmentDetails `json:"environmentDetails"`
 	// ParameterName holds the name of the parameter triggering the error
 	ParameterName string `json:"parameterName"`
@@ -123,8 +124,9 @@ func NewParameterParserError(context ParameterParserContext, reason string) erro
 }
 
 type ParameterWriterError struct {
-	// config the error happened in
-	Location           coordinate.Coordinate     `json:"location"`
+	// Location (coordinate) of the config the error happened in
+	Location coordinate.Coordinate `json:"location"`
+	// EnvironmentDetails of the environment the parsing of the parameter failed for
 	EnvironmentDetails errors.EnvironmentDetails `json:"environmentDetails"`
 	// name of the parameter triggering the error
 	ParameterName string `json:"parameterName"`
@@ -157,10 +159,14 @@ func NewParameterWriterError(context ParameterWriterContext, reason string) erro
 // ParameterResolveValueError is used to indicate that an error occurred during the resolving
 // phase of a parameter.
 type ParameterResolveValueError struct {
-	Location           coordinate.Coordinate     `json:"location"`
+	// Location (coordinate) of the config.Config in which a parameter failed to be resolved
+	Location coordinate.Coordinate `json:"location"`
+	// EnvironmentDetails of the environment the resolving failed for
 	EnvironmentDetails errors.EnvironmentDetails `json:"environmentDetails"`
-	ParameterName      string                    `json:"parameterName"`
-	Reason             string                    `json:"reason"`
+	// ParameterName is the name of the parameter that failed to be resolved
+	ParameterName string `json:"parameterName"`
+	// Reason describing what went wrong
+	Reason string `json:"reason"`
 }
 
 func (p ParameterResolveValueError) Coordinates() coordinate.Coordinate {

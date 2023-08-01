@@ -38,8 +38,11 @@ type ProjectLoaderContext struct {
 	ParametersSerde map[string]parameter.ParameterSerDe
 }
 
+// DuplicateConfigIdentifierError occurs if configuration IDs are found more than once
 type DuplicateConfigIdentifierError struct {
-	Location           coordinate.Coordinate           `json:"location"`
+	// Location (coordinate) of the config.Config in whose ID overlaps with an existign one
+	Location coordinate.Coordinate `json:"location"`
+	// EnvironmentDetails of the environment for which the duplicate was loaded
 	EnvironmentDetails configErrors.EnvironmentDetails `json:"environmentDetails"`
 }
 

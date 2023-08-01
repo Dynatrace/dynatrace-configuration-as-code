@@ -21,17 +21,25 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 )
 
+// RespError represents a HTTP response error
 type RespError struct {
-	Reason     string       `json:"reason"`
-	StatusCode int          `json:"statusCode"`
-	Body       string       `json:"body"`
-	Err        error        `json:"error"`
-	Request    *RequestInfo `json:"request"`
+	// Reason describing what went wrong
+	Reason string `json:"reason"`
+	// StatusCode is the HTTP status code
+	StatusCode int `json:"statusCode"`
+	// Body of the HTTP response
+	Body string `json:"body"`
+	// Err is the underlying error that occurred - maybe be empty
+	Err error `json:"error"`
+	// Request contains information about the HTTP request that caused the RespError
+	Request *RequestInfo `json:"request"`
 }
 
 type RequestInfo struct {
+	// HTTP Method of the request
 	Method string `json:"method"`
-	URL    string `json:"url"`
+	// URL that was called
+	URL string `json:"url"`
 }
 
 func NewRespErr(reason string, resp Response) RespError {

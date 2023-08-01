@@ -26,20 +26,24 @@ import (
 const BucketType = "bucket"
 
 type TypeDefinition struct {
-	Api        string               `yaml:"api,omitempty"`
-	Bucket     string               `yaml:"bucket,omitempty"`
-	Settings   SettingsDefinition   `yaml:"settings,omitempty"`
-	Automation AutomationDefinition `yaml:"automation,omitempty"`
+	Api        string               `yaml:"api,omitempty" json:"api,omitempty"`
+	Bucket     string               `yaml:"bucket,omitempty" json:"bucket,omitempty"`
+	Settings   SettingsDefinition   `yaml:"settings,omitempty" json:"settings,omitempty"`
+	Automation AutomationDefinition `yaml:"automation,omitempty" json:"automation,omitempty"`
 }
 
 type SettingsDefinition struct {
-	Schema        string          `yaml:"schema,omitempty"`
-	SchemaVersion string          `yaml:"schemaVersion,omitempty"`
-	Scope         ConfigParameter `yaml:"scope,omitempty"`
+	// Schema defines the Settings 2.0 schema of this config
+	Schema string `yaml:"schema,omitempty" json:"schema,omitempty" jsonschema:"required"`
+	// SchemaVersion optionally informs the Settings API that a specific schema version was used for this config
+	SchemaVersion string `yaml:"schemaVersion,omitempty" json:"schemaVersion,omitempty"`
+	// Scope defines the scope in which this Setting applies
+	Scope ConfigParameter `yaml:"scope,omitempty" json:"scope,omitempty"  jsonschema:"required"`
 }
 
 type AutomationDefinition struct {
-	Resource config.AutomationResource `yaml:"resource"`
+	// Resource defines which automation resource this config is for
+	Resource config.AutomationResource `yaml:"resource" json:"resource" jsonschema:"required,enum=workflow,enum=business-calendar,enum=scheduling-rule"`
 }
 
 // UnmarshalYAML Custom unmarshaler that knows how to handle TypeDefinition.
