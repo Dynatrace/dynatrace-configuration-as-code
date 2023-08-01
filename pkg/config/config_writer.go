@@ -664,8 +664,7 @@ func parseNameParameter(context *detailedSerializerContext, config Config) (conf
 	nameParam, found := config.Parameters[NameParameter]
 
 	if !found {
-		return nil, fmtDetailedConfigWriterError(context.serializerContext, "%s: `name` parameter missing",
-			config.Coordinate)
+		return nil, nil // not having a name is fine for some API types
 	}
 
 	return toParameterDefinition(context, NameParameter, nameParam)
