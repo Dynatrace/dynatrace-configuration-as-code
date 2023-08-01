@@ -25,6 +25,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
+	"github.com/stretchr/testify/assert"
+
 	"testing"
 	"time"
 
@@ -39,7 +41,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
 )
 
 // AssertAllConfigsAvailability checks all configurations of a given project with given availability
@@ -111,7 +112,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 			properties[config.IdParameter] = "NO REAL ID NEEDED FOR CHECKING AVAILABILITY"
 
 			configName, err := extractConfigName(properties)
-			assert.NilError(t, err)
+			assert.NoError(t, err)
 
 			entities[coord] = parameter.ResolvedEntity{
 				EntityName: configName,
@@ -126,6 +127,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 				case config.SettingsType:
 					assertSetting(t, ctx, clients.Settings(), typ, env, available, theConfig)
 				case config.ClassicApiType:
+					assert.NotEmpty(t, configName, "classic API config %v is missing name, can not assert if it exists", theConfig.Coordinate)
 					assertConfig(t, ctx, clients.Classic(), apis[typ.Api], env, available, theConfig, configName)
 				case config.AutomationType:
 					if clients.Automation() == nil {
@@ -149,7 +151,7 @@ func assertConfig(t *testing.T, ctx context.Context, client dtclient.ConfigClien
 
 	if config.Skip {
 		exists, _, _ = client.ConfigExistsByName(ctx, theApi, name)
-		assert.Check(t, !exists, "Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, name, configType)
+		assert.False(t, exists, "Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, name, configType)
 		return
 	}
 
@@ -160,12 +162,12 @@ func assertConfig(t *testing.T, ctx context.Context, client dtclient.ConfigClien
 		exists, _, _ = client.ConfigExistsByName(ctx, theApi, name)
 		return (shouldBeAvailable && exists) || (!shouldBeAvailable && !exists)
 	})
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	if shouldBeAvailable {
-		assert.Check(t, exists, "Object should be available, but wasn't. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, name, configType)
+		assert.True(t, exists, "Object should be available, but wasn't. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, name, configType)
 	} else {
-		assert.Check(t, !exists, "Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, name, configType)
+		assert.False(t, exists, "Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, name, configType)
 	}
 }
 
@@ -177,7 +179,7 @@ func assertSetting(t *testing.T, ctx context.Context, c dtclient.SettingsClient,
 	}
 
 	objects, err := c.ListSettings(ctx, typ.SchemaId, dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(o dtclient.DownloadSettingsObject) bool { return o.ExternalId == expectedExtId }})
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	if len(objects) > 1 {
 		t.Errorf("Expected a specific Settings Object with externalId %q, but %d are present instead.", expectedExtId, len(objects))
@@ -187,20 +189,20 @@ func assertSetting(t *testing.T, ctx context.Context, c dtclient.SettingsClient,
 	exists := len(objects) == 1
 
 	if config.Skip {
-		assert.Check(t, !exists, "Skipped Settings Object should NOT be available but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, config.Coordinate, typ.SchemaId)
+		assert.False(t, exists, "Skipped Settings Object should NOT be available but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, config.Coordinate, typ.SchemaId)
 		return
 	}
 
 	if shouldBeAvailable {
-		assert.Check(t, exists, "Settings Object should be available, but wasn't. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, config.Coordinate, typ.SchemaId)
+		assert.True(t, exists, "Settings Object should be available, but wasn't. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, config.Coordinate, typ.SchemaId)
 	} else {
-		assert.Check(t, !exists, "Settings Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, config.Coordinate, typ.SchemaId)
+		assert.False(t, exists, "Settings Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, config.Coordinate, typ.SchemaId)
 	}
 }
 
 func assertAutomation(t *testing.T, c automation.Client, env manifest.EnvironmentDefinition, shouldBeAvailable bool, resource config.AutomationResource, cfg config.Config) {
 	resourceType, err := automationutils.ClientResourceTypeFromConfigType(resource)
-	assert.NilError(t, err, "failed to get resource type for: %s", cfg.Coordinate)
+	assert.NoError(t, err, "failed to get resource type for: %s", cfg.Coordinate)
 
 	var expectedId string
 	if cfg.OriginObjectId != "" {
@@ -210,7 +212,7 @@ func assertAutomation(t *testing.T, c automation.Client, env manifest.Environmen
 	}
 
 	resp, err := c.List(context.TODO(), resourceType)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	var exists bool
 	for _, r := range resp {
@@ -221,14 +223,14 @@ func assertAutomation(t *testing.T, c automation.Client, env manifest.Environmen
 	}
 
 	if cfg.Skip {
-		assert.Check(t, !exists, "Skipped Automation Object should NOT be available but was. environment.Environment: '%s', failed for '%s' (%s)", env.Name, cfg.Coordinate, resource)
+		assert.False(t, exists, "Skipped Automation Object should NOT be available but was. environment.Environment: '%s', failed for '%s' (%s)", env.Name, cfg.Coordinate, resource)
 		return
 	}
 
 	if shouldBeAvailable {
-		assert.Check(t, exists, "Automation Object should be available, but wasn't. environment.Environment: '%s', failed for '%s' (%s)", env.Name, cfg.Coordinate, resource)
+		assert.True(t, exists, "Automation Object should be available, but wasn't. environment.Environment: '%s', failed for '%s' (%s)", env.Name, cfg.Coordinate, resource)
 	} else {
-		assert.Check(t, !exists, "Automation Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", env.Name, cfg.Coordinate, resource)
+		assert.False(t, exists, "Automation Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", env.Name, cfg.Coordinate, resource)
 	}
 }
 
@@ -251,7 +253,7 @@ func extractConfigName(properties parameter.Properties) (string, error) {
 	val, found := properties[config.NameParameter]
 
 	if !found {
-		return "", fmt.Errorf("missing `name` for config")
+		return "", nil
 	}
 
 	name, success := val.(string)
