@@ -825,6 +825,84 @@ configs:
 				},
 			},
 		},
+		{
+			name:             "reports error if config API is missing name",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    template: 'profile.json'
+  type: some-api
+`,
+			wantErrorsContain: []string{"missing parameter `name`"},
+		},
+		{
+			name:             "Settings do not require a name",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    template: 'profile.json'
+  type:
+    settings:
+      schema: 'builtin:profile.test'
+      scope: 'environment'
+`,
+			wantConfigs: []Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "builtin:profile.test",
+						ConfigId: "profile-id",
+					},
+					Type: SettingsType{
+						SchemaId: "builtin:profile.test",
+					},
+					Template: template.CreateTemplateFromString("profile.json", "{}"),
+					Parameters: Parameters{
+						ScopeParameter: &value.ValueParameter{Value: "environment"},
+					},
+					Skip:        false,
+					Environment: "env name",
+					Group:       "default",
+				},
+			},
+		},
+		{
+			name:             "Automations do not require a name",
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    template: 'profile.json'
+  type:
+    automation:
+      resource: workflow
+`,
+			wantConfigs: []Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "workflow",
+						ConfigId: "profile-id",
+					},
+					Type: AutomationType{
+						Resource: Workflow,
+					},
+					Template:    template.CreateTemplateFromString("profile.json", "{}"),
+					Parameters:  Parameters{},
+					Skip:        false,
+					Environment: "env name",
+					Group:       "default",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -847,7 +925,7 @@ configs:
 				return
 			}
 			assert.Empty(t, gotErrors, "expected no errors but got: %v", gotErrors)
-			assert.Equal(t, gotConfigs, tt.wantConfigs)
+			assert.Equal(t, tt.wantConfigs, gotConfigs)
 		})
 	}
 }

@@ -311,6 +311,11 @@ func getConfigFromDefinition(
 		}
 	}
 
+	t, err := getType(configType)
+	if err != nil {
+		return Config{}, []error{fmt.Errorf("failed to parse type of config %q: %w", configId, err)}
+	}
+
 	if definition.Name != nil {
 		name, err := parseParameter(context, environment, configId, NameParameter, definition.Name)
 		if err != nil {
@@ -319,7 +324,7 @@ func getConfigFromDefinition(
 			parameters[NameParameter] = name
 		}
 
-	} else {
+	} else if t.ID() == ClassicApiTypeId {
 		errors = append(errors, newDetailedDefinitionParserError(configId, context, environment, "missing parameter `name`"))
 	}
 
@@ -338,11 +343,6 @@ func getConfigFromDefinition(
 		}
 
 		parameters[ScopeParameter] = scopeParam
-	}
-
-	t, err := getType(configType)
-	if err != nil {
-		return Config{}, []error{fmt.Errorf("failed to parse type of config %q: %w", configId, err)}
 	}
 
 	return Config{
