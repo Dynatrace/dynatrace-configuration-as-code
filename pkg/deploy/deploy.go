@@ -226,9 +226,12 @@ func (c *componentDeployer) deploy(ctx context.Context) []error {
 		roots := graph.Roots(c.graph)
 
 		for _, root := range roots {
-			go func(node graph2.Node) {
+			node := root.(graph.ConfigNode)
+			ctx := context.WithValue(ctx, log.CtxKeyCoord{}, node.Config.Coordinate)
+
+			go func(ctx context.Context, node graph.ConfigNode) {
 				errChan <- c.deployNode(ctx, node)
-			}(root)
+			}(ctx, node)
 		}
 
 		for range roots {
@@ -249,11 +252,8 @@ func (c *componentDeployer) deploy(ctx context.Context) []error {
 	return errs
 }
 
-func (c *componentDeployer) deployNode(ctx context.Context, n graph2.Node) error {
-	cnf := n.(graph.ConfigNode).Config
-
-	ctx = context.WithValue(ctx, log.CtxKeyCoord{}, cnf.Coordinate)
-	entity, err := deployFunc(ctx, cnf, c.clients, c.apis, &c.resolvedEntities)
+func (c *componentDeployer) deployNode(ctx context.Context, n graph.ConfigNode) error {
+	entity, err := deployFunc(ctx, n.Config, c.clients, c.apis, &c.resolvedEntities)
 
 	// lock changes we will make to shared variables. Writing them is trivial compared to any http request
 	c.lock.Lock()
@@ -274,28 +274,25 @@ func (c *componentDeployer) deployNode(ctx context.Context, n graph2.Node) error
 	return nil
 }
 
-func (c *componentDeployer) removeChildren(ctx context.Context, parent, root graph2.Node, failed bool) {
-
-	parentCnf := parent.(graph.ConfigNode).Config
-	rootCnf := parent.(graph.ConfigNode).Config
+func (c *componentDeployer) removeChildren(ctx context.Context, parent, root graph.ConfigNode, failed bool) {
 
 	children := c.graph.From(parent.ID())
 	for children.Next() {
-		child := children.Node()
+		child := children.Node().(graph.ConfigNode)
 
 		reason := "was skipped"
 		if failed {
 			reason = "failed to deploy"
 		}
-		childCnf := child.(graph.ConfigNode).Config
+		childCnf := child.Config
 
 		// after the first iteration
 		if parent != root {
-			log.WithCtxFields(ctx).WithFields(field.F("parent", parentCnf.Coordinate), field.F("deploymentFailed", failed), field.F("root", rootCnf.Coordinate)).
-				Warn("Skipping deployment of %v, as it depends on %v which was not deployed after root dependency configuration %v %s", childCnf.Coordinate, parentCnf.Coordinate, rootCnf.Coordinate, reason)
+			log.WithCtxFields(ctx).WithFields(field.F("parent", parent.Config.Coordinate), field.F("deploymentFailed", failed), field.F("root", root.Config.Coordinate)).
+				Warn("Skipping deployment of %v, as it depends on %v which was not deployed after root dependency configuration %v %s", childCnf.Coordinate, parent.Config.Coordinate, root.Config.Coordinate, reason)
 		} else {
-			log.WithCtxFields(ctx).WithFields(field.F("parent", parentCnf.Coordinate), field.F("deploymentFailed", failed)).
-				Warn("Skipping deployment of %v, as it depends on %v which %s", childCnf.Coordinate, parentCnf.Coordinate, reason)
+			log.WithCtxFields(ctx).WithFields(field.F("parent", parent.Config.Coordinate), field.F("deploymentFailed", failed)).
+				Warn("Skipping deployment of %v, as it depends on %v which %s", childCnf.Coordinate, parent.Config.Coordinate, reason)
 		}
 
 		c.removeChildren(ctx, child, root, failed)
