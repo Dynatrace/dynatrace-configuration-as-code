@@ -218,7 +218,7 @@ type componentDeployer struct {
 	apis             api.APIs
 }
 
-func (c *componentDeployer) deployComponent(ctx context.Context) []error {
+func (c *componentDeployer) deploy(ctx context.Context) []error {
 	var errs []error
 
 	errChan := make(chan error)
@@ -314,7 +314,7 @@ func deployComponent(ctx context.Context, component graph.SortedComponent, clien
 		resolvedEntities: *newEntityMap(apis),
 		apis:             apis,
 	}
-	return deployer.deployComponent(ctx)
+	return deployer.deploy(ctx)
 }
 
 // deployFunc kinda just is a smarter deploy... TODO refactor!
