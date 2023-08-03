@@ -37,7 +37,10 @@ type coordinateToNodeIDMap map[coordinate.Coordinate]int64
 type referencesLookup map[coordinate.Coordinate]map[coordinate.Coordinate]struct{}
 
 // ConfigGraph is a directed graph containing ConfigNode s
-type ConfigGraph graph.Directed
+type ConfigGraph interface {
+	graph.Directed
+	graph.NodeRemover
+}
 
 // ConfigNode implements the gonum graph.Node interface and contains a pointer to its respective config.Config in addition to the unique ID required.
 type ConfigNode struct {

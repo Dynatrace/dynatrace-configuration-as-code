@@ -210,15 +210,9 @@ func deployComponentsParallel(ctx context.Context, components []graph.SortedComp
 	return errs
 }
 
-type deployGraph interface {
-	graph2.NodeRemover
-	graph2.Directed
-	graph2.Builder
-}
-
 type componentDeployer struct {
 	lock             sync.Mutex
-	graph            deployGraph
+	graph            graph.ConfigGraph
 	clients          ClientSet
 	resolvedEntities entityMap
 	apis             api.APIs
