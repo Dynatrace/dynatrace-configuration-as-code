@@ -1,0 +1,44 @@
+configs:
+- id: Basic Tag
+  type:
+    settings:
+      schema: builtin:tags.auto-tagging
+      scope: environment
+  config:
+    name: Basic Tag
+    template: auto-tag-setting.json
+    skip: false # deploy
+- id: Skipped Value Tag
+  type:
+    settings:
+      schema: builtin:tags.auto-tagging
+      scope: environment
+  config:
+    name: Skipped Value Tag
+    template: auto-tag-setting.json
+    skip: true # don't deploy
+- id: Env Var Skipped Tag
+  type:
+    settings:
+      schema: builtin:tags.auto-tagging
+      scope: environment
+  config:
+    name: "Env Var Skipped Tag"
+    template: auto-tag-setting.json
+    skip: # don't deploy based on env var
+      type: environment
+      name: SKIPPED_VAR
+      default: false
+- id: Environment Override Deployed Tag
+  type:
+    settings:
+      schema: builtin:tags.auto-tagging
+      scope: environment
+  config:
+    name: Environment Override Deployed Tag
+    template: auto-tag-setting.json
+    skip: true # by default, don't deploy
+  environmentOverrides:
+    - environment: environment2
+      override:
+        skip: false
