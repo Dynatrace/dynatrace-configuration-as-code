@@ -27,15 +27,15 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 )
 
-func deploySetting(ctx context.Context, settingsClient dtclient.SettingsClient, properties parameter.Properties, renderedConfig string, c *config.Config) (*ResolvedEntity, error) {
+func deploySetting(ctx context.Context, settingsClient dtclient.SettingsClient, properties parameter.Properties, renderedConfig string, c *config.Config) (ResolvedEntity, error) {
 	t, ok := c.Type.(config.SettingsType)
 	if !ok {
-		return &ResolvedEntity{}, newConfigDeployErr(c, fmt.Sprintf("config was not of expected type %q, but %q", config.SettingsTypeId, c.Type.ID()))
+		return ResolvedEntity{}, newConfigDeployErr(c, fmt.Sprintf("config was not of expected type %q, but %q", config.SettingsTypeId, c.Type.ID()))
 	}
 
 	scope, err := extractScope(properties)
 	if err != nil {
-		return &ResolvedEntity{}, err
+		return ResolvedEntity{}, err
 	}
 
 	entity, err := settingsClient.UpsertSettings(ctx, dtclient.SettingsObject{
@@ -47,7 +47,7 @@ func deploySetting(ctx context.Context, settingsClient dtclient.SettingsClient, 
 		OriginObjectId: c.OriginObjectId,
 	})
 	if err != nil {
-		return &ResolvedEntity{}, newConfigDeployErr(c, err.Error()).withError(err)
+		return ResolvedEntity{}, newConfigDeployErr(c, err.Error()).withError(err)
 	}
 
 	name := fmt.Sprintf("[UNKNOWN NAME]%s", entity.Id)
@@ -59,12 +59,12 @@ func deploySetting(ctx context.Context, settingsClient dtclient.SettingsClient, 
 
 	properties[config.IdParameter], err = getEntityID(c, entity)
 	if err != nil {
-		return &ResolvedEntity{}, newConfigDeployErr(c, err.Error()).withError(err)
+		return ResolvedEntity{}, newConfigDeployErr(c, err.Error()).withError(err)
 	}
 
 	properties[config.NameParameter] = name
 
-	return &ResolvedEntity{
+	return ResolvedEntity{
 		EntityName: name,
 		Coordinate: c.Coordinate,
 		Properties: properties,

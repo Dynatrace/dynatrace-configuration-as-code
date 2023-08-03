@@ -27,23 +27,23 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 )
 
-func deployClassicConfig(ctx context.Context, configClient dtclient.ConfigClient, apis api.APIs, entityMap *entityMap, properties parameter.Properties, renderedConfig string, conf *config.Config) (*ResolvedEntity, error) {
+func deployClassicConfig(ctx context.Context, configClient dtclient.ConfigClient, apis api.APIs, entityMap *entityMap, properties parameter.Properties, renderedConfig string, conf *config.Config) (ResolvedEntity, error) {
 	t, ok := conf.Type.(config.ClassicApiType)
 	if !ok {
-		return &ResolvedEntity{}, fmt.Errorf("config was not of expected type %q, but %q", config.ClassicApiTypeId, conf.Type.ID())
+		return ResolvedEntity{}, fmt.Errorf("config was not of expected type %q, but %q", config.ClassicApiTypeId, conf.Type.ID())
 	}
 
 	apiToDeploy, found := apis[t.Api]
 	if !found {
-		return &ResolvedEntity{}, fmt.Errorf("unknown api `%s`. this is most likely a bug", t.Api)
+		return ResolvedEntity{}, fmt.Errorf("unknown api `%s`. this is most likely a bug", t.Api)
 	}
 
 	configName, err := extractConfigName(conf, properties)
 	if err != nil {
-		return &ResolvedEntity{}, err
+		return ResolvedEntity{}, err
 	}
 	if entityMap.contains(apiToDeploy.ID, configName) && !apiToDeploy.NonUniqueName {
-		return &ResolvedEntity{}, newConfigDeployErr(conf, fmt.Sprintf("duplicated config name `%s`", configName))
+		return ResolvedEntity{}, newConfigDeployErr(conf, fmt.Sprintf("duplicated config name `%s`", configName))
 	}
 
 	if apiToDeploy.DeprecatedBy != "" {
@@ -58,13 +58,13 @@ func deployClassicConfig(ctx context.Context, configClient dtclient.ConfigClient
 	}
 
 	if err != nil {
-		return &ResolvedEntity{}, newConfigDeployErr(conf, err.Error()).withError(err)
+		return ResolvedEntity{}, newConfigDeployErr(conf, err.Error()).withError(err)
 	}
 
 	properties[config.IdParameter] = entity.Id
 	properties[config.NameParameter] = entity.Name
 
-	return &ResolvedEntity{
+	return ResolvedEntity{
 		EntityName: entity.Name,
 		Coordinate: conf.Coordinate,
 		Properties: properties,
