@@ -125,16 +125,16 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 			if _, found := projectsToValidate[coord.Project]; found {
 				switch typ := theConfig.Type.(type) {
 				case config.SettingsType:
-					assertSetting(t, ctx, clients.Settings(), typ, env, available, theConfig)
+					AssertSetting(t, ctx, clients.Settings(), typ, env.Name, available, theConfig)
 				case config.ClassicApiType:
 					assert.NotEmpty(t, configName, "classic API config %v is missing name, can not assert if it exists", theConfig.Coordinate)
-					assertConfig(t, ctx, clients.Classic(), apis[typ.Api], env, available, theConfig, configName)
+					AssertConfig(t, ctx, clients.Classic(), apis[typ.Api], env, available, theConfig, configName)
 				case config.AutomationType:
 					if clients.Automation() == nil {
 						t.Errorf("can not assert existience of Automtation config %q (%s) because no AutomationClient exists - was the test env not configured as Platform?", theConfig.Coordinate, typ.Resource)
 						return
 					}
-					assertAutomation(t, *clients.Automation(), env, available, typ.Resource, theConfig)
+					AssertAutomation(t, *clients.Automation(), env, available, typ.Resource, theConfig)
 				default:
 					t.Errorf("Can not assert config of unknown type %q", theConfig.Coordinate.Type)
 				}
@@ -143,7 +143,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 	}
 }
 
-func assertConfig(t *testing.T, ctx context.Context, client dtclient.ConfigClient, theApi api.API, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config, name string) {
+func AssertConfig(t *testing.T, ctx context.Context, client dtclient.ConfigClient, theApi api.API, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config, name string) {
 
 	configType := config.Coordinate.Type
 
@@ -171,7 +171,7 @@ func assertConfig(t *testing.T, ctx context.Context, client dtclient.ConfigClien
 	}
 }
 
-func assertSetting(t *testing.T, ctx context.Context, c dtclient.SettingsClient, typ config.SettingsType, environment manifest.EnvironmentDefinition, shouldBeAvailable bool, config config.Config) {
+func AssertSetting(t *testing.T, ctx context.Context, c dtclient.SettingsClient, typ config.SettingsType, environmentName string, shouldBeAvailable bool, config config.Config) {
 	expectedExtId, err := idutils.GenerateExternalID(config.Coordinate)
 	if err != nil {
 		t.Errorf("Unable to generate external id: %v", err)
@@ -189,18 +189,18 @@ func assertSetting(t *testing.T, ctx context.Context, c dtclient.SettingsClient,
 	exists := len(objects) == 1
 
 	if config.Skip {
-		assert.False(t, exists, "Skipped Settings Object should NOT be available but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, config.Coordinate, typ.SchemaId)
+		assert.False(t, exists, "Skipped Settings Object should NOT be available but was. environment.Environment: '%s', failed for '%s' (%s)", environmentName, config.Coordinate, typ.SchemaId)
 		return
 	}
 
 	if shouldBeAvailable {
-		assert.True(t, exists, "Settings Object should be available, but wasn't. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, config.Coordinate, typ.SchemaId)
+		assert.True(t, exists, "Settings Object should be available, but wasn't. environment.Environment: '%s', failed for '%s' (%s)", environmentName, config.Coordinate, typ.SchemaId)
 	} else {
-		assert.False(t, exists, "Settings Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environment.Name, config.Coordinate, typ.SchemaId)
+		assert.False(t, exists, "Settings Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", environmentName, config.Coordinate, typ.SchemaId)
 	}
 }
 
-func assertAutomation(t *testing.T, c automation.Client, env manifest.EnvironmentDefinition, shouldBeAvailable bool, resource config.AutomationResource, cfg config.Config) {
+func AssertAutomation(t *testing.T, c automation.Client, env manifest.EnvironmentDefinition, shouldBeAvailable bool, resource config.AutomationResource, cfg config.Config) {
 	resourceType, err := automationutils.ClientResourceTypeFromConfigType(resource)
 	assert.NoError(t, err, "failed to get resource type for: %s", cfg.Coordinate)
 
