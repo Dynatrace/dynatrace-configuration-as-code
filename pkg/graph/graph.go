@@ -240,7 +240,6 @@ func buildDependencyGraph(projects []project.Project, environment string) *simpl
 			cNode := coordinateToNodeIDs[c]
 			if otherNode, ok := coordinateToNodeIDs[other]; ok {
 				logDependency(c, other)
-				log.Debug("adding edge between %s (%d) -> %s (%d)", other, otherNode, c, cNode)
 				g.SetEdge(g.NewEdge(g.Node(otherNode), g.Node(cNode)))
 			} else {
 				//TODO: to comply with the current 'continue-on-error' behaviour we can not recognize invalid references at this point but must return a dependency graph even if we know things will fail later on
