@@ -34,15 +34,18 @@ func logProjectsInfo(projects []project.Project) {
 }
 
 func logConfigInfo(projects []project.Project) {
-	cfgCount := 0
+	cfgCount := make(map[string]int)
 	for _, p := range projects {
-		for _, cfgsPerTypePerEnv := range p.Configs {
+		for env, cfgsPerTypePerEnv := range p.Configs {
 			for _, cfgsPerType := range cfgsPerTypePerEnv {
-				cfgCount += len(cfgsPerType)
+				cfgCount[env] += len(cfgsPerType)
 			}
 		}
 	}
-	log.Debug("Deploying %d configurations.", cfgCount)
+	log.Info("Configurations per environment:")
+	for env, count := range cfgCount {
+		log.Debug("  - %s:\t%d configurations", env, count)
+	}
 }
 
 func logEnvironmentsInfo(environments manifest.Environments) {
