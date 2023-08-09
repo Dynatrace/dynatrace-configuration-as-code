@@ -16,10 +16,13 @@ package v2
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/slices"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/loader"
 	"os"
+	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -151,48 +154,58 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 	}, nil
 }
 
-func loadConfigsOfProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition manifest.ProjectDefinition, environments []manifest.EnvironmentDefinition) ([]config.Config, []error) {
+func loadConfigsOfProject(fs afero.Fs, loadingContext ProjectLoaderContext, projectDefinition manifest.ProjectDefinition,
+	environments []manifest.EnvironmentDefinition) ([]config.Config, []error) {
+
+	configFiles, err := findConfigFiles(fs, projectDefinition.Path)
+	if err != nil {
+		return nil, []error{fmt.Errorf("failed to walk files: %w", err)}
+	}
+
 	var configs []config.Config
-	var errors []error
+	var errs []error
 
-	err := afero.Walk(fs, projectDefinition.Path, func(path string, info os.FileInfo, err error) error {
+	ctx := &loader.LoaderContext{
+		ProjectId:       projectDefinition.Name,
+		Environments:    environments,
+		Path:            projectDefinition.Path,
+		KnownApis:       loadingContext.KnownApis,
+		ParametersSerDe: loadingContext.ParametersSerde,
+	}
 
-		if !info.IsDir() {
-			return nil
+	for _, file := range configFiles {
+		log.WithFields(field.F("file", file)).Debug("Loading configuration file %s", file)
+		loadedConfigs, configErrs := loader.LoadConfig(fs, ctx, file)
+
+		errs = append(errs, configErrs...)
+		configs = append(configs, loadedConfigs...)
+	}
+
+	return configs, errs
+}
+
+// findConfigFiles finds all YAML files within the given root directory.
+// Hidden directories (start with a dot (.)) are excluded.
+// Directories marked as hidden on Windows are not excluded.
+func findConfigFiles(fs afero.Fs, root string) ([]string, error) {
+	var configFiles []string
+
+	err := afero.Walk(fs, root, func(curPath string, info os.FileInfo, err error) error {
+		name := info.Name()
+
+		if info.IsDir() {
+			if strings.HasPrefix(name, ".") {
+				return filepath.SkipDir
+			}
 		}
 
-		pathParts := strings.Split(path, string(os.PathSeparator))
-		anyHidden := slices.AnyMatches(pathParts, func(v string) bool {
-			return strings.HasPrefix(v, ".")
-		})
-
-		if anyHidden {
-			return nil
+		if files.IsYamlFileExtension(name) {
+			configFiles = append(configFiles, path.Join(curPath))
 		}
-
-		loaded, errs := loader.LoadConfigs(fs, &loader.LoaderContext{
-			ProjectId:       projectDefinition.Name,
-			Path:            path,
-			Environments:    environments,
-			KnownApis:       context.KnownApis,
-			ParametersSerDe: context.ParametersSerde,
-		})
-
-		if errs != nil {
-			errors = append(errors, errs...)
-			return nil
-		}
-
-		configs = append(configs, loaded...)
-
 		return nil
 	})
 
-	if err != nil {
-		errors = append(errors, err)
-	}
-
-	return configs, errors
+	return configFiles, err
 }
 
 func findDuplicatedConfigIdentifiers(configs []config.Config) []config.Config {
