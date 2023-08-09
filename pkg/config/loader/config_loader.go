@@ -137,9 +137,9 @@ func parseConfigs(fs afero.Fs, context *LoaderContext, filePath string) (configs
 		Path:          filePath,
 	}
 
-	for _, config := range definition.Configs {
+	for _, cnf := range definition.Configs {
 
-		result, definitionErrors := parseDefinition(fs, configLoaderContext, config.Id, config)
+		result, definitionErrors := parseDefinition(fs, configLoaderContext, cnf.Id, cnf)
 
 		if len(definitionErrors) > 0 {
 			errors = append(errors, definitionErrors...)
@@ -165,7 +165,7 @@ func parseDefinition(
 ) ([]config.Config, []error) {
 
 	results := make([]config.Config, 0)
-	var errors []error
+	var errs []error
 
 	singleConfigContext := &singleConfigEntryLoadContext{
 		configFileLoaderContext: context,
@@ -173,26 +173,26 @@ func parseDefinition(
 	}
 
 	if e := definition.Type.IsSound(context.KnownApis); e != nil {
-		return nil, append(errors, newDefinitionParserError(configId, singleConfigContext, e.Error()))
+		return nil, append(errs, newDefinitionParserError(configId, singleConfigContext, e.Error()))
 	}
 
 	groupOverrideMap := toGroupOverrideMap(definition.GroupOverrides)
 	environmentOverrideMap := toEnvironmentOverrideMap(definition.EnvironmentOverrides)
 
-	for _, environment := range context.Environments {
-		result, definitionErrors := parseDefinitionForEnvironment(fs, singleConfigContext, configId, environment,
+	for _, env := range context.Environments {
+		result, definitionErrors := parseDefinitionForEnvironment(fs, singleConfigContext, configId, env,
 			definition, groupOverrideMap, environmentOverrideMap)
 
 		if definitionErrors != nil {
-			errors = append(errors, definitionErrors...)
+			errs = append(errs, definitionErrors...)
 			continue
 		}
 
 		results = append(results, result)
 	}
 
-	if errors != nil {
-		return nil, errors
+	if errs != nil {
+		return nil, errs
 	}
 
 	return results, nil
@@ -286,19 +286,19 @@ func getConfigFromDefinition(
 		}
 	}
 
-	template, err := template.LoadTemplate(fs, filepath.Join(context.Folder, definition.Template))
+	tmpl, err := template.LoadTemplate(fs, filepath.Join(context.Folder, definition.Template))
 
-	var errors []error
+	var errs []error
 
 	if err != nil {
-		errors = append(errors, newDetailedDefinitionParserError(configId, context, environment, fmt.Sprintf("error while loading template: `%s`", err)))
+		errs = append(errs, newDetailedDefinitionParserError(configId, context, environment, fmt.Sprintf("error while loading template: `%s`", err)))
 	}
 
 	parameters, parameterErrors := parseParametersAndReferences(context, environment, configId,
 		definition.Parameters)
 
 	if parameterErrors != nil {
-		errors = append(errors, parameterErrors...)
+		errs = append(errs, parameterErrors...)
 		parameters = make(map[string]parameter.Parameter)
 	}
 
@@ -309,7 +309,7 @@ func getConfigFromDefinition(
 		if err == nil {
 			skipConfig = skip
 		} else {
-			errors = append(errors, err)
+			errs = append(errs, err)
 		}
 	}
 
@@ -321,17 +321,17 @@ func getConfigFromDefinition(
 	if definition.Name != nil {
 		name, err := parseParameter(context, environment, configId, config.NameParameter, definition.Name)
 		if err != nil {
-			errors = append(errors, err)
+			errs = append(errs, err)
 		} else {
 			parameters[config.NameParameter] = name
 		}
 
 	} else if t.ID() == config.ClassicApiTypeId {
-		errors = append(errors, newDetailedDefinitionParserError(configId, context, environment, "missing parameter `name`"))
+		errs = append(errs, newDetailedDefinitionParserError(configId, context, environment, "missing parameter `name`"))
 	}
 
-	if errors != nil {
-		return config.Config{}, errors
+	if errs != nil {
+		return config.Config{}, errs
 	}
 
 	if configType.IsSettings() {
@@ -348,7 +348,7 @@ func getConfigFromDefinition(
 	}
 
 	return config.Config{
-		Template: template,
+		Template: tmpl,
 		Coordinate: coordinate.Coordinate{
 			Project:  context.ProjectId,
 			Type:     context.Type,
@@ -451,37 +451,37 @@ func parseParametersAndReferences(context *singleConfigEntryLoadContext, environ
 	configId string, parameterMap map[string]persistence.ConfigParameter) (config.Parameters, []error) {
 
 	parameters := make(map[string]parameter.Parameter)
-	var errors []error
+	var errs []error
 
 	for name, param := range parameterMap {
 		if _, found := parameters[name]; found {
-			errors = append(errors, newDefinitionParserError(configId, context, fmt.Sprintf("duplicate parameter `%s`", name)))
+			errs = append(errs, newDefinitionParserError(configId, context, fmt.Sprintf("duplicate parameter `%s`", name)))
 			continue
 		}
 
 		err := validateParameterName(context, environment, configId, name)
 		if err != nil {
-			errors = append(errors, err)
+			errs = append(errs, err)
 			continue
 		}
 
 		result, err := parseParameter(context, environment, configId, name, param)
 		if err != nil {
-			errors = append(errors, err)
+			errs = append(errs, err)
 			continue
 		}
 
 		err = validateParameter(context, name, result)
 		if err != nil {
-			errors = append(errors, newDetailedDefinitionParserError(configId, context, environment, err.Error()))
+			errs = append(errs, newDetailedDefinitionParserError(configId, context, environment, err.Error()))
 			continue
 		}
 
 		parameters[name] = result
 	}
 
-	if errors != nil {
-		return nil, errors
+	if errs != nil {
+		return nil, errs
 	}
 
 	return parameters, nil
@@ -543,27 +543,27 @@ func arrayToReferenceParameter(context *singleConfigEntryLoadContext, environmen
 
 	project := context.ProjectId
 	configType := context.Type
-	config := configId
+	cnf := configId
 	var property string
 
 	switch len(arr) {
 	case 1:
 		property = toString(arr[0])
 	case 2:
-		config = toString(arr[0])
+		cnf = toString(arr[0])
 		property = toString(arr[1])
 	case 3:
 		configType = toString(arr[0])
-		config = toString(arr[1])
+		cnf = toString(arr[1])
 		property = toString(arr[2])
 	case 4:
 		project = toString(arr[0])
 		configType = toString(arr[1])
-		config = toString(arr[2])
+		cnf = toString(arr[2])
 		property = toString(arr[3])
 	}
 
-	return refParam.New(project, configType, config, property), nil
+	return refParam.New(project, configType, cnf, property), nil
 }
 
 func validateParameter(ctx *singleConfigEntryLoadContext, paramName string, param parameter.Parameter) error {
