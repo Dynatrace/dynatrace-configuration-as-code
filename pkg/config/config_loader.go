@@ -370,6 +370,11 @@ func getType(typeDef typeDefinition) (Type, error) {
 		}, nil
 
 	case typeDef.isClassic():
+
+		if typeDef.Api == ApiTypeBucket {
+			return BucketType{}, nil
+		}
+
 		return ClassicApiType{
 			Api: typeDef.Api,
 		}, nil

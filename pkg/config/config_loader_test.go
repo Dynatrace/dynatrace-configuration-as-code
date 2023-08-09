@@ -903,6 +903,52 @@ configs:
 				},
 			},
 		},
+		{
+			name: "Bucket config with FF on",
+			envVars: map[string]string{
+				featureflags.Buckets().EnvName(): "true",
+			},
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    template: 'profile.json'
+  type: bucket
+`,
+			wantConfigs: []Config{
+				{
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "bucket",
+						ConfigId: "profile-id",
+					},
+					Type:        BucketType{},
+					Template:    template.CreateTemplateFromString("profile.json", "{}"),
+					Parameters:  Parameters{},
+					Skip:        false,
+					Environment: "env name",
+					Group:       "default",
+				},
+			},
+		},
+		{
+			name: "Bucket with FF off",
+			envVars: map[string]string{
+				featureflags.Buckets().EnvName(): "false",
+			},
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    template: 'profile.json'
+  type: bucket
+`,
+			wantErrorsContain: []string{"unknown API: bucket"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -188,3 +188,10 @@ func DependencyGraphBasedDeployParallel() FeatureFlag {
 		defaultEnabled: false,
 	}
 }
+
+func Buckets() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_BUCKETS",
+		defaultEnabled: true,
+	}
+}

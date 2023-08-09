@@ -59,6 +59,7 @@ const (
 	ClassicApiTypeId TypeId = "classic"
 	EntityTypeId     TypeId = "entity"
 	AutomationTypeId TypeId = "automation"
+	BucketTypeId     TypeId = "bucket"
 )
 
 type Type interface {
@@ -108,6 +109,12 @@ type AutomationType struct {
 
 func (AutomationType) ID() TypeId {
 	return AutomationTypeId
+}
+
+type BucketType struct{}
+
+func (BucketType) ID() TypeId {
+	return BucketTypeId
 }
 
 // Config struct defining a configuration which can be deployed.
