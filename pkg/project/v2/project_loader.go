@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/slices"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/loader"
 	"os"
 	"strings"
 
@@ -169,7 +170,7 @@ func loadConfigsOfProject(fs afero.Fs, context ProjectLoaderContext, projectDefi
 			return nil
 		}
 
-		loaded, errs := config.LoadConfigs(fs, &config.LoaderContext{
+		loaded, errs := loader.LoadConfigs(fs, &loader.LoaderContext{
 			ProjectId:       projectDefinition.Name,
 			Path:            path,
 			Environments:    environments,

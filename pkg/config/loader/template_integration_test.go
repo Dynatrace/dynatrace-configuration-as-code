@@ -16,10 +16,11 @@
  * limitations under the License.
  */
 
-package config
+package loader
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
@@ -38,7 +39,7 @@ func TestConfigurationTemplatingFromFilesProducesValidJson(t *testing.T) {
 			{Name: "testEnv"},
 		},
 		KnownApis:       map[string]struct{}{"some-api": {}},
-		ParametersSerDe: DefaultParameterParsers,
+		ParametersSerDe: config.DefaultParameterParsers,
 	}
 
 	cfgs, errs := parseConfigs(fs, &context, test_yaml)
@@ -55,7 +56,7 @@ func TestConfigurationTemplatingFromFilesProducesValidJson(t *testing.T) {
 	assert.NilError(t, err, "Expected rendered template to be valid JSON:\n %s", rendered)
 }
 
-func getProperties(t *testing.T, cfg Config) map[string]interface{} {
+func getProperties(t *testing.T, cfg config.Config) map[string]interface{} {
 	emptyResolveCtxt := parameter.ResolveContext{}
 	props := map[string]interface{}{}
 	for k, p := range cfg.Parameters {

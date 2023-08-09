@@ -16,9 +16,10 @@
  * limitations under the License.
  */
 
-package config
+package loader
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/compound"
 	envParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/environment"
 	listParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/list"
@@ -38,7 +39,7 @@ func TestParametersAreLoadedAsExpected(t *testing.T) {
 			{Name: "testEnv"},
 		},
 		KnownApis:       map[string]struct{}{"some-api": {}},
-		ParametersSerDe: DefaultParameterParsers,
+		ParametersSerDe: config.DefaultParameterParsers,
 	}
 
 	cfgs, errs := parseConfigs(fs, &context, "test-resources/parameter-type-test-config.yaml")

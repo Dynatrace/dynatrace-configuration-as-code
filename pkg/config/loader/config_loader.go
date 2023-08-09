@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package config
+package loader
 
 import (
 	"errors"
@@ -23,6 +23,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/maps"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/slices"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/internal/persistence"
 	"path/filepath"
 	"strconv"
@@ -71,7 +72,7 @@ type singleConfigEntryLoadContext struct {
 // It will try to parse all configurations it finds and returns a list of parsed
 // configs. If any error was encountered, the list of configs will be nil and
 // only the error slice will be filled.
-func LoadConfigs(fs afero.Fs, context *LoaderContext) (result []Config, errors []error) {
+func LoadConfigs(fs afero.Fs, context *LoaderContext) (result []config.Config, errors []error) {
 	filesInFolder, err := afero.ReadDir(fs, context.Path)
 
 	if err != nil {
@@ -103,7 +104,7 @@ func LoadConfigs(fs afero.Fs, context *LoaderContext) (result []Config, errors [
 	return result, nil
 }
 
-func parseConfigs(fs afero.Fs, context *LoaderContext, filePath string) (configs []Config, errors []error) {
+func parseConfigs(fs afero.Fs, context *LoaderContext, filePath string) (configs []config.Config, errors []error) {
 	data, err := afero.ReadFile(fs, filePath)
 	if err != nil {
 		return nil, []error{newLoadError(context.Path, err)}
@@ -161,9 +162,9 @@ func parseDefinition(
 	context *configFileLoaderContext,
 	configId string,
 	definition persistence.TopLevelConfigDefinition,
-) ([]Config, []error) {
+) ([]config.Config, []error) {
 
-	results := make([]Config, 0)
+	results := make([]config.Config, 0)
 	var errors []error
 
 	singleConfigContext := &singleConfigEntryLoadContext{
@@ -225,7 +226,7 @@ func parseDefinitionForEnvironment(
 	definition persistence.TopLevelConfigDefinition,
 	groupOverrides map[string]persistence.GroupOverride,
 	environmentOverride map[string]persistence.EnvironmentOverride,
-) (Config, []error) {
+) (config.Config, []error) {
 
 	configDefinition := persistence.ConfigDefinition{
 		Parameters:     make(map[string]persistence.ConfigParameter),
@@ -277,10 +278,10 @@ func getConfigFromDefinition(
 	environment manifest.EnvironmentDefinition,
 	definition persistence.ConfigDefinition,
 	configType persistence.TypeDefinition,
-) (Config, []error) {
+) (config.Config, []error) {
 
 	if definition.Template == "" {
-		return Config{}, []error{
+		return config.Config{}, []error{
 			newDetailedDefinitionParserError(configId, context, environment, "missing property `template`"),
 		}
 	}
@@ -314,39 +315,39 @@ func getConfigFromDefinition(
 
 	t, err := getType(configType)
 	if err != nil {
-		return Config{}, []error{fmt.Errorf("failed to parse type of config %q: %w", configId, err)}
+		return config.Config{}, []error{fmt.Errorf("failed to parse type of config %q: %w", configId, err)}
 	}
 
 	if definition.Name != nil {
-		name, err := parseParameter(context, environment, configId, NameParameter, definition.Name)
+		name, err := parseParameter(context, environment, configId, config.NameParameter, definition.Name)
 		if err != nil {
 			errors = append(errors, err)
 		} else {
-			parameters[NameParameter] = name
+			parameters[config.NameParameter] = name
 		}
 
-	} else if t.ID() == ClassicApiTypeId {
+	} else if t.ID() == config.ClassicApiTypeId {
 		errors = append(errors, newDetailedDefinitionParserError(configId, context, environment, "missing parameter `name`"))
 	}
 
 	if errors != nil {
-		return Config{}, errors
+		return config.Config{}, errors
 	}
 
 	if configType.IsSettings() {
-		scopeParam, err := parseParameter(context, environment, configId, ScopeParameter, configType.Settings.Scope)
+		scopeParam, err := parseParameter(context, environment, configId, config.ScopeParameter, configType.Settings.Scope)
 		if err != nil {
-			return Config{}, []error{fmt.Errorf("failed to parse scope: %w", err)}
+			return config.Config{}, []error{fmt.Errorf("failed to parse scope: %w", err)}
 		}
 
 		if !slices.Contains(allowedScopeParameterTypes, scopeParam.GetType()) {
-			return Config{}, []error{fmt.Errorf("failed to parse scope: Cannot use parameter-type '%s' within the scope. Allowed types: %v", scopeParam.GetType(), allowedScopeParameterTypes)}
+			return config.Config{}, []error{fmt.Errorf("failed to parse scope: Cannot use parameter-type '%s' within the scope. Allowed types: %v", scopeParam.GetType(), allowedScopeParameterTypes)}
 		}
 
-		parameters[ScopeParameter] = scopeParam
+		parameters[config.ScopeParameter] = scopeParam
 	}
 
-	return Config{
+	return config.Config{
 		Template: template,
 		Coordinate: coordinate.Coordinate{
 			Project:  context.ProjectId,
@@ -362,10 +363,10 @@ func getConfigFromDefinition(
 	}, nil
 }
 
-func getType(typeDef persistence.TypeDefinition) (Type, error) {
+func getType(typeDef persistence.TypeDefinition) (config.Type, error) {
 	switch {
 	case typeDef.IsSettings():
-		return SettingsType{
+		return config.SettingsType{
 			SchemaId:      typeDef.Settings.Schema,
 			SchemaVersion: typeDef.Settings.SchemaVersion,
 		}, nil
@@ -373,19 +374,19 @@ func getType(typeDef persistence.TypeDefinition) (Type, error) {
 	case typeDef.IsClassic():
 
 		if typeDef.Api == persistence.ApiTypeBucket {
-			return BucketType{}, nil
+			return config.BucketType{}, nil
 		}
 
-		return ClassicApiType{
+		return config.ClassicApiType{
 			Api: typeDef.Api,
 		}, nil
 
 	case typeDef.IsEntities():
-		return EntityType{
+		return config.EntityType{
 			EntitiesType: typeDef.Entities.EntitiesType,
 		}, nil
 	case typeDef.IsAutomation():
-		return AutomationType{
+		return config.AutomationType{
 			Resource: typeDef.Automation.Resource,
 		}, nil
 
@@ -400,13 +401,13 @@ func parseSkip(
 	configId string,
 	param interface{},
 ) (bool, error) {
-	parsed, err := parseParameter(context, environmentDefinition, configId, SkipParameter, param)
+	parsed, err := parseParameter(context, environmentDefinition, configId, config.SkipParameter, param)
 	if err != nil {
 		return false, err
 	}
 
 	if !isSupportedParamTypeForSkip(parsed) {
-		return false, newParameterDefinitionParserError(SkipParameter, configId, context, environmentDefinition, "must be of type 'value' or 'environment'")
+		return false, newParameterDefinitionParserError(config.SkipParameter, configId, context, environmentDefinition, "must be of type 'value' or 'environment'")
 	}
 
 	resolved, err := parsed.ResolveValue(parameter.ResolveContext{
@@ -417,15 +418,15 @@ func parseSkip(
 		},
 		Group:         environmentDefinition.Group,
 		Environment:   environmentDefinition.Name,
-		ParameterName: SkipParameter,
+		ParameterName: config.SkipParameter,
 	})
 	if err != nil {
-		return false, newParameterDefinitionParserError(SkipParameter, configId, context, environmentDefinition, fmt.Sprintf("failed to resolve value: %s", err))
+		return false, newParameterDefinitionParserError(config.SkipParameter, configId, context, environmentDefinition, fmt.Sprintf("failed to resolve value: %s", err))
 	}
 
 	retVal, err := strconv.ParseBool(fmt.Sprintf("%v", resolved))
 	if err != nil {
-		return false, newParameterDefinitionParserError(SkipParameter, configId, context, environmentDefinition, fmt.Sprintf("resolved value can only be 'true' or 'false' (current value is: '%v'", resolved))
+		return false, newParameterDefinitionParserError(config.SkipParameter, configId, context, environmentDefinition, fmt.Sprintf("resolved value can only be 'true' or 'false' (current value is: '%v'", resolved))
 	}
 
 	return retVal, err
@@ -447,7 +448,7 @@ func isSupportedParamTypeForSkip(p parameter.Parameter) bool {
 type References map[string]coordinate.Coordinate
 
 func parseParametersAndReferences(context *singleConfigEntryLoadContext, environment manifest.EnvironmentDefinition,
-	configId string, parameterMap map[string]persistence.ConfigParameter) (Parameters, []error) {
+	configId string, parameterMap map[string]persistence.ConfigParameter) (config.Parameters, []error) {
 
 	parameters := make(map[string]parameter.Parameter)
 	var errors []error
@@ -488,7 +489,7 @@ func parseParametersAndReferences(context *singleConfigEntryLoadContext, environ
 
 func validateParameterName(context *singleConfigEntryLoadContext, environment manifest.EnvironmentDefinition, configId string, name string) error {
 
-	for _, parameterName := range ReservedParameterNames {
+	for _, parameterName := range config.ReservedParameterNames {
 		if name == parameterName {
 			return newParameterDefinitionParserError(name, configId, context, environment,
 				fmt.Sprintf("parameter name `%s` is not allowed (reserved)", parameterName))
@@ -569,7 +570,7 @@ func validateParameter(ctx *singleConfigEntryLoadContext, paramName string, para
 	if _, isAPI := ctx.KnownApis[ctx.Type]; isAPI {
 		for _, ref := range param.GetReferences() {
 			if _, referencesAPI := ctx.KnownApis[ref.Config.Type]; !referencesAPI &&
-				ref.Property == IdParameter &&
+				ref.Property == config.IdParameter &&
 				!(ref.Config.Type == "builtin:management-zones" && featureflags.ManagementZoneSettingsNumericIDs().Enabled()) { // leniently handle Management Zone numeric IDs which are the same for Settings
 				return fmt.Errorf("config api type (%s) configuration can only reference IDs of other config api types - parameter %q references %q type", ctx.Type, paramName, ref.Config.Type)
 			}
