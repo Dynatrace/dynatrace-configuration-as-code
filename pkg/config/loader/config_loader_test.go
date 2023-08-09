@@ -16,11 +16,12 @@
  * limitations under the License.
  */
 
-package config
+package loader
 
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/compound"
@@ -53,7 +54,7 @@ func Test_parseConfigs(t *testing.T) {
 				},
 			},
 		},
-		ParametersSerDe: DefaultParameterParsers,
+		ParametersSerDe: config.DefaultParameterParsers,
 	}
 
 	tests := []struct {
@@ -61,7 +62,7 @@ func Test_parseConfigs(t *testing.T) {
 		filePathArgument  string
 		filePathOnDisk    string
 		fileContentOnDisk string
-		wantConfigs       []Config
+		wantConfigs       []config.Config
 		wantErrorsContain []string
 		envVars           map[string]string
 	}{
@@ -115,18 +116,18 @@ configs:
       default: "false"
   type:
     api: some-api`,
-			wantConfigs: []Config{
+			wantConfigs: []config.Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "some-api",
 						ConfigId: "profile",
 					},
-					Type: ClassicApiType{
+					Type: config.ClassicApiType{
 						Api: "some-api",
 					},
 					Template: template.CreateTemplateFromString("profile.json", "{}"),
-					Parameters: Parameters{
+					Parameters: config.Parameters{
 						"name": &value.ValueParameter{Value: "Star Trek Service"},
 					},
 					Skip:        true,
@@ -150,18 +151,18 @@ configs:
       name: ENV_VAR_SKIP_FALSE
   type:
     api: some-api`,
-			wantConfigs: []Config{
+			wantConfigs: []config.Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "some-api",
 						ConfigId: "profile",
 					},
-					Type: ClassicApiType{
+					Type: config.ClassicApiType{
 						Api: "some-api",
 					},
 					Template: template.CreateTemplateFromString("profile.json", "{}"),
-					Parameters: Parameters{
+					Parameters: config.Parameters{
 						"name": &value.ValueParameter{Value: "Star Trek Service"},
 					},
 					Skip:        false,
@@ -186,18 +187,18 @@ configs:
       default: true
   type:
     api: some-api`,
-			wantConfigs: []Config{
+			wantConfigs: []config.Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "some-api",
 						ConfigId: "profile",
 					},
-					Type: ClassicApiType{
+					Type: config.ClassicApiType{
 						Api: "some-api",
 					},
 					Template: template.CreateTemplateFromString("profile.json", "{}"),
-					Parameters: Parameters{
+					Parameters: config.Parameters{
 						"name": &value.ValueParameter{Value: "Star Trek Service"},
 					},
 					Skip:        true,
@@ -221,18 +222,18 @@ configs:
       value: true
   type:
     api: some-api`,
-			wantConfigs: []Config{
+			wantConfigs: []config.Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "some-api",
 						ConfigId: "profile",
 					},
-					Type: ClassicApiType{
+					Type: config.ClassicApiType{
 						Api: "some-api",
 					},
 					Template: template.CreateTemplateFromString("profile.json", "{}"),
-					Parameters: Parameters{
+					Parameters: config.Parameters{
 						"name": &value.ValueParameter{Value: "Star Trek Service"},
 					},
 					Skip:        true,
@@ -317,21 +318,21 @@ configs:
       schema: 'builtin:profile.test'
       schemaVersion: '1.0'
       scope: 'tenant'`,
-			wantConfigs: []Config{
+			wantConfigs: []config.Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "builtin:profile.test",
 						ConfigId: "profile-id",
 					},
-					Type: SettingsType{
+					Type: config.SettingsType{
 						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 					},
 					Template: template.CreateTemplateFromString("profile.json", "{}"),
-					Parameters: Parameters{
-						"name":         &value.ValueParameter{Value: "Star Trek > Star Wars"},
-						ScopeParameter: &value.ValueParameter{Value: "tenant"},
+					Parameters: config.Parameters{
+						"name":                &value.ValueParameter{Value: "Star Trek > Star Wars"},
+						config.ScopeParameter: &value.ValueParameter{Value: "tenant"},
 					},
 					Skip:           false,
 					Environment:    "env name",
@@ -358,21 +359,21 @@ configs:
       scope:
         type: value
         value: environment`,
-			wantConfigs: []Config{
+			wantConfigs: []config.Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "builtin:profile.test",
 						ConfigId: "profile-id",
 					},
-					Type: SettingsType{
+					Type: config.SettingsType{
 						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 					},
 					Template: template.CreateTemplateFromString("profile.json", "{}"),
-					Parameters: Parameters{
-						"name":         &value.ValueParameter{Value: "Star Trek > Star Wars"},
-						ScopeParameter: &value.ValueParameter{Value: "environment"},
+					Parameters: config.Parameters{
+						"name":                &value.ValueParameter{Value: "Star Trek > Star Wars"},
+						config.ScopeParameter: &value.ValueParameter{Value: "environment"},
 					},
 					Skip:           false,
 					Environment:    "env name",
@@ -401,21 +402,21 @@ configs:
         configId: configId
         property: id
         configType: something`,
-			wantConfigs: []Config{
+			wantConfigs: []config.Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "builtin:profile.test",
 						ConfigId: "profile-id",
 					},
-					Type: SettingsType{
+					Type: config.SettingsType{
 						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 					},
 					Template: template.CreateTemplateFromString("profile.json", "{}"),
-					Parameters: Parameters{
-						NameParameter:  &value.ValueParameter{Value: "Star Trek > Star Wars"},
-						ScopeParameter: ref.New("project", "something", "configId", "id"),
+					Parameters: config.Parameters{
+						config.NameParameter:  &value.ValueParameter{Value: "Star Trek > Star Wars"},
+						config.ScopeParameter: ref.New("project", "something", "configId", "id"),
 					},
 					Skip:           false,
 					Environment:    "env name",
@@ -440,21 +441,21 @@ configs:
       schema: 'builtin:profile.test'
       schemaVersion: '1.0'
       scope: ["something", "configId", "id"]`,
-			wantConfigs: []Config{
+			wantConfigs: []config.Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "builtin:profile.test",
 						ConfigId: "profile-id",
 					},
-					Type: SettingsType{
+					Type: config.SettingsType{
 						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 					},
 					Template: template.CreateTemplateFromString("profile.json", "{}"),
-					Parameters: Parameters{
-						NameParameter:  &value.ValueParameter{Value: "Star Trek > Star Wars"},
-						ScopeParameter: ref.New("project", "something", "configId", "id"),
+					Parameters: config.Parameters{
+						config.NameParameter:  &value.ValueParameter{Value: "Star Trek > Star Wars"},
+						config.ScopeParameter: ref.New("project", "something", "configId", "id"),
 					},
 					Skip:           false,
 					Environment:    "env name",
@@ -479,21 +480,21 @@ configs:
       schema: 'builtin:profile.test'
       schemaVersion: '1.0'
       scope: ["proj2", "something", "configId", "id"]`,
-			wantConfigs: []Config{
+			wantConfigs: []config.Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "builtin:profile.test",
 						ConfigId: "profile-id",
 					},
-					Type: SettingsType{
+					Type: config.SettingsType{
 						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 					},
 					Template: template.CreateTemplateFromString("profile.json", "{}"),
-					Parameters: Parameters{
-						NameParameter:  &value.ValueParameter{Value: "Star Trek > Star Wars"},
-						ScopeParameter: ref.New("proj2", "something", "configId", "id"),
+					Parameters: config.Parameters{
+						config.NameParameter:  &value.ValueParameter{Value: "Star Trek > Star Wars"},
+						config.ScopeParameter: ref.New("proj2", "something", "configId", "id"),
 					},
 					Skip:           false,
 					Environment:    "env name",
@@ -568,21 +569,21 @@ configs:
       scope:
         type: environment
         name: TEST`,
-			wantConfigs: []Config{
+			wantConfigs: []config.Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "builtin:profile.test",
 						ConfigId: "profile-id",
 					},
-					Type: SettingsType{
+					Type: config.SettingsType{
 						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 					},
 					Template: template.CreateTemplateFromString("profile.json", "{}"),
-					Parameters: Parameters{
-						NameParameter:  &value.ValueParameter{Value: "Star Trek > Star Wars"},
-						ScopeParameter: &environment.EnvironmentVariableParameter{Name: "TEST"},
+					Parameters: config.Parameters{
+						config.NameParameter:  &value.ValueParameter{Value: "Star Trek > Star Wars"},
+						config.ScopeParameter: &environment.EnvironmentVariableParameter{Name: "TEST"},
 					},
 					Skip:           false,
 					Environment:    "env name",
@@ -604,19 +605,19 @@ configs:
   type:
     automation:
       resource: workflow`,
-			wantConfigs: []Config{
+			wantConfigs: []config.Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "workflow",
 						ConfigId: "workflow-id",
 					},
-					Type: AutomationType{
-						Resource: Workflow,
+					Type: config.AutomationType{
+						Resource: config.Workflow,
 					},
 					Template: template.CreateTemplateFromString("profile.json", "{}"),
-					Parameters: Parameters{
-						NameParameter: &value.ValueParameter{Value: "Star Trek > Star Wars"},
+					Parameters: config.Parameters{
+						config.NameParameter: &value.ValueParameter{Value: "Star Trek > Star Wars"},
 					},
 					Skip:        false,
 					Environment: "env name",
@@ -637,19 +638,19 @@ configs:
   type:
     automation:
       resource: business-calendar`,
-			wantConfigs: []Config{
+			wantConfigs: []config.Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "business-calendar",
 						ConfigId: "bc-id",
 					},
-					Type: AutomationType{
-						Resource: BusinessCalendar,
+					Type: config.AutomationType{
+						Resource: config.BusinessCalendar,
 					},
 					Template: template.CreateTemplateFromString("profile.json", "{}"),
-					Parameters: Parameters{
-						NameParameter: &value.ValueParameter{Value: "Star Trek > Star Wars"},
+					Parameters: config.Parameters{
+						config.NameParameter: &value.ValueParameter{Value: "Star Trek > Star Wars"},
 					},
 					Skip:        false,
 					Environment: "env name",
@@ -670,19 +671,19 @@ configs:
   type:
     automation:
       resource: scheduling-rule`,
-			wantConfigs: []Config{
+			wantConfigs: []config.Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "scheduling-rule",
 						ConfigId: "sr-id",
 					},
-					Type: AutomationType{
-						Resource: SchedulingRule,
+					Type: config.AutomationType{
+						Resource: config.SchedulingRule,
 					},
 					Template: template.CreateTemplateFromString("profile.json", "{}"),
-					Parameters: Parameters{
-						NameParameter: &value.ValueParameter{Value: "Star Trek > Star Wars"},
+					Parameters: config.Parameters{
+						config.NameParameter: &value.ValueParameter{Value: "Star Trek > Star Wars"},
 					},
 					Skip:        false,
 					Environment: "env name",
@@ -724,7 +725,7 @@ configs:
       schema: 'builtin:profile.test'
       schemaVersion: '1.0'
       scope: validScope`,
-			wantErrorsContain: []string{IdParameter},
+			wantErrorsContain: []string{config.IdParameter},
 		},
 		{
 			name:             "fails to load with a parameter that is 'scope'",
@@ -744,7 +745,7 @@ configs:
       schema: 'builtin:profile.test'
       schemaVersion: '1.0'
       scope: validScope`,
-			wantErrorsContain: []string{ScopeParameter},
+			wantErrorsContain: []string{config.ScopeParameter},
 		},
 		{
 			name:             "fails to load with a parameter that is 'name'",
@@ -760,7 +761,7 @@ configs:
     parameters:
       name: "some other name"
   type: some-api`,
-			wantErrorsContain: []string{NameParameter},
+			wantErrorsContain: []string{config.NameParameter},
 		},
 		{
 			name:             "loads config with object id override",
@@ -782,21 +783,21 @@ configs:
     - environment: "env name"
       override:
         originObjectId: better-origin-object-id`,
-			wantConfigs: []Config{
+			wantConfigs: []config.Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "builtin:profile.test",
 						ConfigId: "profile-id",
 					},
-					Type: SettingsType{
+					Type: config.SettingsType{
 						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 					},
 					Template: template.CreateTemplateFromString("profile.json", "{}"),
-					Parameters: Parameters{
-						"name":         &value.ValueParameter{Value: "Star Trek > Star Wars"},
-						ScopeParameter: &value.ValueParameter{Value: "tenant"},
+					Parameters: config.Parameters{
+						"name":                &value.ValueParameter{Value: "Star Trek > Star Wars"},
+						config.ScopeParameter: &value.ValueParameter{Value: "tenant"},
 					},
 					Skip:           false,
 					Environment:    "env name",
@@ -832,19 +833,19 @@ configs:
       schema: 'builtin:profile.test'
       scope: 'environment'
 `,
-			wantConfigs: []Config{
+			wantConfigs: []config.Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "builtin:profile.test",
 						ConfigId: "profile-id",
 					},
-					Type: SettingsType{
+					Type: config.SettingsType{
 						SchemaId: "builtin:profile.test",
 					},
 					Template: template.CreateTemplateFromString("profile.json", "{}"),
-					Parameters: Parameters{
-						ScopeParameter: &value.ValueParameter{Value: "environment"},
+					Parameters: config.Parameters{
+						config.ScopeParameter: &value.ValueParameter{Value: "environment"},
 					},
 					Skip:        false,
 					Environment: "env name",
@@ -865,18 +866,18 @@ configs:
     automation:
       resource: workflow
 `,
-			wantConfigs: []Config{
+			wantConfigs: []config.Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "workflow",
 						ConfigId: "profile-id",
 					},
-					Type: AutomationType{
-						Resource: Workflow,
+					Type: config.AutomationType{
+						Resource: config.Workflow,
 					},
 					Template:    template.CreateTemplateFromString("profile.json", "{}"),
-					Parameters:  Parameters{},
+					Parameters:  config.Parameters{},
 					Skip:        false,
 					Environment: "env name",
 					Group:       "default",
@@ -897,16 +898,16 @@ configs:
     template: 'profile.json'
   type: bucket
 `,
-			wantConfigs: []Config{
+			wantConfigs: []config.Config{
 				{
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "bucket",
 						ConfigId: "profile-id",
 					},
-					Type:        BucketType{},
+					Type:        config.BucketType{},
 					Template:    template.CreateTemplateFromString("profile.json", "{}"),
-					Parameters:  Parameters{},
+					Parameters:  config.Parameters{},
 					Skip:        false,
 					Environment: "env name",
 					Group:       "default",
@@ -1058,7 +1059,7 @@ func Test_validateParameter(t *testing.T) {
 				configFileLoaderContext: &configFileLoaderContext{
 					LoaderContext: &LoaderContext{
 						KnownApis:       knownAPIs,
-						ParametersSerDe: DefaultParameterParsers,
+						ParametersSerDe: config.DefaultParameterParsers,
 					},
 				},
 				Type: tt.given.configType,
