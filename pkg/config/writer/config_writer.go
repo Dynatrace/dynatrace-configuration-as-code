@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package config
+package writer
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	configError "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/internal/persistence"
@@ -67,7 +68,7 @@ type configTemplate struct {
 	content string
 }
 
-func WriteConfigs(context *WriterContext, configs []Config) []error {
+func WriteConfigs(context *WriterContext, configs []config.Config) []error {
 	definitions, templates, errs := toTopLevelDefinitions(context, configs)
 
 	if len(errs) > 0 {
@@ -119,7 +120,7 @@ func writeTemplates(context *WriterContext, templates []configTemplate) (errors 
 	return nil
 }
 
-func toTopLevelDefinitions(context *WriterContext, configs []Config) (map[apiCoordinate]persistence.TopLevelDefinition, []configTemplate, []error) {
+func toTopLevelDefinitions(context *WriterContext, configs []config.Config) (map[apiCoordinate]persistence.TopLevelDefinition, []configTemplate, []error) {
 	configsPerCoordinate := groupConfigs(configs)
 
 	var errs []error
@@ -205,7 +206,7 @@ func writeTopLevelDefinitionToDisk(context *WriterContext, apiCoord apiCoordinat
 	return nil
 }
 
-func toTopLevelConfigDefinition(context *serializerContext, configs []Config) (persistence.TopLevelConfigDefinition, []configTemplate, []error) {
+func toTopLevelConfigDefinition(context *serializerContext, configs []config.Config) (persistence.TopLevelConfigDefinition, []configTemplate, []error) {
 	configDefinitions, templates, errs := toConfigDefinitions(context, configs)
 
 	if len(errs) > 0 {
@@ -270,11 +271,11 @@ func toTopLevelConfigDefinition(context *serializerContext, configs []Config) (p
 	}, templates, nil
 }
 
-func extractConfigType(context *serializerContext, config Config) (persistence.TypeDefinition, error) {
+func extractConfigType(context *serializerContext, cnf config.Config) (persistence.TypeDefinition, error) {
 
-	switch t := config.Type.(type) {
-	case SettingsType:
-		serializedScope, err := getScope(context, config)
+	switch t := cnf.Type.(type) {
+	case config.SettingsType:
+		serializedScope, err := getScope(context, cnf)
 		if err != nil {
 			return persistence.TypeDefinition{}, err
 		}
@@ -287,18 +288,18 @@ func extractConfigType(context *serializerContext, config Config) (persistence.T
 			},
 		}, nil
 
-	case ClassicApiType:
+	case config.ClassicApiType:
 		return persistence.TypeDefinition{
-			Api: config.Coordinate.Type,
+			Api: cnf.Coordinate.Type,
 		}, nil
 
-	case EntityType:
+	case config.EntityType:
 		return persistence.TypeDefinition{
 			Entities: persistence.EntitiesDefinition{
 				EntitiesType: t.EntitiesType,
 			},
 		}, nil
-	case AutomationType:
+	case config.AutomationType:
 		return typeDefinition{
 			Automation: persistence.AutomationDefinition{
 				Resource: t.Resource,
@@ -306,19 +307,19 @@ func extractConfigType(context *serializerContext, config Config) (persistence.T
 		}, nil
 
 	default:
-		return persistence.TypeDefinition{}, fmtDetailedConfigWriterError(context, "unknown config-type (ID: %q)", config.Type.ID())
+		return persistence.TypeDefinition{}, fmtDetailedConfigWriterError(context, "unknown cnf-type (ID: %q)", cnf.Type.ID())
 	}
 }
 
-func getScope(context *serializerContext, config Config) (persistence.ConfigParameter, error) {
-	scopeParam, found := config.Parameters[ScopeParameter]
+func getScope(context *serializerContext, cnf config.Config) (persistence.ConfigParameter, error) {
+	scopeParam, found := cnf.Parameters[config.ScopeParameter]
 	if !found {
 		return nil, fmtDetailedConfigWriterError(context, "scope parameter not found. This is likely a bug")
 	}
 
 	serializedScope, err := toParameterDefinition(&detailedSerializerContext{
 		serializerContext: context,
-	}, ScopeParameter, scopeParam)
+	}, config.ScopeParameter, scopeParam)
 	if err != nil {
 		return nil, fmtDetailedConfigWriterError(context, "failed to serialize scope-parameter: %w", err)
 	}
@@ -519,7 +520,7 @@ type extendedConfigDefinition struct {
 	environment string
 }
 
-func toConfigDefinitions(context *serializerContext, configs []Config) ([]extendedConfigDefinition, []configTemplate, []error) {
+func toConfigDefinitions(context *serializerContext, configs []config.Config) ([]extendedConfigDefinition, []configTemplate, []error) {
 	var errs []error
 	result := make([]extendedConfigDefinition, 0, len(configs))
 
@@ -549,30 +550,30 @@ func toConfigDefinitions(context *serializerContext, configs []Config) ([]extend
 	return result, templates, nil
 }
 
-func toConfigDefinition(context *serializerContext, config Config) (persistence.ConfigDefinition, configTemplate, []error) {
+func toConfigDefinition(context *serializerContext, cnf config.Config) (persistence.ConfigDefinition, configTemplate, []error) {
 	var errs []error
 	detailedContext := detailedSerializerContext{
 		serializerContext: context,
 		environmentDetails: environmentDetails{
-			group:       config.Group,
-			environment: config.Environment,
+			group:       cnf.Group,
+			environment: cnf.Environment,
 		},
 	}
-	nameParam, err := parseNameParameter(&detailedContext, config)
+	nameParam, err := parseNameParameter(&detailedContext, cnf)
 	if err != nil {
 		errs = append(errs, err)
 	}
 
-	skipParam, err := parseSkipParameter(&detailedContext, config)
+	skipParam, err := parseSkipParameter(&detailedContext, cnf)
 	if err != nil {
 		errs = append(errs, err)
 	}
 
-	params, convertErrs := convertParameters(&detailedContext, config.Parameters)
+	params, convertErrs := convertParameters(&detailedContext, cnf.Parameters)
 
 	errs = append(errs, convertErrs...)
 
-	configTemplatePath, templ, err := extractTemplate(&detailedContext, config)
+	configTemplatePath, templ, err := extractTemplate(&detailedContext, cnf)
 
 	if err != nil {
 		errs = append(errs, err)
@@ -587,24 +588,24 @@ func toConfigDefinition(context *serializerContext, config Config) (persistence.
 		Parameters:     params,
 		Template:       filepath.ToSlash(configTemplatePath),
 		Skip:           skipParam,
-		OriginObjectId: config.OriginObjectId,
+		OriginObjectId: cnf.OriginObjectId,
 	}, templ, nil
 }
 
-func parseSkipParameter(d *detailedSerializerContext, config Config) (persistence.ConfigParameter, error) {
-	if config.SkipForConversion == nil {
-		return config.Skip, nil
+func parseSkipParameter(d *detailedSerializerContext, cnf config.Config) (persistence.ConfigParameter, error) {
+	if cnf.SkipForConversion == nil {
+		return cnf.Skip, nil
 	}
 
-	skipDefinition, err := toParameterDefinition(d, SkipParameter, config.SkipForConversion)
+	skipDefinition, err := toParameterDefinition(d, config.SkipParameter, cnf.SkipForConversion)
 	if err != nil {
 		return nil, fmtDetailedConfigWriterError(d.serializerContext, "failed to serialize skip parameter: %w", err)
 	}
 	return skipDefinition, nil
 }
 
-func extractTemplate(context *detailedSerializerContext, config Config) (string, configTemplate, error) {
-	switch templ := config.Template.(type) {
+func extractTemplate(context *detailedSerializerContext, cnf config.Config) (string, configTemplate, error) {
+	switch templ := cnf.Template.(type) {
 	case template.FileBasedTemplate:
 		path, err := filepath.Rel(context.configFolder, filepath.Clean(templ.FilePath()))
 
@@ -629,13 +630,13 @@ func extractTemplate(context *detailedSerializerContext, config Config) (string,
 	return "", configTemplate{}, fmtDetailedConfigWriterError(context.serializerContext, "unknown template type")
 }
 
-func convertParameters(context *detailedSerializerContext, parameters Parameters) (map[string]persistence.ConfigParameter, []error) {
+func convertParameters(context *detailedSerializerContext, parameters config.Parameters) (map[string]persistence.ConfigParameter, []error) {
 	var errs []error
 	result := make(map[string]persistence.ConfigParameter)
 
 	for name, param := range parameters {
 		// ignore NameParameter and ScopeParameter as it is handled in a special way
-		if name == NameParameter || name == ScopeParameter {
+		if name == config.NameParameter || name == config.ScopeParameter {
 			continue
 		}
 
@@ -656,14 +657,14 @@ func convertParameters(context *detailedSerializerContext, parameters Parameters
 	return result, nil
 }
 
-func parseNameParameter(context *detailedSerializerContext, config Config) (persistence.ConfigParameter, error) {
-	nameParam, found := config.Parameters[NameParameter]
+func parseNameParameter(context *detailedSerializerContext, cnf config.Config) (persistence.ConfigParameter, error) {
+	nameParam, found := cnf.Parameters[config.NameParameter]
 
 	if !found {
 		return nil, nil // not having a name is fine for some API types
 	}
 
-	return toParameterDefinition(context, NameParameter, nameParam)
+	return toParameterDefinition(context, config.NameParameter, nameParam)
 }
 
 func toParameterDefinition(context *detailedSerializerContext, parameterName string,
@@ -724,8 +725,8 @@ func toValueShorthandDefinition(context *detailedSerializerContext, parameterNam
 	return nil, fmtDetailedConfigWriterError(context.serializerContext, "%s:%s: unknown special type `%s`", context.config, parameterName, param.GetType())
 }
 
-func groupConfigs(configs []Config) map[coordinate.Coordinate][]Config {
-	result := make(map[coordinate.Coordinate][]Config)
+func groupConfigs(configs []config.Config) map[coordinate.Coordinate][]config.Config {
+	result := make(map[coordinate.Coordinate][]config.Config)
 
 	for _, c := range configs {
 		result[c.Coordinate] = append(result[c.Coordinate], c)

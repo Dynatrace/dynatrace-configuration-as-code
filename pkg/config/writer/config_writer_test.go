@@ -16,12 +16,13 @@
  * limitations under the License.
  */
 
-package config
+package writer
 
 import (
 	"errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/internal/persistence"
 	envParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/environment"
@@ -722,14 +723,14 @@ func TestWriteConfigs(t *testing.T) {
 
 	var tests = []struct {
 		name                  string
-		configs               []Config
+		configs               []config.Config
 		expectedConfigs       map[string]persistence.TopLevelDefinition
 		expectedTemplatePaths []string
 		expectedErrs          []string
 	}{
 		{
 			name: "Simple classic API write",
-			configs: []Config{
+			configs: []config.Config{
 				{
 					Template: template.CreateTemplateFromString("project/alerting-profile/a.json", ""),
 					Coordinate: coordinate.Coordinate{
@@ -737,11 +738,11 @@ func TestWriteConfigs(t *testing.T) {
 						Type:     "alerting-profile",
 						ConfigId: "configId",
 					},
-					Type: ClassicApiType{
+					Type: config.ClassicApiType{
 						Api: "alerting-profile",
 					},
 					Parameters: map[string]parameter.Parameter{
-						NameParameter: &value.ValueParameter{Value: "name"},
+						config.NameParameter: &value.ValueParameter{Value: "name"},
 					},
 					SkipForConversion: envParam.New("ENV_VAR_SKIP"),
 				},
@@ -774,7 +775,7 @@ func TestWriteConfigs(t *testing.T) {
 		},
 		{
 			name: "Settings 2.0 schema write sanitizes names",
-			configs: []Config{
+			configs: []config.Config{
 				{
 					Template: template.NewDownloadTemplate("a", "", ""),
 					Coordinate: coordinate.Coordinate{
@@ -782,12 +783,12 @@ func TestWriteConfigs(t *testing.T) {
 						Type:     "builtin:alerting-profile",
 						ConfigId: "configId",
 					},
-					Type: SettingsType{
+					Type: config.SettingsType{
 						SchemaId: "builtin:alerting-profile",
 					},
 					Parameters: map[string]parameter.Parameter{
-						NameParameter:  &value.ValueParameter{Value: "name"},
-						ScopeParameter: value.New("tenant"),
+						config.NameParameter:  &value.ValueParameter{Value: "name"},
+						config.ScopeParameter: value.New("tenant"),
 					},
 					SkipForConversion: value.New("true"),
 				},
@@ -820,7 +821,7 @@ func TestWriteConfigs(t *testing.T) {
 		},
 		{
 			name: "Simple settings 2.0 write",
-			configs: []Config{
+			configs: []config.Config{
 				{
 					Template: template.CreateTemplateFromString("project/schemaid/a.json", ""),
 					Coordinate: coordinate.Coordinate{
@@ -828,13 +829,13 @@ func TestWriteConfigs(t *testing.T) {
 						Type:     "schemaid",
 						ConfigId: "configId",
 					},
-					Type: SettingsType{
+					Type: config.SettingsType{
 						SchemaId:      "schemaid",
 						SchemaVersion: "1.2.3",
 					},
 					Parameters: map[string]parameter.Parameter{
-						ScopeParameter: &value.ValueParameter{Value: "scope"},
-						NameParameter:  &value.ValueParameter{Value: "name"},
+						config.ScopeParameter: &value.ValueParameter{Value: "scope"},
+						config.NameParameter:  &value.ValueParameter{Value: "name"},
 					},
 					Skip: true,
 				},
@@ -867,7 +868,7 @@ func TestWriteConfigs(t *testing.T) {
 		},
 		{
 			name: "Automation resources",
-			configs: []Config{
+			configs: []config.Config{
 				{
 					Template: template.CreateTemplateFromString("project/workflow/a.json", ""),
 					Coordinate: coordinate.Coordinate{
@@ -875,11 +876,11 @@ func TestWriteConfigs(t *testing.T) {
 						Type:     "workflow",
 						ConfigId: "configId1",
 					},
-					Type: AutomationType{
-						Resource: Workflow,
+					Type: config.AutomationType{
+						Resource: config.Workflow,
 					},
 					Parameters: map[string]parameter.Parameter{
-						NameParameter: &value.ValueParameter{Value: "name"},
+						config.NameParameter: &value.ValueParameter{Value: "name"},
 					},
 					Skip: true,
 				},
@@ -890,11 +891,11 @@ func TestWriteConfigs(t *testing.T) {
 						Type:     "business-calendar",
 						ConfigId: "configId2",
 					},
-					Type: AutomationType{
-						Resource: BusinessCalendar,
+					Type: config.AutomationType{
+						Resource: config.BusinessCalendar,
 					},
 					Parameters: map[string]parameter.Parameter{
-						NameParameter: &value.ValueParameter{Value: "name"},
+						config.NameParameter: &value.ValueParameter{Value: "name"},
 					},
 					Skip: true,
 				},
@@ -905,11 +906,11 @@ func TestWriteConfigs(t *testing.T) {
 						Type:     "scheduling-rule",
 						ConfigId: "configId3",
 					},
-					Type: AutomationType{
-						Resource: SchedulingRule,
+					Type: config.AutomationType{
+						Resource: config.SchedulingRule,
 					},
 					Parameters: map[string]parameter.Parameter{
-						NameParameter: &value.ValueParameter{Value: "name"},
+						config.NameParameter: &value.ValueParameter{Value: "name"},
 					},
 					Skip: true,
 				},
@@ -978,7 +979,7 @@ func TestWriteConfigs(t *testing.T) {
 		},
 		{
 			name: "Reference scope",
-			configs: []Config{
+			configs: []config.Config{
 				{
 					Template: template.CreateTemplateFromString("project/schemaid/a.json", ""),
 					Coordinate: coordinate.Coordinate{
@@ -986,13 +987,13 @@ func TestWriteConfigs(t *testing.T) {
 						Type:     "schemaid",
 						ConfigId: "configId",
 					},
-					Type: SettingsType{
+					Type: config.SettingsType{
 						SchemaId:      "schemaid",
 						SchemaVersion: "1.2.3",
 					},
 					Parameters: map[string]parameter.Parameter{
-						ScopeParameter: refParam.New("otherproject", "type", "id", "prop"),
-						NameParameter:  &value.ValueParameter{Value: "name"},
+						config.ScopeParameter: refParam.New("otherproject", "type", "id", "prop"),
+						config.NameParameter:  &value.ValueParameter{Value: "name"},
 					},
 					Skip: false,
 				},
@@ -1031,7 +1032,7 @@ func TestWriteConfigs(t *testing.T) {
 		},
 		{
 			name: "OS path separators are replaced with slashes",
-			configs: []Config{
+			configs: []config.Config{
 				{
 					Template: template.CreateTemplateFromString(filepath.Join("general", "schemaid", "a.json"), ""),
 					Coordinate: coordinate.Coordinate{
@@ -1039,13 +1040,13 @@ func TestWriteConfigs(t *testing.T) {
 						Type:     "schemaid",
 						ConfigId: "configId",
 					},
-					Type: SettingsType{
+					Type: config.SettingsType{
 						SchemaId:      "schemaid",
 						SchemaVersion: "1.2.3",
 					},
 					Parameters: map[string]parameter.Parameter{
-						ScopeParameter: value.New("scope"),
-						NameParameter:  &value.ValueParameter{Value: "name"},
+						config.ScopeParameter: value.New("scope"),
+						config.NameParameter:  &value.ValueParameter{Value: "name"},
 					},
 					Skip: false,
 				},
@@ -1087,7 +1088,7 @@ func TestWriteConfigs(t *testing.T) {
 				Fs:              fs,
 				OutputFolder:    "test",
 				ProjectFolder:   "project",
-				ParametersSerde: DefaultParameterParsers,
+				ParametersSerde: config.DefaultParameterParsers,
 			}, tc.configs)
 			errutils.PrintErrors(errs)
 			assert.Equal(t, len(errs), len(tc.expectedErrs), "Produced errors do not match expected errors")
@@ -1122,24 +1123,24 @@ func TestWriteConfigs(t *testing.T) {
 }
 
 func TestOrderedConfigs(t *testing.T) {
-	configs := []Config{
+	configs := []config.Config{
 		{
 			Template:   template.CreateTemplateFromString("project/alerting-profile/a.json", ""),
 			Coordinate: coordinate.Coordinate{Project: "project", Type: "alerting-profile", ConfigId: "b"},
-			Type:       ClassicApiType{Api: "alerting-profile"},
-			Parameters: map[string]parameter.Parameter{NameParameter: &value.ValueParameter{Value: "name"}},
+			Type:       config.ClassicApiType{Api: "alerting-profile"},
+			Parameters: map[string]parameter.Parameter{config.NameParameter: &value.ValueParameter{Value: "name"}},
 		},
 		{
 			Template:   template.CreateTemplateFromString("project/alerting-profile/a.json", ""),
 			Coordinate: coordinate.Coordinate{Project: "project", Type: "alerting-profile", ConfigId: "a"},
-			Type:       ClassicApiType{Api: "alerting-profile"},
-			Parameters: map[string]parameter.Parameter{NameParameter: &value.ValueParameter{Value: "name"}},
+			Type:       config.ClassicApiType{Api: "alerting-profile"},
+			Parameters: map[string]parameter.Parameter{config.NameParameter: &value.ValueParameter{Value: "name"}},
 		},
 		{
 			Template:   template.CreateTemplateFromString("project/alerting-profile/a.json", ""),
 			Coordinate: coordinate.Coordinate{Project: "project", Type: "alerting-profile", ConfigId: "c"},
-			Type:       ClassicApiType{Api: "alerting-profile"},
-			Parameters: map[string]parameter.Parameter{NameParameter: &value.ValueParameter{Value: "name"}},
+			Type:       config.ClassicApiType{Api: "alerting-profile"},
+			Parameters: map[string]parameter.Parameter{config.NameParameter: &value.ValueParameter{Value: "name"}},
 		},
 	}
 
@@ -1149,7 +1150,7 @@ func TestOrderedConfigs(t *testing.T) {
 		Fs:              fs,
 		OutputFolder:    "test",
 		ProjectFolder:   "project",
-		ParametersSerde: DefaultParameterParsers,
+		ParametersSerde: config.DefaultParameterParsers,
 	}, configs)
 	assert.NoError(t, errors.Join(errs...))
 
