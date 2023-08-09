@@ -14,42 +14,43 @@
  * limitations under the License.
  */
 
-package config
+package persistence
 
 import (
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/mitchellh/mapstructure"
 )
 
 const ApiTypeBucket = "bucket"
 
-type typeDefinition struct {
+type TypeDefinition struct {
 	Api        string               `yaml:"api,omitempty"`
-	Settings   settingsDefinition   `yaml:"settings,omitempty"`
-	Entities   entitiesDefinition   `yaml:"entities,omitempty"`
-	Automation automationDefinition `yaml:"automation,omitempty"`
+	Settings   SettingsDefinition   `yaml:"settings,omitempty"`
+	Entities   EntitiesDefinition   `yaml:"entities,omitempty"`
+	Automation AutomationDefinition `yaml:"automation,omitempty"`
 }
 
-type settingsDefinition struct {
+type SettingsDefinition struct {
 	Schema        string          `yaml:"schema,omitempty"`
 	SchemaVersion string          `yaml:"schemaVersion,omitempty"`
-	Scope         configParameter `yaml:"scope,omitempty"`
+	Scope         ConfigParameter `yaml:"scope,omitempty"`
 }
 
-type entitiesDefinition struct {
+type EntitiesDefinition struct {
 	EntitiesType string `yaml:"entitiesType,omitempty"`
 }
 
-type automationDefinition struct {
-	Resource AutomationResource `yaml:"resource"`
+type AutomationDefinition struct {
+	Resource config.AutomationResource `yaml:"resource"`
 }
 
-// UnmarshalYAML Custom unmarshaler that knows how to handle typeDefinition.
-// 'type' section can come as string or as struct as it is defind in `typeDefinition`
+// UnmarshalYAML Custom unmarshaler that knows how to handle TypeDefinition.
+// 'type' section can come as string or as struct as it is defind in `TypeDefinition`
 // function parameter more than once if necessary.
-func (c *typeDefinition) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (c *TypeDefinition) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var data interface{}
 	if err := unmarshal(&data); err != nil {
 		return err
@@ -60,7 +61,7 @@ func (c *typeDefinition) UnmarshalYAML(unmarshal func(interface{}) error) error 
 		c.Api = v
 		return nil
 	default:
-		var td typeDefinition
+		var td TypeDefinition
 		if err := mapstructure.Decode(v, &td); err == nil {
 			*c = td
 			return nil
@@ -70,7 +71,7 @@ func (c *typeDefinition) UnmarshalYAML(unmarshal func(interface{}) error) error 
 	}
 }
 
-func (c *typeDefinition) isSound(knownApis map[string]struct{}) error {
+func (c *TypeDefinition) IsSound(knownApis map[string]struct{}) error {
 	classicErrs := c.isClassicSound(knownApis)
 	settingsErrs := c.Settings.isSettingsSound()
 	entitiesErrs := c.Entities.isEntitiesSound()
@@ -79,19 +80,19 @@ func (c *typeDefinition) isSound(knownApis map[string]struct{}) error {
 	types := 0
 	var err error
 
-	if c.isClassic() {
+	if c.IsClassic() {
 		types += 1
 		err = classicErrs
 	}
-	if c.isSettings() {
+	if c.IsSettings() {
 		types += 1
 		err = settingsErrs
 	}
-	if c.isEntities() {
+	if c.IsEntities() {
 		types += 1
 		err = entitiesErrs
 	}
-	if c.isAutomation() {
+	if c.IsAutomation() {
 		types++
 		err = automationErr
 	}
@@ -117,11 +118,11 @@ func (c *typeDefinition) isSound(knownApis map[string]struct{}) error {
 	}
 }
 
-// isSettings returns true iff one of fields from typeDefinition are filed up
-func (c *typeDefinition) isSettings() bool {
-	return c.Settings != settingsDefinition{}
+// IsSettings returns true iff one of fields from TypeDefinition are filed up
+func (c *TypeDefinition) IsSettings() bool {
+	return c.Settings != SettingsDefinition{}
 }
-func (t *settingsDefinition) isSettingsSound() error {
+func (t *SettingsDefinition) isSettingsSound() error {
 	var s []string
 	if t.Schema == "" {
 		s = append(s, "type.schema")
@@ -134,10 +135,10 @@ func (t *settingsDefinition) isSettingsSound() error {
 	}
 	return fmt.Errorf("next property missing: %v", s)
 }
-func (c *typeDefinition) isEntities() bool {
-	return c.Entities != entitiesDefinition{}
+func (c *TypeDefinition) IsEntities() bool {
+	return c.Entities != EntitiesDefinition{}
 }
-func (f *entitiesDefinition) isEntitiesSound() error {
+func (f *EntitiesDefinition) isEntitiesSound() error {
 	var e []string
 	if f.EntitiesType == "" {
 		e = append(e, "type.entitiesType")
@@ -148,11 +149,11 @@ func (f *entitiesDefinition) isEntitiesSound() error {
 	return fmt.Errorf("next property missing: %v", e)
 }
 
-func (c *typeDefinition) isClassic() bool {
+func (c *TypeDefinition) IsClassic() bool {
 	return c.Api != ""
 }
-func (c *typeDefinition) isClassicSound(knownApis map[string]struct{}) error {
-	if !c.isClassic() {
+func (c *TypeDefinition) isClassicSound(knownApis map[string]struct{}) error {
+	if !c.IsClassic() {
 		return errors.New("missing 'type.api' property")
 	}
 
@@ -167,17 +168,17 @@ func (c *typeDefinition) isClassicSound(knownApis map[string]struct{}) error {
 	return nil
 }
 
-func (c *typeDefinition) isAutomation() bool {
-	return c.Automation != automationDefinition{}
+func (c *TypeDefinition) IsAutomation() bool {
+	return c.Automation != AutomationDefinition{}
 }
 
-func (c *automationDefinition) isSound() error {
+func (c *AutomationDefinition) isSound() error {
 
 	switch c.Resource {
 	case "":
 		return errors.New("missing 'type.automation.resource' property")
 
-	case Workflow, BusinessCalendar, SchedulingRule:
+	case config.Workflow, config.BusinessCalendar, config.SchedulingRule:
 		return nil
 
 	default:
@@ -185,15 +186,15 @@ func (c *automationDefinition) isSound() error {
 	}
 }
 
-func (c *typeDefinition) GetApiType() string {
+func (c *TypeDefinition) GetApiType() string {
 	switch {
-	case c.isSettings():
+	case c.IsSettings():
 		return c.Settings.Schema
-	case c.isClassic():
+	case c.IsClassic():
 		return c.Api
-	case c.isEntities():
+	case c.IsEntities():
 		return c.Entities.EntitiesType
-	case c.isAutomation():
+	case c.IsAutomation():
 		return string(c.Automation.Resource)
 	default:
 		return ""

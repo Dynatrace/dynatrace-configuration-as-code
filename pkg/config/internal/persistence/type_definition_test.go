@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package config
+package persistence
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
@@ -29,7 +29,7 @@ func Test_typeDefinition_isSound(t *testing.T) {
 	t.Setenv(featureflags.Buckets().EnvName(), "1")
 
 	type fields struct {
-		configType typeDefinition
+		configType TypeDefinition
 		knownApis  map[string]struct{}
 	}
 	type expect struct {
@@ -46,7 +46,7 @@ func Test_typeDefinition_isSound(t *testing.T) {
 		{
 			"NO configuration at all",
 			fields{
-				*(new(typeDefinition)),
+				*(new(TypeDefinition)),
 				nil,
 			},
 			expect{false, "type configuration is missing"},
@@ -54,9 +54,9 @@ func Test_typeDefinition_isSound(t *testing.T) {
 		{
 			"Classical sound, settings incomplete",
 			fields{
-				typeDefinition{
+				TypeDefinition{
 					Api: "some.classical.api",
-					Settings: settingsDefinition{
+					Settings: SettingsDefinition{
 						Schema: "some.schema",
 					},
 				},
@@ -67,7 +67,7 @@ func Test_typeDefinition_isSound(t *testing.T) {
 		{
 			"Classical - sound",
 			fields{
-				typeDefinition{
+				TypeDefinition{
 					Api: "some.classical.api",
 				},
 				map[string]struct{}{"some.classical.api": {}},
@@ -77,7 +77,7 @@ func Test_typeDefinition_isSound(t *testing.T) {
 		{
 			"Classical - api is not known",
 			fields{
-				typeDefinition{
+				TypeDefinition{
 					Api: "not.known.api",
 				},
 				map[string]struct{}{"some.classical.api": {}},
@@ -87,8 +87,8 @@ func Test_typeDefinition_isSound(t *testing.T) {
 		{
 			"Settings 2.0 - sound",
 			fields{
-				typeDefinition{
-					Settings: settingsDefinition{
+				TypeDefinition{
+					Settings: SettingsDefinition{
 						Schema: "some.schema",
 						Scope:  "scope",
 					},
@@ -100,8 +100,8 @@ func Test_typeDefinition_isSound(t *testing.T) {
 		{
 			"Settings 2.0 - type.schema missing",
 			fields{
-				typeDefinition{
-					Settings: settingsDefinition{
+				TypeDefinition{
+					Settings: SettingsDefinition{
 						Scope: "scope",
 					},
 				},
@@ -112,8 +112,8 @@ func Test_typeDefinition_isSound(t *testing.T) {
 		{
 			"Settings 2.0 - type.scope missing",
 			fields{
-				typeDefinition{
-					Settings: settingsDefinition{
+				TypeDefinition{
+					Settings: SettingsDefinition{
 						Schema: "some.schema",
 					},
 				},
@@ -124,8 +124,8 @@ func Test_typeDefinition_isSound(t *testing.T) {
 		{
 			"Entity - sound",
 			fields{
-				typeDefinition{
-					Entities: entitiesDefinition{
+				TypeDefinition{
+					Entities: EntitiesDefinition{
 						EntitiesType: "SOMETHING",
 					},
 				},
@@ -136,8 +136,8 @@ func Test_typeDefinition_isSound(t *testing.T) {
 		{
 			"Entity - EntitiesType missing",
 			fields{
-				typeDefinition{
-					Entities: entitiesDefinition{},
+				TypeDefinition{
+					Entities: EntitiesDefinition{},
 				},
 				nil,
 			},
@@ -146,12 +146,12 @@ func Test_typeDefinition_isSound(t *testing.T) {
 		{
 			"Entity - wrong type",
 			fields{
-				typeDefinition{
+				TypeDefinition{
 					Api: "some.classical.api",
-					Settings: settingsDefinition{
+					Settings: SettingsDefinition{
 						Schema: "some.schema",
 					},
-					Entities: entitiesDefinition{
+					Entities: EntitiesDefinition{
 						EntitiesType: "SOMETHING",
 					},
 				},
@@ -162,7 +162,7 @@ func Test_typeDefinition_isSound(t *testing.T) {
 		{
 			name: "Bucket - sound",
 			fields: fields{
-				configType: typeDefinition{
+				configType: TypeDefinition{
 					Api: "bucket",
 				},
 				knownApis: map[string]struct{}{},
@@ -177,7 +177,7 @@ func Test_typeDefinition_isSound(t *testing.T) {
 			configType := tt.fields.configType
 			knownApis := tt.fields.knownApis
 
-			actualErr := configType.isSound(knownApis)
+			actualErr := configType.IsSound(knownApis)
 			assert.Equal(t, actualErr == nil, tt.want.result, tt.name)
 			if tt.want.err != "" {
 				assert.ErrorContains(t, actualErr, tt.want.err, tt.name)
@@ -191,7 +191,7 @@ func Test_typeDefinition_UnmarshalYAML(t *testing.T) {
 		ymlSample string
 	}
 	type expected struct {
-		typeDefinition typeDefinition
+		typeDefinition TypeDefinition
 		errorMessage   string
 	}
 
@@ -204,14 +204,14 @@ func Test_typeDefinition_UnmarshalYAML(t *testing.T) {
 			name:  "shorthand syntax",
 			given: given{"some.classical.api"},
 			expected: expected{
-				typeDefinition: typeDefinition{Api: "some.classical.api"},
+				typeDefinition: TypeDefinition{Api: "some.classical.api"},
 			},
 		},
 		{
 			name:  "Classical present",
 			given: given{"Api: some.classical.api"},
 			expected: expected{
-				typeDefinition: typeDefinition{Api: "some.classical.api"},
+				typeDefinition: TypeDefinition{Api: "some.classical.api"},
 			},
 		},
 		{
@@ -224,8 +224,8 @@ settings:
 `,
 			},
 			expected: expected{
-				typeDefinition: typeDefinition{
-					Settings: settingsDefinition{
+				typeDefinition: TypeDefinition{
+					Settings: SettingsDefinition{
 						Schema:        "some.settings.schema",
 						Scope:         "scope",
 						SchemaVersion: "1.0",
@@ -242,7 +242,7 @@ settings:
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var actual typeDefinition
+			var actual TypeDefinition
 			err := yaml.Unmarshal([]byte(tt.given.ymlSample), &actual)
 
 			if tt.expected.errorMessage == "" {
@@ -257,17 +257,17 @@ settings:
 func Test_typeDefinition_isSettings(t *testing.T) {
 	tests := []struct {
 		name  string
-		given typeDefinition
+		given TypeDefinition
 		want  bool
 	}{
 		{
 			name:  "empty struct",
-			given: typeDefinition{},
+			given: TypeDefinition{},
 			want:  false,
 		},
 		{
 			name: "empty struct 2",
-			given: typeDefinition{Settings: settingsDefinition{
+			given: TypeDefinition{Settings: SettingsDefinition{
 				Schema:        "",
 				SchemaVersion: "",
 				Scope:         nil,
@@ -276,7 +276,7 @@ func Test_typeDefinition_isSettings(t *testing.T) {
 		},
 		{
 			name: "empty struct 2",
-			given: typeDefinition{Settings: settingsDefinition{
+			given: TypeDefinition{Settings: SettingsDefinition{
 				Schema:        "some.schema",
 				SchemaVersion: "",
 				Scope:         nil,
@@ -286,7 +286,7 @@ func Test_typeDefinition_isSettings(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := tt.given.isSettings()
+			actual := tt.given.IsSettings()
 			assert.Equal(t, tt.want, actual)
 		})
 	}

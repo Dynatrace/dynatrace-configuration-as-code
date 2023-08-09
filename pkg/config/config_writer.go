@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	configError "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/internal/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
@@ -118,13 +119,13 @@ func writeTemplates(context *WriterContext, templates []configTemplate) (errors 
 	return nil
 }
 
-func toTopLevelDefinitions(context *WriterContext, configs []Config) (map[apiCoordinate]topLevelDefinition, []configTemplate, []error) {
+func toTopLevelDefinitions(context *WriterContext, configs []Config) (map[apiCoordinate]persistence.TopLevelDefinition, []configTemplate, []error) {
 	configsPerCoordinate := groupConfigs(configs)
 
 	var errs []error
-	result := map[apiCoordinate]topLevelDefinition{}
+	result := map[apiCoordinate]persistence.TopLevelDefinition{}
 
-	configsPerApi := map[apiCoordinate][]topLevelConfigDefinition{}
+	configsPerApi := map[apiCoordinate][]persistence.TopLevelConfigDefinition{}
 	knownTemplates := map[string]struct{}{}
 	var configTemplates []configTemplate
 
@@ -165,7 +166,7 @@ func toTopLevelDefinitions(context *WriterContext, configs []Config) (map[apiCoo
 	}
 
 	for apiCoord, confs := range configsPerApi {
-		result[apiCoord] = topLevelDefinition{
+		result[apiCoord] = persistence.TopLevelDefinition{
 			Configs: confs,
 		}
 	}
@@ -173,11 +174,11 @@ func toTopLevelDefinitions(context *WriterContext, configs []Config) (map[apiCoo
 	return result, configTemplates, nil
 }
 
-func byConfigId(a, b topLevelConfigDefinition) bool {
+func byConfigId(a, b persistence.TopLevelConfigDefinition) bool {
 	return a.Id < b.Id
 }
 
-func writeTopLevelDefinitionToDisk(context *WriterContext, apiCoord apiCoordinate, definition topLevelDefinition) error {
+func writeTopLevelDefinitionToDisk(context *WriterContext, apiCoord apiCoordinate, definition persistence.TopLevelDefinition) error {
 	// sort configs so that they are stable within a config file
 	slices.SortFunc(definition.Configs, byConfigId)
 	definitionYaml, err := yaml.Marshal(definition)
@@ -204,11 +205,11 @@ func writeTopLevelDefinitionToDisk(context *WriterContext, apiCoord apiCoordinat
 	return nil
 }
 
-func toTopLevelConfigDefinition(context *serializerContext, configs []Config) (topLevelConfigDefinition, []configTemplate, []error) {
+func toTopLevelConfigDefinition(context *serializerContext, configs []Config) (persistence.TopLevelConfigDefinition, []configTemplate, []error) {
 	configDefinitions, templates, errs := toConfigDefinitions(context, configs)
 
 	if len(errs) > 0 {
-		return topLevelConfigDefinition{}, nil, errs
+		return persistence.TopLevelConfigDefinition{}, nil, errs
 	}
 
 	groupedDefinitionsByGroup := groupByGroups(configDefinitions)
@@ -221,7 +222,7 @@ func toTopLevelConfigDefinition(context *serializerContext, configs []Config) (t
 
 		if base != nil {
 			groupOverrides = append(groupOverrides, extendedConfigDefinition{
-				configDefinition: *base,
+				ConfigDefinition: *base,
 				group:            group,
 			})
 		}
@@ -231,25 +232,25 @@ func toTopLevelConfigDefinition(context *serializerContext, configs []Config) (t
 
 	baseConfig, reducedGroupOverrides := extractCommonBase(groupOverrides)
 
-	var config configDefinition
-	var groupOverrideConfigs []groupOverride
-	var environmentOverrideConfigs []environmentOverride
+	var config persistence.ConfigDefinition
+	var groupOverrideConfigs []persistence.GroupOverride
+	var environmentOverrideConfigs []persistence.EnvironmentOverride
 
 	if baseConfig != nil {
 		config = *baseConfig
 	}
 
 	for _, conf := range reducedGroupOverrides {
-		groupOverrideConfigs = append(groupOverrideConfigs, groupOverride{
+		groupOverrideConfigs = append(groupOverrideConfigs, persistence.GroupOverride{
 			Group:    conf.group,
-			Override: conf.configDefinition,
+			Override: conf.ConfigDefinition,
 		})
 	}
 
 	for _, conf := range environmentOverrides {
-		environmentOverrideConfigs = append(environmentOverrideConfigs, environmentOverride{
+		environmentOverrideConfigs = append(environmentOverrideConfigs, persistence.EnvironmentOverride{
 			Environment: conf.environment,
-			Override:    conf.configDefinition,
+			Override:    conf.ConfigDefinition,
 		})
 	}
 
@@ -257,10 +258,10 @@ func toTopLevelConfigDefinition(context *serializerContext, configs []Config) (t
 	// Since they all should have the same configType (they have all the same coordinate), we can take any one.
 	ct, err := extractConfigType(context, configs[0])
 	if err != nil {
-		return topLevelConfigDefinition{}, nil, []error{fmtDetailedConfigWriterError(context, "failed to extract config type: %w", err)}
+		return persistence.TopLevelConfigDefinition{}, nil, []error{fmtDetailedConfigWriterError(context, "failed to extract config type: %w", err)}
 	}
 
-	return topLevelConfigDefinition{
+	return persistence.TopLevelConfigDefinition{
 		Id:                   context.config.ConfigId,
 		Config:               config,
 		Type:                 ct,
@@ -269,17 +270,17 @@ func toTopLevelConfigDefinition(context *serializerContext, configs []Config) (t
 	}, templates, nil
 }
 
-func extractConfigType(context *serializerContext, config Config) (typeDefinition, error) {
+func extractConfigType(context *serializerContext, config Config) (persistence.TypeDefinition, error) {
 
 	switch t := config.Type.(type) {
 	case SettingsType:
 		serializedScope, err := getScope(context, config)
 		if err != nil {
-			return typeDefinition{}, err
+			return persistence.TypeDefinition{}, err
 		}
 
-		return typeDefinition{
-			Settings: settingsDefinition{
+		return persistence.TypeDefinition{
+			Settings: persistence.SettingsDefinition{
 				Schema:        t.SchemaId,
 				SchemaVersion: t.SchemaVersion,
 				Scope:         serializedScope,
@@ -287,29 +288,29 @@ func extractConfigType(context *serializerContext, config Config) (typeDefinitio
 		}, nil
 
 	case ClassicApiType:
-		return typeDefinition{
+		return persistence.TypeDefinition{
 			Api: config.Coordinate.Type,
 		}, nil
 
 	case EntityType:
-		return typeDefinition{
-			Entities: entitiesDefinition{
+		return persistence.TypeDefinition{
+			Entities: persistence.EntitiesDefinition{
 				EntitiesType: t.EntitiesType,
 			},
 		}, nil
 	case AutomationType:
 		return typeDefinition{
-			Automation: automationDefinition{
+			Automation: persistence.AutomationDefinition{
 				Resource: t.Resource,
 			},
 		}, nil
 
 	default:
-		return typeDefinition{}, fmtDetailedConfigWriterError(context, "unknown config-type (ID: %q)", config.Type.ID())
+		return persistence.TypeDefinition{}, fmtDetailedConfigWriterError(context, "unknown config-type (ID: %q)", config.Type.ID())
 	}
 }
 
-func getScope(context *serializerContext, config Config) (configParameter, error) {
+func getScope(context *serializerContext, config Config) (persistence.ConfigParameter, error) {
 	scopeParam, found := config.Parameters[ScopeParameter]
 	if !found {
 		return nil, fmtDetailedConfigWriterError(context, "scope parameter not found. This is likely a bug")
@@ -335,12 +336,12 @@ func groupByGroups(configs []extendedConfigDefinition) map[string][]extendedConf
 	return result
 }
 
-func extractCommonBase(configs []extendedConfigDefinition) (*configDefinition, []extendedConfigDefinition) {
+func extractCommonBase(configs []extendedConfigDefinition) (*persistence.ConfigDefinition, []extendedConfigDefinition) {
 	switch len(configs) {
 	case 0:
 		return nil, nil
 	case 1:
-		return &configs[0].configDefinition, nil
+		return &configs[0].ConfigDefinition, nil
 	}
 
 	checkResult := testForSameProperties(configs)
@@ -361,7 +362,7 @@ func extractCommonBase(configs []extendedConfigDefinition) (*configDefinition, [
 
 		if reducedConf != nil {
 			definitions = append(definitions, extendedConfigDefinition{
-				configDefinition: *reducedConf,
+				ConfigDefinition: *reducedConf,
 				group:            conf.group,
 				environment:      conf.environment,
 			})
@@ -372,9 +373,9 @@ func extractCommonBase(configs []extendedConfigDefinition) (*configDefinition, [
 }
 
 func createConfigDefinitionWithoutSharedValues(toReduce extendedConfigDefinition, checkResult propertyCheckResult,
-	sharedParameters map[string]configParameter) *configDefinition {
+	sharedParameters map[string]persistence.ConfigParameter) *persistence.ConfigDefinition {
 	allParametersShared := true
-	reducedParameters := make(map[string]configParameter)
+	reducedParameters := make(map[string]persistence.ConfigParameter)
 
 	for k, v := range toReduce.Parameters {
 		if _, found := sharedParameters[k]; !found {
@@ -388,7 +389,7 @@ func createConfigDefinitionWithoutSharedValues(toReduce extendedConfigDefinition
 		return nil
 	}
 
-	result := &configDefinition{
+	result := &persistence.ConfigDefinition{
 		Parameters: reducedParameters,
 	}
 
@@ -407,8 +408,8 @@ func createConfigDefinitionWithoutSharedValues(toReduce extendedConfigDefinition
 	return result
 }
 
-func createCommonConfigDefinition(checkResult propertyCheckResult, sharedParameters map[string]configParameter) *configDefinition {
-	result := &configDefinition{}
+func createCommonConfigDefinition(checkResult propertyCheckResult, sharedParameters map[string]persistence.ConfigParameter) *persistence.ConfigDefinition {
+	result := &persistence.ConfigDefinition{}
 
 	if checkResult.foundName || checkResult.shareName {
 		result.Name = checkResult.name
@@ -429,8 +430,8 @@ func createCommonConfigDefinition(checkResult propertyCheckResult, sharedParamet
 	return result
 }
 
-func extractSharedParameters(configs []extendedConfigDefinition) map[string]configParameter {
-	result := make(map[string]configParameter)
+func extractSharedParameters(configs []extendedConfigDefinition) map[string]persistence.ConfigParameter {
+	result := make(map[string]persistence.ConfigParameter)
 	startParams := configs[0].Parameters
 
 	for name, val := range startParams {
@@ -441,7 +442,7 @@ func extractSharedParameters(configs []extendedConfigDefinition) map[string]conf
 	return result
 }
 
-func isSharedParameter(configs []extendedConfigDefinition, name string, val configParameter) bool {
+func isSharedParameter(configs []extendedConfigDefinition, name string, val persistence.ConfigParameter) bool {
 	for _, conf := range configs {
 		paramVal := conf.Parameters[name]
 
@@ -455,7 +456,7 @@ func isSharedParameter(configs []extendedConfigDefinition, name string, val conf
 type propertyCheckResult struct {
 	shareName bool
 	foundName bool
-	name      configParameter
+	name      persistence.ConfigParameter
 
 	shareTemplate bool
 	foundTemplate bool
@@ -513,7 +514,7 @@ func testForSameProperties(configs []extendedConfigDefinition) propertyCheckResu
 }
 
 type extendedConfigDefinition struct {
-	configDefinition
+	persistence.ConfigDefinition
 	group       string
 	environment string
 }
@@ -535,7 +536,7 @@ func toConfigDefinitions(context *serializerContext, configs []Config) ([]extend
 		templates = append(templates, templ)
 
 		result = append(result, extendedConfigDefinition{
-			configDefinition: definition,
+			ConfigDefinition: definition,
 			group:            c.Group,
 			environment:      c.Environment,
 		})
@@ -548,7 +549,7 @@ func toConfigDefinitions(context *serializerContext, configs []Config) ([]extend
 	return result, templates, nil
 }
 
-func toConfigDefinition(context *serializerContext, config Config) (configDefinition, configTemplate, []error) {
+func toConfigDefinition(context *serializerContext, config Config) (persistence.ConfigDefinition, configTemplate, []error) {
 	var errs []error
 	detailedContext := detailedSerializerContext{
 		serializerContext: context,
@@ -578,10 +579,10 @@ func toConfigDefinition(context *serializerContext, config Config) (configDefini
 	}
 
 	if len(errs) > 0 {
-		return configDefinition{}, configTemplate{}, errs
+		return persistence.ConfigDefinition{}, configTemplate{}, errs
 	}
 
-	return configDefinition{
+	return persistence.ConfigDefinition{
 		Name:           nameParam,
 		Parameters:     params,
 		Template:       filepath.ToSlash(configTemplatePath),
@@ -590,7 +591,7 @@ func toConfigDefinition(context *serializerContext, config Config) (configDefini
 	}, templ, nil
 }
 
-func parseSkipParameter(d *detailedSerializerContext, config Config) (configParameter, error) {
+func parseSkipParameter(d *detailedSerializerContext, config Config) (persistence.ConfigParameter, error) {
 	if config.SkipForConversion == nil {
 		return config.Skip, nil
 	}
@@ -628,9 +629,9 @@ func extractTemplate(context *detailedSerializerContext, config Config) (string,
 	return "", configTemplate{}, fmtDetailedConfigWriterError(context.serializerContext, "unknown template type")
 }
 
-func convertParameters(context *detailedSerializerContext, parameters Parameters) (map[string]configParameter, []error) {
+func convertParameters(context *detailedSerializerContext, parameters Parameters) (map[string]persistence.ConfigParameter, []error) {
 	var errs []error
-	result := make(map[string]configParameter)
+	result := make(map[string]persistence.ConfigParameter)
 
 	for name, param := range parameters {
 		// ignore NameParameter and ScopeParameter as it is handled in a special way
@@ -655,7 +656,7 @@ func convertParameters(context *detailedSerializerContext, parameters Parameters
 	return result, nil
 }
 
-func parseNameParameter(context *detailedSerializerContext, config Config) (configParameter, error) {
+func parseNameParameter(context *detailedSerializerContext, config Config) (persistence.ConfigParameter, error) {
 	nameParam, found := config.Parameters[NameParameter]
 
 	if !found {
@@ -666,7 +667,7 @@ func parseNameParameter(context *detailedSerializerContext, config Config) (conf
 }
 
 func toParameterDefinition(context *detailedSerializerContext, parameterName string,
-	param parameter.Parameter) (configParameter, error) {
+	param parameter.Parameter) (persistence.ConfigParameter, error) {
 
 	if isValueParameter(param) {
 		return toValueShorthandDefinition(context, parameterName, param)
@@ -695,7 +696,7 @@ func isValueParameter(param parameter.Parameter) bool {
 }
 
 func toValueShorthandDefinition(context *detailedSerializerContext, parameterName string,
-	param parameter.Parameter) (configParameter, error) {
+	param parameter.Parameter) (persistence.ConfigParameter, error) {
 	if param.GetType() == value.ValueParameterType {
 		valueParam, ok := param.(*value.ValueParameter)
 
