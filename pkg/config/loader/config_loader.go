@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/maps"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/slices"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -68,50 +67,15 @@ type singleConfigEntryLoadContext struct {
 	Type string
 }
 
-// LoadConfigs will search a given path for configuration yamls and parses them.
-// It will try to parse all configurations it finds and returns a list of parsed
-// configs. If any error was encountered, the list of configs will be nil and
-// only the error slice will be filled.
-func LoadConfigs(fs afero.Fs, context *LoaderContext) (result []config.Config, errors []error) {
-	filesInFolder, err := afero.ReadDir(fs, context.Path)
-
-	if err != nil {
-		return nil, []error{newLoadError(context.Path, err)}
-	}
-
-	for _, file := range filesInFolder {
-		filename := file.Name()
-
-		if file.IsDir() || !files.IsYamlFileExtension(filename) {
-			continue
-		}
-
-		configs, configErrs := parseConfigs(fs, context, filepath.Join(context.Path, filename))
-
-		if configErrs != nil {
-			errors = append(errors, configErrs...)
-			continue
-		}
-
-		result = append(result, configs...)
-
-	}
-
-	if errors != nil {
-		return nil, errors
-	}
-
-	return result, nil
-}
-
-func parseConfigs(fs afero.Fs, context *LoaderContext, filePath string) (configs []config.Config, errors []error) {
+// LoadConfig loads a single configuration file
+// The configuration file might contain multiple config entries
+func LoadConfig(fs afero.Fs, context *LoaderContext, filePath string) ([]config.Config, []error) {
 	data, err := afero.ReadFile(fs, filePath)
 	if err != nil {
 		return nil, []error{newLoadError(context.Path, err)}
 	}
 
 	definition := persistence.TopLevelDefinition{}
-
 	err = yaml.UnmarshalStrict(data, &definition)
 
 	if err != nil {
@@ -137,20 +101,23 @@ func parseConfigs(fs afero.Fs, context *LoaderContext, filePath string) (configs
 		Path:          filePath,
 	}
 
+	var errs []error
+	var configs []config.Config
+
 	for _, cnf := range definition.Configs {
 
 		result, definitionErrors := parseDefinition(fs, configLoaderContext, cnf.Id, cnf)
 
 		if len(definitionErrors) > 0 {
-			errors = append(errors, definitionErrors...)
+			errs = append(errs, definitionErrors...)
 			continue
 		}
 
 		configs = append(configs, result...)
 	}
 
-	if errors != nil {
-		return nil, errors
+	if errs != nil {
+		return nil, errs
 	}
 
 	return configs, nil

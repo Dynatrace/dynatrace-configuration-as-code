@@ -42,7 +42,7 @@ func TestConfigurationTemplatingFromFilesProducesValidJson(t *testing.T) {
 		ParametersSerDe: config.DefaultParameterParsers,
 	}
 
-	cfgs, errs := parseConfigs(fs, &context, test_yaml)
+	cfgs, errs := LoadConfig(fs, &context, test_yaml)
 	assert.Check(t, len(errs) == 0, "Expected test config to load without error")
 	assert.Check(t, len(cfgs) == 1, "Expected test config to contain a single definition")
 
