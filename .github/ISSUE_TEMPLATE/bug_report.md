@@ -21,7 +21,7 @@ Steps to reproduce the behavior:
 A clear and concise description of what you expected to happen.
 
 **Log output**
-If applicable, add log snippet to help explain your problem.
+If applicable, add log snippets to help explain your problem.
 
 **Environment (please complete the following information):**
  - OS: [e.g. Win 10, Ubuntu Linux, macOs Catalina]
