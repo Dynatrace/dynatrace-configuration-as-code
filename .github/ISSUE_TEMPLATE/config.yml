@@ -8,4 +8,4 @@ contact_links:
     about: Please ask general questions and bring up feature ideas in the Dynatrace Community. Label them 'monaco'.
   - name: Suggest changes you'd like to contribute
     url: https://github.com/Dynatrace/dynatrace-configuration-as-code/discussions/new?category=ideas
-    about: Before you open a PR we'd love to get a chance to discuss your proposed changes.
+    about: Before you open a PR, we'd love to get a chance to discuss your proposed changes.
