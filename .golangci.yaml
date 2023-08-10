@@ -8,7 +8,6 @@ linters:
     - bugs
     - unused
   disable:
-    - noctx
     - varcheck # deprecated
     - deadcode # deprecated
     - scopelint # deprecated
