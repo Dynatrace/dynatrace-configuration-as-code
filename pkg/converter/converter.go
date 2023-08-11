@@ -34,6 +34,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	projectV1 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v1"
 	projectV2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/afero"
 	"regexp"
 	"strings"
@@ -75,7 +76,7 @@ func (e ConvertConfigError) Coordinates() coordinate.Coordinate {
 }
 
 func (e ConvertConfigError) Error() string {
-	return fmt.Sprintf("cannot convert config: %s", e.Reason)
+	return fmt.Sprintf("cannot convert config %s: %s", e.Location, e.Reason)
 }
 
 type ReferenceParseError struct {
@@ -242,14 +243,15 @@ func convertConfig(context *configConvertContext, environment manifest.Environme
 		errors = append(errors, parameterErrors...)
 	}
 
-	for paramName, param := range envParams {
-		if _, found := parameters[paramName]; found {
+	// combine the template and config parameters
+	for envParamName, envParamVal := range envParams {
+		if existingParam, found := parameters[envParamName]; found && !cmp.Equal(envParamVal, existingParam) {
 			errors = append(errors, newConvertConfigError(coord,
-				fmt.Sprintf("parameter name collision. automatic environment variable conversion failed. please rename `%s` parameter", paramName)))
+				fmt.Sprintf("parameter name collision. automatic environment variable conversion failed. please rename `%s` parameter", envParamName)))
 			continue
 		}
 
-		parameters[paramName] = param
+		parameters[envParamName] = envParamVal
 	}
 
 	// if the name is missing in the v1 config, create one and log it.

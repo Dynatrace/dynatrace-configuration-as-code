@@ -581,7 +581,7 @@ func TestConvertConfigs(t *testing.T) {
 
 	properties := map[string]map[string]string{
 		configId: {
-			"name":                 configName,
+			"name":                 fmt.Sprintf("%s {{ .Env.%s }}", configName, envVariableName),
 			simpleParameterName:    simpleParameterValue,
 			referenceParameterName: referenceParameterValue,
 			listParameterName:      listParameterValue,
@@ -634,8 +634,22 @@ func TestConvertConfigs(t *testing.T) {
 	// assert list param is converted as expected
 	assert.Equal(t, []valueParam.ValueParameter{{"GEOLOCATION-41"}, {"GEOLOCATION-42"}, {"GEOLOCATION-43"}}, c.Parameters[listParameterName].(*listParam.ListParameter).Values)
 
+	transformedEnvVarName := transformEnvironmentToParamName(envVariableName)
 	// assert env reference in template has created correct env parameter
-	assert.Equal(t, envVariableName, c.Parameters[transformEnvironmentToParamName(envVariableName)].(*envParam.EnvironmentVariableParameter).Name)
+	assert.Equal(t, envVariableName, c.Parameters[transformedEnvVarName].(*envParam.EnvironmentVariableParameter).Name)
+
+	nameCompound, err := compoundParam.New(config.NameParameter, fmt.Sprintf("%s {{ .%s }}", configName, transformedEnvVarName), []parameter.ParameterReference{
+		{
+			Config: coordinate.Coordinate{
+				Project:  "test-project",
+				Type:     "alerting-profile",
+				ConfigId: configId,
+			},
+			Property: transformedEnvVarName,
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, nameCompound, c.Parameters[config.NameParameter].(*compoundParam.CompoundParameter))
 
 	apiConfigs = convertedConfigs[environmentName2]
 	assert.Equal(t, 1, len(apiConfigs))
