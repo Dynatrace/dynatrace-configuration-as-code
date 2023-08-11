@@ -20,9 +20,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
-
 	"github.com/mitchellh/mapstructure"
 )
+
+const ApiTypeBucket = "bucket"
 
 type typeDefinition struct {
 	Api        string               `yaml:"api,omitempty"`
@@ -153,9 +154,16 @@ func (c *typeDefinition) isClassic() bool {
 func (c *typeDefinition) isClassicSound(knownApis map[string]struct{}) error {
 	if !c.isClassic() {
 		return errors.New("missing 'type.api' property")
-	} else if _, found := knownApis[c.Api]; !found {
+	}
+
+	if featureflags.Buckets().Enabled() && c.Api == ApiTypeBucket {
+		return nil
+	}
+
+	if _, found := knownApis[c.Api]; !found {
 		return errors.New("unknown API: " + c.Api)
 	}
+
 	return nil
 }
 

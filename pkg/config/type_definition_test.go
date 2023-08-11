@@ -156,6 +156,18 @@ func Test_typeDefinition_isSound(t1 *testing.T) {
 			},
 			expect{false, "wrong configuration of type property"},
 		},
+		{
+			name: "Bucket - sound",
+			fields: fields{
+				configType: typeDefinition{
+					Api: "bucket",
+				},
+				knownApis: map[string]struct{}{},
+			},
+			want: expect{
+				result: true,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t1.Run(tt.name, func(t1 *testing.T) {
