@@ -70,29 +70,9 @@ type singleConfigEntryLoadContext struct {
 // LoadConfig loads a single configuration file
 // The configuration file might contain multiple config entries
 func LoadConfig(fs afero.Fs, context *LoaderContext, filePath string) ([]config.Config, []error) {
-	data, err := afero.ReadFile(fs, filePath)
+	definedConfigEntries, err := parseFile(fs, filePath)
 	if err != nil {
-		return nil, []error{newLoadError(context.Path, err)}
-	}
-
-	definition := persistence.TopLevelDefinition{}
-	err = yaml.UnmarshalStrict(data, &definition)
-
-	if err != nil {
-		if strings.Contains(err.Error(), fmt.Sprintf("field config not found in type %s", persistence.GetTopLevelDefinitionYamlTypeName())) {
-			return nil, []error{
-				newLoadError(
-					context.Path,
-					fmt.Errorf("config '%s' is not valid v2 configuration - you may be loading v1 configs, please 'convert' to v2:\n%w", filePath, err),
-				),
-			}
-		}
-
 		return nil, []error{newLoadError(filePath, err)}
-	}
-
-	if len(definition.Configs) == 0 {
-		return nil, []error{newLoadError(filePath, fmt.Errorf("no configurations found in file '%s'", filePath))}
 	}
 
 	configLoaderContext := &configFileLoaderContext{
@@ -104,7 +84,7 @@ func LoadConfig(fs afero.Fs, context *LoaderContext, filePath string) ([]config.
 	var errs []error
 	var configs []config.Config
 
-	for _, cnf := range definition.Configs {
+	for _, cnf := range definedConfigEntries {
 
 		result, definitionErrors := parseDefinition(fs, configLoaderContext, cnf.Id, cnf)
 
@@ -121,6 +101,30 @@ func LoadConfig(fs afero.Fs, context *LoaderContext, filePath string) ([]config.
 	}
 
 	return configs, nil
+}
+
+func parseFile(fs afero.Fs, filePath string) ([]persistence.TopLevelConfigDefinition, error) {
+	data, err := afero.ReadFile(fs, filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	definition := persistence.TopLevelDefinition{}
+	err = yaml.UnmarshalStrict(data, &definition)
+
+	if err != nil {
+		if strings.Contains(err.Error(), fmt.Sprintf("field config not found in type %s", persistence.GetTopLevelDefinitionYamlTypeName())) {
+			return nil, fmt.Errorf("config '%s' is not valid v2 configuration - you may be loading v1 configs, please 'convert' to v2:\n%w", filePath, err)
+		}
+
+		return nil, err
+	}
+
+	if len(definition.Configs) == 0 {
+		return nil, fmt.Errorf("no configurations found in file '%s'", filePath)
+	}
+
+	return definition.Configs, nil
 }
 
 // parseDefinition parses a single config entry
