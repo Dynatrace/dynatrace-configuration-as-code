@@ -86,7 +86,7 @@ func LoadConfig(fs afero.Fs, context *LoaderContext, filePath string) ([]config.
 
 	for _, cnf := range definedConfigEntries {
 
-		result, definitionErrors := parseDefinition(fs, configLoaderContext, cnf.Id, cnf)
+		result, definitionErrors := parseConfigEntry(fs, configLoaderContext, cnf.Id, cnf)
 
 		if len(definitionErrors) > 0 {
 			errs = append(errs, definitionErrors...)
@@ -127,16 +127,13 @@ func parseFile(fs afero.Fs, filePath string) ([]persistence.TopLevelConfigDefini
 	return definition.Configs, nil
 }
 
-// parseDefinition parses a single config entry
-func parseDefinition(
+// parseConfigEntry parses a single config entry
+func parseConfigEntry(
 	fs afero.Fs,
 	context *configFileLoaderContext,
 	configId string,
 	definition persistence.TopLevelConfigDefinition,
 ) ([]config.Config, []error) {
-
-	results := make([]config.Config, 0)
-	var errs []error
 
 	singleConfigContext := &singleConfigEntryLoadContext{
 		configFileLoaderContext: context,
@@ -144,15 +141,16 @@ func parseDefinition(
 	}
 
 	if e := definition.Type.IsSound(context.KnownApis); e != nil {
-		return nil, append(errs, newDefinitionParserError(configId, singleConfigContext, e.Error()))
+		return nil, []error{newDefinitionParserError(configId, singleConfigContext, e.Error())}
 	}
 
 	groupOverrideMap := toGroupOverrideMap(definition.GroupOverrides)
 	environmentOverrideMap := toEnvironmentOverrideMap(definition.EnvironmentOverrides)
 
+	var results []config.Config
+	var errs []error
 	for _, env := range context.Environments {
-		result, definitionErrors := parseDefinitionForEnvironment(fs, singleConfigContext, configId, env,
-			definition, groupOverrideMap, environmentOverrideMap)
+		result, definitionErrors := parseDefinitionForEnvironment(fs, singleConfigContext, configId, env, definition, groupOverrideMap, environmentOverrideMap)
 
 		if definitionErrors != nil {
 			errs = append(errs, definitionErrors...)
@@ -162,7 +160,7 @@ func parseDefinition(
 		results = append(results, result)
 	}
 
-	if errs != nil {
+	if len(errs) != 0 {
 		return nil, errs
 	}
 
