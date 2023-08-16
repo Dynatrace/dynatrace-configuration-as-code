@@ -41,10 +41,7 @@ func TestUpsert(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := bucket.Client{
-			Url:    server.URL,
-			Client: rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()),
-		}
+		client := bucket.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 
 		data := []byte("{}")
 
@@ -68,10 +65,7 @@ func TestUpsert(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := bucket.Client{
-			Url:    server.URL,
-			Client: rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()),
-		}
+		client := bucket.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 		data := []byte("{}")
 
 		resp, err := client.Upsert(context.TODO(), "bucket name", data)
@@ -110,10 +104,7 @@ func TestUpsert(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := bucket.Client{
-			Url:    server.URL,
-			Client: rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()),
-		}
+		client := bucket.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 		data := []byte("{}")
 
 		resp, err := client.Upsert(context.TODO(), "bucket name", data)

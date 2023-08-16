@@ -157,6 +157,7 @@ func createDeployClientSet(env manifest.EnvironmentDefinition, dryRun bool) (dep
 		Classic:    cl.Classic(),
 		Settings:   cl.Settings(),
 		Automation: cl.Automation(),
+		Bucket:     cl.Bucket(),
 	}, nil
 }
 

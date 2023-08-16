@@ -24,6 +24,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	clientAuth "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
@@ -39,6 +40,8 @@ type ClientSet struct {
 	dtClient *dtclient.DynatraceClient
 	// autClient is the client capable of updating or creating automation API configs
 	autClient *automation.Client
+
+	bucketClient *bucket.Client
 }
 
 func (s ClientSet) Classic() *dtclient.DynatraceClient {
@@ -55,6 +58,10 @@ func (s ClientSet) Automation() *automation.Client {
 
 func (s ClientSet) Entities() *dtclient.DynatraceClient {
 	return s.dtClient
+}
+
+func (s ClientSet) Bucket() *bucket.Client {
+	return s.bucketClient
 }
 
 type ClientOptions struct {
@@ -136,19 +143,24 @@ func CreatePlatformClientSet(url string, auth PlatformAuth, opts ClientOptions) 
 		dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentRequestLimit)),
 		dtclient.WithCustomUserAgentString(opts.getUserAgentString()),
 	)
+	platformClient := rest.NewRestClient(clientAuth.NewOAuthClient(context.TODO(), oauthCredentials), trafficLogger, rest.CreateRateLimitStrategy())
+
 	autClient := automation.NewClient(
 		url,
-		rest.NewRestClient(clientAuth.NewOAuthClient(context.TODO(), oauthCredentials), trafficLogger, rest.CreateRateLimitStrategy()),
+		platformClient,
 		automation.WithClientRequestLimiter(concurrency.NewLimiter(concurrentRequestLimit)),
 		automation.WithCustomUserAgentString(opts.getUserAgentString()),
 	)
+
+	bucketClient := bucket.NewClient(url, platformClient)
 
 	if err != nil {
 		return nil, fmt.Errorf("unable to create API clients: %w", err)
 	}
 
 	return &ClientSet{
-		dtClient:  dtClient,
-		autClient: autClient,
+		dtClient:     dtClient,
+		autClient:    autClient,
+		bucketClient: bucketClient,
 	}, nil
 }
