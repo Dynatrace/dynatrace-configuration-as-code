@@ -48,6 +48,7 @@ type ClientSet struct {
 	Classic    dtclient.Client
 	Settings   dtclient.Client
 	Automation automationClient
+	Bucket     bucketClient
 }
 
 var DummyClientSet = ClientSet{
@@ -358,6 +359,9 @@ func deploy(ctx context.Context, clientSet ClientSet, apis api.APIs, em *entityM
 
 	case config.AutomationType:
 		res, deployErr = deployAutomation(ctx, clientSet.Automation, properties, renderedConfig, c)
+
+	case config.BucketType:
+		res, deployErr = deployBucket(ctx, clientSet.Bucket, properties, renderedConfig, c)
 
 	default:
 		deployErr = fmt.Errorf("unknown config-type (ID: %q)", c.Type.ID())

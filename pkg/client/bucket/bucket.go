@@ -33,13 +33,20 @@ type Response struct {
 }
 
 type Client struct {
-	Url    string
-	Client *rest.Client
+	url    string
+	client *rest.Client
+}
+
+func NewClient(url string, client *rest.Client) *Client {
+	return &Client{
+		url:    url,
+		client: client,
+	}
 }
 
 func (c Client) Upsert(ctx context.Context, id string, data []byte) (Response, error) {
 
-	u, err := url.JoinPath(c.Url, endpoint)
+	u, err := url.JoinPath(c.url, endpoint)
 	if err != nil {
 		return Response{}, fmt.Errorf("faild to create sound url: %w", err)
 	}
@@ -49,12 +56,12 @@ func (c Client) Upsert(ctx context.Context, id string, data []byte) (Response, e
 		return Response{}, err
 	}
 
-	r, err := c.Client.Post(ctx, u, data)
+	r, err := c.client.Post(ctx, u, data)
 	if err != nil {
 		return Response{}, fmt.Errorf("unable to create object with ID %s: %w", id, err)
 	}
 	if !r.IsSuccess() {
-		return Response{}, rest.NewRespErr(fmt.Sprintf("failed to update object with ID %s (HTTP %d): %s", id, r.StatusCode, string(r.Body)), r).WithRequestInfo(http.MethodPut, u)
+		return Response{}, rest.NewRespErr(fmt.Sprintf("failed to update object with ID %q (HTTP %d): %s", id, r.StatusCode, string(r.Body)), r).WithRequestInfo(http.MethodPut, u)
 	}
 
 	return Response{
