@@ -40,7 +40,7 @@ type ClientSet struct {
 	dtClient *dtclient.DynatraceClient
 	// autClient is the client capable of updating or creating automation API configs
 	autClient *automation.Client
-
+	// bucketClient is the client capable of updating or creating Grail Bucket configs
 	bucketClient *bucket.Client
 }
 

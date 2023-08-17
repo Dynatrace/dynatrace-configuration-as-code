@@ -33,6 +33,7 @@ import (
 const endpoint = "platform/storage/management/v1/bucket-definitions"
 
 type (
+	// Response holds all necessary information to create and update Grail Buckets
 	Response struct {
 		BucketName string `json:"bucketName"`
 		Status     string `json:"status"`
@@ -40,6 +41,7 @@ type (
 		Data       []byte `json:"-"`
 	}
 
+	// Client abstracts the API access for Grail Buckets
 	Client struct {
 		url     string
 		client  *rest.Client
@@ -47,6 +49,7 @@ type (
 	}
 )
 
+// NewClient creates a new client to interact with the Grail Bucket API
 func NewClient(url string, client *rest.Client) *Client {
 	return &Client{
 		url:     url,
@@ -55,6 +58,7 @@ func NewClient(url string, client *rest.Client) *Client {
 	}
 }
 
+// Upsert create or updates a given Grail Bucket
 func (c Client) Upsert(ctx context.Context, id string, data []byte) (result Response, err error) {
 	if id == "" {
 		return Response{}, fmt.Errorf("id must be non empty")
@@ -65,6 +69,8 @@ func (c Client) Upsert(ctx context.Context, id string, data []byte) (result Resp
 	return
 }
 
+// upsert first tries to create the bucket. If it does not work, we try to update it.
+// This has the advantage that we don't need to try to fetch the object first.
 func (c Client) upsert(ctx context.Context, id string, data []byte) (Response, error) {
 	r, err := c.create(ctx, id, data)
 	if err == nil {
