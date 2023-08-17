@@ -22,6 +22,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
@@ -55,6 +56,7 @@ var DummyClientSet = ClientSet{
 	Classic:    &dtclient.DummyClient{},
 	Settings:   &dtclient.DummyClient{},
 	Automation: &dummyAutomationClient{},
+	Bucket:     &bucket.DummyClient{},
 }
 
 // DeployConfigs deploys the given configs with the given apis via the given client
