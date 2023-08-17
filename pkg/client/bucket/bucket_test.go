@@ -25,20 +25,36 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 )
 
 func TestUpsert(t *testing.T) {
 
-	t.Run("error cases", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			if req.Method == http.MethodPost {
-				rw.WriteHeader(http.StatusBadRequest)
-				rw.Write([]byte("bad request message"))
-				return
-			}
-			assert.Fail(t, "unexpected HTTP method call")
-		}))
+	t.Run("update fails", func(t *testing.T) {
+		responses := serverResponses{
+			http.MethodPost: {
+				code:     http.StatusBadRequest,
+				response: "ERROR",
+			},
+			http.MethodGet: {
+				code: http.StatusOK,
+				response: `{
+  "bucketName": "bucket name",
+  "table": "metrics",
+  "displayName": "Default metrics (15 months)",
+  "status": "active",
+  "retentionDays": 462,
+  "metricInterval": "PT1M",
+  "version": 1
+}`,
+			},
+			http.MethodPut: {
+				code:     http.StatusForbidden,
+				response: "no write access message",
+			},
+		}
+		server := createServer(t, responses)
 		defer server.Close()
 
 		client := bucket.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
@@ -46,23 +62,35 @@ func TestUpsert(t *testing.T) {
 		data := []byte("{}")
 
 		_, err := client.Upsert(context.TODO(), "bucket name", data)
-		assert.ErrorContains(t, err, "bad request message", http.StatusBadRequest)
+		assert.ErrorContains(t, err, "no write access message", http.StatusForbidden)
 	})
 
-	t.Run("success cases", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			if req.Method == http.MethodPost {
-				rw.WriteHeader(http.StatusOK)
-				rw.Write([]byte(`{
+	t.Run("create new bucket - OK", func(t *testing.T) {
+		responses := serverResponses{
+			http.MethodPost: {
+				code: http.StatusOK,
+				response: `{
   "bucketName": "bucket name",
-  "table": "logs",
-  "displayName": "Custom logs bucket",
-  "retentionDays": 35
-}`))
-				return
-			}
-			assert.Fail(t, "unexpected HTTP method call")
-		}))
+  "table": "metrics",
+  "displayName": "Default metrics (15 months)",
+  "status": "active",
+  "retentionDays": 462,
+  "metricInterval": "PT1M",
+  "version": 1
+}`,
+				validate: func(req *http.Request) {
+					data, err := io.ReadAll(req.Body)
+					assert.NoError(t, err)
+
+					m := map[string]any{}
+					err = json.Unmarshal(data, &m)
+					assert.NoError(t, err)
+
+					assert.Equal(t, "bucket name", m["bucketName"])
+				},
+			},
+		}
+		server := createServer(t, responses)
 		defer server.Close()
 
 		client := bucket.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
@@ -78,30 +106,51 @@ func TestUpsert(t *testing.T) {
 		assert.Equal(t, "bucket name", m["bucketName"])
 	})
 
-	t.Run("success case 2", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-
-			data, err := io.ReadAll(req.Body)
-			assert.NoError(t, err)
-
-			m := map[string]any{}
-			err = json.Unmarshal(data, &m)
-			assert.NoError(t, err)
-
-			assert.Equal(t, "bucket name", m["bucketName"])
-
-			if req.Method == http.MethodPost {
-				rw.WriteHeader(http.StatusOK)
-				rw.Write([]byte(`{
+	t.Run("update new bucket - OK", func(t *testing.T) {
+		responses := serverResponses{
+			http.MethodPost: {
+				code:     http.StatusForbidden,
+				response: "this is an error",
+			},
+			http.MethodGet: {
+				code: http.StatusOK,
+				response: `{
   "bucketName": "bucket name",
-  "table": "logs",
-  "displayName": "Custom logs bucket",
-  "retentionDays": 35
-}`))
-				return
-			}
-			assert.Fail(t, "unexpected HTTP method call")
-		}))
+  "table": "metrics",
+  "displayName": "Default metrics (15 months)",
+  "status": "active",
+  "retentionDays": 462,
+  "metricInterval": "PT1M",
+  "version": 1
+}`,
+				validate: func(req *http.Request) {
+					assert.Contains(t, req.URL.String(), url.PathEscape("bucket name"))
+				},
+			},
+			http.MethodPut: {
+				code: http.StatusOK,
+				response: `{
+  "bucketName": "bucket name",
+  "table": "metrics",
+  "displayName": "Default metrics (15 months)",
+  "status": "active",
+  "retentionDays": 462,
+  "metricInterval": "PT1M",
+  "version": 1
+}`,
+				validate: func(req *http.Request) {
+					data, err := io.ReadAll(req.Body)
+					assert.NoError(t, err)
+
+					m := map[string]any{}
+					err = json.Unmarshal(data, &m)
+					assert.NoError(t, err)
+
+					assert.Equal(t, "bucket name", m["bucketName"])
+				},
+			},
+		}
+		server := createServer(t, responses)
 		defer server.Close()
 
 		client := bucket.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
@@ -116,5 +165,27 @@ func TestUpsert(t *testing.T) {
 
 		assert.Equal(t, "bucket name", m["bucketName"])
 	})
+
+}
+
+type httpMethod = string
+type serverResponses map[httpMethod]struct {
+	code     int
+	response string
+	validate func(*http.Request)
+}
+
+func createServer(t *testing.T, arg serverResponses) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		if res, found := arg[req.Method]; found {
+			if res.validate != nil {
+				res.validate(req)
+			}
+			rw.WriteHeader(res.code)
+			rw.Write([]byte(res.response))
+		} else {
+			assert.Fail(t, "unexpected HTTP method call")
+		}
+	}))
 
 }
