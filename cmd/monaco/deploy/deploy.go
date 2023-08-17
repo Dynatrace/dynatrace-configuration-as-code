@@ -342,6 +342,9 @@ func platformEnvironment(e manifest.EnvironmentDefinition) bool {
 }
 
 func onlyAvailableOnPlatform(c *config.Config) bool {
-	_, aut := c.Type.(config.AutomationType)
-	return aut
+	if _, ok := c.Type.(config.AutomationType); ok {
+		return true
+	}
+	_, ok := c.Type.(config.BucketType)
+	return ok
 }
