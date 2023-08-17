@@ -21,6 +21,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"net/http"
 	"net/url"
@@ -30,35 +32,56 @@ import (
 
 const endpoint = "platform/storage/management/v1/bucket-definitions"
 
-type Response struct {
-	BucketName string `json:"bucketName"`
-	Status     string `json:"status"`
-	Version    int    `json:"version"`
-	Data       []byte `json:"-"`
-}
+type (
+	Response struct {
+		BucketName string `json:"bucketName"`
+		Status     string `json:"status"`
+		Version    int    `json:"version"`
+		Data       []byte `json:"-"`
+	}
 
-type Client struct {
-	url    string
-	client *rest.Client
-}
+	Client struct {
+		url     string
+		client  *rest.Client
+		limiter *concurrency.Limiter
+	}
+)
 
 func NewClient(url string, client *rest.Client) *Client {
 	return &Client{
-		url:    url,
-		client: client,
+		url:     url,
+		client:  client,
+		limiter: concurrency.NewLimiter(5),
 	}
 }
 
-func (c Client) Upsert(ctx context.Context, id string, data []byte) (Response, error) {
+func (c Client) Upsert(ctx context.Context, id string, data []byte) (result Response, err error) {
+	if id == "" {
+		return Response{}, fmt.Errorf("id must be non empty")
+	}
+	c.limiter.ExecuteBlocking(func() {
+		result, err = c.upsert(ctx, id, data)
+	})
+	return
+}
 
-	time.Sleep(5 * time.Second)
-	b, err := c.get(ctx, id)
-
-	if err != nil {
-		return c.create(ctx, id, data)
+func (c Client) upsert(ctx context.Context, id string, data []byte) (Response, error) {
+	r, err := c.create(ctx, id, data)
+	if err == nil {
+		log.WithCtxFields(ctx).Debug("created object with ID %q", id)
+		return r, nil
 	}
 
-	return c.update(ctx, b, data)
+	log.WithCtxFields(ctx).Debug("failed to create new object with ID %q; trying to update existing: %w", id, err)
+
+	b, err := c.get(ctx, id)
+	if err != nil {
+		return Response{}, fmt.Errorf("failed to get object with ID %q: %w", id, err)
+	}
+
+	r, err = c.update(ctx, b, data)
+	log.WithCtxFields(ctx).Debug("updated object with ID %q", id)
+	return r, err
 }
 
 func (c Client) create(ctx context.Context, id string, data []byte) (Response, error) {
@@ -149,7 +172,12 @@ func (c Client) get(ctx context.Context, id string) (Response, error) {
 		return Response{}, fmt.Errorf("faild to create sound url: %w", err)
 	}
 
-	r, err := c.client.Get(ctx, u)
+	retry := rest.RetrySetting{
+		WaitTime:   time.Second,
+		MaxRetries: 3,
+	}
+
+	r, err := c.client.GetWithRetry(ctx, u, retry)
 	if err != nil {
 		return Response{}, fmt.Errorf("unable to get object with id %q: %w", id, err)
 	}
@@ -166,7 +194,6 @@ func (c Client) get(ctx context.Context, id string) (Response, error) {
 }
 
 func unmarshalJSON(data []byte) (Response, error) {
-
 	var r Response
 	err := json.Unmarshal(data, &r)
 	if err != nil {
