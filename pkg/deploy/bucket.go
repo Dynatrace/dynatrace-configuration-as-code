@@ -32,7 +32,7 @@ type bucketClient interface {
 var _ bucketClient = (*bucket.Client)(nil)
 
 func deployBucket(ctx context.Context, client bucketClient, properties parameter.Properties, renderedConfig string, c *config.Config) (*parameter.ResolvedEntity, error) {
-	id := coordinateID(c.Coordinate)
+	id := BucketId(c.Coordinate)
 
 	_, err := client.Upsert(ctx, id, []byte(renderedConfig))
 	if err != nil {
@@ -48,6 +48,8 @@ func deployBucket(ctx context.Context, client bucketClient, properties parameter
 	}, nil
 }
 
-func coordinateID(c coordinate.Coordinate) string {
+// BucketId returns the ID for a bucket based on the coordinate.
+// Since the bucket API does not support colons, we concatenate them using underscores.
+func BucketId(c coordinate.Coordinate) string {
 	return fmt.Sprintf("%s_%s_%s", c.Project, c.Type, c.ConfigId)
 }
