@@ -26,8 +26,58 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"testing"
 )
+
+func TestGet(t *testing.T) {
+	t.Run("successfully fetch a bucket", func(t *testing.T) {
+		const payload = `{
+  "bucketName": "bucket name",
+  "table": "metrics",
+  "displayName": "Default metrics (15 months)",
+  "status": "active",
+  "retentionDays": 462,
+  "metricInterval": "PT1M",
+  "version": 1
+}`
+
+		responses := serverResponses{
+			http.MethodGet: {
+				code:     http.StatusOK,
+				response: payload,
+			},
+		}
+		server := createServer(t, responses)
+		defer server.Close()
+
+		client := bucket.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
+
+		resp, err := client.Get(context.TODO(), "bucket name")
+		assert.NoError(t, err)
+		assert.Equal(t, resp.Status, "active")
+		assert.Equal(t, resp.Version, 1)
+		assert.Equal(t, resp.BucketName, "bucket name")
+		assert.Equal(t, resp.Data, []byte(payload))
+	})
+
+	t.Run("correctly create the error in case of a server issue", func(t *testing.T) {
+		responses := serverResponses{
+			http.MethodGet: {
+				code:     http.StatusNotFound,
+				response: "my error",
+			},
+		}
+		server := createServer(t, responses)
+		defer server.Close()
+
+		client := bucket.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
+
+		resp, err := client.Get(context.TODO(), "bucket name")
+		assert.ErrorContains(t, err, "my error", strconv.Itoa(http.StatusNotFound))
+		assert.Equal(t, resp, bucket.Response{})
+	})
+}
 
 func TestUpsert(t *testing.T) {
 

@@ -80,7 +80,7 @@ func (c Client) upsert(ctx context.Context, id string, data []byte) (Response, e
 
 	log.WithCtxFields(ctx).Debug("failed to create new object with ID %q; trying to update existing: %w", id, err)
 
-	b, err := c.get(ctx, id)
+	b, err := c.Get(ctx, id)
 	if err != nil {
 		return Response{}, fmt.Errorf("failed to get object with ID %q: %w", id, err)
 	}
@@ -172,7 +172,8 @@ func setBucketName(bucketName string, data *[]byte) error {
 	return nil
 }
 
-func (c Client) get(ctx context.Context, id string) (Response, error) {
+// Get fetches a single bucket based on the ID
+func (c Client) Get(ctx context.Context, id string) (Response, error) {
 	u, err := url.JoinPath(c.url, endpoint, id)
 	if err != nil {
 		return Response{}, fmt.Errorf("faild to create sound url: %w", err)
@@ -188,7 +189,7 @@ func (c Client) get(ctx context.Context, id string) (Response, error) {
 		return Response{}, fmt.Errorf("unable to get object with id %q: %w", id, err)
 	}
 	if !r.IsSuccess() {
-		return Response{}, rest.NewRespErr(fmt.Sprintf("failed to get object with ID %q (HTTP %d): %s", id, r.StatusCode, string(r.Body)), r).WithRequestInfo(http.MethodPut, u)
+		return Response{}, rest.NewRespErr(fmt.Sprintf("failed to get object with ID %q (HTTP %d): %s", id, r.StatusCode, string(r.Body)), r).WithRequestInfo(http.MethodGet, u)
 	}
 
 	b, err := unmarshalJSON(r.Body)
