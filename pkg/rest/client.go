@@ -64,7 +64,11 @@ func (c Client) GetWithRetry(ctx context.Context, url string, settings RetrySett
 	}
 
 	for i := 0; i < settings.MaxRetries; i++ {
-		log.WithCtxFields(ctx).Warn("Retrying failed GET request %s with error (HTTP %d)", url, resp.StatusCode)
+		if err != nil {
+			log.WithCtxFields(ctx).WithFields(field.Error(err)).Warn("Retrying failed GET request %s with error: %v", url, err)
+		} else {
+			log.WithCtxFields(ctx).Warn("Retrying failed GET request %s (HTTP %d)", url, resp.StatusCode)
+		}
 		time.Sleep(settings.WaitTime)
 		resp, err = c.Get(ctx, url)
 		if err == nil && resp.IsSuccess() {
