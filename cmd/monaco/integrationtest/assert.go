@@ -24,8 +24,10 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/stretchr/testify/assert"
+	"strings"
 
 	"testing"
 	"time"
@@ -135,6 +137,12 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 						return
 					}
 					AssertAutomation(t, *clients.Automation(), env, available, typ.Resource, theConfig)
+				case config.BucketType:
+					if clients.Bucket() == nil {
+						t.Errorf("can not assert existience of Bucket config %q) because no BucketClient exists - was the test env not configured as Platform?", theConfig.Coordinate)
+						return
+					}
+					AssertBucket(t, *clients.Bucket(), env, available, theConfig)
 				default:
 					t.Errorf("Can not assert config of unknown type %q", theConfig.Coordinate.Type)
 				}
@@ -231,6 +239,35 @@ func AssertAutomation(t *testing.T, c automation.Client, env manifest.Environmen
 		assert.True(t, exists, "Automation Object should be available, but wasn't. environment.Environment: '%s', failed for '%s' (%s)", env.Name, cfg.Coordinate, resource)
 	} else {
 		assert.False(t, exists, "Automation Object should NOT be available, but was. environment.Environment: '%s', failed for '%s' (%s)", env.Name, cfg.Coordinate, resource)
+	}
+}
+
+func AssertBucket(t *testing.T, client bucket.Client, env manifest.EnvironmentDefinition, available bool, cfg config.Config) {
+
+	var expectedId string
+	if cfg.OriginObjectId != "" {
+		expectedId = cfg.OriginObjectId
+	} else {
+		expectedId = deploy.BucketId(cfg.Coordinate)
+	}
+
+	_, err := client.Get(context.TODO(), expectedId)
+	if err != nil && !strings.Contains(err.Error(), "404") {
+		// 404 is an allowed error to continue
+		assert.NoError(t, err)
+	}
+
+	notFound := err != nil && strings.Contains(err.Error(), "404")
+
+	if cfg.Skip {
+		assert.Truef(t, notFound, "Skipped Automation Object should NOT be available but was. environment.Environment: '%s', failed for '%s'", env.Name, cfg.Coordinate)
+		return
+	}
+
+	if available {
+		assert.Falsef(t, notFound, "Automation Object should be available, but wasn't. environment.Environment: '%s', failed for '%s'", env.Name, cfg.Coordinate)
+	} else {
+		assert.Truef(t, notFound, "Automation Object should NOT be available, but was. environment.Environment: '%s', failed for '%s'", env.Name, cfg.Coordinate)
 	}
 }
 

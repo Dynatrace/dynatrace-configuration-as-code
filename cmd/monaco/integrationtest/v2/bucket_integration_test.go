@@ -20,6 +20,7 @@
 package v2
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -49,5 +50,7 @@ func TestIntegrationBucket(t *testing.T) {
 		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
 		err = cmd.Execute()
 		assert.NoError(t, err)
+
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{}, "", true)
 	})
 }
