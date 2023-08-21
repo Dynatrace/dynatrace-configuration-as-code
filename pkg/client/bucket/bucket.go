@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"net/http"
 	"net/url"
@@ -74,11 +75,11 @@ func (c Client) Upsert(ctx context.Context, id string, data []byte) (result Resp
 func (c Client) upsert(ctx context.Context, id string, data []byte) (Response, error) {
 	r, err := c.create(ctx, id, data)
 	if err == nil {
-		log.WithCtxFields(ctx).Debug("created object with ID %q", id)
+		log.WithCtxFields(ctx).Debug("Created bucket with ID %q", id)
 		return r, nil
 	}
 
-	log.WithCtxFields(ctx).Debug("failed to create new object with ID %q; trying to update existing: %w", id, err)
+	log.WithCtxFields(ctx).WithFields(field.Error(err)).Debug("Failed to create new object with ID %q; trying to update existing: %s", id, err)
 
 	b, err := c.Get(ctx, id)
 	if err != nil {
@@ -86,7 +87,7 @@ func (c Client) upsert(ctx context.Context, id string, data []byte) (Response, e
 	}
 
 	r, err = c.update(ctx, b, data)
-	log.WithCtxFields(ctx).Debug("updated object with ID %q", id)
+	log.WithCtxFields(ctx).Debug("Update bucket with ID %q", id)
 	return r, err
 }
 
@@ -103,10 +104,10 @@ func (c Client) create(ctx context.Context, id string, data []byte) (Response, e
 
 	r, err := c.client.Post(ctx, u, data)
 	if err != nil {
-		return Response{}, fmt.Errorf("unable to create object with ID %q: %w", id, err)
+		return Response{}, fmt.Errorf("failed to create object with ID %q: %w", id, err)
 	}
 	if !r.IsSuccess() {
-		return Response{}, rest.NewRespErr(fmt.Sprintf("failed to update object with ID %q (HTTP %d): %s", id, r.StatusCode, string(r.Body)), r).WithRequestInfo(http.MethodPut, u)
+		return Response{}, rest.NewRespErr(fmt.Sprintf("failed to create object with ID %q (HTTP %d): %s", id, r.StatusCode, string(r.Body)), r).WithRequestInfo(http.MethodPut, u)
 	}
 
 	b, err := unmarshalJSON(r.Body)
