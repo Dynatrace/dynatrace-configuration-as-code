@@ -26,23 +26,23 @@ import (
 )
 
 type bucketClient interface {
-	Upsert(ctx context.Context, id string, data []byte) (bucket.Response, error)
+	Upsert(ctx context.Context, bucketName string, data []byte) (bucket.Response, error)
 }
 
 var _ bucketClient = (*bucket.Client)(nil)
 
 func deployBucket(ctx context.Context, client bucketClient, properties parameter.Properties, renderedConfig string, c *config.Config) (*parameter.ResolvedEntity, error) {
-	id := BucketId(c.Coordinate)
+	bucketName := BucketId(c.Coordinate)
 
-	_, err := client.Upsert(ctx, id, []byte(renderedConfig))
+	_, err := client.Upsert(ctx, bucketName, []byte(renderedConfig))
 	if err != nil {
-		return &parameter.ResolvedEntity{}, newConfigDeployErr(c, fmt.Sprintf("failed to upsert bucket with id %q", id)).withError(err)
+		return &parameter.ResolvedEntity{}, newConfigDeployErr(c, fmt.Sprintf("failed to upsert bucket with bucketName %q", bucketName)).withError(err)
 	}
 
-	properties[config.IdParameter] = id
+	properties[config.IdParameter] = bucketName
 
 	return &parameter.ResolvedEntity{
-		EntityName: id,
+		EntityName: bucketName,
 		Coordinate: c.Coordinate,
 		Properties: properties,
 	}, nil

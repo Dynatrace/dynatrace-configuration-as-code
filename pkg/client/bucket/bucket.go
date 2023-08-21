@@ -60,12 +60,12 @@ func NewClient(url string, client *rest.Client) *Client {
 }
 
 // Upsert create or updates a given Grail Bucket
-func (c Client) Upsert(ctx context.Context, id string, data []byte) (result Response, err error) {
-	if id == "" {
-		return Response{}, fmt.Errorf("id must be non empty")
+func (c Client) Upsert(ctx context.Context, bucketName string, data []byte) (result Response, err error) {
+	if bucketName == "" {
+		return Response{}, fmt.Errorf("bucketName must be non empty")
 	}
 	c.limiter.ExecuteBlocking(func() {
-		result, err = c.upsert(ctx, id, data)
+		result, err = c.upsert(ctx, bucketName, data)
 	})
 	return
 }
@@ -79,42 +79,42 @@ func (c Client) Upsert(ctx context.Context, id string, data []byte) (result Resp
 // This is done like this, as the server did not recognize the existing object immediately after creation.
 // Retrying the GET request multiple times solves this issue, however, this leads to problems during creation, as
 // the fetch fails multiple times, because the object has not been created yet.
-func (c Client) upsert(ctx context.Context, id string, data []byte) (Response, error) {
-	r, err := c.create(ctx, id, data)
+func (c Client) upsert(ctx context.Context, bucketName string, data []byte) (Response, error) {
+	r, err := c.create(ctx, bucketName, data)
 	if err == nil {
-		log.WithCtxFields(ctx).Debug("Created bucket with ID %q", id)
+		log.WithCtxFields(ctx).Debug("Created bucket with bucketName %q", bucketName)
 		return r, nil
 	}
 
-	log.WithCtxFields(ctx).WithFields(field.Error(err)).Debug("Failed to create new object with ID %q; trying to update existing: %s", id, err)
+	log.WithCtxFields(ctx).WithFields(field.Error(err)).Debug("Failed to create new object with bucketName %q. Trying to update existing object. Error: %s", bucketName, err)
 
-	b, err := c.Get(ctx, id)
+	b, err := c.Get(ctx, bucketName)
 	if err != nil {
-		return Response{}, fmt.Errorf("failed to get object with ID %q: %w", id, err)
+		return Response{}, fmt.Errorf("failed to get object with bucketName %q: %w", bucketName, err)
 	}
 
 	r, err = c.update(ctx, b, data)
-	log.WithCtxFields(ctx).Debug("Update bucket with ID %q", id)
+	log.WithCtxFields(ctx).Debug("Updated bucket with bucketName %q", bucketName)
 	return r, err
 }
 
-func (c Client) create(ctx context.Context, id string, data []byte) (Response, error) {
+func (c Client) create(ctx context.Context, bucketName string, data []byte) (Response, error) {
 	u, err := url.JoinPath(c.url, endpoint)
 	if err != nil {
 		return Response{}, fmt.Errorf("faild to create sound url: %w", err)
 	}
 
-	err = setBucketName(id, &data)
+	err = setBucketName(bucketName, &data)
 	if err != nil {
 		return Response{}, err
 	}
 
 	r, err := c.client.Post(ctx, u, data)
 	if err != nil {
-		return Response{}, fmt.Errorf("failed to create object with ID %q: %w", id, err)
+		return Response{}, fmt.Errorf("failed to create object with bucketName %q: %w", bucketName, err)
 	}
 	if !r.IsSuccess() {
-		return Response{}, rest.NewRespErr(fmt.Sprintf("failed to create object with ID %q (HTTP %d): %s", id, r.StatusCode, string(r.Body)), r).WithRequestInfo(http.MethodPut, u)
+		return Response{}, rest.NewRespErr(fmt.Sprintf("failed to create object with bucketName %q (HTTP %d): %s", bucketName, r.StatusCode, string(r.Body)), r).WithRequestInfo(http.MethodPut, u)
 	}
 
 	b, err := unmarshalJSON(r.Body)
@@ -157,10 +157,10 @@ func (c Client) update(ctx context.Context, b Response, data []byte) (Response, 
 
 	r, err := c.client.Put(ctx, u.String(), data)
 	if err != nil {
-		return Response{}, fmt.Errorf("unable to update object with ID %q: %w", b.BucketName, err)
+		return Response{}, fmt.Errorf("unable to update object with bucketName %q: %w", b.BucketName, err)
 	}
 	if !r.IsSuccess() {
-		return Response{}, rest.NewRespErr(fmt.Sprintf("failed to update object with ID %q (HTTP %d): %s", b.BucketName, r.StatusCode, string(r.Body)), r).WithRequestInfo(http.MethodPut, u.String())
+		return Response{}, rest.NewRespErr(fmt.Sprintf("failed to update object with bucketName %q (HTTP %d): %s", b.BucketName, r.StatusCode, string(r.Body)), r).WithRequestInfo(http.MethodPut, u.String())
 	}
 
 	return b, nil
@@ -180,9 +180,9 @@ func setBucketName(bucketName string, data *[]byte) error {
 	return nil
 }
 
-// Get fetches a single bucket based on the ID
-func (c Client) Get(ctx context.Context, id string) (Response, error) {
-	u, err := url.JoinPath(c.url, endpoint, id)
+// Get fetches a single bucket based given the bucketName
+func (c Client) Get(ctx context.Context, bucketName string) (Response, error) {
+	u, err := url.JoinPath(c.url, endpoint, bucketName)
 	if err != nil {
 		return Response{}, fmt.Errorf("faild to create sound url: %w", err)
 	}
@@ -194,10 +194,10 @@ func (c Client) Get(ctx context.Context, id string) (Response, error) {
 
 	r, err := c.client.GetWithRetry(ctx, u, retry)
 	if err != nil {
-		return Response{}, fmt.Errorf("unable to get object with id %q: %w", id, err)
+		return Response{}, fmt.Errorf("unable to get object with bucketName %q: %w", bucketName, err)
 	}
 	if !r.IsSuccess() {
-		return Response{}, rest.NewRespErr(fmt.Sprintf("failed to get object with ID %q (HTTP %d): %s", id, r.StatusCode, string(r.Body)), r).WithRequestInfo(http.MethodGet, u)
+		return Response{}, rest.NewRespErr(fmt.Sprintf("failed to get object with bucketName %q (HTTP %d): %s", bucketName, r.StatusCode, string(r.Body)), r).WithRequestInfo(http.MethodGet, u)
 	}
 
 	b, err := unmarshalJSON(r.Body)
