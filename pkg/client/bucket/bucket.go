@@ -70,8 +70,15 @@ func (c Client) Upsert(ctx context.Context, id string, data []byte) (result Resp
 	return
 }
 
-// upsert first tries to create the bucket. If it does not work, we try to update it.
-// This has the advantage that we don't need to try to fetch the object first.
+// upsert creates or updates a given bucket.
+//
+// Due to concurrency issues on the server side, we decided to do it as follows:
+// First, we try to create the bucket. If we succeed, we return with the created bucket.
+// If the creation fails, we fetch the existing bucket, and perform an update.
+//
+// This is done like this, as the server did not recognize the existing object immediately after creation.
+// Retrying the GET request multiple times solves this issue, however, this leads to problems during creation, as
+// the fetch fails multiple times, because the object has not been created yet.
 func (c Client) upsert(ctx context.Context, id string, data []byte) (Response, error) {
 	r, err := c.create(ctx, id, data)
 	if err == nil {
