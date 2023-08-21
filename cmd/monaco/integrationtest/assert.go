@@ -26,9 +26,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/stretchr/testify/assert"
-	"strings"
-
 	"testing"
 	"time"
 
@@ -252,22 +251,28 @@ func AssertBucket(t *testing.T, client bucket.Client, env manifest.EnvironmentDe
 	}
 
 	_, err := client.Get(context.TODO(), expectedId)
-	if err != nil && !strings.Contains(err.Error(), "404") {
-		// 404 is an allowed error to continue
+	exists := true
+
+	var respErr rest.RespError
+	if errors.As(err, &respErr) {
+		if respErr.StatusCode == 404 {
+			exists = false
+		} else {
+			assert.NoError(t, err)
+		}
+	} else if err != nil {
 		assert.NoError(t, err)
 	}
 
-	notFound := err != nil && strings.Contains(err.Error(), "404")
-
 	if cfg.Skip {
-		assert.Truef(t, notFound, "Skipped Automation Object should NOT be available but was. environment.Environment: '%s', failed for '%s'", env.Name, cfg.Coordinate)
+		assert.Falsef(t, exists, "Skipped Automation Object should NOT be available but was. environment.Environment: '%s', failed for '%s'", env.Name, cfg.Coordinate)
 		return
 	}
 
 	if available {
-		assert.Falsef(t, notFound, "Automation Object should be available, but wasn't. environment.Environment: '%s', failed for '%s'", env.Name, cfg.Coordinate)
+		assert.Truef(t, exists, "Automation Object should be available, but wasn't. environment.Environment: '%s', failed for '%s'", env.Name, cfg.Coordinate)
 	} else {
-		assert.Truef(t, notFound, "Automation Object should NOT be available, but was. environment.Environment: '%s', failed for '%s'", env.Name, cfg.Coordinate)
+		assert.Falsef(t, exists, "Automation Object should NOT be available, but was. environment.Environment: '%s', failed for '%s'", env.Name, cfg.Coordinate)
 	}
 }
 
