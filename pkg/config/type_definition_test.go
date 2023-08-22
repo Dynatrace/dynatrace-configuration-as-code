@@ -19,12 +19,15 @@
 package config
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v2"
 	"testing"
 )
 
-func Test_typeDefinition_isSound(t1 *testing.T) {
+func Test_typeDefinition_isSound(t *testing.T) {
+	t.Setenv(featureflags.Buckets().EnvName(), "1")
+
 	type fields struct {
 		configType typeDefinition
 		knownApis  map[string]struct{}
@@ -170,14 +173,14 @@ func Test_typeDefinition_isSound(t1 *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t1.Run(tt.name, func(t1 *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			configType := tt.fields.configType
 			knownApis := tt.fields.knownApis
 
 			actualErr := configType.isSound(knownApis)
-			assert.Equal(t1, actualErr == nil, tt.want.result, tt.name)
+			assert.Equal(t, actualErr == nil, tt.want.result, tt.name)
 			if tt.want.err != "" {
-				assert.ErrorContains(t1, actualErr, tt.want.err, tt.name)
+				assert.ErrorContains(t, actualErr, tt.want.err, tt.name)
 			}
 		})
 	}
