@@ -169,7 +169,7 @@ func DependencyGraphBasedSort() FeatureFlag {
 func DependencyGraphBasedDeploy() FeatureFlag {
 	return FeatureFlag{
 		envName:        "MONACO_FEAT_GRAPH_DEPLOY",
-		defaultEnabled: false,
+		defaultEnabled: true,
 	}
 }
 
@@ -177,7 +177,7 @@ func DependencyGraphBasedDeploy() FeatureFlag {
 func DependencyGraphBasedDeployParallel() FeatureFlag {
 	return FeatureFlag{
 		envName:        "MONACO_FEAT_GRAPH_DEPLOY_PARALLEL",
-		defaultEnabled: false,
+		defaultEnabled: true,
 	}
 }
 
