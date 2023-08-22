@@ -31,17 +31,17 @@ type bucketClient interface {
 
 var _ bucketClient = (*bucket.Client)(nil)
 
-func deployBucket(ctx context.Context, client bucketClient, properties parameter.Properties, renderedConfig string, c *config.Config) (*parameter.ResolvedEntity, error) {
+func deployBucket(ctx context.Context, client bucketClient, properties parameter.Properties, renderedConfig string, c *config.Config) (parameter.ResolvedEntity, error) {
 	bucketName := BucketId(c.Coordinate)
 
 	_, err := client.Upsert(ctx, bucketName, []byte(renderedConfig))
 	if err != nil {
-		return &parameter.ResolvedEntity{}, newConfigDeployErr(c, fmt.Sprintf("failed to upsert bucket with bucketName %q", bucketName)).withError(err)
+		return parameter.ResolvedEntity{}, newConfigDeployErr(c, fmt.Sprintf("failed to upsert bucket with bucketName %q", bucketName)).withError(err)
 	}
 
 	properties[config.IdParameter] = bucketName
 
-	return &parameter.ResolvedEntity{
+	return parameter.ResolvedEntity{
 		EntityName: bucketName,
 		Coordinate: c.Coordinate,
 		Properties: properties,

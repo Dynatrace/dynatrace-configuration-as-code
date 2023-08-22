@@ -69,7 +69,7 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 			Parameters: toParameterMap([]parameter.NamedParameter{}),
 		}
 		res, err := deployAutomation(context.TODO(), client, nil, "", conf)
-		assert.Nil(t, res)
+		assert.Equal(t, parameter.ResolvedEntity{}, res)
 		assert.Error(t, err)
 	})
 	t.Run("TestDeployAutomation - BusinessCalendar Upsert fails", func(t *testing.T) {
@@ -84,7 +84,7 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 			Parameters: toParameterMap([]parameter.NamedParameter{}),
 		}
 		res, err := deployAutomation(context.TODO(), client, nil, "", conf)
-		assert.Nil(t, res)
+		assert.Equal(t, parameter.ResolvedEntity{}, res)
 		assert.Error(t, err)
 	})
 	t.Run("TestDeployAutomation - Scheduling Rule Upsert fails", func(t *testing.T) {
@@ -99,7 +99,7 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 			Parameters: toParameterMap([]parameter.NamedParameter{}),
 		}
 		res, err := deployAutomation(context.TODO(), client, nil, "", conf)
-		assert.Nil(t, res)
+		assert.Equal(t, parameter.ResolvedEntity{}, res)
 		assert.Error(t, err)
 	})
 }
