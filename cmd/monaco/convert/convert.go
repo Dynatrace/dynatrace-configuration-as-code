@@ -48,7 +48,7 @@ func convert(fs afero.Fs, workingDir string, environmentsFile string, outputFold
 
 	if len(projs) == 0 {
 		err := fmt.Errorf("no projects to convert found in %q", workingDir)
-		log.WithFields(field.Error(err)).Error("Please ensure that you run the command with a directory that holds monaco projects to be converted: %w", err)
+		log.WithFields(field.Error(err)).Error("Please ensure that you run the command with a directory that holds monaco projects to be converted: %s", err)
 		return err
 	}
 

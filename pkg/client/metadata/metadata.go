@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"golang.org/x/net/context"
 	"net/url"
@@ -53,7 +54,11 @@ func GetDynatraceClassicURL(ctx context.Context, client *rest.Client, environmen
 
 	resp, err := client.Get(ctx, endpointURL)
 	if !resp.IsSuccess() || err != nil {
-		log.Debug("failed to query classic environment url from %q, falling back to deprecated endpoint %q: %v (HTTP %v)", ClassicEnvironmentDomainPath, DeprecatedClassicEnvDomainPath, err, resp.StatusCode)
+		if err == nil {
+			log.Debug("failed to query classic environment url from %q, falling back to deprecated endpoint %q (HTTP %v). \n\tResponse was: %s", ClassicEnvironmentDomainPath, DeprecatedClassicEnvDomainPath, resp.StatusCode, string(resp.Body))
+		} else {
+			log.WithFields(field.Error(err)).Debug("failed to query classic environment url from %q, falling back to deprecated endpoint %q: %s", ClassicEnvironmentDomainPath, DeprecatedClassicEnvDomainPath, err)
+		}
 
 		deprecatedEndpointURL, err := url.JoinPath(environmentURL, DeprecatedClassicEnvDomainPath)
 		if err != nil {
