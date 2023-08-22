@@ -3,7 +3,7 @@ module github.com/dynatrace/dynatrace-configuration-as-code/v2
 require (
 	github.com/anknown/ahocorasick v0.0.0-20190904063843-d75dbd5169c0
 	github.com/google/go-cmp v0.5.9
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.3.1
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/spf13/afero v1.9.5
 	github.com/spf13/cobra v1.7.0
