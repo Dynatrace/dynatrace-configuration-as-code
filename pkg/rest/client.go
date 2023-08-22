@@ -138,7 +138,7 @@ func (c Client) requestWithBody(ctx context.Context, method string, url string, 
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Content-type", "application/json")
 	return req, nil
@@ -168,7 +168,7 @@ func (c Client) executeRequest(request *http.Request) (Response, error) {
 			if closeErr := resp.Body.Close(); closeErr != nil {
 				if err != nil {
 					// don't overwrite an actual error for a body close issue
-					log.Warn("Failed to close HTTP response body after previous error. Closing error: %w", err)
+					log.WithFields(field.Error(err)).Warn("Failed to close HTTP response body after previous error. Closing error: %s", err)
 					return
 				}
 
