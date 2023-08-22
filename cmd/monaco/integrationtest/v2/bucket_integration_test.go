@@ -29,7 +29,6 @@ import (
 	"github.com/spf13/afero"
 )
 
-// tests all configs for a single environment
 func TestIntegrationBucket(t *testing.T) {
 
 	configFolder := "test-resources/integration-bucket/"
@@ -41,16 +40,41 @@ func TestIntegrationBucket(t *testing.T) {
 
 		// Create the buckets
 		cmd := runner.BuildCli(fs)
-		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
+		cmd.SetArgs([]string{"deploy", "--verbose", manifest, "-p", "project"})
 		err := cmd.Execute()
 		assert.NoError(t, err)
 
 		// Update the buckets
 		cmd = runner.BuildCli(fs)
-		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
+		cmd.SetArgs([]string{"deploy", "--verbose", manifest, "-p", "project"})
 		err = cmd.Execute()
 		assert.NoError(t, err)
 
-		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{}, "", true)
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{"project"}, "", true)
+	})
+}
+
+func TestIntegrationComplexBucket(t *testing.T) {
+
+	configFolder := "test-resources/integration-bucket/"
+	manifest := configFolder + "manifest.yaml"
+	specificEnvironment := ""
+	t.Setenv(featureflags.Buckets().EnvName(), "1")
+
+	RunIntegrationWithCleanup(t, configFolder, manifest, specificEnvironment, "ComplexBuckets", func(fs afero.Fs, _ TestContext) {
+
+		// Create the buckets
+		cmd := runner.BuildCli(fs)
+		cmd.SetArgs([]string{"deploy", "--verbose", manifest, "-p", "complex-bucket"})
+		err := cmd.Execute()
+		assert.NoError(t, err)
+
+		// Update the buckets
+		cmd = runner.BuildCli(fs)
+		cmd.SetArgs([]string{"deploy", "--verbose", manifest, "-p", "complex-bucket"})
+		err = cmd.Execute()
+		assert.NoError(t, err)
+
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{"complex-bucket"}, "", true)
 	})
 }

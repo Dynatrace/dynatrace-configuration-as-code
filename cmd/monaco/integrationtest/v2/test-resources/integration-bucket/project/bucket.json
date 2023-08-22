@@ -1,6 +1,4 @@
 {
-  "bucketName": "custom_logs",
   "table": "logs",
-  "displayName": "Custom logs bucket",
   "retentionDays": 35
 }

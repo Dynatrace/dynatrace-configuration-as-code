@@ -2,6 +2,7 @@ manifestVersion: 1.0
 
 projects:
   - name: project
+  - name: complex-bucket
 
 environmentGroups:
   - name: default

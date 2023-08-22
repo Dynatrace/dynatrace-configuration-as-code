@@ -1,0 +1,5 @@
+{
+  "table": "logs",
+  "displayName": "{{.name}}",
+  "retentionDays": {{.retention_days}}
+}
