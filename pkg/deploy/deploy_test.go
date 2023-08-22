@@ -269,7 +269,7 @@ func TestDeploySetting(t *testing.T) {
 
 			got, errors := deploy(context.TODO(), ClientSet{Settings: c}, nil, newEntityMap(testApiMap), &tt.given.config)
 			if !tt.wantErr {
-				assert.Equal(t, got, &tt.want)
+				assert.Equal(t, got, tt.want)
 				assert.Emptyf(t, errors, "errors: %v)", errors)
 			} else {
 				assert.NotEmptyf(t, errors, "errors: %v)", errors)
