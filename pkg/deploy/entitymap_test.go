@@ -18,7 +18,7 @@ package deploy
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -38,7 +38,7 @@ func TestEntityMap_PutResolved(t *testing.T) {
 
 		entityMap := newEntityMap()
 		entityMap.put(r1)
-		assert.DeepEqual(t, entityMap.resolvedEntities, ResolvedEntities{
+		assert.Equal(t, entityMap.resolvedEntities, ResolvedEntities{
 			c1: r1,
 		})
 	})
@@ -58,7 +58,7 @@ func TestEntityMap_PutResolved(t *testing.T) {
 
 		entityMap := newEntityMap()
 		entityMap.put(r1)
-		assert.DeepEqual(t, entityMap.resolvedEntities, ResolvedEntities{
+		assert.Equal(t, entityMap.resolvedEntities, ResolvedEntities{
 			c1: r1,
 		})
 	})
@@ -74,7 +74,7 @@ func TestEntityMap_PutResolved(t *testing.T) {
 
 		entityMap := newEntityMap()
 		entityMap.put(r1)
-		assert.DeepEqual(t, entityMap.resolvedEntities, ResolvedEntities{
+		assert.Equal(t, entityMap.resolvedEntities, ResolvedEntities{
 			c1: r1,
 		})
 	})
