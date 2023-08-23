@@ -27,7 +27,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 )
 
-func deployClassicConfig(ctx context.Context, configClient dtclient.ConfigClient, apis api.APIs, entityMap *entityMap, properties parameter.Properties, renderedConfig string, conf *config.Config) (ResolvedEntity, error) {
+func deployClassicConfig(ctx context.Context, configClient dtclient.ConfigClient, apis api.APIs, properties parameter.Properties, renderedConfig string, conf *config.Config) (ResolvedEntity, error) {
 	t, ok := conf.Type.(config.ClassicApiType)
 	if !ok {
 		return ResolvedEntity{}, fmt.Errorf("config was not of expected type %q, but %q", config.ClassicApiTypeId, conf.Type.ID())
@@ -41,9 +41,6 @@ func deployClassicConfig(ctx context.Context, configClient dtclient.ConfigClient
 	configName, err := extractConfigName(conf, properties)
 	if err != nil {
 		return ResolvedEntity{}, err
-	}
-	if entityMap.contains(apiToDeploy.ID, configName) && !apiToDeploy.NonUniqueName {
-		return ResolvedEntity{}, newConfigDeployErr(conf, fmt.Sprintf("duplicated config name `%s`", configName))
 	}
 
 	if apiToDeploy.DeprecatedBy != "" {

@@ -78,7 +78,7 @@ func TestDeploy(t *testing.T) {
 			Skip:        false,
 		}
 
-		resolvedEntity, errors := deploy(context.TODO(), clientSet, testApiMap, newEntityMap(testApiMap), &conf)
+		resolvedEntity, errors := deploy(context.TODO(), clientSet, testApiMap, newEntityMap(), &conf)
 
 		assert.Emptyf(t, errors, "errors: %v", errors)
 		assert.Equal(t, name, resolvedEntity.EntityName)
@@ -124,7 +124,7 @@ func TestDeploySettingShouldFailUpsert(t *testing.T) {
 		Parameters: toParameterMap(parameters),
 	}
 
-	_, errors := deploy(context.TODO(), ClientSet{Settings: c}, nil, newEntityMap(testApiMap), conf)
+	_, errors := deploy(context.TODO(), ClientSet{Settings: c}, nil, newEntityMap(), conf)
 	assert.NotEmpty(t, errors)
 }
 
@@ -267,7 +267,7 @@ func TestDeploySetting(t *testing.T) {
 				Name: tt.given.returnedEntityID,
 			}, nil)
 
-			got, errors := deploy(context.TODO(), ClientSet{Settings: c}, nil, newEntityMap(testApiMap), &tt.given.config)
+			got, errors := deploy(context.TODO(), ClientSet{Settings: c}, nil, newEntityMap(), &tt.given.config)
 			if !tt.wantErr {
 				assert.Equal(t, got, tt.want)
 				assert.Emptyf(t, errors, "errors: %v)", errors)
@@ -319,7 +319,7 @@ func TestDeployedSettingGetsNameFromConfig(t *testing.T) {
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parameters),
 	}
-	res, errors := deploy(context.TODO(), ClientSet{Settings: c}, nil, newEntityMap(testApiMap), conf)
+	res, errors := deploy(context.TODO(), ClientSet{Settings: c}, nil, newEntityMap(), conf)
 	assert.Equal(t, res.EntityName, cfgName, "expected resolved name to match configuration name")
 	assert.Emptyf(t, errors, "errors: %v", errors)
 }
@@ -359,7 +359,7 @@ func TestSettingsNameExtractionDoesNotFailIfCfgNameBecomesOptional(t *testing.T)
 		Template:   generateDummyTemplate(t),
 		Parameters: toParameterMap(parametersWithoutName),
 	}
-	res, errors := deploy(context.TODO(), ClientSet{Settings: c}, nil, newEntityMap(testApiMap), conf)
+	res, errors := deploy(context.TODO(), ClientSet{Settings: c}, nil, newEntityMap(), conf)
 	assert.Contains(t, res.EntityName, objectId, "expected resolved name to contain objectID if name is not configured")
 	assert.Empty(t, errors, " errors: %v)", errors)
 }

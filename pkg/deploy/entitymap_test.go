@@ -17,39 +17,10 @@
 package deploy
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"gotest.tools/assert"
-	"reflect"
 	"testing"
 )
-
-func TestNewEntityMap(t *testing.T) {
-	type args struct {
-		apis api.APIs
-	}
-	tests := []struct {
-		name string
-		args args
-		want *entityMap
-	}{
-		{
-			name: "Test crate entity map",
-			args: args{api.APIs{"dashboard": api.API{ID: "dashboard", URLPath: "dashboard", DeprecatedBy: "dashboard-v2"}}},
-			want: &entityMap{
-				resolvedEntities: ResolvedEntities{},
-				knownEntityNames: map[string]map[string]struct{}{"dashboard": {}},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := newEntityMap(tt.args.apis); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewEntityMap() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
 func TestEntityMap_PutResolved(t *testing.T) {
 
@@ -65,9 +36,8 @@ func TestEntityMap_PutResolved(t *testing.T) {
 			Coordinate: c1,
 		}
 
-		entityMap := newEntityMap(api.APIs{"dashboard": api.API{ID: "dashboard", URLPath: "dashboard", DeprecatedBy: "dashboard-v2"}})
+		entityMap := newEntityMap()
 		entityMap.put(r1)
-		assert.Equal(t, entityMap.contains("type", "entityName"), true)
 		assert.DeepEqual(t, entityMap.resolvedEntities, ResolvedEntities{
 			c1: r1,
 		})
@@ -86,9 +56,8 @@ func TestEntityMap_PutResolved(t *testing.T) {
 			Skip:       true,
 		}
 
-		entityMap := newEntityMap(api.APIs{"dashboard": api.API{ID: "dashboard", URLPath: "dashboard", DeprecatedBy: "dashboard-v2"}})
+		entityMap := newEntityMap()
 		entityMap.put(r1)
-		assert.Equal(t, entityMap.contains("type", "entityName"), false)
 		assert.DeepEqual(t, entityMap.resolvedEntities, ResolvedEntities{
 			c1: r1,
 		})
@@ -103,9 +72,8 @@ func TestEntityMap_PutResolved(t *testing.T) {
 
 		r1 := ResolvedEntity{Coordinate: c1}
 
-		entityMap := newEntityMap(api.APIs{"dashboard": api.API{ID: "dashboard", URLPath: "dashboard", DeprecatedBy: "dashboard-v2"}})
+		entityMap := newEntityMap()
 		entityMap.put(r1)
-		assert.Equal(t, entityMap.contains("type", ""), false)
 		assert.DeepEqual(t, entityMap.resolvedEntities, ResolvedEntities{
 			c1: r1,
 		})

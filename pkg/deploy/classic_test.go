@@ -52,9 +52,9 @@ func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
 		Parameters:  toParameterMap(parameters),
 		Skip:        false,
 	}
-	entityMap := newEntityMap(testApiMap)
+	entityMap := newEntityMap()
 	entityMap.put(ResolvedEntity{EntityName: name, Coordinate: coordinate.Coordinate{Type: "dashboard"}})
-	_, errors := deployClassicConfig(context.TODO(), client, testApiMap, entityMap, nil, "", &conf)
+	_, errors := deployClassicConfig(context.TODO(), client, testApiMap, nil, "", &conf)
 
 	assert.NotEmpty(t, errors)
 }
@@ -106,7 +106,7 @@ func TestDeployConfigShouldFailCyclicParameterDependencies(t *testing.T) {
 		Skip:        false,
 	}
 
-	_, errors := deployClassicConfig(context.TODO(), client, testApiMap, newEntityMap(testApiMap), nil, "", &conf)
+	_, errors := deployClassicConfig(context.TODO(), client, testApiMap, nil, "", &conf)
 	assert.NotEmpty(t, errors)
 }
 
@@ -127,7 +127,7 @@ func TestDeployConfigShouldFailOnMissingNameParameter(t *testing.T) {
 		Skip:        false,
 	}
 
-	_, errors := deployClassicConfig(context.TODO(), client, testApiMap, newEntityMap(testApiMap), nil, "", &conf)
+	_, errors := deployClassicConfig(context.TODO(), client, testApiMap, nil, "", &conf)
 	assert.NotEmpty(t, errors)
 }
 
@@ -164,7 +164,7 @@ func TestDeployConfigShouldFailOnReferenceOnUnknownConfig(t *testing.T) {
 		Skip:        false,
 	}
 
-	_, errors := deployClassicConfig(context.TODO(), client, testApiMap, newEntityMap(testApiMap), nil, "", &conf)
+	_, errors := deployClassicConfig(context.TODO(), client, testApiMap, nil, "", &conf)
 	assert.NotEmpty(t, errors)
 }
 
@@ -203,6 +203,6 @@ func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
 		Skip:        false,
 	}
 
-	_, errors := deployClassicConfig(context.TODO(), client, testApiMap, newEntityMap(testApiMap), nil, "", &conf)
+	_, errors := deployClassicConfig(context.TODO(), client, testApiMap, nil, "", &conf)
 	assert.NotEmpty(t, errors)
 }
