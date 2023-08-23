@@ -22,10 +22,16 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
 )
 
+type EntityLookup interface {
+	parameter.PropertyResolver
+
+	Entity(config coordinate.Coordinate) (ResolvedEntity, bool)
+}
+
 // TODO: unexport this function
 func ResolveParameterValues(
 	conf *config.Config,
-	entities *entityMap,
+	entities EntityLookup,
 	parameters []parameter.NamedParameter,
 ) (parameter.Properties, []error) {
 
@@ -92,7 +98,7 @@ func resolveProperties(c *config.Config, entities *entityMap) (parameter.Propert
 
 func validateParameterReferences(configCoordinates coordinate.Coordinate,
 	group string, environment string,
-	entities *entityMap,
+	entities EntityLookup,
 	paramName string,
 	param parameter.Parameter,
 ) (errors []error) {
@@ -110,7 +116,7 @@ func validateParameterReferences(configCoordinates coordinate.Coordinate,
 			continue
 		}
 
-		entity, found := entities.entity(ref.Config)
+		entity, found := entities.Entity(ref.Config)
 
 		if !found {
 			errors = append(errors, newParamsRefErr(configCoordinates, group, environment, paramName, ref, "referenced config not found"))

@@ -73,7 +73,7 @@ func (r *entityMap) Property(config coordinate.Coordinate, property string) (any
 	return nil, false
 }
 
-func (r *entityMap) entity(config coordinate.Coordinate) (ResolvedEntity, bool) {
+func (r *entityMap) Entity(config coordinate.Coordinate) (ResolvedEntity, bool) {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
