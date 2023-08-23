@@ -20,6 +20,7 @@ package bucket
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -32,6 +33,11 @@ import (
 )
 
 const endpoint = "platform/storage/management/v1/bucket-definitions"
+
+var retryStrategy = rest.RetrySetting{
+	WaitTime:   1 * time.Second,
+	MaxRetries: 3,
+}
 
 type (
 	// Response holds all necessary information to create and update Grail Buckets
@@ -85,17 +91,32 @@ func (c Client) upsert(ctx context.Context, bucketName string, data []byte) (Res
 		log.WithCtxFields(ctx).Debug("Created bucket with bucketName %q", bucketName)
 		return r, nil
 	}
+	log.WithCtxFields(ctx).WithFields(field.Error(err)).Debug("Failed to create new bucket with bucketName %q. Trying to update existing bucket. Error: %s", bucketName, err)
 
-	log.WithCtxFields(ctx).WithFields(field.Error(err)).Debug("Failed to create new object with bucketName %q. Trying to update existing object. Error: %s", bucketName, err)
+	for i := 0; i < retryStrategy.MaxRetries; i++ {
+		log.WithCtxFields(ctx).Debug("Trying to update bucket with bucketName %q (%d/%d retries)", bucketName, i+1, retryStrategy.MaxRetries)
 
-	b, err := c.Get(ctx, bucketName)
-	if err != nil {
-		return Response{}, fmt.Errorf("failed to get object with bucketName %q: %w", bucketName, err)
+		var b Response
+		b, err = c.Get(ctx, bucketName)
+		if err != nil {
+			return Response{}, fmt.Errorf("failed to get bucket with bucketName %q: %w", bucketName, err)
+		}
+
+		r, err = c.update(ctx, b, data)
+		if err == nil {
+			log.WithCtxFields(ctx).Debug("Updated bucket with bucketName %q", bucketName)
+			return r, nil
+		}
+
+		var respErr rest.RespError
+		if !(errors.As(err, &respErr) && respErr.StatusCode == http.StatusConflict) {
+			return Response{}, fmt.Errorf("failed to update bucket with bucketName %q: %w", bucketName, err)
+		}
+
+		time.Sleep(retryStrategy.WaitTime)
 	}
 
-	r, err = c.update(ctx, b, data)
-	log.WithCtxFields(ctx).Debug("Updated bucket with bucketName %q", bucketName)
-	return r, err
+	return Response{}, err
 }
 
 func (c Client) create(ctx context.Context, bucketName string, data []byte) (Response, error) {
@@ -125,6 +146,12 @@ func (c Client) create(ctx context.Context, bucketName string, data []byte) (Res
 	return b, nil
 }
 
+// update updates a given bucket
+//
+// To update, we need to first query the existing object, as we need to get the current version & status from the server.
+// This then will be used to update the bucket.
+// If the bucket changes in between (for example, the status changes), we need to query the current state again and
+// try to update again.
 func (c Client) update(ctx context.Context, b Response, data []byte) (Response, error) {
 
 	u, err := url.Parse(c.url)
@@ -187,12 +214,7 @@ func (c Client) Get(ctx context.Context, bucketName string) (Response, error) {
 		return Response{}, fmt.Errorf("faild to create sound url: %w", err)
 	}
 
-	retry := rest.RetrySetting{
-		WaitTime:   time.Second,
-		MaxRetries: 3,
-	}
-
-	r, err := c.client.GetWithRetry(ctx, u, retry)
+	r, err := c.client.GetWithRetry(ctx, u, retryStrategy)
 	if err != nil {
 		return Response{}, fmt.Errorf("unable to get object with bucketName %q: %w", bucketName, err)
 	}
