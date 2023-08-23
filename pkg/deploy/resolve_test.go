@@ -18,7 +18,6 @@ package deploy
 
 import (
 	"errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
@@ -65,7 +64,7 @@ func TestResolveParameterValues(t *testing.T) {
 		Skip:        false,
 	}
 
-	entities := newEntityMap(api.NewAPIs())
+	entities := newEntityMap()
 
 	values, errors := ResolveParameterValues(&conf, entities, parameters)
 
@@ -107,7 +106,7 @@ func TestResolveParameterValuesShouldFailWhenReferencingNonExistingConfig(t *tes
 		Skip:        false,
 	}
 
-	entities := newEntityMap(api.NewAPIs())
+	entities := newEntityMap()
 
 	_, errors := ResolveParameterValues(&conf, entities, parameters)
 
@@ -185,7 +184,7 @@ func TestResolveParameterValuesShouldFailWhenParameterResolveReturnsError(t *tes
 		Skip:        false,
 	}
 
-	entities := newEntityMap(api.NewAPIs())
+	entities := newEntityMap()
 
 	_, errors := ResolveParameterValues(&conf, entities, parameters)
 
@@ -256,7 +255,7 @@ func TestValidateParameterReferencesShouldFailWhenReferencingSelf(t *testing.T) 
 		},
 	}
 
-	entities := newEntityMap(api.NewAPIs())
+	entities := newEntityMap()
 
 	errors := validateParameterReferences(configCoordinates, "", "", entities, paramName, param)
 
@@ -325,7 +324,7 @@ func TestValidateParameterReferencesShouldFailWhenReferencingUnknownConfig(t *te
 		},
 	}
 
-	entities := newEntityMap(api.NewAPIs())
+	entities := newEntityMap()
 
 	errors := validateParameterReferences(configCoordinates, "", "", entities, "managementZoneName", param)
 

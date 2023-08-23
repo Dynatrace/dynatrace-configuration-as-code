@@ -63,7 +63,7 @@ var DummyClientSet = ClientSet{
 // NOTE: the given configs need to be sorted, otherwise deployment will
 // probably fail, as references cannot be resolved
 func DeployConfigs(clientSet ClientSet, apis api.APIs, sortedConfigs []config.Config, opts DeployConfigsOptions) []error {
-	entityMap := newEntityMap(apis)
+	entityMap := newEntityMap()
 	var errs []error
 
 	for i := range sortedConfigs {
@@ -311,7 +311,7 @@ func deployComponent(ctx context.Context, component graph.SortedComponent, clien
 		lock:             sync.Mutex{},
 		graph:            g,
 		clients:          clientSet,
-		resolvedEntities: *newEntityMap(apis),
+		resolvedEntities: *newEntityMap(),
 		apis:             apis,
 	}
 	return deployer.deploy(ctx)
@@ -357,7 +357,7 @@ func deploy(ctx context.Context, clientSet ClientSet, apis api.APIs, em *entityM
 		res, deployErr = deploySetting(ctx, clientSet.Settings, properties, renderedConfig, c)
 
 	case config.ClassicApiType:
-		res, deployErr = deployClassicConfig(ctx, clientSet.Classic, apis, em, properties, renderedConfig, c)
+		res, deployErr = deployClassicConfig(ctx, clientSet.Classic, apis, properties, renderedConfig, c)
 
 	case config.AutomationType:
 		res, deployErr = deployAutomation(ctx, clientSet.Automation, properties, renderedConfig, c)

@@ -15,7 +15,6 @@
 package deploy
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"sync"
@@ -25,7 +24,6 @@ import (
 // api `ID` of a config.
 type ResolvedEntities map[coordinate.Coordinate]ResolvedEntity
 
-// TODO move to better package
 // ResolvedEntity struct representing an already deployed entity
 type ResolvedEntity struct {
 	// EntityName is the name returned by the Dynatrace api. In theory should be the
@@ -33,32 +31,25 @@ type ResolvedEntity struct {
 	// can differ.
 	EntityName string
 
-	// coordinate of the config this entity represents
+	// Coordinate of the config this entity represents
 	Coordinate coordinate.Coordinate
 
 	// Properties defines a map of all already resolved parameters
 	Properties parameter.Properties
 
 	// Skip flag indicating that this entity was skipped
-	// if a entity is skipped, there will be no properties
+	// if an entity is skipped, there will be no properties
 	Skip bool
 }
 
 type entityMap struct {
 	lock             sync.RWMutex
 	resolvedEntities ResolvedEntities
-	knownEntityNames map[string]map[string]struct{}
 }
 
-func newEntityMap(apis api.APIs) *entityMap {
-	knownEntityNames := make(map[string]map[string]struct{})
-	for _, a := range apis {
-		knownEntityNames[a.ID] = make(map[string]struct{})
-	}
-	resolvedEntities := make(ResolvedEntities)
+func newEntityMap() *entityMap {
 	return &entityMap{
-		resolvedEntities: resolvedEntities,
-		knownEntityNames: knownEntityNames,
+		resolvedEntities: make(ResolvedEntities),
 	}
 }
 
@@ -67,26 +58,6 @@ func (r *entityMap) put(resolvedEntity ResolvedEntity) {
 	defer r.lock.Unlock()
 	// memorize resolved entity
 	r.resolvedEntities[resolvedEntity.Coordinate] = resolvedEntity
-
-	// if entity was marked to be skipped we do not memorize the name of the entity
-	// i.e., we do not care if the same name has already been used
-	if resolvedEntity.Skip || resolvedEntity.EntityName == "" {
-		return
-	}
-	// memorize the name of the resolved entity
-	if _, found := r.knownEntityNames[resolvedEntity.Coordinate.Type]; !found {
-		r.knownEntityNames[resolvedEntity.Coordinate.Type] = make(map[string]struct{})
-	}
-	r.knownEntityNames[resolvedEntity.Coordinate.Type][resolvedEntity.EntityName] = struct{}{}
-}
-
-func (r *entityMap) contains(entityType string, entityName string) bool {
-
-	r.lock.RLock()
-	defer r.lock.RUnlock()
-
-	_, found := r.knownEntityNames[entityType][entityName]
-	return found
 }
 
 func (r *entityMap) Property(config coordinate.Coordinate, property string) (any, bool) {
