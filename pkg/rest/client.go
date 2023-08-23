@@ -19,6 +19,7 @@ package rest
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -26,6 +27,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -162,6 +164,9 @@ func (c Client) executeRequest(request *http.Request) (Response, error) {
 	response, err := c.rateLimitStrategy.ExecuteRequest(timeutils.NewTimelineProvider(), func() (Response, error) {
 		resp, err := c.client.Do(request)
 		if err != nil {
+			if isConnectionResetErr(err) {
+				return Response{}, fmt.Errorf("HTTP request failed: Unable to connect to host %q, connection closed unexpectedly: %w", request.Host, err)
+			}
 			return Response{}, fmt.Errorf("HTTP request failed: %w", err)
 		}
 		defer func() {
@@ -205,6 +210,16 @@ func (c Client) executeRequest(request *http.Request) (Response, error) {
 		return Response{}, err
 	}
 	return response, nil
+}
+
+func isConnectionResetErr(err error) bool {
+	var urlErr *url.Error
+	if errors.As(err, &urlErr) && errors.Is(urlErr, io.EOF) {
+		// there is no direct way to discern a connection reset error, but if it's an url.Error wrapping an io.EOF we can be relatively certain it is
+		// unless net/http stops reporting this as io.EOF
+		return true
+	}
+	return false
 }
 
 // SendRequestWithBody is a function doing a PUT or POST HTTP request
