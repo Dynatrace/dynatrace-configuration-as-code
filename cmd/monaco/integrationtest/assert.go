@@ -26,6 +26,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -36,13 +37,29 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
 	"github.com/spf13/afero"
 )
+
+type entityLookup map[coordinate.Coordinate]deploy.ResolvedEntity
+
+func (e entityLookup) Property(config coordinate.Coordinate, property string) (any, bool) {
+	if ent, f := e.Entity(config); f {
+		if prop, f := ent.Properties[property]; f {
+			return prop, true
+		}
+	}
+
+	return nil, false
+}
+
+func (e entityLookup) Entity(config coordinate.Coordinate) (deploy.ResolvedEntity, bool) {
+	ent, f := e[config]
+	return ent, f
+}
 
 // AssertAllConfigsAvailability checks all configurations of a given project with given availability
 func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string, specificProjects []string, specificEnvironment string, available bool) {
@@ -83,7 +100,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 
 		clients := CreateDynatraceClients(t, env)
 
-		entities := make(map[coordinate.Coordinate]parameter.ResolvedEntity)
+		entities := entityLookup{}
 		var parameters []parameter.NamedParameter
 
 		for _, theConfig := range configs {
@@ -93,7 +110,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 			ctx = context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: theConfig.Environment, Group: theConfig.Group})
 
 			if theConfig.Skip {
-				entities[coord] = parameter.ResolvedEntity{
+				entities[coord] = deploy.ResolvedEntity{
 					EntityName: coord.ConfigId,
 					Coordinate: coord,
 					Properties: parameter.Properties{},
@@ -115,7 +132,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 			configName, err := extractConfigName(properties)
 			assert.NoError(t, err)
 
-			entities[coord] = parameter.ResolvedEntity{
+			entities[coord] = deploy.ResolvedEntity{
 				EntityName: configName,
 				Coordinate: coord,
 				Properties: properties,
