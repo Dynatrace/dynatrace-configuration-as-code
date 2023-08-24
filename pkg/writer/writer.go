@@ -16,7 +16,7 @@ package writer
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/writer"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/config_writer"
 	"path/filepath"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -75,7 +75,7 @@ func writeProjects(context *WriterContext, projectDefinitions manifest.ProjectDe
 
 		configs := collectAllConfigs(p)
 
-		errs := writer.WriteConfigs(&writer.WriterContext{
+		errs := config_writer.WriteConfigs(&config_writer.WriterContext{
 			Fs:              context.Fs,
 			OutputFolder:    context.OutputDir,
 			ProjectFolder:   definition.Path,

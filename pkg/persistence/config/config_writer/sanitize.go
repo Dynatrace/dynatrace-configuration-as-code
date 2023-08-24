@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package writer
+package config_writer
 
 import (
 	"regexp"

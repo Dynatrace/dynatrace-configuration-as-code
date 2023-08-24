@@ -19,7 +19,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/loader"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/config_loader"
 	"os"
 	"path"
 	"path/filepath"
@@ -165,7 +165,7 @@ func loadConfigsOfProject(fs afero.Fs, loadingContext ProjectLoaderContext, proj
 	var configs []config.Config
 	var errs []error
 
-	ctx := &loader.LoaderContext{
+	ctx := &config_loader.LoaderContext{
 		ProjectId:       projectDefinition.Name,
 		Environments:    environments,
 		Path:            projectDefinition.Path,
@@ -175,7 +175,7 @@ func loadConfigsOfProject(fs afero.Fs, loadingContext ProjectLoaderContext, proj
 
 	for _, file := range configFiles {
 		log.WithFields(field.F("file", file)).Debug("Loading configuration file %s", file)
-		loadedConfigs, configErrs := loader.LoadConfig(fs, ctx, file)
+		loadedConfigs, configErrs := config_loader.LoadConfig(fs, ctx, file)
 
 		errs = append(errs, configErrs...)
 		configs = append(configs, loadedConfigs...)
