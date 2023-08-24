@@ -20,16 +20,15 @@ import (
 	"context"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
-
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
+	"reflect"
 )
 
 // DeletePointer contains all data needed to identify an object to be deleted from a Dynatrace environment.
@@ -71,7 +70,7 @@ func Configs(ctx context.Context, clients ClientSet, apis api.APIs, automationRe
 			deleteErrs := deleteClassicConfig(ctx, clients.Classic, targetApi, entries, entryType)
 			errs = append(errs, deleteErrs...)
 		} else if targetAutomation, isAutomation := automationResources[entryType]; isAutomation {
-			if clients.Automation == nil {
+			if reflect.ValueOf(clients.Automation).IsNil() {
 				log.WithCtxFields(ctx).WithFields(field.Type(entryType)).Warn("Skipped deletion of %d Automation configurations of type %q as API client was unavailable.", len(entries), entryType)
 				continue
 			}
