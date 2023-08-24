@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package config_persistence
+package persistence
 
 import (
 	"reflect"

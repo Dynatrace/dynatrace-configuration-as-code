@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package config_persistence
+package persistence
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"

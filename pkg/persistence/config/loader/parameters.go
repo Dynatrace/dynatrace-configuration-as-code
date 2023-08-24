@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package config_loader
+package loader
 
 import (
 	"fmt"
@@ -27,7 +27,7 @@ import (
 	refParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/internal/config_persistence"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/internal/persistence"
 )
 
 var allowedScopeParameterTypes = []string{
@@ -52,7 +52,7 @@ func isSupportedParamTypeForSkip(p parameter.Parameter) bool {
 type References map[string]coordinate.Coordinate
 
 func parseParametersAndReferences(context *singleConfigEntryLoadContext, environment manifest.EnvironmentDefinition,
-	configId string, parameterMap map[string]config_persistence.ConfigParameter) (config.Parameters, []error) {
+	configId string, parameterMap map[string]persistence.ConfigParameter) (config.Parameters, []error) {
 
 	parameters := make(map[string]parameter.Parameter)
 	var errs []error
