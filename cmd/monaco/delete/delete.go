@@ -88,18 +88,27 @@ func deleteConfigForEnvironment(env manifest.EnvironmentDefinition, apis api.API
 
 	ctx := context.WithValue(context.TODO(), log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
 
-	if env.Auth.OAuth == nil {
-		log.WithCtxFields(ctx).Warn("No OAuth defined for environment - Dynatrace Platform configurations like Automations can not be deleted.")
+	automationResources := map[string]config.AutomationResource{
+		string(config.Workflow):         config.Workflow,
+		string(config.BusinessCalendar): config.BusinessCalendar,
+		string(config.SchedulingRule):   config.SchedulingRule,
+	}
+
+	platformTypes := maps.Keys(automationResources)
+	platformTypes = append(platformTypes, "bucket")
+
+	if env.Auth.OAuth == nil && containsPlatformTypes(entriesToDelete, platformTypes) {
+		log.WithCtxFields(ctx).Warn("Delete file contains Dynatrace Platform specific types, but no oAuth credentials are defined for environment %q - Dynatrace Platform configurations won't be deleted.", env.Name)
 	}
 
 	clientSet, err := dynatrace.CreateClientSet(env.URL.Value, env.Auth)
 	if err != nil {
 		return []error{
-			fmt.Errorf("It was not possible to create a client for env `%s` due to the following error: %w", env.Name, err),
+			fmt.Errorf("failed to create API client for environment %q due to the following error: %w", env.Name, err),
 		}
 	}
 
-	log.WithCtxFields(ctx).Info("Deleting configs for environment `%s`...", env.Name)
+	log.WithCtxFields(ctx).Info("Deleting configs for environment %q...", env.Name)
 
 	return delete.Configs(
 		ctx,
@@ -109,10 +118,15 @@ func deleteConfigForEnvironment(env manifest.EnvironmentDefinition, apis api.API
 			Automation: clientSet.Automation(),
 		},
 		apis,
-		map[string]config.AutomationResource{
-			string(config.Workflow):         config.Workflow,
-			string(config.BusinessCalendar): config.BusinessCalendar,
-			string(config.SchedulingRule):   config.SchedulingRule,
-		},
+		automationResources,
 		entriesToDelete)
+}
+
+func containsPlatformTypes(entriesToDelete map[string][]delete.DeletePointer, platformTypes []string) bool {
+	for _, t := range platformTypes {
+		if _, contains := entriesToDelete[t]; contains {
+			return true
+		}
+	}
+	return false
 }

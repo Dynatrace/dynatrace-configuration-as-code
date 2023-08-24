@@ -23,8 +23,12 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
+	"golang.org/x/net/context"
 	"path/filepath"
 	"testing"
 )
@@ -118,29 +122,29 @@ func TestDelete(t *testing.T) {
 			configContent := fmt.Sprintf(tt.configTemplate, cfgId, cfgId)
 
 			configYamlPath, err := filepath.Abs(filepath.Join(configFolder, "project", "config.yaml"))
-			assert.NilError(t1, err)
+			assert.NoError(t1, err)
 			err = afero.WriteFile(fs, configYamlPath, []byte(configContent), 644)
-			assert.NilError(t1, err)
+			assert.NoError(t1, err)
 
 			//create delete yaml
 			deleteContent := fmt.Sprintf(tt.deleteContentTemplate, cfgId)
 			deleteYamlPath, err := filepath.Abs(tt.deleteFile)
-			assert.NilError(t1, err)
+			assert.NoError(t1, err)
 			err = afero.WriteFile(fs, deleteYamlPath, []byte(deleteContent), 644)
-			assert.NilError(t1, err)
+			assert.NoError(t1, err)
 
 			//create manifest file
 			manifestContent, err := afero.ReadFile(fs, deployManifestPath)
-			assert.NilError(t1, err)
+			assert.NoError(t1, err)
 			manifestPath, err := filepath.Abs(tt.manifest)
 			err = afero.WriteFile(fs, manifestPath, manifestContent, 644)
-			assert.NilError(t1, err)
+			assert.NoError(t1, err)
 
 			// DEPLOY Config
 			cmd := runner.BuildCli(fs)
 			cmd.SetArgs([]string{"deploy", "--verbose", deployManifestPath})
 			err = cmd.Execute()
-			assert.NilError(t1, err)
+			assert.NoError(t1, err)
 			integrationtest.AssertAllConfigsAvailability(t1, fs, deployManifestPath, []string{}, "", true)
 
 			// DELETE Config
@@ -148,9 +152,118 @@ func TestDelete(t *testing.T) {
 			baseCmd := []string{"delete", "--verbose"}
 			cmd.SetArgs(append(baseCmd, tt.cmdFlags...))
 			err = cmd.Execute()
-			assert.NilError(t1, err)
+			assert.NoError(t1, err)
 			integrationtest.AssertAllConfigsAvailability(t1, fs, deployManifestPath, []string{}, "", false)
 
 		})
 	}
+}
+
+func TestDeleteSkipsPlatformTypesWhenDeletingFromClassicEnv(t *testing.T) {
+	configFolder := "test-resources/delete-test-configs/"
+	deployManifestPath := configFolder + "deploy-manifest.yaml"
+
+	fs := testutils.CreateTestFileSystem()
+
+	//create config yaml
+	configTemplate := `
+configs:
+- id: %s
+  type:
+    automation:
+      resource: workflow
+  config:
+    name: %s
+    template: workflow.json
+- id: %s
+  type:
+    settings:
+      schema: builtin:tags.auto-tagging
+      scope: environment
+  config:
+    name: %s
+    template: auto-tag-setting.json`
+	workflowID := fmt.Sprintf("workflowSample_%s", integrationtest.GenerateTestSuffix(t, "skip_automations"))
+	tagID := fmt.Sprintf("tagSample_%s", integrationtest.GenerateTestSuffix(t, "skip_automations"))
+	configContent := fmt.Sprintf(configTemplate, workflowID, workflowID, tagID, tagID)
+
+	configYamlPath, err := filepath.Abs(filepath.Join(configFolder, "project", "config.yaml"))
+	assert.NoError(t, err)
+	err = afero.WriteFile(fs, configYamlPath, []byte(configContent), 644)
+	assert.NoError(t, err)
+
+	//create delete yaml
+	deleteTemplate := `delete:
+  - project: "project"
+    type: "workflow"
+    id: "%s"
+  - project: "project"
+    type: "builtin:tags.auto-tagging"
+    id: "%s"`
+
+	deleteContent := fmt.Sprintf(deleteTemplate, workflowID, tagID)
+	deleteYamlPath, err := filepath.Abs("delete.yaml")
+	assert.NoError(t, err)
+	err = afero.WriteFile(fs, deleteYamlPath, []byte(deleteContent), 644)
+	assert.NoError(t, err)
+
+	//create manifest file without oAuth
+	manifestContent := `manifestVersion: 1.0
+projects:
+- name: project
+environmentGroups:
+- name: default
+  environments:
+  - name: environment
+    url:
+      type: environment
+      value: URL_ENVIRONMENT_1
+    auth:
+      token:
+        name: TOKEN_ENVIRONMENT_1`
+	assert.NoError(t, err)
+	manifestPath, err := filepath.Abs("manifest.yaml")
+	err = afero.WriteFile(fs, manifestPath, []byte(manifestContent), 644)
+	assert.NoError(t, err)
+
+	// DEPLOY Config
+	cmd := runner.BuildCli(fs)
+	cmd.SetArgs([]string{"deploy", "--verbose", deployManifestPath})
+	err = cmd.Execute()
+	assert.NoError(t, err)
+	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
+
+	// DELETE Config
+	cmd = runner.BuildCli(fs)
+	cmd.SetArgs([]string{"delete", "--verbose"})
+	err = cmd.Execute()
+	assert.NoError(t, err)
+
+	man, errs := manifest.LoadManifest(&manifest.LoaderContext{
+		Fs:           fs,
+		ManifestPath: "test-resources/delete-test-configs/deploy-manifest.yaml", //full manifest with oAuth
+	})
+	assert.Empty(t, errs)
+
+	envName := "environment"
+	env := man.Environments[envName]
+	clientSet := integrationtest.CreateDynatraceClients(t, env)
+
+	// check the setting was deleted
+	integrationtest.AssertSetting(t, context.TODO(), clientSet.Settings(), config.SettingsType{SchemaId: "builtin:tags.auto-tagging"}, envName, false, config.Config{
+		Coordinate: coordinate.Coordinate{
+			Project:  "project",
+			Type:     "builtin:tags.auto-tagging",
+			ConfigId: tagID,
+		},
+	})
+
+	// check the workflow still exists after deletion was skipped without error
+	integrationtest.AssertAutomation(t, *clientSet.Automation(), env, true, config.Workflow, config.Config{
+		Coordinate: coordinate.Coordinate{
+			Project:  "project",
+			Type:     "workflow",
+			ConfigId: workflowID,
+		},
+	})
 }
