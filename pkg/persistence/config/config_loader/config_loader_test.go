@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package loader
+package config_loader
 
 import (
 	"fmt"

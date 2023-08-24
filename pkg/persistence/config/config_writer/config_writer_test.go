@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package writer
+package config_writer
 
 import (
 	"errors"
@@ -24,10 +24,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/internal/persistence"
 	envParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/environment"
 	refParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/internal/config_persistence"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 	"path/filepath"
@@ -62,9 +62,9 @@ func TestExtractCommonBase(t *testing.T) {
 
 	configs := []extendedConfigDefinition{
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
+			ConfigDefinition: config_persistence.ConfigDefinition{
 				Name: configName,
-				Parameters: map[string]persistence.ConfigParameter{
+				Parameters: map[string]config_persistence.ConfigParameter{
 					param1Name:             param1Value,
 					param2Name:             param2Value,
 					param3Name:             param3Value,
@@ -77,9 +77,9 @@ func TestExtractCommonBase(t *testing.T) {
 			environment: "test",
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
+			ConfigDefinition: config_persistence.ConfigDefinition{
 				Name: configName,
-				Parameters: map[string]persistence.ConfigParameter{
+				Parameters: map[string]config_persistence.ConfigParameter{
 					param1Name:             param1Value,
 					param2Name:             param2Value,
 					param3Name:             param3Value,
@@ -92,9 +92,9 @@ func TestExtractCommonBase(t *testing.T) {
 			environment: "test1",
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
+			ConfigDefinition: config_persistence.ConfigDefinition{
 				Name: configName,
-				Parameters: map[string]persistence.ConfigParameter{
+				Parameters: map[string]config_persistence.ConfigParameter{
 					param1Name:             param1Value,
 					param2Name:             param2Value,
 					param3Name:             param3Value,
@@ -157,9 +157,9 @@ func TestExtractCommonBaseForEnvVarSkipsWithEqualValues(t *testing.T) {
 
 	configs := []extendedConfigDefinition{
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
+			ConfigDefinition: config_persistence.ConfigDefinition{
 				Name: configName,
-				Parameters: map[string]persistence.ConfigParameter{
+				Parameters: map[string]config_persistence.ConfigParameter{
 					param1Name:             param1Value,
 					param2Name:             param2Value,
 					param3Name:             param3Value,
@@ -175,9 +175,9 @@ func TestExtractCommonBaseForEnvVarSkipsWithEqualValues(t *testing.T) {
 			environment: "test",
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
+			ConfigDefinition: config_persistence.ConfigDefinition{
 				Name: configName,
-				Parameters: map[string]persistence.ConfigParameter{
+				Parameters: map[string]config_persistence.ConfigParameter{
 					param1Name:             param1Value,
 					param2Name:             param2Value,
 					param3Name:             param3Value,
@@ -255,9 +255,9 @@ func TestExtractCommonBaseForEnvVarSkipsWithDifferentValues(t *testing.T) {
 	}
 	configs := []extendedConfigDefinition{
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
+			ConfigDefinition: config_persistence.ConfigDefinition{
 				Name: configName,
-				Parameters: map[string]persistence.ConfigParameter{
+				Parameters: map[string]config_persistence.ConfigParameter{
 					param1Name: param1Value,
 					param2Name: param2Value,
 					param3Name: param3Value,
@@ -269,9 +269,9 @@ func TestExtractCommonBaseForEnvVarSkipsWithDifferentValues(t *testing.T) {
 			environment: "test",
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
+			ConfigDefinition: config_persistence.ConfigDefinition{
 				Name: configName,
-				Parameters: map[string]persistence.ConfigParameter{
+				Parameters: map[string]config_persistence.ConfigParameter{
 					param1Name: param1Value,
 					param2Name: param2Value,
 					param3Name: param3Value,
@@ -335,9 +335,9 @@ func TestExtractCommonBaseT(t *testing.T) {
 
 	configs := []extendedConfigDefinition{
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
+			ConfigDefinition: config_persistence.ConfigDefinition{
 				Name: configName,
-				Parameters: map[string]persistence.ConfigParameter{
+				Parameters: map[string]config_persistence.ConfigParameter{
 					param1Name:             param1Value,
 					param2Name:             param2Value,
 					param3Name:             param3Value,
@@ -350,9 +350,9 @@ func TestExtractCommonBaseT(t *testing.T) {
 			environment: "test",
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
+			ConfigDefinition: config_persistence.ConfigDefinition{
 				Name: configName,
-				Parameters: map[string]persistence.ConfigParameter{
+				Parameters: map[string]config_persistence.ConfigParameter{
 					param1Name:             param1Value,
 					param2Name:             param2Value,
 					param3Name:             param3Value,
@@ -365,9 +365,9 @@ func TestExtractCommonBaseT(t *testing.T) {
 			environment: "test1",
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
+			ConfigDefinition: config_persistence.ConfigDefinition{
 				Name: configName,
-				Parameters: map[string]persistence.ConfigParameter{
+				Parameters: map[string]config_persistence.ConfigParameter{
 					param1Name:             param1Value,
 					param2Name:             param2Value,
 					param3Name:             param3Value,
@@ -416,9 +416,9 @@ func TestExtractCommonBaseWithJustSkipDifferent(t *testing.T) {
 
 	configs := []extendedConfigDefinition{
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
+			ConfigDefinition: config_persistence.ConfigDefinition{
 				Name: configName,
-				Parameters: map[string]persistence.ConfigParameter{
+				Parameters: map[string]config_persistence.ConfigParameter{
 					param1Name: param1Value,
 				},
 				Template: template,
@@ -428,9 +428,9 @@ func TestExtractCommonBaseWithJustSkipDifferent(t *testing.T) {
 			environment: "test",
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
+			ConfigDefinition: config_persistence.ConfigDefinition{
 				Name: configName,
-				Parameters: map[string]persistence.ConfigParameter{
+				Parameters: map[string]config_persistence.ConfigParameter{
 					param1Name: param1Value,
 				},
 				Template: template,
@@ -440,9 +440,9 @@ func TestExtractCommonBaseWithJustSkipDifferent(t *testing.T) {
 			environment: "test1",
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
+			ConfigDefinition: config_persistence.ConfigDefinition{
 				Name: configName,
-				Parameters: map[string]persistence.ConfigParameter{
+				Parameters: map[string]config_persistence.ConfigParameter{
 					param1Name: param1Value,
 				},
 				Template: template,
@@ -562,21 +562,21 @@ func TestToParameterDefinitionShouldWithShortSyntaxActiveShouldDoNormalWhenParam
 func TestForSamePropertiesWithNothingSet(t *testing.T) {
 	configs := []extendedConfigDefinition{
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
+			ConfigDefinition: config_persistence.ConfigDefinition{
 				Name:     nil,
 				Template: "",
 				Skip:     nil,
 			},
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
+			ConfigDefinition: config_persistence.ConfigDefinition{
 				Name:     nil,
 				Template: "",
 				Skip:     nil,
 			},
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
+			ConfigDefinition: config_persistence.ConfigDefinition{
 				Name:     nil,
 				Template: "",
 				Skip:     nil,
@@ -608,21 +608,21 @@ func TestForSamePropertiesWithAllShared(t *testing.T) {
 
 	configs := []extendedConfigDefinition{
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
+			ConfigDefinition: config_persistence.ConfigDefinition{
 				Name:     name,
 				Template: template,
 				Skip:     skip,
 			},
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
+			ConfigDefinition: config_persistence.ConfigDefinition{
 				Name:     name,
 				Template: template,
 				Skip:     skip,
 			},
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
+			ConfigDefinition: config_persistence.ConfigDefinition{
 				Name:     name,
 				Template: template,
 				Skip:     skip,
@@ -652,17 +652,17 @@ func TestForSamePropertiesWithNameNotSharedByAll(t *testing.T) {
 
 	configs := []extendedConfigDefinition{
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
+			ConfigDefinition: config_persistence.ConfigDefinition{
 				Name: sharedName,
 			},
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
+			ConfigDefinition: config_persistence.ConfigDefinition{
 				Name: nil,
 			},
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
+			ConfigDefinition: config_persistence.ConfigDefinition{
 				Name: sharedName,
 			},
 		},
@@ -682,15 +682,15 @@ func TestForSamePropertiesWithNameNotSharedByAll(t *testing.T) {
 func TestForSamePropertiesWithSkipNotSetExceptForOne(t *testing.T) {
 	configs := []extendedConfigDefinition{
 		{
-			ConfigDefinition: persistence.ConfigDefinition{},
+			ConfigDefinition: config_persistence.ConfigDefinition{},
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{
+			ConfigDefinition: config_persistence.ConfigDefinition{
 				Skip: true,
 			},
 		},
 		{
-			ConfigDefinition: persistence.ConfigDefinition{},
+			ConfigDefinition: config_persistence.ConfigDefinition{},
 		},
 	}
 
@@ -724,7 +724,7 @@ func TestWriteConfigs(t *testing.T) {
 	var tests = []struct {
 		name                  string
 		configs               []config.Config
-		expectedConfigs       map[string]persistence.TopLevelDefinition
+		expectedConfigs       map[string]config_persistence.TopLevelDefinition
 		expectedTemplatePaths []string
 		expectedErrs          []string
 	}{
@@ -747,12 +747,12 @@ func TestWriteConfigs(t *testing.T) {
 					SkipForConversion: envParam.New("ENV_VAR_SKIP"),
 				},
 			},
-			expectedConfigs: map[string]persistence.TopLevelDefinition{
+			expectedConfigs: map[string]config_persistence.TopLevelDefinition{
 				"alerting-profile": {
-					Configs: []persistence.TopLevelConfigDefinition{
+					Configs: []config_persistence.TopLevelConfigDefinition{
 						{
 							Id: "configId",
-							Config: persistence.ConfigDefinition{
+							Config: config_persistence.ConfigDefinition{
 								Name:       "name",
 								Parameters: nil,
 								Template:   "a.json",
@@ -761,7 +761,7 @@ func TestWriteConfigs(t *testing.T) {
 									"name": "ENV_VAR_SKIP",
 								},
 							},
-							Type: persistence.TypeDefinition{
+							Type: config_persistence.TypeDefinition{
 								Api: "alerting-profile",
 							},
 						},
@@ -793,19 +793,19 @@ func TestWriteConfigs(t *testing.T) {
 					SkipForConversion: value.New("true"),
 				},
 			},
-			expectedConfigs: map[string]persistence.TopLevelDefinition{
+			expectedConfigs: map[string]config_persistence.TopLevelDefinition{
 				"builtinalerting-profile": {
-					Configs: []persistence.TopLevelConfigDefinition{
+					Configs: []config_persistence.TopLevelConfigDefinition{
 						{
 							Id: "configId",
-							Config: persistence.ConfigDefinition{
+							Config: config_persistence.ConfigDefinition{
 								Name:       "name",
 								Parameters: nil,
 								Template:   "a.json",
 								Skip:       "true",
 							},
-							Type: persistence.TypeDefinition{
-								Settings: persistence.SettingsDefinition{
+							Type: config_persistence.TypeDefinition{
+								Settings: config_persistence.SettingsDefinition{
 									Schema: "builtin:alerting-profile",
 									Scope:  "tenant",
 								},
@@ -840,19 +840,19 @@ func TestWriteConfigs(t *testing.T) {
 					Skip: true,
 				},
 			},
-			expectedConfigs: map[string]persistence.TopLevelDefinition{
+			expectedConfigs: map[string]config_persistence.TopLevelDefinition{
 				"schemaid": {
-					Configs: []persistence.TopLevelConfigDefinition{
+					Configs: []config_persistence.TopLevelConfigDefinition{
 						{
 							Id: "configId",
-							Config: persistence.ConfigDefinition{
+							Config: config_persistence.ConfigDefinition{
 								Name:       "name",
 								Parameters: nil,
 								Template:   "a.json",
 								Skip:       true,
 							},
-							Type: persistence.TypeDefinition{
-								Settings: persistence.SettingsDefinition{
+							Type: config_persistence.TypeDefinition{
+								Settings: config_persistence.SettingsDefinition{
 									Schema:        "schemaid",
 									SchemaVersion: "1.2.3",
 									Scope:         "scope",
@@ -915,19 +915,19 @@ func TestWriteConfigs(t *testing.T) {
 					Skip: true,
 				},
 			},
-			expectedConfigs: map[string]persistence.TopLevelDefinition{
+			expectedConfigs: map[string]config_persistence.TopLevelDefinition{
 				"workflow": {
-					Configs: []persistence.TopLevelConfigDefinition{
+					Configs: []config_persistence.TopLevelConfigDefinition{
 						{
 							Id: "configId1",
-							Config: persistence.ConfigDefinition{
+							Config: config_persistence.ConfigDefinition{
 								Name:       "name",
 								Parameters: nil,
 								Template:   "a.json",
 								Skip:       true,
 							},
-							Type: persistence.TypeDefinition{
-								Automation: persistence.AutomationDefinition{
+							Type: config_persistence.TypeDefinition{
+								Automation: config_persistence.AutomationDefinition{
 									Resource: "workflow",
 								},
 							},
@@ -935,17 +935,17 @@ func TestWriteConfigs(t *testing.T) {
 					},
 				},
 				"business-calendar": {
-					Configs: []persistence.TopLevelConfigDefinition{
+					Configs: []config_persistence.TopLevelConfigDefinition{
 						{
 							Id: "configId2",
-							Config: persistence.ConfigDefinition{
+							Config: config_persistence.ConfigDefinition{
 								Name:       "name",
 								Parameters: nil,
 								Template:   "a.json",
 								Skip:       true,
 							},
-							Type: persistence.TypeDefinition{
-								Automation: persistence.AutomationDefinition{
+							Type: config_persistence.TypeDefinition{
+								Automation: config_persistence.AutomationDefinition{
 									Resource: "business-calendar",
 								},
 							},
@@ -953,17 +953,17 @@ func TestWriteConfigs(t *testing.T) {
 					},
 				},
 				"scheduling-rule": {
-					Configs: []persistence.TopLevelConfigDefinition{
+					Configs: []config_persistence.TopLevelConfigDefinition{
 						{
 							Id: "configId3",
-							Config: persistence.ConfigDefinition{
+							Config: config_persistence.ConfigDefinition{
 								Name:       "name",
 								Parameters: nil,
 								Template:   "a.json",
 								Skip:       true,
 							},
-							Type: persistence.TypeDefinition{
-								Automation: persistence.AutomationDefinition{
+							Type: config_persistence.TypeDefinition{
+								Automation: config_persistence.AutomationDefinition{
 									Resource: "scheduling-rule",
 								},
 							},
@@ -998,19 +998,19 @@ func TestWriteConfigs(t *testing.T) {
 					Skip: false,
 				},
 			},
-			expectedConfigs: map[string]persistence.TopLevelDefinition{
+			expectedConfigs: map[string]config_persistence.TopLevelDefinition{
 				"schemaid": {
-					Configs: []persistence.TopLevelConfigDefinition{
+					Configs: []config_persistence.TopLevelConfigDefinition{
 						{
 							Id: "configId",
-							Config: persistence.ConfigDefinition{
+							Config: config_persistence.ConfigDefinition{
 								Name:       "name",
 								Parameters: nil,
 								Template:   "a.json",
 								Skip:       false,
 							},
-							Type: persistence.TypeDefinition{
-								Settings: persistence.SettingsDefinition{
+							Type: config_persistence.TypeDefinition{
+								Settings: config_persistence.SettingsDefinition{
 									Schema:        "schemaid",
 									SchemaVersion: "1.2.3",
 									Scope: map[any]any{
@@ -1051,19 +1051,19 @@ func TestWriteConfigs(t *testing.T) {
 					Skip: false,
 				},
 			},
-			expectedConfigs: map[string]persistence.TopLevelDefinition{
+			expectedConfigs: map[string]config_persistence.TopLevelDefinition{
 				"schemaid": {
-					Configs: []persistence.TopLevelConfigDefinition{
+					Configs: []config_persistence.TopLevelConfigDefinition{
 						{
 							Id: "configId",
-							Config: persistence.ConfigDefinition{
+							Config: config_persistence.ConfigDefinition{
 								Name:       "name",
 								Parameters: nil,
 								Template:   "../../general/schemaid/a.json",
 								Skip:       false,
 							},
-							Type: persistence.TypeDefinition{
-								Settings: persistence.SettingsDefinition{
+							Type: config_persistence.TypeDefinition{
+								Settings: config_persistence.SettingsDefinition{
 									Schema:        "schemaid",
 									SchemaVersion: "1.2.3",
 									Scope:         "scope",
@@ -1103,7 +1103,7 @@ func TestWriteConfigs(t *testing.T) {
 				content, err := afero.ReadFile(fs, "test/project/"+apiType+"/config.yaml")
 				assert.NoError(t, err, "reading config file should not produce an error")
 
-				var s persistence.TopLevelDefinition
+				var s config_persistence.TopLevelDefinition
 				err = yaml.Unmarshal(content, &s)
 				assert.NoError(t, err, "unmarshalling config file should not produce an error")
 
@@ -1157,7 +1157,7 @@ func TestOrderedConfigs(t *testing.T) {
 	content, err := afero.ReadFile(fs, "test/project/alerting-profile/config.yaml")
 	assert.NoError(t, err, "reading config file should not produce an error")
 
-	var s persistence.TopLevelDefinition
+	var s config_persistence.TopLevelDefinition
 	err = yaml.Unmarshal(content, &s)
 	assert.NoError(t, err, "unmarshalling config file should not produce an error")
 

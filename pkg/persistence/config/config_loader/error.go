@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package loader
+package config_loader
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"

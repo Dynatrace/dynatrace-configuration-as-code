@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package loader
+package config_loader
 
 import (
 	"fmt"
@@ -22,12 +22,12 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/maps"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/internal/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	envParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/environment"
 	refParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/internal/config_persistence"
 )
 
 var allowedScopeParameterTypes = []string{
@@ -52,7 +52,7 @@ func isSupportedParamTypeForSkip(p parameter.Parameter) bool {
 type References map[string]coordinate.Coordinate
 
 func parseParametersAndReferences(context *singleConfigEntryLoadContext, environment manifest.EnvironmentDefinition,
-	configId string, parameterMap map[string]persistence.ConfigParameter) (config.Parameters, []error) {
+	configId string, parameterMap map[string]config_persistence.ConfigParameter) (config.Parameters, []error) {
 
 	parameters := make(map[string]parameter.Parameter)
 	var errs []error

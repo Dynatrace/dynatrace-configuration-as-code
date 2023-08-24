@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package loader
+package config_loader
 
 import (
 	"errors"
@@ -22,10 +22,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/slices"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/internal/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/internal/config_persistence"
 	"github.com/spf13/afero"
 	"path/filepath"
 	"strconv"
@@ -36,7 +36,7 @@ func parseConfigEntry(
 	fs afero.Fs,
 	context *configFileLoaderContext,
 	configId string,
-	definition persistence.TopLevelConfigDefinition,
+	definition config_persistence.TopLevelConfigDefinition,
 ) ([]config.Config, []error) {
 
 	singleConfigContext := &singleConfigEntryLoadContext{
@@ -72,8 +72,8 @@ func parseConfigEntry(
 	return results, nil
 }
 
-func toEnvironmentOverrideMap(environments []persistence.EnvironmentOverride) map[string]persistence.EnvironmentOverride {
-	result := make(map[string]persistence.EnvironmentOverride)
+func toEnvironmentOverrideMap(environments []config_persistence.EnvironmentOverride) map[string]config_persistence.EnvironmentOverride {
+	result := make(map[string]config_persistence.EnvironmentOverride)
 
 	for _, env := range environments {
 		result[env.Environment] = env
@@ -82,8 +82,8 @@ func toEnvironmentOverrideMap(environments []persistence.EnvironmentOverride) ma
 	return result
 }
 
-func toGroupOverrideMap(groups []persistence.GroupOverride) map[string]persistence.GroupOverride {
-	result := make(map[string]persistence.GroupOverride)
+func toGroupOverrideMap(groups []config_persistence.GroupOverride) map[string]config_persistence.GroupOverride {
+	result := make(map[string]config_persistence.GroupOverride)
 
 	for _, group := range groups {
 		result[group.Group] = group
@@ -97,13 +97,13 @@ func parseDefinitionForEnvironment(
 	context *singleConfigEntryLoadContext,
 	configId string,
 	environment manifest.EnvironmentDefinition,
-	definition persistence.TopLevelConfigDefinition,
-	groupOverrides map[string]persistence.GroupOverride,
-	environmentOverride map[string]persistence.EnvironmentOverride,
+	definition config_persistence.TopLevelConfigDefinition,
+	groupOverrides map[string]config_persistence.GroupOverride,
+	environmentOverride map[string]config_persistence.EnvironmentOverride,
 ) (config.Config, []error) {
 
-	configDefinition := persistence.ConfigDefinition{
-		Parameters:     make(map[string]persistence.ConfigParameter),
+	configDefinition := config_persistence.ConfigDefinition{
+		Parameters:     make(map[string]config_persistence.ConfigParameter),
 		OriginObjectId: definition.Config.OriginObjectId,
 	}
 
@@ -122,7 +122,7 @@ func parseDefinitionForEnvironment(
 	return getConfigFromDefinition(fs, context, configId, environment, configDefinition, definition.Type)
 }
 
-func applyOverrides(base *persistence.ConfigDefinition, override persistence.ConfigDefinition) {
+func applyOverrides(base *config_persistence.ConfigDefinition, override config_persistence.ConfigDefinition) {
 	if override.Name != nil {
 		base.Name = override.Name
 	}
@@ -150,8 +150,8 @@ func getConfigFromDefinition(
 	context *singleConfigEntryLoadContext,
 	configId string,
 	environment manifest.EnvironmentDefinition,
-	definition persistence.ConfigDefinition,
-	configType persistence.TypeDefinition,
+	definition config_persistence.ConfigDefinition,
+	configType config_persistence.TypeDefinition,
 ) (config.Config, []error) {
 
 	if definition.Template == "" {
@@ -237,7 +237,7 @@ func getConfigFromDefinition(
 	}, nil
 }
 
-func getType(typeDef persistence.TypeDefinition) (config.Type, error) {
+func getType(typeDef config_persistence.TypeDefinition) (config.Type, error) {
 	switch {
 	case typeDef.IsSettings():
 		return config.SettingsType{
@@ -247,7 +247,7 @@ func getType(typeDef persistence.TypeDefinition) (config.Type, error) {
 
 	case typeDef.IsClassic():
 
-		if typeDef.Api == persistence.ApiTypeBucket {
+		if typeDef.Api == config_persistence.ApiTypeBucket {
 			return config.BucketType{}, nil
 		}
 
