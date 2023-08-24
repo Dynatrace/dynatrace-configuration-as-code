@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package config_loader
+package loader
 
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/internal/config_persistence"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/internal/persistence"
 	"path/filepath"
 	"strings"
 
@@ -86,17 +86,17 @@ func LoadConfig(fs afero.Fs, context *LoaderContext, filePath string) ([]config.
 	return configs, nil
 }
 
-func parseFile(fs afero.Fs, filePath string) ([]config_persistence.TopLevelConfigDefinition, error) {
+func parseFile(fs afero.Fs, filePath string) ([]persistence.TopLevelConfigDefinition, error) {
 	data, err := afero.ReadFile(fs, filePath)
 	if err != nil {
 		return nil, err
 	}
 
-	definition := config_persistence.TopLevelDefinition{}
+	definition := persistence.TopLevelDefinition{}
 	err = yaml.UnmarshalStrict(data, &definition)
 
 	if err != nil {
-		if strings.Contains(err.Error(), fmt.Sprintf("field config not found in type %s", config_persistence.GetTopLevelDefinitionYamlTypeName())) {
+		if strings.Contains(err.Error(), fmt.Sprintf("field config not found in type %s", persistence.GetTopLevelDefinitionYamlTypeName())) {
 			return nil, fmt.Errorf("config '%s' is not valid v2 configuration - you may be loading v1 configs, please 'convert' to v2:\n%w", filePath, err)
 		}
 
