@@ -50,6 +50,13 @@ func (d DeletePointer) asCoordinate() coordinate.Coordinate {
 	}
 }
 
+func (d DeletePointer) String() string {
+	if d.Project != "" {
+		return d.asCoordinate().String()
+	}
+	return fmt.Sprintf("%s:%s", d.Type, d.Identifier)
+}
+
 type ClientSet struct {
 	Classic    dtclient.Client
 	Settings   dtclient.Client
@@ -100,13 +107,13 @@ func deleteClassicConfig(ctx context.Context, client dtclient.Client, theApi api
 	log.WithCtxFields(ctx).WithFields(field.Type(theApi.ID)).Info("Deleting configs of type %s...", theApi.ID)
 
 	if len(values) == 0 {
-		log.WithCtxFields(ctx).WithFields(field.Type(theApi.ID)).Debug("No values found to delete (%s).", targetApi)
+		log.WithCtxFields(ctx).WithFields(field.Type(theApi.ID)).Debug("No values found to delete for type %s.", targetApi)
 	}
 
 	for _, v := range values {
-		log.WithCtxFields(ctx).WithFields(field.Type(theApi.ID), field.F("value", v)).Debug("Deleting %v (%v).", v, targetApi)
+		log.WithCtxFields(ctx).WithFields(field.Type(theApi.ID), field.F("value", v)).Debug("Deleting %s:%s (%s)", targetApi, v.Name, v.Id)
 		if err := client.DeleteConfigById(theApi, v.Id); err != nil {
-			errors = append(errors, err)
+			errors = append(errors, fmt.Errorf("could not delete %s:%s (%s): %w", theApi.ID, v.Name, v.Id, err))
 		}
 	}
 
@@ -126,7 +133,7 @@ func deleteSettingsObject(ctx context.Context, c dtclient.Client, entries []Dele
 		externalID, err := idutils.GenerateExternalID(e.asCoordinate())
 
 		if err != nil {
-			errors = append(errors, fmt.Errorf("unable to generate external id: %w", err))
+			errors = append(errors, fmt.Errorf("unable to generate externalID for %s: %w", e, err))
 			continue
 		}
 		// get settings objects with matching external ID
@@ -137,20 +144,20 @@ func deleteSettingsObject(ctx context.Context, c dtclient.Client, entries []Dele
 		}
 
 		if len(objects) == 0 {
-			log.WithCtxFields(ctx).Debug("No settings object found to delete: %s/%s", e.Type, e.Identifier)
+			log.WithCtxFields(ctx).Debug("No settings object found to delete for %s", e)
 			continue
 		}
 
 		for _, obj := range objects {
 			if obj.ModificationInfo != nil && !obj.ModificationInfo.Deletable {
-				log.WithCtxFields(ctx).WithFields(field.F("object", obj)).Warn("Requested settings object %s/%s (%s) is not deletable.", e.Type, e.Identifier, obj.ObjectId)
+				log.WithCtxFields(ctx).WithFields(field.F("object", obj)).Warn("Requested settings object %s (%s) is not deletable.", e, obj.ObjectId)
 				continue
 			}
 
-			log.WithCtxFields(ctx).Debug("Deleting settings object %s/%s with objectId %s.", e.Type, e.Identifier, obj.ObjectId)
+			log.WithCtxFields(ctx).Debug("Deleting settings object %s with objectId %s.", e, obj.ObjectId)
 			err := c.DeleteSettings(obj.ObjectId)
 			if err != nil {
-				errors = append(errors, fmt.Errorf("could not delete settings 2.0 object with object ID %s", obj.ObjectId))
+				errors = append(errors, fmt.Errorf("could not delete settings 2.0 object %s with object ID %s: %w", e, obj.ObjectId, err))
 			}
 		}
 	}
@@ -167,12 +174,12 @@ func deleteAutomations(c automationClient, automationResource config.AutomationR
 
 		resourceType, err := automationutils.ClientResourceTypeFromConfigType(automationResource)
 		if err != nil {
-			errors = append(errors, fmt.Errorf("could not delete Automation object with ID %q: %w", id, err))
+			errors = append(errors, fmt.Errorf("could not delete Automation object %s with ID %q: %w", e, id, err))
 		}
 
 		err = c.Delete(resourceType, id)
 		if err != nil {
-			errors = append(errors, fmt.Errorf("could not delete Automation object with ID %q: %w", id, err))
+			errors = append(errors, fmt.Errorf("could not delete Automation object %s with ID %q: %w", e, id, err))
 		}
 	}
 
@@ -217,12 +224,12 @@ func filterValuesToDelete(ctx context.Context, entries []DeletePointer, existing
 			if found {
 				result = append(result, v)
 			} else {
-				log.WithCtxFields(ctx).WithFields(field.Type(apiName), field.F("expectedID", name)).Debug("No config found with the name or ID '%v' (%v)", name, apiName)
+				log.WithCtxFields(ctx).WithFields(field.Type(apiName), field.F("expectedID", name)).Debug("No config of type %s found with the name or ID %q", apiName, name)
 			}
 
 		default:
 			// multiple configs with this name found -> error
-			errs = append(errs, fmt.Errorf("multiple configs found with the name '%v' (%v). Configs: %v", name, apiName, valuesToDelete))
+			errs = append(errs, fmt.Errorf("multiple configs of type %s found with the name %q. Configs: %v", apiName, name, valuesToDelete))
 		}
 	}
 
@@ -243,7 +250,7 @@ func AllConfigs(ctx context.Context, client dtclient.ConfigClient, apis api.APIs
 		log.WithCtxFields(ctx).WithFields(field.Type(a.ID)).Info("Deleting %d configs of type %s...", len(values), a.ID)
 
 		for _, v := range values {
-			log.WithCtxFields(ctx).WithFields(field.Type(a.ID), field.F("value", v)).Debug("Deleting config %s/%s...", a.ID, v.Id)
+			log.WithCtxFields(ctx).WithFields(field.Type(a.ID), field.F("value", v)).Debug("Deleting config %s:%s...", a.ID, v.Id)
 			// TODO(improvement): this could be improved by filtering for default configs the same way as Download does
 			err := client.DeleteConfigById(a, v.Id)
 
