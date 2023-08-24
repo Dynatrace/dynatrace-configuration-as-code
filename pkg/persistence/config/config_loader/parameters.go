@@ -147,27 +147,27 @@ func arrayToReferenceParameter(context *singleConfigEntryLoadContext, environmen
 
 	project := context.ProjectId
 	configType := context.Type
-	cnf := configId
+	cfg := configId
 	var property string
 
 	switch len(arr) {
 	case 1:
 		property = toString(arr[0])
 	case 2:
-		cnf = toString(arr[0])
+		cfg = toString(arr[0])
 		property = toString(arr[1])
 	case 3:
 		configType = toString(arr[0])
-		cnf = toString(arr[1])
+		cfg = toString(arr[1])
 		property = toString(arr[2])
 	case 4:
 		project = toString(arr[0])
 		configType = toString(arr[1])
-		cnf = toString(arr[2])
+		cfg = toString(arr[2])
 		property = toString(arr[3])
 	}
 
-	return refParam.New(project, configType, cnf, property), nil
+	return refParam.New(project, configType, cfg, property), nil
 }
 
 func validateParameter(ctx *singleConfigEntryLoadContext, paramName string, param parameter.Parameter) error {

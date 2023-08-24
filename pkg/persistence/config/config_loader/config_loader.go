@@ -67,9 +67,9 @@ func LoadConfig(fs afero.Fs, context *LoaderContext, filePath string) ([]config.
 	var errs []error
 	var configs []config.Config
 
-	for _, cnf := range definedConfigEntries {
+	for _, cgf := range definedConfigEntries {
 
-		result, definitionErrors := parseConfigEntry(fs, configLoaderContext, cnf.Id, cnf)
+		result, definitionErrors := parseConfigEntry(fs, configLoaderContext, cgf.Id, cgf)
 
 		if len(definitionErrors) > 0 {
 			errs = append(errs, definitionErrors...)
