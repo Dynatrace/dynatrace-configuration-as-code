@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package deploy
+package bucket
 
 import (
 	"context"
@@ -23,25 +23,35 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 )
 
-type bucketClient interface {
+type Client interface {
 	Upsert(ctx context.Context, bucketName string, data []byte) (bucket.Response, error)
 }
 
-var _ bucketClient = (*bucket.Client)(nil)
+var _ Client = (*DummyClient)(nil)
 
-func deployBucket(ctx context.Context, client bucketClient, properties parameter.Properties, renderedConfig string, c *config.Config) (ResolvedEntity, error) {
+type DummyClient struct{}
+
+func (c DummyClient) Upsert(_ context.Context, id string, data []byte) (response bucket.Response, err error) {
+	return bucket.Response{
+		BucketName: id,
+		Data:       data,
+	}, nil
+}
+
+func Deploy(ctx context.Context, client Client, properties parameter.Properties, renderedConfig string, c *config.Config) (config.ResolvedEntity, error) {
 	bucketName := BucketId(c.Coordinate)
 
 	_, err := client.Upsert(ctx, bucketName, []byte(renderedConfig))
 	if err != nil {
-		return ResolvedEntity{}, newConfigDeployErr(c, fmt.Sprintf("failed to upsert bucket with bucketName %q", bucketName)).withError(err)
+		return config.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("failed to upsert bucket with bucketName %q", bucketName)).WithError(err)
 	}
 
 	properties[config.IdParameter] = bucketName
 
-	return ResolvedEntity{
+	return config.ResolvedEntity{
 		EntityName: bucketName,
 		Coordinate: c.Coordinate,
 		Properties: properties,

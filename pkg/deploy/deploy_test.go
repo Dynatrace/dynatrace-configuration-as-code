@@ -14,10 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package deploy
+package deploy_test
 
 import (
-	"context"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
@@ -25,10 +24,14 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	"github.com/google/uuid"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/entitymap"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/testutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
+	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
+	"golang.org/x/net/context"
 	"testing"
 )
 
@@ -64,21 +67,21 @@ func TestDeploy(t *testing.T) {
 			},
 		}
 
-		clientSet := DummyClientSet
+		clientSet := deploy.DummyClientSet
 		conf := config.Config{
 			Type:     config.ClassicApiType{Api: "dashboard"},
-			Template: generateDummyTemplate(t),
+			Template: testutils.GenerateDummyTemplate(t),
 			Coordinate: coordinate.Coordinate{
 				Project:  "project1",
 				Type:     "dashboard",
 				ConfigId: "dashboard-1",
 			},
 			Environment: "development",
-			Parameters:  toParameterMap(parameters),
+			Parameters:  testutils.ToParameterMap(parameters),
 			Skip:        false,
 		}
 
-		resolvedEntity, errors := deploy(context.TODO(), clientSet, testApiMap, newEntityMap(), &conf)
+		resolvedEntity, errors := deploy.TestDeploy(context.TODO(), &conf, clientSet, testApiMap, entitymap.New())
 
 		assert.Emptyf(t, errors, "errors: %v", errors)
 		assert.Equal(t, name, resolvedEntity.EntityName)
@@ -120,11 +123,11 @@ func TestDeploySettingShouldFailUpsert(t *testing.T) {
 
 	conf := &config.Config{
 		Type:       config.SettingsType{},
-		Template:   generateDummyTemplate(t),
-		Parameters: toParameterMap(parameters),
+		Template:   testutils.GenerateDummyTemplate(t),
+		Parameters: testutils.ToParameterMap(parameters),
 	}
 
-	_, errors := deploy(context.TODO(), ClientSet{Settings: c}, nil, newEntityMap(), conf)
+	_, errors := deploy.TestDeploy(context.TODO(), conf, deploy.ClientSet{Settings: c}, nil, entitymap.New())
 	assert.NotEmpty(t, errors)
 }
 
@@ -137,7 +140,7 @@ func TestDeploySetting(t *testing.T) {
 	tests := []struct {
 		name    string
 		given   given
-		want    ResolvedEntity
+		want    config.ResolvedEntity
 		wantErr bool
 	}{
 		{
@@ -150,8 +153,8 @@ func TestDeploySetting(t *testing.T) {
 						Type:     "bultin:some-schema",
 						ConfigId: "some-settings-config",
 					},
-					Template: generateDummyTemplate(t),
-					Parameters: toParameterMap([]parameter.NamedParameter{
+					Template: testutils.GenerateDummyTemplate(t),
+					Parameters: testutils.ToParameterMap([]parameter.NamedParameter{
 						{
 							Name: "name",
 							Parameter: &parameter.DummyParameter{
@@ -168,7 +171,7 @@ func TestDeploySetting(t *testing.T) {
 				},
 				returnedEntityID: "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0",
 			},
-			want: ResolvedEntity{
+			want: config.ResolvedEntity{
 				EntityName: "My Setting",
 				Coordinate: coordinate.Coordinate{
 					Project:  "project",
@@ -193,8 +196,8 @@ func TestDeploySetting(t *testing.T) {
 						Type:     "builtin:management-zones",
 						ConfigId: "some-settings-config",
 					},
-					Template: generateDummyTemplate(t),
-					Parameters: toParameterMap([]parameter.NamedParameter{
+					Template: testutils.GenerateDummyTemplate(t),
+					Parameters: testutils.ToParameterMap([]parameter.NamedParameter{
 						{
 							Name: "name",
 							Parameter: &parameter.DummyParameter{
@@ -211,7 +214,7 @@ func TestDeploySetting(t *testing.T) {
 				},
 				returnedEntityID: "vu9U3hXa3q0AAAABABhidWlsdGluOm1hbmFnZW1lbnQtem9uZXMABnRlbmFudAAGdGVuYW50ACRjNDZlNDZiMy02ZDk2LTMyYTctOGI1Yi1mNjExNzcyZDAxNjW-71TeFdrerQ",
 			},
-			want: ResolvedEntity{
+			want: config.ResolvedEntity{
 				EntityName: "My Setting",
 				Coordinate: coordinate.Coordinate{
 					Project:  "project",
@@ -236,8 +239,8 @@ func TestDeploySetting(t *testing.T) {
 						Type:     "builtin:management-zones",
 						ConfigId: "some-settings-config",
 					},
-					Template: generateDummyTemplate(t),
-					Parameters: toParameterMap([]parameter.NamedParameter{
+					Template: testutils.GenerateDummyTemplate(t),
+					Parameters: testutils.ToParameterMap([]parameter.NamedParameter{
 						{
 							Name: "name",
 							Parameter: &parameter.DummyParameter{
@@ -254,7 +257,7 @@ func TestDeploySetting(t *testing.T) {
 				},
 				returnedEntityID: "INVALID OBJECT ID",
 			},
-			want:    ResolvedEntity{},
+			want:    config.ResolvedEntity{},
 			wantErr: true,
 		},
 	}
@@ -267,7 +270,7 @@ func TestDeploySetting(t *testing.T) {
 				Name: tt.given.returnedEntityID,
 			}, nil)
 
-			got, errors := deploy(context.TODO(), ClientSet{Settings: c}, nil, newEntityMap(), &tt.given.config)
+			got, errors := deploy.TestDeploy(context.TODO(), &tt.given.config, deploy.ClientSet{Settings: c}, nil, entitymap.New())
 			if !tt.wantErr {
 				assert.Equal(t, got, tt.want)
 				assert.Emptyf(t, errors, "errors: %v)", errors)
@@ -316,10 +319,10 @@ func TestDeployedSettingGetsNameFromConfig(t *testing.T) {
 
 	conf := &config.Config{
 		Type:       config.SettingsType{},
-		Template:   generateDummyTemplate(t),
-		Parameters: toParameterMap(parameters),
+		Template:   testutils.GenerateDummyTemplate(t),
+		Parameters: testutils.ToParameterMap(parameters),
 	}
-	res, errors := deploy(context.TODO(), ClientSet{Settings: c}, nil, newEntityMap(), conf)
+	res, errors := deploy.TestDeploy(context.TODO(), conf, deploy.ClientSet{Settings: c}, nil, entitymap.New())
 	assert.Equal(t, res.EntityName, cfgName, "expected resolved name to match configuration name")
 	assert.Emptyf(t, errors, "errors: %v", errors)
 }
@@ -356,44 +359,224 @@ func TestSettingsNameExtractionDoesNotFailIfCfgNameBecomesOptional(t *testing.T)
 
 	conf := &config.Config{
 		Type:       config.SettingsType{},
-		Template:   generateDummyTemplate(t),
-		Parameters: toParameterMap(parametersWithoutName),
+		Template:   testutils.GenerateDummyTemplate(t),
+		Parameters: testutils.ToParameterMap(parametersWithoutName),
 	}
-	res, errors := deploy(context.TODO(), ClientSet{Settings: c}, nil, newEntityMap(), conf)
+	res, errors := deploy.TestDeploy(context.TODO(), conf, deploy.ClientSet{Settings: c}, nil, entitymap.New())
 	assert.Contains(t, res.EntityName, objectId, "expected resolved name to contain objectID if name is not configured")
 	assert.Empty(t, errors, " errors: %v)", errors)
 }
 
-func TestDeployConfigsWithNoConfigs(t *testing.T) {
-	var apis api.APIs
-	var sortedConfigs []config.Config
+func TestDeployConfigGraph_SingleConfig(t *testing.T) {
+	name := "test"
+	owner := "hansi"
+	ownerParameterName := "owner"
+	timeout := 5
+	timeoutParameterName := "timeout"
+	parameters := []parameter.NamedParameter{
+		{
+			Name: config.NameParameter,
+			Parameter: &parameter.DummyParameter{
+				Value: name,
+			},
+		},
+		{
+			Name: ownerParameterName,
+			Parameter: &parameter.DummyParameter{
+				Value: owner,
+			},
+		},
+		{
+			Name: timeoutParameterName,
+			Parameter: &parameter.DummyParameter{
+				Value: timeout,
+			},
+		},
+	}
 
-	errors := DeployConfigs(DummyClientSet, apis, sortedConfigs, DeployConfigsOptions{})
+	conf := config.Config{
+		Type:     config.ClassicApiType{Api: "dashboard"},
+		Template: testutils.GenerateDummyTemplate(t),
+		Coordinate: coordinate.Coordinate{
+			Project:  "project1",
+			Type:     "dashboard",
+			ConfigId: "dashboard-1",
+		},
+		Environment: "development",
+		Parameters:  testutils.ToParameterMap(parameters),
+		Skip:        false,
+	}
+
+	p := []project.Project{
+		{
+			Id: "proj",
+			Configs: project.ConfigsPerTypePerEnvironments{
+				"env": project.ConfigsPerType{
+					"dashboard": []config.Config{conf},
+				},
+			},
+		},
+	}
+
+	dummyClient := dtclient.DummyClient{}
+	clientSet := deploy.ClientSet{Classic: &dummyClient}
+
+	c := deploy.EnvironmentClients{
+		deploy.EnvironmentInfo{Name: "env"}: clientSet,
+	}
+
+	errors := deploy.DeployConfigGraph(p, c, deploy.DeployConfigsOptions{})
+
+	assert.Emptyf(t, errors, "errors: %v", errors)
+
+	createdEntities, found := dummyClient.GetEntries(api.NewAPIs()["dashboard"])
+	assert.True(t, found, "expected entries for dashboard API to exist in dummy client after deployment")
+	assert.Len(t, createdEntities, 1)
+
+	entity := createdEntities[0]
+	assert.Equal(t, name, entity.Name)
+}
+
+func TestDeployConfigGraph_SettingShouldFailUpsert(t *testing.T) {
+	name := "test"
+	owner := "hansi"
+	ownerParameterName := "owner"
+	parameters := []parameter.NamedParameter{
+		{
+			Name: config.NameParameter,
+			Parameter: &parameter.DummyParameter{
+				Value: name,
+			},
+		},
+		{
+			Name: ownerParameterName,
+			Parameter: &parameter.DummyParameter{
+				Value: owner,
+			},
+		},
+		{
+			Name: config.ScopeParameter,
+			Parameter: &parameter.DummyParameter{
+				Value: "something",
+			},
+		},
+	}
+
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any()).Return(dtclient.DynatraceEntity{}, fmt.Errorf("upsert failed"))
+
+	conf := config.Config{
+		Type: config.SettingsType{
+			SchemaId: "builtin:test",
+		},
+		Template:   testutils.GenerateDummyTemplate(t),
+		Parameters: testutils.ToParameterMap(parameters),
+	}
+
+	p := []project.Project{
+		{
+			Id: "proj",
+			Configs: project.ConfigsPerTypePerEnvironments{
+				"env": project.ConfigsPerType{
+					"builtin:test": []config.Config{conf},
+				},
+			},
+		},
+	}
+
+	clients := deploy.EnvironmentClients{
+		deploy.EnvironmentInfo{Name: "env"}: deploy.ClientSet{Settings: c},
+	}
+
+	errors := deploy.DeployConfigGraph(p, clients, deploy.DeployConfigsOptions{})
+	assert.NotEmpty(t, errors)
+}
+
+func TestDeployConfigGraph_DoesNotFailOnEmptyConfigs(t *testing.T) {
+
+	p := []project.Project{
+		{
+			Id: "proj",
+			Configs: project.ConfigsPerTypePerEnvironments{
+				"env": project.ConfigsPerType{
+					"builtin:test": []config.Config{},
+				},
+			},
+		},
+	}
+
+	c := deploy.EnvironmentClients{
+		deploy.EnvironmentInfo{Name: "env"}: deploy.DummyClientSet,
+	}
+
+	errors := deploy.DeployConfigGraph(p, c, deploy.DeployConfigsOptions{})
 	assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
 }
 
-func TestDeployConfigsWithOneConfigToSkip(t *testing.T) {
-	var apis api.APIs
-	sortedConfigs := []config.Config{
+func TestDeployConfigGraph_DoesNotFailOnEmptyProject(t *testing.T) {
+
+	var p []project.Project
+
+	c := deploy.EnvironmentClients{
+		deploy.EnvironmentInfo{Name: "env"}: deploy.DummyClientSet,
+	}
+
+	errors := deploy.DeployConfigGraph(p, c, deploy.DeployConfigsOptions{})
+	assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
+}
+
+func TestDeployConfigGraph_DoesNotFailNilProject(t *testing.T) {
+
+	c := deploy.EnvironmentClients{
+		deploy.EnvironmentInfo{Name: "env"}: deploy.DummyClientSet,
+	}
+
+	errors := deploy.DeployConfigGraph(nil, c, deploy.DeployConfigsOptions{})
+	assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
+}
+
+func TestDeployConfigGraph_DoesNotDeploySkippedConfig(t *testing.T) {
+	configs := []config.Config{
 		{Skip: true},
 	}
-	errors := DeployConfigs(DummyClientSet, apis, sortedConfigs, DeployConfigsOptions{})
+	p := []project.Project{
+		{
+			Id: "proj",
+			Configs: project.ConfigsPerTypePerEnvironments{
+				"env": project.ConfigsPerType{
+					"dashboard": configs,
+				},
+			},
+		},
+	}
+
+	dummyClient := dtclient.DummyClient{}
+	clientSet := deploy.ClientSet{Classic: &dummyClient}
+
+	c := deploy.EnvironmentClients{
+		deploy.EnvironmentInfo{Name: "env"}: clientSet,
+	}
+
+	errors := deploy.DeployConfigGraph(p, c, deploy.DeployConfigsOptions{})
 	assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
+	createdEntities, found := dummyClient.GetEntries(api.NewAPIs()["dashboard"])
+	assert.False(t, found, "expected NO entries for dashboard API to exist")
+	assert.Len(t, createdEntities, 0)
 }
 
-func TestDeployConfigsTargetingSettings(t *testing.T) {
+func TestDeployConfigGraph_DeploysSetting(t *testing.T) {
 	c := dtclient.NewMockClient(gomock.NewController(t))
-	var apis api.APIs
-	sortedConfigs := []config.Config{
+
+	configs := []config.Config{
 		{
-			Template: generateDummyTemplate(t),
+			Template: testutils.GenerateDummyTemplate(t),
 			Coordinate: coordinate.Coordinate{
 				Project:  "some project",
 				Type:     "schema",
 				ConfigId: "some setting",
 			},
 			Type: config.SettingsType{
-				SchemaId:      "schema",
+				SchemaId:      "builtin:test",
 				SchemaVersion: "schemaversion",
 			},
 			Parameters: config.Parameters{
@@ -405,20 +588,33 @@ func TestDeployConfigsTargetingSettings(t *testing.T) {
 		Id:   "42",
 		Name: "Super Special Settings Object",
 	}, nil)
-	errors := DeployConfigs(ClientSet{Settings: c}, apis, sortedConfigs, DeployConfigsOptions{})
+
+	p := []project.Project{
+		{
+			Id: "proj",
+			Configs: project.ConfigsPerTypePerEnvironments{
+				"env": project.ConfigsPerType{
+					"builtin:test": configs,
+				},
+			},
+		},
+	}
+
+	clients := deploy.EnvironmentClients{
+		deploy.EnvironmentInfo{Name: "env"}: deploy.ClientSet{Settings: c},
+	}
+
+	errors := deploy.DeployConfigGraph(p, clients, deploy.DeployConfigsOptions{})
 	assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
 }
 
 func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
 	theConfigName := "theConfigName"
-	theApiName := "theApiName"
-
-	theApi := api.API{ID: theApiName, URLPath: "path"}
+	theApiName := "management-zone"
 
 	client := dtclient.NewMockClient(gomock.NewController(t))
 	client.EXPECT().UpsertConfigByName(gomock.Any(), gomock.Any(), theConfigName, gomock.Any()).Times(1)
 
-	apis := api.APIs{theApiName: theApi}
 	parameters := []parameter.NamedParameter{
 		{
 			Name: config.NameParameter,
@@ -427,31 +623,43 @@ func TestDeployConfigsTargetingClassicConfigUnique(t *testing.T) {
 			},
 		},
 	}
-	sortedConfigs := []config.Config{
+	configs := []config.Config{
 		{
-			Parameters: toParameterMap(parameters),
+			Parameters: testutils.ToParameterMap(parameters),
 			Coordinate: coordinate.Coordinate{Type: theApiName},
-			Template:   generateDummyTemplate(t),
+			Template:   testutils.GenerateDummyTemplate(t),
 			Type: config.ClassicApiType{
 				Api: theApiName,
 			},
 		},
 	}
 
-	errors := DeployConfigs(ClientSet{Classic: client}, apis, sortedConfigs, DeployConfigsOptions{})
+	p := []project.Project{
+		{
+			Id: "proj",
+			Configs: project.ConfigsPerTypePerEnvironments{
+				"env": project.ConfigsPerType{
+					theApiName: configs,
+				},
+			},
+		},
+	}
+
+	clients := deploy.EnvironmentClients{
+		deploy.EnvironmentInfo{Name: "env"}: deploy.ClientSet{Classic: client},
+	}
+
+	errors := deploy.DeployConfigGraph(p, clients, deploy.DeployConfigsOptions{})
 	assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
 }
 
 func TestDeployConfigsTargetingClassicConfigNonUniqueWithExistingCfgsOfSameName(t *testing.T) {
 	theConfigName := "theConfigName"
-	theApiName := "theApiName"
-
-	theApi := api.API{ID: theApiName, URLPath: "path", NonUniqueName: true}
+	theApiName := "alerting-profile"
 
 	client := dtclient.NewMockClient(gomock.NewController(t))
 	client.EXPECT().UpsertConfigByNonUniqueNameAndId(gomock.Any(), gomock.Any(), gomock.Any(), theConfigName, gomock.Any())
 
-	apis := api.APIs{theApiName: theApi}
 	parameters := []parameter.NamedParameter{
 		{
 			Name: config.NameParameter,
@@ -460,123 +668,449 @@ func TestDeployConfigsTargetingClassicConfigNonUniqueWithExistingCfgsOfSameName(
 			},
 		},
 	}
-	sortedConfigs := []config.Config{
+	configs := []config.Config{
 		{
-			Parameters: toParameterMap(parameters),
+			Parameters: testutils.ToParameterMap(parameters),
 			Coordinate: coordinate.Coordinate{Type: theApiName},
-			Template:   generateDummyTemplate(t),
+			Template:   testutils.GenerateDummyTemplate(t),
 			Type: config.ClassicApiType{
 				Api: theApiName,
 			},
 		},
 	}
 
-	errors := DeployConfigs(ClientSet{Classic: client}, apis, sortedConfigs, DeployConfigsOptions{})
+	p := []project.Project{
+		{
+			Id: "proj",
+			Configs: project.ConfigsPerTypePerEnvironments{
+				"env": project.ConfigsPerType{
+					theApiName: configs,
+				},
+			},
+		},
+	}
+
+	clients := deploy.EnvironmentClients{
+		deploy.EnvironmentInfo{Name: "env"}: deploy.ClientSet{Classic: client},
+	}
+
+	errors := deploy.DeployConfigGraph(p, clients, deploy.DeployConfigsOptions{})
 	assert.Emptyf(t, errors, "there should be no errors (errors: %v)", errors)
 }
 
-func TestDeployConfigsNoApi(t *testing.T) {
-	theConfigName := "theConfigName"
-	theApiName := "theApiName"
-
-	client := dtclient.NewMockClient(gomock.NewController(t))
-
-	apis := api.APIs{}
-	parameters := []parameter.NamedParameter{
-		{
-			Name: config.NameParameter,
-			Parameter: &parameter.DummyParameter{
-				Value: theConfigName,
-			},
-		},
-	}
-	sortedConfigs := []config.Config{
-		{
-			Parameters: toParameterMap(parameters),
-			Coordinate: coordinate.Coordinate{Type: theApiName},
-			Template:   generateDummyTemplate(t),
-			Type: config.ClassicApiType{
-				Api: theApiName,
-			},
-		},
-		{
-			Parameters: toParameterMap(parameters),
-			Coordinate: coordinate.Coordinate{Type: theApiName},
-			Template:   generateDummyTemplate(t),
-			Type: config.ClassicApiType{
-				Api: theApiName,
-			},
-		},
-	}
-
-	t.Run("missing api - continue on error", func(t *testing.T) {
-		errors := DeployConfigs(ClientSet{Classic: client}, apis, sortedConfigs, DeployConfigsOptions{ContinueOnErr: true})
-		assert.Equal(t, 2, len(errors), fmt.Sprintf("Expected 2 errors, but just got %d", len(errors)))
-	})
-
-	t.Run("missing api - stop on error", func(t *testing.T) {
-		errors := DeployConfigs(ClientSet{Classic: client}, apis, sortedConfigs, DeployConfigsOptions{})
-		assert.Equal(t, 1, len(errors), fmt.Sprintf("Expected 1 error, but just got %d", len(errors)))
-	})
-	// test continue on error
-
-}
-
 func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
-	theApiName := "theApiName"
-	theApi := api.API{ID: theApiName, URLPath: "path"}
-	apis := api.APIs{theApiName: theApi}
-	sortedConfigs := []config.Config{
+	theApiName := "management-zone"
+
+	configs := []config.Config{
 		{
-			Parameters: toParameterMap([]parameter.NamedParameter{}), // missing name parameter leads to deployment failure
-			Coordinate: coordinate.Coordinate{Type: theApiName},
-			Template:   generateDummyTemplate(t),
+			Parameters: testutils.ToParameterMap([]parameter.NamedParameter{}), // missing name parameter leads to deployment failure
+			Coordinate: coordinate.Coordinate{Type: theApiName, ConfigId: "config_1"},
+			Template:   testutils.GenerateDummyTemplate(t),
 			Type: config.ClassicApiType{
 				Api: theApiName,
 			},
 		},
 		{
-			Parameters: toParameterMap([]parameter.NamedParameter{}), // missing name parameter leads to deployment failure
-			Coordinate: coordinate.Coordinate{Type: theApiName},
-			Template:   generateDummyTemplate(t),
+			Parameters: testutils.ToParameterMap([]parameter.NamedParameter{}), // missing name parameter leads to deployment failure
+			Coordinate: coordinate.Coordinate{Type: theApiName, ConfigId: "config_2"},
+			Template:   testutils.GenerateDummyTemplate(t),
 			Type: config.ClassicApiType{
 				Api: theApiName,
 			},
 		},
 	}
 
-	t.Run("deployment error - stop on error", func(t *testing.T) {
-		errors := DeployConfigs(DummyClientSet, apis, sortedConfigs, DeployConfigsOptions{})
-		assert.Equal(t, 1, len(errors), fmt.Sprintf("Expected 1 error, but just got %d", len(errors)))
-	})
+	env := "test-environment"
 
-	t.Run("deployment error - stop on error", func(t *testing.T) {
-		errors := DeployConfigs(DummyClientSet, apis, sortedConfigs, DeployConfigsOptions{ContinueOnErr: true})
-		assert.Equal(t, 2, len(errors), fmt.Sprintf("Expected 1 error, but just got %d", len(errors)))
-	})
-
-}
-
-func toParameterMap(params []parameter.NamedParameter) map[string]parameter.Parameter {
-	result := make(map[string]parameter.Parameter)
-
-	for _, p := range params {
-		result[p.Name] = p.Parameter
+	p := []project.Project{
+		{
+			Id: "proj",
+			Configs: project.ConfigsPerTypePerEnvironments{
+				env: project.ConfigsPerType{
+					theApiName: configs,
+				},
+			},
+		},
 	}
 
-	return result
+	c := deploy.EnvironmentClients{
+		deploy.EnvironmentInfo{Name: env}: deploy.DummyClientSet,
+	}
+
+	t.Run("deployment error - stop on error", func(t *testing.T) {
+		envErrs := deploy.DeployConfigGraph(p, c, deploy.DeployConfigsOptions{})
+		assert.Len(t, envErrs, 1)
+		assert.Len(t, envErrs[env], 1, "Expected deployment to return after the first error")
+	})
+
+	t.Run("deployment error - continue on error", func(t *testing.T) {
+		envErrs := deploy.DeployConfigGraph(p, c, deploy.DeployConfigsOptions{ContinueOnErr: true})
+		assert.Len(t, envErrs, 1)
+		assert.Len(t, envErrs[env], 2, "Expected deployment to continue after the first error and return errors for both invalid configs")
+	})
+
 }
 
-func generateDummyTemplate(t *testing.T) template.Template {
-	newUUID, err := uuid.NewUUID()
+func TestDeployConfigGraph_DoesNotDeployConfigsDependingOnSkippedConfigs(t *testing.T) {
+	projectId := "project1"
+	referencedProjectId := "project2"
+	environmentName := "dev"
+
+	dashboardApiId := "dashboard"
+	dashboardConfigCoordinate := coordinate.Coordinate{
+		Project:  projectId,
+		Type:     dashboardApiId,
+		ConfigId: "sample dashboard",
+	}
+
+	autoTagApiId := "auto-tag"
+	autoTagConfigId := "tag"
+	autoTagCoordinates := coordinate.Coordinate{
+		Project:  referencedProjectId,
+		Type:     autoTagApiId,
+		ConfigId: autoTagConfigId,
+	}
+
+	referencedPropertyName := "tagId"
+
+	individualConfigCoordinate := coordinate.Coordinate{
+		Project:  projectId,
+		Type:     dashboardApiId,
+		ConfigId: "Random Dashboard",
+	}
+
+	projects := []project.Project{
+		{
+			Id: projectId,
+			Configs: project.ConfigsPerTypePerEnvironments{
+				environmentName: {
+					dashboardApiId: []config.Config{
+						{
+							Coordinate:  dashboardConfigCoordinate,
+							Environment: environmentName,
+							Parameters: map[string]parameter.Parameter{
+								"autoTagId": &parameter.DummyParameter{
+									References: []parameter.ParameterReference{
+										{
+											Config:   autoTagCoordinates,
+											Property: referencedPropertyName,
+										},
+									},
+								},
+							},
+						},
+						{
+							Coordinate:  individualConfigCoordinate,
+							Environment: environmentName,
+							Parameters: map[string]parameter.Parameter{
+								"name": &parameter.DummyParameter{
+									Value: "sample",
+								},
+								"dashboard": &parameter.DummyParameter{
+									References: []parameter.ParameterReference{
+										{
+											Config:   dashboardConfigCoordinate,
+											Property: "autoTagId",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Dependencies: project.DependenciesPerEnvironment{
+				environmentName: []string{
+					referencedProjectId,
+				},
+			},
+		},
+		{
+			Id: referencedProjectId,
+			Configs: project.ConfigsPerTypePerEnvironments{
+				environmentName: {
+					autoTagApiId: []config.Config{
+						{
+							Coordinate:  autoTagCoordinates,
+							Environment: environmentName,
+							Parameters: map[string]parameter.Parameter{
+								referencedPropertyName: &parameter.DummyParameter{
+									Value: "10",
+								},
+							},
+							Skip: true,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	environments := []string{
+		environmentName,
+	}
+
+	graphs := graph.New(projects, environments)
+	components, err := graphs.GetIndependentlySortedConfigs(environmentName)
 	assert.NoError(t, err)
-	templ := template.CreateTemplateFromString("deploy_test-"+newUUID.String(), "{}")
-	return templ
+	assert.Len(t, components, 1)
+
+	dummyClient := dtclient.DummyClient{}
+	clientSet := deploy.ClientSet{
+		Classic:  &dummyClient,
+		Settings: &dummyClient,
+	}
+
+	clients := deploy.EnvironmentClients{
+		deploy.EnvironmentInfo{Name: environmentName}: clientSet,
+	}
+
+	errs := deploy.DeployConfigGraph(projects, clients, deploy.DeployConfigsOptions{})
+	assert.Len(t, errs, 0)
+	assert.Zero(t, dummyClient.CreatedObjects())
 }
 
-func generateFaultyTemplate(t *testing.T) template.Template {
-	newUUID, err := uuid.NewUUID()
+func TestDeployConfigGraph_DeploysIndependentConfigurations(t *testing.T) {
+	projectId := "project1"
+	referencedProjectId := "project2"
+	environmentName := "dev"
+
+	dashboardApiId := "dashboard"
+	dashboardConfigCoordinate := coordinate.Coordinate{
+		Project:  projectId,
+		Type:     dashboardApiId,
+		ConfigId: "sample dashboard",
+	}
+
+	autoTagApiId := "auto-tag"
+	autoTagConfigId := "tag"
+	autoTagCoordinates := coordinate.Coordinate{
+		Project:  referencedProjectId,
+		Type:     autoTagApiId,
+		ConfigId: autoTagConfigId,
+	}
+
+	referencedPropertyName := "tagId"
+
+	individualConfigCoordinate := coordinate.Coordinate{
+		Project:  projectId,
+		Type:     dashboardApiId,
+		ConfigId: "Random Dashboard",
+	}
+	individualConfigName := "Random Dashboard"
+
+	projects := []project.Project{
+		{
+			Id: projectId,
+			Configs: project.ConfigsPerTypePerEnvironments{
+				environmentName: {
+					dashboardApiId: []config.Config{
+						{
+							Coordinate:  dashboardConfigCoordinate,
+							Type:        config.ClassicApiType{Api: dashboardApiId},
+							Environment: environmentName,
+							Parameters: map[string]parameter.Parameter{
+								"autoTagId": &parameter.DummyParameter{
+									References: []parameter.ParameterReference{
+										{
+											Config:   autoTagCoordinates,
+											Property: referencedPropertyName,
+										},
+									},
+								},
+							},
+							Template: testutils.GenerateDummyTemplate(t),
+						},
+						{
+							Coordinate:  individualConfigCoordinate,
+							Type:        config.ClassicApiType{Api: dashboardApiId},
+							Environment: environmentName,
+							Parameters: map[string]parameter.Parameter{
+								"name": &parameter.DummyParameter{
+									Value: individualConfigName,
+								},
+							},
+							Template: testutils.GenerateDummyTemplate(t),
+						},
+					},
+				},
+			},
+			Dependencies: project.DependenciesPerEnvironment{
+				environmentName: []string{
+					referencedProjectId,
+				},
+			},
+		},
+		{
+			Id: referencedProjectId,
+			Configs: project.ConfigsPerTypePerEnvironments{
+				environmentName: {
+					autoTagApiId: []config.Config{
+						{
+							Coordinate:  autoTagCoordinates,
+							Type:        config.ClassicApiType{Api: autoTagApiId},
+							Environment: environmentName,
+							Parameters: map[string]parameter.Parameter{
+								referencedPropertyName: &parameter.DummyParameter{
+									Value: "10",
+								},
+							},
+							Template: testutils.GenerateDummyTemplate(t),
+							Skip:     true,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	environments := []string{
+		environmentName,
+	}
+
+	graphs := graph.New(projects, environments)
+	components, err := graphs.GetIndependentlySortedConfigs(environmentName)
 	assert.NoError(t, err)
-	templ := template.CreateTemplateFromString("deploy_test-"+newUUID.String(), "{")
-	return templ
+	assert.Len(t, components, 2)
+
+	dummyClient := dtclient.DummyClient{}
+	clientSet := deploy.ClientSet{
+		Classic:  &dummyClient,
+		Settings: &dummyClient,
+	}
+
+	clients := deploy.EnvironmentClients{
+		deploy.EnvironmentInfo{Name: environmentName}: clientSet,
+	}
+
+	errs := deploy.DeployConfigGraph(projects, clients, deploy.DeployConfigsOptions{})
+	assert.Len(t, errs, 0)
+
+	dashboards, found := dummyClient.GetEntries(api.NewAPIs()["dashboard"])
+	assert.True(t, found, "expected entries for dashboard API to exist in dummy client after deployment")
+	assert.Len(t, dashboards, 1)
+
+	assert.Equal(t, dashboards[0].Name, individualConfigName)
+}
+
+func TestDeployConfigGraph_DeploysIndependentConfigurations_IfContinuingAfterFailure(t *testing.T) {
+	projectId := "project1"
+	referencedProjectId := "project2"
+	environmentName := "dev"
+
+	dashboardApiId := "dashboard"
+	dashboardConfigCoordinate := coordinate.Coordinate{
+		Project:  projectId,
+		Type:     dashboardApiId,
+		ConfigId: "sample dashboard",
+	}
+
+	autoTagApiId := "auto-tag"
+	autoTagConfigId := "tag"
+	autoTagCoordinates := coordinate.Coordinate{
+		Project:  referencedProjectId,
+		Type:     autoTagApiId,
+		ConfigId: autoTagConfigId,
+	}
+
+	referencedPropertyName := "tagId"
+
+	individualConfigCoordinate := coordinate.Coordinate{
+		Project:  projectId,
+		Type:     dashboardApiId,
+		ConfigId: "Random Dashboard",
+	}
+	individualConfigName := "Random Dashboard"
+
+	projects := []project.Project{
+		{
+			Id: projectId,
+			Configs: project.ConfigsPerTypePerEnvironments{
+				environmentName: {
+					dashboardApiId: []config.Config{
+						{
+							Coordinate:  dashboardConfigCoordinate,
+							Type:        config.ClassicApiType{Api: dashboardApiId},
+							Environment: environmentName,
+							Parameters: map[string]parameter.Parameter{
+								"autoTagId": &parameter.DummyParameter{
+									References: []parameter.ParameterReference{
+										{
+											Config:   autoTagCoordinates,
+											Property: referencedPropertyName,
+										},
+									},
+								},
+							},
+							Template: testutils.GenerateDummyTemplate(t),
+						},
+						{
+							Coordinate:  individualConfigCoordinate,
+							Type:        config.ClassicApiType{Api: dashboardApiId},
+							Environment: environmentName,
+							Parameters: map[string]parameter.Parameter{
+								"name": &parameter.DummyParameter{
+									Value: individualConfigName,
+								},
+							},
+							Template: testutils.GenerateDummyTemplate(t),
+						},
+					},
+				},
+			},
+			Dependencies: project.DependenciesPerEnvironment{
+				environmentName: []string{
+					referencedProjectId,
+				},
+			},
+		},
+		{
+			Id: referencedProjectId,
+			Configs: project.ConfigsPerTypePerEnvironments{
+				environmentName: {
+					autoTagApiId: []config.Config{
+						{
+							Coordinate:  autoTagCoordinates,
+							Type:        config.ClassicApiType{Api: autoTagApiId},
+							Environment: environmentName,
+							Parameters: map[string]parameter.Parameter{
+								referencedPropertyName: &parameter.DummyParameter{
+									Value: "10",
+								},
+							},
+							Template: testutils.GenerateFaultyTemplate(t), // deploying this will fail, and should result in the dependent dashboard not being deployed either
+						},
+					},
+				},
+			},
+		},
+	}
+
+	environments := []string{
+		environmentName,
+	}
+
+	graphs := graph.New(projects, environments)
+	components, err := graphs.GetIndependentlySortedConfigs(environmentName)
+	assert.NoError(t, err)
+	assert.Len(t, components, 2)
+
+	dummyClient := dtclient.DummyClient{}
+	clientSet := deploy.ClientSet{
+		Classic:  &dummyClient,
+		Settings: &dummyClient,
+	}
+
+	clients := deploy.EnvironmentClients{
+		deploy.EnvironmentInfo{Name: environmentName}: clientSet,
+	}
+
+	errs := deploy.DeployConfigGraph(projects, clients, deploy.DeployConfigsOptions{ContinueOnErr: true})
+	assert.Len(t, errs, 1)
+
+	dashboards, found := dummyClient.GetEntries(api.NewAPIs()["dashboard"])
+	assert.True(t, found, "expected entries for dashboard API to exist in dummy client after deployment")
+	assert.Len(t, dashboards, 1)
+
+	assert.Equal(t, dashboards[0].Name, individualConfigName)
 }

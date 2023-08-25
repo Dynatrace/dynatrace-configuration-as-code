@@ -26,6 +26,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/sequential"
 	"github.com/google/go-cmp/cmp"
 	"path/filepath"
 	"strings"
@@ -187,7 +188,7 @@ func deployOnEnvironment(env manifest.EnvironmentDefinition, cfgs []config.Confi
 		return []error{fmt.Errorf("failed to create clients for envrionment %q: %w", env.Name, err)}
 	}
 
-	errs := deploy.DeployConfigs(clientSet, api.NewAPIs(), cfgs, deploy.DeployConfigsOptions{
+	errs := sequential.DeployConfigs(clientSet, api.NewAPIs(), cfgs, deploy.DeployConfigsOptions{
 		ContinueOnErr: continueOnErr,
 		DryRun:        dryRun,
 	})

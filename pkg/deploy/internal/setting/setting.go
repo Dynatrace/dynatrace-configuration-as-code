@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package deploy
+package setting
 
 import (
 	"context"
@@ -25,17 +25,19 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/resolve"
 )
 
-func deploySetting(ctx context.Context, settingsClient dtclient.SettingsClient, properties parameter.Properties, renderedConfig string, c *config.Config) (ResolvedEntity, error) {
+func Deploy(ctx context.Context, settingsClient dtclient.SettingsClient, properties parameter.Properties, renderedConfig string, c *config.Config) (config.ResolvedEntity, error) {
 	t, ok := c.Type.(config.SettingsType)
 	if !ok {
-		return ResolvedEntity{}, newConfigDeployErr(c, fmt.Sprintf("config was not of expected type %q, but %q", config.SettingsTypeId, c.Type.ID()))
+		return config.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("config was not of expected type %q, but %q", config.SettingsTypeId, c.Type.ID()))
 	}
 
 	scope, err := extractScope(properties)
 	if err != nil {
-		return ResolvedEntity{}, err
+		return config.ResolvedEntity{}, err
 	}
 
 	entity, err := settingsClient.UpsertSettings(ctx, dtclient.SettingsObject{
@@ -47,11 +49,11 @@ func deploySetting(ctx context.Context, settingsClient dtclient.SettingsClient, 
 		OriginObjectId: c.OriginObjectId,
 	})
 	if err != nil {
-		return ResolvedEntity{}, newConfigDeployErr(c, err.Error()).withError(err)
+		return config.ResolvedEntity{}, errors.NewConfigDeployErr(c, err.Error()).WithError(err)
 	}
 
 	name := fmt.Sprintf("[UNKNOWN NAME]%s", entity.Id)
-	if configName, err := extractConfigName(c, properties); err == nil {
+	if configName, err := resolve.ExtractConfigName(c, properties); err == nil {
 		name = configName
 	} else {
 		log.WithCtxFields(ctx).Warn("failed to extract name for Settings 2.0 object %q - ID will be used", entity.Id)
@@ -59,12 +61,12 @@ func deploySetting(ctx context.Context, settingsClient dtclient.SettingsClient, 
 
 	properties[config.IdParameter], err = getEntityID(c, entity)
 	if err != nil {
-		return ResolvedEntity{}, newConfigDeployErr(c, err.Error()).withError(err)
+		return config.ResolvedEntity{}, errors.NewConfigDeployErr(c, err.Error()).WithError(err)
 	}
 
 	properties[config.NameParameter] = name
 
-	return ResolvedEntity{
+	return config.ResolvedEntity{
 		EntityName: name,
 		Coordinate: c.Coordinate,
 		Properties: properties,

@@ -16,17 +16,23 @@
  * limitations under the License.
  */
 
-package deploy
+package classic
 
 import (
 	"context"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/entitymap"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
+
+var dashboardApi = api.API{ID: "dashboard", URLPath: "dashboard", DeprecatedBy: "dashboard-v2"}
+var testApiMap = api.APIs{"dashboard": dashboardApi}
 
 func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
 	name := "test"
@@ -42,19 +48,19 @@ func TestDeployConfigShouldFailOnAnAlreadyKnownEntityName(t *testing.T) {
 	client := &dtclient.DummyClient{}
 	conf := config.Config{
 		Type:     config.ClassicApiType{Api: "dashboard"},
-		Template: generateDummyTemplate(t),
+		Template: testutils.GenerateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
 			Project:  "project1",
 			Type:     "dashboard",
 			ConfigId: "dashboard-1",
 		},
 		Environment: "development",
-		Parameters:  toParameterMap(parameters),
+		Parameters:  testutils.ToParameterMap(parameters),
 		Skip:        false,
 	}
-	entityMap := newEntityMap()
-	entityMap.put(ResolvedEntity{EntityName: name, Coordinate: coordinate.Coordinate{Type: "dashboard"}})
-	_, errors := deployClassicConfig(context.TODO(), client, testApiMap, nil, "", &conf)
+	entityMap := entitymap.New()
+	entityMap.Put(config.ResolvedEntity{EntityName: name, Coordinate: coordinate.Coordinate{Type: "dashboard"}})
+	_, errors := Deploy(context.TODO(), client, testApiMap, nil, "", &conf)
 
 	assert.NotEmpty(t, errors)
 }
@@ -95,18 +101,18 @@ func TestDeployConfigShouldFailCyclicParameterDependencies(t *testing.T) {
 	client := &dtclient.DummyClient{}
 	conf := config.Config{
 		Type:     config.ClassicApiType{Api: "dashboard"},
-		Template: generateDummyTemplate(t),
+		Template: testutils.GenerateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
 			Project:  "project1",
 			Type:     "dashboard",
 			ConfigId: "dashboard-1",
 		},
 		Environment: "development",
-		Parameters:  toParameterMap(parameters),
+		Parameters:  testutils.ToParameterMap(parameters),
 		Skip:        false,
 	}
 
-	_, errors := deployClassicConfig(context.TODO(), client, testApiMap, nil, "", &conf)
+	_, errors := Deploy(context.TODO(), client, testApiMap, nil, "", &conf)
 	assert.NotEmpty(t, errors)
 }
 
@@ -116,18 +122,18 @@ func TestDeployConfigShouldFailOnMissingNameParameter(t *testing.T) {
 	client := &dtclient.DummyClient{}
 	conf := config.Config{
 		Type:     config.ClassicApiType{Api: "dashboard"},
-		Template: generateDummyTemplate(t),
+		Template: testutils.GenerateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
 			Project:  "project1",
 			Type:     "dashboard",
 			ConfigId: "dashboard-1",
 		},
 		Environment: "development",
-		Parameters:  toParameterMap(parameters),
+		Parameters:  testutils.ToParameterMap(parameters),
 		Skip:        false,
 	}
 
-	_, errors := deployClassicConfig(context.TODO(), client, testApiMap, nil, "", &conf)
+	_, errors := Deploy(context.TODO(), client, testApiMap, nil, "", &conf)
 	assert.NotEmpty(t, errors)
 }
 
@@ -153,18 +159,18 @@ func TestDeployConfigShouldFailOnReferenceOnUnknownConfig(t *testing.T) {
 	client := &dtclient.DummyClient{}
 	conf := config.Config{
 		Type:     config.ClassicApiType{Api: "dashboard"},
-		Template: generateDummyTemplate(t),
+		Template: testutils.GenerateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
 			Project:  "project1",
 			Type:     "dashboard",
 			ConfigId: "dashboard-1",
 		},
 		Environment: "development",
-		Parameters:  toParameterMap(parameters),
+		Parameters:  testutils.ToParameterMap(parameters),
 		Skip:        false,
 	}
 
-	_, errors := deployClassicConfig(context.TODO(), client, testApiMap, nil, "", &conf)
+	_, errors := Deploy(context.TODO(), client, testApiMap, nil, "", &conf)
 	assert.NotEmpty(t, errors)
 }
 
@@ -192,17 +198,17 @@ func TestDeployConfigShouldFailOnReferenceOnSkipConfig(t *testing.T) {
 	client := &dtclient.DummyClient{}
 	conf := config.Config{
 		Type:     config.ClassicApiType{Api: "dashboard"},
-		Template: generateDummyTemplate(t),
+		Template: testutils.GenerateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
 			Project:  "project1",
 			Type:     "dashboard",
 			ConfigId: "dashboard-1",
 		},
 		Environment: "development",
-		Parameters:  toParameterMap(parameters),
+		Parameters:  testutils.ToParameterMap(parameters),
 		Skip:        false,
 	}
 
-	_, errors := deployClassicConfig(context.TODO(), client, testApiMap, nil, "", &conf)
+	_, errors := Deploy(context.TODO(), client, testApiMap, nil, "", &conf)
 	assert.NotEmpty(t, errors)
 }

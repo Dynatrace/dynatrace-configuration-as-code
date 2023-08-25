@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package deploy
+package classic
 
 import (
 	"context"
@@ -25,22 +25,24 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/resolve"
 )
 
-func deployClassicConfig(ctx context.Context, configClient dtclient.ConfigClient, apis api.APIs, properties parameter.Properties, renderedConfig string, conf *config.Config) (ResolvedEntity, error) {
+func Deploy(ctx context.Context, configClient dtclient.ConfigClient, apis api.APIs, properties parameter.Properties, renderedConfig string, conf *config.Config) (config.ResolvedEntity, error) {
 	t, ok := conf.Type.(config.ClassicApiType)
 	if !ok {
-		return ResolvedEntity{}, fmt.Errorf("config was not of expected type %q, but %q", config.ClassicApiTypeId, conf.Type.ID())
+		return config.ResolvedEntity{}, fmt.Errorf("config was not of expected type %q, but %q", config.ClassicApiTypeId, conf.Type.ID())
 	}
 
 	apiToDeploy, found := apis[t.Api]
 	if !found {
-		return ResolvedEntity{}, fmt.Errorf("unknown api `%s`. this is most likely a bug", t.Api)
+		return config.ResolvedEntity{}, fmt.Errorf("unknown api `%s`. this is most likely a bug", t.Api)
 	}
 
-	configName, err := extractConfigName(conf, properties)
+	configName, err := resolve.ExtractConfigName(conf, properties)
 	if err != nil {
-		return ResolvedEntity{}, err
+		return config.ResolvedEntity{}, err
 	}
 
 	if apiToDeploy.DeprecatedBy != "" {
@@ -55,13 +57,13 @@ func deployClassicConfig(ctx context.Context, configClient dtclient.ConfigClient
 	}
 
 	if err != nil {
-		return ResolvedEntity{}, newConfigDeployErr(conf, err.Error()).withError(err)
+		return config.ResolvedEntity{}, errors.NewConfigDeployErr(conf, err.Error()).WithError(err)
 	}
 
 	properties[config.IdParameter] = entity.Id
 	properties[config.NameParameter] = entity.Name
 
-	return ResolvedEntity{
+	return config.ResolvedEntity{
 		EntityName: entity.Name,
 		Coordinate: conf.Coordinate,
 		Properties: properties,

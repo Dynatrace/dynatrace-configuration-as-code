@@ -20,9 +20,9 @@ package id_extraction
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/resolve"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
 	"github.com/stretchr/testify/assert"
@@ -336,7 +336,7 @@ func TestExtractedTemplatesRenderCorrectly(t *testing.T) {
 		for _, c := range cfgs {
 			sortedParams, errs := sort.Parameters("", "", c.Coordinate, c.Parameters)
 			assert.Empty(t, errs)
-			props, errs := deploy.ResolveParameterValues(&c, nil, sortedParams)
+			props, errs := resolve.ParameterValues(&c, nil, sortedParams)
 			assert.Empty(t, errs)
 			_, err := c.Render(props)
 			assert.NoError(t, err)
