@@ -61,8 +61,8 @@ func GetDeployCommand(fs afero.Fs) (deployCmd *cobra.Command) {
 			"If this flag is specified, all environments within this group will be used for deployment. "+
 			"This flag is mutually exclusive with '--environment'")
 	deployCmd.Flags().StringSliceVarP(&project, "project", "p", make([]string, 0), "Project configuration to deploy (also deploys any dependent configurations)")
-	deployCmd.Flags().BoolVarP(&dryRun, "dry-run", "d", false, "Switches to just validation instead of actual deployment")
-	deployCmd.Flags().BoolVarP(&continueOnError, "continue-on-error", "c", false, "Proceed deployment even if config upload fails")
+	deployCmd.Flags().BoolVarP(&dryRun, "dry-run", "d", false, "Validate the structure of your manifest, projects and configurations. Dry-run will resolve all configuration parameters and render JSON templates, but can not validate the content of JSON payloads. After a successful dry-run, deployments may still fail with Dynatrace API errors if the content of JSONs is not valid.")
+	deployCmd.Flags().BoolVarP(&continueOnError, "continue-on-error", "c", false, "Proceed deployment even if individual configuration deployments fail.")
 
 	err := deployCmd.RegisterFlagCompletionFunc("environment", completion.EnvironmentByManifestFlag)
 	if err != nil {
