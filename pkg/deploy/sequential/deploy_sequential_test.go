@@ -27,7 +27,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/entitymap"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -81,7 +80,7 @@ func TestDeploy(t *testing.T) {
 			Skip:        false,
 		}
 
-		resolvedEntity, errors := deployConfig(context.TODO(), clientSet, testApiMap, entitymap.New(), &conf)
+		resolvedEntity, errors := deployConfig(context.TODO(), clientSet, testApiMap, newEntityMapWithNames(), &conf)
 
 		assert.Emptyf(t, errors, "errors: %v", errors)
 		assert.Equal(t, name, resolvedEntity.EntityName)
@@ -127,7 +126,7 @@ func TestDeploySettingShouldFailUpsert(t *testing.T) {
 		Parameters: testutils.ToParameterMap(parameters),
 	}
 
-	_, errors := deployConfig(context.TODO(), deploy.ClientSet{Settings: c}, nil, entitymap.New(), conf)
+	_, errors := deployConfig(context.TODO(), deploy.ClientSet{Settings: c}, nil, newEntityMapWithNames(), conf)
 	assert.NotEmpty(t, errors)
 }
 
@@ -270,7 +269,7 @@ func TestDeploySetting(t *testing.T) {
 				Name: tt.given.returnedEntityID,
 			}, nil)
 
-			got, errors := deployConfig(context.TODO(), deploy.ClientSet{Settings: c}, nil, entitymap.New(), &tt.given.config)
+			got, errors := deployConfig(context.TODO(), deploy.ClientSet{Settings: c}, nil, newEntityMapWithNames(), &tt.given.config)
 			if !tt.wantErr {
 				assert.Equal(t, got, tt.want)
 				assert.Emptyf(t, errors, "errors: %v)", errors)
@@ -322,7 +321,7 @@ func TestDeployedSettingGetsNameFromConfig(t *testing.T) {
 		Template:   testutils.GenerateDummyTemplate(t),
 		Parameters: testutils.ToParameterMap(parameters),
 	}
-	res, errors := deployConfig(context.TODO(), deploy.ClientSet{Settings: c}, nil, entitymap.New(), conf)
+	res, errors := deployConfig(context.TODO(), deploy.ClientSet{Settings: c}, nil, newEntityMapWithNames(), conf)
 	assert.Equal(t, res.EntityName, cfgName, "expected resolved name to match configuration name")
 	assert.Emptyf(t, errors, "errors: %v", errors)
 }
@@ -362,7 +361,7 @@ func TestSettingsNameExtractionDoesNotFailIfCfgNameBecomesOptional(t *testing.T)
 		Template:   testutils.GenerateDummyTemplate(t),
 		Parameters: testutils.ToParameterMap(parametersWithoutName),
 	}
-	res, errors := deployConfig(context.TODO(), deploy.ClientSet{Settings: c}, nil, entitymap.New(), conf)
+	res, errors := deployConfig(context.TODO(), deploy.ClientSet{Settings: c}, nil, newEntityMapWithNames(), conf)
 	assert.Contains(t, res.EntityName, objectId, "expected resolved name to contain objectID if name is not configured")
 	assert.Empty(t, errors, " errors: %v)", errors)
 }
@@ -558,4 +557,137 @@ func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
 		assert.Equal(t, 2, len(errors), fmt.Sprintf("Expected 1 error, but just got %d", len(errors)))
 	})
 
+}
+
+func TestDeployConfigsWithDuplicateNameCausesError(t *testing.T) {
+	theConfigName := "theConfigName"
+	theApiName := "theApiName"
+
+	theApi := api.API{ID: theApiName, URLPath: "path"}
+
+	apis := api.APIs{theApiName: theApi}
+	parameters := []parameter.NamedParameter{
+		{
+			Name: config.NameParameter,
+			Parameter: &parameter.DummyParameter{
+				Value: theConfigName,
+			},
+		},
+	}
+	sortedConfigs := []config.Config{
+		{
+			Parameters: testutils.ToParameterMap(parameters),
+			Coordinate: coordinate.Coordinate{Type: theApiName, Project: "proj", ConfigId: "cfg_1"},
+			Template:   testutils.GenerateDummyTemplate(t),
+			Type: config.ClassicApiType{
+				Api: theApiName,
+			},
+		},
+		{
+			Parameters: testutils.ToParameterMap(parameters),
+			Coordinate: coordinate.Coordinate{Type: theApiName, Project: "proj", ConfigId: "cfg_2"},
+			Template:   testutils.GenerateDummyTemplate(t),
+			Type: config.ClassicApiType{
+				Api: theApiName,
+			},
+		},
+	}
+
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().UpsertConfigByName(gomock.Any(), gomock.Any(), theConfigName, gomock.Any()).Return(dtclient.DynatraceEntity{
+		Id:   "42",
+		Name: theConfigName,
+	}, nil)
+
+	errors := DeployConfigs(deploy.ClientSet{Classic: c}, apis, sortedConfigs, deploy.DeployConfigsOptions{})
+	assert.NotEmpty(t, errors, "two configs using the same name should cause validation errors - but got none")
+}
+
+func TestDeploySkippedConfigsWithDuplicateNameNoError(t *testing.T) {
+	theConfigName := "theConfigName"
+	theApiName := "theApiName"
+
+	theApi := api.API{ID: theApiName, URLPath: "path"}
+
+	apis := api.APIs{theApiName: theApi}
+	parameters := []parameter.NamedParameter{
+		{
+			Name: config.NameParameter,
+			Parameter: &parameter.DummyParameter{
+				Value: theConfigName,
+			},
+		},
+	}
+	sortedConfigs := []config.Config{
+		{
+			Parameters: testutils.ToParameterMap(parameters),
+			Coordinate: coordinate.Coordinate{Type: theApiName, Project: "proj", ConfigId: "cfg_1"},
+			Template:   testutils.GenerateDummyTemplate(t),
+			Type: config.ClassicApiType{
+				Api: theApiName,
+			},
+		},
+		{
+			Parameters: testutils.ToParameterMap(parameters),
+			Coordinate: coordinate.Coordinate{Type: theApiName, Project: "proj", ConfigId: "cfg_2"},
+			Template:   testutils.GenerateDummyTemplate(t),
+			Type: config.ClassicApiType{
+				Api: theApiName,
+			},
+			Skip: true,
+		},
+	}
+
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().UpsertConfigByName(gomock.Any(), gomock.Any(), theConfigName, gomock.Any()).Return(dtclient.DynatraceEntity{
+		Id:   "42",
+		Name: theConfigName,
+	}, nil)
+
+	errors := DeployConfigs(deploy.ClientSet{Classic: c}, apis, sortedConfigs, deploy.DeployConfigsOptions{})
+	assert.Empty(t, errors, "skipped and deployed config having the same name should deploy without errors (errors: %v)", errors)
+}
+
+func TestDeployNonUniqueConfigsWithDuplicateNameNoError(t *testing.T) {
+	theConfigName := "theConfigName"
+	theApiName := "theApiName"
+
+	theApi := api.API{ID: theApiName, URLPath: "path", NonUniqueName: true}
+
+	apis := api.APIs{theApiName: theApi}
+	parameters := []parameter.NamedParameter{
+		{
+			Name: config.NameParameter,
+			Parameter: &parameter.DummyParameter{
+				Value: theConfigName,
+			},
+		},
+	}
+	sortedConfigs := []config.Config{
+		{
+			Parameters: testutils.ToParameterMap(parameters),
+			Coordinate: coordinate.Coordinate{Type: theApiName, Project: "proj", ConfigId: "cfg_1"},
+			Template:   testutils.GenerateDummyTemplate(t),
+			Type: config.ClassicApiType{
+				Api: theApiName,
+			},
+		},
+		{
+			Parameters: testutils.ToParameterMap(parameters),
+			Coordinate: coordinate.Coordinate{Type: theApiName, Project: "proj", ConfigId: "cfg_2"},
+			Template:   testutils.GenerateDummyTemplate(t),
+			Type: config.ClassicApiType{
+				Api: theApiName,
+			},
+		},
+	}
+
+	c := dtclient.NewMockClient(gomock.NewController(t))
+	c.EXPECT().UpsertConfigByNonUniqueNameAndId(gomock.Any(), gomock.Any(), gomock.Any(), theConfigName, gomock.Any()).Return(dtclient.DynatraceEntity{
+		Id:   "42",
+		Name: theConfigName,
+	}, nil).Times(2)
+
+	errors := DeployConfigs(deploy.ClientSet{Classic: c}, apis, sortedConfigs, deploy.DeployConfigsOptions{})
+	assert.Empty(t, errors, "two non-unique-name configs with the same name should deploy without errors (errors: %v)", errors)
 }

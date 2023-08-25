@@ -25,6 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy"
+	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/classic"
@@ -37,10 +38,43 @@ import (
 
 // deprecation notice: This complete file can be dropped once graph-based parallel deployment becomes non-optional
 
+// entityMapWithNames behaves like the old entity map, storing entity names per API type in addition to holding an entityMap
+type entityMapWithNames struct {
+	entityMap *entitymap.EntityMap
+	// knownEntityNames per API type. Map of API ID to set of config names for lookup
+	knownEntityNames map[string]map[string]struct{}
+}
+
+func newEntityMapWithNames() *entityMapWithNames {
+	return &entityMapWithNames{
+		entityMap:        entitymap.New(),
+		knownEntityNames: make(map[string]map[string]struct{}),
+	}
+}
+
+func (r *entityMapWithNames) put(resolvedEntity config.ResolvedEntity) {
+	r.entityMap.Put(resolvedEntity)
+
+	// if entity was marked to be skipped we do not memorize the name of the entity
+	// i.e., we do not care if the same name has already been used
+	if resolvedEntity.Skip || resolvedEntity.EntityName == "" {
+		return
+	}
+	if _, found := r.knownEntityNames[resolvedEntity.Coordinate.Type]; !found {
+		r.knownEntityNames[resolvedEntity.Coordinate.Type] = make(map[string]struct{})
+	}
+	r.knownEntityNames[resolvedEntity.Coordinate.Type][resolvedEntity.EntityName] = struct{}{}
+}
+
+func (r *entityMapWithNames) contains(entityType string, entityName string) bool {
+	_, found := r.knownEntityNames[entityType][entityName]
+	return found
+}
+
 // DeployConfigs sequentially deploys the given configs with the given apis to a single environment via the given client
 // NOTE: the given configs need to be sorted, otherwise deployment will probably fail, as references cannot be resolved.
 func DeployConfigs(clientSet deploy.ClientSet, apis api.APIs, sortedConfigs []config.Config, opts deploy.DeployConfigsOptions) []error {
-	entityMap := entitymap.New()
+	entityMapWithNames := newEntityMapWithNames()
 	var errs []error
 
 	for i := range sortedConfigs {
@@ -49,7 +83,7 @@ func DeployConfigs(clientSet deploy.ClientSet, apis api.APIs, sortedConfigs []co
 		ctx := context.WithValue(context.TODO(), log.CtxKeyCoord{}, c.Coordinate)
 		ctx = context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: c.Environment, Group: c.Group})
 
-		entity, deploymentErrors := deployConfig(ctx, clientSet, apis, entityMap, c)
+		entity, deploymentErrors := deployConfig(ctx, clientSet, apis, entityMapWithNames, c)
 
 		if len(deploymentErrors) > 0 {
 			for _, err := range deploymentErrors {
@@ -60,20 +94,20 @@ func DeployConfigs(clientSet deploy.ClientSet, apis api.APIs, sortedConfigs []co
 				return errs
 			}
 		} else {
-			entityMap.Put(entity)
+			entityMapWithNames.put(entity)
 		}
 	}
 
 	return errs
 }
 
-func deployConfig(ctx context.Context, clientSet deploy.ClientSet, apis api.APIs, em *entitymap.EntityMap, c *config.Config) (config.ResolvedEntity, []error) {
+func deployConfig(ctx context.Context, clientSet deploy.ClientSet, apis api.APIs, em *entityMapWithNames, c *config.Config) (config.ResolvedEntity, []error) {
 	if c.Skip {
 		log.WithCtxFields(ctx).Info("Skipping deployment of config %s", c.Coordinate)
 		return config.ResolvedEntity{EntityName: c.Coordinate.ConfigId, Coordinate: c.Coordinate, Properties: parameter.Properties{}, Skip: true}, nil
 	}
 
-	properties, errs := resolve.Properties(c, em)
+	properties, errs := resolve.Properties(c, em.entityMap)
 	if len(errs) > 0 {
 		return config.ResolvedEntity{}, errs
 	}
@@ -91,6 +125,12 @@ func deployConfig(ctx context.Context, clientSet deploy.ClientSet, apis api.APIs
 		res, deployErr = setting.Deploy(ctx, clientSet.Settings, properties, renderedConfig, c)
 
 	case config.ClassicApiType:
+		validationErr := validateConfigNameIsUnique(c, apis, properties, em)
+		if validationErr != nil {
+			deployErr = validationErr
+			break
+		}
+
 		res, deployErr = classic.Deploy(ctx, clientSet.Classic, apis, properties, renderedConfig, c)
 
 	case config.AutomationType:
@@ -114,4 +154,27 @@ func deployConfig(ctx context.Context, clientSet deploy.ClientSet, apis api.APIs
 	}
 	return res, nil
 
+}
+
+func validateConfigNameIsUnique(cfg *config.Config, apis api.APIs, properties parameter.Properties, entityMap *entityMapWithNames) error {
+	configName, err := resolve.ExtractConfigName(cfg, properties)
+	if err != nil {
+		return err
+	}
+
+	t, ok := cfg.Type.(config.ClassicApiType)
+	if !ok {
+		return fmt.Errorf("config was not of expected type %q, but %q", config.ClassicApiTypeId, cfg.Type.ID())
+	}
+
+	apiToDeploy, found := apis[t.Api]
+	if !found {
+		return fmt.Errorf("unknown api `%s`. this is most likely a bug", t.Api)
+	}
+
+	if entityMap.contains(apiToDeploy.ID, configName) && !apiToDeploy.NonUniqueName {
+		return deployErrors.NewConfigDeployErr(cfg, fmt.Sprintf("duplicated config name `%s`", configName))
+	}
+
+	return nil
 }
