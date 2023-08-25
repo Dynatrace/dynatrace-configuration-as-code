@@ -18,8 +18,8 @@ package zip
 
 import (
 	"archive/zip"
-	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/mutlierror"
 	"github.com/spf13/afero"
 	"io"
 	"path/filepath"
@@ -39,7 +39,7 @@ func Create(fs afero.Fs, zipFileName string, files []string, preservePath bool) 
 	for _, f := range files {
 		err = addFileToZip(fs, zipWriter, f, preservePath)
 		if err != nil {
-			errs = errors.Join(errs, fmt.Errorf("unable to add %s file to archive %s: %w", f, zipFileName, err))
+			errs = mutlierror.New(errs, fmt.Errorf("unable to add %s file to archive %s: %w", f, zipFileName, err))
 		}
 	}
 	return errs
