@@ -62,7 +62,12 @@ func ValidateUniqueConfigNames(projects []project.Project) error {
 			}
 
 			if cmp.Equal(n1, n2) {
-				errs = errs.Append(c.Environment, fmt.Errorf("configuration with coordinates %q and %q have same \"name\" values", c.Coordinate, c2.Coordinate))
+				var nameDetails string
+				if s, ok := n1.(string); ok {
+					nameDetails = fmt.Sprintf(": %s", s)
+				}
+
+				errs = errs.Append(c.Environment, fmt.Errorf("duplicated config name found: configurations %s and %s define the same 'name' %q", c.Coordinate, c2.Coordinate, nameDetails))
 				return
 			}
 		}
@@ -83,7 +88,7 @@ func ValidateUniqueConfigNames(projects []project.Project) error {
 func getNameForConfig(c config.Config) (any, error) {
 	nameParam, exist := c.Parameters[config.NameParameter]
 	if !exist {
-		return nil, fmt.Errorf("config %s has no 'name' parameter defined", c.Coordinate)
+		return nil, fmt.Errorf("configuration %s has no 'name' parameter defined", c.Coordinate)
 	}
 
 	switch v := nameParam.(type) {

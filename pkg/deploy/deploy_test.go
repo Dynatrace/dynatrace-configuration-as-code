@@ -1263,7 +1263,7 @@ func TestDeployConfigsValidatesClassicAPINames(t *testing.T) {
 		{
 			name: "duplicate by value parameters",
 			wantErrsContain: map[string][]string{
-				"env1": {"\"::config2\"", "\"::config1\""},
+				"env1": {"::config2", "::config1"},
 			},
 			given: []project.Project{
 				{
@@ -1305,7 +1305,7 @@ func TestDeployConfigsValidatesClassicAPINames(t *testing.T) {
 		{
 			name: "duplicate by environment parameter",
 			wantErrsContain: map[string][]string{
-				"env1": {"\"::config2\"", "\"::config1\""},
+				"env1": {"::config2", "::config1"},
 			},
 			given: []project.Project{
 				{
@@ -1351,7 +1351,7 @@ func TestDeployConfigsValidatesClassicAPINames(t *testing.T) {
 		{
 			name: "duplicate by mix of value and environment parameter",
 			wantErrsContain: map[string][]string{
-				"env1": {"\"::config2\"", "\"::config1\""},
+				"env1": {"::config2", "::config1"},
 			},
 			given: []project.Project{
 				{
@@ -1395,7 +1395,7 @@ func TestDeployConfigsValidatesClassicAPINames(t *testing.T) {
 		{
 			name: "duplicate by reference parameter",
 			wantErrsContain: map[string][]string{
-				"env1": {"\"::config2\"", "\"::config1\""},
+				"env1": {"::config2", "::config1"},
 			},
 			given: []project.Project{
 				{
@@ -1451,7 +1451,7 @@ func TestDeployConfigsValidatesClassicAPINames(t *testing.T) {
 		{
 			name: "duplicate in different projects",
 			wantErrsContain: map[string][]string{
-				"env1": {"\"p2:type:config2\"", "\"p1:type:config1\""},
+				"env1": {"p2:type:config2", "p1:type:config1"},
 			},
 			given: []project.Project{
 				{

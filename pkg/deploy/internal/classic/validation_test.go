@@ -152,7 +152,7 @@ func TestValidateUniqueConfigNames(t *testing.T) {
 		{
 			name: "duplicate by value parameters",
 			wantErrsContain: map[string][]string{
-				"env1": {"\"::config2\"", "\"::config1\""},
+				"env1": {"::config2", "::config1", "duplicate-name"},
 			},
 			given: []project.Project{
 				{
@@ -167,7 +167,7 @@ func TestValidateUniqueConfigNames(t *testing.T) {
 									},
 									Parameters: config.Parameters{
 										config.NameParameter: &value.ValueParameter{
-											Value: "value",
+											Value: "duplicate-name",
 										},
 									},
 								},
@@ -179,7 +179,7 @@ func TestValidateUniqueConfigNames(t *testing.T) {
 									},
 									Parameters: config.Parameters{
 										config.NameParameter: &value.ValueParameter{
-											Value: "value",
+											Value: "duplicate-name",
 										},
 									},
 								},
@@ -192,7 +192,8 @@ func TestValidateUniqueConfigNames(t *testing.T) {
 		{
 			name: "duplicate by environment parameter",
 			wantErrsContain: map[string][]string{
-				"env1": {"\"::config2\"", "\"::config1\""},
+				"env1": {"::config2", "::config1", "default-name" +
+					""},
 			},
 			given: []project.Project{
 				{
@@ -209,7 +210,7 @@ func TestValidateUniqueConfigNames(t *testing.T) {
 										config.NameParameter: &environment.EnvironmentVariableParameter{
 											Name:            "ENV_1",
 											HasDefaultValue: true,
-											DefaultValue:    "value",
+											DefaultValue:    "default-name",
 										},
 									},
 								},
@@ -223,7 +224,7 @@ func TestValidateUniqueConfigNames(t *testing.T) {
 										config.NameParameter: &environment.EnvironmentVariableParameter{
 											Name:            "ENV_1",
 											HasDefaultValue: true,
-											DefaultValue:    "value",
+											DefaultValue:    "default-name",
 										},
 									},
 								},
@@ -236,7 +237,7 @@ func TestValidateUniqueConfigNames(t *testing.T) {
 		{
 			name: "duplicate by mix of value and environment parameter",
 			wantErrsContain: map[string][]string{
-				"env1": {"\"::config2\"", "\"::config1\""},
+				"env1": {"::config2", "::config1"},
 			},
 			given: []project.Project{
 				{
@@ -278,7 +279,7 @@ func TestValidateUniqueConfigNames(t *testing.T) {
 		{
 			name: "duplicate by reference parameter",
 			wantErrsContain: map[string][]string{
-				"env1": {"\"::config2\"", "\"::config1\""},
+				"env1": {"::config2", "::config1"},
 			},
 			given: []project.Project{
 				{
@@ -332,7 +333,7 @@ func TestValidateUniqueConfigNames(t *testing.T) {
 		{
 			name: "duplicate in different projects",
 			wantErrsContain: map[string][]string{
-				"env1": {"\"p2:type:config2\"", "\"p1:type:config1\""},
+				"env1": {"p2:type:config2", "p1:type:config1"},
 			},
 			given: []project.Project{
 				{
