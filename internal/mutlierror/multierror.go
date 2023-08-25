@@ -17,6 +17,7 @@
 package mutlierror
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -40,7 +41,18 @@ func New(errs ...error) error {
 		// callers might not always check this beforehand, but building a MultiError for a single error is useless
 		return errs[0]
 	}
-	return MultiError{
-		Errors: errs,
+
+	m := MultiError{}
+	for _, e := range errs {
+		if e != nil {
+			var me MultiError
+			if errors.As(e, &me) {
+				m.Errors = append(m.Errors, me.Errors...)
+			} else {
+				m.Errors = append(m.Errors, e)
+			}
+		}
 	}
+
+	return m
 }
