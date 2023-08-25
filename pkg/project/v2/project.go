@@ -16,23 +16,29 @@ package v2
 
 import (
 	"fmt"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 )
 
-// ConfigsPerType is a map of configType (api or schema id) to configs
-type ConfigsPerType map[string][]config.Config
+type (
+	EntitiesPerType map[string][]string
 
-type EntitiesPerType map[string][]string
+	EnvironmentName = string
+	// ConfigsPerTypePerEnvironments is a map of EnvironmentName to a ConfigsPerType map
+	ConfigsPerTypePerEnvironments map[EnvironmentName]ConfigsPerType
 
-// ConfigsPerTypePerEnvironments is a map of environment to api to configs
-type ConfigsPerTypePerEnvironments map[string]ConfigsPerType
+	ConfigTypeName = string
+	// ConfigsPerType is a map of ConfigTypeName string (e.g. API ID, settings schema, automation resource, ...) to configs of that type
+	ConfigsPerType map[ConfigTypeName][]config.Config
 
-// ConfigsPerEnvironment is a map of environment to configs
-type ConfigsPerEnvironment map[string][]config.Config
+	// ConfigsPerEnvironment is a map of EnvironmentName to configs. This is a flattened version of ConfigsPerTypePerEnvironments
+	ConfigsPerEnvironment map[EnvironmentName][]config.Config
 
-// DependenciesPerEnvironment is a map of environment to project ids
-type DependenciesPerEnvironment map[string][]string
+	// DependenciesPerEnvironment is a map of EnvironmentName to project IDs
+	DependenciesPerEnvironment map[EnvironmentName][]string
+
+	// ActionOverConfig is a function that will be performed over each config that is part of a project via a Project.ForEveryConfigDo method
+	ActionOverConfig func(c config.Config)
+)
 
 type Project struct {
 	Id string
@@ -40,12 +46,14 @@ type Project struct {
 	// set to the name defined in manifest if this project is part of a grouping, else will be empty
 	GroupId string
 
+	// Configs are the configurations within this Project
 	Configs ConfigsPerTypePerEnvironments
 
-	// map of environment to project ids
+	// Dependencies of this project to other projects
 	Dependencies DependenciesPerEnvironment
 }
 
+// HasDependencyOn returns whether the project it is called on, has a dependency on the given project, for the given environment
 func (p Project) HasDependencyOn(environment string, project Project) bool {
 	dependencies, found := p.Dependencies[environment]
 
@@ -68,4 +76,18 @@ func (p Project) String() string {
 	}
 
 	return p.Id
+}
+
+// ForEveryConfigDo executes the given ActionOverConfig actions for each configuration defined in the project for each environment
+// Actions can not modify the configs inside the Project.
+func (p Project) ForEveryConfigDo(actions ...ActionOverConfig) {
+	for _, cpt := range p.Configs {
+		for _, cs := range cpt {
+			for _, c := range cs {
+				for _, f := range actions {
+					f(c)
+				}
+			}
+		}
+	}
 }
