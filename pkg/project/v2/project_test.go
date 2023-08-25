@@ -14,69 +14,107 @@
 
 //go:build unit
 
-package v2
+package v2_test
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
+	"github.com/stretchr/testify/assert"
 	"testing"
-
-	"gotest.tools/assert"
 )
 
 func TestHasDependencyOn(t *testing.T) {
 	environment := "dev"
 	referencedProjectId := "projct2"
 
-	project := Project{
+	p := project.Project{
 		Id: "project1",
-		Dependencies: DependenciesPerEnvironment{
+		Dependencies: project.DependenciesPerEnvironment{
 			environment: []string{
 				referencedProjectId,
 			},
 		},
 	}
 
-	referencedProject := Project{
+	referencedProject := project.Project{
 		Id: referencedProjectId,
 	}
 
-	result := project.HasDependencyOn(environment, referencedProject)
+	result := p.HasDependencyOn(environment, referencedProject)
 
-	assert.Assert(t, result, "should have dependency")
+	assert.True(t, result, "should have dependency")
 }
 
 func TestHasDependencyOnShouldReturnFalseIfNoDependenciesForEnvironmentAreDefined(t *testing.T) {
 	environment := "dev"
 
-	project := Project{
+	p := project.Project{
 		Id: "project1",
 	}
 
-	project2 := Project{
+	p2 := project.Project{
 		Id: "project2",
 	}
 
-	result := project.HasDependencyOn(environment, project2)
+	result := p.HasDependencyOn(environment, p2)
 
-	assert.Assert(t, !result, "should not have dependency")
+	assert.False(t, result, "should not have dependency")
 }
 
 func TestHasDependencyOnShouldReturnFalseIfNoDependencyDefined(t *testing.T) {
 	environment := "dev"
 
-	project := Project{
+	p := project.Project{
 		Id: "project1",
-		Dependencies: DependenciesPerEnvironment{
+		Dependencies: project.DependenciesPerEnvironment{
 			environment: []string{
 				"project3",
 			},
 		},
 	}
 
-	project2 := Project{
+	project2 := project.Project{
 		Id: "project2",
 	}
 
-	result := project.HasDependencyOn(environment, project2)
+	result := p.HasDependencyOn(environment, project2)
 
-	assert.Assert(t, !result, "should not have dependency")
+	assert.False(t, result, "should not have dependency")
+}
+
+func TestProject_ForEveryConfigDo(t *testing.T) {
+	t.Run("simple case", func(t *testing.T) {
+		given := project.Project{
+			Id:      "projectID",
+			GroupId: "groupID",
+			Configs: map[project.EnvironmentName]project.ConfigsPerType{
+				"env1": map[string][]config.Config{
+					"type1": {
+						{Coordinate: coordinate.Coordinate{Project: "projectID", Type: "type1", ConfigId: "config1"}},
+						{Coordinate: coordinate.Coordinate{Project: "projectID", Type: "type1", ConfigId: "config2"}},
+					},
+					"type2": {
+						{Coordinate: coordinate.Coordinate{Project: "projectID", Type: "type2", ConfigId: "config3"}},
+					},
+				},
+				"env2": map[string][]config.Config{
+					"type3": {
+						{Coordinate: coordinate.Coordinate{Project: "projectID", Type: "type3", ConfigId: "config4"}},
+					},
+				},
+			},
+		}
+
+		var actual []string
+
+		given.ForEveryConfigDo(func(c config.Config) {
+			actual = append(actual, c.Coordinate.ConfigId)
+		})
+
+		assert.Contains(t, actual, "config1")
+		assert.Contains(t, actual, "config2")
+		assert.Contains(t, actual, "config3")
+		assert.Contains(t, actual, "config4")
+	})
 }
