@@ -77,12 +77,17 @@ func (e EnvironmentClients) Names() []string {
 	return n
 }
 
-func DeployConfigGraph(projects []project.Project, environmentClients EnvironmentClients, opts DeployConfigsOptions) errors2.EnvironmentDeploymentErrors {
+func DeployConfigGraph(projects []project.Project, environmentClients EnvironmentClients, opts DeployConfigsOptions) error {
 
 	apis := api.NewAPIs()
 	g := graph.New(projects, environmentClients.Names())
 
 	errs := make(errors2.EnvironmentDeploymentErrors)
+
+	validationErrs := classic.ValidateUniqueConfigNames(projects)
+	if validationErrs != nil {
+		return validationErrs
+	}
 
 	for env, clients := range environmentClients {
 		envErrs := deployComponentsToEnvironment(g, env, clients, apis, opts)

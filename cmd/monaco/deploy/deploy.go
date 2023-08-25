@@ -22,12 +22,9 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/slices"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/environment"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy"
+	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/sequential"
-	"github.com/google/go-cmp/cmp"
 	"path/filepath"
 	"strings"
 
@@ -64,12 +61,6 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 		return fmt.Errorf("error while loading relevant projects to deploy: %w", err)
 	}
 
-	errs := checkUniquenessOfNameForClassicConfig(filteredProjects)
-	if len(errs) != 0 {
-		printErrorReport(errs)
-		return fmt.Errorf("name uniqnuess vailation")
-	}
-
 	if err := checkEnvironments(filteredProjects, loadedManifest.Environments); err != nil {
 		return err
 	}
@@ -82,15 +73,21 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 		if err != nil {
 			return fmt.Errorf("failed to create API clients: %w", err)
 		}
-		environmentDeployErrs := deploy.DeployConfigGraph(filteredProjects, clientSets, deploy.DeployConfigsOptions{
+		deployErr := deploy.DeployConfigGraph(filteredProjects, clientSets, deploy.DeployConfigsOptions{
 			ContinueOnErr: continueOnErr,
 			DryRun:        dryRun,
 		})
-		if len(environmentDeployErrs) > 0 {
+		if deployErr != nil {
 			var deployErrs []error
-			for _, errs := range environmentDeployErrs {
-				// TODO error handling can change to remove the repetitive grouping to env errors - for now we just build a list to be grouped again by printErrorReport
-				deployErrs = append(deployErrs, errs...)
+
+			var environmentDeployErrs deployErrors.EnvironmentDeploymentErrors
+			if errors.As(deployErr, &environmentDeployErrs) {
+				for _, errs := range environmentDeployErrs {
+					// TODO error handling can change to remove the repetitive grouping to env errors - for now we just build a list to be grouped again by printErrorReport
+					deployErrs = append(deployErrs, errs...)
+				}
+			} else {
+				deployErrs = append(deployErrs, deployErr)
 			}
 
 			printErrorReport(deployErrs)
@@ -120,64 +117,6 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 
 	log.Info("%s finished without errors", getOperationNounForLogging(dryRun))
 	return nil
-}
-
-func checkUniquenessOfNameForClassicConfig(projects []project.Project) []error {
-	var errs []error
-	type (
-		environmentName = string
-		classicEndpoint = string
-	)
-	uniqueList := make(map[environmentName]map[classicEndpoint][]config.Config)
-	e := api.NewAPIs()
-
-	checkUniquenessOfName := func(c config.Config) {
-		a, ok := c.Type.(config.ClassicApiType)
-		if !ok || e[a.Api].NonUniqueName {
-			return
-		}
-
-		if uniqueList[c.Environment] == nil {
-			uniqueList[c.Environment] = make(map[classicEndpoint][]config.Config)
-		}
-
-		for _, c2 := range uniqueList[c.Environment][a.Api] {
-			n1, err := getNameForConfig(c)
-			if err != nil {
-				errs = append(errs, err)
-				return
-			}
-			n2, err := getNameForConfig(c2)
-			if err != nil {
-				errs = append(errs, err)
-				return
-			}
-
-			if cmp.Equal(n1, n2) {
-				errs = append(errs, fmt.Errorf("configuration with coordinates %q and %q have same \"name\" values", c.Coordinate, c2.Coordinate))
-				return
-			}
-		}
-
-		uniqueList[c.Environment][a.Api] = append(uniqueList[c.Environment][a.Api], c)
-	}
-
-	for _, p := range projects {
-		p.ForEveryConfigDo(checkUniquenessOfName)
-	}
-
-	return errs
-}
-
-func getNameForConfig(c config.Config) (any, error) {
-	switch v := c.Parameters[config.NameParameter].(type) {
-	case *value.ValueParameter:
-		return v.ResolveValue(parameter.ResolveContext{ParameterName: config.NameParameter})
-	case *environment.EnvironmentVariableParameter:
-		return v.ResolveValue(parameter.ResolveContext{ParameterName: config.NameParameter})
-	default:
-		return c.Parameters[config.NameParameter], nil
-	}
 }
 
 func deployOnEnvironment(env manifest.EnvironmentDefinition, cfgs []config.Config, continueOnErr bool, dryRun bool) []error {
