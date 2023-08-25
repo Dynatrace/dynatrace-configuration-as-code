@@ -25,6 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"io"
@@ -63,13 +64,16 @@ Examples:
 		Run: func(cmd *cobra.Command, args []string) {
 			_ = cmd.Help()
 		},
-		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
-			if support.SupportArchive {
-				return support.Archive(fs)
-			}
-			return nil
-		},
 	}
+
+	// define finalizer method(s) run after cobra commands ran
+	cobra.OnFinalize(func() {
+		if support.SupportArchive {
+			if err := support.Archive(fs); err != nil {
+				log.WithFields(field.Error(err)).Error("Encountered error creating support archive. Archive may be missing or incomplete: %s", err)
+			}
+		}
+	})
 
 	// global flags
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable debug logging")
