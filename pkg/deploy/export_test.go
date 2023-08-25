@@ -1,3 +1,5 @@
+//go:build unit
+
 /*
  * @license
  * Copyright 2023 Dynatrace LLC
@@ -14,15 +16,6 @@
  * limitations under the License.
  */
 
-package bucket
+package deploy
 
-import "context"
-
-type DummyClient struct{}
-
-func (c DummyClient) Upsert(_ context.Context, id string, data []byte) (result Response, err error) {
-	return Response{
-		BucketName: id,
-		Data:       data,
-	}, nil
-}
+var TestDeploy = deploy

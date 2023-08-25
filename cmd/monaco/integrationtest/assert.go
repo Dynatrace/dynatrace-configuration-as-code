@@ -27,6 +27,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/resolve"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -38,13 +39,12 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
 	"github.com/spf13/afero"
 )
 
-type entityLookup map[coordinate.Coordinate]deploy.ResolvedEntity
+type entityLookup map[coordinate.Coordinate]config.ResolvedEntity
 
 func (e entityLookup) GetResolvedProperty(coordinate coordinate.Coordinate, propertyName string) (any, bool) {
 	if ent, f := e.GetResolvedEntity(coordinate); f {
@@ -56,7 +56,7 @@ func (e entityLookup) GetResolvedProperty(coordinate coordinate.Coordinate, prop
 	return nil, false
 }
 
-func (e entityLookup) GetResolvedEntity(config coordinate.Coordinate) (deploy.ResolvedEntity, bool) {
+func (e entityLookup) GetResolvedEntity(config coordinate.Coordinate) (config.ResolvedEntity, bool) {
 	ent, f := e[config]
 	return ent, f
 }
@@ -110,7 +110,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 			ctx = context.WithValue(ctx, log.CtxKeyEnv{}, log.CtxValEnv{Name: theConfig.Environment, Group: theConfig.Group})
 
 			if theConfig.Skip {
-				entities[coord] = deploy.ResolvedEntity{
+				entities[coord] = config.ResolvedEntity{
 					EntityName: coord.ConfigId,
 					Coordinate: coord,
 					Properties: parameter.Properties{},
@@ -124,7 +124,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 
 			parameters = append(parameters, configParameters...)
 
-			properties, errs := deploy.ResolveParameterValues(&theConfig, entities, parameters)
+			properties, errs := resolve.ParameterValues(&theConfig, entities, parameters)
 			testutils.FailTestOnAnyError(t, errs, "resolving of parameter values failed")
 
 			properties[config.IdParameter] = "NO REAL ID NEEDED FOR CHECKING AVAILABILITY"
@@ -132,7 +132,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 			configName, err := extractConfigName(properties)
 			assert.NoError(t, err)
 
-			entities[coord] = deploy.ResolvedEntity{
+			entities[coord] = config.ResolvedEntity{
 				EntityName: configName,
 				Coordinate: coord,
 				Properties: properties,
@@ -264,7 +264,7 @@ func AssertBucket(t *testing.T, client bucket.Client, env manifest.EnvironmentDe
 	if cfg.OriginObjectId != "" {
 		expectedId = cfg.OriginObjectId
 	} else {
-		expectedId = deploy.BucketId(cfg.Coordinate)
+		expectedId = fmt.Sprintf("%s_%s_%s", cfg.Coordinate.Project, cfg.Coordinate.Type, cfg.Coordinate.ConfigId)
 	}
 
 	_, err := client.Get(context.TODO(), expectedId)

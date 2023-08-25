@@ -1,29 +1,50 @@
 //go:build unit
 
-// @license
-// Copyright 2021 Dynatrace LLC
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * @license
+ * Copyright 2023 Dynatrace LLC
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-package deploy
+package resolve
 
 import (
 	"errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
-	"gotest.tools/assert"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
+
+type entityLookup map[coordinate.Coordinate]config.ResolvedEntity
+
+func (e entityLookup) GetResolvedEntity(config coordinate.Coordinate) (config.ResolvedEntity, bool) {
+	ent, f := e[config]
+	return ent, f
+}
+
+func (e entityLookup) GetResolvedProperty(coordinate coordinate.Coordinate, propertyName string) (any, bool) {
+	if ent, f := e.GetResolvedEntity(coordinate); f {
+		if prop, f := ent.Properties[propertyName]; f {
+			return prop, true
+		}
+	}
+
+	return nil, false
+}
 
 func TestResolveParameterValues(t *testing.T) {
 	name := "test"
@@ -64,11 +85,11 @@ func TestResolveParameterValues(t *testing.T) {
 		Skip:        false,
 	}
 
-	entities := newEntityMap()
+	entities := entityLookup{}
 
-	values, errors := ResolveParameterValues(&conf, entities, parameters)
+	values, errs := ParameterValues(&conf, entities, parameters)
 
-	assert.Assert(t, len(errors) == 0, "there should be no errors (errors: %s)", errors)
+	assert.Empty(t, errs, "there should be no errors (errors: %s)", errs)
 	assert.Equal(t, name, values[config.NameParameter])
 	assert.Equal(t, owner, values[ownerParameterName])
 	assert.Equal(t, timeout, values[timeoutParameterName])
@@ -106,11 +127,11 @@ func TestResolveParameterValuesShouldFailWhenReferencingNonExistingConfig(t *tes
 		Skip:        false,
 	}
 
-	entities := newEntityMap()
+	entities := entityLookup{}
 
-	_, errors := ResolveParameterValues(&conf, entities, parameters)
+	_, errs := ParameterValues(&conf, entities, parameters)
 
-	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
+	assert.NotEmpty(t, errs, "there should be errors (no errors: %d)", len(errs))
 }
 
 func TestResolveParameterValuesShouldFailWhenReferencingSkippedConfig(t *testing.T) {
@@ -146,20 +167,18 @@ func TestResolveParameterValuesShouldFailWhenReferencingSkippedConfig(t *testing
 		Skip:        false,
 	}
 
-	entities := &entityMap{
-		resolvedEntities: map[coordinate.Coordinate]ResolvedEntity{
-			referenceCoordinate: {
-				EntityName: "zone1",
-				Coordinate: referenceCoordinate,
-				Properties: parameter.Properties{},
-				Skip:       true,
-			},
+	entities := entityLookup{
+		referenceCoordinate: {
+			EntityName: "zone1",
+			Coordinate: referenceCoordinate,
+			Properties: parameter.Properties{},
+			Skip:       true,
 		},
 	}
 
-	_, errors := ResolveParameterValues(&conf, entities, parameters)
+	_, errs := ParameterValues(&conf, entities, parameters)
 
-	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
+	assert.NotEmpty(t, errs, "there should be errors (no errors: %d)", len(errs))
 }
 
 func TestResolveParameterValuesShouldFailWhenParameterResolveReturnsError(t *testing.T) {
@@ -184,11 +203,11 @@ func TestResolveParameterValuesShouldFailWhenParameterResolveReturnsError(t *tes
 		Skip:        false,
 	}
 
-	entities := newEntityMap()
+	entities := entityLookup{}
 
-	_, errors := ResolveParameterValues(&conf, entities, parameters)
+	_, errs := ParameterValues(&conf, entities, parameters)
 
-	assert.Assert(t, len(errors) > 0, "there should be errors (no errors: %d)", len(errors))
+	assert.NotEmpty(t, errs, "there should be errors (no : %d)", len(errs))
 }
 
 func TestValidateParameterReferences(t *testing.T) {
@@ -218,22 +237,20 @@ func TestValidateParameterReferences(t *testing.T) {
 		},
 	}
 
-	entities := &entityMap{
-		resolvedEntities: map[coordinate.Coordinate]ResolvedEntity{
-			referencedConfigCoordinates: {
-				EntityName: "zone1",
-				Coordinate: referencedConfigCoordinates,
-				Properties: parameter.Properties{
-					"name": "test",
-				},
-				Skip: false,
+	entities := entityLookup{
+		referencedConfigCoordinates: {
+			EntityName: "zone1",
+			Coordinate: referencedConfigCoordinates,
+			Properties: parameter.Properties{
+				"name": "test",
 			},
+			Skip: false,
 		},
 	}
 
-	errors := validateParameterReferences(configCoordinates, "", "", entities, "managementZoneName", param)
+	errs := validateParameterReferences(configCoordinates, "", "", entities, "managementZoneName", param)
 
-	assert.Assert(t, len(errors) == 0, "should not return errors (no errors: %d)", len(errors))
+	assert.Empty(t, errs, "should not return errors (no errors: %d)", len(errs))
 }
 
 func TestValidateParameterReferencesShouldFailWhenReferencingSelf(t *testing.T) {
@@ -255,11 +272,11 @@ func TestValidateParameterReferencesShouldFailWhenReferencingSelf(t *testing.T) 
 		},
 	}
 
-	entities := newEntityMap()
+	entities := entityLookup{}
 
-	errors := validateParameterReferences(configCoordinates, "", "", entities, paramName, param)
+	errs := validateParameterReferences(configCoordinates, "", "", entities, paramName, param)
 
-	assert.Assert(t, len(errors) > 0, "should not errors (no errors: %d)", len(errors))
+	assert.NotEmpty(t, errs, "should not errors (no errors: %d)", len(errs))
 }
 
 func TestValidateParameterReferencesShouldFailWhenReferencingSkippedConfig(t *testing.T) {
@@ -285,20 +302,18 @@ func TestValidateParameterReferencesShouldFailWhenReferencingSkippedConfig(t *te
 		},
 	}
 
-	entities := &entityMap{
-		resolvedEntities: map[coordinate.Coordinate]ResolvedEntity{
-			referencedConfigCoordinates: {
-				EntityName: "zone1",
-				Coordinate: referencedConfigCoordinates,
-				Properties: parameter.Properties{},
-				Skip:       true,
-			},
+	entities := entityLookup{
+		referencedConfigCoordinates: {
+			EntityName: "zone1",
+			Coordinate: referencedConfigCoordinates,
+			Properties: parameter.Properties{},
+			Skip:       true,
 		},
 	}
 
-	errors := validateParameterReferences(configCoordinates, "", "", entities, "managementZoneName", param)
+	errs := validateParameterReferences(configCoordinates, "", "", entities, "managementZoneName", param)
 
-	assert.Assert(t, len(errors) > 0, "should return errors (no errors: %d)", len(errors))
+	assert.NotEmpty(t, errs, "should return errors (no errors: %d)", len(errs))
 }
 
 func TestValidateParameterReferencesShouldFailWhenReferencingUnknownConfig(t *testing.T) {
@@ -324,76 +339,26 @@ func TestValidateParameterReferencesShouldFailWhenReferencingUnknownConfig(t *te
 		},
 	}
 
-	entities := newEntityMap()
+	entities := entityLookup{}
 
-	errors := validateParameterReferences(configCoordinates, "", "", entities, "managementZoneName", param)
+	errs := validateParameterReferences(configCoordinates, "", "", entities, "managementZoneName", param)
 
-	assert.Assert(t, len(errors) > 0, "should return errors (no errors: %d)", len(errors))
+	assert.NotEmpty(t, errs, "should return errors (no errors: %d)", len(errs))
 }
 
-func TestExtractConfigName(t *testing.T) {
-	conf := config.Config{
-		Template: generateDummyTemplate(t),
-		Coordinate: coordinate.Coordinate{
-			Project:  "project1",
-			Type:     "dashboard",
-			ConfigId: "dashboard-1",
-		},
-		Environment: "development",
-		Parameters:  map[string]parameter.Parameter{},
-		Skip:        false,
+func toParameterMap(params []parameter.NamedParameter) map[string]parameter.Parameter {
+	result := make(map[string]parameter.Parameter)
+
+	for _, p := range params {
+		result[p.Name] = p.Parameter
 	}
 
-	name := "test"
-
-	properties := parameter.Properties{
-		config.NameParameter: name,
-	}
-
-	val, err := extractConfigName(&conf, properties)
-
-	assert.NilError(t, err)
-	assert.Equal(t, name, val)
+	return result
 }
 
-func TestExtractConfigNameShouldFailOnMissingName(t *testing.T) {
-	conf := config.Config{
-		Template: generateDummyTemplate(t),
-		Coordinate: coordinate.Coordinate{
-			Project:  "project1",
-			Type:     "dashboard",
-			ConfigId: "dashboard-1",
-		},
-		Environment: "development",
-		Parameters:  map[string]parameter.Parameter{},
-		Skip:        false,
-	}
-
-	properties := parameter.Properties{}
-
-	_, err := extractConfigName(&conf, properties)
-
-	assert.Assert(t, err != nil, "error should not be nil (error val: %s)", err)
-}
-
-func TestExtractConfigNameShouldFailOnNameWithNonStringType(t *testing.T) {
-	conf := config.Config{
-		Template: generateDummyTemplate(t),
-		Coordinate: coordinate.Coordinate{
-			Project:  "project1",
-			Type:     "dashboard",
-			ConfigId: "dashboard-1",
-		},
-		Environment: "development",
-		Parameters:  map[string]parameter.Parameter{},
-		Skip:        false,
-	}
-
-	properties := parameter.Properties{
-		config.NameParameter: 1,
-	}
-
-	_, err := extractConfigName(&conf, properties)
-
-	assert.Assert(t, err != nil, "error should not be nil (error val: %s)", err)
+func generateDummyTemplate(t *testing.T) template.Template {
+	newUUID, err := uuid.NewUUID()
+	assert.NoError(t, err)
+	templ := template.CreateTemplateFromString("deploy_test-"+newUUID.String(), "{}")
+	return templ
 }

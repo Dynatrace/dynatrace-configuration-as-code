@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package deploy
+package setting
 
 import (
 	"context"
@@ -24,6 +24,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -61,10 +62,10 @@ func TestDeploySettingShouldFailCyclicParameterDependencies(t *testing.T) {
 
 	conf := &config.Config{
 		Type:       config.ClassicApiType{},
-		Template:   generateDummyTemplate(t),
-		Parameters: toParameterMap(parameters),
+		Template:   testutils.GenerateDummyTemplate(t),
+		Parameters: testutils.ToParameterMap(parameters),
 	}
-	_, errors := deploySetting(context.TODO(), client, nil, "", conf)
+	_, errors := Deploy(context.TODO(), client, nil, "", conf)
 	assert.NotEmpty(t, errors)
 }
 
@@ -73,9 +74,9 @@ func TestDeploySettingShouldFailRenderTemplate(t *testing.T) {
 
 	conf := &config.Config{
 		Type:     config.ClassicApiType{},
-		Template: generateFaultyTemplate(t),
+		Template: testutils.GenerateFaultyTemplate(t),
 	}
 
-	_, errors := deploySetting(context.TODO(), client, nil, "", conf)
+	_, errors := Deploy(context.TODO(), client, nil, "", conf)
 	assert.NotEmpty(t, errors)
 }
