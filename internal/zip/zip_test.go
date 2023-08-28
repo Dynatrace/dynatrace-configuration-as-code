@@ -18,6 +18,7 @@ package zip
 
 import (
 	"archive/zip"
+	"io"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -63,4 +64,36 @@ func TestCreate(t *testing.T) {
 	for _, expectedFile := range files {
 		assert.True(t, foundFiles[expectedFile], "Expected file '%s' in zip archive", expectedFile)
 	}
+}
+
+func TestCreatePartial(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	file, _ := fs.Create("exists.txt")
+	file.Close()
+
+	files := []string{"exists.txt", "does-not-exist.txt"}
+	err := Create(fs, "test.zip", files, false)
+	assert.Error(t, err, "Expected error trying to add non-existent file")
+
+	// Read the created zip file
+	zipFile, err := fs.Open("test.zip")
+	assert.NoError(t, err, "Expected no error")
+	defer zipFile.Close()
+
+	// Extract the file names from the zip archive
+	archiveData, err := io.ReadAll(zipFile)
+	assert.NoError(t, err, "Expected no error")
+
+	// Open the zip archive for reading
+	zipReader, err := zip.NewReader(bytes.NewReader(archiveData), int64(len(archiveData)))
+	assert.NoError(t, err, "Expected no error")
+
+	// Check that each expected file is present in the zip archive
+	foundFiles := make(map[string]bool)
+	for _, file := range zipReader.File {
+		foundFiles[file.Name] = true
+	}
+
+	assert.True(t, foundFiles["exists.txt"], "Expected file '%s' in zip archive", "exists.txt")
+	assert.False(t, foundFiles["does-not-exist.txt"], "Expected file '%s' not to be in zip archive", "does-not-exist.txt")
 }
