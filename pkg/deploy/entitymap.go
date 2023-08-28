@@ -20,10 +20,6 @@ import (
 	"sync"
 )
 
-// ResolvedEntities defines a map representing resolved configs. this includes the
-// api `ID` of a config.
-type ResolvedEntities map[coordinate.Coordinate]ResolvedEntity
-
 // ResolvedEntity struct representing an already deployed entity
 type ResolvedEntity struct {
 	// EntityName is the name returned by the Dynatrace api. In theory should be the
@@ -44,12 +40,12 @@ type ResolvedEntity struct {
 
 type entityMap struct {
 	lock             sync.RWMutex
-	resolvedEntities ResolvedEntities
+	resolvedEntities map[coordinate.Coordinate]ResolvedEntity
 }
 
 func newEntityMap() *entityMap {
 	return &entityMap{
-		resolvedEntities: make(ResolvedEntities),
+		resolvedEntities: make(map[coordinate.Coordinate]ResolvedEntity),
 	}
 }
 

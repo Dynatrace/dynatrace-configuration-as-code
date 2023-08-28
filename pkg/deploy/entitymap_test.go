@@ -38,7 +38,7 @@ func TestEntityMap_PutResolved(t *testing.T) {
 
 		entityMap := newEntityMap()
 		entityMap.put(r1)
-		assert.Equal(t, entityMap.resolvedEntities, ResolvedEntities{
+		assert.Equal(t, entityMap.resolvedEntities, map[coordinate.Coordinate]ResolvedEntity{
 			c1: r1,
 		})
 	})
@@ -58,7 +58,7 @@ func TestEntityMap_PutResolved(t *testing.T) {
 
 		entityMap := newEntityMap()
 		entityMap.put(r1)
-		assert.Equal(t, entityMap.resolvedEntities, ResolvedEntities{
+		assert.Equal(t, entityMap.resolvedEntities, map[coordinate.Coordinate]ResolvedEntity{
 			c1: r1,
 		})
 	})
@@ -74,7 +74,7 @@ func TestEntityMap_PutResolved(t *testing.T) {
 
 		entityMap := newEntityMap()
 		entityMap.put(r1)
-		assert.Equal(t, entityMap.resolvedEntities, ResolvedEntities{
+		assert.Equal(t, entityMap.resolvedEntities, map[coordinate.Coordinate]ResolvedEntity{
 			c1: r1,
 		})
 	})
