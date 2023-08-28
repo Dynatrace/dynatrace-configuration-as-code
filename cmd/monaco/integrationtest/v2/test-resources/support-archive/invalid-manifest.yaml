@@ -1,0 +1,14 @@
+manifestVersion: 1.0
+projects:
+- name: project
+environmentGroups:
+- name: default
+  environments:
+    - name: valid_env
+      url:
+        value: PLATFORM_URL_ENVIRONMENT_2
+      auth:
+        token:
+          name: TOKEN_ENVIRONMENT_2
+        oAuth:
+          cli<INVALID>
