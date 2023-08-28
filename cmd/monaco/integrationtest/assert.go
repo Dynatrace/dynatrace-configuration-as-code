@@ -46,8 +46,8 @@ import (
 
 type entityLookup map[coordinate.Coordinate]deploy.ResolvedEntity
 
-func (e entityLookup) Property(coordinate coordinate.Coordinate, propertyName string) (any, bool) {
-	if ent, f := e.Entity(coordinate); f {
+func (e entityLookup) GetResolvedProperty(coordinate coordinate.Coordinate, propertyName string) (any, bool) {
+	if ent, f := e.GetResolvedEntity(coordinate); f {
 		if prop, f := ent.Properties[propertyName]; f {
 			return prop, true
 		}
@@ -56,7 +56,7 @@ func (e entityLookup) Property(coordinate coordinate.Coordinate, propertyName st
 	return nil, false
 }
 
-func (e entityLookup) Entity(config coordinate.Coordinate) (deploy.ResolvedEntity, bool) {
+func (e entityLookup) GetResolvedEntity(config coordinate.Coordinate) (deploy.ResolvedEntity, bool) {
 	ent, f := e[config]
 	return ent, f
 }

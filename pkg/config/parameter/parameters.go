@@ -26,7 +26,7 @@ type Properties map[string]interface{}
 
 // PropertyResolver is used in parameter resolution to fetch the values of already deployed configs
 type PropertyResolver interface {
-	Property(coordinate coordinate.Coordinate, propertyName string) (any, bool)
+	GetResolvedProperty(coordinate coordinate.Coordinate, propertyName string) (any, bool)
 }
 
 // ResolveContext used to give some more information on the resolving phase

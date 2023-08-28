@@ -95,7 +95,7 @@ func (p *ReferenceParameter) ResolveValue(context parameter.ResolveContext) (int
 		return nil, newUnresolvedReferenceError(context, p.ParameterReference, "property has not been resolved yet or does not exist")
 	}
 
-	if val, found := context.PropertyResolver.Property(p.Config, p.Property); found {
+	if val, found := context.PropertyResolver.GetResolvedProperty(p.Config, p.Property); found {
 		return val, nil
 	}
 
