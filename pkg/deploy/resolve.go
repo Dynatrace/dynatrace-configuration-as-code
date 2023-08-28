@@ -22,10 +22,11 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
 )
 
+// EntityLookup is used in parameter resolution to fetch the resolved entity of deployed configuration
 type EntityLookup interface {
 	parameter.PropertyResolver
 
-	Entity(config coordinate.Coordinate) (ResolvedEntity, bool)
+	GetResolvedEntity(config coordinate.Coordinate) (ResolvedEntity, bool)
 }
 
 // TODO: unexport this function
@@ -98,7 +99,7 @@ func resolveProperties(c *config.Config, entities *entityMap) (parameter.Propert
 
 func validateParameterReferences(configCoordinates coordinate.Coordinate,
 	group string, environment string,
-	entities EntityLookup,
+	entityLookup EntityLookup,
 	paramName string,
 	param parameter.Parameter,
 ) (errors []error) {
@@ -116,7 +117,7 @@ func validateParameterReferences(configCoordinates coordinate.Coordinate,
 			continue
 		}
 
-		entity, found := entities.Entity(ref.Config)
+		entity, found := entityLookup.GetResolvedEntity(ref.Config)
 
 		if !found {
 			errors = append(errors, newParamsRefErr(configCoordinates, group, environment, paramName, ref, "referenced config not found"))

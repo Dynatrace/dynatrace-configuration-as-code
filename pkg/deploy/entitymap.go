@@ -56,7 +56,7 @@ func (r *entityMap) put(resolvedEntity ResolvedEntity) {
 	r.resolvedEntities[resolvedEntity.Coordinate] = resolvedEntity
 }
 
-func (r *entityMap) Property(coordinate coordinate.Coordinate, propertyName string) (any, bool) {
+func (r *entityMap) GetResolvedProperty(coordinate coordinate.Coordinate, propertyName string) (any, bool) {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
@@ -69,7 +69,7 @@ func (r *entityMap) Property(coordinate coordinate.Coordinate, propertyName stri
 	return nil, false
 }
 
-func (r *entityMap) Entity(config coordinate.Coordinate) (ResolvedEntity, bool) {
+func (r *entityMap) GetResolvedEntity(config coordinate.Coordinate) (ResolvedEntity, bool) {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
