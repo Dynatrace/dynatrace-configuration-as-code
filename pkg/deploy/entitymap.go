@@ -56,12 +56,12 @@ func (r *entityMap) put(resolvedEntity ResolvedEntity) {
 	r.resolvedEntities[resolvedEntity.Coordinate] = resolvedEntity
 }
 
-func (r *entityMap) Property(config coordinate.Coordinate, property string) (any, bool) {
+func (r *entityMap) Property(coordinate coordinate.Coordinate, propertyName string) (any, bool) {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
-	if e, f := r.resolvedEntities[config]; f {
-		if p, f := e.Properties[property]; f {
+	if e, f := r.resolvedEntities[coordinate]; f {
+		if p, f := e.Properties[propertyName]; f {
 			return p, true
 		}
 	}

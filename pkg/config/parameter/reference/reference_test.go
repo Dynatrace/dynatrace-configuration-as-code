@@ -177,9 +177,9 @@ type testResolver struct {
 	props map[coordinate.Coordinate]map[string]any
 }
 
-func (t testResolver) Property(config coordinate.Coordinate, property string) (any, bool) {
-	if e, f := t.props[config]; f {
-		if v, f := e[property]; f {
+func (t testResolver) Property(configCoordinate coordinate.Coordinate, propertyName string) (any, bool) {
+	if e, f := t.props[configCoordinate]; f {
+		if v, f := e[propertyName]; f {
 			return v, true
 		}
 	}
