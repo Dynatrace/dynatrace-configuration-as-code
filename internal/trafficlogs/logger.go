@@ -121,6 +121,11 @@ func (l *FileBasedLogger) logResponse(id string, response *http.Response, body s
 
 func (l *FileBasedLogger) openRequestLogFile() error {
 	if l.requestLogFile == nil {
+
+		if err := l.prepareLogDir(); err != nil {
+			return err
+		}
+
 		requestLogFile, err := l.fs.OpenFile(l.requestFilePath, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			return err
@@ -132,11 +137,27 @@ func (l *FileBasedLogger) openRequestLogFile() error {
 
 func (l *FileBasedLogger) openResponseLogFile() error {
 	if l.responseLogFile == nil {
+
+		if err := l.prepareLogDir(); err != nil {
+			return err
+		}
+
 		responseLogFile, err := l.fs.OpenFile(l.responseFilePath, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			return err
 		}
 		l.responseLogFile = responseLogFile
+	}
+	return nil
+}
+
+func (l *FileBasedLogger) prepareLogDir() error {
+	if exists, err := afero.Exists(l.fs, log.LogDirectory); err != nil {
+		return err
+	} else if !exists {
+		if err := l.fs.MkdirAll(log.LogDirectory, 0777); err != nil {
+			return fmt.Errorf("unable to create log directory %s: %w", log.LogDirectory, err)
+		}
 	}
 	return nil
 }
