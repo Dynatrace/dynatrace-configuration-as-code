@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package resolve
+package config
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/topologysort"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
@@ -27,10 +27,10 @@ import (
 	"strings"
 )
 
-func sortParameters(group string, environment string, conf coordinate.Coordinate, parameters config.Parameters) ([]parameter.NamedParameter, []error) {
-	parametersWithName := make([]parameter.NamedParameter, 0, len(parameters))
+func getSortedParameters(c *Config) ([]parameter.NamedParameter, []error) {
+	parametersWithName := make([]parameter.NamedParameter, 0, len(c.Parameters))
 
-	for name, param := range parameters {
+	for name, param := range c.Parameters {
 		parametersWithName = append(parametersWithName, parameter.NamedParameter{
 			Name:      name,
 			Parameter: param,
@@ -41,7 +41,7 @@ func sortParameters(group string, environment string, conf coordinate.Coordinate
 		return strings.Compare(parametersWithName[i].Name, parametersWithName[j].Name) < 0
 	})
 
-	matrix, inDegrees := parametersToSortData(conf, parametersWithName)
+	matrix, inDegrees := parametersToSortData(c.Coordinate, parametersWithName)
 	sorted, sortErrs := topologysort.TopologySort(matrix, inDegrees)
 
 	if len(sortErrs) > 0 {
@@ -50,10 +50,10 @@ func sortParameters(group string, environment string, conf coordinate.Coordinate
 			param := parametersWithName[sortErr.OnId]
 
 			errs[i] = &CircularDependencyParameterSortError{
-				Location: conf,
+				Location: c.Coordinate,
 				EnvironmentDetails: errors.EnvironmentDetails{
-					Group:       group,
-					Environment: environment,
+					Group:       c.Group,
+					Environment: c.Environment,
 				},
 				ParameterName: param.Name,
 				DependsOn:     param.Parameter.GetReferences(),

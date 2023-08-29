@@ -24,7 +24,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/resolve"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy"
 	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/automation"
@@ -108,7 +107,7 @@ func deployConfig(ctx context.Context, clientSet deploy.ClientSet, apis api.APIs
 		return config.ResolvedEntity{EntityName: c.Coordinate.ConfigId, Coordinate: c.Coordinate, Properties: parameter.Properties{}, Skip: true}, nil
 	}
 
-	properties, errs := resolve.ParameterValues(c, em.entityMap)
+	properties, errs := c.ResolveParameterValues(em.entityMap)
 	if len(errs) > 0 {
 		return config.ResolvedEntity{}, errs
 	}

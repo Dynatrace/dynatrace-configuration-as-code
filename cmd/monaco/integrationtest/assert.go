@@ -18,6 +18,7 @@
 
 package integrationtest
 
+import "C"
 import (
 	"context"
 	"errors"
@@ -27,7 +28,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/resolve"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -118,7 +118,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 				continue
 			}
 
-			properties, errs := resolve.ParameterValues(&theConfig, entities)
+			properties, errs := theConfig.ResolveParameterValues(entities)
 			testutils.FailTestOnAnyError(t, errs, "resolving of parameter values failed")
 
 			properties[config.IdParameter] = "NO REAL ID NEEDED FOR CHECKING AVAILABILITY"

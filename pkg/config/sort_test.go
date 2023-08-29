@@ -1,3 +1,5 @@
+//go:build unit
+
 /*
  * @license
  * Copyright 2023 Dynatrace LLC
@@ -14,10 +16,9 @@
  * limitations under the License.
  */
 
-package resolve
+package config
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/stretchr/testify/assert"
@@ -34,8 +35,8 @@ func TestSortParameters(t *testing.T) {
 	ownerParameterName := "owner"
 	timeoutParameterName := "timeout"
 
-	parameters := config.Parameters{
-		config.NameParameter: &parameter.DummyParameter{
+	parameters := Parameters{
+		NameParameter: &parameter.DummyParameter{
 			References: []parameter.ParameterReference{
 				{
 					Config:   configCoordinates,
@@ -47,12 +48,18 @@ func TestSortParameters(t *testing.T) {
 		timeoutParameterName: &parameter.DummyParameter{},
 	}
 
-	sortedParams, errs := sortParameters("", "dev", configCoordinates, parameters)
+	c := &Config{
+		Environment: "dev",
+		Coordinate:  configCoordinates,
+		Parameters:  parameters,
+	}
+
+	sortedParams, errs := getSortedParameters(c)
 
 	assert.Len(t, errs, 0, "expected zero errors when sorting")
 	assert.Equal(t, len(sortedParams), len(parameters), "the same number of parameters should be sorted")
 
-	indexName := indexOfParam(t, sortedParams, config.NameParameter)
+	indexName := indexOfParam(t, sortedParams, NameParameter)
 	indexOwner := indexOfParam(t, sortedParams, ownerParameterName)
 
 	assert.Greaterf(t, indexName, indexOwner, "parameter name (index %d) must be after parameter owner (%d)", indexName, indexOwner)
@@ -67,8 +74,8 @@ func TestSortParametersShouldFailOnCircularDependency(t *testing.T) {
 
 	ownerParameterName := "owner"
 
-	parameters := config.Parameters{
-		config.NameParameter: &parameter.DummyParameter{
+	parameters := Parameters{
+		NameParameter: &parameter.DummyParameter{
 			References: []parameter.ParameterReference{
 				{
 					Config:   configCoordinates,
@@ -80,13 +87,19 @@ func TestSortParametersShouldFailOnCircularDependency(t *testing.T) {
 			References: []parameter.ParameterReference{
 				{
 					Config:   configCoordinates,
-					Property: config.NameParameter,
+					Property: NameParameter,
 				},
 			},
 		},
 	}
 
-	_, errs := sortParameters("", "dev", configCoordinates, parameters)
+	c := &Config{
+		Environment: "dev",
+		Coordinate:  configCoordinates,
+		Parameters:  parameters,
+	}
+
+	_, errs := getSortedParameters(c)
 
 	assert.True(t, len(errs) > 0, "should fail")
 }

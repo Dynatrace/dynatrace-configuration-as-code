@@ -16,11 +16,10 @@
  * limitations under the License.
  */
 
-package resolve
+package config
 
 import (
 	"errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
@@ -29,9 +28,9 @@ import (
 	"testing"
 )
 
-type entityLookup map[coordinate.Coordinate]config.ResolvedEntity
+type entityLookup map[coordinate.Coordinate]ResolvedEntity
 
-func (e entityLookup) GetResolvedEntity(config coordinate.Coordinate) (config.ResolvedEntity, bool) {
+func (e entityLookup) GetResolvedEntity(config coordinate.Coordinate) (ResolvedEntity, bool) {
 	ent, f := e[config]
 	return ent, f
 }
@@ -54,7 +53,7 @@ func TestResolveParameterValues(t *testing.T) {
 	timeoutParameterName := "timeout"
 	parameters := []parameter.NamedParameter{
 		{
-			Name: config.NameParameter,
+			Name: NameParameter,
 			Parameter: &parameter.DummyParameter{
 				Value: name,
 			},
@@ -73,7 +72,7 @@ func TestResolveParameterValues(t *testing.T) {
 		},
 	}
 
-	conf := config.Config{
+	conf := Config{
 		Template: generateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
 			Project:  "project1",
@@ -87,10 +86,10 @@ func TestResolveParameterValues(t *testing.T) {
 
 	entities := entityLookup{}
 
-	values, errs := ParameterValues(&conf, entities)
+	values, errs := conf.ResolveParameterValues(entities)
 
 	assert.Empty(t, errs, "there should be no errors (errors: %s)", errs)
-	assert.Equal(t, name, values[config.NameParameter])
+	assert.Equal(t, name, values[NameParameter])
 	assert.Equal(t, owner, values[ownerParameterName])
 	assert.Equal(t, timeout, values[timeoutParameterName])
 }
@@ -103,7 +102,7 @@ func TestResolveParameterValuesShouldFailWhenReferencingNonExistingConfig(t *tes
 	}
 	parameters := []parameter.NamedParameter{
 		{
-			Name: config.NameParameter,
+			Name: NameParameter,
 			Parameter: &parameter.DummyParameter{
 				References: []parameter.ParameterReference{
 					{
@@ -115,7 +114,7 @@ func TestResolveParameterValuesShouldFailWhenReferencingNonExistingConfig(t *tes
 		},
 	}
 
-	conf := config.Config{
+	conf := Config{
 		Template: generateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
 			Project:  "project1",
@@ -129,7 +128,7 @@ func TestResolveParameterValuesShouldFailWhenReferencingNonExistingConfig(t *tes
 
 	entities := entityLookup{}
 
-	_, errs := ParameterValues(&conf, entities)
+	_, errs := conf.ResolveParameterValues(entities)
 
 	assert.NotEmpty(t, errs, "there should be errors (no errors: %d)", len(errs))
 }
@@ -143,7 +142,7 @@ func TestResolveParameterValuesShouldFailWhenReferencingSkippedConfig(t *testing
 
 	parameters := []parameter.NamedParameter{
 		{
-			Name: config.NameParameter,
+			Name: NameParameter,
 			Parameter: &parameter.DummyParameter{
 				References: []parameter.ParameterReference{
 					{
@@ -155,7 +154,7 @@ func TestResolveParameterValuesShouldFailWhenReferencingSkippedConfig(t *testing
 		},
 	}
 
-	conf := config.Config{
+	conf := Config{
 		Template: generateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
 			Project:  "project1",
@@ -176,7 +175,7 @@ func TestResolveParameterValuesShouldFailWhenReferencingSkippedConfig(t *testing
 		},
 	}
 
-	_, errs := ParameterValues(&conf, entities)
+	_, errs := conf.ResolveParameterValues(entities)
 
 	assert.NotEmpty(t, errs, "there should be errors (no errors: %d)", len(errs))
 }
@@ -184,14 +183,14 @@ func TestResolveParameterValuesShouldFailWhenReferencingSkippedConfig(t *testing
 func TestResolveParameterValuesShouldFailWhenParameterResolveReturnsError(t *testing.T) {
 	parameters := []parameter.NamedParameter{
 		{
-			Name: config.NameParameter,
+			Name: NameParameter,
 			Parameter: &parameter.DummyParameter{
 				Err: errors.New("error"),
 			},
 		},
 	}
 
-	conf := config.Config{
+	conf := Config{
 		Template: generateDummyTemplate(t),
 		Coordinate: coordinate.Coordinate{
 			Project:  "project1",
@@ -205,7 +204,7 @@ func TestResolveParameterValuesShouldFailWhenParameterResolveReturnsError(t *tes
 
 	entities := entityLookup{}
 
-	_, errs := ParameterValues(&conf, entities)
+	_, errs := conf.ResolveParameterValues(entities)
 
 	assert.NotEmpty(t, errs, "there should be errors (no : %d)", len(errs))
 }

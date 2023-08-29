@@ -20,7 +20,6 @@ package id_extraction
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/resolve"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
@@ -333,7 +332,7 @@ func TestExtractedTemplatesRenderCorrectly(t *testing.T) {
 
 	for _, cfgs := range got {
 		for _, c := range cfgs {
-			props, errs := resolve.ParameterValues(&c, nil)
+			props, errs := c.ResolveParameterValues(nil)
 			assert.Empty(t, errs)
 			_, err := c.Render(props)
 			assert.NoError(t, err)
