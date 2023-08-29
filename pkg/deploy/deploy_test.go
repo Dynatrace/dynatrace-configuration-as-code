@@ -1143,8 +1143,8 @@ func TestDeployConfigsValidatesClassicAPINames(t *testing.T) {
 			name: "no duplicates if from different environment",
 			given: []project.Project{
 				{
-					Configs: map[project.EnvironmentName]project.ConfigsPerType{
-						"env1": map[string][]config.Config{
+					Configs: project.ConfigsPerTypePerEnvironments{
+						"env1": project.ConfigsPerType{
 							"test1": {
 								config.Config{
 									Type:        config.ClassicApiType{Api: "app-detection-rule"},
@@ -1161,7 +1161,7 @@ func TestDeployConfigsValidatesClassicAPINames(t *testing.T) {
 								},
 							},
 						},
-						"env2": map[string][]config.Config{
+						"env2": project.ConfigsPerType{
 							"test1": {
 								config.Config{
 									Type:        config.ClassicApiType{Api: "app-detection-rule"},
@@ -1186,8 +1186,8 @@ func TestDeployConfigsValidatesClassicAPINames(t *testing.T) {
 			name: "no duplicates if for different api",
 			given: []project.Project{
 				{
-					Configs: map[project.EnvironmentName]project.ConfigsPerType{
-						"env1": map[string][]config.Config{
+					Configs: project.ConfigsPerTypePerEnvironments{
+						"env1": project.ConfigsPerType{
 							"test1": {
 								config.Config{
 									Type:        config.ClassicApiType{Api: "app-detection-rule"},
@@ -1225,8 +1225,8 @@ func TestDeployConfigsValidatesClassicAPINames(t *testing.T) {
 			name: "no duplicates if for api allow duplicate names",
 			given: []project.Project{
 				{
-					Configs: map[project.EnvironmentName]project.ConfigsPerType{
-						"env1": map[string][]config.Config{
+					Configs: project.ConfigsPerTypePerEnvironments{
+						"env1": project.ConfigsPerType{
 							"test1": {
 								config.Config{
 									Type:        config.ClassicApiType{Api: "anomaly-detection-metrics"},
@@ -1267,8 +1267,8 @@ func TestDeployConfigsValidatesClassicAPINames(t *testing.T) {
 			},
 			given: []project.Project{
 				{
-					Configs: map[project.EnvironmentName]project.ConfigsPerType{
-						"env1": map[string][]config.Config{
+					Configs: project.ConfigsPerTypePerEnvironments{
+						"env1": project.ConfigsPerType{
 							"test1": {
 								config.Config{
 									Type:        config.ClassicApiType{Api: "app-detection-rule"},
@@ -1309,8 +1309,8 @@ func TestDeployConfigsValidatesClassicAPINames(t *testing.T) {
 			},
 			given: []project.Project{
 				{
-					Configs: map[project.EnvironmentName]project.ConfigsPerType{
-						"env1": map[string][]config.Config{
+					Configs: project.ConfigsPerTypePerEnvironments{
+						"env1": project.ConfigsPerType{
 							"test1": {
 								config.Config{
 									Type:        config.ClassicApiType{Api: "app-detection-rule"},
@@ -1355,8 +1355,8 @@ func TestDeployConfigsValidatesClassicAPINames(t *testing.T) {
 			},
 			given: []project.Project{
 				{
-					Configs: map[project.EnvironmentName]project.ConfigsPerType{
-						"env1": map[string][]config.Config{
+					Configs: project.ConfigsPerTypePerEnvironments{
+						"env1": project.ConfigsPerType{
 							"test1": {
 								config.Config{
 									Type:        config.ClassicApiType{Api: "app-detection-rule"},
@@ -1399,8 +1399,8 @@ func TestDeployConfigsValidatesClassicAPINames(t *testing.T) {
 			},
 			given: []project.Project{
 				{
-					Configs: map[project.EnvironmentName]project.ConfigsPerType{
-						"env1": map[string][]config.Config{
+					Configs: project.ConfigsPerTypePerEnvironments{
+						"env1": project.ConfigsPerType{
 							"test1": {
 								config.Config{
 									Type:        config.ClassicApiType{Api: "app-detection-rule"},
@@ -1455,8 +1455,8 @@ func TestDeployConfigsValidatesClassicAPINames(t *testing.T) {
 			},
 			given: []project.Project{
 				{
-					Configs: map[project.EnvironmentName]project.ConfigsPerType{
-						"env1": map[string][]config.Config{
+					Configs: project.ConfigsPerTypePerEnvironments{
+						"env1": project.ConfigsPerType{
 							"p1": {
 								config.Config{
 									Type:        config.ClassicApiType{Api: "app-detection-rule"},
