@@ -19,7 +19,6 @@ package topologysort
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/topologysort"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	errors2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort/errors"
 	"strings"
 	"sync"
@@ -28,90 +27,10 @@ import (
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
 type projectsPerEnvironment map[string][]project.Project
-
-func parameterReference(sourceParam parameter.NamedParameter, config coordinate.Coordinate, targetParam parameter.NamedParameter) bool {
-	for _, ref := range sourceParam.Parameter.GetReferences() {
-		if ref.Config == config && ref.Property == targetParam.Name {
-			return true
-		}
-	}
-
-	return false
-}
-
-func SortParameters(group string, environment string, conf coordinate.Coordinate, parameters config.Parameters) ([]parameter.NamedParameter, []error) {
-	parametersWithName := make([]parameter.NamedParameter, 0, len(parameters))
-
-	for name, param := range parameters {
-		parametersWithName = append(parametersWithName, parameter.NamedParameter{
-			Name:      name,
-			Parameter: param,
-		})
-	}
-
-	s.SliceStable(parametersWithName, func(i, j int) bool {
-		return strings.Compare(parametersWithName[i].Name, parametersWithName[j].Name) < 0
-	})
-
-	matrix, inDegrees := parametersToSortData(conf, parametersWithName)
-	sorted, sortErrs := topologysort.TopologySort(matrix, inDegrees)
-
-	if len(sortErrs) > 0 {
-		errs := make([]error, len(sortErrs))
-		for i, sortErr := range sortErrs {
-			param := parametersWithName[sortErr.OnId]
-
-			errs[i] = &errors2.CircularDependencyParameterSortError{
-				Location: conf,
-				EnvironmentDetails: errors.EnvironmentDetails{
-					Group:       group,
-					Environment: environment,
-				},
-				ParameterName: param.Name,
-				DependsOn:     param.Parameter.GetReferences(),
-			}
-		}
-		return nil, errs
-
-	}
-
-	result := make([]parameter.NamedParameter, 0, len(parametersWithName))
-
-	for i := len(sorted) - 1; i >= 0; i-- {
-		result = append(result, parametersWithName[sorted[i]])
-	}
-
-	return result, nil
-}
-
-func parametersToSortData(conf coordinate.Coordinate, parameters []parameter.NamedParameter) ([][]bool, []int) {
-	numParameters := len(parameters)
-	matrix := make([][]bool, numParameters)
-	inDegrees := make([]int, numParameters)
-
-	for i, param := range parameters {
-		matrix[i] = make([]bool, numParameters)
-
-		for j, p := range parameters {
-			if i == j {
-				continue
-			}
-
-			if parameterReference(p, conf, param) {
-				logDependency("Config Parameter", p.Name, param.Name)
-				matrix[i][j] = true
-				inDegrees[i]++
-			}
-		}
-	}
-
-	return matrix, inDegrees
-}
 
 func SortProjects(projects []project.Project, environments []string) (map[string][]config.Config, []error) {
 	sortedProjectsPerEnvironment, errs := sortProjects(projects, environments)

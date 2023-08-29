@@ -21,6 +21,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"strings"
 )
 
 var _ configErrors.DetailedConfigError = (*ParamsRefErr)(nil)
@@ -58,4 +59,47 @@ func (e ParamsRefErr) LocationDetails() configErrors.EnvironmentDetails {
 func (e ParamsRefErr) Error() string {
 	return fmt.Sprintf("parameter `%s` cannot reference `%s`: %s",
 		e.ParameterName, e.Reference, e.Reason)
+}
+
+var (
+	_ error                            = (*CircularDependencyParameterSortError)(nil)
+	_ configErrors.DetailedConfigError = (*CircularDependencyParameterSortError)(nil)
+)
+
+type CircularDependencyParameterSortError struct {
+	Location           coordinate.Coordinate           `json:"location"`
+	EnvironmentDetails configErrors.EnvironmentDetails `json:"environmentDetails"`
+	ParameterName      string                          `json:"parameterName"`
+	DependsOn          []parameter.ParameterReference  `json:"dependsOn"`
+}
+
+func (e CircularDependencyParameterSortError) Coordinates() coordinate.Coordinate {
+	return e.Location
+}
+
+func (e CircularDependencyParameterSortError) LocationDetails() configErrors.EnvironmentDetails {
+	return e.EnvironmentDetails
+}
+
+func (e CircularDependencyParameterSortError) Error() string {
+	return fmt.Sprintf("%s: circular dependency detected. check parameter dependencies: %s",
+		e.ParameterName, joinParameterReferencesToString(e.DependsOn))
+}
+
+func joinParameterReferencesToString(refs []parameter.ParameterReference) string {
+	switch len(refs) {
+	case 0:
+		return ""
+	case 1:
+		return refs[0].String()
+	}
+
+	result := strings.Builder{}
+
+	for _, ref := range refs {
+		result.WriteString(ref.String())
+		result.WriteString(", ")
+	}
+
+	return result.String()
 }

@@ -21,7 +21,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
 )
 
 // EntityLookup is used in parameter resolution to fetch the resolved entity of deployed configuration
@@ -42,7 +41,7 @@ type EntityLookup interface {
 func ParameterValues(c *config.Config, entities EntityLookup) (parameter.Properties, []error) {
 	var errors []error
 
-	parameters, sortErrs := sort.Parameters(c.Group, c.Environment, c.Coordinate, c.Parameters)
+	parameters, sortErrs := sortParameters(c.Group, c.Environment, c.Coordinate, c.Parameters)
 	errors = append(errors, sortErrs...)
 
 	properties, errs := resolveValues(c, entities, parameters)
