@@ -26,7 +26,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/resolve"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/extract"
 )
 
 func Deploy(ctx context.Context, configClient dtclient.ConfigClient, apis api.APIs, properties parameter.Properties, renderedConfig string, conf *config.Config) (config.ResolvedEntity, error) {
@@ -40,7 +40,7 @@ func Deploy(ctx context.Context, configClient dtclient.ConfigClient, apis api.AP
 		return config.ResolvedEntity{}, fmt.Errorf("unknown api `%s`. this is most likely a bug", t.Api)
 	}
 
-	configName, err := resolve.ExtractConfigName(conf, properties)
+	configName, err := extract.ConfigName(conf, properties)
 	if err != nil {
 		return config.ResolvedEntity{}, err
 	}

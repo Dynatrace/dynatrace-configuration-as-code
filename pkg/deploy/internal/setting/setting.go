@@ -26,7 +26,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/resolve"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/extract"
 )
 
 func Deploy(ctx context.Context, settingsClient dtclient.SettingsClient, properties parameter.Properties, renderedConfig string, c *config.Config) (config.ResolvedEntity, error) {
@@ -53,7 +53,7 @@ func Deploy(ctx context.Context, settingsClient dtclient.SettingsClient, propert
 	}
 
 	name := fmt.Sprintf("[UNKNOWN NAME]%s", entity.Id)
-	if configName, err := resolve.ExtractConfigName(c, properties); err == nil {
+	if configName, err := extract.ConfigName(c, properties); err == nil {
 		name = configName
 	} else {
 		log.WithCtxFields(ctx).Warn("failed to extract name for Settings 2.0 object %q - ID will be used", entity.Id)

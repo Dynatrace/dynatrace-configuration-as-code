@@ -21,6 +21,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
 )
 
 // EntityLookup is used in parameter resolution to fetch the resolved entity of deployed configuration
@@ -30,7 +31,31 @@ type EntityLookup interface {
 	GetResolvedEntity(config coordinate.Coordinate) (config.ResolvedEntity, bool)
 }
 
-func ParameterValues(
+// ParameterValues will resolve the values of all config.Parameters of a config.Config c and return them as a parameter.Properties map.
+// Resolving will ensure that parameters are resolved in the right order if they have dependencies between each other.
+// To be able to resolve reference.ReferenceParameter values an EntityLookup needs to be provided, which contains all
+// config.ResolvedEntity values of configurations that config.Config c could depend on.
+// Ordering of configurations to ensure that possible dependency configurations are contained in teh EntityLookup is responsibility
+// of the caller of ParameterValues.
+//
+// ParameterValues will return a slice of errors for any failures during sorting or resolving parameters.
+func ParameterValues(c *config.Config, entities EntityLookup) (parameter.Properties, []error) {
+	var errors []error
+
+	parameters, sortErrs := sort.Parameters(c.Group, c.Environment, c.Coordinate, c.Parameters)
+	errors = append(errors, sortErrs...)
+
+	properties, errs := resolveValues(c, entities, parameters)
+	errors = append(errors, errs...)
+
+	if len(errors) > 0 {
+		return nil, errors
+	}
+
+	return properties, nil
+}
+
+func resolveValues(
 	conf *config.Config,
 	entities EntityLookup,
 	parameters []parameter.NamedParameter,

@@ -87,7 +87,7 @@ func TestResolveParameterValues(t *testing.T) {
 
 	entities := entityLookup{}
 
-	values, errs := ParameterValues(&conf, entities, parameters)
+	values, errs := ParameterValues(&conf, entities)
 
 	assert.Empty(t, errs, "there should be no errors (errors: %s)", errs)
 	assert.Equal(t, name, values[config.NameParameter])
@@ -129,7 +129,7 @@ func TestResolveParameterValuesShouldFailWhenReferencingNonExistingConfig(t *tes
 
 	entities := entityLookup{}
 
-	_, errs := ParameterValues(&conf, entities, parameters)
+	_, errs := ParameterValues(&conf, entities)
 
 	assert.NotEmpty(t, errs, "there should be errors (no errors: %d)", len(errs))
 }
@@ -176,7 +176,7 @@ func TestResolveParameterValuesShouldFailWhenReferencingSkippedConfig(t *testing
 		},
 	}
 
-	_, errs := ParameterValues(&conf, entities, parameters)
+	_, errs := ParameterValues(&conf, entities)
 
 	assert.NotEmpty(t, errs, "there should be errors (no errors: %d)", len(errs))
 }
@@ -205,7 +205,7 @@ func TestResolveParameterValuesShouldFailWhenParameterResolveReturnsError(t *tes
 
 	entities := entityLookup{}
 
-	_, errs := ParameterValues(&conf, entities, parameters)
+	_, errs := ParameterValues(&conf, entities)
 
 	assert.NotEmpty(t, errs, "there should be errors (no : %d)", len(errs))
 }
