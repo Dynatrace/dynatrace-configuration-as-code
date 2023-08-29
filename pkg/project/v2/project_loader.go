@@ -229,9 +229,8 @@ func toFullyQualifiedConfigIdentifier(config config.Config) string {
 	return fmt.Sprintf("%s:%s:%s", config.Group, config.Environment, config.Coordinate)
 }
 
-func toDependenciesMap(projectId string,
-	configs []config.Config) map[string][]string {
-	result := make(map[string][]string)
+func toDependenciesMap(projectId string, configs []config.Config) DependenciesPerEnvironment {
+	result := make(DependenciesPerEnvironment)
 
 	for _, c := range configs {
 		// ignore skipped configs

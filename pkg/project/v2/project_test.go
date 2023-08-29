@@ -88,8 +88,8 @@ func TestProject_ForEveryConfigDo(t *testing.T) {
 		given := project.Project{
 			Id:      "projectID",
 			GroupId: "groupID",
-			Configs: map[project.EnvironmentName]project.ConfigsPerType{
-				"env1": map[string][]config.Config{
+			Configs: project.ConfigsPerTypePerEnvironments{
+				"env1": project.ConfigsPerType{
 					"type1": {
 						{Coordinate: coordinate.Coordinate{Project: "projectID", Type: "type1", ConfigId: "config1"}},
 						{Coordinate: coordinate.Coordinate{Project: "projectID", Type: "type1", ConfigId: "config2"}},
@@ -98,7 +98,7 @@ func TestProject_ForEveryConfigDo(t *testing.T) {
 						{Coordinate: coordinate.Coordinate{Project: "projectID", Type: "type2", ConfigId: "config3"}},
 					},
 				},
-				"env2": map[string][]config.Config{
+				"env2": project.ConfigsPerType{
 					"type3": {
 						{Coordinate: coordinate.Coordinate{Project: "projectID", Type: "type3", ConfigId: "config4"}},
 					},

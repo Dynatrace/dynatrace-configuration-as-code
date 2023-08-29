@@ -20,8 +20,6 @@ import (
 )
 
 type (
-	EntitiesPerType map[string][]string
-
 	EnvironmentName = string
 	// ConfigsPerTypePerEnvironments is a map of EnvironmentName to a ConfigsPerType map
 	ConfigsPerTypePerEnvironments map[EnvironmentName]ConfigsPerType
@@ -33,8 +31,9 @@ type (
 	// ConfigsPerEnvironment is a map of EnvironmentName to configs. This is a flattened version of ConfigsPerTypePerEnvironments
 	ConfigsPerEnvironment map[EnvironmentName][]config.Config
 
+	ProjectID = string
 	// DependenciesPerEnvironment is a map of EnvironmentName to project IDs
-	DependenciesPerEnvironment map[EnvironmentName][]string
+	DependenciesPerEnvironment map[EnvironmentName][]ProjectID
 
 	// ActionOverConfig is a function that will be performed over each config that is part of a project via a Project.ForEveryConfigDo method
 	ActionOverConfig func(c config.Config)
