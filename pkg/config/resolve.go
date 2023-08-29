@@ -14,48 +14,17 @@
  * limitations under the License.
  */
 
-package resolve
+package config
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 )
 
-// EntityLookup is used in parameter resolution to fetch the resolved entity of deployed configuration
-type EntityLookup interface {
-	parameter.PropertyResolver
-
-	GetResolvedEntity(config coordinate.Coordinate) (config.ResolvedEntity, bool)
-}
-
-// ParameterValues will resolve the values of all config.Parameters of a config.Config c and return them as a parameter.Properties map.
-// Resolving will ensure that parameters are resolved in the right order if they have dependencies between each other.
-// To be able to resolve reference.ReferenceParameter values an EntityLookup needs to be provided, which contains all
-// config.ResolvedEntity values of configurations that config.Config c could depend on.
-// Ordering of configurations to ensure that possible dependency configurations are contained in teh EntityLookup is responsibility
-// of the caller of ParameterValues.
-//
-// ParameterValues will return a slice of errors for any failures during sorting or resolving parameters.
-func ParameterValues(c *config.Config, entities EntityLookup) (parameter.Properties, []error) {
-	var errors []error
-
-	parameters, sortErrs := sortParameters(c.Group, c.Environment, c.Coordinate, c.Parameters)
-	errors = append(errors, sortErrs...)
-
-	properties, errs := resolveValues(c, entities, parameters)
-	errors = append(errors, errs...)
-
-	if len(errors) > 0 {
-		return nil, errors
-	}
-
-	return properties, nil
-}
-
+// resolveValues validates and resolves the given sorted parameters into actual values
 func resolveValues(
-	conf *config.Config,
+	c *Config,
 	entities EntityLookup,
 	parameters []parameter.NamedParameter,
 ) (parameter.Properties, []error) {
@@ -68,7 +37,7 @@ func resolveValues(
 		name := container.Name
 		param := container.Parameter
 
-		errs := validateParameterReferences(conf.Coordinate, conf.Group, conf.Environment, entities, name, param)
+		errs := validateParameterReferences(c.Coordinate, c.Group, c.Environment, entities, name, param)
 
 		if errs != nil {
 			errors = append(errors, errs...)
@@ -77,9 +46,9 @@ func resolveValues(
 
 		val, err := param.ResolveValue(parameter.ResolveContext{
 			PropertyResolver:        entities,
-			ConfigCoordinate:        conf.Coordinate,
-			Group:                   conf.Group,
-			Environment:             conf.Environment,
+			ConfigCoordinate:        c.Coordinate,
+			Group:                   c.Group,
+			Environment:             c.Environment,
 			ParameterName:           name,
 			ResolvedParameterValues: properties,
 		})
@@ -89,7 +58,7 @@ func resolveValues(
 			continue
 		}
 
-		if name == config.NameParameter {
+		if name == NameParameter {
 			properties[name] = strings.ToString(val)
 		} else {
 			properties[name] = val
@@ -105,12 +74,7 @@ func resolveValues(
 	return properties, nil
 }
 
-func validateParameterReferences(configCoordinates coordinate.Coordinate,
-	group string, environment string,
-	entityLookup EntityLookup,
-	paramName string,
-	param parameter.Parameter,
-) (errs []error) {
+func validateParameterReferences(configCoordinates coordinate.Coordinate, group string, environment string, entityLookup EntityLookup, paramName string, param parameter.Parameter) (errs []error) {
 
 	for _, ref := range param.GetReferences() {
 		// we have to ignore references to the same config,

@@ -211,3 +211,34 @@ func (c *Config) References() []coordinate.Coordinate {
 
 	return refs
 }
+
+// EntityLookup is used in parameter resolution to fetch the resolved entity of deployed configuration
+type EntityLookup interface {
+	parameter.PropertyResolver
+
+	GetResolvedEntity(config coordinate.Coordinate) (ResolvedEntity, bool)
+}
+
+// ResolveParameterValues will resolve the values of all config.Parameters of a config.Config and return them as a parameter.Properties map.
+// Resolving will ensure that parameters are resolved in the right order if they have dependencies between each other.
+// To be able to resolve reference.ReferenceParameter values an EntityLookup needs to be provided, which contains all
+// config.ResolvedEntity values of configurations that the config.Config could depend on.
+// Ordering of configurations to ensure that possible dependency configurations are contained in teh EntityLookup is responsibility
+// of the caller of ResolveParameterValues.
+//
+// ResolveParameterValues will return a slice of errors for any failures during sorting or resolving parameters.
+func (c *Config) ResolveParameterValues(entities EntityLookup) (parameter.Properties, []error) {
+	var errors []error
+
+	parameters, sortErrs := getSortedParameters(c)
+	errors = append(errors, sortErrs...)
+
+	properties, errs := resolveValues(c, entities, parameters)
+	errors = append(errors, errs...)
+
+	if len(errors) > 0 {
+		return nil, errors
+	}
+
+	return properties, nil
+}
