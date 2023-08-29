@@ -145,6 +145,10 @@ type Config struct {
 }
 
 func (c *Config) Render(properties map[string]interface{}) (string, error) {
+	if c == nil || c.Template == nil {
+		return "", nil
+	}
+
 	templatePath := c.Template.Name()
 	if t, ok := c.Template.(template.FileBasedTemplate); ok {
 		templatePath = t.FilePath()
@@ -195,6 +199,9 @@ var DefaultParameterParsers = map[string]parameter.ParameterSerDe{
 }
 
 func (c *Config) References() []coordinate.Coordinate {
+	if c == nil {
+		return nil
+	}
 
 	count := 0
 	for _, p := range c.Parameters {
@@ -228,6 +235,10 @@ type EntityLookup interface {
 //
 // ResolveParameterValues will return a slice of errors for any failures during sorting or resolving parameters.
 func (c *Config) ResolveParameterValues(entities EntityLookup) (parameter.Properties, []error) {
+	if c == nil {
+		return nil, nil
+	}
+
 	var errors []error
 
 	parameters, sortErrs := getSortedParameters(c)
