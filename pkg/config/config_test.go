@@ -361,3 +361,37 @@ func generateDummyTemplate(t *testing.T) template.Template {
 	templ := template.CreateTemplateFromString("deploy_test-"+newUUID.String(), "{}")
 	return templ
 }
+
+func TestConfigMethodsAreNilSafe(t *testing.T) {
+
+	t.Run("References", func(t *testing.T) {
+		var c *Config
+		c = nil
+		assert.NotPanics(t, func() {
+			_ = c.References()
+		})
+	})
+
+	t.Run("Render", func(t *testing.T) {
+		var c *Config
+		c = nil
+		assert.NotPanics(t, func() {
+			_, _ = c.Render(nil)
+		})
+	})
+
+	t.Run("Render - nil template", func(t *testing.T) {
+		var c Config
+		assert.NotPanics(t, func() {
+			_, _ = c.Render(nil)
+		})
+	})
+
+	t.Run("ResolveParameterValues", func(t *testing.T) {
+		var c *Config
+		c = nil
+		assert.NotPanics(t, func() {
+			_, _ = c.ResolveParameterValues(nil)
+		})
+	})
+}
