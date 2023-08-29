@@ -21,96 +21,14 @@ package topologysort
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/topologysort"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort/errors"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 )
-
-func TestIsReferencing(t *testing.T) {
-	referencingConfig := coordinate.Coordinate{
-		Project:  "project-1",
-		Type:     "dashboard",
-		ConfigId: "dashboard-1",
-	}
-
-	referencingProperty := "managementZoneName"
-
-	param := parameter.NamedParameter{
-		Name: "name",
-		Parameter: &parameter.DummyParameter{
-			References: []parameter.ParameterReference{
-				{Config: referencingConfig, Property: referencingProperty},
-			},
-		},
-	}
-
-	referencedParameter := parameter.NamedParameter{
-		Name:      referencingProperty,
-		Parameter: &parameter.DummyParameter{},
-	}
-
-	result := parameterReference(param, referencingConfig, referencedParameter)
-
-	assert.Assert(t, result, "should reference parameter")
-}
-
-func TestIsReferencingShouldReturnFalseForNotReferencing(t *testing.T) {
-	referencingConfig := coordinate.Coordinate{
-		Project:  "project-1",
-		Type:     "dashboard",
-		ConfigId: "dashboard-1",
-	}
-
-	referencingProperty := "managementZoneName"
-
-	param := parameter.NamedParameter{
-		Name: "name",
-		Parameter: &parameter.DummyParameter{
-			References: []parameter.ParameterReference{
-				{
-					Config:   referencingConfig,
-					Property: referencingProperty,
-				},
-			},
-		},
-	}
-
-	referencedParameter := parameter.NamedParameter{
-		Name:      "name",
-		Parameter: &parameter.DummyParameter{},
-	}
-
-	result := parameterReference(param, referencingConfig, referencedParameter)
-
-	assert.Assert(t, !result, "should not reference parameter")
-}
-
-func TestIsReferencingShouldReturnFalseForParameterWithoutReferences(t *testing.T) {
-	referencingConfig := coordinate.Coordinate{
-		Project:  "project-1",
-		Type:     "dashboard",
-		ConfigId: "dashboard-1",
-	}
-
-	param := parameter.NamedParameter{
-		Name:      "name",
-		Parameter: &parameter.DummyParameter{},
-	}
-
-	referencedParameter := parameter.NamedParameter{
-		Name:      "name",
-		Parameter: &parameter.DummyParameter{},
-	}
-
-	result := parameterReference(param, referencingConfig, referencedParameter)
-
-	assert.Assert(t, !result, "should not reference parameter")
-}
 
 func TestSortConfigs(t *testing.T) {
 	configCoordinates := coordinate.Coordinate{
@@ -153,12 +71,12 @@ func TestSortConfigs(t *testing.T) {
 	sorted, errs := sortConfigs(configs)
 
 	assert.Equal(t, len(errs), 0, "expected zero errors when sorting")
-	assert.Assert(t, len(configs) == len(sorted), "len configs (%d) == len sorted (%d)", len(configs), len(sorted))
+	assert.True(t, len(configs) == len(sorted), "len configs (%d) == len sorted (%d)", len(configs), len(sorted))
 
 	indexConfig := indexOfConfig(t, sorted, configCoordinates)
 	indexReferenced := indexOfConfig(t, sorted, referencedConfigCoordinates)
 
-	assert.Assert(t, indexReferenced < indexConfig, "referenced config (index %d) should be before config (index %d)", indexReferenced, indexConfig)
+	assert.True(t, indexReferenced < indexConfig, "referenced config (index %d) should be before config (index %d)", indexReferenced, indexConfig)
 }
 
 func TestSortConfigsShouldFailOnCyclicDependency(t *testing.T) {
@@ -194,7 +112,7 @@ func TestSortConfigsShouldFailOnCyclicDependency(t *testing.T) {
 
 	_, errs := sortConfigs(configs)
 
-	assert.Assert(t, len(errs) > 0, "should fail")
+	assert.True(t, len(errs) > 0, "should fail")
 }
 
 func TestSortConfigsShouldReportAllLinksOfCyclicDependency(t *testing.T) {
@@ -243,19 +161,19 @@ func TestSortConfigsShouldReportAllLinksOfCyclicDependency(t *testing.T) {
 
 	_, errs := sortConfigs(configs)
 
-	assert.Assert(t, len(errs) > 0, "should report cyclic dependency errors")
-	assert.Assert(t, len(errs) == 3, "should report an error for each config")
+	assert.True(t, len(errs) > 0, "should report cyclic dependency errors")
+	assert.True(t, len(errs) == 3, "should report an error for each config")
 	for _, err := range errs {
 		depErr, ok := err.(errors.CircularDependencyConfigSortError)
-		assert.Assert(t, ok, "expected errors of type CircularDependencyConfigSortError")
+		assert.True(t, ok, "expected errors of type CircularDependencyConfigSortError")
 		if depErr.Location.Match(config1Coordinates) {
-			assert.Assert(t, depErr.DependsOn[0] == config2Coordinates)
+			assert.True(t, depErr.DependsOn[0] == config2Coordinates)
 		}
 		if depErr.Location.Match(config2Coordinates) {
-			assert.Assert(t, depErr.DependsOn[0] == config3Coordinates)
+			assert.True(t, depErr.DependsOn[0] == config3Coordinates)
 		}
 		if depErr.Location.Match(config3Coordinates) {
-			assert.Assert(t, depErr.DependsOn[0] == config1Coordinates)
+			assert.True(t, depErr.DependsOn[0] == config1Coordinates)
 		}
 	}
 }
@@ -332,16 +250,16 @@ func TestSortProjects(t *testing.T) {
 
 	sorted, errors := sortProjects(projects, environments)
 
-	assert.Assert(t, len(errors) == 0, "there should be no errors (no errors %d)", len(errors))
-	assert.Assert(t, len(sorted) == 1, "there should be exactly one environments")
+	assert.True(t, len(errors) == 0, "there should be no errors (no errors %d)", len(errors))
+	assert.True(t, len(sorted) == 1, "there should be exactly one environments")
 
 	projectsForEnvironment := sorted[environmentName]
-	assert.Assert(t, len(projectsForEnvironment) == len(projects), "there should be exactly the same amount of environments")
+	assert.True(t, len(projectsForEnvironment) == len(projects), "there should be exactly the same amount of environments")
 
 	indexProject := indexOfProject(t, projectsForEnvironment, projectId)
 	indexReferenced := indexOfProject(t, projectsForEnvironment, referencedProjectId)
 
-	assert.Assert(t, indexReferenced < indexProject,
+	assert.True(t, indexReferenced < indexProject,
 		"referenced project (index %d) should be before project (index %d)", indexReferenced, indexProject)
 }
 
@@ -377,7 +295,7 @@ func TestSortProjectsShouldFailOnCyclicDependency(t *testing.T) {
 
 	_, errors := sortProjects(projects, environments)
 
-	assert.Assert(t, len(errors) > 0, "there should be errors (no errors %d)", len(errors))
+	assert.True(t, len(errors) > 0, "there should be errors (no errors %d)", len(errors))
 }
 
 func indexOfProject(t *testing.T, projects []project.Project, projectId string) int {
@@ -477,11 +395,7 @@ func Test_parseConfigSortErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := parseConfigSortErrors(tt.args.sortErrs, tt.args.configs)
-			assert.DeepEqual(t, got, tt.want, cmpopts.SortSlices(func(a, b error) bool {
-				depErrA := a.(errors.CircularDependencyConfigSortError)
-				depErrB := b.(errors.CircularDependencyConfigSortError)
-				return depErrA.Location.String() < depErrB.Location.String()
-			}))
+			assert.ElementsMatch(t, got, tt.want)
 		})
 	}
 }
