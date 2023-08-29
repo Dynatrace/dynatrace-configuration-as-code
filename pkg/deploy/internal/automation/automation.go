@@ -26,7 +26,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/resolve"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/extract"
 )
 
 //go:generate mockgen -source=automation.go -destination=automation_mock.go -package=automation automationClient
@@ -69,7 +69,7 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 	}
 
 	name := fmt.Sprintf("[UNKNOWN NAME]%s", resp.ID)
-	if configName, err := resolve.ExtractConfigName(c, properties); err == nil {
+	if configName, err := extract.ConfigName(c, properties); err == nil {
 		name = configName
 	} else {
 		log.WithCtxFields(ctx).Warn("failed to extract name for automation object %q - ID will be used", resp.ID)

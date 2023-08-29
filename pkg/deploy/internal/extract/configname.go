@@ -14,34 +14,17 @@
  * limitations under the License.
  */
 
-package resolve
+package extract
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/resolve"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/entitymap"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
 )
 
-func Properties(c *config.Config, entityMap *entitymap.EntityMap) (parameter.Properties, []error) {
-	var errors []error
-
-	parameters, sortErrs := sort.Parameters(c.Group, c.Environment, c.Coordinate, c.Parameters)
-	errors = append(errors, sortErrs...)
-
-	properties, errs := resolve.ParameterValues(c, entityMap, parameters)
-	errors = append(errors, errs...)
-
-	if len(errors) > 0 {
-		return nil, errors
-	}
-
-	return properties, nil
-}
-
-func ExtractConfigName(conf *config.Config, properties parameter.Properties) (string, error) {
+// ConfigName extracts the value of the given config.Config's name parameter from the given parameter.Properties.
+// If the name is not found in the properties, or the resolved value is not a string, ConfigName will return an error.
+func ConfigName(conf *config.Config, properties parameter.Properties) (string, error) {
 	val, found := properties[config.NameParameter]
 
 	if !found {

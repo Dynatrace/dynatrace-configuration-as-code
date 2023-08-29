@@ -101,7 +101,6 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 		clients := CreateDynatraceClients(t, env)
 
 		entities := entityLookup{}
-		var parameters []parameter.NamedParameter
 
 		for _, theConfig := range configs {
 			coord := theConfig.Coordinate
@@ -119,12 +118,7 @@ func AssertAllConfigsAvailability(t *testing.T, fs afero.Fs, manifestPath string
 				continue
 			}
 
-			configParameters, errs := sort.Parameters(theConfig.Group, theConfig.Environment, theConfig.Coordinate, theConfig.Parameters)
-			testutils.FailTestOnAnyError(t, errs, "sorting of parameter values failed")
-
-			parameters = append(parameters, configParameters...)
-
-			properties, errs := resolve.ParameterValues(&theConfig, entities, parameters)
+			properties, errs := resolve.ParameterValues(&theConfig, entities)
 			testutils.FailTestOnAnyError(t, errs, "resolving of parameter values failed")
 
 			properties[config.IdParameter] = "NO REAL ID NEEDED FOR CHECKING AVAILABILITY"

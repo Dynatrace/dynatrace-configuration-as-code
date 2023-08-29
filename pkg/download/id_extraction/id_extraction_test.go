@@ -24,7 +24,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -334,9 +333,7 @@ func TestExtractedTemplatesRenderCorrectly(t *testing.T) {
 
 	for _, cfgs := range got {
 		for _, c := range cfgs {
-			sortedParams, errs := sort.Parameters("", "", c.Coordinate, c.Parameters)
-			assert.Empty(t, errs)
-			props, errs := resolve.ParameterValues(&c, nil, sortedParams)
+			props, errs := resolve.ParameterValues(&c, nil)
 			assert.Empty(t, errs)
 			_, err := c.Render(props)
 			assert.NoError(t, err)

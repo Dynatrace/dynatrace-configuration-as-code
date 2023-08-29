@@ -24,13 +24,14 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/resolve"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy"
 	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/entitymap"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/resolve"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/extract"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/setting"
 	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"golang.org/x/net/context"
@@ -107,7 +108,7 @@ func deployConfig(ctx context.Context, clientSet deploy.ClientSet, apis api.APIs
 		return config.ResolvedEntity{EntityName: c.Coordinate.ConfigId, Coordinate: c.Coordinate, Properties: parameter.Properties{}, Skip: true}, nil
 	}
 
-	properties, errs := resolve.Properties(c, em.entityMap)
+	properties, errs := resolve.ParameterValues(c, em.entityMap)
 	if len(errs) > 0 {
 		return config.ResolvedEntity{}, errs
 	}
@@ -157,7 +158,7 @@ func deployConfig(ctx context.Context, clientSet deploy.ClientSet, apis api.APIs
 }
 
 func validateConfigNameIsUnique(cfg *config.Config, apis api.APIs, properties parameter.Properties, entityMap *entityMapWithNames) error {
-	configName, err := resolve.ExtractConfigName(cfg, properties)
+	configName, err := extract.ConfigName(cfg, properties)
 	if err != nil {
 		return err
 	}
