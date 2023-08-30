@@ -18,6 +18,7 @@ package deploy_test
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -747,7 +748,9 @@ func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
 		deploy.EnvironmentInfo{Name: env}: deploy.DummyClientSet,
 	}
 
-	t.Run("deployment error - stop on error", func(t *testing.T) {
+	t.Run("[non-parallel] deployment error - stop on error", func(t *testing.T) {
+		t.Setenv(featureflags.DependencyGraphBasedDeployParallel().EnvName(), "false") // parallel deploy always continues
+
 		err := deploy.DeployConfigGraph(p, c, deploy.DeployConfigsOptions{})
 		assert.Error(t, err)
 
@@ -757,8 +760,22 @@ func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
 		assert.Len(t, envErrs[env], 1, "Expected deployment to return after the first error")
 	})
 
-	t.Run("deployment error - continue on error", func(t *testing.T) {
+	t.Run("[non-parallel] deployment error - continue on error", func(t *testing.T) {
+		t.Setenv(featureflags.DependencyGraphBasedDeployParallel().EnvName(), "false")
+
 		err := deploy.DeployConfigGraph(p, c, deploy.DeployConfigsOptions{ContinueOnErr: true})
+		assert.Error(t, err)
+
+		envErrs := make(errors.EnvironmentDeploymentErrors)
+		assert.ErrorAs(t, err, &envErrs)
+		assert.Len(t, envErrs, 1)
+		assert.Len(t, envErrs[env], 2, "Expected deployment to continue after the first error and return errors for both invalid configs")
+	})
+
+	t.Run("[parallel] deployment error - always continues on error", func(t *testing.T) {
+		t.Setenv(featureflags.DependencyGraphBasedDeployParallel().EnvName(), "true")
+
+		err := deploy.DeployConfigGraph(p, c, deploy.DeployConfigsOptions{}) // continues even without option set
 		assert.Error(t, err)
 
 		envErrs := make(errors.EnvironmentDeploymentErrors)
