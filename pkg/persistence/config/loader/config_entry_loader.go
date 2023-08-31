@@ -246,11 +246,6 @@ func getType(typeDef persistence.TypeDefinition) (config.Type, error) {
 		}, nil
 
 	case typeDef.IsClassic():
-
-		if typeDef.Api == persistence.ApiTypeBucket {
-			return config.BucketType{}, nil
-		}
-
 		return config.ClassicApiType{
 			Api: typeDef.Api,
 		}, nil
@@ -263,6 +258,8 @@ func getType(typeDef persistence.TypeDefinition) (config.Type, error) {
 		return config.AutomationType{
 			Resource: typeDef.Automation.Resource,
 		}, nil
+	case typeDef.IsBucket():
+		return config.BucketType{}, nil
 
 	default:
 		return nil, errors.New("unknown type")

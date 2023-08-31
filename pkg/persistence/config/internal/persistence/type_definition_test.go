@@ -163,12 +163,24 @@ func Test_typeDefinition_isSound(t *testing.T) {
 			name: "Bucket - sound",
 			fields: fields{
 				configType: TypeDefinition{
-					Api: "bucket",
+					Bucket: "bucket",
 				},
 				knownApis: map[string]struct{}{},
 			},
 			want: expect{
 				result: true,
+			},
+		},
+		{
+			name: "Bucket - as API is invalid",
+			fields: fields{
+				configType: TypeDefinition{
+					Api: "bucket",
+				},
+				knownApis: map[string]struct{}{},
+			},
+			want: expect{
+				result: false,
 			},
 		},
 	}

@@ -928,6 +928,23 @@ configs:
     template: 'profile.json'
   type: bucket
 `,
+			wantErrorsContain: []string{"failed to parse 'type' section: unknown type \"bucket\""},
+		},
+		{
+			name: "Bucket written as api config",
+			envVars: map[string]string{
+				featureflags.Buckets().EnvName(): "true",
+			},
+			filePathArgument: "test-file.yaml",
+			filePathOnDisk:   "test-file.yaml",
+			fileContentOnDisk: `
+configs:
+- id: profile-id
+  config:
+    template: 'profile.json'
+  type:
+    api: bucket
+`,
 			wantErrorsContain: []string{"unknown API: bucket"},
 		},
 	}

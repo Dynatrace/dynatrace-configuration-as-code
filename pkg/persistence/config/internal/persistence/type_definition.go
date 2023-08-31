@@ -24,10 +24,11 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-const ApiTypeBucket = "bucket"
+const BucketType = "bucket"
 
 type TypeDefinition struct {
 	Api        string               `yaml:"api,omitempty"`
+	Bucket     string               `yaml:"bucket,omitempty"`
 	Settings   SettingsDefinition   `yaml:"settings,omitempty"`
 	Entities   EntitiesDefinition   `yaml:"entities,omitempty"`
 	Automation AutomationDefinition `yaml:"automation,omitempty"`
@@ -58,6 +59,17 @@ func (c *TypeDefinition) UnmarshalYAML(unmarshal func(interface{}) error) error 
 
 	switch v := data.(type) {
 	case string:
+		if v == BucketType {
+			// string was a bucket
+			if !featureflags.Buckets().Enabled() {
+				return fmt.Errorf("failed to parse 'type' section: unknown type %q", v)
+			}
+
+			c.Bucket = v
+			return nil
+		}
+
+		// string was a shorthand config API
 		c.Api = v
 		return nil
 	default:
@@ -95,6 +107,9 @@ func (c *TypeDefinition) IsSound(knownApis map[string]struct{}) error {
 	if c.IsAutomation() {
 		types++
 		err = automationErr
+	}
+	if c.IsBucket() {
+		types++
 	}
 
 	typesSound := 0
@@ -157,10 +172,6 @@ func (c *TypeDefinition) isClassicSound(knownApis map[string]struct{}) error {
 		return errors.New("missing 'type.api' property")
 	}
 
-	if featureflags.Buckets().Enabled() && c.Api == ApiTypeBucket {
-		return nil
-	}
-
 	if _, found := knownApis[c.Api]; !found {
 		return errors.New("unknown API: " + c.Api)
 	}
@@ -186,6 +197,10 @@ func (c *AutomationDefinition) isSound() error {
 	}
 }
 
+func (c *TypeDefinition) IsBucket() bool {
+	return c.Bucket != ""
+}
+
 func (c *TypeDefinition) GetApiType() string {
 	switch {
 	case c.IsSettings():
@@ -196,6 +211,8 @@ func (c *TypeDefinition) GetApiType() string {
 		return c.Entities.EntitiesType
 	case c.IsAutomation():
 		return string(c.Automation.Resource)
+	case c.IsBucket():
+		return BucketType
 	default:
 		return ""
 	}
