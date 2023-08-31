@@ -38,7 +38,7 @@ func TestClone(t *testing.T) {
 	clone := encoder.Clone()
 	assert.IsType(t, encoder, clone, "Clone should return a fixedFieldsConsoleEncoder")
 	assert.Len(t, encoder.moe.Fields, 1)
-	assert.Len(t, clone.(fixedFieldsConsoleEncoder).moe.Fields, 0)
+	assert.Len(t, clone.(fixedFieldsConsoleEncoder).moe.Fields, 1)
 }
 
 func TestEncodeEntry_IgnoresFieldsGivenViaArgs(t *testing.T) {

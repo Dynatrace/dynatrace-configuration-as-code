@@ -47,10 +47,14 @@ type fixedFieldsConsoleEncoder struct {
 }
 
 func (e fixedFieldsConsoleEncoder) Clone() zapcore.Encoder {
+	mapEnc := zapcore.NewMapObjectEncoder()
+	for k, v := range e.Fields() {
+		_ = mapEnc.AddReflected(k, v) // mapobj encoder does not return any err
+	}
 	cloneEncoder := fixedFieldsConsoleEncoder{
 		concurrentMapObjectEncoder: &concurrentMapObjectEncoder{
 			mu:  sync.RWMutex{},
-			moe: zapcore.NewMapObjectEncoder(),
+			moe: mapEnc,
 		},
 	}
 	return cloneEncoder
