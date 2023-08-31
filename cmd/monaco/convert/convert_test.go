@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 	"github.com/spf13/afero"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 	"io/fs"
 	"os"
 	"strings"
@@ -37,10 +37,10 @@ func TestConvert_WorksOnFullConfiguration(t *testing.T) {
 	_ = afero.WriteFile(testFs, "delete.yaml", []byte("delete:\n-\"some/config\""), 0644)
 
 	err := convert(testFs, ".", "environments.yaml", "converted", "manifest.yaml")
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	outputFolderExists, _ := afero.Exists(testFs, "converted/")
-	assert.Check(t, outputFolderExists)
+	assert.True(t, outputFolderExists)
 
 	assertExpectedConfigurationCreated(t, testFs)
 
@@ -56,10 +56,10 @@ func TestConvert_WorksIfNoDeleteYamlExists(t *testing.T) {
 	_ = afero.WriteFile(testFs, "environments.yaml", []byte("env:\n  - name: \"My_Environment\"\n  - env-url: \"{{ .Env.ENV_URL }}\"\n  - env-token-name: \"ENV_TOKEN\""), 0644)
 
 	err := convert(testFs, ".", "environments.yaml", "converted", "manifest.yaml")
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	outputFolderExists, _ := afero.Exists(testFs, "converted/")
-	assert.Check(t, outputFolderExists)
+	assert.True(t, outputFolderExists)
 
 	assertExpectedConfigurationCreated(t, testFs)
 
@@ -166,25 +166,25 @@ func TestCopyDeleteFileIfPresent(t *testing.T) {
 				return
 			}
 
-			assert.NilError(t, err)
+			assert.NoError(t, err)
 			deleteFileExistsInOutputFolder, err := afero.Exists(testFs, "new_project/delete.yaml")
 			assert.Equal(t, tt.want.deleteFileCopied, deleteFileExistsInOutputFolder)
-			assert.NilError(t, err)
+			assert.NoError(t, err)
 		})
 	}
 }
 
 func assertExpectedConfigurationCreated(t *testing.T, testFs afero.Fs) {
 	outputConfigExists, _ := afero.Exists(testFs, "converted/project/alerting-profile/config.yaml")
-	assert.Check(t, outputConfigExists)
+	assert.True(t, outputConfigExists)
 	configContent, err := afero.ReadFile(testFs, "converted/project/alerting-profile/config.yaml")
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, string(configContent), "configs:\n- id: profile\n  config:\n    name: Star Trek Service\n    template: profile.json\n    skip: false\n  type:\n    api: alerting-profile\n")
 
 	outputPayloadExists, _ := afero.Exists(testFs, "converted/project/alerting-profile/profile.json")
-	assert.Check(t, outputPayloadExists)
+	assert.True(t, outputPayloadExists)
 	payloadContent, err := afero.ReadFile(testFs, "converted/project/alerting-profile/profile.json")
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, string(payloadContent), "{}")
 }
 
@@ -207,17 +207,17 @@ environmentGroups:
 `, version.ManifestVersion)
 
 	manifestExists, _ := afero.Exists(testFs, "converted/manifest.yaml")
-	assert.Check(t, manifestExists)
+	assert.True(t, manifestExists)
 	manifestContent, err := afero.ReadFile(testFs, "converted/manifest.yaml")
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, string(manifestContent), expectedManifest)
 }
 
 func assertExpectedDeleteFileCreated(t *testing.T, testFs afero.Fs) {
 	deleteExists, _ := afero.Exists(testFs, "converted/delete.yaml")
-	assert.Check(t, deleteExists)
+	assert.True(t, deleteExists)
 	deleteContent, err := afero.ReadFile(testFs, "converted/delete.yaml")
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, string(deleteContent), "delete:\n-\"some/config\"")
 }
 
