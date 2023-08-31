@@ -978,6 +978,46 @@ func TestWriteConfigs(t *testing.T) {
 			},
 		},
 		{
+			name: "Grail Buckets",
+			configs: []config.Config{
+				{
+					Template: template.CreateTemplateFromString("project/bucket/mybucket.json", "{}"),
+					Coordinate: coordinate.Coordinate{
+						Project:  "project",
+						Type:     "bucket",
+						ConfigId: "configId1",
+					},
+					Type: config.BucketType{},
+					Parameters: map[string]parameter.Parameter{
+						"some param": &value.ValueParameter{Value: "some value"},
+					},
+					Skip: false,
+				},
+			},
+			expectedConfigs: map[string]persistence.TopLevelDefinition{
+				"bucket": {
+					Configs: []persistence.TopLevelConfigDefinition{
+						{
+							Id: "configId1",
+							Config: persistence.ConfigDefinition{
+								Parameters: map[string]persistence.ConfigParameter{
+									"some param": "some value",
+								},
+								Template: "mybucket.json",
+								Skip:     false,
+							},
+							Type: persistence.TypeDefinition{
+								Bucket: "bucket",
+							},
+						},
+					},
+				},
+			},
+			expectedTemplatePaths: []string{
+				"project/bucket/mybucket.json",
+			},
+		},
+		{
 			name: "Reference scope",
 			configs: []config.Config{
 				{
