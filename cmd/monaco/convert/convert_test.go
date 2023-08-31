@@ -75,6 +75,105 @@ func TestConvert_FailsIfThereIsJustEmptyProjects(t *testing.T) {
 	assert.ErrorContains(t, err, "no projects to convert")
 }
 
+func TestCopyDeleteFileIfPresent(t *testing.T) {
+	const deleteFilePath = "project/delete.yaml"
+	const convertedProjectPath = "new_project"
+
+	type given struct {
+		deleteFileExists            bool
+		inaccessiblePath            string
+		pathExistsButCanNotBeOpened bool
+	}
+	type want struct {
+		deleteFileCopied bool
+		errorContains    string
+	}
+	tests := []struct {
+		name  string
+		given given
+		want  want
+	}{
+		{
+			"copies delete file",
+			given{
+				deleteFileExists: true,
+			},
+			want{
+				deleteFileCopied: true,
+				errorContains:    "",
+			},
+		},
+		{
+			"does nothing if no delete file exists",
+			given{
+				deleteFileExists: false,
+			},
+			want{
+				deleteFileCopied: false,
+				errorContains:    "",
+			},
+		},
+		{
+			"returns error if file can't be accessed",
+			given{
+				deleteFileExists: true,
+				inaccessiblePath: deleteFilePath,
+			},
+			want{
+				deleteFileCopied: false,
+				errorContains:    "permission denied",
+			},
+		},
+		{
+			"returns error if file can't be read",
+			given{
+				deleteFileExists:            true,
+				inaccessiblePath:            deleteFilePath,
+				pathExistsButCanNotBeOpened: true,
+			},
+			want{
+				deleteFileCopied: false,
+				errorContains:    "permission denied",
+			},
+		},
+		{
+			"returns error if output folder can't be accessed",
+			given{
+				deleteFileExists: true,
+				inaccessiblePath: convertedProjectPath,
+			},
+			want{
+				deleteFileCopied: false,
+				errorContains:    "permission denied",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testFs := &inaccessibleMockFs{}
+			if tt.given.deleteFileExists {
+				_ = afero.WriteFile(testFs, "project/delete.yaml", []byte("delete:\n-\"some/config\""), 0644)
+			}
+
+			testFs.inaccessiblePath = tt.given.inaccessiblePath
+			testFs.filePathExistsButCantBeOpened = tt.given.pathExistsButCanNotBeOpened
+
+			err := copyDeleteFileIfPresent(testFs, "project", "new_project")
+
+			if tt.want.errorContains != "" {
+				assert.ErrorContains(t, err, tt.want.errorContains)
+				return
+			}
+
+			assert.NilError(t, err)
+			deleteFileExistsInOutputFolder, err := afero.Exists(testFs, "new_project/delete.yaml")
+			assert.Equal(t, tt.want.deleteFileCopied, deleteFileExistsInOutputFolder)
+			assert.NilError(t, err)
+		})
+	}
+}
+
 func assertExpectedConfigurationCreated(t *testing.T, testFs afero.Fs) {
 	outputConfigExists, _ := afero.Exists(testFs, "converted/project/alerting-profile/config.yaml")
 	assert.Check(t, outputConfigExists)
@@ -122,57 +221,6 @@ func assertExpectedDeleteFileCreated(t *testing.T, testFs afero.Fs) {
 	assert.Equal(t, string(deleteContent), "delete:\n-\"some/config\"")
 }
 
-func TestCopyDeleteFileIfPresent_copiesDeleteFile(t *testing.T) {
-	testFs := afero.NewMemMapFs()
-	_ = afero.WriteFile(testFs, "project/delete.yaml", []byte("delete:\n-\"some/config\""), 0644)
-
-	err := copyDeleteFileIfPresent(testFs, "project", "new_project")
-	assert.NilError(t, err)
-
-	deleteFileExistsInOutputFolder, err := afero.Exists(testFs, "new_project/delete.yaml")
-	assert.Check(t, deleteFileExistsInOutputFolder)
-	assert.NilError(t, err)
-}
-
-func TestCopyDeleteFileIfPresent_doesNothingIfNoFileIsFound(t *testing.T) {
-	testFs := afero.NewMemMapFs()
-	_ = testFs.MkdirAll("project/", 0755)
-
-	err := copyDeleteFileIfPresent(testFs, "project", "new_project")
-	assert.NilError(t, err)
-
-	deleteFileExistsInOutputFolder, err := afero.Exists(testFs, "new_project/delete.yaml")
-	assert.Check(t, !deleteFileExistsInOutputFolder)
-	assert.NilError(t, err)
-}
-
-func TestCopyDeleteFileIfPresent_returnsErrorIfFileCanNotBeAccessed(t *testing.T) {
-	testFs := inaccessibleMockFs{}
-	testFs.inaccessiblePath = "project/delete.yaml"
-
-	err := copyDeleteFileIfPresent(&testFs, "project", "new_project")
-	assert.ErrorContains(t, err, "permission denied")
-}
-
-func TestCopyDeleteFileIfPresent_returnsErrorIfFileCanNotBeRead(t *testing.T) {
-	testFs := inaccessibleMockFs{}
-	_ = afero.WriteFile(&testFs, "project/delete.yaml", []byte("delete:\n-\"some/config\""), 0644)
-	testFs.inaccessiblePath = "project/delete.yaml"
-	testFs.filePathExistsButCantBeOpened = true
-
-	err := copyDeleteFileIfPresent(&testFs, "project", "new_project")
-	assert.ErrorContains(t, err, "permission denied")
-}
-
-func TestCopyDeleteFileIfPresent_returnsErrorIfOutputFolderCanNotBeAccessed(t *testing.T) {
-	testFs := inaccessibleMockFs{}
-	_ = afero.WriteFile(&testFs, "project/delete.yaml", []byte("delete:\n-\"some/config\""), 0644)
-	testFs.inaccessiblePath = "new_project/"
-
-	err := copyDeleteFileIfPresent(&testFs, "project", "new_project")
-	assert.ErrorContains(t, err, "permission denied")
-}
-
 // This is needed to test failed/denied access error cases, as afero.MemMapFs does not implement permissions
 // See also https://github.com/spf13/afero/issues/150
 type inaccessibleMockFs struct {
@@ -180,6 +228,8 @@ type inaccessibleMockFs struct {
 	filePathExistsButCantBeOpened bool
 	afero.MemMapFs
 }
+
+var _ afero.Fs = (*inaccessibleMockFs)(nil)
 
 func (f *inaccessibleMockFs) Open(name string) (afero.File, error) {
 	if f.isOnInaccessiblePath(name) {
