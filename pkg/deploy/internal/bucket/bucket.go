@@ -19,34 +19,44 @@ package bucket
 import (
 	"context"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/bucket"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/buckets"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
+	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
+	"github.com/go-logr/logr"
 )
 
 type Client interface {
-	Upsert(ctx context.Context, bucketName string, data []byte) (bucket.Response, error)
+	Upsert(ctx context.Context, bucketName string, data []byte) (buckets.Response, error)
 }
 
 var _ Client = (*DummyClient)(nil)
 
 type DummyClient struct{}
 
-func (c DummyClient) Upsert(_ context.Context, id string, data []byte) (response bucket.Response, err error) {
-	return bucket.Response{
-		BucketName: id,
-		Data:       data,
+func (c DummyClient) Upsert(_ context.Context, id string, data []byte) (response buckets.Response, err error) {
+	return buckets.Response{
+		Response: api.Response{
+			Data: data,
+		},
 	}, nil
 }
 
 func Deploy(ctx context.Context, client Client, properties parameter.Properties, renderedConfig string, c *config.Config) (config.ResolvedEntity, error) {
-	bucketName := BucketId(c.Coordinate)
+	bucketName := BucketID(c.Coordinate)
 
-	_, err := client.Upsert(ctx, bucketName, []byte(renderedConfig))
+	// create new context to carry logger
+	ctx = logr.NewContext(ctx, log.WithCtxFields(ctx).GetLogr())
+	resp, err := client.Upsert(ctx, bucketName, []byte(renderedConfig))
 	if err != nil {
 		return config.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("failed to upsert bucket with bucketName %q", bucketName)).WithError(err)
+	}
+	if !resp.IsSuccess() {
+		return config.ResolvedEntity{}, clientErrors.NewRespErr(fmt.Sprintf("failed to upsert bucket with bucketName %q", bucketName), clientErrors.Response{Body: resp.Data, StatusCode: resp.StatusCode})
 	}
 
 	properties[config.IdParameter] = bucketName
@@ -58,8 +68,8 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 	}, nil
 }
 
-// BucketId returns the ID for a bucket based on the coordinate.
+// BucketID returns the ID for a bucket based on the coordinate.
 // Since the bucket API does not support colons, we concatenate them using underscores.
-func BucketId(c coordinate.Coordinate) string {
+func BucketID(c coordinate.Coordinate) string {
 	return fmt.Sprintf("%s_%s_%s", c.Project, c.Type, c.ConfigId)
 }

@@ -18,17 +18,18 @@ package client
 
 import (
 	"context"
-	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	clientAuth "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
+	"golang.org/x/oauth2/clientcredentials"
 	"runtime"
 )
 
@@ -41,7 +42,7 @@ type ClientSet struct {
 	// autClient is the client capable of updating or creating automation API configs
 	autClient *automation.Client
 	// bucketClient is the client capable of updating or creating Grail Bucket configs
-	bucketClient *bucket.Client
+	bucketClient *buckets.Client
 }
 
 func (s ClientSet) Classic() *dtclient.DynatraceClient {
@@ -60,7 +61,7 @@ func (s ClientSet) Entities() *dtclient.DynatraceClient {
 	return s.dtClient
 }
 
-func (s ClientSet) Bucket() *bucket.Client {
+func (s ClientSet) Bucket() *buckets.Client {
 	return s.bucketClient
 }
 
@@ -100,8 +101,7 @@ func CreateClassicClientSet(url string, token string, opts ClientOptions) (*Clie
 	}
 
 	return &ClientSet{
-		dtClient:  dtClient,
-		autClient: nil,
+		dtClient: dtClient,
 	}, nil
 }
 
@@ -143,6 +143,9 @@ func CreatePlatformClientSet(url string, auth PlatformAuth, opts ClientOptions) 
 		dtclient.WithClientRequestLimiter(concurrency.NewLimiter(concurrentRequestLimit)),
 		dtclient.WithCustomUserAgentString(opts.getUserAgentString()),
 	)
+	if err != nil {
+		return nil, err
+	}
 	platformClient := rest.NewRestClient(clientAuth.NewOAuthClient(context.TODO(), oauthCredentials), trafficLogger, rest.CreateRateLimitStrategy())
 
 	autClient := automation.NewClient(
@@ -152,10 +155,17 @@ func CreatePlatformClientSet(url string, auth PlatformAuth, opts ClientOptions) 
 		automation.WithCustomUserAgentString(opts.getUserAgentString()),
 	)
 
-	bucketClient := bucket.NewClient(url, platformClient)
-
+	bucketClient, err := clients.Factory().
+		WithOAuthCredentials(clientcredentials.Config{
+			ClientID:     auth.OauthClientID,
+			ClientSecret: auth.OauthClientSecret,
+			TokenURL:     auth.OauthTokenURL,
+		}).
+		WithEnvironmentURL(url).
+		WithUserAgent(opts.getUserAgentString()).
+		BucketClient()
 	if err != nil {
-		return nil, fmt.Errorf("unable to create API clients: %w", err)
+		return nil, err
 	}
 
 	return &ClientSet{

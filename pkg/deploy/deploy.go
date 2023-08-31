@@ -323,7 +323,7 @@ func deploy(ctx context.Context, c *config.Config, clientSet ClientSet, apis api
 	if deployErr != nil {
 		var responseErr clientErrors.RespError
 		if errors.As(deployErr, &responseErr) {
-			log.WithCtxFields(ctx).WithFields(field.Error(responseErr)).Error("Failed to deploy config %s: %s", c.Coordinate, responseErr.Reason)
+			log.WithCtxFields(ctx).WithFields(field.Error(responseErr)).Error("Failed to deploy config %s: %s", c.Coordinate, responseErr.Error())
 		} else {
 			log.WithCtxFields(ctx).WithFields(field.Error(deployErr)).Error("Failed to deploy config %s: %s", c.Coordinate, deployErr.Error())
 		}

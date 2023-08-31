@@ -23,9 +23,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
@@ -252,7 +252,7 @@ func AssertAutomation(t *testing.T, c automation.Client, env manifest.Environmen
 	}
 }
 
-func AssertBucket(t *testing.T, client bucket.Client, env manifest.EnvironmentDefinition, available bool, cfg config.Config) {
+func AssertBucket(t *testing.T, client buckets.Client, env manifest.EnvironmentDefinition, available bool, cfg config.Config) {
 
 	var expectedId string
 	if cfg.OriginObjectId != "" {
