@@ -305,6 +305,10 @@ func extractConfigType(context *serializerContext, cfg config.Config) (persisten
 				Resource: t.Resource,
 			},
 		}, nil
+	case config.BucketType:
+		return persistence.TypeDefinition{
+			Bucket: persistence.BucketType,
+		}, nil
 
 	default:
 		return persistence.TypeDefinition{}, fmtDetailedConfigWriterError(context, "unknown config-type (ID: %q)", cfg.Type.ID())
