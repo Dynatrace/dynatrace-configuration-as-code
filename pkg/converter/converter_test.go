@@ -961,89 +961,10 @@ func TestConvertListsInTemplate(t *testing.T) {
 	assert.Equal(t, result, expected)
 }
 
-func setupDummyFs(t *testing.T) afero.Fs {
-	fs := afero.NewMemMapFs()
-
-	err := fs.Mkdir("test", 0644)
-
-	assert.NoError(t, err)
-
-	err = afero.WriteFile(fs, "test/test-configV1.json", []byte(`{}`), 0644)
-
-	assert.NoError(t, err)
-
-	return fs
-}
-
-func setupDummyFsWithEnvVariableInTemplate(t *testing.T, envVarName string) afero.Fs {
-	fs := afero.NewMemMapFs()
-
-	err := fs.Mkdir("test", 0644)
-
-	assert.NoError(t, err)
-
-	err = afero.WriteFile(fs, "test/test-configV1.json", []byte(fmt.Sprintf(`{"test": "{{.Env.%s}}"}`, envVarName)), 0644)
-
-	assert.NoError(t, err)
-
-	return fs
-}
-
-func setupFsWithFullTestTemplate(t *testing.T, simpleVar, refVar, listVar, envVar string) (afero.Fs, template.Template) {
-	fs := afero.NewMemMapFs()
-
-	err := fs.Mkdir("test", 0644)
-	assert.NoError(t, err)
-
-	templateContent := fmt.Sprintf(`{ "simple": "{{ .%s }}", "reference": "{{ .%s }}", "list": [ {{ .%s }} ], "env": "{{ .Env.%s }}" }`, simpleVar, refVar, listVar, envVar)
-
-	template, err := template.NewTemplateFromString("test/test-configV1.json", templateContent)
-	assert.NoError(t, err)
-
-	err = afero.WriteFile(fs, "test/test-configV1.json", []byte(templateContent), 0644)
-	assert.NoError(t, err)
-
-	return fs, template
-}
-
-func generateDummyTemplate(t *testing.T) template.Template {
-	template, err := template.NewTemplateFromString("test/test-configV1.json", "{}")
-
-	assert.NoError(t, err)
-
-	return template
-}
-
-func generateDummyConfig(t *testing.T) *projectV1.Config {
-	var configId = "alerting-profile-1"
-
-	testApi := api.API{ID: "alerting-profile", URLPath: "/api/configV1/v1/alertingProfiles"}
-
-	properties := map[string]map[string]string{}
-
-	template, err := template.NewTemplateFromString("test/test-configV1.json", "{}")
-
-	assert.NoError(t, err)
-
-	conf := projectV1.NewConfigWithTemplate(configId, "test-project", "test/test-configV1.json",
-		template, properties, testApi)
-
-	assert.NoError(t, err)
-
-	return conf
-}
-
 func TestAdjustProjectId(t *testing.T) {
 	id := adjustProjectId(`test\project/name`)
 
 	assert.Equal(t, `test.project.name`, id)
-}
-
-func createSimpleUrlDefinition() manifest.URLDefinition {
-	return manifest.URLDefinition{
-		Type:  manifest.ValueURLType,
-		Value: "test.env",
-	}
 }
 
 func Test_parseListStringToValueSlice(t *testing.T) {
@@ -1286,33 +1207,6 @@ func TestNewEnvironmentDefinitionFromV1(t *testing.T) {
 		})
 	}
 }
-func createEnvEnvironmentDefinition() manifest.EnvironmentDefinition {
-	return manifest.EnvironmentDefinition{
-		Name: "test",
-		URL: manifest.URLDefinition{
-			Type: manifest.EnvironmentURLType,
-			Name: "ENV_VAR",
-		},
-		Group: "group",
-		Auth: manifest.Auth{
-			Token: manifest.AuthSecret{Name: "NAME"},
-		},
-	}
-}
-
-func createValueEnvironmentDefinition() manifest.EnvironmentDefinition {
-	return manifest.EnvironmentDefinition{
-		Name: "test",
-		URL: manifest.URLDefinition{
-			Type:  manifest.ValueURLType,
-			Value: "http://google.com",
-		},
-		Group: "group",
-		Auth: manifest.Auth{
-			Token: manifest.AuthSecret{Name: "NAME"},
-		},
-	}
-}
 
 func Test_convertToParameters(t *testing.T) {
 	type args struct {
@@ -1367,5 +1261,111 @@ func Test_convertToParameters(t *testing.T) {
 			got := extractEnvParameters(tt.args.envReference)
 			assert.Equalf(t, tt.want, got, "extractEnvParameters(%v)", tt.args.envReference)
 		})
+	}
+}
+
+func setupDummyFs(t *testing.T) afero.Fs {
+	fs := afero.NewMemMapFs()
+
+	err := fs.Mkdir("test", 0644)
+
+	assert.NoError(t, err)
+
+	err = afero.WriteFile(fs, "test/test-configV1.json", []byte(`{}`), 0644)
+
+	assert.NoError(t, err)
+
+	return fs
+}
+
+func setupDummyFsWithEnvVariableInTemplate(t *testing.T, envVarName string) afero.Fs {
+	fs := afero.NewMemMapFs()
+
+	err := fs.Mkdir("test", 0644)
+
+	assert.NoError(t, err)
+
+	err = afero.WriteFile(fs, "test/test-configV1.json", []byte(fmt.Sprintf(`{"test": "{{.Env.%s}}"}`, envVarName)), 0644)
+
+	assert.NoError(t, err)
+
+	return fs
+}
+
+func setupFsWithFullTestTemplate(t *testing.T, simpleVar, refVar, listVar, envVar string) (afero.Fs, template.Template) {
+	fs := afero.NewMemMapFs()
+
+	err := fs.Mkdir("test", 0644)
+	assert.NoError(t, err)
+
+	templateContent := fmt.Sprintf(`{ "simple": "{{ .%s }}", "reference": "{{ .%s }}", "list": [ {{ .%s }} ], "env": "{{ .Env.%s }}" }`, simpleVar, refVar, listVar, envVar)
+
+	template, err := template.NewTemplateFromString("test/test-configV1.json", templateContent)
+	assert.NoError(t, err)
+
+	err = afero.WriteFile(fs, "test/test-configV1.json", []byte(templateContent), 0644)
+	assert.NoError(t, err)
+
+	return fs, template
+}
+
+func generateDummyTemplate(t *testing.T) template.Template {
+	template, err := template.NewTemplateFromString("test/test-configV1.json", "{}")
+
+	assert.NoError(t, err)
+
+	return template
+}
+
+func generateDummyConfig(t *testing.T) *projectV1.Config {
+	var configId = "alerting-profile-1"
+
+	testApi := api.API{ID: "alerting-profile", URLPath: "/api/configV1/v1/alertingProfiles"}
+
+	properties := map[string]map[string]string{}
+
+	template, err := template.NewTemplateFromString("test/test-configV1.json", "{}")
+
+	assert.NoError(t, err)
+
+	conf := projectV1.NewConfigWithTemplate(configId, "test-project", "test/test-configV1.json",
+		template, properties, testApi)
+
+	assert.NoError(t, err)
+
+	return conf
+}
+func createSimpleUrlDefinition() manifest.URLDefinition {
+	return manifest.URLDefinition{
+		Type:  manifest.ValueURLType,
+		Value: "test.env",
+	}
+}
+
+func createEnvEnvironmentDefinition() manifest.EnvironmentDefinition {
+	return manifest.EnvironmentDefinition{
+		Name: "test",
+		URL: manifest.URLDefinition{
+			Type: manifest.EnvironmentURLType,
+			Name: "ENV_VAR",
+		},
+		Group: "group",
+		Auth: manifest.Auth{
+			Token: manifest.AuthSecret{Name: "NAME"},
+		},
+	}
+}
+
+func createValueEnvironmentDefinition() manifest.EnvironmentDefinition {
+	return manifest.EnvironmentDefinition{
+		Name: "test",
+		URL: manifest.URLDefinition{
+			Type:  manifest.ValueURLType,
+			Value: "http://google.com",
+		},
+		Group: "group",
+		Auth: manifest.Auth{
+			Token: manifest.AuthSecret{Name: "NAME"},
+		},
 	}
 }
