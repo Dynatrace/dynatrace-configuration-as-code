@@ -47,7 +47,13 @@ func (c DummyClient) Upsert(_ context.Context, id string, data []byte) (response
 }
 
 func Deploy(ctx context.Context, client Client, properties parameter.Properties, renderedConfig string, c *config.Config) (config.ResolvedEntity, error) {
-	bucketName := BucketID(c.Coordinate)
+	var bucketName string
+
+	if c.OriginObjectId != "" {
+		bucketName = c.OriginObjectId
+	} else {
+		bucketName = BucketID(c.Coordinate)
+	}
 
 	// create new context to carry logger
 	ctx = logr.NewContext(ctx, log.WithCtxFields(ctx).GetLogr())
