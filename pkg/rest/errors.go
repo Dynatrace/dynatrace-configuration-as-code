@@ -59,7 +59,7 @@ func (e RespError) Error() string {
 	if e.Err != nil {
 		return fmt.Sprintf("%s: %v", e.Reason, e.Err)
 	}
-	return e.Reason
+	return fmt.Sprintf("%s (HTTP %d): %v", e.Reason, e.StatusCode, e.Body)
 }
 
 func (e RespError) Unwrap() error {
