@@ -19,6 +19,7 @@ package console
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers"
+	"github.com/go-logr/logr"
 	"log"
 )
 
@@ -57,4 +58,8 @@ func (l Logger) Fatal(msg string, args ...interface{}) {
 
 func (l Logger) Level() loggers.LogLevel {
 	return loggers.LevelDebug
+}
+
+func (l Logger) GetLogr() logr.Logger {
+	return logr.Discard()
 }

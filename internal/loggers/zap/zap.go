@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers"
+	"github.com/go-logr/logr"
+	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
@@ -69,6 +71,10 @@ func (l *Logger) Fatal(msg string, args ...interface{}) {
 
 func (l *Logger) Level() loggers.LogLevel {
 	return l.logLevel
+}
+
+func (l Logger) GetLogr() logr.Logger {
+	return zapr.NewLogger(l.baseLogger)
 }
 
 func customTimeEncoder(mode loggers.LogTimeMode) func(time.Time, zapcore.PrimitiveArrayEncoder) {

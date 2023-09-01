@@ -18,6 +18,7 @@ package loggers
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/go-logr/logr"
 	"github.com/spf13/afero"
 	"io"
 	"strings"
@@ -32,6 +33,7 @@ type Logger interface {
 	Fatal(msg string, args ...interface{})
 	WithFields(fields ...field.Field) Logger
 	Level() LogLevel
+	GetLogr() logr.Logger
 }
 
 const EnvVarLogFormat = "MONACO_LOG_FORMAT"
