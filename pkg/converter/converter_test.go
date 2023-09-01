@@ -164,6 +164,165 @@ func TestConvertParameters(t *testing.T) {
 	assert.Equal(t, expectedCompoundParam, compound)
 }
 
+func TestConvertConvertRemovesEscapeCharsFromParameters(t *testing.T) {
+	environmentName := "test"
+	configId := "alerting-profile-1"
+	configName := "Alerting Profile 1"
+
+	simpleId := "simpleEscapeParam"
+	simpleEsc := `\"hello\"`
+	stringId := "stringEscapeParam"
+	stringEsc := "\\\"hello\\\""
+	severalId := "severalEscapeParam"
+	severalEsc := "\\\"one line\\ntwo line\\\""
+
+	environment := manifest.EnvironmentDefinition{
+		Name:  environmentName,
+		URL:   createSimpleUrlDefinition(),
+		Group: "",
+		Auth: manifest.Auth{
+			Token: manifest.AuthSecret{Name: "token"},
+		},
+	}
+
+	testApi := api.API{ID: "alerting-profile", URLPath: "/api/configV1/v1/alertingProfiles"}
+
+	convertContext := &configConvertContext{
+		ConverterContext: &ConverterContext{
+			Fs:             setupDummyFs(t),
+			UnescapeValues: true,
+		},
+		KnownListParameterIds: map[string]struct{}{listParameterName: {}},
+		V1Apis: api.APIs{
+			"alerting-profile": testApi,
+			"management-zone":  api.API{ID: "management-zone", URLPath: "/api/path"},
+		},
+		ProjectId: "projectA",
+	}
+
+	properties := map[string]map[string]string{
+		configId: {
+			"name":    configName,
+			simpleId:  simpleEsc,
+			stringId:  stringEsc,
+			severalId: severalEsc,
+		},
+	}
+
+	content := fmt.Sprintf(`{ "a": "{.%s}", "b": "{.%s}", "b": "{.%s}"`, simpleId, stringId, severalId)
+	tmpl, err := template.NewTemplateFromString("test/test-configV1.json", content)
+
+	assert.NoError(t, err)
+
+	testConfig := projectV1.NewConfigWithTemplate(configId, "test-project", "test/test-configV1.json",
+		tmpl, properties, testApi)
+
+	assert.NoError(t, err)
+
+	parameters, skip, errors := convertParameters(convertContext, environment, testConfig)
+
+	assert.Nil(t, errors)
+	assert.Equal(t, 4, len(parameters))
+	assert.Nil(t, skip, "should be empty")
+
+	nameParameter, found := parameters["name"]
+
+	assert.Equal(t, true, found)
+	assert.Equal(t, configName, nameParameter.(*valueParam.ValueParameter).Value)
+
+	simpleParameter, found := parameters[simpleId]
+	assert.Equal(t, true, found)
+	assert.Equal(t, `"hello"`, simpleParameter.(*valueParam.ValueParameter).Value)
+
+	stringParameter, found := parameters[stringId]
+	assert.Equal(t, true, found)
+	assert.Equal(t, `"hello"`, stringParameter.(*valueParam.ValueParameter).Value)
+
+	severalParameter, found := parameters[severalId]
+	assert.Equal(t, true, found)
+	assert.Equal(t, `"one line
+two line"`, severalParameter.(*valueParam.ValueParameter).Value)
+}
+
+func TestConvertConvertLeavesEscapeCharsUntouchedIfNotConfiguredToUnescape(t *testing.T) {
+	environmentName := "test"
+	configId := "alerting-profile-1"
+	configName := "Alerting Profile 1"
+
+	simpleId := "simpleEscapeParam"
+	simpleEsc := `\"hello\"`
+	stringId := "stringEscapeParam"
+	stringEsc := "\\\"hello\\\""
+	severalId := "severalEscapeParam"
+	severalEsc := "\\\"one line\\ntwo line\\\""
+
+	environment := manifest.EnvironmentDefinition{
+		Name:  environmentName,
+		URL:   createSimpleUrlDefinition(),
+		Group: "",
+		Auth: manifest.Auth{
+			Token: manifest.AuthSecret{Name: "token"},
+		},
+	}
+
+	testApi := api.API{ID: "alerting-profile", URLPath: "/api/configV1/v1/alertingProfiles"}
+
+	convertContext := &configConvertContext{
+		ConverterContext: &ConverterContext{
+			Fs:             setupDummyFs(t),
+			UnescapeValues: false,
+		},
+		KnownListParameterIds: map[string]struct{}{listParameterName: {}},
+		V1Apis: api.APIs{
+			"alerting-profile": testApi,
+			"management-zone":  api.API{ID: "management-zone", URLPath: "/api/path"},
+		},
+		ProjectId: "projectA",
+	}
+
+	properties := map[string]map[string]string{
+		configId: {
+			"name":    configName,
+			simpleId:  simpleEsc,
+			stringId:  stringEsc,
+			severalId: severalEsc,
+		},
+	}
+
+	content := fmt.Sprintf(`{ "a": "{.%s}", "b": "{.%s}", "b": "{.%s}"`, simpleId, stringId, severalId)
+	tmpl, err := template.NewTemplateFromString("test/test-configV1.json", content)
+
+	assert.NoError(t, err)
+
+	testConfig := projectV1.NewConfigWithTemplate(configId, "test-project", "test/test-configV1.json",
+		tmpl, properties, testApi)
+
+	assert.NoError(t, err)
+
+	parameters, skip, errors := convertParameters(convertContext, environment, testConfig)
+
+	assert.Nil(t, errors)
+	assert.Equal(t, 4, len(parameters))
+	assert.Nil(t, skip, "should be empty")
+
+	nameParameter, found := parameters["name"]
+
+	assert.Equal(t, true, found)
+	assert.Equal(t, configName, nameParameter.(*valueParam.ValueParameter).Value)
+
+	simpleParameter, found := parameters[simpleId]
+	assert.Equal(t, true, found)
+	assert.Equal(t, simpleEsc, simpleParameter.(*valueParam.ValueParameter).Value)
+
+	stringParameter, found := parameters[stringId]
+	assert.Equal(t, true, found)
+	assert.Equal(t, stringEsc, stringParameter.(*valueParam.ValueParameter).Value)
+
+	severalParameter, found := parameters[severalId]
+	assert.Equal(t, true, found)
+	assert.Equal(t, severalEsc, severalParameter.(*valueParam.ValueParameter).Value)
+}
+
 func TestParseSkipDeploymentParameter(t *testing.T) {
 	configId := "alerting-profile-1"
 	configName := "Alerting Profile 1"
@@ -1367,5 +1526,44 @@ func createValueEnvironmentDefinition() manifest.EnvironmentDefinition {
 		Auth: manifest.Auth{
 			Token: manifest.AuthSecret{Name: "NAME"},
 		},
+	}
+}
+
+func Test_removeEscapeChars(t *testing.T) {
+	tests := []struct {
+		given string
+		want  string
+	}{
+		{
+			`\"hello\"`,
+			`"hello"`,
+		},
+		{
+			"\\\"hello\\\"",
+			`"hello"`,
+		},
+		{
+			`\"hello slash (\) world!\"`,
+			`"hello slash (\) world!"`,
+		},
+		{
+			"\\\"one line\\ntwo line\\\"",
+			`"one line
+two line"`,
+		},
+		{
+			"\\\"one line\\n\\rtwo line\\\"",
+			"\"one line\n\rtwo line\"",
+		},
+
+		{
+			"\\\"no tab\\tone tab\\\"",
+			"\"no tab\tone tab\"",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("%q->%q", tt.given, tt.want), func(t *testing.T) {
+			assert.Equal(t, tt.want, removeEscapeChars(tt.given))
+		})
 	}
 }

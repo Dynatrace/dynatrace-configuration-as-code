@@ -49,7 +49,8 @@ const (
 type ConverterContext struct {
 	Fs afero.Fs
 
-	ResolveSkip bool
+	ResolveSkip    bool
+	UnescapeValues bool
 }
 
 type configConvertContext struct {
@@ -444,7 +445,12 @@ func convertParameters(context *configConvertContext, environment manifest.Envir
 				parameters[newName] = c
 			}
 		} else {
-			parameters[newName] = &valueParam.ValueParameter{Value: value}
+			s := value
+			if context.UnescapeValues {
+				s = removeEscapeChars(s)
+			}
+
+			parameters[newName] = &valueParam.ValueParameter{Value: s}
 		}
 	}
 
@@ -453,6 +459,18 @@ func convertParameters(context *configConvertContext, environment manifest.Envir
 	}
 
 	return parameters, skip, nil
+}
+
+// removeEscapeChars turns any manually escaped special characters into just those characters.
+// This in combination with the value.ValueParameter's auto-escaping ensures that payloads are constructed
+// as expected after conversion.
+func removeEscapeChars(value string) string {
+	s := strings.ReplaceAll(value, `\\`, `\`)
+	s = strings.ReplaceAll(s, `\"`, `"`)
+	s = strings.ReplaceAll(s, `\n`, "\n")
+	s = strings.ReplaceAll(s, `\r`, "\r")
+	s = strings.ReplaceAll(s, `\t`, "\t")
+	return s
 }
 
 // convertReservedParametersNames will return a new name for any v1 parameter name that overlaps with a reserved name that is part of toplevel v2 configuration.
