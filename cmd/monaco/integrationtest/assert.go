@@ -28,7 +28,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -261,15 +260,15 @@ func AssertBucket(t *testing.T, client buckets.Client, env manifest.EnvironmentD
 		expectedId = fmt.Sprintf("%s_%s_%s", cfg.Coordinate.Project, cfg.Coordinate.Type, cfg.Coordinate.ConfigId)
 	}
 
-	_, err := client.Get(context.TODO(), expectedId)
+	resp, err := client.Get(context.TODO(), expectedId)
+
 	exists := true
 
-	var respErr rest.RespError
-	if errors.As(err, &respErr) {
+	if respErr, ok := resp.AsAPIError(); ok {
 		if respErr.StatusCode == 404 {
 			exists = false
 		} else {
-			assert.NoError(t, err)
+			assert.NoError(t, respErr)
 		}
 	} else if err != nil {
 		assert.NoError(t, err)
@@ -281,9 +280,9 @@ func AssertBucket(t *testing.T, client buckets.Client, env manifest.EnvironmentD
 	}
 
 	if available {
-		assert.Truef(t, exists, "Automation Object should be available, but wasn't. environment.Environment: '%s', failed for '%s'", env.Name, cfg.Coordinate)
+		assert.Truef(t, exists, "Automation Object %q should be available, but wasn't. environment.Environment: '%s', failed for '%s'", expectedId, env.Name, cfg.Coordinate)
 	} else {
-		assert.Falsef(t, exists, "Automation Object should NOT be available, but was. environment.Environment: '%s', failed for '%s'", env.Name, cfg.Coordinate)
+		assert.Falsef(t, exists, "Automation Object %q should NOT be available, but was. environment.Environment: '%s', failed for '%s'", expectedId, env.Name, cfg.Coordinate)
 	}
 }
 
