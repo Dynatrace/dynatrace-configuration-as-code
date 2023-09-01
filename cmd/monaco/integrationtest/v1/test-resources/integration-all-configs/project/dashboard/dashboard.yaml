@@ -9,7 +9,7 @@ dashboard:
       It supports **rich text** and [links](https://dynatrace.com)
 
       It also includes some new-lines to test with. Very cool!
-  - markdown2: "## This is another Markdown tile\n\nTest new-lines with a different approach."
+  - markdown2: "## This is another \\\"Markdown\\\" tile\n\nTest new-lines with a different approach."
   - markdown3: "Three tests are better than two.\\n\\nGenerally, the more the merrier."
   - markdown4: >
       One more test\n
