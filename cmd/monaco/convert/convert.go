@@ -17,6 +17,7 @@ package convert
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/converter/v1environment"
@@ -38,7 +39,7 @@ func convert(fs afero.Fs, workingDir string, environmentsFile string, outputFold
 	apis := api.NewV1APIs()
 
 	log.Info("Converting configurations from '%s' ...", workingDir)
-	man, projs, configLoadErrors := loadConfigs(fs, workingDir, apis, environmentsFile)
+	man, projs, configLoadErrors := convertConfigs(fs, workingDir, apis, environmentsFile)
 
 	if len(configLoadErrors) > 0 {
 		errutils.PrintErrors(configLoadErrors)
@@ -79,7 +80,7 @@ func convert(fs afero.Fs, workingDir string, environmentsFile string, outputFold
 	return nil
 }
 
-func loadConfigs(fs afero.Fs, workingDir string, apis api.APIs,
+func convertConfigs(fs afero.Fs, workingDir string, apis api.APIs,
 	environmentsFile string) (manifest.Manifest, []projectv2.Project, []error) {
 
 	environments, errors := v1environment.LoadEnvironmentsWithoutTemplating(environmentsFile, fs)
@@ -106,7 +107,8 @@ func loadConfigs(fs afero.Fs, workingDir string, apis api.APIs,
 	}
 
 	return converter.Convert(converter.ConverterContext{
-		Fs: workingDirFs,
+		Fs:             workingDirFs,
+		UnescapeValues: featureflags.UnescapeOnConvert().Enabled(),
 	}, environments, projects)
 }
 
