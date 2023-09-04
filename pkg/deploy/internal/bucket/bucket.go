@@ -52,7 +52,7 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 	if c.OriginObjectId != "" {
 		bucketName = c.OriginObjectId
 	} else {
-		bucketName = BucketID(c.Coordinate)
+		bucketName = bucketID(c.Coordinate)
 	}
 
 	// create new context to carry logger
@@ -74,8 +74,9 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 	}, nil
 }
 
-// BucketID returns the ID for a bucket based on the coordinate.
+// bucketID returns the ID for a bucket based on the coordinate.
+// As all buckets are of the same type and never overlap with configs of different types on the same API, the "type" is omitted.
 // Since the bucket API does not support colons, we concatenate them using underscores.
-func BucketID(c coordinate.Coordinate) string {
-	return fmt.Sprintf("%s_%s_%s", c.Project, c.Type, c.ConfigId)
+func bucketID(c coordinate.Coordinate) string {
+	return fmt.Sprintf("%s_%s", c.Project, c.ConfigId)
 }
