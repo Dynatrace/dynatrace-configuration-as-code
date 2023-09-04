@@ -67,7 +67,7 @@ func TestDeploy(t *testing.T) {
 				Skip:       false,
 			},
 			func(t *testing.T, bucketName string, data []byte) (buckets.Response, error) {
-				expectedName := "proj_bucket_my-bucket"
+				expectedName := "proj_my-bucket"
 				assert.Equal(t, expectedName, bucketName)
 				return buckets.Response{
 					Response: api.Response{
@@ -77,10 +77,10 @@ func TestDeploy(t *testing.T) {
 				}, nil
 			},
 			config.ResolvedEntity{
-				EntityName: "proj_bucket_my-bucket",
+				EntityName: "proj_my-bucket",
 				Coordinate: testCoord,
 				Properties: parameter.Properties{
-					config.IdParameter: "proj_bucket_my-bucket",
+					config.IdParameter: "proj_my-bucket",
 				},
 			},
 			false,

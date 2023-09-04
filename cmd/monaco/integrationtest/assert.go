@@ -257,7 +257,7 @@ func AssertBucket(t *testing.T, client buckets.Client, env manifest.EnvironmentD
 	if cfg.OriginObjectId != "" {
 		expectedId = cfg.OriginObjectId
 	} else {
-		expectedId = fmt.Sprintf("%s_%s_%s", cfg.Coordinate.Project, cfg.Coordinate.Type, cfg.Coordinate.ConfigId)
+		expectedId = fmt.Sprintf("%s_%s", cfg.Coordinate.Project, cfg.Coordinate.ConfigId)
 	}
 
 	resp, err := client.Get(context.TODO(), expectedId)
@@ -275,14 +275,14 @@ func AssertBucket(t *testing.T, client buckets.Client, env manifest.EnvironmentD
 	}
 
 	if cfg.Skip {
-		assert.Falsef(t, exists, "Skipped Automation Object should NOT be available but was. environment.Environment: '%s', failed for '%s'", env.Name, cfg.Coordinate)
+		assert.Falsef(t, exists, "Skipped Bucket should NOT be available but was. environment.Environment: '%s', failed for '%s'", env.Name, cfg.Coordinate)
 		return
 	}
 
 	if available {
-		assert.Truef(t, exists, "Automation Object %q should be available, but wasn't. environment.Environment: '%s', failed for '%s'", expectedId, env.Name, cfg.Coordinate)
+		assert.Truef(t, exists, "Bucket %q should be available, but wasn't. environment.Environment: '%s', failed for '%s'", expectedId, env.Name, cfg.Coordinate)
 	} else {
-		assert.Falsef(t, exists, "Automation Object %q should NOT be available, but was. environment.Environment: '%s', failed for '%s'", expectedId, env.Name, cfg.Coordinate)
+		assert.Falsef(t, exists, "Bucket %q should NOT be available, but was. environment.Environment: '%s', failed for '%s'", expectedId, env.Name, cfg.Coordinate)
 	}
 }
 
