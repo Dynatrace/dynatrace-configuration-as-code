@@ -29,6 +29,7 @@ import (
 	"net/http/httputil"
 	"os"
 	"path"
+	"strings"
 	"sync"
 )
 
@@ -69,17 +70,17 @@ func (l *FileBasedLogger) LogToFiles(record lib.RequestResponse) {
 }
 
 // Log takes request and response data and tries to write them into files created by this logger.
-// Note: this method is used by "old" clients that are not based on the rest client of the core lib.
-func (l *FileBasedLogger) Log(req *http.Request, reqBody io.ReadCloser, resp *http.Response, respBody io.ReadCloser) error {
+// Note: this method is used by the "old" rest.Client and not the one from configuration-as-code-core
+func (l *FileBasedLogger) Log(req *http.Request, reqBody string, resp *http.Response, respBody string) error {
 
 	requestId := ""
 	requestId = uuid.NewString()
 
-	if err := l.logRequest(requestId, req, reqBody); err != nil {
+	if err := l.logRequest(requestId, req, io.NopCloser(strings.NewReader(reqBody))); err != nil {
 		l.logError(requestId, "request", err)
 	}
 
-	if err := l.logResponse(requestId, resp, respBody); err != nil {
+	if err := l.logResponse(requestId, resp, io.NopCloser(strings.NewReader(respBody))); err != nil {
 		l.logError(requestId, "response", err)
 	}
 

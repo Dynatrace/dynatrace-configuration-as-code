@@ -28,7 +28,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 )
 
@@ -187,7 +186,7 @@ func (c Client) executeRequest(request *http.Request) (Response, error) {
 		}
 
 		if c.trafficLogger != nil {
-			err := c.trafficLogger.Log(request, io.NopCloser(strings.NewReader(reqBody)), resp, io.NopCloser(bytes.NewReader(respBody)))
+			err := c.trafficLogger.Log(request, reqBody, resp, string(respBody))
 			if err != nil {
 				log.WithFields(field.Error(err)).Warn("unable to log traffic: %v", err)
 			}

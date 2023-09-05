@@ -20,10 +20,8 @@ import (
 	"bytes"
 	"github.com/stretchr/testify/assert"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -44,11 +42,11 @@ func TestFileBasedLogger_Log(t *testing.T) {
 	request := httptest.NewRequest("GET", "http://some-url.com/get", bytes.NewBufferString("request body"))
 	response := &http.Response{
 		StatusCode: http.StatusOK,
-		Body:       ioutil.NopCloser(bytes.NewBufferString("response body")),
+		Body:       io.NopCloser(bytes.NewBufferString("response body")),
 	}
 
 	// Log the request and response
-	err := logger.Log(request, io.NopCloser(strings.NewReader("request body")), response, io.NopCloser(strings.NewReader("response body")))
+	err := logger.Log(request, "request body", response, "response body")
 	if err != nil {
 		t.Errorf("Log failed: %v", err)
 	}
