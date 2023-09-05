@@ -80,10 +80,10 @@ func (e EnvironmentDeploymentErrors) Error() string {
 	return b.String()
 }
 
-func (e EnvironmentDeploymentErrors) Append(env string, err error) EnvironmentDeploymentErrors {
+func (e EnvironmentDeploymentErrors) Append(env string, err ...error) EnvironmentDeploymentErrors {
 	if _, exists := e[env]; !exists {
 		e[env] = make([]error, 0)
 	}
-	e[env] = append(e[env], err)
+	e[env] = append(e[env], err...)
 	return e
 }
