@@ -28,6 +28,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/useragent"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 	"golang.org/x/oauth2/clientcredentials"
@@ -122,15 +123,19 @@ func CreatePlatformClientSet(url string, auth PlatformAuth, opts ClientOptions) 
 
 	tokenClient := clientAuth.NewTokenAuthClient(auth.Token)
 	oauthClient := clientAuth.NewOAuthClient(context.TODO(), oauthCredentials)
-	classicURL, err := metadata.GetDynatraceClassicURL(context.TODO(), rest.NewRestClient(oauthClient, nil, rest.CreateRateLimitStrategy()), url) //this will send the default user-agent
-	if err != nil {
-		return nil, err
-	}
 
 	var trafficLogger *trafficlogs.FileBasedLogger
 	if opts.SupportArchive {
 		trafficLogger = trafficlogs.NewFileBased()
 	}
+
+	classicUrlClient := rest.NewRestClient(oauthClient, trafficLogger, rest.CreateRateLimitStrategy())
+	classicUrlClient.Client().Transport = useragent.NewCustomUserAgentTransport(classicUrlClient.Client().Transport, opts.getUserAgentString())
+	classicURL, err := metadata.GetDynatraceClassicURL(context.TODO(), classicUrlClient, url)
+	if err != nil {
+		return nil, err
+	}
+
 	client := rest.NewRestClient(oauthClient, trafficLogger, rest.CreateRateLimitStrategy())
 	clientClassic := rest.NewRestClient(tokenClient, trafficLogger, rest.CreateRateLimitStrategy())
 
