@@ -125,6 +125,38 @@ func TestGeneratesValidDeleteFile_ForSingleProject(t *testing.T) {
 	assertDeleteEntries(t, entries, "alerting-profile", "Lord of the Rings Service", "A Song of Ice and Fire Service")
 }
 
+func TestGeneratesValidDeleteFile_OmittingClassicConfigsWithNonStringNames(t *testing.T) {
+
+	t.Setenv("TOKEN", "some-value")
+
+	fs := testutils.CreateTestFileSystem()
+
+	outputFolder := "output-folder"
+
+	cmd := deletefile.Command(fs)
+
+	cmd.SetArgs([]string{
+		"./test-resources/manifest_invalid_project.yaml",
+		"-o",
+		outputFolder,
+	})
+	err := cmd.Execute()
+	assert.NoError(t, err)
+
+	expectedFile := filepath.Join(outputFolder, "delete.yaml")
+	assertFileExists(t, fs, expectedFile)
+
+	entries, errs := delete.LoadEntriesToDelete(fs, api.NewAPIs().GetNames(), expectedFile)
+	assert.Len(t, errs, 0)
+
+	assertDeleteEntries(t, entries, "alerting-profile", "Star Trek Service", "Star Wars Service", "Star Gate Service", "Lord of the Rings Service", "A Song of Ice and Fire Service")
+	assertDeleteEntries(t, entries, "dashboard", "Alpha Quadrant")
+	assertDeleteEntries(t, entries, "builtin:alerting.maintenance-window", "maintenance-window-setting")
+	assertDeleteEntries(t, entries, "management-zone", "mzone-1")
+	assertDeleteEntries(t, entries, "builtin:management-zones", "management-zone-setting")
+	assertDeleteEntries(t, entries, "notification", "Star Trek to #team-star-trek", "Captain's Log")
+}
+
 func assertDeleteEntries(t *testing.T, entries map[string][]delete.DeletePointer, cfgType string, expectedCfgIdentifiers ...string) {
 	vals, ok := entries[cfgType]
 	assert.True(t, ok, "expected delete pointers for type %s", cfgType)
