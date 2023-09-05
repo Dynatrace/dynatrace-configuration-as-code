@@ -25,6 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
@@ -144,9 +145,17 @@ func generateDeleteFileContent(environment string, projects []project.Project, a
 		for _, cfgs := range cfgsPerType {
 			for _, c := range cfgs {
 				if apis.Contains(c.Coordinate.Type) {
-					val, err := c.Parameters[config.NameParameter].ResolveValue(parameter.ResolveContext{ParameterName: config.NameParameter})
+					nameParam := c.Parameters[config.NameParameter]
+
+					if nameParam.GetType() == reference.ReferenceParameterType {
+						// we don't sort configs or create entities, so references will never find other configs they point to -> user has to write those manually
+						log.Warn("Failed to automatically create delete entry for %q - unable to resolve reference parameters", c.Coordinate)
+						continue
+					}
+
+					val, err := nameParam.ResolveValue(parameter.ResolveContext{ParameterName: config.NameParameter})
 					if err != nil {
-						log.WithFields(field.Error(err)).Warn("Failed to automatically create delete entry for %q - unable to get name: %v", c.Coordinate, err)
+						log.WithFields(field.Error(err)).Warn("Failed to automatically create delete entry for %q - unable to resolve 'name' parameter: %v", c.Coordinate, err)
 						continue
 					}
 					name, ok := val.(string)
