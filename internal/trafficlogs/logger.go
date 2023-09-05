@@ -18,11 +18,13 @@ package trafficlogs
 
 import (
 	"fmt"
+	lib "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/google/uuid"
 	"github.com/spf13/afero"
+	"io"
 	"net/http"
 	"net/http/httputil"
 	"os"
@@ -51,22 +53,30 @@ func NewFileBased() *FileBasedLogger {
 	return tl
 }
 
-func (l *FileBasedLogger) Log(req *http.Request, reqBody string, resp *http.Response, respBody string) error {
-	l.lock.Lock()
-	defer l.lock.Unlock()
+// LogToFiles takes a record containing request and response information and tries to write it into the files
+// created by this logger.
+func (l *FileBasedLogger) LogToFiles(record lib.RequestResponse) {
+	if req, ok := record.IsRequest(); ok {
+		if err := l.logRequest(record.ID, req, req.Body); err != nil {
+			l.logError(record.ID, "request", err)
+		}
+	}
+	if resp, ok := record.IsResponse(); ok {
+		if err := l.logResponse(record.ID, resp, resp.Body); err != nil {
+			l.logError(record.ID, "response", err)
+		}
+	}
+}
+
+// Log takes request and response data and tries to write them into files created by this logger.
+// Note: this method is used by "old" clients that are not based on the rest client of the core lib.
+func (l *FileBasedLogger) Log(req *http.Request, reqBody io.ReadCloser, resp *http.Response, respBody io.ReadCloser) error {
 
 	requestId := ""
 	requestId = uuid.NewString()
-	if err := l.openRequestLogFile(); err != nil {
-		return fmt.Errorf("unable to open file for logging requests: %w", err)
-	}
 
 	if err := l.logRequest(requestId, req, reqBody); err != nil {
 		l.logError(requestId, "request", err)
-	}
-
-	if err := l.openResponseLogFile(); err != nil {
-		return fmt.Errorf("unable to open file for logging responses: %w", err)
 	}
 
 	if err := l.logResponse(requestId, resp, respBody); err != nil {
@@ -81,7 +91,13 @@ func (l *FileBasedLogger) Close() {
 	l.responseLogFile.Close()
 }
 
-func (l *FileBasedLogger) logRequest(id string, request *http.Request, body string) error {
+func (l *FileBasedLogger) logRequest(id string, request *http.Request, body io.ReadCloser) error {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+	if err := l.openRequestLogFile(); err != nil {
+		return fmt.Errorf("unable to open file for logging requests: %w", err)
+	}
+
 	// delete auth header
 	req := request.Clone(request.Context())
 	req.Header.Del("Authorization")
@@ -90,35 +106,70 @@ func (l *FileBasedLogger) logRequest(id string, request *http.Request, body stri
 	if err != nil {
 		return err
 	}
-	_, err = l.requestLogFile.WriteString(fmt.Sprintf("Request-ID: %s\n%s\n%s\n=========================\n", id, string(dump), body))
+
+	// write id
+	_, err = l.requestLogFile.WriteString(fmt.Sprintf("Request-ID: %s\n", id))
 	if err != nil {
 		return err
 	}
 
+	// write dump
+	if _, err := l.requestLogFile.WriteString(fmt.Sprintf("%s", string(dump))); err != nil {
+		return err
+	}
+
+	// write body
+	if body != nil {
+		defer body.Close()
+		if _, err := io.Copy(l.requestLogFile, body); err != nil {
+			return err
+		}
+	}
+
+	// write end indicator
+	if _, err := l.requestLogFile.WriteString("\n=========================\n\n"); err != nil {
+		return err
+	}
 	return l.requestLogFile.Sync()
 }
 
-func (l *FileBasedLogger) logResponse(id string, response *http.Response, body string) error {
+func (l *FileBasedLogger) logResponse(id string, response *http.Response, body io.ReadCloser) error {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+	if err := l.openResponseLogFile(); err != nil {
+		return fmt.Errorf("unable to open file for logging responses: %w", err)
+	}
+
 	dump, err := httputil.DumpResponse(response, false)
 	if err != nil {
 		return err
 	}
 
-	if id != "" {
-		_, err = l.responseLogFile.WriteString(fmt.Sprintf("Request-ID: %s\n", id))
-		if err != nil {
-			return err
-		}
-	}
-
-	_, err = l.responseLogFile.WriteString(fmt.Sprintf("%s\n%s\n\n=========================\n", string(dump), body))
+	// write id
+	_, err = l.responseLogFile.WriteString(fmt.Sprintf("Request-ID: %s\n", id))
 	if err != nil {
 		return err
 	}
 
+	// write dump
+	if _, err := l.responseLogFile.WriteString(fmt.Sprintf("%s", string(dump))); err != nil {
+		return err
+	}
+
+	// write body
+	if body != nil {
+		defer body.Close()
+		if _, err := io.Copy(l.responseLogFile, body); err != nil {
+			return err
+		}
+	}
+
+	// write end indicator
+	if _, err := l.responseLogFile.WriteString("\n=========================\n\n"); err != nil {
+		return err
+	}
 	return l.responseLogFile.Sync()
 }
-
 func (l *FileBasedLogger) openRequestLogFile() error {
 	if l.requestLogFile == nil {
 

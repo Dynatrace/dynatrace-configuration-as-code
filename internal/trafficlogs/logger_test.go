@@ -19,9 +19,11 @@ package trafficlogs
 import (
 	"bytes"
 	"github.com/stretchr/testify/assert"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -46,7 +48,7 @@ func TestFileBasedLogger_Log(t *testing.T) {
 	}
 
 	// Log the request and response
-	err := logger.Log(request, "request body", response, "response body")
+	err := logger.Log(request, io.NopCloser(strings.NewReader("request body")), response, io.NopCloser(strings.NewReader("response body")))
 	if err != nil {
 		t.Errorf("Log failed: %v", err)
 	}
