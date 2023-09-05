@@ -85,13 +85,17 @@ func DeployConfigGraph(projects []project.Project, environmentClients Environmen
 
 	validationErrs := classic.ValidateUniqueConfigNames(projects)
 	if validationErrs != nil {
-		return validationErrs
+		if !opts.ContinueOnErr && !opts.DryRun {
+			return validationErrs
+		}
+
+		errors.As(validationErrs, &errs) // use validation errors as base errors if possible
 	}
 
 	for env, clients := range environmentClients {
 		envErrs := deployComponentsToEnvironment(g, env, clients, apis, opts)
 		if len(envErrs) > 0 {
-			errs[env.Name] = envErrs
+			errs = errs.Append(env.Name, envErrs...)
 
 			if !opts.ContinueOnErr && !opts.DryRun {
 				return errs

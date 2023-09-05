@@ -1536,3 +1536,102 @@ func TestDeployConfigsValidatesClassicAPINames(t *testing.T) {
 		})
 	}
 }
+
+func TestDeployConfigGraph_CollectsAllErrors(t *testing.T) {
+
+	p := []project.Project{
+		{
+			Id: "project",
+			Configs: project.ConfigsPerTypePerEnvironments{
+				"env": project.ConfigsPerType{
+					"app-detection-rule": []config.Config{
+						{
+							Type:     config.ClassicApiType{Api: "app-detection-rule"},
+							Template: testutils.GenerateFaultyTemplate(t), // deploying this will fail, and should result in the dependent dashboard not being deployed either
+							Coordinate: coordinate.Coordinate{
+								Project:  "project",
+								Type:     "dashboard",
+								ConfigId: "WILL FAIL DEPLOYMENT",
+							},
+							Environment: "env",
+							Parameters: testutils.ToParameterMap(
+								[]parameter.NamedParameter{
+									{
+										Name:      config.NameParameter,
+										Parameter: &parameter.DummyParameter{Value: "Some Name"},
+									},
+								}),
+							Skip: false,
+						},
+						{
+							Type:     config.ClassicApiType{Api: "app-detection-rule"},
+							Template: testutils.GenerateDummyTemplate(t),
+							Coordinate: coordinate.Coordinate{
+								Project:  "project",
+								Type:     "app-detection-rule",
+								ConfigId: "WILL FAIL VALIDATION - Overlapping Name #1",
+							},
+							Environment: "env",
+							Parameters: testutils.ToParameterMap(
+								[]parameter.NamedParameter{
+									{
+										Name:      config.NameParameter,
+										Parameter: &parameter.DummyParameter{Value: "DUPLICATE NAME"},
+									},
+								}),
+							Skip: false,
+						},
+						{
+							Type:     config.ClassicApiType{Api: "app-detection-rule"},
+							Template: testutils.GenerateDummyTemplate(t),
+							Coordinate: coordinate.Coordinate{
+								Project:  "project",
+								Type:     "app-detection-rule",
+								ConfigId: "WILL FAIL VALIDATION - Overlapping Name #2",
+							},
+							Environment: "env",
+							Parameters: testutils.ToParameterMap(
+								[]parameter.NamedParameter{
+									{
+										Name:      config.NameParameter,
+										Parameter: &parameter.DummyParameter{Value: "DUPLICATE NAME"},
+									},
+								}),
+							Skip: false,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	dummyClient := dtclient.DummyClient{}
+	clientSet := deploy.ClientSet{Classic: &dummyClient}
+
+	c := deploy.EnvironmentClients{
+		deploy.EnvironmentInfo{Name: "env"}: clientSet,
+	}
+
+	t.Run("stop on error - returns validation errors", func(t *testing.T) {
+		errs := deploy.DeployConfigGraph(p, c, deploy.DeployConfigsOptions{})
+		assert.Error(t, errs)
+
+		var envErrs errors.EnvironmentDeploymentErrors
+		assert.ErrorAs(t, errs, &envErrs)
+		assert.Len(t, envErrs["env"], 1)
+		assert.ErrorContains(t, envErrs["env"][0], "duplicated config name")
+		assert.ErrorContains(t, envErrs["env"][0], "WILL FAIL VALIDATION")
+	})
+
+	t.Run("continue on error - returns validation and deployment", func(t *testing.T) {
+		errs := deploy.DeployConfigGraph(p, c, deploy.DeployConfigsOptions{ContinueOnErr: true})
+		assert.Error(t, errs)
+
+		var envErrs errors.EnvironmentDeploymentErrors
+		assert.ErrorAs(t, errs, &envErrs)
+		assert.Len(t, envErrs["env"], 2)
+		assert.ErrorContains(t, envErrs["env"][0], "WILL FAIL VALIDATION")
+		assert.ErrorContains(t, envErrs["env"][1], "WILL FAIL DEPLOYMENT")
+	})
+
+}
