@@ -17,7 +17,6 @@ package reference
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/strings"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
@@ -93,6 +92,10 @@ func (p *ReferenceParameter) ResolveValue(context parameter.ResolveContext) (int
 			return val, nil
 		}
 		return nil, newUnresolvedReferenceError(context, p.ParameterReference, "property has not been resolved yet or does not exist")
+	}
+
+	if context.PropertyResolver == nil {
+		return nil, newUnresolvedReferenceError(context, p.ParameterReference, "no PropertyResolver is defined")
 	}
 
 	if val, found := context.PropertyResolver.GetResolvedProperty(p.Config, p.Property); found {
