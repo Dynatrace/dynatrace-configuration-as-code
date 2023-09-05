@@ -155,6 +155,11 @@ func generateDeleteFileContent(environment string, projects []project.Project, a
 						continue
 					}
 
+					if name == "" {
+						log.Warn("Failed to automatically create delete entry for %q - 'name' parameter was empty", c.Coordinate)
+						continue
+					}
+
 					entries = append(entries, persistence.DeleteEntry{
 						Type:       c.Coordinate.Type,
 						ConfigName: name,
