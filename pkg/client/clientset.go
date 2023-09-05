@@ -20,6 +20,7 @@ import (
 	"context"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/buckets"
+	lib "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
@@ -155,15 +156,20 @@ func CreatePlatformClientSet(url string, auth PlatformAuth, opts ClientOptions) 
 		automation.WithCustomUserAgentString(opts.getUserAgentString()),
 	)
 
-	bucketClient, err := clients.Factory().
+	clientFactory := clients.Factory().
 		WithOAuthCredentials(clientcredentials.Config{
 			ClientID:     auth.OauthClientID,
 			ClientSecret: auth.OauthClientSecret,
 			TokenURL:     auth.OauthTokenURL,
 		}).
 		WithEnvironmentURL(url).
-		WithUserAgent(opts.getUserAgentString()).
-		BucketClient()
+		WithUserAgent(opts.getUserAgentString())
+
+	if opts.SupportArchive {
+		clientFactory = clientFactory.WithHTTPListener(&lib.HTTPListener{Callback: trafficLogger.LogToFiles})
+	}
+
+	bucketClient, err := clientFactory.BucketClient()
 	if err != nil {
 		return nil, err
 	}

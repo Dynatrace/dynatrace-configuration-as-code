@@ -19,7 +19,7 @@ package trafficlogs
 import (
 	"bytes"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -42,7 +42,7 @@ func TestFileBasedLogger_Log(t *testing.T) {
 	request := httptest.NewRequest("GET", "http://some-url.com/get", bytes.NewBufferString("request body"))
 	response := &http.Response{
 		StatusCode: http.StatusOK,
-		Body:       ioutil.NopCloser(bytes.NewBufferString("response body")),
+		Body:       io.NopCloser(bytes.NewBufferString("response body")),
 	}
 
 	// Log the request and response
