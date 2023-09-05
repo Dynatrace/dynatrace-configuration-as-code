@@ -260,7 +260,7 @@ func AssertBucket(t *testing.T, client buckets.Client, env manifest.EnvironmentD
 		expectedId = fmt.Sprintf("%s_%s", cfg.Coordinate.Project, cfg.Coordinate.ConfigId)
 	}
 
-	resp, err := client.Get(context.TODO(), expectedId)
+	resp, err := getBucketWithRetry(client, expectedId, 0, 5)
 
 	exists := true
 
@@ -284,6 +284,16 @@ func AssertBucket(t *testing.T, client buckets.Client, env manifest.EnvironmentD
 	} else {
 		assert.Falsef(t, exists, "Bucket %q should NOT be available, but was. environment.Environment: '%s', failed for '%s'", expectedId, env.Name, cfg.Coordinate)
 	}
+}
+
+func getBucketWithRetry(client buckets.Client, bucketName string, try, maxTries int) (buckets.Response, error) {
+	resp, err := client.Get(context.TODO(), bucketName)
+	if err != nil && try < maxTries {
+		try++
+		return getBucketWithRetry(client, bucketName, try, maxTries)
+	}
+
+	return resp, err
 }
 
 func wait(description string, maxPollCount int, condition func() bool) error {
