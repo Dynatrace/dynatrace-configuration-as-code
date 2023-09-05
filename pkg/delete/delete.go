@@ -85,28 +85,44 @@ type DeleteEntries = map[configurationType][]DeletePointer
 
 // Configs removes all given entriesToDelete from the Dynatrace environment the given client connects to
 func Configs(ctx context.Context, clients ClientSet, apis api.APIs, automationResources map[string]config.AutomationResource, entriesToDelete DeleteEntries) []error {
-	deleteErrors := make([]error, 0)
+
+	errChan := make(chan []error, len(entriesToDelete))
+
 	for entryType, entries := range entriesToDelete {
-		if targetApi, isClassicAPI := apis[entryType]; isClassicAPI {
-			errs := deleteClassicConfig(ctx, clients.Classic, targetApi, entries, entryType)
-			deleteErrors = append(deleteErrors, errs...)
-		} else if targetAutomation, isAutomationAPI := automationResources[entryType]; isAutomationAPI {
-			if reflect.ValueOf(clients.Automation).IsNil() {
-				log.WithCtxFields(ctx).WithFields(field.Type(entryType)).Warn("Skipped deletion of %d Automation configurations of type %q as API client was unavailable.", len(entries), entryType)
-				continue
+		go func(entryType string, entries []DeletePointer) {
+			if targetApi, isClassicAPI := apis[entryType]; isClassicAPI {
+				errs := deleteClassicConfig(ctx, clients.Classic, targetApi, entries, entryType)
+				errChan <- errs
+			} else if targetAutomation, isAutomationAPI := automationResources[entryType]; isAutomationAPI {
+				if reflect.ValueOf(clients.Automation).IsNil() {
+					log.WithCtxFields(ctx).WithFields(field.Type(entryType)).Warn("Skipped deletion of %d Automation configurations of type %q as API client was unavailable.", len(entries), entryType)
+					errChan <- nil
+				}
+				errs := deleteAutomations(ctx, clients.Automation, targetAutomation, entries)
+				errChan <- errs
+			} else if entryType == "bucket" {
+				errs := deleteBuckets(ctx, clients.Buckets, entries)
+				errChan <- errs
+			} else { // assume it's a Settings Schema
+				errs := deleteSettingsObject(ctx, clients.Settings, entries)
+				errChan <- errs
 			}
-			errs := deleteAutomations(ctx, clients.Automation, targetAutomation, entries)
-			deleteErrors = append(deleteErrors, errs...)
-		} else if entryType == "bucket" {
-			errs := deleteBuckets(ctx, clients.Buckets, entries)
-			deleteErrors = append(deleteErrors, errs...)
-		} else { // assume it's a Settings Schema
-			errs := deleteSettingsObject(ctx, clients.Settings, entries)
-			deleteErrors = append(deleteErrors, errs...)
+		}(entryType, entries)
+	}
+
+	// collect errors
+	deleteErrs := make([]error, 0)
+	for range entriesToDelete {
+		errs := <-errChan
+		if errs != nil {
+			deleteErrs = append(deleteErrs, errs...)
 		}
 	}
 
-	return deleteErrors
+	// Close the error channel.
+	close(errChan)
+
+	return deleteErrs
 }
 
 func deleteClassicConfig(ctx context.Context, client dtclient.Client, theApi api.API, entries []DeletePointer, targetApi string) []error {
