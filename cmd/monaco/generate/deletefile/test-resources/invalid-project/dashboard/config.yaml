@@ -1,0 +1,46 @@
+configs:
+- id: no-name-dash
+  type:
+    api: dashboard
+  config:
+    name: ""
+    parameters:
+      markdown: "# Markdown Tile"
+    template: overview-dashboard.json
+    skip: false
+- id: reference-name-dash
+  type:
+    api: dashboard
+  config:
+    name:
+        type: reference
+        configId: no-name-dash
+        property: markdown
+    parameters:
+      markdown: "# Markdown Tile"
+    template: overview-dashboard.json
+    skip: false
+- id: env-name-dash
+  type:
+    api: dashboard
+  config:
+    name:
+        type: environment
+        name: "ENV_VAR"
+    parameters:
+      markdown: "# Markdown Tile"
+    template: overview-dashboard.json
+    skip: false
+- id: non-string-name
+  type:
+    api: dashboard
+  config:
+    name:
+        type: value
+        value:
+          key: value-name
+          makes-any-sense: false
+    parameters:
+      markdown: "# Markdown Tile"
+    template: overview-dashboard.json
+    skip: false
