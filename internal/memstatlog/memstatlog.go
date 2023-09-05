@@ -19,6 +19,7 @@ package memstatlog
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"runtime"
 )
 
@@ -29,10 +30,20 @@ import (
 func Write(location string) { // nolint:unused
 	var stats runtime.MemStats
 	runtime.ReadMemStats(&stats)
-	log.Debug("### MEMSTATS ### %s ###\n- totalAlloc: %s\n- heapAlloc: %s\n- heapObjects: %d\n- GC runs: %d\n- totalGCPauseTime: %d ns",
+	totalAlloc := byteCountToHumanReadableUnit(stats.TotalAlloc)
+	heapAlloc := byteCountToHumanReadableUnit(stats.HeapAlloc)
+
+	log.WithFields(
+		field.F("location", location),
+		field.F("totalAlloc", totalAlloc),
+		field.F("heapAlloc", heapAlloc),
+		field.F("heapObjects", stats.HeapObjects),
+		field.F("numGCRuns", stats.NumGC),
+		field.F("totalGCPauseNs", stats.PauseTotalNs),
+	).Info("### MEMSTATS ### %s ###\n- totalAlloc: %s\n- heapAlloc: %s\n- heapObjects: %d\n- GC runs: %d\n- totalGCPauseTime: %d ns",
 		location,
-		byteCountToHumanReadableUnit(stats.TotalAlloc),
-		byteCountToHumanReadableUnit(stats.HeapAlloc),
+		totalAlloc,
+		heapAlloc,
 		stats.HeapObjects,
 		stats.NumGC,
 		stats.PauseTotalNs)
