@@ -141,47 +141,24 @@ func generateDeleteFileContent(environment string, projects []project.Project, a
 
 	for _, p := range projects {
 		log.Info("Adding delete entries for project %q...", p.Id)
-		cfgsPerType := p.Configs[environment]
-		for _, cfgs := range cfgsPerType {
-			for _, c := range cfgs {
-				if apis.Contains(c.Coordinate.Type) {
-					nameParam := c.Parameters[config.NameParameter]
 
-					if nameParam.GetType() == reference.ReferenceParameterType {
-						// we don't sort configs or create entities, so references will never find other configs they point to -> user has to write those manually
-						log.Warn("Failed to automatically create delete entry for %q - unable to resolve reference parameters", c.Coordinate)
-						continue
-					}
-
-					val, err := nameParam.ResolveValue(parameter.ResolveContext{ParameterName: config.NameParameter})
-					if err != nil {
-						log.WithFields(field.Error(err)).Warn("Failed to automatically create delete entry for %q - unable to resolve 'name' parameter: %v", c.Coordinate, err)
-						continue
-					}
-					name, ok := val.(string)
-					if !ok {
-						log.Warn("Failed to automatically create delete entry for %q - value of 'name' parameter '%v' was not a string", c.Coordinate, val)
-						continue
-					}
-
-					if name == "" {
-						log.Warn("Failed to automatically create delete entry for %q - 'name' parameter was empty", c.Coordinate)
-						continue
-					}
-
-					entries = append(entries, persistence.DeleteEntry{
-						Type:       c.Coordinate.Type,
-						ConfigName: name,
-					})
-				} else {
-					entries = append(entries, persistence.DeleteEntry{
-						Project:  c.Coordinate.Project,
-						Type:     c.Coordinate.Type,
-						ConfigId: c.Coordinate.ConfigId,
-					})
+		p.ForEveryConfigInEnvironmentDo(environment, func(c config.Config) {
+			if apis.Contains(c.Coordinate.Type) {
+				entry, err := createConfigAPIEntry(c)
+				if err != nil {
+					log.WithFields(field.Error(err)).Warn("Failed to automatically create delete entry for %q: %s", c.Coordinate, err)
+					return
 				}
+
+				entries = append(entries, entry)
+			} else {
+				entries = append(entries, persistence.DeleteEntry{
+					Project:  c.Coordinate.Project,
+					Type:     c.Coordinate.Type,
+					ConfigId: c.Coordinate.ConfigId,
+				})
 			}
-		}
+		})
 	}
 
 	f := persistence.FullFileDefinition{DeleteEntries: entries}
@@ -191,4 +168,32 @@ func generateDeleteFileContent(environment string, projects []project.Project, a
 	}
 
 	return b, nil
+}
+
+func createConfigAPIEntry(c config.Config) (persistence.DeleteEntry, error) {
+	nameParam := c.Parameters[config.NameParameter]
+
+	if nameParam.GetType() == reference.ReferenceParameterType {
+		// we don't sort configs or create entities, so references will never find other configs they point to -> user has to write those manually
+		return persistence.DeleteEntry{}, fmt.Errorf("unable to resolve reference parameters")
+	}
+
+	val, err := nameParam.ResolveValue(parameter.ResolveContext{ParameterName: config.NameParameter})
+	if err != nil {
+		return persistence.DeleteEntry{}, fmt.Errorf("unable to resolve 'name' parameter: %w", err)
+	}
+
+	name, ok := val.(string)
+	if !ok {
+		return persistence.DeleteEntry{}, fmt.Errorf("value of 'name' parameter '%v' was not a string", val)
+	}
+
+	if name == "" {
+		return persistence.DeleteEntry{}, fmt.Errorf("'name' parameter was empty")
+	}
+
+	return persistence.DeleteEntry{
+		Type:       c.Coordinate.Type,
+		ConfigName: name,
+	}, nil
 }
