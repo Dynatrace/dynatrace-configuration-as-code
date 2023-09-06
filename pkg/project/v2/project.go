@@ -80,11 +80,26 @@ func (p Project) String() string {
 // ForEveryConfigDo executes the given ActionOverConfig actions for each configuration defined in the project for each environment
 // Actions can not modify the configs inside the Project.
 func (p Project) ForEveryConfigDo(actions ...ActionOverConfig) {
-	for _, cpt := range p.Configs {
-		for _, cs := range cpt {
-			for _, c := range cs {
-				for _, f := range actions {
-					f(c)
+	p.forEveryConfigDo("", actions)
+}
+
+// ForEveryConfigInEnvironmentDo executes the given ActionOverConfig actions for each configuration defined in the project for a given environment.
+// It behaves like ForEveryConfigDo just limited to a single environment.
+// Actions can not modify the configs inside the Project.
+func (p Project) ForEveryConfigInEnvironmentDo(environment string, actions ...ActionOverConfig) {
+	p.forEveryConfigDo(environment, actions)
+}
+
+// forEveryConfigDo applies the given action to every configuration, either for a single environment if requested,
+// or for all environments if the environemnt parameter is empty.
+func (p Project) forEveryConfigDo(environment string, actions []ActionOverConfig) {
+	for env, cpt := range p.Configs {
+		if environment == "" || environment == env {
+			for _, cs := range cpt {
+				for _, c := range cs {
+					for _, f := range actions {
+						f(c)
+					}
 				}
 			}
 		}
