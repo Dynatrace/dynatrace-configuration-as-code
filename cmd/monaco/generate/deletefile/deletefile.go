@@ -141,26 +141,24 @@ func generateDeleteFileContent(environment string, projects []project.Project, a
 
 	for _, p := range projects {
 		log.Info("Adding delete entries for project %q...", p.Id)
-		cfgsPerType := p.Configs[environment]
-		for _, cfgs := range cfgsPerType {
-			for _, c := range cfgs {
-				if apis.Contains(c.Coordinate.Type) {
-					entry, err := createConfigAPIEntry(c)
-					if err != nil {
-						log.WithFields(field.Error(err)).Warn("Failed to automatically create delete entry for %q: %s", c.Coordinate, err)
-						continue
-					}
 
-					entries = append(entries, entry)
-				} else {
-					entries = append(entries, persistence.DeleteEntry{
-						Project:  c.Coordinate.Project,
-						Type:     c.Coordinate.Type,
-						ConfigId: c.Coordinate.ConfigId,
-					})
+		p.ForEveryConfigInEnvironmentDo(environment, func(c config.Config) {
+			if apis.Contains(c.Coordinate.Type) {
+				entry, err := createConfigAPIEntry(c)
+				if err != nil {
+					log.WithFields(field.Error(err)).Warn("Failed to automatically create delete entry for %q: %s", c.Coordinate, err)
+					return
 				}
+
+				entries = append(entries, entry)
+			} else {
+				entries = append(entries, persistence.DeleteEntry{
+					Project:  c.Coordinate.Project,
+					Type:     c.Coordinate.Type,
+					ConfigId: c.Coordinate.ConfigId,
+				})
 			}
-		}
+		})
 	}
 
 	f := persistence.FullFileDefinition{DeleteEntries: entries}
