@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-package memstatlog
+package memory
 
 import (
-	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"runtime"
 )
 
-// Write creates a log line of memory stats which is useful for manually debugging/validating memory consumption.
+// LogMemStats creates a log line of memory stats which is useful for manually debugging/validating memory consumption.
 // This is not used in general, but is highly useful when detailed memory information is needed - in which case it is
 // nice to have a reusable method, rather than creating it again.
 // Place this method where needed and supply location information - e.g. "before sort" and "after sort".
-func Write(location string) { // nolint:unused
+func LogMemStats(location string) { // nolint:unused
 	var stats runtime.MemStats
 	runtime.ReadMemStats(&stats)
 	totalAlloc := byteCountToHumanReadableUnit(stats.TotalAlloc)
@@ -48,17 +47,4 @@ func Write(location string) { // nolint:unused
 		stats.NumGC,
 		stats.PauseTotalNs)
 
-}
-
-func byteCountToHumanReadableUnit(b uint64) string {
-	const unit = 1000
-	if b < unit {
-		return fmt.Sprintf("%d B", b)
-	}
-	div, exp := uint64(unit), 0
-	for n := b / unit; n >= unit; n /= unit {
-		div *= unit
-		exp++
-	}
-	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "kMGTPE"[exp])
 }
