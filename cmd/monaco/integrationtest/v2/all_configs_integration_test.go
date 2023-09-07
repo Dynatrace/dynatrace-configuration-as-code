@@ -79,3 +79,24 @@ func TestIntegrationValidationAllConfigs(t *testing.T) {
 
 	assert.NilError(t, err)
 }
+
+func TestCLDDeploy(t *testing.T) {
+	configFolder := "/Users/nicola.riedmann/src/monaco/testing/CLD-7817/demodev-2.6.0/"
+	//configFolder := "test-resources/integration-all-configs/"
+	manifest := configFolder + "manifest.yaml"
+
+	cmd := runner.BuildCli(afero.NewOsFs())
+	cmd.SetArgs([]string{"deploy", "--verbose", "--continue-on-error", manifest})
+	_ = cmd.Execute()
+
+}
+
+func TestCLDValidate(t *testing.T) {
+	configFolder := "/Users/nicola.riedmann/src/monaco/testing/CLD-7817/demodev-2.6.0/"
+	manifest := configFolder + "manifest.yaml"
+
+	cmd := runner.BuildCli(afero.NewOsFs())
+	cmd.SetArgs([]string{"deploy", "-d", "--verbose", "--continue-on-error", manifest})
+	_ = cmd.Execute()
+
+}
