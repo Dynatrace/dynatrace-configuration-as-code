@@ -22,6 +22,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/buckets"
+	lib "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
@@ -31,6 +33,7 @@ import (
 	"go.uber.org/mock/gomock"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 )
@@ -389,6 +392,87 @@ func TestDeleteAutomations(t *testing.T) {
 		errs := Configs(context.TODO(), ClientSet{Automation: c}, api.NewAPIs(), automationTypes, entriesToDelete)
 		assert.Len(t, errs, 1, "there should be one delete error")
 		assert.ErrorContains(t, errs[0], "unable to delete")
+	})
+}
+
+func TestDeleteBuckets(t *testing.T) {
+	t.Run("TestDeleteBuckets", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodDelete && strings.Contains(req.RequestURI, "bucket-definitions") {
+				assert.True(t, strings.HasSuffix(req.URL.Path, "/project_id1"))
+				rw.WriteHeader(http.StatusOK)
+				return
+			}
+			assert.Fail(t, "unexpected HTTP call")
+		}))
+		defer server.Close()
+
+		u, _ := url.Parse(server.URL)
+		c := buckets.NewClient(lib.NewClient(u, server.Client()))
+
+		entriesToDelete := map[string][]DeletePointer{
+			"bucket": {
+				{
+					Type:       "bucket",
+					Project:    "project",
+					Identifier: "id1",
+				},
+			},
+		}
+		errs := Configs(context.TODO(), ClientSet{Buckets: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		assert.Empty(t, errs, "errors should be empty")
+	})
+
+	t.Run("TestDeleteBuckets - No Error if object does not exist", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodDelete && strings.Contains(req.RequestURI, "bucket-definitions") {
+				rw.WriteHeader(http.StatusNotFound)
+				return
+			}
+			assert.Fail(t, "unexpected HTTP call")
+		}))
+		defer server.Close()
+
+		u, _ := url.Parse(server.URL)
+		c := buckets.NewClient(lib.NewClient(u, server.Client()))
+
+		entriesToDelete := map[string][]DeletePointer{
+			"bucket": {
+				{
+					Type:       "bucket",
+					Project:    "project",
+					Identifier: "id1",
+				},
+			},
+		}
+		errs := Configs(context.TODO(), ClientSet{Buckets: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		assert.Empty(t, errs, "errors should be empty")
+	})
+
+	t.Run("TestDeleteAutomations - Returns Error on HTTP error", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodDelete && strings.Contains(req.RequestURI, "bucket-definitions") {
+				rw.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			assert.Fail(t, "unexpected HTTP call")
+		}))
+		defer server.Close()
+
+		u, _ := url.Parse(server.URL)
+		c := buckets.NewClient(lib.NewClient(u, server.Client()))
+
+		entriesToDelete := map[string][]DeletePointer{
+			"bucket": {
+				{
+					Type:       "bucket",
+					Project:    "project",
+					Identifier: "id1",
+				},
+			},
+		}
+		errs := Configs(context.TODO(), ClientSet{Buckets: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		assert.Len(t, errs, 1, "there should be one delete error")
 	})
 
 }

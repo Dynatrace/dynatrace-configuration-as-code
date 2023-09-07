@@ -23,7 +23,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/generate/deletefile"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -85,7 +84,7 @@ func TestGeneratesValidDeleteFile(t *testing.T) {
 	expectedFile := filepath.Join(outputFolder, "delete.yaml")
 	assertFileExists(t, fs, expectedFile)
 
-	entries, errs := delete.LoadEntriesToDelete(fs, api.NewAPIs().GetNames(), expectedFile)
+	entries, errs := delete.LoadEntriesToDelete(fs, expectedFile)
 	assert.Len(t, errs, 0)
 
 	assertDeleteEntries(t, entries, "alerting-profile", "Star Trek Service", "Star Wars Service", "Star Gate Service", "Lord of the Rings Service", "A Song of Ice and Fire Service")
@@ -119,7 +118,7 @@ func TestGeneratesValidDeleteFile_ForSingleProject(t *testing.T) {
 	expectedFile := filepath.Join(outputFolder, "delete.yaml")
 	assertFileExists(t, fs, expectedFile)
 
-	entries, errs := delete.LoadEntriesToDelete(fs, api.NewAPIs().GetNames(), expectedFile)
+	entries, errs := delete.LoadEntriesToDelete(fs, expectedFile)
 	assert.Len(t, errs, 0)
 
 	assertDeleteEntries(t, entries, "alerting-profile", "Lord of the Rings Service", "A Song of Ice and Fire Service")
@@ -146,7 +145,7 @@ func TestGeneratesValidDeleteFile_OmittingClassicConfigsWithNonStringNames(t *te
 	expectedFile := filepath.Join(outputFolder, "delete.yaml")
 	assertFileExists(t, fs, expectedFile)
 
-	entries, errs := delete.LoadEntriesToDelete(fs, api.NewAPIs().GetNames(), expectedFile)
+	entries, errs := delete.LoadEntriesToDelete(fs, expectedFile)
 	assert.Len(t, errs, 0)
 
 	assertDeleteEntries(t, entries, "alerting-profile", "Star Trek Service", "Star Wars Service", "Star Gate Service", "Lord of the Rings Service", "A Song of Ice and Fire Service")

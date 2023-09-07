@@ -279,12 +279,7 @@ func TestLoadEntriesToDelete(t *testing.T) {
 			err = afero.WriteFile(fs, deleteFile, []byte(tt.givenFileContent), 0666)
 			assert.NoError(t, err)
 
-			knownApis := []string{
-				"management-zone",
-				"auto-tag",
-			}
-
-			result, errors := LoadEntriesToDelete(fs, knownApis, deleteFile)
+			result, errors := LoadEntriesToDelete(fs, deleteFile)
 
 			assert.Empty(t, errors)
 			assert.Equal(t, 2, len(result))
@@ -311,12 +306,7 @@ func TestLoadEntriesToDeleteWithInvalidEntry(t *testing.T) {
 	err = afero.WriteFile(fs, deleteFilePath, []byte(fileContent), 0666)
 	assert.NoError(t, err)
 
-	knownApis := []string{
-		"management-zone",
-		"auto-tag",
-	}
-
-	result, errors := LoadEntriesToDelete(fs, knownApis, deleteFilePath)
+	result, errors := LoadEntriesToDelete(fs, deleteFilePath)
 
 	assert.Equal(t, 1, len(errors))
 	assert.Equal(t, 0, len(result))
@@ -330,12 +320,7 @@ func TestLoadEntriesToDeleteNonExistingFile(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	knownApis := []string{
-		"management-zone",
-		"auto-tag",
-	}
-
-	result, errors := LoadEntriesToDelete(fs, knownApis, "/home/test/monaco/non-existing-delete.yaml")
+	result, errors := LoadEntriesToDelete(fs, "/home/test/monaco/non-existing-delete.yaml")
 
 	assert.Equal(t, 1, len(errors))
 	assert.Equal(t, 0, len(result))
@@ -358,12 +343,7 @@ func TestLoadEntriesToDeleteWithMalformedFile(t *testing.T) {
 	err = afero.WriteFile(fs, deleteFilePath, []byte(fileContent), 0666)
 	assert.NoError(t, err)
 
-	knownApis := []string{
-		"management-zone",
-		"auto-tag",
-	}
-
-	result, errors := LoadEntriesToDelete(fs, knownApis, deleteFilePath)
+	result, errors := LoadEntriesToDelete(fs, deleteFilePath)
 
 	assert.Equal(t, 1, len(errors))
 	assert.Equal(t, 0, len(result))
@@ -382,12 +362,7 @@ func TestLoadEntriesToDeleteWithEmptyFile(t *testing.T) {
 	err = afero.WriteFile(fs, deleteFilePath, []byte{}, 0666)
 	assert.NoError(t, err)
 
-	knownApis := []string{
-		"management-zone",
-		"auto-tag",
-	}
-
-	result, errors := LoadEntriesToDelete(fs, knownApis, deleteFilePath)
+	result, errors := LoadEntriesToDelete(fs, deleteFilePath)
 
 	assert.Equal(t, 1, len(errors))
 	assert.Equal(t, 0, len(result))
