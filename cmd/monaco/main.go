@@ -15,16 +15,12 @@
 package main
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/memory"
 	"os"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 )
 
 func main() {
-
-	memory.SetDefaultLimit()
-
 	statusCode := runner.Run()
 	os.Exit(statusCode)
 }
