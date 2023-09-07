@@ -18,12 +18,17 @@ package memory
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/pbnjay/memory"
+	"math"
 	"os"
 	"runtime/debug"
 )
 
 const gibibyte = int64(1073741824)
 const defaultLimit = gibibyte * 2
+const defaultPercentTotal = 0.75
+
+type getSystemMemoryF func() uint64
 
 // SetDefaultLimit applies a soft memory limit for the runtime.
 // If a user defined their own memory limit using the GOMEMLIMIT env var,
@@ -32,14 +37,36 @@ const defaultLimit = gibibyte * 2
 // system - and we may not want to even consume a fixed percentage of that
 // anyway - the limit is hardcoded in defaultLimit.
 func SetDefaultLimit() bool {
+	_, set := setLimit(memory.TotalMemory)
+	return set
+}
 
+func setLimit(getSystemMemory getSystemMemoryF) (int64, bool) {
 	// if there is a user defined limit, honor that instead
 	if s, envVarSet := os.LookupEnv("GOMEMLIMIT"); envVarSet {
 		log.Debug("Soft memory limit set via GOMEMLIMIT env var: %s", s)
-		return false
+		return 0, false
 	}
 
-	debug.SetMemoryLimit(defaultLimit)
-	log.Debug("Default soft memory limit set: %d %s", defaultLimit, byteCountToHumanReadableUnit(uint64(defaultLimit)))
-	return true
+	total := getSanitizedSysMem(getSystemMemory)
+	limit := int64(defaultPercentTotal * float64(total))
+
+	debug.SetMemoryLimit(limit)
+	log.Debug("Default soft memory limit set: %s (%v%% of %s)", byteCountToHumanReadableUnit(uint64(limit)), defaultPercentTotal*100, byteCountToHumanReadableUnit(uint64(total)))
+	return limit, true
+}
+
+func getSanitizedSysMem(f getSystemMemoryF) int64 {
+	total := f()
+
+	if total == 0 {
+		// best guess 1GiB
+		return gibibyte
+	}
+
+	if total > math.MaxInt64 {
+		return math.MaxInt64
+	}
+
+	return int64(total)
 }

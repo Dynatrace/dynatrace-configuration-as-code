@@ -18,6 +18,7 @@ package memory
 
 import (
 	"github.com/stretchr/testify/assert"
+	"math"
 	"testing"
 )
 
@@ -58,6 +59,42 @@ func TestSetDefaultLimit(t *testing.T) {
 				t.Setenv(k, v)
 			}
 			assert.Equal(t, tt.want, SetDefaultLimit())
+		})
+	}
+}
+
+func TestSetLimit_CalculatesCorrectRelativeLimit(t *testing.T) {
+	tests := []struct {
+		name   string
+		sysMem getSystemMemoryF
+		want   int64
+	}{
+		{
+			"sets expected limit",
+			func() uint64 {
+				return uint64(4 * gibibyte)
+			},
+			3 * gibibyte, //0.75 * 4
+		},
+		{
+			"truncates to max int64 if needed",
+			func() uint64 {
+				return math.MaxUint64
+			},
+			int64(float64(math.MaxInt64) * 0.75),
+		},
+		{
+			"defaults if sys mem return is invalid",
+			func() uint64 {
+				return 0
+			},
+			805306368, // 1 GiB * 0.75
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, _ := setLimit(tt.sysMem)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
