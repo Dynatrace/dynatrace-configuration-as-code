@@ -26,6 +26,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/memory"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"io"
@@ -59,6 +60,7 @@ Examples:
     monaco deploy service.yaml -e dev`,
 
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			memory.SetDefaultLimit()
 			log.PrepareLogging(fs, &verbose, logSpy)
 		},
 		Run: func(cmd *cobra.Command, args []string) {
