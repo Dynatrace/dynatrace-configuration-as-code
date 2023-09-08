@@ -29,6 +29,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/stretchr/testify/assert"
+	"net/http"
 	"testing"
 	"time"
 
@@ -288,8 +289,9 @@ func AssertBucket(t *testing.T, client buckets.Client, env manifest.EnvironmentD
 
 func getBucketWithRetry(client buckets.Client, bucketName string, try, maxTries int) (buckets.Response, error) {
 	resp, err := client.Get(context.TODO(), bucketName)
-	if err != nil && try < maxTries {
+	if try < maxTries && resp.StatusCode == http.StatusNotFound {
 		try++
+		time.Sleep(time.Second)
 		return getBucketWithRetry(client, bucketName, try, maxTries)
 	}
 
