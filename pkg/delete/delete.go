@@ -87,7 +87,7 @@ func Configs(ctx context.Context, clients ClientSet, apis api.APIs, automationRe
 				log.WithCtxFields(ctx).WithFields(field.Type(entryType)).Warn("Skipped deletion of %d Automation configurations of type %q as API client was unavailable.", len(entries), entryType)
 				continue
 			}
-			errs := deleteAutomations(clients.Automation, targetAutomation, entries)
+			errs := deleteAutomations(ctx, clients.Automation, targetAutomation, entries)
 			deleteErrors = append(deleteErrors, errs...)
 		} else if entryType == "bucket" {
 			errs := deleteBuckets(ctx, clients.Buckets, entries)
@@ -112,7 +112,7 @@ func deleteClassicConfig(ctx context.Context, client dtclient.Client, theApi api
 	values, errs := filterValuesToDelete(ctx, entries, values, theApi.ID)
 	errors = append(errors, errs...)
 
-	log.WithCtxFields(ctx).WithFields(field.Type(theApi.ID)).Info("Deleting configs of type %s...", theApi.ID)
+	log.WithCtxFields(ctx).WithFields(field.Type(theApi.ID)).Info("Deleting %d config(s) of type %s...", len(entries), theApi.ID)
 
 	if len(values) == 0 {
 		log.WithCtxFields(ctx).WithFields(field.Type(theApi.ID)).Debug("No values found to delete for type %s.", targetApi)
@@ -130,6 +130,10 @@ func deleteClassicConfig(ctx context.Context, client dtclient.Client, theApi api
 
 func deleteSettingsObject(ctx context.Context, c dtclient.Client, entries []DeletePointer) []error {
 	errors := make([]error, 0)
+
+	if len(entries) > 0 {
+		log.WithCtxFields(ctx).WithFields(field.Type(entries[0].Type)).Info("Deleting %d config(s) of type %s...", len(entries), entries[0].Type)
+	}
 
 	for _, e := range entries {
 
@@ -173,7 +177,8 @@ func deleteSettingsObject(ctx context.Context, c dtclient.Client, entries []Dele
 	return errors
 }
 
-func deleteAutomations(c automationClient, automationResource config.AutomationResource, entries []DeletePointer) []error {
+func deleteAutomations(ctx context.Context, c automationClient, automationResource config.AutomationResource, entries []DeletePointer) []error {
+	log.WithCtxFields(ctx).WithFields(field.Type(string(automationResource))).Info("Deleting %d config(s) of type %s...", len(entries), automationResource)
 	errors := make([]error, 0)
 
 	for _, e := range entries {
@@ -195,6 +200,7 @@ func deleteAutomations(c automationClient, automationResource config.AutomationR
 }
 
 func deleteBuckets(ctx context.Context, c bucketClient, entries []DeletePointer) []error {
+	log.WithCtxFields(ctx).WithFields(field.Type("bucket")).Info("Deleting %d config(s) of type %s...", len(entries), "bucket")
 	errors := make([]error, 0)
 	for _, e := range entries {
 		bucketName := fmt.Sprintf("%s_%s", e.Project, e.Identifier)
