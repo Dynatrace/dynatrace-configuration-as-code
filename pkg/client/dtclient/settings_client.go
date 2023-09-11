@@ -193,17 +193,17 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 		}
 	}
 
-	if match, err := d.findObjectWithMatchingConstraints(ctx, obj); err != nil {
+	if matchingObject, found, err := d.findObjectWithMatchingConstraints(ctx, obj); err != nil {
 		return DynatraceEntity{}, err
-	} else if match != nil {
+	} else if found {
 
 		var props []string
-		for k, v := range match.matches {
+		for k, v := range matchingObject.matches {
 			props = append(props, fmt.Sprintf("(%v = %v)", k, v))
 		}
 
-		log.WithCtxFields(ctx).Info("Updating existing object %q with matching unique properties: %v", match.object.ObjectId, strings.Join(props, ", "))
-		obj.OriginObjectId = match.object.ObjectId
+		log.WithCtxFields(ctx).Info("Updating existing object %q with matching unique properties: %v", matchingObject.object.ObjectId, strings.Join(props, ", "))
+		obj.OriginObjectId = matchingObject.object.ObjectId
 	}
 
 	// generate legacy external ID without project name.
@@ -271,38 +271,38 @@ type match struct {
 	matches constraintMatch
 }
 
-func (d *DynatraceClient) findObjectWithMatchingConstraints(ctx context.Context, source SettingsObject) (*match, error) {
+func (d *DynatraceClient) findObjectWithMatchingConstraints(ctx context.Context, source SettingsObject) (match, bool, error) {
 	constraints, err := d.fetchSchemasConstraints(ctx, source.SchemaId)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get details for schema %q: %w", source.SchemaId, err)
+		return match{}, false, fmt.Errorf("unable to get details for schema %q: %w", source.SchemaId, err)
 	}
 
 	if len(constraints.UniqueProperties) == 0 {
-		return nil, nil
+		return match{}, false, nil
 	}
 
 	objects, err := d.listSettings(ctx, source.SchemaId, ListSettingsOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("unable to get existing settings objects for %q schema: %w", source.SchemaId, err)
+		return match{}, false, fmt.Errorf("unable to get existing settings objects for %q schema: %w", source.SchemaId, err)
 	}
 
-	target, err := findObjectWithSameConstraints(constraints, source, objects)
+	target, found, err := findObjectWithSameConstraints(constraints, source, objects)
 	if err != nil {
-		return nil, err
+		return match{}, false, err
 	}
-	return target, nil
+	return target, found, nil
 }
 
-func findObjectWithSameConstraints(schema SchemaConstraints, source SettingsObject, objects []DownloadSettingsObject) (*match, error) {
+func findObjectWithSameConstraints(schema SchemaConstraints, source SettingsObject, objects []DownloadSettingsObject) (match, bool, error) {
 	candidates := make(map[int]constraintMatch)
 
 	for _, uniqueKeys := range schema.UniqueProperties {
 		for j, o := range objects {
-			match, constraintMatches, err := doObjectsMatchBasedOnUniqueKeys(uniqueKeys, source, o)
+			matchFound, constraintMatches, err := doObjectsMatchBasedOnUniqueKeys(uniqueKeys, source, o)
 			if err != nil {
-				return nil, err
+				return match{}, false, err
 			}
-			if match {
+			if matchFound {
 				candidates[j] = constraintMatches // candidate found, store index (same object might match for several constraints, set ensures we only count it once)
 			}
 		}
@@ -310,22 +310,28 @@ func findObjectWithSameConstraints(schema SchemaConstraints, source SettingsObje
 
 	if len(candidates) == 1 { // unique match found
 		index := maps.Keys(candidates)[0]
-		return &match{
+		return match{
 			object:  objects[index],
 			matches: candidates[index],
-		}, nil
+		}, true, nil
 	}
 
 	if len(candidates) > 1 {
+
+		if len(candidates) > 5 {
+			// showing many objectIDs to a user won't actually be useful
+			return match{}, false, fmt.Errorf("can't update configuration %q - unable to find exact match, %d existing objects with matching unique keys found", source.Coordinate, len(candidates))
+		}
+
 		var objectIds []string
 		for i := range candidates {
 			objectIds = append(objectIds, objects[i].ObjectId)
 		}
 
-		return nil, fmt.Errorf("can't update configuration %q - unable to find exact match, several existing objects with matching unique keys found: %v", source.Coordinate, strings.Join(objectIds, ", "))
+		return match{}, false, fmt.Errorf("can't update configuration %q - unable to find exact match, %d existing objects with matching unique keys found: %v", source.Coordinate, len(objectIds), strings.Join(objectIds, ", "))
 	}
 
-	return nil, nil // no matches found
+	return match{}, false, nil // no matches found
 }
 
 type constraintMatch map[string]any
