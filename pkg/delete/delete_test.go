@@ -62,7 +62,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 
 		})
 		c.EXPECT().DeleteSettings(gomock.Eq("12345")).Return(nil)
-		entriesToDelete := map[string][]DeletePointer{
+		entriesToDelete := DeleteEntries{
 			"builtin:alerting.profile": {
 				{
 					Type:       "builtin:alerting.profile",
@@ -77,7 +77,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 	t.Run("TestDeleteSettings_LegacyExternalID - List settings with external ID fails", func(t *testing.T) {
 		c := dtclient.NewMockClient(gomock.NewController(t))
 		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, rest.RespError{Err: fmt.Errorf("WHOPS"), StatusCode: 0})
-		entriesToDelete := map[string][]DeletePointer{
+		entriesToDelete := DeleteEntries{
 			"builtin:alerting.profile": {
 				{
 					Type:       "builtin:alerting.profile",
@@ -92,7 +92,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 	t.Run("TestDeleteSettings_LegacyExternalID - List settings returns no objects", func(t *testing.T) {
 		c := dtclient.NewMockClient(gomock.NewController(t))
 		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, nil)
-		entriesToDelete := map[string][]DeletePointer{
+		entriesToDelete := DeleteEntries{
 			"builtin:alerting.profile": {
 				{
 					Type:       "builtin:alerting.profile",
@@ -117,7 +117,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 			},
 		}, nil)
 		c.EXPECT().DeleteSettings(gomock.Eq("12345")).Return(fmt.Errorf("WHOPS"))
-		entriesToDelete := map[string][]DeletePointer{
+		entriesToDelete := DeleteEntries{
 			"builtin:alerting.profile": {
 				{
 					Type:       "builtin:alerting.profile",
@@ -150,7 +150,7 @@ func TestDeleteSettings(t *testing.T) {
 
 		})
 		c.EXPECT().DeleteSettings(gomock.Eq("12345")).Return(nil)
-		entriesToDelete := map[string][]DeletePointer{
+		entriesToDelete := DeleteEntries{
 			"builtin:alerting.profile": {
 				{
 					Type:       "builtin:alerting.profile",
@@ -166,7 +166,7 @@ func TestDeleteSettings(t *testing.T) {
 	t.Run("TestDeleteSettings - List settings with external ID fails", func(t *testing.T) {
 		c := dtclient.NewMockClient(gomock.NewController(t))
 		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, rest.RespError{Err: fmt.Errorf("WHOPS"), StatusCode: 0})
-		entriesToDelete := map[string][]DeletePointer{
+		entriesToDelete := DeleteEntries{
 			"builtin:alerting.profile": {
 				{
 					Type:       "builtin:alerting.profile",
@@ -182,7 +182,7 @@ func TestDeleteSettings(t *testing.T) {
 	t.Run("TestDeleteSettings - List settings returns no objects", func(t *testing.T) {
 		c := dtclient.NewMockClient(gomock.NewController(t))
 		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, nil)
-		entriesToDelete := map[string][]DeletePointer{
+		entriesToDelete := DeleteEntries{
 			"builtin:alerting.profile": {
 				{
 					Type:       "builtin:alerting.profile",
@@ -208,7 +208,7 @@ func TestDeleteSettings(t *testing.T) {
 			},
 		}, nil)
 		c.EXPECT().DeleteSettings(gomock.Eq("12345")).Return(fmt.Errorf("WHOPS"))
-		entriesToDelete := map[string][]DeletePointer{
+		entriesToDelete := DeleteEntries{
 			"builtin:alerting.profile": {
 				{
 					Type:       "builtin:alerting.profile",
@@ -243,7 +243,7 @@ func TestDeleteSettings(t *testing.T) {
 
 		})
 		c.EXPECT().DeleteSettings(gomock.Eq("12345")).Times(0) // deletion should not be attempted for non-deletable objects
-		entriesToDelete := map[string][]DeletePointer{
+		entriesToDelete := DeleteEntries{
 			"builtin:alerting.profile": {
 				{
 					Type:       "builtin:alerting.profile",
@@ -271,7 +271,7 @@ func TestDeleteAutomations(t *testing.T) {
 
 		c := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 
-		entriesToDelete := map[string][]DeletePointer{
+		entriesToDelete := DeleteEntries{
 			"workflow": {
 				{
 					Type:       "workflow",
@@ -313,7 +313,7 @@ func TestDeleteAutomations(t *testing.T) {
 
 		c := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 
-		entriesToDelete := map[string][]DeletePointer{
+		entriesToDelete := DeleteEntries{
 			"workflow": {
 				{
 					Type:       "workflow",
@@ -355,7 +355,7 @@ func TestDeleteAutomations(t *testing.T) {
 
 		c := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 
-		entriesToDelete := map[string][]DeletePointer{
+		entriesToDelete := DeleteEntries{
 			"workflow": {
 				{
 					Type:       "workflow",
@@ -380,7 +380,7 @@ func TestDeleteAutomations(t *testing.T) {
 
 		c := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
 
-		entriesToDelete := map[string][]DeletePointer{
+		entriesToDelete := DeleteEntries{
 			"workflow": {
 				{
 					Type:       "workflow",
@@ -410,7 +410,7 @@ func TestDeleteBuckets(t *testing.T) {
 		u, _ := url.Parse(server.URL)
 		c := buckets.NewClient(lib.NewClient(u, server.Client()))
 
-		entriesToDelete := map[string][]DeletePointer{
+		entriesToDelete := DeleteEntries{
 			"bucket": {
 				{
 					Type:       "bucket",
@@ -436,7 +436,7 @@ func TestDeleteBuckets(t *testing.T) {
 		u, _ := url.Parse(server.URL)
 		c := buckets.NewClient(lib.NewClient(u, server.Client()))
 
-		entriesToDelete := map[string][]DeletePointer{
+		entriesToDelete := DeleteEntries{
 			"bucket": {
 				{
 					Type:       "bucket",
@@ -462,7 +462,7 @@ func TestDeleteBuckets(t *testing.T) {
 		u, _ := url.Parse(server.URL)
 		c := buckets.NewClient(lib.NewClient(u, server.Client()))
 
-		entriesToDelete := map[string][]DeletePointer{
+		entriesToDelete := DeleteEntries{
 			"bucket": {
 				{
 					Type:       "bucket",
@@ -575,7 +575,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 			a := api.API{ID: "some-id"}
 
 			apiMap := api.APIs{a.ID: a}
-			entriesToDelete := map[string][]DeletePointer{a.ID: tc.args.entries}
+			entriesToDelete := DeleteEntries{a.ID: tc.args.entries}
 
 			c := dtclient.NewMockClient(gomock.NewController(t))
 			c.EXPECT().ListConfigs(gomock.Any(), a).Return(tc.args.values, nil)
@@ -595,7 +595,7 @@ func TestSplitConfigsForDeletionClientReturnsError(t *testing.T) {
 	a := api.API{ID: "some-id"}
 
 	apiMap := api.APIs{a.ID: a}
-	entriesToDelete := map[string][]DeletePointer{a.ID: {{}}}
+	entriesToDelete := DeleteEntries{a.ID: {{}}}
 
 	c := dtclient.NewMockClient(gomock.NewController(t))
 	c.EXPECT().ListConfigs(gomock.Any(), a).Return(nil, errors.New("error"))

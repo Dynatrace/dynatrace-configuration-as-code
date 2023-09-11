@@ -78,6 +78,7 @@ func GetDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 			if errs != nil {
 				return fmt.Errorf("encountered errors while parsing delete.yaml: %s", errs)
 			}
+
 			return Delete(manifest.Environments, entriesToDelete)
 		},
 		ValidArgsFunction: completion.DeleteCompletion,

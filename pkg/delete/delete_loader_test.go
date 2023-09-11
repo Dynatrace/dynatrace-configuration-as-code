@@ -172,7 +172,7 @@ func TestLoadEntriesToDelete(t *testing.T) {
 	tests := []struct {
 		name             string
 		givenFileContent string
-		want             map[string][]DeletePointer
+		want             DeleteEntries
 	}{
 		{
 			"Loads simple file",
@@ -180,7 +180,7 @@ func TestLoadEntriesToDelete(t *testing.T) {
 - management-zone/test entity/entities
 - auto-tag/random tag
 `,
-			map[string][]DeletePointer{
+			DeleteEntries{
 				"auto-tag": {
 					{
 						Type:       "auto-tag",
@@ -201,7 +201,7 @@ func TestLoadEntriesToDelete(t *testing.T) {
 - management-zone/test entity/entities
 - builtin:auto.tagging/random tag
 `,
-			map[string][]DeletePointer{
+			DeleteEntries{
 				"builtin:auto.tagging": {
 					{
 						Type:       "builtin:auto.tagging",
@@ -226,7 +226,7 @@ func TestLoadEntriesToDelete(t *testing.T) {
   type: builtin:auto.tagging
   id: my-tag
 `,
-			map[string][]DeletePointer{
+			DeleteEntries{
 				"builtin:auto.tagging": {
 					{
 						Project:    "some-project",
@@ -250,7 +250,7 @@ func TestLoadEntriesToDelete(t *testing.T) {
   type: builtin:auto.tagging
   id: my-tag
 `,
-			map[string][]DeletePointer{
+			DeleteEntries{
 				"builtin:auto.tagging": {
 					{
 						Project:    "some-project",
