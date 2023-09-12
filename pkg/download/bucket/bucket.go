@@ -107,5 +107,8 @@ func (d *Downloader) convertAllObjects(projectName string, objects [][]byte) []c
 		}
 		result = append(result, c)
 	}
+
+	log.Info("downloaded %d configurations for GRAIL bucket", len(result))
+
 	return result
 }

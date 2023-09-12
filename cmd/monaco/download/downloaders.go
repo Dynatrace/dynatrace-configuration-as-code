@@ -25,6 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download"
 	dlautomation "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/automation"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/bucket"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/settings"
 )
@@ -59,7 +60,9 @@ func makeDownloaders(options downloadConfigsOptions) (downloaders, error) {
 	}
 	var settingsDownloader download.Downloader[config.SettingsType] = settings.NewDownloader(clients.Settings())
 	var classicDownloader download.Downloader[config.ClassicApiType] = classicDownloader(clients.Classic(), options)
-	return downloaders{settingsDownloader, classicDownloader, automationDownloader}, nil
+	var bucketDownloader download.Downloader[config.BucketType] = bucket.NewDownloader(clients.Bucket())
+
+	return downloaders{settingsDownloader, classicDownloader, automationDownloader, bucketDownloader}, nil
 }
 
 func classicDownloader(client dtclient.Client, opts downloadConfigsOptions) *classic.Downloader {
