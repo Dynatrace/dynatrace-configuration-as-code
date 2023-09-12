@@ -2,6 +2,8 @@ manifestVersion: 1.0
 projects:
 - name: project1
 - name: project2
+- name: project3
+- name: project4
 environmentGroups:
 - name: default
   environments:

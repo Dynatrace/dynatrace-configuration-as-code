@@ -1,0 +1,4 @@
+{
+    "ProcessGroup": "{{ .pg }}",
+    "MonitoringState": "{{ .state }}"
+}

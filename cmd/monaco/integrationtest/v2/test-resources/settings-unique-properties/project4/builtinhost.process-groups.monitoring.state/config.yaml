@@ -1,0 +1,22 @@
+configs:
+  - id: setting-in-scope-host-42
+    type:
+      settings:
+        schema: builtin:host.process-groups.monitoring-state
+        scope: HOST-4242424242424242
+    config:
+      parameters:
+        state: MONITORING_ON
+        pg: PROCESS_GROUP-4242424242424242
+      template: template.json
+  - id: setting-in-scope-host-21 # defines same unique PG ID, but in different scope
+    type:
+      settings:
+        schema: builtin:host.process-groups.monitoring-state
+        scope: HOST-2121212121212121
+    config:
+      parameters:
+        state: MONITORING_ON
+        pg: PROCESS_GROUP-4242424242424242
+      template: template.json
+

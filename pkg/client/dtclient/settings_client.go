@@ -298,6 +298,10 @@ func findObjectWithSameConstraints(schema SchemaConstraints, source SettingsObje
 
 	for _, uniqueKeys := range schema.UniqueProperties {
 		for j, o := range objects {
+			if o.Scope != source.Scope {
+				continue // settings in different Scopes can't be the same
+			}
+
 			matchFound, constraintMatches, err := doObjectsMatchBasedOnUniqueKeys(uniqueKeys, source, o)
 			if err != nil {
 				return match{}, false, err

@@ -138,23 +138,62 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 
 }
 
+// TestDeploySettingsWithUniqueProperties asserts that settings with a schema that defines unique properties are updated based on those props.
+// It deploys project1 and then project2 - both define the "same" Settings based on unique properties, but being in different projects,
+// will get different monaco externalIds. The test then asserts that only the project2 externalIds can be found - monaco has updated the existing settings
+// it found based on unique properties and attached new externalIds to them.
 func TestDeploySettingsWithUniqueProperties(t *testing.T) {
-	fs := testutils.CreateTestFileSystem()
-	var manifestPath = "test-resources/settings-unique-properties/manifest.yaml"
-	loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "platform_env")
 
-	t.Cleanup(func() {
-		integrationtest.CleanupIntegrationTest(t, fs, manifestPath, loadedManifest, "")
+	configFolder := "test-resources/settings-unique-properties"
+	manifestPath := configFolder + "/manifest.yaml"
+
+	RunIntegrationWithCleanup(t, configFolder, manifestPath, "", "SettingsUniqueProps", func(fs afero.Fs, _ TestContext) {
+		// create with project1 values
+		cmd := runner.BuildCli(fs)
+		cmd.SetArgs([]string{"deploy", "-e", "platform_env", "-p", "project1", manifestPath})
+		err := cmd.Execute()
+		assert.NoError(t, err)
+
+		// update based on unique properties with project2 values
+		cmd = runner.BuildCli(fs)
+		cmd.SetArgs([]string{"deploy", "-e", "platform_env", "-p", "project2", manifestPath})
+		err = cmd.Execute()
+		assert.NoError(t, err)
+
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project1"}, "platform_env", false) // updated to project2 externalIds
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project2"}, "platform_env", true)
 	})
+}
 
-	cmd := runner.BuildCli(fs)
-	cmd.SetArgs([]string{"deploy", "-e", "platform_env", "-p", "project1", manifestPath})
-	err := cmd.Execute()
-	assert.NoError(t, err)
+// TestDeploySettingsWithUniqueProperties_ConsidersScopes is an extension of TestDeploySettingsWithUniqueProperties
+// It uses project3 and project4 which both define settings in scope of certain hosts which match based on a unique property.
+// project3 defines one setting in scope of a HOST-42...
+// project4 defines a setting in scope of HOST-42... and one for HOST-21...
+// Like TestDeploySettingsWithUniqueProperties the test asserts that only project4 settings can be found.
+// In this case that means that the setting in scope of HOST-42 was updated and the setting for HOST-21 created, even though
+// all three Settings share the same unique property (so this test also asserts that the scope is considered for finding
+// settings by unique keys).
+func TestDeploySettingsWithUniqueProperties_ConsidersScopes(t *testing.T) {
 
-	cmd.SetArgs([]string{"deploy", "-e", "platform_env", "-p", "project2", manifestPath})
-	err = cmd.Execute()
-	assert.NoError(t, err)
+	configFolder := "test-resources/settings-unique-properties"
+	manifestPath := configFolder + "/manifest.yaml"
+
+	RunIntegrationWithCleanup(t, configFolder, manifestPath, "", "SettingsUniqueProps", func(fs afero.Fs, _ TestContext) {
+		// create with project3 values
+		cmd := runner.BuildCli(fs)
+		cmd.SetArgs([]string{"deploy", "-e", "platform_env", "-p", "project3", manifestPath})
+		err := cmd.Execute()
+		assert.NoError(t, err)
+
+		// update based on unique properties with project4 values and extend by one config
+		cmd = runner.BuildCli(fs)
+		cmd.SetArgs([]string{"deploy", "-e", "platform_env", "-p", "project4", manifestPath})
+		err = cmd.Execute()
+		assert.NoError(t, err)
+
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project3"}, "platform_env", false) // updated to project3 externalId
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifestPath, []string{"project4"}, "platform_env", true)  // 1 setting updated, 1 newly created
+	})
 }
 
 func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts ...func(dynatraceClient *dtclient.DynatraceClient)) dtclient.SettingsClient {

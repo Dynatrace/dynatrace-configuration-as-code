@@ -1,0 +1,12 @@
+configs:
+  - id: setting-in-scope-host-42
+    type:
+      settings:
+        schema: builtin:host.process-groups.monitoring-state
+        scope: HOST-4242424242424242
+    config:
+      parameters:
+        state: MONITORING_ON
+        pg: PROCESS_GROUP-4242424242424242
+      template: template.json
+
