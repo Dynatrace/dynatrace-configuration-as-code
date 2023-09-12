@@ -43,6 +43,10 @@ func (d downloaders) Automation() download.Downloader[config.AutomationType] {
 	return getDownloader[config.AutomationType](d)
 }
 
+func (d downloaders) Bucket() download.Downloader[config.BucketType] {
+	return getDownloader[config.BucketType](d)
+}
+
 func makeDownloaders(options downloadConfigsOptions) (downloaders, error) {
 	clients, err := dynatrace.CreateClientSet(options.environmentURL, options.auth)
 	if err != nil {

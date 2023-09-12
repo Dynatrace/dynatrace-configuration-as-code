@@ -256,6 +256,14 @@ func downloadConfigs(downloaders downloaders, opts downloadConfigsOptions) (proj
 		}
 	}
 
+	{
+		bucketCfgs, err := downloaders.Bucket().Download(opts.projectName)
+		if err != nil {
+			return nil, err
+		}
+		copyConfigs(configs, bucketCfgs)
+	}
+
 	return configs, nil
 }
 
