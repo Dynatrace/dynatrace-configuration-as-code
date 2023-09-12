@@ -40,6 +40,6 @@ func SetDefaultLimit() bool {
 	}
 
 	debug.SetMemoryLimit(defaultLimit)
-	log.Debug("Default soft memory limit set: %d %s", defaultLimit, byteCountToHumanReadableUnit(uint64(defaultLimit)))
+	log.Debug("Default soft memory limit set: %s", byteCountToHumanReadableUnit(uint64(defaultLimit)))
 	return true
 }
