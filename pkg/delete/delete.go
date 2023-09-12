@@ -63,7 +63,7 @@ type ClientSet struct {
 	Classic    dtclient.Client
 	Settings   dtclient.Client
 	Automation automationClient
-	Buckets    *buckets.Client
+	Buckets    bucketClient
 }
 
 type automationClient interface {
@@ -75,8 +75,10 @@ type bucketClient interface {
 	Delete(ctx context.Context, id string) (buckets.Response, error)
 }
 
+type configurationType = string
+
 // DeleteEntries is a map of configuration type to slice of delete pointers
-type DeleteEntries = map[string][]DeletePointer
+type DeleteEntries = map[configurationType][]DeletePointer
 
 // Configs removes all given entriesToDelete from the Dynatrace environment the given client connects to
 func Configs(ctx context.Context, clients ClientSet, apis api.APIs, automationResources map[string]config.AutomationResource, entriesToDelete DeleteEntries) []error {
