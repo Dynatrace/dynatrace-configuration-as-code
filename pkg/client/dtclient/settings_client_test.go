@@ -1003,6 +1003,118 @@ func TestUpsertSettingsConsidersUniqueKeyConstraints(t *testing.T) {
 				postSettingsRequest: settingsRequest{},
 			},
 		},
+		{
+			"Considers Scope when looking for matching objects",
+			given{
+				schemaDetailsResponse: schemaDetailsResponse{
+					SchemaId: "builtin:alerting.profile",
+					SchemaConstraints: []schemaConstraint{
+						{
+							Type:             "UNIQUE",
+							UniqueProperties: []string{"key_1"},
+						},
+					},
+				},
+				listSettingsResponse: []DownloadSettingsObject{
+					{
+						ExternalId: "externalID--1",
+						SchemaId:   "builtin:alerting.profile",
+						Scope:      "HOST-1", // same scope, but no match
+						ObjectId:   "objectID--1",
+						Value:      []byte(`{ "key_1": "NOT A MATCH", "key_2": "dont-care" }`),
+					},
+					{
+						ExternalId: "externalID--2",
+						SchemaId:   "builtin:alerting.profile",
+						Scope:      "HOST-1", // match in same scope
+						ObjectId:   "objectID--2",
+						Value:      []byte(`{ "key_1": "MATCH", "key_2": "dont-care" }`),
+					},
+					{
+						ExternalId: "externalID--3",
+						SchemaId:   "builtin:alerting.profile",
+						Scope:      "HOST-2", // match but in different scope
+						ObjectId:   "objectID--3",
+						Value:      []byte(`{ "key_1": "MATCH", "key_2": "dont-care" }`),
+					},
+				},
+				settingsObject: SettingsObject{
+					Coordinate: coordinate.Coordinate{"p", "builtin:alerting.profile", "id"},
+					SchemaId:   "builtin:alerting.profile",
+					Scope:      "HOST-1",
+					Content:    []byte(`{ "key_1": "MATCH", "key_2": "dont-care" }`),
+				},
+			},
+			want{
+				error: false,
+				postSettingsRequest: settingsRequest{
+					SchemaId:   "builtin:alerting.profile",
+					Scope:      "HOST-1",
+					ObjectId:   "objectID--2", // object ID of matching object
+					ExternalId: "monaco:cCRidWlsdGluOmFsZXJ0aW5nLnByb2ZpbGUkaWQ=",
+					Value: map[string]interface{}{
+						"key_1": "MATCH",
+						"key_2": "dont-care",
+					},
+				},
+			},
+		},
+
+		{
+			"Matching keys in different scopes do not produce a match - new object is created",
+			given{
+				schemaDetailsResponse: schemaDetailsResponse{
+					SchemaId: "builtin:alerting.profile",
+					SchemaConstraints: []schemaConstraint{
+						{
+							Type:             "UNIQUE",
+							UniqueProperties: []string{"key_1"},
+						},
+					},
+				},
+				listSettingsResponse: []DownloadSettingsObject{
+					{
+						ExternalId: "externalID--2",
+						SchemaId:   "builtin:alerting.profile",
+						Scope:      "HOST-2",
+						ObjectId:   "objectID--2",
+						Value:      []byte(`{ "key_1": "MATCH", "key_2": "dont-care" }`),
+					},
+					{
+						ExternalId: "externalID--3",
+						SchemaId:   "builtin:alerting.profile",
+						Scope:      "HOST-3",
+						ObjectId:   "objectID--3",
+						Value:      []byte(`{ "key_1": "MATCH", "key_2": "dont-care" }`),
+					},
+					{
+						ExternalId: "externalID--4",
+						SchemaId:   "builtin:alerting.profile",
+						Scope:      "HOST-4",
+						ObjectId:   "objectID--4",
+						Value:      []byte(`{ "key_1": "MATCH", "key_2": "dont-care" }`),
+					},
+				},
+				settingsObject: SettingsObject{
+					Coordinate: coordinate.Coordinate{"p", "builtin:alerting.profile", "id"},
+					SchemaId:   "builtin:alerting.profile",
+					Scope:      "HOST-1",
+					Content:    []byte(`{ "key_1": "a", "key_2": 42 }`),
+				},
+			},
+			want{
+				error: false,
+				postSettingsRequest: settingsRequest{
+					SchemaId:   "builtin:alerting.profile",
+					Scope:      "HOST-1",
+					ExternalId: "monaco:cCRidWlsdGluOmFsZXJ0aW5nLnByb2ZpbGUkaWQ=",
+					Value: map[string]interface{}{
+						"key_1": "a",
+						"key_2": float64(42),
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
