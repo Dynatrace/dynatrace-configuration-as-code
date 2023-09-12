@@ -117,10 +117,10 @@ func deleteClassicConfig(ctx context.Context, client dtclient.Client, theApi api
 	values, errs := filterValuesToDelete(ctx, entries, values, theApi.ID)
 	errors = append(errors, errs...)
 
-	log.WithCtxFields(ctx).WithFields(field.Type(theApi.ID)).Info("Deleting %d config(s) of type %s...", len(entries), theApi.ID)
+	log.WithCtxFields(ctx).WithFields(field.Type(theApi.ID)).Info("Deleting %d config(s) of type %q...", len(entries), theApi.ID)
 
 	if len(values) == 0 {
-		log.WithCtxFields(ctx).WithFields(field.Type(theApi.ID)).Debug("No values found to delete for type %s.", targetApi)
+		log.WithCtxFields(ctx).WithFields(field.Type(theApi.ID)).Debug("No values found to delete for type %q.", targetApi)
 	}
 
 	for _, v := range values {
@@ -137,7 +137,7 @@ func deleteSettingsObject(ctx context.Context, c dtclient.Client, entries []Dele
 	errors := make([]error, 0)
 
 	if len(entries) > 0 {
-		log.WithCtxFields(ctx).WithFields(field.Type(entries[0].Type)).Info("Deleting %d config(s) of type %s...", len(entries), entries[0].Type)
+		log.WithCtxFields(ctx).WithFields(field.Type(entries[0].Type)).Info("Deleting %d config(s) of type %q...", len(entries), entries[0].Type)
 	}
 
 	for _, e := range entries {
@@ -171,7 +171,7 @@ func deleteSettingsObject(ctx context.Context, c dtclient.Client, entries []Dele
 				continue
 			}
 
-			log.WithCtxFields(ctx).Debug("Deleting settings object %s with objectId %s.", e, obj.ObjectId)
+			log.WithCtxFields(ctx).Debug("Deleting settings object %s with objectId %q.", e, obj.ObjectId)
 			err := c.DeleteSettings(obj.ObjectId)
 			if err != nil {
 				errors = append(errors, fmt.Errorf("could not delete settings 2.0 object %s with object ID %s: %w", e, obj.ObjectId, err))
@@ -183,7 +183,7 @@ func deleteSettingsObject(ctx context.Context, c dtclient.Client, entries []Dele
 }
 
 func deleteAutomations(ctx context.Context, c automationClient, automationResource config.AutomationResource, entries []DeletePointer) []error {
-	log.WithCtxFields(ctx).WithFields(field.Type(string(automationResource))).Info("Deleting %d config(s) of type %s...", len(entries), automationResource)
+	log.WithCtxFields(ctx).WithFields(field.Type(string(automationResource))).Info("Deleting %d config(s) of type %q...", len(entries), automationResource)
 	errors := make([]error, 0)
 
 	for _, e := range entries {
@@ -205,7 +205,7 @@ func deleteAutomations(ctx context.Context, c automationClient, automationResour
 }
 
 func deleteBuckets(ctx context.Context, c bucketClient, entries []DeletePointer) []error {
-	log.WithCtxFields(ctx).WithFields(field.Type("bucket")).Info("Deleting %d config(s) of type %s...", len(entries), "bucket")
+	log.WithCtxFields(ctx).WithFields(field.Type("bucket")).Info("Deleting %d config(s) of type %q...", len(entries), "bucket")
 	errors := make([]error, 0)
 	for _, e := range entries {
 		bucketName := fmt.Sprintf("%s_%s", e.Project, e.Identifier)
@@ -281,7 +281,7 @@ func AllConfigs(ctx context.Context, client dtclient.ConfigClient, apis api.APIs
 			continue
 		}
 
-		log.WithCtxFields(ctx).WithFields(field.Type(a.ID)).Info("Deleting %d configs of type %s...", len(values), a.ID)
+		log.WithCtxFields(ctx).WithFields(field.Type(a.ID)).Info("Deleting %d configs of type %q...", len(values), a.ID)
 
 		for _, v := range values {
 			log.WithCtxFields(ctx).WithFields(field.Type(a.ID), field.F("value", v)).Debug("Deleting config %s:%s...", a.ID, v.Id)
@@ -321,7 +321,7 @@ func AllSettingsObjects(ctx context.Context, c dtclient.SettingsClient) []error 
 			continue
 		}
 
-		log.WithCtxFields(ctx).WithFields(field.Type(s)).Info("Deleting %d configs of type %s...", len(settings), s)
+		log.WithCtxFields(ctx).WithFields(field.Type(s)).Info("Deleting %d configs of type %q...", len(settings), s)
 		for _, setting := range settings {
 			if setting.ModificationInfo != nil && !setting.ModificationInfo.Deletable {
 				continue
@@ -357,7 +357,7 @@ func AllAutomations(ctx context.Context, c automationClient) []error {
 			continue
 		}
 
-		log.WithCtxFields(ctx).WithFields(field.Type(string(resource))).Info("Deleting %d Automations of type %s...", len(objects), resource)
+		log.WithCtxFields(ctx).WithFields(field.Type(string(resource))).Info("Deleting %d Automations of type %q...", len(objects), resource)
 		for _, o := range objects {
 			log.WithCtxFields(ctx).WithFields(field.Type(string(resource)), field.F("object", o)).Debug("Deleting Automation object with id %q...", o.ID)
 			err = c.Delete(t, o.ID)
