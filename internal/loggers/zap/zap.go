@@ -94,7 +94,7 @@ func New(logOptions loggers.LogOptions) (*Logger, error) {
 	logLevel := zap.NewAtomicLevelAt(levelMap[logOptions.LogLevel])
 
 	var cores []zapcore.Core
-	if logOptions.ConsoleLoggingJSON {
+	if logOptions.JSONLogging {
 		consoleSyncer := zapcore.Lock(os.Stdout)
 		cores = append(cores, zapcore.NewCore(zapcore.NewJSONEncoder(encoderConfig), consoleSyncer, logLevel))
 	} else {
@@ -105,7 +105,7 @@ func New(logOptions loggers.LogOptions) (*Logger, error) {
 	if logOptions.File != nil {
 		debugLevel := zap.NewAtomicLevelAt(zapcore.DebugLevel) // always debug log to files
 		fileSyncer := zapcore.Lock(zapcore.AddSync(logOptions.File))
-		if logOptions.FileLoggingJSON {
+		if logOptions.JSONLogging {
 			cores = append(cores, zapcore.NewCore(zapcore.NewJSONEncoder(encoderConfig), fileSyncer, debugLevel))
 		} else {
 			cores = append(cores, zapcore.NewCore(newFixedFieldsConsoleEncoder(), fileSyncer, debugLevel))
@@ -114,7 +114,7 @@ func New(logOptions loggers.LogOptions) (*Logger, error) {
 
 	if logOptions.LogSpy != nil {
 		spySyncer := zapcore.Lock(zapcore.AddSync(logOptions.LogSpy))
-		if logOptions.ConsoleLoggingJSON {
+		if logOptions.JSONLogging {
 			cores = append(cores, zapcore.NewCore(zapcore.NewJSONEncoder(encoderConfig), spySyncer, logLevel))
 		} else {
 			cores = append(cores, zapcore.NewCore(newFixedFieldsConsoleEncoder(), spySyncer, logLevel))

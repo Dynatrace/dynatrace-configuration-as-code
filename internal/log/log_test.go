@@ -74,7 +74,7 @@ func TestPrepareLogFile_ReturnsErrIfParentDirIsReadOnly(t *testing.T) {
 
 func TestWithFields(t *testing.T) {
 	logSpy := bytes.Buffer{}
-	setDefaultLogger(loggers.LogOptions{ConsoleLoggingJSON: true, LogSpy: &logSpy})
+	setDefaultLogger(loggers.LogOptions{JSONLogging: true, LogSpy: &logSpy})
 	WithFields(
 		field.Field{"Title", "Captain"},
 		field.Field{"Name", "Iglo"},
@@ -97,7 +97,7 @@ func TestWithFields(t *testing.T) {
 
 func TestFromCtx(t *testing.T) {
 	logSpy := bytes.Buffer{}
-	setDefaultLogger(loggers.LogOptions{ConsoleLoggingJSON: true, LogSpy: &logSpy})
+	setDefaultLogger(loggers.LogOptions{JSONLogging: true, LogSpy: &logSpy})
 	c := coordinate.Coordinate{"p1", "t1", "c1"}
 	e := "e1"
 	g := "g"

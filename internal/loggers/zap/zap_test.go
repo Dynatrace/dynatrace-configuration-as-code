@@ -40,7 +40,7 @@ func TestNewLogger(t *testing.T) {
 func TestNewLoggerWithFileJSONEncoded(t *testing.T) {
 	file, err := os.CreateTemp("", "baseLogger-testfile_")
 	defer file.Close()
-	logger, err := New(loggers.LogOptions{File: file, FileLoggingJSON: true})
+	logger, err := New(loggers.LogOptions{File: file, JSONLogging: true})
 	assert.NoError(t, err)
 	assert.NotNil(t, logger)
 
@@ -79,7 +79,7 @@ func TestLoggerReturnsDefaultLogLevel(t *testing.T) {
 
 func TestWithFieldsSubsequently(t *testing.T) {
 	logSpy := bytes.Buffer{}
-	logger, _ := New(loggers.LogOptions{ConsoleLoggingJSON: true, LogSpy: &logSpy})
+	logger, _ := New(loggers.LogOptions{JSONLogging: true, LogSpy: &logSpy})
 
 	// log with field - contains field
 	logger.WithFields(field.F("City", "Monaco")).Info("Hi")
@@ -98,7 +98,7 @@ func TestWithFieldsSubsequently(t *testing.T) {
 
 func TestAllMethodsHaveFields(t *testing.T) {
 	logSpy := bytes.Buffer{}
-	logger, _ := New(loggers.LogOptions{ConsoleLoggingJSON: true, LogSpy: &logSpy, LogLevel: loggers.LevelDebug})
+	logger, _ := New(loggers.LogOptions{JSONLogging: true, LogSpy: &logSpy, LogLevel: loggers.LevelDebug})
 
 	t.Run("Info log - has fields", func(t *testing.T) {
 		defer logSpy.Reset()
@@ -132,7 +132,7 @@ func TestAllMethodsHaveFields(t *testing.T) {
 
 func TestLogger_WhenUsingUnstructuredLogFormat_DoesNotPrintFieldsToConsole(t *testing.T) {
 	logSpy := bytes.Buffer{}
-	logger, _ := New(loggers.LogOptions{ConsoleLoggingJSON: false, LogSpy: &logSpy})
+	logger, _ := New(loggers.LogOptions{JSONLogging: false, LogSpy: &logSpy})
 	logger.WithFields(field.F("my-key", "")).Info("hello")
 	assert.NotContains(t, logSpy.String(), "my-key")
 }
