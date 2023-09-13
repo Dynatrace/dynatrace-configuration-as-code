@@ -89,37 +89,33 @@ func customTimeEncoder(mode loggers.LogTimeMode) func(time.Time, zapcore.Primiti
 }
 
 func New(logOptions loggers.LogOptions) (*Logger, error) {
-	encoderConfig := zap.NewProductionEncoderConfig()
-	encoderConfig.EncodeTime = customTimeEncoder(logOptions.LogTimeMode)
+
 	logLevel := zap.NewAtomicLevelAt(levelMap[logOptions.LogLevel])
 
-	var cores []zapcore.Core
+	var encoder zapcore.Encoder
 	if logOptions.JSONLogging {
-		consoleSyncer := zapcore.Lock(os.Stdout)
-		cores = append(cores, zapcore.NewCore(zapcore.NewJSONEncoder(encoderConfig), consoleSyncer, logLevel))
+		encoderConfig := zap.NewProductionEncoderConfig()
+		encoderConfig.EncodeTime = customTimeEncoder(logOptions.LogTimeMode)
+		encoder = zapcore.NewJSONEncoder(encoderConfig)
 	} else {
-		consoleSyncer := zapcore.Lock(os.Stderr)
-		cores = append(cores, zapcore.NewCore(newFixedFieldsConsoleEncoder(), consoleSyncer, logLevel))
+		encoder = newFixedFieldsConsoleEncoder()
 	}
+
+	var cores []zapcore.Core
+
+	// log to console on configured log level
+	consoleSyncer := zapcore.Lock(os.Stdout)
+	cores = append(cores, zapcore.NewCore(encoder, consoleSyncer, logLevel))
 
 	if logOptions.File != nil {
 		debugLevel := zap.NewAtomicLevelAt(zapcore.DebugLevel) // always debug log to files
 		fileSyncer := zapcore.Lock(zapcore.AddSync(logOptions.File))
-		if logOptions.JSONLogging {
-			cores = append(cores, zapcore.NewCore(zapcore.NewJSONEncoder(encoderConfig), fileSyncer, debugLevel))
-		} else {
-			cores = append(cores, zapcore.NewCore(newFixedFieldsConsoleEncoder(), fileSyncer, debugLevel))
-		}
+		cores = append(cores, zapcore.NewCore(encoder, fileSyncer, debugLevel))
 	}
 
 	if logOptions.LogSpy != nil {
 		spySyncer := zapcore.Lock(zapcore.AddSync(logOptions.LogSpy))
-		if logOptions.JSONLogging {
-			cores = append(cores, zapcore.NewCore(zapcore.NewJSONEncoder(encoderConfig), spySyncer, logLevel))
-		} else {
-			cores = append(cores, zapcore.NewCore(newFixedFieldsConsoleEncoder(), spySyncer, logLevel))
-		}
-
+		cores = append(cores, zapcore.NewCore(encoder, spySyncer, logLevel))
 	}
 
 	logger := zap.New(zapcore.NewTee(cores...))
