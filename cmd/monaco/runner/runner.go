@@ -36,6 +36,7 @@ func Run() int {
 	rootCmd := BuildCli(afero.NewOsFs())
 
 	if err := rootCmd.Execute(); err != nil {
+		log.WithFields(field.F("errorLogFilePath", log.ErrorFilePath())).Error("Errors occurred - error logs written to %s", log.ErrorFilePath())
 		return 1
 	}
 	return 0
