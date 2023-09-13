@@ -28,6 +28,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/go-logr/logr"
+	"net/http"
 )
 
 type Client interface {
@@ -41,7 +42,8 @@ type DummyClient struct{}
 func (c DummyClient) Upsert(_ context.Context, id string, data []byte) (response buckets.Response, err error) {
 	return buckets.Response{
 		Response: api.Response{
-			Data: data,
+			StatusCode: http.StatusOK,
+			Data:       data,
 		},
 	}, nil
 }
