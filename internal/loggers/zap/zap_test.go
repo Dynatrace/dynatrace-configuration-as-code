@@ -144,5 +144,52 @@ func TestLogger_WhenUsingUnstructuredLogFormat_DoesNotPrintFieldsToFile(t *testi
 
 	logger.WithFields(field.F("my-key", "")).Info("hello")
 	content, _ := os.ReadFile(file.Name())
-	assert.NotContains(t, content, "my-key")
+	assert.NotContains(t, string(content), "my-key")
+}
+
+func TestLogger_WritesErrorsToDedicatedFileIfRequested(t *testing.T) {
+	file, _ := os.CreateTemp("", "baseLogger-testfile_")
+	errFile, _ := os.CreateTemp("", "baseLogger-errfile_")
+	defer file.Close()
+	defer errFile.Close()
+	logger, _ := New(loggers.LogOptions{File: file, ErrorFile: errFile})
+
+	logger.Debug("hello")
+	logger.Info("there")
+	logger.Warn("general")
+	logger.Error("kenobi")
+
+	// assert all levels go to file
+	logBytes, _ := os.ReadFile(file.Name())
+	logs := string(logBytes)
+	assert.Contains(t, logs, "hello")
+	assert.Contains(t, logs, "there")
+	assert.Contains(t, logs, "general")
+	assert.Contains(t, logs, "kenobi")
+
+	// assert only errors go to the errors file
+	errBytes, _ := os.ReadFile(errFile.Name())
+	errs := string(errBytes)
+	assert.NotContains(t, errs, "hello")
+	assert.NotContains(t, errs, "there")
+	assert.NotContains(t, errs, "general")
+	assert.Contains(t, errs, "kenobi")
+}
+
+func TestLogger_WritesStructuredErrorFileIfRequested(t *testing.T) {
+	errFile, _ := os.CreateTemp("", "baseLogger-errfile_")
+	defer errFile.Close()
+	logger, _ := New(loggers.LogOptions{ErrorFile: errFile, JSONLogging: true})
+
+	logger.WithFields(field.F("Rank", "General")).Error("Kenobi")
+
+	// assert only errors go to the errors file
+	errBytes, err := os.ReadFile(errFile.Name())
+	assert.NoError(t, err)
+
+	var data map[string]interface{}
+	err = json.Unmarshal(errBytes, &data)
+	assert.NoError(t, err)
+	assert.Equal(t, "Kenobi", data["msg"])
+	assert.Equal(t, "General", data["Rank"])
 }

@@ -50,8 +50,10 @@ type LogOptions struct {
 	LogSpy io.Writer
 	// LogTimeMode specifies which time mode shall be used when printing out logs
 	LogTimeMode LogTimeMode
-
+	// File is an optional file to write logs of level LogLevel and higher to
 	File afero.File
+	// ErrorFile is an optional file to write error level logs to
+	ErrorFile afero.File
 }
 
 type LogFormat int

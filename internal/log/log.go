@@ -32,8 +32,8 @@ import (
 )
 
 const (
-	LogDirectory               = ".logs"
-	TrafficLogFilePrefixFormat = "20060102-150405"
+	LogDirectory                 = ".logs"
+	LogFileTimestampPrefixFormat = "20060102-150405"
 )
 
 // CtxKeyCoord context key used for contextual coordinate information
@@ -117,12 +117,13 @@ func PrepareLogging(fs afero.Fs, verbose *bool, loggerSpy io.Writer) {
 		loglevel = loggers.LevelDebug
 	}
 
-	logFile, err := prepareLogFile(fs)
+	logFile, errFile, err := prepareLogFiles(fs)
 	logFormat := loggers.ParseLogFormat(os.Getenv(loggers.EnvVarLogFormat))
 	logTime := loggers.ParseLogTimeMode(os.Getenv(loggers.EnvVarLogTime))
 
 	setDefaultLogger(loggers.LogOptions{
 		File:        logFile,
+		ErrorFile:   errFile,
 		JSONLogging: logFormat == loggers.LogFormatJSON,
 		LogLevel:    loglevel,
 		LogSpy:      loggerSpy,
@@ -134,18 +135,31 @@ func PrepareLogging(fs afero.Fs, verbose *bool, loggerSpy io.Writer) {
 	}
 }
 
-func prepareLogFile(fs afero.Fs) (afero.File, error) {
-	timestamp := timeutils.TimeAnchor().Format(TrafficLogFilePrefixFormat)
+// prepareLogFiles tries to create a LogDirectory (if none exists) and a file each to write all logs and filtered error
+// logs to. As errors in preparing log files are viewed as optional for the logger setup using this method, partial data
+// may be returned in case of errors.
+// If log directory or logFile creation fails, no log files are returned.
+// If errLog creation fails, a valid logFile is still being returned with an error.
+func prepareLogFiles(fs afero.Fs) (logFile afero.File, errFile afero.File, err error) {
+	timestamp := timeutils.TimeAnchor().Format(LogFileTimestampPrefixFormat)
 	if err := fs.MkdirAll(LogDirectory, 0777); err != nil {
-		return nil, fmt.Errorf("unable to prepare log directory %s: %w", LogDirectory, err)
+		return nil, nil, fmt.Errorf("unable to prepare log directory %s: %w", LogDirectory, err)
 
 	}
+
 	logFilePath := filepath.Join(LogDirectory, timestamp+".log")
-	logFile, err := fs.OpenFile(logFilePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	logFile, err = fs.OpenFile(logFilePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
-		return nil, fmt.Errorf("unable to prepare log file in %s directory: %w", LogDirectory, err)
+		return nil, nil, fmt.Errorf("unable to prepare log file in %s directory: %w", LogDirectory, err)
 	}
-	return logFile, nil
+
+	errFilePath := filepath.Join(LogDirectory, timestamp+".errors")
+	errFile, err = fs.OpenFile(errFilePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		return logFile, nil, fmt.Errorf("unable to prepare error file in %s directory: %w", LogDirectory, err)
+	}
+
+	return logFile, errFile, nil
 
 }
 
