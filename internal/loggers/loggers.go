@@ -41,11 +41,9 @@ const EnvVarLogTime = "MONACO_LOG_TIME"
 
 // LogOptions holds different options that can be passed to setup the logger to change its behavior
 type LogOptions struct {
-	// FileLogging specifies whether logs should be additionally written to a file
-	// FileLoggingJSON specifies whether log lines to files should be JSON formatted
-	FileLoggingJSON bool
-	// ConsoleLoggingJSON specifies whether log lines written to the console should be JSON formatted
-	ConsoleLoggingJSON bool
+	// JSONLogging specifies whether log lines should be structured JSON logs with additional fields.
+	// If deactivated text logs are written and (most) fields added by Logger.WithFields are omitted.
+	JSONLogging bool
 	// LogLevel specifies the log level to be used
 	LogLevel LogLevel
 	// LogSpy can be used as an additional log sink to capture the logs

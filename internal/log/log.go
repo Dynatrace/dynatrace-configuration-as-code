@@ -122,12 +122,11 @@ func PrepareLogging(fs afero.Fs, verbose *bool, loggerSpy io.Writer) {
 	logTime := loggers.ParseLogTimeMode(os.Getenv(loggers.EnvVarLogTime))
 
 	setDefaultLogger(loggers.LogOptions{
-		File:               logFile,
-		FileLoggingJSON:    logFormat == loggers.LogFormatJSON,
-		ConsoleLoggingJSON: logFormat == loggers.LogFormatJSON,
-		LogLevel:           loglevel,
-		LogSpy:             loggerSpy,
-		LogTimeMode:        logTime,
+		File:        logFile,
+		JSONLogging: logFormat == loggers.LogFormatJSON,
+		LogLevel:    loglevel,
+		LogSpy:      loggerSpy,
+		LogTimeMode: logTime,
 	})
 
 	if err != nil {
