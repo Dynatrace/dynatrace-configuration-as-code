@@ -20,7 +20,6 @@ package integrationtest
 
 import (
 	"context"
-	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
@@ -117,7 +116,7 @@ func cleanupByGeneratedID(t *testing.T, fs afero.Fs, manifestPath string, loaded
 						continue
 					}
 
-					id := fmt.Sprintf("%s_%s", cfg.Coordinate.Project, cfg.Coordinate.ConfigId)
+					id := idutils.GenerateBucketName(cfg.Coordinate)
 					deleteBucket(t, id, clients.Bucket())
 				}
 			}
