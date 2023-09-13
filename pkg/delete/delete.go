@@ -423,13 +423,13 @@ func AllBuckets(ctx context.Context, c bucketClient) []error {
 			BucketName string `json:"bucketName"`
 		}
 
-		// exclude builtin bucket names, they cannot be deleted anyway
-		if strings.HasPrefix(bucketName.BucketName, "dt_") || strings.HasPrefix(bucketName.BucketName, "default_") {
+		if err := json.Unmarshal(obj, &bucketName); err != nil {
+			errs = append(errs, err)
 			continue
 		}
 
-		if err := json.Unmarshal(obj, &bucketName); err != nil {
-			errs = append(errs, err)
+		// exclude builtin bucket names, they cannot be deleted anyway
+		if strings.HasPrefix(bucketName.BucketName, "dt_") || strings.HasPrefix(bucketName.BucketName, "default_") {
 			continue
 		}
 
