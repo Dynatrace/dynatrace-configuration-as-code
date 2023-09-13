@@ -34,7 +34,8 @@ func Archive(fs afero.Fs) error {
 	files := []string{
 		path.Join(log.LogDirectory, timeAnchorStr+"-"+"req.log"),
 		path.Join(log.LogDirectory, timeAnchorStr+"-"+"resp.log"),
-		path.Join(log.LogDirectory, timeAnchorStr) + ".log"}
+		path.Join(log.LogDirectory, timeAnchorStr) + ".log",
+		path.Join(log.LogDirectory, timeAnchorStr) + ".errors"}
 
 	workingDir, err := os.Getwd()
 	if err != nil {
