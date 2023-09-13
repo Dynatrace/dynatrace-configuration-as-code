@@ -18,7 +18,9 @@ package delete
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -28,7 +30,9 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	"net/http"
 	"reflect"
+	"strings"
 )
 
 // DeletePointer contains all data needed to identify an object to be deleted from a Dynatrace environment.
@@ -61,6 +65,7 @@ type ClientSet struct {
 	Classic    dtclient.Client
 	Settings   dtclient.Client
 	Automation automationClient
+	Buckets    bucketClient
 }
 
 type automationClient interface {
@@ -68,29 +73,40 @@ type automationClient interface {
 	List(ctx context.Context, resourceType automation.ResourceType) (result []automation.Response, err error)
 }
 
-// Configs removes all given entriesToDelete from the Dynatrace environment the given client connects to
-func Configs(ctx context.Context, clients ClientSet, apis api.APIs, automationResources map[string]config.AutomationResource, entriesToDelete map[string][]DeletePointer) []error {
-	errs := make([]error, 0)
+type bucketClient interface {
+	Delete(ctx context.Context, id string) (buckets.Response, error)
+	List(ctx context.Context) (buckets.ListResponse, error)
+}
 
+type configurationType = string
+
+// DeleteEntries is a map of configuration type to slice of delete pointers
+type DeleteEntries = map[configurationType][]DeletePointer
+
+// Configs removes all given entriesToDelete from the Dynatrace environment the given client connects to
+func Configs(ctx context.Context, clients ClientSet, apis api.APIs, automationResources map[string]config.AutomationResource, entriesToDelete DeleteEntries) []error {
+	deleteErrors := make([]error, 0)
 	for entryType, entries := range entriesToDelete {
-		if targetApi, isApi := apis[entryType]; isApi {
-			deleteErrs := deleteClassicConfig(ctx, clients.Classic, targetApi, entries, entryType)
-			errs = append(errs, deleteErrs...)
-		} else if targetAutomation, isAutomation := automationResources[entryType]; isAutomation {
+		if targetApi, isClassicAPI := apis[entryType]; isClassicAPI {
+			errs := deleteClassicConfig(ctx, clients.Classic, targetApi, entries, entryType)
+			deleteErrors = append(deleteErrors, errs...)
+		} else if targetAutomation, isAutomationAPI := automationResources[entryType]; isAutomationAPI {
 			if reflect.ValueOf(clients.Automation).IsNil() {
 				log.WithCtxFields(ctx).WithFields(field.Type(entryType)).Warn("Skipped deletion of %d Automation configurations of type %q as API client was unavailable.", len(entries), entryType)
 				continue
 			}
-
-			deleteErrs := deleteAutomations(clients.Automation, targetAutomation, entries)
-			errs = append(errs, deleteErrs...)
+			errs := deleteAutomations(ctx, clients.Automation, targetAutomation, entries)
+			deleteErrors = append(deleteErrors, errs...)
+		} else if entryType == "bucket" {
+			errs := deleteBuckets(ctx, clients.Buckets, entries)
+			deleteErrors = append(deleteErrors, errs...)
 		} else { // assume it's a Settings Schema
-			deleteErrs := deleteSettingsObject(ctx, clients.Settings, entries)
-			errs = append(errs, deleteErrs...)
+			errs := deleteSettingsObject(ctx, clients.Settings, entries)
+			deleteErrors = append(deleteErrors, errs...)
 		}
 	}
 
-	return errs
+	return deleteErrors
 }
 
 func deleteClassicConfig(ctx context.Context, client dtclient.Client, theApi api.API, entries []DeletePointer, targetApi string) []error {
@@ -104,10 +120,10 @@ func deleteClassicConfig(ctx context.Context, client dtclient.Client, theApi api
 	values, errs := filterValuesToDelete(ctx, entries, values, theApi.ID)
 	errors = append(errors, errs...)
 
-	log.WithCtxFields(ctx).WithFields(field.Type(theApi.ID)).Info("Deleting configs of type %s...", theApi.ID)
+	log.WithCtxFields(ctx).WithFields(field.Type(theApi.ID)).Info("Deleting %d config(s) of type %q...", len(entries), theApi.ID)
 
 	if len(values) == 0 {
-		log.WithCtxFields(ctx).WithFields(field.Type(theApi.ID)).Debug("No values found to delete for type %s.", targetApi)
+		log.WithCtxFields(ctx).WithFields(field.Type(theApi.ID)).Debug("No values found to delete for type %q.", targetApi)
 	}
 
 	for _, v := range values {
@@ -122,6 +138,10 @@ func deleteClassicConfig(ctx context.Context, client dtclient.Client, theApi api
 
 func deleteSettingsObject(ctx context.Context, c dtclient.Client, entries []DeletePointer) []error {
 	errors := make([]error, 0)
+
+	if len(entries) > 0 {
+		log.WithCtxFields(ctx).WithFields(field.Type(entries[0].Type)).Info("Deleting %d config(s) of type %q...", len(entries), entries[0].Type)
+	}
 
 	for _, e := range entries {
 
@@ -154,7 +174,7 @@ func deleteSettingsObject(ctx context.Context, c dtclient.Client, entries []Dele
 				continue
 			}
 
-			log.WithCtxFields(ctx).Debug("Deleting settings object %s with objectId %s.", e, obj.ObjectId)
+			log.WithCtxFields(ctx).Debug("Deleting settings object %s with objectId %q.", e, obj.ObjectId)
 			err := c.DeleteSettings(obj.ObjectId)
 			if err != nil {
 				errors = append(errors, fmt.Errorf("could not delete settings 2.0 object %s with object ID %s: %w", e, obj.ObjectId, err))
@@ -165,7 +185,8 @@ func deleteSettingsObject(ctx context.Context, c dtclient.Client, entries []Dele
 	return errors
 }
 
-func deleteAutomations(c automationClient, automationResource config.AutomationResource, entries []DeletePointer) []error {
+func deleteAutomations(ctx context.Context, c automationClient, automationResource config.AutomationResource, entries []DeletePointer) []error {
+	log.WithCtxFields(ctx).WithFields(field.Type(string(automationResource))).Info("Deleting %d config(s) of type %q...", len(entries), automationResource)
 	errors := make([]error, 0)
 
 	for _, e := range entries {
@@ -183,6 +204,22 @@ func deleteAutomations(c automationClient, automationResource config.AutomationR
 		}
 	}
 
+	return errors
+}
+
+func deleteBuckets(ctx context.Context, c bucketClient, entries []DeletePointer) []error {
+	log.WithCtxFields(ctx).WithFields(field.Type("bucket")).Info("Deleting %d config(s) of type %q...", len(entries), "bucket")
+	errors := make([]error, 0)
+	for _, e := range entries {
+		bucketName := fmt.Sprintf("%s_%s", e.Project, e.Identifier)
+		resp, err := c.Delete(ctx, bucketName)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("could not delete Bucket Definition object %s with name %q: %w", e, bucketName, err))
+		}
+		if err, ok := resp.AsAPIError(); ok && err.StatusCode != http.StatusNotFound {
+			errors = append(errors, fmt.Errorf("could not delete Bucket Definition object %s with name %q: %w", e, bucketName, err))
+		}
+	}
 	return errors
 }
 
@@ -236,18 +273,26 @@ func filterValuesToDelete(ctx context.Context, entries []DeletePointer, existing
 	return result, errs
 }
 
-// AllConfigs deletes ALL classic Config API objects it can find from the Dynatrace environment the given client connects to
+// AllConfigs collects and deletes classic API configuration objects using the provided ConfigClient.
+//
+// Parameters:
+//   - ctx (context.Context): The context in which the function operates.
+//   - client (dtclient.ConfigClient): An implementation of the ConfigClient interface for managing configuration objects.
+//   - apis (api.APIs): A list of APIs for which configuration values need to be collected and deleted.
+//
+// Returns:
+//   - []error: A slice of errors encountered during the collection and deletion of configuration values.
 func AllConfigs(ctx context.Context, client dtclient.ConfigClient, apis api.APIs) (errors []error) {
 
 	for _, a := range apis {
-		log.WithCtxFields(ctx).WithFields(field.Type(a.ID)).Info("Collecting configs of type %s...", a.ID)
+		log.WithCtxFields(ctx).WithFields(field.Type(a.ID)).Info("Collecting configs of type %q...", a.ID)
 		values, err := client.ListConfigs(ctx, a)
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
 
-		log.WithCtxFields(ctx).WithFields(field.Type(a.ID)).Info("Deleting %d configs of type %s...", len(values), a.ID)
+		log.WithCtxFields(ctx).WithFields(field.Type(a.ID)).Info("Deleting %d configs of type %q...", len(values), a.ID)
 
 		for _, v := range values {
 			log.WithCtxFields(ctx).WithFields(field.Type(a.ID), field.F("value", v)).Debug("Deleting config %s:%s...", a.ID, v.Id)
@@ -263,7 +308,14 @@ func AllConfigs(ctx context.Context, client dtclient.ConfigClient, apis api.APIs
 	return errors
 }
 
-// AllSettingsObjects deletes all settings objects it can find from the Dynatrace environment the given client connects to
+// AllSettingsObjects collects and deletes settings objects using the provided SettingsClient.
+//
+// Parameters:
+//   - ctx (context.Context): The context in which the function operates.
+//   - c (dtclient.SettingsClient): An implementation of the SettingsClient interface for managing settings objects.
+//
+// Returns:
+//   - []error: A slice of errors encountered during the collection and deletion of settings objects.
 func AllSettingsObjects(ctx context.Context, c dtclient.SettingsClient) []error {
 	var errs []error
 
@@ -280,14 +332,14 @@ func AllSettingsObjects(ctx context.Context, c dtclient.SettingsClient) []error 
 	log.WithCtxFields(ctx).Debug("Deleting settings of schemas %v...", schemaIds)
 
 	for _, s := range schemaIds {
-		log.WithCtxFields(ctx).WithFields(field.Type(s)).Info("Collecting Settings of type %s...", s)
+		log.WithCtxFields(ctx).WithFields(field.Type(s)).Info("Collecting objects of type %q...", s)
 		settings, err := c.ListSettings(ctx, s, dtclient.ListSettingsOptions{DiscardValue: true})
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		log.WithCtxFields(ctx).WithFields(field.Type(s)).Info("Deleting %d configs of type %s...", len(settings), s)
+		log.WithCtxFields(ctx).WithFields(field.Type(s)).Info("Deleting %d objects of type %q...", len(settings), s)
 		for _, setting := range settings {
 			if setting.ModificationInfo != nil && !setting.ModificationInfo.Deletable {
 				continue
@@ -304,7 +356,14 @@ func AllSettingsObjects(ctx context.Context, c dtclient.SettingsClient) []error 
 	return errs
 }
 
-// AllAutomations deletes all Automation objects it can find from the Dynatrace environment the given client connects to
+// AllAutomations collects and deletes automations resources using the given automation client.
+//
+// Parameters:
+//   - ctx (context.Context): The context in which the function operates.
+//   - c (automationClient): An implementation of the automationClient interface for performing automation-related operations.
+//
+// Returns:
+//   - []error: A slice of errors encountered during the collection and deletion of automations.
 func AllAutomations(ctx context.Context, c automationClient) []error {
 	var errs []error
 
@@ -316,14 +375,14 @@ func AllAutomations(ctx context.Context, c automationClient) []error {
 			continue
 		}
 
-		log.WithCtxFields(ctx).WithFields(field.Type(string(resource))).Info("Collecting Automations of type %s...", resource)
+		log.WithCtxFields(ctx).WithFields(field.Type(string(resource))).Info("Collecting objects of type %q...", resource)
 		objects, err := c.List(ctx, t)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		log.WithCtxFields(ctx).WithFields(field.Type(string(resource))).Info("Deleting %d Automations of type %s...", len(objects), resource)
+		log.WithCtxFields(ctx).WithFields(field.Type(string(resource))).Info("Deleting %d objects of type %q...", len(objects), resource)
 		for _, o := range objects {
 			log.WithCtxFields(ctx).WithFields(field.Type(string(resource)), field.F("object", o)).Debug("Deleting Automation object with id %q...", o.ID)
 			err = c.Delete(t, o.ID)
@@ -333,5 +392,57 @@ func AllAutomations(ctx context.Context, c automationClient) []error {
 		}
 	}
 
+	return errs
+}
+
+// AllBuckets collects and deletes objects of type "bucket" using the provided bucketClient.
+//
+// Parameters:
+//   - ctx (context.Context): The context for the operation.
+//   - c (bucketClient): The bucketClient used for listing and deleting objects.
+//
+// Returns:
+//   - []error: A slice of errors encountered during the operation. It may contain listing errors,
+//     deletion errors, or API errors.
+func AllBuckets(ctx context.Context, c bucketClient) []error {
+	var errs []error
+
+	log.WithCtxFields(ctx).WithFields(field.Type("bucket")).Info("Collecting objects of type %q...", "bucket")
+	response, err := c.List(ctx)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	if err, ok := response.AsAPIError(); ok {
+		errs = append(errs, err)
+	}
+
+	log.WithCtxFields(ctx).WithFields(field.Type("bucket")).Info("Deleting %d objects of type %q...", len(response.Objects), "bucket")
+	for _, obj := range response.Objects {
+		var bucketName struct {
+			BucketName string `json:"bucketName"`
+		}
+
+		if err := json.Unmarshal(obj, &bucketName); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		// exclude builtin bucket names, they cannot be deleted anyway
+		if strings.HasPrefix(bucketName.BucketName, "dt_") || strings.HasPrefix(bucketName.BucketName, "default_") {
+			continue
+		}
+
+		result, err := c.Delete(ctx, bucketName.BucketName)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		if err, ok := result.AsAPIError(); ok {
+			errs = append(errs, err)
+			continue
+		}
+	}
 	return errs
 }

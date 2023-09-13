@@ -19,6 +19,7 @@ package delete
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/persistence"
 	"github.com/mitchellh/mapstructure"
 	"path/filepath"
@@ -55,11 +56,11 @@ func (e DeleteEntryParserError) Error() string {
 		e.Value, e.Index, e.Reason)
 }
 
-func LoadEntriesToDelete(fs afero.Fs, knownApis []string, deleteFile string) (map[string][]DeletePointer, []error) {
+func LoadEntriesToDelete(fs afero.Fs, deleteFile string) (DeleteEntries, []error) {
 	context := &loaderContext{
 		fs:         fs,
 		deleteFile: filepath.Clean(deleteFile),
-		knownApis:  toSetMap(knownApis),
+		knownApis:  toSetMap(api.NewAPIs().GetNames()),
 	}
 
 	definition, err := readDeleteFile(context)
@@ -108,8 +109,8 @@ func readDeleteFile(context *loaderContext) (persistence.FileDefinition, error) 
 	return result, nil
 }
 
-func parseDeleteFileDefinition(ctx *loaderContext, definition persistence.FileDefinition) (map[string][]DeletePointer, []error) {
-	var result = make(map[string][]DeletePointer)
+func parseDeleteFileDefinition(ctx *loaderContext, definition persistence.FileDefinition) (DeleteEntries, []error) {
+	var result = make(DeleteEntries)
 	var errors []error
 
 	for i, e := range definition.DeleteEntries {

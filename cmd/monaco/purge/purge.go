@@ -82,6 +82,7 @@ func purgeForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs) erro
 	deleteErrors := delete.AllConfigs(ctx, clients.Classic(), apis)
 	deleteErrors = append(deleteErrors, delete.AllSettingsObjects(ctx, clients.Settings())...)
 	deleteErrors = append(deleteErrors, delete.AllAutomations(ctx, clients.Automation())...)
+	deleteErrors = append(deleteErrors, delete.AllBuckets(ctx, clients.Bucket())...)
 
 	if len(deleteErrors) > 0 {
 		log.Error("Encountered %d errors while puring configurations from environment %s, further manual cleanup may be needed. Errors:", len(deleteErrors), env.Name)

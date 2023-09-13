@@ -17,17 +17,21 @@
 package delete
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"path/filepath"
 )
 
 func GetDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
-
 	var environments, groups []string
 	var manifestName string
 	var deleteFile string
@@ -50,7 +54,32 @@ func GetDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 				return err
 			}
 
-			return Delete(fs, manifestName, deleteFile, environments, groups)
+			// Sanitize manifest file path to manifest yaml file
+			manifestName = filepath.Clean(manifestName)
+			absManifestFilePath, err := filepath.Abs(manifestName)
+			if err != nil {
+				return err
+			}
+
+			// Try to load the manifest file
+			manifest, errs := manifest.LoadManifest(&manifest.LoaderContext{
+				Fs:           fs,
+				ManifestPath: absManifestFilePath,
+				Environments: environments,
+				Groups:       groups,
+			})
+			if err != nil {
+				errutils.PrintErrors(errs)
+				return errors.New("error while loading manifest")
+			}
+
+			// Try to load delete entries from delete file
+			entriesToDelete, errs := delete.LoadEntriesToDelete(fs, deleteFile)
+			if errs != nil {
+				return fmt.Errorf("encountered errors while parsing delete.yaml: %s", errs)
+			}
+
+			return Delete(manifest.Environments, entriesToDelete)
 		},
 		ValidArgsFunction: completion.DeleteCompletion,
 	}

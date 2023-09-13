@@ -16,114 +16,70 @@ package delete
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
-	"golang.org/x/exp/maps"
-	"path/filepath"
-
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	"github.com/spf13/afero"
 )
 
-func Delete(fs afero.Fs, deploymentManifestPath string, deleteFile string, environmentNames []string, environmentGroups []string) error {
+// Delete removes configurations from multiple Dynatrace environments based on the specified deletion entries.
+//
+// Parameters:
+//   - environments: A list of Dynatrace environments to perform the deletion on.
+//   - entriesToDelete: Deletion entries specifying what configurations to remove.
+//
+// Returns:
+//   - error: If an error occurs during the deletion process, an error is returned, describing the issue.
+//     If no errors occur, nil is returned.
+func Delete(environments manifest.Environments, entriesToDelete delete.DeleteEntries) error {
+	var deleteErrors []error
+	for _, env := range environments {
+		ctx := context.WithValue(context.TODO(), log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
+		if containsPlatformTypes(entriesToDelete) && env.Auth.OAuth == nil {
+			log.WithCtxFields(ctx).Warn("Delete file contains Dynatrace Platform specific types, but no oAuth credentials are defined for environment %q - Dynatrace Platform configurations won't be deleted.", env.Name)
+		}
 
-	deploymentManifestPath = filepath.Clean(deploymentManifestPath)
-	deploymentManifestPath, manifestErr := filepath.Abs(deploymentManifestPath)
+		clientSet, err := dynatrace.CreateClientSet(env.URL.Value, env.Auth)
+		if err != nil {
+			return fmt.Errorf("failed to create API client for environment %q due to the following error: %w", env.Name, err)
+		}
 
-	if manifestErr != nil {
-		return fmt.Errorf("error while finding absolute path for `%s`: %w", deploymentManifestPath, manifestErr)
+		log.WithCtxFields(ctx).Info("Deleting configs for environment %q...", env.Name)
+
+		classicAPIs := api.NewAPIs()
+		automationAPIs := map[string]config.AutomationResource{
+			string(config.Workflow):         config.Workflow,
+			string(config.BusinessCalendar): config.BusinessCalendar,
+			string(config.SchedulingRule):   config.SchedulingRule,
+		}
+
+		deleteClients := delete.ClientSet{
+			Classic:    clientSet.Classic(),
+			Settings:   clientSet.Settings(),
+			Automation: clientSet.Automation(),
+			Buckets:    clientSet.Bucket(),
+		}
+
+		if errs := delete.Configs(ctx, deleteClients, classicAPIs, automationAPIs, entriesToDelete); errs != nil {
+			deleteErrors = append(deleteErrors, errs...)
+		}
 	}
 
-	apis := api.NewAPIs()
-
-	manifest, manifestLoadError := manifest.LoadManifest(&manifest.LoaderContext{
-		Fs:           fs,
-		ManifestPath: deploymentManifestPath,
-		Environments: environmentNames,
-		Groups:       environmentGroups,
-	})
-
-	if manifestLoadError != nil {
-		errutils.PrintErrors(manifestLoadError)
-		return errors.New("error while loading manifest")
-	}
-
-	entriesToDelete, errs := delete.LoadEntriesToDelete(fs, apis.GetNames(), deleteFile)
-	if errs != nil {
-		return fmt.Errorf("encountered errors while parsing delete.yaml: %s", errs)
-	}
-
-	deleteErrors := deleteConfigs(maps.Values(manifest.Environments), apis, entriesToDelete)
-
-	for _, e := range deleteErrors {
-		log.WithFields(field.Error(e)).Error("Deletion error: %s", e)
-	}
 	if len(deleteErrors) > 0 {
+		for _, e := range deleteErrors {
+			log.WithFields(field.Error(e)).Error("Deletion error: %s", e)
+		}
 		return fmt.Errorf("encountered %v errors during delete", len(deleteErrors))
 	}
 	return nil
 }
 
-func deleteConfigs(environments []manifest.EnvironmentDefinition, apis api.APIs, entriesToDelete map[string][]delete.DeletePointer) (errors []error) {
-
-	for _, env := range environments {
-		deleteErrors := deleteConfigForEnvironment(env, apis, entriesToDelete)
-
-		if deleteErrors != nil {
-			errors = append(errors, deleteErrors...)
-		}
-	}
-
-	return errors
-}
-
-func deleteConfigForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs, entriesToDelete map[string][]delete.DeletePointer) []error {
-
-	ctx := context.WithValue(context.TODO(), log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
-
-	automationResources := map[string]config.AutomationResource{
-		string(config.Workflow):         config.Workflow,
-		string(config.BusinessCalendar): config.BusinessCalendar,
-		string(config.SchedulingRule):   config.SchedulingRule,
-	}
-
-	platformTypes := maps.Keys(automationResources)
-	platformTypes = append(platformTypes, "bucket")
-
-	if env.Auth.OAuth == nil && containsPlatformTypes(entriesToDelete, platformTypes) {
-		log.WithCtxFields(ctx).Warn("Delete file contains Dynatrace Platform specific types, but no oAuth credentials are defined for environment %q - Dynatrace Platform configurations won't be deleted.", env.Name)
-	}
-
-	clientSet, err := dynatrace.CreateClientSet(env.URL.Value, env.Auth)
-	if err != nil {
-		return []error{
-			fmt.Errorf("failed to create API client for environment %q due to the following error: %w", env.Name, err),
-		}
-	}
-
-	log.WithCtxFields(ctx).Info("Deleting configs for environment %q...", env.Name)
-
-	return delete.Configs(
-		ctx,
-		delete.ClientSet{
-			Classic:    clientSet.Classic(),
-			Settings:   clientSet.Settings(),
-			Automation: clientSet.Automation(),
-		},
-		apis,
-		automationResources,
-		entriesToDelete)
-}
-
-func containsPlatformTypes(entriesToDelete map[string][]delete.DeletePointer, platformTypes []string) bool {
-	for _, t := range platformTypes {
+func containsPlatformTypes(entriesToDelete delete.DeleteEntries) bool {
+	for _, t := range []string{string(config.Workflow), string(config.SchedulingRule), string(config.BusinessCalendar), "bucket"} {
 		if _, contains := entriesToDelete[t]; contains {
 			return true
 		}

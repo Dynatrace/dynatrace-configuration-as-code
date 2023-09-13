@@ -172,7 +172,7 @@ func TestLoadEntriesToDelete(t *testing.T) {
 	tests := []struct {
 		name             string
 		givenFileContent string
-		want             map[string][]DeletePointer
+		want             DeleteEntries
 	}{
 		{
 			"Loads simple file",
@@ -180,7 +180,7 @@ func TestLoadEntriesToDelete(t *testing.T) {
 - management-zone/test entity/entities
 - auto-tag/random tag
 `,
-			map[string][]DeletePointer{
+			DeleteEntries{
 				"auto-tag": {
 					{
 						Type:       "auto-tag",
@@ -201,7 +201,7 @@ func TestLoadEntriesToDelete(t *testing.T) {
 - management-zone/test entity/entities
 - builtin:auto.tagging/random tag
 `,
-			map[string][]DeletePointer{
+			DeleteEntries{
 				"builtin:auto.tagging": {
 					{
 						Type:       "builtin:auto.tagging",
@@ -226,7 +226,7 @@ func TestLoadEntriesToDelete(t *testing.T) {
   type: builtin:auto.tagging
   id: my-tag
 `,
-			map[string][]DeletePointer{
+			DeleteEntries{
 				"builtin:auto.tagging": {
 					{
 						Project:    "some-project",
@@ -250,7 +250,7 @@ func TestLoadEntriesToDelete(t *testing.T) {
   type: builtin:auto.tagging
   id: my-tag
 `,
-			map[string][]DeletePointer{
+			DeleteEntries{
 				"builtin:auto.tagging": {
 					{
 						Project:    "some-project",
@@ -279,12 +279,7 @@ func TestLoadEntriesToDelete(t *testing.T) {
 			err = afero.WriteFile(fs, deleteFile, []byte(tt.givenFileContent), 0666)
 			assert.NoError(t, err)
 
-			knownApis := []string{
-				"management-zone",
-				"auto-tag",
-			}
-
-			result, errors := LoadEntriesToDelete(fs, knownApis, deleteFile)
+			result, errors := LoadEntriesToDelete(fs, deleteFile)
 
 			assert.Empty(t, errors)
 			assert.Equal(t, 2, len(result))
@@ -311,12 +306,7 @@ func TestLoadEntriesToDeleteWithInvalidEntry(t *testing.T) {
 	err = afero.WriteFile(fs, deleteFilePath, []byte(fileContent), 0666)
 	assert.NoError(t, err)
 
-	knownApis := []string{
-		"management-zone",
-		"auto-tag",
-	}
-
-	result, errors := LoadEntriesToDelete(fs, knownApis, deleteFilePath)
+	result, errors := LoadEntriesToDelete(fs, deleteFilePath)
 
 	assert.Equal(t, 1, len(errors))
 	assert.Equal(t, 0, len(result))
@@ -330,12 +320,7 @@ func TestLoadEntriesToDeleteNonExistingFile(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	knownApis := []string{
-		"management-zone",
-		"auto-tag",
-	}
-
-	result, errors := LoadEntriesToDelete(fs, knownApis, "/home/test/monaco/non-existing-delete.yaml")
+	result, errors := LoadEntriesToDelete(fs, "/home/test/monaco/non-existing-delete.yaml")
 
 	assert.Equal(t, 1, len(errors))
 	assert.Equal(t, 0, len(result))
@@ -358,12 +343,7 @@ func TestLoadEntriesToDeleteWithMalformedFile(t *testing.T) {
 	err = afero.WriteFile(fs, deleteFilePath, []byte(fileContent), 0666)
 	assert.NoError(t, err)
 
-	knownApis := []string{
-		"management-zone",
-		"auto-tag",
-	}
-
-	result, errors := LoadEntriesToDelete(fs, knownApis, deleteFilePath)
+	result, errors := LoadEntriesToDelete(fs, deleteFilePath)
 
 	assert.Equal(t, 1, len(errors))
 	assert.Equal(t, 0, len(result))
@@ -382,12 +362,7 @@ func TestLoadEntriesToDeleteWithEmptyFile(t *testing.T) {
 	err = afero.WriteFile(fs, deleteFilePath, []byte{}, 0666)
 	assert.NoError(t, err)
 
-	knownApis := []string{
-		"management-zone",
-		"auto-tag",
-	}
-
-	result, errors := LoadEntriesToDelete(fs, knownApis, deleteFilePath)
+	result, errors := LoadEntriesToDelete(fs, deleteFilePath)
 
 	assert.Equal(t, 1, len(errors))
 	assert.Equal(t, 0, len(result))
