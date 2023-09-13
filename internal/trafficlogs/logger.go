@@ -47,11 +47,21 @@ type FileBasedLogger struct {
 func NewFileBased() *FileBasedLogger {
 	tl := &FileBasedLogger{
 		fs:               afero.NewOsFs(),
-		requestFilePath:  path.Join(log.LogDirectory, timeutils.TimeAnchor().Format(TrafficLogFilePrefixFormat)+"-"+"req.log"),
-		responseFilePath: path.Join(log.LogDirectory, timeutils.TimeAnchor().Format(TrafficLogFilePrefixFormat)+"-"+"resp.log"),
+		requestFilePath:  RequestFilePath(),
+		responseFilePath: ResponseFilePath(),
 	}
 
 	return tl
+}
+
+// RequestFilePath returns the full path of an HTTP request log file for the current execution time - if no traffic logs are written (yet) no file may exist at this path.
+func RequestFilePath() string {
+	return path.Join(log.LogDirectory, timeutils.TimeAnchor().Format(TrafficLogFilePrefixFormat)+"-"+"req.log")
+}
+
+// ResponseFilePath returns the full path of an HTTP response log file for the current execution time - if no traffic logs are written (yet) no file may exist at this path.
+func ResponseFilePath() string {
+	return path.Join(log.LogDirectory, timeutils.TimeAnchor().Format(TrafficLogFilePrefixFormat)+"-"+"resp.log")
 }
 
 // LogToFiles takes a record containing request and response information and tries to write it into the files

@@ -23,7 +23,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"path/filepath"
@@ -33,7 +32,6 @@ import (
 func TestManifestErrorsAreWrittenToFile(t *testing.T) {
 	manifest := filepath.Join("test-resources/invalid-manifests/", "manifest_non_existent_project.yaml")
 
-	timeCapture := timeutils.TimeAnchor() // freeze time to ensure test files get expected names
 	fs := testutils.CreateTestFileSystem()
 
 	cmd := runner.BuildCli(fs)
@@ -41,7 +39,7 @@ func TestManifestErrorsAreWrittenToFile(t *testing.T) {
 	err := cmd.Execute()
 	assert.ErrorContains(t, err, "error while loading projects")
 
-	expectedErrFile := filepath.Join(log.LogDirectory, timeCapture.Format(log.LogFileTimestampPrefixFormat)+".errors")
+	expectedErrFile := log.ErrorFilePath()
 
 	exists, err := afero.Exists(fs, expectedErrFile)
 	assert.NoError(t, err)
@@ -60,7 +58,6 @@ func TestConfigErrorsAreWrittenToFile(t *testing.T) {
 	configFolder := "test-resources/configs-with-duplicate-ids/"
 	manifest := filepath.Join(configFolder, "manifest.yaml")
 
-	timeCapture := timeutils.TimeAnchor() // freeze time to ensure test files get expected names
 	fs := testutils.CreateTestFileSystem()
 
 	cmd := runner.BuildCli(fs)
@@ -69,7 +66,7 @@ func TestConfigErrorsAreWrittenToFile(t *testing.T) {
 
 	assert.ErrorContains(t, err, "error while loading projects")
 
-	expectedErrFile := filepath.Join(log.LogDirectory, timeCapture.Format(log.LogFileTimestampPrefixFormat)+".errors")
+	expectedErrFile := log.ErrorFilePath()
 
 	exists, err := afero.Exists(fs, expectedErrFile)
 	assert.NoError(t, err)
