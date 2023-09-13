@@ -20,6 +20,8 @@ package integrationtest
 
 import (
 	"context"
+	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
@@ -109,6 +111,14 @@ func cleanupByGeneratedID(t *testing.T, fs afero.Fs, manifestPath string, loaded
 
 					id := idutils.GenerateUUIDFromCoordinate(cfg.Coordinate)
 					deleteAutomation(t, typ.Resource, id, clients.Automation())
+				case config.BucketType:
+					if cfg.OriginObjectId != "" {
+						deleteBucket(t, cfg.OriginObjectId, clients.Bucket())
+						continue
+					}
+
+					id := fmt.Sprintf("%s_%s", cfg.Coordinate.Project, cfg.Coordinate.ConfigId)
+					deleteBucket(t, id, clients.Bucket())
 				}
 			}
 		}
@@ -148,5 +158,19 @@ func deleteAutomation(t *testing.T, resource config.AutomationResource, id strin
 		t.Logf("Failed to cleanup test config: could not delete Automation (%s) object with ID %s: %v", resource, id, err)
 	} else {
 		log.Info("Cleaned up test Automation %s (%s)", id, resource)
+	}
+}
+
+func deleteBucket(t *testing.T, bucketName string, c *buckets.Client) {
+	r, err := c.Delete(context.Background(), bucketName)
+
+	if err != nil {
+		t.Logf("Unable to delete Bucket with name %s: %v", bucketName, err)
+		return
+	}
+	if apiErr, isErr := r.AsAPIError(); isErr {
+		t.Logf("Unable to delete Bucket with name %s: %v", bucketName, apiErr)
+	} else {
+		log.Info("Cleaned up test Bucket %s", bucketName)
 	}
 }
