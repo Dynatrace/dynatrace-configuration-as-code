@@ -108,9 +108,15 @@ func New(logOptions loggers.LogOptions) (*Logger, error) {
 	cores = append(cores, zapcore.NewCore(encoder, consoleSyncer, logLevel))
 
 	if logOptions.File != nil {
-		debugLevel := zap.NewAtomicLevelAt(zapcore.DebugLevel) // always debug log to files
+		debugLevel := zap.NewAtomicLevelAt(zapcore.DebugLevel) // always debug log to file
 		fileSyncer := zapcore.Lock(zapcore.AddSync(logOptions.File))
 		cores = append(cores, zapcore.NewCore(encoder, fileSyncer, debugLevel))
+	}
+
+	if logOptions.ErrorFile != nil {
+		errLevel := zap.NewAtomicLevelAt(zapcore.ErrorLevel) // only write errors to err file
+		fileSyncer := zapcore.Lock(zapcore.AddSync(logOptions.ErrorFile))
+		cores = append(cores, zapcore.NewCore(encoder, fileSyncer, errLevel))
 	}
 
 	if logOptions.LogSpy != nil {

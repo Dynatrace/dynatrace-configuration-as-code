@@ -33,7 +33,7 @@ import (
 	"sync"
 )
 
-const TrafficLogFilePrefixFormat = log.TrafficLogFilePrefixFormat
+const TrafficLogFilePrefixFormat = log.LogFileTimestampPrefixFormat
 
 type FileBasedLogger struct {
 	fs               afero.Fs

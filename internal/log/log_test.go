@@ -60,15 +60,17 @@ func TestPrepareLogFile_ReturnsErrIfParentDirectoryAlreadyExists(t *testing.T) {
 	fs := &CustomMemMapFs{}
 	err := fs.MkdirAll(".logs", 0777)
 	assert.NoError(t, err)
-	file, err := prepareLogFile(fs)
+	file, errFile, err := prepareLogFiles(fs)
 	assert.Nil(t, file)
+	assert.Nil(t, errFile)
 	assert.Error(t, err)
 }
 
 func TestPrepareLogFile_ReturnsErrIfParentDirIsReadOnly(t *testing.T) {
 	fs := afero.NewReadOnlyFs(afero.NewMemMapFs())
-	file, err := prepareLogFile(fs)
+	file, errFile, err := prepareLogFiles(fs)
 	assert.Nil(t, file)
+	assert.Nil(t, errFile)
 	assert.Error(t, err)
 }
 
