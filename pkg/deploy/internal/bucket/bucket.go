@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/buckets"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 	clientErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
@@ -52,7 +52,7 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 	if c.OriginObjectId != "" {
 		bucketName = c.OriginObjectId
 	} else {
-		bucketName = bucketID(c.Coordinate)
+		bucketName = idutils.GenerateBucketName(c.Coordinate)
 	}
 
 	// create new context to carry logger
@@ -72,11 +72,4 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 		Coordinate: c.Coordinate,
 		Properties: properties,
 	}, nil
-}
-
-// bucketID returns the ID for a bucket based on the coordinate.
-// As all buckets are of the same type and never overlap with configs of different types on the same API, the "type" is omitted.
-// Since the bucket API does not support colons, we concatenate them using underscores.
-func bucketID(c coordinate.Coordinate) string {
-	return fmt.Sprintf("%s_%s", c.Project, c.ConfigId)
 }

@@ -211,7 +211,7 @@ func deleteBuckets(ctx context.Context, c bucketClient, entries []DeletePointer)
 	log.WithCtxFields(ctx).WithFields(field.Type("bucket")).Info("Deleting %d config(s) of type %q...", len(entries), "bucket")
 	errors := make([]error, 0)
 	for _, e := range entries {
-		bucketName := fmt.Sprintf("%s_%s", e.Project, e.Identifier)
+		bucketName := idutils.GenerateBucketName(e.asCoordinate())
 		resp, err := c.Delete(ctx, bucketName)
 		if err != nil {
 			errors = append(errors, fmt.Errorf("could not delete Bucket Definition object %s with name %q: %w", e, bucketName, err))

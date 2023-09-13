@@ -258,7 +258,7 @@ func AssertBucket(t *testing.T, client buckets.Client, env manifest.EnvironmentD
 	if cfg.OriginObjectId != "" {
 		expectedId = cfg.OriginObjectId
 	} else {
-		expectedId = fmt.Sprintf("%s_%s", cfg.Coordinate.Project, cfg.Coordinate.ConfigId)
+		expectedId = idutils.GenerateBucketName(cfg.Coordinate)
 	}
 
 	resp, err := getBucketWithRetry(client, expectedId, 0, 5)
