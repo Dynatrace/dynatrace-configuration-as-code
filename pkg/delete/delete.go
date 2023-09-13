@@ -273,7 +273,15 @@ func filterValuesToDelete(ctx context.Context, entries []DeletePointer, existing
 	return result, errs
 }
 
-// AllConfigs deletes ALL classic Config API objects it can find from the Dynatrace environment the given client connects to
+// AllConfigs collects and deletes classic API configuration objects using the provided ConfigClient.
+//
+// Parameters:
+//   - ctx (context.Context): The context in which the function operates.
+//   - client (dtclient.ConfigClient): An implementation of the ConfigClient interface for managing configuration objects.
+//   - apis (api.APIs): A list of APIs for which configuration values need to be collected and deleted.
+//
+// Returns:
+//   - []error: A slice of errors encountered during the collection and deletion of configuration values.
 func AllConfigs(ctx context.Context, client dtclient.ConfigClient, apis api.APIs) (errors []error) {
 
 	for _, a := range apis {
@@ -300,7 +308,14 @@ func AllConfigs(ctx context.Context, client dtclient.ConfigClient, apis api.APIs
 	return errors
 }
 
-// AllSettingsObjects deletes all settings objects it can find from the Dynatrace environment the given client connects to
+// AllSettingsObjects collects and deletes settings objects using the provided SettingsClient.
+//
+// Parameters:
+//   - ctx (context.Context): The context in which the function operates.
+//   - c (dtclient.SettingsClient): An implementation of the SettingsClient interface for managing settings objects.
+//
+// Returns:
+//   - []error: A slice of errors encountered during the collection and deletion of settings objects.
 func AllSettingsObjects(ctx context.Context, c dtclient.SettingsClient) []error {
 	var errs []error
 
@@ -341,7 +356,14 @@ func AllSettingsObjects(ctx context.Context, c dtclient.SettingsClient) []error 
 	return errs
 }
 
-// AllAutomations deletes all Automation objects it can find from the Dynatrace environment the given client connects to
+// AllAutomations collects and deletes automations resources using the given automation client.
+//
+// Parameters:
+//   - ctx (context.Context): The context in which the function operates.
+//   - c (automationClient): An implementation of the automationClient interface for performing automation-related operations.
+//
+// Returns:
+//   - []error: A slice of errors encountered during the collection and deletion of automations.
 func AllAutomations(ctx context.Context, c automationClient) []error {
 	var errs []error
 
