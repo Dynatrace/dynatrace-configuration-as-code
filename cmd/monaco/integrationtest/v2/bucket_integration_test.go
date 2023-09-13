@@ -22,12 +22,42 @@ package v2
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/spf13/afero"
 )
+
+// Tests a dry run (validation)
+func TestIntegrationBucketValidation(t *testing.T) {
+
+	t.Setenv(featureflags.Buckets().EnvName(), "1")
+	t.Setenv("UNIQUE_TEST_SUFFIX", "can-be-nonunique-for-validation")
+
+	configFolder := "test-resources/integration-bucket/"
+
+	t.Run("project is valid", func(t *testing.T) {
+		manifest := configFolder + "manifest.yaml"
+
+		cmd := runner.BuildCli(testutils.CreateTestFileSystem())
+		cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
+		err := cmd.Execute()
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("broken project is invalid", func(t *testing.T) {
+		manifest := configFolder + "invalid-manifest.yaml"
+
+		cmd := runner.BuildCli(testutils.CreateTestFileSystem())
+		cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
+		err := cmd.Execute()
+
+		assert.Error(t, err)
+	})
+}
 
 func TestIntegrationBucket(t *testing.T) {
 
