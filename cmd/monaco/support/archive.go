@@ -32,10 +32,10 @@ func Archive(fs afero.Fs) error {
 	timeAnchorStr := timeutils.TimeAnchor().Format(trafficlogs.TrafficLogFilePrefixFormat)
 	zipFileName := "support-archive-" + timeAnchorStr + ".zip"
 	files := []string{
-		path.Join(log.LogDirectory, timeAnchorStr+"-"+"req.log"),
-		path.Join(log.LogDirectory, timeAnchorStr+"-"+"resp.log"),
-		path.Join(log.LogDirectory, timeAnchorStr) + ".log",
-		path.Join(log.LogDirectory, timeAnchorStr) + ".errors"}
+		trafficlogs.RequestFilePath(),
+		trafficlogs.ResponseFilePath(),
+		log.LogFilePath(),
+		log.ErrorFilePath()}
 
 	workingDir, err := os.Getwd()
 	if err != nil {

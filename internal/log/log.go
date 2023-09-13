@@ -135,25 +135,36 @@ func PrepareLogging(fs afero.Fs, verbose *bool, loggerSpy io.Writer) {
 	}
 }
 
+// LogFilePath returns the path of a logfile for the current execution time - depending on when this function is called such a file may not yet exist
+func LogFilePath() string {
+	timestamp := timeutils.TimeAnchor().Format(LogFileTimestampPrefixFormat)
+	return filepath.Join(LogDirectory, timestamp+".log")
+}
+
+// ErrorFilePath returns the path of an error logfile for the current execution time - depending on when this function is called such a file may not yet exist
+func ErrorFilePath() string {
+	timestamp := timeutils.TimeAnchor().Format(LogFileTimestampPrefixFormat)
+	return filepath.Join(LogDirectory, timestamp+".errors")
+}
+
 // prepareLogFiles tries to create a LogDirectory (if none exists) and a file each to write all logs and filtered error
 // logs to. As errors in preparing log files are viewed as optional for the logger setup using this method, partial data
 // may be returned in case of errors.
 // If log directory or logFile creation fails, no log files are returned.
 // If errLog creation fails, a valid logFile is still being returned with an error.
 func prepareLogFiles(fs afero.Fs) (logFile afero.File, errFile afero.File, err error) {
-	timestamp := timeutils.TimeAnchor().Format(LogFileTimestampPrefixFormat)
 	if err := fs.MkdirAll(LogDirectory, 0777); err != nil {
 		return nil, nil, fmt.Errorf("unable to prepare log directory %s: %w", LogDirectory, err)
 
 	}
 
-	logFilePath := filepath.Join(LogDirectory, timestamp+".log")
+	logFilePath := LogFilePath()
 	logFile, err = fs.OpenFile(logFilePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to prepare log file in %s directory: %w", LogDirectory, err)
 	}
 
-	errFilePath := filepath.Join(LogDirectory, timestamp+".errors")
+	errFilePath := ErrorFilePath()
 	errFile, err = fs.OpenFile(errFilePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		return logFile, nil, fmt.Errorf("unable to prepare error file in %s directory: %w", LogDirectory, err)
