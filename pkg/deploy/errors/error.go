@@ -87,3 +87,15 @@ func (e EnvironmentDeploymentErrors) Append(env string, err ...error) Environmen
 	e[env] = append(e[env], err...)
 	return e
 }
+
+// DeploymentErrors is an error returned if any deployment errors occured. It carries a count of how many errors happened
+// during deployment, but no details on those errors. The specific errors that have happened during deployment are handled
+// by logging them, and never returned out of DeployConfigGraph.
+type DeploymentErrors struct {
+	// ErrorCount tells how many errors occurred during a deployment
+	ErrorCount int
+}
+
+func (d DeploymentErrors) Error() string {
+	return fmt.Sprintf("Deployment failed: %d errors occurred", d.ErrorCount)
+}
