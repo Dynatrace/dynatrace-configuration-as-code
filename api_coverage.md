@@ -1,3 +1,9 @@
+
+---
+**NOTE**: Information presented in this document is deprecated and **not updated** anymore. Please consult the official documentation to get
+information about [supported configuration types](https://www.dynatrace.com/support/help/manage/configuration-as-code/monaco/reference/supported-configuration#configuration-types-and-access-permissions).
+---
+
 # Configuration API
 
 | Endpoint                                                                      | Supported        | Scope            | Deprecated by Settings v2                                                                                                                                                                           | Can be downloaded |
