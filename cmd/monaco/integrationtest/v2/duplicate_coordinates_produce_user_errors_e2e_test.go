@@ -38,7 +38,7 @@ func TestAllDuplicateErrorsAreReported(t *testing.T) {
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
 	err := cmd.Execute()
 
-	assert.ErrorContains(t, err, "error while loading projects")
+	assert.ErrorContains(t, err, "failed to load projects")
 
 	runLog := strings.ToLower(logOutput.String())
 	assert.Contains(t, runLog, "duplicate")
