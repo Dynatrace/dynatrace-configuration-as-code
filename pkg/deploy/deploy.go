@@ -96,11 +96,14 @@ func DeployConfigGraph(projects []project.Project, environmentClients Environmen
 	for env, clients := range environmentClients {
 		err := deployComponentsToEnvironment(g, env, clients, apis, opts)
 		if err != nil {
+			log.WithFields(field.Environment(env.Name, env.Group), field.Error(err)).Error("Deployment failed for environment %q: %v", env.Name, err)
 			errs = errs.Append(env.Name, err)
 
 			if !opts.ContinueOnErr && !opts.DryRun {
 				return errs
 			}
+		} else {
+			log.WithFields(field.Environment(env.Name, env.Group)).Info("Deployment successful for environment %q", env.Name)
 		}
 	}
 
