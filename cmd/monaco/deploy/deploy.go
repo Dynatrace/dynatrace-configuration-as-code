@@ -27,7 +27,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/slices"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy"
-	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 	"path/filepath"
 	"strings"
 
@@ -80,11 +79,6 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 			DryRun:        dryRun,
 		})
 		if err != nil {
-			var deployErrs deployErrors.DeploymentErrors
-			if errors.As(err, &deployErrs) {
-				return fmt.Errorf("%v failed - check logs for details: %d errors occurred", logging.GetOperationNounForLogging(dryRun), deployErrs.ErrorCount)
-			}
-
 			return fmt.Errorf("%v failed - check logs for details: %w", logging.GetOperationNounForLogging(dryRun), err)
 		}
 	} else {

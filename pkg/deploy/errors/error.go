@@ -74,8 +74,16 @@ type EnvironmentDeploymentErrors map[string][]error
 
 func (e EnvironmentDeploymentErrors) Error() string {
 	b := strings.Builder{}
+	b.WriteString(fmt.Sprintf("Errors encountered for %d environment(s):", len(e)))
 	for env, errs := range e {
-		b.WriteString(fmt.Sprintf("%s deployment errors: %v", env, errs))
+		if len(errs) == 1 {
+			b.WriteString(fmt.Sprintf("\n\t%q: %v", env, errs[0]))
+		} else {
+			b.WriteString(fmt.Sprintf("\n\t%q:", env))
+			for _, err := range errs {
+				b.WriteString(fmt.Sprintf("\n\t\t- %v", err))
+			}
+		}
 	}
 	return b.String()
 }
@@ -97,5 +105,5 @@ type DeploymentErrors struct {
 }
 
 func (d DeploymentErrors) Error() string {
-	return fmt.Sprintf("Deployment failed: %d errors occurred", d.ErrorCount)
+	return fmt.Sprintf("%d deployment errors occurred", d.ErrorCount)
 }
