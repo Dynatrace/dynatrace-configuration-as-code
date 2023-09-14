@@ -1,7 +1,8 @@
 
 ---
-**NOTE**: Information presented in this document is deprecated and **not updated** anymore. Please consult the official documentation to get
-information about [supported configuration types](https://www.dynatrace.com/support/help/manage/configuration-as-code/monaco/reference/supported-configuration#configuration-types-and-access-permissions).
+**NOTE**: This a working document, mainly focused on Configuration APIs being covered by Settings 2.0 support or not.
+Information presented in this document does not represent the current coverage of Dynatrace APIs and is likely outdated anymore.
+ **Please consult the official documentation for information about [supported configuration types](https://www.dynatrace.com/support/help/manage/configuration-as-code/monaco/reference/supported-configuration#configuration-types-and-access-permissions)**.
 ---
 
 # Configuration API
