@@ -73,25 +73,17 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 		if err != nil {
 			return fmt.Errorf("failed to create API clients: %w", err)
 		}
-		deployErr := deploy.DeployConfigGraph(filteredProjects, clientSets, deploy.DeployConfigsOptions{
+		err = deploy.DeployConfigGraph(filteredProjects, clientSets, deploy.DeployConfigsOptions{
 			ContinueOnErr: continueOnErr,
 			DryRun:        dryRun,
 		})
-		if deployErr != nil {
-			var deployErrs []error
-
-			var environmentDeployErrs deployErrors.EnvironmentDeploymentErrors
-			if errors.As(deployErr, &environmentDeployErrs) {
-				for _, errs := range environmentDeployErrs {
-					// TODO error handling can change to remove the repetitive grouping to env errors - for now we just build a list to be grouped again by printErrorReport
-					deployErrs = append(deployErrs, errs...)
-				}
-			} else {
-				deployErrs = append(deployErrs, deployErr)
+		if err != nil {
+			var deployErrs deployErrors.DeploymentErrors
+			if errors.As(err, &deployErrs) {
+				return fmt.Errorf("%v failed - check logs for details: %d errors occurred", getOperationNounForLogging(dryRun), deployErrs.ErrorCount)
 			}
 
-			printErrorReport(deployErrs)
-			return fmt.Errorf("errors during %s", getOperationNounForLogging(dryRun))
+			return fmt.Errorf("%v failed - check logs for details: %w", getOperationNounForLogging(dryRun), err)
 		}
 	} else {
 		var deployErrs []error
