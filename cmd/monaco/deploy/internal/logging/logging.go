@@ -42,7 +42,7 @@ func logConfigInfo(projects []project.Project) {
 			}
 		}
 	}
-	log.Info("Configurations per environment:")
+	log.Debug("Configurations per environment:")
 	for env, count := range cfgCount {
 		log.Debug("  - %s:\t%d configurations", env, count)
 	}
