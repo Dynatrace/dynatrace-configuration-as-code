@@ -1,0 +1,29 @@
+configs:
+- id: valid-config-api
+  type:
+    api: auto-tag
+  config:
+    name: valid-config-api Tag
+    template: auto-tag-config-api.json
+- id: valid-settings
+  type:
+    settings:
+      schema: builtin:tags.auto-tagging
+      scope: environment
+  config:
+    name: valid-settings Tag
+    template: auto-tag-setting.json
+- id: invalid-config-api-with-settings-payload
+  type:
+    api: auto-tag
+  config:
+    name: invalid-config-api-with-settings-payload Tag
+    template: auto-tag-setting.json
+- id: invalid-setting-with-config-api-payload
+  type:
+    settings:
+      schema: builtin:tags.auto-tagging
+      scope: environment
+  config:
+    name: invalid-setting-with-config-api-payload Tag
+    template: auto-tag-config-api.json
