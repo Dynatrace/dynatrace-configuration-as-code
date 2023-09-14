@@ -23,7 +23,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
@@ -758,7 +757,10 @@ func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
 		envErrs := make(errors.EnvironmentDeploymentErrors)
 		assert.ErrorAs(t, err, &envErrs)
 		assert.Len(t, envErrs, 1)
-		assert.Len(t, envErrs[env], 1, "Expected deployment to return after the first error")
+		assert.Len(t, envErrs[env], 1)
+		var depErr errors.DeploymentErrors
+		assert.ErrorAs(t, envErrs[env][0], &depErr)
+		assert.Equal(t, 1, depErr.ErrorCount, "Expected deployment to return after the first error")
 	})
 
 	t.Run("[non-parallel] deployment error - continue on error", func(t *testing.T) {
@@ -770,7 +772,10 @@ func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
 		envErrs := make(errors.EnvironmentDeploymentErrors)
 		assert.ErrorAs(t, err, &envErrs)
 		assert.Len(t, envErrs, 1)
-		assert.Len(t, envErrs[env], 2, "Expected deployment to continue after the first error and return errors for both invalid configs")
+		assert.Len(t, envErrs[env], 1)
+		var depErr errors.DeploymentErrors
+		assert.ErrorAs(t, envErrs[env][0], &depErr)
+		assert.Equal(t, 2, depErr.ErrorCount, "Expected deployment to continue after the first error and count errors for both invalid configs")
 	})
 
 	t.Run("[parallel] deployment error - always continues on error", func(t *testing.T) {
@@ -782,7 +787,10 @@ func TestDeployConfigsWithDeploymentErrors(t *testing.T) {
 		envErrs := make(errors.EnvironmentDeploymentErrors)
 		assert.ErrorAs(t, err, &envErrs)
 		assert.Len(t, envErrs, 1)
-		assert.Len(t, envErrs[env], 2, "Expected deployment to continue after the first error and return errors for both invalid configs")
+		assert.Len(t, envErrs[env], 1)
+		var depErr errors.DeploymentErrors
+		assert.ErrorAs(t, envErrs[env][0], &depErr)
+		assert.Equal(t, 2, depErr.ErrorCount, "Expected deployment to continue after the first error and count errors for both invalid configs")
 	})
 
 }
@@ -1632,9 +1640,9 @@ func TestDeployConfigGraph_CollectsAllErrors(t *testing.T) {
 		assert.ErrorAs(t, errs, &envErrs)
 		assert.Len(t, envErrs["env"], 2)
 		assert.ErrorContains(t, envErrs["env"][0], "WILL FAIL VALIDATION")
-		var jsonErr configErrors.InvalidJsonError
-		assert.ErrorAs(t, envErrs["env"][1], &jsonErr)
-		assert.Equal(t, jsonErr.Location.ConfigId, "WILL FAIL DEPLOYMENT")
+		var depErr errors.DeploymentErrors
+		assert.ErrorAs(t, envErrs["env"][1], &depErr)
+		assert.Equal(t, 1, depErr.ErrorCount, "Expected one deployment error to be counted")
 	})
 
 }

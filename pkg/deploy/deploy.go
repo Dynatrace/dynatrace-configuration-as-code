@@ -94,9 +94,9 @@ func DeployConfigGraph(projects []project.Project, environmentClients Environmen
 	}
 
 	for env, clients := range environmentClients {
-		envErrs := deployComponentsToEnvironment(g, env, clients, apis, opts)
-		if len(envErrs) > 0 {
-			errs = errs.Append(env.Name, envErrs...)
+		err := deployComponentsToEnvironment(g, env, clients, apis, opts)
+		if err != nil {
+			errs = errs.Append(env.Name, err)
 
 			if !opts.ContinueOnErr && !opts.DryRun {
 				return errs
@@ -111,7 +111,7 @@ func DeployConfigGraph(projects []project.Project, environmentClients Environmen
 	return nil
 }
 
-func deployComponentsToEnvironment(g graph.ConfigGraphPerEnvironment, env EnvironmentInfo, clientSet ClientSet, apis api.APIs, opts DeployConfigsOptions) []error {
+func deployComponentsToEnvironment(g graph.ConfigGraphPerEnvironment, env EnvironmentInfo, clientSet ClientSet, apis api.APIs, opts DeployConfigsOptions) error {
 
 	ctx := context.WithValue(context.TODO(), log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
 
@@ -119,70 +119,86 @@ func deployComponentsToEnvironment(g graph.ConfigGraphPerEnvironment, env Enviro
 
 	sortedConfigs, err := g.GetIndependentlySortedConfigs(env.Name)
 	if err != nil {
-		return []error{fmt.Errorf("failed to get independently sorted configs for environment %q: %w", env.Name, err)}
+		return fmt.Errorf("failed to get independently sorted configs for environment %q: %w", env.Name, err)
 	}
 
-	var deployErrs []error
 	if featureflags.DependencyGraphBasedDeployParallel().Enabled() {
-		deployErrs = deployComponentsParallel(ctx, sortedConfigs, clientSet, apis, opts)
-	} else {
-		deployErrs = deployComponents(ctx, sortedConfigs, clientSet, apis, opts)
+		return deployComponentsParallel(ctx, sortedConfigs, clientSet, apis, opts)
 	}
 
-	if len(deployErrs) > 0 {
-		return deployErrs
-	}
-
-	return nil
+	return deployComponents(ctx, sortedConfigs, clientSet, apis, opts)
 }
 
 var skipError = errors.New("skip error")
 
-func deployComponents(ctx context.Context, components []graph.SortedComponent, clientSet ClientSet, apis api.APIs, opts DeployConfigsOptions) []error {
+func deployComponents(ctx context.Context, components []graph.SortedComponent, clientSet ClientSet, apis api.APIs, opts DeployConfigsOptions) error {
 
-	var errs []error
+	errCount := 0
 
 	log.WithCtxFields(ctx).Info("Deploying %d independent configuration sets...", len(components))
 
 	for i := range components {
 		ctx = context.WithValue(ctx, log.CtxGraphComponentId{}, log.CtxValGraphComponentId(i))
-		componentDeployErrs := deployComponent(ctx, components[i], clientSet, apis, opts)
+		err := deployComponent(ctx, components[i], clientSet, apis, opts)
 
-		if len(componentDeployErrs) > 0 && !opts.ContinueOnErr && !opts.DryRun {
-			return componentDeployErrs
+		if err != nil {
+			if !opts.ContinueOnErr && !opts.DryRun {
+				return err
+			}
+
+			var deploymentErrs errors2.DeploymentErrors
+			if errors.As(err, &deploymentErrs) {
+				errCount += deploymentErrs.ErrorCount
+			} else {
+				errCount += 1
+			}
 		}
-
-		errs = append(errs, componentDeployErrs...)
 	}
 
-	return errs
+	if errCount > 0 {
+		return errors2.DeploymentErrors{ErrorCount: errCount}
+	}
+
+	return nil
 }
 
-func deployComponentsParallel(ctx context.Context, components []graph.SortedComponent, clientSet ClientSet, apis api.APIs, opts DeployConfigsOptions) []error {
-	var errs []error
+func deployComponentsParallel(ctx context.Context, components []graph.SortedComponent, clientSet ClientSet, apis api.APIs, opts DeployConfigsOptions) error {
+
+	errCount := 0
+
 	log.WithCtxFields(ctx).Info("Deploying %d independent configuration sets in parallel...", len(components))
 
-	errChan := make(chan []error, len(components))
+	errChan := make(chan error, len(components))
 
 	// Iterate over components and launch a goroutine for each component deployment.
 	for i := range components {
 		c := context.WithValue(ctx, log.CtxGraphComponentId{}, log.CtxValGraphComponentId(i))
 		go func(ctx context.Context, component graph.SortedComponent) {
-			componentDeployErrs := deployComponent(ctx, component, clientSet, apis, opts)
-			errChan <- componentDeployErrs
+			componentDeployErr := deployComponent(ctx, component, clientSet, apis, opts)
+			errChan <- componentDeployErr
 		}(c, components[i])
 	}
 
 	// Collect errors from goroutines and append to the 'errs' slice.
 	for range components {
-		componentDeployErrs := <-errChan
-		errs = append(errs, componentDeployErrs...)
+		err := <-errChan
+
+		var deploymentErrs errors2.DeploymentErrors
+		if errors.As(err, &deploymentErrs) {
+			errCount += deploymentErrs.ErrorCount
+		} else if err != nil {
+			errCount += 1
+		}
 	}
 
 	// Close the error channel.
 	close(errChan)
 
-	return errs
+	if errCount > 0 {
+		return errors2.DeploymentErrors{ErrorCount: errCount}
+	}
+
+	return nil
 }
 
 type componentDeployer struct {
@@ -193,8 +209,8 @@ type componentDeployer struct {
 	apis             api.APIs
 }
 
-func (c *componentDeployer) deploy(ctx context.Context) []error {
-	var errs []error
+func (c *componentDeployer) deploy(ctx context.Context) error {
+	errCount := 0
 
 	errChan := make(chan error)
 	for c.graph.Nodes().Len() != 0 {
@@ -212,7 +228,7 @@ func (c *componentDeployer) deploy(ctx context.Context) []error {
 		for range roots {
 			err := <-errChan
 			if err != nil {
-				errs = append(errs, err)
+				errCount += 1
 			}
 		}
 
@@ -224,7 +240,11 @@ func (c *componentDeployer) deploy(ctx context.Context) []error {
 
 	close(errChan)
 
-	return errs
+	if errCount > 0 {
+		return errors2.DeploymentErrors{ErrorCount: errCount}
+	}
+
+	return nil
 }
 
 func (c *componentDeployer) deployNode(ctx context.Context, n graph.ConfigNode) error {
@@ -275,7 +295,7 @@ func (c *componentDeployer) removeChildren(ctx context.Context, parent, root gra
 		c.graph.RemoveNode(child.ID())
 	}
 }
-func deployComponent(ctx context.Context, component graph.SortedComponent, clientSet ClientSet, apis api.APIs, _ DeployConfigsOptions) []error {
+func deployComponent(ctx context.Context, component graph.SortedComponent, clientSet ClientSet, apis api.APIs, _ DeployConfigsOptions) error {
 	g := simple.NewDirectedGraph()
 	graph2.Copy(g, component.Graph)
 
