@@ -23,6 +23,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
+	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
@@ -1631,7 +1632,9 @@ func TestDeployConfigGraph_CollectsAllErrors(t *testing.T) {
 		assert.ErrorAs(t, errs, &envErrs)
 		assert.Len(t, envErrs["env"], 2)
 		assert.ErrorContains(t, envErrs["env"][0], "WILL FAIL VALIDATION")
-		assert.ErrorContains(t, envErrs["env"][1], "WILL FAIL DEPLOYMENT")
+		var jsonErr configErrors.InvalidJsonError
+		assert.ErrorAs(t, envErrs["env"][1], &jsonErr)
+		assert.Equal(t, jsonErr.Location.ConfigId, "WILL FAIL DEPLOYMENT")
 	})
 
 }

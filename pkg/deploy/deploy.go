@@ -21,6 +21,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/mutlierror"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -296,12 +297,15 @@ func deploy(ctx context.Context, c *config.Config, clientSet ClientSet, apis api
 
 	properties, errs := c.ResolveParameterValues(entityMap)
 	if len(errs) > 0 {
-		return config.ResolvedEntity{}, fmt.Errorf("failed to resolve parameter properties of config %s: %w", c.Coordinate, errors.Join(errs...))
+		err := mutlierror.New(errs...)
+		log.WithCtxFields(ctx).WithFields(field.Error(err)).Error("Invalid configuration - failed to resolve parameter values: %v", err)
+		return config.ResolvedEntity{}, err
 	}
 
 	renderedConfig, err := c.Render(properties)
 	if err != nil {
-		return config.ResolvedEntity{}, fmt.Errorf("failed to render JSON template of config %s: %w", c.Coordinate, err)
+		log.WithCtxFields(ctx).WithFields(field.Error(err)).Error("Invalid configuration - failed to render JSON template: %v", err)
+		return config.ResolvedEntity{}, err
 	}
 
 	log.WithCtxFields(ctx).Info("Deploying config")
@@ -327,11 +331,27 @@ func deploy(ctx context.Context, c *config.Config, clientSet ClientSet, apis api
 	if deployErr != nil {
 		var responseErr clientErrors.RespError
 		if errors.As(deployErr, &responseErr) {
-			log.WithCtxFields(ctx).WithFields(field.Error(responseErr)).Error("Failed to deploy config %s: %s", c.Coordinate, responseErr.Error())
-		} else {
-			log.WithCtxFields(ctx).WithFields(field.Error(deployErr)).Error("Failed to deploy config %s: %s", c.Coordinate, deployErr.Error())
+			logResponseError(ctx, responseErr)
+			return config.ResolvedEntity{}, responseErr
 		}
-		return config.ResolvedEntity{}, fmt.Errorf("failed to deploy config %s: %w", c.Coordinate, deployErr)
+
+		log.WithCtxFields(ctx).WithFields(field.Error(deployErr)).Error("Deployment failed - Monaco Error: %v", deployErr)
+		return config.ResolvedEntity{}, deployErr
 	}
 	return entity, nil
+}
+
+// logResponseError prints user-friendly messages based on the response errors status
+func logResponseError(ctx context.Context, responseErr clientErrors.RespError) {
+	if responseErr.StatusCode >= 400 && responseErr.StatusCode <= 499 {
+		log.WithCtxFields(ctx).WithFields(field.Error(responseErr)).Error("Deployment failed - Dynatrace API rejected HTTP request / JSON data: %v", responseErr)
+		return
+	}
+
+	if responseErr.StatusCode >= 500 && responseErr.StatusCode <= 599 {
+		log.WithCtxFields(ctx).WithFields(field.Error(responseErr)).Error("Deployment failed - Dynatrace Server Error: %v", responseErr)
+		return
+	}
+
+	log.WithCtxFields(ctx).WithFields(field.Error(responseErr)).Error("Deployment failed - Dynatrace API call unsuccessful: %v", responseErr)
 }
