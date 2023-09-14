@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package deploy
+package logging
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -23,7 +23,7 @@ import (
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
-func logProjectsInfo(projects []project.Project) {
+func LogProjectsInfo(projects []project.Project) {
 	log.Info("Projects to be deployed (%d):", len(projects))
 	for _, p := range projects {
 		log.Info("  - %s", p)
@@ -48,13 +48,13 @@ func logConfigInfo(projects []project.Project) {
 	}
 }
 
-func logEnvironmentsInfo(environments manifest.Environments) {
+func LogEnvironmentsInfo(environments manifest.Environments) {
 	log.Info("Environments to deploy to (%d):", len(environments))
 	for _, name := range environments.Names() {
 		log.Info("  - %s", name)
 	}
 }
-func logDeploymentInfo(dryRun bool, envName string) {
+func LogDeploymentInfo(dryRun bool, envName string) {
 	if dryRun {
 		log.Info("Validating configurations for environment `%s`...", envName)
 	} else {
@@ -62,7 +62,7 @@ func logDeploymentInfo(dryRun bool, envName string) {
 	}
 }
 
-func getOperationNounForLogging(dryRun bool) string {
+func GetOperationNounForLogging(dryRun bool) string {
 	if dryRun {
 		return "Validation"
 	}

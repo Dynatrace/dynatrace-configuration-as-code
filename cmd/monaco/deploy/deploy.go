@@ -17,14 +17,17 @@ package deploy
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/deploy/internal/clientset"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/deploy/internal/logging"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/deploy/sequential"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/slices"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy"
 	deployErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/sequential"
 	"path/filepath"
 	"strings"
 
@@ -32,7 +35,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
 	"github.com/spf13/afero"
 )
 
@@ -65,11 +67,11 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 		return err
 	}
 
-	logProjectsInfo(filteredProjects)
-	logEnvironmentsInfo(loadedManifest.Environments)
+	logging.LogProjectsInfo(filteredProjects)
+	logging.LogEnvironmentsInfo(loadedManifest.Environments)
 
 	if featureflags.DependencyGraphBasedDeploy().Enabled() {
-		clientSets, err := createDeployClientSets(loadedManifest.Environments, dryRun)
+		clientSets, err := clientset.NewEnvironmentClients(loadedManifest.Environments, dryRun)
 		if err != nil {
 			return fmt.Errorf("failed to create API clients: %w", err)
 		}
@@ -80,85 +82,20 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 		if err != nil {
 			var deployErrs deployErrors.DeploymentErrors
 			if errors.As(err, &deployErrs) {
-				return fmt.Errorf("%v failed - check logs for details: %d errors occurred", getOperationNounForLogging(dryRun), deployErrs.ErrorCount)
+				return fmt.Errorf("%v failed - check logs for details: %d errors occurred", logging.GetOperationNounForLogging(dryRun), deployErrs.ErrorCount)
 			}
 
-			return fmt.Errorf("%v failed - check logs for details: %w", getOperationNounForLogging(dryRun), err)
+			return fmt.Errorf("%v failed - check logs for details: %w", logging.GetOperationNounForLogging(dryRun), err)
 		}
 	} else {
-		var deployErrs []error
-		sortedConfigs, err := sortConfigs(filteredProjects, loadedManifest.Environments.Names())
+		err = sequential.Deploy(filteredProjects, loadedManifest, continueOnErr, dryRun)
 		if err != nil {
-			return fmt.Errorf("error during configuration sort: %w", err)
-		}
-
-		for envName, cfgs := range sortedConfigs {
-			env := loadedManifest.Environments[envName]
-			errs := deployOnEnvironment(env, cfgs, continueOnErr, dryRun)
-			deployErrs = append(deployErrs, errs...)
-			if len(errs) > 0 && !continueOnErr {
-				break
-			}
-		}
-
-		if len(deployErrs) > 0 {
-			printErrorReport(deployErrs)
-			return fmt.Errorf("errors during %s", getOperationNounForLogging(dryRun))
+			return err
 		}
 	}
 
-	log.Info("%s finished without errors", getOperationNounForLogging(dryRun))
+	log.Info("%s finished without errors", logging.GetOperationNounForLogging(dryRun))
 	return nil
-}
-
-func deployOnEnvironment(env manifest.EnvironmentDefinition, cfgs []config.Config, continueOnErr bool, dryRun bool) []error {
-	logDeploymentInfo(dryRun, env.Name)
-
-	clientSet, err := createDeployClientSet(env, dryRun)
-	if err != nil {
-		return []error{fmt.Errorf("failed to create clients for envrionment %q: %w", env.Name, err)}
-	}
-
-	errs := sequential.DeployConfigs(clientSet, api.NewAPIs(), cfgs, deploy.DeployConfigsOptions{
-		ContinueOnErr: continueOnErr,
-		DryRun:        dryRun,
-	})
-	return errs
-}
-
-func createDeployClientSets(environments manifest.Environments, dryRun bool) (deploy.EnvironmentClients, error) {
-	clients := make(deploy.EnvironmentClients, len(environments))
-	for _, env := range environments {
-		clientSet, err := createDeployClientSet(env, dryRun)
-		if err != nil {
-			return deploy.EnvironmentClients{}, err
-		}
-
-		clients[deploy.EnvironmentInfo{
-			Name:  env.Name,
-			Group: env.Group,
-		}] = clientSet
-	}
-
-	return clients, nil
-}
-
-func createDeployClientSet(env manifest.EnvironmentDefinition, dryRun bool) (deploy.ClientSet, error) {
-	if dryRun {
-		return deploy.DummyClientSet, nil
-	}
-
-	cl, err := dynatrace.CreateClientSet(env.URL.Value, env.Auth)
-	if err != nil {
-		return deploy.ClientSet{}, err
-	}
-
-	return deploy.ClientSet{
-		Classic:    cl.Classic(),
-		Settings:   cl.Settings(),
-		Automation: cl.Automation(),
-		Bucket:     cl.Bucket(),
-	}, nil
 }
 
 func absPath(manifestPath string) (string, error) {
@@ -199,8 +136,11 @@ func loadProjects(fs afero.Fs, manifestPath string, man *manifest.Manifest) ([]p
 	})
 
 	if errs != nil {
-		printErrorReport(errs)
-		return nil, errors.New("error while loading projects - you may be loading v1 projects, please 'convert' to v2")
+		log.Error("Failed to load projects - %d errors occurred:", len(errs))
+		for _, err := range errs {
+			log.WithFields(field.Error(err)).Error(err.Error())
+		}
+		return nil, fmt.Errorf("failed to load projects - %d errors occurred", len(errs))
 	}
 
 	return projects, nil
@@ -225,15 +165,6 @@ func filterProjects(projects []project.Project, specificProjects []string, speci
 	}
 
 	return projects, nil
-}
-
-func sortConfigs(projects []project.Project, environmentNames []string) (project.ConfigsPerEnvironment, error) {
-	sortedConfigs, errs := sort.ConfigsPerEnvironment(projects, environmentNames)
-	if errs != nil {
-		errutils.PrintErrors(errs)
-		return nil, errors.New("error during sort")
-	}
-	return sortedConfigs, nil
 }
 
 func filterProjectsByName(projects []project.Project, names []string) ([]string, error) {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package deploy
+package sequential
 
 import (
 	"errors"

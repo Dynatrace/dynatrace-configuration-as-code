@@ -36,7 +36,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-// deprecation notice: This complete file can be dropped once graph-based parallel deployment becomes non-optional
+// Deprecated: This complete file can be dropped once graph-based parallel deployment becomes non-optional.
 
 // entityMapWithNames behaves like the old entity map, storing entity names per API type in addition to holding an entityMap
 type entityMapWithNames struct {
@@ -73,6 +73,7 @@ func (r *entityMapWithNames) contains(entityType string, entityName string) bool
 
 // DeployConfigs sequentially deploys the given configs with the given apis to a single environment via the given client
 // NOTE: the given configs need to be sorted, otherwise deployment will probably fail, as references cannot be resolved.
+// Deprecated: Sequential deployment is deprecated and only used if featureflags.DependencyGraphBasedDeploy is manually disabled.
 func DeployConfigs(clientSet deploy.ClientSet, apis api.APIs, sortedConfigs []config.Config, opts deploy.DeployConfigsOptions) []error {
 	entityMapWithNames := newEntityMapWithNames()
 	var errs []error
