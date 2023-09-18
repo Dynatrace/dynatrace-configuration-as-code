@@ -28,19 +28,100 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 )
 
-func TestPrepareLogFile_WorksIfParentDirectoryAlreadyExists(t *testing.T) {
-	fs := testutils.TempFs(t)
-	err := fs.MkdirAll(".logs", 0777)
-	assert.NoError(t, err)
-	file, errFile, err := prepareLogFiles(fs)
-	assert.NotNil(t, file)
-	assert.NotNil(t, errFile)
-	assert.NoError(t, err)
+func TestPrepareLogging(t *testing.T) {
+	type pathsWithPermission map[string]os.FileMode
+	tests := []struct {
+		name           string
+		givenFolders   pathsWithPermission
+		givenFiles     pathsWithPermission
+		wantLogFile    bool
+		wantErrLogFile bool
+		wantError      bool
+	}{
+		{
+			name:           "creates files if folder does not exists",
+			wantLogFile:    true,
+			wantErrLogFile: true,
+		},
+		{
+			name:           "creates files if folder exists",
+			givenFolders:   pathsWithPermission{".logs/": 0777},
+			wantLogFile:    true,
+			wantErrLogFile: true,
+		},
+		{
+			name:           "fails if log folder exists as file",
+			givenFiles:     pathsWithPermission{".logs": 0777},
+			wantLogFile:    false,
+			wantErrLogFile: false,
+			wantError:      true,
+		},
+		{
+			name:           "fails if log file creation fails",
+			givenFolders:   pathsWithPermission{".logs/": 0777},
+			givenFiles:     pathsWithPermission{LogFilePath(): 0000}, // logFile exists and can't be accessed
+			wantLogFile:    false,
+			wantErrLogFile: false,
+			wantError:      true,
+		},
+		{
+			name:           "creates log file even though err file creation fails",
+			givenFolders:   pathsWithPermission{".logs/": 0777},
+			givenFiles:     pathsWithPermission{ErrorFilePath(): 0000}, // errFile exists and can't be accessed
+			wantLogFile:    true,
+			wantErrLogFile: false,
+			wantError:      true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// setup test fs with given files
+			fs := testutils.TempFs(t)
+			for folder, perm := range tt.givenFolders {
+				err := fs.MkdirAll(folder, perm)
+				assert.NoError(t, err)
+			}
+			for file, perm := range tt.givenFiles {
+				f, err := fs.Create(file)
+				assert.NoError(t, err)
+				assert.NoError(t, f.Close())
+
+				err = fs.Chmod(file, perm)
+				assert.NoError(t, err)
+			}
+
+			file, errFile, err := prepareLogFiles(fs)
+
+			if tt.wantLogFile {
+				assert.NotNil(t, file)
+				assert.NoError(t, file.Close())
+			} else {
+				assert.Nil(t, file)
+			}
+			if tt.wantErrLogFile {
+				assert.NotNil(t, errFile)
+				assert.NoError(t, errFile.Close())
+			} else {
+				assert.Nil(t, errFile)
+			}
+			if tt.wantError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
 
+// TestPrepareLogFile_ReturnsErrIfParentDirIsReadOnly is separate from the other log file tests, as there is no portable
+// way of handling folder permissions on a real filesystem. (Go has no way to set Windows folder permissions:https://github.com/golang/go/issues/35042)
+// Thus it tests the "can't write even the .logs/ dir" case by setting the whole afero FS to read only... In the real world,
+// this would happen if the Windows folder is marked read only, or POSIX permissions don't allow writing to it.
 func TestPrepareLogFile_ReturnsErrIfParentDirIsReadOnly(t *testing.T) {
 	fs := afero.NewReadOnlyFs(afero.NewMemMapFs())
 	file, errFile, err := prepareLogFiles(fs)
