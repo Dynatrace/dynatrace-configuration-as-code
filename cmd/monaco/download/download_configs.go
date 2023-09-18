@@ -257,11 +257,15 @@ func downloadConfigs(downloaders downloaders, opts downloadConfigsOptions) (proj
 	}
 
 	{
-		bucketCfgs, err := downloaders.Bucket().Download(opts.projectName)
-		if err != nil {
-			return nil, err
+		if opts.auth.OAuth != nil {
+			bucketCfgs, err := downloaders.Bucket().Download(opts.projectName)
+			if err != nil {
+				return nil, err
+			}
+			copyConfigs(configs, bucketCfgs)
+		} else if opts.onlyAutomation {
+			return nil, errors.New("can't download bucket resources: no OAuth credentials configured")
 		}
-		copyConfigs(configs, bucketCfgs)
 	}
 
 	return configs, nil
