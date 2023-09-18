@@ -144,7 +144,7 @@ func LogFilePath() string {
 // ErrorFilePath returns the path of an error logfile for the current execution time - depending on when this function is called such a file may not yet exist
 func ErrorFilePath() string {
 	timestamp := timeutils.TimeAnchor().Format(LogFileTimestampPrefixFormat)
-	return filepath.Join(LogDirectory, timestamp+".errors")
+	return filepath.Join(LogDirectory, timestamp+"-errors.log")
 }
 
 // prepareLogFiles tries to create a LogDirectory (if none exists) and a file each to write all logs and filtered error

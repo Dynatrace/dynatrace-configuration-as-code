@@ -56,7 +56,7 @@ func TestSupportArchiveIsCreatedAsExpected(t *testing.T) {
 
 		archive := "support-archive-" + fixedTime + ".zip"
 
-		expectedFiles := []string{fixedTime + "-" + "req.log", fixedTime + "-" + "resp.log", fixedTime + ".log", fixedTime + ".errors"}
+		expectedFiles := []string{fixedTime + "-" + "req.log", fixedTime + "-" + "resp.log", fixedTime + ".log", fixedTime + "-errors.log"}
 
 		assertSupportArchive(t, fs, archive, expectedFiles)
 
@@ -124,7 +124,7 @@ func TestSupportArchiveIsCreatedInErrorCases(t *testing.T) {
 			_ = cmd.Execute()
 
 			archive := "support-archive-" + fixedTime + ".zip"
-			expectedFiles := []string{fixedTime + ".log", fixedTime + ".errors"}
+			expectedFiles := []string{fixedTime + ".log", fixedTime + "-errors.log"}
 			if tt.expectAllFiles {
 				expectedFiles = append(expectedFiles, fixedTime+"-"+"req.log", fixedTime+"-"+"resp.log")
 			}
