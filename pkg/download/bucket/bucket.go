@@ -90,13 +90,39 @@ func (d *Downloader) convertAllObjects(projectName string, objects [][]byte) []c
 		}
 
 		params := map[string]parameter.Parameter{}
-		if bucketName.DisplayName != "" {
-			params[config.NameParameter] = &value.ValueParameter{Value: bucketName.DisplayName}
-		} else {
-			params[config.NameParameter] = &value.ValueParameter{Value: bucketName.BucketName} // TODO: clarify!
+		{
+			var s string
+			var err error
+
+			s, err = getValueForAttribute(o, "bucketName")
+			if err != nil {
+				log.WithFields(field.Coordinate(coordinate.Coordinate{Project: projectName, Type: "bucket", ConfigId: configID}), field.Error(err)).Warn("Failed to get configuration for %v (%s): %v", configID, "bucket", err)
+				continue
+			}
+			params[config.NameParameter] = &value.ValueParameter{Value: s}
+			o, err = replaceAttributeWith(o, "bucketName", config.NameParameter)
+			if err != nil {
+				log.WithFields(field.Coordinate(coordinate.Coordinate{Project: projectName, Type: "bucket", ConfigId: configID}), field.Error(err)).Warn("Failed to get configuration for %v (%s): %v", configID, "bucket", err)
+				continue
+			}
+
+			s, err = getValueForAttribute(o, "displayName")
+			if err != nil {
+				log.WithFields(field.Coordinate(coordinate.Coordinate{Project: projectName, Type: "bucket", ConfigId: configID}), field.Error(err)).Warn("Failed to get configuration for %v (%s): %v", configID, "bucket", err)
+				continue
+			}
+			if s != "" {
+				params["displayName"] = &value.ValueParameter{Value: s}
+				o, err = replaceAttributeWith(o, "displayName", "displayName")
+				if err != nil {
+					log.WithFields(field.Coordinate(coordinate.Coordinate{Project: projectName, Type: "bucket", ConfigId: configID}), field.Error(err)).Warn("Failed to get configuration for %v (%s): %v", configID, "bucket", err)
+					continue
+				}
+			}
+
 		}
 
-		originObjectID := fmt.Sprintf("%s_%s", configCoord.Project, configCoord.ConfigId) // TODO: clarify!
+		originObjectID := fmt.Sprintf("%s_%s", configCoord.Project, configCoord.ConfigId)
 
 		c := config.Config{
 			Template:       template.NewDownloadTemplate(configID, configID, string(jsonutils.MarshalIndent(o))),
@@ -111,4 +137,35 @@ func (d *Downloader) convertAllObjects(projectName string, objects [][]byte) []c
 	log.Info("downloaded %d configurations for GRAIL bucket", len(result))
 
 	return result
+}
+
+func getValueForAttribute(raw []byte, name string) (string, error) {
+	var m map[string]any
+	err := json.Unmarshal(raw, &m)
+	if err != nil {
+		return "", err
+	}
+	if m[name] != nil {
+		return fmt.Sprintf("%v", m[name]), nil
+
+	}
+	return "", nil
+}
+
+func replaceAttributeWith(raw []byte, attributeName, value string) ([]byte, error) {
+	var m map[string]any
+	err := json.Unmarshal(raw, &m)
+	if err != nil {
+		return raw, err
+	}
+	if _, exits := m[attributeName]; exits {
+		m[attributeName] = "{{." + value + "}}"
+	}
+
+	modified, err := json.Marshal(m)
+	if err != nil {
+		return raw, err
+	}
+
+	return modified, nil
 }

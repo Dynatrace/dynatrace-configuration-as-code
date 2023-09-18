@@ -49,8 +49,8 @@ func TestDownloader_Download(t *testing.T) {
 		result, err := downloader.Download("projectName")
 		assert.Len(t, result, 1)
 		assert.Len(t, result["bucket"], 2) // there should be 2 buckets (default bucket shall be skipped)
-		assert.Equal(t, coordinate.Coordinate{"projectName", "bucket", "372852f8-86d5-3d6d-8feb-6b537aef6bf4"}, result["bucket"][0].Coordinate)
-		assert.Equal(t, &value.ValueParameter{"Default metrics (15 months)"}, result["bucket"][0].Parameters[config.NameParameter])
+		assert.Equal(t, coordinate.Coordinate{"projectName", "bucket", "10f23802-b76d-35ea-91f8-62c339a086eb"}, result["bucket"][0].Coordinate)
+		assert.Equal(t, &value.ValueParameter{"bucket_name"}, result["bucket"][0].Parameters[config.NameParameter])
 		assert.Equal(t, coordinate.Coordinate{"projectName", "bucket", "6e2cd4d7-9ac5-3294-a9ce-277da9bd200c"}, result["bucket"][1].Coordinate)
 		assert.Equal(t, &value.ValueParameter{"another name"}, result["bucket"][1].Parameters[config.NameParameter])
 
@@ -94,4 +94,56 @@ func TestDownloader_Download(t *testing.T) {
 		assert.Len(t, result, 0)
 		assert.NoError(t, err)
 	})
+}
+
+func Test_getValueForAttribute(t *testing.T) {
+
+	tests := []struct {
+		name      string
+		paramName string
+		given     string
+		expected  string
+	}{
+		{
+			name:      "simple case",
+			paramName: "bucketName",
+			given: `
+        {
+            "bucketName": "default_logs",
+            "table": "logs",
+            "displayName": "Logs (35 days)",
+            "status": "active",
+            "retentionDays": 35,
+            "version": 2,
+            "updatable": false
+        }
+`,
+			expected: "default_logs",
+		},
+		{
+			name:      "non existing param",
+			paramName: "nonExisting",
+			given: `
+        {
+            "bucketName": "default_logs",
+            "table": "logs",
+            "displayName": "Logs (35 days)",
+            "status": "active",
+            "retentionDays": 35,
+            "version": 2,
+            "updatable": false
+        }
+`,
+			expected: "",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			actual, err := getValueForAttribute([]byte(tc.given), tc.paramName)
+			assert.Equal(t, tc.expected, actual)
+			assert.NoError(t, err)
+
+		})
+	}
 }

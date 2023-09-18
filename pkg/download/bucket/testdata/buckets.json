@@ -1,7 +1,7 @@
 {
     "buckets": [
         {
-            "bucketName": "bucket name",
+            "bucketName": "bucket_name",
             "table": "metrics",
             "displayName": "Default metrics (15 months)",
             "status": "active",
