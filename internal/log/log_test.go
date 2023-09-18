@@ -22,48 +22,23 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"os"
 	"testing"
 )
 
-// CustomMemMapFs embeds afero.MemMapFs and overrides the MkdirAll method
-type CustomMemMapFs struct {
-	afero.MemMapFs
-}
-
-// MkdirAll overrides the default implementation of MkdirAll
-func (fs *CustomMemMapFs) MkdirAll(path string, perm os.FileMode) error {
-	if fs.DirExists(path) {
-		return fmt.Errorf("directory already exists: %s", path)
-	}
-
-	return fs.MemMapFs.MkdirAll(path, perm)
-}
-
-// DirExists checks if a directory exists in the file system
-func (fs *CustomMemMapFs) DirExists(path string) bool {
-	fi, err := fs.Stat(path)
-	if err != nil {
-		return false
-	}
-
-	return fi.IsDir()
-}
-
-func TestPrepareLogFile_ReturnsErrIfParentDirectoryAlreadyExists(t *testing.T) {
-	fs := &CustomMemMapFs{}
+func TestPrepareLogFile_WorksIfParentDirectoryAlreadyExists(t *testing.T) {
+	fs := testutils.TempFs(t)
 	err := fs.MkdirAll(".logs", 0777)
 	assert.NoError(t, err)
 	file, errFile, err := prepareLogFiles(fs)
-	assert.Nil(t, file)
-	assert.Nil(t, errFile)
-	assert.Error(t, err)
+	assert.NotNil(t, file)
+	assert.NotNil(t, errFile)
+	assert.NoError(t, err)
 }
 
 func TestPrepareLogFile_ReturnsErrIfParentDirIsReadOnly(t *testing.T) {
