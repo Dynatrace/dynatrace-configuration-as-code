@@ -84,29 +84,40 @@ type configurationType = string
 type DeleteEntries = map[configurationType][]DeletePointer
 
 // Configs removes all given entriesToDelete from the Dynatrace environment the given client connects to
-func Configs(ctx context.Context, clients ClientSet, apis api.APIs, automationResources map[string]config.AutomationResource, entriesToDelete DeleteEntries) []error {
-	deleteErrors := make([]error, 0)
+func Configs(ctx context.Context, clients ClientSet, apis api.APIs, automationResources map[string]config.AutomationResource, entriesToDelete DeleteEntries) error {
+	deleteErrors := 0
 	for entryType, entries := range entriesToDelete {
 		if targetApi, isClassicAPI := apis[entryType]; isClassicAPI {
 			errs := deleteClassicConfig(ctx, clients.Classic, targetApi, entries, entryType)
-			deleteErrors = append(deleteErrors, errs...)
+			if len(errs) > 0 {
+				deleteErrors += 1
+			}
 		} else if targetAutomation, isAutomationAPI := automationResources[entryType]; isAutomationAPI {
 			if reflect.ValueOf(clients.Automation).IsNil() {
 				log.WithCtxFields(ctx).WithFields(field.Type(entryType)).Warn("Skipped deletion of %d Automation configurations of type %q as API client was unavailable.", len(entries), entryType)
 				continue
 			}
 			errs := deleteAutomations(ctx, clients.Automation, targetAutomation, entries)
-			deleteErrors = append(deleteErrors, errs...)
+			if len(errs) > 0 {
+				deleteErrors += 1
+			}
 		} else if entryType == "bucket" {
 			errs := deleteBuckets(ctx, clients.Buckets, entries)
-			deleteErrors = append(deleteErrors, errs...)
+			if len(errs) > 0 {
+				deleteErrors += 1
+			}
 		} else { // assume it's a Settings Schema
 			errs := deleteSettingsObject(ctx, clients.Settings, entries)
-			deleteErrors = append(deleteErrors, errs...)
+			if len(errs) > 0 {
+				deleteErrors += 1
+			}
 		}
 	}
 
-	return deleteErrors
+	if deleteErrors > 0 {
+		return fmt.Errorf("encountered %d errors", deleteErrors)
+	}
+	return nil
 }
 
 func deleteClassicConfig(ctx context.Context, client dtclient.Client, theApi api.API, entries []DeletePointer, targetApi string) []error {

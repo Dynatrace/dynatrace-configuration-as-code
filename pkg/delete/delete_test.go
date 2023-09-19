@@ -86,8 +86,8 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(context.TODO(), ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
-		assert.Len(t, errs, 1, "errors should have len 1")
+		err := Configs(context.TODO(), ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		assert.Error(t, err)
 	})
 
 	t.Run("TestDeleteSettings_LegacyExternalID - List settings returns no objects", func(t *testing.T) {
@@ -101,8 +101,8 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(context.TODO(), ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
-		assert.Len(t, errs, 0)
+		err := Configs(context.TODO(), ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		assert.NoError(t, err)
 	})
 
 	t.Run("TestDeleteSettings_LegacyExternalID - Delete settings based on object ID fails", func(t *testing.T) {
@@ -126,8 +126,8 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(context.TODO(), ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
-		assert.Len(t, errs, 1, "errors should have len 1")
+		err := Configs(context.TODO(), ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		assert.Error(t, err)
 	})
 
 }
@@ -160,8 +160,8 @@ func TestDeleteSettings(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(context.TODO(), ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
-		assert.Empty(t, errs, "errors should be empty")
+		err := Configs(context.TODO(), ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		assert.NoError(t, err)
 	})
 
 	t.Run("TestDeleteSettings - List settings with external ID fails", func(t *testing.T) {
@@ -176,8 +176,8 @@ func TestDeleteSettings(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(context.TODO(), ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
-		assert.Len(t, errs, 1, "errors should have len 1")
+		err := Configs(context.TODO(), ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		assert.Error(t, err)
 	})
 
 	t.Run("TestDeleteSettings - List settings returns no objects", func(t *testing.T) {
@@ -192,8 +192,8 @@ func TestDeleteSettings(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(context.TODO(), ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
-		assert.Len(t, errs, 0)
+		err := Configs(context.TODO(), ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		assert.NoError(t, err)
 	})
 
 	t.Run("TestDeleteSettings - Delete settings based on object ID fails", func(t *testing.T) {
@@ -218,8 +218,8 @@ func TestDeleteSettings(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(context.TODO(), ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
-		assert.Len(t, errs, 1, "errors should have len 1")
+		err := Configs(context.TODO(), ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		assert.Error(t, err)
 	})
 
 	t.Run("TestDeleteSettings - Skips non-deletable Objects", func(t *testing.T) {
@@ -253,8 +253,8 @@ func TestDeleteSettings(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(context.TODO(), ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
-		assert.Empty(t, errs, "errors should be empty")
+		err := Configs(context.TODO(), ClientSet{Settings: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		assert.NoError(t, err)
 	})
 }
 
@@ -398,9 +398,8 @@ func TestDeleteAutomations(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(context.TODO(), ClientSet{Automation: c}, api.NewAPIs(), automationTypes, entriesToDelete)
-		assert.Len(t, errs, 1, "there should be one delete error")
-		assert.ErrorContains(t, errs[0], "could not delete")
+		err = Configs(context.TODO(), ClientSet{Automation: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		assert.Error(t, err)
 	})
 }
 
@@ -480,16 +479,16 @@ func TestDeleteBuckets(t *testing.T) {
 				},
 			},
 		}
-		errs := Configs(context.TODO(), ClientSet{Buckets: c}, api.NewAPIs(), automationTypes, entriesToDelete)
-		assert.Len(t, errs, 1, "there should be one delete error")
+		err := Configs(context.TODO(), ClientSet{Buckets: c}, api.NewAPIs(), automationTypes, entriesToDelete)
+		assert.Error(t, err, "there should be one delete error")
 	})
 
 }
 
 func TestSplitConfigsForDeletion(t *testing.T) {
 	type expect struct {
-		ids     []string
-		numErrs int
+		ids []string
+		err bool
 	}
 
 	type args struct {
@@ -512,8 +511,8 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 				values:  []dtclient.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "id2"}, {Name: "d3", Id: "id3"}},
 			},
 			expect: expect{
-				ids:     []string{"id1", "id2", "id3"},
-				numErrs: 0,
+				ids: []string{"id1", "id2", "id3"},
+				err: false,
 			},
 		},
 		{
@@ -530,8 +529,8 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 				values:  []dtclient.Value{{Name: "d1", Id: "id1"}},
 			},
 			expect: expect{
-				ids:     []string{"id1"},
-				numErrs: 0,
+				ids: []string{"id1"},
+				err: false,
 			},
 		},
 		{
@@ -541,8 +540,8 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 				values:  []dtclient.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "id2"}, {Name: "d3", Id: "id3"}},
 			},
 			expect: expect{
-				ids:     []string{"id1"},
-				numErrs: 0,
+				ids: []string{"id1"},
+				err: false,
 			},
 		},
 		{
@@ -552,8 +551,8 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 				values:  []dtclient.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "d2-id"}, {Name: "d3", Id: "id3"}},
 			},
 			expect: expect{
-				ids:     []string{"id1", "d2-id"},
-				numErrs: 0,
+				ids: []string{"id1", "d2-id"},
+				err: false,
 			},
 		},
 		{
@@ -563,8 +562,8 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 				values:  []dtclient.Value{{Name: "d1"}, {Name: "d1"}, {Name: "d2"}, {Name: "d2"}},
 			},
 			expect: expect{
-				ids:     []string{},
-				numErrs: 2,
+				ids: []string{},
+				err: true,
 			},
 		},
 		{
@@ -574,8 +573,8 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 				values:  []dtclient.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "id2"}, {Name: "d2", Id: "id-something"}, {Name: "d3", Id: "id3"}, {Id: "d4-id"}},
 			},
 			expect: expect{
-				ids:     []string{"id1", "id3", "d4-id"},
-				numErrs: 1,
+				ids: []string{"id1", "id3", "d4-id"},
+				err: true,
 			},
 		},
 	}
@@ -593,9 +592,12 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 				c.EXPECT().DeleteConfigById(a, id)
 			}
 
-			errs := Configs(context.TODO(), ClientSet{Classic: c}, apiMap, automationTypes, entriesToDelete)
-
-			assert.Equal(t, len(errs), tc.expect.numErrs)
+			err := Configs(context.TODO(), ClientSet{Classic: c}, apiMap, automationTypes, entriesToDelete)
+			if tc.expect.err {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
