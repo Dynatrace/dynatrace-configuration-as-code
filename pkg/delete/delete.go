@@ -98,8 +98,8 @@ func Configs(ctx context.Context, clients ClientSet, apis api.APIs, automationRe
 				log.WithCtxFields(ctx).WithFields(field.Type(entryType)).Warn("Skipped deletion of %d Automation configurations of type %q as API client was unavailable.", len(entries), entryType)
 				continue
 			}
-			errs := deleteAutomations(ctx, clients.Automation, targetAutomation, entries)
-			if len(errs) > 0 {
+			err := deleteAutomations(ctx, clients.Automation, targetAutomation, entries)
+			if err != nil {
 				deleteErrors += 1
 			}
 		} else if entryType == "bucket" {
@@ -214,28 +214,35 @@ func deleteSettingsObject(ctx context.Context, c dtclient.Client, entries []Dele
 	}
 
 	if deleteErrs > 0 {
-		return fmt.Errorf("failed to delete  %d settings objects(s) of schema %q", deleteErrs, schema)
+		return fmt.Errorf("failed to delete %d settings objects(s) of schema %q", deleteErrs, schema)
 	}
 
 	return nil
 }
 
-func deleteAutomations(ctx context.Context, c automationClient, automationResource config.AutomationResource, entries []DeletePointer) []error {
-	log.WithCtxFields(ctx).WithFields(field.Type(string(automationResource))).Info("Deleting %d config(s) of type %q...", len(entries), automationResource)
-	errors := make([]error, 0)
+func deleteAutomations(ctx context.Context, c automationClient, automationResource config.AutomationResource, entries []DeletePointer) error {
+
+	logger := log.WithCtxFields(ctx).WithFields(field.Type(string(automationResource)))
+	logger.Info("Deleting %d config(s) of type %q...", len(entries), automationResource)
+
+	deleteErrs := 0
 
 	for _, e := range entries {
 
 		id := idutils.GenerateUUIDFromCoordinate(e.asCoordinate())
 
+		logger.Debug("Deleting %v %q with id %q.", automationResource, e, id)
+
 		resourceType, err := automationutils.ClientResourceTypeFromConfigType(automationResource)
 		if err != nil {
-			errors = append(errors, fmt.Errorf("could not delete Automation object %s with ID %q: %w", e, id, err))
+			logger.WithFields(field.Error(err)).Error("Failed to delete %v %s with ID %q: %v", automationResource, e, id, err)
+			deleteErrs++
 		}
 
 		resp, err := c.Delete(ctx, resourceType, id)
 		if err != nil {
-			errors = append(errors, fmt.Errorf("could not delete Automation object %s with ID %q: %w", e, id, err))
+			logger.WithFields(field.Error(err)).Error("Failed to delete %v %s with ID %q: %v", automationResource, e, id, err)
+			deleteErrs++
 		}
 
 		if err, isErr := resp.AsAPIError(); isErr && resp.StatusCode != http.StatusNotFound { // 404 means it's gone already anyway
@@ -243,7 +250,11 @@ func deleteAutomations(ctx context.Context, c automationClient, automationResour
 		}
 	}
 
-	return errors
+	if deleteErrs > 0 {
+		return fmt.Errorf("failed to delete %d Automation objects(s) of type %q", deleteErrs, automationResource)
+	}
+
+	return nil
 }
 
 func deleteBuckets(ctx context.Context, c bucketClient, entries []DeletePointer) []error {
