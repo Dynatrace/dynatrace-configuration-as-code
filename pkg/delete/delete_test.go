@@ -22,13 +22,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/buckets"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	lib "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
+	monacoREST "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"net/http"
@@ -76,7 +77,7 @@ func TestDeleteSettings_LegacyExternalID(t *testing.T) {
 
 	t.Run("TestDeleteSettings_LegacyExternalID - List settings with external ID fails", func(t *testing.T) {
 		c := dtclient.NewMockClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, rest.RespError{Err: fmt.Errorf("WHOPS"), StatusCode: 0})
+		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, monacoREST.RespError{Err: fmt.Errorf("WHOPS"), StatusCode: 0})
 		entriesToDelete := DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -165,7 +166,7 @@ func TestDeleteSettings(t *testing.T) {
 
 	t.Run("TestDeleteSettings - List settings with external ID fails", func(t *testing.T) {
 		c := dtclient.NewMockClient(gomock.NewController(t))
-		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, rest.RespError{Err: fmt.Errorf("WHOPS"), StatusCode: 0})
+		c.EXPECT().ListSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dtclient.DownloadSettingsObject{}, monacoREST.RespError{Err: fmt.Errorf("WHOPS"), StatusCode: 0})
 		entriesToDelete := DeleteEntries{
 			"builtin:alerting.profile": {
 				{
@@ -269,7 +270,9 @@ func TestDeleteAutomations(t *testing.T) {
 		}))
 		defer server.Close()
 
-		c := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
+		serverURL, err := url.Parse(server.URL)
+		assert.NoError(t, err)
+		c := automation.NewClient(rest.NewClient(serverURL, server.Client()))
 
 		entriesToDelete := DeleteEntries{
 			"workflow": {
@@ -311,7 +314,9 @@ func TestDeleteAutomations(t *testing.T) {
 		}))
 		defer server.Close()
 
-		c := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
+		serverURL, err := url.Parse(server.URL)
+		assert.NoError(t, err)
+		c := automation.NewClient(rest.NewClient(serverURL, server.Client()))
 
 		entriesToDelete := DeleteEntries{
 			"workflow": {
@@ -353,7 +358,9 @@ func TestDeleteAutomations(t *testing.T) {
 		}))
 		defer server.Close()
 
-		c := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
+		serverURL, err := url.Parse(server.URL)
+		assert.NoError(t, err)
+		c := automation.NewClient(rest.NewClient(serverURL, server.Client()))
 
 		entriesToDelete := DeleteEntries{
 			"workflow": {
@@ -378,7 +385,9 @@ func TestDeleteAutomations(t *testing.T) {
 		}))
 		defer server.Close()
 
-		c := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
+		serverURL, err := url.Parse(server.URL)
+		assert.NoError(t, err)
+		c := automation.NewClient(rest.NewClient(serverURL, server.Client()))
 
 		entriesToDelete := DeleteEntries{
 			"workflow": {
@@ -391,7 +400,7 @@ func TestDeleteAutomations(t *testing.T) {
 		}
 		errs := Configs(context.TODO(), ClientSet{Automation: c}, api.NewAPIs(), automationTypes, entriesToDelete)
 		assert.Len(t, errs, 1, "there should be one delete error")
-		assert.ErrorContains(t, errs[0], "unable to delete")
+		assert.ErrorContains(t, errs[0], "could not delete")
 	})
 }
 

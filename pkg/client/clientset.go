@@ -19,13 +19,13 @@ package client
 import (
 	"context"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/buckets"
 	lib "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
 	clientAuth "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/auth"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/metadata"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/useragent"
@@ -152,14 +152,6 @@ func CreatePlatformClientSet(url string, auth PlatformAuth, opts ClientOptions) 
 	if err != nil {
 		return nil, err
 	}
-	platformClient := rest.NewRestClient(clientAuth.NewOAuthClient(context.TODO(), oauthCredentials), trafficLogger, rest.CreateRateLimitStrategy())
-
-	autClient := automation.NewClient(
-		url,
-		platformClient,
-		automation.WithClientRequestLimiter(concurrency.NewLimiter(concurrentRequestLimit)),
-		automation.WithCustomUserAgentString(opts.getUserAgentString()),
-	)
 
 	clientFactory := clients.Factory().
 		WithOAuthCredentials(clientcredentials.Config{
@@ -175,6 +167,11 @@ func CreatePlatformClientSet(url string, auth PlatformAuth, opts ClientOptions) 
 	}
 
 	bucketClient, err := clientFactory.BucketClient()
+	if err != nil {
+		return nil, err
+	}
+
+	autClient, err := clientFactory.AutomationClient()
 	if err != nil {
 		return nil, err
 	}

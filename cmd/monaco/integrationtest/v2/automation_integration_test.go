@@ -20,6 +20,7 @@
 package v2
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
@@ -53,5 +54,7 @@ func TestIntegrationAutomation(t *testing.T) {
 		cmd.SetArgs([]string{"deploy", "--verbose", manifest})
 		err = cmd.Execute()
 		assert.NoError(t, err)
+
+		integrationtest.AssertAllConfigsAvailability(t, fs, manifest, []string{}, "", true)
 	})
 }

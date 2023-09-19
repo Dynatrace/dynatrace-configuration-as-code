@@ -21,10 +21,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	client "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	client "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
@@ -72,14 +73,24 @@ func (d *Downloader) Download(projectName string, automationTypes ...config.Auto
 			log.WithFields(field.Type(string(at.Resource)), field.Error(err)).Error("Failed to fetch all objects for automation resource %s: %v", at.Resource, err)
 			continue
 		}
+		if err, isAPIErr := response.AsAPIError(); isAPIErr {
+			log.WithFields(field.Type(string(at.Resource)), field.Error(err)).Error("Failed to fetch all objects for automation resource %s: %v", at.Resource, err)
+			continue
+		}
 
-		log.WithFields(field.Type(string(at.Resource)), field.F("configsDownloaded", len(response))).Info("Downloaded %d objects for automation resource %s", len(response), string(at.Resource))
-		if len(response) == 0 {
+		objects, err := automationutils.DecodeListResponse(response)
+		if err != nil {
+			log.WithFields(field.Type(string(at.Resource)), field.Error(err)).Error("Failed to decode API response objects for automation resource %s: %v", at.Resource, err)
+			continue
+		}
+
+		log.WithFields(field.Type(string(at.Resource)), field.F("configsDownloaded", len(objects))).Info("Downloaded %d objects for automation resource %s", len(objects), string(at.Resource))
+		if len(objects) == 0 {
 			continue
 		}
 
 		var configs []config.Config
-		for _, obj := range response {
+		for _, obj := range objects {
 
 			configId := obj.ID
 
@@ -125,7 +136,7 @@ func escapeJinjaTemplates(src []byte) ([]byte, error) {
 type NoopAutomationDownloader struct {
 }
 
-func createTemplateFromRawJSON(obj client.Response, configType, projectName string) (t template.Template, extractedName *string) {
+func createTemplateFromRawJSON(obj automationutils.Response, configType, projectName string) (t template.Template, extractedName *string) {
 	configId := obj.ID
 
 	var data map[string]interface{}

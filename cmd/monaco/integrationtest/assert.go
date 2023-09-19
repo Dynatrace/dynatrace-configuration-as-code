@@ -23,9 +23,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/stretchr/testify/assert"
@@ -232,8 +232,11 @@ func AssertAutomation(t *testing.T, c automation.Client, env manifest.Environmen
 	resp, err := c.List(context.TODO(), resourceType)
 	assert.NoError(t, err)
 
+	objects, err := automationutils.DecodeListResponse(resp)
+	assert.NoError(t, err)
+
 	var exists bool
-	for _, r := range resp {
+	for _, r := range objects {
 		if r.ID == expectedId {
 			exists = true
 			break

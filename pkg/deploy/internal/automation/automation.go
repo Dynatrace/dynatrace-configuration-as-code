@@ -19,10 +19,11 @@ package automation
 import (
 	"context"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
@@ -31,7 +32,7 @@ import (
 
 //go:generate mockgen -source=automation.go -destination=automation_mock.go -package=automation automationClient
 type Client interface {
-	Upsert(ctx context.Context, resourceType automation.ResourceType, id string, data []byte) (result *automation.Response, err error)
+	Upsert(ctx context.Context, resourceType automation.ResourceType, id string, data []byte) (result automation.Response, err error)
 }
 
 var _ Client = (*DummyClient)(nil)
@@ -39,8 +40,13 @@ var _ Client = (*DummyClient)(nil)
 type DummyClient struct {
 }
 
-func (c *DummyClient) Upsert(_ context.Context, _ automation.ResourceType, id string, _ []byte) (*automation.Response, error) {
-	return &automation.Response{ID: id}, nil
+func (c *DummyClient) Upsert(_ context.Context, _ automation.ResourceType, id string, _ []byte) (automation.Response, error) {
+	return automation.Response{
+		Response: api.Response{
+			StatusCode: 200,
+			Data:       []byte("{}"),
+		},
+	}, nil
 }
 
 func Deploy(ctx context.Context, client Client, properties parameter.Properties, renderedConfig string, c *config.Config) (config.ResolvedEntity, error) {
@@ -62,20 +68,27 @@ func Deploy(ctx context.Context, client Client, properties parameter.Properties,
 		return config.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("failed to upsert automation object of type %s with id %s", t.Resource, id)).WithError(err)
 	}
 
-	var resp *automation.Response
-	resp, err = client.Upsert(ctx, resourceType, id, []byte(renderedConfig))
-	if resp == nil || err != nil {
+	resp, err := client.Upsert(ctx, resourceType, id, []byte(renderedConfig))
+	if err != nil {
+		return config.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("failed to upsert automation object of type %s with id %s", t.Resource, id)).WithError(err)
+	}
+	if err, isErr := resp.AsAPIError(); isErr {
 		return config.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("failed to upsert automation object of type %s with id %s", t.Resource, id)).WithError(err)
 	}
 
-	name := fmt.Sprintf("[UNKNOWN NAME]%s", resp.ID)
+	obj, err := automationutils.DecodeResponse(resp)
+	if err != nil {
+		return config.ResolvedEntity{}, errors.NewConfigDeployErr(c, fmt.Sprintf("failed to decode automation object response of type %s with id %s", t.Resource, id)).WithError(err)
+	}
+
+	name := fmt.Sprintf("[UNKNOWN NAME]%s", obj.ID)
 	if configName, err := extract.ConfigName(c, properties); err == nil {
 		name = configName
 	} else {
-		log.WithCtxFields(ctx).Warn("failed to extract name for automation object %q - ID will be used", resp.ID)
+		log.WithCtxFields(ctx).Warn("failed to extract name for automation object %q - ID will be used", obj.ID)
 	}
 
-	properties[config.IdParameter] = resp.ID
+	properties[config.IdParameter] = obj.ID
 	resolved := config.ResolvedEntity{
 		EntityName: name,
 		Coordinate: c.Coordinate,
