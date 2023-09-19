@@ -103,6 +103,10 @@ func Configs(ctx context.Context, clients ClientSet, apis api.APIs, automationRe
 				deleteErrors += 1
 			}
 		} else if entryType == "bucket" {
+			if reflect.ValueOf(clients.Buckets).IsNil() {
+				log.WithCtxFields(ctx).WithFields(field.Type(entryType)).Warn("Skipped deletion of %d Grail Bucket configurations as API client was unavailable.", len(entries))
+				continue
+			}
 			err := deleteBuckets(ctx, clients.Buckets, entries)
 			if err != nil {
 				deleteErrors += 1

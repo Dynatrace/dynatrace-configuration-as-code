@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -160,6 +161,8 @@ func TestDelete(t *testing.T) {
 }
 
 func TestDeleteSkipsPlatformTypesWhenDeletingFromClassicEnv(t *testing.T) {
+	t.Setenv(featureflags.Buckets().EnvName(), "true")
+
 	configFolder := "test-resources/delete-test-configs/"
 	deployManifestPath := configFolder + "deploy-manifest.yaml"
 
@@ -176,6 +179,10 @@ configs:
     name: %s
     template: workflow.json
 - id: %s
+  type: bucket
+  config:
+    template: bucket.json
+- id: %s
   type:
     settings:
       schema: builtin:tags.auto-tagging
@@ -184,8 +191,9 @@ configs:
     name: %s
     template: auto-tag-setting.json`
 	workflowID := fmt.Sprintf("workflowSample_%s", integrationtest.GenerateTestSuffix(t, "skip_automations"))
+	bucketID := fmt.Sprintf("bucket_%s", integrationtest.GenerateTestSuffix(t, "")) // generate shorter name does not reach API limit
 	tagID := fmt.Sprintf("tagSample_%s", integrationtest.GenerateTestSuffix(t, "skip_automations"))
-	configContent := fmt.Sprintf(configTemplate, workflowID, workflowID, tagID, tagID)
+	configContent := fmt.Sprintf(configTemplate, workflowID, workflowID, bucketID, tagID, tagID)
 
 	configYamlPath, err := filepath.Abs(filepath.Join(configFolder, "project", "config.yaml"))
 	assert.NoError(t, err)
@@ -198,10 +206,13 @@ configs:
     type: "workflow"
     id: "%s"
   - project: "project"
+    type: "bucket"
+    id: "%s"
+  - project: "project"
     type: "builtin:tags.auto-tagging"
     id: "%s"`
 
-	deleteContent := fmt.Sprintf(deleteTemplate, workflowID, tagID)
+	deleteContent := fmt.Sprintf(deleteTemplate, workflowID, bucketID, tagID)
 	deleteYamlPath, err := filepath.Abs("delete.yaml")
 	assert.NoError(t, err)
 	err = afero.WriteFile(fs, deleteYamlPath, []byte(deleteContent), 644)
@@ -232,13 +243,20 @@ environmentGroups:
 	err = cmd.Execute()
 	assert.NoError(t, err)
 	integrationtest.AssertAllConfigsAvailability(t, fs, deployManifestPath, []string{}, "", true)
+	// ensure test resources are removed after test is done
+	t.Cleanup(func() {
+		cmd = runner.BuildCli(fs)
+		cmd.SetArgs([]string{"delete", "--verbose", "--manifest", "test-resources/delete-test-configs/deploy-manifest.yaml"}) //full manifest with oAuth
+		err = cmd.Execute()
+	})
 
-	// DELETE Config
+	// DELETE Configs - with API Token only Manifest
 	cmd = runner.BuildCli(fs)
 	cmd.SetArgs([]string{"delete", "--verbose"})
 	err = cmd.Execute()
 	assert.NoError(t, err)
 
+	// Assert expected deletions
 	man, errs := manifest.LoadManifest(&manifest.LoaderContext{
 		Fs:           fs,
 		ManifestPath: "test-resources/delete-test-configs/deploy-manifest.yaml", //full manifest with oAuth
@@ -264,6 +282,15 @@ environmentGroups:
 			Project:  "project",
 			Type:     "workflow",
 			ConfigId: workflowID,
+		},
+	})
+
+	// check the bucket still exists after deletion was skipped without error
+	integrationtest.AssertBucket(t, *clientSet.Bucket(), env, true, config.Config{
+		Coordinate: coordinate.Coordinate{
+			Project:  "project",
+			Type:     "bucket",
+			ConfigId: bucketID,
 		},
 	})
 }
