@@ -20,10 +20,10 @@ package integrationtest
 
 import (
 	"context"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"strings"
@@ -152,12 +152,17 @@ func deleteAutomation(t *testing.T, resource config.AutomationResource, id strin
 		t.Logf("Unable to delete Automation config %s (%s): %v", id, resource, err)
 		return
 	}
-	err = c.Delete(resourceType, id)
+	resp, err := c.Delete(context.Background(), resourceType, id)
 	if err != nil {
 		t.Logf("Failed to cleanup test config: could not delete Automation (%s) object with ID %s: %v", resource, id, err)
-	} else {
-		log.Info("Cleaned up test Automation %s (%s)", id, resource)
+		return
 	}
+	if err, isAPIErr := resp.AsAPIError(); isAPIErr {
+		t.Logf("Failed to cleanup test config: could not delete Automation (%s) object with ID %s: %v", resource, id, err)
+		return
+	}
+
+	log.Info("Cleaned up test Automation %s (%s)", id, resource)
 }
 
 func deleteBucket(t *testing.T, bucketName string, c *buckets.Client) {

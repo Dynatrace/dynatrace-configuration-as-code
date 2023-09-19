@@ -20,13 +20,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -69,8 +69,8 @@ type ClientSet struct {
 }
 
 type automationClient interface {
-	Delete(resourceType automation.ResourceType, id string) (err error)
-	List(ctx context.Context, resourceType automation.ResourceType) (result []automation.Response, err error)
+	Delete(ctx context.Context, resourceType automation.ResourceType, id string) (automation.Response, error)
+	List(ctx context.Context, resourceType automation.ResourceType) (automation.ListResponse, error)
 }
 
 type bucketClient interface {
@@ -198,8 +198,12 @@ func deleteAutomations(ctx context.Context, c automationClient, automationResour
 			errors = append(errors, fmt.Errorf("could not delete Automation object %s with ID %q: %w", e, id, err))
 		}
 
-		err = c.Delete(resourceType, id)
+		resp, err := c.Delete(ctx, resourceType, id)
 		if err != nil {
+			errors = append(errors, fmt.Errorf("could not delete Automation object %s with ID %q: %w", e, id, err))
+		}
+
+		if err, isErr := resp.AsAPIError(); isErr && resp.StatusCode != http.StatusNotFound { // 404 means it's gone already anyway
 			errors = append(errors, fmt.Errorf("could not delete Automation object %s with ID %q: %w", e, id, err))
 		}
 	}
@@ -376,7 +380,13 @@ func AllAutomations(ctx context.Context, c automationClient) []error {
 		}
 
 		log.WithCtxFields(ctx).WithFields(field.Type(string(resource))).Info("Collecting objects of type %q...", resource)
-		objects, err := c.List(ctx, t)
+		resp, err := c.List(ctx, t)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		objects, err := automationutils.DecodeListResponse(resp)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -385,8 +395,11 @@ func AllAutomations(ctx context.Context, c automationClient) []error {
 		log.WithCtxFields(ctx).WithFields(field.Type(string(resource))).Info("Deleting %d objects of type %q...", len(objects), resource)
 		for _, o := range objects {
 			log.WithCtxFields(ctx).WithFields(field.Type(string(resource)), field.F("object", o)).Debug("Deleting Automation object with id %q...", o.ID)
-			err = c.Delete(t, o.ID)
+			resp, err := c.Delete(ctx, t, o.ID)
 			if err != nil {
+				errs = append(errs, err)
+			}
+			if err, isErr := resp.AsAPIError(); isErr {
 				errs = append(errs, err)
 			}
 		}

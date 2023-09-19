@@ -17,13 +17,15 @@
 package automation
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"testing"
 )
@@ -46,7 +48,9 @@ func TestDownloader_Download(t *testing.T) {
 			}
 		}))
 		defer server.Close()
-		httpClient := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
+		serverURL, err := url.Parse(server.URL)
+		assert.NoError(t, err)
+		httpClient := automation.NewClient(rest.NewClient(serverURL, server.Client()))
 		downloader := NewDownloader(httpClient)
 		result, err := downloader.Download("projectName")
 		assert.Len(t, result, 3)
@@ -73,7 +77,9 @@ func TestDownloader_Download(t *testing.T) {
 
 		}))
 		defer server.Close()
-		httpClient := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
+		serverURL, err := url.Parse(server.URL)
+		assert.NoError(t, err)
+		httpClient := automation.NewClient(rest.NewClient(serverURL, server.Client()))
 		downloader := NewDownloader(httpClient)
 		result, err := downloader.Download("projectName",
 			config.AutomationType{Resource: config.Workflow}, config.AutomationType{Resource: config.BusinessCalendar})
@@ -95,8 +101,9 @@ func TestDownloader_Download(t *testing.T) {
 			}
 		}))
 		defer server.Close()
-
-		httpClient := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
+		serverURL, err := url.Parse(server.URL)
+		assert.NoError(t, err)
+		httpClient := automation.NewClient(rest.NewClient(serverURL, server.Client()))
 
 		downloader := NewDownloader(httpClient)
 		result, err := downloader.Download("projectName", config.AutomationType{Resource: config.Workflow})
@@ -127,7 +134,10 @@ func TestDownloader_Download_FailsToDownloadSpecificResource(t *testing.T) {
 
 	}))
 	defer server.Close()
-	httpClient := automation.NewClient(server.URL, rest.NewRestClient(server.Client(), nil, rest.CreateRateLimitStrategy()))
+
+	serverURL, err := url.Parse(server.URL)
+	assert.NoError(t, err)
+	httpClient := automation.NewClient(rest.NewClient(serverURL, server.Client()))
 	downloader := NewDownloader(httpClient)
 	result, err := downloader.Download("projectName")
 	assert.Len(t, result, 2)
@@ -144,12 +154,12 @@ func Test_createTemplateFromRawJSON(t *testing.T) {
 
 	tests := []struct {
 		name  string
-		given automation.Response
+		given automationutils.Response
 		want  want
 	}{
 		{
 			"sanitizes template as expected - extracts title as name",
-			automation.Response{
+			automationutils.Response{
 				ID:   "42",
 				Data: []byte(`{ "id": "42", "title": "My Workflow", "lastExecution": { "some": "details" }, "important": "data" }`),
 			},
@@ -163,7 +173,7 @@ func Test_createTemplateFromRawJSON(t *testing.T) {
 		},
 		{
 			"defaults template name to ID if title is not found - but returns no name",
-			automation.Response{
+			automationutils.Response{
 				ID:   "42",
 				Data: []byte(`{ "id": "42", "workflow_name": "My Workflow", "important": "data" }`),
 			},
@@ -176,7 +186,7 @@ func Test_createTemplateFromRawJSON(t *testing.T) {
 		},
 		{
 			"works if reply is not valid JSON",
-			automation.Response{
+			automationutils.Response{
 				ID:   "42",
 				Data: []byte(`{ "id": "42`),
 			},

@@ -21,7 +21,8 @@ package automation
 import (
 	"context"
 	"errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/automation"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
@@ -60,7 +61,21 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 
 	t.Run("TestDeployAutomation - Workflow Upsert fails", func(t *testing.T) {
 		client := NewMockClient(gomock.NewController(t))
-		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, errors.New("UPSERT_FAIL"))
+		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(automation.Response{}, errors.New("UPSERT_FAIL"))
+
+		conf := &config.Config{
+			Type: config.AutomationType{
+				Resource: config.Workflow,
+			},
+			Template:   testutils.GenerateDummyTemplate(t),
+			Parameters: testutils.ToParameterMap([]parameter.NamedParameter{}),
+		}
+		_, err := Deploy(context.TODO(), client, nil, "", conf)
+		assert.Error(t, err)
+	})
+	t.Run("TestDeployAutomation - Workflow Upsert fails - HTTP Err", func(t *testing.T) {
+		client := NewMockClient(gomock.NewController(t))
+		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(automation.Response{api.Response{StatusCode: 400}}, nil)
 
 		conf := &config.Config{
 			Type: config.AutomationType{
@@ -74,7 +89,21 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 	})
 	t.Run("TestDeployAutomation - BusinessCalendar Upsert fails", func(t *testing.T) {
 		client := NewMockClient(gomock.NewController(t))
-		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, errors.New("UPSERT_FAIL"))
+		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(automation.Response{}, errors.New("UPSERT_FAIL"))
+
+		conf := &config.Config{
+			Type: config.AutomationType{
+				Resource: config.BusinessCalendar,
+			},
+			Template:   testutils.GenerateDummyTemplate(t),
+			Parameters: testutils.ToParameterMap([]parameter.NamedParameter{}),
+		}
+		_, err := Deploy(context.TODO(), client, nil, "", conf)
+		assert.Error(t, err)
+	})
+	t.Run("TestDeployAutomation - BusinessCalendar Upsert fails - HTTP Error", func(t *testing.T) {
+		client := NewMockClient(gomock.NewController(t))
+		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(automation.Response{api.Response{StatusCode: 400}}, nil)
 
 		conf := &config.Config{
 			Type: config.AutomationType{
@@ -88,7 +117,21 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 	})
 	t.Run("TestDeployAutomation - Scheduling Rule Upsert fails", func(t *testing.T) {
 		client := NewMockClient(gomock.NewController(t))
-		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, errors.New("UPSERT_FAIL"))
+		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(automation.Response{}, errors.New("UPSERT_FAIL"))
+
+		conf := &config.Config{
+			Type: config.AutomationType{
+				Resource: config.SchedulingRule,
+			},
+			Template:   testutils.GenerateDummyTemplate(t),
+			Parameters: testutils.ToParameterMap([]parameter.NamedParameter{}),
+		}
+		_, err := Deploy(context.TODO(), client, nil, "", conf)
+		assert.Error(t, err)
+	})
+	t.Run("TestDeployAutomation - Scheduling Rule Upsert fails - HTTP Error", func(t *testing.T) {
+		client := NewMockClient(gomock.NewController(t))
+		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(automation.Response{api.Response{StatusCode: 400}}, nil)
 
 		conf := &config.Config{
 			Type: config.AutomationType{
@@ -104,8 +147,11 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 
 func TestDeployAutomation(t *testing.T) {
 	client := NewMockClient(gomock.NewController(t))
-	client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&automation.Response{
-		ID: "config-id",
+	client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(automation.Response{
+		Response: api.Response{
+			StatusCode: 200,
+			Data:       []byte("{ \"id\": \"config-id\" }"),
+		},
 	}, nil)
 	conf := &config.Config{
 		Coordinate: coordinate.Coordinate{
