@@ -19,11 +19,11 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	"strings"
 )
 
 // Delete removes configurations from multiple Dynatrace environments based on the specified deletion entries.
@@ -36,7 +36,7 @@ import (
 //   - error: If an error occurs during the deletion process, an error is returned, describing the issue.
 //     If no errors occur, nil is returned.
 func Delete(environments manifest.Environments, entriesToDelete delete.DeleteEntries) error {
-	var deleteErrors []error
+	var envsWithDeleteErrs []string
 	for _, env := range environments {
 		ctx := context.WithValue(context.TODO(), log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
 		if containsPlatformTypes(entriesToDelete) && env.Auth.OAuth == nil {
@@ -64,16 +64,14 @@ func Delete(environments manifest.Environments, entriesToDelete delete.DeleteEnt
 			Buckets:    clientSet.Bucket(),
 		}
 
-		if errs := delete.Configs(ctx, deleteClients, classicAPIs, automationAPIs, entriesToDelete); errs != nil {
-			deleteErrors = append(deleteErrors, errs...)
+		if err := delete.Configs(ctx, deleteClients, classicAPIs, automationAPIs, entriesToDelete); err != nil {
+			log.Error("Failed to delete all configurations from environment %q - check log for details", env)
+			envsWithDeleteErrs = append(envsWithDeleteErrs, env.Name)
 		}
 	}
 
-	if len(deleteErrors) > 0 {
-		for _, e := range deleteErrors {
-			log.WithFields(field.Error(e)).Error("Deletion error: %s", e)
-		}
-		return fmt.Errorf("encountered %v errors during delete", len(deleteErrors))
+	if len(envsWithDeleteErrs) > 0 {
+		return fmt.Errorf("encountered deletion errors for the following environments: %v", strings.Join(envsWithDeleteErrs, ", "))
 	}
 	return nil
 }
