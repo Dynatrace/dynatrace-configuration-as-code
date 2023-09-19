@@ -24,6 +24,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/timeutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"path/filepath"
@@ -156,7 +157,7 @@ func TestGeneratesValidDeleteFile_OmittingClassicConfigsWithNonStringNames(t *te
 	assertDeleteEntries(t, entries, "notification", "Star Trek to #team-star-trek", "Captain's Log")
 }
 
-func assertDeleteEntries(t *testing.T, entries map[string][]delete.DeletePointer, cfgType string, expectedCfgIdentifiers ...string) {
+func assertDeleteEntries(t *testing.T, entries map[string][]pointer.DeletePointer, cfgType string, expectedCfgIdentifiers ...string) {
 	vals, ok := entries[cfgType]
 	assert.True(t, ok, "expected delete pointers for type %s", cfgType)
 

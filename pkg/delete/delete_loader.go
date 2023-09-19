@@ -21,6 +21,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/persistence"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 	"github.com/mitchellh/mapstructure"
 	"path/filepath"
 	"strings"
@@ -131,7 +132,7 @@ func parseDeleteFileDefinition(ctx *loaderContext, definition persistence.FileDe
 	return result, nil
 }
 
-func parseDeleteEntry(ctx *loaderContext, index int, entry interface{}) (DeletePointer, error) {
+func parseDeleteEntry(ctx *loaderContext, index int, entry interface{}) (pointer.DeletePointer, error) {
 
 	ptr, err := parseFullEntry(ctx, entry)
 
@@ -140,19 +141,19 @@ func parseDeleteEntry(ctx *loaderContext, index int, entry interface{}) (DeleteP
 	}
 
 	if err != nil {
-		return DeletePointer{},
+		return pointer.DeletePointer{},
 			newDeleteEntryParserError(fmt.Sprintf("%v", entry), index, err.Error())
 	}
 
 	return ptr, nil
 }
 
-func parseFullEntry(ctx *loaderContext, entry interface{}) (DeletePointer, error) {
+func parseFullEntry(ctx *loaderContext, entry interface{}) (pointer.DeletePointer, error) {
 
 	var parsed persistence.DeleteEntry
 	err := mapstructure.Decode(entry, &parsed)
 	if err != nil {
-		return DeletePointer{}, err
+		return pointer.DeletePointer{}, err
 	}
 
 	if _, known := ctx.knownApis[parsed.Type]; known {
@@ -162,39 +163,39 @@ func parseFullEntry(ctx *loaderContext, entry interface{}) (DeletePointer, error
 	return parseCoordinateEntry(parsed)
 }
 
-func parseAPIEntry(parsed persistence.DeleteEntry) (DeletePointer, error) {
+func parseAPIEntry(parsed persistence.DeleteEntry) (pointer.DeletePointer, error) {
 	if parsed.ConfigName == "" {
-		return DeletePointer{}, fmt.Errorf("delete entry of API type requiress config 'name' to be defined")
+		return pointer.DeletePointer{}, fmt.Errorf("delete entry of API type requiress config 'name' to be defined")
 	}
 	if parsed.ConfigId != "" {
 		log.Warn("Delete entry %q of API type defines config 'id' - only 'name' will be used.")
 	}
-	return DeletePointer{
+	return pointer.DeletePointer{
 		Type:       parsed.Type,
 		Identifier: parsed.ConfigName,
 	}, nil
 }
 
-func parseCoordinateEntry(parsed persistence.DeleteEntry) (DeletePointer, error) {
+func parseCoordinateEntry(parsed persistence.DeleteEntry) (pointer.DeletePointer, error) {
 	if parsed.ConfigId == "" {
-		return DeletePointer{}, fmt.Errorf("delete entry requires config 'id' to be defined")
+		return pointer.DeletePointer{}, fmt.Errorf("delete entry requires config 'id' to be defined")
 	}
 	if parsed.Project == "" {
-		return DeletePointer{}, fmt.Errorf("delete entry requires 'project' to be defined")
+		return pointer.DeletePointer{}, fmt.Errorf("delete entry requires 'project' to be defined")
 	}
 	if parsed.ConfigName != "" {
 		log.Warn("Delete entry defines config 'name' - only 'id' will be used.")
 	}
-	return DeletePointer{
+	return pointer.DeletePointer{
 		Project:    parsed.Project,
 		Type:       parsed.Type,
 		Identifier: parsed.ConfigId,
 	}, nil
 }
 
-func parseSimpleEntry(entry string) (DeletePointer, error) {
+func parseSimpleEntry(entry string) (pointer.DeletePointer, error) {
 	if !strings.Contains(entry, deleteDelimiter) {
-		return DeletePointer{}, fmt.Errorf("invalid format. doesn't contain `%s`", deleteDelimiter)
+		return pointer.DeletePointer{}, fmt.Errorf("invalid format. doesn't contain `%s`", deleteDelimiter)
 	}
 
 	parts := strings.SplitN(entry, deleteDelimiter, 2)
@@ -204,7 +205,7 @@ func parseSimpleEntry(entry string) (DeletePointer, error) {
 	apiId := parts[0]
 	deleteIdentifier := parts[1]
 
-	return DeletePointer{
+	return pointer.DeletePointer{
 		Type:       apiId,
 		Identifier: deleteIdentifier,
 	}, nil
