@@ -108,8 +108,8 @@ func Configs(ctx context.Context, clients ClientSet, apis api.APIs, automationRe
 				deleteErrors += 1
 			}
 		} else { // assume it's a Settings Schema
-			errs := deleteSettingsObject(ctx, clients.Settings, entries)
-			if len(errs) > 0 {
+			err := deleteSettingsObject(ctx, clients.Settings, entries)
+			if err != nil {
 				deleteErrors += 1
 			}
 		}
@@ -161,53 +161,63 @@ func deleteClassicConfig(ctx context.Context, client dtclient.Client, theApi api
 	return nil
 }
 
-func deleteSettingsObject(ctx context.Context, c dtclient.Client, entries []DeletePointer) []error {
-	errors := make([]error, 0)
+func deleteSettingsObject(ctx context.Context, c dtclient.Client, entries []DeletePointer) error {
 
-	if len(entries) > 0 {
-		log.WithCtxFields(ctx).WithFields(field.Type(entries[0].Type)).Info("Deleting %d config(s) of type %q...", len(entries), entries[0].Type)
+	if len(entries) == 0 {
+		return nil
 	}
+	schema := entries[0].Type
 
+	log.WithCtxFields(ctx).WithFields(field.Type(schema)).Info("Deleting %d settings objects(s) of schema %q...", len(entries), schema)
+
+	deleteErrs := 0
 	for _, e := range entries {
 
-		ctx = context.WithValue(ctx, log.CtxKeyCoord{}, e.asCoordinate())
+		logger := log.WithCtxFields(context.WithValue(ctx, log.CtxKeyCoord{}, e.asCoordinate()))
 
 		if e.Project == "" {
-			log.WithCtxFields(ctx).Warn("Generating legacy externalID for deletion of %q - this will fail to identify a newer Settings object. Consider defining a 'project' for this delete entry.", e)
+			logger.Warn("Generating legacy externalID for deletion of %q - this will fail to identify a newer Settings object. Consider defining a 'project' for this delete entry.", e)
 		}
 		externalID, err := idutils.GenerateExternalID(e.asCoordinate())
 
 		if err != nil {
-			errors = append(errors, fmt.Errorf("unable to generate externalID for %s: %w", e, err))
+			logger.Error("Unable to generate externalID for %s, Setting will not be deleted: %w", e, err)
+			deleteErrs++
 			continue
 		}
 		// get settings objects with matching external ID
 		objects, err := c.ListSettings(ctx, e.Type, dtclient.ListSettingsOptions{DiscardValue: true, Filter: func(o dtclient.DownloadSettingsObject) bool { return o.ExternalId == externalID }})
 		if err != nil {
-			errors = append(errors, fmt.Errorf("could not fetch settings 2.0 objects with schema ID %s: %w", e.Type, err))
+			logger.Error("Could not fetch settings object %s: %v", e, err)
+			deleteErrs++
 			continue
 		}
 
 		if len(objects) == 0 {
-			log.WithCtxFields(ctx).Debug("No settings object found to delete for %s", e)
+			logger.Debug("No settings object found to delete for %s", e)
 			continue
 		}
 
 		for _, obj := range objects {
 			if obj.ModificationInfo != nil && !obj.ModificationInfo.Deletable {
-				log.WithCtxFields(ctx).WithFields(field.F("object", obj)).Warn("Requested settings object %s (%s) is not deletable.", e, obj.ObjectId)
+				logger.WithFields(field.F("object", obj)).Warn("Requested settings object %s (%s) is not deletable.", e, obj.ObjectId)
 				continue
 			}
 
-			log.WithCtxFields(ctx).Debug("Deleting settings object %s with objectId %q.", e, obj.ObjectId)
+			logger.Debug("Deleting settings object %s with objectId %q.", e, obj.ObjectId)
 			err := c.DeleteSettings(obj.ObjectId)
 			if err != nil {
-				errors = append(errors, fmt.Errorf("could not delete settings 2.0 object %s with object ID %s: %w", e, obj.ObjectId, err))
+				logger.Error("Failed to delete settings object %s with object ID %s: %v", e, obj.ObjectId, err)
+				deleteErrs++
 			}
 		}
 	}
 
-	return errors
+	if deleteErrs > 0 {
+		return fmt.Errorf("failed to delete  %d settings objects(s) of schema %q", deleteErrs, schema)
+	}
+
+	return nil
 }
 
 func deleteAutomations(ctx context.Context, c automationClient, automationResource config.AutomationResource, entries []DeletePointer) []error {
