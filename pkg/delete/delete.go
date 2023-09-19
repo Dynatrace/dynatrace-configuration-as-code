@@ -103,8 +103,8 @@ func Configs(ctx context.Context, clients ClientSet, apis api.APIs, automationRe
 				deleteErrors += 1
 			}
 		} else if entryType == "bucket" {
-			errs := deleteBuckets(ctx, clients.Buckets, entries)
-			if len(errs) > 0 {
+			err := deleteBuckets(ctx, clients.Buckets, entries)
+			if err != nil {
 				deleteErrors += 1
 			}
 		} else { // assume it's a Settings Schema
@@ -257,20 +257,32 @@ func deleteAutomations(ctx context.Context, c automationClient, automationResour
 	return nil
 }
 
-func deleteBuckets(ctx context.Context, c bucketClient, entries []DeletePointer) []error {
-	log.WithCtxFields(ctx).WithFields(field.Type("bucket")).Info("Deleting %d config(s) of type %q...", len(entries), "bucket")
-	errors := make([]error, 0)
+func deleteBuckets(ctx context.Context, c bucketClient, entries []DeletePointer) error {
+
+	logger := log.WithCtxFields(ctx).WithFields(field.Type("bucket"))
+	logger.Info(`Deleting %d config(s) of type "bucket"...`, len(entries))
+
+	deleteErrs := 0
 	for _, e := range entries {
 		bucketName := idutils.GenerateBucketName(e.asCoordinate())
+
+		logger.Debug("Deleting bucket %q with bucketName %q.", e, bucketName)
 		resp, err := c.Delete(ctx, bucketName)
 		if err != nil {
-			errors = append(errors, fmt.Errorf("could not delete Bucket Definition object %s with name %q: %w", e, bucketName, err))
+			logger.WithFields(field.Error(err)).Error("Failed to delete Grail Bucket configuration %s with bucketName %q: %v", e, bucketName, err)
+			deleteErrs++
 		}
 		if err, ok := resp.AsAPIError(); ok && err.StatusCode != http.StatusNotFound {
-			errors = append(errors, fmt.Errorf("could not delete Bucket Definition object %s with name %q: %w", e, bucketName, err))
+			logger.WithFields(field.Error(err)).Error("Failed to delete Grail Bucket configuration %s with bucketName %q: %v", e, bucketName, err)
+			deleteErrs++
 		}
 	}
-	return errors
+
+	if deleteErrs > 0 {
+		return fmt.Errorf("failed to delete %d Grail Bucket configurations", deleteErrs)
+	}
+
+	return nil
 }
 
 // filterValuesToDelete filters the given values for only values we want to delete.
