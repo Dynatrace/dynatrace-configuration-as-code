@@ -26,6 +26,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/loggers"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -88,8 +89,8 @@ func Configs(ctx context.Context, clients ClientSet, apis api.APIs, automationRe
 	deleteErrors := 0
 	for entryType, entries := range entriesToDelete {
 		if targetApi, isClassicAPI := apis[entryType]; isClassicAPI {
-			errs := deleteClassicConfig(ctx, clients.Classic, targetApi, entries, entryType)
-			if len(errs) > 0 {
+			err := deleteClassicConfig(ctx, clients.Classic, targetApi, entries, entryType)
+			if err != nil {
 				deleteErrors += 1
 			}
 		} else if targetAutomation, isAutomationAPI := automationResources[entryType]; isAutomationAPI {
@@ -120,31 +121,44 @@ func Configs(ctx context.Context, clients ClientSet, apis api.APIs, automationRe
 	return nil
 }
 
-func deleteClassicConfig(ctx context.Context, client dtclient.Client, theApi api.API, entries []DeletePointer, targetApi string) []error {
-	errors := make([]error, 0)
+func deleteClassicConfig(ctx context.Context, client dtclient.Client, theApi api.API, entries []DeletePointer, targetApi string) error {
+	logger := log.WithCtxFields(ctx).WithFields(field.Type(theApi.ID))
 
 	values, err := client.ListConfigs(ctx, theApi)
 	if err != nil {
-		errors = append(errors, fmt.Errorf("failed to fetch existing configs of api `%v`. Skipping deletion all configs of this api. Reason: %w", theApi.ID, err))
+		logger.WithFields(field.Error(err)).Error("Failed to fetch existing configs of API type %q - skipping deletion: %w", theApi.ID, err)
+		return err
 	}
 
-	values, errs := filterValuesToDelete(ctx, entries, values, theApi.ID)
-	errors = append(errors, errs...)
+	deleteErrs := 0
 
-	log.WithCtxFields(ctx).WithFields(field.Type(theApi.ID)).Info("Deleting %d config(s) of type %q...", len(entries), theApi.ID)
+	values, err = filterValuesToDelete(logger, entries, values, theApi.ID)
 
 	if len(values) == 0 {
-		log.WithCtxFields(ctx).WithFields(field.Type(theApi.ID)).Debug("No values found to delete for type %q.", targetApi)
+		logger.Debug("No values found to delete for type %q.", targetApi)
+		return err // might or might not be nil after filtering
 	}
 
+	if err != nil {
+		deleteErrs++
+	}
+
+	logger.Info("Deleting %d config(s) of type %q...", len(values), theApi.ID)
+
 	for _, v := range values {
-		log.WithCtxFields(ctx).WithFields(field.Type(theApi.ID), field.F("value", v)).Debug("Deleting %s:%s (%s)", targetApi, v.Name, v.Id)
+		vLog := logger.WithFields(field.F("value", v))
+		vLog.Debug("Deleting %s:%s (%s)", targetApi, v.Name, v.Id)
 		if err := client.DeleteConfigById(theApi, v.Id); err != nil {
-			errors = append(errors, fmt.Errorf("could not delete %s:%s (%s): %w", theApi.ID, v.Name, v.Id, err))
+			vLog.Error("Failed to delete %s:%s (%s): %w", theApi.ID, v.Name, v.Id, err)
+			deleteErrs++
 		}
 	}
 
-	return errors
+	if deleteErrs > 0 {
+		return fmt.Errorf("failed to delete %d config(s) of type %q", deleteErrs, theApi.ID)
+	}
+
+	return nil
 }
 
 func deleteSettingsObject(ctx context.Context, c dtclient.Client, entries []DeletePointer) []error {
@@ -242,7 +256,7 @@ func deleteBuckets(ctx context.Context, c bucketClient, entries []DeletePointer)
 // We first search the names of the config-to-be-deleted, and if we find it, return them.
 // If we don't find it, we look if the name is actually an id, and if we find it, return them.
 // If a given name is found multiple times, we return an error for each name.
-func filterValuesToDelete(ctx context.Context, entries []DeletePointer, existingValues []dtclient.Value, apiName string) ([]dtclient.Value, []error) {
+func filterValuesToDelete(logger loggers.Logger, entries []DeletePointer, existingValues []dtclient.Value, apiName string) ([]dtclient.Value, error) {
 
 	toDeleteByName := make(map[string][]dtclient.Value, len(entries))
 	valuesById := make(map[string]dtclient.Value, len(existingValues))
@@ -262,8 +276,7 @@ func filterValuesToDelete(ctx context.Context, entries []DeletePointer, existing
 	}
 
 	result := make([]dtclient.Value, 0, len(entries))
-
-	var errs []error
+	filterErr := false
 
 	for name, valuesToDelete := range toDeleteByName {
 
@@ -276,16 +289,21 @@ func filterValuesToDelete(ctx context.Context, entries []DeletePointer, existing
 			if found {
 				result = append(result, v)
 			} else {
-				log.WithCtxFields(ctx).WithFields(field.Type(apiName), field.F("expectedID", name)).Debug("No config of type %s found with the name or ID %q", apiName, name)
+				logger.WithFields(field.F("expectedID", name)).Debug("No config of type %s found with the name or ID %q", apiName, name)
 			}
 
 		default:
 			// multiple configs with this name found -> error
-			errs = append(errs, fmt.Errorf("multiple configs of type %s found with the name %q. Configs: %v", apiName, name, valuesToDelete))
+			logger.WithFields(field.F("expectedID", name)).Error("Unable to delete unique config - multiple configs of type %q found with the name %q. Please delete manually: %v", apiName, name, valuesToDelete)
+			filterErr = true
 		}
 	}
 
-	return result, errs
+	if filterErr {
+		return result, fmt.Errorf("failed to identify all configurations to be deleted")
+	}
+
+	return result, nil
 }
 
 // AllConfigs collects and deletes classic API configuration objects using the provided ConfigClient.
