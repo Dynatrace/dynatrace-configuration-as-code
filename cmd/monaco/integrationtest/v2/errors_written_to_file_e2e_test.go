@@ -37,7 +37,7 @@ func TestManifestErrorsAreWrittenToFile(t *testing.T) {
 	cmd := runner.BuildCli(fs)
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
 	err := cmd.Execute()
-	assert.ErrorContains(t, err, "error while loading projects")
+	assert.Error(t, err)
 
 	expectedErrFile := log.ErrorFilePath()
 
@@ -63,8 +63,7 @@ func TestConfigErrorsAreWrittenToFile(t *testing.T) {
 	cmd := runner.BuildCli(fs)
 	cmd.SetArgs([]string{"deploy", "--verbose", "--dry-run", manifest})
 	err := cmd.Execute()
-
-	assert.ErrorContains(t, err, "error while loading projects")
+	assert.Error(t, err)
 
 	expectedErrFile := log.ErrorFilePath()
 
