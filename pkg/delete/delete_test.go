@@ -29,6 +29,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 	monacoREST "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -492,7 +493,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 	}
 
 	type args struct {
-		entries []DeletePointer
+		entries []pointer.DeletePointer
 		values  []dtclient.Value
 	}
 
@@ -507,7 +508,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 		{
 			name: "Full overlap",
 			args: args{
-				entries: []DeletePointer{{Identifier: "d1"}, {Identifier: "d2"}, {Identifier: "d3"}},
+				entries: []pointer.DeletePointer{{Identifier: "d1"}, {Identifier: "d2"}, {Identifier: "d3"}},
 				values:  []dtclient.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "id2"}, {Name: "d3", Id: "id3"}},
 			},
 			expect: expect{
@@ -518,14 +519,14 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 		{
 			name: "Empty entries, nothing deleted",
 			args: args{
-				entries: []DeletePointer{},
+				entries: []pointer.DeletePointer{},
 				values:  []dtclient.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "id2"}, {Name: "d3", Id: "id3"}},
 			},
 		},
 		{
 			name: "More deletes",
 			args: args{
-				entries: []DeletePointer{{Identifier: "d1"}, {Identifier: "d2"}, {Identifier: "d3"}},
+				entries: []pointer.DeletePointer{{Identifier: "d1"}, {Identifier: "d2"}, {Identifier: "d3"}},
 				values:  []dtclient.Value{{Name: "d1", Id: "id1"}},
 			},
 			expect: expect{
@@ -536,7 +537,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 		{
 			name: "More values",
 			args: args{
-				entries: []DeletePointer{{Identifier: "d1"}},
+				entries: []pointer.DeletePointer{{Identifier: "d1"}},
 				values:  []dtclient.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "id2"}, {Name: "d3", Id: "id3"}},
 			},
 			expect: expect{
@@ -547,7 +548,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 		{
 			name: "Id-fallback",
 			args: args{
-				entries: []DeletePointer{{Identifier: "d1"}, {Identifier: "d2-id"}},
+				entries: []pointer.DeletePointer{{Identifier: "d1"}, {Identifier: "d2-id"}},
 				values:  []dtclient.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "d2-id"}, {Name: "d3", Id: "id3"}},
 			},
 			expect: expect{
@@ -558,7 +559,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 		{
 			name: "Duplicate names",
 			args: args{
-				entries: []DeletePointer{{Identifier: "d1"}, {Identifier: "d2"}},
+				entries: []pointer.DeletePointer{{Identifier: "d1"}, {Identifier: "d2"}},
 				values:  []dtclient.Value{{Name: "d1"}, {Name: "d1"}, {Name: "d2"}, {Name: "d2"}},
 			},
 			expect: expect{
@@ -569,7 +570,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 		{
 			name: "Combined",
 			args: args{
-				entries: []DeletePointer{{Identifier: "d1"}, {Identifier: "d2"}, {Identifier: "d3"}, {Identifier: "d4-id"}},
+				entries: []pointer.DeletePointer{{Identifier: "d1"}, {Identifier: "d2"}, {Identifier: "d3"}, {Identifier: "d4-id"}},
 				values:  []dtclient.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "id2"}, {Name: "d2", Id: "id-something"}, {Name: "d3", Id: "id3"}, {Id: "d4-id"}},
 			},
 			expect: expect{

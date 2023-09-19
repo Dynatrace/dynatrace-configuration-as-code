@@ -20,6 +20,7 @@ package delete
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/persistence"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 	"github.com/stretchr/testify/assert"
 	"path/filepath"
 	"testing"
@@ -125,7 +126,7 @@ func TestParseDeleteFileDefinitions(t *testing.T) {
 	apiEntities := result[api]
 
 	assert.Equal(t, 1, len(apiEntities))
-	assert.Equal(t, DeletePointer{
+	assert.Equal(t, pointer.DeletePointer{
 		Type:       api,
 		Identifier: name,
 	}, apiEntities[0])
@@ -133,7 +134,7 @@ func TestParseDeleteFileDefinitions(t *testing.T) {
 	api2Entities := result[api2]
 
 	assert.Equal(t, 1, len(api2Entities))
-	assert.Equal(t, DeletePointer{
+	assert.Equal(t, pointer.DeletePointer{
 		Type:       api2,
 		Identifier: name2,
 	}, api2Entities[0])
