@@ -79,65 +79,41 @@ func Configs(ctx context.Context, clients ClientSet, apis api.APIs, automationRe
 	return nil
 }
 
-// AllConfigs collects and deletes classic API configuration objects using the provided ConfigClient.
+// All collects and deletes ALL configuration objects using the provided ClientSet.
+// To delete specific configurations use Configs instead!
 //
 // Parameters:
 //   - ctx (context.Context): The context in which the function operates.
-//   - client (dtclient.ConfigClient): An implementation of the ConfigClient interface for managing configuration objects.
-//   - apis (api.APIs): A list of APIs for which configuration values need to be collected and deleted.
-//
-// Returns:
-//   - []error: A slice of errors encountered during the collection and deletion of configuration values.
-func AllConfigs(ctx context.Context, client dtclient.ConfigClient, apis api.APIs) []error {
-	if err := classic.DeleteAll(ctx, client, apis); err != nil {
-		return []error{err}
+//   - clients (ClientSet): A set of API clients used to collect and delete configurations from an environment.
+func All(ctx context.Context, clients ClientSet, apis api.APIs) error {
+	errs := 0
+
+	if err := classic.DeleteAll(ctx, clients.Classic, apis); err != nil {
+		log.Error("Failed to delete all classic API configurations: %v", err)
+		errs++
 	}
 
-	return nil
-}
-
-// AllSettingsObjects collects and deletes settings objects using the provided SettingsClient.
-//
-// Parameters:
-//   - ctx (context.Context): The context in which the function operates.
-//   - c (dtclient.SettingsClient): An implementation of the SettingsClient interface for managing settings objects.
-//
-// Returns:
-//   - []error: A slice of errors encountered during the collection and deletion of settings objects.
-func AllSettingsObjects(ctx context.Context, c dtclient.SettingsClient) []error {
-	if err := setting.DeleteAll(ctx, c); err != nil {
-		return []error{err}
+	if err := setting.DeleteAll(ctx, clients.Settings); err != nil {
+		log.Error("Failed to delete all Settings 2.0 objects: %v", err)
+		errs++
 	}
-	return nil
-}
 
-// AllAutomations collects and deletes automations resources using the given automation client.
-//
-// Parameters:
-//   - ctx (context.Context): The context in which the function operates.
-//   - c (automationClient): An implementation of the automationClient interface for performing automation-related operations.
-//
-// Returns:
-//   - []error: A slice of errors encountered during the collection and deletion of automations.
-func AllAutomations(ctx context.Context, c automation.Client) []error {
-	if err := automation.DeleteAll(ctx, c); err != nil {
-		return []error{err}
+	if reflect.ValueOf(clients.Automation).IsNil() {
+		log.Warn("Skipped deletion of Automation configurations as API client was unavailable.")
+	} else if err := automation.DeleteAll(ctx, clients.Automation); err != nil {
+		log.Error("Failed to delete all Automation configurations: %v", err)
+		errs++
 	}
-	return nil
-}
 
-// AllBuckets collects and deletes objects of type "bucket" using the provided bucketClient.
-//
-// Parameters:
-//   - ctx (context.Context): The context for the operation.
-//   - c (bucketClient): The bucketClient used for listing and deleting objects.
-//
-// Returns:
-//   - []error: A slice of errors encountered during the operation. It may contain listing errors,
-//     deletion errors, or API errors.
-func AllBuckets(ctx context.Context, c bucket.Client) []error {
-	if err := bucket.DeleteAll(ctx, c); err != nil {
-		return []error{err}
+	if reflect.ValueOf(clients.Buckets).IsNil() {
+		log.Warn("Skipped deletion of Grail Bucket configurations as API client was unavailable.")
+	} else if err := bucket.DeleteAll(ctx, clients.Buckets); err != nil {
+		log.Error("Failed to delete all Grail Bucket configurations: %v", err)
+		errs++
+	}
+
+	if errs > 0 {
+		return fmt.Errorf("failed to delete all configurations for %d types", errs)
 	}
 	return nil
 }

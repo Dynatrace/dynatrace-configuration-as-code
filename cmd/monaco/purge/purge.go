@@ -69,24 +69,32 @@ func purgeConfigs(environments []manifest.EnvironmentDefinition, apis api.APIs) 
 }
 
 func purgeForEnvironment(env manifest.EnvironmentDefinition, apis api.APIs) error {
-	clients, err := dynatrace.CreateClientSet(env.URL.Value, env.Auth)
 
+	deleteClients, err := getClientSet(env)
 	if err != nil {
-		return fmt.Errorf("failed to create a client for env `%s` due to the following error: %w", env.Name, err)
+		return err
 	}
 
 	ctx := context.WithValue(context.TODO(), log.CtxKeyEnv{}, log.CtxValEnv{Name: env.Name, Group: env.Group})
 
 	log.WithCtxFields(ctx).Info("Deleting configs for environment `%s`", env.Name)
 
-	deleteErrors := delete.AllConfigs(ctx, clients.Classic(), apis)
-	deleteErrors = append(deleteErrors, delete.AllSettingsObjects(ctx, clients.Settings())...)
-	deleteErrors = append(deleteErrors, delete.AllAutomations(ctx, clients.Automation())...)
-	deleteErrors = append(deleteErrors, delete.AllBuckets(ctx, clients.Bucket())...)
-
-	if len(deleteErrors) > 0 {
-		log.Error("Encountered %d errors while puring configurations from environment %s, further manual cleanup may be needed. Errors:", len(deleteErrors), env.Name)
-		errutils.PrintErrors(deleteErrors)
+	if err := delete.All(ctx, deleteClients, apis); err != nil {
+		log.Error("Encountered errors while puring configurations from environment %s, further manual cleanup may be needed - check logs for details.", env.Name)
 	}
 	return nil
+}
+
+func getClientSet(env manifest.EnvironmentDefinition) (delete.ClientSet, error) {
+	clients, err := dynatrace.CreateClientSet(env.URL.Value, env.Auth)
+	if err != nil {
+		return delete.ClientSet{}, fmt.Errorf("failed to create a client for env `%s` due to the following error: %w", env.Name, err)
+	}
+
+	return delete.ClientSet{
+		Classic:    clients.Classic(),
+		Settings:   clients.Settings(),
+		Automation: clients.Automation(),
+		Buckets:    clients.Bucket(),
+	}, nil
 }
