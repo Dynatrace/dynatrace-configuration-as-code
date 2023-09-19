@@ -88,34 +88,28 @@ type DeleteEntries = map[configurationType][]DeletePointer
 func Configs(ctx context.Context, clients ClientSet, apis api.APIs, automationResources map[string]config.AutomationResource, entriesToDelete DeleteEntries) error {
 	deleteErrors := 0
 	for entryType, entries := range entriesToDelete {
+		var err error
 		if targetApi, isClassicAPI := apis[entryType]; isClassicAPI {
-			err := deleteClassicConfig(ctx, clients.Classic, targetApi, entries, entryType)
-			if err != nil {
-				deleteErrors += 1
-			}
+			err = deleteClassicConfig(ctx, clients.Classic, targetApi, entries, entryType)
 		} else if targetAutomation, isAutomationAPI := automationResources[entryType]; isAutomationAPI {
 			if reflect.ValueOf(clients.Automation).IsNil() {
 				log.WithCtxFields(ctx).WithFields(field.Type(entryType)).Warn("Skipped deletion of %d Automation configuration(s) of type %q as API client was unavailable.", len(entries), entryType)
 				continue
 			}
-			err := deleteAutomations(ctx, clients.Automation, targetAutomation, entries)
-			if err != nil {
-				deleteErrors += 1
-			}
+			err = deleteAutomations(ctx, clients.Automation, targetAutomation, entries)
 		} else if entryType == "bucket" {
 			if reflect.ValueOf(clients.Buckets).IsNil() {
 				log.WithCtxFields(ctx).WithFields(field.Type(entryType)).Warn("Skipped deletion of %d Grail Bucket configuration(s) as API client was unavailable.", len(entries))
 				continue
 			}
-			err := deleteBuckets(ctx, clients.Buckets, entries)
-			if err != nil {
-				deleteErrors += 1
-			}
+			err = deleteBuckets(ctx, clients.Buckets, entries)
 		} else { // assume it's a Settings Schema
-			err := deleteSettingsObject(ctx, clients.Settings, entries)
-			if err != nil {
-				deleteErrors += 1
-			}
+			err = deleteSettingsObject(ctx, clients.Settings, entries)
+		}
+
+		if err != nil {
+			log.WithFields(field.Error(err)).Error("Error during deletion: %v", err)
+			deleteErrors += 1
 		}
 	}
 
@@ -182,7 +176,7 @@ func deleteSettingsObject(ctx context.Context, c dtclient.Client, entries []Dele
 		logger := logger.WithFields(field.Coordinate(e.asCoordinate()))
 
 		if e.Project == "" {
-			logger.Warn("Generating legacy externalID - this will fail to identify a newer Settings object. Consider defining a 'project' for this delete entry.", e)
+			logger.Warn("Generating legacy externalID - this will fail to identify a newer Settings object. Consider defining a 'project' for this delete entry.")
 		}
 		externalID, err := idutils.GenerateExternalID(e.asCoordinate())
 
