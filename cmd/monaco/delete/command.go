@@ -68,7 +68,7 @@ func GetDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 				Environments: environments,
 				Groups:       groups,
 			})
-			if err != nil {
+			if len(errs) > 0 {
 				errutils.PrintErrors(errs)
 				return errors.New("error while loading manifest")
 			}
