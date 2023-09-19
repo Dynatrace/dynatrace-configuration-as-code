@@ -62,7 +62,7 @@ Examples:
     monaco deploy service.yaml -e dev`,
 
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			log.PrepareLogging(fs, &verbose, logSpy)
+			log.PrepareLogging(fs, verbose, logSpy)
 			memory.SetDefaultLimit()
 		},
 		Run: func(cmd *cobra.Command, args []string) {

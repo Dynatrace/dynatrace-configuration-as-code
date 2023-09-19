@@ -111,9 +111,9 @@ var (
 	std loggers.Logger = console.Instance
 )
 
-func PrepareLogging(fs afero.Fs, verbose *bool, loggerSpy io.Writer) {
+func PrepareLogging(fs afero.Fs, verbose bool, loggerSpy io.Writer) {
 	loglevel := loggers.LevelInfo
-	if *verbose {
+	if verbose {
 		loglevel = loggers.LevelDebug
 	}
 
