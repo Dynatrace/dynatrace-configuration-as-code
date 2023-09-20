@@ -399,7 +399,7 @@ func AllAutomations(ctx context.Context, c automationClient) []error {
 			if err != nil {
 				errs = append(errs, err)
 			}
-			if err, isErr := resp.AsAPIError(); isErr {
+			if err, isErr := resp.AsAPIError(); isErr && resp.StatusCode != http.StatusNotFound { // 404 means it's gone already anyway
 				errs = append(errs, err)
 			}
 		}
@@ -452,7 +452,7 @@ func AllBuckets(ctx context.Context, c bucketClient) []error {
 			continue
 		}
 
-		if err, ok := result.AsAPIError(); ok {
+		if err, ok := result.AsAPIError(); ok && result.StatusCode != http.StatusNotFound { // 404 means it's gone already anyway
 			errs = append(errs, err)
 			continue
 		}
