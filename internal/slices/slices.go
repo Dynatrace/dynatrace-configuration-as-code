@@ -52,3 +52,13 @@ func AnyMatches[T comparable, S ~[]T](s S, filter func(v T) bool) bool {
 
 	return false
 }
+
+// Reverse returns a new slice that is in reverse order of the given slice s. It does not modify the order of the given
+// slice.
+func Reverse[T any](s []T) []T {
+	r := make([]T, len(s))
+	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+		r[i], r[j] = s[j], s[i]
+	}
+	return r
+}
