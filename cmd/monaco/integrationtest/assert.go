@@ -229,19 +229,10 @@ func AssertAutomation(t *testing.T, c automation.Client, env manifest.Environmen
 		expectedId = idutils.GenerateUUIDFromCoordinate(cfg.Coordinate)
 	}
 
-	resp, err := c.List(context.TODO(), resourceType)
+	resp, err := c.Get(context.TODO(), resourceType, expectedId)
 	assert.NoError(t, err)
 
-	objects, err := automationutils.DecodeListResponse(resp)
-	assert.NoError(t, err)
-
-	var exists bool
-	for _, r := range objects {
-		if r.ID == expectedId {
-			exists = true
-			break
-		}
-	}
+	exists := resp.IsSuccess()
 
 	if cfg.Skip {
 		assert.False(t, exists, "Skipped Automation Object should NOT be available but was. environment.Environment: '%s', failed for '%s' (%s)", env.Name, cfg.Coordinate, resource)
