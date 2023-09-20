@@ -36,7 +36,8 @@ func Run() int {
 	rootCmd := BuildCli(afero.NewOsFs())
 
 	if err := rootCmd.Execute(); err != nil {
-		log.WithFields(field.F("errorLogFilePath", log.ErrorFilePath())).Error("Errors occurred - error logs written to %s", log.ErrorFilePath())
+		log.WithFields(field.Error(err)).Error("Error: %v", err)
+		log.WithFields(field.F("errorLogFilePath", log.ErrorFilePath())).Error("error logs written to %s", log.ErrorFilePath())
 		return 1
 	}
 	return 0
@@ -67,6 +68,7 @@ Examples:
 		Run: func(cmd *cobra.Command, args []string) {
 			_ = cmd.Help()
 		},
+		SilenceErrors: true, // we want to log returned errors on our own, instead of cobra presenting that via println
 	}
 
 	// define finalizer method(s) run after cobra commands ran
