@@ -18,6 +18,7 @@ package automationutils
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 )
@@ -35,6 +36,9 @@ func DecodeResponse(r automation.Response) (Response, error) {
 	if err != nil {
 		return Response{}, err
 	}
+	if d.ID == "" {
+		return Response{}, fmt.Errorf("failed to decode response - id field missing")
+	}
 
 	d.Data = r.Data
 	return d, nil
@@ -48,6 +52,10 @@ func DecodeListResponse(r automation.ListResponse) ([]Response, error) {
 		if err := json.Unmarshal(raw, &v); err != nil {
 			return nil, err
 		}
+		if v.ID == "" {
+			return nil, fmt.Errorf("failed to decode response - id field missing")
+		}
+
 		v.Data = raw
 		res[i] = v
 	}
