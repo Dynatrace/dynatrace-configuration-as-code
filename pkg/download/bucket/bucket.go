@@ -52,12 +52,12 @@ func (d *Downloader) Download(projectName string, _ ...config.BucketType) (v2.Co
 	response, err := d.client.List(context.TODO())
 	if err != nil {
 		log.WithFields(field.Type("bucket"), field.Error(err)).Error("Failed to fetch all bucket definitions: %v", err)
-		return result, nil
+		return nil, err
 	}
 
-	if !response.IsSuccess() {
-		log.WithFields(field.Type("bucket"), field.Error(err)).Error("Failed to fetch all bucket definitions: %s", string(response.Data))
-		return result, nil
+	if apiErr, isErr := response.AsAPIError(); isErr {
+		log.WithFields(field.Type("bucket"), field.Error(apiErr)).Error("Failed to fetch all bucket definitions: %v", apiErr)
+		return nil, apiErr
 	}
 
 	configs := d.convertAllObjects(projectName, response.Objects)
