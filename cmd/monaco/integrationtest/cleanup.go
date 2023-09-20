@@ -23,9 +23,12 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/slices"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort"
+	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
 
@@ -82,46 +85,50 @@ func cleanupByNameSuffix(t *testing.T, apis api.APIs, c dtclient.ConfigClient, s
 // cleanupByGeneratedID removes test configurations of a given manifest's projects by their generated identifiers
 func cleanupByGeneratedID(t *testing.T, fs afero.Fs, manifestPath string, loadedManifest manifest.Manifest, environment string, clients *client.ClientSet) {
 	projects := LoadProjects(t, fs, manifestPath, loadedManifest)
-	for _, p := range projects {
-		cfgsForEnv, ok := p.Configs[environment]
-		if !ok {
-			t.Logf("Failed to cleanup Settings for env %s - no configs found", environment)
-		}
-		for _, configs := range cfgsForEnv {
-			for _, cfg := range configs {
-				switch typ := cfg.Type.(type) {
-				case config.SettingsType:
-					if cfg.OriginObjectId != "" {
-						deleteSettingsObjects(t, typ.SchemaId, cfg.OriginObjectId, clients.Settings())
-						continue
-					}
+	cfgs, errs := sort.ConfigsPerEnvironment(projects, []string{environment}) // delete in order if things have dependencies
+	assert.Empty(t, errs)
 
-					extID, err := idutils.GenerateExternalID(cfg.Coordinate)
-					if err != nil {
-						t.Log(err)
-						continue
-					}
-					deleteSettingsObjects(t, typ.SchemaId, extID, clients.Settings())
-				case config.AutomationType:
-					if cfg.OriginObjectId != "" {
-						deleteAutomation(t, typ.Resource, cfg.OriginObjectId, clients.Automation())
-						continue
-					}
+	configs, ok := cfgs[environment]
+	if !ok {
+		t.Logf("Failed to cleanup Settings for env %s - no configs found", environment)
+	}
 
-					id := idutils.GenerateUUIDFromCoordinate(cfg.Coordinate)
-					deleteAutomation(t, typ.Resource, id, clients.Automation())
-				case config.BucketType:
-					if cfg.OriginObjectId != "" {
-						deleteBucket(t, cfg.OriginObjectId, clients.Bucket())
-						continue
-					}
+	//ensure dependent configs are removed in the right (reverse) order - if A depends on B, sorted configs contain B first, we want to cleanly delete A before B though
+	configs = slices.Reverse(configs)
 
-					id := idutils.GenerateBucketName(cfg.Coordinate)
-					deleteBucket(t, id, clients.Bucket())
-				}
+	for _, cfg := range configs {
+		switch typ := cfg.Type.(type) {
+		case config.SettingsType:
+			if cfg.OriginObjectId != "" {
+				deleteSettingsObjects(t, typ.SchemaId, cfg.OriginObjectId, clients.Settings())
+				continue
 			}
+
+			extID, err := idutils.GenerateExternalID(cfg.Coordinate)
+			if err != nil {
+				t.Log(err)
+				continue
+			}
+			deleteSettingsObjects(t, typ.SchemaId, extID, clients.Settings())
+		case config.AutomationType:
+			if cfg.OriginObjectId != "" {
+				deleteAutomation(t, typ.Resource, cfg.OriginObjectId, clients.Automation())
+				continue
+			}
+
+			id := idutils.GenerateUUIDFromCoordinate(cfg.Coordinate)
+			deleteAutomation(t, typ.Resource, id, clients.Automation())
+		case config.BucketType:
+			if cfg.OriginObjectId != "" {
+				deleteBucket(t, cfg.OriginObjectId, clients.Bucket())
+				continue
+			}
+
+			id := idutils.GenerateBucketName(cfg.Coordinate)
+			deleteBucket(t, id, clients.Bucket())
 		}
 	}
+
 }
 
 func deleteSettingsObjects(t *testing.T, schema, externalID string, c dtclient.SettingsClient) {

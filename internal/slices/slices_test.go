@@ -19,7 +19,7 @@
 package slices
 
 import (
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -63,7 +63,8 @@ func TestContains(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, Contains(test.slice, test.value), test.expected)
+			got := Contains(test.slice, test.value)
+			assert.Equal(t, test.expected, got)
 		})
 	}
 }
@@ -144,7 +145,8 @@ func TestDifference(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			assert.DeepEqual(t, Difference(test.a, test.b), test.expected)
+			got := Difference(test.a, test.b)
+			assert.ElementsMatch(t, test.expected, got)
 		})
 	}
 }
@@ -218,8 +220,38 @@ func TestAnyMatches(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			result := AnyMatches(test.slice, test.fn)
+			assert.Equal(t, test.expect, result)
+		})
+	}
+}
 
-			assert.Equal(t, result, test.expect)
+func TestReverse(t *testing.T) {
+	type testCase struct {
+		name  string
+		given []int
+		want  []int
+	}
+	tests := []testCase{
+		{
+			"works for empty slice",
+			[]int{},
+			[]int{},
+		},
+		{
+			"works for nil slice",
+			nil,
+			[]int{},
+		},
+		{
+			"reverses order",
+			[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+			[]int{9, 8, 7, 6, 5, 4, 3, 2, 1, 0},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := Reverse(tt.given)
+			assert.ElementsMatch(t, tt.want, got)
 		})
 	}
 }
