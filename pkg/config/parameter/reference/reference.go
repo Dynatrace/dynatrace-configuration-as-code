@@ -170,7 +170,7 @@ func parseReferenceParameter(context parameter.ParameterParserContext) (paramete
 	if val, ok := context.Value[propertyField]; ok {
 		property = strings.ToString(val)
 	} else {
-		return nil, parameter.NewParameterParserError(context, fmt.Sprintf("missing configuration `%s`", projectField))
+		return nil, parameter.NewParameterParserError(context, fmt.Sprintf("missing `%s` - please specifiy which %s should be referenced", propertyField, propertyField))
 	}
 
 	// ensure that we do not have "holes" in the reference definition
