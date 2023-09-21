@@ -147,3 +147,22 @@ func Test_getValueForAttribute(t *testing.T) {
 		})
 	}
 }
+
+func Test_convertObject(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+
+		given := []byte(`
+{
+            "bucketName": "bucketName",
+            "table": "logs",
+            "status": "active",
+            "retentionDays": 35,
+            "version": 2,
+            "updatable": false
+        }`)
+
+		actual, _ := convertObject(given, "project")
+
+		assert.Equal(t, nil, actual.Parameters["displayName"])
+	})
+}
