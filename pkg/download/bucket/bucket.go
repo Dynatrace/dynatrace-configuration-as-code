@@ -82,7 +82,7 @@ func (d *Downloader) convertAllObjects(projectName string, objects [][]byte) []c
 		result = append(result, *c)
 	}
 
-	log.Info("downloaded %d configurations for GRAIL bucket", len(result))
+	log.Info("Downloaded %d Grail buckets", len(result))
 
 	return result
 }
@@ -124,7 +124,7 @@ func convertObject(o []byte, projectName string) (*config.Config, error) {
 		ConfigId: configID,
 	}
 
-	c.OriginObjectId = fmt.Sprintf("%s_%s", c.Coordinate.Project, c.Coordinate.ConfigId)
+	c.OriginObjectId = r.Get(bucketName).(string)
 
 	r.Delete(bucketName)
 
