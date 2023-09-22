@@ -155,21 +155,3 @@ func getValueForAttribute(raw []byte, name string) (string, error) {
 	}
 	return "", nil
 }
-
-func replaceAttributeWith(raw []byte, attributeName, value string) ([]byte, error) {
-	var m map[string]any
-	err := json.Unmarshal(raw, &m)
-	if err != nil {
-		return raw, err
-	}
-	if _, exits := m[attributeName]; exits {
-		m[attributeName] = "{{." + value + "}}"
-	}
-
-	modified, err := json.Marshal(m)
-	if err != nil {
-		return raw, err
-	}
-
-	return modified, nil
-}
