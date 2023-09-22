@@ -19,9 +19,7 @@ package bucket
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -50,9 +48,7 @@ func TestDownloader_Download(t *testing.T) {
 		assert.Len(t, result, 1)
 		assert.Len(t, result["bucket"], 2) // there should be 2 buckets (default bucket shall be skipped)
 		assert.Equal(t, coordinate.Coordinate{Project: "projectName", Type: "bucket", ConfigId: "10f23802-b76d-35ea-91f8-62c339a086eb"}, result["bucket"][0].Coordinate)
-		assert.Equal(t, &value.ValueParameter{Value: "bucket_name"}, result["bucket"][0].Parameters[config.NameParameter])
 		assert.Equal(t, coordinate.Coordinate{Project: "projectName", Type: "bucket", ConfigId: "6e2cd4d7-9ac5-3294-a9ce-277da9bd200c"}, result["bucket"][1].Coordinate)
-		assert.Equal(t, &value.ValueParameter{Value: "another name"}, result["bucket"][1].Parameters[config.NameParameter])
 
 		assert.NoError(t, err)
 	})

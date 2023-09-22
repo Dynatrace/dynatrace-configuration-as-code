@@ -71,7 +71,7 @@ func (d *Downloader) convertAllObjects(projectName string, objects [][]byte) []c
 
 		c, err := convertObject(o, projectName)
 		if err != nil {
-			log.WithFields(field.Coordinate(coordinate.Coordinate{Project: c.Coordinate.Project, Type: "bucket", ConfigId: c.Coordinate.ConfigId}), field.Error(err)).
+			log.WithFields(field.Coordinate(c.Coordinate), field.Error(err)).
 				Warn("Failed to get configuration for %v (%s): %v", c.Coordinate.ConfigId, "bucket", err)
 			continue
 		}
@@ -95,8 +95,9 @@ const (
 func convertObject(o []byte, projectName string) (*config.Config, error) {
 	c := config.Config{
 		Coordinate: coordinate.Coordinate{
-			Project: projectName,
-			Type:    "bucket",
+			Project:  projectName,
+			Type:     "bucket",
+			ConfigId: "unknown", //it will be filled with the proper data later
 		},
 		Type: config.BucketType{},
 	}
@@ -118,11 +119,7 @@ func convertObject(o []byte, projectName string) (*config.Config, error) {
 
 	// construct config object with generated config ID
 	configID := idutils.GenerateUUIDFromString(id)
-	c.Coordinate = coordinate.Coordinate{
-		Project:  projectName,
-		Type:     "bucket",
-		ConfigId: configID,
-	}
+	c.Coordinate.ConfigId = configID
 
 	c.OriginObjectId = r.Get(bucketName).(string)
 
