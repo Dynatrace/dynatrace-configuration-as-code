@@ -21,7 +21,6 @@ import (
 	goaho "github.com/anknown/ahocorasick"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"golang.org/x/exp/maps"
 	"strings"
@@ -72,22 +71,27 @@ func toRuneSlices(ids []string) [][]rune {
 	return dict
 }
 
-func (r ahocorasickResolver) ResolveDependencyReferences(configToBeUpdated *config.Config) {
+func (r ahocorasickResolver) ResolveDependencyReferences(configToBeUpdated *config.Config) error {
 	resolveScope(configToBeUpdated, r.ctx.configsById)
-	resolveTemplate(configToBeUpdated, r.ctx)
+	return resolveTemplate(configToBeUpdated, r.ctx)
 }
 
-func resolveTemplate(configToBeUpdated *config.Config, c dependencyResolutionContext) {
-	newContent, parameters, _ := findAndReplaceIDs(configToBeUpdated.Coordinate.Type, *configToBeUpdated, c)
+func resolveTemplate(configToBeUpdated *config.Config, c dependencyResolutionContext) error {
+	newContent, parameters, err := findAndReplaceIDs(configToBeUpdated.Coordinate.Type, *configToBeUpdated, c)
+	if err != nil {
+		return err
+	}
 
 	maps.Copy(configToBeUpdated.Parameters, parameters)
-	configToBeUpdated.Template.UpdateContent(newContent)
+	return configToBeUpdated.Template.UpdateContent(newContent)
 }
 
-func findAndReplaceIDs(apiName string, configToBeUpdated config.Config, c dependencyResolutionContext) (string, config.Parameters, []coordinate.Coordinate) {
+func findAndReplaceIDs(apiName string, configToBeUpdated config.Config, c dependencyResolutionContext) (string, config.Parameters, error) {
 	parameters := make(config.Parameters, 0)
-	content, _ := configToBeUpdated.Template.Content() //TODO - err handling
-	coordinates := make([]coordinate.Coordinate, 0)
+	content, err := configToBeUpdated.Template.Content()
+	if err != nil {
+		return "", nil, err
+	}
 
 	matches := c.matcher.MultiPatternSearch([]rune(content), false)
 	for _, m := range matches {
@@ -116,9 +120,8 @@ func findAndReplaceIDs(apiName string, configToBeUpdated config.Config, c depend
 		content = strings.ReplaceAll(content, key, "{{."+parameterName+"}}")
 		ref := reference.NewWithCoordinate(coord, "id")
 		parameters[parameterName] = ref
-		coordinates = append(coordinates, coord)
 
 	}
 
-	return content, parameters, coordinates
+	return content, parameters, nil
 }

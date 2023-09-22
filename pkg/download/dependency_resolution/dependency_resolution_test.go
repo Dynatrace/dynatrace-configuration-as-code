@@ -680,14 +680,14 @@ func TestDependencyResolution(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name+"_BasicResolver", func(t *testing.T) {
-			result := ResolveDependencies(test.setup)
-
+			result, err := ResolveDependencies(test.setup)
+			assert.NilError(t, err)
 			assert.DeepEqual(t, result, test.expected, cmp.AllowUnexported(template.InMemoryTemplate{}))
 		})
 		t.Run(test.name+"_FastResolver", func(t *testing.T) {
 			t.Setenv(featureflags.FastDependencyResolver().EnvName(), "true")
-			result := ResolveDependencies(test.setup)
-
+			result, err := ResolveDependencies(test.setup)
+			assert.NilError(t, err)
 			assert.DeepEqual(t, result, test.expected, cmp.AllowUnexported(template.InMemoryTemplate{}))
 		})
 	}

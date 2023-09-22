@@ -19,7 +19,6 @@ package resolver
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"golang.org/x/exp/maps"
 	"strings"
@@ -35,22 +34,27 @@ func BasicResolver(configsById map[string]config.Config) basicResolver {
 	}
 }
 
-func (r basicResolver) ResolveDependencyReferences(configToBeUpdated *config.Config) {
+func (r basicResolver) ResolveDependencyReferences(configToBeUpdated *config.Config) error {
 	resolveScope(configToBeUpdated, r.configsById)
-	basicResolveTemplate(configToBeUpdated, r.configsById)
+	return basicResolveTemplate(configToBeUpdated, r.configsById)
 }
 
-func basicResolveTemplate(configToBeUpdated *config.Config, configsById map[string]config.Config) {
-	newContent, parameters, _ := basicFindAndReplaceIDs(configToBeUpdated.Coordinate.Type, *configToBeUpdated, configsById)
+func basicResolveTemplate(configToBeUpdated *config.Config, configsById map[string]config.Config) error {
+	newContent, parameters, err := basicFindAndReplaceIDs(configToBeUpdated.Coordinate.Type, *configToBeUpdated, configsById)
+	if err != nil {
+		return err
+	}
 
 	maps.Copy(configToBeUpdated.Parameters, parameters)
-	configToBeUpdated.Template.UpdateContent(newContent)
+	return configToBeUpdated.Template.UpdateContent(newContent)
 }
 
-func basicFindAndReplaceIDs(apiName string, configToBeUpdated config.Config, configs map[string]config.Config) (string, config.Parameters, []coordinate.Coordinate) {
+func basicFindAndReplaceIDs(apiName string, configToBeUpdated config.Config, configs map[string]config.Config) (string, config.Parameters, error) {
 	parameters := make(config.Parameters, 0)
-	content, _ := configToBeUpdated.Template.Content() // TODO err handling
-	coordinates := make([]coordinate.Coordinate, 0)
+	content, err := configToBeUpdated.Template.Content()
+	if err != nil {
+		return "", nil, err
+	}
 
 	for key, conf := range configs {
 		if shouldReplaceReference(configToBeUpdated, conf, content, key) {
@@ -62,11 +66,10 @@ func basicFindAndReplaceIDs(apiName string, configToBeUpdated config.Config, con
 			content = strings.ReplaceAll(content, key, "{{."+parameterName+"}}")
 			ref := reference.NewWithCoordinate(coord, "id")
 			parameters[parameterName] = ref
-			coordinates = append(coordinates, coord)
 		}
 	}
 
-	return content, parameters, coordinates
+	return content, parameters, nil
 }
 
 // shouldReplaceReference checks if a given key is found in the content of another config and should be replaced
