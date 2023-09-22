@@ -216,7 +216,10 @@ func doDownloadConfigs(fs afero.Fs, downloaders downloaders, opts downloadConfig
 
 	log.Info("Extracting additional identifiers into YAML parameters")
 	// must happen after dep-resolution, as it removes IDs from the JSONs in which the dep-resolution searches as well
-	downloadedConfigs = id_extraction.ExtractIDsIntoYAML(downloadedConfigs)
+	downloadedConfigs, err = id_extraction.ExtractIDsIntoYAML(downloadedConfigs)
+	if err != nil {
+		return err
+	}
 
 	return writeConfigs(downloadedConfigs, opts.downloadOptionsShared, fs)
 }

@@ -174,7 +174,7 @@ func (d *Downloader) convertAllObjects(objects []dtclient.DownloadSettingsObject
 		// construct config object with generated config ID
 		configId := idutils.GenerateUUIDFromString(o.ObjectId)
 		c := config.Config{
-			Template: template.NewDownloadTemplate(configId, configId, string(indentedJson)),
+			Template: template.NewInMemoryTemplate(configId, string(indentedJson)),
 			Coordinate: coordinate.Coordinate{
 				Project:  projectName,
 				Type:     o.SchemaId,

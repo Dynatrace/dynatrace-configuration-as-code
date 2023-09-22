@@ -143,7 +143,7 @@ func createTemplateFromRawJSON(obj automationutils.Response, configType, project
 	err := json.Unmarshal(obj.Data, &data)
 	if err != nil {
 		log.WithFields(field.Coordinate(coordinate.Coordinate{Project: projectName, Type: configType, ConfigId: configId}), field.Error(err)).Warn("Failed to sanitize downloaded JSON for config %v (%s) - template may need manual cleanup: %v", configId, configType, err)
-		return template.NewDownloadTemplate(configId, configId, string(obj.Data)), nil
+		return template.NewInMemoryTemplate(configId, string(obj.Data)), nil
 	}
 
 	// remove properties not necessary for upload
@@ -169,7 +169,7 @@ func createTemplateFromRawJSON(obj automationutils.Response, configType, project
 	}
 	content = jsonutils.MarshalIndent(content)
 
-	t = template.NewDownloadTemplate(configId, configName, string(content))
+	t = template.NewInMemoryTemplate(configId, string(content))
 	return t, extractedName
 }
 

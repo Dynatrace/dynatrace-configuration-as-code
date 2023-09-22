@@ -1048,7 +1048,9 @@ func TestConvertTemplate_ConvertsListVariables(t *testing.T) {
 	assert.Equal(t, len(listParamIds), 2, " expected to list param ids to be found in template")
 	assert.Contains(t, listParamIds, "list")
 	assert.Contains(t, listParamIds, "list1")
-	assert.Equal(t, templ.Content(), `{
+	gotContent, err := templ.Content()
+	assert.NoError(t, err)
+	assert.Equal(t, gotContent, `{
 		"test": {{ .list }},
 		"test1": {{ .list1 }},
 	}`)
@@ -1092,7 +1094,9 @@ func TestConvertTemplate(t *testing.T) {
 	assert.Equal(t, "ENV_VALUE", p.Name)
 
 	// check converted template
-	assert.Equal(t, templ.Content(), `{
+	gotContent, err := templ.Content()
+	assert.NoError(t, err)
+	assert.Equal(t, gotContent, `{
 		"envKey": "{{ .__ENV_ENV_VALUE__ }}",
 		"listKey": {{ .list_value }},
 		"key": "value"

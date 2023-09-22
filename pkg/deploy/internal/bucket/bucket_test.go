@@ -61,7 +61,7 @@ func TestDeploy(t *testing.T) {
 		{
 			"upserts by generated coordinate ID",
 			config.Config{
-				Template:   template.CreateTemplateFromString("path/file.json", "{}"),
+				Template:   template.NewInMemoryTemplate("path/file.json", "{}"),
 				Coordinate: testCoord,
 				Type:       config.BucketType{},
 				Parameters: config.Parameters{},
@@ -87,7 +87,7 @@ func TestDeploy(t *testing.T) {
 		{
 			"upserts by OriginObjectId if set",
 			config.Config{
-				Template:       template.CreateTemplateFromString("path/file.json", "{}"),
+				Template:       template.NewInMemoryTemplate("path/file.json", "{}"),
 				Coordinate:     testCoord,
 				Type:           config.BucketType{},
 				Parameters:     config.Parameters{},
@@ -113,7 +113,7 @@ func TestDeploy(t *testing.T) {
 		{
 			"returns error on upsert error",
 			config.Config{
-				Template:   template.CreateTemplateFromString("path/file.json", "{}"),
+				Template:   template.NewInMemoryTemplate("path/file.json", "{}"),
 				Coordinate: testCoord,
 				Type:       config.BucketType{},
 				Parameters: config.Parameters{},
@@ -128,7 +128,7 @@ func TestDeploy(t *testing.T) {
 		{
 			"returns error if HTTP request for upsert failed",
 			config.Config{
-				Template:   template.CreateTemplateFromString("path/file.json", "{}"),
+				Template:   template.NewInMemoryTemplate("path/file.json", "{}"),
 				Coordinate: testCoord,
 				Type:       config.BucketType{},
 				Parameters: config.Parameters{},

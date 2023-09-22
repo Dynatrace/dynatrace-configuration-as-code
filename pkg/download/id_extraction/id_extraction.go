@@ -34,11 +34,16 @@ const baseParamID = "extractedIDs"
 
 // ExtractIDsIntoYAML searches for Dynatrace ID patterns in each given config and extracts them from the config's
 // JSON template, into a YAML parameter. It modifies the given configsPerType map.
-func ExtractIDsIntoYAML(configsPerType project.ConfigsPerType) project.ConfigsPerType {
+func ExtractIDsIntoYAML(configsPerType project.ConfigsPerType) (project.ConfigsPerType, error) {
 	for _, cfgs := range configsPerType {
 		for _, c := range cfgs {
-			ids := meIDRegexPattern.FindAllString(c.Template.Content(), -1)
-			ids = append(ids, uuidRegexPattern.FindAllString(c.Template.Content(), -1)...)
+			content, err := c.Template.Content()
+			if err != nil {
+				return nil, fmt.Errorf("failed to extract IDs from %s: %w", c.Coordinate, err)
+			}
+
+			ids := meIDRegexPattern.FindAllString(content, -1)
+			ids = append(ids, uuidRegexPattern.FindAllString(content, -1)...)
 
 			idMap := map[string]string{}
 
@@ -53,16 +58,19 @@ func ExtractIDsIntoYAML(configsPerType project.ConfigsPerType) project.ConfigsPe
 
 				paramID := fmt.Sprintf("{{ .%s.%s }}", baseParamID, idKey)
 
-				newContent := strings.ReplaceAll(c.Template.Content(), id, paramID)
-				c.Template.UpdateContent(newContent)
+				content = strings.ReplaceAll(content, id, paramID)
 			}
 
-			if len(idMap) > 0 {
+			if len(idMap) > 0 { // found IDs, update template with new content and store to parameters
+				err = c.Template.UpdateContent(content)
+				if err != nil {
+					return nil, fmt.Errorf("failed to extract IDs from %s: %w", c.Coordinate, err)
+				}
 				c.Parameters[baseParamID] = value.New(idMap)
 			}
 		}
 	}
-	return configsPerType
+	return configsPerType, nil
 }
 
 func createParameterKey(id string) string {

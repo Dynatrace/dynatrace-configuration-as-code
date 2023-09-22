@@ -103,12 +103,14 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 		id, _ := idutils.GenerateExternalID(input)
 		return id, nil
 	}))
-	_, err := c.UpsertSettings(context.TODO(), dtclient.SettingsObject{
+	content, err := configToDeploy.Template.Content()
+	assert.NoError(t, err)
+	_, err = c.UpsertSettings(context.TODO(), dtclient.SettingsObject{
 		Coordinate:     configToDeploy.Coordinate,
 		SchemaId:       configToDeploy.Type.(config.SettingsType).SchemaId,
 		SchemaVersion:  configToDeploy.Type.(config.SettingsType).SchemaVersion,
 		Scope:          "environment",
-		Content:        []byte(configToDeploy.Template.Content()),
+		Content:        []byte(content),
 		OriginObjectId: configToDeploy.OriginObjectId,
 	}, dtclient.UpsertSettingsOptions{})
 	assert.NoError(t, err)

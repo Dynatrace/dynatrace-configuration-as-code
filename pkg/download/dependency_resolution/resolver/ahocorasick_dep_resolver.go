@@ -86,7 +86,7 @@ func resolveTemplate(configToBeUpdated *config.Config, c dependencyResolutionCon
 
 func findAndReplaceIDs(apiName string, configToBeUpdated config.Config, c dependencyResolutionContext) (string, config.Parameters, []coordinate.Coordinate) {
 	parameters := make(config.Parameters, 0)
-	content := configToBeUpdated.Template.Content()
+	content, _ := configToBeUpdated.Template.Content() //TODO - err handling
 	coordinates := make([]coordinate.Coordinate, 0)
 
 	matches := c.matcher.MultiPatternSearch([]rune(content), false)

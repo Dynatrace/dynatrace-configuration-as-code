@@ -49,7 +49,7 @@ func basicResolveTemplate(configToBeUpdated *config.Config, configsById map[stri
 
 func basicFindAndReplaceIDs(apiName string, configToBeUpdated config.Config, configs map[string]config.Config) (string, config.Parameters, []coordinate.Coordinate) {
 	parameters := make(config.Parameters, 0)
-	content := configToBeUpdated.Template.Content()
+	content, _ := configToBeUpdated.Template.Content() // TODO err handling
 	coordinates := make([]coordinate.Coordinate, 0)
 
 	for key, conf := range configs {

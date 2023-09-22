@@ -133,7 +133,7 @@ func convertObject(o []byte, projectName string) (config.Config, error) {
 	if err != nil {
 		return config.Config{}, err
 	}
-	c.Template = template.NewDownloadTemplate(id, id, string(jsonutils.MarshalIndent(t)))
+	c.Template = template.NewInMemoryTemplate(id, string(jsonutils.MarshalIndent(t)))
 
 	return c, nil
 }
