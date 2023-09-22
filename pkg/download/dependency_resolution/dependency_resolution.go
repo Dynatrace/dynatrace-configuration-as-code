@@ -24,31 +24,35 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/dependency_resolution/resolver"
 	"sync"
+	"sync/atomic"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
 type dependencyResolver interface {
-	ResolveDependencyReferences(configToBeUpdated *config.Config)
+	ResolveDependencyReferences(configToBeUpdated *config.Config) error
 }
 
 // ResolveDependencies resolves all id-dependencies between downloaded configs.
 //
 // We do this by collecting all ids of all configs, and then simply by searching for them in templates.
 // If we find an occurrence, we replace it with a generic variable and reference the config.
-func ResolveDependencies(configs project.ConfigsPerType) project.ConfigsPerType {
+func ResolveDependencies(configs project.ConfigsPerType) (project.ConfigsPerType, error) {
 	log.Debug("Resolving dependencies between configs")
-	resolve(configs)
+	err := resolve(configs)
+	if err != nil {
+		return nil, err
+	}
 	log.Debug("Finished resolving dependencies")
-	return configs
+	return configs, nil
 }
 
-func resolve(configs project.ConfigsPerType) {
+func resolve(configs project.ConfigsPerType) error {
 	r := getResolver(configs)
-
+	errOccurred := atomic.Bool{}
 	wg := sync.WaitGroup{}
-	// currently a simple brute force attach
+	// currently a simple brute force approach
 	for _, configs := range configs {
 		configs := configs
 		for i := range configs {
@@ -56,7 +60,11 @@ func resolve(configs project.ConfigsPerType) {
 
 			configToBeUpdated := &configs[i]
 			go func() {
-				r.ResolveDependencyReferences(configToBeUpdated)
+				err := r.ResolveDependencyReferences(configToBeUpdated)
+				if err != nil {
+					log.WithFields(field.Coordinate(configToBeUpdated.Coordinate), field.Error(err)).Error("Failed to resolve dependencies: %v", err)
+					errOccurred.Store(true)
+				}
 
 				wg.Done()
 			}()
@@ -64,6 +72,11 @@ func resolve(configs project.ConfigsPerType) {
 	}
 
 	wg.Wait()
+
+	if errOccurred.Load() {
+		return fmt.Errorf("failed to resolve dependencies")
+	}
+	return nil
 }
 
 func getResolver(configs project.ConfigsPerType) dependencyResolver {
