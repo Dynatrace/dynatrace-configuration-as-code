@@ -65,7 +65,7 @@ func SendWithRetry(ctx context.Context, sendWithBody SendRequestWithBody, object
 	if err != nil {
 		return Response{}, fmt.Errorf("HTTP send request %s failed after %d retries: %w", path, setting.MaxRetries, err)
 	}
-	return Response{}, NewRespErr(fmt.Sprintf("HTTP send request %s failed after %d retries: (HTTP %d)!\n    Response was: %s", path, setting.MaxRetries, resp.StatusCode, string(resp.Body)), resp)
+	return Response{}, NewRespErr(fmt.Sprintf("HTTP send request %s failed after %d retries: (HTTP %d)", path, setting.MaxRetries, resp.StatusCode), resp)
 }
 
 // SendWithRetryWithInitialTry will try to call sendWithBody and if it didn't succeed call [SendWithRetry]
