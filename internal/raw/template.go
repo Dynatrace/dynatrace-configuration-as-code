@@ -36,7 +36,18 @@ func (o JSONObject) Get(key string) any {
 	return o[key]
 }
 
-func (o JSONObject) ParameterizeAttribute(keyOfJSONAttribute string, nameOfParameter string) *value.ValueParameter {
+func (o JSONObject) Parameterize(key string) *value.ValueParameter {
+	if _, exits := o[key]; !exits {
+		return nil
+	}
+
+	v := o[key]
+	o[key] = "{{." + key + "}}"
+	return &value.ValueParameter{Value: v}
+}
+
+// ParameterizeAttributeWith replace value of the given key with the given parameter name. The returned ValueParameter have the replaced value for the given key.
+func (o JSONObject) ParameterizeAttributeWith(keyOfJSONAttribute string, nameOfParameter string) *value.ValueParameter {
 	if _, exits := o[keyOfJSONAttribute]; !exits {
 		return nil
 	}
@@ -53,4 +64,8 @@ func (o JSONObject) ToJSON() ([]byte, error) {
 	}
 
 	return modified, nil
+}
+
+func (o JSONObject) Delete(key string) {
+	delete(o, key)
 }

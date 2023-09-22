@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/buckets"
+	tools "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/buckettools"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -31,7 +32,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"strings"
 )
 
 type BucketClient interface {
@@ -112,8 +112,7 @@ func convertObject(o []byte, projectName string) (*config.Config, error) {
 	}
 
 	// exclude builtin bucket names
-	if strings.HasPrefix(id, "dt_") ||
-		strings.HasPrefix(id, "default_") {
+	if tools.IsDefault(id) {
 		return nil, nil
 	}
 
@@ -127,9 +126,10 @@ func convertObject(o []byte, projectName string) (*config.Config, error) {
 
 	c.OriginObjectId = fmt.Sprintf("%s_%s", c.Coordinate.Project, c.Coordinate.ConfigId)
 
+	r.Delete(bucketName)
+
 	c.Parameters = map[string]parameter.Parameter{}
-	c.Parameters[config.NameParameter] = r.ParameterizeAttribute(bucketName, config.NameParameter)
-	p := r.ParameterizeAttribute(displayName, displayName)
+	p := r.Parameterize(displayName)
 	if p != nil {
 		c.Parameters[displayName] = p
 	}

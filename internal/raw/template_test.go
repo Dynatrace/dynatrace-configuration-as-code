@@ -62,6 +62,62 @@ func TestNew(t *testing.T) {
 	}
 }
 
+func TestJSONObject_Parameterize(t *testing.T) {
+	type (
+		given struct {
+			jsonObject raw.JSONObject
+			key        string
+		}
+		expected struct {
+			parameter *value.ValueParameter
+			newValue  any
+		}
+		actual struct {
+			parameter *value.ValueParameter
+			value     any
+		}
+	)
+
+	tests := []struct {
+		name string
+		given
+		expected
+	}{
+		{
+			name: "simple case",
+			given: given{
+				jsonObject: raw.JSONObject{"key1": "value1", "key2": "value2"},
+				key:        "key1",
+			},
+			expected: expected{
+				parameter: &value.ValueParameter{Value: "value1"},
+				newValue:  "{{.key1}}",
+			},
+		}, {
+			name: "an non-existent key",
+			given: given{
+				jsonObject: raw.JSONObject{"key1": "value1", "key2": 2},
+				key:        "non-existent",
+			},
+			expected: expected{
+				parameter: nil,
+				newValue:  nil,
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			actual := actual{
+				parameter: tc.given.jsonObject.Parameterize(tc.given.key),
+				value:     tc.given.jsonObject.Get(tc.given.key),
+			}
+
+			assert.Equal(t, tc.expected.parameter, actual.parameter)
+			assert.Equal(t, tc.expected.newValue, actual.value)
+		})
+	}
+}
+
 func TestJSONObject_ParameterizeAttribute(t *testing.T) {
 	type (
 		given struct {
@@ -122,7 +178,7 @@ func TestJSONObject_ParameterizeAttribute(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			actual := actual{
-				parameter: tc.given.jsonObject.ParameterizeAttribute(tc.given.keyOfJSONAttribute, tc.given.parameterName),
+				parameter: tc.given.jsonObject.ParameterizeAttributeWith(tc.given.keyOfJSONAttribute, tc.given.parameterName),
 				value:     tc.given.jsonObject.Get(tc.given.keyOfJSONAttribute),
 			}
 

@@ -20,13 +20,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/buckets"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/buckettools"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 	"golang.org/x/net/context"
 	"net/http"
-	"strings"
 )
 
 type Client interface {
@@ -101,7 +101,7 @@ func DeleteAll(ctx context.Context, c Client) error {
 		}
 
 		// exclude builtin bucket names, they cannot be deleted anyway
-		if strings.HasPrefix(bucketName.BucketName, "dt_") || strings.HasPrefix(bucketName.BucketName, "default_") {
+		if buckettools.IsDefault(bucketName.BucketName) {
 			continue
 		}
 
