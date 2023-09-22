@@ -23,17 +23,22 @@ import (
 // Render tries to render a given template with the given properties and returns the
 // resulting string. if any error occurs during rendering, an error is returned.
 func Render(template Template, properties map[string]interface{}) (string, error) {
-	parsedTemplate, err := ParseTemplate(template.Id(), template.Content())
+	content, err := template.Content()
+	if err != nil {
+		return "", fmt.Errorf("failure trying to render template %s: %w", template.Id(), err)
+	}
+
+	parsedTemplate, err := ParseTemplate(template.Id(), content)
 
 	if err != nil {
-		return "", fmt.Errorf("failure trying to render template %s: %w", template.Name(), err)
+		return "", fmt.Errorf("failure trying to render template %s: %w", template.Id(), err)
 	}
 
 	result := bytes.Buffer{}
 
 	err = parsedTemplate.Execute(&result, properties)
 	if err != nil {
-		return "", fmt.Errorf("failure trying to render template %s: %w", template.Name(), err)
+		return "", fmt.Errorf("failure trying to render template %s: %w", template.Id(), err)
 	}
 
 	return result.String(), nil

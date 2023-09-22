@@ -55,7 +55,7 @@ func TestWriteToDisk(t *testing.T) {
 					"test-api": []config.Config{
 						{
 							Type:        config.ClassicApiType{Api: "test-api"},
-							Template:    template.CreateTemplateFromString("template.json", "{}"),
+							Template:    template.NewInMemoryTemplate("template.json", "{}"),
 							Coordinate:  coordinate.Coordinate{},
 							Group:       "",
 							Environment: "",
@@ -84,7 +84,7 @@ func TestWriteToDisk(t *testing.T) {
 					"test-api": []config.Config{
 						{
 							Type:        config.ClassicApiType{Api: "test-api"},
-							Template:    template.CreateTemplateFromString("template.json", "{}"),
+							Template:    template.NewInMemoryTemplate("template.json", "{}"),
 							Coordinate:  coordinate.Coordinate{},
 							Group:       "",
 							Environment: "",
@@ -113,7 +113,7 @@ func TestWriteToDisk(t *testing.T) {
 					"test-api": []config.Config{
 						{
 							Type:        config.ClassicApiType{Api: "test-api"},
-							Template:    template.CreateTemplateFromString("template.json", "{}"),
+							Template:    template.NewInMemoryTemplate("template.json", "{}"),
 							Coordinate:  coordinate.Coordinate{},
 							Group:       "",
 							Environment: "",
@@ -142,7 +142,7 @@ func TestWriteToDisk(t *testing.T) {
 					"test-api": []config.Config{
 						{
 							Type:        config.ClassicApiType{Api: "test-api"},
-							Template:    template.CreateTemplateFromString("template.json", "{}"),
+							Template:    template.NewInMemoryTemplate("template.json", "{}"),
 							Coordinate:  coordinate.Coordinate{},
 							Group:       "",
 							Environment: "",
@@ -209,7 +209,7 @@ func TestWriteToDisk_OverwritesManifestIfForced(t *testing.T) {
 		"test-api": []config.Config{
 			{
 				Type:        config.ClassicApiType{Api: "test-api"},
-				Template:    template.CreateTemplateFromString("template.json", "{}"),
+				Template:    template.NewInMemoryTemplate("template.json", "{}"),
 				Coordinate:  coordinate.Coordinate{},
 				Group:       "",
 				Environment: "",

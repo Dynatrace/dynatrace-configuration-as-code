@@ -149,8 +149,8 @@ func (c *Config) Render(properties map[string]interface{}) (string, error) {
 		return "", nil
 	}
 
-	templatePath := c.Template.Name()
-	if t, ok := c.Template.(template.FileBasedTemplate); ok {
+	templatePath := c.Template.Id()
+	if t, ok := c.Template.(*template.FileBasedTemplate); ok {
 		templatePath = t.FilePath()
 	}
 

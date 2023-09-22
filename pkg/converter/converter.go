@@ -309,7 +309,7 @@ func convertTemplate(context *configConvertContext, currentPath string, writeToP
 		return nil, nil, nil, errs
 	}
 
-	return v2template.CreateTemplateFromString(writeToPath, temporaryTemplate), environmentParameters, listParameterIds, nil
+	return v2template.NewInMemoryTemplateWithPath(writeToPath, temporaryTemplate), environmentParameters, listParameterIds, nil
 }
 
 func convertReservedParameters(temporaryTemplate string) string {

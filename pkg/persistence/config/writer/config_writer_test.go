@@ -732,7 +732,7 @@ func TestWriteConfigs(t *testing.T) {
 			name: "Simple classic API write",
 			configs: []config.Config{
 				{
-					Template: template.CreateTemplateFromString("project/alerting-profile/a.json", ""),
+					Template: template.NewInMemoryTemplateWithPath("project/alerting-profile/a.json", ""),
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "alerting-profile",
@@ -777,7 +777,7 @@ func TestWriteConfigs(t *testing.T) {
 			name: "Settings 2.0 schema write sanitizes names",
 			configs: []config.Config{
 				{
-					Template: template.NewDownloadTemplate("a", "", ""),
+					Template: template.NewInMemoryTemplate("a", ""),
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "builtin:alerting-profile",
@@ -823,7 +823,7 @@ func TestWriteConfigs(t *testing.T) {
 			name: "Simple settings 2.0 write",
 			configs: []config.Config{
 				{
-					Template: template.CreateTemplateFromString("project/schemaid/a.json", ""),
+					Template: template.NewInMemoryTemplateWithPath("project/schemaid/a.json", ""),
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "schemaid",
@@ -870,7 +870,7 @@ func TestWriteConfigs(t *testing.T) {
 			name: "Automation resources",
 			configs: []config.Config{
 				{
-					Template: template.CreateTemplateFromString("project/workflow/a.json", ""),
+					Template: template.NewInMemoryTemplateWithPath("project/workflow/a.json", ""),
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "workflow",
@@ -885,7 +885,7 @@ func TestWriteConfigs(t *testing.T) {
 					Skip: true,
 				},
 				{
-					Template: template.CreateTemplateFromString("project/business-calendar/a.json", ""),
+					Template: template.NewInMemoryTemplateWithPath("project/business-calendar/a.json", ""),
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "business-calendar",
@@ -900,7 +900,7 @@ func TestWriteConfigs(t *testing.T) {
 					Skip: true,
 				},
 				{
-					Template: template.CreateTemplateFromString("project/scheduling-rule/a.json", ""),
+					Template: template.NewInMemoryTemplateWithPath("project/scheduling-rule/a.json", ""),
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "scheduling-rule",
@@ -981,7 +981,7 @@ func TestWriteConfigs(t *testing.T) {
 			name: "Grail Buckets",
 			configs: []config.Config{
 				{
-					Template: template.CreateTemplateFromString("project/bucket/mybucket.json", "{}"),
+					Template: template.NewInMemoryTemplateWithPath("project/bucket/mybucket.json", "{}"),
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "bucket",
@@ -1021,7 +1021,7 @@ func TestWriteConfigs(t *testing.T) {
 			name: "Reference scope",
 			configs: []config.Config{
 				{
-					Template: template.CreateTemplateFromString("project/schemaid/a.json", ""),
+					Template: template.NewInMemoryTemplateWithPath("project/schemaid/a.json", ""),
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "schemaid",
@@ -1074,7 +1074,7 @@ func TestWriteConfigs(t *testing.T) {
 			name: "OS path separators are replaced with slashes",
 			configs: []config.Config{
 				{
-					Template: template.CreateTemplateFromString(filepath.Join("general", "schemaid", "a.json"), ""),
+					Template: template.NewInMemoryTemplateWithPath(filepath.Join("general", "schemaid", "a.json"), ""),
 					Coordinate: coordinate.Coordinate{
 						Project:  "project",
 						Type:     "schemaid",
@@ -1165,19 +1165,19 @@ func TestWriteConfigs(t *testing.T) {
 func TestOrderedConfigs(t *testing.T) {
 	configs := []config.Config{
 		{
-			Template:   template.CreateTemplateFromString("project/alerting-profile/a.json", ""),
+			Template:   template.NewInMemoryTemplateWithPath("project/alerting-profile/a.json", ""),
 			Coordinate: coordinate.Coordinate{Project: "project", Type: "alerting-profile", ConfigId: "b"},
 			Type:       config.ClassicApiType{Api: "alerting-profile"},
 			Parameters: map[string]parameter.Parameter{config.NameParameter: &value.ValueParameter{Value: "name"}},
 		},
 		{
-			Template:   template.CreateTemplateFromString("project/alerting-profile/a.json", ""),
+			Template:   template.NewInMemoryTemplateWithPath("project/alerting-profile/a.json", ""),
 			Coordinate: coordinate.Coordinate{Project: "project", Type: "alerting-profile", ConfigId: "a"},
 			Type:       config.ClassicApiType{Api: "alerting-profile"},
 			Parameters: map[string]parameter.Parameter{config.NameParameter: &value.ValueParameter{Value: "name"}},
 		},
 		{
-			Template:   template.CreateTemplateFromString("project/alerting-profile/a.json", ""),
+			Template:   template.NewInMemoryTemplateWithPath("project/alerting-profile/a.json", ""),
 			Coordinate: coordinate.Coordinate{Project: "project", Type: "alerting-profile", ConfigId: "c"},
 			Type:       config.ClassicApiType{Api: "alerting-profile"},
 			Parameters: map[string]parameter.Parameter{config.NameParameter: &value.ValueParameter{Value: "name"}},

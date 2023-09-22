@@ -49,7 +49,9 @@ import (
 // We want to be pragmatic in comparing them - so we define these options to make it very simple.
 var compareOptions = []cmp.Option{
 	cmp.Comparer(func(a, b template.Template) bool {
-		return jsonEqual(a.Content(), b.Content())
+		cA, _ := a.Content()
+		cB, _ := b.Content()
+		return jsonEqual(cA, cB)
 	}),
 	cmpopts.SortSlices(func(a, b config.Config) bool {
 		return strings.Compare(a.Coordinate.String(), b.Coordinate.String()) < 0
@@ -58,28 +60,6 @@ var compareOptions = []cmp.Option{
 		return strings.Compare(a.String(), b.String()) < 0
 	}),
 }
-
-type contentOnlyTemplate struct {
-	content string
-}
-
-func (c contentOnlyTemplate) Id() string {
-	panic("implement me")
-}
-
-func (c contentOnlyTemplate) Name() string {
-	panic("implement me")
-}
-
-func (c contentOnlyTemplate) Content() string {
-	return c.content
-}
-
-func (c contentOnlyTemplate) UpdateContent(_ string) {
-	panic("implement me")
-}
-
-var _ template.Template = (*contentOnlyTemplate)(nil)
 
 func TestDownloadIntegrationSimple(t *testing.T) {
 	// GIVEN apis, server responses, file system
@@ -142,7 +122,7 @@ func TestDownloadIntegrationSimple(t *testing.T) {
 				},
 				Group:       "default",
 				Environment: projectName,
-				Template:    contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}"}`},
+				Template:    template.NewInMemoryTemplate("template-1", `{"custom-response": true, "name": "{{.name}}"}`),
 				Type:        config.ClassicApiType{Api: fakeApi.ID},
 			},
 		},
@@ -208,7 +188,7 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 				},
 				Group:       "default",
 				Environment: projectName,
-				Template:    contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}"}`},
+				Template:    template.NewInMemoryTemplate("template-1", `{"custom-response": true, "name": "{{.name}}"}`),
 				Type:        config.ClassicApiType{Api: "fake-id"},
 			},
 			{
@@ -220,7 +200,7 @@ func TestDownloadIntegrationWithReference(t *testing.T) {
 				},
 				Group:       "default",
 				Environment: projectName,
-				Template:    contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}", "reference-to-id1": "{{.fakeid__id1__id}}"}`},
+				Template:    template.NewInMemoryTemplate("template-2", `{"custom-response": true, "name": "{{.name}}", "reference-to-id1": "{{.fakeid__id1__id}}"}`),
 				Type:        config.ClassicApiType{Api: "fake-id"},
 			},
 		},
@@ -295,7 +275,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 				},
 				Group:       "default",
 				Environment: projectName,
-				Template:    contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}"}`},
+				Template:    template.NewInMemoryTemplate("id", `{"custom-response": true, "name": "{{.name}}"}`),
 				Type:        config.ClassicApiType{Api: "fake-id-1"},
 			},
 			{
@@ -307,7 +287,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 				},
 				Group:       "default",
 				Environment: projectName,
-				Template:    contentOnlyTemplate{`{"custom-response": false, "name": "{{.name}}", "reference-to-id1": "{{.fakeid1__id1__id}}"}`},
+				Template:    template.NewInMemoryTemplate("id", `{"custom-response": false, "name": "{{.name}}", "reference-to-id1": "{{.fakeid1__id1__id}}"}`),
 				Type:        config.ClassicApiType{Api: "fake-id-1"},
 			},
 		},
@@ -321,7 +301,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 				},
 				Group:       "default",
 				Environment: projectName,
-				Template:    contentOnlyTemplate{`{"custom-response": "No!", "name": "{{.name}}", "subobject": {"something": "{{.fakeid1__id1__id}}"}}`},
+				Template:    template.NewInMemoryTemplate("id", `{"custom-response": "No!", "name": "{{.name}}", "subobject": {"something": "{{.fakeid1__id1__id}}"}}`),
 				Type:        config.ClassicApiType{Api: "fake-id-2"},
 			},
 			{
@@ -333,7 +313,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 				},
 				Group:       "default",
 				Environment: projectName,
-				Template:    contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}", "reference-to-id3": "{{.fakeid2__id3__id}}"}`},
+				Template:    template.NewInMemoryTemplate("id", `{"custom-response": true, "name": "{{.name}}", "reference-to-id3": "{{.fakeid2__id3__id}}"}`),
 				Type:        config.ClassicApiType{Api: "fake-id-2"},
 			},
 		},
@@ -348,7 +328,7 @@ func TestDownloadIntegrationWithMultipleApisAndReferences(t *testing.T) {
 				},
 				Group:       "default",
 				Environment: projectName,
-				Template:    contentOnlyTemplate{`{"name": "{{.name}}", "custom-response": true, "reference-to-id6-of-another-api": ["{{.fakeid2__id4__id}}" ,{"o":  "{{.fakeid1__id2__id}}"}]}`},
+				Template:    template.NewInMemoryTemplate("id", `{"name": "{{.name}}", "custom-response": true, "reference-to-id6-of-another-api": ["{{.fakeid2__id4__id}}" ,{"o":  "{{.fakeid1__id2__id}}"}]}`),
 				Type:        config.ClassicApiType{Api: "fake-id-3"},
 			},
 		},
@@ -413,7 +393,7 @@ func TestDownloadIntegrationSingletonConfig(t *testing.T) {
 				},
 				Group:       "default",
 				Environment: projectName,
-				Template:    contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}"}`},
+				Template:    template.NewInMemoryTemplate("id", `{"custom-response": true, "name": "{{.name}}"}`),
 				Type:        config.ClassicApiType{Api: "fake-id"},
 			},
 		},
@@ -479,7 +459,7 @@ func TestDownloadIntegrationSyntheticLocations(t *testing.T) {
 				},
 				Group:       "default",
 				Environment: projectName,
-				Template:    contentOnlyTemplate{`{"type": "PRIVATE", "name": "{{.name}}"}`},
+				Template:    template.NewInMemoryTemplate("id", `{"type": "PRIVATE", "name": "{{.name}}"}`),
 				Type:        config.ClassicApiType{Api: "synthetic-location"},
 			},
 		},
@@ -549,7 +529,7 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 				},
 				Group:       "default",
 				Environment: projectName,
-				Template:    contentOnlyTemplate{`{"dashboardMetadata": {"name": "{{.name}}", "owner": "Q"}, "tiles": []}`},
+				Template:    template.NewInMemoryTemplate("id", `{"dashboardMetadata": {"name": "{{.name}}", "owner": "Q"}, "tiles": []}`),
 				Type:        config.ClassicApiType{Api: "dashboard"},
 			},
 			{
@@ -560,7 +540,7 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 				},
 				Group:       "default",
 				Environment: projectName,
-				Template:    contentOnlyTemplate{`{"dashboardMetadata": {"name": "{{.name}}", "owner": "Admiral Jean-Luc Picard"}, "tiles": []}`},
+				Template:    template.NewInMemoryTemplate("id", `{"dashboardMetadata": {"name": "{{.name}}", "owner": "Admiral Jean-Luc Picard"}, "tiles": []}`),
 				Type:        config.ClassicApiType{Api: "dashboard"},
 			},
 			{
@@ -571,7 +551,7 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 				},
 				Group:       "default",
 				Environment: projectName,
-				Template:    contentOnlyTemplate{`{"dashboardMetadata": {"name": "{{.name}}","owner": "Not Dynatrace","preset": true},"tiles": []}`},
+				Template:    template.NewInMemoryTemplate("id", `{"dashboardMetadata": {"name": "{{.name}}","owner": "Not Dynatrace","preset": true},"tiles": []}`),
 				Type:        config.ClassicApiType{Api: "dashboard"},
 			},
 		},
@@ -644,7 +624,7 @@ func TestDownloadIntegrationAllDashboardsAreDownloadedIfFilterFFTurnedOff(t *tes
 				},
 				Group:       "default",
 				Environment: projectName,
-				Template:    contentOnlyTemplate{`{"dashboardMetadata": {"name": "{{.name}}", "owner": "Q"}, "tiles": []}`},
+				Template:    template.NewInMemoryTemplate("id", `{"dashboardMetadata": {"name": "{{.name}}", "owner": "Q"}, "tiles": []}`),
 				Type:        config.ClassicApiType{Api: "dashboard"},
 			},
 			{
@@ -655,7 +635,7 @@ func TestDownloadIntegrationAllDashboardsAreDownloadedIfFilterFFTurnedOff(t *tes
 				},
 				Group:       "default",
 				Environment: projectName,
-				Template:    contentOnlyTemplate{`{"dashboardMetadata": {"name": "{{.name}}", "owner": "Admiral Jean-Luc Picard"}, "tiles": []}`},
+				Template:    template.NewInMemoryTemplate("id", `{"dashboardMetadata": {"name": "{{.name}}", "owner": "Admiral Jean-Luc Picard"}, "tiles": []}`),
 				Type:        config.ClassicApiType{Api: "dashboard"},
 			},
 			{
@@ -666,7 +646,7 @@ func TestDownloadIntegrationAllDashboardsAreDownloadedIfFilterFFTurnedOff(t *tes
 				},
 				Group:       "default",
 				Environment: projectName,
-				Template:    contentOnlyTemplate{`{"dashboardMetadata": {"name": "{{.name}}","owner": "Dynatrace"},"tiles": []}`},
+				Template:    template.NewInMemoryTemplate("id", `{"dashboardMetadata": {"name": "{{.name}}","owner": "Dynatrace"},"tiles": []}`),
 				Type:        config.ClassicApiType{Api: "dashboard"},
 			},
 			{
@@ -677,7 +657,7 @@ func TestDownloadIntegrationAllDashboardsAreDownloadedIfFilterFFTurnedOff(t *tes
 				},
 				Group:       "default",
 				Environment: projectName,
-				Template:    contentOnlyTemplate{`{"dashboardMetadata": {"name": "{{.name}}","owner": "Not Dynatrace","preset": true},"tiles": []}`},
+				Template:    template.NewInMemoryTemplate("id", `{"dashboardMetadata": {"name": "{{.name}}","owner": "Not Dynatrace","preset": true},"tiles": []}`),
 				Type:        config.ClassicApiType{Api: "dashboard"},
 			},
 			{
@@ -688,7 +668,7 @@ func TestDownloadIntegrationAllDashboardsAreDownloadedIfFilterFFTurnedOff(t *tes
 				},
 				Group:       "default",
 				Environment: projectName,
-				Template:    contentOnlyTemplate{`{"dashboardMetadata": {"name": "{{.name}}","owner": "Dynatrace","preset": true},"tiles": []}`},
+				Template:    template.NewInMemoryTemplate("id", `{"dashboardMetadata": {"name": "{{.name}}","owner": "Dynatrace","preset": true},"tiles": []}`),
 				Type:        config.ClassicApiType{Api: "dashboard"},
 			},
 		},
@@ -755,7 +735,7 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 				},
 				Group:       "default",
 				Environment: projectName,
-				Template:    contentOnlyTemplate{`{}`},
+				Template:    template.NewInMemoryTemplate("id", `{}`),
 				Type:        config.ClassicApiType{Api: "anomaly-detection-metrics"},
 			},
 			{
@@ -766,7 +746,7 @@ func TestDownloadIntegrationAnomalyDetectionMetrics(t *testing.T) {
 				},
 				Group:       "default",
 				Environment: projectName,
-				Template:    contentOnlyTemplate{`{}`},
+				Template:    template.NewInMemoryTemplate("id", `{}`),
 				Type:        config.ClassicApiType{Api: "anomaly-detection-metrics"},
 			},
 		},
@@ -791,7 +771,7 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 					},
 					Group:       "default",
 					Environment: "valid",
-					Template:    contentOnlyTemplate{`{"updateWindows":{"windows":[{"id":"3","name":"Daily maintenance window"}]}}`},
+					Template:    template.NewInMemoryTemplate("id", `{"updateWindows":{"windows":[{"id":"3","name":"Daily maintenance window"}]}}`),
 					Type:        config.ClassicApiType{Api: "hosts-auto-update"},
 				},
 			},
@@ -808,7 +788,7 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 					},
 					Group:       "default",
 					Environment: "updateWindows-empty",
-					Template:    contentOnlyTemplate{`{}`},
+					Template:    template.NewInMemoryTemplate("id", `{}`),
 					Type:        config.ClassicApiType{Api: "hosts-auto-update"},
 				},
 			},
@@ -830,7 +810,7 @@ func TestDownloadIntegrationHostAutoUpdate(t *testing.T) {
 					},
 					Group:       "default",
 					Environment: "windows-missing",
-					Template:    contentOnlyTemplate{`{"updateWindows":{}}`},
+					Template:    template.NewInMemoryTemplate("id", `{"updateWindows":{}}`),
 					Type:        config.ClassicApiType{Api: "hosts-auto-update"},
 				},
 			},
@@ -982,7 +962,7 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 				},
 				Group:       "default",
 				Environment: projectName,
-				Template:    contentOnlyTemplate{`{"custom-response": true, "name": "{{.name}}"}`},
+				Template:    template.NewInMemoryTemplate("id", `{"custom-response": true, "name": "{{.name}}"}`),
 				Type:        config.ClassicApiType{Api: "fake-id"},
 			},
 		},

@@ -100,8 +100,7 @@ func TestRender(t *testing.T) {
 	}{
 		{
 			"renders simple template",
-			&fileBasedTemplate{
-				path:    "a path",
+			&InMemoryTemplate{
 				content: simpleTemplateString,
 			},
 			map[string]interface{}{"val": "the-key"},
@@ -110,8 +109,7 @@ func TestRender(t *testing.T) {
 		},
 		{
 			"renders template #1",
-			&fileBasedTemplate{
-				path:    "a path",
+			&InMemoryTemplate{
 				content: templateString,
 			},
 			map[string]interface{}{"color": "white", "animal": "rabbit"},
@@ -120,8 +118,7 @@ func TestRender(t *testing.T) {
 		},
 		{
 			"renders template #2",
-			&fileBasedTemplate{
-				path:    "a path",
+			&InMemoryTemplate{
 				content: templateString,
 			},
 			map[string]interface{}{"color": "white", "animal": "cow"},
@@ -130,8 +127,7 @@ func TestRender(t *testing.T) {
 		},
 		{
 			"renders template - random characters in property",
-			&fileBasedTemplate{
-				path:    "a path",
+			&InMemoryTemplate{
 				content: templateString,
 			},
 			map[string]interface{}{"color": "white", "animal": "rabbit$=co\\/\\/=chicken"},
@@ -140,8 +136,7 @@ func TestRender(t *testing.T) {
 		},
 		{
 			"fails if referenced property is not defined",
-			&fileBasedTemplate{
-				path:    "a path",
+			&InMemoryTemplate{
 				content: simpleTemplateString,
 			},
 			map[string]interface{}{}, // 'val' used in template but not defined as property
@@ -150,8 +145,7 @@ func TestRender(t *testing.T) {
 		},
 		{
 			"fails if one referenced property is not defined",
-			&fileBasedTemplate{
-				path:    "a path",
+			&InMemoryTemplate{
 				content: templateString,
 			},
 			map[string]interface{}{"color": "white"}, // 'val' used in template but not defined as property
@@ -160,8 +154,7 @@ func TestRender(t *testing.T) {
 		},
 		{
 			"fails if template string is invalid",
-			&fileBasedTemplate{
-				path:    "a path",
+			&InMemoryTemplate{
 				content: invalidTemplateString,
 			},
 			map[string]interface{}{"val": "the-key"},
@@ -170,8 +163,7 @@ func TestRender(t *testing.T) {
 		},
 		{
 			"escapes any newlines when rendering template",
-			&fileBasedTemplate{
-				path:    "a path",
+			&InMemoryTemplate{
 				content: templateStringWithNewlines,
 			},
 			map[string]interface{}{"val": "the-key"},

@@ -122,7 +122,7 @@ func TestDownloadAll(t *testing.T) {
 			},
 			want: v2.ConfigsPerType{"id1": {
 				{
-					Template: template.NewDownloadTemplate(uuid, uuid, "{}"),
+					Template: template.NewInMemoryTemplate(uuid, "{}"),
 					Coordinate: coordinate.Coordinate{
 						Project:  "projectName",
 						Type:     "sid1",
@@ -199,7 +199,7 @@ func TestDownloadAll(t *testing.T) {
 			},
 			want: v2.ConfigsPerType{"id1": {
 				{
-					Template: template.NewDownloadTemplate(uuid, uuid, "{}"),
+					Template: template.NewInMemoryTemplate(uuid, "{}"),
 					Coordinate: coordinate.Coordinate{
 						Project:  "projectName",
 						Type:     "sid1",
@@ -280,7 +280,7 @@ func TestDownload(t *testing.T) {
 			},
 			want: v2.ConfigsPerType{"builtin:alerting-profile": {
 				{
-					Template: template.NewDownloadTemplate(uuid, uuid, "{}"),
+					Template: template.NewInMemoryTemplate(uuid, "{}"),
 					Coordinate: coordinate.Coordinate{
 						Project:  "projectName",
 						Type:     "sid1",

@@ -43,7 +43,7 @@ func TestExtractIDsIntoYAML(t *testing.T) {
 			project.ConfigsPerType{
 				"test-type": []config.Config{
 					{
-						Template: template.CreateTemplateFromString("test-tmpl", `{ "key": "value", "details": { "d1_key": "d1_val", "d2_key": "d2_val" } }`),
+						Template: template.NewInMemoryTemplate("test-tmpl", `{ "key": "value", "details": { "d1_key": "d1_val", "d2_key": "d2_val" } }`),
 						Parameters: config.Parameters{
 							"baseParam": value.New("base-value"),
 						},
@@ -53,7 +53,7 @@ func TestExtractIDsIntoYAML(t *testing.T) {
 			project.ConfigsPerType{
 				"test-type": []config.Config{
 					{
-						Template: template.CreateTemplateFromString("test-tmpl", `{ "key": "value", "details": { "d1_key": "d1_val", "d2_key": "d2_val" } }`),
+						Template: template.NewInMemoryTemplate("test-tmpl", `{ "key": "value", "details": { "d1_key": "d1_val", "d2_key": "d2_val" } }`),
 						Parameters: config.Parameters{
 							"baseParam": value.New("base-value"),
 						},
@@ -66,7 +66,7 @@ func TestExtractIDsIntoYAML(t *testing.T) {
 			project.ConfigsPerType{
 				"test-type": []config.Config{
 					{
-						Template: template.CreateTemplateFromString("test-tmpl", `{ "key": "HOST_GROUP-1234567890123456", "details": { "d1_key": "d1_val", "d2_key": "d2_val" } }`),
+						Template: template.NewInMemoryTemplate("test-tmpl", `{ "key": "HOST_GROUP-1234567890123456", "details": { "d1_key": "d1_val", "d2_key": "d2_val" } }`),
 						Parameters: config.Parameters{
 							"baseParam": value.New("base-value"),
 						},
@@ -76,7 +76,7 @@ func TestExtractIDsIntoYAML(t *testing.T) {
 			project.ConfigsPerType{
 				"test-type": []config.Config{
 					{
-						Template: template.CreateTemplateFromString("test-tmpl", `{ "key": "{{ .extractedIDs.id_HOST_GROUP_1234567890123456 }}", "details": { "d1_key": "d1_val", "d2_key": "d2_val" } }`),
+						Template: template.NewInMemoryTemplate("test-tmpl", `{ "key": "{{ .extractedIDs.id_HOST_GROUP_1234567890123456 }}", "details": { "d1_key": "d1_val", "d2_key": "d2_val" } }`),
 						Parameters: config.Parameters{
 							"baseParam": value.New("base-value"),
 							"extractedIDs": value.New(map[string]string{
@@ -92,7 +92,7 @@ func TestExtractIDsIntoYAML(t *testing.T) {
 			project.ConfigsPerType{
 				"test-type": []config.Config{
 					{
-						Template: template.CreateTemplateFromString("test-tmpl", `{ "key": "00b173f7-99ab-36e6-a365-170a7c42d364", "details": { "d1_key": "d1_val", "d2_key": "d2_val" } }`),
+						Template: template.NewInMemoryTemplate("test-tmpl", `{ "key": "00b173f7-99ab-36e6-a365-170a7c42d364", "details": { "d1_key": "d1_val", "d2_key": "d2_val" } }`),
 						Parameters: config.Parameters{
 							"baseParam": value.New("base-value"),
 						},
@@ -102,7 +102,7 @@ func TestExtractIDsIntoYAML(t *testing.T) {
 			project.ConfigsPerType{
 				"test-type": []config.Config{
 					{
-						Template: template.CreateTemplateFromString("test-tmpl", `{ "key": "{{ .extractedIDs.id_00b173f7_99ab_36e6_a365_170a7c42d364 }}", "details": { "d1_key": "d1_val", "d2_key": "d2_val" } }`),
+						Template: template.NewInMemoryTemplate("test-tmpl", `{ "key": "{{ .extractedIDs.id_00b173f7_99ab_36e6_a365_170a7c42d364 }}", "details": { "d1_key": "d1_val", "d2_key": "d2_val" } }`),
 						Parameters: config.Parameters{
 							"baseParam": value.New("base-value"),
 							"extractedIDs": value.New(map[string]string{
@@ -118,7 +118,7 @@ func TestExtractIDsIntoYAML(t *testing.T) {
 			project.ConfigsPerType{
 				"test-type": []config.Config{
 					{
-						Template: template.CreateTemplateFromString("test-tmpl", `{ "key": "HOST_GROUP-1234567890123456", "details": { "d1_key": "AWS_RELATIONAL_DATABASE_SERVICE", "d2_key": "SYNTHETIC_LOCATION-0000000000000089" } }`),
+						Template: template.NewInMemoryTemplate("test-tmpl", `{ "key": "HOST_GROUP-1234567890123456", "details": { "d1_key": "AWS_RELATIONAL_DATABASE_SERVICE", "d2_key": "SYNTHETIC_LOCATION-0000000000000089" } }`),
 						Parameters: config.Parameters{
 							"baseParam": value.New("base-value"),
 						},
@@ -128,7 +128,7 @@ func TestExtractIDsIntoYAML(t *testing.T) {
 			project.ConfigsPerType{
 				"test-type": []config.Config{
 					{
-						Template: template.CreateTemplateFromString("test-tmpl", `{ "key": "{{ .extractedIDs.id_HOST_GROUP_1234567890123456 }}", "details": { "d1_key": "AWS_RELATIONAL_DATABASE_SERVICE", "d2_key": "{{ .extractedIDs.id_SYNTHETIC_LOCATION_0000000000000089 }}" } }`),
+						Template: template.NewInMemoryTemplate("test-tmpl", `{ "key": "{{ .extractedIDs.id_HOST_GROUP_1234567890123456 }}", "details": { "d1_key": "AWS_RELATIONAL_DATABASE_SERVICE", "d2_key": "{{ .extractedIDs.id_SYNTHETIC_LOCATION_0000000000000089 }}" } }`),
 						Parameters: config.Parameters{
 							"baseParam": value.New("base-value"),
 							"extractedIDs": value.New(map[string]string{
@@ -145,7 +145,7 @@ func TestExtractIDsIntoYAML(t *testing.T) {
 			project.ConfigsPerType{
 				"test-type": []config.Config{
 					{
-						Template: template.CreateTemplateFromString("test-tmpl", `{ "key": "HOST_GROUP-1234567890123456", "details": { "d1_key": "AWS_RELATIONAL_DATABASE_SERVICE", "d2_key": "HOST_GROUP-1234567890123456" } }`),
+						Template: template.NewInMemoryTemplate("test-tmpl", `{ "key": "HOST_GROUP-1234567890123456", "details": { "d1_key": "AWS_RELATIONAL_DATABASE_SERVICE", "d2_key": "HOST_GROUP-1234567890123456" } }`),
 						Parameters: config.Parameters{
 							"baseParam": value.New("base-value"),
 						},
@@ -155,7 +155,7 @@ func TestExtractIDsIntoYAML(t *testing.T) {
 			project.ConfigsPerType{
 				"test-type": []config.Config{
 					{
-						Template: template.CreateTemplateFromString("test-tmpl", `{ "key": "{{ .extractedIDs.id_HOST_GROUP_1234567890123456 }}", "details": { "d1_key": "AWS_RELATIONAL_DATABASE_SERVICE", "d2_key": "{{ .extractedIDs.id_HOST_GROUP_1234567890123456 }}" } }`),
+						Template: template.NewInMemoryTemplate("test-tmpl", `{ "key": "{{ .extractedIDs.id_HOST_GROUP_1234567890123456 }}", "details": { "d1_key": "AWS_RELATIONAL_DATABASE_SERVICE", "d2_key": "{{ .extractedIDs.id_HOST_GROUP_1234567890123456 }}" } }`),
 						Parameters: config.Parameters{
 							"baseParam": value.New("base-value"),
 							"extractedIDs": value.New(map[string]string{
@@ -171,7 +171,7 @@ func TestExtractIDsIntoYAML(t *testing.T) {
 			project.ConfigsPerType{
 				"test-type": []config.Config{
 					{
-						Template: template.CreateTemplateFromString("test-tmpl", `{ "key": "00b173f7-99ab-36e6-a365-170a7c42d364", "details": { "d1_key": "AWS_RELATIONAL_DATABASE_SERVICE", "d2_key": "00b173f7-99ab-36e6-a365-170a7c42d364" } }`),
+						Template: template.NewInMemoryTemplate("test-tmpl", `{ "key": "00b173f7-99ab-36e6-a365-170a7c42d364", "details": { "d1_key": "AWS_RELATIONAL_DATABASE_SERVICE", "d2_key": "00b173f7-99ab-36e6-a365-170a7c42d364" } }`),
 						Parameters: config.Parameters{
 							"baseParam": value.New("base-value"),
 						},
@@ -181,7 +181,7 @@ func TestExtractIDsIntoYAML(t *testing.T) {
 			project.ConfigsPerType{
 				"test-type": []config.Config{
 					{
-						Template: template.CreateTemplateFromString("test-tmpl", `{ "key": "{{ .extractedIDs.id_00b173f7_99ab_36e6_a365_170a7c42d364 }}", "details": { "d1_key": "AWS_RELATIONAL_DATABASE_SERVICE", "d2_key": "{{ .extractedIDs.id_00b173f7_99ab_36e6_a365_170a7c42d364 }}" } }`),
+						Template: template.NewInMemoryTemplate("test-tmpl", `{ "key": "{{ .extractedIDs.id_00b173f7_99ab_36e6_a365_170a7c42d364 }}", "details": { "d1_key": "AWS_RELATIONAL_DATABASE_SERVICE", "d2_key": "{{ .extractedIDs.id_00b173f7_99ab_36e6_a365_170a7c42d364 }}" } }`),
 						Parameters: config.Parameters{
 							"baseParam": value.New("base-value"),
 							"extractedIDs": value.New(map[string]string{
@@ -197,13 +197,13 @@ func TestExtractIDsIntoYAML(t *testing.T) {
 			project.ConfigsPerType{
 				"test-type": []config.Config{
 					{
-						Template: template.CreateTemplateFromString("test-tmpl", `{ "key": "HOST_GROUP-1234567890123456", "details": { "d1_key": "AWS_RELATIONAL_DATABASE_SERVICE", "d2_key": "HOST_GROUP-1234567890123456" } }`),
+						Template: template.NewInMemoryTemplate("test-tmpl", `{ "key": "HOST_GROUP-1234567890123456", "details": { "d1_key": "AWS_RELATIONAL_DATABASE_SERVICE", "d2_key": "HOST_GROUP-1234567890123456" } }`),
 						Parameters: config.Parameters{
 							"baseParam": value.New("base-value"),
 						},
 					},
 					{
-						Template: template.CreateTemplateFromString("test-tmpl", `{ "key": "HOST_GROUP-1234567890123456", "details": { "d1_key": "AWS_RELATIONAL_DATABASE_SERVICE", "d2_key": "SYNTHETIC_LOCATION-0000000000000089" } }`),
+						Template: template.NewInMemoryTemplate("test-tmpl", `{ "key": "HOST_GROUP-1234567890123456", "details": { "d1_key": "AWS_RELATIONAL_DATABASE_SERVICE", "d2_key": "SYNTHETIC_LOCATION-0000000000000089" } }`),
 						Parameters: config.Parameters{
 							"baseParam": value.New("base-value"),
 						},
@@ -211,19 +211,19 @@ func TestExtractIDsIntoYAML(t *testing.T) {
 				},
 				"other-type": []config.Config{
 					{
-						Template: template.CreateTemplateFromString("test-tmpl", `{ "key": "value", "details": { "d1_key": "d1_val", "d2_key": "d2_val" } }`),
+						Template: template.NewInMemoryTemplate("test-tmpl", `{ "key": "value", "details": { "d1_key": "d1_val", "d2_key": "d2_val" } }`),
 						Parameters: config.Parameters{
 							"baseParam": value.New("base-value"),
 						},
 					},
 					{
-						Template: template.CreateTemplateFromString("test-tmpl", `{ "key": "SYNTHETIC_LOCATION-4242424242424242", "details": { "d1_key": "d1_val", "d2_key": "d2_val" } }`),
+						Template: template.NewInMemoryTemplate("test-tmpl", `{ "key": "SYNTHETIC_LOCATION-4242424242424242", "details": { "d1_key": "d1_val", "d2_key": "d2_val" } }`),
 						Parameters: config.Parameters{
 							"baseParam": value.New("base-value"),
 						},
 					},
 					{
-						Template: template.CreateTemplateFromString("test-tmpl", `{ "key": "SYNTHETIC_LOCATION-4242424242424242", "details": { "d1_key": "00b173f7-99ab-36e6-a365-170a7c42d364", "d2_key": "d2_val" } }`),
+						Template: template.NewInMemoryTemplate("test-tmpl", `{ "key": "SYNTHETIC_LOCATION-4242424242424242", "details": { "d1_key": "00b173f7-99ab-36e6-a365-170a7c42d364", "d2_key": "d2_val" } }`),
 						Parameters: config.Parameters{
 							"baseParam": value.New("base-value"),
 						},
@@ -233,7 +233,7 @@ func TestExtractIDsIntoYAML(t *testing.T) {
 			project.ConfigsPerType{
 				"test-type": []config.Config{
 					{
-						Template: template.CreateTemplateFromString("test-tmpl", `{ "key": "{{ .extractedIDs.id_HOST_GROUP_1234567890123456 }}", "details": { "d1_key": "AWS_RELATIONAL_DATABASE_SERVICE", "d2_key": "{{ .extractedIDs.id_HOST_GROUP_1234567890123456 }}" } }`),
+						Template: template.NewInMemoryTemplate("test-tmpl", `{ "key": "{{ .extractedIDs.id_HOST_GROUP_1234567890123456 }}", "details": { "d1_key": "AWS_RELATIONAL_DATABASE_SERVICE", "d2_key": "{{ .extractedIDs.id_HOST_GROUP_1234567890123456 }}" } }`),
 						Parameters: config.Parameters{
 							"baseParam": value.New("base-value"),
 							"extractedIDs": value.New(map[string]string{
@@ -242,7 +242,7 @@ func TestExtractIDsIntoYAML(t *testing.T) {
 						},
 					},
 					{
-						Template: template.CreateTemplateFromString("test-tmpl", `{ "key": "{{ .extractedIDs.id_HOST_GROUP_1234567890123456 }}", "details": { "d1_key": "AWS_RELATIONAL_DATABASE_SERVICE", "d2_key": "{{ .extractedIDs.id_SYNTHETIC_LOCATION_0000000000000089 }}" } }`),
+						Template: template.NewInMemoryTemplate("test-tmpl", `{ "key": "{{ .extractedIDs.id_HOST_GROUP_1234567890123456 }}", "details": { "d1_key": "AWS_RELATIONAL_DATABASE_SERVICE", "d2_key": "{{ .extractedIDs.id_SYNTHETIC_LOCATION_0000000000000089 }}" } }`),
 						Parameters: config.Parameters{
 							"baseParam": value.New("base-value"),
 							"extractedIDs": value.New(map[string]string{
@@ -254,13 +254,13 @@ func TestExtractIDsIntoYAML(t *testing.T) {
 				},
 				"other-type": []config.Config{
 					{
-						Template: template.CreateTemplateFromString("test-tmpl", `{ "key": "value", "details": { "d1_key": "d1_val", "d2_key": "d2_val" } }`),
+						Template: template.NewInMemoryTemplate("test-tmpl", `{ "key": "value", "details": { "d1_key": "d1_val", "d2_key": "d2_val" } }`),
 						Parameters: config.Parameters{
 							"baseParam": value.New("base-value"),
 						},
 					},
 					{
-						Template: template.CreateTemplateFromString("test-tmpl", `{ "key": "{{ .extractedIDs.id_SYNTHETIC_LOCATION_4242424242424242 }}", "details": { "d1_key": "d1_val", "d2_key": "d2_val" } }`),
+						Template: template.NewInMemoryTemplate("test-tmpl", `{ "key": "{{ .extractedIDs.id_SYNTHETIC_LOCATION_4242424242424242 }}", "details": { "d1_key": "d1_val", "d2_key": "d2_val" } }`),
 						Parameters: config.Parameters{
 							"baseParam": value.New("base-value"),
 							"extractedIDs": value.New(map[string]string{
@@ -269,7 +269,7 @@ func TestExtractIDsIntoYAML(t *testing.T) {
 						},
 					},
 					{
-						Template: template.CreateTemplateFromString("test-tmpl", `{ "key": "{{ .extractedIDs.id_SYNTHETIC_LOCATION_4242424242424242 }}", "details": { "d1_key": "{{ .extractedIDs.id_00b173f7_99ab_36e6_a365_170a7c42d364 }}", "d2_key": "d2_val" } }`),
+						Template: template.NewInMemoryTemplate("test-tmpl", `{ "key": "{{ .extractedIDs.id_SYNTHETIC_LOCATION_4242424242424242 }}", "details": { "d1_key": "{{ .extractedIDs.id_00b173f7_99ab_36e6_a365_170a7c42d364 }}", "d2_key": "d2_val" } }`),
 						Parameters: config.Parameters{
 							"baseParam": value.New("base-value"),
 							"extractedIDs": value.New(map[string]string{
@@ -284,7 +284,8 @@ func TestExtractIDsIntoYAML(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := ExtractIDsIntoYAML(tt.given)
+			got, gotErr := ExtractIDsIntoYAML(tt.given)
+			assert.NoError(t, gotErr)
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -294,13 +295,13 @@ func TestExtractedTemplatesRenderCorrectly(t *testing.T) {
 	given := project.ConfigsPerType{
 		"test-type": []config.Config{
 			{
-				Template: template.CreateTemplateFromString("test-tmpl-1", `{ "key": "HOST_GROUP-1234567890123456", "details": { "d1_key": "AWS_RELATIONAL_DATABASE_SERVICE", "d2_key": "HOST_GROUP-1234567890123456" } }`),
+				Template: template.NewInMemoryTemplate("test-tmpl-1", `{ "key": "HOST_GROUP-1234567890123456", "details": { "d1_key": "AWS_RELATIONAL_DATABASE_SERVICE", "d2_key": "HOST_GROUP-1234567890123456" } }`),
 				Parameters: config.Parameters{
 					"baseParam": value.New("base-value"),
 				},
 			},
 			{
-				Template: template.CreateTemplateFromString("test-tmpl-2", `{ "key": "HOST_GROUP-1234567890123456", "details": { "d1_key": "AWS_RELATIONAL_DATABASE_SERVICE", "d2_key": "SYNTHETIC_LOCATION-0000000000000089" } }`),
+				Template: template.NewInMemoryTemplate("test-tmpl-2", `{ "key": "HOST_GROUP-1234567890123456", "details": { "d1_key": "AWS_RELATIONAL_DATABASE_SERVICE", "d2_key": "SYNTHETIC_LOCATION-0000000000000089" } }`),
 				Parameters: config.Parameters{
 					"baseParam": value.New("base-value"),
 				},
@@ -308,19 +309,19 @@ func TestExtractedTemplatesRenderCorrectly(t *testing.T) {
 		},
 		"other-type": []config.Config{
 			{
-				Template: template.CreateTemplateFromString("test-tmpl-3", `{ "key": "value", "details": { "d1_key": "d1_val", "d2_key": "d2_val" } }`),
+				Template: template.NewInMemoryTemplate("test-tmpl-3", `{ "key": "value", "details": { "d1_key": "d1_val", "d2_key": "d2_val" } }`),
 				Parameters: config.Parameters{
 					"baseParam": value.New("base-value"),
 				},
 			},
 			{
-				Template: template.CreateTemplateFromString("test-tmpl-4", `{ "key": "SYNTHETIC_LOCATION-4242424242424242", "details": { "d1_key": "d1_val", "d2_key": "d2_val" } }`),
+				Template: template.NewInMemoryTemplate("test-tmpl-4", `{ "key": "SYNTHETIC_LOCATION-4242424242424242", "details": { "d1_key": "d1_val", "d2_key": "d2_val" } }`),
 				Parameters: config.Parameters{
 					"baseParam": value.New("base-value"),
 				},
 			},
 			{
-				Template: template.CreateTemplateFromString("test-tmpl-5", `{ "key": "SYNTHETIC_LOCATION-4242424242424242", "details": { "d1_key": "HOST_GROUP-1234567890123456", "d2_key": "00b173f7-99ab-36e6-a365-170a7c42d364" } }`),
+				Template: template.NewInMemoryTemplate("test-tmpl-5", `{ "key": "SYNTHETIC_LOCATION-4242424242424242", "details": { "d1_key": "HOST_GROUP-1234567890123456", "d2_key": "00b173f7-99ab-36e6-a365-170a7c42d364" } }`),
 				Parameters: config.Parameters{
 					"baseParam": value.New("base-value"),
 				},
@@ -328,7 +329,8 @@ func TestExtractedTemplatesRenderCorrectly(t *testing.T) {
 		},
 	}
 
-	got := ExtractIDsIntoYAML(given)
+	got, gotErr := ExtractIDsIntoYAML(given)
+	assert.NoError(t, gotErr)
 
 	for _, cfgs := range got {
 		for _, c := range cfgs {

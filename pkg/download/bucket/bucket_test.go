@@ -111,7 +111,7 @@ func TestDownloader_Download(t *testing.T) {
 
 func assertBucketConfig(t *testing.T, gotConfig config.Config, expectedBucketName, expectedTemplate string, expectedDisplayName *string) {
 	assert.Equal(t, coordinate.Coordinate{Project: "projectName", Type: "bucket", ConfigId: expectedBucketName}, gotConfig.Coordinate)
-	assert.Equal(t, template.NewDownloadTemplate(expectedBucketName, expectedBucketName, expectedTemplate), gotConfig.Template)
+	assert.Equal(t, template.NewInMemoryTemplate(expectedBucketName, expectedTemplate), gotConfig.Template)
 	assert.Equal(t, expectedBucketName, gotConfig.OriginObjectId)
 	if expectedDisplayName != nil {
 		param, exists := gotConfig.Parameters[displayName]

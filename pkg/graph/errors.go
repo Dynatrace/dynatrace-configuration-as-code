@@ -79,7 +79,7 @@ func newCyclicDependencyError(environment string, cycles [][]graph.Node) CyclicD
 		for j, node := range cycle {
 			coord := node.(ConfigNode).Config.Coordinate
 			filepath := ""
-			if t, ok := node.(ConfigNode).Config.Template.(template.FileBasedTemplate); ok {
+			if t, ok := node.(ConfigNode).Config.Template.(*template.FileBasedTemplate); ok {
 				filepath = t.FilePath()
 			}
 

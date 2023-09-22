@@ -31,8 +31,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"strings"
 	"testing"
 )
 
@@ -126,7 +128,7 @@ configs:
 					Type: config.ClassicApiType{
 						Api: "some-api",
 					},
-					Template: template.CreateTemplateFromString("profile.json", "{}"),
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
 					Parameters: config.Parameters{
 						"name": &value.ValueParameter{Value: "Star Trek Service"},
 					},
@@ -161,7 +163,7 @@ configs:
 					Type: config.ClassicApiType{
 						Api: "some-api",
 					},
-					Template: template.CreateTemplateFromString("profile.json", "{}"),
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
 					Parameters: config.Parameters{
 						"name": &value.ValueParameter{Value: "Star Trek Service"},
 					},
@@ -197,7 +199,7 @@ configs:
 					Type: config.ClassicApiType{
 						Api: "some-api",
 					},
-					Template: template.CreateTemplateFromString("profile.json", "{}"),
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
 					Parameters: config.Parameters{
 						"name": &value.ValueParameter{Value: "Star Trek Service"},
 					},
@@ -232,7 +234,7 @@ configs:
 					Type: config.ClassicApiType{
 						Api: "some-api",
 					},
-					Template: template.CreateTemplateFromString("profile.json", "{}"),
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
 					Parameters: config.Parameters{
 						"name": &value.ValueParameter{Value: "Star Trek Service"},
 					},
@@ -329,7 +331,7 @@ configs:
 						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 					},
-					Template: template.CreateTemplateFromString("profile.json", "{}"),
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
 					Parameters: config.Parameters{
 						"name":                &value.ValueParameter{Value: "Star Trek > Star Wars"},
 						config.ScopeParameter: &value.ValueParameter{Value: "tenant"},
@@ -370,7 +372,7 @@ configs:
 						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 					},
-					Template: template.CreateTemplateFromString("profile.json", "{}"),
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
 					Parameters: config.Parameters{
 						"name":                &value.ValueParameter{Value: "Star Trek > Star Wars"},
 						config.ScopeParameter: &value.ValueParameter{Value: "environment"},
@@ -413,7 +415,7 @@ configs:
 						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 					},
-					Template: template.CreateTemplateFromString("profile.json", "{}"),
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
 					Parameters: config.Parameters{
 						config.NameParameter:  &value.ValueParameter{Value: "Star Trek > Star Wars"},
 						config.ScopeParameter: ref.New("project", "something", "configId", "id"),
@@ -452,7 +454,7 @@ configs:
 						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 					},
-					Template: template.CreateTemplateFromString("profile.json", "{}"),
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
 					Parameters: config.Parameters{
 						config.NameParameter:  &value.ValueParameter{Value: "Star Trek > Star Wars"},
 						config.ScopeParameter: ref.New("project", "something", "configId", "id"),
@@ -491,7 +493,7 @@ configs:
 						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 					},
-					Template: template.CreateTemplateFromString("profile.json", "{}"),
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
 					Parameters: config.Parameters{
 						config.NameParameter:  &value.ValueParameter{Value: "Star Trek > Star Wars"},
 						config.ScopeParameter: ref.New("proj2", "something", "configId", "id"),
@@ -580,7 +582,7 @@ configs:
 						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 					},
-					Template: template.CreateTemplateFromString("profile.json", "{}"),
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
 					Parameters: config.Parameters{
 						config.NameParameter:  &value.ValueParameter{Value: "Star Trek > Star Wars"},
 						config.ScopeParameter: &environment.EnvironmentVariableParameter{Name: "TEST"},
@@ -615,7 +617,7 @@ configs:
 					Type: config.AutomationType{
 						Resource: config.Workflow,
 					},
-					Template: template.CreateTemplateFromString("profile.json", "{}"),
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
 					Parameters: config.Parameters{
 						config.NameParameter: &value.ValueParameter{Value: "Star Trek > Star Wars"},
 					},
@@ -648,7 +650,7 @@ configs:
 					Type: config.AutomationType{
 						Resource: config.BusinessCalendar,
 					},
-					Template: template.CreateTemplateFromString("profile.json", "{}"),
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
 					Parameters: config.Parameters{
 						config.NameParameter: &value.ValueParameter{Value: "Star Trek > Star Wars"},
 					},
@@ -681,7 +683,7 @@ configs:
 					Type: config.AutomationType{
 						Resource: config.SchedulingRule,
 					},
-					Template: template.CreateTemplateFromString("profile.json", "{}"),
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
 					Parameters: config.Parameters{
 						config.NameParameter: &value.ValueParameter{Value: "Star Trek > Star Wars"},
 					},
@@ -794,7 +796,7 @@ configs:
 						SchemaId:      "builtin:profile.test",
 						SchemaVersion: "1.0",
 					},
-					Template: template.CreateTemplateFromString("profile.json", "{}"),
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
 					Parameters: config.Parameters{
 						"name":                &value.ValueParameter{Value: "Star Trek > Star Wars"},
 						config.ScopeParameter: &value.ValueParameter{Value: "tenant"},
@@ -843,7 +845,7 @@ configs:
 					Type: config.SettingsType{
 						SchemaId: "builtin:profile.test",
 					},
-					Template: template.CreateTemplateFromString("profile.json", "{}"),
+					Template: template.NewInMemoryTemplate("profile.json", "{}"),
 					Parameters: config.Parameters{
 						config.ScopeParameter: &value.ValueParameter{Value: "environment"},
 					},
@@ -876,7 +878,7 @@ configs:
 					Type: config.AutomationType{
 						Resource: config.Workflow,
 					},
-					Template:    template.CreateTemplateFromString("profile.json", "{}"),
+					Template:    template.NewInMemoryTemplate("profile.json", "{}"),
 					Parameters:  config.Parameters{},
 					Skip:        false,
 					Environment: "env name",
@@ -906,7 +908,7 @@ configs:
 						ConfigId: "profile-id",
 					},
 					Type:        config.BucketType{},
-					Template:    template.CreateTemplateFromString("profile.json", "{}"),
+					Template:    template.NewInMemoryTemplate("profile.json", "{}"),
 					Parameters:  config.Parameters{},
 					Skip:        false,
 					Environment: "env name",
@@ -969,7 +971,16 @@ configs:
 				return
 			}
 			assert.Empty(t, gotErrors, "expected no errors but got: %v", gotErrors)
-			assert.Equal(t, tt.wantConfigs, gotConfigs)
+
+			assert.True(t, cmp.Equal(tt.wantConfigs, gotConfigs, cmp.Comparer(func(a, b template.Template) bool {
+				cA, _ := a.Content()
+				cA = strings.ReplaceAll(cA, " ", "")
+				cA = strings.ReplaceAll(cA, "\n", "")
+				cB, _ := b.Content()
+				cB = strings.ReplaceAll(cB, " ", "")
+				cB = strings.ReplaceAll(cB, "\n", "")
+				return cA == cB
+			})))
 		})
 	}
 }

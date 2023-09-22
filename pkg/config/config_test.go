@@ -358,7 +358,7 @@ func toParameterMap(params []parameter.NamedParameter) map[string]parameter.Para
 func generateDummyTemplate(t *testing.T) template.Template {
 	newUUID, err := uuid.NewUUID()
 	assert.NoError(t, err)
-	templ := template.CreateTemplateFromString("deploy_test-"+newUUID.String(), "{}")
+	templ := template.NewInMemoryTemplate("deploy_test-"+newUUID.String(), "{}")
 	return templ
 }
 

@@ -603,29 +603,41 @@ func parseSkipParameter(d *detailedSerializerContext, cfg config.Config) (persis
 }
 
 func extractTemplate(context *detailedSerializerContext, cfg config.Config) (string, configTemplate, error) {
-	switch templ := cfg.Template.(type) {
-	case template.FileBasedTemplate:
-		path, err := filepath.Rel(context.configFolder, filepath.Clean(templ.FilePath()))
-
+	var name, path string
+	switch t := cfg.Template.(type) {
+	case *template.InMemoryTemplate:
+		if t.FilePath() != nil {
+			path = *t.FilePath()
+			n, err := filepath.Rel(context.configFolder, filepath.Clean(path))
+			if err != nil {
+				return "", configTemplate{}, newDetailedConfigWriterError(context.serializerContext, err)
+			}
+			name = n
+		} else {
+			name = sanitize(t.Id()) + ".json"
+			path = filepath.Join(context.configFolder, name)
+		}
+	case *template.FileBasedTemplate:
+		path = t.FilePath()
+		if path == "" {
+			return "", configTemplate{}, newDetailedConfigWriterError(context.serializerContext, fmt.Errorf("file-based template %q is missing file path - can not write to file", t.Id()))
+		}
+		n, err := filepath.Rel(context.configFolder, filepath.Clean(path))
 		if err != nil {
 			return "", configTemplate{}, newDetailedConfigWriterError(context.serializerContext, err)
 		}
-
-		return path, configTemplate{
-			templatePath: templ.FilePath(),
-			content:      templ.Content(),
-		}, nil
-	case template.Template:
-		sanitizedName := sanitize(templ.Id()) + ".json"
-
-		return sanitizedName, configTemplate{
-			templatePath: filepath.Join(context.configFolder, sanitizedName),
-			content:      templ.Content(),
-		}, nil
+		name = n
 	}
 
-	// this should never happen
-	return "", configTemplate{}, fmtDetailedConfigWriterError(context.serializerContext, "unknown template type")
+	content, err := cfg.Template.Content()
+	if err != nil {
+		return "", configTemplate{}, newDetailedConfigWriterError(context.serializerContext, err)
+	}
+
+	return name, configTemplate{
+		templatePath: path,
+		content:      content,
+	}, nil
 }
 
 func convertParameters(context *detailedSerializerContext, parameters config.Parameters) (map[string]persistence.ConfigParameter, []error) {

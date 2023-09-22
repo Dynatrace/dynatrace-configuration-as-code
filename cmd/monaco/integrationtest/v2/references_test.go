@@ -237,10 +237,11 @@ func findSetting(t *testing.T, confsPerType project.ConfigsPerType, api, name, p
 
 	for _, c := range confs {
 
-		content := c.Template.Content()
+		content, err := c.Template.Content()
+		assert.NoError(t, err)
 		// convert content to json
 		var jsonContent map[string]interface{}
-		err := json.Unmarshal([]byte(content), &jsonContent)
+		err = json.Unmarshal([]byte(content), &jsonContent)
 		assert.Nil(t, err, "failed to unmarshal content to json")
 
 		// get the setting name

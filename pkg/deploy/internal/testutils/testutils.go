@@ -39,13 +39,13 @@ func ToParameterMap(params []parameter.NamedParameter) map[string]parameter.Para
 func GenerateDummyTemplate(t *testing.T) template.Template {
 	newUUID, err := uuid.NewUUID()
 	assert.NoError(t, err)
-	templ := template.CreateTemplateFromString("deploy_test-"+newUUID.String(), "{}")
+	templ := template.NewInMemoryTemplate("deploy_test-"+newUUID.String(), "{}")
 	return templ
 }
 
 func GenerateFaultyTemplate(t *testing.T) template.Template {
 	newUUID, err := uuid.NewUUID()
 	assert.NoError(t, err)
-	templ := template.CreateTemplateFromString("deploy_test-"+newUUID.String(), "{")
+	templ := template.NewInMemoryTemplate("deploy_test-"+newUUID.String(), "{")
 	return templ
 }

@@ -138,7 +138,7 @@ func Test_checkForCircularDependencies(t *testing.T) {
 						"test_project": {
 							"dashboard": []config.Config{
 								{
-									Template: template.CreateTemplateFromString("some/path", "{}"),
+									Template: template.NewInMemoryTemplate("some/path", "{}"),
 									Parameters: map[string]parameter.Parameter{
 										"name": &valueParam.ValueParameter{Value: "name A"},
 										"ref":  parameter.NewDummy(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "b"}),
@@ -150,7 +150,7 @@ func Test_checkForCircularDependencies(t *testing.T) {
 									},
 								},
 								{
-									Template: template.CreateTemplateFromString("some/path", "{}"),
+									Template: template.NewInMemoryTemplate("some/path", "{}"),
 									Parameters: map[string]parameter.Parameter{
 										"name": &valueParam.ValueParameter{Value: "name A"},
 										"ref":  parameter.NewDummy(coordinate.Coordinate{Project: "test", Type: "dashboard", ConfigId: "a"}),

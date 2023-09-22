@@ -109,12 +109,14 @@ func TestDownloader_Download(t *testing.T) {
 
 		downloader := NewDownloader(httpClient)
 		result, err := downloader.Download("projectName", config.AutomationType{Resource: config.Workflow})
+		assert.NoError(t, err)
 
 		assert.Len(t, result, 1)
 		assert.Len(t, result[string(config.Workflow)], 1)
-		assert.Contains(t, result[string(config.Workflow)][0].Template.Content(), "{{`{{`}}")
-		assert.Contains(t, result[string(config.Workflow)][0].Template.Content(), "{{`}}`}}")
+		gotContent, err := result[string(config.Workflow)][0].Template.Content()
 		assert.NoError(t, err)
+		assert.Contains(t, gotContent, "{{`{{`}}")
+		assert.Contains(t, gotContent, "{{`}}`}}")
 	})
 
 }
@@ -160,27 +162,13 @@ func Test_createTemplateFromRawJSON(t *testing.T) {
 		want  want
 	}{
 		{
-			"sanitizes template as expected - extracts title as name",
-			automationutils.Response{
-				ID:   "42",
-				Data: []byte(`{ "id": "42", "title": "My Workflow", "lastExecution": { "some": "details" }, "important": "data" }`),
-			},
-			want{
-				t: template.NewDownloadTemplate("42", "My Workflow", `{
-  "important": "data",
-  "title": "{{.name}}"
-}`),
-				name: "My Workflow",
-			},
-		},
-		{
-			"defaults template name to ID if title is not found - but returns no name",
+			"sets template ID to object ID",
 			automationutils.Response{
 				ID:   "42",
 				Data: []byte(`{ "id": "42", "workflow_name": "My Workflow", "important": "data" }`),
 			},
 			want{
-				t: template.NewDownloadTemplate("42", "42", `{
+				t: template.NewInMemoryTemplate("42", `{
   "important": "data",
   "workflow_name": "My Workflow"
 }`),
@@ -193,7 +181,7 @@ func Test_createTemplateFromRawJSON(t *testing.T) {
 				Data: []byte(`{ "id": "42`),
 			},
 			want{
-				t: template.NewDownloadTemplate("42", "42", `{ "id": "42`),
+				t: template.NewInMemoryTemplate("42", `{ "id": "42`),
 			},
 		},
 	}

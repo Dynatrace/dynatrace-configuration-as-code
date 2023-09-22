@@ -202,7 +202,7 @@ func (d *Downloader) createConfigForDownloadedJson(mappedJson map[string]interfa
 	}
 
 	params := map[string]parameter.Parameter{}
-	params["name"] = &valueParam.ValueParameter{Value: templ.Name()}
+	params["name"] = &valueParam.ValueParameter{Value: value.Name}
 
 	coord := coordinate.Coordinate{
 		Project:  projectId,
@@ -225,7 +225,7 @@ func (d *Downloader) createTemplate(mappedJson map[string]interface{}, value dtc
 	if err != nil {
 		return nil, err
 	}
-	templ := template.NewDownloadTemplate(value.Id, value.Name, string(bytes))
+	templ := template.NewInMemoryTemplate(value.Id, string(bytes))
 	return templ, nil
 }
 
