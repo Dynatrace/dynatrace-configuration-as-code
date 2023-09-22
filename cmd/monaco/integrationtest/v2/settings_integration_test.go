@@ -110,7 +110,7 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 		Scope:          "environment",
 		Content:        []byte(configToDeploy.Template.Content()),
 		OriginObjectId: configToDeploy.OriginObjectId,
-	})
+	}, dtclient.UpsertSettingsOptions{})
 	assert.NoError(t, err)
 
 	cmd := runner.BuildCli(fs)

@@ -27,6 +27,8 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/internal/extract"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/rest"
+	"time"
 )
 
 func Deploy(ctx context.Context, settingsClient dtclient.SettingsClient, properties parameter.Properties, renderedConfig string, c *config.Config) (config.ResolvedEntity, error) {
@@ -40,14 +42,17 @@ func Deploy(ctx context.Context, settingsClient dtclient.SettingsClient, propert
 		return config.ResolvedEntity{}, err
 	}
 
-	entity, err := settingsClient.UpsertSettings(ctx, dtclient.SettingsObject{
+	settingsObj := dtclient.SettingsObject{
 		Coordinate:     c.Coordinate,
 		SchemaId:       t.SchemaId,
 		SchemaVersion:  t.SchemaVersion,
 		Scope:          scope,
 		Content:        []byte(renderedConfig),
 		OriginObjectId: c.OriginObjectId,
-	})
+	}
+	upsertOptions := makeUpsertOptions(c)
+
+	entity, err := settingsClient.UpsertSettings(ctx, settingsObj, upsertOptions)
 	if err != nil {
 		return config.ResolvedEntity{}, errors.NewConfigDeployErr(c, err.Error()).WithError(err)
 	}
@@ -73,6 +78,27 @@ func Deploy(ctx context.Context, settingsClient dtclient.SettingsClient, propert
 		Skip:       false,
 	}, nil
 
+}
+
+func makeUpsertOptions(c *config.Config) dtclient.UpsertSettingsOptions {
+	// SPECIAL HANDLING: if settings config to be deployed has a reference to a "bucket" definition
+	// we need to drastically increase the retry settings for the upsert operation, as it could take
+	// up to 1 minute until the operation succeeds in case a bucket was just created before
+	var hasRefToBucket bool
+	refs := c.References()
+	for _, r := range refs {
+		if r.Type == "bucket" {
+			hasRefToBucket = true
+		}
+	}
+	var upsertOpts dtclient.UpsertSettingsOptions
+	if hasRefToBucket {
+		upsertOpts.OverrideRetry = &rest.RetrySetting{
+			WaitTime:   10 * time.Second,
+			MaxRetries: 6,
+		}
+	}
+	return upsertOpts
 }
 
 func extractScope(properties parameter.Properties) (string, error) {
