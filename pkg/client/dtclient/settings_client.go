@@ -202,7 +202,7 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 			props = append(props, fmt.Sprintf("(%v = %v)", k, v))
 		}
 
-		log.WithCtxFields(ctx).Info("Updating existing object %q with matching unique properties: %v", matchingObject.object.ObjectId, strings.Join(props, ", "))
+		log.WithCtxFields(ctx).Debug("Updating existing object %q with matching unique properties: %v", matchingObject.object.ObjectId, strings.Join(props, ", "))
 		obj.OriginObjectId = matchingObject.object.ObjectId
 	}
 
