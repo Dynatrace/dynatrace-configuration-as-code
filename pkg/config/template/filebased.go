@@ -71,7 +71,7 @@ func NewFileTemplate(fs afero.Fs, path string) (Template, error) {
 	if exists, err := afero.Exists(fs, sanitizedPath); err != nil {
 		return nil, fmt.Errorf("failed to load template: %w", err)
 	} else if !exists {
-		return nil, fmt.Errorf("template file %q does not exist", sanitizedPath)
+		return nil, fmt.Errorf(`template file "%s" does not exist`, sanitizedPath)
 	}
 
 	template := FileBasedTemplate{
