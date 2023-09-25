@@ -255,7 +255,7 @@ func (c *DummyClient) ConfigExistsByName(_ context.Context, a api.API, name stri
 	return false, "", nil
 }
 
-func (c *DummyClient) UpsertSettings(_ context.Context, obj SettingsObject) (DynatraceEntity, error) {
+func (c *DummyClient) UpsertSettings(_ context.Context, obj SettingsObject, _ UpsertSettingsOptions) (DynatraceEntity, error) {
 
 	id := obj.Coordinate.ConfigId
 

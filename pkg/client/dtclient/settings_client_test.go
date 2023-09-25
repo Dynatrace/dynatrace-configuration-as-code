@@ -638,7 +638,7 @@ func TestUpsertSettings(t *testing.T) {
 				SchemaId:       "builtin:alerting.profile",
 				Scope:          "tenant",
 				Content:        []byte(test.expectSettingsRequestValue),
-			})
+			}, UpsertSettingsOptions{})
 
 			assert.Equal(t, err != nil, test.expectError)
 			assert.Equal(t, resp, test.expectEntity)
@@ -675,7 +675,7 @@ func TestUpsertSettingsRetries(t *testing.T) {
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
-	})
+	}, UpsertSettingsOptions{})
 
 	assert.NoError(t, err)
 	assert.Equal(t, numAPICalls, 3)
@@ -713,7 +713,7 @@ func TestUpsertSettingsFromCache(t *testing.T) {
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
-	})
+	}, UpsertSettingsOptions{})
 
 	assert.NoError(t, err)
 	assert.Equal(t, 1, numAPIGetCalls)
@@ -723,7 +723,7 @@ func TestUpsertSettingsFromCache(t *testing.T) {
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
-	})
+	}, UpsertSettingsOptions{})
 
 	assert.NoError(t, err)
 	assert.Equal(t, 1, numAPIGetCalls) // still one
@@ -760,21 +760,21 @@ func TestUpsertSettingsFromCache_CacheInvalidated(t *testing.T) {
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
-	})
+	}, UpsertSettingsOptions{})
 	assert.Equal(t, 1, numGetAPICalls)
 
 	client.UpsertSettings(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
-	})
+	}, UpsertSettingsOptions{})
 	assert.Equal(t, 2, numGetAPICalls)
 
 	client.UpsertSettings(context.TODO(), SettingsObject{
 		Coordinate: coordinate.Coordinate{Type: "some:schema", ConfigId: "id"},
 		SchemaId:   "some:schema",
 		Content:    []byte("{}"),
-	})
+	}, UpsertSettingsOptions{})
 	assert.Equal(t, 3, numGetAPICalls)
 
 }
@@ -1163,7 +1163,7 @@ func TestUpsertSettingsConsidersUniqueKeyConstraints(t *testing.T) {
 				WithClientRequestLimiter(concurrency.NewLimiter(5)),
 				WithExternalIDGenerator(idutils.GenerateExternalID))
 
-			_, err := c.UpsertSettings(context.TODO(), tt.given.settingsObject)
+			_, err := c.UpsertSettings(context.TODO(), tt.given.settingsObject, UpsertSettingsOptions{})
 			if tt.want.error {
 				assert.Error(t, err)
 			} else {
