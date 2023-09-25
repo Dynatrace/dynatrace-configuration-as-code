@@ -117,7 +117,7 @@ type SettingsClient interface {
 	// UpsertSettings either creates the supplied object, or updates an existing one.
 	// First, we try to find the external-id of the object. If we can't find it, we create the object, if we find it, we
 	// update the object.
-	UpsertSettings(context.Context, SettingsObject) (DynatraceEntity, error)
+	UpsertSettings(context.Context, SettingsObject, UpsertSettingsOptions) (DynatraceEntity, error)
 
 	// ListSchemas returns all schemas that the Dynatrace environment reports
 	ListSchemas() (SchemaList, error)
@@ -132,6 +132,10 @@ type SettingsClient interface {
 
 	// DeleteSettings deletes a settings object giving its object ID
 	DeleteSettings(string) error
+}
+
+type UpsertSettingsOptions struct {
+	OverrideRetry *rest.RetrySetting
 }
 
 // defaultListSettingsFields  are the fields we are interested in when getting setting objects

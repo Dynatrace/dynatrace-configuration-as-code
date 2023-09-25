@@ -118,7 +118,7 @@ func TestDeploySettingShouldFailUpsert(t *testing.T) {
 	}
 
 	c := dtclient.NewMockClient(gomock.NewController(t))
-	c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any()).Return(dtclient.DynatraceEntity{}, fmt.Errorf("upsert failed"))
+	c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any(), gomock.Any()).Return(dtclient.DynatraceEntity{}, fmt.Errorf("upsert failed"))
 
 	conf := &config.Config{
 		Type:       config.SettingsType{},
@@ -264,7 +264,7 @@ func TestDeploySetting(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := dtclient.NewMockClient(gomock.NewController(t))
-			c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
+			c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
 				Id:   tt.given.returnedEntityID,
 				Name: tt.given.returnedEntityID,
 			}, nil)
@@ -311,7 +311,7 @@ func TestDeployedSettingGetsNameFromConfig(t *testing.T) {
 	}
 
 	c := dtclient.NewMockClient(gomock.NewController(t))
-	c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
+	c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
 		Id:   "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0",
 		Name: "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0",
 	}, nil)
@@ -351,7 +351,7 @@ func TestSettingsNameExtractionDoesNotFailIfCfgNameBecomesOptional(t *testing.T)
 	objectId := "vu9U3hXa3q0AAAABABlidWlsdGluOMmE1NGMxvu9U3hXa3q0"
 
 	c := dtclient.NewMockClient(gomock.NewController(t))
-	c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
+	c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
 		Id:   objectId,
 		Name: objectId,
 	}, nil)
@@ -403,7 +403,7 @@ func TestDeployConfigsTargetingSettings(t *testing.T) {
 			},
 		},
 	}
-	c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
+	c.EXPECT().UpsertSettings(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(dtclient.DynatraceEntity{
 		Id:   "42",
 		Name: "Super Special Settings Object",
 	}, nil)

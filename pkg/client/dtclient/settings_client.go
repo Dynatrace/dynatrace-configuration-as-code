@@ -166,14 +166,14 @@ func (d *DynatraceClient) fetchSchemasConstraints(ctx context.Context, schemaID 
 	return ret, nil
 }
 
-func (d *DynatraceClient) UpsertSettings(ctx context.Context, obj SettingsObject) (result DynatraceEntity, err error) {
+func (d *DynatraceClient) UpsertSettings(ctx context.Context, obj SettingsObject, options UpsertSettingsOptions) (result DynatraceEntity, err error) {
 	d.limiter.ExecuteBlocking(func() {
-		result, err = d.upsertSettings(ctx, obj)
+		result, err = d.upsertSettings(ctx, obj, options)
 	})
 	return
 }
 
-func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject) (DynatraceEntity, error) {
+func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject, options UpsertSettingsOptions) (DynatraceEntity, error) {
 	// special handling for updating settings 2.0 objects on tenants with version pre 1.262.0
 	// Tenants with versions < 1.262 are not able to handle updates of existing
 	// settings 2.0 objects that are non-deletable.
@@ -244,9 +244,15 @@ func (d *DynatraceClient) upsertSettings(ctx context.Context, obj SettingsObject
 		return DynatraceEntity{}, fmt.Errorf("failed to build settings object: %w", err)
 	}
 
-	requestUrl := d.environmentURL + d.settingsObjectAPIPath
+	var retrySetting rest.RetrySetting
+	if options.OverrideRetry != nil {
+		retrySetting = *options.OverrideRetry
+	} else {
+		retrySetting = d.retrySettings.Normal
+	}
 
-	resp, err := rest.SendWithRetryWithInitialTry(ctx, d.platformClient.Post, obj.Coordinate.ConfigId, requestUrl, payload, d.retrySettings.Normal)
+	requestUrl := d.environmentURL + d.settingsObjectAPIPath
+	resp, err := rest.SendWithRetryWithInitialTry(ctx, d.platformClient.Post, obj.Coordinate.ConfigId, requestUrl, payload, retrySetting)
 	if err != nil {
 		d.settingsCache.Delete(obj.SchemaId)
 		return DynatraceEntity{}, fmt.Errorf("failed to create or update Settings object with externalId %s: %w", externalID, err)
