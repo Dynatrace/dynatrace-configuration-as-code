@@ -71,7 +71,7 @@ func (d *Downloader) convertAllObjects(projectName string, objects [][]byte) []c
 		c, err := convertObject(o, projectName)
 		if err != nil {
 			log.WithFields(field.Type("bucket"), field.Error(err)).
-				Error("Failed to decode API response objects for automation resource %s: %v", "bucket", err)
+				Error("Failed to decode API response objects for bucket resource: %v", err)
 			continue
 		}
 
@@ -105,7 +105,7 @@ func convertObject(o []byte, projectName string) (config.Config, error) {
 
 	r, err := templatetools.NewJSONObject(o)
 	if err != nil {
-		return config.Config{}, err
+		return config.Config{}, fmt.Errorf("failed to unmarshal bucket: %w", err)
 	}
 
 	id, ok := r.Get(bucketName).(string)
@@ -117,7 +117,7 @@ func convertObject(o []byte, projectName string) (config.Config, error) {
 	configID := idutils.GenerateUUIDFromString(id)
 	c.Coordinate.ConfigId = configID
 
-	c.OriginObjectId = r.Get(bucketName).(string)
+	c.OriginObjectId = id
 
 	r.Delete(bucketName)
 

@@ -257,17 +257,15 @@ func downloadConfigs(downloaders downloaders, opts downloadConfigsOptions) (proj
 		}
 	}
 
-	{
-		if featureflags.Buckets().Enabled() {
-			if opts.auth.OAuth != nil {
-				log.Info("Downloading Grail buckets")
+	if featureflags.Buckets().Enabled() {
+		if opts.auth.OAuth != nil {
+			log.Info("Downloading Grail buckets")
 
-				bucketCfgs, err := downloaders.Bucket().Download(opts.projectName)
-				if err != nil {
-					return nil, err
-				}
-				copyConfigs(configs, bucketCfgs)
+			bucketCfgs, err := downloaders.Bucket().Download(opts.projectName)
+			if err != nil {
+				return nil, err
 			}
+			copyConfigs(configs, bucketCfgs)
 		}
 	}
 
