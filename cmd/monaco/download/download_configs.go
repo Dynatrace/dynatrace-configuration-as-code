@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
@@ -257,14 +258,16 @@ func downloadConfigs(downloaders downloaders, opts downloadConfigsOptions) (proj
 	}
 
 	{
-		if opts.auth.OAuth != nil {
-			log.Info("Downloading Grail buckets")
+		if featureflags.Buckets().Enabled() {
+			if opts.auth.OAuth != nil {
+				log.Info("Downloading Grail buckets")
 
-			bucketCfgs, err := downloaders.Bucket().Download(opts.projectName)
-			if err != nil {
-				return nil, err
+				bucketCfgs, err := downloaders.Bucket().Download(opts.projectName)
+				if err != nil {
+					return nil, err
+				}
+				copyConfigs(configs, bucketCfgs)
 			}
-			copyConfigs(configs, bucketCfgs)
 		}
 	}
 
