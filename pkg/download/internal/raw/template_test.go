@@ -17,8 +17,8 @@
 package raw_test
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/raw"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/internal/raw"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

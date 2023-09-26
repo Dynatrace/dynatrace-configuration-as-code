@@ -18,7 +18,6 @@ package bucket
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/buckets"
 	tools "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/buckettools"
@@ -26,11 +25,11 @@ import (
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/raw"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/internal/raw"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
@@ -71,14 +70,17 @@ func (d *Downloader) convertAllObjects(projectName string, objects [][]byte) []c
 
 		c, err := convertObject(o, projectName)
 		if err != nil {
-			log.WithFields(field.Coordinate(c.Coordinate), field.Error(err)).
-				Warn("Failed to get configuration for %v (%s): %v", c.Coordinate.ConfigId, "bucket", err)
+			log.WithFields(field.Type("bucket"), field.Error(err)).
+				Error("Failed to decode API response objects for automation resource %s: %v", "bucket", err)
 			continue
 		}
 
-		if c == nil {
+		// exclude builtin bucket names
+		if tools.IsDefault(c.OriginObjectId) {
+			log.Debug("Skipping download of immutable default Bucket %s", c.OriginObjectId)
 			continue
 		}
+
 		result = append(result, *c)
 	}
 
@@ -95,26 +97,20 @@ const (
 func convertObject(o []byte, projectName string) (*config.Config, error) {
 	c := config.Config{
 		Coordinate: coordinate.Coordinate{
-			Project:  projectName,
-			Type:     "bucket",
-			ConfigId: "unknown", //it will be filled with the proper data later
+			Project: projectName,
+			Type:    "bucket",
 		},
 		Type: config.BucketType{},
 	}
 
 	r, err := raw.New(o)
 	if err != nil {
-		return &c, err
+		return nil, err
 	}
 
 	id, ok := r.Get(bucketName).(string)
 	if !ok {
-		return &c, fmt.Errorf("variable %q unreadable", bucketName)
-	}
-
-	// exclude builtin bucket names
-	if tools.IsDefault(id) {
-		return nil, nil
+		return nil, fmt.Errorf("variable %q unreadable", bucketName)
 	}
 
 	// construct config object with generated config ID
@@ -138,17 +134,4 @@ func convertObject(o []byte, projectName string) (*config.Config, error) {
 	c.Template = template.NewDownloadTemplate(configID, configID, string(jsonutils.MarshalIndent(t)))
 
 	return &c, nil
-}
-
-func getValueForAttribute(raw []byte, name string) (string, error) {
-	var m map[string]any
-	err := json.Unmarshal(raw, &m)
-	if err != nil {
-		return "", err
-	}
-	if m[name] != nil {
-		return fmt.Sprintf("%v", m[name]), nil
-
-	}
-	return "", nil
 }

@@ -92,58 +92,6 @@ func TestDownloader_Download(t *testing.T) {
 	})
 }
 
-func Test_getValueForAttribute(t *testing.T) {
-
-	tests := []struct {
-		name      string
-		paramName string
-		given     string
-		expected  string
-	}{
-		{
-			name:      "simple case",
-			paramName: "bucketName",
-			given: `
-        {
-            "bucketName": "default_logs",
-            "table": "logs",
-            "displayName": "Logs (35 days)",
-            "status": "active",
-            "retentionDays": 35,
-            "version": 2,
-            "updatable": false
-        }
-`,
-			expected: "default_logs",
-		},
-		{
-			name:      "non existing param",
-			paramName: "nonExisting",
-			given: `
-        {
-            "bucketName": "default_logs",
-            "table": "logs",
-            "displayName": "Logs (35 days)",
-            "status": "active",
-            "retentionDays": 35,
-            "version": 2,
-            "updatable": false
-        }
-`,
-			expected: "",
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			actual, err := getValueForAttribute([]byte(tc.given), tc.paramName)
-			assert.Equal(t, tc.expected, actual)
-			assert.NoError(t, err)
-
-		})
-	}
-}
-
 func Test_convertObject(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 
