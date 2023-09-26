@@ -285,15 +285,15 @@ func (c *componentDeployer) removeChildren(ctx context.Context, parent, root gra
 		l := log.WithCtxFields(ctx).WithFields(
 			field.F("parent", parent.Config.Coordinate),
 			field.F("deploymentFailed", failed),
-			field.F("child", child.Config.Coordinate))
+			field.F("child", child.Config.Coordinate),
+			field.StatusDeploymentSkipped())
 
 		// after the first iteration
 		if parent != root {
-			l.WithFields(field.F("root", root.Config.Coordinate), field.StatusDeploymentSkipped()).
+			l.WithFields(field.F("root", root.Config.Coordinate)).
 				Warn("Skipping deployment of %v, as it depends on %v which was not deployed after root dependency configuration %v %s", childCfg.Coordinate, parent.Config.Coordinate, root.Config.Coordinate, reason)
 		} else {
-			l.WithFields(field.StatusDeploymentSkipped()).
-				Warn("Skipping deployment of %v, as it depends on %v which %s", childCfg.Coordinate, parent.Config.Coordinate, reason)
+			l.Warn("Skipping deployment of %v, as it depends on %v which %s", childCfg.Coordinate, parent.Config.Coordinate, reason)
 		}
 
 		c.removeChildren(ctx, child, root, failed)

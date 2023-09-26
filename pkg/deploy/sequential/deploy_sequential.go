@@ -104,7 +104,7 @@ func DeployConfigs(clientSet deploy.ClientSet, apis api.APIs, sortedConfigs []co
 
 func deployConfig(ctx context.Context, clientSet deploy.ClientSet, apis api.APIs, em *entityMapWithNames, c *config.Config) (config.ResolvedEntity, []error) {
 	if c.Skip {
-		log.WithCtxFields(ctx).WithFields(field.StatusDeploymentSkipped()).Info("Skipping deployment %s")
+		log.WithCtxFields(ctx).WithFields(field.StatusDeploymentSkipped()).Info("Skipping deployment")
 		return config.ResolvedEntity{EntityName: c.Coordinate.ConfigId, Coordinate: c.Coordinate, Properties: parameter.Properties{}, Skip: true}, nil
 	}
 
