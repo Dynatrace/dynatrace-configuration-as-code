@@ -221,11 +221,9 @@ func (c *componentDeployer) deploy(ctx context.Context) error {
 
 		for _, root := range roots {
 			node := root.(graph.ConfigNode)
-			ctx := context.WithValue(ctx, log.CtxKeyCoord{}, node.Config.Coordinate)
-
 			go func(ctx context.Context, node graph.ConfigNode) {
 				errChan <- c.deployNode(ctx, node)
-			}(ctx, node)
+			}(context.WithValue(ctx, log.CtxKeyCoord{}, node.Config.Coordinate), node)
 		}
 
 		for range roots {
@@ -268,7 +266,7 @@ func (c *componentDeployer) deployNode(ctx context.Context, n graph.ConfigNode) 
 	}
 
 	c.resolvedEntities.Put(entity)
-	log.WithCtxFields(ctx).Info("Deployment successful")
+	log.WithCtxFields(ctx).WithFields(field.StatusDeployed()).Info("Deployment successful")
 	return nil
 }
 
@@ -287,7 +285,8 @@ func (c *componentDeployer) removeChildren(ctx context.Context, parent, root gra
 		l := log.WithCtxFields(ctx).WithFields(
 			field.F("parent", parent.Config.Coordinate),
 			field.F("deploymentFailed", failed),
-			field.F("child", child.Config.Coordinate))
+			field.F("child", child.Config.Coordinate),
+			field.StatusDeploymentSkipped())
 
 		// after the first iteration
 		if parent != root {
@@ -318,24 +317,24 @@ func deployComponent(ctx context.Context, component graph.SortedComponent, clien
 
 func deploy(ctx context.Context, c *config.Config, clientSet ClientSet, apis api.APIs, entityMap *entitymap.EntityMap) (config.ResolvedEntity, error) {
 	if c.Skip {
-		log.WithCtxFields(ctx).Info("Skipping deployment of config %s", c.Coordinate)
+		log.WithCtxFields(ctx).WithFields(field.StatusDeploymentSkipped()).Info("Skipping deployment of config")
 		return config.ResolvedEntity{}, skipError //fake resolved entity that "old" deploy creates is never needed, as we don't even try to deploy dependencies of skipped configs (so no reference will ever be attempted to resolve)
 	}
 
 	properties, errs := c.ResolveParameterValues(entityMap)
 	if len(errs) > 0 {
 		err := mutlierror.New(errs...)
-		log.WithCtxFields(ctx).WithFields(field.Error(err)).Error("Invalid configuration - failed to resolve parameter values: %v", err)
+		log.WithCtxFields(ctx).WithFields(field.Error(err), field.StatusDeploymentFailed()).Error("Invalid configuration - failed to resolve parameter values: %v", err)
 		return config.ResolvedEntity{}, err
 	}
 
 	renderedConfig, err := c.Render(properties)
 	if err != nil {
-		log.WithCtxFields(ctx).WithFields(field.Error(err)).Error("Invalid configuration - failed to render JSON template: %v", err)
+		log.WithCtxFields(ctx).WithFields(field.Error(err), field.StatusDeploymentFailed()).Error("Invalid configuration - failed to render JSON template: %v", err)
 		return config.ResolvedEntity{}, err
 	}
 
-	log.WithCtxFields(ctx).Info("Deploying config")
+	log.WithCtxFields(ctx).WithFields(field.StatusDeploying()).Info("Deploying config")
 	var entity config.ResolvedEntity
 	var deployErr error
 	switch c.Type.(type) {
@@ -371,14 +370,14 @@ func deploy(ctx context.Context, c *config.Config, clientSet ClientSet, apis api
 // logResponseError prints user-friendly messages based on the response errors status
 func logResponseError(ctx context.Context, responseErr clientErrors.RespError) {
 	if responseErr.StatusCode >= 400 && responseErr.StatusCode <= 499 {
-		log.WithCtxFields(ctx).WithFields(field.Error(responseErr)).Error("Deployment failed - Dynatrace API rejected HTTP request / JSON data: %v", responseErr)
+		log.WithCtxFields(ctx).WithFields(field.Error(responseErr), field.StatusDeploymentFailed()).Error("Deployment failed - Dynatrace API rejected HTTP request / JSON data: %v", responseErr)
 		return
 	}
 
 	if responseErr.StatusCode >= 500 && responseErr.StatusCode <= 599 {
-		log.WithCtxFields(ctx).WithFields(field.Error(responseErr)).Error("Deployment failed - Dynatrace Server Error: %v", responseErr)
+		log.WithCtxFields(ctx).WithFields(field.Error(responseErr), field.StatusDeploymentFailed()).Error("Deployment failed - Dynatrace Server Error: %v", responseErr)
 		return
 	}
 
-	log.WithCtxFields(ctx).WithFields(field.Error(responseErr)).Error("Deployment failed - Dynatrace API call unsuccessful: %v", responseErr)
+	log.WithCtxFields(ctx).WithFields(field.Error(responseErr), field.StatusDeploymentFailed()).Error("Deployment failed - Dynatrace API call unsuccessful: %v", responseErr)
 }

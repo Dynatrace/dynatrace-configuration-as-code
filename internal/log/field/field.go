@@ -82,3 +82,23 @@ func Error(err error) Field {
 			err,
 		}}
 }
+
+func StatusDeploying() Field {
+	return statusField("deploying")
+}
+
+func StatusDeployed() Field {
+	return statusField("deployed")
+}
+
+func StatusDeploymentFailed() Field {
+	return statusField("failed")
+}
+
+func StatusDeploymentSkipped() Field {
+	return statusField("skipped")
+}
+
+func statusField(statusValue string) Field {
+	return Field{"deploymentStatus", statusValue}
+}
