@@ -29,7 +29,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/internal/raw"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/internal/templatetools"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
 
@@ -103,7 +103,7 @@ func convertObject(o []byte, projectName string) (*config.Config, error) {
 		Type: config.BucketType{},
 	}
 
-	r, err := raw.New(o)
+	r, err := templatetools.NewJSONObject(o)
 	if err != nil {
 		return nil, err
 	}

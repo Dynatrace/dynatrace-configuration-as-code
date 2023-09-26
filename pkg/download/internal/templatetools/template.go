@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package raw
+package templatetools
 
 import (
 	"encoding/json"
@@ -23,7 +23,8 @@ import (
 
 type JSONObject map[string]any
 
-func New(raw []byte) (JSONObject, error) {
+// NewJSONObject is a function that creates a JSONObject from a raw JSON byte slice.
+func NewJSONObject(raw []byte) (JSONObject, error) {
 	var m map[string]any
 	err := json.Unmarshal(raw, &m)
 	if err != nil {
@@ -32,21 +33,17 @@ func New(raw []byte) (JSONObject, error) {
 	return m, nil
 }
 
+// Get returns the value associated with a specified key in the JSONObject. If requested key doesn't exist, nil is returned.
 func (o JSONObject) Get(key string) any {
 	return o[key]
 }
 
+// Parameterize replaces the value associated with a specified key in the JSONObject with a template placeholder.
 func (o JSONObject) Parameterize(key string) *value.ValueParameter {
-	if _, exits := o[key]; !exits {
-		return nil
-	}
-
-	v := o[key]
-	o[key] = "{{." + key + "}}"
-	return &value.ValueParameter{Value: v}
+	return o.ParameterizeAttributeWith(key, key)
 }
 
-// ParameterizeAttributeWith replace value of the given key with the given parameter name. The returned ValueParameter have the replaced value for the given key.
+// ParameterizeAttributeWith replace value of the given key with the given parameter name. The returned ValueParameter contains just replaced value for the given key.
 func (o JSONObject) ParameterizeAttributeWith(keyOfJSONAttribute string, nameOfParameter string) *value.ValueParameter {
 	if _, exits := o[keyOfJSONAttribute]; !exits {
 		return nil
@@ -57,6 +54,7 @@ func (o JSONObject) ParameterizeAttributeWith(keyOfJSONAttribute string, nameOfP
 	return &value.ValueParameter{Value: v}
 }
 
+// ToJSON converts JSONObject to its []byte representation.
 func (o JSONObject) ToJSON() ([]byte, error) {
 	modified, err := json.Marshal(o)
 	if err != nil {
@@ -66,6 +64,7 @@ func (o JSONObject) ToJSON() ([]byte, error) {
 	return modified, nil
 }
 
+// Delete removes a key-value pair for the specified key from JSONObject.
 func (o JSONObject) Delete(key string) {
 	delete(o, key)
 }

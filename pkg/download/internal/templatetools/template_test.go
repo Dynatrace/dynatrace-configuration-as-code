@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package raw_test
+package templatetools_test
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/internal/raw"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/internal/templatetools"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -28,13 +28,13 @@ func TestNew(t *testing.T) {
 	tests := []struct {
 		name     string
 		given    []byte
-		expected raw.JSONObject
+		expected templatetools.JSONObject
 		wantErr  bool
 	}{
 		{
 			name:     "simple case",
 			given:    []byte(`{ "key1" : "value1", "key2" : "value2" }`),
-			expected: raw.JSONObject{"key1": "value1", "key2": "value2"},
+			expected: templatetools.JSONObject{"key1": "value1", "key2": "value2"},
 			wantErr:  false,
 		}, {
 			name:     "nil as argument returns an error",
@@ -44,13 +44,13 @@ func TestNew(t *testing.T) {
 		}, {
 			name:     "empty JSON",
 			given:    []byte(`{}`),
-			expected: raw.JSONObject{},
+			expected: templatetools.JSONObject{},
 			wantErr:  false,
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			actual, err := raw.New(tc.given)
+			actual, err := templatetools.NewJSONObject(tc.given)
 
 			assert.Equal(t, tc.expected, actual)
 			if tc.wantErr {
@@ -65,7 +65,7 @@ func TestNew(t *testing.T) {
 func TestJSONObject_Parameterize(t *testing.T) {
 	type (
 		given struct {
-			jsonObject raw.JSONObject
+			jsonObject templatetools.JSONObject
 			key        string
 		}
 		expected struct {
@@ -86,7 +86,7 @@ func TestJSONObject_Parameterize(t *testing.T) {
 		{
 			name: "simple case",
 			given: given{
-				jsonObject: raw.JSONObject{"key1": "value1", "key2": "value2"},
+				jsonObject: templatetools.JSONObject{"key1": "value1", "key2": "value2"},
 				key:        "key1",
 			},
 			expected: expected{
@@ -96,7 +96,7 @@ func TestJSONObject_Parameterize(t *testing.T) {
 		}, {
 			name: "an non-existent key",
 			given: given{
-				jsonObject: raw.JSONObject{"key1": "value1", "key2": 2},
+				jsonObject: templatetools.JSONObject{"key1": "value1", "key2": 2},
 				key:        "non-existent",
 			},
 			expected: expected{
@@ -121,7 +121,7 @@ func TestJSONObject_Parameterize(t *testing.T) {
 func TestJSONObject_ParameterizeAttribute(t *testing.T) {
 	type (
 		given struct {
-			jsonObject         raw.JSONObject
+			jsonObject         templatetools.JSONObject
 			keyOfJSONAttribute string
 			parameterName      string
 		}
@@ -143,7 +143,7 @@ func TestJSONObject_ParameterizeAttribute(t *testing.T) {
 		{
 			name: "simple case - string",
 			given: given{
-				jsonObject:         raw.JSONObject{"key1": "value1", "key2": "value2"},
+				jsonObject:         templatetools.JSONObject{"key1": "value1", "key2": "value2"},
 				keyOfJSONAttribute: "key1",
 				parameterName:      "param1",
 			},
@@ -154,7 +154,7 @@ func TestJSONObject_ParameterizeAttribute(t *testing.T) {
 		}, {
 			name: "simple case - integer",
 			given: given{
-				jsonObject:         raw.JSONObject{"key1": "value1", "key2": 2},
+				jsonObject:         templatetools.JSONObject{"key1": "value1", "key2": 2},
 				keyOfJSONAttribute: "key2",
 				parameterName:      "param2",
 			},
@@ -165,7 +165,7 @@ func TestJSONObject_ParameterizeAttribute(t *testing.T) {
 		}, {
 			name: "an non-existent key",
 			given: given{
-				jsonObject:         raw.JSONObject{"key1": "value1", "key2": 2},
+				jsonObject:         templatetools.JSONObject{"key1": "value1", "key2": 2},
 				keyOfJSONAttribute: "non-existent",
 				parameterName:      "parameter",
 			},
@@ -191,19 +191,19 @@ func TestJSONObject_ParameterizeAttribute(t *testing.T) {
 func TestJSONObject_ToJSON(t *testing.T) {
 	tests := []struct {
 		name    string
-		given   raw.JSONObject
+		given   templatetools.JSONObject
 		want    []byte
 		wantErr assert.ErrorAssertionFunc
 	}{
 		{
 			name:    "empty",
-			given:   raw.JSONObject{},
+			given:   templatetools.JSONObject{},
 			want:    []byte("{}"),
 			wantErr: nil,
 		},
 		{
 			name:    "simple case",
-			given:   raw.JSONObject{"key1": "value1", "key2": 2},
+			given:   templatetools.JSONObject{"key1": "value1", "key2": 2},
 			want:    []byte(`{"key1":"value1","key2":2}`),
 			wantErr: nil,
 		},
