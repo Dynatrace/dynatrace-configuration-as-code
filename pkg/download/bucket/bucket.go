@@ -81,7 +81,7 @@ func (d *Downloader) convertAllObjects(projectName string, objects [][]byte) []c
 			continue
 		}
 
-		result = append(result, *c)
+		result = append(result, c)
 	}
 
 	log.Info("Downloaded %d Grail buckets", len(result))
@@ -94,7 +94,7 @@ const (
 	displayName = "displayName"
 )
 
-func convertObject(o []byte, projectName string) (*config.Config, error) {
+func convertObject(o []byte, projectName string) (config.Config, error) {
 	c := config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project: projectName,
@@ -105,12 +105,12 @@ func convertObject(o []byte, projectName string) (*config.Config, error) {
 
 	r, err := templatetools.NewJSONObject(o)
 	if err != nil {
-		return nil, err
+		return config.Config{}, err
 	}
 
 	id, ok := r.Get(bucketName).(string)
 	if !ok {
-		return nil, fmt.Errorf("variable %q unreadable", bucketName)
+		return config.Config{}, fmt.Errorf("variable %q unreadable", bucketName)
 	}
 
 	// construct config object with generated config ID
@@ -129,9 +129,9 @@ func convertObject(o []byte, projectName string) (*config.Config, error) {
 
 	t, err := r.ToJSON()
 	if err != nil {
-		return &c, err
+		return config.Config{}, err
 	}
 	c.Template = template.NewDownloadTemplate(configID, configID, string(jsonutils.MarshalIndent(t)))
 
-	return &c, nil
+	return c, nil
 }
