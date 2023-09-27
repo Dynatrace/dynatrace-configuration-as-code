@@ -16,6 +16,7 @@ package manifest
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/oauth2/endpoints"
 	"golang.org/x/exp/maps"
 )
 
@@ -38,10 +39,10 @@ type OAuth struct {
 	TokenEndpoint *URLDefinition
 }
 
-// GetTokenEndpointValue returns the defined token endpoint or an empty string if it's not set.
+// GetTokenEndpointValue returns the defined token endpoint or the default token endpoint if none is defined
 func (o OAuth) GetTokenEndpointValue() string {
-	if o.TokenEndpoint == nil {
-		return ""
+	if o.TokenEndpoint == nil || o.TokenEndpoint.Value == "" {
+		return endpoints.Dynatrace.TokenURL
 	}
 	return o.TokenEndpoint.Value
 }
