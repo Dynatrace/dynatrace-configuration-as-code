@@ -19,13 +19,10 @@ package auth
 import (
 	"context"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/oauth2/endpoints"
 	"golang.org/x/oauth2/clientcredentials"
 	"net/http"
 	"strings"
 )
-
-var defaultOAuthTokenURL = endpoints.Dynatrace.TokenURL
 
 // OauthCredentials holds information for authenticating to Dynatrace
 // using Oauth2.0 client credential flow
@@ -46,20 +43,12 @@ func NewTokenAuthClient(token string) *http.Client {
 
 // NewOAuthClient creates a new HTTP client that supports OAuth2 client credentials based authorization
 func NewOAuthClient(ctx context.Context, oauthConfig OauthCredentials) *http.Client {
-
-	tokenUrl := oauthConfig.TokenURL
-	if tokenUrl == "" {
-		log.Debug("using default token URL %s", defaultOAuthTokenURL)
-		tokenUrl = defaultOAuthTokenURL
-	}
-
 	config := clientcredentials.Config{
 		ClientID:     oauthConfig.ClientID,
 		ClientSecret: oauthConfig.ClientSecret,
-		TokenURL:     tokenUrl,
+		TokenURL:     oauthConfig.TokenURL,
 		Scopes:       oauthConfig.Scopes,
 	}
-
 	return config.Client(ctx)
 }
 
