@@ -4,7 +4,7 @@ pipeline {
             label 'ca-jenkins-agent'
             cloud 'linux-amd64'
             namespace 'keptn-jenkins-slaves-ni'
-            nodeSelector 'beta.kubernetes.io/arch=amd64,beta.kubernetes.io/os=linux'
+            nodeSelector 'kubernetes.io/arch=amd64,kubernetes.io/os=linux'
             instanceCap '2'
             idleMinutes '2'
             yamlFile '.ci/jenkins_agents/ca-jenkins-agent.yaml'
