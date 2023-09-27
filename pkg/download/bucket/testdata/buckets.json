@@ -1,0 +1,40 @@
+{
+    "buckets": [
+        {
+            "bucketName": "bucket_name",
+            "table": "metrics",
+            "displayName": "Default metrics (15 months)",
+            "status": "active",
+            "retentionDays": 462,
+            "metricInterval": "PT1M",
+            "version": 1
+        },
+        {
+            "bucketName": "another name",
+            "table": "metrics",
+            "displayName": "",
+            "status": "active",
+            "retentionDays": 31,
+            "metricInterval": "PT2M",
+            "version": 42
+        },
+        {
+            "bucketName": "default_bucket_name",
+            "table": "metrics",
+            "displayName": "Some logs",
+            "status": "active",
+            "retentionDays": 31,
+            "metricInterval": "PT2M",
+            "version": 42
+        },
+        {
+            "bucketName": "dt_bucket_name",
+            "table": "metrics",
+            "displayName": "Default metrics (15 months)",
+            "status": "active",
+            "retentionDays": 462,
+            "metricInterval": "PT1M",
+            "version": 1
+        }
+    ]
+}
