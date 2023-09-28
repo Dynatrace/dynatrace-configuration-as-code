@@ -44,7 +44,7 @@ func (c *DummyClient) Upsert(_ context.Context, _ automation.ResourceType, id st
 	return automation.Response{
 		Response: api.Response{
 			StatusCode: 200,
-			Data:       []byte("{}"),
+			Data:       []byte(fmt.Sprintf(`{"id" : "%s"}`, id)),
 		},
 	}, nil
 }
