@@ -24,7 +24,7 @@ Please use the [Dynatrace Community](https://community.dynatrace.com/) to let us
 ## Contributing to Monaco
 
 While Monaco development is driven by Dynatrace, we are still committed to keeping the tool open source to allow you to use it as a library or directly contribute improvements and features.\
-If you wish to use Monaco as a library, please make sure you have read and comply to the terms of the [Apache License v2.0](https://github.com/dynatrace/dynatrace-configuration-as-code/blob/main/LICENSE).\
+If you wish to use Monaco as a library, please make sure you have read and are complying with the terms of the [Apache License v2.0](https://github.com/dynatrace/dynatrace-configuration-as-code/blob/main/LICENSE).\
 If you wish to contribute to Monaco directly, please refer to the [contributing guide](./CONTRIBUTING.md) to learn more about compiling Monaco and contributing changes.
 
 ## License
