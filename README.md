@@ -36,8 +36,5 @@ If you wish to contribute to Monaco directly, please refer to the [contributing 
 
 ## Other forms of Dynatrace Configuration as Code
 
-In addition to our official Configuration as Code tool Monaco there is also a [Dynatrace Terraform provider](https://github.com/dynatrace-oss/terraform-provider-dynatrace).
-
-**Please note that unlike Monaco there is no official support provided for the Terraform provider.**
-
-Unless you are already strongly invested in using Terraform for Infrastructure as Code we recommend using Monaco for Dynatrace configuration as code.
+In addition to our official Configuration as Code tool Monaco, there is also the [Dynatrace Terraform provider](https://github.com/dynatrace-oss/terraform-provider-dynatrace).
+Our [documentation](https://www.dynatrace.com/support/help/manage/configuration-as-code) contains further information on when to use what tool.
