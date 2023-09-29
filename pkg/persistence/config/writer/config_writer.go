@@ -293,12 +293,6 @@ func extractConfigType(context *serializerContext, cfg config.Config) (persisten
 			Api: cfg.Coordinate.Type,
 		}, nil
 
-	case config.EntityType:
-		return persistence.TypeDefinition{
-			Entities: persistence.EntitiesDefinition{
-				EntitiesType: t.EntitiesType,
-			},
-		}, nil
 	case config.AutomationType:
 		return persistence.TypeDefinition{
 			Automation: persistence.AutomationDefinition{

@@ -30,7 +30,6 @@ type TypeDefinition struct {
 	Api        string               `yaml:"api,omitempty"`
 	Bucket     string               `yaml:"bucket,omitempty"`
 	Settings   SettingsDefinition   `yaml:"settings,omitempty"`
-	Entities   EntitiesDefinition   `yaml:"entities,omitempty"`
 	Automation AutomationDefinition `yaml:"automation,omitempty"`
 }
 
@@ -38,10 +37,6 @@ type SettingsDefinition struct {
 	Schema        string          `yaml:"schema,omitempty"`
 	SchemaVersion string          `yaml:"schemaVersion,omitempty"`
 	Scope         ConfigParameter `yaml:"scope,omitempty"`
-}
-
-type EntitiesDefinition struct {
-	EntitiesType string `yaml:"entitiesType,omitempty"`
 }
 
 type AutomationDefinition struct {
@@ -86,7 +81,6 @@ func (c *TypeDefinition) UnmarshalYAML(unmarshal func(interface{}) error) error 
 func (c *TypeDefinition) IsSound(knownApis map[string]struct{}) error {
 	classicErrs := c.isClassicSound(knownApis)
 	settingsErrs := c.Settings.isSettingsSound()
-	entitiesErrs := c.Entities.isEntitiesSound()
 	automationErr := c.Automation.isSound()
 
 	types := 0
@@ -100,10 +94,6 @@ func (c *TypeDefinition) IsSound(knownApis map[string]struct{}) error {
 		types += 1
 		err = settingsErrs
 	}
-	if c.IsEntities() {
-		types += 1
-		err = entitiesErrs
-	}
 	if c.IsAutomation() {
 		types++
 		err = automationErr
@@ -113,7 +103,7 @@ func (c *TypeDefinition) IsSound(knownApis map[string]struct{}) error {
 	}
 
 	typesSound := 0
-	for _, e := range []error{classicErrs, settingsErrs, entitiesErrs, automationErr} {
+	for _, e := range []error{classicErrs, settingsErrs, automationErr} {
 		if e == nil {
 			typesSound += 1
 		}
@@ -149,19 +139,6 @@ func (t *SettingsDefinition) isSettingsSound() error {
 		return nil
 	}
 	return fmt.Errorf("next property missing: %v", s)
-}
-func (c *TypeDefinition) IsEntities() bool {
-	return c.Entities != EntitiesDefinition{}
-}
-func (f *EntitiesDefinition) isEntitiesSound() error {
-	var e []string
-	if f.EntitiesType == "" {
-		e = append(e, "type.entitiesType")
-	}
-	if e == nil {
-		return nil
-	}
-	return fmt.Errorf("next property missing: %v", e)
 }
 
 func (c *TypeDefinition) IsClassic() bool {
@@ -207,8 +184,6 @@ func (c *TypeDefinition) GetApiType() string {
 		return c.Settings.Schema
 	case c.IsClassic():
 		return c.Api
-	case c.IsEntities():
-		return c.Entities.EntitiesType
 	case c.IsAutomation():
 		return string(c.Automation.Resource)
 	case c.IsBucket():

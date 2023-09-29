@@ -16,20 +16,6 @@
 
 package featureflags
 
-/*
- * This file groups 'temporary' feature flags which are intended to be removed after a feature is deemed stable enough for not needing a fallback.
- * When adding a new flag please include when it was created/activated with a timestamp and release version.
- */
-
-// Entities returns the feature flag that tells whether Dynatrace Entities download/matching is enabled or not
-// Feature slated for removal!
-func Entities() FeatureFlag {
-	return FeatureFlag{
-		envName:        "MONACO_FEAT_ENTITIES",
-		defaultEnabled: false,
-	}
-}
-
 // VerifyEnvironmentType returns the feature flag that tells whether the environment check
 // at the beginning of execution is enabled or not.
 // Introduced: before 2023-04-27; v2.0.0

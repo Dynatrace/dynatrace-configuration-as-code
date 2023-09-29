@@ -37,8 +37,6 @@ import (
 type Command interface {
 	DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions downloadCmdOptions) error
 	DownloadConfigs(fs afero.Fs, cmdOptions downloadCmdOptions) error
-	DownloadEntitiesBasedOnManifest(fs afero.Fs, cmdOptions entitiesManifestDownloadOptions) error
-	DownloadEntities(fs afero.Fs, cmdOptions entitiesDirectDownloadOptions) error
 }
 
 // DefaultCommand is used to implement the [Command] interface.
@@ -96,16 +94,6 @@ func reportForCircularDependencies(p project.Project) error {
 		return fmt.Errorf("there are circular dependencies between %d configurations that need to be resolved manually", len(errs))
 	}
 	return nil
-}
-
-func sumConfigs(configs project.ConfigsPerType) int {
-	sum := 0
-
-	for _, v := range configs {
-		sum += len(v)
-	}
-
-	return sum
 }
 
 // validateParameters checks that all necessary variables have been set.

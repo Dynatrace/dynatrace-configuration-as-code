@@ -51,10 +51,3 @@ func TestDangerousCommands(t *testing.T) {
 	t.Setenv(ff.EnvName(), "1")
 	assert.True(t, ff.Enabled())
 }
-
-func TestEntities(t *testing.T) {
-	ff := featureflags.Entities()
-	assert.False(t, ff.Enabled())
-	t.Setenv(ff.EnvName(), "1")
-	assert.True(t, ff.Enabled())
-}

@@ -289,11 +289,3 @@ func (c *DummyClient) ListSettings(_ context.Context, _ string, _ ListSettingsOp
 func (c *DummyClient) DeleteSettings(_ string) error {
 	return nil
 }
-
-func (c *DummyClient) ListEntitiesTypes(_ context.Context) ([]EntitiesType, error) {
-	return make([]EntitiesType, 0), nil
-}
-
-func (c *DummyClient) ListEntities(_ context.Context, _ EntitiesType) ([]string, error) {
-	return make([]string, 0), nil
-}
