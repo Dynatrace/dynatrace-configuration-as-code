@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
@@ -100,12 +101,14 @@ func TestRestoreConfigs_FromDownloadWithPlatformWithCLIParameters(t *testing.T) 
 	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, true, execution_downloadConfigsWithCLIParameters)
 }
 
-func TestRestoreConfigs_FromDownloadWithPlatformManifestFile_withAutomation(t *testing.T) {
-	initialConfigsFolder := "test-resources/integration-download-configs-with-automation/"
+func TestRestoreConfigs_FromDownloadWithPlatformManifestFile_withPlatformConfigs(t *testing.T) {
+	initialConfigsFolder := "test-resources/integration-download-configs-platform/"
 	manifestFile := initialConfigsFolder + "platform_manifest.yaml"
 	downloadFolder := "test-resources/download"
 	subsetOfConfigsToDownload := "alerting-profile,management-zone"
 	suffixTest := "_download_automations"
+
+	t.Setenv(featureflags.Buckets().EnvName(), "true")
 
 	testRestoreConfigs(t, initialConfigsFolder, downloadFolder, suffixTest, manifestFile, subsetOfConfigsToDownload, false, execution_downloadConfigs)
 }

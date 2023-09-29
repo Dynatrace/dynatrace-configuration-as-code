@@ -1,0 +1,10 @@
+configs:
+  - id: my-bucket
+    type: bucket
+    config:
+      template: bucket.json
+  - id: pre-existing-bucket
+    type: bucket
+    config:
+      originObjectId: "my_preexisting_bucket"
+      template: bucket.json
