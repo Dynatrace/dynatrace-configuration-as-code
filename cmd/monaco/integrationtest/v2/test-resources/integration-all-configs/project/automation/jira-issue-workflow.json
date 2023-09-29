@@ -1,0 +1,263 @@
+{
+    "actor": "{{ .actor }}",
+    "description": "",
+    "isPrivate": false,
+    "labels": {},
+    "owner": "{{ .owner }}",
+    "schemaVersion": 3,
+    "taskDefaults": {},
+    "tasks": {
+        "jira_jql_cap_ca": {
+            "action": "dynatrace.jira:jira-jql-search",
+            "description": "Execute JQL queries to fetch issues from Jira",
+            "input": {
+                "connectionId": "{{ .connectionId }}",
+                "expand": [],
+                "fields": [
+                    "key",
+                    "summary",
+                    "created"
+                ],
+                "jql": "filter={{ .jplFilter }}",
+                "maxResults": 100
+            },
+            "name": "jira_jql_cap_ca",
+            "position": {
+                "x": 0,
+                "y": 1
+            },
+            "predecessors": []
+        },
+        "jira_jql_cap_ca_overdue_bugs": {
+            "action": "dynatrace.jira:jira-jql-search",
+            "active": true,
+            "description": "Execute JQL queries to fetch issues from Jira",
+            "input": {
+                "connectionId": "{{ .connectionId }}",
+                "expand": [],
+                "fields": [
+                    "key",
+                    "summary",
+                    "created"
+                ],
+                "jql": "filter={{ .jplFilter }}",
+                "maxResults": 100
+            },
+            "name": "jira_jql_cap_ca_overdue_bugs",
+            "position": {
+                "x": -1,
+                "y": 1
+            },
+            "predecessors": []
+        },
+        "notify_cap_new_issues": {
+            "action": "dynatrace.slack:slack-send-message",
+            "active": true,
+            "conditions": {
+                "custom": "{{`{{`}} result(\"run_javascript_1\").ok == false {{`}}`}}",
+                "states": {
+                    "run_javascript_1": "OK"
+                }
+            },
+            "description": "Send a message to a Slack workspace",
+            "input": {
+                "appendToThread": false,
+                "attachmentToggleValue": "none",
+                "channel": "{{ .channel }}",
+                "connection": "{{ .connection }}",
+                "executionDate": "{{`{{`}} execution().started_at {{`}}`}}",
+                "executionID": "{{`{{`}} execution().id {{`}}`}}",
+                "message": ":alert: Found issues\n\n{{`{{`}} result(\"run_javascript_1\").issues {{`}}`}}",
+                "reaction": [],
+                "selectedRequestType": 0,
+                "workflowID": "{{`{{`}} execution().workflow.id {{`}}`}}"
+            },
+            "name": "notify_cap_new_issues",
+            "position": {
+                "x": 1,
+                "y": 4
+            },
+            "predecessors": [
+                "run_javascript_1"
+            ]
+        },
+        "notify_cap_no_new_issues": {
+            "action": "dynatrace.slack:slack-send-message",
+            "active": true,
+            "conditions": {
+                "custom": "{{`{{`}} result(\"run_javascript_1\").ok == true {{`}}`}}",
+                "states": {
+                    "run_javascript_1": "OK"
+                }
+            },
+            "description": "Send a message to a Slack workspace",
+            "input": {
+                "appendToThread": false,
+                "attachmentToggleValue": "none",
+                "channel": "{{ .channel }}",
+                "connection": "{{ .connection }}",
+                "executionDate": "{{`{{`}} execution().started_at {{`}}`}}",
+                "executionID": "{{`{{`}} execution().id {{`}}`}}",
+                "message": ":okay: Found no issues!",
+                "reaction": [],
+                "selectedRequestType": 0,
+                "workflowID": "{{`{{`}} execution().workflow.id {{`}}`}}"
+            },
+            "name": "notify_cap_no_new_issues",
+            "position": {
+                "x": 2,
+                "y": 4
+            },
+            "predecessors": [
+                "run_javascript_1"
+            ]
+        },
+        "notify_cap_overdue_bugs": {
+            "action": "dynatrace.slack:slack-send-message",
+            "active": true,
+            "conditions": {
+                "custom": "{{`{{`}} result(\"run_javascript_2\").ok == false {{`}}`}}",
+                "states": {
+                    "run_javascript_2": "OK"
+                }
+            },
+            "description": "Send a message to a Slack workspace",
+            "input": {
+                "appendToThread": false,
+                "attachmentToggleValue": "none",
+                "channel": "{{ .channel }}",
+                "connection": "{{ .connection }}",
+                "executionDate": "{{`{{`}} execution().started_at {{`}}`}}",
+                "executionID": "{{`{{`}} execution().id {{`}}`}}",
+                "message": ":bug: Found issues",
+                "reaction": [],
+                "selectedRequestType": 0,
+                "workflowID": "{{`{{`}} execution().workflow.id {{`}}`}}"
+            },
+            "name": "notify_cap_overdue_bugs",
+            "position": {
+                "x": -2,
+                "y": 4
+            },
+            "predecessors": [
+                "run_javascript_2"
+            ]
+        },
+        "report_problem": {
+            "action": "dynatrace.slack:slack-send-message",
+            "active": true,
+            "conditions": {
+                "custom": "{{`{{`}} task(\"jira_jql_cap_ca_overdue_bugs\").state == \"ERROR\" or task(\"jira_jql_cap_ca\").state == \"ERROR\" {{`}}`}}",
+                "states": {
+                    "jira_jql_cap_ca": "ANY",
+                    "jira_jql_cap_ca_overdue_bugs": "ANY"
+                }
+            },
+            "description": "Send a message to a Slack workspace",
+            "input": {
+                "appendToThread": false,
+                "attachmentToggleValue": "none",
+                "channel": "{{ .channel }}",
+                "connection": "{{ .connection }}",
+                "executionDate": "{{`{{`}} execution().started_at {{`}}`}}",
+                "executionID": "{{`{{`}} execution().id {{`}}`}}",
+                "message": "Failed to query issues",
+                "reaction": [],
+                "selectedRequestType": 0,
+                "workflowID": "{{`{{`}} execution().workflow.id {{`}}`}}"
+            },
+            "name": "report_problem",
+            "position": {
+                "x": 0,
+                "y": 4
+            },
+            "predecessors": [
+                "jira_jql_cap_ca",
+                "jira_jql_cap_ca_overdue_bugs"
+            ]
+        },
+        "run_javascript_1": {
+            "action": "dynatrace.automations:run-javascript",
+            "conditions": {
+                "states": {
+                    "jira_jql_cap_ca": "OK"
+                }
+            },
+            "description": "Build a custom task running js Code",
+            "input": {
+                "script": "// optional import of sdk modules\nimport { coreClient } from '@dynatrace-sdk/client-core';\n\nexport default async function ({ execution_id }) {\n  const ex = await fetch(`/platform/automation/v1/executions/${execution_id}/tasks/jira_jql_cap_ca/result`);\n  const body = await ex.json();\n  console.log(body);\n  \n  return {\n    ok: body.length === 0,\n    issues: body\n      .map((issue) =\u003e \n        `${new Date(issue.fields.created).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}};\n}"
+            },
+            "name": "run_javascript_1",
+            "position": {
+                "x": 1,
+                "y": 2
+            },
+            "predecessors": [
+                "jira_jql_cap_ca"
+            ]
+        },
+        "run_javascript_2": {
+            "action": "dynatrace.automations:run-javascript",
+            "active": true,
+            "conditions": {
+                "states": {
+                    "jira_jql_cap_ca_overdue_bugs": "OK"
+                }
+            },
+            "description": "Build a custom task running js Code",
+            "input": {
+                "script": "// optional import of sdk modules\nimport { coreClient } from '@dynatrace-sdk/client-core';\n\nexport default async function ({ execution_id }) {\n  const ex = await fetch(`/platform/automation/v1/executions/${execution_id}/tasks/jira_jql_cap_ca_overdue_bugs/result`);\n  const body = await ex.json();\n  console.log(body);\n  \n  return {\n    ok: body.length === 0,\n    issues: body\n      .map((issue) =\u003e \n        `${new Date(issue.fields.created).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}"
+            },
+            "name": "run_javascript_2",
+            "position": {
+                "x": -2,
+                "y": 2
+            },
+            "predecessors": [
+                "jira_jql_cap_ca_overdue_bugs"
+            ]
+        },
+        "run_javascript_3": {
+            "action": "dynatrace.automations:run-javascript",
+            "active": false,
+            "conditions": {
+                "states": {
+                    "jira_jql_cap_ca_overdue_bugs": "OK"
+                }
+            },
+            "description": "Build a custom task running js Code",
+            "input": {
+                "script": "// optional import of sdk modules\nimport { coreClient } from '@dynatrace-sdk/client-core';\nimport { execution } from '@dynatrace-sdk/automation-utils';\n\nexport default async function ({ execution_id }) {\n  const ex = await fetch(`/platform/automation/v1/executions/${execution_id}/tasks/jira_jql_cap_ca_overdue_bugs/result`);\n  const body = await ex.json();\n  console.log(body);\n\n  //use SKD\n  const exe = await execution(execution_id);\n  const result = await exe.result('jira_jql_cap_ca_overdue_bugs');\n  console.log(result);\n  \n  return {\n    ok: body.length === 0,\n    issues: body\n      .map((issue) =\u003e \n        `${new Date(issue.fields.created).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}};\n}"
+            },
+            "name": "run_javascript_3",
+            "position": {
+                "x": -3,
+                "y": 2
+            },
+            "predecessors": [
+                "jira_jql_cap_ca_overdue_bugs"
+            ]
+        }
+    },
+    "title": "{{.name}}",
+    "trigger": {
+        "schedule": {
+            "filterParameters": {
+                "earliestStart": "2023-07-12"
+            },
+            "inputs": {},
+            "isActive": true,
+            "isFaulty": false,
+            "nextExecution": "2023-08-06T22:00:00Z",
+            "rule": "{{ .schedulingRuleId }}",
+            "timezone": "Europe/Vienna",
+            "trigger": {
+                "time": "00:00",
+                "type": "time"
+            }
+        }
+    },
+    "triggerType": "Schedule",
+    "usages": [],
+    "version": 3
+}
