@@ -34,10 +34,8 @@ func TestDecodeResponse(t *testing.T) {
 		{
 			"decodes simple response",
 			automation.Response{
-				Response: api.Response{
-					StatusCode: 200,
-					Data:       []byte(`{ "id": "some-id", "workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]}`),
-				},
+				StatusCode: 200,
+				Data:       []byte(`{ "id": "some-id", "workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]}`),
 			},
 			automationutils.Response{
 				ID:   "some-id",
@@ -48,10 +46,8 @@ func TestDecodeResponse(t *testing.T) {
 		{
 			"error if ID is missing",
 			automation.Response{
-				Response: api.Response{
-					StatusCode: 200,
-					Data:       []byte(`{"workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]}`),
-				},
+				StatusCode: 200,
+				Data:       []byte(`{"workflow-steps": [{"some": "value"},{"some": "value"},{"some": "value"}]}`),
 			},
 			automationutils.Response{},
 			true,
@@ -59,10 +55,8 @@ func TestDecodeResponse(t *testing.T) {
 		{
 			"error if data empty",
 			automation.Response{
-				Response: api.Response{
-					StatusCode: 200,
-					Data:       []byte{},
-				},
+				StatusCode: 200,
+				Data:       []byte{},
 			},
 			automationutils.Response{},
 			true,

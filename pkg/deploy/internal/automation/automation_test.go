@@ -75,7 +75,7 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 	})
 	t.Run("TestDeployAutomation - Workflow Upsert fails - HTTP Err", func(t *testing.T) {
 		client := NewMockClient(gomock.NewController(t))
-		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(automation.Response{api.Response{StatusCode: 400}}, nil)
+		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(api.Response{StatusCode: 400}, nil)
 
 		conf := &config.Config{
 			Type: config.AutomationType{
@@ -103,7 +103,7 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 	})
 	t.Run("TestDeployAutomation - BusinessCalendar Upsert fails - HTTP Error", func(t *testing.T) {
 		client := NewMockClient(gomock.NewController(t))
-		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(automation.Response{api.Response{StatusCode: 400}}, nil)
+		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(automation.Response{StatusCode: 400}, nil)
 
 		conf := &config.Config{
 			Type: config.AutomationType{
@@ -131,7 +131,7 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 	})
 	t.Run("TestDeployAutomation - Scheduling Rule Upsert fails - HTTP Error", func(t *testing.T) {
 		client := NewMockClient(gomock.NewController(t))
-		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(automation.Response{api.Response{StatusCode: 400}}, nil)
+		client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(automation.Response{StatusCode: 400}, nil)
 
 		conf := &config.Config{
 			Type: config.AutomationType{
@@ -148,10 +148,8 @@ func TestDeployAutomation_ClientUpsertFails(t *testing.T) {
 func TestDeployAutomation(t *testing.T) {
 	client := NewMockClient(gomock.NewController(t))
 	client.EXPECT().Upsert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(automation.Response{
-		Response: api.Response{
-			StatusCode: 200,
-			Data:       []byte("{ \"id\": \"config-id\" }"),
-		},
+		StatusCode: 200,
+		Data:       []byte("{ \"id\": \"config-id\" }"),
 	}, nil)
 	conf := &config.Config{
 		Coordinate: coordinate.Coordinate{

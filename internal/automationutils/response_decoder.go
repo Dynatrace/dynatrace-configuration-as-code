@@ -32,7 +32,7 @@ type Response struct {
 }
 
 func DecodeResponse(r automation.Response) (Response, error) {
-	d, err := api.DecodeJSON[Response](r.Response)
+	d, err := api.DecodeJSON[Response](r)
 	if err != nil {
 		return Response{}, err
 	}

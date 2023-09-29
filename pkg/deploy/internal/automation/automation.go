@@ -19,7 +19,6 @@ package automation
 import (
 	"context"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
@@ -42,10 +41,8 @@ type DummyClient struct {
 
 func (c *DummyClient) Upsert(_ context.Context, _ automation.ResourceType, id string, _ []byte) (automation.Response, error) {
 	return automation.Response{
-		Response: api.Response{
-			StatusCode: 200,
-			Data:       []byte(fmt.Sprintf(`{"id" : "%s"}`, id)),
-		},
+		StatusCode: 200,
+		Data:       []byte(fmt.Sprintf(`{"id" : "%s"}`, id)),
 	}, nil
 }
 

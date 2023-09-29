@@ -19,7 +19,6 @@ package bucket
 import (
 	"context"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -41,10 +40,8 @@ type DummyClient struct{}
 
 func (c DummyClient) Upsert(_ context.Context, id string, data []byte) (response buckets.Response, err error) {
 	return buckets.Response{
-		Response: api.Response{
-			StatusCode: http.StatusOK,
-			Data:       data,
-		},
+		StatusCode: http.StatusOK,
+		Data:       data,
 	}, nil
 }
 
