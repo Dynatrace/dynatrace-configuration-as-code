@@ -59,15 +59,14 @@ func (d *Downloader) Download(projectName string, _ ...config.BucketType) (v2.Co
 		return nil, nil
 	}
 
-	configs := d.convertAllObjects(projectName, response.Objects)
+	configs := convertAllObjects(projectName, response.Objects)
 	result["bucket"] = configs
 	return result, nil
 }
 
-func (d *Downloader) convertAllObjects(projectName string, objects [][]byte) []config.Config {
-	result := make([]config.Config, 0, len(objects))
+func convertAllObjects(projectName string, objects [][]byte) []config.Config {
+	var result []config.Config
 	for _, o := range objects {
-
 		c, err := convertObject(o, projectName)
 		if err != nil {
 			log.WithFields(field.Type("bucket"), field.Error(err)).
@@ -77,14 +76,15 @@ func (d *Downloader) convertAllObjects(projectName string, objects [][]byte) []c
 
 		// exclude builtin bucket names
 		if tools.IsDefault(c.OriginObjectId) {
-			log.Debug("Skipping download of immutable default Bucket %s", c.OriginObjectId)
+			log.Debug("Skipping download of immutable default Bucket %s", c.OriginObjectId) //TODO: WithFields??
 			continue
 		}
 
 		result = append(result, c)
 	}
 
-	log.Info("Downloaded %d Grail buckets", len(result))
+	log.WithFields(field.Type("bucket"), field.F("configsDownloaded", len(result))).
+		Info("Downloaded %d Grail buckets", len(result))
 
 	return result
 }
@@ -105,7 +105,7 @@ func convertObject(o []byte, projectName string) (config.Config, error) {
 
 	r, err := templatetools.NewJSONObject(o)
 	if err != nil {
-		return config.Config{}, fmt.Errorf("failed to unmarshal bucket: %w", err)
+		return config.Config{}, err
 	}
 
 	id, ok := r.Get(bucketName).(string)
@@ -122,8 +122,7 @@ func convertObject(o []byte, projectName string) (config.Config, error) {
 	r.Delete(bucketName)
 
 	c.Parameters = map[string]parameter.Parameter{}
-	p := r.Parameterize(displayName)
-	if p != nil {
+	if p := r.Parameterize(displayName); p != nil {
 		c.Parameters[displayName] = p
 	}
 

@@ -19,9 +19,7 @@ package automation
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/template"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -146,65 +144,26 @@ func TestDownloader_Download_FailsToDownloadSpecificResource(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func Test_createTemplateFromRawJSON(t *testing.T) {
-	type want struct {
-		t    template.Template
-		name string
-	}
+func Test_convertObject(t *testing.T) {
+	t.Run("if a title is present, extract it as a name", func(t *testing.T) {
+		given := []byte(`{ "id": "42", "title": "My Workflow", "lastExecution": { "some": "details" }, "important": "data" }`)
+		actual, err := convertObject(given)
 
-	tests := []struct {
-		name  string
-		given automationutils.Response
-		want  want
-	}{
-		{
-			"sanitizes template as expected - extracts title as name",
-			automationutils.Response{
-				ID:   "42",
-				Data: []byte(`{ "id": "42", "title": "My Workflow", "lastExecution": { "some": "details" }, "important": "data" }`),
-			},
-			want{
-				t: template.NewDownloadTemplate("42", "My Workflow", `{
-  "important": "data",
-  "title": "{{.name}}"
-}`),
-				name: "My Workflow",
-			},
-		},
-		{
-			"defaults template name to ID if title is not found - but returns no name",
-			automationutils.Response{
-				ID:   "42",
-				Data: []byte(`{ "id": "42", "workflow_name": "My Workflow", "important": "data" }`),
-			},
-			want{
-				t: template.NewDownloadTemplate("42", "42", `{
-  "important": "data",
-  "workflow_name": "My Workflow"
-}`),
-			},
-		},
-		{
-			"works if reply is not valid JSON",
-			automationutils.Response{
-				ID:   "42",
-				Data: []byte(`{ "id": "42`),
-			},
-			want{
-				t: template.NewDownloadTemplate("42", "42", `{ "id": "42`),
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gotT, gotExtractedName := createTemplateFromRawJSON(tt.given, "DOES NOT MATTER FOR TEST", "SOME PROJECT")
-			assert.Equalf(t, tt.want.t, gotT, "createTemplateFromRawJSON(%v)", tt.given)
-			if tt.want.name != "" {
-				assert.Equalf(t, tt.want.name, *gotExtractedName, "createTemplateFromRawJSON(%v)", tt.given)
-			} else {
-				assert.Nil(t, gotExtractedName, "expected no name to be extracted")
-			}
+		assert.NoError(t, err)
+		assert.NotNil(t, actual.Template)
+		assert.Equal(t, "42", actual.Template.Id())
+		assert.Equal(t, "My Workflow", actual.Template.Name())
+		assert.NotNil(t, actual.Parameters[config.NameParameter])
+	})
 
-		})
-	}
+	t.Run("if a title isn't present, name is ID", func(t *testing.T) {
+		given := []byte(`{ "id": "42", "lastExecution": { "some": "details" }, "important": "data" }`)
+		actual, err := convertObject(given)
+
+		assert.NoError(t, err)
+		assert.NotNil(t, actual.Template)
+		assert.Equal(t, "42", actual.Template.Id())
+		assert.Equal(t, "42", actual.Template.Name())
+		assert.Nil(t, actual.Parameters[config.NameParameter])
+	})
 }

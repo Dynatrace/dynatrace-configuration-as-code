@@ -18,6 +18,7 @@ package templatetools
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 )
 
@@ -28,7 +29,7 @@ func NewJSONObject(raw []byte) (JSONObject, error) {
 	var m map[string]any
 	err := json.Unmarshal(raw, &m)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal object: %w", err)
 	}
 	return m, nil
 }
@@ -58,7 +59,7 @@ func (o JSONObject) ParameterizeAttributeWith(keyOfJSONAttribute string, nameOfP
 func (o JSONObject) ToJSON() ([]byte, error) {
 	modified, err := json.Marshal(o)
 	if err != nil {
-		return []byte{}, err
+		return []byte{}, fmt.Errorf("failed to marshal object: %w", err)
 	}
 
 	return modified, nil

@@ -118,7 +118,7 @@ func TestJSONObject_Parameterize(t *testing.T) {
 	}
 }
 
-func TestJSONObject_ParameterizeAttribute(t *testing.T) {
+func TestJSONObject_ParameterizeAttributeWith(t *testing.T) {
 	type (
 		given struct {
 			jsonObject         templatetools.JSONObject
