@@ -12,7 +12,6 @@
         {
             "bucketName": "another name",
             "table": "metrics",
-            "displayName": "",
             "status": "active",
             "retentionDays": 31,
             "metricInterval": "PT2M",

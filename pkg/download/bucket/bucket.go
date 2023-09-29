@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/buckets"
 	tools "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/buckettools"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -92,6 +91,8 @@ func (d *Downloader) convertAllObjects(projectName string, objects [][]byte) []c
 const (
 	bucketName  = "bucketName"
 	displayName = "displayName"
+	status      = "status"
+	version     = "version"
 )
 
 func convertObject(o []byte, projectName string) (config.Config, error) {
@@ -113,14 +114,15 @@ func convertObject(o []byte, projectName string) (config.Config, error) {
 		return config.Config{}, fmt.Errorf("variable %q unreadable", bucketName)
 	}
 
-	// construct config object with generated config ID
-	configID := idutils.GenerateUUIDFromString(id)
-	c.Coordinate.ConfigId = configID
-
+	c.Coordinate.ConfigId = id
 	c.OriginObjectId = id
 
+	// remove fields that will be set on deployment
 	r.Delete(bucketName)
+	r.Delete(status)
+	r.Delete(version)
 
+	// pull displayName into paramter if one exists
 	c.Parameters = map[string]parameter.Parameter{}
 	p := r.Parameterize(displayName)
 	if p != nil {
@@ -131,7 +133,7 @@ func convertObject(o []byte, projectName string) (config.Config, error) {
 	if err != nil {
 		return config.Config{}, err
 	}
-	c.Template = template.NewDownloadTemplate(configID, configID, string(jsonutils.MarshalIndent(t)))
+	c.Template = template.NewDownloadTemplate(id, id, string(jsonutils.MarshalIndent(t)))
 
 	return c, nil
 }
