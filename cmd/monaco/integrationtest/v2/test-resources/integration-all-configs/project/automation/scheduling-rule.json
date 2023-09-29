@@ -1,0 +1,30 @@
+{
+  "businessCalendar": "{{ .businessCalendarId }}",
+  "description": "",
+  "fixedOffsetRule": null,
+  "groupingRule": null,
+  "labels": {},
+  "relativeOffsetRule": null,
+  "rrule": {
+    "automation_server_byworkday": "WORKING",
+    "byday": [
+      "MO",
+      "WE",
+      "FR"
+    ],
+    "bymonth": [
+      1,
+      3,
+      4,
+      8,
+      11,
+      12
+    ],
+    "datestart": "2023-07-12",
+    "freq": "DAILY",
+    "interval": 1
+  },
+  "ruleType": "rrule",
+  "title": "{{.name}}",
+  "version": 1
+}
