@@ -97,6 +97,9 @@ func cleanupByGeneratedID(t *testing.T, fs afero.Fs, manifestPath string, loaded
 	configs = slices.Reverse(configs)
 
 	for _, cfg := range configs {
+		if cfg.Skip {
+			continue // if config was not deployed to this env, no need to clean up
+		}
 		switch typ := cfg.Type.(type) {
 		case config.SettingsType:
 			if cfg.OriginObjectId != "" {
@@ -154,6 +157,11 @@ func deleteSettingsObjects(t *testing.T, schema, externalID string, c dtclient.S
 }
 
 func deleteAutomation(t *testing.T, resource config.AutomationResource, id string, c *automation.Client) {
+	if c == nil {
+		t.Logf("not cleaning up automation %s:%s - no client defined", resource, id)
+		return
+	}
+
 	resourceType, err := automationutils.ClientResourceTypeFromConfigType(resource)
 	if err != nil {
 		t.Logf("Unable to delete Automation config %s (%s): %v", id, resource, err)
@@ -173,6 +181,11 @@ func deleteAutomation(t *testing.T, resource config.AutomationResource, id strin
 }
 
 func deleteBucket(t *testing.T, bucketName string, c *buckets.Client) {
+	if c == nil {
+		t.Logf("not cleaning up bucket %s - no client defined", bucketName)
+		return
+	}
+
 	r, err := c.Delete(context.Background(), bucketName)
 
 	if err != nil {
