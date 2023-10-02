@@ -20,7 +20,6 @@ package loader
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
@@ -885,10 +884,7 @@ configs:
 			},
 		},
 		{
-			name: "Bucket config with FF on",
-			envVars: map[string]string{
-				featureflags.Buckets().EnvName(): "true",
-			},
+			name:             "Bucket config",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `
@@ -915,26 +911,7 @@ configs:
 			},
 		},
 		{
-			name: "Bucket with FF off",
-			envVars: map[string]string{
-				featureflags.Buckets().EnvName(): "false",
-			},
-			filePathArgument: "test-file.yaml",
-			filePathOnDisk:   "test-file.yaml",
-			fileContentOnDisk: `
-configs:
-- id: profile-id
-  config:
-    template: 'profile.json'
-  type: bucket
-`,
-			wantErrorsContain: []string{"failed to parse 'type' section: unknown type \"bucket\""},
-		},
-		{
-			name: "Bucket written as api config",
-			envVars: map[string]string{
-				featureflags.Buckets().EnvName(): "true",
-			},
+			name:             "Bucket written as api config",
 			filePathArgument: "test-file.yaml",
 			filePathOnDisk:   "test-file.yaml",
 			fileContentOnDisk: `
