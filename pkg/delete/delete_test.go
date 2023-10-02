@@ -546,7 +546,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 			},
 		},
 		{
-			name: "Id-fallback",
+			name: "ID-fallback",
 			args: args{
 				entries: []pointer.DeletePointer{{Identifier: "d1"}, {Identifier: "d2-id"}},
 				values:  []dtclient.Value{{Name: "d1", Id: "id1"}, {Name: "d2", Id: "d2-id"}, {Name: "d3", Id: "id3"}},

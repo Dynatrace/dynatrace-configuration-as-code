@@ -25,20 +25,20 @@ import (
 func Render(template Template, properties map[string]interface{}) (string, error) {
 	content, err := template.Content()
 	if err != nil {
-		return "", fmt.Errorf("failure trying to render template %s: %w", template.Id(), err)
+		return "", fmt.Errorf("failure trying to render template %s: %w", template.ID(), err)
 	}
 
-	parsedTemplate, err := ParseTemplate(template.Id(), content)
+	parsedTemplate, err := ParseTemplate(template.ID(), content)
 
 	if err != nil {
-		return "", fmt.Errorf("failure trying to render template %s: %w", template.Id(), err)
+		return "", fmt.Errorf("failure trying to render template %s: %w", template.ID(), err)
 	}
 
 	result := bytes.Buffer{}
 
 	err = parsedTemplate.Execute(&result, properties)
 	if err != nil {
-		return "", fmt.Errorf("failure trying to render template %s: %w", template.Id(), err)
+		return "", fmt.Errorf("failure trying to render template %s: %w", template.ID(), err)
 	}
 
 	return result.String(), nil

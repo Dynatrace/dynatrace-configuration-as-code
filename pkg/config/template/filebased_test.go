@@ -35,7 +35,7 @@ func TestLoadTemplate(t *testing.T) {
 
 	got, gotErr := template.NewFileTemplate(testFs, testFilepath)
 	assert.NilError(t, gotErr)
-	assert.Equal(t, got.Id(), testFilepath)
+	assert.Equal(t, got.ID(), testFilepath)
 	assert.Equal(t, got.(*template.FileBasedTemplate).FilePath(), testFilepath)
 	gotContent, err := got.Content()
 	assert.NilError(t, err)

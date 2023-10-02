@@ -58,7 +58,7 @@ func basicFindAndReplaceIDs(apiName string, configToBeUpdated config.Config, con
 
 	for key, conf := range configs {
 		if shouldReplaceReference(configToBeUpdated, conf, content, key) {
-			log.Debug("\treference: '%v/%v' referencing '%v' in coordinate '%v' ", apiName, configToBeUpdated.Template.Id(), key, conf.Coordinate)
+			log.Debug("\treference: '%v/%v' referencing '%v' in coordinate '%v' ", apiName, configToBeUpdated.Template.ID(), key, conf.Coordinate)
 
 			parameterName := CreateParameterName(conf.Coordinate.Type, conf.Coordinate.ConfigId)
 			coord := conf.Coordinate
@@ -80,5 +80,5 @@ func shouldReplaceReference(configToBeUpdated config.Config, configToUpdateFrom 
 		return false //dashboards can not actually reference each other, but often contain a link to another inside a markdown tile
 	}
 
-	return configToUpdateFrom.Template.Id() != configToBeUpdated.Template.Id() && strings.Contains(contentToBeUpdated, keyToReplace)
+	return configToUpdateFrom.Template.ID() != configToBeUpdated.Template.ID() && strings.Contains(contentToBeUpdated, keyToReplace)
 }

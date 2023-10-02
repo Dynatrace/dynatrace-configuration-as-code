@@ -112,7 +112,7 @@ func findAndReplaceIDs(apiName string, configToBeUpdated config.Config, c depend
 			continue // skip self referencing configs
 		}
 
-		log.Debug("\treference: '%v/%v' referencing '%v' in coordinate '%v' ", apiName, configToBeUpdated.Template.Id(), key, conf.Coordinate)
+		log.Debug("\treference: '%v/%v' referencing '%v' in coordinate '%v' ", apiName, configToBeUpdated.Template.ID(), key, conf.Coordinate)
 
 		parameterName := CreateParameterName(conf.Coordinate.Type, conf.Coordinate.ConfigId)
 		coord := conf.Coordinate

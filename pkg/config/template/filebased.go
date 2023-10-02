@@ -31,11 +31,13 @@ var (
 // FileBasedTemplate is a JSON Template stored in a file - when it's Template.Content is accessed, that file is read.
 // This is the usual type of Template monaco uses.
 type FileBasedTemplate struct {
-	fs   afero.Fs
+	// fs is the file system the to read the template file from
+	fs afero.Fs
+	// path of the template file
 	path string
 }
 
-func (t *FileBasedTemplate) Id() string {
+func (t *FileBasedTemplate) ID() string {
 	return t.path
 }
 
@@ -63,6 +65,8 @@ func (t *FileBasedTemplate) UpdateContent(newContent string) error {
 	return nil
 }
 
+// NewFileTemplate creates a FileBasedTemplate for a given afero.Fs and filepath.
+// If the file can not be accessed an error will be returned.
 func NewFileTemplate(fs afero.Fs, path string) (Template, error) {
 	sanitizedPath := filepath.Clean(strings.ReplaceAll(path, `\`, `/`))
 
