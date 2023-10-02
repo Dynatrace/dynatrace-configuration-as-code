@@ -87,9 +87,9 @@ func DeleteAll(ctx context.Context, c Client) error {
 		return err
 	}
 
-	logger.Info("Deleting %d objects of type %q...", len(response.Objects), "bucket")
+	logger.Info("Deleting %d objects of type %q...", len(response.All()), "bucket")
 	errs := 0
-	for _, obj := range response.Objects {
+	for _, obj := range response.All() {
 		var bucketName struct {
 			BucketName string `json:"bucketName"`
 		}

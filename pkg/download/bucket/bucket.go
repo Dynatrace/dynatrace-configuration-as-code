@@ -59,7 +59,7 @@ func (d *Downloader) Download(projectName string, _ ...config.BucketType) (v2.Co
 		return nil, nil
 	}
 
-	configs := d.convertAllObjects(projectName, response.Objects)
+	configs := d.convertAllObjects(projectName, response.All())
 	result["bucket"] = configs
 	return result, nil
 }

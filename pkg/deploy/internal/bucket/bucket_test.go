@@ -19,7 +19,6 @@ package bucket_test
 import (
 	"context"
 	"errors"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -70,10 +69,8 @@ func TestDeploy(t *testing.T) {
 				expectedName := "proj_my-bucket"
 				assert.Equal(t, expectedName, bucketName)
 				return buckets.Response{
-					Response: api.Response{
-						StatusCode: 200,
-						Data:       data,
-					},
+					StatusCode: 200,
+					Data:       data,
 				}, nil
 			},
 			config.ResolvedEntity{
@@ -98,10 +95,8 @@ func TestDeploy(t *testing.T) {
 			func(t *testing.T, bucketName string, data []byte) (buckets.Response, error) {
 				assert.Equal(t, "PreExistingBucket", bucketName)
 				return buckets.Response{
-					Response: api.Response{
-						StatusCode: 200,
-						Data:       data,
-					},
+					StatusCode: 200,
+					Data:       data,
 				}, nil
 			},
 			config.ResolvedEntity{
@@ -139,10 +134,8 @@ func TestDeploy(t *testing.T) {
 			},
 			func(t *testing.T, bucketName string, data []byte) (buckets.Response, error) {
 				return buckets.Response{
-					Response: api.Response{
-						StatusCode: 400,
-						Data:       []byte("Your request is bad and you should feel bad"),
-					},
+					StatusCode: 400,
+					Data:       []byte("Your request is bad and you should feel bad"),
 				}, nil
 			},
 			config.ResolvedEntity{},
