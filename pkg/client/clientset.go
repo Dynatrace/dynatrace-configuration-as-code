@@ -59,10 +59,6 @@ func (s ClientSet) Automation() *automation.Client {
 	return s.autClient
 }
 
-func (s ClientSet) Entities() *dtclient.DynatraceClient {
-	return s.dtClient
-}
-
 func (s ClientSet) Bucket() *buckets.Client {
 	return s.bucketClient
 }

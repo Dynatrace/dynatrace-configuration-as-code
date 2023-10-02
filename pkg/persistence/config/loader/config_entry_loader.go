@@ -250,10 +250,6 @@ func getType(typeDef persistence.TypeDefinition) (config.Type, error) {
 			Api: typeDef.Api,
 		}, nil
 
-	case typeDef.IsEntities():
-		return config.EntityType{
-			EntitiesType: typeDef.Entities.EntitiesType,
-		}, nil
 	case typeDef.IsAutomation():
 		return config.AutomationType{
 			Resource: typeDef.Automation.Resource,

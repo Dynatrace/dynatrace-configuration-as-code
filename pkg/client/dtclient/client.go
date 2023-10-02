@@ -34,9 +34,7 @@ import (
 	"golang.org/x/oauth2"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
-	"time"
 )
 
 // ConfigClient is responsible for the classic Dynatrace configs. For settings objects, the [SettingsClient] is responsible.
@@ -145,13 +143,6 @@ const defaultListSettingsFields = "objectId,value,externalId,schemaVersion,schem
 // actual value payload
 const reducedListSettingsFields = "objectId,externalId,schemaVersion,schemaId,scope,modificationInfo"
 const defaultPageSize = "500"
-const defaultPageSizeEntities = "4000"
-
-const defaultEntityDurationTimeframeFrom = -5 * 7 * 24 * time.Hour
-
-// Not extracting the last 10 minutes to make sure what we extract is stable
-// And avoid extracting more entities than the TotalCount from the first page of extraction
-const defaultEntityDurationTimeframeTo = -10 * time.Minute
 
 // ListSettingsOptions are additional options for the ListSettings method
 // of the Settings client
@@ -166,23 +157,6 @@ type ListSettingsOptions struct {
 // ListSettingsFilter can be used to filter fetched settings objects with custom criteria, e.g. o.ExternalId == ""
 type ListSettingsFilter func(DownloadSettingsObject) bool
 
-// EntitiesClient is the abstraction layer for read-only operations on the Dynatrace Entities v2 API.
-// Its design is intentionally not dependent on Monaco objects.
-//
-// This interface exclusively accesses the [entities api] of Dynatrace.
-//
-// More documentation is written in each method's documentation.
-//
-// [entities api]: https://www.dynatrace.com/support/help/dynatrace-api/environment-api/entity-v2
-type EntitiesClient interface {
-
-	// ListEntitiesTypes returns all entities types
-	ListEntitiesTypes(context.Context) ([]EntitiesType, error)
-
-	// ListEntities returns all entities objects for a given type.
-	ListEntities(context.Context, EntitiesType) ([]string, error)
-}
-
 //go:generate mockgen -source=client.go -destination=client_mock.go -package=dtclient DynatraceClient
 
 // Client provides the functionality for performing basic CRUD operations on any Dynatrace API
@@ -196,7 +170,6 @@ type EntitiesClient interface {
 type Client interface {
 	ConfigClient
 	SettingsClient
-	EntitiesClient
 }
 
 // DynatraceClient is the default implementation of the HTTP
@@ -244,7 +217,6 @@ type DynatraceClient struct {
 }
 
 var (
-	_ EntitiesClient = (*DynatraceClient)(nil)
 	_ SettingsClient = (*DynatraceClient)(nil)
 	_ ConfigClient   = (*DynatraceClient)(nil)
 	_ Client         = (*DynatraceClient)(nil)
@@ -561,123 +533,6 @@ func (d *DynatraceClient) getSettingById(ctx context.Context, objectId string) (
 	}
 
 	return &result, nil
-}
-
-type EntitiesTypeListResponse struct {
-	Types []EntitiesType `json:"types"`
-}
-
-type EntitiesType struct {
-	EntitiesTypeId  string                   `json:"type"`
-	ToRelationships []map[string]interface{} `json:"toRelationships"`
-	Properties      []map[string]interface{} `json:"properties"`
-}
-
-func (e EntitiesType) String() string {
-	return e.EntitiesTypeId
-}
-
-func (d *DynatraceClient) ListEntitiesTypes(ctx context.Context) (res []EntitiesType, err error) {
-	d.limiter.ExecuteBlocking(func() {
-		res, err = d.listEntitiesTypes(ctx)
-	})
-	return
-}
-
-func (d *DynatraceClient) listEntitiesTypes(ctx context.Context) ([]EntitiesType, error) {
-
-	params := url.Values{
-		"pageSize": []string{defaultPageSize},
-	}
-
-	result := make([]EntitiesType, 0)
-
-	addToResult := func(body []byte) (int, error) {
-		var parsed EntitiesTypeListResponse
-
-		if err1 := json.Unmarshal(body, &parsed); err1 != nil {
-			return 0, fmt.Errorf("failed to unmarshal response: %w", err1)
-		}
-
-		result = append(result, parsed.Types...)
-
-		return len(parsed.Types), nil
-	}
-
-	u, err := buildUrl(d.environmentURL, pathEntitiesTypes, params)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list entity types: %w", err)
-	}
-
-	_, err = rest.ListPaginated(ctx, d.platformClient, d.retrySettings, u, "EntityTypeList", addToResult)
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-type EntityListResponseRaw struct {
-	Entities []json.RawMessage `json:"entities"`
-}
-
-func genTimeframeUnixMilliString(duration time.Duration) string {
-	return strconv.FormatInt(time.Now().Add(duration).UnixMilli(), 10)
-}
-
-func (d *DynatraceClient) ListEntities(ctx context.Context, entitiesType EntitiesType) (res []string, err error) {
-	d.limiter.ExecuteBlocking(func() {
-		res, err = d.listEntities(ctx, entitiesType)
-	})
-	return
-}
-
-func (d *DynatraceClient) listEntities(ctx context.Context, entitiesType EntitiesType) ([]string, error) {
-
-	entityType := entitiesType.EntitiesTypeId
-	log.Debug("Downloading all entities for entities Type %s", entityType)
-
-	result := make([]string, 0)
-
-	addToResult := func(body []byte) (int, error) {
-		var parsedRaw EntityListResponseRaw
-
-		if err1 := json.Unmarshal(body, &parsedRaw); err1 != nil {
-			return 0, fmt.Errorf("failed to unmarshal response: %w", err1)
-		}
-
-		entitiesContentList := make([]string, len(parsedRaw.Entities))
-
-		for idx, str := range parsedRaw.Entities {
-			entitiesContentList[idx] = string(str)
-		}
-
-		result = append(result, entitiesContentList...)
-
-		return len(parsedRaw.Entities), nil
-	}
-
-	runExtraction := true
-	var ignoreProperties []string
-
-	for runExtraction {
-		params := genListEntitiesParams(entityType, entitiesType, ignoreProperties)
-
-		u, err := buildUrl(d.environmentURL, pathEntitiesObjects, params)
-		if err != nil {
-			return nil, fmt.Errorf("failed to list entities: %w", err)
-		}
-
-		resp, err := rest.ListPaginated(ctx, d.platformClient, d.retrySettings, u, entityType, addToResult)
-
-		runExtraction, ignoreProperties, err = handleListEntitiesError(entityType, resp, runExtraction, ignoreProperties, err)
-
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return result, nil
 }
 
 func (d *DynatraceClient) DeleteSettings(objectID string) (err error) {

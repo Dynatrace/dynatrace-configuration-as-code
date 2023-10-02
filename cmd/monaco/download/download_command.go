@@ -17,9 +17,7 @@ package download
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
@@ -92,10 +90,6 @@ func GetDownloadCommand(fs afero.Fs, command Command) (cmd *cobra.Command) {
 	cmd.MarkFlagsMutuallyExclusive("api", "only-automation")
 	cmd.MarkFlagsMutuallyExclusive("settings-schema", "only-automation")
 
-	if featureflags.Entities().Enabled() {
-		getDownloadEntitiesCommand(fs, command, cmd)
-	}
-
 	err := errors.Join(
 		cmd.RegisterFlagCompletionFunc("token", completion.EnvVarName),
 		cmd.RegisterFlagCompletionFunc("oauth-client-id", completion.EnvVarName),
@@ -140,101 +134,6 @@ func preRunChecks(f downloadCmdOptions) error {
 	return nil
 }
 
-func getDownloadEntitiesCommand(fs afero.Fs, command Command, downloadCmd *cobra.Command) {
-	var project, outputFolder string
-	var forceOverwrite bool
-	var specificEntitiesTypes []string
-
-	downloadEntitiesCmd := &cobra.Command{
-		Use:   "entities",
-		Short: "Download entities configuration from Dynatrace",
-		Long: `Download entities configuration from Dynatrace
-
-Either downloading based on an existing manifest, or by defining environment URL and API token via the 'direct' sub-command.`,
-		Example: `- monaco download entities manifest manifest.yaml some_environment_from_manifest
-- monaco download entities direct https://environment.live.dynatrace.com API_TOKEN_ENV_VAR_NAME`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return fmt.Errorf("'direct' or 'manifest' sub-command is required")
-		},
-	}
-
-	manifestDownloadCmd := &cobra.Command{
-		Use:     "manifest [manifest file] [environment to download]",
-		Aliases: []string{"m"},
-		Short:   "Download configuration from Dynatrace via a manifest file",
-		Example: `monaco download entities manifest.yaml some_environment_from_manifest`,
-		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) != 2 || args[0] == "" || args[1] == "" {
-				return fmt.Errorf(`manifest and environment name have to be provided as positional arguments`)
-			}
-			return nil
-		},
-		ValidArgsFunction: completion.DownloadManifestCompletion,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			m := args[0]
-			specificEnvironment := args[1]
-			options := entitiesManifestDownloadOptions{
-				manifestFile:            m,
-				specificEnvironmentName: specificEnvironment,
-				entitiesDownloadCommandOptions: entitiesDownloadCommandOptions{
-					sharedDownloadCmdOptions: sharedDownloadCmdOptions{
-						projectName:    project,
-						outputFolder:   outputFolder,
-						forceOverwrite: forceOverwrite,
-					},
-					specificEntitiesTypes: specificEntitiesTypes,
-				},
-			}
-			return command.DownloadEntitiesBasedOnManifest(fs, options)
-		},
-	}
-
-	directDownloadCmd := &cobra.Command{
-		Use:     "direct [URL] [TOKEN_NAME]",
-		Aliases: []string{"d"},
-		Short:   "Download configuration from a Dynatrace environment specified on the command line",
-		Example: `monaco download entities direct https://environment.live.dynatrace.com API_TOKEN_ENV_VAR_NAME`,
-		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) != 2 || args[0] == "" || args[1] == "" {
-				return fmt.Errorf(`url and token have to be provided as positional argument`)
-			}
-			return nil
-		},
-		ValidArgsFunction: completion.DownloadDirectCompletion,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			url := args[0]
-			tokenEnvVar := args[1]
-			options := entitiesDirectDownloadOptions{
-				environmentURL: url,
-				envVarName:     tokenEnvVar,
-				entitiesDownloadCommandOptions: entitiesDownloadCommandOptions{
-					sharedDownloadCmdOptions: sharedDownloadCmdOptions{
-						projectName:    project,
-						outputFolder:   outputFolder,
-						forceOverwrite: forceOverwrite,
-					},
-					specificEntitiesTypes: specificEntitiesTypes,
-				},
-			}
-			return command.DownloadEntities(fs, options)
-
-		},
-	}
-
-	setupSharedEntitiesFlags(manifestDownloadCmd, &project, &outputFolder, &forceOverwrite, &specificEntitiesTypes)
-	setupSharedEntitiesFlags(directDownloadCmd, &project, &outputFolder, &forceOverwrite, &specificEntitiesTypes)
-
-	downloadEntitiesCmd.AddCommand(manifestDownloadCmd)
-	downloadEntitiesCmd.AddCommand(directDownloadCmd)
-
-	downloadCmd.AddCommand(downloadEntitiesCmd)
-}
-
-func setupSharedEntitiesFlags(cmd *cobra.Command, project, outputFolder *string, forceOverwrite *bool, specificEntitiesTypes *[]string) {
-	setupSharedFlags(cmd, project, outputFolder, forceOverwrite)
-	cmd.Flags().StringSliceVarP(specificEntitiesTypes, "specific-types", "s", make([]string, 0), "List of entity type IDs specifying which entity types to download")
-
-}
 func setupSharedFlags(cmd *cobra.Command, project, outputFolder *string, forceOverwrite *bool) {
 	// flags always available
 	cmd.Flags().StringVarP(project, "project", "p", "project", "Project to create within the output-folder")
