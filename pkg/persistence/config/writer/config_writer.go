@@ -614,13 +614,13 @@ func extractTemplate(context *detailedSerializerContext, cfg config.Config) (str
 			}
 			name = n
 		} else {
-			name = sanitize(t.Id()) + ".json"
+			name = sanitize(t.ID()) + ".json"
 			path = filepath.Join(context.configFolder, name)
 		}
 	case *template.FileBasedTemplate:
 		path = t.FilePath()
 		if path == "" {
-			return "", configTemplate{}, newDetailedConfigWriterError(context.serializerContext, fmt.Errorf("file-based template %q is missing file path - can not write to file", t.Id()))
+			return "", configTemplate{}, newDetailedConfigWriterError(context.serializerContext, fmt.Errorf("file-based template %q is missing file path - can not write to file", t.ID()))
 		}
 		n, err := filepath.Rel(context.configFolder, filepath.Clean(path))
 		if err != nil {

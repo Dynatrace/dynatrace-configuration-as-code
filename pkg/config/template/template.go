@@ -18,12 +18,12 @@ package template
 // The main implementation is FileBasedTemplate, which loads its Content from a file on disk. An InMemoryTemplate exists
 // as well and is used in cases where Template data is not related to a file - e.g. during download or convert.
 type Template interface {
-	// ID of the template
-	Id() string
+	// ID is a unique identifier for this template. It should be usable in user-facing messages.
+	ID() string
 
-	// Content returns the string content of the template, returns error if content is not accessible
+	// Content returns the string content of the template, returns error if content is not accessible.
 	Content() (string, error)
 
-	// UpdateContent sets the content of the template to the new provided one, returns error if update failed
+	// UpdateContent sets the content of the template to the new provided one, returns error if update failed.
 	UpdateContent(newContent string) error
 }

@@ -206,7 +206,7 @@ func (d *Downloader) createConfigForDownloadedJson(mappedJson map[string]interfa
 
 	coord := coordinate.Coordinate{
 		Project:  projectId,
-		ConfigId: templ.Id(),
+		ConfigId: templ.ID(),
 		Type:     theApi.ID,
 	}
 
