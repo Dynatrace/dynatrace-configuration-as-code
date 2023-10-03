@@ -1,13 +1,3 @@
-def fullRegex = ~/^\d+\.\d+\.\d+$/         // 1.2.3
-def rcRegex = ~/^\d+\.\d+\.\d+-rc.*$/      // 1.2.3-rc(.*)
-def devRegex = ~/^\d+\.\d+\.\d+-dev.*$/    // 1.2.3-dev(.*)
-
-final String PROJECT = 'monaco'
-def version
-def releaseId
-
-def isFullRelease, isRcRelease, isDevRelease
-
 pipeline {
     agent {
         kubernetes {
@@ -26,239 +16,190 @@ pipeline {
             when {
                 tag 'v*'
             }
-            stages {
-                stage('Prepare for build') {
-                    steps {
-                        script {
-                            getSignClient()
-
-                            // version is without the v* prefix
-                            version = getVersionFromGitTagName()
-
-                            isFullRelease = fullRegex.matcher(version).matches()
-                            isRcRelease = rcRegex.matcher(version).matches()
-                            isDevRelease = devRegex.matcher(version).matches()
-
-                            echo "version= ${version}"
-                            echo "isFullRelease=${isFullRelease}"
-                            echo "isRcRelease=${isRcRelease}"
-                            echo "isDevRelease=${isDevRelease}"
-
-                            if (!isFullRelease && !isRcRelease && !isDevRelease) {
-                                error('Given version tag is not a valid tag. Use v1.2.3, v1.2.3-rc*, or v1.2.3-dev*')
-                            }
-
-                            if (!isDevRelease) {
-                                releaseId = createGitHubRelease(version: version)
-                                echo "GitHub releaseId=${releaseId}"
-                            } else {
-                                echo "Skipping creation of GitHub release for version ${version}"
-                            }
+            steps {
+                script {
+                    Context ctx
+                    stage("Pre-build steps") {
+                        ctx = new Context(newGithubRelease())
+                        createEmptyDirectory(dir: Release.BINARIES)
+                        getSignClient()
+                        ctx.version = getVersionFromGitTagName(TAG_NAME)
+                        if (isRelease(ctx)) {
+                            ctx.githubRelease.createNew(ctx)
+                            echo "GitHub release ID: ${ctx.githubRelease.releaseId}"
                         }
                     }
-                }
 
-                stage('matrix') {
-                    matrix {
-                        axes {
-                            axis {
-                                name 'OS'
-                                values 'windows', 'linux', 'darwin', 'container'
-                            }
-                            axis {
-                                name 'ARCH'
-                                values '386', 'amd64', 'arm64'
-                            }
+                    stage("Build binaries") {
+                        def tasks = [:]
+                        //linux
+                        for (arch in ["amd64", "arm64", "386"]) {
+                            Release r = newRelease(os: "linux", arch: arch)
+                            tasks[r.binary.name()] = { releaseBinary(ctx, r) }
                         }
-                        excludes {
-                            exclude {
-                                axis {
-                                    name 'OS'
-                                    values 'windows'
-                                }
-                                axis {
-                                    name 'ARCH'
-                                    values 'arm64'
-                                }
-                            }
-                            exclude {
-                                axis {
-                                    name 'OS'
-                                    values 'darwin'
-                                }
-                                axis {
-                                    name 'ARCH'
-                                    values '386'
-                                }
-                            }
-                            exclude {
-                                axis {
-                                    name 'OS'
-                                    values 'container'
-                                }
-                                axis {
-                                    name 'ARCH'
-                                    values '386', 'arm64'
-                                }
-                            }
+                        //darwin
+                        for (arch in ["amd64", "arm64"]) {
+                            Release r = newRelease(os: "darwin", arch: arch)
+                            tasks[r.binary.name()] = { releaseBinary(ctx, r) }
                         }
-                        stages {
-                            stage('build') {
-                                steps {
-                                    script {
-                                        switch (env.OS) {
-                                            case "windows":
-                                                def release = "${PROJECT}-${env.OS}-${env.ARCH}.exe"
-
-                                                sh "rm -rf ${release}" //ensure to delete old build
-
-                                                buildBinary(command: release, version: version, dest: release)
-                                                signWinBinaries(source: release, version: version, destDir: '.', projectName: PROJECT)
-                                                pushToDynatraceStorage(source: release, dest: "${PROJECT}/${version}/${release}")
-                                                if (!isDevRelease) {
-                                                    pushFileToGithub(rleaseName: release, source: release, releaseId: releaseId)
-                                                } else {
-                                                    echo "Skipping upload of binaries to GitHub"
-                                                }
-                                                break
-                                            case "linux":
-                                            case "darwin":
-                                                def release = "${PROJECT}-${env.OS}-${env.ARCH}"
-
-                                                sh "rm -rf ${release}" //ensure to delete old build
-
-                                                buildBinary(command: release, version: version, dest: "${release}/${release}")
-                                                createShaSum(source: "${release}/${release}", dest: "${release}/${release}.sha256")
-//                                                signShaSum(source: "${release}/${release}.p7m", version: version, destDir: "${release}", projectName: PROJECT)
-//                                                createTarArchive(source: release, dest: release + '.tar')
-
-                                                def pathInStorage = "${PROJECT}/${version}/$release"
-                                                pushToDynatraceStorage(source: "${release}/${release}", dest: pathInStorage)
-                                                pushToDynatraceStorage(source: "${release}/${release}.sha256", dest: pathInStorage + ".sha256")
-                                                if (!isDevRelease) {
-                                                    pushFileToGithub(rleaseName: release, source: "${release}/${release}", releaseId: releaseId)
-                                                    pushFileToGithub(rleaseName: release + ".sha256", source: "${release}/${release}.sha256", releaseId: releaseId)
-                                                } else {
-                                                    echo "Skipping upload of binaries to GitHub"
-                                                }
-                                                break
-                                            case "container":
-                                                // docker hub, only full releases and rc-releases
-                                                if (!isDevRelease) {
-                                                    createContainerAndPushToStorage(version: version, tagLatest: true, registrySecretsPath: 'keptn-jenkins/monaco/dockerhub-deploy', registry: 'Docker')
-                                                } else {
-                                                    echo "Skipping release of ${version} to Docker Hub"
-                                                }
-
-                                                // internal registry, all release are published
-                                                tagLatest = !isDevRelease // only tag full-releases and rc-releases as 'latest'
-                                                createContainerAndPushToStorage(version: version, tagLatest: tagLatest, registrySecretsPath: 'keptn-jenkins/monaco/registry-deploy', registry: 'Internal')
-
-                                                if (!isDevRelease) {
-                                                    withVault(vaultSecrets:
-                                                        [[
-                                                             path        : "keptn-jenkins/monaco/cosign",
-                                                             secretValues: [[envVar: 'cosign_pub', vaultKey: 'cosign.pub', isRequired: true],]
-                                                         ]]) {
-                                                        pushToGithub(releaseId: releaseId, rleaseName: "cosign.pub", source: "$cosign_pub")
-                                                    }
-                                                }
-
-                                                break
-                                        }
-                                    }
-                                }
-                            }
+                        //windows
+                        for (arch in ["amd64", "386"]) {
+                            Release r = newRelease(os: "windows", arch: arch)
+                            tasks[r.binary.name()] = { releaseBinary(ctx, r) }
                         }
+
+                        tasks["Docker container"] = { releaseDockerContainer(ctx) }
+
+                        parallel tasks
                     }
                 }
             }
         }
     }
+}
 
-    post {
-        failure {
-            emailext recipientProviders: [culprits()], subject: '$DEFAULT_SUBJECT', mimeType: 'text/html', body: '$DEFAULT_CONTENT'
-        }
-        unstable {
-            emailext recipientProviders: [culprits()], subject: '$DEFAULT_SUBJECT', mimeType: 'text/html', body: '$DEFAULT_CONTENT'
-        }
+void errorIfArgumentIsNull(Map args = [callerName: null, name: null, value: null]) {
+    if (args.callerName == null) {
+        error "(errorIfArgumentIsNull) method errorIfArgumentIsNull called without 'callerName' parameter"
+    }
+    if (args.name == null) {
+        error "(errorIfArgumentIsNull) method errorIfArgumentIsNull called without 'name' parameter"
+    }
+    if (args.value == null) {
+        error "(${args.callerName}) unspecified parameter ${args.name}"
     }
 }
 
-
-String getVersionFromGitTagName() {
-    def ver = sh(returnStdout: true, script: "git tag -l --points-at HEAD --sort=-creatordate | head -n 1")
-        .trim()
-        .substring(1)  // drop v prefix
-    return ver
+boolean isRelease(Context ctx) {
+    return isRelease(version: ctx.version)
 }
 
+boolean isRelease(Map args = [version: null]) {
+    errorIfArgumentIsNull(callerName: "isRelease", name: "version", value: args.version)
+    return isReleaseCandidate(args) || isFinal(args)
+}
+
+boolean isReleaseCandidate(Map args = [version: null]) {
+    errorIfArgumentIsNull(callerName: "isReleaseCandidate", name: "version", value: args.version)
+    return args.version ==~ /^\d+\.\d+\.\d+-rc\d*$/
+}
+
+boolean isFinal(Context ctx) {
+    return isFinal(version: ctx.version)
+}
+
+boolean isFinal(Map args = [version: null]) {
+    errorIfArgumentIsNull(callerName: "isFinal", name: "version", value: args.version)
+    return args.version ==~ /^\d+\.\d+\.\d+$/
+}
+
+
+/**
+ * wipeDir removes specified directory if it already exists, and create new empty one
+ * @param args path to a desire directory
+ *      stageName: wanted name of the stage, if not provided (null) stage is not created
+ */
+String createEmptyDirectory(Map<String, String> args = [dir: null, stageName: null]) {
+    errorIfArgumentIsNull(callerName: "createEmptyDirectory", name: "dir", value: args.dir)
+
+    Closure action = {
+        sh "rm -rf ${args.dir} && mkdir -p ${args.dir}"
+    }
+
+    if (args.stageName != null && args.stageName != "") {
+        stage(args.stageName, action)
+    } else {
+        action.call()
+    }
+    return args.dir
+}
+
+/**
+ * getSignClient downloads sign client
+ */
 void getSignClient() {
-    withVault(vaultSecrets: [[path        : 'keptn-jenkins/monaco/sign-service',
-                              secretValues: [[envVar: 'repository', vaultKey: 'client_repository_url ', isRequired: true]]]]
-    ) {
-        if (!fileExists('sign-client.jar')) {
-            sh '''
+    if (!fileExists('sign-client.jar')) {
+        stage("get sign-client") {
+            withVault(vaultSecrets: [[path        : 'keptn-jenkins/monaco/sign-service',
+                                      secretValues: [[envVar: 'repository', vaultKey: 'client_repository_url ', isRequired: true]]]]
+            ) {
+                sh(label: "get client", script: '''
                 curl --request GET $repository/testautomation-release-local/com/dynatrace/services/signservice/client/1.0.[RELEASE]/client-1.0.[RELEASE].jar
                      --show-error
                      --silent
                      --globoff
                      --fail-with-body
                      --output sign-client.jar
-               '''.replaceAll("\n", " ").replaceAll(/ +/, " ")
+               '''.replaceAll("\n", " ").replaceAll(/ +/, " "))
+            }
         }
     }
 }
 
-void buildBinary(Map args = [command: null, version: null, dest: null]) {
-    stage('🏁 Build ' + args.command) {
-        sh "make ${args.command} VERSION=${args.version} OUTPUT=${args.dest}"
+/**
+ * getVersionFromGitTagName extract version from git tag name
+ */
+String getVersionFromGitTagName(String tagName) {
+    stage("get version") {
+        // version is without the v* prefix
+        def ver = tagName.substring(1)  // drop v prefix
+        echo "version= ${ver}"
+        return ver
     }
+}
+
+
+void releaseBinary(Context ctx, Release release) {
+    stage("build ${release.os}/${release.arch}") {
+        def knownArchs = ["arm64", "amd64", "386"]
+
+        if (!knownArchs.contains(release.arch)) {
+            error "createLinuxImage: The desired architecture ${release.arch} is not one of ${knownArchs}"
+        }
+
+        buildBinary(makeCommand: release.binary.name(), version: ctx.version, dest: release.binary.localPath())
+        if (release.os == "windows") {
+            signWinBinaries(source: release.binary.localPath(), version: ctx.version, destDir: '.', projectName: "monaco")
+        }
+
+        computeShaSum(source: release.binary.localPath(), dest: release.binary.shaPath())
+
+        pushToDtRepository(source: release.binary.localPath(), dest: release.binary.dtRepositoryPath(ctx))
+        pushToDtRepository(source: release.binary.shaPath(), dest: release.binary.dtRepositoryArtifactoryPathSha(ctx))
+
+        if (isRelease(ctx)) {
+            stage("push to GitHub") {
+                ctx.githubRelease.addToRelease(ctx, release)
+            }
+        }
+    }
+}
+
+void releaseDockerContainer(Context ctx) {
+    stage("Build Docker") {
+        def dockerTools = load(".ci/jenkins/tools/docker.groovy")
+
+        dockerTools.installQemuEmulator()
+        dockerTools.installCosign()
+        dockerTools.createNewBuilder()
+        dockerTools.listDrivers()
+
+        boolean latest = false
+        if (isFinal(ctx)) {
+            latest = true
+        }
+        dockerTools.buildContainer(version: ctx.version, registrySecretsPath: "keptn-jenkins/monaco/registry-deploy", latest: latest)
+
+        if (isRelease(ctx)) {
+            dockerTools.buildContainer(version: ctx.version, registrySecretsPath: "keptn-jenkins/monaco/dockerhub-deploy", latest: latest)
+        }
+    }
+
 }
 
 void signWinBinaries(Map args = [source: null, version: null, destDir: null, projectName: null]) {
     stage('Sign binaries') {
         signWithSignService(source: args.source, version: args.version, destDir: args.destDir, projectName: args.projectName, signAction: "SIGN")
-    }
-}
-
-void createShaSum(Map args = [source: null, dest: null]) {
-    stage('Compute SHA sum') {
-        sh "sha256sum ${args.source} | sed 's, .*/,  ,' > ${args.dest}"
-    }
-}
-
-void signShaSum(Map args = [source: null, version: null, destDir: null, projectName: null]) {
-    stage('Sign SHA sum') {
-        signWithSignService(source: args.source, version: args.version, destDir: args.destDir, projectName: args.projectName, signAction: "ENVELOPE")
-        sh "cat -v ${args.source}"
-    }
-}
-
-void createTarArchive(Map args = [source: null, dest: null]) {
-    stage('Create tar archive') {
-        tar(dir: args.source, file: args.dest)
-    }
-}
-
-def pushToDynatraceStorage(Map args = [source: null, dest: null]) {
-    stage('Deliver to storage') {
-        withEnv(["source=${args.source}", "dest=$args.dest"]) {
-            withVault(vaultSecrets: [[path        : 'keptn-jenkins/monaco/artifact-storage-deploy',
-                                      secretValues: [
-                                          [envVar: 'repo_path', vaultKey: 'repo_path', isRequired: true],
-                                          [envVar: 'username', vaultKey: 'username', isRequired: true],
-                                          [envVar: 'password', vaultKey: 'password', isRequired: true]]]]
-            ) {
-                sh '''
-                    curl --request PUT $repo_path/$dest
-                         --user "$username":"$password"
-                         --fail-with-body
-                         --upload-file $source
-                   '''.replaceAll("\n", " ").replaceAll(/ +/, " ")
-            }
-        }
     }
 }
 
@@ -286,104 +227,131 @@ void signWithSignService(Map args = [source: null, version: null, destDir: '.', 
 
 }
 
-void createContainerAndPushToStorage(Map args = [version: null, tagLatest: false, registrySecretsPath: null, registry: null]) {
-    stage("Publish container: registry=${args.registry}, version=${args.version}") {
-        withEnv(["version=${args.version}"]) {
-            withVault(vaultSecrets: [
-                [
-                    path        : "${args.registrySecretsPath}",
-                    secretValues: [
-                        [envVar: 'registry', vaultKey: 'registry', isRequired: true],
-                        [envVar: 'repo', vaultKey: 'repo', isRequired: true],
-                        [envVar: 'username', vaultKey: 'username', isRequired: true],
-                        [envVar: 'password', vaultKey: 'password', isRequired: true]
-                    ]
-                ],
-                [
-                    path        : "keptn-jenkins/monaco/cosign",
-                    secretValues: [
-                        [envVar: 'cosign_key', vaultKey: 'cosign.key', isRequired: true],
-                        [envVar: 'cosign_pub', vaultKey: 'cosign.pub', isRequired: true],
-                        [envVar: 'cosign_password', vaultKey: 'cosign_password', isRequired: true]
-                    ]
-                ]
-            ]) {
-                script {
-                    try {
-                        sh 'docker login --username $username --password $password $registry'
-                        sh 'DOCKER_BUILDKIT=1 make docker-container OUTPUT=./build/docker/monaco CONTAINER_NAME=$registry/$repo/dynatrace-configuration-as-code VERSION=$version'
-
-                        sh 'docker push $registry/$repo/dynatrace-configuration-as-code:$version'
-
-                        sh 'make sign-verify-image COSIGN_PASSWORD=$cosign_password FULL_IMAGE_NAME=$registry/$repo/dynatrace-configuration-as-code:$version'
-
-                        if (args.tagLatest) {
-                            sh 'docker tag $registry/$repo/dynatrace-configuration-as-code:$version $registry/$repo/dynatrace-configuration-as-code:latest'
-                            sh 'docker push $registry/$repo/dynatrace-configuration-as-code:latest'
-                        }
-                    } finally {
-                        sh 'docker logout $registry'
-                    }
-                }
-            }
-        }
+void buildBinary(Map args = [makeCommand: null, version: null, dest: null]) {
+    stage("build binaries") {
+        sh "make ${args.makeCommand} VERSION=${args.version} OUTPUT=${args.dest}"
     }
 }
 
-int createGitHubRelease(Map args = [version: null]) {
-    stage('Create GitHub release draft') {
-        script {
-            withEnv(["version=${args.version}",]) {
-                withVault(vaultSecrets: [[path        : 'keptn-jenkins/monaco/github-credentials',
-                                          secretValues: [[envVar: 'token', vaultKey: 'access_token', isRequired: true]]]]
-                ) {
-                    def jsonRes = sh(returnStdout: true, script: '''
-                        curl --request POST https://api.github.com/repos/Dynatrace/dynatrace-configuration-as-code/releases
-                             --header "Accept: application/vnd.github+json"
-                             --header "Authorization: Bearer $token"
-                             --header "X-GitHub-Api-Version: 2022-11-28"
-                             --fail-with-body
-                             --data \'{
-                                        "tag_name":"v\'$version\'",
-                                        "target_commitish":"main",
-                                        "name":"\'$version\'",
-                                        "draft":true,
-                                        "prerelease":false,
-                                        "generate_release_notes":true
-                                    }\'
-                        '''.replaceAll("\n", " ").replaceAll(/ +/, " "))
-                    def jsonResObj = readJSON(text: jsonRes)
-                    return jsonResObj.id
-                }
-            }
-        }
+void computeShaSum(Map args = [source: null, dest: null]) {
+    stage("compute sha256 sum") {
+        sh "sha256sum ${args.source} | sed 's, .*/,  ,' > ${args.dest}"
+        sh "cat ${args.dest}"
     }
 }
 
-void pushToGithub(Map args = [rleaseName: null, source: null, releaseId: null]) {
-    stage('Deliver to GitHub') {
-        script {
-            withEnv(["rleaseName=${args.rleaseName}", "source=${args.source}", "releaseId=${args.releaseId}",
-            ]) {
-                withVault(vaultSecrets: [[path        : 'keptn-jenkins/monaco/github-credentials',
-                                          secretValues: [[envVar: 'token', vaultKey: 'access_token', isRequired: true]]]]
-                ) {
-                    sh '''
-                    curl --request POST https://uploads.github.com/repos/Dynatrace/dynatrace-configuration-as-code/releases/$releaseId/assets?name=$rleaseName
-                         --header "Accept: application/vnd.github+json"
-                         --header "Authorization: Bearer $token"
-                         --header "X-GitHub-Api-Version: 2022-11-28"
-                         --header "Content-Type: application/octet-stream"
+def pushToDtRepository(Map args = [source: null, dest: null]) {
+    stage('push to repository') {
+        withEnv(["source=${args.source}", "dest=$args.dest"]) {
+            withVault(vaultSecrets: [[path        : 'keptn-jenkins/monaco/artifact-storage-deploy',
+                                      secretValues: [
+                                          [envVar: 'repo_path', vaultKey: 'repo_path', isRequired: true],
+                                          [envVar: 'username', vaultKey: 'username', isRequired: true],
+                                          [envVar: 'password', vaultKey: 'password', isRequired: true]]]]
+            ) {
+                sh '''
+                    curl --request PUT $repo_path/$dest
+                         --user "$username":"$password"
                          --fail-with-body
-                         --data-binary "$source"
-                    '''.replaceAll("\n", " ").replaceAll(/ +/, " ")
-                }
+                         --upload-file $source
+                   '''.replaceAll("\n", " ").replaceAll(/ +/, " ")
             }
         }
     }
 }
 
 
-void pushFileToGithub(Map args = [rleaseName: null, source: null, releaseId: null]) {
-    pushToGithub(releaseId: args.releaseId, source: "@" + args.source, rleaseName: args.rleaseName)
+class Context {
+    String version
+    GithubRelease githubRelease
+
+    Context(def githubRelease) {
+        this.githubRelease = githubRelease
+    }
 }
+
+
+GithubRelease newGithubRelease() {
+    Map args = [:]
+    args.githubTools = load(".ci/jenkins/tools/github.groovy")
+    return new GithubRelease(args)
+}
+
+class GithubRelease {
+    private githubTools
+    String releaseId
+
+    GithubRelease(Map args = [githubTools: null]) {
+        githubTools = args.githubTools
+    }
+
+    String createNew(Context ctx) {
+        this.releaseId = githubTools.createRelease(version: ctx.version)
+        return this.releaseId
+    }
+
+    void addToRelease(Context ctx, Release release) {
+        githubTools.pushFileToRelease(rleaseName: release.binary.name(), source: release.binary.localPath(), releaseId: this.releaseId)
+        githubTools.pushFileToRelease(rleaseName: "${release.binary.name()}.sha", source: release.binary.shaPath(), releaseId: this.releaseId)
+    }
+}
+
+Release newRelease(Map args = [os: null, arch: null]) {
+    errorIfArgumentIsNull(callerName: "newRelease", name: "os", value: args.os)
+    errorIfArgumentIsNull(callerName: "newRelease", name: "arch", value: args.arch)
+
+    def knownOs = ["linux", "darwin", "windows"]
+    def knownArchs = ["arm64", "amd64", "386"]
+
+    if (!knownOs.contains(args.os)) {
+        error "newRelease: The desired OS ${args.os} is not one of ${knownOs}"
+    }
+    if (!knownArchs.contains(args.arch)) {
+        error "newRelease: The desired architecture ${args.arch} is not one of ${knownArchs}"
+    }
+
+    new Release(args)
+}
+
+class Release {
+    static final String BINARIES = './bin'
+    private String os //e.g. linux, windows, darwin
+    private String arch //e.g. 386, amd64, arm64
+    Binary binary
+
+    Release(Map args = [os: null, arch: null]) {
+        this.arch = args.arch
+        this.os = args.os
+
+        this.binary = new Binary()
+    }
+
+    class Binary {
+        String name() {
+            if (os == "windows") {
+                return "monaco-${os}-${arch}.exe"
+            }
+            return "monaco-${os}-${arch}"
+        }
+
+        String localPath() {
+            return "${BINARIES}/${binary.name()}"
+        }
+
+        String shaPath() {
+            return "${BINARIES}/${binary.name()}.sha256"
+        }
+
+        String dtRepositoryPath(Context ctx) {
+            return "monaco/${ctx.version}/${binary.name()}"
+        }
+
+        String dtRepositoryArtifactoryPathSha(Context ctx) {
+            return "monaco/${ctx.version}/${binary.name()}.sha256"
+        }
+    }
+}
+
+
+
+
