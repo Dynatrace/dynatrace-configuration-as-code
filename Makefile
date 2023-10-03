@@ -9,7 +9,7 @@ default: build
 setup:
 	@echo "Installing build tools..."
 	@go install github.com/google/addlicense@v1.1.1
-	@go install gotest.tools/gotestsum@v1.10.1
+	@go install gotest.tools/gotestsum@v1.11.0
 	@go install go.uber.org/mock/mockgen@v0.2.0
 	@go install github.com/sigstore/cosign/v2/cmd/cosign@v2.1.1
 
@@ -89,22 +89,22 @@ endif
 
 test: mocks
 	@echo "Testing $(BINARY_NAME)..."
-	@gotestsum ${testopts} -- -tags=unit -v -race ./...
+	@gotestsum ${testopts} --format testdox -- -tags=unit -v -race ./...
 
 integration-test: mocks
-	@gotestsum ${testopts} --format standard-verbose -- -tags=integration -timeout=30m -v -race ./...
+	@gotestsum ${testopts} --format testdox -- -tags=integration -timeout=30m -v -race ./...
 
 integration-test-v1: mocks
-	@gotestsum ${testopts} --format standard-verbose -- -tags=integration_v1 -timeout=30m -v -race ./...
+	@gotestsum ${testopts} --format testdox -- -tags=integration_v1 -timeout=30m -v -race ./...
 
 download-restore-test: mocks
-	@gotestsum ${testopts} --format standard-verbose -- -tags=download_restore -timeout=30m -v -race ./...
+	@gotestsum ${testopts} --format testdox -- -tags=download_restore -timeout=30m -v -race ./...
 
 clean-environments:
     @MONACO_ENABLE_DANGEROUS_COMMANDS=1 go run ./cmd/monaco purge cmd/monaco/integrationtest/v2/test-resources/test_environments_manifest.yaml
 
 nightly-test:mocks
-	@gotestsum ${testopts} --format standard-verbose -- -tags=nightly -timeout=240m -v -race ./...
+	@gotestsum ${testopts} --format testdox -- -tags=nightly -timeout=240m -v -race ./...
 
 # Build and Test a single package supplied via pgk variable, without using test cache
 # Run as e.g. make test-package pkg=project
