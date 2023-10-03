@@ -73,15 +73,6 @@ func DependencyGraphBasedDeployParallel() FeatureFlag {
 	}
 }
 
-// Buckets toggles whether the Grail bucket type can be used.
-// Introduced: (inactive) 2023-08-09 ->
-func Buckets() FeatureFlag {
-	return FeatureFlag{
-		envName:        "MONACO_FEAT_BUCKETS",
-		defaultEnabled: false,
-	}
-}
-
 // UnescapeOnConvert toggles whether converting will remove escape chars from v1 values.
 // Introduced: 2023-09-01; v2.8.0
 func UnescapeOnConvert() FeatureFlag {

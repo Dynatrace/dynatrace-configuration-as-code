@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
@@ -161,7 +160,6 @@ func TestDelete(t *testing.T) {
 }
 
 func TestDeleteSkipsPlatformTypesWhenDeletingFromClassicEnv(t *testing.T) {
-	t.Setenv(featureflags.Buckets().EnvName(), "true")
 
 	configFolder := "test-resources/delete-test-configs/"
 	deployManifestPath := configFolder + "deploy-manifest.yaml"
