@@ -120,13 +120,12 @@ update-dependencies:
 	@go mod tidy
 
 
-
 #TAG - specify tag value. The main purpose is to define public tag during a release build.
 CONTAINER_NAME ?= $(BINARY_NAME)
 .PHONY: docker-container
-docker-container: $(BINARY_NAME)-linux-amd64
+docker-container:
 	@echo Building docker container...
-	DOCKER_BUILDKIT=1 docker build --build-arg NAME=$(BINARY_NAME) --build-arg SOURCE=$(OUTPUT) --tag $(CONTAINER_NAME):$(VERSION) .
+	DOCKER_BUILDKIT=1 docker build --build-arg VERSION=$(VERSION) --tag $(CONTAINER_NAME):$(VERSION) .
 
 sign-verify-image:
 	@go install github.com/sigstore/cosign/v2/cmd/cosign@v2.1.1
