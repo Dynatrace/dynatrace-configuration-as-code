@@ -55,7 +55,7 @@ jobs:
 
       - name: 🌎 Integration test
         if: github.repository == env.BASE_REPO && (github.event.action != 'labeled' || github.event.label.name == env.E2E_TEST_LABEL)
-        run: make integration-test
+        run: make integration-test testopts="--junitfile test-result-integration.xml"
         env:
           MONACO_FEAT_GRAPH_DEPLOY: "true" # TODO remove when graph based deployments are activated by default
           MONACO_FEAT_GRAPH_DEPLOY_PARALLEL: "true" # TODO remove when graph based deployments are activated by default
@@ -72,7 +72,7 @@ jobs:
 
       - name: 🧓 Integration test (legacy)
         if: github.repository == env.BASE_REPO && (github.event.action != 'labeled' || github.event.label.name == env.E2E_TEST_LABEL)
-        run: make integration-test-v1
+        run: make integration-test-v1 testopts="--junitfile test-result-integration-legacy.xml"
         env:
           MONACO_FEAT_GRAPH_DEPLOY: "true" # TODO remove when graph based deployments are activated by default
           MONACO_FEAT_GRAPH_DEPLOY_PARALLEL: "true" # TODO remove when graph based deployments are activated by default
@@ -88,7 +88,7 @@ jobs:
 
       - name: 📥/📤 Download/Restore test
         if: github.repository == env.BASE_REPO && (github.event.action != 'labeled' || github.event.label.name == env.E2E_TEST_LABEL)
-        run: make download-restore-test
+        run: make download-restore-test testopts="--junitfile test-result-integration-download-restore.xml"
         env:
           MONACO_FEAT_GRAPH_DEPLOY: "true" # TODO remove when graph based deployments are activated by default
           MONACO_FEAT_GRAPH_DEPLOY_PARALLEL: "true" # TODO remove when graph based deployments are activated by default
@@ -104,7 +104,7 @@ jobs:
 
       - name: 🌙 Nightly Tests
         if: github.repository == env.BASE_REPO && github.event_name == 'schedule'
-        run: make nightly-test
+        run: make nightly-test testopts="--junitfile test-result-integration-nightly.xml"
         env:
           MONACO_FEAT_GRAPH_DEPLOY: "true" # TODO remove when graph based deployments are activated by default
           MONACO_FEAT_GRAPH_DEPLOY_PARALLEL: "true" # TODO remove when graph based deployments are activated by default
@@ -133,3 +133,20 @@ jobs:
           OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
           OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
           OAUTH_TOKEN_ENDPOINT: ${{ secrets.OAUTH_TOKEN_ENDPOINT }}
+
+      - name: ⬆️ Upload Test Results
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3.1.3
+        if: always()
+        with:
+          name: Test Results
+          path: test-result-*.xml
+
+  upload_event:
+    name: "Upload Event File"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Upload
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3.1.3
+        with:
+          name: event_file
+          path: ${{ github.event_path }}

@@ -7,7 +7,7 @@ name: Test Results
 
 on:
   workflow_run:
-    workflows: [ "Build and Test" ]
+    workflows: [ "E2E Test" ]
     types:
       - completed
 
@@ -15,8 +15,8 @@ env:
   ARTIFACT_PATH: "artifacts"
 
 jobs:
-  unit-test-results:
-    name: Unit Test Results
+  e2e-test-results:
+    name: End-to-end Test Results
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -42,10 +42,10 @@ jobs:
             unzip -d "$name" "$name.zip"
           done
 
-      - name: Publish Unit Test Results
+      - name: Publish E2E Test Results
         uses: EnricoMi/publish-unit-test-result-action@d93dbc08d265e4653da0c0af544bee2a851d3e38 #v2.10.0
         with:
-          check_name: "Unit Test Results"
+          check_name: "E2E Test Results"
           commit: ${{ github.event.workflow_run.head_sha }}
           event_file: ${{ env.ARTIFACT_PATH }}/event_file/event.json
           event_name: ${{ github.event.workflow_run.event }}
