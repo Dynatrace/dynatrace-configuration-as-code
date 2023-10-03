@@ -322,6 +322,7 @@ func isApplicationNotReadyYet(resp rest.Response, theApi api.API) bool {
 	return isCalculatedMetricsError(resp, theApi) ||
 		isSyntheticMonitorServerError(resp, theApi) ||
 		isApplicationAPIError(resp, theApi) ||
+		isApplicationDetectionRuleException(resp, theApi) ||
 		strings.Contains(string(resp.Body), "Unknown application(s)")
 }
 
@@ -339,6 +340,13 @@ func isGeneralSyntheticAPIError(resp rest.Response, theApi api.API) bool {
 func isApplicationAPIError(resp rest.Response, theApi api.API) bool {
 	return isAnyApplicationApi(theApi) &&
 		(resp.Is5xxError() || resp.StatusCode == http.StatusConflict || resp.StatusCode == http.StatusNotFound)
+}
+
+// Special case (workaround):
+// Sometimes, the API returns 500 Internal Server Error e.g. when an application referenced by
+// an application detection rule is not fully "ready" yet.
+func isApplicationDetectionRuleException(resp rest.Response, theApi api.API) bool {
+	return theApi.ID == "app-detection-rule" && !resp.IsSuccess()
 }
 
 func isCredentialNotReadyYet(resp rest.Response) bool {
