@@ -19,6 +19,7 @@ package persistence
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/mitchellh/mapstructure"
 )
@@ -54,6 +55,11 @@ func (c *TypeDefinition) UnmarshalYAML(unmarshal func(interface{}) error) error 
 	switch v := data.(type) {
 	case string:
 		if v == BucketType {
+			// string was a bucket
+			if !featureflags.Buckets().Enabled() {
+				return fmt.Errorf("failed to parse 'type' section: unknown type %q", v)
+			}
+
 			c.Bucket = v
 			return nil
 		}

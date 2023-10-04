@@ -21,6 +21,7 @@ package v2
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -31,6 +32,8 @@ import (
 
 // Tests a dry run (validation)
 func TestIntegrationBucketValidation(t *testing.T) {
+
+	t.Setenv(featureflags.Buckets().EnvName(), "1")
 	t.Setenv("UNIQUE_TEST_SUFFIX", "can-be-nonunique-for-validation")
 
 	configFolder := "test-resources/integration-bucket/"
@@ -61,6 +64,7 @@ func TestIntegrationBucket(t *testing.T) {
 	configFolder := "test-resources/integration-bucket/"
 	manifest := configFolder + "manifest.yaml"
 	specificEnvironment := ""
+	t.Setenv(featureflags.Buckets().EnvName(), "1")
 
 	RunIntegrationWithCleanup(t, configFolder, manifest, specificEnvironment, "Buckets", func(fs afero.Fs, _ TestContext) {
 
@@ -85,6 +89,7 @@ func TestIntegrationComplexBucket(t *testing.T) {
 	configFolder := "test-resources/integration-bucket/"
 	manifest := configFolder + "manifest.yaml"
 	specificEnvironment := ""
+	t.Setenv(featureflags.Buckets().EnvName(), "1")
 
 	RunIntegrationWithCleanup(t, configFolder, manifest, specificEnvironment, "ComplexBuckets", func(fs afero.Fs, _ TestContext) {
 
