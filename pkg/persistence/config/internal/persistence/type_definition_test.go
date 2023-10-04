@@ -19,12 +19,15 @@
 package persistence
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v2"
 	"testing"
 )
 
 func Test_typeDefinition_isSound(t *testing.T) {
+	t.Setenv(featureflags.Buckets().EnvName(), "1")
+
 	type fields struct {
 		configType TypeDefinition
 		knownApis  map[string]struct{}
