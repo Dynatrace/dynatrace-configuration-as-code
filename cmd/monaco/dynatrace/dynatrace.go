@@ -46,7 +46,7 @@ func VerifyEnvironmentGeneration(envs manifest.Environments) bool {
 }
 
 func isClassicEnvironment(env manifest.EnvironmentDefinition) bool {
-	if _, err := version.GetDynatraceVersion(context.TODO(), rest.NewRestClient(auth.NewTokenAuthClient(env.Auth.Token.Value), nil, rest.CreateRateLimitStrategy()), env.URL.Value); err != nil {
+	if _, err := version.GetDynatraceVersion(context.TODO(), rest.NewRestClient(auth.NewTokenAuthClient(env.Auth.Token.Value.Value()), nil, rest.CreateRateLimitStrategy()), env.URL.Value); err != nil {
 		var respErr rest.RespError
 		if errors.As(err, &respErr) {
 			log.WithFields(field.Error(err)).Error("Could not authorize against the environment with name %q (%s) using token authorization: %v", env.Name, env.URL.Value, err)
@@ -61,8 +61,8 @@ func isClassicEnvironment(env manifest.EnvironmentDefinition) bool {
 
 func isPlatformEnvironment(env manifest.EnvironmentDefinition) bool {
 	oauthCredentials := auth.OauthCredentials{
-		ClientID:     env.Auth.OAuth.ClientID.Value,
-		ClientSecret: env.Auth.OAuth.ClientSecret.Value,
+		ClientID:     env.Auth.OAuth.ClientID.Value.Value(),
+		ClientSecret: env.Auth.OAuth.ClientSecret.Value.Value(),
 		TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
 	}
 	if _, err := metadata.GetDynatraceClassicURL(context.TODO(), rest.NewRestClient(auth.NewOAuthClient(context.TODO(), oauthCredentials), nil, rest.CreateRateLimitStrategy()), env.URL.Value); err != nil {
@@ -80,14 +80,14 @@ func isPlatformEnvironment(env manifest.EnvironmentDefinition) bool {
 
 func CreateClientSet(url string, auth manifest.Auth) (*client.ClientSet, error) {
 	if auth.OAuth == nil {
-		return client.CreateClassicClientSet(url, auth.Token.Value, client.ClientOptions{
+		return client.CreateClassicClientSet(url, auth.Token.Value.Value(), client.ClientOptions{
 			SupportArchive: support.SupportArchive,
 		})
 	}
 	return client.CreatePlatformClientSet(url, client.PlatformAuth{
-		OauthClientID:     auth.OAuth.ClientID.Value,
-		OauthClientSecret: auth.OAuth.ClientSecret.Value,
-		Token:             auth.Token.Value,
+		OauthClientID:     auth.OAuth.ClientID.Value.Value(),
+		OauthClientSecret: auth.OAuth.ClientSecret.Value.Value(),
+		Token:             auth.Token.Value.Value(),
 		OauthTokenURL:     auth.OAuth.GetTokenEndpointValue(),
 	}, client.ClientOptions{
 		SupportArchive: support.SupportArchive,
