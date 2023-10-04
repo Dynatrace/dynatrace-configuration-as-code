@@ -40,15 +40,15 @@ func CreateDynatraceClients(t *testing.T, environment manifest.EnvironmentDefini
 	var clients *client.ClientSet
 	var err error
 	if environment.Auth.OAuth == nil {
-		clients, err = client.CreateClassicClientSet(environment.URL.Value, environment.Auth.Token.Value, client.ClientOptions{
+		clients, err = client.CreateClassicClientSet(environment.URL.Value, environment.Auth.Token.Value.Value(), client.ClientOptions{
 			SupportArchive:  support.SupportArchive,
 			CachingDisabled: true, // disabled to avoid wrong cache reads
 		})
 	} else {
 		clients, err = client.CreatePlatformClientSet(environment.URL.Value, client.PlatformAuth{
-			OauthClientID:     environment.Auth.OAuth.ClientID.Value,
-			OauthClientSecret: environment.Auth.OAuth.ClientSecret.Value,
-			Token:             environment.Auth.Token.Value,
+			OauthClientID:     environment.Auth.OAuth.ClientID.Value.Value(),
+			OauthClientSecret: environment.Auth.OAuth.ClientSecret.Value.Value(),
+			Token:             environment.Auth.Token.Value.Value(),
 			OauthTokenURL:     environment.Auth.OAuth.GetTokenEndpointValue(),
 		}, client.ClientOptions{
 			SupportArchive:  support.SupportArchive,

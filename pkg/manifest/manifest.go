@@ -16,6 +16,7 @@ package manifest
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/oauth2/endpoints"
 	"golang.org/x/exp/maps"
 )
@@ -93,7 +94,7 @@ type AuthSecret struct {
 	Name string
 
 	// Value holds the actual token value for the given [Name]. It is empty when converting vom monaco-v1 to monaco-v2
-	Value string
+	Value secret.MaskedString
 }
 
 type ProjectDefinitionByProjectID map[string]ProjectDefinition

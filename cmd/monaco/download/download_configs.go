@@ -20,6 +20,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/dependency_resolution"
@@ -80,7 +81,7 @@ func readEnvVariable(envVar string) (manifest.AuthSecret, error) {
 	} else if content = os.Getenv(envVar); content == "" {
 		return manifest.AuthSecret{}, fmt.Errorf("the content of the environment variable %q is not set", envVar)
 	}
-	return manifest.AuthSecret{Name: envVar, Value: content}, nil
+	return manifest.AuthSecret{Name: envVar, Value: secret.MaskedString(content)}, nil
 }
 
 func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions downloadCmdOptions) error {

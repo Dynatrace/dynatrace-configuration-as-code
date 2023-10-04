@@ -155,11 +155,11 @@ func printUploadToSameEnvironmentWarning(env manifest.EnvironmentDefinition) {
 
 	var httpClient *http.Client
 	if env.Auth.OAuth == nil {
-		httpClient = clientAuth.NewTokenAuthClient(env.Auth.Token.Value)
+		httpClient = clientAuth.NewTokenAuthClient(env.Auth.Token.Value.Value())
 	} else {
 		credentials := clientAuth.OauthCredentials{
-			ClientID:     env.Auth.OAuth.ClientID.Value,
-			ClientSecret: env.Auth.OAuth.ClientSecret.Value,
+			ClientID:     env.Auth.OAuth.ClientID.Value.Value(),
+			ClientSecret: env.Auth.OAuth.ClientSecret.Value.Value(),
 			TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
 		}
 		httpClient = clientAuth.NewOAuthClient(context.TODO(), credentials)

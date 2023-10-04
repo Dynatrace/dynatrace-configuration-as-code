@@ -20,6 +20,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/slices"
 	version2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
@@ -218,7 +219,7 @@ func parseAuthSecret(context *LoaderContext, s authSecret) (AuthSecret, error) {
 		log.Debug("Skipped resolving environment variable %s based on loader options", s.Name)
 		return AuthSecret{
 			Name:  s.Name,
-			Value: fmt.Sprintf("SKIPPED RESOLUTION OF ENV_VAR: %s", s.Name),
+			Value: secret.MaskedString(fmt.Sprintf("SKIPPED RESOLUTION OF ENV_VAR: %s", s.Name)),
 		}, nil
 	}
 
@@ -231,7 +232,7 @@ func parseAuthSecret(context *LoaderContext, s authSecret) (AuthSecret, error) {
 		return AuthSecret{}, fmt.Errorf("environment-variable %q found, but the value resolved is empty", s.Name)
 	}
 
-	return AuthSecret{Name: s.Name, Value: v}, nil
+	return AuthSecret{Name: s.Name, Value: secret.MaskedString(v)}, nil
 }
 
 func parseOAuth(context *LoaderContext, a oAuth) (OAuth, error) {

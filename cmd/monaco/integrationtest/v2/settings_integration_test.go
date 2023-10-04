@@ -203,12 +203,12 @@ func TestDeploySettingsWithUniqueProperties_ConsidersScopes(t *testing.T) {
 
 func createSettingsClient(t *testing.T, env manifest.EnvironmentDefinition, opts ...func(dynatraceClient *dtclient.DynatraceClient)) dtclient.SettingsClient {
 	oauthCredentials := auth.OauthCredentials{
-		ClientID:     env.Auth.OAuth.ClientID.Value,
-		ClientSecret: env.Auth.OAuth.ClientSecret.Value,
+		ClientID:     env.Auth.OAuth.ClientID.Value.Value(),
+		ClientSecret: env.Auth.OAuth.ClientSecret.Value.Value(),
 		TokenURL:     env.Auth.OAuth.GetTokenEndpointValue(),
 	}
 
-	tokenClient := auth.NewTokenAuthClient(env.Auth.Token.Value)
+	tokenClient := auth.NewTokenAuthClient(env.Auth.Token.Value.Value())
 	oauthClient := auth.NewOAuthClient(context.TODO(), oauthCredentials)
 
 	client := rest.NewRestClient(oauthClient, nil, rest.CreateRateLimitStrategy())
