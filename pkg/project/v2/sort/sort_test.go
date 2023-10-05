@@ -19,7 +19,6 @@
 package sort_test
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
@@ -117,13 +116,7 @@ func TestGetSortedConfigsForEnvironments(t *testing.T) {
 		environmentName,
 	}
 
-	t.Run("Topology Sort", func(t *testing.T) {
-		t.Setenv(featureflags.DependencyGraphBasedSort().EnvName(), "false")
-		assertSortingWorks(t, projects, environments, environmentName, dashboardConfigCoordinate, autoTagCoordinates)
-	})
-
 	t.Run("Graph-based sort", func(t *testing.T) {
-		t.Setenv(featureflags.DependencyGraphBasedSort().EnvName(), "true")
 		assertSortingWorks(t, projects, environments, environmentName, dashboardConfigCoordinate, autoTagCoordinates)
 	})
 

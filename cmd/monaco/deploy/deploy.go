@@ -19,10 +19,8 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/deploy/internal/clientset"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/deploy/internal/logging"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/deploy/sequential"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/dynatrace"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/slices"
@@ -69,23 +67,16 @@ func deployConfigs(fs afero.Fs, manifestPath string, environmentGroups []string,
 	logging.LogProjectsInfo(filteredProjects)
 	logging.LogEnvironmentsInfo(loadedManifest.Environments)
 
-	if featureflags.DependencyGraphBasedDeploy().Enabled() {
-		clientSets, err := clientset.NewEnvironmentClients(loadedManifest.Environments, dryRun)
-		if err != nil {
-			return fmt.Errorf("failed to create API clients: %w", err)
-		}
-		err = deploy.DeployConfigGraph(filteredProjects, clientSets, deploy.DeployConfigsOptions{
-			ContinueOnErr: continueOnErr,
-			DryRun:        dryRun,
-		})
-		if err != nil {
-			return fmt.Errorf("%v failed - check logs for details: %w", logging.GetOperationNounForLogging(dryRun), err)
-		}
-	} else {
-		err = sequential.Deploy(filteredProjects, loadedManifest, continueOnErr, dryRun)
-		if err != nil {
-			return err
-		}
+	clientSets, err := clientset.NewEnvironmentClients(loadedManifest.Environments, dryRun)
+	if err != nil {
+		return fmt.Errorf("failed to create API clients: %w", err)
+	}
+	err = deploy.DeployConfigGraph(filteredProjects, clientSets, deploy.DeployConfigsOptions{
+		ContinueOnErr: continueOnErr,
+		DryRun:        dryRun,
+	})
+	if err != nil {
+		return fmt.Errorf("%v failed - check logs for details: %w", logging.GetOperationNounForLogging(dryRun), err)
 	}
 
 	log.Info("%s finished without errors", logging.GetOperationNounForLogging(dryRun))

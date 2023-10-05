@@ -46,33 +46,6 @@ func ConsistentUUIDGeneration() FeatureFlag {
 	}
 }
 
-// DependencyGraphBasedSort toggles whether sort.GetSortedConfigsForEnvironments use sgraph datastructures and algorithms for sorting projects.
-// Introduced: 2023-07-17; v2.6.0
-func DependencyGraphBasedSort() FeatureFlag {
-	return FeatureFlag{
-		envName:        "MONACO_FEAT_GRAPH_SORT",
-		defaultEnabled: true,
-	}
-}
-
-// DependencyGraphBasedDeploy toggles whether we use graphs for deployment.
-// Introduced: (inactive) 2023-07-27 -> (active) 2023-08-22; v2.8.0
-func DependencyGraphBasedDeploy() FeatureFlag {
-	return FeatureFlag{
-		envName:        "MONACO_FEAT_GRAPH_DEPLOY",
-		defaultEnabled: true,
-	}
-}
-
-// DependencyGraphBasedDeployParallel toggles whether we use parallel graph based deployment
-// Introduced: (inactive) 2023-07-27 -> (active) 2023-08-22; v2.8.0
-func DependencyGraphBasedDeployParallel() FeatureFlag {
-	return FeatureFlag{
-		envName:        "MONACO_FEAT_GRAPH_DEPLOY_PARALLEL",
-		defaultEnabled: true,
-	}
-}
-
 // Buckets toggles whether the Grail bucket type can be used.
 // Introduced: (inactive) 2023-08-09 ->
 func Buckets() FeatureFlag {

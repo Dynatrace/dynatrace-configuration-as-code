@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/mutlierror"
@@ -125,45 +124,10 @@ func deployComponentsToEnvironment(g graph.ConfigGraphPerEnvironment, env Enviro
 		return fmt.Errorf("failed to get independently sorted configs for environment %q: %w", env.Name, err)
 	}
 
-	if featureflags.DependencyGraphBasedDeployParallel().Enabled() {
-		return deployComponentsParallel(ctx, sortedConfigs, clientSet, apis, opts)
-	}
-
-	return deployComponents(ctx, sortedConfigs, clientSet, apis, opts)
+	return deployComponentsParallel(ctx, sortedConfigs, clientSet, apis, opts)
 }
 
 var skipError = errors.New("skip error")
-
-func deployComponents(ctx context.Context, components []graph.SortedComponent, clientSet ClientSet, apis api.APIs, opts DeployConfigsOptions) error {
-
-	errCount := 0
-
-	log.WithCtxFields(ctx).Info("Deploying %d independent configuration sets...", len(components))
-
-	for i := range components {
-		ctx = context.WithValue(ctx, log.CtxGraphComponentId{}, log.CtxValGraphComponentId(i))
-		err := deployComponent(ctx, components[i], clientSet, apis, opts)
-
-		if err != nil {
-			if !opts.ContinueOnErr && !opts.DryRun {
-				return err
-			}
-
-			var deploymentErrs errors2.DeploymentErrors
-			if errors.As(err, &deploymentErrs) {
-				errCount += deploymentErrs.ErrorCount
-			} else {
-				errCount += 1
-			}
-		}
-	}
-
-	if errCount > 0 {
-		return errors2.DeploymentErrors{ErrorCount: errCount}
-	}
-
-	return nil
-}
 
 func deployComponentsParallel(ctx context.Context, components []graph.SortedComponent, clientSet ClientSet, apis api.APIs, opts DeployConfigsOptions) error {
 
