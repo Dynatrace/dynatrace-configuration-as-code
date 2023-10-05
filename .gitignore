@@ -14,6 +14,9 @@ bin/
 /cmd/monaco/.logs
 .logs
 
+# Download files
+download_*
+
 # Mock files
 **/*_mock.go
 cmd/monaco/test-resources/download/
