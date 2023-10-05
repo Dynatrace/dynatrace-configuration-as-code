@@ -46,8 +46,6 @@ jobs:
 
       - name: 🧪 Unit test
         run: make test testopts="--junitfile test-result-${{ matrix.os }}-unit.xml"
-        env:
-          MONACO_FEAT_GRAPH_DEPLOY: true # TODO remove when graph based deployments are activated by default
 
       - name: ⬆️ Upload Test Results
         uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3.1.3
