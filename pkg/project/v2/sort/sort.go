@@ -17,11 +17,8 @@
 package sort
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2/sort/topologysort"
 )
 
 // ConfigsPerEnvironment returns a sorted slice of configurations for each environment. If configurations depend
@@ -29,9 +26,5 @@ import (
 // Depending on the configuration of featureflags.DependencyGraphBasedSort this will either use topologysort or a new graph datastructure
 // based sort. To use the full graph-based implementation use graph.New instead.
 func ConfigsPerEnvironment(projects []project.Project, environments []string) (sortedConfigsPerEnv project.ConfigsPerEnvironment, errs []error) {
-	if featureflags.DependencyGraphBasedSort().Enabled() {
-		log.Debug("Using dependency graph based sort")
-		return graph.SortProjects(projects, environments)
-	}
-	return topologysort.SortProjects(projects, environments)
+	return graph.SortProjects(projects, environments)
 }

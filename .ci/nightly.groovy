@@ -59,7 +59,6 @@ def executeWithSecrets(Map args = [cmd: null]) {
     withEnv([
         "TEST_ENVIRONMENT=hardening",
         "WORKFLOW_ACTOR=bc33e56f-e8dc-4004-829b-2b02a9d77154",
-        "MONACO_FEAT_GRAPH_DEPLOY=true" //TODO remove when graph based deployments are activated by default
     ]) {
         withVault(vaultSecrets:
             [[

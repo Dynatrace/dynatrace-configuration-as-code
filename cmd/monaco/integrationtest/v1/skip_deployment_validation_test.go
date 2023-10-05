@@ -20,7 +20,6 @@
 package v1
 
 import (
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
@@ -51,28 +50,8 @@ func TestValidationSkipDeployment(t *testing.T) {
 
 }
 
-func TestValidationSkipDeploymentWithBrokenDependency(t *testing.T) {
-	t.Setenv("TEST_TOKEN", "mock test token")
-	t.Setenv(featureflags.DependencyGraphBasedDeploy().EnvName(), "false")
-
-	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, "SkipDeployment", func(fs afero.Fs, manifest string) {
-
-		cmd := runner.BuildCli(fs)
-		cmd.SetArgs([]string{
-			"deploy",
-			"--verbose",
-			manifest,
-			"--dry-run",
-			"--project", "projectB",
-		})
-		err := cmd.Execute()
-		assert.Error(t, err, "errors during Validation")
-	})
-}
-
 func TestValidationSkipDeploymentWithBrokenDependency_GraphBasedDoesNotReturnErrorAsDependenciesAreIgnored(t *testing.T) {
 	t.Setenv("TEST_TOKEN", "mock test token")
-	t.Setenv(featureflags.DependencyGraphBasedDeploy().EnvName(), "true")
 
 	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, "SkipDeployment", func(fs afero.Fs, manifest string) {
 
@@ -129,28 +108,8 @@ func TestValidationSkipDeploymentWithOverridingFlagValue(t *testing.T) {
 	})
 }
 
-func TestValidationSkipDeploymentInterProjectWithMissingDependency(t *testing.T) {
-	t.Setenv("TEST_TOKEN", "mock test token")
-	t.Setenv(featureflags.DependencyGraphBasedDeploy().EnvName(), "false")
-
-	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, t.Name(), func(fs afero.Fs, manifest string) {
-		cmd := runner.BuildCli(fs)
-		cmd.SetArgs([]string{
-			"deploy",
-			"--verbose",
-			manifest,
-			"--dry-run",
-			"--project", "projectD",
-		})
-		err := cmd.Execute()
-
-		assert.Error(t, err, "errors during Validation")
-	})
-}
-
 func TestValidationSkipDeploymentInterProjectWithMissingDependency_GraphBasedDoesNotReturnErrorAsDependenciesAreIgnored(t *testing.T) {
 	t.Setenv("TEST_TOKEN", "mock test token")
-	t.Setenv(featureflags.DependencyGraphBasedDeploy().EnvName(), "true")
 
 	RunLegacyIntegrationWithoutCleanup(t, skipDeploymentFolder, skipDeploymentEnvironmentsFile, t.Name(), func(fs afero.Fs, manifest string) {
 		logOutput := strings.Builder{}
