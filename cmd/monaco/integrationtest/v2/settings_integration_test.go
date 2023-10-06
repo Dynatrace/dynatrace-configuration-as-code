@@ -87,14 +87,17 @@ func TestOldExternalIDGetsUpdated(t *testing.T) {
 
 	fs := testutils.CreateTestFileSystem()
 	var manifestPath = "test-resources/integration-settings-old-new-external-id/manifest.yaml"
-	loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, "")
+
+	env := "platform_env"
+
+	loadedManifest := integrationtest.LoadManifest(t, fs, manifestPath, env)
 	projects := integrationtest.LoadProjects(t, fs, manifestPath, loadedManifest)
-	sortedConfigs, _ := sort.ConfigsPerEnvironment(projects, []string{"platform_env"})
-	environment := loadedManifest.Environments["platform_env"]
-	configToDeploy := sortedConfigs["platform_env"][0]
+	sortedConfigs, _ := sort.ConfigsPerEnvironment(projects, []string{env})
+	environment := loadedManifest.Environments[env]
+	configToDeploy := sortedConfigs[env][0]
 
 	t.Cleanup(func() {
-		integrationtest.CleanupIntegrationTest(t, fs, manifestPath, loadedManifest, "")
+		integrationtest.CleanupIntegrationTest(t, fs, manifestPath, []string{env}, "")
 	})
 
 	// first deploy with external id generate that does not consider the project name

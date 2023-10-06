@@ -25,7 +25,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -260,12 +259,12 @@ func testRestoreConfigs(t *testing.T, initialConfigsFolder string, downloadFolde
 	err = downloadFunc(t, fs, downloadFolder, manifestFile, apisToDownload, "", oauthEnabled)
 	assert.NilError(t, err, "Error during download execution stage")
 
-	cleanupDeployedConfiguration(t, fs, manifestFile, suffix) // remove previously deployed configs
+	integrationtest.CleanupIntegrationTest(t, fs, manifestFile, nil, suffix) // remove previously deployed configs
 
 	downloadedManifestPath := filepath.Join(downloadFolder, "manifest.yaml")
 
 	t.Cleanup(func() { // cleanup uploaded configs after test run
-		cleanupDeployedConfiguration(t, fs, downloadedManifestPath, suffix)
+		integrationtest.CleanupIntegrationTest(t, fs, manifestFile, nil, suffix)
 	})
 
 	validation_uploadDownloadedConfigs(t, fs, downloadFolder, downloadedManifestPath) // re-deploy from download
@@ -287,7 +286,7 @@ func preparation_uploadConfigs(t *testing.T, fs afero.Fs, suffixTest string, con
 	}
 
 	t.Cleanup(func() { // register extra cleanup in case test fails after deployment
-		cleanupDeployedConfiguration(t, fs, manifestFile, suffix)
+		integrationtest.CleanupIntegrationTest(t, fs, manifestFile, nil, suffix)
 	})
 
 	cmd := runner.BuildCli(fs)
@@ -411,14 +410,4 @@ func validation_uploadDownloadedConfigs(t *testing.T, fs afero.Fs, downloadFolde
 	})
 	err := cmd.Execute()
 	assert.NilError(t, err)
-}
-
-func cleanupDeployedConfiguration(t *testing.T, fs afero.Fs, manifestFilepath string, testSuffix string) {
-	loadedManifest, errs := manifest.LoadManifest(&manifest.LoaderContext{
-		Fs:           fs,
-		ManifestPath: manifestFilepath,
-	})
-	testutils.FailTestOnAnyError(t, errs, "loading of manifest failed")
-
-	integrationtest.CleanupIntegrationTest(t, fs, manifestFilepath, loadedManifest, testSuffix)
 }

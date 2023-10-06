@@ -210,16 +210,10 @@ func runLegacyIntegration(t *testing.T, configFolder, envFile, suffixTest string
 	assert.NilError(t, err)
 	assert.Assert(t, exists, "manifest should exist on path '%s' but does not", manifestPath)
 
-	loadedManifest, errs := manifest.LoadManifest(&manifest.LoaderContext{
-		Fs:           fs,
-		ManifestPath: manifestPath,
-	})
-	testutils.FailTestOnAnyError(t, errs, "loading of environments failed")
-
 	if doCleanup {
 		t.Cleanup(func() {
 			t.Log("Cleaning up environment")
-			integrationtest.CleanupIntegrationTest(t, fs, manifestPath, loadedManifest, suffix)
+			integrationtest.CleanupIntegrationTest(t, fs, manifestPath, nil, suffix)
 		})
 	}
 
