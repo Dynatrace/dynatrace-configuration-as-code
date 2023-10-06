@@ -25,6 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client/dtclient"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/pointer"
 	"golang.org/x/net/context"
+	"strings"
 )
 
 type deleteValue struct {
@@ -168,7 +169,14 @@ func filterValuesToDelete(logger loggers.Logger, entries []pointer.DeletePointer
 
 		default:
 			// multiple configs with this name found -> error
-			logger.WithFields(field.F("expectedID", delPtr.Identifier)).Error("Unable to delete unique config - multiple configs of type %q found with the name %q. Please delete manually: %v", apiName, delPtr.Identifier, valuesToDelete)
+			matches := strings.Builder{}
+			for i, v := range valuesToDelete {
+				matches.WriteString(v.Id)
+				if i < len(valuesToDelete)-1 {
+					matches.WriteString(", ")
+				}
+			}
+			logger.WithFields(field.F("expectedID", delPtr.Identifier)).Error("Unable to delete unique config - multiple configs of type %q found with the name %q. Please manually delete the desired configuration(s) with IDs: %s", apiName, delPtr.Identifier, matches.String())
 			filterErr = true
 		}
 	}

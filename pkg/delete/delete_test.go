@@ -560,7 +560,7 @@ func TestSplitConfigsForDeletion(t *testing.T) {
 			name: "Duplicate names",
 			args: args{
 				entries: []pointer.DeletePointer{{Identifier: "d1"}, {Identifier: "d2"}},
-				values:  []dtclient.Value{{Name: "d1"}, {Name: "d1"}, {Name: "d2"}, {Name: "d2"}},
+				values:  []dtclient.Value{{Name: "d1", Id: "1"}, {Name: "d1", Id: "2"}, {Name: "d2", Id: "3"}, {Name: "d2", Id: "4"}},
 			},
 			expect: expect{
 				ids: []string{},
