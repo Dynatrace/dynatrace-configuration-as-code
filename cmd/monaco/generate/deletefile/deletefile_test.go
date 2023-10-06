@@ -45,7 +45,7 @@ func TestInvalidCommandUsage(t *testing.T) {
 		},
 		{
 			name:           "Fails on unknown flag",
-			args:           []string{"manifest.yaml", "--environment", "e"},
+			args:           []string{"manifest.yaml", "--specific-api", "auto-tag"},
 			errMsgContains: "unknown",
 		},
 	}
@@ -93,7 +93,78 @@ func TestGeneratesValidDeleteFile(t *testing.T) {
 	assertDeleteEntries(t, entries, "builtin:alerting.maintenance-window", "maintenance-window-setting")
 	assertDeleteEntries(t, entries, "management-zone", "mzone-1")
 	assertDeleteEntries(t, entries, "builtin:management-zones", "management-zone-setting")
-	assertDeleteEntries(t, entries, "notification", "Star Trek to #team-star-trek", "Captain's Log")
+	assertDeleteEntries(t, entries, "notification", "Star Trek to #team-star-trek", "envOverride: Star Wars to #team-star-wars", "Captain's Log")
+}
+
+func TestGeneratesValidDeleteFile_ForSpecificEnv(t *testing.T) {
+
+	t.Setenv("TOKEN", "some-value")
+	outputFolder := "output-folder"
+
+	t.Run("env1 includes base notification name", func(t *testing.T) {
+		fs := testutils.CreateTestFileSystem()
+		cmd := deletefile.Command(fs)
+		cmd.SetArgs([]string{
+			"./test-resources/manifest.yaml",
+			"-e",
+			"env1",
+			"-o",
+			outputFolder,
+		})
+		err := cmd.Execute()
+		assert.NoError(t, err)
+
+		expectedFile := filepath.Join(outputFolder, "delete.yaml")
+		assertFileExists(t, fs, expectedFile)
+
+		entries, errs := delete.LoadEntriesToDelete(fs, expectedFile)
+		assert.Len(t, errs, 0)
+
+		assertDeleteEntries(t, entries, "notification", "Star Trek to #team-star-trek", "Captain's Log")
+	})
+
+	t.Run("env2 includes over-written notification name", func(t *testing.T) {
+		fs := testutils.CreateTestFileSystem()
+		cmd := deletefile.Command(fs)
+		cmd.SetArgs([]string{
+			"./test-resources/manifest.yaml",
+			"-e",
+			"env2",
+			"-o",
+			outputFolder,
+		})
+		err := cmd.Execute()
+		assert.NoError(t, err)
+
+		expectedFile := filepath.Join(outputFolder, "delete.yaml")
+		assertFileExists(t, fs, expectedFile)
+
+		entries, errs := delete.LoadEntriesToDelete(fs, expectedFile)
+		assert.Len(t, errs, 0)
+
+		assertDeleteEntries(t, entries, "notification", "envOverride: Star Wars to #team-star-wars", "Captain's Log")
+	})
+
+	t.Run("no specific env includes both notification names", func(t *testing.T) {
+		fs := testutils.CreateTestFileSystem()
+		cmd := deletefile.Command(fs)
+		cmd.SetArgs([]string{
+			"./test-resources/manifest.yaml",
+			"-o",
+			outputFolder,
+		})
+		err := cmd.Execute()
+		assert.NoError(t, err)
+
+		expectedFile := filepath.Join(outputFolder, "delete.yaml")
+		assertFileExists(t, fs, expectedFile)
+
+		entries, errs := delete.LoadEntriesToDelete(fs, expectedFile)
+		assert.Len(t, errs, 0)
+
+		assertDeleteEntries(t, entries, "notification", "Star Trek to #team-star-trek", "envOverride: Star Wars to #team-star-wars", "Captain's Log")
+	})
+
 }
 
 func TestGeneratesValidDeleteFile_ForSingleProject(t *testing.T) {
@@ -154,7 +225,7 @@ func TestGeneratesValidDeleteFile_OmittingClassicConfigsWithNonStringNames(t *te
 	assertDeleteEntries(t, entries, "builtin:alerting.maintenance-window", "maintenance-window-setting")
 	assertDeleteEntries(t, entries, "management-zone", "mzone-1")
 	assertDeleteEntries(t, entries, "builtin:management-zones", "management-zone-setting")
-	assertDeleteEntries(t, entries, "notification", "Star Trek to #team-star-trek", "Captain's Log")
+	assertDeleteEntries(t, entries, "notification", "Star Trek to #team-star-trek", "envOverride: Star Wars to #team-star-wars", "Captain's Log")
 }
 
 func assertDeleteEntries(t *testing.T, entries map[string][]pointer.DeletePointer, cfgType string, expectedCfgIdentifiers ...string) {

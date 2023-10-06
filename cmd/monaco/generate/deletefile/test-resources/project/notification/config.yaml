@@ -13,6 +13,10 @@ configs:
       environment: Env1
     template: subfolder/slack.json
     skip: false
+  environmentOverrides:
+    - environment: env2
+      override:
+        name: 'envOverride: Star Wars to #team-star-wars'
 - id: email
   type:
     api: notification

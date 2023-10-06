@@ -29,7 +29,7 @@ import (
 func Command(fs afero.Fs) (cmd *cobra.Command) {
 
 	var fileName, outputFolder string
-	var projects []string
+	var projects, environments []string
 
 	cmd = &cobra.Command{
 		Use:               "deletefile <manifest.yaml>",
@@ -47,7 +47,7 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 				return err
 			}
 
-			return createDeleteFile(fs, manifestName, projects, fileName, outputFolder)
+			return createDeleteFile(fs, manifestName, projects, environments, fileName, outputFolder)
 		},
 	}
 
@@ -55,6 +55,9 @@ func Command(fs afero.Fs) (cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&fileName, "file", "", "delete.yaml", "The name of the generated delete file. If a file of this name already exists, a timestamp will be appended.")
 
 	cmd.Flags().StringSliceVarP(&projects, "project", "p", nil, "Projects to generate delete file entries for. If not defined, all projects in the manifest will be used.")
+
+	cmd.Flags().StringSliceVarP(&environments, "environment", "e", []string{},
+		"Specify one (or multiple) environment(s) to generate delete entries for. If not defined, entries for all environments will be generated. It is generally safe and recommended to generate a full delete file for all environments, but you may sometimes want to create a file limited to a specific environment's overrides.")
 
 	if err := cmd.RegisterFlagCompletionFunc("project", completion.ProjectsFromManifest); err != nil {
 		log.Fatal("failed to setup CLI %v", err)
