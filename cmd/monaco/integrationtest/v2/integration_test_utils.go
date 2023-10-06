@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/spf13/afero"
 	"os"
 	"path/filepath"
@@ -100,19 +99,12 @@ func runIntegrationWithCleanup(t *testing.T, opts TestOptions, testFunc TestFunc
 		envs = append(envs, opts.specificEnvironment)
 	}
 
-	loadedManifest, errs := manifest.LoadManifest(&manifest.LoaderContext{
-		Fs:           opts.fs,
-		ManifestPath: opts.manifestPath,
-		Environments: envs,
-	})
-	testutils.FailTestOnAnyError(t, errs, "loading of manifest failed")
-
 	configFolder, _ := filepath.Abs(opts.configFolder)
 
 	suffix := appendUniqueSuffixToIntegrationTestConfigs(t, opts.fs, configFolder, opts.suffix)
 
 	t.Cleanup(func() {
-		integrationtest.CleanupIntegrationTest(t, opts.fs, opts.manifestPath, loadedManifest, suffix)
+		integrationtest.CleanupIntegrationTest(t, opts.fs, opts.manifestPath, envs, suffix)
 	})
 
 	for k, v := range opts.envVars {
