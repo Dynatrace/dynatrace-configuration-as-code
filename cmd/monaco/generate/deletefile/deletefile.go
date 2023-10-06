@@ -30,11 +30,12 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/spf13/afero"
+	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v2"
 	"path/filepath"
 )
 
-func createDeleteFile(fs afero.Fs, manifestPath string, projectNames []string, filename, outputFolder string) error {
+func createDeleteFile(fs afero.Fs, manifestPath string, projectNames, specificEnvironments []string, filename, outputFolder string) error {
 
 	m, errs := manifest.LoadManifest(&manifest.LoaderContext{
 		Fs:           fs,
@@ -68,8 +69,7 @@ func createDeleteFile(fs afero.Fs, manifestPath string, projectNames []string, f
 		return err
 	}
 
-	env := m.Environments.Names()[0] // take the first environment, as overwrites do not impact the configs that exist (as skipped configs are still loaded)
-	content, err := generateDeleteFileContent(env, projects, apis)
+	content, err := generateDeleteFileContent(projects, specificEnvironments, apis)
 	if err != nil {
 		log.WithFields(field.Error(err)).Error("Failed to generate delete file content: %v", err)
 		return err
@@ -133,32 +133,15 @@ func filterProjects(projects []project.Project, projectsToUse []string) ([]proje
 	return filteredProjects, nil
 }
 
-func generateDeleteFileContent(environment string, projects []project.Project, apis api.APIs) ([]byte, error) {
+func generateDeleteFileContent(projects []project.Project, specificEnvironments []string, apis api.APIs) ([]byte, error) {
 
 	log.Info("Generating delete file...")
 
 	var entries []persistence.DeleteEntry
-
-	for _, p := range projects {
-		log.Info("Adding delete entries for project %q...", p.Id)
-
-		p.ForEveryConfigInEnvironmentDo(environment, func(c config.Config) {
-			if apis.Contains(c.Coordinate.Type) {
-				entry, err := createConfigAPIEntry(c)
-				if err != nil {
-					log.WithFields(field.Error(err)).Warn("Failed to automatically create delete entry for %q: %s", c.Coordinate, err)
-					return
-				}
-
-				entries = append(entries, entry)
-			} else {
-				entries = append(entries, persistence.DeleteEntry{
-					Project:  c.Coordinate.Project,
-					Type:     c.Coordinate.Type,
-					ConfigId: c.Coordinate.ConfigId,
-				})
-			}
-		})
+	if len(specificEnvironments) == 0 {
+		entries = generateDeleteEntries(projects, apis)
+	} else {
+		entries = generateDeleteEntriesForEnvironments(projects, specificEnvironments, apis)
 	}
 
 	f := persistence.FullFileDefinition{DeleteEntries: entries}
@@ -168,6 +151,57 @@ func generateDeleteFileContent(environment string, projects []project.Project, a
 	}
 
 	return b, nil
+}
+
+func generateDeleteEntries(projects []project.Project, apis api.APIs) []persistence.DeleteEntry {
+	entries := make(map[persistence.DeleteEntry]struct{}) // set to ensure cfgs without environment overwrites are only added once
+
+	for _, p := range projects {
+		log.Info("Adding delete entries for project %q...", p.Id)
+
+		p.ForEveryConfigDo(func(c config.Config) {
+			entry, err := createDeleteEntry(c, apis)
+			if err != nil {
+				log.WithFields(field.Error(err)).Warn("Failed to automatically create delete entry for %q: %s", c.Coordinate, err)
+				return
+			}
+			entries[entry] = struct{}{}
+		})
+	}
+
+	return maps.Keys(entries)
+}
+
+func generateDeleteEntriesForEnvironments(projects []project.Project, specificEnvironments []string, apis api.APIs) []persistence.DeleteEntry {
+	entries := make(map[persistence.DeleteEntry]struct{}) // set to ensure cfgs without environment overwrites are only added once
+
+	for _, p := range projects {
+		for _, env := range specificEnvironments {
+			log.Info("Adding delete entries for project %q and environment %q...", p.Id, env)
+			p.ForEveryConfigInEnvironmentDo(env, func(c config.Config) {
+				entry, err := createDeleteEntry(c, apis)
+				if err != nil {
+					log.WithFields(field.Error(err)).Warn("Failed to automatically create delete entry for %q: %s", c.Coordinate, err)
+					return
+				}
+				entries[entry] = struct{}{}
+			})
+		}
+	}
+
+	return maps.Keys(entries)
+}
+
+func createDeleteEntry(c config.Config, apis api.APIs) (persistence.DeleteEntry, error) {
+	if apis.Contains(c.Coordinate.Type) {
+		return createConfigAPIEntry(c)
+	}
+
+	return persistence.DeleteEntry{
+		Project:  c.Coordinate.Project,
+		Type:     c.Coordinate.Type,
+		ConfigId: c.Coordinate.ConfigId,
+	}, nil
 }
 
 func createConfigAPIEntry(c config.Config) (persistence.DeleteEntry, error) {
