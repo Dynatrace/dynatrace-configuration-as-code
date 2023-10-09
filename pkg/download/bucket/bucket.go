@@ -96,14 +96,6 @@ const (
 )
 
 func convertObject(o []byte, projectName string) (config.Config, error) {
-	c := config.Config{
-		Coordinate: coordinate.Coordinate{
-			Project: projectName,
-			Type:    "bucket",
-		},
-		Type: config.BucketType{},
-	}
-
 	r, err := templatetools.NewJSONObject(o)
 	if err != nil {
 		return config.Config{}, fmt.Errorf("failed to unmarshal bucket: %w", err)
@@ -114,26 +106,33 @@ func convertObject(o []byte, projectName string) (config.Config, error) {
 		return config.Config{}, fmt.Errorf("variable %q unreadable", bucketName)
 	}
 
-	c.Coordinate.ConfigId = id
-	c.OriginObjectId = id
-
 	// remove fields that will be set on deployment
 	r.Delete(bucketName)
 	r.Delete(status)
 	r.Delete(version)
 
 	// pull displayName into paramter if one exists
-	c.Parameters = map[string]parameter.Parameter{}
+	parameters := map[string]parameter.Parameter{}
 	p := r.Parameterize(displayName)
 	if p != nil {
-		c.Parameters[displayName] = p
+		parameters[displayName] = p
 	}
 
 	t, err := r.ToJSON()
 	if err != nil {
 		return config.Config{}, err
 	}
-	c.Template = template.NewInMemoryTemplate(id, string(jsonutils.MarshalIndent(t)))
+
+	c := config.Config{
+		Coordinate: coordinate.Coordinate{
+			Project:  projectName,
+			Type:     "bucket",
+			ConfigId: id,
+		},
+		OriginObjectId: id,
+		Type:           config.BucketType{},
+		Template:       template.NewInMemoryTemplate(id, string(jsonutils.MarshalIndent(t))),
+	}
 
 	return c, nil
 }
