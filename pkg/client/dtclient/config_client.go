@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/template"
@@ -101,7 +102,8 @@ func (d *DynatraceClient) upsertDynatraceEntityByNonUniqueNameAndId(
 		return entity, err
 	}
 
-	if len(entitiesWithSameName) == 1 { // name is currently unique, update know entity
+	// Note: this logic is flawed if several configs of the same name exist in a project - they will all update the same single configuration!
+	if featureflags.UpdateNonUniqueByNameIfSingleOneExists().Enabled() && len(entitiesWithSameName) == 1 { // name is currently unique, update know entity
 		existingUuid := entitiesWithSameName[0].Id
 		entity, err := d.updateDynatraceObject(ctx, fullUrl, objectName, existingUuid, theApi, body)
 		return entity, err

@@ -63,3 +63,15 @@ func UnescapeOnConvert() FeatureFlag {
 		defaultEnabled: true,
 	}
 }
+
+// UpdateNonUniqueByNameIfSingleOneExists toggles whether we attempt update api.API configurations with NonUniqueName,
+// by name if only a single one is found on the environment. As this causes issues if a project defines more than one config
+// with the same name - they will overwrite each other, and keep a single on the environment - the feature flag is introduced
+// to turn it off until a generally better solution is available.
+// Introduced: 2023-09-01; v2.9.1
+func UpdateNonUniqueByNameIfSingleOneExists() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_FEAT_UPDATE_SINGLE_NON_UNIQUE_BY_NAME",
+		defaultEnabled: true,
+	}
+}
