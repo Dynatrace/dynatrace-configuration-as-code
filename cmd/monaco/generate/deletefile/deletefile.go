@@ -33,6 +33,7 @@ import (
 	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v2"
 	"path/filepath"
+	"strings"
 )
 
 func createDeleteFile(fs afero.Fs, manifestPath string, projectNames, specificEnvironments []string, filename, outputFolder string) error {
@@ -98,7 +99,14 @@ func createDeleteFile(fs afero.Fs, manifestPath string, projectNames, specificEn
 
 	if exists {
 		time := timeutils.TimeAnchor().Format("20060102-150405")
-		newFile := filepath.Join(folderPath, fmt.Sprintf("%s_%s", filename, time))
+		var newFileName string
+		if lastDot := strings.LastIndex(filename, "."); lastDot > -1 {
+			newFileName = fmt.Sprintf("%s_%s%s", filename[:lastDot], time, filename[lastDot:])
+		} else {
+			newFileName = fmt.Sprintf("%s_%s", filename, time)
+		}
+
+		newFile := filepath.Join(folderPath, newFileName)
 		log.WithFields(field.F("file", newFile), field.F("existingFile", filename)).Debug("Output file %q already exists, creating %q instead", filename, newFile)
 		file = newFile
 	}
