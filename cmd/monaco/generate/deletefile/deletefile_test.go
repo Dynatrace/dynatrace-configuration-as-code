@@ -244,10 +244,36 @@ func TestDoesNotOverwriteExistingFiles(t *testing.T) {
 
 	t.Setenv("TOKEN", "some-value")
 
+	t.Run("default filename", func(t *testing.T) {
+		time := timeutils.TimeAnchor().Format("20060102-150405")
+		newFile := fmt.Sprintf("delete_%s.yaml", time)
+		testPreexistingFileIsNotOverwritten(t, "delete.yaml", newFile, false)
+	})
+
+	t.Run("custom filename", func(t *testing.T) {
+		time := timeutils.TimeAnchor().Format("20060102-150405")
+		newFile := fmt.Sprintf("my-special-delete_file_%s.yaml", time)
+		testPreexistingFileIsNotOverwritten(t, "my-special-delete_file.yaml", newFile, true)
+	})
+
+	t.Run("custom filename with dots", func(t *testing.T) {
+		time := timeutils.TimeAnchor().Format("20060102-150405")
+		newFile := fmt.Sprintf("my.special.delete.file_%s.yaml", time)
+		testPreexistingFileIsNotOverwritten(t, "my.special.delete.file.yaml", newFile, true)
+	})
+
+	t.Run("custom filename with no file-ending", func(t *testing.T) {
+		time := timeutils.TimeAnchor().Format("20060102-150405")
+		newFile := fmt.Sprintf("my-special-delete_file_%s", time)
+		testPreexistingFileIsNotOverwritten(t, "my-special-delete_file", newFile, true)
+	})
+
+}
+
+func testPreexistingFileIsNotOverwritten(t *testing.T, existingFile string, expectedNewFile string, customFileName bool) {
 	// GIVEN pre-existing file overlapping with output name
 	fs := testutils.CreateTestFileSystem()
 	outputFolder := "output-folder"
-	existingFile := "delete.yaml"
 
 	absFolder, err := filepath.Abs(outputFolder)
 	assert.NoError(t, err)
@@ -263,11 +289,15 @@ func TestDoesNotOverwriteExistingFiles(t *testing.T) {
 
 	// WHEN writing dependency graph
 	cmd := deletefile.Command(fs)
-	cmd.SetArgs([]string{
+	args := []string{
 		"./test-resources/manifest.yaml",
 		"-o",
 		outputFolder,
-	})
+	}
+	if customFileName {
+		args = append(args, "--file", existingFile)
+	}
+	cmd.SetArgs(args)
 	err = cmd.Execute()
 	assert.NoError(t, err)
 
@@ -277,10 +307,8 @@ func TestDoesNotOverwriteExistingFiles(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, existingContent, 0, "expected pre-existing file to still be empty")
 
-	// AND THEN new DOT file is created with timestamp appended
-	time := timeutils.TimeAnchor().Format("20060102-150405")
-	newFile := fmt.Sprintf("delete.yaml_%s", time)
-	newPath := filepath.Join(outputFolder, newFile)
+	// AND THEN new delete file is created with timestamp appended
+	newPath := filepath.Join(outputFolder, expectedNewFile)
 	newPath, err = filepath.Abs(newPath)
 
 	assertFileExists(t, fs, newPath)
