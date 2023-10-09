@@ -18,9 +18,10 @@ package bucket
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/buckets"
-	tools "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/buckettools"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/buckettools"
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -31,6 +32,14 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/internal/templatetools"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
+
+type skipErr struct {
+	msg string
+}
+
+func (s skipErr) Error() string {
+	return s.msg
+}
 
 type BucketClient interface {
 	List(ctx context.Context) (buckets.ListResponse, error)
@@ -69,17 +78,16 @@ func (d *Downloader) convertAllObjects(projectName string, objects [][]byte) []c
 
 		c, err := convertObject(o, projectName)
 		if err != nil {
-			log.WithFields(field.Type("bucket"), field.Error(err)).
-				Error("Failed to decode API response objects for bucket resource: %v", err)
+			if errors.As(err, &skipErr{}) {
+				log.WithFields(field.Type("bucket")).
+					Debug("Skipping bucket: %s", err.Error())
+			} else {
+				log.WithFields(field.Type("bucket"), field.Error(err)).
+					Error("Failed to decode API response objects for bucket resource: %v", err)
+			}
+
 			continue
 		}
-
-		// exclude builtin bucket names
-		if tools.IsDefault(c.OriginObjectId) {
-			log.Debug("Skipping download of immutable default Bucket %s", c.OriginObjectId)
-			continue
-		}
-
 		result = append(result, c)
 	}
 
@@ -93,6 +101,7 @@ const (
 	displayName = "displayName"
 	status      = "status"
 	version     = "version"
+	updatable   = "updatable"
 )
 
 func convertObject(o []byte, projectName string) (config.Config, error) {
@@ -106,10 +115,21 @@ func convertObject(o []byte, projectName string) (config.Config, error) {
 		return config.Config{}, fmt.Errorf("variable %q unreadable", bucketName)
 	}
 
+	// skip unmodifiable buckets
+	if u, ok := r.Get(updatable).(bool); ok && !u || buckettools.IsDefault(id) {
+		return config.Config{}, skipErr{fmt.Sprintf("bucket %q is immutable", id)}
+	}
+
+	// buckets that are in the deleting state should not be persisted
+	if stat, ok := r.Get(status).(string); ok && stat == "deleting" {
+		return config.Config{}, skipErr{fmt.Sprintf("bucket %q is deleting", id)}
+	}
+
 	// remove fields that will be set on deployment
 	r.Delete(bucketName)
 	r.Delete(status)
 	r.Delete(version)
+	r.Delete(updatable)
 
 	// pull displayName into paramter if one exists
 	parameters := map[string]parameter.Parameter{}
@@ -132,6 +152,7 @@ func convertObject(o []byte, projectName string) (config.Config, error) {
 		OriginObjectId: id,
 		Type:           config.BucketType{},
 		Template:       template.NewInMemoryTemplate(id, string(jsonutils.MarshalIndent(t))),
+		Parameters:     parameters,
 	}
 
 	return c, nil
