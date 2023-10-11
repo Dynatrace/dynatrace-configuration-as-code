@@ -12,6 +12,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  merge_group: # run if triggered as part of a merge queue
   schedule:
     # this is checking periodically if there are any breaking API changes
     # Every day at 00:00
