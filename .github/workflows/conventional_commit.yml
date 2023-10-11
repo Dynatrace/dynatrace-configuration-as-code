@@ -4,7 +4,9 @@ name: Commit Compliance
 # to make sure your commits are compliant with conventional commits.
 # https://www.conventionalcommits.org/en/v1.0.0/
 
-on: [ pull_request ]
+on:
+  pull_request: # run on any PR
+  merge_group: # run if triggered as part of a merge queue
 jobs:
   validate-commits:
     runs-on: ubuntu-latest
