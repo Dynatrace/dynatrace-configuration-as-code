@@ -18,6 +18,7 @@ package bucket
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/buckets"
@@ -104,25 +105,38 @@ const (
 	updatable   = "updatable"
 )
 
+// bucket holds all values we need to check before we persist the object
+type bucket struct {
+	Name      string `json:"bucketName"`
+	Updatable *bool  `json:"updatable,omitempty"`
+	Status    string `json:"status"`
+}
+
 func convertObject(o []byte, projectName string) (config.Config, error) {
-	r, err := templatetools.NewJSONObject(o)
-	if err != nil {
+	var b bucket
+	if err := json.Unmarshal(o, &b); err != nil {
 		return config.Config{}, fmt.Errorf("failed to unmarshal bucket: %w", err)
 	}
 
-	id, ok := r.Get(bucketName).(string)
-	if !ok {
-		return config.Config{}, fmt.Errorf("variable %q unreadable", bucketName)
+	// bucketName acts as the id, thus it must be set
+	if b.Name == "" {
+		return config.Config{}, fmt.Errorf("bucketName is not set")
 	}
 
 	// skip unmodifiable buckets
-	if u, ok := r.Get(updatable).(bool); ok && !u || buckettools.IsDefault(id) {
-		return config.Config{}, skipErr{fmt.Sprintf("bucket %q is immutable", id)}
+	if b.Updatable != nil && *b.Updatable == false || buckettools.IsDefault(b.Name) {
+		return config.Config{}, skipErr{fmt.Sprintf("bucket %q is immutable", b.Name)}
 	}
 
 	// buckets that are in the deleting state should not be persisted
-	if stat, ok := r.Get(status).(string); ok && stat == "deleting" {
-		return config.Config{}, skipErr{fmt.Sprintf("bucket %q is deleting", id)}
+	if b.Status == "deleting" {
+		return config.Config{}, skipErr{fmt.Sprintf("bucket %q is deleting", b.Name)}
+	}
+
+	// remove unnecessary fields
+	r, err := templatetools.NewJSONObject(o)
+	if err != nil {
+		return config.Config{}, fmt.Errorf("failed to unmarshal bucket: %w", err)
 	}
 
 	// remove fields that will be set on deployment
@@ -131,7 +145,7 @@ func convertObject(o []byte, projectName string) (config.Config, error) {
 	r.Delete(version)
 	r.Delete(updatable)
 
-	// pull displayName into paramter if one exists
+	// pull displayName into parameter if one exists
 	parameters := map[string]parameter.Parameter{}
 	p := r.Parameterize(displayName)
 	if p != nil {
@@ -146,12 +160,12 @@ func convertObject(o []byte, projectName string) (config.Config, error) {
 	c := config.Config{
 		Coordinate: coordinate.Coordinate{
 			Project:  projectName,
-			Type:     "bucket",
-			ConfigId: id,
+			Type:     string(config.BucketTypeId),
+			ConfigId: b.Name,
 		},
-		OriginObjectId: id,
+		OriginObjectId: b.Name,
 		Type:           config.BucketType{},
-		Template:       template.NewInMemoryTemplate(id, string(jsonutils.MarshalIndent(t))),
+		Template:       template.NewInMemoryTemplate(b.Name, string(jsonutils.MarshalIndent(t))),
 		Parameters:     parameters,
 	}
 
