@@ -73,21 +73,3 @@ type (
 		Groups []any  `mapstructure:"groups"`
 	}
 )
-
-func (a *AMResources) GroupExists(id string) bool {
-	for _, g := range a.Groups {
-		if g.ID == id {
-			return true
-		}
-	}
-	return false
-}
-
-func (a *AMResources) PolicyExists(id string) bool {
-	for _, p := range a.Policies {
-		if p.ID == id {
-			return true
-		}
-	}
-	return false
-}
