@@ -7,7 +7,8 @@
             "status": "active",
             "retentionDays": 462,
             "metricInterval": "PT1M",
-            "version": 1
+            "version": 1,
+            "updatable": true
         },
         {
             "bucketName": "another name",
@@ -15,7 +16,8 @@
             "status": "active",
             "retentionDays": 31,
             "metricInterval": "PT2M",
-            "version": 42
+            "version": 42,
+            "updatable": true
         },
         {
             "bucketName": "default_bucket_name",
@@ -24,7 +26,8 @@
             "status": "active",
             "retentionDays": 31,
             "metricInterval": "PT2M",
-            "version": 42
+            "version": 42,
+            "updatable": false
         },
         {
             "bucketName": "dt_bucket_name",
@@ -33,7 +36,37 @@
             "status": "active",
             "retentionDays": 462,
             "metricInterval": "PT1M",
+            "version": 1,
+            "updatable": false
+        },
+        {
+            "bucketName": "my-bucket-name-that-shall-not-be-downloaded",
+            "table": "metrics",
+            "displayName": "Default metrics (15 months)",
+            "status": "deleting",
+            "retentionDays": 462,
+            "metricInterval": "PT1M",
+            "version": 1,
+            "updatable": true
+        },
+        {
+            "bucketName": "dt_bucket_name_other_predefined",
+            "table": "metrics",
+            "displayName": "Default metrics (15 months)",
+            "status": "deleting",
+            "retentionDays": 462,
+            "metricInterval": "PT1M",
             "version": 1
+        },
+        {
+            "bucketName": "wrong_prefix_but_not_updatable",
+            "table": "metrics",
+            "displayName": "Default metrics (15 months)",
+            "status": "deleting",
+            "retentionDays": 462,
+            "metricInterval": "PT1M",
+            "version": 1,
+            "updatable": false
         }
     ]
 }

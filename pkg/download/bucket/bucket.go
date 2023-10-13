@@ -18,9 +18,11 @@ package bucket
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/buckets"
-	tools "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/buckettools"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/buckettools"
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
@@ -31,6 +33,14 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/internal/templatetools"
 	v2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 )
+
+type skipErr struct {
+	msg string
+}
+
+func (s skipErr) Error() string {
+	return s.msg
+}
 
 type BucketClient interface {
 	List(ctx context.Context) (buckets.ListResponse, error)
@@ -69,17 +79,16 @@ func (d *Downloader) convertAllObjects(projectName string, objects [][]byte) []c
 
 		c, err := convertObject(o, projectName)
 		if err != nil {
-			log.WithFields(field.Type("bucket"), field.Error(err)).
-				Error("Failed to decode API response objects for bucket resource: %v", err)
+			if errors.As(err, &skipErr{}) {
+				log.WithFields(field.Type("bucket")).
+					Debug("Skipping bucket: %s", err.Error())
+			} else {
+				log.WithFields(field.Type("bucket"), field.Error(err)).
+					Error("Failed to decode API response objects for bucket resource: %v", err)
+			}
+
 			continue
 		}
-
-		// exclude builtin bucket names
-		if tools.IsDefault(c.OriginObjectId) {
-			log.Debug("Skipping download of immutable default Bucket %s", c.OriginObjectId)
-			continue
-		}
-
 		result = append(result, c)
 	}
 
@@ -93,47 +102,72 @@ const (
 	displayName = "displayName"
 	status      = "status"
 	version     = "version"
+	updatable   = "updatable"
 )
 
+// bucket holds all values we need to check before we persist the object
+type bucket struct {
+	Name      string `json:"bucketName"`
+	Updatable *bool  `json:"updatable,omitempty"`
+	Status    string `json:"status"`
+}
+
 func convertObject(o []byte, projectName string) (config.Config, error) {
-	c := config.Config{
-		Coordinate: coordinate.Coordinate{
-			Project: projectName,
-			Type:    "bucket",
-		},
-		Type: config.BucketType{},
+	var b bucket
+	if err := json.Unmarshal(o, &b); err != nil {
+		return config.Config{}, fmt.Errorf("failed to unmarshal bucket: %w", err)
 	}
 
+	// bucketName acts as the id, thus it must be set
+	if b.Name == "" {
+		return config.Config{}, fmt.Errorf("bucketName is not set")
+	}
+
+	// skip unmodifiable buckets
+	if b.Updatable != nil && *b.Updatable == false || buckettools.IsDefault(b.Name) {
+		return config.Config{}, skipErr{fmt.Sprintf("bucket %q is immutable", b.Name)}
+	}
+
+	// buckets that are in the deleting state should not be persisted
+	if b.Status == "deleting" {
+		return config.Config{}, skipErr{fmt.Sprintf("bucket %q is deleting", b.Name)}
+	}
+
+	// remove unnecessary fields
 	r, err := templatetools.NewJSONObject(o)
 	if err != nil {
 		return config.Config{}, fmt.Errorf("failed to unmarshal bucket: %w", err)
 	}
 
-	id, ok := r.Get(bucketName).(string)
-	if !ok {
-		return config.Config{}, fmt.Errorf("variable %q unreadable", bucketName)
-	}
-
-	c.Coordinate.ConfigId = id
-	c.OriginObjectId = id
-
 	// remove fields that will be set on deployment
 	r.Delete(bucketName)
 	r.Delete(status)
 	r.Delete(version)
+	r.Delete(updatable)
 
-	// pull displayName into paramter if one exists
-	c.Parameters = map[string]parameter.Parameter{}
+	// pull displayName into parameter if one exists
+	parameters := map[string]parameter.Parameter{}
 	p := r.Parameterize(displayName)
 	if p != nil {
-		c.Parameters[displayName] = p
+		parameters[displayName] = p
 	}
 
 	t, err := r.ToJSON()
 	if err != nil {
 		return config.Config{}, err
 	}
-	c.Template = template.NewInMemoryTemplate(id, string(jsonutils.MarshalIndent(t)))
+
+	c := config.Config{
+		Coordinate: coordinate.Coordinate{
+			Project:  projectName,
+			Type:     string(config.BucketTypeId),
+			ConfigId: b.Name,
+		},
+		OriginObjectId: b.Name,
+		Type:           config.BucketType{},
+		Template:       template.NewInMemoryTemplate(b.Name, string(jsonutils.MarshalIndent(t))),
+		Parameters:     parameters,
+	}
 
 	return c, nil
 }

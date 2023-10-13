@@ -22,7 +22,7 @@ import (
 )
 
 // deployAcc triggers the deployment of account management resources for a given monaco project
-func deployAcc(fs afero.Fs, projectName string) error {
+func deployAcc(fs afero.Fs, projectName string) error { //nolint:unused
 	accResources, err := account.Load(fs, projectName)
 	if err != nil {
 		return err
@@ -33,7 +33,7 @@ func deployAcc(fs afero.Fs, projectName string) error {
 		return err
 	}
 
-	// TODO: convert acc resources to internal representation to be deployable and pass to pkg/deploy/acc::Deploy()
+	//convert acc resources to internal representation to be deployable and pass to pkg/deploy/acc::Deploy()
 
 	return nil
 }

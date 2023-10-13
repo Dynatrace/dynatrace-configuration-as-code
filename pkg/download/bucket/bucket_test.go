@@ -38,7 +38,8 @@ func TestDownloader_Download(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			switch req.URL.Path {
 			case "/platform/storage/management/v1/bucket-definitions":
-				wfData, _ := os.ReadFile("./testdata/buckets.json")
+				wfData, err := os.ReadFile("./testdata/buckets.json")
+				assert.NoError(t, err)
 				rw.Write(wfData)
 			default:
 				t.Fatalf("Unexpected API call to %s", req.URL.Path)
@@ -46,28 +47,29 @@ func TestDownloader_Download(t *testing.T) {
 		}))
 		defer server.Close()
 
-		baseUrl, _ := url.Parse(server.URL)
+		baseUrl, err := url.Parse(server.URL)
+		assert.NoError(t, err)
 		bucketClient := buckets.NewClient(rest.NewClient(baseUrl, server.Client()))
 		downloader := NewDownloader(bucketClient)
 		result, err := downloader.Download("projectName")
 		assert.NoError(t, err)
 		assert.Len(t, result, 1)
 		assert.Len(t, result["bucket"], 2) // there should be 2 buckets (default bucket shall be skipped)
-		expectedTemplate_0 := `{
+		expectedTemplate0 := `{
   "displayName": "{{.displayName}}",
   "metricInterval": "PT1M",
   "retentionDays": 462,
   "table": "metrics"
 }`
-		expectedDisplayName_0 := "Default metrics (15 months)"
-		assertBucketConfig(t, result["bucket"][0], "bucket_name", expectedTemplate_0, &expectedDisplayName_0)
+		expectedDisplayName0 := "Default metrics (15 months)"
+		assertBucketConfig(t, result["bucket"][0], "bucket_name", expectedTemplate0, &expectedDisplayName0)
 
-		expectedTemplate_1 := `{
+		expectedTemplate1 := `{
   "metricInterval": "PT2M",
   "retentionDays": 31,
   "table": "metrics"
 }`
-		assertBucketConfig(t, result["bucket"][1], "another name", expectedTemplate_1, nil)
+		assertBucketConfig(t, result["bucket"][1], "another name", expectedTemplate1, nil)
 	})
 
 	t.Run("download buckets - fetch buckets fails - no error returned", func(t *testing.T) {
@@ -113,15 +115,16 @@ func assertBucketConfig(t *testing.T, gotConfig config.Config, expectedBucketNam
 	assert.Equal(t, coordinate.Coordinate{Project: "projectName", Type: "bucket", ConfigId: expectedBucketName}, gotConfig.Coordinate)
 	assert.Equal(t, template.NewInMemoryTemplate(expectedBucketName, expectedTemplate), gotConfig.Template)
 	assert.Equal(t, expectedBucketName, gotConfig.OriginObjectId)
+
 	if expectedDisplayName != nil {
 		param, exists := gotConfig.Parameters[displayName]
-		assert.True(t, exists)
+		assert.Truef(t, exists, "should have the parameter %q set", displayName)
 		val, err := param.ResolveValue(parameter.ResolveContext{})
 		assert.NoError(t, err)
 		assert.Equal(t, *expectedDisplayName, val)
 	} else {
 		_, exists := gotConfig.Parameters[displayName]
-		assert.False(t, exists)
+		assert.Falsef(t, exists, "should not have the parameter %q set", displayName)
 	}
 }
 
