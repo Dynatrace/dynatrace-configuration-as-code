@@ -4,8 +4,6 @@ ARG NAME=monaco
 ARG SOURCE=/build/${NAME}-linux-amd64
 
 RUN apk add --update --no-cache \
-    curl \
-    jq \
     ca-certificates
 
 RUN addgroup monaco ; \
