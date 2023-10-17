@@ -54,4 +54,14 @@ func TestLoad(t *testing.T) {
 		assert.Error(t, err)
 	})
 
+	t.Run("root folder not found", func(t *testing.T) {
+		result, err := Load(afero.NewOsFs(), "test-resources/non-existent-folder")
+		assert.Equal(t, &AMResources{
+			Policies: make(map[string]Policy, 0),
+			Groups:   make(map[string]Group, 0),
+			Users:    make(map[string]User, 0),
+		}, result)
+		assert.NoError(t, err)
+	})
+
 }

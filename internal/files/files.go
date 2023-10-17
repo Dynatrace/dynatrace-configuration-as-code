@@ -62,10 +62,20 @@ func IsYamlFileExtension(file string) bool {
 // FindYamlFiles finds all YAML files within the given root directory.
 // Hidden directories (start with a dot (.)) are excluded.
 // Directories marked as hidden on Windows are not excluded.
+// If root is not existent the function returns nil, nil
 func FindYamlFiles(fs afero.Fs, root string) ([]string, error) {
 	var configFiles []string
 
-	err := afero.Walk(fs, root, func(curPath string, info os.FileInfo, err error) error {
+	exists, err := afero.Exists(fs, root)
+	if err != nil {
+		return configFiles, err
+	}
+
+	if !exists {
+		return nil, nil
+	}
+
+	err = afero.Walk(fs, root, func(curPath string, info os.FileInfo, err error) error {
 		name := info.Name()
 
 		if info.IsDir() {
