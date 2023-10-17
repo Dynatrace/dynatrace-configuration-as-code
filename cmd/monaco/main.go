@@ -15,12 +15,51 @@
 package main
 
 import (
-	"os"
-
+	"context"
+	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
+	monacoVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
+	"net/http"
+	"os"
 )
 
 func main() {
+	var versionNotification string
+	go setVersionNotificationStr(&versionNotification)
+
 	statusCode := runner.Run()
+	notifyUser(versionNotification)
 	os.Exit(statusCode)
+}
+
+func setVersionNotificationStr(msg *string) {
+	currentVersion, err := version.ParseVersion(monacoVersion.MonitoringAsCode)
+	if err != nil {
+		log.Debug("Could not perform version check: %s", err)
+		return
+	}
+
+	latestVersion, err := version.GetLatestVersion(context.TODO(), &http.Client{}, "https://api.github.com/repos/dynatrace/dynatrace-configuration-as-code/releases/latest")
+	if err != nil {
+		log.Debug("Could not perform version check: %s", err)
+		return
+	}
+
+	if currentVersion == version.UnknownVersion || latestVersion == version.UnknownVersion {
+		return
+	}
+
+	if latestVersion.GreaterThan(currentVersion) {
+		*msg = fmt.Sprintf("A newer version (%s) of Monaco is available! "+
+			"You can download the latest release from here: https://github.com/Dynatrace/dynatrace-configuration-as-code/releases/latest\n", latestVersion)
+	}
+}
+
+func notifyUser(msg string) {
+	if msg == "" {
+		return
+	}
+	fmt.Println(msg)
 }
