@@ -495,75 +495,6 @@ func Test_toProjectDefinitions(t *testing.T) {
 	}
 }
 
-func TestVerifyManifestYAML(t *testing.T) {
-	type given struct {
-		manifest manifest
-	}
-	type expected struct {
-		errorMessage string
-	}
-
-	var tests = []struct {
-		name     string
-		given    given
-		expected expected
-	}{
-		{
-			name:     "fails on missing version",
-			given:    given{manifest: manifest{}},
-			expected: expected{errorMessage: "`manifestVersion` missing"},
-		},
-		{
-			name:     "fails on missing projects",
-			given:    given{},
-			expected: expected{errorMessage: "no `projects` defined"},
-		},
-		{
-			name:     "fails on missing environments",
-			given:    given{},
-			expected: expected{errorMessage: "no `environmentGroups` defined"},
-		},
-		{
-			name: "fails on no longer supported manifest version",
-			given: given{
-				manifest: manifest{
-					ManifestVersion: "0.0",
-				},
-			},
-			expected: expected{errorMessage: "`manifestVersion` 0.0 is no longer supported. Min required version is 1.0, please update manifest"},
-		},
-		{
-			name: "fails on not yet supported manifest version",
-			given: given{
-				manifest: manifest{
-					ManifestVersion: fmt.Sprintf("%d.%d", math.MaxInt32, math.MaxInt32),
-				},
-			},
-			expected: expected{errorMessage: fmt.Sprintf("`manifestVersion` %d.%d is not supported by monaco 2.x. Max supported version is 1.0, please check manifest or update monaco", math.MaxInt32, math.MaxInt32)},
-		},
-		{
-			name: "fails on malformed manifest version",
-			given: given{
-				manifest: manifest{
-					ManifestVersion: "random text",
-				},
-			},
-			expected: expected{errorMessage: "invalid `manifestVersion`: failed to parse version: format did not meet expected MAJOR.MINOR or MAJOR.MINOR.PATCH pattern: random text"},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			errors := verifyManifestYAML(tt.given.manifest)
-			var errorMessages []string
-			for _, err := range errors {
-				errorMessages = append(errorMessages, err.Error())
-			}
-			fmt.Println(errors)
-			assert.Contains(t, errorMessages, tt.expected.errorMessage)
-		})
-	}
-}
-
 func TestUnmarshallingYAML(t *testing.T) {
 	type expected struct {
 		manifest manifest
@@ -731,7 +662,7 @@ func Test_validateManifestVersion(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := validateManifestVersion(tt.manifestVersion); (err != nil) != tt.wantErr {
+			if err := validateVersion(manifest{ManifestVersion: tt.manifestVersion}); (err != nil) != tt.wantErr {
 				t.Errorf("validateManifestVersion() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
