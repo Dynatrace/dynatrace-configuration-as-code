@@ -1,0 +1,66 @@
+manifestVersion: 1.1
+
+projects:
+- name: simple
+- name: with-path
+  path: here-i-am
+- name: grouping
+  type: grouping
+  path: grouping
+- name: grouping-without-path
+  type: grouping
+
+environmentGroups:
+- name: dev
+  environments:
+  - name: test-env-1
+    url:
+      type: environment
+      value: ENV_URL
+    auth:
+      token:
+        name: ENV_TOKEN
+      oAuth:
+        clientId:
+          name: ENV_CLIENT_ID
+        clientSecret:
+          name: ENV_CLIENT_SECRET
+        tokenEndpoint:
+          value: https://my-token.url
+  - name: test-env-2
+    url:
+      value: https://ddd.bbb.cc
+    auth:
+      token:
+        name: ENV_TOKEN
+- name: prod
+  environments:
+  - name: prod-env-1
+    url:
+      type: environment
+      value: ENV_URL
+    auth:
+      token:
+        name: ENV_TOKEN
+
+accounts:
+- name: my-account
+  accountUUID: 8f9935ee-2068-455d-85ce-47447f19d5d5
+  oAuth:
+    clientId:
+      name: ENV_CLIENT_ID
+    clientSecret:
+      name: ENV_CLIENT_SECRET
+- name: other-account
+  accountUUID: c3f50f90-a1e2-4e7b-aadb-f3dea28e2294
+  apiUrl:
+    type: environment
+    value: ENV_API_URL
+  oAuth:
+    clientId:
+      name: ENV_CLIENT_ID
+    clientSecret:
+      name: ENV_CLIENT_SECRET
+    tokenEndpoint:
+      type: environment
+      value: ENV_TOKEN_URL

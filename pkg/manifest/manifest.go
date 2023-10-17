@@ -20,7 +20,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/oauth2/endpoints"
 	"github.com/google/uuid"
 	"golang.org/x/exp/maps"
-	url2 "net/url"
 )
 
 type ProjectDefinition struct {
@@ -119,7 +118,7 @@ type Account struct {
 
 	// ApiUrl is the target URL of this account.
 	// It is used when the default account management url is not the target account management url.
-	ApiUrl *url2.URL
+	ApiUrl *URLDefinition
 
 	// OAuth holds the OAuth credentials used to access the account API.
 	OAuth OAuth
@@ -133,5 +132,5 @@ type Manifest struct {
 	Environments Environments
 
 	// Accounts holds all accounts defined in the manifest
-	Accounts []Account
+	Accounts map[string]Account
 }
