@@ -406,10 +406,32 @@ func TestDeleteAutomations(t *testing.T) {
 
 func TestDeleteBuckets(t *testing.T) {
 	t.Run("TestDeleteBuckets", func(t *testing.T) {
+		deletingBucketResponse := []byte(`{
+ "bucketName": "bucket name",
+ "table": "metrics",
+ "displayName": "Default metrics (15 months)",
+ "status": "deleting",
+ "retentionDays": 462,
+ "metricInterval": "PT1M",
+ "version": 1
+}`)
+
+		getCalls := 0
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if req.Method == http.MethodDelete && strings.Contains(req.RequestURI, "bucket-definitions") {
 				assert.True(t, strings.HasSuffix(req.URL.Path, "/project_id1"))
 				rw.WriteHeader(http.StatusOK)
+				rw.Write(deletingBucketResponse)
+				return
+			}
+			if req.Method == http.MethodGet && getCalls < 5 {
+				assert.True(t, strings.HasSuffix(req.URL.Path, "/project_id1"))
+				rw.WriteHeader(http.StatusOK)
+				rw.Write(deletingBucketResponse)
+				getCalls++
+				return
+			} else if req.Method == http.MethodGet {
+				rw.WriteHeader(http.StatusNotFound)
 				return
 			}
 			assert.Fail(t, "unexpected HTTP call")
