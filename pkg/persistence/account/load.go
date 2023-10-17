@@ -17,6 +17,7 @@
 package account
 
 import (
+	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/afero"
@@ -29,9 +30,9 @@ import (
 // groups, and users data, and organizes them into a AMResources struct, which is then returned.
 func Load(fs afero.Fs, rootPath string) (*AMResources, error) {
 	resources := &AMResources{
-		Policies: make([]Policy, 0),
-		Groups:   make([]Group, 0),
-		Users:    make([]User, 0),
+		Policies: make(map[string]Policy, 0),
+		Groups:   make(map[string]Group, 0),
+		Users:    make(map[string]User, 0),
 	}
 
 	yamlFilePaths, err := files.FindYamlFiles(fs, rootPath)
@@ -54,21 +55,36 @@ func Load(fs afero.Fs, rootPath string) (*AMResources, error) {
 		if err != nil {
 			return nil, err
 		}
-		resources.Policies = append(resources.Policies, policies.Policies...)
+		for _, pol := range policies.Policies {
+			if _, exists := resources.Policies[pol.ID]; exists {
+				return nil, fmt.Errorf("found duplicate policy with id %q", pol.ID)
+			}
+			resources.Policies[pol.ID] = pol
+		}
 
 		var groups Groups
 		err = mapstructure.Decode(content, &groups)
 		if err != nil {
 			return nil, err
 		}
-		resources.Groups = append(resources.Groups, groups.Groups...)
+		for _, gr := range groups.Groups {
+			if _, exists := resources.Groups[gr.ID]; exists {
+				return nil, fmt.Errorf("found duplicate group with id %q", gr.ID)
+			}
+			resources.Groups[gr.ID] = gr
+		}
 
 		var users Users
 		err = mapstructure.Decode(content, &users)
 		if err != nil {
 			return nil, err
 		}
-		resources.Users = append(resources.Users, users.Users...)
+		for _, us := range users.Users {
+			if _, exists := resources.Users[us.Email]; exists {
+				return nil, fmt.Errorf("found duplicate user with id %q", us.Email)
+			}
+			resources.Users[us.Email] = us
+		}
 	}
 
 	return resources, nil

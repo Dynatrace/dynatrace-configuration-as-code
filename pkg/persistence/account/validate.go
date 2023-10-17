@@ -59,8 +59,8 @@ func refCheck(elem any, refCheckFn func(string) bool) error {
 		if !isIdFieldStr {
 			return fmt.Errorf("error validating account resources: %w", ErrIdFieldNoString)
 		}
-		policyRefExists := refCheckFn(idFieldStr)
-		if !policyRefExists {
+		refExists := refCheckFn(idFieldStr)
+		if !refExists {
 			return fmt.Errorf("error validating account resources with id %q: %w", idFieldStr, ErrRefMissing)
 		}
 	}
@@ -68,19 +68,12 @@ func refCheck(elem any, refCheckFn func(string) bool) error {
 }
 
 func (a *AMResources) GroupExists(id string) bool {
-	for _, g := range a.Groups {
-		if g.ID == id {
-			return true
-		}
-	}
-	return false
+	_, exists := a.Groups[id]
+	return exists
 }
 
 func (a *AMResources) PolicyExists(id string) bool {
-	for _, p := range a.Policies {
-		if p.ID == id {
-			return true
-		}
-	}
-	return false
+	_, exists := a.Policies[id]
+	return exists
+
 }

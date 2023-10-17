@@ -39,4 +39,19 @@ func TestLoad(t *testing.T) {
 		assert.Len(t, loaded.Policies, 1)
 	})
 
+	t.Run("Duplicate group", func(t *testing.T) {
+		_, err := Load(afero.NewOsFs(), "test-resources/duplicate-group.yaml")
+		assert.Error(t, err)
+	})
+
+	t.Run("Duplicate user", func(t *testing.T) {
+		_, err := Load(afero.NewOsFs(), "test-resources/duplicate-user.yaml")
+		assert.Error(t, err)
+	})
+
+	t.Run("Duplicate policy", func(t *testing.T) {
+		_, err := Load(afero.NewOsFs(), "test-resources/duplicate-policy.yaml")
+		assert.Error(t, err)
+	})
+
 }

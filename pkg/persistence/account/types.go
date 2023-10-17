@@ -19,9 +19,9 @@ package account
 type (
 	anyMap      = map[any]any
 	AMResources struct {
-		Policies []Policy
-		Groups   []Group
-		Users    []User
+		Policies map[string]Policy
+		Groups   map[string]Group
+		Users    map[string]User
 	}
 	Policies struct {
 		Policies []Policy `mapstructure:"policies"`
