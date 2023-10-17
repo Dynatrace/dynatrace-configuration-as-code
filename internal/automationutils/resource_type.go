@@ -18,18 +18,18 @@ package automationutils
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
+	automationAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 )
 
-func ClientResourceTypeFromConfigType(resource config.AutomationResource) (automation.ResourceType, error) {
+func ClientResourceTypeFromConfigType(resource config.AutomationResource) (automationAPI.ResourceType, error) {
 	switch resource {
 	case config.Workflow:
-		return automation.Workflows, nil
+		return automationAPI.Workflows, nil
 	case config.BusinessCalendar:
-		return automation.BusinessCalendars, nil
+		return automationAPI.BusinessCalendars, nil
 	case config.SchedulingRule:
-		return automation.SchedulingRules, nil
+		return automationAPI.SchedulingRules, nil
 	default:
 		return -1, fmt.Errorf("unknown automation resource type %q", resource)
 	}

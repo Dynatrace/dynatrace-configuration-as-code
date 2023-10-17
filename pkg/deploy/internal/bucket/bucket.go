@@ -19,7 +19,7 @@ package bucket
 import (
 	"context"
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/buckets"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"

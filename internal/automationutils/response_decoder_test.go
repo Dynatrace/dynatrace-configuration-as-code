@@ -20,7 +20,7 @@ package automationutils_test
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code-core/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	"github.com/stretchr/testify/assert"
 	"testing"

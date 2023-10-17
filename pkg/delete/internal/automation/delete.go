@@ -18,7 +18,8 @@ package automation
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
+	automationAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/idutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -30,8 +31,8 @@ import (
 )
 
 type Client interface {
-	Delete(ctx context.Context, resourceType automation.ResourceType, id string) (automation.Response, error)
-	List(ctx context.Context, resourceType automation.ResourceType) (automation.ListResponse, error)
+	Delete(ctx context.Context, resourceType automationAPI.ResourceType, id string) (automation.Response, error)
+	List(ctx context.Context, resourceType automationAPI.ResourceType) (automation.ListResponse, error)
 }
 
 func Delete(ctx context.Context, c Client, automationResource config.AutomationResource, entries []pointer.DeletePointer) error {

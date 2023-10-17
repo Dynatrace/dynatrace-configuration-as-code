@@ -18,10 +18,10 @@ package client
 
 import (
 	"context"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
-	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/buckets"
 	lib "github.com/dynatrace/dynatrace-configuration-as-code-core/api/rest"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients/buckets"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/concurrency"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/environment"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/trafficlogs"
