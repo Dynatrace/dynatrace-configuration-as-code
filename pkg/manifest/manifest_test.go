@@ -16,18 +16,19 @@
  * limitations under the License.
  */
 
-package manifest
+package manifest_test
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestDefaultTokenEndpoint(t *testing.T) {
 	t.Run("Token endpoint value is returned if set", func(t *testing.T) {
-		o := OAuth{
-			TokenEndpoint: &URLDefinition{
-				Type:  ValueURLType,
+		o := manifest.OAuth{
+			TokenEndpoint: &manifest.URLDefinition{
+				Type:  manifest.ValueURLType,
 				Value: "https://my-token-endpoint.com",
 			},
 		}
@@ -36,12 +37,12 @@ func TestDefaultTokenEndpoint(t *testing.T) {
 	})
 
 	t.Run("Default token endpoint is returned if none is set", func(t *testing.T) {
-		o := OAuth{}
+		o := manifest.OAuth{}
 		assert.Equal(t, "https://sso.dynatrace.com/sso/oauth2/token", o.GetTokenEndpointValue())
 
-		o2 := OAuth{
-			TokenEndpoint: &URLDefinition{
-				Type:  ValueURLType,
+		o2 := manifest.OAuth{
+			TokenEndpoint: &manifest.URLDefinition{
+				Type:  manifest.ValueURLType,
 				Value: "",
 			},
 		}
