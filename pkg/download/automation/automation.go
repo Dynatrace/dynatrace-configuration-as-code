@@ -21,7 +21,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	client "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
+	automationAPI "github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/automation"
+	client "github.com/dynatrace/dynatrace-configuration-as-code-core/clients/automation"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/automationutils"
 	jsonutils "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
@@ -36,10 +37,10 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-var automationTypesToResources = map[config.AutomationType]client.ResourceType{
-	config.AutomationType{Resource: config.Workflow}:         client.Workflows,
-	config.AutomationType{Resource: config.BusinessCalendar}: client.BusinessCalendars,
-	config.AutomationType{Resource: config.SchedulingRule}:   client.SchedulingRules,
+var automationTypesToResources = map[config.AutomationType]automationAPI.ResourceType{
+	config.AutomationType{Resource: config.Workflow}:         automationAPI.Workflows,
+	config.AutomationType{Resource: config.BusinessCalendar}: automationAPI.BusinessCalendars,
+	config.AutomationType{Resource: config.SchedulingRule}:   automationAPI.SchedulingRules,
 }
 
 // Downloader can be used to download automation resources/configs
