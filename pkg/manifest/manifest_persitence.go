@@ -78,4 +78,12 @@ type manifest struct {
 	ManifestVersion   string    `yaml:"manifestVersion"`
 	Projects          []project `yaml:"projects"`
 	EnvironmentGroups []group   `yaml:"environmentGroups"`
+	Accounts          []account `yaml:"accounts,omitempty"`
+}
+
+type account struct {
+	Name        string `yaml:"name"`
+	AccountUUID string `yaml:"accountUUID"`
+	ApiUrl      *url   `yaml:"apiUrl,omitempty"`
+	OAuth       oAuth  `yaml:"oAuth"`
 }
