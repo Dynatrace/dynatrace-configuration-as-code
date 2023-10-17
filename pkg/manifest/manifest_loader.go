@@ -130,12 +130,10 @@ func LoadManifest(context *LoaderContext) (Manifest, []error) {
 	if err != nil {
 		return Manifest{}, []error{err}
 	}
-	if errs := verifyManifestYAML(manifestYAML); errs != nil {
-		var retErrs []error
-		for _, e := range errs {
-			retErrs = append(retErrs, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("invalid manifest definition: %s", e)))
-		}
-		return Manifest{}, retErrs
+
+	// check that the manifestVersion is ok
+	if err := validateVersion(manifestYAML); err != nil {
+		return Manifest{}, []error{newManifestLoaderError(context.ManifestPath, fmt.Sprintf("invalid manifest definition: %s", err))}
 	}
 
 	manifestPath := filepath.Clean(context.ManifestPath)
@@ -293,43 +291,31 @@ func readManifestYAML(context *LoaderContext) (manifest, error) {
 	return m, nil
 }
 
-func verifyManifestYAML(m manifest) []error {
-	var errs []error
-
-	if err := validateManifestVersion(m.ManifestVersion); err != nil {
-		errs = append(errs, err)
-	}
-
-	if len(m.Projects) == 0 { //this should be checked over the Manifest
-		errs = append(errs, fmt.Errorf("no `projects` defined"))
-	}
-
-	if len(m.EnvironmentGroups) == 0 { //this should be checked over the Manifest
-		errs = append(errs, fmt.Errorf("no `environmentGroups` defined"))
-	}
-
-	return errs
-}
-
+var manifestAccountSupport, _ = version2.ParseVersion("1.1")
 var maxSupportedManifestVersion, _ = version2.ParseVersion(version.ManifestVersion)
 var minSupportedManifestVersion, _ = version2.ParseVersion(version.MinManifestVersion)
 
-func validateManifestVersion(manifestVersion string) error {
-	if len(manifestVersion) == 0 {
-		return fmt.Errorf("`manifestVersion` missing")
+func validateVersion(m manifest) error {
+
+	if len(m.ManifestVersion) == 0 {
+		return errors.New("`manifestVersion` missing")
 	}
 
-	v, err := version2.ParseVersion(manifestVersion)
+	v, err := version2.ParseVersion(m.ManifestVersion)
 	if err != nil {
 		return fmt.Errorf("invalid `manifestVersion`: %w", err)
 	}
 
 	if v.SmallerThan(minSupportedManifestVersion) {
-		return fmt.Errorf("`manifestVersion` %s is no longer supported. Min required version is %s, please update manifest", manifestVersion, version.MinManifestVersion)
+		return fmt.Errorf("`manifestVersion` %s is no longer supported. Min required version is %s, please update manifest", m.ManifestVersion, version.MinManifestVersion)
 	}
 
 	if v.GreaterThan(maxSupportedManifestVersion) {
-		return fmt.Errorf("`manifestVersion` %s is not supported by monaco %s. Max supported version is %s, please check manifest or update monaco", manifestVersion, version.MonitoringAsCode, version.ManifestVersion)
+		return fmt.Errorf("`manifestVersion` %s is not supported by monaco %s. Max supported version is %s, please check manifest or update monaco", m.ManifestVersion, version.MonitoringAsCode, version.ManifestVersion)
+	}
+
+	if len(m.Accounts) > 0 && v.SmallerThan(manifestAccountSupport) {
+		return fmt.Errorf("`accounts` are unsupported prior to `manifestVersion: \"1.1\"`, please update `manifestVersion` to at least `1.1`")
 	}
 
 	return nil
