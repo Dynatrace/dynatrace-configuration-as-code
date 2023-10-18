@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	monacoVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
@@ -27,7 +28,9 @@ import (
 
 func main() {
 	var versionNotification string
-	go setVersionNotificationStr(&versionNotification)
+	if !featureflags.SkipVersionCheck().Enabled() {
+		go setVersionNotificationStr(&versionNotification)
+	}
 
 	statusCode := runner.Run()
 	notifyUser(versionNotification)
