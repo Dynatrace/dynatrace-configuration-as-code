@@ -688,7 +688,7 @@ func TestLoadManifest(t *testing.T) {
 	}{
 		{
 			name:        "Everything missing",
-			errsContain: []string{"manifestVersion", "project", "environmentGroups"},
+			errsContain: []string{"manifestVersion"},
 		},
 		{
 			name: "Everything good",
@@ -721,6 +721,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 						},
 					},
 				},
+				Accounts: map[string]Account{},
 			},
 		},
 		{
@@ -769,6 +770,7 @@ environmentGroups:
 						},
 					},
 				},
+				Accounts: map[string]Account{},
 			},
 		},
 		{
@@ -819,6 +821,7 @@ environmentGroups:
 						},
 					},
 				},
+				Accounts: map[string]Account{},
 			},
 		},
 		{
@@ -854,6 +857,7 @@ environmentGroups:
 						},
 					},
 				},
+				Accounts: map[string]Account{},
 			},
 		},
 		{
@@ -889,6 +893,7 @@ environmentGroups:
 						},
 					},
 				},
+				Accounts: map[string]Account{},
 			},
 		},
 		{
@@ -940,6 +945,7 @@ environmentGroups:
 						},
 					},
 				},
+				Accounts: map[string]Account{},
 			},
 		},
 		{
@@ -990,6 +996,7 @@ environmentGroups:
 						},
 					},
 				},
+				Accounts: map[string]Account{},
 			},
 		},
 		{
@@ -1040,6 +1047,7 @@ environmentGroups:
 						},
 					},
 				},
+				Accounts: map[string]Account{},
 			},
 		},
 		{
@@ -1091,6 +1099,7 @@ environmentGroups:
 						},
 					},
 				},
+				Accounts: map[string]Account{},
 			},
 		},
 		{
@@ -1170,7 +1179,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 manifestVersion: 1.0
 projects: [{name: a}]
 `,
-			errsContain: []string{"environmentGroups"},
+			errsContain: []string{"no environments defined in manifest"},
 		},
 		{
 			name: "Empty projects",
@@ -1306,6 +1315,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 						},
 					},
 				},
+				Accounts: map[string]Account{},
 			},
 		},
 		{
@@ -1350,6 +1360,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 						},
 					},
 				},
+				Accounts: map[string]Account{},
 			},
 		},
 		{
@@ -1397,6 +1408,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 						},
 					},
 				},
+				Accounts: map[string]Account{},
 			},
 		},
 		{
@@ -1445,6 +1457,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 						},
 					},
 				},
+				Accounts: map[string]Account{},
 			},
 		},
 		{
@@ -1523,6 +1536,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {type: environment, 
 						},
 					},
 				},
+				Accounts: map[string]Account{},
 			},
 			errsContain: []string{},
 		},
@@ -1620,7 +1634,6 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 			}
 
 			assert.Equal(t, test.expectedManifest, mani)
-
 		})
 	}
 }
