@@ -24,7 +24,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/slices"
 	version2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
-	"github.com/google/uuid"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 	"os"
@@ -172,9 +171,9 @@ func LoadManifest(context *LoaderContext) (Manifest, []error) {
 	}
 
 	// accounts
-	accounts, accErrs := convertAccounts(context, manifestYAML.Accounts)
-	if len(accErrs) > 0 {
-		errs = append(errs, accErrs...)
+	accounts, accErr := convertAccounts(context, manifestYAML.Accounts)
+	if accErr != nil {
+		errs = append(errs, newManifestLoaderError(context.ManifestPath, accErr.Error()))
 	}
 
 	// if any errors occurred up to now, return them
@@ -187,63 +186,6 @@ func LoadManifest(context *LoaderContext) (Manifest, []error) {
 		Environments: environmentDefinitions,
 		Accounts:     accounts,
 	}, nil
-}
-
-// convertAccounts converts the persistence definition to the in-memory definition
-func convertAccounts(c *LoaderContext, accounts []account) (map[string]Account, []error) {
-
-	var errs []error
-	result := make(map[string]Account, len(accounts))
-
-	// validate
-	for i, a := range accounts {
-		if a.Name == "" {
-			errs = append(errs, fmt.Errorf("failed to parse account on position %d: 'name' is missing", i))
-			continue
-		}
-
-		if a.AccountUUID == "" {
-			errs = append(errs, fmt.Errorf("failed to parse account %q: accountUUID is missing", a.Name))
-			continue
-		}
-
-		accountId, err := uuid.Parse(a.AccountUUID)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("failed to parse account %q: accountUUID is invalid: %w", a.Name, err))
-			continue
-		}
-
-		oAuth, err := parseOAuth(c, a.OAuth)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("failed to parse account %q: oAuth: %w", a.Name, err))
-			continue
-		}
-
-		var url *URLDefinition
-		if a.ApiUrl != nil {
-			if u, err := parseURLDefinition(c, *a.ApiUrl); err != nil {
-				errs = append(errs, fmt.Errorf("failed to parse account %q: apiUrl: %w", a.Name, err))
-				continue
-			} else {
-				url = &u
-			}
-		}
-
-		acc := Account{
-			Name:        a.Name,
-			AccountUUID: accountId,
-			ApiUrl:      url,
-			OAuth:       oAuth,
-		}
-
-		result[acc.Name] = acc
-	}
-
-	if len(errs) > 0 {
-		return nil, errs
-	}
-
-	return result, nil
 }
 
 func parseAuth(context *LoaderContext, a auth) (Auth, error) {
