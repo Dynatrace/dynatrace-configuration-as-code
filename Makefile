@@ -9,7 +9,6 @@ default: build
 setup:
 	@echo "Installing build tools..."
 	@go install gotest.tools/gotestsum@v1.11.0
-	@go install go.uber.org/mock/mockgen@v0.2.0
 	@go install github.com/sigstore/cosign/v2/cmd/cosign@v2.1.1
 
 lint:
@@ -35,7 +34,9 @@ else
 	@sh ./tools/add-missing-license-headers.sh
 endif
 
-mocks: setup
+mocks:
+	@echo Installing mockgen
+	@go install go.uber.org/mock/mockgen@v0.2.0
 	@echo "Generating mocks"
 	@go generate ./...
 
