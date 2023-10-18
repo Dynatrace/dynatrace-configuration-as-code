@@ -16,6 +16,7 @@ package manifest
 
 import (
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 	"path/filepath"
 	"strings"
@@ -68,8 +69,13 @@ func WriteManifest(context *WriterContext, manifestToWrite Manifest) error {
 	projects := toWriteableProjects(manifestToWrite.Projects)
 	groups := toWriteableEnvironmentGroups(manifestToWrite.Environments)
 
+	manifestVersion := "1.0"
+	if featureflags.AccountManagement().Enabled() {
+		manifestVersion = version.ManifestVersion
+	}
+
 	m := manifest{
-		ManifestVersion:   version.ManifestVersion,
+		ManifestVersion:   manifestVersion,
 		Projects:          projects,
 		EnvironmentGroups: groups,
 	}
