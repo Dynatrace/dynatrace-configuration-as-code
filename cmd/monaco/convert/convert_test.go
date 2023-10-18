@@ -26,7 +26,6 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/loader"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"io/fs"
@@ -312,7 +311,7 @@ func assertExpectedConfigurationCreated(t *testing.T, testFs afero.Fs) {
 
 func assertExpectedManifestCreated(t *testing.T, testFs afero.Fs) {
 	expectedManifest := fmt.Sprintf(
-		`manifestVersion: "%s"
+		`manifestVersion: "1.0"
 projects:
 - name: project
 environmentGroups:
@@ -326,13 +325,13 @@ environmentGroups:
       token:
         type: environment
         name: ENV_TOKEN
-`, version.ManifestVersion)
+`)
 
 	manifestExists, _ := afero.Exists(testFs, "converted/manifest.yaml")
 	assert.True(t, manifestExists)
 	manifestContent, err := afero.ReadFile(testFs, "converted/manifest.yaml")
 	assert.NoError(t, err)
-	assert.Equal(t, string(manifestContent), expectedManifest)
+	assert.Equal(t, expectedManifest, string(manifestContent))
 }
 
 func assertExpectedDeleteFileCreated(t *testing.T, testFs afero.Fs) {
