@@ -8,12 +8,12 @@ default: build
 
 setup:
 	@echo "Installing build tools..."
-	@go install github.com/google/addlicense@v1.1.1
 	@go install gotest.tools/gotestsum@v1.11.0
 	@go install go.uber.org/mock/mockgen@v0.2.0
 	@go install github.com/sigstore/cosign/v2/cmd/cosign@v2.1.1
 
-lint: setup
+lint:
+	@go install github.com/google/addlicense@v1.1.1
 ifeq ($(OS),Windows_NT)
 	@.\tools\check-format.cmd
 else
@@ -31,6 +31,7 @@ ifeq ($(OS),Windows_NT)
 	@echo "This is currently not supported on windows"
 	@exit 1
 else
+	@go install github.com/google/addlicense@v1.1.1
 	@sh ./tools/add-missing-license-headers.sh
 endif
 
