@@ -1,0 +1,17 @@
+users:
+  - email: monaco@dynatrace.com
+    groups:
+      - type: reference
+        id: non-existing-group-ref
+      - Default Group
+
+# GROUPS
+groups:
+  - name: Another Group
+    id: another-group
+    description: This is a group
+    account:
+      permissions:
+        - Default permissions
+      policies:
+        - Default policies

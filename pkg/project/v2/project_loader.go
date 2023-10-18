@@ -19,17 +19,12 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/loader"
-	"os"
-	"path"
-	"path/filepath"
-	"strings"
-
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/loader"
 	"github.com/spf13/afero"
 )
 
@@ -157,7 +152,7 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 func loadConfigsOfProject(fs afero.Fs, loadingContext ProjectLoaderContext, projectDefinition manifest.ProjectDefinition,
 	environments []manifest.EnvironmentDefinition) ([]config.Config, []error) {
 
-	configFiles, err := findConfigFiles(fs, projectDefinition.Path)
+	configFiles, err := files.FindYamlFiles(fs, projectDefinition.Path)
 	if err != nil {
 		return nil, []error{fmt.Errorf("failed to walk files: %w", err)}
 	}
@@ -182,30 +177,6 @@ func loadConfigsOfProject(fs afero.Fs, loadingContext ProjectLoaderContext, proj
 	}
 
 	return configs, errs
-}
-
-// findConfigFiles finds all YAML files within the given root directory.
-// Hidden directories (start with a dot (.)) are excluded.
-// Directories marked as hidden on Windows are not excluded.
-func findConfigFiles(fs afero.Fs, root string) ([]string, error) {
-	var configFiles []string
-
-	err := afero.Walk(fs, root, func(curPath string, info os.FileInfo, err error) error {
-		name := info.Name()
-
-		if info.IsDir() {
-			if strings.HasPrefix(name, ".") {
-				return filepath.SkipDir
-			}
-		}
-
-		if files.IsYamlFileExtension(name) {
-			configFiles = append(configFiles, path.Join(curPath))
-		}
-		return nil
-	})
-
-	return configFiles, err
 }
 
 func findDuplicatedConfigIdentifiers(configs []config.Config) []config.Config {

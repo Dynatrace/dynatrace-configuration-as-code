@@ -18,6 +18,8 @@ package files
 
 import (
 	"os"
+	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/afero"
@@ -55,6 +57,40 @@ func IsYamlFileExtension(file string) bool {
 	}
 
 	return false
+}
+
+// FindYamlFiles finds all YAML files within the given root directory.
+// Hidden directories (start with a dot (.)) are excluded.
+// Directories marked as hidden on Windows are not excluded.
+// If root is not existent the function returns nil, nil
+func FindYamlFiles(fs afero.Fs, root string) ([]string, error) {
+	var configFiles []string
+
+	exists, err := afero.Exists(fs, root)
+	if err != nil {
+		return configFiles, err
+	}
+
+	if !exists {
+		return nil, nil
+	}
+
+	err = afero.Walk(fs, root, func(curPath string, info os.FileInfo, err error) error {
+		name := info.Name()
+
+		if info.IsDir() {
+			if strings.HasPrefix(name, ".") {
+				return filepath.SkipDir
+			}
+		}
+
+		if IsYamlFileExtension(name) {
+			configFiles = append(configFiles, path.Join(curPath))
+		}
+		return nil
+	})
+
+	return configFiles, err
 }
 
 func ReplacePathSeparators(path string) (newPath string) {

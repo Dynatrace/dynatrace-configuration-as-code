@@ -1,0 +1,18 @@
+users:
+  - email: monaco@dynatrace.com
+    groups:
+      - type: reference
+        id: my-group
+# GROUPS
+groups:
+  - name: My Group
+    id: my-group
+    description: This is my group
+    account:
+    environment:
+      - name: myenv
+        permissions:
+          - View environment
+        policies:
+          - type: reference
+            id: non-existing-policy-ref
