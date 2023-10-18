@@ -9,7 +9,6 @@ default: build
 setup:
 	@echo "Installing build tools..."
 	@go install gotest.tools/gotestsum@v1.11.0
-	@go install github.com/sigstore/cosign/v2/cmd/cosign@v2.1.1
 
 lint:
 	@go install github.com/google/addlicense@v1.1.1
@@ -129,6 +128,7 @@ docker-container: $(BINARY_NAME)-linux-amd64
 	@echo Building docker container...
 	DOCKER_BUILDKIT=1 docker build --build-arg NAME=$(BINARY_NAME) --build-arg SOURCE=$(OUTPUT) --tag $(CONTAINER_NAME):$(VERSION) .
 
-sign-verify-image: setup
+sign-verify-image:
+	@go install github.com/sigstore/cosign/v2/cmd/cosign@v2.1.1
 	COSIGN_PASSWORD=$(COSIGN_PASSWORD) cosign sign --key env://cosign_key $(FULL_IMAGE_NAME) -y
 	cosign verify --key env://cosign_pub $(FULL_IMAGE_NAME)
