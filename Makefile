@@ -6,10 +6,6 @@ RELEASES = $(BINARY_NAME)-windows-amd64.exe $(BINARY_NAME)-windows-386.exe $(BIN
 
 default: build
 
-setup:
-	@echo "Installing build tools..."
-	@go install gotest.tools/gotestsum@v1.11.0
-
 lint:
 	@go install github.com/google/addlicense@v1.1.1
 ifeq ($(OS),Windows_NT)
@@ -88,29 +84,33 @@ else
 	@rm -rf build/
 endif
 
-test: mocks
+
+install-gotestsum:
+	@go install gotest.tools/gotestsum@v1.11.0
+
+test: mocks install-gotestsum
 	@echo "Testing $(BINARY_NAME)..."
 	@gotestsum ${testopts} --format testdox -- -tags=unit -v -race ./...
 
-integration-test: mocks
+integration-test: mocks install-gotestsum
 	@gotestsum ${testopts} --format testdox -- -tags=integration -timeout=30m -v -race ./...
 
-integration-test-v1: mocks
+integration-test-v1: mocks install-gotestsum
 	@gotestsum ${testopts} --format testdox -- -tags=integration_v1 -timeout=30m -v -race ./...
 
-download-restore-test: mocks
+download-restore-test: mocks install-gotestsum
 	@gotestsum ${testopts} --format testdox -- -tags=download_restore -timeout=30m -v -race ./...
 
 clean-environments:
     @MONACO_ENABLE_DANGEROUS_COMMANDS=1 go run ./cmd/monaco purge cmd/monaco/integrationtest/v2/test-resources/test_environments_manifest.yaml
 
-nightly-test:mocks
+nightly-test:mocks install-gotestsum
 	@gotestsum ${testopts} --format testdox -- -tags=nightly -timeout=240m -v -race ./...
 
 # Build and Test a single package supplied via pgk variable, without using test cache
 # Run as e.g. make test-package pkg=project
 pkg=...
-test-package: setup mocks lint
+test-package: mocks lint install-gotestsum
 	@echo "Testing ${pkg}..."
 	@gotestsum -- -tags=unit -count=1 -v -race ./pkg/${pkg}
 
