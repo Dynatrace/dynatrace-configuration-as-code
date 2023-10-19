@@ -25,6 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/slices"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy"
+	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	"path/filepath"
 	"strings"
 
@@ -89,7 +90,7 @@ func absPath(manifestPath string) (string, error) {
 }
 
 func loadManifest(fs afero.Fs, manifestPath string, groups []string, environments []string) (*manifest.Manifest, error) {
-	m, errs := manifest.LoadManifest(&manifest.LoaderContext{
+	m, errs := manifestloader.LoadManifest(&manifestloader.LoaderContext{
 		Fs:           fs,
 		ManifestPath: manifestPath,
 		Groups:       groups,

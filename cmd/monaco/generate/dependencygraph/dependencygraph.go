@@ -26,7 +26,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/graph"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/spf13/afero"
 	"path/filepath"
@@ -51,12 +51,12 @@ func (e ExportError) Error() string {
 
 func writeGraphFiles(fs afero.Fs, manifestPath string, environmentNames []string, environmentGroups []string, outputFolder string) error {
 
-	m, errs := manifest.LoadManifest(&manifest.LoaderContext{
+	m, errs := manifestloader.LoadManifest(&manifestloader.LoaderContext{
 		Fs:           fs,
 		ManifestPath: manifestPath,
 		Environments: environmentNames,
 		Groups:       environmentGroups,
-		Opts: manifest.LoaderOptions{
+		Opts: manifestloader.LoaderOptions{
 			DontResolveEnvVars: true,
 		},
 	})

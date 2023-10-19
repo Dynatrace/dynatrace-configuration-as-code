@@ -25,7 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"path/filepath"
@@ -62,7 +62,7 @@ func GetDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 			}
 
 			// Try to load the manifest file
-			manifest, errs := manifest.LoadManifest(&manifest.LoaderContext{
+			manifest, errs := manifestloader.LoadManifest(&manifestloader.LoaderContext{
 				Fs:           fs,
 				ManifestPath: absManifestFilePath,
 				Environments: environments,

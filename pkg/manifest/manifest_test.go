@@ -21,6 +21,7 @@ package manifest_test
 import (
 	"errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	"github.com/google/uuid"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -66,10 +67,10 @@ func TestManifestLoading(t *testing.T) {
 	t.Setenv("ENV_TOKEN_URL", "https://another-token.url")
 	t.Setenv("ENV_API_URL", "https://api.url")
 
-	mani, errs := manifest.LoadManifest(&manifest.LoaderContext{
+	mani, errs := manifestloader.LoadManifest(&manifestloader.LoaderContext{
 		Fs:           fs,
 		ManifestPath: "./testdata/manifest_full.yaml",
-		Opts: manifest.LoaderOptions{
+		Opts: manifestloader.LoaderOptions{
 			DontResolveEnvVars: false,
 		},
 	})
@@ -341,7 +342,7 @@ environmentGroups:
 			afero.WriteFile(fs, "manifest.yaml", []byte(fullDef), 0644)
 			fs.Mkdir("proj", 0644)
 
-			mani, errs := manifest.LoadManifest(&manifest.LoaderContext{
+			mani, errs := manifestloader.LoadManifest(&manifestloader.LoaderContext{
 				Fs:           fs,
 				ManifestPath: "manifest.yaml",
 			})

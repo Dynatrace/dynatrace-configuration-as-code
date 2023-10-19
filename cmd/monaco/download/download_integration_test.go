@@ -32,6 +32,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/classic"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/settings"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	projectLoader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -917,7 +918,7 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 	assert.NilError(t, err)
 
 	// THEN we can load the project again and verify its content
-	man, errs := manifest.LoadManifest(&manifest.LoaderContext{
+	man, errs := manifestloader.LoadManifest(&manifestloader.LoaderContext{
 		Fs:           fs,
 		ManifestPath: filepath.Join(testBasePath, "manifest.yaml"),
 	})
@@ -1230,7 +1231,7 @@ func setupTestingDownloadOptions(t *testing.T, server *httptest.Server, projectN
 }
 
 func loadDownloadedProjects(fs afero.Fs, apis api.APIs) ([]projectLoader.Project, []error) {
-	man, errs := manifest.LoadManifest(&manifest.LoaderContext{
+	man, errs := manifestloader.LoadManifest(&manifestloader.LoaderContext{
 		Fs:           fs,
 		ManifestPath: "out/manifest.yaml",
 	})

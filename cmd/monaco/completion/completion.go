@@ -19,13 +19,13 @@ package completion
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/slices"
+	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	"github.com/spf13/pflag"
 	"golang.org/x/exp/maps"
 	"os"
 	"strings"
 
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -115,7 +115,7 @@ func EnvironmentByArg0(_ *cobra.Command, args []string, _ string) ([]string, cob
 }
 
 func loadEnvironmentsFromManifest(manifestPath string) ([]string, cobra.ShellCompDirective) {
-	man, _ := manifest.LoadManifest(&manifest.LoaderContext{
+	man, _ := manifestloader.LoadManifest(&manifestloader.LoaderContext{
 		Fs:           afero.NewOsFs(),
 		ManifestPath: manifestPath,
 	})
@@ -126,7 +126,7 @@ func loadEnvironmentsFromManifest(manifestPath string) ([]string, cobra.ShellCom
 func ProjectsFromManifest(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
 
 	manifestPath := args[0]
-	mani, _ := manifest.LoadManifest(&manifest.LoaderContext{
+	mani, _ := manifestloader.LoadManifest(&manifestloader.LoaderContext{
 		Fs:           afero.NewOsFs(),
 		ManifestPath: manifestPath,
 	})

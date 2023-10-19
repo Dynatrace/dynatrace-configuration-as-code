@@ -26,6 +26,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	"github.com/spf13/afero"
 	"golang.org/x/exp/maps"
 	"path/filepath"
@@ -42,7 +43,7 @@ func purge(fs afero.Fs, deploymentManifestPath string, environmentNames []string
 
 	apis := api.NewAPIs().Filter(api.RetainByName(apiNames))
 
-	mani, manifestLoadError := manifest.LoadManifest(&manifest.LoaderContext{
+	mani, manifestLoadError := manifestloader.LoadManifest(&manifestloader.LoaderContext{
 		Fs:           fs,
 		ManifestPath: deploymentManifestPath,
 		Environments: environmentNames,
