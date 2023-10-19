@@ -23,6 +23,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/secret"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/slices"
 	version2 "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
@@ -188,7 +189,7 @@ func LoadManifest(context *LoaderContext) (Manifest, []error) {
 	}, nil
 }
 
-func parseAuth(context *LoaderContext, a auth) (Auth, error) {
+func parseAuth(context *LoaderContext, a persistence.Auth) (Auth, error) {
 	token, err := parseAuthSecret(context, a.Token)
 	if err != nil {
 		return Auth{}, fmt.Errorf("error parsing token: %w", err)
@@ -212,9 +213,9 @@ func parseAuth(context *LoaderContext, a auth) (Auth, error) {
 
 }
 
-func parseAuthSecret(context *LoaderContext, s authSecret) (AuthSecret, error) {
+func parseAuthSecret(context *LoaderContext, s persistence.AuthSecret) (AuthSecret, error) {
 
-	if !(s.Type == typeEnvironment || s.Type == "") {
+	if !(s.Type == persistence.TypeEnvironment || s.Type == "") {
 		return AuthSecret{}, errors.New("type must be 'environment'")
 	}
 
@@ -242,7 +243,7 @@ func parseAuthSecret(context *LoaderContext, s authSecret) (AuthSecret, error) {
 	return AuthSecret{Name: s.Name, Value: secret.MaskedString(v)}, nil
 }
 
-func parseOAuth(context *LoaderContext, a oAuth) (OAuth, error) {
+func parseOAuth(context *LoaderContext, a persistence.OAuth) (OAuth, error) {
 	clientID, err := parseAuthSecret(context, a.ClientID)
 	if err != nil {
 		return OAuth{}, fmt.Errorf("failed to parse ClientID: %w", err)
@@ -273,29 +274,29 @@ func parseOAuth(context *LoaderContext, a oAuth) (OAuth, error) {
 	}, nil
 }
 
-func readManifestYAML(context *LoaderContext) (manifest, error) {
+func readManifestYAML(context *LoaderContext) (persistence.Manifest, error) {
 	manifestPath := filepath.Clean(context.ManifestPath)
 
 	if !files.IsYamlFileExtension(manifestPath) {
-		return manifest{}, newManifestLoaderError(context.ManifestPath, "manifest file is not a yaml")
+		return persistence.Manifest{}, newManifestLoaderError(context.ManifestPath, "manifest file is not a yaml")
 	}
 
 	if exists, err := files.DoesFileExist(context.Fs, manifestPath); err != nil {
-		return manifest{}, err
+		return persistence.Manifest{}, err
 	} else if !exists {
-		return manifest{}, newManifestLoaderError(context.ManifestPath, "manifest file does not exist")
+		return persistence.Manifest{}, newManifestLoaderError(context.ManifestPath, "manifest file does not exist")
 	}
 
 	rawData, err := afero.ReadFile(context.Fs, manifestPath)
 	if err != nil {
-		return manifest{}, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("error while reading the manifest: %s", err))
+		return persistence.Manifest{}, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("error while reading the manifest: %s", err))
 	}
 
-	var m manifest
+	var m persistence.Manifest
 
 	err = yaml.UnmarshalStrict(rawData, &m)
 	if err != nil {
-		return manifest{}, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("error during parsing the manifest: %s", err))
+		return persistence.Manifest{}, newManifestLoaderError(context.ManifestPath, fmt.Sprintf("error during parsing the manifest: %s", err))
 	}
 	return m, nil
 }
@@ -304,7 +305,7 @@ var manifestAccountSupport, _ = version2.ParseVersion("1.1")
 var maxSupportedManifestVersion, _ = version2.ParseVersion(version.ManifestVersion)
 var minSupportedManifestVersion, _ = version2.ParseVersion(version.MinManifestVersion)
 
-func validateVersion(m manifest) error {
+func validateVersion(m persistence.Manifest) error {
 
 	if len(m.ManifestVersion) == 0 {
 		return errors.New("`manifestVersion` missing")
@@ -330,7 +331,7 @@ func validateVersion(m manifest) error {
 	return nil
 }
 
-func parseEnvironments(context *LoaderContext, groups []group) (map[string]EnvironmentDefinition, []error) { // nolint:gocognit
+func parseEnvironments(context *LoaderContext, groups []persistence.Group) (map[string]EnvironmentDefinition, []error) { // nolint:gocognit
 	var errors []error
 	environments := make(map[string]EnvironmentDefinition)
 
@@ -398,7 +399,7 @@ func parseEnvironments(context *LoaderContext, groups []group) (map[string]Envir
 	return environments, nil
 }
 
-func shouldSkipEnv(context *LoaderContext, group group, env environment) bool {
+func shouldSkipEnv(context *LoaderContext, group persistence.Group, env persistence.Environment) bool {
 	// if nothing is restricted, everything is allowed
 	if len(context.Groups) == 0 && len(context.Environments) == 0 {
 		return false
@@ -415,7 +416,7 @@ func shouldSkipEnv(context *LoaderContext, group group, env environment) bool {
 	return true
 }
 
-func parseSingleEnvironment(context *LoaderContext, config environment, group string) (EnvironmentDefinition, []error) {
+func parseSingleEnvironment(context *LoaderContext, config persistence.Environment, group string) (EnvironmentDefinition, []error) {
 	var errs []error
 
 	a, err := parseAuth(context, config.Auth)
@@ -440,14 +441,14 @@ func parseSingleEnvironment(context *LoaderContext, config environment, group st
 	}, nil
 }
 
-func parseURLDefinition(context *LoaderContext, u url) (URLDefinition, error) {
+func parseURLDefinition(context *LoaderContext, u persistence.Url) (URLDefinition, error) {
 
 	// Depending on the type, the url.value either contains the env var name or the direct value of the url
 	if u.Value == "" {
 		return URLDefinition{}, errors.New("no `Url` configured or value is blank")
 	}
 
-	if u.Type == "" || u.Type == urlTypeValue {
+	if u.Type == "" || u.Type == persistence.UrlTypeValue {
 		val := strings.TrimSuffix(u.Value, "/")
 
 		return URLDefinition{
@@ -456,7 +457,7 @@ func parseURLDefinition(context *LoaderContext, u url) (URLDefinition, error) {
 		}, nil
 	}
 
-	if u.Type == urlTypeEnvironment {
+	if u.Type == persistence.UrlTypeEnvironment {
 
 		if context.Opts.DontResolveEnvVars {
 			log.Debug("Skipped resolving environment variable %s based on loader options", u.Value)
@@ -489,7 +490,7 @@ func parseURLDefinition(context *LoaderContext, u url) (URLDefinition, error) {
 	return URLDefinition{}, fmt.Errorf("%q is not a valid URL type", u.Type)
 }
 
-func parseProjects(context *projectLoaderContext, definitions []project) (map[string]ProjectDefinition, []error) {
+func parseProjects(context *projectLoaderContext, definitions []persistence.Project) (map[string]ProjectDefinition, []error) {
 	var errors []error
 	result := make(map[string]ProjectDefinition)
 
@@ -523,7 +524,7 @@ func parseProjects(context *projectLoaderContext, definitions []project) (map[st
 	return result, nil
 }
 
-func checkForDuplicateDefinitions(context *projectLoaderContext, definitions []project) (errors []error) {
+func checkForDuplicateDefinitions(context *projectLoaderContext, definitions []persistence.Project) (errors []error) {
 	definedIds := map[string]struct{}{}
 	for _, project := range definitions {
 		if _, found := definedIds[project.Name]; found {
@@ -534,11 +535,11 @@ func checkForDuplicateDefinitions(context *projectLoaderContext, definitions []p
 	return errors
 }
 
-func parseProjectDefinition(context *projectLoaderContext, project project) ([]ProjectDefinition, []error) {
+func parseProjectDefinition(context *projectLoaderContext, project persistence.Project) ([]ProjectDefinition, []error) {
 	var projectType string
 
 	if project.Type == "" {
-		projectType = simpleProjectType
+		projectType = persistence.SimpleProjectType
 	} else {
 		projectType = project.Type
 	}
@@ -548,9 +549,9 @@ func parseProjectDefinition(context *projectLoaderContext, project project) ([]P
 	}
 
 	switch projectType {
-	case simpleProjectType:
+	case persistence.SimpleProjectType:
 		return parseSimpleProjectDefinition(context, project)
-	case groupProjectType:
+	case persistence.GroupProjectType:
 		return parseGroupingProjectDefinition(context, project)
 	default:
 		return nil, []error{newManifestProjectLoaderError(context.manifestPath, project.Name,
@@ -558,7 +559,7 @@ func parseProjectDefinition(context *projectLoaderContext, project project) ([]P
 	}
 }
 
-func parseSimpleProjectDefinition(context *projectLoaderContext, project project) ([]ProjectDefinition, []error) {
+func parseSimpleProjectDefinition(context *projectLoaderContext, project persistence.Project) ([]ProjectDefinition, []error) {
 	if project.Path == "" && project.Name == "" {
 		return nil, []error{newManifestProjectLoaderError(context.manifestPath, project.Name,
 			"project is missing both name and path")}
@@ -586,7 +587,7 @@ func parseSimpleProjectDefinition(context *projectLoaderContext, project project
 	}, nil
 }
 
-func parseGroupingProjectDefinition(context *projectLoaderContext, project project) ([]ProjectDefinition, []error) {
+func parseGroupingProjectDefinition(context *projectLoaderContext, project persistence.Project) ([]ProjectDefinition, []error) {
 	projectPath := filepath.FromSlash(project.Path)
 
 	files, err := afero.ReadDir(context.fs, projectPath)

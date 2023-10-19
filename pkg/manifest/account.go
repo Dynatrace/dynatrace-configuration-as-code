@@ -19,6 +19,7 @@ package manifest
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
 	"github.com/google/uuid"
 )
 
@@ -40,7 +41,7 @@ func (e invalidUUIDError) Unwrap() error {
 	return e.err
 }
 
-func parseSingleAccount(c *LoaderContext, a account) (Account, error) {
+func parseSingleAccount(c *LoaderContext, a persistence.Account) (Account, error) {
 
 	if a.AccountUUID == "" {
 		return Account{}, errAccUidMissing
@@ -76,7 +77,7 @@ func parseSingleAccount(c *LoaderContext, a account) (Account, error) {
 }
 
 // parseAccounts converts the persistence definition to the in-memory definition
-func parseAccounts(c *LoaderContext, accounts []account) (map[string]Account, error) {
+func parseAccounts(c *LoaderContext, accounts []persistence.Account) (map[string]Account, error) {
 
 	result := make(map[string]Account, len(accounts))
 

@@ -20,6 +20,7 @@ package manifest
 
 import (
 	"encoding/json"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -27,41 +28,41 @@ import (
 
 func TestValidAccounts(t *testing.T) {
 	t.Setenv("SECRET", "secret")
-	acc := account{
+	acc := persistence.Account{
 		Name:        "name",
 		AccountUUID: uuid.New().String(),
-		ApiUrl: &url{
+		ApiUrl: &persistence.Url{
 			Value: "https://example.com",
 		},
-		OAuth: oAuth{
-			ClientID: authSecret{
+		OAuth: persistence.OAuth{
+			ClientID: persistence.AuthSecret{
 				Name: "SECRET",
 			},
-			ClientSecret: authSecret{
+			ClientSecret: persistence.AuthSecret{
 				Name: "SECRET",
 			},
-			TokenEndpoint: &url{
+			TokenEndpoint: &persistence.Url{
 				Value: "https://example.com",
 			},
 		},
 	}
 
 	// account 2 has no api name
-	acc2 := account{
+	acc2 := persistence.Account{
 		Name:        "name2",
 		AccountUUID: uuid.New().String(),
-		OAuth: oAuth{
-			ClientID: authSecret{
+		OAuth: persistence.OAuth{
+			ClientID: persistence.AuthSecret{
 				Name: "SECRET",
 			},
-			ClientSecret: authSecret{
+			ClientSecret: persistence.AuthSecret{
 				Name: "SECRET",
 			},
 			TokenEndpoint: nil,
 		},
 	}
 
-	v, err := parseAccounts(&LoaderContext{}, []account{acc, acc2})
+	v, err := parseAccounts(&LoaderContext{}, []persistence.Account{acc, acc2})
 	assert.NoError(t, err)
 
 	assert.Equal(t, v, map[string]Account{
@@ -99,27 +100,27 @@ func TestInvalidAccounts(t *testing.T) {
 	t.Setenv("SECRET", "secret")
 
 	// default account to permute
-	validAccount := account{
+	validAccount := persistence.Account{
 		Name:        "name",
 		AccountUUID: uuid.New().String(),
-		ApiUrl: &url{
+		ApiUrl: &persistence.Url{
 			Value: "https://example.com",
 		},
-		OAuth: oAuth{
-			ClientID: authSecret{
+		OAuth: persistence.OAuth{
+			ClientID: persistence.AuthSecret{
 				Name: "SECRET",
 			},
-			ClientSecret: authSecret{
+			ClientSecret: persistence.AuthSecret{
 				Name: "SECRET",
 			},
-			TokenEndpoint: &url{
+			TokenEndpoint: &persistence.Url{
 				Value: "https://example.com",
 			},
 		},
 	}
 
 	// validate that the default is valid
-	_, err := parseAccounts(&LoaderContext{}, []account{validAccount})
+	_, err := parseAccounts(&LoaderContext{}, []persistence.Account{validAccount})
 	assert.NoError(t, err)
 
 	// tests
@@ -127,7 +128,7 @@ func TestInvalidAccounts(t *testing.T) {
 		a := validAccount
 		a.Name = ""
 
-		_, err := parseAccounts(&LoaderContext{}, []account{a})
+		_, err := parseAccounts(&LoaderContext{}, []persistence.Account{a})
 		assert.ErrorIs(t, err, errNameMissing)
 	})
 
@@ -135,7 +136,7 @@ func TestInvalidAccounts(t *testing.T) {
 		a := validAccount
 		a.AccountUUID = ""
 
-		_, err := parseAccounts(&LoaderContext{}, []account{a})
+		_, err := parseAccounts(&LoaderContext{}, []persistence.Account{a})
 		assert.ErrorIs(t, err, errAccUidMissing)
 	})
 
@@ -143,7 +144,7 @@ func TestInvalidAccounts(t *testing.T) {
 		a := deepCopy(t, validAccount)
 		a.AccountUUID = "this-is-not-a-valid-uuid"
 
-		_, err := parseAccounts(&LoaderContext{}, []account{a})
+		_, err := parseAccounts(&LoaderContext{}, []persistence.Account{a})
 		uuidErr := invalidUUIDError{}
 		if assert.ErrorAs(t, err, &uuidErr) {
 			assert.Equal(t, uuidErr.uuid, "this-is-not-a-valid-uuid")
@@ -152,36 +153,36 @@ func TestInvalidAccounts(t *testing.T) {
 
 	t.Run("oAuth is set", func(t *testing.T) {
 		a := deepCopy(t, validAccount)
-		a.OAuth = oAuth{}
+		a.OAuth = persistence.OAuth{}
 
-		_, err := parseAccounts(&LoaderContext{}, []account{a})
+		_, err := parseAccounts(&LoaderContext{}, []persistence.Account{a})
 		assert.ErrorContains(t, err, "oAuth is invalid")
 	})
 
 	t.Run("oAuth.id is not set", func(t *testing.T) {
 		a := deepCopy(t, validAccount)
-		a.OAuth.ClientID = authSecret{}
+		a.OAuth.ClientID = persistence.AuthSecret{}
 
-		_, err := parseAccounts(&LoaderContext{}, []account{a})
+		_, err := parseAccounts(&LoaderContext{}, []persistence.Account{a})
 		assert.ErrorContains(t, err, "ClientID: no name given or empty")
 
 	})
 
 	t.Run("oAuth.secret is not set", func(t *testing.T) {
 		a := deepCopy(t, validAccount)
-		a.OAuth.ClientSecret = authSecret{}
+		a.OAuth.ClientSecret = persistence.AuthSecret{}
 
-		_, err := parseAccounts(&LoaderContext{}, []account{a})
+		_, err := parseAccounts(&LoaderContext{}, []persistence.Account{a})
 		assert.ErrorContains(t, err, "ClientSecret: no name given or empty")
 	})
 }
 
 // deepCopy marshals and then marshals the payload, thus only works for public members, thus only private spaced
-func deepCopy(t *testing.T, in account) account {
+func deepCopy(t *testing.T, in persistence.Account) persistence.Account {
 	d, e := json.Marshal(in)
 	assert.NoError(t, e)
 
-	var o account
+	var o persistence.Account
 	e = json.Unmarshal(d, &o)
 	assert.NoError(t, e)
 	return o

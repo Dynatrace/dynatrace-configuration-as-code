@@ -21,6 +21,7 @@ package manifest
 import (
 	"fmt"
 	monacoVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -35,17 +36,17 @@ func Test_extractUrlType(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		inputConfig      environment
+		inputConfig      persistence.Environment
 		givenEnvVarValue string
 		want             URLDefinition
 		wantErr          bool
 	}{
 		{
 			name: "extracts_value_url",
-			inputConfig: environment{
+			inputConfig: persistence.Environment{
 				Name: "TEST ENV",
-				URL:  url{Value: "TEST URL", Type: urlTypeValue},
-				Auth: auth{Token: authSecret{Type: "environment", Name: "VAR"}},
+				URL:  persistence.Url{Value: "TEST URL", Type: persistence.UrlTypeValue},
+				Auth: persistence.Auth{Token: persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
 			want: URLDefinition{
 				Type:  ValueURLType,
@@ -55,10 +56,10 @@ func Test_extractUrlType(t *testing.T) {
 		},
 		{
 			name: "extracts_value_if_type_empty",
-			inputConfig: environment{
+			inputConfig: persistence.Environment{
 				Name: "TEST ENV",
-				URL:  url{Value: "TEST URL", Type: ""},
-				Auth: auth{Token: authSecret{Type: "environment", Name: "VAR"}},
+				URL:  persistence.Url{Value: "TEST URL", Type: ""},
+				Auth: persistence.Auth{Token: persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
 			want: URLDefinition{
 				Type:  ValueURLType,
@@ -68,10 +69,10 @@ func Test_extractUrlType(t *testing.T) {
 		},
 		{
 			name: "trims trailing slash from value url",
-			inputConfig: environment{
+			inputConfig: persistence.Environment{
 				Name: "TEST ENV",
-				URL:  url{Value: "https://www.test.url/", Type: urlTypeValue},
-				Auth: auth{Token: authSecret{Type: "environment", Name: "VAR"}},
+				URL:  persistence.Url{Value: "https://www.test.url/", Type: persistence.UrlTypeValue},
+				Auth: persistence.Auth{Token: persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
 			want: URLDefinition{
 				Type:  ValueURLType,
@@ -81,10 +82,10 @@ func Test_extractUrlType(t *testing.T) {
 		},
 		{
 			name: "extracts_environment_url",
-			inputConfig: environment{
+			inputConfig: persistence.Environment{
 				Name: "TEST ENV",
-				URL:  url{Value: "TEST_TOKEN", Type: urlTypeEnvironment},
-				Auth: auth{Token: authSecret{Type: "environment", Name: "VAR"}},
+				URL:  persistence.Url{Value: "TEST_TOKEN", Type: persistence.UrlTypeEnvironment},
+				Auth: persistence.Auth{Token: persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
 			givenEnvVarValue: "resolved url value",
 			want: URLDefinition{
@@ -96,10 +97,10 @@ func Test_extractUrlType(t *testing.T) {
 		},
 		{
 			name: "trims trailing slash from environment url",
-			inputConfig: environment{
+			inputConfig: persistence.Environment{
 				Name: "TEST ENV",
-				URL:  url{Value: "TEST_TOKEN", Type: urlTypeEnvironment},
-				Auth: auth{Token: authSecret{Type: "environment", Name: "VAR"}},
+				URL:  persistence.Url{Value: "TEST_TOKEN", Type: persistence.UrlTypeEnvironment},
+				Auth: persistence.Auth{Token: persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
 			givenEnvVarValue: "https://www.test.url/",
 			want: URLDefinition{
@@ -111,10 +112,10 @@ func Test_extractUrlType(t *testing.T) {
 		},
 		{
 			name: "fails_on_unknown_type",
-			inputConfig: environment{
+			inputConfig: persistence.Environment{
 				Name: "TEST ENV",
-				URL:  url{Value: "TEST URL", Type: "this-is-not-a-type"},
-				Auth: auth{Token: authSecret{Type: "environment", Name: "VAR"}},
+				URL:  persistence.Url{Value: "TEST URL", Type: "this-is-not-a-type"},
+				Auth: persistence.Auth{Token: persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
 			want:    URLDefinition{},
 			wantErr: true,
@@ -133,14 +134,14 @@ func Test_extractUrlType(t *testing.T) {
 func Test_parseProjectDefinition_SimpleType(t *testing.T) {
 	tests := []struct {
 		name  string
-		given project
+		given persistence.Project
 		want  []ProjectDefinition
 	}{
 		{
 			"parses_simple_project",
-			project{
+			persistence.Project{
 				Name: "PROJ_NAME",
-				Type: simpleProjectType,
+				Type: persistence.SimpleProjectType,
 				Path: "PROJ_PATH",
 			},
 			[]ProjectDefinition{
@@ -152,7 +153,7 @@ func Test_parseProjectDefinition_SimpleType(t *testing.T) {
 		},
 		{
 			"parses_simple_project_when_type_omitted",
-			project{
+			persistence.Project{
 				Name: "PROJ_NAME",
 				Path: "PROJ_PATH",
 			},
@@ -166,7 +167,7 @@ func Test_parseProjectDefinition_SimpleType(t *testing.T) {
 		},
 		{
 			"sets_project_name_as_path_if_no_path_set",
-			project{
+			persistence.Project{
 				Name: "PROJ_NAME",
 			},
 
@@ -179,7 +180,7 @@ func Test_parseProjectDefinition_SimpleType(t *testing.T) {
 		},
 		{
 			"sets_project_name_as_path_if_no_path_set",
-			project{
+			persistence.Project{
 				Name: "PROJ_NAME",
 			},
 
@@ -213,9 +214,9 @@ func Test_parseProjectDefinition_GroupingType(t *testing.T) {
 		fs:           testFs,
 		manifestPath: ".",
 	}
-	project := project{
+	project := persistence.Project{
 		Name: "PROJ_NAME",
-		Type: groupProjectType,
+		Type: persistence.GroupProjectType,
 		Path: "PROJ_PATH",
 	}
 
@@ -244,7 +245,7 @@ func Test_parseProjectDefinition_FailsOnUnknownType(t *testing.T) {
 		fs:           nil,
 		manifestPath: ".",
 	}
-	project := project{
+	project := persistence.Project{
 		Name: "PROJ_NAME",
 		Type: "not-a-project-type",
 		Path: "PROJ_PATH",
@@ -268,41 +269,41 @@ func Test_parseProjectDefinition_FailsOnInvalidProjectDefinitions(t *testing.T) 
 
 	tests := []struct {
 		name    string
-		project project
+		project persistence.Project
 	}{
 		{
 			"empty simple project",
-			project{
+			persistence.Project{
 				Name: "",
 				Path: "",
 			},
 		},
 		{
 			"simple project without a name",
-			project{
+			persistence.Project{
 				Name: "",
 				Path: "./some/folder",
 			},
 		},
 		{
 			"grouping dir that does not exist",
-			project{
+			persistence.Project{
 				Name: "a grouping",
-				Type: groupProjectType,
+				Type: persistence.GroupProjectType,
 				Path: "path/that/wont/be/found",
 			},
 		},
 		{
 			"grouping project without a name",
-			project{
+			persistence.Project{
 				Name: "",
-				Type: groupProjectType,
+				Type: persistence.GroupProjectType,
 				Path: "./some/group",
 			},
 		},
 		{
 			"name containing path separators",
-			project{
+			persistence.Project{
 				Name: "names/must/not/be\\paths",
 				Path: "",
 			},
@@ -333,13 +334,13 @@ func Test_toProjectDefinitions(t *testing.T) {
 
 	tests := []struct {
 		name               string
-		projectDefinitions []project
+		projectDefinitions []persistence.Project
 		want               map[string]ProjectDefinition
 		wantErrs           bool
 	}{
 		{
 			"returns error on duplicate project id",
-			[]project{
+			[]persistence.Project{
 				{
 					Name: "project_id",
 					Path: "project/path/",
@@ -354,14 +355,14 @@ func Test_toProjectDefinitions(t *testing.T) {
 		},
 		{
 			"returns error on duplicate project id between simple and grouping",
-			[]project{
+			[]persistence.Project{
 				{
 					Name: "project_id",
 					Path: "project/path/",
 				},
 				{
 					Name: "project_id",
-					Type: groupProjectType,
+					Type: persistence.GroupProjectType,
 					Path: "another/project/path/",
 				},
 			},
@@ -370,15 +371,15 @@ func Test_toProjectDefinitions(t *testing.T) {
 		},
 		{
 			"returns error on duplicate project id between grouping and grouping",
-			[]project{
+			[]persistence.Project{
 				{
 					Name: "project_id",
-					Type: groupProjectType,
+					Type: persistence.GroupProjectType,
 					Path: "project/path/",
 				},
 				{
 					Name: "project_id",
-					Type: groupProjectType,
+					Type: persistence.GroupProjectType,
 					Path: "another/project/path/",
 				},
 			},
@@ -387,14 +388,14 @@ func Test_toProjectDefinitions(t *testing.T) {
 		},
 		{
 			"returns error on duplicate project id between simple and sub-project in a group",
-			[]project{
+			[]persistence.Project{
 				{
 					Name: "project_id.a",
 					Path: "some/project/path/",
 				},
 				{
 					Name: "project_id", //this group will contain 'project_id.a' & 'project_id.b' projects
-					Type: groupProjectType,
+					Type: persistence.GroupProjectType,
 					Path: "project/path/",
 				},
 			},
@@ -403,10 +404,10 @@ func Test_toProjectDefinitions(t *testing.T) {
 		},
 		{
 			"returns error if grouping project path can not be read",
-			[]project{
+			[]persistence.Project{
 				{
 					Name: "project_id",
-					Type: groupProjectType,
+					Type: persistence.GroupProjectType,
 					Path: "this/path/does/not/exist",
 				},
 			},
@@ -415,7 +416,7 @@ func Test_toProjectDefinitions(t *testing.T) {
 		},
 		{
 			"returns error if project is invalid (empty)",
-			[]project{
+			[]persistence.Project{
 				{
 					Name: "",
 					Path: "",
@@ -426,7 +427,7 @@ func Test_toProjectDefinitions(t *testing.T) {
 		},
 		{
 			"returns error if project is invalid (path separators)",
-			[]project{
+			[]persistence.Project{
 				{
 					Name: "names/must/not/be\\paths",
 					Path: "",
@@ -437,10 +438,10 @@ func Test_toProjectDefinitions(t *testing.T) {
 		},
 		{
 			"returns error if a grouping project does not contain any projects",
-			[]project{
+			[]persistence.Project{
 				{
 					Name: "project_id",
-					Type: groupProjectType,
+					Type: persistence.GroupProjectType,
 					Path: "empty/project/path/",
 				},
 			},
@@ -449,14 +450,14 @@ func Test_toProjectDefinitions(t *testing.T) {
 		},
 		{
 			"correctly parses project definition",
-			[]project{
+			[]persistence.Project{
 				{
 					Name: "project_id_1",
 					Path: filepath.FromSlash("project/path/"),
 				},
 				{
 					Name: "project_id_2",
-					Type: groupProjectType,
+					Type: persistence.GroupProjectType,
 					Path: filepath.FromSlash("another/project/path/"),
 				},
 			},
@@ -497,7 +498,7 @@ func Test_toProjectDefinitions(t *testing.T) {
 
 func TestUnmarshallingYAML(t *testing.T) {
 	type expected struct {
-		manifest manifest
+		manifest persistence.Manifest
 		wantErr  bool
 	}
 	var tests = []struct {
@@ -523,25 +524,25 @@ environmentGroups:
         name: ENV_TOKEN
 `,
 			expected: expected{
-				manifest: manifest{
+				manifest: persistence.Manifest{
 					ManifestVersion: "1.0",
-					Projects: []project{
+					Projects: []persistence.Project{
 						{
 							Name: "project",
 						},
 					},
-					EnvironmentGroups: []group{
+					EnvironmentGroups: []persistence.Group{
 						{
 							Name: "default",
-							Environments: []environment{
+							Environments: []persistence.Environment{
 								{
 									Name: "env",
-									URL: url{
-										Type:  urlTypeEnvironment,
+									URL: persistence.Url{
+										Type:  persistence.UrlTypeEnvironment,
 										Value: "ENV_URL",
 									},
-									Auth: auth{
-										Token: authSecret{
+									Auth: persistence.Auth{
+										Token: persistence.AuthSecret{
 											Name: "ENV_TOKEN",
 										},
 									},
@@ -577,16 +578,16 @@ environmentGroups:
             value: "https://sso.token.endpoint"
 `,
 			expected: expected{
-				manifest: manifest{
-					EnvironmentGroups: []group{
+				manifest: persistence.Manifest{
+					EnvironmentGroups: []persistence.Group{
 						{
-							Environments: []environment{
+							Environments: []persistence.Environment{
 								{
-									Auth: auth{
-										OAuth: &oAuth{
-											ClientID:      authSecret{Name: "ENV_CLIENT_ID"},
-											ClientSecret:  authSecret{Name: "ENV_CLIENT_SECRET"},
-											TokenEndpoint: &url{Value: "https://sso.token.endpoint"},
+									Auth: persistence.Auth{
+										OAuth: &persistence.OAuth{
+											ClientID:      persistence.AuthSecret{Name: "ENV_CLIENT_ID"},
+											ClientSecret:  persistence.AuthSecret{Name: "ENV_CLIENT_SECRET"},
+											TokenEndpoint: &persistence.Url{Value: "https://sso.token.endpoint"},
 										},
 									},
 								},
@@ -599,7 +600,7 @@ environmentGroups:
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			var actual manifest
+			var actual persistence.Manifest
 			err := yaml.UnmarshalStrict([]byte(tc.given), &actual)
 			if tc.expected.wantErr {
 				assert.Error(t, err)
@@ -662,7 +663,7 @@ func Test_validateManifestVersion(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := validateVersion(manifest{ManifestVersion: tt.manifestVersion}); (err != nil) != tt.wantErr {
+			if err := validateVersion(persistence.Manifest{ManifestVersion: tt.manifestVersion}); (err != nil) != tt.wantErr {
 				t.Errorf("validateManifestVersion() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -1639,14 +1640,14 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 }
 
 func TestEnvVarResolutionCanBeDeactivated(t *testing.T) {
-	e := environment{
+	e := persistence.Environment{
 		Name: "TEST ENV",
-		URL:  url{Value: "TEST_TOKEN", Type: urlTypeEnvironment},
-		Auth: auth{
-			Token: authSecret{Type: "environment", Name: "VAR"},
-			OAuth: &oAuth{
-				ClientID:     authSecret{Type: "environment", Name: "VAR_1"},
-				ClientSecret: authSecret{Type: "environment", Name: "VAR_2"},
+		URL:  persistence.Url{Value: "TEST_TOKEN", Type: persistence.UrlTypeEnvironment},
+		Auth: persistence.Auth{
+			Token: persistence.AuthSecret{Type: "environment", Name: "VAR"},
+			OAuth: &persistence.OAuth{
+				ClientID:     persistence.AuthSecret{Type: "environment", Name: "VAR_1"},
+				ClientSecret: persistence.AuthSecret{Type: "environment", Name: "VAR_2"},
 			},
 		},
 	}
