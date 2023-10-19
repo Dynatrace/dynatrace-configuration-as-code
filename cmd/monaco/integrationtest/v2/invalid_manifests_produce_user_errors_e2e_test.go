@@ -53,12 +53,12 @@ func TestInvalidManifest_ReportsError(t *testing.T) {
 		{
 			"environments missing",
 			"manifest_missing_envs.yaml",
-			"no `environmentGroups` defined",
+			"no environments defined in manifest",
 		},
 		{
 			"projects missing",
 			"manifest_missing_projects.yaml",
-			"no `projects` defined",
+			"no projects defined in manifest",
 		},
 	}
 
