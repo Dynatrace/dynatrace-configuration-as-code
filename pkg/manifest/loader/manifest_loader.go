@@ -35,8 +35,8 @@ import (
 	"strings"
 )
 
-// LoaderContext holds all information for [LoadManifest]
-type LoaderContext struct {
+// Context holds all information for [Load]
+type Context struct {
 	// Fs holds the abstraction of the file system.
 	Fs afero.Fs
 
@@ -57,8 +57,8 @@ type LoaderContext struct {
 	// If Groups contains items that do not match any environment in the specified manifest file, the loading errors.
 	Groups []string
 
-	// Opts are LoaderOptions holding optional configuration for LoadManifest
-	Opts LoaderOptions
+	// Opts are Options holding optional configuration for Load
+	Opts Options
 }
 
 type projectLoaderContext struct {
@@ -66,9 +66,9 @@ type projectLoaderContext struct {
 	manifestPath string
 }
 
-// LoaderOptions are optional configuration for LoadManifest
-type LoaderOptions struct {
-	DontResolveEnvVars bool
+// Options are optional configuration for Load
+type Options struct {
+	DoNotResolveEnvVars bool
 }
 
 type ManifestLoaderError struct {
@@ -127,7 +127,7 @@ func (e ProjectLoaderError) Error() string {
 	return fmt.Sprintf("%s:%s: %s", e.ManifestPath, e.Project, e.Reason)
 }
 
-func LoadManifest(context *LoaderContext) (manifest.Manifest, []error) {
+func Load(context *Context) (manifest.Manifest, []error) {
 	log.WithFields(field.F("manifestPath", context.ManifestPath)).Info("Loading manifest %q. Restrictions: groups=%q, environments=%q", context.ManifestPath, context.Groups, context.Environments)
 
 	manifestYAML, err := readManifestYAML(context)
@@ -192,7 +192,7 @@ func LoadManifest(context *LoaderContext) (manifest.Manifest, []error) {
 	}, nil
 }
 
-func parseAuth(context *LoaderContext, a persistence.Auth) (manifest.Auth, error) {
+func parseAuth(context *Context, a persistence.Auth) (manifest.Auth, error) {
 	token, err := parseAuthSecret(context, a.Token)
 	if err != nil {
 		return manifest.Auth{}, fmt.Errorf("error parsing token: %w", err)
@@ -216,7 +216,7 @@ func parseAuth(context *LoaderContext, a persistence.Auth) (manifest.Auth, error
 
 }
 
-func parseAuthSecret(context *LoaderContext, s persistence.AuthSecret) (manifest.AuthSecret, error) {
+func parseAuthSecret(context *Context, s persistence.AuthSecret) (manifest.AuthSecret, error) {
 
 	if !(s.Type == persistence.TypeEnvironment || s.Type == "") {
 		return manifest.AuthSecret{}, errors.New("type must be 'environment'")
@@ -226,7 +226,7 @@ func parseAuthSecret(context *LoaderContext, s persistence.AuthSecret) (manifest
 		return manifest.AuthSecret{}, errors.New("no name given or empty")
 	}
 
-	if context.Opts.DontResolveEnvVars {
+	if context.Opts.DoNotResolveEnvVars {
 		log.Debug("Skipped resolving environment variable %s based on loader options", s.Name)
 		return manifest.AuthSecret{
 			Name:  s.Name,
@@ -246,7 +246,7 @@ func parseAuthSecret(context *LoaderContext, s persistence.AuthSecret) (manifest
 	return manifest.AuthSecret{Name: s.Name, Value: secret.MaskedString(v)}, nil
 }
 
-func parseOAuth(context *LoaderContext, a persistence.OAuth) (manifest.OAuth, error) {
+func parseOAuth(context *Context, a persistence.OAuth) (manifest.OAuth, error) {
 	clientID, err := parseAuthSecret(context, a.ClientID)
 	if err != nil {
 		return manifest.OAuth{}, fmt.Errorf("failed to parse ClientID: %w", err)
@@ -277,7 +277,7 @@ func parseOAuth(context *LoaderContext, a persistence.OAuth) (manifest.OAuth, er
 	}, nil
 }
 
-func readManifestYAML(context *LoaderContext) (persistence.Manifest, error) {
+func readManifestYAML(context *Context) (persistence.Manifest, error) {
 	manifestPath := filepath.Clean(context.ManifestPath)
 
 	if !files.IsYamlFileExtension(manifestPath) {
@@ -334,7 +334,7 @@ func validateVersion(m persistence.Manifest) error {
 	return nil
 }
 
-func parseEnvironments(context *LoaderContext, groups []persistence.Group) (map[string]manifest.EnvironmentDefinition, []error) { // nolint:gocognit
+func parseEnvironments(context *Context, groups []persistence.Group) (map[string]manifest.EnvironmentDefinition, []error) { // nolint:gocognit
 	var errors []error
 	environments := make(map[string]manifest.EnvironmentDefinition)
 
@@ -402,7 +402,7 @@ func parseEnvironments(context *LoaderContext, groups []persistence.Group) (map[
 	return environments, nil
 }
 
-func shouldSkipEnv(context *LoaderContext, group persistence.Group, env persistence.Environment) bool {
+func shouldSkipEnv(context *Context, group persistence.Group, env persistence.Environment) bool {
 	// if nothing is restricted, everything is allowed
 	if len(context.Groups) == 0 && len(context.Environments) == 0 {
 		return false
@@ -419,7 +419,7 @@ func shouldSkipEnv(context *LoaderContext, group persistence.Group, env persiste
 	return true
 }
 
-func parseSingleEnvironment(context *LoaderContext, config persistence.Environment, group string) (manifest.EnvironmentDefinition, []error) {
+func parseSingleEnvironment(context *Context, config persistence.Environment, group string) (manifest.EnvironmentDefinition, []error) {
 	var errs []error
 
 	a, err := parseAuth(context, config.Auth)
@@ -444,7 +444,7 @@ func parseSingleEnvironment(context *LoaderContext, config persistence.Environme
 	}, nil
 }
 
-func parseURLDefinition(context *LoaderContext, u persistence.Url) (manifest.URLDefinition, error) {
+func parseURLDefinition(context *Context, u persistence.Url) (manifest.URLDefinition, error) {
 
 	// Depending on the type, the url.value either contains the env var name or the direct value of the url
 	if u.Value == "" {
@@ -462,7 +462,7 @@ func parseURLDefinition(context *LoaderContext, u persistence.Url) (manifest.URL
 
 	if u.Type == persistence.UrlTypeEnvironment {
 
-		if context.Opts.DontResolveEnvVars {
+		if context.Opts.DoNotResolveEnvVars {
 			log.Debug("Skipped resolving environment variable %s based on loader options", u.Value)
 			return manifest.URLDefinition{
 				Type:  manifest.EnvironmentURLType,

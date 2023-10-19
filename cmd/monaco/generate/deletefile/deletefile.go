@@ -38,11 +38,11 @@ import (
 
 func createDeleteFile(fs afero.Fs, manifestPath string, projectNames, specificEnvironments []string, filename, outputFolder string) error {
 
-	m, errs := manifestloader.LoadManifest(&manifestloader.LoaderContext{
+	m, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
 		ManifestPath: manifestPath,
-		Opts: manifestloader.LoaderOptions{
-			DontResolveEnvVars: true,
+		Opts: manifestloader.Options{
+			DoNotResolveEnvVars: true,
 		},
 	})
 	if len(errs) > 0 {

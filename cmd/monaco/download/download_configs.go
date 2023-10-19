@@ -87,7 +87,7 @@ func readEnvVariable(envVar string) (manifest.AuthSecret, error) {
 
 func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions downloadCmdOptions) error {
 
-	m, errs := manifestloader.LoadManifest(&manifestloader.LoaderContext{
+	m, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
 		ManifestPath: cmdOptions.manifestFile,
 		Environments: []string{cmdOptions.specificEnvironmentName},

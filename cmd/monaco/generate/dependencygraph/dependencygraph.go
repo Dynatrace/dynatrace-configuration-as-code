@@ -51,13 +51,13 @@ func (e ExportError) Error() string {
 
 func writeGraphFiles(fs afero.Fs, manifestPath string, environmentNames []string, environmentGroups []string, outputFolder string) error {
 
-	m, errs := manifestloader.LoadManifest(&manifestloader.LoaderContext{
+	m, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
 		ManifestPath: manifestPath,
 		Environments: environmentNames,
 		Groups:       environmentGroups,
-		Opts: manifestloader.LoaderOptions{
-			DontResolveEnvVars: true,
+		Opts: manifestloader.Options{
+			DoNotResolveEnvVars: true,
 		},
 	})
 	if len(errs) > 0 {

@@ -42,7 +42,7 @@ func (e invalidUUIDError) Unwrap() error {
 	return e.err
 }
 
-func parseSingleAccount(c *LoaderContext, a persistence.Account) (manifest.Account, error) {
+func parseSingleAccount(c *Context, a persistence.Account) (manifest.Account, error) {
 
 	if a.AccountUUID == "" {
 		return manifest.Account{}, errAccUidMissing
@@ -78,7 +78,7 @@ func parseSingleAccount(c *LoaderContext, a persistence.Account) (manifest.Accou
 }
 
 // parseAccounts converts the persistence definition to the in-memory definition
-func parseAccounts(c *LoaderContext, accounts []persistence.Account) (map[string]manifest.Account, error) {
+func parseAccounts(c *Context, accounts []persistence.Account) (map[string]manifest.Account, error) {
 
 	result := make(map[string]manifest.Account, len(accounts))
 

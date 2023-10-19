@@ -62,7 +62,7 @@ func GetDeleteCommand(fs afero.Fs) (deleteCmd *cobra.Command) {
 			}
 
 			// Try to load the manifest file
-			manifest, errs := manifestloader.LoadManifest(&manifestloader.LoaderContext{
+			manifest, errs := manifestloader.Load(&manifestloader.Context{
 				Fs:           fs,
 				ManifestPath: absManifestFilePath,
 				Environments: environments,
