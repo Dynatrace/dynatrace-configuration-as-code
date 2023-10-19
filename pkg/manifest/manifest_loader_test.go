@@ -483,11 +483,11 @@ func Test_toProjectDefinitions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			context := &projectLoaderContext{testFs, "path/to/a/manifest.yaml"}
 
-			got, gotErrs := toProjectDefinitions(context, tt.projectDefinitions)
+			got, gotErrs := parseProjects(context, tt.projectDefinitions)
 
 			numErrs := len(gotErrs)
 			if (tt.wantErrs && numErrs <= 0) || (!tt.wantErrs && numErrs > 0) {
-				t.Errorf("toProjectDefinitions() returned unexpected Errors = %v", gotErrs)
+				t.Errorf("parseProjects() returned unexpected Errors = %v", gotErrs)
 			}
 
 			assert.Equal(t, tt.want, got)
