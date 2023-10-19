@@ -20,6 +20,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/runner"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
 	monacoVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 	"net/http"
@@ -40,13 +41,13 @@ func main() {
 func setVersionNotificationStr(msg *string) {
 	currentVersion, err := version.ParseVersion(monacoVersion.MonitoringAsCode)
 	if err != nil {
-		log.Debug("Could not perform version check: %s", err)
+		log.WithFields(field.Error(err)).Debug("Can't parse current monaco version: %s", err)
 		return
 	}
 
 	latestVersion, err := version.GetLatestVersion(context.TODO(), &http.Client{}, "https://api.github.com/repos/dynatrace/dynatrace-configuration-as-code/releases/latest")
 	if err != nil {
-		log.Debug("Could not perform version check: %s", err)
+		log.WithFields(field.Error(err)).Debug("Could not perform version check: %s", err)
 		return
 	}
 
@@ -64,5 +65,5 @@ func notifyUser(msg string) {
 	if msg == "" {
 		return
 	}
-	fmt.Println(msg)
+	log.Info(msg)
 }
