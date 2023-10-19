@@ -125,7 +125,7 @@ func Test_extractUrlType(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv("TEST_TOKEN", tt.givenEnvVarValue)
-			if got, gotErr := parseURLDefinition(&LoaderContext{}, tt.inputConfig.URL); got != tt.want || (!tt.wantErr && gotErr != nil) {
+			if got, gotErr := parseURLDefinition(&Context{}, tt.inputConfig.URL); got != tt.want || (!tt.wantErr && gotErr != nil) {
 				t.Errorf("extractUrlType() = %v, %v, want %v, %v", got, gotErr, tt.want, tt.wantErr)
 			}
 		})
@@ -1620,7 +1620,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 			fs := afero.NewMemMapFs()
 			assert.NoError(t, afero.WriteFile(fs, "manifest.yaml", []byte(test.manifestContent), 0400))
 
-			mani, errs := LoadManifest(&LoaderContext{
+			mani, errs := Load(&Context{
 				Fs:           fs,
 				ManifestPath: "manifest.yaml",
 				Groups:       test.groups,
@@ -1654,22 +1654,22 @@ func TestEnvVarResolutionCanBeDeactivated(t *testing.T) {
 	}
 
 	t.Run("URLs resolution produces error", func(t *testing.T) {
-		_, gotErr := parseURLDefinition(&LoaderContext{}, e.URL)
+		_, gotErr := parseURLDefinition(&Context{}, e.URL)
 		assert.Error(t, gotErr)
 	})
 
-	t.Run("URLs are not resolved if 'DontResolveEnvVars' option is set", func(t *testing.T) {
-		_, gotErr := parseURLDefinition(&LoaderContext{Opts: LoaderOptions{DontResolveEnvVars: true}}, e.URL)
+	t.Run("URLs are not resolved if 'DoNotResolveEnvVars' option is set", func(t *testing.T) {
+		_, gotErr := parseURLDefinition(&Context{Opts: Options{DoNotResolveEnvVars: true}}, e.URL)
 		assert.NoError(t, gotErr)
 	})
 
 	t.Run("Auth token resolution produces error", func(t *testing.T) {
-		_, gotErr := parseAuth(&LoaderContext{}, e.Auth)
+		_, gotErr := parseAuth(&Context{}, e.Auth)
 		assert.Error(t, gotErr)
 	})
 
-	t.Run("Auth tokens are not resolved if 'DontResolveEnvVars' option is set", func(t *testing.T) {
-		_, gotErr := parseAuth(&LoaderContext{Opts: LoaderOptions{DontResolveEnvVars: true}}, e.Auth)
+	t.Run("Auth tokens are not resolved if 'DoNotResolveEnvVars' option is set", func(t *testing.T) {
+		_, gotErr := parseAuth(&Context{Opts: Options{DoNotResolveEnvVars: true}}, e.Auth)
 		assert.NoError(t, gotErr)
 	})
 }

@@ -115,7 +115,7 @@ func EnvironmentByArg0(_ *cobra.Command, args []string, _ string) ([]string, cob
 }
 
 func loadEnvironmentsFromManifest(manifestPath string) ([]string, cobra.ShellCompDirective) {
-	man, _ := manifestloader.LoadManifest(&manifestloader.LoaderContext{
+	man, _ := manifestloader.Load(&manifestloader.Context{
 		Fs:           afero.NewOsFs(),
 		ManifestPath: manifestPath,
 	})
@@ -126,7 +126,7 @@ func loadEnvironmentsFromManifest(manifestPath string) ([]string, cobra.ShellCom
 func ProjectsFromManifest(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
 
 	manifestPath := args[0]
-	mani, _ := manifestloader.LoadManifest(&manifestloader.LoaderContext{
+	mani, _ := manifestloader.Load(&manifestloader.Context{
 		Fs:           afero.NewOsFs(),
 		ManifestPath: manifestPath,
 	})

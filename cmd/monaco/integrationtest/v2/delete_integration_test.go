@@ -257,7 +257,7 @@ environmentGroups:
 	assert.NoError(t, err)
 
 	// Assert expected deletions
-	man, errs := manifestloader.LoadManifest(&manifestloader.LoaderContext{
+	man, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
 		ManifestPath: "test-resources/delete-test-configs/deploy-manifest.yaml", //full manifest with oAuth
 	})

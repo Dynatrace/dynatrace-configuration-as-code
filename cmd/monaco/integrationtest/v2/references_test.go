@@ -138,7 +138,7 @@ func TestReferencesAreResolvedOnDownload(t *testing.T) {
 					assert.Nil(t, err, "download: did not expect error")
 
 					// assert
-					mani, errs := manifestloader.LoadManifest(&manifestloader.LoaderContext{
+					mani, errs := manifestloader.Load(&manifestloader.Context{
 						Fs:           fs,
 						ManifestPath: "download/manifest.yaml",
 					})

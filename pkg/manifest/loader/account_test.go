@@ -63,7 +63,7 @@ func TestValidAccounts(t *testing.T) {
 		},
 	}
 
-	v, err := parseAccounts(&LoaderContext{}, []persistence.Account{acc, acc2})
+	v, err := parseAccounts(&Context{}, []persistence.Account{acc, acc2})
 	assert.NoError(t, err)
 
 	assert.Equal(t, v, map[string]manifest.Account{
@@ -121,7 +121,7 @@ func TestInvalidAccounts(t *testing.T) {
 	}
 
 	// validate that the default is valid
-	_, err := parseAccounts(&LoaderContext{}, []persistence.Account{validAccount})
+	_, err := parseAccounts(&Context{}, []persistence.Account{validAccount})
 	assert.NoError(t, err)
 
 	// tests
@@ -129,7 +129,7 @@ func TestInvalidAccounts(t *testing.T) {
 		a := validAccount
 		a.Name = ""
 
-		_, err := parseAccounts(&LoaderContext{}, []persistence.Account{a})
+		_, err := parseAccounts(&Context{}, []persistence.Account{a})
 		assert.ErrorIs(t, err, errNameMissing)
 	})
 
@@ -137,7 +137,7 @@ func TestInvalidAccounts(t *testing.T) {
 		a := validAccount
 		a.AccountUUID = ""
 
-		_, err := parseAccounts(&LoaderContext{}, []persistence.Account{a})
+		_, err := parseAccounts(&Context{}, []persistence.Account{a})
 		assert.ErrorIs(t, err, errAccUidMissing)
 	})
 
@@ -145,7 +145,7 @@ func TestInvalidAccounts(t *testing.T) {
 		a := deepCopy(t, validAccount)
 		a.AccountUUID = "this-is-not-a-valid-uuid"
 
-		_, err := parseAccounts(&LoaderContext{}, []persistence.Account{a})
+		_, err := parseAccounts(&Context{}, []persistence.Account{a})
 		uuidErr := invalidUUIDError{}
 		if assert.ErrorAs(t, err, &uuidErr) {
 			assert.Equal(t, uuidErr.uuid, "this-is-not-a-valid-uuid")
@@ -156,7 +156,7 @@ func TestInvalidAccounts(t *testing.T) {
 		a := deepCopy(t, validAccount)
 		a.OAuth = persistence.OAuth{}
 
-		_, err := parseAccounts(&LoaderContext{}, []persistence.Account{a})
+		_, err := parseAccounts(&Context{}, []persistence.Account{a})
 		assert.ErrorContains(t, err, "oAuth is invalid")
 	})
 
@@ -164,7 +164,7 @@ func TestInvalidAccounts(t *testing.T) {
 		a := deepCopy(t, validAccount)
 		a.OAuth.ClientID = persistence.AuthSecret{}
 
-		_, err := parseAccounts(&LoaderContext{}, []persistence.Account{a})
+		_, err := parseAccounts(&Context{}, []persistence.Account{a})
 		assert.ErrorContains(t, err, "ClientID: no name given or empty")
 
 	})
@@ -173,7 +173,7 @@ func TestInvalidAccounts(t *testing.T) {
 		a := deepCopy(t, validAccount)
 		a.OAuth.ClientSecret = persistence.AuthSecret{}
 
-		_, err := parseAccounts(&LoaderContext{}, []persistence.Account{a})
+		_, err := parseAccounts(&Context{}, []persistence.Account{a})
 		assert.ErrorContains(t, err, "ClientSecret: no name given or empty")
 	})
 }

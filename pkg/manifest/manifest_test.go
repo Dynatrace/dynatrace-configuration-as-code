@@ -67,11 +67,11 @@ func TestManifestLoading(t *testing.T) {
 	t.Setenv("ENV_TOKEN_URL", "https://another-token.url")
 	t.Setenv("ENV_API_URL", "https://api.url")
 
-	mani, errs := manifestloader.LoadManifest(&manifestloader.LoaderContext{
+	mani, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
 		ManifestPath: "./testdata/manifest_full.yaml",
-		Opts: manifestloader.LoaderOptions{
-			DontResolveEnvVars: false,
+		Opts: manifestloader.Options{
+			DoNotResolveEnvVars: false,
 		},
 	})
 
@@ -342,7 +342,7 @@ environmentGroups:
 			afero.WriteFile(fs, "manifest.yaml", []byte(fullDef), 0644)
 			fs.Mkdir("proj", 0644)
 
-			mani, errs := manifestloader.LoadManifest(&manifestloader.LoaderContext{
+			mani, errs := manifestloader.Load(&manifestloader.Context{
 				Fs:           fs,
 				ManifestPath: "manifest.yaml",
 			})

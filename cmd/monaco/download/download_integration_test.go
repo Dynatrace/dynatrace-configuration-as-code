@@ -918,7 +918,7 @@ func TestDownloadIntegrationOverwritesFolderAndManifestIfForced(t *testing.T) {
 	assert.NilError(t, err)
 
 	// THEN we can load the project again and verify its content
-	man, errs := manifestloader.LoadManifest(&manifestloader.LoaderContext{
+	man, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
 		ManifestPath: filepath.Join(testBasePath, "manifest.yaml"),
 	})
@@ -1231,7 +1231,7 @@ func setupTestingDownloadOptions(t *testing.T, server *httptest.Server, projectN
 }
 
 func loadDownloadedProjects(fs afero.Fs, apis api.APIs) ([]projectLoader.Project, []error) {
-	man, errs := manifestloader.LoadManifest(&manifestloader.LoaderContext{
+	man, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
 		ManifestPath: "out/manifest.yaml",
 	})

@@ -90,7 +90,7 @@ func absPath(manifestPath string) (string, error) {
 }
 
 func loadManifest(fs afero.Fs, manifestPath string, groups []string, environments []string) (*manifest.Manifest, error) {
-	m, errs := manifestloader.LoadManifest(&manifestloader.LoaderContext{
+	m, errs := manifestloader.Load(&manifestloader.Context{
 		Fs:           fs,
 		ManifestPath: manifestPath,
 		Groups:       groups,
