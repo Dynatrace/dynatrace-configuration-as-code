@@ -1,22 +1,25 @@
 //go:build unit
 
-// @license
-// Copyright 2022 Dynatrace LLC
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * @license
+ * Copyright 2023 Dynatrace LLC
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-package manifest
+package writer
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/oauth2/endpoints"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -29,12 +32,12 @@ import (
 func Test_toWriteableProjects(t *testing.T) {
 	tests := []struct {
 		name          string
-		givenProjects map[string]ProjectDefinition
+		givenProjects map[string]manifest.ProjectDefinition
 		wantResult    []persistence.Project
 	}{
 		{
 			name: "creates_simple_projects",
-			givenProjects: map[string]ProjectDefinition{
+			givenProjects: map[string]manifest.ProjectDefinition{
 				"project_a": {
 					Name: "a",
 					Path: "projects/a",
@@ -65,7 +68,7 @@ func Test_toWriteableProjects(t *testing.T) {
 		},
 		{
 			"creates_grouping_projects",
-			map[string]ProjectDefinition{
+			map[string]manifest.ProjectDefinition{
 				"project_a": {
 					Name: "projects.a",
 					Path: "projects/a",
@@ -89,7 +92,7 @@ func Test_toWriteableProjects(t *testing.T) {
 		},
 		{
 			name: "creates_mixed_projects",
-			givenProjects: map[string]ProjectDefinition{
+			givenProjects: map[string]manifest.ProjectDefinition{
 				"project_a": {
 					Name: "projects.a",
 					Path: "projects/a",
@@ -144,44 +147,44 @@ func Test_toWriteableProjects(t *testing.T) {
 func Test_toWriteableEnvironmentGroups(t *testing.T) {
 	tests := []struct {
 		name       string
-		input      map[string]EnvironmentDefinition
+		input      map[string]manifest.EnvironmentDefinition
 		wantResult []persistence.Group
 	}{
 		{
 			name: "correctly transforms simple env groups",
-			input: map[string]EnvironmentDefinition{
+			input: map[string]manifest.EnvironmentDefinition{
 				"env1": {
 					Name: "env1",
-					URL: URLDefinition{
+					URL: manifest.URLDefinition{
 						Value: "www.an.Url",
 					},
 					Group: "group1",
-					Auth: Auth{
-						Token: AuthSecret{
+					Auth: manifest.Auth{
+						Token: manifest.AuthSecret{
 							Name: "TokenTest",
 						},
 					},
 				},
 				"env2": {
 					Name: "env2",
-					URL: URLDefinition{
+					URL: manifest.URLDefinition{
 						Value: "www.an.Url",
 					},
 					Group: "group1",
-					Auth: Auth{
-						Token: AuthSecret{},
-						OAuth: &OAuth{
-							ClientID: AuthSecret{
+					Auth: manifest.Auth{
+						Token: manifest.AuthSecret{},
+						OAuth: &manifest.OAuth{
+							ClientID: manifest.AuthSecret{
 								Name:  "client-id-key",
 								Value: "client-id-val",
 							},
-							ClientSecret: AuthSecret{
+							ClientSecret: manifest.AuthSecret{
 								Name:  "client-secret-key",
 								Value: "client-secret-val",
 							},
-							TokenEndpoint: &URLDefinition{
+							TokenEndpoint: &manifest.URLDefinition{
 								Value: endpoints.Dynatrace.TokenURL,
-								Type:  EnvironmentURLType,
+								Type:  manifest.EnvironmentURLType,
 								Name:  "ENV_TOKEN_ENDPOINT",
 							},
 						},
@@ -189,18 +192,18 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 				},
 				"env2a": {
 					Name: "env2",
-					URL: URLDefinition{
+					URL: manifest.URLDefinition{
 						Value: "www.an.Url",
 					},
 					Group: "group1",
-					Auth: Auth{
-						Token: AuthSecret{},
-						OAuth: &OAuth{
-							ClientID: AuthSecret{
+					Auth: manifest.Auth{
+						Token: manifest.AuthSecret{},
+						OAuth: &manifest.OAuth{
+							ClientID: manifest.AuthSecret{
 								Name:  "client-id-key",
 								Value: "client-id-val",
 							},
-							ClientSecret: AuthSecret{
+							ClientSecret: manifest.AuthSecret{
 								Name:  "client-secret-key",
 								Value: "client-secret-val",
 							},
@@ -209,36 +212,36 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 				},
 				"env2b": {
 					Name: "env2",
-					URL: URLDefinition{
+					URL: manifest.URLDefinition{
 						Value: "www.an.Url",
 					},
 					Group: "group1",
-					Auth: Auth{
-						Token: AuthSecret{},
-						OAuth: &OAuth{
-							ClientID: AuthSecret{
+					Auth: manifest.Auth{
+						Token: manifest.AuthSecret{},
+						OAuth: &manifest.OAuth{
+							ClientID: manifest.AuthSecret{
 								Name:  "client-id-key",
 								Value: "client-id-val",
 							},
-							ClientSecret: AuthSecret{
+							ClientSecret: manifest.AuthSecret{
 								Name:  "client-secret-key",
 								Value: "client-secret-val",
 							},
-							TokenEndpoint: &URLDefinition{
+							TokenEndpoint: &manifest.URLDefinition{
 								Value: "http://custom.sso.token.endpoint",
-								Type:  ValueURLType,
+								Type:  manifest.ValueURLType,
 							},
 						},
 					},
 				},
 				"env3": {
 					Name: "env3",
-					URL: URLDefinition{
+					URL: manifest.URLDefinition{
 						Value: "www.an.Url",
 					},
 					Group: "group2",
-					Auth: Auth{
-						Token: AuthSecret{},
+					Auth: manifest.Auth{
+						Token: manifest.AuthSecret{},
 					},
 				},
 			},
@@ -344,7 +347,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 		},
 		{
 			"returns empty groups for empty env definition",
-			map[string]EnvironmentDefinition{},
+			map[string]manifest.EnvironmentDefinition{},
 			[]persistence.Group{},
 		},
 	}
@@ -373,21 +376,21 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 func Test_toWriteableUrl(t *testing.T) {
 	tests := []struct {
 		name  string
-		input EnvironmentDefinition
+		input manifest.EnvironmentDefinition
 		want  persistence.Url
 	}{
 		{
 			"correctly transforms env var Url",
-			EnvironmentDefinition{
+			manifest.EnvironmentDefinition{
 				Name: "NAME",
-				URL: URLDefinition{
-					Type:  EnvironmentURLType,
+				URL: manifest.URLDefinition{
+					Type:  manifest.EnvironmentURLType,
 					Name:  "{{ .Env.VARIABLE }}",
 					Value: "Some previously resolved value",
 				},
 				Group: "GROUP",
-				Auth: Auth{
-					Token: AuthSecret{},
+				Auth: manifest.Auth{
+					Token: manifest.AuthSecret{},
 				},
 			},
 			persistence.Url{
@@ -397,15 +400,15 @@ func Test_toWriteableUrl(t *testing.T) {
 		},
 		{
 			"correctly transforms value Url",
-			EnvironmentDefinition{
+			manifest.EnvironmentDefinition{
 				Name: "NAME",
-				URL: URLDefinition{
-					Type:  ValueURLType,
+				URL: manifest.URLDefinition{
+					Type:  manifest.ValueURLType,
 					Value: "www.an.Url",
 				},
 				Group: "GROUP",
-				Auth: Auth{
-					Token: AuthSecret{},
+				Auth: manifest.Auth{
+					Token: manifest.AuthSecret{},
 				},
 			},
 			persistence.Url{
@@ -414,14 +417,14 @@ func Test_toWriteableUrl(t *testing.T) {
 		},
 		{
 			"defaults to value Url if no type is defined",
-			EnvironmentDefinition{
+			manifest.EnvironmentDefinition{
 				Name: "NAME",
-				URL: URLDefinition{
+				URL: manifest.URLDefinition{
 					Value: "www.an.Url",
 				},
 				Group: "GROUP",
-				Auth: Auth{
-					Token: AuthSecret{},
+				Auth: manifest.Auth{
+					Token: manifest.AuthSecret{},
 				},
 			},
 			persistence.Url{
@@ -441,17 +444,17 @@ func Test_toWriteableUrl(t *testing.T) {
 func Test_toWritableToken(t *testing.T) {
 	tests := []struct {
 		name  string
-		input EnvironmentDefinition
+		input manifest.EnvironmentDefinition
 		want  persistence.AuthSecret
 	}{
 		{
 			"correctly transforms env var token",
-			EnvironmentDefinition{
+			manifest.EnvironmentDefinition{
 				Name:  "NAME",
-				URL:   URLDefinition{},
+				URL:   manifest.URLDefinition{},
 				Group: "GROUP",
-				Auth: Auth{
-					Token: AuthSecret{Name: "VARIABLE"},
+				Auth: manifest.Auth{
+					Token: manifest.AuthSecret{Name: "VARIABLE"},
 				},
 			},
 			persistence.AuthSecret{
@@ -461,13 +464,13 @@ func Test_toWritableToken(t *testing.T) {
 		},
 		{
 			"defaults to assumed token name if nothing is defined",
-			EnvironmentDefinition{
+			manifest.EnvironmentDefinition{
 				Name:  "NAME",
-				URL:   URLDefinition{},
+				URL:   manifest.URLDefinition{},
 				Group: "GROUP",
 
-				Auth: Auth{
-					Token: AuthSecret{},
+				Auth: manifest.Auth{
+					Token: manifest.AuthSecret{},
 				},
 			},
 			persistence.AuthSecret{

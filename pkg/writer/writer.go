@@ -16,6 +16,7 @@ package writer
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	manifestwriter "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/writer"
 	configwriter "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/writer"
 	"path/filepath"
 
@@ -42,7 +43,7 @@ func WriteToDisk(context *WriterContext, manifestToWrite manifest.Manifest, proj
 		return []error{err}
 	}
 
-	err = manifest.WriteManifest(&manifest.WriterContext{
+	err = manifestwriter.WriteManifest(&manifestwriter.WriterContext{
 		Fs:           context.Fs,
 		ManifestPath: filepath.Join(sanitizedOutputDir, context.ManifestName),
 	}, manifestToWrite)

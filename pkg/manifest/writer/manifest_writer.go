@@ -1,22 +1,25 @@
-// @license
-// Copyright 2021 Dynatrace LLC
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * @license
+ * Copyright 2023 Dynatrace LLC
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-package manifest
+package writer
 
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 	"path/filepath"
@@ -55,7 +58,7 @@ func newManifestWriterError(path string, err error) manifestWriterError {
 	}
 }
 
-func WriteManifest(context *WriterContext, manifestToWrite Manifest) error {
+func WriteManifest(context *WriterContext, manifestToWrite manifest.Manifest) error {
 	sanitizedPath := filepath.Clean(context.ManifestPath)
 	folder := filepath.Dir(sanitizedPath)
 
@@ -98,7 +101,7 @@ func persistManifestToDisk(context *WriterContext, m persistence.Manifest) error
 	return nil
 }
 
-func toWriteableProjects(projects map[string]ProjectDefinition) (result []persistence.Project) {
+func toWriteableProjects(projects map[string]manifest.ProjectDefinition) (result []persistence.Project) {
 	groups := map[string]persistence.Project{}
 
 	for _, projectDefinition := range projects {
@@ -130,12 +133,12 @@ func toWriteableProjects(projects map[string]ProjectDefinition) (result []persis
 	return result
 }
 
-func isGroupingProject(projectDefinition ProjectDefinition) bool {
+func isGroupingProject(projectDefinition manifest.ProjectDefinition) bool {
 	return strings.Contains(projectDefinition.Name, ".") &&
 		strings.ReplaceAll(projectDefinition.Name, ".", "/") == projectDefinition.Path
 }
 
-func extractGroupedProjectDetails(projectDefinition ProjectDefinition) (groupName, groupPath string) {
+func extractGroupedProjectDetails(projectDefinition manifest.ProjectDefinition) (groupName, groupPath string) {
 	subgroups := strings.Split(projectDefinition.Name, ".")
 	projectName := subgroups[len(subgroups)-1]
 	groupName = strings.TrimSuffix(projectDefinition.Name, "."+projectName)
@@ -144,7 +147,7 @@ func extractGroupedProjectDetails(projectDefinition ProjectDefinition) (groupNam
 	return groupName, groupPath
 }
 
-func toWriteableEnvironmentGroups(environments map[string]EnvironmentDefinition) (result []persistence.Group) {
+func toWriteableEnvironmentGroups(environments map[string]manifest.EnvironmentDefinition) (result []persistence.Group) {
 	environmentPerGroup := make(map[string][]persistence.Environment)
 
 	for name, env := range environments {
@@ -164,15 +167,15 @@ func toWriteableEnvironmentGroups(environments map[string]EnvironmentDefinition)
 	return result
 }
 
-func getAuth(env EnvironmentDefinition) persistence.Auth {
+func getAuth(env manifest.EnvironmentDefinition) persistence.Auth {
 	return persistence.Auth{
 		Token: getTokenSecret(env.Auth, env.Name),
 		OAuth: getOAuthCredentials(env.Auth.OAuth),
 	}
 }
 
-func toWriteableURL(environment EnvironmentDefinition) persistence.Url {
-	if environment.URL.Type == EnvironmentURLType {
+func toWriteableURL(environment manifest.EnvironmentDefinition) persistence.Url {
+	if environment.URL.Type == manifest.EnvironmentURLType {
 		return persistence.Url{
 			Type:  persistence.UrlTypeEnvironment,
 			Value: environment.URL.Name,
@@ -185,7 +188,7 @@ func toWriteableURL(environment EnvironmentDefinition) persistence.Url {
 }
 
 // getTokenSecret returns the tokenConfig with some legacy magic string append that still might be used (?)
-func getTokenSecret(a Auth, envName string) persistence.AuthSecret {
+func getTokenSecret(a manifest.Auth, envName string) persistence.AuthSecret {
 	var envVarName string
 	if a.Token.Name != "" {
 		envVarName = a.Token.Name
@@ -199,7 +202,7 @@ func getTokenSecret(a Auth, envName string) persistence.AuthSecret {
 	}
 }
 
-func getOAuthCredentials(a *OAuth) *persistence.OAuth {
+func getOAuthCredentials(a *manifest.OAuth) *persistence.OAuth {
 	if a == nil {
 		return nil
 	}
@@ -207,11 +210,11 @@ func getOAuthCredentials(a *OAuth) *persistence.OAuth {
 	var te *persistence.Url
 	if a.TokenEndpoint != nil {
 		switch a.TokenEndpoint.Type {
-		case ValueURLType:
+		case manifest.ValueURLType:
 			te = &persistence.Url{
 				Value: a.TokenEndpoint.Value,
 			}
-		case EnvironmentURLType:
+		case manifest.EnvironmentURLType:
 			te = &persistence.Url{
 				Type:  persistence.UrlTypeEnvironment,
 				Value: a.TokenEndpoint.Name,
