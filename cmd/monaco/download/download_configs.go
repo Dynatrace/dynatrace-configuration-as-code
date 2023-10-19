@@ -26,6 +26,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/dependency_resolution"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/download/id_extraction"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/spf13/afero"
 	"os"
@@ -86,7 +87,7 @@ func readEnvVariable(envVar string) (manifest.AuthSecret, error) {
 
 func (d DefaultCommand) DownloadConfigsBasedOnManifest(fs afero.Fs, cmdOptions downloadCmdOptions) error {
 
-	m, errs := manifest.LoadManifest(&manifest.LoaderContext{
+	m, errs := manifestloader.LoadManifest(&manifestloader.LoaderContext{
 		Fs:           fs,
 		ManifestPath: cmdOptions.manifestFile,
 		Environments: []string{cmdOptions.specificEnvironmentName},

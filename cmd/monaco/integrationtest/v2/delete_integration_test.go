@@ -26,7 +26,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/testutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
@@ -257,7 +257,7 @@ environmentGroups:
 	assert.NoError(t, err)
 
 	// Assert expected deletions
-	man, errs := manifest.LoadManifest(&manifest.LoaderContext{
+	man, errs := manifestloader.LoadManifest(&manifestloader.LoaderContext{
 		Fs:           fs,
 		ManifestPath: "test-resources/delete-test-configs/deploy-manifest.yaml", //full manifest with oAuth
 	})

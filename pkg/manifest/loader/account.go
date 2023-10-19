@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package manifest
+package loader
 
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
 	"github.com/google/uuid"
 )
@@ -41,32 +42,32 @@ func (e invalidUUIDError) Unwrap() error {
 	return e.err
 }
 
-func parseSingleAccount(c *LoaderContext, a persistence.Account) (Account, error) {
+func parseSingleAccount(c *LoaderContext, a persistence.Account) (manifest.Account, error) {
 
 	if a.AccountUUID == "" {
-		return Account{}, errAccUidMissing
+		return manifest.Account{}, errAccUidMissing
 	}
 
 	accountId, err := uuid.Parse(a.AccountUUID)
 	if err != nil {
-		return Account{}, invalidUUIDError{a.AccountUUID, err}
+		return manifest.Account{}, invalidUUIDError{a.AccountUUID, err}
 	}
 
 	oAuthDef, err := parseOAuth(c, a.OAuth)
 	if err != nil {
-		return Account{}, fmt.Errorf("oAuth is invalid: %w", err)
+		return manifest.Account{}, fmt.Errorf("oAuth is invalid: %w", err)
 	}
 
-	var urlDef *URLDefinition
+	var urlDef *manifest.URLDefinition
 	if a.ApiUrl != nil {
 		if u, err := parseURLDefinition(c, *a.ApiUrl); err != nil {
-			return Account{}, fmt.Errorf("apiUrl: %w", err)
+			return manifest.Account{}, fmt.Errorf("apiUrl: %w", err)
 		} else {
 			urlDef = &u
 		}
 	}
 
-	acc := Account{
+	acc := manifest.Account{
 		Name:        a.Name,
 		AccountUUID: accountId,
 		ApiUrl:      urlDef,
@@ -77,9 +78,9 @@ func parseSingleAccount(c *LoaderContext, a persistence.Account) (Account, error
 }
 
 // parseAccounts converts the persistence definition to the in-memory definition
-func parseAccounts(c *LoaderContext, accounts []persistence.Account) (map[string]Account, error) {
+func parseAccounts(c *LoaderContext, accounts []persistence.Account) (map[string]manifest.Account, error) {
 
-	result := make(map[string]Account, len(accounts))
+	result := make(map[string]manifest.Account, len(accounts))
 
 	for i, a := range accounts {
 		if a.Name == "" {

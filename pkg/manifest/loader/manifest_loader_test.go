@@ -1,8 +1,8 @@
 //go:build unit
 
-/**
+/*
  * @license
- * Copyright 2020 Dynatrace LLC
+ * Copyright 2023 Dynatrace LLC
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,11 +16,12 @@
  * limitations under the License.
  */
 
-package manifest
+package loader
 
 import (
 	"fmt"
 	monacoVersion "github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/version"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 	"github.com/spf13/afero"
@@ -38,7 +39,7 @@ func Test_extractUrlType(t *testing.T) {
 		name             string
 		inputConfig      persistence.Environment
 		givenEnvVarValue string
-		want             URLDefinition
+		want             manifest.URLDefinition
 		wantErr          bool
 	}{
 		{
@@ -48,8 +49,8 @@ func Test_extractUrlType(t *testing.T) {
 				URL:  persistence.Url{Value: "TEST URL", Type: persistence.UrlTypeValue},
 				Auth: persistence.Auth{Token: persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
-			want: URLDefinition{
-				Type:  ValueURLType,
+			want: manifest.URLDefinition{
+				Type:  manifest.ValueURLType,
 				Value: "TEST URL",
 			},
 			wantErr: false,
@@ -61,8 +62,8 @@ func Test_extractUrlType(t *testing.T) {
 				URL:  persistence.Url{Value: "TEST URL", Type: ""},
 				Auth: persistence.Auth{Token: persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
-			want: URLDefinition{
-				Type:  ValueURLType,
+			want: manifest.URLDefinition{
+				Type:  manifest.ValueURLType,
 				Value: "TEST URL",
 			},
 			wantErr: false,
@@ -74,8 +75,8 @@ func Test_extractUrlType(t *testing.T) {
 				URL:  persistence.Url{Value: "https://www.test.url/", Type: persistence.UrlTypeValue},
 				Auth: persistence.Auth{Token: persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
-			want: URLDefinition{
-				Type:  ValueURLType,
+			want: manifest.URLDefinition{
+				Type:  manifest.ValueURLType,
 				Value: "https://www.test.url",
 			},
 			wantErr: false,
@@ -88,8 +89,8 @@ func Test_extractUrlType(t *testing.T) {
 				Auth: persistence.Auth{Token: persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
 			givenEnvVarValue: "resolved url value",
-			want: URLDefinition{
-				Type:  EnvironmentURLType,
+			want: manifest.URLDefinition{
+				Type:  manifest.EnvironmentURLType,
 				Name:  "TEST_TOKEN",
 				Value: "resolved url value",
 			},
@@ -103,8 +104,8 @@ func Test_extractUrlType(t *testing.T) {
 				Auth: persistence.Auth{Token: persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
 			givenEnvVarValue: "https://www.test.url/",
-			want: URLDefinition{
-				Type:  EnvironmentURLType,
+			want: manifest.URLDefinition{
+				Type:  manifest.EnvironmentURLType,
 				Name:  "TEST_TOKEN",
 				Value: "https://www.test.url",
 			},
@@ -117,7 +118,7 @@ func Test_extractUrlType(t *testing.T) {
 				URL:  persistence.Url{Value: "TEST URL", Type: "this-is-not-a-type"},
 				Auth: persistence.Auth{Token: persistence.AuthSecret{Type: "environment", Name: "VAR"}},
 			},
-			want:    URLDefinition{},
+			want:    manifest.URLDefinition{},
 			wantErr: true,
 		},
 	}
@@ -135,7 +136,7 @@ func Test_parseProjectDefinition_SimpleType(t *testing.T) {
 	tests := []struct {
 		name  string
 		given persistence.Project
-		want  []ProjectDefinition
+		want  []manifest.ProjectDefinition
 	}{
 		{
 			"parses_simple_project",
@@ -144,7 +145,7 @@ func Test_parseProjectDefinition_SimpleType(t *testing.T) {
 				Type: persistence.SimpleProjectType,
 				Path: "PROJ_PATH",
 			},
-			[]ProjectDefinition{
+			[]manifest.ProjectDefinition{
 				{
 					Name: "PROJ_NAME",
 					Path: "PROJ_PATH",
@@ -158,7 +159,7 @@ func Test_parseProjectDefinition_SimpleType(t *testing.T) {
 				Path: "PROJ_PATH",
 			},
 
-			[]ProjectDefinition{
+			[]manifest.ProjectDefinition{
 				{
 					Name: "PROJ_NAME",
 					Path: "PROJ_PATH",
@@ -171,7 +172,7 @@ func Test_parseProjectDefinition_SimpleType(t *testing.T) {
 				Name: "PROJ_NAME",
 			},
 
-			[]ProjectDefinition{
+			[]manifest.ProjectDefinition{
 				{
 					Name: "PROJ_NAME",
 					Path: "PROJ_NAME",
@@ -184,7 +185,7 @@ func Test_parseProjectDefinition_SimpleType(t *testing.T) {
 				Name: "PROJ_NAME",
 			},
 
-			[]ProjectDefinition{
+			[]manifest.ProjectDefinition{
 				{
 					Name: "PROJ_NAME",
 					Path: "PROJ_NAME",
@@ -220,7 +221,7 @@ func Test_parseProjectDefinition_GroupingType(t *testing.T) {
 		Path: "PROJ_PATH",
 	}
 
-	want := []ProjectDefinition{
+	want := []manifest.ProjectDefinition{
 		{
 			Name:  "PROJ_NAME.a",
 			Group: "PROJ_NAME",
@@ -335,7 +336,7 @@ func Test_toProjectDefinitions(t *testing.T) {
 	tests := []struct {
 		name               string
 		projectDefinitions []persistence.Project
-		want               map[string]ProjectDefinition
+		want               map[string]manifest.ProjectDefinition
 		wantErrs           bool
 	}{
 		{
@@ -461,7 +462,7 @@ func Test_toProjectDefinitions(t *testing.T) {
 					Path: filepath.FromSlash("another/project/path/"),
 				},
 			},
-			map[string]ProjectDefinition{
+			map[string]manifest.ProjectDefinition{
 				"project_id_1": {
 					Name: "project_id_1",
 					Path: filepath.FromSlash("project/path/"),
@@ -685,7 +686,7 @@ func TestLoadManifest(t *testing.T) {
 		envs            []string
 
 		errsContain      []string
-		expectedManifest Manifest
+		expectedManifest manifest.Manifest
 	}{
 		{
 			name:        "Everything missing",
@@ -699,30 +700,30 @@ projects: [{name: a, path: p}]
 environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}}}]}]
 `,
 			errsContain: []string{},
-			expectedManifest: Manifest{
-				Projects: map[string]ProjectDefinition{
+			expectedManifest: manifest.Manifest{
+				Projects: map[string]manifest.ProjectDefinition{
 					"a": {
 						Name: "a",
 						Path: "p",
 					},
 				},
-				Environments: map[string]EnvironmentDefinition{
+				Environments: map[string]manifest.EnvironmentDefinition{
 					"c": {
 						Name: "c",
-						URL: URLDefinition{
-							Type:  ValueURLType,
+						URL: manifest.URLDefinition{
+							Type:  manifest.ValueURLType,
 							Value: "d",
 						},
 						Group: "b",
-						Auth: Auth{
-							Token: AuthSecret{
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{
 								Name:  "e",
 								Value: "mock token",
 							},
 						},
 					},
 				},
-				Accounts: map[string]Account{},
+				Accounts: map[string]manifest.Account{},
 			},
 		},
 		{
@@ -734,23 +735,23 @@ environmentGroups:
 - {name: groupA, environments: [{name: envA, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
 - {name: groupB, environments: [{name: envB, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
 `,
-			expectedManifest: Manifest{
-				Projects: map[string]ProjectDefinition{
+			expectedManifest: manifest.Manifest{
+				Projects: map[string]manifest.ProjectDefinition{
 					"projectA": {
 						Name: "projectA",
 						Path: "pathA",
 					},
 				},
-				Environments: map[string]EnvironmentDefinition{
+				Environments: map[string]manifest.EnvironmentDefinition{
 					"envA": {
 						Name: "envA",
-						URL: URLDefinition{
-							Type:  ValueURLType,
+						URL: manifest.URLDefinition{
+							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupA",
-						Auth: Auth{
-							Token: AuthSecret{
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
@@ -758,20 +759,20 @@ environmentGroups:
 					},
 					"envB": {
 						Name: "envB",
-						URL: URLDefinition{
-							Type:  ValueURLType,
+						URL: manifest.URLDefinition{
+							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupB",
-						Auth: Auth{
-							Token: AuthSecret{
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
 						},
 					},
 				},
-				Accounts: map[string]Account{},
+				Accounts: map[string]manifest.Account{},
 			},
 		},
 		{
@@ -785,23 +786,23 @@ environmentGroups:
    {name: envB, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}
   ]}
 `,
-			expectedManifest: Manifest{
-				Projects: map[string]ProjectDefinition{
+			expectedManifest: manifest.Manifest{
+				Projects: map[string]manifest.ProjectDefinition{
 					"projectA": {
 						Name: "projectA",
 						Path: "pathA",
 					},
 				},
-				Environments: map[string]EnvironmentDefinition{
+				Environments: map[string]manifest.EnvironmentDefinition{
 					"envA": {
 						Name: "envA",
-						URL: URLDefinition{
-							Type:  ValueURLType,
+						URL: manifest.URLDefinition{
+							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupA",
-						Auth: Auth{
-							Token: AuthSecret{
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
@@ -809,20 +810,20 @@ environmentGroups:
 					},
 					"envB": {
 						Name: "envB",
-						URL: URLDefinition{
-							Type:  ValueURLType,
+						URL: manifest.URLDefinition{
+							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupA",
-						Auth: Auth{
-							Token: AuthSecret{
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
 						},
 					},
 				},
-				Accounts: map[string]Account{},
+				Accounts: map[string]manifest.Account{},
 			},
 		},
 		{
@@ -835,30 +836,30 @@ environmentGroups:
 - {name: groupA, environments: [{name: envA, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
 - {name: groupB, environments: [{name: envB, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
 `,
-			expectedManifest: Manifest{
-				Projects: map[string]ProjectDefinition{
+			expectedManifest: manifest.Manifest{
+				Projects: map[string]manifest.ProjectDefinition{
 					"projectA": {
 						Name: "projectA",
 						Path: "pathA",
 					},
 				},
-				Environments: map[string]EnvironmentDefinition{
+				Environments: map[string]manifest.EnvironmentDefinition{
 					"envA": {
 						Name: "envA",
-						URL: URLDefinition{
-							Type:  ValueURLType,
+						URL: manifest.URLDefinition{
+							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupA",
-						Auth: Auth{
-							Token: AuthSecret{
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
 						},
 					},
 				},
-				Accounts: map[string]Account{},
+				Accounts: map[string]manifest.Account{},
 			},
 		},
 		{
@@ -871,30 +872,30 @@ environmentGroups:
 - {name: groupA, environments: [{name: envA, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
 - {name: groupB, environments: [{name: envB, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
 `,
-			expectedManifest: Manifest{
-				Projects: map[string]ProjectDefinition{
+			expectedManifest: manifest.Manifest{
+				Projects: map[string]manifest.ProjectDefinition{
 					"projectA": {
 						Name: "projectA",
 						Path: "pathA",
 					},
 				},
-				Environments: map[string]EnvironmentDefinition{
+				Environments: map[string]manifest.EnvironmentDefinition{
 					"envA": {
 						Name: "envA",
-						URL: URLDefinition{
-							Type:  ValueURLType,
+						URL: manifest.URLDefinition{
+							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupA",
-						Auth: Auth{
-							Token: AuthSecret{
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
 						},
 					},
 				},
-				Accounts: map[string]Account{},
+				Accounts: map[string]manifest.Account{},
 			},
 		},
 		{
@@ -909,23 +910,23 @@ environmentGroups:
 - {name: groupB, environments: [{name: envB, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
 - {name: groupC, environments: [{name: envC, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
 `,
-			expectedManifest: Manifest{
-				Projects: map[string]ProjectDefinition{
+			expectedManifest: manifest.Manifest{
+				Projects: map[string]manifest.ProjectDefinition{
 					"projectA": {
 						Name: "projectA",
 						Path: "pathA",
 					},
 				},
-				Environments: map[string]EnvironmentDefinition{
+				Environments: map[string]manifest.EnvironmentDefinition{
 					"envA": {
 						Name: "envA",
-						URL: URLDefinition{
-							Type:  ValueURLType,
+						URL: manifest.URLDefinition{
+							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupA",
-						Auth: Auth{
-							Token: AuthSecret{
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
@@ -933,20 +934,20 @@ environmentGroups:
 					},
 					"envB": {
 						Name: "envB",
-						URL: URLDefinition{
-							Type:  ValueURLType,
+						URL: manifest.URLDefinition{
+							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupB",
-						Auth: Auth{
-							Token: AuthSecret{
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
 						},
 					},
 				},
-				Accounts: map[string]Account{},
+				Accounts: map[string]manifest.Account{},
 			},
 		},
 		{
@@ -960,23 +961,23 @@ environmentGroups:
 - {name: groupB, environments: [{name: envB, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
 - {name: groupC, environments: [{name: envC, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
 `,
-			expectedManifest: Manifest{
-				Projects: map[string]ProjectDefinition{
+			expectedManifest: manifest.Manifest{
+				Projects: map[string]manifest.ProjectDefinition{
 					"projectA": {
 						Name: "projectA",
 						Path: "pathA",
 					},
 				},
-				Environments: map[string]EnvironmentDefinition{
+				Environments: map[string]manifest.EnvironmentDefinition{
 					"envA": {
 						Name: "envA",
-						URL: URLDefinition{
-							Type:  ValueURLType,
+						URL: manifest.URLDefinition{
+							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupA",
-						Auth: Auth{
-							Token: AuthSecret{
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
@@ -984,20 +985,20 @@ environmentGroups:
 					},
 					"envB": {
 						Name: "envB",
-						URL: URLDefinition{
-							Type:  ValueURLType,
+						URL: manifest.URLDefinition{
+							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupB",
-						Auth: Auth{
-							Token: AuthSecret{
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
 						},
 					},
 				},
-				Accounts: map[string]Account{},
+				Accounts: map[string]manifest.Account{},
 			},
 		},
 		{
@@ -1011,23 +1012,23 @@ environmentGroups:
 - {name: groupB, environments: [{name: envB, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
 - {name: groupC, environments: [{name: envC, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
 `,
-			expectedManifest: Manifest{
-				Projects: map[string]ProjectDefinition{
+			expectedManifest: manifest.Manifest{
+				Projects: map[string]manifest.ProjectDefinition{
 					"projectA": {
 						Name: "projectA",
 						Path: "pathA",
 					},
 				},
-				Environments: map[string]EnvironmentDefinition{
+				Environments: map[string]manifest.EnvironmentDefinition{
 					"envA": {
 						Name: "envA",
-						URL: URLDefinition{
-							Type:  ValueURLType,
+						URL: manifest.URLDefinition{
+							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupA",
-						Auth: Auth{
-							Token: AuthSecret{
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
@@ -1035,20 +1036,20 @@ environmentGroups:
 					},
 					"envB": {
 						Name: "envB",
-						URL: URLDefinition{
-							Type:  ValueURLType,
+						URL: manifest.URLDefinition{
+							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupB",
-						Auth: Auth{
-							Token: AuthSecret{
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
 						},
 					},
 				},
-				Accounts: map[string]Account{},
+				Accounts: map[string]manifest.Account{},
 			},
 		},
 		{
@@ -1063,23 +1064,23 @@ environmentGroups:
 - {name: groupB, environments: [{name: envB, url: {value: "https://example.com"}, auth: {token: {name: token-env-var}}}]}
 - {name: groupC, environments: [{name: envC, url: {value: "https://example.com"}, auth: {token: {name: token-does-not-exist-but-it-should-not-error-because-envC-is-not-loaded}}}]}
 `,
-			expectedManifest: Manifest{
-				Projects: map[string]ProjectDefinition{
+			expectedManifest: manifest.Manifest{
+				Projects: map[string]manifest.ProjectDefinition{
 					"projectA": {
 						Name: "projectA",
 						Path: "pathA",
 					},
 				},
-				Environments: map[string]EnvironmentDefinition{
+				Environments: map[string]manifest.EnvironmentDefinition{
 					"envA": {
 						Name: "envA",
-						URL: URLDefinition{
-							Type:  ValueURLType,
+						URL: manifest.URLDefinition{
+							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupA",
-						Auth: Auth{
-							Token: AuthSecret{
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
@@ -1087,20 +1088,20 @@ environmentGroups:
 					},
 					"envB": {
 						Name: "envB",
-						URL: URLDefinition{
-							Type:  ValueURLType,
+						URL: manifest.URLDefinition{
+							Type:  manifest.ValueURLType,
 							Value: "https://example.com",
 						},
 						Group: "groupB",
-						Auth: Auth{
-							Token: AuthSecret{
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{
 								Name:  "token-env-var",
 								Value: "mock token",
 							},
 						},
 					},
 				},
-				Accounts: map[string]Account{},
+				Accounts: map[string]manifest.Account{},
 			},
 		},
 		{
@@ -1293,30 +1294,30 @@ projects: [{name: a, path: p}]
 environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}}}]}]
 `,
 			errsContain: []string{},
-			expectedManifest: Manifest{
-				Projects: map[string]ProjectDefinition{
+			expectedManifest: manifest.Manifest{
+				Projects: map[string]manifest.ProjectDefinition{
 					"a": {
 						Name: "a",
 						Path: "p",
 					},
 				},
-				Environments: map[string]EnvironmentDefinition{
+				Environments: map[string]manifest.EnvironmentDefinition{
 					"c": {
 						Name: "c",
-						URL: URLDefinition{
-							Type:  ValueURLType,
+						URL: manifest.URLDefinition{
+							Type:  manifest.ValueURLType,
 							Value: "d",
 						},
 						Group: "b",
-						Auth: Auth{
-							Token: AuthSecret{
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{
 								Name:  "e",
 								Value: "mock token",
 							},
 						},
 					},
 				},
-				Accounts: map[string]Account{},
+				Accounts: map[string]manifest.Account{},
 			},
 		},
 		{
@@ -1327,32 +1328,32 @@ projects: [{name: a, path: p}]
 environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientId: {name: client-id}, clientSecret: {name: client-secret}}}}]}]
 `,
 			errsContain: []string{},
-			expectedManifest: Manifest{
-				Projects: map[string]ProjectDefinition{
+			expectedManifest: manifest.Manifest{
+				Projects: map[string]manifest.ProjectDefinition{
 					"a": {
 						Name: "a",
 						Path: "p",
 					},
 				},
-				Environments: map[string]EnvironmentDefinition{
+				Environments: map[string]manifest.EnvironmentDefinition{
 					"c": {
 						Name: "c",
-						URL: URLDefinition{
-							Type:  ValueURLType,
+						URL: manifest.URLDefinition{
+							Type:  manifest.ValueURLType,
 							Value: "d",
 						},
 						Group: "b",
-						Auth: Auth{
-							Token: AuthSecret{
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{
 								Name:  "e",
 								Value: "mock token",
 							},
-							OAuth: &OAuth{
-								ClientID: AuthSecret{
+							OAuth: &manifest.OAuth{
+								ClientID: manifest.AuthSecret{
 									Name:  "client-id",
 									Value: "resolved-client-id",
 								},
-								ClientSecret: AuthSecret{
+								ClientSecret: manifest.AuthSecret{
 									Name:  "client-secret",
 									Value: "resolved-client-secret",
 								},
@@ -1361,7 +1362,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 						},
 					},
 				},
-				Accounts: map[string]Account{},
+				Accounts: map[string]manifest.Account{},
 			},
 		},
 		{
@@ -1372,44 +1373,44 @@ projects: [{name: a, path: p}]
 environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientId: {name: client-id}, clientSecret: {name: client-secret}, tokenEndpoint: {value: https://custom.sso.token.endpoint}}}}]}]
 `,
 			errsContain: []string{},
-			expectedManifest: Manifest{
-				Projects: map[string]ProjectDefinition{
+			expectedManifest: manifest.Manifest{
+				Projects: map[string]manifest.ProjectDefinition{
 					"a": {
 						Name: "a",
 						Path: "p",
 					},
 				},
-				Environments: map[string]EnvironmentDefinition{
+				Environments: map[string]manifest.EnvironmentDefinition{
 					"c": {
 						Name: "c",
-						URL: URLDefinition{
-							Type:  ValueURLType,
+						URL: manifest.URLDefinition{
+							Type:  manifest.ValueURLType,
 							Value: "d",
 						},
 						Group: "b",
-						Auth: Auth{
-							Token: AuthSecret{
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{
 								Name:  "e",
 								Value: "mock token",
 							},
-							OAuth: &OAuth{
-								ClientID: AuthSecret{
+							OAuth: &manifest.OAuth{
+								ClientID: manifest.AuthSecret{
 									Name:  "client-id",
 									Value: "resolved-client-id",
 								},
-								ClientSecret: AuthSecret{
+								ClientSecret: manifest.AuthSecret{
 									Name:  "client-secret",
 									Value: "resolved-client-secret",
 								},
-								TokenEndpoint: &URLDefinition{
-									Type:  ValueURLType,
+								TokenEndpoint: &manifest.URLDefinition{
+									Type:  manifest.ValueURLType,
 									Value: "https://custom.sso.token.endpoint",
 								},
 							},
 						},
 					},
 				},
-				Accounts: map[string]Account{},
+				Accounts: map[string]manifest.Account{},
 			},
 		},
 		{
@@ -1420,37 +1421,37 @@ projects: [{name: a, path: p}]
 environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {token: {name: e}, oAuth: {clientId: {name: client-id}, clientSecret: {name: client-secret}, tokenEndpoint: {type: environment, value: ENV_OAUTH_ENDPOINT}}}}]}]
 `,
 			errsContain: []string{},
-			expectedManifest: Manifest{
-				Projects: map[string]ProjectDefinition{
+			expectedManifest: manifest.Manifest{
+				Projects: map[string]manifest.ProjectDefinition{
 					"a": {
 						Name: "a",
 						Path: "p",
 					},
 				},
-				Environments: map[string]EnvironmentDefinition{
+				Environments: map[string]manifest.EnvironmentDefinition{
 					"c": {
 						Name: "c",
-						URL: URLDefinition{
-							Type:  ValueURLType,
+						URL: manifest.URLDefinition{
+							Type:  manifest.ValueURLType,
 							Value: "d",
 						},
 						Group: "b",
-						Auth: Auth{
-							Token: AuthSecret{
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{
 								Name:  "e",
 								Value: "mock token",
 							},
-							OAuth: &OAuth{
-								ClientID: AuthSecret{
+							OAuth: &manifest.OAuth{
+								ClientID: manifest.AuthSecret{
 									Name:  "client-id",
 									Value: "resolved-client-id",
 								},
-								ClientSecret: AuthSecret{
+								ClientSecret: manifest.AuthSecret{
 									Name:  "client-secret",
 									Value: "resolved-client-secret",
 								},
-								TokenEndpoint: &URLDefinition{
-									Type:  EnvironmentURLType,
+								TokenEndpoint: &manifest.URLDefinition{
+									Type:  manifest.EnvironmentURLType,
 									Name:  "ENV_OAUTH_ENDPOINT",
 									Value: "resolved-oauth-endpoint",
 								},
@@ -1458,7 +1459,7 @@ environmentGroups: [{name: b, environments: [{name: c, url: {value: d}, auth: {t
 						},
 					},
 				},
-				Accounts: map[string]Account{},
+				Accounts: map[string]manifest.Account{},
 			},
 		},
 		{
@@ -1513,31 +1514,31 @@ manifestVersion: 1.0
 projects: [{name: a, path: p}]
 environmentGroups: [{name: b, environments: [{name: c, url: {type: environment, value: e}, auth: {token: {name: e}}}]}]
 `,
-			expectedManifest: Manifest{
-				Projects: map[string]ProjectDefinition{
+			expectedManifest: manifest.Manifest{
+				Projects: map[string]manifest.ProjectDefinition{
 					"a": {
 						Name: "a",
 						Path: "p",
 					},
 				},
-				Environments: map[string]EnvironmentDefinition{
+				Environments: map[string]manifest.EnvironmentDefinition{
 					"c": {
 						Name: "c",
-						URL: URLDefinition{
-							Type:  EnvironmentURLType,
+						URL: manifest.URLDefinition{
+							Type:  manifest.EnvironmentURLType,
 							Value: "mock token",
 							Name:  "e",
 						},
 						Group: "b",
-						Auth: Auth{
-							Token: AuthSecret{
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{
 								Name:  "e",
 								Value: "mock token",
 							},
 						},
 					},
 				},
-				Accounts: map[string]Account{},
+				Accounts: map[string]manifest.Account{},
 			},
 			errsContain: []string{},
 		},

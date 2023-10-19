@@ -25,7 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	valueParam "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -138,7 +138,7 @@ func TestReferencesAreResolvedOnDownload(t *testing.T) {
 					assert.Nil(t, err, "download: did not expect error")
 
 					// assert
-					mani, errs := manifest.LoadManifest(&manifest.LoaderContext{
+					mani, errs := manifestloader.LoadManifest(&manifestloader.LoaderContext{
 						Fs:           fs,
 						ManifestPath: "download/manifest.yaml",
 					})

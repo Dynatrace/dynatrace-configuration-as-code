@@ -27,7 +27,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/reference"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/delete/persistence"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/spf13/afero"
 	"golang.org/x/exp/maps"
@@ -38,10 +38,10 @@ import (
 
 func createDeleteFile(fs afero.Fs, manifestPath string, projectNames, specificEnvironments []string, filename, outputFolder string) error {
 
-	m, errs := manifest.LoadManifest(&manifest.LoaderContext{
+	m, errs := manifestloader.LoadManifest(&manifestloader.LoaderContext{
 		Fs:           fs,
 		ManifestPath: manifestPath,
-		Opts: manifest.LoaderOptions{
+		Opts: manifestloader.LoaderOptions{
 			DontResolveEnvVars: true,
 		},
 	})

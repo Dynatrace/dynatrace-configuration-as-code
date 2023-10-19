@@ -25,6 +25,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
+	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/spf13/afero"
 	"gotest.tools/assert"
@@ -65,7 +66,7 @@ func LoadManifest(t *testing.T, fs afero.Fs, manifestFile string, specificEnviro
 		specificEnvs = append(specificEnvs, specificEnvironment)
 	}
 
-	m, errs := manifest.LoadManifest(&manifest.LoaderContext{
+	m, errs := manifestloader.LoadManifest(&manifestloader.LoaderContext{
 		Fs:           fs,
 		ManifestPath: manifestFile,
 		Environments: specificEnvs,

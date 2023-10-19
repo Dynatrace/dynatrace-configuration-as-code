@@ -16,10 +16,11 @@
  * limitations under the License.
  */
 
-package manifest
+package loader
 
 import (
 	"encoding/json"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -65,19 +66,19 @@ func TestValidAccounts(t *testing.T) {
 	v, err := parseAccounts(&LoaderContext{}, []persistence.Account{acc, acc2})
 	assert.NoError(t, err)
 
-	assert.Equal(t, v, map[string]Account{
+	assert.Equal(t, v, map[string]manifest.Account{
 		"name": {
 			Name:        "name",
 			AccountUUID: uuid.MustParse(acc.AccountUUID),
-			ApiUrl: &URLDefinition{
-				Type:  ValueURLType,
+			ApiUrl: &manifest.URLDefinition{
+				Type:  manifest.ValueURLType,
 				Value: "https://example.com",
 			},
-			OAuth: OAuth{
-				ClientID:     AuthSecret{Name: "SECRET", Value: "secret"},
-				ClientSecret: AuthSecret{Name: "SECRET", Value: "secret"},
-				TokenEndpoint: &URLDefinition{
-					Type:  ValueURLType,
+			OAuth: manifest.OAuth{
+				ClientID:     manifest.AuthSecret{Name: "SECRET", Value: "secret"},
+				ClientSecret: manifest.AuthSecret{Name: "SECRET", Value: "secret"},
+				TokenEndpoint: &manifest.URLDefinition{
+					Type:  manifest.ValueURLType,
 					Value: "https://example.com",
 				},
 			},
@@ -86,9 +87,9 @@ func TestValidAccounts(t *testing.T) {
 			Name:        "name2",
 			AccountUUID: uuid.MustParse(acc2.AccountUUID),
 			ApiUrl:      nil,
-			OAuth: OAuth{
-				ClientID:      AuthSecret{Name: "SECRET", Value: "secret"},
-				ClientSecret:  AuthSecret{Name: "SECRET", Value: "secret"},
+			OAuth: manifest.OAuth{
+				ClientID:      manifest.AuthSecret{Name: "SECRET", Value: "secret"},
+				ClientSecret:  manifest.AuthSecret{Name: "SECRET", Value: "secret"},
 				TokenEndpoint: nil,
 			},
 		},
