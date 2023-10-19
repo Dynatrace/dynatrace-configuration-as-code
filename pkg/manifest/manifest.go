@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package manifest and its subpackages contains all information regarding the in-memory definitions of manifests, as well as the
+// persistence layer, loading, and writing.
+// To load use the [loader] package, to write use the [writer] package.
 package manifest
 
 import (
@@ -124,6 +127,7 @@ type Account struct {
 	OAuth OAuth
 }
 
+// Manifest is the central component. It holds all information that is needed to deploy projects.
 type Manifest struct {
 	// Projects defined in the manifest, split by project-name
 	Projects ProjectDefinitionByProjectID
