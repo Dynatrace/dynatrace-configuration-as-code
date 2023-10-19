@@ -4,10 +4,15 @@
     <working_directory value="$PROJECT_DIR$/cmd" />
     <go_parameters value="--tags=cleanup" />
     <envs>
-      <env name="TOKEN_ENVIRONMENT_1" value="FILL ME" />
-      <env name="TOKEN_ENVIRONMENT_2" value="FILL ME" />
       <env name="URL_ENVIRONMENT_1" value="FILL ME" />
       <env name="URL_ENVIRONMENT_2" value="FILL ME" />
+      <env name="TOKEN_ENVIRONMENT_1" value="FILL ME" />
+      <env name="TOKEN_ENVIRONMENT_2" value="FILL ME" />
+      <env name="PLATFORM_URL_ENVIRONMENT_1" value="FILL ME" />
+      <env name="PLATFORM_URL_ENVIRONMENT_2" value="FILL ME" />
+      <env name="OAUTH_CLIENT_ID" value="FILL ME" />
+      <env name="OAUTH_CLIENT_SECRET" value="FILL ME" />
+      <env name="OAUTH_TOKEN_ENDPOINT" value="FILL ME" />
     </envs>
     <root_directory value="$PROJECT_DIR$" />
     <kind value="DIRECTORY" />

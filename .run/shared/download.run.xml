@@ -3,9 +3,11 @@
     <module name="dynatrace-configuration-as-code" />
     <working_directory value="$PROJECT_DIR$" />
     <useCustomBuildTags value="true" />
-    <parameters value="download direct {YOUR ENV URL HERE} TOKEN -v" />
+    <parameters value="download --url {YOUR ENV URL HERE} --token TOKEN --oauth-client-id OAUTH_CLIENT_ID --oauth-client-secret OAUTH_CLIENT_SECRET" />
     <envs>
       <env name="TOKEN" value="FILL ME" />
+      <env name="OAUTH_CLIENT_ID" value="FILL ME" />
+      <env name="OAUTH_CLIENT_SECRET" value="FILL ME" />
     </envs>
     <kind value="PACKAGE" />
     <package value="github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco" />
