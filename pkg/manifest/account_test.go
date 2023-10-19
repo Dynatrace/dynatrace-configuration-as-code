@@ -61,7 +61,7 @@ func TestValidAccounts(t *testing.T) {
 		},
 	}
 
-	v, err := convertAccounts(&LoaderContext{}, []account{acc, acc2})
+	v, err := parseAccounts(&LoaderContext{}, []account{acc, acc2})
 	assert.NoError(t, err)
 
 	assert.Equal(t, v, map[string]Account{
@@ -119,7 +119,7 @@ func TestInvalidAccounts(t *testing.T) {
 	}
 
 	// validate that the default is valid
-	_, err := convertAccounts(&LoaderContext{}, []account{validAccount})
+	_, err := parseAccounts(&LoaderContext{}, []account{validAccount})
 	assert.NoError(t, err)
 
 	// tests
@@ -127,7 +127,7 @@ func TestInvalidAccounts(t *testing.T) {
 		a := validAccount
 		a.Name = ""
 
-		_, err := convertAccounts(&LoaderContext{}, []account{a})
+		_, err := parseAccounts(&LoaderContext{}, []account{a})
 		assert.ErrorIs(t, err, errNameMissing)
 	})
 
@@ -135,7 +135,7 @@ func TestInvalidAccounts(t *testing.T) {
 		a := validAccount
 		a.AccountUUID = ""
 
-		_, err := convertAccounts(&LoaderContext{}, []account{a})
+		_, err := parseAccounts(&LoaderContext{}, []account{a})
 		assert.ErrorIs(t, err, errAccUidMissing)
 	})
 
@@ -143,7 +143,7 @@ func TestInvalidAccounts(t *testing.T) {
 		a := deepCopy(t, validAccount)
 		a.AccountUUID = "this-is-not-a-valid-uuid"
 
-		_, err := convertAccounts(&LoaderContext{}, []account{a})
+		_, err := parseAccounts(&LoaderContext{}, []account{a})
 		uuidErr := invalidUUIDError{}
 		if assert.ErrorAs(t, err, &uuidErr) {
 			assert.Equal(t, uuidErr.uuid, "this-is-not-a-valid-uuid")
@@ -154,7 +154,7 @@ func TestInvalidAccounts(t *testing.T) {
 		a := deepCopy(t, validAccount)
 		a.OAuth = oAuth{}
 
-		_, err := convertAccounts(&LoaderContext{}, []account{a})
+		_, err := parseAccounts(&LoaderContext{}, []account{a})
 		assert.ErrorContains(t, err, "oAuth is invalid")
 	})
 
@@ -162,7 +162,7 @@ func TestInvalidAccounts(t *testing.T) {
 		a := deepCopy(t, validAccount)
 		a.OAuth.ClientID = authSecret{}
 
-		_, err := convertAccounts(&LoaderContext{}, []account{a})
+		_, err := parseAccounts(&LoaderContext{}, []account{a})
 		assert.ErrorContains(t, err, "ClientID: no name given or empty")
 
 	})
@@ -171,7 +171,7 @@ func TestInvalidAccounts(t *testing.T) {
 		a := deepCopy(t, validAccount)
 		a.OAuth.ClientSecret = authSecret{}
 
-		_, err := convertAccounts(&LoaderContext{}, []account{a})
+		_, err := parseAccounts(&LoaderContext{}, []account{a})
 		assert.ErrorContains(t, err, "ClientSecret: no name given or empty")
 	})
 }

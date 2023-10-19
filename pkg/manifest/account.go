@@ -40,7 +40,7 @@ func (e invalidUUIDError) Unwrap() error {
 	return e.err
 }
 
-func convertSingleAccount(c *LoaderContext, a account) (Account, error) {
+func parseSingleAccount(c *LoaderContext, a account) (Account, error) {
 
 	if a.AccountUUID == "" {
 		return Account{}, errAccUidMissing
@@ -75,8 +75,8 @@ func convertSingleAccount(c *LoaderContext, a account) (Account, error) {
 	return acc, nil
 }
 
-// convertAccounts converts the persistence definition to the in-memory definition
-func convertAccounts(c *LoaderContext, accounts []account) (map[string]Account, error) {
+// parseAccounts converts the persistence definition to the in-memory definition
+func parseAccounts(c *LoaderContext, accounts []account) (map[string]Account, error) {
 
 	result := make(map[string]Account, len(accounts))
 
@@ -85,7 +85,7 @@ func convertAccounts(c *LoaderContext, accounts []account) (map[string]Account, 
 			return nil, fmt.Errorf("failed to parse account on position %d: %w", i, errNameMissing)
 		}
 
-		acc, err := convertSingleAccount(c, a)
+		acc, err := parseSingleAccount(c, a)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse account %q: %w", a.Name, err)
 		}

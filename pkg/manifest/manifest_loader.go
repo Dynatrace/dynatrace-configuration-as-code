@@ -152,7 +152,7 @@ func LoadManifest(context *LoaderContext) (Manifest, []error) {
 	var errs []error
 
 	// projects
-	projectDefinitions, projectErrors := toProjectDefinitions(&projectLoaderContext{
+	projectDefinitions, projectErrors := parseProjects(&projectLoaderContext{
 		fs:           workingDirFs,
 		manifestPath: relativeManifestPath,
 	}, manifestYAML.Projects)
@@ -163,7 +163,7 @@ func LoadManifest(context *LoaderContext) (Manifest, []error) {
 	}
 
 	// environments
-	environmentDefinitions, manifestErrors := toEnvironments(context, manifestYAML.EnvironmentGroups)
+	environmentDefinitions, manifestErrors := parseEnvironments(context, manifestYAML.EnvironmentGroups)
 	if manifestErrors != nil {
 		errs = append(errs, manifestErrors...)
 	} else if len(environmentDefinitions) == 0 {
@@ -171,7 +171,7 @@ func LoadManifest(context *LoaderContext) (Manifest, []error) {
 	}
 
 	// accounts
-	accounts, accErr := convertAccounts(context, manifestYAML.Accounts)
+	accounts, accErr := parseAccounts(context, manifestYAML.Accounts)
 	if accErr != nil {
 		errs = append(errs, newManifestLoaderError(context.ManifestPath, accErr.Error()))
 	}
@@ -330,7 +330,7 @@ func validateVersion(m manifest) error {
 	return nil
 }
 
-func toEnvironments(context *LoaderContext, groups []group) (map[string]EnvironmentDefinition, []error) { // nolint:gocognit
+func parseEnvironments(context *LoaderContext, groups []group) (map[string]EnvironmentDefinition, []error) { // nolint:gocognit
 	var errors []error
 	environments := make(map[string]EnvironmentDefinition)
 
@@ -367,7 +367,7 @@ func toEnvironments(context *LoaderContext, groups []group) (map[string]Environm
 				continue
 			}
 
-			parsedEnv, configErrors := parseEnvironment(context, env, group.Name)
+			parsedEnv, configErrors := parseSingleEnvironment(context, env, group.Name)
 
 			if configErrors != nil {
 				errors = append(errors, configErrors...)
@@ -415,7 +415,7 @@ func shouldSkipEnv(context *LoaderContext, group group, env environment) bool {
 	return true
 }
 
-func parseEnvironment(context *LoaderContext, config environment, group string) (EnvironmentDefinition, []error) {
+func parseSingleEnvironment(context *LoaderContext, config environment, group string) (EnvironmentDefinition, []error) {
 	var errs []error
 
 	a, err := parseAuth(context, config.Auth)
@@ -489,7 +489,7 @@ func parseURLDefinition(context *LoaderContext, u url) (URLDefinition, error) {
 	return URLDefinition{}, fmt.Errorf("%q is not a valid URL type", u.Type)
 }
 
-func toProjectDefinitions(context *projectLoaderContext, definitions []project) (map[string]ProjectDefinition, []error) {
+func parseProjects(context *projectLoaderContext, definitions []project) (map[string]ProjectDefinition, []error) {
 	var errors []error
 	result := make(map[string]ProjectDefinition)
 
