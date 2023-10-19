@@ -72,3 +72,11 @@ func DownloadFilterClassicConfigs() FeatureFlag {
 		defaultEnabled: true,
 	}
 }
+
+// SkipVersionCheck returns the feature flag to control disabling the version check that happens at the end of each monaco run
+func SkipVersionCheck() FeatureFlag {
+	return FeatureFlag{
+		envName:        "MONACO_SKIP_VERSION_CHECK",
+		defaultEnabled: false,
+	}
+}
