@@ -17,6 +17,7 @@ package manifest
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 	"path/filepath"
 	"strings"
@@ -74,7 +75,7 @@ func WriteManifest(context *WriterContext, manifestToWrite Manifest) error {
 		manifestVersion = version.ManifestVersion
 	}
 
-	m := manifest{
+	m := persistence.Manifest{
 		ManifestVersion:   manifestVersion,
 		Projects:          projects,
 		EnvironmentGroups: groups,
@@ -83,7 +84,7 @@ func WriteManifest(context *WriterContext, manifestToWrite Manifest) error {
 	return persistManifestToDisk(context, m)
 }
 
-func persistManifestToDisk(context *WriterContext, m manifest) error {
+func persistManifestToDisk(context *WriterContext, m persistence.Manifest) error {
 	manifestAsYaml, err := yaml.Marshal(m)
 
 	if err != nil {
@@ -97,23 +98,23 @@ func persistManifestToDisk(context *WriterContext, m manifest) error {
 	return nil
 }
 
-func toWriteableProjects(projects map[string]ProjectDefinition) (result []project) {
-	groups := map[string]project{}
+func toWriteableProjects(projects map[string]ProjectDefinition) (result []persistence.Project) {
+	groups := map[string]persistence.Project{}
 
 	for _, projectDefinition := range projects {
 
 		if isGroupingProject(projectDefinition) {
 			groupName, groupPath := extractGroupedProjectDetails(projectDefinition)
 
-			groups[groupName] = project{
+			groups[groupName] = persistence.Project{
 				Name: groupName,
 				Path: groupPath,
-				Type: groupProjectType,
+				Type: persistence.GroupProjectType,
 			}
 			continue
 		}
 
-		p := project{Name: projectDefinition.Name}
+		p := persistence.Project{Name: projectDefinition.Name}
 
 		if projectDefinition.Name != projectDefinition.Path {
 			p.Path = projectDefinition.Path
@@ -143,11 +144,11 @@ func extractGroupedProjectDetails(projectDefinition ProjectDefinition) (groupNam
 	return groupName, groupPath
 }
 
-func toWriteableEnvironmentGroups(environments map[string]EnvironmentDefinition) (result []group) {
-	environmentPerGroup := make(map[string][]environment)
+func toWriteableEnvironmentGroups(environments map[string]EnvironmentDefinition) (result []persistence.Group) {
+	environmentPerGroup := make(map[string][]persistence.Environment)
 
 	for name, env := range environments {
-		e := environment{
+		e := persistence.Environment{
 			Name: name,
 			URL:  toWriteableURL(env),
 			Auth: getAuth(env),
@@ -157,34 +158,34 @@ func toWriteableEnvironmentGroups(environments map[string]EnvironmentDefinition)
 	}
 
 	for g, envs := range environmentPerGroup {
-		result = append(result, group{Name: g, Environments: envs})
+		result = append(result, persistence.Group{Name: g, Environments: envs})
 	}
 
 	return result
 }
 
-func getAuth(env EnvironmentDefinition) auth {
-	return auth{
+func getAuth(env EnvironmentDefinition) persistence.Auth {
+	return persistence.Auth{
 		Token: getTokenSecret(env.Auth, env.Name),
 		OAuth: getOAuthCredentials(env.Auth.OAuth),
 	}
 }
 
-func toWriteableURL(environment EnvironmentDefinition) url {
+func toWriteableURL(environment EnvironmentDefinition) persistence.Url {
 	if environment.URL.Type == EnvironmentURLType {
-		return url{
-			Type:  urlTypeEnvironment,
+		return persistence.Url{
+			Type:  persistence.UrlTypeEnvironment,
 			Value: environment.URL.Name,
 		}
 	}
 
-	return url{
+	return persistence.Url{
 		Value: environment.URL.Value,
 	}
 }
 
 // getTokenSecret returns the tokenConfig with some legacy magic string append that still might be used (?)
-func getTokenSecret(a Auth, envName string) authSecret {
+func getTokenSecret(a Auth, envName string) persistence.AuthSecret {
 	var envVarName string
 	if a.Token.Name != "" {
 		envVarName = a.Token.Name
@@ -192,39 +193,39 @@ func getTokenSecret(a Auth, envName string) authSecret {
 		envVarName = envName + "_TOKEN"
 	}
 
-	return authSecret{
-		Type: typeEnvironment,
+	return persistence.AuthSecret{
+		Type: persistence.TypeEnvironment,
 		Name: envVarName,
 	}
 }
 
-func getOAuthCredentials(a *OAuth) *oAuth {
+func getOAuthCredentials(a *OAuth) *persistence.OAuth {
 	if a == nil {
 		return nil
 	}
 
-	var te *url
+	var te *persistence.Url
 	if a.TokenEndpoint != nil {
 		switch a.TokenEndpoint.Type {
 		case ValueURLType:
-			te = &url{
+			te = &persistence.Url{
 				Value: a.TokenEndpoint.Value,
 			}
 		case EnvironmentURLType:
-			te = &url{
-				Type:  urlTypeEnvironment,
+			te = &persistence.Url{
+				Type:  persistence.UrlTypeEnvironment,
 				Value: a.TokenEndpoint.Name,
 			}
 		}
 	}
 
-	return &oAuth{
-		ClientID: authSecret{
-			Type: typeEnvironment,
+	return &persistence.OAuth{
+		ClientID: persistence.AuthSecret{
+			Type: persistence.TypeEnvironment,
 			Name: a.ClientID.Name,
 		},
-		ClientSecret: authSecret{
-			Type: typeEnvironment,
+		ClientSecret: persistence.AuthSecret{
+			Type: persistence.TypeEnvironment,
 			Name: a.ClientSecret.Name,
 		},
 		TokenEndpoint: te,

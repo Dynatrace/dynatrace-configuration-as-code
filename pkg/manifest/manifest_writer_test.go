@@ -17,6 +17,7 @@
 package manifest
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/oauth2/endpoints"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"gotest.tools/assert"
@@ -29,7 +30,7 @@ func Test_toWriteableProjects(t *testing.T) {
 	tests := []struct {
 		name          string
 		givenProjects map[string]ProjectDefinition
-		wantResult    []project
+		wantResult    []persistence.Project
 	}{
 		{
 			name: "creates_simple_projects",
@@ -47,7 +48,7 @@ func Test_toWriteableProjects(t *testing.T) {
 					Path: "projects/c",
 				},
 			},
-			wantResult: []project{
+			wantResult: []persistence.Project{
 				{
 					Name: "a",
 					Path: "projects/a",
@@ -78,7 +79,7 @@ func Test_toWriteableProjects(t *testing.T) {
 					Path: "projects/c",
 				},
 			},
-			[]project{
+			[]persistence.Project{
 				{
 					Name: "projects",
 					Path: "projects",
@@ -114,7 +115,7 @@ func Test_toWriteableProjects(t *testing.T) {
 					Path: "nested/projects/deeply/grouped/two",
 				},
 			},
-			wantResult: []project{
+			wantResult: []persistence.Project{
 				{
 					Name: "alpha",
 					Path: "special_projects/alpha",
@@ -135,7 +136,7 @@ func Test_toWriteableProjects(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotResult := toWriteableProjects(tt.givenProjects)
-			assert.DeepEqual(t, gotResult, tt.wantResult, cmpopts.SortSlices(func(a, b project) bool { return a.Name < b.Name }))
+			assert.DeepEqual(t, gotResult, tt.wantResult, cmpopts.SortSlices(func(a, b persistence.Project) bool { return a.Name < b.Name }))
 		})
 	}
 }
@@ -144,7 +145,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 	tests := []struct {
 		name       string
 		input      map[string]EnvironmentDefinition
-		wantResult []group
+		wantResult []persistence.Group
 	}{
 		{
 			name: "correctly transforms simple env groups",
@@ -241,15 +242,15 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 					},
 				},
 			},
-			wantResult: []group{
+			wantResult: []persistence.Group{
 				{
 					Name: "group1",
-					Environments: []environment{
+					Environments: []persistence.Environment{
 						{
 							Name: "env1",
-							URL:  url{Value: "www.an.Url"},
-							Auth: auth{
-								Token: authSecret{
+							URL:  persistence.Url{Value: "www.an.Url"},
+							Auth: persistence.Auth{
+								Token: persistence.AuthSecret{
 									Name: "TokenTest",
 									Type: "environment",
 								},
@@ -257,23 +258,23 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						},
 						{
 							Name: "env2",
-							URL:  url{Value: "www.an.Url"},
-							Auth: auth{
-								Token: authSecret{
+							URL:  persistence.Url{Value: "www.an.Url"},
+							Auth: persistence.Auth{
+								Token: persistence.AuthSecret{
 									Name: "env2_TOKEN",
 									Type: "environment",
 								},
-								OAuth: &oAuth{
-									ClientID: authSecret{
-										Type: typeEnvironment,
+								OAuth: &persistence.OAuth{
+									ClientID: persistence.AuthSecret{
+										Type: persistence.TypeEnvironment,
 										Name: "client-id-key",
 									},
-									ClientSecret: authSecret{
-										Type: typeEnvironment,
+									ClientSecret: persistence.AuthSecret{
+										Type: persistence.TypeEnvironment,
 										Name: "client-secret-key",
 									},
-									TokenEndpoint: &url{
-										Type:  urlTypeEnvironment,
+									TokenEndpoint: &persistence.Url{
+										Type:  persistence.UrlTypeEnvironment,
 										Value: "ENV_TOKEN_ENDPOINT",
 									},
 								},
@@ -281,19 +282,19 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						},
 						{
 							Name: "env2a",
-							URL:  url{Value: "www.an.Url"},
-							Auth: auth{
-								Token: authSecret{
+							URL:  persistence.Url{Value: "www.an.Url"},
+							Auth: persistence.Auth{
+								Token: persistence.AuthSecret{
 									Name: "env2_TOKEN",
 									Type: "environment",
 								},
-								OAuth: &oAuth{
-									ClientID: authSecret{
-										Type: typeEnvironment,
+								OAuth: &persistence.OAuth{
+									ClientID: persistence.AuthSecret{
+										Type: persistence.TypeEnvironment,
 										Name: "client-id-key",
 									},
-									ClientSecret: authSecret{
-										Type: typeEnvironment,
+									ClientSecret: persistence.AuthSecret{
+										Type: persistence.TypeEnvironment,
 										Name: "client-secret-key",
 									},
 								},
@@ -301,22 +302,22 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 						},
 						{
 							Name: "env2b",
-							URL:  url{Value: "www.an.Url"},
-							Auth: auth{
-								Token: authSecret{
+							URL:  persistence.Url{Value: "www.an.Url"},
+							Auth: persistence.Auth{
+								Token: persistence.AuthSecret{
 									Name: "env2_TOKEN",
 									Type: "environment",
 								},
-								OAuth: &oAuth{
-									ClientID: authSecret{
-										Type: typeEnvironment,
+								OAuth: &persistence.OAuth{
+									ClientID: persistence.AuthSecret{
+										Type: persistence.TypeEnvironment,
 										Name: "client-id-key",
 									},
-									ClientSecret: authSecret{
-										Type: typeEnvironment,
+									ClientSecret: persistence.AuthSecret{
+										Type: persistence.TypeEnvironment,
 										Name: "client-secret-key",
 									},
-									TokenEndpoint: &url{
+									TokenEndpoint: &persistence.Url{
 										Value: "http://custom.sso.token.endpoint",
 									},
 								},
@@ -326,12 +327,12 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 				},
 				{
 					Name: "group2",
-					Environments: []environment{
+					Environments: []persistence.Environment{
 						{
 							Name: "env3",
-							URL:  url{Value: "www.an.Url"},
-							Auth: auth{
-								Token: authSecret{
+							URL:  persistence.Url{Value: "www.an.Url"},
+							Auth: persistence.Auth{
+								Token: persistence.AuthSecret{
 									Name: "env3_TOKEN",
 									Type: "environment",
 								},
@@ -344,7 +345,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 		{
 			"returns empty groups for empty env definition",
 			map[string]EnvironmentDefinition{},
-			[]group{},
+			[]persistence.Group{},
 		},
 	}
 	for _, tt := range tests {
@@ -362,7 +363,7 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 				assert.DeepEqual(t,
 					tt.wantResult,
 					gotResult,
-					cmpopts.SortSlices(func(a, b group) bool { return a.Name < b.Name }),
+					cmpopts.SortSlices(func(a, b persistence.Group) bool { return a.Name < b.Name }),
 				)
 			}
 		})
@@ -373,7 +374,7 @@ func Test_toWriteableUrl(t *testing.T) {
 	tests := []struct {
 		name  string
 		input EnvironmentDefinition
-		want  url
+		want  persistence.Url
 	}{
 		{
 			"correctly transforms env var Url",
@@ -389,8 +390,8 @@ func Test_toWriteableUrl(t *testing.T) {
 					Token: AuthSecret{},
 				},
 			},
-			url{
-				Type:  urlTypeEnvironment,
+			persistence.Url{
+				Type:  persistence.UrlTypeEnvironment,
 				Value: "{{ .Env.VARIABLE }}",
 			},
 		},
@@ -407,7 +408,7 @@ func Test_toWriteableUrl(t *testing.T) {
 					Token: AuthSecret{},
 				},
 			},
-			url{
+			persistence.Url{
 				Value: "www.an.Url",
 			},
 		},
@@ -423,7 +424,7 @@ func Test_toWriteableUrl(t *testing.T) {
 					Token: AuthSecret{},
 				},
 			},
-			url{
+			persistence.Url{
 				Value: "www.an.Url",
 			},
 		},
@@ -441,7 +442,7 @@ func Test_toWritableToken(t *testing.T) {
 	tests := []struct {
 		name  string
 		input EnvironmentDefinition
-		want  authSecret
+		want  persistence.AuthSecret
 	}{
 		{
 			"correctly transforms env var token",
@@ -453,7 +454,7 @@ func Test_toWritableToken(t *testing.T) {
 					Token: AuthSecret{Name: "VARIABLE"},
 				},
 			},
-			authSecret{
+			persistence.AuthSecret{
 				Name: "VARIABLE",
 				Type: "environment",
 			},
@@ -469,7 +470,7 @@ func Test_toWritableToken(t *testing.T) {
 					Token: AuthSecret{},
 				},
 			},
-			authSecret{
+			persistence.AuthSecret{
 				Name: "NAME_TOKEN",
 				Type: "environment",
 			},
