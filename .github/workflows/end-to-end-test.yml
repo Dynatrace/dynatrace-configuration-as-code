@@ -11,6 +11,7 @@ on:
   - cron: '0 0 * * *'
   pull_request_target:
     types: [ labeled ]
+  workflow_dispatch:
 
 defaults:
   run:
@@ -174,6 +175,7 @@ jobs:
         name: Test Results
         path: test-result-*.xml
 
+
   download-restore-test:
     name: Download-restore-test
     runs-on: ubuntu-latest
@@ -235,6 +237,7 @@ jobs:
         name: Test Results
         path: test-result-*.xml
 
+
   nightly-run:
     name: Nightly test
     runs-on: ubuntu-latest
@@ -260,6 +263,7 @@ jobs:
       uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 #v4.1.1
       with:
         ref: ${{ github.event.pull_request.head.sha }}
+
     - name: 🌙 Nightly Tests
       if: github.repository == env.BASE_REPO && github.event_name == 'schedule'
       run: make nightly-test testopts="--junitfile test-result-integration-nightly.xml"
