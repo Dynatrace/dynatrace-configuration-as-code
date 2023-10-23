@@ -23,6 +23,7 @@ jobs:
 
   release-binaries:
     name: Build release binaries
+    if: (github.event.action != 'labeled' || github.event.label.name == env.E2E_TEST_LABEL)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -32,7 +33,6 @@ jobs:
       uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe #v4.1.0
       with:
         go-version: '~1.20'
-
 
     - name: Check out base repo
       if: github.event.action != 'labeled'
@@ -48,7 +48,6 @@ jobs:
         ref: ${{ github.event.pull_request.head.sha }}
 
     - name: 🏁 Build release binaries
-      if: (github.event.action != 'labeled' || github.event.label.name == env.E2E_TEST_LABEL)
       run: make build-release
 
   integration-test:
@@ -91,20 +90,6 @@ jobs:
         OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
         OAUTH_TOKEN_ENDPOINT: ${{ secrets.OAUTH_TOKEN_ENDPOINT }}
 
-    - name: 🧹 Cleanup
-      if: github.event_name == 'schedule'
-      run: make clean-environments
-      env:
-        URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
-        URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
-        TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
-        TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
-        PLATFORM_URL_ENVIRONMENT_1: ${{ secrets.PLATFORM_URL_ENVIRONMENT_1 }}
-        PLATFORM_URL_ENVIRONMENT_2: ${{ secrets.PLATFORM_URL_ENVIRONMENT_2 }}
-        OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
-        OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
-        OAUTH_TOKEN_ENDPOINT: ${{ secrets.OAUTH_TOKEN_ENDPOINT }}
-
     - name: ⬆️ Upload Test Results
       uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3.1.3
       if: always()
@@ -114,6 +99,7 @@ jobs:
 
   legacy-integration-tests:
     name: Legacy integration tests
+    if: (github.event.action != 'labeled' || github.event.label.name == env.E2E_TEST_LABEL)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -139,22 +125,7 @@ jobs:
         ref: ${{ github.event.pull_request.head.sha }}
 
     - name: 🧓 Integration test (legacy)
-      if: (github.event.action != 'labeled' || github.event.label.name == env.E2E_TEST_LABEL)
       run: make integration-test-v1 testopts="--junitfile test-result-integration-legacy.xml"
-      env:
-        URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
-        URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
-        TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
-        TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
-        PLATFORM_URL_ENVIRONMENT_1: ${{ secrets.PLATFORM_URL_ENVIRONMENT_1 }}
-        PLATFORM_URL_ENVIRONMENT_2: ${{ secrets.PLATFORM_URL_ENVIRONMENT_2 }}
-        OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
-        OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
-        OAUTH_TOKEN_ENDPOINT: ${{ secrets.OAUTH_TOKEN_ENDPOINT }}
-
-    - name: 🧹 Cleanup
-      if: github.event_name == 'schedule'
-      run: make clean-environments
       env:
         URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
         URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
@@ -176,6 +147,7 @@ jobs:
 
   download-restore-test:
     name: Download-restore-test
+    if: (github.event.action != 'labeled' || github.event.label.name == env.E2E_TEST_LABEL)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -201,22 +173,7 @@ jobs:
         ref: ${{ github.event.pull_request.head.sha }}
 
     - name: 📥/📤 Download/Restore test
-      if: (github.event.action != 'labeled' || github.event.label.name == env.E2E_TEST_LABEL)
       run: make download-restore-test testopts="--junitfile test-result-integration-download-restore.xml"
-      env:
-        URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
-        URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
-        TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
-        TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
-        PLATFORM_URL_ENVIRONMENT_1: ${{ secrets.PLATFORM_URL_ENVIRONMENT_1 }}
-        PLATFORM_URL_ENVIRONMENT_2: ${{ secrets.PLATFORM_URL_ENVIRONMENT_2 }}
-        OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
-        OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
-        OAUTH_TOKEN_ENDPOINT: ${{ secrets.OAUTH_TOKEN_ENDPOINT }}
-
-    - name: 🧹 Cleanup
-      if: github.event_name == 'schedule'
-      run: make clean-environments
       env:
         URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
         URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
@@ -238,6 +195,7 @@ jobs:
 
   nightly-run:
     name: Nightly test
+    if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -248,22 +206,10 @@ jobs:
       with:
         go-version: '~1.20'
 
-
     - name: Check out base repo
-      if: github.event.action != 'labeled'
       uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 #v4.1.1
-
-    # If a PR was reviewed and deemed safe to run in the context of our repo and it's secrets, we label it to trigger E2E tests.
-    # In that case this Action is triggered in pull_request_target context and checks out the HEAD of the PR branch.
-    # This is a semi-secure manually reviewed way to ensure we only run code we're fine accessing our secrets
-    - name: Check out PR # nosemgrep:yaml.github-actions.security.pull-request-target-code-checkout.pull-request-target-code-checkout
-      if: github.event.action == 'labeled' && github.event.label.name == env.E2E_TEST_LABEL
-      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 #v4.1.1
-      with:
-        ref: ${{ github.event.pull_request.head.sha }}
 
     - name: 🌙 Nightly Tests
-      if: github.event_name == 'schedule'
       run: make nightly-test testopts="--junitfile test-result-integration-nightly.xml"
       env:
         URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
@@ -277,7 +223,6 @@ jobs:
         OAUTH_TOKEN_ENDPOINT: ${{ secrets.OAUTH_TOKEN_ENDPOINT }}
 
     - name: 🧹 Cleanup
-      if: github.event_name == 'schedule'
       run: make clean-environments
       env:
         URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
