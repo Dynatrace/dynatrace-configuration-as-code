@@ -1,14 +1,13 @@
 name: E2E Test
 
-# This builds all binary versions and runs the end-to-end test against test Dynatrace environments
-# This currently only runs on push to main and nightly
+# This workflow executes end-to-end tests and verifies that the binaries are buildable
+# The workflow is executed on latest main commits, pull requests which are labeled 'run-e2e-test', and nightly.
 
 on:
   push:
     branches: [ main ]
   schedule:
-    # nightly build ensure E2E tests run daily and catch any breaking API changes
-    - cron: '0 0 * * *'
+  - cron: '0 0 * * *' # nightly build ensure E2E tests run daily and catch any breaking API changes
   pull_request_target:
     types: [ labeled ]
 
@@ -16,126 +15,233 @@ defaults:
   run:
     shell: bash
 
-env:
-  BASE_REPO: 'Dynatrace/dynatrace-configuration-as-code'  # Used to only execute directly if running in main repository, not on forks/PRs inside forks
-  E2E_TEST_LABEL: 'run-e2e-test'
-
 jobs:
+  setup:
+    name: Setup variables
+    if: github.repository == 'Dynatrace/dynatrace-configuration-as-code'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      sha: ${{ steps.write.outputs.sha }} # sha contains the correct sha for followup jobs to use
 
-  e2e-test:
-    name: E2E Test
+    steps:
+    - name: Fetch base repo sha
+      if: github.event.action == 'labeled' && github.event.label.name == 'run-e2e-test'
+      run: echo "sha=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
+
+    - name: Fetch event sha
+      if: github.event.action != 'labeled'
+      run: echo "sha=$GITHUB_SHA" >> $GITHUB_ENV
+
+    - id: write
+      name: Store sha
+      run: echo "sha=$sha" >> $GITHUB_OUTPUT
+
+
+  release-binaries:
+    name:  🏁 Build release binaries
+    needs: [setup]
+    if: github.event.action != 'labeled' || github.event.label.name == 'run-e2e-test'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       checks: write
     steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe #v4.1.0
+      with:
+        go-version: '~1.20'
 
-      - name: Set up Go 1.x
-        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe #v4.1.0
-        with:
-          go-version: '~1.20'
-        id: go
+    - name: Checkout
+      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 #v4.1.1
+      with:
+        ref: ${{needs.setup.outputs.sha}}
 
-      - name: Check out base repo
-        if: github.event.action != 'labeled'
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 #v4.1.1
+    - name: 🏁 Build release binaries
+      run: make build-release
 
-      # If a PR was reviewed and deemed safe to run in the context of our repo and it's secrets, we label it to trigger E2E tests.
-      # In that case this Action is triggered in pull_request_target context and checks out the HEAD of the PR branch.
-      # This is a semi-secure manually reviewed way to ensure we only run code we're fine accessing our secrets
-      - name: Check out PR # nosemgrep:yaml.github-actions.security.pull-request-target-code-checkout.pull-request-target-code-checkout
-        if: github.event.action == 'labeled' && github.event.label.name == env.E2E_TEST_LABEL
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 #v4.1.1
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: 🏁 Build release binaries
-        if: github.repository == env.BASE_REPO && (github.event.action != 'labeled' || github.event.label.name == env.E2E_TEST_LABEL)
-        run: make build-release
+  integration-test:
+    name: 🌎 Integration tests
+    if: github.event.action != 'labeled' || github.event.label.name == 'run-e2e-test'
+    needs: [setup]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
 
-      - name: 🌎 Integration test
-        if: github.repository == env.BASE_REPO && (github.event.action != 'labeled' || github.event.label.name == env.E2E_TEST_LABEL)
-        run: make integration-test testopts="--junitfile test-result-integration.xml"
-        env:
-          URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
-          URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
-          TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
-          TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
-          PLATFORM_URL_ENVIRONMENT_1: ${{ secrets.PLATFORM_URL_ENVIRONMENT_1 }}
-          PLATFORM_URL_ENVIRONMENT_2: ${{ secrets.PLATFORM_URL_ENVIRONMENT_2 }}
-          OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
-          OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
-          OAUTH_TOKEN_ENDPOINT: ${{ secrets.OAUTH_TOKEN_ENDPOINT }}
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe #v4.1.0
+      with:
+        go-version: '~1.20'
 
-      - name: 🧓 Integration test (legacy)
-        if: github.repository == env.BASE_REPO && (github.event.action != 'labeled' || github.event.label.name == env.E2E_TEST_LABEL)
-        run: make integration-test-v1 testopts="--junitfile test-result-integration-legacy.xml"
-        env:
-          URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
-          URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
-          TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
-          TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
-          PLATFORM_URL_ENVIRONMENT_1: ${{ secrets.PLATFORM_URL_ENVIRONMENT_1 }}
-          PLATFORM_URL_ENVIRONMENT_2: ${{ secrets.PLATFORM_URL_ENVIRONMENT_2 }}
-          OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
-          OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
-          OAUTH_TOKEN_ENDPOINT: ${{ secrets.OAUTH_TOKEN_ENDPOINT }}
+    - name: Checkout
+      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 #v4.1.1
+      with:
+        ref: ${{needs.setup.outputs.sha}}
 
-      - name: 📥/📤 Download/Restore test
-        if: github.repository == env.BASE_REPO && (github.event.action != 'labeled' || github.event.label.name == env.E2E_TEST_LABEL)
-        run: make download-restore-test testopts="--junitfile test-result-integration-download-restore.xml"
-        env:
-          URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
-          URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
-          TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
-          TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
-          PLATFORM_URL_ENVIRONMENT_1: ${{ secrets.PLATFORM_URL_ENVIRONMENT_1 }}
-          PLATFORM_URL_ENVIRONMENT_2: ${{ secrets.PLATFORM_URL_ENVIRONMENT_2 }}
-          OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
-          OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
-          OAUTH_TOKEN_ENDPOINT: ${{ secrets.OAUTH_TOKEN_ENDPOINT }}
+    - name: 🌎 Integration test
+      run: make integration-test testopts="--junitfile test-result-integration.xml"
+      env:
+        URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
+        URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
+        TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
+        TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
+        PLATFORM_URL_ENVIRONMENT_1: ${{ secrets.PLATFORM_URL_ENVIRONMENT_1 }}
+        PLATFORM_URL_ENVIRONMENT_2: ${{ secrets.PLATFORM_URL_ENVIRONMENT_2 }}
+        OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
+        OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
+        OAUTH_TOKEN_ENDPOINT: ${{ secrets.OAUTH_TOKEN_ENDPOINT }}
 
-      - name: 🌙 Nightly Tests
-        if: github.repository == env.BASE_REPO && github.event_name == 'schedule'
-        run: make nightly-test testopts="--junitfile test-result-integration-nightly.xml"
-        env:
-          URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
-          URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
-          TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
-          TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
-          PLATFORM_URL_ENVIRONMENT_1: ${{ secrets.PLATFORM_URL_ENVIRONMENT_1 }}
-          PLATFORM_URL_ENVIRONMENT_2: ${{ secrets.PLATFORM_URL_ENVIRONMENT_2 }}
-          OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
-          OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
-          OAUTH_TOKEN_ENDPOINT: ${{ secrets.OAUTH_TOKEN_ENDPOINT }}
+    - name: ⬆️ Upload Test Results
+      uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3.1.3
+      if: always()
+      with:
+        name: Test Results
+        path: test-result-*.xml
 
-      - name: 🧹 Cleanup
-        if: github.repository == env.BASE_REPO && github.event_name == 'schedule'
-        run: make clean-environments
-        env:
-          URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
-          URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
-          TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
-          TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
-          PLATFORM_URL_ENVIRONMENT_1: ${{ secrets.PLATFORM_URL_ENVIRONMENT_1 }}
-          PLATFORM_URL_ENVIRONMENT_2: ${{ secrets.PLATFORM_URL_ENVIRONMENT_2 }}
-          OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
-          OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
-          OAUTH_TOKEN_ENDPOINT: ${{ secrets.OAUTH_TOKEN_ENDPOINT }}
 
-      - name: ⬆️ Upload Test Results
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3.1.3
-        if: always()
-        with:
-          name: Test Results
-          path: test-result-*.xml
+  legacy-integration-tests:
+    name: 🧓 Legacy integration tests
+    needs: [setup]
+    if: github.event.action != 'labeled' || github.event.label.name == 'run-e2e-test'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe #v4.1.0
+      with:
+        go-version: '~1.20'
+
+    - name: Checkout
+      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 #v4.1.1
+      with:
+        ref: ${{needs.setup.outputs.sha}}
+
+    - name: 🧓 Integration test (legacy)
+      run: make integration-test-v1 testopts="--junitfile test-result-integration-legacy.xml"
+      env:
+        URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
+        URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
+        TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
+        TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
+        PLATFORM_URL_ENVIRONMENT_1: ${{ secrets.PLATFORM_URL_ENVIRONMENT_1 }}
+        PLATFORM_URL_ENVIRONMENT_2: ${{ secrets.PLATFORM_URL_ENVIRONMENT_2 }}
+        OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
+        OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
+        OAUTH_TOKEN_ENDPOINT: ${{ secrets.OAUTH_TOKEN_ENDPOINT }}
+
+    - name: ⬆️ Upload Test Results
+      uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3.1.3
+      if: always()
+      with:
+        name: Test Results
+        path: test-result-*.xml
+
+
+  download-restore-test:
+    name: 📥/📤 Download-restore-test
+    needs: [setup]
+    if: github.event.action != 'labeled' || github.event.label.name == 'run-e2e-test'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe #v4.1.0
+      with:
+        go-version: '~1.20'
+
+    - name: Checkout
+      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 #v4.1.1
+      with:
+        ref: ${{needs.setup.outputs.sha}}
+
+    - name: 📥/📤 Download/Restore test
+      run: make download-restore-test testopts="--junitfile test-result-integration-download-restore.xml"
+      env:
+        URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
+        URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
+        TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
+        TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
+        PLATFORM_URL_ENVIRONMENT_1: ${{ secrets.PLATFORM_URL_ENVIRONMENT_1 }}
+        PLATFORM_URL_ENVIRONMENT_2: ${{ secrets.PLATFORM_URL_ENVIRONMENT_2 }}
+        OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
+        OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
+        OAUTH_TOKEN_ENDPOINT: ${{ secrets.OAUTH_TOKEN_ENDPOINT }}
+
+    - name: ⬆️ Upload Test Results
+      uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3.1.3
+      if: always()
+      with:
+        name: Test Results
+        path: test-result-*.xml
+
+
+  nightly-run:
+    name: 🌜 Nightly test & 🧹 Cleanup
+    needs: [setup] # It does not need it strictly, but we filter based on the repository in the setup step
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe #v4.1.0
+      with:
+        go-version: '~1.20'
+
+    - name: Check out base repo
+      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 #v4.1.1
+
+    - name: 🌜 Nightly Tests
+      run: make nightly-test testopts="--junitfile test-result-integration-nightly.xml"
+      env:
+        URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
+        URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
+        TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
+        TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
+        PLATFORM_URL_ENVIRONMENT_1: ${{ secrets.PLATFORM_URL_ENVIRONMENT_1 }}
+        PLATFORM_URL_ENVIRONMENT_2: ${{ secrets.PLATFORM_URL_ENVIRONMENT_2 }}
+        OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
+        OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
+        OAUTH_TOKEN_ENDPOINT: ${{ secrets.OAUTH_TOKEN_ENDPOINT }}
+
+    - name: 🧹 Cleanup
+      run: make clean-environments
+      env:
+        URL_ENVIRONMENT_1: ${{ secrets.URL_ENVIRONMENT_1 }}
+        URL_ENVIRONMENT_2: ${{ secrets.URL_ENVIRONMENT_2 }}
+        TOKEN_ENVIRONMENT_1: ${{ secrets.TOKEN_ENVIRONMENT_1 }}
+        TOKEN_ENVIRONMENT_2: ${{ secrets.TOKEN_ENVIRONMENT_2 }}
+        PLATFORM_URL_ENVIRONMENT_1: ${{ secrets.PLATFORM_URL_ENVIRONMENT_1 }}
+        PLATFORM_URL_ENVIRONMENT_2: ${{ secrets.PLATFORM_URL_ENVIRONMENT_2 }}
+        OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
+        OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
+        OAUTH_TOKEN_ENDPOINT: ${{ secrets.OAUTH_TOKEN_ENDPOINT }}
+
+    - name: ⬆️ Upload Test Results
+      uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3.1.3
+      if: always()
+      with:
+        name: Test Results
+        path: test-result-*.xml
+
 
   upload_event:
     name: "Upload Event File"
     runs-on: ubuntu-latest
     steps:
-      - name: Upload
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3.1.3
-        with:
-          name: event_file
-          path: ${{ github.event_path }}
+    - name: Upload
+      uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3.1.3
+      with:
+        name: event_file
+        path: ${{ github.event_path }}
