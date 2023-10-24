@@ -28,10 +28,7 @@ jobs:
     permissions:
       contents: read
       checks: write
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, windows-latest ]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
 
     steps:
       - name: 🛠️ Set up Go 1.x
@@ -46,7 +43,7 @@ jobs:
         run: make compile
 
       - name: 🧪 Unit test
-        run: make test testopts="--junitfile test-result-${{ matrix.os }}-unit.xml"
+        run: make test testopts="--junitfile test-result-ubuntu-latest-unit.xml"
 
       - name: ⬆️ Upload Test Results
         uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3.1.3

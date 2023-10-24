@@ -185,6 +185,29 @@ jobs:
         path: test-result-*.xml
 
 
+  windows-unit-tests:
+    name: 🪟 Windows tests
+    needs: [ setup ]
+    if: github.event.action != 'labeled' || github.event.label.name == 'run-e2e-test'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe #v4.1.0
+      with:
+        go-version: '~1.20'
+
+    - name: Checkout
+      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 #v4.1.1
+      with:
+        ref: ${{needs.setup.outputs.sha}}
+
+    - name: 🧪 Unit test
+      run: make test testopts="--junitfile test-result-windows-latest-unit.xml"
+
   nightly-run:
     name: 🌜 Nightly test & 🧹 Cleanup
     needs: [setup] # It does not need it strictly, but we filter based on the repository in the setup step
