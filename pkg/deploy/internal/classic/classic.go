@@ -82,5 +82,20 @@ func upsertNonUniqueNameConfig(ctx context.Context, client dtclient.ConfigClient
 		entityUuid = idutils.GenerateUUIDFromConfigId(projectId, configID)
 	}
 
-	return client.UpsertConfigByNonUniqueNameAndId(ctx, apiToDeploy, entityUuid, configName, []byte(renderedConfig))
+	// check if we are dealing with a non-unique name configuration that appears multiple times
+	// in a monaco project. if that's the case, we need to handle it differently, by setting the
+	// duplicate parameter accordingly
+	var duplicate bool
+	if val, exists := conf.Parameters[config.NonUniqueNameConfigDuplicationParameter]; exists {
+		resolvedVal, err := val.ResolveValue(parameter.ResolveContext{})
+		if err != nil {
+			return dtclient.DynatraceEntity{}, err
+		}
+		resolvedValBool, ok := resolvedVal.(bool)
+		if !ok {
+			return dtclient.DynatraceEntity{}, err
+		}
+		duplicate = resolvedValBool
+	}
+	return client.UpsertConfigByNonUniqueNameAndId(ctx, apiToDeploy, entityUuid, configName, []byte(renderedConfig), duplicate)
 }

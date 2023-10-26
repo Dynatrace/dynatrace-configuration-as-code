@@ -76,6 +76,7 @@ func (d *DynatraceClient) upsertDynatraceEntityByNonUniqueNameAndId(
 	objectName string,
 	theApi api.API,
 	payload []byte,
+	duplicate bool,
 ) (DynatraceEntity, error) {
 	fullUrl := theApi.CreateURL(d.environmentURLClassic)
 	body := payload
@@ -102,8 +103,8 @@ func (d *DynatraceClient) upsertDynatraceEntityByNonUniqueNameAndId(
 		return entity, err
 	}
 
-	// Note: this logic is flawed if several configs of the same name exist in a project - they will all update the same single configuration!
-	if featureflags.UpdateNonUniqueByNameIfSingleOneExists().Enabled() && len(entitiesWithSameName) == 1 { // name is currently unique, update know entity
+	// check if we are dealing with a duplicate non-unique name configuration, if not, go ahead and update the known entity
+	if featureflags.UpdateNonUniqueByNameIfSingleOneExists().Enabled() && len(entitiesWithSameName) == 1 && !duplicate {
 		existingUuid := entitiesWithSameName[0].Id
 		entity, err := d.updateDynatraceObject(ctx, fullUrl, objectName, existingUuid, theApi, body)
 		return entity, err

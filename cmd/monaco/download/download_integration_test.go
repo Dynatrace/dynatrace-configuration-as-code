@@ -527,6 +527,7 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name": &value.ValueParameter{Value: "Non-unique dashboard-name"},
+					config.NonUniqueNameConfigDuplicationParameter: value.New(true),
 				},
 				Group:       "default",
 				Environment: projectName,
@@ -538,6 +539,7 @@ func TestDownloadIntegrationDashboards(t *testing.T) {
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
 					"name": &value.ValueParameter{Value: "Non-unique dashboard-name"},
+					config.NonUniqueNameConfigDuplicationParameter: value.New(true),
 				},
 				Group:       "default",
 				Environment: projectName,
@@ -621,6 +623,7 @@ func TestDownloadIntegrationAllDashboardsAreDownloadedIfFilterFFTurnedOff(t *tes
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.ID, ConfigId: "id-1"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
+					config.NonUniqueNameConfigDuplicationParameter: value.New(true),
 					"name": &value.ValueParameter{Value: "Non-unique dashboard-name"},
 				},
 				Group:       "default",
@@ -632,6 +635,7 @@ func TestDownloadIntegrationAllDashboardsAreDownloadedIfFilterFFTurnedOff(t *tes
 				Coordinate: coordinate.Coordinate{Project: projectName, Type: dashboardApi.ID, ConfigId: "id-2"},
 				Skip:       false,
 				Parameters: map[string]parameter.Parameter{
+					config.NonUniqueNameConfigDuplicationParameter: value.New(true),
 					"name": &value.ValueParameter{Value: "Non-unique dashboard-name"},
 				},
 				Group:       "default",

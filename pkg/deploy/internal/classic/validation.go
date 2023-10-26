@@ -20,9 +20,6 @@ import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/environment"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/deploy/errors"
 	project "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/project/v2"
 	"github.com/google/go-cmp/cmp"
@@ -50,12 +47,12 @@ func ValidateUniqueConfigNames(projects []project.Project) error {
 		}
 
 		for _, c2 := range uniqueList[c.Environment][a.Api] {
-			n1, err := getNameForConfig(c)
+			n1, err := config.GetNameForConfig(c)
 			if err != nil {
 				errs = errs.Append(c.Environment, err)
 				return
 			}
-			n2, err := getNameForConfig(c2)
+			n2, err := config.GetNameForConfig(c2)
 			if err != nil {
 				errs = errs.Append(c.Environment, err)
 				return
@@ -83,20 +80,4 @@ func ValidateUniqueConfigNames(projects []project.Project) error {
 		return errs
 	}
 	return nil
-}
-
-func getNameForConfig(c config.Config) (any, error) {
-	nameParam, exist := c.Parameters[config.NameParameter]
-	if !exist {
-		return nil, fmt.Errorf("configuration %s has no 'name' parameter defined", c.Coordinate)
-	}
-
-	switch v := nameParam.(type) {
-	case *value.ValueParameter:
-		return v.ResolveValue(parameter.ResolveContext{ParameterName: config.NameParameter})
-	case *environment.EnvironmentVariableParameter:
-		return v.ResolveValue(parameter.ResolveContext{ParameterName: config.NameParameter})
-	default:
-		return c.Parameters[config.NameParameter], nil
-	}
 }
