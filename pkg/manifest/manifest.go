@@ -135,6 +135,6 @@ type Manifest struct {
 	// Environments defined in the manifest, split by environment-name
 	Environments Environments
 
-	// Accounts holds all accounts defined in the manifest
+	// Accounts holds all accounts defined in the manifest. Key is the user-defined account name.
 	Accounts map[string]Account
 }
