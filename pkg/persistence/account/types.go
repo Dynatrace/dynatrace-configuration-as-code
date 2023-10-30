@@ -49,7 +49,7 @@ type (
 		Description    string           `mapstructure:"description"`
 		Account        *Account         `mapstructure:"account"`
 		Environment    []Environment    `mapstructure:"environment"`
-		ManagementZone []ManagementZone `mapstructure:"managementZone"`
+		ManagementZone []ManagementZone `mapstructure:"managementZone" yaml:"managementZone"`
 	}
 	Account struct {
 		Permissions []any `mapstructure:"permissions"`
@@ -62,7 +62,7 @@ type (
 	}
 	ManagementZone struct {
 		Environment    string `mapstructure:"environment"`
-		ManagementZone string `mapstructure:"managementZone"`
+		ManagementZone string `mapstructure:"managementZone" yaml:"managementZone"`
 		Permissions    []any  `mapstructure:"permissions"`
 	}
 	Users struct {
