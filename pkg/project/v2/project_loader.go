@@ -19,10 +19,12 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log/field"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/api"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/parameter/value"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/config/loader"
 	"github.com/spf13/afero"
@@ -126,14 +128,37 @@ func loadProject(fs afero.Fs, context ProjectLoaderContext, projectDefinition ma
 			errors = append(errors, newDuplicateConfigIdentifierError(c))
 		}
 	}
-
 	if errors != nil {
 		return Project{}, errors
 	}
 
-	configMap := make(ConfigsPerTypePerEnvironments)
+	// find and memoroize (non-unique-name) configurations with identical names and set a special parameter on them
+	// to be able to identify them later
+	nonUniqueNameConfigCount := make(map[string]int)
+	apis := api.NewAPIs()
+	for _, c := range configs {
+		if c.Type.ID() == config.ClassicApiTypeId && apis[c.Coordinate.Type].NonUniqueName {
+			name, err := config.GetNameForConfig(c)
+			if err != nil {
+				log.WithFields(field.Error(err), field.Coordinate(c.Coordinate)).Error("Unable to resolve name of configuration")
+			}
+			if nameStr, ok := name.(string); ok {
+				nonUniqueNameConfigCount[nameStr]++
+			}
+		}
+	}
 
-	for _, conf := range configs {
+	configMap := make(ConfigsPerTypePerEnvironments)
+	for i, conf := range configs {
+		name, _ := config.GetNameForConfig(configs[i])
+		// set special parameter for non-unique configs that appear multiple times with the same name
+		// in order to be able to identify them during deployment
+		if nameStr, ok := name.(string); ok {
+			if nonUniqueNameConfigCount[nameStr] > 1 {
+				configs[i].Parameters[config.NonUniqueNameConfigDuplicationParameter] = value.New(true)
+			}
+		}
+
 		if _, found := configMap[conf.Environment]; !found {
 			configMap[conf.Environment] = make(map[string][]config.Config)
 		}

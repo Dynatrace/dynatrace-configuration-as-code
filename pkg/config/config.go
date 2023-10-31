@@ -17,6 +17,7 @@
 package config
 
 import (
+	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/json"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/coordinate"
 	configErrors "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/config/errors"
@@ -44,6 +45,10 @@ const (
 
 	// SkipParameter is special in that config should be deployed or not
 	SkipParameter = "skip"
+
+	// NonUniqueNameConfigDuplicationParameter is a special parameter set on non-unique name API configurations
+	// that appear multiple times in a project
+	NonUniqueNameConfigDuplicationParameter = "__MONACO_NUN_API_DUP__"
 )
 
 // ReservedParameterNames holds all parameter names that may not be specified by a user in a config.
@@ -252,4 +257,20 @@ func (c *Config) ResolveParameterValues(entities EntityLookup) (parameter.Proper
 	}
 
 	return properties, nil
+}
+
+func GetNameForConfig(c Config) (any, error) {
+	nameParam, exist := c.Parameters[NameParameter]
+	if !exist {
+		return nil, fmt.Errorf("configuration %s has no 'name' parameter defined", c.Coordinate)
+	}
+
+	switch v := nameParam.(type) {
+	case *valueParam.ValueParameter:
+		return v.ResolveValue(parameter.ResolveContext{ParameterName: NameParameter})
+	case *envParam.EnvironmentVariableParameter:
+		return v.ResolveValue(parameter.ResolveContext{ParameterName: NameParameter})
+	default:
+		return c.Parameters[NameParameter], nil
+	}
 }

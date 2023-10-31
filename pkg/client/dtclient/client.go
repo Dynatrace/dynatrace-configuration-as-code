@@ -65,7 +65,7 @@ type ConfigClient interface {
 	// It calls the underlying GET and PUT endpoints for the API. E.g. for alerting profiles this would be:
 	//	 GET <environment-url>/api/config/v1/alertingProfiles ... to check if the config is already available
 	//	 PUT <environment-url>/api/config/v1/alertingProfiles/<id> ... with the given (or found by unique name) entity ID
-	UpsertConfigByNonUniqueNameAndId(ctx context.Context, a api.API, entityID string, name string, payload []byte) (entity DynatraceEntity, err error)
+	UpsertConfigByNonUniqueNameAndId(ctx context.Context, a api.API, entityID string, name string, payload []byte, duplicate bool) (entity DynatraceEntity, err error)
 
 	// DeleteConfigById removes a given config for a given API using its id.
 	// It calls the DELETE endpoint for the API. E.g. for alerting profiles this would be:
@@ -489,15 +489,15 @@ func (d *DynatraceClient) upsertConfigByName(ctx context.Context, api api.API, n
 	return d.upsertDynatraceObject(ctx, api, name, payload)
 }
 
-func (d *DynatraceClient) UpsertConfigByNonUniqueNameAndId(ctx context.Context, api api.API, entityId string, name string, payload []byte) (entity DynatraceEntity, err error) {
+func (d *DynatraceClient) UpsertConfigByNonUniqueNameAndId(ctx context.Context, api api.API, entityId string, name string, payload []byte, duplicate bool) (entity DynatraceEntity, err error) {
 	d.limiter.ExecuteBlocking(func() {
-		entity, err = d.upsertConfigByNonUniqueNameAndId(ctx, api, entityId, name, payload)
+		entity, err = d.upsertConfigByNonUniqueNameAndId(ctx, api, entityId, name, payload, duplicate)
 	})
 	return
 }
 
-func (d *DynatraceClient) upsertConfigByNonUniqueNameAndId(ctx context.Context, api api.API, entityId string, name string, payload []byte) (entity DynatraceEntity, err error) {
-	return d.upsertDynatraceEntityByNonUniqueNameAndId(ctx, entityId, name, api, payload)
+func (d *DynatraceClient) upsertConfigByNonUniqueNameAndId(ctx context.Context, api api.API, entityId string, name string, payload []byte, duplicate bool) (entity DynatraceEntity, err error) {
+	return d.upsertDynatraceEntityByNonUniqueNameAndId(ctx, entityId, name, api, payload, duplicate)
 }
 
 func (d *DynatraceClient) GetSettingById(objectId string) (res *DownloadSettingsObject, err error) {
