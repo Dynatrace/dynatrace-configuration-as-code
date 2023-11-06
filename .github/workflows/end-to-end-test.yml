@@ -56,7 +56,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe #v4.1.0
       with:
-        go-version: '~1.20'
+        go-version: '~1.21'
 
     - name: 🏁 Build release binaries
       run: make build-release
@@ -80,7 +80,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe #v4.1.0
       with:
-        go-version: '~1.20'
+        go-version: '~1.21'
 
     - name: 🌎 Integration test
       run: make integration-test testopts="--junitfile test-result-integration.xml"
@@ -121,7 +121,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe #v4.1.0
       with:
-        go-version: '~1.20'
+        go-version: '~1.21'
 
     - name: 🧓 Integration test (legacy)
       run: make integration-test-v1 testopts="--junitfile test-result-integration-legacy.xml"
@@ -162,7 +162,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe #v4.1.0
       with:
-        go-version: '~1.20'
+        go-version: '~1.21'
 
     - name: 📥/📤 Download/Restore test
       run: make download-restore-test testopts="--junitfile test-result-integration-download-restore.xml"
@@ -203,7 +203,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe #v4.1.0
       with:
-        go-version: '~1.20'
+        go-version: '~1.21'
 
     - name: 🧪 Unit test
       run: make test testopts="--junitfile test-result-windows-latest-unit.xml"
@@ -223,7 +223,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe #v4.1.0
       with:
-        go-version: '~1.20'
+        go-version: '~1.21'
 
     - name: 🌜 Nightly Tests
       run: make nightly-test testopts="--junitfile test-result-integration-nightly.xml"
