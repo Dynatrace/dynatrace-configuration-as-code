@@ -23,52 +23,6 @@ import (
 	"testing"
 )
 
-func TestContains(t *testing.T) {
-	tests := []struct {
-		name     string
-		slice    []int
-		value    int
-		expected bool
-	}{
-		{
-			"not contained in empty",
-			[]int{},
-			1,
-			false,
-		},
-		{
-			"not contained single",
-			[]int{2},
-			1,
-			false,
-		},
-		{
-			"not contained multiple",
-			[]int{2, 3, 4},
-			1,
-			false,
-		},
-		{
-			"contained single",
-			[]int{1},
-			1,
-			true,
-		},
-		{
-			"contained multi",
-			[]int{1, 2},
-			1,
-			true,
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			got := Contains(test.slice, test.value)
-			assert.Equal(t, test.expected, got)
-		})
-	}
-}
-
 func TestDifference(t *testing.T) {
 	tests := []struct {
 		name     string
