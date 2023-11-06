@@ -87,7 +87,7 @@ func deploy(fs afero.Fs, opts deployOpts) error {
 		if acc, f := accs[opts.accountName]; !f {
 			return fmt.Errorf("required account %q was not found in manifest %q", opts.accountName, opts.manifestName)
 		} else {
-			maps.Clear(accs)
+			clear(accs)
 			accs[acc.Name] = acc
 		}
 	}
@@ -98,7 +98,7 @@ func deploy(fs afero.Fs, opts deployOpts) error {
 		if proj, f := projs[opts.project]; !f {
 			return fmt.Errorf("required project %q was not found in manifest %q", opts.accountName, opts.manifestName)
 		} else {
-			maps.Clear(projs)
+			clear(projs)
 			projs[proj.Name] = proj
 		}
 	}
