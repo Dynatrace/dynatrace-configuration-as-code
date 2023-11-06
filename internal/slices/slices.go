@@ -16,16 +16,7 @@
 
 package slices
 
-// Contains checks if a value is present in
-func Contains[T comparable, S ~[]T](slice S, value T) bool {
-	for _, v := range slice {
-		if v == value {
-			return true
-		}
-	}
-
-	return false
-}
+import "slices"
 
 // Difference is removing all elements from a which are present in b.
 // It is the mathematical set-operation equivalent as (A - B)
@@ -34,7 +25,7 @@ func Difference[T comparable, S ~[]T](a S, b S) S {
 
 	// Could be optimized for larger slices by using maps, or sorting & iterating. Not needed for now
 	for _, v := range a {
-		if !Contains(b, v) {
+		if !slices.Contains(b, v) {
 			result = append(result, v)
 		}
 	}
