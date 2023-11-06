@@ -41,24 +41,3 @@ func Difference[T comparable, S ~[]T](a S, b S) S {
 
 	return result
 }
-
-// AnyMatches checks if any value in the slice matches the filter. If so, true is returned, otherwise false.
-func AnyMatches[T comparable, S ~[]T](s S, filter func(v T) bool) bool {
-	for _, v := range s {
-		if filter(v) {
-			return true
-		}
-	}
-
-	return false
-}
-
-// Reverse returns a new slice that is in reverse order of the given slice s. It does not modify the order of the given
-// slice.
-func Reverse[T any](s []T) []T {
-	r := make([]T, len(s))
-	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
-		r[i], r[j] = s[j], s[i]
-	}
-	return r
-}
