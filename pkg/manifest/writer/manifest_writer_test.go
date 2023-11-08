@@ -19,11 +19,13 @@
 package writer
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/featureflags"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/internal/persistence"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/oauth2/endpoints"
-	"github.com/google/go-cmp/cmp/cmpopts"
-	"gotest.tools/assert"
+	"github.com/google/uuid"
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 	"reflect"
 	"sort"
 	"testing"
@@ -139,7 +141,7 @@ func Test_toWriteableProjects(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotResult := toWriteableProjects(tt.givenProjects)
-			assert.DeepEqual(t, gotResult, tt.wantResult, cmpopts.SortSlices(func(a, b persistence.Project) bool { return a.Name < b.Name }))
+			assert.ElementsMatch(t, gotResult, tt.wantResult)
 		})
 	}
 }
@@ -363,10 +365,9 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 					})
 				}
 
-				assert.DeepEqual(t,
+				assert.ElementsMatch(t,
 					tt.wantResult,
 					gotResult,
-					cmpopts.SortSlices(func(a, b persistence.Group) bool { return a.Name < b.Name }),
 				)
 			}
 		})
@@ -463,6 +464,345 @@ func Test_toWritableToken(t *testing.T) {
 			if got := getTokenSecret(tt.input.Auth, tt.input.Name); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getTokenSecret() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func Test_toWriteableAccounts(t *testing.T) {
+
+	tests := []struct {
+		name  string
+		given map[string]manifest.Account
+		want  []persistence.Account
+	}{
+		{
+			"simple case",
+			map[string]manifest.Account{
+				"test": {
+					Name:        "test",
+					AccountUUID: uuid.MustParse("95a97c92-7137-4f7a-94ff-f29b54b94a72"),
+					OAuth: manifest.OAuth{
+						ClientID: manifest.AuthSecret{
+							Name:  "MY_CLIENT_ID",
+							Value: "SECRET!",
+						},
+						ClientSecret: manifest.AuthSecret{
+							Name:  "MY_CLIENT_SECRET",
+							Value: "ALSO SECRET!!!",
+						},
+					},
+				},
+			},
+			[]persistence.Account{
+				{
+					Name:        "test",
+					AccountUUID: "95a97c92-7137-4f7a-94ff-f29b54b94a72",
+					OAuth: persistence.OAuth{
+						ClientID: persistence.AuthSecret{
+							Type: persistence.TypeEnvironment,
+							Name: "MY_CLIENT_ID",
+						},
+						ClientSecret: persistence.AuthSecret{
+							Type: persistence.TypeEnvironment,
+							Name: "MY_CLIENT_SECRET",
+						},
+					},
+				},
+			},
+		},
+		{
+			"With optional env var URLs",
+			map[string]manifest.Account{
+				"test": {
+					Name:        "test",
+					AccountUUID: uuid.MustParse("95a97c92-7137-4f7a-94ff-f29b54b94a72"),
+					ApiUrl: &manifest.URLDefinition{
+						Type: manifest.EnvironmentURLType,
+						Name: "MY_ENV_URL",
+					},
+					OAuth: manifest.OAuth{
+						ClientID: manifest.AuthSecret{
+							Name:  "MY_CLIENT_ID",
+							Value: "SECRET!",
+						},
+						ClientSecret: manifest.AuthSecret{
+							Name:  "MY_CLIENT_SECRET",
+							Value: "ALSO SECRET!!!",
+						},
+						TokenEndpoint: &manifest.URLDefinition{
+							Type: manifest.EnvironmentURLType,
+							Name: "TOKEN_ENDPOINT",
+						},
+					},
+				},
+			},
+			[]persistence.Account{
+				{
+					Name:        "test",
+					AccountUUID: "95a97c92-7137-4f7a-94ff-f29b54b94a72",
+					ApiUrl: &persistence.Url{
+						Type:  persistence.UrlTypeEnvironment,
+						Value: "MY_ENV_URL",
+					},
+					OAuth: persistence.OAuth{
+						ClientID: persistence.AuthSecret{
+							Type: persistence.TypeEnvironment,
+							Name: "MY_CLIENT_ID",
+						},
+						ClientSecret: persistence.AuthSecret{
+							Type: persistence.TypeEnvironment,
+							Name: "MY_CLIENT_SECRET",
+						},
+						TokenEndpoint: &persistence.Url{
+							Type:  persistence.UrlTypeEnvironment,
+							Value: "TOKEN_ENDPOINT",
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := toWriteableAccounts(tt.given)
+			assert.ElementsMatch(t, tt.want, got)
+		})
+	}
+}
+
+func TestWrite(t *testing.T) {
+	tests := []struct {
+		name                 string
+		accountFeatureActive bool
+		givenManifest        manifest.Manifest
+		wantJSON             string
+	}{
+		{
+			"writes manifest",
+			false,
+			manifest.Manifest{
+				Projects: manifest.ProjectDefinitionByProjectID{
+					"p1": {
+						Name: "p1",
+						Path: "projects/p1",
+					},
+				},
+				Environments: manifest.Environments{
+					"env1": {
+						Name: "env1",
+						URL: manifest.URLDefinition{
+							Value: "https://a.dynatrace.environment",
+						},
+						Group: "group1",
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{
+								Name: "TOKEN_VAR",
+							},
+						},
+					},
+				},
+			},
+			`manifestVersion: "1.0"
+projects:
+- name: p1
+  path: projects/p1
+environmentGroups:
+- name: group1
+  environments:
+  - name: env1
+    url:
+      value: https://a.dynatrace.environment
+    auth:
+      token:
+        type: environment
+        name: TOKEN_VAR
+`,
+		},
+		{
+			"writes manifest 1.1 if account feature is active but account defined",
+			true,
+			manifest.Manifest{
+				Projects: manifest.ProjectDefinitionByProjectID{
+					"p1": {
+						Name: "p1",
+						Path: "projects/p1",
+					},
+				},
+				Environments: manifest.Environments{
+					"env1": {
+						Name: "env1",
+						URL: manifest.URLDefinition{
+							Value: "https://a.dynatrace.environment",
+						},
+						Group: "group1",
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{
+								Name: "TOKEN_VAR",
+							},
+						},
+					},
+				},
+			},
+			`manifestVersion: "1.1"
+projects:
+- name: p1
+  path: projects/p1
+environmentGroups:
+- name: group1
+  environments:
+  - name: env1
+    url:
+      value: https://a.dynatrace.environment
+    auth:
+      token:
+        type: environment
+        name: TOKEN_VAR
+`,
+		},
+		{
+			"writes manifest with accounts if FF active",
+			true,
+			manifest.Manifest{
+				Projects: manifest.ProjectDefinitionByProjectID{
+					"p1": {
+						Name: "p1",
+						Path: "projects/p1",
+					},
+				},
+				Environments: manifest.Environments{
+					"env1": {
+						Name: "env1",
+						URL: manifest.URLDefinition{
+							Value: "https://a.dynatrace.environment",
+						},
+						Group: "group1",
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{
+								Name: "TOKEN_VAR",
+							},
+						},
+					},
+				},
+				Accounts: map[string]manifest.Account{
+					"account_1": {
+						Name:        "account_1",
+						AccountUUID: uuid.MustParse("95a97c92-7137-4f7a-94ff-f29b54b94a72"),
+						OAuth: manifest.OAuth{
+							ClientID: manifest.AuthSecret{
+								Name:  "MY_CLIENT_ID",
+								Value: "SECRET!",
+							},
+							ClientSecret: manifest.AuthSecret{
+								Name:  "MY_CLIENT_SECRET",
+								Value: "ALSO SECRET!!!",
+							},
+						},
+					},
+				},
+			},
+			`manifestVersion: "1.1"
+projects:
+- name: p1
+  path: projects/p1
+environmentGroups:
+- name: group1
+  environments:
+  - name: env1
+    url:
+      value: https://a.dynatrace.environment
+    auth:
+      token:
+        type: environment
+        name: TOKEN_VAR
+accounts:
+- name: account_1
+  accountUUID: 95a97c92-7137-4f7a-94ff-f29b54b94a72
+  oAuth:
+    clientId:
+      type: environment
+      name: MY_CLIENT_ID
+    clientSecret:
+      type: environment
+      name: MY_CLIENT_SECRET
+`,
+		},
+		{
+			"writes manifest with NO accounts if FF inactive",
+			false,
+			manifest.Manifest{
+				Projects: manifest.ProjectDefinitionByProjectID{
+					"p1": {
+						Name: "p1",
+						Path: "projects/p1",
+					},
+				},
+				Environments: manifest.Environments{
+					"env1": {
+						Name: "env1",
+						URL: manifest.URLDefinition{
+							Value: "https://a.dynatrace.environment",
+						},
+						Group: "group1",
+						Auth: manifest.Auth{
+							Token: manifest.AuthSecret{
+								Name: "TOKEN_VAR",
+							},
+						},
+					},
+				},
+				Accounts: map[string]manifest.Account{
+					"account_1": {
+						Name:        "account_1",
+						AccountUUID: uuid.MustParse("95a97c92-7137-4f7a-94ff-f29b54b94a72"),
+						OAuth: manifest.OAuth{
+							ClientID: manifest.AuthSecret{
+								Name:  "MY_CLIENT_ID",
+								Value: "SECRET!",
+							},
+							ClientSecret: manifest.AuthSecret{
+								Name:  "MY_CLIENT_SECRET",
+								Value: "ALSO SECRET!!!",
+							},
+						},
+					},
+				},
+			},
+			`manifestVersion: "1.0"
+projects:
+- name: p1
+  path: projects/p1
+environmentGroups:
+- name: group1
+  environments:
+  - name: env1
+    url:
+      value: https://a.dynatrace.environment
+    auth:
+      token:
+        type: environment
+        name: TOKEN_VAR
+`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.accountFeatureActive {
+				t.Setenv(featureflags.AccountManagement().EnvName(), "true")
+			}
+
+			c := Context{
+				Fs:           afero.NewMemMapFs(),
+				ManifestPath: "manifest.yaml",
+			}
+			err := Write(&c, tt.givenManifest)
+			assert.NoError(t, err)
+
+			exists, err := afero.Exists(c.Fs, c.ManifestPath)
+			assert.True(t, exists)
+			assert.NoError(t, err)
+			got, err := afero.ReadFile(c.Fs, c.ManifestPath)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantJSON, string(got))
 		})
 	}
 }

@@ -74,15 +74,15 @@ func Write(context *Context, manifestToWrite manifest.Manifest) error {
 	projects := toWriteableProjects(manifestToWrite.Projects)
 	groups := toWriteableEnvironmentGroups(manifestToWrite.Environments)
 
-	manifestVersion := "1.0"
-	if featureflags.AccountManagement().Enabled() {
-		manifestVersion = version.ManifestVersion
-	}
-
 	m := persistence.Manifest{
-		ManifestVersion:   manifestVersion,
+		ManifestVersion:   "1.0", // we default to old version unless account management FF is active
 		Projects:          projects,
 		EnvironmentGroups: groups,
+	}
+
+	if featureflags.AccountManagement().Enabled() {
+		m.ManifestVersion = version.ManifestVersion
+		m.Accounts = toWriteableAccounts(manifestToWrite.Accounts)
 	}
 
 	return persistManifestToDisk(context, m)
@@ -225,4 +225,39 @@ func getOAuthCredentials(a *manifest.OAuth) *persistence.OAuth {
 		},
 		TokenEndpoint: te,
 	}
+}
+
+func toWriteableAccounts(accounts map[string]manifest.Account) []persistence.Account {
+	var out []persistence.Account
+	for _, account := range accounts {
+
+		var apiURL *persistence.Url
+		if account.ApiUrl != nil {
+			url := toWriteableURL(*account.ApiUrl)
+			apiURL = &url
+		}
+
+		oauth := persistence.OAuth{
+			ClientID: persistence.AuthSecret{
+				Type: persistence.TypeEnvironment,
+				Name: account.OAuth.ClientID.Name,
+			},
+			ClientSecret: persistence.AuthSecret{
+				Type: persistence.TypeEnvironment,
+				Name: account.OAuth.ClientSecret.Name,
+			},
+		}
+		if account.OAuth.TokenEndpoint != nil {
+			url := toWriteableURL(*account.OAuth.TokenEndpoint)
+			oauth.TokenEndpoint = &url
+		}
+
+		out = append(out, persistence.Account{
+			Name:        account.Name,
+			AccountUUID: account.AccountUUID.String(),
+			ApiUrl:      apiURL,
+			OAuth:       oauth,
+		})
+	}
+	return out
 }
