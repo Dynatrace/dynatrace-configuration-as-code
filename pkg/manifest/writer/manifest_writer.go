@@ -154,7 +154,7 @@ func toWriteableEnvironmentGroups(environments map[string]manifest.EnvironmentDe
 	for name, env := range environments {
 		e := persistence.Environment{
 			Name: name,
-			URL:  toWriteableURL(env),
+			URL:  toWriteableURL(env.URL),
 			Auth: getAuth(env),
 		}
 
@@ -175,16 +175,16 @@ func getAuth(env manifest.EnvironmentDefinition) persistence.Auth {
 	}
 }
 
-func toWriteableURL(environment manifest.EnvironmentDefinition) persistence.Url {
-	if environment.URL.Type == manifest.EnvironmentURLType {
+func toWriteableURL(url manifest.URLDefinition) persistence.Url {
+	if url.Type == manifest.EnvironmentURLType {
 		return persistence.Url{
 			Type:  persistence.UrlTypeEnvironment,
-			Value: environment.URL.Name,
+			Value: url.Name,
 		}
 	}
 
 	return persistence.Url{
-		Value: environment.URL.Value,
+		Value: url.Value,
 	}
 }
 
@@ -210,17 +210,8 @@ func getOAuthCredentials(a *manifest.OAuth) *persistence.OAuth {
 
 	var te *persistence.Url
 	if a.TokenEndpoint != nil {
-		switch a.TokenEndpoint.Type {
-		case manifest.ValueURLType:
-			te = &persistence.Url{
-				Value: a.TokenEndpoint.Value,
-			}
-		case manifest.EnvironmentURLType:
-			te = &persistence.Url{
-				Type:  persistence.UrlTypeEnvironment,
-				Value: a.TokenEndpoint.Name,
-			}
-		}
+		url := toWriteableURL(*a.TokenEndpoint)
+		te = &url
 	}
 
 	return &persistence.OAuth{

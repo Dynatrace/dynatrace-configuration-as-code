@@ -376,22 +376,15 @@ func Test_toWriteableEnvironmentGroups(t *testing.T) {
 func Test_toWriteableUrl(t *testing.T) {
 	tests := []struct {
 		name  string
-		input manifest.EnvironmentDefinition
+		input manifest.URLDefinition
 		want  persistence.Url
 	}{
 		{
 			"correctly transforms env var Url",
-			manifest.EnvironmentDefinition{
-				Name: "NAME",
-				URL: manifest.URLDefinition{
-					Type:  manifest.EnvironmentURLType,
-					Name:  "{{ .Env.VARIABLE }}",
-					Value: "Some previously resolved value",
-				},
-				Group: "GROUP",
-				Auth: manifest.Auth{
-					Token: manifest.AuthSecret{},
-				},
+			manifest.URLDefinition{
+				Type:  manifest.EnvironmentURLType,
+				Name:  "{{ .Env.VARIABLE }}",
+				Value: "Some previously resolved value",
 			},
 			persistence.Url{
 				Type:  persistence.UrlTypeEnvironment,
@@ -400,16 +393,9 @@ func Test_toWriteableUrl(t *testing.T) {
 		},
 		{
 			"correctly transforms value Url",
-			manifest.EnvironmentDefinition{
-				Name: "NAME",
-				URL: manifest.URLDefinition{
-					Type:  manifest.ValueURLType,
-					Value: "www.an.Url",
-				},
-				Group: "GROUP",
-				Auth: manifest.Auth{
-					Token: manifest.AuthSecret{},
-				},
+			manifest.URLDefinition{
+				Type:  manifest.ValueURLType,
+				Value: "www.an.Url",
 			},
 			persistence.Url{
 				Value: "www.an.Url",
@@ -417,15 +403,8 @@ func Test_toWriteableUrl(t *testing.T) {
 		},
 		{
 			"defaults to value Url if no type is defined",
-			manifest.EnvironmentDefinition{
-				Name: "NAME",
-				URL: manifest.URLDefinition{
-					Value: "www.an.Url",
-				},
-				Group: "GROUP",
-				Auth: manifest.Auth{
-					Token: manifest.AuthSecret{},
-				},
+			manifest.URLDefinition{
+				Value: "www.an.Url",
 			},
 			persistence.Url{
 				Value: "www.an.Url",
