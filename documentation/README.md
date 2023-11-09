@@ -62,3 +62,10 @@ Example:
 
 2. Delete the versioned docs directory. Example: `documentation/versioned_docs/version-1.8.0`.
 3. Delete the versioned sidebars file. Example: `documentation/versioned_sidebars/version-1.8.0-sidebars.json`.
+
+
+# Build and view docs locally
+
+1. Install yarn
+2. Run `yarn install` to install [docusaurus](https://docusaurus.io/)
+3. Run `yarn start` to build and serve the documentation page locally
