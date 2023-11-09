@@ -5,7 +5,17 @@ title: Monaco Documentation
 slug: /
 ---
 
-# Welcome to the Monaco docs
+# Welcome to the Documentation for Monaco 1.8.x
+
+:::caution
+**Monaco 1.x is deprecated by Monaco 2.x since April 2023.**
+
+**This documentation only exists for reference purposes. We strongly suggest you upgrade!**
+
+Take a look at [the current documentation](https://docs.dynatrace.com/docs/shortlink/configuration-as-code)!
+
+Or jump directly into [the step-by-step migration guide](https://docs.dynatrace.com/docs/shortlink/configuration-as-code-migrate-to-v2)
+:::
 
 <p>
 Monaco is a configuration as code tool that allows you to create, update and version your observability and security configurations in Dynatrace efficiently and at scale. Initially the focus was on "monitoring as code" hence the name Monaco.
