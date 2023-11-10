@@ -28,6 +28,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account"
+	accountLoader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/loader"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
@@ -122,9 +123,9 @@ func loadAccountManagementResources(fs afero.Fs, projs manifest.ProjectDefinitio
 
 	// load project content
 	for _, p := range projs {
-		if a, err := account.Load(fs, p.Path); err != nil {
+		if a, err := accountLoader.Load(fs, p.Path); err != nil {
 			errs = append(errs, err)
-		} else if err := account.Validate(a); err != nil {
+		} else if err := accountLoader.Validate(a); err != nil {
 			errs = append(errs, err)
 		} else {
 			resources[p.Name] = a

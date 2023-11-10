@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package account
+package loader
 
 import (
 	"github.com/spf13/afero"

@@ -14,17 +14,20 @@
  * limitations under the License.
  */
 
-package account
+package loader
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account"
+)
 
 // Validate checks the references in the provided AMResources instance to ensure
 // that all referenced groups and policies exist. It iterates through the users,
 // environment policies, and account policies, validating their references.
-func Validate(res *AMResources) error {
+func Validate(res *account.AMResources) error {
 	for _, user := range res.Users {
 		for _, groupRef := range user.Groups {
-			if err := refCheck(groupRef, res.GroupExists); err != nil {
+			if err := refCheck(res, groupRef, groupExists); err != nil {
 				return err
 			}
 		}
@@ -34,14 +37,14 @@ func Validate(res *AMResources) error {
 		// check references in environment policies
 		for _, env := range group.Environment {
 			for _, policyRef := range env.Policies {
-				if err := refCheck(policyRef, res.PolicyExists); err != nil {
+				if err := refCheck(res, policyRef, policyExists); err != nil {
 					return err
 				}
 			}
 		}
 		// check references in account policies
 		for _, policyRef := range group.Account.Policies {
-			if err := refCheck(policyRef, res.PolicyExists); err != nil {
+			if err := refCheck(res, policyRef, policyExists); err != nil {
 				return err
 			}
 		}
@@ -49,13 +52,13 @@ func Validate(res *AMResources) error {
 	return nil
 }
 
-func refCheck(elem any, refCheckFn func(string) bool) error {
-	if reference, isCustomRef := elem.(Reference); isCustomRef {
+func refCheck(res *account.AMResources, elem any, refCheckFn func(*account.AMResources, string) bool) error {
+	if reference, isCustomRef := elem.(account.Reference); isCustomRef {
 		if reference.Id == "" {
 			return fmt.Errorf("error validating account resources: %w", ErrIdFieldMissing)
 		}
 
-		refExists := refCheckFn(reference.Id)
+		refExists := refCheckFn(res, reference.Id)
 		if !refExists {
 			return fmt.Errorf("error validating account resources with id %q: %w", reference.Id, ErrRefMissing)
 		}
@@ -63,12 +66,12 @@ func refCheck(elem any, refCheckFn func(string) bool) error {
 	return nil
 }
 
-func (a *AMResources) GroupExists(id string) bool {
+func groupExists(a *account.AMResources, id string) bool {
 	_, exists := a.Groups[id]
 	return exists
 }
 
-func (a *AMResources) PolicyExists(id string) bool {
+func policyExists(a *account.AMResources, id string) bool {
 	_, exists := a.Policies[id]
 	return exists
 

@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package account
+package loader
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/exp/maps"
@@ -46,13 +47,13 @@ func TestLoad(t *testing.T) {
 		assert.Len(t, loaded.Groups, 1)
 		assert.NotNil(t, loaded.Groups["monaco-group"].Account)
 		assert.Len(t, loaded.Groups["monaco-group"].Account.Policies, 2)
-		assert.IsType(t, Reference{}, loaded.Groups["monaco-group"].Account.Policies[0])
+		assert.IsType(t, account.Reference{}, loaded.Groups["monaco-group"].Account.Policies[0])
 		assert.IsType(t, "", loaded.Groups["monaco-group"].Account.Policies[1])
 		assert.NotNil(t, loaded.Groups["monaco-group"].Environment)
 		assert.Len(t, loaded.Groups["monaco-group"].Environment, 1)
 		assert.Equal(t, "vsy13800", loaded.Groups["monaco-group"].Environment[0].Name)
 		assert.Len(t, loaded.Groups["monaco-group"].Environment[0].Policies, 2)
-		assert.IsType(t, Reference{}, loaded.Groups["monaco-group"].Environment[0].Policies[0])
+		assert.IsType(t, account.Reference{}, loaded.Groups["monaco-group"].Environment[0].Policies[0])
 		assert.IsType(t, "", loaded.Groups["monaco-group"].Environment[0].Policies[1])
 		assert.Len(t, loaded.Policies, 2)
 	})
@@ -82,10 +83,10 @@ func TestLoad(t *testing.T) {
 
 	t.Run("root folder not found", func(t *testing.T) {
 		result, err := Load(afero.NewOsFs(), "test-resources/non-existent-folder")
-		assert.Equal(t, &AMResources{
-			Policies: make(map[string]Policy, 0),
-			Groups:   make(map[string]Group, 0),
-			Users:    make(map[string]User, 0),
+		assert.Equal(t, &account.AMResources{
+			Policies: make(map[string]account.Policy, 0),
+			Groups:   make(map[string]account.Group, 0),
+			Users:    make(map[string]account.User, 0),
 		}, result)
 		assert.NoError(t, err)
 	})
