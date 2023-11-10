@@ -20,4 +20,3 @@ import "errors"
 
 var ErrRefMissing = errors.New("no referenced target found")
 var ErrIdFieldMissing = errors.New("no ref id field found")
-var ErrIdFieldNoString = errors.New("ref id field is not a string")

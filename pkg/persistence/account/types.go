@@ -72,4 +72,8 @@ type (
 		Email  string `mapstructure:"email"`
 		Groups []any  `mapstructure:"groups"`
 	}
+	Reference struct {
+		Type string `mapstructure:"type"`
+		Id   string `mapstructure:"id"`
+	}
 )
