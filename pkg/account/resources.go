@@ -27,11 +27,12 @@ type (
 		Users    map[UserId]User
 	}
 	Policy struct {
-		ID          string
-		Name        string
-		Level       any
-		Description string
-		Policy      string
+		ID             string
+		Name           string
+		Level          any
+		Description    string
+		Policy         string
+		OriginObjectID string
 	}
 	PolicyLevelAccount struct {
 		Type string
@@ -48,6 +49,7 @@ type (
 		Account        *Account
 		Environment    []Environment
 		ManagementZone []ManagementZone
+		OriginObjectID string
 	}
 	Account struct {
 		Permissions []any
