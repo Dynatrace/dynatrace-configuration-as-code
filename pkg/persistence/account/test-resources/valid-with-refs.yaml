@@ -1,0 +1,37 @@
+users:
+  - email: the-user@gmail.com
+    groups:
+      - type: reference
+        id: monaco-group
+
+groups:
+  - name: Monaco Test Group
+    id: monaco-group
+    description: Just a Monaco test group
+    account:
+      policies:
+        - type: reference
+          id: monaco-policy
+        - default
+    environment:
+      - name: vsy13800
+        policies:
+          - type: reference
+            id: monaco-policy
+          - defaultenv
+policies:
+  - name: Monaco Test Policy
+    id: monaco-policy
+    level:
+      type: account
+    description: Just a monaco test policy
+    policy: |-
+      ALLOW automation:workflows:read;
+  - name: Monaco Test Policy 2
+    id: monaco-policy-2
+    level:
+      type: environment
+      environment: vsy13800
+    description: Just a monaco test policy 2
+    policy: |-
+      ALLOW automation:workflows:read;

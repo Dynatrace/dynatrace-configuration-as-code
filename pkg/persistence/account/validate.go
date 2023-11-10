@@ -50,18 +50,14 @@ func Validate(res *AMResources) error {
 }
 
 func refCheck(elem any, refCheckFn func(string) bool) error {
-	if reference, isCustomRef := elem.(anyMap); isCustomRef {
-		idField, hasIdField := reference["id"]
-		if !hasIdField {
+	if reference, isCustomRef := elem.(Reference); isCustomRef {
+		if reference.Id == "" {
 			return fmt.Errorf("error validating account resources: %w", ErrIdFieldMissing)
 		}
-		idFieldStr, isIdFieldStr := idField.(string)
-		if !isIdFieldStr {
-			return fmt.Errorf("error validating account resources: %w", ErrIdFieldNoString)
-		}
-		refExists := refCheckFn(idFieldStr)
+
+		refExists := refCheckFn(reference.Id)
 		if !refExists {
-			return fmt.Errorf("error validating account resources with id %q: %w", idFieldStr, ErrRefMissing)
+			return fmt.Errorf("error validating account resources with id %q: %w", reference.Id, ErrRefMissing)
 		}
 	}
 	return nil

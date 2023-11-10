@@ -30,9 +30,9 @@ import (
 // groups, and users data, and organizes them into a AMResources struct, which is then returned.
 func Load(fs afero.Fs, rootPath string) (*AMResources, error) {
 	resources := &AMResources{
-		Policies: make(map[string]Policy, 0),
-		Groups:   make(map[string]Group, 0),
-		Users:    make(map[string]User, 0),
+		Policies: make(map[string]Policy),
+		Groups:   make(map[string]Group),
+		Users:    make(map[string]User),
 	}
 
 	yamlFilePaths, err := files.FindYamlFiles(fs, rootPath)
@@ -59,6 +59,24 @@ func Load(fs afero.Fs, rootPath string) (*AMResources, error) {
 			if _, exists := resources.Policies[pol.ID]; exists {
 				return nil, fmt.Errorf("found duplicate policy with id %q", pol.ID)
 			}
+			type PolicyLevel struct {
+				Type        string `mapstructure:"type"`
+				Environment string `mapstructure:"environment"`
+			}
+			var level PolicyLevel
+			if err := mapstructure.Decode(pol.Level, &level); err != nil {
+				return nil, err
+			}
+
+			if level.Type == "account" {
+				pol.Level = PolicyLevelAccount{Type: "account"}
+			}
+			if level.Type == "environment" {
+				pol.Level = PolicyLevelEnvironment{
+					Type:        "environment",
+					Environment: level.Environment,
+				}
+			}
 			resources.Policies[pol.ID] = pol
 		}
 
@@ -70,6 +88,44 @@ func Load(fs afero.Fs, rootPath string) (*AMResources, error) {
 		for _, gr := range groups.Groups {
 			if _, exists := resources.Groups[gr.ID]; exists {
 				return nil, fmt.Errorf("found duplicate group with id %q", gr.ID)
+			}
+
+			//---  parsing refs
+			if gr.Account != nil {
+				var typedPolicies []any
+				for _, pol := range gr.Account.Policies {
+					if polStr, ok := pol.(string); ok {
+						typedPolicies = append(typedPolicies, polStr)
+						continue
+					}
+					var reference Reference
+					if err = mapstructure.Decode(pol, &reference); err != nil {
+						return nil, err
+					}
+					typedPolicies = append(typedPolicies, reference)
+				}
+				gr.Account.Policies = typedPolicies
+			}
+
+			if gr.Environment != nil {
+				var typedEnvs []Environment
+				for _, env := range gr.Environment {
+					var typedPolicies []any
+					for _, pol := range env.Policies {
+						if polStr, ok := pol.(string); ok {
+							typedPolicies = append(typedPolicies, polStr)
+							continue
+						}
+						var reference Reference
+						if err = mapstructure.Decode(pol, &reference); err != nil {
+							return nil, err
+						}
+						typedPolicies = append(typedPolicies, reference)
+					}
+					env.Policies = typedPolicies
+					typedEnvs = append(typedEnvs, env)
+				}
+				gr.Environment = typedEnvs
 			}
 			resources.Groups[gr.ID] = gr
 		}
@@ -83,10 +139,23 @@ func Load(fs afero.Fs, rootPath string) (*AMResources, error) {
 			if _, exists := resources.Users[us.Email]; exists {
 				return nil, fmt.Errorf("found duplicate user with id %q", us.Email)
 			}
+
+			typedGroups := make([]any, 0)
+			for _, gr := range us.Groups {
+				if grStr, ok := gr.(string); ok {
+					typedGroups = append(typedGroups, grStr)
+					continue
+				}
+				var reference Reference
+				if err = mapstructure.Decode(gr, &reference); err != nil {
+					return nil, err
+				}
+				typedGroups = append(typedGroups, reference)
+			}
+			us.Groups = typedGroups
 			resources.Users[us.Email] = us
 		}
 	}
-
 	return resources, nil
 }
 

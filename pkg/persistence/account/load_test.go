@@ -19,6 +19,7 @@ package account
 import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/exp/maps"
 	"testing"
 )
 
@@ -29,6 +30,31 @@ func TestLoad(t *testing.T) {
 		assert.Len(t, loaded.Users, 1)
 		assert.Len(t, loaded.Groups, 1)
 		assert.Len(t, loaded.Policies, 1)
+		assert.Len(t, maps.Values(loaded.Groups)[0].Account.Policies, 1)
+		assert.Len(t, maps.Values(loaded.Groups)[0].Account.Permissions, 1)
+		assert.Len(t, maps.Values(loaded.Groups)[0].Environment, 1)
+		assert.Len(t, maps.Values(loaded.Groups)[0].Environment[0].Policies, 2)
+		assert.Len(t, maps.Values(loaded.Groups)[0].Environment[0].Permissions, 1)
+		assert.Len(t, maps.Values(loaded.Groups)[0].ManagementZone, 1)
+		assert.Len(t, maps.Values(loaded.Groups)[0].ManagementZone[0].Permissions, 1)
+
+	})
+
+	t.Run("Load single file - with refs", func(t *testing.T) {
+		loaded, err := Load(afero.NewOsFs(), "test-resources/valid-with-refs.yaml")
+		assert.NoError(t, err)
+		assert.Len(t, loaded.Groups, 1)
+		assert.NotNil(t, loaded.Groups["monaco-group"].Account)
+		assert.Len(t, loaded.Groups["monaco-group"].Account.Policies, 2)
+		assert.IsType(t, Reference{}, loaded.Groups["monaco-group"].Account.Policies[0])
+		assert.IsType(t, "", loaded.Groups["monaco-group"].Account.Policies[1])
+		assert.NotNil(t, loaded.Groups["monaco-group"].Environment)
+		assert.Len(t, loaded.Groups["monaco-group"].Environment, 1)
+		assert.Equal(t, "vsy13800", loaded.Groups["monaco-group"].Environment[0].Name)
+		assert.Len(t, loaded.Groups["monaco-group"].Environment[0].Policies, 2)
+		assert.IsType(t, Reference{}, loaded.Groups["monaco-group"].Environment[0].Policies[0])
+		assert.IsType(t, "", loaded.Groups["monaco-group"].Environment[0].Policies[1])
+		assert.Len(t, loaded.Policies, 2)
 	})
 
 	t.Run("Load multiple files", func(t *testing.T) {
@@ -63,5 +89,4 @@ func TestLoad(t *testing.T) {
 		}, result)
 		assert.NoError(t, err)
 	})
-
 }
