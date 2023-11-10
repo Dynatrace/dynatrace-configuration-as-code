@@ -26,9 +26,6 @@ type (
 		Groups   map[GroupId]Group
 		Users    map[UserId]User
 	}
-	Policies struct {
-		Policies []Policy
-	}
 	Policy struct {
 		ID          string
 		Name        string
@@ -43,9 +40,7 @@ type (
 		Type        string
 		Environment string
 	}
-	Groups struct {
-		Groups []Group
-	}
+
 	Group struct {
 		ID             string
 		Name           string
@@ -68,9 +63,7 @@ type (
 		ManagementZone string
 		Permissions    []any
 	}
-	Users struct {
-		Users []User
-	}
+
 	User struct {
 		Email  string
 		Groups []any
