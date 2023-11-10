@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package account
+package loader
 
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
@@ -28,11 +29,11 @@ import (
 // Load loads account management resources from YAML configuration files
 // located within the specified root directory path. It parses the YAML files, extracts policies,
 // groups, and users data, and organizes them into a AMResources struct, which is then returned.
-func Load(fs afero.Fs, rootPath string) (*AMResources, error) {
-	resources := &AMResources{
-		Policies: make(map[string]Policy),
-		Groups:   make(map[string]Group),
-		Users:    make(map[string]User),
+func Load(fs afero.Fs, rootPath string) (*account.AMResources, error) {
+	resources := &account.AMResources{
+		Policies: make(map[string]account.Policy),
+		Groups:   make(map[string]account.Group),
+		Users:    make(map[string]account.User),
 	}
 
 	yamlFilePaths, err := files.FindYamlFiles(fs, rootPath)
@@ -50,7 +51,7 @@ func Load(fs afero.Fs, rootPath string) (*AMResources, error) {
 			return nil, err
 		}
 
-		var policies Policies
+		var policies account.Policies
 		err = mapstructure.Decode(content, &policies)
 		if err != nil {
 			return nil, err
@@ -69,10 +70,10 @@ func Load(fs afero.Fs, rootPath string) (*AMResources, error) {
 			}
 
 			if level.Type == "account" {
-				pol.Level = PolicyLevelAccount{Type: "account"}
+				pol.Level = account.PolicyLevelAccount{Type: "account"}
 			}
 			if level.Type == "environment" {
-				pol.Level = PolicyLevelEnvironment{
+				pol.Level = account.PolicyLevelEnvironment{
 					Type:        "environment",
 					Environment: level.Environment,
 				}
@@ -80,7 +81,7 @@ func Load(fs afero.Fs, rootPath string) (*AMResources, error) {
 			resources.Policies[pol.ID] = pol
 		}
 
-		var groups Groups
+		var groups account.Groups
 		err = mapstructure.Decode(content, &groups)
 		if err != nil {
 			return nil, err
@@ -98,7 +99,7 @@ func Load(fs afero.Fs, rootPath string) (*AMResources, error) {
 						typedPolicies = append(typedPolicies, polStr)
 						continue
 					}
-					var reference Reference
+					var reference account.Reference
 					if err = mapstructure.Decode(pol, &reference); err != nil {
 						return nil, err
 					}
@@ -108,7 +109,7 @@ func Load(fs afero.Fs, rootPath string) (*AMResources, error) {
 			}
 
 			if gr.Environment != nil {
-				var typedEnvs []Environment
+				var typedEnvs []account.Environment
 				for _, env := range gr.Environment {
 					var typedPolicies []any
 					for _, pol := range env.Policies {
@@ -116,7 +117,7 @@ func Load(fs afero.Fs, rootPath string) (*AMResources, error) {
 							typedPolicies = append(typedPolicies, polStr)
 							continue
 						}
-						var reference Reference
+						var reference account.Reference
 						if err = mapstructure.Decode(pol, &reference); err != nil {
 							return nil, err
 						}
@@ -130,7 +131,7 @@ func Load(fs afero.Fs, rootPath string) (*AMResources, error) {
 			resources.Groups[gr.ID] = gr
 		}
 
-		var users Users
+		var users account.Users
 		err = mapstructure.Decode(content, &users)
 		if err != nil {
 			return nil, err
@@ -146,7 +147,7 @@ func Load(fs afero.Fs, rootPath string) (*AMResources, error) {
 					typedGroups = append(typedGroups, grStr)
 					continue
 				}
-				var reference Reference
+				var reference account.Reference
 				if err = mapstructure.Decode(gr, &reference); err != nil {
 					return nil, err
 				}
