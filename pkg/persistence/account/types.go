@@ -27,11 +27,12 @@ type (
 		Policies []Policy `mapstructure:"policies"`
 	}
 	Policy struct {
-		ID          string      `mapstructure:"id"`
-		Name        string      `mapstructure:"name"`
-		Level       interface{} `mapstructure:"level"` // either PolicyLevelAccount or PolicyLevelEnvironment
-		Description string      `mapstructure:"description"`
-		Policy      string      `mapstructure:"policy"`
+		ID             string      `mapstructure:"id"`
+		Name           string      `mapstructure:"name"`
+		Level          interface{} `mapstructure:"level"` // either PolicyLevelAccount or PolicyLevelEnvironment
+		Description    string      `mapstructure:"description"`
+		Policy         string      `mapstructure:"policy"`
+		OriginObjectID string      `mapstructure:"originObjectId" yaml:"originObjectId,omitempty"`
 	}
 	PolicyLevelAccount struct {
 		Type string `mapstructure:"type"`
@@ -50,6 +51,7 @@ type (
 		Account        *Account         `mapstructure:"account"`
 		Environment    []Environment    `mapstructure:"environment"`
 		ManagementZone []ManagementZone `mapstructure:"managementZone" yaml:"managementZone"`
+		OriginObjectID string           `mapstructure:"originObjectId" yaml:"originObjectId,omitempty"`
 	}
 	Account struct {
 		Permissions []any `mapstructure:"permissions"`

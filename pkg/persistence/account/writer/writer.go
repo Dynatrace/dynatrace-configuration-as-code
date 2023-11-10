@@ -81,11 +81,12 @@ func toPersistencePolicies(policies map[string]account.Policy) persistence.Polic
 	out := make([]persistence.Policy, 0)
 	for _, v := range policies {
 		out = append(out, persistence.Policy{
-			ID:          v.ID,
-			Name:        v.Name,
-			Level:       v.Level,
-			Description: v.Description,
-			Policy:      v.Policy,
+			ID:             v.ID,
+			Name:           v.Name,
+			Level:          v.Level,
+			Description:    v.Description,
+			Policy:         v.Policy,
+			OriginObjectID: v.OriginObjectID,
 		})
 	}
 	return persistence.Policies{
@@ -124,6 +125,7 @@ func toPersistenceGroups(groups map[string]account.Group) persistence.Groups {
 			Account:        &a,
 			Environment:    envs,
 			ManagementZone: mzs,
+			OriginObjectID: v.OriginObjectID,
 		})
 	}
 	return persistence.Groups{

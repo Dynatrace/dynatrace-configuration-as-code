@@ -243,6 +243,107 @@ func TestWriteAccountResources(t *testing.T) {
 `,
 			},
 		},
+		{
+			"with origin objectIDs",
+			account.Resources{
+				Users: map[account.UserId]account.User{
+					"monaco@dynatrace.com": account.User{
+						Email: "monaco@dynatrace.com",
+						Groups: []any{
+							account.Reference{
+								Type: "reference",
+								Id:   "my-group",
+							},
+							"Log viewer",
+						},
+					},
+				},
+				Groups: map[account.GroupId]account.Group{
+					"my-group": {
+						ID:             "my-group",
+						OriginObjectID: "ObjectID-123",
+						Name:           "My Group",
+						Description:    "This is my group",
+						Account: &account.Account{
+							Permissions: []any{"View my Group Stuff"},
+							Policies:    []any{"Request my Group Stuff"},
+						},
+						Environment: []account.Environment{
+							{
+								Name:        "myenv123",
+								Permissions: []any{"View environment"},
+								Policies: []any{
+									"View environment",
+									account.Reference{
+										Type: "reference",
+										Id:   "my-policy",
+									},
+								},
+							},
+						},
+						ManagementZone: []account.ManagementZone{
+							{
+								Environment:    "myenv123",
+								ManagementZone: "My MZone",
+								Permissions:    []any{"Do Stuff"},
+							},
+						},
+					},
+				},
+				Policies: map[account.PolicyId]account.Policy{
+					"my-policy": {
+						ID:             "my-policy",
+						OriginObjectID: "ObjectID-456",
+						Name:           "My Policy",
+						Level:          account.PolicyLevelAccount{Type: "account"},
+						Description:    "This is my policy. There's many like it, but this one is mine.",
+						Policy:         "ALLOW a:b:c;",
+					},
+				},
+			},
+			want{
+				users: `users:
+- email: monaco@dynatrace.com
+  groups:
+  - type: reference
+    id: my-group
+  - Log viewer
+`,
+				groups: `groups:
+- id: my-group
+  name: My Group
+  description: This is my group
+  account:
+    permissions:
+    - View my Group Stuff
+    policies:
+    - Request my Group Stuff
+  environment:
+  - name: myenv123
+    permissions:
+    - View environment
+    policies:
+    - View environment
+    - type: reference
+      id: my-policy
+  managementZone:
+  - environment: myenv123
+    managementZone: My MZone
+    permissions:
+    - Do Stuff
+  originObjectId: ObjectID-123
+`,
+				policies: `policies:
+- id: my-policy
+  name: My Policy
+  level:
+    type: account
+  description: This is my policy. There's many like it, but this one is mine.
+  policy: ALLOW a:b:c;
+  originObjectId: ObjectID-456
+`,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
