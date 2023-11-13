@@ -1,3 +1,5 @@
+//go:build unit
+
 /*
  * @license
  * Copyright 2023 Dynatrace LLC
@@ -13,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package writer_test
 
 import (
