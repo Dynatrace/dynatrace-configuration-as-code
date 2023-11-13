@@ -421,13 +421,13 @@ func TestDeleteBuckets(t *testing.T) {
 			if req.Method == http.MethodDelete && strings.Contains(req.RequestURI, "bucket-definitions") {
 				assert.True(t, strings.HasSuffix(req.URL.Path, "/project_id1"))
 				rw.WriteHeader(http.StatusOK)
-				rw.Write(deletingBucketResponse)
+				_, _ = rw.Write(deletingBucketResponse)
 				return
 			}
 			if req.Method == http.MethodGet && getCalls < 5 {
 				assert.True(t, strings.HasSuffix(req.URL.Path, "/project_id1"))
 				rw.WriteHeader(http.StatusOK)
-				rw.Write(deletingBucketResponse)
+				_, _ = rw.Write(deletingBucketResponse)
 				getCalls++
 				return
 			} else if req.Method == http.MethodGet {
