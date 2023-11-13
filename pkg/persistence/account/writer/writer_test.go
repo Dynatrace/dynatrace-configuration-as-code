@@ -353,7 +353,7 @@ func TestWriteAccountResources(t *testing.T) {
 				OutputFolder:  "test/",
 				ProjectFolder: "project/",
 			}
-			err := writer.WriteAccountResources(c, tt.givenResources)
+			err := writer.Write(c, tt.givenResources)
 			assert.NoError(t, err)
 
 			expectedFolder, _ := filepath.Abs(c.OutputFolder)

@@ -26,13 +26,24 @@ import (
 	"path/filepath"
 )
 
+// Context for this account resource writer, defining the filesystem and paths to create resources at
 type Context struct {
-	Fs            afero.Fs
-	OutputFolder  string
+	// Fs to use when writing files
+	Fs afero.Fs
+	// OutputFolder to write an account resources ProjectFolder into. If this is not an absolute path, Write will transform it into one using filepath.Abs.
+	OutputFolder string
+	// ProjectFolder to create and fill with account resources YAML files
 	ProjectFolder string
 }
 
-func WriteAccountResources(writerContext Context, resources account.Resources) error {
+// Write the given account.Resources to the target filesystem and paths defined by the Context.
+// This will create a folder "filepath.Abs(<writerContext.OutputFolder>)/<writerContext.ProjectFolder>/", and create
+// individual "policies.yaml", "users.yaml" & "groups.yaml" files containing YAML representations of the given account.Resources.
+//
+// Returns an error if any step of transforming or persisting resources fails, but will attempt to write as many files as
+// possible. If policies fail to be written to a file, an error is logged, but groups and users are attempted to be written
+// to files before the method returns with an error.
+func Write(writerContext Context, resources account.Resources) error {
 
 	outputFolder, err := filepath.Abs(writerContext.OutputFolder)
 	if err != nil {

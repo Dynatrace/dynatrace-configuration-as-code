@@ -51,7 +51,7 @@ func TestLoadAndReWriteAccountResources(t *testing.T) {
 		OutputFolder:  "test-folder",
 		ProjectFolder: "test-project",
 	}
-	err = writer.WriteAccountResources(c, inMemResources)
+	err = writer.Write(c, inMemResources)
 	assert.NoError(t, err)
 
 	// ASSERT FILES WRITTEN AS EXPECTED
