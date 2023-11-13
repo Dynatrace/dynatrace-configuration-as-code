@@ -78,7 +78,7 @@ func WriteAccountResources(writerContext Context, resources account.Resources) e
 }
 
 func toPersistencePolicies(policies map[string]account.Policy) persistence.Policies {
-	out := make([]persistence.Policy, 0)
+	out := make([]persistence.Policy, 0, len(policies))
 	for _, v := range policies {
 		out = append(out, persistence.Policy{
 			ID:             v.ID,
@@ -95,7 +95,7 @@ func toPersistencePolicies(policies map[string]account.Policy) persistence.Polic
 }
 
 func toPersistenceGroups(groups map[string]account.Group) persistence.Groups {
-	out := make([]persistence.Group, 0)
+	out := make([]persistence.Group, 0, len(groups))
 	for _, v := range groups {
 		a := persistence.Account{
 			Permissions: v.Account.Permissions,
@@ -134,7 +134,7 @@ func toPersistenceGroups(groups map[string]account.Group) persistence.Groups {
 }
 
 func toPersistenceUsers(users map[string]account.User) persistence.Users {
-	out := make([]persistence.User, 0)
+	out := make([]persistence.User, 0, len(users))
 	for _, v := range users {
 		out = append(out, persistence.User{
 			Email:  v.Email,
