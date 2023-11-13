@@ -19,6 +19,8 @@ package account
 import (
 	"errors"
 	"fmt"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/api/clients/accounts"
+	"github.com/dynatrace/dynatrace-configuration-as-code-core/clients"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/cmdutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/completion"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
@@ -26,15 +28,20 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/deployer"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	accountLoader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/loader"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
+	"golang.org/x/oauth2/clientcredentials"
+	"path"
+	"path/filepath"
 )
 
 type deployOpts struct {
+	workingDir   string
 	manifestName string
 	accountName  string
 	project      string
@@ -59,6 +66,7 @@ func deployCommand(fs afero.Fs) *cobra.Command {
 			}
 
 			opts.manifestName = manifestName
+			opts.workingDir = filepath.Dir(manifestName)
 
 			return deploy(fs, opts)
 		},
@@ -107,23 +115,44 @@ func deploy(fs afero.Fs, opts deployOpts) error {
 	log.Debug("Deploying to accounts: %q", maps.Keys(accs))
 	log.Debug("Deploying projects: %q", maps.Keys(projs))
 
-	resources, errs := loadAccountManagementResources(fs, projs)
+	resources, errs := loadAccountManagementResources(fs, opts.workingDir, projs)
 	if len(errs) > 0 {
 		errutils.PrintErrors(errs)
 		return errors.New("failed to load all account management resources")
 	}
 
-	err := deployer.Deploy(accs, resources, deployer.Options{DryRun: opts.dryRun})
-	return err
+	if opts.dryRun {
+		log.Info("Successfully validated account management resources")
+		return nil
+	}
+
+	accountClients, err := createAccountClients(accs)
+	if err != nil {
+		return fmt.Errorf("failed to create account clients: %w", err)
+	}
+
+	supportedPermissions, err := deployer.DefaultPermissionProvider()
+	if err != nil {
+		return fmt.Errorf("failed to fetch supportedPermissions: %w", err)
+	}
+
+	for accInfo, accClient := range accountClients {
+		accountDeployer := deployer.NewAccountDeployer(deployer.NewClient(accInfo, accClient, supportedPermissions))
+		if err = accountDeployer.Deploy(resources); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-func loadAccountManagementResources(fs afero.Fs, projs manifest.ProjectDefinitionByProjectID) (map[string]*account.Resources, []error) {
+func loadAccountManagementResources(fs afero.Fs, workingDir string, projs manifest.ProjectDefinitionByProjectID) (map[string]*account.Resources, []error) {
 	resources := make(map[string]*account.Resources, len(projs))
 	var errs []error
 
 	// load project content
 	for _, p := range projs {
-		if a, err := accountLoader.Load(fs, p.Path); err != nil {
+		if a, err := accountLoader.Load(fs, path.Join(workingDir, p.Path)); err != nil {
 			errs = append(errs, err)
 		} else {
 			resources[p.Name] = a
@@ -131,4 +160,35 @@ func loadAccountManagementResources(fs afero.Fs, projs manifest.ProjectDefinitio
 	}
 
 	return resources, errs
+}
+
+func createAccountClients(manifestAccounts map[string]manifest.Account) (map[deployer.AccountInfo]*accounts.Client, error) {
+	accClients := make(map[deployer.AccountInfo]*accounts.Client, len(manifestAccounts))
+	for _, acc := range manifestAccounts {
+		oauthCreds := clientcredentials.Config{
+			ClientID:     acc.OAuth.ClientID.Value.Value(),
+			ClientSecret: acc.OAuth.ClientSecret.Value.Value(),
+			TokenURL:     acc.OAuth.GetTokenEndpointValue(),
+		}
+
+		var apiUrl string
+		if acc.ApiUrl == nil || acc.ApiUrl.Value == "" {
+			apiUrl = "https://api.dynatrace.com"
+		} else {
+			apiUrl = acc.ApiUrl.Value
+		}
+		accClient, err := clients.Factory().
+			WithOAuthCredentials(oauthCreds).
+			WithUserAgent(client.DefaultMonacoUserAgent).
+			AccountClient(apiUrl)
+
+		if err != nil {
+			return accClients, err
+		}
+		accClients[deployer.AccountInfo{
+			Name:        acc.Name,
+			AccountUUID: acc.AccountUUID.String(),
+		}] = accClient
+	}
+	return accClients, nil
 }

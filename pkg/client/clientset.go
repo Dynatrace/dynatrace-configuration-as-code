@@ -36,6 +36,8 @@ import (
 	"time"
 )
 
+var DefaultMonacoUserAgent = "Dynatrace Monitoring as Code/" + version.MonitoringAsCode + " " + (runtime.GOOS + " " + runtime.GOARCH)
+
 // ClientSet composes a "full" set of sub-clients to access Dynatrace APIs
 // Each field may be nil, if the ClientSet is partially initialized - e.g. no autClient will be part of a ClientSet
 // created for a 'classic' Dynatrace environment, as Automations are a Platform feature
@@ -72,7 +74,7 @@ type ClientOptions struct {
 
 func (o ClientOptions) getUserAgentString() string {
 	if o.CustomUserAgent == "" {
-		return "Dynatrace Monitoring as Code/" + version.MonitoringAsCode + " " + (runtime.GOOS + " " + runtime.GOARCH)
+		return DefaultMonacoUserAgent
 	}
 	return o.CustomUserAgent
 }

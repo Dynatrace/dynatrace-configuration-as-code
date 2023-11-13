@@ -23,6 +23,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/delete"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/client"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
 	"github.com/spf13/afero"
@@ -160,7 +161,7 @@ func createAccountDeleteClient(a manifest.Account) (delete.Account, error) {
 		apiUrl = a.ApiUrl.Value
 	}
 
-	c, err := clients.Factory().WithOAuthCredentials(oauthCreds).AccountClient(apiUrl)
+	c, err := clients.Factory().WithOAuthCredentials(oauthCreds).WithUserAgent(client.DefaultMonacoUserAgent).AccountClient(apiUrl)
 	if err != nil {
 		return delete.Account{}, err
 	}
