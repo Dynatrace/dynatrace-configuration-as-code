@@ -33,6 +33,7 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version"
 	"golang.org/x/oauth2/clientcredentials"
 	"runtime"
+	"time"
 )
 
 // ClientSet composes a "full" set of sub-clients to access Dynatrace APIs
@@ -162,7 +163,7 @@ func CreatePlatformClientSet(url string, auth PlatformAuth, opts ClientOptions) 
 		clientFactory = clientFactory.WithHTTPListener(&lib.HTTPListener{Callback: trafficLogger.LogToFiles})
 	}
 
-	bucketClient, err := clientFactory.BucketClient()
+	bucketClient, err := clientFactory.BucketClientWithRetrySettings(15, time.Second, 5*time.Minute)
 	if err != nil {
 		return nil, err
 	}
