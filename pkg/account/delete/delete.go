@@ -18,6 +18,7 @@ package delete
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
 )
@@ -44,34 +45,64 @@ type Resources struct {
 	EnvironmentPolicies []EnvironmentPolicy
 }
 
-// AccountResources removes all given Account configurations defined as DeleteEntries from an account using the supplied Client
+// Account defines everything required to access the account management API
+type Account struct {
+	// Name of this account - as defined in the manifest.Manifest
+	Name string
+	// UUID of this account
+	UUID string
+	// APIClient is a Client for authenticated access to delete resources for this Account
+	APIClient Client
+}
+
+func (a Account) String() string {
+	return fmt.Sprintf("%q (%s)", a.Name, a.UUID)
+}
+
+// AccountResources removes all given Resources from the given Account
 // Returns an error if any resource fails to be deleted, but attempts to delete as many resources as possible and only returns an error at the end.
-func AccountResources(ctx context.Context, client Client, resourcesToDelete Resources) error {
+func AccountResources(ctx context.Context, account Account, resourcesToDelete Resources) error {
 
 	deleteErrors := 0
 
 	for _, user := range resourcesToDelete.Users {
-		if err := client.DeleteUser(ctx, user.Email); err != nil {
-			log.Error("Failed to delete user %q from account %q: %v", user.Email, client.GetAccountUUID(), err)
+		if err := account.APIClient.DeleteUser(ctx, user.Email); err != nil && errors.Is(err, NotFoundErr) {
+			log.Info("User %q does not exist for account %s", user.Email, account)
+		} else if err != nil {
+			log.Error("Failed to delete user %q from account %s: %v", user.Email, account, err)
 			deleteErrors++
+		} else {
+			log.Info("Deleted user %q from account %s", user.Email, account)
 		}
 	}
 	for _, group := range resourcesToDelete.Groups {
-		if err := client.DeleteGroup(ctx, group.Name); err != nil {
-			log.Error("Failed to delete group %q from account %q: %v", group.Name, client.GetAccountUUID(), err)
+		if err := account.APIClient.DeleteGroup(ctx, group.Name); err != nil && errors.Is(err, NotFoundErr) {
+			log.Info("Group %q does not exist for account %s", group.Name, account)
+		} else if err != nil {
+			log.Error("Failed to delete group %q from account %s: %v", group.Name, account, err)
 			deleteErrors++
+		} else {
+			log.Info("Deleted group %q from account %s", group.Name, account)
 		}
 	}
 	for _, policy := range resourcesToDelete.AccountPolicies {
-		if err := client.DeleteAccountPolicy(ctx, policy.Name); err != nil {
-			log.Error("Failed to delete account policy %q from account %q: %v", policy.Name, client.GetAccountUUID(), err)
+		if err := account.APIClient.DeleteAccountPolicy(ctx, policy.Name); err != nil && errors.Is(err, NotFoundErr) {
+			log.Info("Policy %q does not exist for account %s", policy.Name, account)
+		} else if err != nil {
+			log.Error("Failed to delete policy %q from account %s: %v", policy.Name, account, err)
 			deleteErrors++
+		} else {
+			log.Info("Deleted policy %q from account %s", policy.Name, account)
 		}
 	}
 	for _, policy := range resourcesToDelete.EnvironmentPolicies {
-		if err := client.DeleteEnvironmentPolicy(ctx, policy.Environment, policy.Name); err != nil {
-			log.Error("Failed to delete policy %q for environment %q: %v", policy.Name, policy.Environment, err)
+		if err := account.APIClient.DeleteEnvironmentPolicy(ctx, policy.Environment, policy.Name); err != nil && errors.Is(err, NotFoundErr) {
+			log.Info("Policy %q does not exist for environment %s", policy.Name, policy.Environment)
+		} else if err != nil {
+			log.Error("Failed to delete policy %q for environment %s: %v", policy.Name, policy.Environment, err)
 			deleteErrors++
+		} else {
+			log.Info("Deleted policy %q for environment %q", policy.Name, policy.Environment)
 		}
 	}
 
