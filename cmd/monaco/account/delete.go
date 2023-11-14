@@ -46,37 +46,14 @@ func deleteCommand(fs afero.Fs) *cobra.Command {
 		PreRun:  cmdutils.SilenceUsageCommand(),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			if !files.IsYamlFileExtension(manifestName) {
-				err := fmt.Errorf("wrong format for manifest file! Expected a .yaml file, but got %s", manifestName)
-				return err
-			}
-
-			if !files.IsYamlFileExtension(deleteFile) {
-				err := fmt.Errorf("wrong format for delete file! Expected a .yaml file, but got %s", deleteFile)
-				return err
-			}
-
-			// Sanitize manifest file path to manifest yaml file
-			manifestName = filepath.Clean(manifestName)
-			absManifestFilePath, err := filepath.Abs(manifestName)
+			m, err := loadManifest(fs, manifestName)
 			if err != nil {
 				return err
 			}
 
-			// Try to load the manifest file
-			m, errs := manifestloader.Load(&manifestloader.Context{
-				Fs:           fs,
-				ManifestPath: absManifestFilePath,
-			})
-			if len(errs) > 0 {
-				errutils.PrintErrors(errs)
-				return fmt.Errorf("error while loading manifest (%s)", absManifestFilePath)
-			}
-
-			// Try to load delete entries from delete file
-			entriesToDelete, err := delete.LoadResourcesToDelete(fs, deleteFile)
+			resourcesToDelete, err := loadResourcesToDelete(fs, deleteFile)
 			if err != nil {
-				return fmt.Errorf("failed to parse delete file (%s): %s", deleteFile, err)
+				return err
 			}
 
 			if len(accounts) == 0 {
@@ -90,14 +67,7 @@ func deleteCommand(fs afero.Fs) *cobra.Command {
 					errOccurred = true
 				}
 
-				c, err := createClient(account)
-				if err != nil {
-					log.Error("Failed to create API client for account %q: %v", name, err)
-					errOccurred = true
-				}
-				err = delete.AccountResources(context.Background(), c, entriesToDelete)
-				if err != nil {
-					log.Error("Failed to delete resources for account %q", name)
+				if err := deleteFromAccount(account, resourcesToDelete); err != nil {
 					errOccurred = true
 				}
 			}
@@ -123,6 +93,57 @@ func deleteCommand(fs afero.Fs) *cobra.Command {
 	}
 
 	return deleteCmd
+}
+
+func loadManifest(fs afero.Fs, manifestName string) (manifest.Manifest, error) {
+	if !files.IsYamlFileExtension(manifestName) {
+		err := fmt.Errorf("wrong format for manifest file! Expected a .yaml file, but got %s", manifestName)
+		return manifest.Manifest{}, err
+	}
+	// Sanitize manifest file path to manifest yaml file
+	manifestName = filepath.Clean(manifestName)
+	absManifestFilePath, err := filepath.Abs(manifestName)
+	if err != nil {
+		return manifest.Manifest{}, err
+	}
+
+	// Try to load the manifest file
+	m, errs := manifestloader.Load(&manifestloader.Context{
+		Fs:           fs,
+		ManifestPath: absManifestFilePath,
+	})
+	if len(errs) > 0 {
+		errutils.PrintErrors(errs)
+		return manifest.Manifest{}, fmt.Errorf("error while loading manifest (%s)", absManifestFilePath)
+	}
+	return m, nil
+}
+
+func loadResourcesToDelete(fs afero.Fs, deleteFile string) (delete.Resources, error) {
+	if !files.IsYamlFileExtension(deleteFile) {
+		err := fmt.Errorf("wrong format for delete file! Expected a .yaml file, but got %s", deleteFile)
+		return delete.Resources{}, err
+	}
+	resources, err := delete.LoadResourcesToDelete(fs, deleteFile)
+	if err != nil {
+		return delete.Resources{}, fmt.Errorf("failed to parse delete file (%s): %w", deleteFile, err)
+	}
+
+	return resources, nil
+}
+
+func deleteFromAccount(account manifest.Account, resourcesToDelete delete.Resources) error {
+	c, err := createClient(account)
+	if err != nil {
+		log.Error("Failed to create API client for account %q: %v", account.Name, err)
+		return err
+	}
+	err = delete.AccountResources(context.Background(), c, resourcesToDelete)
+	if err != nil {
+		log.Error("Failed to delete resources for account %q", account.Name)
+		return err
+	}
+	return nil
 }
 
 func createClient(a manifest.Account) (delete.Client, error) {
