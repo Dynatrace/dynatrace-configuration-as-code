@@ -55,6 +55,7 @@ func NewAccountAPIClient(accountUUID string, restClient *accounts.Client) Client
 // Returns error if any API call fails unless the user is already not present (HTTP 404)
 func (c *AccountAPIClient) DeleteUser(ctx context.Context, email string) error {
 	resp, err := c.client.UserManagementAPI.RemoveUserFromAccount(ctx, c.accountUUID, email).Execute()
+	defer closeResponseBody(resp)
 	if resp != nil && resp.StatusCode == 404 {
 		log.Info("User %q does not exist for account %q", email, c.accountUUID)
 		return nil
@@ -80,6 +81,7 @@ func (c *AccountAPIClient) DeleteGroup(ctx context.Context, name string) error {
 	}
 
 	resp, err := c.client.GroupManagementAPI.DeleteGroup(ctx, c.accountUUID, uuid).Execute()
+	defer closeResponseBody(resp)
 	if resp != nil && resp.StatusCode == 404 {
 		log.Info("Group %q does not exist for account %q", name, c.accountUUID)
 		return nil
@@ -95,6 +97,7 @@ var notFoundErr = errors.New("nothing with given name found")
 
 func (c *AccountAPIClient) getGroupID(ctx context.Context, accountUUID, name string) (string, error) {
 	groups, resp, err := c.client.GroupManagementAPI.GetGroups(ctx, accountUUID).Execute()
+	defer closeResponseBody(resp)
 	if err := handleClientResponseError(resp, err, fmt.Sprintf("failed to fetch UUID for group %q", name)); err != nil {
 		return "", err
 	}
@@ -131,6 +134,7 @@ func (c *AccountAPIClient) deletePolicy(ctx context.Context, levelType string, l
 	}
 
 	resp, err := c.client.PolicyManagementAPI.DeleteLevelPolicy(ctx, levelType, levelID, uuid).Force(true).Execute()
+	defer closeResponseBody(resp)
 	if resp != nil && resp.StatusCode == 404 {
 		log.Info("Policy %q does not exist for %s %q", name, levelType, levelID)
 		return nil
@@ -144,6 +148,7 @@ func (c *AccountAPIClient) deletePolicy(ctx context.Context, levelType string, l
 
 func (c *AccountAPIClient) getPolicyID(ctx context.Context, levelType, levelID, name string) (string, error) {
 	policies, resp, err := c.client.PolicyManagementAPI.GetLevelPolicies(ctx, levelType, levelID).Execute()
+	defer closeResponseBody(resp)
 	if err := handleClientResponseError(resp, err, fmt.Sprintf("failed to fetch UUID for policy %q", name)); err != nil {
 		return "", err
 	}
@@ -173,4 +178,8 @@ func handleClientResponseError(resp *http.Response, clientErr error, errMessage 
 		return fmt.Errorf("%s (HTTP %d): %s", errMessage, resp.StatusCode, string(body))
 	}
 	return nil
+}
+
+func closeResponseBody(resp *http.Response) {
+	_ = resp.Body.Close()
 }
