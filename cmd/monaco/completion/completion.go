@@ -123,6 +123,23 @@ func loadEnvironmentsFromManifest(manifestPath string) ([]string, cobra.ShellCom
 	return maps.Keys(man.Environments), cobra.ShellCompDirectiveDefault
 }
 
+func AccountsByManifestFlag(cmd *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+	return loadAccountsFromManifest(cmd.Flag("manifest").Value.String())
+}
+
+func AccountsByArg0(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
+	return loadAccountsFromManifest(args[0])
+}
+
+func loadAccountsFromManifest(manifestPath string) ([]string, cobra.ShellCompDirective) {
+	man, _ := manifestloader.Load(&manifestloader.Context{
+		Fs:           afero.NewOsFs(),
+		ManifestPath: manifestPath,
+	})
+
+	return maps.Keys(man.Accounts), cobra.ShellCompDirectiveDefault
+}
+
 func ProjectsFromManifest(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
 
 	manifestPath := args[0]
