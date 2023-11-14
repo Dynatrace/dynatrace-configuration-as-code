@@ -95,7 +95,7 @@ func deleteCommand(fs afero.Fs) *cobra.Command {
 					log.Error("Failed to create API client for account %q: %v", name, err)
 					errOccurred = true
 				}
-				err = delete.AccountResources(context.Background(), c, account.AccountUUID.String(), entriesToDelete)
+				err = delete.AccountResources(context.Background(), c, entriesToDelete)
 				if err != nil {
 					log.Error("Failed to delete resources for account %q", name)
 					errOccurred = true
@@ -143,5 +143,5 @@ func createClient(a manifest.Account) (delete.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &delete.AccountAPIClient{Client: c}, nil
+	return delete.NewAccountAPIClient(a.AccountUUID.String(), c), nil
 }

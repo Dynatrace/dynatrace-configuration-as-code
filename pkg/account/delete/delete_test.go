@@ -27,27 +27,40 @@ import (
 )
 
 type testClient struct {
-	userFunc   func(ctx context.Context, accountUUID, email string) error
-	groupFunc  func(ctx context.Context, accountUUID, name string) error
-	policyFunc func(ctx context.Context, levelType, levelID, name string) error
+	AccountUUID           string
+	userFunc              func(ctx context.Context, accountUUID, email string) error
+	groupFunc             func(ctx context.Context, accountUUID, name string) error
+	accountPolicyFunc     func(ctx context.Context, name string) error
+	environmentPolicyFunc func(ctx context.Context, environmentID, name string) error
 }
 
-func (c *testClient) DeleteUser(ctx context.Context, accountUUID, email string) error {
-	return c.userFunc(ctx, accountUUID, email)
+var _ delete.Client = (*testClient)(nil)
+
+func (c *testClient) DeleteUser(ctx context.Context, email string) error {
+	return c.userFunc(ctx, c.AccountUUID, email)
 }
 
-func (c *testClient) DeleteGroup(ctx context.Context, accountUUID, name string) error {
-	return c.groupFunc(ctx, accountUUID, name)
+func (c *testClient) DeleteGroup(ctx context.Context, name string) error {
+	return c.groupFunc(ctx, c.AccountUUID, name)
 }
 
-func (c *testClient) DeletePolicy(ctx context.Context, levelType, levelID, name string) error {
-	return c.policyFunc(ctx, levelType, levelID, name)
+func (c *testClient) DeleteAccountPolicy(ctx context.Context, name string) error {
+	return c.accountPolicyFunc(ctx, name)
+}
+
+func (c *testClient) DeleteEnvironmentPolicy(ctx context.Context, environmentID, name string) error {
+	return c.environmentPolicyFunc(ctx, environmentID, name)
+}
+
+func (c *testClient) GetAccountUUID() string {
+	return c.AccountUUID
 }
 
 func TestDeletesResources(t *testing.T) {
 	userDeleteCalled := 0
 	groupDeleteCalled := 0
-	policyDeleteCalled := 0
+	accountPolicyDeleteCalled := 0
+	environmentPolicyDeleteCalled := 0
 	c := testClient{
 		userFunc: func(ctx context.Context, accountUUID, email string) error {
 			userDeleteCalled++
@@ -57,8 +70,12 @@ func TestDeletesResources(t *testing.T) {
 			groupDeleteCalled++
 			return nil
 		},
-		policyFunc: func(ctx context.Context, levelType, levelID, name string) error {
-			policyDeleteCalled++
+		accountPolicyFunc: func(ctx context.Context, name string) error {
+			accountPolicyDeleteCalled++
+			return nil
+		},
+		environmentPolicyFunc: func(ctx context.Context, envID, name string) error {
+			environmentPolicyDeleteCalled++
 			return nil
 		},
 	}
@@ -88,16 +105,18 @@ func TestDeletesResources(t *testing.T) {
 			},
 		},
 	}
-	err := delete.AccountResources(context.TODO(), &c, "1234", entriesToDelete)
+	err := delete.AccountResources(context.TODO(), &c, entriesToDelete)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, userDeleteCalled)
 	assert.Equal(t, 1, groupDeleteCalled)
-	assert.Equal(t, 2, policyDeleteCalled)
+	assert.Equal(t, 1, accountPolicyDeleteCalled)
+	assert.Equal(t, 1, environmentPolicyDeleteCalled)
 }
 
 func TestContinuesDeletionIfOneTypeFails(t *testing.T) {
 	userDeleteCalled := 0
-	policyDeleteCalled := 0
+	accountPolicyDeleteCalled := 0
+	environmentPolicyDeleteCalled := 0
 	c := testClient{
 		userFunc: func(ctx context.Context, accountUUID, email string) error {
 			userDeleteCalled++
@@ -106,8 +125,12 @@ func TestContinuesDeletionIfOneTypeFails(t *testing.T) {
 		groupFunc: func(ctx context.Context, accountUUID, name string) error {
 			return errors.New("fail")
 		},
-		policyFunc: func(ctx context.Context, levelType, levelID, name string) error {
-			policyDeleteCalled++
+		accountPolicyFunc: func(ctx context.Context, name string) error {
+			accountPolicyDeleteCalled++
+			return nil
+		},
+		environmentPolicyFunc: func(ctx context.Context, envID, name string) error {
+			environmentPolicyDeleteCalled++
 			return nil
 		},
 	}
@@ -137,16 +160,18 @@ func TestContinuesDeletionIfOneTypeFails(t *testing.T) {
 			},
 		},
 	}
-	err := delete.AccountResources(context.TODO(), &c, "1234", entriesToDelete)
+	err := delete.AccountResources(context.TODO(), &c, entriesToDelete)
 	assert.Error(t, err)
 	assert.Equal(t, 2, userDeleteCalled)
-	assert.Equal(t, 2, policyDeleteCalled)
+	assert.Equal(t, 1, accountPolicyDeleteCalled)
+	assert.Equal(t, 1, environmentPolicyDeleteCalled)
 }
 
 func TestContinuesIfSingleEntriesFailToDelete(t *testing.T) {
 	userDeleteCalled := 0
 	groupDeleteCalled := 0
-	policyDeleteCalled := 0
+	accountPolicyDeleteCalled := 0
+	environmentPolicyDeleteCalled := 0
 	c := testClient{
 		userFunc: func(ctx context.Context, accountUUID, email string) error {
 			userDeleteCalled++
@@ -162,9 +187,16 @@ func TestContinuesIfSingleEntriesFailToDelete(t *testing.T) {
 			}
 			return nil
 		},
-		policyFunc: func(ctx context.Context, levelType, levelID, name string) error {
-			policyDeleteCalled++
-			if policyDeleteCalled > 1 {
+		accountPolicyFunc: func(ctx context.Context, name string) error {
+			accountPolicyDeleteCalled++
+			if accountPolicyDeleteCalled > 1 {
+				return errors.New("fail")
+			}
+			return nil
+		},
+		environmentPolicyFunc: func(ctx context.Context, envID, name string) error {
+			environmentPolicyDeleteCalled++
+			if environmentPolicyDeleteCalled > 1 {
 				return errors.New("fail")
 			}
 			return nil
@@ -200,11 +232,16 @@ func TestContinuesIfSingleEntriesFailToDelete(t *testing.T) {
 				Name:        "test-policy",
 				Environment: "abc1234567",
 			},
+			{
+				Name:        "test-policy",
+				Environment: "def7654321",
+			},
 		},
 	}
-	err := delete.AccountResources(context.TODO(), &c, "1234", entriesToDelete)
+	err := delete.AccountResources(context.TODO(), &c, entriesToDelete)
 	assert.Error(t, err)
 	assert.Equal(t, 2, userDeleteCalled)
 	assert.Equal(t, 2, groupDeleteCalled)
-	assert.Equal(t, 3, policyDeleteCalled)
+	assert.Equal(t, 2, accountPolicyDeleteCalled)
+	assert.Equal(t, 2, environmentPolicyDeleteCalled)
 }
