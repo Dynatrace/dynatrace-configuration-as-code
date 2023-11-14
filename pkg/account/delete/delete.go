@@ -36,7 +36,7 @@ type EnvironmentPolicy struct {
 	Environment string
 }
 
-// Resources is a map of configuration type to slice of delete pointers
+// Resources defines which account resources to delete. Each field defines the information required to delete that type.
 type Resources struct {
 	Users               []User
 	Groups              []Group
@@ -44,31 +44,32 @@ type Resources struct {
 	EnvironmentPolicies []EnvironmentPolicy
 }
 
-// AccountResources removes all given Account configurations
-func AccountResources(ctx context.Context, client Client, accountUUID string, entriesToDelete Resources) error {
+// AccountResources removes all given Account configurations defined as DeleteEntries from an account using the supplied Client
+// Returns an error if any resource fails to be deleted, but attempts to delete as many resources as possible and only returns an error at the end.
+func AccountResources(ctx context.Context, client Client, resourcesToDelete Resources) error {
 
 	deleteErrors := 0
 
-	for _, user := range entriesToDelete.Users {
-		if err := client.DeleteUser(ctx, accountUUID, user.Email); err != nil {
-			log.Error("Failed to delete user %q from account %q: %v", user.Email, accountUUID, err)
+	for _, user := range resourcesToDelete.Users {
+		if err := client.DeleteUser(ctx, user.Email); err != nil {
+			log.Error("Failed to delete user %q from account %q: %v", user.Email, client.GetAccountUUID(), err)
 			deleteErrors++
 		}
 	}
-	for _, group := range entriesToDelete.Groups {
-		if err := client.DeleteGroup(ctx, accountUUID, group.Name); err != nil {
-			log.Error("Failed to delete group %q from account %q: %v", group.Name, accountUUID, err)
+	for _, group := range resourcesToDelete.Groups {
+		if err := client.DeleteGroup(ctx, group.Name); err != nil {
+			log.Error("Failed to delete group %q from account %q: %v", group.Name, client.GetAccountUUID(), err)
 			deleteErrors++
 		}
 	}
-	for _, policy := range entriesToDelete.AccountPolicies {
-		if err := client.DeletePolicy(ctx, "account", accountUUID, policy.Name); err != nil {
-			log.Error("Failed to delete account policy %q from account %q: %v", policy.Name, accountUUID, err)
+	for _, policy := range resourcesToDelete.AccountPolicies {
+		if err := client.DeleteAccountPolicy(ctx, policy.Name); err != nil {
+			log.Error("Failed to delete account policy %q from account %q: %v", policy.Name, client.GetAccountUUID(), err)
 			deleteErrors++
 		}
 	}
-	for _, policy := range entriesToDelete.EnvironmentPolicies {
-		if err := client.DeletePolicy(ctx, "environment", policy.Environment, policy.Name); err != nil {
+	for _, policy := range resourcesToDelete.EnvironmentPolicies {
+		if err := client.DeleteEnvironmentPolicy(ctx, policy.Environment, policy.Name); err != nil {
 			log.Error("Failed to delete policy %q for environment %q: %v", policy.Name, policy.Environment, err)
 			deleteErrors++
 		}
