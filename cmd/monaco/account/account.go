@@ -30,10 +30,13 @@ func Command(fs afero.Fs) *cobra.Command {
 Examples:
 	Deploy account management defined in a manifest:
 		monaco account deploy manifest.yaml [--account <account-name-in-manifest>] [--project <project-defined-in-manifest>]
+	Delete resources defined in a delete-file from account(s) defined in a manifest:
+		monaco account delete [--manifest manifest.yaml] [--file delete.yaml] [--account <account-name-in-manifest>] [--project <project-defined-in-manifest>]
 `,
 	}
 
 	command.AddCommand(deployCommand(fs))
+	command.AddCommand(deleteCommand(fs))
 
 	return command
 }
