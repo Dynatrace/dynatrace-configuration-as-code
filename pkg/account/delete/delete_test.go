@@ -52,10 +52,6 @@ func (c *testClient) DeleteEnvironmentPolicy(ctx context.Context, environmentID,
 	return c.environmentPolicyFunc(ctx, environmentID, name)
 }
 
-func (c *testClient) GetAccountUUID() string {
-	return c.AccountUUID
-}
-
 func TestDeletesResources(t *testing.T) {
 	userDeleteCalled := 0
 	groupDeleteCalled := 0
@@ -105,7 +101,12 @@ func TestDeletesResources(t *testing.T) {
 			},
 		},
 	}
-	err := delete.AccountResources(context.TODO(), &c, entriesToDelete)
+	acc := delete.Account{
+		Name:      "name",
+		UUID:      "1234",
+		APIClient: &c,
+	}
+	err := delete.AccountResources(context.TODO(), acc, entriesToDelete)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, userDeleteCalled)
 	assert.Equal(t, 1, groupDeleteCalled)
@@ -160,7 +161,12 @@ func TestContinuesDeletionIfOneTypeFails(t *testing.T) {
 			},
 		},
 	}
-	err := delete.AccountResources(context.TODO(), &c, entriesToDelete)
+	acc := delete.Account{
+		Name:      "name",
+		UUID:      "1234",
+		APIClient: &c,
+	}
+	err := delete.AccountResources(context.TODO(), acc, entriesToDelete)
 	assert.Error(t, err)
 	assert.Equal(t, 2, userDeleteCalled)
 	assert.Equal(t, 1, accountPolicyDeleteCalled)
@@ -238,7 +244,12 @@ func TestContinuesIfSingleEntriesFailToDelete(t *testing.T) {
 			},
 		},
 	}
-	err := delete.AccountResources(context.TODO(), &c, entriesToDelete)
+	acc := delete.Account{
+		Name:      "name",
+		UUID:      "1234",
+		APIClient: &c,
+	}
+	err := delete.AccountResources(context.TODO(), acc, entriesToDelete)
 	assert.Error(t, err)
 	assert.Equal(t, 2, userDeleteCalled)
 	assert.Equal(t, 2, groupDeleteCalled)

@@ -116,9 +116,9 @@ func TestAccountAPIClient_DeleteGroup(t *testing.T) {
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
 		err = accountClient.DeleteGroup(context.Background(), "test-group")
-		assert.NoError(t, err)
+		assert.ErrorIs(t, err, delete.NotFoundErr)
 	})
-	t.Run("no error if delete result is a 404", func(t *testing.T) {
+	t.Run("returns NotFoundError if delete result is a 404", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if !strings.HasPrefix(req.URL.Path, "/iam/v1/accounts/1234/groups") {
 				t.Fatalf("expected API call to '/iam/v1/accounts/1234/groups' but got %q", req.URL.Path)
@@ -165,7 +165,7 @@ func TestAccountAPIClient_DeleteGroup(t *testing.T) {
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
 		err = accountClient.DeleteGroup(context.Background(), "test-group")
-		assert.NoError(t, err)
+		assert.ErrorIs(t, err, delete.NotFoundErr)
 	})
 	t.Run("returns an error if finding ID failed", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -313,9 +313,9 @@ func TestAccountAPIClient_DeleteAccountPolicy(t *testing.T) {
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
 		err = accountClient.DeleteAccountPolicy(context.Background(), "test-policy")
-		assert.NoError(t, err)
+		assert.ErrorIs(t, err, delete.NotFoundErr)
 	})
-	t.Run("no error if delete result is a 404", func(t *testing.T) {
+	t.Run("returns NotFoundError if delete result is a 404", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if !strings.HasPrefix(req.URL.Path, "/iam/v1/repo/account/1234/policies") {
 				t.Fatalf("expected API call to '/iam/v1/repo/account/1234/policies' but got %q", req.URL.Path)
@@ -353,7 +353,7 @@ func TestAccountAPIClient_DeleteAccountPolicy(t *testing.T) {
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
 		err = accountClient.DeleteAccountPolicy(context.Background(), "test-policy")
-		assert.NoError(t, err)
+		assert.ErrorIs(t, err, delete.NotFoundErr)
 	})
 	t.Run("returns an error if finding ID failed", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -492,9 +492,9 @@ func TestAccountAPIClient_DeleteEnvironmentPolicy(t *testing.T) {
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
 		err = accountClient.DeleteEnvironmentPolicy(context.Background(), "abc1234", "test-policy")
-		assert.NoError(t, err)
+		assert.ErrorIs(t, err, delete.NotFoundErr)
 	})
-	t.Run("no error if delete result is a 404", func(t *testing.T) {
+	t.Run("returns NotFoundError if delete result is a 404", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if !strings.HasPrefix(req.URL.Path, "/iam/v1/repo/environment/abc1234/policies") {
 				t.Fatalf("expected API call to '/iam/v1/repo/environment/abc1234/policies' but got %q", req.URL.Path)
@@ -532,7 +532,7 @@ func TestAccountAPIClient_DeleteEnvironmentPolicy(t *testing.T) {
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
 		err = accountClient.DeleteEnvironmentPolicy(context.Background(), "abc1234", "test-policy")
-		assert.NoError(t, err)
+		assert.ErrorIs(t, err, delete.NotFoundErr)
 	})
 	t.Run("returns an error if finding ID failed", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -623,7 +623,7 @@ func TestAccountAPIClient_DeleteUser(t *testing.T) {
 		err = accountClient.DeleteUser(context.Background(), "user@test.com")
 		assert.NoError(t, err)
 	})
-	t.Run("no error if delete result is a 404", func(t *testing.T) {
+	t.Run("returns NotFoundError if delete result is a 404", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			if !strings.HasPrefix(req.URL.Path, "/iam/v1/accounts/1234/users") {
 				t.Fatalf("expected API call to '/iam/v1/accounts/1234/users' but got %q", req.URL.Path)
@@ -644,7 +644,7 @@ func TestAccountAPIClient_DeleteUser(t *testing.T) {
 		accountClient := delete.NewAccountAPIClient("1234", accounts.NewClient(restClient))
 
 		err = accountClient.DeleteUser(context.Background(), "user@test.com")
-		assert.NoError(t, err)
+		assert.ErrorIs(t, err, delete.NotFoundErr)
 	})
 	t.Run("returns an error if delete failed", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {

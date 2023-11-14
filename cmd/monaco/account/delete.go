@@ -133,12 +133,12 @@ func loadResourcesToDelete(fs afero.Fs, deleteFile string) (delete.Resources, er
 }
 
 func deleteFromAccount(account manifest.Account, resourcesToDelete delete.Resources) error {
-	c, err := createClient(account)
+	accountAccess, err := createAccountDeleteClient(account)
 	if err != nil {
 		log.Error("Failed to create API client for account %q: %v", account.Name, err)
 		return err
 	}
-	err = delete.AccountResources(context.Background(), c, resourcesToDelete)
+	err = delete.AccountResources(context.Background(), accountAccess, resourcesToDelete)
 	if err != nil {
 		log.Error("Failed to delete resources for account %q", account.Name)
 		return err
@@ -146,7 +146,7 @@ func deleteFromAccount(account manifest.Account, resourcesToDelete delete.Resour
 	return nil
 }
 
-func createClient(a manifest.Account) (delete.Client, error) {
+func createAccountDeleteClient(a manifest.Account) (delete.Account, error) {
 	oauthCreds := clientcredentials.Config{
 		ClientID:     a.OAuth.ClientID.Value.Value(),
 		ClientSecret: a.OAuth.ClientSecret.Value.Value(),
@@ -162,7 +162,11 @@ func createClient(a manifest.Account) (delete.Client, error) {
 
 	c, err := clients.Factory().WithOAuthCredentials(oauthCreds).AccountClient(apiUrl)
 	if err != nil {
-		return nil, err
+		return delete.Account{}, err
 	}
-	return delete.NewAccountAPIClient(a.AccountUUID.String(), c), nil
+	return delete.Account{
+		Name:      a.Name,
+		UUID:      a.AccountUUID.String(),
+		APIClient: delete.NewAccountAPIClient(a.AccountUUID.String(), c),
+	}, nil
 }
