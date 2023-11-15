@@ -19,7 +19,8 @@ package loader
 import (
 	"fmt"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
+	persitence "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/internal/types"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
@@ -27,13 +28,29 @@ import (
 )
 
 // Load loads account management resources from YAML configuration files
-// located within the specified root directory path. It parses the YAML files, extracts policies,
-// groups, and users data, and organizes them into a AMResources struct, which is then returned.
-func Load(fs afero.Fs, rootPath string) (*account.AMResources, error) {
-	resources := &account.AMResources{
-		Policies: make(map[string]account.Policy),
-		Groups:   make(map[string]account.Group),
-		Users:    make(map[string]account.User),
+// located within the specified root directory path.
+// It:
+//  1. parses YAML files found under rootPath, extracts policies, groups, and users data
+//  2. validates the loaded data for correct syntax
+//  3. returns the data in the in-memory account.Resources representation
+func Load(fs afero.Fs, rootPath string) (*account.Resources, error) {
+	persisted, err := load(fs, rootPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load account managment resources from %s: %w", rootPath, err)
+	}
+
+	if err := validate(persisted); err != nil {
+		return nil, fmt.Errorf("account managment resources from %s are invalid: %w", rootPath, err)
+	}
+
+	return transform(persisted), nil
+}
+
+func load(fs afero.Fs, rootPath string) (*persitence.Resources, error) {
+	resources := &persitence.Resources{
+		Policies: make(map[string]persitence.Policy),
+		Groups:   make(map[string]persitence.Group),
+		Users:    make(map[string]persitence.User),
 	}
 
 	yamlFilePaths, err := files.FindYamlFiles(fs, rootPath)
@@ -51,7 +68,7 @@ func Load(fs afero.Fs, rootPath string) (*account.AMResources, error) {
 			return nil, err
 		}
 
-		var policies account.Policies
+		var policies persitence.Policies
 		err = mapstructure.Decode(content, &policies)
 		if err != nil {
 			return nil, err
@@ -70,10 +87,10 @@ func Load(fs afero.Fs, rootPath string) (*account.AMResources, error) {
 			}
 
 			if level.Type == "account" {
-				pol.Level = account.PolicyLevelAccount{Type: "account"}
+				pol.Level = persitence.PolicyLevelAccount{Type: "account"}
 			}
 			if level.Type == "environment" {
-				pol.Level = account.PolicyLevelEnvironment{
+				pol.Level = persitence.PolicyLevelEnvironment{
 					Type:        "environment",
 					Environment: level.Environment,
 				}
@@ -81,7 +98,7 @@ func Load(fs afero.Fs, rootPath string) (*account.AMResources, error) {
 			resources.Policies[pol.ID] = pol
 		}
 
-		var groups account.Groups
+		var groups persitence.Groups
 		err = mapstructure.Decode(content, &groups)
 		if err != nil {
 			return nil, err
@@ -99,7 +116,7 @@ func Load(fs afero.Fs, rootPath string) (*account.AMResources, error) {
 						typedPolicies = append(typedPolicies, polStr)
 						continue
 					}
-					var reference account.Reference
+					var reference persitence.Reference
 					if err = mapstructure.Decode(pol, &reference); err != nil {
 						return nil, err
 					}
@@ -109,7 +126,7 @@ func Load(fs afero.Fs, rootPath string) (*account.AMResources, error) {
 			}
 
 			if gr.Environment != nil {
-				var typedEnvs []account.Environment
+				var typedEnvs []persitence.Environment
 				for _, env := range gr.Environment {
 					var typedPolicies []any
 					for _, pol := range env.Policies {
@@ -117,7 +134,7 @@ func Load(fs afero.Fs, rootPath string) (*account.AMResources, error) {
 							typedPolicies = append(typedPolicies, polStr)
 							continue
 						}
-						var reference account.Reference
+						var reference persitence.Reference
 						if err = mapstructure.Decode(pol, &reference); err != nil {
 							return nil, err
 						}
@@ -131,7 +148,7 @@ func Load(fs afero.Fs, rootPath string) (*account.AMResources, error) {
 			resources.Groups[gr.ID] = gr
 		}
 
-		var users account.Users
+		var users persitence.Users
 		err = mapstructure.Decode(content, &users)
 		if err != nil {
 			return nil, err
@@ -147,7 +164,7 @@ func Load(fs afero.Fs, rootPath string) (*account.AMResources, error) {
 					typedGroups = append(typedGroups, grStr)
 					continue
 				}
-				var reference account.Reference
+				var reference persitence.Reference
 				if err = mapstructure.Decode(gr, &reference); err != nil {
 					return nil, err
 				}
@@ -167,4 +184,61 @@ func decode(in io.ReadCloser) (map[string]any, error) {
 		return content, err
 	}
 	return content, nil
+}
+
+func transform(resources *persitence.Resources) *account.Resources {
+	inMemResources := account.Resources{
+		Policies: make(map[account.PolicyId]account.Policy),
+		Groups:   make(map[account.GroupId]account.Group),
+		Users:    make(map[account.UserId]account.User),
+	}
+	for id, v := range resources.Policies {
+		inMemResources.Policies[id] = account.Policy{
+			ID:          v.ID,
+			Name:        v.Name,
+			Level:       v.Level,
+			Description: v.Description,
+			Policy:      v.Policy,
+		}
+	}
+	for id, v := range resources.Groups {
+		var acc *account.Account
+		if v.Account != nil {
+			acc = &account.Account{
+				Permissions: v.Account.Permissions,
+				Policies:    v.Account.Policies,
+			}
+		}
+		env := make([]account.Environment, len(v.Environment))
+		for i, e := range v.Environment {
+			env[i] = account.Environment{
+				Name:        e.Name,
+				Permissions: e.Permissions,
+				Policies:    e.Policies,
+			}
+		}
+		mz := make([]account.ManagementZone, len(v.ManagementZone))
+		for i, m := range v.ManagementZone {
+			mz[i] = account.ManagementZone{
+				Environment:    m.Environment,
+				ManagementZone: m.ManagementZone,
+				Permissions:    m.Permissions,
+			}
+		}
+		inMemResources.Groups[id] = account.Group{
+			ID:             v.ID,
+			Name:           v.Name,
+			Description:    v.Description,
+			Account:        acc,
+			Environment:    env,
+			ManagementZone: mz,
+		}
+	}
+	for id, v := range resources.Users {
+		inMemResources.Users[id] = account.User{
+			Email:  v.Email,
+			Groups: v.Groups,
+		}
+	}
+	return &inMemResources
 }

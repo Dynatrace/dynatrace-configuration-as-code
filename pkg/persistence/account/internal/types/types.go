@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package account
+package types
 
 type (
-	anyMap      = map[any]any
-	AMResources struct {
+	Resources struct {
 		Policies map[string]Policy
 		Groups   map[string]Group
 		Users    map[string]User

@@ -24,10 +24,10 @@ import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/errutils"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/log"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account/deployer"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account"
 	accountLoader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/loader"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -117,15 +117,13 @@ func deploy(fs afero.Fs, opts deployOpts) error {
 	return err
 }
 
-func loadAccountManagementResources(fs afero.Fs, projs manifest.ProjectDefinitionByProjectID) (map[string]*account.AMResources, []error) {
-	resources := make(map[string]*account.AMResources, len(projs))
+func loadAccountManagementResources(fs afero.Fs, projs manifest.ProjectDefinitionByProjectID) (map[string]*account.Resources, []error) {
+	resources := make(map[string]*account.Resources, len(projs))
 	var errs []error
 
 	// load project content
 	for _, p := range projs {
 		if a, err := accountLoader.Load(fs, p.Path); err != nil {
-			errs = append(errs, err)
-		} else if err := accountLoader.Validate(a); err != nil {
 			errs = append(errs, err)
 		} else {
 			resources[p.Name] = a

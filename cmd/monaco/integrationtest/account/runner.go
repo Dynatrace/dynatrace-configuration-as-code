@@ -21,9 +21,9 @@ package account
 import (
 	"errors"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/cmd/monaco/integrationtest/account/internal"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/internal/files"
 	manifestloader "github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest/loader"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -64,7 +64,7 @@ func appendSuffixForWorkspace(t *testing.T, fs afero.Fs, suffix string) {
 		for _, file := range ff {
 			content := unmarshal(t, fs, file)
 
-			var full fullFile
+			var full internal.FullFile
 			err := mapstructure.Decode(content, &full)
 			assert.NoError(t, err)
 
@@ -88,12 +88,6 @@ func appendSuffixForWorkspace(t *testing.T, fs afero.Fs, suffix string) {
 			marshal(t, fs, file, content)
 		}
 	}
-}
-
-type fullFile struct {
-	Policies []account.Policy `mapstructure:"policies"`
-	Groups   []account.Group  `mapstructure:"groups"`
-	Users    []account.User   `mapstructure:"users"`
 }
 
 func unmarshal(t *testing.T, fs afero.Fs, path string) map[string]any {
