@@ -17,8 +17,8 @@
 package deployer
 
 import (
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/manifest"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account"
 )
 
 type Options struct {
@@ -26,6 +26,6 @@ type Options struct {
 }
 
 // Deploy deploys all given resources to all given accounts
-func Deploy(accounts map[string]manifest.Account, resources map[string]*account.AMResources, opts Options) error {
+func Deploy(accounts map[string]manifest.Account, resources map[string]*account.Resources, opts Options) error {
 	return nil
 }

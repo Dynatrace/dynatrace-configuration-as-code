@@ -18,13 +18,13 @@ package loader
 
 import (
 	"fmt"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account"
+	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/internal/types"
 )
 
 // Validate checks the references in the provided AMResources instance to ensure
 // that all referenced groups and policies exist. It iterates through the users,
 // environment policies, and account policies, validating their references.
-func Validate(res *account.AMResources) error {
+func validate(res *types.Resources) error {
 	for _, user := range res.Users {
 		for _, groupRef := range user.Groups {
 			if err := refCheck(res, groupRef, groupExists); err != nil {
@@ -52,8 +52,8 @@ func Validate(res *account.AMResources) error {
 	return nil
 }
 
-func refCheck(res *account.AMResources, elem any, refCheckFn func(*account.AMResources, string) bool) error {
-	if reference, isCustomRef := elem.(account.Reference); isCustomRef {
+func refCheck(res *types.Resources, elem any, refCheckFn func(*types.Resources, string) bool) error {
+	if reference, isCustomRef := elem.(types.Reference); isCustomRef {
 		if reference.Id == "" {
 			return fmt.Errorf("error validating account resources: %w", ErrIdFieldMissing)
 		}
@@ -66,12 +66,12 @@ func refCheck(res *account.AMResources, elem any, refCheckFn func(*account.AMRes
 	return nil
 }
 
-func groupExists(a *account.AMResources, id string) bool {
+func groupExists(a *types.Resources, id string) bool {
 	_, exists := a.Groups[id]
 	return exists
 }
 
-func policyExists(a *account.AMResources, id string) bool {
+func policyExists(a *types.Resources, id string) bool {
 	_, exists := a.Policies[id]
 	return exists
 
