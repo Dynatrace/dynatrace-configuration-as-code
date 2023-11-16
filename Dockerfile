@@ -17,7 +17,7 @@ FROM alpine:3.18
 RUN apk add --update --no-cache ca-certificates
 RUN addgroup monaco ; \
     adduser --shell /bin/false --ingroup monaco --disabled-password --home /monaco monaco
-COPY --chown=monaco:monaco --chmod=755 --from=build /src/monaco /usr/local/bin/monaco
+COPY --chown=monaco:monaco --chmod=500 --from=build /src/monaco /usr/local/bin/monaco
 USER monaco
 WORKDIR /monaco
 ENTRYPOINT ["/usr/local/bin/monaco"]
