@@ -25,12 +25,12 @@ environmentGroups:
 
 accounts:
 - name: monaco-test-account
-  accountUUID: 8f9935ee-2068-455d-85ce-47447f19d5d5
+  accountUUID: 17a8095e-a974-40a2-9049-8a5d683cdd0b
   oAuth:
     clientId:
-      name: OAUTH_CLIENT_ID
+      name: ACCOUNT_OAUTH_CLIENT_ID
     clientSecret:
-      name: OAUTH_CLIENT_SECRET
+      name: ACCOUNT_OAUTH_CLIENT_SECRET
     tokenEndpoint:
       type: environment
       value: OAUTH_TOKEN_ENDPOINT
