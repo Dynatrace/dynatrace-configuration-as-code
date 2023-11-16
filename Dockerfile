@@ -5,7 +5,11 @@ WORKDIR /src
 ARG TARGETOS
 ARG TARGETARCH
 ARG VERSION=2.x
-COPY . .
+COPY cmd/ ./cmd
+COPY internal/ ./internal
+COPY pkg/ ./pkg
+COPY go.mod .
+COPY go.sum .
 RUN GOOS=$TARGETOS GOARCH=$TARGETARCH CGO_ENABLED=0  go build -a -tags netgo -ldflags "-X github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/version.MonitoringAsCode=${VERSION} -w -extldflags '-static'" ./cmd/monaco
 
 
