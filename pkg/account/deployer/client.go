@@ -290,5 +290,7 @@ func (d *accountManagementClient) handleClientResponseError(resp *http.Response,
 }
 
 func closeResponseBody(resp *http.Response) {
-	_ = resp.Body.Close()
+	if resp != nil {
+		_ = resp.Body.Close()
+	}
 }
