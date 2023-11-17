@@ -19,7 +19,6 @@ package loader
 
 import (
 	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/account"
-	"github.com/dynatrace/dynatrace-configuration-as-code/v2/pkg/persistence/account/internal/types"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/exp/maps"
@@ -49,13 +48,13 @@ func TestLoad(t *testing.T) {
 		assert.Len(t, loaded.Groups, 1)
 		assert.NotNil(t, loaded.Groups["monaco-group"].Account)
 		assert.Len(t, loaded.Groups["monaco-group"].Account.Policies, 2)
-		assert.IsType(t, types.Reference{}, loaded.Groups["monaco-group"].Account.Policies[0])
+		assert.IsType(t, account.Reference{}, loaded.Groups["monaco-group"].Account.Policies[0])
 		assert.IsType(t, "", loaded.Groups["monaco-group"].Account.Policies[1])
 		assert.NotNil(t, loaded.Groups["monaco-group"].Environment)
 		assert.Len(t, loaded.Groups["monaco-group"].Environment, 1)
 		assert.Equal(t, "vsy13800", loaded.Groups["monaco-group"].Environment[0].Name)
 		assert.Len(t, loaded.Groups["monaco-group"].Environment[0].Policies, 2)
-		assert.IsType(t, types.Reference{}, loaded.Groups["monaco-group"].Environment[0].Policies[0])
+		assert.IsType(t, account.Reference{}, loaded.Groups["monaco-group"].Environment[0].Policies[0])
 		assert.IsType(t, "", loaded.Groups["monaco-group"].Environment[0].Policies[1])
 		assert.Len(t, loaded.Policies, 2)
 	})
