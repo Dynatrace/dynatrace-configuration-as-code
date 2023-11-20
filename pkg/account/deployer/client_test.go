@@ -333,7 +333,7 @@ func TestClient_UpdateGroupPermissions(t *testing.T) {
 	t.Run("Update Group Permissions - OK", func(t *testing.T) {
 		responses := []testutils.ResponseDef{
 			{
-				POST: func(t *testing.T, request *http.Request) testutils.Response {
+				PUT: func(t *testing.T, request *http.Request) testutils.Response {
 					return testutils.Response{
 						ResponseCode: http.StatusOK,
 						ResponseBody: `{"count": 0,"items": []}`,
@@ -363,7 +363,7 @@ func TestClient_UpdateGroupPermissions(t *testing.T) {
 	t.Run("Update Group Permissions - API call fails", func(t *testing.T) {
 		responses := []testutils.ResponseDef{
 			{
-				POST: func(t *testing.T, request *http.Request) testutils.Response {
+				PUT: func(t *testing.T, request *http.Request) testutils.Response {
 					return testutils.Response{
 						ResponseCode: http.StatusInternalServerError,
 						ResponseBody: `{"error": "some-error"}`,
@@ -587,14 +587,14 @@ func TestClient_UpdateGroupBindings(t *testing.T) {
 	t.Run("Update Group Bindings - OK", func(t *testing.T) {
 		responses := []testutils.ResponseDef{
 			{
-				POST: func(t *testing.T, request *http.Request) testutils.Response {
+				PUT: func(t *testing.T, request *http.Request) testutils.Response {
 					return testutils.Response{
 						ResponseCode: http.StatusOK,
 						ResponseBody: `{}`,
 					}
 				},
 				ValidateRequest: func(t *testing.T, request *http.Request) {
-					assert.Equal(t, "/iam/v1/accounts/abcde/users/8b78ac8d-74fd-456f-bb19-13e078674745", request.URL.String())
+					assert.Equal(t, "/iam/v1/accounts/abcde/users/8b78ac8d-74fd-456f-bb19-13e078674745/groups", request.URL.String())
 					body, _ := io.ReadAll(request.Body)
 					require.JSONEq(t, `["155a39a5-159f-475e-b2ff-681dad70896e"]`, string(body))
 				},
@@ -613,7 +613,7 @@ func TestClient_UpdateGroupBindings(t *testing.T) {
 	t.Run("Update Grou pBindings - API call fails", func(t *testing.T) {
 		responses := []testutils.ResponseDef{
 			{
-				POST: func(t *testing.T, request *http.Request) testutils.Response {
+				PUT: func(t *testing.T, request *http.Request) testutils.Response {
 					return testutils.Response{
 						ResponseCode: http.StatusInternalServerError,
 						ResponseBody: `{"error" : "some-error"}`,
