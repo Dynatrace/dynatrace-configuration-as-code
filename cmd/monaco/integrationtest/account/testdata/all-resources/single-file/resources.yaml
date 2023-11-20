@@ -12,24 +12,24 @@ groups:
   description: This is my group
   account:
     permissions:
-    - View my Group Stuff
+    - account-viewer
     policies:
-    - Request My Group Stuff
+    - Environment role - Access environment
 
   environment:
-  - name: myenv123
+  - name: vkb66581
     permissions:
-    - View environment
+    - tenant-viewer
     policies:
-    - View environment
+    - Environment role - Replay session data without masking
     - type: reference
       id: my-policy
 
-  managementZone:
-  - environment: env12345
-    managementZone: Mzone
-    permissions:
-    - View environment
+#  managementZone:
+#  - environment: vs13800
+#    managementZone: Mzone
+#    permissions:
+#    - tenant-viewer
 
 policies:
 - name: My Policy
@@ -38,4 +38,4 @@ policies:
     type: account
   description: abcde
   policy: |-
-    ALLOW a:b:c;
+    ALLOW automation:workflows:read;

@@ -30,7 +30,7 @@ func TestUsers(t *testing.T) {
 
 	RunAccountTestCase(t, "testdata/all-resources", "users", func(o options) {
 		cmd := runner.BuildCli(o.fs)
-		cmd.SetArgs([]string{"account", "deploy", "manifest.yaml"})
+		cmd.SetArgs([]string{"account", "deploy", "manifest.yaml", "-p", "single-file"})
 
 		err := cmd.Execute()
 		assert.NoError(t, err)
