@@ -42,6 +42,7 @@ type Options struct {
 
 //go:generate mockgen -source=deployer.go -destination=client_mock.go -package=deployer client
 type client interface {
+	getAllGroups(ctx context.Context) (map[string]remoteId, error)
 	getGlobalPolicies(ctx context.Context) (map[string]remoteId, error)
 	getManagementZones(ctx context.Context) ([]ManagementZone, error)
 	upsertPolicy(ctx context.Context, policyLevel string, policyLevelId string, policyId string, policy Policy) (remoteId, error)
@@ -79,6 +80,11 @@ func (d *AccountDeployer) Deploy(resources map[projectName]*account.Resources) e
 	}
 
 	d.deployedMgmtZones, err = d.accountManagementClient.getManagementZones(context.TODO())
+	if err != nil {
+		return err
+	}
+
+	d.deployedGroups, err = d.accountManagementClient.getAllGroups(context.TODO())
 	if err != nil {
 		return err
 	}
