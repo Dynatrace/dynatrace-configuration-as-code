@@ -131,7 +131,7 @@ func (d *AccountDeployer) deployGroups(groups map[string]account.Group) error {
 			return fmt.Errorf("unable to deploy policy binding for account %q: %w", d.accountManagementClient.getAccountInfo().AccountUUID, err)
 		}
 
-		if err := d.updateGroupPermissions(context.TODO(), group); err != nil {
+		if err = d.updateGroupPermissions(context.TODO(), group); err != nil {
 			return fmt.Errorf("unable to deploy permissions for account %q: %w", d.accountManagementClient.getAccountInfo().AccountUUID, err)
 		}
 	}
@@ -195,7 +195,7 @@ func (d *AccountDeployer) updateGroupPolicyBindings(ctx context.Context, group a
 		return err
 	}
 
-	if err := d.accountManagementClient.updateAccountPolicyBindings(ctx, remoteGroupId, remoteIds); err != nil {
+	if err = d.accountManagementClient.updateAccountPolicyBindings(ctx, remoteGroupId, remoteIds); err != nil {
 		return err
 	}
 
@@ -203,8 +203,8 @@ func (d *AccountDeployer) updateGroupPolicyBindings(ctx context.Context, group a
 	if err != nil {
 		return err
 	}
-	for envName, uuids := range envPolicyUuids {
-		if err := d.accountManagementClient.updateEnvironmentPolicyBindings(ctx, envName, remoteGroupId, uuids); err != nil {
+	for env, uuids := range envPolicyUuids {
+		if err = d.accountManagementClient.updateEnvironmentPolicyBindings(ctx, env, remoteGroupId, uuids); err != nil {
 			return err
 		}
 	}
@@ -291,12 +291,13 @@ func (d *AccountDeployer) getEnvironmentPermissions(environments []account.Envir
 func (d *AccountDeployer) getManagementZonePermissions(mzones []account.ManagementZone) ([]accountmanagement.PermissionsDto, error) {
 	var permissions []accountmanagement.PermissionsDto
 	for _, mz := range mzones {
+		mzId := d.managementZoneIdLookup(mz.Environment, mz.ManagementZone)
+		if mzId == "" {
+			return nil, fmt.Errorf("unable to lookup id for management zone %q of environment %q", mz.ManagementZone, mz.Environment)
+		}
+
 		for _, p := range mz.Permissions {
 			if pStr, ok := p.(string); ok {
-				mzId := d.managementZoneIdLookup(mz.Environment, mz.ManagementZone)
-				if mzId == "" {
-					return nil, fmt.Errorf("unable to lookup id for management zone %q of environment %q", mz.Environment, mz.ManagementZone)
-				}
 				perm := accountmanagement.PermissionsDto{
 					PermissionName: pStr,
 					ScopeType:      "management-zone",
@@ -306,9 +307,9 @@ func (d *AccountDeployer) getManagementZonePermissions(mzones []account.Manageme
 			}
 		}
 	}
+
 	return permissions, nil
 }
-
 func (d *AccountDeployer) getAccountPolicyRefs(group account.Group) ([]remoteId, error) {
 	var policyIds []remoteId
 	var err error
@@ -340,30 +341,33 @@ func (d *AccountDeployer) getUserGroupRefs(user account.User) ([]remoteId, error
 }
 
 func (d *AccountDeployer) processItems(items []interface{}, remoteIdLookup idLookupFn) ([]remoteId, error) {
-	ids := make([]remoteId, 0)
+	var ids []remoteId
 	var notFoundLocalIds []localId
-	for _, item := range items {
-		if ref, ok := item.(account.Reference); ok {
-			rid := remoteIdLookup(ref.Id)
-			if rid == "" {
-				notFoundLocalIds = append(notFoundLocalIds, ref.Id)
-				continue
-			}
-			ids = append(ids, rid)
-		}
-		if name, ok := item.(string); ok {
-			rid := remoteIdLookup(name)
-			if rid == "" {
-				notFoundLocalIds = append(notFoundLocalIds, name)
-				continue
-			}
 
-			ids = append(ids, rid)
+	for _, item := range items {
+		var id localId
+		switch v := item.(type) {
+		case account.Reference:
+			id = v.Id
+		case string:
+			id = v
+		default:
+			return nil, fmt.Errorf("unsupported item type: %T", item)
 		}
+
+		rid := remoteIdLookup(id)
+		if rid == "" {
+			notFoundLocalIds = append(notFoundLocalIds, id)
+			continue
+		}
+
+		ids = append(ids, rid)
 	}
-	if len(items) != len(ids) {
-		return nil, fmt.Errorf("could not find remote Ids for the the following items: %v", notFoundLocalIds)
+
+	if len(notFoundLocalIds) > 0 {
+		return nil, fmt.Errorf("could not find remote Ids for the following items: %v", notFoundLocalIds)
 	}
+
 	return ids, nil
 }
 
